@@ -24,7 +24,8 @@
 
 (in-package "CUTIL")
 (include-book "deflist")
-
+(local (include-book "str/top" :dir :system))
+(local (include-book "misc/assert" :dir :system))
 
 
 (local (progn
@@ -238,6 +239,26 @@
   :guard (integerp min)
   :true-listp t)
 
+
+;; rest stuff
+
+(local (in-theory (enable rational-listp)))
+
+(deflist ratlist (x)
+  (rationalp x)
+  :true-listp t
+  :guard t
+  :parents (rationalp)
+  :rest
+  ((defthm ratlist-is-rational-listp
+     (equal (ratlist x)
+            (rational-listp x)))))
+
+(assert!
+ ;; make sure it got included in the docs...
+ (b* ((topic (xdoc::find-topic 'ratlist (xdoc::get-xdoc-table (w state)))))
+   (str::isubstrp "@(def |CUTIL|::|RATLIST-IS-RATIONAL-LISTP|)"
+                  (cdr (assoc :long topic)))))
 
 ))
 

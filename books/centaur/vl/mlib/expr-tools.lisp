@@ -22,11 +22,9 @@
 (include-book "../parsetree")
 (local (include-book "../util/arithmetic"))
 
-
 (defxdoc expr-tools
   :parents (mlib)
   :short "Basic functions for working with expressions.")
-
 
 
 (defsection vl-one-bit-constants
@@ -68,7 +66,7 @@ expression-sizing) is a very complex topic.</p>"
 
 
 
-(defsection vl-expr-resolved-p
+(define vl-expr-resolved-p ((x vl-expr-p))
   :parents (expr-tools)
   :short "Recognizes plain constant integer expressions."
 
@@ -76,27 +74,23 @@ expression-sizing) is a very complex topic.</p>"
 integer value that is free of X/Z bits.  We often expect to be able to resolve
 the expressions that occur in ranges like @('wire [3:0] foo;') and in
 selects.</p>"
+  :inline t
 
-  (definlined vl-expr-resolved-p (x)
-    (declare (xargs :guard (vl-expr-p x)))
-    (and (vl-fast-atom-p x)
-         (vl-fast-constint-p (vl-atom->guts x)))))
+  (and (vl-fast-atom-p x)
+       (vl-fast-constint-p (vl-atom->guts x))))
 
 
-(defsection vl-resolved->val
+(define vl-resolved->val ((x (and (vl-expr-p x)
+                                  (vl-expr-resolved-p x))))
   :parents (expr-tools)
   :short "Get the value from a resolved expression."
+  :long "<p>Guaranteed to return a natural number.</p>"
 
-  :long "<p>This is guaranteed to be a natural number.</p>"
+  (lnfix (vl-constint->value (vl-atom->guts x)))
 
-  (definlined vl-resolved->val (x)
-    (declare (xargs :guard (and (vl-expr-p x)
-                                (vl-expr-resolved-p x))
-                    :guard-hints (("Goal" :in-theory (enable vl-expr-resolved-p)))))
-    (lnfix (vl-constint->value (vl-atom->guts x))))
+  :guard-hints (("Goal" :in-theory (enable vl-expr-resolved-p)))
 
-  (local (in-theory (enable vl-resolved->val)))
-
+  ///
   (defthm natp-of-vl-resolved->val
     (natp (vl-resolved->val x))
     :rule-classes :type-prescription))
@@ -112,25 +106,21 @@ selects.</p>"
   :guard (and (vl-exprlist-p x)
               (vl-exprlist-resolved-p x))
   :nil-preservingp nil
-  :parents (expr-tools))
-
-(defthm nat-listp-of-vl-exprlist-resolved->vals
-  (nat-listp (vl-exprlist-resolved->vals x))
-  :hints(("Goal" :induct (len x))))
-
+  :parents (expr-tools)
+  :rest
+  ((defthm nat-listp-of-vl-exprlist-resolved->vals
+     (nat-listp (vl-exprlist-resolved->vals x)))))
 
 
-(defsection vl-idexpr-p
+
+(define vl-idexpr-p ((x vl-expr-p))
   :parents (expr-tools)
   :short "Recognize plain identifier expressions."
-
-  :long "<p>This recognizes simple, non-hierarchical identifier expressions
+  :long "<p>This recognizes simple non-hierarchical identifier expressions
 like @('foo').</p>"
-
-  (definlined vl-idexpr-p (x)
-    (declare (xargs :guard (vl-expr-p x)))
-    (and (vl-fast-atom-p x)
-         (vl-fast-id-p (vl-atom->guts x)))))
+  :inline t
+  (and (vl-fast-atom-p x)
+       (vl-fast-id-p (vl-atom->guts x))))
 
 (deflist vl-idexprlist-p (x)
   (vl-idexpr-p x)
@@ -139,58 +129,55 @@ like @('foo').</p>"
   :parents (expr-tools))
 
 
-(defsection vl-idexpr->name
+(define vl-idexpr->name ((x (and (vl-expr-p x)
+                                 (vl-idexpr-p x))))
   :parents (expr-tools)
   :short "Get the name from a @(see vl-idexpr-p)."
+  :long "<p>Guaranteed to return a string.</p>"
+  :inline t
 
-  :long "<p>This is guaranteed to be a string.</p>"
+  (mbe :logic (string-fix (vl-id->name (vl-atom->guts x)))
+       :exec (vl-id->name (vl-atom->guts x)))
 
-  (definlined vl-idexpr->name (x)
-    (declare (xargs :guard (and (vl-expr-p x)
-                                (vl-idexpr-p x))
-                    :guard-hints(("Goal" :in-theory (enable vl-idexpr-p)))))
-    (mbe :logic (string-fix (vl-id->name (vl-atom->guts x)))
-         :exec (vl-id->name (vl-atom->guts x))))
+  :guard-hints(("Goal" :in-theory (enable vl-idexpr-p)))
 
-  (local (in-theory (enable vl-idexpr->name)))
+  ///
 
   (defthm stringp-of-vl-idexpr->name
     (stringp (vl-idexpr->name x))
     :rule-classes :type-prescription))
 
 
-(defsection vl-idexprlist->names
-
-  (defprojection vl-idexprlist->names (x)
-    (vl-idexpr->name x)
-    :guard (and (vl-exprlist-p x)
-                (vl-idexprlist-p x))
-    :parents (expr-tools))
-
-  (local (in-theory (enable vl-idexprlist->names)))
-
-  (defthm string-listp-of-vl-idexprlist->names
-    (string-listp (vl-idexprlist->names x))))
+(defprojection vl-idexprlist->names (x)
+  (vl-idexpr->name x)
+  :guard (and (vl-exprlist-p x)
+              (vl-idexprlist-p x))
+  :parents (expr-tools)
+  :rest
+  ((defthm string-listp-of-vl-idexprlist->names
+     (string-listp (vl-idexprlist->names x)))))
 
 
 
-(defsection vl-idexpr
+(define vl-idexpr ((name stringp)
+                   (finalwidth vl-maybe-natp)
+                   (finaltype vl-maybe-exprtype-p))
   :parents (expr-tools)
   :short "Construct an @(see vl-idexpr-p)."
   :long "<p>@(call vl-idexpr) constructs a simple identifier expression with the
-given name, width, and type.</p>"
+given name, width, and type.</p>
 
-  (definlined vl-idexpr (name finalwidth finaltype)
-    (declare (xargs :guard (and (stringp name)
-                                (vl-maybe-natp finalwidth)
-                                (vl-maybe-exprtype-p finaltype))))
-    ;; I didn't used to hons these, but now it seems like a good idea
-    ;; since the same identifier may be needed in several contexts.
-    (make-honsed-vl-atom :guts (make-honsed-vl-id :name name)
-                         :finalwidth finalwidth
-                         :finaltype finaltype))
+<p>I didn't always hons these, but now it seems like a good idea since the same
+identifier may be needed in several contexts, and since we often want to
+construct fast alists binding identifiers to things, etc.</p>"
+  :inline t
 
-  (local (in-theory (enable vl-idexpr-p vl-idexpr vl-idexpr->name)))
+  (make-honsed-vl-atom :guts (make-honsed-vl-id :name name)
+                       :finalwidth finalwidth
+                       :finaltype finaltype)
+
+  ///
+  (local (in-theory (enable vl-idexpr-p vl-idexpr->name)))
 
   (defthm vl-idexpr-p-of-vl-idexpr
     (implies (and (force (stringp name))
@@ -219,30 +206,26 @@ given name, width, and type.</p>"
 
 
 
-(defsection vl-make-idexpr-list
+(defprojection vl-make-idexpr-list (x finalwidth finaltype)
+  (vl-idexpr x finalwidth finaltype)
+  :guard (and (string-listp x)
+              (vl-maybe-natp finalwidth)
+              (vl-maybe-exprtype-p finaltype))
+  :result-type vl-exprlist-p
+  :parents (expr-tools)
+  :long "<p>Each expression is given the specified @('finalwidth') and
+@('finaltype').</p>"
+  :rest
+  ((defthm vl-idexprlist-p-of-vl-make-idexpr-list
+     (implies (and (force (string-listp x))
+                   (force (vl-maybe-natp finalwidth))
+                   (force (vl-maybe-exprtype-p finaltype)))
+              (vl-idexprlist-p (vl-make-idexpr-list x finalwidth finaltype))))
 
-  (defprojection vl-make-idexpr-list (x finalwidth finaltype)
-    (vl-idexpr x finalwidth finaltype)
-    :guard (and (string-listp x)
-                (vl-maybe-natp finalwidth)
-                (vl-maybe-exprtype-p finaltype))
-    :result-type vl-exprlist-p
-    :parents (expr-tools)
-    :long "<p>Each expression is given the specified @('finalwidth') and
-@('finaltype').</p>")
-
-  (local (in-theory (enable vl-make-idexpr-list)))
-
-  (defthm vl-idexprlist-p-of-vl-make-idexpr-list
-    (implies (and (force (string-listp x))
-                  (force (vl-maybe-natp finalwidth))
-                  (force (vl-maybe-exprtype-p finaltype)))
-             (vl-idexprlist-p (vl-make-idexpr-list x finalwidth finaltype))))
-
-  (defthm vl-idexprlist->names-of-vl-make-idexpr-list
-    (implies (force (string-listp x))
-             (equal (vl-idexprlist->names (vl-make-idexpr-list x finalwidth finaltype))
-                    x))))
+   (defthm vl-idexprlist->names-of-vl-make-idexpr-list
+     (implies (force (string-listp x))
+              (equal (vl-idexprlist->names (vl-make-idexpr-list x finalwidth finaltype))
+                     x)))))
 
 
 
@@ -288,7 +271,6 @@ given name, width, and type.</p>"
                   (force (not (vl-atom-p x)))
                   (force (consp (cdr (vl-nonatom->args x)))))
              (vl-expr-widthsfixed-p (cadr (vl-nonatom->args x))))))
-
 
 
 
@@ -713,8 +695,6 @@ may contain any @(see vl-op-p), including even odd such as @(':vl-syscall') or
 
 
 
-
-
 (defsection vl-expr-has-ops
 
   (mutual-recursion
@@ -785,57 +765,48 @@ may contain any @(see vl-op-p), including even odd such as @(':vl-syscall') or
 
 
 
-(defund vl-zbitlist-p (x)
-  (declare (xargs :guard (vl-bitlist-p x)))
+(define vl-zbitlist-p ((x vl-bitlist-p))
   (if (consp x)
       (and (equal (car x) :vl-zval)
            (vl-zbitlist-p (cdr x)))
     t))
 
-(defund vl-zatom-p (x)
-  (declare (xargs :guard t))
+(define vl-zatom-p (x)
   (and (vl-atom-p x)
        (let ((guts (vl-atom->guts x)))
          (and (vl-weirdint-p guts)
               (vl-zbitlist-p (vl-weirdint->bits guts))))))
 
-(defund vl-obviously-true-expr-p (x)
-  (declare (xargs :guard (vl-expr-p x)))
+(define vl-obviously-true-expr-p ((x vl-expr-p))
   (and (vl-fast-atom-p x)
        (vl-fast-constint-p (vl-atom->guts x))
        (equal (vl-constint->value (vl-atom->guts x)) 1)))
 
-(defund vl-obviously-false-expr-p (x)
-  (declare (xargs :guard (vl-expr-p x)))
+(define vl-obviously-false-expr-p ((x vl-expr-p))
   (and (vl-fast-atom-p x)
        (vl-fast-constint-p (vl-atom->guts x))
        (equal (vl-constint->value (vl-atom->guts x)) 0)))
 
 
 
+(define vl-make-index (n)
+  :parents (expr-tools)
+  :short "Safely create a constant integer atom whose value is n."
+  :long "<p>@('n') is expected to be a natural number, but our guard is only
+@('t').  We cause a hard error if we are given a non-natural number index, or
+one which is too large.  BOZO consider a stronger guard.</p>"
 
-(defsection vl-make-index
-
-  (defund vl-make-index (n)
-    (declare (xargs :guard t :verify-guards nil))
-
-; Safely create a constant integer atom whose value is n.  N is expected to be
-; a natural number, but our guard is only t.  We complain if we are given a
-; non-natural number index, or one which is too large.
-
-; BOZO consider a stronger guard.
-
-    (let* ((value  (if (natp n)
-                       n
-                     (prog2$ (er hard? 'vl-make-index
-                                 "Proposed index is not a natural: ~x0." n)
-                             0)))
-           (width (+ 1 (integer-length value))))
-      (if (<= width 31)
-          ;; Prefer to make indices that look like plain decimal numbers,
-          ;; I didn't used to hons these, but now it seems like a good idea
-          ;; since the same indicies may be needed frequently.
-          (make-honsed-vl-atom
+  (let* ((value  (if (natp n)
+                     n
+                   (prog2$ (er hard? 'vl-make-index
+                               "Proposed index is not a natural: ~x0." n)
+                           0)))
+         (width (+ 1 (integer-length value))))
+    (if (<= width 31)
+        ;; Prefer to make indices that look like plain decimal numbers, I
+        ;; didn't used to hons these, but now it seems like a good idea since
+        ;; the same indicies may be needed frequently.
+        (make-honsed-vl-atom
            :guts (make-honsed-vl-constint :origwidth 32
                                           :origtype :vl-signed
                                           :wasunsized t
@@ -847,11 +818,9 @@ may contain any @(see vl-op-p), including even odd such as @(':vl-syscall') or
                                         :origtype :vl-signed
                                         :value value)
          :finalwidth width
-         :finaltype :vl-signed))))
+         :finaltype :vl-signed)))
 
-  (verify-guards vl-make-index)
-
-  (local (in-theory (enable vl-make-index)))
+  ///
 
   (defthm vl-atom-p-of-vl-make-index
     (vl-atom-p (vl-make-index n)))
@@ -873,22 +842,21 @@ may contain any @(see vl-op-p), including even odd such as @(':vl-syscall') or
 
 
 
-(defund vl-sysfunexpr-p (x)
-  (declare (xargs :guard (vl-expr-p x)))
+(define vl-sysfunexpr-p ((x vl-expr-p))
   (and (vl-fast-atom-p x)
        (vl-fast-sysfunname-p (vl-atom->guts x))))
 
-(defund vl-sysfunexpr->name (x)
-  (declare (xargs :guard (and (vl-expr-p x)
-                              (vl-sysfunexpr-p x))
-                  :guard-hints(("Goal" :in-theory (enable vl-sysfunexpr-p)))))
-  (string-fix (vl-sysfunname->name (vl-atom->guts x))))
+(define vl-sysfunexpr->name ((x (and (vl-expr-p x)
+                                     (vl-sysfunexpr-p x))))
+  (string-fix (vl-sysfunname->name (vl-atom->guts x)))
+  :guard-hints(("Goal" :in-theory (enable vl-sysfunexpr-p)))
+  ///
+  (defthm stringp-of-vl-sysfunexpr->name
+    (stringp (vl-sysfunexpr->name x))
+    :rule-classes :type-prescription))
 
-(defthm stringp-of-vl-sysfunexpr->name
-  (stringp (vl-sysfunexpr->name x))
-  :rule-classes :type-prescription)
 
-(defsection vl-$random-expr-p
+(define vl-$random-expr-p ((x vl-expr-p))
   :parents (expr-tools)
   :short "Recognize calls of the @('$random') system function."
 
@@ -901,29 +869,27 @@ page 311:</p>
 In this recognizer, if a seed is provided we require it to be an identifier,
 but we do not check what kind of identifier it is.</p>"
 
-  (defund vl-$random-expr-p (x)
-    (declare (xargs :guard (vl-expr-p x)))
-    (b* (((when (vl-fast-atom-p x))
-          nil)
-         (op   (vl-nonatom->op x))
-         (args (vl-nonatom->args x))
-         ((unless (and (eq op :vl-syscall)
-                       (consp args)
-                       (vl-sysfunexpr-p (first args))
-                       (equal (vl-sysfunexpr->name (first args))
-                              (hons-copy "$random"))))
-          nil)
-         ((when (= (len args) 1))
-          ;; Seedless $random call -- this is fine
-          t)
-         ((when (and (= (len args) 2)
-                     (vl-idexpr-p (second args))))
-          ;; $random(seed) -- seed is supposed to be a reg, integer, or time
-          ;; variable, but we only check that it's an identifier.
-          t))
-      nil))
+  (b* (((when (vl-fast-atom-p x))
+        nil)
+       (op   (vl-nonatom->op x))
+       (args (vl-nonatom->args x))
+       ((unless (and (eq op :vl-syscall)
+                     (consp args)
+                     (vl-sysfunexpr-p (first args))
+                     (equal (vl-sysfunexpr->name (first args))
+                            (hons-copy "$random"))))
+        nil)
+       ((when (= (len args) 1))
+        ;; Seedless $random call -- this is fine
+        t)
+       ((when (and (= (len args) 2)
+                   (vl-idexpr-p (second args))))
+        ;; $random(seed) -- seed is supposed to be a reg, integer, or time
+        ;; variable, but we only check that it's an identifier.
+        t))
+    nil)
 
-  (local (in-theory (enable vl-$random-expr-p)))
+  ///
 
   (defthm vl-nonatom-p-when-vl-$random-expr-p
     (implies (and (vl-$random-expr-p x)
@@ -1059,121 +1025,73 @@ usually think of as atoms.</p>
 
 
 
-(defsection vl-exprlist-to-plainarglist
+(define vl-exprlist-to-plainarglist
+  ((x    vl-exprlist-p        "list to convert")
+   &key
+   (dir  vl-maybe-direction-p "direction for each new plainarg")
+   (atts vl-atts-p            "attributes for each new plainarg"))
+  :returns (ans vl-plainarglist-p :hyp :fguard)
   :parents (expr-tools)
-  :short "Build a plainarglist from some expressions."
+  :short "Convert expressions into @(see vl-plainarg-p)s."
 
-  :long "<p><b>Signature:</b> @(call vl-exprlist-to-plainarglist) returns a
-@(see vl-plainarglist-p).</p>
+  (if (consp x)
+      (cons (make-vl-plainarg :expr (car x)
+                              :dir dir
+                              :atts atts)
+            (vl-exprlist-to-plainarglist-fn (cdr x) dir atts))
+    nil)
 
-<ul>
-
-<li>@('x') is an @(see vl-exprlist-p),</li>
-
-<li>@('dir') is a @(see vl-direction-p), or @('nil'), which will be assigned to
-each resulting plainarg, and</li>
-
-<li>@('atts') are the attributes which will be assigned to each resulting
-plainarg.</li>
-
-</ul>"
-
-  (defund vl-exprlist-to-plainarglist-fn (x dir atts)
-    (declare (xargs :guard (and (vl-exprlist-p x)
-                                (vl-maybe-direction-p dir)
-                                (vl-atts-p atts))))
-    (if (consp x)
-        (cons (make-vl-plainarg :expr (car x)
-                                :dir dir
-                                :atts atts)
-              (vl-exprlist-to-plainarglist-fn (cdr x) dir atts))
-      nil))
-
-  (defmacro vl-exprlist-to-plainarglist (x &key dir atts)
-    `(vl-exprlist-to-plainarglist-fn ,x ,dir ,atts))
-
-  (add-macro-alias vl-exprlist-to-plainarglist vl-exprlist-to-plainarglist-fn)
-
-  (local (in-theory (enable vl-exprlist-to-plainarglist)))
+  ///
 
   (defthm vl-exprlist-to-plainarglist-under-iff
     (iff (vl-exprlist-to-plainarglist x :dir dir :atts atts)
          (consp x)))
-
-  (defthm vl-plainarglist-p-of-vl-exprlist-to-plainarglist
-    (implies (and (force (vl-exprlist-p x))
-                  (force (vl-maybe-direction-p dir))
-                  (force (vl-atts-p atts)))
-             (vl-plainarglist-p (vl-exprlist-to-plainarglist x :dir dir :atts atts))))
 
   (defthm len-of-vl-exprlist-to-plainarglist
     (equal (len (vl-exprlist-to-plainarglist x :dir dir :atts atts))
            (len x))))
 
 
-
-(defsection vl-atomlist-collect-funnames
+(define vl-atomlist-collect-funnames ((x vl-atomlist-p))
+  :returns (ans string-listp)
   :parents (vl-expr-funnames vl-atomlist-p)
   :short "Collect all the function names that occur in an @(see vl-atomlist-p)
 and return them as a string list."
 
-  (defund vl-atomlist-collect-funnames (x)
-    (declare (xargs :guard (vl-atomlist-p x)))
-    (b* (((when (atom x))
-          nil)
-         (guts (vl-atom->guts (car x)))
-         ((when (vl-fast-funname-p guts))
-          (cons (string-fix (vl-funname->name guts))
-                (vl-atomlist-collect-funnames (cdr x)))))
-      (vl-atomlist-collect-funnames (cdr x))))
+  (b* (((when (atom x))
+        nil)
+       (guts (vl-atom->guts (car x)))
+       ((when (vl-fast-funname-p guts))
+        (cons (string-fix (vl-funname->name guts))
+              (vl-atomlist-collect-funnames (cdr x)))))
+    (vl-atomlist-collect-funnames (cdr x)))
 
-  (local (in-theory (enable vl-atomlist-collect-funnames)))
-
-  (defthm string-listp-of-vl-atomlist-collect-funnames
-    (string-listp (vl-atomlist-collect-funnames x))
-    :hints(("Goal" :in-theory (disable (force))))))
+  :prepwork ((local (in-theory (disable (force))))))
 
 
-(defsection vl-expr-funnames
+(define vl-expr-funnames ((x vl-expr-p))
+  :returns (ans string-listp)
   :parents (expr-tools)
   :short "Collect the names of all functions that occur in a @(see vl-expr-p)
 and return them as a string list."
-
-  (defund vl-expr-funnames (x)
-    (declare (xargs :guard (vl-expr-p x)))
-    (vl-atomlist-collect-funnames (vl-expr-atoms x)))
-
-  (local (in-theory (enable vl-expr-funnames)))
-
-  (defthm string-listp-of-vl-expr-funnames
-    (string-listp (vl-expr-funnames x))))
+  (vl-atomlist-collect-funnames (vl-expr-atoms x)))
 
 
-(defsection vl-exprlist-funnames
+(define vl-exprlist-funnames ((x vl-exprlist-p))
+  :returns (ans string-listp)
   :parents (expr-tools)
   :short "Collect the names of all functions that occur in a @(see
 vl-exprlist-p) and return them as a string list."
-  :long "<p>See @(see vl-expr-funnames).</p>"
-
-  (defund vl-exprlist-funnames (x)
-    (declare (xargs :guard (vl-exprlist-p x)))
-    (vl-atomlist-collect-funnames (vl-exprlist-atoms x)))
-
-  (local (in-theory (enable vl-exprlist-funnames)))
-
-  (defthm string-listp-of-vl-exprlist-funnames
-    (string-listp (vl-exprlist-funnames x))))
+  (vl-atomlist-collect-funnames (vl-exprlist-atoms x)))
 
 
-(defun vl-expr-has-funcalls (x)
-  (declare (xargs :guard (vl-expr-p x)))
+(define vl-expr-has-funcalls ((x vl-expr-p))
   (mbe :logic (if (member :vl-funcall (vl-expr-ops x))
                   t
                 nil)
        :exec (vl-expr-has-ops (list :vl-funcall) x)))
 
-(defun vl-exprlist-has-funcalls (x)
-  (declare (xargs :guard (vl-exprlist-p x)))
+(define vl-exprlist-has-funcalls ((x vl-exprlist-p))
   (mbe :logic (if (member :vl-funcall (vl-exprlist-ops x))
                   t
                 nil)
@@ -1181,26 +1099,29 @@ vl-exprlist-p) and return them as a string list."
 
 
 
+(define vl-partition-plainargs
+  ;; BOZO find this a better home
+  ((x      vl-plainarglist-p "list to filter")
+   ;; bozo make these optional
+   (inputs   "accumulator for args with :dir :vl-input")
+   (outputs  "accumulator for args with :dir :vl-output")
+   (inouts   "accumulator for args with :dir :vl-inout")
+   (unknowns "accumulator for args with :dir nil"))
+  :returns (mv inputs outputs inouts unknowns)
+  :parents (vl-plainarglist-p)
 
-(defsection vl-partition-plainargs
+  (b* (((when (atom x))
+        (mv inputs outputs inouts unknowns))
+       (dir (vl-plainarg->dir (car x)))
+       ((when (eq dir :vl-input))
+        (vl-partition-plainargs (cdr x) (cons (car x) inputs) outputs inouts unknowns))
+       ((when (eq dir :vl-output))
+        (vl-partition-plainargs (cdr x) inputs (cons (car x) outputs) inouts unknowns))
+       ((when (eq dir :vl-inout))
+        (vl-partition-plainargs (cdr x) inputs outputs (cons (car x) inouts) unknowns)))
+    (vl-partition-plainargs (cdr x) inputs outputs inouts (cons (car x) unknowns)))
 
-; BOZO probably need to find this a better home
-
-  (defund vl-partition-plainargs (x inputs outputs inouts unknowns)
-    "Returns (MV INPUTS OUTPUTS INOUTS UNKNOWNS)"
-    (declare (xargs :guard (vl-plainarglist-p x)))
-    (b* (((when (atom x))
-          (mv inputs outputs inouts unknowns))
-         (dir (vl-plainarg->dir (car x)))
-         ((when (eq dir :vl-input))
-          (vl-partition-plainargs (cdr x) (cons (car x) inputs) outputs inouts unknowns))
-         ((when (eq dir :vl-output))
-          (vl-partition-plainargs (cdr x) inputs (cons (car x) outputs) inouts unknowns))
-         ((when (eq dir :vl-inout))
-          (vl-partition-plainargs (cdr x) inputs outputs (cons (car x) inouts) unknowns)))
-      (vl-partition-plainargs (cdr x) inputs outputs inouts (cons (car x) unknowns))))
-
-  (local (in-theory (enable vl-partition-plainargs)))
+  ///
 
   (defthm vl-partition-plainarg-basics
     (implies (and (force (vl-plainarglist-p x))
@@ -1214,7 +1135,6 @@ vl-exprlist-p) and return them as a string list."
                     (vl-plainarglist-p outputs)
                     (vl-plainarglist-p inouts)
                     (vl-plainarglist-p unknowns))))))
-
 
 
 
@@ -1264,3 +1184,4 @@ expression, and return them as a flat list of expressions."
       :flag list)
     :hints(("Goal" :expand ((vl-exprlist-selects x)
                             (vl-expr-selects x))))))
+

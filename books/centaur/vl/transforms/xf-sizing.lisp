@@ -5461,6 +5461,7 @@ the expression.</p>"
 
 
 (defsection vl-module-exprsize
+  :parents (expression-sizing)
 
   (defund vl-module-exprsize (x)
     (declare (xargs :guard (vl-module-p x)))
@@ -5520,16 +5521,13 @@ the expression.</p>"
            (vl-module->name x))))
 
 
-(defsection vl-modulelist-exprsize
-
-  (defprojection vl-modulelist-exprsize (x)
-    (vl-module-exprsize x)
-    :guard (vl-modulelist-p x)
-    :result-type vl-modulelist-p)
-
-  (local (in-theory (enable vl-modulelist-exprsize)))
-
-  (defthm vl-modulelist->names-of-vl-modulelist-exprsize
-    (equal (vl-modulelist->names (vl-modulelist-exprsize x))
-           (vl-modulelist->names x))))
+(defprojection vl-modulelist-exprsize (x)
+  (vl-module-exprsize x)
+  :guard (vl-modulelist-p x)
+  :result-type vl-modulelist-p
+  :parents (expression-sizing)
+  :rest
+  ((defthm vl-modulelist->names-of-vl-modulelist-exprsize
+     (equal (vl-modulelist->names (vl-modulelist-exprsize x))
+            (vl-modulelist->names x)))))
 

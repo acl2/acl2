@@ -26,43 +26,37 @@
 
 
 
-(defsection vl-pgenstr
+(define vl-pgenstr ((prefix stringp)
+                    (n natp))
   :parents (vl-namedb-p)
   :short "@(call vl-pgenstr) creates the string \"@('prefix')_@('n')\"."
-
   :long "<p>We @(see hons-copy) the result because generated names are
 frequently used in fast alists.  See also @(see vl-pgenstr-p) and @(see
 vl-pgenstr->val).</p>"
-
-  (defund vl-pgenstr (prefix n)
-    (declare (xargs :guard (and (stringp prefix)
-                                (natp n))))
-    (hons-copy (cat prefix "_" (natstr n)))))
+  (hons-copy (cat prefix "_" (natstr n))))
 
 
-
-(defsection vl-pgenstr-p
+(define vl-pgenstr-p ((prefix stringp)
+                      (str stringp))
   :parents (vl-namedb-p)
   :short "@(call vl-pgenstr-p) recognizes strings of the form
 \"@('prefix')_n\"."
 
-  :long "<p>See also @(see vl-pgenstr) and @(see vl-pgenstr->val).</p>"
+  (b* ((plen (length prefix))
+       (slen (length str)))
+    (and (< (+ 1 plen) slen)
+         (str::strprefixp prefix str)
+         (eql (char str plen) #\_)
+         (str::digit-string-p-aux str (+ 1 plen) slen)))
 
-  (defund vl-pgenstr-p (prefix str)
-    (declare (xargs :guard (and (stringp prefix)
-                                (stringp str))))
-    (let ((plen (length prefix))
-          (slen (length str)))
-      (and (< (+ 1 plen) slen)
-           (str::strprefixp prefix str)
-           (equal (char str plen) #\_)
-           (str::digit-string-p-aux str (+ 1 plen) slen))))
+  ///
+
+  (local (in-theory (enable vl-pgenstr string-append)))
 
   (defthm vl-pgenstr-p-of-vl-pgenstr
     (implies (and (force (stringp prefix))
                   (force (natp n)))
-             (vl-pgenstr-p prefix (vl-pgenstr prefix n)))
-    :hints(("Goal" :in-theory (enable vl-pgenstr-p vl-pgenstr string-append))))
+             (vl-pgenstr-p prefix (vl-pgenstr prefix n))))
 
   (local (defthm nth-underscore-when-digit-listp
            (implies (str::digit-listp chars)
@@ -74,64 +68,61 @@ vl-pgenstr->val).</p>"
     (implies (and (not (equal other prefix))
                   (force (stringp prefix))
                   (force (stringp other)))
-             (not (vl-pgenstr-p other (vl-pgenstr prefix n))))
-    :hints(("Goal" :in-theory (enable vl-pgenstr-p vl-pgenstr string-append)))))
+             (not (vl-pgenstr-p other (vl-pgenstr prefix n))))))
 
 
 
-(defsection vl-pgenstr->val
+(define vl-pgenstr->val ((prefix stringp)
+                         (str stringp))
   :parents (vl-namedb-p)
   :short "@(call vl-pgenstr->val) retrieves @('n') from the string @('str'),
 which must have the form \"@('prefix')_@('n')\"; we return @('n') as a natural
 number."
 
-  :long "<p>See also @(see vl-pgenstr) and @(see vl-pgenstr-p).</p>
-@(def vl-pgenstr->val)"
+  :guard (vl-pgenstr-p prefix str)
 
-  (defund vl-pgenstr->val (prefix str)
-    (declare (xargs :guard (and (stringp prefix)
-                                (stringp str)
-                                (vl-pgenstr-p prefix str))
-                    :guard-hints (("Goal" :in-theory (enable vl-pgenstr-p)))))
-    (b* (((mv val ?len)
-          (str::parse-nat-from-string str 0 0
-                                      (+ 1 (length prefix))
-                                      (length str))))
-      (lnfix val)))
+  (b* (((mv val ?len)
+        (str::parse-nat-from-string str 0 0
+                                    (+ 1 (length prefix))
+                                    (length str))))
+    (lnfix val))
+
+  :guard-hints (("Goal" :in-theory (enable vl-pgenstr-p)))
+
+  ///
+
+  (local (in-theory (enable vl-pgenstr string-append)))
 
   (defthm vl-pgenstr->val-of-vl-pgenstr
     (implies (and (force (stringp prefix))
                   (force (natp n)))
              (equal (vl-pgenstr->val prefix (vl-pgenstr prefix n))
-                    n))
-    :hints(("Goal" :in-theory (enable vl-pgenstr->val vl-pgenstr
-                                      string-append)))))
+                    n))))
 
 
 
-(defsection vl-pgenstr-highest
+(define vl-pgenstr-highest ((prefix stringp)
+                            (names string-listp))
   :parents (vl-namedb-p)
   :short "@(call vl-pgenstr-highest) returns the largest @('n') such that
 \"@('prefix')_n\" occurs in @('names')."
 
-  (defund vl-pgenstr-highest (prefix names)
-    (declare (xargs :guard (and (stringp prefix)
-                                (string-listp names))))
-    (cond ((atom names)
-           0)
-          ((vl-pgenstr-p prefix (car names))
-           (max (vl-pgenstr->val prefix (car names))
-                (vl-pgenstr-highest prefix (cdr names))))
-          (t
-           (vl-pgenstr-highest prefix (cdr names)))))
+  (cond ((atom names)
+         0)
+        ((vl-pgenstr-p prefix (car names))
+         (max (vl-pgenstr->val prefix (car names))
+              (vl-pgenstr-highest prefix (cdr names))))
+        (t
+         (vl-pgenstr-highest prefix (cdr names))))
+
+  ///
 
   (defthm none-greater-than-vl-pgenstr-highest
     (implies (and (< (vl-pgenstr-highest prefix names) n)
                   (force (stringp prefix))
                   (force (natp n)))
              (equal (member-equal (vl-pgenstr prefix n) names)
-                    nil))
-    :hints(("Goal" :in-theory (enable vl-pgenstr-highest))))
+                    nil)))
 
   (defthm vl-pgenstr-highest-of-incremental-extension
     (implies (force (stringp prefix))
@@ -139,8 +130,7 @@ number."
                      PREFIX
                      (CONS (VL-PGENSTR PREFIX (+ 1 (VL-PGENSTR-HIGHEST PREFIX MODNS)))
                            MODNS))
-                    (+ 1 (VL-PGENSTR-HIGHEST PREFIX MODNS))))
-    :hints(("Goal" :in-theory (enable vl-pgenstr-highest))))
+                    (+ 1 (VL-PGENSTR-HIGHEST PREFIX MODNS)))))
 
   (defthm vl-pgenstr-highest-of-irrelevant-extension
     (implies (and (not (equal other prefix))
@@ -148,18 +138,17 @@ number."
                   (force (stringp other)))
              (equal (vl-pgenstr-highest other (CONS (VL-PGENSTR PREFIX k) MODNS))
                     (vl-pgenstr-highest other modns)))
-    :hints(("Goal"
-            :in-theory (e/d (vl-pgenstr-highest)
-                            (force))))))
+    :hints(("Goal" :in-theory (disable (force))))))
 
 
+(define vl-pgenstr-highest-of-strip-cars ((prefix stringp)
+                                          (modns (and (alistp modns)
+                                                      (vl-string-keys-p modns))))
+  :parents (vl-namedb-p)
+  :short "Fusion of vl-pgenstr-highest and strip-cars, for efficiency."
+  :enabled t
+  :verify-guards nil
 
-(defun vl-pgenstr-highest-of-strip-cars (prefix modns)
-  ;; Simple fusion of vl-pgenstr-highest and strip-cars for efficiency
-  (declare (xargs :guard (and (stringp prefix)
-                              (alistp modns)
-                              (vl-string-keys-p modns))
-                  :verify-guards nil))
   (mbe :logic
        (vl-pgenstr-highest prefix (strip-cars modns))
        :exec
@@ -169,12 +158,11 @@ number."
               (max (vl-pgenstr->val prefix (caar modns))
                    (vl-pgenstr-highest-of-strip-cars prefix (cdr modns))))
              (t
-              (vl-pgenstr-highest-of-strip-cars prefix (cdr modns))))))
+              (vl-pgenstr-highest-of-strip-cars prefix (cdr modns)))))
 
-(verify-guards vl-pgenstr-highest-of-strip-cars
-               ;; Same hint doesn't work in :guard-hints.  Hooray for stupid
-               ;; ACL2 inconsistency?
-               :hints(("Goal" :in-theory (enable vl-pgenstr-highest))))
+  ///
+  (local (in-theory (enable vl-pgenstr-highest)))
+  (verify-guards vl-pgenstr-highest-of-strip-cars))
 
 
 (defsection vl-prefix-map-correct-p

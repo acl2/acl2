@@ -74,29 +74,22 @@ vl-gateinst-dirassign), just because it is convenient.</li>
 </ul>")
 
 
-(defsection vl-find-namedarg
+(define vl-find-namedarg ((name stringp)
+                          (args vl-namedarglist-p))
   :parents (vl-convert-namedargs)
-  :short "@(call vl-find-namedarg) attempts to find a @(see vl-namedarg-p) of
-the specified @('name') among @('args'), a @(see vl-namedarglist-p)."
-
+  :short "Look up an argument by name in a named argument list."
   :long "<p>We once used some fast-alist stuff here, but now I think that it
-isn't worthwhile since most module instances have relatively few arguments, or
-are instantiated infrequently.  It'd be easy enough to write an version that
-uses fast-alists when there are many arguments, but I don't expect performance
-to be a problem.</p>"
-
-  (defund vl-find-namedarg (name args)
-    (declare (xargs :guard (and (stringp name)
-                                (vl-namedarglist-p args))))
-    (cond ((atom args)
-           nil)
-          ((equal (vl-namedarg->name (car args)) name)
-           (car args))
-          (t
-           (vl-find-namedarg name (cdr args)))))
-
-  (local (in-theory (enable vl-find-namedarg)))
-
+isn't worthwhile since most module instances either have relatively few
+arguments or are instantiated infrequently.  It'd be easy enough to write an
+version that uses fast-alists when there are many arguments if performance
+becomes a problem.</p>"
+  (cond ((atom args)
+         nil)
+        ((equal (vl-namedarg->name (car args)) name)
+         (car args))
+        (t
+         (vl-find-namedarg name (cdr args))))
+  ///
   (defthm vl-find-namedarg-under-iff
     (implies (force (vl-namedarglist-p args))
              (iff (vl-find-namedarg name args)
@@ -110,555 +103,380 @@ to be a problem.</p>"
                       nil)))))
 
 
+(define vl-convert-namedargs-aux
+  ((args  "Named arguments for some module instance" vl-namedarglist-p)
+   (ports "Ports of the submodule"
+          (and (vl-portlist-p ports)
+               (vl-portlist-named-p ports))))
+  :returns (new-args vl-plainarglist-p :hyp :fguard)
+  :parents (vl-convert-namedargs)
+  :short "Change a named argument list into an equivalent plain (positional)
+argument list."
+  :long "<p>We walk down the list of ports since they're in the \"right\"
+order.  For each port, we look up the corresponding argument and build a
+plainarg for it.</p>"
 
-(defsection vl-convert-namedargs
-  :parents (argresolve)
-  :short "Canonicalizes @(see vl-arguments-p) structures to use plain
-arguments."
-
-  :long "<p><b>Signature:</b> @(call vl-convert-namedargs) returns @('(mv
-successp warnings x-prime)').</p>
-
-<p>As inputs:</p>
-
-<ul>
-
-<li>@('x') is the @(see vl-arguments-p) structure that is the @(':portargs')
-field of a module instance,</li>
-
-<li>@('ports') are the lists of ports and port declarations for the module
-being instanced, and</li>
-
-<li>@('warnings') is an ordinary @(see warnings) accumulator which we may
-extend with fatal warnings, and</li>
-
-<li>@('inst') is the module instance we are working with, which is semantically
-irrelevant and is used merely to provide better error messages.</li>
-
-</ul>
-
-<p>We return a success flag, updated warnings, and @('x-prime'), a new @(see
-vl-arguments-p) structure which is always semantically equivalent to @('x')
-and, upon success, uses plain arguments.</p>
-
-<p>The main function just does a few well-formedness checks, then calls the aux
-function to do the conversion.</p>
-
-<p>The aux function walks down the list of ports.  For each port, it looks up
-the corresponding argument and builds a new @(see vl-plainarg-p).</p>
-
-<p>Iterating over the ports (instead of the arguments) has two advantages: the
-resulting list of plain arguments ends up being in the same order as the ports,
-and it is easy to introduce blanks for any ports that aren't connected.</p>
-
-<h3>Handling of Missing Arguments</h3>
-
-<p>We used to require that every port had a connection, and otherwise cause a
-fatal error.</p>
-
-<p>While a missing port is obviously a concern and we should at least cause a
-warning, the Verilog standard does not seem to say that it is an error.
-Moreover, at least some other Verilog tools, like Verilog-XL and NCVerilog,
-merely warn about the situation and then simply treat the port as
-unconnected.</p>
-
-<p>So, to be able to handle designs that do this bad thing, we now also
-tolerate named arguments with missing ports, and only issue non-fatal
-warnings.</p>"
-
-  (defund vl-convert-namedargs-aux (args ports)
-    "Returns a vl-plainarglist-p"
-    (declare (xargs :guard (and (vl-portlist-p ports)
-                                (vl-namedarglist-p args)
-                                (vl-portlist-named-p ports))
-                    :guard-debug t))
-    (b* (((when (atom ports))
-          nil)
-         (namedarg (vl-find-namedarg (vl-port->name (car ports)) args))
-         (plainarg (if namedarg
-                       (make-vl-plainarg :expr (vl-namedarg->expr namedarg)
-                                         :atts (vl-namedarg->atts namedarg))
-;; Otherwise, there's no argument corresponding to this
-;; port.  That's bad, but we've already warned about it
-;; (see below) and so we're just going to create a blank
-;; argument for it.
-                     (make-vl-plainarg :expr nil
-                                       :atts '(("VL_MISSING_CONNECTION"))))))
-      (cons plainarg
-            (vl-convert-namedargs-aux args (cdr ports)))))
-
-  (local (in-theory (enable vl-convert-namedargs-aux)))
-
-  (defthm vl-plainarglist-of-vl-convert-namedargs-aux
-    (implies (and (force (vl-portlist-p ports))
-                  (force (vl-namedarglist-p args))
-                  (force (vl-portlist-named-p ports)))
-             (vl-plainarglist-p (vl-convert-namedargs-aux args ports))))
-
+  (b* (((when (atom ports))
+        nil)
+       (namedarg (vl-find-namedarg (vl-port->name (car ports)) args))
+       (plainarg (if namedarg
+                     (make-vl-plainarg :expr (vl-namedarg->expr namedarg)
+                                       :atts (vl-namedarg->atts namedarg))
+                   ;; Otherwise, there's no argument corresponding to this
+                   ;; port.  That's bad, but we've already warned about it (see
+                   ;; below) and so we're just going to create a blank argument
+                   ;; for it.
+                   (make-vl-plainarg :expr nil
+                                     :atts '(("VL_MISSING_CONNECTION"))))))
+    (cons plainarg
+          (vl-convert-namedargs-aux args (cdr ports))))
+  ///
   (defthm len-of-vl-convert-namedargs-aux
     (equal (len (vl-convert-namedargs-aux args ports))
-           (len ports)))
+           (len ports))))
 
 
+(define vl-convert-namedargs
+  ((x        "arguments of a module instance, named or plain" vl-arguments-p)
+   (ports    "ports of the submodule"                         vl-portlist-p)
+   (warnings "warnings accumulator"                           vl-warninglist-p)
+   (inst     "just a context for warnings"                    vl-modinst-p))
+  :returns (mv successp
+               (warnings vl-warninglist-p :hyp :fguard)
+               (new-x    vl-arguments-p   :hyp :fguard))
+  :short "Coerce arguments into plain (positional) style."
 
-  (defund vl-convert-namedargs (x ports warnings inst)
-    "Returns (MV SUCCESSP WARNINGS X-PRIME)"
-    (declare (xargs :guard (and (vl-arguments-p x)
-                                (vl-portlist-p ports)
-                                (vl-warninglist-p warnings)
-                                (vl-modinst-p inst))))
-    (b* ((namedp (vl-arguments->namedp x))
-         (args   (vl-arguments->args x))
+  :long "<p>We used to require that every port had a connection, and otherwise
+caused a fatal warning.  This is no longer the case.</p>
 
-         ((unless namedp)
-;; Already uses plain arguments, nothing to do.
-          (mv t warnings x))
+<p>A missing port is obviously a concern and we should at least cause a
+warning.  But the Verilog standard does not seem to say that it is an error,
+and at least some other Verilog tools, like Verilog-XL and NCVerilog, merely
+warn about the situation and then simply treat the port as unconnected.</p>
 
-         (modname        (vl-modinst->modname inst))
+<p>To be able to handle designs that do this bad thing, we now also tolerate
+named arguments with missing ports, and only issue non-fatal warnings.</p>"
 
-         (formal-names   (vl-portlist->names ports))
-         (actual-names   (vl-namedarglist->names args))
-         (sorted-formals (mergesort formal-names))
-         (sorted-actuals (mergesort actual-names))
+  (b* (((vl-arguments x) x)
+       ((vl-modinst inst) inst)
 
-         ((unless (vl-portlist-named-p ports))
-;; Illegal instance: uses named arguments but module has unnamed ports
-          (b* ((nils (acl2::duplicity nil formal-names))
-               (w    (make-vl-warning
-                      :type :vl-bad-instance
-                      :msg "~a0 has named arguments, which is illegal since ~
-                            ~m1 has ~s2."
-                      :args (list inst modname
-                                  (if (vl-plural-p nils)
-                                      "unnamed ports"
-                                    "an unnamed port"))
-                      :fatalp t
-                      :fn 'vl-convert-namedargs)))
-            (mv nil (cons w warnings) x)))
+       ((unless x.namedp)
+        ;; Already uses plain arguments, nothing to do.
+        (mv t warnings x))
 
-         ((unless (mbe :logic (uniquep actual-names)
-                       :exec (same-lengthp actual-names sorted-actuals)))
-;; Illegal instance: actual names are not unique.
-          (b* ((w (make-vl-warning
-                   :type :vl-bad-instance
-                   :msg "~a0 illegally has multiple connections for port~s1 ~&2."
-                   :args (let ((dupes (duplicated-members actual-names)))
-                           (list inst (if (vl-plural-p dupes) "s" "") dupes))
-                   :fatalp t
-                   :fn 'vl-convert-namedargs)))
-            (mv nil (cons w warnings) x)))
+       (formal-names   (vl-portlist->names ports))
+       (actual-names   (vl-namedarglist->names x.args))
+       (sorted-formals (mergesort formal-names))
+       (sorted-actuals (mergesort actual-names))
 
-         ((unless (subset sorted-actuals sorted-formals))
-;; There are actuals that aren't formals, i.e., connections to
-;; "extra" ports that don't exist in the module.  Seems like a pretty
-;; clear error, and tools like Verilog-XL and NCVerilog reject it.
-          (b* ((extra (difference sorted-actuals sorted-formals))
-               (w     (make-vl-warning
-                       :type :vl-bad-instance
-                       :msg "~a0 illegally connects to the following ~s1 in ~
-                             ~m2: ~&3"
-                       :args (list inst
-                                   (if (vl-plural-p extra)
-                                       "ports, which do not exist"
-                                     "port, which does not exist")
-                                   modname extra)
-                       :fatalp t
-                       :fn 'vl-convert-namedargs)))
-            (mv nil (cons w warnings) x)))
+       ((unless (vl-portlist-named-p ports))
+        ;; BOZO do other Verilog tools tolerate this and just supply Zs
+        ;; instead?  Maybe we should tolerate this, too.
+        (b* ((w (make-vl-warning
+                 :type :vl-bad-instance
+                 :msg "~a0 has named arguments, which is illegal since ~m1 ~
+                       has unnamed ports."
+                 :args (list inst inst.modname)
+                 :fatalp t
+                 :fn 'vl-convert-namedargs)))
+          (mv nil (cons w warnings) x)))
 
-         (warnings
-          (if (subset sorted-formals sorted-actuals)
-;; Every formal is connected, looking good...
-              warnings
-;; There are formals that aren't actuals, i.e., we don't have
-;; connections to some ports.  Bad, bad.  But, we'll only issue a
-;; NON-FATAL warning, because this is allowed by tools like
-;; Verilog-XL and NCVerilog.
-            (b* ((missing (difference sorted-formals sorted-actuals))
-                 (w       (make-vl-warning
-                           :type :vl-bad-instance
-                           :msg "~a0 omits the following ~s1 from ~m2: ~&3"
-                           :args (list inst
-                                       (if (vl-plural-p missing) "ports" "port")
-                                       modname missing)
-                           :fatalp nil
-                           :fn 'vl-convert-namedargs)))
-              (cons w warnings))))
+       ((unless (mbe :logic (uniquep actual-names)
+                     :exec (same-lengthp actual-names sorted-actuals)))
+        (b* ((w (make-vl-warning
+                 :type :vl-bad-instance
+                 :msg "~a0 illegally has multiple connections for port~s1 ~&2."
+                 :args (let ((dupes (duplicated-members actual-names)))
+                         (list inst (if (vl-plural-p dupes) "s" "") dupes))
+                 :fatalp t
+                 :fn 'vl-convert-namedargs)))
+          (mv nil (cons w warnings) x)))
 
-         (plainargs (vl-convert-namedargs-aux args ports))
-         (x-prime   (vl-arguments nil plainargs)))
-      (mv t warnings x-prime)))
+       ((unless (subset sorted-actuals sorted-formals))
+        ;; There are actuals that aren't formals, i.e., connections to "extra"
+        ;; ports that don't exist in the module.  Seems like a pretty clear
+        ;; error, and tools like Verilog-XL and NCVerilog reject it.
+        (b* ((extra (difference sorted-actuals sorted-formals))
+             (w     (make-vl-warning
+                     :type :vl-bad-instance
+                     :msg "~a0 illegally connects to the following ~s1 in ~
+                           ~m2: ~&3"
+                     :args (list inst
+                                 (if (vl-plural-p extra)
+                                     "ports, which do not exist"
+                                   "port, which does not exist")
+                                 inst.modname extra)
+                     :fatalp t
+                     :fn 'vl-convert-namedargs)))
+          (mv nil (cons w warnings) x)))
 
-  (local (in-theory (enable vl-convert-namedargs)))
+       (warnings
+        (if (subset sorted-formals sorted-actuals)
+            ;; Every formal is connected, looking good...
+            warnings
+          ;; There are formals that aren't actuals, i.e., we don't have
+          ;; connections to some ports.  Bad, bad.  But, we'll only issue a
+          ;; NON-FATAL warning, because this is allowed by tools like
+          ;; Verilog-XL and NCVerilog.
+          (b* ((missing (difference sorted-formals sorted-actuals))
+               (w       (make-vl-warning
+                         :type :vl-bad-instance
+                         :msg "~a0 omits the following ~s1 from ~m2: ~&3"
+                         :args (list inst
+                                     (if (vl-plural-p missing) "ports" "port")
+                                     inst.modname missing)
+                         :fatalp nil
+                         :fn 'vl-convert-namedargs)))
+            (cons w warnings))))
 
-  (defthm vl-warninglist-p-of-vl-convert-namedargs
-    (implies (force (vl-warninglist-p warnings))
-             (vl-warninglist-p
-              (mv-nth 1 (vl-convert-namedargs x ports warnings inst)))))
+       (plainargs (vl-convert-namedargs-aux x.args ports))
+       (new-x     (vl-arguments nil plainargs)))
+    (mv t warnings new-x))
 
-  (defthm vl-arguments-p-of-vl-convert-namedargs
-    (implies (and (force (vl-arguments-p x))
-                  (force (vl-portlist-p ports)))
-             (vl-arguments-p
-              (mv-nth 2 (vl-convert-namedargs x ports warnings inst)))))
-
+  ///
   (defthm vl-arguments->named-of-vl-convert-namedargs
     (implies (force (vl-arguments-p x))
-             (let ((result (vl-convert-namedargs x ports warnings inst)))
-               (equal (vl-arguments->namedp (mv-nth 2 result))
-                      (not (mv-nth 0 result)))))))
+             (b* (((mv successp ?warnings new-x)
+                   (vl-convert-namedargs x ports warnings inst)))
+               (equal (vl-arguments->namedp new-x)
+                      (not successp))))))
 
 
 
-
-(defsection vl-annotate-plainargs
+(define vl-annotate-plainargs
+  ((args "plainargs that typically have no @(':dir') or @(':portname')
+         information; we want to annotate them."
+         vl-plainarglist-p)
+   (ports "corresponding ports for the submodule"
+          (and (vl-portlist-p ports)
+               (same-lengthp args ports)))
+   (portdecls "port declarations for the submodule"
+              vl-portdecllist-p)
+   (palist "precomputed for fast lookups"
+           (equal palist (vl-portdecl-alist portdecls))))
+  :returns
+  (annotated-args "annotated version of @('args'), semantically equivalent
+                   but typically has @(':dir') and @(':portname') information."
+                  vl-plainarglist-p :hyp :fguard)
   :parents (argresolve)
   :short "Annotates a plain argument list with port names and directions."
+  :long "<p>This is a \"best-effort\" process which may fail to add annotations
+to any or all arguments.  Such failures are expected, so we do not generate any
+warnings or errors in response to them.</p>
 
-  :long "<p><b>Signature:</b> @(call vl-annotate-plainargs) returns
-@('args-prime').</p>
-
-<p>As inputs,</p>
-
-<ul>
-
-<li>@('args') is a list of @(see vl-plainarg-p) structures which typically have
-no @(':dir') or @(':portname') information; our goal is to add these
-annotations to @('x'), and</li>
-
-<li>@('ports') and @('portdecls') are the lists of ports and port declarations
-for the module being instanced, and @('palist') is the @(see vl-portdecl-alist)
-for @('portdecls').</li>
-
-</ul>
-
-<p>We return a new argument list, @('args-prime'), which is semantically
-equivalent to @('x') but may have additional @(':portname') and @(':dir')
-annotations.</p>
-
-<p>This is a \"best-effort\" process which may fail to add annotations to any
-or all arguments.  Such failures are expected, so we do not generate any
-warnings or errors in response to them.  What causes these failures?  Not all
-ports necessarily have a name, so we cannot add a @(':portname') for every
-port.  The direction of a port may also not be apparent in some cases; see
-@(see vl-port-direction) for details.</p>"
-
-  (defund vl-annotate-plainargs (args ports portdecls palist)
-    "Returns a new plainarglist"
-    (declare (xargs :guard (and (vl-plainarglist-p args)
-                                (vl-portlist-p ports)
-                                (same-lengthp args ports)
-                                (vl-portdecllist-p portdecls)
-                                (equal palist (vl-portdecl-alist portdecls)))))
-    (b* (((when (atom args))
-          nil)
-         (name (vl-port->name (car ports)))
-         (expr (vl-port->expr (car ports)))
-
-         ;; Our direction inference is pretty sophisticated, and handles even
-         ;; compound ports as long as their directions are all the same.  But
-         ;; it could also fail and leave dir as NIL.
-         ((mv & dir) (vl-port-direction (car ports) portdecls palist nil))
-
-         ;; If we're dealing with a simple port (which is most of the time), we
-         ;; try to propagate active high/low information from its declaration
-         ;; back into the argument.
-         (maybe-decl (and name
-                          expr
-                          (vl-idexpr-p expr)
-                          (equal (vl-idexpr->name expr) name)
-                          (vl-find-portdecl name portdecls)))
-         (decl-atts (and maybe-decl
-                         (vl-portdecl->atts maybe-decl)))
-
-         (arg-atts (vl-plainarg->atts (car args)))
-         (arg-atts (if (assoc-equal "VL_ACTIVE_HIGH" decl-atts)
-                       (acons "VL_ACTIVE_HIGH" nil arg-atts)
-                     arg-atts))
-         (arg-atts (if (assoc-equal "VL_ACTIVE_LOW" decl-atts)
-                       (acons "VL_ACTIVE_LOW" nil arg-atts)
-                     arg-atts))
-
-         (arg-prime  (change-vl-plainarg (car args)
-                                         :dir dir       ;; could be nil
-                                         :portname name ;; could be nil
-                                         :atts arg-atts
-                                         )))
-      (cons arg-prime
-            (vl-annotate-plainargs (cdr args) (cdr ports) portdecls palist))))
-
-  (local (in-theory (enable vl-annotate-plainargs)))
-
-  (defthm vl-plainarglist-p-of-vl-annotate-plainargs
-    (implies (and (force (vl-plainarglist-p args))
-                  (force (vl-portlist-p ports))
-                  (force (same-lengthp args ports))
-                  (force (vl-portdecllist-p portdecls))
-                  (force (equal palist (vl-portdecl-alist portdecls))))
-             (vl-plainarglist-p (vl-annotate-plainargs args ports portdecls palist)))))
-
-
-
-
-(defsection vl-check-blankargs
-  :parents (argresolve)
-  :short "Check for any expressions connected to blank ports, and for any
-blanks connected to non-blank ports."
-
-  :long "<p><b>Signature:</b> @(call vl-check-blankargs) returns an updated
-@(see warnings) accumulator.</p>
-
-<p>As inputs,</p>
+<p>What causes these failures?</p>
 
 <ul>
+<li>Not all ports necessarily have a name, so we cannot add a @(':portname')
+for every port.</li>
+<li>The direction of a port may also not be apparent in some cases; see
+@(see vl-port-direction) for details.</li>
+</ul>"
 
-<li>@('args') is a list of @(see vl-plainarg-p) structures, and</li>
+  (b* (((when (atom args))
+        nil)
+       (name (vl-port->name (car ports)))
+       (expr (vl-port->expr (car ports)))
 
-<li>@('ports') and @('portdecls') are the lists of ports and port declarations
-for the module being instanced, and @('palist') is the @(see vl-portdecl-alist)
-for @('portdecls').</li>
+       ((mv & dir)
+        ;; Our direction inference is pretty sophisticated, and handles even
+        ;; compound ports as long as their directions are all the same.  But it
+        ;; could also fail and leave dir as NIL.
+        (vl-port-direction (car ports) portdecls palist nil))
 
-</ul>
+       ;; If we're dealing with a simple port (which is most of the time), we
+       ;; try to propagate active high/low information from its declaration
+       ;; back into the argument.  BOZO this stuff is all old and should be
+       ;; removed.
+       (maybe-decl (and name
+                        expr
+                        (vl-idexpr-p expr)
+                        (equal (vl-idexpr->name expr) name)
+                        (vl-find-portdecl name portdecls)))
+       (decl-atts (and maybe-decl
+                       (vl-portdecl->atts maybe-decl)))
 
-<p>We compare the arguments and ports, looking for any \"blank\" ports that are
-given non-blank arguments, and for any blank arguments that are given to
-non-blank ports.</p>
+       (arg-atts (vl-plainarg->atts (car args)))
+       (arg-atts (if (assoc-equal "VL_ACTIVE_HIGH" decl-atts)
+                     (acons "VL_ACTIVE_HIGH" nil arg-atts)
+                   arg-atts))
+       (arg-atts (if (assoc-equal "VL_ACTIVE_LOW" decl-atts)
+                     (acons "VL_ACTIVE_LOW" nil arg-atts)
+                   arg-atts))
 
-<p>Either of these situations is semantically well-formed and relatively easy
-to handle; see @(see blankargs).  But they are also bizarre, and at least would
-seem to indicate a situation that could be optimized.  So, if we see either of
-these cases, we add a non-fatal warning explaining the problem.</p>"
+       (arg-prime  (change-vl-plainarg (car args)
+                                       :dir dir         ;; could be nil
+                                       :portname name   ;; could be nil
+                                       :atts arg-atts)))
+    (cons arg-prime
+          (vl-annotate-plainargs (cdr args) (cdr ports) portdecls palist))))
 
-  (defund vl-check-blankargs (args ports inst warnings)
-    (declare (xargs :guard (and (vl-plainarglist-p args)
-                                (vl-portlist-p ports)
-                                (same-lengthp args ports)
-                                (vl-modinst-p inst)
-                                (vl-warninglist-p warnings))))
-    (if (atom args)
-        warnings
-      (b* ((portexpr (vl-port->expr (car ports)))
-           (argexpr  (vl-plainarg->expr (car args)))
-           (warnings
-            (if (and argexpr (not portexpr))
-                (cons (make-vl-warning
-                       :type :vl-warn-blank
-                       :msg "~a0 connects the expression ~a1 to the blank ~
-                             port at ~l2."
-                       :args (list inst argexpr (vl-port->loc (car ports)))
-                       :fatalp nil
-                       :fn 'vl-check-blankargs)
-                      warnings)
-              warnings))
-           (warnings
-            (if (and portexpr (not argexpr))
-                (cons (make-vl-warning
-                       :type :vl-warn-blank
-                       ;; BOZO linking doesn't quite work here for the foreign port.
-                       :msg "~a0 gives a blank expression for non-blank ~a1."
-                       :args (list inst (car ports))
-                       :fatalp nil
-                       :fn 'vl-check-blankargs)
-                      warnings)
-              warnings)))
-        (vl-check-blankargs (cdr args) (cdr ports) inst warnings))))
-
-  (local (in-theory (enable vl-check-blankargs)))
-
-  (defthm vl-warninglist-p-of-vl-check-blankargs
-    (implies (vl-warninglist-p warnings)
-             (vl-warninglist-p (vl-check-blankargs args ports inst warnings)))))
-
-
-
-(defsection vl-arguments-argresolve
+(define vl-check-blankargs
+  ((args  "plainargs for a module instance" vl-plainarglist-p)
+   (ports "corresponding ports for the submodule"
+          (and (vl-portlist-p ports)
+               (same-lengthp args ports)))
+   (inst  "just a context for warnings" vl-modinst-p)
+   (warnings "warnings accumulator" vl-warninglist-p))
+  :returns (warnings vl-warninglist-p :hyp :fguard)
   :parents (argresolve)
-  :short "Apply the @(see argresolve) transformation to a @(see
-vl-arguments-p)."
-
-  :long "<p><b>Signature:</b> @(call vl-arguments-argresolve) returns @('(mv
-warnings x-prime)').</p>
-
-<p>This is just a basic wrapper that applies @(see vl-convert-namedargs), @(see
-vl-annotate-plainargs), and @(see vl-check-blankargs), and checks that the
-arguments have the proper arity.</p>"
-
-  (defund vl-arguments-argresolve (x ports portdecls palist warnings inst)
-    "Returns (MV WARNINGS X-PRIME)"
-    (declare (xargs :guard (and (vl-arguments-p x)
-                                (vl-portlist-p ports)
-                                (vl-portdecllist-p portdecls)
-                                (equal palist (vl-portdecl-alist portdecls))
-                                (vl-warninglist-p warnings)
-                                (vl-modinst-p inst))))
-    (b* (((mv successp warnings x)
-          (vl-convert-namedargs x ports warnings inst))
-         ((unless successp)
-          (mv warnings x))
-         (plainargs (vl-arguments->args x))
-
-         ((unless (same-lengthp plainargs ports))
-          (b* ((modname  (vl-modinst->modname inst))
-               (nports   (len ports))
-               (nargs    (len plainargs))
-               (w (make-vl-warning
-                   :type :vl-bad-instance
-                   ;; Wow this is hideous
-                   :msg "~a0 ~s1 ~x2 ~s3, but module ~m4 ~s5 ~x6 ~s7."
-                   :args (list inst
-                               (if (< nargs nports) "only has" "has")
-                               nargs
-                               (if (= nargs 1) "argument" "arguments")
-                               modname
-                               (if (< nargs nports) "has" "only has")
-                               nports
-                               (if (= nports 1) "port" "ports"))
-                   :fatalp t
-                   :fn 'vl-arguments-argresolve)))
-            (mv (cons w warnings) x)))
-
-         (warnings  (vl-check-blankargs plainargs ports inst warnings))
-         (plainargs (vl-annotate-plainargs plainargs ports portdecls palist))
-         (x-prime   (vl-arguments nil plainargs)))
-      (mv warnings x-prime)))
-
-  (local (in-theory (enable vl-arguments-argresolve)))
-
-  (defthm vl-warninglist-p-of-vl-arguments-argresolve
-    (implies (force (vl-warninglist-p warnings))
-             (vl-warninglist-p
-              (mv-nth 0 (vl-arguments-argresolve x ports portdecls palist warnings inst)))))
-
-  (defthm vl-arguments-p-of-vl-arguments-argresolve
-    (implies (and (force (vl-arguments-p x))
-                  (force (vl-portlist-p ports))
-                  (force (vl-portdecllist-p portdecls))
-                  (force (equal palist (vl-portdecl-alist portdecls))))
-             (vl-arguments-p
-              (mv-nth 1 (vl-arguments-argresolve x ports portdecls palist warnings inst))))))
+  :short "Warn about expressions connected to blank ports and for blanks
+connected to non-blank ports."
+  :long "<p>Either of these situations is semantically well-formed and
+relatively easy to handle; see @(see blankargs).  But they are also bizarre,
+and at least would seem to indicate a situation that could be optimized.  So,
+if we see either of these cases, we add a non-fatal warning explaining the
+problem.</p>"
+  (b* (((when (atom args))
+        warnings)
+       (portexpr (vl-port->expr (car ports)))
+       (argexpr  (vl-plainarg->expr (car args)))
+       (warnings
+        (if (and argexpr (not portexpr))
+            (cons (make-vl-warning
+                   :type :vl-warn-blank
+                   :msg "~a0 connects the expression ~a1 to the blank port at ~
+                         ~l2."
+                   :args (list inst argexpr (vl-port->loc (car ports)))
+                   :fatalp nil
+                   :fn 'vl-check-blankargs)
+                  warnings)
+          warnings))
+       (warnings
+        (if (and portexpr (not argexpr))
+            (cons (make-vl-warning
+                   :type :vl-warn-blank
+                   ;; BOZO linking doesn't quite work here for the foreign port.
+                   :msg "~a0 gives a blank expression for non-blank ~a1."
+                   :args (list inst (car ports))
+                   :fatalp nil
+                   :fn 'vl-check-blankargs)
+                  warnings)
+          warnings)))
+    (vl-check-blankargs (cdr args) (cdr ports) inst warnings)))
 
 
+(define vl-arguments-argresolve
+  ((x         "arguments of a module instance, named or plain" vl-arguments-p)
+   (ports     "ports of the submodule" vl-portlist-p)
+   (portdecls "portdecls of the submodule" vl-portdecllist-p)
+   (palist    "precomputed for fast lookups"
+              (equal palist (vl-portdecl-alist portdecls)))
+   (warnings  "warnings accumulator" vl-warninglist-p)
+   (inst      "just a context for error messages" vl-modinst-p))
+  :returns
+  (mv (warnings vl-warninglist-p :hyp :fguard)
+      (new-x    vl-arguments-p   :hyp :fguard))
+  :parents (argresolve)
+  :short "Apply the @(see argresolve) transformation to some arguments."
+  :long "<p>This wrapper is really the heart of the @(see argresolve)
+transform.  We convert @('x') into a plain argument list, do basic arity/blank
+checking, and add direction/name annotations.</p>"
+
+  (b* (((mv successp warnings x)
+        (vl-convert-namedargs x ports warnings inst))
+       ((unless successp)
+        (mv warnings x))
+       (plainargs (vl-arguments->args x))
+
+       ((unless (same-lengthp plainargs ports))
+        (b* ((nports   (len ports))
+             (nargs    (len plainargs))
+             (w (make-vl-warning
+                 :type :vl-bad-instance
+                 ;; Wow this is hideous
+                 :msg "~a0 ~s1 ~x2 ~s3, but module ~m4 ~s5 ~x6 ~s7."
+                 :args (list inst
+                             (if (< nargs nports) "only has" "has")
+                             nargs
+                             (if (= nargs 1) "argument" "arguments")
+                             (vl-modinst->modname inst)
+                             (if (< nargs nports) "has" "only has")
+                             nports
+                             (if (= nports 1) "port" "ports"))
+                 :fatalp t
+                 :fn 'vl-arguments-argresolve)))
+          (mv (cons w warnings) x)))
+
+       (warnings  (vl-check-blankargs plainargs ports inst warnings))
+       (plainargs (vl-annotate-plainargs plainargs ports portdecls palist))
+       (new-x     (vl-arguments nil plainargs)))
+    (mv warnings new-x)))
 
 
-(defsection vl-modulelist-portdecl-alists
+(define vl-modulelist-portdecl-alists ((x vl-modulelist-p))
   :parents (argresolve)
   :short "Computes the @(see vl-portdecl-alist)s for a list of modules."
   :long "<p>@(call vl-modulelist-portdecl-alists) builds a fast alist
 associating each module name to its corresponding @(see vl-portdecl-alist).</p>"
 
-  (defund vl-modulelist-portdecl-alists (x)
-    (declare (xargs :guard (vl-modulelist-p x)))
-    (if (atom x)
-        nil
-      (hons-acons (vl-module->name (car x))
-                  (vl-portdecl-alist (vl-module->portdecls (car x)))
-                  (vl-modulelist-portdecl-alists (cdr x)))))
+  (if (atom x)
+      nil
+    (hons-acons (vl-module->name (car x))
+                (vl-portdecl-alist (vl-module->portdecls (car x)))
+                (vl-modulelist-portdecl-alists (cdr x))))
+  ///
 
   (defthm hons-assoc-equal-of-vl-modulelist-portdecl-alists
-    (implies (force (vl-modulelist-p x))
-             (equal (hons-assoc-equal name (vl-modulelist-portdecl-alists x))
-                    (let ((mod (vl-find-module name x)))
-                      (and mod
-                           (cons name (vl-portdecl-alist (vl-module->portdecls mod)))))))
-    :hints(("Goal" :in-theory (enable vl-modulelist-portdecl-alists)))))
+    (implies
+     (force (vl-modulelist-p x))
+     (equal (hons-assoc-equal name (vl-modulelist-portdecl-alists x))
+            (let ((mod (vl-find-module name x)))
+              (and mod
+                   (cons name (vl-portdecl-alist (vl-module->portdecls mod)))))))))
 
 
-
-(defsection vl-modinst-argresolve
+(define vl-modinst-argresolve
+  ((x        vl-modinst-p)
+   (mods     vl-modulelist-p)
+   (modalist (equal modalist (vl-modalist mods)))
+   (mpalists (equal mpalists (vl-modulelist-portdecl-alists mods)))
+   (warnings vl-warninglist-p))
+  :returns
+  (mv (warnings vl-warninglist-p :hyp :fguard)
+      (new-x    vl-modinst-p     :hyp :fguard))
   :parents (argresolve)
-  :short "Apply the @(see argresolve) transformation to a @(see vl-modinst-p)."
+  :short "Resolve arguments in a @(see vl-modinst-p)."
 
-  :long "<p><b>Signature:</b> @(call vl-modinst-argresolve) returns @('(mv
-warnings x-prime)').</p>
+  (b* (((vl-modinst x) x)
+       (submod (vl-fast-find-module x.modname mods modalist))
+       ((unless submod)
+        (b* ((w (make-vl-warning
+                 :type :vl-bad-instance
+                 :msg "~a0 refers to undefined module ~m1."
+                 :args (list x x.modname)
+                 :fatalp t
+                 :fn 'vl-modinst-argresolve)))
+          (mv (cons w warnings) x)))
 
-<p>This is just a basic wrapper around @(see vl-arguments-argresolve).  We look
-up the module being instantiated from the @(see vl-modalist) so that we can get
-its ports and port declarations.  We also look up the corresponding @(see
-vl-portdecl-alist) from the precomputed @(see vl-modulelist-portdecl-alists).
-Finally we standardize the instance's arguments and return the updated
-instance.</p>"
-
-  (defund vl-modinst-argresolve (x mods modalist mpalists warnings)
-    "Returns (MV WARNINGS X-PRIME)"
-    (declare (xargs :guard (and (vl-modinst-p x)
-                                (vl-modulelist-p mods)
-                                (equal modalist (vl-modalist mods))
-                                (equal mpalists (vl-modulelist-portdecl-alists mods))
-                                (vl-warninglist-p warnings))
-                    :guard-debug t))
-    (b* ((modname (vl-modinst->modname x))
-         (lookup  (vl-fast-find-module modname mods modalist))
-         ((unless lookup)
-          (b* ((w (make-vl-warning
-                   :type :vl-bad-instance
-                   :msg "~a0 refers to undefined module ~m1."
-                   :args (list x modname)
-                   :fatalp t
-                   :fn 'vl-modinst-argresolve)))
-            (mv (cons w warnings) x)))
-
-         (ports     (vl-module->ports lookup))
-         (portdecls (vl-module->portdecls lookup))
-         (palist    (cdr (hons-get modname mpalists)))
-         (args      (vl-modinst->portargs x))
-
-         ((mv warnings args)
-          (vl-arguments-argresolve args ports portdecls palist warnings x))
-         (x-prime (change-vl-modinst x :portargs args)))
-
-        (mv warnings x-prime)))
-
-  (local (in-theory (enable vl-modinst-argresolve)))
-
-  (defthm vl-warninglist-p-of-vl-modinst-argresolve
-    (implies (force (vl-warninglist-p warnings))
-             (vl-warninglist-p
-              (mv-nth 0 (vl-modinst-argresolve x mods modalist mpalists warnings)))))
-
-  (defthm vl-modinst-p-of-vl-modinst-argresolve
-    (implies (and (force (vl-modinst-p x))
-                  (force (vl-modulelist-p mods))
-                  (force (equal modalist (vl-modalist mods)))
-                  (force (equal mpalists (vl-modulelist-portdecl-alists mods))))
-             (vl-modinst-p
-              (mv-nth 1 (vl-modinst-argresolve x mods modalist mpalists warnings))))))
+       ((vl-module submod) submod)
+       (palist    (cdr (hons-get x.modname mpalists)))
+       ((mv warnings new-args)
+        (vl-arguments-argresolve x.portargs submod.ports submod.portdecls
+                                 palist warnings x))
+       (new-x (change-vl-modinst x :portargs new-args)))
+    (mv warnings new-x)))
 
 
-
-(defsection vl-modinstlist-argresolve
+(define vl-modinstlist-argresolve
+  ((x        vl-modinstlist-p)
+   (mods     vl-modulelist-p)
+   (modalist (equal modalist (vl-modalist mods)))
+   (mpalists (equal mpalists (vl-modulelist-portdecl-alists mods)))
+   (warnings vl-warninglist-p))
+  :returns
+  (mv (warnings vl-warninglist-p :hyp :fguard)
+      (new-x    vl-modinstlist-p :hyp :fguard))
   :parents (argresolve)
-  :short "Projects @(see vl-modinst-argresolve) across a list of @(see
-vl-modinst-p)s."
+  :short "Resolve arguments in a @(see vl-modinstlist-p)."
 
-  (defund vl-modinstlist-argresolve (x mods modalist mpalists warnings)
-    "Returns (MV WARNINGS X-PRIME)"
-    (declare (xargs :guard (and (vl-modinstlist-p x)
-                                (vl-modulelist-p mods)
-                                (equal modalist (vl-modalist mods))
-                                (equal mpalists (vl-modulelist-portdecl-alists mods))
-                                (vl-warninglist-p warnings))))
-    (if (atom x)
-        (mv warnings nil)
-      (b* (((mv warnings car-prime)
-            (vl-modinst-argresolve (car x) mods modalist mpalists warnings))
-           ((mv warnings cdr-prime)
-            (vl-modinstlist-argresolve (cdr x) mods modalist mpalists warnings)))
-        (mv warnings (cons car-prime cdr-prime)))))
-
-  (local (in-theory (enable vl-modinstlist-argresolve)))
-
-  (defthm vl-warninglist-p-of-vl-modinstlist-argresolve
-    (implies (force (vl-warninglist-p warnings))
-             (vl-warninglist-p
-              (mv-nth 0 (vl-modinstlist-argresolve x mods modalist mpalists warnings)))))
-
-  (defthm vl-modinstlist-p-of-vl-modinstlist-argresolve
-    (implies (and (force (vl-modinstlist-p x))
-                  (force (vl-modulelist-p mods))
-                  (force (equal modalist (vl-modalist mods)))
-                  (force (equal mpalists (vl-modulelist-portdecl-alists mods))))
-             (vl-modinstlist-p
-              (mv-nth 1 (vl-modinstlist-argresolve x mods modalist mpalists warnings))))))
+  (b* (((when (atom x))
+        (mv warnings nil))
+       ((mv warnings car)
+        (vl-modinst-argresolve (car x) mods modalist mpalists warnings))
+       ((mv warnings cdr)
+        (vl-modinstlist-argresolve (cdr x) mods modalist mpalists warnings)))
+    (mv warnings (cons car cdr))))
 
 
 
@@ -975,23 +793,19 @@ in the module.</p>"
 
 
 
-(defsection vl-modulelist-argresolve-aux
+(defprojection vl-modulelist-argresolve-aux (x mods modalist mpalists)
+  (vl-module-argresolve x mods modalist mpalists)
+  :guard (and (vl-modulelist-p x)
+              (vl-modulelist-p mods)
+              (equal modalist (vl-modalist mods))
+              (equal mpalists (vl-modulelist-portdecl-alists mods)))
+  :result-type vl-modulelist-p
   :parents (argresolve)
-  :short "Projects @(see vl-module-argresolve) across a list of @(see vl-module-p)s."
-
-  (defprojection vl-modulelist-argresolve-aux (x mods modalist mpalists)
-    (vl-module-argresolve x mods modalist mpalists)
-    :guard (and (vl-modulelist-p x)
-                (vl-modulelist-p mods)
-                (equal modalist (vl-modalist mods))
-                (equal mpalists (vl-modulelist-portdecl-alists mods)))
-    :result-type vl-modulelist-p)
-
-  (local (in-theory (enable vl-modulelist-argresolve-aux)))
-
-  (defthm vl-modulelist->names-of-vl-modulelist-argresolve-aux
-    (equal (vl-modulelist->names (vl-modulelist-argresolve-aux x mods modalist mpalists))
-           (vl-modulelist->names x))))
+  :rest
+  ((defthm vl-modulelist->names-of-vl-modulelist-argresolve-aux
+     (equal (vl-modulelist->names
+             (vl-modulelist-argresolve-aux x mods modalist mpalists))
+            (vl-modulelist->names x)))))
 
 
 

@@ -19,12 +19,10 @@
 ; Original author: Jared Davis <jared@centtech.com>
 
 (in-package "VL")
-(include-book "gen-adder")
+(include-book "add")
 (local (include-book "../../util/arithmetic"))
 (local (include-book "../../util/osets"))
 (local (in-theory (disable vl-maybe-module-p-when-vl-module-p)))
-
-; gen-mul.lisp -- functions that generate multipliers
 
 (defsection *vl-1-bit-mult*
   :parents (occform)
@@ -81,36 +79,25 @@ endmodule
 
 ;; bozo this all needs to be documented.
 
-(defsection vl-mult-netdecls
+(define vl-mult-netdecls ((prefix stringp)
+                          (i      natp)
+                          (n      natp)
+                          (range  vl-maybe-range-p))
   ;; wire [range] prefix_i;
   ;; ...
   ;; wire [range] prefix_{n-1};
-  (defund vl-mult-netdecls (prefix i n range)
-    (declare (xargs :guard (and (stringp prefix)
-                                (natp i)
-                                (natp n)
-                                (<= i n)
-                                (vl-maybe-range-p range))
-                    :measure (nfix (- (nfix n) (nfix i)))))
-    (b* (((when (zp (- (nfix n) (nfix i))))
-          nil)
-         (name (hons-copy (cat prefix (natstr i))))
-         (decl (make-vl-netdecl :name name
-                                :type :vl-wire
-                                :range range
-                                :loc *vl-fakeloc*)))
-      (cons decl (vl-mult-netdecls prefix (+ 1 (nfix i)) n range))))
-
-  (local (in-theory (enable vl-mult-netdecls)))
-
-  (defthm vl-netdecllist-p-of-vl-mult-netdecls
-    (implies (and (force (stringp prefix))
-                  (force (natp i))
-                  (force (natp n))
-                  (force (<= i n))
-                  (force (vl-maybe-range-p range)))
-             (vl-netdecllist-p (vl-mult-netdecls prefix i n range))))
-
+  :returns (decls vl-netdecllist-p :hyp :fguard)
+  :guard   (<= i n)
+  :measure (nfix (- (nfix n) (nfix i)))
+  (b* (((when (zp (- (nfix n) (nfix i))))
+        nil)
+       (name (hons-copy (cat prefix (natstr i))))
+       (decl (make-vl-netdecl :name name
+                              :type :vl-wire
+                              :range range
+                              :loc *vl-fakeloc*)))
+    (cons decl (vl-mult-netdecls prefix (+ 1 (nfix i)) n range)))
+  ///
   (defthm len-of-vl-mult-netdecls
     (equal (len (vl-mult-netdecls prefix i n range))
            (nfix (- (nfix n) (nfix i)))))
@@ -120,64 +107,51 @@ endmodule
          (posp (- (nfix n) (nfix i))))))
 
 
-(defsection vl-partprod-insts
+(define vl-partprod-insts-aux ((i natp)
+                               (n natp))
+  :returns (insts vl-modinstlist-p :hyp :fguard)
+  :guard (< i n)
+  ;; Create instances that drive pi, the i-th, shifted partial product for an
+  ;; n-bit multiplier
+  (b* ((p-name (hons-copy (cat "p" (natstr i))))
+       (p-expr (vl-idexpr p-name n :vl-unsigned))
+       (p-high (vl-make-list-of-bitselects p-expr i (- n 1)))
+       (p-low  (if (zp i)
+                   nil
+                 (vl-make-list-of-bitselects p-expr 0 (- i 1))))
 
-  (defund vl-partprod-insts-aux (i n)
-    ;; Create instances that drive pi, the i-th, shifted partial product for an
-    ;; n-bit multiplier
-    (declare (xargs :guard (and (natp i)
-                                (natp n)
-                                (< i n))))
-    (b* ((p-name (hons-copy (cat "p" (natstr i))))
-         (p-expr (vl-idexpr p-name n :vl-unsigned))
-         (p-high (vl-make-list-of-bitselects p-expr i (- n 1)))
-         (p-low  (if (zp i)
-                     nil
-                   (vl-make-list-of-bitselects p-expr 0 (- i 1))))
+       (a-name (hons-copy "a"))
+       (a-expr (vl-idexpr a-name n :vl-unsigned))
+       (a[i]   (vl-make-bitselect a-expr i))
+       (a-high (repeat a[i] (len p-high)))
 
-         (a-name (hons-copy "a"))
-         (a-expr (vl-idexpr a-name n :vl-unsigned))
-         (a[i]   (vl-make-bitselect a-expr i))
-         (a-high (repeat a[i] (len p-high)))
+       (b-name (hons-copy "b"))
+       (b-expr (vl-idexpr b-name n :vl-unsigned))
+       (b-bits (vl-make-list-of-bitselects b-expr 0 (- n 1)))
+       (b-high (take (len p-high) b-bits))
+       (b-low  (repeat |*sized-1'b0*| (len p-low)))
 
-         (b-name (hons-copy "b"))
-         (b-expr (vl-idexpr b-name n :vl-unsigned))
-         (b-bits (vl-make-list-of-bitselects b-expr 0 (- n 1)))
-         (b-high (take (len p-high) b-bits))
-         (b-low  (repeat |*sized-1'b0*| (len p-low)))
+       (ands (vl-simple-inst-list *vl-1-bit-and* (cat "mk_" p-name "_high")
+                                  p-high a-high b-high))
+       (bufs (vl-simple-inst-list *vl-1-bit-buf* (cat "mk_" p-name "_low")
+                                  p-low b-low nil)))
+    (revappend ands (reverse bufs))))
 
-         (ands (vl-simple-inst-list *vl-1-bit-and* (cat "mk_" p-name "_high")
-                                    p-high a-high b-high))
-         (bufs (vl-simple-inst-list *vl-1-bit-buf* (cat "mk_" p-name "_low")
-                                    p-low b-low nil)))
-      (revappend ands (reverse bufs))))
-
-  (defund vl-partprod-insts (i n)
-    ;; Create instances that drive all all pi (0 <= i < n), all partial products
-    ;; for an n-bit multiplier
-    (declare (xargs :guard (and (natp i)
-                                (natp n)
-                                (<= i n))
-                    :measure (nfix (- (nfix n) (nfix i)))))
-    (if (zp (- (nfix n) (nfix i)))
-        nil
-      (append (vl-partprod-insts-aux i n)
-              (vl-partprod-insts (+ 1 (nfix i)) n))))
-
-  (defthm vl-modinstlist-p-of-vl-partprod-insts-aux
-    (implies (and (force (natp i))
-                  (force (natp n))
-                  (force (< i n)))
-             (vl-modinstlist-p (vl-partprod-insts-aux i n)))
-    :hints(("Goal" :in-theory (enable vl-partprod-insts-aux))))
-
-  (defthm vl-modinstlist-p-of-vl-partprod-insts
-    (implies (and (force (natp i))
-                  (force (natp n))
-                  (force (<= i n)))
-             (vl-modinstlist-p (vl-partprod-insts i n)))
-    :hints(("Goal" :in-theory (enable vl-partprod-insts)))))
-
+(define vl-partprod-insts ((i natp)
+                           (n natp))
+  :returns (insts vl-modinstlist-p :hyp :fguard)
+  :guard (<= i n)
+  :measure (nfix (- (nfix n) (nfix i)))
+  ;; Create instances that drive all all pi (0 <= i < n), all partial products
+  ;; for an n-bit multiplier
+  (declare (xargs :guard (and (natp i)
+                              (natp n)
+                              (<= i n))
+                  :measure (nfix (- (nfix n) (nfix i)))))
+  (if (zp (- (nfix n) (nfix i)))
+      nil
+    (append (vl-partprod-insts-aux i n)
+            (vl-partprod-insts (+ 1 (nfix i)) n))))
 
 
 (def-vl-modgen vl-make-n-bit-mult (n)

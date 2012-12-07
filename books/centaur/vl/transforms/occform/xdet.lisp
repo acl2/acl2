@@ -19,13 +19,10 @@
 ; Original author: Jared Davis <jared@centtech.com>
 
 (in-package "VL")
-(include-book "gen-simple")
+(include-book "simple")
 (local (include-book "../../util/arithmetic"))
 (local (include-book "../../util/osets"))
 (local (in-theory (disable vl-maybe-module-p-when-vl-module-p)))
-
-; gen-xdet.lisp -- functions that generate X-detection modules
-
 
 (def-vl-modgen vl-make-n-bit-xdetect (n)
   :short "Generate a module that detects X/Z bits."

@@ -20,23 +20,8 @@
 
 (in-package "ACL2")
 
-(defconst *cwtime-green*  (concatenate 'string (coerce (list (code-char 27)) 'string) "[40;32m"))
-(defconst *cwtime-yellow* (concatenate 'string (coerce (list (code-char 27)) 'string) "[33m"))
-(defconst *cwtime-reg*    (concatenate 'string (coerce (list (code-char 27)) 'string) "[0m"))
-
-;; (defmacro cwtime (form &key name (mintime 'nil) (minalloc 'nil))
-;;   (let ((name (or name
-;;                   (and (consp form)
-;;                        (symbolp (car form))
-;;                        (car form))
-;;                   'cwtime)))
-;;     `(time$ ,form
-;;             :msg "~s0~s1:~s2 ~st seconds, ~sa bytes.~s3~%"
-;;             :args (list *cwtime-green* ',name *cwtime-yellow* *cwtime-reg*)
-;;             :mintime ,mintime
-;;             :minalloc ,minalloc)))
-
 (defmacro cwtime (form &key name (mintime 'nil) (minalloc 'nil))
+  "Concise time reports with optional names."
   (let ((name (or name
                   (and (consp form)
                        (symbolp (car form))
@@ -48,12 +33,24 @@
             :mintime ,mintime
             :minalloc ,minalloc)))
 
+(defmacro xf-cwtime (form &key
+                          name
+                          (mintime '1)
+                          ;; 64 MB minalloc to report
+                          (minalloc '67108864))
+  "Same as cwtime, but defaults to 1sec / 64 MB alloc minimum.  This is nice as
+a sort of passive performance monitor: if everything is running quickly you
+won't be bothered with timing info, but if something is taking awhile or a lot
+of memory, you'll get a chance to notice it."
+  `(cwtime ,form
+           :name ,name
+           :mintime ,mintime
+           :minalloc ,minalloc))
+
 #||
 
 (cwtime (append '(1 2 3) '(4 5 6)))
-
 (cwtime (+ 1 2))
-
 (cwtime 3)
 
 ||#

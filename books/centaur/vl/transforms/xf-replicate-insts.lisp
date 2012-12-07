@@ -1764,22 +1764,22 @@ arrays, and replacing them with explicit lists of instances.</p>"
            (vl-module->name x))))
 
 
+(defprojection vl-modulelist-replicate-aux (x mods modalist)
+  (vl-module-replicate x mods modalist)
+  :guard (and (vl-modulelist-p x)
+              (vl-modulelist-p mods)
+              (equal modalist (vl-modalist mods)))
+  :result-type vl-modulelist-p
+  :parents (replicate)
+  :rest
+  ((defthm vl-modulelist->names-of-vl-modulelist-replicate-aux
+     (equal (vl-modulelist->names (vl-modulelist-replicate-aux x mods modalist))
+            (vl-modulelist->names x)))))
+
 
 (defsection vl-modulelist-replicate
   :parents (replicate)
   :short "Extend @(see vl-module-replicate) across the list of modules."
-
-  (defprojection vl-modulelist-replicate-aux (x mods modalist)
-    (vl-module-replicate x mods modalist)
-    :guard (and (vl-modulelist-p x)
-                (vl-modulelist-p mods)
-                (equal modalist (vl-modalist mods)))
-    :result-type vl-modulelist-p)
-
-  (defthm vl-modulelist->names-of-vl-modulelist-replicate-aux
-    (equal (vl-modulelist->names (vl-modulelist-replicate-aux x mods modalist))
-           (vl-modulelist->names x))
-    :hints(("Goal" :induct (len x))))
 
   (defund vl-modulelist-replicate (x)
     (declare (xargs :guard (vl-modulelist-p x)))
@@ -1788,13 +1788,13 @@ arrays, and replacing them with explicit lists of instances.</p>"
          (-        (flush-hons-get-hash-table-link modalist)))
         result))
 
+  (local (in-theory (enable vl-modulelist-replicate)))
+
   (defthm vl-modulelist-p-of-vl-modulelist-replicate
     (implies (force (vl-modulelist-p x))
-             (vl-modulelist-p (vl-modulelist-replicate x)))
-    :hints(("Goal" :in-theory (enable vl-modulelist-replicate))))
+             (vl-modulelist-p (vl-modulelist-replicate x))))
 
   (defthm vl-modulelist->names-of-vl-modulelist-replicate
     (equal (vl-modulelist->names (vl-modulelist-replicate x))
-           (vl-modulelist->names x))
-    :hints(("Goal" :in-theory (enable vl-modulelist-replicate)))))
+           (vl-modulelist->names x))))
 

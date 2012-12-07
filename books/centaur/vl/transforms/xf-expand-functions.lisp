@@ -19,7 +19,7 @@
 ; Original author: Jared Davis <jared@centtech.com>
 
 (in-package "VL")
-(include-book "xf-stmt-rewrite")
+(include-book "always/stmtrewrite") ;; bozo
 (include-book "xf-subst")
 (include-book "../mlib/context")
 (include-book "../mlib/allexprs")
@@ -1460,11 +1460,13 @@ generated list of assignments.  Otherwise we fail with fatal warnings.</p>"
   (local (in-theory (enable vl-funbody-to-assignments)))
 
   (defthm vl-warninglist-p-of-vl-funbody-to-assignments
-    (implies (force (vl-warninglist-p warnings))
+    (implies (and (force (vl-fundecl-p x))
+                  (force (vl-warninglist-p warnings)))
              (vl-warninglist-p (mv-nth 1 (vl-funbody-to-assignments x warnings)))))
 
   (defthm vl-assignlist-p-of-vl-funbody-to-assignments
-    (implies (force (vl-fundecl-p x))
+    (implies (and (force (vl-fundecl-p x))
+                  (force (vl-warninglist-p warnings)))
              (vl-assignlist-p (mv-nth 2 (vl-funbody-to-assignments x warnings))))))
 
 
@@ -1791,11 +1793,13 @@ unsupported constructs or doesn't meet our other sanity criteria.</p>"
   (local (in-theory (enable vl-fundecl-expansion-template)))
 
   (defthm vl-warninglist-p-of-vl-fundecl-expansion-template
-    (implies (force (vl-warninglist-p warnings))
+    (implies (and (force (vl-fundecl-p x))
+                  (force (vl-warninglist-p warnings)))
              (vl-warninglist-p (mv-nth 1 (vl-fundecl-expansion-template x warnings)))))
 
   (defthm vl-funtemplate-p-of-vl-fundecl-expansion-template
-    (implies (force (vl-fundecl-p x))
+    (implies (and (force (vl-fundecl-p x))
+                  (force (vl-warninglist-p warnings)))
              (equal (vl-funtemplate-p (mv-nth 0 (vl-fundecl-expansion-template x warnings)))
                     (if (mv-nth 0 (vl-fundecl-expansion-template x warnings))
                         t
@@ -1824,11 +1828,13 @@ unsupported constructs or doesn't meet our other sanity criteria.</p>"
   (local (in-theory (enable vl-fundecllist-expansion-templates)))
 
   (defthm vl-warninglist-p-of-vl-fundecllist-expansion-templates
-    (implies (force (vl-warninglist-p warnings))
+    (implies (and (force (vl-fundecllist-p x))
+                  (force (vl-warninglist-p warnings)))
              (vl-warninglist-p (mv-nth 1 (vl-fundecllist-expansion-templates x warnings)))))
 
   (defthm vl-funtemplatelist-p-of-vl-fundecllist-expansion-templates
-    (implies (force (vl-fundecllist-p x))
+    (implies (and (force (vl-fundecllist-p x))
+                  (force (vl-warninglist-p warnings)))
              (vl-funtemplatelist-p (mv-nth 2 (vl-fundecllist-expansion-templates x warnings))))))
 
 
@@ -2772,12 +2778,12 @@ function calls on success.</p>"
          ((mv okp1 warnings) (vl-check-bad-funcalls ctx (vl-blockitemlist-allexprs x.decls) "block declarations" warnings))
          ((mv okp2 warnings) (vl-check-bad-funcalls ctx (vl-maybe-delayoreventcontrol-allexprs x.ctrl) "timing controls" warnings))
          ((mv okp3 warnings)
-          (cond ((eq x.type :vl-forstmt)
+          (cond ((vl-forstmt-p x)
                  ;; Don't allow function calls in initlhs or nextlhs.
                  (vl-check-bad-funcalls ctx (list (vl-forstmt->initlhs x)
                                                   (vl-forstmt->nextlhs x))
                                         "left-hand sides of for-loop assignments" warnings))
-                ((eq x.type :vl-casestmt)
+                ((vl-casestmt-p x)
                  ;; Don't allow function calls in match expressions
                  (vl-check-bad-funcalls ctx (vl-casestmt->exprs x)
                                         "case-statement match expressions" warnings))
@@ -3510,10 +3516,9 @@ and assignments that need to be added to the module.</li>
   (vl-module-expand-functions x)
   :guard (vl-modulelist-p x)
   :result-type vl-modulelist-p
-  :parents (expand-functions))
-
-(defthm vl-modulelist->names-of-vl-modulelist-expand-functions
-  (equal (vl-modulelist->names (vl-modulelist-expand-functions x))
-         (vl-modulelist->names x))
-  :hints(("Goal" :induct (len x))))
+  :parents (expand-functions)
+  :rest
+  ((defthm vl-modulelist->names-of-vl-modulelist-expand-functions
+     (equal (vl-modulelist->names (vl-modulelist-expand-functions x))
+            (vl-modulelist->names x)))))
 

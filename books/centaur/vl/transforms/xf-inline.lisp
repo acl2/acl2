@@ -442,12 +442,11 @@ a module."
               (vl-ok-to-inline-p sub)
               (vl-modulelist-p x))
   :result-type vl-modulelist-p
-  :parents (inline-mods))
-
-(defthm vl-modulelist->names-of-vl-inline-mod-in-mods-aux
-  (equal (vl-modulelist->names (vl-inline-mod-in-mods-aux sub x))
-         (vl-modulelist->names x))
-  :hints(("Goal" :in-theory (enable vl-inline-mod-in-mods-aux))))
+  :parents (inline-mods)
+  :rest
+  ((defthm vl-modulelist->names-of-vl-inline-mod-in-mods-aux
+     (equal (vl-modulelist->names (vl-inline-mod-in-mods-aux sub x))
+            (vl-modulelist->names x)))))
 
 
 

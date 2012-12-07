@@ -19,7 +19,7 @@
 ; Original author: Jared Davis <jared@centtech.com>
 
 (in-package "VL")
-(include-book "transforms/occform/gen-simple")
+(include-book "transforms/occform/simple")
 (local (include-book "util/arithmetic"))
 (local (in-theory (disable vl-maybe-module-p-when-vl-module-p)))
 

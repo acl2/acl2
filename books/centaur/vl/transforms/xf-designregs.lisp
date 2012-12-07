@@ -181,11 +181,10 @@ are dealing with.</li>
 
   (defprojection vl-dreglist-flatnames (x)
     (vl-dreg-flatname x)
-    :guard (vl-dreglist-p x))
-
-  (defthm string-listp-of-vl-dreglist-flatnames
-    (string-listp (vl-dreglist-flatnames x))
-    :hints(("Goal" :in-theory (enable vl-dreglist-flatnames))))
+    :guard (vl-dreglist-p x)
+    :rest
+    ((defthm string-listp-of-vl-dreglist-flatnames
+       (string-listp (vl-dreglist-flatnames x)))))
 
   (defprojection vl-dreglist-types (x)
     (vl-dreg->type x)
@@ -376,33 +375,25 @@ see @(see vl-extend-dreglist).</p>"
 
 
 
-(defsection vl-modinstlist-collect-dregs
+(defmapappend vl-modinstlist-collect-dregs (x mod alist)
+  (vl-modinst-collect-dregs x mod alist)
+  :guard (and (vl-modinstlist-p x)
+              (vl-module-p mod)
+              (vl-dregalist-p alist))
+  :transform-true-list-p t
+  ;; It should be pretty straightforward to develop a transform-exec version of
+  ;; vl-modinst-collect-dregs for a more efficient implementation, but I
+  ;; suspect it isn't worth the effort.
+  :transform-exec nil
   :parents (design-regs)
   :short "Construct the list of @(see vl-dreg-p)s for a list of @(see
 vl-modinst-p)s."
-
-  :long "<p>See @(see vl-modinst-collect-dregs); this function is just the
-natural extension of it.</p>"
-
-  (defmapappend vl-modinstlist-collect-dregs (x mod alist)
-    (vl-modinst-collect-dregs x mod alist)
-    :guard (and (vl-modinstlist-p x)
-                (vl-module-p mod)
-                (vl-dregalist-p alist))
-    :transform-true-list-p t
-    ;; It should be pretty straightforward to develop a transform-exec version
-    ;; of vl-modinst-collect-dregs for a more efficient implementation, but I
-    ;; suspect it isn't worth the effort.
-    )
-
-  (local (in-theory (enable vl-modinstlist-collect-dregs)))
-
-  (defthm vl-dreglist-p-of-vl-modinstlist-collect-dregs
-    (implies (and (force (vl-modinstlist-p x))
-                  (force (vl-module-p mod))
-                  (force (vl-dregalist-p alist)))
-             (vl-dreglist-p (vl-modinstlist-collect-dregs x mod alist)))))
-
+  :rest
+  ((defthm vl-dreglist-p-of-vl-modinstlist-collect-dregs
+     (implies (and (force (vl-modinstlist-p x))
+                   (force (vl-module-p mod))
+                   (force (vl-dregalist-p alist)))
+              (vl-dreglist-p (vl-modinstlist-collect-dregs x mod alist))))))
 
 
 

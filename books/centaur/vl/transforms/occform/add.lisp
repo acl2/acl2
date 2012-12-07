@@ -19,13 +19,11 @@
 ; Original author: Jared Davis <jared@centtech.com>
 
 (in-package "VL")
-(include-book "gen-simple")
-(include-book "gen-xdet")
+(include-book "simple")
+(include-book "xdet")
 (local (include-book "../../util/arithmetic"))
 (local (include-book "../../util/osets"))
 (local (in-theory (disable vl-maybe-module-p-when-vl-module-p)))
-
-; gen-adder.lisp -- functions that generate addition/subtraction modules
 
 (defsection *vl-1-bit-adder-core*
   :parents (occform)

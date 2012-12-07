@@ -787,20 +787,16 @@ each token has a location, namely the location of its first character.</p>"
   :parents (lexer))
 
 
-(defsection vl-tokenlist->etext
-
-  (defmapappend vl-tokenlist->etext (x)
-    (vl-token->etext x)
-    :transform-true-list-p t
-    :guard (vl-tokenlist-p x)
-    :parents (lexer)
-    :short "Append together all the text for a list of tokens.")
-
-  (local (in-theory (enable vl-tokenlist->etext)))
-
-  (defthm vl-echarlist-p-of-vl-tokenlist->etext
-    (implies (force (vl-tokenlist-p x))
-             (vl-echarlist-p (vl-tokenlist->etext x)))))
+(defmapappend vl-tokenlist->etext (x)
+  (vl-token->etext x)
+  :transform-true-list-p t
+  :guard (vl-tokenlist-p x)
+  :parents (lexer)
+  :short "Append together all the text for a list of tokens."
+  :rest
+  ((defthm vl-echarlist-p-of-vl-tokenlist->etext
+     (implies (force (vl-tokenlist-p x))
+              (vl-echarlist-p (vl-tokenlist->etext x))))))
 
 
 

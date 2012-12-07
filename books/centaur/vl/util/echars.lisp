@@ -24,7 +24,6 @@
 (local (include-book "arithmetic"))
 
 
-
 (defxdoc extended-characters
   :parents (loader)
   :short "Characters with additional annotations."
@@ -32,36 +31,24 @@
 characters\", which associate regular characterp objects with their origin in
 the Verilog source code.</p>")
 
-
-
 (defaggregate vl-location
   (filename line col)
   :tag :vl-location
   :legiblep nil
-  :require ((stringp-of-vl-location->filename (stringp filename))
-            (posp-of-vl-location->line        (posp line))
-            (natp-of-vl-location->col         (natp col)))
+  :require ((stringp-of-vl-location->filename
+             (stringp filename)
+             :rule-classes :type-prescription)
+            (posp-of-vl-location->line
+             (posp line)
+             :rule-classes :type-prescription)
+            (natp-of-vl-location->col
+             (natp col)
+             :rule-classes :type-prescription))
   :parents (extended-characters)
   :short "Representation of a point in a source file."
   :long "<p>Each vl-location-p represents some location in a source code file.
 These locations are attached to characters and module items to provide context
 during error reporting.</p>")
-
-(defthm stringp-of-vl-location->line-tp
-  (implies (force (vl-location-p x))
-           (stringp (vl-location->filename x)))
-  :rule-classes :type-prescription)
-
-(defthm posp-of-vl-location->line-tp
-  (implies (force (vl-location-p x))
-           (posp (vl-location->line x)))
-  :rule-classes :type-prescription)
-
-(defthm natp-of-vl-location->col-tp
-  (implies (force (vl-location-p x))
-           (natp (vl-location->line x)))
-  :rule-classes :type-prescription)
-
 
 
 (defsection *vl-fakeloc*
@@ -74,63 +61,48 @@ own @(see extended-characters) and module items."
 
 
 
-
-(defsection vl-location-string
+(define vl-location-string ((loc vl-location-p))
   :parents (vl-location-p)
   :short "Convert an @(see vl-location-p) into a string."
   :long "<p>@(call vl-location-string) is often useful in generating warning
 or error messages.  It converts a @(see vl-location-p) object into a string
 of the form <i>filename:line:col</i>.</p>"
 
-  (defund vl-location-string (loc)
-    (declare (xargs :guard (vl-location-p loc)))
-    (cat (vl-location->filename loc)
-         ":"
-         (natstr (vl-location->line loc))
-         ":"
-         (natstr (vl-location->col loc))))
+  (cat (vl-location->filename loc)
+       ":"
+       (natstr (vl-location->line loc))
+       ":"
+       (natstr (vl-location->col loc)))
+
+  ///
 
   (defthm stringp-of-vl-location-string
     (stringp (vl-location-string loc))
     :rule-classes :type-prescription))
 
 
-(defsection vl-location-between-p
+(define vl-location-between-p ((x vl-location-p)
+                               (min vl-location-p)
+                               (max vl-location-p))
   :parents (vl-location-p)
   :short "@(call vl-location-between-p) is true exactly when @('x') is in the
 same file as @('min') and @('max'), and inclusively falls between these
 bounds."
 
-  (defund vl-location-between-p (x min max)
-    (declare (xargs :guard (and (vl-location-p x)
-                                (vl-location-p min)
-                                (vl-location-p max))))
+  (b* (((vl-location x) x)
+       ((vl-location low) min) ;; bozo awful symbol problems with min/max
+       ((vl-location high) max))
 
-; Is the location X in the same file as MIN and MAX, and does it, inclusively,
-; fall within these bounds?
+      (and (equal x.filename low.filename)
+           (equal x.filename high.filename)
 
-    (let ((x-filename   (vl-location->filename x))
-          (x-line       (vl-location->line x))
-          (x-col        (vl-location->col x))
+           (or (< low.line x.line)
+               (and (int= low.line x.line)
+                    (<= low.col x.col)))
 
-          (min-filename (vl-location->filename min))
-          (min-line     (vl-location->line min))
-          (min-col      (vl-location->col min))
-
-          (max-filename (vl-location->filename max))
-          (max-line     (vl-location->line max))
-          (max-col      (vl-location->col max)))
-
-      (and (equal x-filename min-filename)
-           (equal x-filename max-filename)
-
-           (or (< min-line x-line)
-               (and (= min-line x-line)
-                    (<= min-col x-col)))
-
-           (or (< x-line max-line)
-               (and (= x-line max-line)
-                    (<= x-col max-col)))))))
+           (or (< x.line high.line)
+               (and (int= x.line high.line)
+                    (<= x.col high.col))))))
 
 
 
@@ -140,8 +112,11 @@ bounds."
   ;; pay the price of tagging them all.
   :tag nil
   :legiblep nil
-  :require ((characterp-of-vl-echar->char      (characterp char))
-            (vl-location-p-of-vl-echar->loc    (vl-location-p loc)))
+  :require ((characterp-of-vl-echar->char
+             (characterp char)
+             :rule-classes :type-prescription)
+            (vl-location-p-of-vl-echar->loc
+             (vl-location-p loc)))
   :parents (extended-characters)
   :short "An annotated character."
   :long "<p>Each @('vl-echar-p') associates its @('char') with a @(see
@@ -159,27 +134,24 @@ vl-location-p) that says where the character was read from.</p>")
   :elementp-of-nil nil
   :parents (extended-characters))
 
-(defsection vl-echarlist->chars
-
-  (defprojection vl-echarlist->chars (x)
-    (vl-echar->char x)
-    :guard (vl-echarlist-p x)
-    :nil-preservingp t
-    :result-type character-listp
-    :parents (extended-characters))
-
-; Not sure why I wanted this other form.
-  (defthm vl-echarlist->chars-of-simpler-take
-    (equal (vl-echarlist->chars (simpler-take n x))
-           (simpler-take n (vl-echarlist->chars x))))
-
-  (in-theory (disable simpler-take-of-vl-echarlist->chars))
-  (theory-invariant (incompatible (:rewrite simpler-take-of-vl-echarlist->chars)
-                                  (:rewrite vl-echarlist->chars-of-simpler-take))))
+(defprojection vl-echarlist->chars (x)
+  (vl-echar->char x)
+  :guard (vl-echarlist-p x)
+  :nil-preservingp t
+  :result-type character-listp
+  :parents (extended-characters)
+  :rest
+  (; BOZO not sure why I wanted this other form.
+   (defthm vl-echarlist->chars-of-simpler-take
+     (equal (vl-echarlist->chars (simpler-take n x))
+            (simpler-take n (vl-echarlist->chars x))))
+   (in-theory (disable simpler-take-of-vl-echarlist->chars))
+   (theory-invariant (incompatible (:rewrite simpler-take-of-vl-echarlist->chars)
+                                   (:rewrite vl-echarlist->chars-of-simpler-take)))))
 
 
 
-(defsection vl-echarlist->string
+(define vl-echarlist->string ((x vl-echarlist-p))
   :parents (extended-characters)
   :short "Transform a @(see vl-echarlist-p) to a string."
 
@@ -190,33 +162,33 @@ coerces the result to a string; we typically leave it enabled.</p>
 creating an intermediate list and instead just builds a string directly.  This
 notably saves a lot of memory when we build @(see vl-filemap-p)s.</p>"
 
-  (defun vl-echarlist->string (x)
-    (declare (xargs :guard (vl-echarlist-p x)))
-    (coerce (vl-echarlist->chars x) 'string))
+  :enabled t
+  (coerce (vl-echarlist->chars x) 'string)
+
+  ///
 
   (defttag vl-optimize)
   (acl2::progn!
    (set-raw-mode t)
-
-   (declaim (inline vl-echarlist->string))
    (defun vl-echarlist->string (x)
      (let ((len (len x)))
-       (cond ((equal len 0)
+       (declare (fixnum len))
+       (cond ((eql len 0)
               "")
              (t
-              (let ((ret (make-string len))
-                    (last (- len 1)))
-                (loop for i from 0 to last
-                      do
+              (let* ((ret  (make-string len))
+                     (last (- len 1)))
+                (declare (fixnum last))
+                (loop for i fixnum from 0 to last do
                       (setf (char ret i) (vl-echar->char (car x)))
                       (setq x (cdr x)))
                 ret))))))
   (defttag nil))
 
 
-
-
-(defsection vl-change-echarlist-locations
+(define vl-change-echarlist-locations ((x vl-echarlist-p)
+                                       (loc vl-location-p))
+  :returns (ans vl-echarlist-p :hyp :fguard)
   :parents (extended-characters)
   :short "Override the locations of characters."
   :long "<p>@(call vl-change-echarlist-locations) is given a list of extended
@@ -226,58 +198,25 @@ character in @('x') to @('loc').</p>
 <p>This funny operation is used in the preprocessor to make @('`define')
 handling more sensible.</p>"
 
-  (defund vl-change-echarlist-locations (x loc)
-    (declare (xargs :guard (and (vl-echarlist-p x)
-                                (vl-location-p loc))))
-    (if (consp x)
-        (cons (change-vl-echar (car x) :loc loc)
-              (vl-change-echarlist-locations (cdr x) loc))
-      nil))
-
-  (local (in-theory (enable vl-change-echarlist-locations)))
-
-  (defthm vl-echarlist-p-of-vl-change-echarlist-locations
-    (implies (and (force (vl-echarlist-p x))
-                  (force (vl-location-p loc)))
-             (vl-echarlist-p (vl-change-echarlist-locations x loc)))))
+  (if (consp x)
+      (cons (change-vl-echar (car x) :loc loc)
+            (vl-change-echarlist-locations (cdr x) loc))
+    nil))
 
 
+(define vl-echarlist-from-chars-aux ((x character-listp)
+                                     (filename stringp)
+                                     (line posp)
+                                     (col natp)
+                                     (acc vl-echarlist-p))
+  :parents (vl-echarlist-from-chars)
 
-
-(defsection vl-echarlist-from-chars
-  :parents (extended-characters)
-  :short "Transform an ordinary character list into a @(see vl-echarlist-p)."
-
-  :long "<p>@('vl-echarlist-from-chars') transforms a character list into an
-extended character list.  It properly handles the incrementing of line and
-column numbers, but note that it assigns every character the same source
-type.</p>
-
-<p>We implement @('vl-echarlist-from-chars') as a macro wrapper for the
-function @(srclink vl-echarlist-from-chars-aux).</p>
-
-<p>@(call vl-echarlist-from-chars)</p>
-
-<ul> <li>@('x') is the list of characters to convert.</li> <li>@('filename')
-will be used as the filename for every character.</li> <li>@('line') is the
-starting line.</li> <li>@('col') is the starting column.</li> </ul>
-
-<p>Note that we actually optimize this function using @('nreverse') for better
-performance.</p>"
-
-  (defund vl-echarlist-from-chars-aux (x filename line col acc)
-    (declare (xargs :guard (and (character-listp x)
-                                (stringp filename)
-                                (posp line)
-                                (natp col)
-                                (vl-echarlist-p acc))))
-
-; At one point I considered a fixnum-optimized version of this function, to
-; avoid the arbitrary-precision calls of +.  In CCL, there was virtually no
-; performance difference between the two versions, and, furthermore, if you
-; have to call (length x) in the wrapper to determine if it's safe to use the
-; fixnum version, it ends up being slower on a medium-size example.  So, now I
-; am not bothering to do any kind of fixnum nonsense.
+  :long "<p>At one point I considered a fixnum-optimized version of this
+function, to avoid the arbitrary-precision calls of +.  In CCL, there was
+virtually no performance difference between the two versions, and, furthermore,
+if you have to call @('(length x)') in the wrapper to determine if it's safe to
+use the fixnum version, it ends up being slower on a medium-size example.  So,
+now I am not bothering to do any kind of fixnum nonsense.</p>"
 
   (if (consp x)
       (vl-echarlist-from-chars-aux
@@ -288,29 +227,43 @@ performance.</p>"
        (cons (make-vl-echar :char (car x)
                             :loc (vl-location filename line col))
              acc))
-    acc))
+    acc)
 
-  (local (in-theory (enable vl-echarlist-from-chars-aux)))
+  ///
 
   (defthm true-listp-of-vl-echarlist-from-chars-aux
     (equal (true-listp (vl-echarlist-from-chars-aux x filename line col acc))
-           (true-listp acc)))
+           (true-listp acc))))
 
-  (defund vl-echarlist-from-chars-fn (x filename line col)
-    (declare (xargs :guard (and (character-listp x)
-                                (stringp filename)
-                                (posp line)
-                                (natp col))
-                    :verify-guards nil))
-    (mbe :logic (if (atom x)
-                    nil
-                  (cons (make-vl-echar :char (car x)
-                                       :loc (vl-location filename line col))
-                        (vl-echarlist-from-chars-fn
-                         (cdr x) filename
-                         (if (eql (car x) #\Newline) (+ 1 line) line)
-                         (if (eql (car x) #\Newline) 0 (+ 1 col)))))
-         :exec (reverse (vl-echarlist-from-chars-aux x filename line col nil))))
+
+
+(define vl-echarlist-from-chars
+  ((x character-listp "The characters to convert")
+   &key
+   ((filename stringp  "Filename for every echar we build")
+    '"[internal character list]")
+   ((line posp "Starting line") '1)
+   ((col natp "Starting column") '0))
+  :returns (ans vl-echarlist-p :hyp :fguard)
+  :parents (extended-characters)
+  :short "Transform an ordinary character list into a @(see vl-echarlist-p)."
+  :long "<p>This properly handles the incrementing of line and column numbers.
+Note that we optimize this function using @('nreverse') for better
+performance.</p>"
+
+  (mbe :logic (if (atom x)
+                  nil
+                (cons (make-vl-echar :char (car x)
+                                     :loc (vl-location filename line col))
+                      (vl-echarlist-from-chars-fn
+                       (cdr x) filename
+                       (if (eql (car x) #\Newline) (+ 1 line) line)
+                       (if (eql (car x) #\Newline) 0 (+ 1 col)))))
+       :exec (reverse (vl-echarlist-from-chars-aux x filename line col nil)))
+
+  :verify-guards nil
+
+  ///
 
   (defttag vl-optimize)
   (progn!
@@ -324,18 +277,11 @@ performance.</p>"
     (true-listp (vl-echarlist-from-chars-fn x filename line col))
     :rule-classes :type-prescription)
 
-  (local (in-theory (enable vl-echarlist-from-chars-fn)))
-
   (defthm vl-echarlist->chars-of-vl-echarlist-from-chars-fn
     (equal (vl-echarlist->chars (vl-echarlist-from-chars-fn x filename line col))
            (list-fix x)))
 
-  (defthm vl-echarlist-p-of-vl-echarlist-from-chars-fn
-    (implies (and (force (character-listp x))
-                  (force (stringp filename))
-                  (force (posp line))
-                  (force (natp col)))
-             (vl-echarlist-p (vl-echarlist-from-chars-fn x filename line col))))
+  (local (in-theory (enable vl-echarlist-from-chars-aux)))
 
   (defthm vl-echarlist-from-chars-aux-removal
     (implies (force (true-listp acc))
@@ -343,15 +289,8 @@ performance.</p>"
                     (revappend (vl-echarlist-from-chars-fn x filename line col)
                                acc))))
 
-  (verify-guards vl-echarlist-from-chars-fn)
+  (verify-guards vl-echarlist-from-chars-fn))
 
-  (defmacro vl-echarlist-from-chars (x &key
-                                       (filename '"[internal character list]")
-                                       (line '1)
-                                       (col '0))
-    `(vl-echarlist-from-chars-fn ,x ,filename ,line ,col))
-
-  (add-macro-alias vl-echarlist-from-chars vl-echarlist-from-chars-fn))
 
 
 
@@ -483,26 +422,25 @@ Also note that we actually use @('nreverse') here.</p>"
 
 
 
-(defsection vl-echar-digit-value
+(define vl-echar-digit-value ((x vl-echar-p)
+                              (radix (and (integerp radix)
+                                          (<= 2 radix)
+                                          (<= radix 36))))
   :parents (extended-characters)
   :short "@(call vl-echar-digit-value) interprets the extended character @('x')
 as a base-@('radix') digit, or returns @('nil') if @('x') is not a valid digit
 in this base."
 
-  (defund vl-echar-digit-value (x radix)
-    (declare (xargs :guard (and (vl-echar-p x)
-                                (integerp radix)
-                                (<= 2 radix)
-                                (<= radix 36))))
-    (digit-char-p (vl-echar->char x) radix))
+  (digit-char-p (vl-echar->char x) radix)
 
-  (local (in-theory (enable vl-echar-digit-value)))
+  ///
 
   (defthm natp-of-vl-echar-digit-value
-    (implies (vl-echar-digit-value x radix)
-             (and (natp (vl-echar-digit-value x radix))
-                  (integerp (vl-echar-digit-value x radix))
-                  (<= 0 (vl-echar-digit-value x radix))))
+    (let ((ret (vl-echar-digit-value x radix)))
+      (implies ret
+               (and (natp ret)
+                    (integerp ret)
+                    (<= 0 ret))))
     :rule-classes ((:rewrite)
                    (:type-prescription
                     :corollary (or (not (vl-echar-digit-value x radix))
@@ -511,72 +449,71 @@ in this base."
 
 
 
-(defsection vl-echarlist-unsigned-value
+(define vl-echarlist-unsigned-value-aux ((x vl-echarlist-p)
+                                         (radix (and (integerp radix)
+                                                     (<= 2 radix)
+                                                     (<= radix 36)))
+                                         (n (equal n (len x))))
+  :parents (vl-echarlist-unsigned-value)
+
+  (b* (((when (atom x))
+        0)
+       (car-digit (vl-echar-digit-value (car x) radix))
+       ((unless car-digit)
+        nil)
+       (cdr-value (vl-echarlist-unsigned-value-aux (cdr x) radix (1- n)))
+       ((unless cdr-value)
+        nil))
+    (+ (* (expt radix (1- n)) car-digit)
+       cdr-value)))
+
+(define vl-echarlist-unsigned-value ((x vl-echarlist-p)
+                                     (radix (and (integerp radix)
+                                                 (<= 2 radix)
+                                                 (<= radix 36))))
   :parents (extended-characters)
   :short "@(call vl-echarlist-unsigned-value) interprets the extended character
 list @('x') as a base-@('radix') number, or returns @('nil') if @('x') is
 invalid."
 
-  (defund vl-echarlist-unsigned-value-aux (x radix n)
-    (declare (xargs :guard (and (vl-echarlist-p x)
-                                (integerp radix)
-                                (<= 2 radix)
-                                (<= radix 36)
-                                (equal n (len x)))))
-    (if (consp x)
-        (let ((car-digit (vl-echar-digit-value (car x) radix)))
-          (if (not car-digit)
-              nil
-            (let ((cdr-value (vl-echarlist-unsigned-value-aux (cdr x) radix (1- n))))
-              (if (not cdr-value)
-                  nil
-                (+ (* (expt radix (1- n)) car-digit)
-                   cdr-value)))))
-      0))
+  :long "<p>We see if X is made up entirely of base RADIX digits.  If so, we
+return the number represented by X, treating the digits as if they are written
+with the most significant digit first.  For instance, an echarlist whose string
+is \"987\" has, in base 10, an unsigned-value of 987.  Otherwise, if there are
+any invalid digits, we return NIL.</p>"
 
-  (defund vl-echarlist-unsigned-value (x radix)
-    ;; We see if X is made up entirely of base RADIX digits.  If so, we return
-    ;; the number represented by X, treating the digits as if they are written
-    ;; with the most significant digit first.  For instance, an echarlist whose
-    ;; string is "987" has, in base 10, an unsigned-value of 987.  Otherwise,
-    ;; if there are any invalid digits, we return NIL.
-    (declare (xargs :guard (and (vl-echarlist-p x)
-                                (integerp radix)
-                                (<= 2 radix)
-                                (<= radix 36))))
-    (if (not (consp x))
-        nil
-      (vl-echarlist-unsigned-value-aux x (nfix radix) (len x))))
+  (if (not (consp x))
+      nil
+    (vl-echarlist-unsigned-value-aux x (lnfix radix) (len x)))
 
-  (local (in-theory (enable vl-echarlist-unsigned-value)))
+  ///
 
-  (encapsulate
-    ()
-    (local (defthm natp-expt
-             (implies (and (natp a)
-                           (natp b))
-                      (natp (expt a b)))
-             :rule-classes :type-prescription))
+  (local (defthm natp-expt
+           (implies (and (natp a)
+                         (natp b))
+                    (natp (expt a b)))
+           :rule-classes :type-prescription))
 
-    (local (defthm lemma
-             (implies (and (integerp radix)
-                           (<= 0 radix)
-                           (equal n (len x))
-                           (vl-echarlist-unsigned-value-aux x radix n))
-                      (natp (vl-echarlist-unsigned-value-aux x radix n)))
-             :hints(("Goal" :in-theory (e/d (vl-echarlist-unsigned-value-aux)
-                                            (expt))))))
+  (local (defthm lemma
+           (implies (and (integerp radix)
+                         (<= 0 radix)
+                         (equal n (len x))
+                         (vl-echarlist-unsigned-value-aux x radix n))
+                    (natp (vl-echarlist-unsigned-value-aux x radix n)))
+           :hints(("Goal" :in-theory (e/d (vl-echarlist-unsigned-value-aux)
+                                          (expt))))))
 
-    (defthm natp-of-vl-echarlist-unsigned-value-aux
-      (implies (vl-echarlist-unsigned-value x radix)
-               (and (natp (vl-echarlist-unsigned-value x radix))
-                    (integerp (vl-echarlist-unsigned-value x radix))
-                    (<= 0 (vl-echarlist-unsigned-value x radix))))
-      :rule-classes ((:rewrite)
-                     (:type-prescription
-                      :corollary (or (not (vl-echarlist-unsigned-value x radix))
-                                     (and (integerp (vl-echarlist-unsigned-value x radix))
-                                          (<= 0 (vl-echarlist-unsigned-value x radix))))))))
+  (defthm natp-of-vl-echarlist-unsigned-value-aux
+    (implies (vl-echarlist-unsigned-value x radix)
+             (and (natp (vl-echarlist-unsigned-value x radix))
+                  (integerp (vl-echarlist-unsigned-value x radix))
+                  (<= 0 (vl-echarlist-unsigned-value x radix))))
+    :rule-classes
+    ((:rewrite)
+     (:type-prescription
+      :corollary (or (not (vl-echarlist-unsigned-value x radix))
+                     (and (integerp (vl-echarlist-unsigned-value x radix))
+                          (<= 0 (vl-echarlist-unsigned-value x radix)))))))
 
   (defthm vl-echarlist-unsigned-value-when-not-consp
     (implies (not (consp x))
@@ -588,33 +525,32 @@ invalid."
         (natp (vl-echarlist-unsigned-value x radix)))
     :rule-classes :type-prescription)
 
-  ;; Some unit tests to make sure the damn thing works right.
-  (assert! (not (vl-echarlist-unsigned-value (vl-echarlist-from-str "") 10)))
-  (assert! (not (vl-echarlist-unsigned-value (vl-echarlist-from-str "Hello") 10)))
+  (local
+   (progn
+     ;; Some unit tests to make sure the damn thing works right.
+     (assert! (not (vl-echarlist-unsigned-value (vl-echarlist-from-str "") 10)))
+     (assert! (not (vl-echarlist-unsigned-value (vl-echarlist-from-str "Hello") 10)))
 
-  (assert! (equal 0 (vl-echarlist-unsigned-value (vl-echarlist-from-str "0") 10)))
-  (assert! (equal 0 (vl-echarlist-unsigned-value (vl-echarlist-from-str "0") 13)))
-  (assert! (equal 0 (vl-echarlist-unsigned-value (vl-echarlist-from-str "000") 2)))
-  (assert! (equal 0 (vl-echarlist-unsigned-value (vl-echarlist-from-str "00000") 16)))
+     (assert! (equal 0 (vl-echarlist-unsigned-value (vl-echarlist-from-str "0") 10)))
+     (assert! (equal 0 (vl-echarlist-unsigned-value (vl-echarlist-from-str "0") 13)))
+     (assert! (equal 0 (vl-echarlist-unsigned-value (vl-echarlist-from-str "000") 2)))
+     (assert! (equal 0 (vl-echarlist-unsigned-value (vl-echarlist-from-str "00000") 16)))
 
-  (assert! (equal 12345 (vl-echarlist-unsigned-value (vl-echarlist-from-str "12345") 10)))
-  (assert! (equal #o12345 (vl-echarlist-unsigned-value (vl-echarlist-from-str "12345") 8)))
-  (assert! (equal #x12345 (vl-echarlist-unsigned-value (vl-echarlist-from-str "12345") 16)))
+     (assert! (equal 12345 (vl-echarlist-unsigned-value (vl-echarlist-from-str "12345") 10)))
+     (assert! (equal #o12345 (vl-echarlist-unsigned-value (vl-echarlist-from-str "12345") 8)))
+     (assert! (equal #x12345 (vl-echarlist-unsigned-value (vl-echarlist-from-str "12345") 16)))
 
-  (assert! (equal #b010101 (vl-echarlist-unsigned-value (vl-echarlist-from-str "010101") 2)))
-  (assert! (equal #o010101 (vl-echarlist-unsigned-value (vl-echarlist-from-str "010101") 8)))
-  (assert! (equal 010101 (vl-echarlist-unsigned-value (vl-echarlist-from-str "010101") 10)))
-  (assert! (equal #x010101 (vl-echarlist-unsigned-value (vl-echarlist-from-str "010101") 16))))
-
-
+     (assert! (equal #b010101 (vl-echarlist-unsigned-value (vl-echarlist-from-str "010101") 2)))
+     (assert! (equal #o010101 (vl-echarlist-unsigned-value (vl-echarlist-from-str "010101") 8)))
+     (assert! (equal 010101 (vl-echarlist-unsigned-value (vl-echarlist-from-str "010101") 10)))
+     (assert! (equal #x010101 (vl-echarlist-unsigned-value (vl-echarlist-from-str "010101") 16)))
 
 
+     ;; Dumb unit checks to make sure vl-echarlist->string seems to be working
+     ;; right.
 
-;; Dumb unit checks to make sure vl-echarlist->string seems to be working
-;; right.
-
-(assert! (equal (vl-echarlist->string (vl-echarlist-from-str "")) ""))
-(assert! (equal (vl-echarlist->string (vl-echarlist-from-str "foo")) "foo"))
+     (assert! (equal (vl-echarlist->string (vl-echarlist-from-str "")) ""))
+     (assert! (equal (vl-echarlist->string (vl-echarlist-from-str "foo")) "foo")))))
 
 
 #||

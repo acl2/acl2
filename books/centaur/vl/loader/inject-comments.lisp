@@ -386,13 +386,11 @@ and max, gathering their comments.</p>"
   (vl-inject-comments-module x fal)
   :guard (and (vl-modulelist-p x)
               (vl-commentmap-falp fal))
-  :result-type vl-modulelist-p)
-
-(defthm vl-modulelist->names-of-vl-inject-comments-modulelist-aux
-  (equal (vl-modulelist->names (vl-inject-comments-modulelist-aux x comment-map))
-         (vl-modulelist->names x))
-  :hints(("Goal" :in-theory (enable vl-inject-comments-modulelist-aux))))
-
+  :result-type vl-modulelist-p
+  :rest
+  ((defthm vl-modulelist->names-of-vl-inject-comments-modulelist-aux
+     (equal (vl-modulelist->names (vl-inject-comments-modulelist-aux x comment-map))
+            (vl-modulelist->names x)))))
 
 
 (defund vl-inject-comments-modulelist (x comment-map)

@@ -19,7 +19,7 @@
 ; Original author: Jared Davis <jared@centtech.com>
 
 (in-package "VL")
-(include-book "../parsetree")
+(include-book "expr-tools")
 (local (include-book "../util/arithmetic"))
 
 
@@ -33,7 +33,6 @@
   :hints(("Goal" :in-theory (enable vl-stmt-p))))
 
 
-
 (defthm vl-atomicstmt-p-of-vl-compoundstmt
   (not (vl-atomicstmt-p (vl-compoundstmt type exprs stmts name decls
                                          ctrl sequentialp casetype atts)))
@@ -42,102 +41,116 @@
           :use ((:instance tag-of-vl-compoundstmt)))))
 
 
+(defsection vl-compoundstmt-basic-checksp-of-change-vl-compoundstmt
+  :parents (vl-compoundstmt-p
+            vl-compoundstmt-basic-checksp)
 
-(defthm vl-compoundstmt-basic-checksp-of-change-vl-compoundstmt
+  :short "An important theorem for proving that altered statements still
+satisfy @(see vl-compoundstmt-basic-checksp)."
 
-; This is a very funny theorem that requires some explanation.  Despite its
-; complicated look, it is actually pretty cool.
-;
-; The "basic checks" on compound statements are quite complicated and
-; elaborate.  But many transformations, such as substituting into statements,
-; deciding signs and widths, and so on, don't need to do anything except change
-; all of the expressions throughout a statement.  Such a transformation only
-; wants to recursively go into the expressions, sub-statements, declarations,
-; etc., modify them, and throw them back together.
-;
-; Ultimately, such a transform ends up writing something like this:
-;
-;    (change-vl-compoundstmt x
-;                            :exprs new-exprs
-;                            :stmts new-stmts
-;                            ...)
-;
-; And now we have a problem.  How do we know that this change produces a valid
-; compound statement?  Well, the change macro expands to something like:
-;
-;    (vl-compoundstmt (vl-compoundstmt->type x)
-;                     new-exprs
-;                     new-stmts
-;                     ...)
-;
-; And, to show that such a thing is a vl-compoundstmt-p, we have the theorem
-;
-; (defthm vl-compoundstmt-p-of-vl-compoundstmt
-;   (implies (force (and (vl-compoundstmt-type-p type)
-;                        (vl-exprlist-p exprs)
-;                        ...
-;                        (vl-compoundstmt-basic-checksp
-;                         type exprs stmts name decls ctrl)))
-;            (vl-compoundstmt-p
-;             (vl-compoundstmt type exprs stmts name decls ctrl atts))))
-;
-; It's generally straightforward to show all of this except for
-; (vl-compoundstmt-basic-checksp type exprs stmts name decls ctrl).  And that's
-; where this funny theorem comes in.
-;
-; Although the basic checks are rather elaborate, they only really care about
-;
-;   (1) whether there is a name and a control,
-;   (2) how many statements and expressions there are,
-;   (3) whether the declarations are empty or not
-;
-; As long as a transform maintains these things, this theorem will allow us to
-; show that the basic checks are satisfied after the transform is carried out,
-; so that we do not have to think about the specifics of the basic checks any
-; more deeply than this.
-;
-; The forcing in this rule is perhaps overly aggressive, but we think it is
-; usually the rule you want unless you are doing something very sophisticated
-; anyway, in which case you should just turn off this rule and do what you want.
+  :autodoc nil
 
-  (implies (and (force (vl-compoundstmt-p x))
-                (force (iff (double-rewrite new-name)  (vl-compoundstmt->name x)))
-                (force (iff (double-rewrite new-ctrl)  (vl-compoundstmt->ctrl x)))
-                (force (equal new-sequentialp          (vl-compoundstmt->sequentialp x)))
-                (force (equal new-casetype             (vl-compoundstmt->casetype x)))
-                (force (equal (consp new-decls) (consp (vl-compoundstmt->decls x))))
-                (force (equal (len (double-rewrite new-stmts)) (len (vl-compoundstmt->stmts x))))
-                (force (equal (len (double-rewrite new-exprs)) (len (vl-compoundstmt->exprs x))))
-                )
-           (vl-compoundstmt-basic-checksp
+  :long "<p>This weird theorem requires some explanation.  It looks quite
+complicated, but is actually pretty cool.  First off, here is the theorem:</p>
 
-; Using (vl-compoundstmt->type x) here, instead of "new-type" or something, is
-; neat for two reasons.
-;
-; First, when we match the target term, we get a binding for x instead of
-; having to deal with a free variable or something.  Furthermore, since we're
-; running (vl-compoundstmt->type x), it should be the case that x really is a
-; compound statement.
-;
-; Second, if the user is doing something sophisticated for particular types,
-; this rule probably won't match.  That's good!  The rule is probably too
-; aggressive for such cases.  On the other hand, when the user really is using
-; (change-vl-compoundstmt x ...) and doesn't change the type, then this rule
-; will match, and this is the case that we think the rule should be used in.
+@(thm vl-compoundstmt-basic-checksp-of-change-vl-compoundstmt)
 
-            (vl-compoundstmt->type x)
+<p>What is this for?  The \"basic checks\" on compound statements are quite
+complicated and elaborate; see @(see vl-compoundstmt-basic-checksp).  qBut many
+transformations, such as substituting into statements, deciding signs and
+widths, and so on, don't need to do anything except change all of the
+expressions throughout a statement.  Such a transformation only wants to
+recursively go into the expressions, sub-statements, declarations, etc., modify
+them, and throw them back together.</p>
 
-; For the other slots, we match anything.  Note that these new-foo variables
-; aren't free: these are the new values that are being put into the new
-; compound-stmt begin formed.
+<p>Ultimately, such a transform ends up writing something like this:</p>
 
-            new-exprs new-stmts new-name new-decls new-ctrl new-sequentialp new-casetype))
-  :hints(("Goal"
-          :use ((:instance vl-compoundstmt-basic-checksp-of-vl-compoundstmt))
-          :in-theory (e/d (vl-compoundstmt-basic-checksp)
-                          (vl-compoundstmt-basic-checksp-of-vl-compoundstmt)))))
+@({
+ (change-vl-compoundstmt x
+                         :exprs new-exprs
+                         :stmts new-stmts
+                         ...)
+})
 
+<p>The problem is: how can we show this produces a valid compound statement?
+Well, the change macro expands to something like:</p>
 
+@({
+ (vl-compoundstmt (vl-compoundstmt->type x)
+                  new-exprs
+                  new-stmts
+                  ...)
+})
+
+<p>To show that this thing is a vl-compoundstmt-p, we need to appeal to the
+following theorem:</p>
+
+@(thm vl-compoundstmt-p-of-vl-compoundstmt)
+
+<p>It's generally straightforward to establish all of these hyps except for</p>
+
+@({
+ (vl-compoundstmt-basic-checksp type exprs stmts name decls ctrl)
+})
+
+<p>This is where our funny theorem comes in.  Although the basic checks are
+rather elaborate, they only really care about</p>
+
+<ul>
+<li>whether there is a name and a control,</li>
+<li>how many statements and expressions there are,</li>
+<li>whether the declarations are empty or not</li>
+</ul>
+
+<p>As long as a transform maintains these things, our funny theorem will allow
+us to show that the basic checks are satisfied after the transform is carried
+out, so that we do not have to think about the specifics of the basic checks
+any more deeply than this.  Here once again is the theorem:</p>
+
+@(thm vl-compoundstmt-basic-checksp-of-change-vl-compoundstmt)
+
+<p>The forcing here is perhaps overly aggressive, but we think it is usually
+the rule you want unless you are doing something very sophisticated anyway, in
+which case you should just turn off this rule and do what you want.</p>
+
+<p>Using @('(vl-compoundstmt->type x)') here in the left-hand side, instead
+of @('new-type') or something, is neat for two reasons.</p>
+
+<p>First, when we match the target term, we get a binding for @('x') instead of
+having to deal with a free variable or something.  Furthermore, since we're
+running @('(vl-compoundstmt->type x)'), it should be the case that @('x')
+really is a compound statement, reducing the chance of inappropriate
+forcing.</p>
+
+<p>Second, if the user is doing something sophisticated for particular types,
+this rule probably won't match.  But that's <b>good</b>!  The rule is probably
+too aggressive for such cases.  On the other hand, when the user really is
+using @('(change-vl-compoundstmt x ...)') and doesn't change the type, then
+this rule will match, and that's probably when the rule is appropriate.</p>
+
+<p>For the other slots, we match anything.  Note that these new-foo variables
+are <b>not</b> free: these are the new values that are being put into the new
+compound-stmt begin formed.</p>"
+
+  (defthm vl-compoundstmt-basic-checksp-of-change-vl-compoundstmt
+    (implies
+     (and (force (vl-compoundstmt-p x))
+          (force (iff (double-rewrite new-name)  (vl-compoundstmt->name x)))
+          (force (iff (double-rewrite new-ctrl)  (vl-compoundstmt->ctrl x)))
+          (force (equal new-sequentialp          (vl-compoundstmt->sequentialp x)))
+          (force (equal new-casetype             (vl-compoundstmt->casetype x)))
+          (force (equal (consp new-decls) (consp (vl-compoundstmt->decls x))))
+          (force (equal (len (double-rewrite new-stmts))
+                        (len (vl-compoundstmt->stmts x))))
+          (force (equal (len (double-rewrite new-exprs))
+                        (len (vl-compoundstmt->exprs x)))))
+     (vl-compoundstmt-basic-checksp (vl-compoundstmt->type x)
+                                    new-exprs new-stmts new-name new-decls
+                                    new-ctrl new-sequentialp new-casetype))
+    :hints(("Goal"
+            :use ((:instance vl-compoundstmt-basic-checksp-of-vl-compoundstmt))
+            :in-theory (e/d (vl-compoundstmt-basic-checksp)
+                            (vl-compoundstmt-basic-checksp-of-vl-compoundstmt))))))
 
 
 ; Ugh, the relationship between len and consp is really a pain in the ass.
@@ -158,10 +171,19 @@
             (equal (len (cdr x))
                    (1- (len x))))))
 
+(local (defthm consp-when-vl-expr-p-rw
+         ;; Could be too expensive in general
+         (implies (vl-expr-p x)
+                  (consp x))))
+
+(local (defthm consp-when-vl-stmt-p-rw
+         ;; Could be too expensive in general
+         (implies (vl-stmt-p x)
+                  (consp x))))
+
 (local
  ;; BOZO do we want this thing?  What do we want our normal form to be?
  (in-theory (disable vl-compoundstmt-p-when-not-vl-atomicstmt-p)))
-
 
 
 
@@ -186,6 +208,23 @@
 ; nicer interface that should be a lot less error-prone.
 
 
+(defmacro vl-emulate-defaggregate-stuff (name fields)
+  ;; Introduces defaggregate-like functions for statement stuff, e.g., for
+  ;; if statements this gives us
+  ;;  - (make-vl-ifstmt ...)
+  ;;  - (change-vl-ifstmt ...)
+  ;;  - a b* (vl-ifstmt x) binder
+  ;; I don't bother with make-honsed-vl-ifstmt, but we could add that easily
+  ;; enough, if desired...
+  `(progn
+     ,(cutil::da-make-maker-fn name fields)
+     ,(cutil::da-make-maker name fields)
+     ,(cutil::da-make-changer-fn name fields)
+     ,(cutil::da-make-changer name fields)
+     ,(cutil::da-make-binder name fields)))
+
+
+
 (defsection if-statements
   :parents (vl-stmt-p)
   :short "Utilities for manipulating @('if') statements."
@@ -203,11 +242,16 @@ else
    <falsebranch>
 })"
 
+  (definline vl-ifstmt-p (x)
+    ;; Note: we leave this enabled and allow compoundstmt->type to open up.
+    (declare (xargs :guard (vl-stmt-p x)))
+    (and (vl-fast-compoundstmt-p x)
+         (eq (vl-compoundstmt->type x) :vl-ifstmt)))
+
   (defthmd vl-compoundstmt-parts-when-vl-ifstmt
     ;; Just the natural consequence of basic-checks for if statements.
     ;; Note that we ordinarily leave this disabled.
-    (implies (and (equal (vl-compoundstmt->type x) :vl-ifstmt)
-                  (force (vl-compoundstmt-p x)))
+    (implies (vl-ifstmt-p x)
              (and (not (vl-compoundstmt->name x))
                   (not (vl-compoundstmt->ctrl x))
                   (not (vl-compoundstmt->sequentialp x))
@@ -233,28 +277,30 @@ else
                           :stmts (list truebranch falsebranch)
                           :atts atts))
 
-  (make-event
-   ;; Introduce make-vl-ifstmt macro with keywords like for regular defaggregates.
-   `(progn ,(cutil::da-make-maker-fn 'vl-ifstmt '(condition truebranch falsebranch atts))
-           ,(cutil::da-make-maker 'vl-ifstmt '(condition truebranch falsebranch atts))))
+  (vl-emulate-defaggregate-stuff vl-ifstmt
+                                 (condition truebranch falsebranch atts))
 
   (definlined vl-ifstmt->condition (x)
     (declare (xargs :guard (and (vl-stmt-p x)
-                                (vl-compoundstmt-p x)
-                                (eq (vl-compoundstmt->type x) :vl-ifstmt))))
+                                (vl-ifstmt-p x))))
     (car (vl-compoundstmt->exprs x)))
 
   (definlined vl-ifstmt->truebranch (x)
     (declare (xargs :guard (and (vl-stmt-p x)
-                                (vl-compoundstmt-p x)
-                                (eq (vl-compoundstmt->type x) :vl-ifstmt))))
+                                (vl-ifstmt-p x))))
     (first (vl-compoundstmt->stmts x)))
 
   (definlined vl-ifstmt->falsebranch (x)
     (declare (xargs :guard (and (vl-stmt-p x)
-                                (vl-compoundstmt-p x)
-                                (eq (vl-compoundstmt->type x) :vl-ifstmt))))
+                                (vl-ifstmt-p x))))
     (second (vl-compoundstmt->stmts x)))
+
+  (definline vl-ifstmt->atts (x)
+    ;; Note: we leave this enabled and just reason about vl-compoundstmt->atts.
+    ;; Don't remove this function; it's needed for things like the b* binder.
+    (declare (xargs :guard (and (vl-stmt-p x)
+                                (vl-ifstmt-p x))))
+    (vl-compoundstmt->atts x))
 
   (local (in-theory (enable vl-ifstmt
                             vl-ifstmt->condition
@@ -280,21 +326,35 @@ else
                                         :atts atts))))
 
   (defthm vl-expr-p-of-vl-ifstmt->condition
-    (implies (and (force (vl-compoundstmt-p x))
-                  (force (eq (vl-compoundstmt->type x) :vl-ifstmt)))
+    (implies (force (vl-ifstmt-p x))
              (vl-expr-p (vl-ifstmt->condition x))))
 
   (defthm vl-stmt-p-of-vl-ifstmt->truebranch
-    (implies (and (force (vl-stmt-p x))
-                  (force (vl-compoundstmt-p x))
-                  (force (eq (vl-compoundstmt->type x) :vl-ifstmt)))
+    (implies (and (force (vl-ifstmt-p x))
+                  (force (vl-stmt-p x)))
              (vl-stmt-p (vl-ifstmt->truebranch x))))
 
   (defthm vl-stmt-p-of-vl-ifstmt->falsebranch
-    (implies (and (force (vl-stmt-p x))
-                  (force (vl-compoundstmt-p x))
-                  (force (eq (vl-compoundstmt->type x) :vl-ifstmt)))
+    (implies (and (force (vl-ifstmt-p x))
+                  (force (vl-stmt-p x)))
              (vl-stmt-p (vl-ifstmt->falsebranch x))))
+
+  (defthm type-of-vl-ifstmt->condition
+    (implies (force (vl-ifstmt-p x))
+             (consp (vl-ifstmt->condition x)))
+    :rule-classes :type-prescription)
+
+  (defthm type-of-vl-ifstmt->truebranch
+    (implies (and (force (vl-ifstmt-p x))
+                  (force (vl-stmt-p x)))
+             (consp (vl-ifstmt->truebranch x)))
+    :rule-classes :type-prescription)
+
+  (defthm type-of-vl-ifstmt->falsebranch
+    (implies (and (force (vl-ifstmt-p x))
+                  (force (vl-stmt-p x)))
+             (consp (vl-ifstmt->falsebranch x)))
+    :rule-classes :type-prescription)
 
   (defthm vl-ifstmt->condition-of-vl-ifstmt
     (equal (vl-ifstmt->condition (make-vl-ifstmt :condition condition
@@ -354,6 +414,51 @@ else
     :rule-classes ((:rewrite) (:linear))))
 
 
+(local
+ (defsection basic-vl-emulate-defaggregate-test
+
+   (defconst *e1* (make-vl-atom
+                   :guts (make-vl-constint :value 1
+                                           :origtype :vl-unsigned
+                                           :origwidth 5)))
+
+   (defconst *e2* (make-vl-atom
+                   :guts (make-vl-constint :value 2
+                                           :origtype :vl-unsigned
+                                           :origwidth 5)))
+
+   (defconst *s1* (make-vl-assignstmt :type :vl-blocking
+                                      :lvalue *e1*
+                                      :expr *e2*
+                                      :loc *vl-fakeloc*))
+
+   (defconst *s2* (make-vl-nullstmt))
+
+   (defconst *atts* '(("FOO")))
+
+   (assert!
+    (b* ((s (make-vl-ifstmt :condition *e1*
+                            :truebranch *s1*
+                            :falsebranch *s2*
+                            :atts '(("FOO")))))
+      (and (vl-stmt-p s)
+           (vl-compoundstmt-p s)
+           (vl-ifstmt-p s)
+           (equal (vl-compoundstmt->type s) :vl-ifstmt)
+           (equal (vl-ifstmt->truebranch s) *s1*)
+           (equal (vl-ifstmt->falsebranch s) *s2*)
+           (equal (vl-ifstmt->condition s) *e1*)
+           (b* ((r (change-vl-ifstmt s :truebranch *s2*))
+                ((vl-ifstmt r) r)
+                ((vl-ifstmt s) s))
+             (and (vl-ifstmt-p r)
+                  (vl-ifstmt-p s)
+                  (equal r.condition s.condition)
+                  (equal r.falsebranch s.falsebranch)
+                  (equal r.atts s.atts)
+                  (equal r.truebranch *s2*)
+                  (equal r.atts *atts*)
+                  (equal s.atts *atts*))))))))
 
 
 (defsection while-statements
@@ -376,11 +481,16 @@ C; <i>body</i> is executed until <i>condition</i> becomes false.  If
 <i>condition</i> is false to begin with, then <i>body</i> is not executed at
 all.</p>"
 
+  (definline vl-whilestmt-p (x)
+    ;; Note: we leave this enabled and allow compoundstmt->type to open up.
+    (declare (xargs :guard (vl-stmt-p x)))
+    (and (vl-fast-compoundstmt-p x)
+         (eq (vl-compoundstmt->type x) :vl-whilestmt)))
+
   (defthmd vl-compoundstmt-parts-when-vl-whilestmt
     ;; Just the natural consequence of basic-checks for if statements.
     ;; Note that we ordinarily leave this disabled.
-    (implies (and (equal (vl-compoundstmt->type x) :vl-whilestmt)
-                  (force (vl-compoundstmt-p x)))
+    (implies (vl-whilestmt-p x)
              (and (not (vl-compoundstmt->name x))
                   (not (vl-compoundstmt->ctrl x))
                   (not (vl-compoundstmt->sequentialp x))
@@ -396,31 +506,34 @@ all.</p>"
   (local (in-theory (enable vl-compoundstmt-parts-when-vl-whilestmt
                             vl-compoundstmt-basic-checksp)))
 
-  (defund vl-whilestmt (expr body atts)
-    (declare (xargs :guard (and (vl-expr-p expr)
+  (defund vl-whilestmt (condition body atts)
+    (declare (xargs :guard (and (vl-expr-p condition)
                                 (vl-stmt-p body)
                                 (vl-atts-p atts))))
     (make-vl-compoundstmt :type :vl-whilestmt
-                          :exprs (list expr)
+                          :exprs (list condition)
                           :stmts (list body)
                           :atts atts))
 
-  (make-event
-   ;; Introduce make-vl-whilestmt macro with keywords like for regular defaggregates.
-   `(progn ,(cutil::da-make-maker-fn 'vl-whilestmt '(condition body atts))
-           ,(cutil::da-make-maker 'vl-whilestmt '(condition body atts))))
+  (vl-emulate-defaggregate-stuff vl-whilestmt
+                                 (condition body atts))
 
   (definlined vl-whilestmt->condition (x)
     (declare (xargs :guard (and (vl-stmt-p x)
-                                (vl-compoundstmt-p x)
-                                (eq (vl-compoundstmt->type x) :vl-whilestmt))))
+                                (vl-whilestmt-p x))))
     (car (vl-compoundstmt->exprs x)))
 
   (definlined vl-whilestmt->body (x)
     (declare (xargs :guard (and (vl-stmt-p x)
-                                (vl-compoundstmt-p x)
-                                (eq (vl-compoundstmt->type x) :vl-whilestmt))))
+                                (vl-whilestmt-p x))))
     (car (vl-compoundstmt->stmts x)))
+
+  (definline vl-whilestmt->atts (x)
+    ;; Note: we leave this enabled and just reason about vl-compoundstmt->atts.
+    ;; Don't remove this function; it's needed for things like the b* binder.
+    (declare (xargs :guard (and (vl-stmt-p x)
+                                (vl-whilestmt-p x))))
+    (vl-compoundstmt->atts x))
 
   (local (in-theory (enable vl-whilestmt
                             vl-whilestmt->condition
@@ -442,16 +555,13 @@ all.</p>"
                                            :atts atts))))
 
   (defthm vl-expr-p-of-vl-whilestmt->condition
-    (implies (and (force (vl-compoundstmt-p x))
-                  (force (eq (vl-compoundstmt->type x) :vl-whilestmt)))
+    (implies (force (vl-whilestmt-p x))
              (vl-expr-p (vl-whilestmt->condition x))))
 
   (defthm vl-stmt-p-of-vl-whilestmt->body
-    (implies (and (force (vl-stmt-p x))
-                  (force (vl-compoundstmt-p x))
-                  (force (eq (vl-compoundstmt->type x) :vl-whilestmt)))
+    (implies (and (force (vl-whilestmt-p x))
+                  (force (vl-stmt-p x)))
              (vl-stmt-p (vl-whilestmt->body x))))
-
 
   (defthm vl-whilestmt->condition-of-vl-whilestmt
     (equal (vl-whilestmt->condition (make-vl-whilestmt :condition condition
@@ -490,7 +600,6 @@ all.</p>"
 
 
 
-
 (defsection repeat-statements
   :parents (vl-stmt-p)
   :short "Utilities for manipulating @('repeat') statements."
@@ -511,11 +620,16 @@ a natural number, and then <i>body</i> is executed that many times.  If the
 expression evaluates to @('X') or @('Z'), it is supposed to be treated as zero
 and the statement is not executed at all.  (What a crock!)</p>"
 
+  (definline vl-repeatstmt-p (x)
+    ;; Note: we leave this enabled and allow compoundstmt->type to open up.
+    (declare (xargs :guard (vl-stmt-p x)))
+    (and (vl-fast-compoundstmt-p x)
+         (eq (vl-compoundstmt->type x) :vl-repeatstmt)))
+
   (defthmd vl-compoundstmt-parts-when-vl-repeatstmt
     ;; Just the natural consequence of basic-checks for if statements.
     ;; Note that we ordinarily leave this disabled.
-    (implies (and (equal (vl-compoundstmt->type x) :vl-repeatstmt)
-                  (force (vl-compoundstmt-p x)))
+    (implies (vl-repeatstmt-p x)
              (and (not (vl-compoundstmt->name x))
                   (not (vl-compoundstmt->ctrl x))
                   (not (vl-compoundstmt->sequentialp x))
@@ -531,31 +645,34 @@ and the statement is not executed at all.  (What a crock!)</p>"
   (local (in-theory (enable vl-compoundstmt-parts-when-vl-repeatstmt
                             vl-compoundstmt-basic-checksp)))
 
-  (defund vl-repeatstmt (expr body atts)
-    (declare (xargs :guard (and (vl-expr-p expr)
+  (defund vl-repeatstmt (condition body atts)
+    (declare (xargs :guard (and (vl-expr-p condition)
                                 (vl-stmt-p body)
                                 (vl-atts-p atts))))
     (make-vl-compoundstmt :type :vl-repeatstmt
-                          :exprs (list expr)
+                          :exprs (list condition)
                           :stmts (list body)
                           :atts atts))
 
-  (make-event
-   ;; Introduce make-vl-repeatstmt macro with keywords like for regular defaggregates.
-   `(progn ,(cutil::da-make-maker-fn 'vl-repeatstmt '(condition body atts))
-           ,(cutil::da-make-maker 'vl-repeatstmt '(condition body atts))))
+  (vl-emulate-defaggregate-stuff vl-repeatstmt
+                                 (condition body atts))
 
   (definlined vl-repeatstmt->condition (x)
     (declare (xargs :guard (and (vl-stmt-p x)
-                                (vl-compoundstmt-p x)
-                                (eq (vl-compoundstmt->type x) :vl-repeatstmt))))
+                                (vl-repeatstmt-p x))))
     (car (vl-compoundstmt->exprs x)))
 
   (definlined vl-repeatstmt->body (x)
     (declare (xargs :guard (and (vl-stmt-p x)
-                                (vl-compoundstmt-p x)
-                                (eq (vl-compoundstmt->type x) :vl-repeatstmt))))
+                                (vl-repeatstmt-p x))))
     (car (vl-compoundstmt->stmts x)))
+
+  (definline vl-repeatstmt->atts (x)
+    ;; Note: we leave this enabled and just reason about vl-compoundstmt->atts.
+    ;; Don't remove this function; it's needed for things like the b* binder.
+    (declare (xargs :guard (and (vl-stmt-p x)
+                                (vl-repeatstmt-p x))))
+    (vl-compoundstmt->atts x))
 
   (local (in-theory (enable vl-repeatstmt
                             vl-repeatstmt->condition
@@ -577,16 +694,13 @@ and the statement is not executed at all.  (What a crock!)</p>"
                                             :atts atts))))
 
   (defthm vl-expr-p-of-vl-repeatstmt->condition
-    (implies (and (force (vl-compoundstmt-p x))
-                  (force (eq (vl-compoundstmt->type x) :vl-repeatstmt)))
+    (implies (force (vl-repeatstmt-p x))
              (vl-expr-p (vl-repeatstmt->condition x))))
 
   (defthm vl-stmt-p-of-vl-repeatstmt->body
-    (implies (and (force (vl-stmt-p x))
-                  (force (vl-compoundstmt-p x))
-                  (force (eq (vl-compoundstmt->type x) :vl-repeatstmt)))
+    (implies (and (force (vl-repeatstmt-p x))
+                  (force (vl-stmt-p x)))
              (vl-stmt-p (vl-repeatstmt->body x))))
-
 
   (defthm vl-repeatstmt->condition-of-vl-repeatstmt
     (equal (vl-repeatstmt->condition (make-vl-repeatstmt :condition condition
@@ -625,7 +739,6 @@ and the statement is not executed at all.  (What a crock!)</p>"
 
 
 
-
 (defsection wait-statements
   :parents (vl-stmt-p)
   :short "Utilities for manipulating @('wait') statements."
@@ -648,11 +761,16 @@ it resumes and <i>body</i> is executed.  There is no discussion of what happens
 when the <i>condition</i> is X or Z.  I would guess it is treated as 0 like in
 if statements, but who knows.</p>"
 
+  (definline vl-waitstmt-p (x)
+    ;; Note: we leave this enabled and allow compoundstmt->type to open up.
+    (declare (xargs :guard (vl-stmt-p x)))
+    (and (vl-fast-compoundstmt-p x)
+         (eq (vl-compoundstmt->type x) :vl-waitstmt)))
+
   (defthmd vl-compoundstmt-parts-when-vl-waitstmt
     ;; Just the natural consequence of basic-checks for if statements.
     ;; Note that we ordinarily leave this disabled.
-    (implies (and (equal (vl-compoundstmt->type x) :vl-waitstmt)
-                  (force (vl-compoundstmt-p x)))
+    (implies (vl-waitstmt-p x)
              (and (not (vl-compoundstmt->name x))
                   (not (vl-compoundstmt->ctrl x))
                   (not (vl-compoundstmt->sequentialp x))
@@ -668,31 +786,34 @@ if statements, but who knows.</p>"
   (local (in-theory (enable vl-compoundstmt-parts-when-vl-waitstmt
                             vl-compoundstmt-basic-checksp)))
 
-  (defund vl-waitstmt (expr body atts)
-    (declare (xargs :guard (and (vl-expr-p expr)
+  (defund vl-waitstmt (condition body atts)
+    (declare (xargs :guard (and (vl-expr-p condition)
                                 (vl-stmt-p body)
                                 (vl-atts-p atts))))
     (make-vl-compoundstmt :type :vl-waitstmt
-                          :exprs (list expr)
+                          :exprs (list condition)
                           :stmts (list body)
                           :atts atts))
 
-  (make-event
-   ;; Introduce make-vl-waitstmt macro with keywords like for regular defaggregates.
-   `(progn ,(cutil::da-make-maker-fn 'vl-waitstmt '(condition body atts))
-           ,(cutil::da-make-maker 'vl-waitstmt '(condition body atts))))
+  (vl-emulate-defaggregate-stuff vl-waitstmt
+                                 (condition body atts))
 
   (definlined vl-waitstmt->condition (x)
     (declare (xargs :guard (and (vl-stmt-p x)
-                                (vl-compoundstmt-p x)
-                                (eq (vl-compoundstmt->type x) :vl-waitstmt))))
+                                (vl-waitstmt-p x))))
     (car (vl-compoundstmt->exprs x)))
 
   (definlined vl-waitstmt->body (x)
     (declare (xargs :guard (and (vl-stmt-p x)
-                                (vl-compoundstmt-p x)
-                                (eq (vl-compoundstmt->type x) :vl-waitstmt))))
+                                (vl-waitstmt-p x))))
     (car (vl-compoundstmt->stmts x)))
+
+  (definline vl-waitstmt->atts (x)
+    ;; Note: we leave this enabled and just reason about vl-compoundstmt->atts.
+    ;; Don't remove this function; it's needed for things like the b* binder.
+    (declare (xargs :guard (and (vl-stmt-p x)
+                                (vl-waitstmt-p x))))
+    (vl-compoundstmt->atts x))
 
   (local (in-theory (enable vl-waitstmt
                             vl-waitstmt->condition
@@ -710,31 +831,28 @@ if statements, but who knows.</p>"
                   (force (vl-stmt-p body))
                   (force (vl-atts-p atts)))
              (vl-stmt-p (make-vl-waitstmt :condition condition
-                                           :body body
-                                           :atts atts))))
+                                          :body body
+                                          :atts atts))))
 
   (defthm vl-expr-p-of-vl-waitstmt->condition
-    (implies (and (force (vl-compoundstmt-p x))
-                  (force (eq (vl-compoundstmt->type x) :vl-waitstmt)))
+    (implies (force (vl-waitstmt-p x))
              (vl-expr-p (vl-waitstmt->condition x))))
 
   (defthm vl-stmt-p-of-vl-waitstmt->body
-    (implies (and (force (vl-stmt-p x))
-                  (force (vl-compoundstmt-p x))
-                  (force (eq (vl-compoundstmt->type x) :vl-waitstmt)))
+    (implies (and (force (vl-waitstmt-p x))
+                  (force (vl-stmt-p x)))
              (vl-stmt-p (vl-waitstmt->body x))))
-
 
   (defthm vl-waitstmt->condition-of-vl-waitstmt
     (equal (vl-waitstmt->condition (make-vl-waitstmt :condition condition
-                                                       :body body
-                                                       :atts atts))
+                                                     :body body
+                                                     :atts atts))
            condition))
 
   (defthm vl-waitstmt->body-of-vl-waitstmt
     (equal (vl-waitstmt->body (make-vl-waitstmt :condition condition
-                                                  :body body
-                                                  :atts atts))
+                                                :body body
+                                                :atts atts))
            body))
 
   (defthm vl-compoundstmt->type-of-vl-waitstmt
@@ -745,8 +863,8 @@ if statements, but who knows.</p>"
 
   (defthm vl-compoundstmt->atts-of-vl-waitstmt
     (equal (vl-compoundstmt->atts (make-vl-waitstmt :condition condition
-                                                     :body body
-                                                     :atts atts))
+                                                    :body body
+                                                    :atts atts))
            atts))
 
   (defthm acl2-count-of-vl-waitstmt->body-weak
@@ -779,11 +897,16 @@ forever <body>;
 <p>See Section 9.6 (page 130).  The forever statement continuously executes
 <i>body</i>.</p>"
 
+  (definline vl-foreverstmt-p (x)
+    ;; Note: we leave this enabled and allow compoundstmt->type to open up.
+    (declare (xargs :guard (vl-stmt-p x)))
+    (and (vl-fast-compoundstmt-p x)
+         (eq (vl-compoundstmt->type x) :vl-foreverstmt)))
+
   (defthmd vl-compoundstmt-parts-when-vl-foreverstmt
     ;; Just the natural consequence of basic-checks for if statements.
     ;; Note that we ordinarily leave this disabled.
-    (implies (and (equal (vl-compoundstmt->type x) :vl-foreverstmt)
-                  (force (vl-compoundstmt-p x)))
+    (implies (vl-foreverstmt-p x)
              (and (not (vl-compoundstmt->name x))
                   (not (vl-compoundstmt->ctrl x))
                   (not (vl-compoundstmt->sequentialp x))
@@ -806,16 +929,20 @@ forever <body>;
                           :stmts (list body)
                           :atts atts))
 
-  (make-event
-   ;; Introduce make-vl-foreverstmt macro with keywords like for regular defaggregates.
-   `(progn ,(cutil::da-make-maker-fn 'vl-foreverstmt '(body atts))
-           ,(cutil::da-make-maker 'vl-foreverstmt '(body atts))))
+  (vl-emulate-defaggregate-stuff vl-foreverstmt
+                                 (body atts))
 
   (definlined vl-foreverstmt->body (x)
     (declare (xargs :guard (and (vl-stmt-p x)
-                                (vl-compoundstmt-p x)
-                                (eq (vl-compoundstmt->type x) :vl-foreverstmt))))
+                                (vl-foreverstmt-p x))))
     (car (vl-compoundstmt->stmts x)))
+
+  (definline vl-foreverstmt->atts (x)
+    ;; Note: we leave this enabled and just reason about vl-compoundstmt->atts.
+    ;; Don't remove this function; it's needed for things like the b* binder.
+    (declare (xargs :guard (and (vl-stmt-p x)
+                                (vl-foreverstmt-p x))))
+    (vl-compoundstmt->atts x))
 
   (local (in-theory (enable vl-foreverstmt
                             vl-foreverstmt->body)))
@@ -833,8 +960,7 @@ forever <body>;
 
   (defthm vl-stmt-p-of-vl-foreverstmt->body
     (implies (and (force (vl-stmt-p x))
-                  (force (vl-compoundstmt-p x))
-                  (force (eq (vl-compoundstmt->type x) :vl-foreverstmt)))
+                  (force (vl-foreverstmt-p x)))
              (vl-stmt-p (vl-foreverstmt->body x))))
 
   (defthm vl-foreverstmt->body-of-vl-foreverstmt
@@ -865,7 +991,6 @@ forever <body>;
 
 
 
-
 (defsection for-statements
   :parents (vl-stmt-p)
   :short "Utilities for manipulating @('for') statements."
@@ -888,11 +1013,16 @@ to X or Z) then the loop exists.  Otherwise, <i>body</i> is executed, the
 assignment @('nextlhs = nextrhs') is performed, and we loop back to evaluating
 <i>test</i>.</p>"
 
+  (definline vl-forstmt-p (x)
+    ;; Note: we leave this enabled and allow compoundstmt->type to open up.
+    (declare (xargs :guard (vl-stmt-p x)))
+    (and (vl-fast-compoundstmt-p x)
+         (eq (vl-compoundstmt->type x) :vl-forstmt)))
+
   (defthmd vl-compoundstmt-parts-when-vl-forstmt
     ;; Just the natural consequence of basic-checks for if statements.
     ;; Note that we ordinarily leave this disabled.
-    (implies (and (equal (vl-compoundstmt->type x) :vl-forstmt)
-                  (force (vl-compoundstmt-p x)))
+    (implies (vl-forstmt-p x)
              (and (not (vl-compoundstmt->name x))
                   (not (vl-compoundstmt->ctrl x))
                   (not (vl-compoundstmt->sequentialp x))
@@ -922,46 +1052,46 @@ assignment @('nextlhs = nextrhs') is performed, and we loop back to evaluating
                           :stmts (list body)
                           :atts atts))
 
-  (make-event
-   ;; Introduce make-vl-forstmt macro with keywords like for regular defaggregates.
-   `(progn ,(cutil::da-make-maker-fn 'vl-forstmt '(initlhs initrhs test nextlhs nextrhs body atts))
-           ,(cutil::da-make-maker 'vl-forstmt '(initlhs initrhs test nextlhs nextrhs body atts))))
+  (vl-emulate-defaggregate-stuff vl-forstmt
+                                 (initlhs initrhs test nextlhs nextrhs
+                                          body atts))
 
   (definlined vl-forstmt->initlhs (x)
     (declare (xargs :guard (and (vl-stmt-p x)
-                                (vl-compoundstmt-p x)
-                                (eq (vl-compoundstmt->type x) :vl-forstmt))))
+                                (vl-forstmt-p x))))
     (first (vl-compoundstmt->exprs x)))
 
   (definlined vl-forstmt->initrhs (x)
     (declare (xargs :guard (and (vl-stmt-p x)
-                                (vl-compoundstmt-p x)
-                                (eq (vl-compoundstmt->type x) :vl-forstmt))))
+                                (vl-forstmt-p x))))
     (second (vl-compoundstmt->exprs x)))
 
   (definlined vl-forstmt->test (x)
     (declare (xargs :guard (and (vl-stmt-p x)
-                                (vl-compoundstmt-p x)
-                                (eq (vl-compoundstmt->type x) :vl-forstmt))))
+                                (vl-forstmt-p x))))
     (third (vl-compoundstmt->exprs x)))
 
   (definlined vl-forstmt->nextlhs (x)
     (declare (xargs :guard (and (vl-stmt-p x)
-                                (vl-compoundstmt-p x)
-                                (eq (vl-compoundstmt->type x) :vl-forstmt))))
+                                (vl-forstmt-p x))))
     (fourth (vl-compoundstmt->exprs x)))
 
   (definlined vl-forstmt->nextrhs (x)
     (declare (xargs :guard (and (vl-stmt-p x)
-                                (vl-compoundstmt-p x)
-                                (eq (vl-compoundstmt->type x) :vl-forstmt))))
+                                (vl-forstmt-p x))))
     (fifth (vl-compoundstmt->exprs x)))
 
   (definlined vl-forstmt->body (x)
     (declare (xargs :guard (and (vl-stmt-p x)
-                                (vl-compoundstmt-p x)
-                                (eq (vl-compoundstmt->type x) :vl-forstmt))))
+                                (vl-forstmt-p x))))
     (first (vl-compoundstmt->stmts x)))
+
+  (definline vl-forstmt->atts (x)
+    ;; Note: we leave this enabled and just reason about vl-compoundstmt->atts.
+    ;; Don't remove this function; it's needed for things like the b* binder.
+    (declare (xargs :guard (and (vl-stmt-p x)
+                                (vl-forstmt-p x))))
+    (vl-compoundstmt->atts x))
 
   (local (in-theory (enable vl-forstmt
                             vl-forstmt->initlhs
@@ -1003,42 +1133,31 @@ assignment @('nextlhs = nextrhs') is performed, and we loop back to evaluating
                                          :atts atts))))
 
   (defthm vl-expr-p-of-vl-forstmt->initlhs
-    (implies (and (force (vl-stmt-p x))
-                  (force (vl-compoundstmt-p x))
-                  (force (eq (vl-compoundstmt->type x) :vl-forstmt)))
+    (implies (force (vl-forstmt-p x))
              (vl-expr-p (vl-forstmt->initlhs x))))
 
   ;; Interferes with our length lemmas, I guess
   (local (in-theory (disable VL-MAYBE-EXPR-P-WHEN-VL-EXPR-P)))
 
   (defthm vl-expr-p-of-vl-forstmt->initrhs
-    (implies (and (force (vl-stmt-p x))
-                  (force (vl-compoundstmt-p x))
-                  (force (eq (vl-compoundstmt->type x) :vl-forstmt)))
+    (implies (force (vl-forstmt-p x))
              (vl-expr-p (vl-forstmt->initrhs x))))
 
   (defthm vl-expr-p-of-vl-forstmt->test
-    (implies (and (force (vl-stmt-p x))
-                  (force (vl-compoundstmt-p x))
-                  (force (eq (vl-compoundstmt->type x) :vl-forstmt)))
+    (implies (force (vl-forstmt-p x))
              (vl-expr-p (vl-forstmt->test x))))
 
   (defthm vl-expr-p-of-vl-forstmt->nextlhs
-    (implies (and (force (vl-stmt-p x))
-                  (force (vl-compoundstmt-p x))
-                  (force (eq (vl-compoundstmt->type x) :vl-forstmt)))
+    (implies (force (vl-forstmt-p x))
              (vl-expr-p (vl-forstmt->nextlhs x))))
 
   (defthm vl-expr-p-of-vl-forstmt->nextrhs
-    (implies (and (force (vl-stmt-p x))
-                  (force (vl-compoundstmt-p x))
-                  (force (eq (vl-compoundstmt->type x) :vl-forstmt)))
+    (implies (force (vl-forstmt-p x))
              (vl-expr-p (vl-forstmt->nextrhs x))))
 
   (defthm vl-stmt-p-of-vl-forstmt->body
-    (implies (and (force (vl-stmt-p x))
-                  (force (vl-compoundstmt-p x))
-                  (force (eq (vl-compoundstmt->type x) :vl-forstmt)))
+    (implies (and (force (vl-forstmt-p x))
+                  (force (vl-stmt-p x)))
              (vl-stmt-p (vl-forstmt->body x))))
 
 
@@ -1136,7 +1255,6 @@ assignment @('nextlhs = nextrhs') is performed, and we loop back to evaluating
 
 
 
-
 (defsection block-statements
   :parents (vl-stmt-p)
   :short "Utilities for manipulating sequential block (i.e., @('begin
@@ -1173,11 +1291,16 @@ all variables at any simulation time.\" This seems to suggest that one might
 try to flatten all of the declarations in a module by, e.g., prepending the
 block name to each variable name.</p>"
 
+  (definline vl-blockstmt-p (x)
+    ;; Note: we leave this enabled and allow compoundstmt->type to open up.
+    (declare (xargs :guard (vl-stmt-p x)))
+    (and (vl-fast-compoundstmt-p x)
+         (eq (vl-compoundstmt->type x) :vl-blockstmt)))
+
   (defthmd vl-compoundstmt-parts-when-vl-blockstmt
     ;; Just the natural consequence of basic-checks for if statements.
     ;; Note that we ordinarily leave this disabled.
-    (implies (and (equal (vl-compoundstmt->type x) :vl-blockstmt)
-                  (force (vl-compoundstmt-p x)))
+    (implies (vl-blockstmt-p x)
              (and (not (vl-compoundstmt->ctrl x))
                   (not (vl-compoundstmt->casetype x))
                   (atom (vl-compoundstmt->exprs x))))
@@ -1202,34 +1325,35 @@ block name to each variable name.</p>"
                           :stmts stmts
                           :atts atts))
 
-  (make-event
-   ;; Introduce make-vl-blockstmt macro with keywords like for regular defaggregates.
-   `(progn ,(cutil::da-make-maker-fn 'vl-blockstmt '(sequentialp name decls stmts atts))
-           ,(cutil::da-make-maker 'vl-blockstmt '(sequentialp name decls stmts atts))))
+  (vl-emulate-defaggregate-stuff vl-blockstmt
+                                 (sequentialp name decls stmts atts))
 
   (definlined vl-blockstmt->sequentialp (x)
     (declare (xargs :guard (and (vl-stmt-p x)
-                                (vl-compoundstmt-p x)
-                                (eq (vl-compoundstmt->type x) :vl-blockstmt))))
+                                (vl-blockstmt-p x))))
     (vl-compoundstmt->sequentialp x))
 
   (definlined vl-blockstmt->name (x)
     (declare (xargs :guard (and (vl-stmt-p x)
-                                (vl-compoundstmt-p x)
-                                (eq (vl-compoundstmt->type x) :vl-blockstmt))))
+                                (vl-blockstmt-p x))))
     (vl-compoundstmt->name x))
 
   (definlined vl-blockstmt->decls (x)
     (declare (xargs :guard (and (vl-stmt-p x)
-                                (vl-compoundstmt-p x)
-                                (eq (vl-compoundstmt->type x) :vl-blockstmt))))
+                                (vl-blockstmt-p x))))
     (vl-compoundstmt->decls x))
 
   (definlined vl-blockstmt->stmts (x)
     (declare (xargs :guard (and (vl-stmt-p x)
-                                (vl-compoundstmt-p x)
-                                (eq (vl-compoundstmt->type x) :vl-blockstmt))))
+                                (vl-blockstmt-p x))))
     (vl-compoundstmt->stmts x))
+
+  (definline vl-blockstmt->atts (x)
+    ;; Note: we leave this enabled and just reason about vl-compoundstmt->atts.
+    ;; Don't remove this function; it's needed for things like the b* binder.
+    (declare (xargs :guard (and (vl-stmt-p x)
+                                (vl-blockstmt-p x))))
+    (vl-compoundstmt->atts x))
 
   (local (in-theory (enable vl-blockstmt
                             vl-blockstmt->sequentialp
@@ -1261,39 +1385,30 @@ block name to each variable name.</p>"
                                            :atts atts))))
 
   (defthm booleanp-of-vl-blockstmt->sequentialp
-    (implies (and (force (vl-stmt-p x))
-                  (force (vl-compoundstmt-p x))
-                  (force (eq (vl-compoundstmt->type x) :vl-blockstmt)))
+    (implies (force (vl-blockstmt-p x))
              (booleanp (vl-blockstmt->sequentialp x)))
     :rule-classes :type-prescription)
 
   (defthm vl-maybe-string-p-of-vl-blockstmt->name
-    (implies (and (force (vl-stmt-p x))
-                  (force (vl-compoundstmt-p x))
-                  (force (eq (vl-compoundstmt->type x) :vl-blockstmt)))
+    (implies (force (vl-blockstmt-p x))
              (vl-maybe-string-p (vl-blockstmt->name x)))
     :rule-classes ((:rewrite)
                    (:type-prescription)))
 
   (defthm stringp-of-vl-blockstmt->name
-    (implies (and (force (vl-stmt-p x))
-                  (force (vl-compoundstmt-p x))
-                  (force (eq (vl-compoundstmt->type x) :vl-blockstmt)))
+    (implies (force (vl-blockstmt-p x))
              (equal (stringp (vl-blockstmt->name x))
                     (if (vl-blockstmt->name x)
                         t
                       nil))))
 
   (defthm vl-blockitemlist-p-of-vl-blockstmt->decls
-    (implies (and (force (vl-stmt-p x))
-                  (force (vl-compoundstmt-p x))
-                  (force (eq (vl-compoundstmt->type x) :vl-blockstmt)))
+    (implies (force (vl-blockstmt-p x))
              (vl-blockitemlist-p (vl-blockstmt->decls x))))
 
   (defthm vl-stmtlist-p-of-vl-blockstmt->stmts
-    (implies (and (force (vl-stmt-p x))
-                  (force (vl-compoundstmt-p x))
-                  (force (eq (vl-compoundstmt->type x) :vl-blockstmt)))
+    (implies (and (force (vl-blockstmt-p x))
+                  (force (vl-stmt-p x)))
              (vl-stmtlist-p (vl-blockstmt->stmts x))))
 
   (defthm vl-blockstmt->sequentialp-of-vl-blockstmt
@@ -1380,11 +1495,16 @@ representation.</p>
 @@(bar or baz) foo = bar | baz;
 })"
 
+  (definline vl-timingstmt-p (x)
+    ;; Note: we leave this enabled and allow compoundstmt->type to open up.
+    (declare (xargs :guard (vl-stmt-p x)))
+    (and (vl-fast-compoundstmt-p x)
+         (eq (vl-compoundstmt->type x) :vl-timingstmt)))
+
   (defthmd vl-compoundstmt-parts-when-vl-timingstmt
     ;; Just the natural consequence of basic-checks for if statements.
     ;; Note that we ordinarily leave this disabled.
-    (implies (and (equal (vl-compoundstmt->type x) :vl-timingstmt)
-                  (force (vl-compoundstmt-p x)))
+    (implies (vl-timingstmt-p x)
              (and (not (vl-compoundstmt->name x))
                   (vl-compoundstmt->ctrl x)
                   (not (vl-compoundstmt->sequentialp x))
@@ -1409,22 +1529,25 @@ representation.</p>
                           :stmts (list body)
                           :atts atts))
 
-  (make-event
-   ;; Introduce make-vl-timingstmt macro with keywords like for regular defaggregates.
-   `(progn ,(cutil::da-make-maker-fn 'vl-timingstmt '(ctrl body atts))
-           ,(cutil::da-make-maker 'vl-timingstmt '(ctrl body atts))))
+  (vl-emulate-defaggregate-stuff vl-timingstmt
+                                 (ctrl body atts))
 
   (definlined vl-timingstmt->ctrl (x)
     (declare (xargs :guard (and (vl-stmt-p x)
-                                (vl-compoundstmt-p x)
-                                (eq (vl-compoundstmt->type x) :vl-timingstmt))))
+                                (vl-timingstmt-p x))))
     (vl-compoundstmt->ctrl x))
 
   (definlined vl-timingstmt->body (x)
     (declare (xargs :guard (and (vl-stmt-p x)
-                                (vl-compoundstmt-p x)
-                                (eq (vl-compoundstmt->type x) :vl-timingstmt))))
+                                (vl-timingstmt-p x))))
     (car (vl-compoundstmt->stmts x)))
+
+  (definline vl-timingstmt->atts (x)
+    ;; Note: we leave this enabled and just reason about vl-compoundstmt->atts.
+    ;; Don't remove this function; it's needed for things like the b* binder.
+    (declare (xargs :guard (and (vl-stmt-p x)
+                                (vl-timingstmt-p x))))
+    (vl-compoundstmt->atts x))
 
   (local (in-theory (enable vl-timingstmt
                             vl-timingstmt->ctrl
@@ -1446,15 +1569,12 @@ representation.</p>
                                             :atts atts))))
 
   (defthm vl-delayoreventcontrol-p-of-vl-timingstmt->ctrl
-    (implies (and (force (vl-stmt-p x))
-                  (force (vl-compoundstmt-p x))
-                  (force (eq (vl-compoundstmt->type x) :vl-timingstmt)))
+    (implies (force (vl-timingstmt-p x))
              (vl-delayoreventcontrol-p (vl-timingstmt->ctrl x))))
 
   (defthm vl-stmt-p-of-vl-timingstmt->body
-    (implies (and (force (vl-stmt-p x))
-                  (force (vl-compoundstmt-p x))
-                  (force (eq (vl-compoundstmt->type x) :vl-timingstmt)))
+    (implies (and (force (vl-timingstmt-p x))
+                  (force (vl-stmt-p x)))
              (vl-stmt-p (vl-timingstmt->body x))))
 
   (defthm vl-timingstmt->ctrl-of-vl-timingstmt
@@ -1491,7 +1611,6 @@ representation.</p>
              (< (acl2-count (vl-timingstmt->body x))
                 (acl2-count x)))
     :rule-classes ((:rewrite) (:linear))))
-
 
 
 
@@ -1542,11 +1661,16 @@ list.</li>
 
 </ul>"
 
+  (definline vl-casestmt-p (x)
+    ;; Note: we leave this enabled and allow compoundstmt->type to open up.
+    (declare (xargs :guard (vl-stmt-p x)))
+    (and (vl-fast-compoundstmt-p x)
+         (eq (vl-compoundstmt->type x) :vl-casestmt)))
+
   (defthmd vl-compoundstmt-parts-when-vl-casestmt
     ;; Just the natural consequence of basic-checks for if statements.
     ;; Note that we ordinarily leave this disabled.
-    (implies (and (equal (vl-compoundstmt->type x) :vl-casestmt)
-                  (force (vl-compoundstmt-p x)))
+    (implies (vl-casestmt-p x)
              (and (not (vl-compoundstmt->name x))
                   (not (vl-compoundstmt->ctrl x))
                   (not (vl-compoundstmt->sequentialp x))
@@ -1576,10 +1700,8 @@ list.</li>
                           :stmts (cons default bodies)
                           :atts atts))
 
-  (make-event
-   ;; Introduce make-vl-casestmt macro with keywords like for regular defaggregates.
-   `(progn ,(cutil::da-make-maker-fn 'vl-casestmt '(casetype test exprs bodies default atts))
-           ,(cutil::da-make-maker 'vl-casestmt '(casetype test exprs bodies default atts))))
+  (vl-emulate-defaggregate-stuff vl-casestmt
+                                 (casetype test exprs bodies default atts))
 
   (definlined vl-casestmt->casetype (x)
     (declare (xargs :guard (and (vl-stmt-p x)
@@ -1617,6 +1739,13 @@ list.</li>
                                   :use ((:instance vl-compoundstmt-parts-when-vl-casestmt))))))
     (cdr (vl-compoundstmt->stmts x)))
 
+  (definline vl-casestmt->atts (x)
+    ;; Note: we leave this enabled and just reason about vl-compoundstmt->atts.
+    ;; Don't remove this function; it's needed for things like the b* binder.
+    (declare (xargs :guard (and (vl-stmt-p x)
+                                (vl-casestmt-p x))))
+    (vl-compoundstmt->atts x))
+
   (local (in-theory (enable vl-casestmt
                             vl-casestmt->casetype
                             vl-casestmt->test
@@ -1653,42 +1782,29 @@ list.</li>
                                           :atts atts))))
 
   (defthm vl-casetype-p-of-vl-casestmt->casetype
-    (implies (and (force (vl-stmt-p x))
-                  (force (vl-compoundstmt-p x))
-                  (force (eq (vl-compoundstmt->type x) :vl-casestmt)))
+    (implies (force (vl-casestmt-p x))
              (vl-casetype-p (vl-casestmt->casetype x))))
 
   (defthm vl-expr-p-of-vl-casestmt->test
-    (implies (and (force (vl-stmt-p x))
-                  (force (vl-compoundstmt-p x))
-                  (force (eq (vl-compoundstmt->type x) :vl-casestmt)))
+    (implies (force (vl-casestmt-p x))
              (vl-expr-p (vl-casestmt->test x))))
 
   (defthm vl-stmt-p-of-vl-casestmt->default
-    (implies (and (force (vl-stmt-p x))
-                  (force (vl-compoundstmt-p x))
-                  (force (eq (vl-compoundstmt->type x) :vl-casestmt)))
-             (vl-stmt-p (vl-casestmt->default x)))
-    :hints(("Goal"
-            :in-theory (disable vl-compoundstmt-parts-when-vl-casestmt)
-            :use ((:instance vl-compoundstmt-parts-when-vl-casestmt)))))
+    (implies (and (force (vl-casestmt-p x))
+                  (force (vl-stmt-p x)))
+             (vl-stmt-p (vl-casestmt->default x))))
 
   (defthm vl-exprlist-p-of-vl-casestmt->exprs
-    (implies (and (force (vl-stmt-p x))
-                  (force (vl-compoundstmt-p x))
-                  (force (eq (vl-compoundstmt->type x) :vl-casestmt)))
+    (implies (force (vl-casestmt-p x))
              (vl-exprlist-p (vl-casestmt->exprs x))))
 
   (defthm vl-stmtlist-p-of-vl-casestmt->bodies
-    (implies (and (force (vl-stmt-p x))
-                  (force (vl-compoundstmt-p x))
-                  (force (eq (vl-compoundstmt->type x) :vl-casestmt)))
+    (implies (and (force (vl-casestmt-p x))
+                  (force (vl-stmt-p x)))
              (vl-stmtlist-p (vl-casestmt->bodies x))))
 
   (defthm len-of-vl-casestmt->bodies
-    (implies (and (force (vl-stmt-p x))
-                  (force (vl-compoundstmt-p x))
-                  (force (eq (vl-compoundstmt->type x) :vl-casestmt)))
+    (implies (force (vl-casestmt-p x))
              (equal (len (vl-casestmt->bodies x))
                     (len (vl-casestmt->exprs x)))))
 
@@ -1780,68 +1896,20 @@ list.</li>
 
 
 
-
-
-;; I don't think we want this.
-
-;; (encapsulate
-;;  ()
-;;  (local (defthm lemma
-;;           (implies (and (vl-compoundstmttype-p type)
-;;                         (vl-compoundstmt-basic-checksp type exprs stmts name decls ctrl))
-;;                    (iff ctrl (equal type :vl-ptctrlstmt)))
-;;           :rule-classes nil
-;;           :hints(("Goal" :in-theory (enable vl-compoundstmt-basic-checksp)))))
-
-;;  (defthm vl-compoundstmt->ctrl-when-ptctrlstmt
-;;    (implies (force (vl-compoundstmt-p x))
-;;             (iff (vl-compoundstmt->ctrl x)
-;;                  (equal (vl-compoundstmt->type x) :vl-ptctrlstmt)))
-;;    :hints(("Goal"
-;;            :use ((:instance lemma
-;;                             (type  (vl-compoundstmt->type x))
-;;                             (exprs (vl-compoundstmt->exprs x))
-;;                             (stmts (vl-compoundstmt->stmts x))
-;;                             (name  (vl-compoundstmt->name x))
-;;                             (decls (vl-compoundstmt->decls x))
-;;                             (ctrl  (vl-compoundstmt->ctrl x))))))))
-
-
-
-
-;; I don't think we want this.
-
-;; (defthm consp-of-vl-compoundstmt->stmts-when-vl-ptctrlstmt
-;;   (implies (and (equal (vl-compoundstmt->type x) :vl-ptctrlstmt)
-;;                 (force (vl-compoundstmt-p x)))
-;;            (consp (vl-compoundstmt->stmts x)))
-;;   :hints(("Goal"
-;;           :in-theory (e/d (vl-compoundstmt-basic-checksp)
-;;                           (vl-compoundstmt-basic-checksp-of-vl-compoundstmt))
-;;           :use ((:instance vl-compoundstmt-basic-checksp-of-vl-compoundstmt)))))
-
-
-;; I don't think we want this?
-;; (defthm vl-eventcontrol-p-of-vl-compoundstmt->ctrl
-;;   (implies (and (equal (vl-compoundstmt->type x) :vl-ptctrlstmt)
-;;                 (not (vl-delaycontrol-p (vl-compoundstmt->ctrl x)))
-;;                 (not (vl-repeateventcontrol-p (vl-compoundstmt->ctrl x)))
-;;                 (force (vl-compoundstmt-p x)))
-;;            (vl-eventcontrol-p (vl-compoundstmt->ctrl x)))
-;;   :hints(("Goal"
-;;           :in-theory (e/d (vl-compoundstmt-basic-checksp
-;;                            vl-delayoreventcontrol-p
-;;                            vl-maybe-delayoreventcontrol-p)
-;;                           (vl-compoundstmt-basic-checksp-of-vl-compoundstmt
-;;                            vl-maybe-delayoreventcontrol-p-of-vl-compoundstmt->ctrl))
-;;           :use ((:instance vl-compoundstmt-basic-checksp-of-vl-compoundstmt)
-;;                 (:instance vl-maybe-delayoreventcontrol-p-of-vl-compoundstmt->ctrl)))))
-
 (deflist vl-atomicstmtlist-p (x)
   (vl-atomicstmt-p x)
   :elementp-of-nil nil)
 
 (defsection vl-stmt-atomicstmts
+  :parents (vl-stmt-p)
+  :short "@(call vl-stmt-atomicstmts) returns a flat list of all atomic
+statements in the statement @('x')."
+
+  :long "<p>This is sometimes useful to avoid needing to write a mutually
+recursive function to walk over statements.  For instance, if you want to look
+at all of the assignments anywhere within a statement, you can first grab all
+of the atomic statements, then filter it down to just the assignments, then
+process them.</p>"
 
   (mutual-recursion
    (defund vl-stmt-atomicstmts-exec (x acc)
@@ -1922,7 +1990,6 @@ list.</li>
                                                    vl-stmtlist-atomicstmts)))))
 
 
-
 (defsection vl-filter-blockitems
   :parents (vl-blockitemlist-p)
   :short "Split up blockitems into lists by their type."
@@ -1956,3 +2023,22 @@ list.</li>
                     (vl-vardecllist-p (mv-nth 1 ret))
                     (vl-eventdecllist-p (mv-nth 2 ret))
                     (vl-paramdecllist-p (mv-nth 3 ret)))))))
+
+
+
+(define vl-simpledelaycontrol-p ((x vl-delaycontrol-p))
+  :returns bool
+  :parents (vl-delaycontrol-p)
+  :short "Recognizer for simple delays by some natural-number amount."
+  :inline t
+  (vl-expr-resolved-p (vl-delaycontrol->value x)))
+
+(define vl-simpledelaycontrol->ticks ((x (and (vl-delaycontrol-p x)
+                                              (vl-simpledelaycontrol-p x))))
+  :returns (ticks natp)
+  :parents (vl-simpledelaycontrol-p)
+  :short "Number of ticks for a simple delay, e.g., @('#5') has 5 ticks."
+  :guard-hints (("Goal" :in-theory (enable vl-simpledelaycontrol-p)))
+  :inline t
+  (lnfix (vl-resolved->val (vl-delaycontrol->value x))))
+

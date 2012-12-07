@@ -19,14 +19,14 @@
 ; Original author: Jared Davis <jared@centtech.com>
 
 (in-package "VL")
-(include-book "gen-adder")
-(include-book "gen-compare")
-(include-book "gen-mul")
-(include-book "gen-select")
-(include-book "gen-shl")
-(include-book "gen-shr")
-(include-book "gen-simple")
-(include-book "gen-xdet")
+(include-book "add")
+(include-book "compare")
+(include-book "mul")
+(include-book "select")
+(include-book "shl")
+(include-book "shr")
+(include-book "simple")
+(include-book "xdet")
 (include-book "../../mlib/expr-slice")
 (include-book "../../mlib/namefactory")
 (local (include-book "../../util/arithmetic"))
@@ -34,77 +34,37 @@
 (local (in-theory (disable vl-maybe-module-p-when-vl-module-p)))
 
 
-(defconst *vl-occform-memoize*
-  '(vl-make-n-bit-binary-op
-    vl-make-n-bit-assign
-    vl-make-n-bit-not
-    vl-make-n-bit-reduction-op
-    vl-make-n-bit-mux
-    vl-make-n-bit-zmux
-    vl-make-n-bit-ceq
-    vl-make-n-bit-adder-core
-    vl-make-n-bit-plusminus
-    vl-make-n-bit-unsigned-gte
-    vl-make-n-bit-signed-gte
-    vl-make-n-bit-mult
-    vl-make-2^n-bit-dynamic-bitselect
-    vl-make-n-bit-dynamic-bitselect
-    vl-make-n-bit-dynamic-bitselect-m
-    vl-make-n-bit-shl-place-p
-    vl-make-n-bit-shl-by-m-bits
-    vl-make-n-bit-shr-place-p
-    vl-make-n-bit-shr-by-m-bits
-    vl-make-n-bit-xdetect
-    vl-make-n-bit-xor-each
-    vl-make-n-bit-x-propagator))
-
-(defun memoize-list-fn (x)
-  (declare (xargs :guard t))
-  (if (atom x)
-      nil
-    (cons `(memoize ',(car x))
-          (memoize-list-fn (cdr x)))))
-
-(defmacro memoize-list (x)
-  `(make-event
-    (b* ((fns   ,x)
-         (-     (or (not fns)
-                    (cw "Memoizing ~&0.~%" fns)))
-         (forms (memoize-list-fn fns)))
-      `(with-output :off (summary)
-         (progn . ,forms)))))
-
-(memoize-list *vl-occform-memoize*)
-
-(defun clear-these-memoize-tables (fns)
-  (declare (xargs :guard t))
-  (if (atom fns)
-      nil
-    (prog2$ (clear-memoize-table (car fns))
-            (clear-these-memoize-tables (cdr fns)))))
-
-
-
-;; BOZO we probably want to memoize the generators and possibly have all of the generators produce honsed modules.
-;; If all of the new-modules are honsed, then the mergesort here should be really fast
-;;   - the EQUAL check in FAST-UNION will be quickly YES by pointer-equality or quickly NO by module-name mismatch
-;;   - the << checks in FAST-UNION will be quickly settled by module-name comparison
-;; But if there are EQUAL-but-not-EQ modules, the EQUAL checks could become quite expensive.
+;; BOZO we probably want to memoize the generators and possibly have all of the
+;; generators produce honsed modules.  If all of the new-modules are honsed,
+;; then the mergesort here should be really fast
+;;
+;;   - the EQUAL check in FAST-UNION will be quickly YES by pointer-equality or
+;;     quickly NO by module-name mismatch
+;;
+;;   - the << checks in FAST-UNION will be quickly settled by module-name
+;;     comparison
+;;
+;; But if there are EQUAL-but-not-EQ modules, the EQUAL checks could become
+;; quite expensive.
 
 ;; BOZO try to standardize the parameter-names in generated modules into some
 ;; common scheme, e.g., "out" versus "o", etc.
 
-;; BOZO any generators that can be improved by using bustable exprs?  Shifting was improved a lot by using part-selects
-;; instead of lots of stupid buffers.  I think the partial-product generation for multiplication can also be patched
-;; up like this.  Searching for "buf" might be a good start toward looking at these.
+;; BOZO any generators that can be improved by using bustable exprs?  Shifting
+;; was improved a lot by using part-selects instead of lots of stupid buffers.
+;; I think the partial-product generation for multiplication can also be
+;; patched up like this.  Searching for "buf" might be a good start toward
+;; looking at these.
 
-;; BOZO many generators could also probably switch to instance muxes instead of laying down their own gates to do
-;; muxing, which could make their function more clear
+;; BOZO many generators could also probably switch to instance muxes instead of
+;; laying down their own gates to do muxing, which could make their function
+;; more clear
 
 ;; BOZO are we handling signed things correctly?  need regressions and similar.
 
-;; BOZO these width-checks could probably be turned into welltyped-assign-p checks or similar, if we had such
-;; a concept and all of the relevant theorems about it.
+;; BOZO these width-checks could probably be turned into welltyped-assign-p
+;; checks or similar, if we had such a concept and all of the relevant theorems
+;; about it.
 
 
 (defxdoc occform
@@ -164,6 +124,56 @@ module instance names.</li>
 
 <p>Typically @('new-assigns') will be empty on success, and will just be
 @('(list x)') on failure.</p>")
+
+(defconst *vl-occform-memoize*
+  '(vl-make-n-bit-binary-op
+    vl-make-n-bit-assign
+    vl-make-n-bit-not
+    vl-make-n-bit-reduction-op
+    vl-make-n-bit-mux
+    vl-make-n-bit-zmux
+    vl-make-n-bit-ceq
+    vl-make-n-bit-adder-core
+    vl-make-n-bit-plusminus
+    vl-make-n-bit-unsigned-gte
+    vl-make-n-bit-signed-gte
+    vl-make-n-bit-mult
+    vl-make-2^n-bit-dynamic-bitselect
+    vl-make-n-bit-dynamic-bitselect
+    vl-make-n-bit-dynamic-bitselect-m
+    vl-make-n-bit-shl-place-p
+    vl-make-n-bit-shl-by-m-bits
+    vl-make-n-bit-shr-place-p
+    vl-make-n-bit-shr-by-m-bits
+    vl-make-n-bit-xdetect
+    vl-make-n-bit-xor-each
+    vl-make-n-bit-x-propagator))
+
+(defun memoize-list-fn (x)
+  (declare (xargs :guard t))
+  (if (atom x)
+      nil
+    (cons `(memoize ',(car x))
+          (memoize-list-fn (cdr x)))))
+
+(defmacro memoize-list (x)
+  `(make-event
+    (b* ((fns   ,x)
+         (-     (or (not fns)
+                    (cw "Memoizing ~&0.~%" fns)))
+         (forms (memoize-list-fn fns)))
+      `(with-output :off (summary)
+         (progn . ,forms)))))
+
+(memoize-list *vl-occform-memoize*)
+
+(defun clear-these-memoize-tables (fns)
+  (declare (xargs :guard t))
+  (if (atom fns)
+      nil
+    (prog2$ (clear-memoize-table (car fns))
+            (clear-these-memoize-tables (cdr fns)))))
+
 
 (defmacro def-vl-occform (name &key
                                (parents '(occform))
@@ -889,136 +899,79 @@ below.</p>"
                         warnings))))))
 
 
-
-(defsection vl-assignlist-occform
+(define vl-assignlist-occform ((x vl-assignlist-p)
+                                  (nf vl-namefactory-p)
+                                  (warnings vl-warninglist-p))
+  :returns (mv (warnings vl-warninglist-p :hyp :fguard)
+               (mods     vl-modulelist-p  :hyp :fguard)
+               (insts    vl-modinstlist-p :hyp :fguard)
+               (assigns  vl-assignlist-p  :hyp :fguard)
+               (nf       vl-namefactory-p :hyp :fguard))
   :parents (occform)
   :short "Project @(see vl-assign-occform) across a list of assignments."
 
-  (defund vl-assignlist-occform (x nf warnings)
-    (declare (xargs :guard (and (vl-assignlist-p x)
-                                (vl-namefactory-p nf)
-                                (vl-warninglist-p warnings))))
-    (b* (((when (atom x))
-          (mv warnings nil nil nil nf))
-         ((mv warnings mods1 modinsts1 assigns1 nf) (vl-assign-occform (car x) nf warnings))
-         ((mv warnings mods2 modinsts2 assigns2 nf) (vl-assignlist-occform (cdr x) nf warnings))
-         (mods     (append mods1 mods2))
-         (modinsts (append modinsts1 modinsts2))
-         (assigns  (append assigns1 assigns2)))
-      (mv warnings mods modinsts assigns nf)))
+  (b* (((when (atom x))
+        (mv warnings nil nil nil nf))
+       ((mv warnings mods1 modinsts1 assigns1 nf)
+        (vl-assign-occform (car x) nf warnings))
+       ((mv warnings mods2 modinsts2 assigns2 nf)
+        (vl-assignlist-occform (cdr x) nf warnings))
+       (mods     (append mods1 mods2))
+       (modinsts (append modinsts1 modinsts2))
+       (assigns  (append assigns1 assigns2)))
+    (mv warnings mods modinsts assigns nf))
 
-  (local (in-theory (enable vl-assignlist-occform)))
-
-  (defthm vl-warninglist-p-of-vl-assignlist-occform
-    (implies (force (vl-warninglist-p warnings))
-             (vl-warninglist-p (mv-nth 0 (vl-assignlist-occform x nf warnings)))))
-
-  (defthm true-listp-of-vl-assignlist-occform-1
-    (true-listp (mv-nth 1 (vl-assignlist-occform x nf warnings)))
-    :rule-classes :type-prescription)
-
-  (defthm true-listp-of-vl-assignlist-occform-2
-    (true-listp (mv-nth 2 (vl-assignlist-occform x nf warnings)))
-    :rule-classes :type-prescription)
-
-  (defthm true-listp-of-vl-assignlist-occform-3
-    (true-listp (mv-nth 3 (vl-assignlist-occform x nf warnings)))
-    :rule-classes :type-prescription)
-
-  (defthm vl-assignlist-occform-basics
-    (implies (and (force (vl-assignlist-p x))
-                  (force (vl-namefactory-p nf)))
-             (let ((ret (vl-assignlist-occform x nf warnings)))
-               (and (vl-modulelist-p   (mv-nth 1 ret))
-                    (vl-modinstlist-p  (mv-nth 2 ret))
-                    (vl-assignlist-p   (mv-nth 3 ret))
-                    (vl-namefactory-p  (mv-nth 4 ret)))))))
+  ///
+  (defmvtypes vl-assignlist-occform (nil true-listp true-listp true-listp nil)))
 
 
-
-
-(defsection vl-module-occform
-
-  (defund vl-module-occform (x)
-    (declare (xargs :guard (vl-module-p x)))
-    (b* (((when (vl-module->hands-offp x))
-          (mv nil x))
-
-         ((vl-module x) x)
-
-         (nf (vl-starting-namefactory x))
-         ((mv warnings new-mods new-modinsts new-assigns nf)
-          (vl-assignlist-occform x.assigns nf x.warnings))
-         (- (vl-free-namefactory nf))
-
-         (x-prime (change-vl-module x
-                                    :warnings warnings
-                                    :assigns  new-assigns
-                                    :modinsts (append new-modinsts x.modinsts))))
-      (mv new-mods x-prime)))
-
-  (local (in-theory (enable vl-module-occform)))
-
+(define vl-module-occform ((x vl-module-p))
+  :returns (mv (addmods vl-modulelist-p :hyp :fguard)
+               (new-x   vl-module-p     :hyp :fguard))
+  (b* (((vl-module x) x)
+       ((when (vl-module->hands-offp x))
+        (mv nil x))
+       (nf (vl-starting-namefactory x))
+       ((mv warnings addmods new-modinsts new-assigns nf)
+        (vl-assignlist-occform x.assigns nf x.warnings))
+       (new-x (change-vl-module x
+                                :warnings warnings
+                                :assigns  new-assigns
+                                :modinsts (append new-modinsts x.modinsts))))
+    (vl-free-namefactory nf)
+    (mv addmods new-x))
+  ///
   (defthm true-listp-of-vl-module-occform1
     (true-listp (mv-nth 0 (vl-module-occform x)))
-    :rule-classes :type-prescription)
-
-  (defthm props-of-vl-module-occform
-    (implies (vl-module-p x)
-             (and (vl-modulelist-p (mv-nth 0 (vl-module-occform x)))
-                  (vl-module-p (mv-nth 1 (vl-module-occform x)))))))
+    :rule-classes :type-prescription))
 
 
-(defsection vl-modulelist-occform-aux
-
-  (defund vl-modulelist-occform-aux (x)
-    "Returns (MV NEW-MODS X-PRIME)"
-    (declare (xargs :guard (vl-modulelist-p x)))
-    (b* (((when (atom x))
-          (mv nil nil))
-         ((mv mods1 car-prime) (vl-module-occform (car x)))
-         ((mv mods2 cdr-prime) (vl-modulelist-occform-aux (cdr x)))
-         (new-mods (append mods1 mods2))
-         (x-prime  (cons car-prime cdr-prime)))
-        (mv new-mods x-prime)))
-
-  (local (in-theory (enable vl-modulelist-occform-aux)))
-
-  (defthm true-listp-of-vl-modulelist-occform-aux1
-    (true-listp (mv-nth 0 (vl-modulelist-occform-aux x)))
-    :rule-classes :type-prescription)
-
-  (defthm true-listp-of-vl-modulelist-occform-aux2
-    (true-listp (mv-nth 1 (vl-modulelist-occform-aux x)))
-    :rule-classes :type-prescription)
-
-  (defthm props-of-vl-modulelist-occform-aux
-    (implies (force (vl-modulelist-p x))
-             (and (vl-modulelist-p (mv-nth 0 (vl-modulelist-occform-aux x)))
-                  (vl-modulelist-p (mv-nth 1 (vl-modulelist-occform-aux x)))))))
+(define vl-modulelist-occform-aux ((x vl-modulelist-p))
+  :returns (mv (addmods vl-modulelist-p :hyp :fguard)
+               (new-x   vl-modulelist-p :hyp :fguard))
+  (b* (((when (atom x))
+        (mv nil nil))
+       ((mv addmods1 car) (vl-module-occform (car x)))
+       ((mv addmods2 cdr) (vl-modulelist-occform-aux (cdr x)))
+       (addmods (append addmods1 addmods2))
+       (new-x   (cons car cdr)))
+    (mv addmods new-x))
+  ///
+  (defmvtypes vl-modulelist-occform-aux (true-listp true-listp)))
 
 
-
-(defsection vl-modulelist-occform
-
-  (defund vl-modulelist-occform (x)
-    (declare (xargs :guard (vl-modulelist-p x)))
-    (b* (((mv new-mods x-prime)
-          (vl-modulelist-occform-aux x))
-         (- (clear-these-memoize-tables *vl-occform-memoize*))
-         (new-mods-sort (mergesort new-mods))
-         (full-mods     (append new-mods-sort x-prime))
-         (all-names     (vl-modulelist->names full-mods))
-         ((unless (uniquep all-names))
-          (er hard? 'vl-modulelist-occform "Name collision")))
-      full-mods))
-
-  (local (in-theory (enable vl-modulelist-occform)))
-
-  (defthm vl-modulelist-p-of-vl-modulelist-occform
-    (implies (force (vl-modulelist-p x))
-             (vl-modulelist-p (vl-modulelist-occform x))))
-
+(define vl-modulelist-occform ((x vl-modulelist-p))
+  :returns (new-x vl-modulelist-p :hyp :fguard)
+  (b* (((mv new-mods x-prime)
+        (vl-modulelist-occform-aux x))
+       (- (clear-these-memoize-tables *vl-occform-memoize*))
+       (new-mods-sort (mergesort new-mods))
+       (full-mods     (append new-mods-sort x-prime))
+       (all-names     (vl-modulelist->names full-mods))
+       ((unless (uniquep all-names))
+        (er hard? 'vl-modulelist-occform "Name collision")))
+    full-mods)
+  ///
   (defthm no-duplicatesp-equal-of-vl-modulelist->names-of-vl-modulelist-occform
     (no-duplicatesp-equal (vl-modulelist->names (vl-modulelist-occform x)))))
 

@@ -24,242 +24,171 @@
 
 (defxdoc drop-blankports
   :parents (transforms)
-  :short "A transformation which eliminates \"blank ports\" from modules,
-and deletes all corresponding arguments from module instances."
+  :short "Eliminate \"blank ports\" from modules and delete all corresponding
+arguments from module instances."
 
-  :long "<p>See @(see vl-port-p) and @(see vl-plainarg-p) for some discussion
-about blank ports and arguments.  Blank ports are completely useless.  In this
-transformation, we remove blank ports from modules and simultaneously remove
-all corresponding arguments from all instances of the module.</p>
+  :long "<p>For background on blank ports and argument see @(see vl-port-p) and
+@(see vl-plainarg-p).</p>
 
-<p>This transformation only expects to deal with plain argument lists, so it
-should be run only after @(see argresolve).  There are no other requirements
-for using it.</p>")
+<p>Blank ports are completely useless.  This transform removes blank ports from
+all modules and simultaneously removes all arguments given to blank ports from
+all instances of all modules.</p>
 
-(defsection vl-plainarglist-drop-blankports
+<p>Prerequisites.  We expect to only see plain argument lists, i.e., @(see
+argresolve) should have already been run.  There are no other requirements.
+However, note that we do not respect @(see vl-module->hands-offp) since it does
+not seem legitimate to do so: the correctness of this transformation requires
+that the instances throughout every module be updated.</p>
 
-  (defund vl-plainarglist-drop-blankports (args ports)
-    (declare (xargs :guard (and (vl-plainarglist-p args)
-                                (vl-portlist-p ports)
-                                (same-lengthp args ports))))
-    (cond ((atom args)
-           nil)
-          ((vl-port->expr (car ports))
-           (cons (car args)
-                 (vl-plainarglist-drop-blankports (cdr args) (cdr ports))))
-          (t
-           (vl-plainarglist-drop-blankports (cdr args) (cdr ports)))))
+<p>We may add fatal warnings if we find instances of undefined modules or arity
+mismatches.  But we do <i>not</i> add any warnings about connections to blank
+ports because we expect @(see argresolve) to have done that.</p>")
 
-  (local (in-theory (enable vl-plainarglist-drop-blankports)))
-
-  (defthm vl-plainarglist-p-of-vl-plainarglist-drop-blankports
-    (implies (and (force (vl-plainarglist-p args))
-                  (force (vl-portlist-p ports))
-                  (force (same-lengthp args ports)))
-             (vl-plainarglist-p
-              (vl-plainarglist-drop-blankports args ports)))))
-
-
-
-(defsection vl-modinst-drop-blankports
+(define vl-plainarglist-drop-blankports
+  ((args  "arguments to some module instance"      vl-plainarglist-p)
+   (ports "corresponding ports from the submodule" vl-portlist-p))
+  :guard (same-lengthp args ports)
+  :returns (new-args "copy of @('args') with blank ports removed"
+                     vl-plainarglist-p :hyp :fguard)
   :parents (drop-blankports)
-  :short "Drop any blank ports from a module instance."
+  :short "Drop arguments to blank ports from an plain argument list."
 
-  (defund vl-modinst-drop-blankports (x mods modalist warnings)
-    "Returns (MV WARNINGS X-PRIME)"
-    (declare (xargs :guard (and (vl-modinst-p x)
-                                (vl-modulelist-p mods)
-                                (equal modalist (vl-modalist mods))
-                                (vl-warninglist-p warnings))))
-    (b* (((vl-modinst x) x)
+  (cond ((atom args)
+         nil)
+        ((vl-port->expr (car ports))
+         (cons (car args)
+               (vl-plainarglist-drop-blankports (cdr args) (cdr ports))))
+        (t
+         (vl-plainarglist-drop-blankports (cdr args) (cdr ports)))))
 
-         (target-mod (vl-fast-find-module x.modname mods modalist))
-         ((unless target-mod)
-          (b* ((w (make-vl-warning
-                   :type :vl-bad-instance
-                   :msg "~a0 refers to undefined module ~m1."
-                   :args (list x x.modname)
-                   :fatalp t
-                   :fn 'vl-modinst-drop-blankports)))
-            (mv (cons w warnings) x)))
-
-         ((when (vl-arguments->namedp x.portargs))
-          (b* ((w (make-vl-warning
-                   :type :vl-programming-error
-                   :msg "~a0: expected all modules to be using plain arguments, ~
-                         but found named arguments.  Did you forget to run the ~
-                         argresolve transform first?"
-                   :args (list x)
-                   :fatalp t
-                   :fn 'vl-modinst-drop-blankports)))
-            (mv (cons w warnings) x)))
-
-         (ports         (vl-module->ports target-mod))
-         (plainargs     (vl-arguments->args x.portargs))
-
-         ((unless (same-lengthp plainargs ports))
-          (b* ((w (make-vl-warning
-                   :type :vl-bad-instance
-                   :msg "~a0: bad arity.  Expected ~x1 arguments but found ~x2 ~
-                         arguments."
-                   :args (list x (len ports) (len plainargs))
-                   :fatalp t
-                   :fn 'vl-modinst-drop-blankports)))
-            (mv (cons w warnings) x)))
-
-         (new-plainargs (vl-plainarglist-drop-blankports plainargs ports))
-         (new-arguments (vl-arguments nil new-plainargs))
-         (x-prime       (change-vl-modinst x :portargs new-arguments)))
-
-      (mv warnings x-prime)))
-
-  (local (in-theory (enable vl-modinst-drop-blankports)))
-
-  (defthm vl-warninglist-p-of-vl-modinst-drop-blankports
-    (implies (force (vl-warninglist-p warnings))
-             (vl-warninglist-p
-              (mv-nth 0 (vl-modinst-drop-blankports x mods modalist warnings)))))
-
-  (defthm vl-modinst-p-of-vl-modinst-drop-blankports
-    (implies (and (force (vl-modinst-p x))
-                  (force (vl-modulelist-p mods))
-                  (force (equal modalist (vl-modalist mods))))
-             (vl-modinst-p
-              (mv-nth 1 (vl-modinst-drop-blankports x mods modalist warnings))))))
-
-
-
-(defsection vl-modinstlist-drop-blankports
+(define vl-modinst-drop-blankports
+  ((x        "module instance to rewrite" vl-modinst-p)
+   (mods     "list of all modules" vl-modulelist-p)
+   (modalist (equal modalist (vl-modalist mods)))
+   (warnings vl-warninglist-p))
+  :returns (mv (warnings vl-warninglist-p :hyp :fguard)
+               (new-x    vl-modinst-p     :hyp :fguard))
   :parents (drop-blankports)
-  :short "Extends @(see vl-modinst-drop-blankports) to a list of module
-instances."
+  :short "Drop arguments to blank ports from a module instance."
 
-  (defund vl-modinstlist-drop-blankports (x mods modalist warnings)
-    "Returns (MV WARNINGS X-PRIME)"
-    (declare (xargs :guard (and (vl-modinstlist-p x)
-                                (vl-modulelist-p mods)
-                                (equal modalist (vl-modalist mods))
-                                (vl-warninglist-p warnings))))
-    (if (atom x)
-        (mv warnings nil)
-      (b* (((mv warnings car-prime)
-            (vl-modinst-drop-blankports (car x) mods modalist warnings))
-           ((mv warnings cdr-prime)
-            (vl-modinstlist-drop-blankports (cdr x) mods modalist warnings))
-           (x-prime
-            (cons car-prime cdr-prime)))
-        (mv warnings x-prime))))
+  (b* (((vl-modinst x) x)
 
-  (local (in-theory (enable vl-modinstlist-drop-blankports)))
+       (target-mod (vl-fast-find-module x.modname mods modalist))
+       ((unless target-mod)
+        (b* ((w (make-vl-warning
+                 :type :vl-bad-instance
+                 :msg "~a0 refers to undefined module ~m1."
+                 :args (list x x.modname)
+                 :fatalp t
+                 :fn 'vl-modinst-drop-blankports)))
+          (mv (cons w warnings) x)))
 
-  (defthm vl-warninglist-p-of-vl-modinstlist-drop-blankports
-    (implies (force (vl-warninglist-p warnings))
-             (vl-warninglist-p
-              (mv-nth 0 (vl-modinstlist-drop-blankports x mods modalist warnings)))))
+       ((when (vl-arguments->namedp x.portargs))
+        (b* ((w (make-vl-warning
+                 :type :vl-programming-error
+                 :msg "~a0: expected all modules to be using plain arguments, ~
+                       but found named arguments.  Did you forget to run the ~
+                       argresolve transform first?"
+                 :args (list x)
+                 :fatalp t
+                 :fn 'vl-modinst-drop-blankports)))
+          (mv (cons w warnings) x)))
 
-  (defthm vl-modinstlist-p-of-vl-modinstlist-drop-blankports
-    (implies (and (vl-modinstlist-p x)
-                  (vl-modulelist-p mods)
-                  (equal modalist (vl-modalist mods)))
-             (vl-modinstlist-p
-              (mv-nth 1 (vl-modinstlist-drop-blankports x mods modalist warnings))))))
+       (ports         (vl-module->ports target-mod))
+       (plainargs     (vl-arguments->args x.portargs))
 
+       ((unless (same-lengthp plainargs ports))
+        (b* ((w (make-vl-warning
+                 :type :vl-bad-instance
+                 :msg "~a0: bad arity.  Expected ~x1 arguments but found ~x2 ~
+                       arguments."
+                 :args (list x (len ports) (len plainargs))
+                 :fatalp t
+                 :fn 'vl-modinst-drop-blankports)))
+          (mv (cons w warnings) x)))
 
+       (new-plainargs (vl-plainarglist-drop-blankports plainargs ports))
+       (new-arguments (vl-arguments nil new-plainargs))
+       (new-x         (change-vl-modinst x :portargs new-arguments)))
 
-(defsection vl-portlist-drop-blankports
+    (mv warnings new-x)))
+
+(define vl-modinstlist-drop-blankports
+  ((x        "modinsts to rewrite" vl-modinstlist-p)
+   (mods     "list of all modules" vl-modulelist-p)
+   (modalist (equal modalist (vl-modalist mods)))
+   (warnings vl-warninglist-p))
+  :returns (mv (warnings vl-warninglist-p :hyp :fguard)
+               (new-x    vl-modinstlist-p :hyp :fguard))
+  :parents (drop-blankports)
+  :short "Drop arguments to blank ports from module instances."
+
+  (b* (((when (atom x))
+        (mv warnings nil))
+       ((mv warnings car)
+        (vl-modinst-drop-blankports (car x) mods modalist warnings))
+       ((mv warnings cdr)
+        (vl-modinstlist-drop-blankports (cdr x) mods modalist warnings)))
+    (mv warnings (cons car cdr))))
+
+(define vl-portlist-drop-blankports ((x vl-portlist-p))
+  :returns (new-x vl-portlist-p :hyp :fguard)
   :parents (drop-blankports)
   :short "Drop any blank ports from a list of ports."
 
-  (defund vl-portlist-drop-blankports (x)
-    (declare (xargs :guard (vl-portlist-p x)))
-    (cond ((atom x)
-           nil)
-          ((vl-port->expr (car x))
-           (cons (car x) (vl-portlist-drop-blankports (cdr x))))
-          (t
-           (vl-portlist-drop-blankports (cdr x)))))
+  (cond ((atom x)
+         nil)
+        ((vl-port->expr (car x))
+         (cons (car x) (vl-portlist-drop-blankports (cdr x))))
+        (t
+         (vl-portlist-drop-blankports (cdr x)))))
 
-  (local (in-theory (enable vl-portlist-drop-blankports)))
-
-  (defthm vl-portlist-p-of-vl-portlist-drop-blankports
-    (implies (force (vl-portlist-p x))
-             (vl-portlist-p (vl-portlist-drop-blankports x)))))
-
-
-(defsection vl-module-drop-blankports
+(define vl-module-drop-blankports
+  ((x    "module to rewrite"   vl-module-p)
+   (mods "list of all modules" vl-modulelist-p)
+   (modalist (equal modalist (vl-modalist mods))))
+  :returns (new-x vl-module-p :hyp :fguard)
   :parents (drop-blankports)
-  :short "Drop any blank ports from a module, and simultaneously remove any
-blank ports from all module instances within the module."
+  :short "Drop any blank ports from a module, and simultaneously remove all
+arguments to blank ports from all module instances within the module."
 
-  (defund vl-module-drop-blankports (x mods modalist)
-    (declare (xargs :guard (and (vl-module-p x)
-                                (vl-modulelist-p mods)
-                                (equal modalist (vl-modalist mods)))))
-    ;; Note: we don't respect hands-off, but it doesn't seem like it would be
-    ;; legitimate to do so: the correctness of this transformation requires
-    ;; that the instances throughout every module be updated.
-    (b* (((vl-module x) x)
-         (ports (vl-portlist-drop-blankports x.ports))
-         ((mv warnings modinsts)
-          (vl-modinstlist-drop-blankports x.modinsts mods modalist x.warnings))
-         (x-prime
-          (change-vl-module x
-                            :ports ports
-                            :modinsts modinsts
-                            :warnings warnings)))
-      x-prime))
-
-  (local (in-theory (enable vl-module-drop-blankports)))
-
-  (defthm vl-module-p-of-vl-module-drop-blankports
-    (implies (and (force (vl-module-p x))
-                  (force (vl-modulelist-p mods))
-                  (force (equal modalist (vl-modalist mods))))
-             (vl-module-p
-              (vl-module-drop-blankports x mods modalist))))
-
+  (b* (((vl-module x) x)
+       (ports (vl-portlist-drop-blankports x.ports))
+       ((mv warnings modinsts)
+        (vl-modinstlist-drop-blankports x.modinsts mods modalist x.warnings)))
+    (change-vl-module x
+                      :ports ports
+                      :modinsts modinsts
+                      :warnings warnings))
+  ///
   (defthm vl-module->name-of-vl-module-drop-blankports
-    (equal (vl-module->name (vl-module-drop-blankports x mods modalist))
-           (vl-module->name x))))
+    (let ((ret (vl-module-drop-blankports x mods modalist)))
+      (equal (vl-module->name ret)
+             (vl-module->name x)))))
 
-
-
-(defsection vl-modulelist-drop-blankports-aux
+(defprojection vl-modulelist-drop-blankports-aux (x mods modalist)
+  (vl-module-drop-blankports x mods modalist)
+  :guard (and (vl-modulelist-p x)
+              (vl-modulelist-p mods)
+              (equal modalist (vl-modalist mods)))
+  :result-type vl-modulelist-p
   :parents (drop-blankports)
-  :short "Projects @(see vl-module-blankargs) across a module list."
+  :rest
+  ((defthm vl-modulelist->names-of-vl-modulelist-drop-blankports-aux
+     (let ((ret (vl-modulelist-drop-blankports-aux x mods modalist)))
+       (equal (vl-modulelist->names ret)
+              (vl-modulelist->names x))))))
 
-  (defprojection vl-modulelist-drop-blankports-aux (x mods modalist)
-    (vl-module-drop-blankports x mods modalist)
-    :guard (and (vl-modulelist-p x)
-                (vl-modulelist-p mods)
-                (equal modalist (vl-modalist mods)))
-    :result-type vl-modulelist-p)
-
-  (local (in-theory (enable vl-modulelist-drop-blankports-aux)))
-
-  (defthm vl-modulelist->names-of-vl-modulelist-drop-blankports-aux
-    (equal (vl-modulelist->names (vl-modulelist-drop-blankports-aux x mods modalist))
-           (vl-modulelist->names x))))
-
-
-
-(defsection vl-modulelist-drop-blankports
+(define vl-modulelist-drop-blankports ((x vl-modulelist-p))
+  :returns (new-x vl-modulelist-p :hyp :fguard)
   :parents (drop-blankports)
   :short "Top-level @(see drop-blankports) transformation."
 
-  (defund vl-modulelist-drop-blankports (x)
-    (declare (xargs :guard (vl-modulelist-p x)))
-    (b* ((modalist (vl-modalist x))
-         (x-prime  (vl-modulelist-drop-blankports-aux x x modalist))
-         (-        (fast-alist-free modalist)))
-      x-prime))
-
-  (local (in-theory (enable vl-modulelist-drop-blankports)))
-
-  (defthm vl-modulelist-p-of-vl-modulelist-drop-blankports
-    (implies (force (vl-modulelist-p x))
-             (vl-modulelist-p (vl-modulelist-drop-blankports x))))
-
+  (b* ((modalist (vl-modalist x))
+       (new-x    (vl-modulelist-drop-blankports-aux x x modalist)))
+    (fast-alist-free modalist)
+    new-x)
+  ///
   (defthm vl-modulelist->names-of-vl-modulelist-drop-blankports
     (equal (vl-modulelist->names (vl-modulelist-drop-blankports x))
            (vl-modulelist->names x))))

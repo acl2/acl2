@@ -24,86 +24,66 @@
 (local (include-book "../util/arithmetic"))
 
 
-(defsection vl-regdecllist-elim-unused-regs
+(define vl-regdecllist-elim-unused-regs
+  ((regs   vl-regdecllist-p)
+   (used   string-listp)
+   (ualist (equal ualist (make-lookup-alist used))))
+  :returns (new-regs vl-regdecllist-p :hyp :fguard)
 
-  (defund vl-regdecllist-elim-unused-regs (regs used ualist)
-    "Returns REGS-PRIME"
-    (declare (xargs :guard (and (vl-regdecllist-p regs)
-                                (string-listp used)
-                                (equal ualist (make-lookup-alist used)))))
-    (cond ((atom regs)
-           nil)
-          ((fast-memberp (vl-regdecl->name (car regs)) used ualist)
-           ;; It's used, keep it
-           (cons (car regs) (vl-regdecllist-elim-unused-regs (cdr regs) used ualist)))
-          (t
-           ;; Not used, eliminate it.
-           (vl-regdecllist-elim-unused-regs (cdr regs) used ualist))))
-
-  (local (in-theory (enable vl-regdecllist-elim-unused-regs)))
-
-  (defthm vl-regdecllist-p-of-vl-regdecllist-elim-unused-regs
-    (implies (force (vl-regdecllist-p regs))
-             (vl-regdecllist-p (vl-regdecllist-elim-unused-regs regs used ualist)))))
+  (cond ((atom regs)
+         nil)
+        ((fast-memberp (vl-regdecl->name (car regs)) used ualist)
+         ;; It's used, keep it
+         (cons (car regs) (vl-regdecllist-elim-unused-regs (cdr regs) used ualist)))
+        (t
+         ;; Not used, eliminate it.
+         (vl-regdecllist-elim-unused-regs (cdr regs) used ualist))))
 
 
+(define vl-module-elim-unused-regs ((x vl-module-p))
+  :returns (new-x vl-module-p :hyp :fguard)
+  (b* ((regs (vl-module->regdecls x))
+       ((unless (consp regs))
+        ;; Optimization.  Don't need to do anything if there aren't any
+        ;; registers anyway.
+        x)
+       (used       (vl-exprlist-names (vl-module-allexprs x)))
+       (ualist     (make-lookup-alist used))
+       (regs-prime (vl-regdecllist-elim-unused-regs regs used ualist))
+       (-          (fast-alist-free ualist))
+       ((when (same-lengthp regs-prime regs))
+        ;; Optimization.  Don't need to do anything more unless we threw
+        ;; out some registers.
+        x)
+       (old-names (mergesort (vl-regdecllist->names regs)))
+       (new-names (mergesort (vl-regdecllist->names regs-prime)))
+       (unused-names (difference old-names new-names))
+       (warnings (cons (make-vl-warning
+                        :type :vl-warn-unused-reg
+                        :msg "In ~m0, eliminating spurious registers ~&1."
+                        :args (list (vl-module->name x) unused-names)
+                        :fatalp nil
+                        :fn 'vl-module-elim-unused-regs)
+                       (vl-module->warnings x)))
+       (new-x (change-vl-module x
+                                :regdecls regs-prime
+                                :warnings warnings)))
+    new-x)
 
-
-(defsection vl-module-elim-unused-regs
-
-  (defund vl-module-elim-unused-regs (x)
-    (declare (xargs :guard (vl-module-p x)))
-    (b* ((regs (vl-module->regdecls x))
-         ((unless (consp regs))
-          ;; Optimization.  Don't need to do anything if there aren't any
-          ;; registers anyway.
-          x)
-         (used       (vl-exprlist-names (vl-module-allexprs x)))
-         (ualist     (make-lookup-alist used))
-         (regs-prime (vl-regdecllist-elim-unused-regs regs used ualist))
-         (-          (fast-alist-free ualist))
-         ((when (same-lengthp regs-prime regs))
-          ;; Optimization.  Don't need to do anything more unless we threw
-          ;; out some registers.
-          x)
-         (old-names (mergesort (vl-regdecllist->names regs)))
-         (new-names (mergesort (vl-regdecllist->names regs-prime)))
-         (unused-names (difference old-names new-names))
-         (warnings (cons (make-vl-warning
-                          :type :vl-warn-unused-reg
-                          :msg "In ~m0, eliminating spurious registers ~&1."
-                          :args (list (vl-module->name x) unused-names)
-                          :fatalp nil
-                          :fn 'vl-module-elim-unused-regs)
-                         (vl-module->warnings x)))
-         (x-prime (change-vl-module x
-                                    :regdecls regs-prime
-                                    :warnings warnings)))
-        x-prime))
-
-  (local (in-theory (enable vl-module-elim-unused-regs)))
-
-  (defthm vl-module-p-of-vl-module-elim-unused-regs
-    (implies (force (vl-module-p x))
-             (vl-module-p (vl-module-elim-unused-regs x))))
-
+  ///
   (defthm vl-module->name-of-vl-module-elim-unused-regs
     (equal (vl-module->name (vl-module-elim-unused-regs x))
            (vl-module->name x))))
 
 
-(defsection vl-modulelist-elim-unused-regs
-
-  (defprojection vl-modulelist-elim-unused-regs (x)
-    (vl-module-elim-unused-regs x)
-    :guard (vl-modulelist-p x)
-    :result-type vl-modulelist-p
-    :nil-preservingp t)
-
-  (local (in-theory (enable vl-modulelist-elim-unused-regs)))
-
-  (defthm vl-modulelist->names-of-vl-modulelist-elim-unused-regs
-    (equal (vl-modulelist->names (vl-modulelist-elim-unused-regs x))
-           (vl-modulelist->names x))))
+(defprojection vl-modulelist-elim-unused-regs (x)
+  (vl-module-elim-unused-regs x)
+  :guard (vl-modulelist-p x)
+  :result-type vl-modulelist-p
+  :nil-preservingp t
+  :rest
+  ((defthm vl-modulelist->names-of-vl-modulelist-elim-unused-regs
+     (equal (vl-modulelist->names (vl-modulelist-elim-unused-regs x))
+            (vl-modulelist->names x)))))
 
 

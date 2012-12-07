@@ -8,6 +8,7 @@
               flag-equivs-name expand-calls-computed-hint
               find-calls-of-fns-term
               find-calls-of-fns-list
+              defxdoc defsection
               )
     (union-eq *acl2-exports*
               *common-lisp-symbols-from-main-lisp-package*))

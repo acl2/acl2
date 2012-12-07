@@ -705,9 +705,8 @@ warnings-prime x-prime)')</p>")))
 (defprojection vl-modulelist-make-array-indexing (x)
   (vl-module-make-array-indexing x)
   :guard (vl-modulelist-p x)
-  :result-type vl-modulelist-p)
-
-(defthm vl-modulelist->names-of-vl-modulelist-make-array-indexing
-  (equal (vl-modulelist->names (vl-modulelist-make-array-indexing x))
-         (vl-modulelist->names x))
-  :hints(("Goal" :induct (len x))))
+  :result-type vl-modulelist-p
+  :rest
+  ((defthm vl-modulelist->names-of-vl-modulelist-make-array-indexing
+     (equal (vl-modulelist->names (vl-modulelist-make-array-indexing x))
+            (vl-modulelist->names x)))))

@@ -19,15 +19,11 @@
 ; Original author: Jared Davis <jared@centtech.com>
 
 (in-package "VL")
+(include-book "occform/util")
 (include-book "../mlib/allexprs")
-(include-book "../mlib/namefactory")
 (include-book "../mlib/stmt-tools")
-(include-book "occform/gen-util")
-(include-book "../primitives")
 (local (include-book "../util/arithmetic"))
 (local (include-book "../util/osets"))
-
-
 
 (defxdoc weirdint-elim
   :parents (transforms)

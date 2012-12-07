@@ -42,6 +42,7 @@
     ;; Things we want to "import"
     '(assert!
       b*
+      fun
       append-without-guard
       flatten
       strip-cadrs
@@ -79,6 +80,7 @@
       signed-byte-p
       unsigned-byte-p
       cwtime
+      xf-cwtime
       defxdoc
       undocumented
       progn$
@@ -184,6 +186,7 @@
      enable
      disable
      e/d
+     warn
      nat-listp ; included 12/4/2012 by Matt K., for addition to *acl2-exports*
      )))
 

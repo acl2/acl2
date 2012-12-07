@@ -217,17 +217,14 @@ structure where any useless arguments are removed.</p>"
              (vl-modinst-p (vl-modinst-elim-useless-params x map)))))
 
 
-(defsection vl-modinstlist-elim-useless-params
-
-  (defprojection vl-modinstlist-elim-useless-params (x map)
-    (vl-modinst-elim-useless-params x map)
-    :guard (and (vl-modinstlist-p x)
-                (vl-useless-params-map-p map)))
-
-  (defthm vl-modinstlist-p-of-vl-modinstlist-elim-useless-params
-    (implies (force (vl-modinstlist-p x))
-             (vl-modinstlist-p (vl-modinstlist-elim-useless-params x map)))
-    :hints(("Goal" :induct (len x)))))
+(defprojection vl-modinstlist-elim-useless-params (x map)
+  (vl-modinst-elim-useless-params x map)
+  :guard (and (vl-modinstlist-p x)
+              (vl-useless-params-map-p map))
+  :rest
+  ((defthm vl-modinstlist-p-of-vl-modinstlist-elim-useless-params
+     (implies (force (vl-modinstlist-p x))
+              (vl-modinstlist-p (vl-modinstlist-elim-useless-params x map))))))
 
 
 (defsection vl-module-elim-useless-params
@@ -250,22 +247,18 @@ structure where any useless arguments are removed.</p>"
            (vl-module->name x))))
 
 
-(defsection vl-modulelist-elim-useless-params
+(defprojection vl-modulelist-elim-useless-params (x map)
+  (vl-module-elim-useless-params x map)
+  :guard (and (vl-modulelist-p x)
+              (vl-useless-params-map-p map))
+  :rest
+  ((defthm vl-modulelist-p-of-vl-modulelist-elim-useless-params
+     (implies (force (vl-modulelist-p x))
+              (vl-modulelist-p (vl-modulelist-elim-useless-params x map))))
 
-  (defprojection vl-modulelist-elim-useless-params (x map)
-    (vl-module-elim-useless-params x map)
-    :guard (and (vl-modulelist-p x)
-                (vl-useless-params-map-p map)))
-
-  (local (in-theory (enable vl-modulelist-elim-useless-params)))
-
-  (defthm vl-modulelist-p-of-vl-modulelist-elim-useless-params
-    (implies (force (vl-modulelist-p x))
-             (vl-modulelist-p (vl-modulelist-elim-useless-params x map))))
-
-  (defthm vl-modulelist->names-of-vl-modulelist-elim-useless-params
-    (equal (vl-modulelist->names (vl-modulelist-elim-useless-params x map))
-           (vl-modulelist->names x))))
+   (defthm vl-modulelist->names-of-vl-modulelist-elim-useless-params
+     (equal (vl-modulelist->names (vl-modulelist-elim-useless-params x map))
+            (vl-modulelist->names x)))))
 
 
 

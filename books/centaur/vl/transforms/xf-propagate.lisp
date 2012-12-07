@@ -485,9 +485,8 @@ Hence, we need some code for detecting what wires are driven.</p>"
   :guard (and (vl-modulelist-p x)
               (propagate-limits-p limits))
   :result-type vl-modulelist-p
-  :parents (propagate))
-
-(defthm vl-modulelist->names-of-vl-modulelist-propagate
-  (equal (vl-modulelist->names (vl-modulelist-propagate x limits))
-         (vl-modulelist->names x))
-  :hints(("Goal" :induct (len x))))
+  :parents (propagate)
+  :rest
+  ((defthm vl-modulelist->names-of-vl-modulelist-propagate
+     (equal (vl-modulelist->names (vl-modulelist-propagate x limits))
+            (vl-modulelist->names x)))))

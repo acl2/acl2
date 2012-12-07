@@ -132,20 +132,15 @@ essentially say where some expressions are from.</p>"
          (collect-elem (mksym element '-ctxexprs))
          (type-thm     (mksym 'vl-exprctxalist-p-of- collect-list)))
 
-    `(defsection ,collect-list
-
-       (defmapappend ,collect-list (mod x)
-         (,collect-elem mod x)
-         :guard
-         (and (stringp mod)
-              (,list-type-p x)))
-
-       (local (in-theory (enable ,collect-list)))
-
-       (defthm ,type-thm
-         (implies (and (force (stringp mod))
-                       (force (,list-type-p x)))
-                  (vl-exprctxalist-p (,collect-list mod x)))))))
+    `(defmapappend ,collect-list (mod x)
+       (,collect-elem mod x)
+       :guard (and (stringp mod)
+                   (,list-type-p x))
+       :rest
+       ((defthm ,type-thm
+          (implies (and (force (stringp mod))
+                        (force (,list-type-p x)))
+                   (vl-exprctxalist-p (,collect-list mod x))))))))
 
 (def-vl-ctxexprs :type vl-port)
 (def-vl-ctxexprs :type vl-portdecl)

@@ -24,21 +24,21 @@
 (local (include-book "arithmetic"))
 
 
-(defund clean-alist (x)
-  (declare (xargs :guard t))
+(define clean-alist (x)
+  :parents (utilities)
+
   (b* ((fal    (acl2::make-fal x nil))
        (shrink (hons-shrink-alist fal nil))
        (-      (flush-hons-get-hash-table-link fal))
        (-      (flush-hons-get-hash-table-link shrink)))
-      shrink))
+      shrink)
 
-(local (in-theory (enable clean-alist)))
+  :returns (ans alistp)
 
-(defthm alistp-of-clean-alist
-  (alistp (clean-alist x)))
+  ///
 
-(defthm hons-assoc-equal-of-clean-alist
-  (equal (hons-assoc-equal a (clean-alist x))
-         (hons-assoc-equal a x)))
+  (defthm hons-assoc-equal-of-clean-alist
+    (equal (hons-assoc-equal a (clean-alist x))
+           (hons-assoc-equal a x))))
 
 

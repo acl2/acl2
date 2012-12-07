@@ -19,6 +19,252 @@
 ; Original authors: Sol Swords and Jared Davis
 ;                   {sswords,jared}@centtech.com
 
+#||  for interactive development, you'll need to ld the package first:
+
+(ld ;; fool dependency scanner
+ "flag-package.lsp")
+
+||#
+
+(in-package "FLAG")
+(include-book "xdoc/top" :dir :system)
+
+(defxdoc make-flag
+  :parents (mutual-recursion)
+  :short "Create a flag-based @(see induction) scheme for a @(see
+mutual-recursion)."
+
+  :long "<p>The @('make-flag') macro lets you quickly introduce:</p>
+
+<ul>
+
+<li>a \"flag function\" that mimics a @(see mutual-recursion), and</li>
+
+<li>a macro for proving properties by induction according to the flag
+function.</li>
+
+</ul>
+
+<p>Generally speaking, writing a corresponding flag function is the first step
+toward proving any inductive property about mutually recursive definitions;
+more discussion below.</p>
+
+<h3>Using @('make-flag')</h3>
+
+<p>Example:</p>
+
+@({
+ (make-flag flag-pseudo-termp               ; flag function name
+            pseudo-termp                    ; any member of the clique
+            ;; optional arguments:
+            :flag-mapping ((pseudo-termp      . term)
+                           (pseudo-term-listp . list))
+            :defthm-macro-name defthm-pseudo-termp
+            :flag-var flag
+            :hints ((\"Goal\" ...))         ; for the measure theorem
+                                          ; usually not necessary
+            )
+})
+
+<p>Here @('pseudo-termp') is the name of a function in a mutually recursive
+clique.  In this case, the clique has two functions, @('pseudo-termp') and
+@('pseudo-term-listp').  name of the newly generated flag function will be
+@('flag-pseudo-termp').</p>
+
+<p>The other arguments are optional:</p>
+
+<ul>
+
+<li>@(':flag-mapping') specifies short names to identify with each of the
+functions of the clique.  By default we just use the function names themselves,
+but it's usually nice to pick shorter names since you'll have to mention them
+in the theorems you prove.</li>
+
+<li>@(':defthm-macro-name') lets you name the new macro that will be generated
+for proving theorems by inducting with the flag function.  By default it is
+named @('defthm-[flag-function-name]'), i.e., for the above example, it would
+be called @('defthm-flag-psuedo-termp').</li>
+
+<li>@(':flag-var') specifies the name of the variable to use for the flag.  By
+default it is just called @('flag'), and we rarely change it.  To be more
+precise, it is @('pkg::flag') where @('pkg') is the package of the new flag
+function's name; usually this means you don't have to think about the
+package.</li>
+
+</ul>
+
+
+<h3>Proving Theorems with @('make-flag')</h3>
+
+<p>To prove an inductive theorem about a mutually-recursive function, usually
+one has to effectively prove a big ugly formula that has a different case for
+different theorem about each function in the clique.</p>
+
+<p>Normally, even with the flag function written for you, this would be a
+tedious process.  Here is an example of how you might prove by induction that
+@('pseudo-termp') and @('pseudo-term-listp') return Booleans:</p>
+
+@({
+ ;; ACL2 can prove these are Booleans even without induction due to
+ ;; type reasoning, so for illustration we'll turn these off so that
+ ;; induction is required:
+
+ (in-theory (disable (:type-prescription pseudo-termp)
+                     (:type-prescription pseudo-term-listp)
+                     (:executable-counterpart tau-system)))
+
+ ;; Main part of the proof, ugly lemma with cases.  Note that we
+ ;; have to use :rule-classes nil here because this isn't a valid
+ ;; rewrite rule.
+
+ (local (defthm crux
+          (cond ((equal flag 'term)
+                 (booleanp (pseudo-termp x)))
+                ((equal flag 'list)
+                 (booleanp (pseudo-term-listp lst)))
+                (t
+                 t))
+          :rule-classes nil
+          :hints((\"Goal\" :induct (flag-pseudo-termp flag x lst)))))
+
+ ;; Now we have to re-prove each part of the lemma so that we can use
+ ;; it as a proper rule.
+
+ (defthm type-of-pseudo-termp
+   (booleanp (pseudo-termp x))
+   :rule-classes :type-prescription
+   :hints((\"Goal\" :use ((:instance crux (flag 'term))))))
+
+ (defthm type-of-pseudo-term-listp
+   (booleanp (pseudo-term-listp lst))
+   :rule-classes :type-prescription
+   :hints((\"Goal\" :use ((:instance crux (flag 'list))))))
+})
+
+<p>Obviously this is tedious and makes you say everything twice.  Since the
+steps are so standard, @('make-flag') automatically gives you a macro to
+automate the process.  Here's the same proof, done with the new macro:</p>
+
+@({
+ (defthm-pseudo-termp
+   (defthm type-of-pseudo-termp
+     (booleanp (pseudo-termp x))
+     :rule-classes :type-prescription
+     :flag term)
+   (defthm type-of-pseudo-term-listp
+     (booleanp (pseudo-term-listp lst))
+     :rule-classes :type-prescription
+     :flag list))
+})
+
+<p>It's worth understanding some of the details of what's going on here.</p>
+
+<p>The macro automatically tries to induct using the induction scheme.  But
+<color rgb=\"#ff0000\">this only works if you're using the formals of the
+flag function as the variable names in the theorems.</color>  In the case of
+@('pseudo-termp'), this is pretty subtle: ACL2's definition uses different
+variables for the term/list cases, i.e.,</p>
+
+@({
+ (mutual-recursion
+   (defun pseudo-termp (x) ...)
+   (defun pseudo-term-listp (lst) ...))
+})
+
+<p>So the theorem above only works without hints because we happened to choose
+@('x') and @('lst') as our variables.  If, instead, we wanted to use different
+variable names in our theorems, we'd have to give an explicit induction hint.
+For example:</p>
+
+@({
+ (defthm-pseudo-termp
+   (defthm type-of-pseudo-termp
+     (booleanp (pseudo-termp term))
+     :rule-classes :type-prescription
+     :flag term)
+   (defthm type-of-pseudo-term-listp
+     (booleanp (pseudo-term-listp termlist))
+     :rule-classes :type-prescription
+     :flag list)
+   :hints((\"Goal\" :induct (flag-pseudo-termp flag term termlist))))
+})
+
+
+<h3>Bells and Whistles</h3>
+
+<p>Sometimes you may only want to export one of the theorems.  For instance, if
+we only want to add a rule about the term case, but no the list case, we could
+do this:</p>
+
+@({
+ (defthm-pseudo-termp
+   (defthm type-of-pseudo-termp
+     (booleanp (pseudo-termp x))
+     :rule-classes :type-prescription
+     :flag term)
+   (defthm type-of-pseudo-term-listp
+     (booleanp (pseudo-term-listp lst))
+     :flag list
+     :skip t))
+})
+
+<p>There is an older, alternate syntax for @('make-flag') that is still
+available.  To encourage transitioning to the new syntax, the old syntax is not
+documented and should usually not be used.  However, the old syntax is very
+convenient for skipping theorems, because it is more concise and doesn't
+require theorem names for skipped theorems.  Here's an example:</p>
+
+@({
+ (defthm-pseudo-termp
+   (list
+    (booleanp (pseudo-term-listp acl2::lst))
+    :skip t)
+   (defthm type-of-pseudo-termp
+     (booleanp (pseudo-termp acl2::x))
+     :rule-classes :type-prescription
+     :flag term))
+})
+
+
+<h3>Advanced Hints</h3>
+
+<p>For advanced users, note that each individual \"theorem\" can have its own
+computed hints.  For instance we can write:</p>
+
+@({
+ (defthm-pseudo-termp
+   (defthm type-of-pseudo-termp
+     (booleanp (pseudo-termp term))
+     :rule-classes :type-prescription
+     :flag term
+     :hints ('(:expand ((pseudo-termp x))))
+   (defthm type-of-pseudo-term-listp
+     (booleanp (pseudo-term-listp termlist))
+     :rule-classes :type-prescription
+     :flag list
+     :hints ('(:expand ((pseudo-term-listp lst)))))
+   :hints((\"Goal\" :induct (flag-pseudo-termp flag term termlist))))
+})
+
+<p>These hints are used <b>during the mutually inductive proof</b>.  Under the
+top-level induction, we check the clause for the current subgoal to determine
+the hypothesized setting of the flag variable, and provide the computed hints
+for the appropriate case.</p>
+
+<p>If you provide both a top-level hints form and hints on some or all of the
+separate theorems, both sets of hints have an effect; try @(':trans1') on such
+a defthm-flag-fn form to see what you get.</p>
+
+<p>You may use subgoal hints as well as computed hints, but they will not have
+any effect if the particular subgoal does not occur when those hints are in
+effect.  We simply translate subgoal hints to computed hints:</p>
+
+@({
+ (\"Subgoal *1/5.2\" :in-theory (theory 'foo))
+   --->
+ (and (equal id (parse-clause-id \"Subgoal *1/5.2\"))
+      '(:in-theory (theory 'foo)))
+})")
 
 ; Examples
 #|
@@ -89,14 +335,9 @@
 |#
 
 
-
-(in-package "FLAG")
-
-
 (defthmd expand-all-hides
   (equal (hide x) x)
   :hints (("goal" :expand ((hide x)))))
-
 
 
 (defun acl2::flag-is (x)
@@ -362,7 +603,7 @@
   ;; _either_ (flag <thm-body> :name ... :rule-classes ... :doc ...)
   ;;;    (for backwards compatibility)
   ;; _or_  (defthm <thmname> <thm-body> :flag ... :rule-classes ... :doc ...)
-  
+
   (if (consp alist)
       (let* ((flag   (cdar alist))
              (lookup (assoc-flag-in-thmparts flag thmparts)))
@@ -387,7 +628,7 @@
   ;; _either_ (flag <thm-body> :name ... :rule-classes ... :doc ...)
   ;;;    (for backwards compatibility)
   ;; _or_  (defthm <thmname> <thm-body> :flag ... :rule-classes ... :doc ...)
-  
+
   (if (consp alist)
       (let* ((flag   (cdar alist))
              (lookup (assoc-flag-in-thmparts flag thmparts)))
@@ -413,8 +654,8 @@
           (er hard 'flag-thm-entry-thmname
               "~
 Expected an explicit name for each theorem, since no general name was
-given.  The following theorem does not have a name: ~x0~%")))))
-          
+given.  The following theorem does not have a name: ~x0~%" entry)))))
+
 
 (defun make-defthm-macro-fn-aux (lemma-name explicit-name flag-var alist thmparts)
   ;; We have just proven the lemma and it's time to instantiate it to
@@ -456,12 +697,10 @@ given.  The following theorem does not have a name: ~x0~%")))))
                     (concatenate 'string "FLAG-LEMMA-FOR-"
                                  (symbol-name explicit-name))
                     explicit-name)
-                 (let ((first-thmname
-                        (flag-thm-entry-thmname nil nil (car thmparts))))
-                   (intern-in-package-of-symbol
-                    (concatenate 'string "FLAG-LEMMA-FOR-"
-                                 (symbol-name  first-thmname))
-                    first-thmname))))
+                 (intern-in-package-of-symbol
+                  (concatenate 'string "FLAG-LEMMA-FOR-"
+                               (symbol-name (car flag-fncall)))
+                  (car flag-fncall))))
          (instructions (extract-keyword-from-args :instructions args))
          (user-hints (extract-keyword-from-args :hints args))
          (hints (and (not instructions)
@@ -653,128 +892,7 @@ given.  The following theorem does not have a name: ~x0~%")))))
                              ',local
                              (w state))))
 
-(defdoc make-flag
-":doc-section miscellaneous
-Make-flag: create a flag-based induction scheme for a mutual recursion~/
 
-Usage:
-~bv[]
- (FLAG::make-flag flag-pseudo-termp
-                  pseudo-termp
-                  :flag-var flag
-                  :flag-mapping ((pseudo-termp . term)
-                                 (pseudo-term-listp . list))
-                 ;; :hints {for the measure theorem}
-                  :defthm-macro-name defthm-pseudo-termp
-                  )
-~ev[]
-
-Here pseudo-termp is the name of a function in a mutually recursive clique.  In
-this case, the clique has two functions, pseudo-termp and pseudo-term-listp.
-The name of the newly generated flag function will be flag-pseudo-termp.
-
-The other arguments are optional:
- * flag-var specifies the name of the variable to use for the flag.
- * flag-mapping specifies short names to identify with each of the functions of
-the clique.  In absence of these names, the function names themselves will be
-used.
- * defthm-macro-name: Make-flag creates a macro that is useful for proving
-theorems about the mutual recursion.  This argument provides the name of this
-macro.
-~/
-
-Using the generated defthm macro:
-
-To prove an inductive theorem about a mutually-recursive function, usually one
-has to effectively prove a different theorem about each function in the mutual
-recursion, but do them all at once inside a single induction.  The defthm macro
-automates this process.
-
-Here are some examples of its usage with the flag-pseudo-termp example above.
-
-~bv[]
- (defthm-pseudo-termp type-of-pseudo-termp
-   (term (booleanp (pseudo-termp x))
-         :rule-classes :rewrite
-         :doc nil)
-   (list (booleanp (pseudo-term-listp lst)))
-   :hints ((\"goal\" :expand (pseudo-term-listp lst))))
-~ev[]
-
-The above form produces two theorems named, respectively,
-type-of-pseudo-termp-term and type-of-pseudo-termp-list.  The hints provided
-are modified automatically by the defthm macro in order to provide an induction
-scheme.  However, this induction scheme assumes you're using the formals of the
-flag function as the variable names of the theorem.  Otherwise, you'll have to
-provide your own induction hint, as follows.  We also use an alternative syntax
-in this example:
-
-~bv[]
- (defthm-pseudo-termp
-     ;; name in top-level form is optional if names for each theorem are provided
-   (defthm type-of-pseudo-termp
-     (booleanp (pseudo-termp term))
-     :flag term)
-   (defthm type-of-pseudo-term-listp
-     (booleanp (pseudo-term-listp termlist))
-     :flag term)
-   :hints ((\"goal\" :induct (flag-pseudo-termp flag term termlist))))
-~ev[]
-
-Here we only export the theorem about pseudo-termp, and skip the one about
-pseudo-term-listp: putting the keyword argument ~c[:skip t] on any of the
-lemmas causes this behavior.  We're also mixing the allowed syntaxes:
-
-~bv[]
- (defthm-pseudo-termp
-     ;; name in top-level form is optional if names for each theorem are provided
-   (defthm type-of-pseudo-termp
-     (booleanp (pseudo-termp term))
-     :flag term)
-   (list
-     (booleanp (pseudo-term-listp termlist))
-     :skip t)
-   :hints ((\"goal\" :induct (flag-pseudo-termp flag term termlist))))
-~ev[]
-
-You may also provide (computed) hints to the separate theorems, as follows:
-
-~bv[]
- (local (in-theory (disable pseudo-termp pseudo-term-listp)))
- (defthm-pseudo-termp
-     ;; name in top-level form is optional if names for each theorem are provided
-   (defthm type-of-pseudo-termp
-     (booleanp (pseudo-termp x))
-     :hints ('(:expand ((pseudo-termp x))))
-     :flag term)
-   (defthm type-of-pseudo-term-listp
-     (booleanp (pseudo-term-listp lst))
-     :hints ('(:expand ((pseudo-term-listp lst))))
-     :skip t))
-~ev[]
-
-These are used during the mutually inductive proof.  Under the top-level
-induction, we check the clause for the current subgoal to determine the
-hypothesized setting of the flag variable, and provide the computed hints for
-the appropriate case.
-
-If you provide both a top-level hints form and hints on some or all of the
-separate theorems, both sets of hints have an effect; try :trans1 on such a
-defthm-flag-fn form to see what you get.
-
-You may use subgoal hints as well as computed hints, but they will not have any
-effect if the particular subgoal does not occur when those hints are in
-effect.  We simply translate subgoal hints to computed hints:
-~bv[]
- (\"Subgoal *1/5.2\" :in-theory (theory 'foo))
-~ev[]
-becomes
-~bv[]
- (and (equal id (parse-clause-id \"Subgoal *1/5.2\"))
-      '(:in-theory (theory 'foo))).
-~ev[]
-
-~/ ")
 
 ;; Accessors for the records stored in the flag-fns table
 (defun flag-present (fn world)

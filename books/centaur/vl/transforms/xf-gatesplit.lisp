@@ -884,6 +884,7 @@ in the module.</li>
 
 
 (defsection vl-gateinstlist-gatesplit
+  :parents (gatesplit)
 
   (defund vl-gateinstlist-gatesplit (x nf warnings)
     (declare (xargs :guard (and (vl-gateinstlist-p x)
@@ -926,6 +927,7 @@ in the module.</li>
 
 
 (defsection vl-module-gatesplit
+  :parents (gatesplit)
 
   (defund vl-module-gatesplit (x)
     (declare (xargs :guard (vl-module-p x)))
@@ -955,16 +957,13 @@ in the module.</li>
 
 
 
-(defsection vl-modulelist-gatesplit
-
-  (defprojection vl-modulelist-gatesplit (x)
-    (vl-module-gatesplit x)
-    :guard (vl-modulelist-p x)
-    :result-type vl-modulelist-p)
-
-  (local (in-theory (enable vl-modulelist-gatesplit)))
-
-  (defthm vl-modulelist->names-of-vl-modulelist-gatesplit
-    (equal (vl-modulelist->names (vl-modulelist-gatesplit x))
-           (vl-modulelist->names x))))
+(defprojection vl-modulelist-gatesplit (x)
+  (vl-module-gatesplit x)
+  :guard (vl-modulelist-p x)
+  :result-type vl-modulelist-p
+  :parents (gatesplit)
+  :rest
+  ((defthm vl-modulelist->names-of-vl-modulelist-gatesplit
+     (equal (vl-modulelist->names (vl-modulelist-gatesplit x))
+            (vl-modulelist->names x)))))
 

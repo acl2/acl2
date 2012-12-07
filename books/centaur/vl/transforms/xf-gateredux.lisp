@@ -19,7 +19,7 @@
 ; Original author: Jared Davis <jared@centtech.com>
 
 (in-package "VL")
-(include-book "occform/gen-simple")
+(include-book "occform/simple")
 (local (include-book "../util/arithmetic"))
 
 

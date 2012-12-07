@@ -267,6 +267,14 @@
                                     expand-level acc state)))
          (mv acc id state)))))
 
+(defconst *xml-entity-stuff*
+  "<!DOCTYPE xdoc [
+  <!ENTITY mdash \"&#8212;\">
+  <!ENTITY rarr \"&#8594;\">
+  <!ENTITY nbsp \"&#160;\">
+]>
+")
+
 (defun save-hierarchy (x dir topics-fal index-pkg expand-level state)
 
 ; X is all topics.  We assume all parents are normalized.
@@ -277,6 +285,7 @@
        (acc   (cons #\Newline acc))
        (acc   (str::revappend-chars "<?xml-stylesheet type=\"text/xsl\" href=\"xml-topic-index.xsl\"?>" acc))
        (acc   (cons #\Newline acc))
+       (acc   (str::revappend-chars *xml-entity-stuff* acc))
        (acc   (str::revappend-chars "<page>" acc))
        (acc   (cons #\Newline acc))
        (acc   (str::revappend-chars "<hindex_root>" acc))
@@ -357,6 +366,7 @@
        (acc (cons #\Newline acc))
        (acc (str::revappend-chars "<?xml-stylesheet type=\"text/xsl\" href=\"xml-full-index.xsl\"?>" acc))
        (acc (cons #\Newline acc))
+       (acc   (str::revappend-chars *xml-entity-stuff* acc))
        (acc (str::revappend-chars "<page>" acc))
        (acc (cons #\Newline acc))
        ((mv acc state) (index-topics x "Full Index" dir topics-fal index-pkg state acc))
@@ -422,6 +432,7 @@
        (acc    (cons #\Newline acc))
        (acc    (str::revappend-chars "<?xml-stylesheet type=\"text/xsl\" href=\"xml-topic.xsl\"?>" acc))
        (acc    (cons #\Newline acc))
+       (acc    (str::revappend-chars *xml-entity-stuff* acc))
        (acc    (str::revappend-chars "<page>" acc))
        (acc    (str::revappend-chars "<topic name=\"" acc))
        (acc    (sym-mangle-cap name base-pkg acc))

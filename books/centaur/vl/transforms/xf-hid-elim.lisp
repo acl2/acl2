@@ -1185,19 +1185,16 @@ hierarchical references to wires inside of @('processor'), etc.</p>")
     (equal (vl-module->name (vl-module-hid-elim x mods modalist))
            (vl-module->name x))))
 
-(defsection vl-modulelist-hid-elim-aux
-
-  (defprojection vl-modulelist-hid-elim-aux (x mods modalist)
-    (vl-module-hid-elim x mods modalist)
-    :guard (and (vl-modulelist-p x)
-                (vl-modulelist-p mods)
-                (equal modalist (vl-modalist mods)))
-    :result-type vl-modulelist-p)
-
-  (defthm vl-modulelist->names-of-vl-modulelist-hid-elim-aux
-    (equal (vl-modulelist->names (vl-modulelist-hid-elim-aux x mods modalist))
-           (vl-modulelist->names x))
-    :hints(("Goal" :induct (len x)))))
+(defprojection vl-modulelist-hid-elim-aux (x mods modalist)
+  (vl-module-hid-elim x mods modalist)
+  :guard (and (vl-modulelist-p x)
+              (vl-modulelist-p mods)
+              (equal modalist (vl-modalist mods)))
+  :result-type vl-modulelist-p
+  :rest
+  ((defthm vl-modulelist->names-of-vl-modulelist-hid-elim-aux
+     (equal (vl-modulelist->names (vl-modulelist-hid-elim-aux x mods modalist))
+            (vl-modulelist->names x)))))
 
 
 (defsection vl-modulelist-hid-elim

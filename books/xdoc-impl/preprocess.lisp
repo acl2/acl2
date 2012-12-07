@@ -23,6 +23,7 @@
 
 (in-package "XDOC")
 (include-book "autolink")
+(include-book "str/top" :dir :system)
 (local (include-book "misc/assert" :dir :system))
 (set-state-ok t)
 (program)

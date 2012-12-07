@@ -125,22 +125,18 @@ optimization.</p>")))
 <p>We return a list of all the top-level expressions used throughout a @(see "
 list-rec-s "), as described in @(see allexprs).</p>")))
 
-    `(defsection ,list-collect
+    `(defmapappend ,list-collect (x)
+       (,element-collect x)
+       :guard (,list-rec x)
+       :transform-true-list-p t
+       :transform-exec ,element-collect-exec
        :parents (,list-rec allexprs)
        :short ,short
        :long ,long
-
-       (defmapappend ,list-collect (x)
-         (,element-collect x)
-         :guard (,list-rec x)
-         :transform-true-list-p t
-         :transform-exec ,element-collect-exec)
-
-       (local (in-theory (enable ,list-collect)))
-
-       (defthm ,type-thm
-         (implies (force (,list-rec x))
-                  (vl-exprlist-p (,list-collect x)))))))
+       :rest
+       ((defthm ,type-thm
+          (implies (force (,list-rec x))
+                   (vl-exprlist-p (,list-collect x))))))))
 
 (def-vl-allexprs
   :type vl-maybe-expr

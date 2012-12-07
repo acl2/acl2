@@ -469,32 +469,27 @@ already correct and that no extensions are necessary.</p>"
   (local (in-theory (enable vl-maybe-range-p
                             vl-maybe-range-resolved-p
                             vl-maybe-range-size)))
-  (defund vl-msb-bitslice-name (x mod ialist warnings)
-    (declare (xargs :guard (and (stringp x)
-                                (vl-module-p mod)
-                                (equal ialist (vl-moditem-alist mod))
-                                (vl-warninglist-p warnings))
-                    :guard-debug t))
+
+  (define vl-msb-bitslice-name ((x        stringp)
+                                (mod      vl-module-p)
+                                (ialist   (equal ialist (vl-moditem-alist mod)))
+                                (warnings vl-warninglist-p))
     (b* (((mv successp range)
           (vl-find-net/reg-range x mod ialist))
          ((unless successp)
-          (b* ((w (make-vl-warning
-                   :type :vl-slicing-fail
-                   :msg "Expected a net/reg declaration for ~a0."
-                   :args (list x)
-                   :fatalp t
-                   :fn 'vl-msb-bitslice-name)))
-            (mv nil (cons w warnings) nil)))
+          (mv nil
+              (fatal :type :vl-slicing-fail
+                     :msg "Expected a net/reg declaration for ~a0."
+                     :args (list x))
+              nil))
 
          ((unless (vl-maybe-range-resolved-p range))
-          (b* ((w (make-vl-warning
-                   :type :vl-slicing-fail
-                   :msg "Expected the range of ~a0 to be resolved, but it ~
-                         is ~a1."
-                   :args (list x range)
-                   :fatalp t
-                   :fn 'vl-msb-bitslice-name)))
-            (mv nil (cons w warnings) nil)))
+          (mv nil
+              (fatal :type :vl-slicing-fail
+                     :msg "Expected the range of ~a0 to be resolved, but it ~
+                           is ~a1."
+                     :args (list x range))
+              nil))
 
          (msb-index (if range (vl-resolved->val (vl-range->msb range)) 0))
          (lsb-index (if range (vl-resolved->val (vl-range->lsb range)) 0))
@@ -512,8 +507,6 @@ already correct and that no extensions are necessary.</p>"
                          msb-index lsb-index)
                       (list (vl-idexpr x 1 :vl-unsigned)))))
       (mv t warnings main-bits)))
-
-
 
   (local (in-theory (enable vl-msb-bitslice-name)))
 
@@ -537,7 +530,7 @@ already correct and that no extensions are necessary.</p>"
              (let ((x (vl-make-msb-to-lsb-bitselects expr msb lsb)))
                (iff x
                     (< 0 (len x))))))
-    
+
     (defthm nonempty-of-vl-msb-bitslice-name
       (let ((ret (vl-msb-bitslice-name x mod ialist warnings)))
         (implies (mv-nth 0 ret)
@@ -766,7 +759,7 @@ wire [0:3] w;
                             vl-maybe-range-size)))
 
 
-  (defund vl-msb-bitslice-id (x mod ialist warnings)
+  (define vl-msb-bitslice-id (x mod ialist warnings)
     "Returns (MV SUCCESSP WARNINGS BITS)"
     (declare (xargs :guard (and (vl-atom-p x)
                                 (vl-atom-welltyped-p x)
@@ -784,17 +777,15 @@ wire [0:3] w;
 
          (nwires (len main-bits))
          ((when (< x.finalwidth nwires))
-          (b* ((w (make-vl-warning
-                   :type :vl-programming-error
-                   :msg "Found a plain, atomic identifier expression for ~a0 ~
-                         with width ~x1, which is smaller than ~x2, the size ~
-                         of its range.  Expected all occurrences of ~
-                         plain identifiers to have widths that are at least ~
-                         as large as their declarations."
-                   :args (list x x.finalwidth nwires)
-                   :fatalp t
-                   :fn 'vl-msb-bitslice-id)))
-            (mv nil (cons w warnings) nil)))
+          (mv nil
+              (fatal :type :vl-programming-error
+                     :msg "Found a plain, atomic identifier expression for ~
+                           ~a0 with width ~x1, which is smaller than ~x2, the ~
+                           size of its range.  Expected all occurrences of ~
+                           plain identifiers to have widths that are at least ~
+                           as large as their declarations."
+                     :args (list x x.finalwidth nwires))
+              nil))
 
          ((when (= nwires x.finalwidth))
           ;; There's no sign/zero extension so this is straightforward:
@@ -847,7 +838,7 @@ wire [0:3] w;
   (local (defthm vl-expr->finalwidth-of-first
            (equal (vl-expr->finalwidth (first x))
                   (first (vl-exprlist->finalwidths x)))))
-  
+
   (local (defthm first-repeat
            (implies (not (zp len))
                     (equal (first (repeat v len)) v))
@@ -954,7 +945,7 @@ wire [0:3] b;
                             vl-maybe-range-resolved-p
                             vl-maybe-range-size)))
 
-  (defund vl-msb-bitslice-partselect (x mod ialist warnings)
+  (define vl-msb-bitslice-partselect (x mod ialist warnings)
     "Returns (MV SUCCESSP WARNINGS BITS)"
     (declare (xargs :guard (and (vl-expr-p x)
                                 (vl-nonatom-p x)
@@ -978,33 +969,27 @@ wire [0:3] b;
          ((mv successp range)
           (vl-find-net/reg-range name mod ialist))
          ((unless successp)
-          (b* ((w (make-vl-warning
-                   :type :vl-slicing-fail
-                   :msg "Expected a net/reg declaration for ~a0."
-                   :args (list x)
-                   :fatalp t
-                   :fn 'vl-msb-bitslice-partselect)))
-            (mv nil (cons w warnings) nil)))
+          (mv nil
+              (fatal :type :vl-slicing-fail
+                     :msg "Expected a net/reg declaration for ~a0."
+                     :args (list x))
+              nil))
 
          ((unless (vl-maybe-range-resolved-p range))
-          (b* ((w (make-vl-warning
-                   :type :vl-slicing-fail
-                   :msg "Expected the range of ~a0 to be resolved, but it ~
-                         is ~a1."
-                   :args (list x range)
-                   :fatalp t
-                   :fn 'vl-msb-bitslice-partselect)))
-            (mv nil (cons w warnings) nil)))
+          (mv nil
+              (fatal :type :vl-slicing-fail
+                     :msg "Expected the range of ~a0 to be resolved, but it ~
+                           is ~a1."
+                     :args (list x range))
+              nil))
 
          ((unless range)
-          (b* ((w (make-vl-warning
-                   :type :vl-slicing-fail
-                   :msg "Trying to do a part-select, ~a0, but ~w1 does not ~
-                         have a range."
-                   :args (list x name)
-                   :fatalp t
-                   :fn 'vl-msb-bitslice-partselect)))
-            (mv nil (cons w warnings) nil)))
+          (mv nil
+              (fatal :type :vl-slicing-fail
+                     :msg "Trying to do a part-select, ~a0, but ~w1 does not ~
+                           have a range."
+                     :args (list x name))
+              nil))
 
          ((vl-range range) range)
          (wire-msb-val (vl-resolved->val range.msb))
@@ -1016,14 +1001,12 @@ wire [0:3] b;
 
          ((unless (or (equal wire-is-msb-first-p select-is-msb-first-p)
                       select-is-trivial-p))
-          (b* ((w (make-vl-warning
-                   :type :vl-slicing-fail
-                   :msg "Trying to do a part-select, ~a0, in the opposite ~
-                         order of the range from ~w1 (~a2)."
-                   :args (list x name range)
-                   :fatalp t
-                   :fn 'vl-msb-bitslice-partselect)))
-            (mv nil (cons w warnings) nil)))
+          (mv nil
+              (fatal :type :vl-slicing-fail
+                     :msg "Trying to do a part-select, ~a0, in the opposite ~
+                           order of the range from ~w1 (~a2)."
+                     :args (list x name range))
+              nil))
 
          ;; Sure, why not do another bounds check.
          (wire-max (max wire-msb-val wire-lsb-val))
@@ -1032,14 +1015,12 @@ wire [0:3] b;
          (sel-min  (min left-val right-val))
          ((unless (and (<= wire-min sel-min)
                        (<= sel-max wire-max)))
-          (b* ((w (make-vl-warning
-                   :type :vl-slicing-fail
-                   :msg "Part select ~a0 is out of bounds; the range of ~
-                         ~s1 is only ~a2."
-                   :args (list x name range)
-                   :fatalp t
-                   :fn 'vl-msb-bitslice-partselect)))
-            (mv nil (cons w warnings) nil)))
+          (mv nil
+              (fatal :type :vl-slicing-fail
+                     :msg "Part select ~a0 is out of bounds; the range of ~s1 ~
+                           is only ~a2."
+                     :args (list x name range))
+              nil))
 
          (bits (vl-make-msb-to-lsb-bitselects from left-val right-val)))
       (mv t warnings bits)))
@@ -1279,15 +1260,6 @@ a flat list of MSB-ordered, single-bit expressions."
 
   (verify-guards vl-msb-bitslice-expr)
 
-  (local (deflist vl-exprlistlist-p (x)
-           (vl-exprlist-p x)
-           :guard t))
-
-  (local (defthm vl-exprlist-p-of-flatten
-           (implies (vl-exprlistlist-p x)
-                    (vl-exprlist-p (flatten x)))
-           :hints(("Goal" :induct (len x)))))
-
   (defthm-vl-flag-msb-bitslice-expr
     (defthm vl-exprlist-p-of-vl-msb-bitslice-expr
       (let ((ret (vl-msb-bitslice-expr x mod ialist warnings)))
@@ -1310,7 +1282,6 @@ a flat list of MSB-ordered, single-bit expressions."
     :hints(("Goal"
             :expand ((vl-msb-bitslice-expr x mod ialist warnings)
                      (vl-msb-bitslice-exprlist x mod ialist warnings)))))
-
 
   (local (defthm len-of-flatten-of-repeat
            (equal (len (flatten (repeat a n)))

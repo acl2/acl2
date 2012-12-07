@@ -192,7 +192,7 @@ and :save commands are executed.
 
 (extract-documentation-from-books
  ("tools/safe-case"
-  "tools/flag"
+;;  "tools/flag" -- switched to xdoc
   "tools/def-functional-instance"
   "tools/include-raw"
   "tools/pattern-match"
@@ -262,6 +262,9 @@ and :save commands are executed.
 
 (include-book "cutil/top" :dir :system)
 (include-book "xdoc/top" :dir :system)
+(include-book "tools/flag" :dir :system)
+(include-book "finite-set-theory/osets/osets" :dir :system)
+(include-book "str/top" :dir :system)
 
 
 ;; Okay, now the code to process what we've just loaded.

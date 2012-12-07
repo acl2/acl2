@@ -157,16 +157,16 @@
 
 (deflist vl-erangetypelist-p (x)
   (vl-erangetype-p x)
-  :elementp-of-nil nil)
-
-(defthm vl-erangetype-p-of-vl-type-of-matched-token
-  ;; ugly, but effective.
-  (implies (vl-erangetypelist-p types)
-           (equal (vl-erangetype-p (vl-type-of-matched-token types tokens))
-                  (if (vl-type-of-matched-token types tokens)
-                      t
-                    nil)))
-  :hints(("Goal" :in-theory (enable vl-type-of-matched-token))))
+  :elementp-of-nil nil
+  :rest
+  ((defthm vl-erangetype-p-of-vl-type-of-matched-token
+     ;; ugly, but effective.
+     (implies (vl-erangetypelist-p types)
+              (equal (vl-erangetype-p (vl-type-of-matched-token types tokens))
+                     (if (vl-type-of-matched-token types tokens)
+                         t
+                       nil)))
+     :hints(("Goal" :in-theory (enable vl-type-of-matched-token))))))
 
 
 

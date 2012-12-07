@@ -526,24 +526,17 @@ and all gate instances with @(see vl-gateinst-blankargs).</p>"
            (vl-module->name x))))
 
 
-(defsection vl-modulelist-blankargs-aux
+(defprojection vl-modulelist-blankargs-aux (x mods modalist)
+  (vl-module-blankargs x mods modalist)
+  :guard (and (vl-modulelist-p x)
+              (vl-modulelist-p mods)
+              (equal modalist (vl-modalist mods)))
+  :result-type vl-modulelist-p
   :parents (blankargs)
-  :short "Projects @(see vl-module-blankargs) across a module list."
-  :long "@(def vl-modulelist-blankargs-aux)"
-
-  (defprojection vl-modulelist-blankargs-aux (x mods modalist)
-    (vl-module-blankargs x mods modalist)
-    :guard (and (vl-modulelist-p x)
-                (vl-modulelist-p mods)
-                (equal modalist (vl-modalist mods)))
-    :result-type vl-modulelist-p)
-
-  (local (in-theory (enable vl-modulelist-blankargs-aux)))
-
-  (defthm vl-modulelist->names-of-vl-modulelist-blankargs-aux
-    (equal (vl-modulelist->names (vl-modulelist-blankargs-aux x mods modalist))
-           (vl-modulelist->names x))))
-
+  :rest
+  ((defthm vl-modulelist->names-of-vl-modulelist-blankargs-aux
+     (equal (vl-modulelist->names (vl-modulelist-blankargs-aux x mods modalist))
+            (vl-modulelist->names x)))))
 
 
 (defsection vl-modulelist-blankargs

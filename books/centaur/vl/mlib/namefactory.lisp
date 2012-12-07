@@ -126,7 +126,8 @@ will only give you fresh names.</p>
 
 <p>Name generation is a surprisingly important and difficult problem.  It needs
 to be very efficient: we have sometimes found that tens of thousands of fresh
-names are needed.  Toward this goal, our original approach was as follows:</p>
+names are needed, e.g., in @(see split).  Toward this goal, our original
+approach was as follows:</p>
 
 <ul>
 

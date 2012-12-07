@@ -46,14 +46,14 @@ efficient.</p>")
                            string-listp-of-rev)))
 
 
-(defsection vl-printed-p
+(define vl-printed-p (x)
   :parents (printer)
-  :short "A printed object (string or character)."
+  :short "Recognize a printed object (string or character)."
 
-  (defund vl-printed-p (x)
-    (declare (xargs :guard t))
-    (or (characterp x)
-        (stringp x)))
+  (or (characterp x)
+      (stringp x))
+
+  ///
 
   (defthm vl-printed-p-cr
     (equal (vl-printed-p x)
@@ -72,49 +72,85 @@ efficient.</p>")
   (vl-printed-p x)
   :guard t
   :elementp-of-nil nil
-  :parents (printer))
+  :parents (printer)
+  :rest
+  ((defthm vl-printedlist-p-when-character-listp
+     (implies (character-listp x)
+              (vl-printedlist-p x)))
 
-(defthm vl-printedlist-p-when-character-listp
-  (implies (character-listp x)
-           (vl-printedlist-p x))
-  :hints(("Goal" :induct (len x))))
+   (defthm vl-printedlist-p-when-string-listp
+     (implies (string-listp x)
+              (vl-printedlist-p x)))
 
-(defthm vl-printedlist-p-when-string-listp
-  (implies (string-listp x)
-           (vl-printedlist-p x))
-  :hints(("Goal" :induct (len x))))
+   (local (in-theory (e/d (repeated-revappend)
+                          ((:executable-counterpart force)))))
 
-(defthm vl-printedlist-p-of-repeated-revappend
-  (implies (and (vl-printedlist-p x)
-                (force (vl-printedlist-p y)))
-           (vl-printedlist-p (repeated-revappend n x y)))
-  :hints(("Goal" :in-theory (e/d (repeated-revappend)
-                                 ((force))))))
+   (defthm vl-printedlist-p-of-repeated-revappend
+     (implies (and (vl-printedlist-p x)
+                   (force (vl-printedlist-p y)))
+              (vl-printedlist-p (repeated-revappend n x y))))
 
-(defthm vl-printedlist-p-of-make-list-ac
-  (implies (and (vl-printed-p x)
-                (force (vl-printedlist-p y)))
-           (vl-printedlist-p (make-list-ac n x y)))
-  :hints(("Goal" :in-theory (e/d (repeated-revappend)
-                                 ((force))))))
+   (defthm vl-printedlist-p-of-make-list-ac
+     (implies (and (vl-printed-p x)
+                   (force (vl-printedlist-p y)))
+              (vl-printedlist-p (make-list-ac n x y))))
+
+   (defthm vl-printedlist-p-of-vl-html-encode-chars-aux
+     (implies (and (character-listp x)
+                   (natp col)
+                   (vl-printedlist-p acc))
+              (vl-printedlist-p
+               (mv-nth 1 (vl-html-encode-chars-aux x col tabsize acc))))
+     :hints(("Goal" :in-theory (enable vl-html-encode-chars-aux))))
+
+   (defthm vl-printedlist-p-of-revappend-chars
+     (implies (and (stringp x)
+                   (vl-printedlist-p acc))
+              (vl-printedlist-p (str::revappend-chars x acc)))
+     :hints(("Goal" :in-theory (enable str::revappend-chars))))
+
+   (defthm vl-printedlist-p-of-vl-html-encode-string-aux
+     (implies (and (stringp x)
+                   (natp n)
+                   (natp xl)
+                   (natp col)
+                   (vl-printedlist-p acc)
+                   (<= n xl)
+                   (= xl (length x)))
+              (vl-printedlist-p
+               (mv-nth 1 (vl-html-encode-string-aux x n xl col tabsize acc))))
+     :hints(("Goal" :in-theory (enable vl-html-encode-string-aux))))
+
+   (defthm vl-printedlist-p-of-vl-url-encode-chars-aux
+     (implies (vl-printedlist-p acc)
+              (vl-printedlist-p (vl-url-encode-chars-aux x acc)))
+     :hints(("Goal" :in-theory (enable vl-url-encode-chars-aux))))
+
+   (defthm vl-printedlist-p-of-vl-url-encode-string-aux
+     (implies (and (stringp x)
+                   (vl-printedlist-p acc)
+                   (natp n)
+                   (natp xl)
+                   (<= n xl)
+                   (= xl (length x)))
+              (vl-printedlist-p (vl-url-encode-string-aux x n xl acc)))
+     :hints(("Goal" :in-theory (enable vl-url-encode-string-aux))))))
 
 
-(defund vl-printedlist-length (x acc)
-  (declare (xargs :guard (and (vl-printedlist-p x)
-                              (natp acc))))
-    (if (atom x)
-        acc
-      (vl-printedlist-length (cdr x)
-                             (+ (if (characterp (car x))
-                                    1
-                                  (length (car x)))
-                                acc))))
+
+(define vl-printedlist-length ((x vl-printedlist-p)
+                               (acc natp))
+  (if (atom x)
+      acc
+    (vl-printedlist-length (cdr x)
+                           (+ (if (characterp (car x))
+                                  1
+                                (length (car x)))
+                              acc))))
 
 
-(defund vl-printedlist-peek (x)
-  ;; Get the very last character that was printed.
-  (declare (xargs :guard (vl-printedlist-p x)
-                  :guard-debug t))
+(define vl-printedlist-peek ((x vl-printedlist-p))
+  "Get the very last character that was printed."
   (and (consp x)
        (if (characterp (car x))
            (car x)
@@ -125,55 +161,6 @@ efficient.</p>")
                (vl-printedlist-peek (cdr x))
              (char (car x) (1- len)))))))
 
-(defthm vl-printedlist-p-of-vl-html-encode-chars-aux
-  (implies (and (character-listp x)
-                (natp col)
-                (vl-printedlist-p acc))
-           (vl-printedlist-p (mv-nth 1 (vl-html-encode-chars-aux x col tabsize acc))))
-  :hints(("Goal" :in-theory (enable vl-html-encode-chars-aux))))
-
-(defthm vl-printedlist-p-of-revappend-chars
-  (implies (and (stringp x)
-                (vl-printedlist-p acc))
-           (vl-printedlist-p (str::revappend-chars x acc)))
-  :hints(("Goal" :in-theory (enable str::revappend-chars))))
-
-(defthm vl-printedlist-p-of-vl-html-encode-string-aux
-  (implies (and (stringp x)
-                (natp n)
-                (natp xl)
-                (natp col)
-                (vl-printedlist-p acc)
-                (<= n xl)
-                (= xl (length x)))
-           (vl-printedlist-p (mv-nth 1 (vl-html-encode-string-aux x n xl col tabsize acc))))
-  :hints(("Goal" :in-theory (enable vl-html-encode-string-aux))))
-
-
-(defthm vl-printedlist-p-of-vl-url-encode-chars-aux
-  (implies (vl-printedlist-p acc)
-           (vl-printedlist-p (vl-url-encode-chars-aux x acc)))
-  :hints(("Goal"
-          :induct (vl-url-encode-chars-aux x acc)
-          :in-theory (e/d (vl-url-encode-chars-aux) (aref1)))
-         (and acl2::stable-under-simplificationp
-              '(:in-theory (enable aref1)))))
-
-
-(defthm vl-printedlist-p-of-vl-url-encode-string-aux
-  (implies (and (stringp x)
-                (vl-printedlist-p acc)
-                (natp n)
-                (natp xl)
-                (<= n xl)
-                (= xl (length x)))
-           (vl-printedlist-p (vl-url-encode-string-aux x n xl acc)))
-  :hints(("Goal"
-          :induct (vl-url-encode-string-aux x n xl acc)
-          :in-theory (e/d (vl-url-encode-string-aux)
-                          (aref1)))
-         (and acl2::stable-under-simplificationp
-              '(:in-theory (enable aref1)))))
 
 
 

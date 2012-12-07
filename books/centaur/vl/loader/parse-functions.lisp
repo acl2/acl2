@@ -200,23 +200,23 @@
     :guard t
     :elementp-of-nil nil)
 
-  (local (in-theory (enable vl-taskport-or-blockitem-p)))
-
-  (defthm vl-taskport-or-blockitem-list-p-when-vl-taskportlist-p
-    (implies (vl-taskportlist-p x)
-             (vl-taskport-or-blockitem-list-p x))
-    :hints(("Goal" :induct (len x))))
-
-  (defthm vl-taskport-or-blockitem-list-p-when-vl-blockitemlist-p
-    (implies (vl-blockitemlist-p x)
-             (vl-taskport-or-blockitem-list-p x))
-    :hints(("Goal" :induct (len x))))
-
   (local (defthm crock
            (implies (vl-taskport-or-blockitem-p x)
                     (equal (vl-taskport-p x)
                            (eq (tag x) :vl-taskport)))
-           :hints(("Goal" :in-theory (enable vl-blockitem-p)))))
+           :hints(("Goal" :in-theory (enable vl-taskport-or-blockitem-p
+                                             vl-blockitem-p)))))
+
+  (local (in-theory (enable vl-taskport-or-blockitem-p
+                            vl-taskport-or-blockitem-list-p)))
+
+  (defthm vl-taskport-or-blockitem-list-p-when-vl-taskportlist-p
+    (implies (vl-taskportlist-p x)
+             (vl-taskport-or-blockitem-list-p x)))
+
+  (defthm vl-taskport-or-blockitem-list-p-when-vl-blockitemlist-p
+    (implies (vl-blockitemlist-p x)
+             (vl-taskport-or-blockitem-list-p x)))
 
   (defund vl-filter-taskport-or-blockitem-list (x)
     (declare (xargs :guard (vl-taskport-or-blockitem-list-p x)))

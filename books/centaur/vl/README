@@ -3,8 +3,11 @@
                           VL Verilog Toolkit
                                README
 
-
-GUIDE TO THE VL SOURCE CODE ("bottom up")
+  +-----------------------------------------------------------------------+
+  | Note: VL has extensive documentation; see the README.html file in the |
+  | centaur/ directory for instructions on building the reference manual. |
+  | This README is just a small guide to the layout of VL's source code.  |
+  +-----------------------------------------------------------------------+
 
 vl/util/           -- basic ACL2 stuff used throughout VL
 
@@ -13,7 +16,6 @@ vl/util/           -- basic ACL2 stuff used throughout VL
    * Warning Objects
    * Locations, Extended Characters
    * Misnamed "arithmetic" book -- reasoning support for ACL2 concepts
-
 
 
 vl/parsetree.lisp  -- core definitions of our internal representation for
@@ -95,8 +97,6 @@ MISCELLANEOUS STUFF
 vl/lint/           -- a basic Verilog linter
 
 vl/doc/            -- a couple of (old) presentations about VL
-
-vl/primitives/     -- some primitive Verilog modules used by VL
 
 vl/wf-*.lisp       -- well-formedness checks
 

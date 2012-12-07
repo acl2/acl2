@@ -22,108 +22,86 @@
 (include-book "../parsetree")
 (local (include-book "../util/arithmetic"))
 
-
 (defxdoc designwires
   :parents (transforms)
-  :short "Introduce @('VL_DESIGN_WIRE') annotations."
+  :short "Introduce @('VL_DESIGN_WIRE') annotations that say which wires/regs
+were in the original Verilog modules."
 
-  :long "<p>In this transformation, we annotate every net and reg declaration
-with a @('VL_DESIGN_WIRE') attribute (see @(see attributes)).  Later, when
-\"temporary\" wires are added to the module, they will not have this attribute.
-The idea is to allow us to distinguish between (1) the wires that are really
-present and visible in the design, and (2) the wires that VL has added during
-transformations like @(see split) and @(see occform).</p>
+  :long "<p>This transform lets you distinguish between:</p>
 
-<p>This transformation really should be run shortly <b>after</b> @(see
-make-implicit-wires), since even implicit wires are visible in the
-design.</p>")
+<ul>
+<li>wires that are really present and visible in the design, and</li>
+<li>wires that VL added in transforms like @(see split) and @(see occform).</li>
+</ul>
 
+<p>This transform should typically be run very early.  It just annotates every
+net and reg declaration with a @('VL_DESIGN_WIRE') <see topic='@(url
+vl-atts-p)'>attribute</see>.</p>
 
-(defsection vl-netdecl-designwires
+<p>When temporary wires are added to the module by subsequent VL transforms,
+they will not have this attribute.  Hence, you can check for this attribute to
+tell whether a wire was in the original design.</p>")
 
-  (defund vl-netdecl-designwires (x)
-    (declare (xargs :guard (vl-netdecl-p x)))
-    (let* ((old-atts (vl-netdecl->atts x))
-           (new-atts (acons "VL_DESIGN_WIRE" nil old-atts)))
-      (change-vl-netdecl x :atts new-atts)))
-
-  (local (in-theory (enable vl-netdecl-designwires)))
-
-  (defthm vl-netdecl-p-of-vl-netdecl-designwires
-    (implies (force (vl-netdecl-p x))
-             (vl-netdecl-p (vl-netdecl-designwires x)))))
-
+(define vl-netdecl-designwires ((x vl-netdecl-p))
+  :returns (new-x vl-netdecl-p :hyp :fguard)
+  :parents (designwires)
+  :short "Add a @('VL_DESIGN_WIRE') attribute to a @(see vl-netdecl-p)."
+  (b* (((vl-netdecl x) x)
+       ((when (assoc-equal "VL_DESIGN_WIRE" x.atts))
+        ;; For idempotency, don't add it again.
+        x)
+       (atts (acons "VL_DESIGN_WIRE" nil x.atts)))
+    (change-vl-netdecl x :atts atts)))
 
 (defprojection vl-netdecllist-designwires (x)
   (vl-netdecl-designwires x)
   :guard (vl-netdecllist-p x)
   :result-type vl-netdecllist-p
-  :nil-preservingp nil)
+  :nil-preservingp nil
+  :parents (designwires))
 
-(defsection vl-regdecl-designwires
-
-  (defund vl-regdecl-designwires (x)
-    (declare (xargs :guard (vl-regdecl-p x)))
-    (let* ((old-atts (vl-regdecl->atts x))
-           (new-atts (acons "VL_DESIGN_WIRE" nil old-atts)))
-      (change-vl-regdecl x :atts new-atts)))
-
-  (local (in-theory (enable vl-regdecl-designwires)))
-
-  (defthm vl-regdecl-p-of-vl-regdecl-designwires
-    (implies (force (vl-regdecl-p x))
-             (vl-regdecl-p (vl-regdecl-designwires x)))))
-
+(define vl-regdecl-designwires ((x vl-regdecl-p))
+  :returns (new-x vl-regdecl-p :hyp :fguard)
+  :parents (designwires)
+  :short "Add a @('VL_DESIGN_WIRE') attribute to a @(see vl-regdecl-p)."
+  (b* (((vl-regdecl x) x)
+       ((when (assoc-equal "VL_DESIGN_WIRE" x.atts))
+        ;; For idempotency, don't add it again.
+        x)
+       (atts (acons "VL_DESIGN_WIRE" nil x.atts)))
+    (change-vl-regdecl x :atts atts)))
 
 (defprojection vl-regdecllist-designwires (x)
   (vl-regdecl-designwires x)
   :guard (vl-regdecllist-p x)
   :result-type vl-regdecllist-p
-  :nil-preservingp nil)
+  :nil-preservingp nil
+  :parents (designwires))
 
-
-(defsection vl-module-designwires
-
-  (defund vl-module-designwires (x)
-    (declare (xargs :guard (vl-module-p x)))
-    (b* (((when (vl-module->hands-offp x))
-          x)
-         (old-netdecls (vl-module->netdecls x))
-         (old-regdecls (vl-module->regdecls x))
-         (new-netdecls (vl-netdecllist-designwires old-netdecls))
-         (new-regdecls (vl-regdecllist-designwires old-regdecls)))
-        (change-vl-module x
-                          :netdecls new-netdecls
-                          :regdecls new-regdecls)))
-
-  (local (in-theory (enable vl-module-designwires)))
-
-  (defthm vl-module-p-of-vl-module-designwires
-    (implies (force (vl-module-p x))
-             (vl-module-p (vl-module-designwires x))))
-
+(define vl-module-designwires ((x vl-module-p))
+  :returns (new-x vl-module-p :hyp :fguard)
+  :parents (designwires)
+  :short "Add a @('VL_DESIGN_WIRE') attribute to every net and reg declaration
+in a module."
+  (b* (((vl-module x) x)
+       ((when (vl-module->hands-offp x))
+        x))
+    (change-vl-module x
+                      :netdecls (vl-netdecllist-designwires x.netdecls)
+                      :regdecls (vl-regdecllist-designwires x.regdecls)))
+  ///
   (defthm vl-module->name-of-vl-module-designwires
     (equal (vl-module->name (vl-module-designwires x))
            (vl-module->name x))))
 
-
-(defsection vl-modulelist-designwires
+(defprojection vl-modulelist-designwires (x)
+  (vl-module-designwires x)
+  :guard (vl-modulelist-p x)
+  :result-type vl-modulelist-p
+  :nil-preservingp nil
   :parents (designwires)
-  :short "Add @('VL_DESIGN_WIRE') annotations throughout a module list."
-  :long "<p>This transformation is so simple that we just present its source
-code below, in a top-down style.</p>"
-
-  (defprojection vl-modulelist-designwires (x)
-    (vl-module-designwires x)
-    :guard (vl-modulelist-p x)
-    :result-type vl-modulelist-p
-    :nil-preservingp nil)
-
-  (local (in-theory (enable vl-modulelist-designwires)))
-
-  (defthm vl-modulelist->names-of-vl-modulelist-designwires
-    (equal (vl-modulelist->names (vl-modulelist-designwires x))
-           (vl-modulelist->names x))))
-
-
+  :rest
+  ((defthm vl-modulelist->names-of-vl-modulelist-designwires
+     (equal (vl-modulelist->names (vl-modulelist-designwires x))
+            (vl-modulelist->names x)))))
 

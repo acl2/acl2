@@ -45,38 +45,39 @@ instances is defined.")
 but not defined.")
 
 
-(defsection vl-modulelist-everinstanced
+(define vl-modulelist-everinstanced ((x vl-modulelist-p))
   :parents (hierarchy)
-  :short "@(call vl-modulelist-everinstanced) gathers the names of every module
-instanced anywhere in a module list @('x')."
-
+  :short "Gather the names of every module ever instanced in a module list."
   :long "<p>We leave this function enabled.  It is logically equal to:</p>
 
 @({
   (vl-modinstlist->modnames (vl-modulelist->modinsts x))
 })
 
-<p>But it is implemented more efficiently.  The list returned will typically
-contain duplicates.  Even so, constructing the list of all instance names may
-require a lot of consing.</p>
+<p>The returned list typically will contain a lot of duplicates.</p>
 
-<p>Note: nreverse optimized in raw lisp.</p>"
+<p>This is fairly expensive, requiring a cons for every single module instance.
+We optimize the function by avoiding the construction of intermediate lists,
+and via nreverse in raw lisp.</p>"
+  :inline t
+  :enabled t
 
-  (defund vl-modulelist-everinstanced-exec (x acc)
-    (declare (xargs :guard (and (vl-modulelist-p x)
-                                (true-listp acc))
-                    :verify-guards nil))
-    (if (atom x)
-        acc
-      (let* ((modinsts1 (vl-module->modinsts (car x)))
-             (acc       (vl-modinstlist->modnames-exec modinsts1 acc)))
-        (vl-modulelist-everinstanced-exec (cdr x) acc))))
+  (mbe :logic (vl-modinstlist->modnames (vl-modulelist->modinsts x))
+       :exec (reverse (vl-modulelist-everinstanced-exec x nil)))
 
-  (definline vl-modulelist-everinstanced (x)
-    (declare (xargs :guard (vl-modulelist-p x)
-                    :verify-guards nil))
-    (mbe :logic (vl-modinstlist->modnames (vl-modulelist->modinsts x))
-         :exec (reverse (vl-modulelist-everinstanced-exec x nil))))
+  :prepwork ((defund vl-modulelist-everinstanced-exec (x acc)
+               (declare (xargs :guard (and (vl-modulelist-p x)
+                                           (true-listp acc))
+                               :verify-guards nil))
+               (b* (((when (atom x))
+                     acc)
+                    (modinsts1 (vl-module->modinsts (car x)))
+                    (acc       (vl-modinstlist->modnames-exec modinsts1 acc)))
+                 (vl-modulelist-everinstanced-exec (cdr x) acc))))
+
+  :verify-guards nil
+
+  ///
 
   (local (defthm lemma
            (implies (true-listp acc)
@@ -103,11 +104,12 @@ require a lot of consing.</p>
   (defttag nil))
 
 
-(defsection vl-modulelist-meganames
+
+(define vl-modulelist-meganames ((x vl-modulelist-p))
+  :returns (names setp)
   :parents (hierarchy)
   :short "@(call vl-modulelist-meganames) gather the names of every module that
-is ever defined or instantiated in @('x'), and returns them as an ordered
-set."
+is ever defined or instantiated in @('x'), and returns them as an ordered set."
 
   :long "<p>We give this function a funny name because it is rather weird.
 After all, our basic notion of @(see completeness) is that every instanced
@@ -119,24 +121,19 @@ us to admit functions like @(see vl-dependent-modules), which build up sets of
 module names until a fixed point is reached, even when the module list might
 not be complete.</p>"
 
-  (defund vl-modulelist-meganames (x)
-    (declare (xargs :guard (vl-modulelist-p x)))
-    (mbe :logic
-         (mergesort (append (vl-modulelist->names x)
-                            (vl-modulelist-everinstanced x)))
-         :exec
-         (let* ((acc (vl-modulelist-everinstanced-exec x nil))
-                (acc (vl-modulelist->names-exec x acc)))
-           (mergesort acc))))
+  (mbe :logic
+       (mergesort (append (vl-modulelist->names x)
+                          (vl-modulelist-everinstanced x)))
+       :exec
+       (let* ((acc (vl-modulelist-everinstanced-exec x nil))
+              (acc (vl-modulelist->names-exec x acc)))
+         (mergesort acc)))
 
-  (local (in-theory (enable vl-modulelist-meganames)))
+  ///
 
   (defthm true-listp-of-vl-modulelist-meganames
     (true-listp (vl-modulelist-meganames x))
     :rule-classes :type-prescription)
-
-  (defthm setp-of-vl-modulelist-meganames
-    (setp (vl-modulelist-meganames x)))
 
   (defthm string-listp-of-vl-modulelist-meganames
     (implies (force (vl-modulelist-p x))
@@ -148,7 +145,8 @@ not be complete.</p>"
 
 
 
-(defsection vl-module-complete-p
+(define vl-module-complete-p ((x vl-module-p)
+                              (mods vl-modulelist-p))
   :parents (hierarchy completeness)
   :short "@(call vl-module-complete-p) determines if every module that is
 instantiated by @('x') is defined in @('mods')."
@@ -159,13 +157,11 @@ subset check.</p>
 <p>This function is not efficient, and carries out a linear search of
 @('mods') for every module instance of @('x').  See @(see
 vl-fast-module-complete-p) for a faster alternative.</p>"
+  :enabled t
 
-  (defun vl-module-complete-p (x mods)
-    (declare (xargs :guard (and (vl-module-p x)
-                                (vl-modulelist-p mods))))
-    (let* ((instances (vl-module->modinsts x))
-           (names     (vl-modinstlist->modnames instances)))
-      (vl-has-modules names mods))))
+  (let* ((instances (vl-module->modinsts x))
+         (names     (vl-modinstlist->modnames instances)))
+    (vl-has-modules names mods)))
 
 
 (defsection vl-fast-has-modules-of-vl-modinstlist->modnames
@@ -275,7 +271,7 @@ warnings about @(see completeness)."
   :long "<p>If @('x') is incomplete, a fatal warning is added that says
 which missing modules it instantiates.</p>"
 
-  (defund vl-module-check-complete (x mods modalist)
+  (define vl-module-check-complete (x mods modalist)
     (declare (xargs :guard (and (vl-module-p x)
                                 (vl-modulelist-p mods)
                                 (equal modalist (vl-modalist mods)))))
@@ -294,7 +290,7 @@ which missing modules it instantiates.</p>"
                                         (if (vl-plural-p bad) "s" "")
                                         bad)
                             :fatalp t
-                            :fn 'vl-module-check-complete)
+                            :fn __function__)
                            x.warnings))
          (x-prime (change-vl-module x :warnings warnings)))
       x-prime))
@@ -313,24 +309,20 @@ which missing modules it instantiates.</p>"
 
 
 
-(defsection vl-modulelist-check-complete
+(defprojection vl-modulelist-check-complete (x mods modalist)
+  (vl-module-check-complete x mods modalist)
+  :guard (and (vl-modulelist-p x)
+              (vl-modulelist-p mods)
+              (equal modalist (vl-modalist mods)))
+  :result-type vl-modulelist-p
   :parents (hierarchy completeness)
   :short "Extends @(see vl-module-check-complete) to a list of modules."
-
-;; BOZO why not use an aux function and make the completeness check build
-;; its own modalist?
-
-  (defprojection vl-modulelist-check-complete (x mods modalist)
-    (vl-module-check-complete x mods modalist)
-    :guard (and (vl-modulelist-p x)
-                (vl-modulelist-p mods)
-                (equal modalist (vl-modalist mods)))
-    :result-type vl-modulelist-p)
-
-  (defthm vl-modulelist->names-of-vl-modulelist-check-complete
-    (equal (vl-modulelist->names (vl-modulelist-check-complete x mods modalist))
-           (vl-modulelist->names x))
-    :hints(("Goal" :induct (len x)))))
+  :long "<p>BOZO make this an -aux function, and add a wrapper that builds the
+modalist.</p>"
+  :rest
+  ((defthm vl-modulelist->names-of-vl-modulelist-check-complete
+     (equal (vl-modulelist->names (vl-modulelist-check-complete x mods modalist))
+            (vl-modulelist->names x)))))
 
 
 (defsection vl-modulelist-missing

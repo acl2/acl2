@@ -85,13 +85,11 @@
 (defmapappend vl-subcountlist-all-warnings (x)
   (vl-subcount->warnings x)
   :guard (vl-subcountlist-p x)
-  :transform-true-list-p nil)
-
-(defthm vl-warninglist-p-of-vl-subcountlist-all-warnings
-  (implies (force (vl-subcountlist-p x))
-           (vl-warninglist-p (vl-subcountlist-all-warnings x)))
-  :hints(("Goal" :induct (len x))))
-
+  :transform-true-list-p nil
+  :rest
+  ((defthm vl-warninglist-p-of-vl-subcountlist-all-warnings
+     (implies (force (vl-subcountlist-p x))
+              (vl-warninglist-p (vl-subcountlist-all-warnings x))))))
 
 
 ; Notes about how we handle modules with parameters.

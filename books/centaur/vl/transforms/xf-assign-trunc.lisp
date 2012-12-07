@@ -23,6 +23,7 @@
 (include-book "../wf-widthsfixed-p")
 (include-book "../mlib/namefactory")
 (include-book "../mlib/welltyped")
+(include-book "../mlib/delta")
 (local (include-book "../util/arithmetic"))
 
 
@@ -60,85 +61,77 @@ with something like:</p>
 <p>where @('trunc_12345') is a fresh variable name.  All of the resulting
 assignments are between lvalues and expressions that agree.</p>")
 
-
-(defsection vl-make-chopped-id
+(define vl-make-chopped-id
+  ((name "name of an unsigned wire to be truncated" stringp)
+   (name-width "width of @('name')" posp)
+   (trunc-width "width to truncate to" posp))
+  :guard (< trunc-width name-width)
+  :returns (expr "expression like @('name[truncwidth-1:0]')"
+                 vl-expr-p :hyp :fguard)
   :parents (trunc)
   :short "Generate the expression to truncate a wire."
 
-  :long "<p><b>Signature:</b> @(call vl-make-chopped-id) returns a @(see
-vl-expr-p).</p>
+  :long "<p>We require that @('trunc-width') is strictly less than @('width').
+We return the expression to truncate @('name') down to this new
+@('trunc-width'), with all of the intermediate widths set up correctly.</p>"
 
-<p>Given @('name'), the name of some unsigned wire, @('width'), the width of
-the wire, and @('trunc'), some number which is strictly less than @('width'),
-we construct the expression @('name[trunc-1:0]'), with all of the intermediate
-widths set up correctly.</p>"
+  (b* ((name-expr (vl-idexpr name name-width :vl-unsigned))
+       (left      (vl-make-index (- trunc-width 1)))
+       (zero      (vl-make-index 0))
+       ;; The goal is to make the expression name[left:zero].
 
-  (defund vl-make-chopped-id (name name-width trunc-width)
-    (declare (xargs :guard (and (stringp name)
-                                (posp name-width)
-                                (posp trunc-width)
-                                (< trunc-width name-width))))
-    (b* ((name-expr (vl-idexpr name name-width :vl-unsigned))
-         (left      (vl-make-index (- trunc-width 1)))
-         (zero      (vl-make-index 0))
-         ;; The goal is to make the expression name[left:zero].
-         ((when (equal trunc-width 1))
-          ;; In this case, left is 0 so we have name[0:0].  This is the same as
-          ;; name[0].  By our guard, 1 < name-width, so there is no chance to
-          ;; further simplify this to simply "name".  Hence, build a bitselect
-          ;; of name[0].
-          (make-vl-nonatom :op :vl-bitselect
-                           :args (list name-expr zero)
-                           :finalwidth 1
-                           :finaltype :vl-unsigned)))
+       ((when (int= trunc-width 1))
+        ;; We can use a bitselect instead of name[0:0].  By our guard, 1 <
+        ;; name-width, so there is no chance to further simplify this to
+        ;; simply "name".
+        (make-vl-nonatom :op         :vl-bitselect
+                         :args       (list name-expr zero)
+                         :finalwidth 1
+                         :finaltype  :vl-unsigned)))
 
-        ;; Otherwise, our goal is name[left:zero], and we cannot simplify this
-        ;; any further.  Introduce a real part select.
-        (make-vl-nonatom :op :vl-partselect-colon
-                         :args (list name-expr left zero)
-                         :finalwidth trunc-width
-                         :finaltype :vl-unsigned)))
-
-  (local (in-theory (enable vl-make-chopped-id)))
-
-  (defthm vl-expr-p-of-vl-make-chopped-id
-    (implies (and (force (stringp name))
-                  (force (posp name-width))
-                  (force (posp trunc-width))
-                  (force (< trunc-width name-width)))
-             (vl-expr-p (vl-make-chopped-id name name-width trunc-width)))))
+    ;; Otherwise, our goal is name[left:zero], and we cannot simplify this
+    ;; any further.  Introduce a real part select.
+    (make-vl-nonatom :op         :vl-partselect-colon
+                     :args       (list name-expr left zero)
+                     :finalwidth trunc-width
+                     :finaltype  :vl-unsigned)))
 
 
+(define vl-truncate-constint
+  ((n "width to truncate down to" posp)
+   (x "resolved, unsigned, constant integer expression to truncate"
+      (and (vl-atom-p x)
+           (vl-expr-welltyped-p x)
+           (vl-constint-p (vl-atom->guts x))
+           (equal (vl-expr->finaltype x) :vl-unsigned))))
+  :returns chopped-expr
+  :guard (< n (vl-expr->finalwidth x))
+  :parents (trunc)
+  :short "Special routine for truncating ordinary, unsigned constant integers,
+without introducing temporary wires."
 
+  :long "<p>We can truncate resolved constants by just creating a new constant
+that has its width and value chopped down to size.</p>"
 
-(defsection vl-truncate-constint
+  (b* ((guts     (vl-atom->guts x))
+       (value    (vl-constint->value guts))
+       (val-chop (mod value (expt 2 n)))
+       (new-guts (make-vl-constint :value val-chop
+                                   :origwidth n
+                                   :origtype :vl-unsigned))
+       (new-atom (make-vl-atom :guts new-guts
+                               :finalwidth n
+                               :finaltype :vl-unsigned)))
+    new-atom)
 
-  ;; Special support for truncating ordinary, unsigned constant integers, without
-  ;; introducing temporary wires.
+  :prepwork
+  ((local (include-book "arithmetic-3/floor-mod/floor-mod" :dir :system))
+   (local (in-theory (enable vl-atom-welltyped-p
+                             vl-expr-welltyped-p
+                             vl-expr->finalwidth
+                             vl-expr->finaltype))))
 
-  (local (include-book "arithmetic-3/floor-mod/floor-mod" :dir :system))
-  (local (in-theory (enable vl-atom-welltyped-p vl-expr-welltyped-p
-                            vl-expr->finalwidth vl-expr->finaltype)))
-
-  (defund vl-truncate-constint (n x)
-    (declare (xargs :guard (and (posp n)
-                                (vl-atom-p x)
-                                (vl-expr-welltyped-p x)
-                                (vl-constint-p (vl-atom->guts x))
-                                (< n (vl-expr->finalwidth x))
-                                (equal (vl-expr->finaltype x) :vl-unsigned))))
-    (b* ((guts     (vl-atom->guts x))
-         (value    (vl-constint->value guts))
-         (val-chop (mod value (expt 2 n)))
-         (new-guts (make-vl-constint :value val-chop
-                                     :origwidth n
-                                     :origtype :vl-unsigned))
-         (new-atom (make-vl-atom :guts new-guts
-                                 :finalwidth n
-                                 :finaltype :vl-unsigned)))
-      new-atom))
-
-  (local (in-theory (enable vl-truncate-constint)))
+  ///
 
   (defthm vl-truncate-constint-basics
     (implies (and (force (posp n))
@@ -153,34 +146,39 @@ widths set up correctly.</p>"
                   (vl-expr-welltyped-p (vl-truncate-constint n x))))))
 
 
-(defsection vl-truncate-weirdint
+(define vl-truncate-weirdint
+  ((n "width to truncate down to" posp)
+   (x "unsigned @(see vl-weirdint-p) to truncate"
+      (and (vl-atom-p x)
+           (vl-expr-welltyped-p x)
+           (vl-weirdint-p (vl-atom->guts x))
+           (equal (vl-expr->finaltype x) :vl-unsigned))))
+  :guard (< n (vl-expr->finalwidth x))
+  :returns chopped-expr
+  :parents (trunc)
+  :short "Special routine for truncating unsigned weirdint literals without
+introducing temporary wires."
 
-  ;; Special support for truncating ordinary, unsigned weird integers, without
-  ;; introducing temporary wires.
+  :long "<p>We can truncate a weirdint by just creating a new weirdint that has
+its width reduced and that drops the chopped off bits.</p>"
 
-  (local (in-theory (enable vl-atom-welltyped-p vl-expr-welltyped-p
-                            vl-expr->finalwidth vl-expr->finaltype)))
+  (b* ((guts      (vl-atom->guts x))
+       ((vl-weirdint guts) guts)
+       (bits-chop (nthcdr (- guts.origwidth n)
+                          (redundant-list-fix guts.bits)))
+       (new-guts (make-vl-weirdint :bits bits-chop
+                                   :origwidth n
+                                   :origtype :vl-unsigned))
+       (new-atom (make-vl-atom :guts new-guts
+                               :finalwidth n
+                               :finaltype :vl-unsigned)))
+    new-atom)
 
-  (defund vl-truncate-weirdint (n x)
-    (declare (xargs :guard (and (posp n)
-                                (vl-atom-p x)
-                                (vl-expr-welltyped-p x)
-                                (vl-weirdint-p (vl-atom->guts x))
-                                (< n (vl-expr->finalwidth x))
-                                (equal (vl-expr->finaltype x) :vl-unsigned))))
-    (b* ((guts      (vl-atom->guts x))
-         ((vl-weirdint guts) guts)
-         (bits-chop (nthcdr (- guts.origwidth n)
-                            (redundant-list-fix guts.bits)))
-         (new-guts (make-vl-weirdint :bits bits-chop
-                                     :origwidth n
-                                     :origtype :vl-unsigned))
-         (new-atom (make-vl-atom :guts new-guts
-                                 :finalwidth n
-                                 :finaltype :vl-unsigned)))
-      new-atom))
+  :prepwork
+  ((local (in-theory (enable vl-atom-welltyped-p vl-expr-welltyped-p
+                             vl-expr->finalwidth vl-expr->finaltype))))
 
-  (local (in-theory (enable vl-truncate-weirdint)))
+  ///
 
   (defthm vl-truncate-weirdint-basics
     (implies (and (force (posp n))
@@ -196,244 +194,169 @@ widths set up correctly.</p>"
 
 
 
-
-
-(defsection vl-assign-trunc
+(define vl-assign-trunc ((x vl-assign-p)
+                         (delta vl-delta-p))
+  :returns (mv (assign vl-assign-p :hyp :fguard)
+               (delta  vl-delta-p  :hyp :fguard))
   :parents (trunc)
   :short "Make any implicit truncation in an assignment explicit."
-  :long "<p><b>Signature:</b> @(call vl-assign-trunc) returns @('(mv
-warnings-prime netdecls assigns nf-prime)').</p>
 
-<p>Inputs.</p>
+  (b* (((vl-assign x) x)
 
-<ul>
+       (lhsw (vl-expr->finalwidth x.lvalue))
+       (rhsw (vl-expr->finalwidth x.expr))
 
-<li>@('x') is the assignment statement which may need to be truncated, </li>
-
-<li>@('nf') is a @(see vl-namefactory-p) for generating fresh variable names,
-and</li>
-
-<li>@('warnings') is an accumulator for warnings.</li>
-
-</ul>
-
-<p>Outputs.</p>
-
-<ul>
-
-<li>@('warnings-prime') is the updated list of warnings,</li>
-
-<li>@('netdecls') are any new wire declarations that must be added to the
-module,</li>
-
-<li>@('new-assigns') is a new list of assignments which will <b>replace</b>
-@('x') in the module, and</li>
-
-<li>@('nf-prime') is the updated name factory.</li>
-
-</ul>"
-
-  (defund vl-assign-trunc (x nf warnings)
-    "Returns (MV WARNINGS NETDECLS ASSIGNS NF-PRIME)"
-    (declare (xargs :guard (and (vl-assign-p x)
-                                (vl-namefactory-p nf)
-                                (vl-warninglist-p warnings))))
-    (b* ((lvalue   (vl-assign->lvalue x))
-         (expr     (vl-assign->expr x))
-         (loc      (vl-assign->loc x))
-         (lw       (vl-expr->finalwidth lvalue))
-         (ew       (vl-expr->finalwidth expr))
-
-         ((when (or (not (posp lw))
-                    (not (posp ew))
-                    (< ew lw)))
-          (mv (cons (make-vl-warning
-                     :type :vl-programming-error
+       ((when (or (not (posp lhsw))
+                  (not (posp rhsw))
+                  (< rhsw lhsw)))
+        (mv x (dwarn :type :vl-programming-error
                      :msg "~a0: expected widths to be computed and never ~
-                           thought lvalue would be larger than the expr being ~
-                           assigned to it.  Lvalue width: ~x1.  Expr width: ~
-                           ~x2.  Lvalue: ~a3.  Expr: ~a4."
-                     :args (list x lw ew lvalue expr)
+                             thought lhs would never be wider than rhs. LHS ~
+                             width: ~x1.  RHS width: ~x2.  LHS: ~a3.  RHS: ~
+                             ~a4."
+                     :args (list x lhsw rhsw x.lvalue x.expr)
                      :fatalp t
-                     :fn 'vl-assign-trunc)
-                    warnings)
-              nil (list x) nf))
+                     :fn 'vl-assign-trunc)))
 
-         ((when (= lw ew))
-          ;; The widths already agree, so nothing needs to change.
-          (mv warnings nil (list x) nf))
+       ((when (int= lhsw rhsw))
+        ;; The widths already agree, so nothing needs to change.
+        (mv x delta))
 
-         ;; Otherwise, we need to truncate.  We used to issue warnings
-         ;; here, but we moved that to the sizing code because we can
-         ;; generate better messages there.
+       ;; If we get this far, we need to truncate.
 
-         ((when (and (vl-fast-atom-p expr)
-                     (vl-fast-constint-p (vl-atom->guts expr))
-                     (eq (vl-expr->finaltype expr) :vl-unsigned)
-                     (vl-expr-welltyped-p expr)))
-          ;; Optimized case for truncating constant integers
-          (b* ((new-atom   (vl-truncate-constint lw expr))
-               (new-assign (change-vl-assign x :expr new-atom)))
-            (mv warnings nil (list new-assign) nf)))
+       ;; We used to issue warnings here, but we moved that to the sizing
+       ;; code because we can generate better messages there.
 
-         ((when (and (vl-fast-atom-p expr)
-                     (vl-fast-weirdint-p (vl-atom->guts expr))
-                     (eq (vl-expr->finaltype expr) :vl-unsigned)
-                     (vl-expr-welltyped-p expr)))
-          ;; Optimized case for truncating weird integers
-          (b* ((new-atom   (vl-truncate-weirdint lw expr))
-               (new-assign (change-vl-assign x :expr new-atom)))
-            (mv warnings nil (list new-assign) nf)))
+       ((when (and (vl-fast-atom-p x.expr)
+                   (vl-fast-constint-p (vl-atom->guts x.expr))
+                   (eq (vl-expr->finaltype x.expr) :vl-unsigned)
+                   (vl-expr-welltyped-p x.expr)))
+        ;; Optimized case for truncating constant integers
+        (b* ((new-rhs (vl-truncate-constint lhsw x.expr))
+             (x-prime (change-vl-assign x :expr new-rhs)))
+          (mv x-prime delta)))
 
-         ;; BOZO probably should extend this to allow for truncating any
-         ;; sliceable expression without adding wires...
+       ((when (and (vl-fast-atom-p x.expr)
+                   (vl-fast-weirdint-p (vl-atom->guts x.expr))
+                   (eq (vl-expr->finaltype x.expr) :vl-unsigned)
+                   (vl-expr-welltyped-p x.expr)))
+        ;; Optimized case for truncating weird integers
+        (b* ((new-rhs (vl-truncate-weirdint lhsw x.expr))
+             (x-prime (change-vl-assign x :expr new-rhs)))
+          (mv x-prime delta)))
 
-         ;; Ordinary case...
-         ((mv new-name nf) (vl-namefactory-indexed-name "trunc" nf))
-         (new-name-expr    (vl-idexpr new-name ew :vl-unsigned))
+       ;; BOZO probably should extend this to allow for truncating any
+       ;; sliceable expression without adding wires...
 
-         ;; Make a fake wire, e.g., wire [expr.width-1:0] trunc_12345;
-         (new-netdecl (make-vl-netdecl :loc loc
-                                       :name new-name
-                                       :type :vl-wire
-                                       :range (vl-make-n-bit-range ew)))
+       ;; Ordinary case...
+       ((vl-delta delta) delta)
 
-         ;; Assign the expression to the fake wire, e.g., trunc_12345 = expr;
-         ;; We always use 0-delay here.
-         (new-assign1 (make-vl-assign :loc loc
-                                      :lvalue new-name-expr
-                                      :expr expr))
+       ((mv tmp-name nf) (vl-namefactory-indexed-name "trunc" delta.nf))
+       (tmp-expr         (vl-idexpr tmp-name rhsw :vl-unsigned))
 
-         ;; Make the expression for the chop, i.e., trunc_12345[lvalue.width-1:0];
-         (chop-expr   (vl-make-chopped-id new-name ew lw))
+       ;; wire [rhsw-1:0] trunc_12345;
+       (tmp-decl   (make-vl-netdecl :loc   x.loc
+                                    :name  tmp-name
+                                    :type  :vl-wire
+                                    :range (vl-make-n-bit-range rhsw)))
 
-         ;; Assign the chopped expression to the lvalue, i.e.,
-         ;;   assign lvalue = trunc_12345[lvalue.width-1:0];
-         ;; We annotate this assignment with an attribute like (* TRUNC_15 *) when
-         ;; we're truncating to 15 bits.
-         ;; We now preserve the delay/strength of the assignment
-         (new-assign2 (change-vl-assign x
-                                        :expr chop-expr
-                                        :atts (acons (cat "TRUNC_" (natstr lw))
-                                                     nil nil))))
-        (mv warnings
-            (list new-netdecl)
-            (list new-assign1 new-assign2)
-            nf)))
+       ;; assign trunc_12345 = rhs;
+       (tmp-assign (make-vl-assign :loc    x.loc
+                                   :lvalue tmp-expr
+                                   :expr   x.expr))
 
-  (defmvtypes vl-assign-trunc (nil true-listp true-listp))
+       (delta      (change-vl-delta delta
+                                    :netdecls (cons tmp-decl delta.netdecls)
+                                    :assigns  (cons tmp-assign delta.assigns)
+                                    :nf       nf))
 
-  (local (in-theory (enable vl-assign-trunc)))
+       ;; trunc_12345[lhsw-1:0];
+       (chop-expr  (vl-make-chopped-id tmp-name rhsw lhsw))
 
-  (defthm vl-assign-trunc-basics
-    (implies (and (force (vl-assign-p x))
-                  (force (vl-namefactory-p nf))
-                  (force (vl-warninglist-p warnings)))
-             (let ((ret (vl-assign-trunc x nf warnings)))
-               (and (vl-warninglist-p (mv-nth 0 ret))
-                    (vl-netdecllist-p (mv-nth 1 ret))
-                    (vl-assignlist-p  (mv-nth 2 ret))
-                    (vl-namefactory-p (mv-nth 3 ret)))))))
+       ;; assign lhs = trunc_12345[lhsw-1:0];
+       (x-prime
+        ;; Using change-vl-assign (vs. make-vl-assign) keeps delay/strength
+        (change-vl-assign x
+                          :expr chop-expr
+                          ;; Add an attribute like (* TRUNC_15 *) when we're
+                          ;; truncating to 15 bits.  BOZO should be VL_.
+                          :atts (acons (cat "TRUNC_" (natstr lhsw)) nil x.atts))))
+    (mv x-prime delta)))
 
 
 
-(defsection vl-assignlist-trunc
+(define vl-assignlist-trunc ((x vl-assignlist-p)
+                             (delta vl-delta-p))
+  :returns (mv (assigns vl-assignlist-p :hyp :fguard)
+               (detla   vl-delta-p      :hyp :fguard))
   :parents (trunc)
-  :short "Extends @(see vl-assign-trunc) across a list of assignments."
 
-  (defund vl-assignlist-trunc (x nf warnings)
-    "Returns (MV WARNINGS-PRIME NETDECLS ASSIGNS NF-PRIME)"
-    (declare (xargs :guard (and (vl-assignlist-p x)
-                                (vl-namefactory-p nf)
-                                (vl-warninglist-p warnings))))
-    (b* (((when (atom x))
-          (mv warnings nil nil nf))
-         ((mv warnings new-netdecls1 new-assigns1 nf)
-          (vl-assign-trunc (car x) nf warnings))
-         ((mv warnings new-netdecls2 new-assigns2 nf)
-          (vl-assignlist-trunc (cdr x) nf warnings))
-         (netdecls (append new-netdecls1 new-netdecls2))
-         (assigns  (append new-assigns1 new-assigns2)))
-        (mv warnings netdecls assigns nf)))
-
-  (defmvtypes vl-assignlist-trunc (nil true-listp true-listp))
-
-  (local (in-theory (enable vl-assignlist-trunc)))
-
-  (defthm vl-assignlist-trunc-basics
-    (implies (and (force (vl-assignlist-p x))
-                  (force (vl-namefactory-p nf))
-                  (force (vl-warninglist-p warnings)))
-             (let ((ret (vl-assignlist-trunc x nf warnings)))
-               (and (vl-warninglist-p (mv-nth 0 ret))
-                    (vl-netdecllist-p (mv-nth 1 ret))
-                    (vl-assignlist-p  (mv-nth 2 ret))
-                    (vl-namefactory-p (mv-nth 3 ret)))))))
+  (b* (((when (atom x))
+        (mv nil delta))
+       ((mv car delta) (vl-assign-trunc (car x) delta))
+       ((mv cdr delta) (vl-assignlist-trunc (cdr x) delta)))
+    (mv (cons car cdr) delta)))
 
 
-(defund vl-assign-can-skip-trunc-p (x)
-  (declare (xargs :guard (vl-assign-p x)))
-  (let ((lw (vl-expr->finalwidth (vl-assign->lvalue x)))
-        (ew (vl-expr->finalwidth (vl-assign->expr x))))
-    (and (posp lw)
-         (posp ew)
-         (= lw ew))))
+(define vl-assign-can-skip-trunc-p ((x vl-assign-p))
+  :inline t
+  (b* ((lhsw (vl-expr->finalwidth (vl-assign->lvalue x)))
+       (rhsw (vl-expr->finalwidth (vl-assign->expr x))))
+    (and (posp lhsw)
+         (posp rhsw)
+         (int= lhsw rhsw))))
 
-(defund vl-assignlist-can-skip-trunc-p (x)
-  (declare (xargs :guard (vl-assignlist-p x)))
+(define vl-assignlist-can-skip-trunc-p ((x vl-assignlist-p))
   (or (atom x)
       (and (vl-assign-can-skip-trunc-p (car x))
            (vl-assignlist-can-skip-trunc-p (cdr x)))))
 
 
-(defsection vl-module-trunc
+(define vl-module-trunc ((x vl-module-p))
+  :returns (new-x vl-module-p :hyp :fguard)
   :parents (trunc)
   :short "Eliminate implicit truncations in assignments throughout a module."
 
-  (defund vl-module-trunc (x)
-    "Return X-PRIME"
-    (declare (xargs :guard (vl-module-p x)))
-    (b* (((when (vl-module->hands-offp x))
-          x)
-         (assigns    (vl-module->assigns x))
-         ((when (vl-assignlist-can-skip-trunc-p assigns))
-          ;; Optimization.  Don't recons anything if there aren't any implicit
-          ;; truncations to make.
-          x)
-         (warnings   (vl-module->warnings x))
-         (netdecls   (vl-module->netdecls x))
-         (nf         (vl-starting-namefactory x))
-         ((mv warnings new-netdecls new-assigns nf)
-          (vl-assignlist-trunc assigns nf warnings))
-         (-          (vl-free-namefactory nf)))
-        (change-vl-module x
-                          :assigns new-assigns
-                          :netdecls (append (redundant-list-fix netdecls) new-netdecls)
-                          :warnings warnings)))
+  (b* (((vl-module x) x)
 
-  (local (in-theory (enable vl-module-trunc)))
+       ((when (vl-module->hands-offp x))
+        ;; Fine, don't do anything.
+        x)
 
-  (defthm vl-module-p-of-vl-module-trunc
-    (implies (force (vl-module-p x))
-             (vl-module-p (vl-module-trunc x))))
+       ((when (vl-assignlist-can-skip-trunc-p x.assigns))
+        ;; Optimization.  Don't recons anything if there aren't any implicit
+        ;; truncations to make.
+        x)
+
+       (delta              (vl-starting-delta x))
+       (delta              (change-vl-delta delta :netdecls x.netdecls))
+       ((mv assigns delta) (vl-assignlist-trunc x.assigns delta))
+       ((vl-delta delta)   (vl-free-delta delta)))
+
+    (change-vl-module x
+                      ;; We started out with x.netdecls and extended them, so
+                      ;; this has everything we want
+                      :netdecls delta.netdecls
+                      ;; We rewrote all of x's assigns, but there are also
+                      ;; assigns in the delta, so merge them.
+                      :assigns (revappend-without-guard delta.assigns assigns)
+                      ;; The starting delta include's the former warnings for X,
+                      ;; so the delta's warnings are fine.
+                      :warnings delta.warnings))
+
+  ///
 
   (defthm vl-module->name-of-vl-module-trunc
     (equal (vl-module->name (vl-module-trunc x))
            (vl-module->name x))))
 
 
-
-(defsection vl-modulelist-trunc
+(defprojection vl-modulelist-trunc (x)
+  (vl-module-trunc x)
+  :guard (vl-modulelist-p x)
+  :result-type vl-modulelist-p
   :parents (trunc)
-  :short "Eliminate implicit truncations in assignments throughout a module list."
-
-  (defprojection vl-modulelist-trunc (x)
-    (vl-module-trunc x)
-    :guard (vl-modulelist-p x)
-    :result-type vl-modulelist-p)
-
-  (local (in-theory (enable vl-modulelist-trunc)))
-
-  (defthm vl-modulelist->names-of-vl-modulelist-trunc
-    (equal (vl-modulelist->names (vl-modulelist-trunc x))
-           (vl-modulelist->names x))))
+  :rest
+  ((defthm vl-modulelist->names-of-vl-modulelist-trunc
+     (equal (vl-modulelist->names (vl-modulelist-trunc x))
+            (vl-modulelist->names x)))))

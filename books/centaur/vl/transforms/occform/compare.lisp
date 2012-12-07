@@ -19,7 +19,7 @@
 ; Original author: Jared Davis <jared@centtech.com>
 
 (in-package "VL")
-(include-book "gen-adder")
+(include-book "add")
 (local (include-book "../../util/arithmetic"))
 (local (include-book "../../util/osets"))
 (local (in-theory (disable vl-maybe-module-p-when-vl-module-p)))

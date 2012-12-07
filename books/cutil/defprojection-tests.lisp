@@ -73,7 +73,12 @@
 
   (defprojection add1-list (x)
     (+ 1 x)
-    :guard (integer-listp x))
+    :guard (integer-listp x)
+    :parents (foo)
+    :rest
+    ((defthm add1-list-integer-list
+       (implies (integer-listp x)
+                (integer-listp (add1-list x))))))
 
   (defprojection symbol-<-foo-list (x)
     (symbol-< :foo x)

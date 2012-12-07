@@ -275,19 +275,14 @@ limits so that more flexible paramter declarations are supported.</p>"
     (equal (vl-module->name (vl-module-check-good-paramdecls x))
            (vl-module->name x))))
 
-(defsection vl-modulelist-check-good-paramdecls
-
-;; BOZO document me
-
-  (defprojection vl-modulelist-check-good-paramdecls (x)
-    (vl-module-check-good-paramdecls x)
-    :guard (vl-modulelist-p x)
-    :result-type vl-modulelist-p)
-
-  (defthm vl-modulelist->names-of-vl-modulelist-check-good-paramdecls
-    (equal (vl-modulelist->names (vl-modulelist-check-good-paramdecls x))
-           (vl-modulelist->names x))
-    :hints(("Goal" :induct (len x)))))
+(defprojection vl-modulelist-check-good-paramdecls (x)
+  (vl-module-check-good-paramdecls x)
+  :guard (vl-modulelist-p x)
+  :result-type vl-modulelist-p
+  :rest
+  ((defthm vl-modulelist->names-of-vl-modulelist-check-good-paramdecls
+     (equal (vl-modulelist->names (vl-modulelist-check-good-paramdecls x))
+            (vl-modulelist->names x)))))
 
 (defun vl-good-paramdecllist-list-p-of-vl-modulelist->paramdecls (x)
   ;; Simple fused operation.  We leave this enabled.

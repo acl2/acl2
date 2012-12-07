@@ -62,7 +62,6 @@
 (include-book "../transforms/xf-resolve-ranges")
 (include-book "../transforms/xf-replicate-insts")
 (include-book "../transforms/xf-sizing")
-(include-book "../transforms/xf-stmt-rewrite")
 (include-book "../transforms/xf-unparameterize")
 (include-book "../transforms/xf-unused-reg")
 
@@ -343,7 +342,8 @@
         rest))))
 
 (defthm vl-modwarningalist-p-of-vl-keep-from-modwarningalist
-  (implies (force (vl-modwarningalist-p x))
+  (implies (and (force (symbol-listp types))
+                (force (vl-modwarningalist-p x)))
            (vl-modwarningalist-p (vl-keep-from-modwarningalist types x)))
   :hints(("Goal" :in-theory (enable vl-keep-from-modwarningalist))))
 

@@ -22,8 +22,8 @@
 ; autolink.lisp -- automatically insert links into pretty-printed s-expressions
 
 (in-package "XDOC")
+(include-book "fmt-to-str")
 (include-book "../xdoc/names")
-(include-book "str/top" :dir :system)
 (local (include-book "misc/assert" :dir :system))
 (set-state-ok t)
 (program)
@@ -44,7 +44,7 @@
 (defun error-context (x n xl) ;; ==> STRING
   ;; Tries to show what text is near an error.
   (declare (type string x))
-  (let ((min (nfix (- n 20)))
+  (let ((min (nfix (- n 40)))
         (max (min (+ n 20) xl)))
     (subseq x min max)))
 
@@ -239,20 +239,7 @@
      (assert! (test "123" nil 'acl2::|123| 3)))))
 
 
-(defun simple-html-encode-str (x n xl acc)
 
-; Revappend the HTML encoding of X (e.g., & --> &amp;) onto ACC.
-
-  (b* (((when (int= n xl))
-        acc)
-       (char1 (char x n))
-       (acc   (case char1
-                (#\< (list* #\; #\t #\l #\& acc))         ;; "&lt;" (in reverse)
-                (#\> (list* #\; #\t #\g #\& acc))         ;; "&gt;"
-                (#\& (list* #\; #\p #\m #\a #\& acc))     ;; "&amp;"
-                (#\" (list* #\; #\t #\o #\u #\q #\& acc)) ;; "&quot;"
-                (t   (cons char1 acc)))))
-    (simple-html-encode-str x (+ 1 n) xl acc)))
 
 (defun autolink-and-encode (x n xl topics base-pkg kpa acc) ;; ==> ACC
 
@@ -363,53 +350,6 @@
      (assert! (test "(xdoc::foo (f 1 2))"
                     ;; -->
                     "(<see topic=\"XDOC____FOO\">xdoc::foo</see> (<see topic=\"ACL2____F\">f</see> 1 2))")))))
-
-
-
-
-; Now put them together to get a sexpr -> linked xml conversion.
-
-(defun fmt-to-str (x base-pkg state)
-
-; Use ACL2's fancy new string-printing stuff to pretty-print an object into a
-; string.
-
-  (b* ((hard-right-margin   (f-get-global 'acl2::fmt-hard-right-margin state))
-       (soft-right-margin   (f-get-global 'acl2::fmt-soft-right-margin state))
-       (print-case          (f-get-global 'acl2::print-case state))
-       (pkg                 (current-package state))
-       (state               (set-fmt-hard-right-margin 68 state))
-       (state               (set-fmt-soft-right-margin 62 state))
-       (state               (set-print-case :downcase state))
-
-       ((mv er ?val state)  (acl2::in-package-fn (symbol-package-name base-pkg) state))
-       ((when er)
-        (er hard? 'fmt-to-str "Error switching to package ~x0~%"
-            (symbol-package-name base-pkg))
-        (mv "" state))
-
-       ((mv channel state)  (open-output-channel :string :character state))
-       ((mv & state)        (fmt1 "~x0" (list (cons #\0 x)) 0 channel state nil))
-
-       ((mv er str state)  (get-output-stream-string$ channel state))
-       ((when er)
-        (er hard? 'fmt-to-str "Error with get-output-stream-string$???")
-        (mv "" state))
-
-       ((mv er ?val state) (acl2::in-package-fn pkg state))
-       ((when er)
-        (er hard? 'fmt-to-str "Error switching back to package ~x0~%" pkg)
-        (mv "" state))
-
-       (state               (set-fmt-hard-right-margin hard-right-margin state))
-       (state               (set-fmt-soft-right-margin soft-right-margin state))
-       (state               (set-print-case print-case state)))
-    (mv str state)))
-
-(defun fmt-and-encode-to-acc (x base-pkg state acc)
-  (b* (((mv str state) (fmt-to-str x base-pkg state))
-       (acc (simple-html-encode-str str 0 (length str) acc)))
-    (mv acc state)))
 
 
 

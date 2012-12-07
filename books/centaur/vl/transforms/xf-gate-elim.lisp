@@ -24,7 +24,6 @@
 (local (include-book "../util/arithmetic"))
 
 
-
 (defxdoc gate-elim
   :parents (transforms)
   :short "Convert gate instances into <see topic='@(url

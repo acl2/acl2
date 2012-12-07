@@ -553,16 +553,17 @@ We extend @('X') with a fatal warning if this doesn't hold.</p>"
   :guard (vl-modulelist-p x)
   :result-type vl-modulelist-p
   :parents (port-bit-checking)
+
   :long "<p>Performance note.  This will look expensive because it calls @(see
 vl-module-wirealist), @(see vl-portdecls-to-i/o) and @(see
 vl-portlist-msb-bit-pattern) on all modules.  But since these are memoized, we
 get to reuse this work when we generate the eoccs for module instances and need
-to look up these patterns.</p>")
+to look up these patterns.</p>"
 
-(defthm vl-modulelist->names-of-vl-modulelist-check-port-bits
-  (equal (vl-modulelist->names (vl-modulelist-check-port-bits x))
-         (vl-modulelist->names x))
-  :hints(("Goal" :induct (len x))))
+  :rest
+  ((defthm vl-modulelist->names-of-vl-modulelist-check-port-bits
+     (equal (vl-modulelist->names (vl-modulelist-check-port-bits x))
+            (vl-modulelist->names x)))))
 
 
 

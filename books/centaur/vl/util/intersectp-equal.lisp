@@ -20,59 +20,62 @@
 
 (in-package "VL")
 (include-book "unicode/list-defuns" :dir :system)
+(include-book "cutil/define" :dir :system)
 (local (include-book "arithmetic"))
 
 
 ; Extended lemmas about intersectp-equal
 
-(defund empty-intersect-with-each-p (a x)
-  ;; A is a list.  X is a list of lists.
+(define empty-intersect-with-each-p ((a "A list")
+                                     (x "A list of lists"))
+  :verify-guards nil
   (or (atom x)
       (and (not (intersectp-equal a (car x)))
-           (empty-intersect-with-each-p a (cdr x)))))
-
-(defthm empty-intersect-with-each-p-when-atom
-  (implies (atom x)
-           (empty-intersect-with-each-p a x))
-  :hints(("Goal" :in-theory (enable empty-intersect-with-each-p))))
-
-(defthm empty-intersect-with-each-p-of-cons
-  (equal (empty-intersect-with-each-p a (cons b x))
-         (and (not (intersectp-equal a b))
-              (empty-intersect-with-each-p a x)))
-  :hints(("Goal" :in-theory (enable empty-intersect-with-each-p))))
-
-(defthm empty-intersect-with-each-p-of-cdr
-  (implies (empty-intersect-with-each-p a x)
            (empty-intersect-with-each-p a (cdr x))))
+  :parents (utilities)
+  :short "@(call empty-intersect-with-each-p) checks whether @('a') is disjoint
+from every member of @('x')."
 
-(defthm intersectp-equal-when-empty-intersect-with-each-p
-  (implies (and (empty-intersect-with-each-p a x)
-                (member-equal b x))
-           (equal (intersectp-equal a b)
-                  nil))
-  :rule-classes ((:rewrite)
-                 (:rewrite :corollary
-                           (implies (and (member-equal b x)
-                                         (empty-intersect-with-each-p a x))
-                                    (equal (intersectp-equal a b)
-                                           nil)))
-                 (:rewrite :corollary
-                           (implies (and (empty-intersect-with-each-p a x)
-                                         (member-equal b x))
-                                    (equal (intersectp-equal b a)
-                                           nil)))
-                 (:rewrite :corollary
-                           (implies (and (member-equal b x)
-                                         (empty-intersect-with-each-p a x))
-                                    (equal (intersectp-equal b a)
-                                           nil))))
-  :hints(("Goal" :induct (len x))))
+  ///
 
-(defthm empty-intersect-flatten-when-empty-intersect-with-each-p
-  (implies (empty-intersect-with-each-p a x)
-           (not (intersectp-equal a (flatten x))))
-  :hints(("Goal" :induct (len x))))
+  (defthm empty-intersect-with-each-p-when-atom
+    (implies (atom x)
+             (empty-intersect-with-each-p a x)))
+
+  (defthm empty-intersect-with-each-p-of-cons
+    (equal (empty-intersect-with-each-p a (cons b x))
+           (and (not (intersectp-equal a b))
+                (empty-intersect-with-each-p a x))))
+
+  (defthm empty-intersect-with-each-p-of-cdr
+    (implies (empty-intersect-with-each-p a x)
+             (empty-intersect-with-each-p a (cdr x))))
+
+  (defthm intersectp-equal-when-empty-intersect-with-each-p
+    (implies (and (empty-intersect-with-each-p a x)
+                  (member-equal b x))
+             (equal (intersectp-equal a b)
+                    nil))
+    :rule-classes ((:rewrite)
+                   (:rewrite :corollary
+                             (implies (and (member-equal b x)
+                                           (empty-intersect-with-each-p a x))
+                                      (equal (intersectp-equal a b)
+                                             nil)))
+                   (:rewrite :corollary
+                             (implies (and (empty-intersect-with-each-p a x)
+                                           (member-equal b x))
+                                      (equal (intersectp-equal b a)
+                                             nil)))
+                   (:rewrite :corollary
+                             (implies (and (member-equal b x)
+                                           (empty-intersect-with-each-p a x))
+                                      (equal (intersectp-equal b a)
+                                             nil)))))
+
+  (defthm empty-intersect-flatten-when-empty-intersect-with-each-p
+    (implies (empty-intersect-with-each-p a x)
+             (not (intersectp-equal a (flatten x))))))
 
 
 
@@ -94,8 +97,8 @@
                        (member-equal a (empty-intersect-rhs)))))
     :rule-classes nil))
 
-(encapsulate
-  ()
+(defsection empty-intersect-by-membership
+
   (local (defun badguy (x y)
            (cond ((atom x)
                   nil)
@@ -286,8 +289,6 @@
                                (find-intersect2 (intersect-2flatten-lhs)
                                                 (intersect-2flatten-rhs))
                                (intersect-2flatten-rhs))))))))
-
-
 
 
 

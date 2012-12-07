@@ -27,7 +27,7 @@
 
   :long "<p>Verilog has four register-transfer level values, @('0'), @('1'),
 @('X'), and @('Z').  In @(see vl-weirdint-p) objects, We represent these values
-using the keyword symbols:</p>
+using the keyword symbols accepted by @('vl-bit-p'):</p>
 
 <ul>
  <li>@(':vl-0val') means 0,</li>
@@ -43,27 +43,26 @@ using the keyword symbols:</p>
   :parents (vl-weirdint-p))
 
 
-(defsection vl-bit->char
+(define vl-bit->char ((x vl-bit-p))
   :parents (vl-weirdint-p)
   :short "Get the character for a @(see vl-bit-p)."
 
   :long "<p>@(call vl-bit->char) produces the ASCII character for a @(see vl-bit-p).
 That is, it returns one of the characters: 0, 1, X, or Z.</p>"
 
-  (defund vl-bit->char (x)
-    (declare (xargs :guard (vl-bit-p x)
-                    :guard-hints (("Goal" :in-theory (enable vl-bit-p)))))
-    (case x
-      (:vl-0val #\0)
-      (:vl-1val #\1)
-      (:vl-xval #\X)
-      (:vl-zval #\Z)
-      (otherwise
-       ;; hack for unconditional type prescription
-       (prog2$ (er hard 'vl-bit-char "Impossible")
-               #\0))))
+  (case x
+    (:vl-0val #\0)
+    (:vl-1val #\1)
+    (:vl-xval #\X)
+    (:vl-zval #\Z)
+    (otherwise
+     ;; hack for unconditional type prescription
+     (prog2$ (er hard 'vl-bit-char "Impossible")
+             #\0)))
 
-  (local (in-theory (enable vl-bit->char)))
+  :guard-hints (("Goal" :in-theory (enable vl-bit-p)))
+
+  ///
 
   (defthm characterp-of-vl-bit->char
     (characterp (vl-bit->char x))
@@ -76,22 +75,16 @@ That is, it returns one of the characters: 0, 1, X, or Z.</p>"
   :result-type character-listp
   :nil-preservingp nil
   :parents (vl-weirdint-p)
-  :short "Get a character list for a @(see vl-bitlist-p)."
-
-  :long "<p>@(call vl-bitlist->charlist) returns the list of ASCII characters
-corresponding to a @(see vl-bitlist-p).  See also @(see vl-bitlist->string).</p>")
+  :short "Get a character list for a @(see vl-bitlist-p).")
 
 
-(defsection vl-bitlist->string
+(define vl-bitlist->string ((x vl-bitlist-p))
   :parents (vl-weirdint-p)
   :short "Get the string corresponding to a @(see vl-bitlist-p)."
-  :long "<p>See @(see vl-bitlist->charlist).</p>"
 
-  (defund vl-bitlist->string (x)
-    (declare (xargs :guard (vl-bitlist-p x)))
-    (coerce (vl-bitlist->charlist x) 'string))
+  (coerce (vl-bitlist->charlist x) 'string)
 
-  (local (in-theory (enable vl-bitlist->string)))
+  ///
 
   (defthm stringp-of-vl-bitlist->string
     (stringp (vl-bitlist->string x))

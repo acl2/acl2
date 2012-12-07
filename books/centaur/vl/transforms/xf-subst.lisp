@@ -599,8 +599,8 @@ attributes is left up to the implementation.</p>"
   :type vl-fundecllist-p
   :element vl-fundecl-subst)
 
-                       
-                       
+
+
 
 (def-vl-subst vl-module-subst
   :type vl-module-p
@@ -621,7 +621,7 @@ attributes is left up to the implementation.</p>"
                             :gateinsts  (vl-gateinstlist-subst  x.gateinsts  sigma)
                             :alwayses   (vl-alwayslist-subst    x.alwayses   sigma)
                             :initials   (vl-initiallist-subst   x.initials   sigma)
-                            ;; atts are unchanged 
+                            ;; atts are unchanged
                             )))
 
 (defthm vl-module->name-of-vl-module-subst

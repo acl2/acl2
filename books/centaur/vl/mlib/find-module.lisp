@@ -243,7 +243,10 @@ vl-fast-has-modules) for a faster alternative.</p>"
                   (vl-fast-has-modules (cdr x) mods modalist))))))
 
 
-(defsection vl-find-modules
+(defprojection vl-find-modules (x mods)
+  (vl-find-module x mods)
+  :guard (and (string-listp x)
+              (vl-modulelist-p mods))
   :parents (hierarchy)
   :short "@(call vl-find-modules) gathers every module in named in @('x') from
 @('mods') and returns them as a list."
@@ -255,32 +258,26 @@ logically simplest way of gathering modules by name.</p>
 module list for each module in @('x'), making it quadratic.  For better
 performance, see @(see vl-fast-find-modules).</p>"
 
-  (defprojection vl-find-modules (x mods)
-    (vl-find-module x mods)
-    :guard (and (string-listp x)
-                (vl-modulelist-p mods)))
+  :rest
+  ((defthm vl-modulelist-p-of-vl-find-modules
+     (implies (force (vl-modulelist-p mods))
+              (equal (vl-modulelist-p (vl-find-modules names mods))
+                     (vl-has-modules names mods))))
 
-  (local (in-theory (enable vl-find-modules)))
+   (defthm subsetp-equal-of-vl-find-modules-of-self
+     (implies (force (vl-modulelist-p mods))
+              (equal (subsetp-equal (vl-find-modules names mods) mods)
+                     (vl-has-modules names mods))))
 
-  (defthm vl-modulelist-p-of-vl-find-modules
-    (implies (force (vl-modulelist-p mods))
-             (equal (vl-modulelist-p (vl-find-modules names mods))
-                    (vl-has-modules names mods))))
+   (defthm vl-modulelist-p-of-vl-find-modules-of-self
+     (implies (force (vl-modulelist-p mods))
+              (equal (vl-modulelist-p (vl-find-modules names mods))
+                     (vl-has-modules names mods))))
 
-  (defthm subsetp-equal-of-vl-find-modules-of-self
-    (implies (force (vl-modulelist-p mods))
-             (equal (subsetp-equal (vl-find-modules names mods) mods)
-                    (vl-has-modules names mods))))
-
-  (defthm vl-modulelist-p-of-vl-find-modules-of-self
-    (implies (force (vl-modulelist-p mods))
-             (equal (vl-modulelist-p (vl-find-modules names mods))
-                    (vl-has-modules names mods))))
-
-  (defthm vl-modulelist->names-of-vl-find-modules
-    (implies (vl-has-modules names mods)
-             (equal (vl-modulelist->names (vl-find-modules names mods))
-                    (list-fix names)))))
+   (defthm vl-modulelist->names-of-vl-find-modules
+     (implies (vl-has-modules names mods)
+              (equal (vl-modulelist->names (vl-find-modules names mods))
+                     (list-fix names))))))
 
 
 (defsection vl-fast-find-modules

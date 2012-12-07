@@ -25,7 +25,6 @@
 (in-package "CUTIL")
 (include-book "deflist")
 
-
 (defxdoc defprojection
   :parents (cutil)
   :short "Project a transformation across a list."
@@ -51,6 +50,7 @@ define a new function that applies @('f') to every element in a list.</p>
         short                   ; nil by default
         long                    ; nil by default
         parallelize             ; nil by default
+        rest                    ; nil by default
         )
 })
 
@@ -93,6 +93,13 @@ the name of a unary predicate like @('nat-listp'), then a defthm will be
 generated that looks like @('(implies (force guard) (nat-listp (name ...)))')
 while @('name') is still enabled.  This is not a very general mechanism, but it
 is often good enough to save a lot of work.</p>
+
+<p>The optional @(':rest') keyword can be used to stick in additional events
+after the end of the projection.  These events will be submitted after
+everything else, including the @(':result-type') theorem.  The theory will have
+the projection function enabled.  This is a more general but less automatic
+than @(':result-type'), i.e., you typically have to include full @(see defthm)s
+here.</p>
 
 <p>The optional @(':already-definedp') keyword can be set if you have already
 defined the function.  This can be used to generate all of the ordinary
@@ -148,7 +155,8 @@ the user wishes to parallelize the execution of the defined function.</p>")
                               nil-preservingp already-definedp
                               guard verify-guards
                               mode optimize result-type
-                              parents short long parallelize)
+                              parents short long rest
+                              parallelize)
   (declare (xargs :mode :program))
   (b* (((unless (symbolp name))
         (er hard? 'defprojection "Name must be a symbol, but is ~x0." name))
@@ -243,12 +251,7 @@ the user wishes to parallelize the execution of the defined function.</p>")
 
        (long (or long
                  (and parents
-                      (str::cat "<p>This is an ordinary @(see defprojection).</p>"
-                                "@(def " (symbol-name list-fn) ")"))))
-
-       (doc (if (or parents short long)
-                `((defxdoc ,name :parents ,parents :short ,short :long ,long))
-              nil))
+                      (str::cat "<p>This is an ordinary @(see defprojection).</p>"))))
 
        (def  (if already-definedp
                  nil
@@ -318,159 +321,171 @@ the user wishes to parallelize the execution of the defined function.</p>")
                         (defttag nil)))))
 
        ((when (eq mode :program))
-        `(encapsulate
-           ()
+        `(defsection ,name
+           ,@(and parents `(:parents ,parents))
+           ,@(and short   `(:short ,short))
+           ,@(and long    `(:long ,long))
            (program)
-           ,@doc
            ,@def
-           ,@opt)))
+           ,@opt
+           ,@rest))
 
-      `(encapsulate
-        ()
-        (logic)
+       (events
+        `((logic)
+          ,@def
 
-        ,@doc
-        ,@def
+          ,@(if already-definedp
+                nil
+              `((in-theory (disable ,list-fn ,exec-fn))))
 
-        ,@(if already-definedp
-              nil
-            `((in-theory (disable ,list-fn ,exec-fn))))
+          (local (in-theory (enable defprojection-append-of-nil
+                                    defprojection-associativity-of-append)))
 
-        (local (in-theory (enable defprojection-append-of-nil
-                                  defprojection-associativity-of-append)))
+          (defthm ,(mksym list-fn '-when-not-consp)
+            (implies (not (consp ,x))
+                     (equal (,list-fn ,@list-args)
+                            nil))
+            :hints(("Goal" :in-theory (enable ,list-fn))))
 
-        (defthm ,(mksym list-fn '-when-not-consp)
-          (implies (not (consp ,x))
-                   (equal (,list-fn ,@list-args)
-                          nil))
-          :hints(("Goal" :in-theory (enable ,list-fn))))
+          (defthm ,(mksym list-fn '-of-cons)
+            (equal (,list-fn ,@(subst `(cons ,a ,x) x list-args))
+                   (cons (,elem-fn ,@(subst a x elem-args))
+                         (,list-fn ,@list-args)))
+            :hints(("Goal" :in-theory (enable ,list-fn))))
 
-        (defthm ,(mksym list-fn '-of-cons)
-          (equal (,list-fn ,@(subst `(cons ,a ,x) x list-args))
-                 (cons (,elem-fn ,@(subst a x elem-args))
-                       (,list-fn ,@list-args)))
-          :hints(("Goal" :in-theory (enable ,list-fn))))
+          (defthm ,(mksym 'true-listp-of- list-fn)
+            (equal (true-listp (,list-fn ,@list-args))
+                   t)
+            :hints(("Goal" :induct (len ,x))))
 
-        (defthm ,(mksym 'true-listp-of- list-fn)
-          (equal (true-listp (,list-fn ,@list-args))
-                 t)
-          :hints(("Goal" :induct (len ,x))))
+          (defthm ,(mksym 'len-of- list-fn)
+            (equal (len (,list-fn ,@list-args))
+                   (len ,x))
+            :hints(("Goal" :induct (len ,x))))
 
-        (defthm ,(mksym 'len-of- list-fn)
-          (equal (len (,list-fn ,@list-args))
-                 (len ,x))
-          :hints(("Goal" :induct (len ,x))))
+          (defthm ,(mksym 'consp-of- list-fn)
+            (equal (consp (,list-fn ,@list-args))
+                   (consp ,x))
+            :hints(("Goal" :induct (len ,x))))
 
-        (defthm ,(mksym 'consp-of- list-fn)
-          (equal (consp (,list-fn ,@list-args))
+          (defthm ,(mksym 'car-of- list-fn)
+            (equal (car (,list-fn ,@list-args))
+                   ,(if nil-preservingp
+                        `(,elem-fn ,@(subst `(car ,x) x elem-args))
+                      `(if (consp ,x)
+                           (,elem-fn ,@(subst `(car ,x) x elem-args))
+                         nil))))
+
+          (defthm ,(mksym 'cdr-of- list-fn)
+            (equal (cdr (,list-fn ,@list-args))
+                   (,list-fn ,@(subst `(cdr ,x) x list-args))))
+
+          (defthm ,(mksym list-fn '-under-iff)
+            (iff (,list-fn ,@list-args)
                  (consp ,x))
-          :hints(("Goal" :induct (len ,x))))
+            :hints(("Goal" :induct (len ,x))))
 
-        (defthm ,(mksym 'car-of- list-fn)
-          (equal (car (,list-fn ,@list-args))
-                 ,(if nil-preservingp
-                      `(,elem-fn ,@(subst `(car ,x) x elem-args))
-                    `(if (consp ,x)
-                         (,elem-fn ,@(subst `(car ,x) x elem-args))
-                       nil))))
+          (defthm ,(mksym list-fn '-of-list-fix)
+            (equal (,list-fn ,@(subst `(list-fix ,x) x list-args))
+                   (,list-fn ,@list-args))
+            :hints(("Goal" :induct (len ,x))))
 
-        (defthm ,(mksym 'cdr-of- list-fn)
-          (equal (cdr (,list-fn ,@list-args))
-                 (,list-fn ,@(subst `(cdr ,x) x list-args))))
+          (defthm ,(mksym list-fn '-of-append)
+            (equal (,list-fn ,@(subst `(append ,x ,y) x list-args))
+                   (append (,list-fn ,@list-args)
+                           (,list-fn ,@(subst y x list-args))))
+            :hints(("Goal" :induct (len ,x))))
 
-        (defthm ,(mksym list-fn '-under-iff)
-          (iff (,list-fn ,@list-args)
-               (consp ,x))
-          :hints(("Goal" :induct (len ,x))))
+          (defthm ,(mksym list-fn '-of-rev)
+            (equal (,list-fn ,@(subst `(rev ,x) x list-args))
+                   (rev (,list-fn ,@list-args)))
+            :hints(("Goal" :induct (len ,x))))
 
-        (defthm ,(mksym list-fn '-of-list-fix)
-          (equal (,list-fn ,@(subst `(list-fix ,x) x list-args))
-                 (,list-fn ,@list-args))
-          :hints(("Goal" :induct (len ,x))))
+          (defthm ,(mksym list-fn '-of-revappend)
+            (equal (,list-fn ,@(subst `(revappend ,x ,y) x list-args))
+                   (revappend (,list-fn ,@list-args)
+                              (,list-fn ,@(subst y x list-args)))))
 
-        (defthm ,(mksym list-fn '-of-append)
-          (equal (,list-fn ,@(subst `(append ,x ,y) x list-args))
-                 (append (,list-fn ,@list-args)
-                         (,list-fn ,@(subst y x list-args))))
-          :hints(("Goal" :induct (len ,x))))
+          ,@(if nil-preservingp
+                `((defthm ,(mksym 'simpler-take-of- list-fn)
+                    (equal (simpler-take ,n (,list-fn ,@list-args))
+                           (,list-fn ,@(subst `(simpler-take ,n ,x) x list-args)))
+                    :hints(("Goal"
+                            :in-theory (enable simpler-take)
+                            :induct (simpler-take ,n ,x)))))
+              nil)
 
-        (defthm ,(mksym list-fn '-of-rev)
-          (equal (,list-fn ,@(subst `(rev ,x) x list-args))
-                 (rev (,list-fn ,@list-args)))
-          :hints(("Goal" :induct (len ,x))))
+          (defthm ,(mksym 'nthcdr-of- list-fn)
+            (equal (nthcdr ,n (,list-fn ,@list-args))
+                   (,list-fn ,@(subst `(nthcdr ,n ,x) x list-args)))
+            :hints(("Goal"
+                    :in-theory (enable nthcdr)
+                    :induct (nthcdr ,n ,x))))
 
-        (defthm ,(mksym list-fn '-of-revappend)
-          (equal (,list-fn ,@(subst `(revappend ,x ,y) x list-args))
-                 (revappend (,list-fn ,@list-args)
-                            (,list-fn ,@(subst y x list-args)))))
+          (defthm ,(mksym 'member-equal-of- elem-fn '-in- list-fn '-when-member-equal)
+            (implies (member-equal ,a (double-rewrite ,x))
+                     (member-equal (,elem-fn ,@(subst a x elem-args))
+                                   (,list-fn ,@list-args)))
+            :hints(("Goal" :induct (len ,x))))
 
-        ,@(if nil-preservingp
-              `((defthm ,(mksym 'simpler-take-of- list-fn)
-                  (equal (simpler-take ,n (,list-fn ,@list-args))
-                         (,list-fn ,@(subst `(simpler-take ,n ,x) x list-args)))
-                  :hints(("Goal"
-                          :in-theory (enable simpler-take)
-                          :induct (simpler-take ,n ,x)))))
-            nil)
+          (defthm ,(mksym 'subsetp-equal-of- list-fn 's-when-subsetp-equal)
+            (implies (subsetp-equal (double-rewrite ,x)
+                                    (double-rewrite ,y))
+                     (subsetp-equal (,list-fn ,@list-args)
+                                    (,list-fn ,@(subst y x list-args))))
+            :hints(("Goal"
+                    ;; bleh
+                    :in-theory (enable subsetp-equal)
+                    :induct (len ,x))))
 
-        (defthm ,(mksym 'nthcdr-of- list-fn)
-          (equal (nthcdr ,n (,list-fn ,@list-args))
-                 (,list-fn ,@(subst `(nthcdr ,n ,x) x list-args)))
-          :hints(("Goal"
-                  :in-theory (enable nthcdr)
-                  :induct (nthcdr ,n ,x))))
+          ,@(if nil-preservingp
+                `((defthm ,(mksym 'nth-of- list-fn)
+                    (equal (nth ,n (,list-fn ,@list-args))
+                           (,elem-fn ,@(subst `(nth ,n ,x) x elem-args)))
+                    :hints(("Goal"
+                            :in-theory (enable nth)
+                            :induct (nth ,n ,x)))))
+              nil)
 
-        (defthm ,(mksym 'member-equal-of- elem-fn '-in- list-fn '-when-member-equal)
-          (implies (member-equal ,a (double-rewrite ,x))
-                   (member-equal (,elem-fn ,@(subst a x elem-args))
-                                 (,list-fn ,@list-args)))
-          :hints(("Goal" :induct (len ,x))))
+          ,@(if already-definedp
+                nil
+              `((defthm ,(mksym exec-fn '-removal)
+                  (implies (force (true-listp ,acc))
+                           (equal (,exec-fn ,@list-args ,acc)
+                                  (revappend (,list-fn ,@list-args) ,acc)))
+                  :hints(("Goal" :in-theory (enable ,exec-fn))))
 
-        (defthm ,(mksym 'subsetp-equal-of- list-fn 's-when-subsetp-equal)
-          (implies (subsetp-equal (double-rewrite ,x)
-                                  (double-rewrite ,y))
-                   (subsetp-equal (,list-fn ,@list-args)
-                                  (,list-fn ,@(subst y x list-args))))
-          :hints(("Goal"
-                  ;; bleh
-                  :in-theory (enable subsetp-equal)
-                  :induct (len ,x))))
+                ,@(if verify-guards
+                      `((verify-guards ,exec-fn)
+                        (verify-guards ,list-fn))
+                    nil)))
 
-        ,@(if nil-preservingp
-              `((defthm ,(mksym 'nth-of- list-fn)
-                  (equal (nth ,n (,list-fn ,@list-args))
-                         (,elem-fn ,@(subst `(nth ,n ,x) x elem-args)))
-                  :hints(("Goal"
-                          :in-theory (enable nth)
-                          :induct (nth ,n ,x)))))
-            nil)
+          ,@(and result-type
+                 `((defthm ,(mksym result-type '-of- list-fn)
+                     ,(if (eq guard t)
+                          `(,result-type (,list-fn ,@list-args))
+                        `(implies (force ,guard)
+                                  (,result-type (,list-fn ,@list-args))))
+                     :hints(("Goal"
+                             :induct (len ,x)
+                             :in-theory (enable (:induction len)))))))
 
-        ,@(if already-definedp
-              nil
-            `((defthm ,(mksym exec-fn '-removal)
-                (implies (force (true-listp ,acc))
-                         (equal (,exec-fn ,@list-args ,acc)
-                                (revappend (,list-fn ,@list-args) ,acc)))
-                :hints(("Goal" :in-theory (enable ,exec-fn))))
+          . ,opt)))
 
-              ,@(if verify-guards
-                    `((verify-guards ,exec-fn)
-                      (verify-guards ,list-fn))
-                  nil)))
+    `(defsection ,name
+       ,@(and parents `(:parents ,parents))
+       ,@(and short   `(:short ,short))
+       ,@(and long    `(:long ,long))
+       . ,(if (not rest)
+              events
+            `((encapsulate ()
+                ;; keep all our deflist theory stuff bottled up
+                . ,events)
 
-        ,@(and result-type
-               `((defthm ,(mksym result-type '-of- list-fn)
-                   ,(if (eq guard t)
-                        `(,result-type (,list-fn ,@list-args))
-                      `(implies (force ,guard)
-                                (,result-type (,list-fn ,@list-args))))
-                   :hints(("Goal"
-                           :induct (len ,x)
-                           :in-theory (enable (:induction len)))))))
-
-        ,@opt
-
-      )))
+              ;; now do the rest of the events with name enabled, so they get
+              ;; included in the section
+              (local (in-theory (enable ,name)))
+              . ,rest)))))
 
 (defmacro defprojection (name formals element &key nil-preservingp already-definedp
                               (optimize 't)
@@ -481,10 +496,12 @@ the user wishes to parallelize the execution of the defined function.</p>")
                               (parents '(acl2::undocumented))
                               (short 'nil)
                               (long 'nil)
+                              (rest 'nil)
                               (parallelize 'nil))
   `(make-event (let ((mode (or ',mode (default-defun-mode (w state)))))
                  (defprojection-fn ',name ',formals ',element
                    ',nil-preservingp ',already-definedp
                    ',guard ',verify-guards
                    mode ',optimize ',result-type
-                   ',parents ',short ',long ',parallelize))))
+                   ',parents ',short ',long ',rest
+                   ',parallelize))))

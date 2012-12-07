@@ -19,14 +19,11 @@
 ; Original author: Jared Davis <jared@centtech.com>
 
 (in-package "VL")
-(include-book "gen-simple")
+(include-book "simple")
 (include-book "../../util/next-power-of-2")
 (local (include-book "../../util/arithmetic"))
 (local (include-book "../../util/osets"))
 (local (in-theory (disable vl-maybe-module-p-when-vl-module-p)))
-
-; gen-select.lisp -- functions that generate dynamic bit-select modules
-
 
 (defsection *vl-1-bit-dynamic-bitselect*
   :parents (occform)

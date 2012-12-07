@@ -19,11 +19,11 @@
 ; Original author: Jared Davis <jared@centtech.com>
 
 (in-package "VL")
-(include-book "gen-util")
+(include-book "util")
 (local (include-book "../../util/arithmetic"))
 (local (include-book "../../util/osets"))
 
-; gen-simple.lisp -- functions that generate
+; This file has generators for:
 ;
 ;  - N-bit pointwise AND, OR, XOR, XNOR modules
 ;  - N-bit assignment modules
@@ -495,62 +495,6 @@ the inputs when the select is X.  So, we generally set @('approxp') to T.</p>"
 (vl-pps-modulelist (vl-make-n-bit-mux 5 nil))
 ||#
 
-
-
-
-;; (defsection vl-instance-1-bit-zmux
-
-;;   (defund vl-instance-1-bit-zmux (instname out sel a)
-;;     (declare (xargs :guard (and (stringp instname)
-;;                                 (vl-expr-p out)
-;;                                 (vl-expr-p sel)
-;;                                 (vl-expr-p a))))
-;;     (make-vl-modinst :modname   (vl-module->name *vl-1-bit-zmux*)
-;;                      :instname  (hons-copy instname)
-;;                      :paramargs (vl-arguments nil nil)
-;;                      :portargs  (vl-arguments nil (list (make-vl-plainarg :expr out :dir :vl-output :portname (hons-copy "out"))
-;;                                                         (make-vl-plainarg :expr sel :dir :vl-input  :portname (hons-copy "sel"))
-;;                                                         (make-vl-plainarg :expr a   :dir :vl-input  :portname (hons-copy "a"))))
-;;                      :loc       *vl-fakeloc*))
-
-;;   (local (in-theory (enable vl-instance-1-bit-zmux)))
-
-;;   (defthm vl-modinst-p-of-vl-instance-1-bit-zmux
-;;     (implies (and (force (stringp instname))
-;;                   (force (vl-expr-p out))
-;;                   (force (vl-expr-p sel))
-;;                   (force (vl-expr-p a)))
-;;              (vl-modinst-p (vl-instance-1-bit-zmux instname out sel a)))))
-
-;; (defsection vl-instance-zmux-list
-
-;;   (defund vl-instance-zmux-list (out-wires sel-wires a-wires prefix n)
-;;     (declare (xargs :guard (and (vl-exprlist-p out-wires)
-;;                                 (vl-exprlist-p sel-wires)
-;;                                 (vl-exprlist-p a-wires)
-;;                                 (same-lengthp out-wires a-wires)
-;;                                 (same-lengthp out-wires sel-wires)
-;;                                 (stringp prefix)
-;;                                 (natp n))))
-;;     (if (atom out-wires)
-;;         nil
-;;       (cons (vl-instance-1-bit-zmux (hons-copy (cat prefix (natstr n)))
-;;                                     (car out-wires) (car sel-wires) (car a-wires))
-;;             (vl-instance-zmux-list (cdr out-wires) (cdr sel-wires) (cdr a-wires)
-;;                                    prefix (+ 1 n)))))
-
-;;   (local (in-theory (enable vl-instance-zmux-list)))
-
-;;   (defthm vl-modinstlist-p-of-vl-instance-zmux-list
-;;     (implies (and (force (vl-exprlist-p out-wires))
-;;                   (force (vl-exprlist-p sel-wires))
-;;                   (force (vl-exprlist-p a-wires))
-;;                   (force (same-lengthp out-wires a-wires))
-;;                   (force (same-lengthp out-wires sel-wires))
-;;                   (force (stringp prefix))
-;;                   (force (natp n)))
-;;              (vl-modinstlist-p (vl-instance-zmux-list out-wires sel-wires a-wires
-;;                                                       prefix n)))))
 
 (def-vl-modgen vl-make-n-bit-zmux (n)
   :short "Generate a wide tri-state buffer module."

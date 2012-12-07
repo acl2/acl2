@@ -26,7 +26,7 @@
 (include-book "defmapappend")
 (include-book "defmvtypes")
 (include-book "defprojection")
-(include-book "defsection")
+(include-book "define")
 
 (defxdoc cutil
   :short "Centaur Utility Library"
@@ -49,7 +49,7 @@
  <li>append the results (@(see defmapappend)).</li>
 </ul></li>
 
-<li>Structing books (@(see defsection))</li>
+<li>Defining functions with documentation and related theorems (@(see define))</li>
 
 <li>Automating other tedious tasks
 <ul>

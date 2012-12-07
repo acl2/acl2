@@ -83,27 +83,29 @@ working with Verilog modules.")
 
 
 
-(defsection same-lengthp
+(define same-lengthp (x y)
   :parents (utilities)
-  :short "@(call same-lengthp) is a fast way to compute @('(equal (len x) (len
-y))')."
+  :short "Efficiently checks if two lists have the same length."
 
-  :long "<p>In the logic, @(call same-lengthp) is exactly @('(equal (len
-x) (len y))').  However, for greater efficiency, it walks down both lists
-together and never does any arithmetic.  We leave @('same-lengthp') enabled,
-and reason about @('len') instead.</p>"
+  :long "<p>In the logic this is just @('(equal (len x) (len y))').  But for
+faster execution we walk down both lists together so that we can terminate
+early.</p>
 
-  (defun same-lengthp (x y)
-    (declare (xargs :guard t))
-    (mbe :logic (equal (len x) (len y))
-         :exec (if (consp x)
-                   (and (consp y)
-                        (same-lengthp (cdr x) (cdr y)))
-                 (not (consp y))))))
+<p>We leave @('same-lengthp') enabled, and reason about @('len') instead.</p>"
+
+  :enabled t
+
+  (mbe :logic (equal (len x) (len y))
+       :exec (if (consp x)
+                 (and (consp y)
+                      (same-lengthp (cdr x) (cdr y)))
+               (not (consp y)))))
 
 
-
-(defsection redundant-mergesort
+(define redundant-mergesort
+  (x &key
+     (warnp booleanp "print warnings when @('x') is not sorted?")
+     (from symbolp   "context to help track down warnings."))
   :parents (utilities)
   :short "Same as @('mergesort'), but avoids re-sorting lists that are already
 sorted."
@@ -117,8 +119,6 @@ some cons-based operation happens to produce a set.  In practice, this should
 be much faster than a mergesort because checking @('(setp x)') is linear and
 requires no consing.</p>
 
-<h3>Performance Warnings</h3>
-
 <p>By default, @('redundant-mergesort') is silent and will simply sort its
 argument if necessary.  However, you can also instruct it to emit warnings.  A
 typical example is:</p>
@@ -127,51 +127,34 @@ typical example is:</p>
  (defun my-function (x)
     (let ((x-sort (redundant-mergesort x :warnp t :from 'my-function)))
        ...))
-})
+})"
 
-<p>Here, @(':warnp') specifies that warnings should be printed when @('x') is
-not sorted.  The @(':from') argument is used to indicate where this call of
-@('redundant-mergesort') originates, which may be helpful in determining why
-the mergesort is not actually redundant.</p>"
+  :enabled t
 
-  (defun redundant-mergesort-fn (x warnp from)
-    (declare (xargs :guard (and (booleanp warnp)
-                                (symbolp from)))
-             (ignorable warnp from))
-    (mbe :logic
-         (mergesort x)
-         :exec
-         (if (setp x)
-             x
-           (prog2$
-            (cond ((and warnp from)
-                   (cw "; Redundant-mergesort given unsorted list by ~s0.~%" from))
-                  (warnp
-                   (cw "; Redundant-mergesort given unsorted list.~%"))
-                  (t
-                   nil))
-            (mergesort x)))))
-
-  (defmacro redundant-mergesort (x &key warnp from)
-    `(redundant-mergesort-fn ,x ,warnp ,from)))
+  (mbe :logic
+       (mergesort x)
+       :exec
+       (if (setp x)
+           x
+         (prog2$
+          (cond ((and warnp from)
+                 (cw "; Redundant-mergesort given unsorted list by ~s0.~%" from))
+                (warnp
+                 (cw "; Redundant-mergesort given unsorted list.~%"))
+                (t
+                 nil))
+          (mergesort x)))))
 
 
-
-
-(defsection vl-maybe-integerp
+(define vl-maybe-integerp (x)
   :parents (utilities)
   :short "Recognizer for integers and @('nil')."
-
-  :long "<p>@(call vl-maybe-integerp) is like an option type, where either
-there is some integer value or nothing.</p>"
-
-  (definlined vl-maybe-integerp (x)
-    (declare (xargs :guard t))
-    (or (not x)
-        (integerp x)))
-
-  (local (in-theory (enable vl-maybe-integerp)))
-
+  :long "<p>This is like an option type, where either there is some integer
+value or nothing.</p>"
+  :inline t
+  (or (not x)
+      (integerp x))
+  ///
   (defthm vl-maybe-integerp-compound-recognizer
     (equal (vl-maybe-integerp x)
            (or (integerp x)
@@ -179,44 +162,31 @@ there is some integer value or nothing.</p>"
     :rule-classes :compound-recognizer))
 
 
-
-(defsection vl-maybe-natp
+(define vl-maybe-natp (n)
   :parents (utilities)
   :short "Recognizer for naturals and @('nil')."
-
-  :long "<p>@(call vl-maybe-natp) is like an option type, where either there is
-some natural number value or nothing.</p>"
-
-  (definlined vl-maybe-natp (n)
-    (declare (xargs :guard t))
-    (or (not n)
-        (natp n)))
-
-  (local (in-theory (enable vl-maybe-natp)))
-
+  :long "<p>This is like an option type, where either there is some natural
+number value or nothing.</p>"
+  :inline t
+  (or (not n)
+      (natp n))
+  ///
   (defthm vl-maybe-natp-compound-recognizer
     (equal (vl-maybe-natp x)
            (or (not x)
-               (and (integerp x)
-                    (<= 0 x))))
+               (natp x)))
     :rule-classes :compound-recognizer))
 
 
-
-(defsection vl-maybe-posp
+(define vl-maybe-posp (x)
   :parents (utilities)
   :short "Recognizer for positive naturals and @('nil')."
-
-  :long "<p>@(call vl-maybe-posp) is like an option type, where either there is
-some positive, natural number value or nothing.</p>"
-
-  (definlined vl-maybe-posp (x)
-    (declare (xargs :guard t))
-    (or (not x)
-        (posp x)))
-
-  (local (in-theory (enable vl-maybe-posp)))
-
+  :long "<p>This is like an option type, where either there is some positive,
+natural number value or nothing.</p>"
+  :inline t
+  (or (not x)
+      (posp x))
+  ///
   (defthm vl-maybe-posp-compound-recognizer
     (equal (vl-maybe-posp x)
            (or (and (integerp x)
@@ -225,28 +195,21 @@ some positive, natural number value or nothing.</p>"
     :rule-classes :compound-recognizer))
 
 
-
-(defsection vl-maybe-string-p
+(define vl-maybe-string-p (x)
   ;; BOZO name consistency with other functions here
   :parents (utilities)
   :short "Recognizer for strings and @('nil')."
-
-  :long "<p>@(call vl-maybe-string-p) is like an option type, where either
-there is some string value or nothing.</p>"
-
-  (definlined vl-maybe-string-p (x)
-    (declare (xargs :guard t))
-    (or (not x)
-        (stringp x)))
-
-  (local (in-theory (enable vl-maybe-string-p)))
-
+  :long "<p>This is like an option type, where either there is some string
+value or nothing.</p>"
+  :inline t
+  (or (not x)
+      (stringp x))
+  ///
   (defthm vl-maybe-string-p-compound-recognizer
     (equal (vl-maybe-string-p x)
            (or (not x)
                (stringp x)))
     :rule-classes :compound-recognizer))
-
 
 
 (deflist nat-listp (x)
@@ -255,30 +218,27 @@ there is some string value or nothing.</p>"
   :parents (utilities))
 
 
-
 (deflist vl-maybe-nat-listp (x)
   (vl-maybe-natp x)
   :elementp-of-nil t
-  :parents (utilities))
-
-(defthm nat-listp-when-no-nils-in-vl-maybe-nat-listp
-  (implies (and (not (member-equal nil x))
-                (vl-maybe-nat-listp x))
-           (nat-listp x))
-  :hints(("Goal" :induct (len x))))
+  :parents (utilities)
+  :rest
+  ((defthm nat-listp-when-no-nils-in-vl-maybe-nat-listp
+     (implies (and (not (member-equal nil x))
+                   (vl-maybe-nat-listp x))
+              (nat-listp x)))))
 
 
 (deflist vl-maybe-string-listp (x)
   (vl-maybe-string-p x)
   :elementp-of-nil t
-  :parents (utilities))
-
-(defthm string-listp-when-no-nils-in-vl-maybe-string-listp
-  (implies (and (not (member-equal nil x))
-                (vl-maybe-string-listp x))
-           (equal (string-listp x)
-                  (true-listp x)))
-  :hints(("Goal" :induct (len x))))
+  :parents (utilities)
+  :rest
+  ((defthm string-listp-when-no-nils-in-vl-maybe-string-listp
+     (implies (and (not (member-equal nil x))
+                   (vl-maybe-string-listp x))
+              (equal (string-listp x)
+                     (true-listp x))))))
 
 
 
@@ -314,7 +274,7 @@ VL !>
 
 
 
-(defsection make-lookup-alist
+(define make-lookup-alist (x)
   :parents (utilities)
   :short "Make a fast-alist for use with @(see fast-memberp)."
 
@@ -326,21 +286,17 @@ member of @('x') to @('t').</p>
 lists.</p>
 
 <p>Don't forget to free the alist after you are done using it, via @(see
-flush-hons-get-hash-table-link).</p>"
+fast-alist-free).</p>"
 
-  (defund make-lookup-alist (x)
-    (declare (xargs :guard t))
-    (if (consp x)
-        (hons-acons (car x)
-                    t
-                    (make-lookup-alist (cdr x)))
-      nil))
+  (if (consp x)
+      (hons-acons (car x)
+                  t
+                  (make-lookup-alist (cdr x)))
+    nil)
 
-  (local (in-theory (enable make-lookup-alist)))
+  :returns (ans alistp)
 
-  (defthm alistp-of-make-lookup-alist
-    (alistp (make-lookup-alist x)))
-
+  ///
   (defthm hons-assoc-equal-of-make-lookup-alist
     (iff (hons-assoc-equal a (make-lookup-alist x))
          (member-equal a (double-rewrite x))))
@@ -363,7 +319,7 @@ flush-hons-get-hash-table-link).</p>"
 
 
 
-(defsection fast-memberp
+(define fast-memberp (a x (alist (equal alist (make-lookup-alist x))))
   :parents (utilities)
   :short "Fast list membership using @(see make-lookup-alist)."
 
@@ -376,15 +332,14 @@ make-lookup-alist) on @('x').  Because of this, in the execution, the call of
 @(see member-equal) call is instead carried out using @(see hons-get) on the
 alist, and hence is a hash table lookup.</p>"
 
-  (definline fast-memberp (a x alist)
-    (declare (xargs :guard (equal alist (make-lookup-alist x)))
-             (ignorable x alist))
-    (mbe :logic (if (member-equal a x) t nil)
-         :exec (if (hons-get a alist) t nil))))
+  :inline t
+  :enabled t
+
+  (mbe :logic (if (member-equal a x) t nil)
+       :exec (if (hons-get a alist) t nil)))
 
 
-
-(defsection all-equalp
+(define all-equalp (a x)
   :parents (utilities)
   :short "@(call all-equalp) determines if every members of @('x') is equal to
 @('a')."
@@ -398,17 +353,19 @@ recursively, so we do prove a few theorems about it.</p>
 
 <p>For better execution speed, we use a recursive definition that does no
 consing.</p>"
+  :enabled t
 
-  (defun all-equalp (a x)
-    (declare (xargs :guard t
-                    :guard-hints(("Goal" :in-theory (enable all-equalp repeat)))))
-    (mbe :logic
-         (equal (list-fix x) (repeat a (len x)))
-         :exec
-         (if (consp x)
-             (and (equal a (car x))
-                  (all-equalp a (cdr x)))
-           t)))
+  (mbe :logic
+       (equal (list-fix x) (repeat a (len x)))
+       :exec
+       (if (consp x)
+           (and (equal a (car x))
+                (all-equalp a (cdr x)))
+         t))
+
+  :guard-hints(("Goal" :in-theory (enable all-equalp repeat)))
+
+  ///
 
   (defthm all-equalp-when-atom
     (implies (atom x)
@@ -469,41 +426,34 @@ consing.</p>"
 
 
 
-
-
-(defsection remove-equal-without-guard
+(define remove-equal-without-guard (a x)
   :parents (utilities)
   :short "Same as @('remove-equal'), but doesn't require @('true-listp')."
-
   :long "<p>In the logic, we define this function as @('remove-equal') and we
 leave it enabled.  You should never reason about it directly; reason about
 @('remove-equal') instead.</p>"
+  :enabled t
 
-  (defun remove-equal-without-guard (a x)
-    (declare (xargs :guard t))
-    (mbe :logic (remove-equal a x)
-         :exec (cond ((atom x)
-                      nil)
-                     ((equal a (car x))
-                      (remove-equal-without-guard a (cdr x)))
-                     (t
-                      (cons (car x) (remove-equal-without-guard a (cdr x))))))))
-
+  (mbe :logic (remove-equal a x)
+       :exec (cond ((atom x)
+                    nil)
+                   ((equal a (car x))
+                    (remove-equal-without-guard a (cdr x)))
+                   (t
+                    (cons (car x) (remove-equal-without-guard a (cdr x)))))))
 
 
-(defsection all-have-len
+(define all-have-len (x n)
   :parents (utilities)
   :short "@(call all-have-len) determines if every element of @('x') has length
 @('n')."
 
-  (defund all-have-len (x n)
-    (declare (xargs :guard t))
-    (if (consp x)
-        (and (equal (len (car x)) n)
-             (all-have-len (cdr x) n))
-      t))
+  (if (consp x)
+      (and (eql (len (car x)) n)
+           (all-have-len (cdr x) n))
+    t)
 
-  (local (in-theory (enable all-have-len)))
+  ///
 
   (defthm all-have-len-when-not-consp
     (implies (not (consp x))
@@ -527,23 +477,22 @@ leave it enabled.  You should never reason about it directly; reason about
                     (true-listp x)))))
 
 
-
-(defsection remove-from-alist
+(define remove-from-alist (key (alist alistp))
   :parents (utilities)
   :short "@(call remove-from-alist) removes all bindings for @('key') from
 @('alist')."
 
-  (defund remove-from-alist (key alist)
-    (declare (xargs :guard (alistp alist)))
-    (cond ((atom alist)
-           nil)
-          ((equal key (caar alist))
-           (remove-from-alist key (cdr alist)))
-          (t
-           (cons (car alist)
-                 (remove-from-alist key (cdr alist))))))
+  (cond ((atom alist)
+         nil)
+        ((equal key (caar alist))
+         (remove-from-alist key (cdr alist)))
+        (t
+         (cons (car alist)
+               (remove-from-alist key (cdr alist)))))
 
-  (local (in-theory (enable remove-from-alist)))
+  :returns (ans alistp :hyp :fguard)
+
+  ///
 
   (defthm remove-from-alist-when-not-consp
     (implies (not (consp alist))
@@ -554,32 +503,29 @@ leave it enabled.  You should never reason about it directly; reason about
     (equal (remove-from-alist key (cons a x))
            (if (equal key (car a))
                (remove-from-alist key x)
-             (cons a (remove-from-alist key x)))))
+             (cons a (remove-from-alist key x))))))
 
-  (defthm alistp-of-remove-from-alist
-    (implies (force (alistp alist))
-             (alistp (remove-from-alist key alist)))))
 
-(defsection vl-remove-keys
+(define vl-remove-keys ((keys true-listp) x)
   :parents (utilities)
   :short "@(call vl-remove-keys) removes all bindings for the given @('keys')
 from @('alist')."
 
   :long "<p><b>BOZO</b> name consistency with @(see remove-from-alist).</p>"
 
-  (defund vl-remove-keys (keys x)
-    (declare (xargs :guard (true-listp keys)))
-    (cond ((atom x)
-           nil)
-          ((atom (car x))
-           ;; bad alist convention
-           (vl-remove-keys keys (cdr x)))
-          ((member-equal (caar x) keys)
-           (vl-remove-keys keys (cdr x)))
-          (t
-           (cons (car x) (vl-remove-keys keys (cdr x))))))
+  (cond ((atom x)
+         nil)
+        ((atom (car x))
+         ;; bad alist convention
+         (vl-remove-keys keys (cdr x)))
+        ((member-equal (caar x) keys)
+         (vl-remove-keys keys (cdr x)))
+        (t
+         (cons (car x) (vl-remove-keys keys (cdr x)))))
 
-  (local (in-theory (enable vl-remove-keys)))
+  :returns (ans alistp)
+
+  ///
 
   (defthm vl-remove-keys-when-not-consp
     (implies (not (consp x))
@@ -598,9 +544,6 @@ from @('alist')."
     (true-listp (vl-remove-keys keys x))
     :rule-classes :type-prescription)
 
-  (defthm alistp-of-vl-remove-keys
-    (alistp (vl-remove-keys keys x)))
-
   (defthm consp-of-car-of-vl-remove-keys
     (equal (consp (car (vl-remove-keys keys x)))
            (consp (vl-remove-keys keys x))))
@@ -612,9 +555,7 @@ from @('alist')."
     :hints(("Goal" :in-theory (enable acl2-count)))))
 
 
-
-
-(defsection redundant-list-fix
+(define redundant-list-fix (x)
   :parents (utilities)
   :short "@(call redundant-list-fix) is the same as @('(list-fix x)'), but
 avoids consing when @('x') is already a true-listp."
@@ -627,14 +568,12 @@ checking @('true-listp') is much cheaper than re-consing the a list.</p>
 <p>I leave this function enabled.  Logically it is just an alias for
 @('list-fix'), so you should never need to reason about it.</p>"
 
-  (defun redundant-list-fix (x)
-    (declare (xargs :guard t))
-    (mbe :logic (list-fix x)
-         :exec (if (true-listp x)
-                   x
-                 (list-fix x)))))
+  :enabled t
 
-
+  (mbe :logic (list-fix x)
+       :exec (if (true-listp x)
+                 x
+               (list-fix x))))
 
 
 (deflist string-list-listp (x)
@@ -657,8 +596,7 @@ checking @('true-listp') is much cheaper than re-consing the a list.</p>
 
 
 
-
-(defsection longest-common-prefix
+(define longest-common-prefix (x y)
   :parents (utilities)
   :short "@(call longest-common-prefix) returns the longest list, @('p'), such
 that @('p') is a prefix of both @('x') and @('y'), in the sense of
@@ -667,18 +605,16 @@ that @('p') is a prefix of both @('x') and @('y'), in the sense of
   :long "<p>See also @(see longest-common-prefix-list), which extends this
 function to a list of lists.</p>"
 
-  (defund longest-common-prefix (x y)
-    (declare (xargs :guard t))
-    (cond ((or (atom x)
-               (atom y))
-           nil)
-          ((equal (car x) (car y))
-           (cons (car x)
-                 (longest-common-prefix (cdr x) (cdr y))))
-          (t
-           nil)))
+  (cond ((or (atom x)
+             (atom y))
+         nil)
+        ((equal (car x) (car y))
+         (cons (car x)
+               (longest-common-prefix (cdr x) (cdr y))))
+        (t
+         nil))
 
-  (local (in-theory (enable longest-common-prefix)))
+  ///
 
   (defthm true-listp-of-longest-common-prefix
     (true-listp (longest-common-prefix x y))
@@ -687,8 +623,7 @@ function to a list of lists.</p>"
   (defthm string-listp-of-longest-common-prefix
     (implies (and (string-listp x)
                   (string-listp y))
-             (string-listp (longest-common-prefix x y)))
-    :hints(("Goal" :in-theory (enable longest-common-prefix))))
+             (string-listp (longest-common-prefix x y))))
 
   (defthm longest-common-prefix-of-list-fix-left
     (equal (longest-common-prefix (list-fix x) y)
@@ -710,47 +645,40 @@ function to a list of lists.</p>"
     :hints(("Goal" :in-theory (enable prefixp)))))
 
 
+(deflist prefix-of-eachp (p x)
+  (prefixp p x)
+  :guard t
+  :parents (utilities)
+  :short "@(call prefix-of-eachp) returns true exactly when @('p') is a
+prefix of every member of @('x')."
+  :rest
+  ((defthm prefix-of-eachp-when-prefixp
+     (implies (and (prefix-of-eachp a x)
+                   (prefixp b a))
+              (prefix-of-eachp b x)))
 
-(defsection prefixp-of-each
-
-  (deflist prefix-of-eachp (p x)
-    (prefixp p x)
-    :guard t
-    :parents (utilities)
-    :short "@(call prefix-of-eachp) returns true exactly when @('p') is a
-prefix of every member of @('x').")
-
-  (defthm prefix-of-eachp-when-prefixp
-    (implies (and (prefix-of-eachp a x)
-                  (prefixp b a))
-             (prefix-of-eachp b x))
-    :hints(("Goal" :induct (len x))))
-
-  (defthm prefix-of-eachp-when-prefixp-alt
-    (implies (and (prefixp b a)
-                  (prefix-of-eachp a x))
-             (prefix-of-eachp b x))
-    :hints(("Goal" :induct (len x)))))
+   (defthm prefix-of-eachp-when-prefixp-alt
+     (implies (and (prefixp b a)
+                   (prefix-of-eachp a x))
+              (prefix-of-eachp b x)))))
 
 
 
-(defsection longest-common-prefix-list
+(define longest-common-prefix-list (x)
   :parents (utilities)
   :short "@(call longest-common-prefix-list) returns the longest list, @('p'),
 such that @('p') is a prefix of every list in @('x')."
   :long "<p>See also @(see longest-common-prefix).</p>"
 
-  (defund longest-common-prefix-list (x)
-    (declare (xargs :guard t))
-    (cond ((atom x)
-           nil)
-          ((atom (cdr x))
-           (list-fix (car x)))
-          (t
-           (longest-common-prefix (first x)
-                                  (longest-common-prefix-list (cdr x))))))
+  (cond ((atom x)
+         nil)
+        ((atom (cdr x))
+         (list-fix (car x)))
+        (t
+         (longest-common-prefix (first x)
+                                (longest-common-prefix-list (cdr x)))))
 
-  (local (in-theory (enable longest-common-prefix-list)))
+  ///
 
   (defthm true-listp-of-longest-common-prefix-list
     (true-listp (longest-common-prefix-list x))
@@ -768,16 +696,17 @@ such that @('p') is a prefix of every list in @('x')."
     (prefix-of-eachp (longest-common-prefix-list x) x)))
 
 
-
-(defsection string-fix
+(define string-fix ((x stringp))
   :parents (utilities)
   :short "@(call string-fix) is the identity function for strings."
   :long "<p>Note that we leave this function enabled.</p>"
+  :enabled t
+  :inline t
 
-  (definline string-fix (x)
-    (declare (type string x))
-    (mbe :logic (if (stringp x) x "")
-         :exec x))
+  (mbe :logic (if (stringp x) x "")
+       :exec x)
+
+  ///
 
   (defthm stringp-of-string-fix
     (stringp (string-fix x))
@@ -886,20 +815,18 @@ such that @('p') is a prefix of every list in @('x')."
   :parents (utilities))
 
 
-(defsection vl-starname
+(define vl-starname ((name stringp))
   :parents (utilities)
   :short "@(call vl-starname) is given a string, say @('\"foo\"'), and return a
 symbol in the ACL2 package, e.g., @('ACL2::*foo*')."
 
   :long "<p>Such names are the convention for naming modules in E.</p>"
 
-  (definlined vl-starname (name)
-    (declare (xargs :guard (stringp name)))
-    (intern-in-package-of-symbol
-     (coerce (cons #\* (str::append-chars name (list #\*))) 'string)
-     'ACL2::foo))
+  (intern-in-package-of-symbol
+   (coerce (cons #\* (str::append-chars name (list #\*))) 'string)
+   'ACL2::foo)
 
-  (local (in-theory (enable vl-starname)))
+  ///
 
   (defthm symbolp-of-vl-starname
     (symbolp (vl-starname name))
@@ -1022,9 +949,10 @@ will include the values from any \"shadowed pairs\" in the list.</p>"
 
 
 
-(defun fast-alist-free-each-alist-val (x)
-  "Applies fast-alist-free to every value bound in the alist x."
-  (declare (xargs :guard t))
+(define fast-alist-free-each-alist-val (x)
+  :parents (utilities)
+  :short "Applies @(see fast-alist-free) to every value bound in the alist x."
+  :enabled t
   (mbe :logic nil
        :exec
        (cond ((atom x)
@@ -1036,9 +964,12 @@ will include the values from any \"shadowed pairs\" in the list.</p>"
                       (fast-alist-free-each-alist-val (cdr x)))))))
 
 
-(defun free-list-of-fast-alists (x)
-  "Applies fast-alist-free to every member of the list x."
+(define free-list-of-fast-alists (x)
+  :parents (utilities)
+  ;; BOZO very badly named, what does this free exactly?
+
   (declare (xargs :guard t))
+  :enabled t
   (mbe :logic nil
        :exec
        (if (atom x)
@@ -1048,8 +979,7 @@ will include the values from any \"shadowed pairs\" in the list.</p>"
 
 
 
-
-(defsection vl-plural-p
+(define vl-plural-p (x)
   :parents (utilities)
   :short "@(call vl-plural-p) determines whether a description of a list should
 be plural instead of singluar."
@@ -1075,12 +1005,10 @@ behavior in cases like:</p>
  <li>2 <b>warnings</b> to report,</li>
  <li>...</li>
 </ul>"
-
-  (definlined vl-plural-p (x)
-    (declare (xargs :guard t))
-    (mbe :logic (not (= (len x) 1))
-         :exec (or (atom x)
-                   (not (atom (cdr x)))))))
+  :inline t
+  (mbe :logic (not (equal (len x) 1))
+       :exec (or (atom x)
+                 (not (atom (cdr x))))))
 
 
 
@@ -1089,7 +1017,7 @@ behavior in cases like:</p>
   (mbe :logic (and (true-listp x)
                    (equal (len x) n))
        :exec (and (true-listp x)
-                  (= (length x) n))))
+                  (eql (length x) n))))
 
 (deflist cons-listp (x)
   (consp x)

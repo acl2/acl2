@@ -50,6 +50,7 @@
                defsection
                defsection-progn
                defmvtypes
+               define
 ;               defaggregate
 ;               defenum
 ;               defprojection
@@ -70,6 +71,7 @@
                two-nats-measure
                make-fal
                xdoc-extend
+               legal-variablep
 
                ;; BOZO consider moving these to cutil?
                defconsts
@@ -125,7 +127,8 @@
     defmapappend
     defmvtypes
     defsection
-    defsection-progn))
+    defsection-progn
+    define))
 
 (assign acl2::verbose-theory-warning nil)
 

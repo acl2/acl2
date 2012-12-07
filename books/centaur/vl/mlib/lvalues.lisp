@@ -272,27 +272,22 @@ optimization.</p>")))
 <p>We return a list of all the top-level lvalue-positioned expressions used
 throughout a @(see " list-rec-s "), as described in @(see lvalexprs).</p>")))
 
-    `(defsection ,list-collect
+    `(defmapappend ,list-collect (x)
+       (,element-collect x)
+       :guard (,list-rec x)
+       :transform-true-list-p t
+       :transform-exec ,element-collect-exec
        :parents (,list-rec lvalexprs)
        :short ,short
        :long ,long
+       :rest
+       ((defthm ,type-thm
+          (implies (force (,list-rec x))
+                   (vl-exprlist-p (,list-collect x))))
 
-       (defmapappend ,list-collect (x)
-         (,element-collect x)
-         :guard (,list-rec x)
-         :transform-true-list-p t
-         :transform-exec ,element-collect-exec)
-
-       (local (in-theory (enable ,list-collect)))
-
-       (defthm ,type-thm
-         (implies (force (,list-rec x))
-                  (vl-exprlist-p (,list-collect x))))
-
-       (defthm ,lv-thm
-         (implies (force (,list-rec x))
-                  (vl-exprlist-lvaluesp (,list-collect x))))
-       )))
+        (defthm ,lv-thm
+          (implies (force (,list-rec x))
+                   (vl-exprlist-lvaluesp (,list-collect x))))))))
 
 (def-vl-lvalexprs
   :type vl-plainarg
@@ -476,11 +471,8 @@ throughout a @(see " list-rec-s "), as described in @(see lvalexprs).</p>")))
   :element vl-module)
 
 
-
-
 (defxdoc lvaluecheck
   :parents (lvalues well-formedness)
-
   :short "Checks to ensure that expressions used in lvalue positions are valid
 in the sense of @(see vl-expr-lvaluep)."
 
@@ -514,7 +506,7 @@ long)))
        :short ,short
        :long ,long
 
-       (defund ,chk (x ,@extra-formals warnings)
+       (define ,chk (x ,@extra-formals warnings)
          (declare (xargs :guard (and (,rec x)
                                      ,guard
                                      (vl-warninglist-p warnings))))
@@ -533,12 +525,9 @@ long)))
        ((when (vl-expr-lvaluep lvalue))
         warnings)
        (loc (vl-assign->loc x)))
-      (cons (make-vl-warning
-             :type :vl-bad-lvalue
-             :msg "~l0: assignment to bad lvalue ~a1."
-             :args (list loc lvalue)
-             :fn 'vl-assign-lvaluecheck)
-            warnings)))
+    (warn :type :vl-bad-lvalue
+          :msg "~l0: assignment to bad lvalue ~a1."
+          :args (list loc lvalue))))
 
 (def-vl-lvaluecheck
   :type vl-assignlist
@@ -546,7 +535,7 @@ long)))
   (if (atom x)
       warnings
     (b* ((warnings (vl-assign-lvaluecheck (car x) warnings)))
-        (vl-assignlist-lvaluecheck (cdr x) warnings))))
+      (vl-assignlist-lvaluecheck (cdr x) warnings))))
 
 ; BOZO this is broken -- need to consider ports, can't just look at :dir in general.
 
@@ -562,30 +551,24 @@ long)))
         ;; Nothing to check.
         warnings)
        ((unless dir)
-        (cons (make-vl-warning
-               :type :vl-programming-error
-               :msg "~l0: expected arguments of instance ~w1 to be ~
-                     resolved, but no :DIR is present."
-               :args (list loc instname)
-               :fn 'vl-plainarg-lvaluecheck)
-              warnings))
+        (warn :type :vl-programming-error
+              :msg "~l0: expected arguments of instance ~w1 to be resolved, ~
+                    but no :DIR is present."
+              :args (list loc instname)))
        ((when (eq dir :vl-input))
         ;; Input to a submodule -- not an lvalue, nothing to check.
         warnings)
        ((when (vl-expr-lvaluep expr))
         ;; Good lvalue to an lvalue port.
         warnings))
-      (cons (make-vl-warning
-             :type :vl-bad-lvalue
-             :msg "~l0: expression for ~s1 port ~s2 of instance ~w3 is ~
-                   not a valid lvalue: ~a4.~%"
-             :args (list loc
-                         (if (eq dir :vl-inout) "inout" "output")
-                         (vl-plainarg->portname x)
-                         instname
-                         expr)
-             :fn 'vl-plainarg-lvaluecheck)
-            warnings)))
+    (warn :type :vl-bad-lvalue
+          :msg "~l0: expression for ~s1 port ~s2 of instance ~w3 is not a ~
+                valid lvalue: ~a4.~%"
+          :args (list loc
+                      (if (eq dir :vl-inout) "inout" "output")
+                      (vl-plainarg->portname x)
+                      instname
+                      expr))))
 
 (def-vl-lvaluecheck
   :type vl-plainarglist
@@ -596,7 +579,7 @@ long)))
   (if (atom x)
       warnings
     (b* ((warnings (vl-plainarg-lvaluecheck (car x) loc instname warnings)))
-        (vl-plainarglist-lvaluecheck (cdr x) loc instname warnings))))
+      (vl-plainarglist-lvaluecheck (cdr x) loc instname warnings))))
 
 (def-vl-lvaluecheck
   :type vl-arguments
@@ -605,13 +588,10 @@ long)))
               (vl-maybe-string-p instname))
   :body
   (if (vl-arguments->namedp x)
-      (cons (make-vl-warning
-             :type :vl-programming-error
-             :msg "~l0: expected arguments of instance ~s1 to be resolved, ~
-                   but args are still named."
-             :args (list loc instname)
-             :fn 'vl-arguments-lvaluecheck)
-            warnings)
+      (warn :type :vl-programming-error
+            :msg "~l0: expected arguments of instance ~s1 to be resolved, but ~
+                  args are still named."
+            :args (list loc instname))
     (vl-plainarglist-lvaluecheck (vl-arguments->args x) loc instname warnings)))
 
 (def-vl-lvaluecheck
@@ -628,7 +608,7 @@ long)))
   (if (atom x)
       warnings
     (b* ((warnings (vl-modinst-lvaluecheck (car x) warnings)))
-        (vl-modinstlist-lvaluecheck (cdr x) warnings))))
+      (vl-modinstlist-lvaluecheck (cdr x) warnings))))
 
 (def-vl-lvaluecheck
   :type vl-gateinst
@@ -644,7 +624,7 @@ long)))
   (if (atom x)
       warnings
     (b* ((warnings (vl-gateinst-lvaluecheck (car x) warnings)))
-        (vl-gateinstlist-lvaluecheck (cdr x) warnings))))
+      (vl-gateinstlist-lvaluecheck (cdr x) warnings))))
 
 (def-vl-lvaluecheck
   :type vl-assignstmt
@@ -653,28 +633,20 @@ long)))
        ((when (vl-expr-lvaluep lvalue))
         warnings)
        (loc (vl-assignstmt->loc x)))
-      (cons (make-vl-warning
-             :type :vl-bad-lvalue
-             :msg "~l0: assignment to bad lvalue, ~a1."
-             :args (list loc lvalue)
-             :fn 'vl-assignstmt-lvaluecheck)
-            warnings)))
+    (warn :type :vl-bad-lvalue
+          :msg "~l0: assignment to bad lvalue, ~a1."
+          :args (list loc lvalue))))
 
 (def-vl-lvaluecheck
   :type vl-deassignstmt
   :body
   (b* ((lvalue (vl-deassignstmt->lvalue x))
        ((when (vl-expr-lvaluep lvalue))
-        warnings)
-       ;; (loc (vl-deassignstmt->loc x))
-       )
-      (cons (make-vl-warning
-             :type :vl-bad-lvalue
-             ;; BOZO add locations to deassign statements
-             :msg "Deassignment to bad lvalue, ~a0."
-             :args (list lvalue)
-             :fn 'vl-deassignstmt-lvaluecheck)
-            warnings)))
+        warnings))
+    (warn :type :vl-bad-lvalue
+          ;; BOZO add locations to deassign statements
+          :msg "Deassignment to bad lvalue, ~a0."
+          :args (list lvalue))))
 
 (def-vl-lvaluecheck
   :type vl-atomicstmt
@@ -700,26 +672,21 @@ long)))
 ; for loops, which have the initial and next lhs.  So I explicitly check for
 ; this here, then recursively check the substatements.
 
-           ((eq (vl-compoundstmt->type x) :vl-forstmt)
-            (b* ((initlhs (vl-forstmt->initlhs x))
-                 (nextlhs (vl-forstmt->nextlhs x))
-                 (warnings (if (vl-expr-lvaluep initlhs)
+           ((vl-forstmt-p x)
+            (b* (((vl-forstmt x) x)
+                 (warnings (if (vl-expr-lvaluep x.initlhs)
                                warnings
-                             (cons (make-vl-warning
-                                    :type :vl-bad-lvalue
-                                    :msg "Bad lvalue in for-loop initialization: ~a0."
-                                    :args (list initlhs)
-                                    :fn 'vl-stmt-lvaluecheck)
-                                   warnings)))
-                 (warnings (if (vl-expr-lvaluep nextlhs)
+                             (warn :type :vl-bad-lvalue
+                                   :msg "Bad lvalue in for-loop initialization: ~a0."
+                                   :args (list x.initlhs)
+                                   :fn 'vl-stmt-lvaluecheck)))
+                 (warnings (if (vl-expr-lvaluep x.nextlhs)
                                warnings
-                             (cons (make-vl-warning
-                                    :type :vl-bad-lvalue
-                                    :msg "Bad lvalue in for-loop step: ~a0."
-                                    :args (list nextlhs)
-                                    :fn 'vl-stmt-lvaluecheck)
-                                   warnings))))
-                (vl-stmtlist-lvaluecheck (vl-compoundstmt->stmts x) warnings)))
+                             (warn :type :vl-bad-lvalue
+                                   :msg "Bad lvalue in for-loop step: ~a0."
+                                   :args (list x.nextlhs)
+                                   :fn 'vl-stmt-lvaluecheck))))
+              (vl-stmtlist-lvaluecheck (vl-compoundstmt->stmts x) warnings)))
 
            (t
             (vl-stmtlist-lvaluecheck (vl-compoundstmt->stmts x) warnings))))
@@ -829,17 +796,13 @@ long)))
 
 
 
-(defsection vl-modulelist-lvaluecheck
-
-  (defprojection vl-modulelist-lvaluecheck (x)
-    (vl-module-lvaluecheck x)
-    :guard (vl-modulelist-p x)
-    :result-type vl-modulelist-p)
-
-  (local (in-theory (enable vl-modulelist-lvaluecheck)))
-
-  (defthm vl-modulelist->names-of-vl-modulelist-lvaluecheck
-    (equal (vl-modulelist->names (vl-modulelist-lvaluecheck x))
-           (vl-modulelist->names x))))
+(defprojection vl-modulelist-lvaluecheck (x)
+  (vl-module-lvaluecheck x)
+  :guard (vl-modulelist-p x)
+  :result-type vl-modulelist-p
+  :rest
+  ((defthm vl-modulelist->names-of-vl-modulelist-lvaluecheck
+     (equal (vl-modulelist->names (vl-modulelist-lvaluecheck x))
+            (vl-modulelist->names x)))))
 
 

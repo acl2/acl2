@@ -294,13 +294,11 @@ additional details about this decision.</p>")
 (defmapappend vl-overridelist-requirement-names (x)
   (vl-override-requirement-names x)
   :guard (vl-overridelist-p x)
-  :transform-true-list-p t)
-
-(defthm string-listp-of-vl-overridelist-requirement-names
-  (implies (force (vl-overridelist-p x))
-           (string-listp (vl-overridelist-requirement-names x)))
-  :hints(("Goal" :induct (len x))))
-
+  :transform-true-list-p t
+  :rest
+  ((defthm string-listp-of-vl-overridelist-requirement-names
+     (implies (force (vl-overridelist-p x))
+              (string-listp (vl-overridelist-requirement-names x))))))
 
 
 

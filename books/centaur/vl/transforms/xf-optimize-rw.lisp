@@ -422,9 +422,8 @@
 (defprojection vl-modulelist-optimize (x)
   (vl-module-optimize x)
   :guard (vl-modulelist-p x)
-  :result-type vl-modulelist-p)
-
-(defthm vl-modulelist->names-of-vl-modulelist-optimize
-  (equal (vl-modulelist->names (vl-modulelist-optimize x))
-         (vl-modulelist->names x))
-  :hints(("Goal" :induct (len x))))
+  :result-type vl-modulelist-p
+  :rest
+  ((defthm vl-modulelist->names-of-vl-modulelist-optimize
+     (equal (vl-modulelist->names (vl-modulelist-optimize x))
+            (vl-modulelist->names x)))))

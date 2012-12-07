@@ -184,9 +184,9 @@ separator.</p>
 in a simple way:</p>
 
 <ul>
-<li>. ---> {4</li>
-<li>! ---> {5</li>
-<li>/ ---> {6</li>
+<li>@('. ---> {4')</li>
+<li>@('! ---> {5')</li>
+<li>@('/ ---> {6')</li>
 </ul>
 
 <p>This encoding is done automatically by the @(see vl-emodwire) constructor
@@ -823,44 +823,35 @@ details.</p>"
 
 
 
-(defsection vl-emodwirelist-p
+(deflist vl-emodwirelist-p (x)
+  (vl-emodwire-p x)
+  :elementp-of-nil nil
   :parents (exploding-vectors)
-  :short "A list of @(see vl-emodwire-p)s."
+  :rest
+  ((defthm symbol-listp-when-vl-emodwirelist-p
+     (implies (vl-emodwirelist-p x)
+              (equal (symbol-listp x)
+                     (true-listp x))))
 
-  (deflist vl-emodwirelist-p (x)
-    (vl-emodwire-p x)
-    :elementp-of-nil nil)
-
-  (defthm symbol-listp-when-vl-emodwirelist-p
-    (implies (vl-emodwirelist-p x)
-             (equal (symbol-listp x)
-                    (true-listp x)))
-    :hints(("Goal" :induct (len x))))
-
-  (defthm member-of-nil-when-vl-emodwirelist-p
-    (implies (vl-emodwirelist-p x)
-             (not (member-equal nil x)))
-    :hints(("Goal" :induct (len x)))))
+   (defthm member-of-nil-when-vl-emodwirelist-p
+     (implies (vl-emodwirelist-p x)
+              (not (member-equal nil x))))))
 
 
-
-(defsection vl-emodwirelistlist-p
+(deflist vl-emodwirelistlist-p (x)
+  (vl-emodwirelist-p x)
+  :guard t
+  :elementp-of-nil t
   :parents (exploding-vectors)
   :short "A list of @(see vl-emodwire-p) lists."
 
   :long "<p>These are notably used as the @(':i') and @(':o') patterns for
 modules; see @(see modinsts-to-eoccs) for details.</p>"
 
-  (deflist vl-emodwirelistlist-p (x)
-    (vl-emodwirelist-p x)
-    :guard t
-    :elementp-of-nil t)
-
-  (defthm vl-emodwirelist-p-of-flatten
-    (implies (vl-emodwirelistlist-p x)
-             (vl-emodwirelist-p (flatten x)))
-    :hints(("Goal" :induct (len x)))))
-
+  :rest
+  ((defthm vl-emodwirelist-p-of-flatten
+     (implies (vl-emodwirelistlist-p x)
+              (vl-emodwirelist-p (flatten x))))))
 
 
 (defsection vl-emodwire

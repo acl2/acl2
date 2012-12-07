@@ -78,6 +78,7 @@ for a new record-like structure.  It is similar to @('struct') in C or
         short               ; nil by default
         long                ; nil by default
         rest                ; nil by default
+        rest        ; nil by default
         )
 })
 
@@ -494,6 +495,42 @@ reasoning about @('car') in general.</p>"
 ;; them in program mode.
 
 (program)
+
+(table defaggregate)
+(table defaggregate 'aggregates
+       ;; An alist binding NAME -> INFO structures, see DA-EXTEND-TABLE
+       )
+
+(defun get-aggregates (world)
+  "Look up the current alist of defined aggregates."
+  (cdr (assoc 'aggregates (table-alist 'defaggregate world))))
+
+(defmacro da-extend-table (name fields)
+  ;; For now an INFO structure will just have the fields, but we can extend
+  ;; this later if desired.
+  `(table defaggregate 'aggregates
+          (cons (cons ,name (list (cons :fields ,fields)))
+                (get-aggregates world))))
+
+(defun get-aggregate-fields (name world)
+  "Return the field names for an aggregate."
+  (b* ((alist (get-aggregates world))
+       (entry (assoc name alist))
+       ((unless entry)
+        (er hard? 'get-aggregate-fields
+            "~x0 was not found in the aggregates alist." name))
+       (info (cdr entry))
+       (look (and (alistp info)
+                  (assoc :fields info)))
+       ((unless look)
+        (er hard? 'get-aggregate-fields
+            "~x0 has a malformed entry in the aggregates alist." name)))
+    (cdr look)))
+
+;(da-extend-table 'buffalo '(horns face body legs hooves))
+;(da-extend-table 'cat '(eyes ears teeth claws fur))
+;(get-aggregate-fields 'buffalo (w state))
+;(get-aggregate-fields 'cat (w state))
 
 
 ;; We introduce some functions to generate the nmes of constructors,
@@ -1030,8 +1067,8 @@ term.  The attempted binding of~|~% ~p1~%~%is not of this form."
        (vars-alist      (da-patbind-remove-unused-vars full-vars-alist unused-vars))
        ((unless vars-alist)
         (progn$
-         (cw "Note: not introducing any bindings for ~x0, since none of its ~
-               fields appear to be used.~%" var)
+         (cw "Note: not introducing any ~x0 field bindings for ~x1, since ~
+              none of its fields appear to be used.~%" name var)
          rest-expr))
 
        ;;(- (cw "Var is ~x0.~%" var))
@@ -1059,6 +1096,14 @@ term.  The attempted binding of~|~% ~p1~%~%is not of this form."
         `(let ((,target ,binding))
            (b* ,bindings
                (check-vars-not-free (,target) ,rest-expr))))))
+
+(defun da-make-binder (name fields)
+  `(defmacro ,(intern-in-package-of-symbol
+               (concatenate 'string "PATBIND-" (symbol-name name))
+               name)
+     (args forms rest-expr)
+     (da-patbind-fn ',name ',fields args forms rest-expr)))
+
 
 
 ;; Autodoc support for aggregates:
@@ -1148,8 +1193,9 @@ term.  The attempted binding of~|~% ~p1~%~%is not of this form."
   (cons (da-main-autodoc name fields require parents short long)
         (da-fields-autodoc name fields)))
 
-(defun defaggregate-fn (name fields tag require honsp legiblep patbindp 
-                             already-definedp mode parents short long)
+(defun defaggregate-fn (name fields tag require honsp legiblep
+                             already-definedp mode parents short long
+                             rest)
   (and (or (symbolp name)
            (er hard 'defaggregate "Name must be a symbol."))
        (or (symbol-listp fields)
@@ -1197,6 +1243,7 @@ term.  The attempted binding of~|~% ~p1~%~%is not of this form."
               (x                (da-x name)))
          `(progn
 
+            (da-extend-table ',name ',fields)
             ,@(da-autodoc name fields require parents short long)
 
             ,(if (eq mode :logic)
@@ -1209,13 +1256,6 @@ term.  The attempted binding of~|~% ~p1~%~%is not of this form."
             ,(da-make-constructor name tag fields require honsp legiblep)
             ,(da-make-honsed-constructor name tag fields require legiblep)
             ,@(da-make-accessors name tag fields legiblep)
-
-            ,@(and patbindp
-                   `((defmacro ,(intern-in-package-of-symbol
-                                 (concatenate 'string "PATBIND-" (symbol-name name))
-                                 name)
-                       (args forms rest-expr)
-                       (da-patbind-fn ',name ',fields args forms rest-expr))))
 
             ,@(and
                (eq mode :logic)
@@ -1291,6 +1331,8 @@ term.  The attempted binding of~|~% ~p1~%~%is not of this form."
                  ,@(da-make-requirements-of-recognizer name require fields)))
 
 
+            ,(da-make-binder name fields)
+
             ,(da-make-changer-fn name fields)
             ,(da-make-changer name fields)
 
@@ -1300,6 +1342,8 @@ term.  The attempted binding of~|~% ~p1~%~%is not of this form."
             ,(da-make-honsed-maker-fn name fields)
             ,(da-make-honsed-maker name fields)
 
+            . ,rest
+
             ))))
 
 (defmacro defaggregate (name fields &key
@@ -1307,15 +1351,16 @@ term.  The attempted binding of~|~% ~p1~%~%is not of this form."
                              require
                              (legiblep ''t)
                              hons
-                             (patbindp ''t)
-                             (already-definedp 'nil)
+                             already-definedp
                              mode
                              (parents '(acl2::undocumented))
                              short
-                             long)
+                             long
+                             rest)
   `(make-event (let ((mode (or ',mode (default-defun-mode (w state)))))
                  (defaggregate-fn ',name ',fields ',tag ',require ',hons ',legiblep
-                   ',patbindp ',already-definedp mode ',parents ',short ',long))))
+                   ',already-definedp mode ',parents ',short ',long
+                   ',rest))))
 
 
 
@@ -1329,7 +1374,6 @@ term.  The attempted binding of~|~% ~p1~%~%is not of this form."
     :require ((integerp-of-taco->shell (integerp shell)
                                        :rule-classes ((:rewrite) (:type-prescription))))
     :long "<p>Additional documentation</p>"
-    :patbindp t
     )
 
 (defaggregate htaco
@@ -1338,7 +1382,6 @@ term.  The attempted binding of~|~% ~p1~%~%is not of this form."
     :hons t
     :require ((integerp-of-htaco->shell (integerp shell)))
     :long "<p>Additional documentation</p>"
-    :patbindp nil
     )
 
 (defaggregate untagged-taco
@@ -1347,7 +1390,6 @@ term.  The attempted binding of~|~% ~p1~%~%is not of this form."
     :hons t
     :require ((integerp-of-untagged-taco->shell (integerp shell)))
     :long "<p>Additional documentation</p>"
-    :patbindp nil
     )
 
 

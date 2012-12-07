@@ -1354,27 +1354,18 @@ identifier.</p>"
 
 
 
-(defsection vl-modulelist-follow-hids-aux
-
-  (defprojection vl-modulelist-follow-hids-aux (x mods modalist toplev)
-    (vl-module-follow-hids x mods modalist toplev)
-    :guard (and (vl-modulelist-p x)
-                (vl-modulelist-p mods)
-                (equal modalist (vl-modalist mods))
-                (equal toplev (vl-modulelist-toplevel mods))))
-
-  (local (in-theory (enable vl-modulelist-follow-hids-aux)))
-
-  (defthm vl-modulelist-p-of-vl-modulelist-follow-hids-aux
-    (implies (and (force (vl-modulelist-p x))
-                  (force (vl-modulelist-p mods))
-                  (force (equal modalist (vl-modalist mods)))
-                  (force (equal toplev (vl-modulelist-toplevel mods))))
-             (vl-modulelist-p (vl-modulelist-follow-hids-aux x mods modalist toplev))))
-
-  (defthm vl-modulelist->names-of-vl-modulelist-follow-hids-aux
-    (equal (vl-modulelist->names (vl-modulelist-follow-hids-aux x mods modalist toplev))
-           (vl-modulelist->names x))))
+(defprojection vl-modulelist-follow-hids-aux (x mods modalist toplev)
+  (vl-module-follow-hids x mods modalist toplev)
+  :guard (and (vl-modulelist-p x)
+              (vl-modulelist-p mods)
+              (equal modalist (vl-modalist mods))
+              (equal toplev (vl-modulelist-toplevel mods)))
+  :result-type vl-modulelist-p
+  :rest
+  ((defthm vl-modulelist->names-of-vl-modulelist-follow-hids-aux
+     (let ((ret (vl-modulelist-follow-hids-aux x mods modalist toplev)))
+       (equal (vl-modulelist->names ret)
+              (vl-modulelist->names x))))))
 
 
 (defsection vl-modulelist-follow-hids

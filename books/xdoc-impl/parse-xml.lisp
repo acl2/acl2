@@ -52,7 +52,7 @@
 ;
 ;    (:ENTITY TYPE) represents entities like &amp;
 ;
-;      - TYPE is :AMP, :LT, :GT, :APOS, or :NBSP
+;      - TYPE is :AMP, :LT, :GT, :APOS, :NBSP, :MDASH, or :RARR
 
 (defconst *nls* (coerce (list #\Newline) 'string))
 
@@ -190,6 +190,18 @@
         (skip-declaration x (+ n 1) xl start-n)))
     (mv nil (+ n 2) nil)))
 
+(defun skip-entity-stuff (x n xl start-n)
+  ;; Read through ]>
+  "Returns (MV ERR N NIL)"
+  (b* (((when (>= (- n 1) xl))
+        (mv (str::cat "<! ... ]> declaration never closes." *nls*
+                      "Nearby text: {" (error-context x start-n xl) "}" *nls*)
+            n nil))
+       ((unless (and (eql (char x n) #\])
+                     (eql (char x (+ n 1)) #\>)))
+        (skip-entity-stuff x (+ n 1) xl start-n)))
+    (mv nil (+ n 2) nil)))
+
 (defun read-tag (x n xl)
   ;; Assumes (char x n) is "<"
   "Returns (MV ERR N TOKEN-LIST)"
@@ -202,6 +214,8 @@
             n nil))
        ((when (eql (char x n) #\?))
         (skip-declaration x n xl tag-start-n))
+       ((when (eql (char x n) #\!))
+        (skip-entity-stuff x n xl tag-start-n))
        ((when (eql (char x n) #\/))
         (read-close-tag x (+ 1 n) xl))
        ;; Else, it's an opening tag.  This should be its name.
@@ -237,7 +251,9 @@
        ((when (equal str "gt"))   (mv nil n '(:ENTITY :GT)))
        ((when (equal str "quot")) (mv nil n '(:ENTITY :QUOT)))
        ((when (equal str "apos")) (mv nil n '(:ENTITY :APOS)))
-       ((when (equal str "nbsp")) (mv nil n '(:ENTITY :NBSP))))
+       ((when (equal str "nbsp")) (mv nil n '(:ENTITY :NBSP)))
+       ((when (equal str "mdash")) (mv nil n '(:ENTITY :MDASH)))
+       ((when (equal str "rarr")) (mv nil n '(:ENTITY :RARR))))
     (mv (str::cat "Unsupported entity: &" str ";" *nls*
                   "Nearby text: {" (error-context x saved-n xl) "}" *nls*)
         n nil)))
@@ -288,21 +304,26 @@
 
 (defun entitytok-as-entity (x)
   (case (entitytok-type x)
-    (:AMP  "&amp;")
-    (:LT   "&lt;")
-    (:GT   "&gt;")
-    (:QUOT "&quot;")
-    (:APOS "&apos;")
-    (:NBSP "&nbsp;")))
+    (:AMP   "&amp;")
+    (:LT    "&lt;")
+    (:GT    "&gt;")
+    (:QUOT  "&quot;")
+    (:APOS  "&apos;")
+    (:NBSP  "&nbsp;")
+    (:MDASH "&mdash;")
+    (:RARR  "&rarr;")
+    ))
 
 (defun entitytok-as-plaintext (x)
   (case (entitytok-type x)
-    (:AMP  "&")
-    (:LT   "<")
-    (:GT   ">")
-    (:QUOT "\"")
-    (:APOS "'")
-    (:NBSP " ")))
+    (:AMP   "&")
+    (:LT    "<")
+    (:GT    ">")
+    (:QUOT  "\"")
+    (:APOS  "'")
+    (:NBSP  " ")
+    (:MDASH "---")
+    (:RARR  "-->")))
 
 (defun flatten-token-for-errormsg (x)
   (cond ((opentok-p x)
@@ -354,9 +375,9 @@
        ((when err)
         (b* (((when (not loc))
               (mv err nil))
-             (back-one  (max 0 (- loc 2)))
+             (back-one  (max 0 (- loc 4)))
              (start-ctx (nthcdr back-one tokens))
-             (context   (take (min 4 (len start-ctx)) start-ctx))
+             (context   (take (min 8 (len start-ctx)) start-ctx))
              (nearby    (flatten-tokens-for-errormsg context)))
           (mv (str::cat err "
 Nearby text: {" nearby "}" *nls*)

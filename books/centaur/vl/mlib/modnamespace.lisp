@@ -383,9 +383,9 @@
 
 (defmapappend vl-fundecllist->namespaces (x)
   (vl-fundecl->namespace x)
-  :guard (vl-fundecllist-p x))
+  :guard (vl-fundecllist-p x)
+  :rest
+  ((defthm string-listp-of-vl-fundecllist->namespaces
+     (implies (vl-fundecllist-p x)
+              (string-listp (vl-fundecllist->namespaces x))))))
 
-(defthm string-listp-of-vl-fundecllist->namespaces
-  (implies (vl-fundecllist-p x)
-           (string-listp (vl-fundecllist->namespaces x)))
-  :hints(("Goal" :in-theory (enable vl-fundecllist->namespaces))))

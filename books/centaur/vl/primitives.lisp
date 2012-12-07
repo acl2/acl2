@@ -92,11 +92,77 @@ symbolic simulator.</p>")
                     (vl-netdecl-p     (mv-nth 1 ret)))))))
 
 
+(defxdoc *vl-1-bit-t*
+  :parents (primitives)
+  :short "Primitive 1 (true) generator."
+  :long "<p>The Verilog definition of this module is:</p>
+
+@({
+module VL_1_BIT_T (out) ;
+  output out;
+  assign out = 1'b1;
+endmodule
+})
+
+<p>VL takes this as a primitive.  BOZO this module is currently unused but
+we are going to start using it soon.</p>
+
+<p>The corresponding @(see esim) primitive is @(see acl2::*esim-t*).</p>")
+
+(defconsts *vl-1-bit-t*
+  (b* ((name "VL_1_BIT_T")
+       (atts '(("VL_PRIMITIVE") ("VL_HANDS_OFF")))
+       ((mv out-expr out-port out-portdecl out-netdecl) (vl-primitive-mkport "out" :vl-output))
+       (out-assign (make-vl-assign :lvalue out-expr :expr |*sized-1'b1*| :loc *vl-fakeloc*)))
+    (make-honsed-vl-module :name      name
+                           :origname  name
+                           :ports     (list out-port)
+                           :portdecls (list out-portdecl)
+                           :netdecls  (list out-netdecl)
+                           :assigns   (list out-assign)
+                           :minloc    *vl-fakeloc*
+                           :maxloc    *vl-fakeloc*
+                           :atts      atts
+                           :esim      acl2::*esim-t*)))
+
+
+(defxdoc *vl-1-bit-f*
+  :parents (primitives)
+  :short "Primitive 0 (false) generator."
+  :long "<p>The Verilog definition of this module is:</p>
+
+@({
+module VL_1_BIT_F (out) ;
+  output out;
+  assign out = 1'b0;
+endmodule
+})
+
+<p>VL takes this as a primitive.  BOZO this module is currently unused but
+we are going to start using it soon.</p>
+
+<p>The corresponding @(see esim) primitive is @(see acl2::*esim-f*).</p>")
+
+(defconsts *vl-1-bit-f*
+  (b* ((name "VL_1_BIT_F")
+       (atts '(("VL_PRIMITIVE") ("VL_HANDS_OFF")))
+       ((mv out-expr out-port out-portdecl out-netdecl) (vl-primitive-mkport "out" :vl-output))
+       (out-assign (make-vl-assign :lvalue out-expr :expr |*sized-1'b0*| :loc *vl-fakeloc*)))
+    (make-honsed-vl-module :name      name
+                           :origname  name
+                           :ports     (list out-port)
+                           :portdecls (list out-portdecl)
+                           :netdecls  (list out-netdecl)
+                           :assigns   (list out-assign)
+                           :minloc    *vl-fakeloc*
+                           :maxloc    *vl-fakeloc*
+                           :atts      atts
+                           :esim      acl2::*esim-f*)))
 
 
 (defxdoc *vl-1-bit-x*
   :parents (primitives)
-  :short "Primitive X generator."
+  :short "Primitive X (unknown) generator."
   :long "<p>The Verilog definition of this module is:</p>
 
 @({
@@ -130,7 +196,7 @@ weirdint-elim) to eliminate explicit X values from literals.</p>
 
 (defxdoc *vl-1-bit-z*
   :parents (primitives)
-  :short "Primitive Z generator."
+  :short "Primitive Z (floating) generator."
   :long "<p>The Verilog definition of this module is:</p>
 
 @({
@@ -160,6 +226,80 @@ weirdint-elim) to eliminate explicit Z values from literals.</p>
                            :maxloc    *vl-fakeloc*
                            :atts      atts
                            :esim      acl2::*esim-z*)))
+
+
+(defxdoc *vl-1-bit-power*
+  :parents (primitives)
+  :short "Primitive power source or @('supply1') signal."
+  :long "<p>The Verilog definition of this module is:</p>
+
+@({
+module VL_1_BIT_POWER (out) ;
+  output out;
+  supply1 out;
+endmodule
+})
+
+<p>VL takes this as a primitive.  This module is typically introduced by the
+@(see elim-supplies) transform to replace @('supply1') wires.</p>
+
+<p>The corresponding @(see esim) primitive is @(see acl2::*esim-t*).  This is
+also how esim treats @(see *vl-1-bit-t*), i.e., in esim there is no difference
+between a power source and an ordinary constant @('1'b1') value.  We have a
+separate primitive mainly so that other backends with more transistor-level
+support can implement them in other ways.</p>")
+
+(defconsts *vl-1-bit-power*
+  (b* ((name "VL_1_BIT_POWER")
+       (atts '(("VL_PRIMITIVE") ("VL_HANDS_OFF")))
+       ((mv ?out-expr out-port out-portdecl out-netdecl) (vl-primitive-mkport "out" :vl-output))
+       (out-netdecl (change-vl-netdecl out-netdecl :type :vl-supply1)))
+    (make-honsed-vl-module :name      name
+                           :origname  name
+                           :ports     (list out-port)
+                           :portdecls (list out-portdecl)
+                           :netdecls  (list out-netdecl)
+                           :minloc    *vl-fakeloc*
+                           :maxloc    *vl-fakeloc*
+                           :atts      atts
+                           :esim      acl2::*esim-t*)))
+
+
+(defxdoc *vl-1-bit-ground*
+  :parents (primitives)
+  :short "Primitive ground or @('supply0') signal."
+  :long "<p>The Verilog definition of this module is:</p>
+
+@({
+module VL_1_BIT_GROUND (out) ;
+  output out;
+  supply0 out;
+endmodule
+})
+
+<p>VL takes this as a primitive.  This module is typically introduced by the
+@(see elim-supplies) transform to replace @('supply0') wires.</p>
+
+<p>The corresponding @(see esim) primitive is @(see acl2::*esim-f*).  This is
+also how esim treats @(see *vl-1-bit-f*), i.e., in esim there is no difference
+between ground and an ordinary constant @('1'b0') value.  We have a separate
+primitive mainly so that other backends with more transistor-level support can
+implement them in other ways.</p>")
+
+(defconsts *vl-1-bit-ground*
+  (b* ((name "VL_1_BIT_GROUND")
+       (atts '(("VL_PRIMITIVE") ("VL_HANDS_OFF")))
+       ((mv ?out-expr out-port out-portdecl out-netdecl) (vl-primitive-mkport "out" :vl-output))
+       (out-netdecl (change-vl-netdecl out-netdecl :type :vl-supply0)))
+    (make-honsed-vl-module :name      name
+                           :origname  name
+                           :ports     (list out-port)
+                           :portdecls (list out-portdecl)
+                           :netdecls  (list out-netdecl)
+                           :minloc    *vl-fakeloc*
+                           :maxloc    *vl-fakeloc*
+                           :atts      atts
+                           :esim      acl2::*esim-f*)))
 
 
 (defxdoc *vl-1-bit-assign*
@@ -862,8 +1002,12 @@ certain @('always') statements into instances of this module.</p>
 
 
 (defconst *vl-primitive-mods*
-  (list *vl-1-bit-x*
+  (list *vl-1-bit-t*
+        *vl-1-bit-f*
+        *vl-1-bit-x*
         *vl-1-bit-z*
+        *vl-1-bit-power*
+        *vl-1-bit-ground*
         *vl-1-bit-assign*
         *vl-1-bit-delay-1*
         *vl-1-bit-buf*
@@ -935,8 +1079,12 @@ certain @('always') statements into instances of this module.</p>
 (include-book ;; fool dependency scanner
  "mlib/writer")
 
+(vl-pps-module *vl-1-bit-t*)
+(vl-pps-module *vl-1-bit-f*)
 (vl-pps-module *vl-1-bit-x*)
 (vl-pps-module *vl-1-bit-z*)
+(vl-pps-module *vl-1-bit-power*)
+(vl-pps-module *vl-1-bit-ground*)
 (vl-pps-module *vl-1-bit-assign*)
 (vl-pps-module *vl-1-bit-delay-1*)
 (vl-pps-module *vl-1-bit-buf*)

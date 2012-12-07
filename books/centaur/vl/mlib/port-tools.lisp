@@ -172,14 +172,12 @@ basic port expressions.</p>"
 (deflist vl-portlist-named-p (x)
   (vl-port-named-p x)
   :guard (vl-portlist-p x)
-  :elementp-of-nil nil)
-
-(defthm string-listp-of-vl-portlist->names
-  (implies (and (vl-portlist-named-p x)
-                (force (vl-portlist-p x)))
-           (string-listp (vl-portlist->names x)))
-  :hints(("Goal" :induct (len x))))
-
+  :elementp-of-nil nil
+  :rest
+  ((defthm string-listp-of-vl-portlist->names
+     (implies (and (vl-portlist-named-p x)
+                   (force (vl-portlist-p x)))
+              (string-listp (vl-portlist->names x))))))
 
 
 (defsection vl-flatten-portexpr
@@ -232,7 +230,7 @@ the names of the internal wires that are connected to the port.  For instance,
 in the following module,</p>
 
 @({
-module mod (a, .b(foo), .c({bar[2], baz})) ;
+module mod (a, .b(foo), .c( {bar[2], baz} )) ;
   ...
 endmodule
 })
@@ -308,7 +306,7 @@ directions, e.g., imagine a port such as @('.foo({bar,baz})'), where @('bar')
 is an input and @('baz') is an output.  We regard such a port as an @('inout'),
 and add a warning that this case is very unusual.</p>"
 
-  (defund vl-port-direction-aux (names portdecls palist warnings port)
+  (define vl-port-direction-aux (names portdecls palist warnings port)
     "Returns (MV SUCCESSP WARNINGS DIRECTIONS)"
     (declare (xargs :guard (and (string-listp names)
                                 (vl-portdecllist-p portdecls)
@@ -321,13 +319,13 @@ and add a warning that this case is very unusual.</p>"
          ((mv successp warnings directions)
           (vl-port-direction-aux (cdr names) portdecls palist warnings port))
          ((when decl)
-          (mv successp warnings (cons (vl-portdecl->dir decl) directions)))
-         (w (make-vl-warning
-             :type :vl-bad-port
-             :msg "~a0 refers to ~w1, but there is no port declaration for ~w1."
-             :args (list port (car names))
-             :fn 'vl-port-direction-aux)))
-      (mv nil (cons w warnings) directions)))
+          (mv successp warnings (cons (vl-portdecl->dir decl) directions))))
+      (mv nil
+          (warn :type :vl-bad-port
+                :msg "~a0 refers to ~w1, but there is no port declaration for ~
+                      ~w1."
+                :args (list port (car names)))
+          directions)))
 
   (defmvtypes vl-port-direction-aux (booleanp nil true-listp))
 
@@ -349,18 +347,17 @@ and add a warning that this case is very unusual.</p>"
 
 
 
-  (defund vl-port-direction (port portdecls palist warnings)
+  (define vl-port-direction (port portdecls palist warnings)
     "Returns (MV WARNINGS MAYBE-DIR)"
     (declare (xargs :guard (and (vl-port-p port)
                                 (vl-portdecllist-p portdecls)
                                 (equal palist (vl-portdecl-alist portdecls))
                                 (vl-warninglist-p warnings))))
     (b* (((unless (vl-port-wellformed-p port))
-          (b* ((w (make-vl-warning :type :vl-bad-port
-                                   :msg "~a0 is not well-formed."
-                                   :args (list port)
-                                   :fn 'vl-port-direction)))
-            (mv (cons w warnings) nil)))
+          (mv (warn :type :vl-bad-port
+                    :msg "~a0 is not well-formed."
+                    :args (list port))
+              nil))
 
          (names (vl-port-internal-wirenames port))
          ((mv successp warnings dirs)
@@ -372,15 +369,12 @@ and add a warning that this case is very unusual.</p>"
                     (all-equalp :vl-input dirs)
                     (all-equalp :vl-output dirs)
                     (all-equalp :vl-inout dirs)))
-          (mv warnings (car dirs)))
-
-         (w (make-vl-warning
-             :type :vl-bad-port
-             :msg "~a0 refers to ~&1, which do not all agree upon a direction.  ~
-                   We do not support this. Directions: ~&2."
-             :args (list port names (mergesort dirs))
-             :fn 'vl-port-direction)))
-      (mv (cons w warnings) nil)))
+          (mv warnings (car dirs))))
+      (mv (warn :type :vl-bad-port
+                :msg "~a0 refers to ~&1, which do not all agree upon a ~
+                      direction.  We do not support this. Directions: ~&2."
+                :args (list port names (mergesort dirs)))
+          nil)))
 
   (local (in-theory (enable vl-port-direction)))
 

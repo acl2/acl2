@@ -168,20 +168,15 @@ used.</p>
 warning.  We added this later, so some warnings might not have this field set
 at the moment.</p>")
 
-
-(defsection vl-warninglist-p
-
-  (deflist vl-warninglist-p (x)
-    (vl-warning-p x)
-    :elementp-of-nil nil
-    :parents (warnings))
-
-  (defthm vl-warninglist-p-of-remove-adjacent-duplicates
-    (implies (force (vl-warninglist-p x))
-             (vl-warninglist-p (acl2::remove-adjacent-duplicates x)))
-    :hints(("Goal" :in-theory (enable acl2::remove-adjacent-duplicates)))))
-
-
+(deflist vl-warninglist-p (x)
+  (vl-warning-p x)
+  :elementp-of-nil nil
+  :parents (warnings)
+  :rest
+  ((defthm vl-warninglist-p-of-remove-adjacent-duplicates
+     (implies (force (vl-warninglist-p x))
+              (vl-warninglist-p (acl2::remove-adjacent-duplicates x)))
+     :hints(("Goal" :in-theory (enable acl2::remove-adjacent-duplicates))))))
 
 (defprojection vl-warninglist->types (x)
   (vl-warning->type x)
@@ -190,31 +185,85 @@ at the moment.</p>")
   :parents (warnings))
 
 
+(defsection warn
+  :parents (warnings)
+  :short "Extend a @(see warnings) accumulator with a non-fatal warning."
 
-(defsection vl-warning-<
+  :long "@(ccall warn)
+
+<p>This macro builds a new warning @('w') from the given @('type'), @('msg'),
+@('args'), and @('fn'), then conses @('w') onto the @(see warnings) accumulator
+@('acc')</p>
+
+<p>Note that @('warn') always builds non-fatal warnings.  If you want to build
+a fatal warning instead, use the macro @(see fatal), which has an identical
+interface.</p>
+
+<p>There are a couple of interfacing tricks:</p>
+
+<p>Note that @('acc') defaults to @('warnings') because we often use
+@('warnings') as the name of the warnings accumulator we are working with.
+That is, as long as your warnings accumulator is named @('warnings'), you don't
+have to give an @('acc') argument.</p>
+
+<p>Note that @('fn') defaults to @('__function__').  Macros like @(see define)
+often bind this symbol to the name of the current function, so if you are using
+a macro like this you don't have to give a @('fn') argument.  But you will need
+to explicitly give a function name when using raw @(see defun).</p>"
+
+  (defmacro warn (&key type msg args
+                       (fn '__function__)
+                       (acc 'warnings))
+    `(cons (make-vl-warning :type ,type
+                            :msg ,msg
+                            :args ,args
+                            :fatalp nil
+                            :fn ,fn)
+           ,acc)))
+
+(defsection fatal
+  :parents (warnings)
+  :short "Extend a @(see warnings) accumulator with a fatal warning."
+  :long "@(ccall fatal)
+
+<p>This is identical to @(see warn), except that it produces fatal warnings
+instead of non-fatal warnings.</p>"
+
+  (defmacro fatal (&key type msg args
+                        (fn '__function__)
+                        (acc 'warnings))
+    `(cons (make-vl-warning :type ,type
+                            :msg ,msg
+                            :args ,args
+                            :fatalp t
+                            :fn ,fn)
+           ,acc)))
+
+
+(define vl-warning-< ((x vl-warning-p)
+                      (y vl-warning-p))
   :parents (warnings)
   :short "Basic ordering for warnings."
   :long "<p>This is mainly useful for @(see vl-warning-sort).</p>"
 
-  (defund vl-warning-< (x y)
-    (declare (xargs :guard (and (vl-warning-p x)
-                                (vl-warning-p y))))
-    (b* (((vl-warning x) x)
-         ((vl-warning y) y)
+  (b* (((vl-warning x) x)
+       ((vl-warning y) y)
 
-         ((when (symbol-< x.type y.type)) t)
-         ((unless (eq x.type y.type)) nil)
+       ((when (symbol-< x.type y.type)) t)
+       ((unless (eq x.type y.type)) nil)
 
-         ((when (<< x.fn y.fn)) t)
-         ((unless (eq x.fn y.fn)) nil)
+       ((when (<< x.fn y.fn)) t)
+       ((unless (eq x.fn y.fn)) nil)
 
-         ((when (string< x.msg y.msg)) t)
-         ((unless (equal x.msg y.msg)) nil)
+       ((when (string< x.msg y.msg)) t)
+       ((unless (equal x.msg y.msg)) nil)
 
-         ((when (<< x.args y.args)) t)
-         ((unless (equal x.args y.args)) nil))
+       ((when (<< x.args y.args)) t)
+       ((unless (equal x.args y.args)) nil))
 
-      (<< x.fatalp y.fatalp)))
+    (<< x.fatalp y.fatalp))
+
+  ///
 
   (defthm vl-warning-<-transitive
     (implies (and (vl-warning-< x y)
@@ -223,8 +272,7 @@ at the moment.</p>")
                   (force (vl-warning-p y))
                   (force (vl-warning-p z)))
              (vl-warning-< x z))
-    :hints(("Goal" :in-theory (enable vl-warning-<
-                                      string<)))))
+    :hints(("Goal" :in-theory (enable string<)))))
 
 
 (defsection vl-warning-sort
@@ -249,93 +297,61 @@ at the moment.</p>")
             :use ((:instance vl-warning-sort-creates-comparable-listp (ACL2::x x)))))))
 
 
-(defsection vl-clean-warnings
+(define vl-clean-warnings ((x vl-warninglist-p))
+  :returns (ans vl-warninglist-p :hyp :fguard)
   :parents (warnings)
   :short "Sort warnings and remove duplicates."
 
-  (defund vl-clean-warnings (x)
-    (declare (xargs :guard (vl-warninglist-p x)))
-    (ACL2::remove-adjacent-duplicates
-     (vl-warning-sort
-      (redundant-list-fix x))))
-
-  (local (in-theory (enable vl-clean-warnings)))
-
-  (defthm vl-warninglist-p-of-vl-clean-warnings
-    (implies (force (vl-warninglist-p x))
-             (vl-warninglist-p (vl-clean-warnings x)))))
+  (ACL2::remove-adjacent-duplicates
+   (vl-warning-sort
+    (redundant-list-fix x))))
 
 
-
-(defsection vl-remove-warnings
+(define vl-remove-warnings ((types symbol-listp)
+                            (x vl-warninglist-p))
+  :returns (ans vl-warninglist-p :hyp :guard)
   :parents (warnings)
-  :short "@(call vl-remove-warnings) removes all warnings of types in
-@('types') from @('x'), a @(see vl-warninglist-p)."
+  :short "Remove warnings of certain types."
+  :long "<p>This can be useful to filter out mundane warnings that you do not
+want to bother the user with.</p>"
 
-  :long "<p>This is sometimes useful to filter out certain mundane warnings
-that you do not want to bother the user with.  See also @(see
-vl-keep-warnings).</p>"
-
-  (defund vl-remove-warnings (types x)
-    (declare (xargs :guard (and (symbol-listp types)
-                                (vl-warninglist-p x))))
-    (cond ((atom x)
-           nil)
-          ((member (vl-warning->type (car x)) types)
-           (vl-remove-warnings types (cdr x)))
-          (t
-           (cons (car x) (vl-remove-warnings types (cdr x))))))
-
-  (local (in-theory (enable vl-remove-warnings)))
-
-  (defthm vl-warninglist-p-of-vl-remove-warnings
-    (implies (vl-warninglist-p x)
-             (vl-warninglist-p (vl-remove-warnings types x)))))
+  (cond ((atom x)
+         nil)
+        ((member (vl-warning->type (car x)) types)
+         (vl-remove-warnings types (cdr x)))
+        (t
+         (cons (car x) (vl-remove-warnings types (cdr x))))))
 
 
-
-(defsection vl-keep-warnings
+(define vl-keep-warnings ((types symbol-listp)
+                          (x vl-warninglist-p))
+  :returns (ans vl-warninglist-p :hyp :guard)
   :parents (warnings)
-  :short "@(call vl-keep-warnings) remove all warnings whose types are not
-mentioned in @('types') from @('x'), a @(see vl-warninglist-p)."
+  :short "Keep only warnings of certain types."
+  :long "<p>This can be useful to highlight certain warnings that are of
+particular interest.</p>"
 
-  :long "<p>This is sometimes useful to highlight certain warnings that are
-of particular interest.  See also @(see vl-remove-warnings).</p>"
-
-  (defund vl-keep-warnings (types x)
-    (declare (xargs :guard (and (symbol-listp types)
-                                (vl-warninglist-p x))))
-    (cond ((atom x)
-           nil)
-          ((member (vl-warning->type (car x)) types)
-           (cons (car x) (vl-keep-warnings types (cdr x))))
-          (t
-           (vl-keep-warnings types (cdr x)))))
-
-  (local (in-theory (enable vl-keep-warnings)))
-
-  (defthm vl-warninglist-p-of-vl-keep-warnings
-    (implies (vl-warninglist-p x)
-             (vl-warninglist-p (vl-keep-warnings types x)))))
+  (cond ((atom x)
+         nil)
+        ((member (vl-warning->type (car x)) types)
+         (cons (car x) (vl-keep-warnings types (cdr x))))
+        (t
+         (vl-keep-warnings types (cdr x)))))
 
 
-
-(defsection vl-some-warning-fatalp
+(define vl-some-warning-fatalp ((x vl-warninglist-p))
   :parents (warnings)
-  :short "@(call vl-some-warning-fatalp) determines if any warning in @('x'), a
-@(see vl-warninglist-p), is marked as \"fatal\"."
+  :short "Check if any warning is marked as fatal."
 
-  (defund vl-some-warning-fatalp (x)
-    (declare (xargs :guard (vl-warninglist-p x)))
-    (if (atom x)
-        nil
-      (or
-       ;; MBE gives us an always-boolean result.
-       (mbe :logic (if (vl-warning->fatalp (car x)) t nil)
-            :exec (vl-warning->fatalp (car x)))
-       (vl-some-warning-fatalp (cdr x)))))
+  (if (atom x)
+      nil
+    (or
+     ;; MBE gives us an always-boolean result.
+     (mbe :logic (if (vl-warning->fatalp (car x)) t nil)
+          :exec (vl-warning->fatalp (car x)))
+     (vl-some-warning-fatalp (cdr x))))
 
-  (local (in-theory (enable vl-some-warning-fatalp)))
+  ///
 
   (defthm vl-some-warning-fatalp-when-not-consp
     (implies (not (consp x))
@@ -366,26 +382,21 @@ of particular interest.  See also @(see vl-remove-warnings).</p>"
                (vl-some-warning-fatalp y)))))
 
 
-(defsection vl-some-warning-of-type-p
+(define vl-some-warning-of-type-p ((types symbol-listp)
+                                   (x vl-warninglist-p))
   :parents (warnings)
-  :short "@(call vl-some-warning-of-type-p) determines if any warning in
-@('x'), a @(see vl-warninglist-p), has a type mentioned in @('types'), a
-symbol-list."
-
+  :short "Check if there are any warnings of certain types."
   :long "<p>Note that we leave this function enabled.</p>"
 
-  (defun vl-some-warning-of-type-p (types x)
-    (declare (xargs :guard (and (symbol-listp types)
-                                (vl-warninglist-p x))))
-    (mbe :logic
-         (intersectp-equal types (vl-warninglist->types x))
-         :exec
-         (cond ((atom x)
-                nil)
-               ((member (vl-warning->type (car x)) types)
-                t)
-               (t
-                (vl-some-warning-of-type-p types (cdr x)))))))
+  (mbe :logic
+       (intersectp-equal types (vl-warninglist->types x))
+       :exec
+       (cond ((atom x)
+              nil)
+             ((member (vl-warning->type (car x)) types)
+              t)
+             (t
+              (vl-some-warning-of-type-p types (cdr x))))))
 
 
 

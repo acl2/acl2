@@ -227,82 +227,66 @@ initially kept in a big, mixed list.</p>"
 
 
 
-(defsection vl-modelementlist-p
+(deflist vl-modelementlist-p (x)
+  (vl-modelement-p x)
+  :elementp-of-nil nil
+  :parents (vl-modelement-p)
+  :rest
+  ((defthm vl-modelementlist-p-when-vl-portlist-p
+     (implies (vl-portlist-p x)
+              (vl-modelementlist-p x)))
 
-  (deflist vl-modelementlist-p (x)
-    (vl-modelement-p x)
-    :elementp-of-nil nil
-    :parents (vl-modelement-p))
+   (defthm vl-modelementlist-p-when-vl-portdecllist-p
+     (implies (vl-portdecllist-p x)
+              (vl-modelementlist-p x)))
 
-  (defthm vl-modelementlist-p-when-vl-portlist-p
-    (implies (vl-portlist-p x)
-             (vl-modelementlist-p x))
-    :hints(("Goal" :induct (len x))))
+   (defthm vl-modelementlist-p-when-vl-assignlist-p
+     (implies (vl-assignlist-p x)
+              (vl-modelementlist-p x)))
 
-  (defthm vl-modelementlist-p-when-vl-portdecllist-p
-    (implies (vl-portdecllist-p x)
-             (vl-modelementlist-p x))
-    :hints(("Goal" :induct (len x))))
+   (defthm vl-modelementlist-p-when-vl-netdecllist-p
+     (implies (vl-netdecllist-p x)
+              (vl-modelementlist-p x)))
 
-  (defthm vl-modelementlist-p-when-vl-assignlist-p
-    (implies (vl-assignlist-p x)
-             (vl-modelementlist-p x))
-    :hints(("Goal" :induct (len x))))
+   (defthm vl-modelementlist-p-when-vl-vardecllist-p
+     (implies (vl-vardecllist-p x)
+              (vl-modelementlist-p x)))
 
-  (defthm vl-modelementlist-p-when-vl-netdecllist-p
-    (implies (vl-netdecllist-p x)
-             (vl-modelementlist-p x))
-    :hints(("Goal" :induct (len x))))
+   (defthm vl-modelementlist-p-when-vl-regdecllist-p
+     (implies (vl-regdecllist-p x)
+              (vl-modelementlist-p x)))
 
-  (defthm vl-modelementlist-p-when-vl-vardecllist-p
-    (implies (vl-vardecllist-p x)
-             (vl-modelementlist-p x))
-    :hints(("Goal" :induct (len x))))
+   (defthm vl-modelementlist-p-when-vl-eventdecllist-p
+     (implies (vl-eventdecllist-p x)
+              (vl-modelementlist-p x)))
 
-  (defthm vl-modelementlist-p-when-vl-regdecllist-p
-    (implies (vl-regdecllist-p x)
-             (vl-modelementlist-p x))
-    :hints(("Goal" :induct (len x))))
+   (defthm vl-modelementlist-p-when-vl-paramdecllist-p
+     (implies (vl-paramdecllist-p x)
+              (vl-modelementlist-p x)))
 
-  (defthm vl-modelementlist-p-when-vl-eventdecllist-p
-    (implies (vl-eventdecllist-p x)
-             (vl-modelementlist-p x))
-    :hints(("Goal" :induct (len x))))
+   (defthm vl-modelementlist-p-when-vl-fundecllist-p
+     (implies (vl-fundecllist-p x)
+              (vl-modelementlist-p x)))
 
-  (defthm vl-modelementlist-p-when-vl-paramdecllist-p
-    (implies (vl-paramdecllist-p x)
-             (vl-modelementlist-p x))
-    :hints(("Goal" :induct (len x))))
+   (defthm vl-modelementlist-p-when-vl-taskdecllist-p
+     (implies (vl-taskdecllist-p x)
+              (vl-modelementlist-p x)))
 
-  (defthm vl-modelementlist-p-when-vl-fundecllist-p
-    (implies (vl-fundecllist-p x)
-             (vl-modelementlist-p x))
-    :hints(("Goal" :induct (len x))))
+   (defthm vl-modelementlist-p-when-vl-modinstlist-p
+     (implies (vl-modinstlist-p x)
+              (vl-modelementlist-p x)))
 
-  (defthm vl-modelementlist-p-when-vl-taskdecllist-p
-    (implies (vl-taskdecllist-p x)
-             (vl-modelementlist-p x))
-    :hints(("Goal" :induct (len x))))
+   (defthm vl-modelementlist-p-when-vl-gateinstlist-p
+     (implies (vl-gateinstlist-p x)
+              (vl-modelementlist-p x)))
 
-  (defthm vl-modelementlist-p-when-vl-modinstlist-p
-    (implies (vl-modinstlist-p x)
-             (vl-modelementlist-p x))
-    :hints(("Goal" :induct (len x))))
+   (defthm vl-modelementlist-p-when-vl-alwayslist-p
+     (implies (vl-alwayslist-p x)
+              (vl-modelementlist-p x)))
 
-  (defthm vl-modelementlist-p-when-vl-gateinstlist-p
-    (implies (vl-gateinstlist-p x)
-             (vl-modelementlist-p x))
-    :hints(("Goal" :induct (len x))))
-
-  (defthm vl-modelementlist-p-when-vl-alwayslist-p
-    (implies (vl-alwayslist-p x)
-             (vl-modelementlist-p x))
-    :hints(("Goal" :induct (len x))))
-
-  (defthm vl-modelementlist-p-when-vl-initiallist-p
-    (implies (vl-initiallist-p x)
-             (vl-modelementlist-p x))
-    :hints(("Goal" :induct (len x)))))
+   (defthm vl-modelementlist-p-when-vl-initiallist-p
+     (implies (vl-initiallist-p x)
+              (vl-modelementlist-p x)))))
 
 
 

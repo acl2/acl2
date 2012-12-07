@@ -179,7 +179,8 @@ wp-gen: ordinals
 # xdoc has no dependencies
 xdoc-impl: xdoc str tools finite-set-theory/osets
 system: tools arithmetic arithmetic-5 misc
-cutil: xdoc tools str misc finite-set-theory/osets defsort unicode clause-processors
+cutil: xdoc xdoc-impl tools str misc finite-set-theory/osets \
+       defsort unicode clause-processors
 countereg-gen: xdoc arithmetic-5 tools defexec finite-set-theory/osets \
 	arithmetic-3 arithmetic ordinals
 leftist-trees: arithmetic-5 sorting

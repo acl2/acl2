@@ -19,13 +19,12 @@
 ; Original author: Jared Davis <jared@centtech.com>
 
 (in-package "VL")
-(include-book "gen-simple")
-(include-book "gen-xdet")
+(include-book "shl")
 (local (include-book "../../util/arithmetic"))
 (local (include-book "../../util/osets"))
 (local (in-theory (disable vl-maybe-module-p-when-vl-module-p)))
 
-; gen-shl.lisp -- functions that generate left-shift modules
+; basically identical to shl.lisp, reuses some stuff from there.
 
 (local (defthm car-of-vl-make-list-of-bitselects-under-iff
          (implies (force (vl-expr-p expr))
@@ -43,28 +42,27 @@
                          (1- (len x))))))
 
 
-
-; Basic idea: a << b is the same as
+; Basic idea: a >> b is the same as
 ;
-;   temp0 =     a << (b[0] * 2^0)          "place 0"
-;   temp1 = temp0 << (b[1] * 2^1)          "place 1"
-;   temp2 = temp1 << (b[2] * 2^2)          "place 2"
+;   temp0 =     a >> (b[0] * 2^0)          "place 0"
+;   temp1 = temp0 >> (b[1] * 2^1)          "place 1"
+;   temp2 = temp1 >> (b[2] * 2^2)          "place 2"
 ;   ...
 
-(def-vl-modgen vl-make-n-bit-shl-place-p (n p)
+(def-vl-modgen vl-make-n-bit-shr-place-p (n p)
   :short "Generate a module that conditionally shifts an @('N') bit number by
-@('2**(P-1)') bits to the left."
+@('2**(P-1)') bits to the right."
 
   :long "<p>We generate a gate-based module that is semantically equivalent
 to:</p>
 
 @({
-module VL_N_BIT_SHL_PLACE_P (out, in, shiftp) ;
+module VL_N_BIT_SHR_PLACE_P (out, in, shiftp) ;
   output [n-1:0] out;
   input [n-1:0] in;
   input shiftp;
 
-  assign out = shiftp ? (in << 2**(p-1)) : in;
+  assign out = shiftp ? (in >> 2**(p-1)) : in;
 
 endmodule
 })
@@ -73,15 +71,16 @@ endmodule
 operates on O(log_2 n) muxes.</p>"
 
   :guard (and (posp n) (posp p))
+
   :body
   (b* ((shift-amount (expt 2 (- p 1)))
-       (name  (hons-copy (cat "VL_" (natstr n) "_BIT_SHL_PLACE_" (natstr p))))
+       (name  (hons-copy (cat "VL_" (natstr n) "_BIT_SHR_PLACE_" (natstr p))))
 
        ((mv out-expr out-port out-portdecl out-netdecl)             (vl-occform-mkport "out" :vl-output n))
        ((mv in-expr in-port in-portdecl in-netdecl)                 (vl-occform-mkport "in" :vl-input n))
        ((mv shiftp-expr shiftp-port shiftp-portdecl shiftp-netdecl) (vl-primitive-mkport "shiftp" :vl-input))
 
-       ;; we can only shift as many places as there are bits in n.
+       ;; we can only shift as many places as there are bits in n
        (places      (min n shift-amount))
        (|places'b0| (make-vl-atom :guts (make-vl-constint :value 0
                                                           :origwidth places
@@ -91,15 +90,10 @@ operates on O(log_2 n) muxes.</p>"
        (shifted-expr
         (if (<= n shift-amount)
             |places'b0|
-          ;; {in[(N-1)-places:0], places'b0}
+          ;; {places'b0, in[N-1:places]}
           (make-vl-nonatom :op :vl-concat
-                           :args (list (make-vl-nonatom :op :vl-partselect-colon
-                                                        :args (list in-expr
-                                                                    (vl-make-index (- n (+ 1 places)))
-                                                                    (vl-make-index 0))
-                                                        :finalwidth (- n places)
-                                                        :finaltype :vl-unsigned)
-                                       |places'b0|)
+                           :args (list |places'b0|
+                                       (vl-make-partselect in-expr (- n 1) places))
                            :finalwidth n
                            :finaltype :vl-unsigned)))
 
@@ -118,139 +112,43 @@ operates on O(log_2 n) muxes.</p>"
            mux-mod
            mux-support)))
 
-#||
-(vl-pps-modulelist (vl-make-n-bit-shl-place-p 10 3))
-||#
 
 
-
-(defsection vl-make-n-bit-shl-place-ps
+(define vl-make-n-bit-shr-place-ps ((n posp)
+                                    (p natp))
+  :returns (mv (shift-mods vl-modulelist-p :hyp :fguard)
+               (support-mods vl-modulelist-p :hyp :fguard))
   :parents (occform)
   :short "Generate a list of place-shifters, counting down from P to 1."
 
-  (defund vl-make-n-bit-shl-place-ps (n p)
-    "Returns (MV SHIFT-MODS SUPPORT-MODS)"
-    (declare (xargs :guard (and (posp n)
-                                (natp p))))
-    (b* (((when (zp p))
-          (mv nil nil))
-         ((cons car-shifter car-support) (vl-make-n-bit-shl-place-p n p))
-         ((mv cdr-shifters cdr-support) (vl-make-n-bit-shl-place-ps n (- p 1))))
-      (mv (cons car-shifter cdr-shifters)
-          (append car-support cdr-support))))
+  (b* (((when (zp p))
+        (mv nil nil))
+       ((cons car-shifter car-support) (vl-make-n-bit-shr-place-p n p))
+       ((mv cdr-shifters cdr-support) (vl-make-n-bit-shr-place-ps n (- p 1))))
+    (mv (cons car-shifter cdr-shifters)
+        (append car-support cdr-support)))
+  ///
+  (defmvtypes vl-make-n-bit-shr-place-ps (true-listp true-listp))
 
-  (local (in-theory (enable vl-make-n-bit-shl-place-ps)))
-
-  (defthm vl-modulelist-p-of-vl-make-n-bit-shl-place-ps
-    (implies (and (force (posp n))
-                  (force (natp p)))
-             (let ((ret (vl-make-n-bit-shl-place-ps n p)))
-               (and (vl-modulelist-p (mv-nth 0 ret))
-                    (vl-modulelist-p (mv-nth 1 ret))))))
-
-  (defthm len-of-vl-make-n-bit-shl-place-ps-0
-    (equal (len (mv-nth 0 (vl-make-n-bit-shl-place-ps n p)))
-           (nfix p)))
-
-  (defthm type-of-vl-make-n-bit-shl-place-ps-0
-    (true-listp (mv-nth 0 (vl-make-n-bit-shl-place-ps n p)))
-    :rule-classes :type-prescription)
-
-  (defthm type-of-vl-make-n-bit-shl-place-ps-1
-    (true-listp (mv-nth 1 (vl-make-n-bit-shl-place-ps n p)))
-    :rule-classes :type-prescription))
+  (defthm len-of-vl-make-n-bit-shr-place-ps-0
+    (equal (len (mv-nth 0 (vl-make-n-bit-shr-place-ps n p)))
+           (nfix p))))
 
 
 
-(defsection vl-make-list-of-netdecls
-  :parents (occform)
-  :short "@(call vl-make-list-of-netdecls) generates @('n') distinct wires with
-  the given @('range')."
-
-  :long "<p><b>Signature:</b> @(call vl-make-list-of-netdecls) returns a list
-of net declarations, for @('basename_n') down to @('basename_1').</p>
-
-<p>As inputs, @('n') should be a natural number, @('basename') should be a
-string, and @('range') is a range that will be given to every generated net
-declaration.</p>"
-
-  (defund vl-make-list-of-netdecls (n basename range)
-    "Returns (MV NETDECLS NF')"
-    (declare (xargs :guard (and (natp n)
-                                (stringp basename)
-                                (vl-maybe-range-p range))))
-    (if (zp n)
-        nil
-      (cons (make-vl-netdecl :name  (cat basename "_" (natstr n))
-                             :type  :vl-wire
-                             :range range
-                             :loc   *vl-fakeloc*)
-            (vl-make-list-of-netdecls (- n 1) basename range))))
-
-  (local (in-theory (enable vl-make-list-of-netdecls)))
-
-  (defthm len-of-vl-make-list-of-netdecls
-    (equal (len (vl-make-list-of-netdecls n basename range))
-           (nfix n)))
-
-  (defthm consp-of-vl-make-list-of-netdecls
-    (iff (vl-make-list-of-netdecls n basename range)
-         (posp n)))
-
-  (defthm vl-netdecllist-p-of-vl-make-list-of-netdecls
-    (implies (force (vl-maybe-range-p range))
-             (vl-netdecllist-p (vl-make-list-of-netdecls n basename range)))))
-
-
-(defsection vl-make-modinsts-for-shl
-
-  (defund vl-make-modinsts-for-shl (name-index mods outs as bs)
-    (declare (xargs :guard (and (natp name-index)
-                                (vl-modulelist-p mods)
-                                (vl-exprlist-p outs)
-                                (vl-exprlist-p as)
-                                (vl-exprlist-p bs)
-                                (same-lengthp mods outs)
-                                (same-lengthp mods as)
-                                (same-lengthp mods bs))))
-    (b* (((when (atom mods))
-          nil)
-         (modinst (vl-simple-inst (car mods) (cat "shift_" (natstr name-index))
-                                  (car outs) (car as) (car bs))))
-      (cons modinst
-            (vl-make-modinsts-for-shl (+ 1 name-index) (cdr mods) (cdr outs) (cdr as) (cdr bs)))))
-
-  (local (in-theory (enable vl-make-modinsts-for-shl)))
-
-  (defthm vl-make-modinsts-for-shl-basics
-    (implies (and (force (natp name-index))
-                  (force (vl-modulelist-p mods))
-                  (force (vl-exprlist-p outs))
-                  (force (vl-exprlist-p as))
-                  (force (vl-exprlist-p bs))
-                  (force (same-lengthp mods outs))
-                  (force (same-lengthp mods as))
-                  (force (same-lengthp mods bs)))
-             (vl-modinstlist-p (vl-make-modinsts-for-shl name-index mods outs as bs))))
-
-  (defthm len-of-vl-make-modinsts-for-shl
-    (equal (len (vl-make-modinsts-for-shl name-index mods outs as bs))
-           (len mods))))
-
-
-(def-vl-modgen vl-make-n-bit-shl-by-m-bits (n m)
-  :short "Generate a module that shifts an @('N') bit number left by an @('M')
+(def-vl-modgen vl-make-n-bit-shr-by-m-bits (n m)
+  :short "Generate a module that shifts an @('N') bit number right by an @('M')
 bit number."
 
   :long "<p>We generate a gate-based module that is semantically equivalent
 to:</p>
 
 @({
-module VL_N_BIT_SHL_BY_M_BITS (out, a, b) ;
+module VL_N_BIT_SHR_BY_M_BITS (out, a, b) ;
   output [n-1:0] out;
   input [n-1:0] a;
   input [m-1:0] b;
-  assign out = a << b;
+  assign out = a >> b;
 endmodule
 })"
 
@@ -258,7 +156,7 @@ endmodule
               (posp m))
 
   :body
-  (b* ((name (hons-copy (cat "VL_" (natstr n) "_BIT_SHL_BY_" (natstr m) "_BITS")))
+  (b* ((name (hons-copy (cat "VL_" (natstr n) "_BIT_SHR_BY_" (natstr m) "_BITS")))
 
        ((mv out-expr out-port out-portdecl out-netdecl) (vl-occform-mkport "out" :vl-output n))
        ((mv a-expr a-port a-portdecl a-netdecl)         (vl-occform-mkport "a" :vl-input n))
@@ -275,14 +173,14 @@ endmodule
        ;;
        ;; The basic idea is to set:
        ;;
-       ;;  wire [n-1:0] temp1 =          a << (b[0] * 2^0);
-       ;;  wire [n-1:0] temp2 =     temp_1 << (b[1] * 2^1)
+       ;;  wire [n-1:0] temp1 =          a >> (b[0] * 2^0);
+       ;;  wire [n-1:0] temp2 =     temp_1 >> (b[1] * 2^1)
        ;;    ...
-       ;;  wire [n-1:0] tempK = temp_{k-1} << (b[k-1] * 2^{k-1})
+       ;;  wire [n-1:0] tempK = temp_{k-1} >> (b[k-1] * 2^{k-1})
 
        (k (min (+ (integer-length n) 1) m))
 
-       ((mv pshift-mods pshift-support) (vl-make-n-bit-shl-place-ps n k))
+       ((mv pshift-mods pshift-support) (vl-make-n-bit-shr-place-ps n k))
        (pshift-mods (reverse pshift-mods)) ;; for place_1 ... place_k order
 
        (temp-netdecls (reverse (vl-make-list-of-netdecls k "temp" (vl-make-n-bit-range n))))      ;; temp_1 ... temp_k
@@ -304,7 +202,7 @@ endmodule
        ;; in either case, much is the same:
 
        (lhs-exprs (cons a-expr (butlast temp-exprs 1)))
-       (b-wires (vl-make-list-of-bitselects b-expr 0 (- m 1)))
+       (b-wires   (vl-make-list-of-bitselects b-expr 0 (- m 1)))
 
        ((when (= m k))
         ;; We have exactly the right number of bits in B, so we can give one
@@ -340,7 +238,7 @@ endmodule
        ;; Okay, now we're ready to build the rhses.  We just use merged-expr
        ;; as the arg to the final shifter.
 
-       (lower-wires  (take (- k 1) b-wires))  ;; b[0], b[1], ..., b[k-2]
+       (lower-wires  (take (- k 1) b-wires)) ;; b[0], b[1], ..., b[k-2]
        (rhs-exprs    (append lower-wires (list merged-expr)))
        (pshift-insts (vl-make-modinsts-for-shl 1 pshift-mods temp-exprs lhs-exprs rhs-exprs)))
 

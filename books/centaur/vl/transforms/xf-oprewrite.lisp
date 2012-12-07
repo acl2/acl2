@@ -24,8 +24,6 @@
 (include-book "../checkers/duplicate-detect")
 (local (include-book "../util/arithmetic"))
 
-
-
 (defxdoc oprewrite
   :parents (transforms)
   :short "Rewrite expressions to eliminate various operators."
@@ -98,7 +96,9 @@ occform, since designers sometimes write things like</p>
 <p>Here, if we don't consolidate @('width{1'bz}'), we're not going to recognize
 it as a zatom and occform it correctly.</p>")
 
+
 (defsection vl-replicate-constint-value
+  :parents (oprewrite)
 
   (defund vl-replicate-constint-value (n width x)
     (declare (xargs :guard (and (natp n)
@@ -129,6 +129,7 @@ it as a zatom and occform it correctly.</p>")
 
 
 (defsection vl-replicate-weirdint-bits
+  :parents (oprewrite)
 
   (defund vl-replicate-weirdint-bits (n x)
     (declare (xargs :guard (and (natp n)
@@ -151,6 +152,7 @@ it as a zatom and occform it correctly.</p>")
 
 
 (defsection vl-maybe-consolidate-multiconcat
+  :parents (oprewrite)
 
   (defund vl-maybe-consolidate-multiconcat (x)
     (declare (xargs :guard (and (vl-expr-p x)
@@ -507,6 +509,7 @@ mutual recursion as simple as possible.</p>"
 ; Special outside-in rewrite for strange muxes
 
 (defsection vl-qmark-p
+  :parents (oprewrite)
 
   ;; Recognize a ? b : c and return the components, or return NILs
   ;; if X doens't match.
@@ -535,6 +538,8 @@ mutual recursion as simple as possible.</p>"
                            (if (mv-nth 0 ret) t nil)))))))
 
 (defsection vl-goofymux-p
+  :parents (oprewrite)
+
   ;; Recognize terms of the following forms:
   ;;  1. (i1 === i2) ? i1 : (s ? i1 : i2)
   ;;  2. (i1 === i2) ? i2 : (s ? i1 : i2)
@@ -588,6 +593,7 @@ mutual recursion as simple as possible.</p>"
 
 
 (defsection vl-goofymux-rewrite
+  :parents (oprewrite)
 
   (local (defthm crock
            (implies (and (mv-nth 0 (vl-goofymux-p x))
@@ -1180,18 +1186,20 @@ vl-expr-p) @('x') and returns @('(mv warnings-prime x-prime)')."
   :element vl-initial-oprewrite)
 
 
+(defsection vl-module-oprewrite
+  :parents (oprewrite)
 
-(defund vl-module-oprewrite (x)
-  (declare (xargs :guard (vl-module-p x)))
-  (b* (((vl-module x) x)
-       ((when (vl-module->hands-offp x))
-        x)
-       (warnings                x.warnings)
-       ((mv warnings assigns)   (vl-assignlist-oprewrite   x.assigns warnings))
-       ((mv warnings modinsts)  (vl-modinstlist-oprewrite  x.modinsts warnings))
-       ((mv warnings gateinsts) (vl-gateinstlist-oprewrite x.gateinsts warnings))
-       ((mv warnings alwayses)  (vl-alwayslist-oprewrite   x.alwayses warnings))
-       ((mv warnings initials)  (vl-initiallist-oprewrite  x.initials warnings)))
+  (defund vl-module-oprewrite (x)
+    (declare (xargs :guard (vl-module-p x)))
+    (b* (((vl-module x) x)
+         ((when (vl-module->hands-offp x))
+          x)
+         (warnings                x.warnings)
+         ((mv warnings assigns)   (vl-assignlist-oprewrite   x.assigns warnings))
+         ((mv warnings modinsts)  (vl-modinstlist-oprewrite  x.modinsts warnings))
+         ((mv warnings gateinsts) (vl-gateinstlist-oprewrite x.gateinsts warnings))
+         ((mv warnings alwayses)  (vl-alwayslist-oprewrite   x.alwayses warnings))
+         ((mv warnings initials)  (vl-initiallist-oprewrite  x.initials warnings)))
       (change-vl-module x
                         :assigns assigns
                         :modinsts modinsts
@@ -1200,24 +1208,22 @@ vl-expr-p) @('x') and returns @('(mv warnings-prime x-prime)')."
                         :initials initials
                         :warnings warnings)))
 
-(defthm vl-module-p-of-vl-module-oprewrite
-  (implies (force (vl-module-p x))
-           (vl-module-p (vl-module-oprewrite x)))
-  :hints(("Goal" :in-theory (enable vl-module-oprewrite))))
+  (local (in-theory (enable vl-module-oprewrite)))
 
-(defthm vl-module->name-of-vl-module-oprewrite
-  (equal (vl-module->name (vl-module-oprewrite x))
-         (vl-module->name x))
-  :hints(("Goal" :in-theory (enable vl-module-oprewrite))))
+  (defthm vl-module-p-of-vl-module-oprewrite
+    (implies (force (vl-module-p x))
+             (vl-module-p (vl-module-oprewrite x))))
 
+  (defthm vl-module->name-of-vl-module-oprewrite
+    (equal (vl-module->name (vl-module-oprewrite x))
+           (vl-module->name x))))
 
 
 (defprojection vl-modulelist-oprewrite (x)
   (vl-module-oprewrite x)
   :guard (vl-modulelist-p x)
-  :result-type vl-modulelist-p)
-
-(defthm vl-modulelist->names-of-vl-modulelist-oprewrite
-  (equal (vl-modulelist->names (vl-modulelist-oprewrite x))
-         (vl-modulelist->names x))
-  :hints(("Goal" :induct (len x))))
+  :result-type vl-modulelist-p
+  :rest
+  ((defthm vl-modulelist->names-of-vl-modulelist-oprewrite
+     (equal (vl-modulelist->names (vl-modulelist-oprewrite x))
+            (vl-modulelist->names x)))))

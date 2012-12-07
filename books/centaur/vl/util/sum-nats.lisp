@@ -65,28 +65,28 @@
 
 
 
-(defsection sum-nats
+(define sum-nats ((x nat-listp))
   :parents (utilities)
   :short "Sum a list of natural numbers."
 
-  (defund tr-sum-nats (x acc)
-    (declare (xargs :guard (and (nat-listp x)
-                                (natp acc)))
-             (type integer acc))
-    (if (consp x)
-        (tr-sum-nats (cdr x) (the integer (+ (car x) acc)))
-      acc))
+  (mbe :logic (if (consp x)
+                  (+ (nfix (car x))
+                     (sum-nats (cdr x)))
+                0)
+       :exec (tr-sum-nats x 0))
 
-  (defund sum-nats (x)
-    (declare (xargs :guard (nat-listp x)
-                    :verify-guards nil))
-    (mbe :logic (if (consp x)
-                    (+ (nfix (car x))
-                       (sum-nats (cdr x)))
-                  0)
-         :exec (tr-sum-nats x 0)))
+  :verify-guards nil
+  :prepwork
+  ((defund tr-sum-nats (x acc)
+     (declare (xargs :guard (and (nat-listp x)
+                                 (natp acc)))
+              (type integer acc))
+     (if (consp x)
+         (tr-sum-nats (cdr x) (the integer (+ (car x) acc)))
+       acc)))
 
-  (local (in-theory (enable tr-sum-nats sum-nats)))
+  ///
+  (local (in-theory (enable tr-sum-nats)))
 
   (local (defthm lemma
            (implies (and (nat-listp x)
@@ -144,21 +144,18 @@
 
 
 
-(defsection max-nats
+(define max-nats ((x nat-listp))
   :parents (utilities)
   :short "Maximum member in a list of naturals."
-
   :long "<p>Typically you would only use this on non-empty lists, but as a
 reasonable default we say the maximum member of the empty list is @('0').</p>"
 
-  (defund max-nats (x)
-    (declare (xargs :guard (nat-listp x)))
-    (if (atom x)
-        0
-      (max (lnfix (car x))
-           (max-nats (cdr x)))))
+  (if (atom x)
+      0
+    (max (lnfix (car x))
+         (max-nats (cdr x))))
 
-  (local (in-theory (enable max-nats)))
+  ///
 
   (defthm max-nats-when-atom
     (implies (atom x)
@@ -188,24 +185,21 @@ reasonable default we say the maximum member of the empty list is @('0').</p>"
 
 
 
-(defsection min-nats
+(define min-nats ((x nat-listp))
   :parents (utilities)
   :short "Minimum member in a list of naturals."
-
   :long "<p>Typically you would only use this on non-empty lists, but as a
 reasonable default we say the minimum of the empty list is @('0').</p>"
 
-  (defund min-nats (x)
-    (declare (xargs :guard (nat-listp x)))
-    (cond ((atom x)
-           0)
-          ((atom (cdr x))
-           (lnfix (car x)))
-          (t
-           (min (lnfix (car x))
-                (min-nats (cdr x))))))
+  (cond ((atom x)
+         0)
+        ((atom (cdr x))
+         (lnfix (car x)))
+        (t
+         (min (lnfix (car x))
+              (min-nats (cdr x)))))
 
-  (local (in-theory (enable min-nats)))
+  ///
 
   (defthm natp-of-min-nats
     (natp (min-nats x))
@@ -219,26 +213,21 @@ reasonable default we say the minimum of the empty list is @('0').</p>"
 
 
 
-(defsection nats-from
+(define nats-from ((a natp)
+                   (b natp))
+  :guard (<= a b)
+  :measure (nfix (- (nfix b) (nfix a)))
   :parents (utilities)
   :short "@(call nats-from) enumerates the naturals from @('[a, b)')."
 
-;; copied from aigpu, minus a couple of theorems.
+  (let ((a (lnfix a))
+        (b (lnfix b)))
+    (if (mbe :logic (zp (- b a))
+             :exec (= a b))
+        nil
+      (cons a (nats-from (+ 1 a) b))))
 
-  (defund nats-from (a b)
-    ;; [a, a+1, ..., b)
-    (declare (xargs :guard (and (natp a)
-                                (natp b)
-                                (<= a b))
-                    :measure (nfix (- (nfix b) (nfix a)))))
-    (let ((a (lnfix a))
-          (b (lnfix b)))
-      (if (mbe :logic (zp (- b a))
-               :exec (= a b))
-          nil
-        (cons a (nats-from (+ 1 a) b)))))
-
-  (local (in-theory (enable nats-from)))
+  ///
 
   (defthm true-listp-of-nats-from
     (true-listp (nats-from a b))

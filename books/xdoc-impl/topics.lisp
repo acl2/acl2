@@ -30,7 +30,7 @@
 (program)
 
 (defxdoc xdoc
-  :short "<em>XDOC</em> is a tool for documenting ACL2 libraries, and is
+  :short "<i>XDOC</i> is a tool for documenting ACL2 libraries, and is
 intended as a replacement for ACL2 facilities such as @('defdoc'), @(':doc'),
 and so on."
 
@@ -480,7 +480,7 @@ files.</li>
 </ul>
 
 <p>The net effect is that clicking on these links will send you directly to the
-desired function in the source code.  This can be <em>really</em> slick, and
+desired function in the source code.  This can be <i>really</i> slick, and
 depending on your web browser, it may not be too hard to set up.</p>
 
 
@@ -786,3 +786,25 @@ not introduce a new scope, whereas a @('defsection') does.</p>")
 
 (defxdoc undocumented
   :short "Placeholder for undocumented topics.")
+
+
+(defxdoc test-of-entities
+  :parents (xdoc)
+  :short "Placeholder topic for testing out HTML entity support in XDOC."
+  :long "<p>Here are the entities that XDOC allows:</p>
+
+<p>Normal XML entities:</p>
+<ul>
+<li>@('&amp;')   becomes &amp;</li>
+<li>@('&lt;')    becomes &lt;</li>
+<li>@('&gt;')    becomes &gt;</li>
+<li>@('&quot;')  becomes &quot;</li>
+<li>@('&apos;')  becomes &apos;</li>
+</ul>
+
+<p>Additional entities allowed by XDOC:</p>
+<ul>
+<li>@('&nbsp;')  becomes &nbsp; (this one can be hard to see)</li>
+<li>@('&mdash;') becomes &mdash;</li>
+<li>@('&rarr;')  becomes &rarr;</li>
+</ul>")

@@ -209,7 +209,7 @@ hierarchical identifiers.</p>
      )))
 
 
-(defsection vl-op-p
+(define vl-op-p (x)
   :parents (vl-expr-p)
   :short "Recognizer for valid operators."
 
@@ -220,15 +220,14 @@ in the @(see *vl-ops-table*).</p>
 the table, since this way we can disable @('vl-op-p') and avoid large case
 splits.</p>"
 
+  :inline t
+
   ;; Per basic testing, assoc is faster than hons-get here.
+  (if (assoc x *vl-ops-table*)
+      t
+    nil)
 
-  (definlined vl-op-p (x)
-    (declare (xargs :guard t))
-    (if (assoc x *vl-ops-table*)
-        t
-      nil))
-
-  (local (in-theory (enable vl-op-p)))
+  ///
 
   (defthm type-when-vl-op-p
     (implies (vl-op-p x)
@@ -245,7 +244,8 @@ splits.</p>"
 
 
 
-(defsection vl-op-arity
+(define vl-op-arity ((x vl-op-p))
+  :inline t
   :parents (vl-expr-p)
   :short "Look up the arity of an operator."
 
@@ -258,12 +258,9 @@ return @('nil').</p>
 in the table, since this way we can disable @('vl-op-arity') and avoid large
 case splits.</p>"
 
-  (definlined vl-op-arity (x)
-    (declare (xargs :guard (vl-op-p x)))
-    (cdr (assoc x *vl-ops-table*)))
+  (cdr (assoc x *vl-ops-table*))
 
-  (local (in-theory (enable vl-op-arity)))
-
+  ///
   (defthm type-of-vl-op-arity
     (vl-maybe-natp (vl-op-arity x))
     :rule-classes :type-prescription))
@@ -279,7 +276,8 @@ as real and string.</p>")
 
 
 
-(defsection vl-maybe-exprtype-p
+(define vl-maybe-exprtype-p (x)
+  :inline t
   :parents (vl-expr-p)
   :short "Recognizer for an @(see vl-exprtype-p) or @('nil')."
 
@@ -287,12 +285,10 @@ as real and string.</p>")
 fields in our expressions, which allows us to represent expressions whose signs
 have not yet been computed.</p>"
 
-  (definlined vl-maybe-exprtype-p (x)
-    (declare (xargs :guard t))
-    (or (not x)
-        (vl-exprtype-p x)))
+  (or (not x)
+      (vl-exprtype-p x))
 
-  (local (in-theory (enable vl-maybe-exprtype-p)))
+  ///
 
   (defthm vl-maybe-exprtype-p-when-vl-exprtype-p
     (implies (vl-exprtype-p x)
@@ -308,7 +304,6 @@ have not yet been computed.</p>"
              (and (symbolp x)
                   (not (equal x t))))
     :rule-classes :compound-recognizer))
-
 
 
 (defaggregate vl-constint
@@ -568,33 +563,32 @@ we do not confuse them with ordinary @(see vl-id-p) objects.</p>")
 
 
 
-(defsection vl-atomguts-p
+(define vl-atomguts-p (x)
   :parents (vl-expr-p)
   :short "The main contents of a @(see vl-atom-p)."
+
   :long "<p>The guts of an atom are its main contents.  See @(see vl-expr-p)
 for a discussion of the valid types.</p>"
 
-  (defund vl-atomguts-p (x)
-    (declare (xargs :guard t))
-    (mbe :logic (or (vl-constint-p x)
-                    (vl-weirdint-p x)
-                    (vl-string-p x)
-                    (vl-real-p x)
-                    (vl-id-p x)
-                    (vl-hidpiece-p x)
-                    (vl-funname-p x)
-                    (vl-sysfunname-p x))
-         :exec (case (tag x)
-                 (:vl-id       (vl-id-p x))
-                 (:vl-constint (vl-constint-p x))
-                 (:vl-weirdint (vl-weirdint-p x))
-                 (:vl-string   (vl-string-p x))
-                 (:vl-real     (vl-real-p x))
-                 (:vl-hidpiece (vl-hidpiece-p x))
-                 (:vl-funname  (vl-funname-p x))
-                 (otherwise    (vl-sysfunname-p x)))))
+  (mbe :logic (or (vl-constint-p x)
+                  (vl-weirdint-p x)
+                  (vl-string-p x)
+                  (vl-real-p x)
+                  (vl-id-p x)
+                  (vl-hidpiece-p x)
+                  (vl-funname-p x)
+                  (vl-sysfunname-p x))
+       :exec (case (tag x)
+               (:vl-id       (vl-id-p x))
+               (:vl-constint (vl-constint-p x))
+               (:vl-weirdint (vl-weirdint-p x))
+               (:vl-string   (vl-string-p x))
+               (:vl-real     (vl-real-p x))
+               (:vl-hidpiece (vl-hidpiece-p x))
+               (:vl-funname  (vl-funname-p x))
+               (otherwise    (vl-sysfunname-p x))))
 
-  (local (in-theory (enable vl-atomguts-p)))
+  ///
 
   (defthm consp-when-vl-atomguts-p
     (implies (vl-atomguts-p x)
@@ -674,103 +668,82 @@ for a discussion of the valid types.</p>"
              (vl-sysfunname-p x))))
 
 
-
-(defsection vl-fast-id-p
+(define vl-fast-id-p ((x vl-atomguts-p))
+  :inline t
+  :enabled t
   :parents (vl-atomguts-p vl-id-p)
   :short "Faster version of @(see vl-id-p), given that @(see vl-atomguts-p) is
 already known."
-
   :long "<p>We leave this function enabled and reason about @('vl-id-p')
 instead.</p>"
+  (mbe :logic (vl-id-p x)
+       :exec (eq (tag x) :vl-id)))
 
-  (definline vl-fast-id-p (x)
-    (declare (xargs :guard (vl-atomguts-p x)))
-    (mbe :logic (vl-id-p x)
-         :exec (eq (tag x) :vl-id))))
-
-
-(defsection vl-fast-constint-p
+(define vl-fast-constint-p ((x vl-atomguts-p))
+  :inline t
+  :enabled t
   :parents (vl-atomguts-p vl-constint-p)
   :short "Faster version of @(see vl-constint-p), given that @(see
 vl-atomguts-p) is already known."
-
   :long "<p>We leave this function enabled and reason about @('vl-constint-p')
 instead.</p>"
+  (mbe :logic (vl-constint-p x)
+       :exec (eq (tag x) :vl-constint)))
 
-  (definline vl-fast-constint-p (x)
-    (declare (xargs :guard (vl-atomguts-p x)))
-    (mbe :logic (vl-constint-p x)
-         :exec (eq (tag x) :vl-constint))))
-
-
-(defsection vl-fast-weirdint-p
+(define vl-fast-weirdint-p ((x vl-atomguts-p))
+  :inline t
+  :enabled t
   :parents (vl-atomguts-p vl-weirdint-p)
   :short "Faster version of @(see vl-weirdint-p), given that @(see
 vl-atomguts-p) is already known."
-
   :long "<p>We leave this function enabled and reason about @('vl-weirdint-p')
 instead.</p>"
+  (mbe :logic (vl-weirdint-p x)
+       :exec (eq (tag x) :vl-weirdint)))
 
-  (definline vl-fast-weirdint-p (x)
-    (declare (xargs :guard (vl-atomguts-p x)))
-    (mbe :logic (vl-weirdint-p x)
-         :exec (eq (tag x) :vl-weirdint))))
-
-
-(defsection vl-fast-string-p
+(define vl-fast-string-p ((x vl-atomguts-p))
+  :inline t
+  :enabled t
   :parents (vl-atomguts-p vl-string-p)
   :short "Faster version of @(see vl-string-p), given that @(see
 vl-atomguts-p) is already known."
-
   :long "<p>We leave this function enabled and reason about @('vl-string-p')
 instead.</p>"
+  (mbe :logic (vl-string-p x)
+       :exec (eq (tag x) :vl-string)))
 
-  (definline vl-fast-string-p (x)
-    (declare (xargs :guard (vl-atomguts-p x)))
-    (mbe :logic (vl-string-p x)
-         :exec (eq (tag x) :vl-string))))
-
-
-(defsection vl-fast-hidpiece-p
+(define vl-fast-hidpiece-p ((x vl-atomguts-p))
+  :inline t
+  :enabled t
   :parents (vl-atomguts-p vl-hidpiece-p)
   :short "Faster version of @(see vl-hidpiece-p), given that @(see
 vl-atomguts-p) is already known."
-
   :long "<p>We leave this function enabled and reason about @('vl-hidpiece-p')
 instead.</p>"
+  (mbe :logic (vl-hidpiece-p x)
+       :exec (eq (tag x) :vl-hidpiece)))
 
-  (definline vl-fast-hidpiece-p (x)
-    (declare (xargs :guard (vl-atomguts-p x)))
-    (mbe :logic (vl-hidpiece-p x)
-         :exec (eq (tag x) :vl-hidpiece))))
-
-
-(defsection vl-fast-funname-p
+(define vl-fast-funname-p ((x vl-atomguts-p))
+  :inline t
+  :enabled t
   :parents (vl-atomguts-p vl-funname-p)
   :short "Faster version of @(see vl-funname-p), given that @(see
 vl-atomguts-p) is already known."
-
   :long "<p>We leave this function enabled and reason about @('vl-funname-p')
 instead.</p>"
+  (mbe :logic (vl-funname-p x)
+       :exec (eq (tag x) :vl-funname)))
 
-  (definline vl-fast-funname-p (x)
-    (declare (xargs :guard (vl-atomguts-p x)))
-    (mbe :logic (vl-funname-p x)
-         :exec (eq (tag x) :vl-funname))))
-
-
-(defsection vl-fast-sysfunname-p
+(define vl-fast-sysfunname-p ((x vl-atomguts-p))
+  :inline t
+  :enabled t
   :parents (vl-atomguts-p vl-sysfunname-p)
   :short "Faster version of @(see vl-sysfunname-p), given that @(see
 vl-atomguts-p) is already known."
-
   :long "<p>We leave this function enabled and reason about
 @('vl-sysfunname-p') instead.</p>"
-
-  (definline vl-fast-sysfunname-p (x)
-    (declare (xargs :guard (vl-atomguts-p x)))
-    (mbe :logic (vl-sysfunname-p x)
-         :exec (eq (tag x) :vl-sysfunname))))
+  (mbe :logic (vl-sysfunname-p x)
+       :exec (eq (tag x) :vl-sysfunname)))
 
 
 (defaggregate vl-atom
@@ -799,7 +772,6 @@ vl-atomguts-p) is already known."
   :guard t
   :elementp-of-nil nil
   :parents (vl-expr-p))
-
 
 
 (defaggregate vl-nonatom
@@ -832,33 +804,34 @@ vl-atomguts-p) is already known."
   :parents (vl-expr-p)
   :short "Structural validity of non-atomic expressions."
   :long "<p>This is only a simple structural check, and does not imply
-@('vl-expr-p').  See @(see vl-expr-p) for details.</p>")
+@('vl-expr-p').  See @(see vl-expr-p) for details.</p>"
 
-(defthm acl2-count-of-vl-nonatom->args
-  (and (<= (acl2-count (vl-nonatom->args x))
-           (acl2-count x))
-       (implies (consp x)
-                (< (acl2-count (vl-nonatom->args x))
-                   (acl2-count x))))
-  :hints(("Goal" :in-theory (enable vl-nonatom->args)))
-  :rule-classes ((:rewrite) (:linear)))
+  :rest
+  ((defthm acl2-count-of-vl-nonatom->args
+     (and (<= (acl2-count (vl-nonatom->args x))
+              (acl2-count x))
+          (implies (consp x)
+                   (< (acl2-count (vl-nonatom->args x))
+                      (acl2-count x))))
+     :hints(("Goal" :in-theory (enable vl-nonatom->args)))
+     :rule-classes ((:rewrite) (:linear)))
 
-(defthm acl2-count-of-vl-nonatom->args-when-vl-nonatom->op
-  ;; This is a funny rule that is occasionally useful in avoiding artificial
-  ;; termination checks for functions that recur over expressions.
-  (implies (vl-nonatom->op x)
-           (not (equal (acl2-count (vl-nonatom->args x))
-                       (acl2-count x))))
-  :hints(("Goal" :in-theory (enable vl-nonatom->op vl-nonatom->args))))
+   (defthm acl2-count-of-vl-nonatom->args-when-vl-nonatom->op
+     ;; This is a funny rule that is occasionally useful in avoiding artificial
+     ;; termination checks for functions that recur over expressions.
+     (implies (vl-nonatom->op x)
+              (not (equal (acl2-count (vl-nonatom->args x))
+                          (acl2-count x))))
+     :hints(("Goal" :in-theory (enable vl-nonatom->op vl-nonatom->args))))
 
-(defthm acl2-count-of-vl-nonatom->atts
-  (and (<= (acl2-count (vl-nonatom->atts x))
-           (acl2-count x))
-       (implies (consp x)
-                (< (acl2-count (vl-nonatom->atts x))
-                   (acl2-count x))))
-  :hints(("Goal" :in-theory (enable vl-nonatom->atts)))
-  :rule-classes ((:rewrite) (:linear)))
+   (defthm acl2-count-of-vl-nonatom->atts
+     (and (<= (acl2-count (vl-nonatom->atts x))
+              (acl2-count x))
+          (implies (consp x)
+                   (< (acl2-count (vl-nonatom->atts x))
+                      (acl2-count x))))
+     :hints(("Goal" :in-theory (enable vl-nonatom->atts)))
+     :rule-classes ((:rewrite) (:linear)))))
 
 
 
@@ -1043,38 +1016,30 @@ each operator has the proper arity.</p>"
              (vl-atts-p (vl-nonatom->atts x)))))
 
 
-(defsection vl-fast-atom-p
+(define vl-fast-atom-p ((x vl-expr-p))
+  :inline t
+  :enabled t
   :parents (vl-atom-p vl-expr-p)
   :short "Faster version of @(see vl-atom-p), given that @(see vl-expr-p) is
 already known."
-
   :long "<p>We leave this function enabled and reason about @('vl-atom-p')
 instead.</p>"
+  (mbe :logic (vl-atom-p x)
+       :exec (eq (tag x) :vl-atom)))
 
-  (definline vl-fast-atom-p (x)
-    (declare (xargs :guard (vl-expr-p x)))
-    (mbe :logic (vl-atom-p x)
-         :exec (eq (tag x) :vl-atom))))
-
-
-(defsection vl-expr->finalwidth
+(define vl-expr->finalwidth ((x vl-expr-p))
+  :inline t
   :parents (vl-expr-p)
   :short "Get the @('finalwidth') from an expression."
-
   :long "<p>See @(see vl-expr-p) for a discussion of widths.  The result is a
 @(see vl-maybe-exprwidth-p).</p>"
+  (if (eq (tag x) :vl-atom)
+      (vl-atom->finalwidth x)
+    (vl-nonatom->finalwidth x))
 
-  (definlined vl-expr->finalwidth (x)
-    (declare (xargs :guard (vl-expr-p x)
-                    :verify-guards nil))
-    (if (eq (tag x) :vl-atom)
-        (vl-atom->finalwidth x)
-      (vl-nonatom->finalwidth x)))
+  :prepwork ((local (in-theory (enable vl-expr-p))))
 
-  (local (in-theory (enable vl-expr->finalwidth
-                            vl-expr-p)))
-
-  (verify-guards vl-expr->finalwidth$inline)
+  ///
 
   (defthm vl-maybe-natp-of-vl-expr->finalwidth
     (implies (force (vl-expr-p x))
@@ -1094,25 +1059,18 @@ instead.</p>"
            finalwidth)))
 
 
-
-(defsection vl-expr->finaltype
+(define vl-expr->finaltype ((x vl-expr-p))
+  :inline t
   :parents (vl-expr-p)
   :short "Get the @('finaltype') from an expression."
-
   :long "<p>See @(see vl-expr-p) for a discussion of types.  The result
 is a @(see vl-maybe-exprtype-p).</p>"
+  (if (eq (tag x) :vl-atom)
+      (vl-atom->finaltype x)
+    (vl-nonatom->finaltype x))
 
-  (definlined vl-expr->finaltype (x)
-    (declare (xargs :guard (vl-expr-p x)
-                    :verify-guards nil))
-    (if (eq (tag x) :vl-atom)
-        (vl-atom->finaltype x)
-      (vl-nonatom->finaltype x)))
-
-  (local (in-theory (enable vl-expr-p vl-expr->finaltype)))
-
-  (verify-guards vl-expr->finaltype$inline)
-
+  :prepwork ((local (in-theory (enable vl-expr-p))))
+  ///
   (defthm vl-maybe-exprtype-p-of-vl-expr->finaltype
     (implies (force (vl-expr-p x))
              (vl-maybe-exprtype-p (vl-expr->finaltype x)))
@@ -1133,7 +1091,6 @@ is a @(see vl-maybe-exprtype-p).</p>"
                                                 :finalwidth finalwidth
                                                 :finaltype finaltype))
            finaltype)))
-
 
 
 (defsection vl-atts-p
@@ -1295,36 +1252,32 @@ high or low.</dd>
 
 
 
+(deflist vl-exprlist-p (x)
+  (vl-expr-p x)
+  :elementp-of-nil nil
+  :verify-guards nil
+  :already-definedp t
+  :parents (modules)
 
+  :rest
+  ( ;; These are useful for seeing that arguments exist.
+   (defthm first-under-iff-when-vl-exprlist-p
+     (implies (vl-exprlist-p x)
+              (iff (first x)
+                   (consp x)))
+     :rule-classes ((:rewrite :backchain-limit-lst 1)))
 
-(defsection vl-exprlist-p
+   (defthm second-under-iff-when-vl-exprlist-p
+     (implies (vl-exprlist-p x)
+              (iff (second x)
+                   (consp (cdr x))))
+     :rule-classes ((:rewrite :backchain-limit-lst 1)))
 
-  (deflist vl-exprlist-p (x)
-    (vl-expr-p x)
-    :elementp-of-nil nil
-    :verify-guards nil
-    :already-definedp t
-    :parents (modules))
-
-  ;; These are useful for seeing that arguments exist.
-  (defthm first-under-iff-when-vl-exprlist-p
-    (implies (vl-exprlist-p x)
-             (iff (first x)
-                  (consp x)))
-    :rule-classes ((:rewrite :backchain-limit-lst 1)))
-
-  (defthm second-under-iff-when-vl-exprlist-p
-    (implies (vl-exprlist-p x)
-             (iff (second x)
-                  (consp (cdr x))))
-    :rule-classes ((:rewrite :backchain-limit-lst 1)))
-
-  (defthm third-under-iff-when-vl-exprlist-p
-    (implies (vl-exprlist-p x)
-             (iff (third x)
-                  (consp (cddr x))))
-    :rule-classes ((:rewrite :backchain-limit-lst 1))))
-
+   (defthm third-under-iff-when-vl-exprlist-p
+     (implies (vl-exprlist-p x)
+              (iff (third x)
+                   (consp (cddr x))))
+     :rule-classes ((:rewrite :backchain-limit-lst 1)))))
 
 (defprojection vl-exprlist->finalwidths (x)
   (vl-expr->finalwidth x)
@@ -1340,20 +1293,30 @@ high or low.</dd>
   :parents (vl-exprlist-p))
 
 
+(deflist vl-exprlistlist-p (x)
+  (vl-exprlist-p x)
+  :guard t
+  :elementp-of-nil t
+  :rest
+  ((defthm vl-exprlist-p-of-flatten
+     (implies (vl-exprlistlist-p x)
+              (vl-exprlist-p (flatten x))))
+
+   (defthm vl-exprlistlist-p-of-pairlis$
+     (implies (and (vl-exprlist-p a)
+                   (vl-exprlistlist-p x))
+              (vl-exprlistlist-p (pairlis$ a x)))
+     :hints(("Goal" :in-theory (enable pairlis$))))))
 
 
-(defsection vl-maybe-expr-p
+(define vl-maybe-expr-p (x)
+  :inline t
   :parents (modules vl-expr-p)
   :short "Representation for a @(see vl-expr-p) or @('nil')."
   :long "<p>This is a basic option type for expressions.</p>"
-
-  (definlined vl-maybe-expr-p (x)
-    (declare (xargs :guard t))
-    (or (not x)
-        (vl-expr-p x)))
-
-  (local (in-theory (enable vl-maybe-expr-p)))
-
+  (or (not x)
+      (vl-expr-p x))
+  ///
   (defthm vl-maybe-expr-p-when-vl-expr-p
     (implies (vl-expr-p x)
              (vl-maybe-expr-p x)))
@@ -1368,8 +1331,6 @@ high or low.</dd>
              (or (consp x)
                  (not x)))
     :rule-classes :compound-recognizer))
-
-
 
 
 (defun vl-expr-induct (flag x)
@@ -1489,7 +1450,6 @@ high or low.</dd>
                   (:instance iff-when-vl-expr-p (x (caddr (vl-nonatom->args x)))))))))
 
 
-
 (defaggregate vl-range
   (msb lsb)
   :tag :vl-range
@@ -1521,18 +1481,14 @@ try to support the use of both ascending and descending ranges.</p>")
 
 
 
-(defsection vl-maybe-range-p
+(define vl-maybe-range-p (x)
+  :inline t
   :parents (modules vl-range-p)
   :short "Representation for a @(see vl-range-p) or @('nil')."
   :long "<p>This is a basic option type for ranges.</p>"
-
-  (definlined vl-maybe-range-p (x)
-    (declare (xargs :guard t))
-    (or (not x)
-        (vl-range-p x)))
-
-  (local (in-theory (enable vl-maybe-range-p)))
-
+  (or (not x)
+      (vl-range-p x))
+  ///
   (defthm vl-maybe-range-p-when-vl-range-p
     (implies (vl-range-p x)
              (vl-maybe-range-p x)))
@@ -1548,8 +1504,6 @@ try to support the use of both ascending and descending ranges.</p>")
                  (not x)))
     :rule-classes :compound-recognizer))
 
-
-
 (deflist vl-maybe-range-list-p (x)
   (vl-maybe-range-p x)
   :elementp-of-nil t
@@ -1564,7 +1518,6 @@ try to support the use of both ascending and descending ranges.</p>")
   (vl-rangelist-p x)
   :elementp-of-nil t
   :parents (modules))
-
 
 
 
@@ -1601,11 +1554,11 @@ module mod(a,b,c) ;  <-- ports are a, b, and c
 endmodule
 })
 
-<p>However, an alternate (and less repetitive) syntax can be used instead:</p>
+<p>A more modern, less repetitive syntax can be used instead:</p>
 
 @({
 module mod(
-  input [3:0] a;   < ports are a, b, and c
+  input [3:0] a;   <-- ports are a, b, and c
   input b;
   output c;
 ) ;
@@ -1613,7 +1566,8 @@ module mod(
 endmodule
 })
 
-<p>More complex ports are also possible, e.g., in this example,</p>
+<p>More complex ports are also possible, e.g., here are some ports whose
+external names are distinct from their internal wiring:</p>
 
 @({
 module mod (a, .b(w), c[3:0], .d(c[7:4])) ;
@@ -1623,9 +1577,6 @@ module mod (a, .b(w), c[3:0], .d(c[7:4])) ;
   ...
 endmodule
 })
-
-<p>the ports have external names which are distinct from their internal
-wiring.</p>
 
 
 <h3>Representation of Ports</h3>
@@ -1651,9 +1602,9 @@ and fourth ports collectively specify the bits of @('c').</p>
 <p>It is generally best to <b>avoid using port names</b> except perhaps for
 things like error messages.  Why?  As shown above, some ports might not have
 names, and even when a port does have a name, it does not necessarily
-correspond to any wires in the module.  But because these cases are relatively
-rare, port-name based code is particularly likely to work for test cases and
-then fail later when more complex examples are encountered.</p>
+correspond to any wires in the module.  Since these cases are exotic, code
+based on port names is likely to work for simple test cases and then fail later
+when more complex examples are encountered.</p>
 
 <p>Usually you should not need to deal with port names.  The @(see argresolve)
 transform converts module instances that use named arguments into their plain
@@ -1691,18 +1642,16 @@ and @(see ctxsize) for details.</p>")
   (vl-port->expr x)
   :guard (vl-portlist-p x)
   :nil-preservingp t
-  :parents (vl-portlist-p))
+  :parents (vl-portlist-p)
+  :rest
+  ((defthm vl-exprlist-p-of-vl-portlist->exprs
+     (implies (force (vl-portlist-p x))
+              (equal (vl-exprlist-p (vl-portlist->exprs x))
+                     (not (member nil (vl-portlist->exprs x))))))
 
-(defthm vl-exprlist-p-of-vl-portlist->exprs
-  (implies (force (vl-portlist-p x))
-           (equal (vl-exprlist-p (vl-portlist->exprs x))
-                  (not (member nil (vl-portlist->exprs x)))))
-  :hints(("Goal" :induct (len x))))
-
-(defthm vl-exprlist-p-of-remove-equal-of-vl-portlist->exprs
-  (implies (force (vl-portlist-p x))
-           (vl-exprlist-p (remove-equal nil (vl-portlist->exprs x))))
-  :hints(("Goal" :induct (len x))))
+   (defthm vl-exprlist-p-of-remove-equal-of-vl-portlist->exprs
+     (implies (force (vl-portlist-p x))
+              (vl-exprlist-p (remove-equal nil (vl-portlist->exprs x)))))))
 
 (defprojection vl-portlist->names (x)
   (vl-port->name x)
@@ -1725,19 +1674,14 @@ arguments of gate instances and most arguments of module instances.  See our
 @(see vl-plainarg-p) structures for more information.</p>")
 
 
-
-(defsection vl-maybe-direction-p
+(define vl-maybe-direction-p (x)
+  :inline t
   :parents (modules)
   :short "Representation for a @(see vl-direction-p) or @('nil')."
   :long "<p>This is a basic option type for directions.</p>"
-
-  (definlined vl-maybe-direction-p (x)
-    (declare (xargs :guard t))
-    (or (not x)
-        (vl-direction-p x)))
-
-  (local (in-theory (enable vl-maybe-direction-p)))
-
+  (or (not x)
+      (vl-direction-p x))
+  ///
   (defthm vl-maybe-direction-p-when-vl-direction-p
     (implies (vl-direction-p x)
              (vl-maybe-direction-p x)))
@@ -1752,7 +1696,6 @@ arguments of gate instances and most arguments of module instances.  See our
              (and (symbolp x)
                   (not (equal x t))))
     :rule-classes :compound-recognizer))
-
 
 
 (defaggregate vl-portdecl
@@ -1880,19 +1823,14 @@ left as @('nil').  Simulators that care about this will need to carefully
 review the rules for correctly computing these delays.</p>")
 
 
-
-(defsection vl-maybe-gatedelay-p
+(define vl-maybe-gatedelay-p (x)
+  :inline t
   :parents (modules)
   :short "Representation for a @(see vl-gatedelay-p) or @('nil')."
   :long "<p>This is a basic option type for gatedelays.</p>"
-
-  (definlined vl-maybe-gatedelay-p (x)
-    (declare (xargs :guard t))
-    (or (not x)
-        (vl-gatedelay-p x)))
-
-  (local (in-theory (enable vl-maybe-gatedelay-p)))
-
+  (or (not x)
+      (vl-gatedelay-p x))
+  ///
   (defthm vl-maybe-gatedelay-p-when-vl-gatedelay-p
     (implies (vl-gatedelay-p x)
              (vl-maybe-gatedelay-p x)))
@@ -1909,7 +1847,6 @@ review the rules for correctly computing these delays.</p>")
     :rule-classes :compound-recognizer))
 
 
-
 (defenum vl-dstrength-p
   (:vl-supply
    :vl-strong
@@ -1924,7 +1861,6 @@ recognized by @(call vl-dstrength-p).</p>
 
 <p>BOZO add references to the Verilog standard, description of what these
 are.</p>")
-
 
 
 (defaggregate vl-gatestrength
@@ -1955,7 +1891,6 @@ associate strengths onto module items where they are explicitly
 specified.</p>")
 
 
-
 (defsection vl-maybe-gatestrength-p
   :parents (modules)
   :short "Representation for a @(see vl-gatestrength-p) or @('nil')."
@@ -1984,7 +1919,6 @@ specified.</p>")
     :rule-classes :compound-recognizer))
 
 
-
 (defenum vl-cstrength-p (:vl-large :vl-medium :vl-small)
   :parents (modules)
   :short "Representation of charge strengths."
@@ -1996,19 +1930,14 @@ recognized by @(call vl-cstrength-p).</p>
 are.</p>")
 
 
-
-(defsection vl-maybe-cstrength-p
+(define vl-maybe-cstrength-p (x)
+  :inline t
   :parents (modules)
   :short "Representation for a @(see vl-cstrength-p) or @('nil')."
   :long "<p>This is a basic option type for cstrengths.</p>"
-
-  (defund vl-maybe-cstrength-p (x)
-    (declare (xargs :guard t))
-    (or (not x)
-        (vl-cstrength-p x)))
-
-  (local (in-theory (enable vl-maybe-cstrength-p)))
-
+  (or (not x)
+      (vl-cstrength-p x))
+  ///
   (defthm vl-maybe-cstrength-p-when-vl-cstrength-p
     (implies (vl-cstrength-p x)
              (vl-maybe-cstrength-p x)))
@@ -2023,7 +1952,6 @@ are.</p>")
              (and (symbolp x)
                   (not (equal x t))))
     :rule-classes :compound-recognizer))
-
 
 
 (defaggregate vl-assign
@@ -2191,18 +2119,14 @@ correspond to the possible types.</p>")
 
 
 
-(defsection vl-maybe-netdecltype-p
+(define vl-maybe-netdecltype-p (x)
+  :inline t
   :parents (modules)
   :short "Representation for a @(see vl-netdecltype-p) or @('nil')."
   :long "<p>This is a basic option type for netdecltypes.</p>"
-
-  (definlined vl-maybe-netdecltype-p (x)
-    (declare (xargs :guard t))
-    (or (not x)
-        (vl-netdecltype-p x)))
-
-  (local (in-theory (enable vl-maybe-netdecltype-p)))
-
+  (or (not x)
+      (vl-netdecltype-p x))
+  ///
   (defthm vl-maybe-netdecltype-p-when-vl-netdecltype-p
     (implies (vl-netdecltype-p x)
              (vl-maybe-netdecltype-p x)))
@@ -2217,7 +2141,6 @@ correspond to the possible types.</p>")
              (and (symbolp x)
                   (not (equal x t))))
     :rule-classes :compound-recognizer))
-
 
 
 (defaggregate vl-netdecl
@@ -2403,7 +2326,6 @@ our transformations may not preserve it correctly.</p>")
   :parents (modules))
 
 
-
 (defaggregate vl-plainarg
   (expr atts portname dir)
   :tag :vl-plainarg
@@ -2476,37 +2398,31 @@ some arguments to module instances may also not be given portnames.</p>")
 (deflist vl-plainarglistlist-p (x)
   (vl-plainarglist-p x)
   :elementp-of-nil t
-  :parents (modules))
+  :parents (modules)
+  :rest
+  ((defthm vl-plainarglist-p-of-strip-cars
+     (implies (and (vl-plainarglistlist-p x)
+                   (all-have-len x n)
+                   (not (zp n)))
+              (vl-plainarglist-p (strip-cars x))))
 
-(defthm vl-plainarglist-p-of-strip-cars
-  (implies (and (vl-plainarglistlist-p x)
-                (all-have-len x n)
-                (not (zp n)))
-           (vl-plainarglist-p (strip-cars x)))
-  :hints(("Goal" :induct (len x))))
-
-(defthm vl-plainarglistlist-p-of-strip-cdrs
-  (implies (vl-plainarglistlist-p x)
-           (vl-plainarglistlist-p (strip-cdrs x)))
-  :hints(("Goal" :induct (len x))))
+   (defthm vl-plainarglistlist-p-of-strip-cdrs
+     (implies (vl-plainarglistlist-p x)
+              (vl-plainarglistlist-p (strip-cdrs x))))))
 
 (defprojection vl-plainarglist->exprs (x)
   (vl-plainarg->expr x)
   :guard (vl-plainarglist-p x)
-  :nil-preservingp t)
+  :nil-preservingp t
+  :rest
+  ((defthm vl-exprlist-p-of-vl-plainarglist->exprs
+     (implies (force (vl-plainarglist-p x))
+              (equal (vl-exprlist-p (vl-plainarglist->exprs x))
+                     (not (member nil (vl-plainarglist->exprs x))))))
 
-(defthm vl-exprlist-p-of-vl-plainarglist->exprs
-  (implies (force (vl-plainarglist-p x))
-           (equal (vl-exprlist-p (vl-plainarglist->exprs x))
-                  (not (member nil (vl-plainarglist->exprs x)))))
-  :hints(("Goal" :induct (len x))))
-
-(defthm vl-exprlist-p-of-remove-nil-of-plainarglist->exprs
-  (implies (vl-plainarglist-p x)
-           (vl-exprlist-p (remove nil (vl-plainarglist->exprs x))))
-  :hints(("Goal" :induct (len x))))
-
-
+   (defthm vl-exprlist-p-of-remove-nil-of-plainarglist->exprs
+     (implies (vl-plainarglist-p x)
+              (vl-exprlist-p (remove nil (vl-plainarglist->exprs x)))))))
 
 
 
@@ -2667,7 +2583,6 @@ variety.  Each @('vl-arguments-p') structure is an aggregate of two fields:</p>
     (implies (and (force (vl-arguments-p x))
                   (case-split (not (vl-arguments->namedp x))))
              (vl-plainarglist-p (vl-arguments->args x)))))
-
 
 (deflist vl-argumentlist-p (x)
   (vl-arguments-p x)
@@ -2860,17 +2775,18 @@ the definition of @('vl-gateinst-p').</p>
 module instance.</p>
 
 <p>The @('loc') is a @(see vl-location-p) that says where in the source code
-this module instance was introduced, and is useful for error messages.</p>")
+this module instance was introduced, and is useful for error messages.</p>"
 
-(defthm symbolp-of-vl-gateinst->type
-  (implies (force (vl-gateinst-p x))
-           (and (symbolp (vl-gateinst->type x))
-                (not (equal (vl-gateinst->type x) t))
-                (not (equal (vl-gateinst->type x) nil))))
-  :hints(("Goal"
-          :use ((:instance vl-gatetype-p-of-vl-gateinst->type))
-          :in-theory (e/d (vl-gatetype-p)
-                          (vl-gatetype-p-of-vl-gateinst->type)))))
+  :rest
+  ((defthm symbolp-of-vl-gateinst->type
+     (implies (force (vl-gateinst-p x))
+              (and (symbolp (vl-gateinst->type x))
+                   (not (equal (vl-gateinst->type x) t))
+                   (not (equal (vl-gateinst->type x) nil))))
+     :hints(("Goal"
+             :use ((:instance vl-gatetype-p-of-vl-gateinst->type))
+             :in-theory (e/d (vl-gatetype-p)
+                             (vl-gatetype-p-of-vl-gateinst->type)))))))
 
 (deflist vl-gateinstlist-p (x)
   (vl-gateinst-p x)
@@ -2987,7 +2903,6 @@ declaration.</p>
 declaration comes from in the source code.</p>")
 
 
-
 (defaggregate vl-eventdecl
   (name arrdims atts loc)
   :tag :vl-eventdecl
@@ -3004,7 +2919,6 @@ declaration comes from in the source code.</p>")
   :parents (modules)
   :short "Representation of a single event declaration."
   :long "<p>BOZO document this</p>")
-
 
 
 (defenum vl-paramdecltype-p
@@ -3132,34 +3046,28 @@ vl-location-p).</p>")
 
 
 
-(defsection vl-blockitem-p
+(define vl-blockitem-p (x)
   :parents (modules)
   :short "Recognizer for a valid block item."
-
   :long "<p>@('vl-blockitem-p') is a sum-of-products style type for recognizing
 valid block items.  The valid block item declarations are register
 declarations, variable declarations (integer, real, time, and realtime), event
 declarations, and parameter declarations (parameter and localparam), which we
 represent as @(see vl-regdecl-p), @(see vl-vardecl-p), @(see vl-eventdecl-p),
 and @(see vl-paramdecl-p) objects, respectively.</p>"
-
-  (defund vl-blockitem-p (x)
-    (declare (xargs :guard t))
-    (mbe :logic
-         (or (vl-regdecl-p x)
-             (vl-vardecl-p x)
-             (vl-eventdecl-p x)
-             (vl-paramdecl-p x))
-         :exec
-         (case (tag x)
-           (:vl-regdecl (vl-regdecl-p x))
-           (:vl-vardecl (vl-vardecl-p x))
-           (:vl-eventdecl (vl-eventdecl-p x))
-           (:vl-paramdecl (vl-paramdecl-p x))
-           (otherwise nil))))
-
-  (local (in-theory (enable vl-blockitem-p)))
-
+  (mbe :logic
+       (or (vl-regdecl-p x)
+           (vl-vardecl-p x)
+           (vl-eventdecl-p x)
+           (vl-paramdecl-p x))
+       :exec
+       (case (tag x)
+         (:vl-regdecl (vl-regdecl-p x))
+         (:vl-vardecl (vl-vardecl-p x))
+         (:vl-eventdecl (vl-eventdecl-p x))
+         (:vl-paramdecl (vl-paramdecl-p x))
+         (otherwise nil)))
+  ///
   (defthm vl-regdecl-p-by-tag-when-vl-blockitem-p
     (implies (and (equal (tag x) :vl-regdecl)
                   (vl-blockitem-p x))
@@ -3206,32 +3114,23 @@ and @(see vl-paramdecl-p) objects, respectively.</p>"
              (vl-blockitem-p x))))
 
 
-
 (deflist vl-blockitemlist-p (x)
   (vl-blockitem-p x)
   :elementp-of-nil nil
-  :parents (modules))
-
-(defthm vl-blockitemlist-p-when-vl-regdecllist-p
-  (implies (vl-regdecllist-p x)
-           (vl-blockitemlist-p x))
-  :hints(("Goal" :induct (len x))))
-
-(defthm vl-blockitemlist-p-when-vl-vardecllist-p
-  (implies (vl-vardecllist-p x)
-           (vl-blockitemlist-p x))
-  :hints(("Goal" :induct (len x))))
-
-(defthm vl-blockitemlist-p-when-vl-eventdecllist-p
-  (implies (vl-eventdecllist-p x)
-           (vl-blockitemlist-p x))
-  :hints(("Goal" :induct (len x))))
-
-(defthm vl-blockitemlist-p-when-vl-paramdecllist-p
-  (implies (vl-paramdecllist-p x)
-           (vl-blockitemlist-p x))
-  :hints(("Goal" :induct (len x))))
-
+  :parents (modules)
+  :rest
+  ((defthm vl-blockitemlist-p-when-vl-regdecllist-p
+     (implies (vl-regdecllist-p x)
+              (vl-blockitemlist-p x)))
+   (defthm vl-blockitemlist-p-when-vl-vardecllist-p
+     (implies (vl-vardecllist-p x)
+              (vl-blockitemlist-p x)))
+   (defthm vl-blockitemlist-p-when-vl-eventdecllist-p
+     (implies (vl-eventdecllist-p x)
+              (vl-blockitemlist-p x)))
+   (defthm vl-blockitemlist-p-when-vl-paramdecllist-p
+     (implies (vl-paramdecllist-p x)
+              (vl-blockitemlist-p x)))))
 
 
 
@@ -3348,25 +3247,19 @@ least extend eventcontrol with a maybe-expr that is its count, and get
 rid of repeateventcontrol.</p>")
 
 
-
-(defsection vl-delayoreventcontrol-p
+(define vl-delayoreventcontrol-p (x)
   :parents (modules)
   :short "BOZO document this."
-
-  (defund vl-delayoreventcontrol-p (x)
-    (declare (xargs :guard t))
-    (mbe :logic
-         (or (vl-delaycontrol-p x)
-             (vl-eventcontrol-p x)
-             (vl-repeateventcontrol-p x))
-         :exec
-         (case (tag x)
-           (:vl-delaycontrol (vl-delaycontrol-p x))
-           (:vl-eventcontrol (vl-eventcontrol-p x))
-           (:vl-repeat-eventcontrol (vl-repeateventcontrol-p x)))))
-
-  (local (in-theory (enable vl-delayoreventcontrol-p)))
-
+  (mbe :logic
+       (or (vl-delaycontrol-p x)
+           (vl-eventcontrol-p x)
+           (vl-repeateventcontrol-p x))
+       :exec
+       (case (tag x)
+         (:vl-delaycontrol (vl-delaycontrol-p x))
+         (:vl-eventcontrol (vl-eventcontrol-p x))
+         (:vl-repeat-eventcontrol (vl-repeateventcontrol-p x))))
+  ///
   (defthm vl-delayoreventcontrol-p-when-vl-delaycontrol-p
     (implies (vl-delaycontrol-p x)
              (vl-delayoreventcontrol-p x)))
@@ -3403,18 +3296,13 @@ rid of repeateventcontrol.</p>")
     :rule-classes ((:rewrite :backchain-limit-lst 0))))
 
 
-
-(defsection vl-maybe-delayoreventcontrol-p
+(define vl-maybe-delayoreventcontrol-p (x)
+  :inline t
   :parents (modules)
   :short "BOZO document this."
-
-  (defund vl-maybe-delayoreventcontrol-p (x)
-    (declare (xargs :guard t))
-    (or (not x)
-        (vl-delayoreventcontrol-p x)))
-
-  (local (in-theory (enable vl-maybe-delayoreventcontrol-p)))
-
+  (or (not x)
+      (vl-delayoreventcontrol-p x))
+  ///
   (defthm vl-maybe-delayoreventcontrol-p-when-vl-delayoreventcontrol-p
     (implies (vl-delayoreventcontrol-p x)
              (vl-maybe-delayoreventcontrol-p x)))
@@ -3423,7 +3311,6 @@ rid of repeateventcontrol.</p>")
     (implies (vl-maybe-delayoreventcontrol-p x)
              (equal (vl-delayoreventcontrol-p x)
                     (if x t nil)))))
-
 
 
 (defenum vl-assign-type-p
@@ -3520,7 +3407,6 @@ assignment.</p>
 assignment in the original Verilog sources.</p>")
 
 
-
 (defenum vl-deassign-type-p
   (:vl-deassign :vl-release)
   :parents (vl-stmt-p)
@@ -3605,7 +3491,6 @@ expressions that can follow the trigger?  Maybe they just become part of the
 @('id')?</p>")
 
 
-
 (defaggregate vl-nullstmt
   (atts)
   :tag :vl-nullstmt
@@ -3620,43 +3505,26 @@ expressions that can follow the trigger?  Maybe they just become part of the
 statements.</p>")
 
 
-
-
-(defsection vl-atomicstmt-p
+(define vl-atomicstmt-p (x)
   :parents (vl-stmt-p)
   :short "Representation of an atomic statement."
-
-  :long "<p>@('vl-atomicstmt-p') is a sum-of-products style recognizer.  Every
-atomic statement is either a</p>
-
-<ul>
- <li>@(see vl-nullstmt-p), </li>
- <li>@(see vl-assignstmt-p), </li>
- <li>@(see vl-deassignstmt-p), </li>
- <li>@(see vl-enablestmt-p),</li>
- <li>@(see vl-disablestmt-p), or</li>
- <li>@(see vl-eventtriggerstmt-p).</li>
-</ul>"
-
-  (defund vl-atomicstmt-p (x)
-    (declare (xargs :guard t))
-    (mbe :logic (or (vl-nullstmt-p x)
-                    (vl-assignstmt-p x)
-                    (vl-deassignstmt-p x)
-                    (vl-enablestmt-p x)
-                    (vl-disablestmt-p x)
-                    (vl-eventtriggerstmt-p x))
-         :exec (case (tag x)
-                 (:vl-nullstmt         (vl-nullstmt-p x))
-                 (:vl-assignstmt       (vl-assignstmt-p x))
-                 (:vl-deassignstmt     (vl-deassignstmt-p x))
-                 (:vl-enablestmt       (vl-enablestmt-p x))
-                 (:vl-disablestmt      (vl-disablestmt-p x))
-                 (:vl-eventtriggerstmt (vl-eventtriggerstmt-p x))
-                 (otherwise            nil))))
-
-  (local (in-theory (enable vl-atomicstmt-p)))
-
+  :long "<p>@('vl-atomicstmt-p') is a sum-of-products style recognizer for the
+different kinds of atomic statements.</p>"
+  (mbe :logic (or (vl-nullstmt-p x)
+                  (vl-assignstmt-p x)
+                  (vl-deassignstmt-p x)
+                  (vl-enablestmt-p x)
+                  (vl-disablestmt-p x)
+                  (vl-eventtriggerstmt-p x))
+       :exec (case (tag x)
+               (:vl-nullstmt         (vl-nullstmt-p x))
+               (:vl-assignstmt       (vl-assignstmt-p x))
+               (:vl-deassignstmt     (vl-deassignstmt-p x))
+               (:vl-enablestmt       (vl-enablestmt-p x))
+               (:vl-disablestmt      (vl-disablestmt-p x))
+               (:vl-eventtriggerstmt (vl-eventtriggerstmt-p x))
+               (otherwise            nil)))
+  ///
   (defthm consp-when-vl-atomicstmt-p
     (implies (vl-atomicstmt-p x)
              (consp x))
@@ -3730,7 +3598,6 @@ atomic statement is either a</p>
              (vl-atomicstmt-p x))))
 
 
-
 (defenum vl-compoundstmttype-p
   (:vl-casestmt
    :vl-ifstmt
@@ -3781,35 +3648,27 @@ parallel (@('fork ... join')) blocks.  See the compound statement's
 
 </ul>")
 
-(defsection vl-compoundstmt-basic-checksp
+(define vl-compoundstmt-basic-checksp
+  ((type        vl-compoundstmttype-p)
+   (exprs       vl-exprlist-p)
+   (stmts       "no guard due to mutual recursion")
+   (name        vl-maybe-string-p)
+   (decls       vl-blockitemlist-p)
+   (ctrl        vl-maybe-delayoreventcontrol-p)
+   (sequentialp booleanp)
+   (casetype    vl-casetype-p))
+  :returns okp
   :parents (vl-compoundstmt-p)
   :short "Additional structural checks for compound statements."
+  :long "<p>This is a well-formedness constraint imposed on @(@see
+vl-compoundstmt-p) structures.  It is responsible for ensuring that, e.g., an
+@('if') statement properly has a single expression (its condition), two
+sub-statements (its true and false branches), and no inappropriate fields such
+as @('name'), @('decls'), or @('ctrl') which are only appropriate for other
+kinds of statements.</p>"
 
-  :long "<p><b>Note:</b> the reader should first see @(see vl-compoundstmt-p)
-for a general description of our representation of compound statements.</p>
-
-<p>@('vl-compoundstmt-basic-checksp') is an additional well-formedness
-constraint imposed on @('vl-compoundstmt-p') structures.  It is responsible for
-ensuring that, e.g., an @('if') statement properly has a single expression (its
-condition), two sub-statements (its true and false branches), and no
-inappropriate fields such as @('name'), @('decls'), or @('ctrl') which are only
-appropriate for other kinds of statements.</p>
-
-@(def vl-compoundstmt-basic-checksp)"
-
-  (defund vl-compoundstmt-basic-checksp (type exprs stmts name decls ctrl
-                                              sequentialp casetype)
-    (declare (xargs :guard (and (vl-compoundstmttype-p type)
-                                (vl-exprlist-p exprs)
-                                ;; no guard on stmts due to mutual recursion
-                                (vl-maybe-string-p name)
-                                (vl-blockitemlist-p decls)
-                                (vl-maybe-delayoreventcontrol-p ctrl)
-                                (booleanp sequentialp)
-                                (vl-casetype-p casetype))))
-    (let ((num-exprs (len exprs))
-          (num-stmts (len stmts)))
-
+  (let ((num-exprs (len exprs))
+        (num-stmts (len stmts)))
       (case type
         ((:vl-casestmt)
          ;; Format is:
@@ -3875,7 +3734,7 @@ appropriate for other kinds of statements.</p>
               (atom exprs)
               (atom decls)
               ctrl
-              (= num-stmts 1)))))))
+              (= num-stmts 1))))))
 
 
 (defaggregate vl-compoundstmt
@@ -3991,33 +3850,34 @@ has the right number?</p>
 for each field, we use @(see vl-compoundstmt-basic-checksp) to carry out
 additional well-formedness checking on a per-field basis.  This check ensures
 that, for instance, an @('if') statement has no @('name'), and that a @('for')
-statement has the right number of expressions.</p>")
+statement has the right number of expressions.</p>"
 
-(defthm acl2-count-of-vl-compoundstmt->stmts
-  (and (<= (acl2-count (vl-compoundstmt->stmts x))
-           (acl2-count x))
-       (implies (consp x)
-                (< (acl2-count (vl-compoundstmt->stmts x))
-                   (acl2-count x))))
-  :hints(("Goal" :in-theory (enable vl-compoundstmt->stmts)))
-  :rule-classes ((:rewrite) (:linear)))
+  :rest
+  ((defthm acl2-count-of-vl-compoundstmt->stmts
+     (and (<= (acl2-count (vl-compoundstmt->stmts x))
+              (acl2-count x))
+          (implies (consp x)
+                   (< (acl2-count (vl-compoundstmt->stmts x))
+                      (acl2-count x))))
+     :hints(("Goal" :in-theory (enable vl-compoundstmt->stmts)))
+     :rule-classes ((:rewrite) (:linear)))
 
-(defthm type-of-vl-compoundstmt->type
-  (implies (force (vl-compoundstmt-p x))
-           (and (symbolp (vl-compoundstmt->type x))
-                (not (equal (vl-compoundstmt->type x) nil))
-                (not (equal (vl-compoundstmt->type x) t))))
-  :hints(("Goal"
-          :in-theory (disable type-when-vl-compoundstmttype-p)
-          :use ((:instance type-when-vl-compoundstmttype-p
-                           (x (vl-compoundstmt->type x)))))))
+   (defthm type-of-vl-compoundstmt->type
+     (implies (force (vl-compoundstmt-p x))
+              (and (symbolp (vl-compoundstmt->type x))
+                   (not (equal (vl-compoundstmt->type x) nil))
+                   (not (equal (vl-compoundstmt->type x) t))))
+     :hints(("Goal"
+             :in-theory (disable type-when-vl-compoundstmttype-p)
+             :use ((:instance type-when-vl-compoundstmttype-p
+                              (x (vl-compoundstmt->type x)))))))
 
-(defthm vl-atomicstmt-p-tag-not-compoundstmt
-  ;; Hrmn.  This is kind of ugly.  I guess it's not so bad.
-  (implies (vl-atomicstmt-p x)
-           (not (equal :vl-compoundstmt (tag x))))
-  :rule-classes :forward-chaining
-  :hints(("Goal" :in-theory (enable vl-atomicstmt-p))))
+   (defthm vl-atomicstmt-p-tag-not-compoundstmt
+     ;; Hrmn.  This is kind of ugly.  I guess it's not so bad.
+     (implies (vl-atomicstmt-p x)
+              (not (equal :vl-compoundstmt (tag x))))
+     :rule-classes :forward-chaining
+     :hints(("Goal" :in-theory (enable vl-atomicstmt-p))))))
 
 
 
@@ -4123,120 +3983,91 @@ statements are recognized with @(see vl-compoundstmt-p).</p>"
 
 
 
-(defsection vl-fast-atomicstmt-p
+(define vl-fast-atomicstmt-p ((x vl-stmt-p))
+  :inline t
+  :enabled t
   :parents (vl-atomicstmt-p vl-stmt-p)
   :short "Faster version of @(see vl-atomicstmt-p), given that @(see vl-stmt-p)
 is already known."
-
   :long "<p>We leave this function enabled and reason about
 @('vl-atomicstmt-p') instead.</p>"
 
-  (definline vl-fast-atomicstmt-p (x)
-    (declare (xargs :guard (vl-stmt-p x)))
-    (mbe :logic (vl-atomicstmt-p x)
-         :exec (not (eq (tag x) :vl-compoundstmt)))))
+  (mbe :logic (vl-atomicstmt-p x)
+       :exec (not (eq (tag x) :vl-compoundstmt))))
 
-
-(defsection vl-fast-compoundstmt-p
+(define vl-fast-compoundstmt-p ((x vl-stmt-p))
+  :inline t
+  :enabled t
   :parents (vl-compoundstmt-p vl-stmt-p)
-  :short "Faster version of @(see vl-compoundstmt-p), given that @(see vl-stmt-p)
-is already known."
-
+  :short "Faster version of @(see vl-compoundstmt-p), given that @(see
+vl-stmt-p) is already known."
   :long "<p>We leave this function enabled and reason about
 @('vl-compoundstmt-p') instead.</p>"
+  (mbe :logic (vl-compoundstmt-p x)
+       :exec (eq (tag x) :vl-compoundstmt)))
 
-  (definline vl-fast-compoundstmt-p (x)
-    (declare (xargs :guard (vl-stmt-p x)))
-    (mbe :logic (vl-compoundstmt-p x)
-         :exec (eq (tag x) :vl-compoundstmt))))
-
-
-(defsection vl-fast-nullstmt-p
+(define vl-fast-nullstmt-p ((x vl-stmt-p))
+  :inline t
+  :enabled t
   :parents (vl-nullstmt-p vl-stmt-p)
   :short "Faster version of @(see vl-nullstmt-p), given that @(see vl-stmt-p)
 is already known."
-
-  :long "<p>We leave this function nulld and reason about @('vl-nullstmt-p')
+  :long "<p>We leave this function enabled and reason about @('vl-nullstmt-p')
 instead.</p>"
+  (mbe :logic (vl-nullstmt-p x)
+       :exec (eq (tag x) :vl-nullstmt)))
 
-  (definline vl-fast-nullstmt-p (x)
-    (declare (xargs :guard (vl-stmt-p x)))
-    (mbe :logic (vl-nullstmt-p x)
-         :exec (eq (tag x) :vl-nullstmt))))
-
-
-(defsection vl-fast-assignstmt-p
+(define vl-fast-assignstmt-p ((x vl-stmt-p))
+  :inline t
+  :enabled t
   :parents (vl-assignstmt-p vl-stmt-p)
   :short "Faster version of @(see vl-assignstmt-p), given that @(see vl-stmt-p)
 is already known."
-
-  :long "<p>We leave this function assignd and reason about
+  :long "<p>We leave this function enabled and reason about
 @('vl-assignstmt-p') instead.</p>"
+  (mbe :logic (vl-assignstmt-p x)
+       :exec (eq (tag x) :vl-assignstmt)))
 
-  (definline vl-fast-assignstmt-p (x)
-    (declare (xargs :guard (vl-stmt-p x)))
-    (mbe :logic (vl-assignstmt-p x)
-         :exec (eq (tag x) :vl-assignstmt))))
-
-
-(defsection vl-fast-enablestmt-p
+(define vl-fast-enablestmt-p ((x vl-stmt-p))
+  :inline t
+  :enabled t
   :parents (vl-enablestmt-p vl-stmt-p)
   :short "Faster version of @(see vl-enablestmt-p), given that @(see vl-stmt-p)
 is already known."
-
   :long "<p>We leave this function enabled and reason about
 @('vl-enablestmt-p') instead.</p>"
-
-  (definline vl-fast-enablestmt-p (x)
-    (declare (xargs :guard (vl-stmt-p x)))
-    (mbe :logic (vl-enablestmt-p x)
-         :exec (eq (tag x) :vl-enablestmt))))
+  (mbe :logic (vl-enablestmt-p x)
+       :exec (eq (tag x) :vl-enablestmt)))
 
 
+(define vl-atomicstmt->atts ((x vl-atomicstmt-p))
+  :returns (atts vl-atts-p :hyp :fguard)
+  :parents (vl-atomicstmt-p vl-stmt->atts)
+  :short "Get the attributes from any atomic statement."
+  (mbe :logic
+       (cond ((vl-nullstmt-p x)         (vl-nullstmt->atts x))
+             ((vl-assignstmt-p x)       (vl-assignstmt->atts x))
+             ((vl-deassignstmt-p x)     (vl-deassignstmt->atts x))
+             ((vl-enablestmt-p x)       (vl-enablestmt->atts x))
+             ((vl-disablestmt-p x)      (vl-disablestmt->atts x))
+             ((vl-eventtriggerstmt-p x) (vl-eventtriggerstmt->atts x)))
+       :exec
+       (case (tag x)
+         (:vl-nullstmt         (vl-nullstmt->atts x))
+         (:vl-assignstmt       (vl-assignstmt->atts x))
+         (:vl-deassignstmt     (vl-deassignstmt->atts x))
+         (:vl-enablestmt       (vl-enablestmt->atts x))
+         (:vl-disablestmt      (vl-disablestmt->atts x))
+         (:vl-eventtriggerstmt (vl-eventtriggerstmt->atts x)))))
 
-
-
-(defsection vl-atomicstmt->atts
-  ;; BOZO document me
-  (definlined vl-atomicstmt->atts (x)
-    (declare (xargs :guard (vl-atomicstmt-p x)))
-    (mbe :logic
-         (cond ((vl-nullstmt-p x)         (vl-nullstmt->atts x))
-               ((vl-assignstmt-p x)       (vl-assignstmt->atts x))
-               ((vl-deassignstmt-p x)     (vl-deassignstmt->atts x))
-               ((vl-enablestmt-p x)       (vl-enablestmt->atts x))
-               ((vl-disablestmt-p x)      (vl-disablestmt->atts x))
-               ((vl-eventtriggerstmt-p x) (vl-eventtriggerstmt->atts x)))
-         :exec
-         (case (tag x)
-           (:vl-nullstmt         (vl-nullstmt->atts x))
-           (:vl-assignstmt       (vl-assignstmt->atts x))
-           (:vl-deassignstmt     (vl-deassignstmt->atts x))
-           (:vl-enablestmt       (vl-enablestmt->atts x))
-           (:vl-disablestmt      (vl-disablestmt->atts x))
-           (:vl-eventtriggerstmt (vl-eventtriggerstmt->atts x)))))
-
-  (local (in-theory (enable vl-atomicstmt->atts)))
-
-  (defthm vl-atts-p-of-vl-atomicstmt->atts
-    (implies (force (vl-atomicstmt-p x))
-             (vl-atts-p (vl-atomicstmt->atts x)))))
-
-(defsection vl-stmt->atts
-  ;; BOZO document me
-  (definlined vl-stmt->atts (x)
-    (declare (xargs :guard (vl-stmt-p x)))
-    (if (vl-fast-atomicstmt-p x)
-        (vl-atomicstmt->atts x)
-      (vl-compoundstmt->atts x)))
-
-  (local (in-theory (enable vl-stmt->atts)))
-
-  (defthm vl-atts-p-of-vl-stmt->atts
-    (implies (force (vl-stmt-p x))
-             (vl-atts-p (vl-stmt->atts x)))))
-
-
+(define vl-stmt->atts ((x vl-stmt-p))
+  :inline t
+  :returns (atts vl-atts-p :hyp :fguard)
+  :parents (vl-stmt-p)
+  :short "Get the attributes from any statement."
+  (if (vl-fast-atomicstmt-p x)
+      (vl-atomicstmt->atts x)
+    (vl-compoundstmt->atts x)))
 
 
 
@@ -4285,7 +4116,18 @@ statement was read from in the source code.</li>
 
 <p><b>BOZO</b> Our plan is to eventually generate @('initial') statements from
 register and variable declarations with initial values, i.e., @('reg r =
-0;').</p>")
+0;').</p>"
+
+  :rest
+  ((defthm acl2-count-of-vl-initial->stmt
+     (and (<= (acl2-count (vl-initial->stmt x))
+              (acl2-count x))
+          (implies (consp x)
+                   (< (acl2-count (vl-initial->stmt x))
+                      (acl2-count x))))
+     :hints(("Goal" :in-theory (enable vl-initial->stmt)))
+     :rule-classes ((:rewrite) (:linear)))))
+
 
 
 (defaggregate vl-always
@@ -4323,7 +4165,17 @@ always statement.</li>
 <li>The @('loc') is a @(see vl-location-p) that describes where this always
 statement was read from in the source code.</li>
 
-</ul>")
+</ul>"
+
+  :rest
+  ((defthm acl2-count-of-vl-always->stmt
+     (and (<= (acl2-count (vl-always->stmt x))
+              (acl2-count x))
+          (implies (consp x)
+                   (< (acl2-count (vl-always->stmt x))
+                      (acl2-count x))))
+     :hints(("Goal" :in-theory (enable vl-always->stmt)))
+     :rule-classes ((:rewrite) (:linear)))))
 
 (deflist vl-initiallist-p (x)
   (vl-initial-p x)
@@ -4334,25 +4186,6 @@ statement was read from in the source code.</li>
   (vl-always-p x)
   :elementp-of-nil nil
   :parents (modules))
-
-(defthm acl2-count-of-vl-initial->stmt
-  (and (<= (acl2-count (vl-initial->stmt x))
-           (acl2-count x))
-       (implies (consp x)
-                (< (acl2-count (vl-initial->stmt x))
-                   (acl2-count x))))
-  :hints(("Goal" :in-theory (enable vl-initial->stmt)))
-  :rule-classes ((:rewrite) (:linear)))
-
-(defthm acl2-count-of-vl-always->stmt
-  (and (<= (acl2-count (vl-always->stmt x))
-           (acl2-count x))
-       (implies (consp x)
-                (< (acl2-count (vl-always->stmt x))
-                   (acl2-count x))))
-  :hints(("Goal" :in-theory (enable vl-always->stmt)))
-  :rule-classes ((:rewrite) (:linear)))
-
 
 
 
@@ -4445,23 +4278,22 @@ input.  Syntactically, the attributes come before the @('input') keyword.</p>
 <p>The @('loc') is the @(see vl-location-p) where the @('name') of the function
 was found in the source code.  We use this location, instead of the location of
 the input keyword, because a list of inputs can be declared using the same
-input keyword.</p>")
+input keyword.</p>"
 
-(defthm type-of-vl-taskport->dir
-  (implies (force (vl-taskport-p x))
-           (and (symbolp (vl-taskport->dir x))
-                (not (equal (vl-taskport->dir x) t))
-                (not (equal (vl-taskport->dir x) nil))))
-  :rule-classes :type-prescription)
+  :rest
+  ((defthm type-of-vl-taskport->dir
+     (implies (force (vl-taskport-p x))
+              (and (symbolp (vl-taskport->dir x))
+                   (not (equal (vl-taskport->dir x) t))
+                   (not (equal (vl-taskport->dir x) nil))))
+     :rule-classes :type-prescription)
 
-(defthm type-of-vl-taskport->type
-  (implies (force (vl-taskport-p x))
-           (and (symbolp (vl-taskport->type x))
-                (not (equal (vl-taskport->type x) t))
-                (not (equal (vl-taskport->type x) nil))))
-  :rule-classes :type-prescription)
-
-
+   (defthm type-of-vl-taskport->type
+     (implies (force (vl-taskport-p x))
+              (and (symbolp (vl-taskport->type x))
+                   (not (equal (vl-taskport->type x) t))
+                   (not (equal (vl-taskport->type x) nil))))
+     :rule-classes :type-prescription)))
 
 (deflist vl-taskportlist-p (x)
   (vl-taskport-p x)
@@ -4574,7 +4406,17 @@ tasks, cannot have non-blocking assignments, etc.</p>
 function.  The attributes come before the @('function') keyword.</p>
 
 <p>The @('loc') is the @(see vl-location-p) where the @('function') keyword was
-found in the source code.</p>")
+found in the source code.</p>"
+
+  :rest
+  ((defthm acl2-count-of-vl-fundecl->body
+     (and (<= (acl2-count (vl-fundecl->body x))
+              (acl2-count x))
+          (implies (consp x)
+                   (< (acl2-count (vl-fundecl->body x))
+                      (acl2-count x))))
+     :hints(("Goal" :in-theory (enable vl-fundecl->body)))
+     :rule-classes ((:rewrite) (:linear)))))
 
 (deflist vl-fundecllist-p (x)
   (vl-fundecl-p x)
@@ -4587,14 +4429,6 @@ found in the source code.</p>")
   :nil-preservingp t
   :result-type string-listp)
 
-(defthm acl2-count-of-vl-fundecl->body
-  (and (<= (acl2-count (vl-fundecl->body x))
-           (acl2-count x))
-       (implies (consp x)
-                (< (acl2-count (vl-fundecl->body x))
-                   (acl2-count x))))
-  :hints(("Goal" :in-theory (enable vl-fundecl->body)))
-  :rule-classes ((:rewrite) (:linear)))
 
 
 (defaggregate vl-taskdecl
@@ -4669,7 +4503,6 @@ task.  The attributes come before the @('task') keyword.</p>
 
 <p>The @('loc') is the @(see vl-location-p) where the @('task') keyword was
 found in the source code.</p>")
-
 
 (deflist vl-taskdecllist-p (x)
   (vl-taskdecl-p x)
@@ -4863,11 +4696,50 @@ now.</p>")
   :elementp-of-nil nil
   :parents (modules))
 
+(defthm vl-module-identity
+  ;; This is occaisonally useful when we want to prove that some optimized
+  ;; version of a transform, that doesn't re-cons the module, is equivalent to
+  ;; the naive version that does.
+  (implies (vl-module-p x)
+           (equal (change-vl-module x)
+                  x))
+  :hints(("Goal"
+          ;; I'm okay with this hint being hideous since this isn't really
+          ;; something anyone should ever do.
+          :in-theory (union-theories
+                      (union-theories (current-theory :here)
+                                      '(vl-module-p vl-module))
+                      (b* ((fields (cutil::get-aggregate-fields 'vl-module world)))
+                        (cutil::da-accessor-names 'vl-module fields))))))
 
-(defund vl-module->hands-offp (x)
-  (declare (xargs :guard (vl-module-p x)))
+(define vl-module->hands-offp ((x vl-module-p))
+  :inline t
+  :returns hands-offp
+  :parents (vl-module-p)
+  :short "Attribute that says a module should not be transformed."
+
+  :long "<p>We use the ordinary <see topic='@(url vl-atts-p)'>attribute</see>
+@('VL_HANDS_OFF') to say that a module should not be changed by @(see
+transforms).</p>
+
+<p>This is generally meant for use in VL @(see primitives).  The Verilog
+definitions of these modules sometimes make use of fancy Verilog constructs.
+Normally our transforms would try to remove these constructs, replacing them
+with instances of primitives.  This can lead to funny sorts of problems if we
+try to transform the primitives themselves.</p>
+
+<p>For instance, consider the @(see *vl-1-bit-delay-1*) module.  This module
+has a delayed assignment, @('assign #1 out = in').  If we hit this module with
+the @(see delayredux) transform, we'll try to replace the delay with an
+explicit instance of @('VL_1_BIT_DELAY_1').  But that's crazy: now the module
+is trying to instantiate itself!</p>
+
+<p>Similar issues can arise from trying to replace the @('always') statements
+in a primitive flop/latch with instances of flop/latch primitives, etc.  So as
+a general rule, we mark the primitives with @('VL_HANDS_OFF') and code our
+transforms to not modules with this attribute.</p>"
+
   (consp (assoc-equal "VL_HANDS_OFF" (vl-module->atts x))))
-
 
 (defprojection vl-modulelist->names (x)
   (vl-module->name x)
@@ -4884,18 +4756,15 @@ now.</p>")
   :nil-preservingp t
   :parents (vl-modulelist-p))
 
-
 (defmapappend vl-modulelist->modinsts (x)
   (vl-module->modinsts x)
   :guard (vl-modulelist-p x)
   :transform-true-list-p nil
-  :parents (vl-modulelist-p))
-
-(defthm vl-modinstlist-p-of-vl-modulelist->modinsts
-  (implies (force (vl-modulelist-p x))
-           (vl-modinstlist-p (vl-modulelist->modinsts x)))
-  :hints(("Goal" :induct (len x))))
-
+  :parents (vl-modulelist-p)
+  :rest
+  ((defthm vl-modinstlist-p-of-vl-modulelist->modinsts
+     (implies (force (vl-modulelist-p x))
+              (vl-modinstlist-p (vl-modulelist->modinsts x))))))
 
 (defprojection vl-modulelist->esims (x)
   (vl-module->esim x)
@@ -4905,19 +4774,13 @@ now.</p>")
 
 
 
-
-
-(defsection vl-maybe-module-p
+(define vl-maybe-module-p (x)
+  :inline t
   :parents (vl-expr-p)
   :short "Recognizer for an @(see vl-module-p) or @('nil')."
-
-  (definlined vl-maybe-module-p (x)
-    (declare (xargs :guard t))
-    (or (not x)
-        (vl-module-p x)))
-
-  (local (in-theory (enable vl-maybe-module-p)))
-
+  (or (not x)
+      (vl-module-p x))
+  ///
   (defthm vl-maybe-module-p-when-vl-module-p
     (implies (vl-module-p x)
              (vl-maybe-module-p x)))

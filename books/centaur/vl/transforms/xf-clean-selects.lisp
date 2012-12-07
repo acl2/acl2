@@ -58,24 +58,14 @@ concatenation and select expressions more readable.</p>")
 
 (defmacro def-vl-clean-selects-list (name &key type element)
 
-  `(encapsulate
-     ()
-     (defprojection ,name (x mod ialist)
-       (,element x mod ialist)
-       :guard (and (,type x)
-                   (vl-module-p mod)
-                   (equal ialist (vl-moditem-alist mod)))
-       :parents (clean-selects)
-       :nil-preservingp nil)
-
-    (defthm ,(intern-in-package-of-symbol
-              (cat (symbol-name type) "-OF-" (symbol-name name))
-              name)
-      (implies (and (force (,type x))
-                    (force (vl-module-p mod))
-                    (force (equal ialist (vl-moditem-alist mod))))
-               (,type (,name x mod ialist)))
-      :hints(("Goal" :induct (len x))))))
+  `(defprojection ,name (x mod ialist)
+     (,element x mod ialist)
+     :guard (and (,type x)
+                 (vl-module-p mod)
+                 (equal ialist (vl-moditem-alist mod)))
+     :parents (clean-selects)
+     :result-type ,type
+     :nil-preservingp nil))
 
 (def-vl-clean-selects vl-maybe-expr-clean-selects
   :type vl-maybe-expr-p
@@ -329,10 +319,9 @@ concatenation and select expressions more readable.</p>")
   (vl-module-clean-selects x)
   :guard (vl-modulelist-p x)
   :result-type vl-modulelist-p
-  :parents (clean-selects))
-
-(defthm vl-modulelist->names-of-vl-modulelist-clean-selects
-  (equal (vl-modulelist->names (vl-modulelist-clean-selects x))
-         (vl-modulelist->names x))
-  :hints(("Goal" :induct (len x))))
+  :parents (clean-selects)
+  :rest
+  ((defthm vl-modulelist->names-of-vl-modulelist-clean-selects
+     (equal (vl-modulelist->names (vl-modulelist-clean-selects x))
+            (vl-modulelist->names x)))))
 
