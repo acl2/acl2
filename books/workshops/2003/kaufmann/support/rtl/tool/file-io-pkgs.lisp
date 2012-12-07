@@ -68,7 +68,7 @@
                (if (int= indent 0) ; optimization
                    state
                  (spaces indent 0 channel state))
-               (ppr2 (ppr1 obj (acl2-print-base) (- 80 indent) 0 state t)
+               (ppr2 (ppr1 obj (print-base) (print-radix) (- 80 indent) 0 state t)
                      indent channel state t)
                (if new-pkg
                    (in-package-fn "ACL2" state)
@@ -152,7 +152,8 @@
                 (if (int= indent 0) ; optimization
                     state
                   (spaces indent 0 channel state))
-                (ppr2 (ppr1 form (acl2-print-base) (- 80 indent) 0 state t)
+                (ppr2 (ppr1 form (print-base) (print-radix) (- 80 indent) 0
+                            state t)
                       indent channel state t)
                 (value nil))))
             (declare (ignore erp val))

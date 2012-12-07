@@ -58,12 +58,9 @@
   ;; Typical usage is (cw "foo: ~x0~%" (str::hexify foo))
   (declare (xargs :guard t))
   (cond ((natp x)
-         (b* ((chars (explode-atom x 16)) ;; looks like #xBEEF...
-              ((unless (and (equal (take 2 chars) '(#\# #\x))
-                            (characterp (third chars))))
-               (er hard? 'hexify "explode-atom is broken"))
-              (nice-chars (list* #\# #\u #\x (third chars)
-                                 (insert-underscores (nthcdr 3 chars)))))
+         (b* ((chars (explode-atom x 16)) ;; looks like BEEF...
+              (nice-chars (list* #\# #\u #\x (first chars)
+                                 (insert-underscores (nthcdr 1 chars)))))
            (coerce nice-chars 'string)))
         ((symbolp x)
          (symbol-name x))

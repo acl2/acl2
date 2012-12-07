@@ -49,7 +49,7 @@
           (and (char<= #\0 x) (char<= x #\9))
           (member x '(#\- #\_ #\. #\~)))
       (list x)
-    (let* ((hex-code (cddr (explode-atom (char-code x) 16)))
+    (let* ((hex-code (explode-atom (char-code x) 16)) ; no leading #x
            (hex-code (if (= (len hex-code) 1)
                          (cons #\0 hex-code)
                        hex-code)))

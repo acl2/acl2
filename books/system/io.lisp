@@ -849,6 +849,10 @@ output channels when you are done with them to avoid resource leaks.</p>"
 (defthm character-listp-explode-atom
   (character-listp (explode-atom x base)))
 
+; Added by Matt K. for princ$ change 12/7/2012.
+(defthm character-listp-explode-atom+
+  (character-listp (explode-atom+ x base radix)))
+
 
 
 ;; I-AM-HERE

@@ -43,7 +43,7 @@
     (mv-let (erp val state)
             (state-global-let*
              ((write-for-read t))
-             (pprogn (ppr2 (ppr1 obj (acl2-print-base) 80 0 state t)
+             (pprogn (ppr2 (ppr1 obj (print-base) (print-radix) 80 0 state t)
                            0 channel state t)
                      (value nil)))
             (declare (ignore erp val))

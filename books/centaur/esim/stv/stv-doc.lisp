@@ -83,7 +83,7 @@
            ;; For any larger constants, write them in hex.  I'll use a 0x
            ;; prefix instead of a #x prefix, since it's probably more widely
            ;; understood.
-           (let* ((pound-x-hex-digits (explode-atom entry 16))              ;; #x1000
+           (let* ((pound-x-hex-digits (explode-atom+ entry 16 t))           ;; #x1000
                   (zero-x-hex-digits  (cons #\0 (cdr pound-x-hex-digits)))) ;; 0x1000
              (revappend zero-x-hex-digits acc))))
 
