@@ -358,6 +358,12 @@ If neither of these is what you want, you can provide an arbitrary
 function.  The return values of the theorem will not be bound in scope of the
 hyp, so trying to refer to them in a hypothesis is generally an error.</dd>
 
+<dt>@(':hints hints-term')</dt>
+
+<dd>This option only makes sense when there is a return-type term.  By default,
+this is @('nil'), but when specified, the hints are passed to the proof attempt
+for the associated return-type.</dd>
+
 <dt>@(':rule-classes classes')</dt>
 
 <dd>This option only makes sense when there is a return-type term.  By default,
@@ -909,6 +915,7 @@ some kind of separator!</p>
    doc           ; "" when omitted
    return-type   ; t when omitted
    hyp           ; t when omitted
+   hints         ; nil when omitted
    rule-classes  ; :rewrite when omitted
    )
   :tag :return-spec
@@ -928,6 +935,7 @@ some kind of separator!</p>
                    :doc ""
                    :return-type t
                    :hyp t
+                   :hints nil
                    :rule-classes :rewrite))
 
 (defund extract-keywords (fnname legal-kwds args kwd-alist)
@@ -1063,7 +1071,8 @@ some kind of separator!</p>
                            :doc ""
                            :return-type t
                            :rule-classes :rewrite
-                           :hyp nil)))
+                           :hyp nil
+                           :hints nil)))
        ((when (atom x))
         (er hard? 'parse-returnspec
             "Error in ~x0: return specifiers must be symbols or lists, but ~
@@ -1082,10 +1091,13 @@ some kind of separator!</p>
 
        ((mv kwd-alist other-opts)
         ;; bozo better context for error message here would be good
-        (extract-keywords fnname '(:hyp :rule-classes) options nil))
+        (extract-keywords fnname '(:hyp :hints :rule-classes) options nil))
        (hyp (if (assoc :hyp kwd-alist)
                 (cdr (assoc :hyp kwd-alist))
               t))
+       (hints (if (assoc :hints kwd-alist)
+                (cdr (assoc :hints kwd-alist))
+              nil))
        (rule-classes (if (assoc :rule-classes kwd-alist)
                          (cdr (assoc :rule-classes kwd-alist))
                        :rewrite))
@@ -1117,7 +1129,8 @@ some kind of separator!</p>
                       :doc xdoc
                       :return-type return-type
                       :rule-classes rule-classes
-                      :hyp hyp)))
+                      :hyp hyp
+                      :hints hints)))
 
 (defthm returnspec-p-of-parse-returnspec
   (returnspec-p (parse-returnspec fnname x world))
@@ -1236,6 +1249,7 @@ some kind of separator!</p>
                        (fancy-force-hyp (look-up-guard fnname world)))
                       (t
                        x.hyp)))
+       (hints x.hints)
        (concl   `(let ((,x.name (,fnname . ,formals)))
                    ,x.return-type))
        (formula (if (eq hyp t)
@@ -1245,6 +1259,7 @@ some kind of separator!</p>
                 (concatenate 'string "RETURN-TYPE-OF-" (symbol-name fnname))
                 fnname)
         ,formula
+        :hints ,hints
         :rule-classes ,x.rule-classes))))
 
 (defund returnspec-multi-thm (fnname binds x world)
@@ -1259,6 +1274,8 @@ some kind of separator!</p>
              ((eq x.hyp :guard) (fancy-hyp (look-up-guard fnname world)))
              ((eq x.hyp :fguard) (fancy-force-hyp (look-up-guard fnname world)))
              (t x.hyp)))
+
+       (hints x.hints)
        (concl `(b* (,binds)
                  ,x.return-type))
        (formula (if (eq hyp t)
@@ -1269,6 +1286,7 @@ some kind of separator!</p>
                              "." (symbol-name x.name))
                 fnname)
         ,formula
+        :hints ,hints
         :rule-classes ,x.rule-classes))))
 
 (defund returnspec-multi-thms (fnname binds x world)
