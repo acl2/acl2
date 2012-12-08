@@ -305,7 +305,7 @@ channel; see @(see open-input-channel).</li>
 </ul>
 
 <p>This is a @(see logic)-mode function, but its logical definition is tricky;
-see @(see logical-story-of-io).  The main logical consequence are to update the
+see @(see logical-story-of-io).  The main logical consequence is to update the
 state.</p>
 
 <p>Under the hood, we read a <see topic='@(url characters)'>character</see>
