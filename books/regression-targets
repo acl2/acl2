@@ -519,6 +519,7 @@
 ./cowles/acl2-crg.cert
 ./cutil/defaggregate.cert
 ./cutil/defaggregate-opt.cert
+./cutil/defaggregate-tests.cert
 ./cutil/defalist.cert
 ./cutil/defalist-tests.cert
 ./cutil/defenum.cert
@@ -531,6 +532,7 @@
 ./cutil/defprojection.cert
 ./cutil/defprojection-tests.cert
 ./cutil/defsection.cert
+./cutil/define.cert
 ./cutil/portcullis.cert
 ./cutil/top.cert
 ./cutil/top-opt.cert
