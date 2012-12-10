@@ -305,8 +305,8 @@ channel; see @(see open-input-channel).</li>
 </ul>
 
 <p>This is a @(see logic)-mode function, but its logical definition is tricky;
-see @(see logical-story-of-io).  The main logical consequence is to update the
-state.</p>
+see @(see logical-story-of-io).  The main logical consequence is the updating
+of state.</p>
 
 <p>Under the hood, we read a <see topic='@(url characters)'>character</see>
 from the Lisp input stream that is associated with @('channel').  If we reach
@@ -460,8 +460,8 @@ channel; see @(see open-input-channel).</li>
 </ul>
 
 <p>This is a @(see logic)-mode function, but its logical definition is tricky;
-see @(see logical-story-of-io).  The main logical consequence are to update the
-state.</p>
+see @(see logical-story-of-io).  The main logical consequence is the updating
+of state.</p>
 
 <p>Under the hood, we read a byte (i.e., a number between 0 and 255, inclusive)
 from the Lisp input stream that is associated with @('channel').  If we reach
@@ -530,8 +530,8 @@ channel; see @(see open-input-channel).</li>
 </ul>
 
 <p>This is a @(see logic)-mode function, but its logical definition is tricky;
-see @(see logical-story-of-io).  The main logical consequence are to update the
-state.</p>
+see @(see logical-story-of-io).  The main logical consequence is the updating
+of state.</p>
 
 <p>Under the hood, we use the Lisp reader to try to read an object from the
 Lisp input stream that is associated with @('channel').</p>
