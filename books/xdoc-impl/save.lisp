@@ -50,6 +50,23 @@
 
 (program)
 
+(defun clean-topics-aux (x seen-names-fal)
+  ;; Remove topics we've already seen.
+  (b* (((when (atom x))
+        (fast-alist-free seen-names-fal)
+        nil)
+       (name1 (cdr (assoc :name (car x))))
+
+       ((when (hons-get name1 seen-names-fal))
+        (cw "~|WARNING: dropping shadowed topic for ~x0.~%" name1)
+        (clean-topics-aux (cdr x) seen-names-fal))
+
+       (seen-names-fal (hons-acons name1 t seen-names-fal)))
+    (cons (car x)
+          (clean-topics-aux (cdr x) seen-names-fal))))
+
+(defun clean-topics (x)
+  (clean-topics-aux x (len x)))
 
 ; --------------------- File Copying ----------------------------
 
@@ -562,6 +579,7 @@
 (defun save-topics (x dir index-pkg expand-level state)
   (b* ((state (prepare-dir dir state))
        (dir   (acl2::extend-pathname dir "xml" state))
+       (x     (clean-topics x))
        (- (cw "; Processing ~x0 topics.~%" (len x)))
        ;; Note: generate the index after the topic files, so that
        ;; errors in short messages will be seen there.
