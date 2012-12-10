@@ -200,23 +200,24 @@
 
 ;; ------------------- MAKE-LIST-AC redefinition --------------------------
 
-(defthm make-list-ac-rec
-  (equal (make-list-ac n val ac)
-         (if (zp n)
-             ac
-           (cons val (make-list-ac (1- n) val ac))))
-  :rule-classes ((:definition :controller-alist ((make-list-ac t nil nil)))))
+;; Note: this is now make-list-ac-redef in list-defthms.lisp
+;; (defthm make-list-ac-rec
+;;   (equal (make-list-ac n val ac)
+;;          (if (zp n)
+;;              ac
+;;            (cons val (make-list-ac (1- n) val ac))))
+;;   :rule-classes ((:definition :controller-alist ((make-list-ac t nil nil)))))
 
-(defun make-list-ac-rec-ind (n val ac)
-  (if (zp n)
-      (list val ac)
-    (make-list-ac-rec-ind (1- n) val ac)))
+;; (defun make-list-ac-rec-ind (n val ac)
+;;   (if (zp n)
+;;       (list val ac)
+;;     (make-list-ac-rec-ind (1- n) val ac)))
 
-(defthm make-list-ac-induct
-  t
-  :rule-classes ((:induction
-                  :pattern (make-list-ac n val ac)
-                  :scheme (make-list-ac-rec-ind n val ac))))
+;; (defthm make-list-ac-induct
+;;   t
+;;   :rule-classes ((:induction
+;;                   :pattern (make-list-ac n val ac)
+;;                   :scheme (make-list-ac-rec-ind n val ac))))
 
 (defcong list-equiv list-equiv (make-list-ac n val ac) 3)
 (defcong nat-equiv equal (make-list-ac n val ac) 1)

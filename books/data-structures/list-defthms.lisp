@@ -932,6 +932,9 @@
 ; NTH
 ; ------------------------------------------------------------
 
+(defthm nth-of-nil
+  (equal (nth n nil) nil))
+
 (defthm nth-with-large-index 
   (implies (<= (len l) (nfix n))
            (equal (nth n l) nil)))
@@ -1617,10 +1620,45 @@
   (equal (len (resize-list lst m default))
          (nfix m)))
 
+  
+; ------------------------------------------------------------
+; MAKE-LIST-AC
+; ------------------------------------------------------------
 
+(defthm make-list-ac-redef
+  (equal (make-list-ac n x acc)
+         (if (zp n)
+             acc
+           (cons x (make-list-ac (1- n) x acc))))
+  :rule-classes ((:definition :clique (make-list-ac)
+                  :controller-alist ((make-list-ac t nil nil)))))
+
+(defun countdown2-ind (n m)
+  (if (zp m)
+      n
+    (countdown2-ind (nfix (1- (nfix n))) (1- m))))
+
+
+(defthm resize-list-of-make-list-ac-same
+  (equal (resize-list (make-list-ac n x nil) m x)
+         (make-list-ac m x nil))
+  :hints (("goal" :induct (countdown2-ind n m)
+           :expand ((make-list-ac n x nil)))))
+
+(defthm resize-list-when-empty
+  (implies (atom lst)
+           (equal (resize-list lst n x)
+                  (make-list-ac n x nil))))
+
+(defun make-list-ac-ind (n x acc)
+  (if (zp n)
+      acc
+    (cons x (make-list-ac-ind (1- n) x acc))))
+
+(defthm make-list-ac-induct
+  t
+  :rule-classes ((:induction :pattern (make-list-ac n x acc)
+                  :scheme (make-list-ac-ind n x acc))))
 
 (in-theory (disable butlast position position-eq position-equal
                     occurrences occurrences-eq occurrences-equal))
-
-
-
