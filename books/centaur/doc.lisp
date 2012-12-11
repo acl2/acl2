@@ -70,7 +70,6 @@
 (include-book "../xdoc-impl/extra-packages")
 
 (include-book "misc/hons-remove-dups")
-(include-book "misc/make-list")
 (include-book "misc/seed-random")
 (include-book "misc/equal-by-nths")
 (include-book "misc/load-stobj")
