@@ -861,6 +861,7 @@
 ./parallel/spec-mv-let.cert
 ./parallel/stress-tests.cert
 ./parallel/syntax-tests.cert
+./parallel/with-waterfall-parallelism.cert
 ./parallel/without-waterfall-parallelism.cert
 ./powerlists/algebra.cert
 ./powerlists/batcher-sort.cert
