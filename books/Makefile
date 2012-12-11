@@ -167,7 +167,7 @@ models/X86: tools arithmetic-5 arithmetic misc rtl defexec
 paco: ihs ordinals top-with-meta-cert
 hacking: misc
 parallel: make-event tools
-security: misc arithmetic-3
+security: misc arithmetic-3 arithmetic-5
 sorting: arithmetic-3/extra
 tools: arithmetic-5 misc xdoc
 regex: tools cutil str misc
