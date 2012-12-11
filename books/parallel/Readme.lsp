@@ -12,7 +12,8 @@ proofs/ideal-speedup.lisp
 spec-mv-let.lisp
 syntax-tests.lisp
 stress-tests.lisp
-without-waterfall-parallelism")
+without-waterfall-parallelism
+with-waterfall-parallelism")
  (:TITLE    "Simple examples and tests of parallelism primitives and proofs")
  (:AUTHOR/S "David Rager")
  (:KEYWORDS ; non-empty list of keywords, case-insensitive
