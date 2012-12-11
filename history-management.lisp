@@ -7104,9 +7104,65 @@
   prints the ~il[command]s between them with ~ilc[pc].  The order of the two
   descriptors is irrelevant.  ~l[command-descriptor] for a
   description of ~il[command] descriptors.  ~l[pc] for a description
-  of the format in which ~il[command]s are displayed.~/"
+  of the format in which ~il[command]s are displayed.
+
+  For a related utility that simply returns a sequence of commands,
+  ~pl[get-command-sequence].~/"
 
   (list 'pcs-fn cd1 cd2 t 'state))
+
+(defun get-command-sequence-fn1 (cmd-wrld1 cmd2 ans)
+
+; Keep this in sync with make-ldds-command-sequence.
+
+  (cond ((equal (cddar cmd-wrld1) cmd2)
+         (cons (access-command-tuple-form (cddar cmd-wrld1))
+               ans))
+        (t (get-command-sequence-fn1
+            (scan-to-command (cdr cmd-wrld1))
+            cmd2
+            (cons (access-command-tuple-form (cddar cmd-wrld1))
+                  ans)))))
+
+(defun get-command-sequence-fn (cd1 cd2 state)
+
+; We print the commands between cd1 and cd2 (relative order of these two cds is
+; irrelevant).  We always print the most recent command here, possibly elided
+; into the cd1-cd2 region.  We mark the end points of the region if markp is t.
+
+  (let ((wrld (w state))
+        (ctx 'get-command-sequence))
+    (er-let*
+        ((cmd-wrld1 (er-decode-cd cd1 wrld ctx state))
+         (cmd-wrld2 (er-decode-cd cd2 wrld ctx state)))
+      (let ((later-wrld
+             (if (>= (access-command-tuple-number (cddar cmd-wrld1))
+                     (access-command-tuple-number (cddar cmd-wrld2)))
+                 cmd-wrld1
+               cmd-wrld2))
+            (earlier-wrld
+             (if (>= (access-command-tuple-number (cddar cmd-wrld1))
+                     (access-command-tuple-number (cddar cmd-wrld2)))
+                 cmd-wrld2
+               cmd-wrld1)))
+        (value (get-command-sequence-fn1 later-wrld
+                                         (cddar earlier-wrld)
+                                         nil))))))
+
+(defmacro get-command-sequence (cd1 cd2)
+
+  ":Doc-Section History
+
+  return list of ~il[command]s that are between two ~il[command] descriptors~/
+
+  ~l[pcs] for a utility that prints the list of ~il[command]s that are between
+  two command descriptors.  The utility ~c[get-command-sequence] has the same
+  syntax but instead of printing, it simply returns the corresponding list of
+  commands.  More precisely, it returns an error triple ~c[(mv erp val state)]
+  (~pl[error-triples]) such that if ~c[erp] is not ~c[nil], then ~c[val] is the
+  desired list of commands.~/~/"
+
+  (list 'get-command-sequence-fn cd1 cd2 'state))
 
 (defmacro pbt (cd1)
 
@@ -16646,9 +16702,10 @@
                         set of primitive functions whose definitions are ~
                         built into the ACL2 system in various places.  This ~
                         set consists of the functions ~&2.  While excluding ~
-                        them from the current theory will prevent certain ~
-                        expansions it will not prevent others.  Good ~
-                        luck!~|~%To inhibit this warning, evaluate:~|~x3."
+                        :DEFINITION rules for any functions in this set from ~
+                        the current theory may prevent certain expansions, it ~
+                        may not prevent others.  Good luck!~|~%To inhibit ~
+                        this warning, evaluate:~|~x3."
                        expr
                        (strip-base-symbols
                         (set-difference-equal
@@ -16677,8 +16734,9 @@
                          are~] among a set of primitive functions whose ~
                          executable counterparts are built into the ACL2 ~
                          system.  This set consists of the functions ~&2.  ~
-                         While excluding them from the current theory may ~
-                         prevent certain expansions it will not prevent ~
+                         While excluding :EXECUTABLE-COUNTERPART rules for ~
+                         any functions in this set from the current theory ~
+                         may prevent certain expansions, it may not prevent ~
                          others.  Good luck!~|~%To inhibit this warning, ~
                          evaluate:~|~x3."
                         expr
@@ -16719,16 +16777,15 @@
                                  'current-acl2-world wrld)
                         runic-value)))
              (warning$@par ctx ("Theory")
-               "The value of the theory expression ~x0 does not ~
-                            include the :DEFINITION rule~#1~[~/s~] for ~v1.  ~
-                            But ~#1~[this function is~/these functions are~] ~
-                            among a set of primitive functions whose ~
-                            definitions are built into the ACL2 system in ~
-                            various places.  This set consists of the ~
-                            functions ~&2.  While excluding them from the ~
-                            current theory will prevent certain expansions it ~
-                            will not prevent others.  Good luck!~|~%To ~
-                            inhibit this warning, evaluate:~|~x3."
+               "The value of the theory expression ~x0 does not include the ~
+                :DEFINITION rule~#1~[~/s~] for ~v1.  But ~#1~[this function ~
+                is~/these functions are~] among a set of primitive functions ~
+                whose definitions are built into the ACL2 system in various ~
+                places.  This set consists of the functions ~&2.  While ~
+                excluding :DEFINITION rules for any functions in this set ~
+                from the current theory may prevent certain expansions, it ~
+                may not prevent others.  Good luck!~|~%To inhibit this ~
+                warning, evaluate:~|~x3."
                expr
                (strip-base-symbols
                 (set-difference-equal
@@ -16752,17 +16809,15 @@
                                   'current-acl2-world wrld)
                          runic-value)))
               (warning$@par ctx ("Theory")
-                "The value of the theory expression ~x0 does not ~
-                             include the :EXECUTABLE-COUNTERPART ~
-                             rule~#1~[~/s~] for ~v1.  But ~#1~[this function ~
-                             is~/these functions are~] among a set of ~
-                             primitive functions whose executable ~
-                             counterparts are built into the ACL2 system.  ~
-                             This set consists of the functions ~&2.  While ~
-                             excluding them from the current theory may ~
-                             prevent certain expansions it will not prevent ~
-                             others.  Good luck!~|~%To inhibit this warning, ~
-                             evaluate:~|~x3."
+                "The value of the theory expression ~x0 does not include the ~
+                 :EXECUTABLE-COUNTERPART rule~#1~[~/s~] for ~v1.  But ~
+                 ~#1~[this function is~/these functions are~] among a set of ~
+                 primitive functions whose executable counterparts are built ~
+                 into the ACL2 system.  This set consists of the functions ~
+                 ~&2.  While excluding :EXECUTABLE-COUNTERPART rules for any ~
+                 functions in this set from the current theory may prevent ~
+                 certain expansions, it may not prevent others.  Good ~
+                 luck!~|~%To inhibit this warning, evaluate:~|~x3."
                 expr
                 (strip-base-symbols
                  (set-difference-equal

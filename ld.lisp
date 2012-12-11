@@ -19776,6 +19776,9 @@
   additions, and the definition of ~ilc[integer-listp] was modified to call
   ~ilc[eq] instead of ~ilc[equal], like the other such definitions.
 
+  ~l[get-command-sequence] for a new utility that returns a list of
+  ~il[command]s between two given command descriptors.
+
   ~st[HEURISTIC IMPROVEMENTS]
 
   We obtained a substantial speedup ~-[] 13% observed for the regression suite,
@@ -19876,6 +19879,10 @@
   ACL2 regression will build this manual.  (4) It is no longer necessary to set
   the ~c[ACL2] environment variable for ACL2(h) regressions if you want to use
   the executable ~c[saved_acl2h] in the ACL2 sources directory.
+
+  The ACL2 home page now has a search utility for documentation and books.
+  Thanks to Shilpi Goel and David Rager for feedback on a preliminary version
+  of this utility.
 
   ~st[EMACS SUPPORT]
 
@@ -21756,6 +21763,14 @@ ACL2 is part of the Boyer-Moore family of provers, for which its authors have
 received the 2005 <A HREF=\"http://awards.acm.org/software_system/\">ACM
 Software System Award</A>.<P>
 
+<TABLE BORDER=\"1\">
+<TR>
+<TD>
+<a href=\"#search\"><font color=\"green\">SEARCH</font></a>
+</TD>
+</TR>
+</TABLE>
+
 </TD>
 </TR>
 </TABLE>
@@ -21919,11 +21934,11 @@ David L. Rager</LI>
 
 <p>
 
-The distribution also includes libraries of <i>books</i> (files
-containing definitions and theorems) that extend the code that we have
-written.  Books are contributed and maintained by the ACL2 community
-(see <code><A
-HREF=\"http://acl2-books.googlecode.com/\">http://acl2-books.googlecode.com/</A></code>)
+There are libraries of <i>books</i> (files containing definitions and theorems)
+that extend the code that we have written.  Books are contributed and
+maintained by the ACL2 community (see <code><A
+HREF=\"http://acl2-books.googlecode.com/\">http://acl2-books.googlecode.com/</A></code>;
+in particular, the [Source] tab near the top takes you to a search box)
 and their authors are generally noted in each book or its
 <code>README</code> file.  There is a <A
 HREF=\"http://fv.centtech.com/acl2/5.0/doc/\">combined manual</A> that
@@ -22096,6 +22111,39 @@ href=\"http://www.cs.utexas.edu/users/moore/acl2/current/MAKE-EVENT.html\">http:
 To contribute user documentation, send email to the ACL2 developers,
 for example at <code><a
 href=\"mailto:acl2-bugs@utlists.utexas.edu\">acl2-bugs@utlists.utexas.edu</a></code>.
+
+<H2><A NAME=\"search\">Searching documentation and books</A></H2>
+
+The links below may help you to search the ACL2 documentation and the ACL2
+community books, respectively.  Our approach is low-tech, but intended to be
+reliable and easy to use.  You might want to add a bookmark for each of these.
+
+<ul>
+
+<li>
+The following link will take you to a search box on a Google page, where you
+can replace the word `search_term' with your topic.  For example, replace
+`search_term' by `certify-book' to get documentation about book certification.
+<p>
+<a href=\"http://www.google.com/search?q=search_term
+		 site:http://www.cs.utexas.edu/users/moore/acl2/v5-0\">SEARCH
+		 THE DOCUMENTATION</a>
+</li>
+
+<p>
+
+<li>
+The next link will take you to the Source tab of the community books website
+(which is external to the present ACL2 website).  You can then click in the box
+just under that tab and type your search term.  For example, if you type `tail
+recursion' then you will see text from several books in the svn trunk that deal
+with the topic of tail recursion.
+<p>
+<a href=\"https://code.google.com/p/acl2-books/source/\">SEARCH THE
+  COMMUNITY BOOKS</a></a><br>
+</li>
+
+</ul>
 
 <BR><HR><BR><BR><BR><BR><BR><BR>
 <BR><BR><BR><BR><BR><BR><BR><BR><BR><BR><BR><BR>
