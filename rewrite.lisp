@@ -8847,6 +8847,13 @@
      )))
   t)
 
+(defun binds-to-constants-p (unify-subst)
+  (cond ((endp unify-subst) t)
+        (t (let ((pair (car unify-subst)))
+             (and (or (eq (car pair) (cdr pair))
+                      (quotep (cdr pair)))
+                  (binds-to-constants-p (cdr unify-subst)))))))
+
 (defun expand-permission-result1 (term expand-lst geneqv wrld)
 
 ; This is a generalized version of member-equal that asks whether expand-lst
@@ -8875,32 +8882,46 @@
                                         geneqv
                                         wrld))
                (expand-permission-result1 term (cdr expand-lst) geneqv wrld))
-              (t (let ((alist-none-p (eq (access expand-hint x :alist) :none)))
+              (t (let* ((alist (access expand-hint x :alist))
+                        (alist-none-p (eq alist :none))
+                        (alist-constants-p (and (not alist-none-p)
+                                                (eq (car alist) :constants)))
+                        (alist (if alist-constants-p
+                                   (cdr alist)
+                                 alist)))
                    (mv-let
-                    (flg ignore-unify-subst)
+                    (flg unify-subst0)
                     (cond
                      (alist-none-p
                       (mv (equal (access expand-hint x :pattern) term) nil))
                      (t (one-way-unify1 (access expand-hint x :pattern)
                                         term
-                                        (access expand-hint x :alist))))
-                    (declare (ignore ignore-unify-subst))
-                    (cond
-                     (flg
-                      (mv-let
-                       (flg unify-subst)
-                       (one-way-unify (access expand-hint x :lhs) term)
-                       (cond (flg
-                              (mv (access expand-hint x :rhs)
-                                  (access expand-hint x :hyp)
-                                  unify-subst
-                                  (access expand-hint x :rune)
-                                  (and alist-none-p
-                                       (length expand-lst))))
-                             (t (expand-permission-result1
-                                 term (cdr expand-lst) geneqv wrld)))))
-                     (t (expand-permission-result1 term (cdr expand-lst)
-                                                   geneqv wrld))))))))
+                                        alist)))
+                    (let ((flg (and flg
+                                    (if alist-constants-p
+                                        (binds-to-constants-p unify-subst0)
+                                      t))))
+                      (cond
+                       (flg
+                        (mv-let
+                         (flg unify-subst)
+                         (one-way-unify (access expand-hint x :lhs) term)
+                         (cond (flg
+                                (mv (access expand-hint x :rhs)
+                                    (access expand-hint x :hyp)
+                                    unify-subst
+                                    (access expand-hint x :rune)
+                                    (and (or alist-none-p
+
+; For the example in a comment in expand-permission-result, looping occurs if
+; we do not remove the expand hint in the alist-constants-p case.
+
+                                             alist-constants-p)
+                                         (length expand-lst))))
+                               (t (expand-permission-result1
+                                   term (cdr expand-lst) geneqv wrld)))))
+                       (t (expand-permission-result1 term (cdr expand-lst)
+                                                     geneqv wrld)))))))))
     (mv nil nil nil nil nil)))
 
 (defun remove1-by-position (target-index lst acc)
@@ -8937,7 +8958,8 @@
 
 ; In this case new-term is non-nil; so term will be expanded, and we want to
 ; remove the reason for this expansion in order to avoid looping.  The thm
-; below did indeed cause a rewriting loop through Version_4.3.
+; below did indeed cause a rewriting loop through Version_4.3.  (It is OK for
+; it to fail, but not with looping.)
 
 ;   (defun first-nondecrease (lst)
 ;     (cond ((endp lst) nil)

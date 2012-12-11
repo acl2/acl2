@@ -7669,6 +7669,28 @@
         :displayed-goal nil
         :otf-flg nil))
 
+(defun controller-unify-subst2 (vars acc)
+  (cond ((endp vars) acc)
+        ((assoc-eq (car vars) acc)
+         acc)
+        (t (controller-unify-subst2 (cdr vars)
+                                    (acons (car vars) (car vars) acc)))))
+
+(defun controller-unify-subst1 (actuals controllers acc)
+  (cond ((endp actuals) acc)
+        ((car controllers)
+         (controller-unify-subst2
+          (all-vars (car actuals))
+          (controller-unify-subst1 (cdr actuals) (cdr controllers) acc)))
+        (t (controller-unify-subst1 (cdr actuals) (cdr controllers) acc))))
+
+(defun controller-unify-subst (name term def-body)
+  (let* ((controller-alist (access def-body def-body :controller-alist))
+         (controllers (cdr (assoc-eq name controller-alist))))
+    (cond (controllers
+           (controller-unify-subst1 (fargs term) controllers nil))
+          (t :none))))
+
 (defun filter-disabled-expand-terms (terms ens wrld)
 
 ; We build expand hint strucures, throwing certain terms out of terms.
@@ -7702,20 +7724,33 @@
                                         (lambda-body (ffn-symb (car terms)))))
                  (filter-disabled-expand-terms (cdr terms) ens wrld)))
           (t
-           (let ((def-body (def-body (ffn-symb (car terms)) wrld)))
+           (let* ((term (car terms))
+                  (name (ffn-symb term))
+                  (def-body (def-body name wrld))
+                  (formals (access def-body def-body :formals)))
              (cond
               ((and def-body
                     (enabled-numep (access def-body def-body :nume)
                                    ens))
                (cons (make expand-hint
-                           :pattern (car terms)
-                           :alist :none
+                           :pattern term
+                           :alist
+
+; After Version_5.0, we use a more generous expansion heuristic during
+; induction, in which only actuals in the controller positions must match
+; exactly the actuals in induction terms; otherwise the latter can be instances
+; of the former.  But at least 14 proofs failed in an ACL2(h) regression after
+; that change, so we limit those instances to ones in which variables are bound
+; to constants.  That is probably the common case in which user-supplied
+; :expand hints had been provided, say because some argument in the pattern had
+; simplified to 0 or nil.
+
+                           (cons :constants
+                                 (controller-unify-subst name term def-body))
                            :rune (access def-body def-body :rune)
                            :equiv 'equal
                            :hyp (access def-body def-body :hyp)
-                           :lhs (cons-term (ffn-symb (car terms))
-                                           (access def-body def-body
-                                                   :formals))
+                           :lhs (cons-term name formals)
                            :rhs (access def-body def-body :concl))
                      (filter-disabled-expand-terms (cdr terms) ens wrld)))
               (t (filter-disabled-expand-terms (cdr terms) ens wrld)))))))))

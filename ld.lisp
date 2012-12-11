@@ -19789,6 +19789,12 @@
   performance statistics that suggested looking at changing ~il[break-rewrite]
   to boost performance.
 
+  The heuristics for automatically expanding recursive function calls have been
+  changed during proofs by induction.  Now, during induction, more terms that
+  suggested the induction scheme are automatically expanded.  Thanks to David
+  Rager for providing an example and having discussions with us that spurred us
+  to develop this heuristic improvement.
+
   ~st[BUG FIXES]
 
   Fixed a soundness bug in ~ilc[defabsstobj] based on ~ilc[guard]s that
