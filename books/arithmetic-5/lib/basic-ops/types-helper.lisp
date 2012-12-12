@@ -51,7 +51,7 @@
 
 (local
  (defthm two-a
-   (implies (and (real/rationalp x)
+   (implies (and (rationalp x)
 		 (< 1 x))
 	    (and (< 0 (/ x))
 		 (< (/ x) 1)))
@@ -59,7 +59,7 @@
 
 (local
  (defthm two-b
-   (implies (and (real/rationalp x)
+   (implies (and (rationalp x)
 		 (< x -1))
 	    (and (< (/ x) 0)
 		 (< -1 (/ x))))
@@ -67,20 +67,20 @@
 
 (local
  (defthm three
-   (implies (complex/complex-rationalp x)
+   (implies (complex-rationalp x)
 	    (not (integerp (/ x))))))
 
 (defthm not-integerp-/-1
   (implies (< 1 x)
 	   (not (integerp (/ x))))
-  :hints (("Goal" :cases ((real/rationalp x)
-			  (complex/complex-rationalp x)))))
+  :hints (("Goal" :cases ((rationalp x)
+			  (complex-rationalp x)))))
 
 (defthm not-integerp-/-2
   (implies (< x -1)
 	   (not (integerp (/ x))))
-  :hints (("Goal" :cases ((real/rationalp x)
-			  (complex/complex-rationalp x)))))
+  :hints (("Goal" :cases ((rationalp x)
+			  (complex-rationalp x)))))
 
 (defthm integerp-/-helper
   (implies (integerp x)

@@ -57,14 +57,14 @@
   (defthm justify-induction
     (implies (and (integerp i)
 		  (< 1 r)
-		  (real/rationalp r))
+		  (rationalp r))
 	     (< (expt r i) (expt r (+ 1 i))))
     :hints (("Goal" :in-theory (enable prefer-*-to-/)))))
 
  (defthm expt-is-increasing-for-base>1
    (implies (and (< 1 r)
                  (< i j)
-                 (real/rationalp r)
+                 (rationalp r)
                  (integerp i)
                  (integerp j))
             (< (expt r i)

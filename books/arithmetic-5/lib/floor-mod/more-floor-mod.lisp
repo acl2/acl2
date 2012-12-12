@@ -70,7 +70,7 @@
 
 (defthm |(* 2 (floor x y))|
   (implies (and (syntaxp (rewriting-goal-literal x mfc state))
-		(real/rationalp (/ x y)))
+		(rationalp (/ x y)))
 	   (equal (* 2 (floor x y))
 		  (if (integerp (* 1/2 (floor (* 2 x) y)))
 		      (floor (* 2 x) y)
@@ -79,14 +79,14 @@
 		 (:rewrite
 		  :corollary
 		  (implies (and (syntaxp (not (rewriting-goal-literal x mfc state)))
-				(real/rationalp (/ x y))
+				(rationalp (/ x y))
 				(integerp (* 1/2 (floor (* 2 x) y))))
 			   (equal (* 2 (floor x y))
 				  (floor (* 2 x) y))))
 		 (:rewrite
 		  :corollary
 		  (implies (and (syntaxp (not (rewriting-goal-literal x mfc state)))
-				(real/rationalp (/ x y))
+				(rationalp (/ x y))
 				(not (integerp (* 1/2 (floor (* 2 x) y)))))
 			   (equal (* 2 (floor x y))
 				  (+ -1 (floor (* 2 x) y)))))))
@@ -157,7 +157,7 @@
 (defthm |(* 1/2 (floor x y))|
   (implies (and (syntaxp (rewriting-goal-literal x mfc state))
 		(syntaxp (not (ugly-unhide-hack-loop-stopper x y mfc state)))
-		(real/rationalp (/ x y)))
+		(rationalp (/ x y)))
 	   (equal (* 1/2 (floor x y))
 		  (if (integerp (ugly-unhide-hack (hide (* 1/2 (floor x y)))))
 		      (floor (* 1/2 x) y)
@@ -168,14 +168,14 @@
 		 (:rewrite
 		  :corollary
 		  (implies (and (syntaxp (not (rewriting-goal-literal x mfc state)))
-				(real/rationalp (/ x y))
+				(rationalp (/ x y))
 				(integerp (ugly-unhide-hack (hide (* 1/2 (floor x y))))))
 			   (equal (* 1/2 (floor x y))
 				  (floor (* 1/2 x) y))))
 		 (:rewrite
 		  :corollary
 		  (implies (and (syntaxp (not (rewriting-goal-literal x mfc state)))
-				(real/rationalp (/ x y))
+				(rationalp (/ x y))
 				(not (integerp (ugly-unhide-hack (hide (* 1/2 (floor x y)))))))
 			   (equal (* 1/2 (floor x y))
 				  (+ 1/2 (floor (* 1/2 x) y)))))))
@@ -185,7 +185,7 @@
 (local
  (defthm extra-intp-thm-1
    (IMPLIES (AND (INTEGERP (* (/ I) (/ J) X))
-              (REAL/RATIONALP X)
+              (RATIONALP X)
               (INTEGERP I)
               (INTEGERP J)
               (NOT (EQUAL J 0)))
@@ -201,7 +201,7 @@
 (local
  (defthm extra-intp-thm-3
    (IMPLIES (AND (INTEGERP (* (/ I) (/ J) X))
-		 (REAL/RATIONALP X)
+		 (RATIONALP X)
 		 (INTEGERP I)
 		 (INTEGERP J))
 	    (INTEGERP (* (/ J) (FLOOR X I))))
@@ -210,7 +210,7 @@
 (defthm |(floor (+ x r) i)|  ;;; OK
   (implies (and (integerp x)
                 ;(<= 0 x)
-                (real/rationalp r)
+                (rationalp r)
                 (<= 0 r)
                 (< r 1)
                 (integerp i)
@@ -238,7 +238,7 @@
   (implies (and (< 0 j)
 		(integerp i)
 		(integerp j)
-		(real/rationalp x)
+		(rationalp x)
 		(INTEGERP (* (/ J) (FLOOR X I))))
 	   (equal (mod x (* i j))
 		  (mod x i))))
@@ -246,7 +246,7 @@
 (defthm mod-x-i*j-v2
   (IMPLIES (AND (INTEGERP I)
 		(INTEGERP J)
-		(REAL/RATIONALP X)
+		(RATIONALP X)
 		(< J 0)
 		(NOT (INTEGERP (* (/ I) (/ J) X)))
 		(INTEGERP (* (/ J) (FLOOR X I))))
@@ -300,8 +300,8 @@
 
 (defthm floor-equal-i-over-j-rewrite   ;;; OK
   (implies (and (case-split (not (equal j 0)))
-                (case-split (real/rationalp i))
-                (case-split (real/rationalp j))
+                (case-split (rationalp i))
+                (case-split (rationalp j))
                 )
            (equal (equal (* j (floor i j)) i)
                   (integerp (* i (/ j))))))
@@ -321,17 +321,17 @@
 
 
 (defthm mod-theorem-one-a   ;;; OK
-  (implies (and (real/rationalp a)
+  (implies (and (rationalp a)
 		(integerp b)
-		(real/rationalp n)
+		(rationalp n)
 		(not (equal n 0)))
 	   (equal (mod (* (mod a n) b) n)
 		  (mod (* a b) n))))
 
 (defthm mod-theorem-one-b   ;;; OK
-  (implies (and (real/rationalp a)
+  (implies (and (rationalp a)
 		(integerp b)
-		(real/rationalp n)
+		(rationalp n)
 		(not (equal n 0)))
 	   (equal (mod (* b (mod a n)) n)
 		  (mod (* a b) n))))
@@ -614,9 +614,9 @@
   :hints (("Goal" :cases ((equal n 0)))))
 
 (defthm mod-prod
-  (implies (and (real/rationalp m)
-                (real/rationalp n)
-                (real/rationalp k)
+  (implies (and (rationalp m)
+                (rationalp n)
+                (rationalp k)
                 )
            (equal (mod (* k m) (* k n))
                   (* k (mod m n))))
@@ -624,8 +624,8 @@
 
 (defthm mod-mult
     (implies (and (integerp a)
-                  (real/rationalp m)
-		  (real/rationalp n))
+                  (rationalp m)
+		  (rationalp n))
 	     (equal (mod (+ m (* a n)) n)
 		    (mod m n))))
 
@@ -634,19 +634,19 @@
 
 (defthm mod-sums-cancel-1
   (implies (and (case-split (<= 0 y))
-                (case-split (real/rationalp k))
-                (case-split (real/rationalp y))
-                (case-split (real/rationalp x1))
-                (case-split (real/rationalp x2))
+                (case-split (rationalp k))
+                (case-split (rationalp y))
+                (case-split (rationalp x1))
+                (case-split (rationalp x2))
                 )
            (equal (equal (mod (+ k x1) y) (mod (+ k x2) y))
                   (equal (mod x1 y) (mod x2 y)))))
 
 (defthm  |(equal (mod a n) (mod b n))|
   (implies (and (integerp (+ (* a (/ n)) (- (* b (/ n)))))
-		(real/rationalp a)
-		(real/rationalp b)
-		(real/rationalp n)
+		(rationalp a)
+		(rationalp b)
+		(rationalp n)
 		(not (equal n 0)))
 	   (equal (equal (mod a n) (mod b n))
 		  t))
@@ -721,7 +721,7 @@
 			   (a b c))
 		(integerp x)
 		(integerp y)
-		(real/rationalp (* a (/ b)))
+		(rationalp (* a (/ b)))
 		(equal c (- (floor a b))))
 	   (equal (< x y)
 		  (< (+ (* a (/ b)) c x)
@@ -733,7 +733,7 @@
 			   (a b c))
 		(integerp x)
 		(integerp y)
-		(real/rationalp (* a (/ b)))
+		(rationalp (* a (/ b)))
 		(equal c (- (floor a b)))
 		(not (equal x y)))
 	   (equal (< x y)
@@ -787,7 +787,7 @@
 
 (defthm mod-pull-inside-fl-shift
    (implies (and ;no hyp about x
-	     (real/rationalp x)
+	     (rationalp x)
              (integerp i)
              (integerp j)
              )

@@ -37,11 +37,11 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defthm default-floor-ratio
-  (implies (syntaxp (not (proveably-real/rational '(BINARY-* x (UNARY-/ y))
-						  `((x . ,x) (y . ,y)) 
-						  mfc state)))
+  (implies (syntaxp (not (proveably-rational '(BINARY-* x (UNARY-/ y))
+					     `((x . ,x) (y . ,y)) 
+					     mfc state)))
 	   (equal (floor x y)
-		  (if (real/rationalp (/ x y))
+		  (if (rationalp (/ x y))
 		      (floor x y)
 		    0))))
 
@@ -60,11 +60,11 @@
 		    0))))
 
 (defthm default-mod-ratio
-  (implies (syntaxp (not (proveably-real/rational '(BINARY-* x (UNARY-/ y))
+  (implies (syntaxp (not (proveably-rational '(BINARY-* x (UNARY-/ y))
 					     `((x . ,x) (y . ,y)) 
 					     mfc state)))
 	   (equal (mod x y)
-		  (if (real/rationalp (/ x y))
+		  (if (rationalp (/ x y))
 		      (mod x y)
 		    (if (acl2-numberp x)
 			x

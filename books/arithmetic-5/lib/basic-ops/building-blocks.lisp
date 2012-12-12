@@ -95,8 +95,8 @@
 ;;; This was taken from somewhere in the rtl books and modified.
 
 (defun power-of-2-measure (x)
-  (declare (xargs :guard (and (real/rationalp x) (not (equal x 0)))))
-  (cond ((or (not (real/rationalp x))
+  (declare (xargs :guard (and (rationalp x) (not (equal x 0)))))
+  (cond ((or (not (rationalp x))
              (<= x 0)) 0)
 	((< x 1) (cons (cons 1 1) (floor (/ x) 1)))
 	(t (floor x 1))))
@@ -104,7 +104,7 @@
 (defun power-of-2-helper (x)
   (declare (xargs :guard t
                   :measure (power-of-2-measure x)))
-  (cond ((or (not (real/rationalp x))
+  (cond ((or (not (rationalp x))
              (<= x 0))
          0)
         ((< x 1) (+ -1 (power-of-2-helper (* 2 x))))
@@ -385,17 +385,6 @@
 		 t t mfc state)
 	 *t*))
 
-(defun proveably-real/rational (x alist mfc state)
-  (declare (xargs :guard t))
-
-  ;; Can rewriting determine that x is rational?
-
-  (equal (mfc-rw+ #-non-standard-analysis `(RATIONALP ,x)
-		  #+non-standard-analysis `(REALP ,x)
-		 alist
-		 t t mfc state)
-	 *t*))
-
 (defun proveably-acl2-numberp (x alist mfc state)
   (declare (xargs :guard t))
 
@@ -451,31 +440,6 @@
          nil)
         (t
          (proveably-non-zero-rational1 x alist mfc state))))
-
-(defun proveably-non-zero-real/rational1 (x alist mfc state)
-  (declare (xargs :guard t))
-  (equal (mfc-rw+ #-non-standard-analysis `(NOT (EQUAL (RFIX ,x) '0))
-		  #+non-standard-analysis `(NOT (EQUAL (REALFIX ,x) '0))
-		  alist
-		  t t mfc state)
-	 *t*))
-
-(defun proveably-non-zero-real/rational (x alist mfc state)
-  (declare (xargs :guard t))
-  
-  ;; If x is not an IF expression, can rewriting determine that it
-  ;; is rational and not equal to zero?
-
-  (cond ((variablep x)
-         (proveably-non-zero-real/rational1 x alist mfc state))
-        ((fquotep x)
-         (and (rational-constant-p x)
-              (not (equal x ''0))))
-        ((eq (ffn-symb x) 'IF)
-         nil)
-        (t
-         (proveably-non-zero-real/rational1 x alist mfc state))))
-
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -903,12 +867,10 @@
 	 ;; The following arithmetic predicates are OK.
 	 (member-eq (car x) '(acl2-numberp
 			      rationalp
-			      #+:non-standard-analysis realp
 			      integerp
 			      natp
 			      posp
 			      complex-rationalp
-			      #+:non-standard-analysis complexp
 			      equal
 			      eql
 			      <)))))

@@ -96,8 +96,8 @@
 
  (local
   (defthm floor-sum-cases-helper-a
-    (implies (and (real/rationalp (/ x z))
-		  (real/rationalp (/ y z)))
+    (implies (and (rationalp (/ x z))
+		  (rationalp (/ y z)))
 	     (<= (floor (+ x y) z)
 		 (cond ((not (acl2-numberp z))
 			0)
@@ -115,8 +115,8 @@
 
  (local
   (defthm floor-sum-cases-helper-b
-    (implies (and (real/rationalp (/ x z))
-		  (real/rationalp (/ y z)))
+    (implies (and (rationalp (/ x z))
+		  (rationalp (/ y z)))
 	     (<= (cond ((not (acl2-numberp z))
 			0)
 		       ((equal z 0)
@@ -137,8 +137,8 @@
 		      floor-sum-cases-helper-b)))
 
  (defthm |(floor (+ x y) z)|
-   (implies (and (real/rationalp (/ x z))
-		 (real/rationalp (/ y z)))
+   (implies (and (rationalp (/ x z))
+		 (rationalp (/ y z)))
 	    (equal (floor (+ x y) z)
 		   (cond ((not (acl2-numberp z))
 			  0)
@@ -185,8 +185,8 @@
                             mod-x-y-=-x
                             mod-x-y-=-x-y)))
  (defthm |(mod (+ x y) z)|
-   (implies (and (real/rationalp (/ x z))
-                 (real/rationalp (/ y z)))
+   (implies (and (rationalp (/ x z))
+                 (rationalp (/ y z)))
             (equal (mod (+ x y) z)
                    (if (<= 0 z)
                        (if (< (+ (mod x z) (mod y z)) z)
@@ -244,18 +244,6 @@
                  (acl2-numberp z))
             (integerp (* md0 (/ z))))
    :hints (("Goal" :use crock-xxx33-helper))))
-
-#+non-standard-analysis
-(local
- (defthm crock-xxx33b
-   ;; Jared reordered hyps to speed up the proofs
-   (implies (and (equal 0 (+ md0 (* j z)))
-                 (not (equal z 0))
-                 (acl2-numberp md0)
-                 (integerp j)
-                 (acl2-numberp z))
-            (realp (* md0 (/ z))))
-   :hints (("Goal" :use crock-xxx33a))))
 
 (encapsulate
   ()
@@ -322,9 +310,9 @@
 
 
   (defthm rewrite-floor-mod
-    (implies (and (real/rationalp (/ x y))
-                  (real/rationalp (/ x z))
-                  (real/rationalp (/ (mod x y) z))
+    (implies (and (rationalp (/ x y))
+                  (rationalp (/ x z))
+                  (rationalp (/ (mod x y) z))
                   (equal i (/ y z))
                   (integerp i))
              (equal (floor (mod x y) z)
@@ -396,8 +384,8 @@
 
  (defthm rewrite-mod-mod
    (implies (and (acl2-numberp z)
-		 (real/rationalp (/ x y))
-		 (real/rationalp (/ x z))
+		 (rationalp (/ x y))
+		 (rationalp (/ x z))
 		 (not (equal z 0))
 		 (equal i (/ y z))
 		 (integerp i))

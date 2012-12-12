@@ -73,11 +73,11 @@
 			   acc)))))
 
 (defun mod-expt-fast (a i n)
-  (declare (xargs :guard (and (real/rationalp a)
+  (declare (xargs :guard (and (rationalp a)
                               (integerp i)
                               (not (and (eql a 0) (< i 0)))
                               (<= 0 i)
-                              (real/rationalp n)
+                              (rationalp n)
                               (not (eql n 0)))))
   (if (and (integerp a) (integerp n) (< 0 n))
       (mod-expt-fast-1 a i n 1)
@@ -95,7 +95,7 @@
 		   (mod (* acc (expt a i)) n)))))
 
 (defthm mod-expt-fast-is-mod-expt
-  (implies (and (real/rationalp a)
+  (implies (and (rationalp a)
                 (natp i)
                 (integerp n)
                 (< 1 n))

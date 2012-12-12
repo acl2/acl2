@@ -52,20 +52,6 @@
           (rationalp-guard-fn args)))))
 
 (local
-(defun real/rationalp-guard-fn (args)
-  (if (endp (cdr args))
-      `((real/rationalp ,(car args)))
-    (cons `(real/rationalp ,(car args))
-          (real/rationalp-guard-fn (cdr args))))))
-
-(local
-(defmacro real/rationalp-guard (&rest args)
-  (if (endp (cdr args))
-      `(real/rationalp ,(car args))
-    (cons 'and
-          (real/rationalp-guard-fn args)))))
-
-(local
  (defthm niq-bounds
    (implies (and (integerp i)
 		 (<= 0 i)
@@ -81,7 +67,7 @@
 
 (local
 (defthm floor-bounds-1
-  (implies (real/rationalp-guard x y)
+  (implies (rationalp-guard x y)
 	   (and (< (+ (/ x y) -1)
 		   (floor x y))
 		(<= (floor x y)
@@ -91,7 +77,7 @@
 
 (local
 (defthm floor-bounds-2
-  (implies (and (real/rationalp-guard x y)
+  (implies (and (rationalp-guard x y)
 		(integerp (/ x y)))
 	   (equal (floor x y)
 		  (/ x y)))
@@ -100,7 +86,7 @@
 
 (local
 (defthm floor-bounds-3
-  (implies (and (real/rationalp-guard x y)
+  (implies (and (rationalp-guard x y)
 		(not (integerp (/ x y))))
 	   (< (floor x y)
 	      (/ x y)))
@@ -113,7 +99,7 @@
 
 (defthm integerp-<-constant
   (implies (and (syntaxp (rational-constant-p c))
-		(real/rationalp c)
+		(rationalp c)
 		(not (integerp c))
 		(integerp x))
            (equal (< x c)
@@ -122,7 +108,7 @@
 
 (defthm constant-<-integerp
   (implies (and (syntaxp (rational-constant-p c))
-                (real/rationalp c)
+                (rationalp c)
 		(not (integerp c))
 		(integerp x))
            (equal (< c x)

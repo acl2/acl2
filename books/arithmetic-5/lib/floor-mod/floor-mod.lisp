@@ -124,16 +124,11 @@
                            integerp-mod-2
                            integerp-mod-3
                            expt-type-prescription-nonpositive-base-odd-exponent
-			   #+non-standard-analysis expt-type-prescription-nonpositive-base-odd-exponent-real-case
                            expt-type-prescription-nonpositive-base-even-exponent
-			   #+non-standard-analysis expt-type-prescription-nonpositive-base-even-exponent-real-case
                            expt-type-prescription-negative-base-odd-exponent
-			   #+non-standard-analysis expt-type-prescription-negative-base-odd-exponent-real-case
                            expt-type-prescription-negative-base-even-exponent
-			   #+non-standard-analysis expt-type-prescription-negative-base-even-exponent-real-case
                            expt-type-prescription-integerp-base
                            expt-type-prescription-positive-base
-			   #+non-standard-analysis expt-type-prescription-positive-base-real-case
                            expt-type-prescription-integerp-base-b
                            expt-type-prescription-integerp-base-a
                            default-plus-1
@@ -152,7 +147,6 @@
                            floor-zero
                            mod-zero
                            rationalp-x
-			   #+non-standard-analysis real/rationalp-x
                            integerp-/-expt-2
                            floor-positive
                            floor-negative
@@ -162,7 +156,6 @@
                            acl2-count
                            numeric-constant-p
                            meta-rationalp-correct
-			   #+non-standard-analysis meta-realp-correct
                            floor-=-x/y
                            )))
 
@@ -178,9 +171,9 @@
 (defun floor-rec (x y)
   (declare (xargs :measure (abs (floor x y))
 		  :hints (("Goal" :in-theory (disable |(denominator (+ x r))|)))))
-    (cond ((not (real/rationalp x))
+    (cond ((not (rationalp x))
 	   t)
-	  ((not (real/rationalp y))
+	  ((not (rationalp y))
 	   t)
 	  ((equal y 0)
 	   t)
@@ -202,9 +195,9 @@
 (defun mod-rec (x y)
   (declare (xargs :measure (abs (floor x y))
 		  :hints (("Goal" :in-theory (disable |(denominator (+ x r))|)))))
-    (cond ((not (real/rationalp x))
+    (cond ((not (rationalp x))
 	   t)
-	  ((not (real/rationalp y))
+	  ((not (rationalp y))
 	   t)
 	  ((equal y 0)
 	   t)
@@ -240,14 +233,14 @@
 ;;; Justifying recursion by floor
 
 (defthm justify-floor-recursion
-  (and (implies (and ;(real/rationalp x)
+  (and (implies (and ;(rationalp x)
 		     (< 0 x)
-		     (real/rationalp y)
+		     (rationalp y)
 		     (< 1 y))
 		(< (floor x y) x))
        (implies (and ;(rationalp x)
 		     (< x -1)
-		     (real/rationalp y)
+		     (rationalp y)
 		     (<= 2 y))
 		(< x (floor x y))))
   :hints (("Subgoal 1.2.2" :cases ((< i -1))))
@@ -263,8 +256,8 @@
 ;;; So, we leave them disabled.
 
 (defthm |(floor (+ x y) z)|
-  (implies (and (real/rationalp (/ x z))
-                (real/rationalp (/ y z)))
+  (implies (and (rationalp (/ x z))
+                (rationalp (/ y z)))
            (equal (floor (+ x y) z)
 		  (cond ((not (acl2-numberp z))
 			 0)
@@ -281,8 +274,8 @@
 
 (defthm |(floor (+ x y) z) rewriting goal literal|
   (implies (and (syntaxp (rewriting-goal-literal x mfc state))
-		(real/rationalp (/ x z))
-                (real/rationalp (/ y z)))
+		(rationalp (/ x z))
+                (rationalp (/ y z)))
            (equal (floor (+ x y) z)
 		  (cond ((not (acl2-numberp z))
 			 0)
@@ -317,8 +310,8 @@
 (defthm |(floor (+ x y) z) where (< z 0)|
   (implies (and (syntaxp (rewriting-goal-literal x mfc state))
 		(syntaxp (not-too-many-addends y))
-		(real/rationalp (/ x z))
-                (real/rationalp (/ y z))
+		(rationalp (/ x z))
+                (rationalp (/ y z))
 		(< z 0))
            (equal (floor (+ x y) z)
 		  (if (< z (+ (mod x z) (mod y z)))
@@ -329,8 +322,8 @@
 		  :corollary
 		  (implies (and (syntaxp (not (rewriting-goal-literal x mfc state)))
 				(syntaxp (not-too-many-addends y))
-				(real/rationalp (/ x z))
-				(real/rationalp (/ y z))
+				(rationalp (/ x z))
+				(rationalp (/ y z))
 				(< z 0)
 				(< z (+ (mod x z) (mod y z))))
 			   (equal (floor (+ x y) z)
@@ -339,8 +332,8 @@
 		  :corollary
 		  (implies (and (syntaxp (not (rewriting-goal-literal x mfc state)))
 				(syntaxp (not-too-many-addends y))
-				(real/rationalp (/ x z))
-				(real/rationalp (/ y z))
+				(rationalp (/ x z))
+				(rationalp (/ y z))
 				(< z 0)
 				(<= (+ (mod x z) (mod y z)) z))
 			   (equal (floor (+ x y) z)
@@ -349,8 +342,8 @@
 (defthm |(floor (+ x y) z) where (< 0 z)|
   (implies (and (syntaxp (rewriting-goal-literal x mfc state))
 		(syntaxp (not-too-many-addends y))
-		(real/rationalp (/ x z))
-                (real/rationalp (/ y z))
+		(rationalp (/ x z))
+                (rationalp (/ y z))
 		(< 0 z))
            (equal (floor (+ x y) z)
 		  (if (< (+ (mod x z) (mod y z)) z)
@@ -361,8 +354,8 @@
 		  :corollary
 		  (implies (and (syntaxp (not (rewriting-goal-literal x mfc state)))
 				(syntaxp (not-too-many-addends y))
-				(real/rationalp (/ x z))
-				(real/rationalp (/ y z))
+				(rationalp (/ x z))
+				(rationalp (/ y z))
 				(< 0 z)
 				(< (+ (mod x z) (mod y z)) z))
 			   (equal (floor (+ x y) z)
@@ -371,8 +364,8 @@
 		  :corollary
 		  (implies (and (syntaxp (not (rewriting-goal-literal x mfc state)))
 				(syntaxp (not-too-many-addends y))
-				(real/rationalp (/ x z))
-				(real/rationalp (/ y z))
+				(rationalp (/ x z))
+				(rationalp (/ y z))
 				(< 0 z)
 				(<= z (+ (mod x z) (mod y z))))
 			   (equal (floor (+ x y) z)
@@ -384,8 +377,8 @@
 ;;; A special case of the above:
 
 (defthm |(floor (+ 1 x) y)|
-  (implies (and (real/rationalp x)
-		(real/rationalp y)
+  (implies (and (rationalp x)
+		(rationalp y)
 		(< 1 y))
            (equal (floor (+ 1 x) y)
 		  (if (< (+ 1 (mod x y)) y)
@@ -394,8 +387,8 @@
   :hints (("Goal" :in-theory (enable |(floor (+ x y) z)|))))
 
 (defthm |(mod (+ x y) z)|
-  (implies (and (real/rationalp (/ x z))
-                (real/rationalp (/ y z)))
+  (implies (and (rationalp (/ x z))
+                (rationalp (/ y z)))
            (equal (mod (+ x y) z)
 		  (if (<= 0 z)
 		      (if (< (+ (mod x z) (mod y z)) z)
@@ -407,8 +400,8 @@
 
 (defthm |(mod (+ x y) z) rewriting goal literal|
   (implies (and (syntaxp (rewriting-goal-literal x mfc state))
-		(real/rationalp (/ x z))
-                (real/rationalp (/ y z)))
+		(rationalp (/ x z))
+                (rationalp (/ y z)))
            (equal (mod (+ x y) z)
 		  (if (<= 0 z)
 		      (if (< (+ (mod x z) (mod y z)) z)
@@ -421,8 +414,8 @@
 (defthm |(mod (+ x y) z) where (<= z 0)|
   (implies (and (syntaxp (rewriting-goal-literal x mfc state))
 		(syntaxp (not-too-many-addends y))
-		(real/rationalp (/ x z))
-                (real/rationalp (/ y z))
+		(rationalp (/ x z))
+                (rationalp (/ y z))
 		(<= z 0))
            (equal (mod (+ x y) z)
 		  (if (< z (+ (mod x z) (mod y z)))
@@ -433,8 +426,8 @@
 		  :corollary
 		  (implies (and (syntaxp (not (rewriting-goal-literal x mfc state)))
 				(syntaxp (not-too-many-addends y))
-				(real/rationalp (/ x z))
-				(real/rationalp (/ y z))
+				(rationalp (/ x z))
+				(rationalp (/ y z))
 				(<= z 0)
 				(< z (+ (mod x z) (mod y z))))
 			   (equal (mod (+ x y) z)
@@ -443,8 +436,8 @@
 		  :corollary
 		  (implies (and (syntaxp (not (rewriting-goal-literal x mfc state)))
 				(syntaxp (not-too-many-addends y))
-				(real/rationalp (/ x z))
-				(real/rationalp (/ y z))
+				(rationalp (/ x z))
+				(rationalp (/ y z))
 				(<= z 0)
 				(<= (+ (mod x z) (mod y z)) z))
 			   (equal (mod (+ x y) z)
@@ -453,8 +446,8 @@
 (defthm |(mod (+ x y) z) where (<= 0 z)|
   (implies (and (syntaxp (rewriting-goal-literal x mfc state))
 		(syntaxp (not-too-many-addends y))
-		(real/rationalp (/ x z))
-                (real/rationalp (/ y z))
+		(rationalp (/ x z))
+                (rationalp (/ y z))
 		(<= 0 z))
            (equal (mod (+ x y) z)
 		  (if (< (+ (mod x z) (mod y z)) z)
@@ -465,8 +458,8 @@
 		  :corollary
 		  (implies (and (syntaxp (not (rewriting-goal-literal x mfc state)))
 				(syntaxp (not-too-many-addends y))
-				(real/rationalp (/ x z))
-				(real/rationalp (/ y z))
+				(rationalp (/ x z))
+				(rationalp (/ y z))
 				(<= 0 z)
 				(< (+ (mod x z) (mod y z)) z))
 			   (equal (mod (+ x y) z)
@@ -475,8 +468,8 @@
 		  :corollary
 		  (implies (and (syntaxp (not (rewriting-goal-literal x mfc state)))
 				(syntaxp (not-too-many-addends y))
-				(real/rationalp (/ x z))
-				(real/rationalp (/ y z))
+				(rationalp (/ x z))
+				(rationalp (/ y z))
 				(<= 0 z)
 				(<= z (+ (mod x z) (mod y z))))
 			   (equal (mod (+ x y) z)
@@ -487,8 +480,8 @@
 
 ;;; A special case of the above:
 (defthm |(mod (+ 1 x) y)|
-  (implies (and (real/rationalp x)
-		(real/rationalp y)
+  (implies (and (rationalp x)
+		(rationalp y)
 		(< 1 y))
            (equal (mod (+ 1 x) y)
 		  (if (< (+ 1 (mod x y)) y)
@@ -519,7 +512,7 @@
 	((fquotep x)
 	 (if (consp (cdr x))		; for the guard
 	     (let ((c (unquote x)))
-	       (if (and (real/rationalp c)
+	       (if (and (rationalp c)
 			(not (equal 0 c)) ; I don't think this will happen
 			(< (abs c) 1))
 
@@ -542,7 +535,7 @@
                ((quotep (arg1 x))
 		(if (consp (cdr (arg1 x)))	; for the guard
 		    (let ((c (unquote (arg1 x))))
-		      (if (and (real/rationalp c)
+		      (if (and (rationalp c)
 			       (not (equal 0 c)) ; I don't think this will happen
 			       (or (< (abs c) 1)
 				   (eq (fn-symb (arg2 x)) 'UNARY--)
@@ -595,7 +588,7 @@
 		(syntaxp (not (rewriting-goal-literal x mfc state)))
 		(syntaxp (in-term-order-* x mfc state))
 		(syntaxp (in-term-order-* y mfc state))
-		(real/rationalp (/ x y))
+		(rationalp (/ x y))
 		(bind-free (find-divisive-factor x nil mfc state)
 			   (factor))
 		(acl2-numberp factor)
@@ -608,7 +601,7 @@
 		(syntaxp (rewriting-goal-literal x mfc state))
 		(syntaxp (in-term-order-* x mfc state))
 		(syntaxp (in-term-order-* y mfc state))
-		(real/rationalp (/ x y))
+		(rationalp (/ x y))
 		(bind-free (find-divisive-factor x t mfc state)
 			   (factor))
 		(acl2-numberp factor)
@@ -621,7 +614,7 @@
 		(syntaxp (not (rewriting-goal-literal x mfc state)))
 		(syntaxp (in-term-order-* x mfc state))
 		(syntaxp (in-term-order-* y mfc state))
-		(real/rationalp (/ x y))
+		(rationalp (/ x y))
 		(bind-free (find-divisive-factor y nil mfc state)
 			   (factor))
 		(acl2-numberp factor)
@@ -634,7 +627,7 @@
 		(syntaxp (rewriting-goal-literal x mfc state))
 		(syntaxp (in-term-order-* x mfc state))
 		(syntaxp (in-term-order-* y mfc state))
-		(real/rationalp (/ x y))
+		(rationalp (/ x y))
 		(bind-free (find-divisive-factor y t mfc state)
 			   (factor))
 		(acl2-numberp factor)
@@ -647,7 +640,7 @@
 		(syntaxp (not (rewriting-goal-literal x mfc state)))
 		(syntaxp (in-term-order-* x mfc state))
 		(syntaxp (in-term-order-* y mfc state))
-		(real/rationalp (/ x y))
+		(rationalp (/ x y))
 		(bind-free (find-divisive-factor x nil mfc state)
 			   (factor))
 		(acl2-numberp factor)
@@ -661,7 +654,7 @@
 		(syntaxp (rewriting-goal-literal x mfc state))
 		(syntaxp (in-term-order-* x mfc state))
 		(syntaxp (in-term-order-* y mfc state))
-		(real/rationalp (/ x y))
+		(rationalp (/ x y))
 		(bind-free (find-divisive-factor x t mfc state)
 			   (factor))
 		(acl2-numberp factor)
@@ -675,7 +668,7 @@
 		(syntaxp (not (rewriting-goal-literal x mfc state)))
 		(syntaxp (in-term-order-* x mfc state))
 		(syntaxp (in-term-order-* y mfc state))
-		(real/rationalp (/ x y))
+		(rationalp (/ x y))
 		(bind-free (find-divisive-factor y nil mfc state)
 			   (factor))
 		(acl2-numberp factor)
@@ -689,7 +682,7 @@
 		(syntaxp (rewriting-goal-literal x mfc state))
 		(syntaxp (in-term-order-* x mfc state))
 		(syntaxp (in-term-order-* y mfc state))
-		(real/rationalp (/ x y))
+		(rationalp (/ x y))
 		(bind-free (find-divisive-factor y t mfc state)
 			   (factor))
 		(acl2-numberp factor)
@@ -705,7 +698,7 @@
 (defthm |(floor (- x) y)|
   (implies (and (syntaxp (rewriting-goal-literal x mfc state))
 		(syntaxp (mostly-negative-addends-p x mfc state))
-                (real/rationalp (/ x y)))
+                (rationalp (/ x y)))
            (equal (floor x y)
                   (if (integerp (* x (/ y)))
                       (* x (/ y))
@@ -715,7 +708,7 @@
 		  :corollary
 		  (implies (and (syntaxp (not (rewriting-goal-literal x mfc state)))
 				(syntaxp (mostly-negative-addends-p x mfc state))
-				(real/rationalp (/ x y))
+				(rationalp (/ x y))
 				(not (integerp (* x (/ y)))))
 			   (equal (floor x y)
 				  (+ -1 (- (floor (- x) y))))))))
@@ -723,7 +716,7 @@
 (defthm |(floor x (- y))|
   (implies (and (syntaxp (rewriting-goal-literal x mfc state))
 		(syntaxp (mostly-negative-addends-p y mfc state))
-                (real/rationalp (/ x y)))
+                (rationalp (/ x y)))
 	    (equal (floor x y)
 		   (if (integerp (* x (/ y)))
 		       (* x (/ y))
@@ -733,7 +726,7 @@
 		  :corollary
 		  (implies (and (syntaxp (not (rewriting-goal-literal x mfc state)))
 				(syntaxp (mostly-negative-addends-p x mfc state))
-				(real/rationalp (/ x y))
+				(rationalp (/ x y))
 				(not (integerp (* x (/ y)))))
 			   (equal (floor x y)
 				  (+ -1 (- (floor x (- y)))))))))
@@ -742,7 +735,7 @@
   (implies (and (syntaxp (rewriting-goal-literal x mfc state))
 		(syntaxp (mostly-negative-addends-p x mfc state))
 		;(acl2-numberp y)
-                (real/rationalp (/ x y)))
+                (rationalp (/ x y)))
 	   (equal (mod x y)
 		  (if (integerp (/ x y))
 		      (- (mod (- x) y))
@@ -760,7 +753,7 @@
 		  :corollary
 		  (implies (and (syntaxp (not (rewriting-goal-literal x mfc state)))
 				(syntaxp (mostly-negative-addends-p x mfc state))
-				(real/rationalp (/ x y))
+				(rationalp (/ x y))
 				(not (integerp (* x (/ y)))))
 			   (equal (mod x y)
 				  (+ y (- (mod (- x) y))))))))
@@ -769,7 +762,7 @@
   (implies (and (syntaxp (rewriting-goal-literal x mfc state))
 		(syntaxp (mostly-negative-addends-p y mfc state))
 		;(acl2-numberp y)
-                (real/rationalp (/ x y)))
+                (rationalp (/ x y)))
 	   (equal (mod x y)
 		  (if (integerp (/ x y))
 		      (mod x (- y))
@@ -787,7 +780,7 @@
 		  :corollary
 		  (implies (and (syntaxp (not (rewriting-goal-literal x mfc state)))
 				(syntaxp (mostly-negative-addends-p y mfc state))
-				(real/rationalp (/ x y))
+				(rationalp (/ x y))
 				(not (integerp (* x (/ y)))))
 			   (equal (mod x y)
 				  (+ y (mod x (- y))))))))
@@ -802,9 +795,9 @@
 (defthm |(floor (mod x y) z)|
   (implies (and ;(acl2-numberp x)
 		;(acl2-numberp y)
-		(real/rationalp x)
-		(real/rationalp y)
-		(real/rationalp z)
+		(rationalp x)
+		(rationalp y)
+		(rationalp z)
 		(equal i (/ y z))
 		(integerp (* i (floor x y))))
 	   (equal (floor (mod x y) z)
@@ -843,32 +836,32 @@ an easy reduction unless the above applies anyway.
 
  (defthm |(mod (mod x y) z)|
    (implies (and (syntaxp (rewriting-goal-literal x mfc state))
-                 ;;(real/rationalp x)
-                 (real/rationalp y)
-                 (real/rationalp z)
+                 ;;(rationalp x)
+                 (rationalp y)
+                 (rationalp z)
                  (equal i (/ y z))
                  (integerp (* i (floor x y))))
             (equal (mod (mod x y) z)
                    (if (equal z 0)
                        (mod x y)
                      (mod x z))))
-   :hints (("Goal" :cases ((real/rationalp x))
+   :hints (("Goal" :cases ((rationalp x))
             :in-theory (enable mod)))
    :rule-classes ((:rewrite)
                   (:rewrite
                    :corollary
                    (implies (and (syntaxp (not (rewriting-goal-literal x mfc state)))
-                                 ;;(real/rationalp x)
-                                 (real/rationalp y)
+                                 ;;(rationalp x)
+                                 (rationalp y)
                                  (equal z 0))
                             (equal (mod (mod x y) z)
                                    (mod x y))))
                   (:rewrite
                    :corollary
                    (implies (and (syntaxp (not (rewriting-goal-literal x mfc state)))
-                                 ;;(real/rationalp x)
-                                 (real/rationalp y)
-                                 (real/rationalp z)
+                                 ;;(rationalp x)
+                                 (rationalp y)
+                                 (rationalp z)
                                  (not (equal z 0))
                                  (equal i (/ y z))
                                  (integerp (* i (floor x y))))
@@ -894,7 +887,6 @@ an easy reduction unless the above applies anyway.
                             (:TYPE-PRESCRIPTION MOD-NONNEGATIVE)
                             
                             (:TYPE-PRESCRIPTION RATIONALP-MOD)
-			    #+non-standard-analysis (:TYPE-PRESCRIPTION REALP-MOD)
                             (:TYPE-PRESCRIPTION FLOOR-ZERO . 4)
                             (:TYPE-PRESCRIPTION FLOOR-ZERO . 3)
                             (:TYPE-PRESCRIPTION FLOOR-ZERO . 1)
@@ -967,7 +959,7 @@ an easy reduction unless the above applies anyway.
 
  (defthm |(mod (floor x y) z)|
    (implies (and (syntaxp (rewriting-goal-literal x mfc state))
-                 (real/rationalp x)
+                 (rationalp x)
                  (integerp y)
                  (integerp z))
             (equal (mod (floor x y) z)
@@ -985,7 +977,7 @@ an easy reduction unless the above applies anyway.
                   (:rewrite
                    :corollary
                    (implies (and (syntaxp (not (rewriting-goal-literal x mfc state)))
-                                 (real/rationalp x)
+                                 (rationalp x)
                                  (integerp y)
                                  (integerp z)
                                  (< z 0)
@@ -998,7 +990,7 @@ an easy reduction unless the above applies anyway.
                   (:rewrite
                    :corollary
                    (implies (and (syntaxp (not (rewriting-goal-literal x mfc state)))
-                                 (real/rationalp x)
+                                 (rationalp x)
                                  (integerp y)
                                  (integerp z)
                                  (<= 0 z))
@@ -1008,7 +1000,7 @@ an easy reduction unless the above applies anyway.
                   (:rewrite
                    :corollary
                    (implies (and (syntaxp (not (rewriting-goal-literal x mfc state)))
-                                 (real/rationalp x)
+                                 (rationalp x)
                                  (integerp y)
                                  (integerp z)
                                  (integerp (* x (/ y))))
@@ -1017,7 +1009,7 @@ an easy reduction unless the above applies anyway.
                   (:rewrite
                    :corollary
                    (implies (and (syntaxp (not (rewriting-goal-literal x mfc state)))
-                                 (real/rationalp x)
+                                 (rationalp x)
                                  (integerp y)
                                  (integerp z)
                                  (not (integerp (* (/ z) (floor x y)))))
@@ -1120,7 +1112,7 @@ an easy reduction unless the above applies anyway.
  (defthm |(floor (floor x y) z)|
    ;; Jared 8.55 seconds
    (implies (and (syntaxp (rewriting-goal-literal x mfc state))
-                 (real/rationalp x)
+                 (rationalp x)
                  (integerp y)
                  (integerp z))
             (equal (floor (floor x y) z)
@@ -1134,7 +1126,7 @@ an easy reduction unless the above applies anyway.
                   (:rewrite
                    :corollary
                    (implies (and (syntaxp (not (rewriting-goal-literal x mfc state)))
-                                 (real/rationalp x)
+                                 (rationalp x)
                                  (integerp y)
                                  (integerp z)
                                  (< z 0)
@@ -1145,7 +1137,7 @@ an easy reduction unless the above applies anyway.
                   (:rewrite
                    :corollary
                    (implies (and (syntaxp (not (rewriting-goal-literal x mfc state)))
-                                 (real/rationalp x)
+                                 (rationalp x)
                                  (integerp y)
                                  (integerp z)
                                  (<= 0 z))
@@ -1154,7 +1146,7 @@ an easy reduction unless the above applies anyway.
                   (:rewrite
                    :corollary
                    (implies (and (syntaxp (not (rewriting-goal-literal x mfc state)))
-                                 (real/rationalp x)
+                                 (rationalp x)
                                  (integerp y)
                                  (integerp z)
                                  (integerp (/ x y)))
@@ -1163,7 +1155,7 @@ an easy reduction unless the above applies anyway.
                   (:rewrite
                    :corollary
                    (implies (and (syntaxp (not (rewriting-goal-literal x mfc state)))
-                                 (real/rationalp x)
+                                 (rationalp x)
                                  (integerp y)
                                  (integerp z)
                                  (not (integerp (/ (floor x y) z))))
@@ -1222,13 +1214,13 @@ an easy reduction unless the above applies anyway.
                            not-integerp-1a)))
 
  (defthm |(equal (mod (+ x y) z) x)|
-    (implies (and (real/rationalp x)
-		  (real/rationalp y)
+    (implies (and (rationalp x)
+		  (rationalp y)
                   (syntaxp (mod-+-cancel-0-fn x z)))
              (equal (equal (mod x y) z)
                     (and (equal (mod (- x z) y) 0)
                          (equal (mod z y) z))))
-    :hints (("Goal" :cases ((real/rationalp z))))))
+    :hints (("Goal" :cases ((rationalp z))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1284,8 +1276,8 @@ an easy reduction unless the above applies anyway.
 
 (local
  (defthm crock-529
-   (implies (and (real/rationalp (/ x z))
-		 (real/rationalp (/ y z)))
+   (implies (and (rationalp (/ x z))
+		 (rationalp (/ y z)))
 	    (equal (equal (floor (+ x y) z) (/ x z))
 		   (and (integerp (/ x z))
 			(equal (floor y z) 0))))
@@ -1294,7 +1286,7 @@ an easy reduction unless the above applies anyway.
    :rule-classes nil))
 
 (defthm |(equal (floor (+ x y) z) x)|
-    (implies (and (real/rationalp (/ x y))
+    (implies (and (rationalp (/ x y))
                   (syntaxp (in-term-order-+ x mfc state))
 		(bind-free (floor-+-cancel-0-fn x y z mfc state)
 			     (addend))
@@ -1395,39 +1387,39 @@ an easy reduction unless the above applies anyway.
 
 (defthm floor-cancel-*-not-rewriting-goal-literal
     (implies (and (syntaxp (not (rewriting-goal-literal lhs mfc state)))
-		  (real/rationalp (/ lhs rhs))
+		  (rationalp (/ lhs rhs))
 		(syntaxp (in-term-order-* lhs mfc state))
 		(syntaxp (in-term-order-* rhs mfc state))
                   (bind-free 
 		   (ugly-hack-two lhs rhs mfc state)
                    (x))
-                  (real/rationalp x)
+                  (rationalp x)
                   (not (equal x 0)))
              (equal (floor lhs rhs)
                     (floor (* x lhs) (* x rhs)))))
 
 (defthm floor-cancel-*-rewriting-goal-literal
     (implies (and (syntaxp (rewriting-goal-literal lhs mfc state))
-		  (real/rationalp (/ lhs rhs))
+		  (rationalp (/ lhs rhs))
                   (syntaxp (in-term-order-* lhs mfc state))
 		(syntaxp (in-term-order-* rhs mfc state))
                   (bind-free 
                    (ugly-hack-one lhs rhs mfc state)
                    (x))
-                  (real/rationalp x)
+                  (rationalp x)
                   (case-split (not (equal x 0))))
              (equal (floor lhs rhs)
                     (floor (* x lhs) (* x rhs)))))
 
 (defthm mod-cancel-*-not-rewriting-goal-literal
     (implies (and (syntaxp (not (rewriting-goal-literal lhs mfc state)))
-		  (real/rationalp (/ lhs rhs))
+		  (rationalp (/ lhs rhs))
                   (syntaxp (in-term-order-* lhs mfc state))
 		(syntaxp (in-term-order-* rhs mfc state))
                   (bind-free 
                    (ugly-hack-two lhs rhs mfc state)
                    (x))
-		  (real/rationalp x)
+		  (rationalp x)
                   (not (equal x 0)))
              (equal (mod lhs rhs)
                     (* (/ x)
@@ -1436,13 +1428,13 @@ an easy reduction unless the above applies anyway.
 
 (defthm mod-cancel-*-rewriting-goal-literal
     (implies (and (syntaxp (rewriting-goal-literal lhs mfc state))
-		  (real/rationalp (/ lhs rhs))
+		  (rationalp (/ lhs rhs))
                   (syntaxp (in-term-order-* lhs mfc state))
 		(syntaxp (in-term-order-* rhs mfc state))
                   (bind-free 
                    (ugly-hack-one lhs rhs mfc state)
                    (x))
-		  (real/rationalp x)
+		  (rationalp x)
                   (case-split (not (equal x 0))))
              (equal (mod lhs rhs)
                     (* (/ x)
@@ -1531,25 +1523,25 @@ an easy reduction unless the above applies anyway.
 	 nil)))
 
 (defthm floor-cancel-*-const
-    (implies (and (real/rationalp (/ lhs rhs))
+    (implies (and (rationalp (/ lhs rhs))
                   (syntaxp (in-term-order-* lhs mfc state))
 		(syntaxp (in-term-order-* rhs mfc state))
                   (bind-free 
                    (find-constant-factor-floor-mod lhs rhs)
                    (c))
-                  (real/rationalp c)
+                  (rationalp c)
                   (not (equal c 0)))
              (equal (floor lhs rhs)
                     (floor (* c lhs) (* c rhs)))))
 
 (defthm mod-cancel-*-const
-    (implies (and (real/rationalp (/ lhs rhs))
+    (implies (and (rationalp (/ lhs rhs))
                   (syntaxp (in-term-order-* lhs mfc state))
 		(syntaxp (in-term-order-* rhs mfc state))
                   (bind-free 
                    (find-constant-factor-floor-mod lhs rhs)
 		   (c))
-		  (real/rationalp c)
+		  (rationalp c)
                   (not (equal c 0)))
              (equal (mod lhs rhs)
                     (* (/ c)
@@ -1612,7 +1604,7 @@ an easy reduction unless the above applies anyway.
          nil)))
 
 (defthm cancel-floor-+
-    (implies (and (real/rationalp (/ x y))
+    (implies (and (rationalp (/ x y))
                   (syntaxp (in-term-order-+ x mfc state))
                   (bind-free 
                    (find-cancelling-addends x y mfc state)
@@ -1627,7 +1619,7 @@ an easy reduction unless the above applies anyway.
 		  (acl2-numberp y)
 		  (not (equal y 0))
 		  (syntaxp (not (equal x ''0)))
-                  (real/rationalp (/ x y))
+                  (rationalp (/ x y))
                   (syntaxp (in-term-order-+ x mfc state))
                   (bind-free 
                    (find-cancelling-addends x y mfc state)
@@ -1803,7 +1795,7 @@ an easy reduction unless the above applies anyway.
 ;; Jared 13.42 seconds (some gc)
     (implies (and (acl2-numberp x)
 		  (acl2-numberp y)
-                  (real/rationalp (/ x y))
+                  (rationalp (/ x y))
 		  (not (equal y 0))
                   (syntaxp (in-term-order-+ x mfc state))
                   (bind-free 
@@ -1861,7 +1853,7 @@ an easy reduction unless the above applies anyway.
 (defthm |(mod (+ x (- (mod a b))) y)|
     (implies (and (acl2-numberp x)
 		  (acl2-numberp y)
-                  (real/rationalp (/ x y))
+                  (rationalp (/ x y))
 		  (not (equal y 0))
                   (syntaxp (in-term-order-+ x mfc state))
                   (bind-free 

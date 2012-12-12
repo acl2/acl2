@@ -1,4 +1,3 @@
-
 ; Arithmetic-5 Library
 ; Copyright (C) 2009 Robert Krug <rkrug@cs.utexas.edu>
 ;
@@ -46,12 +45,12 @@
 	  (iff (< w x) (< y z)))))
 
 (defthm /-preserves-positive
-  (implies (real/rationalp x)
+  (implies (rationalp x)
 	   (equal (< 0 (/ x))
 		  (< 0 x))))
 
 (defthm /-preserves-negative
-  (implies (real/rationalp x)
+  (implies (rationalp x)
 	   (equal (< (/ x) 0)
 		  (< x 0))))
 
@@ -84,8 +83,8 @@
          (< x y)))
 
 (defthm <-*-0
-  (implies (and (real/rationalp x)
-                (real/rationalp y))
+  (implies (and (rationalp x)
+                (rationalp y))
            (equal (< (* x y) 0)
                 (and (not (equal x 0))
                      (not (equal y 0))
@@ -93,8 +92,8 @@
                           (< 0 y))))))
 
 (defthm 0-<-*
-  (implies (and (real/rationalp x)
-                (real/rationalp y))
+  (implies (and (rationalp x)
+                (rationalp y))
            (equal (< 0 (* x y))
                 (and (not (equal x 0))
                      (not (equal y 0))
@@ -111,9 +110,9 @@
  (in-arithmetic-theory '((:rewrite COMMUTATIVITY-OF-*))))
 
 (defthm <-*-right-cancel
-  (implies (and (fc (real/rationalp x))
-		(fc (real/rationalp y))
-                (fc (real/rationalp z)))
+  (implies (and (fc (rationalp x))
+		(fc (rationalp y))
+                (fc (rationalp z)))
            (equal (< (* x z) (* y z))
 		  (cond ((< 0 z) (< x y))
 			((< z 0) (< y x))
@@ -121,9 +120,9 @@
 			(t nil)))))
 
 (defthm <-*-left-cancel
-  (implies (and (fc (real/rationalp x))
-		(fc (real/rationalp y))
-                (fc (real/rationalp z)))
+  (implies (and (fc (rationalp x))
+		(fc (rationalp y))
+                (fc (rationalp z)))
            (equal (< (* z x) (* z y))
 		  (cond ((< 0 z) (< x y))
 			((< z 0) (< y x))
@@ -131,8 +130,8 @@
 			(t nil)))))
 
 (defthm <-*-x-y-y
-  (implies (and (fc (real/rationalp x))
-		(fc (real/rationalp y)))
+  (implies (and (fc (rationalp x))
+		(fc (rationalp y)))
 	   (equal (< (* x y) y)
 		  (cond
                    ((< 0 y) (< x 1))
@@ -141,8 +140,8 @@
 		   (t nil)))))
 
 (defthm <-*-y-x-y
-  (implies (and (fc (real/rationalp x))
-		(fc (real/rationalp y)))
+  (implies (and (fc (rationalp x))
+		(fc (rationalp y)))
 	   (equal (< (* y x) y)
 		  (cond
                    ((< 0 y) (< x 1))
@@ -151,8 +150,8 @@
                    (t nil)))))
 
 (defthm <-y-*-x-y
-  (implies (and (fc (real/rationalp x))
-		(fc (real/rationalp y)))
+  (implies (and (fc (rationalp x))
+		(fc (rationalp y)))
 	   (equal (< y (* x y))
 		  (cond
                    ((< 0 y) (< 1 x))
@@ -161,8 +160,8 @@
                    (t nil)))))
 
 (defthm <-y-*-y-x
-  (implies (and (fc (real/rationalp x))
-		(fc (real/rationalp y)))
+  (implies (and (fc (rationalp x))
+		(fc (rationalp y)))
 	   (equal (< y (* y x))
 		  (cond
                    ((< 0 y) (< 1 x))

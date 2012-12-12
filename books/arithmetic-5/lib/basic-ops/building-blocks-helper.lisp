@@ -40,30 +40,12 @@
      (cons `(rationalp ,(car args))
 	   (rationalp-guard-fn (cdr args))))))
 
-
-
 (local
  (defmacro rationalp-guard (&rest args)
    (if (endp (cdr args))
        `(rationalp ,(car args))
      (cons 'and
 	   (rationalp-guard-fn args)))))
-
-(local
- (defun real/rationalp-guard-fn (args)
-   (if (endp (cdr args))
-       `((real/rationalp ,(car args)))
-     (cons `(real/rationalp ,(car args))
-	   (real/rationalp-guard-fn (cdr args))))))
-
-
-
-(local
- (defmacro real/rationalp-guard (&rest args)
-   (if (endp (cdr args))
-       `(real/rationalp ,(car args))
-     (cons 'and
-	   (real/rationalp-guard-fn args)))))
 
 
 (local
@@ -85,7 +67,7 @@
 
 (local
  (defthm floor-bounds-1
-   (implies (real/rationalp-guard x y)
+   (implies (rationalp-guard x y)
 	    (and (< (+ (/ x y) -1)
 		    (floor x y))
 		 (<= (floor x y)
@@ -95,7 +77,7 @@
 
 (local
  (defthm floor-bounds-2
-   (implies (and (real/rationalp-guard x y)
+   (implies (and (rationalp-guard x y)
 		 (integerp (/ x y)))
 	    (equal (floor x y)
 		   (/ x y)))
@@ -104,7 +86,7 @@
 
 (local
  (defthm floor-bounds-3
-   (implies (and (real/rationalp-guard x y)
+   (implies (and (rationalp-guard x y)
 		 (not (integerp (/ x y))))
 	    (< (floor x y)
 	       (/ x y)))
@@ -131,16 +113,16 @@
   :rule-classes :linear)
 
 (defthm rewrite-floor-x*y-z-left
-  (implies (and (real/rationalp x)
-		(real/rationalp y)
-		(real/rationalp z)
+  (implies (and (rationalp x)
+		(rationalp y)
+		(rationalp z)
 		(not (equal z 0)))
 	   (equal (floor (* x y) z)
 		  (floor y (/ z x)))))
 
 (defun power-of-2-measure (x)
-  (declare (xargs :guard (and (real/rationalp x) (not (equal x 0)))))
-  (cond ((or (not (real/rationalp x))
+  (declare (xargs :guard (and (rationalp x) (not (equal x 0)))))
+  (cond ((or (not (rationalp x))
              (<= x 0)) 0)
 	((< x 1) (cons (cons 1 1) (floor (/ x) 1)))
 	(t (floor x 1))))
@@ -150,12 +132,12 @@
                   :measure (power-of-2-measure x)
 		  :hints (("Subgoal 2.2'" :use (:instance
 						(:theorem 
-						 (IMPLIES (AND (REAL/RATIONALP X)
+						 (IMPLIES (AND (RATIONALP X)
 							       (< 2 X))
 							  (< (FLOOR X 2) (FLOOR X 1))))
 						(x (/ x)))
 			                  :in-theory (enable NORMALIZE-<-/-TO-*-1)))))
-  (cond ((or (not (real/rationalp x))
+  (cond ((or (not (rationalp x))
              (<= x 0))
          0)
         ((< x 1) (+ -1 (power-of-2-helper (* 2 x))))

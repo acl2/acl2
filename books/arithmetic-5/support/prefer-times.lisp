@@ -89,52 +89,52 @@
 			(:REWRITE TIMES-MINUS-ONE))))
 
 (defthm normalize-<-/-to-*-1
-  (implies (and (real/rationalp x)
-		(real/rationalp y))
+  (implies (and (rationalp x)
+		(rationalp y))
 	   (equal (< x (/ y)) 
 		  (cond ((< y 0) (< 1 (* x y)))
 			((< 0 y) (< (* x y) 1))
 			(t (< x 0))))))
 
 (defthm normalize-<-/-to-*-2
-  (implies (and (real/rationalp x)
-		(real/rationalp y))
+  (implies (and (rationalp x)
+		(rationalp y))
 		(equal (< (/ y) x) 
 		       (cond ((< y 0) (< (* x y) 1))
 			     ((< 0 y) (< 1 (* x y)))
 			     (t (< 0 x))))))
 
 (defthm normalize-<-/-to-*-3-1
-  (implies (and (real/rationalp x)
-		(real/rationalp y)
-		(real/rationalp z))
+  (implies (and (rationalp x)
+		(rationalp y)
+		(rationalp z))
 	   (equal (< x (* y (/ z)))
 		  (cond ((< z 0) (< y (* x z)))
 			((< 0 z) (< (* x z) y))
 			(t (< x 0))))))
  
 (defthm normalize-<-/-to-*-3-2
-  (implies (and (real/rationalp x)
-		(real/rationalp y)
-		(real/rationalp z))
+  (implies (and (rationalp x)
+		(rationalp y)
+		(rationalp z))
 	   (equal (< x (* (/ z) y))
 		  (cond ((< z 0) (< y (* x z)))
 			((< 0 z) (< (* x z) y))
 			(t (< x 0))))))
 
 (defthm normalize-<-/-to-*-3-3
-  (implies (and (real/rationalp x)
-		(real/rationalp y)
-		(real/rationalp z))
+  (implies (and (rationalp x)
+		(rationalp y)
+		(rationalp z))
 	   (equal (< (* y (/ z)) x)
 		  (cond ((< z 0) (< (* x z) y))
 			((< 0 z) (< y (* x z)))
 			(t (< 0 x))))))
 
 (defthm normalize-<-/-to-*-3-4
-  (implies (and (real/rationalp x)
-		(real/rationalp y)
-		(real/rationalp z))
+  (implies (and (rationalp x)
+		(rationalp y)
+		(rationalp z))
 	   (equal (< (* (/ z) y) x)
 		  (cond ((< z 0) (< (* x z) y))
 			((< 0 z) (< y (* x z)))

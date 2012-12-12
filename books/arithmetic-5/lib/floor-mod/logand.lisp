@@ -271,8 +271,8 @@ and variants
 ;;; I should also consider (+ -1 (* 2 x)) and other variants.
 
 (defthm |(logand (* 2 x) (* 2 y))|
-  (implies (and (real/rationalp x)
-		(real/rationalp y)
+  (implies (and (rationalp x)
+		(rationalp y)
 		(integerp (* 2 x))
 		(integerp (* 2 y)))
 	   (equal (logand (* 2 x) (* 2 y))
@@ -290,8 +290,8 @@ and variants
   :rule-classes ((:rewrite
 		  :corollary
 		  (implies (and (syntaxp (rewriting-goal-literal x mfc state))
-				(real/rationalp x)
-				(real/rationalp y)
+				(rationalp x)
+				(rationalp y)
 				(integerp (* 2 x))
 				(integerp (* 2 y)))
 			   (equal (logand (* 2 x) (* 2 y))
@@ -320,7 +320,7 @@ and variants
 		  (implies (and (syntaxp (rewriting-goal-literal x mfc state))
 				(integerp (* 2 x))
 				(integerp (* 2 y))
-				(real/rationalp x)
+				(rationalp x)
 				(not (integerp x))
 				(integerp y))
 			   (equal (logand (* 2 x) (* 2 y))
@@ -331,7 +331,7 @@ and variants
 				(integerp (* 2 x))
 				(integerp (* 2 y))
 				(integerp x)
-				(real/rationalp y)
+				(rationalp y)
 				(not (integerp y)))
 			   (equal (logand (* 2 x) (* 2 y))
 				  (* 2 (logand x (+ -1/2 y))))))
@@ -340,9 +340,9 @@ and variants
 		  (implies (and (syntaxp (rewriting-goal-literal x mfc state))
 				(integerp (* 2 x))
 				(integerp (* 2 y))
-				(real/rationalp x)
+				(rationalp x)
 				(not (integerp x))
-				(real/rationalp y)
+				(rationalp y)
 				(not (integerp y)))
 			   (equal (logand (* 2 x) (* 2 y))
 				  (+ 1 (* 2 (logand (+ -1/2 x) (+ -1/2 y)))))))))
@@ -874,8 +874,8 @@ and variants
 ;;; this next bunch should be generalized to any power of 2
 
 (defthm |(logior (* 2 x) (* 2 y))|
-  (implies (and (real/rationalp x)
-		(real/rationalp y)
+  (implies (and (rationalp x)
+		(rationalp y)
 		(integerp (* 2 x))
 		(integerp (* 2 y)))
 	   (equal (logior (* 2 x) (* 2 y))
@@ -897,8 +897,8 @@ and variants
   :rule-classes ((:rewrite
 		  :corollary
 		  (implies (and (syntaxp (rewriting-goal-literal x mfc state))
-				(real/rationalp x)
-				(real/rationalp y)
+				(rationalp x)
+				(rationalp y)
 				(integerp (* 2 x))
 				(integerp (* 2 y)))
 			   (equal (logior (* 2 x) (* 2 y))
@@ -927,7 +927,7 @@ and variants
 		  (implies (and (syntaxp (rewriting-goal-literal x mfc state))
 				(integerp (* 2 x))
 				(integerp (* 2 y))
-				(real/rationalp x)
+				(rationalp x)
 				(not (integerp x))
 				(integerp y))
 			   (equal (logior (* 2 x) (* 2 y))
@@ -938,7 +938,7 @@ and variants
 				(integerp (* 2 x))
 				(integerp (* 2 y))
 				(integerp x)
-				(real/rationalp y)
+				(rationalp y)
 				(not (integerp y)))
 			   (equal (logior (* 2 x) (* 2 y))
 				  (+ 1 (* 2 (logior x (+ -1/2 y)))))))
@@ -947,9 +947,9 @@ and variants
 		  (implies (and (syntaxp (rewriting-goal-literal x mfc state))
 				(integerp (* 2 x))
 				(integerp (* 2 y))
-				(real/rationalp x)
+				(rationalp x)
 				(not (integerp x))
-				(real/rationalp y)
+				(rationalp y)
 				(not (integerp y)))
 			   (equal (logior (* 2 x) (* 2 y))
 				  (+ 1 (* 2 (logior (+ -1/2 x) (+ -1/2 y))))))))
@@ -1777,7 +1777,7 @@ and variants
 ;;; this next bunch should be generalized to any power of 2
 
 (defthm |(lognot (* 2 x))|
-  (implies (and (real/rationalp x)
+  (implies (and (rationalp x)
 		(integerp (* 2 x)))
 	   (equal (lognot (* 2 x))
 		  (if (integerp x)
@@ -1786,7 +1786,7 @@ and variants
   :rule-classes ((:rewrite
 		  :corollary
 		  (implies (and (syntaxp (rewriting-goal-literal x mfc state))
-				(real/rationalp x)
+				(rationalp x)
 				(integerp (* 2 x)))
 			   (equal (lognot (* 2 x))
 				  (if (integerp x)
@@ -1802,7 +1802,7 @@ and variants
 		  :corollary
 		  (implies (and (syntaxp (not (rewriting-goal-literal x mfc state)))
 				(integerp (* 2 x))
-				(real/rationalp x)
+				(rationalp x)
 				(not (integerp x)))
 			   (equal (lognot (* 2 x))
 				  (* 2 (lognot (+ -1/2 x))))))))

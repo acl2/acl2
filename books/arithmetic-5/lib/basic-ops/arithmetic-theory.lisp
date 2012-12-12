@@ -66,8 +66,8 @@
 
 (local
  (defthm temp510
-     (implies (and (real/rationalp x)
-                   (real/rationalp y))
+     (implies (and (rationalp x)
+                   (rationalp y))
               (equal (equal (+ x y) 0)
                      (equal x (- y))))))
 

@@ -106,8 +106,6 @@
 				     (binary-* x y)
                                      (integerp x)
 				     (rationalp x)
-				     #+non-standard-analysis
-				     (realp x)
 				     (hide x)
 				     (meta-integerp-unhide x)
 				     (if x y z)
@@ -160,13 +158,6 @@
 		(acl2-numberp y)
 		(not (rationalp y)))
 	   (not (rationalp (intp-+ x y)))))
-
-#+non-standard-analysis
-(defthm nintp-5
-  (implies (and (real/rationalp x)
-		(acl2-numberp y)
-		(not (real/rationalp y)))
-	   (not (real/rationalp (intp-+ x y)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -283,8 +274,7 @@
 				(mfc-rw+ '(INTEGERP x) 
 					 `((x . ,(car leaves)))
 					 t t mfc state)
-			      (mfc-rw+ #-non-standard-analysis '(RATIONALP x)
-				       #+non-standard-analysis '(REALP x)
+			      (mfc-rw+ '(RATIONALP x) 
 					 `((x . ,(car leaves)))
 					 t t mfc state))))
       (cond ((equal rewriting-result *t*)
@@ -322,9 +312,7 @@
 	((ts-subsetp (cadr (car type-alist))
 		     (if intp-flag
 			 *ts-integer*
-		       #-non-standard-analysis *ts-rational*
-		       #+non-standard-analysis *ts-real*
-		       ))
+		       *ts-rational*))
 	 (bag-terms (cdr type-alist) bin-op
 		    (cons (leaves (caar type-alist) bin-op)
 			  intp-bags)
@@ -335,9 +323,7 @@
 	      (ts-subsetp (cadr (car type-alist))
 			  (ts-complement (if intp-flag
 					     *ts-integer*
-					   #-non-standard-analysis *ts-rational*
-					   #+non-standard-analysis *ts-real*
-					   ))))
+					   *ts-rational*))))
 	 (bag-terms (cdr type-alist) bin-op
 		    intp-bags
 		    (cons (leaves (caar type-alist) bin-op)
@@ -530,47 +516,6 @@
 		      term)))))
 	  term))
     term))
-
-#+non-standard-analysis
-(defun meta-realp (term mfc state)
-  (declare (xargs :guard (pseudo-termp term)))
-
-; Assumptions: 1. Term is right-associated.  2. Not all leaves
-; are known to be integers by type-set.
-;
-; Pseudo-Example:
-; (integerp (+ a (+ b (+ c d))))
-;  ==> (integerp (intp-+ (+ a c) (+ b d)))
-
-  (if (eq (fn-symb term) 'REALP)
-           
-      (let ((bin-op (fn-symb (fargn term 1))))
-	(if (and (member-eq bin-op '(BINARY-+ BINARY-*))
-		 (eq (fn-symb (fargn (fargn term 1) 2)) bin-op))
-
-	    ;; We have a term of the form:
-	    ;; (integerp (bin-op x (bin-op y z))).
-
-	    (let ((leaves (leaves (fargn term 1) bin-op)))
-	      (mv-let (intp-leaves non-intp-leaves)
-		(bag-leaves leaves mfc state nil nil nil)
-		(mv-let (intp-bags non-intp-bags)
-		  (bag-terms (mfc-type-alist mfc) bin-op
-			     intp-leaves non-intp-leaves
-			     nil)
-		  (mv-let (flag bag-list)
-		    (collect-bags leaves intp-bags non-intp-bags bin-op)
-		    (if flag
-			`(REALP (META-INTEGERP-UNHIDE
-				     (HIDE
-				      ,(big-tree bag-list
-						 (if (eq bin-op 'BINARY-+)
-						     'INTP-+
-						   'INTP-*)
-						 bin-op))))
-		      term)))))
-	  term))
-    term))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -626,8 +571,8 @@
 
    (local
     (defthm floor-bounds-1
-        (implies (and (real/rationalp x)
-                      (real/rationalp y))
+        (implies (and (rationalp x)
+                      (rationalp y))
                  (and (< (+ (/ x y) -1)
                          (floor x y))
                       (<= (floor x y)
@@ -637,8 +582,8 @@
 
    (local
     (defthm floor-bounds-2
-        (implies (and (real/rationalp x)
-                      (real/rationalp y)
+        (implies (and (rationalp x)
+                      (rationalp y)
                       (integerp (/ x y)))
                  (equal (floor x y)
                         (/ x y)))
@@ -647,8 +592,8 @@
 
    (local
     (defthm floor-bounds-3
-        (implies (and (real/rationalp x)
-                      (real/rationalp y)
+        (implies (and (rationalp x)
+                      (rationalp y)
                       (not (integerp (/ x y))))
                  (< (floor x y)
                     (/ x y)))
@@ -750,19 +695,6 @@
                      (<= (logand x y) 8191)))
      :hints (("Goal" :use ((:instance logand-bounds
                                       (n 13))))))
-
-   #+non-standard-analysis
-   (defthm logand-thm-2
-       (implies (and (integerp x)
-                     (<= -65536 x)
-                     (<= x 65535)
-                     (integerp y)
-                     (<= -65536 y)
-                     (<= y 65535))
-                (and (<= -65536 (logand x y))
-                     (<= (logand x y) 65535)))
-     :hints (("Goal" :use ((:instance logand-bounds
-                                      (n 16))))))
    
    ))
 #| 
@@ -903,12 +835,6 @@
                                                       collect-bags))))
 
  (verify-guards meta-rationalp
-                  :hints (("Goal" :in-theory (disable bag-leaves
-                                                      bag-terms
-                                                      collect-bags))))
-
- #+non-standard-analysis
- (verify-guards meta-realp
                   :hints (("Goal" :in-theory (disable bag-leaves
                                                       bag-terms
                                                       collect-bags))))
@@ -1094,12 +1020,6 @@
 	  (intp-eva (meta-rationalp term mfc state) a))
    :rule-classes ((:meta :trigger-fns (RATIONALP))))
 
- #+non-standard-analysis
- (defthm meta-realp-correct
-   (equal (intp-eva term a)
-	  (intp-eva (meta-realp term mfc state) a))
-   :rule-classes ((:meta :trigger-fns (REALP))))
-
 )
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1107,9 +1027,6 @@
 (in-theory (disable leaves tree big-tree bag-leaves bag-terms
 		    subtract-leaf subtract-bag
 		    collect-bags-intp collect-bags-non-intp
-		    collect-bags meta-integerp meta-rationalp 
-		    #+non-standard-analysis
-		    meta-realp
-		    ))
+		    collect-bags meta-integerp meta-rationalp))
 
 (in-theory (disable intp-+ intp-*))

@@ -59,12 +59,6 @@
            (rationalp (expt x n)))
   :rule-classes (:type-prescription :generalize))
 
-#+non-standard-analysis
-(defthm expt-type-prescription-realp-base
-  (implies (real/rationalp x)
-           (real/rationalp (expt x n)))
-  :rule-classes (:type-prescription :generalize))
-
 (defthm expt-type-prescription-integerp-base
   (implies (and (<= 0 n)
                 (integerp x))
@@ -133,26 +127,10 @@
 		(< 0 (expt x n))))
   :rule-classes (:type-prescription :generalize))
 
-#+non-standard-analysis
-(defthm expt-type-prescription-positive-base-real-case
-  (implies (and (< 0 x)
-                (real/rationalp x))
-           (and (real/rationalp (expt x n))
-		(< 0 (expt x n))))
-  :rule-classes (:type-prescription :generalize))
-
 (defthm expt-type-prescription-nonnegative-base
   (implies (and (<= 0 x)
                 (rationalp x))
 	   (and (rationalp (expt x n))
-		(<= 0 (expt x n))))
-  :rule-classes (:type-prescription :generalize))
-
-#+non-standard-analysis
-(defthm expt-type-prescription-nonnegative-base-real-case
-  (implies (and (<= 0 x)
-                (real/rationalp x))
-	   (and (real/rationalp (expt x n))
 		(<= 0 (expt x n))))
   :rule-classes (:type-prescription :generalize))
 
@@ -247,14 +225,14 @@
 
 (defthm |(equal (expt x n) -1)|
   (implies (and (integerp n)
-		(real/rationalp x))
+		(rationalp x))
 	   (equal (equal (expt x n) -1)
 		  (and (equal x -1)
 		       (oddp n)))))
 
 (defthm |(equal (expt x n) 0)|
   (implies (and (integerp n)
-		(real/rationalp x))
+		(rationalp x))
 	   (equal (equal (expt x n) 0)
 		  (and (equal x 0)
 		       (not (equal n 0))))))
@@ -264,7 +242,7 @@
 
 (defthm |(equal (expt x n) 1)|
   (implies  (and (integerp n)
-		 (real/rationalp x)
+		 (rationalp x)
 		 (syntaxp (rewriting-goal-literal x mfc state)))
 	   (equal (equal (expt x n) 1)
 		  (or (zip n)
@@ -517,7 +495,7 @@
 		  (<= 0 n))))
 
 (defthm |(< (expt x n) (expt x m))|
-   (implies (and (real/rationalp x)
+   (implies (and (rationalp x)
 		 (< 1 x)
 		 (integerp m)
 		 (integerp n))
@@ -525,7 +503,7 @@
 		   (< m n))))
 
  (defthm |(equal (expt x m) (expt x n))|
-   (implies (and (real/rationalp x)
+   (implies (and (rationalp x)
 		 (not (equal x -1))
 		 (not (equal x 0))
 		 (not (equal x 1))
@@ -540,14 +518,14 @@
 ;;; again, I do not see how.
 
 (defthm expt-exceeds-another-by-more-than-y
-  (implies (and (real/rationalp x)
+  (implies (and (rationalp x)
 		(< 1 x)
                 (integerp m)
                 (integerp n)
 		(<= 0 m)
                 (<= 0 n)
                 (< m n)
-		(real/rationalp y)
+		(rationalp y)
 		(< (+ y 1) x))
 	   (< (+ y (expt x m)) (expt x n))))
 
@@ -578,7 +556,7 @@
 (defthm expt-x->-x
   (implies (and (< 1 x)
 		(< 1 n)
-		(real/rationalp x)
+		(rationalp x)
 		(integerp n))
 	   (< x (expt x n)))
   :rule-classes (:rewrite :linear))
@@ -586,7 +564,7 @@
 (defthm expt-x->=-x
   (implies (and (<= 1 x)
 		(< 1 n)
-		(real/rationalp x)
+		(rationalp x)
 		(integerp n))
 	   (<= x (expt x n)))
   :rule-classes (:rewrite :linear))
@@ -596,7 +574,7 @@
 		(< 1 x)
 		(integerp m)
 		(integerp n)
-		(real/rationalp x))
+		(rationalp x))
 	   (< (expt x m)
 	      (expt x n)))
   :rule-classes ((:rewrite)
@@ -608,7 +586,7 @@
                 (< x 1)
                 (integerp m)
                 (integerp n)
-                (real/rationalp x))
+                (rationalp x))
            (< (expt x n)
               (expt x m)))
   :rule-classes ((:rewrite)
@@ -619,7 +597,7 @@
                 (<= 1 x)
                 (integerp m)
                 (integerp n)
-                (real/rationalp x))
+                (rationalp x))
            (<= (expt x m)
                (expt x n)))
   :rule-classes ((:rewrite)
@@ -631,7 +609,7 @@
                 (<= x 1)
                 (integerp m)
                 (integerp n)
-                (real/rationalp x))
+                (rationalp x))
            (<= (expt x n)
                (expt x m)))
   :rule-classes ((:rewrite)
@@ -642,7 +620,7 @@
 (defthm expt->-1-one
   (implies (and (< 1 x)
 		(< 0 n)
-		(real/rationalp x)
+		(rationalp x)
 		(integerp n))
 	   (< 1 (expt x n)))
   :rule-classes :linear)
@@ -650,7 +628,7 @@
 (defthm expt->=-1-one
   (implies (and (<= 1 x)
 		(<= 0 n)
-		(real/rationalp x)
+		(rationalp x)
 		(integerp n))
 	   (<= 1 (expt x n)))
   :rule-classes :linear)
@@ -659,7 +637,7 @@
   (implies (and (< 0 x)
 		(< x 1)
 		(< n 0)
-		(real/rationalp x)
+		(rationalp x)
 		(integerp n))
 	   (< 1 (expt x n)))
   :rule-classes :linear)
@@ -668,7 +646,7 @@
   (implies (and (< 0 x)
 		(<= x 1)
 		(<= n 0)
-		(real/rationalp x)
+		(rationalp x)
 		(integerp n))
 	   (<= 1 (expt x n)))
   :rule-classes :linear)
@@ -677,7 +655,7 @@
   (implies (and (< 0 x)
 		(< x 1)
 		(< 0 n)
-		(real/rationalp x)
+		(rationalp x)
 		(integerp n))
 	   (< (expt x n) 1))
   :rule-classes :linear)
@@ -686,7 +664,7 @@
   (implies (and (<= 0 x)
 		(<= x 1)
 		(<= 0 n)
-		(real/rationalp x)
+		(rationalp x)
 		(integerp n))
 	   (<= (expt x n) 1))
   :hints (("Goal" :cases ((equal x 0)
@@ -696,7 +674,7 @@
 (defthm expt-<-1-two
   (implies (and (< 1 x)
 		(< n 0)
-		(real/rationalp x)
+		(rationalp x)
 		(integerp n))
 	   (< (expt x n) 1))
   :rule-classes :linear)
@@ -704,7 +682,7 @@
 (defthm expt-<=-1-two
   (implies (and (<= 1 x)
 		(<= n 0)
-		(real/rationalp x)
+		(rationalp x)
 		(integerp n))
 	   (<= (expt x n) 1))
   :rule-classes :linear)
@@ -744,7 +722,7 @@
 		(<= d n)
 		(syntaxp (rational-constant-p d))
 		(integerp d)
-		(real/rationalp c)
+		(rationalp c)
 		(< 1 c)
 		(integerp n))
 	   (<= (expt c d) (expt c n)))
@@ -758,7 +736,7 @@
 		(syntaxp (rational-constant-p d))
 		(not (equal n d))
 		(integerp d)
-		(real/rationalp c)
+		(rationalp c)
 		(< 1 c)
 		(integerp n))
 	   (<= (expt c (+ 1 d)) (expt c n)))
@@ -774,7 +752,7 @@
 		(< n d)
 		(syntaxp (rational-constant-p d))
 		(integerp d)
-		(real/rationalp c)
+		(rationalp c)
 		(< 1 c)
 		(integerp n))
 	   (<= (expt c n) (expt c (+ -1 d))))
@@ -790,7 +768,7 @@
 		(<= n d)
 		(syntaxp (rational-constant-p d))
 		(integerp d)
-		(real/rationalp c)
+		(rationalp c)
 		(< 1 c)
 		(integerp n))
 	   (<= (expt c n) (expt c d)))
@@ -802,7 +780,7 @@
 		(syntaxp (rational-constant-p d))
 		(not (equal n d))
 		(integerp d)
-		(real/rationalp c)
+		(rationalp c)
 		(< 1 c)
 		(integerp n))
 	   (<= (expt c n) (expt c (+ -1 d))))
@@ -937,7 +915,7 @@
 		(integerp ubd))
 	   ;; Caught in expt-linear-upper-<-fn
 	   nil)
-	  ((real/rationalp ubd)
+	  ((rationalp ubd)
 	   (list (cons 'd (kwote (floor ubd 1)))))
 	  (t
 	   nil))))
@@ -964,14 +942,14 @@
 	  ((and (equal lbd-rel '<)
 		(integerp lbd))
 	   nil)
-	  ((real/rationalp lbd)
+	  ((rationalp lbd)
 	   (list (cons 'd (kwote (+ 1 (floor lbd 1))))))
 	  (t
 	   nil))))
 
 (defthm expt-linear-upper-<
   (implies (and (syntaxp (rational-constant-p c))
-		(real/rationalp c)
+		(rationalp c)
 		(< 1 c)
 		(bind-free (expt-linear-upper-<-fn n mfc state)
 			   (d))
@@ -983,7 +961,7 @@
 
 (defthm expt-linear-upper-<=
   (implies (and (syntaxp (rational-constant-p c))
-		(real/rationalp c)
+		(rationalp c)
 		(< 1 c)
 		(bind-free (expt-linear-upper-<=-fn n mfc state)
 			   (d))
@@ -995,7 +973,7 @@
 
 (defthm expt-linear-lower-<
   (implies (and (syntaxp (rational-constant-p c))
-		(real/rationalp c)
+		(rationalp c)
 		(< 1 c)
 		(bind-free (expt-linear-lower-<-fn n mfc state)
 			   (d))
@@ -1007,7 +985,7 @@
 
 (defthm expt-linear-lower-<=
   (implies (and (syntaxp (rational-constant-p c))
-		(real/rationalp c)
+		(rationalp c)
 		(< 1 c)
 		(bind-free (expt-linear-lower-<=-fn n mfc state)
 			   (d))
@@ -1031,32 +1009,12 @@
 		(< 0 (expt x n))))
   :rule-classes (:type-prescription :generalize))
 
-#+non-standard-analysis
-(defthm expt-type-prescription-negative-base-even-exponent-real-case
-  (implies (and (< x 0)
-		(real/rationalp x)
-		(integerp n)
-		(integerp (* 1/2 n)))
-	   (and (real/rationalp (expt x n))
-		(< 0 (expt x n))))
-  :rule-classes (:type-prescription :generalize))
-
 (defthm expt-type-prescription-negative-base-odd-exponent
   (implies (and (< x 0)
 		(rationalp x)
 		(integerp n)
 		(not (integerp (* 1/2 n))))
 	   (and (rationalp (expt x n))
-		(< (expt x n) 0)))
-  :rule-classes (:type-prescription :generalize))
-
-#+non-standard-analysis
-(defthm expt-type-prescription-negative-base-odd-exponent-real-case
-  (implies (and (< x 0)
-		(real/rationalp x)
-		(integerp n)
-		(not (integerp (* 1/2 n))))
-	   (and (real/rationalp (expt x n))
 		(< (expt x n) 0)))
   :rule-classes (:type-prescription :generalize))
 
@@ -1071,36 +1029,12 @@
   :hints (("Goal" :use ((:instance 
 			 expt-type-prescription-negative-base-even-exponent-a)))))
 
-#+non-standard-analysis
-(defthm expt-type-prescription-nonpositive-base-even-exponent-real-case
-  (implies (and (<= x 0)
-                (real/rationalp x)
-		(integerp n)
-		(integerp (* 1/2 n)))
-	   (and (real/rationalp (expt x n))
-		(<= 0 (expt x n))))
-  :rule-classes (:type-prescription :generalize)
-  :hints (("Goal" :use ((:instance 
-			 expt-type-prescription-negative-base-even-exponent-a)))))
-
 (defthm expt-type-prescription-nonpositive-base-odd-exponent
   (implies (and (<= x 0)
                 (rationalp x)
 		(integerp n)
 		(not (integerp (* 1/2 n))))
 	   (and (rationalp (expt x n))
-		(<= (expt x n) 0)))
-  :rule-classes (:type-prescription :generalize)
-  :hints (("Goal" :use ((:instance 
-			 expt-type-prescription-negative-base-odd-exponent-a)))))
-
-#+non-standard-analysis
-(defthm expt-type-prescription-nonpositive-base-odd-exponent-real-case
-  (implies (and (<= x 0)
-                (real/rationalp x)
-		(integerp n)
-		(not (integerp (* 1/2 n))))
-	   (and (real/rationalp (expt x n))
 		(<= (expt x n) 0)))
   :rule-classes (:type-prescription :generalize)
   :hints (("Goal" :use ((:instance 
