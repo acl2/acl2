@@ -47,7 +47,7 @@
 (defthm rewrite-truncate-to-floor
   (implies (syntaxp (rewriting-goal-literal x mfc state))
 	   (equal (truncate x y)
-		  (cond ((not (rationalp (/ x y)))
+		  (cond ((not (real/rationalp (/ x y)))
 			 0)
 			((<= 0 (/ x y))
 			 (floor x y))
@@ -60,7 +60,7 @@
 (defthm rewrite-rem-to-mod
   (implies (syntaxp (rewriting-goal-literal x mfc state))
 	   (equal (rem x y)
-		  (cond ((not (rationalp (/ x y)))
+		  (cond ((not (real/rationalp (/ x y)))
 			 (if (acl2-numberp x)
 			     x
 			   0))
@@ -75,7 +75,7 @@
 (defthm rewrite-ceiling-to-floor
   (implies (syntaxp (rewriting-goal-literal x mfc state))
 	   (equal (ceiling x y)
-		  (cond ((not (rationalp (/ x y)))
+		  (cond ((not (real/rationalp (/ x y)))
 			 0)
 			((integerp (/ x y))
 			 (/ x y))
@@ -88,7 +88,7 @@
 (defthm rewrite-round-to-floor
   (implies (syntaxp (rewriting-goal-literal x mfc state))
 	   (equal (round x y)
-		  (cond ((not (rationalp (/ x y)))
+		  (cond ((not (real/rationalp (/ x y)))
 			 (cond ((< 1/2 (/ x y))
 				1)
 			       ((< (/ x y) -1/2)

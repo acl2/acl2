@@ -75,10 +75,25 @@
 	   (integerp (mod x y)))
   :rule-classes (:rewrite :type-prescription))
 
+#-non-standard-analysis
 (defthm rationalp-mod
   (implies (rationalp x)
            (rationalp (mod x y)))
   :hints (("Goal" :cases ((rationalp y))))
+  :rule-classes (:rewrite :type-prescription))
+
+#+non-standard-analysis
+(defthm rationalp-mod
+  (implies (and (rationalp x)
+		(rationalp y))
+           (rationalp (mod x y)))
+  :rule-classes (:rewrite :type-prescription))
+
+#+non-standard-analysis
+(defthm realp-mod
+  (implies (real/rationalp x)
+           (real/rationalp (mod x y)))
+  :hints (("Goal" :cases ((real/rationalp y))))
   :rule-classes (:rewrite :type-prescription))
 
 (defthm floor-mod-elim
@@ -93,7 +108,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defthm linear-floor-bounds-1
-  (implies (rationalp (/ x y))
+  (implies (real/rationalp (/ x y))
 	   (and (< (+ (/ x y) -1)
 		   (floor x y))
 		(<= (floor x y)
@@ -109,7 +124,7 @@
 		 (:linear :trigger-terms ((floor x y)))))
 
 (defthm linear-floor-bounds-3
-  (implies (and (rationalp (/ x y))
+  (implies (and (real/rationalp (/ x y))
 		(not (integerp (/ x y))))
 	   (< (floor x y)
 	      (/ x y)))
@@ -121,9 +136,9 @@
 
  (local
   (defthm hack0
-    (implies (and (rationalp x)
-		  (rationalp y)
-		  (rationalp z))
+    (implies (and (real/rationalp x)
+		  (real/rationalp y)
+		  (real/rationalp z))
 	     (equal (* z (complex x y))
 		    (complex (* x z) (* y z))))
     :hints (("Goal" :use ((:instance complex-definition)
@@ -137,15 +152,15 @@
 
  (local
   (defthm hack1
-    (implies (and (rationalp x)
-		  (rationalp y))
-	     (equal (rationalp (complex x y))
+    (implies (and (real/rationalp x)
+		  (real/rationalp y))
+	     (equal (real/rationalp (complex x y))
 		    (equal y 0)))))
 
  (local
   (defthm hack2
     (implies (and (acl2-numberp x)
-		  (rationalp y))
+		  (real/rationalp y))
 	     (and (equal (realpart (* x y))
 			 (* y (realpart x)))
 		  (equal (imagpart (* x y))
@@ -154,19 +169,19 @@
  (local
   (defthm hack3
     (implies (and (acl2-numberp x)
-		  (rationalp y)
+		  (real/rationalp y)
 		  (not (equal y 0)))
-	     (equal (rationalp (* x y))
+	     (equal (real/rationalp (* x y))
 		    (equal (imagpart x) 0)))
-    :hints (("Goal" :cases ((rationalp x)
+    :hints (("Goal" :cases ((real/rationalp x)
 			    (complex-rationalp x))))))
 
  (local
   (defthm foo-1
     (implies (and (acl2-numberp x)
 		  (< 0 x)
-		  (rationalp y)
-		  (rationalp z)
+		  (real/rationalp y)
+		  (real/rationalp z)
 		  (< y z))
 	     (< (* x y) (* x z)))
     :hints (("Goal" :use ((:instance completion-of-<
@@ -183,8 +198,8 @@
   (defthm foo-2
     (implies (and (acl2-numberp x)
 		  (< 0 x)
-		  (rationalp y)
-		  (rationalp z)
+		  (real/rationalp y)
+		  (real/rationalp z)
 		  (<= y z))
 	     (<= (* x y) (* x z)))
     :hints (("Goal" :use ((:instance completion-of-<
@@ -200,8 +215,8 @@
   (defthm foo-3
     (implies (and (acl2-numberp x)
 		  (< x 0)
-		  (rationalp y)
-		  (rationalp z)
+		  (real/rationalp y)
+		  (real/rationalp z)
 		  (< y z))
 	     (< (* x z) (* x y)))
     :hints (("Goal" :use ((:instance completion-of-<
@@ -217,8 +232,8 @@
   (defthm foo-4
     (implies (and (acl2-numberp x)
 		  (< x 0)
-		  (rationalp y)
-		  (rationalp z)
+		  (real/rationalp y)
+		  (real/rationalp z)
 		  (<= y z))
 	     (<= (* x z) (* x y)))
     :hints (("Goal" :use ((:instance completion-of-<
@@ -231,7 +246,7 @@
 				 (equal y 0))))))
 
  (defthm mod-bounds-1
-   (implies (and (rationalp (/ x y))
+   (implies (and (real/rationalp (/ x y))
 		 (< 0 y))
 	    (and (<= 0 (mod x y))
 		 (< (mod x y) y)))
@@ -252,7 +267,7 @@
    :otf-flg t)
 
  (defthm mod-bounds-2
-   (implies (and (rationalp (/ x y))
+   (implies (and (real/rationalp (/ x y))
 		 (< y 0))
 	    (and (<= (mod x y) 0)
 		 (< y (mod x y))))
@@ -283,9 +298,9 @@
 
  (local
   (defthm hack0
-    (implies (and (rationalp x)
-		  (rationalp y)
-		  (rationalp z))
+    (implies (and (real/rationalp x)
+		  (real/rationalp y)
+		  (real/rationalp z))
 	     (equal (* z (complex x y))
 		    (complex (* x z) (* y z))))
     :hints (("Goal" :use ((:instance complex-definition)
@@ -299,15 +314,15 @@
 
  (local
   (defthm hack1
-    (implies (and (rationalp x)
-		  (rationalp y))
-	     (equal (rationalp (complex x y))
+    (implies (and (real/rationalp x)
+		  (real/rationalp y))
+	     (equal (real/rationalp (complex x y))
 		    (equal y 0)))))
 
  (local
   (defthm hack2
     (implies (and (acl2-numberp x)
-		  (rationalp y))
+		  (real/rationalp y))
 	     (and (equal (realpart (* x y))
 			 (* y (realpart x)))
 		  (equal (imagpart (* x y))
@@ -316,19 +331,19 @@
  (local
   (defthm hack3
     (implies (and (acl2-numberp x)
-		  (rationalp y)
+		  (real/rationalp y)
 		  (not (equal y 0)))
-	     (equal (rationalp (* x y))
+	     (equal (real/rationalp (* x y))
 		    (equal (imagpart x) 0)))
-    :hints (("Goal" :cases ((rationalp x)
+    :hints (("Goal" :cases ((real/rationalp x)
 			    (complex-rationalp x))))))
 
  (local
   (defthm foo-1
     (implies (and (acl2-numberp x)
 		  (< 0 x)
-		  (rationalp y)
-		  (rationalp z)
+		  (real/rationalp y)
+		  (real/rationalp z)
 		  (< y z))
 	     (< (* x y) (* x z)))
     :hints (("Goal" :use ((:instance completion-of-<
@@ -345,8 +360,8 @@
   (defthm foo-2
     (implies (and (acl2-numberp x)
 		  (<= 0 x)
-		  (rationalp y)
-		  (rationalp z)
+		  (real/rationalp y)
+		  (real/rationalp z)
 		  (<= y z))
 	     (<= (* x y) (* x z)))
     :hints (("Goal" :use ((:instance completion-of-<
@@ -362,8 +377,8 @@
   (defthm foo-3
     (implies (and (acl2-numberp x)
 		  (< x 0)
-		  (rationalp y)
-		  (rationalp z)
+		  (real/rationalp y)
+		  (real/rationalp z)
 		  (< y z))
 	     (< (* x z) (* x y)))
     :hints (("Goal" :use ((:instance completion-of-<
@@ -379,8 +394,8 @@
   (defthm foo-4
     (implies (and (acl2-numberp x)
 		  (<= x 0)
-		  (rationalp y)
-		  (rationalp z)
+		  (real/rationalp y)
+		  (real/rationalp z)
 		  (<= y z))
 	     (<= (* x z) (* x y)))
     :hints (("Goal" :use ((:instance completion-of-<
@@ -395,13 +410,13 @@
  (local
   (defthm floor-rule-1
     (implies (and (syntaxp (rewriting-goal-literal x mfc state))
-		  (rationalp (/ x y)))
+		  (real/rationalp (/ x y)))
 	     (equal (< 0 (floor x y))
 		    (<= 1 (/ x y))))))
 
  (local
   (defthm bar-1
-    (implies (rationalp (/ x y))
+    (implies (real/rationalp (/ x y))
 	     (equal (< (/ x y) 1)
 		    (not (or (and (< 0 y)
 				  (<= y x))
@@ -434,14 +449,14 @@
     (implies (and (syntaxp (rewriting-goal-literal x mfc state))
 		  (acl2-numberp x)
 		  (acl2-numberp y)
-		  (rationalp (/ x y)))
+		  (real/rationalp (/ x y)))
 	     (equal (< (floor x y) 0)
 		    (< (/ x y) 0)))
     :otf-flg t))
 
  (local
   (defthm bar-2
-    (implies (rationalp (/ x y))
+    (implies (real/rationalp (/ x y))
 	     (equal (< (/ x y) 0)
 		    (or (and (< 0 y)
 			     (< x 0))
@@ -470,7 +485,7 @@
 
  (defthm floor-positive
   (implies (and (syntaxp (rewriting-goal-literal x mfc state))
-                (rationalp (/ x y)))
+                (real/rationalp (/ x y)))
            (equal (< 0 (floor x y))
                   (or (and (< 0 y)
                            (<= y x))
@@ -482,7 +497,7 @@
 		  :corollary
 		  (implies (and (syntaxp 
                                  (not (rewriting-goal-literal x mfc state)))
-                                (rationalp (/ x y))
+                                (real/rationalp (/ x y))
 				(<= 1 (/ x y)))
                            (< 0 (floor x y))))
 		 (:rewrite
@@ -490,7 +505,7 @@
 		  :corollary
 		  (implies (and (syntaxp 
                                  (not (rewriting-goal-literal x mfc state)))
-                                (rationalp (/ x y))
+                                (real/rationalp (/ x y))
                                 (< 0 y)
                                 (<= y x))
                            (< 0 (floor x y))))
@@ -499,26 +514,26 @@
 		  :corollary
 		  (implies (and (syntaxp 
                                  (not (rewriting-goal-literal x mfc state)))
-                                (rationalp (/ x y))
+                                (real/rationalp (/ x y))
                                 (< y 0)
                                 (<= x y))
 			   (< 0 (floor x y))))
 		 (:type-prescription
 		  :corollary
-		  (implies (and (rationalp (/ x y))
+		  (implies (and (real/rationalp (/ x y))
 				(<= 1 (/ x y)))
 			   (and (integerp (floor x y))
 				(< 0 (floor x y)))))
 		 (:type-prescription
 		  :corollary
-		  (implies (and (rationalp (/ x y))
+		  (implies (and (real/rationalp (/ x y))
                                 (< 0 y)
                                 (<= y x))
 			   (and (integerp (floor x y))
 				(< 0 (floor x y)))))
 		 (:type-prescription
 		  :corollary
-		  (implies (and (rationalp (/ x y))
+		  (implies (and (real/rationalp (/ x y))
                                 (< y 0)
                                 (<= x y))
 			   (and (integerp (floor x y))
@@ -527,7 +542,7 @@
 
  (defthm floor-negative
   (implies (and (syntaxp (rewriting-goal-literal x mfc state))
-		(rationalp (/ x y)))
+		(real/rationalp (/ x y)))
 	   (equal (< (floor x y) 0)
 		  (or (and (< 0 x)
 			   (< y 0))
@@ -539,7 +554,7 @@
 		  :corollary
 		  (implies (and (syntaxp 
 				 (not (rewriting-goal-literal x mfc state)))
-				(rationalp (/ x y))
+				(real/rationalp (/ x y))
 				(< (/ x y) 0))
 			   (< (floor x y) 0)))
 		 (:rewrite
@@ -547,7 +562,7 @@
 		  :corollary
 		  (implies (and (syntaxp 
 				 (not (rewriting-goal-literal x mfc state)))
-				(rationalp (/ x y))
+				(real/rationalp (/ x y))
 				(< 0 x)
 				(< y 0))
 			   (< (floor x y) 0)))
@@ -556,26 +571,26 @@
 		  :corollary
 		  (implies (and (syntaxp 
 				 (not (rewriting-goal-literal x mfc state)))
-				(rationalp (/ x y))
+				(real/rationalp (/ x y))
 				(< x 0)
 				(< 0 y))
 			   (< (floor x y) 0)))
 		 (:type-prescription
 		  :corollary
-		  (implies (and (rationalp (/ x y))
+		  (implies (and (real/rationalp (/ x y))
 				(< (/ x y) 0))
 			   (and (integerp (floor x y))
 				(< (floor x y) 0))))
 		 (:type-prescription
 		  :corollary
-		  (implies (and (rationalp (/ x y))
+		  (implies (and (real/rationalp (/ x y))
 				(< 0 x)
 				(< y 0))
 			   (and (integerp (floor x y))
 				(< (floor x y) 0))))
 		 (:type-prescription
 		  :corollary
-		  (implies (and (rationalp (/ x y))
+		  (implies (and (real/rationalp (/ x y))
 				(< x 0)
 				(< 0 y))
 			   (and (integerp (floor x y))
@@ -585,7 +600,7 @@
  (defthm floor-zero
   (implies (and (syntaxp (rewriting-goal-literal x mfc state))
 		(acl2-numberp y)
-                (rationalp (/ x y)))
+                (real/rationalp (/ x y)))
            (equal (equal (floor x y) 0)
                   (or (equal y 0)
                       (and (<= 0 x)
@@ -596,50 +611,50 @@
 		 (:rewrite
                   :backchain-limit-lst (3 1)
 		  :corollary
-		  (implies (and (rationalp (/ x y))
+		  (implies (and (real/rationalp (/ x y))
                                 (equal y 0))
 			   (equal (floor x y) 0)))
 		 (:rewrite
                   :backchain-limit-lst (3 1 1)
 		  :corollary
-		  (implies (and (rationalp (/ x y))
+		  (implies (and (real/rationalp (/ x y))
                                 (<= 0 (/ x y))
 				(< (/ x y) 1))
 			   (equal (floor x y) 0)))
 		 (:rewrite
                   :backchain-limit-lst (3 1 1)
 		  :corollary
-		  (implies (and (rationalp (/ x y))
+		  (implies (and (real/rationalp (/ x y))
                                 (<= 0 x)
 				(< x y))
 			   (equal (floor x y) 0)))
 		 (:rewrite
 		  :backchain-limit-lst (3 1 1)
 		  :corollary
-		  (implies (and (rationalp (/ x y))
+		  (implies (and (real/rationalp (/ x y))
                                 (<= x 0)
 				(< y x))
 			   (equal (floor x y) 0)))
 		 (:type-prescription
 		  :corollary
-		  (implies (and (rationalp (/ x y))
+		  (implies (and (real/rationalp (/ x y))
                                 (equal y 0))
 			   (equal (floor x y) 0)))
 		 (:type-prescription
 		  :corollary
-		  (implies (and (rationalp (/ x y))
+		  (implies (and (real/rationalp (/ x y))
                                 (<= 0 (/ x y))
 				(< (/ x y) 1))
 			   (equal (floor x y) 0)))
 		 (:type-prescription
 		  :corollary
-		  (implies (and (rationalp (/ x y))
+		  (implies (and (real/rationalp (/ x y))
                                 (<= 0 x)
 				(< x y))
 			   (equal (floor x y) 0)))
 		 (:type-prescription
 		  :corollary
-		  (implies (and (rationalp (/ x y))
+		  (implies (and (real/rationalp (/ x y))
                                 (<= x 0)
 				(< y x))
 			   (equal (floor x y) 0))))

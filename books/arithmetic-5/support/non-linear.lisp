@@ -63,17 +63,17 @@
 
 
 (defthm arith-inverse-of-*-1
-  (implies (and (rationalp x) (not (equal x 0)))
+  (implies (and (real/rationalp x) (not (equal x 0)))
 	   (equal (* x (/ x))
 		  1)))
 
 (defthm arith-inverse-of-*-2
-  (implies (and (rationalp x) (not (equal x 0)))
+  (implies (and (real/rationalp x) (not (equal x 0)))
 	   (equal (* x (/ x) y)
 		  (fix y))))
 
 (defthm arith-inverse-of-*-3
-  (implies (and (rationalp x) (not (equal x 0)))
+  (implies (and (real/rationalp x) (not (equal x 0)))
 	   (equal (* x y (/ x))
 		  (fix y))))
 
