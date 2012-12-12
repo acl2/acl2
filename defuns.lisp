@@ -8346,6 +8346,8 @@
 (link-doc-to &rest miscellaneous macro-args)
 (link-doc-to &whole miscellaneous macro-args)
 
+(link-doc-to gcs history get-command-sequence)
+
 #+:non-standard-analysis
 (defun build-valid-std-usage-clause (arglist body)
   (cond ((null arglist)

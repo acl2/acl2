@@ -8899,6 +8899,10 @@
                                         alist)))
                     (let ((flg (and flg
                                     (if alist-constants-p
+
+; We require that unify-subst0 bind each variable to itself or to a constant.
+; See the long comment in filter-disabled-expand-terms for further discussion.
+
                                         (binds-to-constants-p unify-subst0)
                                       t))))
                       (cond
@@ -8914,7 +8918,8 @@
                                     (and (or alist-none-p
 
 ; For the example in a comment in expand-permission-result, looping occurs if
-; we do not remove the expand hint in the alist-constants-p case.
+; we do not remove the expand hint in the alist-constants-p case.  See the long
+; comment in filter-disabled-expand-terms for further discussion.
 
                                              alist-constants-p)
                                          (length expand-lst))))

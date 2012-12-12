@@ -19586,6 +19586,10 @@
 ; they probably warned before.  With this change, CCL svn rev 15527 doesn't
 ; warn.
 
+; Modified the layout of the history-entry record so that it's not dependent on
+; #+acl2-par, and hence its generated macros are the same for ACL2 and
+; ACL2(p).  As a consequence, made a few related changes.
+
   :doc
   ":Doc-Section release-notes
 
@@ -22122,14 +22126,24 @@ href=\"mailto:acl2-bugs@utlists.utexas.edu\">acl2-bugs@utlists.utexas.edu</a></c
 
 The links below may help you to search the ACL2 documentation and the ACL2
 community books, respectively.  Our approach is low-tech, but intended to be
-reliable and easy to use.  You might want to add a bookmark for each of these.
+reliable and easy to use on any platform.  You might want to add a bookmark for
+each of these.
 
 <ul>
 
 <li>
-The following link will take you to a search box on a Google page, where you
-can replace the word `search_term' with your topic.  For example, replace
-`search_term' by `certify-book' to get documentation about book certification.
+The following link will take you to a search box on a Google page,
+which has the following contents.
+<pre>
+search_term site:http://www.cs.utexas.edu/users/moore/acl2/v5-0
+</pre>
+Now simply replace the word `search_term' with your topic.  For example, replace
+`<code>search_term</code>' by `<code>tail recursion</code>' to get
+documentation about tail recursion.
+<pre>
+tail recursion site:http://www.cs.utexas.edu/users/moore/acl2/v5-0
+</pre>
+Now you are ready to follow the link.
 <p>
 <a href=\"http://www.google.com/search?q=search_term
 		 site:http://www.cs.utexas.edu/users/moore/acl2/v5-0\">SEARCH
@@ -22139,11 +22153,12 @@ can replace the word `search_term' with your topic.  For example, replace
 <p>
 
 <li>
-The next link will take you to the Source tab of the community books website
-(which is external to the present ACL2 website).  You can then click in the box
-just under that tab and type your search term.  For example, if you type `tail
-recursion' then you will see text from several books in the svn trunk that deal
-with the topic of tail recursion.
+The next link will take you to the Source tab of the community books
+website (which is external to the present ACL2 website).  You can then
+click in the box just under that tab and type your search term.  For
+example, if you type `<code>tail recursion</code>' then you will see
+text from several books in the svn trunk that deal with the topic of
+tail recursion.
 <p>
 <a href=\"https://code.google.com/p/acl2-books/source/\">SEARCH THE
   COMMUNITY BOOKS</a></a><br>

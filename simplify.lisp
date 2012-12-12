@@ -7693,12 +7693,12 @@
 
 (defun filter-disabled-expand-terms (terms ens wrld)
 
-; We build expand hint strucures, throwing certain terms out of terms.
+; We build expand hint structures, throwing certain terms out of terms.
 ; Variables and constants are kept (but they should never be there).  Lambda
 ; applications are kept.  Function symbol applications are kept provided the
 ; symbol has a non-nil, enabled def-body.  There is no point in keeping on
-; :expand-lst a term whose function symbol has no def-body, because it
-; there that we go when we decide to force an expansion (from other than
+; :expand-lst a term whose function symbol has no def-body, because it is there
+; that we go when we decide to force an expansion (from other than
 ; user-provided :expand hints).
 
 ; Note: It is good that HIDE has a body because we allow HIDE terms to be put
@@ -7736,14 +7736,31 @@
                            :pattern term
                            :alist
 
-; After Version_5.0, we use a more generous expansion heuristic during
+; Starting after Version_5.0, we use a more generous expansion heuristic during
 ; induction, in which only actuals in the controller positions must match
-; exactly the actuals in induction terms; otherwise the latter can be instances
-; of the former.  But at least 14 proofs failed in an ACL2(h) regression after
-; that change, so we limit those instances to ones in which variables are bound
-; to constants.  That is probably the common case in which user-supplied
-; :expand hints had been provided, say because some argument in the pattern had
-; simplified to 0 or nil.
+; exactly the actuals in induction terms; otherwise the latter may be instances
+; of the former.  With our first attempt at such a change, 8 proofs failed in
+; an ACL2(h) regression, not including possible additional proofs that were not
+; attempted because of include-book failures.  That attempt didn't remove the
+; expand hint when applying it, a heuristic discussed in a long comment in
+; expand-permission-result.
+
+; We restored that removal heuristic and the number of failures decreased from
+; 8 to 5.  But one of those failures was pretty nasty, still with the same
+; behavior (as judging by output from :gag-mode :goals) and the same prove
+; time: MAIN-LEMMA-3 in community book
+; books/data-structures/memories/memtree.lisp.  The prove time increased from
+; 17 seconds for a successful proof to 20 seconds for (both versions of) this
+; failure, with a notably different proof as compared to the successful proof
+; (Subgoal *1/2' split into 15 subgoals in the failed proof but only generated
+; one subgoal in the successful proof).
+
+; So in addition to restoring the removal heuristic, we now limit the
+; application of the expand-hint to instances for which each variable is bound
+; either to itself or to a constant (a quotep).  That is probably the common
+; case in which users had supplied :expand hints because of the formerly weaker
+; expand-hint created by the system, say because some non-controller argument
+; in the pattern had simplified to 0 or nil.
 
                            (cons :constants
                                  (controller-unify-subst name term def-body))

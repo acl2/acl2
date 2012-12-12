@@ -7155,14 +7155,26 @@
 
   return list of ~il[command]s that are between two ~il[command] descriptors~/
 
-  ~l[pcs] for a utility that prints the list of ~il[command]s that are between
-  two command descriptors.  The utility ~c[get-command-sequence] has the same
-  syntax but instead of printing, it simply returns the corresponding list of
-  commands.  More precisely, it returns an error triple ~c[(mv erp val state)]
-  (~pl[error-triples]) such that if ~c[erp] is not ~c[nil], then ~c[val] is the
-  desired list of commands.~/~/"
+  ~bv[]
+  Examples:
+  (get-command-sequence 4 12)
+  :gcs 4 12 ; same as above
+  (get-command-sequence 4 :x)
+  :gcs 4 :x ; same as above
+  ~ev[]
+
+  ~l[pcs] for a utility that prints abbreviated information about the
+  ~il[command]s that are between two command descriptors.  The utility
+  ~c[get-command-sequence] ~-[] or simply ~c[gcs], so that you can just type
+  ~c[:gcs] at the prompt ~-[] has the same syntax but instead of printing, it
+  simply returns the corresponding list of commands.  More precisely, it
+  returns an error triple ~c[(mv erp val state)] (~pl[error-triples]) such that
+  if ~c[erp] is not ~c[nil], then ~c[val] is the desired list of commands.~/~/"
 
   (list 'get-command-sequence-fn cd1 cd2 'state))
+
+(defmacro gcs (cd1 cd2)
+  `(get-command-sequence ,cd1 ,cd2))
 
 (defmacro pbt (cd1)
 
