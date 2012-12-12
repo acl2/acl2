@@ -25,35 +25,10 @@
 (in-package "CUTIL")
 (include-book "xdoc/top" :dir :system)
 (include-book "tools/rulesets" :dir :system)
-(include-book "tools/bstar" :dir :system)
 (include-book "xdoc/names" :dir :system)
 (include-book "str/cat" :dir :system)
 (include-book "misc/definline" :dir :system)
-
-; BOZO these don't really go here.  But, the harm should be low since we're in
-; our own package.
-
-(defun tuplep (n x)
-  (declare (xargs :guard (natp n)))
-  (mbe :logic (and (true-listp x)
-                   (equal (len x) n))
-       :exec (and (true-listp x)
-                  (= (length x) n))))
-
-(defun tuple-listp (n x)
-  (declare (xargs :guard (natp n)))
-  (if (consp x)
-      (and (tuplep n (car x))
-           (tuple-listp n (cdr x)))
-    t))
-
-(defun cons-listp (x)
-  (declare (xargs :guard t))
-  (if (consp x)
-      (and (consp (car x))
-           (cons-listp (cdr x)))
-    t))
-
+(include-book "support")
 
 (defxdoc defaggregate
   :parents (cutil)
@@ -1362,111 +1337,3 @@ term.  The attempted binding of~|~% ~p1~%~%is not of this form."
                    ',already-definedp mode ',parents ',short ',long
                    ',rest))))
 
-
-
-#||
-
-(logic)
-
-(defaggregate taco
-    (shell meat cheese lettuce sauce)
-    :tag :taco
-    :require ((integerp-of-taco->shell (integerp shell)
-                                       :rule-classes ((:rewrite) (:type-prescription))))
-    :long "<p>Additional documentation</p>"
-    )
-
-(defaggregate htaco
-    (shell meat cheese lettuce sauce)
-    :tag :taco
-    :hons t
-    :require ((integerp-of-htaco->shell (integerp shell)))
-    :long "<p>Additional documentation</p>"
-    )
-
-(defaggregate untagged-taco
-    (shell meat cheese lettuce sauce)
-    :tag nil
-    :hons t
-    :require ((integerp-of-untagged-taco->shell (integerp shell)))
-    :long "<p>Additional documentation</p>"
-    )
-
-
-;;  Basic binding tests
-
-(b* ((?my-taco (make-taco :shell 5
-                         :meat 'beef
-                         :cheese 'swiss
-                         :lettuce 'iceberg
-                         :sauce 'green))
-     ((taco x) my-taco)
-     (five (+ 2 3)))
-    (list :x.shell x.shell
-          :x.lettuce x.lettuce
-          :five five
-          :my-taco my-taco))
-
-
-;; I'd like something like this, but it looks like the b* machinery wants
-;; at least one form.
-;;
-;; (b* ((?my-taco (make-taco :shell 5
-;;                           :meat 'beef
-;;                           :cheese 'swiss
-;;                           :lettuce 'iceberg
-;;                           :sauce 'green))
-;;      ((taco my-taco))
-;;      (five (+ 2 3)))
-;;     (list :my-taco.shell my-taco.shell
-;;           :my-taco.lettuce my-taco.lettuce
-;;           :five five
-;;           :my-taco my-taco))
-
-(b* (((taco x)
-      (make-taco :shell 5
-                 :meat 'beef
-                 :cheese 'swiss
-                 :lettuce 'iceberg
-                 :sauce 'green))
-     (five (+ 2 3)))
-    (list :x.shell x.shell
-          :x.lettuce x.lettuce
-          :five five))
-
-;; Improper binding... fails nicely
-(b* (((taco x y)
-      (make-taco :shell 5
-                 :meat 'beef
-                 :cheese 'swiss
-                 :lettuce 'iceberg
-                 :sauce 'green))
-     (five (+ 2 3)))
-    (list :x.shell x.shell
-          :x.lettuce x.lettuce
-          :five five))
-
-;; Unused binding collapses to nothing.  warning noted.
-(b* (((taco x) (make-taco :shell 5
-                          :meat 'beef
-                          :cheese 'swiss
-                          :lettuce 'iceberg
-                          :sauce 'green))
-     (five (+ 2 3)))
-    five)
-
-;; Good, inadvertent capture is detected
-(b* ((foo (make-taco :shell 5
-                     :meat 'beef
-                     :cheese 'swiss
-                     :lettuce 'iceberg
-                     :sauce 'green))
-     ((taco x) (identity foo))
-     (bad      ACL2::|(IDENTITY FOO)|)
-     (five     (+ 2 3)))
-    (list :x.shell x.shell
-          :x.lettuce x.lettuce
-          :five five
-          :bad bad))
-
-||#

@@ -1,3 +1,23 @@
+; CUTIL - Centaur Basic Utilities
+; Copyright (C) 2008-2011 Centaur Technology
+;
+; Contact:
+;   Centaur Technology Formal Verification Group
+;   7600-C N. Capital of Texas Highway, Suite 300, Austin, TX 78731, USA.
+;   http://www.centtech.com/
+;
+; This program is free software; you can redistribute it and/or modify it under
+; the terms of the GNU General Public License as published by the Free Software
+; Foundation; either version 2 of the License, or (at your option) any later
+; version.  This program is distributed in the hope that it will be useful but
+; WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+; FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
+; more details.  You should have received a copy of the GNU General Public
+; License along with this program; if not, write to the Free Software
+; Foundation, Inc., 51 Franklin Street, Suite 500, Boston, MA 02110-1335, USA.
+;
+; Original author: Jared Davis <jared@centtech.com>
+
 ; Tests for defaggregate utility.  Consider moving tests from the bottom of
 ; defaggregate.lisp into this file.
 
@@ -71,3 +91,114 @@
   :elementp-of-nil nil
   :already-definedp t
   :true-listp t)
+
+
+
+
+
+#||
+
+(logic)
+
+(defaggregate taco
+    (shell meat cheese lettuce sauce)
+    :tag :taco
+    :require ((integerp-of-taco->shell (integerp shell)
+                                       :rule-classes ((:rewrite) (:type-prescription))))
+    :long "<p>Additional documentation</p>"
+    )
+
+(defaggregate htaco
+    (shell meat cheese lettuce sauce)
+    :tag :taco
+    :hons t
+    :require ((integerp-of-htaco->shell (integerp shell)))
+    :long "<p>Additional documentation</p>"
+    )
+
+(defaggregate untagged-taco
+    (shell meat cheese lettuce sauce)
+    :tag nil
+    :hons t
+    :require ((integerp-of-untagged-taco->shell (integerp shell)))
+    :long "<p>Additional documentation</p>"
+    )
+
+
+;;  Basic binding tests
+
+(b* ((?my-taco (make-taco :shell 5
+                         :meat 'beef
+                         :cheese 'swiss
+                         :lettuce 'iceberg
+                         :sauce 'green))
+     ((taco x) my-taco)
+     (five (+ 2 3)))
+    (list :x.shell x.shell
+          :x.lettuce x.lettuce
+          :five five
+          :my-taco my-taco))
+
+
+;; I'd like something like this, but it looks like the b* machinery wants
+;; at least one form.
+;;
+;; (b* ((?my-taco (make-taco :shell 5
+;;                           :meat 'beef
+;;                           :cheese 'swiss
+;;                           :lettuce 'iceberg
+;;                           :sauce 'green))
+;;      ((taco my-taco))
+;;      (five (+ 2 3)))
+;;     (list :my-taco.shell my-taco.shell
+;;           :my-taco.lettuce my-taco.lettuce
+;;           :five five
+;;           :my-taco my-taco))
+
+(b* (((taco x)
+      (make-taco :shell 5
+                 :meat 'beef
+                 :cheese 'swiss
+                 :lettuce 'iceberg
+                 :sauce 'green))
+     (five (+ 2 3)))
+    (list :x.shell x.shell
+          :x.lettuce x.lettuce
+          :five five))
+
+;; Improper binding... fails nicely
+(b* (((taco x y)
+      (make-taco :shell 5
+                 :meat 'beef
+                 :cheese 'swiss
+                 :lettuce 'iceberg
+                 :sauce 'green))
+     (five (+ 2 3)))
+    (list :x.shell x.shell
+          :x.lettuce x.lettuce
+          :five five))
+
+;; Unused binding collapses to nothing.  warning noted.
+(b* (((taco x) (make-taco :shell 5
+                          :meat 'beef
+                          :cheese 'swiss
+                          :lettuce 'iceberg
+                          :sauce 'green))
+     (five (+ 2 3)))
+    five)
+
+;; Good, inadvertent capture is detected
+(b* ((foo (make-taco :shell 5
+                     :meat 'beef
+                     :cheese 'swiss
+                     :lettuce 'iceberg
+                     :sauce 'green))
+     ((taco x) (identity foo))
+     (bad      ACL2::|(IDENTITY FOO)|)
+     (five     (+ 2 3)))
+    (list :x.shell x.shell
+          :x.lettuce x.lettuce
+          :five five
+          :bad bad))
+
+||#
