@@ -97,7 +97,7 @@
 
 (local
  (defthm expt-crock
-   (implies (and (rationalp x)
+   (implies (and (real/rationalp x)
 		 (integerp n))
 	    (equal (expt x (- n))
 		   (/ (expt x n))))))
@@ -125,8 +125,8 @@
 
  (local
   (defthm not-integerp-helper
-    (implies (and ;(rationalp a)
-              (rationalp x)
+    (implies (and ;(real/rationalp a)
+              (real/rationalp x)
               (< 0 a)
               (< a x))
              (and (< 0 (* (/ x) a))
@@ -134,8 +134,8 @@
     :rule-classes nil))
 
  (defthm not-integerp-1a
-   (implies (and ;(rationalp a)
-             (rationalp x)
+   (implies (and ;(real/rationalp a)
+             (real/rationalp x)
              (< 0 a)
              (< a x))
             (not (integerp (* (/ x) a))))
@@ -143,8 +143,8 @@
    :rule-classes :type-prescription)
 
  (defthm not-integerp-1a-expt
-   (implies (and ;(rationalp a)
-             (rationalp x)
+   (implies (and ;(real/rationalp a)
+             (real/rationalp x)
              (integerp n)
              (< 0 a)
              (< a (expt x n)))
@@ -159,8 +159,8 @@
 
 
 (defthm not-integerp-1b
-  (implies (and ;(rationalp a)
-		(rationalp x)
+  (implies (and ;(real/rationalp a)
+		(real/rationalp x)
 		(< 0 a)
 		(< a x))
 	   (not (integerp (* a (/ x)))))
@@ -168,8 +168,8 @@
   :rule-classes :type-prescription)
 
 (defthm not-integerp-1b-expt
-  (implies (and ;(rationalp a)
-		(rationalp x)
+  (implies (and ;(real/rationalp a)
+		(real/rationalp x)
 		(integerp n)
 		(< 0 a)
 		(< a (expt x n)))
@@ -190,9 +190,9 @@
 ;;   :rule-classes :type-prescription)
 
 (defthm not-integerp-1d
-  (implies (and ;(rationalp a)
-                (rationalp b)
-		(rationalp x)
+  (implies (and ;(real/rationalp a)
+                (real/rationalp b)
+		(real/rationalp x)
 		(< 0 (* a b))
 		(< (* a b) x))
 	   (not (integerp (* a (/ x) b))))
@@ -202,9 +202,9 @@
   :rule-classes :type-prescription)
 
 (defthm not-integerp-1d-expt
-  (implies (and ;(rationalp a)
-                (rationalp b)
-		(rationalp x)
+  (implies (and ;(real/rationalp a)
+                (real/rationalp b)
+		(real/rationalp x)
 		(integerp n)
 		(< 0 (* a b))
 		(< (* a b) (expt x n)))
@@ -217,9 +217,9 @@
 (local (in-theory (disable not-integerp-1d not-integerp-1d-expt)))
 
 (defthm not-integerp-1e
-  (implies (and ;(rationalp a)
-                ;(rationalp b)
-		(rationalp x)
+  (implies (and ;(real/rationalp a)
+                ;(real/rationalp b)
+		(real/rationalp x)
 		(< 0 (* a b))
 		(< (* a b) x))
 	   (not (integerp (* a b (/ x)))))
@@ -229,9 +229,9 @@
   :rule-classes :type-prescription)
 
 (defthm not-integerp-1e-expt
-  (implies (and ;(rationalp a)
-                ;(rationalp b)
-		(rationalp x)
+  (implies (and ;(real/rationalp a)
+                ;(real/rationalp b)
+		(real/rationalp x)
 		(integerp n)
 		(< 0 (* a b))
 		(< (* a b) (expt x n)))
@@ -245,9 +245,9 @@
 
 
 (defthm not-integerp-1f
-  (implies (and ;(rationalp a)
-                (rationalp x)
-		(rationalp y)
+  (implies (and ;(real/rationalp a)
+                (real/rationalp x)
+		(real/rationalp y)
 		(< 0 a)
 		(< a (* x y)))
 	   (not (integerp (* (/ x) (/ y) a))))
@@ -257,10 +257,10 @@
   :rule-classes :type-prescription)
 
 (defthm not-integerp-1f-expt-a
-  (implies (and ;(rationalp a)
-                (rationalp x)
+  (implies (and ;(real/rationalp a)
+                (real/rationalp x)
 		(integerp n)
-		(rationalp y)
+		(real/rationalp y)
 		(< 0 a)
 		(< a (* (expt x n) y)))
 	   (not (integerp (* (expt x (- n)) (/ y) a))))
@@ -270,9 +270,9 @@
   :rule-classes :type-prescription)
 
 (defthm not-integerp-1f-expt-b
-  (implies (and ;(rationalp a)
-                (rationalp x)
-		(rationalp y)
+  (implies (and ;(real/rationalp a)
+                (real/rationalp x)
+		(real/rationalp y)
 		(integerp n)
 		(< 0 a)
 		(< a (* x (expt y n))))
@@ -283,10 +283,10 @@
   :rule-classes :type-prescription)
 
 (defthm not-integerp-1f-expt-c
-  (implies (and ;(rationalp a)
-                (rationalp x)
+  (implies (and ;(real/rationalp a)
+                (real/rationalp x)
 		(integerp n1)
-		(rationalp y)
+		(real/rationalp y)
 		(integerp n2)
 		(< 0 a)
 		(< a (* (expt x n1) (expt y n2))))
@@ -302,9 +302,9 @@
                            not-integerp-1f-expt-c)))
 
 (defthm not-integerp-1g
-  (implies (and ;(rationalp a)
-                (rationalp x)
-		(rationalp y)
+  (implies (and ;(real/rationalp a)
+                (real/rationalp x)
+		(real/rationalp y)
 		(< 0 a)
 		(< a (* x y)))
 	   (not (integerp (* (/ x) a (/ y)))))
@@ -312,10 +312,10 @@
   :rule-classes :type-prescription)
 
 (defthm not-integerp-1g-expt-a
-  (implies (and ;(rationalp a)
-                (rationalp x)
+  (implies (and ;(real/rationalp a)
+                (real/rationalp x)
 		(integerp n)
-		(rationalp y)
+		(real/rationalp y)
 		(< 0 a)
 		(< a (* (expt x n) y)))
 	   (not (integerp (* (expt x (- n)) a (/ y)))))
@@ -324,9 +324,9 @@
   :rule-classes :type-prescription)
 
 (defthm not-integerp-1g-expt-b
-  (implies (and ;(rationalp a)
-                (rationalp x)
-		(rationalp y)
+  (implies (and ;(real/rationalp a)
+                (real/rationalp x)
+		(real/rationalp y)
 		(integerp n)
 		(< 0 a)
 		(< a (* x (expt y n))))
@@ -336,10 +336,10 @@
   :rule-classes :type-prescription)
 
 (defthm not-integerp-1g-expt-c
-  (implies (and ;(rationalp a)
-                (rationalp x)
+  (implies (and ;(real/rationalp a)
+                (real/rationalp x)
 		(integerp n1)
-		(rationalp y)
+		(real/rationalp y)
 		(integerp n2)
 		(< 0 a)
 		(< a (* (expt x n1) (expt y n2))))
@@ -356,9 +356,9 @@
 
 
 (defthm not-integerp-1h
-  (implies (and ;(rationalp a)
-                (rationalp x)
-		(rationalp y)
+  (implies (and ;(real/rationalp a)
+                (real/rationalp x)
+		(real/rationalp y)
 		(< 0 a)
 		(< a (* x y)))
 	   (not (integerp (* a (/ x) (/ y)))))
@@ -366,10 +366,10 @@
   :rule-classes :type-prescription)
 
 (defthm not-integerp-1h-expt-a
-  (implies (and ;(rationalp a)
-                (rationalp x)
+  (implies (and ;(real/rationalp a)
+                (real/rationalp x)
 		(integerp n)
-		(rationalp y)
+		(real/rationalp y)
 		(< 0 a)
 		(< a (* (expt x n) y)))
 	   (not (integerp (* a (expt x (- n)) (/ y)))))
@@ -378,9 +378,9 @@
   :rule-classes :type-prescription)
 
 (defthm not-integerp-1h-expt-b
-  (implies (and ;(rationalp a)
-                (rationalp x)
-		(rationalp y)
+  (implies (and ;(real/rationalp a)
+                (real/rationalp x)
+		(real/rationalp y)
 		(integerp n)
 		(< 0 a)
 		(< a (* x (expt y n))))
@@ -390,10 +390,10 @@
   :rule-classes :type-prescription)
 
 (defthm not-integerp-1h-expt-c
-  (implies (and ;(rationalp a)
-                (rationalp x)
+  (implies (and ;(real/rationalp a)
+                (real/rationalp x)
 		(integerp n1)
-		(rationalp y)
+		(real/rationalp y)
 		(integerp n2)
 		(< 0 a)
 		(< a (* (expt x n1) (expt y n2))))
@@ -409,30 +409,30 @@
                            not-integerp-1h-expt-c)))
 
 ;; (defthm not-integerp-1i
-;;   (implies (and (rationalp a)
-;;                 (rationalp b)
-;;                 (rationalp c)
-;; 		(rationalp x)
+;;   (implies (and (real/rationalp a)
+;;                 (real/rationalp b)
+;;                 (real/rationalp c)
+;; 		(real/rationalp x)
 ;; 		(< 0 (* a b c))
 ;; 		(< (* a b c) x))
 ;; 	   (not (integerp (* (/ x) a b c))))
 ;;   :rule-classes :type-prescription)
 
 ;; (defthm not-integerp-1j
-;;   (implies (and (rationalp a)
-;;                 (rationalp b)
-;;                 (rationalp c)
-;; 		(rationalp x)
+;;   (implies (and (real/rationalp a)
+;;                 (real/rationalp b)
+;;                 (real/rationalp c)
+;; 		(real/rationalp x)
 ;; 		(< 0 (* a b c))
 ;; 		(< (* a b c) x))
 ;; 	   (not (integerp (* a (/ x) b c))))
 ;;   :rule-classes :type-prescription)
 
 (defthm not-integerp-1k
-  (implies (and ;(rationalp a)
-                ;(rationalp b)
-                (rationalp c)
-                (rationalp x)
+  (implies (and ;(real/rationalp a)
+                ;(real/rationalp b)
+                (real/rationalp c)
+                (real/rationalp x)
 		(< 0 (* a b c))
 		(< (* a b c) x))
 	   (not (integerp (* a b (/ x) c))))
@@ -442,10 +442,10 @@
   :rule-classes :type-prescription)
 
 (defthm not-integerp-1k-expt
-  (implies (and ;(rationalp a)
-                ;(rationalp b)
-                (rationalp c)
-                (rationalp x)
+  (implies (and ;(real/rationalp a)
+                ;(real/rationalp b)
+                (real/rationalp c)
+                (real/rationalp x)
 		(integerp n)
 		(< 0 (* a b c))
 		(< (* a b c) (expt x n)))
@@ -461,10 +461,10 @@
 
 
 (defthm not-integerp-1l
-  (implies (and ;(rationalp a)
-                ;(rationalp b)
-                ;(rationalp c)
-		(rationalp x)
+  (implies (and ;(real/rationalp a)
+                ;(real/rationalp b)
+                ;(real/rationalp c)
+		(real/rationalp x)
 		(< 0 (* a b c))
 		(< (* a b c) x))
 	   (not (integerp (* a b c (/ x)))))
@@ -474,10 +474,10 @@
   :rule-classes :type-prescription)
 
 (defthm not-integerp-1l-expt
-  (implies (and ;(rationalp a)
-                ;(rationalp b)
-                ;(rationalp c)
-		(rationalp x)
+  (implies (and ;(real/rationalp a)
+                ;(real/rationalp b)
+                ;(real/rationalp c)
+		(real/rationalp x)
 		(integerp n)
 		(< 0 (* a b c))
 		(< (* a b c) (expt x n)))
@@ -491,20 +491,20 @@
                            not-integerp-1l-expt)))
 
 ;; (defthm not-integerp-1m
-;;   (implies (and (rationalp a)
-;;                 (rationalp b)
-;;                 (rationalp x)
-;; 		(rationalp y)
+;;   (implies (and (real/rationalp a)
+;;                 (real/rationalp b)
+;;                 (real/rationalp x)
+;; 		(real/rationalp y)
 ;; 		(< 0 (* a b))
 ;; 		(< (* a b) (* x y)))
 ;; 	   (not (integerp (* (/ x) (/ y) a b))))
 ;;   :rule-classes :type-prescription)
 
 (defthm not-integerp-1n
-  (implies (and ;(rationalp a)
-                ;(rationalp b)
-                (rationalp x)
-		(rationalp y)
+  (implies (and ;(real/rationalp a)
+                ;(real/rationalp b)
+                (real/rationalp x)
+		(real/rationalp y)
 		(< 0 (* a b))
 		(< (* a b) (* x y)))
 	   (not (integerp (* (/ x) a (/ y) b))))
@@ -514,11 +514,11 @@
   :rule-classes :type-prescription)
 
 (defthm not-integerp-1n-expt-a
-  (implies (and ;(rationalp a)
-                ;(rationalp b)
-                (rationalp x)
+  (implies (and ;(real/rationalp a)
+                ;(real/rationalp b)
+                (real/rationalp x)
 		(integerp n)
-		(rationalp y)
+		(real/rationalp y)
 		(< 0 (* a b))
 		(< (* a b) (* (expt x n) y)))
 	   (not (integerp (* (expt x (- n)) a (/ y) b))))
@@ -528,10 +528,10 @@
   :rule-classes :type-prescription)
 
 (defthm not-integerp-1n-expt-b
-  (implies (and ;(rationalp a)
-                ;(rationalp b)
-                (rationalp x)
-		(rationalp y)
+  (implies (and ;(real/rationalp a)
+                ;(real/rationalp b)
+                (real/rationalp x)
+		(real/rationalp y)
 		(integerp n)
 		(< 0 (* a b))
 		(< (* a b) (* x (expt y n))))
@@ -542,11 +542,11 @@
   :rule-classes :type-prescription)
 
 (defthm not-integerp-1n-expt-c
-  (implies (and ;(rationalp a)
-                ;(rationalp b)
-                (rationalp x)
+  (implies (and ;(real/rationalp a)
+                ;(real/rationalp b)
+                (real/rationalp x)
 		(integerp n1)
-		(rationalp y)
+		(real/rationalp y)
 		(integerp n2)
 		(< 0 (* a b))
 		(< (* a b) (* (expt x n1) (expt y n2))))
@@ -564,10 +564,10 @@
 
 
 (defthm not-integerp-1o
-  (implies (and ;(rationalp a)
-                ;(rationalp b)
-                (rationalp x)
-		(rationalp y)
+  (implies (and ;(real/rationalp a)
+                ;(real/rationalp b)
+                (real/rationalp x)
+		(real/rationalp y)
 		(< 0 (* a b))
 		(< (* a b) (* x y)))
 	   (not (integerp (* (/ x) a b (/ y)))))
@@ -577,11 +577,11 @@
   :rule-classes :type-prescription)
 
 (defthm not-integerp-1o-expt-a
-  (implies (and ;(rationalp a)
-                ;(rationalp b)
-                (rationalp x)
+  (implies (and ;(real/rationalp a)
+                ;(real/rationalp b)
+                (real/rationalp x)
 		(integerp n)
-		(rationalp y)
+		(real/rationalp y)
 		(< 0 (* a b))
 		(< (* a b) (* (expt x n) y)))
 	   (not (integerp (* (expt x (- n)) a b (/ y)))))
@@ -591,10 +591,10 @@
   :rule-classes :type-prescription)
 
 (defthm not-integerp-1o-expt-b
-  (implies (and ;(rationalp a)
-                ;(rationalp b)
-                (rationalp x)
-		(rationalp y)
+  (implies (and ;(real/rationalp a)
+                ;(real/rationalp b)
+                (real/rationalp x)
+		(real/rationalp y)
 		(integerp n)
 		(< 0 (* a b))
 		(< (* a b) (* x (expt y n))))
@@ -605,11 +605,11 @@
   :rule-classes :type-prescription)
 
 (defthm not-integerp-1o-expt-c
-  (implies (and ;(rationalp a)
-                ;(rationalp b)
-                (rationalp x)
+  (implies (and ;(real/rationalp a)
+                ;(real/rationalp b)
+                (real/rationalp x)
 		(integerp n1)
-		(rationalp y)
+		(real/rationalp y)
 		(integerp n2)
 		(< 0 (* a b))
 		(< (* a b) (* (expt x n1) (expt y n2))))
@@ -626,10 +626,10 @@
 
 
 (defthm not-integerp-1p
-  (implies (and ;(rationalp a)
-                ;(rationalp b)
-                (rationalp x)
-		(rationalp y)
+  (implies (and ;(real/rationalp a)
+                ;(real/rationalp b)
+                (real/rationalp x)
+		(real/rationalp y)
 		(< 0 (* a b))
 		(< (* a b) (* x y)))
 	   (not (integerp (* a (/ x) (/ y) b))))
@@ -639,11 +639,11 @@
   :rule-classes :type-prescription)
 
 (defthm not-integerp-1p-expt-a
-  (implies (and ;(rationalp a)
-                ;(rationalp b)
-                (rationalp x)
+  (implies (and ;(real/rationalp a)
+                ;(real/rationalp b)
+                (real/rationalp x)
 		(integerp n)
-		(rationalp y)
+		(real/rationalp y)
 		(< 0 (* a b))
 		(< (* a b) (* (expt x n) y)))
 	   (not (integerp (* a (expt x (- n)) (/ y) b))))
@@ -653,10 +653,10 @@
   :rule-classes :type-prescription)
 
 (defthm not-integerp-1p-expt-b
-  (implies (and ;(rationalp a)
-                ;(rationalp b)
-                (rationalp x)
-		(rationalp y)
+  (implies (and ;(real/rationalp a)
+                ;(real/rationalp b)
+                (real/rationalp x)
+		(real/rationalp y)
 		(integerp n)
 		(< 0 (* a b))
 		(< (* a b) (* x (expt y n))))
@@ -667,11 +667,11 @@
   :rule-classes :type-prescription)
 
 (defthm not-integerp-1p-expt-c
-  (implies (and ;(rationalp a)
-                ;(rationalp b)
-                (rationalp x)
+  (implies (and ;(real/rationalp a)
+                ;(real/rationalp b)
+                (real/rationalp x)
 		(integerp n1)
-		(rationalp y)
+		(real/rationalp y)
 		(integerp n2)
 		(< 0 (* a b))
 		(< (* a b) (* (expt x n1) (expt y n2))))
@@ -688,10 +688,10 @@
 
 
 (defthm not-integerp-1q
-  (implies (and ;(rationalp a)
-                ;(rationalp b)
-                (rationalp x)
-		(rationalp y)
+  (implies (and ;(real/rationalp a)
+                ;(real/rationalp b)
+                (real/rationalp x)
+		(real/rationalp y)
 		(< 0 (* a b))
 		(< (* a b) (* x y)))
 	   (not (integerp (* a (/ x) b (/ y)))))
@@ -701,11 +701,11 @@
   :rule-classes :type-prescription)
 
 (defthm not-integerp-1q-expt-a
-  (implies (and ;(rationalp a)
-                ;(rationalp b)
-                (rationalp x)
+  (implies (and ;(real/rationalp a)
+                ;(real/rationalp b)
+                (real/rationalp x)
 		(integerp n)
-		(rationalp y)
+		(real/rationalp y)
 		(< 0 (* a b))
 		(< (* a b) (* (expt x n) y)))
 	   (not (integerp (* a (expt x (- n)) b (/ y)))))
@@ -715,10 +715,10 @@
   :rule-classes :type-prescription)
 
 (defthm not-integerp-1q-expt-b
-  (implies (and ;(rationalp a)
-                ;(rationalp b)
-                (rationalp x)
-		(rationalp y)
+  (implies (and ;(real/rationalp a)
+                ;(real/rationalp b)
+                (real/rationalp x)
+		(real/rationalp y)
 		(integerp n)
 		(< 0 (* a b))
 		(< (* a b) (* x (expt y n))))
@@ -729,11 +729,11 @@
   :rule-classes :type-prescription)
 
 (defthm not-integerp-1q-expt-c
-  (implies (and ;(rationalp a)
-                ;(rationalp b)
-                (rationalp x)
+  (implies (and ;(real/rationalp a)
+                ;(real/rationalp b)
+                (real/rationalp x)
 		(integerp n1)
-		(rationalp y)
+		(real/rationalp y)
 		(integerp n2)
 		(< 0 (* a b))
 		(< (* a b) (* (expt x n1) (expt y n2))))
@@ -750,10 +750,10 @@
 
 
 (defthm not-integerp-1r
-  (implies (and ;(rationalp a)
-                ;(rationalp b)
-                (rationalp x)
-		(rationalp y)
+  (implies (and ;(real/rationalp a)
+                ;(real/rationalp b)
+                (real/rationalp x)
+		(real/rationalp y)
 		(< 0 (* a b))
 		(< (* a b) (* x y)))
 	   (not (integerp (* a b (/ x) (/ y)))))
@@ -763,11 +763,11 @@
   :rule-classes :type-prescription)
 
 (defthm not-integerp-1r-expt-a
-  (implies (and ;(rationalp a)
-                ;(rationalp b)
-                (rationalp x)
+  (implies (and ;(real/rationalp a)
+                ;(real/rationalp b)
+                (real/rationalp x)
 		(integerp n)
-		(rationalp y)
+		(real/rationalp y)
 		(< 0 (* a b))
 		(< (* a b) (* (expt x n) y)))
 	   (not (integerp (* a b (expt x (- n)) (/ y)))))
@@ -777,10 +777,10 @@
   :rule-classes :type-prescription)
 
 (defthm not-integerp-1r-expt-b
-  (implies (and ;(rationalp a)
-                ;(rationalp b)
-                (rationalp x)
-		(rationalp y)
+  (implies (and ;(real/rationalp a)
+                ;(real/rationalp b)
+                (real/rationalp x)
+		(real/rationalp y)
 		(integerp n)
 		(< 0 (* a b))
 		(< (* a b) (* x (expt y n))))
@@ -791,11 +791,11 @@
   :rule-classes :type-prescription)
 
 (defthm not-integerp-1r-expt-c
-  (implies (and ;(rationalp a)
-                ;(rationalp b)
-                (rationalp x)
+  (implies (and ;(real/rationalp a)
+                ;(real/rationalp b)
+                (real/rationalp x)
 		(integerp n1)
-		(rationalp y)
+		(real/rationalp y)
 		(integerp n2)
 		(< 0 (* a b))
 		(< (* a b) (* (expt x n1) (expt y n2))))
@@ -812,10 +812,10 @@
 
 
 (defthm not-integerp-1s
-  (implies (and ;(rationalp a)
-                (rationalp x)
-                (rationalp y)
-		(rationalp z)
+  (implies (and ;(real/rationalp a)
+                (real/rationalp x)
+                (real/rationalp y)
+		(real/rationalp z)
 		(< 0 a)
 		(< a (* x y z)))
 	   (not (integerp (* (/ x) (/ y) (/ z) a))))
@@ -825,11 +825,11 @@
   :rule-classes :type-prescription)
 
 (defthm not-integerp-1s-expt-a
-  (implies (and ;(rationalp a)
-                (rationalp x)
+  (implies (and ;(real/rationalp a)
+                (real/rationalp x)
 		(integerp n)
-                (rationalp y)
-		(rationalp z)
+                (real/rationalp y)
+		(real/rationalp z)
 		(< 0 a)
 		(< a (* (expt x n) y z)))
 	   (not (integerp (* (expt x (- n)) (/ y) (/ z) a))))
@@ -839,11 +839,11 @@
   :rule-classes :type-prescription)
 
 (defthm not-integerp-1s-expt-b
-  (implies (and ;(rationalp a)
-                (rationalp x)
-                (rationalp y)
+  (implies (and ;(real/rationalp a)
+                (real/rationalp x)
+                (real/rationalp y)
 		(integerp n)
-		(rationalp z)
+		(real/rationalp z)
 		(< 0 a)
 		(< a (* x (expt y n) z)))
 	   (not (integerp (* (/ x) (expt y (- n)) (/ z) a))))
@@ -853,10 +853,10 @@
   :rule-classes :type-prescription)
 
 (defthm not-integerp-1s-expt-c
-  (implies (and ;(rationalp a)
-                (rationalp x)
-                (rationalp y)
-		(rationalp z)
+  (implies (and ;(real/rationalp a)
+                (real/rationalp x)
+                (real/rationalp y)
+		(real/rationalp z)
 		(integerp n)
 		(< 0 a)
 		(< a (* x y (expt z n))))
@@ -867,12 +867,12 @@
   :rule-classes :type-prescription)
 
 (defthm not-integerp-1s-expt-d
-  (implies (and ;(rationalp a)
-                (rationalp x)
+  (implies (and ;(real/rationalp a)
+                (real/rationalp x)
 		(integerp n1)
-                (rationalp y)
+                (real/rationalp y)
 		(integerp n2)
-		(rationalp z)
+		(real/rationalp z)
 		(< 0 a)
 		(< a (* (expt x n1) (expt y n2) z)))
 	   (not (integerp (* (expt x (- n1)) (expt y (- n2)) (/ z) a))))
@@ -882,11 +882,11 @@
   :rule-classes :type-prescription)
 
 (defthm not-integerp-1s-expt-e
-  (implies (and ;(rationalp a)
-                (rationalp x)
+  (implies (and ;(real/rationalp a)
+                (real/rationalp x)
 		(integerp n1)
-                (rationalp y)
-		(rationalp z)
+                (real/rationalp y)
+		(real/rationalp z)
 		(integerp n2)
 		(< 0 a)
 		(< a (* (expt x n1) y (expt z n2))))
@@ -897,11 +897,11 @@
   :rule-classes :type-prescription)
 
 (defthm not-integerp-1s-expt-f
-  (implies (and ;(rationalp a)
-                (rationalp x)
-                (rationalp y)
+  (implies (and ;(real/rationalp a)
+                (real/rationalp x)
+                (real/rationalp y)
 		(integerp n1)
-		(rationalp z)
+		(real/rationalp z)
 		(integerp n2)
 		(< 0 a)
 		(< a (* x (expt y n1) (expt z n2))))
@@ -912,12 +912,12 @@
   :rule-classes :type-prescription)
 
 (defthm not-integerp-1s-expt-g
-  (implies (and ;(rationalp a)
-                (rationalp x)
+  (implies (and ;(real/rationalp a)
+                (real/rationalp x)
 		(integerp n1)
-                (rationalp y)
+                (real/rationalp y)
 		(integerp n2)
-		(rationalp z)
+		(real/rationalp z)
 		(integerp n3)
 		(< 0 a)
 		(< a (* (expt x n1) (expt y n2) (expt z n3))))
@@ -939,10 +939,10 @@
 
 
 (defthm not-integerp-1t
-  (implies (and ;(rationalp a)
-                (rationalp x)
-                (rationalp y)
-		(rationalp z)
+  (implies (and ;(real/rationalp a)
+                (real/rationalp x)
+                (real/rationalp y)
+		(real/rationalp z)
 		(< 0 a)
 		(< a (* x y z)))
 	   (not (integerp (* (/ x) (/ y) a (/ z)))))
@@ -950,11 +950,11 @@
   :rule-classes :type-prescription)
 
 (defthm not-integerp-1t-expt-a
-  (implies (and ;(rationalp a)
-                (rationalp x)
+  (implies (and ;(real/rationalp a)
+                (real/rationalp x)
 		(integerp n)
-                (rationalp y)
-		(rationalp z)
+                (real/rationalp y)
+		(real/rationalp z)
 		(< 0 a)
 		(< a (* (expt x n) y z)))
 	   (not (integerp (* (expt x (- n)) (/ y) a (/ z)))))
@@ -963,11 +963,11 @@
   :rule-classes :type-prescription)
 
 (defthm not-integerp-1t-expt-b
-  (implies (and ;(rationalp a)
-                (rationalp x)
-                (rationalp y)
+  (implies (and ;(real/rationalp a)
+                (real/rationalp x)
+                (real/rationalp y)
 		(integerp n)
-		(rationalp z)
+		(real/rationalp z)
 		(< 0 a)
 		(< a (* x (expt y n) z)))
 	   (not (integerp (* (/ x) (expt y (- n)) a (/ z)))))
@@ -976,10 +976,10 @@
   :rule-classes :type-prescription)
 
 (defthm not-integerp-1t-expt-c
-  (implies (and ;(rationalp a)
-                (rationalp x)
-                (rationalp y)
-		(rationalp z)
+  (implies (and ;(real/rationalp a)
+                (real/rationalp x)
+                (real/rationalp y)
+		(real/rationalp z)
 		(integerp n)
 		(< 0 a)
 		(< a (* x y (expt z n))))
@@ -989,12 +989,12 @@
   :rule-classes :type-prescription)
 
 (defthm not-integerp-1t-expt-d
-  (implies (and ;(rationalp a)
-                (rationalp x)
+  (implies (and ;(real/rationalp a)
+                (real/rationalp x)
 		(integerp n1)
-                (rationalp y)
+                (real/rationalp y)
 		(integerp n2)
-		(rationalp z)
+		(real/rationalp z)
 		(< 0 a)
 		(< a (* (expt x n1) (expt y n2) z)))
 	   (not (integerp (* (expt x (- n1)) (expt y (- n2)) a (/ z)))))
@@ -1004,11 +1004,11 @@
   :rule-classes :type-prescription)
 
 (defthm not-integerp-1t-expt-e
-  (implies (and ;(rationalp a)
-                (rationalp x)
+  (implies (and ;(real/rationalp a)
+                (real/rationalp x)
 		(integerp n1)
-                (rationalp y)
-		(rationalp z)
+                (real/rationalp y)
+		(real/rationalp z)
 		(integerp n2)
 		(< 0 a)
 		(< a (* (expt x n1) y (expt z n2))))
@@ -1019,11 +1019,11 @@
   :rule-classes :type-prescription)
 
 (defthm not-integerp-1t-expt-f
-  (implies (and ;(rationalp a)
-                (rationalp x)
-                (rationalp y)
+  (implies (and ;(real/rationalp a)
+                (real/rationalp x)
+                (real/rationalp y)
 		(integerp n1)
-		(rationalp z)
+		(real/rationalp z)
 		(integerp n2)
 		(< 0 a)
 		(< a (* x (expt y n1) (expt z n2))))
@@ -1034,12 +1034,12 @@
   :rule-classes :type-prescription)
 
 (defthm not-integerp-1t-expt-g
-  (implies (and ;(rationalp a)
-                (rationalp x)
+  (implies (and ;(real/rationalp a)
+                (real/rationalp x)
 		(integerp n1)
-                (rationalp y)
+                (real/rationalp y)
 		(integerp n2)
-		(rationalp z)
+		(real/rationalp z)
 		(integerp n3)
 		(< 0 a)
 		(< a (* (expt x n1) (expt y n2) (expt z n3))))
@@ -1060,10 +1060,10 @@
                            not-integerp-1s-expt-g)))
 
 (defthm not-integerp-1u
-  (implies (and ;(rationalp a)
-                (rationalp x)
-                (rationalp y)
-		(rationalp z)
+  (implies (and ;(real/rationalp a)
+                (real/rationalp x)
+                (real/rationalp y)
+		(real/rationalp z)
 		(< 0 a)
 		(< a (* x y z)))
 	   (not (integerp (* (/ x) a (/ y) (/ z)))))
@@ -1072,11 +1072,11 @@
   :rule-classes :type-prescription)
 
 (defthm not-integerp-1u-expt-a
-  (implies (and ;(rationalp a)
-                (rationalp x)
+  (implies (and ;(real/rationalp a)
+                (real/rationalp x)
 		(integerp n)
-                (rationalp y)
-		(rationalp z)
+                (real/rationalp y)
+		(real/rationalp z)
 		(< 0 a)
 		(< a (* (expt x n) y z)))
 	   (not (integerp (* (expt x (- n)) a (/ y) (/ z)))))
@@ -1085,11 +1085,11 @@
   :rule-classes :type-prescription)
 
 (defthm not-integerp-1u-expt-b
-  (implies (and ;(rationalp a)
-                (rationalp x)
-                (rationalp y)
+  (implies (and ;(real/rationalp a)
+                (real/rationalp x)
+                (real/rationalp y)
 		(integerp n)
-		(rationalp z)
+		(real/rationalp z)
 		(< 0 a)
 		(< a (* x (expt y n) z)))
 	   (not (integerp (* (/ x) a (expt y (- n)) (/ z)))))
@@ -1098,10 +1098,10 @@
   :rule-classes :type-prescription)
 
 (defthm not-integerp-1u-expt-c
-  (implies (and ;(rationalp a)
-                (rationalp x)
-                (rationalp y)
-		(rationalp z)
+  (implies (and ;(real/rationalp a)
+                (real/rationalp x)
+                (real/rationalp y)
+		(real/rationalp z)
 		(integerp n)
 		(< 0 a)
 		(< a (* x y (expt z n))))
@@ -1111,12 +1111,12 @@
   :rule-classes :type-prescription)
 
 (defthm not-integerp-1u-expt-d
-  (implies (and ;(rationalp a)
-                (rationalp x)
+  (implies (and ;(real/rationalp a)
+                (real/rationalp x)
 		(integerp n1)
-                (rationalp y)
+                (real/rationalp y)
 		(integerp n2)
-		(rationalp z)
+		(real/rationalp z)
 		(< 0 a)
 		(< a (* (expt x n1) (expt y n2) z)))
 	   (not (integerp (* (expt x (- n1)) a (expt y (- n2)) (/ z)))))
@@ -1126,11 +1126,11 @@
   :rule-classes :type-prescription)
 
 (defthm not-integerp-1u-expt-e
-  (implies (and ;(rationalp a)
-                (rationalp x)
+  (implies (and ;(real/rationalp a)
+                (real/rationalp x)
 		(integerp n1)
-                (rationalp y)
-		(rationalp z)
+                (real/rationalp y)
+		(real/rationalp z)
 		(integerp n2)
 		(< 0 a)
 		(< a (* (expt x n1) y (expt z n2))))
@@ -1141,11 +1141,11 @@
   :rule-classes :type-prescription)
 
 (defthm not-integerp-1u-expt-f
-  (implies (and ;(rationalp a)
-                (rationalp x)
-                (rationalp y)
+  (implies (and ;(real/rationalp a)
+                (real/rationalp x)
+                (real/rationalp y)
 		(integerp n1)
-		(rationalp z)
+		(real/rationalp z)
 		(integerp n2)
 		(< 0 a)
 		(< a (* x (expt y n1) (expt z n2))))
@@ -1156,12 +1156,12 @@
   :rule-classes :type-prescription)
 
 (defthm not-integerp-1u-expt-g
-  (implies (and ;(rationalp a)
-                (rationalp x)
+  (implies (and ;(real/rationalp a)
+                (real/rationalp x)
 		(integerp n1)
-                (rationalp y)
+                (real/rationalp y)
 		(integerp n2)
-		(rationalp z)
+		(real/rationalp z)
 		(integerp n3)
 		(< 0 a)
 		(< a (* (expt x n1) (expt y n2) (expt z n3))))
@@ -1184,10 +1184,10 @@
 
 
 (defthm not-integerp-1v
-  (implies (and ;(rationalp a)
-                (rationalp x)
-                (rationalp y)
-		(rationalp z)
+  (implies (and ;(real/rationalp a)
+                (real/rationalp x)
+                (real/rationalp y)
+		(real/rationalp z)
 		(< 0 a)
 		(< a (* x y z)))
 	   (not (integerp (* a (/ x) (/ y) (/ z)))))
@@ -1196,11 +1196,11 @@
   :rule-classes :type-prescription)
 
 (defthm not-integerp-1v-expt-a
-  (implies (and ;(rationalp a)
-                (rationalp x)
+  (implies (and ;(real/rationalp a)
+                (real/rationalp x)
 		(integerp n)
-                (rationalp y)
-		(rationalp z)
+                (real/rationalp y)
+		(real/rationalp z)
 		(< 0 a)
 		(< a (* (expt x n) y z)))
 	   (not (integerp (* a (expt x (- n)) (/ y) (/ z)))))
@@ -1209,11 +1209,11 @@
   :rule-classes :type-prescription)
 
 (defthm not-integerp-1v-expt-b
-  (implies (and ;(rationalp a)
-                (rationalp x)
-                (rationalp y)
+  (implies (and ;(real/rationalp a)
+                (real/rationalp x)
+                (real/rationalp y)
 		(integerp n)
-		(rationalp z)
+		(real/rationalp z)
 		(< 0 a)
 		(< a (* x (expt y n) z)))
 	   (not (integerp (* a (/ x) (expt y (- n)) (/ z)))))
@@ -1222,10 +1222,10 @@
   :rule-classes :type-prescription)
 
 (defthm not-integerp-1v-expt-c
-  (implies (and ;(rationalp a)
-                (rationalp x)
-                (rationalp y)
-		(rationalp z)
+  (implies (and ;(real/rationalp a)
+                (real/rationalp x)
+                (real/rationalp y)
+		(real/rationalp z)
 		(integerp n)
 		(< 0 a)
 		(< a (* x y (expt z n))))
@@ -1235,12 +1235,12 @@
   :rule-classes :type-prescription)
 
 (defthm not-integerp-1v-expt-d
-  (implies (and ;(rationalp a)
-                (rationalp x)
+  (implies (and ;(real/rationalp a)
+                (real/rationalp x)
 		(integerp n1)
-                (rationalp y)
+                (real/rationalp y)
 		(integerp n2)
-		(rationalp z)
+		(real/rationalp z)
 		(< 0 a)
 		(< a (* (expt x n1) (expt y n2) z)))
 	   (not (integerp (* a (expt x (- n1)) (expt y (- n2)) (/ z)))))
@@ -1250,11 +1250,11 @@
   :rule-classes :type-prescription)
 
 (defthm not-integerp-1v-expt-e
-  (implies (and ;(rationalp a)
-                (rationalp x)
+  (implies (and ;(real/rationalp a)
+                (real/rationalp x)
 		(integerp n1)
-                (rationalp y)
-		(rationalp z)
+                (real/rationalp y)
+		(real/rationalp z)
 		(integerp n2)
 		(< 0 a)
 		(< a (* (expt x n1) y (expt z n2))))
@@ -1265,11 +1265,11 @@
   :rule-classes :type-prescription)
 
 (defthm not-integerp-1v-expt-f
-  (implies (and ;(rationalp a)
-                (rationalp x)
-                (rationalp y)
+  (implies (and ;(real/rationalp a)
+                (real/rationalp x)
+                (real/rationalp y)
 		(integerp n1)
-		(rationalp z)
+		(real/rationalp z)
 		(integerp n2)
 		(< 0 a)
 		(< a (* x (expt y n1) (expt z n2))))
@@ -1280,12 +1280,12 @@
   :rule-classes :type-prescription)
 
 (defthm not-integerp-1v-expt-g
-  (implies (and ;(rationalp a)
-                (rationalp x)
+  (implies (and ;(real/rationalp a)
+                (real/rationalp x)
 		(integerp n1)
-                (rationalp y)
+                (real/rationalp y)
 		(integerp n2)
-		(rationalp z)
+		(real/rationalp z)
 		(integerp n3)
 		(< 0 a)
 		(< a (* (expt x n1) (expt y n2) (expt z n3))))
@@ -1310,8 +1310,8 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defthm not-integerp-2a
-  (implies (and ;(rationalp a)
-	        (rationalp x)
+  (implies (and ;(real/rationalp a)
+	        (real/rationalp x)
 		(< a 0)
 		(< x a))
 	   (not (integerp (* (/ x) a))))
@@ -1321,8 +1321,8 @@
   :rule-classes :type-prescription)
 
 (defthm not-integerp-2a-expt
-  (implies (and	;(rationalp a)
-	        (rationalp x)
+  (implies (and	;(real/rationalp a)
+	        (real/rationalp x)
 		(integerp n)
 		(< a 0)
 		(< (expt x n) a))
@@ -1335,8 +1335,8 @@
                            not-integerp-2a-expt)))
 
 (defthm not-integerp-2b
-  (implies (and ;(rationalp a)
-		(rationalp x)
+  (implies (and ;(real/rationalp a)
+		(real/rationalp x)
 		(< a 0)
 		(< x a))
 	   (not (integerp (* a (/ x)))))
@@ -1344,8 +1344,8 @@
   :rule-classes :type-prescription)
 
 (defthm not-integerp-2b-expt
-  (implies (and ;(rationalp a)
-		(rationalp x)
+  (implies (and ;(real/rationalp a)
+		(real/rationalp x)
 		(integerp n)
 		(< a 0)
 		(< (expt x n) a))
@@ -1359,18 +1359,18 @@
 
 
 ;; (defthm not-integerp-2c
-;;   (implies (and (rationalp a)
-;;                 (rationalp b)
-;; 		(rationalp x)
+;;   (implies (and (real/rationalp a)
+;;                 (real/rationalp b)
+;; 		(real/rationalp x)
 ;; 		(< (* a b) 0)
 ;; 		(< x (* a b)))
 ;; 	   (not (integerp (* (/ x) a b))))
 ;;   :rule-classes :type-prescription)
 
 (defthm not-integerp-2d
-  (implies (and ;(rationalp a)
-                (rationalp b)
-		(rationalp x)
+  (implies (and ;(real/rationalp a)
+                (real/rationalp b)
+		(real/rationalp x)
 		(< (* a b) 0)
 		(< x (* a b)))
 	   (not (integerp (* a (/ x) b))))
@@ -1380,9 +1380,9 @@
   :rule-classes :type-prescription)
 
 (defthm not-integerp-2d-expt
-  (implies (and ;(rationalp a)
-                (rationalp b)
-		(rationalp x)
+  (implies (and ;(real/rationalp a)
+                (real/rationalp b)
+		(real/rationalp x)
 		(integerp n)
 		(< (* a b) 0)
 		(< (expt x n) (* a b)))
@@ -1397,9 +1397,9 @@
 
 
 (defthm not-integerp-2e
-  (implies (and ;(rationalp a)
-                ;(rationalp b)
-		(rationalp x)
+  (implies (and ;(real/rationalp a)
+                ;(real/rationalp b)
+		(real/rationalp x)
 		(< (* a b) 0)
 		(< x (* a b)))
 	   (not (integerp (* a b (/ x)))))
@@ -1409,9 +1409,9 @@
   :rule-classes :type-prescription)
 
 (defthm not-integerp-2e-expt
-  (implies (and ;(rationalp a)
-                ;(rationalp b)
-		(rationalp x)
+  (implies (and ;(real/rationalp a)
+                ;(real/rationalp b)
+		(real/rationalp x)
 		(integerp n)
 		(< (* a b) 0)
 		(< (expt x n) (* a b)))
@@ -1426,9 +1426,9 @@
 
 
 (defthm not-integerp-2f
-  (implies (and ;(rationalp a)
-                (rationalp x)
-		(rationalp y)
+  (implies (and ;(real/rationalp a)
+                (real/rationalp x)
+		(real/rationalp y)
 		(< a 0)
 		(< (* x y) a))
 	   (not (integerp (* (/ x) (/ y) a))))
@@ -1438,10 +1438,10 @@
   :rule-classes :type-prescription)
 
 (defthm not-integerp-2f-expt-a
-  (implies (and ;(rationalp a)
-                (rationalp x)
+  (implies (and ;(real/rationalp a)
+                (real/rationalp x)
 		(integerp n)
-		(rationalp y)
+		(real/rationalp y)
 		(< a 0)
 		(< (* (expt x n) y) a))
 	   (not (integerp (* (expt x (- n)) (/ y) a))))
@@ -1451,9 +1451,9 @@
   :rule-classes :type-prescription)
 
 (defthm not-integerp-2f-expt-b
-  (implies (and ;(rationalp a)
-                (rationalp x)
-		(rationalp y)
+  (implies (and ;(real/rationalp a)
+                (real/rationalp x)
+		(real/rationalp y)
 		(integerp n)
 		(< a 0)
 		(< (* x (expt y n)) a))
@@ -1464,10 +1464,10 @@
   :rule-classes :type-prescription)
 
 (defthm not-integerp-2f-expt-c
-  (implies (and ;(rationalp a)
-                (rationalp x)
+  (implies (and ;(real/rationalp a)
+                (real/rationalp x)
 		(integerp n1)
-		(rationalp y)
+		(real/rationalp y)
 		(integerp n2)
 		(< a 0)
 		(< (* (expt x n1) (expt y n2)) a))
@@ -1484,9 +1484,9 @@
 
 
 (defthm not-integerp-2g
-  (implies (and ;(rationalp a)
-                (rationalp x)
-		(rationalp y)
+  (implies (and ;(real/rationalp a)
+                (real/rationalp x)
+		(real/rationalp y)
 		(< a 0)
 		(< (* x y) a))
 	   (not (integerp (* (/ x) a (/ y)))))
@@ -1494,10 +1494,10 @@
   :rule-classes :type-prescription)
 
 (defthm not-integerp-2g-expt-a
-  (implies (and ;(rationalp a)
-                (rationalp x)
+  (implies (and ;(real/rationalp a)
+                (real/rationalp x)
 		(integerp n)
-		(rationalp y)
+		(real/rationalp y)
 		(< a 0)
 		(< (* (expt x n) y) a))
 	   (not (integerp (* (expt x (- n)) a (/ y)))))
@@ -1506,9 +1506,9 @@
   :rule-classes :type-prescription)
 
 (defthm not-integerp-2g-expt-b
-  (implies (and ;(rationalp a)
-                (rationalp x)
-		(rationalp y)
+  (implies (and ;(real/rationalp a)
+                (real/rationalp x)
+		(real/rationalp y)
 		(integerp n)
 		(< a 0)
 		(< (* x (expt y n)) a))
@@ -1518,10 +1518,10 @@
   :rule-classes :type-prescription)
 
 (defthm not-integerp-2g-expt-c
-  (implies (and ;(rationalp a)
-                (rationalp x)
+  (implies (and ;(real/rationalp a)
+                (real/rationalp x)
 		(integerp n1)
-		(rationalp y)
+		(real/rationalp y)
 		(integerp n2)
 		(< a 0)
 		(< (* (expt x n1) (expt y n2)) a))
@@ -1538,9 +1538,9 @@
 
 
 (defthm not-integerp-2h
-  (implies (and ;(rationalp a)
-                (rationalp x)
-		(rationalp y)
+  (implies (and ;(real/rationalp a)
+                (real/rationalp x)
+		(real/rationalp y)
 		(< a 0)
 		(< (* x y) a))
 	   (not (integerp (* a (/ x) (/ y)))))
@@ -1548,10 +1548,10 @@
   :rule-classes :type-prescription)
 
 (defthm not-integerp-2h-expt-a
-  (implies (and ;(rationalp a)
-                (rationalp x)
+  (implies (and ;(real/rationalp a)
+                (real/rationalp x)
 		(integerp n)
-		(rationalp y)
+		(real/rationalp y)
 		(< a 0)
 		(< (* (expt x n) y) a))
 	   (not (integerp (* a (expt x (- n)) (/ y)))))
@@ -1560,9 +1560,9 @@
   :rule-classes :type-prescription)
 
 (defthm not-integerp-2h-expt-b
-  (implies (and ;(rationalp a)
-                (rationalp x)
-		(rationalp y)
+  (implies (and ;(real/rationalp a)
+                (real/rationalp x)
+		(real/rationalp y)
 		(integerp n)
 		(< a 0)
 		(< (* x (expt y n)) a))
@@ -1572,10 +1572,10 @@
   :rule-classes :type-prescription)
 
 (defthm not-integerp-2h-expt-c
-  (implies (and ;(rationalp a)
-                (rationalp x)
+  (implies (and ;(real/rationalp a)
+                (real/rationalp x)
 		(integerp n1)
-		(rationalp y)
+		(real/rationalp y)
 		(integerp n2)
 		(< a 0)
 		(< (* (expt x n1) (expt y n2)) a))
@@ -1592,30 +1592,30 @@
 
 
 ;; (defthm not-integerp-2i
-;;   (implies (and (rationalp a)
-;;                 (rationalp b)
-;;                 (rationalp c)
-;; 		(rationalp x)
+;;   (implies (and (real/rationalp a)
+;;                 (real/rationalp b)
+;;                 (real/rationalp c)
+;; 		(real/rationalp x)
 ;; 		(< (* a b c) 0)
 ;; 		(< x (* a b c)))
 ;; 	   (not (integerp (* (/ x) a b c))))
 ;;   :rule-classes :type-prescription)
 
 ;; (defthm not-integerp-2j
-;;   (implies (and (rationalp a)
-;;                 (rationalp b)
-;;                 (rationalp c)
-;; 		(rationalp x)
+;;   (implies (and (real/rationalp a)
+;;                 (real/rationalp b)
+;;                 (real/rationalp c)
+;; 		(real/rationalp x)
 ;; 		(< (* a b c) 0)
 ;; 		(< x (* a b c)))
 ;; 	   (not (integerp (* a (/ x) b c))))
 ;;   :rule-classes :type-prescription)
 
 (defthm not-integerp-2k
-  (implies (and ;(rationalp a)
-                ;(rationalp b)
-                (rationalp c)
-                (rationalp x)
+  (implies (and ;(real/rationalp a)
+                ;(real/rationalp b)
+                (real/rationalp c)
+                (real/rationalp x)
 		(< (* a b c) 0)
 		(< x (* a b c)))
 	   (not (integerp (* a b (/ x) c))))
@@ -1625,10 +1625,10 @@
   :rule-classes :type-prescription)
 
 (defthm not-integerp-2k-expt
-  (implies (and ;(rationalp a)
-                ;(rationalp b)
-                (rationalp c)
-                (rationalp x)
+  (implies (and ;(real/rationalp a)
+                ;(real/rationalp b)
+                (real/rationalp c)
+                (real/rationalp x)
 		(integerp n)
 		(< (* a b c) 0)
 		(< (expt x n) (* a b c)))
@@ -1643,10 +1643,10 @@
 
 
 (defthm not-integerp-2l
-  (implies (and ;(rationalp a)
-                ;(rationalp b)
-                ;(rationalp c)
-		(rationalp x)
+  (implies (and ;(real/rationalp a)
+                ;(real/rationalp b)
+                ;(real/rationalp c)
+		(real/rationalp x)
 		(< (* a b c) 0)
 		(< x (* a b c)))
 	   (not (integerp (* a b c (/ x)))))
@@ -1656,10 +1656,10 @@
   :rule-classes :type-prescription)
 
 (defthm not-integerp-2l-expt
-  (implies (and ;(rationalp a)
-                ;(rationalp b)
-                ;(rationalp c)
-		(rationalp x)
+  (implies (and ;(real/rationalp a)
+                ;(real/rationalp b)
+                ;(real/rationalp c)
+		(real/rationalp x)
 		(integerp n)
 		(< (* a b c) 0)
 		(< (expt x n) (* a b c)))
@@ -1673,20 +1673,20 @@
                            not-integerp-2l-expt)))
 
 ;; (defthm not-integerp-2m
-;;   (implies (and (rationalp a)
-;;                 (rationalp b)
-;;                 (rationalp x)
-;; 		(rationalp y)
+;;   (implies (and (real/rationalp a)
+;;                 (real/rationalp b)
+;;                 (real/rationalp x)
+;; 		(real/rationalp y)
 ;; 		(< (* a b) 0)
 ;; 		(< (* x y) (* a b)))
 ;; 	   (not (integerp (* (/ x) (/ y) a b))))
 ;;   :rule-classes :type-prescription)
 
 (defthm not-integerp-2n
-  (implies (and ;(rationalp a)
-                ;(rationalp b)
-                (rationalp x)
-		(rationalp y)
+  (implies (and ;(real/rationalp a)
+                ;(real/rationalp b)
+                (real/rationalp x)
+		(real/rationalp y)
 		(< (* a b) 0)
 		(< (* x y) (* a b)))
 	   (not (integerp (* (/ x) a (/ y) b))))
@@ -1696,11 +1696,11 @@
   :rule-classes :type-prescription)
 
 (defthm not-integerp-2n-expt-a
-  (implies (and ;(rationalp a)
-                ;(rationalp b)
-                (rationalp x)
+  (implies (and ;(real/rationalp a)
+                ;(real/rationalp b)
+                (real/rationalp x)
 		(integerp n)
-		(rationalp y)
+		(real/rationalp y)
 		(< (* a b) 0)
 		(< (* (expt x n) y) (* a b)))
 	   (not (integerp (* (expt x (- n)) a (/ y) b))))
@@ -1710,10 +1710,10 @@
   :rule-classes :type-prescription)
 
 (defthm not-integerp-2n-expt-b
-  (implies (and ;(rationalp a)
-                ;(rationalp b)
-                (rationalp x)
-		(rationalp y)
+  (implies (and ;(real/rationalp a)
+                ;(real/rationalp b)
+                (real/rationalp x)
+		(real/rationalp y)
 		(integerp n)
 		(< (* a b) 0)
 		(< (* x (expt y n)) (* a b)))
@@ -1724,11 +1724,11 @@
   :rule-classes :type-prescription)
 
 (defthm not-integerp-2n-expt-c
-  (implies (and ;(rationalp a)
-                ;(rationalp b)
-                (rationalp x)
+  (implies (and ;(real/rationalp a)
+                ;(real/rationalp b)
+                (real/rationalp x)
 		(integerp n1)
-		(rationalp y)
+		(real/rationalp y)
 		(integerp n2)
 		(< (* a b) 0)
 		(< (* (expt x n1) (expt y n2)) (* a b)))
@@ -1745,10 +1745,10 @@
 
 
 (defthm not-integerp-2o
-  (implies (and ;(rationalp a)
-                ;(rationalp b)
-                (rationalp x)
-		(rationalp y)
+  (implies (and ;(real/rationalp a)
+                ;(real/rationalp b)
+                (real/rationalp x)
+		(real/rationalp y)
 		(< (* a b) 0)
 		(< (* x y) (* a b)))
 	   (not (integerp (* (/ x) a b (/ y)))))
@@ -1758,11 +1758,11 @@
   :rule-classes :type-prescription)
 
 (defthm not-integerp-2o-expt-a
-  (implies (and ;(rationalp a)
-                ;(rationalp b)
-                (rationalp x)
+  (implies (and ;(real/rationalp a)
+                ;(real/rationalp b)
+                (real/rationalp x)
 		(integerp n)
-		(rationalp y)
+		(real/rationalp y)
 		(< (* a b) 0)
 		(< (* (expt x n) y) (* a b)))
 	   (not (integerp (* (expt x (- n)) a b (/ y)))))
@@ -1772,10 +1772,10 @@
   :rule-classes :type-prescription)
 
 (defthm not-integerp-2o-expt-b
-  (implies (and ;(rationalp a)
-                ;(rationalp b)
-                (rationalp x)
-		(rationalp y)
+  (implies (and ;(real/rationalp a)
+                ;(real/rationalp b)
+                (real/rationalp x)
+		(real/rationalp y)
 		(integerp n)
 		(< (* a b) 0)
 		(< (* x (expt y n)) (* a b)))
@@ -1786,11 +1786,11 @@
   :rule-classes :type-prescription)
 
 (defthm not-integerp-2o-expt-c
-  (implies (and ;(rationalp a)
-                ;(rationalp b)
-                (rationalp x)
+  (implies (and ;(real/rationalp a)
+                ;(real/rationalp b)
+                (real/rationalp x)
 		(integerp n1)
-		(rationalp y)
+		(real/rationalp y)
 		(integerp n2)
 		(< (* a b) 0)
 		(< (* (expt x n1) (expt y n2)) (* a b)))
@@ -1807,10 +1807,10 @@
 
 
 (defthm not-integerp-2p
-  (implies (and ;(rationalp a)
-                ;(rationalp b)
-                (rationalp x)
-		(rationalp y)
+  (implies (and ;(real/rationalp a)
+                ;(real/rationalp b)
+                (real/rationalp x)
+		(real/rationalp y)
 		(< (* a b) 0)
 		(< (* x y) (* a b)))
 	   (not (integerp (* a (/ x) (/ y) b))))
@@ -1820,11 +1820,11 @@
   :rule-classes :type-prescription)
 
 (defthm not-integerp-2p-expt-a
-  (implies (and ;(rationalp a)
-                ;(rationalp b)
-                (rationalp x)
+  (implies (and ;(real/rationalp a)
+                ;(real/rationalp b)
+                (real/rationalp x)
 		(integerp n)
-		(rationalp y)
+		(real/rationalp y)
 		(< (* a b) 0)
 		(< (* (expt x n) y) (* a b)))
 	   (not (integerp (* a (expt x (- n)) (/ y) b))))
@@ -1834,10 +1834,10 @@
   :rule-classes :type-prescription)
 
 (defthm not-integerp-2p-expt-b
-  (implies (and ;(rationalp a)
-                ;(rationalp b)
-                (rationalp x)
-		(rationalp y)
+  (implies (and ;(real/rationalp a)
+                ;(real/rationalp b)
+                (real/rationalp x)
+		(real/rationalp y)
 		(integerp n)
 		(< (* a b) 0)
 		(< (* x (expt y n)) (* a b)))
@@ -1848,11 +1848,11 @@
   :rule-classes :type-prescription)
 
 (defthm not-integerp-2p-expt-c
-  (implies (and ;(rationalp a)
-                ;(rationalp b)
-                (rationalp x)
+  (implies (and ;(real/rationalp a)
+                ;(real/rationalp b)
+                (real/rationalp x)
 		(integerp n1)
-		(rationalp y)
+		(real/rationalp y)
 		(integerp n2)
 		(< (* a b) 0)
 		(< (* (expt x n1) (expt y n2)) (* a b)))
@@ -1870,10 +1870,10 @@
 
 
 (defthm not-integerp-2q
-  (implies (and ;(rationalp a)
-                ;(rationalp b)
-                (rationalp x)
-		(rationalp y)
+  (implies (and ;(real/rationalp a)
+                ;(real/rationalp b)
+                (real/rationalp x)
+		(real/rationalp y)
 		(< (* a b) 0)
 		(< (* x y) (* a b)))
 	   (not (integerp (* a (/ x) b (/ y)))))
@@ -1883,11 +1883,11 @@
   :rule-classes :type-prescription)
 
 (defthm not-integerp-2q-expt-a
-  (implies (and ;(rationalp a)
-                ;(rationalp b)
-                (rationalp x)
+  (implies (and ;(real/rationalp a)
+                ;(real/rationalp b)
+                (real/rationalp x)
 		(integerp n)
-		(rationalp y)
+		(real/rationalp y)
 		(< (* a b) 0)
 		(< (* (expt x n) y) (* a b)))
 	   (not (integerp (* a (expt x (- n)) b (/ y)))))
@@ -1897,10 +1897,10 @@
   :rule-classes :type-prescription)
 
 (defthm not-integerp-2q-expt-b
-  (implies (and ;(rationalp a)
-                ;(rationalp b)
-                (rationalp x)
-		(rationalp y)
+  (implies (and ;(real/rationalp a)
+                ;(real/rationalp b)
+                (real/rationalp x)
+		(real/rationalp y)
 		(integerp n)
 		(< (* a b) 0)
 		(< (* x (expt y n)) (* a b)))
@@ -1911,11 +1911,11 @@
   :rule-classes :type-prescription)
 
 (defthm not-integerp-2q-expt-c
-  (implies (and ;(rationalp a)
-                ;(rationalp b)
-                (rationalp x)
+  (implies (and ;(real/rationalp a)
+                ;(real/rationalp b)
+                (real/rationalp x)
 		(integerp n1)
-		(rationalp y)
+		(real/rationalp y)
 		(integerp n2)
 		(< (* a b) 0)
 		(< (* (expt x n1) (expt y n2)) (* a b)))
@@ -1932,10 +1932,10 @@
 
 
 (defthm not-integerp-2r
-  (implies (and ;(rationalp a)
-                ;(rationalp b)
-                (rationalp x)
-		(rationalp y)
+  (implies (and ;(real/rationalp a)
+                ;(real/rationalp b)
+                (real/rationalp x)
+		(real/rationalp y)
 		(< (* a b) 0)
 		(< (* x y) (* a b)))
 	   (not (integerp (* a b (/ x) (/ y)))))
@@ -1945,11 +1945,11 @@
   :rule-classes :type-prescription)
 
 (defthm not-integerp-2r-expt-a
-  (implies (and ;(rationalp a)
-                ;(rationalp b)
-                (rationalp x)
+  (implies (and ;(real/rationalp a)
+                ;(real/rationalp b)
+                (real/rationalp x)
 		(integerp n)
-		(rationalp y)
+		(real/rationalp y)
 		(< (* a b) 0)
 		(< (* (expt x n) y) (* a b)))
 	   (not (integerp (* a b (expt x (- n)) (/ y)))))
@@ -1959,10 +1959,10 @@
   :rule-classes :type-prescription)
 
 (defthm not-integerp-2r-expt-b
-  (implies (and ;(rationalp a)
-                ;(rationalp b)
-                (rationalp x)
-		(rationalp y)
+  (implies (and ;(real/rationalp a)
+                ;(real/rationalp b)
+                (real/rationalp x)
+		(real/rationalp y)
 		(integerp n)
 		(< (* a b) 0)
 		(< (* x (expt y n)) (* a b)))
@@ -1973,11 +1973,11 @@
   :rule-classes :type-prescription)
 
 (defthm not-integerp-2r-expt-c
-  (implies (and ;(rationalp a)
-                ;(rationalp b)
-                (rationalp x)
+  (implies (and ;(real/rationalp a)
+                ;(real/rationalp b)
+                (real/rationalp x)
 		(integerp n1)
-		(rationalp y)
+		(real/rationalp y)
 		(integerp n2)
 		(< (* a b) 0)
 		(< (* (expt x n1) (expt y n2)) (* a b)))
@@ -1994,10 +1994,10 @@
 
 
 (defthm not-integerp-2s
-  (implies (and ;(rationalp a)
-                (rationalp x)
-                (rationalp y)
-		(rationalp z)
+  (implies (and ;(real/rationalp a)
+                (real/rationalp x)
+                (real/rationalp y)
+		(real/rationalp z)
 		(< a 0)
 		(< (* x y z) a))
 	   (not (integerp (* (/ x) (/ y) (/ z) a))))
@@ -2007,11 +2007,11 @@
   :rule-classes :type-prescription)
 
 (defthm not-integerp-2s-expt-a
-  (implies (and ;(rationalp a)
-                (rationalp x)
+  (implies (and ;(real/rationalp a)
+                (real/rationalp x)
 		(integerp n)
-                (rationalp y)
-		(rationalp z)
+                (real/rationalp y)
+		(real/rationalp z)
 		(< a 0)
 		(< (* (expt x n) y z) a))
 	   (not (integerp (* (expt x (- n)) (/ y) (/ z) a))))
@@ -2021,11 +2021,11 @@
   :rule-classes :type-prescription)
 
 (defthm not-integerp-2s-expt-b
-  (implies (and ;(rationalp a)
-                (rationalp x)
-                (rationalp y)
+  (implies (and ;(real/rationalp a)
+                (real/rationalp x)
+                (real/rationalp y)
 		(integerp n)
-		(rationalp z)
+		(real/rationalp z)
 		(< a 0)
 		(< (* x (expt y n) z) a))
 	   (not (integerp (* (/ x) (expt y (- n)) (/ z) a))))
@@ -2035,10 +2035,10 @@
   :rule-classes :type-prescription)
 
 (defthm not-integerp-2s-expt-c
-  (implies (and ;(rationalp a)
-                (rationalp x)
-                (rationalp y)
-		(rationalp z)
+  (implies (and ;(real/rationalp a)
+                (real/rationalp x)
+                (real/rationalp y)
+		(real/rationalp z)
 		(integerp n)
 		(< a 0)
 		(< (* x y (expt z n)) a))
@@ -2049,12 +2049,12 @@
   :rule-classes :type-prescription)
 
 (defthm not-integerp-2s-expt-d
-  (implies (and ;(rationalp a)
-                (rationalp x)
+  (implies (and ;(real/rationalp a)
+                (real/rationalp x)
 		(integerp n1)
-                (rationalp y)
+                (real/rationalp y)
 		(integerp n2)
-		(rationalp z)
+		(real/rationalp z)
 		(< a 0)
 		(< (* (expt x n1) (expt y n2) z) a))
 	   (not (integerp (* (expt x (- n1)) (expt y (- n2)) (/ z) a))))
@@ -2064,11 +2064,11 @@
   :rule-classes :type-prescription)
 
 (defthm not-integerp-2s-expt-e
-  (implies (and ;(rationalp a)
-                (rationalp x)
+  (implies (and ;(real/rationalp a)
+                (real/rationalp x)
 		(integerp n1)
-                (rationalp y)
-		(rationalp z)
+                (real/rationalp y)
+		(real/rationalp z)
 		(integerp n2)
 		(< a 0)
 		(< (* (expt x n1) y (expt z n2)) a))
@@ -2079,11 +2079,11 @@
   :rule-classes :type-prescription)
 
 (defthm not-integerp-2s-expt-f
-  (implies (and ;(rationalp a)
-                (rationalp x)
-                (rationalp y)
+  (implies (and ;(real/rationalp a)
+                (real/rationalp x)
+                (real/rationalp y)
 		(integerp n1)
-		(rationalp z)
+		(real/rationalp z)
 		(integerp n2)
 		(< a 0)
 		(< (* x (expt y n1) (expt z n2)) a))
@@ -2094,12 +2094,12 @@
   :rule-classes :type-prescription)
 
 (defthm not-integerp-2s-expt-g
-  (implies (and ;(rationalp a)
-                (rationalp x)
+  (implies (and ;(real/rationalp a)
+                (real/rationalp x)
 		(integerp n1)
-                (rationalp y)
+                (real/rationalp y)
 		(integerp n2)
-		(rationalp z)
+		(real/rationalp z)
 		(integerp n3)
 		(< a 0)
 		(< (* (expt x n1) (expt y n2) (expt z n3)) a))
@@ -2120,10 +2120,10 @@
 
 
 (defthm not-integerp-2t
-  (implies (and ;(rationalp a)
-                (rationalp x)
-                (rationalp y)
-		(rationalp z)
+  (implies (and ;(real/rationalp a)
+                (real/rationalp x)
+                (real/rationalp y)
+		(real/rationalp z)
 		(< a 0)
 		(< (* x y z) a))
 	   (not (integerp (* (/ x) (/ y) a (/ z)))))
@@ -2131,11 +2131,11 @@
   :rule-classes :type-prescription)
 
 (defthm not-integerp-2t-expt-a
-  (implies (and ;(rationalp a)
-                (rationalp x)
+  (implies (and ;(real/rationalp a)
+                (real/rationalp x)
 		(integerp n)
-                (rationalp y)
-		(rationalp z)
+                (real/rationalp y)
+		(real/rationalp z)
 		(< a 0)
 		(< (* (expt x n) y z) a))
 	   (not (integerp (* (expt x (- n)) (/ y) a (/ z)))))
@@ -2144,11 +2144,11 @@
   :rule-classes :type-prescription)
 
 (defthm not-integerp-2t-expt-b
-  (implies (and ;(rationalp a)
-                (rationalp x)
-                (rationalp y)
+  (implies (and ;(real/rationalp a)
+                (real/rationalp x)
+                (real/rationalp y)
 		(integerp n)
-		(rationalp z)
+		(real/rationalp z)
 		(< a 0)
 		(< (* x (expt y n) z) a))
 	   (not (integerp (* (/ x) (expt y (- n)) a (/ z)))))
@@ -2157,10 +2157,10 @@
   :rule-classes :type-prescription)
 
 (defthm not-integerp-2t-expt-c
-  (implies (and ;(rationalp a)
-                (rationalp x)
-                (rationalp y)
-		(rationalp z)
+  (implies (and ;(real/rationalp a)
+                (real/rationalp x)
+                (real/rationalp y)
+		(real/rationalp z)
 		(integerp n)
 		(< a 0)
 		(< (* x y (expt z n)) a))
@@ -2170,12 +2170,12 @@
   :rule-classes :type-prescription)
 
 (defthm not-integerp-2t-expt-d
-  (implies (and ;(rationalp a)
-                (rationalp x)
+  (implies (and ;(real/rationalp a)
+                (real/rationalp x)
 		(integerp n1)
-                (rationalp y)
+                (real/rationalp y)
 		(integerp n2)
-		(rationalp z)
+		(real/rationalp z)
 		(< a 0)
 		(< (* (expt x n1) (expt y n2) z) a))
 	   (not (integerp (* (expt x (- n1)) (expt y (- n2)) a (/ z)))))
@@ -2185,11 +2185,11 @@
   :rule-classes :type-prescription)
 
 (defthm not-integerp-2t-expt-e
-  (implies (and ;(rationalp a)
-                (rationalp x)
+  (implies (and ;(real/rationalp a)
+                (real/rationalp x)
 		(integerp n1)
-                (rationalp y)
-		(rationalp z)
+                (real/rationalp y)
+		(real/rationalp z)
 		(integerp n2)
 		(< a 0)
 		(< (* (expt x n1) y (expt z n2)) a))
@@ -2200,11 +2200,11 @@
   :rule-classes :type-prescription)
 
 (defthm not-integerp-2t-expt-f
-  (implies (and ;(rationalp a)
-                (rationalp x)
-                (rationalp y)
+  (implies (and ;(real/rationalp a)
+                (real/rationalp x)
+                (real/rationalp y)
 		(integerp n1)
-		(rationalp z)
+		(real/rationalp z)
 		(integerp n2)
 		(< a 0)
 		(< (* x (expt y n1) (expt z n2)) a))
@@ -2215,12 +2215,12 @@
   :rule-classes :type-prescription)
 
 (defthm not-integerp-2t-expt-g
-  (implies (and ;(rationalp a)
-                (rationalp x)
+  (implies (and ;(real/rationalp a)
+                (real/rationalp x)
 		(integerp n1)
-                (rationalp y)
+                (real/rationalp y)
 		(integerp n2)
-		(rationalp z)
+		(real/rationalp z)
 		(integerp n3)
 		(< a 0)
 		(< (* (expt x n1) (expt y n2) (expt z n3)) a))
@@ -2242,10 +2242,10 @@
 
 
 (defthm not-integerp-2u
-  (implies (and ;(rationalp a)
-                (rationalp x)
-                (rationalp y)
-		(rationalp z)
+  (implies (and ;(real/rationalp a)
+                (real/rationalp x)
+                (real/rationalp y)
+		(real/rationalp z)
 		(< a 0)
 		(< (* x y z) a))
 	   (not (integerp (* (/ x) a (/ y) (/ z)))))
@@ -2254,11 +2254,11 @@
   :rule-classes :type-prescription)
 
 (defthm not-integerp-2u-expt-a
-  (implies (and ;(rationalp a)
-                (rationalp x)
+  (implies (and ;(real/rationalp a)
+                (real/rationalp x)
 		(integerp n)
-                (rationalp y)
-		(rationalp z)
+                (real/rationalp y)
+		(real/rationalp z)
 		(< a 0)
 		(< (* (expt x n) y z) a))
 	   (not (integerp (* (expt x (- n)) a (/ y) (/ z)))))
@@ -2267,11 +2267,11 @@
   :rule-classes :type-prescription)
 
 (defthm not-integerp-2u-expt-b
-  (implies (and ;(rationalp a)
-                (rationalp x)
-                (rationalp y)
+  (implies (and ;(real/rationalp a)
+                (real/rationalp x)
+                (real/rationalp y)
 		(integerp n)
-		(rationalp z)
+		(real/rationalp z)
 		(< a 0)
 		(< (* x (expt y n) z) a))
 	   (not (integerp (* (/ x) a (expt y (- n)) (/ z)))))
@@ -2280,10 +2280,10 @@
   :rule-classes :type-prescription)
 
 (defthm not-integerp-2u-expt-c
-  (implies (and ;(rationalp a)
-                (rationalp x)
-                (rationalp y)
-		(rationalp z)
+  (implies (and ;(real/rationalp a)
+                (real/rationalp x)
+                (real/rationalp y)
+		(real/rationalp z)
 		(integerp n)
 		(< a 0)
 		(< (* x y (expt z n)) a))
@@ -2293,12 +2293,12 @@
   :rule-classes :type-prescription)
 
 (defthm not-integerp-2u-expt-d
-  (implies (and ;(rationalp a)
-                (rationalp x)
+  (implies (and ;(real/rationalp a)
+                (real/rationalp x)
 		(integerp n1)
-                (rationalp y)
+                (real/rationalp y)
 		(integerp n2)
-		(rationalp z)
+		(real/rationalp z)
 		(< a 0)
 		(< (* (expt x n1) (expt y n2) z) a))
 	   (not (integerp (* (expt x (- n1)) a (expt y (- n2)) (/ z)))))
@@ -2308,11 +2308,11 @@
   :rule-classes :type-prescription)
 
 (defthm not-integerp-2u-expt-e
-  (implies (and ;(rationalp a)
-                (rationalp x)
+  (implies (and ;(real/rationalp a)
+                (real/rationalp x)
 		(integerp n1)
-                (rationalp y)
-		(rationalp z)
+                (real/rationalp y)
+		(real/rationalp z)
 		(integerp n2)
 		(< a 0)
 		(< (* (expt x n1) y (expt z n2)) a))
@@ -2323,11 +2323,11 @@
   :rule-classes :type-prescription)
 
 (defthm not-integerp-2u-expt-f
-  (implies (and ;(rationalp a)
-                (rationalp x)
-                (rationalp y)
+  (implies (and ;(real/rationalp a)
+                (real/rationalp x)
+                (real/rationalp y)
 		(integerp n1)
-		(rationalp z)
+		(real/rationalp z)
 		(integerp n2)
 		(< a 0)
 		(< (* x (expt y n1) (expt z n2)) a))
@@ -2338,12 +2338,12 @@
   :rule-classes :type-prescription)
 
 (defthm not-integerp-2u-expt-g
-  (implies (and ;(rationalp a)
-                (rationalp x)
+  (implies (and ;(real/rationalp a)
+                (real/rationalp x)
 		(integerp n1)
-                (rationalp y)
+                (real/rationalp y)
 		(integerp n2)
-		(rationalp z)
+		(real/rationalp z)
 		(integerp n3)
 		(< a 0)
 		(< (* (expt x n1) (expt y n2) (expt z n3)) a))
@@ -2365,10 +2365,10 @@
 
 
 (defthm not-integerp-2v
-  (implies (and ;(rationalp a)
-                (rationalp x)
-                (rationalp y)
-		(rationalp z)
+  (implies (and ;(real/rationalp a)
+                (real/rationalp x)
+                (real/rationalp y)
+		(real/rationalp z)
 		(< a 0)
 		(< (* x y z) a))
 	   (not (integerp (* a (/ x) (/ y) (/ z)))))
@@ -2377,11 +2377,11 @@
   :rule-classes :type-prescription)
 
 (defthm not-integerp-2v-expt-a
-  (implies (and ;(rationalp a)
-                (rationalp x)
+  (implies (and ;(real/rationalp a)
+                (real/rationalp x)
 		(integerp n)
-                (rationalp y)
-		(rationalp z)
+                (real/rationalp y)
+		(real/rationalp z)
 		(< a 0)
 		(< (* (expt x n) y z) a))
 	   (not (integerp (* a (expt x (- n)) (/ y) (/ z)))))
@@ -2390,11 +2390,11 @@
   :rule-classes :type-prescription)
 
 (defthm not-integerp-2v-expt-b
-  (implies (and ;(rationalp a)
-                (rationalp x)
-                (rationalp y)
+  (implies (and ;(real/rationalp a)
+                (real/rationalp x)
+                (real/rationalp y)
 		(integerp n)
-		(rationalp z)
+		(real/rationalp z)
 		(< a 0)
 		(< (* x (expt y n) z) a))
 	   (not (integerp (* a (/ x) (expt y (- n)) (/ z)))))
@@ -2403,10 +2403,10 @@
   :rule-classes :type-prescription)
 
 (defthm not-integerp-2v-expt-c
-  (implies (and ;(rationalp a)
-                (rationalp x)
-                (rationalp y)
-		(rationalp z)
+  (implies (and ;(real/rationalp a)
+                (real/rationalp x)
+                (real/rationalp y)
+		(real/rationalp z)
 		(integerp n)
 		(< a 0)
 		(< (* x y (expt z n)) a))
@@ -2416,12 +2416,12 @@
   :rule-classes :type-prescription)
 
 (defthm not-integerp-2v-expt-d
-  (implies (and ;(rationalp a)
-                (rationalp x)
+  (implies (and ;(real/rationalp a)
+                (real/rationalp x)
 		(integerp n1)
-                (rationalp y)
+                (real/rationalp y)
 		(integerp n2)
-		(rationalp z)
+		(real/rationalp z)
 		(< a 0)
 		(< (* (expt x n1) (expt y n2) z) a))
 	   (not (integerp (* a (expt x (- n1)) (expt y (- n2)) (/ z)))))
@@ -2431,11 +2431,11 @@
   :rule-classes :type-prescription)
 
 (defthm not-integerp-2v-expt-e
-  (implies (and ;(rationalp a)
-                (rationalp x)
+  (implies (and ;(real/rationalp a)
+                (real/rationalp x)
 		(integerp n1)
-                (rationalp y)
-		(rationalp z)
+                (real/rationalp y)
+		(real/rationalp z)
 		(integerp n2)
 		(< a 0)
 		(< (* (expt x n1) y (expt z n2)) a))
@@ -2446,11 +2446,11 @@
   :rule-classes :type-prescription)
 
 (defthm not-integerp-2v-expt-f
-  (implies (and ;(rationalp a)
-                (rationalp x)
-                (rationalp y)
+  (implies (and ;(real/rationalp a)
+                (real/rationalp x)
+                (real/rationalp y)
 		(integerp n1)
-		(rationalp z)
+		(real/rationalp z)
 		(integerp n2)
 		(< a 0)
 		(< (* x (expt y n1) (expt z n2)) a))
@@ -2461,12 +2461,12 @@
   :rule-classes :type-prescription)
 
 (defthm not-integerp-2v-expt-g
-  (implies (and ;(rationalp a)
-                (rationalp x)
+  (implies (and ;(real/rationalp a)
+                (real/rationalp x)
 		(integerp n1)
-                (rationalp y)
+                (real/rationalp y)
 		(integerp n2)
-		(rationalp z)
+		(real/rationalp z)
 		(integerp n3)
 		(< a 0)
 		(< (* (expt x n1) (expt y n2) (expt z n3)) a))
@@ -2490,8 +2490,8 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defthm not-integerp-3a
-  (implies (and ;(rationalp a)
-	        (rationalp x)
+  (implies (and ;(real/rationalp a)
+	        (real/rationalp x)
 		(< 0 a)
 		(< x (- a)))
 	   (not (integerp (* (/ x) a))))
@@ -2501,8 +2501,8 @@
   :rule-classes :type-prescription)
 
 (defthm not-integerp-3a-expt
-  (implies (and	;(rationalp a)
-	        (rationalp x)
+  (implies (and	;(real/rationalp a)
+	        (real/rationalp x)
 		(integerp n)
 		(< 0 a)
 		(< (expt x n) (- a)))
@@ -2516,8 +2516,8 @@
 
 
 (defthm not-integerp-3b
-  (implies (and ;(rationalp a)
-		(rationalp x)
+  (implies (and ;(real/rationalp a)
+		(real/rationalp x)
 		(< 0 a)
 		(< x (- a)))
 	   (not (integerp (* a (/ x)))))
@@ -2525,8 +2525,8 @@
   :rule-classes :type-prescription)
 
 (defthm not-integerp-3b-expt
-  (implies (and ;(rationalp a)
-		(rationalp x)
+  (implies (and ;(real/rationalp a)
+		(real/rationalp x)
 		(integerp n)
 		(< 0 a)
 		(< (expt x n) (- a)))
@@ -2540,18 +2540,18 @@
 
 
 ;; (defthm not-integerp-3c
-;;   (implies (and (rationalp a)
-;;                 (rationalp b)
-;; 		(rationalp x)
+;;   (implies (and (real/rationalp a)
+;;                 (real/rationalp b)
+;; 		(real/rationalp x)
 ;; 		(< 0 (* a b))
 ;; 		(< x (- (* a b))))
 ;; 	   (not (integerp (* (/ x) a b))))
 ;;   :rule-classes :type-prescription)
 
 (defthm not-integerp-3d
-  (implies (and ;(rationalp a)
-                (rationalp b)
-		(rationalp x)
+  (implies (and ;(real/rationalp a)
+                (real/rationalp b)
+		(real/rationalp x)
 		(< 0 (* a b))
 		(< x (- (* a b))))
 	   (not (integerp (* a (/ x) b))))
@@ -2561,9 +2561,9 @@
   :rule-classes :type-prescription)
 
 (defthm not-integerp-3d-expt
-  (implies (and ;(rationalp a)
-                (rationalp b)
-		(rationalp x)
+  (implies (and ;(real/rationalp a)
+                (real/rationalp b)
+		(real/rationalp x)
 		(integerp n)
 		(< 0 (* a b))
 		(< (expt x n) (- (* a b))))
@@ -2578,9 +2578,9 @@
 
 
 (defthm not-integerp-3e
-  (implies (and ;(rationalp a)
-                ;(rationalp b)
-		(rationalp x)
+  (implies (and ;(real/rationalp a)
+                ;(real/rationalp b)
+		(real/rationalp x)
 		(< 0 (* a b))
 		(< x (- (* a b))))
 	   (not (integerp (* a b (/ x)))))
@@ -2590,9 +2590,9 @@
   :rule-classes :type-prescription)
 
 (defthm not-integerp-3e-expt
-  (implies (and ;(rationalp a)
-                ;(rationalp b)
-		(rationalp x)
+  (implies (and ;(real/rationalp a)
+                ;(real/rationalp b)
+		(real/rationalp x)
 		(integerp n)
 		(< 0 (* a b))
 		(< (expt x n) (- (* a b))))
@@ -2607,9 +2607,9 @@
 
 
 (defthm not-integerp-3f
-  (implies (and ;(rationalp a)
-                (rationalp x)
-		(rationalp y)
+  (implies (and ;(real/rationalp a)
+                (real/rationalp x)
+		(real/rationalp y)
 		(< 0 a)
 		(< (* x y) (- a)))
 	   (not (integerp (* (/ x) (/ y) a))))
@@ -2619,10 +2619,10 @@
   :rule-classes :type-prescription)
 
 (defthm not-integerp-3f-expt-a
-  (implies (and ;(rationalp a)
-                (rationalp x)
+  (implies (and ;(real/rationalp a)
+                (real/rationalp x)
 		(integerp n)
-		(rationalp y)
+		(real/rationalp y)
 		(< 0 a)
 		(< (* (expt x n) y) (- a)))
 	   (not (integerp (* (expt x (- n)) (/ y) a))))
@@ -2632,9 +2632,9 @@
   :rule-classes :type-prescription)
 
 (defthm not-integerp-3f-expt-b
-  (implies (and ;(rationalp a)
-                (rationalp x)
-		(rationalp y)
+  (implies (and ;(real/rationalp a)
+                (real/rationalp x)
+		(real/rationalp y)
 		(integerp n)
 		(< 0 a)
 		(< (* x (expt y n)) (- a)))
@@ -2645,10 +2645,10 @@
   :rule-classes :type-prescription)
 
 (defthm not-integerp-3f-expt-c
-  (implies (and ;(rationalp a)
-                (rationalp x)
+  (implies (and ;(real/rationalp a)
+                (real/rationalp x)
 		(integerp n1)
-		(rationalp y)
+		(real/rationalp y)
 		(integerp n2)
 		(< 0 a)
 		(< (* (expt x n1) (expt y n2)) (- a)))
@@ -2665,9 +2665,9 @@
 
 
 (defthm not-integerp-3g
-  (implies (and ;(rationalp a)
-                (rationalp x)
-		(rationalp y)
+  (implies (and ;(real/rationalp a)
+                (real/rationalp x)
+		(real/rationalp y)
 		(< 0 a)
 		(< (* x y) (- a)))
 	   (not (integerp (* (/ x) a (/ y)))))
@@ -2675,10 +2675,10 @@
   :rule-classes :type-prescription)
 
 (defthm not-integerp-3g-expt-a
-  (implies (and ;(rationalp a)
-                (rationalp x)
+  (implies (and ;(real/rationalp a)
+                (real/rationalp x)
 		(integerp n)
-		(rationalp y)
+		(real/rationalp y)
 		(< 0 a)
 		(< (* (expt x n) y) (- a)))
 	   (not (integerp (* (expt x (- n)) a (/ y)))))
@@ -2687,9 +2687,9 @@
   :rule-classes :type-prescription)
 
 (defthm not-integerp-3g-expt-b
-  (implies (and ;(rationalp a)
-                (rationalp x)
-		(rationalp y)
+  (implies (and ;(real/rationalp a)
+                (real/rationalp x)
+		(real/rationalp y)
 		(integerp n)
 		(< 0 a)
 		(< (* x (expt y n)) (- a)))
@@ -2699,10 +2699,10 @@
   :rule-classes :type-prescription)
 
 (defthm not-integerp-3g-expt-c
-  (implies (and ;(rationalp a)
-                (rationalp x)
+  (implies (and ;(real/rationalp a)
+                (real/rationalp x)
 		(integerp n1)
-		(rationalp y)
+		(real/rationalp y)
 		(integerp n2)
 		(< 0 a)
 		(< (* (expt x n1) (expt y n2)) (- a)))
@@ -2719,9 +2719,9 @@
 
 
 (defthm not-integerp-3h
-  (implies (and ;(rationalp a)
-                (rationalp x)
-		(rationalp y)
+  (implies (and ;(real/rationalp a)
+                (real/rationalp x)
+		(real/rationalp y)
 		(< 0 a)
 		(< (* x y) (- a)))
 	   (not (integerp (* a (/ x) (/ y)))))
@@ -2729,10 +2729,10 @@
   :rule-classes :type-prescription)
 
 (defthm not-integerp-3h-expt-a
-  (implies (and ;(rationalp a)
-                (rationalp x)
+  (implies (and ;(real/rationalp a)
+                (real/rationalp x)
 		(integerp n)
-		(rationalp y)
+		(real/rationalp y)
 		(< 0 a)
 		(< (* (expt x n) y) (- a)))
 	   (not (integerp (* a (expt x (- n)) (/ y)))))
@@ -2741,9 +2741,9 @@
   :rule-classes :type-prescription)
 
 (defthm not-integerp-3h-expt-b
-  (implies (and ;(rationalp a)
-                (rationalp x)
-		(rationalp y)
+  (implies (and ;(real/rationalp a)
+                (real/rationalp x)
+		(real/rationalp y)
 		(integerp n)
 		(< 0 a)
 		(< (* x (expt y n)) (- a)))
@@ -2753,10 +2753,10 @@
   :rule-classes :type-prescription)
 
 (defthm not-integerp-3h-expt-c
-  (implies (and ;(rationalp a)
-                (rationalp x)
+  (implies (and ;(real/rationalp a)
+                (real/rationalp x)
 		(integerp n1)
-		(rationalp y)
+		(real/rationalp y)
 		(integerp n2)
 		(< 0 a)
 		(< (* (expt x n1) (expt y n2)) (- a)))
@@ -2773,30 +2773,30 @@
 
 
 ;; (defthm not-integerp-3i
-;;   (implies (and (rationalp a)
-;;                 (rationalp b)
-;;                 (rationalp c)
-;; 		(rationalp x)
+;;   (implies (and (real/rationalp a)
+;;                 (real/rationalp b)
+;;                 (real/rationalp c)
+;; 		(real/rationalp x)
 ;; 		(< 0 (* a b c))
 ;; 		(< x (- (* a b c))))
 ;; 	   (not (integerp (* (/ x) a b c))))
 ;;   :rule-classes :type-prescription)
 
 ;; (defthm not-integerp-3j
-;;   (implies (and (rationalp a)
-;;                 (rationalp b)
-;;                 (rationalp c)
-;; 		(rationalp x)
+;;   (implies (and (real/rationalp a)
+;;                 (real/rationalp b)
+;;                 (real/rationalp c)
+;; 		(real/rationalp x)
 ;; 		(< 0 (* a b c))
 ;; 		(< x (- (* a b c))))
 ;; 	   (not (integerp (* a (/ x) b c))))
 ;;   :rule-classes :type-prescription)
 
 (defthm not-integerp-3k
-  (implies (and ;(rationalp a)
-                ;(rationalp b)
-                (rationalp c)
-                (rationalp x)
+  (implies (and ;(real/rationalp a)
+                ;(real/rationalp b)
+                (real/rationalp c)
+                (real/rationalp x)
 		(< 0 (* a b c))
 		(< x (- (* a b c))))
 	   (not (integerp (* a b (/ x) c))))
@@ -2806,10 +2806,10 @@
   :rule-classes :type-prescription)
 
 (defthm not-integerp-3k-expt
-  (implies (and ;(rationalp a)
-                ;(rationalp b)
-                (rationalp c)
-                (rationalp x)
+  (implies (and ;(real/rationalp a)
+                ;(real/rationalp b)
+                (real/rationalp c)
+                (real/rationalp x)
 		(integerp n)
 		(< 0 (* a b c))
 		(< (expt x n) (- (* a b c))))
@@ -2824,10 +2824,10 @@
 
 
 (defthm not-integerp-3l
-  (implies (and ;(rationalp a)
-                ;(rationalp b)
-                ;(rationalp c)
-		(rationalp x)
+  (implies (and ;(real/rationalp a)
+                ;(real/rationalp b)
+                ;(real/rationalp c)
+		(real/rationalp x)
 		(< 0 (* a b c))
 		(< x (- (* a b c))))
 	   (not (integerp (* a b c (/ x)))))
@@ -2837,10 +2837,10 @@
   :rule-classes :type-prescription)
 
 (defthm not-integerp-3l-expt
-  (implies (and ;(rationalp a)
-                ;(rationalp b)
-                ;(rationalp c)
-		(rationalp x)
+  (implies (and ;(real/rationalp a)
+                ;(real/rationalp b)
+                ;(real/rationalp c)
+		(real/rationalp x)
 		(integerp n)
 		(< 0 (* a b c))
 		(< (expt x n) (- (* a b c))))
@@ -2855,20 +2855,20 @@
 
 
 ;; (defthm not-integerp-3m
-;;   (implies (and (rationalp a)
-;;                 (rationalp b)
-;;                 (rationalp x)
-;; 		(rationalp y)
+;;   (implies (and (real/rationalp a)
+;;                 (real/rationalp b)
+;;                 (real/rationalp x)
+;; 		(real/rationalp y)
 ;; 		(< 0 (* a b))
 ;; 		(< (* x y) (- (* a b))))
 ;; 	   (not (integerp (* (/ x) (/ y) a b))))
 ;;   :rule-classes :type-prescription)
 
 (defthm not-integerp-3n
-  (implies (and ;(rationalp a)
-                ;(rationalp b)
-                (rationalp x)
-		(rationalp y)
+  (implies (and ;(real/rationalp a)
+                ;(real/rationalp b)
+                (real/rationalp x)
+		(real/rationalp y)
 		(< 0 (* a b))
 		(< (* x y) (- (* a b))))
 	   (not (integerp (* (/ x) a (/ y) b))))
@@ -2878,11 +2878,11 @@
   :rule-classes :type-prescription)
 
 (defthm not-integerp-3n-expt-a
-  (implies (and ;(rationalp a)
-                ;(rationalp b)
-                (rationalp x)
+  (implies (and ;(real/rationalp a)
+                ;(real/rationalp b)
+                (real/rationalp x)
 		(integerp n)
-		(rationalp y)
+		(real/rationalp y)
 		(< 0 (* a b))
 		(< (* (expt x n) y) (- (* a b))))
 	   (not (integerp (* (expt x (- n)) a (/ y) b))))
@@ -2892,10 +2892,10 @@
   :rule-classes :type-prescription)
 
 (defthm not-integerp-3n-expt-b
-  (implies (and ;(rationalp a)
-                ;(rationalp b)
-                (rationalp x)
-		(rationalp y)
+  (implies (and ;(real/rationalp a)
+                ;(real/rationalp b)
+                (real/rationalp x)
+		(real/rationalp y)
 		(integerp n)
 		(< 0 (* a b))
 		(< (* x (expt y n)) (- (* a b))))
@@ -2906,11 +2906,11 @@
   :rule-classes :type-prescription)
 
 (defthm not-integerp-3n-expt-c
-  (implies (and ;(rationalp a)
-                ;(rationalp b)
-                (rationalp x)
+  (implies (and ;(real/rationalp a)
+                ;(real/rationalp b)
+                (real/rationalp x)
 		(integerp n1)
-		(rationalp y)
+		(real/rationalp y)
 		(integerp n2)
 		(< 0 (* a b))
 		(< (* (expt x n1) (expt y n2)) (- (* a b))))
@@ -2927,10 +2927,10 @@
 
 
 (defthm not-integerp-3o
-  (implies (and ;(rationalp a)
-                ;(rationalp b)
-                (rationalp x)
-		(rationalp y)
+  (implies (and ;(real/rationalp a)
+                ;(real/rationalp b)
+                (real/rationalp x)
+		(real/rationalp y)
 		(< 0 (* a b))
 		(< (* x y) (- (* a b))))
 	   (not (integerp (* (/ x) a b (/ y)))))
@@ -2940,11 +2940,11 @@
   :rule-classes :type-prescription)
 
 (defthm not-integerp-3o-expt-a
-  (implies (and ;(rationalp a)
-                ;(rationalp b)
-                (rationalp x)
+  (implies (and ;(real/rationalp a)
+                ;(real/rationalp b)
+                (real/rationalp x)
 		(integerp n)
-		(rationalp y)
+		(real/rationalp y)
 		(< 0 (* a b))
 		(< (* (expt x n) y) (- (* a b))))
 	   (not (integerp (* (expt x (- n)) a b (/ y)))))
@@ -2954,10 +2954,10 @@
   :rule-classes :type-prescription)
 
 (defthm not-integerp-3o-expt-b
-  (implies (and ;(rationalp a)
-                ;(rationalp b)
-                (rationalp x)
-		(rationalp y)
+  (implies (and ;(real/rationalp a)
+                ;(real/rationalp b)
+                (real/rationalp x)
+		(real/rationalp y)
 		(integerp n)
 		(< 0 (* a b))
 		(< (* x (expt y n)) (- (* a b))))
@@ -2968,11 +2968,11 @@
   :rule-classes :type-prescription)
 
 (defthm not-integerp-3o-expt-c
-  (implies (and ;(rationalp a)
-                ;(rationalp b)
-                (rationalp x)
+  (implies (and ;(real/rationalp a)
+                ;(real/rationalp b)
+                (real/rationalp x)
 		(integerp n1)
-		(rationalp y)
+		(real/rationalp y)
 		(integerp n2)
 		(< 0 (* a b))
 		(< (* (expt x n1) (expt y n2)) (- (* a b))))
@@ -2989,10 +2989,10 @@
 
 
 (defthm not-integerp-3p
-  (implies (and ;(rationalp a)
-                ;(rationalp b)
-                (rationalp x)
-		(rationalp y)
+  (implies (and ;(real/rationalp a)
+                ;(real/rationalp b)
+                (real/rationalp x)
+		(real/rationalp y)
 		(< 0 (* a b))
 		(< (* x y) (- (* a b))))
 	   (not (integerp (* a (/ x) (/ y) b))))
@@ -3002,11 +3002,11 @@
   :rule-classes :type-prescription)
 
 (defthm not-integerp-3p-expt-a
-  (implies (and ;(rationalp a)
-                ;(rationalp b)
-                (rationalp x)
+  (implies (and ;(real/rationalp a)
+                ;(real/rationalp b)
+                (real/rationalp x)
 		(integerp n)
-		(rationalp y)
+		(real/rationalp y)
 		(< 0 (* a b))
 		(< (* (expt x n) y) (- (* a b))))
 	   (not (integerp (* a (expt x (- n)) (/ y) b))))
@@ -3016,10 +3016,10 @@
   :rule-classes :type-prescription)
 
 (defthm not-integerp-3p-expt-b
-  (implies (and ;(rationalp a)
-                ;(rationalp b)
-                (rationalp x)
-		(rationalp y)
+  (implies (and ;(real/rationalp a)
+                ;(real/rationalp b)
+                (real/rationalp x)
+		(real/rationalp y)
 		(integerp n)
 		(< 0 (* a b))
 		(< (* x (expt y n)) (- (* a b))))
@@ -3030,11 +3030,11 @@
   :rule-classes :type-prescription)
 
 (defthm not-integerp-3p-expt-c
-  (implies (and ;(rationalp a)
-                ;(rationalp b)
-                (rationalp x)
+  (implies (and ;(real/rationalp a)
+                ;(real/rationalp b)
+                (real/rationalp x)
 		(integerp n1)
-		(rationalp y)
+		(real/rationalp y)
 		(integerp n2)
 		(< 0 (* a b))
 		(< (* (expt x n1) (expt y n2)) (- (* a b))))
@@ -3051,10 +3051,10 @@
 
 
 (defthm not-integerp-3q
-  (implies (and ;(rationalp a)
-                ;(rationalp b)
-                (rationalp x)
-		(rationalp y)
+  (implies (and ;(real/rationalp a)
+                ;(real/rationalp b)
+                (real/rationalp x)
+		(real/rationalp y)
 		(< 0 (* a b))
 		(< (* x y) (- (* a b))))
 	   (not (integerp (* a (/ x) b (/ y)))))
@@ -3064,11 +3064,11 @@
   :rule-classes :type-prescription)
 
 (defthm not-integerp-3q-expt-a
-  (implies (and ;(rationalp a)
-                ;(rationalp b)
-                (rationalp x)
+  (implies (and ;(real/rationalp a)
+                ;(real/rationalp b)
+                (real/rationalp x)
 		(integerp n)
-		(rationalp y)
+		(real/rationalp y)
 		(< 0 (* a b))
 		(< (* (expt x n) y) (- (* a b))))
 	   (not (integerp (* a (expt x (- n)) b (/ y)))))
@@ -3078,10 +3078,10 @@
   :rule-classes :type-prescription)
 
 (defthm not-integerp-3q-expt-b
-  (implies (and ;(rationalp a)
-                ;(rationalp b)
-                (rationalp x)
-		(rationalp y)
+  (implies (and ;(real/rationalp a)
+                ;(real/rationalp b)
+                (real/rationalp x)
+		(real/rationalp y)
 		(integerp n)
 		(< 0 (* a b))
 		(< (* x (expt y n)) (- (* a b))))
@@ -3092,11 +3092,11 @@
   :rule-classes :type-prescription)
 
 (defthm not-integerp-3q-expt-c
-  (implies (and ;(rationalp a)
-                ;(rationalp b)
-                (rationalp x)
+  (implies (and ;(real/rationalp a)
+                ;(real/rationalp b)
+                (real/rationalp x)
 		(integerp n1)
-		(rationalp y)
+		(real/rationalp y)
 		(integerp n2)
 		(< 0 (* a b))
 		(< (* (expt x n1) (expt y n2)) (- (* a b))))
@@ -3113,10 +3113,10 @@
 
 
 (defthm not-integerp-3r
-  (implies (and ;(rationalp a)
-                ;(rationalp b)
-                (rationalp x)
-		(rationalp y)
+  (implies (and ;(real/rationalp a)
+                ;(real/rationalp b)
+                (real/rationalp x)
+		(real/rationalp y)
 		(< 0 (* a b))
 		(< (* x y) (- (* a b))))
 	   (not (integerp (* a b (/ x) (/ y)))))
@@ -3126,11 +3126,11 @@
   :rule-classes :type-prescription)
 
 (defthm not-integerp-3r-expt-a
-  (implies (and ;(rationalp a)
-                ;(rationalp b)
-                (rationalp x)
+  (implies (and ;(real/rationalp a)
+                ;(real/rationalp b)
+                (real/rationalp x)
 		(integerp n)
-		(rationalp y)
+		(real/rationalp y)
 		(< 0 (* a b))
 		(< (* (expt x n) y) (- (* a b))))
 	   (not (integerp (* a b (expt x (- n)) (/ y)))))
@@ -3140,10 +3140,10 @@
   :rule-classes :type-prescription)
 
 (defthm not-integerp-3r-expt-b
-  (implies (and ;(rationalp a)
-                ;(rationalp b)
-                (rationalp x)
-		(rationalp y)
+  (implies (and ;(real/rationalp a)
+                ;(real/rationalp b)
+                (real/rationalp x)
+		(real/rationalp y)
 		(integerp n)
 		(< 0 (* a b))
 		(< (* x (expt y n)) (- (* a b))))
@@ -3154,11 +3154,11 @@
   :rule-classes :type-prescription)
 
 (defthm not-integerp-3r-expt-c
-  (implies (and ;(rationalp a)
-                ;(rationalp b)
-                (rationalp x)
+  (implies (and ;(real/rationalp a)
+                ;(real/rationalp b)
+                (real/rationalp x)
 		(integerp n1)
-		(rationalp y)
+		(real/rationalp y)
 		(integerp n2)
 		(< 0 (* a b))
 		(< (* (expt x n1) (expt y n2)) (- (* a b))))
@@ -3175,10 +3175,10 @@
 
 
 (defthm not-integerp-3s
-  (implies (and ;(rationalp a)
-                (rationalp x)
-                (rationalp y)
-		(rationalp z)
+  (implies (and ;(real/rationalp a)
+                (real/rationalp x)
+                (real/rationalp y)
+		(real/rationalp z)
 		(< 0 a)
 		(< (* x y z) (- a)))
 	   (not (integerp (* (/ x) (/ y) (/ z) a))))
@@ -3188,11 +3188,11 @@
   :rule-classes :type-prescription)
 
 (defthm not-integerp-3s-expt-a
-  (implies (and ;(rationalp a)
-                (rationalp x)
+  (implies (and ;(real/rationalp a)
+                (real/rationalp x)
 		(integerp n)
-                (rationalp y)
-		(rationalp z)
+                (real/rationalp y)
+		(real/rationalp z)
 		(< 0 a)
 		(< (* (expt x n) y z) (- a)))
 	   (not (integerp (* (expt x (- n)) (/ y) (/ z) a))))
@@ -3202,11 +3202,11 @@
   :rule-classes :type-prescription)
 
 (defthm not-integerp-3s-expt-b
-  (implies (and ;(rationalp a)
-                (rationalp x)
-                (rationalp y)
+  (implies (and ;(real/rationalp a)
+                (real/rationalp x)
+                (real/rationalp y)
 		(integerp n)
-		(rationalp z)
+		(real/rationalp z)
 		(< 0 a)
 		(< (* x (expt y n) z) (- a)))
 	   (not (integerp (* (/ x) (expt y (- n)) (/ z) a))))
@@ -3216,10 +3216,10 @@
   :rule-classes :type-prescription)
 
 (defthm not-integerp-3s-expt-c
-  (implies (and ;(rationalp a)
-                (rationalp x)
-                (rationalp y)
-		(rationalp z)
+  (implies (and ;(real/rationalp a)
+                (real/rationalp x)
+                (real/rationalp y)
+		(real/rationalp z)
 		(integerp n)
 		(< 0 a)
 		(< (* x y (expt z n)) (- a)))
@@ -3230,12 +3230,12 @@
   :rule-classes :type-prescription)
 
 (defthm not-integerp-3s-expt-d
-  (implies (and ;(rationalp a)
-                (rationalp x)
+  (implies (and ;(real/rationalp a)
+                (real/rationalp x)
 		(integerp n1)
-                (rationalp y)
+                (real/rationalp y)
 		(integerp n2)
-		(rationalp z)
+		(real/rationalp z)
 		(< 0 a)
 		(< (* (expt x n1) (expt y n2) z) (- a)))
 	   (not (integerp (* (expt x (- n1)) (expt y (- n2)) (/ z) a))))
@@ -3245,11 +3245,11 @@
   :rule-classes :type-prescription)
 
 (defthm not-integerp-3s-expt-e
-  (implies (and ;(rationalp a)
-                (rationalp x)
+  (implies (and ;(real/rationalp a)
+                (real/rationalp x)
 		(integerp n1)
-                (rationalp y)
-		(rationalp z)
+                (real/rationalp y)
+		(real/rationalp z)
 		(integerp n2)
 		(< 0 a)
 		(< (* (expt x n1) y (expt z n2)) (- a)))
@@ -3260,11 +3260,11 @@
   :rule-classes :type-prescription)
 
 (defthm not-integerp-3s-expt-f
-  (implies (and ;(rationalp a)
-                (rationalp x)
-                (rationalp y)
+  (implies (and ;(real/rationalp a)
+                (real/rationalp x)
+                (real/rationalp y)
 		(integerp n1)
-		(rationalp z)
+		(real/rationalp z)
 		(integerp n2)
 		(< 0 a)
 		(< (* x (expt y n1) (expt z n2)) (- a)))
@@ -3275,12 +3275,12 @@
   :rule-classes :type-prescription)
 
 (defthm not-integerp-3s-expt-g
-  (implies (and ;(rationalp a)
-                (rationalp x)
+  (implies (and ;(real/rationalp a)
+                (real/rationalp x)
 		(integerp n1)
-                (rationalp y)
+                (real/rationalp y)
 		(integerp n2)
-		(rationalp z)
+		(real/rationalp z)
 		(integerp n3)
 		(< 0 a)
 		(< (* (expt x n1) (expt y n2) (expt z n3)) (- a)))
@@ -3302,10 +3302,10 @@
 
 
 (defthm not-integerp-3t
-  (implies (and ;(rationalp a)
-                (rationalp x)
-                (rationalp y)
-		(rationalp z)
+  (implies (and ;(real/rationalp a)
+                (real/rationalp x)
+                (real/rationalp y)
+		(real/rationalp z)
 		(< 0 a)
 		(< (* x y z) (- a)))
 	   (not (integerp (* (/ x) (/ y) a (/ z)))))
@@ -3313,11 +3313,11 @@
   :rule-classes :type-prescription)
 
 (defthm not-integerp-3t-expt-a
-  (implies (and ;(rationalp a)
-                (rationalp x)
+  (implies (and ;(real/rationalp a)
+                (real/rationalp x)
 		(integerp n)
-                (rationalp y)
-		(rationalp z)
+                (real/rationalp y)
+		(real/rationalp z)
 		(< 0 a)
 		(< (* (expt x n) y z) (- a)))
 	   (not (integerp (* (expt x (- n)) (/ y) a (/ z)))))
@@ -3326,11 +3326,11 @@
   :rule-classes :type-prescription)
 
 (defthm not-integerp-3t-expt-b
-  (implies (and ;(rationalp a)
-                (rationalp x)
-                (rationalp y)
+  (implies (and ;(real/rationalp a)
+                (real/rationalp x)
+                (real/rationalp y)
 		(integerp n)
-		(rationalp z)
+		(real/rationalp z)
 		(< 0 a)
 		(< (* x (expt y n) z) (- a)))
 	   (not (integerp (* (/ x) (expt y (- n)) a (/ z)))))
@@ -3339,10 +3339,10 @@
   :rule-classes :type-prescription)
 
 (defthm not-integerp-3t-expt-c
-  (implies (and ;(rationalp a)
-                (rationalp x)
-                (rationalp y)
-		(rationalp z)
+  (implies (and ;(real/rationalp a)
+                (real/rationalp x)
+                (real/rationalp y)
+		(real/rationalp z)
 		(integerp n)
 		(< 0 a)
 		(< (* x y (expt z n)) (- a)))
@@ -3352,12 +3352,12 @@
   :rule-classes :type-prescription)
 
 (defthm not-integerp-3t-expt-d
-  (implies (and ;(rationalp a)
-                (rationalp x)
+  (implies (and ;(real/rationalp a)
+                (real/rationalp x)
 		(integerp n1)
-                (rationalp y)
+                (real/rationalp y)
 		(integerp n2)
-		(rationalp z)
+		(real/rationalp z)
 		(< 0 a)
 		(< (* (expt x n1) (expt y n2) z) (- a)))
 	   (not (integerp (* (expt x (- n1)) (expt y (- n2)) a (/ z)))))
@@ -3367,11 +3367,11 @@
   :rule-classes :type-prescription)
 
 (defthm not-integerp-3t-expt-e
-  (implies (and ;(rationalp a)
-                (rationalp x)
+  (implies (and ;(real/rationalp a)
+                (real/rationalp x)
 		(integerp n1)
-                (rationalp y)
-		(rationalp z)
+                (real/rationalp y)
+		(real/rationalp z)
 		(integerp n2)
 		(< 0 a)
 		(< (* (expt x n1) y (expt z n2)) (- a)))
@@ -3382,11 +3382,11 @@
   :rule-classes :type-prescription)
 
 (defthm not-integerp-3t-expt-f
-  (implies (and ;(rationalp a)
-                (rationalp x)
-                (rationalp y)
+  (implies (and ;(real/rationalp a)
+                (real/rationalp x)
+                (real/rationalp y)
 		(integerp n1)
-		(rationalp z)
+		(real/rationalp z)
 		(integerp n2)
 		(< 0 a)
 		(< (* x (expt y n1) (expt z n2)) (- a)))
@@ -3397,12 +3397,12 @@
   :rule-classes :type-prescription)
 
 (defthm not-integerp-3t-expt-g
-  (implies (and ;(rationalp a)
-                (rationalp x)
+  (implies (and ;(real/rationalp a)
+                (real/rationalp x)
 		(integerp n1)
-                (rationalp y)
+                (real/rationalp y)
 		(integerp n2)
-		(rationalp z)
+		(real/rationalp z)
 		(integerp n3)
 		(< 0 a)
 		(< (* (expt x n1) (expt y n2) (expt z n3)) (- a)))
@@ -3425,10 +3425,10 @@
 
 
 (defthm not-integerp-3u
-  (implies (and ;(rationalp a)
-                (rationalp x)
-                (rationalp y)
-		(rationalp z)
+  (implies (and ;(real/rationalp a)
+                (real/rationalp x)
+                (real/rationalp y)
+		(real/rationalp z)
 		(< 0 a)
 		(< (* x y z) (- a)))
 	   (not (integerp (* (/ x) a (/ y) (/ z)))))
@@ -3437,11 +3437,11 @@
   :rule-classes :type-prescription)
 
 (defthm not-integerp-3u-expt-a
-  (implies (and ;(rationalp a)
-                (rationalp x)
+  (implies (and ;(real/rationalp a)
+                (real/rationalp x)
 		(integerp n)
-                (rationalp y)
-		(rationalp z)
+                (real/rationalp y)
+		(real/rationalp z)
 		(< 0 a)
 		(< (* (expt x n) y z) (- a)))
 	   (not (integerp (* (expt x (- n)) a (/ y) (/ z)))))
@@ -3450,11 +3450,11 @@
   :rule-classes :type-prescription)
 
 (defthm not-integerp-3u-expt-b
-  (implies (and ;(rationalp a)
-                (rationalp x)
-                (rationalp y)
+  (implies (and ;(real/rationalp a)
+                (real/rationalp x)
+                (real/rationalp y)
 		(integerp n)
-		(rationalp z)
+		(real/rationalp z)
 		(< 0 a)
 		(< (* x (expt y n) z) (- a)))
 	   (not (integerp (* (/ x) a (expt y (- n)) (/ z)))))
@@ -3463,10 +3463,10 @@
   :rule-classes :type-prescription)
 
 (defthm not-integerp-3u-expt-c
-  (implies (and ;(rationalp a)
-                (rationalp x)
-                (rationalp y)
-		(rationalp z)
+  (implies (and ;(real/rationalp a)
+                (real/rationalp x)
+                (real/rationalp y)
+		(real/rationalp z)
 		(integerp n)
 		(< 0 a)
 		(< (* x y (expt z n)) (- a)))
@@ -3476,12 +3476,12 @@
   :rule-classes :type-prescription)
 
 (defthm not-integerp-3u-expt-d
-  (implies (and ;(rationalp a)
-                (rationalp x)
+  (implies (and ;(real/rationalp a)
+                (real/rationalp x)
 		(integerp n1)
-                (rationalp y)
+                (real/rationalp y)
 		(integerp n2)
-		(rationalp z)
+		(real/rationalp z)
 		(< 0 a)
 		(< (* (expt x n1) (expt y n2) z) (- a)))
 	   (not (integerp (* (expt x (- n1)) a (expt y (- n2)) (/ z)))))
@@ -3491,11 +3491,11 @@
   :rule-classes :type-prescription)
 
 (defthm not-integerp-3u-expt-e
-  (implies (and ;(rationalp a)
-                (rationalp x)
+  (implies (and ;(real/rationalp a)
+                (real/rationalp x)
 		(integerp n1)
-                (rationalp y)
-		(rationalp z)
+                (real/rationalp y)
+		(real/rationalp z)
 		(integerp n2)
 		(< 0 a)
 		(< (* (expt x n1) y (expt z n2)) (- a)))
@@ -3506,11 +3506,11 @@
   :rule-classes :type-prescription)
 
 (defthm not-integerp-3u-expt-f
-  (implies (and ;(rationalp a)
-                (rationalp x)
-                (rationalp y)
+  (implies (and ;(real/rationalp a)
+                (real/rationalp x)
+                (real/rationalp y)
 		(integerp n1)
-		(rationalp z)
+		(real/rationalp z)
 		(integerp n2)
 		(< 0 a)
 		(< (* x (expt y n1) (expt z n2)) (- a)))
@@ -3521,12 +3521,12 @@
   :rule-classes :type-prescription)
 
 (defthm not-integerp-3u-expt-g
-  (implies (and ;(rationalp a)
-                (rationalp x)
+  (implies (and ;(real/rationalp a)
+                (real/rationalp x)
 		(integerp n1)
-                (rationalp y)
+                (real/rationalp y)
 		(integerp n2)
-		(rationalp z)
+		(real/rationalp z)
 		(integerp n3)
 		(< 0 a)
 		(< (* (expt x n1) (expt y n2) (expt z n3)) (- a)))
@@ -3549,10 +3549,10 @@
 
 
 (defthm not-integerp-3v
-  (implies (and ;(rationalp a)
-                (rationalp x)
-                (rationalp y)
-		(rationalp z)
+  (implies (and ;(real/rationalp a)
+                (real/rationalp x)
+                (real/rationalp y)
+		(real/rationalp z)
 		(< 0 a)
 		(< (* x y z) (- a)))
 	   (not (integerp (* a (/ x) (/ y) (/ z)))))
@@ -3561,11 +3561,11 @@
   :rule-classes :type-prescription)
 
 (defthm not-integerp-3v-expt-a
-  (implies (and ;(rationalp a)
-                (rationalp x)
+  (implies (and ;(real/rationalp a)
+                (real/rationalp x)
 		(integerp n)
-                (rationalp y)
-		(rationalp z)
+                (real/rationalp y)
+		(real/rationalp z)
 		(< 0 a)
 		(< (* (expt x n) y z) (- a)))
 	   (not (integerp (* a (expt x (- n)) (/ y) (/ z)))))
@@ -3574,11 +3574,11 @@
   :rule-classes :type-prescription)
 
 (defthm not-integerp-3v-expt-b
-  (implies (and ;(rationalp a)
-                (rationalp x)
-                (rationalp y)
+  (implies (and ;(real/rationalp a)
+                (real/rationalp x)
+                (real/rationalp y)
 		(integerp n)
-		(rationalp z)
+		(real/rationalp z)
 		(< 0 a)
 		(< (* x (expt y n) z) (- a)))
 	   (not (integerp (* a (/ x) (expt y (- n)) (/ z)))))
@@ -3587,10 +3587,10 @@
   :rule-classes :type-prescription)
 
 (defthm not-integerp-3v-expt-c
-  (implies (and ;(rationalp a)
-                (rationalp x)
-                (rationalp y)
-		(rationalp z)
+  (implies (and ;(real/rationalp a)
+                (real/rationalp x)
+                (real/rationalp y)
+		(real/rationalp z)
 		(integerp n)
 		(< 0 a)
 		(< (* x y (expt z n)) (- a)))
@@ -3600,12 +3600,12 @@
   :rule-classes :type-prescription)
 
 (defthm not-integerp-3v-expt-d
-  (implies (and ;(rationalp a)
-                (rationalp x)
+  (implies (and ;(real/rationalp a)
+                (real/rationalp x)
 		(integerp n1)
-                (rationalp y)
+                (real/rationalp y)
 		(integerp n2)
-		(rationalp z)
+		(real/rationalp z)
 		(< 0 a)
 		(< (* (expt x n1) (expt y n2) z) (- a)))
 	   (not (integerp (* a (expt x (- n1)) (expt y (- n2)) (/ z)))))
@@ -3615,11 +3615,11 @@
   :rule-classes :type-prescription)
 
 (defthm not-integerp-3v-expt-e
-  (implies (and ;(rationalp a)
-                (rationalp x)
+  (implies (and ;(real/rationalp a)
+                (real/rationalp x)
 		(integerp n1)
-                (rationalp y)
-		(rationalp z)
+                (real/rationalp y)
+		(real/rationalp z)
 		(integerp n2)
 		(< 0 a)
 		(< (* (expt x n1) y (expt z n2)) (- a)))
@@ -3630,11 +3630,11 @@
   :rule-classes :type-prescription)
 
 (defthm not-integerp-3v-expt-f
-  (implies (and ;(rationalp a)
-                (rationalp x)
-                (rationalp y)
+  (implies (and ;(real/rationalp a)
+                (real/rationalp x)
+                (real/rationalp y)
 		(integerp n1)
-		(rationalp z)
+		(real/rationalp z)
 		(integerp n2)
 		(< 0 a)
 		(< (* x (expt y n1) (expt z n2)) (- a)))
@@ -3645,12 +3645,12 @@
   :rule-classes :type-prescription)
 
 (defthm not-integerp-3v-expt-g
-  (implies (and ;(rationalp a)
-                (rationalp x)
+  (implies (and ;(real/rationalp a)
+                (real/rationalp x)
 		(integerp n1)
-                (rationalp y)
+                (real/rationalp y)
 		(integerp n2)
-		(rationalp z)
+		(real/rationalp z)
 		(integerp n3)
 		(< 0 a)
 		(< (* (expt x n1) (expt y n2) (expt z n3)) (- a)))
@@ -3675,8 +3675,8 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defthm not-integerp-4a
-  (implies (and ;(rationalp a)
-	        (rationalp x)
+  (implies (and ;(real/rationalp a)
+	        (real/rationalp x)
 		(< a 0)
 		(< (- a) x))
 	   (not (integerp (* (/ x) a))))
@@ -3686,8 +3686,8 @@
   :rule-classes :type-prescription)
 
 (defthm not-integerp-4a-expt
-  (implies (and	;(rationalp a)
-	        (rationalp x)
+  (implies (and	;(real/rationalp a)
+	        (real/rationalp x)
 		(integerp n)
 		(< a 0)
 		(< (- a) (expt x n)))
@@ -3701,8 +3701,8 @@
 
 
 (defthm not-integerp-4b
-  (implies (and ;(rationalp a)
-		(rationalp x)
+  (implies (and ;(real/rationalp a)
+		(real/rationalp x)
 		(< a 0)
 		(< (- a) x))
 	   (not (integerp (* a (/ x)))))
@@ -3710,8 +3710,8 @@
   :rule-classes :type-prescription)
 
 (defthm not-integerp-4b-expt
-  (implies (and ;(rationalp a)
-		(rationalp x)
+  (implies (and ;(real/rationalp a)
+		(real/rationalp x)
 		(integerp n)
 		(< a 0)
 		(< (- a) (expt x n)))
@@ -3725,18 +3725,18 @@
 
 
 ;; (defthm not-integerp-4c
-;;   (implies (and (rationalp a)
-;;                 (rationalp b)
-;; 		(rationalp x)
+;;   (implies (and (real/rationalp a)
+;;                 (real/rationalp b)
+;; 		(real/rationalp x)
 ;; 		(< (* a b) 0)
 ;; 		(< (- (* a b)) x))
 ;; 	   (not (integerp (* (/ x) a b))))
 ;;   :rule-classes :type-prescription)
 
 (defthm not-integerp-4d
-  (implies (and ;(rationalp a)
-                (rationalp b)
-		(rationalp x)
+  (implies (and ;(real/rationalp a)
+                (real/rationalp b)
+		(real/rationalp x)
 		(< (* a b) 0)
 		(< (- (* a b)) x))
 	   (not (integerp (* a (/ x) b))))
@@ -3746,9 +3746,9 @@
   :rule-classes :type-prescription)
 
 (defthm not-integerp-4d-expt
-  (implies (and ;(rationalp a)
-                (rationalp b)
-		(rationalp x)
+  (implies (and ;(real/rationalp a)
+                (real/rationalp b)
+		(real/rationalp x)
 		(integerp n)
 		(< (* a b) 0)
 		(< (- (* a b)) (expt x n)))
@@ -3763,9 +3763,9 @@
 
 
 (defthm not-integerp-4e
-  (implies (and ;(rationalp a)
-                ;(rationalp b)
-		(rationalp x)
+  (implies (and ;(real/rationalp a)
+                ;(real/rationalp b)
+		(real/rationalp x)
 		(< (* a b) 0)
 		(< (- (* a b)) x))
 	   (not (integerp (* a b (/ x)))))
@@ -3775,9 +3775,9 @@
   :rule-classes :type-prescription)
 
 (defthm not-integerp-4e-expt
-  (implies (and ;(rationalp a)
-                ;(rationalp b)
-		(rationalp x)
+  (implies (and ;(real/rationalp a)
+                ;(real/rationalp b)
+		(real/rationalp x)
 		(integerp n)
 		(< (* a b) 0)
 		(< (- (* a b)) (expt x n)))
@@ -3792,9 +3792,9 @@
 
 
 (defthm not-integerp-4f
-  (implies (and ;(rationalp a)
-                (rationalp x)
-		(rationalp y)
+  (implies (and ;(real/rationalp a)
+                (real/rationalp x)
+		(real/rationalp y)
 		(< a 0)
 		(< (- a) (* x y)))
 	   (not (integerp (* (/ x) (/ y) a))))
@@ -3804,10 +3804,10 @@
   :rule-classes :type-prescription)
 
 (defthm not-integerp-4f-expt-a
-  (implies (and ;(rationalp a)
-                (rationalp x)
+  (implies (and ;(real/rationalp a)
+                (real/rationalp x)
 		(integerp n)
-		(rationalp y)
+		(real/rationalp y)
 		(< a 0)
 		(< (- a) (* (expt x n) y)))
 	   (not (integerp (* (expt x (- n)) (/ y) a))))
@@ -3817,9 +3817,9 @@
   :rule-classes :type-prescription)
 
 (defthm not-integerp-4f-expt-b
-  (implies (and ;(rationalp a)
-                (rationalp x)
-		(rationalp y)
+  (implies (and ;(real/rationalp a)
+                (real/rationalp x)
+		(real/rationalp y)
 		(integerp n)
 		(< a 0)
 		(< (- a) (* x (expt y n))))
@@ -3830,10 +3830,10 @@
   :rule-classes :type-prescription)
 
 (defthm not-integerp-4f-expt-c
-  (implies (and ;(rationalp a)
-                (rationalp x)
+  (implies (and ;(real/rationalp a)
+                (real/rationalp x)
 		(integerp n1)
-		(rationalp y)
+		(real/rationalp y)
 		(integerp n2)
 		(< a 0)
 		(< (- a) (* (expt x n1) (expt y n2))))
@@ -3850,9 +3850,9 @@
 
 
 (defthm not-integerp-4g
-  (implies (and ;(rationalp a)
-                (rationalp x)
-		(rationalp y)
+  (implies (and ;(real/rationalp a)
+                (real/rationalp x)
+		(real/rationalp y)
 		(< a 0)
 		(< (- a) (* x y)))
 	   (not (integerp (* (/ x) a (/ y)))))
@@ -3860,10 +3860,10 @@
   :rule-classes :type-prescription)
 
 (defthm not-integerp-4g-expt-a
-  (implies (and ;(rationalp a)
-                (rationalp x)
+  (implies (and ;(real/rationalp a)
+                (real/rationalp x)
 		(integerp n)
-		(rationalp y)
+		(real/rationalp y)
 		(< a 0)
 		(< (- a) (* (expt x n) y)))
 	   (not (integerp (* (expt x (- n)) a (/ y)))))
@@ -3872,9 +3872,9 @@
   :rule-classes :type-prescription)
 
 (defthm not-integerp-4g-expt-b
-  (implies (and ;(rationalp a)
-                (rationalp x)
-		(rationalp y)
+  (implies (and ;(real/rationalp a)
+                (real/rationalp x)
+		(real/rationalp y)
 		(integerp n)
 		(< a 0)
 		(< (- a) (* x (expt y n))))
@@ -3884,10 +3884,10 @@
   :rule-classes :type-prescription)
 
 (defthm not-integerp-4g-expt-c
-  (implies (and ;(rationalp a)
-                (rationalp x)
+  (implies (and ;(real/rationalp a)
+                (real/rationalp x)
 		(integerp n1)
-		(rationalp y)
+		(real/rationalp y)
 		(integerp n2)
 		(< a 0)
 		(< (- a) (* (expt x n1) (expt y n2))))
@@ -3904,9 +3904,9 @@
 
 
 (defthm not-integerp-4h
-  (implies (and ;(rationalp a)
-                (rationalp x)
-		(rationalp y)
+  (implies (and ;(real/rationalp a)
+                (real/rationalp x)
+		(real/rationalp y)
 		(< a 0)
 		(< (- a) (* x y)))
 	   (not (integerp (* a (/ x) (/ y)))))
@@ -3914,10 +3914,10 @@
   :rule-classes :type-prescription)
 
 (defthm not-integerp-4h-expt-a
-  (implies (and ;(rationalp a)
-                (rationalp x)
+  (implies (and ;(real/rationalp a)
+                (real/rationalp x)
 		(integerp n)
-		(rationalp y)
+		(real/rationalp y)
 		(< a 0)
 		(< (- a) (* (expt x n) y)))
 	   (not (integerp (* a (expt x (- n)) (/ y)))))
@@ -3926,9 +3926,9 @@
   :rule-classes :type-prescription)
 
 (defthm not-integerp-4h-expt-b
-  (implies (and ;(rationalp a)
-                (rationalp x)
-		(rationalp y)
+  (implies (and ;(real/rationalp a)
+                (real/rationalp x)
+		(real/rationalp y)
 		(integerp n)
 		(< a 0)
 		(< (- a) (* x (expt y n))))
@@ -3938,10 +3938,10 @@
   :rule-classes :type-prescription)
 
 (defthm not-integerp-4h-expt-c
-  (implies (and ;(rationalp a)
-                (rationalp x)
+  (implies (and ;(real/rationalp a)
+                (real/rationalp x)
 		(integerp n1)
-		(rationalp y)
+		(real/rationalp y)
 		(integerp n2)
 		(< a 0)
 		(< (- a) (* (expt x n1) (expt y n2))))
@@ -3958,30 +3958,30 @@
 
 
 ;; (defthm not-integerp-4i
-;;   (implies (and (rationalp a)
-;;                 (rationalp b)
-;;                 (rationalp c)
-;; 		(rationalp x)
+;;   (implies (and (real/rationalp a)
+;;                 (real/rationalp b)
+;;                 (real/rationalp c)
+;; 		(real/rationalp x)
 ;; 		(< (* a b c) 0)
 ;; 		(< (- (* a b c)) x))
 ;; 	   (not (integerp (* (/ x) a b c))))
 ;;   :rule-classes :type-prescription)
 
 ;; (defthm not-integerp-4j
-;;   (implies (and (rationalp a)
-;;                 (rationalp b)
-;;                 (rationalp c)
-;; 		(rationalp x)
+;;   (implies (and (real/rationalp a)
+;;                 (real/rationalp b)
+;;                 (real/rationalp c)
+;; 		(real/rationalp x)
 ;; 		(< (* a b c) 0)
 ;; 		(< (- (* a b c)) x))
 ;; 	   (not (integerp (* a (/ x) b c))))
 ;;   :rule-classes :type-prescription)
 
 (defthm not-integerp-4k
-  (implies (and ;(rationalp a)
-                ;(rationalp b)
-                (rationalp c)
-                (rationalp x)
+  (implies (and ;(real/rationalp a)
+                ;(real/rationalp b)
+                (real/rationalp c)
+                (real/rationalp x)
 		(< (* a b c) 0)
 		(< (- (* a b c)) x))
 	   (not (integerp (* a b (/ x) c))))
@@ -3991,10 +3991,10 @@
   :rule-classes :type-prescription)
 
 (defthm not-integerp-4k-expt
-  (implies (and ;(rationalp a)
-                ;(rationalp b)
-                (rationalp c)
-                (rationalp x)
+  (implies (and ;(real/rationalp a)
+                ;(real/rationalp b)
+                (real/rationalp c)
+                (real/rationalp x)
 		(integerp n)
 		(< (* a b c) 0)
 		(< (- (* a b c)) (expt x n)))
@@ -4009,10 +4009,10 @@
 
 
 (defthm not-integerp-4l
-  (implies (and ;(rationalp a)
-                ;(rationalp b)
-                ;(rationalp c)
-		(rationalp x)
+  (implies (and ;(real/rationalp a)
+                ;(real/rationalp b)
+                ;(real/rationalp c)
+		(real/rationalp x)
 		(< (* a b c) 0)
 		(< (- (* a b c)) x))
 	   (not (integerp (* a b c (/ x)))))
@@ -4022,10 +4022,10 @@
   :rule-classes :type-prescription)
 
 (defthm not-integerp-4l-expt
-  (implies (and ;(rationalp a)
-                ;(rationalp b)
-                ;(rationalp c)
-		(rationalp x)
+  (implies (and ;(real/rationalp a)
+                ;(real/rationalp b)
+                ;(real/rationalp c)
+		(real/rationalp x)
 		(integerp n)
 		(< (* a b c) 0)
 		(< (- (* a b c)) (expt x n)))
@@ -4039,20 +4039,20 @@
                            not-integerp-4l-expt)))
 
 ;; (defthm not-integerp-4m
-;;   (implies (and (rationalp a)
-;;                 (rationalp b)
-;;                 (rationalp x)
-;; 		(rationalp y)
+;;   (implies (and (real/rationalp a)
+;;                 (real/rationalp b)
+;;                 (real/rationalp x)
+;; 		(real/rationalp y)
 ;; 		(< (* a b) 0)
 ;; 		(< (- (* a b)) (* x y)))
 ;; 	   (not (integerp (* (/ x) (/ y) a b))))
 ;;   :rule-classes :type-prescription)
 
 (defthm not-integerp-4n
-  (implies (and ;(rationalp a)
-                ;(rationalp b)
-                (rationalp x)
-		(rationalp y)
+  (implies (and ;(real/rationalp a)
+                ;(real/rationalp b)
+                (real/rationalp x)
+		(real/rationalp y)
 		(< (* a b) 0)
 		(< (- (* a b)) (* x y)))
 	   (not (integerp (* (/ x) a (/ y) b))))
@@ -4062,11 +4062,11 @@
   :rule-classes :type-prescription)
 
 (defthm not-integerp-4n-expt-a
-  (implies (and ;(rationalp a)
-                ;(rationalp b)
-                (rationalp x)
+  (implies (and ;(real/rationalp a)
+                ;(real/rationalp b)
+                (real/rationalp x)
 		(integerp n)
-		(rationalp y)
+		(real/rationalp y)
 		(< (* a b) 0)
 		(< (- (* a b)) (* (expt x n) y)))
 	   (not (integerp (* (expt x (- n)) a (/ y) b))))
@@ -4076,10 +4076,10 @@
   :rule-classes :type-prescription)
 
 (defthm not-integerp-4n-expt-b
-  (implies (and ;(rationalp a)
-                ;(rationalp b)
-                (rationalp x)
-		(rationalp y)
+  (implies (and ;(real/rationalp a)
+                ;(real/rationalp b)
+                (real/rationalp x)
+		(real/rationalp y)
 		(integerp n)
 		(< (* a b) 0)
 		(< (- (* a b)) (* x (expt y n))))
@@ -4090,11 +4090,11 @@
   :rule-classes :type-prescription)
 
 (defthm not-integerp-4n-expt-c
-  (implies (and ;(rationalp a)
-                ;(rationalp b)
-                (rationalp x)
+  (implies (and ;(real/rationalp a)
+                ;(real/rationalp b)
+                (real/rationalp x)
 		(integerp n1)
-		(rationalp y)
+		(real/rationalp y)
 		(integerp n2)
 		(< (* a b) 0)
 		(< (- (* a b)) (* (expt x n1) (expt y n2))))
@@ -4110,10 +4110,10 @@
                            not-integerp-4n-expt-c)))
 
 (defthm not-integerp-4o
-  (implies (and ;(rationalp a)
-                ;(rationalp b)
-                (rationalp x)
-		(rationalp y)
+  (implies (and ;(real/rationalp a)
+                ;(real/rationalp b)
+                (real/rationalp x)
+		(real/rationalp y)
 		(< (* a b) 0)
 		(< (- (* a b)) (* x y)))
 	   (not (integerp (* (/ x) a b (/ y)))))
@@ -4123,11 +4123,11 @@
   :rule-classes :type-prescription)
 
 (defthm not-integerp-4o-expt-a
-  (implies (and ;(rationalp a)
-                ;(rationalp b)
-                (rationalp x)
+  (implies (and ;(real/rationalp a)
+                ;(real/rationalp b)
+                (real/rationalp x)
 		(integerp n)
-		(rationalp y)
+		(real/rationalp y)
 		(< (* a b) 0)
 		(< (- (* a b)) (* (expt x n) y)))
 	   (not (integerp (* (expt x (- n)) a b (/ y)))))
@@ -4137,10 +4137,10 @@
   :rule-classes :type-prescription)
 
 (defthm not-integerp-4o-expt-b
-  (implies (and ;(rationalp a)
-                ;(rationalp b)
-                (rationalp x)
-		(rationalp y)
+  (implies (and ;(real/rationalp a)
+                ;(real/rationalp b)
+                (real/rationalp x)
+		(real/rationalp y)
 		(integerp n)
 		(< (* a b) 0)
 		(< (- (* a b)) (* x (expt y n))))
@@ -4151,11 +4151,11 @@
   :rule-classes :type-prescription)
 
 (defthm not-integerp-4o-expt-c
-  (implies (and ;(rationalp a)
-                ;(rationalp b)
-                (rationalp x)
+  (implies (and ;(real/rationalp a)
+                ;(real/rationalp b)
+                (real/rationalp x)
 		(integerp n1)
-		(rationalp y)
+		(real/rationalp y)
 		(integerp n2)
 		(< (* a b) 0)
 		(< (- (* a b)) (* (expt x n1) (expt y n2))))
@@ -4173,10 +4173,10 @@
 
 
 (defthm not-integerp-4p
-  (implies (and ;(rationalp a)
-                ;(rationalp b)
-                (rationalp x)
-		(rationalp y)
+  (implies (and ;(real/rationalp a)
+                ;(real/rationalp b)
+                (real/rationalp x)
+		(real/rationalp y)
 		(< (* a b) 0)
 		(< (- (* a b)) (* x y)))
 	   (not (integerp (* a (/ x) (/ y) b))))
@@ -4186,11 +4186,11 @@
   :rule-classes :type-prescription)
 
 (defthm not-integerp-4p-expt-a
-  (implies (and ;(rationalp a)
-                ;(rationalp b)
-                (rationalp x)
+  (implies (and ;(real/rationalp a)
+                ;(real/rationalp b)
+                (real/rationalp x)
 		(integerp n)
-		(rationalp y)
+		(real/rationalp y)
 		(< (* a b) 0)
 		(< (- (* a b)) (* (expt x n) y)))
 	   (not (integerp (* a (expt x (- n)) (/ y) b))))
@@ -4200,10 +4200,10 @@
   :rule-classes :type-prescription)
 
 (defthm not-integerp-4p-expt-b
-  (implies (and ;(rationalp a)
-                ;(rationalp b)
-                (rationalp x)
-		(rationalp y)
+  (implies (and ;(real/rationalp a)
+                ;(real/rationalp b)
+                (real/rationalp x)
+		(real/rationalp y)
 		(integerp n)
 		(< (* a b) 0)
 		(< (- (* a b)) (* x (expt y n))))
@@ -4214,11 +4214,11 @@
   :rule-classes :type-prescription)
 
 (defthm not-integerp-4p-expt-c
-  (implies (and ;(rationalp a)
-                ;(rationalp b)
-                (rationalp x)
+  (implies (and ;(real/rationalp a)
+                ;(real/rationalp b)
+                (real/rationalp x)
 		(integerp n1)
-		(rationalp y)
+		(real/rationalp y)
 		(integerp n2)
 		(< (* a b) 0)
 		(< (- (* a b)) (* (expt x n1) (expt y n2))))
@@ -4236,10 +4236,10 @@
 
 
 (defthm not-integerp-4q
-  (implies (and ;(rationalp a)
-                ;(rationalp b)
-                (rationalp x)
-		(rationalp y)
+  (implies (and ;(real/rationalp a)
+                ;(real/rationalp b)
+                (real/rationalp x)
+		(real/rationalp y)
 		(< (* a b) 0)
 		(< (- (* a b)) (* x y)))
 	   (not (integerp (* a (/ x) b (/ y)))))
@@ -4249,11 +4249,11 @@
   :rule-classes :type-prescription)
 
 (defthm not-integerp-4q-expt-a
-  (implies (and ;(rationalp a)
-                ;(rationalp b)
-                (rationalp x)
+  (implies (and ;(real/rationalp a)
+                ;(real/rationalp b)
+                (real/rationalp x)
 		(integerp n)
-		(rationalp y)
+		(real/rationalp y)
 		(< (* a b) 0)
 		(< (- (* a b)) (* (expt x n) y)))
 	   (not (integerp (* a (expt x (- n)) b (/ y)))))
@@ -4263,10 +4263,10 @@
   :rule-classes :type-prescription)
 
 (defthm not-integerp-4q-expt-b
-  (implies (and ;(rationalp a)
-                ;(rationalp b)
-                (rationalp x)
-		(rationalp y)
+  (implies (and ;(real/rationalp a)
+                ;(real/rationalp b)
+                (real/rationalp x)
+		(real/rationalp y)
 		(integerp n)
 		(< (* a b) 0)
 		(< (- (* a b)) (* x (expt y n))))
@@ -4277,11 +4277,11 @@
   :rule-classes :type-prescription)
 
 (defthm not-integerp-4q-expt-c
-  (implies (and ;(rationalp a)
-                ;(rationalp b)
-                (rationalp x)
+  (implies (and ;(real/rationalp a)
+                ;(real/rationalp b)
+                (real/rationalp x)
 		(integerp n1)
-		(rationalp y)
+		(real/rationalp y)
 		(integerp n2)
 		(< (* a b) 0)
 		(< (- (* a b)) (* (expt x n1) (expt y n2))))
@@ -4299,10 +4299,10 @@
 
 
 (defthm not-integerp-4r
-  (implies (and ;(rationalp a)
-                ;(rationalp b)
-                (rationalp x)
-		(rationalp y)
+  (implies (and ;(real/rationalp a)
+                ;(real/rationalp b)
+                (real/rationalp x)
+		(real/rationalp y)
 		(< (* a b) 0)
 		(< (- (* a b)) (* x y)))
 	   (not (integerp (* a b (/ x) (/ y)))))
@@ -4312,11 +4312,11 @@
   :rule-classes :type-prescription)
 
 (defthm not-integerp-4r-expt-a
-  (implies (and ;(rationalp a)
-                ;(rationalp b)
-                (rationalp x)
+  (implies (and ;(real/rationalp a)
+                ;(real/rationalp b)
+                (real/rationalp x)
 		(integerp n)
-		(rationalp y)
+		(real/rationalp y)
 		(< (* a b) 0)
 		(< (- (* a b)) (* (expt x n) y)))
 	   (not (integerp (* a b (expt x (- n)) (/ y)))))
@@ -4326,10 +4326,10 @@
   :rule-classes :type-prescription)
 
 (defthm not-integerp-4r-expt-b
-  (implies (and ;(rationalp a)
-                ;(rationalp b)
-                (rationalp x)
-		(rationalp y)
+  (implies (and ;(real/rationalp a)
+                ;(real/rationalp b)
+                (real/rationalp x)
+		(real/rationalp y)
 		(integerp n)
 		(< (* a b) 0)
 		(< (- (* a b)) (* x (expt y n))))
@@ -4340,11 +4340,11 @@
   :rule-classes :type-prescription)
 
 (defthm not-integerp-4r-expt-c
-  (implies (and ;(rationalp a)
-                ;(rationalp b)
-                (rationalp x)
+  (implies (and ;(real/rationalp a)
+                ;(real/rationalp b)
+                (real/rationalp x)
 		(integerp n1)
-		(rationalp y)
+		(real/rationalp y)
 		(integerp n2)
 		(< (* a b) 0)
 		(< (- (* a b)) (* (expt x n1) (expt y n2))))
@@ -4362,10 +4362,10 @@
 
 
 (defthm not-integerp-4s
-  (implies (and ;(rationalp a)
-                (rationalp x)
-                (rationalp y)
-		(rationalp z)
+  (implies (and ;(real/rationalp a)
+                (real/rationalp x)
+                (real/rationalp y)
+		(real/rationalp z)
 		(< a 0)
 		(< (- a) (* x y z)))
 	   (not (integerp (* (/ x) (/ y) (/ z) a))))
@@ -4375,11 +4375,11 @@
   :rule-classes :type-prescription)
 
 (defthm not-integerp-4s-expt-a
-  (implies (and ;(rationalp a)
-                (rationalp x)
+  (implies (and ;(real/rationalp a)
+                (real/rationalp x)
 		(integerp n)
-                (rationalp y)
-		(rationalp z)
+                (real/rationalp y)
+		(real/rationalp z)
 		(< a 0)
 		(< (- a) (* (expt x n) y z)))
 	   (not (integerp (* (expt x (- n)) (/ y) (/ z) a))))
@@ -4389,11 +4389,11 @@
   :rule-classes :type-prescription)
 
 (defthm not-integerp-4s-expt-b
-  (implies (and ;(rationalp a)
-                (rationalp x)
-                (rationalp y)
+  (implies (and ;(real/rationalp a)
+                (real/rationalp x)
+                (real/rationalp y)
 		(integerp n)
-		(rationalp z)
+		(real/rationalp z)
 		(< a 0)
 		(< (- a) (* x (expt y n) z)))
 	   (not (integerp (* (/ x) (expt y (- n)) (/ z) a))))
@@ -4403,10 +4403,10 @@
   :rule-classes :type-prescription)
 
 (defthm not-integerp-4s-expt-c
-  (implies (and ;(rationalp a)
-                (rationalp x)
-                (rationalp y)
-		(rationalp z)
+  (implies (and ;(real/rationalp a)
+                (real/rationalp x)
+                (real/rationalp y)
+		(real/rationalp z)
 		(integerp n)
 		(< a 0)
 		(< (- a) (* x y (expt z n))))
@@ -4417,12 +4417,12 @@
   :rule-classes :type-prescription)
 
 (defthm not-integerp-4s-expt-d
-  (implies (and ;(rationalp a)
-                (rationalp x)
+  (implies (and ;(real/rationalp a)
+                (real/rationalp x)
 		(integerp n1)
-                (rationalp y)
+                (real/rationalp y)
 		(integerp n2)
-		(rationalp z)
+		(real/rationalp z)
 		(< a 0)
 		(< (- a) (* (expt x n1) (expt y n2) z)))
 	   (not (integerp (* (expt x (- n1)) (expt y (- n2)) (/ z) a))))
@@ -4432,11 +4432,11 @@
   :rule-classes :type-prescription)
 
 (defthm not-integerp-4s-expt-e
-  (implies (and ;(rationalp a)
-                (rationalp x)
+  (implies (and ;(real/rationalp a)
+                (real/rationalp x)
 		(integerp n1)
-                (rationalp y)
-		(rationalp z)
+                (real/rationalp y)
+		(real/rationalp z)
 		(integerp n2)
 		(< a 0)
 		(< (- a) (* (expt x n1) y (expt z n2))))
@@ -4447,11 +4447,11 @@
   :rule-classes :type-prescription)
 
 (defthm not-integerp-4s-expt-f
-  (implies (and ;(rationalp a)
-                (rationalp x)
-                (rationalp y)
+  (implies (and ;(real/rationalp a)
+                (real/rationalp x)
+                (real/rationalp y)
 		(integerp n1)
-		(rationalp z)
+		(real/rationalp z)
 		(integerp n2)
 		(< a 0)
 		(< (- a) (* x (expt y n1) (expt z n2))))
@@ -4462,12 +4462,12 @@
   :rule-classes :type-prescription)
 
 (defthm not-integerp-4s-expt-g
-  (implies (and ;(rationalp a)
-                (rationalp x)
+  (implies (and ;(real/rationalp a)
+                (real/rationalp x)
 		(integerp n1)
-                (rationalp y)
+                (real/rationalp y)
 		(integerp n2)
-		(rationalp z)
+		(real/rationalp z)
 		(integerp n3)
 		(< a 0)
 		(< (- a) (* (expt x n1) (expt y n2) (expt z n3))))
@@ -4489,10 +4489,10 @@
 
 
 (defthm not-integerp-4t
-  (implies (and ;(rationalp a)
-                (rationalp x)
-                (rationalp y)
-		(rationalp z)
+  (implies (and ;(real/rationalp a)
+                (real/rationalp x)
+                (real/rationalp y)
+		(real/rationalp z)
 		(< a 0)
 		(< (- a) (* x y z)))
 	   (not (integerp (* (/ x) (/ y) a (/ z)))))
@@ -4500,11 +4500,11 @@
   :rule-classes :type-prescription)
 
 (defthm not-integerp-4t-expt-a
-  (implies (and ;(rationalp a)
-                (rationalp x)
+  (implies (and ;(real/rationalp a)
+                (real/rationalp x)
 		(integerp n)
-                (rationalp y)
-		(rationalp z)
+                (real/rationalp y)
+		(real/rationalp z)
 		(< a 0)
 		(< (- a) (* (expt x n) y z)))
 	   (not (integerp (* (expt x (- n)) (/ y) a (/ z)))))
@@ -4513,11 +4513,11 @@
   :rule-classes :type-prescription)
 
 (defthm not-integerp-4t-expt-b
-  (implies (and ;(rationalp a)
-                (rationalp x)
-                (rationalp y)
+  (implies (and ;(real/rationalp a)
+                (real/rationalp x)
+                (real/rationalp y)
 		(integerp n)
-		(rationalp z)
+		(real/rationalp z)
 		(< a 0)
 		(< (- a) (* x (expt y n) z)))
 	   (not (integerp (* (/ x) (expt y (- n)) a (/ z)))))
@@ -4526,10 +4526,10 @@
   :rule-classes :type-prescription)
 
 (defthm not-integerp-4t-expt-c
-  (implies (and ;(rationalp a)
-                (rationalp x)
-                (rationalp y)
-		(rationalp z)
+  (implies (and ;(real/rationalp a)
+                (real/rationalp x)
+                (real/rationalp y)
+		(real/rationalp z)
 		(integerp n)
 		(< a 0)
 		(< (- a) (* x y (expt z n))))
@@ -4539,12 +4539,12 @@
   :rule-classes :type-prescription)
 
 (defthm not-integerp-4t-expt-d
-  (implies (and ;(rationalp a)
-                (rationalp x)
+  (implies (and ;(real/rationalp a)
+                (real/rationalp x)
 		(integerp n1)
-                (rationalp y)
+                (real/rationalp y)
 		(integerp n2)
-		(rationalp z)
+		(real/rationalp z)
 		(< a 0)
 		(< (- a) (* (expt x n1) (expt y n2) z)))
 	   (not (integerp (* (expt x (- n1)) (expt y (- n2)) a (/ z)))))
@@ -4554,11 +4554,11 @@
   :rule-classes :type-prescription)
 
 (defthm not-integerp-4t-expt-e
-  (implies (and ;(rationalp a)
-                (rationalp x)
+  (implies (and ;(real/rationalp a)
+                (real/rationalp x)
 		(integerp n1)
-                (rationalp y)
-		(rationalp z)
+                (real/rationalp y)
+		(real/rationalp z)
 		(integerp n2)
 		(< a 0)
 		(< (- a) (* (expt x n1) y (expt z n2))))
@@ -4569,11 +4569,11 @@
   :rule-classes :type-prescription)
 
 (defthm not-integerp-4t-expt-f
-  (implies (and ;(rationalp a)
-                (rationalp x)
-                (rationalp y)
+  (implies (and ;(real/rationalp a)
+                (real/rationalp x)
+                (real/rationalp y)
 		(integerp n1)
-		(rationalp z)
+		(real/rationalp z)
 		(integerp n2)
 		(< a 0)
 		(< (- a) (* x (expt y n1) (expt z n2))))
@@ -4584,12 +4584,12 @@
   :rule-classes :type-prescription)
 
 (defthm not-integerp-4t-expt-g
-  (implies (and ;(rationalp a)
-                (rationalp x)
+  (implies (and ;(real/rationalp a)
+                (real/rationalp x)
 		(integerp n1)
-                (rationalp y)
+                (real/rationalp y)
 		(integerp n2)
-		(rationalp z)
+		(real/rationalp z)
 		(integerp n3)
 		(< a 0)
 		(< (- a) (* (expt x n1) (expt y n2) (expt z n3))))
@@ -4612,10 +4612,10 @@
 
 
 (defthm not-integerp-4u
-  (implies (and ;(rationalp a)
-                (rationalp x)
-                (rationalp y)
-		(rationalp z)
+  (implies (and ;(real/rationalp a)
+                (real/rationalp x)
+                (real/rationalp y)
+		(real/rationalp z)
 		(< a 0)
 		(< (- a) (* x y z)))
 	   (not (integerp (* (/ x) a (/ y) (/ z)))))
@@ -4624,11 +4624,11 @@
   :rule-classes :type-prescription)
 
 (defthm not-integerp-4u-expt-a
-  (implies (and ;(rationalp a)
-                (rationalp x)
+  (implies (and ;(real/rationalp a)
+                (real/rationalp x)
 		(integerp n)
-                (rationalp y)
-		(rationalp z)
+                (real/rationalp y)
+		(real/rationalp z)
 		(< a 0)
 		(< (- a) (* (expt x n) y z)))
 	   (not (integerp (* (expt x (- n)) a (/ y) (/ z)))))
@@ -4637,11 +4637,11 @@
   :rule-classes :type-prescription)
 
 (defthm not-integerp-4u-expt-b
-  (implies (and ;(rationalp a)
-                (rationalp x)
-                (rationalp y)
+  (implies (and ;(real/rationalp a)
+                (real/rationalp x)
+                (real/rationalp y)
 		(integerp n)
-		(rationalp z)
+		(real/rationalp z)
 		(< a 0)
 		(< (- a) (* x (expt y n) z)))
 	   (not (integerp (* (/ x) a (expt y (- n)) (/ z)))))
@@ -4650,10 +4650,10 @@
   :rule-classes :type-prescription)
 
 (defthm not-integerp-4u-expt-c
-  (implies (and ;(rationalp a)
-                (rationalp x)
-                (rationalp y)
-		(rationalp z)
+  (implies (and ;(real/rationalp a)
+                (real/rationalp x)
+                (real/rationalp y)
+		(real/rationalp z)
 		(integerp n)
 		(< a 0)
 		(< (- a) (* x y (expt z n))))
@@ -4663,12 +4663,12 @@
   :rule-classes :type-prescription)
 
 (defthm not-integerp-4u-expt-d
-  (implies (and ;(rationalp a)
-                (rationalp x)
+  (implies (and ;(real/rationalp a)
+                (real/rationalp x)
 		(integerp n1)
-                (rationalp y)
+                (real/rationalp y)
 		(integerp n2)
-		(rationalp z)
+		(real/rationalp z)
 		(< a 0)
 		(< (- a) (* (expt x n1) (expt y n2) z)))
 	   (not (integerp (* (expt x (- n1)) a (expt y (- n2)) (/ z)))))
@@ -4678,11 +4678,11 @@
   :rule-classes :type-prescription)
 
 (defthm not-integerp-4u-expt-e
-  (implies (and ;(rationalp a)
-                (rationalp x)
+  (implies (and ;(real/rationalp a)
+                (real/rationalp x)
 		(integerp n1)
-                (rationalp y)
-		(rationalp z)
+                (real/rationalp y)
+		(real/rationalp z)
 		(integerp n2)
 		(< a 0)
 		(< (- a) (* (expt x n1) y (expt z n2))))
@@ -4693,11 +4693,11 @@
   :rule-classes :type-prescription)
 
 (defthm not-integerp-4u-expt-f
-  (implies (and ;(rationalp a)
-                (rationalp x)
-                (rationalp y)
+  (implies (and ;(real/rationalp a)
+                (real/rationalp x)
+                (real/rationalp y)
 		(integerp n1)
-		(rationalp z)
+		(real/rationalp z)
 		(integerp n2)
 		(< a 0)
 		(< (- a) (* x (expt y n1) (expt z n2))))
@@ -4708,12 +4708,12 @@
   :rule-classes :type-prescription)
 
 (defthm not-integerp-4u-expt-g
-  (implies (and ;(rationalp a)
-                (rationalp x)
+  (implies (and ;(real/rationalp a)
+                (real/rationalp x)
 		(integerp n1)
-                (rationalp y)
+                (real/rationalp y)
 		(integerp n2)
-		(rationalp z)
+		(real/rationalp z)
 		(integerp n3)
 		(< a 0)
 		(< (- a) (* (expt x n1) (expt y n2) (expt z n3))))
@@ -4736,10 +4736,10 @@
 
 
 (defthm not-integerp-4v
-  (implies (and ;(rationalp a)
-                (rationalp x)
-                (rationalp y)
-		(rationalp z)
+  (implies (and ;(real/rationalp a)
+                (real/rationalp x)
+                (real/rationalp y)
+		(real/rationalp z)
 		(< a 0)
 		(< (- a) (* x y z)))
 	   (not (integerp (* a (/ x) (/ y) (/ z)))))
@@ -4748,11 +4748,11 @@
   :rule-classes :type-prescription)
 
 (defthm not-integerp-4v-expt-a
-  (implies (and ;(rationalp a)
-                (rationalp x)
+  (implies (and ;(real/rationalp a)
+                (real/rationalp x)
 		(integerp n)
-                (rationalp y)
-		(rationalp z)
+                (real/rationalp y)
+		(real/rationalp z)
 		(< a 0)
 		(< (- a) (* (expt x n) y z)))
 	   (not (integerp (* a (expt x (- n)) (/ y) (/ z)))))
@@ -4761,11 +4761,11 @@
   :rule-classes :type-prescription)
 
 (defthm not-integerp-4v-expt-b
-  (implies (and ;(rationalp a)
-                (rationalp x)
-                (rationalp y)
+  (implies (and ;(real/rationalp a)
+                (real/rationalp x)
+                (real/rationalp y)
 		(integerp n)
-		(rationalp z)
+		(real/rationalp z)
 		(< a 0)
 		(< (- a) (* x (expt y n) z)))
 	   (not (integerp (* a (/ x) (expt y (- n)) (/ z)))))
@@ -4774,10 +4774,10 @@
   :rule-classes :type-prescription)
 
 (defthm not-integerp-4v-expt-c
-  (implies (and ;(rationalp a)
-                (rationalp x)
-                (rationalp y)
-		(rationalp z)
+  (implies (and ;(real/rationalp a)
+                (real/rationalp x)
+                (real/rationalp y)
+		(real/rationalp z)
 		(integerp n)
 		(< a 0)
 		(< (- a) (* x y (expt z n))))
@@ -4787,12 +4787,12 @@
   :rule-classes :type-prescription)
 
 (defthm not-integerp-4v-expt-d
-  (implies (and ;(rationalp a)
-                (rationalp x)
+  (implies (and ;(real/rationalp a)
+                (real/rationalp x)
 		(integerp n1)
-                (rationalp y)
+                (real/rationalp y)
 		(integerp n2)
-		(rationalp z)
+		(real/rationalp z)
 		(< a 0)
 		(< (- a) (* (expt x n1) (expt y n2) z)))
 	   (not (integerp (* a (expt x (- n1)) (expt y (- n2)) (/ z)))))
@@ -4802,11 +4802,11 @@
   :rule-classes :type-prescription)
 
 (defthm not-integerp-4v-expt-e
-  (implies (and ;(rationalp a)
-                (rationalp x)
+  (implies (and ;(real/rationalp a)
+                (real/rationalp x)
 		(integerp n1)
-                (rationalp y)
-		(rationalp z)
+                (real/rationalp y)
+		(real/rationalp z)
 		(integerp n2)
 		(< a 0)
 		(< (- a) (* (expt x n1) y (expt z n2))))
@@ -4817,11 +4817,11 @@
   :rule-classes :type-prescription)
 
 (defthm not-integerp-4v-expt-f
-  (implies (and ;(rationalp a)
-                (rationalp x)
-                (rationalp y)
+  (implies (and ;(real/rationalp a)
+                (real/rationalp x)
+                (real/rationalp y)
 		(integerp n1)
-		(rationalp z)
+		(real/rationalp z)
 		(integerp n2)
 		(< a 0)
 		(< (- a) (* x (expt y n1) (expt z n2))))
@@ -4832,12 +4832,12 @@
   :rule-classes :type-prescription)
 
 (defthm not-integerp-4v-expt-g
-  (implies (and ;(rationalp a)
-                (rationalp x)
+  (implies (and ;(real/rationalp a)
+                (real/rationalp x)
 		(integerp n1)
-                (rationalp y)
+                (real/rationalp y)
 		(integerp n2)
-		(rationalp z)
+		(real/rationalp z)
 		(integerp n3)
 		(< a 0)
 		(< (- a) (* (expt x n1) (expt y n2) (expt z n3))))
@@ -5232,7 +5232,7 @@ Robert
   (cond ((and (not (equal (arg1 x) ''0)) ; Prevent possible loops
 	      (if intp-flag
 		  (proveably-integer 'x `((x . ,(arg1 x))) mfc state)
-		(proveably-rational 'x `((x . ,(arg1 x))) mfc state))
+		(proveably-real/rational 'x `((x . ,(arg1 x))) mfc state))
 	      ;; prevent various odd loops
 	      (stable-under-rewriting-sums (negate-match (arg1 x))
 					   mfc state))
@@ -5242,7 +5242,7 @@ Robert
 	((and (not (equal (arg2 x) ''0))
 	      (if intp-flag
 		  (proveably-integer 'x `((x . ,(arg2 x))) mfc state)
-		(proveably-rational 'x `((x . ,(arg2 x))) mfc state))
+		(proveably-real/rational 'x `((x . ,(arg2 x))) mfc state))
 	      (stable-under-rewriting-sums (negate-match (arg2 x))
 					   mfc state))
 	 (list (cons 'z (negate-match (arg2 x)))))
@@ -5265,10 +5265,18 @@ Robert
 
 (local
  (defthm iff-rationalp
-     (equal (equal (rationalp x)
-                   (rationalp y))
-            (iff (rationalp x)
-                 (rationalp y)))))
+     (equal (equal (real/rationalp x)
+                   (real/rationalp y))
+            (iff (real/rationalp x)
+                 (real/rationalp y)))))
+
+#+non-standard-analysis
+(local
+ (defthm iff-rationalp
+     (equal (equal (real/rationalp x)
+                   (real/rationalp y))
+            (iff (real/rationalp x)
+                 (real/rationalp y)))))
 
 ;;; In the right hand side of the conclusion below, if x is a sum and
 ;;; we can find an addend of x which is proveably an integer, we
@@ -5297,8 +5305,19 @@ Robert
                              (z))
                   (rationalp z)
                   (acl2-numberp x))
-             (equal (rationalp x)
-                    (rationalp (+ z x)))))
+             (equal (real/rationalp x)
+                    (real/rationalp (+ z x)))))
+
+#+non-standard-analysis
+(defthm reduce-real/rationalp-+
+    (implies (and (syntaxp (rewriting-goal-literal x mfc state))
+                  (syntaxp (in-term-order-+ x mfc state))
+                  (bind-free (reduce-integerp-+-fn x nil mfc state)
+                             (z))
+                  (real/rationalp z)
+                  (acl2-numberp x))
+             (equal (real/rationalp x)
+                    (real/rationalp (+ z x)))))
 
 ;;; We repeat the above for removing rational factors from a
 ;;; product, when we are deciding rationalp.
@@ -5322,11 +5341,39 @@ Robert
 	(t
 	 nil)))
 
+#+non-standard-analysis
+(defun reduce-real/rationalp-*-fn-1 (x mfc state)
+  (declare (xargs :guard (eq (fn-symb x) 'BINARY-*)))
+
+  (cond ((and (not (equal (arg1 x) ''1)) ; Prevent possible loops
+	      (proveably-non-zero-real/rational 'x `((x . ,(arg1 x))) mfc state)
+	      ;; prevent various odd loops
+	      (stable-under-rewriting-products (invert-match (arg1 x))
+					       mfc state))
+	 (list (cons 'z (invert-match (arg1 x)))))
+	((eq (fn-symb (arg2 x)) 'BINARY-*)
+	 (reduce-real/rationalp-*-fn-1 (arg2 x) mfc state))
+	((and (not (equal (arg2 x) ''1))
+	      (proveably-non-zero-rational 'x `((x . ,(arg2 x))) mfc state)
+	      (stable-under-rewriting-products (invert-match (arg2 x))
+					       mfc state))
+	 (list (cons 'z (invert-match (arg2 x)))))
+	(t
+	 nil)))
+
 (defun reduce-rationalp-*-fn (x mfc state)
   (declare (xargs :guard t))
 
   (if (eq (fn-symb x) 'BINARY-*)
       (reduce-rationalp-*-fn-1 x mfc state)
+    nil))
+
+#+non-standard-analysis
+(defun reduce-real/rationalp-*-fn (x mfc state)
+  (declare (xargs :guard t))
+
+  (if (eq (fn-symb x) 'BINARY-*)
+      (reduce-real/rationalp-*-fn-1 x mfc state)
     nil))
 
 ;;; One might want to redo the below, splitting into two rules ---
@@ -5344,8 +5391,20 @@ Robert
                   (rationalp z)
 		  (not (equal z 0))
                   (acl2-numberp x))
-             (equal (rationalp x)
-                    (rationalp (* z x)))))
+             (equal (real/rationalp x)
+                    (real/rationalp (* z x)))))
+
+#+non-standard-analysis
+(defthm reduce-real/rationalp-*
+    (implies (and (syntaxp (rewriting-goal-literal x mfc state))
+                  (syntaxp (in-term-order-* x mfc state))
+                  (bind-free (reduce-real/rationalp-*-fn x mfc state)
+                             (z))
+                  (real/rationalp z)
+		  (not (equal z 0))
+                  (acl2-numberp x))
+             (equal (real/rationalp x)
+                    (real/rationalp (* z x)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -5369,8 +5428,15 @@ Robert
 (defthm rationalp-minus-x
     (implies (and (syntaxp (weak-mostly-negative-addends-p x mfc state))
                   (acl2-numberp x))
-             (equal (rationalp x)
-                    (rationalp (- x)))))
+             (equal (real/rationalp x)
+                    (real/rationalp (- x)))))
+
+#+non-standard-analysis
+(defthm real/rationalp-minus-x
+    (implies (and (syntaxp (weak-mostly-negative-addends-p x mfc state))
+                  (acl2-numberp x))
+             (equal (real/rationalp x)
+                    (real/rationalp (- x)))))
 
 ;;; No longer needed as of ACL2 ... due to improved type-set reasoning.
 
@@ -5451,9 +5517,9 @@ Robert
 ;;; above rules would cover this case also.
 
 (defthm nintegerp-extra
-    (implies (and (rationalp x)
+    (implies (and (real/rationalp x)
                   (< 0 x)
-                  (rationalp y)
+                  (real/rationalp y)
                   (< 0 y)
                   (integerp n)
                   (< 0 n)

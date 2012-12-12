@@ -49,9 +49,9 @@
 
 (local
  (defthm hack0
-   (implies (and (rationalp x)
-		 (rationalp y)
-		 (rationalp z))
+   (implies (and (real/rationalp x)
+		 (real/rationalp y)
+		 (real/rationalp z))
 	    (equal (* z (complex x y))
 		   (complex (* x z) (* y z))))
    :hints (("Goal" :use ((:instance complex-definition)
@@ -65,9 +65,9 @@
 
 (local
  (defthm hack1
-   (implies (and (rationalp x)
-		 (rationalp y))
-	    (equal (rationalp (complex x y))
+   (implies (and (real/rationalp x)
+		 (real/rationalp y))
+	    (equal (real/rationalp (complex x y))
 		   (equal y 0)))))
 
 (local
@@ -77,7 +77,7 @@
 
 (local
  (defthm step-one
-   (implies (and (rationalp a)
+   (implies (and (real/rationalp a)
 		 (not (equal a 0)))
 	    (equal (< x y)
 		   (cond ((< a 0)
@@ -223,7 +223,7 @@
 				  (y (* y z))))))
 
 (defthm helper-6
-  (implies (and (rationalp x)
+  (implies (and (real/rationalp x)
 		(not (equal x 0)))
 	   (equal (< (* a x)
 		     (* b x))
@@ -236,7 +236,7 @@
 				  (a (/ x))))))
 
 (defthm helper-6a
-  (implies (and (rationalp x)
+  (implies (and (real/rationalp x)
 		(not (equal x 0)))
 	   (equal (< (* x a)
 		     (* x b))
@@ -245,7 +245,7 @@
 		      (< b a)))))
 
 (defthm helper-7
-  (implies (and (rationalp x)
+  (implies (and (real/rationalp x)
 		(not (equal x 0)))
 	   (equal (< (+ (* a x)
 			(* b x))
@@ -260,7 +260,7 @@
 				  (a (/ x))))))
 
 (defthm helper-8
-  (implies (and (rationalp x)
+  (implies (and (real/rationalp x)
 		(not (equal x 0)))
 	   (equal (< (* c x)
 		     (+ (* a x)
@@ -275,7 +275,7 @@
 				  (a (/ x))))))
 
 (defthm helper-9
-  (implies (and (rationalp x)
+  (implies (and (real/rationalp x)
 		(not (equal x 0)))
 	   (equal (< (* a x)
 		     (* b c x))
@@ -288,7 +288,7 @@
 				  (a (/ x))))))
 
 (defthm helper-10
-  (implies (and (rationalp x)
+  (implies (and (real/rationalp x)
 		(not (equal x 0)))
 	   (equal (< (* a b x)
 		     (* c x))
@@ -304,7 +304,7 @@
     (implies (and (<= 0 x)
                   (<= y 0)
                   (acl2-numberp x)
-                  (rationalp y))
+                  (real/rationalp y))
              (<= (* x y) 0))
   :hints (("Goal" :use (:instance step-one
 				  (x (* x y))
@@ -315,7 +315,7 @@
     (implies (and (< x 0)
                   (< y 0)
                   (acl2-numberp x)
-                  (rationalp y))
+                  (real/rationalp y))
              (< 0 (* x y)))
   :hints (("Goal" :use (:instance step-one
 				  (x 0)
@@ -326,7 +326,7 @@
     (implies (and (<= 0 x)
                   (<= 0 y)
                   (acl2-numberp x)
-                  (rationalp y))
+                  (real/rationalp y))
              (<= 0 (* x y)))
   :hints (("Goal" :use (:instance step-one
 				  (x 0)
@@ -337,7 +337,7 @@
     (implies (and (< x 0)
                   (< 0 y)
                   (acl2-numberp x)
-                  (rationalp y))
+                  (real/rationalp y))
              (< (* x y) 0))
   :hints (("Goal" :use (:instance step-one
 				  (x (* x y))
@@ -348,7 +348,7 @@
     (implies (and (<= x 0)
                   (<= y 0)
                   (acl2-numberp x)
-                  (rationalp y))
+                  (real/rationalp y))
              (<= 0 (* x y)))
   :hints (("Goal" :use (:instance step-one
 				  (x 0)
@@ -359,7 +359,7 @@
     (implies (and (< 0 x)
                   (< y 0)
                   (acl2-numberp x)
-                  (rationalp y))
+                  (real/rationalp y))
              (< (* x y) 0))
   :hints (("Goal" :use (:instance step-one
 				  (x (* x y))
@@ -370,7 +370,7 @@
     (implies (and (<= x 0)
                   (<= 0 y)
                   (acl2-numberp x)
-                  (rationalp y))
+                  (real/rationalp y))
              (<= (* x y) 0))
   :hints (("Goal" :use (:instance step-one
 				  (x (* x y))
@@ -381,7 +381,7 @@
     (implies (and (< 0 x)
                   (< 0 y)
                   (acl2-numberp x)
-                  (rationalp y))
+                  (real/rationalp y))
              (< 0 (* x y)))
   :hints (("Goal" :use (:instance step-one
 				  (x 0)
@@ -390,7 +390,7 @@
 
 (defthm big-helper-1
   (IMPLIES (AND (EQUAL X (* Y Z))
-              (RATIONALP z)
+              (REAL/RATIONALP z)
               (ACL2-NUMBERP y))
          (EQUAL (< X 0)
                 (AND (NOT (EQUAL Y 0))
@@ -408,7 +408,7 @@
  (local
   (defthm hack2
     (implies (and (acl2-numberp x)
-		  (rationalp y))
+		  (real/rationalp y))
 	     (and (equal (realpart (* x y))
 			 (* y (realpart x)))
 		  (equal (imagpart (* x y))
@@ -417,19 +417,19 @@
  (local
   (defthm hack3
     (implies (and (acl2-numberp x)
-		  (rationalp y)
+		  (real/rationalp y)
 		  (not (equal y 0)))
-	     (equal (rationalp (* x y))
+	     (equal (real/rationalp (* x y))
 		    (equal (imagpart x) 0)))
-    :hints (("Goal" :cases ((rationalp x)
-			    (complex-rationalp x))))))
+    :hints (("Goal" :cases ((real/rationalp x)
+			    (complex/complex-rationalp x))))))
 
  (local
   (defthm foo-1
     (implies (and (acl2-numberp x)
 		  (< 0 x)
-		  (rationalp y)
-		  (rationalp z)
+		  (real/rationalp y)
+		  (real/rationalp z)
 		  (< y z))
 	     (< (* x y) (* x z)))
     :hints (("Goal" :use ((:instance completion-of-<
@@ -448,8 +448,8 @@
   (defthm foo-2
     (implies (and (acl2-numberp x)
 		  (< 0 x)
-		  (rationalp y)
-		  (rationalp z)
+		  (real/rationalp y)
+		  (real/rationalp z)
 		  (<= y z))
 	     (<= (* x y) (* x z)))
     :hints (("Goal" :use ((:instance completion-of-<
@@ -465,8 +465,8 @@
   (defthm foo-3
     (implies (and (acl2-numberp x)
 		  (< x 0)
-		  (rationalp y)
-		  (rationalp z)
+		  (real/rationalp y)
+		  (real/rationalp z)
 		  (< y z))
 	     (< (* x z) (* x y)))
     :hints (("Goal" :use ((:instance completion-of-<
@@ -482,8 +482,8 @@
   (defthm foo-4
     (implies (and (acl2-numberp x)
 		  (< x 0)
-		  (rationalp y)
-		  (rationalp z)
+		  (real/rationalp y)
+		  (real/rationalp z)
 		  (<= y z))
 	     (<= (* x z) (* x y)))
     :hints (("Goal" :use ((:instance completion-of-<
@@ -496,8 +496,8 @@
 				 (equal y 0))))))
 
  (defthm big-helper-2
-  (implies (and (rationalp lhs)
-		(rationalp rhs)
+  (implies (and (real/rationalp lhs)
+		(real/rationalp rhs)
 		(acl2-numberp c)
 		(not (equal c 0)))
 	   (equal (< lhs rhs)

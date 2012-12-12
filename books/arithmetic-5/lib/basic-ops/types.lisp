@@ -41,6 +41,11 @@
 	  (iff (rationalp x) (rationalp y)))))
 
 (local
+ (defthm equal-to-iff-1-real-case
+   (equal (equal (real/rationalp x) (real/rationalp y))
+	  (iff (real/rationalp x) (real/rationalp y)))))
+
+(local
  (defthm equal-to-iff-2
    (equal (equal (integerp x) (integerp y))
 	  (iff (integerp x) (integerp y)))))
@@ -67,6 +72,12 @@
 	   (equal (rationalp (- x))
 		  (rationalp x))))
 
+#+non-standard-analysis
+(defthm |(real/rationalp (- x))|
+  (implies (acl2-numberp x)
+	   (equal (real/rationalp (- x))
+		  (real/rationalp x))))
+
 (defthm |(integerp (- x))|
   (implies (acl2-numberp x)
 	   (equal (integerp (- x))
@@ -92,6 +103,12 @@
 	   (equal (rationalp (/ x))
 		  (rationalp x))))
 
+#+non-standard-analysis
+(defthm real/rationalp-/
+  (implies (acl2-numberp x)
+	   (equal (real/rationalp (/ x))
+		  (real/rationalp x))))
+
 (defthm not-integerp-/-1
   (implies (< 1 x)
 	   (not (integerp (/ x)))))
@@ -116,7 +133,19 @@
 	   (rationalp x))
   :rule-classes ((:rewrite :backchain-limit-lst 2)))
 
+#+non-standard-analysis
+(defthm real/rationalp-x
+  (implies (integerp x)
+	   (real/rationalp x))
+  :rule-classes ((:rewrite :backchain-limit-lst 3)))
+
 (defthm acl2-numberp-x
   (implies (rationalp x)
+	   (acl2-numberp x))
+  :rule-classes ((:rewrite :backchain-limit-lst 3)))
+
+#+non-standard-analysis
+(defthm acl2-number-if-real/rationalp-x
+  (implies (real/rationalp x)
 	   (acl2-numberp x))
   :rule-classes ((:rewrite :backchain-limit-lst 3)))

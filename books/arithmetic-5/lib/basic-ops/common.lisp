@@ -314,11 +314,11 @@
 (defun good-val-triple-p (x)
   (declare (xargs :guard t))
   (and (consp x)
-       (rationalp (car x))
+       (real/rationalp (car x))
        (consp (cdr x))
-       (rationalp (cadr x))
+       (real/rationalp (cadr x))
        (consp (cddr x))
-       (rationalp (caddr x))))
+       (real/rationalp (caddr x))))
 
 (defun val-< (x y)
   (declare (xargs :guard (and (good-val-triple-p x)
@@ -383,7 +383,7 @@
 	 (list 0 1 0))
 	((constant-p factor)
 	 (let ((val (unquote factor)))
-	   (if (rationalp val)
+	   (if (rationalp val)   ; OK to use instead of real/rationalp because there all realp *constants* are rationalp
 	       (list 0 0 (abs val))
 	     (list 0 0 1))))
 	((eq (ffn-symb factor) 'UNARY-/)
@@ -424,7 +424,7 @@
 	 (list 0 1 0))
 	((constant-p factor)
 	 (let ((val (unquote factor)))
-	   (if (rationalp val)
+	   (if (rationalp val)  ; Again OK.  No non-rationalp realp constants
 	       (list 0 0 (abs val))
 	     (list 0 0 1))))
 	((eq (ffn-symb factor) 'UNARY-/)
@@ -580,7 +580,7 @@
       nil
     (let ((temp (assoc-factor-gather-exponents (car (car info-list1)) info-list2)))
       (if (and temp
-               (proveably-rational 'x `((x . ,(caddr temp))) mfc state))
+               (proveably-real/rational 'x `((x . ,(caddr temp))) mfc state))
           (cond ((and ;; We want the ``smaller'' match
 		      (val-< (cadr (car info-list1))
 			     (cadr temp))
@@ -626,7 +626,7 @@
       nil
     (let ((temp (assoc-factor-gather-exponents (car (car info-list1)) info-list2)))
       (if (and temp
-               (proveably-non-zero-rational 'x `((x . ,(caddr temp))) mfc state))
+               (proveably-non-zero-real/rational 'x `((x . ,(caddr temp))) mfc state))
           (cond ((and ;; We want the ``smaller'' match
 		      (val-< (cadr (car info-list1))
 			     (cadr temp))
@@ -818,7 +818,7 @@
       nil
     (let ((temp (assoc-factor-scatter-exponents (car (car info-list1)) info-list2)))
       (if (and temp
-               (proveably-rational 'x `((x . ,(caddr temp))) mfc state))
+               (proveably-real/rational 'x `((x . ,(caddr temp))) mfc state))
           (cond ((and ;; We want the ``smaller'' match
 		      (val-< (cadr (car info-list1))
 			     (cadr temp))
@@ -864,7 +864,7 @@
       nil
     (let ((temp (assoc-factor-scatter-exponents (car (car info-list1)) info-list2)))
       (if (and temp
-               (proveably-non-zero-rational 'x `((x . ,(caddr temp))) mfc state))
+               (proveably-non-zero-real/rational 'x `((x . ,(caddr temp))) mfc state))
           (cond ((and ;; We want the ``smaller'' match
 		      (val-< (cadr (car info-list1))
 			     (cadr temp))
@@ -1089,7 +1089,7 @@ to
  (local
   (defthm foo-0
     (implies (and (not (zp x))
-		  (rationalp y)
+		  (real/rationalp y)
 		  (<= 2 y))
 	     (< (* x (/ y)) x))
     :hints (("Goal" :in-theory (enable NORMALIZE-<-/-TO-*-3-3)))))

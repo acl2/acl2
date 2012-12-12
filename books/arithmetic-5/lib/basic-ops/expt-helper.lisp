@@ -118,14 +118,14 @@
 
  (local
   (defthm expt-x-2
-    (implies (and (rationalp x)
+    (implies (and (real/rationalp x)
 		  (not (equal x 0)))
 	     (< 0 (expt x 2)))))
 
  (local
   (defthm <-0-expt-x-2
     (implies (and (< r 0)
-		  (rationalp r)
+		  (real/rationalp r)
 		  (integerp i))
 	     (< 0 (expt (expt r i) 2)))
     :hints (("Goal" :use ((:instance expt-x-2
@@ -133,7 +133,7 @@
 
  (defthm expt-type-prescription-negative-base-even-exponent-a
    (implies (and (< r 0)
-		 (rationalp r)
+		 (real/rationalp r)
 		 (integerp i)
 		 (integerp (* 1/2 i)))
 	    (< 0 (expt r i)))
@@ -144,14 +144,14 @@
  (local
   (defthm reduce
     (implies (and (integerp i)
-		  (rationalp r)
+		  (real/rationalp r)
 		  (not (equal r 0)))
 	     (equal (expt r i)
 		    (* r (expt r (- i 1)))))))
 
  (defthm expt-type-prescription-negative-base-odd-exponent-a
    (implies (and (< r 0)
-		 (rationalp r)
+		 (real/rationalp r)
 		 (integerp i)
 		 (not (integerp (* 1/2 i))))
 	    (< (expt r i) 0))
@@ -217,21 +217,21 @@
 
  (local
   (defthm one
-    (implies (rationalp x)
+    (implies (real/rationalp x)
 	     (equal (equal (abs (/ x)) 1)
 		    (equal (abs x) 1)))
     :otf-flg t))
 
   (local
    (defthm oner
-     (implies (rationalp x)
+     (implies (real/rationalp x)
 	      (equal (equal (- x) 1)
 		     (equal x -1)))))
 
   (local 
    (defthm onex
-     (implies (and (rationalp x)
-		   (rationalp y)
+     (implies (and (real/rationalp x)
+		   (real/rationalp y)
 		   (equal (abs (* x y)) 1)
 		   (equal (abs x) 1))
 	      (equal (abs y) 1))
@@ -239,15 +239,15 @@
 
   (local
    (defthm oney
-     (implies (and (rationalp x)
-		   (rationalp y))
+     (implies (and (real/rationalp x)
+		   (real/rationalp y))
 	      (equal (abs (* x y))
 		     (* (abs x) (abs y))))))
 
  (local
   (defthm www
-    (implies (rationalp x)
-	     (rationalp (abs x)))))
+    (implies (real/rationalp x)
+	     (real/rationalp (abs x)))))
 
  (local
   (defthm ee
@@ -255,7 +255,7 @@
 
  (local
   (defthm nnn
-    (implies (and (rationalp x)
+    (implies (and (real/rationalp x)
 		  (not (equal x 0))
 		  (< (abs x) 1))
 	     (< 1 (abs (/ x))))
@@ -263,7 +263,7 @@
 
  (local
   (defthm nnn-2
-    (implies (and (rationalp x)
+    (implies (and (real/rationalp x)
 		  (not (equal x 0))
 		  (< 1 (abs x)))
 	     (< (abs (/ x)) 1))
@@ -271,7 +271,7 @@
 
  (local
   (defthm nnn-3
-    (implies (and (rationalp x)
+    (implies (and (real/rationalp x)
 		  (not (equal x 0)))
 	     (not (equal (abs (/ x)) 0)))))
 #|
@@ -283,13 +283,13 @@
 |#
  (local
   (defthm nnn-4
-    (implies (rationalp x)
+    (implies (real/rationalp x)
 	     (equal (< 0 (abs x))
 		    (not (equal x 0))))))
 
  (local
   (defthm foo
-    (implies (and (rationalp x)
+    (implies (and (real/rationalp x)
 		  (not (equal x 0)))
 	     (< 0 (abs (/ x))))))
 
@@ -299,22 +299,22 @@
  (local
   (defthm xxx1
     (implies (and (integerp n)
-		  (rationalp x)
+		  (real/rationalp x)
 		  (equal n 0))
 	     (equal (abs (expt x n)) 1))))
 
  (local
   (defthm xxx2
     (implies (and (integerp n)
-		  (rationalp x)
+		  (real/rationalp x)
 		  (equal (abs x) 1))
 	     (equal (abs (expt x n)) 1))
     :hints (("Goal" :do-not '(generalize)))))
 
  (local
   (defthm qqq
-    (implies (and (rationalp x)
-		  (rationalp y))
+    (implies (and (real/rationalp x)
+		  (real/rationalp y))
 	     (equal (< 0 (* x y))
 		    (cond ((equal x 0)
 			   nil)
@@ -325,20 +325,20 @@
 
  (local
   (defthm ggg
-    (implies (rationalp x)
-	     (rationalp (/ x)))))
+    (implies (real/rationalp x)
+	     (real/rationalp (/ x)))))
 
  (local
   (defthm hhh
-    (implies (rationalp x)
-	     (rationalp (expt x n)))))
+    (implies (real/rationalp x)
+	     (real/rationalp (expt x n)))))
 
  ;;; Do I really have non-linear arithmetic enabled?
 
  (local
   (defthm ddd
-    (implies (and (rationalp x)
-		  (rationalp y)
+    (implies (and (real/rationalp x)
+		  (real/rationalp y)
 		  (< 0 x)
 		  (< x 1)
 		  (< 0 y)
@@ -349,9 +349,9 @@
 
  (local
   (defthm ddd-2
-    (implies (and (rationalp x)
-		  (rationalp y)
-		  (rationalp z)
+    (implies (and (real/rationalp x)
+		  (real/rationalp y)
+		  (real/rationalp z)
 		  (< 0 x)
 		  (< x 1)
 		  (< 0 (* y z))
@@ -360,8 +360,8 @@
 
  (local
   (defthm jjj
-    (implies (and (rationalp x)
-		  (rationalp y)
+    (implies (and (real/rationalp x)
+		  (real/rationalp y)
 		  (< 1 x)
 		  (< 1 y))
 	     (< 1 (* x y)))
@@ -370,9 +370,9 @@
 
  (local
   (defthm jjj-2
-    (implies (and (rationalp x)
-		  (rationalp y)
-		  (rationalp z)
+    (implies (and (real/rationalp x)
+		  (real/rationalp y)
+		  (real/rationalp z)
 		  (< 1 x)
 		  (< 1 (* y z)))
 	     (< 1 (* y x z)))))
@@ -380,7 +380,7 @@
  (local
   (defthm yyy1
      (implies (and (integerp n)
-		   (rationalp x)
+		   (real/rationalp x)
 		   (< 0 n)
 		   (< 0 (abs x))
 		   (< (abs x) 1))
@@ -391,7 +391,7 @@
  (local
   (defthm yyy2
      (implies (and (integerp n)
-		   (rationalp x)
+		   (real/rationalp x)
 		   (< 0 n)
 		   (< 1 (abs x)))
 	      (< 1 (abs (expt x n))))
@@ -400,7 +400,7 @@
  (local
   (defthm yyy3
      (implies (and (integerp n)
-		   (rationalp x)
+		   (real/rationalp x)
 		   (< n 0)
 		   (< 0 (abs x))
 		   (< (abs x) 1))
@@ -410,7 +410,7 @@
  (local
   (defthm yyy4
      (implies (and (integerp n)
-		   (rationalp x)
+		   (real/rationalp x)
 		   (< n 0)
 		   (< 1 (abs x)))
 	      (and (< 0 (abs (expt x n)))
@@ -420,7 +420,7 @@
  (local
   (defthm oneb
     (implies (and (integerp n)
-		  (rationalp x))
+		  (real/rationalp x))
 	     (equal (equal (abs (expt x n)) 1)
 		    (or (equal n 0)
 			(equal (abs x) 1))))
@@ -431,7 +431,7 @@
 
  (defthm |(equal (expt x n) -1)|
    (implies (and (integerp n)
-		 (rationalp x))
+		 (real/rationalp x))
 	    (equal (equal (expt x n) -1)
 		   (and (equal x -1)
 			(oddp n))))
@@ -440,7 +440,7 @@
 
  (defthm |(equal (expt x n) 1) --- helper|
    (implies  (and (integerp n)
-		  (rationalp x))
+		  (real/rationalp x))
 	     (equal (equal (expt x n) 1)
 		    (or (zip n)
 			(equal x 1)
@@ -464,7 +464,7 @@
 			      (< -5 c)))
                 (integerp c)
                 (not (equal c 0))
-		(rationalp x)
+		(real/rationalp x)
 		(integerp n))
            (equal (expt x (* c n))
                   (cond ((< c 0)
@@ -482,7 +482,7 @@
 
  (local
   (defthm three
-    (implies (and (rationalp x)
+    (implies (and (real/rationalp x)
 		  (< 0 x)
 		  (< x 1))
 	     (not (integerp x)))))
@@ -521,7 +521,7 @@
 
  (local
   (defthm four
-    (implies (and (rationalp x)
+    (implies (and (real/rationalp x)
 		  (< 1 x)
 		  (integerp m)
 		  (integerp i))
@@ -530,7 +530,7 @@
     :hints (("Goal" :induct (ind-hint i)))))
 
  (defthm |(< (expt x n) (expt x m))|
-   (implies (and (rationalp x)
+   (implies (and (real/rationalp x)
 		 (< 1 x)
 		 (integerp m)
 		 (integerp n))
@@ -553,7 +553,7 @@
 
  (local
   (defthm five
-    (implies (and (rationalp x)
+    (implies (and (real/rationalp x)
 		  (not (equal x -1))
 		  (not (equal x 0))
 		  (not (equal x 1))
@@ -564,7 +564,7 @@
     :hints (("Goal" :induct (ind-hint i)))))
 
  (defthm |(equal (expt x m) (expt x n))|
-   (implies (and (rationalp x)
+   (implies (and (real/rationalp x)
 		 (not (equal x -1))
 		 (not (equal x 0))
 		 (not (equal x 1))
@@ -587,31 +587,31 @@
 
  (local
   (defthm sixa
-    (IMPLIES (AND (RATIONALP X)
+    (IMPLIES (AND (REAL/RATIONALP X)
 		  (< 1 X)
-		  (rationalp b)
+		  (real/rationalp b)
 		  (< 0 b))
 	     (< b
 		(* x b)))))
 
  (local
   (defthm sixb
-    (IMPLIES (AND (RATIONALP X)
+    (IMPLIES (AND (REAL/RATIONALP X)
 		  (<= 1 X)
-		  (rationalp b)
+		  (real/rationalp b)
 		  (< 0 b))
 	     (<= b
 		(* x b)))))
 
  (local
   (defthm six
-    (implies (and (rationalp x)
+    (implies (and (real/rationalp x)
 		(< 1 x)
                 (integerp m)
 		(<= 0 m)
 		(integerp i)
                 (< 0 i)
-		(rationalp y)
+		(real/rationalp y)
 		(< (+ y 1) x))
 	   (< (+ y (expt x m)) (expt x (+ m i))))
     :hints (("Goal" :induct (ind-hintx i)
@@ -625,14 +625,14 @@
 	                      :in-theory (disable <-*-X-Y-Y)))))
 
  (defthm expt-exceeds-another-by-more-than-y
-   (implies (and (rationalp x)
+   (implies (and (real/rationalp x)
 		 (< 1 x)
 		 (integerp m)
 		 (integerp n)
 		 (<= 0 m)
 		 (<= 0 n)
 		 (< m n)
-		 (rationalp y)
+		 (real/rationalp y)
 		 (< (+ y 1) x))
 	    (< (+ y (expt x m)) (expt x n)))
    :hints (("Goal" :use (:instance six
@@ -652,7 +652,7 @@
   (defthm helper-www
     (implies (and (integerp n)
 		  (< 0 n)
-		  (rationalp x)
+		  (real/rationalp x)
 		  (< 1 x))
 	     (<= x (expt x n)))))
 
@@ -661,9 +661,9 @@
 
  (local
   (defthm helper-qqq
-    (implies (and (rationalp x)
-		  (rationalp y)
-		  (rationalp z)
+    (implies (and (real/rationalp x)
+		  (real/rationalp y)
+		  (real/rationalp z)
 		  (< 0 z))
 	     (equal (<= x (* y z))
 		    (<= (/ x z) y)))
@@ -672,7 +672,7 @@
  (defthm expt-linear-helper-a
    (implies (and (< d n)
 		 (integerp d)
-		 (rationalp c)
+		 (real/rationalp c)
 		 (< 1 c)
 		 (integerp n))
 	    (<= (expt c (+ 1 d)) (expt c n)))
@@ -683,7 +683,7 @@
  (defthm expt-linear-helper-b
    (implies (and (< n d)
 		 (integerp d)
-		 (rationalp c)
+		 (real/rationalp c)
 		 (< 1 c)
 		 (integerp n))
 	    (<= (expt c n) (expt c (+ -1 d))))
