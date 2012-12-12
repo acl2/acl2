@@ -411,7 +411,9 @@ output using an equivalence checker.</p>")
 
   (defund vl-module-simp (x)
     (declare (xargs :guard (vl-module-p x)))
-    (b* (((vl-module x) x))
+    (b* (((vl-module x) x)
+         ((when (vl-module->hands-offp x))
+          x))
       (change-vl-module x
                         :assigns (vl-assignlist-simp x.assigns)
                         :modinsts (vl-modinstlist-simp x.modinsts))))

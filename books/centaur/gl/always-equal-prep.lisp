@@ -58,11 +58,11 @@
            (cons (ctrex-for-always-equal-ind xa ya (cdr env)) nil)))))
 
    (defthmd ctrex-for-always-equal-correct
-     (implies (and (acl2::normp x) (acl2::normp y) (not (equal x y))
+     (implies (and (acl2::ubddp x) (acl2::ubddp y) (not (equal x y))
                    (acl2::eval-bdd (ctrex-for-always-equal x y) env))
               (not (equal (acl2::eval-bdd x env) (acl2::eval-bdd y env))))
      :hints (("goal" :induct (ctrex-for-always-equal-ind x y env)
-              :in-theory (enable acl2::eval-bdd acl2::normp))))
+              :in-theory (enable acl2::eval-bdd acl2::ubddp))))
 
    
    (defthmd ctrex-for-always-equal-correct-bfr
@@ -74,14 +74,14 @@
               :in-theory (enable bfr-eval bfr-p))))
 
    (defthm ctrex-for-always-equal-correct2
-     (implies (and (acl2::normp x) (acl2::normp y) (not (equal x y))
+     (implies (and (acl2::ubddp x) (acl2::ubddp y) (not (equal x y))
                    (equal (acl2::eval-bdd x env) (acl2::eval-bdd y env)))
               (not (acl2::eval-bdd (ctrex-for-always-equal x y) env)))
      :hints(("Goal" :in-theory (enable ctrex-for-always-equal-correct))))
       
-   (defthm acl2::normp-ctrex-for-always-equal
-     (acl2::normp (ctrex-for-always-equal a b))
-     :hints(("Goal" :in-theory (enable acl2::normp))))
+   (defthm acl2::ubddp-ctrex-for-always-equal
+     (acl2::ubddp (ctrex-for-always-equal a b))
+     :hints(("Goal" :in-theory (enable acl2::ubddp))))
    
    (defthm bfr-p-ctrex-for-always-equal
      (implies (not (bfr-mode))
@@ -125,10 +125,10 @@
                (ctrex-for-always-equal x1 y1))))))
 
 (local
- (defthm ctrex-for-always-equal-under-hyp1-normp
-   (implies (and (acl2::normp x) (acl2::normp y) (acl2::normp hyp))
-            (acl2::normp (ctrex-for-always-equal-under-hyp1 x y hyp)))
-   :hints(("Goal" :in-theory (enable acl2::normp)
+ (defthm ctrex-for-always-equal-under-hyp1-ubddp
+   (implies (and (acl2::ubddp x) (acl2::ubddp y) (acl2::ubddp hyp))
+            (acl2::ubddp (ctrex-for-always-equal-under-hyp1 x y hyp)))
+   :hints(("Goal" :in-theory (enable acl2::ubddp)
            :induct (ctrex-for-always-equal-under-hyp1 x y hyp)))))
 
 
@@ -158,15 +158,15 @@
    (defthm ctrex-for-always-equal-under-hyp1-correct1
      (implies (and (not (and (acl2::eval-bdd hyp env)
                              (not (equal (acl2::eval-bdd x env) (acl2::eval-bdd y env)))))
-                   (acl2::normp x) (acl2::normp y) (acl2::normp hyp))
+                   (acl2::ubddp x) (acl2::ubddp y) (acl2::ubddp hyp))
               (not (acl2::eval-bdd (ctrex-for-always-equal-under-hyp1 x y hyp) env)))
-     :hints(("Goal" :in-theory (e/d* (acl2::normp)
+     :hints(("Goal" :in-theory (e/d* (acl2::ubddp)
                                      (ctrex-for-always-equal-under-hyp1
                                       acl2::eval-bdd-when-qs-subset
                                       ctrex-for-always-equal
                                       acl2::eval-bdd-when-not-consp
                                       acl2::eval-bdd-of-non-consp-cheap
-                                      acl2::normp-compound-recognizer
+                                      acl2::ubddp-compound-recognizer
                                       (:rules-of-class :type-prescription :here)
 ;                                      acl2::eval-bdd-booleanp
                                       equal-of-booleans-rewrite)
@@ -195,9 +195,9 @@
      (implies (and (bind-free '((env . (cdr env))) (env))
                    (not (equal (acl2::eval-bdd x env) (acl2::eval-bdd y env)))
                    (acl2::eval-bdd hyp env)
-                   (acl2::normp x) (acl2::normp y) (acl2::normp hyp))
+                   (acl2::ubddp x) (acl2::ubddp y) (acl2::ubddp hyp))
               (ctrex-for-always-equal-under-hyp1 x y hyp))
-     :hints(("Goal" :in-theory (e/d* (acl2::normp)
+     :hints(("Goal" :in-theory (e/d* (acl2::ubddp)
                                      (ctrex-for-always-equal-under-hyp1
                                       acl2::eval-bdd-when-qs-subset
                                       ctrex-for-always-equal
@@ -269,28 +269,28 @@
                  (and cdr-result
                       (cons nil cdr-result))))))))
 
-(local (defthm ctrex-for-always-equal-under-hyp-normp
-         (implies (and (acl2::normp x) (acl2::normp y) (acl2::normp hyp))
-                  (acl2::normp (ctrex-for-always-equal-under-hyp x y hyp)))
-         :hints(("Goal" :in-theory (enable acl2::normp)))))
+(local (defthm ctrex-for-always-equal-under-hyp-ubddp
+         (implies (and (acl2::ubddp x) (acl2::ubddp y) (acl2::ubddp hyp))
+                  (acl2::ubddp (ctrex-for-always-equal-under-hyp x y hyp)))
+         :hints(("Goal" :in-theory (enable acl2::ubddp)))))
 
 (local (defthm ctrex-for-always-equal-under-hyp-bfr-p
          (implies (and (not (bfr-mode))
                        (bfr-p x) (bfr-p y) (bfr-p hyp))
                   (bfr-p (ctrex-for-always-equal-under-hyp x y hyp)))
-         :hints(("Goal" :use ctrex-for-always-equal-under-hyp-normp
+         :hints(("Goal" :use ctrex-for-always-equal-under-hyp-ubddp
                  :in-theory (e/d (bfr-p booleanp)
-                                 (ctrex-for-always-equal-under-hyp-normp))))))
+                                 (ctrex-for-always-equal-under-hyp-ubddp))))))
 
 
 (local
  (defthm ctrex-for-always-equal-under-hyp-correct1
    (implies (and (acl2::eval-bdd (ctrex-for-always-equal-under-hyp x y hyp) env)
-                 (acl2::normp x) (acl2::normp y) (acl2::normp hyp))
+                 (acl2::ubddp x) (acl2::ubddp y) (acl2::ubddp hyp))
             (and (acl2::eval-bdd hyp env)
                  (equal (acl2::eval-bdd x env)
                         (not (acl2::eval-bdd y env)))))
-   :hints(("Goal" :in-theory (e/d* (acl2::normp)
+   :hints(("Goal" :in-theory (e/d* (acl2::ubddp)
                                    (ctrex-for-always-equal-under-hyp
                                     acl2::eval-bdd-when-qs-subset
                                     equal-of-booleans-rewrite
@@ -312,9 +312,9 @@
  (defthm ctrex-for-always-equal-under-hyp-correct2
    (implies (and (not (equal (acl2::eval-bdd x env) (acl2::eval-bdd y env)))
                  (acl2::eval-bdd hyp env)
-                 (acl2::normp x) (acl2::normp y) (acl2::normp hyp))
+                 (acl2::ubddp x) (acl2::ubddp y) (acl2::ubddp hyp))
             (ctrex-for-always-equal-under-hyp x y hyp))
-   :hints(("Goal" :in-theory (e/d* (acl2::normp)
+   :hints(("Goal" :in-theory (e/d* (acl2::ubddp)
                                    (ctrex-for-always-equal-under-hyp
                                     ;ctrex-for-always-equal-under-hyp1-correct2
                                     ctrex-for-always-equal-under-hyp-correct1
@@ -767,7 +767,7 @@
                           (:type-prescription general-booleanp)
                           (:type-prescription general-numberp)
                           (:type-prescription g-ite-p)
-                          (:type-prescription acl2::normp)
+                          (:type-prescription acl2::ubddp)
                           (:type-prescription general-concretep)
                           (:type-prescription g-var-p)
                           (:type-prescription g-apply-p)

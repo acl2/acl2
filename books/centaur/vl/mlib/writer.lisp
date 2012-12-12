@@ -1802,14 +1802,14 @@ code.)</p>"
                        ps)
                      (vl-print "  ")
                      (vl-ps-span "vl_key" (vl-print-str (vl-gatetype-string type)))
-                     ;(if (not strength)
-                     ;    ps
-                     ;  (vl-ps-seq (vl-print " ")
-                     ;             (vl-pp-gatestrength strength)))
-                     ;(if (not delay)
-                     ;    ps
-                     ;  (vl-ps-seq (vl-print " ")
-                     ;             (vl-pp-gatedelay delay)))
+                     (if (not strength)
+                         ps
+                       (vl-ps-seq (vl-print " ")
+                                  (vl-pp-gatestrength strength)))
+                     (if (not delay)
+                         ps
+                       (vl-ps-seq (vl-print " ")
+                                  (vl-pp-gatedelay delay)))
                      (if (not name)
                          ps
                        (vl-ps-seq (vl-print " ")

@@ -458,6 +458,8 @@ Hence, we need some code for detecting what wires are driven.</p>"
     (declare (xargs :guard (and (vl-module-p x)
                                 (propagate-limits-p limits))))
     (b* (((vl-module x) x)
+         ((when (vl-module->hands-offp x))
+          x)
          ((when (or x.alwayses
                     x.paramdecls
                     x.fundecls

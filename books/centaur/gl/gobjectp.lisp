@@ -35,27 +35,21 @@
 
 (in-theory (disable wf-g-numberp))
 
-(defun norm-truelistp (x)
-  (declare (xargs :guard t))
-  (if (atom x)
-      (eq x nil)
-    (and (acl2::normp (car x))
-         (norm-truelistp (cdr x)))))
 
 
 (defun wf-g-numberp-bdd (x)
   (declare (xargs :guard t))
   (and (consp x)
-       (norm-truelistp (car x))
+       (acl2::ubdd-listp (car x))
        (or (eq (cdr x) nil)
            (and (consp (cdr x))
-                (norm-truelistp (cadr x))
+                (acl2::ubdd-listp (cadr x))
                 (or (eq (cddr x) nil)
                     (and (consp (cddr x))
-                         (norm-truelistp (caddr x))
+                         (acl2::ubdd-listp (caddr x))
                          (or (eq (cdr (cddr x)) nil)
                              (and (consp (cdr (cddr x)))
-                                  (norm-truelistp (cadr (cddr x)))
+                                  (acl2::ubdd-listp (cadr (cddr x)))
                                   (eq (cddr (cddr x))
                                       nil)))))))))
 
@@ -79,11 +73,11 @@
  (progn
    (defthm norm-listp-is-bfr-listp
      (implies (not (bfr-mode))
-              (iff (norm-truelistp x)
+              (iff (acl2::ubdd-listp x)
                    (bfr-listp x)))
      :hints(("Goal" :in-theory (enable bfr-listp bfr-p))))
 
-   (in-theory (disable norm-truelistp))
+   (in-theory (disable acl2::ubdd-listp))
 
    (defthm wf-g-numberp-bdd-is-wf-g-numberp
      (implies (not (bfr-mode))
@@ -169,7 +163,7 @@
       (and (not (g-keyword-symbolp x)) 'concrete)
     (cond
      ((g-concrete-p x)       'general)
-     ((g-boolean-p x)   (and (acl2::normp (g-boolean->bool x))
+     ((g-boolean-p x)   (and (acl2::ubddp (g-boolean->bool x))
                              'gobject))
      ((g-number-p x)    (and (wf-g-numberp-bdd (g-number->num x))
                              'gobject))
@@ -256,9 +250,9 @@
 
 (local
  (progn
-   (defthmd normp-is-bfr-p
+   (defthmd ubddp-is-bfr-p
      (implies (not (bfr-mode))
-              (iff (acl2::normp x)
+              (iff (acl2::ubddp x)
                    (bfr-p x)))
      :hints(("Goal" :in-theory (enable bfr-p))))
 
@@ -273,7 +267,7 @@
   (implies (not (bfr-mode))
            (equal (gobject-hierarchy-bdd x)
                   (gobject-hierarchy x)))
-  :hints(("Goal" :in-theory (enable normp-is-bfr-p))))
+  :hints(("Goal" :in-theory (enable ubddp-is-bfr-p))))
 
 (defthm gobject-hierarchy-aig-is-gobject-hierarchy
   (implies (bfr-mode)

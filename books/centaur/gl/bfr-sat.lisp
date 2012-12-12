@@ -140,9 +140,9 @@ BFR-COUNTEREX-ALIST.
                             (if (car lst) (car bdd) (cdr bdd)))))))
 
 (defthm to-satisfying-assign-correct
-  (implies (and bdd (acl2::normp bdd))
+  (implies (and bdd (acl2::ubddp bdd))
            (acl2::eval-bdd bdd (to-satisfying-assign lst bdd)))
-  :hints(("Goal" :in-theory (enable acl2::eval-bdd acl2::normp))))
+  :hints(("Goal" :in-theory (enable acl2::eval-bdd acl2::ubddp))))
 
 (defun bfr-ctrex-to-satisfying-assign (assign ctrex)
   (if (eq (bfr-counterex-mode) t) ;; alist

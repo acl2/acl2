@@ -60,17 +60,17 @@
 ;; BDD-DIFF-WITNESS always produces a variable assignment which
 ;; differentiates two BDDs, if they are different:
 (defthm eval-bdd-diff-witness
-  (implies (and (normp a)
-                (normp b)
+  (implies (and (ubddp a)
+                (ubddp b)
                 (not (equal a b)))
            (not (equal (eval-bdd a (bdd-diff-witness a b))
                        (eval-bdd b (bdd-diff-witness a b)))))
-  :hints (("goal" :in-theory (enable eval-bdd normp bdd-diff-witness)
+  :hints (("goal" :in-theory (enable eval-bdd ubddp bdd-diff-witness)
            :induct (bdd-diff-witness a b))))
 
 (defthm eval-bdd-diff-witness-corr
-  (implies (and (normp a)
-                (normp b)
+  (implies (and (ubddp a)
+                (ubddp b)
                 (not (equal a b)))
            (equal (eval-bdd a (bdd-diff-witness a b))
                   (not (eval-bdd b (bdd-diff-witness a b)))))
@@ -111,8 +111,8 @@
 (add-bdd-pats 't 'nil)
 
 
-(defun bdd-termp (x normp-terms patterns)
-  (or (member-equal x normp-terms)
+(defun bdd-termp (x ubddp-terms patterns)
+  (or (member-equal x ubddp-terms)
       (match-term-pattern x patterns)))
 
 
@@ -140,7 +140,7 @@
 
 (defevaluator bdd-cp-ev bdd-cp-evl
   ((bdd-diff-witness a b) (eval-bdd a b) (equal a b) (not a)
-   (normp a)
+   (ubddp a)
    (equal x y)
    (use-these-hints x)
    (implies a b)
@@ -150,11 +150,11 @@
 
 
 
-(defun not-equal-hyps-to-eval-bdds (clause normp-terms patterns)
+(defun not-equal-hyps-to-eval-bdds (clause ubddp-terms patterns)
   (if (atom clause)
       (mv nil nil)
     (mv-let (rst-clause witnesses)
-      (not-equal-hyps-to-eval-bdds (cdr clause) normp-terms patterns)
+      (not-equal-hyps-to-eval-bdds (cdr clause) ubddp-terms patterns)
       (let ((lit (car clause)))
         (mv-let (a b ok)
           (case-match lit
@@ -163,11 +163,11 @@
             (('not a) (mv a ''nil t))
             (& (mv nil nil nil)))
           (if (and ok
-                   (bdd-termp a normp-terms patterns)
-                   (bdd-termp b normp-terms patterns))
+                   (bdd-termp a ubddp-terms patterns)
+                   (bdd-termp b ubddp-terms patterns))
               (mv (cons ;; `(not (eval-bdd (q-binary-xor ,a ,b)
                    ;;                                         (q-sat (q-binary-xor ,a ,b))))
-                   `(not (implies (if (normp ,a) (normp ,b) 'nil)
+                   `(not (implies (if (ubddp ,a) (ubddp ,b) 'nil)
                                   (not (equal (eval-bdd ,a (bdd-diff-witness ,a ,b))
                                               (eval-bdd ,b (bdd-diff-witness ,a ,b))))))
                    rst-clause)
@@ -178,7 +178,7 @@
 (defthm pseudo-term-listp-not-equal-hyps
   (implies (pseudo-term-listp clause)
            (pseudo-term-listp (mv-nth 0 (not-equal-hyps-to-eval-bdds
-                                    clause normp-terms patterns)))))
+                                    clause ubddp-terms patterns)))))
 
 (in-theory (disable bdd-termp))
 
@@ -193,28 +193,28 @@
    (implies (and ;;(pseudo-term-listp clause)
              ;;(alistp a)
              (bdd-cp-ev (disjoin (mv-nth 0 (not-equal-hyps-to-eval-bdds
-                                            clause normp-terms patterns))) a))
+                                            clause ubddp-terms patterns))) a))
             (bdd-cp-ev (disjoin clause) a))
-   :hints (("goal" :induct (not-equal-hyps-to-eval-bdds clause normp-terms
+   :hints (("goal" :induct (not-equal-hyps-to-eval-bdds clause ubddp-terms
                                                         patterns))
            (and (subgoal-of "subgoal *1/" id)
                 '(:in-theory
                   (disable not-equal-hyps-to-eval-bdds
                            eval-bdd-of-q-xor)
-                  :expand ((not-equal-hyps-to-eval-bdds clause normp-terms
+                  :expand ((not-equal-hyps-to-eval-bdds clause ubddp-terms
                                                         patterns)
-                           (not-equal-hyps-to-eval-bdds nil normp-terms
+                           (not-equal-hyps-to-eval-bdds nil ubddp-terms
                                                         patterns)))))))
 
 
-;; ;; The hint consists of (list normp-terms patterns), where normp-terms is a list
+;; ;; The hint consists of (list ubddp-terms patterns), where ubddp-terms is a list
 ;; ;; of terms that will be considered BDDs (it should be provable that they are
-;; ;; each normp.)
+;; ;; each ubddp.)
 ;; (defun not-equal-hyps-to-eval-bdds-cp (clause hint)
-;;   (mv-let (new-clause normp-hyps)
+;;   (mv-let (new-clause ubddp-hyps)
 ;;     (not-equal-hyps-to-eval-bdds clause (car hint) (cadr hint))
 ;;     (list new-clause
-;;           (cons (conjoin normp-hyps) clause))))
+;;           (cons (conjoin ubddp-hyps) clause))))
 
 ;; (defthm not-equal-hyps-to-eval-bdds-cp-correct
 ;;   (implies (and (pseudo-term-listp clause)
@@ -225,7 +225,7 @@
 ;;            (bdd-cp-ev (disjoin clause) a))
 ;;   :hints (("goal" :use ((:instance not-equal-hyps-to-eval-bdds-correct
 ;;                                    (patterns (cadr hint))
-;;                                    (normp-terms (car hint))))
+;;                                    (ubddp-terms (car hint))))
 ;;            :in-theory (disable not-equal-hyps-to-eval-bdds-correct)))
 ;;   :rule-classes :clause-processor)
 
@@ -298,11 +298,11 @@
 
 (in-theory (disable instantiate-eval-bdds))
 
-(defun instantiate-equals-with-eval-bdds (clause vals normp-terms patterns)
+(defun instantiate-equals-with-eval-bdds (clause vals ubddp-terms patterns)
   (if (atom clause)
       nil
     (let* ((rst-clause (instantiate-equals-with-eval-bdds
-                        (cdr clause) vals normp-terms patterns))
+                        (cdr clause) vals ubddp-terms patterns))
            (lit (car clause)))
       (mv-let (a b)
         (case-match lit
@@ -310,8 +310,8 @@
            (mv a b))
           (a (mv a ''nil))
           (& (mv nil nil)))
-        (if (and (bdd-termp a normp-terms patterns)
-                 (bdd-termp b normp-terms patterns))
+        (if (and (bdd-termp a ubddp-terms patterns)
+                 (bdd-termp b ubddp-terms patterns))
             (cons (disjoin (instantiate-eval-bdds a b vals))
                   rst-clause)
           (cons lit rst-clause))))))
@@ -320,11 +320,11 @@
   (implies (and ;;(pseudo-term-listp clause)
                 ;;(alistp a)
                 (bdd-cp-ev (disjoin (instantiate-equals-with-eval-bdds
-                                     clause vals normp-terms patterns))
+                                     clause vals ubddp-terms patterns))
                            a))
            (bdd-cp-ev (disjoin clause) a))
   :hints (("goal" :induct (instantiate-equals-with-eval-bdds
-                           clause vals normp-terms patterns))))
+                           clause vals ubddp-terms patterns))))
 
 
 
@@ -332,21 +332,21 @@
   (implies (and (pseudo-term-listp clause)
                 (pseudo-term-listp vals))
            (pseudo-term-listp (instantiate-equals-with-eval-bdds
-                               clause vals normp-terms patterns))))
+                               clause vals ubddp-terms patterns))))
 
 
-;; hints are: normp-terms, patterns
+;; hints are: ubddp-terms, patterns
 (defun eval-bdd-cp (clause hints)
-  (let* ((normp-terms (car hints))
+  (let* ((ubddp-terms (car hints))
          (patterns (cadr hints))
          (given-witnesses (caddr hints)))
     (mv-let (new-clause witnesses)
       (if given-witnesses
           (mv clause given-witnesses)
-        (not-equal-hyps-to-eval-bdds clause normp-terms patterns))
+        (not-equal-hyps-to-eval-bdds clause ubddp-terms patterns))
       (let* ((vals (eval-bdd-vals new-clause))
              (new-clause (instantiate-equals-with-eval-bdds
-                          new-clause vals normp-terms patterns)))
+                          new-clause vals ubddp-terms patterns)))
         (if given-witnesses
             (list new-clause)
           (let* ((symbols (make-n-vars (len witnesses) 'bdd-vals 0
@@ -389,16 +389,16 @@
                    replace-alist-to-bindings-bdd))))))
 
 (defun alist-for-eval-bdd-cp (clause hints a)
-  (let* ((normp-terms (car hints))
+  (let* ((ubddp-terms (car hints))
          (patterns (cadr hints))
          (given-witnesses (caddr hints)))
     (mv-let (new-clause witnesses)
       (if given-witnesses
           (mv clause given-witnesses)
-        (not-equal-hyps-to-eval-bdds clause normp-terms patterns))
+        (not-equal-hyps-to-eval-bdds clause ubddp-terms patterns))
       (let* ((vals (eval-bdd-vals new-clause))
              (new-clause (instantiate-equals-with-eval-bdds
-                          new-clause vals normp-terms patterns)))
+                          new-clause vals ubddp-terms patterns)))
         (if given-witnesses
             a
           (let* ((symbols (make-n-vars (len witnesses) 'bdd-vals 0
@@ -422,16 +422,16 @@
   :hints ((let ((new-clause '(mv-nth 0 (not-equal-hyps-to-eval-bdds
                                         clause (car hints) (cadr hints)))))
             `(:use ((:instance not-equal-hyps-to-eval-bdds-correct
-                               (normp-terms (car hints))
+                               (ubddp-terms (car hints))
                                (patterns (cadr hints)))
                     (:instance instantiate-equals-with-eval-bdds-correct
                                (clause ,new-clause)
-                               (normp-terms (car hints))
+                               (ubddp-terms (car hints))
                                (vals (eval-bdd-vals ,new-clause))
                                (patterns (cadr hints)))
                     (:instance instantiate-equals-with-eval-bdds-correct
                                (clause clause)
-                               (normp-terms (car hints))
+                               (ubddp-terms (car hints))
                                (vals (eval-bdd-vals clause))
                                (patterns (cadr hints))))
                    :in-theory (disable not-equal-hyps-to-eval-bdds-correct
@@ -443,20 +443,20 @@
 
 
 
-(defun find-normp-terms (clause)
+(defun find-ubddp-terms (clause)
   (if (atom clause)
       nil
     (let ((lit (car clause))
-          (rst (find-normp-terms (cdr clause))))
+          (rst (find-ubddp-terms (cdr clause))))
       (case-match lit
-        (('not ('normp x))
+        (('not ('ubddp x))
          (cons x rst))
         (& rst)))))
 
 
 
 (defun eval-bdd-cp-hint (clause patterns)
-  `(:clause-processor (eval-bdd-cp clause (list ',(find-normp-terms clause)
+  `(:clause-processor (eval-bdd-cp clause (list ',(find-ubddp-terms clause)
                                                 ',patterns))))
 
 
@@ -504,7 +504,7 @@
 (in-theory (disable eval-bdd-cp-hint))
 
 
-;;   `(:or ((:clause-processor (eval-bdd-cp clause (list ',(find-normp-terms clause)
+;;   `(:or ((:clause-processor (eval-bdd-cp clause (list ',(find-ubddp-terms clause)
 ;;                                                       ',(bdd-patterns))))
 ;;          (:null nil))))
 
@@ -522,7 +522,7 @@
    (in-theory (enable eval-bdd-cp-hint))
 
    (defthm ex1
-     (implies (and (normp a) (normp b) (normp c)
+     (implies (and (ubddp a) (ubddp b) (ubddp c)
                    (not (q-ite a b c)))
               (not (q-and (q-implies a b)
                           (q-implies (q-not a) c))))
@@ -530,7 +530,7 @@
 
 
    (defthm ex2
-     (implies (and (normp a) (normp b) (normp c)
+     (implies (and (ubddp a) (ubddp b) (ubddp c)
                    (not (q-and (q-implies a b) (q-implies (q-not a) c))))
               (not (q-ite a b c)))
      :rule-classes nil)
@@ -539,7 +539,7 @@
 
 
    (defthm ex3
-     (implies (and (normp x) (normp hyp)
+     (implies (and (ubddp x) (ubddp hyp)
                    (equal (let ((and (q-and x hyp)))
                             (if and (if (hqual and hyp) t x) nil))
                           x)
@@ -552,7 +552,7 @@
 
 
    (defthm ex4
-     (implies (and (normp c) (normp hyp) hyp
+     (implies (and (ubddp c) (ubddp hyp) hyp
                    (equal (let ((and (q-and c hyp)))
                             (if and (if (hqual and hyp) t c) nil))
                           c))

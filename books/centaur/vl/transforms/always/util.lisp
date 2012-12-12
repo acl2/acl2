@@ -169,3 +169,28 @@ singleton statemetn list.</p>"
   :result-type vl-exprlist-p
   :parents (vl-evatomlist-p))
 
+
+(local (defthm consp-of-vl-evatom->expr
+         (implies (force (vl-evatom-p x))
+                  (consp (vl-evatom->expr x)))
+         :rule-classes :type-prescription))
+
+(define vl-match-posedge-clk ((x vl-always-p))
+  :returns (mv (clk  :hyp :fguard (equal (vl-expr-p clk) (if clk t nil)))
+               (body :hyp :fguard (equal (vl-stmt-p body) (if clk t nil))))
+  :parents (vl-always-p timing-statements)
+  :short "Match @('always @(posedge clk) body')."
+  (b* ((stmt (vl-always->stmt x))
+       ((unless (vl-timingstmt-p stmt))
+        (mv nil nil))
+       ((vl-timingstmt stmt) stmt)
+       ;; Try to match ctrl with (posedge clk)
+       ((unless (and (eq (tag stmt.ctrl) :vl-eventcontrol)
+                     (not (vl-eventcontrol->starp stmt.ctrl))))
+        (mv nil nil))
+       (evatoms (vl-eventcontrol->atoms stmt.ctrl))
+       ((unless (and (eql (len evatoms) 1)
+                     (eq (vl-evatom->type (car evatoms)) :vl-posedge)))
+        (mv nil nil))
+       (clk (vl-evatom->expr (car evatoms))))
+    (mv clk stmt.body)))

@@ -412,6 +412,8 @@ a module."
                                 (vl-ok-to-inline-p sub)
                                 (vl-module-p x))))
     (b* (((vl-module x) x)
+         ((when (vl-module->hands-offp x))
+          x)
          (nf (vl-starting-namefactory x))
          ((mv nf modinsts gateinsts assigns netdecls warnings)
           (vl-inline-mod-in-modinsts sub x.modinsts nf x.warnings)))

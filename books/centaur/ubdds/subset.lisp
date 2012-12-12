@@ -54,8 +54,8 @@
                 t))
              ((atom y)
               ;; [Jared]: I changed this case slightly to better-handle
-              ;; non-normp objects.  With this change, we get the mbe
-              ;; equivalence without normp hyps.
+              ;; non-ubddp objects.  With this change, we get the mbe
+              ;; equivalence without ubddp hyps.
               (if y t nil))
              ((hons-equal x y)
               t)
@@ -130,7 +130,7 @@
                                                  (equal (qs-subset x z)
                                                         t))))
     :hints(("Goal" :in-theory (e/d (qs-subset)
-                                   (normp-of-q-implies canonicalize-q-implies))))))
+                                   (ubddp-of-q-implies canonicalize-q-implies))))))
 
 
 
@@ -138,20 +138,20 @@
 
 (defsection qs-subset-by-eval-bdds
 
-  (local (in-theory (disable canonicalize-q-implies normp-of-q-implies)))
+  (local (in-theory (disable canonicalize-q-implies ubddp-of-q-implies)))
   (local (in-theory (enable qs-subset)))
 
   (encapsulate
-   (((qs-subset-hyps) => *)
-    ((qs-subset-lhs) => *)
-    ((qs-subset-rhs) => *))
-   (local (defun qs-subset-hyps () nil))
-   (local (defun qs-subset-lhs () nil))
-   (local (defun qs-subset-rhs () nil))
-   (defthmd qs-subset-by-eval-bdds-constraint
-     (implies (qs-subset-hyps)
-              (implies (eval-bdd (qs-subset-lhs) arbitrary-values)
-                       (eval-bdd (qs-subset-rhs) arbitrary-values)))))
+    (((qs-subset-hyps) => *)
+     ((qs-subset-lhs) => *)
+     ((qs-subset-rhs) => *))
+    (local (defun qs-subset-hyps () nil))
+    (local (defun qs-subset-lhs () nil))
+    (local (defun qs-subset-rhs () nil))
+    (defthmd qs-subset-by-eval-bdds-constraint
+      (implies (qs-subset-hyps)
+               (implies (eval-bdd (qs-subset-lhs) arbitrary-values)
+                        (eval-bdd (qs-subset-rhs) arbitrary-values)))))
 
 
   (local (defund qs-subset-badguy (x y)
@@ -161,15 +161,15 @@
                ;; At least one of them is a cons.  We descend both trees and try
                ;; to discover a path that will break their equality.
                (mv-let (car-successp car-path)
-                       (qs-subset-badguy (qcar x) (qcar y))
-                       (if car-successp
-                           ;; We took the "true" branch.
-                           (mv t (cons t car-path))
-                         (mv-let (cdr-successp cdr-path)
-                                 (qs-subset-badguy (qcdr x) (qcdr y))
-                                 (if cdr-successp
-                                     (mv t (cons nil cdr-path))
-                                   (mv nil nil)))))
+                 (qs-subset-badguy (qcar x) (qcar y))
+                 (if car-successp
+                     ;; We took the "true" branch.
+                     (mv t (cons t car-path))
+                   (mv-let (cdr-successp cdr-path)
+                     (qs-subset-badguy (qcdr x) (qcdr y))
+                     (if cdr-successp
+                         (mv t (cons nil cdr-path))
+                       (mv nil nil)))))
              ;; Otherwise, both are atoms.  Does x imply y?  If not, we have found
              ;; a violation.
              (mv (not (implies x y)) nil))))
@@ -207,7 +207,8 @@
                                (IF Y
                                    T
                                    (equal t (Q-NOT X))))))
-           :hints(("Goal" :in-theory (enable q-implies)))))
+           :hints(("Goal" :in-theory (e/d* (q-implies)
+                                           (canonicalize-to-q-ite))))))
 
   (local (defthm equal-t-of-q-implies-of-cons
            (equal (equal t (q-implies (cons a x) (cons b y)))
@@ -217,21 +218,21 @@
 
   (local (defthm lemma2
            ;; BOZO can anything be done about these hyps?
-           (implies (and (normp x)
-                         (normp y))
+           (implies (and (ubddp x)
+                         (ubddp y))
                     (equal (car (qs-subset-badguy x y))
                            (not (equal t (qs-subset x y)))))
            :hints(("Goal"
                    :induct (qs-subset-badguy x y)
-                   :in-theory (e/d (qs-subset-badguy normp q-not)
+                   :in-theory (e/d (qs-subset-badguy ubddp q-not)
                                    (q-implies-of-nil
                                     equal-by-eval-bdds
                                     canonicalize-q-not))))))
 
   (defthm qs-subset-by-eval-bdds
     (implies (and (qs-subset-hyps)
-                  (normp (qs-subset-lhs))
-                  (normp (qs-subset-rhs)))
+                  (ubddp (qs-subset-lhs))
+                  (ubddp (qs-subset-rhs)))
              (equal (qs-subset (qs-subset-lhs) (qs-subset-rhs))
                     t))
     :hints(("Goal"
@@ -242,31 +243,31 @@
   (defun qs-subset-by-eval-bdds-hint (clause pspv stable world)
     (declare (xargs :mode :program))
     (and stable
-      (let* ((rcnst (access prove-spec-var pspv :rewrite-constant))
-             (ens   (access rewrite-constant rcnst :current-enabled-structure)))
-        (and (enabled-numep (fnume '(:rewrite qs-subset-by-eval-bdds) world) ens)
-             (let ((conclusion (car (last clause))))
-               (and (consp conclusion)
-                    (eq (car conclusion) 'qs-subset)
-                    (let* ((lhs  (second conclusion))
-                           (rhs  (third conclusion))
-                           (hyps (dumb-negate-lit-lst (butlast clause 1)))
-                           ;; We always think they are normp's if we're asking about qs-subset, so
-                           ;; we don't consult the rewriter.
-                           (hint `(:use (:functional-instance qs-subset-by-eval-bdds
-                                          (qs-subset-hyps (lambda () (and ,@hyps)))
-                                          (qs-subset-lhs  (lambda () ,lhs))
-                                          (qs-subset-rhs  (lambda () ,rhs))))))
-                      (prog2$
-                       ;; And tell the user what's happening.
-                       (cw "~|~%We now appeal to ~s0 in an attempt to show that ~x1 is a ~
+         (let* ((rcnst (access prove-spec-var pspv :rewrite-constant))
+                (ens   (access rewrite-constant rcnst :current-enabled-structure)))
+           (and (enabled-numep (fnume '(:rewrite qs-subset-by-eval-bdds) world) ens)
+                (let ((conclusion (car (last clause))))
+                  (and (consp conclusion)
+                       (eq (car conclusion) 'qs-subset)
+                       (let* ((lhs  (second conclusion))
+                              (rhs  (third conclusion))
+                              (hyps (dumb-negate-lit-lst (butlast clause 1)))
+                              ;; We always think they are ubddp's if we're asking about qs-subset, so
+                              ;; we don't consult the rewriter.
+                              (hint `(:use (:functional-instance qs-subset-by-eval-bdds
+                                                                 (qs-subset-hyps (lambda () (and ,@hyps)))
+                                                                 (qs-subset-lhs  (lambda () ,lhs))
+                                                                 (qs-subset-rhs  (lambda () ,rhs))))))
+                         (prog2$
+                          ;; And tell the user what's happening.
+                          (cw "~|~%We now appeal to ~s0 in an attempt to show that ~x1 is a ~
                           qs-subset of ~x2.  (You can disable ~s0 to avoid this.)  ~
                           The hint we give is: ~x3~|~%"
-                           'qs-subset-by-eval-bdds
-                           (untranslate lhs nil world)
-                           (untranslate rhs nil world)
-                           hint)
-                       hint))))))))
+                              'qs-subset-by-eval-bdds
+                              (untranslate lhs nil world)
+                              (untranslate rhs nil world)
+                              hint)
+                          hint))))))))
 
   (add-default-hints!
    '((qs-subset-by-eval-bdds-hint clause pspv stable-under-simplificationp world))))
@@ -284,16 +285,16 @@
   ;; relationships will become more apparent.
 
   (local (defthm lemma
-           (implies (and (normp x)
-                         (normp y)
+           (implies (and (ubddp x)
+                         (ubddp y)
                          (qs-subset x y)
                          (qs-subset y x))
                     (equal (equal x y)
                            t))))
 
   (defthm bdd-equality-is-double-containment
-    (implies (and (normp x)
-                  (normp y))
+    (implies (and (ubddp x)
+                  (ubddp y))
              (equal (equal x y)
                     (and (qs-subset x y)
                          (qs-subset y x)))))
@@ -305,7 +306,7 @@
   (in-theory (disable equal-by-eval-bdds))
 
 
-  ;; An bit of a catch is that booleans are normp's too, so we will now be
+  ;; An bit of a catch is that booleans are ubddp's too, so we will now be
   ;; rewriting equalities between booleans as qs-subset's.  To fix this, replace
   ;; subsets between booleans with implies, and the net effect is no different
   ;; than equal-of-booleans-rewrite, though more roundabout.
@@ -327,13 +328,13 @@
 ;; They break the normal form of q-subset.
 
 (defthmd |(qs-subset x nil)|
-  (implies (normp x)
+  (implies (ubddp x)
            (equal (qs-subset x nil)
                   (not (double-rewrite x))))
   :hints(("Goal" :in-theory (enable equal-by-eval-bdds))))
 
 (defthmd |(qs-subset t x)|
-  (implies (force (normp x))
+  (implies (force (ubddp x))
            (equal (qs-subset t x)
                   (equal x t))))
 
@@ -351,7 +352,7 @@
     ;; X != NIL --> ~(subset X NIL) v ~(subset NIL Y)
     ;;          --> ~(subset X NIL) v ~(T)
     ;;          --> ~(subset X NIL)
-    (implies (normp x)
+    (implies (ubddp x)
              (iff x
                   (not (qs-subset x nil))))
     :rule-classes nil
@@ -366,64 +367,64 @@
   ;; we know makes a BDD.  It's lousy but maybe it's good enough?
 
   (defthm q-ite-iff-for-qs-subset-mode
-    (implies (and (force (normp x))
-                  (force (normp y))
-                  (force (normp z)))
+    (implies (and (force (ubddp x))
+                  (force (ubddp y))
+                  (force (ubddp z)))
              (iff (q-ite x y z)
                   (not (qs-subset (q-ite x y z) nil))))
     :hints(("Goal" :use ((:instance qs-subset-canonicalization-of-iff
                                     (x (q-ite x y z)))))))
 
   (defthm q-not-iff-for-qs-subset-mode
-    (implies (normp x)
+    (implies (ubddp x)
              (iff (q-not x)
                   (not (qs-subset (q-not x) nil)))))
 
   (defthm q-and-iff-for-qs-subset-mode
-    (implies (and (force (normp x))
-                  (force (normp y)))
+    (implies (and (force (ubddp x))
+                  (force (ubddp y)))
              (iff (q-and x y)
                   (not (qs-subset (q-and x y) nil)))))
 
   (defthm q-or-iff-for-qs-subset-mode
-    (implies (and (force (normp x))
-                  (force (normp y)))
+    (implies (and (force (ubddp x))
+                  (force (ubddp y)))
              (iff (q-or x y)
                   (not (qs-subset (q-or x y) nil)))))
 
   (defthm q-implies-iff-for-qs-subset-mode
-    (implies (and (force (normp x))
-                  (force (normp y)))
+    (implies (and (force (ubddp x))
+                  (force (ubddp y)))
              (iff (q-implies x y)
                   (not (qs-subset (q-implies x y) nil)))))
 
   (defthm q-or-c2-iff-for-qs-subset-mode
-    (implies (and (force (normp x))
-                  (force (normp y)))
+    (implies (and (force (ubddp x))
+                  (force (ubddp y)))
              (iff (q-or-c2 x y)
                   (not (qs-subset (q-or-c2 x y) nil)))))
 
   (defthm q-and-c1-iff-for-qs-subset-mode
-    (implies (and (force (normp x))
-                  (force (normp y)))
+    (implies (and (force (ubddp x))
+                  (force (ubddp y)))
              (iff (q-and-c1 x y)
                   (not (qs-subset (q-and-c1 x y) nil)))))
 
   (defthm q-and-c2-iff-for-qs-subset-mode
-    (implies (and (force (normp x))
-                  (force (normp y)))
+    (implies (and (force (ubddp x))
+                  (force (ubddp y)))
              (iff (q-and-c2 x y)
                   (not (qs-subset (q-and-c2 x y) nil)))))
 
   (defthm q-iff-iff-for-qs-subset-mode
-    (implies (and (force (normp x))
-                  (force (normp y)))
+    (implies (and (force (ubddp x))
+                  (force (ubddp y)))
              (iff (q-iff x y)
                   (not (qs-subset (q-iff x y) nil)))))
 
   (defthm q-xor-iff-for-qs-subset-mode
-    (implies (and (force (normp x))
-                  (force (normp y)))
+    (implies (and (force (ubddp x))
+                  (force (ubddp y)))
              (iff (q-xor x y)
                   (not (qs-subset (q-xor x y) nil)))))
 
@@ -455,37 +456,37 @@
   ;; are both subsets of W.
 
  (local (defthmd lemma
-          (implies (and (force (normp x))
-                        (force (normp y))
-                        (force (normp z))
-                        (force (normp w))
+          (implies (and (force (ubddp x))
+                        (force (ubddp y))
+                        (force (ubddp z))
+                        (force (ubddp w))
                         (qs-subset (q-ite x y nil) w)
                         (qs-subset (q-ite x nil z) w))
                    (qs-subset (q-ite x y z) w))))
 
  (local (defthmd lemma2
           (implies (and (qs-subset (q-ite x y z) w)
-                        (force (normp x))
-                        (force (normp y))
-                        (force (normp z))
-                        (force (normp w)))
+                        (force (ubddp x))
+                        (force (ubddp y))
+                        (force (ubddp z))
+                        (force (ubddp w)))
                    (qs-subset (q-ite x y nil) w))))
 
  (local (defthmd lemma3
           (implies (and (qs-subset (q-ite x y z) w)
-                        (force (normp x))
-                        (force (normp y))
-                        (force (normp z))
-                        (force (normp w)))
+                        (force (ubddp x))
+                        (force (ubddp y))
+                        (force (ubddp z))
+                        (force (ubddp w)))
                    (qs-subset (q-ite x nil z) w))))
 
  (defthm qs-subset-of-q-ite-left
    (implies (and (syntaxp (not (equal y ''nil)))
                  (syntaxp (not (equal z ''nil)))
-                 (force (normp x))
-                 (force (normp y))
-                 (force (normp z))
-                 (force (normp w)))
+                 (force (ubddp x))
+                 (force (ubddp y))
+                 (force (ubddp z))
+                 (force (ubddp w)))
             (equal (qs-subset (q-ite x y z) w)
                    (and (qs-subset (q-ite x y nil) w)
                         (qs-subset (q-ite x nil z) w))))
@@ -502,36 +503,36 @@
   ;;  2. (INTERSECT (NOT X) W) is a subset of Z.
 
  (local (defthmd lemma
-          (implies (and (force (normp x))
-                        (force (normp y))
-                        (force (normp z))
-                        (force (normp w))
+          (implies (and (force (ubddp x))
+                        (force (ubddp y))
+                        (force (ubddp z))
+                        (force (ubddp w))
                         (qs-subset (q-ite w x nil) y)
                         (qs-subset (q-ite x nil w) z))
                    (qs-subset w (q-ite x y z)))))
 
  (local (defthmd lemma2
           (implies (and (qs-subset w (q-ite x y z))
-                        (force (normp x))
-                        (force (normp y))
-                        (force (normp z))
-                        (force (normp w)))
+                        (force (ubddp x))
+                        (force (ubddp y))
+                        (force (ubddp z))
+                        (force (ubddp w)))
                    (qs-subset (q-ite w x nil) y))))
 
  (local (defthmd lemma3
           (implies (and (qs-subset w (q-ite x y z))
-                        (force (normp x))
-                        (force (normp y))
-                        (force (normp z))
-                        (force (normp w)))
+                        (force (ubddp x))
+                        (force (ubddp y))
+                        (force (ubddp z))
+                        (force (ubddp w)))
                    (qs-subset (q-ite x nil w) z))))
 
  (defthm qs-subset-of-q-ite-right
    ;; I don't think we need syntax rules here because we're always moving stuff to the left.
-   (implies (and (force (normp x))
-                 (force (normp y))
-                 (force (normp z))
-                 (force (normp w)))
+   (implies (and (force (ubddp x))
+                 (force (ubddp y))
+                 (force (ubddp z))
+                 (force (ubddp w)))
             (equal (qs-subset w (q-ite x y z))
                    (and (qs-subset (q-ite w x nil) y)
                         (qs-subset (q-ite x nil w) z))))
@@ -546,29 +547,29 @@
   ;; (SUBSET (INTERSECT (NOT X) Y) X) = (SUBSET Y X)
 
   (local (defthmd gross
-           (implies (and (force (normp x))
-                         (force (normp y))
+           (implies (and (force (ubddp x))
+                         (force (ubddp y))
                          (qs-subset (q-ite x nil y) x)
                          (eval-bdd y values))
                     (eval-bdd x values))
            :hints(("Goal" :use ((:instance eval-bdd-of-q-ite (y nil) (z y)))))))
 
   (local (defthmd lemma
-           (implies (and (force (normp x))
-                         (force (normp y))
+           (implies (and (force (ubddp x))
+                         (force (ubddp y))
                          (qs-subset (q-ite x nil y) x))
                     (qs-subset y x))
            :hints(("Goal" :in-theory (enable gross)))))
 
   (local (defthmd lemma2
-           (implies (and (force (normp x))
-                         (force (normp y))
+           (implies (and (force (ubddp x))
+                         (force (ubddp y))
                          (qs-subset y x))
                     (qs-subset (q-ite x nil y) x))))
 
   (defthm |(qs-subset (q-ite x nil y) x)|
-    (implies (and (force (normp x))
-                  (force (normp y)))
+    (implies (and (force (ubddp x))
+                  (force (ubddp y)))
              (equal (qs-subset (q-ite x nil y) x)
                     (qs-subset y x)))
     :hints(("Goal" :use ((:instance lemma)
@@ -581,29 +582,29 @@
   ;; (SUBSET (INTERSECT (NOT X) Y) NIL) = (SUBSET Y X)
 
   (local (defthmd gross
-           (implies (and (normp x)
-                         (normp y)
+           (implies (and (ubddp x)
+                         (ubddp y)
                          (qs-subset (q-ite x nil y) nil)
                          (eval-bdd y values))
                     (eval-bdd x values))
            :hints(("goal" :use ((:instance eval-bdd-of-q-ite (y nil) (z y)))))))
 
   (local (defthmd lemma
-           (implies (and (normp x)
-                         (normp y)
+           (implies (and (ubddp x)
+                         (ubddp y)
                          (qs-subset (q-ite x nil y) nil))
                     (qs-subset y x))
            :hints(("Goal" :in-theory (enable gross)))))
 
   (local (defthmd lemma2
-           (implies (and (normp x)
-                         (normp y)
+           (implies (and (ubddp x)
+                         (ubddp y)
                          (qs-subset y x))
                     (qs-subset (q-ite x nil y) nil))))
 
   (defthm |(qs-subset (q-ite x nil y) nil)|
-    (implies (and (force (normp x))
-                  (force (normp y)))
+    (implies (and (force (ubddp x))
+                  (force (ubddp y)))
              (equal (qs-subset (q-ite x nil y) nil)
                     (qs-subset y x)))
     :hints(("Goal" :use ((:instance lemma)
@@ -616,23 +617,23 @@
 ;; QS-SUBSET of Q-AND
 
 (defthm |(qs-subset (q-ite x y nil) x)|
-  (implies (and (force (normp x))
-                (force (normp y)))
+  (implies (and (force (ubddp x))
+                (force (ubddp y)))
            (qs-subset (q-ite x y nil) x)))
 
 (defthm |(qs-subset (q-ite x y nil) y)|
-  (implies (and (force (normp x))
-                (force (normp y)))
+  (implies (and (force (ubddp x))
+                (force (ubddp y)))
            (qs-subset (q-ite x y nil) y)))
 
 (defthm |(qs-subset (q-and x y) x)|
-  (implies (and (force (normp x))
-                (force (normp y)))
+  (implies (and (force (ubddp x))
+                (force (ubddp y)))
            (qs-subset (q-and x y) x)))
 
 (defthm |(qs-subset (q-and x y) y)|
-  (implies (and (force (normp x))
-                (force (normp y)))
+  (implies (and (force (ubddp x))
+                (force (ubddp y)))
            (qs-subset (q-and x y) y)))
 
 
@@ -643,37 +644,37 @@
 (encapsulate
  ()
  (local (defthmd lemma
-          (implies (and (force (normp x))
-                        (force (normp y))
+          (implies (and (force (ubddp x))
+                        (force (ubddp y))
                         (qs-subset x y))
                    (equal (qs-subset x (q-and x y))
                           t))))
 
  (local (defthmd lemma2
-          (implies (and (force (normp x))
-                        (force (normp y))
+          (implies (and (force (ubddp x))
+                        (force (ubddp y))
                         (qs-subset x (q-and x y)))
                    (equal (qs-subset x y)
                           t))))
 
  (defthm |(qs-subset x (q-and x y))|
-   (implies (and (force (normp x))
-                 (force (normp y)))
+   (implies (and (force (ubddp x))
+                 (force (ubddp y)))
             (equal (qs-subset x (q-and x y))
                    (qs-subset x y)))
    :hints(("Goal" :use ((:instance lemma)
                         (:instance lemma2))))))
 
 (defthm |(qs-subset x (q-ite x y nil))|
-  (implies (and (force (normp x))
-                (force (normp y)))
+  (implies (and (force (ubddp x))
+                (force (ubddp y)))
            (equal (qs-subset x (q-ite x y nil))
                   (qs-subset x y)))
   :hints(("Goal" :use ((:instance |(qs-subset x (q-and x y))|)))))
 
 (defthm |(qs-subset y (q-and x y))|
-   (implies (and (force (normp x))
-                 (force (normp y)))
+   (implies (and (force (ubddp x))
+                 (force (ubddp y)))
             (equal (qs-subset y (q-and x y))
                    (qs-subset y x)))
    :hints(("Goal"
@@ -685,8 +686,8 @@
                             (y x))))))
 
 (defthm |(qs-subset y (q-ite x y nil))|
-   (implies (and (force (normp x))
-                 (force (normp y)))
+   (implies (and (force (ubddp x))
+                 (force (ubddp y)))
             (equal (qs-subset y (q-ite x y nil))
                    (qs-subset y x)))
    :hints(("Goal" :use ((:instance |(qs-subset y (q-and x y))|)))))
@@ -698,23 +699,23 @@
 ;; QS-SUBSET of Q-OR
 
 (defthm |(qs-subset x (q-ite x t y))|
-  (implies (and (force (normp x))
-                (force (normp y)))
+  (implies (and (force (ubddp x))
+                (force (ubddp y)))
            (qs-subset x (q-ite x t y))))
 
 (defthm |(qs-subset y (q-ite x t y))|
-  (implies (and (force (normp x))
-                (force (normp y)))
+  (implies (and (force (ubddp x))
+                (force (ubddp y)))
            (qs-subset y (q-ite x t y))))
 
 (defthm |(qs-subset x (q-or x y))|
-  (implies (and (force (normp x))
-                (force (normp y)))
+  (implies (and (force (ubddp x))
+                (force (ubddp y)))
            (qs-subset x (q-or x y))))
 
 (defthm |(qs-subset y (q-or x y))|
-  (implies (and (force (normp x))
-                (force (normp y)))
+  (implies (and (force (ubddp x))
+                (force (ubddp y)))
            (qs-subset y (q-or x y))))
 
 
@@ -722,35 +723,35 @@
 (encapsulate
  ()
  (local (defthmd lemma
-          (implies (and (force (normp x))
-                        (force (normp y))
+          (implies (and (force (ubddp x))
+                        (force (ubddp y))
                         (qs-subset (q-or x y) x))
                    (qs-subset y x))))
 
  (local (defthmd lemma2
-          (implies (and (force (normp x))
-                        (force (normp y))
+          (implies (and (force (ubddp x))
+                        (force (ubddp y))
                         (qs-subset y x))
                    (qs-subset (q-or x y) x))))
 
  (defthm |(qs-subset (q-or x y) x)|
-   (implies (and (force (normp x))
-                 (force (normp y)))
+   (implies (and (force (ubddp x))
+                 (force (ubddp y)))
             (equal (qs-subset (q-or x y) x)
                    (qs-subset y x)))
    :hints(("Goal" :use ((:instance lemma)
                         (:instance lemma2))))))
 
 (defthm |(qs-subset (q-ite x t y) x)|
-  (implies (and (force (normp x))
-                (force (normp y)))
+  (implies (and (force (ubddp x))
+                (force (ubddp y)))
            (equal (qs-subset (q-ite x t y) x)
                   (qs-subset y x)))
   :hints(("Goal" :use ((:instance |(qs-subset (q-or x y) x)|)))))
 
 (defthm |(qs-subset (q-or x y) y)|
-  (implies (and (force (normp x))
-                (force (normp y)))
+  (implies (and (force (ubddp x))
+                (force (ubddp y)))
            (equal (qs-subset (q-or x y) y)
                   (qs-subset x y)))
   :hints(("Goal"
@@ -759,8 +760,8 @@
                            (x y) (y x))))))
 
 (defthm |(qs-subset (q-ite x t y) y)|
-  (implies (and (force (normp x))
-                (force (normp y)))
+  (implies (and (force (ubddp x))
+                (force (ubddp y)))
            (equal (qs-subset (q-ite x t y) y)
                   (qs-subset x y)))
   :hints(("Goal" :use ((:instance |(qs-subset (q-or x y) y)|)))))
@@ -773,10 +774,10 @@
 #||
 
 (thm
-  (IMPLIES (AND (NORMP C)
+  (IMPLIES (AND (UBDDP C)
                 (Q-ITE C HYP NIL)
                 (NOT (EQUAL (Q-ITE C HYP NIL) HYP))
-                (NORMP HYP)
+                (UBDDP HYP)
                 (not (qs-subset hyp nil))
                 (NOT (EQUAL C T))
                 (NOT (Q-ITE C NIL HYP))

@@ -35,6 +35,13 @@
 
 
 (defsection cheap-and-expensive-arguments
+  :parents (ubdd-constructors)
+  :short "Sort arguments into those that we think are definitely cheap to evaluate
+versus those that may be expensive."
+
+  :long "<p>This is the same idea as in @(see q-ite).  Variables and quoted
+constants are cheap to evaluate, so in associative/commutative operations like
+@(see q-and) we prefer to evaluate them first.</p>"
 
   (defun cheap-and-expensive-arguments-aux (x cheap expensive)
     (declare (xargs :mode :program))
@@ -53,10 +60,27 @@
 
 
 (defsection q-and
+  :parents (ubdd-constructors)
+  :short "@(call q-and) constructs a UBDD representing the conjunction of its
+arguments."
 
-  ;; This is sort of styled after other associative/commutative functions like
-  ;; append and plus, where we begin by introducing an actual function to do the
-  ;; "binary" version of the function.
+  :long "<p>In the logic,</p>
+
+@({
+ (Q-AND)        = T
+ (Q-AND X)      = X
+ (Q-AND X Y)   = (Q-BINARY-AND X Y)
+ (Q-AND X Y Z) = (Q-BINARY-AND X (Q-BINARY-AND Y Z))
+ ... etc ...
+})
+
+<p>But as a special optimization, in the execution, when there is more than one
+argument, we can sometimes \"short-circuit\" the computation and avoid
+evaluating some arguments.  In particular, we classify the arguments as cheap
+or expensive using @(see cheap-and-expensive-arguments).  We then arrange
+things so that the cheap arguments are considered first.  If any cheap argument
+is @('nil'), we can stop before any expensive arguments even need to be
+computed.</p>"
 
   (defund q-binary-and (x y)
     (declare (xargs :guard t))
@@ -75,24 +99,6 @@
                   (q-binary-and (cdr x) (cdr y))))))
 
   (add-bdd-fn q-binary-and)
-
-  ;; Next, we are going to introduce the Q-AND macro which takes an arbitrary
-  ;; number of arguments and ANDs them together.  In the logic, we have:
-  ;;
-  ;;   (Q-AND) = t
-  ;;   (Q-AND X) = X
-  ;;   (Q-AND X Y) = (Q-BINARY-AND X Y)
-  ;;   (Q-AND X Y Z) = (Q-BINARY-AND X (Q-BINARY-AND Y Z))
-  ;;    Etc.
-  ;;
-  ;; But as a special optimization in the :exec world when there is more than
-  ;; one argument, we can sometimes "short-circuit" the computation and avoid
-  ;; evaluating some arguments.
-  ;;
-  ;; We classify the arguments as cheap or expensive using classify-for-q-macros,
-  ;; and then walk through the cheap arguments first to see if any of them is nil
-  ;; so that we can stop early.  Then we continue through the expensive
-  ;; arguments, again stopping early if any of them is nil.
 
   (defun q-and-macro-logic-part (args)
     ;; Generates the :logic part for a q-and MBE call.
@@ -150,12 +156,12 @@
 
   (local (in-theory (enable q-and)))
 
-  (defthm normp-of-q-and
-    (implies (and (force (normp x))
-                  (force (normp y)))
-             (equal (normp (q-and x y))
+  (defthm ubddp-of-q-and
+    (implies (and (force (ubddp x))
+                  (force (ubddp y)))
+             (equal (ubddp (q-and x y))
                     t))
-    :hints(("Goal" :in-theory (enable normp))))
+    :hints(("Goal" :in-theory (enable ubddp))))
 
   (defthm eval-bdd-of-q-and
     (equal (eval-bdd (q-and x y) values)
@@ -167,18 +173,19 @@
             :expand (q-and x y))))
 
   (defthm canonicalize-q-and
-    (implies (and (force (normp x))
-                  (force (normp y)))
+    (implies (and (force (ubddp x))
+                  (force (ubddp y)))
              (equal (q-and x y)
                     (q-ite x y nil))))
 
   (add-to-ruleset canonicalize-to-q-ite '(canonicalize-q-and))
 
   ;; One strategy is to canonicalize away q-and into q-ite whenever it is seen,
-  ;; using canonicalize-q-and, above.  But if this strategy is not being
-  ;; followed, weak-boolean-listp may find the following theorems useful.  It is important that
-  ;; these theorems come after canonicalize-q-and, since in particular
-  ;; q-and-of-nil is to verify the guards when the q-and macro is being used.
+  ;; using canonicalize-q-and.  But if this strategy is not being followed,
+  ;; weak-boolean-listp may find the following theorems useful.  It is
+  ;; important that these theorems come after canonicalize-q-and, since in
+  ;; particular q-and-of-nil is to verify the guards when the q-and macro is
+  ;; being used.
 
   (defthm q-and-of-nil
     (and (equal (q-and nil x) nil)
@@ -191,7 +198,7 @@
     :hints(("Goal" :in-theory (disable canonicalize-q-and))))
 
   (defthm q-and-of-t-aggressive
-    (implies (force (normp x))
+    (implies (force (ubddp x))
              (and (equal (q-and t x) x)
                   (equal (q-and x t) x))))
 
@@ -209,11 +216,8 @@
     (equal (q-and x x) (if (consp x) x (if x t nil))))
 
   (defthm q-and-of-self-aggressive
-    (implies (force (normp x))
+    (implies (force (ubddp x))
              (equal (q-and x x) x)))
-
-  ;; !!! What is the point of doing a LOCAL at the end of an
-  ;; ENCAPSULATE?
 
   ;; The following ensures that a trivial usage of our Q-AND macro
   ;; will succeed in guard verification.
@@ -231,6 +235,20 @@
 
 
 (defsection q-or
+  :parents (ubdd-constructors)
+  :short "@(call q-or) constructs a UBDD representing the disjunction of its
+arguments."
+  :long "<p>In the logic,</p>
+
+@({
+ (Q-OR)       = NIL
+ (Q-OR X)     = X
+ (Q-OR X Y)   = (Q-BINARY-OR X Y)
+ (Q-OR X Y Z) = (Q-BINARY-OR X (Q-BINARY-OR Y Z))
+})
+
+<p>In the execution, we use the same sort of optimization as in @(see
+q-and).</p>"
 
   (defund q-binary-or (x y)
     (declare (xargs :guard t))
@@ -250,16 +268,6 @@
              (qcons l r)))))
 
   (add-bdd-fn q-binary-or)
-
-  ;; In the logic:
-  ;;
-  ;; (Q-OR) = NIL
-  ;; (Q-OR X) = X
-  ;; (Q-OR X Y) = (Q-BINARY-OR X Y)
-  ;; (Q-OR X Y Z) = (Q-BINARY-OR X (Q-BINARY-OR Y Z))
-  ;;
-  ;; In the exec world, we stop early if any argument evaluates to T and just
-  ;; return T without evaluating the later arguments.
 
   (defun q-or-macro-logic-part (args)
     (declare (xargs :mode :program))
@@ -281,7 +289,7 @@
               ;; We could be slightly more permissive and just check
               ;; for any non-nil atom here.  But it's probably faster
               ;; to check equality with t and we probably don't care
-              ;; about performance on non-normp bdds?
+              ;; about performance on non-ubddp bdds?
               (if (eq t q-or-x-do-not-use-elsewhere)
                   t
                 (prog2$
@@ -312,12 +320,12 @@
 
   (local (in-theory (enable q-or)))
 
-  (defthm normp-of-q-or
-    (implies (and (force (normp x))
-                  (force (normp y)))
-             (equal (normp (q-or x y))
+  (defthm ubddp-of-q-or
+    (implies (and (force (ubddp x))
+                  (force (ubddp y)))
+             (equal (ubddp (q-or x y))
                     t))
-    :hints(("Goal" :in-theory (enable normp))))
+    :hints(("Goal" :in-theory (enable ubddp))))
 
   (defthm eval-bdd-of-q-or
     (equal (eval-bdd (q-or x y) values)
@@ -329,8 +337,8 @@
             :expand (q-or x y))))
 
   (defthm canonicalize-q-or
-    (implies (and (force (normp x))
-                  (force (normp y)))
+    (implies (and (force (ubddp x))
+                  (force (ubddp y)))
              (equal (q-or x y)
                     (q-ite x t y))))
 
@@ -341,7 +349,7 @@
          (equal (q-or x nil) (if (consp x) x (if x t nil)))))
 
   (defthm q-or-of-nil-aggressive
-    (implies (force (normp x))
+    (implies (force (ubddp x))
              (and (equal (q-or nil x) x)
                   (equal (q-or x nil) x))))
 
@@ -366,11 +374,8 @@
            (if (consp x) x (if x t nil))))
 
   (defthm q-or-of-self-aggressive
-    (implies (force (normp x))
+    (implies (force (ubddp x))
              (equal (q-or x x) x)))
-
-  ;; !!! What is the point of doing a LOCAL at the end of an
-  ;; ENCAPSULATE?
 
   (local (in-theory (disable q-or)))
 
@@ -381,7 +386,10 @@
                  (q-or (q-not x) y)
                  (q-or x y (q-not x) a b (q-ite y z c))))))
 
+
 (defsection q-implies
+  :parents (ubdd-constructors)
+  :short "@(call q-implies) constructs a UBDD representing @('(implies x y)')."
 
   (defund q-implies-fn (x y)
     (declare (xargs :guard t))
@@ -439,12 +447,13 @@
 
   (local (in-theory (enable q-implies)))
 
-  (defthm normp-of-q-implies
-    (implies (and (force (normp x))
-                  (force (normp y)))
-             (equal (normp (q-implies x y))
+  (defthm ubddp-of-q-implies
+    (implies (and (force (ubddp x))
+                  (force (ubddp y)))
+             (equal (ubddp (q-implies x y))
                     t))
-    :hints(("Goal" :in-theory (enable normp))))
+    :hints(("Goal" :in-theory (e/d (ubddp)
+                                   (canonicalize-q-not)))))
 
   (defthm eval-bdd-of-q-implies
     (equal (eval-bdd (q-implies x y) values)
@@ -457,8 +466,8 @@
             :expand (q-implies x y))))
 
   (defthm canonicalize-q-implies
-    (implies (and (force (normp x))
-                  (force (normp y)))
+    (implies (and (force (ubddp x))
+                  (force (ubddp y)))
              (equal (q-implies x y)
                     (q-ite x y t))))
 
@@ -476,7 +485,7 @@
     :hints(("Goal" :in-theory (disable canonicalize-q-implies))))
 
   (defthm q-implies-of-t-left-aggressive
-    (implies (force (normp x))
+    (implies (force (ubddp x))
              (equal (q-implies t x) x))
     :hints(("Goal" :in-theory (disable canonicalize-q-implies))))
 
@@ -487,10 +496,6 @@
   (defthm q-implies-of-self
     (equal (q-implies x x) t)
     :hints(("Goal" :in-theory (disable canonicalize-q-implies))))
-
-
-  ;; !!! What is the point of doing a LOCAL at the end of an
-  ;; ENCAPSULATE?
 
   (local (in-theory (disable q-implies)))
 
@@ -503,7 +508,10 @@
                  (q-implies (q-not a) (q-not b))))))
 
 
+
 (defsection q-or-c2
+  :parents (ubdd-constructors)
+  :short "@(call q-or-c2) constructs a UBDD representing @('(or x (not y))')."
 
   (defund q-or-c2-fn (x y)
     (declare (xargs :guard t))
@@ -551,12 +559,12 @@
 
   (memoize 'q-or-c2   :condition '(and (consp x) (consp y)))
 
-  (defthm normp-of-q-or-c2
-    (implies (and (force (normp x))
-                  (force (normp y)))
-             (equal (normp (q-or-c2 x y))
+  (defthm ubddp-of-q-or-c2
+    (implies (and (force (ubddp x))
+                  (force (ubddp y)))
+             (equal (ubddp (q-or-c2 x y))
                     t))
-    :hints(("Goal" :in-theory (enable normp))))
+    :hints(("Goal" :in-theory (enable ubddp))))
 
   (defthm eval-bdd-of-q-or-c2
     (equal (eval-bdd (q-or-c2 x y) values)
@@ -569,8 +577,8 @@
             :expand (q-or-c2 x y))))
 
   (defthm canonicalize-q-or-c2
-    (implies (and (force (normp x))
-                  (force (normp y)))
+    (implies (and (force (ubddp x))
+                  (force (ubddp y)))
              (equal (q-or-c2 x y)
                     (q-ite y x t))))
 
@@ -588,9 +596,6 @@
                                    (canonicalize-q-not
                                     canonicalize-q-or-c2)))))
 
-  ;; !!! What is the point of doing a LOCAL at the end of an
-  ;; ENCAPSULATE?
-
   (local (in-theory (disable q-or-c2)))
 
   (local (defun test-q-or-c2 (a b)
@@ -602,6 +607,8 @@
 
 
 (defsection q-and-c1
+  :parents (ubdd-constructors)
+  :short "@(call q-and-c1) constructs a UBDD representing @('(and (not x) y)')."
 
   (defund q-and-c1-fn (x y)
     (declare (xargs :guard t))
@@ -650,12 +657,12 @@
   (add-macro-alias q-and-c1 q-and-c1-fn)
   (local (in-theory (enable q-and-c1)))
 
-  (defthm normp-of-q-and-c1
-    (implies (and (force (normp x))
-                  (force (normp y)))
-             (equal (normp (q-and-c1 x y))
+  (defthm ubddp-of-q-and-c1
+    (implies (and (force (ubddp x))
+                  (force (ubddp y)))
+             (equal (ubddp (q-and-c1 x y))
                     t))
-    :hints(("Goal" :in-theory (enable normp))))
+    :hints(("Goal" :in-theory (enable ubddp))))
 
   (defthm eval-bdd-of-q-and-c1
     (equal (eval-bdd (q-and-c1 x y) values)
@@ -669,8 +676,8 @@
             :expand (q-and-c1 x y))))
 
   (defthm canonicalize-q-and-c1
-    (implies (and (force (normp x))
-                  (force (normp y)))
+    (implies (and (force (ubddp x))
+                  (force (ubddp y)))
              (equal (q-and-c1 x y)
                     (q-ite x nil y))))
 
@@ -688,9 +695,6 @@
                                    (canonicalize-q-and-c1
                                     canonicalize-q-not)))))
 
-  ;; !!! What is the point of doing a LOCAL at the end of an
-  ;; ENCAPSULATE?
-
   (local (in-theory (disable q-and-c1)))
 
   (local (defun test-q-and-c1 (a b)
@@ -702,6 +706,8 @@
 
 
 (defsection q-and-c2
+  :parents (ubdd-constructors)
+  :short "@(call q-and-c2) constructs a UBDD representing @('(and x (not y))')."
 
   (defund q-and-c2-fn (x y)
     (declare (xargs :guard t))
@@ -750,12 +756,12 @@
   (add-macro-alias q-and-c2 q-and-c2-fn)
   (local (in-theory (enable q-and-c2)))
 
-  (defthm normp-of-q-and-c2
-    (implies (and (force (normp x))
-                  (force (normp y)))
-             (equal (normp (q-and-c2 x y))
+  (defthm ubddp-of-q-and-c2
+    (implies (and (force (ubddp x))
+                  (force (ubddp y)))
+             (equal (ubddp (q-and-c2 x y))
                     t))
-    :hints(("Goal" :in-theory (enable normp))))
+    :hints(("Goal" :in-theory (enable ubddp))))
 
   (defthm eval-bdd-of-q-and-c2
     (equal (eval-bdd (q-and-c2 x y) values)
@@ -769,8 +775,8 @@
             :expand (q-and-c2 x y))))
 
   (defthm canonicalize-q-and-c2
-    (implies (and (force (normp x))
-                  (force (normp y)))
+    (implies (and (force (ubddp x))
+                  (force (ubddp y)))
              (equal (q-and-c2 x y)
                     (q-ite y nil x))))
 
@@ -784,16 +790,13 @@
     (equal (q-and-c2 x nil) (if (consp x) x (if x t nil))))
 
   (defthm q-and-c2-of-nil-right-aggressive
-    (implies (force (normp x))
+    (implies (force (ubddp x))
              (equal (q-and-c2 x nil) x)))
 
   (defthm q-and-c2-of-t
     (and (equal (q-and-c2 t x) (q-not x))
          (equal (q-and-c2 x t) nil))
     :hints(("Goal" :in-theory (disable (force)))))
-
-  ;; !!! What is the point of doing a LOCAL at the end of an
-  ;; ENCAPSULATE?
 
   (local (in-theory (disable q-and-c2)))
 
@@ -807,6 +810,22 @@
 
 
 (defsection q-iff
+  :parents (ubdd-constructors)
+  :short "@(call q-iff) constructs a UBDD representing an equality/iff-equivalence."
+  :long "<p>In the logic, for instance,</p>
+
+@({
+  (q-iff x1 x2 x3 x4) = (q-and (q-binary-iff x1 x2)
+                               (q-binary-iff x1 x3)
+                               (q-binary-iff x1 x4))
+})
+
+<p>We do not see how to use short-circuiting to improve upon @('(q-binary-iff x
+y)'), since the answer depends upon both inputs in all cases.  But when we
+implement the multiple-input @('q-iff') macro, we can at least take advantage
+of the short-circuiting provided by @(see q-and).  We also reorder the inputs
+so that cheap ones come first, hoping that we can avoid evaluating expensive
+arguments.</p>"
 
   (defund q-binary-iff (x y)
     (declare (xargs :guard t))
@@ -823,20 +842,6 @@
   (memoize 'q-binary-iff     :condition '(and (consp x) (consp y)))
 
   (add-bdd-fn q-binary-iff)
-
-  ;; We do not see how to use short-circuiting to improve upon (Q-BINARY-IFF X
-  ;; Y), since the answer depends upon both inputs in all cases.
-  ;;
-  ;; However, when implementing the multiple-input Q-IFF macro, we can at least
-  ;; take advantage of the short-circuiting provided by Q-AND for multiple-input
-  ;; Q-IFF, e.g.,:
-  ;;
-  ;;    (Q-IFF X1 X2 X3 X4) == (Q-AND (Q-BINARY-IFF X1 X2)
-  ;;                                  (Q-BINARY-IFF X1 X3)
-  ;;                                  (Q-BINARY-IFF X1 X4))
-  ;;
-  ;; And we also reorder the inputs so that cheap ones come first, hoping that we
-  ;; can avoid evaluating expensive Xi.
 
   (defun q-iff-macro-guts (a x)
     ;; Produces (LIST (Q-BINARY-IFF A X1) (Q-BINARY-IFF A X2) ...)
@@ -868,12 +873,12 @@
   (add-macro-alias q-iff q-binary-iff)
   (local (in-theory (enable q-iff)))
 
-  (defthm normp-of-q-iff
-    (implies (and (force (normp x))
-                  (force (normp y)))
-             (equal (normp (q-iff x y))
+  (defthm ubddp-of-q-iff
+    (implies (and (force (ubddp x))
+                  (force (ubddp y)))
+             (equal (ubddp (q-iff x y))
                     t))
-    :hints(("Goal" :in-theory (enable normp))))
+    :hints(("Goal" :in-theory (enable ubddp))))
 
   (defthm eval-bdd-of-q-iff
     (equal (eval-bdd (q-iff x y) values)
@@ -886,15 +891,12 @@
             :expand (q-iff x y))))
 
   (defthm canonicalize-q-iff
-    (implies (and (force (normp x))
-                  (force (normp y)))
+    (implies (and (force (ubddp x))
+                  (force (ubddp y)))
              (equal (q-iff x y)
                     (q-ite x y (q-ite y nil t)))))
 
   (add-to-ruleset canonicalize-to-q-ite '(canonicalize-q-iff))
-
-  ;; !!! What is the point of doing a LOCAL at the end of an
-  ;; ENCAPSULATE?
 
   (local (in-theory (disable q-iff)))
 
@@ -905,21 +907,43 @@
                  (q-iff a b c (q-not b))
                  (q-iff (q-not a) (q-not b) c d)))))
 
+(defsection q-nand
+  :parents (ubdd-constructors)
+  :short "@(call q-nand) constructs a UBDD representing the NAND of its arguments."
+  :long "<p>For instance:</p>
+@({
+ (q-nand)         = nil
+ (q-nand a)       = (q-not a)
+ (q-nand a b ...) = (q-not (q-and a b ...))
+})
 
-(defmacro q-nand (&rest args)
-  ;; (q-nand) = nil
-  ;; (q-nand a) = (q-not a)
-  ;; (q-nand a b ...) = (q-not (q-and a b ...))
-  `(q-not (q-and . ,args)))
+@(def q-nand)"
 
-(defmacro q-nor (&rest args)
-  ;; (q-nor) = t
-  ;; (q-nor a) = (q-not a)
-  ;; (q-nor a b ...) = (q-not (q-or a b ...))
-  `(q-not (q-or . ,args)))
+  (defmacro q-nand (&rest args)
+    `(q-not (q-and . ,args))))
+
+
+(defsection q-nor
+  :parents (ubdd-constructors)
+  :short "@(call q-nor) constructs a UBDD representing the NOR of its arguments."
+  :long "<p>For instance:</p>
+@({
+ (q-nor)         = t
+ (q-nor a)       = (q-not a)
+ (q-nor a b ...) = (q-not (q-or a b ...))
+})
+
+@(def q-nor)"
+
+  (defmacro q-nor (&rest args)
+    `(q-not (q-or . ,args))))
+
 
 
 (defsection q-xor
+  :parents (ubdd-constructors)
+  :short "@(call q-xor) constructs a UBDD representing the exclusive OR of its
+arguments."
 
   (defund q-binary-xor (x y)
     (declare (xargs :guard t))
@@ -955,12 +979,12 @@
   (add-binop q-xor q-binary-xor)
   (local (in-theory (enable q-xor)))
 
-  (defthm normp-of-q-xor
-    (implies (and (force (normp x))
-                  (force (normp y)))
-             (equal (normp (q-xor x y))
+  (defthm ubddp-of-q-xor
+    (implies (and (force (ubddp x))
+                  (force (ubddp y)))
+             (equal (ubddp (q-xor x y))
                     t))
-    :hints(("Goal" :in-theory (enable normp))))
+    :hints(("Goal" :in-theory (enable ubddp))))
 
   (defthm eval-bdd-of-q-xor
     (equal (eval-bdd (q-xor x y) values)
@@ -981,8 +1005,8 @@
                                     canonicalize-q-not)))))
 
   (defthm canonicalize-q-xor
-    (implies (and (force (normp x))
-                  (force (normp y)))
+    (implies (and (force (ubddp x))
+                  (force (ubddp y)))
              (equal (q-xor x y)
                     (q-ite x (q-not y) y))))
 
@@ -990,8 +1014,11 @@
 
 
 (defsection qv
+  :parents (ubdd-constructors)
+  :short "@(call qv) constructs a UBDD which evaluates to true exactly when the
+@('i')th BDD variable is true."
+
   (defund qv (i)
-    ;; Creates the (nfix i)th BDD variable.
     (declare (xargs :guard t))
     (if (posp i)
         (let ((prev (qv (1- i))))
@@ -999,21 +1026,22 @@
       (hons t nil)))
 
   (memoize 'qv)
-
   (add-bdd-fn qv)
 
-  (defthm normp-qv
-    (normp (qv i))
-    :hints(("goal" :in-theory (enable normp qv))))
+  (local (in-theory (enable qv)))
+
+  (defthm ubddp-qv
+    (ubddp (qv i))
+    :hints(("goal" :in-theory (enable ubddp))))
 
   (defthm eval-bdd-of-qv-and-nil
     (not (eval-bdd (qv i) nil))
-    :hints(("Goal" :in-theory (enable eval-bdd qv))))
+    :hints(("Goal" :in-theory (enable eval-bdd))))
 
   (defthm eval-bdd-of-qv
     (equal (eval-bdd (qv i) lst)
            (if (nth i lst) t nil))
-    :hints(("Goal" :in-theory (enable eval-bdd qv))))
+    :hints(("Goal" :in-theory (enable eval-bdd))))
 
   (local (defun qvs-ind (i j)
            (if (or (zp i) (zp j))
@@ -1023,168 +1051,168 @@
   (defthm qvs-equal
     (equal (equal (qv i) (qv j))
            (equal (nfix i) (nfix j)))
-    :hints(("Goal" :in-theory (enable qv)
-            :induct (qvs-ind i j)))))
-
-
-;; !!! BOZO organization is kind of haphazard after here.
-
-(defsection norm-listp
-
-  ;; [Jared]: I changed the name from normp-list
-  (defund norm-listp (x)
-    ":Doc-Section ubdds
-     Recognizer for a list of ~il[normp]s.~/~/
-     We do not require ~il[true-listp]."
-    (declare (xargs :guard t))
-    (if (consp x)
-        (and (normp (car x))
-             (norm-listp (cdr x)))
-      t))
-
-  (defthm norm-listp-when-not-consp
-    (implies (not (consp x))
-             (equal (norm-listp x)
-                    t))
-    :hints(("Goal" :in-theory (enable norm-listp))))
-
-  (defthm norm-listp-of-cons
-    (equal (norm-listp (cons a x))
-           (and (normp a)
-                (norm-listp x)))
-    :hints(("Goal" :in-theory (enable norm-listp)))))
+    :hints(("Goal" :induct (qvs-ind i j)))))
 
 
 
 (defsection eval-bdd-list
+  :parents (ubdds)
+  :short "Apply @(see eval-bdd) to a list of UBDDs."
+  :long "<p>The resulting list is @(see hons)ed together.</p>
+
+<p>BOZO why do we hons the list, I suspect it makes no sense to do so...</p>"
 
   (defund eval-bdd-list (x values)
-    ":Doc-Section ubdds
-     Apply ~il[eval-bdd] to a list of bdds.~/~/
-     The resulting list is ~il[hons]ed together."
     (declare (xargs :guard t))
     (if (consp x)
         (hons (eval-bdd (car x) values)
               (eval-bdd-list (cdr x) values))
       nil))
 
+  (local (in-theory (enable eval-bdd-list)))
+
   (defthm eval-bdd-list-when-not-consp
     (implies (not (consp x))
              (equal (eval-bdd-list x values)
-                    nil))
-    :hints(("Goal" :in-theory (enable eval-bdd-list))))
+                    nil)))
 
   (defthm eval-bdd-list-of-cons
     (equal (eval-bdd-list (cons a x) values)
            (cons (eval-bdd a values)
-                 (eval-bdd-list x values)))
-    :hints(("Goal" :in-theory (enable eval-bdd-list))))
+                 (eval-bdd-list x values))))
 
   (defthmd consp-eval-bdd-list
     (equal (consp (eval-bdd-list x env))
-           (consp x))
-    :hints(("Goal" :in-theory (enable eval-bdd-list)))))
+           (consp x))))
 
 
-(defund q-compose (x l)
-  ;; Composes the Boolean function represented by BDD X with those
-  ;; represented by BDDs in the list L.
-  (declare (xargs :guard t))
-  (if (atom x)
-      x
-    (if (atom l)
-        (q-compose (cdr x) nil)
-      (if (hons-equal (car x) (cdr x))
-          (q-compose (car x) (cdr l))
-        (q-ite (car l)
-               (q-compose (car x) (cdr l))
-               (q-compose (cdr x) (cdr l)))))))
 
-(add-bdd-fn q-compose)
+(defsection q-compose
+  :parents (ubdd-constructors)
+  :short "@(call q-compose) composes the UBDD @('x') with the list of UBDDs
+@('l')."
+  :long "<p>BOZO document what this is doing. Is it like sexpr compose?</p>"
 
-(defthm normp-of-q-compose
-  (implies (and (force (normp x))
-                (force (norm-listp l)))
-           (equal (normp (q-compose x l))
-                  t))
-  :hints(("Goal" :in-theory (enable q-compose normp))))
+  (defund q-compose (x l)
+    (declare (xargs :guard t))
+    (cond ((atom x)
+           x)
+          ((atom l)
+           (q-compose (cdr x) nil))
+          ((hons-equal (car x) (cdr x))
+           (q-compose (car x) (cdr l)))
+          (t
+           (q-ite (car l)
+                  (q-compose (car x) (cdr l))
+                  (q-compose (cdr x) (cdr l))))))
 
+  (add-bdd-fn q-compose)
+  (local (in-theory (enable q-compose)))
 
-(defund q-compose-list (xs l)
-  (declare (xargs :guard t))
-  (if (atom xs)
-      nil
-    (cons (q-compose (car xs) l)
-          (q-compose-list (cdr xs) l))))
-
-(defthm q-compose-list-when-not-consp
-  (implies (not (consp xs))
-           (equal (q-compose-list xs l)
-                  nil))
-  :hints(("Goal" :in-theory (enable q-compose-list))))
-
-(defthm q-compose-list-of-cons
-  (equal (q-compose-list (cons x xs) l)
-         (cons (q-compose x l)
-               (q-compose-list xs l)))
-  :hints(("Goal" :in-theory (enable q-compose-list))))
-
-(defthm norm-listp-of-q-compose-list
-  (implies (and (force (norm-listp xs))
-                (force (norm-listp l)))
-           (equal (norm-listp (q-compose-list xs l))
-                  t))
-  :hints(("Goal" :induct (len xs))))
+  (defthm ubddp-of-q-compose
+    (implies (and (force (ubddp x))
+                  (force (ubdd-listp l)))
+             (equal (ubddp (q-compose x l))
+                    t))
+    :hints(("Goal" :in-theory (enable ubddp)))))
 
 
-(defund q-and-is-nil (x y)
-  (declare (xargs :guard t))
-  (cond ((eq x t) (eq y nil))
-        ((atom x) t)
-        ((eq y t) nil)
-        ((atom y) t)
-        (t (and (q-and-is-nil (qcar x) (qcar y))
-                (q-and-is-nil (qcdr x) (qcdr y))))))
+(defsection q-compose-list
+  :parents (ubdd-constructors)
+  :short "@(call q-compose-list) composes each UBDD in @('xs') with the list of
+UBDDs @('l'), i.e., it maps @(see q-compose) across @('xs')."
 
-(memoize 'q-and-is-nil   :condition '(and (consp x) (consp y)))
+  (defund q-compose-list (xs l)
+    (declare (xargs :guard t))
+    (if (atom xs)
+        nil
+      (cons (q-compose (car xs) l)
+            (q-compose-list (cdr xs) l))))
 
-(defthm q-and-is-nil-removal
-  (implies (and (force (normp x))
-                (force (normp y)))
-           (equal (q-and-is-nil x y)
-                  (not (q-and x y))))
-  :hints(("Goal"
-          :induct (q-and-is-nil x y)
-          :in-theory (e/d (q-and q-and-is-nil normp)
-                          (canonicalize-q-and
-                           equal-by-eval-bdds)))))
+  (local (in-theory (enable q-compose-list)))
+
+  (defthm q-compose-list-when-not-consp
+    (implies (not (consp xs))
+             (equal (q-compose-list xs l)
+                    nil)))
+
+  (defthm q-compose-list-of-cons
+    (equal (q-compose-list (cons x xs) l)
+           (cons (q-compose x l)
+                 (q-compose-list xs l))))
+
+  (defthm ubdd-listp-of-q-compose-list
+    (implies (and (force (ubdd-listp xs))
+                  (force (ubdd-listp l)))
+             (equal (ubdd-listp (q-compose-list xs l))
+                    t))))
 
 
-(defund q-and-is-nilc2 (x y)
-  (declare (xargs :guard t))
-  (cond ((eq x t) (eq y t))
-        ((atom x) t)
-        ((eq y t) t)
-        ((atom y) nil)
-        (t (and (q-and-is-nilc2 (qcar x) (qcar y))
-                (q-and-is-nilc2 (qcdr x) (qcdr y))))))
+(defsection q-and-is-nil
+  :parents (ubdd-constructors)
+  :short "@(call q-and-is-nil) determines whether @('(q-and x y)') is
+always false."
 
-(encapsulate
- ()
- (local (defthm lemma
-          (implies (and (normp y) (not (equal y t)))
-                   (q-ite y nil t))
-          :hints(("Goal" :in-theory (enable q-ite q-not normp)))))
+  :long "<p>You could ask the same question in other ways, say for instance</p>
 
- (defthm q-and-is-nilc2-removal
-   (implies (and (force (normp x))
-                 (force (normp y)))
-            (equal (q-and-is-nilc2 x y)
-                   (not (q-and-c2 x y))))
-   :hints(("Goal"
-           :induct (q-and-is-nilc2 x y)
-           :in-theory (e/d (q-and-c2 q-and-is-nilc2 normp)
-                           (canonicalize-q-and-c2 equal-by-eval-bdds))))))
+@({
+ (not (q-and x y))
+})
+
+<p>But @('q-and-is-nil') is especially efficient and doesn't need to construct
+an intermediate UBDD.</p>"
+
+  (defund q-and-is-nil (x y)
+    (declare (xargs :guard t))
+    (cond ((eq x t) (eq y nil))
+          ((atom x) t)
+          ((eq y t) nil)
+          ((atom y) t)
+          (t (and (q-and-is-nil (qcar x) (qcar y))
+                  (q-and-is-nil (qcdr x) (qcdr y))))))
+
+  (memoize 'q-and-is-nil :condition '(and (consp x) (consp y)))
+
+  (local (in-theory (enable q-and-is-nil)))
+
+  (defthm q-and-is-nil-removal
+    (implies (and (force (ubddp x))
+                  (force (ubddp y)))
+             (equal (q-and-is-nil x y)
+                    (not (q-and x y))))
+    :hints(("Goal"
+            :induct (q-and-is-nil x y)
+            :in-theory (e/d (q-and ubddp)
+                            (canonicalize-q-and
+                             equal-by-eval-bdds))))))
+
+
+(defsection q-and-is-nilc2
+  :parents (ubdd-constructors)
+  :short "@(call q-and-is-nilc2) determines whether @('(q-and x (q-not y))') is
+always false."
+  :long "<p>This is like @(see q-and-is-nil).</p>"
+
+  (defund q-and-is-nilc2 (x y)
+    (declare (xargs :guard t))
+    (cond ((eq x t) (eq y t))
+          ((atom x) t)
+          ((eq y t) t)
+          ((atom y) nil)
+          (t (and (q-and-is-nilc2 (qcar x) (qcar y))
+                  (q-and-is-nilc2 (qcdr x) (qcdr y))))))
+
+  (local (in-theory (enable q-and-is-nilc2)))
+
+  (defthm q-and-is-nilc2-removal
+    (implies (and (force (ubddp x))
+                  (force (ubddp y)))
+             (equal (q-and-is-nilc2 x y)
+                    (not (q-and x (q-not y)))))
+    :hints(("Goal"
+            :induct (q-and-is-nilc2 x y)
+            :in-theory (e/d (q-and-c2 q-and-is-nilc2 ubddp)
+                            (canonicalize-q-and-c2 equal-by-eval-bdds))))))
 
 
 (defund q-is-atomic (x)
@@ -1201,13 +1229,13 @@
     'not-atomic))
 
 (defthm q-not-is-atomic-removal
-  (implies (normp x)
+  (implies (ubddp x)
            (equal (q-not-is-atomic x)
                   (q-is-atomic (q-not x))))
   :hints(("Goal"
           :in-theory (enable q-not-is-atomic
                              q-is-atomic
-                             q-ite q-not normp))))
+                             q-ite q-not ubddp))))
 
 
 (defabbrev atom-fix (y)
@@ -1234,50 +1262,50 @@
 (encapsulate
   ()
   (local (defthm lemma
-           (implies (normp x)
+           (implies (ubddp x)
                     (equal (consp x)
                            (if (equal x t)
                                nil
                              (if (equal x nil)
                                  nil
                                t))))
-           :hints(("Goal" :in-theory (enable normp)))))
+           :hints(("Goal" :in-theory (enable ubddp)))))
 
   (local
    (defthm consp-q-ite
-     (implies (and (normp x) (normp y) (normp z))
+     (implies (and (ubddp x) (ubddp y) (ubddp z))
               (equal (consp (q-ite x y z))
                      (and (not (equal (q-ite x y z) t))
                           (not (equal (q-ite x y z) nil)))))))
 
-  (local (defthm normp-consp-rws
-           (implies (and (normp x) (consp x))
-                    (and (normp (car x))
-                         (normp (cdr x))))
-           :hints(("Goal" :in-theory (enable normp)))))
+  (local (defthm ubddp-consp-rws
+           (implies (and (ubddp x) (consp x))
+                    (and (ubddp (car x))
+                         (ubddp (cdr x))))
+           :hints(("Goal" :in-theory (enable ubddp)))))
 
   (with-output
    :off (prove warning) :gag-mode nil
    (defthm q-ite-is-atomic-removal
-     (implies (and (normp x)
-                   (normp y)
-                   (normp z))
+     (implies (and (ubddp x)
+                   (ubddp y)
+                   (ubddp z))
               (equal (q-ite-is-atomic x y z)
                      (q-is-atomic (q-ite x y z))))
      :hints(("Goal"
              :induct (q-ite-is-atomic x y z)
              :in-theory (e/d (q-is-atomic
-                              ; normp
+                              ; ubddp
                               (:induction q-ite-is-atomic))
                              (canonicalize-q-not
-                              ;;                               q-ite normp
+                              ;;                               q-ite ubddp
                               equal-by-eval-bdds
                               equal-of-booleans-rewrite
                               |(q-ite non-nil y z)|
                               default-car
                               default-cdr
                               (:type-prescription booleanp)
-                              (:type-prescription normp)
+                              (:type-prescription ubddp)
                               (:type-prescription q-ite-is-atomic)
                               (:type-prescription q-ite-fn)
                               (:type-prescription q-is-atomic)
@@ -1347,58 +1375,86 @@
 
 ; Finds a satisfying assignment for a BDD.
 
-(defn q-sat (x)
-  (if (atom x)
-      nil
-    (if (eq (cdr x) nil)
-        (cons t (q-sat (car x)))
-      (cons nil (q-sat (cdr x))))))
+(defsection q-sat
+  :parents (ubdds)
+  :short "@(call q-sat) finds a satisfying assignment for the UBDD @('x'), if
+one exists."
 
-(in-theory (disable q-sat))
+  :long "<p>Assuming @('x') is a well-formed UBDD, the only time there isn't
+a satisfying assignment is when @('x') represents the constant false function,
+i.e., when @('x') is @('nil').  In any other case it's easy to construct some
+list of values for which @(see eval-bdd) returns true.</p>
 
-(defthm q-sat-correct
-  (implies (and (normp x) x)
-           (eval-bdd x (q-sat x)))
-  :hints (("goal" :in-theory (enable eval-bdd q-sat normp))))
+<p>BOZO naming.  This shouldn't start with @('q-') since it's constructing a
+list of values instead of a UBDD.</p>"
+
+  (defund q-sat (x)
+    (declare (xargs :guard t))
+    (if (atom x)
+        nil
+      (if (eq (cdr x) nil)
+          (cons t (q-sat (car x)))
+        (cons nil (q-sat (cdr x))))))
+
+  (local (in-theory (enable q-sat)))
+
+  (defthm q-sat-correct
+    (implies (and (ubddp x) x)
+             (eval-bdd x (q-sat x)))
+    :hints(("Goal" :in-theory (enable ubddp
+                                      eval-bdd)))))
 
 
-; Given a list of BDDs, finds an assignment that satisfies at least one of
-; them.
+(defsection q-sat-any
+  :parents (ubdds)
+  :short "@(call q-sat-any) finds an assignment that satisfies at least one
+UBDD in the list of UBDDs @('x')."
 
-(defn q-sat-any (a)
-  (if (atom a)
-      nil
-    (if (eq (car a) nil)
-        (q-sat-any (cdr a))
-      (q-sat (car a)))))
+  :long "<p>BOZO naming.  This shouldn't start with @('q-') since it's
+constructing a list of values instead of a UBDD.</p>"
+
+  (defund q-sat-any (a)
+    (declare (xargs :guard t))
+    (if (atom a)
+        nil
+      (if (eq (car a) nil)
+          (q-sat-any (cdr a))
+        (q-sat (car a))))))
 
 
 
-(defsection norm-fix
+(defsection ubdd-fix
+  :parents (ubdds)
+  :short "@(call ubdd-fix) constructs a valid @(see ubddp) that is treated
+identically to @('x') under @(see eval-bdd)."
 
-  (defun norm-fix (x)
+  :long "<p>This fixes up the tips of @('x') to be Booleans and handles any
+collapsing of @('(t . t)') and @('(nil . nil)') nodes.  It is occasionally
+useful in theorems to avoid @(see ubddp) hypotheses.</p>"
+
+  (defund ubdd-fix (x)
     (declare (xargs :guard t))
     (if (atom x)
         (if x t nil)
       (if (and (atom (car x)) (atom (cdr x))
                (iff (car x) (cdr x)))
           (if (car x) t nil)
-        (acl2::qcons (norm-fix (car x))
-                     (norm-fix (cdr x))))))
+        (qcons (ubdd-fix (car x))
+               (ubdd-fix (cdr x))))))
 
-  (defthm normp-norm-fix
-    (normp (norm-fix x))
-    :hints(("Goal" :in-theory (enable normp))))
+  (local (in-theory (enable ubdd-fix)))
 
-  (defthm eval-bdd-norm-fix
-    (equal (eval-bdd (norm-fix x) env)
+  (defthm ubddp-ubdd-fix
+    (ubddp (ubdd-fix x))
+    :hints(("Goal" :in-theory (enable ubddp))))
+
+  (defthm eval-bdd-ubdd-fix
+    (equal (eval-bdd (ubdd-fix x) env)
            (eval-bdd x env))
     :hints(("Goal" :in-theory (enable eval-bdd))))
 
-  (defthm norm-fix-x-is-x
-    (implies (normp x)
-             (equal (norm-fix x) x))
-    :hints(("Goal" :in-theory (enable normp))))
-
-  (in-theory (disable norm-fix)))
+  (defthm ubdd-fix-x-is-x
+    (implies (ubddp x)
+             (equal (ubdd-fix x) x))
+    :hints(("Goal" :in-theory (enable ubddp)))))
 

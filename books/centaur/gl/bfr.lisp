@@ -25,9 +25,9 @@
   (declare (xargs :guard t)
            (ignorable x))
   (mbe :logic 
-       (bfr-case :bdd (acl2::normp x) :aig t)
+       (bfr-case :bdd (acl2::ubddp x) :aig t)
        :exec (or (booleanp x)
-                 (bfr-case :bdd (acl2::normp x) :aig t))))
+                 (bfr-case :bdd (acl2::ubddp x) :aig t))))
 
 (defthm bfr-p-booleanp
   (booleanp (bfr-p x))
@@ -36,16 +36,16 @@
 
 (defthmd bfr-p-of-boolean
   (implies (booleanp x) (bfr-p x))
-  :hints (("goal" :in-theory (enable bfr-p acl2::normp))))
+  :hints (("goal" :in-theory (enable bfr-p acl2::ubddp))))
 
 (defun bfr-fix (x)
   (declare (xargs :guard t))
   (mbe :logic
-       (bfr-case :bdd (acl2::norm-fix x) :aig x)
+       (bfr-case :bdd (acl2::ubdd-fix x) :aig x)
        :exec
        (if (booleanp x)
            x
-         (bfr-case :bdd (acl2::norm-fix x) :aig x))))
+         (bfr-case :bdd (acl2::ubdd-fix x) :aig x))))
 
 (defthm bfr-p-bfr-fix
   (bfr-p (bfr-fix x)))
@@ -92,8 +92,8 @@
 (defthmd bfr-eval-of-bfr-fix
   (equal (bfr-eval (bfr-fix x) env)
          (bfr-eval x env))
-  :hints (("goal" :use acl2::eval-bdd-norm-fix
-           :in-theory (disable acl2::eval-bdd-norm-fix))))
+  :hints (("goal" :use acl2::eval-bdd-ubdd-fix
+           :in-theory (disable acl2::eval-bdd-ubdd-fix))))
 
 (defcong bfr-equiv equal (bfr-eval x env) 1
   :hints (("goal" :use ((:instance bfr-eval-of-bfr-fix)
@@ -115,7 +115,7 @@
 (defthm bfr-p-bfr-not
   (bfr-p (bfr-not x)))
 
-(local (acl2::add-bdd-fn-pat acl2::norm-fix))
+(local (acl2::add-bdd-fn-pat acl2::ubdd-fix))
 
 (defthm bfr-eval-bfr-not
   (equal (bfr-eval (bfr-not x) env)
@@ -313,7 +313,7 @@
             ;; We could be slightly more permissive and just check
             ;; for any non-nil atom here.  But it's probably faster
             ;; to check equality with t and we probably don't care
-            ;; about performance on non-normp bdds?
+            ;; about performance on non-ubddp bdds?
             (if (eq t bfr-or-x-do-not-use-elsewhere)
                 t
               (bfr-binary-or

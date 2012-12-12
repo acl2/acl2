@@ -32,8 +32,8 @@
 
 
 
-(defthm normp-val-alistp-vars-to-bdd-bindings
-  (acl2::normp-val-alistp (vars-to-bdd-bindings x n)))
+(defthm ubddp-val-alistp-vars-to-bdd-bindings
+  (acl2::ubddp-val-alistp (vars-to-bdd-bindings x n)))
 
 
 (local (include-book "arithmetic/top-with-meta" :dir :system))

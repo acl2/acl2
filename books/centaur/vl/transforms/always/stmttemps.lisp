@@ -19,12 +19,11 @@
 ; Original author: Jared Davis <jared@centtech.com>
 
 (in-package "VL")
+(include-book "util")
 (include-book "conditions")
 (include-book "../occform/util")
 (include-book "../../mlib/expr-slice")
-(include-book "../../mlib/stmt-tools")
 (include-book "../../mlib/delta")
-(include-book "../../mlib/context")
 (local (include-book "../../util/arithmetic"))
 
 (defxdoc stmttemps
@@ -35,16 +34,22 @@ wires."
   :long "<p>This is a preprocessing step in synthesizing always blocks.  We
 expect it to be run only after expressions are sized.</p>
 
-<p>We rewrite statements throughout each @('always') block, adding temporary
-wires for:</p>
+<p>We rewrite statements throughout each flop-like @('always') block, adding
+temporary wires for:</p>
 
 <ol>
 <li>non-trivial conditions of if expressions</li>
 <li>non-sliceable right-hand sides of assignment statements</li>
 </ol>
 
-<p>Regarding (1), this is really just an optimization.  The idea is that we want
-to simplify the condition expressions, since we might end up duplicating them
+<p>We don't apply this transform to latch-like blocks, because it would
+interfere with our sensitivity-list checking.  That is, if our sensitivity list
+is something like @('@(en1 or en2 or d)') and we rewrite @('if (en1 & en2)
+...')  to @('if (temp_123) ...'), we would think the resulting sensitivity list
+was incorrect.</p>
+
+<p>Regarding (1), this is mainly an optimization.  The idea is that we want to
+simplify the condition expressions, since we might end up duplicating them
 across many flops.  That is, if we have a block like:</p>
 
 @({
@@ -62,7 +67,7 @@ across many flops.  That is, if we have a block like:</p>
      myflop flop2 (c, (foo1 + foo2 + foo3 + foo4 == 1) ? d : c, clk);
 })
 
-<p>And then we'll be redundantly synthesizing this complex expression.  This
+<p>And we'll be redundantly synthesizing this complex expression.  This
 wouldn't necessarily be any kind of problem, but it seems like we can do better
 by pulling the combinational logic out of the conditions, e.g.:</p>
 
@@ -304,6 +309,11 @@ so that later transforms just need to deal with compatible assignments.</p>")
                (delta vl-delta-p  :hyp :fguard))
   :parents (stmttemps)
   (b* (((vl-always x) x)
+       ((mv clk ?body) (vl-match-posedge-clk x))
+       ((unless clk)
+        ;; Not a flop-like always block, so don't change it.  We can screw
+        ;; up the sensitivity lists on latches, otherwise.
+        (mv x delta))
        ((mv stmt delta) (vl-stmt-stmttemps x.stmt delta x)))
     (mv (change-vl-always x :stmt stmt) delta)))
 

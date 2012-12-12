@@ -292,6 +292,8 @@ concatenation and select expressions more readable.</p>")
   (defund vl-module-clean-selects (x)
     (declare (xargs :guard (vl-module-p x)))
     (b* (((vl-module x) x)
+         ((when (vl-module->hands-offp x))
+          x)
          (ialist (vl-moditem-alist x))
          (ans (change-vl-module
                x

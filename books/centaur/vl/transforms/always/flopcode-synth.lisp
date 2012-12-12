@@ -29,12 +29,6 @@
 (local (include-book "../../util/osets"))
 (local (in-theory (disable all-equalp)))
 
-(local (defthm consp-of-vl-evatom->expr
-         (implies (force (vl-evatom-p x))
-                  (consp (vl-evatom->expr x)))
-         :rule-classes :type-prescription))
-
-
 (define vl-flopcode-fix ((x (and (vl-expr-p x)
                                  (vl-expr-welltyped-p x)
                                  (posp (vl-expr->finalwidth x)))))
@@ -193,29 +187,6 @@ overwritten by @('a <= c').</p>"
                             (vl-expr-welltyped-p
                              (vl-nonatom :vl-qmark atts args finalwidth finaltype))))
             :in-theory (enable vl-expr-welltyped-p)))))
-
-
-
-(define vl-match-posedge-clk ((x vl-always-p))
-  :returns (mv (clk  :hyp :fguard (equal (vl-expr-p clk) (if clk t nil)))
-               (body :hyp :fguard (equal (vl-stmt-p body) (if clk t nil))))
-  :parents (flopcode)
-  :short "Match @('always @(posedge clk) body')."
-
-  (b* ((stmt (vl-always->stmt x))
-       ((unless (vl-timingstmt-p stmt))
-        (mv nil nil))
-       ((vl-timingstmt stmt) stmt)
-       ;; Try to match ctrl with (posedge clk)
-       ((unless (and (eq (tag stmt.ctrl) :vl-eventcontrol)
-                     (not (vl-eventcontrol->starp stmt.ctrl))))
-        (mv nil nil))
-       (evatoms (vl-eventcontrol->atoms stmt.ctrl))
-       ((unless (and (eql (len evatoms) 1)
-                     (eq (vl-evatom->type (car evatoms)) :vl-posedge)))
-        (mv nil nil))
-       (clk (vl-evatom->expr (car evatoms))))
-    (mv clk stmt.body)))
 
 
 (define vl-flopcode-synth-always

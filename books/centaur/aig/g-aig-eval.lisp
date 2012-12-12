@@ -338,7 +338,7 @@
 (defthmd bfr-alistp-bfr-cases
   (equal (gl::bfr-alistp x)
          (gl::bfr-case
-          :bdd (acl2::normp-val-alistp x)
+          :bdd (acl2::ubddp-val-alistp x)
           :aig t))
   :hints(("Goal" :in-theory (enable bfr-p)
           :induct (gl::bfr-alistp x))))
@@ -347,7 +347,7 @@
 (defthmd bfr-listp-bfr-cases
   (equal (gl::bfr-listp x)
          (gl::bfr-case
-          :bdd (and (acl2::norm-listp x) (true-listp x))
+          :bdd (and (acl2::ubdd-listp x) (true-listp x))
           :aig (true-listp x)))
   :hints(("Goal" :in-theory (enable gl::bfr-listp gl::bfr-p)
           :induct (len x))))

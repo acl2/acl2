@@ -35,7 +35,7 @@
                      equal-by-eval-bdds
                      ))
 
-(in-theory (enable eval-bdd eval-bdd-list normp norm-listp
+(in-theory (enable eval-bdd eval-bdd-list ubddp ubdd-listp
                    q-compose q-compose-list))
 
 ;; -------------------------------------------------------------------
@@ -207,14 +207,14 @@
          (len x)))
 
 
-;; NORMP forward-chaining rules
-(defthm normp-cons-forward-chain
-  (implies (and (normp x) (consp x))
-           (and (normp (car x)) (normp (cdr x))))
+;; UBDDP forward-chaining rules
+(defthm ubddp-cons-forward-chain
+  (implies (and (ubddp x) (consp x))
+           (and (ubddp (car x)) (ubddp (cdr x))))
   :rule-classes :forward-chaining)
 
-(defthm normp-atom-forward-chain
-  (implies (and (normp x) (not (consp x)))
+(defthm ubddp-atom-forward-chain
+  (implies (and (ubddp x) (not (consp x)))
            (or (equal x nil) (equal x t)))
   :rule-classes :forward-chaining)
 
@@ -235,8 +235,8 @@
 ;; FIND-DIFF always produces a variable assignment which
 ;; differentiates two BDDs, if they are different:
 (defthm eval-bdd-diff
-  (implies (and (normp a)
-                (normp b)
+  (implies (and (ubddp a)
+                (ubddp b)
                 (not (equal a b)))
            (not (equal (eval-bdd a (find-diff a b))
                        (eval-bdd b (find-diff a b)))))
@@ -245,8 +245,8 @@
 ;; FIND-DIFF-OF-LENGTH always produces a variable assignment which
 ;; differentiates two BDDs, if they are different:
 (defthm eval-bdd-diff-of-length
-  (implies (and (normp a)
-                (normp b)
+  (implies (and (ubddp a)
+                (ubddp b)
                 (not (equal a b))
                 (<= (max-depth a) (nfix n))
                 (<= (max-depth b) (nfix n)))
@@ -265,9 +265,9 @@
 ;; assignments, then use eval-bdd-diff (above) to show that the
 ;; expressions themselves are equal.
 ;; (defthm eval-bdd-q-ite-of-q-ite
-;;   (implies (and (normp a)
-;;                 (normp b) (normp c)
-;;                 (normp d) (normp e))
+;;   (implies (and (ubddp a)
+;;                 (ubddp b) (ubddp c)
+;;                 (ubddp d) (ubddp e))
 ;;            (equal (eval-bdd (q-ite (q-ite a b c) d e) vals)
 ;;                   (eval-bdd (q-ite a
 ;;                                    (q-ite b d e)
@@ -275,9 +275,9 @@
 ;;                             vals))))
 
 ;; (defthm q-ite-of-q-ite
-;;   (implies (and (normp a)
-;;                 (normp b) (normp c)
-;;                 (normp d) (normp e))
+;;   (implies (and (ubddp a)
+;;                 (ubddp b) (ubddp c)
+;;                 (ubddp d) (ubddp e))
 ;;            (equal (q-ite (q-ite a b c) d e)
 ;;                   (q-ite a
 ;;                          (q-ite b d e)
@@ -287,42 +287,42 @@
 
 (defthm q-and-equals-t
   (implies (equal (q-and x y) t)
-           (and (implies (normp x) (equal x t))
-                (implies (normp y) (equal y t))))
+           (and (implies (ubddp x) (equal x t))
+                (implies (ubddp y) (equal y t))))
   :hints (("goal" :in-theory (enable q-and)))
   :rule-classes :forward-chaining)
 
-(defthmd normp-q-not-t-implies-not
-  (implies (and (normp x)
+(defthmd ubddp-q-not-t-implies-not
+  (implies (and (ubddp x)
                 x)
            (not (equal (q-not x) t)))
   :hints (("goal" :in-theory (enable q-not))))
 
-(defthmd normp-q-not-nil-implies-t
-  (implies (and (normp x)
+(defthmd ubddp-q-not-nil-implies-t
+  (implies (and (ubddp x)
                 (not (q-not x)))
            (equal (equal x t) t))
   :hints (("goal" :in-theory (enable q-not))))
 
-(defthm norm-listp-q-ite-list
-  (implies (and (normp x) (norm-listp ys) (norm-listp zs))
-           (norm-listp (q-ite-list x ys zs)))
+(defthm ubdd-listp-q-ite-list
+  (implies (and (ubddp x) (ubdd-listp ys) (ubdd-listp zs))
+           (ubdd-listp (q-ite-list x ys zs)))
   :hints (("goal" :induct (q-ite-list x ys zs))))
 
-;; (defthm q-compose-normp
-;;   (implies (and (normp x) (norm-listp l))
-;;            (normp (q-compose x l))))
+;; (defthm q-compose-ubddp
+;;   (implies (and (ubddp x) (ubdd-listp l))
+;;            (ubddp (q-compose x l))))
 
 ;; Show that Q-COMPOSE really performs function composition.
 (defthm q-compose-to-eval-bdd
-  (implies (and (normp x) (norm-listp l))
+  (implies (and (ubddp x) (ubdd-listp l))
            (equal (eval-bdd (q-compose x l) vals)
                   (eval-bdd x (eval-bdd-list l vals)))))
 
 ; (add-bdd-fn-pat q-compose)
 
 (defthm q-ite-list-correct
-  (implies (and (normp x) (norm-listp ys) (norm-listp zs)
+  (implies (and (ubddp x) (ubdd-listp ys) (ubdd-listp zs)
                 (equal (len ys) (len zs)))
            (equal (eval-bdd-list (q-ite-list x ys zs) vals)
                   (if (eval-bdd x vals)
@@ -331,8 +331,8 @@
 
 ;; (if a (f b) (f c)) == (f (if a b c))
 (defthm eval-bdd-q-compose-commutes-with-q-ite
-  (implies (and (normp x) (normp y)
-                (norm-listp l1) (norm-listp l2)
+  (implies (and (ubddp x) (ubddp y)
+                (ubdd-listp l1) (ubdd-listp l2)
                 (equal (len l1) (len l2)))
            (equal (eval-bdd (q-ite x
                                    (q-compose y l1)
@@ -343,8 +343,8 @@
   :hints (("goal" :in-theory (disable q-compose))))
 
 (defthm q-compose-commutes-with-q-ite
-  (implies (and (normp x) (normp y)
-                (norm-listp l1) (norm-listp l2)
+  (implies (and (ubddp x) (ubddp y)
+                (ubdd-listp l1) (ubdd-listp l2)
                 (equal (len l1) (len l2)))
            (equal (q-ite x
                          (q-compose y l1)
@@ -352,24 +352,24 @@
                   (q-compose y (q-ite-list x l1 l2))))
   :hints(("Goal" :in-theory (enable equal-by-eval-bdds))))
 
-;; (defthm norm-listp-q-compose-list
-;;   (implies (and (norm-listp ys) (norm-listp zs))
-;;            (norm-listp (q-compose-list ys zs))))
+;; (defthm ubdd-listp-q-compose-list
+;;   (implies (and (ubdd-listp ys) (ubdd-listp zs))
+;;            (ubdd-listp (q-compose-list ys zs))))
 
 (defthm q-compose-list-correct
-  (implies (and (norm-listp ys) (norm-listp zs))
+  (implies (and (ubdd-listp ys) (ubdd-listp zs))
            (equal (eval-bdd-list (q-compose-list ys zs) vals)
                   (eval-bdd-list ys (eval-bdd-list zs vals)))))
 
 
 (defthm eval-bdd-q-compose-associative
-  (implies (and (normp x) (norm-listp ys) (norm-listp zs))
+  (implies (and (ubddp x) (ubdd-listp ys) (ubdd-listp zs))
            (equal (eval-bdd (q-compose (q-compose x ys) zs) vals)
                   (eval-bdd (q-compose x (q-compose-list ys zs))
                             vals))))
 
 (defthm q-compose-associative
-  (implies (and (normp x) (norm-listp ys) (norm-listp zs))
+  (implies (and (ubddp x) (ubdd-listp ys) (ubdd-listp zs))
            (equal (q-compose (q-compose x ys) zs)
                   (q-compose x (q-compose-list ys zs))))
   :hints(("Goal" :in-theory (enable equal-by-eval-bdds))))
@@ -383,9 +383,9 @@
 
 (in-theory (enable q-zipper))
 
-(defthm norm-listp-q-zipper
-  (implies (and (norm-listp l1) (norm-listp l2))
-           (norm-listp (q-zipper l1 l2))))
+(defthm ubdd-listp-q-zipper
+  (implies (and (ubdd-listp l1) (ubdd-listp l2))
+           (ubdd-listp (q-zipper l1 l2))))
 
 (defthm len-q-zipper
   (equal (len (q-zipper l1 l2))
@@ -446,11 +446,11 @@
   :hints (("goal" :in-theory (enable q-zipper))))
 
 
-(defthm normp-qv-all
-  (normp (qv n)))
+(defthm ubddp-qv-all
+  (ubddp (qv n)))
 
-(defthm norm-listp-qv-list
-  (norm-listp (qv-list start by n)))
+(defthm ubdd-listp-qv-list
+  (ubdd-listp (qv-list start by n)))
 
 (defthm len-qv-list
   (equal (len (qv-list start by n))
@@ -537,12 +537,12 @@
                    (take n (nthcdr start vars)))))
   :hints(("Goal" :in-theory (enable simpler-take))))
 
-(defthm norm-listp-make-list-ac
-  (equal (norm-listp (make-list-ac n nil acc))
-         (norm-listp acc)))
+(defthm ubdd-listp-make-list-ac
+  (equal (ubdd-listp (make-list-ac n nil acc))
+         (ubdd-listp acc)))
 
-(defthm norm-listp-q-param
-  (norm-listp (q-param x depth)))
+(defthm ubdd-listp-q-param
+  (ubdd-listp (q-param x depth)))
 
 (defthm len-of-make-list-ac
   (equal (len (make-list-ac n nil acc))
@@ -563,7 +563,7 @@
 (defthm eval-q-param
   (implies (and (natp depth)
                 (<= (max-depth x) depth)
-                (normp x)
+                (ubddp x)
                 x)
            (equal (eval-bdd x (eval-bdd-list (q-param x depth) vars))
                   t))
@@ -603,8 +603,8 @@
            (equal (extend-list a b) a)))
 
 
-(defthm norm-listp-q-param-inv
-  (norm-listp (q-param-inv x nvars)))
+(defthm ubdd-listp-q-param-inv
+  (ubdd-listp (q-param-inv x nvars)))
 
 (defthm eval-q-param-inv
   (implies (and (equal (eval-bdd x vars) t)
@@ -645,7 +645,7 @@
 ;; part 1:
 (defthm forall-y-p-of-param-of-y-is-true
   (implies (and p
-                (normp p)
+                (ubddp p)
                 (integerp n)
                 (<= (max-depth p) n))
            (equal (eval-bdd p
@@ -716,9 +716,9 @@
 
 
 
-(defthm normp-to-param-space
-  (implies (normp x)
-           (normp (to-param-space p x))))
+(defthm ubddp-to-param-space
+  (implies (ubddp x)
+           (ubddp (to-param-space p x))))
 
 (defun param-env (p env)
   (declare (xargs :guard t))
@@ -748,7 +748,7 @@
                                     cdr))))))
 
 (defthm eval-with-unparam-env
-  (implies (and p (normp p))
+  (implies (and p (ubddp p))
            (eval-bdd p (unparam-env p env))))
 
 (defun unparam-env-ind (x p env)
@@ -760,7 +760,7 @@
                             (cdr env)))))
 
 (defthmd unparam-env-to-param-space
-  (implies (and p (normp p))
+  (implies (and p (ubddp p))
            (equal (eval-bdd (to-param-space p x) env)
                   (eval-bdd x (unparam-env p env))))
   :hints (("goal" :induct (unparam-env-ind x p env)
@@ -817,25 +817,26 @@
 (encapsulate nil
   (local (in-theory (disable equal-by-eval-bdds)))
   (local (defthm q-not-equal-t
-           (implies (normp x)
+           (implies (ubddp x)
                     (equal (equal (q-not x) t)
                            (equal x nil)))
            :hints (("goal" :in-theory (enable q-not)))))
   (local (defthm not-q-not-x
-           (implies (normp x)
+           (implies (ubddp x)
                     (iff (q-not x)
                          (not (equal x t))))
            :hints (("goal" :in-theory (enable q-not)))))
+  (local (in-theory (disable q-not-under-iff)))
   ;; NOT commutes over to-param-space:
   (defthm q-not-to-param
-    (implies (and p (normp p) (normp x))
+    (implies (and p (ubddp p) (ubddp x))
              (equal (q-not (to-param-space p x))
                     (to-param-space p (q-not x))))
     :hints (("goal" :in-theory
              (e/d (q-not) (equal-by-eval-bdds)))
             ("Subgoal *1/9"
-             :in-theory (e/d (q-not normp-q-not-t-implies-not
-                                    normp-q-not-nil-implies-t))))))
+             :in-theory (e/d (q-not ubddp-q-not-t-implies-not
+                                    ubddp-q-not-nil-implies-t))))))
 
 
 
@@ -844,7 +845,7 @@
  ()
  (local (defthm not-consp-not-nil-implies-t
           (implies (and (not (consp (to-param-space p x)))
-                        (normp x)
+                        (ubddp x)
                         (to-param-space p x))
                    (equal (to-param-space p x) t))
           :rule-classes :forward-chaining))
@@ -857,16 +858,16 @@
 
  ;; AND commutes over to-param-space:
  (defthm q-and-to-param
-   (implies (and (normp x) (normp y))
+   (implies (and (ubddp x) (ubddp y))
             (equal (q-and (to-param-space p x)
                           (to-param-space p y))
                    (to-param-space p (q-and x y))))
    :hints (("goal" :induct (q-and-to-param-ind p x y)
             ;; BOZO: Why do we have to disable force?
-            :in-theory (e/d (q-and) (normp (force)))))))
+            :in-theory (e/d (q-and) (ubddp (force)))))))
 
 (defthm q-ite-in-terms-of-and-and-not
-  (implies (and (normp x) (normp y) (normp z))
+  (implies (and (ubddp x) (ubddp y) (ubddp z))
            (equal (q-ite x y z)
                   (q-not (q-and
                           (q-not (q-and x y))
@@ -877,7 +878,7 @@
 ;; Using the AND and NOT thms we can prove that all basic BDD operations
 ;; commute over to-param-space:
 (defthm q-ite-to-param
-  (implies (and p (normp p) (normp x) (normp y) (normp z))
+  (implies (and p (ubddp p) (ubddp x) (ubddp y) (ubddp z))
            (equal (q-ite (to-param-space p x)
                          (to-param-space p y)
                          (to-param-space p z))
@@ -893,21 +894,21 @@
 
 ;; Finally, from-param-space of to-param-space reduces to q-and with the predicate.
 (defthm to-from-param-space
-  (implies (and (normp x) (normp p))
+  (implies (and (ubddp x) (ubddp p))
            (equal (from-param-space p (to-param-space p x))
                   (q-and p x)))
   :hints (("goal" :induct (to-param-space p x)
-           :in-theory (e/d (q-and) (normp)))))
+           :in-theory (e/d (q-and) (ubddp)))))
 
 (defthm to-param-space-self
-  (implies (and (normp p) p)
+  (implies (and (ubddp p) p)
            (equal (to-param-space p p) t))
-  :hints(("Goal" :in-theory (enable normp))))
+  :hints(("Goal" :in-theory (enable ubddp))))
 
 
 (defthm from-to-param-space
-  (implies (and (normp x) (normp p) p)
+  (implies (and (ubddp x) (ubddp p) p)
            (equal (to-param-space p (from-param-space p x))
                   x))
   :hints (("goal" :induct (from-param-space p x)
-           :in-theory (e/d (q-and) (normp)))))
+           :in-theory (e/d (q-and) (ubddp)))))
