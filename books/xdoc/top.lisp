@@ -244,6 +244,11 @@
            (er hard? 'defsection-fn "When using :extension, you cannot ~
                   give a :parents or :short field."))
 
+          ((and extension
+                (not (symbolp extension)))
+           (er hard? 'defsection-fn "Expected a single symbol for :extension, ~
+                                     but was given ~x0." extension))
+
           ((not autodoc-p)
            `(with-output
               :stack :push
