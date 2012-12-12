@@ -493,109 +493,8 @@
                  (strip-cadrs (cdr x))))))
 
 
-;check this TODO
-(defun is-singleton-type-p (obj)
-  (possible-constant-valuep obj))
-
-(defun is-singleton-type-lst-p (obj-lst)
-  (declare (xargs :guard (true-listp obj-lst)))
-  (if (endp obj-lst)
-    t
-  (and (possible-constant-valuep (car obj-lst))
-       (is-singleton-type-lst-p (cdr obj-lst)))))
-
-;TYPES
-;check if fn-name is a type-pred by checking for corresponding typ pres rule
-(defun has-type-prescription-rule (fn-name wrld)
-  (declare (xargs :guard (and (symbolp fn-name)
-                              (plist-worldp wrld))))
-  (acl2-getprop fn-name 'acl2::type-prescriptions wrld))
-                  
-
-;if true then returns the type name (not the predicate)
-;is true is Tp is a predicate and nth-T or *T-values* is defined in world
-;Sig: Sym * World -> Sym
-(defun is-custom-type-predicate (pred wrld)
-  (declare (xargs :verify-guards nil
-                  :guard (and (symbolp pred)
-                              (plist-worldp wrld)
-                              )))
-(let* ((typ (get-typesymbol-from-pred pred))
-       (values (modify-symbol "*"  typ "-VALUES*"))
-       (enum   (modify-symbol "NTH-" typ "")))
-  (if (plausible-predicate-functionp pred wrld)
-    (if (or (allows-arity enum 1 wrld) ;is enum defined in wrld
-            (acl2-getprop values 'acl2::const wrld) 
-;;or is values defined in wrld
-            )
-      typ ;THIS CAN BE NIL, if pred doesnt follow naming convention, works out well in any case
-      nil)
-    nil)))
-
-;;is a predicate explicitly recognized in the defdata framework? 
-;;if true then returns the corresponding type
-(defun is-datadef-type-predicate (fn-name typtable-alst)
-  (declare (xargs :verify-guards nil
-                  :guard (and (symbolp fn-name)
-                              (symbol-alistp typtable-alst))))
-  (if (endp typtable-alst)
-    nil
-    (let* ((typ-info-pair (car typtable-alst))
-           (typ (car typ-info-pair))
-           (info (cdr typ-info-pair)))
-      (if (eq fn-name (third info)) ;info is of form (typ-size typ-enum typ-pred ...) TODO: here for multiple pred aliases
-        ;BUG here, with every change of type table, you might have to change this function
-        typ
-        (is-datadef-type-predicate fn-name (cdr typtable-alst))))))
 
 
-
-
-
-;is a possible type (ASK:should we also pick compound recognizers?)
-;is either custom type pred or datadef pred
-;if true then returns the type name (not the predicate)
-;Sig: Sym * World -> Sym
-(defun is-type-predicate (fn-name wrld)
-  (declare (xargs :verify-guards nil
-                  :guard (and (symbolp fn-name)
-                              (plist-worldp wrld))))
-  (or (is-datadef-type-predicate fn-name (table-alist 'types-info-table wrld));is in types table
-      (is-custom-type-predicate fn-name wrld)));is a custom type in the current world
-(defconst *z-values* '(1))
-;Sig: Any -> Bool
-;check wether arg is a variable 
-(defun is-a-variablep (x)
-  (declare (xargs :guard t))
-  (and (symbolp x)
-       (not (or (keywordp x);a keyword
-                (booleanp x);t or nil
-                (legal-constantp x)))));ACL2::CONSTANT
-
-(defun is-a-constant-symbolp (x)
-  (or (keywordp x);a keyword
-      (booleanp x);t or nil
-      (legal-constantp x)));ACL2::CONSTANT
-
-;Sig: Any -> Bool
-;check if x can be used as an identifier, i.e. has not been previously defined
-(defun is-a-identifier (x wrld)
-  (declare (xargs :mode :program))
-  (if (and (is-a-variablep x)
-           (acl2::new-namep x wrld))
-    x
-    nil))
-
-;Sig: Sym * State -> bool
-;purpose: Check wether id is an identifier, which has not been previously defined as a type
-(defun is-a-typeId-p (id wrld)
-  (declare (xargs :verify-guards nil
-                  :guard (plist-worldp wrld)))
-  (and (is-a-variablep id)
-       (let ((typ-alst (table-alist 'types-info-table wrld))
-             (pred (get-predicate-symbol id)))
-         (and (not (assoc-eq id typ-alst))
-              (not (is-custom-type-predicate pred wrld))))))
 
 ;utility funs
 ;boolean-or: Expr * Expr * ... -> Bool
@@ -610,68 +509,17 @@
 (defmacro boolean-or (&rest args)
   (boolean-or-macro args))
 
-;Sig: Sym * World -> Sym (typename)
-;type has been defined using register-custom-type
-(defun is-a-registered-custom-type (type wrld)
-  (declare (xargs :verify-guards nil))
-  (if (is-a-variablep type);shud be a variable symbol
-    (let* ((typ-alst (table-alist 'types-info-table wrld))
-          (typ-entry (assoc-eq type typ-alst))) 
-      (if (and typ-entry (not (sixth typ-entry)))
-        type ;if not derived by defdata but in the type table return type
-        nil))
-    nil))
 
-;type has been defined using the defdata form
-(defun is-a-defdata-type (type wrld)
-  (declare (xargs :verify-guards nil))
-  (if (is-a-variablep type);shud be a variable symbol
-    (let* ((typ-alst (table-alist 'types-info-table wrld))
-          (typ-entry (assoc-eq type typ-alst))) 
-      (if (and typ-entry (sixth typ-entry))
-        type ;if derived by defdata return type
-        nil))
-    nil))
-
-;purpose: Check wether argument  has been previously defined as a type using defdata
-;or is clearly recognized by the defdata framework, i.e. it could also be a custom
-;type which has been added into the types-info-table using register-custom-type.
-;could also have been implemented in terms of is-datadef-type-predicate
-(defun is-a-predefined-typeName (type wrld)
-  (declare (xargs :verify-guards nil))
-  (or (is-a-registered-custom-type type wrld)
-      (is-a-defdata-type type wrld)))
-
-;Sig: Sym * World -> Sym (typename)
-;purpose: Check wether argument is a custom defined type and not a defdata pred
-(defun is-a-custom-type (type wrld)
-  (declare (xargs :verify-guards nil))
-  (if (is-a-variablep type);shud be a variable symbol
-    (if (is-a-predefined-typeName type wrld)
-      nil
-      (let ((pred (get-predicate-symbol type)))
-        (if (is-custom-type-predicate pred wrld) ;or is a custom type
-          type
-          nil)))
-    nil))
-
-;is either a defdata defined type or a custom typename
-(defun is-a-typeName (type wrld)
-  (declare (xargs :verify-guards nil))
-  (or (is-a-predefined-typeName type wrld)
-      (is-a-custom-type type wrld)))
-
-
-(defun is-simple-type-hyp (term wrld)
-;is a simple type hypothesis, and if true returns
-; the type-name (not the predicate itself)
-  (declare (xargs :verify-guards nil))
-  (and (consp term)
-       (eql (len term) 2)
-       (atom (cadr term))
-       (is-a-variablep (cadr term)) ;check wether its arg is sa variable 
-       (plausible-predicate-functionp (car term) wrld)
-       (is-type-predicate (car term) wrld))) ;check if its a type predicate
+;; (defun is-simple-type-hyp (term wrld)
+;; ;is a simple type hypothesis, and if true returns
+;; ; the type-name (not the predicate itself)
+;;   (declare (xargs :verify-guards nil))
+;;   (and (consp term)
+;;        (eql (len term) 2)
+;;        (atom (cadr term))
+;;        (is-a-variablep (cadr term)) ;check wether its arg is sa variable 
+;;        (plausible-predicate-functionp (car term) wrld)
+;;        (is-type-predicate (car term) wrld))) ;check if its a type predicate
 
 
 ;NEEDED BY EVERYONE:
@@ -721,6 +569,17 @@
 (defun get-value-from-keyword-value-list (key kv-lst)
   (declare (xargs :guard (keyword-value-listp kv-lst)))
   (second (assoc-keyword key kv-lst)))
+
+
+
+;Sig: Any -> Bool
+;check wether arg is a variable 
+(defun is-a-variablep (x)
+  (declare (xargs :guard t))
+  (and (symbolp x)
+       (not (or (keywordp x);a keyword
+                (booleanp x);t or nil
+                (legal-constantp x)))));ACL2::CONSTANT
 
 
 ;NOTE PACKAGES are very IMP while assuming that symbols are all ACL2. Like

@@ -8,6 +8,7 @@
 
 (in-package "DEFDATA")
 (include-book "utilities" :load-compiled-file :comp)
+(include-book "data" :load-compiled-file :comp)
 
 ;;;; harshrc --
 ;;;; NOTE: This is an old graph book which will be replaced by the
