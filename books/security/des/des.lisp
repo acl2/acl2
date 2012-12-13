@@ -1,6 +1,6 @@
 (in-package "ACL2")
 
-; (include-book "centaur/gl/gl" :dir :system)
+(include-book "centaur/gl/gl" :dir :system)
 (include-book "security/util/byte-operations" :dir :system)
 
 
@@ -261,27 +261,24 @@
 ; and returns the original list
 ; 
 
-;; The following should be uncommented once we figure out how to import the GL
-;; package correctly.
+(defun gen (n)
+  (declare (xargs :guard (natp n)
+                  :measure (nfix n)))
+  (cond ((zp n)
+         nil)
+        (t
+         (cons (GL::g-number (list (list (- 128 (* 2 n)) 
+                                         (- 128 (- (* 2 n) 1)))))
+               (gen (- n 1))))))
 
-;; (defun gen (n)
-;;   (declare (xargs :guard (natp n)
-;;                   :measure (nfix n)))
-;;   (cond ((zp n)
-;;          nil)
-;;         (t
-;;          (cons (GL::g-number (list (list (- 128 (* 2 n)) 
-;;                                          (- 128 (- (* 2 n) 1)))))
-;;                (gen (- n 1))))))
+(defconst *gl-const* 
+  (gen 64))
 
-;; (defconst *gl-const* 
-;;   (gen 64))
-
-;; (def-gl-thm IP-inverse-inverts-IP-gl
-;;   :hyp (64-bitp x)
-;;   :concl (equal (IP-inverse (IP x))
-;; 		x)
-;;   :g-bindings `((x ,*gl-const*)))
+(def-gl-thm IP-inverse-inverts-IP-gl
+  :hyp (64-bitp x)
+  :concl (equal (IP-inverse (IP x))
+		x)
+  :g-bindings `((x ,*gl-const*)))
 
 ;
 ; Test case for the above theorem

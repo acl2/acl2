@@ -1,0 +1,2 @@
+(include-book "centaur/gl/gl" :dir :system)
+(certify-book "des" 1)
