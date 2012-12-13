@@ -401,7 +401,8 @@
                  (inverse-f-prime acl2-exp)
                  (inverse-g acl2-ln)
                  (inverse-g-domain-p ln-domain-p)))
-          ("Subgoal 4"
+          ("Subgoal 3"
+; changed from "Subgoal 4" by Matt K. 12/13/12, probably because of tau-system
            :use (:instance acl2-exp-derivative))))
 
 
