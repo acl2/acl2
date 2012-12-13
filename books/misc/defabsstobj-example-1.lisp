@@ -251,7 +251,7 @@
    :RULE-CLASSES NIL)
  )
 
-; Th following theorem was originally local to an encapsulate surrounding
+; The following theorem was originally local to an encapsulate surrounding
 ; corr-mem-update-memi, but it is also useful for st-equal, later, and it's a
 ; pretty theorem.  So we make it global here.
 
