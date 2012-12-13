@@ -19896,7 +19896,12 @@
 
   ~st[EMACS SUPPORT]
 
-  ~st[EXPERIMENTAL VERSIONS]
+  ~st[EXPERIMENTAL/ALTERNATE VERSIONS]
+
+  For ACL2(r) (~pl[real]), incorporated a bug fix from Ruben Gamboa for
+  ~ilc[ceiling].  The default (for `bad' arguments) had been 1, but now we
+  follow normal ACL2 practice by returning 0 in that case.  The bug and fix
+  only affect ACL2(r).
 
   Among the enhancements for the HONS extension (~pl[hons-and-memoization])
   are the following.~bq[]

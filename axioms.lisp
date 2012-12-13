@@ -14402,7 +14402,8 @@
                   1)
              (- (nonnegative-integer-quotient (- (numerator q))
                                               (denominator q)))))
-          (t (1+ (floor1 q)))))
+          ((realp q) (1+ (floor1 q)))
+          (t 0)))
   #-:non-standard-analysis
   (let* ((q (* i (/ j)))
          (n (numerator q))
