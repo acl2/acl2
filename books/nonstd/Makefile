@@ -58,7 +58,7 @@ NDIRS2_EXCEPT_WK = fft sqrt
 # A subset of the value of DIRS2_EXCEPT_WK in ../Makefile:
 DIRS2_EXCEPT_WK = ordinals data-structures bdd ihs arithmetic-2 \
         arithmetic-3 arithmetic-3/extra misc rtl \
-        finite-set-theory powerlists
+        finite-set-theory powerlists arithmetic-5
 $(NDIRS2_EXCEPT_WK): $(DIRS2_EXCEPT_WK) top-with-meta-cert
 	@if [ -f $@/Makefile ]; then cd $@ ; $(MAKE) ; fi
 DIRS2_EXCEPT_WK += $(NDIRS2_EXCEPT_WK)
@@ -87,6 +87,8 @@ FULLDIRS = nsa fft
 # directory and there is no books/nonstd/rtl/rel7.
 SUBDIRS = arithmetic-2/floor-mod arithmetic-2/meta arithmetic-2/pass1 \
 	  arithmetic-3/bind-free arithmetic-3/floor-mod arithmetic-3/pass1 \
+	  arithmetic-5/lib arithmetic-5/support \
+	  arithmetic-5/lib/basic-ops arithmetic-5/lib/floor-mod \
 	  rtl/rel1 rtl/rel1/lib1 rtl/rel1/lib3 rtl/rel1/support rtl/rel1/support/fadd
 
 WORKSHOPS = workshops/1999 \
