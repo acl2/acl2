@@ -8159,11 +8159,31 @@
 
 ; These constants record the tau indices of the arithmetic predicates.
 (defconst *tau-acl2-numberp-pair* '(0 . ACL2-NUMBERP))
-(defconst *tau-integerp-pair* '(4 . INTEGERP))
-(defconst *tau-rationalp-pair* '(5 . RATIONALP))
-(defconst *tau-natp-pair* '(17 . NATP))
-(defconst *tau-posp-pair* '(18 . POSP))
-(defconst *tau-minusp-pair* '(26 . MINUSP))
+(defconst *tau-integerp-pair*
+  #+non-standard-analysis
+  '(5 . INTEGERP)
+  #-non-standard-analysis
+  '(4 . INTEGERP))
+(defconst *tau-rationalp-pair*
+  #+non-standard-analysis
+  '(6 . RATIONALP)
+  #-non-standard-analysis
+  '(5 . RATIONALP))
+(defconst *tau-natp-pair*
+  #+non-standard-analysis
+  '(20 . NATP)
+  #-non-standard-analysis
+  '(17 . NATP))
+(defconst *tau-posp-pair*
+  #+non-standard-analysis
+  '(21 . POSP)
+  #-non-standard-analysis
+  '(18 . POSP))
+(defconst *tau-minusp-pair*
+  #+non-standard-analysis
+  '(29 . MINUSP)
+  #-non-standard-analysis
+  '(26 . MINUSP))
 
 ; Note: The constants declared above are checked for accuracy after bootstrap
 ; by check-built-in-constants in interface-raw.lisp.
