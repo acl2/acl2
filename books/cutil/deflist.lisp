@@ -529,7 +529,7 @@ list.</p>"
 
           (local (in-theory (theory 'minimal-theory)))
           (local (in-theory (enable car-cons cdr-cons car-cdr-elim
-                                    zp len natp nth nfix
+                                    zp len natp nth update-nth nfix
                                     acl2::default-+-2
                                     acl2::default-<-1
                                     acl2::default-unary-minus
@@ -726,7 +726,46 @@ list.</p>"
                                            (< (nfix ,n) (len ,x))))))))
             :hints(("Goal" :induct (nth ,n ,x))))
 
-          ;; BOZO: add theorems for update-nth
+          ,@(and true-listp
+                 `((defthm ,(mksym name '-of-update-nth-when- elementp)
+                     (implies (and ,(if negatedp 
+                                        `(not (,elementp ,@(subst y x elem-formals)))
+                                      `(,elementp ,@(subst y x elem-formals)))
+                                   (< (nfix ,n) (len ,x))
+                                   (,name ,@formals))
+                              (,name ,@(subst `(update-nth ,n ,y ,x)
+                                              x
+                                              formals))))
+
+                   ;; The following theorem is actually quite silly.  Any
+                   ;; decent library that reasons about nth and update-nth
+                   ;; probably covers this case.  However, to avoid imposing a
+                   ;; dependency upon such a library for users of deflist,
+                   ;; here, we include a less general version of the theorem
+                   ;; that such a library would provide.
+                   
+                   (defthm ,(mksym name '-of-update-nth-when-identity-slot)
+                     (implies (and (< (nfix ,n) (len ,x))
+                                   (,name ,@formals))
+                              (,name ,@(subst `(update-nth ,n
+                                                           (nth ,n ,x)
+                                                           ,x)
+                                              x
+                                              formals))))
+
+                   ;; The following theorem should be unnecessary if we can
+                   ;; find an appropriate :type-prescription rule (which would
+                   ;; be defined as part of a defaggregate that includes a
+                   ;; ,name).  The problem is that -of-append can't fire,
+                   ;; because list-fix is blocking it, and the theorem about
+                   ;; list-fix being a no-op on true-listp's can't fire because
+                   ;; the fact that ,name-p's are true-listp's is buried too
+                   ;; deeply for ACL2 to figure it out.  So, we help ACL2
+                   ;; figure it out by including this lemma.
+                   (defthm ,(mksym name '-of-list-fix)
+                     (implies (,name ,@formals)
+                              (,name ,@(subst `(list-fix ,x) x formals))))))
+                                                           
 
           (local (in-theory (disable ,name)))
 

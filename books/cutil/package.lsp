@@ -51,6 +51,7 @@
                defsection-progn
                defmvtypes
                define
+               xdoc
 ;               defaggregate
 ;               defenum
 ;               defprojection
@@ -103,7 +104,6 @@
                xdoc::extract-keyword-from-args
                xdoc::throw-away-keyword-parts
                undocumented
-
                ))
    ;; Things to remove:
    '(string-trim
