@@ -1,16 +1,21 @@
+# This file used by the "centaur" target in Makefile, which is
+# intended for ACL2, not ACL2(h).
+
 # Keep this in sync with centaur/doc.lisp.
 
 ./centaur/vl/top.cert
 ./centaur/vl/lint/lint.cert
 ./centaur/vl/mlib/clean-concats.cert
 ./centaur/vl/mlib/atts.cert
-./centaur/vl/transforms/xf-careless-infer-flops.cert
 ./centaur/vl/transforms/xf-clean-selects.cert
 ./centaur/vl/transforms/xf-propagate.cert
 ./centaur/vl/transforms/xf-expr-simp.cert
 ./centaur/vl/transforms/xf-inline.cert
+./centaur/aig/aiger.cert
 ./centaur/aig/aig-equivs.cert
 ./centaur/aig/aig-vars.cert
+# Omit the following, which seems to require ACL2(h):
+# ./centaur/aig/aig-vars-fast.cert
 ./centaur/aig/base.cert
 ./centaur/aig/bddify.cert
 ./centaur/aig/bddify-correct.cert
@@ -36,7 +41,6 @@
 ./centaur/../xdoc-impl/topics.cert
 ./centaur/../xdoc-impl/extra-packages.cert
 ./centaur/misc/hons-remove-dups.cert
-./centaur/misc/make-list.cert
 ./centaur/misc/seed-random.cert
 ./centaur/misc/equal-by-nths.cert
 ./centaur/misc/load-stobj.cert
@@ -45,8 +49,6 @@
 # We omit centaur/tutorial/ for vanilla ACL2, but we may include some
 # books that support it.
 # ./centaur/tutorial/ # Omit this entire directory 
-./tools/plev-ccl.cert
-./tools/plev.cert
 
 ./centaur/bridge/top.cert
 ./centaur/defrstobj/defrstobj.cert

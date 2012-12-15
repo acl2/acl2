@@ -71,7 +71,7 @@ proofstyles rtl arithmetic-3/extra sorting make-event parallel hints \
 	defsort serialize wp-gen xdoc-impl system tutorial-problems cutil \
 	countereg-gen demos leftist-trees taspi
 # Add directories other than centaur that depend on hons, say, for performance:
-HONS_ONLY_DIRS = models/y86
+HONS_ONLY_DIRS = models/y86 security/des
 ifdef ACL2_HONS_REGRESSION
 DIRS2_EXCEPT_WK_COI += $(HONS_ONLY_DIRS)
 endif
@@ -163,11 +163,11 @@ models/jvm/m1: arithmetic-5
 models/jvm/m5: top-with-meta-cert ordinals misc ihs
 # models/jvm/m5 is needed for paco/books, not paco
 models/X86: tools arithmetic-5 arithmetic misc rtl defexec
-# X86 also depends on centaur
 paco: ihs ordinals top-with-meta-cert
 hacking: misc
 parallel: make-event tools
 security: misc arithmetic-3 arithmetic-5
+security/des: security misc centaur
 sorting: arithmetic-3/extra
 tools: arithmetic-5 misc xdoc
 regex: tools cutil str misc
