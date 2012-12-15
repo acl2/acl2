@@ -274,6 +274,9 @@ export ACL2_PCERT
 # the Makefile in the books/ directory.
 export ACL2_HONS_OPT
 ifdef ACL2_JOBS
+# Note: Because of recursive call of make, ACL2_HONS_OPT could
+# ultimately include many -j options.  This anomaly seems harmless, so
+# we leave it for now but may revisit it later.
 ACL2_HONS_OPT += -j$(ACL2_JOBS)
 ACL2_JOBS_OPT := -j $(ACL2_JOBS)
 endif
