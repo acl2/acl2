@@ -18135,6 +18135,9 @@
   standard installation instructions, that you install the ACL2 community books
   in the ~c[books/] subdirectory of your ACL2 distribution.
 
+  See the end of this topic for a list of troubleshooting notes.  Please feel
+  free to suggest additions to that list!
+
   The basic idea is to stand in the ACL2 sources directory and submit the
   following command, in order to certify all the ~il[books].
   ~bv[]
@@ -18364,7 +18367,7 @@
   ACL2_SYSTEM_BOOKS = /home/acl2/v3-2/acl2-sources/books
   ~ev[]
 
-  ~st[Compilation support.]  Finally, ~c[books/Makefile-generic] provides
+  ~st[Compilation support.]  The file ~c[books/Makefile-generic] provides
   support for compiling books that are already certified (but ~pl[compilation]
   for an exception).  For example, suppose that you have certified books in
   GCL, resulting in compiled files with the ~c[.o] extension.  Now suppose you
@@ -18376,7 +18379,31 @@
   ~ev[]
   In general, the compiled file extension for a Lisp supported by ACL2 will be
   a target name for building compiled files for all your books (after
-  certifying the books, if not already up-to-date on certification).")
+  certifying the books, if not already up-to-date on certification).
+
+  ~st[Troubleshooting notes.]  Please feel free to suggest additions and
+  changes!
+
+  (1) PROBLEM: Regression fails early for community books, perhaps because of
+  Perl.  (For example, a Windows system has encountered such difficulty even
+  after installing Perl.)
+  ~bq[]
+  Solution: Skip certification of the ~c[centaur/] books by including
+  ~c[ACL2_CENTAUR=skip] with your `~c[make]' command.  For example:
+  ~bv[]
+  make regression-fresh ACL2_CENTAUR=skip
+  ~ev[]
+  ~eq[]
+
+  (2) PROBLEM: The first part of the regression doesn't seem to be going in
+  parallel, even though I supplied a ~c[-j] option in my `~c[make]' command.
+  ~bq[]
+  Solution: Set ~c[ACL2_JOBS] to the number of jobs instead of using ~c[-j].
+  For example:
+  ~bv[]
+  make ACL2_JOBS=8 regression-fresh
+  ~ev[]
+  ~eq[]")
 
 (link-doc-to makefiles books book-makefiles)
 
