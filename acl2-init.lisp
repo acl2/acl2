@@ -1262,6 +1262,53 @@ implementations.")
   (save-acl2-in-cmulisp-aux sysout-name sysout-name))
 
 #+sbcl
+(defvar *sbcl-dynamic-space-size*
+
+; The user is welcome to set this value, either by setting this variable before
+; saving an ACL2 image, or by editing the resulting script (e.g., saved_acl2 or
+; saved_acl2h).  Here we explain the defaults that we provide for this
+; variable.
+
+; We observed during development of Version_5.0 that --dynamic-space-size 2000
+; is necessary in order to complete an ACL2(h) regression with SBCL 1.0.55 on a
+; Mac OS 10.6 laptop; otherwise Lisp dies during a GC when certifying community
+; book books/centaur/tutorial/intro.lisp, even with (clear-memoize-tables)
+; executed at the start of acl2-compile-file and with (gc$ :full t) executed
+; there as well, and also at the start of write-expansion-file and immediately
+; before and after include-book-fn in certify-book-fn.  We believe that it has
+; been necessary to use such a --dynamic-space-size setting even to build ACL2
+; (not only ACL2(h)) with SBCL on some platforms, so we decided to use this
+; option for ACL2, not just ACL2(h).
+
+; But in December 2012 we found that 2000 is not sufficient using SBCL 1.0.49
+; on our 64-bit linux system.  Our first such failure was in certifying
+; community book
+; books/models/y86/y86-two-level-abs/common/x86-state-concrete.lisp in ACL2(h).
+; We tried increasing the --dynamic-space-size to 4000, but that was not
+; sufficient for community book
+; books/models/y86/y86-basic/common/x86-state.lisp; in fact, 8000 also was not
+; sufficient for that book.  Fortunately, 16000 was sufficient.
+
+; These are unusual books, in that they allocate an array of size 2^32.
+; Therefore we only increase the value to 16000 under #+hons; after all, the
+; ACL2 regression (as opposed to ACL2(h)) does not certify the y86 books in
+; ACL2.  If --dynamic-space-size 16000 causes a problem for some ACL2(h) users,
+; a simple solution will be for them to edit saved_acl2 or for them to build
+; ACL2 after defining this variable to be smaller than 16000 (though some
+; community book certifications may fail under under books/models/y86/, which
+; are done by default for ACL2(h)).
+
+; On 32-bit systems, 16000 may be too large.  We tried it on a 32-bit Linux
+; system and got an error upon starting ACL2: "--dynamic-space-size argument is
+; out of range: 16000".  So we revert to our earlier value of 2000 for such
+; systems, even if we are doing an ACL2(h) build.  (The y86 books will likely
+; fail in this case, but we expect ACL2(h) users will generally be on 64-bit
+; systems.)
+
+  #+(and x86-64 hons) 16000
+  #-(and x86-64 hons) 2000)
+
+#+sbcl
 (defun save-acl2-in-sbcl-aux (sysout-name core-name)
   (declaim (optimize (sb-ext:inhibit-warnings 3)))
   (let ((eventual-sysout-core
@@ -1309,20 +1356,13 @@ implementations.")
 ; default, according to http://www.sbcl.org/manual/, is 2.  The problem seems
 ; to be stack overflow from fmt0, which is not tail recursive.
 
-; We have also observed that --dynamic-space-size 2000 is necessary in order to
-; complete an ACL2(h) regression with SBCL 1.0.55 on a Mac OS 10.6 laptop;
-; otherwise Lisp dies during a GC when certifying community book
-; books/centaur/tutorial/intro.lisp, even with (clear-memoize-tables) executed
-; at the start of acl2-compile-file and with (gc$ :full t) executed there as
-; well, and also at the start of write-expansion-file and immediately before
-; and after include-book-fn in certify-book-fn.  We believe that it has been
-; necessary to use such a --dynamic-space-size setting even to build ACL2 with
-; SBCL on some platforms, so we think it's reasonable to use this option for
-; ACL2, not just ACL2(h).
+; See *sbcl-dynamic-space-size* for an explanation of the --dynamic-space-size
+; setting below.
 
-        "~s --dynamic-space-size 2000 --control-stack-size 4 --core ~s~a ~
+        "~s --dynamic-space-size ~s --control-stack-size 4 --core ~s~a ~
          --eval '(acl2::sbcl-restart)'"
         prog
+        *sbcl-dynamic-space-size*
         eventual-sysout-core
 
 ; We have found (August 2008) that SBCL 1.0.13 on Windows does not like
