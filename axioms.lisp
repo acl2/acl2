@@ -31188,7 +31188,8 @@
                                                    *print-base*
                                                    *print-radix*)
                                     'string))
-                           (t x)))
+                           (t x))
+                     stream)
               #-allegro
               (princ x stream))))
            (cond ((eql x #\Newline)
