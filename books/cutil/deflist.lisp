@@ -728,44 +728,55 @@ list.</p>"
 
           ,@(and true-listp
                  `((defthm ,(mksym name '-of-update-nth-when- elementp)
-                     (implies (and ,(if negatedp 
-                                        `(not (,elementp ,@(subst y x elem-formals)))
-                                      `(,elementp ,@(subst y x elem-formals)))
-                                   (< (nfix ,n) (len ,x))
-                                   (,name ,@formals))
-                              (,name ,@(subst `(update-nth ,n ,y ,x)
-                                              x
-                                              formals))))
+                     ;; 1. When (elementp nil) = NIL, there's a strong bound because if you
+                     ;; update something past the length of the list, you introduce NILs
+                     ;; into the list and then ruin foo-listp.
+                     ;; 2. When (elementp nil) = T, there's no bound because no matter whether
+                     ;; you add NILs, they're still valid.
+                     ;; 3. When (elementp nil) = Unknown, we restrict the rule to only fire
+                     ;; if N is in bounds.
+                     ,(let ((val-okp (if negatedp 
+                                         `(not (,elementp ,@(subst y x elem-formals)))
+                                       `(,elementp ,@(subst y x elem-formals)))))
+                        (cond ((eq elementp-of-nil negatedp)
+                               `(implies (,name ,@formals)
+                                         (equal (,name ,@(subst `(update-nth ,n ,y ,x) x formals))
+                                                (and (<= (nfix ,n) (len ,x))
+                                                     ,val-okp))))
+                              ((eq elementp-of-nil (not negatedp))
+                               `(implies (,name ,@formals)
+                                         (equal (,name ,@(subst `(update-nth ,n ,y ,x) x formals))
+                                                ,val-okp)))
+                              (t
+                               `(implies (and (<= (nfix ,n) (len ,x))
+                                              (,name ,@formals))
+                                         (equal (,name ,@(subst `(update-nth ,n ,y ,x) x formals))
+                                                ,val-okp))))))
 
-                   ;; The following theorem is actually quite silly.  Any
-                   ;; decent library that reasons about nth and update-nth
-                   ;; probably covers this case.  However, to avoid imposing a
-                   ;; dependency upon such a library for users of deflist,
-                   ;; here, we include a less general version of the theorem
-                   ;; that such a library would provide.
-                   
-                   (defthm ,(mksym name '-of-update-nth-when-identity-slot)
-                     (implies (and (< (nfix ,n) (len ,x))
-                                   (,name ,@formals))
-                              (,name ,@(subst `(update-nth ,n
-                                                           (nth ,n ,x)
-                                                           ,x)
-                                              x
-                                              formals))))
-
-                   ;; The following theorem should be unnecessary if we can
-                   ;; find an appropriate :type-prescription rule (which would
-                   ;; be defined as part of a defaggregate that includes a
-                   ;; ,name).  The problem is that -of-append can't fire,
-                   ;; because list-fix is blocking it, and the theorem about
-                   ;; list-fix being a no-op on true-listp's can't fire because
-                   ;; the fact that ,name-p's are true-listp's is buried too
-                   ;; deeply for ACL2 to figure it out.  So, we help ACL2
-                   ;; figure it out by including this lemma.
                    (defthm ,(mksym name '-of-list-fix)
+; This is not very satisfying.  Ideally, ACL2 would deeply understand, from the
+; compound-recognizer rule showing true-listp when foo-listp, that whenever
+; (foo-listp x) holds then (true-listp x) holds.  Ideally, it could use this
+; knowledge to rewrite (list-fix x) to x whenever we can show (foo-listp x).
+;
+; But compound recognizers aren't quite good enough for this.  For instance,
+; ACL2 won't rewrite a term like (list-fix (accessor x)) into (accessor x) even
+; if we have a rewrite rule that says (foo-listp (accessor x)).
+;
+; Some alternatives we considered:
+;  - A rewrite rule version of (foo-listp x) ==> (true-listp x).  But it seems
+;    like this would get *really* expensive when you have 100 list recognizers
+;    and you encounter a true-listp term.
+;  - A rewrite rule that rewrites (list-fix x) ==> x when (foo-listp x) is known.
+;    This might be the right compromise.  It's at least somewhat less common to
+;    see list-fix than true-listp.  But it still suffers from the same kind of
+;    scaling problem.
+;
+; David's rule, below, is not as powerful as either of these approaches, but it
+; at least manages to localize the performance impact, and helps at least in
+; some cases.  Perhaps TAU can somehow help with this in the future.
                      (implies (,name ,@formals)
                               (,name ,@(subst `(list-fix ,x) x formals))))))
-                                                           
 
           (local (in-theory (disable ,name)))
 
