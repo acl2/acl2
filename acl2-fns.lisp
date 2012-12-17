@@ -1453,3 +1453,35 @@ notation causes an error and (b) the use of ,. is not permitted."
                     (lam (and fn (function-lambda-expression fn))))
                (cond (lam (values lam nil))
                      (t (values nil nil))))))))
+
+; [Comment from Jared]: We probably should work toward getting rid of
+; defg/defv's in favor of regular parameters...
+
+(defmacro defg (&rest r)
+
+  "DEFG is a short name for DEFPARAMETER.  However, in Clozure Common
+  Lisp (CCL) its use includes two promises: (1) never to locally bind
+  the variable, e.g., with LET or LAMBDA, and (2) never to call
+  MAKUNBOUND on the variable.  CCL uses fewer machine instructions to
+  reference such a variable than an ordinary special, which may have a
+  per-thread binding that needs to be locked up."
+
+  #-Clozure
+  `(defparameter ,@r)
+  #+Clozure
+  `(ccl::defstatic ,@r))
+
+(defmacro defv (&rest r)
+
+  "DEFV is a short name for DEFVAR.  However, in Clozure Common Lisp
+  (CCL) its use includes two promises: (1) never to locally bind the
+  variable, e.g., with LET or LAMBDA, and (2) never to call MAKUNBOUND
+  on the variable.  CCL uses fewer machine instructions to reference
+  such a variable than an ordinary special, which may have a
+  per-thread binding that needs to be locked up.  Unlike for DEFVAR,
+  the second argument of DEFV is not optional."
+
+  #-Clozure
+  `(defparameter ,@r)
+  #+Clozure
+  `(ccl::defstaticvar ,@r))

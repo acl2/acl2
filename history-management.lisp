@@ -17208,6 +17208,7 @@
             more-doc-state             ;;; for proof-checker :more command
             pc-ss-alist                ;;; for saves under :instructions hints
             last-step-limit            ;;; propagate step-limit past expansion
+            illegal-to-certify-message ;;; needs to persist past expansion
             ))))
     val))
 

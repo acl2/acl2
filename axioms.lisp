@@ -27262,6 +27262,7 @@
     fix-stobj-array-type
     set-gc-threshold$-fn
     certify-book-finish-complete
+    chk-absstobj-invariants
     ))
 
 (defconst *primitive-logic-fns-with-raw-code*
@@ -27387,6 +27388,7 @@
     oracle-apply oracle-apply-raw
     time-tracker-fn
     gc-verbose-fn
+    set-absstobj-debug-fn
   ))
 
 (defconst *primitive-macros-with-raw-code*
@@ -27897,6 +27899,7 @@
     (gstackp . nil)
     (guard-checking-on . t)
     (host-lisp . nil)
+    (illegal-to-certify-message . nil)
     (in-local-flg . nil)
     (in-prove-flg . nil)
     (in-verify-flg . nil)
@@ -35429,6 +35432,7 @@
     deferred-ttag-notes
     deferred-ttag-notes-saved
     pc-assign
+    illegal-to-certify-message
     ))
 
 ; There are a variety of state global variables, 'ld-skip-proofsp among them,
@@ -48496,3 +48500,247 @@ Lisp definition."
          (not (foo '(a b c))))
     :rule-classes :tau-system)
   ~ev[]~/~/")
+
+#-acl2-loop-only
+(defg *inside-absstobj-update* #(0))
+
+(defun set-absstobj-debug-fn (val always)
+  (declare (xargs :guard t))
+  #+acl2-loop-only
+  (declare (ignore always))
+  #-acl2-loop-only
+  (let ((temp (svref *inside-absstobj-update* 0)))
+    (cond ((or (null temp)
+               (eql temp 0)
+               (and always
+                    (or (ttag (w *the-live-state*))
+                        (er hard 'set-absstobj-debug
+                            "It is illegal to supply a non-nil value for ~
+                             keyword :always, for set-absstobj-debug, unless ~
+                             there is an active trust tag."))))
+           (setf (aref *inside-absstobj-update* 0)
+                 (cond ((eq val :reset)
+                        (if (natp temp) 0 nil))
+                       (val nil)
+                       (t 0))))
+          (t (er hard 'set-absstobj-debug
+                 "It is illegal to call set-absstobj-debug in a context where ~
+                  an abstract stobj invariance violation has already occurred ~
+                  but not yet been processed.  You can overcome this ~
+                  restriction either by waiting for the top-level prompt, or ~
+                  by evaluating the following form: ~x0."
+                 `(set-abbstobj-debug ,(if (member-eq val '(nil :reset))
+                                           nil
+                                         t)
+                                      :always t)))))
+  val)
+
+(defmacro set-absstobj-debug (val &key (event-p 't) always on-skip-proofs)
+
+; Here is a book that was certifiable in ACL2 Version_5.0, obtained from Sol
+; Swords (shown here with only very trivial changes).  It explains why we need
+; the :protect keyword for defabsstobj, as explained in :doc note-5-1.
+; Community book books/misc/defabsstobj-example-4.lisp is based on this
+; example, but focuses on invariance violation and avoids the work Sol did to
+; get a proof of nil.
+
+;   (in-package "ACL2")
+;   
+;   (defstobj const-stobj$c (const-fld$c :type bit :initially 0))
+;   
+;   (defstub stop () nil)
+;   
+;   ;; Logically preserves the field value as 0, but actually leaves it as 1
+;   (defun change-fld$c (const-stobj$c)
+;      (declare (xargs :stobjs const-stobj$c))
+;      (let ((const-stobj$c (update-const-fld$c 1 const-stobj$c)))
+;        (prog2$ (stop)
+;                (update-const-fld$c 0 const-stobj$c))))
+;   
+;   (defun get-fld$c (const-stobj$c)
+;      (declare (xargs :stobjs const-stobj$c))
+;      (const-fld$c const-stobj$c))
+;   
+;   (defun const-stobj$ap (const-stobj$a)
+;      (declare (xargs :guard t))
+;      (equal const-stobj$a 0))
+;   
+;   (defun change-fld$a (const-stobj$a)
+;      (declare (xargs :guard t)
+;               (ignore const-stobj$a))
+;      0)
+;   
+;   ;; Logically returns 0, exec version returns the field value which should
+;   ;; always be 0...
+;   (defun get-fld$a (const-stobj$a)
+;      (declare (xargs :guard t)
+;               (ignore const-stobj$a))
+;      0)
+;   
+;   (defun create-const-stobj$a ()
+;      (declare (xargs :guard t))
+;      0)
+;   
+;   (defun-nx const-stobj-corr (const-stobj$c const-stobj$a)
+;      (and (equal const-stobj$a 0) (equal const-stobj$c '(0))))
+;   
+;   (in-theory (disable (const-stobj-corr)
+;                        (change-fld$c)))
+;   
+;   (DEFTHM CREATE-CONST-STOBJ{CORRESPONDENCE}
+;            (CONST-STOBJ-CORR (CREATE-CONST-STOBJ$C)
+;                              (CREATE-CONST-STOBJ$A))
+;            :RULE-CLASSES NIL)
+;   
+;   (DEFTHM CREATE-CONST-STOBJ{PRESERVED}
+;            (CONST-STOBJ$AP (CREATE-CONST-STOBJ$A))
+;            :RULE-CLASSES NIL)
+;   
+;   (DEFTHM GET-FLD{CORRESPONDENCE}
+;            (IMPLIES (CONST-STOBJ-CORR CONST-STOBJ$C CONST-STOBJ)
+;                     (EQUAL (GET-FLD$C CONST-STOBJ$C)
+;                            (GET-FLD$A CONST-STOBJ)))
+;            :RULE-CLASSES NIL)
+;   
+;   (DEFTHM CHANGE-FLD{CORRESPONDENCE}
+;            (IMPLIES (CONST-STOBJ-CORR CONST-STOBJ$C CONST-STOBJ)
+;                     (CONST-STOBJ-CORR (CHANGE-FLD$C CONST-STOBJ$C)
+;                                       (CHANGE-FLD$A CONST-STOBJ)))
+;            :RULE-CLASSES NIL)
+;   
+;   (DEFTHM CHANGE-FLD{PRESERVED}
+;            (IMPLIES (CONST-STOBJ$AP CONST-STOBJ)
+;                     (CONST-STOBJ$AP (CHANGE-FLD$A CONST-STOBJ)))
+;            :RULE-CLASSES NIL)
+;   
+;   (defabsstobj const-stobj
+;      :concrete const-stobj$c
+;      :recognizer (const-stobjp :logic const-stobj$ap :exec const-stobj$cp)
+;      :creator (create-const-stobj :logic create-const-stobj$a :exec
+;                                   create-const-stobj$c)
+;      :corr-fn const-stobj-corr
+;      :exports ((get-fld :logic get-fld$a :exec get-fld$c)
+;                (change-fld :logic change-fld$a :exec change-fld$c
+;                            ;; new
+;                            ;; :protect t
+;                            )))
+;   
+;   ;; Causes an error and leaves the stobj in an inconsistent state (field
+;   ;; is 1)
+;   (make-event
+;    (mv-let
+;     (erp val state)
+;     (trans-eval '(change-fld const-stobj) 'top state t)
+;     (declare (ignore erp val))
+;     (value '(value-triple nil))))
+;   
+;   (defevaluator my-ev my-ev-lst ((if a b c)))
+;   
+;   (defun my-clause-proc (clause hint const-stobj)
+;      (declare (xargs :stobjs const-stobj
+;                      :guard t)
+;               (ignore hint))
+;      (if (= 0 (get-fld const-stobj)) ;; always true by defn. of get-fld
+;          (mv nil (list clause))
+;        (mv nil nil))) ;; unsound if this branch is taken
+;   
+;   (defthm my-clause-proc-correct
+;      (implies (and (pseudo-term-listp clause)
+;                    (alistp a)
+;                    (my-ev (conjoin-clauses
+;                            (clauses-result
+;                             (my-clause-proc clause hint const-stobj)))
+;                           a))
+;               (my-ev (disjoin clause) a))
+;      :rule-classes :clause-processor)
+;   
+;   (defthm foo nil :hints (("goal" :clause-processor
+;                             (my-clause-proc clause nil const-stobj)))
+;      :rule-classes nil)
+
+  ":Doc-Section switches-parameters-and-modes
+
+  obtain debugging information upon atomicity violation for an abstract stobj~/
+
+  This ~il[documentation] topic assumes familiarity with abstract stobjs.
+  ~l[defabsstobj].
+
+  Below we explain what is meant by an error message such as the following.
+
+  ~bv[]
+  ACL2 Error in CHK-ABSSTOBJ-INVARIANTS:  Possible invariance violation
+  for an abstract stobj!  See :DOC set-absstobj-debug, and PROCEED AT
+  YOUR OWN RISK.
+  ~ev[]
+
+  The use of ~c[(set-absstobj-debug t)] will make this error message more
+  informative, as follows, at the cost of slower execution ~-[] but in
+  practice, the slowdown may be negligible (more on that below).
+
+  ~bv[]
+  ACL2 Error in CHK-ABSSTOBJ-INVARIANTS:  Possible invariance violation
+  for an abstract stobj!  See :DOC set-absstobj-debug, and PROCEED AT
+  YOUR OWN RISK.  Evaluation was aborted under a call of abstract stobj
+  export UPDATE-FLD-NIL-BAD.
+  ~ev[]
+
+  You may be best off starting a new ACL2 session if you see one of the errors
+  above.  But you can continue at your own risk.  With a trust tag
+  (~pl[defttag]), you can even fool ACL2 into thinking nothing is wrong, and
+  perhaps you can fix up the abstract stobj so that indeed, nothing really is
+  wrong.  See the community book ~c[books/misc/defabsstobj-example-4.lisp] for
+  how to do that.  That book also documents the ~c[:always] keyword and a
+  special value for the first argument, ~c[:RESET].
+
+  ~bv[]
+  Examples:
+  (set-absstobj-debug t)                 ; obtain extra debug info, as above
+  (set-absstobj-debug t :event-p t)      ; same as above
+  (set-absstobj-debug t
+                      :on-skip-proofs t) ; as above, but even in include-book
+  (set-absstobj-debug t :event-p nil)    ; returns one value, not error triple
+  (set-absstobj-debug nil)               ; avoid extra debug info (default)~/
+
+  General Form:
+  (set-absstobj-debug val
+                      :event-p        event-p        ; default t
+                      :always         always         ; default nil
+                      :on-skip-proofs on-skip-proofs ; default nil
+                      )
+  ~ev[]
+  where the keyword arguments are optional with defaults as indicated above,
+  and all supplied arguments are evaluated except for ~c[on-skip-proofsp],
+  which must be Boolean (if supplied).  Keyword arguments are discussed at the
+  end of this topic.
+
+  Recall (~pl[defabsstobj]) that for any exported function whose ~c[:EXEC]
+  function might (according to ACL2's heuristics) modify the concrete stobj
+  non-atomically, one must specify ~c[:PROTECT t].  This results in extra code
+  generated for the exported function, which provides a check that atomicity
+  was not actually violated by a call of the exported function.  The extra code
+  might slow down execution, but perhaps only negligibly in typical cases.  If
+  you can tolerate a bit extra slow-down, then evaluate the form
+  ~c[(set-absstobj-debug t)].  Subsequent such errors will provide additional
+  information, as in the example displayed earlier in this documentation topic.
+
+  Finally we document the keyword arguments, other than ~c[:ALWAYS], which is
+  discussed in a book as mentioned above.  When the value of ~c[:EVENT-P] is
+  true, which it is by default, the call of ~c[set-absstobj-debug] will expand
+  to an event.  That event is a call of ~ilc[value-triple].  In that case,
+  ~c[:ON-SKIP-PROOFS] is passed to that call so that ~c[set-absstobj-debug] has
+  an effect even when proofs are being skipped, as during ~ilc[include-book].
+  That behavior is the default; that is, ~c[:ON-SKIP-PROOFS] is ~c[nil] by
+  default.  Also ~pl[value-triple].  The value of keyword ~c[:ON-SKIP-PROOFS]
+  must always be either ~c[t] or ~c[nil], but other than that, it is ignored
+  when ~c[EVENT-P] is ~c[nil].~/"
+
+  (declare (xargs :guard
+
+; We provide this guard as a courtesy: since on-skip-proofs is not evaluated, a
+; non-nil form that evaluates to nil (such as 'nil) would otherwise be passed
+; without evaluation and hence treated as being true.
+
+                  (booleanp on-skip-proofs)))
+  (let ((form `(set-absstobj-debug-fn ,val ,always)))
+    (cond (event-p `(value-triple ,form :on-skip-proofs ,on-skip-proofs))
+          (t form))))

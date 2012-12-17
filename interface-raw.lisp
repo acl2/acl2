@@ -6639,6 +6639,7 @@
            defconst
            defconstant
            defdoc
+           defg
            define-@par-macros
            define-trusted-clause-processor ; should handle :partial-theory
            deflabel
