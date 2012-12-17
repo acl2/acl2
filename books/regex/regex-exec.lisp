@@ -26,7 +26,7 @@
 (include-book "input-list")
 
 (include-book "tools/flag" :dir :system)
-
+(include-book "clause-processors/find-subterms" :dir :system)
 ;;(include-book "arithmetic-3/bind-free/top" :dir :system)
 
 
@@ -590,21 +590,6 @@
 ;;                 (pseudo-input-listp 
 ;;                  (run-regex-m-r regex str index backrefs ilist min max fun))))
 ;;   :hints (("Goal" :in-theory (enable input-list-eltp))))
-(mutual-recursion
- (defun find-call (fn x)
-   (declare (xargs :guard (symbolp fn)))
-   (if (atom x)
-       nil
-     (if (eq (car x) fn)
-         x
-       (find-call-list fn (cdr x)))))
- (defun find-call-list (fn x)
-   (declare (Xargs :guard (symbolp fn)))
-   (if (atom x)
-       nil
-     (or (find-call fn (car x))
-         (find-call-list fn (cdr x))))))
-
 
 (local
  (defthm-run-regex-flag
