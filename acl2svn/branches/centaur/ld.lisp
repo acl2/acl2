@@ -1258,19 +1258,21 @@
 
 ; If error-flg is non-nil, trans-ans is (stobjs-out . valx).
 
-                            (cond
-                             (error-flg (mv t nil state))
-                             ((and (ld-error-triples state)
-                                   (equal (car trans-ans) *error-triple-sig*)
-                                   (car (cdr trans-ans)))
-                              (mv t nil state))
-                             (t (er-progn
-                                 (maybe-add-command-landmark
-                                  old-wrld
-                                  old-default-defun-mode
-                                  form
-                                  trans-ans state)
-                                 (mv nil trans-ans state))))))
+                            (er-progn
+                             (chk-absstobj-invariants nil state)
+                             (cond
+                              (error-flg (mv t nil state))
+                              ((and (ld-error-triples state)
+                                    (equal (car trans-ans) *error-triple-sig*)
+                                    (car (cdr trans-ans)))
+                               (mv t nil state))
+                              (t (er-progn
+                                  (maybe-add-command-landmark
+                                   old-wrld
+                                   old-default-defun-mode
+                                   form
+                                   trans-ans state)
+                                  (mv nil trans-ans state)))))))
 
 ; If error-flg is non-nil, trans-ans is (stobjs-out . valx) and we know
 ; that valx is not an erroneous error triple if we're paying attention to
@@ -19586,6 +19588,10 @@
 ; they probably warned before.  With this change, CCL svn rev 15527 doesn't
 ; warn.
 
+; Modified the layout of the history-entry record so that it's not dependent on
+; #+acl2-par, and hence its generated macros are the same for ACL2 and
+; ACL2(p).  As a consequence, made a few related changes.
+
   :doc
   ":Doc-Section release-notes
 
@@ -19658,9 +19664,13 @@
   but when it is ~c[t], then a second value is returned, which is a tag-tree.
   ~l[extended-metafunctions].
 
-  Many improvements have been made to the tau-system (~pl[tau-system]).  Also
-  ~pl[time-tracker-tau] for discussion of how the new ~ilc[time-tracker]
-  utility can help discover ways to avoid slowdown related to the tau-system.
+  Many improvements have been made to the tau-system (~pl[tau-system]),
+  including support for arithmetic intervals bounded by constants.  Thus, for
+  example, ~c[(and (<= 0 x) (<= x 15))] is a tau predicate.  The
+  ~il[documentation] has also been improved
+  (~pl[introduction-to-the-tau-system]). Also ~pl[time-tracker-tau] for
+  discussion of how the new ~ilc[time-tracker] utility can help discover ways
+  to detect slowdown related to the tau-system.
 
   The ~ilc[defthm] ~il[events] printed by ~ilc[defabsstobj], namely those that
   remain to be proved, are now given with ~c[:rule-classes nil] since there is
@@ -19776,6 +19786,9 @@
   additions, and the definition of ~ilc[integer-listp] was modified to call
   ~ilc[eq] instead of ~ilc[equal], like the other such definitions.
 
+  ~l[get-command-sequence] for a new utility that returns a list of
+  ~il[command]s between two given command descriptors.
+
   ~st[HEURISTIC IMPROVEMENTS]
 
   We obtained a substantial speedup ~-[] 13% observed for the regression suite,
@@ -19786,6 +19799,12 @@
   performance statistics that suggested looking at changing ~il[break-rewrite]
   to boost performance.
 
+  The heuristics for automatically expanding recursive function calls have been
+  changed during proofs by induction.  Now, during induction, more terms that
+  suggested the induction scheme are automatically expanded.  Thanks to David
+  Rager for providing an example and having discussions with us that spurred us
+  to develop this heuristic improvement.
+
   ~st[BUG FIXES]
 
   Fixed a soundness bug in ~ilc[defabsstobj] based on ~ilc[guard]s that
@@ -19795,6 +19814,17 @@
   also thank Sol for helpful discussions about ~il[guard]s of functions
   introduced by ~c[defabsstobj], which has led us to enhance the
   ~il[documentation]; ~pl[defabsstobj].
+
+  Fixed a soundness bug in ~ilc[defabsstobj] based on interrupted updates of
+  abstract stobjs.  As part of the fix a new keyword, ~c[:PROTECT], has been
+  introduced for ~c[defabsstobj] exports, along with a new top-level
+  ~c[defabsstobj] keyword, ~c[:PROTECT-DEFAULT]; ~pl[defabsstobj].  We do some
+  analysis that we expect will avoid the use of ~c[:PROTECT] in many cases,
+  which is fortunate since the use of ~c[:PROTECT t] may cause a slight
+  slowdown in (abstract) stobj updates.  Thanks to Sol Swords for bringing this
+  bug to our attention and supplying a proof of ~c[nil], which we include as a
+  comment in source file ~c[other-events.lisp], in the definition of function
+  ~c[set-absstobj-debug].
 
   Fixed a raw Lisp error that occurred when tracing a ~i[stobj] resize
   function, thanks to an error report from Warren Hunt, Marijn Heule, and
@@ -19866,20 +19896,46 @@
 
   Some changes have been made to how regressions are run, i.e., to how the
   community books are certified.  (1) The standard regression now includes
-  community books directory ~c[books/centaur].  (2) A new `make' (or
-  environment) variable, ~c[ACL2_JOBS], specifies the number of parallel jobs
-  to run, serving as a replacment for the ~c[-j] argument of `make' that works
-  for all community books, including those under directory ~c[centaur];
-  ~pl[book-makefiles].  (3) It is no longer necessary to do an ACL2(h)
-  regression in order to build a copy of the documentation generated by Jared
-  Davis's xdoc utility at ~c[books/xdoc-impl/manual/preview.html]; a vanilla
-  ACL2 regression will build this manual.  (4) It is no longer necessary to set
-  the ~c[ACL2] environment variable for ACL2(h) regressions if you want to use
-  the executable ~c[saved_acl2h] in the ACL2 sources directory.
+  community books directory ~c[books/centaur].  To skip these (for example, a
+  Windows system has encountered difficulty with them even after installing
+  Perl), include ~c[ACL2_CENTAUR=skip] with your `~c[make]' command.  (2) A new
+  `make' (or environment) variable, ~c[ACL2_JOBS], specifies the number of
+  parallel jobs to run, serving as a replacment for the ~c[-j] argument of
+  `make' that works for all community books, including those under directory
+  ~c[centaur]; ~pl[book-makefiles].  (3) It is no longer necessary to do an
+  ACL2(h) regression in order to build a copy of the documentation generated by
+  Jared Davis's xdoc utility at ~c[books/xdoc-impl/manual/preview.html]; a
+  vanilla ACL2 regression will build this manual.  (4) It is no longer
+  necessary to set the ~c[ACL2] environment variable for ACL2(h) regressions if
+  you want to use the executable ~c[saved_acl2h] in the ACL2 sources directory.
+
+  The ACL2 home page now has a search utility for documentation and books.
+  Thanks to Shilpi Goel and David Rager for feedback on a preliminary version
+  of this utility.
+
+  (SBCL only) The value of SBCL command line option --dynamic-space-size has
+  been increased from 2000 to 4000 (as explained in a comment in ACL2 source
+  function ~c[save-acl2-in-sbcl-aux]).
 
   ~st[EMACS SUPPORT]
 
-  ~st[EXPERIMENTAL VERSIONS]
+  ~st[EXPERIMENTAL/ALTERNATE VERSIONS]
+
+  Among the enhancements for ACL2(r) (~pl[real]) are the following.~bq[]
+
+  Thanks to Ruben Gamboa for his helpful role in making the following
+  improvements made with Ruben Gamboa in support for non-standard analysis in
+  ACL2(r).
+
+  Constrained functions can now be introduce as non-classical.  ~l[signature].
+
+  ~ilc[Defun-sk] now takes a new keyword argument, ~c[:CLASSICALP], that
+  determines whether or not the named function is classical.  ~l[defun-sk].
+
+  Incorporated a bug fix from Ruben Gamboa for ~ilc[ceiling].  The default (for
+  `bad' arguments) had been 1, but now we follow normal ACL2 practice by
+  returning 0 in that case.
+  ~eq[]
 
   Among the enhancements for the HONS extension (~pl[hons-and-memoization])
   are the following.~bq[]
@@ -19906,28 +19962,6 @@
   ~eq[]
 
   ~/~/")
-
-(deflabel |NOTE-5-1(R)|
-  :doc
-  ":Doc-Section release-notes
-
-  ACL2 Version  5.1(r) (xxx, 20xx) Notes~/
-
-  ~/
-
-  Please ~pl[note-5-1] for changes in Version  5.1 of ACL2.
-
-  Thanks to Ruben Gamboa for his helpful role in making the following
-  improvements made with Ruben Gamboa in support for non-standard analysis in
-  ACL2(r).
-
-  Constrained functions can now be introduce as non-classical.  ~l[signature].
-
-  ~ilc[Defun-sk] now takes a new keyword argument, ~c[:CLASSICALP], that
-  determines whether or not the named function is classical.  ~l[defun-sk].
-
-  ~/
-  ")
 
 (deflabel the-method
   :doc
@@ -21756,6 +21790,14 @@ ACL2 is part of the Boyer-Moore family of provers, for which its authors have
 received the 2005 <A HREF=\"http://awards.acm.org/software_system/\">ACM
 Software System Award</A>.<P>
 
+<TABLE BORDER=\"1\">
+<TR>
+<TD>
+<a href=\"#search\"><font color=\"green\">SEARCH</font></a>
+</TD>
+</TR>
+</TABLE>
+
 </TD>
 </TR>
 </TABLE>
@@ -21919,11 +21961,11 @@ David L. Rager</LI>
 
 <p>
 
-The distribution also includes libraries of <i>books</i> (files
-containing definitions and theorems) that extend the code that we have
-written.  Books are contributed and maintained by the ACL2 community
-(see <code><A
-HREF=\"http://acl2-books.googlecode.com/\">http://acl2-books.googlecode.com/</A></code>)
+There are libraries of <i>books</i> (files containing definitions and theorems)
+that extend the code that we have written.  Books are contributed and
+maintained by the ACL2 community (see <code><A
+HREF=\"http://acl2-books.googlecode.com/\">http://acl2-books.googlecode.com/</A></code>;
+in particular, the [Source] tab near the top takes you to a search box)
 and their authors are generally noted in each book or its
 <code>README</code> file.  There is a <A
 HREF=\"http://fv.centtech.com/acl2/5.0/doc/\">combined manual</A> that
@@ -22096,6 +22138,50 @@ href=\"http://www.cs.utexas.edu/users/moore/acl2/current/MAKE-EVENT.html\">http:
 To contribute user documentation, send email to the ACL2 developers,
 for example at <code><a
 href=\"mailto:acl2-bugs@utlists.utexas.edu\">acl2-bugs@utlists.utexas.edu</a></code>.
+
+<H2><A NAME=\"search\">Searching documentation and books</A></H2>
+
+The links below may help you to search the ACL2 documentation and the ACL2
+community books, respectively.  Our approach is low-tech, but intended to be
+reliable and easy to use on any platform.  You might want to add a bookmark for
+each of these.
+
+<ul>
+
+<li>
+The following link will take you to a search box on a Google page,
+which has the following contents.
+<pre>
+search_term site:http://www.cs.utexas.edu/users/moore/acl2/v5-0
+</pre>
+Now simply replace the word `search_term' with your topic.  For example, replace
+`<code>search_term</code>' by `<code>tail recursion</code>' to get
+documentation about tail recursion.
+<pre>
+tail recursion site:http://www.cs.utexas.edu/users/moore/acl2/v5-0
+</pre>
+Now you are ready to follow the link.
+<p>
+<a href=\"http://www.google.com/search?q=search_term
+		 site:http://www.cs.utexas.edu/users/moore/acl2/v5-0\">SEARCH
+		 THE DOCUMENTATION</a>
+</li>
+
+<p>
+
+<li>
+The next link will take you to the Source tab of the community books
+website (which is external to the present ACL2 website).  You can then
+click in the box just under that tab and type your search term.  For
+example, if you type `<code>tail recursion</code>' then you will see
+text from several books in the svn trunk that deal with the topic of
+tail recursion.
+<p>
+<a href=\"https://code.google.com/p/acl2-books/source/\">SEARCH THE
+  COMMUNITY BOOKS</a></a><br>
+</li>
+
+</ul>
 
 <BR><HR><BR><BR><BR><BR><BR><BR>
 <BR><BR><BR><BR><BR><BR><BR><BR><BR><BR><BR><BR>

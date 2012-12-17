@@ -1046,9 +1046,7 @@
                  (sl-let (clauses ttree)
                          (clausify-input term
                                          (access rewrite-constant
-                                                 (access prove-spec-var
-                                                         pspv
-                                                         :rewrite-constant)
+                                                 rcnst
                                                  :fns-to-be-ignored-by-rewrite)
                                          (access rewrite-constant
                                                  rcnst
@@ -5307,8 +5305,8 @@
                           processor)
                         :clause clause
                         :ttree ttree
-                        #+acl2-par :cl-id 
-                        #+acl2-par cl-id)
+                        :cl-id ; only needed for #+acl2-par, but harmless
+                        cl-id)
                   hist)))
       (cond
        ((consp (access history-entry ; (SPECIOUS . processor)
@@ -6275,7 +6273,7 @@
    nil   ; summary
    ))
 
-(defun change-or-hit-history-entry (i hist #+acl2-par cl-id)
+(defun change-or-hit-history-entry (i hist cl-id)
   
 ; The first entry in hist is a history-entry of the form
 
@@ -6323,8 +6321,8 @@
                                                i
                                                uhs-lst)
                                          nil)
-                #+acl2-par :cl-id 
-                #+acl2-par cl-id)
+                :cl-id ; only needed for #+acl2-par, but harmless
+                cl-id)
           (cdr hist))))
 
 (defun@par pair-cl-id-with-hint-setting (cl-id hint-settings)
@@ -7500,7 +7498,7 @@
          (waterfall1@par ledge
                          d-cl-id
                          clause
-                         (change-or-hit-history-entry i hist #+acl2-par cl-id)
+                         (change-or-hit-history-entry i hist cl-id)
                          pspv
                          (cons (pair-cl-id-with-hint-setting@par d-cl-id
                                                                  hint-settingsi)
