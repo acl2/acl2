@@ -5,7 +5,15 @@
 # provisional certification.
 override ACL2_PCERT =
 
-all: proofs/ideal-speedup.cert
+# It can be useful to extend the :all target for use in ACL2(p)
+# regressions, as shown just below.  However, we have seen the first
+# theorem in proofs/ideal-speedup.lisp, ideal-4-way, take over 9 hours
+# using ACL2(h) built on CCL with safety 3, on a fast 2012-vintage
+# Linux machine.  So we avoid adding certification of that book to the
+# default regression.
+#
+# all: proofs/ideal-speedup.cert
+
 matrix-multiplication-parallel.cert: matrix-multiplication-serial.cert
 fibonacci.cert: matrix-multiplication-parallel.cert
 
