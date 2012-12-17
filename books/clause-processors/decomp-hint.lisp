@@ -227,8 +227,8 @@ chosen structure to decompose. Clause: ~x0~%" clause)
        ;; Heuristically decide based on presence in the conclusion
        ;; or in rest of clause whether to prefer expanding
        ;; (car arg) or (cdr arg)
-       (car (if (eq (car arg) 'cons) (cadr arg)`(car ,arg)))
-       (cdr (if (eq (car arg) 'cons) (caddr arg)`(cdr ,arg)))
+       (car (if (and (consp arg) (eq (car arg) 'cons)) (cadr arg) `(car ,arg)))
+       (cdr (if (and (consp arg) (eq (car arg) 'cons)) (caddr arg) `(cdr ,arg)))
        (concl (car (last clause)))
        ((mv 1st give-up)
         (cond ((present-in-term concl car) (mv car nil))
