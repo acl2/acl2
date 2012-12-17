@@ -12,10 +12,7 @@ akcl-acl2-trace.lisp
 # all-files-developers.txt -- developer file
 # all-files-extra.txt -- developer file
 allegro-acl2-trace.lisp
-all-files-books.txt
-all-files-nonstd.txt
 all-files.txt
-all-files-workshops.txt
 axioms.lisp
 basis.lisp
 bdd.lisp
@@ -102,7 +99,7 @@ make-texinfo.el
 README
 # The following is distributed but is not in the svn repository:
 TEX
-texinfo.tex
+# unversioned-files.txt -- under svn control but not distributed
 write-acl2-code-size.lisp
 write-acl2-html.lisp
 write-acl2-texinfo.lisp
@@ -120,6 +117,7 @@ installation
 *.html
 *.gif
 
+# The following is distributed but is not in the svn repository:
 doc/HTML/installation:
 installation.html
 installing-make.html
@@ -153,4 +151,5 @@ using.html
 windows7.html
 windows-gcl-jared.html
 
+# The following is distributed but is not in the svn repository:
 saved:
