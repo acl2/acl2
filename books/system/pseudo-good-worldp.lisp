@@ -999,10 +999,10 @@
   (declare (xargs :guard (symbolp sym)))
   (cond (sym
          (and (consp val)
-              (natp (car val))
+              (integerp (car val))
               (eq (cdr val) sym)))
         (t (and (consp val)
-                (natp (car val))
+                (integerp (car val))
                 (symbolp (cdr val))))))
 
 (defun pseudo-tau-pairp-listp (lst)
@@ -2593,6 +2593,7 @@
           (ABSOLUTE-EVENT-NUMBER
            (or (eq val *acl2-property-unbound*)
                (absolute-event-numberp sym val)))
+          (ABSSTOBJ-INFO (weak-absstobj-info-p val))
           (ACCESSOR-NAMES (accessor-namesp sym val))
           (ATTACHMENT (attachment-propertyp sym val))
           (BIG-SWITCH (pseudo-big-switchp sym val))

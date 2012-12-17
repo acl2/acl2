@@ -252,7 +252,7 @@ define cert_cmd
 		   tail -300 $*$(ACL2_OUTFILE_SUFFIX).out | sed 's/^/   | /' ;\
 		   echo "" ;\
 		   echo "" ;\
-		   echo '**CERTIFICATION FAILED** for `pwd`/$@ (see $*$(ACL2_OUTFILE_SUFFIX).out)' ;\
+		   echo "**CERTIFICATION FAILED** for" `pwd`/$@ "(see $*$(ACL2_OUTFILE_SUFFIX).out)" ;\
 		   exit 1)
 	rm -f $(WORKXXX).$(*F)
 endef

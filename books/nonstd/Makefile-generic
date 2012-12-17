@@ -59,11 +59,11 @@ ifdef MAKEFILE_LIST
 # Determine the location of this Makefile-generic.  NOTE: We have
 # tried $(realpath $(dir ...)) and similarly for abspath, but they
 # have returned the empty string, presumably an error.
-BOOKS_DIR := $(dir $(word $(words $(MAKEFILE_LIST)),$(MAKEFILE_LIST)))
+BOOKS_DIR := $(shell cd $(dir $(word $(words $(MAKEFILE_LIST)),$(MAKEFILE_LIST))) ; pwd)
 
 # Determine the default location of ACL2.  To override, set the ACL2
 # variable on the command line or in the environment.
-ACL2 ?= $(BOOKS_DIR)../../saved_acl2r
+ACL2 ?= $(shell cd $(BOOKS_DIR)/../.. ; pwd)/saved_acl2r
 
 # Unless otherwise specified, use the books under this directory as
 # the system books.  We set the flag ACL2_SYSTEM_BOOKS_DYNAMIC if any
@@ -105,7 +105,7 @@ endif
 # Inhibit all output except the summary (which can be useful for tracking down problems).
 # Set this to "" if you do want the output.
 
-INHIBIT ?= (set-inhibit-output-lst (list (quote prove) (quote proof-tree) (quote warning) (quote observation) (quote event) (quote expansion)))
+INHIBIT ?= (set-inhibit-output-lst (list (quote prove) (quote proof-tree) (quote warning) (quote observation) (quote event) (quote expansion))) (set-debugger-enable :bt)
 
 # Support for make dependencies:  should be a list of book names without
 # the .lisp suffix.  Can be overridden on the command line or in a file
@@ -257,7 +257,7 @@ define cert_cmd
 		   tail -300 $*$(ACL2_OUTFILE_SUFFIX).out | sed 's/^/   | /' ;\
 		   echo "" ;\
 		   echo "" ;\
-		   echo "CERTIFICATION FAILED for `pwd`/$@ (see $*$(ACL2_OUTFILE_SUFFIX).out)" ;\
+		   echo "**CERTIFICATION FAILED** for" `pwd`/$@ "(see $*$(ACL2_OUTFILE_SUFFIX).out)" ;\
 		   exit 1)
 	rm -f $(WORKXXX).$(*F)
 endef

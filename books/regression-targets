@@ -4,6 +4,10 @@
 # make all-plus (or, in the parent directory, make regression)
 # find . -name '*.cert' | sort
 
+# This file is intended for ordinary ACL2 regressions.  For ACL2(h)
+# regressions, consider uncommenting the lines below with comments
+# that say "hons only".
+
 # To update this file, run the process above and then compare to
 # its existing contents.
 
@@ -239,7 +243,76 @@
 ./bdd/cbf.cert
 ./bdd/hamming.cert
 ./bdd/pg-theory.cert
-# Omitting centaur/ (it's hons-only)
+# For centaur/ use targets from regression-centaur-targets:
+./centaur/vl/top.cert
+./centaur/vl/lint/lint.cert
+./centaur/vl/mlib/clean-concats.cert
+./centaur/vl/mlib/atts.cert
+./centaur/vl/transforms/xf-clean-selects.cert
+./centaur/vl/transforms/xf-propagate.cert
+./centaur/vl/transforms/xf-expr-simp.cert
+./centaur/vl/transforms/xf-inline.cert
+./centaur/aig/aiger.cert
+./centaur/aig/aig-equivs.cert
+./centaur/aig/aig-vars.cert
+# ./centaur/aig/aig-vars-fast.cert (probably hons only)
+./centaur/aig/base.cert
+./centaur/aig/bddify.cert
+./centaur/aig/bddify-correct.cert
+./centaur/aig/eval-restrict.cert
+./centaur/aig/g-aig-eval.cert
+./centaur/aig/induction.cert
+./centaur/aig/misc.cert
+./centaur/aig/three-four.cert
+./centaur/aig/witness.cert
+./centaur/aig/vuaig.cert
+./centaur/ubdds/lite.cert
+./centaur/ubdds/param.cert
+./centaur/bitops/top.cert
+./centaur/gl/gl.cert
+./centaur/gl/bfr-aig-bddify.cert
+./centaur/4v-sexpr/top.cert
+./centaur/esim/stv/stv-top.cert
+./centaur/esim/stv/stv-debug.cert
+./centaur/esim/esim-sexpr-correct.cert
+./centaur/../xdoc-impl/save.cert
+./centaur/../xdoc/defxdoc-raw.cert
+./centaur/../xdoc-impl/mkdir-raw.cert
+./centaur/../xdoc-impl/topics.cert
+./centaur/../xdoc-impl/extra-packages.cert
+./centaur/misc/hons-remove-dups.cert
+./centaur/misc/seed-random.cert
+./centaur/misc/equal-by-nths.cert
+./centaur/misc/load-stobj.cert
+./centaur/misc/load-stobj-tests.cert
+# ./centaur/tutorial/ (hons only)
+./centaur/bridge/top.cert
+./centaur/defrstobj/defrstobj.cert
+./centaur/misc/smm.cert
+./centaur/bitops/install-bit.cert
+./centaur/bitops/rotate.cert
+./centaur/misc/tailrec.cert
+./centaur/vl/mlib/sub-counts.cert
+./centaur/vl/util/prefix-hash.cert
+./centaur/bitops/congruences.cert
+./centaur/defrstobj/basic-tests.cert
+./cutil/deflist-tests.cert
+./cutil/defalist-tests.cert
+./cutil/defmapappend-tests.cert
+./cutil/defprojection-tests.cert
+./centaur/bitops/sign-extend.cert
+./centaur/defrstobj/groundwork/demo1.cert
+./centaur/defrstobj/groundwork/demo2.cert
+./centaur/defrstobj/groundwork/demo3.cert
+./centaur/defrstobj/groundwork/demo4.cert
+./centaur/defrstobj/groundwork/demo5.cert
+./centaur/misc/top.cert
+./centaur/ubdds/sanity-check-macros.cert
+./centaur/vl/checkers/use-set-tool.cert
+./centaur/vl/lint/xf-drop-unresolved-submodules.cert
+./centaur/vl/mlib/lvalues-mentioning.cert
+./centaur/vl/mlib/rvalues.cert
+./centaur/vl/util/prefixp.cert
 ./clause-processors/autohide.cert
 ./clause-processors/basic-examples.cert
 ./clause-processors/bv-add.cert
@@ -248,19 +321,25 @@
 ./clause-processors/decomp-hint.cert
 ./clause-processors/equality.cert
 ./clause-processors/ev-theoremp.cert
+./clause-processors/find-subterms.lisp
 ./clause-processors/generalize.cert
+./clause-processors/instantiate.cert
 ./clause-processors/join-thms.cert
-./clause-processors/meta-cheat-ttag.cert
-./clause-processors/meta-cheat-user.cert
+./clause-processors/just-expand.cert
+./clause-processors/meta-extract-simple-test.cert
+./clause-processors/meta-extract-user.cert
 ./clause-processors/multi-env-trick.cert
 ./clause-processors/null-fail-hints.cert
 ./clause-processors/nvalues-thms.cert
 ./clause-processors/replace-defined-consts.cert
 ./clause-processors/replace-impl.cert
 # Omitting clause-processors/SULFA/ (and all its subdirectories)
+./clause-processors/stobj-preservation.cert
+./clause-processors/sublis-var-meaning.cert
 ./clause-processors/term-patterns.cert
 ./clause-processors/unify-subst.cert
 ./clause-processors/use-by-hint.cert
+./clause-processors/witness-cp.cert
 ./coi/adviser/adviser.cert
 ./coi/adviser/adviser-pkg.cert
 ./coi/adviser/test.cert
@@ -502,7 +581,6 @@
 ./countereg-gen/mv-proof.cert
 ./countereg-gen/num-list-fns.cert
 ./countereg-gen/num-list-thms.cert
-./countereg-gen/portcullis.cert
 ./countereg-gen/random.cert
 ./countereg-gen/random-state-basis1.cert
 ./countereg-gen/random-state.cert
@@ -518,11 +596,11 @@
 ./cowles/acl2-asg.cert
 ./cowles/acl2-crg.cert
 ./cutil/defaggregate.cert
-./cutil/defaggregate-opt.cert
 ./cutil/defaggregate-tests.cert
 ./cutil/defalist.cert
 ./cutil/defalist-tests.cert
 ./cutil/defenum.cert
+./cutil/define.cert
 ./cutil/deflist-aux.cert
 ./cutil/deflist.cert
 ./cutil/deflist-tests.cert
@@ -532,10 +610,9 @@
 ./cutil/defprojection.cert
 ./cutil/defprojection-tests.cert
 ./cutil/defsection.cert
-./cutil/define.cert
 ./cutil/portcullis.cert
+./cutil/support.cert
 ./cutil/top.cert
-./cutil/top-opt.cert
 ./cutil/wizard.cert
 ./data-structures/alist-defthms.cert
 ./data-structures/alist-defuns.cert
@@ -617,6 +694,11 @@
 ./defsort/generic-impl.cert
 ./defsort/remove-dups.cert
 ./defsort/uniquep.cert
+./demos/list-theory.cert
+./demos/modeling/memories.cert
+./demos/modeling/network-state-basic.cert
+./demos/modeling/network-state.cert
+./demos/modeling/nondeterminism.cert
 ./finite-set-theory/osets/cardinality.cert
 ./finite-set-theory/osets/computed-hints.cert
 ./finite-set-theory/osets/delete.cert
@@ -657,7 +739,6 @@
 ./hints/huet-lang-algorithm.cert
 ./hints/huet-lang-algorithm-tests.cert
 ./hints/merge-hint.cert
-./hons-archive/hons-archive.cert
 ./ihs/basic-definitions.cert
 ./ihs/ihs-definitions.cert
 ./ihs/ihs-doc-topic.cert
@@ -669,6 +750,13 @@
 ./ihs/logops-lemmas.cert
 ./ihs/math-lemmas.cert
 ./ihs/quotient-remainder-lemmas.cert
+./leftist-trees/leftist-tree-defthms.cert
+./leftist-trees/leftist-tree-defuns.cert
+./leftist-trees/leftist-tree-sort.cert
+./leftist-trees/leftist-tree-sort-equivalent2.cert
+./leftist-trees/leftist-tree-sort-equivalent3.cert
+./leftist-trees/leftist-tree-sort-equivalent.cert
+./leftist-trees/top.cert
 ./make-event/acl2x-help.cert
 # ./make-event/acl2x-help-test.cert (maybe OK, but there's .acl2x file so not sure)
 ./make-event/assert.cert
@@ -738,6 +826,8 @@
 ./misc/dead-events.cert
 ./misc/defabsstobj-example-1.cert
 ./misc/defabsstobj-example-2.cert
+./misc/defabsstobj-example-3.cert
+./misc/defabsstobj-example-4.cert
 ./misc/defattach-bang.cert
 ./misc/defattach-example.cert
 ./misc/definline.cert
@@ -749,6 +839,7 @@
 ./misc/defun-plus.cert
 ./misc/dft.cert
 ./misc/dft-ex.cert
+./misc/dijkstra-shortest-path.cert
 ./misc/disassemble.cert
 ./misc/doc-section.cert
 ./misc/dump-events.cert
@@ -808,8 +899,34 @@
 ./misc/transfinite.cert
 ./misc/untranslate-patterns.cert
 ./misc/wet.cert
-./models/jvm/m1/m1-story.cert
-./models/jvm/m1/problem-set-1-answers.cert
+./models/jvm/m1/alternating-sum.cert
+./models/jvm/m1/alternating-sum-variant.cert
+./models/jvm/m1/bexpt.cert
+./models/jvm/m1/defsys.cert
+./models/jvm/m1/defsys-utilities.cert
+./models/jvm/m1/div.cert
+./models/jvm/m1/even-solution-1.cert
+./models/jvm/m1/even-solution-2.cert
+./models/jvm/m1/expt.cert
+./models/jvm/m1/fact.cert
+./models/jvm/m1/fib.cert
+./models/jvm/m1/find-k!.cert
+./models/jvm/m1/funny-fact.cert
+./models/jvm/m1/implementation.cert
+./models/jvm/m1/lessp.cert
+./models/jvm/m1/low-seven.cert
+./models/jvm/m1/m1.cert
+./models/jvm/m1/magic.cert
+./models/jvm/m1-original/m1-story.cert
+./models/jvm/m1-original/problem-set-1-answers.cert
+./models/jvm/m1/power.cert
+./models/jvm/m1/sign.cert
+./models/jvm/m1/sum.cert
+./models/jvm/m1/sumsq.cert
+./models/jvm/m1/template.cert
+./models/jvm/m1/theorems-a-and-b.cert
+./models/jvm/m1/tmi-reductions.cert
+./models/jvm/m1/wormhole-abstraction.cert
 # ./models/jvm/m5/apprentice.cert (generated only at UT)
 ./models/jvm/m5/apprentice-state.cert
 ./models/jvm/m5/demo.cert
@@ -824,6 +941,7 @@
 ./models/jvm/m5/universal-never-returns.cert
 ./models/jvm/m5/utilities.cert
 # omitting nonstd/ (and all its subdirectories)
+# omitting models/y86/ (hons only)
 ./ordinals/e0-ordinal.cert
 ./ordinals/lexicographic-book.cert
 ./ordinals/lexicographic-ordering.cert
@@ -857,7 +975,7 @@
 ./parallel/matrix-multiplication-parallel.cert
 ./parallel/matrix-multiplication-serial.cert
 ./parallel/matrix-multiplication-setup.cert
-./parallel/proofs/ideal-speedup.cert
+# ./parallel/proofs/ideal-speedup.cert (could be slow in some Lisps)
 ./parallel/spec-mv-let.cert
 ./parallel/stress-tests.cert
 ./parallel/syntax-tests.cert
@@ -917,6 +1035,7 @@
 ./regex/regex-parse-bracket.cert
 ./regex/regex-parse.cert
 ./regex/regex-tests.cert
+./regex/regex-ui.cert
 ./rtl/rel1/lib1/basic.cert
 ./rtl/rel1/lib1/bits.cert
 ./rtl/rel1/lib1/brat.cert
@@ -1645,12 +1764,14 @@
 ./rtl/rel8/support/support/trunc-proofs.cert
 ./rtl/rel8/support/support/util.cert
 ./rtl/rel8/support/top/top.cert
+# ./security/des/des.cert (hons only)
+# ./security/des/des-test.cert (hons only)
 ./security/jfkr/diffie-helman.cert
 ./security/jfkr/encryption.cert
 ./security/jfkr/jfkr.cert
 ./security/jfkr/random.cert
-./serialize/compact-print.cert
-./serialize/serialize.cert
+./security/suite-b/sha-2.cert
+./security/util/byte-operations.cert
 ./serialize/serialize-tests2.cert
 ./serialize/serialize-tests.cert
 ./serialize/unsound-read.cert
@@ -1700,6 +1821,7 @@
 ./str/strsubst.cert
 ./str/strtok.cert
 ./str/strval.cert
+./str/subseq.cert
 ./str/substrp.cert
 ./str/suffixp.cert
 ./str/top.cert
@@ -1719,8 +1841,12 @@
 ./symbolic/tiny-triangle/tiny-triangle-correct.cert
 ./symbolic/tiny-triangle/triangle-def.cert
 ./system/convert-normalized-term-to-pairs.cert
+./system/extend-pathname.cert
+./system/f-put-global.cert
 ./system/gather-dcls.cert
 ./system/hl-addr-combine.cert
+./system/io.cert
+./system/meta-extract.cert
 # omitting system/pcert; provisional certification seems to cause problems here
 ./system/pseudo-good-worldp.cert
 ./system/pseudo-termp-lemmas.cert
@@ -1732,7 +1858,72 @@
 ./system/top.cert
 ./system/verified-termination-and-guards.cert
 ./system/worldp-check.cert
-# Omitting taspi/ (it's hons-only)
+./taspi/code/brlens/brlens.cert
+./taspi/code/brlens/trees-with-brlens.cert
+./taspi/code/build/build-term.cert
+./taspi/code/build/build-term-guards.cert
+./taspi/code/fringes/fringes.cert
+./taspi/code/fringes/fringes-guards.cert
+./taspi/code/fringes/fringes-props.cert
+./taspi/code/gen-helper/bdd-functions.cert
+./taspi/code/gen-helper/extra.cert
+./taspi/code/gen-helper/fast-lists.cert
+./taspi/code/gen-helper/sets.cert
+./taspi/code/gen-helper/top.cert
+./taspi/code/gen-trees/app-rev-lists.cert
+./taspi/code/gen-trees/btrees-bdds.cert
+./taspi/code/gen-trees/btrees-bdds-sets.cert
+./taspi/code/gen-trees/btrees.cert
+./taspi/code/gen-trees/sets-lists-trees.cert
+./taspi/code/gen-trees/top.cert
+./taspi/code/gen-trees/tree-predicates.cert
+./taspi/code/replete/replete.cert
+./taspi/code/replete/replete-guards.cert
+./taspi/code/replete/replete-helper.cert
+./taspi/code/sequences/align.cert
+./taspi/code/sequences/p-inform.cert
+./taspi/code/sequences/seqs.cert
+./taspi/code/tree-manip/insertion-based-sort.cert
+./taspi/code/tree-manip/merge-based-sort.cert
+./taspi/code/tree-manip/mv-root.cert
+./taspi/code/tree-manip/quicksort.cert
+./taspi/code/tree-manip/sort-help.cert
+./taspi/code/tree-manip/top.cert
+./taspi/database/db.cert
+./taspi/database/db-from-list.cert
+./taspi/database/entry.cert
+./taspi/database/filters.cert
+./taspi/database/props.cert
+./taspi/proofs/fringes-taspi.cert
+./taspi/proofs/omerge-good-order.cert
+./taspi/proofs/sets.cert
+./taspi/sets-input/consensus.cert
+./taspi/sets-input/greedy.cert
+./taspi/sets-input/mast.cert
+./taspi/sets-input/mct.cert
+./taspi/sets-input/multipolar-loose.cert
+./taspi/sets-input/top.cert
+./taspi/sets-input/tree-compat.cert
+./taspi/sets-input/tree-support-in-set.cert
+./taspi/single-input/taxa-based.cert
+./taspi/single-input/tree-stats.cert
+./taspi/tree-distance/rf.cert
+./taspi/tree-distance/symm-diff.cert
+./taspi/tree-generation/branch-and-bound/bandb.cert
+./taspi/tree-generation/distance-based/naive-quartet-method.cert
+./taspi/tree-generation/heuristics/do-search.cert
+./taspi/tree-generation/heuristics/spr.cert
+./taspi/tree-generation/heuristics/tbr.cert
+./taspi/tree-generation/tree-gen-helper/basics.cert
+./taspi/tree-score/ambig-score.cert
+./taspi/tree-score/circle-scoring.cert
+./taspi/tree-score/costs.cert
+./taspi/tree-score/efficient-pscores.cert
+./taspi/tree-score/efficient-pscores-help.cert
+./taspi/tree-score/fitch-scoring.cert
+./taspi/tree-score/min-length.cert
+./taspi/tree-score/opt-pairwise.cert
+./taspi/tree-score/pscores.cert
 ./textbook/chap10/ac-example.cert
 ./textbook/chap10/adder.cert
 ./textbook/chap10/compiler.cert
@@ -1787,6 +1978,7 @@
 ./tools/rulesets.cert
 ./tools/safe-case.cert
 ./tools/saved-errors.cert
+./tools/stobj-frame.cert
 ./tools/stobj-help.cert
 ./tools/theory-tools.cert
 ./tools/time-dollar-with-gc.cert
@@ -1810,6 +2002,7 @@
 ./unicode/intern-in-package-of-symbol.cert
 ./unicode/list-defuns.cert
 ./unicode/list-fix.cert
+./unicode/make-character-list.cert
 ./unicode/nat-listp.cert
 ./unicode/nthcdr-bytes.cert
 ./unicode/nthcdr.cert
