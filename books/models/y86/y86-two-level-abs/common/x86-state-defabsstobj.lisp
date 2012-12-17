@@ -536,7 +536,7 @@
                ,(append
                  pruned-x86-32-model-list
                  `((MEMI  :LOGIC  MEM$AI :EXEC MEM$CI))
-                 `((!MEMI :LOGIC !MEM$AI :EXEC !MEM$CI)))))
+                 `((!MEMI :LOGIC !MEM$AI :EXEC !MEM$CI :PROTECT T)))))
 
 (defmacro create-x86-32-abstract-stobj ()
   (create-x86-32-abstract-stobj-fn

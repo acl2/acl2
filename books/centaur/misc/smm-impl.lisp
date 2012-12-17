@@ -1309,8 +1309,10 @@
               (smm-block-size :logic smml-block-size :exec smme-block-size$inline)
               (smm-read :logic smml-read :exec smme-read$inline)
               (smm-write :logic smml-write :exec smme-write$inline)
-              (smm-addblock :logic smml-addblock :exec smme-addblock)
-              (smm-clear :logic smml-clear :exec smme-clear$inline)
+              (smm-addblock :logic smml-addblock :exec smme-addblock
+                            :protect t)
+              (smm-clear :logic smml-clear :exec smme-clear$inline
+                         :protect t)
               (smm-block-start :logic smml-block-start :exec smme-block-start$inline)
               (smm-max-index :logic smml-max-index :exec smme-nextfree)
               (smm-fast-read :logic smml-fast-read :exec smme-memi)
@@ -1327,8 +1329,10 @@
               (smm2-block-size :logic smml-block-size :exec smme-block-size$inline)
               (smm2-read :logic smml-read :exec smme-read$inline)
               (smm2-write :logic smml-write :exec smme-write$inline)
-              (smm2-addblock :logic smml-addblock :exec smme-addblock)
-              (smm2-clear :logic smml-clear :exec smme-clear$inline)
+              (smm2-addblock :logic smml-addblock :exec smme-addblock
+                             :protect t)
+              (smm2-clear :logic smml-clear :exec smme-clear$inline
+                          :protect t)
               (smm2-block-start :logic smml-block-start :exec smme-block-start$inline)
               (smm2-max-index :logic smml-max-index :exec smme-nextfree)
               (smm2-fast-read :logic smml-fast-read :exec smme-memi)
@@ -1344,8 +1348,10 @@
               (smm3-block-size :logic smml-block-size :exec smme-block-size$inline)
               (smm3-read :logic smml-read :exec smme-read$inline)
               (smm3-write :logic smml-write :exec smme-write$inline)
-              (smm3-addblock :logic smml-addblock :exec smme-addblock)
-              (smm3-clear :logic smml-clear :exec smme-clear$inline)
+              (smm3-addblock :logic smml-addblock :exec smme-addblock
+                             :protect t)
+              (smm3-clear :logic smml-clear :exec smme-clear$inline
+                          :protect t)
               (smm3-block-start :logic smml-block-start :exec smme-block-start$inline)
               (smm3-max-index :logic smml-max-index :exec smme-nextfree)
               (smm3-fast-read :logic smml-fast-read :exec smme-memi)

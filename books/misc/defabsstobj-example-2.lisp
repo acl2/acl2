@@ -1,23 +1,25 @@
 ; Defabsstobj Example 2
 ; Copyright (C) 2012 Matt Kaufmann
-; July, 2012
+; July, 2012 (updated Dec., 2012)
+
+; This example uses abstract stobjs to save values in a memo table.  It
+; illustrates how to avoid guard checks using abstract stobjs.  It also
+; illustrates the use of keywords :PROTECT and :PROTECT-DEFAULT.
 
 ; Note: A separate example, which has more comments and is perhaps a bit more
 ; elementary, may be found in the book defabsstobj-example-1.lisp.  I suggest
 ; reading through that book before reading through this one.
 
-; This example illustrates how to use abstract stobjs to save values in a memo
-; table.  The idea of using stobjs for a memo table is not new here; in
-; particular, the distributed book from Rob Sumners,
-; books/defexec/other-apps/misc/memos.lisp, implements such an idea.  Moreover,
-; the particular function we memoize here, a Fibonacci function, is very fast
-; to compute with memoization even if we start with an empty memo table each
-; time; thus, with-local-stobj provides a means for using an ordinary stobj, as
-; shown in the above book memos.lisp.  One could, however, imagine wanting to
-; save previous results between top-level invocations, in which case a local
-; stobj is not helpful.  In that case, it would be really great that we don't
-; have to check the guard on the memo table every time we want to run the
-; memoized function.
+; The idea of using stobjs for a memo table is not new here; in particular, the
+; distributed book from Rob Sumners, books/defexec/other-apps/misc/memos.lisp,
+; implements such an idea.  Moreover, the particular function we memoize here,
+; a Fibonacci function, is very fast to compute with memoization even if we
+; start with an empty memo table each time; thus, with-local-stobj provides a
+; means for using an ordinary stobj, as shown in the above book memos.lisp.
+; One could, however, imagine wanting to save previous results between
+; top-level invocations, in which case a local stobj is not helpful.  In that
+; case, it would be really great that we don't have to check the guard on the
+; memo table every time we want to run the memoized function.
 
 ; In summary: Even though our particular Fibonacci example could be done with
 ; ordinary stobjs, if you imagine a function whose values you want to save
@@ -281,7 +283,18 @@
 ; of defabsstobj; for example, :concrete is implicitly memo$c, obtained by
 ; putting the suffix "$C" on the symbol, memo.
 
-(defabsstobj memo :exports (fib2))
+(defabsstobj memo :exports (fib2)
+  :protect-default t)
+
+; Test other way of specifying :protect:
+
+(defabsstobj memo-alt
+  :concrete memo$c
+  :recognizer (memo-alt-p :logic memo$ap :exec memo$cp)
+  :creator (create-memo-alt :logic create-memo$a :exec create-memo$c)
+  :exports ((fib2-alt :logic fib2$a :exec fib2$c
+                                          :protect t))
+  :congruent-to memo)
 
 ; The following sanity check is trivial to prove.
 

@@ -1,15 +1,17 @@
-; Defabsstobj Example 1
+; Defabsstobj Example 3
 ; Copyright (C) 2012 Matt Kaufmann
-; July, 2012 (updated Nov. and Dec., 2012)
+; Dec., 2012
 
-; Note: A separate example, one which is perhaps slightly more advanced and is
-; probably more interesting, may be found in the book
-; defabsstobj-example-2.lisp.  That example focuses especially on avoiding an
-; expensive guard-check that would be needed if using a concrete stobj.  The
-; present example presents, at the end of this file, a different advantage of
-; abstract stobjs: avoidance of hypotheses in rewrite rules.
+; This is based on defabsstobj-example-1.lisp, with comments dropped in this
+; file; see comments in the above file for details.  Here, we modify that
+; example to illustrate that we can avoid :protect t even for functions that
+; have many calls doing stobj updates, and even when there is a big call stack
+; down to such a function, provided the IF structures of relevant function
+; bodies guarantee that only one update is done on each computation branch.
 
-; Also see defabsstobj-example-3.lisp for a discussion of :protect t.
+; To see how this book differs from defabsstobj-example-1.lisp, either compare
+; the files (with diff or, in emacs, meta-x compare-windows) or search for
+; semicolon triples (;;;).
 
 (in-package "ACL2")
 
@@ -30,6 +32,35 @@
   (mem$c :type (array (integer 0 *) (100))
          :initially 0 :resizable nil)
   (misc$c :initially 0))
+
+;;; Let's make a more complicated update-misc$c than we had in
+;;; defabsstobj-example-1.lisp.
+
+(defun update-misc1 (v1 st$c)
+  (declare (xargs :stobjs st$c))
+  (if (eql v1 0)
+      (update-misc$c 0 st$c)
+    (update-misc$c v1 st$c)))
+
+(defun update-misc2 (v2 st$c)
+  (declare (xargs :stobjs st$c))
+  (let ((st$c (update-misc1 v2 st$c)))
+    (mv v2 st$c)))
+
+(defun update-misc3 (v st$c)
+  (declare (xargs :stobjs st$c))
+  (mv-let (k st$c)
+          (if (eql v 7)
+              (update-misc2 25 st$c)
+            (update-misc2 v st$c))
+          (declare (ignore k))
+          st$c))
+
+(defun update-misc4 (v st$c)
+  (declare (xargs :stobjs st$c))
+  (if (eql v 0)
+      (update-misc3 0 st$c)
+    (update-misc1 v st$c)))
 
 ; To spice things up, let's consider an invariant on the concrete stobj saying
 ; that entry 0 is even, and let's make an even stronger invariant on the
@@ -189,14 +220,16 @@
 (defthm update-misc{correspondence}-lemma
   (implies (corr-mem k st$c st)
            (corr-mem k
-                     (update-misc$c v st$c)
+;;; The next line is changed from defabsstobj-example-1.lisp.
+                     (update-misc4 v st$c)
                      (update-misc$a v st)))
   :rule-classes nil)
 
 (DEFTHM UPDATE-MISC{CORRESPONDENCE}
   (IMPLIES (AND (ST$CORR ST$C ST)
                 (ST$AP ST))
-           (ST$CORR (UPDATE-MISC$C V ST$C)
+;;; The next line is changed from defabsstobj-example-1.lisp.
+           (ST$CORR (UPDATE-MISC4 V ST$C)
                     (UPDATE-MISC$A V ST)))
   :hints (("Goal" :use ((:instance update-misc{correspondence}-lemma
                                    (k 50)))))
@@ -341,199 +374,26 @@
 (DEFABSSTOBJ ST
   :EXPORTS ((LOOKUP :EXEC MEM$CI)
             (UPDATE :EXEC UPDATE-MEM$CI)
-            MISC UPDATE-MISC))
+            MISC
+;;; The next line is changed from defabsstobj-example-1.lisp.
+            (UPDATE-MISC :logic update-misc$a :exec update-misc4)))
 
-; Here is a more verbose version of the form above.  The parts retained from
-; the short form above are in CAPS.  We change the names because redundancy
-; would require the two defabsstobj events to be syntactically identical, which
-; they are not.
+;;; Deleted remaining events from defabsstobj-example-1.lisp.
 
-(DEFABSSTOBJ ST2
-  :concrete st$c ; the corresponding concrete stobj
-  :recognizer (st2p :logic st$ap :exec st$cp)
-  :creator (create-st2 :logic create-st$a :EXEC create-st$c
-                       :correspondence create-st{correspondence}
-                       :preserved create-st{preserved})
-  :corr-fn st$corr ; a correspondence function (st$corr st$c st)
-  :EXPORTS (
+;;; fails:
 
-; The following entry defines lookup2 to be lookup$a in the logic (with the
-; same guard as lookup$a), and defines lookup2 to be mem$ci in the
-; implementation (actually, using a macro definition).  Moroever, lookup2 will
-; be given a signature "matching" that of the :EXEC, mem$ci, where "matching"
-; means that st$c is replaced by st.  (Note that we are not restricted to
-; matching up with a stobj accessor such as mem$ci; any defined function with
-; suitable signature could be specified.)  Note that the body of lookup2 will
-; never be executed on a live stobj, just as the logical definition of a
-; concrete stobj accessor is never executed on a live stobj; rather, lookup2 is
-; defined in raw Lisp to be mem$ci.
+#||
 
-            (LOOKUP2 :logic lookup$a
-                     :EXEC MEM$CI
-                     :correspondence lookup{correspondence}
-                     :guard-thm lookup{guard-thm})
-            (UPDATE2 :logic update$a
-                     :EXEC UPDATE-MEM$CI
-                     :correspondence update{correspondence}
+(u)
 
-; For functions that return a stobj, like update (and update-mem$ci), we have
-; not only a :correspondence theorem but also a :preserved theorem.  It can be
-; omitted with explicit :preserved nil.
+(defun update-misc5 (v st$c)
+  (declare (xargs :stobjs st$c))
+  (let ((st$c (update-misc1 v st$c)))
+    (update-misc1 v st$c)))
 
-                     :preserved update{preserved}
-                     :guard-thm update{guard-thm})
-
-; Note that renaming is not handled as with defstobj.  So for example, if the
-; concrete updater for the misc$c field is !misc$c, then we need to use a long
-; form such as the one below.
-
-            (MISC2 :logic misc$a
-                   :exec misc$c
-                   :correspondence misc{correspondence})
-            (UPDATE-MISC2 :logic update-misc$a
-                          :exec update-misc$c
-                          :correspondence update-misc{correspondence}
-                          :preserved update-misc{preserved}))
-  :doc ; nil is OK, but we test the use of an actual :doc string
-  ":Doc-Section defabsstobj
-
-  a defabsstobj example~/
-
-  This :DOC string is just a stub.  ~l[defabsstobj].~/~/")
-
-; Finally, we show that the use of a logical stobj can result in improvements
-; to rewrite rules by way of eliminating hypotheses.
-
-; First, for the original stobj we have the following lemma.  Without the type
-; hypotheses on both i and j, it fails -- see mem$ci-update-mem$ci-failure.
-
-(defthm mem$ci-update-mem$ci
-  (implies (and (st$cp+ st$c)
-                (natp i)
-                (natp j))
-           (equal (mem$ci i (update-mem$ci j v st$c))
-                  (if (equal i j)
-                      v
-                    (mem$ci i st$c)))))
-
-; Here is evidence of the failure promised above.  The theorem above can be
-; salvaged without the natp hypotheses by replacing (equal i j) with (equal
-; (nfix i) (nfix j)), but that would introduce a case split, which might be
-; undesirable.
-
-(defthm mem$ci-update-mem$ci-failure
-  (let* ((st$c (create-st$c))
-         (i 0)
-         (j 'a))
-    (not (implies (and (st$cp+ st$c)
-                       (natp i)
-                       ;; (natp j)
-                       )
-                  (equal (mem$ci i (update-mem$ci j 1 st$c))
-                         (if (equal i j)
-                             v
-                           (mem$ci i st$c))))))
-  :rule-classes nil)
-
-; But for our abstract stobj, both natp hypotheses can be eliminated.
-
-(defthm lookup-update
-  (equal (lookup i (update j v st))
-         (if (equal i j)
-             v
-           (lookup i st))))
-
-; We conclude with some examples of congruent abstract stobjs.  The first two
-; below, st3 and st4, are designated as congruent to st; the fifth one is
-; designated as congruent to st3.  Thus all four of those should be usable
-; interchangeably; we test that below.
-
-(defabsstobj st3
-  :concrete st$c
-  :recognizer (st3p :logic st$ap :exec st$cp)
-  :creator (create-st3 :logic create-st$a :exec create-st$c
-                       :correspondence create-st{correspondence}
-                       :preserved create-st{preserved})
-  :corr-fn st$corr
-  :exports ((lookup3 :logic lookup$a
-                     :exec mem$ci)
-            (update3 :logic update$a
-                     :exec update-mem$ci)
-            (misc3 :logic misc$a
-                   :exec misc$c)
-            (update-misc3 :logic update-misc$a
-                          :exec update-misc$c))
-  :congruent-to st)
-
-(defabsstobj st4
-  :concrete st$c
-  :recognizer (st4p :logic st$ap :exec st$cp)
-  :creator (create-st4 :logic create-st$a :exec create-st$c
-                       :correspondence create-st{correspondence}
-                       :preserved create-st{preserved})
-  :corr-fn st$corr
-  :exports ((lookup4 :logic lookup$a
-                     :exec mem$ci)
-            (update4 :logic update$a
-                     :exec update-mem$ci)
-            (misc4 :logic misc$a
-                   :exec misc$c)
-            (update-misc4 :logic update-misc$a
-                          :exec update-misc$c))
-  :congruent-to st)
-
-(defabsstobj st5
-  :concrete st$c
-  :recognizer (st5p :logic st$ap :exec st$cp)
-  :creator (create-st5 :logic create-st$a :exec create-st$c
-                       :correspondence create-st{correspondence}
-                       :preserved create-st{preserved})
-  :corr-fn st$corr
-  :exports ((lookup5 :logic lookup$a
-                     :exec mem$ci)
-            (update5 :logic update$a
-                     :exec update-mem$ci)
-            (misc5 :logic misc$a
-                   :exec misc$c)
-            (update-misc5 :logic update-misc$a
-                          :exec update-misc$c))
-  :congruent-to st3)
-
-; Now let's see if they really are interchangable.
-
-(defun foo (st st3 st4 st5)
-  (declare (xargs :stobjs (st st3 st4 st5)))
-  (list (lookup 7 st)
-        (lookup 7 st3)
-        (lookup 7 st4)
-        (lookup 7 st5)
-        (lookup3 7 st)
-        (lookup3 7 st3)
-        (lookup3 7 st4)
-        (lookup3 7 st5)
-        (lookup4 7 st)
-        (lookup4 7 st3)
-        (lookup4 7 st4)
-        (lookup4 7 st5)
-        (lookup5 7 st)
-        (lookup5 7 st3)
-        (lookup5 7 st4)
-        (lookup5 7 st5)))
-
-(local (make-event
-        (let* ((st (update 7 10 st))
-               (st3 (update 7 30 st3))
-               (st4 (update 7 40 st4))
-               (st5 (update 7 50 st5)))
-          (mv nil '(value-triple nil) state st st3 st4 st5))))
-
-(local
- (assert-event
-  (equal (foo st st3 st4 st5)
-         '(10 30 40 50 10 30 40 50
-              10 30 40 50 10 30 40 50))))
-
-(local
- (assert-event
-  (equal (foo st5 st4 st3 st)
-         '(50 40 30 10 50 40 30 10 50 40 30 10 50 40 30 10))))
+(DEFABSSTOBJ ST
+  :EXPORTS ((LOOKUP :EXEC MEM$CI)
+            (UPDATE :EXEC UPDATE-MEM$CI)
+            MISC
+            (UPDATE-MISC :logic update-misc$a :exec update-misc5)))
+||#

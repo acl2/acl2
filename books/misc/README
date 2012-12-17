@@ -49,8 +49,7 @@ defattach-example.lisp -- example use of defattach
 
 ===============================================================================
 
-defabsstobj-example-1.lisp -- example use of defabsstobj
-defabsstobj-example-2.lisp -- example use of defabsstobj
+defabsstobj-example-*.lisp -- example uses of defabsstobj
 
 ===============================================================================
 
