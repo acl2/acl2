@@ -2824,8 +2824,8 @@
 
    (time-tracker :tau :end) ; in case interrupt prevented preceding summary
    (time-tracker :tau :init
-                 :times '(1 2 3 4 5)
-                 :interval 5
+                 :times '(1 5)
+                 :interval 10
                  :msg "Elapsed runtime in tau is ~st secs; see :DOC ~
                        time-tracker-tau.~|~%")
    (pprogn (cond ((null (cdr (get-timer 'other-time state))) ; top-level event
@@ -20241,12 +20241,14 @@
 
   ~c[:REORDER]~nl[]
   ~c[Value] is a list of positive integers without duplicates, corresponding to
-  the numbering of subgoals generated for the ~ilc[goal-spec], say ~c[\"G.k\"]
-  down to ~c[\"G.1\"].  Those subgoals are reordered so that if ~c[value] is
-  ~c[(n1 n2 ... nk)], then the goal now numbered ~c[\"G.k\"] will be the goal
-  originally numbered ~c[\"G.n1\"]; the goal now numbered ~c[\"G.k-1\"] will be
-  the goal formerly numbered ~c[\"G.n2\"]; and so on, down the list of ~c[ni],
-  after which the goals not yet printed are printed in their original order.
+  the numbering of subgoals generated for the ~il[goal-spec] ~c[\"G\"], say
+  ~c[\"G.k\"] down to ~c[\"G.1\"].  Those subgoals are reordered so that if
+  ~c[value] is ~c[(n1 n2 ... nk)], then the goal now numbered ~c[\"G.k\"] will
+  be the goal originally numbered ~c[\"G.n1\"]; the goal now numbered
+  ~c[\"G.k-1\"] will be the goal formerly numbered ~c[\"G.n2\"]; and so on,
+  down the list of ~c[ni], after which the goals not yet printed are printed in
+  their original order.  Note that reordering for subgoals of a goal to be
+  proved by induction, such as ~c[*1], is not supported.
 
   ~c[:CASE-SPLIT-LIMITATIONS]~nl[]
   ~c[Value] is the same as for ~ilc[set-case-split-limitations].  The

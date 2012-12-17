@@ -69,10 +69,24 @@ into the <CODE>books/</CODE> directory.  (Further
 instructions are
 <A HREF="obtaining-and-installing.html#Sources">here</A>.)
 
-<li>Certify books (this may take a few hours; you can speed this up
-with the option <code>-j N</code> if you have an N-core machine, N&gt;1):
+<li><A NAME="certify-books">Certify books:</A>
 <pre>
 make regression
+</pre>
+This may take a few hours; you can speed this up
+by specifying a value for <code>ACL2_JOBS</code> if you have an N-core
+machine, N&gt;1, for example as
+follows.  <font color="red">WARNING</font>:  if instead you use
+`<code>make</code>' option <code>-j</code>, you will not see
+parallel certification for books in the ~c[centaur/] directory.
+<pre>
+make regression ACL2_JOBS=8
+</pre>
+If your system has difficulty certifying the books in the ~c[centaur/]
+directory, say because of issues with Perl, you can skip them by
+specifying <code>ACL2_CENTAUR=skip</code>, for example as follows.
+<pre>
+make regression ACL2_CENTAUR=skip
 </pre>
 
 </ol>

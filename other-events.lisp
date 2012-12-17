@@ -23911,7 +23911,7 @@
                      (setf (svref temp 0) 0)))
                    ((typep saved 'fixnum)
                     (setf (svref temp 0)
-                          (1+ (the fixnum (svref temp 0))))
+                          (1+ (the fixnum saved)))
                     (our-multiple-value-prog1
                      ,(cons ',exec args)
                      (decf (the fixnum (svref temp 0)))))
@@ -23931,7 +23931,7 @@
                          ,(cons ',exec args)
                          (setf (svref temp 0) nil)))
                        (t
-                        (push (the symbol sym) (svref temp 0))
+                        (push (the symbol sym) saved)
                         (our-multiple-value-prog1
                          ,(cons ',exec args)
                          (pop (svref temp 0)))))))))))))
