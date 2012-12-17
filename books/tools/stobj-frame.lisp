@@ -126,7 +126,7 @@
                                  (not (cdr recp))) ;; not mutually recursive
                             `(:induct ,call
                               :do-not-induct t
-                              :in-theory (enable ,fn))
+                              :in-theory (enable (:induction ,fn)))
                           '(:do-not-induct t)))))
        (exp-hint (and (not hints)
                       `(:expand (,call))))
@@ -180,7 +180,7 @@
                                  (not (cdr recp))) ;; not mutually recursive
                             `(:induct ,call
                               :do-not-induct t
-                              :in-theory (enable ,fn))
+                              :in-theory (enable (:induction ,fn)))
                           '(:do-not-induct t)))))
        (exp-hint (and (not hints)
                       `(:expand (,call (:free (n) ,upd-call)))))
