@@ -19664,9 +19664,13 @@
   but when it is ~c[t], then a second value is returned, which is a tag-tree.
   ~l[extended-metafunctions].
 
-  Many improvements have been made to the tau-system (~pl[tau-system]).  Also
-  ~pl[time-tracker-tau] for discussion of how the new ~ilc[time-tracker]
-  utility can help discover ways to avoid slowdown related to the tau-system.
+  Many improvements have been made to the tau-system (~pl[tau-system]),
+  including support for arithmetic intervals bounded by constants.  Thus, for
+  example, ~c[(and (<= 0 x) (<= x 15))] is a tau predicate.  The
+  ~il[documentation] has also been improved
+  (~pl[introduction-to-the-tau-system]). Also ~pl[time-tracker-tau] for
+  discussion of how the new ~ilc[time-tracker] utility can help discover ways
+  to detect slowdown related to the tau-system.
 
   The ~ilc[defthm] ~il[events] printed by ~ilc[defabsstobj], namely those that
   remain to be proved, are now given with ~c[:rule-classes nil] since there is
@@ -19917,10 +19921,21 @@
 
   ~st[EXPERIMENTAL/ALTERNATE VERSIONS]
 
-  For ACL2(r) (~pl[real]), incorporated a bug fix from Ruben Gamboa for
-  ~ilc[ceiling].  The default (for `bad' arguments) had been 1, but now we
-  follow normal ACL2 practice by returning 0 in that case.  The bug and fix
-  only affect ACL2(r).
+  Among the enhancements for ACL2(r) (~pl[real]) are the following.~bq[]
+
+  Thanks to Ruben Gamboa for his helpful role in making the following
+  improvements made with Ruben Gamboa in support for non-standard analysis in
+  ACL2(r).
+
+  Constrained functions can now be introduce as non-classical.  ~l[signature].
+
+  ~ilc[Defun-sk] now takes a new keyword argument, ~c[:CLASSICALP], that
+  determines whether or not the named function is classical.  ~l[defun-sk].
+
+  Incorporated a bug fix from Ruben Gamboa for ~ilc[ceiling].  The default (for
+  `bad' arguments) had been 1, but now we follow normal ACL2 practice by
+  returning 0 in that case.
+  ~eq[]
 
   Among the enhancements for the HONS extension (~pl[hons-and-memoization])
   are the following.~bq[]
@@ -19947,28 +19962,6 @@
   ~eq[]
 
   ~/~/")
-
-(deflabel |NOTE-5-1(R)|
-  :doc
-  ":Doc-Section release-notes
-
-  ACL2 Version  5.1(r) (xxx, 20xx) Notes~/
-
-  ~/
-
-  Please ~pl[note-5-1] for changes in Version  5.1 of ACL2.
-
-  Thanks to Ruben Gamboa for his helpful role in making the following
-  improvements made with Ruben Gamboa in support for non-standard analysis in
-  ACL2(r).
-
-  Constrained functions can now be introduce as non-classical.  ~l[signature].
-
-  ~ilc[Defun-sk] now takes a new keyword argument, ~c[:CLASSICALP], that
-  determines whether or not the named function is classical.  ~l[defun-sk].
-
-  ~/
-  ")
 
 (deflabel the-method
   :doc
