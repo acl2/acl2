@@ -316,7 +316,7 @@
   (mv-let (channel state)
 	  (open-output-channel fname :character state)
 	  (let ((state (write-objects list channel state)))
-	    state)))
+	    (close-output-channel channel state))))
 
 (defun compile-pipeline-fn (name output state)
   (declare (xargs :mode :program))
