@@ -993,16 +993,14 @@
 ; should be eq to the cdr of the val.  However, we also need the concept of a
 ; tau pair found elsewhere, e.g., as the pos-implicants property.  We make this
 ; predicate do double duty.  If sym is nil, then we do not check for any
-; relationship between sym and val.  We could insist on a guard of
-; (symbolp sym) for this function but that
+; relationship between sym and val.
 
   (declare (xargs :guard (symbolp sym)))
-  (cond (sym
-         (and (consp val)
-              (integerp (car val))
-              (eq (cdr val) sym)))
+  (cond (sym (and (consp val)
+                  (natp (car val))
+                  (eq (cdr val) sym)))
         (t (and (consp val)
-                (integerp (car val))
+                (rationalp (car val))
                 (symbolp (cdr val))))))
 
 (defun pseudo-tau-pairp-listp (lst)
