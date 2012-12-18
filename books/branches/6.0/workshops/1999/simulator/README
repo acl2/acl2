@@ -1,0 +1,20 @@
+This directory contains two files of ACL2 input associated with
+"High-Speed Analyzable Simulators", Chapter 8 of the Kluwer Academic
+book "Computer-Aided Reasoning: ACL2 Case Studies".
+
+tiny.lisp	  The toy machine "TINY" used for illustration in 
+                  the chapter, and a proof of a small TINY program
+
+exercises.lisp    Solutions for each of the chapter exercises
+
+Some of the methods implicit in these files, as well as our
+motivation, a description of the toy processor, and an indication of
+how we apply these techniques on real processors, are documented in
+
+  M. Wilding, D. Greve, D. Hardin, "Efficient Simulation of Formal
+  Processor Models" 1998.  (To appear in Formal Methods in System
+  Design in 2000; original TR available at pobox.com/~hokie/docs.)
+
+
+David Greve and Matt Wilding
+April 2000

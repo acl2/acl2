@@ -1,0 +1,3 @@
+(ld "test-pkg1.lsp")
+
+(certify-book "test1bb" 1 t :ttags :all)

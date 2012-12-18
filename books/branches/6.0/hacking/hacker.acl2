@@ -1,0 +1,4 @@
+(ld "hacker-pkg.lsp")
+
+
+(ACL2::CERTIFY-BOOK "hacker" ACL2::?)

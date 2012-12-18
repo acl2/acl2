@@ -1,0 +1,3 @@
+(ld "../powerlists/defpkg.lsp")
+
+(certify-book "fft-trig-with-axioms" 3 t :defaxioms-okp t)

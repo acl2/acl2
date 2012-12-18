@@ -1,0 +1,43 @@
+This directory contains the start of "arithmetic" library.  Some of the rules and files in this directory were
+previously in support/.  Others are new.
+
+This library includes lemmas about the following functions:
+
++ 
+* 
+unary-- (note that - is a macro)
+unary-/ (note that - is a macro)
+<       (and so also > <= and >=)
+integerp
+rationalp
+complex-rationalp
+numerator                    (We hope the user doesn't have to reason about this directly.)
+denominator                  (We hope the user doesn't have to reason about this directly.)
+nonnegative-integer-quotient (We hope the user doesn't have to reason about this directly.)
+expt
+floor
+mod
+abs (sort of)
+fl (not built-in, but related to floor)
+cg (not built-in, but related to fl)
+expo (not built-in, but initmately tied up with expt)
+even (not built-in; recursive version of evenp)
+odd  (not built-in; recursive version of oddp)
+
+
+See the comments in top.lisp.  See also ../README
+
+The user of the library probably wants some arithmetic books, to help him/her reason about + and * and so on.
+The safest thing to do would be to include lib/arith.  This is essentially the old "fp.lisp" book.  Note that
+lib/basic include more arithmetic-style lemmas.  The more agressive use might want to try including this
+arithmetic library (i.e., the book arithmetic/top) instead of lib/arith.
+
+Normal Forms:
+
+We rewrite (- x) to (* -1 x).
+
+Scattering vs. gathering exponents: Currently, we are agnostic about which to do.  (Neither is enabled by
+default after one includes arithmetic/top).  To scatter exponents, enable expt-split and expt-miuns.  To
+gather exponents, enable a15 and expt-inverse (and disable expo-shift-general, which currently doesn't work
+with gathering -- that is, it can loop!).
+

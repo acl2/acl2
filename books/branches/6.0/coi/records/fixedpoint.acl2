@@ -1,0 +1,9 @@
+#|-*-Lisp-*-=================================================================|#
+#|                                                                           |#
+#| coi: Computational Object Inference                                       |#
+#|                                                                           |#
+#|===========================================================================|#
+(ld "cert.acl2")
+(ld "../alists/alist-defpkg.lsp")
+(include-book "domain")
+(certify-book "fixedpoint" ? t)

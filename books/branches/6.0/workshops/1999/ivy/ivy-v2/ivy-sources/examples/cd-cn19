@@ -1,0 +1,10 @@
+;; IVY operation: PROVE
+;;
+;; Theorem CN19 from the McCune/Wos Condensed Detachment paper (CADE-11).
+
+(imp (and (all x (all y (imp (and (p (i x y)) (p x)) (p y))))
+	  (all x (all y (all z (P (i (i x y) (i (i y z) (i x z)))))))
+	  (all x (P (i (i (n x) x) x)))
+	  (all x (all y (P (i x (i (n x) y))))))
+
+     (all a (all b (all c (P (i (i (i a b) c) (i b c)))))))

@@ -1,0 +1,5 @@
+; We have commented out the following just to add a little spice,
+; since (p)certification of sub and top will load cert.acl2.
+; (load "cert.acl2")
+
+(certify-book "mid" ? :default :skip-proofs-okp t)

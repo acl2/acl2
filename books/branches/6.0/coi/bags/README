@@ -1,0 +1,61 @@
+#|==================================================================|#
+#|                                                                  |#
+#|                                                                  |#
+#|==================================================================|#
+last modified: Thu Aug  5 17:57:47 2004
+
+This directory (bags/) contains the beginnings of an ACL2 library about bags (multisets).
+
+See the ACL2 Workshop 2004 paper on bags by Smith, et. al. (if it gets accepted).  See especially the "Future Work" section of that paper for TODOs for this library.
+
+Typically, the user should include bags/top.
+The books whose names start with "two-level" deal with bags of bags.
+
+organization of the library:
+...
+...
+
+The plan is to make a basic theory which the user can include to do any proof (but perhaps slowly), plus books of
+fancy rules which disable some of basic the rules and handle the same cases more efficiently.
+
+
+Here are the main functions that deal with bags:\\
+
+ Functions that return bags:
+
+(bag-insert a x) ;insert element A into bag X [currently a macro which expands to cons]
+(bag-sum x y) ;combine the bags X and Y [currently a macro which expands to append]
+(remove-1 a x) ;remove the first occurrence of element A from bag X
+(remove-all a x) ;remove all occurrences of A from bag X
+(bag-difference x y) ;remove the elements in bag Y from bag X -- currently, we have remove-bag with the elems in the other order...
+
+Predicates on bags:
+
+(bagp x) ; test whether X is a bag [currently returns t.]
+(empty-bagp x) ;test whether X is an empty bag [currently implemented with (not (consp x))]
+(memberp a x) ;test whether A appears in bag X (returns a boolean, unlike{\tt member})
+(subbagp x y) ;test whether, for any element A, A appears in bag Y
+              ;at least as many times as it appears in bag X
+(disjointp x y) ;test whether X and Y have no elements in common
+(uniquep x) ;test whether no element appears in X more than once
+
+
+Other functions:
+
+(count a x) ;return the number of times that element A appears in bag X
+
+Equivalence relation on bags:
+
+;should be called bag-equal?
+(perm x y) ;test whether two bags are permutations of each other
+           ;(i.e., whether they agree on the count for each element)
+
+
+
+
+
+We currently implement bags as simple lists.  Because we do not sort our bags,
+lists that are permutations of each other represent the same bag.  For example,
+the bag containing {\tt 1} and {\tt 2} can be represented by {\tt '(1 2)} or
+{\tt '(2 1)}.  (But perhaps we {\em should} sort our bags; see ``Future Work''
+below.)

@@ -1,0 +1,3 @@
+
+(ld "tools/flag-package.lsp" :dir :system)
+(certify-book "replace-defined-consts" ?)

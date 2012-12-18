@@ -1,0 +1,7 @@
+(defpkg "M1"
+  (set-difference-eq (union-eq *acl2-exports*
+                               *common-lisp-symbols-from-main-lisp-package*)
+                     '(push pop pc program step
+                            nth update-nth nth-update-nth)))
+
+(certify-book "m1" 1)

@@ -1,0 +1,21 @@
+
+memory-acl2: Contains the ACL2 version of the memory model.  Memory is
+modeled as an alist, from 32 bit addresses to 8-bit values.  The two
+main definiions are read-mem-byte and write-mem-byte,
+
+memory-raw: Contains the (much more efficient) raw lisp version of the
+memory model.  Just like for memory-acl2, the two main definitions are
+read-mem-byte and write-mem-byte.
+
+The basic idea behind these two separate pairs of definitions is to
+provide both a logical story for ACL2, and an efficiently executable
+version for performance.
+
+memory-low: Provides the basic low-level memory accessor/updater
+functions (r08-low, r32-low, w08-low, and w32-low) we will use in
+memory.lisp.
+
+memory: Provides the high level memory accessor/updater functions
+(r08, r32, w08, and w32).  These functions follow Intels 10 10 12
+memory paging heirarchy, and use page table lookups when the
+appropriate bit is set in CR0.
