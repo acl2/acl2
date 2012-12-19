@@ -2153,7 +2153,7 @@ X:rgbcolors = blue
 ;;;                 :test-enumerator <enum-fn>
 ;;;                 :filter <filter-fn>
 ;;;                 ...)                              
-;register the type by adding it into the types-info-table
+;register the type by adding it into the types info table
  (defmacro defdata-testing  (typename &key test-enumerator)
    ":Doc-Section acl2::DATA-DEFINITIONS
   Specify a custom testing enumerator for a type~/

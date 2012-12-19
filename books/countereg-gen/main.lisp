@@ -572,7 +572,10 @@ processed, the annotation of edges is also returned"
 (defattach (local-sampling-method local-sampling-method-builtin))
 
 
-(defrec gcs% ;global-coverage-stats 
+(defrec gcs% 
+; global-coverage-stats 
+; Only accumulates sound and top-reproducible cts/wts
+; i.e is not modified after a cross-fertilize ledge of the waterfall
   ((total-runs dups . vacs)
    (cts . wts) 
    (cts-to-reach . wts-to-reach)
@@ -2159,6 +2162,7 @@ last decision made in Assign. For more details refer to the FMCAD paper.")
      are recorded in globals @gcs and @s-hist.
   3. return error triple containing stop? (described in simple-search)
 ")
+
   (f* ((update-cts-search-globals ()
          (b* ((s-hist-entry% (change s-hist-entry% run-hist run-hist%))
               ((mv end state) (acl2::read-run-time state))
@@ -2256,6 +2260,8 @@ doesnt work on an make-event
          (initial-subseq-p (cdr x) (cdr y)))))
 
 (defun cl-id-ancestor (parent child)
+  "Sig: clause-id * clause-id -> boolean
+   function: Is parent an ancestor of child in the ACL2 proof tree?"
   (declare (xargs :mode :program))
   (and (equal (acl2::access acl2::clause-id parent :forcing-round)
               (acl2::access acl2::clause-id child :forcing-round))
@@ -2986,6 +2992,7 @@ id processor (acl2::prettyify-clause cl nil (w state))))
                              acl2::generalize-clause
                              acl2::eliminate-irrelevance-clause
                              acl2::push-clause)))  
+; NOTE: I can also use (f-get-global 'checkpoint-processors state)
         (value nil));ignore backtrack hint
        
        
@@ -3032,7 +3039,7 @@ id processor (acl2::prettyify-clause cl nil (w state))))
                            type-alist NIL
                            (acl2s-defaults-alist) 
                            *initial-run-hist%* 
-; we dont care about witnesses and the start time
+; we dont care about witnesses and the start time and do no accumulation.
                            (initial-gcs% 1 0 0 (cons H C))
                            ctx wrld state))
               (num-cts-found (access run-hist% |#cts|)))

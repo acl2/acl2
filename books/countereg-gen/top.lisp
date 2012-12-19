@@ -4,12 +4,11 @@
  "portcullis.lsp")
 (begin-book t :ttags :all);$ACL2s-Preamble$|#
 
-;; Note: I apologize for the use of ttags, but they are used for
-;; engineering purposes: for implementing timeouts and to defattach
-;; testing-related functions in course of testing. Hence, the above
-;; should in principle not affect ACL2's soundness. But if you are
-;; still worried, you can include this book while developing/designing
-;; proofs and when you have all QEDs, simply remove this book.
+;; Note: I apologize for the use of ttags, but they are used for engineering
+;; purposes: for implementing timeouts. The above should in principle not
+;; affect ACL2's soundness. Usually you would include this book while
+;; developing/designing proofs and when you have all QEDs, simply remove this
+;; book.
 
 
 (in-package "ACL2")
@@ -18,6 +17,27 @@
 (include-book "main" :ttags :all)
 (include-book "base")
 
+
+; initialize gcs% global which keeps track of the
+; number of cts/wts collected across a thm/defthm/test?
+(make-event
+;idempotent. everytime top.lisp is included, the
+;globals for recording cts/wts are reset.
+ (b* ((gcs%  (defdata::initial-gcs% 
+              (acl2s-defaults :get num-counterexamples)
+              (acl2s-defaults :get num-witnesses)
+              0 (cons nil t)))
+      (defdata::vl (acl2s-defaults :get verbosity-level))
+      (defdata::ctx 'top.lisp)
+      (state (defdata::put-gcs%-global gcs%))
+      (state (defdata::put-s-hist-global '()))
+      (- (defdata::cw? (defdata::verbose-flag defdata::vl)
+              "Initializing gcs% global in top.lisp~%")))
+   (value '(value-triple :gcs%-global-initialized)))
+ :check-expansion t)
+  
+
+
 ; For now lets keep the nats not more than 1000 to avoid stack-overflow
 ; on non-tail-recursive functions. If you dont like these, comment
 ; them out, or write your own custom test enumerators and attach them
@@ -25,6 +45,7 @@
 (defdata-testing integer :test-enumerator nth-integer-testing)
 (defdata-testing nat :test-enumerator nth-nat-testing)
 (defdata-testing neg :test-enumerator nth-neg-testing)
+
 
 ; The following shows the various configuration parameters that you
 ; can customize.
