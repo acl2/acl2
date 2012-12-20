@@ -14,6 +14,8 @@ Version 4.3 of ACL2 corresponds to r819.
 
 Version 5.0 of ACL2 corresponds to r1206.
 
+Version 6.0 of ACL2 corresponds to r1408.
+
 = Details =
 
 Version 4.0 of ACL2 corresponds to svn revision r544.
@@ -25,3 +27,5 @@ Version 4.2 of ACL2 corresponds to svn revision r666.
 Version 4.3 of ACL2 corresponds to r819.
 
 Version 5.0 of ACL2 corresponds to r1206.
+
+Version 6.0 of ACL2 corresponds to r1408.
