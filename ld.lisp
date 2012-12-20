@@ -19903,9 +19903,10 @@
   Thanks to Shilpi Goel and David Rager for feedback on a preliminary version
   of this utility.
 
-  (SBCL only) The value of SBCL command line option --dynamic-space-size has
-  been increased from 2000 to 4000 (as explained in a comment in ACL2 source
-  function ~c[save-acl2-in-sbcl-aux]).
+  (only for SBCL with 64-bit ACL2(h)) The value of SBCL command line option
+  ~c[--dynamic-space-size] for ACL2(h) on 64-bit platforms has been increased
+  from 2000 to 16000 (as explained in a comment in the ACL2 source definition
+  of ~c[*sbcl-dynamic-space-size*]).
 
   ~st[EMACS SUPPORT]
 

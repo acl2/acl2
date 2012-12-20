@@ -46,13 +46,8 @@ eventually incorporated into official ACL2 releases.
 
 <p>
 
-<font color="red">NOTE:</font> The information below is from the
-previous release, Version 5.0.  We expect to update this soon.
-
-<p>
-
-The statistics below correspond to runs of <code>make -j 8
-regression</code> using both distributed and workshops books
+The statistics below correspond to runs of <code>make ACL2_JOBS=8
+regression</code> using community books
 (available from
 the <a href="https://code.google.com/p/acl2-books/">acl2-books project
 website</a>), skipping
@@ -63,78 +58,77 @@ on Ubuntu Linux.
 
 <p>
 
-<H3>64-bit ACL2 Linux runs on 3.5 GHz 4-core Intel(R) Xeon(R) with Hyper-Threading, using make -j 8</H3>
+<H3>64-bit ACL2 Linux runs on 3.5 GHz 4-core Intel(R) Xeon(R) with Hyper-Threading, using make ACL2_JOBS=8</H3>
 
 Note: We ran regression using CLISP 2.44.1 as well, but without the
-<code>workshops/</code> books.  The wall clock time was close to 3
-hours, far exceeding all the times just below even though those
-include certification of the <code>workshops/</code> books.
+<code>centaur/</code> or <code>workshops/</code> books.  The wall
+clock time was close to 3 hours, far exceeding all the times just
+below even though those include certification of
+the above books.
 
 <ul>
 <!-- dunnottar -->
 
-<li>CCL Version 1.9-dev-r15314M-trunk:
+<li>CCL Version 1.9-dev-r15542M-trunk:
 <pre>
-14824.260u 294.000s 50:44.12 496.6%	0+0k 225032+915200io 463pf+0w
-
-<i>Compare with ACL2(p), the experimental extension of ACL2 with parallel
-proof (as reported in David Rager's dissertation):</i>
-
-14269.790u 568.320s 39:09.91 631.4%	0+0k 248552+941200io 434pf+0w</pre></li>
+17121.010u 570.180s 2:03:26.55 238.8%	0+0k 231264+1293128io 365pf+0w</pre></li>
 
 <li>Gnu Common Lisp (GCL) Version 2.6.8pre, 524288 maximum pages:
 <pre>
-16891.980u 639.930s 53:06.41 550.2%	0+0k 354024+2440552io 617pf+0w</pre></li>
+18786.760u 778.230s 1:59:34.37 272.7%	0+0k 406504+3298312io 426pf+0w</pre></li>
 
-<li>Lispworks Version 6.1.0:
+<li>Lispworks Version 6.1.1:
 <pre>
-14399.470u 252.470s 47:54.17 509.7%	0+0k 202296+950544io 524pf+0w</pre></li>
+18272.610u 379.770s 2:08:32.22 241.8%	0+0k 218288+1358464io 324pf+0w</pre></li>
 
 <li>SBCL Version 1.0.49:
 <pre>
-18996.530u 426.280s 1:04:24.79 502.5%	0+0k 414320+1150024io 814pf+0w</pre></li>
+22538.290u 498.680s 2:32:32.52 251.7%	0+0k 427992+1622792io 603pf+0w</pre></li>
 
 </ul>
 
-<H3>64-bit ACL2(h) Linux runs on 3.5 GHz 4-core Intel(R) Xeon(R) with Hyper-Threading, using make -j 8</H3>
+<H3>64-bit ACL2(h) Linux runs on 3.5 GHz 4-core Intel(R) Xeon(R) with Hyper-Threading, using make ACL2_JOBS=8</H3>
 
-Note that unlike the times above, the times just below are for the <a href="http://www.cs.utexas.edu/users/moore/acl2/current/HONS-AND-MEMOIZATION.html">HONS
-version of ACL2</a>, i.e., ACL2(h), <b>and they reflect a significantly
-larger regression suite than do the times above.</b>
+Note that unlike the times above, the times just below are for the
+regression suite for
+the <a href="http://www.cs.utexas.edu/users/moore/acl2/current/HONS-AND-MEMOIZATION.html">HONS
+version of ACL2</a>, i.e., ACL2(h).</b>
 
 <ul>
 <!-- eld -->
 
-<li>CCL Version 1.9-dev-r15314M-trunk:
+<li>CCL Version 1.9-dev-r15542M-trunk:
 <pre>
-21042.290u 1329.220s 1:13:36.71 506.5%	0+0k 320528+1343632io 1934pf+0w</pre></li>
+21345.800u 935.270s 1:13:29.73 505.2%	0+0k 326624+1530776io 1825pf+0w</pre></li>
 
-<li>Lispworks Version 6.1.0:
+<li>Lispworks Version 6.1.1 [Note: Skipped models/y86 because
+of insufficient values for array-dimension-limit and for
+array-dimension-limit.]:
 <pre>
-23405.960u 467.140s 1:18:52.78 504.4%	0+0k 220440+1350584io 1532pf+0w</pre></li>
+23760.990u 494.720s 1:21:12.82 497.7%	0+0k 225960+1512856io 1523pf+0w</pre>
+</li>
 
 <li>SBCL Version 1.0.49:
 <pre>
-30262.000u 770.720s 1:41:44.32 508.3%	0+0k 505584+1604032io 2036pf+0w</pre></li>
+29884.140u 703.070s 1:40:01.15 509.6%	0+0k 477576+1812312io 2079pf+0w</pre></li>
 
 </ul>
 
-<H3>32-bit ACL2 Linux runs on 2.8 GHz 4-core Intel(R) Xeon(R) with Hyper-Threading, using make -j 8</H3>
+<H3>32-bit ACL2 Linux runs on 2.8 GHz 4-core Intel(R) Xeon(R) with Hyper-Threading, using make ACL2_JOBS=8</H3>
 
 <ul>
-<!-- patience -->
+<!-- chastity -->
 
 <li>Gnu Common Lisp (GCL) Version 2.6.8pre, 524288 maximum pages:
-<pre>19078.076u 550.070s 1:03:33.09 514.7%	0+0k 197072+2304808io 392pf+0w</pre></li>
+<pre>23144.374u 710.308s 2:33:41.31 258.6%	0+0k 347088+3101128io 254pf+0w</pre></li>
 
-<li>Allegro Common Lisp (Allegro CL) Version 8.0:
-<pre>21803.218u 318.795s 1:16:25.72 482.4%	0+0k 0+952784io 0pf+0w</pre></li>
-
-<li>CCL Version 1.9-dev-r15314M-trunk:
-<pre>23113.792u 341.137s 1:20:42.46 484.3%	0+0k 158360+912912io 332pf+0w</pre></li>
+<li>CCL Version 1.9-dev-r15542M-trunk:
+<pre>
+27832.755u 426.454s 3:20:08.68 235.3%	0+0k 278848+1286616io 274pf+0w</pre></li>
 
 <li>CMU Common Lisp (CMUCL) Version 19e:
-<pre>48718.772u 949.975s 2:59:20.90 461.5%	0+0k 177104+1091464io 301pf+0w</pre></li>
+<pre>
+63694.864u 936.738s 7:38:22.49 235.0%	0+0k 179000+1574976io 245pf+0w</pre></li>
 
 </ul>
 
