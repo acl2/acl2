@@ -27,7 +27,6 @@ doc
 emacs
 futures-raw.lisp
 GNUmakefile
-GPL2
 graphics
 history-management.lisp
 hons.lisp

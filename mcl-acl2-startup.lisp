@@ -1,4 +1,4 @@
-Here are instructions for how to install ACL2 on MCL (Macintosh Common Lisp).
+ Here are instructions for how to install ACL2 on MCL (Macintosh Common Lisp).
 These instructions were developed for MCL 4.0 and have been used successfully
 on MCL 4.2.  Thanks to Pascal Costanza for providing information pertaining to
 MCL 5.0 on Mac OS X and to Warren Hunt for additional information about

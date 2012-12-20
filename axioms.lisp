@@ -1,21 +1,16 @@
-; ACL2 Version 5.0 -- A Computational Logic for Applicative Common Lisp
-; Copyright (C) 2012  University of Texas at Austin
+; ACL2 Version 6.0 -- A Computational Logic for Applicative Common Lisp
+; Copyright (C) 2012, Regents of the University of Texas
 
 ; This version of ACL2 is a descendent of ACL2 Version 1.9, Copyright
 ; (C) 1997 Computational Logic, Inc.  See the documentation topic NOTE-2-0.
 
 ; This program is free software; you can redistribute it and/or modify
-; it under the terms of Version 2 of the GNU General Public License as
-; published by the Free Software Foundation.
+; it under the terms of the LICENSE file distributed with ACL2.
 
 ; This program is distributed in the hope that it will be useful,
 ; but WITHOUT ANY WARRANTY; without even the implied warranty of
 ; MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-; GNU General Public License for more details.
-
-; You should have received a copy of the GNU General Public License
-; along with this program; if not, write to the Free Software
-; Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
+; LICENSE for more details.
 
 ; Written by:  Matt Kaufmann               and J Strother Moore
 ; email:       Kaufmann@cs.utexas.edu      and Moore@cs.utexas.edu
@@ -14277,7 +14272,7 @@
 
   Note that if you download community books as tarfiles, then you should be
   sure to download the `nonstd' books, from
-  ~url[http://acl2-books.googlecode.com/files/nonstd-5.0.tar.gz].  Then certify
+  ~url[http://acl2-books.googlecode.com/files/nonstd-6.0.tar.gz].  Then certify
   them from your acl2-sources directory, shown here as
   ~c[<DIR>]:
   ~bv[]
@@ -27819,7 +27814,7 @@
 ; The reason MCL needs special treatment is that (char-code #\Newline) = 13 in
 ; MCL, not 10.  See also :DOC version.
 
-; ACL2 Version 5.0
+; ACL2 Version 6.0
 
 ; We put the version number on the line above just to remind ourselves to bump
 ; the value of state global 'acl2-version, which gets printed out with the
@@ -27845,7 +27840,7 @@
 ; reformatting :DOC comments.
 
                   ,(concatenate 'string
-                                "ACL2 Version 5.0"
+                                "ACL2 Version 6.0"
                                 #+non-standard-analysis
                                 "(r)"
                                 #+(and mcl (not ccl))
@@ -48539,7 +48534,7 @@ Lisp definition."
 
 ; Here is a book that was certifiable in ACL2 Version_5.0, obtained from Sol
 ; Swords (shown here with only very trivial changes).  It explains why we need
-; the :protect keyword for defabsstobj, as explained in :doc note-5-1.
+; the :protect keyword for defabsstobj, as explained in :doc note-6-0.
 ; Community book books/misc/defabsstobj-example-4.lisp is based on this
 ; example, but focuses on invariance violation and avoids the work Sol did to
 ; get a proof of nil.

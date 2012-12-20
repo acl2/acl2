@@ -1,21 +1,16 @@
-; ACL2 Version 5.0 -- A Computational Logic for Applicative Common Lisp
-; Copyright (C) 2012  University of Texas at Austin
+; ACL2 Version 6.0 -- A Computational Logic for Applicative Common Lisp
+; Copyright (C) 2012, Regents of the University of Texas
 
 ; This version of ACL2 is a descendent of ACL2 Version 1.9, Copyright
 ; (C) 1997 Computational Logic, Inc.  See the documentation topic NOTE-2-0.
 
 ; This program is free software; you can redistribute it and/or modify
-; it under the terms of Version 2 of the GNU General Public License as
-; published by the Free Software Foundation.
+; it under the terms of the LICENSE file distributed with ACL2.
 
 ; This program is distributed in the hope that it will be useful,
 ; but WITHOUT ANY WARRANTY; without even the implied warranty of
 ; MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-; GNU General Public License for more details.
-
-; You should have received a copy of the GNU General Public License
-; along with this program; if not, write to the Free Software
-; Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
+; LICENSE for more details.
 
 ; Written by:  Matt Kaufmann               and J Strother Moore
 ; email:       Kaufmann@cs.utexas.edu      and Moore@cs.utexas.edu
@@ -3209,25 +3204,19 @@
 
   ACL2 copyright, license, sponsorship~/~/
 
-  ACL2 Version 5.0 -- A Computational Logic for Applicative Common Lisp
-  Copyright (C) 2012  University of Texas at Austin
+  ACL2 Version 6.0 -- A Computational Logic for Applicative Common Lisp
+  Copyright (C) 2012, Regents of the University of Texas
 
   This version of ACL2 is a descendent of ACL2 Version 1.9, Copyright
   (C) 1997 Computational Logic, Inc.  See the documentation topic NOTE-2-0.
 
   This program is free software; you can redistribute it and/or modify
-  it under the terms of Version 2 of the GNU General Public License as
-  published by the Free Software Foundation.
+  it under the terms of the LICENSE file distributed with ACL2.
 
   This program is distributed in the hope that it will be useful,
   but WITHOUT ANY WARRANTY; without even the implied warranty of
   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-  GNU General Public License for more details.
-
-  You should have received a copy of the GNU General Public License
-  along with this program.  See the file ~c[LICENSE].  If not, write
-  to the Free Software Foundation, Inc., 675 Mass Ave, Cambridge, MA
-  02139, USA.
+  LICENSE for more details.
 
   Written by:  Matt Kaufmann               and J Strother Moore
   email:       Kaufmann@cs.utexas.edu      and Moore@cs.utexas.edu
@@ -18493,7 +18482,8 @@
   one category.
 
   NOTE: ACL2 is now distributed under Version 2 of the GNU General Public
-  License.  Formerly, any later version had been acceptable.  Moreover, books
+  License.  [Added later: The license has changed since Version_5.0.  See
+  LICENSE.]  Formerly, any later version had been acceptable.  Moreover, books
   are no longer distributed from a University of Texas website, but rather,
   from Google Code at ~url[http://code.google.com/p/acl2-books/downloads/].
 
@@ -19428,7 +19418,7 @@
 
   ~/~/")
 
-(deflabel note-5-1
+(deflabel note-6-0
 
 ; Added analogues simple-translate-and-eval-error-double and
 ; simple-translate-and-eval-cmp of simple-translate-and-eval, which instead of
@@ -19595,13 +19585,13 @@
   :doc
   ":Doc-Section release-notes
 
-  ACL2 Version  5.1 (xxx, 20xx) Notes~/
+  ACL2 Version  6.0 (December, 2012) Notes~/
 
   NOTE!  New users can ignore these release notes, because the
   ~il[documentation] has been updated to reflect all changes that are recorded
   here.
 
-  Below we roughly organize the changes since Version 5.0 into the following
+  Below we roughly organize the changes since Version  5.0 into the following
   categories of changes: existing features, new features, heuristic
   improvements, bug fixes, changes at the system level, Emacs support, and
   experimental versions.  Each change is described in just one category, though
@@ -19728,7 +19718,7 @@
   David Rager for requesting this feature and helpful conversations on its
   implementation.)  This and other low-level changes are typically documented
   in comments in the corresponding release note event, which in this case is
-  ~c[(deflabel note-5-1 ...)].
+  ~c[(deflabel note-6-0 ...)].
 
   More built-in functions are now ~il[guard]-verified (and in ~c[:]~ilc[logic]
   mode).  Furthermore, a mechanism exists for marking yet more built-in
@@ -19810,7 +19800,7 @@
   Fixed a soundness bug in ~ilc[defabsstobj] based on ~ilc[guard]s that
   violated single-threadedness restrictions.  Thanks to Sol Swords for bringing
   this bug to our attention and supplying a proof of ~c[nil], which we include
-  as a comment in source file ~c[ld.lisp], in ~c[(deflabel note-5-1 ...)].  We
+  as a comment in source file ~c[ld.lisp], in ~c[(deflabel note-6-0 ...)].  We
   also thank Sol for helpful discussions about ~il[guard]s of functions
   introduced by ~c[defabsstobj], which has led us to enhance the
   ~il[documentation]; ~pl[defabsstobj].
@@ -21906,7 +21896,7 @@ Recent changes to this page</A>
 <A HREF=\"~sg\"><IMG SRC=\"note02.gif\" BORDER=0></A>
 </TD>
 <TD>
-<A HREF=\"~sg\">Differences from Version 4.3</A><A HREF=\"~s7\"> <IMG SRC=\"twarning.gif\"></A>
+<A HREF=\"~sg\">Differences from Version 5.0</A><A HREF=\"~s7\"> <IMG SRC=\"twarning.gif\"></A>
 </TD>
 <TD ALIGN=CENTER VALIGN=MIDDLE>
 <A HREF=\"other-releases.html\">
@@ -21968,7 +21958,7 @@ HREF=\"http://acl2-books.googlecode.com/\">http://acl2-books.googlecode.com/</A>
 in particular, the [Source] tab near the top takes you to a search box)
 and their authors are generally noted in each book or its
 <code>README</code> file.  There is a <A
-HREF=\"http://fv.centtech.com/acl2/5.0/doc/\">combined manual</A> that
+HREF=\"http://fv.centtech.com/acl2/6.0/doc/\">combined manual</A> that
 incorporates not only <A HREF=\"#User's-Manual\">The User's Manual</A>
 for ACL2 but also documentation for many books; thanks to Jared Davis
 for building this view of the documentation.
@@ -22063,7 +22053,7 @@ which you can find under your local <CODE>acl2-sources/</CODE> diretory at
 <CODE>doc/HTML/acl2-doc.html</CODE>.</li>
 
 <li>Alternatively, for web browsing you can use <A
-HREF=\"http://fv.centtech.com/acl2/5.0/doc/\">documentation generated by Jared
+HREF=\"http://fv.centtech.com/acl2/6.0/doc/\">documentation generated by Jared
 Davis's xdoc utility</A>.  After you install and certify the ACL2 community
 books (see <A HREF=\"#Tools\">below</A>), you will find a complete local copy
 at <CODE>books/xdoc-impl/manual/preview.html</A></CODE>.
@@ -22152,18 +22142,18 @@ each of these.
 The following link will take you to a search box on a Google page,
 which has the following contents.
 <pre>
-search_term site:http://www.cs.utexas.edu/users/moore/acl2/v5-0
+search_term site:http://www.cs.utexas.edu/users/moore/acl2/v6-0
 </pre>
 Now simply replace the word `search_term' with your topic.  For example, replace
 `<code>search_term</code>' by `<code>tail recursion</code>' to get
 documentation about tail recursion.
 <pre>
-tail recursion site:http://www.cs.utexas.edu/users/moore/acl2/v5-0
+tail recursion site:http://www.cs.utexas.edu/users/moore/acl2/v6-0
 </pre>
 Now you are ready to follow the link.
 <p>
 <a href=\"http://www.google.com/search?q=search_term
-		 site:http://www.cs.utexas.edu/users/moore/acl2/v5-0\">SEARCH
+		 site:http://www.cs.utexas.edu/users/moore/acl2/v6-0\">SEARCH
 		 THE DOCUMENTATION</a>
 </li>
 
@@ -22200,7 +22190,7 @@ tail recursion.
     programming                         ;;; d
     rule-classes                        ;;; e
     books                               ;;; f
-    note-5-0                            ;;; g
+    note-6-0                            ;;; g   ; current release notes
     the-method                          ;;; h
     introduction-to-the-theorem-prover  ;;; i   ; This is not used right now.
     interesting-applications            ;;; j
@@ -23109,9 +23099,8 @@ tail recursion.
   
   ACL2 is distributed on the Web without fee.
 
-  There is a ~b[License] agreement, GPL Version 2 (see
-  ~url[http://www.gnu.org/licenses/gpl-2.0.html]), as indicated near the top of
-  each source file.
+  There is a ~b[license] agreement based on the 3-clause BSD license.  See the
+  file LICENSE in the ACL2 distribution.
 
   ACL2 currently runs on ~b[Unix], ~b[Linux], ~b[Windows], and
   ~b[Macintosh OS X] operating systems.
@@ -26443,8 +26432,8 @@ tail recursion.
 
   about ACL2~/
 
-  This is ACL2 Version 5.0, copyright (C) 2011 University of Texas at Austin,
-  authored by Matt Kaufmann and J Strother Moore.
+  This is ACL2 Version 6.0, copyright (C) 2012, Regents of the University of
+  Texas, authored by Matt Kaufmann and J Strother Moore.
 
   For past versions, see
   ~url[http://www.cs.utexas.edu/users/moore/acl2/current/other-releases.html].

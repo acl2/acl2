@@ -1,21 +1,16 @@
-; ACL2 Version 5.0 -- A Computational Logic for Applicative Common Lisp
-; Copyright (C) 2012  University of Texas at Austin
+; ACL2 Version 6.0 -- A Computational Logic for Applicative Common Lisp
+; Copyright (C) 2012, Regents of the University of Texas
 
 ; This version of ACL2 is a descendent of ACL2 Version 1.9, Copyright
 ; (C) 1997 Computational Logic, Inc.  See the documentation topic NOTE-2-0.
 
 ; This program is free software; you can redistribute it and/or modify
-; it under the terms of Version 2 of the GNU General Public License as
-; published by the Free Software Foundation.
+; it under the terms of the LICENSE file distributed with ACL2.
 
 ; This program is distributed in the hope that it will be useful,
 ; but WITHOUT ANY WARRANTY; without even the implied warranty of
 ; MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-; GNU General Public License for more details.
-
-; You should have received a copy of the GNU General Public License
-; along with this program; if not, write to the Free Software
-; Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
+; LICENSE for more details.
 
 ; Written by:  Matt Kaufmann               and J Strother Moore
 ; email:       Kaufmann@cs.utexas.edu      and Moore@cs.utexas.edu
@@ -10250,8 +10245,8 @@
   which the resulting ACL2 proof script was then hand-massaged into a script
   suitable for the ACL2-like theorem prover to process, generating a formal
   proof of its fidelity that has been checked by the trusted proof checker.
-  (See Jared Davis.  ~i[Milawa: A Self-Verifying Theorem Prover].  Ph.D. Thesis, University of
-  Texas at Austin, December, 2009.)
+  (See Jared Davis.  ~i[Milawa: A Self-Verifying Theorem Prover].
+  Ph.D. Thesis, University of Texas at Austin, December, 2009.)
 
   These are but a few of the interesting projects carried out with ACL2.  Many
   of the authors mentioned above have versions of the papers on their web
