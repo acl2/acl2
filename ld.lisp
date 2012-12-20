@@ -19597,6 +19597,14 @@
   experimental versions.  Each change is described in just one category, though
   of course many changes could be placed in more than one category.
 
+  NOTE.  But we start with one major change that is outside the usual
+  categories:
+
+  ~st[LICENSE change]
+
+  The ACL2 license has been changed from GPL Version 2 to a 3-clause BSD
+  license, found in the ~c[LICENSE] file distributed with ACL2.
+
   ~st[CHANGES TO EXISTING FEATURES]
 
   Function ~ilc[fmt-to-string] and similar functions (~pl[printing-to-strings])
@@ -19951,6 +19959,39 @@
   key checkpoint would be printed once for each such goal during the proof, and
   also once for each such goal in the summary at the end.
   ~eq[]
+
+  ~/~/")
+
+(deflabel note-6-1
+
+  :doc
+  ":Doc-Section release-notes
+
+  ACL2 Version  6.1 (xx, xxxx) Notes~/
+
+  NOTE!  New users can ignore these release notes, because the
+  ~il[documentation] has been updated to reflect all changes that are recorded
+  here.
+
+  Below we roughly organize the changes since Version  6.0 into the following
+  categories of changes: existing features, new features, heuristic
+  improvements, bug fixes, changes at the system level, Emacs support, and
+  experimental versions.  Each change is described in just one category, though
+  of course many changes could be placed in more than one category.
+
+  ~st[CHANGES TO EXISTING FEATURES]
+
+  ~st[NEW FEATURES]
+
+  ~st[HEURISTIC IMPROVEMENTS]
+
+  ~st[BUG FIXES]
+
+  ~st[CHANGES AT THE SYSTEM LEVEL]
+
+  ~st[EMACS SUPPORT]
+
+  ~st[EXPERIMENTAL/ALTERNATE VERSIONS]
 
   ~/~/")
 
