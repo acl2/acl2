@@ -43342,8 +43342,8 @@
   the name of the package of a symbol (a string)~/
 
   WARNING: While ~c[symbol-package-name] behaves properly on all ACL2 objects,
-  it may give surprising results when called in raw Lisp.  More details
-  ~pl[pkg-imports], in particula the discussion there of the
+  it may give surprising results when called in raw Lisp.  For more details
+  ~pl[pkg-imports], in particular the discussion there of the
   ~c[\"COMMON-LISP\"] package.
 
   Completion Axiom (~c[completion-of-symbol-package-name]):

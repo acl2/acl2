@@ -19989,6 +19989,10 @@
 
   ~st[CHANGES AT THE SYSTEM LEVEL]
 
+  The ~c[books/] directory no longer needs to exist in order to build an ACL2
+  executable.  Thanks to Robert Krug for pointing out that the installation
+  instructions had suggested that this was already the case.
+
   ~st[EMACS SUPPORT]
 
   ~st[EXPERIMENTAL/ALTERNATE VERSIONS]

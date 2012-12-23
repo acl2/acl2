@@ -32,17 +32,16 @@ distribution</a> if one is available for your platform.  Otherwise:
 acl2.tar.gz</A> into a new directory, say <code>acl2/v6-0/</code>.</li>
 
 <li>Execute the following to create directory <code>acl2-sources/</code>:<br>
-<code>tar xfz acl2.tar.gz</code>
+<code>tar xfz acl2.tar.gz</code></li>
 
-<li>We strongly suggest that you fetch ACL2 community books, for
+<li><A NAME="create-books">We strongly suggest</A> that you fetch ACL2 community books, for
   example
   as <A HREF="http://acl2-books.googlecode.com/files/books-6.0.tar.gz">a
   tarball from the Google Code website</A>, into your
-  new <code>acl2-sources/</code> directory.
-
-<li>Execute the following in <code>acl2-sources/</code> to create
+  new <code>acl2-sources/</code> directory; then execute the following
+  in <code>acl2-sources/</code> to create
   directory <code>books/</code>:<br>
-<code>tar xfz books-6.0.tar.gz</code>
+<code>tar xfz books-6.0.tar.gz</code></li>
 
 <li><a href="requirements.html">Obtain a Common Lisp implementation</a> if you don't
 already have one.</li>
@@ -65,11 +64,15 @@ for <A HREF="http://acl2-books.googlecode.com/files/workshops-6.0.tar.gz">worksh
 books</A>
 and/or <A HREF="http://acl2-books.googlecode.com/files/nonstd-6.0.tar.gz">nonstd
 books</A> from the Google Code website
-into the <CODE>books/</CODE> directory.  (Further
-instructions are
-<A HREF="obtaining-and-installing.html#Sources">here</A>.)
+into the <CODE>books/</CODE> directory (but first
+  create <CODE>books/</CODE> if you
+  skipped <A HREF="#create-books">that step</A>).  Further
+  instructions
+  are <A HREF="obtaining-and-installing.html#Sources">here</A>.</li>
 
-<li><A NAME="certify-books">Certify books:</A>
+<li><A NAME="certify-books">Certify books (but first
+    create <CODE>books/</CODE> if you
+    skipped <A HREF="#create-books">that step</A>):</A>
 <pre>
 make regression
 </pre>
@@ -91,8 +94,8 @@ make regression ACL2_CENTAUR=skip
 
 </ol>
 
-You now have an ACL2 executable called <code>saved_acl2</code> (from step 6)
-and access to certified community books (from step 8).  Enjoy!
+You now have an ACL2 executable called <code>saved_acl2</code> (from step 5)
+and access to certified community books (from step 7).  Enjoy!
 
 <hr size=3 noshade>
 

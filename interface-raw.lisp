@@ -6345,33 +6345,34 @@
 ; Set the system books directory now that the operating-system has been defined
 ; (needed by pathname-os-to-unix).
 
-  (let ((system-books-dir
-         (cond (system-books-dir
-                (let ((dir (unix-full-pathname
-                            (cond
-                             ((symbolp system-books-dir)
-                              (symbol-name system-books-dir))
-                             ((stringp system-books-dir)
-                              system-books-dir)
-                             (t (er hard 'initialize-acl2
-                                    "Unable to complete ~
-                                     initialization, because the supplied ~
-                                     system books directory, ~x0, is not ~
-                                     a string."
-                                    system-books-dir))))))
-                  (maybe-add-separator dir)))
-               (t (unix-full-pathname
-                   (concatenate 'string
-                                (our-pwd)
-                                #-:non-standard-analysis
-                                "books/"
-                                #+:non-standard-analysis
-                                "books/nonstd/"))))))
-    (f-put-global 'system-books-dir
-                  (canonical-dirname! system-books-dir
-                                      'enter-boot-strap-mode
-                                      *the-live-state*)
-                  *the-live-state*))
+  (cond (system-books-dir
+         (let ((dir (unix-full-pathname
+                     (cond
+                      ((symbolp system-books-dir)
+                       (symbol-name system-books-dir))
+                      ((stringp system-books-dir)
+                       system-books-dir)
+                      (t (er hard 'initialize-acl2
+                             "Unable to complete initialization, because the ~
+                              supplied system books directory, ~x0, is not a ~
+                              string."
+                             system-books-dir))))))
+           (f-put-global 'system-books-dir
+                         (canonical-dirname! (maybe-add-separator dir)
+                                             'enter-boot-strap-mode
+                                             *the-live-state*)
+                         *the-live-state*)))
+        (t (f-put-global 'system-books-dir
+                         (concatenate
+                          'string
+                          (canonical-dirname! (our-pwd)
+                                              'enter-boot-strap-mode
+                                              *the-live-state*)
+                          #-:non-standard-analysis
+                          "books/"
+                          #+:non-standard-analysis
+                          "books/nonstd/")
+                         *the-live-state*)))
 
 ; Inhibit proof-tree output during the build, including pass-2 if present.
 

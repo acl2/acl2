@@ -6074,20 +6074,20 @@
 ; Each element of stack-s (resp. stack-f) corresponds to an attempt to apply a
 ; certain xrune and the element is the value of cnt-s (resp. cnt-f) at the time
 ; the attempt started.  When the attempt is successful, we increase cnt-s,
-; first by one if we have a rune rather than a hyp-xrune or conc-xrune, and then
-; by the difference of the current value of cnt-s with the old value (on top of
-; stack-s) to find out how many lemmas were usefully tried under that xrune,
-; and we accumulate that difference into the success fields of the current
-; totals for that xrune; similarly for cnt-f and useless tries.  When the
-; attempt fails, all accumulation is into the failure (useless) fields of the
-; totals.  The accumulated totals is a stack of lists, each of which contains
-; elements associating xrunes with values n-s, ap-s, n-f, and ap-f, where n-s
-; is the number of times xrune was pushed onto the stack and successfully
-; applied, ap-s is the accumulated persistence of useful applications of that
-; xrune (the total number of applications while that xrune was on the stack,
-; not yet including such applications that are recorded in more recent stack
-; frames), and n-f and ap-f are similar but for failed applications of that
-; xrune.
+; first by one if we have a rune rather than a hyp-xrune or conc-xrune, and
+; then by the difference of the current value of cnt-s with the old value (on
+; top of stack-s) to find out how many lemmas were usefully tried under that
+; xrune, and we accumulate that difference into the success fields of the
+; current totals for that xrune; similarly for cnt-f and useless tries.  When
+; the attempt fails, all accumulation is into the failure (useless) fields of
+; the totals.  The accumulated totals is a stack of lists, each of which
+; contains elements associating xrunes with values n-s, ap-s, n-f, and ap-f,
+; where n-s is the number of times xrune was pushed onto the stack and
+; successfully applied, ap-s is the accumulated persistence of useful
+; applications of that xrune (the total number of applications while that xrune
+; was on the stack, not yet including such applications that are recorded in
+; more recent stack frames), and n-f and ap-f are similar but for failed
+; applications of that xrune.
 
 ; Performance: We have seen (Version_3.2.1) about a 50% increase in time with
 ; accumulated-persistence turned on, in very limited experiments.  In later
@@ -6120,8 +6120,8 @@
 ; ; 165.09 seconds realtime, 163.90 seconds runtime.
 ; 
 ; The results above were based on code that always gave results for a :conc
-; xrune.  We now skip that xrune if there are no hypotheses, but that didn't make
-; much difference:
+; xrune.  We now skip that xrune if there are no hypotheses, but that didn't
+; make much difference:
 ; ; 164.84 seconds realtime, 163.50 seconds runtime.
 
 (defun merge-accumulated-persistence-aux (xrune entry alist)
@@ -6592,8 +6592,8 @@
   to ~c[rn] to form what we call its ``conclusion xrune'', and for its ~c[I]-th
   hypothesis we prepend ~c[:HYP I] to ~c[rn] to form its ~c[I]-th ``hypothesis
   xrune.''  Here, ``xrune'' is pronounced ``ex rune'', and is mnemonic for
-  ``extended rune.''  For example, if ~c[(REWRiTE FOO)] is a ~il[rune] then
-  ~c[(:CONC REWRiTE FOO)] is its conclusion xrune, and ~c[(:HYP 2 REWRiTE FOO)]
+  ``extended rune.''  For example, if ~c[(REWRITE FOO)] is a ~il[rune] then
+  ~c[(:CONC REWRITE FOO)] is its conclusion xrune, and ~c[(:HYP 2 REWRITE FOO)]
   is a hypothesis xrune corresponding to the second hypothesis of the
   corresponding rewrite rule.
 
@@ -6669,9 +6669,9 @@
   ~ev[]
   The second hypothesis, however, does cause additional rewriting in order to
   rewrite it to true, resulting in 251 stack frames for runes.  We see that the
-  conclusion does not lead to creation any rune stack frames, which might seem
-  to suggest that only 251 stack frames for runes were created on behalf of
-  this rule application ~-[] yet, we see that 462 frames were actually
+  conclusion does not lead to creation of any rune stack frames, which might
+  seem to suggest that only 251 stack frames for runes were created on behalf
+  of this rule application ~-[] yet, we see that 462 frames were actually
   created.  The difference is the 211 frames created for the rewrite rule
   itself.  Even if the total had been a bit more than 462, one need not be
   surprised, as there could be some work recorded during application of the
@@ -6695,10 +6695,9 @@
   of ~c[:merge], in which case output will be sorted and displayed as though
   only runes were tracked (not the extra xrunes), but each data item for a
   non-rune xrune will be merged so that it is displayed in suitable order just
-  below its corresponding rune, as in the ~c[PERM-MEM] example displayeda
-  above.
+  below its corresponding rune, as in the ~c[PERM-MEM] example displayed above.
 
-  We close by mentioning two aspect of enhanced statistics display for
+  We close by mentioning two aspects of enhanced statistics display for
   ~c[:CONC] xrunes that have potential to be confusing.  First consider the
   following example.
   ~bv[]
