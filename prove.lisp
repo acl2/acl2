@@ -3702,7 +3702,7 @@
   generate implicit expand hints for certain ``induction conclusion''
   terms.~/~/")
 
-(defmacro set-splitter-rules-p (val state)
+(defmacro set-splitter-rules-p (val)
 
   ":Doc-Section switches-parameters-and-modes
 
@@ -3729,7 +3729,7 @@
   Again, ~pl[splitter] for the effects of turning on the reporting of splitter
   rules."
 
-  `(f-put-global 'splitter-rules-p ,val ,state))
+  `(f-put-global 'splitter-rules-p ,val state))
 
 (defun waterfall-msg1
   (processor cl-id signal clauses new-hist msg ttree pspv state)
