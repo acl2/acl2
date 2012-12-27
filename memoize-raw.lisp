@@ -1810,7 +1810,6 @@ the calls took.")
             expand-some-non-rec-fns
             expand-some-non-rec-fns-lst
             explode-atom
-            extend-car-cdr-sorted-alist
             extend-type-alist
             extend-type-alist-simple
             extend-type-alist-with-bindings

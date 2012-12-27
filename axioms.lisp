@@ -12016,7 +12016,7 @@
       (equal x nil)))
 
 (defconst *summary-types*
-  '(header form rules hint-events warnings time steps value))
+  '(header form rules hint-events warnings time steps value splitter-rules))
 
 (defun with-output-fn (ctx args off on gag-mode off-on-p gag-p stack
                            summary summary-p)
@@ -27978,6 +27978,7 @@
     (skip-proofs-by-system . nil)
     (skip-proofs-okp-cert . t) ; t when not inside certify-book
     (slow-array-action . :break) ; set to :warning in exit-boot-strap-mode
+    (splitter-rules-p . nil)
     (standard-co . acl2-output-channel::standard-character-output-0)
     (standard-oi . acl2-output-channel::standard-object-input-0)
     (step-limit-record . nil)
@@ -38493,11 +38494,11 @@
   ~ev[]
   where form evaluates to a true-list of symbols, each of which is among the
   values of the constant ~c[*summary-types*], i.e.: ~c[header], ~c[form],
-  ~c[rules], ~c[hint-events] ~c[warnings], ~c[time], ~c[steps], and ~c[value].
-  Each specified type inhibits printing of the corresponding portion of the
-  summaries printed at the conclusions of ~il[events], where ~c[header] refers
-  to an initial newline followed by the line containing just the word
-  ~c[Summary].
+  ~c[rules], ~c[hint-events] ~c[warnings], ~c[time], ~c[steps], ~c[value], and
+  ~c[splitter-rules].  Each specified type inhibits printing of the
+  corresponding portion of the summaries printed at the conclusions of
+  ~il[events], where ~c[header] refers to an initial newline followed by the
+  line containing just the word ~c[Summary].
 
   Note the distinction between ~c[rules] and ~c[hint-events].  ~c[Rules]
   provides a record of automatic rule usage by the prover, while
@@ -39523,8 +39524,10 @@
   effect is ~ilc[local] to the book or ~ilc[encapsulate] form containing it;
   ~pl[acl2-defaults-table].
 
-  Also ~pl[hints] for discussion of a related hint,
-  ~c[:case-split-limitations].~/
+  ~l[hints] for discussion of a related hint, ~c[:case-split-limitations].
+  Also ~pl[set-splitter-rules-p] for how to obtain reports on rules that may be
+  responsible for case splits.~/
+
   ~bv[]
   General Form:
   (set-case-split-limitations lst)

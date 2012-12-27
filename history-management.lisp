@@ -3476,60 +3476,6 @@
             (declare (ignore col))
             state)))
 
-; We admit the following sorting functions in :logic mode, verify their guards,
-; and prove properties of them in community book books/misc/sort-symbols.lisp.
-
-(defun strict-merge-symbol-< (l1 l2 acc)
-
-; If l1 and l2 are strictly ordered by symbol-< and above acc, which is also
-; thus strictly ordered, then the result is strictly ordered by symbol-<.
-
-  (declare (xargs :guard (and (symbol-listp l1)
-                              (symbol-listp l2)
-                              (true-listp acc))
-
-; We admit this to the logic and prove termination in community book
-; books/misc/sort-symbols.lisp.
-
-                  :mode :program))
-  (cond ((endp l1) (revappend acc l2))
-        ((endp l2) (revappend acc l1))
-        ((eq (car l1) (car l2))
-         (strict-merge-symbol-< (cdr l1) (cdr l2) (cons (car l1) acc)))
-        ((symbol-< (car l1) (car l2))
-         (strict-merge-symbol-< (cdr l1) l2 (cons (car l1) acc)))
-        (t (strict-merge-symbol-< l1 (cdr l2) (cons (car l2) acc)))))
-
-(defun strict-merge-sort-symbol-< (l)
-
-; Produces a result with the same elements as the list l of symbols, but
-; strictly ordered by symbol-name.
-
-  (declare (xargs :guard (symbol-listp l)
-
-; We admit this to the logic and prove termination in community book
-; books/misc/sort-symbols.lisp.
-
-                  :mode :program))
-  (cond ((endp (cdr l)) l)
-        (t (strict-merge-symbol-<
-            (strict-merge-sort-symbol-< (evens l))
-            (strict-merge-sort-symbol-< (odds l))
-            nil))))
-
-(defun strict-symbol-<-sortedp (x)
-  (declare (xargs :guard (symbol-listp x)))
-  (cond ((or (endp x) (null (cdr x)))
-         t)
-        (t (and (symbol-< (car x) (cadr x))
-                (strict-symbol-<-sortedp (cdr x))))))
-
-(defun sort-symbol-listp (x)
-  (declare (xargs :guard (symbol-listp x)))
-  (cond ((strict-symbol-<-sortedp x)
-         x)
-        (t (strict-merge-sort-symbol-< x))))
-
 (defun use-names-in-ttree (ttree)
   (let* ((objs (tagged-objects :USE ttree))
          (lmi-lst (append-lst (strip-cars (strip-cars objs))))
@@ -3584,6 +3530,65 @@
                          state))
             (t state)))))
 
+(defun print-splitter-rules-summary (cl-id clauses ttree channel state)
+
+; When cl-id is nil, we are printing for the summary, and clauses is ignored.
+; Otherwise we are printing during a proof under waterfall-msg1, for gag-mode.
+
+  (let ((if-intro (merge-sort-runes
+                   (tagged-objects 'splitter-if-intro ttree)))
+        (case-split (merge-sort-runes
+                     (tagged-objects 'splitter-case-split ttree)))
+        (immed-forced (merge-sort-runes
+                       (tagged-objects 'splitter-immed-forced ttree))))
+    (cond ((or if-intro case-split immed-forced)
+           (with-output-lock ; only necessary if cl-id is non-nil
+            (pprogn
+             (cond (cl-id (newline channel state))
+                   (t state))
+             (mv-let
+              (col state)
+              (fmt1 "Splitter ~s0 (see :DOC splitter)~@1~s2~|~@3~@4~@5"
+                    (list
+                     (cons #\0 (if cl-id "note" "rules"))
+                     (cons #\1
+                           (if cl-id
+
+; Since we are printing during a proof (see comment above) but not already
+; printing the clause-id, we do so now.  This is redundant if (f-get-global
+; 'print-clause-ids state) is true, but necessary when parallelism is enabled
+; for #+acl2-par, and anyhow, adds a bit of clarity.
+
+; We leave it to waterfall-msg1 to track print-time, so we avoid calling
+; waterfall-print-clause-id.
+
+                               (msg " for ~@0 (~x1 subgoal~#2~[~/s~])"
+                                    (tilde-@-clause-id-phrase cl-id)
+                                    (length clauses)
+                                    clauses)
+                             ""))
+                     (cons #\2 (if cl-id "." ":"))
+                     (cons #\3
+                           (cond
+                            (case-split (msg "  case-split: ~y0"
+                                             case-split))
+                            (t "")))
+                     (cons #\4
+                           (cond
+                            (immed-forced (msg "  immed-forced: ~y0"
+                                               immed-forced))
+                            (t "")))
+                     (cons #\5
+                           (cond
+                            (if-intro (msg "  if-intro: ~y0"
+                                           if-intro))
+                            (t ""))))
+                    0 channel state nil)
+              (declare (ignore col))
+              (cond (cl-id (newline channel state))
+                    (t state))))))
+          (t state))))
+
 (defun print-rules-and-hint-events-summary (state)
   (pprogn
    (io? summary nil state
@@ -3598,7 +3603,11 @@
                  (t (print-runes-summary acc-ttree channel state)))
            (cond ((member-eq 'hint-events inhibited-summary-types)
                   state)
-                 (t (print-hint-events-summary acc-ttree channel state))))))
+                 (t (print-hint-events-summary acc-ttree channel state)))
+           (cond ((member-eq 'splitter-rules inhibited-summary-types)
+                  state)
+                 (t (print-splitter-rules-summary nil nil acc-ttree channel
+                                                  state))))))
 
 ; Since we've already printed from the accumulated-ttree, there is no need to
 ; print again the next time we want to print rules or hint-events.  That is why
@@ -17204,6 +17213,7 @@
             pc-ss-alist                ;;; for saves under :instructions hints
             last-step-limit            ;;; propagate step-limit past expansion
             illegal-to-certify-message ;;; needs to persist past expansion
+            splitter-rules-p           ;;; allow user to modify this in a book
             ))))
     val))
 

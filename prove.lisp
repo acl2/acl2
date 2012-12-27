@@ -1181,7 +1181,7 @@
 
   (mv-let (message-lst char-alist)
           (tilde-*-simp-phrase1
-           (extract-and-classify-lemmas ttree '(implies not iff) nil nil)
+           (extract-and-classify-lemmas ttree '(implies not iff) nil)
 
 ; Note: The third argument to extract-and-classify-lemmas is the list
 ; of forced runes, which we assume to be nil in preprocessing.  If
@@ -3531,9 +3531,205 @@
 ; That completes basic support for gag-mode.  We now resume mainline
 ; development of the waterfall.
 
-; The waterfall also manages the output, by case switching on the
-; processor.  The next function handles the printing of the formula
-; and the output for those processes that hit.
+; The waterfall also manages the output, by case switching on the processor.
+; The function waterfall-msg1 handles the printing of the formula and the
+; output for those processes that hit.
+
+(defmacro splitter-rules-p (&optional state)
+  ":Doc-Section Miscellaneous
+
+  status for reporting of ~il[splitter] rules~/
+
+  ~bv[]
+  Forms:
+  (splitter-rules-p state)
+  (splitter-rules-p) ; same as above
+  ~ev[]
+
+  ~l[splitter] for a discussion of splitter rules.  ~l[set-splitter-rules-p]
+  for how to turn on, or off, the reporting of splitter rules.  When off (the
+  default), the value of ~c[(splitter-rules-p)] is ~c[nil]; otherwise, the
+  reporting of splitter rules is on.~/~/"
+
+  `(f-get-global 'splitter-rules-p ,state))
+
+(defdoc splitter
+  ":Doc-Section Miscellaneous
+
+  reporting of rules whose application may have caused case splits~/
+
+  ~l[set-splitter-rules-p] for how to turn on, or off, the reporting of rule
+  applications that may have caused a goal to simplify to more than one
+  subgoal.  A rule with such an application is called a ``splitter''.  Here, we
+  explain the output produced for splitters when such reporting is turned on
+  ~-[] that is, when the value of ~c[(]~ilc[splitter-rules-p]~c[)] is true.
+  Also ~pl[set-case-split-limitations] for information on how to control case
+  splits.
+
+  We begin by describing three types of splitters.~bq[]
+
+  ~c[if-intro]: The rule application may have introduced a call of ~c[IF], in
+  the sense discussed at the end below.
+
+  ~c[case-split]: For the application of a rule with hypothesis of the form
+  ~c[(case-split <hyp>)], ~c[<hyp>] did not simplify to true or false.
+
+  ~c[immed-forced]: For the application of a rule with hypothesis of the form
+  ~c[(force <hyp>)], ~c[<hyp>] did not simplify to true or false, where
+  immediate-force-modep is enabled (~pl[immediate-force-modep]).~eq[]
+
+  These three annotations ~-[] ~c[if-intro], ~c[case-split], and
+  ~c[immed-forced] ~-[] may be used in proof output and summaries for
+  describing rule applications, as discussed below.  A fourth annotation,
+  ~c[forced], maybe also be used in proof output to indicate the application of
+  a rule with hypothesis of the form ~c[(force <hyp>)] when ~c[<hyp>] did not
+  simplify to true or false, where immediate-force-modep is disabled
+  (~pl[immediate-force-modep]).  We don't consider such uses of ~ilc[force] to
+  be splitters, because they do not cause case splits (though they do produce
+  goals to prove after lower-case ``q.e.d.'' is printed); ~pl[force].
+
+  There are three kinds of output affected by splitters, illustrated in turn
+  below using examples.
+  ~bq[]
+  (a) During the proof, ~il[gag-mode] off~nl[]
+  (b) During the proof, ~il[gag-mode] on~nl[]
+  (c) Summary
+  ~eq[]
+
+  Of course, (a) and (b) are skipped if proof output is inhibited, which (c) is
+  skipped if summary output is inhibited; ~pl[set-inhibit-output-lst].
+
+ (a) During the proof, ~il[gag-mode] off
+
+  With ~il[gag-mode] off (or when using ~c[:]~ilc[pso], ~c[:]~ilc[psof], or
+  ~c[:]~ilc[psog]) one normally gets an English commentary.  The following
+  output indicates that at least one application of each rule ~c[F] and ~c[G]
+  is of type ~c[if-intro], at least one application of rules ~c[G] and ~c[R1]
+  are of type ~c[case-split], and at least one application of rule ~c[R3] is of
+  type ~c[immed-forced].  If ~il[immediate-force-modep] is off then
+  ``~c[immed-forced]'' would be replaced by ``~c[forced]''.
+  ~bv[]
+    This simplifies, using the :definitions F (if-intro), G (case-split and
+    if-intro) and H and the :rewrite rules R1, R2 (case-split), and
+    R3 (immed-forced), to the following two conjectures.
+  ~ev[]
+
+  Note that any such printing of ``~c[forced]'' is done even if
+  ~c[(splitter-rules-p)] is false.  Such forcing indication is also done when
+  raw proof format is used ~-[] ~pl[set-raw-proof-format] ~-[] but in that
+  case, no indication is made for splitters in the proof output.
+
+  (b) During the proof, ~il[gag-mode] on
+
+  With ~il[gag-mode] on the proof output is greatly abbreviated.  However,
+  ``Splitter Notes'' are printed so that even with ~il[gag-mode] on, one can
+  get important information to help control large case splits, by disabling
+  splitter rules as appropriate.  These are printed at the point when a goal
+  splits into subgoals.  Here, for example, is the Splitter Note that
+  corresponds to the output shown in (a) above.  It shows the goal whose
+  simplification has produced a split into more than one subgoal, and it shows
+  how many subgoals have been created.
+  ~bv[]
+  Splitter note (see :DOC splitter) for Subgoal *1/2.2.1' (2 subgoals).
+    case-split: ((:DEFINITION G) (:REWRITE R2))
+    immed-forced: ((:REWRITE R3))
+    if-intro: ((:DEFINITION G) (:DEFINITION F))
+  ~ev[]
+  No such splitter notes are printed for the use of ~ilc[force] (when
+  ~il[immediate-force-modep] is off).
+
+  (c) Summary
+
+  Here is a possible summary corresponding to our running example.  In the
+  summary, ``Splitter rules'' is omitted if there are no splitter rules, and a
+  splitter type is only mentioned if there is at least one corresponding
+  splitter rule.
+  ~bv[]
+  Summary
+  Form:  ( THM ...)
+  Rules: ((:DEFINITION F)
+          (:DEFINITION G)
+          (:DEFINITION H)
+          (:REWRITE R1)
+          (:REWRITE R2)
+          (:REWRITE R3))
+  Splitter rules (see :DOC splitter):
+    case-split: ((:DEFINITION G) (:REWRITE R2))
+    immed-forced: ((:REWRITE R3))
+    if-intro: ((:DEFINITION G) (:DEFINITION F))
+  Time:  0.01 seconds (prove: 0.00, print: 0.00, other: 0.00)
+  Prover steps counted:  145
+  ~ev[]
+  No indication for ``~c[forced]'' is given for ``Splitter rules''.  (As
+  discussed earlier above, the ~ilc[force]d hypotheses are not considered
+  relevant for determining splitter rule applications unless
+  ~il[immediate-force-modep] is on.)
+
+  We conclude by giving the criteria for a ~il[rewrite] or ~il[definition] rule
+  application to be a splitter of type ~c[if-intro].~bq[]
+
+  o Reporting of splitter rules is on, i.e., the value of
+  ~c[(]~ilc[splitter-rules-p]~c[)] is true.
+
+  o At least two subgoals are created, even before considering subgoals
+  generated by unrelieved ~ilc[case-split] or ~ilc[force] hypotheses.
+
+  o The term to which the rule is applied is at the top level, rather than
+  being encountered when trying to establish the hypothesis of a rule.
+
+  o There is a call of the function symbol ~c[IF] in the right-hand side of the
+  rewrite rule, or, in the case of a definition rule, in the body of the
+  definition.
+
+  o There is a call of the function symbol ~c[IF] in the rewritten right-hand
+  side (for a rewrite rule) or definition body (for a definition rule).
+  ~eq[]
+
+  Any rule application meeting the above criteria will be consider a splitter
+  of type ~c[if-intro], even if the call does not actually cause a case split.
+  For example, if you are proving ~c[(implies (hyp x) (conc x))] and rule R
+  rewrites ~c[(hyp x)] to ~c[(if (h1 x) (h2 x) nil)], which is really the term
+  ~c[(and (h1 x) (h2 x))], then R may be labelled as a splitter rule.  If you
+  want to find the causes of case-splitting, the list of ~c[if-intro] splitters
+  can help you narrow your search, but may include irrelevant rules as well.
+
+  Finally, note that if the reason for introducing an ~c[IF] call is an
+  ~c[:expand] hint (~pl[hints]), then that expansion will not be associated
+  with an ~c[if-intro] splitter.  This makes sense when one considers that the
+  point of reporting splitters is to assist users in deciding on rules to
+  disable, and ~c[:expand] hints apply regardless of whether a definition is
+  disabled.  A subtlely here is that during proofs by induction, ACL2 may
+  generate implicit expand hints for certain ``induction conclusion''
+  terms.~/~/")
+
+(defmacro set-splitter-rules-p (val state)
+
+  ":Doc-Section switches-parameters-and-modes
+
+  turn on or off reporting of rules that may have caused case splits~/
+  ~bv[]
+  Examples:
+  (set-splitter-rules-p t)   ; enable  reports of ``splitter'' rules
+  (set-splitter-rules-p nil) ; disable reports of ``splitter'' rules (default)
+  ~ev[]~/
+
+  After evaluation of the form ~c[(set-splitter-rules-p t)], ACL2 will report
+  ~il[rewrite] and ~il[definition] rules that may have reduced a goal to more
+  than one subgoal.  ~l[splitter] for how to interpret such reports.  We call
+  such rules ``splitter rules'' for the goal that is being split.  This
+  information can be useful in deciding how to eliminate large splits, for
+  example of Goal into Subgoal 1000 through Subgoal 1, by disabling some
+  splitter rules.  Advanced users who traffic in large proofs might thus want
+  to put the form ~c[(set-splitter-rules-p t)] in their customization file;
+  ~pl[acl2-customization].
+
+  Note that this command does not change the ACL2 ~il[world]; it only modifies
+  the ~il[state].
+
+  Again, ~pl[splitter] for the effects of turning on the reporting of splitter
+  rules."
+
+  `(f-put-global 'splitter-rules-p ,val ,state))
 
 (defun waterfall-msg1
   (processor cl-id signal clauses new-hist msg ttree pspv state)
@@ -3556,7 +3752,9 @@
      (fms "~@0~|" (list (cons #\0 msg)) (proofs-co state) state nil))
     (t state))
    (cond
-    ((gag-mode) state)
+    ((gag-mode)
+     (print-splitter-rules-summary cl-id clauses ttree (proofs-co state)
+                                   state))
     (t
      (case
        processor
@@ -3795,7 +3993,11 @@
                    (pspv ttree new-hist clauses signal cl-id processor msg)
                    (waterfall-msg1 processor cl-id signal clauses new-hist msg 
                                    ttree pspv state))) 
-             (t 'no-need-to-print)))
+             (t (io? prove t
+                     state
+                     (cl-id ttree clauses)
+                     (print-splitter-rules-summary
+                      cl-id clauses ttree (proofs-co state) state)))))
       (increment-timer@par 'print-time state)
       (mv@par (cond ((eq processor 'push-clause)
                           
@@ -4896,7 +5098,37 @@
         (t (add-to-set-equal (access assumption (car lst) :term)
                              (strip-assumption-terms (cdr lst))))))
 
-(defun extract-and-clausify-assumptions (cl ttree only-immediatep ens wrld)
+(defun add-splitters-to-ttree1 (assumnotes tag ttree)
+  (cond ((endp assumnotes) ttree)
+        (t (add-splitters-to-ttree1
+            (cdr assumnotes)
+            tag
+            (add-to-tag-tree tag
+                             (access assumnote (car assumnotes) :rune)
+                             ttree)))))
+
+(defun add-splitters-to-ttree (immediatep tag assumptions ttree)
+  (cond ((endp assumptions) ttree)
+        (t (add-splitters-to-ttree
+            immediatep
+            tag
+            (cdr assumptions)
+            (cond
+             ((eq immediatep
+                  (access assumption (car assumptions) :immediatep))
+              (add-splitters-to-ttree1
+               (access assumption (car assumptions) :assumnotes)
+               tag ttree))
+             (t ttree))))))
+
+(defun maybe-add-splitters-to-ttree (splitter-rules-p immediatep tag
+                                                      assumptions ttree)
+  (cond (splitter-rules-p
+         (add-splitters-to-ttree immediatep tag assumptions ttree))
+        (t ttree)))
+
+(defun extract-and-clausify-assumptions (cl ttree only-immediatep ens wrld
+                                            splitter-rules-p)
 
 ; WARNING: This function is overloaded.  Only-immediatep can take only only two
 ; values in this function: 'non-nil or nil.  The interpretation is as in
@@ -4963,14 +5195,13 @@
              ((tagged-objectsp 'assumption ttree1)
               (er hard 'extract-and-clausify-assumptions
                   "Convert-type-set-to-term apparently returned a ttree that ~
-                   contained an 'assumption tag.  This violates the ~
-                   assumption in this function."))
+                    contained an 'assumption tag.  This violates the ~
+                    assumption in this function."))
              (t ttree1))
             (delete-assumptions ttree only-immediatep))))))
    ((eq only-immediatep 'non-nil)
-    (let* ((assumed-terms
-            (strip-assumption-terms
-             (collect-assumptions ttree 'case-split)))
+    (let* ((case-split-assumptions (collect-assumptions ttree 'case-split))
+           (assumed-terms (strip-assumption-terms case-split-assumptions))
            (case-split-clauses (split-on-assumptions assumed-terms cl nil))
            (case-split-pairs (pairlis2 nil case-split-clauses))
            (raw-assumptions (collect-assumptions ttree t))
@@ -4992,15 +5223,25 @@
        (mv 'ignored
            assumed-terms
            (append case-split-pairs pairs)
-           (cons-tag-trees
-            (cond
-             ((tagged-objectsp 'assumption ttree1)
-              (er hard 'extract-and-clausify-assumptions
-                  "Convert-type-set-to-term apparently returned a ttree that ~
+           (maybe-add-splitters-to-ttree
+            splitter-rules-p
+            'case-split
+            'splitter-case-split
+            case-split-assumptions
+            (maybe-add-splitters-to-ttree
+             splitter-rules-p
+             t
+             'splitter-immed-forced
+             raw-assumptions
+             (cons-tag-trees
+              (cond
+               ((tagged-objectsp 'assumption ttree1)
+                (er hard 'extract-and-clausify-assumptions
+                    "Convert-type-set-to-term apparently returned a ttree that ~
                    contained an 'assumption tag.  This violates the assumption ~
                    in this function."))
-             (t ttree1))
-            (delete-assumptions ttree 'non-nil))))))
+               (t ttree1))
+              (delete-assumptions ttree 'non-nil))))))))
    (t (mv 0 nil
           (er hard 'extract-and-clausify-assumptions
               "We only implemented two cases for only-immediatep:  'non-nil ~
@@ -5199,14 +5440,12 @@
 ; We accumulate the modified ttree into state.
 
   (declare (ignorable cl-id step-limit state))
-  (mv-let@par
-   (erp ttree state)
-   (accumulate-ttree-and-step-limit-into-state@par
-    (set-cl-ids-of-assumptions ttree cl-id)
-    step-limit
-    state)
-   (declare (ignore erp))
-
+  (let ((ttree (set-cl-ids-of-assumptions (cond ((cdr clauses) ttree)
+                                                (t (remove-tag-from-tag-tree
+                                                    'splitter-if-intro
+                                                    ttree)))
+                                          cl-id)))
+  
 ; We extract the assumptions we are to handle immediately.
 
    (mv-let
@@ -5218,36 +5457,43 @@
      (access rewrite-constant
              (access prove-spec-var new-pspv :rewrite-constant)
              :current-enabled-structure)
-     wrld)
+     wrld
+     (access rewrite-constant
+             (access prove-spec-var new-pspv :rewrite-constant)
+             :splitter-rules-p))
     (declare (ignore n))
+    (mv-let@par
+     (erp ttree state)
+     (accumulate-ttree-and-step-limit-into-state@par ttree step-limit state)
+     (declare (ignore erp))
 
 ; Note below that we throw away the cars of the pairs, which are
 ; typically assumnotes.  We keep only the clauses themselves.
 ; We perform the required splitting, augmenting the previously
 ; generated clauses with the assumed terms.
 
-    (let* ((split-clauses (strip-cdrs pairs))
-           (clauses
-            (if (and (null split-clauses)
-                     (null assumed-terms)
-                     (member-eq processor
-                                '(preprocess-clause
-                                  apply-top-hints-clause)))
-                clauses
-              (remove-trivial-clauses
-               (union-equal split-clauses
-                            (disjoin-clause-segment-to-clause-set
-                             (dumb-negate-lit-lst assumed-terms)
-                             clauses))
-               wrld)))
+     (let* ((split-clauses (strip-cdrs pairs))
+            (clauses
+             (if (and (null split-clauses)
+                      (null assumed-terms)
+                      (member-eq processor
+                                 '(preprocess-clause
+                                   apply-top-hints-clause)))
+                 clauses
+               (remove-trivial-clauses
+                (union-equal split-clauses
+                             (disjoin-clause-segment-to-clause-set
+                              (dumb-negate-lit-lst assumed-terms)
+                              clauses))
+                wrld)))
 
 ; We create the history entry for this step.  We have to be careful about
 ; specious hits to prevent a loop described below.
 
-           (new-hist
-            (cons (make history-entry
-                        :signal signal ; indicating the type of "hit"
-                        :processor
+            (new-hist
+             (cons (make history-entry
+                         :signal signal ; indicating the type of "hit"
+                         :processor
                         
 ; We here detect specious behavior.  The basic idea is that a hit
 ; is specious if the input clause is among the output clauses.  But
@@ -5256,9 +5502,9 @@
 ; We mark a specious hit by setting the :processor of the history-entry
 ; to the cons (SPECIOUS . processor).
                         
-                        (if (and (not (member-eq
-                                       processor
-                                       '(settled-down-clause
+                         (if (and (not (member-eq
+                                        processor
+                                        '(settled-down-clause
 
 ; The obvious example of apparently specious behavior by
 ; apply-top-hints-clause that is not really specious is when it signals
@@ -5294,35 +5540,35 @@
 ;   (equal (f1 x) (f0 x))
 ;   :hints (("Goal" :by (:functional-instance lemma1 (f2 f1) (f1 f0)))))
 
-                                         apply-top-hints-clause)))
-                                 (member-equal clause clauses))
-                            (cons 'SPECIOUS processor)
-                          processor)
-                        :clause clause
-                        :ttree ttree
-                        :cl-id ; only needed for #+acl2-par, but harmless
-                        cl-id)
-                  hist)))
-      (cond
-       ((consp (access history-entry ; (SPECIOUS . processor)
-                       (car new-hist) :processor))
-        (mv@par 'MISS nil ttree new-hist
-                (accumulate-rw-cache-into-pspv processor ttree pspv)
-                state))
-       (t (mv@par signal clauses ttree new-hist
-                  (cond
-                   ((or (member-eq processor *simplify-clause-ledge-complement*)
-                        (eq processor 'settled-down-clause))
-                    (put-ttree-into-pspv ttree new-pspv))
-                   ((eq processor 'simplify-clause)
-                    (put-ttree-into-pspv ttree
-                                         (maybe-set-rw-cache-state-enabled
-                                          new-pspv)))
-                   (t
-                    (put-ttree-into-pspv (erase-rw-cache ttree)
-                                         (maybe-set-rw-cache-state-disabled
-                                          (erase-rw-cache-from-pspv new-pspv)))))
-                  state)))))))
+                                          apply-top-hints-clause)))
+                                  (member-equal clause clauses))
+                             (cons 'SPECIOUS processor)
+                           processor)
+                         :clause clause
+                         :ttree ttree
+                         :cl-id ; only needed for #+acl2-par, but harmless
+                         cl-id)
+                   hist)))
+       (cond
+        ((consp (access history-entry ; (SPECIOUS . processor)
+                        (car new-hist) :processor))
+         (mv@par 'MISS nil ttree new-hist
+                 (accumulate-rw-cache-into-pspv processor ttree pspv)
+                 state))
+        (t (mv@par signal clauses ttree new-hist
+                   (cond
+                    ((or (member-eq processor *simplify-clause-ledge-complement*)
+                         (eq processor 'settled-down-clause))
+                     (put-ttree-into-pspv ttree new-pspv))
+                    ((eq processor 'simplify-clause)
+                     (put-ttree-into-pspv ttree
+                                          (maybe-set-rw-cache-state-enabled
+                                           new-pspv)))
+                    (t
+                     (put-ttree-into-pspv (erase-rw-cache ttree)
+                                          (maybe-set-rw-cache-state-disabled
+                                           (erase-rw-cache-from-pspv new-pspv)))))
+                   state))))))))
 
 (defun@par waterfall-step (processor cl-id clause hist pspv wrld ctx state
                                      step-limit)
@@ -9342,7 +9588,11 @@
                (access prove-spec-var pspv
                        :rewrite-constant)
                :current-enabled-structure)
-       wrld)
+       wrld
+       (access rewrite-constant
+               (access prove-spec-var pspv
+                       :rewrite-constant)
+               :splitter-rules-p))
       (cond
        ((= n0 0)
         (mv nil pspv state))
@@ -9636,7 +9886,9 @@
 
   `(change prove-spec-var
            (change prove-spec-var *empty-prove-spec-var*
-                   :rewrite-constant (make-rcnst ,ens ,wrld))
+                   :rewrite-constant (make-rcnst ,ens ,wrld
+                                                 :splitter-rules-p
+                                                 (splitter-rules-p state)))
            ,@args))
 
 (defun chk-assumption-free-ttree (ttree ctx state)

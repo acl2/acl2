@@ -6584,9 +6584,9 @@
    ((and (null case-limit)
          (> ecnt 1000))
     (prog2$
-     (cw "~%~%Helpful Little Message:  The simplifier is now expected ~
-          to produce approximately ~n0 subgoals.  ~
-          See :DOC case-split-limitations.~%~%"
+     (cw "~%~%Helpful Little Message:  The simplifier is now expected to ~
+          produce approximately ~n0 subgoals.  See :DOC ~
+          case-split-limitations and see :DOC set-splitter-rules-p.~%~%"
          ecnt)
      ecnt))
    (t ecnt)))
@@ -6664,12 +6664,12 @@
                            (access rewrite-constant rcnst :pt)))
             (local-rcnst
              (change rewrite-constant rcnst
-                     :pt
-                     new-pts
                      :current-literal
                      (make current-literal
                            :not-flg not-flg
-                           :atm atm)))
+                           :atm atm)
+                     :pt
+                     new-pts))
             (case-split-limitations (access rewrite-constant rcnst 
                                             :case-split-limitations))
 
@@ -8162,92 +8162,165 @@
 
 ; We now develop the functions for reporting on the output of simplify.
 
-(defun insert-pair-by-cdr (car-val cdr-val alist)
+(defun member-class-name-runes (class name runes)
+  (cond ((endp runes) nil)
+        ((let ((rune (car runes)))
+           (and (eq (car rune) class)
+                (eq (base-symbol rune) name)))
+         t)
+        (t (member-class-name-runes class name (cdr runes)))))
 
-; A car-cdr-sorted alist is an alist whose keys are symbols and whose
-; values are alists sorted by cdr, where each value is a cons of
-; symbols.  Such alists are the type returned by
-; extract-and-classify-lemmas.
-
-  (cond ((null alist)
-         (list (cons car-val cdr-val)))
-        ((eq cdr-val (cdar alist))
-         (cond
-          ((eq car-val (caar alist))
-           alist)
-          ((symbol-< car-val (caar alist))
-           (cons (cons car-val cdr-val)
-                 alist))
-          (t
-           (cons (car alist)
-                 (cons (cons car-val cdr-val)
-                       (cdr alist))))))
-        ((symbol-< cdr-val (cdar alist))
-         (cons (cons car-val cdr-val) alist))
+(defun extract-and-classify-lemmas2 (names class ignore-lst if-intro case-split
+                                           immed-forced forced-runes)
+  (cond ((endp names) nil)
+        ((member-eq (car names) ignore-lst)
+         (extract-and-classify-lemmas2 (cdr names) class ignore-lst if-intro
+                                       case-split immed-forced forced-runes))
         (t
-         (cons (car alist)
-               (insert-pair-by-cdr car-val cdr-val (cdr alist))))))
+         (let ((name (car names)))
+           (acons name
+                  (append (if (member-class-name-runes class name if-intro)
+                              '("if-intro")
+                            nil)
+                          (if (member-class-name-runes class name case-split)
+                              '("case-split")
+                            nil)
+                          (if (member-class-name-runes class name immed-forced)
+                              '("immed-forced")
+                            nil)
+                          (if (member-class-name-runes class name forced-runes)
+                              '("forced")
+                            nil))
+                  (extract-and-classify-lemmas2 (cdr names) class ignore-lst
+                                                if-intro case-split
+                                                immed-forced forced-runes))))))
 
-(defun extend-car-cdr-sorted-alist (key car-val cdr-val alist)
+(defun extract-and-classify-lemmas1 (class-alist ignore-lst if-intro case-split
+                                                 immed-forced forced-runes)
+  (cond ((endp class-alist) nil)
+        (t (let* ((class (caar class-alist))
+                  (symbol-alist
+                   (extract-and-classify-lemmas2
+                    (cdar class-alist) ; names
+                    class ignore-lst if-intro case-split immed-forced
+                    forced-runes))
+                  (rest
+                   (extract-and-classify-lemmas1
+                    (cdr class-alist) ignore-lst if-intro case-split
+                    immed-forced forced-runes)))
+             (cond
+              (symbol-alist (acons class symbol-alist rest))
+              (t rest))))))
 
-  (cond ((null alist)
-         (list (cons key (list (cons car-val cdr-val)))))
-        ((eq key (caar alist))
-         (cons (cons key (insert-pair-by-cdr
-                          car-val cdr-val (cdr (car alist))))
-               (cdr alist)))
-        ((symbol-< key (caar alist))
-         (cons (cons key (list (cons car-val cdr-val)))
-               alist))
-        (t (cons (car alist)
-                 (extend-car-cdr-sorted-alist
-                  key car-val cdr-val (cdr alist))))))
-
-(defun extract-and-classify-lemmas1 (runes ignore-lst forced-runes alist)
+(defun runes-to-class-alist1 (runes alist)
   (cond ((endp runes) alist)
-        (t (extract-and-classify-lemmas1
-            (cdr runes) ignore-lst forced-runes
-            (let ((rune (car runes)))
-              (cond
-               ((member-eq (base-symbol rune) ignore-lst)
-                alist)
-               (t
-                (extend-car-cdr-sorted-alist
-                 (car rune)
-                 (cond ((member-equal rune forced-runes) t)
-                       (t nil))
-                 (base-symbol rune)
-                 alist))))))))
+        (t (let* ((rune (car runes))
+                  (type (car rune))
+                  (sym (base-symbol rune))
+                  (old (cdr (assoc-eq type alist))))
+             (runes-to-class-alist1 (cdr runes)
+                                    (put-assoc-eq type
+                                                  (cons sym old)
+                                                  alist))))))
 
-(defun extract-and-classify-lemmas (ttree ignore-lst forced-runes alist)
+; We admit the following sorting functions in :logic mode, verify their guards,
+; and prove properties of them in community book books/misc/sort-symbols.lisp.
 
-; We essentially partition the set of runes tagged as 'lemmas in ttree
-; into partitions based on the type (i.e., the keyword token) for each
-; rune.  In addition, we indicate whether the rune is a member of
-; forced-runes.  In our partitioning we actually throw away the runes and
+(defun strict-merge-symbol-< (l1 l2 acc)
+
+; If l1 and l2 are strictly ordered by symbol-< and above acc, which is also
+; thus strictly ordered, then the result is strictly ordered by symbol-<.
+
+  (declare (xargs :guard (and (symbol-listp l1)
+                              (symbol-listp l2)
+                              (true-listp acc))
+
+; We admit this to the logic and prove termination in community book
+; books/misc/sort-symbols.lisp.
+
+                  :mode :program))
+  (cond ((endp l1) (revappend acc l2))
+        ((endp l2) (revappend acc l1))
+        ((eq (car l1) (car l2))
+         (strict-merge-symbol-< (cdr l1) (cdr l2) (cons (car l1) acc)))
+        ((symbol-< (car l1) (car l2))
+         (strict-merge-symbol-< (cdr l1) l2 (cons (car l1) acc)))
+        (t (strict-merge-symbol-< l1 (cdr l2) (cons (car l2) acc)))))
+
+(defun strict-merge-sort-symbol-< (l)
+
+; Produces a result with the same elements as the list l of symbols, but
+; strictly ordered by symbol-name.
+
+  (declare (xargs :guard (symbol-listp l)
+
+; We admit this to the logic and prove termination in community book
+; books/misc/sort-symbols.lisp.
+
+                  :mode :program))
+  (cond ((endp (cdr l)) l)
+        (t (strict-merge-symbol-<
+            (strict-merge-sort-symbol-< (evens l))
+            (strict-merge-sort-symbol-< (odds l))
+            nil))))
+
+(defun strict-symbol-<-sortedp (x)
+  (declare (xargs :guard (symbol-listp x)))
+  (cond ((or (endp x) (null (cdr x)))
+         t)
+        (t (and (symbol-< (car x) (cadr x))
+                (strict-symbol-<-sortedp (cdr x))))))
+
+(defun sort-symbol-listp (x)
+  (declare (xargs :guard (symbol-listp x)))
+  (cond ((strict-symbol-<-sortedp x)
+         x)
+        (t (strict-merge-sort-symbol-< x))))
+
+(defun strict-merge-sort-symbol-<-cdrs (alist)
+  (cond ((endp alist) nil)
+        (t (acons (caar alist)
+                  (strict-merge-sort-symbol-< (cdar alist))
+                  (strict-merge-sort-symbol-<-cdrs (cdr alist))))))
+
+(defun runes-to-class-alist (runes)
+  (strict-merge-sort-symbol-<-cdrs
+   (runes-to-class-alist1
+    runes
+    (pairlis$ (strict-merge-sort-symbol-< (strip-cars runes))
+              nil))))
+                         
+(defun extract-and-classify-lemmas (ttree ignore-lst forced-runes)
+
+; We essentially partition the set of runes tagged as 'lemmas in ttree into
+; partitions based on the type (i.e., the keyword token) for each rune.  In
+; addition, we indicate whether the rune was applied as a splitter rune, and if
+; so, of which types.  In our partitioning we actually throw away the runes and
 ; just report the corresponding base symbols.
 
-; In particular, scan ttree for all the 'lemma tags and return an
-; alist associating each type of rune used in the ttree with a list of
-; pairs.  Each pair is of the form (flg . name), where flg is t or nil
-; and name is the base symbol of a rune of the given type used in the
-; ttree.  There is a pair for every rune in the ttree, except those
-; whose base symbols are in ignore-lst; those runes we ignore.  If flg
-; is t, the corresponding rune is a member of forced-runes.
+; In particular, scan ttree for all the 'lemma tags and return an alist
+; associating each type of rune used in the ttree with an alist associating
+; runes with types of splitters, except that we ignore runes whose whose base
+; symbols are in ignore-lst.
 
 ; An example alist returned is
-; '((:DEFINITION (NIL . APP) (T . REV))
-;   (:REWRITE (NIL . LEMMA1) (T . LEMMA2) (NIL . LEMMA3))
-;   (:TYPE-PRESCRIPTION (T . FN1) (T . FN2) (NIL . FN3)))
+; '((:DEFINITION (APP) (REV FORCED))
+;   (:REWRITE (LEMMA1) (LEMMA2 IF-INTRO FORCED) (LEMMA3 CASE-SPLIT))
+;   (:TYPE-PRESCRIPTION (FN1 FORCED) (FN2 FORCED) (FN3)))
 ; indicating that three :REWRITE runes were used, with base symbols
-; LEMMA1, LEMMA2 (which was forced), and LEMMA3, etc. 
+; LEMMA1, LEMMA2 (which was forced and also introduced a call of IF), and
+; LEMMA3, etc.
 
-; The alist is sorted by car.  Each value is itself an alist that is
-; sorted by cdr.
+; The alist is sorted by car.  Each value is itself an alist that is itself
+; sorted by car.
 
   (extract-and-classify-lemmas1
-   (tagged-objects 'lemma ttree)
-   ignore-lst forced-runes alist))
+   (runes-to-class-alist (tagged-objects 'lemma ttree))
+   ignore-lst
+   (tagged-objects 'splitter-if-intro ttree)
+   (tagged-objects 'splitter-case-split ttree)
+   (tagged-objects 'splitter-immed-forced ttree)
+   forced-runes))
 
 (deflabel Simple
   :doc
@@ -8282,15 +8355,19 @@
   its body is a disjunction or conjunction, according to a perhaps
   subtle criterion that is intended to avoid case splits.")
 
-(defun tilde-*-conjunction-of-possibly-forced-names-phrase1 (lst)
+(defun tilde-*-conjunction-of-possibly-forced-names-phrase1 (alist)
   (cond
-   ((null lst) nil)
-   (t
-    (cons (msg (if (caar lst)
-                   "~x0 (forced)"
-                   "~x0")
-               (cdar lst))
-          (tilde-*-conjunction-of-possibly-forced-names-phrase1 (cdr lst))))))
+   ((null alist) nil)
+   (t (cons (let ((name (caar alist))
+                  (splitter-types (cdar alist)))
+              (cond ((null splitter-types)
+                     (msg "~x0" name))
+                    (t (msg "~x0 (~*1)"
+                            name
+                            (list "" "~s*" "~s*," "~s*,"
+                                  splitter-types)))))
+            (tilde-*-conjunction-of-possibly-forced-names-phrase1
+             (cdr alist))))))
 
 (defun tilde-*-conjunction-of-possibly-forced-names-phrase (lst)
 
@@ -8360,14 +8437,15 @@
                     rest-pairs)))
        (t
         (let ((names
-               (tilde-*-conjunction-of-possibly-forced-names-phrase (cdar alist)))
+               (tilde-*-conjunction-of-possibly-forced-names-phrase
+                (cdar alist)))
 
 ; Note: Names is a tilde-* object that will print a conjoined list of names
-; (possibly followed by parenthetical "forced" remarks).  We must determine
-; whether there is more than one name in the list.  The names printe are just
-; those in (cdar alist), which we know is a non-empty true list of pairs.
-; Below we set pluralp to t if two or more names will be printed and to nil if
-; exactly one name will be printed.  
+; (possibly followed by parenthetical remarks for splitters).  We must
+; determine whether there is more than one name in the list.  The names printe
+; are just those in (cdar alist), which we know is a non-empty true list of
+; pairs.  Below we set pluralp to t if two or more names will be printed and to
+; nil if exactly one name will be printed.
 
               (pluralp (if (cdr (cdar alist)) t nil)))
           (mv-let
@@ -8599,7 +8677,7 @@
   (let ((forced-runes (recover-forced-runes ttree)))
     (mv-let (message-lst char-alist)
             (tilde-*-simp-phrase1
-             (extract-and-classify-lemmas ttree nil forced-runes nil)
+             (extract-and-classify-lemmas ttree nil forced-runes)
              nil)
             (list* "trivial ob~-ser~-va~-tions"
                    "~@*"

@@ -726,7 +726,8 @@
                  (proofs-co state) state nil))))
      (mv-let
       (n0 assns pairs ttree1)
-      (extract-and-clausify-assumptions nil ttree nil pc-ens wrld)
+      (extract-and-clausify-assumptions nil ttree nil pc-ens wrld
+                                        (splitter-rules-p state))
       (cond
        ((= n0 0)
         (mv nil nil ttree state))
@@ -803,8 +804,9 @@
       (ens state)
     pc-ens))
 
-(defun initial-rcnst-from-ens (ens wrld)
+(defun initial-rcnst-from-ens (ens wrld splitter-rules-p)
   (change rewrite-constant *empty-rewrite-constant*
+          :splitter-rules-p splitter-rules-p
           :current-enabled-structure ens
           :oncep-override (match-free-override wrld)
           :force-info t
@@ -870,7 +872,9 @@
                    nil ;ancestors
                    nil ;gstack
                    nil ;simplify-clause-pot-lst
-                   (initial-rcnst-from-ens pc-ens wrld)
+                   (initial-rcnst-from-ens pc-ens
+                                           wrld
+                                           (splitter-rules-p state))
                    wrld
                    state
                    (initial-step-limit wrld state))

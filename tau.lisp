@@ -930,6 +930,11 @@
            (variables
 ; Shape: var-lst
             ans)
+           ((splitter-if-intro
+             splitter-case-split
+             splitter-immed-forced)
+; Shape: rune (Note: objects are a subset 'lemmas objects.)
+            ans)
            (elim-sequence
 ; Shape: ((rune rhs lhs alist restricted-vars var-to-runes-alist ttree) ...)
             (all-runes-in-elim-sequence-lst lst ans))

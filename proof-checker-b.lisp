@@ -1480,9 +1480,10 @@
     (null-pool (cdr pool)))
    (t nil)))
 
-(defun initial-pspv (term displayed-goal otf-flg ens wrld)
+(defun initial-pspv (term displayed-goal otf-flg ens wrld splitter-rules-p)
   (change prove-spec-var *empty-prove-spec-var*
-          :rewrite-constant (initial-rcnst-from-ens ens wrld)
+          :rewrite-constant
+          (initial-rcnst-from-ens ens wrld splitter-rules-p)
           :user-supplied-term term
           :displayed-goal displayed-goal
           :otf-flg otf-flg))
@@ -1496,7 +1497,8 @@
   (prog2$
    (initialize-brr-stack state)
    (er-let* ((ttree
-              (let ((pspv (initial-pspv term displayed-goal otf-flg ens wrld))
+              (let ((pspv (initial-pspv term displayed-goal otf-flg ens wrld
+                                        (splitter-rules-p state)))
                     (clauses (list (list term))))
                 (if (f-get-global 'in-verify-flg state) ;interactive
                     (state-global-let*
@@ -5427,8 +5429,8 @@
                          :rcnst (change rewrite-constant rcnst
                                         :current-literal
                                         (make current-literal
-                                              :not-flg nil
-                                              :atm nterm))
+                                              :atm nterm
+                                              :not-flg nil))
                          :gstack gstack
                          :ttree old-ttree))
                     (mv 0 ; irrelevant step-limit
