@@ -32,6 +32,7 @@
 ;  - N-bit muxes (regular or approximations)
 ;  - N-bit "Z muxes" (tri-state buffers)
 ;  - N-bit case equality modules (===)
+;  - N-bit pure-X module
 
 
 (def-vl-modgen vl-make-n-bit-binary-op (type n)
@@ -616,3 +617,69 @@ reduction-and the results.</p> "
 (vl-pps-modulelist (vl-make-n-bit-ceq 5))
 ||#
 
+
+(def-vl-modgen vl-make-n-bit-x (n)
+  :short "Generate a wide X module."
+
+  :long "<p>We generate a module that is semantically equal to:</p>
+
+@({
+module VL_N_BIT_ASSIGN (out, in) ;
+  output [n-1:0] out;
+  input [n-1:0] in;
+  assign out = {n{1'bx}};
+endmodule
+})
+
+<p>We actually implement these modules using a list of @(see *vl-1-bit-assign*)
+instances, one for each bit.  For instance, we implement our four-bit X generator
+like this:</p>
+
+@({
+module VL_4_BIT_X (out, in);
+  output [3:0] out ;
+  input [3:0] in ;
+
+  wire xwire;
+  VL_1_BIT_X xdriver (xwire);
+
+  VL_1_BIT_ASSIGN bit_0 (out[0], xwire);
+  VL_1_BIT_ASSIGN bit_1 (out[1], xwire) ;
+  VL_1_BIT_ASSIGN bit_2 (out[2], xwire) ;
+  VL_1_BIT_ASSIGN bit_3 (out[3], xwire) ;
+endmodule
+})"
+
+  :guard (posp n)
+
+  :body
+  (b* (((when (int= n 1))
+        (list *vl-1-bit-x*))
+
+       (name (hons-copy (cat "VL_" (natstr n) "_BIT_X")))
+
+       ((mv out-expr out-port out-portdecl out-netdecl) (vl-occform-mkport "out" :vl-output n))
+
+       ((mv x-expr x-netdecl) (vl-occform-mkwire "xwire" 1))
+       (x-inst (vl-simple-inst *vl-1-bit-x* "xdriver" x-expr))
+
+       (out-wires (vl-make-list-of-bitselects out-expr 0 (- n 1)))
+       (in-wires  (repeat x-expr n))
+       (out-insts (vl-simple-inst-list *vl-1-bit-assign* "bit" out-wires in-wires)))
+
+    (list (make-vl-module :name      name
+                          :origname  name
+                          :ports     (list out-port)
+                          :portdecls (list out-portdecl)
+                          :netdecls  (list out-netdecl x-netdecl)
+                          :modinsts  (cons x-inst out-insts)
+                          :minloc    *vl-fakeloc*
+                          :maxloc    *vl-fakeloc*)
+          *vl-1-bit-assign*
+          *vl-1-bit-x*)))
+
+#||
+(vl-pps-modulelist (vl-make-n-bit-x 1))
+(vl-pps-modulelist (vl-make-n-bit-x 2))
+(vl-pps-modulelist (vl-make-n-bit-x 5))
+||#

@@ -21,6 +21,7 @@
 (in-package "VL")
 (include-book "add")
 (include-book "compare")
+(include-book "div")
 (include-book "mul")
 (include-book "select")
 (include-book "shl")
@@ -133,6 +134,7 @@ module instance names.</li>
     vl-make-n-bit-mux
     vl-make-n-bit-zmux
     vl-make-n-bit-ceq
+    vl-make-n-bit-x
     vl-make-n-bit-adder-core
     vl-make-n-bit-plusminus
     vl-make-n-bit-unsigned-gte
@@ -147,7 +149,13 @@ module instance names.</li>
     vl-make-n-bit-shr-by-m-bits
     vl-make-n-bit-xdetect
     vl-make-n-bit-xor-each
-    vl-make-n-bit-x-propagator))
+    vl-make-n-bit-x-propagator
+    vl-make-n-bit-div-step
+    vl-make-n-bit-div-core
+    vl-make-n-bit-div-rem
+    vl-make-n-bit-unsigned-div
+    vl-make-n-bit-unsigned-rem
+    ))
 
 (defun memoize-list-fn (x)
   (declare (xargs :guard t))
@@ -457,15 +465,6 @@ module instance."
                           :fn 'vl-plusminus-occform)
                          warnings)))
 
-       (warnings (if (eq type :vl-unsigned)
-                     warnings
-                   (cons (make-vl-warning :type :vl-signed-addition
-                                          :msg "~a0: make sure signed addition/subtraction is right."
-                                          :args (list x)
-                                          :fatalp nil
-                                          :fn 'vl-plusminus-occform)
-                         warnings)))
-
        (basename (case op
                    (:vl-binary-plus "vl_plus")
                    (:vl-binary-minus "vl_minus")))
@@ -507,15 +506,6 @@ module instance."
                           :fn 'vl-mult-occform)
                          warnings)))
 
-       (warnings (if (eq type :vl-unsigned)
-                     warnings
-                   (cons (make-vl-warning :type :vl-signed-multiplication
-                                          :msg "~a0: make sure signed multiplication is right."
-                                          :args (list x)
-                                          :fatalp nil
-                                          :fn 'vl-mult-occform)
-                         warnings)))
-
        (basename "vl_mult")
        ((mv instname nf) (vl-namefactory-indexed-name basename nf))
        (mods (vl-make-n-bit-mult width))
@@ -524,6 +514,104 @@ module instance."
                                        :loc x.loc)))
     (occform-return :mods mods
                     :modinsts (list modinst))))
+
+
+(def-vl-occform vl-div-occform
+  :short "Transform @('assign lhs = a / b') into occurrences."
+  :ops (:vl-binary-div)
+  :body
+  (b* (((vl-assign x) x)
+       (arg1  (first  (vl-nonatom->args x.expr)))
+       (arg2  (second (vl-nonatom->args x.expr)))
+       (width (vl-expr->finalwidth x.expr))
+       (type  (vl-expr->finaltype x.expr))
+
+       ((unless (eq type :vl-unsigned))
+        (occform-return
+         :assigns (list x)
+         :warnings (cons (make-vl-warning
+                          :type :vl-warn-signed-div
+                          :msg "~a0: signed divide is not implemented yet"
+                          :args (list x)
+                          :fatalp t
+                          :fn 'vl-div-occform)
+                         warnings)))
+
+       ((unless (and (posp width)
+                     (equal width (vl-expr->finalwidth x.lvalue))
+                     (equal width (vl-expr->finalwidth arg1))
+                     (equal width (vl-expr->finalwidth arg2))
+                     type
+                     (vl-expr->finaltype x.lvalue)
+                     (eq type (vl-expr->finaltype arg1))
+                     (eq type (vl-expr->finaltype arg2))))
+        (occform-return
+         :assigns  (list x)
+         :warnings (cons (make-vl-warning
+                          :type :vl-programming-error
+                          :msg "~a0: bad widths/types in divide."
+                          :args (list x)
+                          :fatalp t
+                          :fn 'vl-div-occform)
+                         warnings)))
+
+       (basename "vl_div")
+       ((mv instname nf) (vl-namefactory-indexed-name basename nf))
+       (mods    (vl-make-n-bit-unsigned-div width))
+       (modinst (vl-simple-instantiate (car mods) instname
+                                       (list x.lvalue arg1 arg2)
+                                       :loc x.loc)))
+    (occform-return :mods mods
+                    :modinsts (list modinst))))
+
+(def-vl-occform vl-rem-occform
+  :short "Transform @('assign lhs = a % b') into occurrences."
+  :ops (:vl-binary-rem)
+  :body
+  (b* (((vl-assign x) x)
+       (arg1  (first  (vl-nonatom->args x.expr)))
+       (arg2  (second (vl-nonatom->args x.expr)))
+       (width (vl-expr->finalwidth x.expr))
+       (type  (vl-expr->finaltype x.expr))
+
+       ((unless (eq type :vl-unsigned))
+        (occform-return
+         :assigns (list x)
+         :warnings (cons (make-vl-warning
+                          :type :vl-warn-signed-rem
+                          :msg "~a0: signed remainder (i.e., modulus, %) is not implemented yet"
+                          :args (list x)
+                          :fatalp t
+                          :fn 'vl-rem-occform)
+                         warnings)))
+
+       ((unless (and (posp width)
+                     (equal width (vl-expr->finalwidth x.lvalue))
+                     (equal width (vl-expr->finalwidth arg1))
+                     (equal width (vl-expr->finalwidth arg2))
+                     type
+                     (vl-expr->finaltype x.lvalue)
+                     (eq type (vl-expr->finaltype arg1))
+                     (eq type (vl-expr->finaltype arg2))))
+        (occform-return
+         :assigns  (list x)
+         :warnings (cons (make-vl-warning
+                          :type :vl-programming-error
+                          :msg "~a0: bad widths/types in remainder (i.e., modulus, %)."
+                          :args (list x)
+                          :fatalp t
+                          :fn 'vl-rem-occform)
+                         warnings)))
+
+       (basename "vl_rem")
+       ((mv instname nf) (vl-namefactory-indexed-name basename nf))
+       (mods    (vl-make-n-bit-unsigned-rem width))
+       (modinst (vl-simple-instantiate (car mods) instname
+                                       (list x.lvalue arg1 arg2)
+                                       :loc x.loc)))
+    (occform-return :mods mods
+                    :modinsts (list modinst))))
+
 
 
 (def-vl-occform vl-gte-occform
@@ -874,6 +962,12 @@ below.</p>"
 
       ((:vl-binary-times)
        (vl-mult-occform x nf warnings))
+
+      ((:vl-binary-div)
+       (vl-div-occform x nf warnings))
+
+      ((:vl-binary-rem)
+       (vl-rem-occform x nf warnings))
 
       ;; Now these should all be handled above, since they should be sliceable.
       ((:vl-partselect-colon :vl-concat :vl-multiconcat)

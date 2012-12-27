@@ -79,34 +79,6 @@ endmodule
 
 ;; bozo this all needs to be documented.
 
-(define vl-mult-netdecls ((prefix stringp)
-                          (i      natp)
-                          (n      natp)
-                          (range  vl-maybe-range-p))
-  ;; wire [range] prefix_i;
-  ;; ...
-  ;; wire [range] prefix_{n-1};
-  :returns (decls vl-netdecllist-p :hyp :fguard)
-  :guard   (<= i n)
-  :measure (nfix (- (nfix n) (nfix i)))
-  (b* (((when (zp (- (nfix n) (nfix i))))
-        nil)
-       (name (hons-copy (cat prefix (natstr i))))
-       (decl (make-vl-netdecl :name name
-                              :type :vl-wire
-                              :range range
-                              :loc *vl-fakeloc*)))
-    (cons decl (vl-mult-netdecls prefix (+ 1 (nfix i)) n range)))
-  ///
-  (defthm len-of-vl-mult-netdecls
-    (equal (len (vl-mult-netdecls prefix i n range))
-           (nfix (- (nfix n) (nfix i)))))
-
-  (defthm vl-mult-netdecls-under-iff
-    (iff (vl-mult-netdecls prefix i n range)
-         (posp (- (nfix n) (nfix i))))))
-
-
 (define vl-partprod-insts-aux ((i natp)
                                (n natp))
   :returns (insts vl-modinstlist-p :hyp :fguard)
@@ -182,7 +154,6 @@ explicitly, which adds a layer of X-detection around the core circuitry.</p>"
   (b* (((when (= n 1))
         (list *vl-1-bit-mult*))
        (name  (hons-copy (cat "VL_" (natstr n) "_BIT_MULT")))
-       (range (vl-make-n-bit-range n))
 
        ((mv o-expr o-port o-portdecl o-netdecl) (vl-occform-mkport "o" :vl-output n))
        ((mv a-expr a-port a-portdecl a-netdecl) (vl-occform-mkport "a" :vl-input n))
@@ -192,13 +163,9 @@ explicitly, which adds a layer of X-detection around the core circuitry.</p>"
        ;; wire [n-1] s0, s1, ...;  // sums
        ;; wire c0, c1, ...;        // carry-outs
 
-       (p-netdecls (vl-mult-netdecls "p" 0 n (vl-make-n-bit-range n)))
-       (s-netdecls (vl-mult-netdecls "s" 0 (- n 1) range))
-       (c-netdecls (vl-mult-netdecls "c" 0 (- n 1) nil))
-
-       (p-exprs    (vl-make-idexpr-list (vl-netdecllist->names p-netdecls) n :vl-unsigned))
-       (s-exprs    (vl-make-idexpr-list (vl-netdecllist->names s-netdecls) n :vl-unsigned))
-       (c-exprs    (vl-make-idexpr-list (vl-netdecllist->names c-netdecls) 1 :vl-unsigned))
+       ((mv p-exprs p-netdecls) (vl-occform-mkwires "p" 0 n :width n))
+       ((mv s-exprs s-netdecls) (vl-occform-mkwires "s" 0 (- n 1) :width n))
+       ((mv c-exprs c-netdecls) (vl-occform-mkwires "c" 0 (- n 1) :width 1))
 
        ;; instances that generate the partial products
        (p-insts    (vl-partprod-insts 0 n))

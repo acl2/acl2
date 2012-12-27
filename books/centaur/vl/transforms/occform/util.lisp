@@ -235,3 +235,56 @@ you don't have to put the actuals in a list."
 
 
 
+(define vl-occform-mkwires ((prefix stringp "name prefix for each wire")
+                            (i      natp "starting index, <b>inclusive!</b>")
+                            (n      natp "ending index, <b>non-inclusive!</b>")
+                            &key
+                            (width  posp "width of each wire")
+                            ((loc vl-location-p) '*vl-fakeloc*))
+  :guard   (<= i n)
+  :returns (mv (exprs vl-exprlist-p :hyp :fguard)
+               (decls vl-netdecllist-p :hyp :fguard))
+  :parents (occform)
+  :short "Helper function for creating lists of net declarations."
+  :long "<p>We generate a list of net declarations,</p>
+@({
+ wire [width-1:0] prefix_i;
+ ...
+ wire [width-1:0] prefix_{n-1};
+})
+
+<p>And return these declarations, along with the corresponding expressions with
+sizes pre-computed.</p>"
+
+  :measure (nfix (- (nfix n) (nfix i)))
+
+  (b* (((when (zp (- (lnfix n) (lnfix i))))
+        (mv nil nil))
+       (name  (hons-copy (cat prefix (natstr i))))
+       (expr  (vl-idexpr name width :vl-unsigned))
+       (decl  (make-vl-netdecl :name  name
+                               :type  :vl-wire
+                               :range (vl-make-n-bit-range width)
+                               :loc   loc))
+       ((mv rest-exprs rest-decls)
+        (vl-occform-mkwires prefix (+ 1 (lnfix i)) n
+                            :width width :loc loc)))
+    (mv (cons expr rest-exprs)
+        (cons decl rest-decls)))
+
+  ///
+  (defmvtypes vl-occform-mkwires-fn (true-listp true-listp))
+
+  (defthm len-of-vl-occform-mkwires
+    (b* (((mv exprs decls) (vl-occform-mkwires prefix i n
+                                               :width width
+                                               :loc loc)))
+      (and (equal (len exprs) (nfix (- (nfix n) (nfix i))))
+           (equal (len decls) (nfix (- (nfix n) (nfix i)))))))
+
+  (defthm vl-occform-mkwires-under-iff
+    (b* (((mv exprs decls) (vl-occform-mkwires prefix i n
+                                               :width width
+                                               :loc loc)))
+      (and (iff exprs (posp (- (nfix n) (nfix i))))
+           (iff decls (posp (- (nfix n) (nfix i))))))))
