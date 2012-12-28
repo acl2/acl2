@@ -19983,10 +19983,10 @@
 
   ~st[NEW FEATURES]
 
-  A new utility, ~c[set-splitter-rules-p], can direct the prover to give
-  information about case splits.  ~l[set-splitter-rules-p].  Thanks to many
+  A new utility, ~c[set-splitter-output], can direct the prover to give
+  information about case splits.  ~l[set-splitter-output].  Thanks to many
   ACL2 users, most recently David Rager, for requesting such a capability.
-  Also thanks to Jared Davis for helpful discussions.
+  Also thanks to David Rager and Jared Davis for helpful discussions.
 
   ~st[HEURISTIC IMPROVEMENTS]
 

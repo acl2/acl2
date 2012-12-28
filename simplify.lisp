@@ -6586,7 +6586,7 @@
     (prog2$
      (cw "~%~%Helpful Little Message:  The simplifier is now expected to ~
           produce approximately ~n0 subgoals.  See :DOC ~
-          case-split-limitations and see :DOC set-splitter-rules-p.~%~%"
+          case-split-limitations and see :DOC set-splitter-output.~%~%"
          ecnt)
      ecnt))
    (t ecnt)))

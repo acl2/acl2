@@ -4950,7 +4950,7 @@
    (pt restrictions-alist . expand-lst)
    (force-info fns-to-be-ignored-by-rewrite . terms-to-be-ignored-by-rewrite)
    (top-clause . current-clause)
-   ((splitter-rules-p . current-literal) . oncep-override)
+   ((splitter-output . current-literal) . oncep-override)
    (nonlinearp . cheap-linearp)
    . case-split-limitations)
   t)
@@ -5023,7 +5023,7 @@
         :active-theory :standard
         :backchain-limit-rw nil
         :case-split-limitations nil
-        :splitter-rules-p nil
+        :splitter-output nil
         :current-clause nil
         :current-enabled-structure nil
         :current-literal nil
@@ -12224,7 +12224,7 @@
 
 (defmacro push-lemma+ (rune ttree rcnst ancestors rhs rewritten-rhs)
   `(cond ((and (null ,ancestors)
-               (access rewrite-constant ,rcnst :splitter-rules-p)
+               (access rewrite-constant ,rcnst :splitter-output)
                (ffnnamep 'if ,rhs)
                (ffnnamep 'if ,rewritten-rhs))
           (let ((rune ,rune)

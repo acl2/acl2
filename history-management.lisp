@@ -17213,7 +17213,7 @@
             pc-ss-alist                ;;; for saves under :instructions hints
             last-step-limit            ;;; propagate step-limit past expansion
             illegal-to-certify-message ;;; needs to persist past expansion
-            splitter-rules-p           ;;; allow user to modify this in a book
+            splitter-output            ;;; allow user to modify this in a book
             ))))
     val))
 

@@ -27978,7 +27978,7 @@
     (skip-proofs-by-system . nil)
     (skip-proofs-okp-cert . t) ; t when not inside certify-book
     (slow-array-action . :break) ; set to :warning in exit-boot-strap-mode
-    (splitter-rules-p . nil)
+    (splitter-output . nil)
     (standard-co . acl2-output-channel::standard-character-output-0)
     (standard-oi . acl2-output-channel::standard-object-input-0)
     (step-limit-record . nil)
@@ -39525,7 +39525,7 @@
   ~pl[acl2-defaults-table].
 
   ~l[hints] for discussion of a related hint, ~c[:case-split-limitations].
-  Also ~pl[set-splitter-rules-p] for how to obtain reports on rules that may be
+  Also ~pl[set-splitter-output] for how to obtain reports on rules that may be
   responsible for case splits.~/
 
   ~bv[]
