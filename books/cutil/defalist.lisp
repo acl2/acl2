@@ -274,8 +274,9 @@ each value satisfies @(see " (symbol-name valp) ")."))))
               `((defthm ,(mksym name '-is-alistp)
                   (implies (,name ,x)
                            (alistp ,x))
-                  :hints (("Goal" :in-theory (enable ,name alistp))))))
-
+                  :hints (("Goal" :in-theory (enable ,name alistp)))
+                  :rule-classes :tau-system)))
+       
        (defthm ,(mksym name '-of-append)
          (equal (,name ,@(subst `(append ,x ,y) x formals))
                 (and (,name ,@(if true-listp
