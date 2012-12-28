@@ -19964,6 +19964,11 @@
 
 (deflabel note-6-1
 
+; "Theory" warnings about disabling primitives (such as mv-nth) have been made
+; much more compact, pointing to a new :doc topic, theories-and-primitives.
+; Thanks to David Rager and Jared Davis for helpful discussions leading to this
+; change.
+
   :doc
   ":Doc-Section release-notes
 

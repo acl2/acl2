@@ -3096,7 +3096,7 @@
   The problem is that when ACL2 tries to rewrite the term
   ~c[(integerp (triple x))] using the ~c[:]~ilc[rewrite] rule
   ~c[triple-preserves-integerp], it needs to rewrite the hypothesis
-  ~c[(integerp x) to ~c[t], but instead what is known is ~c[(natp x)].  If we
+  ~c[(integerp x)] to ~c[t], but instead what is known is ~c[(natp x)].  If we
   remove the hint, then the proof succeeds because the above
   ~c[:compound-recognizer] rule tells ACL2 that when assuming ~c[(natp x)] to
   be true, it should actually assume both ~c[(integerp x)] and ~c[(<= 0 x)] to

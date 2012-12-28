@@ -16687,6 +16687,114 @@
 (defconst *definition-minimal-theory*
   (list* 'mv-nth 'iff *expandable-boot-strap-non-rec-fns*))
 
+(defdoc theories-and-primitives
+  ":Doc-Section Theories
+
+  warnings from disabling certain built-in functions~/
+
+  When you ~il[disable] the ~il[definition] or ~il[executable-counterpart] of a
+  built-in function, you may see a warning, for example as follows.
+
+  ~bv[]
+    ACL2 !>(in-theory (disable mv-nth))
+
+    ACL2 Warning [Theory] in ( IN-THEORY (DISABLE ...)):  Although the
+    theory expression (DISABLE MV-NTH) disables the :DEFINITION rule for
+    MV-NTH, some expansions involving this function may still occur.  See
+    :DOC theories-and-primitives.
+  ~ev[]
+
+  This warning can be eliminated by turning off all theory warnings
+  (~pl[set-inhibit-warnings]) or simply by evaluating the following form.
+  ~bv[]
+    (assign verbose-theory-warning nil)
+  ~ev[]
+  But before you eliminate such warnings, you may wish to read the following to
+  understand their significance.
+
+  First consider the following example, evaluated after the ~ilc[in-theory]
+  event displayed above.
+
+  ~bv[]
+    ACL2 !>(thm (equal (mv-nth 2 (list a b c d e)) c))
+
+    Q.E.D.
+
+    Summary
+    Form:  ( THM ...)
+    Rules: ((:DEFINITION MV-NTH)
+            (:FAKE-RUNE-FOR-TYPE-SET NIL))
+    Time:  0.00 seconds (prove: 0.00, print: 0.00, other: 0.00)
+    Prover steps counted:  19
+
+    Proof succeeded.
+    ACL2 !>
+  ~ev[]
+
+  Note that even though the ~il[definition] of ~ilc[mv-nth] had been
+  ~il[disable]d, nevertheless its definition rule was used in proving this
+  theorem.  It is as though ~ilc[mv-nth] had not been been disabled after all!
+  The warning is intended to indicate that expansion of ~c[mv-nth] calls may be
+  made by the theorem prover even when ~c[mv-nth] is disabled.  Indeed, the
+  prover has special-purpose code for simplifying certain ~c[mv-nth] calls.
+
+  A similar issue can arise for ~c[executable-counterpart] rules, as the
+  following log illustrates.
+  ~bv[]
+    ACL2 !>(in-theory (disable (:executable-counterpart symbolp)))
+
+    ACL2 Warning [Theory] in ( IN-THEORY (DISABLE ...)):  Although the
+    theory expression (DISABLE (:EXECUTABLE-COUNTERPART SYMBOLP)) disables
+    the :EXECUTABLE-COUNTERPART rule for SYMBOLP, some calls involving
+    this function may still be made.  See :DOC theories-and-primitives.
+
+
+    Summary
+    Form:  ( IN-THEORY (DISABLE ...))
+    Rules: NIL
+    Warnings:  Theory
+    Time:  0.01 seconds (prove: 0.00, print: 0.00, other: 0.01)
+     2921
+    ACL2 !>(thm (symbolp 'a))
+
+    Q.E.D.
+
+    Summary
+    Form:  ( THM ...)
+    Rules: NIL
+    Time:  0.00 seconds (prove: 0.00, print: 0.00, other: 0.00)
+
+    Proof succeeded.
+    ACL2 !>
+  ~ev[]
+
+  In general, ACL2 warns when ~ilc[in-theory] ~il[events] or ~il[hints] leave
+  you in a theory where a rule for a built-in function is disabled but may be
+  applied in some cases nonetheless, because of special-purpose prover code for
+  handling calls of that function.  The built-in function symbols with such
+  ~il[definition] rules or ~il[executable-counterpart] rules are those in the
+  following two lists, respectively.
+  ~bv[]
+    ACL2 !>*definition-minimal-theory*
+    (MV-NTH IFF NOT
+            IMPLIES EQ ATOM EQL = /= NULL ENDP ZEROP
+            SYNP PLUSP MINUSP LISTP RETURN-LAST
+            MV-LIST THE-ERROR WORMHOLE-EVAL
+            FORCE CASE-SPLIT DOUBLE-REWRITE)
+    ACL2 !>*built-in-executable-counterparts*
+    (ACL2-NUMBERP BINARY-* BINARY-+ UNARY-- UNARY-/
+                  < CAR CDR CHAR-CODE CHARACTERP CODE-CHAR
+                  COMPLEX COMPLEX-RATIONALP COERCE
+                  CONS CONSP DENOMINATOR EQUAL IF IMAGPART
+                  INTEGERP INTERN-IN-PACKAGE-OF-SYMBOL
+                  NUMERATOR PKG-WITNESS PKG-IMPORTS
+                  RATIONALP REALPART STRINGP SYMBOL-NAME
+                  SYMBOL-PACKAGE-NAME SYMBOLP NOT)
+    ACL2 !>
+  ~ev[]
+
+  ~/~/")
+
 (defun translate-in-theory-hint
   (expr chk-boot-strap-fns-flg ctx wrld state)
 
@@ -16712,16 +16820,10 @@
                                  'current-acl2-world wrld)
                         runic-value)))
              (warning$ ctx ("Theory")
-                       "The value of the theory expression ~x0 does not ~
-                        include the :DEFINITION rule~#1~[~/s~] for ~v1.  But ~
-                        ~#1~[this function is~/these functions are~] among a ~
-                        set of primitive functions whose definitions are ~
-                        built into the ACL2 system in various places.  This ~
-                        set consists of the functions ~&2.  While excluding ~
-                        :DEFINITION rules for any functions in this set from ~
-                        the current theory may prevent certain expansions, it ~
-                        may not prevent others.  Good luck!~|~%To inhibit ~
-                        this warning, evaluate:~|~x3."
+                       "Although the theory expression ~x0 disables the ~
+                        :DEFINITION rule~#1~[~/s~] for ~v1, some expansions ~
+                        involving ~#1~[this function~/these functions~] may ~
+                        still occur.  See :DOC theories-and-primitives."
                        expr
                        (strip-base-symbols
                         (set-difference-equal
@@ -16744,17 +16846,10 @@
                                   'current-acl2-world wrld)
                          runic-value)))
               (warning$ ctx ("Theory")
-                        "The value of the theory expression ~x0 does not ~
-                         include the :EXECUTABLE-COUNTERPART rule~#1~[~/s~] ~
-                         for ~v1.  But ~#1~[this function is~/these functions ~
-                         are~] among a set of primitive functions whose ~
-                         executable counterparts are built into the ACL2 ~
-                         system.  This set consists of the functions ~&2.  ~
-                         While excluding :EXECUTABLE-COUNTERPART rules for ~
-                         any functions in this set from the current theory ~
-                         may prevent certain expansions, it may not prevent ~
-                         others.  Good luck!~|~%To inhibit this warning, ~
-                         evaluate:~|~x3."
+                       "Although the theory expression ~x0 disables the ~
+                        :EXECUTABLE-COUNTERPART rule~#1~[~/s~] for ~v1, some ~
+                        calls involving ~#1~[this function~/these functions~] ~
+                        may still be made.  See :DOC theories-and-primitives."
                         expr
                         (strip-base-symbols
                          (set-difference-equal
