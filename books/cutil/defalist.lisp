@@ -267,6 +267,15 @@ each value satisfies @(see " (symbol-name valp) ")."))))
                           :in-theory (enable list-fix))
                          ,last-ditch-hint))))
 
+       ,@(and true-listp
+
+; TODO: check the name for consistency with names of other lemmas
+
+              `((defthm ,(mksym name '-is-alistp)
+                  (implies (,name ,x)
+                           (alistp ,x))
+                  :hints (("Goal" :in-theory (enable ,name alistp))))))
+
        (defthm ,(mksym name '-of-append)
          (equal (,name ,@(subst `(append ,x ,y) x formals))
                 (and (,name ,@(if true-listp

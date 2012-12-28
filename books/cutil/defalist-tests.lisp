@@ -62,6 +62,11 @@
      :guard (integerp arg)
      :keyp-of-nil nil
      :valp-of-nil nil)
+
+   (defalist keyword-string-alist-p (x)
+     :key (keywordp x)
+     :val (stringp x)
+     :true-listp t)
    ))
 
 
