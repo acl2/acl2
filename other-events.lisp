@@ -22242,23 +22242,6 @@
 ; warnings in Lisps such as CCL that compile on-the-fly.
 
           (defvar ,the-live-name)
-          (let* ((boundp (boundp ',the-live-name))
-                 (d (and boundp
-                         (get ',the-live-name
-                              'redundant-raw-lisp-discriminator)))
-
-; d is expected to be of the form (DEFSTOBJ namep creator . field-templates)
-
-                 (ok-p (and boundp
-                            (equal d ',event-form))))
-            (cond
-             (ok-p ',name)
-             ((and boundp (not (raw-mode-p *the-live-state*)))
-              (interface-er
-               "Illegal attempt to redeclare the (abstract) single-threaded ~
-                object ~s0."
-               ',name))
-             (t
 
 ; For defstobj, we lay down a defg form for the variable (st-lst name).  Here,
 ; we do not do so, because memoize-fn collects st-lst values based on
@@ -22271,14 +22254,28 @@
 ; discussion of abstract stobjs in comments in memoize-fn.  So there is no defg
 ; form to lay down here.
 
-              ,@(mapcar (function (lambda (def)
-                                    (cons 'DEFMACRO def)))
+          ,@(mapcar (function (lambda (def)
+                                (cons 'DEFMACRO def)))
 
 ; See the comment above in the binding of fields, about a guarantee that the
 ; first two methods must be for the recognizer and creator, respectively.
 
-                        (defabsstobj-raw-defs name methods))
-              (defparameter ,the-live-name
+                    (defabsstobj-raw-defs name methods))
+          (let* ((boundp (boundp ',the-live-name))
+                 (d (and boundp
+                         (get ',the-live-name
+                              'redundant-raw-lisp-discriminator)))
+                 (ok-p (and boundp
+                            (equal d ',event-form))))
+            (cond
+             (ok-p ',name)
+             ((and boundp (not (raw-mode-p *the-live-state*)))
+              (interface-er
+               "Illegal attempt to redeclare the (abstract) single-threaded ~
+                object ~s0."
+               ',name))
+             (t
+              (setf ,the-live-name
                 ,(defabsstobj-raw-init creator-name methods))
               (setf (get ',the-live-name 'redundant-raw-lisp-discriminator)
                     ',event-form)

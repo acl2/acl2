@@ -19997,6 +19997,11 @@
 
   ~st[BUG FIXES]
 
+  Functions defined by ~ilc[defstobj] had failed to be compiled when certifying
+  books, except in host Lisps that compile on-the-fly (CCL, SBCL).  This has
+  been fixed for all host Lisps.  A related change, probably less significant,
+  was made for ~ilc[defabsstobj].
+
   ~st[CHANGES AT THE SYSTEM LEVEL]
 
   The ~c[books/] directory no longer needs to exist in order to build an ACL2
