@@ -44,6 +44,16 @@ class ACL2Bridge
       @sock = TCPSocket.new(args[:host], args[:port])
     end
 
+    # The below assignment to worker is subtle.  The hello message
+    # that the server sends to the client is something like the
+    # following, where bridge-worker-17 is the name of the CCL thread
+    # that is running to handle this client.  This name is sent as the
+    # content of the hello message and saved so that the Ruby side can
+    # know the name of the worker being used.  This name is currently
+    # unused but might later but used to implement interrupts.
+
+    # HELLO [n]
+    # bridge-worker-17
     type, content = read_message()
     if type == :acl2_bridge_hello
       @worker = content
