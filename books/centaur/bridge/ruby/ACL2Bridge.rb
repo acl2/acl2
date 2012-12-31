@@ -173,12 +173,11 @@ class ACL2Bridge
     #   puts "Output was #{reply[:stdout]}"
     #   puts "Return value was #{reply[:return]}"
     #
-    # This is MID lonly a "medium level" command because it does not do any
-    # kind of error checking on the reply and doesn't try to interpret the
-    # return value in any way.  You can't assume that the reply will have a
-    # :return or a :stdout or anything.  For instance, if there's a parse error
-    # reading the command, then you won't have a :return but you'll have an
-    # :error.
+    # This is only a "medium level" command because it does not do any kind of
+    # error checking on the reply and doesn't try to interpret the return value
+    # in any way.  You can't assume that the reply will have a :return or a
+    # :stdout or anything.  For instance, if there's a parse error reading the
+    # command, then you won't have a :return but you'll have an :error.
     send_command(type, cmd)
     reply = {:cmd => cmd}
     until_ready { |type, content|
