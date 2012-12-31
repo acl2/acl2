@@ -1841,6 +1841,14 @@
         (t (cons (car x)
                  (remove-stobj-inline-declare (cdr x))))))
 
+(defun congruent-stobj-rep-raw (name)
+  (assert name)
+  (let* ((d (get (the-live-var name)
+                 'redundant-raw-lisp-discriminator))
+         (ans (cddddr d)))
+    (assert ans)
+    ans))
+
 ; Note: The code below bothers me a little because of its impact on
 ; the toothbrush model.  In particular, it uses defstobj-raw-defs,
 ; which is defined far away in other-events.lisp.
@@ -1868,7 +1876,10 @@
 ; the raw lisp defmacro of acl2::defconst.
 
   (let* ((template (defstobj-template name args nil))
-         #+hons (congruent-to (sixth template))
+         (congruent-to (sixth template))
+         (congruent-stobj-rep (if congruent-to
+                                  (congruent-stobj-rep-raw congruent-to)
+                                name))
          (init (defstobj-raw-init template))
          (the-live-name (the-live-var name)))
     `(progn
@@ -1891,9 +1902,10 @@
                                  (cons 'DEFABBREV
                                        (remove-stobj-inline-declare def))
                                (cons 'DEFUN def))))
-                 (defstobj-raw-defs name template nil))
+                 (defstobj-raw-defs name template congruent-stobj-rep nil))
        ,@(defstobj-defconsts (strip-accessor-names (caddr template)) 0)
        (let* ((template ',template)
+              (congruent-stobj-rep ',congruent-stobj-rep)
               (boundp (boundp ',the-live-name))
               (d (and boundp
                       (get ',the-live-name
@@ -1908,7 +1920,8 @@
                          (eq (cadr d) (car template))
                          (consp (cddr d))
                          (eq (caddr d) (cadr template))
-                         (equal (cdddr d) (caddr template))
+                         (equal (cadddr d) (caddr template))
+                         (eq (cddddr d) congruent-stobj-rep)
 
 ; We also formerly required:
 
@@ -1941,7 +1954,7 @@
            (setf ,the-live-name ,init)
            (setf (get ',the-live-name 'redundant-raw-lisp-discriminator)
                  (list* 'defstobj (car template) (cadr template)
-                        (caddr template)))
+                        (caddr template) congruent-stobj-rep))
            (let ((old (and boundp
 
 ; Since boundp, then by a test made above, we also know (raw-mode-p state).

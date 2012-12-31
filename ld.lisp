@@ -20010,6 +20010,40 @@
 ;
 ;   ; [End of file bug.lisp.]
 
+; Regarding memoize/congruent stobj bug: The following example illustrates the
+; bug.  Technical remark: The problem was that the true congruent stobj
+; representative was not stored where expected.
+
+;   ; acl2h
+;   ; (certify-book "foo")
+;   ; (quit)
+;   ; acl2h
+;   ; (include-book "foo")
+;   ; (memoize 'fld3)
+;   ; (defthm bug
+;   ;   nil
+;   ;   :hints (("Goal" :use foo-is-17))
+;   ;   :rule-classes nil)
+;   
+;   (in-package "ACL2")
+;   
+;   (defstobj st1 fld1)
+;   (defstobj st2 fld2 :congruent-to st1)
+;   (defstobj st3 fld3 :congruent-to st2)
+;   
+;   (defun foo ()
+;     (with-local-stobj
+;      st3
+;      (mv-let (result st3)
+;              (prog2$ (fld3 st3)
+;                      (let ((st3 (update-fld3 17 st3)))
+;                        (mv (fld3 st3) st3)))
+;              result)))
+;   
+;   (defthm foo-is-17
+;     (equal (foo) 17)
+;     :rule-classes nil)
+
   :doc
   ":Doc-Section release-notes
 
@@ -20042,6 +20076,13 @@
   (~pl[book-compiled-file]) together with ~ilc[defstobj].  For an example
   illustrating this bug, see the comment about ``Expansion/Defstobj Bug'' in
   the form ~c[(deflabel note-6-1 ...)] in ACL2 source file ~c[ld.lisp].
+
+  (ACL2(h) only) We fixed a soundness bug in the interaction of memoization
+  with congruent stobjs, in cases where the ~c[:congruent-to] field of
+  ~ilc[defstobj] was not the canonical representative in the congruence class.
+  For an example illustrating this bug, see the comment about
+  ``memoize/congruent stobj bug'' in the form ~c[(deflabel note-6-1 ...)]  in
+  ACL2 source file ~c[ld.lisp].
 
   Functions defined by ~ilc[defstobj] had failed to be compiled when certifying
   books, except in host Lisps that compile on-the-fly (CCL, SBCL).  This has
