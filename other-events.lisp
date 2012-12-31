@@ -20254,18 +20254,18 @@
 
 (defun fix-stobj-array-type (type wrld)
 
-; Note: Wrld may be a world, nil, or (in raw Lisp only) the symbol :raw-lisp.
-; If wrld is :raw-lisp then this function should be called in a context where
-; the symbol-value is available for any symbol introduced by a previous
-; defconst event.  Our intended use case meets that criterion: evaluation of a
-; defstobj form during loading of the compiled file for a book.
+; Note: Wrld may be a world or nil.  If wrld is nil and we are in raw Lisp,
+; then this function should be called in a context where the symbol-value is
+; available for any symbol introduced by a previous defconst event.  Our
+; intended use case meets that criterion: evaluation of a defstobj form during
+; loading of the compiled file for a book.
 
   (let* ((max (car (caddr type)))
          (n (cond ((consp wrld)
                    (let ((qc (defined-constant max wrld)))
                      (and qc (unquote qc))))
                   #-acl2-loop-only
-                  ((eq wrld :raw-lisp)
+                  ((eq wrld nil)
                    (and (symbolp max)
                         (symbol-value max)))
                   (t nil))))
@@ -20930,8 +20930,7 @@
 
 (defun defstobj-fields-template (field-descriptors renaming wrld)
 
-; Note: Wrld may be a world, nil, or (in raw Lisp only) the symbol :raw-lisp.
-; See fix-stobj-array-type.
+; Note: Wrld may be a world or nil.  See fix-stobj-array-type.
 
   (cond
    ((endp field-descriptors) nil)
@@ -20977,8 +20976,7 @@
 
 (defun defstobj-template (name args wrld)
 
-; Note: Wrld may be a world, nil, or (in raw Lisp only) the symbol :raw-lisp.
-; See fix-stobj-array-type.
+; Note: Wrld may be a world or nil.  See fix-stobj-array-type.
 
 ; We unpack the args to get the renamed field descriptors.  We return a list of
 ; the form (namep create-name fields doc inline congruent-to), where: namep is
@@ -21056,12 +21054,11 @@
 ; checking by translate-declaration-to-guard.
 
 ; We return a list of defs (see defstobj-axiomatic-defs) for all the
-; recognizers for the single-threaded resource named name with the
-; given template.  The answer contains the top-level recognizer and
-; creator for the object, as well as the definitions of all component
-; recognizers.  The answer contains defs for auxiliary functions used
-; in array component recognizers.  The defs are listed in an order
-; suitable for processing (components first, then top-level).
+; recognizers for the single-threaded resource named name with the given
+; template.  The answer contains the top-level recognizer as well as the
+; definitions of all component recognizers.  The answer contains defs for
+; auxiliary functions used in array component recognizers.  The defs are listed
+; in an order suitable for processing (components first, then top-level).
 
   (cond
    ((endp ftemps)
@@ -21111,20 +21108,13 @@
              (t (let ((type-term (translate-declaration-to-guard
                                   type 'x wrld)))
                   
-; We may not use x in the type-term and so have to declare it ignored.
+; We may not use x in the type-term and so have to declare it ignorable.
 
-                  (cond
-                   ((member-eq 'x (all-vars type-term))
-                    `(,recog-name (x)
-                                  (declare (xargs :guard t
-                                                  :verify-guards t))
-                                  ,type-term))
-                   (t 
-                    `(,recog-name (x)
-                                  (declare (xargs :guard t
-                                                  :verify-guards t)
-                                           (ignore x))
-                                  ,type-term))))))
+                  `(,recog-name (x)
+                                (declare (xargs :guard t
+                                                :verify-guards t)
+                                         (ignorable x))
+                                ,type-term))))
             (defstobj-component-recognizer-axiomatic-defs 
               name template (cdr ftemps) wrld))))))
 
@@ -21595,9 +21585,8 @@
                         (= (length ,name) ,(length field-templates))
                         ,@(defstobj-component-recognizer-calls
                             field-templates 0 name nil)))))
-       ,@(and wrld
-              `((,creator ()
-                          ,(defstobj-raw-init template))))
+       (,creator ()
+                 ,(defstobj-raw-init template))
        ,@(defstobj-field-fns-raw-defs
            name
            (congruent-stobj-rep (or (sixth template) name)

@@ -1867,7 +1867,7 @@
 ; stobj.  We use redundant-raw-lisp-discriminator in much the same way as in
 ; the raw lisp defmacro of acl2::defconst.
 
-  (let* ((template (defstobj-template name args :raw-lisp))
+  (let* ((template (defstobj-template name args nil))
          #+hons (congruent-to (sixth template))
          (init (defstobj-raw-init template))
          (the-live-name (the-live-var name)))
@@ -1891,7 +1891,7 @@
                                  (cons 'DEFABBREV
                                        (remove-stobj-inline-declare def))
                                (cons 'DEFUN def))))
-                 (defstobj-raw-defs name template (w *the-live-state*)))
+                 (defstobj-raw-defs name template nil))
        ,@(defstobj-defconsts (strip-accessor-names (caddr template)) 0)
        (let* ((template ',template)
               (boundp (boundp ',the-live-name))
@@ -22449,11 +22449,10 @@
 
 (defun translate-declaration-to-guard1 (x var wrld)
 
-; Wrld is either nil or an ACL2 logical world.  We get a pretty good check even
-; if wrld is nil, but if wrld is the ACL2 logical world we can do a stronger
-; check.
+; Wrld is either an ACL2 logical world or a symbol; see
+; translate-declaration-to-guard.
 
-  (declare (xargs :guard (or (null wrld)
+  (declare (xargs :guard (or (symbolp wrld)
                              (plist-worldp wrld))
                   :mode :program))
   (cond ((or (eq x 'integer)
@@ -22618,7 +22617,7 @@
         ((eq x 'symbol) (list 'symbolp var))
         ((eq x 't) t)
         ((and (weak-satisfies-type-spec-p x)
-              (or (null wrld)
+              (or (symbolp wrld)
                   (eql (length (getprop (cadr x) 'formals nil
                                         'current-acl2-world wrld))
                        1)))
@@ -22636,29 +22635,22 @@
 
 (defun translate-declaration-to-guard (x var wrld)
 
-; This function is typically called on the sort of x you might write
-; in a TYPE declaration, e.g., (DECLARE (TYPE x var1 ... varn)).
-; Thus, x might be something like '(or symbol cons (integer 0 128))
-; meaning that var is either a symbolp, a consp, or an integer in the
-; given range.  X is taken as a declaration about the variable symbol
-; var and is converted into an UNTRANSLATED term about var.
+; This function is typically called on the sort of x you might write in a TYPE
+; declaration, e.g., (DECLARE (TYPE x var1 ... varn)).  Thus, x might be
+; something like '(or symbol cons (integer 0 128)) meaning that var is either a
+; symbolp, a consp, or an integer in the given range.  X is taken as a
+; declaration about the variable symbol var and is converted into an
+; UNTRANSLATED term about var, except that we return nil if x is seen not to be
+; a valid type-spec for ACL2.
 
-; Wrld is either nil or an ACL2 logical world.  We get a pretty good check even
-; if wrld is nil, but if wrld is the ACL2 logical world we can do a stronger
-; check.  This extra argument was added after Version_3.0 when Dave Greve
-; pointed out that Common Lisp only allows the type-spec (satisfies pred) when
-; pred is a unary function symbol, not a macro.  But we allow a value of
-; nil for backward compatibility, as some users have called
-; translate-declaration-to-guard in a context where the world is not
-; available.  In fact, we make such a call in the-fn.  Note that a non-nil wrld
-; can only strengthen this function, causing it to return nil in more cases.
+; Wrld an ACL2 logical world or a symbol, the difference being that a symbol
+; indicates that we should do a weaker check.  This extra argument was added
+; after Version_3.0 when Dave Greve pointed out that Common Lisp only allows
+; the type-spec (satisfies pred) when pred is a unary function symbol, not a
+; macro.  Thus, a non-symbol wrld can only strengthen this function, i.e.,
+; causing it to return nil in more cases.
 
-; WARNING: This function is assumed elsewhere (e.g., in the generation
-; of the recognizers for user declared single-threaded objects) to
-; return a pseudo-termp.  We use all-vars on the output of this
-; function to determine if the var is mentioned.
-
-  (declare (xargs :guard (or (null wrld)
+  (declare (xargs :guard (or (symbolp wrld)
                              (plist-worldp wrld))
                   :mode :program
 
@@ -22699,22 +22691,25 @@
         ((eq (car x) 'complex)
          (cond ((and (consp (cdr x))
                      (null (cddr x)))
-                (list 'and
-                      (list 'complex/complex-rationalp var)
-                      (translate-declaration-to-guard (cadr x)
-                                                      (list 'realpart var)
-                                                      wrld)
-                      (translate-declaration-to-guard (cadr x)
-                                                      (list 'imagpart var)
-                                                      wrld)))
+                (let ((r (translate-declaration-to-guard (cadr x)
+                                                         (list 'realpart var)
+                                                         wrld))
+                      (i (translate-declaration-to-guard (cadr x)
+                                                         (list 'imagpart var)
+                                                         wrld)))
+                  (cond ((and r i)
+                         (list 'and
+                               (list 'complex/complex-rationalp var)
+                               r
+                               i))
+                        (t nil))))
                (t nil)))
         (t (translate-declaration-to-guard1 x var wrld))))
 
 (defun translate-declaration-to-guard-lst (l var wrld)
 
-; Wrld is either nil or an ACL2 logical world.  We get a pretty good check even
-; if wrld is nil, but if wrld is the ACL2 logical world we can do a stronger
-; check.
+; Wrld is an ACL2 logical world or a symbol; see
+; translate-declaration-to-guard.
 
   (declare (xargs ; :measure (acl2-count l)
                   :guard (and (true-listp l)

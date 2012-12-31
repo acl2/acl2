@@ -19969,6 +19969,47 @@
 ; Thanks to David Rager and Jared Davis for helpful discussions leading to this
 ; change.
 
+; Avoided a bogus call of all-vars in
+; defstobj-component-recognizer-axiomatic-defs, and removed a false comment in
+; translate-declaration-to-guard that had "justified" this.
+
+; Removed argument value of :raw-lisp for defstobj-template.
+
+; Regarding Expansion/Defstobj Bug (technical remarks followed by example): The
+; problem was that the raw Lisp code for defstobj, which is called when loading
+; an expansion file, in turn called function defstobj-raw-defs in a world that
+; did not include the definition of the `satisfies' predicate, which in turn
+; called defstobj-component-recognizer-axiomatic-defs on that world, which in
+; turn called translate-declaration-to-guard on that world, which translated
+; the `satisfies' type-spec (below) to nil.  Here is the promised example (file
+; bug.lisp).
+
+;   ; acl2
+;   ; (assign save-expansion-file t)
+;   ; (certify-book "bug")
+;   ; (quit)
+;   ; rm bug.lx64fsl
+;   ; acl2
+;   ; (include-book "bug")
+;   ; (defthm bug
+;   ;   nil
+;   ;   :hints (("Goal" :use obvious))
+;   ;   :rule-classes nil)
+;   
+;   (in-package "ACL2")
+;   
+;   (defun my-natp (x)
+;     (declare (xargs :guard t))
+;     (natp x))
+;   
+;   (defstobj st1 (fld1 :type (satisfies my-natp) :initially 0))
+;   
+;   (defthm obvious
+;     (fld1p 3)
+;     :rule-classes nil)
+;
+;   ; [End of file bug.lisp.]
+
   :doc
   ":Doc-Section release-notes
 
@@ -19996,6 +20037,11 @@
   ~st[HEURISTIC IMPROVEMENTS]
 
   ~st[BUG FIXES]
+
+  A soundness bug has been fixed that exploited the use of expansion files
+  (~pl[book-compiled-file]) together with ~ilc[defstobj].  For an example
+  illustrating this bug, see the comment about ``Expansion/Defstobj Bug'' in
+  the form ~c[(deflabel note-6-1 ...)] in ACL2 source file ~c[ld.lisp].
 
   Functions defined by ~ilc[defstobj] had failed to be compiled when certifying
   books, except in host Lisps that compile on-the-fly (CCL, SBCL).  This has
