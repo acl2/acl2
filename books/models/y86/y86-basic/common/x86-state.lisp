@@ -150,7 +150,7 @@
          (args (cddr form))
          (wrld (w state))
          (template (defstobj-template name args wrld)))
-    (defstobj-raw-defs name template wrld)))
+    (defstobj-raw-defs name template nil wrld)))
 
 ; Lemmas to help with proofs about STOBJs that hold X86 state.  Our
 ; goal is to prove a nice set of forward-chaining lemmas, as our
