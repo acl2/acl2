@@ -656,26 +656,40 @@
 
 ; We strongly suspect that add-linear-assumption will succeed with flg =
 ; :added, since (ts-intersectp ts-rhs *ts-acl2-number*).  But we do not depend
-; on this without checking it.
+; on this without checking it.  Indeed, it fails for the following example,
+; sent to us by Sol Swords.
 
-                                 (assert$
-                                  (and (not (eq flg :failed))
-                                       (not (eq flg :known-false)))
-                                  (poly-set 'or
-                                            (add-linear-terms
-                                             :lhs lhs
-                                             :rhs rhs
-                                             (base-poly new-ttree
-                                                        '<
-                                                        nil
-                                                        nil))
-                                            (add-linear-terms
-                                             :lhs rhs
-                                             :rhs lhs
-                                             (base-poly new-ttree
-                                                        '<
-                                                        nil
-                                                        nil))))))
+;   (defstub bar-p (x) nil)
+;   (defstub foo (x) nil)
+;   
+;   (defaxiom type-of-foo
+;      (implies (force (bar-p x))
+;               (or (and (rationalp (foo x))
+;                        (<= 0 (foo x)))
+;                   (equal (foo x) nil)))
+;      :rule-classes :type-prescription)
+;   
+;   (thm (implies (not (rationalp (foo x))) (equal 0 (foo x))))
+
+                                 (cond
+                                  ((and (not (eq flg :failed))
+                                        (not (eq flg :known-false)))
+                                   (poly-set 'or
+                                             (add-linear-terms
+                                              :lhs lhs
+                                              :rhs rhs
+                                              (base-poly new-ttree
+                                                         '<
+                                                         nil
+                                                         nil))
+                                             (add-linear-terms
+                                              :lhs rhs
+                                              :rhs lhs
+                                              (base-poly new-ttree
+                                                         '<
+                                                         nil
+                                                         nil))))
+                                  (t nil))))
                         ((and (ts-acl2-numberp ts-rhs)
                               force-flg
                               (ts-intersectp ts-lhs *ts-acl2-number*))
@@ -693,24 +707,25 @@
                                   type-alist ens
                                   (immediate-forcep nil ens)
                                   force-flg wrld ts-ttree)
-                                 (assert$ ; see comment on preceding assert$
-                                  (and (not (eq flg :failed))
-                                       (not (eq flg :known-false)))
-                                  (poly-set 'or
-                                            (add-linear-terms
-                                             :lhs lhs
-                                             :rhs rhs
-                                             (base-poly new-ttree
-                                                        '<
-                                                        nil
-                                                        nil))
-                                            (add-linear-terms
-                                             :lhs rhs
-                                             :rhs lhs
-                                             (base-poly new-ttree
-                                                        '<
-                                                        nil
-                                                        nil))))))
+                                 (cond
+                                  ((and (not (eq flg :failed))
+                                        (not (eq flg :known-false)))
+                                   (poly-set 'or
+                                             (add-linear-terms
+                                              :lhs lhs
+                                              :rhs rhs
+                                              (base-poly new-ttree
+                                                         '<
+                                                         nil
+                                                         nil))
+                                             (add-linear-terms
+                                              :lhs rhs
+                                              :rhs lhs
+                                              (base-poly new-ttree
+                                                         '<
+                                                         nil
+                                                         nil))))
+                                  (t nil))))
                         (t
                          nil)))))))
        ((quotep atm)

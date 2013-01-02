@@ -20089,6 +20089,10 @@
   been fixed for all host Lisps.  A related change, probably less significant,
   was made for ~ilc[defabsstobj].
 
+  Fixed an assertion error involving linear arithmetic.  Thanks to Sol Swords
+  for sending an example illustrating the bug (now appearing as a comment in
+  ACL2 source function ~c[linearize1]).
+
   ~st[CHANGES AT THE SYSTEM LEVEL]
 
   The ~c[books/] directory no longer needs to exist in order to build an ACL2
