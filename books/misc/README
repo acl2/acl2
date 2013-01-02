@@ -545,6 +545,7 @@ in more information about ruler-extenders, beyond that provided in
 ===============================================================================
 
 total-order.lisp -- total order for ACL2
+total-order-bsd.lisp -- BSD-licensed version of the above
 
 ===============================================================================
 
