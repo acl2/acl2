@@ -416,6 +416,7 @@ random.lisp -- a pseudo-random number generator
 ===============================================================================
 
 records.lisp   --  canonical key-value record structures
+  [also records-bsd.lisp: BSD-licensed version of the above]
 records0.lisp  --  canonical key-value record structures
 
 These books provide similar functionality, though the approaches differ; the
