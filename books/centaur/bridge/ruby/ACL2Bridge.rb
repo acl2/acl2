@@ -143,11 +143,11 @@ class ACL2Bridge
     # You might need to do this if output is being sent to different channels
     # (e.g., stdout versus stderr) and you don't want it to be separated, but
     # in that case it'd probably be best to write an alternative to
-    # basic_command that merges messages to those channels.
+    # raw_command_with_errors that merges messages to those channels.
     #
     # You might also need this if you are just dealing with so much output that
     # it isn't tolerable to wait for the full reply to be collected up by
-    # basic_command.
+    # raw_command_with_errors.
     type = nil
     while type != :ready
       type, content = read_message()
