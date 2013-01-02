@@ -6,7 +6,7 @@
 Note: The license below is based on the template at:
 http://opensource.org/licenses/BSD-3-Clause
 
-Copyright (C) 2009, Regents of the University of Texas
+Copyright (C) 2013, Regents of the University of Texas
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without

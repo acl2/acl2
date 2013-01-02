@@ -1,11 +1,11 @@
 ; Rob Sumners
-; Modified to be slightly more extensible by David Rager in 2012
+; Modified to be slightly more extensible by David Rager
 
 #||
 Note: The license below is based on the template at:
 http://opensource.org/licenses/BSD-3-Clause
 
-Copyright (C) 2009, Regents of the University of Texas
+Copyright (C) 2013, Regents of the University of Texas
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
@@ -211,7 +211,6 @@ well-formed record hypothesis.
 
 ;; we need the following theorems in order to get the guard for s to verify.
 
-
 (defthmd mset-wf-is-bounded
   (implies (and (well-formed-map r)
                 (mset-wf a v r)
@@ -358,7 +357,6 @@ well-formed record hypothesis.
                   x)))
 
 (in-theory (disable acl2->map map->acl2))
-
 
 ;;;; final (exported) properties of record g(et) and s(et) ;;;;
 
