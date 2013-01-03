@@ -97,7 +97,7 @@ identical JSON encodings:</p>
 <li>Why use \"NIL\" and \"T\" instead of, e.g., JSON's null (or false) and
 true?  The main reason is that null/true can't be used as keys in JSON objects,
 so this would lead to either special handling of alists with nil/t keys, or
-alists that have different encoding depending on theri keys, and it just seems
+alists that have different encoding depending on their keys, and it just seems
 simpler to use strings for all atoms.</li>
 
 <li>Why use \"123\" when JSON has integers?  The same reason as for NIL and T
