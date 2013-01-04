@@ -7,7 +7,7 @@
 (defthm x86-32p-create-x86-32
   (x86-32p (create-x86-32))
   :hints (("Goal" :in-theory (e/d (x86-32p memp-aux)
-                                  ((x86-32$ap))))))
+				  ((x86-32$ap))))))
 
 (in-theory (disable create-x86-32))
 
@@ -86,16 +86,16 @@
 (defconst *popcount-symbol-table*
   (hons-shrink-alist
    (y86-symbol-table *popcount-source*
-                     *popcount-start-location*
-                     'symbol-table)
+		     *popcount-start-location*
+		     'symbol-table)
    nil))
 
 ; The function Y86-ASM assembles a program into a memory image.
 
 (defconst *popcount-binary*
   (reverse (y86-asm *popcount-source*
-                    *popcount-start-location*
-                    *popcount-symbol-table* nil)))
+		    *popcount-start-location*
+		    *popcount-symbol-table* nil)))
 
 (defun-nx popcount-init-x86-32 (n esp eip)
 
@@ -106,8 +106,8 @@
 ; a bit to hold callee-save registers.
 
   (declare (xargs :guard (and (n32p n)
-                              (n32p esp)
-                              (n32p eip))))
+			      (n32p esp)
+			      (n32p eip))))
   (init-y86-state
    nil                          ; Y86 status
    eip                          ; Initial program counter
@@ -119,20 +119,20 @@
 
 (def-gl-thm y86-popcount-correct-reduced-symsim-fixed-n-var-esp
   :hyp (and (equal n 1023) ;; Fixing the value of n
-            (natp esp)
-            (< 118 esp)
-            (<= esp (- (expt 2 32) 4)))
+	    (natp esp)
+	    (< 118 esp)
+	    (<= esp (- (expt 2 32) 4)))
   :concl (let* ((start-eip (cdr (assoc-eq 'call-popcount
-                                          *popcount-symbol-table*)))
-                (halt-eip (cdr (assoc-eq 'halt-of-main
-                                         *popcount-symbol-table*)))
-                (x86-32 (popcount-init-x86-32 n esp start-eip))
-                (count 300)
-                (x86-32 (y86 x86-32 count)))
-           (and (equal (rgfi *mr-eax* x86-32)
-                       (logcount n))
-                (equal (eip x86-32)
-                       halt-eip)))
+					  *popcount-symbol-table*)))
+		(halt-eip (cdr (assoc-eq 'halt-of-main
+					 *popcount-symbol-table*)))
+		(x86-32 (popcount-init-x86-32 n esp start-eip))
+		(count 300)
+		(x86-32 (y86 x86-32 count)))
+	   (and (equal (rgfi *mr-eax* x86-32)
+		       (logcount n))
+		(equal (eip x86-32)
+		       halt-eip)))
   :g-bindings
   ;; Note that GL can optimize the following away to construct a symbolic
   ;; object that represents 1023.
@@ -142,18 +142,18 @@
 
 (def-gl-thm y86-popcount-correct-reduced-symsim-var-n-fixed-esp
   :hyp (and (equal esp 8192) ;; Fixing the value of esp
-            (n32p n))
+	    (n32p n))
   :concl (let* ((start-eip (cdr (assoc-eq 'call-popcount
-                                          *popcount-symbol-table*)))
-                (halt-eip (cdr (assoc-eq 'halt-of-main
-                                         *popcount-symbol-table*)))
-                (x86-32 (popcount-init-x86-32 n esp start-eip))
-                (count 300)
-                (x86-32 (y86 x86-32 count)))
-           (and (equal (rgfi *mr-eax* x86-32)
-                       (logcount n))
-                (equal (eip x86-32)
-                       halt-eip)))
+					  *popcount-symbol-table*)))
+		(halt-eip (cdr (assoc-eq 'halt-of-main
+					 *popcount-symbol-table*)))
+		(x86-32 (popcount-init-x86-32 n esp start-eip))
+		(count 300)
+		(x86-32 (y86 x86-32 count)))
+	   (and (equal (rgfi *mr-eax* x86-32)
+		       (logcount n))
+		(equal (eip x86-32)
+		       halt-eip)))
   :g-bindings
   `((n   (:g-number ,(gl-int 0 1 33)))
     ;; Note that GL can optimize the following away to construct a symbolic

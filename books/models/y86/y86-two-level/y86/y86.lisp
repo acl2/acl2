@@ -2,6 +2,8 @@
 
 ; NOTES:  Semantics of MRMOVL changed from D(rB) -> rA to D(rA) -> rB.
 
+;; Jan 3, 2013: x86-32p-* theorems added by Shilpi Goel.
+
 (in-package "ACL2")
 
 (include-book "tools/bstar" :dir :system)
@@ -115,21 +117,6 @@
 
 (in-theory (disable !y86-zf))
 
-;; flg-hack-1 and flg-hack-2 added by Shilpi:
-
-;; (defthm flg-hack-1
-;;   (implies (x86-32p-pre x86-32)
-;;            (and (integerp (flg x86-32))
-;;                 (<= 0 (flg x86-32))))
-;;   :hints (("Goal" :in-theory (enable x86-32p-pre flg)))
-;;   :rule-classes :type-prescription)
-
-;; (defthm flg-hack-2
-;;   (implies (x86-32p-pre x86-32)
-;;            (< (flg x86-32) 4294967296))
-;;   :hints (("Goal" :in-theory (enable x86-32p-pre flg)))
-;;   :rule-classes :linear)
-
 (defun y86-condition (x86-32 condition)
   (declare (xargs :guard (and (natp condition)
                               (< condition 7)
@@ -186,29 +173,19 @@
 ; Each instruction is defined individually, and afterwards, there is
 ; an instruction dispatch function.
 
-(defund y86-halt (x86-32)
+(defun y86-halt (x86-32)
   (declare (xargs :guard t
                   :stobjs (x86-32)))
-    (b* ((pc (eip x86-32)))
-        (!ms (list :halt-at-location pc) x86-32)))
+  (b* ((pc (eip x86-32)))
+      (!ms (list :halt-at-location pc) x86-32)))
 
+(defthm x86-32p-y86-halt
+  (implies (x86-32p x86-32)
+           (x86-32p (y86-halt x86-32))))
 
-;; eip-hack-1 and eip-hack-2 added by Shilpi:
+(in-theory (disable y86-halt))
 
-;; (defthm eip-hack-1
-;;   (implies (x86-32p-pre x86-32)
-;;            (and (integerp (eip x86-32))
-;;                 (<= 0 (eip x86-32))))
-;;   :hints (("Goal" :in-theory (enable x86-32p-pre eip)))
-;;   :rule-classes :type-prescription)
-
-;; (defthm eip-hack-2
-;;   (implies (x86-32p-pre x86-32)
-;;            (< (eip x86-32) 4294967296))
-;;   :hints (("Goal" :in-theory (enable x86-32p-pre eip)))
-;;   :rule-classes :linear)
-
-(defund y86-nop (x86-32)
+(defun y86-nop (x86-32)
   (declare (xargs :guard (x86-32p x86-32)
                   :stobjs (x86-32)))
   (b* ((pc (eip x86-32))
@@ -224,7 +201,13 @@
        (x86-32 (!eip (+ pc 1) x86-32)))
       x86-32))
 
-(defund y86-cmove (x86-32 condition)
+(defthm x86-32p-y86-nop
+  (implies (x86-32p x86-32)
+           (x86-32p (y86-nop x86-32))))
+
+(in-theory (disable y86-nop))
+
+(defun y86-cmove (x86-32 condition)
   (declare (xargs :guard (and (natp condition)
                               (< condition 7)
                               (x86-32p x86-32))
@@ -267,7 +250,13 @@
        (x86-32 (!eip (+ pc 2) x86-32)))
       x86-32))
 
-(defund y86-move-imm (x86-32 condition)
+(defthm x86-32p-y86-cmove
+  (implies (x86-32p x86-32)
+           (x86-32p (y86-cmove x86-32 condition))))
+
+(in-theory (disable y86-cmove))
+
+(defun y86-move-imm (x86-32 condition)
   (declare (xargs :guard (and (natp condition)
                               (< condition 7)
                               (x86-32p x86-32))
@@ -308,7 +297,13 @@
        (x86-32 (!eip (+ pc 6) x86-32)))
       x86-32))
 
-(defund y86-rA-to-mem-at-rb+D (x86-32)
+(defthm x86-32p-y86-move-imm
+  (implies (x86-32p x86-32)
+           (x86-32p (y86-move-imm x86-32 condition))))
+
+(in-theory (disable y86-move-imm))
+
+(defun y86-rA-to-mem-at-rb+D (x86-32)
   (declare (xargs :guard (x86-32p x86-32)
                   :stobjs (x86-32)))
   (b* ((pc (eip x86-32))
@@ -344,7 +339,13 @@
        (x86-32 (!eip (+ pc 6) x86-32)))
       x86-32))
 
-(defund y86-mem-at-rA+D-to-rB (x86-32)
+(defthm x86-32p-y86-rA-to-mem-at-rb+D
+  (implies (x86-32p x86-32)
+           (x86-32p (y86-rA-to-mem-at-rb+D x86-32))))
+
+(in-theory (disable y86-rA-to-mem-at-rb+D))
+
+(defun y86-mem-at-rA+D-to-rB (x86-32)
   (declare (xargs :guard (x86-32p x86-32)
                   :stobjs (x86-32)))
   (b* ((pc (eip x86-32))
@@ -380,7 +381,13 @@
        (x86-32 (!eip (+ pc 6) x86-32)))
       x86-32))
 
-(defund y86-ALU-results-store-flgs (zf sf of x86-32)
+(defthm x86-32p-y86-mem-at-rA+D-to-rB
+  (implies (x86-32p x86-32)
+           (x86-32p (y86-mem-at-rA+D-to-rB x86-32))))
+
+(in-theory (disable y86-mem-at-rA+D-to-rB))
+
+(defun y86-ALU-results-store-flgs (zf sf of x86-32)
   (declare (xargs :guard (and (n01p zf)
                               (n01p sf)
                               (n01p of)
@@ -393,7 +400,13 @@
        (x86-32 (!flg eflags x86-32)))
       x86-32))
 
-(defund y86-rA-xor-rB-to-rB (x86-32)
+(defthm x86-32p-y86-ALU-results-store-flgs
+  (implies (x86-32p x86-32)
+           (x86-32p (y86-ALU-results-store-flgs zf sf of x86-32))))
+
+(in-theory (disable y86-ALU-results-store-flgs))
+
+(defun y86-rA-xor-rB-to-rB (x86-32)
   (declare (xargs :guard (x86-32p x86-32)
                   :stobjs (x86-32)))
   (b* ((pc (eip x86-32))
@@ -437,7 +450,13 @@
        (x86-32 (!eip (+ pc 2) x86-32)))
       x86-32))
 
-(defund y86-rA-and-rB-to-rB (x86-32)
+(defthm x86-32p-y86-rA-xor-rB-to-rB
+  (implies (x86-32p x86-32)
+           (x86-32p (y86-rA-xor-rB-to-rB x86-32))))
+
+(in-theory (disable y86-rA-xor-rB-to-rB))
+
+(defun y86-rA-and-rB-to-rB (x86-32)
   (declare (xargs :guard (x86-32p x86-32)
                   :stobjs (x86-32)))
   (b* ((pc (eip x86-32))
@@ -481,7 +500,13 @@
        (x86-32 (!eip (+ pc 2) x86-32)))
       x86-32))
 
-(defund y86-rA-+-rB-to-rB (x86-32)
+(defthm x86-32p-y86-rA-and-rB-to-rB
+  (implies (x86-32p x86-32)
+           (x86-32p (y86-rA-and-rB-to-rB x86-32))))
+
+(in-theory (disable y86-rA-and-rB-to-rB))
+
+(defun y86-rA-+-rB-to-rB (x86-32)
   (declare (xargs :guard (x86-32p x86-32)
                   :stobjs (x86-32)))
   (b* ((pc (eip x86-32))
@@ -530,7 +555,13 @@
        (x86-32 (!eip (+ pc 2) x86-32)))
       x86-32))
 
-(defund y86-rB---rA-to-rB (x86-32)
+(defthm x86-32p-y86-rA-+-rB-to-rB
+  (implies (x86-32p x86-32)
+           (x86-32p (y86-rA-+-rB-to-rB x86-32))))
+
+(in-theory (disable y86-rA-+-rB-to-rB))
+
+(defun y86-rB---rA-to-rB (x86-32)
   (declare (xargs :guard (x86-32p x86-32)
                   :stobjs (x86-32)))
   (b* ((pc (eip x86-32))
@@ -581,7 +612,13 @@
        (x86-32 (!eip (+ pc 2) x86-32)))
       x86-32))
 
-(defund y86-cjump (x86-32 condition)
+(defthm x86-32p-y86-rB---rA-to-rB
+  (implies (x86-32p x86-32)
+           (x86-32p (y86-rB---rA-to-rB x86-32))))
+
+(in-theory (disable y86-rB---rA-to-rB))
+
+(defun y86-cjump (x86-32 condition)
   (declare (xargs :guard (and (natp condition)
                               (< condition 7)
                               (x86-32p x86-32))
@@ -604,7 +641,13 @@
                  (!eip (+ pc 5) x86-32))))
       x86-32))
 
-(defund y86-call (x86-32)
+(defthm x86-32p-y86-cjump
+  (implies (x86-32p x86-32)
+           (x86-32p (y86-cjump x86-32 condition))))
+
+(in-theory (disable y86-cjump))
+
+(defun y86-call (x86-32)
   (declare (xargs :guard (x86-32p x86-32)
                   :stobjs (x86-32)))
   (b* ((pc (eip x86-32))
@@ -628,7 +671,13 @@
        (x86-32 (!eip call-addr x86-32)))
       x86-32))
 
-(defund y86-ret (x86-32)
+(defthm x86-32p-y86-call
+  (implies (x86-32p x86-32)
+           (x86-32p (y86-call x86-32))))
+
+(in-theory (disable y86-call))
+
+(defun y86-ret (x86-32)
   (declare (xargs :guard (x86-32p x86-32)
                   :stobjs (x86-32)))
   (b* (;; No Memory Probe because PC is replaced.
@@ -641,7 +690,13 @@
        (x86-32 (!eip rtr-addr x86-32)))
       x86-32))
 
-(defund y86-pushl (x86-32)
+(defthm x86-32p-y86-ret
+  (implies (x86-32p x86-32)
+           (x86-32p (y86-ret x86-32))))
+
+(in-theory (disable y86-ret))
+
+(defun y86-pushl (x86-32)
   (declare (xargs :guard (x86-32p x86-32)
                   :stobjs (x86-32)))
   (b* ((pc (eip x86-32))
@@ -677,7 +732,13 @@
        (x86-32 (!eip (+ pc 2) x86-32)))
       x86-32))
 
-(defund y86-popl (x86-32)
+(defthm x86-32p-y86-pushl
+  (implies (x86-32p x86-32)
+           (x86-32p (y86-pushl x86-32))))
+
+(in-theory (disable y86-pushl))
+
+(defun y86-popl (x86-32)
   (declare (xargs :guard (x86-32p x86-32)
                   :stobjs (x86-32)))
   (b* ((pc (eip x86-32))
@@ -715,7 +776,13 @@
        (x86-32 (!eip (+ pc 2) x86-32)))
       x86-32))
 
-(defund y86-imm-add (x86-32 condition)
+(defthm x86-32p-popl
+  (implies (x86-32p x86-32)
+           (x86-32p (y86-popl x86-32))))
+
+(in-theory (disable y86-popl))
+
+(defun y86-imm-add (x86-32 condition)
   (declare (xargs :guard (and (natp condition)
                               (< condition 7)
                               (x86-32p x86-32))
@@ -757,8 +824,13 @@
        (x86-32 (!eip (+ pc 6) x86-32)))
       x86-32))
 
+(defthm x86-32p-y86-imm-add
+  (implies (x86-32p x86-32)
+           (x86-32p (y86-imm-add x86-32 condition))))
 
-(defund y86-leave (x86-32)
+(in-theory (disable y86-imm-add))
+
+(defun y86-leave (x86-32)
   (declare (xargs :guard (x86-32p x86-32)
                   :stobjs (x86-32)))
   (b* ((pc (eip x86-32))
@@ -781,8 +853,13 @@
        (x86-32 (!eip (+ pc 1) x86-32)))
       x86-32))
 
+(defthm x86-32p-y86-leave
+  (implies (x86-32p x86-32)
+           (x86-32p (y86-leave x86-32))))
 
-(defund y86-illegal-opcode (x86-32)
+(in-theory (disable y86-leave))
+
+(defun y86-illegal-opcode (x86-32)
   (declare (xargs :guard (x86-32p x86-32)
                   :stobjs (x86-32)))
   (b* ((pc (eip x86-32))
@@ -790,10 +867,16 @@
       (!ms (list :illegal-opcode byte-at-pc :at-location pc)
            x86-32)))
 
+(defthm x86-32p-y86-illegal-opcode
+  (implies (x86-32p x86-32)
+           (x86-32p (y86-illegal-opcode x86-32))))
+
+(in-theory (disable y86-illegal-opcode))
+
 
 ; Main instruction dispatch.
 
-(defund y86-step (x86-32)
+(defun y86-step (x86-32)
   (declare (xargs :guard (x86-32p x86-32)
                   :stobjs (x86-32)))
   (b* ((pc (eip x86-32))
@@ -923,19 +1006,15 @@
 
         (t (y86-illegal-opcode x86-32)))))
 
-;; (i-am-here)
+(defthm x86-32p-y86-step
+  (implies (x86-32p x86-32)
+           (x86-32p (y86-step x86-32))))
 
-;; (defthm x86-32p-y86-step
-;;   (implies (x86-32p x86-32)
-;;            (x86-32p (y86-step x86-32)))
-;;   :hints (("Goal" :in-theory (enable x86-32p x86-32p-pre))))
+(in-theory (disable y86-step))
 
-;; TO-DO@Shilpi: Verify guards of the following function:
-
-(defund y86 (x86-32 n)
+(defun y86 (x86-32 n)
   (declare (xargs :guard (and (natp n)
                               (x86-32p x86-32))
-                  :verify-guards nil
                   :measure (acl2-count n)
                   :stobjs (x86-32)))
   (if (mbe :logic (zp n) :exec (= n 0))
@@ -945,15 +1024,8 @@
       (let ((x86-32 (y86-step x86-32)))
         (y86 x86-32 (1- n))))))
 
+(defthm x86-32p-y86
+  (implies (x86-32p x86-32)
+           (x86-32p (y86 x86-32 n))))
 
-#||
-(include-book "misc/defp" :dir :system)
-
-(defp y86-wc (x86-32)
-  ; (declare (xargs :stobjs (x86-32)))
-  (if (ms x86-32)
-      x86-32
-    (let ((x86-32 (y86-step x86-32)))
-      (y86-wc x86-32))))
-
-||#
+(in-theory (disable y86))

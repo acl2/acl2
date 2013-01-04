@@ -198,14 +198,6 @@
        (x86-32 (y86-ALU-results-store-flgs 0 0 0 x86-32)))
       x86-32))
 
-(defthm x86-32p-y86-alu-results-store-flgs
-  (implies (and (x86-32p x86-32)
-                (n01p zf)
-                (n01p sf)
-                (n01p of))
-           (x86-32p (y86-alu-results-store-flgs zf sf of x86-32)))
-  :hints (("Goal" :in-theory (enable y86-alu-results-store-flgs))))
-
 (defthm x86-32p-m86-clear-regs
   (implies (x86-32p x86-32)
            (x86-32p (m86-clear-regs x86-32))))
