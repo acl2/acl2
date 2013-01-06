@@ -11888,6 +11888,7 @@
          (if evalp
              (chk-raise-portcullis1 file1 file2 ch nil ctx state)
            (get-cmds-from-portcullis
+            file1 file2
 
 ; When we are raising the portcullis on behalf of the Convert procedure of
 ; provisional certification, we may need to eval hidden defpkg events from the
@@ -11897,7 +11898,7 @@
 ; an example from Sol Swords showing how this can be necessary.
 
             (eq caller 'convert-pcert)
-            file1 file2 ch ctx state))))
+            ch ctx state))))
      (state-global-let*
       ((infixp nil))
       (mv-let

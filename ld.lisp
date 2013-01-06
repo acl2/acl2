@@ -20093,6 +20093,14 @@
   for sending an example illustrating the bug (now appearing as a comment in
   ACL2 source function ~c[linearize1]).
 
+  Fixed a bug that was breaking the ACL2s build mechanism (~pl[acl2-sedan]) by
+  causing certain needless evaluation of ``hidden ~ilc[defpkg]'' forms in
+  ~il[certificate] files when executing a call of ~ilc[include-book].  The bug
+  could also affect rare error messages arising from ill-formed
+  ~il[certificate] files.  Thanks to Harsh Raju Chamarthi for bringing this bug
+  to our attention by sending us an example script of the sort that was
+  breaking during an ACL2s build.
+
   ~st[CHANGES AT THE SYSTEM LEVEL]
 
   The ~c[books/] directory no longer needs to exist in order to build an ACL2
