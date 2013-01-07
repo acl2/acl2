@@ -20087,7 +20087,9 @@
   Functions defined by ~ilc[defstobj] had failed to be compiled when certifying
   books, except in host Lisps that compile on-the-fly (CCL, SBCL).  This has
   been fixed for all host Lisps.  A related change, probably less significant,
-  was made for ~ilc[defabsstobj].
+  was made for ~ilc[defabsstobj].  Thanks to Sol Swords for reporting a bug
+  that turned out to be a mistake in a preliminary implementation of this
+  change.
 
   Fixed an assertion error involving linear arithmetic.  Thanks to Sol Swords
   for sending an example illustrating the bug (now appearing as a comment in

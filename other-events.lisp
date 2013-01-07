@@ -22217,6 +22217,10 @@
                         creator exports)))
     (mv-let
      (erp methods)
+
+; Each method has only the :NAME, :LOGIC, :EXEC, and :PROTECT fields filled in
+; (the others are nil).  But that suffices for the present purposes.
+
      (simple-translate-absstobj-fields
       name st$c
 
@@ -22224,6 +22228,7 @@
 ; being for the recognizer and creator.
 
       fields
+      '(:RECOGNIZER :CREATOR) ; other types are nil
       protect-default
       nil ; safe value, probably irrelevant in raw Lisp
       )
@@ -23253,10 +23258,11 @@
 ; the value component is an appropriate absstobj-method record.
 
 ; If wrld is nil, then we take a shortcut, returning a record with only the
-; :name and :exec fields, sufficient for handling a defabsstobj form in raw
-; lisp.  Otherwise, this function does all necessary checks except for the
-; presence of suitable :correspondence, :preserved, and :guard formulas.  For
-; that, see chk-defabsstobj-method.
+; :NAME, :LOGIC, :EXEC, and :PROTECT fields filled in (the others are nil),
+; which are sufficient for handling a defabsstobj form in raw lisp.  Otherwise,
+; this function does all necessary checks except for the presence of suitable
+; :correspondence, :preserved, and :guard formulas.  For that, see
+; chk-defabsstobj-method.
 
   (let* ((field0 field)
          (field (if (atom field) (list field) field))
@@ -23286,157 +23292,160 @@
            (er-cmp ctx
                    "Illegal value of :PROTECT, ~x0, in the field for ~x1.  ~@2"
                    protect name see-doc))
-          ((null wrld) ; shortcut for raw Lisp definition of defabsstobj
-           (value-cmp (make absstobj-method
-                            :NAME name
-                            :EXEC exec
-                            :PROTECT protect)))
-          ((strip-keyword-list
-            '(:LOGIC :EXEC :CORRESPONDENCE :PRESERVED :GUARD-THM :PROTECT)
-            keyword-lst)
-           (er-cmp ctx
-                   "Unexpected keyword~#0~[~/s~], ~&0, in field ~x1.  ~@2"
-                   (evens (strip-keyword-list
-                           '(:LOGIC :EXEC :CORRESPONDENCE :PRESERVED :GUARD-THM)
-                           keyword-lst))
-                   field0 see-doc))
-          ((duplicate-key-in-keyword-value-listp keyword-lst)
-           (er-cmp ctx
-                   "Duplicate keyword~#0~[~/s~] ~&0 found in field ~x1.~|~@2"
-                   (duplicates (evens keyword-lst)) field0 see-doc))
-          ((not (and (symbolp exec)
-                     (function-symbolp exec wrld)))
-           (er-cmp ctx
-                   "The :EXEC field ~x0, specified~#1~[~/ (implicitly)~] for ~
-                    ~#2~[defabsstobj :RECOGNIZER~/defabsstobj ~
-                    :CREATOR~/exported~] symbol ~x3, is not a function symbol ~
-                    in the current ACL2 logical world.  ~@4"
-                   exec
-                   (if exec-p 0 1)
-                   (case type
-                     (:RECOGNIZER 0)
-                     (:CREATOR 1)
-                     (otherwise 2))
-                   name see-doc))
-          ((and (null protect)
-                (not (member-eq type '(:RECOGNIZER :CREATOR)))
-                (not (member-eq ld-skip-proofsp ; optimization
-                                '(include-book include-book-with-locals)))
-                (unprotected-export-p st$c exec wrld))
-           (er-cmp ctx
-                   "The :EXEC field ~x0, specified~#1~[~/ (implicitly)~] for ~
-                    defabsstobj field ~x2, appears capable of modifying the ~
-                    concrete stobj, ~x3, non-atomically; yet :PROTECT T was ~
-                    not specified for this field.  ~@4"
-                   exec
-                   (if exec-p 0 1)
-                   name st$c see-doc))
           (t
            (mv-let
             (logic logic-p)
             (let ((logic (cadr (assoc-keyword :LOGIC keyword-lst))))
               (cond (logic (mv logic t))
                     (t (mv (absstobj-name name :A) nil))))
-            (mv-let
-             (guard-thm guard-thm-p)
-             (let ((guard-thm (cadr (assoc-keyword :GUARD-THM keyword-lst))))
-               (cond (guard-thm (mv guard-thm t))
-                     (t (mv (absstobj-name name :GUARD-THM) nil))))
-             (let* ((exec-formals (formals exec wrld))
-                    (posn-exec (position-eq st$c exec-formals))
-                    (stobjs-in-logic (stobjs-in logic wrld))
-                    (stobjs-in-exec (stobjs-in exec wrld))
-                    (stobjs-out-logic (stobjs-out logic wrld))
-                    (stobjs-out-exec (stobjs-out exec wrld))
-                    (posn-exec-out (position-eq st$c stobjs-out-exec))
-                    (correspondence-required (not (eq type :RECOGNIZER)))
-                    (preserved-required (and (not (eq type :RECOGNIZER))
-                                             (member-eq st$c stobjs-out-exec))))
-               (mv-let
-                (correspondence correspondence-p)
-                (let ((corr (cadr (assoc-keyword :CORRESPONDENCE keyword-lst))))
-                  (cond (corr (mv corr t))
-                        (t (mv (and correspondence-required
-                                    (absstobj-name name :CORRESPONDENCE))
-                               nil))))
-                (mv-let
-                 (preserved preserved-p)
-                 (let ((pres (cadr (assoc-keyword :PRESERVED keyword-lst))))
-                   (cond (pres (mv pres t))
-                         (t (mv (and preserved-required
-                                     (absstobj-name name :PRESERVED))
-                                nil))))
-                 (cond
-                  ((or (and (eq type :RECOGNIZER)
-                            (or correspondence-p preserved-p guard-thm-p
-                                (not logic-p) (not exec-p)))
-                       (and (eq type :CREATOR)
-                            guard-thm-p))
-                   (er-cmp ctx
-                           "The keyword ~x0 for the ~@1.  ~@2"
-                           type
-                           (cond (guard-thm-p
-                                  ":GUARD-THM field is not allowed")
-                                 (correspondence-p
-                                  ":CORRESPONDENCE field is not allowed")
-                                 (preserved-p
-                                  ":PRESERVED field is not allowed")
-                                 ((not logic-p)
-                                  ":LOGIC field is required")
-                                 (t ; (not exec-p)
-                                  ":EXEC field is required"))
-                           see-doc))
-                  ((not (and (symbolp logic)
-                             (function-symbolp logic wrld)))
-                   (er-cmp ctx
-                           "The :LOGIC field ~x0, specified~#1~[~/ ~
+            (cond
+             ((null wrld) ; shortcut for raw Lisp definition of defabsstobj
+              (value-cmp (make absstobj-method
+                               :NAME name
+                               :LOGIC logic
+                               :EXEC exec
+                               :PROTECT protect)))
+             ((strip-keyword-list
+               '(:LOGIC :EXEC :CORRESPONDENCE :PRESERVED :GUARD-THM :PROTECT)
+               keyword-lst)
+              (er-cmp ctx
+                      "Unexpected keyword~#0~[~/s~], ~&0, in field ~x1.  ~@2"
+                      (evens (strip-keyword-list
+                              '(:LOGIC :EXEC :CORRESPONDENCE :PRESERVED :GUARD-THM)
+                              keyword-lst))
+                      field0 see-doc))
+             ((duplicate-key-in-keyword-value-listp keyword-lst)
+              (er-cmp ctx
+                      "Duplicate keyword~#0~[~/s~] ~&0 found in field ~x1.~|~@2"
+                      (duplicates (evens keyword-lst)) field0 see-doc))
+             ((not (and (symbolp exec)
+                        (function-symbolp exec wrld)))
+              (er-cmp ctx
+                      "The :EXEC field ~x0, specified~#1~[~/ (implicitly)~] for ~
+                    ~#2~[defabsstobj :RECOGNIZER~/defabsstobj ~
+                    :CREATOR~/exported~] symbol ~x3, is not a function symbol ~
+                    in the current ACL2 logical world.  ~@4"
+                      exec
+                      (if exec-p 0 1)
+                      (case type
+                        (:RECOGNIZER 0)
+                        (:CREATOR 1)
+                        (otherwise 2))
+                      name see-doc))
+             ((and (null protect)
+                   (not (member-eq type '(:RECOGNIZER :CREATOR)))
+                   (not (member-eq ld-skip-proofsp ; optimization
+                                   '(include-book include-book-with-locals)))
+                   (unprotected-export-p st$c exec wrld))
+              (er-cmp ctx
+                      "The :EXEC field ~x0, specified~#1~[~/ (implicitly)~] for ~
+                    defabsstobj field ~x2, appears capable of modifying the ~
+                    concrete stobj, ~x3, non-atomically; yet :PROTECT T was ~
+                    not specified for this field.  ~@4"
+                      exec
+                      (if exec-p 0 1)
+                      name st$c see-doc))
+             (t
+              (mv-let
+               (guard-thm guard-thm-p)
+               (let ((guard-thm (cadr (assoc-keyword :GUARD-THM keyword-lst))))
+                 (cond (guard-thm (mv guard-thm t))
+                       (t (mv (absstobj-name name :GUARD-THM) nil))))
+               (let* ((exec-formals (formals exec wrld))
+                      (posn-exec (position-eq st$c exec-formals))
+                      (stobjs-in-logic (stobjs-in logic wrld))
+                      (stobjs-in-exec (stobjs-in exec wrld))
+                      (stobjs-out-logic (stobjs-out logic wrld))
+                      (stobjs-out-exec (stobjs-out exec wrld))
+                      (posn-exec-out (position-eq st$c stobjs-out-exec))
+                      (correspondence-required (not (eq type :RECOGNIZER)))
+                      (preserved-required (and (not (eq type :RECOGNIZER))
+                                               (member-eq st$c stobjs-out-exec))))
+                 (mv-let
+                  (correspondence correspondence-p)
+                  (let ((corr (cadr (assoc-keyword :CORRESPONDENCE keyword-lst))))
+                    (cond (corr (mv corr t))
+                          (t (mv (and correspondence-required
+                                      (absstobj-name name :CORRESPONDENCE))
+                                 nil))))
+                  (mv-let
+                   (preserved preserved-p)
+                   (let ((pres (cadr (assoc-keyword :PRESERVED keyword-lst))))
+                     (cond (pres (mv pres t))
+                           (t (mv (and preserved-required
+                                       (absstobj-name name :PRESERVED))
+                                  nil))))
+                   (cond
+                    ((or (and (eq type :RECOGNIZER)
+                              (or correspondence-p preserved-p guard-thm-p
+                                  (not logic-p) (not exec-p)))
+                         (and (eq type :CREATOR)
+                              guard-thm-p))
+                     (er-cmp ctx
+                             "The keyword ~x0 for the ~@1.  ~@2"
+                             type
+                             (cond (guard-thm-p
+                                    ":GUARD-THM field is not allowed")
+                                   (correspondence-p
+                                    ":CORRESPONDENCE field is not allowed")
+                                   (preserved-p
+                                    ":PRESERVED field is not allowed")
+                                   ((not logic-p)
+                                    ":LOGIC field is required")
+                                   (t ; (not exec-p)
+                                    ":EXEC field is required"))
+                             see-doc))
+                    ((not (and (symbolp logic)
+                               (function-symbolp logic wrld)))
+                     (er-cmp ctx
+                             "The :LOGIC field ~x0, specified~#1~[~/ ~
                             (implicitly)~] for ~#2~[defabsstobj ~
                             :RECOGNIZER~/defabsstobj :CREATOR~/exported~] ~
                             symbol ~x3, is not a function symbol in the ~
                             current ACL2 logical world.  ~@4"
-                           logic
-                           (if logic-p 0 1)
-                           (case type
-                             (:RECOGNIZER 0)
-                             (:CREATOR 1)
-                             (otherwise 2))
-                           name see-doc))
-                  ((or (not (eq (symbol-class exec wrld)
-                                :COMMON-LISP-COMPLIANT))
-                       (not (eq (symbol-class logic wrld)
-                                :COMMON-LISP-COMPLIANT)))
-                   (let* ((lp (not (eq (symbol-class logic wrld)
-                                       :COMMON-LISP-COMPLIANT)))
-                          (implicit-p (if lp logic-p exec-p))
-                          (fn (if lp logic exec)))
-                     (er-cmp ctx
-                             "The~#0~[~/ (implicit)~] ~x1 component of field ~
+                             logic
+                             (if logic-p 0 1)
+                             (case type
+                               (:RECOGNIZER 0)
+                               (:CREATOR 1)
+                               (otherwise 2))
+                             name see-doc))
+                    ((or (not (eq (symbol-class exec wrld)
+                                  :COMMON-LISP-COMPLIANT))
+                         (not (eq (symbol-class logic wrld)
+                                  :COMMON-LISP-COMPLIANT)))
+                     (let* ((lp (not (eq (symbol-class logic wrld)
+                                         :COMMON-LISP-COMPLIANT)))
+                            (implicit-p (if lp logic-p exec-p))
+                            (fn (if lp logic exec)))
+                       (er-cmp ctx
+                               "The~#0~[~/ (implicit)~] ~x1 component of field ~
                               ~x2, ~x3, is a function symbol but its guards ~
                               have not yet been verified.  ~@4"
-                             (if implicit-p 0 1)
-                             (if lp :LOGIC :EXEC)
-                             field0 fn see-doc)))
-                  ((and (eq type :RECOGNIZER)
-                        (not (eq exec (get-stobj-recognizer st$c wrld))))
+                               (if implicit-p 0 1)
+                               (if lp :LOGIC :EXEC)
+                               field0 fn see-doc)))
+                    ((and (eq type :RECOGNIZER)
+                          (not (eq exec (get-stobj-recognizer st$c wrld))))
 
 ; We use the concrete recognizer in the definition of the recognizer returned
 ; by defabsstobj-raw-defs.
 
-                   (er-cmp ctx
-                           "The~#0~[~/ (implicit)~] :EXEC component, ~x1, of ~
+                     (er-cmp ctx
+                             "The~#0~[~/ (implicit)~] :EXEC component, ~x1, of ~
                             the specified :RECOGNIZER, ~x2, is not the ~
                             recognizer of the :CONCRETE stobj ~x3.  ~@4"
-                           (if exec-p 0 1) exec name st$c see-doc))
-                  ((and preserved-p
-                        (not preserved-required))
-                   (er-cmp ctx
-                           "It is illegal to specify :PRESERVED for a field ~
+                             (if exec-p 0 1) exec name st$c see-doc))
+                    ((and preserved-p
+                          (not preserved-required))
+                     (er-cmp ctx
+                             "It is illegal to specify :PRESERVED for a field ~
                             whose :EXEC does not return the concrete stobj.  ~
                             In this case, :PRESERVED ~x0 has been specified ~
                             for an :EXEC of ~x1, which does not return ~x2.  ~
                             ~@3"
-                           preserved exec st$c see-doc))
-                  ((member-eq st exec-formals)
+                             preserved exec st$c see-doc))
+                    ((member-eq st exec-formals)
 
 ; We form the formals of name by replacing st$c by st in exec-formals.  If st
 ; is already a formal parameter of exec-formals then this would create a
@@ -23449,73 +23458,73 @@
 ; course define a wrapper for the :EXEC function that avoids the new stobj name,
 ; st.
 
-                   (er-cmp ctx
-                           "We do not allow the use of the defabsstobj name, ~
+                     (er-cmp ctx
+                             "We do not allow the use of the defabsstobj name, ~
                             ~x0, in the formals of the :EXEC function of a ~
                             field, in particular, the :EXEC function ~x1 for ~
                             field ~x2.  ~@3"
-                           st exec field0 see-doc))
-                  ((and (eq type :CREATOR)
-                        (not (and (null stobjs-in-logic)
-                                  (null stobjs-in-exec)
-                                  (null (cdr stobjs-out-exec))
-                                  (eq (car stobjs-out-exec) st$c)
-                                  (null (cdr stobjs-in-exec))
-                                  (eql (length stobjs-out-logic) 1))))
-                   (cond ((or stobjs-in-logic
-                              stobjs-in-exec)
-                          (er-cmp ctx
-                                  "The :LOGIC and :EXEC versions of the ~
+                             st exec field0 see-doc))
+                    ((and (eq type :CREATOR)
+                          (not (and (null stobjs-in-logic)
+                                    (null stobjs-in-exec)
+                                    (null (cdr stobjs-out-exec))
+                                    (eq (car stobjs-out-exec) st$c)
+                                    (null (cdr stobjs-in-exec))
+                                    (eql (length stobjs-out-logic) 1))))
+                     (cond ((or stobjs-in-logic
+                                stobjs-in-exec)
+                            (er-cmp ctx
+                                    "The :LOGIC and :EXEC versions of the ~
                                    :CREATOR function must both be functions ~
                                    of no arguments but ~&0 ~#0~[is not such a ~
                                    function~/xare not such functions~].  ~@1"
-                                  (append (and stobjs-in-logic
-                                               (list logic))
-                                          (and stobjs-in-exec
-                                               (list exec)))
-                                  see-doc))
-                         ((or (not (eql (length stobjs-out-logic) 1))
-                              (not (eql (length stobjs-out-exec) 1)))
-                          (er-cmp ctx
-                                  "The :LOGIC and :EXEC versions of the ~
+                                    (append (and stobjs-in-logic
+                                                 (list logic))
+                                            (and stobjs-in-exec
+                                                 (list exec)))
+                                    see-doc))
+                           ((or (not (eql (length stobjs-out-logic) 1))
+                                (not (eql (length stobjs-out-exec) 1)))
+                            (er-cmp ctx
+                                    "The :LOGIC and :EXEC versions of the ~
                                    :CREATOR function must both be functions ~
                                    that return a single value, but ~&0 ~
                                    ~#0~[is not such a function~/are not such ~
                                    functions~].  ~@1"
-                                  (append
-                                   (and (not (eql (length stobjs-out-logic) 1))
-                                        (list logic))
-                                   (and (not (eql (length stobjs-out-exec) 1))
-                                        (list exec)))
-                                  see-doc))
-                         (t ; (not (eq (car stobjs-out-exec) st$c))
-                          (er-cmp ctx
-                                  "The :EXEC version of the :CREATOR function ~
+                                    (append
+                                     (and (not (eql (length stobjs-out-logic) 1))
+                                          (list logic))
+                                     (and (not (eql (length stobjs-out-exec) 1))
+                                          (list exec)))
+                                    see-doc))
+                           (t ; (not (eq (car stobjs-out-exec) st$c))
+                            (er-cmp ctx
+                                    "The :EXEC version of the :CREATOR function ~
                                    must return a single value that is the ~
                                    stobj ~x0, but ~x1 does not have that ~
                                    property.  ~@2"
-                                  st$c exec see-doc))))
-                  ((and (not (eq type :CREATOR))
-                        (not posn-exec))
+                                    st$c exec see-doc))))
+                    ((and (not (eq type :CREATOR))
+                          (not posn-exec))
 
 ; Warning: before weakening this test, consider how it is relied upon in
 ; absstobj-correspondence-formula.  Also, note that stobj-creatorp relies on
 ; empty formals, so this check guarantees that stobj-creatorp returns nil for
 ; functions other than the creator.
 
-                   (er-cmp ctx
-                           "The :CONCRETE stobj name, ~x0, is not a known ~
+                     (er-cmp ctx
+                             "The :CONCRETE stobj name, ~x0, is not a known ~
                             stobj parameter of :EXEC function ~x1 for field ~
                             ~x2.~|~@3"
-                           st$c exec field0 see-doc))
-                  ((and (not (eq type :CREATOR))
-                        (not
-                         (and (equal (length stobjs-in-logic)
-                                     (length stobjs-in-exec))
-                              (equal (update-nth posn-exec nil stobjs-in-logic)
-                                     (update-nth posn-exec nil stobjs-in-exec)))))
-                   (er-cmp ctx
-                           "The input signatures of the :LOGIC and :EXEC ~
+                             st$c exec field0 see-doc))
+                    ((and (not (eq type :CREATOR))
+                          (not
+                           (and (equal (length stobjs-in-logic)
+                                       (length stobjs-in-exec))
+                                (equal (update-nth posn-exec nil stobjs-in-logic)
+                                       (update-nth posn-exec nil stobjs-in-exec)))))
+                     (er-cmp ctx
+                             "The input signatures of the :LOGIC and :EXEC ~
                             functions for a field must agree except perhaps ~
                             at the position of the concrete stobj (~x0) in ~
                             the :EXEC function (which is zero-based position ~
@@ -23523,24 +23532,24 @@
                             ~x2, as the input signatures are as ~
                             follows.~|~%~x3 (:LOGIC):~|~X47~|~%~x5 ~
                             (:EXEC):~|~X67~|~%~@8"
-                           st$c posn-exec field0
-                           logic (prettyify-stobj-flags stobjs-in-logic)
-                           exec (prettyify-stobj-flags stobjs-in-exec)
-                           nil see-doc))
-                  ((and (not (eq type :CREATOR)) ; handled elsewhere
-                        (not (and (equal (length stobjs-out-logic)
-                                         (length stobjs-out-exec))
-                                  (equal stobjs-out-exec
-                                         (if posn-exec-out
-                                             (update-nth posn-exec-out
-                                                         (assert$
-                                                          posn-exec
-                                                          (nth posn-exec
-                                                               stobjs-in-exec))
-                                                         stobjs-out-logic)
-                                           stobjs-out-logic)))))
-                   (er-cmp ctx
-                           "The output signatures of the :LOGIC and :EXEC ~
+                             st$c posn-exec field0
+                             logic (prettyify-stobj-flags stobjs-in-logic)
+                             exec (prettyify-stobj-flags stobjs-in-exec)
+                             nil see-doc))
+                    ((and (not (eq type :CREATOR)) ; handled elsewhere
+                          (not (and (equal (length stobjs-out-logic)
+                                           (length stobjs-out-exec))
+                                    (equal stobjs-out-exec
+                                           (if posn-exec-out
+                                               (update-nth posn-exec-out
+                                                           (assert$
+                                                            posn-exec
+                                                            (nth posn-exec
+                                                                 stobjs-in-exec))
+                                                           stobjs-out-logic)
+                                             stobjs-out-logic)))))
+                     (er-cmp ctx
+                             "The output signatures of the :LOGIC and :EXEC ~
                             functions for a field must have the same length ~
                             and must agree at each position, except for the ~
                             position of concrete stobj (~x0) in the outputs ~
@@ -23552,51 +23561,55 @@
                             field ~x1, as the output signatures are as ~
                             follows.~|~%~x2 (:LOGIC):~|~X36~|~%~x4 ~
                             (:EXEC):~|~X56~|~%~@7"
-                           st$c field0
-                           logic (prettyify-stobj-flags stobjs-out-logic)
-                           exec (prettyify-stobj-flags stobjs-out-exec)
-                           nil see-doc))
-                  (t
-                   (let* ((formals (if (eq type :CREATOR)
-                                       nil
-                                     (update-nth posn-exec st exec-formals)))
-                          (guard-pre (subcor-var (formals logic wrld)
-                                                 formals
-                                                 (guard logic nil wrld))))
-                     (value-cmp
-                      (make absstobj-method
-                            :NAME name
-                            :FORMALS formals
-                            :GUARD-PRE guard-pre
-                            :GUARD-POST nil ; to be filled in later
-                            :GUARD-THM guard-thm
-                            :GUARD-THM-P (if type :SKIP guard-thm-p)
-                            :STOBJS-IN-POSN posn-exec
-                            :STOBJS-IN-EXEC (stobjs-in exec wrld)
-                            :STOBJS-OUT
-                            (substitute st st$c stobjs-out-exec)
-                            :LOGIC logic
-                            :EXEC exec
-                            :CORRESPONDENCE correspondence
-                            :PRESERVED preserved
-                            :PROTECT protect))))))))))))))))))
+                             st$c field0
+                             logic (prettyify-stobj-flags stobjs-out-logic)
+                             exec (prettyify-stobj-flags stobjs-out-exec)
+                             nil see-doc))
+                    (t
+                     (let* ((formals (if (eq type :CREATOR)
+                                         nil
+                                       (update-nth posn-exec st exec-formals)))
+                            (guard-pre (subcor-var (formals logic wrld)
+                                                   formals
+                                                   (guard logic nil wrld))))
+                       (value-cmp
+                        (make absstobj-method
+                              :NAME name
+                              :FORMALS formals
+                              :GUARD-PRE guard-pre
+                              :GUARD-POST nil ; to be filled in later
+                              :GUARD-THM guard-thm
+                              :GUARD-THM-P (if type :SKIP guard-thm-p)
+                              :STOBJS-IN-POSN posn-exec
+                              :STOBJS-IN-EXEC (stobjs-in exec wrld)
+                              :STOBJS-OUT
+                              (substitute st st$c stobjs-out-exec)
+                              :LOGIC logic
+                              :EXEC exec
+                              :CORRESPONDENCE correspondence
+                              :PRESERVED preserved
+                              :PROTECT protect))))))))))))))))))))
 
-(defun simple-translate-absstobj-fields (st st$c fields protect-default
+(defun simple-translate-absstobj-fields (st st$c fields types protect-default
                                             ld-skip-proofsp)
 
 ; Warning: Return methods in the same order as fields.  See the comments about
 ; simple-translate-absstobj-fields in the #-acl2-loop-only definition of
-; defabsstobj.
+; defabsstobj.  Each returned method has only the :NAME, :LOGIC, :EXEC, and
+; :PROTECT fields filled in (the others are nil).
 
   (cond ((endp fields) (mv nil nil))
         (t (er-let*-cmp
             ((method (translate-absstobj-field
                       st st$c
-                      (car fields) nil protect-default
+                      (car fields)
+                      (car types)
+                      protect-default
                       ld-skip-proofsp
                       "" 'defabsstobj nil))
              (rest (simple-translate-absstobj-fields
-                    st st$c (cdr fields) protect-default ld-skip-proofsp)))
+                    st st$c (cdr fields) (cdr types) protect-default
+                    ld-skip-proofsp)))
             (value-cmp (cons method rest))))))
 
 (defun one-way-unify-p (pat term)
@@ -23879,6 +23892,11 @@
             (defabsstobj-axiomatic-defs st$c (cdr methods))))))
 
 (defun defabsstobj-raw-def (method)
+
+; Warning: Method, which is an absstobj-method record, might only have valid
+; :NAME, :LOGIC, :EXEC, and :PROTECT fields filled in.  Do not use other fields
+; unless you adjust how methods is passed in.
+
   (let* ((name (access absstobj-method method :NAME))
          (exec (access absstobj-method method :EXEC))
          (protect (access absstobj-method method :PROTECT))
@@ -23933,8 +23951,12 @@
 
 (defun defabsstobj-raw-defs (st-name methods)
 
+; Warning: Each method, which is an absstobj-method record, might only have
+; valid :NAME, :LOGIC, :EXEC, and :PROTECT fields filled in.  Do not use other
+; fields unless you adjust how methods is passed in.
+
 ; Warning: The first two methods in methods should be for the recognizer and
-; creator, respectivley.  See comments about that where defabsstobj-raw-defs is
+; creator, respectively.  See comments about that where defabsstobj-raw-defs is
 ; called.
 
 ; We define the bodies of macros.  By defining macros instead of functions, not
