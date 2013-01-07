@@ -1,21 +1,16 @@
-; ACL2 Version 5.0 -- A Computational Logic for Applicative Common Lisp
-; Copyright (C) 2012  University of Texas at Austin
+; ACL2 Version 6.0 -- A Computational Logic for Applicative Common Lisp
+; Copyright (C) 2012, Regents of the University of Texas
 
 ; This version of ACL2 is a descendent of ACL2 Version 1.9, Copyright
 ; (C) 1997 Computational Logic, Inc.  See the documentation topic NOTE-2-0.
 
 ; This program is free software; you can redistribute it and/or modify
-; it under the terms of Version 2 of the GNU General Public License as
-; published by the Free Software Foundation.
+; it under the terms of the LICENSE file distributed with ACL2.
 
 ; This program is distributed in the hope that it will be useful,
 ; but WITHOUT ANY WARRANTY; without even the implied warranty of
 ; MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-; GNU General Public License for more details.
-
-; You should have received a copy of the GNU General Public License
-; along with this program; if not, write to the Free Software
-; Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
+; LICENSE for more details.
 
 ; Written by:  Matt Kaufmann               and J Strother Moore
 ; email:       Kaufmann@cs.utexas.edu      and Moore@cs.utexas.edu
@@ -1485,9 +1480,10 @@
     (null-pool (cdr pool)))
    (t nil)))
 
-(defun initial-pspv (term displayed-goal otf-flg ens wrld)
+(defun initial-pspv (term displayed-goal otf-flg ens wrld splitter-output)
   (change prove-spec-var *empty-prove-spec-var*
-          :rewrite-constant (initial-rcnst-from-ens ens wrld)
+          :rewrite-constant
+          (initial-rcnst-from-ens ens wrld splitter-output)
           :user-supplied-term term
           :displayed-goal displayed-goal
           :otf-flg otf-flg))
@@ -1501,7 +1497,8 @@
   (prog2$
    (initialize-brr-stack state)
    (er-let* ((ttree
-              (let ((pspv (initial-pspv term displayed-goal otf-flg ens wrld))
+              (let ((pspv (initial-pspv term displayed-goal otf-flg ens wrld
+                                        (splitter-output)))
                     (clauses (list (list term))))
                 (if (f-get-global 'in-verify-flg state) ;interactive
                     (state-global-let*
@@ -5432,8 +5429,8 @@
                          :rcnst (change rewrite-constant rcnst
                                         :current-literal
                                         (make current-literal
-                                              :not-flg nil
-                                              :atm nterm))
+                                              :atm nterm
+                                              :not-flg nil))
                          :gstack gstack
                          :ttree old-ttree))
                     (mv 0 ; irrelevant step-limit

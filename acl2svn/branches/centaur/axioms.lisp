@@ -1,21 +1,16 @@
-; ACL2 Version 5.0 -- A Computational Logic for Applicative Common Lisp
-; Copyright (C) 2012  University of Texas at Austin
+; ACL2 Version 6.0 -- A Computational Logic for Applicative Common Lisp
+; Copyright (C) 2012, Regents of the University of Texas
 
 ; This version of ACL2 is a descendent of ACL2 Version 1.9, Copyright
 ; (C) 1997 Computational Logic, Inc.  See the documentation topic NOTE-2-0.
 
 ; This program is free software; you can redistribute it and/or modify
-; it under the terms of Version 2 of the GNU General Public License as
-; published by the Free Software Foundation.
+; it under the terms of the LICENSE file distributed with ACL2.
 
 ; This program is distributed in the hope that it will be useful,
 ; but WITHOUT ANY WARRANTY; without even the implied warranty of
 ; MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-; GNU General Public License for more details.
-
-; You should have received a copy of the GNU General Public License
-; along with this program; if not, write to the Free Software
-; Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
+; LICENSE for more details.
 
 ; Written by:  Matt Kaufmann               and J Strother Moore
 ; email:       Kaufmann@cs.utexas.edu      and Moore@cs.utexas.edu
@@ -12094,7 +12089,7 @@
       (equal x nil)))
 
 (defconst *summary-types*
-  '(header form rules hint-events warnings time steps value))
+  '(header form rules hint-events warnings time steps value splitter-rules))
 
 (defun with-output-fn (ctx args off on gag-mode off-on-p gag-p stack
                            summary summary-p)
@@ -14361,7 +14356,7 @@
 
   Note that if you download community books as tarfiles, then you should be
   sure to download the `nonstd' books, from
-  ~url[http://acl2-books.googlecode.com/files/nonstd-5.0.tar.gz].  Then certify
+  ~url[http://acl2-books.googlecode.com/files/nonstd-6.0.tar.gz].  Then certify
   them from your acl2-sources directory, shown here as
   ~c[<DIR>]:
   ~bv[]
@@ -27906,7 +27901,7 @@
 ; The reason MCL needs special treatment is that (char-code #\Newline) = 13 in
 ; MCL, not 10.  See also :DOC version.
 
-; ACL2 Version 5.0
+; ACL2 Version 6.0
 
 ; We put the version number on the line above just to remind ourselves to bump
 ; the value of state global 'acl2-version, which gets printed out with the
@@ -27932,7 +27927,7 @@
 ; reformatting :DOC comments.
 
                   ,(concatenate 'string
-                                "ACL2 Version 5.0"
+                                "ACL2 Version 6.0"
                                 #+non-standard-analysis
                                 "(r)"
                                 #+(and mcl (not ccl))
@@ -28070,6 +28065,7 @@
     (skip-proofs-by-system . nil)
     (skip-proofs-okp-cert . t) ; t when not inside certify-book
     (slow-array-action . :break) ; set to :warning in exit-boot-strap-mode
+    (splitter-output . nil)
     (standard-co . acl2-output-channel::standard-character-output-0)
     (standard-oi . acl2-output-channel::standard-object-input-0)
     (step-limit-record . nil)
@@ -38612,11 +38608,11 @@
   ~ev[]
   where form evaluates to a true-list of symbols, each of which is among the
   values of the constant ~c[*summary-types*], i.e.: ~c[header], ~c[form],
-  ~c[rules], ~c[hint-events] ~c[warnings], ~c[time], ~c[steps], and ~c[value].
-  Each specified type inhibits printing of the corresponding portion of the
-  summaries printed at the conclusions of ~il[events], where ~c[header] refers
-  to an initial newline followed by the line containing just the word
-  ~c[Summary].
+  ~c[rules], ~c[hint-events] ~c[warnings], ~c[time], ~c[steps], ~c[value], and
+  ~c[splitter-rules].  Each specified type inhibits printing of the
+  corresponding portion of the summaries printed at the conclusions of
+  ~il[events], where ~c[header] refers to an initial newline followed by the
+  line containing just the word ~c[Summary].
 
   Note the distinction between ~c[rules] and ~c[hint-events].  ~c[Rules]
   provides a record of automatic rule usage by the prover, while
@@ -39642,8 +39638,10 @@
   effect is ~ilc[local] to the book or ~ilc[encapsulate] form containing it;
   ~pl[acl2-defaults-table].
 
-  Also ~pl[hints] for discussion of a related hint,
-  ~c[:case-split-limitations].~/
+  ~l[hints] for discussion of a related hint, ~c[:case-split-limitations].
+  Also ~pl[set-splitter-output] for how to obtain reports on rules that may be
+  responsible for case splits.~/
+
   ~bv[]
   General Form:
   (set-case-split-limitations lst)
@@ -43461,8 +43459,8 @@
   the name of the package of a symbol (a string)~/
 
   WARNING: While ~c[symbol-package-name] behaves properly on all ACL2 objects,
-  it may give surprising results when called in raw Lisp.  More details
-  ~pl[pkg-imports], in particula the discussion there of the
+  it may give surprising results when called in raw Lisp.  For more details
+  ~pl[pkg-imports], in particular the discussion there of the
   ~c[\"COMMON-LISP\"] package.
 
   Completion Axiom (~c[completion-of-symbol-package-name]):
@@ -48653,7 +48651,7 @@ Lisp definition."
 
 ; Here is a book that was certifiable in ACL2 Version_5.0, obtained from Sol
 ; Swords (shown here with only very trivial changes).  It explains why we need
-; the :protect keyword for defabsstobj, as explained in :doc note-5-1.
+; the :protect keyword for defabsstobj, as explained in :doc note-6-0.
 ; Community book books/misc/defabsstobj-example-4.lisp is based on this
 ; example, but focuses on invariance violation and avoids the work Sol did to
 ; get a proof of nil.

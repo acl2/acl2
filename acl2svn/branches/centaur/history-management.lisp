@@ -1,21 +1,16 @@
-; ACL2 Version 5.0 -- A Computational Logic for Applicative Common Lisp
-; Copyright (C) 2012  University of Texas at Austin
+; ACL2 Version 6.0 -- A Computational Logic for Applicative Common Lisp
+; Copyright (C) 2012, Regents of the University of Texas
 
 ; This version of ACL2 is a descendent of ACL2 Version 1.9, Copyright
 ; (C) 1997 Computational Logic, Inc.  See the documentation topic NOTE-2-0.
 
 ; This program is free software; you can redistribute it and/or modify
-; it under the terms of Version 2 of the GNU General Public License as
-; published by the Free Software Foundation.
+; it under the terms of the LICENSE file distributed with ACL2.
 
 ; This program is distributed in the hope that it will be useful,
 ; but WITHOUT ANY WARRANTY; without even the implied warranty of
 ; MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-; GNU General Public License for more details.
-
-; You should have received a copy of the GNU General Public License
-; along with this program; if not, write to the Free Software
-; Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
+; LICENSE for more details.
 
 ; Written by:  Matt Kaufmann               and J Strother Moore
 ; email:       Kaufmann@cs.utexas.edu      and Moore@cs.utexas.edu
@@ -2824,8 +2819,8 @@
 
    (time-tracker :tau :end) ; in case interrupt prevented preceding summary
    (time-tracker :tau :init
-                 :times '(1 2 3 4 5)
-                 :interval 5
+                 :times '(1 5)
+                 :interval 10
                  :msg "Elapsed runtime in tau is ~st secs; see :DOC ~
                        time-tracker-tau.~|~%")
    (pprogn (cond ((null (cdr (get-timer 'other-time state))) ; top-level event
@@ -3481,60 +3476,6 @@
             (declare (ignore col))
             state)))
 
-; We admit the following sorting functions in :logic mode, verify their guards,
-; and prove properties of them in community book books/misc/sort-symbols.lisp.
-
-(defun strict-merge-symbol-< (l1 l2 acc)
-
-; If l1 and l2 are strictly ordered by symbol-< and above acc, which is also
-; thus strictly ordered, then the result is strictly ordered by symbol-<.
-
-  (declare (xargs :guard (and (symbol-listp l1)
-                              (symbol-listp l2)
-                              (true-listp acc))
-
-; We admit this to the logic and prove termination in community book
-; books/misc/sort-symbols.lisp.
-
-                  :mode :program))
-  (cond ((endp l1) (revappend acc l2))
-        ((endp l2) (revappend acc l1))
-        ((eq (car l1) (car l2))
-         (strict-merge-symbol-< (cdr l1) (cdr l2) (cons (car l1) acc)))
-        ((symbol-< (car l1) (car l2))
-         (strict-merge-symbol-< (cdr l1) l2 (cons (car l1) acc)))
-        (t (strict-merge-symbol-< l1 (cdr l2) (cons (car l2) acc)))))
-
-(defun strict-merge-sort-symbol-< (l)
-
-; Produces a result with the same elements as the list l of symbols, but
-; strictly ordered by symbol-name.
-
-  (declare (xargs :guard (symbol-listp l)
-
-; We admit this to the logic and prove termination in community book
-; books/misc/sort-symbols.lisp.
-
-                  :mode :program))
-  (cond ((endp (cdr l)) l)
-        (t (strict-merge-symbol-<
-            (strict-merge-sort-symbol-< (evens l))
-            (strict-merge-sort-symbol-< (odds l))
-            nil))))
-
-(defun strict-symbol-<-sortedp (x)
-  (declare (xargs :guard (symbol-listp x)))
-  (cond ((or (endp x) (null (cdr x)))
-         t)
-        (t (and (symbol-< (car x) (cadr x))
-                (strict-symbol-<-sortedp (cdr x))))))
-
-(defun sort-symbol-listp (x)
-  (declare (xargs :guard (symbol-listp x)))
-  (cond ((strict-symbol-<-sortedp x)
-         x)
-        (t (strict-merge-sort-symbol-< x))))
-
 (defun use-names-in-ttree (ttree)
   (let* ((objs (tagged-objects :USE ttree))
          (lmi-lst (append-lst (strip-cars (strip-cars objs))))
@@ -3589,6 +3530,65 @@
                          state))
             (t state)))))
 
+(defun print-splitter-rules-summary (cl-id clauses ttree channel state)
+
+; When cl-id is nil, we are printing for the summary, and clauses is ignored.
+; Otherwise we are printing during a proof under waterfall-msg1, for gag-mode.
+
+  (let ((if-intro (merge-sort-runes
+                   (tagged-objects 'splitter-if-intro ttree)))
+        (case-split (merge-sort-runes
+                     (tagged-objects 'splitter-case-split ttree)))
+        (immed-forced (merge-sort-runes
+                       (tagged-objects 'splitter-immed-forced ttree))))
+    (cond ((or if-intro case-split immed-forced)
+           (with-output-lock ; only necessary if cl-id is non-nil
+            (pprogn
+             (cond (cl-id (newline channel state))
+                   (t state))
+             (mv-let
+              (col state)
+              (fmt1 "Splitter ~s0 (see :DOC splitter)~@1~s2~|~@3~@4~@5"
+                    (list
+                     (cons #\0 (if cl-id "note" "rules"))
+                     (cons #\1
+                           (if cl-id
+
+; Since we are printing during a proof (see comment above) but not already
+; printing the clause-id, we do so now.  This is redundant if (f-get-global
+; 'print-clause-ids state) is true, but necessary when parallelism is enabled
+; for #+acl2-par, and anyhow, adds a bit of clarity.
+
+; We leave it to waterfall-msg1 to track print-time, so we avoid calling
+; waterfall-print-clause-id.
+
+                               (msg " for ~@0 (~x1 subgoal~#2~[~/s~])"
+                                    (tilde-@-clause-id-phrase cl-id)
+                                    (length clauses)
+                                    clauses)
+                             ""))
+                     (cons #\2 (if cl-id "." ":"))
+                     (cons #\3
+                           (cond
+                            (case-split (msg "  case-split: ~y0"
+                                             case-split))
+                            (t "")))
+                     (cons #\4
+                           (cond
+                            (immed-forced (msg "  immed-forced: ~y0"
+                                               immed-forced))
+                            (t "")))
+                     (cons #\5
+                           (cond
+                            (if-intro (msg "  if-intro: ~y0"
+                                           if-intro))
+                            (t ""))))
+                    0 channel state nil)
+              (declare (ignore col))
+              (cond (cl-id (newline channel state))
+                    (t state))))))
+          (t state))))
+
 (defun print-rules-and-hint-events-summary (state)
   (pprogn
    (io? summary nil state
@@ -3603,7 +3603,11 @@
                  (t (print-runes-summary acc-ttree channel state)))
            (cond ((member-eq 'hint-events inhibited-summary-types)
                   state)
-                 (t (print-hint-events-summary acc-ttree channel state))))))
+                 (t (print-hint-events-summary acc-ttree channel state)))
+           (cond ((member-eq 'splitter-rules inhibited-summary-types)
+                  state)
+                 (t (print-splitter-rules-summary nil nil acc-ttree channel
+                                                  state))))))
 
 ; Since we've already printed from the accumulated-ttree, there is no need to
 ; print again the next time we want to print rules or hint-events.  That is why
@@ -16683,6 +16687,114 @@
 (defconst *definition-minimal-theory*
   (list* 'mv-nth 'iff *expandable-boot-strap-non-rec-fns*))
 
+(defdoc theories-and-primitives
+  ":Doc-Section Theories
+
+  warnings from disabling certain built-in functions~/
+
+  When you ~il[disable] the ~il[definition] or ~il[executable-counterpart] of a
+  built-in function, you may see a warning, for example as follows.
+
+  ~bv[]
+    ACL2 !>(in-theory (disable mv-nth))
+
+    ACL2 Warning [Theory] in ( IN-THEORY (DISABLE ...)):  Although the
+    theory expression (DISABLE MV-NTH) disables the :DEFINITION rule for
+    MV-NTH, some expansions involving this function may still occur.  See
+    :DOC theories-and-primitives.
+  ~ev[]
+
+  This warning can be eliminated by turning off all theory warnings
+  (~pl[set-inhibit-warnings]) or simply by evaluating the following form.
+  ~bv[]
+    (assign verbose-theory-warning nil)
+  ~ev[]
+  But before you eliminate such warnings, you may wish to read the following to
+  understand their significance.
+
+  First consider the following example, evaluated after the ~ilc[in-theory]
+  event displayed above.
+
+  ~bv[]
+    ACL2 !>(thm (equal (mv-nth 2 (list a b c d e)) c))
+
+    Q.E.D.
+
+    Summary
+    Form:  ( THM ...)
+    Rules: ((:DEFINITION MV-NTH)
+            (:FAKE-RUNE-FOR-TYPE-SET NIL))
+    Time:  0.00 seconds (prove: 0.00, print: 0.00, other: 0.00)
+    Prover steps counted:  19
+
+    Proof succeeded.
+    ACL2 !>
+  ~ev[]
+
+  Note that even though the ~il[definition] of ~ilc[mv-nth] had been
+  ~il[disable]d, nevertheless its definition rule was used in proving this
+  theorem.  It is as though ~ilc[mv-nth] had not been been disabled after all!
+  The warning is intended to indicate that expansion of ~c[mv-nth] calls may be
+  made by the theorem prover even when ~c[mv-nth] is disabled.  Indeed, the
+  prover has special-purpose code for simplifying certain ~c[mv-nth] calls.
+
+  A similar issue can arise for ~c[executable-counterpart] rules, as the
+  following log illustrates.
+  ~bv[]
+    ACL2 !>(in-theory (disable (:executable-counterpart symbolp)))
+
+    ACL2 Warning [Theory] in ( IN-THEORY (DISABLE ...)):  Although the
+    theory expression (DISABLE (:EXECUTABLE-COUNTERPART SYMBOLP)) disables
+    the :EXECUTABLE-COUNTERPART rule for SYMBOLP, some calls involving
+    this function may still be made.  See :DOC theories-and-primitives.
+
+
+    Summary
+    Form:  ( IN-THEORY (DISABLE ...))
+    Rules: NIL
+    Warnings:  Theory
+    Time:  0.01 seconds (prove: 0.00, print: 0.00, other: 0.01)
+     2921
+    ACL2 !>(thm (symbolp 'a))
+
+    Q.E.D.
+
+    Summary
+    Form:  ( THM ...)
+    Rules: NIL
+    Time:  0.00 seconds (prove: 0.00, print: 0.00, other: 0.00)
+
+    Proof succeeded.
+    ACL2 !>
+  ~ev[]
+
+  In general, ACL2 warns when ~ilc[in-theory] ~il[events] or ~il[hints] leave
+  you in a theory where a rule for a built-in function is disabled but may be
+  applied in some cases nonetheless, because of special-purpose prover code for
+  handling calls of that function.  The built-in function symbols with such
+  ~il[definition] rules or ~il[executable-counterpart] rules are those in the
+  following two lists, respectively.
+  ~bv[]
+    ACL2 !>*definition-minimal-theory*
+    (MV-NTH IFF NOT
+            IMPLIES EQ ATOM EQL = /= NULL ENDP ZEROP
+            SYNP PLUSP MINUSP LISTP RETURN-LAST
+            MV-LIST THE-ERROR WORMHOLE-EVAL
+            FORCE CASE-SPLIT DOUBLE-REWRITE)
+    ACL2 !>*built-in-executable-counterparts*
+    (ACL2-NUMBERP BINARY-* BINARY-+ UNARY-- UNARY-/
+                  < CAR CDR CHAR-CODE CHARACTERP CODE-CHAR
+                  COMPLEX COMPLEX-RATIONALP COERCE
+                  CONS CONSP DENOMINATOR EQUAL IF IMAGPART
+                  INTEGERP INTERN-IN-PACKAGE-OF-SYMBOL
+                  NUMERATOR PKG-WITNESS PKG-IMPORTS
+                  RATIONALP REALPART STRINGP SYMBOL-NAME
+                  SYMBOL-PACKAGE-NAME SYMBOLP NOT)
+    ACL2 !>
+  ~ev[]
+
+  ~/~/")
+
 (defun translate-in-theory-hint
   (expr chk-boot-strap-fns-flg ctx wrld state)
 
@@ -16708,16 +16820,10 @@
                                  'current-acl2-world wrld)
                         runic-value)))
              (warning$ ctx ("Theory")
-                       "The value of the theory expression ~x0 does not ~
-                        include the :DEFINITION rule~#1~[~/s~] for ~v1.  But ~
-                        ~#1~[this function is~/these functions are~] among a ~
-                        set of primitive functions whose definitions are ~
-                        built into the ACL2 system in various places.  This ~
-                        set consists of the functions ~&2.  While excluding ~
-                        :DEFINITION rules for any functions in this set from ~
-                        the current theory may prevent certain expansions, it ~
-                        may not prevent others.  Good luck!~|~%To inhibit ~
-                        this warning, evaluate:~|~x3."
+                       "Although the theory expression ~x0 disables the ~
+                        :DEFINITION rule~#1~[~/s~] for ~v1, some expansions ~
+                        involving ~#1~[this function~/these functions~] may ~
+                        still occur.  See :DOC theories-and-primitives."
                        expr
                        (strip-base-symbols
                         (set-difference-equal
@@ -16740,17 +16846,10 @@
                                   'current-acl2-world wrld)
                          runic-value)))
               (warning$ ctx ("Theory")
-                        "The value of the theory expression ~x0 does not ~
-                         include the :EXECUTABLE-COUNTERPART rule~#1~[~/s~] ~
-                         for ~v1.  But ~#1~[this function is~/these functions ~
-                         are~] among a set of primitive functions whose ~
-                         executable counterparts are built into the ACL2 ~
-                         system.  This set consists of the functions ~&2.  ~
-                         While excluding :EXECUTABLE-COUNTERPART rules for ~
-                         any functions in this set from the current theory ~
-                         may prevent certain expansions, it may not prevent ~
-                         others.  Good luck!~|~%To inhibit this warning, ~
-                         evaluate:~|~x3."
+                       "Although the theory expression ~x0 disables the ~
+                        :EXECUTABLE-COUNTERPART rule~#1~[~/s~] for ~v1, some ~
+                        calls involving ~#1~[this function~/these functions~] ~
+                        may still be made.  See :DOC theories-and-primitives."
                         expr
                         (strip-base-symbols
                          (set-difference-equal
@@ -17209,6 +17308,7 @@
             pc-ss-alist                ;;; for saves under :instructions hints
             last-step-limit            ;;; propagate step-limit past expansion
             illegal-to-certify-message ;;; needs to persist past expansion
+            splitter-output            ;;; allow user to modify this in a book
             ))))
     val))
 
@@ -20241,12 +20341,14 @@
 
   ~c[:REORDER]~nl[]
   ~c[Value] is a list of positive integers without duplicates, corresponding to
-  the numbering of subgoals generated for the ~ilc[goal-spec], say ~c[\"G.k\"]
-  down to ~c[\"G.1\"].  Those subgoals are reordered so that if ~c[value] is
-  ~c[(n1 n2 ... nk)], then the goal now numbered ~c[\"G.k\"] will be the goal
-  originally numbered ~c[\"G.n1\"]; the goal now numbered ~c[\"G.k-1\"] will be
-  the goal formerly numbered ~c[\"G.n2\"]; and so on, down the list of ~c[ni],
-  after which the goals not yet printed are printed in their original order.
+  the numbering of subgoals generated for the ~il[goal-spec] ~c[\"G\"], say
+  ~c[\"G.k\"] down to ~c[\"G.1\"].  Those subgoals are reordered so that if
+  ~c[value] is ~c[(n1 n2 ... nk)], then the goal now numbered ~c[\"G.k\"] will
+  be the goal originally numbered ~c[\"G.n1\"]; the goal now numbered
+  ~c[\"G.k-1\"] will be the goal formerly numbered ~c[\"G.n2\"]; and so on,
+  down the list of ~c[ni], after which the goals not yet printed are printed in
+  their original order.  Note that reordering for subgoals of a goal to be
+  proved by induction, such as ~c[*1], is not supported.
 
   ~c[:CASE-SPLIT-LIMITATIONS]~nl[]
   ~c[Value] is the same as for ~ilc[set-case-split-limitations].  The

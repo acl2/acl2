@@ -1,21 +1,16 @@
-; ACL2 Version 5.0 -- A Computational Logic for Applicative Common Lisp
-; Copyright (C) 2012  University of Texas at Austin
+; ACL2 Version 6.0 -- A Computational Logic for Applicative Common Lisp
+; Copyright (C) 2012, Regents of the University of Texas
 
 ; This version of ACL2 is a descendent of ACL2 Version 1.9, Copyright
 ; (C) 1997 Computational Logic, Inc.  See the documentation topic NOTE-2-0.
 
 ; This program is free software; you can redistribute it and/or modify
-; it under the terms of Version 2 of the GNU General Public License as
-; published by the Free Software Foundation.
+; it under the terms of the LICENSE file distributed with ACL2.
 
 ; This program is distributed in the hope that it will be useful,
 ; but WITHOUT ANY WARRANTY; without even the implied warranty of
 ; MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-; GNU General Public License for more details.
-
-; You should have received a copy of the GNU General Public License
-; along with this program; if not, write to the Free Software
-; Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
+; LICENSE for more details.
 
 ; Written by:  Matt Kaufmann               and J Strother Moore
 ; email:       Kaufmann@cs.utexas.edu      and Moore@cs.utexas.edu
@@ -731,7 +726,8 @@
                  (proofs-co state) state nil))))
      (mv-let
       (n0 assns pairs ttree1)
-      (extract-and-clausify-assumptions nil ttree nil pc-ens wrld)
+      (extract-and-clausify-assumptions nil ttree nil pc-ens wrld
+                                        (splitter-output))
       (cond
        ((= n0 0)
         (mv nil nil ttree state))
@@ -808,8 +804,9 @@
       (ens state)
     pc-ens))
 
-(defun initial-rcnst-from-ens (ens wrld)
+(defun initial-rcnst-from-ens (ens wrld splitter-output)
   (change rewrite-constant *empty-rewrite-constant*
+          :splitter-output splitter-output
           :current-enabled-structure ens
           :oncep-override (match-free-override wrld)
           :force-info t
@@ -875,7 +872,9 @@
                    nil ;ancestors
                    nil ;gstack
                    nil ;simplify-clause-pot-lst
-                   (initial-rcnst-from-ens pc-ens wrld)
+                   (initial-rcnst-from-ens pc-ens
+                                           wrld
+                                           (splitter-output))
                    wrld
                    state
                    (initial-step-limit wrld state))

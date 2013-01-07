@@ -1,21 +1,16 @@
-; ACL2 Version 5.0 -- A Computational Logic for Applicative Common Lisp
-; Copyright (C) 2012  University of Texas at Austin
+; ACL2 Version 6.0 -- A Computational Logic for Applicative Common Lisp
+; Copyright (C) 2012, Regents of the University of Texas
 
 ; This version of ACL2 is a descendent of ACL2 Version 1.9, Copyright
 ; (C) 1997 Computational Logic, Inc.  See the documentation topic NOTE-2-0.
 
 ; This program is free software; you can redistribute it and/or modify
-; it under the terms of Version 2 of the GNU General Public License as
-; published by the Free Software Foundation.
+; it under the terms of the LICENSE file distributed with ACL2.
 
 ; This program is distributed in the hope that it will be useful,
 ; but WITHOUT ANY WARRANTY; without even the implied warranty of
 ; MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-; GNU General Public License for more details.
-
-; You should have received a copy of the GNU General Public License
-; along with this program; if not, write to the Free Software
-; Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
+; LICENSE for more details.
 
 ; Written by:  Matt Kaufmann               and J Strother Moore
 ; email:       Kaufmann@cs.utexas.edu      and Moore@cs.utexas.edu
@@ -6350,33 +6345,34 @@
 ; Set the system books directory now that the operating-system has been defined
 ; (needed by pathname-os-to-unix).
 
-  (let ((system-books-dir
-         (cond (system-books-dir
-                (let ((dir (unix-full-pathname
-                            (cond
-                             ((symbolp system-books-dir)
-                              (symbol-name system-books-dir))
-                             ((stringp system-books-dir)
-                              system-books-dir)
-                             (t (er hard 'initialize-acl2
-                                    "Unable to complete ~
-                                     initialization, because the supplied ~
-                                     system books directory, ~x0, is not ~
-                                     a string."
-                                    system-books-dir))))))
-                  (maybe-add-separator dir)))
-               (t (unix-full-pathname
-                   (concatenate 'string
-                                (our-pwd)
-                                #-:non-standard-analysis
-                                "books/"
-                                #+:non-standard-analysis
-                                "books/nonstd/"))))))
-    (f-put-global 'system-books-dir
-                  (canonical-dirname! system-books-dir
-                                      'enter-boot-strap-mode
-                                      *the-live-state*)
-                  *the-live-state*))
+  (cond (system-books-dir
+         (let ((dir (unix-full-pathname
+                     (cond
+                      ((symbolp system-books-dir)
+                       (symbol-name system-books-dir))
+                      ((stringp system-books-dir)
+                       system-books-dir)
+                      (t (er hard 'initialize-acl2
+                             "Unable to complete initialization, because the ~
+                              supplied system books directory, ~x0, is not a ~
+                              string."
+                             system-books-dir))))))
+           (f-put-global 'system-books-dir
+                         (canonical-dirname! (maybe-add-separator dir)
+                                             'enter-boot-strap-mode
+                                             *the-live-state*)
+                         *the-live-state*)))
+        (t (f-put-global 'system-books-dir
+                         (concatenate
+                          'string
+                          (canonical-dirname! (our-pwd)
+                                              'enter-boot-strap-mode
+                                              *the-live-state*)
+                          #-:non-standard-analysis
+                          "books/"
+                          #+:non-standard-analysis
+                          "books/nonstd/")
+                         *the-live-state*)))
 
 ; Inhibit proof-tree output during the build, including pass-2 if present.
 

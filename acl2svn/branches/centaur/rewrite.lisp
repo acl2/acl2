@@ -1,21 +1,16 @@
-; ACL2 Version 5.0 -- A Computational Logic for Applicative Common Lisp
-; Copyright (C) 2012  University of Texas at Austin
+; ACL2 Version 6.0 -- A Computational Logic for Applicative Common Lisp
+; Copyright (C) 2012, Regents of the University of Texas
 
 ; This version of ACL2 is a descendent of ACL2 Version 1.9, Copyright
 ; (C) 1997 Computational Logic, Inc.  See the documentation topic NOTE-2-0.
 
 ; This program is free software; you can redistribute it and/or modify
-; it under the terms of Version 2 of the GNU General Public License as
-; published by the Free Software Foundation.
+; it under the terms of the LICENSE file distributed with ACL2.
 
 ; This program is distributed in the hope that it will be useful,
 ; but WITHOUT ANY WARRANTY; without even the implied warranty of
 ; MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-; GNU General Public License for more details.
-
-; You should have received a copy of the GNU General Public License
-; along with this program; if not, write to the Free Software
-; Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
+; LICENSE for more details.
 
 ; Written by:  Matt Kaufmann               and J Strother Moore
 ; email:       Kaufmann@cs.utexas.edu      and Moore@cs.utexas.edu
@@ -4955,7 +4950,7 @@
    (pt restrictions-alist . expand-lst)
    (force-info fns-to-be-ignored-by-rewrite . terms-to-be-ignored-by-rewrite)
    (top-clause . current-clause)
-   (current-literal . oncep-override)
+   ((splitter-output . current-literal) . oncep-override)
    (nonlinearp . cheap-linearp)
    . case-split-limitations)
   t)
@@ -5028,6 +5023,7 @@
         :active-theory :standard
         :backchain-limit-rw nil
         :case-split-limitations nil
+        :splitter-output nil
         :current-clause nil
         :current-enabled-structure nil
         :current-literal nil
@@ -12226,6 +12222,17 @@
       (push-lemma rune ttree)
     ttree))
 
+(defmacro push-lemma+ (rune ttree rcnst ancestors rhs rewritten-rhs)
+  `(cond ((and (null ,ancestors)
+               (access rewrite-constant ,rcnst :splitter-output)
+               (ffnnamep 'if ,rhs)
+               (ffnnamep 'if ,rewritten-rhs))
+          (let ((rune ,rune)
+                (ttree ,ttree))
+            (add-to-tag-tree 'splitter-if-intro rune
+                             (push-lemma rune ttree))))
+         (t (push-lemma ,rune ,ttree))))
+
 (defmacro prepend-step-limit (n form)
   (let ((vars (if (consp n)
                   n
@@ -15890,23 +15897,24 @@
 ; substitution.  Often that is just the identity substitution.
 
                                                   unify-subst
-                                                  'meta)
-                                                 :ttree
-
+                                                  'meta))
+                                  :conc
+                                  hyps)
+                                 (mv step-limit t rewritten-rhs
+                                     
 ; Should we be pushing executable counterparts into ttrees when we applying
 ; metafunctions on behalf of meta rules?  NO:  We should only do that if the
 ; meta-rule's use is sensitive to whether or not they're enabled, and it's not
 ; -- all that matters is if the rule itself is enabled.
 
-                                                 (push-lemma
-                                                  (geneqv-refinementp
-                                                   (access rewrite-rule lemma :equiv)
-                                                   geneqv
-                                                   wrld)
-                                                  (push-lemma rune ttree)))
-                                  :conc
-                                  hyps)
-                                 (mv step-limit t rewritten-rhs ttree)))
+                                     (push-lemma
+                                      (geneqv-refinementp
+                                       (access rewrite-rule lemma
+                                               :equiv)
+                                       geneqv
+                                       wrld)
+                                      (push-lemma+ rune ttree rcnst ancestors
+                                                   val rewritten-rhs)))))
                                (t (mv step-limit nil term ttree))))))))
                         (t (mv step-limit
                                (er hard 'rewrite-with-lemma
@@ -16027,13 +16035,16 @@
                                 (brkpt2 t nil unify-subst gstack rewritten-rhs
                                         ttree rcnst state)
                                 (mv step-limit t rewritten-rhs
-                                    (push-lemma (geneqv-refinementp
-                                                 (access rewrite-rule lemma :equiv)
-                                                 geneqv
-                                                 wrld)
-                                                (push-lemma
-                                                 rune
-                                                 ttree))))))
+                                    (push-lemma
+                                     (geneqv-refinementp
+                                      (access rewrite-rule lemma
+                                              :equiv)
+                                      geneqv
+                                      wrld)
+                                     (push-lemma+ rune ttree rcnst ancestors
+                                                  (access rewrite-rule lemma
+                                                          :rhs)
+                                                  rewritten-rhs))))))
                              (t (prog2$
                                  (brkpt2 nil failure-reason
                                          unify-subst gstack nil nil
@@ -16296,8 +16307,9 @@
                                     (too-many-ifs-post-rewrite args
                                                                rewritten-body))
                                (prog2$
-                                (brkpt2 nil 'too-many-ifs-post-rewrite unify-subst
-                                        gstack rewritten-body ttree1 rcnst state)
+                                (brkpt2 nil 'too-many-ifs-post-rewrite
+                                        unify-subst gstack rewritten-body
+                                        ttree1 rcnst state)
                                 (prepend-step-limit
                                  2
                                  (rewrite-solidify
@@ -16313,7 +16325,8 @@
                                           rewritten-body ttree1 rcnst state)
                                   (mv step-limit
                                       rewritten-body
-                                      (push-lemma rune ttree1))))))
+                                      (push-lemma+ rune ttree1 rcnst ancestors
+                                                   body rewritten-body))))))
                             ((rewrite-fncallp
                               term rewritten-body
                               (if (cdr recursivep) recursivep nil)
@@ -16397,7 +16410,8 @@
 ; that was here before Version_2.9).
 
                                (sl-let (rewritten-body ttree2)
-                                       (rewrite-entry (rewrite rewritten-body nil
+                                       (rewrite-entry (rewrite rewritten-body
+                                                               nil
                                                                'rewritten-body)
                                                       :fnstack
 
@@ -16405,22 +16419,30 @@
 
                                                       (cons (cons :TERM term)
                                                             fnstack)
-                                                      :ttree (push-lemma rune
-                                                                         ttree1))
+                                                      :ttree ttree1)
                                        (let ((ttree2
-                                              (restore-rw-cache-any-tag ttree2
-                                                                        ttree1)))
+                                              (restore-rw-cache-any-tag
+                                               (push-lemma+ rune ttree2 rcnst
+                                                            ancestors body
+                                                            rewritten-body)
+                                               ttree1)))
                                          (prog2$
                                           (brkpt2 t nil unify-subst gstack
-                                                  rewritten-body ttree2 rcnst state)
-                                          (mv step-limit rewritten-body ttree2)))))
+                                                  rewritten-body ttree2 rcnst
+                                                  state)
+                                          (mv step-limit
+                                              rewritten-body
+                                              ttree2)))))
                               (t
                                (prog2$
                                 (brkpt2 t nil unify-subst gstack rewritten-body
                                         ttree1 rcnst state)
                                 (mv step-limit
                                     rewritten-body
-                                    (push-lemma rune ttree1))))))
+                                    (push-lemma+ rune ttree1 rcnst
+                                                 ancestors
+                                                 body
+                                                 rewritten-body))))))
                             (t (prog2$
                                 (brkpt2 nil 'rewrite-fncallp unify-subst gstack
                                         rewritten-body ttree1 rcnst state)
