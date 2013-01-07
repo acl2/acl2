@@ -4985,8 +4985,10 @@
    (mv erp msg :UNKNOWN-BINDINGS)))
 
 (defun congruent-stobj-rep (name wrld)
-  (or (getprop name 'congruent-stobj-rep nil 'current-acl2-world wrld)
-      name))
+  (assert$
+   wrld ; use congruent-stobj-rep-raw if wrld is not available
+   (or (getprop name 'congruent-stobj-rep nil 'current-acl2-world wrld)
+       name)))
 
 (defun congruent-stobjsp (st1 st2 wrld)
   (eq (congruent-stobj-rep st1 wrld)

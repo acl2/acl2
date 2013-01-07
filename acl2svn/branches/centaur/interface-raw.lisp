@@ -5393,7 +5393,7 @@
                 (the-live-name (nth 2 (cddr trip)))
                 (init (nth 3 (cddr trip)))
                 (raw-defs (nth 4 (cddr trip)))
-                (discrim (nth 5 (cddr trip)))
+                (template-or-event (nth 5 (cddr trip)))
                 (ax-defs (nth 6 (cddr trip)))
                 (new-defs
 
@@ -5425,9 +5425,15 @@
 ; defabsstobj in raw lisp, so we set up the redundancy stuff:
 
             (setf (get the-live-name 'redundant-raw-lisp-discriminator)
-                  (cond (absp discrim)
-                        (t (list* 'defstobj (car discrim) (cadr discrim)
-                                  (caddr discrim)))))
+                  (cond (absp template-or-event)
+                        (t (list* 'defstobj
+                                  (car template-or-event)
+                                  (cadr template-or-event)
+                                  (caddr template-or-event)
+                                  (if (sixth template-or-event)
+                                      (congruent-stobj-rep-raw
+                                       (sixth template-or-event))
+                                    name)))))
 
 ; At one point we executed the following form.  But now we see that this is not
 ; necessary, since trans-eval binds stobj names anyhow using *user-stobj-alist*

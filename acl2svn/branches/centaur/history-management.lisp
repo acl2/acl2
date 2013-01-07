@@ -12836,7 +12836,9 @@
 
 (defun get-guards2 (edcls wrld acc)
 
-; See get-guards for an example of what edcls looks like.
+; See get-guards for an example of what edcls looks like.  We require that
+; edcls contains only valid type declarations, as explained in the comment
+; below about translate-declaration-to-guard-var-lst.
 
 ; We are careful to preserve the order, except that within a given declaration
 ; we consider :stobjs as going before :guard.  (An example is (defun load-qs
@@ -12894,6 +12896,13 @@
         ((eq (caar edcls) 'type)
          (get-guards2 (cdr edcls)
                       wrld
+
+; The call of translate-declaration-to-guard-var-lst below assumes that
+; (translate-declaration-to-guard (cadr (car edcls)) 'var wrld) is non-nil.
+; This is indeed the case, because edcls is as created by chk-defuns-tuples,
+; which leads to a call of chk-dcl-lst to check that the type declarations are
+; legal.
+
                       (rev-union-equal (translate-declaration-to-guard-var-lst
                                         (cadr (car edcls))
                                         (cddr (car edcls))
@@ -12909,9 +12918,10 @@
 ; Warning: see :DOC guard-miscellany for a specification of how conjuncts are
 ; ordered when forming the guard from :xargs and type declarations.
 
-; Each element of lst is a 5-tuple (name args doc edcls body).  We return
-; a list in 1:1 correspondence with lst.  Each element is the
-; untranslated guard expression extracted from the edcls of the
+; Each element of lst is a 5-tuple (name args doc edcls body), where every TYPE
+; declaration in edcls is valid (see get-guards2 for an explanation of why that
+; is important).  We return a list in 1:1 correspondence with lst.  Each
+; element is the untranslated guard expression extracted from the edcls of the
 ; corresponding element of lst.  A typical value of edcls might be
 
 ; '((IGNORE X Y)
@@ -12919,9 +12929,8 @@
 ;   (TYPE ...)
 ;   (XARGS :GUARD g2 :MEASURE m2))
 
-; The guard extracted from such an edcls is the conjunction of all the
-; guards mentioned, where we also translate TYPE declarations to guard
-; terms.
+; The guard extracted from such an edcls is the conjunction of all the guards
+; mentioned, where we also translate TYPE declarations to guard terms.
 
   (cond ((null lst) nil)
         (t (cons (conjoin-untranslated-terms (get-guards1 (fourth (car lst))

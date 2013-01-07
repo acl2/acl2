@@ -592,9 +592,11 @@
 ; We do not want to rely on having the world available here, so we pass in nil
 ; for the final argument of defstobj-raw-defs.  The only effect of using nil
 ; instead of a world in such a context is that additional checking by
-; translate-declaration-to-guard is missing.
+; translate-declaration-to-guard is missing.  We also pass in nil for
+; congruent-to, since we don't think it makes any difference in the resulting
+; declare form.
 
-                               nil)))
+                               nil nil)))
       (cons 'progn
             (mapcar (function
                      (lambda (def) (if (member (symbol-value

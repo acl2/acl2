@@ -19969,6 +19969,81 @@
 ; Thanks to David Rager and Jared Davis for helpful discussions leading to this
 ; change.
 
+; Avoided a bogus call of all-vars in
+; defstobj-component-recognizer-axiomatic-defs, and removed a false comment in
+; translate-declaration-to-guard that had "justified" this.
+
+; Removed argument value of :raw-lisp for defstobj-template.
+
+; Regarding Expansion/Defstobj Bug (technical remarks followed by example): The
+; problem was that the raw Lisp code for defstobj, which is called when loading
+; an expansion file, in turn called function defstobj-raw-defs in a world that
+; did not include the definition of the `satisfies' predicate, which in turn
+; called defstobj-component-recognizer-axiomatic-defs on that world, which in
+; turn called translate-declaration-to-guard on that world, which translated
+; the `satisfies' type-spec (below) to nil.  Here is the promised example (file
+; bug.lisp).
+
+;   ; acl2
+;   ; (assign save-expansion-file t)
+;   ; (certify-book "bug")
+;   ; (quit)
+;   ; rm bug.lx64fsl
+;   ; acl2
+;   ; (include-book "bug")
+;   ; (defthm bug
+;   ;   nil
+;   ;   :hints (("Goal" :use obvious))
+;   ;   :rule-classes nil)
+;   
+;   (in-package "ACL2")
+;   
+;   (defun my-natp (x)
+;     (declare (xargs :guard t))
+;     (natp x))
+;   
+;   (defstobj st1 (fld1 :type (satisfies my-natp) :initially 0))
+;   
+;   (defthm obvious
+;     (fld1p 3)
+;     :rule-classes nil)
+;
+;   ; [End of file bug.lisp.]
+
+; Regarding memoize/congruent stobj bug: The following example illustrates the
+; bug.  Technical remark: The problem was that the true congruent stobj
+; representative was not stored where expected.
+
+;   ; acl2h
+;   ; (certify-book "foo")
+;   ; (quit)
+;   ; acl2h
+;   ; (include-book "foo")
+;   ; (memoize 'fld3)
+;   ; (defthm bug
+;   ;   nil
+;   ;   :hints (("Goal" :use foo-is-17))
+;   ;   :rule-classes nil)
+;   
+;   (in-package "ACL2")
+;   
+;   (defstobj st1 fld1)
+;   (defstobj st2 fld2 :congruent-to st1)
+;   (defstobj st3 fld3 :congruent-to st2)
+;   
+;   (defun foo ()
+;     (with-local-stobj
+;      st3
+;      (mv-let (result st3)
+;              (prog2$ (fld3 st3)
+;                      (let ((st3 (update-fld3 17 st3)))
+;                        (mv (fld3 st3) st3)))
+;              result)))
+;   
+;   (defthm foo-is-17
+;     (equal (foo) 17)
+;     :rule-classes nil)
+
   :doc
   ":Doc-Section release-notes
 
@@ -19996,6 +20071,37 @@
   ~st[HEURISTIC IMPROVEMENTS]
 
   ~st[BUG FIXES]
+
+  A soundness bug has been fixed that exploited the use of expansion files
+  (~pl[book-compiled-file]) together with ~ilc[defstobj].  For an example
+  illustrating this bug, see the comment about ``Expansion/Defstobj Bug'' in
+  the form ~c[(deflabel note-6-1 ...)] in ACL2 source file ~c[ld.lisp].
+
+  (ACL2(h) only) We fixed a soundness bug in the interaction of memoization
+  with congruent stobjs, in cases where the ~c[:congruent-to] field of
+  ~ilc[defstobj] was not the canonical representative in the congruence class.
+  For an example illustrating this bug, see the comment about
+  ``memoize/congruent stobj bug'' in the form ~c[(deflabel note-6-1 ...)]  in
+  ACL2 source file ~c[ld.lisp].
+
+  Functions defined by ~ilc[defstobj] had failed to be compiled when certifying
+  books, except in host Lisps that compile on-the-fly (CCL, SBCL).  This has
+  been fixed for all host Lisps.  A related change, probably less significant,
+  was made for ~ilc[defabsstobj].  Thanks to Sol Swords for reporting a bug
+  that turned out to be a mistake in a preliminary implementation of this
+  change.
+
+  Fixed an assertion error involving linear arithmetic.  Thanks to Sol Swords
+  for sending an example illustrating the bug (now appearing as a comment in
+  ACL2 source function ~c[linearize1]).
+
+  Fixed a bug that was breaking the ACL2s build mechanism (~pl[acl2-sedan]) by
+  causing certain needless evaluation of ``hidden ~ilc[defpkg]'' forms in
+  ~il[certificate] files when executing a call of ~ilc[include-book].  The bug
+  could also affect rare error messages arising from ill-formed
+  ~il[certificate] files.  Thanks to Harsh Raju Chamarthi for bringing this bug
+  to our attention by sending us an example script of the sort that was
+  breaking during an ACL2s build.
 
   ~st[CHANGES AT THE SYSTEM LEVEL]
 
