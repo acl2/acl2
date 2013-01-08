@@ -22288,8 +22288,7 @@ href=\"http://www.cs.utexas.edu/users/moore/acl2/current/MAKE-EVENT.html\">http:
 <p>
 
 To contribute user documentation, send email to the ACL2 developers,
-for example at <code><a
-href=\"mailto:acl2-bugs@utlists.utexas.edu\">acl2-bugs@utlists.utexas.edu</a></code>.
+<A HREF=\"mailto:kaufmann@cs.utexas.edu\">Matt Kaufmann</A> and <A HREF=\"mailto:moore@cs.utexas.edu\">J Strother Moore</A>.
 
 <H2><A NAME=\"search\">Searching documentation and books</A></H2>
 
