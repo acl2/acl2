@@ -48,6 +48,7 @@ for a new record-like structure.  It is similar to @('struct') in C or
         legiblep            ; t by default
         hons                ; nil by default
         already-definedp    ; nil by default
+        debugp              ; nil by default
         mode                ; current defun-mode by default
         parents             ; '(acl2::undocumented) by default
         short               ; nil by default
@@ -251,12 +252,18 @@ generate all of the ordinary @('defaggregate') theorems without generating a
 @('defund') event, and is useful when you are dealing with mutually recursive
 recognizers.</p>
 
+<h4>Debug-mode (@(':debugp') parameter)</h4>
+
+<p>When set, adds calls of @('cw') that print the aggregate's data members that
+fail the predicate test.  This can be used to help debug executions whose
+guards were defined using predicates defined with defaggregate.  Note that the
+defined predicate can be called many times, even during proofs, so the use of
+@(':debugp') can result in a large amount of extra output.</p>
 
 <h4>Defun-mode (@(':mode') parameter)</h4>
 
 <p>Mode for the introduced functions -- must be either @(':program') or
 @(':logic').  The current defun-mode by default</p>
-
 
 <h4>XDOC Integration (@(':parents'), @('short'), and @('long') parameters)</h4>
 
@@ -771,20 +778,60 @@ reasoning about @('car') in general.</p>"
 ;;             :EXEC (HONS :TACO (HONS (HONS SHELL MEAT)
 ;;                                     (HONS CHEESE (HONS LETTUCE SAUCE))))))
 
-(defun da-make-recognizer (name tag fields require legiblep)
+;; As discussed in the user-level docomentation, if the :debugp flag is used,
+;; the user can see a lot of extra output that can be distracting.  It would be
+;; better to make this output dynamically enabled/disabled, either via a table
+;; flag or some other trick.  However, time is valuable, and we leave this
+;; improvement as future work.  Anyone who wishes to enable the defaggregate
+;; user to dynamically toggle this debugging output should feel free to do so.
+;; It would be nice to avoid the use of a trust tag, and the defined predicate
+;; should continue to not require the ACL2 state or world as an argument.
+
+(defun da-insert-debugging-statements-into-require (require)
+  (cond ((atom require)
+         nil)
+        (t (cons `(or ,(car require)
+
+;; We use output locks, because this cw output can show up during proofs
+;; because of executable counterparts (and we've seen it occur regularly).
+
+                      (with-output-lock
+                       (cw "Check ~x0 failed~%"
+                           ',(car require))))
+                 (da-insert-debugging-statements-into-require (cdr require))))))
+
+(defun da-make-recognizer (name tag fields require legiblep debugp)
   ;; Previously we allowed recognizers to be inlined, but now we prefer to
   ;; only inline accessors.
   `(defund ,(da-recognizer-name name) (,(da-x name))
      (declare (xargs :guard t))
      (and ,@(if tag
+                (if debugp 
+                    (list `(or (and (consp ,(da-x name))
+                                    (eq (car ,(da-x name)) ,tag))
+                               (with-output-lock
+                                (cw "Stuctural check for consp and tag ~
+                                     equality failed.  Tag should be ~x0.  ~
+                                     Failing instance is:~% ~x1~%~%"
+                                    ,tag
+                                    ,(da-x name)))))
                 `((consp ,(da-x name))
-                  (eq (car ,(da-x name)) ,tag))
+                  (eq (car ,(da-x name)) ,tag)))
               nil)
-          ,@(da-structure-checks name tag legiblep fields)
+          ,@(if debugp
+                (list
+                 `(or (and ,@(da-structure-checks name tag legiblep fields))
+                      (with-output-lock
+                       (cw "Structural check for ~x0 failed.  Failing instance ~
+                         is:~% ~x1~%"
+                           ',name
+                           ,(da-x name)))))
+              (da-structure-checks name tag legiblep fields))
           (let ,(da-fields-map-let-bindings (da-fields-map name tag legiblep fields))
             (declare (ACL2::ignorable ,@fields))
-            (and ,@(strip-cadrs require))))))
-
+            ,(if debugp
+                `(and ,@(da-insert-debugging-statements-into-require (strip-cadrs require)))
+              `(and ,@(strip-cadrs require)))))))
 
 ;; (da-make-recognizer 'taco :taco '(shell meat cheese lettuce sauce)
 ;;                  '((shell-p-of-taco->shell (shellp shell)))
@@ -1169,7 +1216,7 @@ term.  The attempted binding of~|~% ~p1~%~%is not of this form."
         (da-fields-autodoc name fields)))
 
 (defun defaggregate-fn (name fields tag require honsp legiblep
-                             already-definedp mode parents short long
+                             already-definedp debugp mode parents short long
                              rest)
   (and (or (symbolp name)
            (er hard 'defaggregate "Name must be a symbol."))
@@ -1187,6 +1234,8 @@ term.  The attempted binding of~|~% ~p1~%~%is not of this form."
            (er hard 'defaggregate "Malformed requirements."))
        (or (no-duplicatesp (strip-cars require))
            (er hard 'defaggregate "The names given to :require must be unique."))
+       (or (member debugp '(t nil))
+           (er hard 'defaggregate "Debugp must be t or nil"))
        (or (member mode '(:logic :program))
            (er hard 'defaggregate "The mode must be :logic or :program."))
        (or (eq mode :logic)
@@ -1227,7 +1276,8 @@ term.  The attempted binding of~|~% ~p1~%~%is not of this form."
 
             ,@(if already-definedp
                  nil
-                (list (da-make-recognizer name tag fields require legiblep)))
+                (list (da-make-recognizer name tag fields require legiblep
+                                          debugp)))
             ,(da-make-constructor name tag fields require honsp legiblep)
             ,(da-make-honsed-constructor name tag fields require legiblep)
             ,@(da-make-accessors name tag fields legiblep)
@@ -1327,6 +1377,7 @@ term.  The attempted binding of~|~% ~p1~%~%is not of this form."
                              (legiblep ''t)
                              hons
                              already-definedp
+                             debugp
                              mode
                              (parents '(acl2::undocumented))
                              short
@@ -1334,6 +1385,5 @@ term.  The attempted binding of~|~% ~p1~%~%is not of this form."
                              rest)
   `(make-event (let ((mode (or ',mode (default-defun-mode (w state)))))
                  (defaggregate-fn ',name ',fields ',tag ',require ',hons ',legiblep
-                   ',already-definedp mode ',parents ',short ',long
+                   ',already-definedp ',debugp mode ',parents ',short ',long
                    ',rest))))
-
