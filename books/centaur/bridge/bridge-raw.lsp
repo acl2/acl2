@@ -705,5 +705,5 @@ This is a trace-co test"))
   ;; Very inelegant: just sleep a couple of seconds to try to give the threads
   ;; time to die.
   (sleep 2)
-  (cl-user::format t "; bridge::stop done.  New processes: ~a~%"
+  (cl-user::format t "; bridge::stop done.~%New processes: ~a~%"
                    (ccl::all-processes)))
