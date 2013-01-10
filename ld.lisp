@@ -19420,6 +19420,8 @@
 
 (deflabel note-6-0
 
+; Total number of release note items: 53.
+
 ; Added analogues simple-translate-and-eval-error-double and
 ; simple-translate-and-eval-cmp of simple-translate-and-eval, which instead of
 ; (mv erp val state) return (mv erp val) and a context-message pair,
