@@ -75,7 +75,8 @@
           (da-extras . ,rst)))
 
 #!CUTIL
-(defmacro GL::defagg-fns (name fields &key tag require hons (legiblep ''t))
+(defmacro GL::defagg-fns (name fields &key tag require hons (legiblep 't)
+                               (debugp 'nil))
   (and (or (symbolp name)
            (er hard 'defaggregate "Name must be a symbol.~%"))
        (or (symbol-listp fields)
@@ -97,7 +98,7 @@
        (or (pseudo-term-listp (strip-cadrs require))
            (er hard 'defaggregate "The requierments must be terms.~%"))
        (let ((x (da-x name)))
-         `(progn ,(da-make-recognizer name tag fields require legiblep)
+         `(progn ,(da-make-recognizer name tag fields require legiblep debugp)
                  ;; jared: removing this, it's not included in vl anymore
                  ;; ,(da-make-debugger name tag fields require legiblep)
                  ,(da-make-constructor name tag fields require hons legiblep)
