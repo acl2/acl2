@@ -1,0 +1,3 @@
+The supporting materials for this workshop paper have been extended somewhat
+in support of fast execution, and may now be found in subdirectory
+books/defexec/chapter3/qsort/ of the ACL2 distribution.

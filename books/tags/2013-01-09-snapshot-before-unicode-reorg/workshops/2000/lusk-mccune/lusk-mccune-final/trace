@@ -1,0 +1,582 @@
+(in-package "ACL2")
+
+(include-book "simulator")
+(include-book "compile")
+
+(sim
+
+ ;; First, the oracle.
+
+ '(
+   (DELIVER . 4171) (DELIVER . 8601) (STEP . 2628) (STEP . 5460)
+   (STEP . 91) (DELIVER . 1679) (STEP . 7016) (STEP . 1200)
+   (DELIVER . 4466) (DELIVER . 3037) (DELIVER . 297) (DELIVER . 6124)
+   (DELIVER . 318) (DELIVER . 8179) (STEP . 30) (STEP . 9229)
+   (STEP . 2578) (DELIVER . 397) (DELIVER . 8538) (STEP . 8593)
+   (STEP . 3167) (STEP . 7727) (STEP . 6736) (STEP . 7074)
+   (DELIVER . 3575) (DELIVER . 7403) (STEP . 5457) (STEP . 5518)
+   (DELIVER . 4937) (DELIVER . 7809) (DELIVER . 4283) (STEP . 3460)
+   (STEP . 5613) (DELIVER . 7930) (STEP . 7872) (DELIVER . 7326)
+   (STEP . 6265) (DELIVER . 4308) (DELIVER . 9783) (STEP . 6137)
+   (DELIVER . 2433) (STEP . 5497) (DELIVER . 3809) (DELIVER . 4715)
+   (DELIVER . 4620) (STEP . 4009) (DELIVER . 2804) (STEP . 4379)
+   (STEP . 5861) (DELIVER . 5774) (DELIVER . 5009) (DELIVER . 1157)
+   (DELIVER . 6810) (DELIVER . 7092) (STEP . 7881) (DELIVER . 1482)
+   (DELIVER . 8311) (DELIVER . 9081) (DELIVER . 9421) (DELIVER . 5398)
+   (STEP . 1479) (STEP . 9636) (STEP . 7004) (STEP . 7265)
+   (DELIVER . 5280) (DELIVER . 2882) (STEP . 3706) (DELIVER . 3958)
+   (DELIVER . 1606) (STEP . 6121) (DELIVER . 2129) (STEP . 573)
+   (STEP . 7854) (DELIVER . 4293) (STEP . 5735) (STEP . 3629)
+   (DELIVER . 7005) (STEP . 1922) (STEP . 7669) (DELIVER . 1772)
+   (STEP . 5202) (STEP . 2576) (STEP . 7091) (DELIVER . 3976)
+   (STEP . 6828) (DELIVER . 5815) (DELIVER . 3000) (DELIVER . 5251)
+   (DELIVER . 7082) (DELIVER . 1645) (DELIVER . 5567) (STEP . 9840)
+   (STEP . 2061) (STEP . 2473) (STEP . 4960) (STEP . 1926) (STEP . 6336)
+   (STEP . 2559) (STEP . 7669) (DELIVER . 3834) (DELIVER . 8028)
+   (DELIVER . 4620) (STEP . 4009) (DELIVER . 2804) (STEP . 4379)
+   (STEP . 5861) (DELIVER . 5774) (DELIVER . 5009) (DELIVER . 1157)
+   (DELIVER . 6810) (DELIVER . 7092) (STEP . 7881) (DELIVER . 1482)
+   (DELIVER . 8311) (DELIVER . 9081) (DELIVER . 9421) (DELIVER . 5398)
+   (STEP . 1479) (STEP . 9636) (STEP . 7004) (STEP . 7265)
+   (DELIVER . 5280) (DELIVER . 2882) (STEP . 3706) (DELIVER . 3958)
+   (DELIVER . 1606) (STEP . 6121) (DELIVER . 2129) (STEP . 573)
+   (STEP . 7854) (DELIVER . 4293) (STEP . 5735) (STEP . 3629)
+   (DELIVER . 7005) (STEP . 1922) (STEP . 7669) (DELIVER . 1772)
+   (STEP . 5202) (STEP . 2576) (STEP . 7091) (DELIVER . 3976)
+   (STEP . 6828) (DELIVER . 5815) (DELIVER . 3000) (DELIVER . 5251)
+   (DELIVER . 7082) (DELIVER . 1645) (DELIVER . 5567) (STEP . 9840)
+   (STEP . 2061) (STEP . 2473) (STEP . 4960) (STEP . 1926) (STEP . 6336)
+   (STEP . 2559) (STEP . 7669) (DELIVER . 3834) (DELIVER . 8028)
+   (DELIVER . 4968) (STEP . 344) (STEP . 1733) (DELIVER . 1392)
+   (STEP . 6026) (DELIVER . 1112) (DELIVER . 8843) (STEP . 6888)
+   (STEP . 7271) (STEP . 8412) (STEP . 6133) (STEP . 8764) (STEP . 4904)
+   (STEP . 91) (DELIVER . 1679) (STEP . 7016) (STEP . 1200)
+   (DELIVER . 4466) (DELIVER . 3037) (DELIVER . 297) (DELIVER . 6124)
+   (DELIVER . 318) (DELIVER . 8179) (STEP . 30) (STEP . 9229)
+   (STEP . 2578) (DELIVER . 397) (DELIVER . 8538) (STEP . 8593)
+   (STEP . 3167) (STEP . 7727) (STEP . 6736) (STEP . 7074)
+   (DELIVER . 3575) (DELIVER . 7403) (STEP . 5457) (STEP . 5518)
+   (DELIVER . 4937) (DELIVER . 7809) (DELIVER . 4283) (STEP . 3460)
+   (STEP . 5613) (DELIVER . 7930) (STEP . 7872) (DELIVER . 7326)
+   (STEP . 6265) (DELIVER . 4308) (DELIVER . 9783) (STEP . 6137)
+   (DELIVER . 2433) (STEP . 5497) (DELIVER . 3809) (DELIVER . 4715)
+   (DELIVER . 4620) (STEP . 4009) (DELIVER . 2804) (STEP . 4379)
+   (STEP . 5861) (DELIVER . 5774) (DELIVER . 5009) (DELIVER . 1157)
+   (DELIVER . 6810) (DELIVER . 7092) (STEP . 7881) (DELIVER . 1482)
+   (DELIVER . 8311) (DELIVER . 9081) (DELIVER . 9421) (DELIVER . 5398)
+   (STEP . 1479) (STEP . 9636) (STEP . 7004) (STEP . 7265)
+   (DELIVER . 5280) (DELIVER . 2882) (STEP . 3706) (DELIVER . 3958)
+   (DELIVER . 1606) (STEP . 6121) (DELIVER . 2129) (STEP . 573)
+   (STEP . 7854) (DELIVER . 4293) (STEP . 5735) (STEP . 3629)
+   (DELIVER . 7005) (STEP . 1922) (STEP . 7669) (DELIVER . 1772)
+   (STEP . 5202) (STEP . 2576) (STEP . 7091) (DELIVER . 3976)
+   (STEP . 6828) (DELIVER . 5815) (DELIVER . 3000) (DELIVER . 5251)
+   (DELIVER . 7082) (DELIVER . 1645) (DELIVER . 5567) (STEP . 9840)
+   (STEP . 2061) (STEP . 2473) (STEP . 4960) (STEP . 1926) (STEP . 6336)
+   (STEP . 2559) (STEP . 7669) (DELIVER . 3834) (DELIVER . 8028)
+   (DELIVER . 4620) (STEP . 4009) (DELIVER . 2804) (STEP . 4379)
+   (STEP . 5861) (DELIVER . 5774) (DELIVER . 5009) (DELIVER . 1157)
+   (DELIVER . 6810) (DELIVER . 7092) (STEP . 7881) (DELIVER . 1482)
+   (DELIVER . 8311) (DELIVER . 9081) (DELIVER . 9421) (DELIVER . 5398)
+   (STEP . 1479) (STEP . 9636) (STEP . 7004) (STEP . 7265)
+   (DELIVER . 5280) (DELIVER . 2882) (STEP . 3706) (DELIVER . 3958)
+   (DELIVER . 1606) (STEP . 6121) (DELIVER . 2129) (STEP . 573)
+   (STEP . 7854) (DELIVER . 4293) (STEP . 5735) (STEP . 3629)
+   (DELIVER . 7005) (STEP . 1922) (STEP . 7669) (DELIVER . 1772)
+   (STEP . 5202) (STEP . 2576) (STEP . 7091) (DELIVER . 3976)
+   (STEP . 6828) (DELIVER . 5815) (DELIVER . 3000) (DELIVER . 5251)
+   (DELIVER . 7082) (DELIVER . 1645) (DELIVER . 5567) (STEP . 9840)
+   (STEP . 2061) (STEP . 2473) (STEP . 4960) (STEP . 1926) (STEP . 6336)
+   (STEP . 2559) (STEP . 7669) (DELIVER . 3834) (DELIVER . 8028)
+   (DELIVER . 4968) (STEP . 344) (STEP . 1733) (DELIVER . 1392)
+   (STEP . 6026) (DELIVER . 1112) (DELIVER . 8843) (STEP . 6888)
+   (STEP . 7271) (STEP . 8412) (STEP . 6133) (STEP . 8764) (STEP . 4904)
+   (DELIVER . 7828)
+
+   (DELIVER . 4171) (DELIVER . 8601) (STEP . 2628) (STEP . 5460)
+   (STEP . 91) (DELIVER . 1679) (STEP . 7016) (STEP . 1200)
+   (DELIVER . 4466) (DELIVER . 3037) (DELIVER . 297) (DELIVER . 6124)
+   (DELIVER . 318) (DELIVER . 8179) (STEP . 30) (STEP . 9229)
+   (STEP . 2578) (DELIVER . 397) (DELIVER . 8538) (STEP . 8593)
+   (STEP . 3167) (STEP . 7727) (STEP . 6736) (STEP . 7074)
+   (DELIVER . 3575) (DELIVER . 7403) (STEP . 5457) (STEP . 5518)
+   (DELIVER . 4937) (DELIVER . 7809) (DELIVER . 4283) (STEP . 3460)
+   (STEP . 5613) (DELIVER . 7930) (STEP . 7872) (DELIVER . 7326)
+   (STEP . 6265) (DELIVER . 4308) (DELIVER . 9783) (STEP . 6137)
+   (DELIVER . 2433) (STEP . 5497) (DELIVER . 3809) (DELIVER . 4715)
+   (DELIVER . 4620) (STEP . 4009) (DELIVER . 2804) (STEP . 4379)
+   (STEP . 5861) (DELIVER . 5774) (DELIVER . 5009) (DELIVER . 1157)
+   (DELIVER . 6810) (DELIVER . 7092) (STEP . 7881) (DELIVER . 1482)
+   (DELIVER . 8311) (DELIVER . 9081) (DELIVER . 9421) (DELIVER . 5398)
+   (STEP . 1479) (STEP . 9636) (STEP . 7004) (STEP . 7265)
+   (DELIVER . 5280) (DELIVER . 2882) (STEP . 3706) (DELIVER . 3958)
+   (DELIVER . 1606) (STEP . 6121) (DELIVER . 2129) (STEP . 573)
+   (STEP . 7854) (DELIVER . 4293) (STEP . 5735) (STEP . 3629)
+   (DELIVER . 7005) (STEP . 1922) (STEP . 7669) (DELIVER . 1772)
+   (STEP . 5202) (STEP . 2576) (STEP . 7091) (DELIVER . 3976)
+   (STEP . 6828) (DELIVER . 5815) (DELIVER . 3000) (DELIVER . 5251)
+   (DELIVER . 7082) (DELIVER . 1645) (DELIVER . 5567) (STEP . 9840)
+   (STEP . 2061) (STEP . 2473) (STEP . 4960) (STEP . 1926) (STEP . 6336)
+   (STEP . 2559) (STEP . 7669) (DELIVER . 3834) (DELIVER . 8028)
+   (DELIVER . 4620) (STEP . 4009) (DELIVER . 2804) (STEP . 4379)
+   (STEP . 5861) (DELIVER . 5774) (DELIVER . 5009) (DELIVER . 1157)
+   (DELIVER . 6810) (DELIVER . 7092) (STEP . 7881) (DELIVER . 1482)
+   (DELIVER . 8311) (DELIVER . 9081) (DELIVER . 9421) (DELIVER . 5398)
+   (STEP . 1479) (STEP . 9636) (STEP . 7004) (STEP . 7265)
+   (DELIVER . 5280) (DELIVER . 2882) (STEP . 3706) (DELIVER . 3958)
+   (DELIVER . 1606) (STEP . 6121) (DELIVER . 2129) (STEP . 573)
+   (STEP . 7854) (DELIVER . 4293) (STEP . 5735) (STEP . 3629)
+   (DELIVER . 7005) (STEP . 1922) (STEP . 7669) (DELIVER . 1772)
+   (STEP . 5202) (STEP . 2576) (STEP . 7091) (DELIVER . 3976)
+   (STEP . 6828) (DELIVER . 5815) (DELIVER . 3000) (DELIVER . 5251)
+   (DELIVER . 7082) (DELIVER . 1645) (DELIVER . 5567) (STEP . 9840)
+   (STEP . 2061) (STEP . 2473) (STEP . 4960) (STEP . 1926) (STEP . 6336)
+   (STEP . 2559) (STEP . 7669) (DELIVER . 3834) (DELIVER . 8028)
+   (DELIVER . 4968) (STEP . 344) (STEP . 1733) (DELIVER . 1392)
+   (STEP . 6026) (DELIVER . 1112) (DELIVER . 8843) (STEP . 6888)
+   (STEP . 7271) (STEP . 8412) (STEP . 6133) (STEP . 8764) (STEP . 4904)
+   (STEP . 91) (DELIVER . 1679) (STEP . 7016) (STEP . 1200)
+   (DELIVER . 4466) (DELIVER . 3037) (DELIVER . 297) (DELIVER . 6124)
+   (DELIVER . 318) (DELIVER . 8179) (STEP . 30) (STEP . 9229)
+   (STEP . 2578) (DELIVER . 397) (DELIVER . 8538) (STEP . 8593)
+   (STEP . 3167) (STEP . 7727) (STEP . 6736) (STEP . 7074)
+   (DELIVER . 3575) (DELIVER . 7403) (STEP . 5457) (STEP . 5518)
+   (DELIVER . 4937) (DELIVER . 7809) (DELIVER . 4283) (STEP . 3460)
+   (STEP . 5613) (DELIVER . 7930) (STEP . 7872) (DELIVER . 7326)
+   (STEP . 6265) (DELIVER . 4308) (DELIVER . 9783) (STEP . 6137)
+   (DELIVER . 2433) (STEP . 5497) (DELIVER . 3809) (DELIVER . 4715)
+   (DELIVER . 4620) (STEP . 4009) (DELIVER . 2804) (STEP . 4379)
+   (STEP . 5861) (DELIVER . 5774) (DELIVER . 5009) (DELIVER . 1157)
+   (DELIVER . 6810) (DELIVER . 7092) (STEP . 7881) (DELIVER . 1482)
+   (DELIVER . 8311) (DELIVER . 9081) (DELIVER . 9421) (DELIVER . 5398)
+   (STEP . 1479) (STEP . 9636) (STEP . 7004) (STEP . 7265)
+   (DELIVER . 5280) (DELIVER . 2882) (STEP . 3706) (DELIVER . 3958)
+   (DELIVER . 1606) (STEP . 6121) (DELIVER . 2129) (STEP . 573)
+   (STEP . 7854) (DELIVER . 4293) (STEP . 5735) (STEP . 3629)
+   (DELIVER . 7005) (STEP . 1922) (STEP . 7669) (DELIVER . 1772)
+   (STEP . 5202) (STEP . 2576) (STEP . 7091) (DELIVER . 3976)
+   (STEP . 6828) (DELIVER . 5815) (DELIVER . 3000) (DELIVER . 5251)
+   (DELIVER . 7082) (DELIVER . 1645) (DELIVER . 5567) (STEP . 9840)
+   (STEP . 2061) (STEP . 2473) (STEP . 4960) (STEP . 1926) (STEP . 6336)
+   (STEP . 2559) (STEP . 7669) (DELIVER . 3834) (DELIVER . 8028)
+   (DELIVER . 4620) (STEP . 4009) (DELIVER . 2804) (STEP . 4379)
+   (STEP . 5861) (DELIVER . 5774) (DELIVER . 5009) (DELIVER . 1157)
+   (DELIVER . 6810) (DELIVER . 7092) (STEP . 7881) (DELIVER . 1482)
+   (DELIVER . 8311) (DELIVER . 9081) (DELIVER . 9421) (DELIVER . 5398)
+   (STEP . 1479) (STEP . 9636) (STEP . 7004) (STEP . 7265)
+   (DELIVER . 5280) (DELIVER . 2882) (STEP . 3706) (DELIVER . 3958)
+   (DELIVER . 1606) (STEP . 6121) (DELIVER . 2129) (STEP . 573)
+   (STEP . 7854) (DELIVER . 4293) (STEP . 5735) (STEP . 3629)
+   (DELIVER . 7005) (STEP . 1922) (STEP . 7669) (DELIVER . 1772)
+   (STEP . 5202) (STEP . 2576) (STEP . 7091) (DELIVER . 3976)
+   (STEP . 6828) (DELIVER . 5815) (DELIVER . 3000) (DELIVER . 5251)
+   (DELIVER . 7082) (DELIVER . 1645) (DELIVER . 5567) (STEP . 9840)
+   (STEP . 2061) (STEP . 2473) (STEP . 4960) (STEP . 1926) (STEP . 6336)
+   (STEP . 2559) (STEP . 7669) (DELIVER . 3834) (DELIVER . 8028)
+   (DELIVER . 4968) (STEP . 344) (STEP . 1733) (DELIVER . 1392)
+   (STEP . 6026) (DELIVER . 1112) (DELIVER . 8843) (STEP . 6888)
+   (STEP . 7271) (STEP . 8412) (STEP . 6133) (STEP . 8764) (STEP . 4904)
+   (DELIVER . 7828)
+
+   (DELIVER . 4171) (DELIVER . 8601) (STEP . 2628) (STEP . 5460)
+   (STEP . 91) (DELIVER . 1679) (STEP . 7016) (STEP . 1200)
+   (DELIVER . 4466) (DELIVER . 3037) (DELIVER . 297) (DELIVER . 6124)
+   (DELIVER . 318) (DELIVER . 8179) (STEP . 30) (STEP . 9229)
+   (STEP . 2578) (DELIVER . 397) (DELIVER . 8538) (STEP . 8593)
+   (STEP . 3167) (STEP . 7727) (STEP . 6736) (STEP . 7074)
+   (DELIVER . 3575) (DELIVER . 7403) (STEP . 5457) (STEP . 5518)
+   (DELIVER . 4937) (DELIVER . 7809) (DELIVER . 4283) (STEP . 3460)
+   (STEP . 5613) (DELIVER . 7930) (STEP . 7872) (DELIVER . 7326)
+   (STEP . 6265) (DELIVER . 4308) (DELIVER . 9783) (STEP . 6137)
+   (DELIVER . 2433) (STEP . 5497) (DELIVER . 3809) (DELIVER . 4715)
+   (DELIVER . 4620) (STEP . 4009) (DELIVER . 2804) (STEP . 4379)
+   (STEP . 5861) (DELIVER . 5774) (DELIVER . 5009) (DELIVER . 1157)
+   (DELIVER . 6810) (DELIVER . 7092) (STEP . 7881) (DELIVER . 1482)
+   (DELIVER . 8311) (DELIVER . 9081) (DELIVER . 9421) (DELIVER . 5398)
+   (STEP . 1479) (STEP . 9636) (STEP . 7004) (STEP . 7265)
+   (DELIVER . 5280) (DELIVER . 2882) (STEP . 3706) (DELIVER . 3958)
+   (DELIVER . 1606) (STEP . 6121) (DELIVER . 2129) (STEP . 573)
+   (STEP . 7854) (DELIVER . 4293) (STEP . 5735) (STEP . 3629)
+   (DELIVER . 7005) (STEP . 1922) (STEP . 7669) (DELIVER . 1772)
+   (STEP . 5202) (STEP . 2576) (STEP . 7091) (DELIVER . 3976)
+   (STEP . 6828) (DELIVER . 5815) (DELIVER . 3000) (DELIVER . 5251)
+   (DELIVER . 7082) (DELIVER . 1645) (DELIVER . 5567) (STEP . 9840)
+   (STEP . 2061) (STEP . 2473) (STEP . 4960) (STEP . 1926) (STEP . 6336)
+   (STEP . 2559) (STEP . 7669) (DELIVER . 3834) (DELIVER . 8028)
+   (DELIVER . 4620) (STEP . 4009) (DELIVER . 2804) (STEP . 4379)
+   (STEP . 5861) (DELIVER . 5774) (DELIVER . 5009) (DELIVER . 1157)
+   (DELIVER . 6810) (DELIVER . 7092) (STEP . 7881) (DELIVER . 1482)
+   (DELIVER . 8311) (DELIVER . 9081) (DELIVER . 9421) (DELIVER . 5398)
+   (STEP . 1479) (STEP . 9636) (STEP . 7004) (STEP . 7265)
+   (DELIVER . 5280) (DELIVER . 2882) (STEP . 3706) (DELIVER . 3958)
+   (DELIVER . 1606) (STEP . 6121) (DELIVER . 2129) (STEP . 573)
+   (STEP . 7854) (DELIVER . 4293) (STEP . 5735) (STEP . 3629)
+   (DELIVER . 7005) (STEP . 1922) (STEP . 7669) (DELIVER . 1772)
+   (STEP . 5202) (STEP . 2576) (STEP . 7091) (DELIVER . 3976)
+   (STEP . 6828) (DELIVER . 5815) (DELIVER . 3000) (DELIVER . 5251)
+   (DELIVER . 7082) (DELIVER . 1645) (DELIVER . 5567) (STEP . 9840)
+   (STEP . 2061) (STEP . 2473) (STEP . 4960) (STEP . 1926) (STEP . 6336)
+   (STEP . 2559) (STEP . 7669) (DELIVER . 3834) (DELIVER . 8028)
+   (DELIVER . 4968) (STEP . 344) (STEP . 1733) (DELIVER . 1392)
+   (STEP . 6026) (DELIVER . 1112) (DELIVER . 8843) (STEP . 6888)
+   (STEP . 7271) (STEP . 8412) (STEP . 6133) (STEP . 8764) (STEP . 4904)
+   (STEP . 91) (DELIVER . 1679) (STEP . 7016) (STEP . 1200)
+   (DELIVER . 4466) (DELIVER . 3037) (DELIVER . 297) (DELIVER . 6124)
+   (DELIVER . 318) (DELIVER . 8179) (STEP . 30) (STEP . 9229)
+   (STEP . 2578) (DELIVER . 397) (DELIVER . 8538) (STEP . 8593)
+   (STEP . 3167) (STEP . 7727) (STEP . 6736) (STEP . 7074)
+   (DELIVER . 3575) (DELIVER . 7403) (STEP . 5457) (STEP . 5518)
+   (DELIVER . 4937) (DELIVER . 7809) (DELIVER . 4283) (STEP . 3460)
+   (STEP . 5613) (DELIVER . 7930) (STEP . 7872) (DELIVER . 7326)
+   (STEP . 6265) (DELIVER . 4308) (DELIVER . 9783) (STEP . 6137)
+   (DELIVER . 2433) (STEP . 5497) (DELIVER . 3809) (DELIVER . 4715)
+   (DELIVER . 4620) (STEP . 4009) (DELIVER . 2804) (STEP . 4379)
+   (STEP . 5861) (DELIVER . 5774) (DELIVER . 5009) (DELIVER . 1157)
+   (DELIVER . 6810) (DELIVER . 7092) (STEP . 7881) (DELIVER . 1482)
+   (DELIVER . 8311) (DELIVER . 9081) (DELIVER . 9421) (DELIVER . 5398)
+   (STEP . 1479) (STEP . 9636) (STEP . 7004) (STEP . 7265)
+   (DELIVER . 5280) (DELIVER . 2882) (STEP . 3706) (DELIVER . 3958)
+   (DELIVER . 1606) (STEP . 6121) (DELIVER . 2129) (STEP . 573)
+   (STEP . 7854) (DELIVER . 4293) (STEP . 5735) (STEP . 3629)
+   (DELIVER . 7005) (STEP . 1922) (STEP . 7669) (DELIVER . 1772)
+   (STEP . 5202) (STEP . 2576) (STEP . 7091) (DELIVER . 3976)
+   (STEP . 6828) (DELIVER . 5815) (DELIVER . 3000) (DELIVER . 5251)
+   (DELIVER . 7082) (DELIVER . 1645) (DELIVER . 5567) (STEP . 9840)
+   (STEP . 2061) (STEP . 2473) (STEP . 4960) (STEP . 1926) (STEP . 6336)
+   (STEP . 2559) (STEP . 7669) (DELIVER . 3834) (DELIVER . 8028)
+   (DELIVER . 4620) (STEP . 4009) (DELIVER . 2804) (STEP . 4379)
+   (STEP . 5861) (DELIVER . 5774) (DELIVER . 5009) (DELIVER . 1157)
+   (DELIVER . 6810) (DELIVER . 7092) (STEP . 7881) (DELIVER . 1482)
+   (DELIVER . 8311) (DELIVER . 9081) (DELIVER . 9421) (DELIVER . 5398)
+   (STEP . 1479) (STEP . 9636) (STEP . 7004) (STEP . 7265)
+   (DELIVER . 5280) (DELIVER . 2882) (STEP . 3706) (DELIVER . 3958)
+   (DELIVER . 1606) (STEP . 6121) (DELIVER . 2129) (STEP . 573)
+   (STEP . 7854) (DELIVER . 4293) (STEP . 5735) (STEP . 3629)
+   (DELIVER . 7005) (STEP . 1922) (STEP . 7669) (DELIVER . 1772)
+   (STEP . 5202) (STEP . 2576) (STEP . 7091) (DELIVER . 3976)
+   (STEP . 6828) (DELIVER . 5815) (DELIVER . 3000) (DELIVER . 5251)
+   (DELIVER . 7082) (DELIVER . 1645) (DELIVER . 5567) (STEP . 9840)
+   (STEP . 2061) (STEP . 2473) (STEP . 4960) (STEP . 1926) (STEP . 6336)
+   (STEP . 2559) (STEP . 7669) (DELIVER . 3834) (DELIVER . 8028)
+   (DELIVER . 4968) (STEP . 344) (STEP . 1733) (DELIVER . 1392)
+   (STEP . 6026) (DELIVER . 1112) (DELIVER . 8843) (STEP . 6888)
+   (STEP . 7271) (STEP . 8412) (STEP . 6133) (STEP . 8764) (STEP . 4904)
+   (DELIVER . 7828)
+   )
+
+ 0 ;; step counter
+
+ nil ;; trace
+
+ ;;--------------------------------------------------------- mstate
+
+ ;;  This mstate contains a console and set of daemons The console sends a
+ ;;  message to the local daemon, which forwards it aroung the ring to the
+ ;;  local daemon, which sends it back to the console.
+
+ (list;; mstate
+
+  (list;; list of pstates
+
+   ;;--------------------------------------------------------- console pstate
+
+   ;; This pstate is for the console.  It connects to the local daemon, sends
+   ;; a message to it, and then waits for a reply.
+
+   (list;; trace pstate
+    '(host1 9)
+
+    (compile-list;; trace program
+     '(
+       (my-hpid myhpid)
+       (asgn host (car myhpid))
+       (connect host 2000 mpd-fd)
+       (send mpd-fd 'trace)
+       (asgn eof 'false)
+       (asgn host-list nil) ;; note that the constant nil is unquoted
+       (while (not eof)
+	 (receive mpd-fd x)
+	 (if (not (equal x 'end-of-file))
+	     (asgn host-list (cons x host-list))
+	  else
+	     (asgn eof 'true)
+	     );; end if
+	 );; end while
+       (return)
+       )
+     nil
+     );; end of trace program
+
+    1;; program counter at first statement
+    nil;; xstack
+    nil;; memory
+    );; end of trace process
+
+   ;;--------------------------------------------------------- daemon 1 pstate
+
+   (list;; first mpd pstate
+
+   ;; All the daemons are the same.  They wait for a connection from a console
+   ;; and accept it, then process commands from it.  The trace command handler
+   ;; forwards the message to the next daemon.  The ring connections among the
+   ;; daemons are pre-established in the connection part of the mstate.  A
+   ;; ring-message handler reads the message and either forwards it around the
+   ;; ring or (if it is the original daemon that received it from the console,
+   ;; back to the console.
+
+    '(host1 1)
+
+    (compile-list;; mpd program
+     '(
+       (my-hpid myhpid)
+       (asgn select-set (lhs-fd conl-fd))
+       (asgn con-fd -1)
+       (while 'true
+	 (select select-set selected-set)
+	 (if (member conl-fd selected-set)
+	     (call conl-handler)
+	   );; end if
+	 (if (member lhs-fd selected-set)
+	     (call lhs-handler)
+	   );; end if
+	 (if (member con-fd selected-set)
+	     (call con-handler)
+	   );; end if
+	 );; end while
+
+       (return);; end of main program
+
+       (procedure conl-handler)
+       (accept conl-fd con-fd)
+       (asgn select-set (cons con-fd select-set))
+       (return)
+
+       (procedure con-handler)
+       (receive con-fd con-handler-message)
+       (if (equal con-handler-message 'trace)
+	   (send rhs-fd (('cmd . 'trace-request) ('src . myhpid)))
+	 );; end if
+       (return)
+
+       (procedure lhs-handler)
+       (receive lhs-fd lhs-handler-message)
+       (asgn cmd (cdr (assoc 'cmd lhs-handler-message)))
+       (asgn src (cdr (assoc 'src lhs-handler-message)))
+       (if (equal cmd 'trace-request)
+	   (if (equal src myhpid)
+	       (send con-fd myhpid)
+	       (send con-fd 'end-of-file)
+	    else
+	       (send rhs-fd (('src . myhpid)
+			     ('dest . src)
+			     ('cmd . 'trace-ack)))
+	       (send rhs-fd lhs-handler-message)
+	       );; end if
+	else
+	   (if (equal cmd 'trace-ack)
+	       (asgn dest (cdr (assoc 'dest lhs-handler-message)))
+	       (if (not (equal dest myhpid))
+		   (send rhs-fd lhs-handler-message)
+	        else
+		   (send con-fd src)
+		   );; end if
+	       );; end if
+	   );; end if
+       (return)
+       );; uncompiled program
+     nil
+     );; compiled program
+
+    1;; program counter
+    nil;; xstack
+    '((lhs-fd . 3)
+      (rhs-fd . 4)
+      (conl-fd . 5))
+    );; end of pstate
+
+   ;;--------------------------------------------------------- daemon 2 pstate
+
+   (list;; second mpd pstate
+
+   ;; same as first
+
+    '(host2 2)
+
+    (compile-list;; mpd program
+     '(
+       (my-hpid myhpid)
+       (asgn select-set (lhs-fd conl-fd))
+       (asgn con-fd -1)
+       (while 'true
+	 (select select-set selected-set)
+	 (if (member conl-fd selected-set)
+	     (call conl-handler)
+	   );; end if
+	 (if (member lhs-fd selected-set)
+	     (call lhs-handler)
+	   );; end if
+	 (if (member con-fd selected-set)
+	     (call con-handler)
+	   );; end if
+	 );; end while
+
+       (return);; end of main program
+
+       (procedure conl-handler)
+       (accept conl-fd con-fd)
+       (asgn select-set (cons con-fd select-set))
+       (return)
+
+       (procedure con-handler)
+       (receive con-fd con-handler-message)
+       (if (equal con-handler-message 'trace)
+	   (send rhs-fd (('cmd . 'trace-request) ('src . myhpid)))
+	 );; end if
+       (return)
+
+       (procedure lhs-handler)
+       (receive lhs-fd lhs-handler-message)
+       (asgn cmd (cdr (assoc 'cmd lhs-handler-message)))
+       (asgn src (cdr (assoc 'src lhs-handler-message)))
+       (if (equal cmd 'trace-request)
+	   (if (equal src myhpid)
+	       (send con-fd myhpid)
+	       (send con-fd 'end-of-file)
+	    else
+	       (send rhs-fd (('src . myhpid)
+			     ('dest . src)
+			     ('cmd . 'trace-ack)))
+	       (send rhs-fd lhs-handler-message)
+	       );; end if
+	else
+	   (if (equal cmd 'trace-ack)
+	       (asgn dest (cdr (assoc 'dest lhs-handler-message)))
+	       (if (not (equal dest myhpid))
+		   (send rhs-fd lhs-handler-message)
+	        else
+		   (send con-fd src)
+		   );; end if
+	       );; end if
+	   );; end if
+       (return)
+       );; uncompiled program
+     nil
+     );; compiled program
+
+    1;; program counter
+    nil;; xstack
+    '((lhs-fd . 3)
+      (rhs-fd . 4)
+      (conl-fd . 5))
+    );; end of pstate
+
+   ;;---------------------------------------------------------- daemon 3 pstate
+
+   (list;; third mpd pstate
+
+   ;; same as first and second
+
+    '(host3 3)
+
+    (compile-list;; mpd program
+     '(
+       (my-hpid myhpid)
+       (asgn select-set (lhs-fd conl-fd))
+       (asgn con-fd -1)
+       (while 'true
+	 (select select-set selected-set)
+	 (if (member conl-fd selected-set)
+	     (call conl-handler)
+	   );; end if
+	 (if (member lhs-fd selected-set)
+	     (call lhs-handler)
+	   );; end if
+	 (if (member con-fd selected-set)
+	     (call con-handler)
+	   );; end if
+	 );; end while
+
+       (return);; end of main program
+
+       (procedure conl-handler)
+       (accept conl-fd con-fd)
+       (asgn select-set (cons con-fd select-set))
+       (return)
+
+       (procedure con-handler)
+       (receive con-fd con-handler-message)
+       (if (equal con-handler-message 'trace)
+	   (send rhs-fd (('cmd . 'trace-request) ('src . myhpid)))
+	 );; end if
+       (return)
+
+       (procedure lhs-handler)
+       (receive lhs-fd lhs-handler-message)
+       (asgn cmd (cdr (assoc 'cmd lhs-handler-message)))
+       (asgn src (cdr (assoc 'src lhs-handler-message)))
+       (if (equal cmd 'trace-request)
+	   (if (equal src myhpid)
+	       (send con-fd myhpid)
+	       (send con-fd 'end-of-file)
+	    else
+	       (send rhs-fd (('src . myhpid)
+			     ('dest . src)
+			     ('cmd . 'trace-ack)))
+	       (send rhs-fd lhs-handler-message)
+	       );; end if
+	else
+	   (if (equal cmd 'trace-ack)
+	       (asgn dest (cdr (assoc 'dest lhs-handler-message)))
+	       (if (not (equal dest myhpid))
+		   (send rhs-fd lhs-handler-message)
+	        else
+		   (send con-fd src)
+		   );; end if
+	       );; end if
+	   );; end if
+       (return)
+       );; uncompiled program
+     nil
+     );; compiled program
+
+    1;; program counter
+    nil;; xstack
+    '((lhs-fd . 3)
+      (rhs-fd . 4)
+      (conl-fd . 5))
+    );; end of pstate
+
+   ;;---------------------------------------------------- end of pstates
+
+   );; end of pstate-list
+
+  (list;; connection-list
+
+   ;; The three daemons are bidirectionally connected in a ring.
+
+   '(((host1 1) 4 (host2 2) 3) nil nil)
+   '(((host2 2) 4 (host3 3) 3) nil nil)
+   '(((host3 3) 4 (host1 1) 3) nil nil)
+  
+   '(((host2 2) 3 (host1 1) 4) nil nil)
+   '(((host3 3) 3 (host2 2) 4) nil nil)
+   '(((host1 1) 3 (host3 3) 4) nil nil)
+  
+   );; end of connections
+
+  (list;; listener-list
+
+   ;; All daemons are listening for connections from consoles.
+
+   '(((host1 1) 5) 2000 nil)
+   '(((host2 2) 5) 2000 nil)
+   '(((host3 3) 5) 2000 nil)
+
+   );; end of lstate-list
+
+  nil;; program-list
+
+  )
+ )
+
+;;--------------------

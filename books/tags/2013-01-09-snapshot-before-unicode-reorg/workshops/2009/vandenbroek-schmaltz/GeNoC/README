@@ -1,0 +1,70 @@
+;;--------------------------------------------------------------------------
+;; GeNoC                                                                    |
+;; Authors: Tom van den Broek, Julien Schmaltz                              |                           
+;; Rev.: February  2009                                                     |
+;;--------------------------------------------------------------------------
+
+
+1) To certify all the books, simply type "make" from this directory. 
+BEFORE THAT, the definition of ACL2_SYSTEM_BOOKS must be changed from
+/usr/local/acl2/acl2-sources/books to the path of your local ACL2 books 
+directory, in all the Makefiles. To that goal, you can use the enclosed 
+script SubstMkf, for instance like this:
+      SubstMkf . /usr/local/ACL2-3.4/books 
+if /usr/local/ACL2-3.4/books is the absolute path to your ACL2 books.
+
+Note that this distribution is only tested with ACL2 version 3.4 and 
+requires the "defspec" book.
+
+
+2) The top level directory contains the generic-modules and their 
+instantiations in two different sub-directories. In the sub-directory 
+generic-modules, one will find a ".lisp" file per module. The main one is 
+GeNoC.lisp. 
+
+The files pressent in the Generic model are:
+
+GeNoC.lisp                              
+datalink.lisp           
+departure.lisp  
+flowcontrol.lisp        
+routecontrol.lisp 
+router.lisp
+network.lisp
+types.lisp
+
+
+In the sub-directory instantiations, for each generic module name.lisp, 
+there is a directory name/ containing the instances of this generic module.
+
+3) To run a simulation of a network, execute one of the files in the 
+directory instances/simulations. Currently, the output is not very userfriendly, 
+but can be interpreted with some practice.  
+
+The table bellow gives some statistics about the model.     
+     
+Generic comp.           Instances       lines   functions
+interpreter                                     200     11
+types                                           314     41
+router                                          34      1
+routing control                                 22      1
+                        xy                      75      5
+                        spidergon               79      6
+flow control                                    25      1
+                        packet-switching        70      4
+                        wormhole                134     9
+                        circuit-switching       158     10
+departure                                       31      1
+                        injection time          29      1
+network                                         65      4
+                        2dmesh                  75      6
+                        spidergon               47      4
+input and outputs                               26      2
+                        handshake               129     15
+Total                                           1513    122
+  
+   
+Please report any problem to: tombroek@science.ru.nl or julien@cs.ru.nl
+
+;;;;;;;;;;;;
+

@@ -1,0 +1,5 @@
+(defpkg "FOO" nil)
+
+(defpkg "BAR" '(foo::a))
+
+(certify-book "pkg-test" ? :default)

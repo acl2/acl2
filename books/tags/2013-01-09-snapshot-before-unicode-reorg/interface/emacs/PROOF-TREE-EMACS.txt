@@ -1,0 +1,86 @@
+See the ACL2 documentation topic PROOF-TREE for an introduction to
+proof trees in ACL2:
+
+http://www.cs.utexas.edu/users/moore/acl2/current/PROOF-TREE.html
+
+Within emacs, proof trees provide a sort of structure for the linear
+proof transcript output by the ACL2 prover.  Below we explain how to
+get proof trees set up in your emacs environment.
+
+To get started, it suffices to load the distributed ACL2 emacs file,
+which has lots more than just proof tree support (documented near the
+top of that file), as follows.  Thus, you can put the following form in
+your ~/.emacs file, where DIR refers to your ACL2 source directory
+(typically called acl2-sources/).
+
+     (load "DIR/emacs/emacs-acl2.el")
+
+Then you can start the proof tree display by issuing the following emacs
+command:  M-x start-proof-tree.
+
+If you prefer not to load the ACL2 emacs file as shown above, you can
+instead put the following forms in your ~/.emacs file (where THIS_DIR
+is the present directory) and then issue the above M-x command.
+
+     (setq *acl2-interface-dir*
+           "THIS_DIR")
+
+     (autoload 'start-proof-tree
+       (concat *acl2-interface-dir* "top-start-shell-acl2")
+       "Enable proof tree logging in a prooftree buffer."
+       t)
+
+Once the above is taken care of, then to start using proof trees you do
+two things.  In emacs, start a shell (meta-x shell) and evaluate:
+
+        M-x start-proof-tree
+
+Also, in your ACL2, evaluate
+
+       :start-proof-tree
+
+If you want to turn off proof trees, evaluate this in emacs
+
+        M-x stop-proof-tree
+
+and evaluate this in your ACL2 session:
+
+       :stop-proof-tree
+
+When you do M-x start-proof-tree for the first time in your emacs
+session, you will be prompted for some information.  You can avoid the
+prompt by putting the following in your .emacs file.  The defaults are
+as shown, but you can of course change them.
+
+       (setq *acl2-proof-tree-height* 17)
+       (setq *checkpoint-recenter-line* 3)
+       (setq *mfm-buffer* "*shell*")
+
+Alternatively, you can put the following in your ~/.emacs file in order
+to start proof trees without any queries.
+
+       (start-proof-tree-noninteractive "*shell*")
+
+Once you start proof trees (meta-x start-proof-tree), you will have
+defined the key bindings shown by executing C-z h in emacs.  Also see
+*note file PROOF-TREE-BINDINGS.txt for that additional documentation.
+
+If you want proof-trees to be displayed in a separate emacs frame to the
+side, then you can put the following forms in your .emacs file above the
+load of emacs-acl2.el described above.  But you may wish to edit the
+second form, in particular the number 2048.
+
+     (start-proof-tree-noninteractive "*shell*")
+     (cond ((and (eq window-system 'x)
+                 (fboundp 'x-display-pixel-width)
+                 (= (x-display-pixel-width) 2048) ; for a wide monitor
+                 )
+            (delete-other-windows)
+            (if (boundp 'emacs-startup-hook) ; false in xemacs
+                (push 'new-prooftree-frame emacs-startup-hook))))
+
+The file README-mouse.doc discusses an extension of ACL2
+proof trees that allows the mouse to be used with menus.  That
+extension may well work, but it is no longer supported.  The basic
+proof tree interface, however, is supported and is what is described in
+the documentation mentioned above for PROOF-TREE.

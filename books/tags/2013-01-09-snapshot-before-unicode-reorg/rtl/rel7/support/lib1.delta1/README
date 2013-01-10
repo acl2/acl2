@@ -1,0 +1,8 @@
+This directory contains two updated books: float.lisp, round.lisp as well as a
+new book, mult.lisp.  The actual proof work appears in float-extra2.lisp,
+round-extra2.lisp and mult-proofs.lisp.
+
+These proofs are done with existing rules from "../lib1".
+
+
+

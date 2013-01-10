@@ -1,0 +1,120 @@
+===========================================================
+Ivy: A Preprocessor and Proof Checker for First-order Logic
+===========================================================
+
+Files:
+
+    README
+    Configure
+
+Subdirectories:
+
+    ivy-sources
+    otter-3.0.6     : the full otter-3.0.6 distribution
+    mace-1.3.4      : the full mace-1.3.4 distribution
+
+[Modification for ACL2 distribution:  To create directories otter-3.0.6 and
+ mace-1.3.4 on your system, issue the following commands:
+
+ gunzip otter-3.0.6.tar.gz
+ tar xvf otter-3.0.6.tar
+ rm otter-3.0.6.tar
+ gunzip mace-1.3.4.tar.gz
+ tar xvf mace-1.3.4.tar
+ rm mace-1.3.4.tar
+]
+
+------------
+INTRODUCTION
+------------
+
+Ivy is a preprocessor and proof checker for resolution/paramodulation
+theorem provers.  It is coded in ACL2 and proved sound for finite
+interpretations.
+
+Ivy is described in a paper that will appear as a chapter in
+	Computer-Aided Reasoning: ACL2 Case Studies
+	-------------------------------------------
+edited by Matt Kaufmann, Pete Manolios, and J Moore,
+to be published by Kluwer Academic in 2000. See
+http://www.wkap.nl/series.htm/ADFM.
+
+The Ivy web page is http://www.mcs.anl.gov/~mccune/acl2/ivy.
+
+----------
+INSTALLING
+----------
+
+To install Ivy, you have to (1) run the Configure script to update
+pathnames in several scripts, (2) certify the Ivy books, and
+(3) compile the external programs Otter and MACE (this can
+be done before running the Configure script if you like).
+
+If all goes according to plan, the following commands should work.
+(This works for us with ACL2-v2.4 on Linux and on Solaris.  The
+three makes---Ivy, Otter, and MACE---are independent and can be
+done in any order.)
+
+
+    ./Configure  # this will ask some questions; try the default answers
+
+    # Part 1. Make Ivy.
+
+    [look at ivy-sources/arithmetic.lisp, and change the pathname if necessary]
+    cd ivy-sources
+    make &                       # 90 minutes, 21 megabytes of output
+    cd ..
+
+    # Part 2. Make Otter.
+
+    cd otter-3.0.6/source
+    make
+    cd ../..
+
+    # Part 3. Make MACE.
+
+    cd mace-1.3.4
+    make
+    cd ..
+
+    # Simple tests of Ivy; the first calls Otter, the second calls MACE
+
+    ivy-sources/util/ivy  prove  ivy-sources/test/p-implies-p
+    ivy-sources/util/ivy  model  ivy-sources/test/p
+
+-------
+RUNNING
+-------
+
+The ivy script in ivy-sources/util is the way to run Ivy.
+The first argument is ( prove | refute | disprove | model ), and
+the second argument is a file containing a formula.
+You should be able to run it from anywhere, but you must have
+write-permission in the directory containing the input file.
+
+For further tests, see the README files in ivy-sources/test
+and ivy-sources/examples.
+
+---------
+SAVED_IVY
+---------
+
+Running ivy-sources/util/ivy loads all of the Ivy books, which takes
+a while.  Instead, you can try to create a saved_ivy file with the
+command
+
+    ivy-sources/util/make-saved-ivy
+
+After several minutes, you should have a file ivy-sources/saved_ivy.
+This seems to build a good saved_ivy on our Solaris systems, BUT IT
+DOESN'T WORK ON OUR LINUX SYSTEMS.
+
+You can run saved_ivy by using util/sivy instead of util/ivy:
+
+    ivy-sources/util/sivy  prove  ivy-sources/test/p-implies-p
+    ivy-sources/util/sivy  model  ivy-sources/test/p
+
+William McCune (mccune@mcs.anl.gov, http://www.mcs.anl.gov/~mccune)
+Olga Shumsky (shumsky@ece.nwu.edu, http://www.ece.nwu.edu/~shumsky)
+
+April 2000

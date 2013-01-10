@@ -1,0 +1,7 @@
+(value :q)
+(lp)
+
+(defpkg "ORD" (set-difference-eq *acl2-exports*
+				 '(o< o<= o-p)))
+
+(certify-book "proof-of-well-foundedness" 1)

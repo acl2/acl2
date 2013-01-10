@@ -1,0 +1,4 @@
+(value :q)
+(lp)
+(include-book "examples")
+(certify-book "tjvm-examples" 1)

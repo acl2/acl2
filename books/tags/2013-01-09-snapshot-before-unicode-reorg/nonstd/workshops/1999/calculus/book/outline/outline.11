@@ -1,0 +1,398 @@
+Main.  fundamental-theorem-of-calculus.
+ (IMPLIES (AND (REALP A) (REALP X))
+          (EQUAL (INTEGRAL-RCFN-PRIME A X)
+                 (RCFN X)))
+using lemmas:
+  ("split-integral-by-subintervals" "ftoc-lemma")
+and library books:
+  ("integral-rcfn" "nsa-lemmas"
+                   "integral-rcfn-lemmas" "riemann-lemmas"
+                   "make-partition" "riemann-defuns")
+==============================
+Main.1.  split-integral-by-subintervals.
+ (IMPLIES (AND (REALP A) (REALP B) (REALP C))
+          (EQUAL (INTEGRAL-RCFN A C)
+                 (+ (INTEGRAL-RCFN A B)
+                    (INTEGRAL-RCFN B C))))
+using lemmas:
+  ("riemann-sum-approximates-integral" "integral-rcfn-equal-if-i-close")
+and library books:
+  ("integral-rcfn-lemmas" "nsa-lemmas" "integral-rcfn"
+                          "riemann-lemmas" "riemann-defuns")
+==============================
+Main.1.1.  riemann-sum-approximates-integral.
+ (IMPLIES (AND (PARTITIONP P)
+               (EQUAL A (CAR P))
+               (EQUAL B (CAR (LAST P)))
+               (< A B)
+               (STANDARD-NUMBERP A)
+               (STANDARD-NUMBERP B)
+               (I-SMALL (MESH P)))
+          (I-CLOSE (RIEMANN-RCFN P)
+                   (INTEGRAL-RCFN A B)))
+using lemmas:
+  ("riemann-sum-approximates-integral-1"
+       "riemann-sum-approximates-integral-2")
+and library books:
+  ("integral-rcfn" "riemann-defuns")
+==============================
+Main.1.1.1.  riemann-sum-approximates-integral-1.
+ (IMPLIES
+   (AND (PARTITIONP P)
+        (EQUAL A (CAR P))
+        (EQUAL B (CAR (LAST P)))
+        (< A B)
+        (STANDARD-NUMBERP A)
+        (STANDARD-NUMBERP B)
+        (I-SMALL (MESH P)))
+   (I-CLOSE
+        (RIEMANN-RCFN (COMMON-REFINEMENT P
+                                         (MAKE-PARTITION (CAR P)
+                                                         (CAR (LAST P))
+                                                         (I-LARGE-INTEGER))))
+        (INTEGRAL-RCFN A B)))
+using lemmas:
+  ("partitions-give-i-close-riemann-sum")
+and library books:
+  ("nsa-lemmas" "integral-rcfn-lemmas"
+                "integral-rcfn" "riemann-lemmas"
+                "riemann-defuns" "defaxioms")
+==============================
+Main.1.1.1.1.  partitions-give-i-close-riemann-sum.
+ (IMPLIES (AND (PARTITIONP2 P1 P2)
+               (REFINEMENT-P P1 P2)
+               (STANDARD-NUMBERP (CAR P1))
+               (STANDARD-NUMBERP (CAR (LAST P1)))
+               (I-SMALL (MESH P2)))
+          (I-CLOSE (RIEMANN-RCFN P1)
+                   (RIEMANN-RCFN P2)))
+using lemmas:
+  ("refinement-makes-i-small-change")
+and library books:
+  ("nsa-lemmas" "riemann-defuns")
+==============================
+Main.1.1.1.1.1.  refinement-makes-i-small-change.
+ (IMPLIES (AND (STRONG-REFINEMENT-P P1 P2)
+               (STANDARD-NUMBERP (CAR P1))
+               (STANDARD-NUMBERP (CAR (LAST P1)))
+               (I-SMALL (MESH P2)))
+          (I-SMALL (- (RIEMANN-RCFN P1)
+                      (RIEMANN-RCFN P2))))
+using lemmas:
+  ("riemann-bound" "refinement-makes-i-small-change-1"
+                   "riemann-rcfn-refinement-is-riemann-rcfn")
+and library books:
+  ("nsa-lemmas" "riemann-lemmas" "riemann-defuns")
+==============================
+Main.1.1.1.1.1.1.  riemann-bound.
+ (IMPLIES
+   (STRONG-REFINEMENT-P P1 P2)
+   (<= (ABS (- (RIEMANN-RCFN P1)
+               (RIEMANN-RCFN-REFINEMENT P1 P2)))
+       (ABS (* (SPAN P1)
+               (MAXLIST (ABSLIST (DIFFLIST (MAP-RCFN P1)
+                                           (MAP-RCFN-REFINEMENT P1 P2))))))))
+using library books:
+  ("riemann-lemmas")
+==============================
+Main.1.1.1.1.1.2.  refinement-makes-i-small-change-1.
+ (IMPLIES
+    (AND (STRONG-REFINEMENT-P P1 P2)
+         (STANDARD-NUMBERP (CAR P1))
+         (STANDARD-NUMBERP (CAR (LAST P1)))
+         (I-SMALL (MESH P2)))
+    (I-SMALL (* (SPAN P1)
+                (MAXLIST (ABSLIST (DIFFLIST (MAP-RCFN P1)
+                                            (MAP-RCFN-REFINEMENT P1 P2)))))))
+using lemmas:
+  ("i-small-maxlist-abslist-difflist-maps")
+and library books:
+  ("nsa-lemmas" "riemann-lemmas" "riemann-defuns")
+==============================
+Main.1.1.1.1.1.2.1.  i-small-maxlist-abslist-difflist-maps.
+ (IMPLIES
+      (AND (STRONG-REFINEMENT-P P1 P2)
+           (STANDARD-NUMBERP (CAR P1))
+           (STANDARD-NUMBERP (CAR (LAST P1)))
+           (I-SMALL (MESH P2)))
+      (I-SMALL (MAXLIST (ABSLIST (DIFFLIST (MAP-RCFN P1)
+                                           (MAP-RCFN-REFINEMENT P1 P2))))))
+using lemmas:
+  ("maxlist-abslist-difflist-maps-lt"
+       "two-times-r-is-not-less-than-standard-part")
+and library books:
+  ("nsa-lemmas" "riemann-lemmas" "riemann-defuns")
+==============================
+Main.1.1.1.1.1.2.1.1.  maxlist-abslist-difflist-maps-lt.
+ (IMPLIES (AND (STRONG-REFINEMENT-P P1 P2)
+               (CONSP (CDR P1))
+               (STANDARD-NUMBERP (CAR P1))
+               (STANDARD-NUMBERP (CAR (LAST P1)))
+               (I-SMALL (MESH P2))
+               (STANDARD-NUMBERP R)
+               (REALP R)
+               (< 0 R))
+          (< (MAXLIST (ABSLIST (DIFFLIST (MAP-RCFN P1)
+                                         (MAP-RCFN-REFINEMENT P1 P2))))
+             R))
+using lemmas:
+  ("map-rcfn-close-to-map-rcfn-refinement")
+and library books:
+  ("riemann-lemmas" "riemann-defuns")
+==============================
+Main.1.1.1.1.1.2.1.1.1.  map-rcfn-close-to-map-rcfn-refinement.
+ (IMPLIES (AND (STRONG-REFINEMENT-P P1 P2)
+               (CONSP (CDR P1))
+               (STANDARD-NUMBERP (CAR P1))
+               (STANDARD-NUMBERP (CAR (LAST P1)))
+               (I-SMALL (MESH P2))
+               (STANDARD-NUMBERP R)
+               (REALP R)
+               (< 0 R)
+               (<= 0 INDEX)
+               (< INDEX (LEN P1)))
+          (< (ABS (- (NTH INDEX (MAP-RCFN P1))
+                     (NTH INDEX (MAP-RCFN-REFINEMENT P1 P2))))
+             R))
+using lemmas:
+  ("rcfn-next-gte-close" "i-close-implies-abs-difference-small")
+and library books:
+  ("riemann-lemmas" "riemann-defuns")
+==============================
+Main.1.1.1.1.1.2.1.1.1.1.  rcfn-next-gte-close.
+ (IMPLIES (AND (PARTITIONP P2)
+               (STANDARD-NUMBERP (CAR P2))
+               (STANDARD-NUMBERP (CAR (LAST P2)))
+               (I-SMALL (MESH P2))
+               (<= (CAR P2) X)
+               (<= X (CAR (LAST P2)))
+               (REALP X))
+          (I-CLOSE (RCFN X)
+                   (RCFN (NEXT-GTE X P2))))
+using lemmas (NOT shown just below:  depth limit reached):
+  ("next-gte-close")
+and library books:
+  ("riemann-lemmas" "nsa-lemmas" "riemann-defuns")
+==============================
+Main.1.1.1.1.1.2.1.1.1.2.  i-close-implies-abs-difference-small.
+ (IMPLIES (AND (REALP R)
+               (STANDARD-NUMBERP R)
+               (< 0 R)
+               (REALP X)
+               (REALP Y)
+               (I-CLOSE X Y))
+          (< (ABS (- X Y)) R))
+using library books:
+  ("nsa-lemmas")
+==============================
+Main.1.1.1.1.1.2.1.2.  two-times-r-is-not-less-than-standard-part.
+ (IMPLIES (AND (REALP R) (<= 0 R))
+          (NOT (< (* 2 R) (STANDARD-PART R))))
+using library books:
+  ("defaxioms" "top-with-meta" "nsa-lemmas")
+==============================
+Main.1.1.1.1.1.3.  riemann-rcfn-refinement-is-riemann-rcfn.
+ (IMPLIES (STRONG-REFINEMENT-P P1 P2)
+          (EQUAL (RIEMANN-RCFN-REFINEMENT P1 P2)
+                 (RIEMANN-RCFN P2)))
+using lemmas:
+  ("equal-riemann-rcfn-refinement-reduction")
+and library books:
+  ("riemann-lemmas" "riemann-defuns")
+==============================
+Main.1.1.1.1.1.3.1.  equal-riemann-rcfn-refinement-reduction.
+ (IMPLIES (AND (PARTITIONP P1)
+               (PARTITIONP P2)
+               (CONSP (CDR P2))
+               (EQUAL (RIEMANN-RCFN-REFINEMENT (MEMBER (CADR P2) P1)
+                                               (CDR P2))
+                      (RIEMANN-RCFN (CDR P2)))
+               (STRONG-REFINEMENT-P P1 P2))
+          (EQUAL (RIEMANN-RCFN-REFINEMENT P1 P2)
+                 (RIEMANN-RCFN P2)))
+using lemmas:
+  ("map-rcfn-refinement-cdr-co-member")
+and library books:
+  ("riemann-lemmas" "riemann-defuns")
+==============================
+Main.1.1.1.1.1.3.1.1.  map-rcfn-refinement-cdr-co-member.
+ (IMPLIES (AND (PARTITIONP P1)
+               (PARTITIONP P2)
+               (CONSP (CDR P2))
+               (STRONG-REFINEMENT-P P1 P2))
+          (EQUAL (MAP-RCFN-REFINEMENT (CDR (CO-MEMBER (CADR P2) P1))
+                                      P2)
+                 (MY-MAKE-LIST (LEN (CDR (CO-MEMBER (CADR P2) P1)))
+                               (RCFN (CADR P2)))))
+using library books:
+  ("riemann-lemmas" "riemann-defuns")
+==============================
+Main.1.1.2.  riemann-sum-approximates-integral-2.
+ (IMPLIES
+  (AND (PARTITIONP P)
+       (EQUAL A (CAR P))
+       (EQUAL B (CAR (LAST P)))
+       (< A B)
+       (STANDARD-NUMBERP A)
+       (STANDARD-NUMBERP B)
+       (I-SMALL (MESH P)))
+  (I-CLOSE
+      (RIEMANN-RCFN P)
+      (RIEMANN-RCFN (COMMON-REFINEMENT P
+                                       (MAKE-PARTITION (CAR P)
+                                                       (CAR (LAST P))
+                                                       (I-LARGE-INTEGER))))))
+using lemmas:
+  ("riemann-sum-approximates-integral-1")
+and library books:
+  ("riemann-defuns")
+==============================
+Main.1.1.2.1.  riemann-sum-approximates-integral-1.
+ <See Main.1.1.1 for details.>
+==============================
+Main.1.2.  integral-rcfn-equal-if-i-close.
+ (IMPLIES (AND (REALP A)
+               (STANDARD-NUMBERP A)
+               (REALP B)
+               (STANDARD-NUMBERP B)
+               (< A B)
+               (REALP Y)
+               (REALP Z))
+          (EQUAL (EQUAL (INTEGRAL-RCFN A B)
+                        (+ (STANDARD-PART Y) (STANDARD-PART Z)))
+                 (I-CLOSE (INTEGRAL-RCFN A B) (+ Y Z))))
+using lemmas:
+  ("standard-part-equal-if-i-close")
+and library books:
+  ("integral-rcfn-lemmas" "riemann-lemmas"
+                          "integral-rcfn" "riemann-defuns")
+==============================
+Main.1.2.1.  standard-part-equal-if-i-close.
+ (IMPLIES (AND (REALP X) (REALP Y) (REALP Z))
+          (EQUAL (EQUAL (STANDARD-PART X)
+                        (+ (STANDARD-PART Y) (STANDARD-PART Z)))
+                 (I-CLOSE (STANDARD-PART X) (+ Y Z))))
+using library books:
+  ("defaxioms" "nsa-lemmas")
+==============================
+Main.2.  ftoc-lemma.
+ (IMPLIES (AND (REALP EPS)
+               (NOT (EQUAL EPS 0))
+               (I-SMALL EPS)
+               (REALP X)
+               (STANDARD-NUMBERP X))
+          (EQUAL (STANDARD-PART (/ (INTEGRAL-RCFN X (+ X EPS)) EPS))
+                 (RCFN X)))
+using lemmas:
+  ("integral-rcfn-quotient-between-non-classical"
+       "between-i-close-implies-i-close")
+and library books:
+  ("min-x-and-max-x-lemmas" "defaxioms" "integral-rcfn"
+                            "max-and-min-attained" "nsa-lemmas"
+                            "integral-rcfn-lemmas" "riemann-lemmas"
+                            "make-partition" "riemann-defuns")
+==============================
+Main.2.1.  integral-rcfn-quotient-between-non-classical.
+ (IMPLIES (AND (STANDARD-NUMBERP A)
+               (REALP A)
+               (STANDARD-NUMBERP B)
+               (REALP B)
+               (< A B))
+          (BETWEEN (/ (INTEGRAL-RCFN A B) (- B A))
+                   (RCFN (MIN-X A B))
+                   (RCFN (MAX-X A B))))
+using lemmas:
+  ("riemann-rcfn-between" "between-limited-implies-limited"
+                          "standard-part-preserves-between"
+                          "rcfn-standard-part" "i-limited-rcfn")
+and library books:
+  ("defaxioms" "integral-rcfn"
+               "max-and-min-attained" "nsa-lemmas"
+               "integral-rcfn-lemmas" "riemann-lemmas"
+               "make-partition" "riemann-defuns")
+==============================
+Main.2.1.1.  riemann-rcfn-between.
+ (IMPLIES (AND (REALP A) (REALP B) (< A B))
+          (LET ((P (MAKE-PARTITION A B (I-LARGE-INTEGER))))
+               (BETWEEN (RIEMANN-RCFN P)
+                        (* (RCFN (MIN-X-REC P)) (- B A))
+                        (* (RCFN (MAX-X-REC P)) (- B A)))))
+using lemmas:
+  ("riemann-rcfn-upper-bound" "riemann-rcfn-lower-bound")
+and library books:
+  ("max-and-min-attained" "nsa-lemmas"
+                          "integral-rcfn-lemmas" "riemann-lemmas"
+                          "make-partition" "riemann-defuns")
+==============================
+Main.2.1.1.1.  riemann-rcfn-upper-bound.
+ (IMPLIES (PARTITIONP P)
+          (LET ((A (CAR P)) (B (CAR (LAST P))))
+               (<= (RIEMANN-RCFN P)
+                   (* (RCFN (MAX-X-REC P)) (- B A)))))
+using library books:
+  ("max-and-min-attained" "nsa-lemmas"
+                          "riemann-lemmas" "make-partition"
+                          "riemann-defuns" "top-with-meta")
+==============================
+Main.2.1.1.2.  riemann-rcfn-lower-bound.
+ (IMPLIES (PARTITIONP P)
+          (LET ((A (CAR P)) (B (CAR (LAST P))))
+               (>= (RIEMANN-RCFN P)
+                   (* (RCFN (MIN-X-REC P)) (- B A)))))
+using library books:
+  ("max-and-min-attained" "nsa-lemmas"
+                          "riemann-lemmas" "make-partition"
+                          "riemann-defuns" "top-with-meta")
+==============================
+Main.2.1.2.  between-limited-implies-limited.
+ (IMPLIES (AND (BETWEEN Z X Y)
+               (REALP X)
+               (I-LIMITED X)
+               (REALP Y)
+               (I-LIMITED Y)
+               (REALP Z))
+          (I-LIMITED Z))
+using library books:
+  ("nsa-lemmas")
+==============================
+Main.2.1.3.  standard-part-preserves-between.
+ (IMPLIES (AND (REALP X)
+               (REALP Y)
+               (REALP Z)
+               (BETWEEN Z X Y))
+          (BETWEEN (STANDARD-PART Z)
+                   (STANDARD-PART X)
+                   (STANDARD-PART Y)))
+using library books:
+  ("defaxioms" "nsa-lemmas")
+==============================
+Main.2.1.4.  rcfn-standard-part.
+ (IMPLIES (AND (I-LIMITED X) (REALP X))
+          (EQUAL (RCFN (STANDARD-PART X))
+                 (STANDARD-PART (RCFN X))))
+using lemmas:
+  ("i-limited-rcfn")
+and library books:
+  ("defaxioms" "nsa-lemmas" "riemann-defuns")
+==============================
+Main.2.1.4.1.  i-limited-rcfn.
+ (IMPLIES (AND (REALP X) (I-LIMITED X))
+          (I-LIMITED (RCFN X)))
+using library books:
+  ("defaxioms" "nsa-lemmas" "riemann-defuns")
+==============================
+Main.2.1.5.  i-limited-rcfn.
+ <See Main.2.1.4.1 for details.>
+==============================
+Main.2.2.  between-i-close-implies-i-close.
+ (IMPLIES (AND (REALP Z)
+               (REALP X)
+               (REALP Y)
+               (REALP R)
+               (BETWEEN Z X Y)
+               (I-CLOSE X R)
+               (I-CLOSE Y R))
+          (I-CLOSE Z R))
+using library books:
+  ("defaxioms" "top-with-meta" "nsa-lemmas")
+==============================

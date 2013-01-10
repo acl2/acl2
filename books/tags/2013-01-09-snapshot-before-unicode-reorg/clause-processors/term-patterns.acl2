@@ -1,0 +1,7 @@
+; We need the following for provisional certification, so that ACL2
+; can read symbols flag::SYM in term-patterns.acl2x at the start of
+; the Pcertify step.
+
+(include-book "tools/flag" :dir :system)
+
+(certify-book "term-patterns" ?)
