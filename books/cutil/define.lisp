@@ -372,6 +372,35 @@ other @(see rule-classes), then you will want to override this default.</dd>
 
 </dl>
 
+<h4>@('Assert') Specification</h4>
+
+<p>It can be convenient when testing code to check that the arguments of a
+function meet certain criteria, and ACL2 implements that check with a @(see
+guard).  In order to take this idea one step further, @('define') provides a
+way to check the return value of the defined function at run-time, through the
+@(':assert') keyword argument.</p>
+
+<p>The @(':assert') keyword accepts either a symbol or a list of symbols.  In
+the event that a symbol or a list containing exactly one symbol is provided, a
+check will be added near the end of the defined function's body that checks
+that the return value passes the predicate associated with that symbol.
+Sometimes the defined function will return multiple-values.  In this case, the
+argument given to @(':assert') should be a list of symbols, of length equal to
+the number of return values.  @('Define') will then take each symbol and use
+its associated function to check that the <i>i</i>'th return value passes the
+<i>i</i>'th predicate symbol's test (where <i>i</i> ranges from 1 to the number
+of values returned by the defined function).</p>
+
+<p>In the long-term, we would like @('define') to only require a Boolean value
+as the argument to @(':assert') and to infer the requirements of the return
+values from the @(':returns') specifications.  If any user wishes to make this
+change to @('define'), they should feel free to do so.</p>
+
+<p>Another problem of the current implementation of @(':assert') is that if the
+same predicate is used twice, the @('define') will break.  A workaround for
+this is to define a second predicate that is simply a wrapper for the desired
+predicate.  The user can then use that second predicate in the second place it
+is needed.</p>
 
 <h3>The Other Events</h3>
 
@@ -905,8 +934,26 @@ some kind of separator!</p>
     `(defmacro ,fnname ,macro-formals
        (list ',fnname-fn . ,fn-arg-names))))
 
+; -------------- Assertion Specifications -------------------------------------
 
+(defun parse-assert-tests (assertion ctx)
+  (declare (xargs :guard (symbol-listp assertion)))
+  (cond ((atom assertion)
+         nil)
 
+; Predicate's symbol is also the local variable name.  It would be good to call
+; gensym, along with a call of check-vars-not-free so that the same predicate
+; could be used twice.  I'm not fixing this for now, because really we should
+; be using the returns specifications, and doing so will obviate this issue.
+
+        (t (cons `(if (,(car assertion) ,(car assertion)) 
+                      t
+                    (er hard? ',ctx
+                        "Assertion failure.  The following was supposed to ~
+                           be of type ~x0: ~x1"
+                        ',(car assertion)
+                        ,(car assertion)))
+                 (parse-assert-tests (cdr assertion) ctx)))))
 
 ; -------------- Returns Specifications ---------------------------------------
 
@@ -1442,6 +1489,22 @@ some kind of separator!</p>
              (alistp kwd-alist)))
   :hints(("Goal" :in-theory (enable get-defun-params))))
 
+(defund get-assertion (kwd-alist)
+  "Returns (mv assertion rest-of-kwd-alist)"
+  (declare (xargs :guard (alistp kwd-alist)))
+  (b* ((assertion (cdr (assoc :assert kwd-alist)))
+       (assertion (if (and (atom assertion) (not (null assertion)))
+                      (list assertion)
+                    assertion))
+       (kwd-alist (delete-assoc :assert kwd-alist)))
+    (mv assertion kwd-alist)))
+
+(defthm alistp-of-get-assertion
+  (implies (force (alistp kwd-alist))
+           (b* (((mv ?assertion kwd-alist)
+                 (get-assertion kwd-alist)))
+             (alistp kwd-alist)))
+  :hints(("Goal" :in-theory (enable get-assertion))))
 
 (defund get-returns (kwd-alist)
   "Returns (mv returns rest-of-kwd-alist)"
@@ -1466,6 +1529,7 @@ some kind of separator!</p>
             :inline
             :enabled
             :returns
+            :assert
             :prepwork
             )
           acl2::*xargs-keywords*))
@@ -1688,6 +1752,13 @@ some kind of separator!</p>
        ((mv parents short long kwd-alist) (get-xdoc-stuff kwd-alist))
        ((mv enabled-p inline-p prepwork kwd-alist)
         (get-defun-params kwd-alist))
+       ((mv assertion kwd-alist)          (get-assertion kwd-alist))
+       ((unless (symbol-listp assertion))
+        (er hard? 'define-fn
+            "Error in ~x0: expected :assert to be either a symbol or a ~
+             symbol-listp, but found ~x1."
+            fnname assertion)) 
+       (ruler-extenders (if assertion :all nil))       
 
        ((unless (true-listp prepwork))
         (er hard? 'define-fn
@@ -1719,6 +1790,9 @@ some kind of separator!</p>
        (formal-guards (remove t (formallist->guards formals)))
        (stobj-names   (formallist->names (formallist-collect-stobjs formals world)))
 
+       (assert-mv-let-bindings assertion)
+       (assert-tests (parse-assert-tests assertion fnname-fn))
+       
        (returnspecs   (parse-returnspecs fnname returns world))
        (defun-sym     (if enabled-p 'defun 'defund))
 
@@ -1737,8 +1811,19 @@ some kind of separator!</p>
                     `((declare (xargs :guard (and . ,formal-guards))))))
            ,@(and stobj-names `((declare (xargs :stobjs ,stobj-names))))
            ,@(and xargs       `((declare (xargs . ,xargs))))
+
+;; Bozo (that only applies in the :assert case), we should merge the
+;; ruler-extenders or figure out a way to do the assertions without them.
+
+           ,@(and ruler-extenders `((declare (xargs :ruler-extenders
+                                                    ,ruler-extenders))))
            ,@traditional-decls/docs
-           ,extended-body)))
+           ,(if assertion
+                `(mv?-let ,assert-mv-let-bindings
+                          ,extended-body
+                          (prog2$ (and ,@assert-tests)
+                                  (mv? ,@assert-mv-let-bindings)))
+                extended-body))))
 
     `(progn
        (defsection ,fnname
@@ -1789,4 +1874,3 @@ some kind of separator!</p>
   `(make-event (b* ((world (w state))
                     (event (define-fn ',name ',formals ',args world)))
                  (value event))))
-
