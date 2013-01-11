@@ -23,9 +23,9 @@
 
 (in-package "STR")
 (local (include-book "arithmetic"))
-(local (include-book "unicode/take" :dir :system))
-(local (include-book "unicode/nthcdr" :dir :system))
-(local (include-book "unicode/coerce" :dir :system))
+(local (include-book "misc/take" :dir :system))
+(local (include-book "std/lists/nthcdr" :dir :system))
+(local (include-book "std/lists/coerce" :dir :system))
 
 ;; NOTE: These get globally disabled by including this book!  This is probably
 ;; how things ought to be.

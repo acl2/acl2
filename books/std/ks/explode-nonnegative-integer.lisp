@@ -18,7 +18,7 @@
 (in-package "ACL2")
 
 (local (include-book "ihs/quotient-remainder-lemmas" :dir :system))
-(local (include-book "revappend"))
+(local (include-book "std/lists/revappend" :dir :system))
 (include-book "base10-digit-charp")
 
 
@@ -301,7 +301,7 @@
 
 (encapsulate
  ()
- (local (include-book "rev"))
+ (local (include-book "std/lists/rev" :dir :system))
 
  (defthm unexplode-nonnegative-integer-of-explode-nonnegative-integer
    (implies (force (natp n))

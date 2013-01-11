@@ -23,7 +23,7 @@
 (local (include-book "misc/assert" :dir :system))
 (local (include-book "../util/arithmetic"))
 (local (include-book "../util/position"))
-(local (include-book "unicode/intern-in-package-of-symbol" :dir :system))
+(local (include-book "std/ks/intern-in-package-of-symbol" :dir :system))
 
 
 (defxdoc exploding-vectors

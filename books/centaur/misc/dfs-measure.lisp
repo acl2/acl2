@@ -23,7 +23,7 @@
 (in-package "ACL2")
 (include-book "suffixp")
 (include-book "tools/rulesets" :dir :system)
-(include-book "unicode/two-nats-measure" :dir :system)
+(include-book "std/ks/two-nats-measure" :dir :system)
 (include-book "misc/hons-help" :dir :system)
 (include-book "tools/bstar" :dir :system)
 

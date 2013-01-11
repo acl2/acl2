@@ -21,8 +21,8 @@
 (include-book "utf8-table36")
 (include-book "utf8-encode")
 (include-book "partition")
-(local (include-book "nthcdr"))
-(local (include-book "signed-byte-listp"))
+(local (include-book "std/lists/nthcdr" :dir :system))
+(local (include-book "std/io/signed-byte-listp" :dir :system))
 (local (include-book "tools/mv-nth" :dir :system))
 (set-verify-guards-eagerness 2)
 (set-state-ok t)
@@ -1295,7 +1295,7 @@
 
 (encapsulate
  ()
- (local (include-book "revappend"))
+ (local (include-book "std/lists/revappend" :dir :system))
 
  (local (defthm lemma
           (implies (and (true-listp acc)

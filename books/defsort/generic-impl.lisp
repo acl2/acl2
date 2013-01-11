@@ -19,9 +19,9 @@
 ; Original author: Jared Davis <jared@centtech.com>
 
 (in-package "ACL2")
-(include-book "unicode/take" :dir :system)
-(include-book "unicode/nthcdr" :dir :system)
-(include-book "unicode/list-fix" :dir :system)
+(include-book "misc/take" :dir :system)
+(include-book "std/lists/nthcdr" :dir :system)
+(include-book "misc/list-fix" :dir :system)
 (include-book "duplicity")
 
 (local (include-book "ihs/ihs-lemmas" :dir :system))

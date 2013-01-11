@@ -76,14 +76,14 @@
 
 (include-book "misc/hons-help" :dir :system)
 
-(include-book "unicode/list-defuns" :dir :system)
-(include-book "unicode/nthcdr" :dir :system)
-(include-book "unicode/take" :dir :system)
-(include-book "unicode/coerce" :dir :system)
-(include-book "unicode/list-fix" :dir :system)
-(include-book "unicode/explode-atom" :dir :system)
-(include-book "unicode/repeat" :dir :system)
-(include-book "unicode/rev" :dir :system)
+(include-book "std/lists/list-defuns" :dir :system)
+(include-book "std/lists/nthcdr" :dir :system)
+(include-book "misc/take" :dir :system)
+(include-book "std/lists/coerce" :dir :system)
+(include-book "misc/list-fix" :dir :system)
+(include-book "std/ks/explode-atom" :dir :system)
+(include-book "std/lists/repeat" :dir :system)
+(include-book "std/lists/rev" :dir :system)
 
 (include-book "defsort/duplicity" :dir :system)
 (include-book "tools/mv-nth" :dir :system)
@@ -337,7 +337,7 @@
   (local (in-theory (enable rev)))
 
   (defthm rev-under-iff
-    ;; BOZO move me to unicode/rev
+    ;; BOZO move me to system/lists/rev
     (iff (rev x) (consp x)))
 
   (defthm member-equal-of-rev

@@ -20,8 +20,8 @@
 
 (in-package "STR")
 (include-book "eqv")
-(include-book "unicode/list-fix" :dir :system)
-(local (include-book "unicode/rev" :dir :system))
+(include-book "misc/list-fix" :dir :system)
+(local (include-book "std/lists/rev" :dir :system))
 (local (include-book "arithmetic"))
 
 

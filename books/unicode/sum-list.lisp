@@ -17,7 +17,7 @@
 
 (in-package "ACL2")
 
-(include-book "nat-listp")
+(include-book "std/lists/nat-listp" :dir :system)
 
 (defund sum-list (x)
   (declare (xargs :guard (nat-listp x)))

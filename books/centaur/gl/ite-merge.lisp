@@ -9,7 +9,7 @@
 
 (include-book "bvec-ite")
 (include-book "hyp-fix")
-(include-book "unicode/two-nats-measure" :dir :system)
+(include-book "std/ks/two-nats-measure" :dir :system)
 
 (include-book "tools/mv-nth" :dir :system)
 (local (include-book "misc/invariants" :dir :system))

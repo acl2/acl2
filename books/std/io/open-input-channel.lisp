@@ -17,7 +17,7 @@
 
 (in-package "ACL2")
 (local (include-book "tools/mv-nth" :dir :system))
-(local (include-book "update-state"))
+(local (include-book "system/update-state" :dir :system))
 (local (include-book "open-input-channels"))
 
 ; [Removed by Matt K. to handle changes to member, assoc, etc. after ACL2 4.2.]
@@ -59,9 +59,9 @@
  ;; to verify the guards on close-input-channel after opening a channel.
 
  (local (include-book "arithmetic/top" :dir :system))
- (local (include-book "explode-nonnegative-integer"))
- (local (include-book "intern-in-package-of-symbol"))
- (local (include-book "coerce"))
+ (local (include-book "std/ks/explode-nonnegative-integer" :dir :system))
+ (local (include-book "std/ks/intern-in-package-of-symbol" :dir :system))
+ (local (include-book "std/lists/coerce" :dir :system))
 
  (local (defthm lemma-0
           (implies (and (base10-digit-char-listp y1)

@@ -20,8 +20,8 @@
 
 (in-package "VL")
 (include-book "../util/warnings")
-(local (include-book "unicode/open-input-channel" :dir :system))
-(local (include-book "unicode/close-input-channel" :dir :system))
+(local (include-book "std/io/open-input-channel" :dir :system))
+(local (include-book "std/io/close-input-channel" :dir :system))
 (local (include-book "../util/arithmetic"))
 (set-state-ok t)
 

@@ -454,7 +454,7 @@
 
 (local
  (progn
-   (include-book "unicode/take" :dir :system)
+   (include-book "misc/take" :dir :system)
 
    (defthm nthcdr-len-x-of-append-x
      (Equal (nthcdr (len x) (append x y)) y))

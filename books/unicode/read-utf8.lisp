@@ -17,10 +17,10 @@
 
 (in-package "ACL2")
 (include-book "utf8-decode")
-(include-book "take-bytes")
+(include-book "std/io/take-bytes" :dir :system)
 ;; (local (include-book "open-input-channel"))
 ;; (local (include-book "close-input-channel"))
-(local (include-book "system/io" :dir :system))
+(local (include-book "std/io/base" :dir :system))
 (local (include-book "tools/mv-nth" :dir :system))
 (set-state-ok t)
 
@@ -423,7 +423,7 @@
                   :use ((:instance uchar?-of-utf8-combine4
                                    (x1 244)))))))
 
- (local (include-book "signed-byte-listp"))
+ (local (include-book "std/io/signed-byte-listp" :dir :system))
 
  (local (defthm unsigned-byte-listp-8-of-car-of-read-byte$-all-forward
           (implies (and (force (state-p1 state))

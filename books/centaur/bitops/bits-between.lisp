@@ -23,8 +23,8 @@
 (include-book "tools/bstar" :dir :system)
 (include-book "finite-set-theory/osets/sets" :dir :system)
 (local (include-book "ihs-extensions"))
-(local (include-book "unicode/rev" :dir :system))
-(local (include-book "unicode/append" :dir :system))
+(local (include-book "std/lists/rev" :dir :system))
+(local (include-book "std/lists/append" :dir :system))
 ; (local (include-book "arithmetic-3/extra/top-ext" :dir :system))
 
 (local (in-theory (enable* arith-equiv-forwarding)))

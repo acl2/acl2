@@ -21,10 +21,10 @@
 (in-package "STR")
 (include-book "digitp")
 (include-book "arithmetic/nat-listp" :dir :system)
-(local (include-book "unicode/revappend" :dir :system))
+(local (include-book "std/lists/revappend" :dir :system))
 (local (include-book "arithmetic-3/floor-mod/floor-mod" :dir :system))
-(local (include-book "unicode/rev" :dir :system))
-(local (include-book "unicode/coerce" :dir :system))
+(local (include-book "std/lists/rev" :dir :system))
+(local (include-book "std/lists/coerce" :dir :system))
 
 
 (local (defthm digit-listp-of-rev

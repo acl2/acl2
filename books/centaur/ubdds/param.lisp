@@ -25,7 +25,7 @@
 (include-book "extra-operations")
 (include-book "misc/hons-help2" :dir :system)
 (include-book "tools/rulesets" :dir :system)
-(local (include-book "unicode/take" :dir :system))
+(local (include-book "misc/take" :dir :system))
 
 (local (include-book "arithmetic/top" :dir :system))
 

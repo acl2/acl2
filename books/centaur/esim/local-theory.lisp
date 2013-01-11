@@ -24,7 +24,7 @@
 ;                   Jared Davis <jared@centtech.com>
 
 (in-package "ACL2")
-(include-book "unicode/rev" :dir :system)
+(include-book "std/lists/rev" :dir :system)
 (include-book "data-structures/list-defthms" :dir :system)
 (include-book "data-structures/no-duplicates" :dir :system)
 (include-book "centaur/misc/fast-alists" :dir :system)

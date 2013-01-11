@@ -17,12 +17,12 @@
 
 (in-package "ACL2")
 
-(include-book "flatten")
+(include-book "std/lists/flatten" :dir :system)
 (include-book "sum-list")
-(local (include-book "take"))
+(local (include-book "misc/take" :dir :system))
 (local (include-book "z-listp"))
 (local (include-book "arithmetic/top-with-meta" :dir :system))
-(local (include-book "nthcdr"))
+(local (include-book "std/lists/nthcdr" :dir :system))
 
 (defund partition (sizes x)
   (declare (xargs :guard (and (nat-listp sizes)

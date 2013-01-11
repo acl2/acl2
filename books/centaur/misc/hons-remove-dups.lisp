@@ -1,7 +1,7 @@
 
 (in-package "ACL2")
 
-(include-book "unicode/rev" :dir :system)
+(include-book "std/lists/rev" :dir :system)
 (include-book "alist-equiv")
 
 ;; Defines hons-remove-dups, which is equivalent to remove-duplicates-equal but

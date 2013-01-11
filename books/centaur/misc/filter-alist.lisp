@@ -22,7 +22,7 @@
 
 (in-package "ACL2")
 (include-book "centaur/misc/fast-alists" :dir :system)
-(local (include-book "unicode/rev" :dir :system))
+(local (include-book "std/lists/rev" :dir :system))
 
 
 (defstub filter-alist-criteria (entry) t)

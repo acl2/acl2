@@ -29,7 +29,7 @@
 (include-book "centaur/misc/nat-list-duplicates" :dir :system)
 (include-book "centaur/misc/tuplep" :dir :system)
 (include-book "centaur/misc/dfs-measure" :dir :system)
-(include-book "unicode/two-nats-measure" :dir :system)
+(include-book "std/ks/two-nats-measure" :dir :system)
 (include-book "centaur/vl/util/cwtime" :dir :system)
 (local (include-book "arithmetic/top-with-meta" :dir :system))
 

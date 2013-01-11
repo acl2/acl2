@@ -21,7 +21,7 @@
 (in-package "STR")
 (include-book "ieqv")
 (include-book "iprefixp")
-(include-book "unicode/nthcdr" :dir :system)
+(include-book "std/lists/nthcdr" :dir :system)
 (local (include-book "arithmetic"))
 
 (local (defthm iprefixp-lemma-1

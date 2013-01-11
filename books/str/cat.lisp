@@ -22,7 +22,7 @@
 (include-book "xdoc/top" :dir :system)
 (include-book "misc/definline" :dir :system)
 (local (include-book "arithmetic"))
-(local (include-book "unicode/take" :dir :system))
+(local (include-book "misc/take" :dir :system))
 
 
 (defsection cat

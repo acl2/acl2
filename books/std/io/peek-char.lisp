@@ -17,7 +17,7 @@
 
 (in-package "ACL2")
 
-(include-book "system/io" :dir :system)
+(include-book "base")
 
 ;; (local (include-book "update-state"))
 ;; (local (include-book "open-input-channels"))

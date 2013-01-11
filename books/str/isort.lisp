@@ -21,7 +21,7 @@
 (in-package "STR")
 (include-book "iless")
 (include-book "defsort/defsort" :dir :system)
-(include-book "unicode/list-fix" :dir :system)
+(include-book "misc/list-fix" :dir :system)
 
 (ACL2::defsort
  :comparablep stringp

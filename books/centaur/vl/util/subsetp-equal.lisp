@@ -26,8 +26,8 @@
 
 (include-book "centaur/misc/equal-sets" :dir :system)
 (include-book "finite-set-theory/osets/sets" :dir :system)
-(include-book "unicode/list-fix" :dir :system)
-(include-book "unicode/take" :dir :system)
+(include-book "misc/list-fix" :dir :system)
+(include-book "misc/take" :dir :system)
 (include-book "defsort/duplicated-members" :dir :system)
 
 (local (include-book "arithmetic/top" :dir :system))

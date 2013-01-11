@@ -23,8 +23,8 @@
 
 (in-package "ACL2")
 (include-book "stv-util")
-(include-book "unicode/repeat" :dir :system)
-(local (include-book "unicode/take" :dir :system))
+(include-book "std/lists/repeat" :dir :system)
+(local (include-book "misc/take" :dir :system))
 
 (defsection stv-widen-lines
   :parents (stv-widen)

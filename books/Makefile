@@ -62,14 +62,14 @@ export ACL2_PCERT
 DIRS1 = cowles arithmetic meta xdoc
 DIRS2_EXCEPT_WK_COI = ordinals data-structures bdd ihs arithmetic-2 arithmetic-3 arithmetic-5 \
 	misc models/jvm/m1-original models/jvm/m1 models/jvm/m5 \
-proofstyles rtl arithmetic-3/extra sorting make-event parallel hints \
+	proofstyles rtl arithmetic-3/extra sorting make-event parallel hints \
 	fix-cert finite-set-theory finite-set-theory/osets powerlists textbook \
 	defexec symbolic \
 	data-structures/memories unicode str concurrent-programs/bakery \
 	concurrent-programs/german-protocol deduction/passmore clause-processors \
 	quadratic-reciprocity tools paco hacking security regex \
-	defsort serialize wp-gen xdoc-impl system tutorial-problems cutil \
-	countereg-gen demos leftist-trees taspi io
+	defsort serialize wp-gen xdoc-impl system tutorial-problems \
+    cutil countereg-gen demos leftist-trees taspi std std/ks std/lists std/io
 # Add directories other than centaur that depend on hons, say, for performance:
 HONS_ONLY_DIRS = models/y86 security/des
 ifdef ACL2_HONS_REGRESSION
@@ -147,7 +147,7 @@ textbook: arithmetic top-with-meta-cert ordinals ihs
 defexec: arithmetic misc ordinals
 symbolic: arithmetic arithmetic-2 data-structures ihs misc ordinals models/jvm/m5
 data-structures/memories: arithmetic-3 misc
-unicode: arithmetic arithmetic-3 ihs ordinals tools misc system
+unicode: arithmetic arithmetic-3 ihs ordinals tools misc system std/io std/lists std/ks
 proofstyles: arithmetic-2 ordinals misc top-with-meta-cert
 concurrent-programs/bakery: misc ordinals
 concurrent-programs/german-protocol: misc
@@ -171,14 +171,17 @@ security/des: security misc centaur
 sorting: arithmetic-3/extra
 tools: arithmetic-5 misc xdoc
 regex: tools cutil str misc
-defsort: misc unicode tools
-str: arithmetic unicode defsort tools xdoc misc
+defsort: misc tools std/lists
+str: arithmetic defsort tools xdoc misc std/ks
 coi: arithmetic arithmetic-2 arithmetic-3 data-structures ihs make-event \
 	misc ordinals rtl
 wp-gen: ordinals
 # xdoc has no dependencies
 xdoc-impl: xdoc str tools finite-set-theory/osets
 system: tools arithmetic arithmetic-5 misc
+std/lists: misc
+std/ks: std/lists
+std/io: tools xdoc system std/lists
 cutil: xdoc xdoc-impl tools str misc finite-set-theory/osets \
        defsort unicode clause-processors
 countereg-gen: xdoc arithmetic-5 tools defexec finite-set-theory/osets \
@@ -187,7 +190,7 @@ leftist-trees: arithmetic-5 sorting
 demos: make-event cutil misc tools arithmetic
 taspi: misc arithmetic-3
 models/y86: tools centaur misc arithmetic-5 rtl arithmetic defexec
-io: unicode cutil tools
+
 
 # Let us wait for everything else before workshops.  Starting after
 # Version_4.3 we include the coi books, because of

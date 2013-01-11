@@ -31,8 +31,8 @@
 
 (include-book "cutil/top" :dir :system)
 (include-book "tools/defconsts" :dir :system)
-(include-book "unicode/two-nats-measure" :dir :system)
-(include-book "unicode/list-defuns" :dir :system)
+(include-book "std/ks/two-nats-measure" :dir :system)
+(include-book "std/lists/list-defuns" :dir :system)
 (include-book "centaur/bitops/integer-length" :dir :system)
 (include-book "centaur/misc/alist-equiv" :dir :system)
 (include-book "centaur/misc/hons-extra" :dir :system)

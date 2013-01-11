@@ -20,7 +20,7 @@
 
 (in-package "STR")
 (include-book "ieqv")
-(local (include-book "unicode/nthcdr" :dir :system))
+(local (include-book "std/lists/nthcdr" :dir :system))
 (local (include-book "arithmetic"))
 
 

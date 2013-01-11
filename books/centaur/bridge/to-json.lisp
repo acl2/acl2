@@ -22,8 +22,8 @@
 (include-book "misc/definline" :dir :system)
 (include-book "str/cat" :dir :system)
 (include-book "str/natstr" :dir :system)
-(include-book "unicode/two-nats-measure" :dir :system)
-(local (include-book "unicode/explode-atom" :dir :system))
+(include-book "std/ks/two-nats-measure" :dir :system)
+(local (include-book "std/ks/explode-atom" :dir :system))
 (local (include-book "centaur/bitops/ihsext-basics" :dir :system))
 (local (include-book "misc/assert" :dir :system))
 
@@ -299,7 +299,7 @@ character list."
                              (+ 1 (mbe :logic (nfix n) :exec n))
                              xl acc))))
 
-  (local (include-book "unicode/nthcdr" :dir :system))
+  (local (include-book "std/lists/nthcdr" :dir :system))
   (local (include-book "arithmetic/top" :dir :system))
 
   (local (defthm nthcdr-of-increment

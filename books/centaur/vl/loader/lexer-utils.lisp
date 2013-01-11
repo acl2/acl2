@@ -21,7 +21,7 @@
 ;; lexutils.lisp --- general-purpose routines for writing echar-based lexers.
 
 (in-package "VL")
-(include-book "unicode/prefixp" :dir :system)
+(include-book "std/lists/prefixp" :dir :system)
 (include-book "../util/echars")
 (local (include-book "../util/arithmetic"))
 

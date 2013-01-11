@@ -20,7 +20,7 @@
 
 (in-package "STR")
 (include-book "ieqv")
-(include-book "unicode/prefixp" :dir :system)
+(include-book "std/lists/prefixp" :dir :system)
 (local (include-book "arithmetic"))
 
 (defsection iprefixp

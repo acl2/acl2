@@ -31,7 +31,7 @@
 (include-book "cutil/defmvtypes" :dir :system)
 (include-book "cutil/defprojection" :dir :system)
 (include-book "str/natstr" :dir :system)
-(include-book "unicode/final-cdr" :dir :system)
+(include-book "std/lists/final-cdr" :dir :system)
 (include-book "centaur/vl/util/defs" :dir :system)
 (local (include-book "../esim-sexpr-support-thms"))
 (local (include-book "centaur/vl/util/arithmetic" :dir :system))

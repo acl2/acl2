@@ -28,10 +28,10 @@
 (include-book "char-case")
 (include-book "cat")
 (local (include-book "arithmetic"))
-(local (include-book "unicode/rev" :dir :system))
-(local (include-book "unicode/coerce" :dir :system))
-(local (include-book "unicode/take" :dir :system))
-(local (include-book "unicode/nthcdr" :dir :system))
+(local (include-book "std/lists/rev" :dir :system))
+(local (include-book "std/lists/coerce" :dir :system))
+(local (include-book "misc/take" :dir :system))
+(local (include-book "std/lists/nthcdr" :dir :system))
 (local (include-book "subseq"))
 
 (local (defthm append-singleton-crock

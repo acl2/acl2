@@ -16,6 +16,7 @@
 ;; Place - Suite 330, Boston, MA 02111-1307, USA.
 
 ; Modified 6/18/06 by Matt K. to replace run-times by acl2-oracle.
+; Moved by David Rager 1/10/13 from unicode directory.
 
 (in-package "ACL2")
 

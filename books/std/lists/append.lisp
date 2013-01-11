@@ -17,7 +17,7 @@
 
 (in-package "ACL2")
 
-(include-book "list-fix")
+(include-book "misc/list-fix" :dir :system)
 (local (include-book "arithmetic/top" :dir :system))
 
 (local (defthm len-when-consp

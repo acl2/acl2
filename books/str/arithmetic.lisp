@@ -20,9 +20,9 @@
 
 (in-package "ACL2")
 (include-book "arithmetic/top" :dir :system)
-(include-book "unicode/nthcdr" :dir :system)
-(include-book "unicode/append" :dir :system)
-(include-book "unicode/repeat" :dir :system)
+(include-book "std/lists/nthcdr" :dir :system)
+(include-book "std/lists/append" :dir :system)
+(include-book "std/lists/repeat" :dir :system)
 (in-theory (enable acl2::make-list-ac->repeat))
 
 

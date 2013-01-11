@@ -21,8 +21,8 @@
 (in-package "STR")
 (include-book "misc/definline" :dir :system)
 (include-book "xdoc/top" :dir :system)
-(include-book "unicode/prefixp" :dir :system)
-(include-book "unicode/nthcdr" :dir :system)
+(include-book "std/lists/prefixp" :dir :system)
+(include-book "std/lists/nthcdr" :dir :system)
 (local (include-book "arithmetic"))
 
 (local (defthm prefixp-lemma-1

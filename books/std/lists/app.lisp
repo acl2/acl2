@@ -16,8 +16,8 @@
 ;; Place - Suite 330, Boston, MA 02111-1307, USA.
 
 (in-package "ACL2")
-(include-book "list-fix")
-(local (include-book "take"))
+(include-book "misc/list-fix" :dir :system)
+(local (include-book "misc/take" :dir :system))
 (local (include-book "nthcdr"))
 
 

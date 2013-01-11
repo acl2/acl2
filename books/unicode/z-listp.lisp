@@ -17,7 +17,7 @@
 
 (in-package "ACL2")
 
-(include-book "app")
+(include-book "std/lists/app" :dir :system)
 
 (defund z-listp (x)
   (declare (xargs :guard t))

@@ -28,10 +28,10 @@
 (include-book "str/cat" :dir :system)
 (include-book "finite-set-theory/osets/sets" :dir :system)
 (include-book "defsort/duplicated-members" :dir :system)
-(include-book "unicode/list-fix" :dir :system)
-(include-book "unicode/take" :dir :system)
-(include-book "unicode/repeat" :dir :system)
-(include-book "unicode/rev" :dir :system)
+(include-book "misc/list-fix" :dir :system)
+(include-book "misc/take" :dir :system)
+(include-book "std/lists/repeat" :dir :system)
+(include-book "std/lists/rev" :dir :system)
 (local (include-book "deflist-aux"))
 
 (defxdoc deflist

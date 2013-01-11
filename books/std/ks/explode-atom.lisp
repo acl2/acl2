@@ -17,7 +17,7 @@
 
 (in-package "ACL2")
 (include-book "base10-digit-charp")
-(local (include-book "append"))
+(local (include-book "std/lists/append" :dir :system))
 (local (include-book "explode-nonnegative-integer"))
 
 (defthm true-listp-of-explode-atom

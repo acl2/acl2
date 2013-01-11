@@ -16,8 +16,8 @@
 
 (in-package "SETS")
 (include-book "union")
-(local (include-book "unicode/app" :dir :system))
-(local (include-book "unicode/rev" :dir :system))
+(local (include-book "std/lists/app" :dir :system))
+(local (include-book "std/lists/rev" :dir :system))
 (local (include-book "tools/mv-nth" :dir :system))
 (set-verify-guards-eagerness 2)
 

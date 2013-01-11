@@ -16,7 +16,7 @@
 ;; Place - Suite 330, Boston, MA 02111-1307, USA.
 
 (in-package "ACL2")
-(local (include-book "take"))
+(local (include-book "misc/take" :dir :system))
 
 (defund simpler-take (n xs)
   ;; Redundant from take.lisp

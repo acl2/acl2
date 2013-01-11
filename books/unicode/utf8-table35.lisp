@@ -17,8 +17,8 @@
 
 (in-package "ACL2")
 (include-book "uchar")
-(include-book "unsigned-byte-listp")
-(local (include-book "signed-byte-listp"))
+(include-book "std/io/unsigned-byte-listp" :dir :system)
+(local (include-book "std/io/signed-byte-listp" :dir :system))
 (local (in-theory (enable unsigned-byte-p)))
 
 

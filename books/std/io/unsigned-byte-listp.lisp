@@ -18,9 +18,9 @@
 (in-package "ACL2")
 (set-verify-guards-eagerness 2)
 
-(include-book "take")
-(include-book "nat-listp")
-(local (include-book "repeat"))
+(include-book "misc/take" :dir :system)
+(include-book "std/lists/nat-listp" :dir :system)
+(local (include-book "std/lists/repeat" :dir :system))
 
 (in-theory (disable unsigned-byte-p))
 

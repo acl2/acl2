@@ -16,7 +16,7 @@
 ;; Place - Suite 330, Boston, MA 02111-1307, USA.
 
 (in-package "ACL2")
-(include-book "system/io" :dir :system)
+(include-book "base")
 
 ;; (local (include-book "tools/mv-nth" :dir :system))
 ;; (local (include-book "update-state"))

@@ -23,7 +23,7 @@
 (include-book "misc/definline" :dir :system)
 (local (include-book "misc/assert" :dir :system))
 (local (include-book "arithmetic"))
-(local (include-book "unicode/revappend" :dir :system))
+(local (include-book "std/lists/revappend" :dir :system))
 
 (defsection strtok-aux
   :parents (strtok)

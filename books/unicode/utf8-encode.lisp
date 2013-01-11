@@ -18,8 +18,8 @@
 (in-package "ACL2")
 (include-book "utf8-table35")
 (include-book "utf8-table36")
-(local (include-book "append"))
-(local (include-book "signed-byte-listp"))  ;; for the-fixnum
+(local (include-book "std/lists/append" :dir :system))
+(local (include-book "std/io/signed-byte-listp" :dir :system))  ;; for the-fixnum
 
 
 

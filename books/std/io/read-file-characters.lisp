@@ -22,7 +22,7 @@
 ;; (local (include-book "open-input-channel"))
 ;; (local (include-book "read-char"))
 ;; (local (include-book "close-input-channel"))
-(local (include-book "revappend"))
+(local (include-book "std/lists/revappend" :dir :system))
 (local (include-book "tools/mv-nth" :dir :system))
 
 (defun tr-read-char$-all (channel state acc)
@@ -135,7 +135,7 @@
 
 (encapsulate
  ()
- (local (include-book "rev"))
+ (local (include-book "std/lists/rev" :dir :system))
  (verify-guards read-char$-all))
 
 

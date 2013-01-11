@@ -20,7 +20,7 @@
 
 (in-package "STR")
 (include-book "tools/bstar" :dir :system)
-(local (include-book "unicode/explode-atom" :dir :system))
+(local (include-book "std/ks/explode-atom" :dir :system))
 (local (include-book "arithmetic"))
 
 (defund insert-underscores (x)

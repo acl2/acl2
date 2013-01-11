@@ -20,7 +20,7 @@
 
 (in-package "STR")
 (include-book "xdoc/top" :dir :system)
-(include-book "unicode/list-fix" :dir :system)
+(include-book "misc/list-fix" :dir :system)
 (include-book "misc/definline" :dir :system)
 (local (include-book "arithmetic"))
 

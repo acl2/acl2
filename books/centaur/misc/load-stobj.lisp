@@ -20,7 +20,7 @@
 ; Original author: Jared Davis <jared@centtech.com>
 
 (in-package "ACL2")
-(include-book "unicode/list-fix" :dir :system)
+(include-book "misc/list-fix" :dir :system)
 (local (include-book "arithmetic/top" :dir :system))
 (local (include-book "data-structures/list-defthms" :dir :system))
 ;;(local (include-book "unicode/take" :dir :system))
