@@ -16713,60 +16713,6 @@
         #+:non-standard-analysis ; std-p
         nil))
 
-#+acl2-loop-only
-(defmacro defund (&rest def)
-
-  ":Doc-Section acl2::Events
-
-  define a function symbol and then disable it~/~/
-
-  Use ~c[defund] instead of ~ilc[defun] when you want to disable a function
-  immediately after its definition.  This macro has been provided for users who
-  prefer working in a mode where functions are only enabled when explicitly
-  directed by ~c[:]~ilc[in-theory].  Specifically, the form
-  ~bv[]
-  (defund NAME FORMALS ...)
-  ~ev[]
-  expands to:
-  ~bv[]
-  (progn
-    (defun NAME FORMALS ...)
-    (with-output
-     :off summary
-     (in-theory (disable NAME)))
-    (value-triple '(:defund NAME))).
-  ~ev[]
-  Only the ~c[:]~ilc[definition] rule (and, for recursively defined functions,
-  the ~c[:]~ilc[induction] rule) for the function are disabled.  In particular,
-  ~c[defund] does not disable either the ~c[:]~ilc[type-prescription] or the
-  ~c[:]~ilc[executable-counterpart] rule.  Also, the summary for the
-  ~ilc[in-theory] event is suppressed.
-
-  Note that ~c[defund] commands are never redundant (~pl[redundant-events]).
-  If the function has already been defined, then the ~ilc[in-theory] event
-  will still be executed.
-
-  ~l[defun] for documentation of ~c[defun]."
-
-  (declare (xargs :guard (and (true-listp def)
-                              (symbolp (car def))
-                              (symbol-listp (cadr def)))))
-
-  (list 'progn
-        (cons 'defun def)
-        (list
-         'with-output
-         :off 'summary
-         (list 'in-theory
-               (list 'disable (car def))))
-        (list 'value-triple
-              (list 'quote (xd-name 'defund (car def)))
-              :on-skip-proofs t)))
-
-#-acl2-loop-only
-(defmacro defund (&rest def)
-  (cons 'defun def))
-
 #+(and acl2-loop-only :non-standard-analysis)
 (defmacro defun-std (&whole event-form &rest def)
 

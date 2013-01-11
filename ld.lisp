@@ -20063,6 +20063,13 @@
 
   ~st[CHANGES TO EXISTING FEATURES]
 
+  The macro ~ilc[defund] now avoids an error when ~c[:mode :program] has been
+  specified in an ~ilc[xargs] form of a ~ilc[declare] form, for example:
+  ~c[(defund f (x) (declare (xargs :mode :program)) x)].  It does this by
+  avoiding the generation of ~ilc[in-theory] ~il[events] in such cases.  Thanks
+  to David Rager and Jared Davis for requesting such a change, and for ensuing
+  helpful discussions.
+
   ~st[NEW FEATURES]
 
   A new utility, ~c[set-splitter-output], can direct the prover to give

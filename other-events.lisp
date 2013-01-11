@@ -34916,3 +34916,88 @@
      (t (setf (time-tracker-latest tt)
               (get-internal-run-time))))))
 )
+
+; We originally defined defund in axioms.lisp, but now that its definition
+; depends on remove-strings and other functions defined after axioms.lisp, we
+; define it here.
+
+(defun program-declared-p1 (dcls)
+  (cond ((endp dcls) nil)
+        ((and (consp (car dcls))
+              (eq (caar dcls) 'xargs)
+              (keyword-value-listp (cdr (car dcls)))
+              (eq (cadr (assoc-keyword :mode (cdr (car dcls))))
+                  :program))
+         t)
+        (t (program-declared-p1 (cdr dcls)))))
+
+(defun program-declared-p (def)
+
+; Def is a definition with the initial DEFUN or DEFUND stripped off.  We return
+; t if the declarations in def are minimally well-formed and there is an xargs
+; declaration of :mode :program.
+
+  (mv-let (erp dcls)
+          (collect-dcls (remove-strings (butlast (cddr def) 1)) 'ignored-ctx)
+          (cond (erp nil)
+                (t (program-declared-p1 dcls)))))
+
+#+acl2-loop-only
+(defmacro defund (&rest def)
+
+  ":Doc-Section acl2::Events
+
+  define a function symbol and then disable it~/~/
+
+  Use ~c[defund] instead of ~ilc[defun] when you want to disable a function
+  immediately after its definition in ~c[:]~ilc[logic] mode.  This macro has
+  been provided for users who prefer working in a mode where functions are only
+  enabled when explicitly directed by ~c[:]~ilc[in-theory].  Specifically, the
+  form
+  ~bv[]
+  (defund NAME FORMALS ...)
+  ~ev[]
+  expands to:
+  ~bv[]
+  (progn
+    (defun NAME FORMALS ...)
+    (with-output
+     :off summary
+     (in-theory (disable NAME)))
+    (value-triple '(:defund NAME))).
+  ~ev[]
+  Only the ~c[:]~ilc[definition] rule (and, for recursively defined functions,
+  the ~c[:]~ilc[induction] rule) for the function are disabled.  In particular,
+  ~c[defund] does not disable either the ~c[:]~ilc[type-prescription] or the
+  ~c[:]~ilc[executable-counterpart] rule.  Also, the summary for the
+  ~ilc[in-theory] event is suppressed.
+
+  If the function is defined in ~c[:]~ilc[program] mode, either because the
+  ~il[default-defun-mode] is ~c[:]~ilc[program] or because ~c[:mode :program]
+  has been specified in an ~ilc[xargs] form of a ~ilc[declare] form, then no
+  ~ilc[in-theory] event is executed.  (More precisely, ~ilc[in-theory] events
+  are ignored when the ~il[default-defun-mode] is ~c[:]~ilc[program], and if
+  ~c[:mode :program] is specified then ~c[defund] does not generate an
+  ~ilc[in-theory] event.)
+
+  Note that ~c[defund] commands are never redundant (~pl[redundant-events])
+  when the ~il[default-defun-mode] is ~c[:]~ilc[logic], because the
+  ~ilc[in-theory] event will always be executed.
+
+  ~l[defun] for documentation of ~c[defun]."
+
+  (declare (xargs :guard (and (true-listp def)
+                              (symbolp (car def))
+                              (symbol-listp (cadr def)))))
+
+  `(progn (defun ,@def)
+          ,@(and (not (program-declared-p def))
+                 `((with-output
+                    :off summary
+                    (in-theory (disable ,(car def))))))
+          (value-triple ',(xd-name 'defund (car def))
+                        :on-skip-proofs t)))
+
+#-acl2-loop-only
+(defmacro defund (&rest def)
+  (cons 'defun def))
