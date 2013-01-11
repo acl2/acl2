@@ -181,7 +181,7 @@ xdoc-impl: xdoc str tools finite-set-theory/osets
 system: tools arithmetic arithmetic-5 misc
 std/lists: misc
 std/ks: std/lists
-std/io: tools xdoc system std/lists
+std/io: tools xdoc system std/lists std/ks
 cutil: xdoc xdoc-impl tools str misc finite-set-theory/osets \
        defsort unicode clause-processors
 countereg-gen: xdoc arithmetic-5 tools defexec finite-set-theory/osets \

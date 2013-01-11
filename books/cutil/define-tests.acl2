@@ -1,0 +1,2 @@
+(include-book "portcullis")
+(certify-book "define-tests" ? t :ttags (:cutil-optimize))
