@@ -18207,7 +18207,13 @@
   make regression
   ~ev[]
   For each book ~c[foo.lisp], a file ~c[foo.out] in the same directory will
-  contain the output from the corresponding certification attempt.
+  contain the output from the corresponding certification attempt.  If you have
+  previous executed such a command, then you will first want to delete
+  ~il[certificate] files and other generated files, either by first executing
+  ~c[make clean-books] or simply by submitting the following command.
+  ~bv[]
+  make regression-fresh
+  ~ev[]
 
   By default, the ACL2 executable used is the file ~c[saved_acl2] in the ACL2
   sources directory.  But you can specify another instead; indeed, you must do
@@ -18216,6 +18222,7 @@
   ~bv[]
   make regression ACL2=<your_favorite_acl2_executable>
   ~ev[]
+
   If you have a multi-processor machine or the like, then you can use the
   ~c[ACL2_JOBS] variable to obtain ~c[make]-level parallelism by specifying the
   number of concurrent processes.  The following example shows how to specify 8
@@ -18226,11 +18233,18 @@
   ~bv[]
   make ACL2_JOBS=8 regression
   ~ev[]
+  Note that while other environment and `make' variables discussed here are
+  also appropriate for use by suitable calls of `make' in the community books
+  directory, ~c[ACL2_JOBS] is only suitable for use with the ~c[regression]
+  target (and similar targets, such as ~c[regression-fresh]) in the ACL2
+  sources directory.
+
   You can also specify just the directories you want, among those offered in
   ~c[Makefile].  For example:
   ~bv[]
   make -j 8 regression ACL2_BOOK_DIRS='symbolic paco'
   ~ev[]
+
   By default, your acl2-customization file (~pl[acl2-customization]) is ignored
   by all such flavors of ``~c[make regression]''.  However, you can specify the
   use of an acl2-customization file by setting the value of environment
@@ -18241,8 +18255,11 @@
   make regression ACL2_CUSTOMIZATION='~~/acl2-customization.lisp'
   ~ev[]
 
+  The `make' commands displayed above all use the makefile, ~c[GNUmakefile],
+  that resides in the ACL2 sources directory.
+
   We now discuss how to create suitable makefiles in individual directories
-  containing certifiable ~il[books].~/
+  that contain certifiable ~il[books].~/
 
   ACL2's regression suite is typically run on the community books, using
   ~c[Makefile]s that include community books file ~c[books/Makefile-generic].
