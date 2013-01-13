@@ -21,7 +21,7 @@
 (in-package "STR")
 (include-book "eqv")
 (local (include-book "arithmetic"))
-(local (include-book "misc/take" :dir :system))
+(local (include-book "std/lists/take" :dir :system))
 
 (defsection firstn-chars
   :parents (str)

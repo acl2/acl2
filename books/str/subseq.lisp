@@ -23,7 +23,7 @@
 
 (in-package "STR")
 (local (include-book "arithmetic"))
-(local (include-book "misc/take" :dir :system))
+(local (include-book "std/lists/take" :dir :system))
 (local (include-book "std/lists/nthcdr" :dir :system))
 (local (include-book "std/lists/coerce" :dir :system))
 

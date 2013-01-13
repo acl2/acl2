@@ -78,9 +78,9 @@
 
 (include-book "std/lists/list-defuns" :dir :system)
 (include-book "std/lists/nthcdr" :dir :system)
-(include-book "misc/take" :dir :system)
+(include-book "std/lists/take" :dir :system)
 (include-book "std/lists/coerce" :dir :system)
-(include-book "misc/list-fix" :dir :system)
+(include-book "std/lists/list-fix" :dir :system)
 (include-book "std/ks/explode-atom" :dir :system)
 (include-book "std/lists/repeat" :dir :system)
 (include-book "std/lists/rev" :dir :system)

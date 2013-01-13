@@ -10,7 +10,7 @@
 (include-book "centaur/misc/evaluator-metatheorems" :dir :system)
 (include-book "centaur/misc/interp-function-lookup" :dir :system)
 (include-book "centaur/ubdds/witness" :dir :system)
-(local (include-book "misc/take" :dir :system))
+(local (include-book "std/lists/take" :dir :system))
 (local (include-book "gobjectp-thms"))
 
 

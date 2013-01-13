@@ -133,7 +133,7 @@ data-structures: arithmetic
 meta: arithmetic
 ordinals: top-with-meta-cert
 ihs: arithmetic data-structures
-misc: data-structures top-with-meta-cert ordinals arithmetic ihs arithmetic-2 arithmetic-3
+misc: data-structures top-with-meta-cert ordinals arithmetic ihs arithmetic-2 arithmetic-3 std/lists
 make-event: misc arithmetic-3 arithmetic rtl
 arithmetic-2: ihs
 rtl: arithmetic meta top-with-meta-cert ordinals ihs misc arithmetic-2
@@ -179,7 +179,7 @@ wp-gen: ordinals
 # xdoc has no dependencies
 xdoc-impl: xdoc str tools finite-set-theory/osets
 system: tools arithmetic arithmetic-5 misc
-std/lists: misc
+std/lists:
 std/ks: std/lists
 std/io: tools xdoc system std/lists std/ks
 cutil: xdoc xdoc-impl tools str misc finite-set-theory/osets \

@@ -19,7 +19,7 @@
 
 (include-book "std/lists/flatten" :dir :system)
 (include-book "sum-list")
-(local (include-book "misc/take" :dir :system))
+(local (include-book "std/lists/take" :dir :system))
 (local (include-book "z-listp"))
 (local (include-book "arithmetic/top-with-meta" :dir :system))
 (local (include-book "std/lists/nthcdr" :dir :system))

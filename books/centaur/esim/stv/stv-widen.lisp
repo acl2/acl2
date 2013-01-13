@@ -24,7 +24,7 @@
 (in-package "ACL2")
 (include-book "stv-util")
 (include-book "std/lists/repeat" :dir :system)
-(local (include-book "misc/take" :dir :system))
+(local (include-book "std/lists/take" :dir :system))
 
 (defsection stv-widen-lines
   :parents (stv-widen)

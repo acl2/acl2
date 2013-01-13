@@ -29,7 +29,7 @@
 (include-book "tools/mv-nth" :dir :system)
 (include-book "clause-processors/use-by-hint" :dir :system)
 (include-book "clause-processors/generalize" :dir :system)
-(local (include-book "misc/take" :dir :system))
+(local (include-book "std/lists/take" :dir :system))
 (local (include-book "arithmetic/top" :dir :system))
 
 

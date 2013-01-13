@@ -18,7 +18,7 @@
 (in-package "ACL2")
 (set-verify-guards-eagerness 2)
 
-(include-book "misc/take" :dir :system)
+(include-book "std/lists/take" :dir :system)
 (include-book "std/lists/nat-listp" :dir :system)
 (local (include-book "std/lists/repeat" :dir :system))
 

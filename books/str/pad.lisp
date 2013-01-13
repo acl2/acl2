@@ -20,7 +20,7 @@
 
 (in-package "STR")
 (include-book "cat")
-(local (include-book "misc/take" :dir :system))
+(local (include-book "std/lists/take" :dir :system))
 (local (include-book "arithmetic"))
 
 (defsection pad-trim

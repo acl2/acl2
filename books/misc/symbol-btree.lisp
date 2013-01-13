@@ -534,7 +534,7 @@ ACL2 !>
 
 
 
-(local (include-book "take"))
+(local (include-book "std/lists/take" :dir :system))
 (local
  (encapsulate nil
    (local (include-book "arithmetic/top" :dir :system))
