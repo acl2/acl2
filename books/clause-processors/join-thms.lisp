@@ -11,6 +11,8 @@
 
 
 (in-package "ACL2")
+(include-book "ev-find-rules")
+
 
 (defthm conjoin-clauses-of-one
   (equal (conjoin-clauses (list x))
@@ -126,63 +128,6 @@
 
 
 
-;; Rewrite-rule fields: 
-;; rune nume hyps equiv lhs rhs subclass heuristic-info backchain-limit-lst
-;; var-info match-free
-
-
-(defun find-matching-rule (hyps equiv lhs rhs lemmas)
-  (if (atom lemmas)
-      nil
-    (or (let* ((rune  (access rewrite-rule (car lemmas) :rune))
-               (rhyps  (access rewrite-rule (car lemmas) :hyps))
-               (rlhs   (access rewrite-rule (car lemmas) :lhs))
-               (rrhs   (access rewrite-rule (car lemmas) :rhs))
-               (requiv (access rewrite-rule (car lemmas) :equiv)))
-          (and (or (not hyps)  (equal rhyps hyps))
-               (or (not lhs)   (equal rlhs lhs))
-               (or (not rhs)   (equal rrhs rhs))
-               (or (not equiv) (equal requiv equiv))
-               rune))
-        (find-matching-rule hyps equiv lhs rhs (cdr lemmas)))))
-
-;; (defun ev-find-fncall-rule1 (ev fn lemmas)
-;;   (if (atom lemmas)
-;;       nil
-;;     (or (and (let* ((equiv (access rewrite-rule (car lemmas) :equiv))
-;;                     (hyps (access rewrite-rule (car lemmas) :hyps))
-;;                     (lhs (access rewrite-rule (car lemmas) :lhs))
-;;                     (rhs (access rewrite-rule (car lemmas) :rhs))
-;;                     (rune (access rewrite-rule (car lemmas) :rune))
-;;                     (subclass (access rewrite-rule (car lemmas) :subclass))
-;;                     (backchain (access rewrite-rule (car lemmas) :backchain-limit-lst)))
-;;                (and (case-match hyps (('(consp x) ('equal '(car x) ('quote !fn))) t))
-;;                     (eq equiv 'equal)
-;;                     (case-match lhs ((!ev . '(x a)) t))
-;;                     (case-match rhs ((!fn . &) t))
-;;                     (eq subclass 'backchain)
-;;                     (eq backchain nil)
-;;                     (eq (car rune) :rewrite)
-;;                     rune)))
-;;         (ev-find-fncall-rule1 ev fn (cdr lemmas)))))
-
-(defun ev-find-fncall-rule-in-lemmas (ev fn lemmas)
-  (find-matching-rule
-   `((consp x) (equal (car x) ',fn))        ;; hyps
-   'equal
-   `(,ev x a)                               ;; lhs
-   nil
-   lemmas))
-
-(defun ev-find-fncall-rule (ev fn world)
-  (find-matching-rule
-   `((consp x) (equal (car x) ',fn))        ;; hyps
-   'equal
-   `(,ev x a)                               ;; lhs
-   nil
-   (fgetprop ev 'lemmas nil world)))
-
-
 
 
 (defun ev-mk-rulename (ev name)
@@ -213,7 +158,7 @@
                                             conjoin-clauses-append)))))
     `(make-event
       (let* ((if-rule (ev-find-fncall-rule ',ev 'if (w state)))
-             (quote-rule (ev-find-fncall-rule ',ev 'quote (w state)))
+             (quote-rule (ev-find-quote-rule ',ev (w state)))
              (alist (list* (cons 'if-rule if-rule)
                            (cons 'quote-rule quote-rule)
                            ',alist)))

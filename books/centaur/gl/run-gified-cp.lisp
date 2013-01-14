@@ -36,6 +36,8 @@
    (acl2::kwote-lst lst)
    (symbolp x)
    (pairlis$ a b)
+   (cons a b)
+   (binary-+ a b)
    (hide a)
    (mv-nth n x)
    (mv-list n x)
@@ -1559,22 +1561,7 @@
             clauses))))
 
 (local
- (defun run-gified-ev-alist (x al)
-   (if (atom x)
-       nil
-     (cons (cons (caar x) (run-gified-ev (cdar x) al))
-           (run-gified-ev-alist (cdr x) al)))))
-
-(local
- (acl2::def-functional-instance
-  simple-one-way-unify-lst-usage-for-run-gified-ev
-  acl2::simple-one-way-unify-lst-usage
-  ((acl2::unify-ev run-gified-ev)
-   (acl2::unify-ev-lst run-gified-ev-lst)
-   (acl2::unify-ev-alist run-gified-ev-alist))
-  :hints ((and stable-under-simplificationp
-               '(:in-theory (enable run-gified-ev-constraint-0))))))
-
+ (acl2::def-unify run-gified-ev run-gified-ev-alist))
 
 (local
  (defthm assoc-equal-run-gified-ev-alist

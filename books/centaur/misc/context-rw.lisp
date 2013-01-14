@@ -144,13 +144,7 @@ when it becomes available.
 
 (def-meta-extract ctx-ev ctx-ev-lst)
 
-
-
-(defun ctx-ev-alist (x al)
-  (if (atom x)
-      nil
-    (cons (cons (caar x) (ctx-ev (cdar x) al))
-          (ctx-ev-alist (cdr x) al))))
+(def-unify ctx-ev ctx-ev-alist)
 
 (def-functional-instance
   ctx-ev-of-sublis-var
@@ -203,34 +197,34 @@ when it becomes available.
 
 
 
-(def-functional-instance
-  ctx-ev-substitute-into-term
-  substitute-into-term-correct
-  ((unify-ev ctx-ev)
-   (unify-ev-lst ctx-ev-lst)
-   (unify-ev-alist ctx-ev-alist))
-  :hints ((and stable-under-simplificationp
-               '(:use ctx-ev-of-fncall-args))))
+;; (def-functional-instance
+;;   ctx-ev-substitute-into-term
+;;   substitute-into-term-correct
+;;   ((unify-ev ctx-ev)
+;;    (unify-ev-lst ctx-ev-lst)
+;;    (unify-ev-alist ctx-ev-alist))
+;;   :hints ((and stable-under-simplificationp
+;;                '(:use ctx-ev-of-fncall-args))))
 
-(def-functional-instance
-  ctx-ev-simple-one-way-unify-usage
-  simple-one-way-unify-usage
-  ((unify-ev ctx-ev)
-   (unify-ev-lst ctx-ev-lst)
-   (unify-ev-alist ctx-ev-alist))
-  :hints ((and stable-under-simplificationp
-               '(:use ctx-ev-of-fncall-args))))
+;; (def-functional-instance
+;;   ctx-ev-simple-one-way-unify-usage
+;;   simple-one-way-unify-usage
+;;   ((unify-ev ctx-ev)
+;;    (unify-ev-lst ctx-ev-lst)
+;;    (unify-ev-alist ctx-ev-alist))
+;;   :hints ((and stable-under-simplificationp
+;;                '(:use ctx-ev-of-fncall-args))))
 
-(defthm ctx-ev-simple-one-way-unify-usage-rev
-  (mv-let (ok subst)
-    (simple-one-way-unify template term alist)
-    (implies (and ok
-                  (pseudo-termp term)
-                  (pseudo-termp template))
-             (equal (ctx-ev template (ctx-ev-alist subst a))
-                    (ctx-ev term a)))))
+;; (defthm ctx-ev-simple-one-way-unify-usage-rev
+;;   (mv-let (ok subst)
+;;     (simple-one-way-unify template term alist)
+;;     (implies (and ok
+;;                   (pseudo-termp term)
+;;                   (pseudo-termp template))
+;;              (equal (ctx-ev template (ctx-ev-alist subst a))
+;;                     (ctx-ev term a)))))
 
-(in-theory (disable ctx-ev-simple-one-way-unify-usage-rev))
+;; (in-theory (disable ctx-ev-simple-one-way-unify-usage-rev))
 
 
 
@@ -342,6 +336,14 @@ when it becomes available.
 
 (in-theory (disable mfc-relieve-hyps))
 
+
+(defthm unify-const-nil-not-bound
+  (mv-let (unified subst)
+    (unify-const pat const alist)
+    (implies (and (not (assoc nil alist))
+                  unified)
+             (not (assoc nil subst))))
+  :hints(("Goal" :in-theory (enable unify-const))))
 
 (defthm-simple-one-way-unify-flag
   (defthm simple-one-way-unify-nil-not-bound
@@ -582,7 +584,13 @@ when it becomes available.
 
 
 
-
+(defthm unify-const-reduce-when-all-keys-bound
+  (mv-let (ok subst)
+    (unify-const pat x alist)
+    (implies (and ok
+                  (all-keys-bound (simple-term-vars pat) alist))
+             (equal subst alist)))
+  :hints(("Goal" :in-theory (enable unify-const))))
 
 
 (defthm-simple-one-way-unify-flag
@@ -648,6 +656,12 @@ when it becomes available.
            (sub-alistp a c))
   :hints(("Goal" :in-theory (e/d (sub-alistp)))))
 
+(defthm sub-alistp-of-unify-const
+  (mv-let (ok subst)
+    (unify-const pat x subst0)
+    (implies ok
+             (sub-alistp subst0 subst)))
+  :hints(("Goal" :in-theory (enable unify-const))))
 
 (defthm-simple-one-way-unify-flag
   (defthm sub-alistp-of-one-way-unify
@@ -669,6 +683,25 @@ when it becomes available.
                              (simple-one-way-unify-lst pat x subst))))))
     :flag simple-one-way-unify-lst)
   :hints (("Goal" :induct (simple-one-way-unify-flag flag pat x subst0))))
+
+(encapsulate nil
+  (local (defthm equal-of-len
+           (equal (equal (len x) n)
+                  (if (zp n)
+                      (and (equal n 0)
+                           (not (consp x)))
+                    (and (consp x)
+                         (equal (len (cdr x)) (1- n)))))))
+  (local (in-theory (disable len)))
+  (defthm alist-keys-of-unify-const
+    (mv-let (ok subst)
+      (unify-const pat x subst0)
+      (implies ok
+               (set-equivp (alist-keys subst)
+                           (append (simple-term-vars pat)
+                                   (alist-keys subst0)))))
+    :hints(("Goal" :in-theory (enable unify-const)
+            :induct t))))
 
 (defthm-simple-one-way-unify-flag
   (defthm alist-keys-of-simple-one-way-unify
@@ -706,37 +739,6 @@ when it becomes available.
           :cases ((alists-agree keys al1 al2)))))
 
 
-(mutual-recursion
- (defun one-way-unify-redef (pat term)
-   (cond ((null pat)
-          (if (eq term nil)
-              (mv t nil)
-            (mv nil nil)))
-         ((atom pat)
-          (mv t (list (cons pat term))))
-         ((atom term)
-          (mv nil nil))
-         ((eq (car pat) 'quote)
-          (mv (equal pat term) nil))
-         ((equal (car pat) (car term))
-          (one-way-unify-redef-lst (cdr pat) (cdr term)))
-         (t (mv nil nil))))
- (defun one-way-unify-redef-lst (pat term)
-   (if (atom pat)
-       (if (atom term)
-           (mv t nil)
-         (mv nil nil))
-     (if (atom term)
-         (mv nil nil)
-       (mv-let (ok alist)
-         (one-way-unify-redef (car pat) (car term))
-         (if ok
-             (mv-let (ok alist2)
-               (one-way-unify-redef-lst (cdr pat) (cdr term))
-               (if (and ok (alists-compatible alist2 alist))
-                   (mv t (append alist2 alist))
-                 (mv nil nil)))
-           (mv nil nil)))))))
 
 (defthm alists-compatible-nil
   (alists-compatible nil x)
@@ -788,6 +790,125 @@ when it becomes available.
   :hints (("goal" :cases ((alists-compatible a b)))
           (alist-reasoning)))
 
+
+
+(defun unify-const-redef (pat const)
+  (cond ((null pat)
+         (if (eq const nil)
+             (mv t nil)
+           (mv nil nil)))
+        ((variablep pat)
+         (mv t (list (cons pat (kwote const)))))
+        ((eq (car pat) 'quote)
+         (mv (equal (unquote pat) const) nil))
+        ((and (eq (car pat) 'cons)
+              (int= (len pat) 3))
+         (if (consp const)
+             (b* (((mv car-ok car-alist)
+                   (unify-const-redef (second pat) (car const)))
+                  ((unless car-ok) (mv nil nil))
+                  ((mv cdr-ok cdr-alist)
+                   (unify-const-redef (third pat) (cdr const)))
+                  ((unless (and cdr-ok
+                                (alists-compatible cdr-alist car-alist)))
+                   (mv nil nil)))
+               (mv t (append cdr-alist car-alist)))
+           (mv nil nil)))
+        ((and (eq (car pat) 'binary-+)
+              (int= (len pat) 3))
+         (cond ((not (acl2-numberp const))
+                (mv nil nil))
+               ((quotep (second pat))
+                (let ((num (unquote (second pat))))
+                  (if (acl2-numberp num)
+                      (unify-const-redef (third pat) (- const num))
+                    (mv nil nil))))
+               ((quotep (third pat))
+                (let ((num (unquote (third pat))))
+                  (if (acl2-numberp num)
+                      (unify-const-redef (second pat) (- const num))
+                    (mv nil nil))))
+               (t (mv nil nil))))
+        (t (mv nil nil))))
+
+(local (defthm hons-assoc-equal-nil
+         (equal (hons-assoc-equal x nil) nil)))
+
+(local (defthm hons-assoc-equal-cons
+         (equal (hons-assoc-equal x (cons a b))
+                (or (and (consp a) (equal x (car a)) a)
+                    (hons-assoc-equal x b)))))
+
+(defthm unify-const-is-redef
+  (mv-let (ok subst)
+    (unify-const pat x subst0)
+    (mv-let (okr substr)
+      (unify-const-redef pat x)
+      (and (iff ok
+                (and okr
+                     (alists-compatible substr subst0)))
+           (implies ok
+                    (alist-equiv subst (append substr subst0))))))
+  :hints (("goal" :induct (unify-const pat x subst0)
+           :in-theory (e/d ((:induction unify-const))
+                           (pseudo-termp
+                            unify-const-redef
+                            sets::double-containment
+                            default-car default-cdr
+                            append len hons-assoc-equal
+                            alists-compatible-when-sub-alistp
+                            unify-const-reduce-when-all-keys-bound)))
+          (and stable-under-simplificationp
+               '(:expand ((:free (x subst)
+                           (unify-const pat x subst))
+                          (:free (x subst)
+                           (unify-const nil x subst))
+                          (:free (x)
+                           (unify-const-redef pat x))
+                          (:free (x)
+                           (unify-const-redef nil x)))))
+          (alist-reasoning)))
+
+(defthm pseudo-term-val-alistp-of-unify-const-redef
+  (pseudo-term-val-alistp (mv-nth 1 (unify-const-redef pat const))))
+        
+(in-theory (disable unify-const-redef))
+
+(mutual-recursion
+ (defun one-way-unify-redef (pat term)
+   (cond ((null pat)
+          (mv (or (eq term nil)
+                  (equal term *nil*))
+              nil))
+         ((atom pat)
+          (mv t (list (cons pat term))))
+         ((atom term)
+          (mv nil nil))
+         ((eq (car pat) 'quote)
+          (mv (equal pat term) nil))
+         ((eq (car term) 'quote)
+          (unify-const pat (unquote term) nil))
+         ((equal (car pat) (car term))
+          (one-way-unify-redef-lst (cdr pat) (cdr term)))
+         (t (mv nil nil))))
+ (defun one-way-unify-redef-lst (pat term)
+   (if (atom pat)
+       (if (atom term)
+           (mv t nil)
+         (mv nil nil))
+     (if (atom term)
+         (mv nil nil)
+       (mv-let (ok alist)
+         (one-way-unify-redef (car pat) (car term))
+         (if ok
+             (mv-let (ok alist2)
+               (one-way-unify-redef-lst (cdr pat) (cdr term))
+               (if (and ok (alists-compatible alist2 alist))
+                   (mv t (append alist2 alist))
+                 (mv nil nil)))
+           (mv nil nil)))))))
+
+
 (defthm-simple-one-way-unify-flag
   (defthm one-way-unify-is-redef
     (mv-let (ok subst)
@@ -838,7 +959,9 @@ when it becomes available.
 
 
 (in-theory (disable one-way-unify-is-redef
-                    one-way-unify-lst-is-redef))
+                    one-way-unify-lst-is-redef
+                    unify-const-is-redef))
+
 
 
 (encapsulate nil
@@ -857,73 +980,215 @@ when it becomes available.
          (list (subst-ind t (car pat) (car term))
                (subst-ind nil (cdr pat) (cdr term)))))))
 
-  (local (defthm substitute-into-single-var-unify-term-lemma
-           (if flg
-               (implies (and (all-keys-bound (simple-term-vars pat) alist)
-                             (mv-nth 0 (simple-one-way-unify pat term alist))
-                             (all-identities-except-x var alist))
-                        (equal (substitute-into-term
-                                pat 
-                                (cons (cons var (substitute-into-term
-                                                 (cdr (hons-assoc-equal var alist))
-                                                 subst))
-                                      subst))
-                               (substitute-into-term term subst)))
-             (implies (and (all-keys-bound (simple-term-vars-lst pat) alist)
-                           (mv-nth 0 (simple-one-way-unify-lst pat term alist))
-                           (all-identities-except-x var alist))
-                      (equal (substitute-into-list
-                              pat 
-                              (cons (cons var (substitute-into-term
-                                               (cdr (hons-assoc-equal var alist))
-                                               subst))
-                                    subst))
-                             (substitute-into-list term subst))))
-           :hints (("goal" :induct (subst-ind flg pat term))
-                   (and stable-under-simplificationp
-                        '(:expand ((simple-one-way-unify-lst pat term alist)
-                                   (substitute-into-list term subst)
-                                   (:free (subst) (substitute-into-list pat subst))
-                                   (:free (term) (simple-one-way-unify pat term alist))
-                                   (simple-one-way-unify nil term alist)
-                                   (substitute-into-term term subst)
-                                   (:free (subst) (substitute-into-term pat subst))))))
-           :rule-classes nil))
+  (defthm pseudo-term-listp-cdr
+    (implies (and (pseudo-termp x)
+                  (not (eq (car x) 'quote)))
+             (pseudo-term-listp (cdr x))))
 
-  (defthm substitute-into-single-var-unify-term
-    (implies (and (all-keys-bound (simple-term-vars pat) alist)
-                  (mv-nth 0 (simple-one-way-unify pat term alist))
-                  (all-identities-except-x var alist))
-             (equal (substitute-into-term
-                     pat 
-                     (cons (cons var (substitute-into-term
-                                      (cdr (hons-assoc-equal var alist))
-                                      subst))
-                           subst))
-                    (substitute-into-term term subst)))
-    :hints (("goal" :use ((:instance substitute-into-single-var-unify-term-lemma
-                           (flg t)))))))
+  (encapsulate nil
+    (local (defthm equal-of-len
+             (implies (syntaxp (quotep n))
+                      (equal (equal (len x) n)
+                             (if (zp n)
+                                 (and (equal n 0)
+                                      (not (consp x)))
+                               (and (consp x)
+                                    (equal (len (cdr x)) (1- n))))))))
+    (local (in-theory (disable len)))
+    
+    (defthm unify-const-single-var-unify-lemma
+      (implies (and (all-keys-bound (simple-term-vars pat) alist)
+                    (mv-nth 0 (unify-const pat const alist))
+                    (all-identities-except-x var alist)
+                    (pseudo-termp pat))
+               (equal (ctx-ev
+                       pat 
+                       (cons (cons var (ctx-ev
+                                        (cdr (hons-assoc-equal var alist))
+                                        (ctx-ev-alist subst a)))
+                             (ctx-ev-alist subst a)))
+                      const))
+      :hints(("Goal" :in-theory (enable unify-const)))))
 
 
-(defthm eval-of-substitute-into-single-var-unify-term-1
-  (implies (and (all-keys-bound (simple-term-vars pat) alist)
-                (mv-nth 0 (simple-one-way-unify pat term alist))
-                (all-identities-except-x var alist)
-                (pseudo-termp pat)
-                (pseudo-termp term)
-                (pseudo-termp (cdr (hons-assoc-equal var alist))))
-           (equal (ctx-ev pat
-                          (cons (cons var
-                                      (ctx-ev (cdr (hons-assoc-equal var alist))
-                                              (ctx-ev-alist subst a)))
-                                (ctx-ev-alist subst a)))
-                  (ctx-ev term (ctx-ev-alist subst a))))
-  :hints (("goal" :use ((:instance ctx-ev-substitute-into-term
-                         (x pat)
-                         (subst (cons (cons var (substitute-into-term
-                                                 (cdr (hons-assoc-equal var alist))
-                                                 subst))
-                                      subst)))))))
+  (defthm-simple-one-way-unify-flag
+    (defthm substitute-into-single-var-unify-term-lemma
+      (implies (and (all-keys-bound (simple-term-vars pat) alist)
+                    (mv-nth 0 (simple-one-way-unify pat term alist))
+                    (all-identities-except-x var alist)
+                    (pseudo-termp pat)
+                    (pseudo-termp term))
+               (equal (ctx-ev
+                       pat 
+                       (cons (cons var (ctx-ev
+                                        (cdr (hons-assoc-equal var alist))
+                                        (ctx-ev-alist subst a)))
+                             (ctx-ev-alist subst a)))
+                      (ctx-ev term (ctx-ev-alist subst a))))
+      :hints ('(:do-not-induct t
+                :expand ((:free (term) (simple-one-way-unify pat term alist))))
+              (and stable-under-simplificationp
+                   '(:in-theory (enable ctx-ev-of-fncall-args))))
+      :flag simple-one-way-unify)
+    (defthm substitute-into-single-var-unify-list-lemma
+      (implies (and (all-keys-bound (simple-term-vars-lst pat) alist)
+                    (mv-nth 0 (simple-one-way-unify-lst pat term alist))
+                    (all-identities-except-x var alist)
+                    (pseudo-term-listp pat)
+                    (pseudo-term-listp term))
+               (equal (ctx-ev-lst
+                       pat 
+                       (cons (cons var (ctx-ev
+                                        (cdr (hons-assoc-equal var alist))
+                                        (ctx-ev-alist subst a)))
+                             (ctx-ev-alist subst a)))
+                      (ctx-ev-lst term (ctx-ev-alist subst a))))
+      :hints ('(:expand ((:free (term) (simple-one-way-unify-lst nil term
+                                                                 alist))
+                         (:free (term) (simple-one-way-unify-lst pat term
+                                                                 alist)))
+                :in-theory (enable ctx-ev-alist)))
+      :flag simple-one-way-unify-lst)))
+
+  ;; (local (defthm substitute-into-single-var-unify-term-lemma
+  ;;          (if flg
+  ;;              (implies (and (all-keys-bound (simple-term-vars pat) alist)
+  ;;                            (mv-nth 0 (simple-one-way-unify pat term alist))
+  ;;                            (all-identities-except-x var alist)
+  ;;                            (pseudo-termp pat)
+  ;;                            (pseudo-termp term))
+  ;;                       (equal (ctx-ev
+  ;;                               pat 
+  ;;                               (cons (cons var (ctx-ev
+  ;;                                                (cdr (hons-assoc-equal var alist))
+  ;;                                                (ctx-ev-alist subst a)))
+  ;;                                     (ctx-ev-alist subst a)))
+  ;;                              (ctx-ev term (ctx-ev-alist subst a))))
+  ;;            (implies (and (all-keys-bound (simple-term-vars-lst pat) alist)
+  ;;                          (mv-nth 0 (simple-one-way-unify-lst pat term alist))
+  ;;                          (all-identities-except-x var alist)
+  ;;                          (pseudo-term-listp pat)
+  ;;                          (pseudo-term-listp term))
+  ;;                     (equal (ctx-ev-lst
+  ;;                             pat 
+  ;;                             (cons (cons var (ctx-ev
+  ;;                                                (cdr (hons-assoc-equal var alist))
+  ;;                                                (ctx-ev-alist subst a)))
+  ;;                                     (ctx-ev-alist subst a)))
+  ;;                            (ctx-ev-lst term (ctx-ev-alist subst a)))))
+  ;;          :hints (("goal" :induct (subst-ind flg pat term))
+  ;;                  (and stable-under-simplificationp
+  ;;                       '(:expand ((simple-one-way-unify-lst pat term alist)
+  ;;                                  (substitute-into-list term subst)
+  ;;                                  (:free (subst) (substitute-into-list pat subst))
+  ;;                                  (:free (term) (simple-one-way-unify pat term alist))
+  ;;                                  (simple-one-way-unify nil term alist)
+  ;;                                  (substitute-into-term term subst)
+  ;;                                  (:free (subst) (substitute-into-term pat
+  ;;                                                                       subst)))))
+  ;;                  (and stable-under-simplificationp
+  ;;                       '(:in-theory (enable ctx-ev-of-fncall-args))))
+  ;;          :rule-classes nil))
+
+  ;; (defthm substitute-into-single-var-unify-term
+  ;;   (implies (and (all-keys-bound (simple-term-vars pat) alist)
+  ;;                 (mv-nth 0 (simple-one-way-unify pat term alist))
+  ;;                 (all-identities-except-x var alist)
+  ;;                 (pseudo-)
+  ;;            (equal (substitute-into-term
+  ;;                    pat 
+  ;;                    (cons (cons var (substitute-into-term
+  ;;                                     (cdr (hons-assoc-equal var alist))
+  ;;                                     subst))
+  ;;                          subst))
+  ;;                   (substitute-into-term term subst)))
+  ;;   :hints (("goal" :use ((:instance substitute-into-single-var-unify-term-lemma
+  ;;                          (flg t)))))))
+
+
+
+;; (encapsulate nil
+;;   (local
+;;    (defun subst-ind (flg pat term)
+;;      (if flg
+;;          (cond ((or (null pat)
+;;                     (atom pat)
+;;                     (atom term)
+;;                     (eq (car pat) 'quote)
+;;                     (not (equal (car pat) (car term))))
+;;                 (list pat term))
+;;                (t (subst-ind nil (cdr pat) (cdr term))))
+;;        (if (or (atom pat) (atom term))
+;;            (list pat term)
+;;          (list (subst-ind t (car pat) (car term))
+;;                (subst-ind nil (cdr pat) (cdr term)))))))
+
+;;   (local (defthm substitute-into-single-var-unify-term-lemma
+;;            (if flg
+;;                (implies (and (all-keys-bound (simple-term-vars pat) alist)
+;;                              (mv-nth 0 (simple-one-way-unify pat term alist))
+;;                              (all-identities-except-x var alist))
+;;                         (equal (substitute-into-term
+;;                                 pat 
+;;                                 (cons (cons var (substitute-into-term
+;;                                                  (cdr (hons-assoc-equal var alist))
+;;                                                  subst))
+;;                                       subst))
+;;                                (substitute-into-term term subst)))
+;;              (implies (and (all-keys-bound (simple-term-vars-lst pat) alist)
+;;                            (mv-nth 0 (simple-one-way-unify-lst pat term alist))
+;;                            (all-identities-except-x var alist))
+;;                       (equal (substitute-into-list
+;;                               pat 
+;;                               (cons (cons var (substitute-into-term
+;;                                                (cdr (hons-assoc-equal var alist))
+;;                                                subst))
+;;                                     subst))
+;;                              (substitute-into-list term subst))))
+;;            :hints (("goal" :induct (subst-ind flg pat term))
+;;                    (and stable-under-simplificationp
+;;                         '(:expand ((simple-one-way-unify-lst pat term alist)
+;;                                    (substitute-into-list term subst)
+;;                                    (:free (subst) (substitute-into-list pat subst))
+;;                                    (:free (term) (simple-one-way-unify pat term alist))
+;;                                    (simple-one-way-unify nil term alist)
+;;                                    (substitute-into-term term subst)
+;;                                    (:free (subst) (substitute-into-term pat subst))))))
+;;            :rule-classes nil))
+
+;;   (defthm substitute-into-single-var-unify-term
+;;     (implies (and (all-keys-bound (simple-term-vars pat) alist)
+;;                   (mv-nth 0 (simple-one-way-unify pat term alist))
+;;                   (all-identities-except-x var alist))
+;;              (equal (substitute-into-term
+;;                      pat 
+;;                      (cons (cons var (substitute-into-term
+;;                                       (cdr (hons-assoc-equal var alist))
+;;                                       subst))
+;;                            subst))
+;;                     (substitute-into-term term subst)))
+;;     :hints (("goal" :use ((:instance substitute-into-single-var-unify-term-lemma
+;;                            (flg t)))))))
+
+
+;; (defthm eval-of-substitute-into-single-var-unify-term-1
+;;   (implies (and (all-keys-bound (simple-term-vars pat) alist)
+;;                 (mv-nth 0 (simple-one-way-unify pat term alist))
+;;                 (all-identities-except-x var alist)
+;;                 (pseudo-termp pat)
+;;                 (pseudo-termp term))
+;;            (equal (ctx-ev pat
+;;                           (cons (cons var
+;;                                       (ctx-ev (cdr (hons-assoc-equal var alist))
+;;                                               (ctx-ev-alist subst a)))
+;;                                 (ctx-ev-alist subst a)))
+;;                   (ctx-ev term (ctx-ev-alist subst a)))))
+;;   :hints (("goal" :use ((:instance ctx-ev-substitute-into-term
+;;                          (x pat)
+;;                          (subst (cons (cons var (substitute-into-term
+;;                                                  (cdr (hons-assoc-equal var alist))
+;;                                                  subst))
+;;                                       subst)))))))
 
 (defthm eval-of-substitute-into-single-var-unify-term-rw
   (let ((alist (mv-nth 1 (simple-one-way-unify pat term nil))))
@@ -945,10 +1210,10 @@ when it becomes available.
                                                 (ctx-ev-alist subst a)))
                                   (ctx-ev-alist subst a)))
                     (ctx-ev term (ctx-ev-alist subst a)))))
-  :hints (("goal" :use ((:instance eval-of-substitute-into-single-var-unify-term-1
+  :hints (("goal" :use ((:instance substitute-into-single-var-unify-term-lemma
                          (alist (mv-nth 1 (simple-one-way-unify pat term
                                                                 nil)))))
-           :in-theory (disable eval-of-substitute-into-single-var-unify-term-1))))
+           :in-theory (disable substitute-into-single-var-unify-term-lemma))))
 
 
 ;; (defun false () nil)

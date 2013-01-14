@@ -303,9 +303,10 @@
      (local
       (make-event
        (let ((rule (find-matching-rule
-                    nil nil nil '(evfn (CONS (CAR X)
-                                             (KWOTE-LST (evlst-fn (CDR X) A)))
-                                       'NIL)
+                    :dont-care :dont-care :dont-care
+                    '(evfn (CONS (CAR X)
+                                 (KWOTE-LST (evlst-fn (CDR X) A)))
+                           'NIL)
                     (getprop 'evfn 'lemmas nil 'current-acl2-world (w
                                                                     state)))))
          (prog2$

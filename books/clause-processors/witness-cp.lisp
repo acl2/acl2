@@ -53,7 +53,8 @@
 
 (defevaluator witness-ev witness-ev-lst
   ((if a b c) (not a) (equal a b) (use-these-hints x)
-   (implies a b) (hide x)))
+   (implies a b) (hide x)
+   (cons a b) (binary-+ a b)))
 
 
 (verify-termination
@@ -78,27 +79,7 @@
 
 (def-ev-theoremp witness-ev)
 
-(defun witness-ev-alist (x al)
-  (if (atom x)
-      nil
-    (cons (cons (caar x) (witness-ev (cdar x) al))
-          (witness-ev-alist (cdr x) al))))
-
-(def-functional-instance
-  simple-one-way-unify-usage-witness-ev
-  simple-one-way-unify-usage
-  ((unify-ev witness-ev)
-   (unify-ev-lst witness-ev-lst)
-   (unify-ev-alist witness-ev-alist))
-  :hints((and stable-under-simplificationp
-              '(:in-theory (enable witness-ev-constraint-0)))))
-
-(def-functional-instance
-  substitute-into-term-correct-witness-ev
-  substitute-into-term-correct
-  ((unify-ev witness-ev)
-   (unify-ev-lst witness-ev-lst)
-   (unify-ev-alist witness-ev-alist)))
+(def-unify witness-ev witness-ev-alist)
 
 (defun assert-msg (msg arg)
   (declare (xargs :guard t))

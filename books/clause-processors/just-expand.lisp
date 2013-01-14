@@ -74,7 +74,9 @@
           (just-expand-cp-parse-hints (cdr hints) w))))
 
 
-(defevaluator expev expev-lst ((if a b c) (equal a b) (not a) (use-by-hint a)))
+(defevaluator expev expev-lst
+  ((if a b c) (equal a b) (not a) (use-by-hint a)
+   (cons a b) (binary-+ a b)))
 
 (def-ev-theoremp expev)
 
@@ -123,37 +125,7 @@
                         (x (disjoin (hint-alist-to-clause alist)))
                         (a a)))))))
 
-(defun expev-alist (x a)
-  (if (atom x)
-      nil
-    (cons (cons (caar x) (expev (cdar x) a))
-          (expev-alist (cdr x) a))))
-
-(defthm simple-one-way-unify-of-expev
-  (mv-let (ok newalist)
-    (simple-one-way-unify template term alist)
-    (implies (and ok
-                  (pseudo-termp term)
-                  (pseudo-termp template))
-             (equal (expev term a)
-                    (expev template
-                              (expev-alist newalist a)))))
-  :hints (("goal" :use ((:functional-instance simple-one-way-unify-usage
-                         (unify-ev expev)
-                         (unify-ev-lst expev-lst)
-                         (unify-ev-alist expev-alist))))
-          (and stable-under-simplificationp
-               '(:in-theory (enable expev-constraint-0)))))
-
-(defthm substitute-into-term-correct-of-expev
-  (implies
-   (pseudo-termp x)
-   (equal (expev (substitute-into-term x subst) a)
-          (expev x (expev-alist subst a))))
-  :hints (("goal" :use ((:functional-instance substitute-into-term-correct
-                         (unify-ev expev)
-                         (unify-ev-lst expev-lst)
-                         (unify-ev-alist expev-alist))))))
+(def-unify expev expev-alist)
 
 (defthm apply-expansion-correct
   (implies (and (expev-theoremp (disjoin (hint-alist-to-clause alist)))

@@ -31,6 +31,8 @@
    (mk-g-ite test then else)
    (mk-g-bdd-ite test then else hyp)
    (mk-g-boolean bdd)
+   (cons a b)
+   (binary-+ a b)
 ;   (generic-geval x env)
    (hide x)
    (gobjectp x)
@@ -45,31 +47,11 @@
      (set-difference-theories (universal-theory :here)
                               (universal-theory 'dummy-for-g-if-ev-start)))
 
-   (defun g-if-ev-alist (x a)
-     (if (atom x)
-         nil
-       (cons (cons (caar x) (g-if-ev (cdar x) a))
-             (g-if-ev-alist (cdr x) a))))
+   (acl2::def-unify g-if-ev g-if-ev-alist)
 
    (defthm assoc-equal-g-if-ev-alist
      (equal (cdr (assoc-equal k (g-if-ev-alist x a)))
             (g-if-ev (cdr (assoc-equal k x)) a)))
-
-   (acl2::def-functional-instance
-    substitute-into-term-correct-for-g-if-ev
-    acl2::substitute-into-term-correct
-    ((acl2::unify-ev g-if-ev)
-     (acl2::unify-ev-lst g-if-ev-lst)
-     (acl2::unify-ev-alist g-if-ev-alist))
-    :hints ((and stable-under-simplificationp
-                 '(:in-theory (enable g-if-ev-constraint-0)))))
-
-   (acl2::def-functional-instance
-    simple-one-way-unify-usage-for-g-if-ev
-    acl2::simple-one-way-unify-usage
-    ((acl2::unify-ev g-if-ev)
-     (acl2::unify-ev-lst g-if-ev-lst)
-     (acl2::unify-ev-alist g-if-ev-alist)))
 
    (acl2::def-functional-instance
     g-if-ev-alist-pairlis$
@@ -534,8 +516,7 @@
            (equal (g-if-ev x a)
                   (g-if-ev (g-or-gobjectp-meta x) a)))
   :hints(("Goal" :expand ((:free (x) (hide x)))
-          :in-theory (disable gobjectp-def
-                              simple-one-way-unify-usage-for-g-if-ev)))
+          :in-theory (disable gobjectp-def)))
   :rule-classes ((:meta :trigger-fns (g-or-marker))))
 
 
@@ -597,8 +578,7 @@
            (equal (g-if-ev x a)
                   (g-if-ev (g-if-gobjectp-meta x) a)))
   :hints(("Goal" :expand ((:free (x) (hide x)))
-          :in-theory (disable gobjectp-def
-                              simple-one-way-unify-usage-for-g-if-ev)))
+          :in-theory (disable gobjectp-def)))
   :rule-classes ((:meta :trigger-fns (g-if-marker))))
 
 
@@ -632,6 +612,8 @@
        (mk-g-bdd-ite test then else hyp)
        (mk-g-boolean bdd)
        (hide x)
+       (cons a b)
+       (binary-+ a b)
        (gobjectp x)
        (bfr-p x)
        (bfr-eval x env)
