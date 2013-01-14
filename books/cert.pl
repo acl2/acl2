@@ -529,6 +529,40 @@ foreach my $run (@run_sources) {
     }
 }
 
+my @certs = sort(keys %depmap);
+
+# Warn about books that include relocation stubs
+my %stubs = (); # maps stub files to the books that include them
+foreach my $cert (@certs) {
+    my $certdeps = cert_bookdeps($cert, \%depmap);
+    foreach my $dep (@$certdeps) {
+	if (cert_get_param($dep, \%depmap, "reloc_stub")) {
+	    if (exists $stubs{$dep}) {
+		push(@{$stubs{$dep}}, $cert);
+	    } else {
+		$stubs{$dep} = [ $cert ];
+	    }
+	}
+    }
+}
+if (%stubs) {
+    print "Relocation warnings:\n";
+    print "--------------------------\n";
+    my @stubbooks = sort(keys %stubs);
+    foreach my $stub (@stubbooks) {
+	print "Stub file:       $stub\n";
+	# note: assumes each stub file includes only one book.
+	print "relocated to:    ${cert_bookdeps($stub, \%depmap)}[0]\n";
+	print "is included by:\n";
+	foreach my $cert (sort(@{$stubs{$stub}})) {
+	    print "                 $cert\n";
+	}
+	print "--------------------------\n";
+    }
+}
+
+
+
 my $mf_intro_string = '
 # Cert.pl is a build system for ACL2 books.  The cert.pl executable is
 # located under your ACL2_SYSTEM_BOOKS directory; run "cert.pl -h" for
@@ -567,9 +601,6 @@ unless ($no_makefile) {
     
     # declare $var_prefix_CERTS to be the list of certificates
     print $mf $var_prefix . "_CERTS :=";
-
-    my @certs = keys %depmap;
-    @certs = sort(@certs);
 
     foreach my $cert (@certs) {
 	print $mf " \\\n     $cert";
