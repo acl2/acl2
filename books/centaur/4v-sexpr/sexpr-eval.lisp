@@ -129,6 +129,34 @@ of fixnums to hold the values, or similar.</p>"
     :long "<p>See @(see 4v-sexpr-eval); this is just its mutually recursive
 counterpart.</p>")
 
+  (defun 4v-sexpr-apply (fn args)
+    (b* (((when (or (eq fn (4vt))
+                    (eq fn (4vf))
+                    (eq fn (4vx))
+                    (eq fn (4vz))))
+          fn)
+         (arg1 (4v-first args))
+         (arg2 (4v-second args))
+         (arg3 (4v-third args)))
+      (case fn
+        (not       (4v-not      arg1))
+        (and       (4v-and      arg1 arg2))
+        (xor       (4v-xor      arg1 arg2))
+        (iff       (4v-iff      arg1 arg2))
+        (or        (4v-or       arg1 arg2))
+        (ite*      (4v-ite*     arg1 arg2 arg3))
+        (buf       (4v-unfloat  arg1))
+        (res       (4v-res      arg1 arg2))
+        (tristate  (4v-tristate arg1 arg2))
+        (ite       (4v-ite      arg1 arg2 arg3))
+        (pullup    (4v-pullup   arg1))
+        (id        (4v-fix      arg1))
+        ;; (wand     (4v-wand  arg1 arg2))
+        ;; (wor      (4v-wor   arg1 arg2))
+        (otherwise (4vx)))))
+         
+         
+
 ; [Jared] I was tempted to make a 4v-sexpr-eval1 function in the style of
 ; 4v-sexpr-eval-alist1, but this seems troublesome because it would mean
 ; changing all of our clear-memoize-table call functions.  I'm just going to
@@ -178,6 +206,18 @@ counterpart.</p>")
          nil
        (cons (4v-sexpr-eval (car x) env)
              (4v-sexpr-eval-list (cdr x) env)))))
+
+  (defthmd 4v-sexpr-eval-redef
+    (equal (4v-sexpr-eval x env)
+           (b* (((when (atom x))
+                 (if x (4v-lookup x env) (4vx)))
+                (args (4v-sexpr-eval-list (cdr x) env)))
+             (4v-sexpr-apply (car x) args)))
+    :rule-classes ((:definition
+                    :clique (4v-sexpr-eval 4v-sexpr-eval-list)
+                    :controller-alist
+                    ((4v-sexpr-eval t nil)
+                     (4v-sexpr-eval-list t nil)))))
 
   (verify-guards 4v-sexpr-eval
     :hints (("goal" :in-theory (enable nth-open-quotep))))

@@ -23,6 +23,7 @@
 (include-book "sexpr-advanced")
 (include-book "centaur/misc/hons-extra" :dir :system)
 (include-book "sexpr-vars-1pass")
+(include-book "unicode/two-nats-measure" :dir :system)
 (local (in-theory (disable sets::double-containment)))
 
 
@@ -307,8 +308,92 @@ substitution as an alist binding variables to subterms."
                (not (member-equal
                      x (4v-sexpr-vars-list
                         (alist-vals (mv-nth 1 (sexpr-unify-list pat term alist)))))))
-      :flag sexpr-unify-list)))
+      :flag sexpr-unify-list))
 
+  (defun max-acl2-count (x)
+    (declare (xargs :guard t))
+    (if (atom x)
+        0
+      (max (acl2-count (car x))
+           (max-acl2-count (cdr x)))))
+
+  (defthm acl2-count-gte-max-acl2-count-of-args
+    (implies (consp term)
+             (< (max-acl2-count (cdr term))
+                (acl2-count term)))
+    :hints(("Goal" :in-theory (enable acl2-count)))
+    :rule-classes ((:linear :trigger-terms ((max-acl2-count (cdr term))))))
+
+  (defthm-sexpr-unify-flag
+    (defthm sexpr-unify-alist-max-count-small-term
+      (implies (<= (acl2-count term) (max-acl2-count (alist-vals alist)))
+               (equal (max-acl2-count (alist-vals (mv-nth 1 (sexpr-unify
+                                                             pat term
+                                                             alist))))
+                      (max-acl2-count (alist-vals alist))))
+      :flag sexpr-unify)
+
+    (defthm sexpr-unify-list-alist-max-count-small-term
+      (implies (<= (max-acl2-count term) (max-acl2-count (alist-vals alist)))
+               (equal (max-acl2-count (alist-vals (mv-nth 1 (sexpr-unify-list
+                                                             pat term
+                                                             alist))))
+                      (max-acl2-count (alist-vals alist))))
+      :flag sexpr-unify-list))
+
+  (defthm-sexpr-unify-flag
+    (defthm sexpr-unify-alist-max-count-large-term
+      (implies (<= (max-acl2-count (alist-vals alist)) (acl2-count term))
+               (<= (max-acl2-count (alist-vals (mv-nth 1 (sexpr-unify
+                                                          pat term
+                                                          alist))))
+                   (acl2-count term)))
+      :rule-classes (:rewrite :linear)
+      :flag sexpr-unify)
+
+    (defthm sexpr-unify-list-alist-max-count-large-term
+      (implies (<= (max-acl2-count (alist-vals alist)) (max-acl2-count term))
+               (<= (max-acl2-count (alist-vals (mv-nth 1 (sexpr-unify-list
+                                                          pat term
+                                                          alist))))
+                   (max-acl2-count term)))
+      :rule-classes (:rewrite :linear)
+      :flag sexpr-unify-list))
+
+  (defthm-sexpr-unify-flag
+    (defthm sexpr-vars-alist-of-unify
+      (subsetp-equal
+       (4v-sexpr-vars-list (alist-vals (mv-nth 1 (sexpr-unify pat term alist))))
+       (append (4v-sexpr-vars term)
+               (4v-sexpr-vars-list (alist-vals alist))))
+      :flag sexpr-unify)
+
+    (defthm sexpr-vars-alist-of-unify-list
+      (subsetp-equal
+       (4v-sexpr-vars-list (alist-vals (mv-nth 1 (sexpr-unify-list pat term alist))))
+       (append (4v-sexpr-vars-list term)
+               (4v-sexpr-vars-list (alist-vals alist))))
+      :flag sexpr-unify-list))
+
+  (defthm-sexpr-unify-flag
+    (defthm alist-keys-of-sexpr-unify
+      (mv-let (ok alist1)
+        (sexpr-unify pat term alist)
+        (implies ok
+                 (set-equivp (alist-keys alist1)
+                             (append (4v-sexpr-vars pat)
+                                     (alist-keys alist)))))
+      :flag sexpr-unify)
+    (defthm alist-keys-of-sexpr-unify-list
+      (mv-let (ok alist1)
+        (sexpr-unify-list pat term alist)
+        (implies ok
+                 (set-equivp (alist-keys alist1)
+                             (append (4v-sexpr-vars-list pat)
+                                     (alist-keys alist)))))
+      :flag sexpr-unify-list))
+
+)
 
 (defsection 4v-sexpr-compose-nofal
   :parents (sexpr-rewriting-internals)
@@ -1793,3 +1878,723 @@ simplifying using the known signals."
 
 
 
+(defconst *sexpr-booleanp-rules*
+  ;; The following is a list of sexprs in the variables a, b, c, d, w, x, y, z.
+  ;; Each of these is read as:  If variables a, b, c, d are known
+  ;; Boolean-valued, then this term is known Boolean-valued.  (w, x, y, z need
+  ;; not be known Boolean.)
+  '((not a)
+    (and a b)
+    (xor a b)
+    (iff a b)
+    (or a b)
+    (ite* a b c)
+    (buf a)
+    (res a a)
+    (ite a b c)
+    (ite x a a)
+    (pullup a)
+    (id a)))
+
+(defsection 4v-sexpr-boolean-rulep
+  (defmacro sexpr-bool-special-vars () ''(a b c d))
+  
+
+  (defund 4v-boolp (x)
+    (declare (xargs :guard t))
+    (member x '(t f)))
+
+  (defun 4v-key-bool-alistp (keys al)
+    (declare (xargs :guard t))
+    (if (Atom keys)
+        t
+      (and (4v-boolp (4v-lookup (car keys) al))
+           (4v-key-bool-alistp (cdr keys) al))))
+
+  (defun-sk 4v-sexpr-boolean-rulep (x)
+    (forall al
+            (implies (4v-key-bool-alistp (sexpr-bool-special-vars) al)
+                     (4v-boolp (4v-sexpr-eval x al)))))
+
+  (in-theory (disable (4v-sexpr-boolean-rulep)))
+
+  (defun 4v-sexpr-boolean-rulesp (x)
+    (if (atom x)
+        t
+      (and (4v-sexpr-boolean-rulep (car x))
+           (4v-sexpr-boolean-rulesp (cdr x)))))
+
+  (in-theory (disable (4v-sexpr-boolean-rulesp)))
+
+  (defthm 4v-boolp-implies-equal-t
+    (implies (and (4v-boolp x)
+                  (not (equal x 'f)))
+             (equal (equal x t) t))
+    :hints(("Goal" :in-theory (enable 4v-boolp))))
+             
+  (local (in-theory (disable 4v-lookup)))
+
+  (defthm 4v-sexpr-boolean-rulesp-of-booleanp-rules
+    (4v-sexpr-boolean-rulesp *sexpr-booleanp-rules*))
+
+  (defun 4v-alist-bool-fix-vars (vars sexpr-vars alist)
+    (declare (xargs :guard (true-listp sexpr-vars)))
+    (if (atom vars)
+        nil
+      (cons (cons (car vars)
+                  (if (member-equal (car vars) sexpr-vars)
+                      (4v-lookup (car vars) alist)
+                    (4vt)))
+            (4v-alist-bool-fix-vars (cdr vars) sexpr-vars alist))))
+
+  (defthm 4v-lookup-of-4v-alist-bool-fix-vars
+    (equal (4v-lookup k (4v-alist-bool-fix-vars vars sexpr-vars alist))
+           (if (member k vars)
+               (if (member k sexpr-vars)
+                   (4v-lookup k alist)
+                 (4vt))
+             (4vx)))
+    :hints(("Goal" :induct t)
+           (and stable-under-simplificationp
+                '(:in-theory (enable 4v-lookup)))))
+
+  (defun 4v-alist-bool-special (special-vars sexpr-vars alist)
+    (declare (xargs :guard (and (true-listp special-vars)
+                                (true-listp sexpr-vars))))
+    (4v-alist-bool-fix-vars (append special-vars sexpr-vars)
+                            sexpr-vars alist))
+
+  (defthm 4v-lookup-of-4v-alist-bool-special
+    (equal (4v-lookup k (4v-alist-bool-special special-vars sexpr-vars alist))
+           (if (member k sexpr-vars)
+               (4v-lookup k alist)
+             (if (member k special-vars)
+                 (4vt)
+               (4vx)))))
+
+  (in-theory (disable 4v-alist-bool-special))
+
+  (defthm-4v-sexpr-flag
+    (defthm 4v-sexpr-eval-with-4v-alist-bool-special
+      (implies (subsetp-equal (4v-sexpr-vars x) sexpr-vars)
+               (equal (4v-sexpr-eval x (4v-alist-bool-special special-vars
+                                                              sexpr-vars al))
+                      (4v-sexpr-eval x al)))
+      :hints('(:expand ((:free (al) (4v-sexpr-eval x al)))))
+      :flag sexpr)
+    (defthm 4v-sexpr-eval-list-with-4v-alist-bool-special
+      (implies (subsetp-equal (4v-sexpr-vars-list x) sexpr-vars)
+               (equal (4v-sexpr-eval-list x (4v-alist-bool-special special-vars
+                                                                   sexpr-vars al))
+                      (4v-sexpr-eval-list x al)))
+      :flag sexpr-list))
+
+  (defthm 4v-key-bool-listp-of-4v-alist-bool-special
+    (implies (and (4v-key-bool-alistp (intersection-equal keys1 keys2) al)
+                  (subsetp-equal keys1 keys3))
+             (4v-key-bool-alistp keys1 (4v-alist-bool-special keys3 keys2 al)))
+    :hints(("Goal" :in-theory (enable intersection-equal))))
+
+  (defthm 4v-sexpr-boolean-rulep-implies
+    (implies (and (4v-sexpr-boolean-rulep x)
+                  (4v-key-bool-alistp (intersection-equal
+                                       (sexpr-bool-special-vars)
+                                       (4v-sexpr-vars x))
+                                      al))
+             (4v-boolp (4v-sexpr-eval x al)))
+    :hints(("Goal" :in-theory (disable 4v-sexpr-boolean-rulep
+                                       4v-sexpr-boolean-rulep-necc)
+            :use ((:instance 4v-sexpr-boolean-rulep-necc
+                   (al (4v-alist-bool-special (sexpr-bool-special-vars)
+                                              (4v-sexpr-vars x) al))))))))
+             
+
+
+(defsection sexpr-booleanp
+  (defun collect-bound-key-vals (x alist)
+    (declare (xargs :guard t))
+    (if (atom x)
+        nil
+      (let ((look (hons-assoc-equal (car x) alist)))
+        (if look
+            (cons (cdr look) (collect-bound-key-vals (cdr x) alist))
+          (collect-bound-key-vals (cdr x) alist)))))
+
+  (defthm max-acl2-count-vals-gte-acl2-count-of-lookup
+    (implies (hons-assoc-equal k x)
+             (<= (acl2-count (cdr (hons-assoc-equal k x)))
+                 (max-acl2-count (alist-vals x)))))
+
+  (defthm max-acl2-count-of-collect-bound-key-vals
+    (<= (max-acl2-count (collect-bound-key-vals x alist))
+        (max-acl2-count (alist-vals alist)))
+    :rule-classes (:rewrite :linear))
+
+  (defthm sexpr-vars-of-lookup
+    (subsetp-equal (4v-sexpr-vars (cdr (hons-assoc-equal k alist)))
+                   (4v-sexpr-vars-list (alist-vals alist)))
+    :hints(("Goal" :in-theory (enable alist-vals))))
+
+  (defthm sexpr-vars-list-of-collect-bound-key-vals
+    (subsetp-equal (4v-sexpr-vars-list (collect-bound-key-vals x alist))
+                   (4v-sexpr-vars-alist alist))
+    :hints(("Goal" :in-theory (enable collect-bound-key-vals))))
+
+  (defthm max-acl2-count-sexpr-unify-when-non-var
+    (implies (and (consp pat)
+                  (< (max-acl2-count (alist-vals alist))
+                     (acl2-count term)))
+             (< (max-acl2-count
+                 (alist-vals (mv-nth 1 (sexpr-unify pat term alist))))
+                (acl2-count term)))
+    :hints (("goal"
+             :in-theory (e/d ()
+                             (sexpr-unify-list-alist-max-count-large-term))
+             :do-not-induct t
+             :use ((:instance sexpr-unify-list-alist-max-count-large-term
+                    (pat (cdr pat)) (term (cdr term))))))
+    :rule-classes (:rewrite :linear)
+    :otf-flg t)
+
+  (in-theory (disable collect-bound-key-vals))
+
+  (local (defthm acl2-count-gt-0-when-consp
+           (implies (consp x)
+                    (< 0 (acl2-count x)))))
+
+  (mutual-recursion
+   (defun sexpr-booleanp-by-rule (rule x all-rules)
+     (declare (xargs :guard (consp x)
+                     :measure (nat-list-measure
+                               (list (acl2-count x) 0 0))))
+     (b* (((unless (consp rule)) nil)    ;; technicality for termination
+          ((unless (mbt (consp x))) nil) ;; technicality for termination
+          ((mv ok alist) (sexpr-unify rule x nil))
+          ((unless ok) nil)
+          (abcd (collect-bound-key-vals (sexpr-bool-special-vars) alist)))
+       (sexpr-booleanp-list abcd all-rules)))
+   (defun sexpr-booleanp-by-rules (rules x all-rules)
+     (declare (xargs :guard (consp x)
+                     :measure (nat-list-measure
+                               (list (acl2-count x) 1 (len rules)))))
+     (if (atom rules)
+         nil
+       (or (sexpr-booleanp-by-rule (car rules) x all-rules)
+           (sexpr-booleanp-by-rules (cdr rules) x all-rules))))
+   (defun sexpr-booleanp (x all-rules)
+     (declare (xargs :guard t
+                     :measure (nat-list-measure
+                               (list (acl2-count x) 2 0))))
+     (if (atom x)
+         ;; assume variables are boolean-valued.
+         (if x t nil)
+       (sexpr-booleanp-by-rules all-rules x all-rules)))
+   (defun sexpr-booleanp-list (x all-rules)
+     (declare (xargs :guard t
+                     :hints (("goal" :do-not-induct t))
+                     :measure (nat-list-measure
+                               (list (max-acl2-count x) 3 (len x)))))
+     (if (atom x)
+         t
+       (and (sexpr-booleanp (car x) all-rules)
+            (sexpr-booleanp-list (cdr x) all-rules)))))
+
+  (flag::make-flag flag-sexpr-booleanp sexpr-booleanp
+                   :flag-mapping ((sexpr-booleanp-by-rule . rule)
+                                  (sexpr-booleanp-by-rules . rules)
+                                  (sexpr-booleanp . sexpr)
+                                  (sexpr-booleanp-list . list)))
+
+  (local (in-theory (disable 4v-lookup)))
+
+  (defund 4v-alist-boolp (keys x)
+    (declare (xargs :guard t))
+    (if (atom keys)
+        t
+      (and (4v-boolp (4v-lookup (car keys) x))
+           (4v-alist-boolp (cdr keys) x))))
+
+  (defthm 4v-lookup-when-4v-alist-boolp
+    (implies (and (member k keys)
+                  (4v-alist-boolp keys x))
+             (4v-boolp (4v-lookup k x)))
+    :hints(("Goal" :in-theory (enable 4v-alist-boolp))))
+
+  (defthm 4v-alist-boolp-of-subset
+    (implies (and (subsetp-equal a b)
+                  (4v-alist-boolp b x))
+             (4v-alist-boolp a x))
+    :hints(("Goal" :in-theory (enable 4v-alist-boolp subsetp-equal))))
+
+  (defcong set-equivp equal (4v-alist-boolp keys x) 1
+    :hints(("Goal" :in-theory (enable set-equivp)
+            :cases ((4v-alist-boolp keys x)))))
+
+  (defthm 4v-alist-boolp-of-append
+    (equal (4v-alist-boolp (append a b) x)
+           (and (4v-alist-boolp a x)
+                (4v-alist-boolp b x)))
+    :hints(("Goal" :in-theory (enable 4v-alist-boolp))))
+
+  (defun 4v-bool-listp (x)
+    (declare (xargs :guard t))
+    (if (atom x)
+        (eq x nil)
+      (and (4v-boolp (car x))
+           (4v-bool-listp (cdr x)))))
+
+  (local (in-theory (disable 4v-sexpr-boolean-rulep)))
+
+  (defthm 4v-sexpr-vars-of-collect-bound-keys-of-sexpr-unify
+    (subsetp-equal (4v-sexpr-vars-list
+                    (collect-bound-key-vals
+                     keys (mv-nth 1 (sexpr-unify rule x nil))))
+                   (4v-sexpr-vars x))
+    :hints (("goal" :use ((:instance sexpr-vars-alist-of-unify
+                           (alist nil) (term x) (pat rule))
+                          (:instance sexpr-vars-list-of-collect-bound-key-vals
+                           (x keys) (alist (mv-nth 1 (sexpr-unify rule x nil)))))
+             :in-theory (e/d (subsetp-equal-trans2)
+                             (sexpr-vars-alist-of-unify
+                              sexpr-vars-list-of-collect-bound-key-vals)))))
+
+  (defthm 4v-alist-boolp-of-collect-bound-key-vals
+    (implies (4v-alist-boolp (4v-sexpr-vars x) alist)
+             (4v-alist-boolp
+              (4v-sexpr-vars-list
+               (collect-bound-key-vals keys (mv-nth 1 (sexpr-unify rule x nil))))
+              alist))
+    :hints (("goal" :use 4v-sexpr-vars-of-collect-bound-keys-of-sexpr-unify
+             :in-theory (disable 4v-sexpr-vars-of-collect-bound-keys-of-sexpr-unify))))
+
+  (defthm 4v-sexpr-eval-list-of-collect-bound-key-vals
+    (equal (4v-sexpr-eval-list (collect-bound-key-vals keys x) al)
+           (collect-bound-key-vals keys (4v-sexpr-eval-alist x al)))
+    :hints(("Goal" :in-theory (enable collect-bound-key-vals))))
+
+  (defthm 4v-bool-listp-of-collect-bound-key-vals
+    (iff (4v-bool-listp
+          (collect-bound-key-vals special-vars alist))
+         (4v-key-bool-alistp (intersection-equal special-vars (alist-keys
+                                                               alist))
+                             alist))
+    :hints(("Goal" :in-theory (enable collect-bound-key-vals
+                                      intersection-equal)
+            :induct t)
+           (and stable-under-simplificationp
+                '(:in-theory (enable 4v-lookup)))))
+
+  (local (defthmd 4V-SEXPR-EVAL-4V-SEXPR-COMPOSE-strong
+           (implies (equal (4v-sexpr-compose x al) y)
+                    (equal (4v-sexpr-eval y env)
+                           (4v-sexpr-eval x (4v-sexpr-eval-alist al env))))))
+
+  (defthm-flag-sexpr-booleanp
+    (defthm 4v-boolp-when-sexpr-booleanp-by-rule
+      (implies (and (sexpr-booleanp-by-rule rule x all-rules)
+                    (4v-sexpr-boolean-rulep rule)
+                    (4v-sexpr-boolean-rulesp all-rules)
+                    (4v-alist-boolp (4v-sexpr-vars x) alist))
+               (4v-boolp (4v-sexpr-eval x alist)))
+      :hints ((and stable-under-simplificationp
+                   '(:use ((:instance sexpr-unify-4v-sexpr-compose
+                            (pat rule) (term x) (alist nil)))
+                     :in-theory (e/d (4v-sexpr-eval-4v-sexpr-compose-strong)
+                                     (sexpr-unify-4v-sexpr-compose)))))
+      :flag rule)
+    (defthm 4v-boolp-when-sexpr-booleanp-by-rules
+      (implies (and (sexpr-booleanp-by-rules rules x all-rules)
+                    (4v-sexpr-boolean-rulesp rules)
+                    (4v-sexpr-boolean-rulesp all-rules)
+                    (4v-alist-boolp (4v-sexpr-vars x) alist))
+               (4v-boolp (4v-sexpr-eval x alist)))
+      :flag rules)
+    (defthm 4v-boolp-when-sexpr-booleanp
+      (implies (and (sexpr-booleanp x all-rules)
+                    (4v-sexpr-boolean-rulesp all-rules)
+                    (4v-alist-boolp (4v-sexpr-vars x) alist))
+               (4v-boolp (4v-sexpr-eval x alist)))
+      :hints ((and stable-under-simplificationp
+                   '(:expand ((:free (x) (4v-alist-boolp (list x) alist))))))
+      :flag sexpr)
+    (defthm 4v-boolp-when-sexpr-booleanp-list
+      (implies (and (sexpr-booleanp-list x all-rules)
+                    (4v-sexpr-boolean-rulesp all-rules)
+                    (4v-alist-boolp (4v-sexpr-vars-list x) alist))
+               (4v-bool-listp (4v-sexpr-eval-list x alist)))
+      :flag list))
+   
+
+  (memoize 'sexpr-booleanp :condition '(consp x))
+
+    
+  ;; check the given keys of the alist to determine if their associated sexprs
+  ;; are known Boolean-valued.
+  (defun sexpr-booleanp-keys (keys x bool-rules)
+    (declare (xargs :guard t))
+    (b* (((when (atom keys)) t)
+         (look (hons-assoc-equal (car keys) x))
+         ((unless look)
+          (sexpr-booleanp-keys (cdr keys) x bool-rules)))
+      (and (sexpr-booleanp (cdr look) bool-rules)
+           (sexpr-booleanp-keys (cdr keys) x bool-rules)))))
+
+
+(defconst *sexpr-boolean-rewrites*
+  ;; The following is a list of equivalences of sexprs in the variables a, b,
+  ;; c, d, w, x, y, z.  Each of these is read as: If variables a, b, c, d are
+  ;; known Boolean-valued, then these two terms are equivalent.  (w, x, y, z
+  ;; need not be known Boolean.)
+  '(((xor a a)        . (f))
+    ((xor a (not a))  . (t))
+    ((ite* a x x)     . (buf x))))
+           
+(defsection 4v-sexpr-boolean-rewritep
+
+  (defun-sk 4v-sexpr-boolean-rewritep (x y)
+    (forall al
+            (implies (4v-key-bool-alistp (sexpr-bool-special-vars) al)
+                     (equal (4v-sexpr-eval x al)
+                            (4v-sexpr-eval y al)))))
+
+  (in-theory (disable (4v-sexpr-boolean-rewritep)))
+
+  (defun 4v-sexpr-boolean-rewritesp (x)
+    (if (atom x)
+        t
+      (and (consp (car x))
+           (subsetp-equal (4v-sexpr-vars (cdar x))
+                          (4v-sexpr-vars (caar x)))
+           (4v-sexpr-boolean-rewritep (caar x) (cdar x))
+           (4v-sexpr-boolean-rewritesp (cdr x)))))
+
+  (in-theory (disable (4v-sexpr-boolean-rewritesp)))
+
+  (defthm 4v-boolp-implies-equal-t
+    (implies (and (4v-boolp x)
+                  (not (equal x 'f)))
+             (equal (equal x t) t))
+    :hints(("Goal" :in-theory (enable 4v-boolp))))
+             
+  (local (in-theory (disable 4v-lookup)))
+
+  (defthm 4v-sexpr-boolean-rewritesp-of-boolean-rewrites
+    (4v-sexpr-boolean-rewritesp *sexpr-boolean-rewrites*))
+
+  (defthm 4v-sexpr-boolean-rewritep-implies
+    (implies (and (4v-sexpr-boolean-rewritep x y)
+                  (subsetp-equal (4v-sexpr-vars y) (4v-sexpr-vars x))
+                  (4v-key-bool-alistp (intersection-equal
+                                       (sexpr-bool-special-vars)
+                                       (4v-sexpr-vars x))
+                                      al))
+             (equal (4v-sexpr-eval y al)
+                    (4v-sexpr-eval x al)))
+    :hints(("Goal" :in-theory (disable 4v-sexpr-boolean-rewritep
+                                       4v-sexpr-boolean-rewritep-necc)
+            :use ((:instance 4v-sexpr-boolean-rewritep-necc
+                   (al (4v-alist-bool-special (sexpr-bool-special-vars)
+                                              (4v-sexpr-vars x)
+                                              al))))))))
+
+(defsection sexpr-brules
+
+  ;; brules is of the form (bool-rws (boolp-rules . rws)).
+  (defun sexpr-brules-p (x)
+    (declare (xargs :guard t))
+    (and (consp x) (consp (cdr x))))
+
+  (defund sexpr-brules->bool-rws (x)
+    (declare (xargs :guard (sexpr-brules-p x)))
+    (car x))
+
+  (defund sexpr-brules->boolp-rules (x)
+    (declare (xargs :guard (sexpr-brules-p x)))
+    (cadr x))
+
+  (defund sexpr-brules->rewrites (x)
+    (declare (xargs :guard (sexpr-brules-p x)))
+    (cddr x))
+
+  (in-theory (disable sexpr-brules-p))
+
+
+  (defund 4v-sexpr-brules-p (x)
+    (and (4v-sexpr-boolean-rewritesp (sexpr-brules->bool-rws x))
+         (4v-sexpr-boolean-rulesp (sexpr-brules->boolp-rules x))
+         (4v-sexpr-rewrite-alistp (sexpr-brules->rewrites x))))
+
+  (in-theory (disable (4v-sexpr-brules-p)))
+
+  (defconst *sexpr-brules*
+    (list* *sexpr-boolean-rewrites*
+           *sexpr-booleanp-rules*
+           *sexpr-rewrites*))
+
+  (defthm 4v-sexpr-brulesp-of-sexpr-brules
+    (4v-sexpr-brules-p *sexpr-brules*)
+    :hints(("Goal" :in-theory (enable 4v-sexpr-brules-p)))))
+
+
+(defsection sexpr-boolean-rw-apply-rule
+
+
+  ;; We interleave rewriting with boolean rules with regular sexpr-rewriting,
+  ;; since (e.g.) the (ite* a x x) -> (buf x) rule might result in a term where
+  ;; the buf can be eliminated.
+
+  (defund sexpr-boolean-rw-apply-rule (x rule brules)
+    (declare (xargs :guard (sexpr-brules-p brules)))
+    (declare (xargs :guard (consp rule)))
+    (b* (((cons lhs rhs) rule)
+         ((mv ok subst) (sexpr-unify lhs x nil))
+         ((unless ok) (mv nil nil))
+         ((unless (sexpr-booleanp-keys
+                   (sexpr-bool-special-vars)
+                   subst
+                   (sexpr-brules->boolp-rules brules)))
+          (mv nil nil))
+         (new-x (4v-sexpr-compose-nofal rhs subst)))
+      (mv (sexpr-rewrite new-x (sexpr-brules->rewrites brules))
+          t)))
+
+  (local (in-theory (enable sexpr-boolean-rw-apply-rule)))
+
+  (local (in-theory (disable sexpr-booleanp-keys
+                             4v-sexpr-boolean-rewritep)))
+
+  (defthm eval-of-unify-pat
+    (implies (mv-nth 0 (sexpr-unify pat x alist))
+             (equal (4v-sexpr-eval
+                     pat
+                     (4v-sexpr-eval-alist (mv-nth 1 (sexpr-unify pat x alist))
+                                          env))
+                    (4v-sexpr-eval x env)))
+    :hints (("goal" :use ((:instance sexpr-unify-4v-sexpr-compose
+                           (term x)))
+             :in-theory (disable sexpr-unify-4v-sexpr-compose))))
+
+  (defthm sexpr-booleanp-keys-implies-4v-key-bool-alistp-of-eval
+    (implies (and (sexpr-booleanp-keys keys alist rules)
+                  (4v-sexpr-boolean-rulesp rules)
+                  (4v-alist-boolp (4v-sexpr-vars-list (collect-bound-key-vals
+                                                       keys alist))
+                                  env))
+             (4v-key-bool-alistp
+              (intersection-equal keys (alist-keys alist))
+              (4v-sexpr-eval-alist alist env)))
+    :hints(("Goal" :in-theory (e/d (sexpr-booleanp-keys
+                                    collect-bound-key-vals
+                                    intersection-equal
+                                    4v-key-bool-alistp)
+                                   (4v-sexpr-boolean-rulesp)))))
+
+  (defthm 4v-sexpr-eval-of-sexpr-boolean-rw-apply-rule
+    (mv-let (new-x ok)
+      (sexpr-boolean-rw-apply-rule x rule brules)
+      (implies (and ok
+                    (4v-sexpr-brules-p brules)
+                    (4v-sexpr-boolean-rewritep (car rule) (cdr rule))
+                    (subsetp-equal (4v-sexpr-vars (cdr rule))
+                                   (4v-sexpr-vars (car rule)))
+                    (4v-alist-boolp (4v-sexpr-vars x) alist))
+               (equal (4v-sexpr-eval new-x alist)
+                      (4v-sexpr-eval x alist))))
+    :hints(("Goal" :in-theory (enable 4v-sexpr-brules-p)
+            :use ((:instance
+                   sexpr-booleanp-keys-implies-4v-key-bool-alistp-of-eval
+                   (keys (sexpr-bool-special-vars))
+                   (alist (mv-nth 1 (sexpr-unify (car rule) x nil)))
+                   (rules (sexpr-brules->boolp-rules brules))
+                   (env alist))))))
+
+  (defthm member-4v-sexpr-vars-of-sexpr-boolean-rw-apply-rule
+    (implies (not (member-equal v (4v-sexpr-vars x)))
+             (not (member-equal v (4v-sexpr-vars
+                                   (mv-nth 0 (sexpr-boolean-rw-apply-rule
+                                              x rule brules)))))))
+
+
+  (defthm subsetp-4v-sexpr-vars-of-sexpr-boolean-rw-apply-rule
+    (subsetp-equal (4v-sexpr-vars
+                    (mv-nth 0 (sexpr-boolean-rw-apply-rule
+                               x rule brules)))
+                   (4v-sexpr-vars x))
+    :hints ((set-reasoning))))
+
+(defsection sexpr-boolean-rw-apply-rules
+  (defund sexpr-boolean-rw-apply-rules (x rules brules)
+    (declare (xargs :guard (sexpr-brules-p brules)))
+    (b* (((when (atom rules))
+          (mv nil nil))
+         ((unless (consp (car rules)))
+          (sexpr-boolean-rw-apply-rules x (cdr rules) brules))
+         ((mv new-x changed)
+          (sexpr-boolean-rw-apply-rule x (car rules) brules))
+         ((when (and changed (not (hqual new-x x))))
+          (mv new-x t)))
+      (sexpr-boolean-rw-apply-rules x (cdr rules) brules)))
+
+  (local (in-theory (enable sexpr-boolean-rw-apply-rules)))
+
+  (defthm 4v-sexpr-eval-of-sexpr-boolean-rw-apply-rules
+    (mv-let (new-x ok)
+      (sexpr-boolean-rw-apply-rules x rules brules)
+      (implies (and ok
+                    (4v-sexpr-brules-p brules)
+                    (4v-sexpr-boolean-rewritesp rules)
+                    (4v-alist-boolp (4v-sexpr-vars x) alist))
+               (equal (4v-sexpr-eval new-x alist)
+                      (4v-sexpr-eval x alist))))
+    :hints(("Goal" :in-theory (e/d (4v-sexpr-boolean-rewritesp)
+                                   (4v-sexpr-boolean-rewritep)))))
+
+  (defthm member-4v-sexpr-vars-of-sexpr-boolean-rw-apply-rules
+    (implies (not (member-equal v (4v-sexpr-vars x)))
+             (not (member-equal v (4v-sexpr-vars
+                                   (mv-nth 0 (sexpr-boolean-rw-apply-rules
+                                              x rules brules)))))))
+
+
+  (defthm subsetp-4v-sexpr-vars-of-sexpr-boolean-rw-apply-rules
+    (subsetp-equal (4v-sexpr-vars
+                    (mv-nth 0 (sexpr-boolean-rw-apply-rules
+                               x rules brules)))
+                   (4v-sexpr-vars x))
+    :hints ((set-reasoning))))
+
+(defsection sexpr-boolean-rw-n
+  (defund sexpr-boolean-rw-n (n x brules)
+    (declare (xargs :guard (and (sexpr-brules-p brules)
+                                (natp n))))
+    (b* (((when (zp n))
+          (cw "Sexpr-boolean-rw-n: limit reached -- looping rewrite rule?~%")
+          x)
+         ((mv newx changed)
+          (sexpr-boolean-rw-apply-rules x (sexpr-brules->bool-rws brules)
+                                        brules))
+         ((when (or (not changed)
+                    (hqual newx x)))
+          (sexpr-rewrite x (sexpr-brules->rewrites brules)))
+         ((when (or (atom newx) (atom (cdr newx))))
+          newx))
+      (sexpr-boolean-rw-n (1- n) newx brules)))
+
+  (local (in-theory (enable sexpr-boolean-rw-n)))
+
+  (defthm 4v-alist-boolp-of-sexpr-vars-of-rules
+    (implies (4v-alist-boolp (4v-sexpr-vars x) alist)
+             (4v-alist-boolp
+              (4v-sexpr-vars
+               (mv-nth 0 (sexpr-boolean-rw-apply-rules x rules brules)))
+              alist))
+    :hints (("goal" :use
+             ((:instance
+               subsetp-4v-sexpr-vars-of-sexpr-boolean-rw-apply-rules))
+             :in-theory (disable
+                         subsetp-4v-sexpr-vars-of-sexpr-boolean-rw-apply-rules))))
+
+  (defthm 4v-sexpr-eval-of-sexpr-boolean-rw-n
+    (let ((new-x (sexpr-boolean-rw-n n x brules)))
+      (implies (and (4v-sexpr-brules-p brules)
+                    (4v-alist-boolp (4v-sexpr-vars x) alist))
+               (equal (4v-sexpr-eval new-x alist)
+                      (4v-sexpr-eval x alist))))
+    :hints(("Goal" :in-theory (e/d (4v-sexpr-brules-p)
+                                   (4v-sexpr-boolean-rewritesp
+                                    4v-sexpr-eval
+                                    4v-sexpr-vars)))))
+
+  
+  (defthm member-4v-sexpr-vars-of-sexpr-boolean-rw-n
+    (implies (not (member-equal v (4v-sexpr-vars x)))
+             (not (member-equal v (4v-sexpr-vars
+                                   (sexpr-boolean-rw-n n x brules)))))
+    :hints(("Goal" :in-theory (disable 4v-sexpr-vars))))
+
+
+  (defthm subsetp-4v-sexpr-vars-of-sexpr-boolean-rw-n
+    (subsetp-equal (4v-sexpr-vars 
+                    (sexpr-boolean-rw-n n x brules))
+                   (4v-sexpr-vars x))
+    :hints ((set-reasoning))))
+
+(defsection sexpr-boolean-rw
+  (mutual-recursion
+   (defun sexpr-boolean-rw (x brules)
+     (declare (xargs :guard (sexpr-brules-p brules)))
+     (if (atom x)
+         x
+       (b* ((args (sexpr-boolean-rw-list (cdr x) brules)))
+         (sexpr-boolean-rw-n 100 (hons (car x) args) brules))))
+   (defun sexpr-boolean-rw-list (x brules)
+     (declare (xargs :guard (sexpr-brules-p brules)))
+     (if (atom x)
+         nil
+       (hons (sexpr-boolean-rw (car x) brules)
+             (sexpr-boolean-rw-list (cdr x) brules)))))
+
+  (memoize 'sexpr-boolean-rw :condition '(consp x))
+
+  (defthm-4v-sexpr-flag
+    (defthm 4v-sexpr-vars-sexpr-boolean-rw
+      (implies (not (member-equal k (4v-sexpr-vars x)))
+               (not (member-equal k (4v-sexpr-vars (sexpr-boolean-rw x rewrites)))))
+      :flag sexpr)
+
+    (defthm 4v-sexpr-vars-sexpr-boolean-rw-list
+      (implies (not (member-equal k (4v-sexpr-vars-list x)))
+               (not (member-equal k (4v-sexpr-vars-list
+                                     (sexpr-boolean-rw-list x rewrites)))))
+      :flag sexpr-list))
+
+  (defthm 4v-sexpr-vars-sexpr-boolean-rw-subset
+    (subsetp-equal (4v-sexpr-vars (sexpr-boolean-rw x brules))
+                   (4v-sexpr-vars x))
+    :hints ((set-reasoning)))
+
+  (defthm 4v-sexpr-vars-sexpr-boolean-rw-list-subset
+    (subsetp-equal (4v-sexpr-vars-list (sexpr-boolean-rw-list x brules))
+                   (4v-sexpr-vars-list x))
+    :hints ((set-reasoning)))
+
+  (defthm 4v-alist-boolp-of-sexpr-vars-of-sexpr-boolean-rw
+    (implies (4v-alist-boolp (4v-sexpr-vars x) alist)
+             (4v-alist-boolp
+              (4v-sexpr-vars
+               (sexpr-boolean-rw x brules))
+              alist))
+    :hints (("goal" :use
+             ((:instance
+               4v-sexpr-vars-sexpr-boolean-rw-subset))
+             :in-theory (disable
+                         4v-sexpr-vars-sexpr-boolean-rw-subset))))
+
+  (defthm 4v-alist-boolp-of-sexpr-vars-of-sexpr-boolean-rw-list
+    (implies (4v-alist-boolp (4v-sexpr-vars-list x) alist)
+             (4v-alist-boolp
+              (4v-sexpr-vars-list
+               (sexpr-boolean-rw-list x brules))
+              alist))
+    :hints (("goal" :use
+             ((:instance
+               4v-sexpr-vars-sexpr-boolean-rw-list-subset))
+             :in-theory (disable
+                         4v-sexpr-vars-sexpr-boolean-rw-list-subset))))
+
+  (defthm-4v-sexpr-flag
+    (defthm sexpr-boolean-rw-correct
+      (implies (and (4v-sexpr-brules-p brules)
+                    (4v-alist-boolp (4v-sexpr-vars x) alist))
+               (equal (4v-sexpr-eval (sexpr-boolean-rw x brules) alist)
+                      (4v-sexpr-eval x alist)))
+      :hints('(:in-theory (e/d (4v-sexpr-eval-redef)
+                               (4v-sexpr-eval 4v-sexpr-apply))
+               :expand ((4v-sexpr-eval x alist))))
+      :flag sexpr)
+    (defthm sexpr-boolean-rw-list-correct
+      (implies (and (4v-sexpr-brules-p brules)
+                    (4v-alist-boolp (4v-sexpr-vars-list x) alist))
+               (equal (4v-sexpr-eval-list (sexpr-boolean-rw-list x brules) alist)
+                      (4v-sexpr-eval-list x alist)))
+      :flag sexpr-list)))
