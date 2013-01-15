@@ -437,3 +437,10 @@ a Total Order to ACL2</a>.</i> ACL2 Workshop, 2002.</p>
 
 (verify-guards <<
   :hints(("Goal" :in-theory (enable <<))))
+
+
+
+;; This include-book ensures that the definitions above are compatible with
+;; those from total-order-bsd.  DO NOT MOVE IT TO THE TOP OF THE FILE, or the
+;; definitions here will be redundant and hence won't show up in the xdoc.
+(local (include-book "total-order-bsd"))
