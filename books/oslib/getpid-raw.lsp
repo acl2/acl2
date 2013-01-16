@@ -21,7 +21,7 @@
 
 (in-package "OSLIB")
 
-(defun getpid (state)
+(defun getpid-fn (state)
 
   (unless (live-state-p state)
     (er hard? 'getpid "Getpid can only be called on a live state.")

@@ -20,7 +20,7 @@
 
 (in-package "OSLIB")
 
-(defun date (state)
+(defun date-fn (state)
 
    (unless (live-state-p state)
      (er hard? 'date "Date can only be called on a live state.")

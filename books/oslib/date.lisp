@@ -26,7 +26,7 @@
 (include-book "str/natstr" :dir :system)
 ; (depends-on "date-raw.lsp")
 
-(define date (state)
+(define date (&optional (state 'state))
   :returns (mv (datestamp stringp :rule-classes :type-prescription)
                (state state-p1 :hyp (force (state-p1 state))))
   :parents (oslib)

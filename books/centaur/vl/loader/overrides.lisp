@@ -27,7 +27,7 @@
 (include-book "filemap")
 (include-book "../util/cwtime")
 (include-book "../mlib/warnings")
-(include-book "centaur/misc/ls" :dir :system)
+(include-book "oslib/ls" :dir :system)
 (include-book "str/top" :dir :system)
 (local (include-book "../util/arithmetic"))
 (local (include-book "../util/osets"))
@@ -782,7 +782,7 @@ overrides database loaded.</p>"
           (mv t nil nil defines comment-map walist state))
 
          (path1 (car dirs))
-         ((mv err filenames state) (acl2::ls-files path1 state))
+         ((mv err filenames state) (oslib::ls-files path1))
          (filenames (if err
                         (er hard? 'vl-read-overrides-aux "Error listing ~x0.~%" (car dirs))
                       filenames))

@@ -25,7 +25,7 @@
 (include-book "tools/include-raw" :dir :system)
 ; (depends-on "getpid-raw.lsp")
 
-(define getpid (state)
+(define getpid (&optional (state 'state))
   :returns (mv (pid "The Process ID for this ACL2 session on success, or
                      @('nil') on failure."
                     (or (natp pid)

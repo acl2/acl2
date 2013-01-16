@@ -26,6 +26,8 @@
 ;; Must be included here for cutil:: functions
 (ld "cutil/package.lsp" :dir :system)
 
+(ld "oslib/package.lsp" :dir :system)
+
 (defmacro multi-union-eq (x y &rest rst)
   (xxxjoin 'union-eq (list* x y rst)))
 

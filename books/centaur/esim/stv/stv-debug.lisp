@@ -24,7 +24,7 @@
 (in-package "ACL2")
 (include-book "stv-run")
 (include-book "stv-sim")
-(include-book "centaur/misc/date" :dir :system)
+(include-book "oslib/date" :dir :system)
 (include-book "centaur/misc/tshell" :dir :system)
 (include-book "../esim-vcd")
 (local (include-book "centaur/vl/util/arithmetic" :dir :system))
@@ -167,7 +167,7 @@ especially the first time before things are memoized.</p>"
           (- (fast-alist-free evaled-out-bits))
 
           ;; Actual VCD generation
-          ((mv date state) (acl2::date state))
+          ((mv date state) (oslib::date))
           (dump (vl::vcd-dump-main pstv.mod evaled-snapshots date))
 
           ((mv & & state) (assign acl2::writes-okp t))
