@@ -24,6 +24,7 @@
 (include-book "date")
 (include-book "getpid")
 (include-book "ls")
+(include-book "tempfile")
 
 (defxdoc oslib
   :short "Operating System Utilities Library"
