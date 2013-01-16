@@ -91,15 +91,16 @@ sub abs_canonical_path {
     my $path = shift;
     my $abspath = File::Spec->rel2abs(rec_readlink($path));
     my ($vol, $dir, $file) = File::Spec->splitpath($abspath);
-    if (! -d $dir) {
-	print "Oops, trying to go into $dir\n";
+    my $voldir = File::Spec->catpath($vol, $dir, "");
+    if (! -d $voldir) {
+	print "Oops, trying to go into $voldir\n";
 	return 0;
     }
-    my $absdir = Cwd::fast_abs_path($dir);
+    my $absdir = Cwd::fast_abs_path($voldir);
     if ($absdir) {
-	return File::Spec->catpath($vol, $absdir, $file);
+	return File::Spec->catfile($absdir, $file);
     } else {
-	print "Warning: canonical_path: Directory not found: " . $dir . "\n";
+	print "Warning: canonical_path: Directory not found: " . $voldir . "\n";
 	return 0;
     }
 }
