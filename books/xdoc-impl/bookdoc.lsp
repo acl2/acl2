@@ -265,6 +265,7 @@ and :save commands are executed.
 (include-book "tools/flag" :dir :system)
 (include-book "finite-set-theory/osets/osets" :dir :system)
 (include-book "str/top" :dir :system)
+(include-book "oslib/top" :dir :system)
 
 
 ;; Okay, now the code to process what we've just loaded.

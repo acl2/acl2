@@ -36,7 +36,7 @@
 
 (define ls-subdirs ((path "Directory to list files in.  May or may not include
                            a trailing slash.  May use standard idioms like
-                           @('~') or ~('~jared').  The empty string means the
+                           @('~') or @('~jared').  The empty string means the
                            current directory."
                           stringp)
                     &optional
@@ -71,7 +71,7 @@ not full paths like @('\"/home/users/jared/foo\"').</p>"
 
 (define ls-files ((path "Directory to list files in.  May or may not include
                          a trailing slash.  May use standard idioms like
-                         @('~') or ~('~jared').  The empty string means the
+                         @('~') or @('~jared').  The empty string means the
                          current directory."
                         stringp)
                   &optional

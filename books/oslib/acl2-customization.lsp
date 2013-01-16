@@ -19,6 +19,8 @@
 ; Original author: Jared Davis <jared@centtech.com>
 
 (in-package "ACL2")
+(ld "~/acl2-customization.lsp")
+(in-package "ACL2")
 (ld "package.lsp")
 (include-book "portcullis")
 (set-deferred-ttag-notes t state)

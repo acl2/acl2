@@ -12,4 +12,7 @@
 ; proof-by-arith book.
 
 (in-package "ACL2")
+
+;; cert_param: (reloc_stub)
+
 (include-book "misc/eval" :dir :system)
