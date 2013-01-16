@@ -23,8 +23,8 @@
 (include-book "deflist")
 (include-book "defprojection")
 (include-book "xdoc-impl/fmt-to-str" :dir :system)
+(include-book "tools/mv-nth" :dir :system)
 (local (include-book "misc/assert" :dir :system))
-(local (include-book "tools/mv-nth" :dir :system))
 (set-state-ok t)
 
 (defxdoc define
