@@ -26,8 +26,9 @@ use strict;
 use warnings;
 use File::Basename;
 use File::Spec;
+# don't know how to get it on msys
+# use File::Which qw(which where);
 use Storable;
-# use Cwd;
 use Cwd 'abs_path';
 
 my $cache_version_code = 3;
@@ -128,21 +129,22 @@ sub canonical_path {
     }
 }
 
-sub which {
-    my $name = shift;
-    # test to see if this is just a filename with no directory -- is this correct?
-    if (basename($name) eq $name) {
-	foreach my $dir (split(":", $ENV{"PATH"})) {
-	    my $file = rel_path($dir, $name);
-	    if ((! -d $file) && -x $file) {
-		return abs_canonical_path($file);
-	    }
-	}
-    } elsif ((! -d $name) && -x $name) {
-	return abs_canonical_path($name);
-    }
-    return 0;
-}
+# not at all cross-platform
+# sub which {
+#     my $name = shift;
+#     # test to see if this is just a filename with no directory -- is this correct?
+#     if (basename($name) eq $name) {
+# 	foreach my $dir (split(":", $ENV{"PATH"})) {
+# 	    my $file = rel_path($dir, $name);
+# 	    if ((! -d $file) && -x $file) {
+# 		return abs_canonical_path($file);
+# 	    }
+# 	}
+#     } elsif ((! -d $name) && -x $name) {
+# 	return abs_canonical_path($name);
+#     }
+#     return 0;
+# }
 	
 
 

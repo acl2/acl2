@@ -58,6 +58,8 @@
 use warnings;
 use strict;
 use File::Spec;
+# problematic to get this from cpan on msys
+# use File::Which qw(which);
 use FindBin qw($RealBin);
 use POSIX qw(strftime);
 use Cwd;
@@ -373,6 +375,7 @@ if (($? >> 8) != 0) {
     print "Error: failed to find \$ACL2 ($ACL2) in the PATH.\n";
     exit(1);
 }
+chomp($default_acl2);
 
 my $PCERT = "";
 if ($STEP eq "pcertify") {

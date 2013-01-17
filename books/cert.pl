@@ -441,7 +441,8 @@ unless ($acl2) {
     $acl2 = "acl2";
 }
 
-$acl2 = which($acl2);
+$acl2 = `which $acl2 2>/dev/null`;
+chomp($acl2);
 
 if ($acl2) {
     $acl2 = abs_canonical_path($acl2);
