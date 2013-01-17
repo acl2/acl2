@@ -21464,7 +21464,8 @@
                         by ACL2."
                        (list (cons #\0 i)
                              (cons #\1 array-dimension-limit)))
-                    (let* ((old (svref ,var ,n))
+                    (let* ((var ,var)
+                           (old (svref var ,n))
                            (min-index (if (< i (length old))
                                           i
                                         (length old)))
@@ -21486,10 +21487,10 @@
                                              :element-type
                                              ',array-etype)))
                       #+hons (memoize-flush ,flush-var)
-                      (setf (svref ,var ,n)
+                      (setf (svref var ,n)
                             (,(pack2 'stobj-copy-array- fix-vref)
                              old new 0 min-index))
-                      ,var)))))
+                      var)))))
            (,accessor-name
             (i ,var)
             (declare (type (and fixnum (integer 0 *)) i))

@@ -20112,6 +20112,23 @@
   to our attention by sending us an example script of the sort that was
   breaking during an ACL2s build.
 
+  Fixed handling of pathnames by some low-level code (system function
+  ~c[our-truename]) that could cause errors, for example for host-Lisp GCL on
+  some platforms when environment variable ~c[HOME] points to a non-existent
+  directory.  Thanks to Camm Maguire for bringing this issue to our attention
+  and helping with the debugging.
+
+  Fixed a coding bug in generation of stobj resizing functions for a stobj
+  named ~c[OLD].  The following example illustrates the bug.
+  ~bv[]
+  (defstobj old
+    (fld :type (array (unsigned-byte 31) (8))
+          :initially 0 :resizable t))
+  (resize-fld 10 old)
+  ; The following returned 8 but should have returned 10:
+  (fld-length old)
+  ~ev[]
+
   ~st[CHANGES AT THE SYSTEM LEVEL]
 
   The ~c[books/] directory no longer needs to exist in order to build an ACL2

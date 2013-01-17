@@ -1221,7 +1221,9 @@ notation causes an error and (b) the use of ,. is not permitted."
 
 (defun our-truename (filename &optional namestringp)
 
-; For now, assume that namestringp is not supplied.
+; For now, assume that namestringp is nil (or not supplied).
+
+; Filename can be a pathname, in which case we treat it as its namestring.
 
 ; This function is intended to return nil if filename does not exist.  We thus
 ; rely on the CL HyperSpec, where it says of truename that "An error of type
@@ -1242,6 +1244,8 @@ notation causes an error and (b) the use of ,. is not permitted."
 ; such a truename, with the following treatment if that truename is nil: return
 ; nil if namestringp is :safe, else cause an error.
 
+  (when (pathnamep filename)
+    (setq filename (namestring filename)))
   (let ((truename
          (cond
           #+allegro

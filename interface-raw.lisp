@@ -7671,13 +7671,14 @@ Missing functions:
                 (user-home-dir-path (our-user-homedir-pathname))
                 (user-home-dir0 (and user-home-dir-path
                                      (our-truename user-home-dir-path t)))
-                (user-home-dir (if (eql (char user-home-dir0
-                                              (1- (length user-home-dir0)))
-                                        *directory-separator*)
-                                   (subseq user-home-dir0
-                                           0
-                                           (1- (length user-home-dir0)))
-                                 user-home-dir0)))
+                (user-home-dir (and user-home-dir0
+                                    (if (eql (char user-home-dir0
+                                                   (1- (length user-home-dir0)))
+                                             *directory-separator*)
+                                        (subseq user-home-dir0
+                                                0
+                                                (1- (length user-home-dir0)))
+                                      user-home-dir0))))
            (when system-dir
              (f-put-global 'system-books-dir
                            (canonical-dirname!
