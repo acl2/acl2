@@ -750,12 +750,14 @@ some kind of separator!</p>
 (defprojection formallist->names (x)
   (formal->name x)
   :guard (formallist-p x)
-  :nil-preservingp t)
+  :nil-preservingp t
+  :optimize nil)
 
 (defprojection formallist->guards (x)
   (formal->guard x)
   :guard (formallist-p x)
-  :nil-preservingp t)
+  :nil-preservingp t
+  :optimize nil)
 
 (defund formallist-collect-stobjs (x world)
   (declare (xargs :guard (and (formallist-p x)
@@ -1349,7 +1351,8 @@ some kind of separator!</p>
 (defprojection returnspeclist->names (x)
   (returnspec->name x)
   :guard (returnspeclist-p x)
-  :result-type symbol-listp)
+  :result-type symbol-listp
+  :optimize nil)
 
 (defund make-symbol-ignorable (x)
   (declare (xargs :guard (symbolp x)))
@@ -1359,7 +1362,8 @@ some kind of separator!</p>
 
 (defprojection make-symbols-ignorable (x)
   (make-symbol-ignorable x)
-  :guard (symbol-listp x))
+  :guard (symbol-listp x)
+  :optimize nil)
 
 (defun returnspec-thms (fnname specs world)
   "Returns EVENTS"
