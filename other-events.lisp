@@ -18237,7 +18237,7 @@
   also appropriate for use by suitable calls of `make' in the community books
   directory, ~c[ACL2_JOBS] is only suitable for use with the ~c[regression]
   target (and similar targets, such as ~c[regression-fresh]) in the ACL2
-  sources directory.
+  sources directory).
 
   You can also specify just the directories you want, among those offered in
   ~c[Makefile].  For example:
@@ -23271,9 +23271,9 @@
 
 ; Field is a member of the :exports field of a defabsstobj event if type is
 ; nil; otherwise type is :recognizer or :creator and field is the recognizer or
-; creator argument to defabsstobj (already expanded, in the case of the
-; recognizer).  We return an error triple such that if there is no error, then
-; the value component is an appropriate absstobj-method record.
+; creator argument to defabsstobj.  We return an error triple such that if
+; there is no error, then the value component is an appropriate absstobj-method
+; record.
 
 ; If wrld is nil, then we take a shortcut, returning a record with only the
 ; :NAME, :LOGIC, :EXEC, and :PROTECT fields filled in (the others are nil),
@@ -23299,6 +23299,8 @@
        (exec exec-p)
        (let ((exec (cadr (assoc-keyword :EXEC keyword-lst))))
          (cond (exec (mv exec t))
+               ((eq type :recognizer)
+                (mv (absstobj-name st :RECOGNIZER-EXEC) nil))
                (t (mv (absstobj-name name :C) nil))))
        (let* ((protect-tail (assoc-keyword :PROTECT keyword-lst))
               (protect (if protect-tail
@@ -23315,6 +23317,8 @@
             (logic logic-p)
             (let ((logic (cadr (assoc-keyword :LOGIC keyword-lst))))
               (cond (logic (mv logic t))
+                    ((eq type :recognizer)
+                     (mv (absstobj-name st :RECOGNIZER-LOGIC) nil))
                     (t (mv (absstobj-name name :A) nil))))
             (cond
              ((null wrld) ; shortcut for raw Lisp definition of defabsstobj

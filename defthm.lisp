@@ -4859,6 +4859,9 @@
 
   ~c[(w state)]: returns the ACL2 logical ~ilc[world].
 
+  ~c[(mfc-unify-subst mfc)]: returns the unifying substitution when evaluating
+  a ~ilc[syntaxp] or ~ilc[bind-free] hypothesis, else returns ~c[nil].
+
   ~c[(mfc-ts term mfc state :forcep forcep :ttreep ttreep)]: returns the
   ~c[type-set] of ~c[term] in the current context; ~pl[type-set].
 
@@ -6247,7 +6250,8 @@
                               :top-clause (list term)
                               :current-clause (list term))
                   :gstack nil
-                  :ttree nil)
+                  :ttree nil
+                  :unify-subst nil)
             (coerce-state-to-object state))))
    (t (list term))))
 

@@ -27263,6 +27263,7 @@
     hard-error ; *HARD-ERROR-RETURNS-NILP*, FUNCALL, ...
     abort! p! ; THROW
     mfc-rdepth ; *metafunction-context*
+    mfc-unify-subst ; *metafunction-context*
     flush-compress ; SETF [may be critical for correctness]
     alphorder ; [bad atoms]
     extend-world ; EXTEND-WORLD1
@@ -44344,7 +44345,21 @@
    (LIST (LIST 'TTREE TTREE))
    '(CAR
      (CDR
-       (CDR (CDR (CDR (CDR (CDR (CDR (CDR (CDR (CDR (CDR TTREE)))))))))))))))
+       (CDR (CDR (CDR (CDR (CDR (CDR (CDR (CDR (CDR (CDR TTREE))))))))))))))
+; The present PROGN form is the result of executing the following forms in an
+; ACL2 built without this form -- but be sure to replace the defrec form below
+; with the corresponding defrec that appears later in the sources!
+
+ (DEFMACRO
+  |Access METAFUNCTION-CONTEXT record field UNIFY-SUBST|
+  (UNIFY-SUBST)
+  (LIST
+   'LET
+   (LIST (LIST 'UNIFY-SUBST UNIFY-SUBST))
+   '(CAR
+     (CDR
+      (CDR
+       (CDR (CDR (CDR (CDR (CDR (CDR (CDR (CDR (CDR (CDR UNIFY-SUBST))))))))))))))))
 
 (DEFMACRO |Access REWRITE-CONSTANT record field CURRENT-CLAUSE|
   (CURRENT-CLAUSE)
@@ -44484,6 +44499,16 @@
   (if (and (true-listp mfc)
            (true-listp (access metafunction-context mfc :ancestors)))
       (access metafunction-context mfc :ancestors)
+    nil))
+
+(defun mfc-unify-subst (mfc)
+  (declare (xargs :guard t))
+  #-acl2-loop-only
+  (cond ((eq mfc *metafunction-context*)
+         (return-from mfc-unify-subst
+                      (access metafunction-context mfc :unify-subst))))
+  (if (true-listp mfc)
+      (access metafunction-context mfc :unify-subst)
     nil))
 
 ; When verifying guards on meta-functions, the following two events are

@@ -20070,6 +20070,10 @@
   to David Rager and Jared Davis for requesting such a change, and for ensuing
   helpful discussions.
 
+  Added a field ~c[:UNIFY-SUBST] to metafunction contexts
+  (~pl[EXTENDED-METAFUNCTIONS]), accessed with function ~c[mfc-unify-subst].
+  Thanks to Sol Swords for requesting this enhancement.
+
   ~st[NEW FEATURES]
 
   A new utility, ~c[set-splitter-output], can direct the prover to give
@@ -20096,9 +20100,8 @@
   Functions defined by ~ilc[defstobj] had failed to be compiled when certifying
   books, except in host Lisps that compile on-the-fly (CCL, SBCL).  This has
   been fixed for all host Lisps.  A related change, probably less significant,
-  was made for ~ilc[defabsstobj].  Thanks to Sol Swords for reporting a bug
-  that turned out to be a mistake in a preliminary implementation of this
-  change.
+  was made for ~ilc[defabsstobj].  Thanks to Sol Swords for reporting bugs that
+  turned out to be mistakes in a preliminary implementation of this change.
 
   Fixed an assertion error involving linear arithmetic.  Thanks to Sol Swords
   for sending an example illustrating the bug (now appearing as a comment in
