@@ -3,6 +3,11 @@
 
 (in-package "ACL2")
 
+(local (include-book "../arithmetic/idiv"))
+(local (include-book "../arithmetic/realp"))
+(local (include-book "../arithmetic/abs"))
+(local (include-book "../arithmetic/top"))
+
 (include-book "trig")
 
 ; Added by Matt K. for v2-7.

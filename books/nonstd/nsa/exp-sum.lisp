@@ -5,7 +5,10 @@
 
 (in-package "ACL2")
 
+(local (include-book "../arithmetic/idiv"))
+(local (include-book "../arithmetic/realp"))
 (include-book "../arithmetic/binomial")
+
 (include-book "inner-sums")
 (include-book "exp")
 

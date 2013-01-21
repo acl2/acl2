@@ -6,6 +6,9 @@
  (certify-book "inverse-monotone" 1)
 |#
 
+(local (include-book "../arithmetic/idiv"))
+(local (include-book "../arithmetic/realp"))
+
 (include-book "continuity")
 (include-book "intervals")
 (include-book "inverses")

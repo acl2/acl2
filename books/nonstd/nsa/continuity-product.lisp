@@ -1,6 +1,7 @@
 (in-package "ACL2")
 
-(include-book "../arithmetic/realp")
+(local (include-book "../arithmetic/idiv"))
+(local (include-book "../arithmetic/realp"))
 (include-book "nsa")
 
 ; Added by Matt K. for v2-7.

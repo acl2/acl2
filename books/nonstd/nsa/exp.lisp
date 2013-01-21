@@ -23,8 +23,11 @@
 
 (in-package "ACL2")
 
-(include-book "../arithmetic/abs")
+(local (include-book "../arithmetic/abs"))
 (include-book "../arithmetic/sumlist")
+(local (include-book "../arithmetic/idiv"))
+(local (include-book "../arithmetic/realp"))
+
 (include-book "nsa")
 (include-book "norm")
 (include-book "next-integer")

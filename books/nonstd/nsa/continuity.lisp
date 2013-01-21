@@ -7,6 +7,9 @@
 ;; theorems; i.e., a continuous function achieves its maximum and
 ;; minimum over a closed interval.
 
+(local (include-book "../arithmetic/idiv"))
+(local (include-book "../arithmetic/realp"))
+
 (include-book "nsa")
 (include-book "intervals")
 (include-book "../arithmetic/realp")

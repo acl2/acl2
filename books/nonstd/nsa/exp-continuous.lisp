@@ -10,6 +10,9 @@
 
 (in-package "ACL2")
 
+(local (include-book "../arithmetic/idiv"))
+(local (include-book "../arithmetic/realp"))
+
 (include-book "exp-sum")
 
 ; Added by Matt K. for v2-7.

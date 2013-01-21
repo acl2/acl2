@@ -6,7 +6,7 @@
 
 (in-package "ACL2")
 
-(include-book "../arithmetic/top")
+(local (include-book "../arithmetic/top"))
 (include-book "../arithmetic/sumlist")
 
 ; Added by Matt K. for v2-7.

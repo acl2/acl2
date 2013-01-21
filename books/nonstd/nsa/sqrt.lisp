@@ -48,7 +48,10 @@ To load this book, it is sufficient to do something like this:
 
 (in-package "ACL2")		; We're too lazy to build our own package
 
-(include-book "../arithmetic/top")
+(local (include-book "../arithmetic/idiv"))
+(local (include-book "../arithmetic/realp"))
+(local (include-book "../arithmetic/top"))
+
 (include-book "nsa")
 
 ; Added by Matt K. for v2-7.

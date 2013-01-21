@@ -1,7 +1,7 @@
 (in-package "ACL2")
 
-(include-book "../arithmetic/idiv")
-(include-book "../arithmetic/realp")
+(local (include-book "../arithmetic/idiv"))
+(local (include-book "../arithmetic/realp"))
 
 ; Added by Matt K. for v2-7.
 (add-match-free-override :once t)

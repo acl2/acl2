@@ -6,8 +6,8 @@
 
 (in-package "ACL2")
 
-(include-book "../arithmetic/top")
-(include-book "../arithmetic/realp")
+(local (include-book "../arithmetic/top"))
+(local (include-book "../arithmetic/realp"))
 (include-book "../arithmetic/sumlist")
 
 ; Added by Matt K. for v2-7.

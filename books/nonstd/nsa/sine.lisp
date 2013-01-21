@@ -23,8 +23,10 @@
 
 (in-package "ACL2")
 
-(include-book "../arithmetic/realp")
-(include-book "../arithmetic/abs")
+(local (include-book "../arithmetic/idiv"))
+(local (include-book "../arithmetic/realp"))
+(local (include-book "../arithmetic/abs"))
+
 (include-book "nsa")
 (include-book "factorial")
 

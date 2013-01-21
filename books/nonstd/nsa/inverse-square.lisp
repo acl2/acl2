@@ -1,5 +1,8 @@
 (in-package "ACL2")
 
+(local (include-book "../arithmetic/idiv"))
+(local (include-book "../arithmetic/realp"))
+
 (include-book "inverse-monotone")
 
 (defun square (x)

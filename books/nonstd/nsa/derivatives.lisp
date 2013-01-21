@@ -5,6 +5,9 @@
 ;; Also, it proves Rolle's theorem and from that the mean value
 ;; theorem.
 
+(local (include-book "../arithmetic/idiv"))
+(local (include-book "../arithmetic/realp"))
+
 (include-book "continuity")
 
 ; Added by Matt K. for v2-7.
