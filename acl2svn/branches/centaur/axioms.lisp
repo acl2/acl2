@@ -16800,60 +16800,6 @@
         #+:non-standard-analysis ; std-p
         nil))
 
-#+acl2-loop-only
-(defmacro defund (&rest def)
-
-  ":Doc-Section acl2::Events
-
-  define a function symbol and then disable it~/~/
-
-  Use ~c[defund] instead of ~ilc[defun] when you want to disable a function
-  immediately after its definition.  This macro has been provided for users who
-  prefer working in a mode where functions are only enabled when explicitly
-  directed by ~c[:]~ilc[in-theory].  Specifically, the form
-  ~bv[]
-  (defund NAME FORMALS ...)
-  ~ev[]
-  expands to:
-  ~bv[]
-  (progn
-    (defun NAME FORMALS ...)
-    (with-output
-     :off summary
-     (in-theory (disable NAME)))
-    (value-triple '(:defund NAME))).
-  ~ev[]
-  Only the ~c[:]~ilc[definition] rule (and, for recursively defined functions,
-  the ~c[:]~ilc[induction] rule) for the function are disabled.  In particular,
-  ~c[defund] does not disable either the ~c[:]~ilc[type-prescription] or the
-  ~c[:]~ilc[executable-counterpart] rule.  Also, the summary for the
-  ~ilc[in-theory] event is suppressed.
-
-  Note that ~c[defund] commands are never redundant (~pl[redundant-events]).
-  If the function has already been defined, then the ~ilc[in-theory] event
-  will still be executed.
-
-  ~l[defun] for documentation of ~c[defun]."
-
-  (declare (xargs :guard (and (true-listp def)
-                              (symbolp (car def))
-                              (symbol-listp (cadr def)))))
-
-  (list 'progn
-        (cons 'defun def)
-        (list
-         'with-output
-         :off 'summary
-         (list 'in-theory
-               (list 'disable (car def))))
-        (list 'value-triple
-              (list 'quote (xd-name 'defund (car def)))
-              :on-skip-proofs t)))
-
-#-acl2-loop-only
-(defmacro defund (&rest def)
-  (cons 'defun def))
-
 #+(and acl2-loop-only :non-standard-analysis)
 (defmacro defun-std (&whole event-form &rest def)
 
@@ -27404,6 +27350,7 @@
     hard-error ; *HARD-ERROR-RETURNS-NILP*, FUNCALL, ...
     abort! p! ; THROW
     mfc-rdepth ; *metafunction-context*
+    mfc-unify-subst ; *metafunction-context*
     flush-compress ; SETF [may be critical for correctness]
     alphorder ; [bad atoms]
     extend-world ; EXTEND-WORLD1
@@ -44512,7 +44459,21 @@
    (LIST (LIST 'TTREE TTREE))
    '(CAR
      (CDR
-       (CDR (CDR (CDR (CDR (CDR (CDR (CDR (CDR (CDR (CDR TTREE)))))))))))))))
+       (CDR (CDR (CDR (CDR (CDR (CDR (CDR (CDR (CDR (CDR TTREE))))))))))))))
+; The present PROGN form is the result of executing the following forms in an
+; ACL2 built without this form -- but be sure to replace the defrec form below
+; with the corresponding defrec that appears later in the sources!
+
+ (DEFMACRO
+  |Access METAFUNCTION-CONTEXT record field UNIFY-SUBST|
+  (UNIFY-SUBST)
+  (LIST
+   'LET
+   (LIST (LIST 'UNIFY-SUBST UNIFY-SUBST))
+   '(CAR
+     (CDR
+      (CDR
+       (CDR (CDR (CDR (CDR (CDR (CDR (CDR (CDR (CDR (CDR UNIFY-SUBST))))))))))))))))
 
 (DEFMACRO |Access REWRITE-CONSTANT record field CURRENT-CLAUSE|
   (CURRENT-CLAUSE)
@@ -44652,6 +44613,16 @@
   (if (and (true-listp mfc)
            (true-listp (access metafunction-context mfc :ancestors)))
       (access metafunction-context mfc :ancestors)
+    nil))
+
+(defun mfc-unify-subst (mfc)
+  (declare (xargs :guard t))
+  #-acl2-loop-only
+  (cond ((eq mfc *metafunction-context*)
+         (return-from mfc-unify-subst
+                      (access metafunction-context mfc :unify-subst))))
+  (if (true-listp mfc)
+      (access metafunction-context mfc :unify-subst)
     nil))
 
 ; When verifying guards on meta-functions, the following two events are

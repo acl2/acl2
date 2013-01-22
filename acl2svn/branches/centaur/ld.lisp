@@ -19420,6 +19420,8 @@
 
 (deflabel note-6-0
 
+; Total number of release note items: 53.
+
 ; Added analogues simple-translate-and-eval-error-double and
 ; simple-translate-and-eval-cmp of simple-translate-and-eval, which instead of
 ; (mv erp val state) return (mv erp val) and a context-message pair,
@@ -20061,6 +20063,17 @@
 
   ~st[CHANGES TO EXISTING FEATURES]
 
+  The macro ~ilc[defund] now avoids an error when ~c[:mode :program] has been
+  specified in an ~ilc[xargs] form of a ~ilc[declare] form, for example:
+  ~c[(defund f (x) (declare (xargs :mode :program)) x)].  It does this by
+  avoiding the generation of ~ilc[in-theory] ~il[events] in such cases.  Thanks
+  to David Rager and Jared Davis for requesting such a change, and for ensuing
+  helpful discussions.
+
+  Added a field ~c[:UNIFY-SUBST] to metafunction contexts
+  (~pl[EXTENDED-METAFUNCTIONS]), accessed with function ~c[mfc-unify-subst].
+  Thanks to Sol Swords for requesting this enhancement.
+
   ~st[NEW FEATURES]
 
   A new utility, ~c[set-splitter-output], can direct the prover to give
@@ -20087,9 +20100,8 @@
   Functions defined by ~ilc[defstobj] had failed to be compiled when certifying
   books, except in host Lisps that compile on-the-fly (CCL, SBCL).  This has
   been fixed for all host Lisps.  A related change, probably less significant,
-  was made for ~ilc[defabsstobj].  Thanks to Sol Swords for reporting a bug
-  that turned out to be a mistake in a preliminary implementation of this
-  change.
+  was made for ~ilc[defabsstobj].  Thanks to Sol Swords for reporting bugs that
+  turned out to be mistakes in a preliminary implementation of this change.
 
   Fixed an assertion error involving linear arithmetic.  Thanks to Sol Swords
   for sending an example illustrating the bug (now appearing as a comment in
@@ -20102,6 +20114,23 @@
   ~il[certificate] files.  Thanks to Harsh Raju Chamarthi for bringing this bug
   to our attention by sending us an example script of the sort that was
   breaking during an ACL2s build.
+
+  Fixed handling of pathnames by some low-level code (system function
+  ~c[our-truename]) that could cause errors, for example for host-Lisp GCL on
+  some platforms when environment variable ~c[HOME] points to a non-existent
+  directory.  Thanks to Camm Maguire for bringing this issue to our attention
+  and helping with the debugging.
+
+  Fixed a coding bug in generation of stobj resizing functions for a stobj
+  named ~c[OLD].  The following example illustrates the bug.
+  ~bv[]
+  (defstobj old
+    (fld :type (array (unsigned-byte 31) (8))
+          :initially 0 :resizable t))
+  (resize-fld 10 old)
+  ; The following returned 8 but should have returned 10:
+  (fld-length old)
+  ~ev[]
 
   ~st[CHANGES AT THE SYSTEM LEVEL]
 
@@ -22288,8 +22317,7 @@ href=\"http://www.cs.utexas.edu/users/moore/acl2/current/MAKE-EVENT.html\">http:
 <p>
 
 To contribute user documentation, send email to the ACL2 developers,
-for example at <code><a
-href=\"mailto:acl2-bugs@utlists.utexas.edu\">acl2-bugs@utlists.utexas.edu</a></code>.
+<A HREF=\"mailto:kaufmann@cs.utexas.edu\">Matt Kaufmann</A> and <A HREF=\"mailto:moore@cs.utexas.edu\">J Strother Moore</A>.
 
 <H2><A NAME=\"search\">Searching documentation and books</A></H2>
 

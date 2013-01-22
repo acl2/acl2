@@ -18207,7 +18207,13 @@
   make regression
   ~ev[]
   For each book ~c[foo.lisp], a file ~c[foo.out] in the same directory will
-  contain the output from the corresponding certification attempt.
+  contain the output from the corresponding certification attempt.  If you have
+  previous executed such a command, then you will first want to delete
+  ~il[certificate] files and other generated files, either by first executing
+  ~c[make clean-books] or simply by submitting the following command.
+  ~bv[]
+  make regression-fresh
+  ~ev[]
 
   By default, the ACL2 executable used is the file ~c[saved_acl2] in the ACL2
   sources directory.  But you can specify another instead; indeed, you must do
@@ -18216,6 +18222,7 @@
   ~bv[]
   make regression ACL2=<your_favorite_acl2_executable>
   ~ev[]
+
   If you have a multi-processor machine or the like, then you can use the
   ~c[ACL2_JOBS] variable to obtain ~c[make]-level parallelism by specifying the
   number of concurrent processes.  The following example shows how to specify 8
@@ -18226,11 +18233,18 @@
   ~bv[]
   make ACL2_JOBS=8 regression
   ~ev[]
+  Note that while other environment and `make' variables discussed here are
+  also appropriate for use by suitable calls of `make' in the community books
+  directory, ~c[ACL2_JOBS] is only suitable for use with the ~c[regression]
+  target (and similar targets, such as ~c[regression-fresh]) in the ACL2
+  sources directory).
+
   You can also specify just the directories you want, among those offered in
   ~c[Makefile].  For example:
   ~bv[]
   make -j 8 regression ACL2_BOOK_DIRS='symbolic paco'
   ~ev[]
+
   By default, your acl2-customization file (~pl[acl2-customization]) is ignored
   by all such flavors of ``~c[make regression]''.  However, you can specify the
   use of an acl2-customization file by setting the value of environment
@@ -18241,8 +18255,11 @@
   make regression ACL2_CUSTOMIZATION='~~/acl2-customization.lisp'
   ~ev[]
 
+  The `make' commands displayed above all use the makefile, ~c[GNUmakefile],
+  that resides in the ACL2 sources directory.
+
   We now discuss how to create suitable makefiles in individual directories
-  containing certifiable ~il[books].~/
+  that contain certifiable ~il[books].~/
 
   ACL2's regression suite is typically run on the community books, using
   ~c[Makefile]s that include community books file ~c[books/Makefile-generic].
@@ -21447,7 +21464,8 @@
                         by ACL2."
                        (list (cons #\0 i)
                              (cons #\1 array-dimension-limit)))
-                    (let* ((old (svref ,var ,n))
+                    (let* ((var ,var)
+                           (old (svref var ,n))
                            (min-index (if (< i (length old))
                                           i
                                         (length old)))
@@ -21469,10 +21487,10 @@
                                              :element-type
                                              ',array-etype)))
                       #+hons (memoize-flush ,flush-var)
-                      (setf (svref ,var ,n)
+                      (setf (svref var ,n)
                             (,(pack2 'stobj-copy-array- fix-vref)
                              old new 0 min-index))
-                      ,var)))))
+                      var)))))
            (,accessor-name
             (i ,var)
             (declare (type (and fixnum (integer 0 *)) i))
@@ -23253,9 +23271,9 @@
 
 ; Field is a member of the :exports field of a defabsstobj event if type is
 ; nil; otherwise type is :recognizer or :creator and field is the recognizer or
-; creator argument to defabsstobj (already expanded, in the case of the
-; recognizer).  We return an error triple such that if there is no error, then
-; the value component is an appropriate absstobj-method record.
+; creator argument to defabsstobj.  We return an error triple such that if
+; there is no error, then the value component is an appropriate absstobj-method
+; record.
 
 ; If wrld is nil, then we take a shortcut, returning a record with only the
 ; :NAME, :LOGIC, :EXEC, and :PROTECT fields filled in (the others are nil),
@@ -23281,6 +23299,8 @@
        (exec exec-p)
        (let ((exec (cadr (assoc-keyword :EXEC keyword-lst))))
          (cond (exec (mv exec t))
+               ((eq type :recognizer)
+                (mv (absstobj-name st :RECOGNIZER-EXEC) nil))
                (t (mv (absstobj-name name :C) nil))))
        (let* ((protect-tail (assoc-keyword :PROTECT keyword-lst))
               (protect (if protect-tail
@@ -23297,6 +23317,8 @@
             (logic logic-p)
             (let ((logic (cadr (assoc-keyword :LOGIC keyword-lst))))
               (cond (logic (mv logic t))
+                    ((eq type :recognizer)
+                     (mv (absstobj-name st :RECOGNIZER-LOGIC) nil))
                     (t (mv (absstobj-name name :A) nil))))
             (cond
              ((null wrld) ; shortcut for raw Lisp definition of defabsstobj
@@ -34916,3 +34938,88 @@
      (t (setf (time-tracker-latest tt)
               (get-internal-run-time))))))
 )
+
+; We originally defined defund in axioms.lisp, but now that its definition
+; depends on remove-strings and other functions defined after axioms.lisp, we
+; define it here.
+
+(defun program-declared-p1 (dcls)
+  (cond ((endp dcls) nil)
+        ((and (consp (car dcls))
+              (eq (caar dcls) 'xargs)
+              (keyword-value-listp (cdr (car dcls)))
+              (eq (cadr (assoc-keyword :mode (cdr (car dcls))))
+                  :program))
+         t)
+        (t (program-declared-p1 (cdr dcls)))))
+
+(defun program-declared-p (def)
+
+; Def is a definition with the initial DEFUN or DEFUND stripped off.  We return
+; t if the declarations in def are minimally well-formed and there is an xargs
+; declaration of :mode :program.
+
+  (mv-let (erp dcls)
+          (collect-dcls (remove-strings (butlast (cddr def) 1)) 'ignored-ctx)
+          (cond (erp nil)
+                (t (program-declared-p1 dcls)))))
+
+#+acl2-loop-only
+(defmacro defund (&rest def)
+
+  ":Doc-Section acl2::Events
+
+  define a function symbol and then disable it~/~/
+
+  Use ~c[defund] instead of ~ilc[defun] when you want to disable a function
+  immediately after its definition in ~c[:]~ilc[logic] mode.  This macro has
+  been provided for users who prefer working in a mode where functions are only
+  enabled when explicitly directed by ~c[:]~ilc[in-theory].  Specifically, the
+  form
+  ~bv[]
+  (defund NAME FORMALS ...)
+  ~ev[]
+  expands to:
+  ~bv[]
+  (progn
+    (defun NAME FORMALS ...)
+    (with-output
+     :off summary
+     (in-theory (disable NAME)))
+    (value-triple '(:defund NAME))).
+  ~ev[]
+  Only the ~c[:]~ilc[definition] rule (and, for recursively defined functions,
+  the ~c[:]~ilc[induction] rule) for the function are disabled.  In particular,
+  ~c[defund] does not disable either the ~c[:]~ilc[type-prescription] or the
+  ~c[:]~ilc[executable-counterpart] rule.  Also, the summary for the
+  ~ilc[in-theory] event is suppressed.
+
+  If the function is defined in ~c[:]~ilc[program] mode, either because the
+  ~il[default-defun-mode] is ~c[:]~ilc[program] or because ~c[:mode :program]
+  has been specified in an ~ilc[xargs] form of a ~ilc[declare] form, then no
+  ~ilc[in-theory] event is executed.  (More precisely, ~ilc[in-theory] events
+  are ignored when the ~il[default-defun-mode] is ~c[:]~ilc[program], and if
+  ~c[:mode :program] is specified then ~c[defund] does not generate an
+  ~ilc[in-theory] event.)
+
+  Note that ~c[defund] commands are never redundant (~pl[redundant-events])
+  when the ~il[default-defun-mode] is ~c[:]~ilc[logic], because the
+  ~ilc[in-theory] event will always be executed.
+
+  ~l[defun] for documentation of ~c[defun]."
+
+  (declare (xargs :guard (and (true-listp def)
+                              (symbolp (car def))
+                              (symbol-listp (cadr def)))))
+
+  `(progn (defun ,@def)
+          ,@(and (not (program-declared-p def))
+                 `((with-output
+                    :off summary
+                    (in-theory (disable ,(car def))))))
+          (value-triple ',(xd-name 'defund (car def))
+                        :on-skip-proofs t)))
+
+#-acl2-loop-only
+(defmacro defund (&rest def)
+  (cons 'defun def))

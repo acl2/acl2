@@ -5053,7 +5053,7 @@
 ; of this record.
 
   (rdepth type-alist obj geneqv wrld fnstack ancestors backchain-limit
-          simplify-clause-pot-lst rcnst gstack ttree)
+          simplify-clause-pot-lst rcnst gstack ttree unify-subst)
   t)
 
 (defun ok-to-force (rcnst)
@@ -12135,7 +12135,8 @@
                                                      synp-fn
                                                    'bind-free))
                                   gstack)
-                        :ttree ttree)
+                        :ttree ttree
+                        :unify-subst unify-subst)
                 nil)))
     (mv-let (erp val latches)
             (ev-synp (fargn hyp0 3) unify-subst mfc state)
@@ -15772,7 +15773,8 @@
                                    simplify-clause-pot-lst
                                    :rcnst rcnst
                                    :gstack gstack
-                                   :ttree ttree)
+                                   :ttree ttree
+                                   :unify-subst nil)
                              (coerce-state-to-object state)))
                       (t (list term))))
                     (rune (access rewrite-rule lemma :rune)))

@@ -700,6 +700,8 @@
 
   nil)
 
+(deflock *wormhole-lock*)
+
 #-acl2-loop-only
 (defmacro wormhole-eval (qname qlambda free-vars)
   (declare (xargs :guard t)
@@ -730,31 +732,30 @@
 
   (let ((whs (if (car (cadr (cadr qlambda)))
                  (car (cadr (cadr qlambda))) ; Case (i)
-                 (gensym)))                  ; Case (ii)
+               (gensym)))                    ; Case (ii)
         (val (gensym)))
 
 ; The code we lay down is the same in both cases, because we use the variable whs to
 ; store the old value of the status to see whether it has changed.  But we have
 ; to generate a name if one isn't supplied.
 
-    `(progn
-       (cond (*wormholep*
+    `(with-wormhole-lock
+      (progn
+        (cond (*wormholep*
+               (setq *wormhole-status-alist*
+                     (put-assoc-equal
+                      (f-get-global 'wormhole-name
+                                    *the-live-state*)
+                      (f-get-global 'wormhole-status
+                                    *the-live-state*)
+                      *wormhole-status-alist*))))
+        (let* ((*wormholep* t)
+               (,whs (cdr (assoc-equal ,qname *wormhole-status-alist*)))
+               (,val ,(caddr (cadr qlambda))))
+          (or (equal ,whs ,val)
               (setq *wormhole-status-alist*
-                    (put-assoc-equal
-                     (f-get-global 'wormhole-name
-                                   *the-live-state*)
-                     (f-get-global 'wormhole-status
-                                   *the-live-state*)
-                     *wormhole-status-alist*))))
-       (let* ((*wormholep* t)
-              (,whs (cdr (assoc-equal ,qname *wormhole-status-alist*)))
-              (,val ,(caddr (cadr qlambda))))
-         (or (equal ,whs ,val)
-             (setq *wormhole-status-alist*
-                   (put-assoc-equal ,qname ,val *wormhole-status-alist*)))
-         nil))))
-
-(deflock *wormhole-lock*)
+                    (put-assoc-equal ,qname ,val *wormhole-status-alist*)))
+          nil)))))
 
 (defmacro wormhole (name entry-lambda input form
                          &key
