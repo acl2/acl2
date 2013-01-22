@@ -9,6 +9,7 @@ differentiable functions.)
 (in-package "ACL2")
 
 (include-book "../../../nsa/nsa")
+(include-book "../../../arithmetic/top")
 (include-book "../../../arithmetic/realp")
 
 ;; First, we define a generic continuous function, f1.  This is just a

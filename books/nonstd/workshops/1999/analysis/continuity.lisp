@@ -8,6 +8,7 @@
 ;; minimum over a closed interval.
 
 (include-book "../../../nsa/nsa")
+(include-book "../../../arithmetic/top")
 (include-book "../../../arithmetic/realp")
 
 ;; First, we introduce rcfn - a Real Continuous FunctioN of a single

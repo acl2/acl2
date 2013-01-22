@@ -2,7 +2,9 @@
 
 (local (include-book "nsa/norm" :dir :system))
 (local (include-book "nsa/factorial" :dir :system))
+(local (include-book "arithmetic/top" :dir :system))
 (local (include-book "arithmetic/sumlist" :dir :system))
+(local (include-book "arithmetic/abs" :dir :system))
 (include-book "nsa/exp" :dir :system)
 (include-book "nsa/exp-continuous" :dir :system)
 

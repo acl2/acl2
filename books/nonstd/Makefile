@@ -54,7 +54,8 @@ NDIRS2_EXCEPT_WK = fft sqrt
 .PHONY: $(NDIRS2_EXCEPT_WK)
 # A subset of the value of DIRS2_EXCEPT_WK in ../Makefile:
 DIRS2_EXCEPT_WK = ordinals data-structures bdd ihs arithmetic-2 \
-        arithmetic-3 arithmetic-3/extra misc rtl \
+        arithmetic-3 arithmetic-3/extra tools system system/pcert \
+	std std/io std/ks std/lists misc rtl \
         finite-set-theory powerlists arithmetic-5
 $(NDIRS2_EXCEPT_WK): $(DIRS2_EXCEPT_WK) top-with-meta-cert
 	@if [ -f $@/Makefile ]; then cd $@ ; $(MAKE) ; fi
@@ -97,6 +98,9 @@ LINKDIRS = . $(filter-out $(FULLDIRS), $(DIRS1) $(DIRS2) $(SUBDIRS))
 
 # All directories:
 ALLDIRS = $(LINKDIRS) $(FULLDIRS)
+
+hons clean-hons centaur clean-centaur:
+	@echo "Ignoring hons and centaur for now"
 
 .PHONY: links
 links:

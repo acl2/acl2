@@ -359,6 +359,12 @@
 
 ;; read-16sle
 
+#+non-standard-analysis
+(local
+ (defthm integer-to-real
+   (implies (integerp x)
+	    (realp x))))
+
 (defun read-16sle (channel state)
   (declare (xargs :guard (and (state-p state)
                               (symbolp channel)
