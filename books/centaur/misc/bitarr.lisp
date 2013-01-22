@@ -195,3 +195,7 @@
             resize-bits))
 
 
+;; Disable this because get-bit's logical definition BFIXes anyway; this tends
+;; to get rid of the bfix which makes it harder to know (e.g. by type prescrip)
+;; that the NTH is e.g. an integer.
+(in-theory (disable bitp-nth-of-bitsp))

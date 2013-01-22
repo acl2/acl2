@@ -556,3 +556,24 @@
               (aig-vars a)))
 
 (in-theory (disable accumulate-aig-vars))
+
+
+;;---------------------------------------------------------------------------
+;; ACCUMULATE-AIG-VARS is duplicate-free proof.
+
+;; Invariant for this is just that the variables are duplicate-free, and any
+;; variable present is present in the nodetable.
+
+(defthm accumulate-aig-vars-duplicate-free
+  (implies (and (no-duplicatesp vars)
+                (subsetp-equal vars (alist-keys nodetable)))
+           (b* (((mv nodetable vars)
+                 (accumulate-aig-vars a nodetable vars)))
+             (and (no-duplicatesp vars)
+                  (subsetp-equal vars (alist-keys nodetable)))))
+  :hints(("Goal" :in-theory (enable accumulate-aig-vars)
+          :induct t)
+         (set-reasoning)))
+
+
+
