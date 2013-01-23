@@ -75,7 +75,7 @@
 
   (defthm prefixp-of-take-prefix-len-2
     (prefixp (simpler-take (prefix-len a b) a) b)
-    :hints(("Goal" :in-theory (enable prefixp))))
+    :hints(("Goal" :in-theory (enable prefixp simpler-take))))
 
   (defthm prefix-len-of-simpler-take
     (implies (and (natp n)

@@ -148,7 +148,7 @@ session by just calling ~c[(seed-random 'seed)].~/~/"
 
    (include-book "tools/defconsts" :dir :system)
    (include-book "tools/bstar" :dir :system)
-   (include-book "make-event/assert" :dir :system)
+   (include-book "misc/assert" :dir :system)
 
    (defund random-list (len limit state)
      (declare (xargs :guard (and (natp len)

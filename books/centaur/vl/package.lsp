@@ -51,6 +51,7 @@
       simpler-take
       repeat
       list-fix
+      list-equiv
       rev
       revappend-without-guard
       unexplode-nonnegative-integer

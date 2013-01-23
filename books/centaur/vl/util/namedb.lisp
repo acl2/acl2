@@ -68,7 +68,8 @@ vl-pgenstr->val).</p>"
     (implies (and (not (equal other prefix))
                   (force (stringp prefix))
                   (force (stringp other)))
-             (not (vl-pgenstr-p other (vl-pgenstr prefix n))))))
+             (not (vl-pgenstr-p other (vl-pgenstr prefix n))))
+    :hints(("Goal" :in-theory (enable list-equiv)))))
 
 
 

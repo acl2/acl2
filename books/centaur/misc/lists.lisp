@@ -21,52 +21,16 @@
 
 ;; - We prove list-equiv congruences where appropriate.
 
+;; [Jared] moved most of the pure list-equiv stuff into std/lists/equiv.lisp
+
 (include-book "arith-equivs")
+(include-book "std/lists/equiv" :dir :system)
 (include-book "data-structures/list-defthms" :dir :system)
 (local (in-theory (enable* arith-equiv-forwarding)))
 (local (include-book "arithmetic/top-with-meta" :dir :system))
 
-;; ------------------- LIST-FIX, LIST-EQUIV -------------------------------
-;; We may or may not be able to maintain compatibility with the unicode books,
-;; but we'll try.
-(defund list-fix (x)
-  (declare (xargs :guard t))
-  (if (consp x)
-      (cons (car x)
-            (list-fix (cdr x)))
-    nil))
-
 (local (in-theory (enable list-fix)))
 
-(defthm true-listp-of-list-fix
-  (true-listp (list-fix x)))
-
-(defthm list-fix-when-true-listp
-  (implies (true-listp x)
-           (equal (list-fix x) x)))
-
-(defthm list-fix-under-iff
-  (iff (list-fix x)
-       (consp x)))
-
-(defun list-equiv (x y)
-  (declare (xargs :guard t))
-  (equal (list-fix x) (list-fix y)))
-
-(defequiv list-equiv)
-
-(defthm list-fix-under-list-equiv
-  (list-equiv (list-fix x) x))
-
-;; Various list-equiv congruences.
-(defcong list-equiv equal      (list-fix x) 1)
-(defcong list-equiv equal      (car x) 1)
-(defcong list-equiv list-equiv (cdr x) 1)
-(defcong list-equiv list-equiv (cons x y) 2)
-
-(defcong list-equiv equal      (nth n x) 2)
-(defcong list-equiv list-equiv (nthcdr n x) 2)
-(defcong list-equiv list-equiv (update-nth n v x) 3)
 
 (defun cdr-cdr-ind (x y)
   (declare (xargs :measure (+ (len x) (len y))))
@@ -74,30 +38,10 @@
       nil
     (cdr-cdr-ind (cdr x) (cdr y))))
 
-(defcong list-equiv equal      (consp x) 1 :hints (("goal" :induct (cdr-cdr-ind x x-equiv))))
-(defcong list-equiv equal      (len x) 1 :hints (("goal" :induct (cdr-cdr-ind x x-equiv))))
-(defcong list-equiv equal      (append x y) 1 :hints (("goal" :induct (cdr-cdr-ind x x-equiv))))
-(defcong list-equiv list-equiv (append x y) 2)
-(defcong list-equiv list-equiv (member k x) 2 :hints (("goal" :induct (cdr-cdr-ind x x-equiv))))
-(defcong list-equiv iff        (member k x) 2 :hints (("goal" :induct (cdr-cdr-ind x x-equiv))))
-(defcong list-equiv equal      (remove k x) 2 :hints (("goal" :induct (cdr-cdr-ind x x-equiv))))
-(defcong list-equiv equal      (resize-list lst n default) 1)
-
-(defthm list-fix-equal-forward-to-list-equiv
-  (implies (equal (list-fix x) (list-fix y))
-           (list-equiv x y))
-  :rule-classes :forward-chaining)
-
 
 ;; ------------------- REVAPPEND -------------------------------
 ;; Supposing we let REVERSE open into revappend -- this means we don't need
 ;; (not (stringp x)) hyps.
-
-(defcong list-equiv equal (revappend x y) 1
-  :hints (("goal" :induct (and (cdr-cdr-ind x x-equiv)
-                               (revappend x y)))))
-
-(defcong list-equiv list-equiv (revappend x y) 2)
 
 (defthm revappend-to-append
   (implies (syntaxp (not (equal b ''nil)))
@@ -127,8 +71,6 @@
                   :scheme (xfirstn n x))))
 
 (in-theory (disable take-is-xfirstn take))
-
-(defcong list-equiv equal (take n x) 2)
 
 ;; ------------------- SUBSEQ-LIST redefinition --------------------------
 
@@ -190,13 +132,12 @@
 
 (verify-guards butlastx)
 
-
-
 (defcong list-equiv equal (butlastx lst n) 1
   :hints(("Goal" :in-theory (disable list-equiv)
           :induct (cdr-cdr-ind lst lst-equiv))))
 
 (defcong nat-equiv equal (butlastx lst n) 2)
+
 
 ;; ------------------- MAKE-LIST-AC redefinition --------------------------
 
@@ -219,10 +160,7 @@
 ;;                   :pattern (make-list-ac n val ac)
 ;;                   :scheme (make-list-ac-rec-ind n val ac))))
 
-(defcong list-equiv list-equiv (make-list-ac n val ac) 3)
 (defcong nat-equiv equal (make-list-ac n val ac) 1)
-
-
 
 (defun cdr-cdr-dec-ind (x y n)
   (declare (xargs :measure (+ (len x) (len y) (nfix n))

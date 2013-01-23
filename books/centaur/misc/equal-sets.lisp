@@ -20,6 +20,7 @@
 
 (in-package "ACL2")
 (include-book "finite-set-theory/osets/sets" :dir :system)
+(include-book "std/lists/equiv" :dir :system)
 (include-book "mfc-utils")
 (include-book "witness-cp")
 
@@ -237,6 +238,10 @@
                     (set-equivp x z))))
 
   (defequiv set-equivp))
+
+
+(defrefinement list-equiv set-equivp)
+
 
 (defcong set-equivp iff (member-equal x y) 2)
 

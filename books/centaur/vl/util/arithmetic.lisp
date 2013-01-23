@@ -722,9 +722,12 @@
 
 (defsection prefixp
 
-;; BOZO these should really get merged into unicode
+  ;; BOZO these should really get merged into unicode
 
   (local (in-theory (enable prefixp)))
+
+  (defcong list-equiv equal (prefixp x y) 1)
+  (defcong list-equiv equal (prefixp x y) 2)
 
   ;; not needed since unicode has prefixp-when-not-consp-left
   ;; (defthm prefixp-when-atom
@@ -760,12 +763,17 @@
   (defthm prefixp-when-equal-lengths
     (implies (equal (len x) (len y))
              (equal (prefixp x y)
-                    (equal (list-fix x) (list-fix y)))))
+                    (list-equiv x y)))
+    :hints(("Goal" :in-theory (enable list-equiv))))
 
   (defthm prefixp-of-append-when-same-length
     (implies (equal (len x) (len y))
              (equal (prefixp x (append y z))
-                    (prefixp x y)))))
+                    (prefixp x y)))
+    :hints(("Goal"
+            :induct (prefixp x y)
+            :in-theory (enable prefixp
+                               list-equiv)))))
 
 
 

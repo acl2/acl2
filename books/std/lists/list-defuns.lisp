@@ -26,6 +26,7 @@
 (local (include-book "repeat"))
 (local (include-book "revappend"))
 (local (include-book "rev"))
+(local (include-book "equiv"))
 (set-enforce-redundancy t)
 
 (defund list-fix (x)
@@ -34,6 +35,27 @@
       (cons (car x)
             (list-fix (cdr x)))
     nil))
+
+(defund fast-list-equiv (x y)
+  (declare (xargs :guard t))
+  (if (consp x)
+      (and (consp y)
+           (equal (car x) (car y))
+           (fast-list-equiv (cdr x) (cdr y)))
+    (atom y)))
+
+(defund list-equiv (x y)
+  (mbe :logic (equal (list-fix x) (list-fix y))
+       :exec (fast-list-equiv x y)))
+
+(defequiv list-equiv
+  ;; We include this, even though this book isn't really meant to include
+  ;; theorems, in order to avoid subtle errors that can arise in different
+  ;; books.  Without this, in book A we could just load LIST-DEFUNS and then
+  ;; prove a theorem that concluded (LIST-EQUIV X Y).  If then in book B we
+  ;; load list/equiv.lisp first and then include book A, this is no longer a
+  ;; valid rewrite rule and we get a horrible error!
+  )
 
 (defund binary-app (x y)
   (declare (xargs :guard t))
