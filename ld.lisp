@@ -20132,6 +20132,9 @@
   (fld-length old)
   ~ev[]
 
+  Fixed a bug in ~ilc[defabsstobj-missing-events] (which macroexpanded
+  incorrectly).  Thanks to Sol Swords for bringing this bug to our attention.
+
   ~st[CHANGES AT THE SYSTEM LEVEL]
 
   The ~c[books/] directory no longer needs to exist in order to build an ACL2
