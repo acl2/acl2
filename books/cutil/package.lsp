@@ -103,6 +103,8 @@
 ; Stuff I moved into xdoc:
                xdoc::extract-keyword-from-args
                xdoc::throw-away-keyword-parts
+               xdoc::mksym
+               xdoc::mksym-package-symbol
                undocumented
                ))
    ;; Things to remove:

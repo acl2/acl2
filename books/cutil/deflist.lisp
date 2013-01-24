@@ -352,21 +352,6 @@ of which recognizers require true-listp and which don't.</p>")
            (subsetp-equal x y))))
 
 
-(defsection mksym
-
-  (defun concatenate-symbol-names (x)
-    (declare (xargs :guard (symbol-listp x)))
-    (if (consp x)
-        (acl2::concatenate 'string
-                           (symbol-name (car x))
-                           (concatenate-symbol-names (cdr x)))
-      ""))
-
-  (defmacro mksym (&rest args)
-    `(intern-in-package-of-symbol
-      (concatenate-symbol-names (list ,@args))
-      mksym-package-symbol)))
-
 
 (defun deflist-fn (name formals element negatedp
                         guard verify-guards guard-debug guard-hints
