@@ -44,6 +44,21 @@
 
 
 
+
+(defmacro colon-xdoc-init ()
+  '(with-output :off (summary event)
+     (make-event
+      (if (not (cdr (assoc 'colon-xdoc-support-loaded (table-alist 'xdoc (w state)))))
+        `(progn
+           (include-book ,*xdoc-dir/defxdoc-raw* :ttags :all)
+           (include-book ,*xdoc-dir/topics*)
+           (include-book ,*xdoc-dir/display*)
+           (include-book ,*xdoc-dir/extra-packages*)
+           (import-acl2doc)
+           (maybe-import-bookdoc)
+           (table xdoc 'colon-xdoc-support-loaded t))
+        '(value-triple :invisible)))))
+
 (defmacro xdoc (name)
   (declare (xargs :guard (or (symbolp name)
                              (and (quotep name)
@@ -53,13 +68,7 @@
                 (unquote name))))
     `(with-output :off (summary event)
        (progn
-         (include-book ,*xdoc-dir/defxdoc-raw* :ttags :all)
-         (include-book ,*xdoc-dir/topics*)
-         (include-book ,*xdoc-dir/display*)
-         (include-book ,*xdoc-dir/extra-packages*)
-         (import-acl2doc)
-         (maybe-import-bookdoc)
-         ;; b* should have been included by the above includes
+         (colon-xdoc-init)
          (make-event
           (b* (((mv all-xdoc-topics state) (all-xdoc-topics state))
                ((mv & & state) (colon-xdoc-fn ',name all-xdoc-topics state)))
