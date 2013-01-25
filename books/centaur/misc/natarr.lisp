@@ -43,7 +43,11 @@
 (defthm natp-of-nth-when-nat-listp
   (implies (nat-listp x)
            (equal (natp (nth n x))
-                  (< (nfix n) (len x)))))
+                  (< (nfix n) (len x))))
+  :rule-classes ((:rewrite)
+                 (:linear :corollary
+                          (implies (nat-listp x)
+                                   (<= 0 (nth n x))))))
 
 (defthm nat-listp-of-update-nth
   (implies (nat-listp x)
