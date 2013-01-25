@@ -22979,7 +22979,8 @@
                                              name
                                              &key
                                              concrete recognizer creator
-                                             corr-fn exports doc)
+                                             corr-fn exports protect-default
+                                             congruent-to doc)
 
   ":Doc-Section Events
 
@@ -23012,6 +23013,8 @@
         (list 'quote creator)
         (list 'quote corr-fn)
         (list 'quote exports)
+        (list 'quote protect-default)
+        (list 'quote congruent-to)
         (list 'quote t) ; missing-only
         (list 'quote doc)
         (list 'quote (msg "( DEFABSSTOBJ-MISSING-EVENTS ~x0 ...)" name)) ; ctx
