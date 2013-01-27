@@ -1847,7 +1847,8 @@ some kind of separator!</p>
                    ,main-def))
              `(,main-def))
 
-         ,@(and need-macrop `((add-macro-alias ,fnname ,fnname-fn)))
+         ,@(and need-macrop `((add-macro-alias ,fnname ,fnname-fn)
+                              (table define-macro-fns ',fnname-fn ',fnname)))
 
          (local (in-theory (enable ,fnname)))
 
@@ -1878,3 +1879,84 @@ some kind of separator!</p>
   `(make-event (b* ((world (w state))
                     (event (define-fn ',name ',formals ',args world)))
                  (value event))))
+
+
+
+
+#!ACL2
+(progn
+  ;; Returns (mv successp arglist).
+  ;; If DEFINE has created a macro wrapper for a function, which may have
+  ;; optional or keyword args, we'd terms involving the function to untranslate
+  ;; to a correct call of the macro.  This tries to do that.  Args are the
+  ;; arguments provided to the function, macro-args is the lambda-list of the
+  ;; macro.
+  (defun untrans-macro-args (args macro-args opt/key)
+    (cond ((endp macro-args)
+           (mv (endp args) nil))
+          ((endp args) (mv nil nil))
+          ((member-eq (car args) '(&whole &body &rest &allow-other-keys))
+           ;; unsupported macro arg type
+           (mv nil nil))
+          ((member (car macro-args) '(&key &optional))
+           (untrans-macro-args args (cdr macro-args) (car macro-args)))
+          ((not opt/key)
+           ;; just variables, no default
+           (mv-let (ok rest)
+             (untrans-macro-args (cdr args) (cdr macro-args) opt/key)
+             (if ok
+                 (mv t (cons (car args) rest))
+               (mv nil nil))))
+          (t (let* ((default (and (< 1 (len (car macro-args)))
+                                  ;; unquote of the second element
+                                  (cadr (cadr (car macro-args)))))
+                    (key (and (eq opt/key '&key)
+                              (cond ((symbolp (car macro-args))
+                                     (intern (symbol-name (car macro-args)) "KEYWORD"))
+                                    ((symbolp (caar macro-args))
+                                     (intern (symbol-name (car macro-args)) "KEYWORD"))
+                                    (t (caaar macro-args)))))
+                    (presentp (< 2 (len (car macro-args)))))
+               (if (and (not (equal (car args) default))
+                        presentp
+                        (not (cadr args)))
+                   ;; Looks like presentp is nil but the value is not the
+                   ;; default, so things must not be of the expected form.
+                   (mv nil nil)
+                 (mv-let (ok rest)
+                   (untrans-macro-args
+                    (if presentp (cddr args) (cdr args))
+                    (cdr macro-args) opt/key)
+                   (if (not ok)
+                       (mv nil nil)
+                     (let ((args-out
+                            (cond ((and (or (eq opt/key '&key) (not rest))
+                                        (equal default (car args))
+                                        (or (not presentp)
+                                            (not (cadr args))))
+                                   ;; default value and not supposed to be present, leave out
+                                   rest)
+                                  (key (list* key (car args) rest))
+                                  (t (cons (car args) rest)))))
+                       (mv t args-out)))))))))
+
+
+  (defun untranslate-preproc-for-define (term world)
+    (and (consp term)
+         (not (eq (car term) 'quote))
+         (symbolp (car term))
+         (let* ((macro (cdr (assoc (car term) (table-alist 'define-macro-fns world)))))
+           (and macro
+                (let ((macro-args
+                       (getprop macro 'macro-args nil
+                                'current-acl2-world world)))
+                  (and macro-args
+                       (mv-let (ok newargs)
+                         (untrans-macro-args (cdr term) macro-args nil)
+                         (and ok
+                              (cons macro newargs)))))))))
+
+
+  (table user-defined-functions-table
+         'untranslate-preprocess
+         'untranslate-preproc-for-define))

@@ -28,7 +28,7 @@
   :parents (event-generation)
   :short "Process a template to generate some events"
   :long "
-<p>This book contains a tool, template-subst, for manipulating templates that
+<p>Template-subst is a function for manipulating templates that
 may be used to generate events.  For example, we might want to generate a
 function that runs some function on all the atoms of a tree.  Also, if the
 function to be run on the leaves is acl2-count preserving, we'd like to

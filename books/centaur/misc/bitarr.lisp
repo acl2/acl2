@@ -46,6 +46,6 @@
 (def-1d-arr :arrname bitarr
   :slotname bit
   :pred bitp
-  :fix bfix
+  :fix bfix$inline
   :type-decl bit
   :default-val 0)

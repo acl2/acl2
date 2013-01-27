@@ -25,6 +25,13 @@
 (include-book "tools/defmacfun" :dir :system)
 (include-book "tools/templates" :dir :system)
 
+;; BOZO might move this somewhere more sensible.
+;; This differs from Common Lisp typep in that it's a macro, and type must be a
+;; plain type-spec (it is not evaluated).
+(defmacro typep$ (x type)
+  (declare (xargs :guard (translate-declaration-to-guard type 'var nil)))
+  (translate-declaration-to-guard type x nil))
+
 
 (defconst *def-1d-arr-events*
   '(encapsulate
@@ -32,7 +39,7 @@
      (local
       (progn
         (include-book "data-structures/list-defthms" :dir :system)
-
+        (in-theory (enable nth update-nth resize-list))
         (:@ :fix
          (def-universal-equiv 1d-arr-tmp-equiv
            :equiv-terms ((equal (_fix_ x)))))
@@ -88,22 +95,22 @@
 
         (defthm _slotname_s$cp-of-update-nth
           (implies (and (_slotname_s$cp x)
-                        (:@ :pred (_pred_ v))
+                        (typep$ v _type-decl_)
                         (<= (nfix n) (len x)))
                    (_slotname_s$cp (update-nth n v x))))
 
         (defthm _slotname_s$cp-of-resize-list
           (implies (and (_slotname_s$cp x)
-                        (:@ :pred (_pred_ default)))
+                        (typep$ default _type-decl_))
                    (_slotname_s$cp (resize-list x n default))))))
 
      (defun _arrname_$ap (_arrname_$a)
-       (declare (xargs :guard t)
+       (declare (xargs :guard t :verify-guards t)
                 (ignorable _arrname_$a))
        t)
 
      (defun create-_arrname_$a ()
-       (declare (xargs :guard t))
+       (declare (xargs :guard t :verify-guards t))
        nil)
 
      (defun _slotname_s$a-length (_arrname_$a)
@@ -112,7 +119,8 @@
        (len _arrname_$a))
 
      (defun resize-_slotname_s$a (i _arrname_$a)
-       (declare (xargs :guard (_arrname_$ap _arrname_$a)))
+       (declare (xargs :guard (_arrname_$ap _arrname_$a)
+                       :verify-guards t))
        (resize-list _arrname_$a i '_default-val_))
 
      (defun _slotname_s$ai (i _arrname_$a)
@@ -122,7 +130,10 @@
                                    (< i (_slotname_s$a-length _arrname_$a)))
                        :verify-guards t))
        (:@ :fix
-        (_fix_ (ec-call (nth i _arrname_$a))))
+        ;; outer ec-call supports fixing functions with guards
+        ;; e.g. the following sort of implementation
+        ;; (mbe :logic (if (foo-p a) a 'default-val) :exec a)
+        (ec-call (_fix_ (ec-call (nth i _arrname_$a)))))
        (:@ (not :fix)
         (ec-call (nth i _arrname_$a))))
 
@@ -131,7 +142,8 @@
                                    (integerp i)
                                    (<= 0 i)
                                    (< i (_slotname_s$a-length _arrname_$a))
-                                   (:@ :pred (_pred_ v)))
+                                   (:@ :pred (_pred_ v))
+                                   (typep$ v _type-decl_))
                        :verify-guards t))
        (ec-call (update-nth i
                             (:@ :fix (_fix_ v))
@@ -245,6 +257,7 @@ created symbols will be interned.  If not given, @(':arrname') or
                             fix
                             default-val
                             pkg-sym
+                            rename
                             (type-decl 't))
   (declare (xargs :mode :program))
   (b* (((unless (or slotname arrname))
@@ -267,12 +280,16 @@ created symbols will be interned.  If not given, @(':arrname') or
                    (_default-val_ . ,default-val)))
        (strsubst (tmpl-symbol-alist-to-str-alist symsubst))
        (symsubst (if fix symsubst
-                   (cons '(1d-arr-tmp-equiv . equal) symsubst))))
-    (template-subst *def-1d-arr-events*
-                    :features features
-                    :atom-alist symsubst
-                    :str-alist strsubst
-                    :pkg-sym xdoc::mksym-package-symbol)))
+                   (cons '(1d-arr-tmp-equiv . equal) symsubst)))
+       (tmpl
+        (template-subst *def-1d-arr-events*
+                        :features features
+                        :atom-alist symsubst
+                        :str-alist strsubst
+                        :pkg-sym xdoc::mksym-package-symbol)))
+    (if rename
+        (sublis rename tmpl)
+      tmpl)))
 
 
                               
