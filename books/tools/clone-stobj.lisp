@@ -20,9 +20,9 @@
 
 (in-package "ACL2")
 
-(include-book "tools/bstar" :dir :system)
-(include-book "tools/rulesets" :dir :system)
-(include-book "tools/templates" :dir :system)
+(include-book "bstar")
+(include-book "rulesets")
+(include-book "templates")
 (include-book "xdoc/top" :dir :system)
 
 (program)
