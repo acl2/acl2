@@ -156,28 +156,33 @@
 ; Well, go figure.  I'm not sure how to avoid this.
 
 
+(defparameter *test* (coerce "blah blah blah this is some text" 'list))
+
 (progn
   (ccl::gc)
-  ;; 4.085 seconds, 160 MB allocated
-  (time (loop for i fixnum from 1 to 10000000
-              collect
-              (str::rchars-to-string "blah blah blah this is some text")))
+  ;; 6.782 seconds, 1.6 GB allocated
+  (let ((test *test*))
+    (time (loop for i fixnum from 1 to 10000000
+                collect
+                (str::rchars-to-string test))))
   nil)
 
 (progn
   (ccl::gc)
-  ;; 9.742 seconds, 1.6 GB allocated
-  (time (loop for i fixnum from 1 to 10000000
-              collect
-              (reverse (coerce "blah blah blah this is some text" 'string))))
+  ;; 11.629 seconds, 3.04 GB allocated
+  (let ((test *test*))
+    (time (loop for i fixnum from 1 to 10000000
+                collect
+                (reverse (coerce test 'string)))))
   nil)
 
 (progn
   (ccl::gc)
-  ;; 9.682 seconds, 1.6 gb allocated
-  (time (loop for i fixnum from 1 to 10000000
-              collect
-              (coerce (reverse "blah blah blah this is some text") 'string)))
+  ;; 10.314 seconds, 6.72 GB allocated
+  (let ((test *test*))
+    (time (loop for i fixnum from 1 to 10000000
+                collect
+                (coerce (reverse test) 'string))))
   nil)
 
 
