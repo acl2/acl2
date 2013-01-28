@@ -86,7 +86,12 @@
                      (setf (schar ret i) (schar str j))
                      (incf i)
                      (incf j))))
-       ret))))
+       ret)))
+
+ (defun rchars-to-string (rchars)
+   (the string
+     (nreverse
+      (the string (coerce (the list rchars) 'string))))))
 
 
 #|
@@ -149,5 +154,31 @@
 ; fast-concatenate macro is doing.
 
 ; Well, go figure.  I'm not sure how to avoid this.
+
+
+(progn
+  (ccl::gc)
+  ;; 4.085 seconds, 160 MB allocated
+  (time (loop for i fixnum from 1 to 10000000
+              collect
+              (str::rchars-to-string "blah blah blah this is some text")))
+  nil)
+
+(progn
+  (ccl::gc)
+  ;; 9.742 seconds, 1.6 GB allocated
+  (time (loop for i fixnum from 1 to 10000000
+              collect
+              (reverse (coerce "blah blah blah this is some text" 'string))))
+  nil)
+
+(progn
+  (ccl::gc)
+  ;; 9.682 seconds, 1.6 gb allocated
+  (time (loop for i fixnum from 1 to 10000000
+              collect
+              (coerce (reverse "blah blah blah this is some text") 'string)))
+  nil)
+
 
 |#

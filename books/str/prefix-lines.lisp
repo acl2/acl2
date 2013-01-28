@@ -70,9 +70,8 @@ into a character list and then coerce it back into a string at the end.</p>"
                                 (stringp prefix))
                     :verify-guards nil))
     (let* ((acc    (str::revappend-chars prefix nil))
-           (rchars (prefix-lines-aux 0 x (length x) acc prefix))
-           (rstr   (coerce rchars 'string)))
-      (reverse rstr)))
+           (rchars (prefix-lines-aux 0 x (length x) acc prefix)))
+      (rchars-to-string rchars)))
 
   (local (in-theory (enable prefix-lines-aux prefix-lines)))
 

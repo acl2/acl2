@@ -208,7 +208,8 @@ instance, a sequence such as:</p>
 
 <p>But it is comparably much more efficient because it avoids the creation of
 the intermediate strings.  See the performance discussion in @(see str::cat)
-for more details.</p>"
+for more details.  Also see @(see rchars-to-string), which is a potentially
+more efficient way to do the final @(see reverse)/@(see coerce) steps.</p>"
 
   (defund revappend-chars-aux (x n xl y)
     (declare (xargs :guard (and (stringp x)
@@ -323,3 +324,50 @@ for more details.</p>"
   (defthm len-of-prefix-strings
     (equal (len (prefix-strings prefix x))
            (len x))))
+
+
+
+
+(defsection rchars-to-string
+  :parents (concatenation)
+  :short "Possibly optimized way to reverse a character list and coerce it to a
+string."
+
+  :long "<p>@(call rchars-to-string) is logically equal to</p>
+
+@({
+   (reverse (coerce rchars 'string))
+})
+
+<p>We leave it enabled and would not expect to ever reason about it.  This
+operation is useful as the final step in a string-building strategy where
+characters are accumulated onto a list in reverse order; see for instance @(see
+revappend-chars).</p>
+
+<p>When you just load books like @('str/top') or @('str/cat'), this logical
+definition is exactly what gets executed.  This definition is not too bad, and
+doing the @(see coerce) first means that the @(see reverse) is done on a
+string (i.e., an array) instead of a list, which is generally efficient.</p>
+
+<p>But if you are willing to accept a trust tag, then you may <b>optionally</b>
+load the book:</p>
+
+@({
+  (include-book \"str/fast-cat\" :dir :system)
+})
+
+<p>This may improve the performance of @('rchars-to-string') by replacing the
+@(see reverse) call with a call of @('nreverse').  We can \"obviously\" see
+that this is safe since the string produced by the @('coerce') is not visible
+to any other part of the program.</p>"
+
+  (defun rchars-to-string (rchars)
+    "May be redefined under-the-hood in str/fast-cat.lisp"
+    ;; We don't inline this because you might want to develop books without
+    ;; fast-cat (for fewer ttags), but then include fast-cat later for more
+    ;; performance.
+    (declare (xargs :guard (character-listp rchars)))
+    (the string
+      (reverse
+       (the string (coerce (the list rchars) 'string))))))
+

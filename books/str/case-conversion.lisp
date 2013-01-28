@@ -280,10 +280,8 @@ least we're better when no work needs to be done:</p>
            (if (not (string-has-some-down-alpha-p x 0 xl))
                ;; Avoid consing when no characters need to be converted.
                x
-             (let* ((acc     (upcase-string-aux x 0 xl nil))
-                    (rev-ans (coerce acc 'string)))
-               ;; Generally best to reverse the string, rather than the chars.
-               (reverse rev-ans))))))
+             (rchars-to-string
+              (upcase-string-aux x 0 xl nil))))))
 
   (defthm string-has-some-down-alpha-p-redef
     (implies (and (stringp x)
@@ -385,10 +383,7 @@ make this fast.</p>"
            (if (not (string-has-some-up-alpha-p x 0 xl))
                ;; Avoid consing when no characters need to be converted.
                x
-             (let* ((acc     (downcase-string-aux x 0 xl nil))
-                    (rev-ans (coerce acc 'string)))
-               ;; Generally best to reverse the string, rather than the chars.
-               (reverse rev-ans))))))
+             (rchars-to-string (downcase-string-aux x 0 xl nil))))))
 
   (defthm string-has-some-up-alpha-p-redef
     (implies (and (stringp x)

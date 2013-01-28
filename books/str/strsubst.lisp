@@ -108,7 +108,7 @@ Examples:
                           x
                         "")
                :exec x)
-        (reverse (coerce (strsubst-aux old new x 0 (length x) oldl nil) 'string)))))
+        (rchars-to-string (strsubst-aux old new x 0 (length x) oldl nil)))))
 
   (local (in-theory (enable strsubst)))
 

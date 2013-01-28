@@ -19,9 +19,8 @@
 ; Original author: Jared Davis <jared@centtech.com>
 
 (in-package "STR")
-(include-book "xdoc/top" :dir :system)
+(include-book "cat")
 (include-book "tools/bstar" :dir :system)
-(include-book "misc/definline" :dir :system)
 (local (include-book "misc/assert" :dir :system))
 (local (include-book "arithmetic"))
 
@@ -243,10 +242,8 @@ returns the result as a new string."
                                 (posp tabsize)))
              (type string x)
              (type integer tabsize))
-    (mv-let (col acc)
-      (html-encode-string-aux x 0 (length x) 0 tabsize nil)
-      (declare (ignore col))
-      (reverse (coerce acc 'string))))
+    (b* (((mv ?col acc) (html-encode-string-aux x 0 (length x) 0 tabsize nil)))
+      (rchars-to-string acc)))
 
   (local (in-theory (enable html-encode-string)))
 

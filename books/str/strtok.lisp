@@ -19,8 +19,7 @@
 ; Original author: Jared Davis <jared@centtech.com>
 
 (in-package "STR")
-(include-book "xdoc/top" :dir :system)
-(include-book "misc/definline" :dir :system)
+(include-book "cat")
 (local (include-book "misc/assert" :dir :system))
 (local (include-book "arithmetic"))
 (local (include-book "std/lists/revappend" :dir :system))
@@ -50,7 +49,7 @@
     (if (mbe :logic (zp (- (nfix xl) (nfix n)))
              :exec (int= n xl))
         (if curr
-            (cons (reverse (coerce curr 'string)) acc)
+            (cons (rchars-to-string curr) acc)
           acc)
       (let* ((char1  (char x n))
              (matchp (member char1 delimiters)))
@@ -60,7 +59,7 @@
                     delimiters
                     (if matchp nil (cons char1 curr))
                     (if (and matchp curr)
-                        (cons (reverse (coerce curr 'string)) acc)
+                        (cons (rchars-to-string curr) acc)
                       acc)))))
 
   (local (in-theory (enable strtok-aux)))
