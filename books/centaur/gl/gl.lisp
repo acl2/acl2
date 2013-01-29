@@ -498,6 +498,7 @@ Use BDD-based symbolic simulation in GL.~/
 This macro produces an event which sets the GL reasoning mode to use uBDDs,
 This is the default, relatively stable form of GL symbolic simulation.~/~/"
   '(progn (acl2::defattach bfr-mode bfr-bdd)
+          (acl2::defattach bfr-counterex-mode bfr-counterex-bdd)
           (acl2::defattach
            (bfr-sat bfr-sat-bdd)
            :hints (("goal" :in-theory '(bfr-sat-bdd-unsat))

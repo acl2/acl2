@@ -70,16 +70,14 @@ attribute.  We check for this attribute in order to know where to find
   (defund vl-qmark-test-size (x)
     (declare (xargs :guard (vl-expr-p x)))
     (b* (((when (vl-fast-atom-p x))
-          (er hard? 'vl-qmark-test-size
-              "Conditional test is not |A or ~|A.  ~x0.~%" x))
+          (vl-expr->finalwidth x))
          (op   (vl-nonatom->op x))
          (args (vl-nonatom->args x))
 
          ((unless (and (or (eq op :vl-unary-bitnot)
                            (eq op :vl-unary-bitor))
                        (assoc-equal "VL_CONDITIONAL_FIX" (vl-nonatom->atts x))))
-          (er hard? 'vl-qmark-test-size
-              "Conditional test is not |A or ~|A.  ~x0.~%" x))
+          (vl-expr->finalwidth x))
 
          (arg1 (first args))
          ((when (eq op :vl-unary-bitor))
@@ -89,7 +87,7 @@ attribute.  We check for this attribute in order to know where to find
                        (eq (vl-nonatom->op arg1) :vl-unary-bitor)
                        (assoc-equal "VL_CONDITIONAL_FIX" (vl-nonatom->atts arg1))))
           (er hard? 'vl-qmark-test-size
-              "Conditional test is not |A or ~|A.  ~x0.~%" x)))
+              "Malformed oprewrite conditional fix?  ~x0.~%" x)))
 
       (vl-expr->finalwidth (first (vl-nonatom->args arg1))))))
 

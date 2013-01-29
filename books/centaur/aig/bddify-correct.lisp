@@ -2428,3 +2428,94 @@
   (true-listp (mv-nth 0 (aig-bddify-list
                          tries x al maybe-wash-args)))
   :hints(("Goal" :in-theory (enable aig-bddify-list))))
+
+
+(defun vars-to-bdd-bindings (x n)
+  (declare (xargs :guard (natp n)))
+  (let ((n (lnfix n)))
+    (if (atom x)
+        nil
+      (hons-acons (car x) (qv n)
+                  (vars-to-bdd-bindings (cdr x) (1+ n))))))
+
+;; SAT procedure for an AIG using BDDIFY.
+;; BOZO produce a satisfying assignment
+(defun aig-bddify-sat (x)
+  (declare (xargs :guard t))
+  (b* ((vars (aig-vars x))
+       (bindings (vars-to-bdd-bindings vars 0))
+       ((mv bdd & exact)
+        (ec-call (aig-bddify *bddify-default-tries*
+                             x bindings nil))))
+    (if exact
+        (if bdd
+            '(sat)
+          '(unsat))
+      '(failed))))
+
+
+(encapsulate nil
+  (local
+   (progn
+     (defthm ubddp-val-alistp-vars-to-bdd-bindings
+       (acl2::ubddp-val-alistp (vars-to-bdd-bindings x n)))
+
+
+     (local (include-book "arithmetic/top-with-meta" :dir :system))
+
+     (defthm hons-assoc-equal-vars-to-bdd-bindings
+       (implies (member-equal x vars)
+                (equal (hons-assoc-equal x (vars-to-bdd-bindings vars n))
+                       (cons x (qv (+ (nfix n) (- (len vars) (len (member-equal x vars))))))))
+       :hints(("Goal" :in-theory (enable hons-assoc-equal))))
+
+
+     (defun vars-to-bdd-env (vars aig-env)
+       (if (atom vars)
+           nil
+         (cons (let ((look (hons-get (car vars) aig-env)))
+                 (or (not look) (cdr look)))
+               (vars-to-bdd-env (cdr vars) aig-env))))
+
+     (defthm nth-vars-to-bdd-env
+       (implies (< (nfix n) (len vars))
+                (equal (nth n (vars-to-bdd-env vars aig-env))
+                       (if (hons-assoc-equal (nth n vars) aig-env)
+                           (cdr (hons-assoc-equal (nth n vars) aig-env))
+                         t))))
+
+     (defthm len-member-equal
+       (implies (member-equal x vars)
+                (and (< 0 (len (member-equal x vars)))
+                     (<= (len (member-equal x vars)) (len vars))))
+       :rule-classes :linear)
+
+     (defthm nth-of-index
+       (implies (member-equal x lst)
+                (equal (nth (+ (len lst) (- (len (member-equal x lst)))) lst)
+                       x)))
+
+     (defthm idx-rewrite
+       (implies (member-equal x vars)
+                (< (nfix (+ (len vars) (- (len (member-equal x vars)))))
+                   (len vars))))
+
+     (defthm aig-q-compose-vars-to-bdd-env
+       (implies (subsetp-equal (acl2::aig-vars x) vars)
+                (equal (acl2::eval-bdd (acl2::aig-q-compose
+                                        x (vars-to-bdd-bindings vars n))
+                                       (append (make-list n)
+                                               (vars-to-bdd-env vars aig-env)))
+                       (acl2::aig-eval x aig-env)))
+       :hints (("goal" :induct (acl2::aig-eval x aig-env)
+                :in-theory (e/d (subsetp-equal
+                                 acl2::aig-env-lookup) (nfix)))
+               (and stable-under-simplificationp
+                    '(:in-theory (enable nfix)))))))
+
+  (defthm aig-bddify-sat-correct-for-unsat
+    (implies (equal (car (aig-bddify-sat x)) 'unsat)
+             (equal (aig-eval x env) nil))
+    :hints (("goal" :use ((:instance aig-q-compose-vars-to-bdd-env
+                                     (n 0) (vars (aig-vars x))
+                                     (aig-env env)))))))
