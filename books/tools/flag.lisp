@@ -208,23 +208,36 @@ do this:</p>
      :skip t))
 })
 
-<p>There is an older, alternate syntax for @('make-flag') that is still
-available.  To encourage transitioning to the new syntax, the old syntax is not
-documented and should usually not be used.  However, the old syntax is very
-convenient for skipping theorems, because it is more concise and doesn't
-require theorem names for skipped theorems.  Here's an example:</p>
-
+<p>Sometimes the theorem you want is inductive in such a way that some
+functions are irrelevant; nothing needs to be proved about them in order to
+prove the desired theorem about the others.  The :skip keyword can be used with
+a theorem of T to do this:</p>
 @({
  (defthm-pseudo-termp
-   (list
-    (booleanp (pseudo-term-listp acl2::lst))
-    :skip t)
    (defthm type-of-pseudo-termp
-     (booleanp (pseudo-termp acl2::x))
+     (booleanp (pseudo-termp x))
      :rule-classes :type-prescription
-     :flag term))
+     :flag term)
+   (defthm type-of-pseudo-term-listp
+     t
+     :flag list
+     :skip t))
+})
+<p>Alternatively, you can provide the :skip-others keyword to the top-level
+macro and simply leave out the trivial parts:</p>
+@({
+ (defthm-pseudo-termp
+   (defthm type-of-pseudo-termp
+     (booleanp (pseudo-termp x))
+     :rule-classes :type-prescription
+     :flag term)
+   :skip-others t)
 })
 
+
+<p>There is an older, alternate syntax for @('make-flag') that is still
+available.  To encourage transitioning to the new syntax, the old syntax is not
+documented and should usually not be used.</p>
 
 <h3>Advanced Hints</h3>
 
@@ -598,7 +611,7 @@ effect.  We simply translate subgoal hints to computed hints:</p>
 
 
 
-(defun pair-up-cases-with-thmparts (alist thmparts)
+(defun pair-up-cases-with-thmparts (alist thmparts skip-ok)
   ;; Each thmpart is an thing like
   ;; _either_ (flag <thm-body> :name ... :rule-classes ... :doc ...)
   ;;;    (for backwards compatibility)
@@ -607,23 +620,24 @@ effect.  We simply translate subgoal hints to computed hints:</p>
   (if (consp alist)
       (let* ((flag   (cdar alist))
              (lookup (assoc-flag-in-thmparts flag thmparts)))
-        (if (not lookup)
+        (if (and (not lookup) (not skip-ok))
             (er hard 'pair-up-cases-with-thmparts
                 "Expected there to be a case for the flag ~s0.~%" flag)
-          (let ((body (if (eq (car lookup) 'defthm)
-                          ;; (defthm name body ...)
-                          (caddr lookup)
-                        ;; (flag body ...)
-                        (cadr lookup))))
+          (let ((body (cond ((not lookup) t)
+                            ((eq (car lookup) 'defthm)
+                             ;; (defthm name body ...)
+                             (caddr lookup))
+                            (t ;; (flag body ...)
+                             (cadr lookup)))))
             (if (consp (cdr alist))
                 (cons `(,flag ,body)
-                      (pair-up-cases-with-thmparts (cdr alist) thmparts))
+                      (pair-up-cases-with-thmparts (cdr alist) thmparts skip-ok))
               (list `(otherwise ,body))))))
     (er hard 'pair-up-cases-with-thmparts
         "Never get here.")))
 
 
-(defun pair-up-cases-with-hints (alist thmparts)
+(defun pair-up-cases-with-hints (alist thmparts skip-ok)
   ;; Each thmpart is an thing like
   ;; _either_ (flag <thm-body> :name ... :rule-classes ... :doc ...)
   ;;;    (for backwards compatibility)
@@ -633,11 +647,14 @@ effect.  We simply translate subgoal hints to computed hints:</p>
       (let* ((flag   (cdar alist))
              (lookup (assoc-flag-in-thmparts flag thmparts)))
         (if (not lookup)
-            (er hard 'pair-up-cases-with-hints
-                "Expected there to be a case for the flag ~s0.~%" flag)
+            (if skip-ok
+                (cons (cons flag nil)
+                      (pair-up-cases-with-hints (cdr alist) thmparts skip-ok))
+              (er hard 'pair-up-cases-with-hints
+                  "Expected there to be a case for the flag ~s0.~%" flag))
           (let ((hints (extract-keyword-from-args :hints lookup)))
             (cons (cons flag hints)
-                  (pair-up-cases-with-hints (cdr alist) thmparts)))))
+                  (pair-up-cases-with-hints (cdr alist) thmparts skip-ok)))))
     nil))
 
 (defun flag-thm-entry-thmname (explicit-name flag entry)
@@ -663,7 +680,8 @@ given.  The following theorem does not have a name: ~x0~%" entry)))))
   (if (consp alist)
       (let* ((flag (cdar alist))
              (lookup (assoc-flag-in-thmparts flag thmparts)))
-        (if (extract-keyword-from-args :skip (cddr lookup))
+        (if (or (not lookup)
+                (extract-keyword-from-args :skip (cddr lookup)))
             (make-defthm-macro-fn-aux
              lemma-name explicit-name flag-var (cdr alist) thmparts)
           ;; Not checking for lookup, already did it when we did cases.
@@ -703,6 +721,7 @@ given.  The following theorem does not have a name: ~x0~%" entry)))))
                   (car flag-fncall))))
          (instructions (extract-keyword-from-args :instructions args))
          (user-hints (extract-keyword-from-args :hints args))
+         (skip-ok (extract-keyword-from-args :skip-others args))
          (hints (and (not instructions)
                      (append
                       (if (and (consp (car user-hints))
@@ -724,13 +743,14 @@ given.  The following theorem does not have a name: ~x0~%" entry)))))
                       (list
                        `(flag-hint-cases
                          ,flag-var
-                         . ,(pair-up-cases-with-hints alist thmparts)))))))
+                         . ,(pair-up-cases-with-hints alist thmparts skip-ok)))))))
 
     `(progn
        (encapsulate
         ()
         (local (defthm ,name
-                 (case ,flag-var . ,(pair-up-cases-with-thmparts alist thmparts))
+                 (case ,flag-var . ,(pair-up-cases-with-thmparts
+                                     alist thmparts skip-ok))
                  :rule-classes nil
                  :hints ,hints
                  :instructions ,instructions
@@ -948,6 +968,16 @@ given.  The following theorem does not have a name: ~x0~%" entry)))))
                   :rule-classes :rewrite
                   :doc nil)
             (list (booleanp (pseudo-term-listp lst))))))
+
+  (encapsulate
+   nil
+   (local (defthm-pseudo-termp type-of-pseudo-termp2
+            (defthm booleanp-of-pseudo-termp
+              (booleanp (pseudo-termp x))
+              :rule-classes :rewrite
+              :doc nil
+              :flag term)
+            :skip-others t)))
 
 
   (encapsulate
