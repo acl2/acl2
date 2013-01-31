@@ -333,9 +333,16 @@ in the certificate file instead of being recomputed.~/")
                         ,@idecl
                         ,ret))))
 
-      `(make-event (time$ ,form
-                          :msg "; ~s0: ~st seconds, ~sa bytes~%"
-                          :args (list ,summary)))))
+      `(make-event (time$
+                    (let ((__function__
+                           ;; Goofy: we bind __function__ to make it easy to
+                           ;; move code between functions based on
+                           ;; cutil::define and defconsts forms
+                           ',(intern summary "ACL2")))
+                      (declare (ignorable __function__))
+                      ,form)
+                    :msg "; ~s0: ~st seconds, ~sa bytes~%"
+                    :args (list ,summary)))))
 
 (defmacro defconsts (consts body)
   (defconsts-fn consts body))
@@ -422,5 +429,21 @@ in the certificate file instead of being recomputed.~/")
   (defthm t3 (equal *five* 5) :rule-classes nil)))
 
 
+;; tests of __function__
 
+(local
+ (encapsulate
+   ()
+   (defconsts *oops*
+     __function__)
 
+   (defconsts (*oops2* state)
+     (mv __function__ state))
+
+   ;; If you change how summaries work, these won't be right.  But, the point
+   ;; is to make sure with some test here that __function__ is working.  So, if
+   ;; you change summaries, just change these tests to make them work.
+   (defthm f1 (equal *oops* '|(DEFCONSTS *OOPS* ...)|)
+     :rule-classes nil)
+   (defthm f2 (equal *oops2* '|(DEFCONSTS (*OOPS2* ...) ...)|)
+     :rule-classes nil)))

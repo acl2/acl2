@@ -1786,6 +1786,7 @@ some kind of separator!</p>
                               fnname))
                             (t
                              fnname)))
+
        (macro         (and need-macrop
                            (make-wrapper-macro fnname fnname-fn formals)))
        (formals       (remove-macro-args fnname formals nil))
@@ -1796,7 +1797,7 @@ some kind of separator!</p>
 
        (assert-mv-let-bindings assertion)
        (assert-tests (parse-assert-tests assertion fnname-fn))
-       
+
        (returnspecs   (parse-returnspecs fnname returns world))
        (defun-sym     (if enabled-p 'defun 'defund))
 
@@ -1880,9 +1881,6 @@ some kind of separator!</p>
                     (event (define-fn ',name ',formals ',args world)))
                  (value event))))
 
-
-
-
 #!ACL2
 (progn
   ;; Returns (mv successp arglist).
@@ -1960,3 +1958,30 @@ some kind of separator!</p>
   (table user-defined-functions-table
          'untranslate-preprocess
          'untranslate-preproc-for-define))
+
+
+(defsection raise
+  :parents (define)
+  :short "Shorthand for causing hard errors, for use in @(see define)."
+
+  :long "<p>@(call raise) is a macro that is equivalent to @('(er hard? ...)'),
+but it automatically fills in the function name using @('__function__').  So,
+rather than write something like:</p>
+
+@({
+ (er hard? __function__ \"bad input value ~x0~%\" x)
+})
+
+<p>You can just write:</p>
+
+@({
+ (raise \"bad input value ~x0~%\" x)
+})
+
+<p>Logically @('raise') just returns @('nil').</p>
+
+@(def raise)"
+
+  (defmacro raise (&rest args)
+    `(er hard? __function__ . ,args)))
+
