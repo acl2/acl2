@@ -16,7 +16,7 @@
 ;; Place - Suite 330, Boston, MA 02111-1307, USA.
 
 (in-package "ACL2")
-(include-book "file-measure")
+(include-book "base")
 ;; (local (include-book "open-input-channel"))
 ;; (local (include-book "close-input-channel"))
 ;; (local (include-book "read-object"))
@@ -66,7 +66,8 @@
                       (read-object-all channel state)
                       (let ((state (close-input-channel channel state)))
                         (mv data state)))
-            (mv "Error opening file." state))))
+            (mv (concatenate 'string "Error opening file " filename)
+                state))))
 
 
 (encapsulate

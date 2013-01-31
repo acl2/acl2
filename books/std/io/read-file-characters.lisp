@@ -18,7 +18,7 @@
 (in-package "ACL2")
 (set-state-ok t)
 
-(include-book "file-measure")
+(include-book "base")
 ;; (local (include-book "open-input-channel"))
 ;; (local (include-book "read-char"))
 ;; (local (include-book "close-input-channel"))
@@ -70,7 +70,8 @@
                       (read-char$-all channel state)
                       (let ((state (close-input-channel channel state)))
                         (mv data state)))
-            (mv "Error opening file." state))))
+            (mv (concatenate 'string "Error opening file " filename)
+                state))))
 
 (defun read-file-characters-rev (filename state)
   "Read the entire file and return its contents as a list of characters in
@@ -86,7 +87,8 @@
                       (tr-read-char$-all channel state nil)
                       (let ((state (close-input-channel channel state)))
                         (mv data state)))
-            (mv "Error opening file." state))))
+            (mv (concatenate 'string "Error opening file " filename)
+                state))))
 
 (local (defthm lemma-decompose-impl
          (equal (tr-read-char$-all channel state acc)

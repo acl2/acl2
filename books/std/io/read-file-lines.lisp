@@ -16,7 +16,7 @@
 ;; Place - Suite 330, Boston, MA 02111-1307, USA.
 
 (in-package "ACL2")
-(include-book "file-measure")
+(include-book "base")
 ;; (local (include-book "open-input-channel"))
 ;; (local (include-book "read-byte"))
 ;; (local (include-book "close-input-channel"))
@@ -95,7 +95,8 @@
   (b* (((mv channel state)
         (open-input-channel filename :byte state))
        ((unless channel)
-        (mv "Error opening file." state))
+        (mv (concatenate 'string "Error opening file " filename)
+            state))
        ((mv data state)
         (read-file-lines-aux nil nil channel state))
        (state
