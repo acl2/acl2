@@ -2440,7 +2440,7 @@
 
 ;; SAT procedure for an AIG using BDDIFY.
 ;; BOZO produce a satisfying assignment
-(defun aig-bddify-sat (x)
+(defund aig-bddify-sat (x)
   (declare (xargs :guard t))
   (b* ((vars (aig-vars x))
        (bindings (vars-to-bdd-bindings vars 0))
@@ -2453,10 +2453,10 @@
           '(unsat))
       '(failed))))
 
-
 (encapsulate nil
   (local
    (progn
+     (in-theory (enable aig-bddify-sat))
      (defthm ubddp-val-alistp-vars-to-bdd-bindings
        (acl2::ubddp-val-alistp (vars-to-bdd-bindings x n)))
 
@@ -2514,8 +2514,8 @@
                     '(:in-theory (enable nfix)))))))
 
   (defthm aig-bddify-sat-correct-for-unsat
-    (implies (equal (car (aig-bddify-sat x)) 'unsat)
-             (equal (aig-eval x env) nil))
+    (implies (not (equal (aig-eval x env) nil))
+             (not (equal (car (aig-bddify-sat x)) 'unsat)))
     :hints (("goal" :use ((:instance aig-q-compose-vars-to-bdd-env
                                      (n 0) (vars (aig-vars x))
                                      (aig-env env)))))))

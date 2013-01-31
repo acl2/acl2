@@ -704,6 +704,16 @@ given.  The following theorem does not have a name: ~x0~%" entry)))))
                    lemma-name explicit-name flag-var (cdr alist) thmparts)))))
     nil))
 
+(defun find-first-thm-name (thmparts)
+  (if (atom thmparts)
+      (er hard? 'find-first-thm-name
+          "No explicit name given, and no theorems are given names?")
+    (if (extract-keyword-from-args :skip (cddr (car thmparts)))
+        (find-first-thm-name (cdr thmparts))
+      (flag-thm-entry-thmname
+       nil (flag-from-thmpart (car thmparts)) (car thmparts)))))
+       
+
 
 
 (defun make-defthm-macro-fn (args alist flag-var flag-fncall)
@@ -717,7 +727,8 @@ given.  The following theorem does not have a name: ~x0~%" entry)))))
                     explicit-name)
                  (intern-in-package-of-symbol
                   (concatenate 'string "FLAG-LEMMA-FOR-"
-                               (symbol-name (car flag-fncall)))
+                               (symbol-name
+                                (find-first-thm-name thmparts)))
                   (car flag-fncall))))
          (instructions (extract-keyword-from-args :instructions args))
          (user-hints (extract-keyword-from-args :hints args))
