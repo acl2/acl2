@@ -22,21 +22,6 @@
 (include-book "defsort")
 (include-book "misc/total-order" :dir :system)
 
-
-
-; UNIQUEP.
-;
-; Uniquep, introduced below, is provably equal to no-duplicatesp, but has
-; different performance characteristics.
-;
-; It operates by sorting its argument and then scanning for adjacent duplicates.
-; This is an O(n log n) instead of O(n^2) operation, and it will be particularly
-; fast on long, duplicate-free lists.
-;
-; On the other hand, it uses much more memory than no-duplicatesp, and it does
-; not stop early when a duplicate is detected.  So, on lists with lots of
-; duplication, no-duplicatesp may be preferable.
-
 (defsort :compare< <<
          :prefix <<)
 
@@ -50,24 +35,59 @@
          (and (not (equal (car x) (cadr x)))
               (no-adjacent-duplicates-p (cdr x))))))
 
-(defun uniquep (x)
-  (declare (xargs :guard (true-listp x)
-                  :verify-guards nil))
-  (mbe :logic (no-duplicatesp-equal x)
-       :exec (no-adjacent-duplicates-p (<<-sort x))))
+(defsection uniquep
+  :parents (no-duplicatesp)
+  :short "Sometimes better than @(see no-duplicatesp): first sorts the list and
+then looks for adjacent duplicates."
 
-(encapsulate
- ()
- (local (defthm lemma
-          (implies (<<-ordered-p x)
-                   (equal (no-adjacent-duplicates-p x)
-                          (no-duplicatesp-equal x)))
-          :hints(("Goal" :in-theory (enable no-duplicatesp-equal
-                                            no-adjacent-duplicates-p
-                                            <<-ordered-p)))))
+  :long "<p>@(call uniquep) is provably equal to @('(no-duplicatesp x)'), but
+has different performance characteristics.  It operates by sorting its argument
+and then scanning for adjacent duplicates.</p>
 
- (verify-guards uniquep))
+<p>Since we use a mergesort, the complexity of @('uniquep') is @('O(n log n)').
+By comparison, @('no-duplicatesp') is @('O(n^2)').</p>
 
+<p>It is not always better to use @('uniquep') than @('no-duplicatesp'):</p>
+
+<ul>
+
+<li>It uses far more memory than @('no-duplicatesp') because it sorts the
+list.</li>
+
+<li>On a list with lots of duplicates, @('no-duplicatesp') may find a duplicate
+very quickly and stop early, but @('uniquep') has to sort the whole list before
+it looks for any duplicates.</li>
+
+</ul>
+
+<p>However, if your lists are sometimes long with few duplicates, @('uniquep')
+is probably a much better function to use.</p>"
+
+  (defun uniquep-exec (x)
+    (declare (xargs :guard (true-listp x)
+                    :verify-guards nil))
+    (mbe :logic (no-duplicatesp x)
+         :exec (no-adjacent-duplicates-p (<<-sort x))))
+
+  (defmacro uniquep (x)
+    ;; Based on the equality-variants documentation, I think this is what we
+    ;; want to do so that we can prove theorems about uniquep and have them
+    ;; apply to no-duplicatesp.
+    `(let-mbe ((x ,x))
+              :logic (no-duplicatesp x)
+              :exec (uniquep-exec x)))
+
+  (local (defthm lemma
+           (implies (<<-ordered-p x)
+                    (equal (no-adjacent-duplicates-p x)
+                           (no-duplicatesp x)))
+           :hints(("Goal" :in-theory (enable no-duplicatesp
+                                             no-adjacent-duplicates-p
+                                             <<-ordered-p)))))
+
+  (verify-guards uniquep-exec)
+
+  (add-macro-alias uniquep no-duplicatesp-equal))
 
 
 #||
