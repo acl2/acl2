@@ -256,10 +256,19 @@ the user wishes to parallelize the execution of the defined function.</p>")
        (def  (if already-definedp
                  nil
                `((defun ,exec-fn (,@list-args ,acc)
-                   (declare (xargs :guard ,(if (equal guard t)
-                                               `(true-listp ,acc)
-                                             `(and (true-listp ,acc)
-                                                   ,guard))
+                   (declare (xargs :guard
+                                   ;; Previously we required that acc was a
+                                   ;; true-listp in the guard.  But on reflection,
+                                   ;; this really isn't necessary, and omitting it
+                                   ;; can simplify the guards of other functions
+                                   ;; that are directly calling -exec functions.
+
+                                   ;; ,(if (equal guard t)
+                                   ;;      `(true-listp ,acc)
+                                   ;;    `(and (true-listp ,acc)
+                                   ;;          ,guard))
+                                   ,guard
+
                                    :mode ,mode
                                    ;; we tell ACL2 not to normalize because
                                    ;; otherwise type reasoning can rewrite the
@@ -450,9 +459,9 @@ the user wishes to parallelize the execution of the defined function.</p>")
           ,@(if already-definedp
                 nil
               `((defthm ,(mksym exec-fn '-removal)
-                  (implies (force (true-listp ,acc))
-                           (equal (,exec-fn ,@list-args ,acc)
-                                  (revappend (,list-fn ,@list-args) ,acc)))
+                  ;; we don't need the hyp... (implies (force (true-listp ,acc))
+                  (equal (,exec-fn ,@list-args ,acc)
+                         (revappend (,list-fn ,@list-args) ,acc))
                   :hints(("Goal" :in-theory (enable ,exec-fn))))
 
                 ,@(if verify-guards

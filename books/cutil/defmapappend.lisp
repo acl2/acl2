@@ -130,9 +130,8 @@ and allows us to slightly optimize our function.</p>
 of a function that satisfies the following property:</p>
 
 @({
-  (implies (true-listp acc)
-           (equal (transform-exec x acc)
-                  (append (rev (transform x)) acc)))
+   (equal (transform-exec x acc)
+          (revappend (transform x)))
 })
 
 <p>Note that such functions are automatically introduced by @(see

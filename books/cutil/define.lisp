@@ -24,8 +24,35 @@
 (include-book "defprojection")
 (include-book "xdoc-impl/fmt-to-str" :dir :system)
 (include-book "tools/mv-nth" :dir :system)
-(local (include-book "misc/assert" :dir :system))
 (set-state-ok t)
+
+(defun interactive-p (state)
+  (declare (xargs :mode :program))
+  (not (f-get-global 'acl2::certify-book-info state)))
+
+(make-event
+
+; I originally wrote this file in logic mode.  You'll see theorems below, etc.
+; But there is a problem:
+;
+;   - End-users (including me) would much rather have all this stuff in program
+;     mode.  They don't care a lick about reasoning about cutil::formal-p and
+;     that sort of thing, and we don't want theorems about the guts of define
+;     messing with real proofs.
+;
+;   - Developers (including me) would much rather have all this stuff in logic
+;     mode.  They want verified guards, assertions to be checked, etc.
+;
+; So, as a dumb hack: if we're aren't certifying a book, then do everything in
+; logic mode to make sure the guards get checked.  If we're certifying the book,
+; do it in program-mode so none of these theorems actually get exported.
+
+ (if (interactive-p state)
+     (value '(value-triple :invisible))
+   (value '(program))))
+
+(local (include-book "misc/assert" :dir :system))
+(local (include-book "system/legal-variablep" :dir :system))
 
 (defxdoc define
   :parents (cutil)
@@ -52,8 +79,9 @@ basic theorems (e.g., type-like theorems) about them.</li>
 defsection)-like ability to associate related theorems with your function.</li>
 
 <li>Automatic binding of @('__function__') to the name of the function, which
-can be useful in error messages and, on CCL at least, appears to produce
-identical compiled output when @('__function__') isn't used in the body.</li>
+can be useful in error messages (see, e.g., @(see raise)) and, on CCL at least,
+appears to produce identical compiled output when @('__function__') isn't used
+in the body.</li>
 
 </ul>
 
@@ -144,11 +172,12 @@ example, compare:</p>
  vs. &key ((x atom) '3) ;; x has guard (atom x), default value 3
 })
 
-<p>As a special convenience, certain guards like @('stringp') and
-@('(unsigned-byte-p 32 x)'), are recognized as @(see type-spec)s and result in
-@(see type) declarations for the Lisp compiler.  This may occasionally improve
-efficiency.  Note that this is a very limited mechanism and it can easily fail
-to add declarations that are trivially implied by the guard.</p>
+<p>BOZO this is not yet implemented.  Eventually I want it to be true: As a
+special convenience, certain guards like @('stringp') and @('(unsigned-byte-p
+32 x)'), are recognized as @(see type-spec)s and result in @(see type)
+declarations for the Lisp compiler.  This may occasionally improve efficiency.
+Note that this is a very limited mechanism and it can easily fail to add
+declarations that are trivially implied by the guard.</p>
 
 <p>The @('xdoc') is any string.  It will be embedded within the within @(see
 xdoc) documentation, so you may make use of @(see xdoc::markup) and @(see
@@ -319,10 +348,12 @@ See the section on xdoc integration, below, for more details.</dd>
 <dd>When provided, the return type is used to generate a basic type-like
 theorems about the return values.</dd>
 
-<dd><b>Important Note</b>: in the multiple-valued case, this approach assumes
+<dd><b>Important Note</b> in the multiple-valued case, this approach assumes
 you are using the @('tools/mv-nth') book.  The theorems we prove target terms
 like @('(mv-nth 0 (f ...))') and @('(mv-nth 1 (f ...))').  This will not work
-well if @(see mv-nth) is enabled, especially about the 0th return value.</dd>
+well if @(see mv-nth) is enabled, especially about the 0th return value. For
+your convenience, @('define') automatically includes the @('tools/mv-nth')
+book.  You really should be using it, you know.</dd>
 
 <dd>As a convenient shorthand, you can use a single symbol like @('evenp').
 The theorem to be proven in this case might be, e.g., @('(evenp (f x))') for a
@@ -333,10 +364,11 @@ The symbol @('t') is explicitly allowed and results in no theorem.  The symbol
 
 <dd>In certain cases, you may wish to prove a more complex theorem, e.g., say
 we want to prove this return value is always greater than 5.  To support this,
-you can write a return type like @('< 5 ans'), where @('ans') is the @('name')
-of this return value.  You can also refer to the names of other return values
-in this term.  To make it easy to distinguish return types from other options,
-the return type term must be a cons and must not begin with @('quote').</dd>
+you can write a return type like @('(< 5 ans)'), where @('ans') is the
+@('name') of this return value.  You can also refer to the names of other
+return values in this term.  To make it easy to distinguish return types from
+other options, the return type term must be a cons and must not begin with
+@('quote').</dd>
 
 <dt>@(':hyp hyp-term')</dt>
 
@@ -402,6 +434,10 @@ this is to define a second predicate that is simply a wrapper for the desired
 predicate.  The user can then use that second predicate in the second place it
 is needed.</p>
 
+<p>BOZO assert is probably orthogonal to define and should just be turned into
+some kind of tracing/advise mechanism.</p>
+
+
 <h3>The Other Events</h3>
 
 <p>The final part of a @('define') is an area for any arbitrary events to be
@@ -432,33 +468,8 @@ some kind of separator!</p>
 
 ; Preliminaries ---------------------------------------------------------------
 
-(defsection system-stuff
 
-  (local (in-theory (disable member-equal)))
-  (verify-termination acl2::legal-variable-or-constant-namep)
-  (verify-termination legal-variablep)
-  (verify-termination acl2::arglistp1)
-  (verify-termination acl2::arglistp)
-  (verify-termination acl2::lambda-keywordp)
-  (verify-termination acl2::legal-constantp1)
-  (verify-guards acl2::legal-variable-or-constant-namep)
-  (verify-guards legal-variablep)
-  (verify-guards acl2::arglistp1)
-  (verify-guards acl2::arglistp)
-  (verify-guards acl2::lambda-keywordp)
-  ;; bleh, someone else can prove the guards
-  (verify-termination acl2::find-first-bad-arg
-                      (declare (xargs :verify-guards nil)))
-  (defthm symbolp-when-legal-variablep
-    (implies (legal-variablep x)
-             (and (symbolp x)
-                  (not (equal x t))
-                  (not (equal x nil))))
-    :rule-classes :compound-recognizer))
 
-(local (in-theory (disable legal-variablep
-                           acl2::arglistp
-                           acl2::find-first-bad-arg)))
 
 ; Trivial lemmas...
 
