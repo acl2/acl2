@@ -34,9 +34,8 @@
 (verify-guards arglistp)
 (verify-guards lambda-keywordp)
 
-;; bleh, someone else can prove the guards
-(verify-termination find-first-bad-arg
-                      (declare (xargs :verify-guards nil)))
+(verify-termination find-first-bad-arg ; See later in file for verify-guards.
+                    (declare (xargs :verify-guards nil)))
 
 (defthm symbolp-when-legal-variablep
   (implies (legal-variablep x)
@@ -44,6 +43,24 @@
                 (not (equal x t))
                 (not (equal x nil))))
   :rule-classes :compound-recognizer)
+
+(local (defthm find-first-bad-arg-lemma-lemma
+         (implies (and (character-listp x)
+                       (atom (cdr x))
+                       (equal (car x) #\&))
+                  (equal "&" (coerce x 'string)))
+         :rule-classes nil))
+
+(local (defthm find-first-bad-arg-lemma
+         (implies (and (not (equal "&" s))
+                       (equal (car (coerce s 'list)) #\&)
+                       (stringp s))
+                  (consp (cdr (coerce s 'list))))
+         :hints (("Goal" :use ((:instance find-first-bad-arg-lemma-lemma
+                                          (x (coerce s 'list))))))))
+
+(verify-guards find-first-bad-arg
+               :hints (("Goal" :in-theory (enable string< string<-l))))
 
 ; Since we're verifying these terminate, it seems reasonable to disable them here.
 
