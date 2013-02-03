@@ -20063,6 +20063,15 @@
 
   ~st[CHANGES TO EXISTING FEATURES]
 
+  More system functions are in ~c[:]~ilc[logic] mode, ~il[guard]-verified.
+  Evaluate
+  ~bv[]
+  (strip-cars (cdr (assoc-equal \"system/top\" *system-verify-guards-alist*)))
+  ~ev[]
+  for the list of functions checked to be guard-verifiable in the community
+  books.  Thanks to those who have contributed to this effort, as shown in file
+  headers in directory ~c[system/] of the community books.
+
   The macro ~ilc[defund] now avoids an error when ~c[:mode :program] has been
   specified in an ~ilc[xargs] form of a ~ilc[declare] form, for example:
   ~c[(defund f (x) (declare (xargs :mode :program)) x)].  It does this by
