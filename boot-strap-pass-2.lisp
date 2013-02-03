@@ -1121,9 +1121,8 @@
 
 ; This section supports a mechanism for users to extend the set of
 ; guard-verified functions.  They do so in community books under books/system/,
-; which are checked when building with feature :acl2-devel, for example
-; building with `make' with ACL2_DEVEL=d.  But normal builds will not set that
-; feature, and will simply trust that functions marked in
+; which are checked when building with feature :acl2-devel.  But normal builds
+; will not set that feature, and will simply trust that functions marked in
 ; *system-verify-guards-alist* can be guard-verified.
 
 ; A flaw in our approach is that user-supplied guard verifications may depend
@@ -1189,21 +1188,12 @@
 (defconst *system-verify-guards-alist*
 
 ; Each cdr was produced by evaluating
-; (new-verify-guards-fns state)
-; after including the book indicated in the car in a build with feature
-; :acl2-devel set (see discussion in the comment at the top of this section).
-; For example, cdr of the entry for "system/top" is produced by evaluating:
+; (new-verify-guards-fns (w state) (w state) nil)
+; after including the book indicated in the car, e.g.,
 ; (include-book "system/top" :dir :system).
-; The indicated books need to be certified with :acl2-devel set, but this takes
-; about 2.5 minutes on a fast machine in Feb. 2013, as follows:
-
-; make -j 8 regression ACL2_BOOK_DIRS=system ACL2=<:acl2-devel version>
-
-; Each member of each cdr below is of the form (fn . measured-subset).
+; Each entry is of the form (fn . measured-subset).
 
   '(("system/top"
-     (ARGLISTP)
-     (ARGLISTP1 LST)
      (CONS-TERM)
      (CONS-TERM1)
      (CONS-TERM1-MV2)
@@ -1212,11 +1202,6 @@
      (FETCH-DCL-FIELDS LST)
      (FETCH-DCL-FIELDS1 LST)
      (FETCH-DCL-FIELDS2 KWD-LIST)
-     (FIND-FIRST-BAD-ARG ARGS)
-     (LAMBDA-KEYWORDP)
-     (LEGAL-CONSTANTP1)
-     (LEGAL-VARIABLE-OR-CONSTANT-NAMEP)
-     (LEGAL-VARIABLEP)
      (META-EXTRACT-CONTEXTUAL-FACT)
      (META-EXTRACT-GLOBAL-FACT)
      (META-EXTRACT-RW+-TERM)
@@ -1339,11 +1324,7 @@
 ; :acl2-devel is set, then we do not do so, as we instead intend to run
 ; (chk-new-verified-guards i) for each i less than the length of
 ; *system-verify-guards-alist*, in order to check that the effect of
-; system-verify-guards is sound.  This check is performed by using `make' with
-; target devel-check, for example as follows, where <acl2d> denotes a full
-; pathname for a build of ACL2 using feature :acl2-devel (see comments above
-; for how to make such a build):
-;   (time nice make ACL2_JOBS=8 regression-fresh devel-check ACL2=<acl2d>)
+; system-verify-guards is sound.
 #+(and acl2-loop-only ; Note that make-event can't be called here in raw Lisp.
        (not acl2-devel))
 (system-verify-guards)
