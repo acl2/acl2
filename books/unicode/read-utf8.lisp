@@ -595,6 +595,8 @@
            (state-p1 (mv-nth 1 (read-utf8 filename state))))
   :hints(("Goal" :in-theory (enable read-utf8))))
 
+#|| No longer true, given change to read-file-bytes in
+    std/io/read-file-bytes.lisp, svn 1477.
 (defthm car-of-read-utf8-when-file-cannot-be-opened
   (implies (and (stringp (mv-nth 0 (read-file-bytes filename state)))
                 (force (state-p1 state))
@@ -602,6 +604,7 @@
            (equal (mv-nth 0 (read-utf8 filename state))
                   (mv-nth 0 (read-file-bytes filename state))))
   :hints(("Goal" :in-theory (enable read-file-bytes read-utf8))))
+||#
 
 (defthm car-of-read-utf8-when-file-can-be-opened
   (implies (and (not (stringp (mv-nth 0 (read-file-bytes filename state))))
