@@ -421,8 +421,10 @@
 
   Time limits (~pl[with-prover-time-limit]) aren't supported.
 
-  The timing information printed at the end of a proof attempt may be somewhat
-  inaccurate.  Consider using ~ilc[time$] to obtain timing information.
+  The timing information printed at the end of a proof attempt, which is
+  intended to represent cpu time (not wall-clock time), may be somewhat
+  inaccurate when ~il[waterfall-parallelism] is non-~c[nil].  Consider using
+  ~ilc[time$] to obtain timing information.
 
   The use of ~ilc[wormhole]s is not recommended, as there may be race
   conditions.
