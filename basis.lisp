@@ -604,8 +604,19 @@
 ; user has messed up our wormhole status.  Of course, if the user has messed up
 ; the status, there is no guarantee about what happens inside the wormhole.
 
+(defun tree-occur-eq (x y)
+
+; Does symbol x occur in the cons tree y?
+
+  (declare (xargs :guard (symbolp x)))
+  (cond ((consp y)
+         (or (tree-occur-eq x (car y))
+             (tree-occur-eq x (cdr y))))
+        (t (eq x y))))
+
 #+acl2-loop-only
 (defun wormhole-eval (qname qlambda free-vars)
+
 ; A typical call of this function is
 ; (wormhole-eval 'my-wormhole 
 ;                '(lambda (output) (p x y output))
@@ -654,6 +665,13 @@
   expression occurs.  The value of ~c[varterm] is irrelevant and if you provide ~c[nil]
   ACL2 will automatically provide a suitable term, namely a ~c[prog2$] form
   like the one shown in the example above.  
+
+  Aside: Exception for ACL2(p) (~pl[parallelism]) to the irrelevance of
+  ~c[varterm].  By default, calls of ~c[wormhole-eval] employ a lock,
+  ~c[*wormhole-lock*].  To avoid such a lock, include the symbol
+  ~c[:NO-WORMHOLE-LOCK] in ~c[varterm]; for example, you might replace a last
+  argument of ~c[nil] in ~c[wormhole-eval] by ~c[:NO-WORMHOLE-LOCK].  End of
+  Aside.
 
   ~l[wormhole] for a full explanation of wormholes.  Most relevant here is that
   every wormhole has a name and a status.  The status is generally a cons pair
@@ -704,8 +722,7 @@
 
 #-acl2-loop-only
 (defmacro wormhole-eval (qname qlambda free-vars)
-  (declare (xargs :guard t)
-           (ignore free-vars))
+  (declare (xargs :guard t))
 
 ; All calls of wormhole-eval that have survived translation are of a special
 ; form.  Qname is a quoted object (used as the name of a wormhole), and qlambda
@@ -730,32 +747,35 @@
 ; (ii) no arguments, appropriately, and stores the result as the most recent
 ; output, and then returns nil.
 
-  (let ((whs (if (car (cadr (cadr qlambda)))
-                 (car (cadr (cadr qlambda))) ; Case (i)
-               (gensym)))                    ; Case (ii)
-        (val (gensym)))
+  (let* ((whs (if (car (cadr (cadr qlambda)))
+                  (car (cadr (cadr qlambda))) ; Case (i)
+                (gensym)))                    ; Case (ii)
+         (val (gensym))
+         (form
 
 ; The code we lay down is the same in both cases, because we use the variable whs to
 ; store the old value of the status to see whether it has changed.  But we have
 ; to generate a name if one isn't supplied.
 
-    `(with-wormhole-lock
-      (progn
-        (cond (*wormholep*
-               (setq *wormhole-status-alist*
-                     (put-assoc-equal
-                      (f-get-global 'wormhole-name
-                                    *the-live-state*)
-                      (f-get-global 'wormhole-status
-                                    *the-live-state*)
-                      *wormhole-status-alist*))))
-        (let* ((*wormholep* t)
-               (,whs (cdr (assoc-equal ,qname *wormhole-status-alist*)))
-               (,val ,(caddr (cadr qlambda))))
-          (or (equal ,whs ,val)
-              (setq *wormhole-status-alist*
-                    (put-assoc-equal ,qname ,val *wormhole-status-alist*)))
-          nil)))))
+          `(progn
+             (cond (*wormholep*
+                    (setq *wormhole-status-alist*
+                          (put-assoc-equal
+                           (f-get-global 'wormhole-name
+                                         *the-live-state*)
+                           (f-get-global 'wormhole-status
+                                         *the-live-state*)
+                           *wormhole-status-alist*))))
+             (let* ((*wormholep* t)
+                    (,whs (cdr (assoc-equal ,qname *wormhole-status-alist*)))
+                    (,val ,(caddr (cadr qlambda))))
+               (or (equal ,whs ,val)
+                   (setq *wormhole-status-alist*
+                         (put-assoc-equal ,qname ,val *wormhole-status-alist*)))
+               nil))))
+    (cond ((tree-occur-eq :no-wormhole-lock free-vars)
+           form)
+          (t `(with-wormhole-lock ,form)))))
 
 (defmacro wormhole (name entry-lambda input form
                          &key
@@ -1215,7 +1235,12 @@
 
   `(with-wormhole-lock
     (prog2$
-     (wormhole-eval ,name ,entry-lambda nil)
+     (wormhole-eval ,name ,entry-lambda
+
+; It is probably harmless to allow a second lock under the one above, but there
+; is no need, so we avoid it.
+
+                    :no-wormhole-lock)
      (wormhole1
       ,name
       ,input

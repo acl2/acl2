@@ -20154,6 +20154,13 @@
 
   ~st[EXPERIMENTAL/ALTERNATE VERSIONS]
 
+  For ACL2(p), ~ilc[wormhole-eval] is now locked by default; thanks to David
+  Rager for suggesting this change.  But there is a way to avoid the lock;
+  ~pl[wormhole-eval].  In particular, the lock is avoided in the
+  implementations of ~il[accumulated-persistence] and
+  ~il[forward-chaining-reports], which are not supported in ACL2(p)
+  (~pl[unsupported-waterfall-parallelism-features]).
+
   ~/~/")
 
 (deflabel the-method

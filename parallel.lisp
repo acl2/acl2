@@ -416,6 +416,9 @@
 
   The ~ilc[accumulated-persistence] utility is not supported.
 
+  Tracking for ~il[forward-chaining-reports] is not supported
+  (~pl[set-fc-criteria]).
+
   Time limits (~pl[with-prover-time-limit]) aren't supported.
 
   The timing information printed at the end of a proof attempt may be somewhat
@@ -604,37 +607,58 @@
      (t (value nil)))))
 
 (defun set-waterfall-parallelism-fn (val ctx state)
-  (cond ((eq val (f-get-global 'waterfall-parallelism state))
-         (pprogn (observation ctx
-                              "Ignoring call to set-waterfall-parallelism ~
-                               since the new value is the same as the current ~
-                               value.~%~%")
-                 (value :ignored)))
-        ((member-eq val *waterfall-parallelism-values*)
-         (let ((val (if (eq val t) ; t is a alias for :resource-based
-                        :resource-based
-                      val)))
-           #+acl2-par
-           (cond 
-            ((null (f-get-global 'parallel-execution-enabled state))
-             (er soft ctx 
-                 "Parallel execution must be enabled before enabling ~
-                  waterfall parallelism.  See :DOC set-parallel-execution"))
-            (t
-             (pprogn #+(and hons (not acl2-loop-only))
-                     (progn
-                       (cond ((null val)
-                              (hons-init-hook-memoizations))
-                             (t 
-                              (hons-init-hook-unmemoizations)))
-                       state)
-                     (f-put-global 'waterfall-parallelism val state)
-                     (progn$
-                      #-acl2-loop-only
-                      (funcall ; avoid undefined function warning
-                       'initialize-dmr-interval-used)
-                      (value val)))))
-           #-acl2-par
+  (prog2$
+   (and val
+
+; We avoid a possible hard error, e.g. from (mini-proveall), when parallelism
+; and accumulated-persistence are both turned on.  A corresponding bit of code
+; is in accumulated-persistence.  We do similarly, just to be safe, for
+; forward-chaining-reports; see also set-fc-criteria-fn.
+
+; Warning: Keep the following two wormhole-eval calls in sync with the
+; definitions of accumulated-persistence and set-fc-criteria-fn.
+
+        (prog2$ (wormhole-eval 'accumulated-persistence
+                               '(lambda (whs) (set-wormhole-data whs nil))
+                               nil)
+                (wormhole-eval 'fc-wormhole
+                               '(lambda (whs)
+                                  (set-wormhole-data
+                                   whs
+                                   (put-assoc-eq :CRITERIA nil (wormhole-data
+                                                                whs))))
+                               nil)))
+   (cond ((eq val (f-get-global 'waterfall-parallelism state))
+          (pprogn (observation ctx
+                               "Ignoring call to set-waterfall-parallelism ~
+                                since the new value is the same as the ~
+                                current value.~%~%")
+                  (value :ignored)))
+         ((member-eq val *waterfall-parallelism-values*)
+          (let ((val (if (eq val t) ; t is a alias for :resource-based
+                         :resource-based
+                       val)))
+            #+acl2-par
+            (cond 
+             ((null (f-get-global 'parallel-execution-enabled state))
+              (er soft ctx 
+                  "Parallel execution must be enabled before enabling ~
+                   waterfall parallelism.  See :DOC set-parallel-execution"))
+             (t
+              (pprogn #+(and hons (not acl2-loop-only))
+                      (progn
+                        (cond ((null val)
+                               (hons-init-hook-memoizations))
+                              (t 
+                               (hons-init-hook-unmemoizations)))
+                        state)
+                      (f-put-global 'waterfall-parallelism val state)
+                      (progn$
+                       #-acl2-loop-only
+                       (funcall ; avoid undefined function warning
+                        'initialize-dmr-interval-used)
+                       (value val)))))
+            #-acl2-par
 
 ; Once upon a time we issued an error here instead of an observation.  In
 ; response to feedback from Dave Greve, we have changed it to an observation so
@@ -642,28 +666,28 @@
 ; make-event) without causing their certification to stop when using #-acl2-par
 ; builds of ACL2.
 
-           (pprogn
-            (observation ctx
+            (pprogn
+             (observation ctx
       
 ; We make this an observation instead of a warning, because it's probably
 ; pretty obvious to the user whether they're using an image that was built with
 ; the acl2-par feature.
                      
-                         "Parallelism can only be enabled in CCL, threaded ~
-                          SBCL, or Lispworks.  Additionally, the feature ~
-                          :ACL2-PAR must be set when compiling ACL2 (for ~
-                          example, by using `make' with argument ~
-                          `ACL2_PAR=t'). ~ Either the current Lisp is neither ~
-                          CCL nor threaded SBCL nor Lispworks, or this ~
-                          feature is missing.  Consequently, this attempt to ~
-                          set waterfall-parallelism to ~x0 will be ~
-                          ignored.~%~%"
-                         val)
-            (value :ignored))))
-        (t (er soft ctx
-               "Illegal value for set-waterfall-parallelism: ~x0.  The legal ~
-                values are ~&1."
-               val *waterfall-parallelism-values*))))
+                          "Parallelism can only be enabled in CCL, threaded ~
+                           SBCL, or Lispworks.  Additionally, the feature ~
+                           :ACL2-PAR must be set when compiling ACL2 (for ~
+                           example, by using `make' with argument ~
+                           `ACL2_PAR=t'). ~ Either the current Lisp is ~
+                           neither CCL nor threaded SBCL nor Lispworks, or ~
+                           this feature is missing.  Consequently, this ~
+                           attempt to set waterfall-parallelism to ~x0 will ~
+                           be ignored.~%~%"
+                          val)
+             (value :ignored))))
+         (t (er soft ctx
+                "Illegal value for set-waterfall-parallelism: ~x0.  The legal ~
+                 values are ~&1."
+                val *waterfall-parallelism-values*)))))
 
 ; Parallelism blemish: make a macro via deflast called
 ; with-waterfall-parallelism that enables waterfall parallelism for a given

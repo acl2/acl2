@@ -2134,9 +2134,17 @@
              (value (cons triple rest))))))
 
 (defun set-fc-criteria-fn (x state)
+
+; Warning: Keep this in syc with set-waterfall-parallelism-fn.
+
   (er-let* ((criteria
              (cond
               ((equal x '(nil)) (value nil))
+              #+acl2-par ; the following test is always false when #-acl2-par
+              ((f-get-global 'waterfall-parallelism state)
+               (er soft 'set-fc-criteria
+                   "It is illegal to track forward-chaining when ~
+                    waterfall-parallelism is enabled. "))
               ((equal x '(t)) (value '((t t t))))
               (t (translate-fc-criteria x state)))))
     (prog2$
@@ -2313,7 +2321,7 @@
                   calls-alist)
             data)))
          (t whs))))
-   nil))
+   :no-wormhole-lock))
 
 ; As forward-chain-top operates, it monitors the activations it creates and
 ; records certain information.  First, we must be able to determine whether an
@@ -2504,7 +2512,7 @@
                     (cdr calls-alist))
               data))))
          (t whs))))
-   nil))
+   :no-wormhole-lock))
 
 (defun filter-all-satisfying-fc-derivations (fcd-lst)
 
@@ -2549,7 +2557,7 @@
                            call-alist))
                     (cdr calls-alist))
               data)))))))
-   nil))
+   :no-wormhole-lock))
 
 (defun filter-satisfying-fc-activations (acts)
 
@@ -2583,7 +2591,7 @@
                              call-alist))
                       (cdr calls-alist))
                 data)))))))
-   nil))
+   :no-wormhole-lock))
 
 (defun filter-redundant-approved-fc-derivation (fcd)
 
@@ -2615,7 +2623,7 @@
                          (cdr calls-alist))
                    data))))
               (t whs))))
-   nil))
+   :no-wormhole-lock))
 
 ; So now we have got the machinery to populate sites (1)-(5) of the
 ; current call of forward-chain-top.
@@ -3000,7 +3008,7 @@
                    (cw "~%(Forward Chaining on behalf of ~x0:  (FC-Report ~x1))~%"
                        caller k)
                    new-whs))))))))
-    nil)
+    :no-wormhole-lock)
    (mv flg type-alist ttree-or-fc-pairs)))
 
 ; Explanation of the Kernel Code for FC Advancement
