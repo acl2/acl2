@@ -1753,12 +1753,20 @@ some kind of separator!</p>
         (extract-keywords fnname *define-keywords* main-stuff nil))
        (traditional-decls/docs (butlast normal-defun-stuff 1))
        (body          (car (last normal-defun-stuff)))
-       (__function__  (intern-in-package-of-symbol "__FUNCTION__" fnname))
-       (extended-body `(let ((,__function__ ',fnname))
+
+;; I originally generated __function__ in a package based on the function name.
+;; The goal was to make it easy to use __function__ in other packages without
+;; having to remember to import it, etc.  But then, when I added raise, I
+;; realized how inconvenient this is.  You can't write something like raise
+;; unless you know which package __function__ will live in.  So, now, just
+;; always target cutil::__function__ which is the same as acl2::__function__
+;; and can be imported as desired.
+
+       (extended-body `(let ((__function__ ',fnname))
                          ;; CCL's compiler seems to be smart enough to not
                          ;; generate code for this binding when it's not
                          ;; needed.
-                         (declare (ignorable ,__function__))
+                         (declare (ignorable __function__))
                          ,body))
 
        ((mv xargs kwd-alist)              (get-xargs-from-kwd-alist kwd-alist))

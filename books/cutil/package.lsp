@@ -45,6 +45,7 @@
 ; and convenient, but for consistency all of the data-type introduction macros
 ; will be kept in the cutil package.
 
+               __function__
                raise
                tag
                tag-reasoning
@@ -132,7 +133,8 @@
     defsection
     defsection-progn
     define
-    raise))
+    raise
+    __function__))
 
 (assign acl2::verbose-theory-warning nil)
 
