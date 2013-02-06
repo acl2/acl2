@@ -26481,7 +26481,7 @@ tail recursion.
   Evaluation of ~c[set-gag-mode t] enters gag-mode, so that only key
   checkpoints are printed.  Evaluation of ~c[set-gag-mode :goals] also enters
   gag-mode, but will additionally cause the name of a goal to be printed as
-  soon as it is generated (by invoking ~pl[set-print-clause-ids]).  The
+  soon as it is generated (by invoking ~il[set-print-clause-ids]).  The
   ~c[:goals] setting is useful for cases in which the prover spends very little
   of its time generating goals to be proved by induction, yet you want to see
   that it is making progress.  For finer-grained feedback about the
@@ -26491,25 +26491,6 @@ tail recursion.
   ~bv[]
   (gag-mode) ; evaluates to t, nil, or :goals
   ~ev[]
-
-  (Remark for advanced users.  The notion of ``checkpoint'' can be modified by
-  the user.  The default, as discussed above, is for a checkpoint to be a goal
-  that cannot be simplified.  Put differently, a checkpoint is acted on by one
-  of the processes in the value of the form ~c[(@ checkpoint-processors)];
-  ~pl[@].  Any or all of the symbols ~c[eliminate-destructors-clause],
-  ~c[fertilize-clause], ~c[generalize-clause], or
-  ~c[eliminate-irrelevance-clause] can be removed from this value in order that
-  invocation of the corresponding proof process does not cause its input goal
-  to be labeled a checkpoint.  For example, if you do not want destructor
-  elimination to be treated differently from simplification for purposes of
-  labeling checkpoints, you can evaluate the following form (~pl[assign]):
-  ~bv[]
-  (assign checkpoint-processors
-          (remove 'eliminate-destructors-clause
-                  (@ checkpoint-processors)))
-  ~ev[]
-  Note that the value of ~c[(@ checkpoint-processors)] also affects the proof
-  tree display; ~pl[proof-tree-details].  End of Remark.)
 
   An alternative to gag-mode is to use proof-trees; ~pl[proof-tree].  With
   proof-trees it is not so important to avoid excessive prover output, since
@@ -26535,7 +26516,31 @@ tail recursion.
   is more appropriate to analyze.  In general, the ``higher level'' the
   checkpoint, the more worthy it is of attention.  Thus, we suggest that look
   at the top-level checkpoints before looking at those labeled ``Key
-  checkpoints under a top-level induction''."
+  checkpoints under a top-level induction''.
+
+  We conclude with remarks for advanced users.
+
+  The notion of ``checkpoint'' can be modified by the user.  The default, as
+  discussed above, is for a checkpoint to be a goal that cannot be simplified.
+  Put differently, a checkpoint is acted on by one of the processes in the
+  value of the form ~c[(@ checkpoint-processors)]; ~pl[@].  Any or all of the
+  symbols ~c[eliminate-destructors-clause], ~c[fertilize-clause],
+  ~c[generalize-clause], or ~c[eliminate-irrelevance-clause] can be removed
+  from this value in order that invocation of the corresponding proof process
+  does not cause its input goal to be labeled a checkpoint.  For example, if
+  you do not want destructor elimination to be treated differently from
+  simplification for purposes of labeling checkpoints, you can evaluate the
+  following form (~pl[assign]):
+  ~bv[]
+  (assign checkpoint-processors
+          (remove 'eliminate-destructors-clause
+                  (@ checkpoint-processors)))
+  ~ev[]
+  Note that the value of ~c[(@ checkpoint-processors)] also affects the proof
+  tree display; ~pl[proof-tree-details].  End of Remark.)
+
+  ~l[set-evisc-tuple], in particular the discussion there of ~c[:GAG-MODE], for
+  how to influence slightly just what is printed in gag-mode."
 
   `(set-gag-mode-fn ,action state))
 
