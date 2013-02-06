@@ -333,6 +333,198 @@ together.  For instance, @('foo[3:1], foo[0]') could generally be merged into
              (vl-exprlist-p (vl-maybe-merge-selects x mod ialist)))))
 
 
+(defsection vl-merge-consts-aux
+  :parents (expr-cleaning)
+  :short "Consolidate concatenations of constants."
+
+  :long "<p>@(call vl-merge-consts-aux) returns @('(mv startwidth startval weirdval rest)').</p>
+
+<p>Startwidth is the width of the initial sequence of constants.  If this
+initial sequence involves any bits which are Z or X, then weirdval is a
+vl-bitlist-p whose value is the same as the bits of this initial sequence, and
+startval is nil.  Otherwise, weirdval is nil and startval is the value of the
+initial sequence.  Rest is the remaining expressions, with constants
+consolidated.</p>
+
+<p>Example: Suppose we have @('{ 2'h3, 4'ha, foo[4:3], 6'h3a, 8'h10 }').
+Running vl-merge-consts-aux on this yields
+@({
+  STARTWIDTH = 6      ;; sum of widths of initial constants
+  STARTVAL = 53       ;; hex 3a, value of concatenated initial constants
+  WEIRDVAL = nil
+  REST = { foo[4:3], 14'ha10 }
+                      ;; remaining exprs, constants consolidated
+})
+
+<p>If we have @('{ 2'b1x, 4'ha, foo[4:3], 6'h3a, 8'h10 }').
+Running vl-merge-consts-aux on this yields
+@({
+  STARTWIDTH = 6      ;; sum of widths of initial constants
+  STARTVAL = nil      
+  WEIRDVAL = bits 1x1010
+  REST = { foo[4:3], 14'ha10 }
+                      ;; remaining exprs, constants consolidated
+})
+})"
+
+  (mutual-recursion
+   (defun vl-merge-consts (x)
+     "Returns list-of-expressions"
+     (declare (xargs :guard (vl-exprlist-p x)
+                     :verify-guards nil
+                     :measure (two-nats-measure (acl2-count x) 1)))
+     (b* (((mv rest-w rest-val rest-weird rest-exprs)
+           (vl-merge-consts-aux x))
+          ((when (int= 0 rest-w))
+           rest-exprs)
+          ((when rest-val)
+           ;; constint case
+           (cons (make-vl-atom :guts (make-vl-constint
+                                      :origwidth rest-w
+                                      :origtype :vl-unsigned
+                                      :value rest-val
+                                      :wasunsized nil)
+                               :finalwidth rest-w
+                               :finaltype :vl-unsigned)
+                 rest-exprs)))
+       ;; weirdint case
+       (cons (make-vl-atom :guts (make-vl-weirdint
+                                  :origwidth rest-w
+                                  :origtype :vl-unsigned
+                                  :bits rest-weird
+                                  :wasunsized nil)
+                           :finalwidth rest-w
+                           :finaltype :vl-unsigned)
+             rest-exprs)))
+
+   (defun vl-merge-consts-aux (x)
+     "Returns (MIN REST)"
+     (declare (xargs :guard (vl-exprlist-p x)
+                     :measure (two-nats-measure (acl2-count x) 0)))
+     (b* (((when (atom x))
+           (mv 0 0 nil nil))
+
+          (expr1 (car x))
+          ((unless (and (vl-fast-atom-p expr1)
+                        (let ((guts (vl-atom->guts expr1)))
+                          (or (vl-fast-constint-p guts)
+                              (vl-fast-weirdint-p guts)))))
+           ;; the first expression is not a constant, so get the rest as exprs
+           ;; and cons on expr1
+           (mv 0 0 nil (cons expr1 (vl-merge-consts (cdr x)))))
+
+          ;; process the rest
+          ((mv rest-w rest-val rest-weird rest-exprs)
+           (vl-merge-consts-aux (cdr x)))
+
+          (guts (vl-atom->guts expr1))
+          ((when (vl-fast-constint-p guts))
+           (b* (((vl-constint guts) guts)
+                ((when rest-val)
+                 ;; concatenate (with ash/+) the values, add the widths
+                 (mv (+ guts.origwidth rest-w)
+                     (+ (ash guts.value rest-w) rest-val)
+                     nil rest-exprs))
+                ;; the rest starts with a weirdint, so we need to transform
+                ;; this value into bits and append them on
+                (bits (vl-bitlist-from-nat guts.value guts.origwidth))
+                (all-bits (append bits rest-weird)))
+             (mv (+ guts.origwidth rest-w)
+                 nil all-bits rest-exprs)))
+          
+          ;; otherwise expr1 is a weirdint.  append its bits to those from the
+          ;; initial expr.
+          ((vl-weirdint guts) guts)
+          ((when (int= rest-w 0))
+           ;; optimization; don't bother appending stuff
+           (mv guts.origwidth nil guts.bits rest-exprs))
+          ((when rest-val)
+           (b* ((rest-bits (vl-bitlist-from-nat rest-val rest-w)))
+             (mv (+ rest-w guts.origwidth)
+                 nil
+                 (append-without-guard guts.bits rest-bits)
+                 rest-exprs))))
+       (mv (+ rest-w guts.origwidth)
+           nil
+           (append-without-guard guts.bits rest-weird)
+           rest-exprs))))
+
+  (in-theory (disable vl-merge-consts-aux
+                      vl-merge-consts))
+
+  (local (in-theory (disable vl-atom-p-when-wrong-tag
+                             vl-weirdint-p-when-wrong-tag)))
+
+  (flag::make-flag vl-merge-consts-flg vl-merge-consts)
+
+  (defthm-vl-merge-consts-flg
+    (defthm true-listp-of-vl-merge-consts-aux->exprs
+      (true-listp (mv-nth 3 (vl-merge-consts-aux x)))
+      :rule-classes :type-prescription
+      :hints ('(:expand ((vl-merge-consts-aux x))))
+      :flag vl-merge-consts-aux)
+    (defthm true-listp-of-vl-merge-consts->exprs
+      (true-listp (vl-merge-consts x))
+      :hints ('(:expand ((vl-merge-consts x))))
+      :rule-classes :type-prescription
+      :flag vl-merge-consts))
+
+  (defthm-vl-merge-consts-flg
+    (defthm natp-of-vl-merge-consts-aux->width
+      (natp (mv-nth 0 (vl-merge-consts-aux x)))
+      :hints ('(:expand ((vl-merge-consts-aux x))))
+      :rule-classes :type-prescription
+      :flag vl-merge-consts-aux)
+    :skip-others t)
+
+  (defthm-vl-merge-consts-flg
+    (defthm natp-of-vl-merge-consts-aux->val
+      (or (not (mv-nth 1 (vl-merge-consts-aux x)))
+          (natp (mv-nth 1 (vl-merge-consts-aux x))))
+      :hints ('(:expand ((vl-merge-consts-aux x))))
+      :rule-classes :type-prescription
+      :flag vl-merge-consts-aux)
+    :skip-others t)
+
+  (local (defthm arith-lemma
+           (implies (and (natp v)
+                         (natp v-cap)
+                         (natp w)
+                         (natp w-cap)
+                         (< v v-cap)
+                         (< w w-cap))
+                    (< (+ w (* v w-cap))
+                       (* v-cap w-cap)))
+           :hints ((and stable-under-simplificationp
+                        '(:nonlinearp t)))))
+
+  (defthm-vl-merge-consts-flg
+    (defthm vl-merge-consts-aux-invar
+      (implies (vl-exprlist-p x)
+               (b* (((mv width val bits exprs)
+                     (vl-merge-consts-aux x)))
+                 (and (vl-bitlist-p bits)
+                      (vl-exprlist-p exprs)
+                      (implies val
+                               (not bits))
+                      (implies (not val)
+                               (equal (len bits)
+                                      width))
+                      (implies val
+                               (< val (expt 2 width))))))
+      :hints ('(:expand ((vl-merge-consts-aux x))))
+      :flag vl-merge-consts-aux)
+    (defthm vl-exprlist-p-of-vl-merge-consts
+      (implies (vl-exprlist-p x)
+               (vl-exprlist-p (vl-merge-consts x)))
+      :hints ('(:expand ((vl-merge-consts x))))
+      :flag vl-merge-consts))
+
+  (verify-guards vl-merge-consts))
+
+
+
+
 
 (defsection vl-expr-clean-concats
   :parents (expr-cleaning)
@@ -374,6 +566,7 @@ but may be aesthetically better.</p>"
           (args (vl-exprlist-clean-concats args mod ialist)) ;; do this first for easy termination argument
           (args (vl-elim-nested-concats args))
           (args (vl-maybe-merge-selects args mod ialist))
+          (args (vl-merge-consts args))
 
           ;; Historically we looked for singleton concatenations like {a} here,
           ;; and replaced them with just a.  It's tricky to safely do this
@@ -652,3 +845,32 @@ of @('w[3:0]') with just @('w').</li>
   :result-type vl-exprlist-p
   :parents (expr-cleaning))
 
+#||
+
+Testing the constant consolidation....
+
+
+(include-book
+ "../loader/lexer")
+(include-book 
+ "../loader/parse-expressions")
+(include-book
+ "fmt")
+
+(defun cleaned-version (str)
+  (b* (((mv erp val tokens ?warnings)
+        (vl-parse-expression (vl-make-test-tstream str) nil))
+       ((when erp) "parse error")
+       ((when tokens) "extra tokens")
+       (empty-mod (make-vl-module :name "fake"
+                                  :minloc *vl-fakeloc*
+                                  :maxloc *vl-fakeloc*
+                                  :origname "fake"))
+       (clean (vl-expr-clean-concats val empty-mod (vl-moditem-alist empty-mod))))
+    (with-local-ps
+      (vl-cw "Orig:  ~a0~%Clean: ~a1~%" val clean))))
+
+(cleaned-version "{ 2'h3, 4'ha, foo[4:3], 6'h3a, 8'h10 }")
+(cleaned-version "{ 2'b1x, 4'ha, foo[4:3], 1'bz, 6'h3a, 8'h10 }")
+
+||#

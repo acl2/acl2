@@ -1185,3 +1185,20 @@ expression, and return them as a flat list of expressions."
     :hints(("Goal" :expand ((vl-exprlist-selects x)
                             (vl-expr-selects x))))))
 
+
+(define vl-bitlist-from-nat ((x natp)
+                             (width natp))
+  :returns (bits vl-bitlist-p)
+  :short "Turn a natural number into a vl-bitlist-p of the given width."
+  (b* (((when (zp width)) nil)
+       (width (1- width))
+       (bit (if (logbitp width x)
+                :vl-1val
+              :vl-0val)))
+    (cons bit (vl-bitlist-from-nat x width)))
+
+  ///
+
+  (defthm len-of-vl-bitlist-from-nat
+    (equal (len (vl-bitlist-from-nat x width))
+           (nfix width))))
