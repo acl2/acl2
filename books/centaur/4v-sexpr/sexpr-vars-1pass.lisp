@@ -146,13 +146,13 @@ This stupid twist makes the proof ridiculously harder!</p>"
 (local (defthm-flag-4v-sexpr-vars-1pass-exec
          (defthm seen-has-correct-vars-sexpr
            (b* (((mv new-seen &) (4v-sexpr-vars-1pass-exec x seen vars)))
-             (set-equivp (4v-sexpr-vars-list (alist-keys new-seen))
+             (set-equiv (4v-sexpr-vars-list (alist-keys new-seen))
                          (append (4v-sexpr-vars-list (alist-keys seen))
                                  (4v-sexpr-vars x))))
            :flag sexpr)
          (defthm seen-has-correct-vars-list
            (b* (((mv new-seen &) (4v-sexpr-vars-1pass-list-exec x seen vars)))
-             (set-equivp (4v-sexpr-vars-list (alist-keys new-seen))
+             (set-equiv (4v-sexpr-vars-list (alist-keys new-seen))
                          (append (4v-sexpr-vars-list (alist-keys seen))
                                  (4v-sexpr-vars-list x))))
            :flag list)))
@@ -179,16 +179,16 @@ This stupid twist makes the proof ridiculously harder!</p>"
          (defthm vars-are-correct-sexpr
            (b* (((mv & new-vars)
                  (4v-sexpr-vars-1pass-exec x seen vars)))
-             (implies (set-equivp vars (4v-sexpr-vars-list (alist-keys seen)))
-                      (set-equivp new-vars
+             (implies (set-equiv vars (4v-sexpr-vars-list (alist-keys seen)))
+                      (set-equiv new-vars
                                   (append (4v-sexpr-vars-list (alist-keys seen))
                                           (4v-sexpr-vars x)))))
            :flag sexpr)
          (defthm vars-are-correct-list
            (b* (((mv & new-vars)
                  (4v-sexpr-vars-1pass-list-exec x seen vars)))
-             (implies (set-equivp vars (4v-sexpr-vars-list (alist-keys seen)))
-                      (set-equivp new-vars
+             (implies (set-equiv vars (4v-sexpr-vars-list (alist-keys seen)))
+                      (set-equiv new-vars
                                   (append (4v-sexpr-vars-list (alist-keys seen))
                                           (4v-sexpr-vars-list x)))))
            :flag list)))
@@ -200,7 +200,7 @@ This stupid twist makes the proof ridiculously harder!</p>"
          :hints(("Goal" :in-theory (enable sets::in-to-member)))))
 
 (local (defthm main-corollary
-           (set-equivp (mv-nth 1 (4v-sexpr-vars-1pass-exec x nil nil))
+           (set-equiv (mv-nth 1 (4v-sexpr-vars-1pass-exec x nil nil))
                        (4v-sexpr-vars x))))
 
 
@@ -253,8 +253,8 @@ list of sexpr lists.</p>"
   (local (defthm l0
            (b* (((mv & new-vars)
                  (4v-sexpr-vars-1pass-list-list-exec x seen vars)))
-             (implies (set-equivp vars (4v-sexpr-vars-list (alist-keys seen)))
-                      (set-equivp new-vars
+             (implies (set-equiv vars (4v-sexpr-vars-list (alist-keys seen)))
+                      (set-equiv new-vars
                                   (append (4v-sexpr-vars-list (alist-keys seen))
                                           (4v-sexpr-vars-list-list x)))))))
 

@@ -39,8 +39,8 @@
 ;; These are disabled in equal-sets.lisp because they can sometimes be
 ;; expensive.  But I prefer to leave them enabled by default, and just disable
 ;; them when they become expensive.
-(in-theory (enable acl2::subsetp-equal-member
-                   acl2::subsetp-equal-trans2))
+(in-theory (enable acl2::subsetp-member
+                   acl2::subsetp-trans2))
 
 
 (defthm member-equal-when-member-equal-of-cdr-under-iff
@@ -66,14 +66,14 @@
          (subsetp-equal a x))
   :hints(("Goal" :induct (len a))))
 
-(defthm list-fix-under-set-equivp
-  (set-equivp (list-fix x) x)
+(defthm list-fix-under-set-equiv
+  (set-equiv (list-fix x) x)
   :hints((set-reasoning)))
 
 
 
 
-(defsection set-equivp-by-duplicity
+(defsection set-equiv-by-duplicity
 
   (local (defthmd l0
            (iff (member-equal a x)
@@ -89,29 +89,29 @@
                    :use ((:instance acl2::duplicity-constraint
                                     (acl2::a a)))))))
 
-  (defthmd set-equivp-by-duplicity
+  (defthmd set-equiv-by-duplicity
     (implies (acl2::duplicity-hyp)
-             (set-equivp (acl2::duplicity-lhs)
+             (set-equiv (acl2::duplicity-lhs)
                          (acl2::duplicity-rhs)))
     :hints((set-reasoning))))
 
-(defcong set-equivp set-equivp (acl2::<<-sort x) 1
+(defcong set-equiv set-equiv (acl2::<<-sort x) 1
   :hints(("Goal"
           :use ((:functional-instance
-                 set-equivp-by-duplicity
+                 set-equiv-by-duplicity
                  (acl2::duplicity-hyp (lambda () t))
                  (acl2::duplicity-rhs (lambda () (acl2::<<-sort x)))
                  (acl2::duplicity-lhs (lambda () x)))
                 (:functional-instance
-                 set-equivp-by-duplicity
+                 set-equiv-by-duplicity
                  (acl2::duplicity-hyp (lambda () t))
                  (acl2::duplicity-rhs (lambda () (acl2::<<-sort acl2::x-equiv)))
                  (acl2::duplicity-lhs (lambda () acl2::x-equiv)))))))
 
-(defthm <<-sort-under-set-equivp
-  (set-equivp (acl2::<<-sort x) x)
+(defthm <<-sort-under-set-equiv
+  (set-equiv (acl2::<<-sort x) x)
   :hints(("Goal"
-          :use ((:functional-instance set-equivp-by-duplicity
+          :use ((:functional-instance set-equiv-by-duplicity
                  (acl2::duplicity-hyp (lambda () t))
                  (acl2::duplicity-rhs (lambda () (acl2::<<-sort x)))
                  (acl2::duplicity-lhs (lambda () x)))))))

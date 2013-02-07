@@ -67,19 +67,19 @@ working with Verilog modules.")
     (coerce (list #\Newline) 'string)))
 
 
-(defsection set-equivp
+(defsection set-equiv
 
   (local (include-book "centaur/misc/equal-sets" :dir :system))
   (set-enforce-redundancy t) ;; note: implicitly local
 
   #!ACL2
-  (defun set-equivp (x y)
+  (defun set-equiv (x y)
     (declare (xargs :guard (and (true-listp x)
                                 (true-listp y))))
     (and (subsetp-equal x y)
          (subsetp-equal y x)))
 
-  (defequiv set-equivp))
+  (defequiv set-equiv))
 
 
 

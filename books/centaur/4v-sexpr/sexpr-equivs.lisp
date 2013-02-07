@@ -170,7 +170,7 @@
 (defcong 4v-env-equiv equal (4v-sexpr-eval-alist x env) 2)
 
 (defthm 4v-env-equiv-append
-  (implies (and (set-equivp (double-rewrite (alist-keys a))
+  (implies (and (set-equiv (double-rewrite (alist-keys a))
                             (double-rewrite (alist-keys b)))
                 (4v-env-equiv (double-rewrite a)
                               (double-rewrite b))
@@ -235,7 +235,7 @@
          (and (member-equal key keys)
               (cons key (4v-fix (cdr (hons-assoc-equal key al)))))))
 
-(defcong set-equivp key-and-env-equiv (4v-alist-extract keys al) 1
+(defcong set-equiv key-and-env-equiv (4v-alist-extract keys al) 1
   :hints(("Goal" :in-theory (e/d (key-and-env-equiv)
                                  (4v-env-equiv-to-key-and-env-equiv 4v-fix)))
          (witness :ruleset 4v-env-equiv-witnessing)))
@@ -336,7 +336,7 @@
                             4v-env-equiv-witnessing
                             4v-env-equiv-4v-lookup-ex))))
 
-(defcong set-equivp equal (4v-alists-agree keys a b) 1
+(defcong set-equiv equal (4v-alists-agree keys a b) 1
   :hints(("Goal" :in-theory (e/d (4v-alists-agree-to-4v-env-equiv)
                                  (4v-fix)))))
 

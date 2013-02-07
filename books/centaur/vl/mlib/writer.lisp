@@ -883,12 +883,12 @@ displays.  The module browser's web pages are responsible for defining the
 (encapsulate
   ()
   ;; Speed hint
-  (local (in-theory (disable acl2::member-equal-of-cons
+  (local (in-theory (disable acl2::member-of-cons
                              MEMBER-EQUAL-WHEN-MEMBER-EQUAL-OF-CDR-UNDER-IFF
                              double-containment
                              ACL2::TRUE-LISTP-MEMBER-EQUAL
                              ACL2::CONSP-MEMBER-EQUAL
-                             ACL2::SUBSETP-EQUAL-MEMBER
+                             ACL2::SUBSETP-MEMBER
                              (:ruleset tag-reasoning)
                              )))
 
@@ -982,7 +982,7 @@ displays.  The module browser's web pages are responsible for defining the
                    :in-theory (e/d (vl-expr-p))
                    :use ((:instance crock0d (x (vl-nonatom->args x))))))))
 
-  (local (in-theory (enable acl2::member-equal-of-cons)))
+  (local (in-theory (enable acl2::member-of-cons)))
 
 
   (verify-guards vl-pp-expr-fn

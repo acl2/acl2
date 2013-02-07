@@ -536,9 +536,9 @@
                      4v-alist-extract not
                      4v-bitspecp
                      no-duplicatesp-equal
-                     subsetp-equal-atom
+                     subsetp-when-atom-left
                      append 4v-sexpr-alist-extract
-                     subsetp-equal-trans
+                     subsetp-trans
                      intersectp-equal-non-cons-1
                      intersectp-equal-non-cons
                      4v-sexpr-vars-list
@@ -552,7 +552,7 @@
                     ((:type-prescription 4v-bitspec-vars))))))
 
 ;; BOZO fix up the above thms so that this isnt' necessary
-(local (in-theory (disable COMMUTATIVITY-OF-APPEND-UNDER-SET-EQUIVP)))
+(local (in-theory (disable COMMUTATIVITY-OF-APPEND-UNDER-SET-EQUIV)))
 
 
 (defthm cmp4v-generic-theorem

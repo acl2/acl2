@@ -527,7 +527,7 @@
 
 
 (defthm 4v-env-equiv-cons
-  (implies (and (set-equivp (alist-keys a) (alist-keys b))
+  (implies (and (set-equiv (alist-keys a) (alist-keys b))
                 (equal (4v-fix a) (4v-fix b))
                 (4v-env-equiv c d))
            (equal (4v-env-equiv (cons (cons k a) c)

@@ -250,7 +250,7 @@ are to blame.</li>
                              remove-equal
                              promote-member-equal-to-membership
                              true-listp
-                             acl2::subsetp-equal-member
+                             acl2::subsetp-member
                              acl2::true-listp-member-equal)))
 
   (defconst *vl-bad-submodule-message*
@@ -398,7 +398,7 @@ are to blame.</li>
                                  remove-equal
                                  promote-member-equal-to-membership
                                  true-listp
-                                 acl2::subsetp-equal-member
+                                 acl2::subsetp-member
                                  acl2::true-listp-member-equal)
              :do-not '(generalize fertilize)))))
 
@@ -408,7 +408,7 @@ are to blame.</li>
     ;; this is a good rule.
     (implies
      (force (no-duplicatesp-equal (vl-modulelist->names mods)))
-     (set-equivp
+     (set-equiv
       (vl-modulelist->names (mv-nth 1 (vl-apply-blame-alist mods alist)))
       (set-difference-equal
        (vl-modulelist->names mods)
@@ -480,7 +480,7 @@ modules, and separate them from the modules that are okay.</p>
     ;; names to be in terms of the survivors' names.  It's not clear whether
     ;; this is a good rule.
     (implies (force (no-duplicatesp-equal (vl-modulelist->names mods)))
-             (set-equivp
+             (set-equiv
               (vl-modulelist->names (mv-nth 1 (vl-remove-bad-modules names mods)))
               (set-difference-equal
                (vl-modulelist->names mods)
@@ -572,7 +572,7 @@ same order as they occur in @('x').</p>"
     ;; names to be in terms of the survivors' names.  It's not clear whether
     ;; this is a good rule.
     (implies (force (no-duplicatesp-equal (vl-modulelist->names mods)))
-             (set-equivp
+             (set-equiv
               (vl-modulelist->names (mv-nth 1 (vl-propagate-errors mods)))
               (set-difference-equal
                (vl-modulelist->names mods)

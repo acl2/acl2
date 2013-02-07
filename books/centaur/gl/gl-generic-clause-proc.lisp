@@ -1397,7 +1397,7 @@
                 (member-equal x b)))))
 
    (defthm revappend-set-equiv-union
-     (acl2::set-equivp (revappend a b) (union-equal a b))
+     (acl2::set-equiv (revappend a b) (union-equal a b))
      :hints ((acl2::set-reasoning)))
 
 

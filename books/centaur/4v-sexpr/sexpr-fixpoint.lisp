@@ -510,7 +510,7 @@
                                                  parent
                                                  back-edges))))
   :hints (("goal" :do-not-induct t
-           :in-theory (enable subsetp-equal-witness-rw))))
+           :in-theory (enable subsetp-witness-rw))))
 
 
 

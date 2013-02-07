@@ -372,7 +372,7 @@ toposort-aux)."
            (implies (and (mv-nth 0 (toposort-aux queue seen graph))
                          (subsetp-equal queue (alist-keys graph)))
                     (subsetp-equal queue (eto (mv-nth 1 (toposort-aux queue seen graph)))))
-           :hints((acl2::witness :ruleset (acl2::subsetp-equal-witnessing)))))
+           :hints((acl2::witness :ruleset (acl2::subsetp-witnessing)))))
 
   (defthm extract-topological-order-includes-queue
     (implies (and (mv-nth 0 (toposort-aux queue seen graph))
@@ -585,7 +585,7 @@ strategy is the easiest way to topologically sort your data.</p>"
   (local (defthm l2
            (implies (and (consp x)
                          (cons-listp x))
-                    (set-equivp (cons (caar x) (alist-keys (cdr x)))
+                    (set-equiv (cons (caar x) (alist-keys (cdr x)))
                                 (alist-keys x)))))
 
   (local (make-event
@@ -604,7 +604,7 @@ strategy is the easiest way to topologically sort your data.</p>"
                                         (stop (caar ,seen))
                                         (acc  (list (caar ,seen)))
                                         (full-seen ,seen))))
-                      (acl2::witness :ruleset (acl2::subsetp-equal-witnessing)))))))
+                      (acl2::witness :ruleset (acl2::subsetp-witnessing)))))))
 
 
   (defthm subsetp-equal-of-toposort
@@ -629,9 +629,9 @@ strategy is the easiest way to topologically sort your data.</p>"
 
   (defthm toposort-set-equiv
     (implies (mv-nth 0 (toposort graph))
-             (set-equivp (mv-nth 1 (toposort graph))
+             (set-equiv (mv-nth 1 (toposort graph))
                          (alist-keys graph)))
-    :hints(("Goal" :in-theory (e/d (set-equivp)
+    :hints(("Goal" :in-theory (e/d (set-equiv)
                                    (toposort)))))
 
   (defthm no-duplicatesp-equal-of-toposort

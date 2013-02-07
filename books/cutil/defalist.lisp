@@ -276,7 +276,7 @@ each value satisfies @(see " (symbol-name valp) ")."))))
                            (alistp ,x))
                   :hints (("Goal" :in-theory (enable ,name alistp)))
                   :rule-classes :tau-system)))
-       
+
        (defthm ,(mksym name '-of-append)
          (equal (,name ,@(subst `(append ,x ,y) x formals))
                 (and (,name ,@(if true-listp
@@ -410,7 +410,7 @@ each value satisfies @(see " (symbol-name valp) ")."))))
                 ,last-ditch-hint))
 
        (defthm ,(mksym name '-of-nthcdr)
-         (implies (force (,name ,@formals))
+         (implies (previously-forced (,name ,@formals))
                   (equal (,name ,@(subst `(nthcdr ,n ,x) x formals))
                          t))
          :hints(("Goal"
@@ -419,7 +419,7 @@ each value satisfies @(see " (symbol-name valp) ")."))))
                 ,last-ditch-hint))
 
        (defthm ,(mksym name '-of-simpler-take)
-         (implies (and (force (,name ,@formals))
+         (implies (and (previously-forced (,name ,@formals))
                        (force (<= ,n (len ,x))))
                   (equal (,name ,@(subst `(simpler-take ,n ,x) x formals))
                          t))
@@ -447,7 +447,7 @@ each value satisfies @(see " (symbol-name valp) ")."))))
                          ,last-ditch-hint))))
 
        (defthm ,(mksym name '-of-last)
-         (implies (force (,name ,@formals))
+         (implies (previously-forced (,name ,@formals))
                   (equal (,name ,@(subst `(last ,x) x formals))
                          t))
          :hints(("Goal"
@@ -456,15 +456,16 @@ each value satisfies @(see " (symbol-name valp) ")."))))
                 ,last-ditch-hint))
 
        (defthm ,(mksym name '-of-butlast)
-         (implies (and (force (,name ,@formals))
-                       (force (natp ,n)))
+         (implies (and (previously-forced (,name ,@formals))
+                       ;; (force (natp ,n)) not needed after butlast fixes
+                       )
                   (equal (,name ,@(subst `(butlast ,x ,n) x formals))
                          t))
          :hints(("Goal" :in-theory (enable butlast))
                 ,last-ditch-hint))
 
        (defthm ,(mksym name '-of-set-difference-equal)
-         (implies (force (,name ,@formals))
+         (implies (previously-forced (,name ,@formals))
                   (equal (,name ,@(subst `(set-difference-equal ,x ,y) x formals))
                          t))
          :hints(("Goal"
@@ -472,18 +473,29 @@ each value satisfies @(see " (symbol-name valp) ")."))))
                  :in-theory (enable set-difference-equal))
                 ,last-ditch-hint))
 
-       (defthm ,(mksym name '-of-union-equal)
-         (implies (and (force (,name ,@formals))
-                       (force (,name ,@(subst y x formals))))
-                  (equal (,name ,@(subst `(union-equal ,x ,y) x formals))
-                         t))
-         :hints(("Goal"
-                 :induct (len ,x)
-                 :in-theory (enable union-equal))
-                ,last-ditch-hint))
+       (encapsulate
+         ()
+         (local (defthm l0
+                  (implies (and (member ,a ,x)
+                                (,name ,@formals))
+                           (consp ,a))
+                  :hints(("Goal"
+                          :in-theory (enable member)
+                          :induct (len ,x)))))
+
+         (defthm ,(mksym name '-of-union-equal)
+           (equal (,name ,@(subst `(union-equal ,x ,y) x formals))
+                  (and ,(if true-listp
+                            `(,name ,@(subst `(list-fix ,x) x formals))
+                          `(,name ,@formals))
+                       (,name ,@(subst y x formals))))
+           :hints(("Goal"
+                   :induct (len ,x)
+                   :in-theory (enable union-equal))
+                  ,last-ditch-hint)))
 
        (defthm ,(mksym name '-of-difference)
-         (implies (force (,name ,@formals))
+         (implies (previously-forced (,name ,@formals))
                   (equal (,name ,@(subst `(difference ,x ,y) x formals))
                          t))
          :hints(,last-ditch-hint))
@@ -502,8 +514,8 @@ each value satisfies @(see " (symbol-name valp) ")."))))
 
        ,@(and (not true-listp)
               `((defthm ,(mksym name '-of-union)
-                  (implies (and (force (,name ,@formals))
-                                (force (,name ,@(subst y x formals))))
+                  (implies (and (previously-forced (,name ,@formals))
+                                (previously-forced (,name ,@(subst y x formals))))
                            (,name ,@(subst `(union ,x ,y) x formals)))
                   :hints(("Goal"
                           :use ((:instance deflist-lemma-5 (x ,x) (y ,y))
@@ -512,7 +524,7 @@ each value satisfies @(see " (symbol-name valp) ")."))))
                          ,last-ditch-hint))))
 
        (defthm ,(mksym name '-of-duplicated-members)
-         (implies (force (,name ,@formals))
+         (implies (previously-forced (,name ,@formals))
                   (equal (,name ,@(subst `(duplicated-members ,x) x formals))
                          t))
          :hints(,last-ditch-hint))
@@ -529,8 +541,8 @@ each value satisfies @(see " (symbol-name valp) ")."))))
                 ,last-ditch-hint))
 
        (defthm ,(mksym name '-of-hons-shrink-alist)
-         (implies (and (force (,name ,@formals))
-                       (force (,name ,@(subst y x formals))))
+         (implies (and (previously-forced (,name ,@formals))
+                       (previously-forced (,name ,@(subst y x formals))))
                   (,name ,@(subst `(hons-shrink-alist ,x ,y) x formals)))
          :hints(("Goal"
                  :induct (hons-shrink-alist ,x ,y)
@@ -538,8 +550,8 @@ each value satisfies @(see " (symbol-name valp) ")."))))
                 ,last-ditch-hint))
 
        (defthm ,(mksym name '-of-make-fal)
-         (implies (and (force (,name ,@formals))
-                       (force (,name ,@(subst y x formals))))
+         (implies (and (previously-forced (,name ,@formals))
+                       (previously-forced (,name ,@(subst y x formals))))
                   (,name ,@(subst `(make-fal ,x ,y) x formals)))
          :hints(("Goal"
                  :induct (make-fal ,x ,y)

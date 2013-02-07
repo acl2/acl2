@@ -4032,9 +4032,9 @@ context-determined expressions."
 (local (acl2::def-ruleset! extra-disables
                            '(sets::double-containment
                             (:type-prescription member-equal)
-                            acl2::member-equal-of-cons
+                            acl2::member-of-cons
                             member-equal-when-member-equal-of-cdr-under-iff
-                            acl2::subsetp-equal-member
+                            acl2::subsetp-member
                             acl2::true-listp-member-equal
                             acl2::consp-member-equal
                             default-car
@@ -4160,7 +4160,7 @@ context-determined expressions."
                              default-car
                              default-cdr
                              natp-when-member-equal-of-nat-listp
-                             acl2::subsetp-equal-member
+                             acl2::subsetp-member
                              member-equal-when-member-equal-of-cdr-under-iff
                              vl-expr-p-when-member-equal-of-vl-exprlist-p
                              vl-exprtype-p-when-vl-maybe-exprtype-p
@@ -4240,7 +4240,7 @@ context-determined expressions."
                      ACL2::TRUE-LISTP-MEMBER-EQUAL
                      (:ruleset tag-reasoning)
                      (:ruleset basic-arithmetic-rules)
-                     acl2::subsetp-equal-member
+                     acl2::subsetp-member
                      default-car
                      default-cdr
                      VL-MODELEMENT-P-WHEN-VL-VARDECL-P
@@ -4333,7 +4333,7 @@ context-determined expressions."
                      default-car
                      default-cdr
                      vl-module-p-when-wrong-tag
-                     acl2::subsetp-equal-member
+                     acl2::subsetp-member
                      natp-when-posp
                      integerp-when-natp
                      acl2::posp-rw

@@ -91,7 +91,7 @@
                            subsetp-equal-when-first-two-same-yada-yada
                            no-duplicatesp-equal
                            ;; No longer included after emod changes
-                           ;; acl2::subsetp-equal-implies-subsetp-equal-cdr
+                           ;; acl2::subsetp-implies-subsetp-cdr
                            true-listp)))
 
 

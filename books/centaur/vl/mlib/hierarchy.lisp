@@ -1692,7 +1692,7 @@ vl-maximal-deporder).  Otherwise, we will wait for a subsequent pass.</p>"
 
   ;; BOZO i broke it.  is this important?
   ;;
-  ;; (defcong set-equivp equal (vl-deporder-pass mods alist sorted-cars) 3
+  ;; (defcong set-equiv equal (vl-deporder-pass mods alist sorted-cars) 3
   ;;   :hints(("Goal" :in-theory (enable vl-deporder-pass))))
 
   )

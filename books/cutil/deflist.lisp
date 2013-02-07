@@ -352,6 +352,12 @@ of which recognizers require true-listp and which don't.</p>")
            (subsetp-equal x y))))
 
 
+(defmacro previously-forced (x)
+  ;; Sol has pretty much convinced me that we shouldn't be forcing things here.
+  ;; I'm just leaving this as an annotation of what we were previously forcing,
+  ;; to make it easy to revisit this decision later.
+  x)
+
 
 (defun deflist-fn (name formals element negatedp
                         guard verify-guards guard-debug guard-hints
@@ -766,7 +772,7 @@ list.</p>"
           (local (in-theory (disable ,name)))
 
           (defthm ,(mksym name '-of-nthcdr)
-            (implies (force (,name ,@formals))
+            (implies (previously-forced (,name ,@formals))
                      (equal (,name ,@(subst `(nthcdr ,n ,x) x formals))
                             t))
             :hints(("Goal"
@@ -776,7 +782,7 @@ list.</p>"
                    ))
 
           (defthm ,(mksym name '-of-simpler-take)
-            (implies (force (,name ,@formals))
+            (implies (previously-forced (,name ,@formals))
                      (equal (,name ,@(subst `(simpler-take ,n ,x) x formals))
                             ,(cond ((eq elementp-of-nil nil)
                                     (if negatedp
@@ -818,7 +824,7 @@ list.</p>"
                    ))
 
           (defthm ,(mksym name '-of-last)
-            (implies (force (,name ,@formals))
+            (implies (previously-forced (,name ,@formals))
                      (equal (,name ,@(subst `(last ,x) x formals))
                             t))
             :hints(("Goal"
@@ -828,21 +834,12 @@ list.</p>"
                    ))
 
           (defthm ,(mksym name '-of-butlast)
-            ;; This is kind of awful, but butlast is a very nasty function in that it
-            ;; doesn't nfix its count argument, and so you have crazy cases to deal
-            ;; with like (butlast '(1 2 3) -1) ==> '(1 2 3 NIL).
-            ,(cond ((or (and (equal elementp-of-nil t)
-                             (not negatedp))
-                        (and (equal elementp-of-nil nil)
-                             negatedp))
-                    `(implies (force (,name ,@formals))
-                              (equal (,name ,@(subst `(butlast ,x ,n) x formals))
-                                     t)))
-                   (t
-                    `(implies (and (force (,name ,@formals))
-                                   (force (natp ,n)))
-                              (equal (,name ,@(subst `(butlast ,x ,n) x formals))
-                                     t))))
+            ;; Historically this was much more complicated, but after Matt
+            ;; fixed up butlast to not be totally crazy in the -N case
+            ;; (introduce NILs, etc.)  it simplifies down nicely.
+            (implies (previously-forced (,name ,@formals))
+                     (equal (,name ,@(subst `(butlast ,x ,n) x formals))
+                            t))
             :hints(("Goal" :in-theory (enable butlast))
                    ;;,last-ditch-hint
                    ))
@@ -916,7 +913,7 @@ list.</p>"
             ;; aggressive, but I think most of the time, if you're expecting a
             ;; set-difference to be all of one type, it's probably because you're
             ;; expecting X to all be of that type.
-            (implies (force (,name ,@formals))
+            (implies (previously-forced (,name ,@formals))
                      (equal (,name ,@(subst `(set-difference-equal ,x ,y) x formals))
                             t))
             :hints(("Goal"
@@ -929,16 +926,18 @@ list.</p>"
                    ))
 
           (defthm ,(mksym name '-of-union-equal)
-            (implies (and (force (,name ,@formals))
-                          (force (,name ,@(subst y x formals))))
-                     (equal (,name ,@(subst `(union-equal ,x ,y) x formals))
-                            t))
+            (equal (,name ,@(subst `(union-equal ,x ,y) x formals))
+                   (and ,(if true-listp
+                             `(,name ,@(subst `(list-fix ,x) x formals))
+                           `(,name ,@formals))
+                        (,name ,@(subst y x formals))))
             :hints(("Goal"
                     :induct (len ,x)
                     :in-theory (enable union-equal)
-                    :expand ((,name ,@formals)
-                             (:free (,x ,y)
-                                    (,name ,@(subst `(cons ,x ,y) x formals)))))
+                    ;; :expand ((,name ,@formals)
+                    ;;          (:free (,x ,y)
+                    ;;                 (,name ,@(subst `(cons ,x ,y) x formals))))
+                    )
                    ;;,last-ditch-hint
                    ))
 
@@ -947,7 +946,7 @@ list.</p>"
 ; TODO: create a suitable lemmas for the true-listp cases of the following.
 
                  `((defthm ,(mksym name '-of-difference)
-                     (implies (force (,name ,@formals))
+                     (implies (previously-forced (,name ,@formals))
                               (equal (,name ,@(subst `(difference ,x ,y) x formals))
                                      t))
                      ;;:hints(,last-ditch-hint)
@@ -968,8 +967,8 @@ list.</p>"
                      )
 
                    (defthm ,(mksym name '-of-union)
-                     (implies (and (force (,name ,@formals))
-                                   (force (,name ,@(subst y x formals))))
+                     (implies (and (previously-forced (,name ,@formals))
+                                   (previously-forced (,name ,@(subst y x formals))))
                               (,name ,@(subst `(union ,x ,y) x formals)))
                      :hints(("Goal"
                              :use ((:instance deflist-lemma-5 (x ,x) (y ,y))
@@ -979,7 +978,7 @@ list.</p>"
                             ))
 
                    (defthm ,(mksym name '-of-duplicated-members)
-                     (implies (force (,name ,@formals))
+                     (implies (previously-forced (,name ,@formals))
                               (equal (,name ,@(subst `(duplicated-members ,x) x formals))
                                      t))
                      ;;:hints(,last-ditch-hint)

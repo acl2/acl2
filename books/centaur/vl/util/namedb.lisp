@@ -249,9 +249,9 @@ number."
              (vl-prefix-map-correct-p-aux x pmap names))
     :hints(("Goal" :induct (len x))))
 
-  (defcong set-equivp equal (vl-prefix-map-correct-p-aux x pmap names) 1
+  (defcong set-equiv equal (vl-prefix-map-correct-p-aux x pmap names) 1
     :hints(("goal"
-            :in-theory (enable set-equivp)
+            :in-theory (enable set-equiv)
             :cases ((vl-prefix-map-correct-p-aux x pmap names)))))
 
   (defthm vl-prefix-map-correct-p-aux-of-hons-shrink-alist
@@ -287,7 +287,7 @@ number."
                               (alistp pset)
                               (vl-string-keys-p pset))))
   (and (or names (not pmap))
-       (set-equivp (strip-cars pset) (strip-cars pmap))))
+       (set-equiv (strip-cars pset) (strip-cars pmap))))
 
 (defaggregate vl-namedb
   (names pmap pset)
@@ -419,9 +419,9 @@ vl-compatible-with-prefix-set-p) for details.</p>")
           :in-theory (disable vl-namedb-okp-when-vl-namedb-p)
           :use ((:instance vl-namedb-okp-when-vl-namedb-p)))))
 
-(defthm vl-namedb->pset-under-set-equivp
+(defthm vl-namedb->pset-under-set-equiv
   (implies (force (vl-namedb-p x))
-           (set-equivp (strip-cars (vl-namedb->pset x))
+           (set-equiv (strip-cars (vl-namedb->pset x))
                           (strip-cars (vl-namedb->pmap x))))
   :hints(("Goal"
           :in-theory (disable vl-namedb-okp-when-vl-namedb-p)
@@ -656,9 +656,9 @@ matches a current prefix.</p>"
                      (vl-unlike-any-prefix-p name x))
             :hints(("Goal" :induct (len x)))))
 
-   (defcong set-equivp equal (vl-unlike-any-prefix-p name prefixes) 2
+   (defcong set-equiv equal (vl-unlike-any-prefix-p name prefixes) 2
      :hints(("Goal"
-             :in-theory (e/d (set-equivp)
+             :in-theory (e/d (set-equiv)
                              (vl-unlike-any-prefix-p))
              :cases ((vl-unlike-any-prefix-p name prefixes))))))
 
@@ -756,7 +756,7 @@ note is printed and @('fresh-name') looks like @('name_n') instead."
   (defthm stringp-of-vl-namedb-plain-name
     (implies (force (stringp name))
              (stringp (mv-nth 0 (vl-namedb-plain-name name db))))
-    :hints(("Goal" :in-theory (disable vl-namedb->pset-under-set-equivp)))
+    :hints(("Goal" :in-theory (disable vl-namedb->pset-under-set-equiv)))
     :rule-classes :type-prescription)
 
   (defthm vl-namedb-p-of-vl-namedb-plain-name

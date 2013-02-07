@@ -23,7 +23,7 @@
 (include-book "sexpr-advanced")
 (include-book "centaur/misc/hons-extra" :dir :system)
 (include-book "sexpr-vars-1pass")
-(include-book "unicode/two-nats-measure" :dir :system)
+(include-book "std/ks/two-nats-measure" :dir :system)
 (local (in-theory (disable sets::double-containment)))
 
 
@@ -380,7 +380,7 @@ substitution as an alist binding variables to subterms."
       (mv-let (ok alist1)
         (sexpr-unify pat term alist)
         (implies ok
-                 (set-equivp (alist-keys alist1)
+                 (set-equiv (alist-keys alist1)
                              (append (4v-sexpr-vars pat)
                                      (alist-keys alist)))))
       :flag sexpr-unify)
@@ -388,7 +388,7 @@ substitution as an alist binding variables to subterms."
       (mv-let (ok alist1)
         (sexpr-unify-list pat term alist)
         (implies ok
-                 (set-equivp (alist-keys alist1)
+                 (set-equiv (alist-keys alist1)
                              (append (4v-sexpr-vars-list pat)
                                      (alist-keys alist)))))
       :flag sexpr-unify-list))
@@ -2126,8 +2126,8 @@ simplifying using the known signals."
              (4v-alist-boolp a x))
     :hints(("Goal" :in-theory (enable 4v-alist-boolp subsetp-equal))))
 
-  (defcong set-equivp equal (4v-alist-boolp keys x) 1
-    :hints(("Goal" :in-theory (enable set-equivp)
+  (defcong set-equiv equal (4v-alist-boolp keys x) 1
+    :hints(("Goal" :in-theory (enable set-equiv)
             :cases ((4v-alist-boolp keys x)))))
 
   (defthm 4v-alist-boolp-of-append
@@ -2154,7 +2154,7 @@ simplifying using the known signals."
                            (alist nil) (term x) (pat rule))
                           (:instance sexpr-vars-list-of-collect-bound-key-vals
                            (x keys) (alist (mv-nth 1 (sexpr-unify rule x nil)))))
-             :in-theory (e/d (subsetp-equal-trans2)
+             :in-theory (e/d (subsetp-trans2)
                              (sexpr-vars-alist-of-unify
                               sexpr-vars-list-of-collect-bound-key-vals)))))
 

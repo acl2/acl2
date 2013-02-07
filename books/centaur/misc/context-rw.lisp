@@ -697,7 +697,7 @@ when it becomes available.
     (mv-let (ok subst)
       (unify-const pat x subst0)
       (implies ok
-               (set-equivp (alist-keys subst)
+               (set-equiv (alist-keys subst)
                            (append (simple-term-vars pat)
                                    (alist-keys subst0)))))
     :hints(("Goal" :in-theory (enable unify-const)
@@ -708,7 +708,7 @@ when it becomes available.
     (mv-let (ok subst)
       (simple-one-way-unify pat x subst0)
       (implies ok
-               (set-equivp (alist-keys subst)
+               (set-equiv (alist-keys subst)
                            (append (simple-term-vars pat)
                                    (alist-keys subst0)))))
     :hints ((and stable-under-simplificationp
@@ -719,7 +719,7 @@ when it becomes available.
     (mv-let (ok subst)
       (simple-one-way-unify-lst pat x subst0)
       (implies ok
-               (set-equivp (alist-keys subst)
+               (set-equiv (alist-keys subst)
                            (append (simple-term-vars-lst pat)
                                    (alist-keys subst0)))))
     :hints ((and stable-under-simplificationp
@@ -734,8 +734,8 @@ when it becomes available.
            (alists-agree keys1 a b))
   :hints(("Goal" :in-theory (enable subsetp-equal alists-agree))))
 
-(defcong set-equivp equal (alists-agree keys al1 al2) 1
-  :hints(("Goal" :in-theory (enable set-equivp)
+(defcong set-equiv equal (alists-agree keys al1 al2) 1
+  :hints(("Goal" :in-theory (enable set-equiv)
           :cases ((alists-agree keys al1 al2)))))
 
 

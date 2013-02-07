@@ -157,8 +157,8 @@
        (member-equal k x))
   :hints(("Goal" :in-theory (enable rev))))
 
-(defthm set-equivp-rev
-  (set-equivp (rev x) x)
+(defthm set-equiv-rev
+  (set-equiv (rev x) x)
   :hints ((witness)))
 
 
@@ -190,9 +190,9 @@
                             (collect-signal-list-member-witness
                              collect-signal-list member-equal pat-flatten gpl)))))
 
-(defcong set-equivp set-equivp (collect-signal-list key vals) 2
+(defcong set-equiv set-equiv (collect-signal-list key vals) 2
   :hints (("goal" :do-not-induct t)
-          (witness :ruleset set-equivp-witnessing)
+          (witness :ruleset set-equiv-witnessing)
           (witness :ruleset collect-signal-list-member-witnessing)))
 
 

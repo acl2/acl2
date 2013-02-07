@@ -39,7 +39,7 @@
                            double-containment
                            default-car
                            default-cdr
-                           acl2::subsetp-equal-append1
+                           acl2::subsetp-append1
                            vl-echar-p-when-member-equal-of-vl-echarlist-p)))
 
 

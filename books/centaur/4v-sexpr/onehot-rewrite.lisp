@@ -137,8 +137,8 @@ sexprs.</p>")
      (equal (member-equal a (list-fix x))
             (list-fix (member-equal a x))))
 
-   (defthm list-fix-under-set-equivp
-     (set-equivp (list-fix x)
+   (defthm list-fix-under-set-equiv
+     (set-equiv (list-fix x)
                  x)
      :hints((witness)))
 
@@ -284,14 +284,14 @@ sexprs.</p>")
      (implies (subsetp-equal (double-rewrite a) (double-rewrite b))
               (subsetp-equal (4v-sexpr-vars-list a)
                              (4v-sexpr-vars-list b)))
-     :hints((witness :ruleset subsetp-equal-witnessing)))
+     :hints((witness :ruleset subsetp-witnessing)))
 
-   (defcong set-equivp set-equivp (4v-sexpr-vars-list x) 1
-     :hints(("Goal" :in-theory (enable set-equivp))))
+   (defcong set-equiv set-equiv (4v-sexpr-vars-list x) 1
+     :hints(("Goal" :in-theory (enable set-equiv))))
 
 
    (defthm 4v-sexpr-vars-list-of-append
-     (set-equivp (4v-sexpr-vars-list (append x y))
+     (set-equiv (4v-sexpr-vars-list (append x y))
                  (append (4v-sexpr-vars-list x)
                          (4v-sexpr-vars-list y)))
      :hints(("Goal" :induct (len x))))
@@ -305,7 +305,7 @@ sexprs.</p>")
               :hints(("Goal" :induct (len x)))))
 
      (defthm 4v-sexpr-vars-list-alist-vals-rev
-       (set-equivp (alist-vals (rev x))
+       (set-equiv (alist-vals (rev x))
                    (rev (alist-vals x)))
        :hints((witness))))
 
@@ -315,8 +315,8 @@ sexprs.</p>")
               (iff (member-equal a (rev x))
                    (member-equal a x))))
 
-     (defthm rev-under-set-equivp
-       (set-equivp (rev x)
+     (defthm rev-under-set-equiv
+       (set-equiv (rev x)
                    x)
        :hints((witness))))
 
@@ -453,7 +453,7 @@ sexprs.</p>")
 
   (defthm 4v-sexpr-vars-list-of-4vs-ite*-list-dumb
     (implies (equal (len a) (len b))
-             (set-equivp (4v-sexpr-vars-list (4vs-ite*-list-dumb c a b))
+             (set-equiv (4v-sexpr-vars-list (4vs-ite*-list-dumb c a b))
                          (if (consp a)
                              (hons-alphorder-merge (4v-sexpr-vars c)
                                                    (hons-alphorder-merge (4v-sexpr-vars-list a)
@@ -558,7 +558,7 @@ honsing sexprs we get a lot of reuse here.</p>
     :hints(("Goal" :induct (my-induct sexprs env))))
 
   (defthm 4v-sexpr-vars-of-4vs-onehot
-    (set-equivp (4v-sexpr-vars (4vs-onehot sexprs))
+    (set-equiv (4v-sexpr-vars (4vs-onehot sexprs))
                 (4v-sexpr-vars-list sexprs))
     :hints(("Goal" :in-theory (enable 4vs-onehot))
            (witness))))
@@ -1475,7 +1475,7 @@ any other sexprs unchanged.</p>"
                      :do-not-induct t))))
 
     (defthm alist-keys-of-4v-onehot-rw-sexpr-alist
-      (set-equivp (alist-keys (4v-onehot-rw-sexpr-alist vars sexpr-alist))
+      (set-equiv (alist-keys (4v-onehot-rw-sexpr-alist vars sexpr-alist))
                   (alist-keys sexpr-alist))
       :hints(("Goal" :in-theory (disable 4v-onehot-rw-sexpr-alist))
              (witness))))
@@ -1645,5 +1645,5 @@ any other sexprs unchanged.</p>"
       (implies (atom-listp vars)
                (subsetp-equal (4v-sexpr-vars-list (alist-vals new-alist))
                               (append vars (4v-sexpr-vars-list (alist-vals sexpr-alist))))))
-    :hints((witness :ruleset subsetp-equal-witnessing))))
+    :hints((witness :ruleset subsetp-witnessing))))
 

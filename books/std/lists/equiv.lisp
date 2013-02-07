@@ -121,3 +121,7 @@
                        (cdr-cdr-ind x x-equiv)))))
 
 (defcong list-equiv equal (take n x) 2)
+
+(defthm append-nil-under-list-equiv
+  (list-equiv (append x nil) x))
+

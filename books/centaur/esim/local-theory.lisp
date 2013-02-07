@@ -88,8 +88,8 @@
        (member-equal k x))
   :hints(("Goal" :in-theory (enable rev))))
 
-(defthm set-equivp-rev
-  (set-equivp (rev x) x)
+(defthm set-equiv-rev
+  (set-equiv (rev x) x)
   :hints ((witness)))
 
 (defthm alist-keys-append

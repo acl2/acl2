@@ -168,18 +168,18 @@
    (iff (member-equal a (mergesort x))
         (member-equal a (double-rewrite x))))
 
-(defcong set-equivp equal (mergesort x) 1)
+(defcong set-equiv equal (mergesort x) 1)
 
-(defthm mergesort-under-set-equivp
-  (set-equivp (mergesort x) x))
+(defthm mergesort-under-set-equiv
+  (set-equiv (mergesort x) x))
 
 ;; (defthm subsetp-equal-of-mergesort-left
-;;   ;; BOZO seems redundant with mergesort-under-set-equivp
+;;   ;; BOZO seems redundant with mergesort-under-set-equiv
 ;;   (equal (subsetp-equal (mergesort x) y)
 ;;          (subsetp-equal x y)))
 
 ;; (defthm subsetp-equal-of-mergesort-right
-;;   ;; BOZO seems redundant with mergesort-under-set-equivp
+;;   ;; BOZO seems redundant with mergesort-under-set-equiv
 ;;   (equal (subsetp-equal x (mergesort y))
 ;;          (subsetp-equal x y)))
 

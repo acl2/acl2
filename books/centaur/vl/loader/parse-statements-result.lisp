@@ -55,7 +55,7 @@
                            double-containment
                            member-equal-when-member-equal-of-cdr-under-iff
                            consp-by-len
-                           acl2::acl2-count-when-member-equal
+                           acl2::acl2-count-when-member
                            consp-when-member-equal-of-cons-listp
                            consp-when-member-equal-of-cons-listp
                            true-listp-when-character-listp

@@ -475,7 +475,7 @@
                                          hyp clk))
      :hints(("Goal" :in-theory (disable member-eq
                                         atom-key-gobj-val-alistp
-                                        member-equal-of-cons
+                                        member-of-cons
                                         gl::gobjectp-cons-case
                                         aig-bddify-list)))))
 

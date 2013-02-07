@@ -286,9 +286,9 @@
                               4v-alists-agree-self
                               hons-subset-subsetp-equal
                               4v-sexpr-vars-list-append
-                              set-equivp-implies-equal-subsetp-equal-1
-                              set-equivp-is-an-equivalence
-                              subsetp-equal-append1
+                              set-equiv-implies-equal-subsetp-1
+                              set-equiv-is-an-equivalence
+                              subsetp-append1
                               append-4v-alist-extract))
            :expand ((good-esim-modulep mod)))))
 
@@ -458,7 +458,7 @@
          (append (alist-vals a) (alist-vals b))))
 
 (defthm alist-vals-4v-sexpr-vars-list
-  (set-equivp (4v-sexpr-vars-list (append a b))
+  (set-equiv (4v-sexpr-vars-list (append a b))
               (append (4v-sexpr-vars-list a) (4v-sexpr-vars-list b))))
 
 (defthm 4v-sexpr-vars-of-esim-sexpr-out
@@ -1480,7 +1480,7 @@
 (local
  (defthm 4v-alists-agree-lemma1
    (implies (and (not (intersectp-equal inkeys outkeys))
-                 (set-equivp outkeys (alist-keys fixpoint))
+                 (set-equiv outkeys (alist-keys fixpoint))
                  (subsetp-equal inkeys inkeys1))
             (iff (4v-alists-agree
                   inkeys
@@ -1494,11 +1494,11 @@
                                    (4v-fix ; 4v-lookup
                                     4v-alists-agree
 ; alist-keys-member-hons-assoc-equal
-; subsetp-car-member-equal
+; subsetp-car-member
                                     default-car default-cdr
                                     consp-hons-assoc-equal
-                                    subsetp-equal-trans
-                                    subsetp-equal-atom
+                                    subsetp-trans
+                                    subsetp-when-atom-left
                                     hons-assoc-equal
 ; 4v-fix-when-4vp
                                     (:rules-of-class :type-prescription :here)))
@@ -1508,7 +1508,7 @@
           )))
 
 (defthm alist-equiv-append-when-keys-nil
-  (implies (set-equivp nil (alist-keys a))
+  (implies (set-equiv nil (alist-keys a))
            (alist-equiv (append a b) b))
   :hints (("goal" :in-theory (e/d (hons-assoc-equal-iff-member-alist-keys)
                                   (alist-keys-member-hons-assoc-equal)))
@@ -1526,7 +1526,7 @@
 
 (defthm 4v-alists-agree-rewrite
   (implies (and (good-esim-modulep mod)
-                (set-equivp
+                (set-equiv
                  (collect-signal-list :o (mod-occs mod))
                  (alist-keys fixpoint)))
            (iff (4v-alists-agree
@@ -1615,14 +1615,14 @@
   :hints (("goal" :in-theory (e/d* (subsetp-equal)
                                    (sexpr-eval-list-norm-env-when-ground-args-p 
                                     nth-with-large-index
-                                    member-equal-of-cons
+                                    member-of-cons
                                     4v-sexpr-eval
                                     4v-sexpr-eval-when-agree-on-keys
                                     4v-alists-agree
                                     append alist-equiv-append-when-keys-nil
-                                    set-equivp-asym
-                                    subsetp-equal-cons-2
-                                    subsetp-car-member-equal
+                                    set-equiv-asym
+                                    subsetp-cons-2
+                                    subsetp-car-member
                                     default-car default-cdr
                                     member-equal
                                     4v-fix (:ruleset 4v-op-defs))))))
@@ -1648,7 +1648,7 @@
   :hints ((set-reasoning)))
 
 ;; BOZO this shouldn't be necessary, rework the above theorems to fix it
-(local (in-theory (disable commutativity-of-append-under-set-equivp)))
+(local (in-theory (disable commutativity-of-append-under-set-equiv)))
 
 (defthm eval-alist-append-collect-i-state
   (implies (and (good-esim-modulep mod) (not (gpl :x mod)))
@@ -1690,8 +1690,8 @@
                            esim-sexpr-occs-out
                            good-esim-modulep not
                            4v-sexpr-eval 4v-fix
-                           ;set-equivp-trans
-                           set-equivp-implies-key-and-env-equiv-4v-alist-extract-1
+                           ;set-equiv-trans
+                           set-equiv-implies-key-and-env-equiv-4v-alist-extract-1
                            intersectp-equal-non-cons-1
                            intersectp-equal-non-cons
                            4v-alist-extract-when-subset
@@ -1711,10 +1711,10 @@
                            4v-alists-agree-commute
                            4v-alists-agree
                            4v-sexpr-eval-alist
-                           set-equivp-asym pat-flatten
+                           set-equiv-asym pat-flatten
                            ; 4v-fix-when-4vp
                            esim-sexpr-correct-occsp
-                           member-equal-when-atom member-equal
+                           member-when-atom member-equal
                            alist-vals-when-atom
                            collect-signal-list
                            occmap-when-no-occs
@@ -1728,7 +1728,7 @@
     (implies (and (4v-sexpr-fixpoint-lower-boundp
                    (esim-sexpr-occs-out mod (alist-keys (occmap mod)))
                    fixpoint)
-                  (set-equivp
+                  (set-equiv
                    (collect-signal-list :o (mod-occs mod))
                    (alist-keys fixpoint))
                   (and (good-esim-modulep mod) (not (gpl :x mod)))
@@ -1841,7 +1841,7 @@
                              hons-assoc-equal
                              ; 4v-fix-when-4vp
                              4v-alists-agree
-                             member-equal member-equal-when-atom
+                             member-equal member-when-atom
                              alist-equiv-append-when-keys-nil
                              good-esim-modulep
                              occmap-when-no-occs
@@ -1872,20 +1872,20 @@
                      4v-fix default-car default-cdr
                      good-esim-modulep-ins-not-intersecting-states
                      ; good-esim-modulep-st-subset-not-intersecting-inputs
-                     subsetp-car-member-equal
-                     subsetp-equal-atom
+                     subsetp-car-member
+                     subsetp-when-atom-left
                      alist-keys-when-atom
                      pat-flatten
                      append fal-extract
                      good-esim-occp
                      esim-fixpoint-p-occs
-                     4v-alists-agree set-equivp-asym
+                     4v-alists-agree set-equiv-asym
                      (:rules-of-class :type-prescription :here))))
   (defthm 4v-sexpr-fixpointp-implies-esim-fixpoint-p-2
     (implies (and (4v-sexpr-fixpointp
                    (esim-sexpr-occs-out mod (alist-keys (occmap mod)))
                    fixpoint)
-                  (set-equivp
+                  (set-equiv
                    (collect-signal-list :o (mod-occs mod))
                    (alist-keys fixpoint))
                   (good-esim-modulep mod) (not (gpl :x mod))
@@ -1925,7 +1925,7 @@
   (implies (and (4v-sexpr-fixpoint-lower-boundp
                  (esim-sexpr-occs-out mod (alist-keys (occmap mod)))
                  fixpoint)
-                (set-equivp
+                (set-equiv
                  (collect-signal-list :o (mod-occs mod))
                  (alist-keys fixpoint))
                 (good-esim-modulep mod) (not (gpl :x mod))
@@ -1943,7 +1943,7 @@
     (implies (and (4v-sexpr-fixpointp
                    (esim-sexpr-occs-out mod (alist-keys (occmap mod)))
                    fixpoint)
-                  (set-equivp
+                  (set-equiv
                    (collect-signal-list :o (mod-occs mod))
                    (alist-keys fixpoint))
                   (good-esim-modulep mod) (not (gpl :x mod))
@@ -1962,7 +1962,7 @@
                 (4v-sexpr-fixpoint-lower-boundp
                  (esim-sexpr-occs-out mod (alist-keys (occmap mod)))
                  fixpoint)
-                (set-equivp
+                (set-equiv
                    (collect-signal-list :o (mod-occs mod))
                    (alist-keys fixpoint))
                 (good-esim-modulep mod) (not (gpl :x mod))
@@ -2003,8 +2003,8 @@
                                4v-alist-extract-when-subset
                                pat-flatten
                                4v-alistp
-                               set-equivp-asym default-car default-cdr
-                               subsetp-equal-atom
+                               set-equiv-asym default-car default-cdr
+                               subsetp-when-atom-left
                                keys-equiv-when-alist-keys
                                input-subset-bound-impl-esim-wf-signals
                                alist-keys-when-atom
@@ -2020,12 +2020,12 @@
 
 (defthm alist-keys-sexpr-fixpoint-with-varmap
   (implies (good-sexpr-varmap varmap ups)
-           (set-equivp (alist-keys (sexpr-fixpoint-with-varmap ups varmap))
+           (set-equiv (alist-keys (sexpr-fixpoint-with-varmap ups varmap))
                        (alist-keys ups))))
 
 (defthm alist-keys-esim-sexpr-fixpoint-out
   (implies (and (good-esim-modulep mod) (not (gpl :x mod)))
-           (set-equivp (alist-keys (esim-sexpr-fixpoint-out mod))
+           (set-equiv (alist-keys (esim-sexpr-fixpoint-out mod))
                        (collect-signal-list :o (mod-occs mod))))
   :hints(("Goal" :expand ((esim-sexpr-fixpoint-out mod))
           :in-theory (disable esim-sexpr-occs-out
@@ -2165,8 +2165,8 @@
                              4v-sexpr-eval-fixpoint-lemma2
                              esim-sexpr-fixpoint-gives-esim-least-fixpoint
                              4v-sexpr-least-fixpointp-implies-esim-least-fixpoint
-                             subsetp-equal-atom
-                             subsetp-equal-trans
+                             subsetp-when-atom-left
+                             subsetp-trans
                              intersectp-equal-non-cons
                              intersectp-equal-non-cons-1
                              alist-keys-when-atom
@@ -2239,7 +2239,7 @@
                             esim-occs 4v-alist-extract esim-fixpoint
                             default-car default-cdr hons-assoc-equal
                             4v-alist-extract-when-subset
-                            subsetp-equal-atom
+                            subsetp-when-atom-left
                             alist-keys-when-atom
                             alist-vals-when-atom
                             alist-equiv-append-when-keys-nil
@@ -2516,7 +2516,7 @@
                               good-esim-modulep good-esim-primitivep
                               hons-dups-p-is-no-duplicatesp
                               no-duplicatesp-equal-append-iff
-                              subsetp-equal-refl)
+                              subsetp-refl)
           :expand ((good-esim-modulep mod)))))
 
 

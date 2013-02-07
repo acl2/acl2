@@ -53,7 +53,7 @@
 (defthm 4v-sexpr-alist-<=-append
   (implies (and (4v-sexpr-alist-<= a b)
                 (4v-sexpr-alist-<= c d)
-                (set-equivp (alist-keys a) (alist-keys b)))
+                (set-equiv (alist-keys a) (alist-keys b)))
            (4v-sexpr-alist-<= (append a c) (append b d)))
   :hints (("goal" :do-not-induct t
            :in-theory (e/d (hons-assoc-equal-iff-member-alist-keys)
@@ -91,7 +91,7 @@
 (defthm 4v-sexpr-restrict-monotonic
   (implies (and (4v-sexpr-<= a b)
                 (4v-sexpr-alist-<= c d)
-                (set-equivp (alist-keys c) (alist-keys d)))
+                (set-equiv (alist-keys c) (alist-keys d)))
            (4v-sexpr-<= (4v-sexpr-restrict a c)
                         (4v-sexpr-restrict b d)))
   :hints (("goal" :in-theory (disable 4v-fix 4v-<=)
@@ -101,7 +101,7 @@
 (defthm 4v-sexpr-restrict-alist-monotonic
   (implies (and (4v-sexpr-alist-<= a b)
                 (4v-sexpr-alist-<= c d)
-                (set-equivp (double-rewrite (alist-keys c))
+                (set-equiv (double-rewrite (alist-keys c))
                             (double-rewrite (alist-keys d))))
            (4v-sexpr-alist-<= (4v-sexpr-restrict-alist a c)
                               (4v-sexpr-restrict-alist b d)))
@@ -119,7 +119,7 @@
 (defthm 4v-sexpr-compose-monotonic
   (implies (and (4v-sexpr-<= a b)
                 (4v-sexpr-alist-<= c d)
-                ;; (set-equivp (alist-keys c) (alist-keys d))
+                ;; (set-equiv (alist-keys c) (alist-keys d))
                 )
            (4v-sexpr-<= (4v-sexpr-compose a c)
                         (4v-sexpr-compose b d)))
@@ -130,7 +130,7 @@
 (defthm 4v-sexpr-compose-alist-monotonic
   (implies (and (4v-sexpr-alist-<= a b)
                 (4v-sexpr-alist-<= c d)
-                ;; (set-equivp (double-rewrite (alist-keys c))
+                ;; (set-equiv (double-rewrite (alist-keys c))
                 ;;             (double-rewrite (alist-keys d)))
                 )
            (4v-sexpr-alist-<= (4v-sexpr-compose-alist a c)

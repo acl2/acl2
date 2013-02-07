@@ -101,11 +101,11 @@ and @('hons-alphorder-merge') is nothing more than @(see sets::union).</p>"
              (member-equal k b))))
 
   (defthm hons-set-equiv-hons-alphorder-merge-append
-    (set-equivp (hons-alphorder-merge a b)
+    (set-equiv (hons-alphorder-merge a b)
                 (append a b))
     :hints ((set-reasoning)))
 
-  (local (in-theory (disable sets::insert-under-set-equivp
+  (local (in-theory (disable sets::insert-under-set-equiv
                              sets::double-containment
                              default-car
                              default-cdr)))
@@ -234,15 +234,15 @@ and @('hons-alphorder-merge') is nothing more than @(see sets::union).</p>"
 ;;              (and (consp b)
 ;;                   (cdr-two-ind (cdr a) (cdr b))))))
 
-;;   (local (defexample set-equivp-silly-example1
-;;            :pattern (set-equivp a b)
+;;   (local (defexample set-equiv-silly-example1
+;;            :pattern (set-equiv a b)
 ;;            :templates ((car a))
-;;            :instance-rulename set-equivp-instancing))
+;;            :instance-rulename set-equiv-instancing))
 
-;;   (local (defexample set-equivp-silly-example2
-;;            :pattern (set-equivp a b)
+;;   (local (defexample set-equiv-silly-example2
+;;            :pattern (set-equiv a b)
 ;;            :templates ((car b))
-;;            :instance-rulename set-equivp-instancing))
+;;            :instance-rulename set-equiv-instancing))
 
 ;;   (local (defthm not-consp-car-atom-listp
 ;;            (implies (atom-listp x)
@@ -265,7 +265,7 @@ and @('hons-alphorder-merge') is nothing more than @(see sets::union).</p>"
 ;;                     :do-not-induct t))))
 
 ;;   (defthm equal-when-set-equiv-and-strict-alphorder-sorted
-;;     (implies (and (set-equivp a b)
+;;     (implies (and (set-equiv a b)
 ;;                   (strict-alphorder-sortedp a)
 ;;                   (strict-alphorder-sortedp b)
 ;;                   (atom-listp a)
@@ -277,10 +277,10 @@ and @('hons-alphorder-merge') is nothing more than @(see sets::union).</p>"
 ;;              :expand ((strict-alphorder-sortedp a)
 ;;                       (strict-alphorder-sortedp b))
 ;;              :do-not-induct t)
-;;             (witness :ruleset (set-equivp-silly-example1
-;;                                set-equivp-silly-example2
-;;                                set-equivp-witnessing
-;;                                set-equivp-member-template)))
+;;             (witness :ruleset (set-equiv-silly-example1
+;;                                set-equiv-silly-example2
+;;                                set-equiv-witnessing
+;;                                set-equiv-member-template)))
 ;;     :rule-classes nil
 ;;     :otf-flg t))
 

@@ -115,24 +115,24 @@
 (local (set-default-hints '((set-reasoning))))
 
 (defthm hons-union-set-equiv-union-equal
-  (set-equivp (hons-union x y)
+  (set-equiv (hons-union x y)
                    (union-equal x y)))
 
 
 (defthm hons-set-diff-set-equiv-set-diff-equal
-  (set-equivp (hons-set-diff x y)
+  (set-equiv (hons-set-diff x y)
                    (set-difference-equal x y)))
 
-(defcong set-equivp iff (hons-member-equal a b) 2)
+(defcong set-equiv iff (hons-member-equal a b) 2)
 
-(defcong set-equivp set-equivp (hons-union x y) 1)
-(defcong set-equivp set-equivp (hons-union x y) 2)
+(defcong set-equiv set-equiv (hons-union x y) 1)
+(defcong set-equiv set-equiv (hons-union x y) 2)
 
-(defcong set-equivp set-equivp (hons-intersection x y) 1)
-(defcong set-equivp set-equivp (hons-intersection x y) 2)
+(defcong set-equiv set-equiv (hons-intersection x y) 1)
+(defcong set-equiv set-equiv (hons-intersection x y) 2)
 
-(defcong set-equivp set-equivp (hons-set-diff x y) 1)
-(defcong set-equivp set-equivp (hons-set-diff x y) 2)
+(defcong set-equiv set-equiv (hons-set-diff x y) 1)
+(defcong set-equiv set-equiv (hons-set-diff x y) 2)
 
 
 
@@ -193,8 +193,8 @@
                    (iff x y)))
    :rule-classes ((:rewrite :backchain-limit-lst 1))))
 
-(defcong set-equivp equal (hons-subset x y) 1)
-(defcong set-equivp equal (hons-subset x y) 2)
+(defcong set-equiv equal (hons-subset x y) 1)
+(defcong set-equiv equal (hons-subset x y) 2)
 
 
 
@@ -273,9 +273,9 @@
   :hints(("Goal" :in-theory (enable hons-assoc-equal))))
 
 
-(defthm set-equivp-hons-remove-duplicates
-  (set-equivp (hons-remove-duplicates lst) lst)
-  :hints (("goal" :in-theory (Disable set-equivp))))
+(defthm set-equiv-hons-remove-duplicates
+  (set-equiv (hons-remove-duplicates lst) lst)
+  :hints (("goal" :in-theory (Disable set-equiv))))
 
 
 
@@ -295,7 +295,7 @@
            :hints(("Goal" :in-theory (enable hons-put-list alist-keys)))))
 
   (local (defthm l2
-           (set-equivp (alist-keys (hons-put-list x y z))
+           (set-equiv (alist-keys (hons-put-list x y z))
                        (append x (alist-keys z)))
            :hints((witness))))
 

@@ -100,7 +100,7 @@
   :hints(("Goal" :in-theory (enable alist-equiv-when-agree-on-bad-guy))))
 
 
-(defcong alist-equiv set-equivp (alist-keys a) 1
+(defcong alist-equiv set-equiv (alist-keys a) 1
   :hints((set-reasoning)))
 
 
@@ -125,7 +125,7 @@
   (defcong alist-equiv alist-equiv (fal-extract keys al) 2
     :hints(("Goal" :in-theory (enable alist-equiv-when-agree-on-bad-guy))))
 
-  (defcong set-equivp alist-equiv (fal-extract keys al) 1
+  (defcong set-equiv alist-equiv (fal-extract keys al) 1
     :hints(("Goal" :in-theory (enable alist-equiv-iff-agree-on-bad-guy))
            (set-reasoning))))
 
@@ -134,7 +134,7 @@
 
 
 (defthm alist-keys-hons-put-list
-  (set-equivp (alist-keys (hons-put-list vars vals rest))
+  (set-equiv (alist-keys (hons-put-list vars vals rest))
                    (union-equal vars (alist-keys rest)))
   :hints (("goal" :in-theory (enable alist-keys))
           (set-reasoning)))
@@ -208,8 +208,8 @@
 
 (defcong alist-equiv equal (al-covers-keys keys al) 2)
 
-(defcong set-equivp equal (al-covers-keys keys al) 1
-  :hints (("goal" :in-theory (disable set-equivp))))
+(defcong set-equiv equal (al-covers-keys keys al) 1
+  :hints (("goal" :in-theory (disable set-equiv))))
 
 
 
@@ -337,7 +337,7 @@
 
 
 (defsection keys-equiv
-  ;; Note:  Keys-equiv is equivalent to (set-equivp (alist-keys x)...)
+  ;; Note:  Keys-equiv is equivalent to (set-equiv (alist-keys x)...)
   ;; but sometimes it's convenient to have as its own equivalence relation.
 
   (def-universal-equiv keys-equiv
@@ -357,16 +357,16 @@
   (defcong keys-equiv iff (hons-assoc-equal k x) 2
     :hints ((witness)))
 
-  (defcong keys-equiv set-equivp (alist-keys x) 1
-    :hints(("Goal" :in-theory (e/d () (set-equivp)))
+  (defcong keys-equiv set-equiv (alist-keys x) 1
+    :hints(("Goal" :in-theory (e/d () (set-equiv)))
            (witness)))
 
   (defthm keys-equiv-when-alist-keys
-    (implies (set-equivp (double-rewrite (alist-keys env1))
+    (implies (set-equiv (double-rewrite (alist-keys env1))
                          (double-rewrite (alist-keys env2)))
              (equal (keys-equiv env1 env2) t))
     :hints(("Goal" :in-theory (e/d (hons-assoc-equal-iff-member-alist-keys)
-                                   (set-equivp
+                                   (set-equiv
                                     alist-keys-member-hons-assoc-equal)))
            (witness))))
 

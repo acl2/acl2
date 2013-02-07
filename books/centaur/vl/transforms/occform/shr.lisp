@@ -135,6 +135,10 @@ operates on O(log_2 n) muxes.</p>"
            (nfix p))))
 
 
+(local (defthm l0
+         (implies (and (vl-exprlist-p x)
+                       (consp x))
+                  (car (last x)))))
 
 (def-vl-modgen vl-make-n-bit-shr-by-m-bits (n m)
   :short "Generate a module that shifts an @('N') bit number right by an @('M')

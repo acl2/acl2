@@ -27,7 +27,7 @@
 (in-package "ACL2")
 (include-book "ihs/basic-definitions" :dir :system)
 (include-book "tools/rulesets" :dir :system)
-(include-book "mfc-utils")
+(include-book "std/lists/mfc-utils" :dir :system)
 
 (defthm bitp-compound-recognizer
   ;; Questionable given the bitp-forward rule.  But I think we may still want

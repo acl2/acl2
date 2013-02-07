@@ -391,8 +391,8 @@ raw-lisp for better performance.</p>"
                                   double-containment
                                   MEMBER-EQUAL-WHEN-MEMBER-EQUAL-OF-CDR-UNDER-IFF
                                   MEMBER-EQUAL-WHEN-ALL-EQUALP
-                                  acl2::subsetp-equal-trans
-                                  acl2::subsetp-equal-trans2
+                                  acl2::subsetp-trans
+                                  acl2::subsetp-trans2
 
                                   )
               :expand ((vl-emodwire-decode-chars x)

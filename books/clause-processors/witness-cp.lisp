@@ -1375,7 +1375,7 @@ restrictions are not used~%")
 
  To set up witnessing for not-subsetp-equal hypotheses:
 
- (defwitness subsetp-equal-witnessing
+ (defwitness subsetp-witnessing
    :predicate (not (subsetp-equal a b))
    :expr (and (member-equal (subsetp-equal-witness a b) a)
               (not (member-equal (subsetp-equal-witness a b) b)))
@@ -1418,7 +1418,7 @@ restrictions are not used~%")
    :vars (k)
    :expr (implies (member-equal k a)
                   (member-equal k b))
-   :hints ('(:in-theory '(subsetp-equal-member))))
+   :hints ('(:in-theory '(subsetp-member))))
 
  This will mean that for each subsetp-equal hypothesis we find, we'll add
  hypotheses of the form (implies (member-equal k a) (member-equal k b)) for
@@ -1434,7 +1434,7 @@ restrictions are not used~%")
 
  The terms used to instantiate k above are determined by defexample rules,
  like the following:
-  (defexample subsetp-equal-member-template
+  (defexample subsetp-member-template
    :pattern (member-equal k a)
    :templates (k)
    :instance-rulename subsetp-equal-instancing)
@@ -1448,14 +1448,14 @@ restrictions are not used~%")
  To use the scheme we've introduced for reasoning about subsetp-equal, we can
  introduce a witness ruleset:
 
- (def-witness-ruleset subsetp-equal-witnessing-rules
-   '(subsetp-equal-witnessing
+ (def-witness-ruleset subsetp-witnessing-rules
+   '(subsetp-witnessing
      subsetp-equal-instancing
-     subsetp-equal-member-template))
+     subsetp-member-template))
 
  Then when we want to use this reasoning strategy, we can provide a computed
  hint:
- :hints ((witness :ruleset subsetp-equal-witnessing-rules))
+ :hints ((witness :ruleset subsetp-witnessing-rules))
 
  This implicitly waits til the formula is stable-under-simplification and
  invokes the witness-cp clause processor, allowing it to use the
@@ -1464,7 +1464,7 @@ restrictions are not used~%")
  applying defwitness and definstantiate rules.  You can also define a macro
  so that you don't have to remember this syntax:
 
- (defmacro subset-reasoning () '(witness :ruleset subsetp-equal-witnessing-rules))
+ (defmacro subset-reasoning () '(witness :ruleset subsetp-witnessing-rules))
  (defthm foo
    ...
   :hints ((\"goal\" ...)
@@ -1595,7 +1595,7 @@ restrictions are not used~%")
 
 (defconst *witness-set-cp-hints*
   '( ;; witness-rules: (pat rulename witness expr hint)
-    ((subsetp-equal-witnessing
+    ((subsetp-witnessing
       (subsetp-equal x y)
       (subsetp-equal-witness x y)
       (implies (member-equal (subsetp-equal-witness
@@ -1639,7 +1639,7 @@ restrictions are not used~%")
       (k)
       (not (implies (member-equal k x)
                     (member-equal k y)))
-      ('(:in-theory (e/d (subsetp-equal-member)
+      ('(:in-theory (e/d (subsetp-member)
                          (subsetp-equal
                           member-equal)))))
      (intersectp-equal-instancing
@@ -1788,7 +1788,7 @@ restrictions are not used~%")
  existential-quantifier hypothesis (or universal-quantifier conclusion).~/
 
  Usage example:
- (defwitness subsetp-equal-witnessing
+ (defwitness subsetp-witnessing
    :predicate (not (subsetp-equal a b))
    :expr (and (member-equal (subsetp-equal-witness a b) a)
               (not (member-equal (subsetp-equal-witness a b) b)))
@@ -1859,7 +1859,7 @@ restrictions are not used~%")
    :vars (k)
    :expr (implies (member-equal k a)
                   (member-equal k b))
-   :hints ('(:in-theory '(subsetp-equal-member))))
+   :hints ('(:in-theory '(subsetp-member))))
 
  Additional arguments:
    :restriction term
@@ -1901,20 +1901,21 @@ restrictions are not used~%")
                              instance-restriction witness-restriction
                              instance-hints witness-hints
                              witness-rulename instance-rulename
-                             generalize)
-  (b* (((unless (member quantifier '(:forall :exists)))
+                             generalize in-package-of)
+  (b* ((in-package-of (or in-package-of name))
+       ((unless (member quantifier '(:forall :exists)))
         (er hard? 'defquantexpr
             "Quantifier argument must be either :FORALL or :EXISTS~%"))
        (witness-rulename
         (or witness-rulename
             (intern-in-package-of-symbol
              (concatenate 'string (symbol-name name) "-WITNESSING")
-             name)))
+             in-package-of)))
        (instance-rulename
         (or instance-rulename
             (intern-in-package-of-symbol
              (concatenate 'string (symbol-name name) "-INSTANCING")
-             name)))
+             in-package-of)))
        ((mv witness-pred instance-pred witness-expr instance-expr)
         (if (eq quantifier :forall)
             (mv `(not ,predicate)
@@ -1948,6 +1949,7 @@ restrictions are not used~%")
                              instance-hints witness-hints
                              witness-rulename
                              instance-rulename
+                             in-package-of
                              (generalize 't))
   ":doc-section witness-cp
  Defquantexpr -- shortcut to perform both a DEFWITNESS and DEFINSTANTIATE~/
@@ -1961,12 +1963,12 @@ restrictions are not used~%")
   :expr (implies (member-equal k x)
                  (member-equal k y))
   :witness-hints ('(:in-theory '(subsetp-equal-witness-correct)))
-  :instance-hints ('(:in-theory '(subsetp-equal-member))))
+  :instance-hints ('(:in-theory '(subsetp-member))))
 ~ev[]
  This expands to a DEFWITNESS and DEFINSTANTIATE form.  The names of the
  defwitness and definstantiate rules produced are generated from the name
  (first argument) of the defquantexpr form; in this case they are
- subsetp-equal-witnessing and subsetp-equal-instancing.  Keyword arguments
+ subsetp-witnessing and subsetp-equal-instancing.  Keyword arguments
  witness-rulename and instance-rulename may be provided to override these
  defaults.
 
@@ -2035,7 +2037,7 @@ restrictions are not used~%")
 "
   (defquantexpr-fn name predicate quantifier expr witnesses
      instance-restriction witness-restriction
-     instance-hints witness-hints witness-rulename instance-rulename generalize))
+     instance-hints witness-hints witness-rulename instance-rulename generalize in-package-of))
 
 
 
@@ -2103,13 +2105,13 @@ definstantiate rules~/
 
 Example:
 ~bv[]
- (defexample set-reasoning-member-equal-template
+ (defexample set-reasoning-member-template
    :pattern (member-equal k y)
    :templates (k)
    :instance-rules
    (subsetp-equal-instancing
     intersectp-equal-instancing
-    set-equivp-instancing
+    set-equiv-instancing
     set-consp-instancing))
 ~ev[]
 
@@ -2284,8 +2286,10 @@ witness-disable just as they are used in the ruleset argument of WITNESS.
                          thm-name
                          rewrite
                          strengthen
-                         witness-dcls)
-  (b* ((qcall (cons name vars))
+                         witness-dcls
+                         in-package-of)
+  (b* ((in-package-of (or in-package-of name))
+       (qcall (cons name vars))
        ((when (not (and (eql (len quant-expr) 3)
                         (member-equal (symbol-name (car quant-expr))
                                      '("FORALL" "EXISTS"))
@@ -2302,14 +2306,14 @@ witness-disable just as they are used in the ruleset argument of WITNESS.
                         (intern-in-package-of-symbol
                          (concatenate 'string (symbol-name name)
                                       "-WITNESS")
-                         name)))
+                         in-package-of)))
        (witness-expr (cons skolem-name vars))
        (thm-name (or thm-name
                      (intern-in-package-of-symbol
                       (concatenate 'string (symbol-name name)
                                    (if exists-p
                                        "-SUFF" "-NECC"))
-                      name))))
+                      in-package-of))))
 
   `(progn
      ,@(and define `((defun-sk ,name ,vars ,quant-expr
@@ -2343,6 +2347,7 @@ witness-disable just as they are used in the ruleset argument of WITNESS.
                          thm-name
                          rewrite
                          strengthen
+                         in-package-of
                          (witness-dcls '((DECLARE (XARGS :NON-EXECUTABLE T)))))
   ":doc-section witness-cp
 Defquant -- define a quantified function and corresponding witness-cp rules~/
@@ -2369,7 +2374,8 @@ additional keywords:
     thm-name
     rewrite
     strengthen
-    witness-dcls))
+    witness-dcls
+    in-package-of))
 
 
 (defun witness-rule-e/d-event (rulename tablename enablep world)

@@ -233,8 +233,8 @@
 ;;        (member-equal x a))
 ;;   :hints(("Goal" :in-theory (enable hons-remove-duplicates))))
 
-;; (defthm set-equivp-hons-remove-duplicates
-;;   (set-equivp (hons-remove-duplicates x)
+;; (defthm set-equiv-hons-remove-duplicates
+;;   (set-equiv (hons-remove-duplicates x)
 ;;               (double-rewrite x))
 ;;   :hints ((set-reasoning)))
 
@@ -319,7 +319,7 @@
                                     (var signame))))))))
 
 (defthm hons-assoc-equal-update-deptable
-  (set-equivp (cdr (hons-assoc-equal k (update-deptable keys vals deptable)))
+  (set-equiv (cdr (hons-assoc-equal k (update-deptable keys vals deptable)))
               (if (member-equal k keys)
                   (append vals (cdr (hons-assoc-equal k deptable)))
                 (cdr (hons-assoc-equal k deptable)))))
@@ -343,7 +343,7 @@
   :hints (("goal" :induct (len update-fns)
            :in-theory (disable sexpr-update-fixpoints 4v-sexpr-restrict
                                update-deptable
-                               subsetp-car-member-equal
+                               subsetp-car-member
                                default-car default-cdr
                                find-sexpr-least-fixpoint)
            :do-not-induct t
@@ -367,7 +367,7 @@
 
 
 (defthm alist-keys-find-sexpr-least-fixpoint-fixpoint
-  (set-equivp (alist-keys (mv-nth 0 (find-sexpr-least-fixpoint update-fns)))
+  (set-equiv (alist-keys (mv-nth 0 (find-sexpr-least-fixpoint update-fns)))
               (alist-keys update-fns)))
 
 
@@ -613,7 +613,7 @@
                           default-car default-cdr
                           hons-acons-each
                           append not
-                          member-equal-when-atom
+                          member-when-atom
                           (:type-prescription subsetp-equal)
                           (:type-prescription member-equal)))))
   (defthm 4v-sexpr-restrict-alist-when-keys-subset
@@ -768,8 +768,8 @@
   :hints(("Goal" :in-theory
           (e/d ()
                (4v-sexpr-vars default-car default-cdr
-                           union-equal member-equal-when-atom
-                           subsetp-car-member-equal
+                           union-equal member-when-atom
+                           subsetp-car-member
                            alist-keys-when-atom)))))
 
 (defthm no-duplicatesp-sexpr-dfs-finished
@@ -782,7 +782,7 @@
              'finished)))
   :hints (("goal" :induct (sexpr-dfs queue deps seen-al parent
                                  back-edges)
-           :in-theory (disable default-car member-equal-of-cons union-equal
+           :in-theory (disable default-car member-of-cons union-equal
                                default-cdr 4v-sexpr-vars)
            :do-not-induct t)))
 
@@ -839,7 +839,7 @@
                        (:definition sexpr-dfs)
                        default-car  union-equal 
                        sexpr-dfs-not-finished-when-present
-                       subsetp-equal-atom
+                       subsetp-when-atom-left
                        not-hons-assoc-equal-impl-not-member-collect-keys
                        aig-vars
                        default-cdr)
@@ -885,13 +885,13 @@
 (encapsulate nil
   (local (defthm set-equiv-finished-of-sexpr-dfs1
            (implies (equal (alist-keys deps) (alist-keys update-fns))
-                    (set-equivp (collect-keys-with-value
+                    (set-equiv (collect-keys-with-value
                                  (mv-nth 0 (sexpr-dfs (alist-keys update-fns)
                                                       deps nil parent
                                                       back-edges))
                                  'finished)
                                 (alist-keys update-fns)))
-           :hints(("Goal" :in-theory (enable set-equivp)))))
+           :hints(("Goal" :in-theory (enable set-equiv)))))
 
   (local (defthm alist-keys-sexpr-update-fns-to-deps
            (equal (alist-keys (sexpr-update-fns-to-deps update-fns))
@@ -899,7 +899,7 @@
            :hints(("Goal" :in-theory (enable alist-keys)))))
 
   (defthm set-equiv-finished-of-sexpr-dfs
-    (set-equivp (collect-keys-with-value
+    (set-equiv (collect-keys-with-value
                  (mv-nth 0 (sexpr-dfs (alist-keys update-fns)
                                       (sexpr-update-fns-to-deps update-fns)
                                       nil parent back-edges))
@@ -920,7 +920,7 @@
 
                               
 (defthm alist-equiv-fal-extract
-  (implies (set-equivp keys (alist-keys al))
+  (implies (set-equiv keys (alist-keys al))
            (alist-equiv (fal-extract keys al)
                         al))
   :hints (("goal" :do-not-induct t)
@@ -1471,8 +1471,8 @@
 
 ;; BOZO these are good rules but they're screwing up the normal form that
 ;; was being used here, will have to update the thms above to match
-(local (in-theory (disable commutativity-of-append-under-set-equivp
-                           SET-EQUIVP-WITH-APPEND-OTHER-LEFT)))
+(local (in-theory (disable commutativity-of-append-under-set-equiv
+                           SET-EQUIV-WITH-APPEND-OTHER-LEFT)))
 
 (defthm 4v-sexpr-equiv-append-translate-domain
   (implies (and (keys-equiv (translate-domain ups map)
@@ -1529,7 +1529,7 @@
                              translate-domain
                              no-duplicatesp-equal)))
           (witness :ruleset 4v-alist-<=-witnessing)
-          (witness :ruleset set-reasoning-member-equal-template)
+          (witness :ruleset set-reasoning-member-template)
           (and stable-under-simplificationp
                '(:use ((:instance 4v-alist-<=-necc
                                   (x (translate-domain a map))

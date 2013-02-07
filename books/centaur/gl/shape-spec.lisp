@@ -937,7 +937,7 @@
                               sets::double-containment
                               generic-geval-non-gobjectp
                               acl2::no-duplicatesp-equal-non-cons
-                              acl2::subsetp-car-member-equal
+                              acl2::subsetp-car-member
                               g-ite-p-gobj-fix
                               generic-geval)))
    (defthm shape-spec-to-gobj-eval-iff-slice

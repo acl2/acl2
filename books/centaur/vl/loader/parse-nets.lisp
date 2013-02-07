@@ -404,7 +404,7 @@
                            ;args-exist-when-binary-op
                            ;args-exist-when-ternary-op
                            VL-PARSE-DRIVE-STRENGTH-OR-CHARGE-STRENGTH-FORWARD
-                           acl2::subsetp-equal-atom)))
+                           acl2::subsetp-when-atom-left)))
 
 
 

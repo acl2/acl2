@@ -566,8 +566,8 @@ expression list."
                     (subsetp-equal (vl-expr-names a)
                                    (vl-exprlist-names y)))))
 
-  (defcong set-equivp set-equivp (vl-exprlist-names x) 1
-    :hints(("Goal" :in-theory (enable set-equivp)))))
+  (defcong set-equiv set-equiv (vl-exprlist-names x) 1
+    :hints(("Goal" :in-theory (enable set-equiv)))))
 
 
 

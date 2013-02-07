@@ -328,15 +328,15 @@ reorders @('x') to match @('names').</p>"
                          (subsetp-equal (vl-fundecllist->names x) names)
                          (vl-fundecllist-p x))
                     (subsetp-equal x (vl-reorder-fundecls names x)))
-           :hints((acl2::witness :ruleset (acl2::subsetp-equal-witnessing)))))
+           :hints((acl2::witness :ruleset (acl2::subsetp-witnessing)))))
 
-  (defthm vl-reorder-fundecls-under-set-equivp
+  (defthm vl-reorder-fundecls-under-set-equiv
     (implies (and (no-duplicatesp-equal (vl-fundecllist->names x))
-                  (set-equivp (double-rewrite names) (vl-fundecllist->names x))
+                  (set-equiv (double-rewrite names) (vl-fundecllist->names x))
                   (force (vl-fundecllist-p x)))
-             (set-equivp (vl-reorder-fundecls names x)
+             (set-equiv (vl-reorder-fundecls names x)
                             (double-rewrite x)))
-    :hints(("Goal" :in-theory (enable set-equivp)))))
+    :hints(("Goal" :in-theory (enable set-equiv)))))
 
 
 
@@ -406,12 +406,12 @@ added.</p>"
 
   (local (in-theory (enable vl-depsort-functions)))
 
-  (defthm vl-depsort-functions-under-set-equivp
+  (defthm vl-depsort-functions-under-set-equiv
     ;; This shows that no functions are added/lost as a result of depsorting.
     (implies (force (vl-fundecllist-p x))
-             (set-equivp (mv-nth 2 (vl-depsort-functions x warnings))
+             (set-equiv (mv-nth 2 (vl-depsort-functions x warnings))
                             x))
-    :hints(("Goal" :in-theory (enable set-equivp))))
+    :hints(("Goal" :in-theory (enable set-equiv))))
 
   (defthm vl-warninglist-p-of-vl-depsort-functions
     (implies (force (vl-warninglist-p warnings))

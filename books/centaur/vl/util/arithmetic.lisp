@@ -344,9 +344,9 @@
     (iff (member-equal a (rev x))
          (member-equal a x)))
 
-  (defthm rev-under-set-equivp
-    (set-equivp (rev x) (double-rewrite x))
-    :hints(("Goal" :in-theory (enable set-equivp))))
+  (defthm rev-under-set-equiv
+    (set-equiv (rev x) (double-rewrite x))
+    :hints(("Goal" :in-theory (enable set-equiv))))
 
   (defthm duplicity-of-rev
     (equal (acl2::duplicity a (rev x))
@@ -447,10 +447,10 @@
            (implies (subsetp-equal x y)
                     (subsetp-equal (flatten x) (flatten y)))
            :hints((acl2::witness
-                   :ruleset (acl2::subsetp-equal-witnessing)))))
+                   :ruleset (acl2::subsetp-witnessing)))))
 
-  (defcong set-equivp set-equivp (flatten x) 1
-    :hints(("Goal" :in-theory (enable set-equivp))))
+  (defcong set-equiv set-equiv (flatten x) 1
+    :hints(("Goal" :in-theory (enable set-equiv))))
 
   (defthm duplicity-of-flatten-of-rev
     (equal (acl2::duplicity a (flatten (rev x)))
@@ -1001,10 +1001,10 @@
                          (or (member-equal a (strip-cars x))
                              (member-equal a (strip-cars y)))))))
 
-  (defthm strip-cars-of-hons-shrink-alist-under-set-equivp
+  (defthm strip-cars-of-hons-shrink-alist-under-set-equiv
     (implies (and (alistp x)
                   (alistp y))
-             (set-equivp (strip-cars (hons-shrink-alist x y))
+             (set-equiv (strip-cars (hons-shrink-alist x y))
                          (strip-cars (append x y))))
     :hints((set-reasoning)))
 

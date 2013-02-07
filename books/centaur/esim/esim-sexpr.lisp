@@ -304,16 +304,16 @@
          (no-duplicatesp-equal (alist-keys acc))))
 
   (defthm alist-keys-pattern-to-indices
-    (set-equivp (alist-keys (mv-nth 0 (pattern-to-indices pat acc idx)))
+    (set-equiv (alist-keys (mv-nth 0 (pattern-to-indices pat acc idx)))
                 (append (pat-flatten1 pat) (alist-keys acc)))
     :hints (("goal"
              :induct t
              :in-theory (enable pat-flatten1))
-            (witness :ruleset set-equivp-witnessing)))
+            (witness :ruleset set-equiv-witnessing)))
 
 
   (defthm alist-keys-esim-sexpr-indices-occs
-    (set-equivp (alist-keys (mv-nth 0 (esim-sexpr-indices-occs mod occs acc idx)))
+    (set-equiv (alist-keys (mv-nth 0 (esim-sexpr-indices-occs mod occs acc idx)))
                 (append (collect-signal-list
                          :o (occs-for-names occs mod))
                         (collect-signal-list
@@ -321,7 +321,7 @@
                         (alist-keys acc)))
     :hints (("goal" :induct t :do-not-induct t
              :in-theory (enable fal-extract))
-            (witness :ruleset set-equivp-witnessing))))
+            (witness :ruleset set-equiv-witnessing))))
 
 
 
@@ -409,7 +409,7 @@
 (defsection 4v-sexpr-vars-list
 
   (defthm 4v-sexpr-vars-list-append
-    (set-equivp (4v-sexpr-vars-list (append a b))
+    (set-equiv (4v-sexpr-vars-list (append a b))
                 (append (4v-sexpr-vars-list a) (4v-sexpr-vars-list b))))
 
   (defthm not-member-4v-sexpr-vars-of-hons-assoc-equal
@@ -541,7 +541,7 @@ the existing update functions without modification."
                          update-fns))
 
     (defthm esim-simplify-update-fns-alist-keys-same
-      (set-equivp (alist-keys (esim-simplify-update-fns mod update-fns))
+      (set-equiv (alist-keys (esim-simplify-update-fns mod update-fns))
                   (alist-keys update-fns)))
 
     (defthm esim-simplify-update-fns-4v-sexpr-vars-subset
@@ -560,7 +560,7 @@ the existing update functions without modification."
              (good-sexpr-varmap
               (mod-varmap mod)
               (esim-simplify-update-fns mod update-fns)))
-    :hints (("goal" :in-theory (e/d (subsetp-equal-trans2)
+    :hints (("goal" :in-theory (e/d (subsetp-trans2)
                                     (esim-simplify-update-fns-4v-sexpr-vars-subset))
              :use esim-simplify-update-fns-4v-sexpr-vars-subset))))
 
@@ -1210,7 +1210,7 @@ the existing update functions without modification."
                                         mod (alist-keys (occmap mod)))))
            :hints(("Goal" :in-theory (enable mod-varmap)
                    :do-not-induct t)
-                  (witness :ruleset subsetp-equal-witnessing))
+                  (witness :ruleset subsetp-witnessing))
            :otf-flg t))
 
        (verify-guards esim-sexpr-fnname
@@ -1226,7 +1226,7 @@ the existing update functions without modification."
                                    good-sexpr-varmap
                                    esim-sexpr-general-fnname
                                    4v-sexpr-restrict
-                                   subsetp-car-member-equal
+                                   subsetp-car-member
                                    hons-set-diff
                                    sexpr-fixpoints))))
          :otf-flg t)
@@ -1400,7 +1400,7 @@ the existing update functions without modification."
                                  occmap
                                  good-sexpr-varmap
                                  4v-sexpr-restrict
-                                 subsetp-car-member-equal
+                                 subsetp-car-member
                                  hons-set-diff
                                  sexpr-fixpoints)))
                (and stable-under-simplificationp

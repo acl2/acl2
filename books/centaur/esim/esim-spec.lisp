@@ -742,7 +742,7 @@
        (member-equal x y)))
 
 (defthm remove-duplicates-equal-set-equiv
-  (set-equivp (remove-duplicates-equal x)
+  (set-equiv (remove-duplicates-equal x)
              (double-rewrite x))
   :hints ((set-reasoning)))
 
@@ -1175,7 +1175,7 @@
 ;;                 (subsetp-equal (pat-flatten (gpl :i mod) nil)
 ;;                                (alist-keys sig-al))
 ;;                 (good-esim-modulep mod))
-;;            (set-equivp (alist-keys (mv-nth 1 (esim-fixpoint mod sig-al st-al)))
+;;            (set-equiv (alist-keys (mv-nth 1 (esim-fixpoint mod sig-al st-al)))
 ;;                        (append (pat-flatten (gpl :i mod) nil)
 ;;                                (esim-driven-signals mod))))
 ;;   :hints (("goal" :induct (esim-fixpoint-ind mod sig-al st-al)
@@ -1228,7 +1228,7 @@
 
 ;; (defthm esim-fixpoint-sig-al-signals
 ;;   (implies (good-esim-modulep mod)
-;;            (set-equivp (alist-keys (esim-fixpoint mod sig-al st-al))
+;;            (set-equiv (alist-keys (esim-fixpoint mod sig-al st-al))
 ;;                        (append (alist-keys sig-al)
 ;;                                (esim-driven-signals mod))))
 ;;   :hints (("goal" :induct (esim-fixpoint-ind mod sig-al st-al)
@@ -1242,10 +1242,10 @@
                           (esim-out
                            esim-fixpoint esim-occs esim-occ
                            good-esim-modulep good-esim-occp eapply-spec
-                           mod-state occ-state subsetp-equal-atom
-                           subsetp-equal-trans
-                           subsetp-equal-implies-subsetp-equal-cdr
-                           subsetp-car-member-equal member-equal
+                           mod-state occ-state subsetp-when-atom-left
+                           subsetp-trans
+                           subsetp-implies-subsetp-cdr
+                           subsetp-car-member member-equal
                            alist-keys-when-atom hons-assoc-equal
                            collect-signal-list 4v-pat-alist-translate
                            fal-extract append alist-vals-when-atom
@@ -1328,7 +1328,7 @@
                                                occmap-when-no-occs)
                                               (good-esim-modulep
                                                similar-patternsp
-                                               subsetp-equal-atom
+                                               subsetp-when-atom-left
                                                data-for-patternp
                                                eapply-spec
                                                default-car default-cdr
@@ -1359,7 +1359,7 @@
   :hints (("goal" :induct (len occs1)
            :in-theory (enable subsetp-equal))))
 
-(defcong set-equivp iff (esim-wf-signals mod occs sig-al st-al) 2)
+(defcong set-equiv iff (esim-wf-signals mod occs sig-al st-al) 2)
 
 (defthm esim-occ-increases-when-non-outputs-bound
   (implies (and (good-esim-occp occ)
@@ -2418,7 +2418,7 @@
                           4vp default-car default-cdr 4v-fix
                           (:rules-of-class :type-prescription :here)
                           not hons-assoc-equal member-equal
-                          subsetp-car-member-equal
+                          subsetp-car-member
                           no-duplicatesp-equal
                           alist-keys-when-atom
                           4v-alistp
@@ -2750,14 +2750,14 @@
 
 ;; (defthm esim-fixpoint-and-esim-least-fixpoint-keys-equiv
 ;;   (implies (and (good-esim-modulep mod)
-;;                 (set-equivp (alist-keys sig-al)
+;;                 (set-equiv (alist-keys sig-al)
 ;;                             (pat-flatten (gpl :i mod) nil)))
-;;            (set-equivp (alist-keys (mv-nth 1 (esim-fixpoint mod sig-al st-al)))
+;;            (set-equiv (alist-keys (mv-nth 1 (esim-fixpoint mod sig-al st-al)))
 ;;                        (alist-keys (esim-least-fixpoint mod sig-al st-al)))))
 
 ;; (defthm esim-fixpoint-equiv-esim-least-fixpoint
 ;;   (implies (and (good-esim-modulep mod)
-;;                 (set-equivp (alist-keys sig-al)
+;;                 (set-equiv (alist-keys sig-al)
 ;;                             (pat-flatten (gpl :i mod) nil)))
 ;;            (key-and-env-equiv (mv-nth 1 (esim-fixpoint mod sig-al st-al))
 ;;                               (esim-least-fixpoint mod sig-al st-al)))
@@ -2950,7 +2950,7 @@
                                      alist-keys-when-atom
                                      fal-extract
                                      collect-signal-list
-                                     subsetp-equal-atom
+                                     subsetp-when-atom-left
                                      hons-assoc-equal
                                      esim-wf-signals-impl-esim-occs-incr
                                      default-car default-cdr mod-internals
@@ -2990,7 +2990,7 @@
 ;;                                      alist-keys-when-atom
 ;;                                      fal-extract
 ;;                                      collect-signal-list
-;;                                      subsetp-equal-atom
+;;                                      subsetp-when-atom-left
 ;;                                      hons-assoc-equal
 ;;                                      esim-wf-signals-impl-esim-occs-incr
 ;;                                      default-car default-cdr pat-flatten mod-internals
@@ -3132,7 +3132,7 @@
 ;;   :hints(("Goal" :in-theory (enable set-difference-equal))))
 
 
-;; (defcong set-equivp equal (set-difference-equal x y) 2
+;; (defcong set-equiv equal (set-difference-equal x y) 2
 ;;   :hints(("Goal" :in-theory (enable set-difference-equal))))
 
 ;; (defthm hons-set-diff-is-set-difference-equal
@@ -3252,7 +3252,7 @@
 
 ;; (defthm alist-keys-esim-fixpoint
 ;;   (implies (good-esim-modulep mod)
-;;            (set-equivp (alist-keys (mv-nth 1 (esim-fixpoint mod sig-al st-al)))
+;;            (set-equiv (alist-keys (mv-nth 1 (esim-fixpoint mod sig-al st-al)))
 ;;                        (append (alist-keys sig-al)
 ;;                                (esim-driven-signals mod))))
 ;;   :hints(("Goal" :in-theory (disable esim-occs good-esim-modulep)

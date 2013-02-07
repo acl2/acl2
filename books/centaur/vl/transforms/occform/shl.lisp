@@ -188,6 +188,11 @@ operates on O(log_2 n) muxes.</p>"
            (len mods))))
 
 
+(local (defthm l0
+         (implies (and (vl-exprlist-p x)
+                       (consp x))
+                  (car (last x)))))
+
 (def-vl-modgen vl-make-n-bit-shl-by-m-bits (n m)
   :short "Generate a module that shifts an @('N') bit number left by an @('M')
 bit number."

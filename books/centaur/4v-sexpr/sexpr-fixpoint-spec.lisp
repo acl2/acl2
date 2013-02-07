@@ -45,9 +45,9 @@
 (defthmd keys-equiv-iff-set-equiv-alist-keys
   ;; BOZO move to fast-alists book?
   (iff (keys-equiv env1 env2)
-       (set-equivp (alist-keys env1) (alist-keys env2)))
+       (set-equiv (alist-keys env1) (alist-keys env2)))
   :hints(("goal" :in-theory (e/d (hons-assoc-equal-iff-member-alist-keys)
-                                 (set-equivp
+                                 (set-equiv
                                   alist-keys-member-hons-assoc-equal)))
          (witness)))
 
@@ -61,22 +61,22 @@
 (encapsulate
   ()
   (local (defthmd lemma
-           (iff (set-equivp a (cons b c))
+           (iff (set-equiv a (cons b c))
                 (and (member-equal b a)
-                     (set-equivp (remove b a) (remove b c))))
+                     (set-equiv (remove b a) (remove b c))))
            :hints ((set-reasoning))))
 
-  (defthmd set-equivp-breakdown-cons
-    (equal (set-equivp a (cons b c))
+  (defthmd set-equiv-breakdown-cons
+    (equal (set-equiv a (cons b c))
            (and (member-equal b a)
-                (set-equivp (remove b a) (remove b c))))
+                (set-equiv (remove b a) (remove b c))))
     :hints(("Goal" :use ((:instance lemma))))))
 
-(defthmd set-equivp-breakdown-cons2
-  (equal (set-equivp (cons b c) a)
+(defthmd set-equiv-breakdown-cons2
+  (equal (set-equiv (cons b c) a)
          (and (member-equal b a)
-              (set-equivp (remove b a) (remove b c))))
-  :hints(("Goal" :use ((:instance set-equivp-breakdown-cons)))))
+              (set-equiv (remove b a) (remove b c))))
+  :hints(("Goal" :use ((:instance set-equiv-breakdown-cons)))))
 
 (defthm remove-remove
   (equal (remove k (remove k x))
@@ -741,7 +741,7 @@
   :hints ((witness :ruleset 4v-alist-<=-witnessing)))
 
 (defthmd 4v-alist-<=-append-cons-append
-  (implies (and (set-equivp (double-rewrite (cons bk (alist-keys a)))
+  (implies (and (set-equiv (double-rewrite (cons bk (alist-keys a)))
                             (double-rewrite (alist-keys d)))
                 (4v-alist-<= (append a (list (cons bk bv)))
                              d)
@@ -754,13 +754,13 @@
                              )
                             (alist-keys-member-hons-assoc-equal
                              4v-fix 4v-<= default-car default-cdr
-                             append member-equal-when-atom member-equal
+                             append member-when-atom member-equal
                              alist-keys-when-atom
-                             ;; set-equivp-asym set-equivp-trans
+                             ;; set-equiv-asym set-equiv-trans
                              (:rules-of-class :type-prescription :here))))
           (witness :ruleset (4v-alist-<=-witnessing
                              4v-alist-<=-4v-lookup-example))
-          (witness :ruleset set-equivp-member-template)))
+          (witness :ruleset set-equiv-member-template)))
 
 
 ;(why 4v-alist-<=-trans2)
@@ -775,7 +775,7 @@
 (defthm |upsr (fp\s1 :: (s1 : X) :: env) <= fp\s1|
   (implies (and (4v-alist-<= (4v-sexpr-eval-alist upsr (append fp env))
                              (remove-assoc s1 fp))
-                (set-equivp (alist-keys fp)
+                (set-equiv (alist-keys fp)
                             (cons s1 (alist-keys upsr))))
            (4v-alist-<= (4v-sexpr-eval-alist upsr
                                              (append (remove-assoc s1 fp)
@@ -785,7 +785,7 @@
   :hints(("Goal" :in-theory
           (e/d (4v-alist-<=-trans2
                 hons-assoc-equal-iff-member-alist-keys
-                set-equivp-breakdown-cons
+                set-equiv-breakdown-cons
                 4v-alist-<=-append-cons-append)
                (switch-append-cons
                 switch-append
@@ -804,7 +804,7 @@
                 (4v-alist-<=
                  (4v-sexpr-eval-alist upsr (append fp env))
                  (remove-assoc s1 fp))
-                (set-equivp (alist-keys fp)
+                (set-equiv (alist-keys fp)
                             (cons s1 (alist-keys upsr)))
                 (not (member-equal s1 (alist-keys upsr))))
            (4v-alist-<=
@@ -818,7 +818,7 @@
                        (lb lbr)
                        (fp (remove-assoc s1 fp))
                        (env (cons (cons s1 *4vx*) env))))
-           :in-theory (e/d (set-equivp-breakdown-cons)
+           :in-theory (e/d (set-equiv-breakdown-cons)
                            (alist-keys-member-hons-assoc-equal
                             switch-append
                             switch-append-cons))
@@ -866,7 +866,7 @@
                  (remove-assoc s1 fp))
                 (4v-<= (4v-sexpr-eval up1 (append fp env))
                        (4v-lookup s1 fp))
-                (set-equivp (alist-keys fp)
+                (set-equiv (alist-keys fp)
                             (cons s1 (alist-keys lbr))))
            (4v-<=
             (4v-sexpr-eval
@@ -911,9 +911,9 @@
                  (remove-assoc s1 fp))
                 (4v-<= (4v-sexpr-eval up1 (append fp env))
                        (4v-lookup s1 fp))
-                (set-equivp (alist-keys fp)
+                (set-equiv (alist-keys fp)
                             (cons s1 (alist-keys upsr)))
-                (set-equivp (alist-keys lbr)
+                (set-equiv (alist-keys lbr)
                             (alist-keys upsr))
                 (not (member-equal s1 (alist-keys upsr)))
                 (4v-sexpr-fixpoint-lower-boundp upsr lbr))
@@ -933,8 +933,8 @@
   :hints(("Goal" :in-theory
           (e/d (4v-alist-<=-trans2
                 hons-assoc-equal-iff-member-alist-keys
-                set-equivp-breakdown-cons
-                set-equivp-breakdown-cons2
+                set-equiv-breakdown-cons
+                set-equiv-breakdown-cons2
                 4v-alist-<=-append->remove
                 4v-alist-<=-append-cons-append)
                (switch-append-cons
@@ -959,9 +959,9 @@
                  (remove-assoc s1 fp))
                 (4v-<= (4v-sexpr-eval up1 (append fp env))
                        (4v-lookup s1 fp))
-                (set-equivp (alist-keys fp)
+                (set-equiv (alist-keys fp)
                             (cons s1 (alist-keys upsr)))
-                (set-equivp (alist-keys lbr)
+                (set-equiv (alist-keys lbr)
                             (alist-keys upsr))
                 (not (member-equal s1 (alist-keys upsr)))
                 (4v-sexpr-fixpoint-lower-boundp upsr lbr))
@@ -992,8 +992,8 @@
            :in-theory
            (e/d (4v-alist-<=-trans2
                  hons-assoc-equal-iff-member-alist-keys
-                 set-equivp-breakdown-cons
-                 set-equivp-breakdown-cons2
+                 set-equiv-breakdown-cons
+                 set-equiv-breakdown-cons2
                  4v-alist-<=-append->remove
                  4v-alist-<=-append-cons-append)
                 (switch-append-cons
@@ -1006,7 +1006,7 @@
 ;;        :: (lbr * (s1 : ((up1 * lbr) * (s1 : X)))).
 (defthm inductive-step
   (implies (and (4v-sexpr-fixpoint-lower-boundp upsr lbr)
-                (set-equivp (alist-keys upsr)
+                (set-equiv (alist-keys upsr)
                             (alist-keys lbr))
                 (not (member-equal s1 (alist-keys upsr))))
            (4v-sexpr-fixpoint-lower-boundp
@@ -1075,7 +1075,7 @@
 ;;                             4v-alist-<=-acons-1
 ;;                             default-car default-cdr
 ;;                             keys-equiv-when-alist-keys
-;;                             subsetp-car-member-equal
+;;                             subsetp-car-member
 ;;                             member-equal
 ;;                             4v-fix 4v-<=))
 ;;            :do-not-induct t)

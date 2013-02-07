@@ -57,7 +57,7 @@
       unexplode-nonnegative-integer
       base10-digit-char-listp
       prefixp
-      set-equivp
+      set-equiv
       set-reasoning
       lnfix
       lifix

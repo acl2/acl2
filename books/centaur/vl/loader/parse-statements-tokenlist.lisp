@@ -34,7 +34,7 @@
                    (:type-prescription vl-is-some-token?-fn)
                    (:type-prescription acl2-count)
                    double-containment
-                   acl2::acl2-count-when-member-equal
+                   acl2::acl2-count-when-member
                    consp-by-len
                    consp-when-member-equal-of-cons-listp
                    vl-tokenlist-p-when-member-equal-of-vl-tokenlistlist-p
@@ -50,7 +50,7 @@
                    vl-exprlist-p-of-cons
                    first-under-iff-when-vl-exprlist-p
                    default-<-2 default-<-1
-                   acl2::subsetp-equal-member
+                   acl2::subsetp-member
                    rationalp-implies-acl2-numberp
                    rationalp-when-integerp
                    integerp-when-natp

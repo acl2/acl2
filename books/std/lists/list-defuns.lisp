@@ -27,6 +27,7 @@
 (local (include-book "revappend"))
 (local (include-book "rev"))
 (local (include-book "equiv"))
+(local (include-book "sets"))
 (set-enforce-redundancy t)
 
 (defund list-fix (x)
@@ -56,6 +57,17 @@
   ;; load list/equiv.lisp first and then include book A, this is no longer a
   ;; valid rewrite rule and we get a horrible error!
   )
+
+(defun set-equiv (x y)
+  (declare (xargs :guard (and (true-listp x)
+                              (true-listp y))))
+  (and (subsetp-equal x y)
+       (subsetp-equal y x)))
+
+(defequiv set-equiv)
+
+(defrefinement list-equiv set-equiv)
+
 
 (defund binary-app (x y)
   (declare (xargs :guard t))
