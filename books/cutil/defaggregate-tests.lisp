@@ -28,12 +28,12 @@
 
 (encapsulate
  ()
-
- (defn foof-p (x)
+ (defun foof-p (x)
+   (declare (xargs :guard t))
    (keywordp x))
 
  (defmacro foom-p (x)
-   (keywordp x))
+   `(keywordp ,x))
 
  (defaggregate containerf
    (thing)
@@ -41,21 +41,11 @@
               (foof-p thing)))
    :tag :containerf)
 
-; The following defaggregate call is commented out because using a macro, as is
-; done in the following example, results in a rewrite rule that is
-; unacceptable.  Here is the error:
-
-;;; ACL2 Error in ( DEFTHM FOOM-P-OF-CONTAINERM->THING ...):  A :REWRITE
-;;; rule generated from FOOM-P-OF-CONTAINERM->THING is illegal because
-;;; it rewrites the quoted constant 'NIL.  See :DOC rewrite.
-
- ;; (defaggregate containerm
- ;;   (thing)
- ;;   :require ((foom-p-of-containerm->thing
- ;;              (foom-p thing)))
- ;;   :tag :containerm)
-
- ) ; encapsulate
+ (defaggregate containerm
+   (thing)
+   :require ((foom-p-of-containerm->thing
+              (foom-p thing)))
+   :tag :containerm))
 
 (mutual-recursion
  (DEFUND FOO-P (X)
@@ -91,9 +81,6 @@
   :elementp-of-nil nil
   :already-definedp t
   :true-listp t)
-
-
-
 
 
 #||
@@ -202,3 +189,20 @@
           :bad bad))
 
 ||#
+
+(defaggregate employee
+  :tag :employee
+  ((name stringp "some documentation")
+   (salary natp :rule-classes :type-prescription :default 25))
+  :legiblep nil
+  :short "Hello!")
+
+(assert! (b* ((emp (make-employee :name "foo")))
+           (and (equal (employee->name emp) "foo")
+                (equal (employee->salary emp) 25))))
+
+(assert! (b* ((emp (make-employee :name "foo"))
+              ((employee emp) emp))
+           (and (equal emp.name "foo")
+                (equal emp.salary 25))))
+

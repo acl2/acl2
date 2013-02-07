@@ -268,6 +268,9 @@ overwritten by @('a <= c').</p>"
        ;; wire [n-1:0] foo_delfree;    // output of foo's register but without delay
        ((mv next-expr    next-decl)    (vl-occform-mkwire next-name    width :loc x.loc))
        ((mv delfree-expr delfree-decl) (vl-occform-mkwire delfree-name width :loc x.loc))
+       (delfree-decl
+        (change-vl-netdecl delfree-decl
+                           :atts (acons "VL_TARGET_REG" target (vl-netdecl->atts delfree-decl))))
 
        ;; assign foo_next = [converted next expr for foo]; // any truncation happens here
        ((mv next-rhs warnings) (vl-flopcode-next-expr (rev prog) target delta.warnings x))

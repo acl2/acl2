@@ -141,15 +141,6 @@
 ; a warning.
 ;
 
-(defparser vl-parse-generate-region (tokens warnings)
-  :result (vl-modelementlist-p val)
-  :resultp-of-nil t
-  :true-listp t
-  :fails gracefully
-  :count strong
-  (vl-unimplemented))
-
-
 (defparser vl-parse-specify-block-aux (tokens warnings)
   ;; BOZO this is really not implemented.  We just read until endspecify,
   ;; throwing away any tokens we encounter until it.
@@ -183,6 +174,38 @@
           (return ret))))
 
 
+(defparser vl-parse-generate-region-aux (tokens warnings)
+  ;; BOZO this is really not implemented.  We just read until endgenerate,
+  ;; throwing away any tokens we encounter until it.
+  :result (vl-modelementlist-p val)
+  :resultp-of-nil t
+  :true-listp t
+  :fails gracefully
+  :count strong
+  (seqw tokens warnings
+        (when (vl-is-token? :vl-kwd-endgenerate)
+          (:= (vl-match-token :vl-kwd-endgenerate))
+          (return nil))
+        (:s= (vl-match-any))
+        (:= (vl-parse-generate-region-aux))
+        (return nil)))
+
+(defparser vl-parse-generate-region (tokens warnings)
+  :result (vl-modelementlist-p val)
+  :resultp-of-nil t
+  :true-listp t
+  :fails gracefully
+  :count strong
+  (if (not (consp tokens))
+      (vl-parse-error "Unexpected EOF.")
+    (seqw tokens warnings
+          (:= (vl-parse-warning :vl-warn-generate
+                                (cat "Generate regions are not yet implemented.  "
+                                     "Instead, we are simply ignoring everything "
+                                     "until 'endgenerate'.")))
+          (ret := (vl-parse-generate-region-aux))
+          (return ret))))
+
 (defparser vl-parse-specparam-declaration (atts tokens warnings)
   :guard (vl-atts-p atts)
   :result (vl-modelementlist-p val)
@@ -201,7 +224,13 @@
   :fails gracefully
   :count strong
   (declare (ignore atts))
-  (vl-unimplemented))
+  (seqw tokens warnings
+        (:= (vl-parse-warning :vl-warn-genvar
+                              (cat "Genvar declarations are not implemented, we are just skipping this genvar.")))
+        (:= (vl-match-token :vl-kwd-genvar))
+        (:= (vl-parse-1+-identifiers-separated-by-commas))
+        (:= (vl-match-token :vl-semi))
+        (return nil)))
 
 (defparser vl-parse-parameter-override (atts tokens warnings)
   :guard (vl-atts-p atts)

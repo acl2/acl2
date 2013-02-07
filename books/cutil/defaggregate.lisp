@@ -23,50 +23,37 @@
 ; This file is adapted from Milawa, which is also released under the GPL.
 
 (in-package "CUTIL")
-(include-book "xdoc/top" :dir :system)
+(include-book "da-base")
+(include-book "formals")
+(include-book "xdoc-impl/fmt-to-str" :dir :system)
 (include-book "tools/rulesets" :dir :system)
 (include-book "xdoc/names" :dir :system)
 (include-book "str/cat" :dir :system)
-(include-book "misc/definline" :dir :system)
-(include-book "support")
+(set-state-ok t)
+(program)
+
+(def-ruleset tag-reasoning nil)
 
 (defxdoc defaggregate
   :parents (cutil)
   :short "Introduce a record structure, like a @('struct') in C."
 
-  :long "<p>Defaggregate introduces a recognizer, constructor, and accessors
-for a new record-like structure.  It is similar to @('struct') in C or
-@('defstruct') in Lisp.</p>
+  :long "<h3>Introduction</h3>
 
-<p>General form:</p>
+<p>Defaggregate introduces a recognizer, constructor, and accessors for a new
+record-like structure.  It is similar to @('struct') in C or @('defstruct') in
+Lisp.</p>
 
-@({
- (defaggregate prefix
-   fields
-   &key tag                 ; required
-        require             ; nil by default
-        legiblep            ; t by default
-        hons                ; nil by default
-        already-definedp    ; nil by default
-        debugp              ; nil by default
-        mode                ; current defun-mode by default
-        parents             ; '(acl2::undocumented) by default
-        short               ; nil by default
-        long                ; nil by default
-        rest                ; nil by default
-        rest        ; nil by default
-        )
-})
-
-<p>For example,</p>
+<p>Basic example:</p>
 
 @({
- (defaggregate employee
-   (name salary position)
-   :tag :employee)
+ (defaggregate employee     ;; structure name
+   (name salary position)   ;; fields
+   :tag :employee           ;; options
+   )
 })
 
-<p>will result in the introduction of:</p>
+<p>This example would produce:</p>
 
 <ul>
  <li>A recognizer, @('(employee-p x)'),</li>
@@ -81,9 +68,35 @@ for a new record-like structure.  It is similar to @('struct') in C or
  <li>Basic theorems relating these new functions.</li>
 </ul>
 
-<h3>Usage and Options</h3>
+<p>General form:</p>
 
-<h4>Tags (@(':tag') parameter)</h4>
+@({
+ (defaggregate name
+   Fields
+   [Option]*              ;; i.e., :keyword value
+   [/// other-events])    ;; optional, starts with the symbol ///
+})
+
+<p>The @('name') acts like a prefix the function and theorem names we generate
+will be based on this name.</p>
+
+<p>The @('Fields') describe what fields each instance of the structure will
+have.  The example above shows only the very simplest syntax, but fields can
+also have well-formedness requirements, documentation, etc.; see below.</p>
+
+<p>The @('Option')s control various settings on the structure, and many options
+are described below.</p>
+
+<p>The @('other-events') is just a place for arbitrary other events to be put,
+as in @(see define).  This is mainly intended as a book structuring device, to
+allow you to keep related theorems near your aggregate.</p>
+
+<p>Note that the general form is not really quite expressive enough.  We
+actually allow the options and fields to come in any order.  That is, you can
+put the :tag and other options before the fields, etc.</p>
+
+
+<h3>Structure Tags</h3>
 
 <p>The @(':tag') of every aggregate must either be:</p>
 
@@ -98,8 +111,8 @@ or</li>
 </ul>
 
 <p>How are tags used?  Each instance of a tagged aggregate will be a cons tree
-whose car is the tag.  This requires some overhead---one cons for every
-instance of the aggregate---but allows us to compare tags to differentiate
+whose car is the tag.  This requires some overhead&mdash;one cons for every
+instance of the aggregate&mdash;but allows us to compare tags to differentiate
 between different kinds of aggregates.  A tagless aggregate avoids this
 overhead, but you give up the ability to easily distinguish different kinds of
 tagless aggregates from one another.</p>
@@ -137,73 +150,50 @@ theorems:</p>
 
 <p>These theorems seem to perform well and settle most questions regarding the
 disjointness of different kinds of aggregates.  In case the latter rules become
-expensive, we always add them to the @('tag-ruleset'), so you can disable
-this ruleset to turn off almost all tag-related reasoning.</p>
+expensive, we always add them to the @('tag-ruleset'), so you can disable this
+<see topic='@(url acl2::rulesets)'>ruleset</see> to turn off almost all
+tag-related reasoning.</p>
 
 
-<h4>Requirements (@(':require') parameter)</h4>
+<h3>Syntax of Fields</h3>
 
-<p>The @(':require') field allows you to list conditions that must be met
-by the fields for the object to be considered well-formed.  These requirements
-are used in three places:</p>
-
-<ul>
- <li>As well-formedness checks in the recognizer,</li>
- <li>As guards on the constructor,</li>
- <li>As rewrite rules about the accessors.</li>
-</ul>
-
-<p>Here is an example of using @(':require') for the employee structure:</p>
+<p>To describe each field, you can make use of @(see extended-formals) syntax
+This syntax means each field can have a guard, some documentation, and some
+additional keyword/value options.  Here is an example:</p>
 
 @({
  (defaggregate employee
-   (name salary position)
-   :tag :employee
-   :require ((stringp-of-employee->name
-              (stringp name)
-              :rule-classes :type-prescription)
-             (natp-of-employee->salary
-              (natp salary)
-              :rule-classes :type-prescription)
-             (position-p-of-employee->position
-              (position-p position))
-             (properly-oppressed-p
-              (salary-bounded-by-position-p salary position))))
+   ((name   \"Should be in Lastname, Firstname format\"
+            stringp :rule-classes :type-prescription)
+    (salary \"Annual salary in dollars, nil for hourly employees\"
+            (or (not salary) (natp salary))
+            :rule-classes :type-prescription)
+    (position (and (position-p position)
+                   (salary-in-range-for-position-p salary position))
+              :default :peon))
+   :tag :employee)
 })
 
-<p>Each requirement has the form @('(name condition [:rule-classes classes])'), where</p>
+<p>The \"guard\" for each field plays three roles:</p>
 <ul>
- <li>@('name') is a symbol that will be used to name the theorem introduced
-     by this form,</li>
- <li>@('condition') is some requirement about one or more fields of the
-     aggregate,</li>
- <li>@('classes') are optionally rule-classes to give to the theorem that
-     is introduced, and by default is just :rewrite.</li>
+<li>It is a guard on the constructor</li>
+<li>It is a well-formedness requirement enforced by the recognizer</li>
+<li>It is a theorem about the return type of the accessor.</li>
 </ul>
 
-<p>By default, the theorems introduced by the requirements mechanism are
-ordinary @(':rewrite') rules.  This works well for requirements like:</p>
+<p>The return-type theorem requires some special attention.  By default, the
+return-type theorem is an ordinary @(see acl2::rewrite) rule.  When this is not
+appropriate, e.g., for @('name') above, you may wish to use a different
+@(':rule-classes') option.</p>
 
-@({
- (position-p-of-employee->position
-  (position-p position))
-})
+<p>The embedded @(see xdoc) documentation gets incorporated into the
+documentation for the aggregate in a sensible way.</p>
 
-<p>where presumably @('position-p') is some custom recognizer that we've
-previously introduced.  The resulting rule is:</p>
+<p>The @(':default') value only affects the Make macro (see below).</p>
 
-@({
- (defthm position-p-of-employee->position
-   (implies (force (employee-p x))
-            (position-p (patient->position x))))
-})
+<h3>Options</h3>
 
-<p>But for other fields like @('name') and @('salary'), the requirement
-involves primitive ACL2 types like strings and natural numbers, so you may wish
-to use a @(':type-prescription') rule instead.</p>
-
-
-<h4>Legibility (@(':legiblep') parameter)</h4>
+<h4>Legibility</h4>
 
 <p>By default, an aggregate is represented in a <i>legible</i> way, which means
 the fields of each instance are laid out in an alist.  When such an object is
@@ -231,58 +221,57 @@ be laid out, and for instance you can prove that two @('point3d') structures
 will be equal exactly when their components are equal (which is not a theorem
 for legible structures.)</p>
 
-
-<h4>Honsed aggregates (@(':hons') parameter)</h4>
+<h4>Honsed Aggregates</h4>
 
 <p>By default, @(':hons') is nil and the constructor for an aggregate will
 build the object using ordinary conses.  However, when @(':hons') is set to
-@('t'), we instead always use @('hons') when building these aggregates.</p>
+@('t'), we instead always use @(see hons) when building these aggregates.</p>
 
-<p>Honsing is only appropriate for some structures.  It is generally slower
-than cons, and should typically not be used for aggregates that will be
+<p>Honsing is only appropriate for some structures.  It is a bit slower than
+consing, and should typically not be used for aggregates that will be
 constructed and used in an ephemeral manner.</p>
 
-<p>Because honsing is somewhat at odds with the notion of legible structures,
-@(':hons t') implies @(':legiblep nil').</p>
+<p>Because honsing is somewhat at odds with the memory-inefficiency of legible
+structures, @(':hons t') implies @(':legiblep nil').</p>
 
-<h4>Already defined predicates (@(':already-definedp') parameter)</h4>
+<h4>Other Options</h4>
 
-<p>Can be set if you have already defined the function.  This can be used to
-generate all of the ordinary @('defaggregate') theorems without generating a
-@('defund') event, and is useful when you are dealing with mutually recursive
-recognizers.</p>
+<dl>
 
-<h4>Debug-mode (@(':debugp') parameter)</h4>
+<dt>:mode</dt>
 
-<p>When set, adds calls of @('cw') that print the aggregate's data members that
-fail the predicate test.  This can be used to help debug executions whose
-guards were defined using predicates defined with defaggregate.  Note that the
-defined predicate can be called many times, even during proofs, so the use of
-@(':debugp') can result in a large amount of extra output.</p>
+<dd>Mode for the introduced functions -- must be either @(':program') or
+@(':logic').  Defaults to the current @(see acl2::defun-mode).</dd>
 
-<h4>Defun-mode (@(':mode') parameter)</h4>
+<dt>:already-definedp</dt>
 
-<p>Mode for the introduced functions -- must be either @(':program') or
-@(':logic').  The current defun-mode by default</p>
+<dd>Advanced option that may be useful for mutually-recursive recognizers.
+This means: generate all ordinary @('defaggregate') functions and theorems
+<i>except</i> for the recognizer.  For this to work, you have to have already
+defined a \"compatible\" recognizer.</dd>
 
-<h4>XDOC Integration (@(':parents'), @('short'), and @('long') parameters)</h4>
+<dt>:parents, :short, :long</dt>
 
-<p>The @(':parents'), @(':short'), and @(':long') arguments are like those in
-@(see xdoc::defxdoc).  Whatever you supply for @(':long') will follow some
-automatically generated documentation that lists the fields and requirements
-for the aggregate.</p>
+<dd>These options are as in @(see xdoc).  Whatever you supply for @(':long')
+will follow some automatically generated documentation that describes the
+fields of the aggregate.</dd>
+
+<dt>:require</dt>
+
+<dd>This option is deprecated.  Please use the new fields syntax, instead.</dd>
+
+<dt>:rest</dt>
+
+<dd>This option is deprecated.  Please use the new @('///') syntax, instead.</dd>
+
+</dl>
 
 
-<h3>Using Aggregates</h3>
-
-
-<h3>@('Make') and @('Change') Macros</h3>
+<h3>Make and Change Macros</h3>
 
 <p>Direct use of the constructor is discouraged.  Instead, we introduce two
-macros with every aggregate.</p>
-
-<p>The @('make') macro constructs a fresh aggregate when given values for its
-fields:</p>
+macros with every aggregate.  The @('make') macro constructs a fresh aggregate
+when given values for its fields:</p>
 
 @({
  (make-example :field1 val1 :field2 val2 ...)
@@ -302,16 +291,30 @@ starting point.  It may be thought of as:</p>
                ...)
 })
 
-<p>There are some advantages to using these macros over calling the constructor
-directly.  The person writing the code does not need to remember the order of
-the fields, and the person reading the code can see what values are being given
-to which fields.  Also, any field whose value should be @('nil') may be omitted
-from the <i>make</i> macro, and any field whose value should be left alone can
-be omitted from the <i>change</i> macro.  These features make it easier to add
-new fields to the aggregate later on, or to rearrange fields, etc.</p>
+<p>There are some strong advantages to using these macros instead of calling
+the constructor directly.</p>
+
+<ul>
+
+<li>The person writing the code does not need to remember the order of the
+fields</li>
+
+<li>The person reading the code can see what values are being given to which
+fields.</li>
+
+<li>Fields whose value should be @('nil') (or some other @(':default') may be
+omitted from the <i>make</i> macro.</li>
+
+<li>Fields whose value should be left alone can be omitted from the
+<i>change</i> macro.</li>
+
+</ul>
+
+<p>These features make it easier to add new fields to the aggregate later on,
+or to rearrange fields, etc.</p>
 
 
-<h4>Integration with @(see b*)</h4>
+<h3>Integration with @(see b*)</h3>
 
 <p>Defaggregate automatically introduces a pattern binder that integrates into
 @('b*').  This provides a concise syntax for destructuring aggregates.  For
@@ -344,9 +347,9 @@ instance:</p>
    bonus)
 })
 
-<p>For greater efficiency in the resulting code, we actually avoid binding
-components which do not appear to be used, e.g., we will not actually bind
-@('x.name') above.</p>
+<p>For greater efficiency in the resulting code, we avoid binding components
+which do not appear to be used, e.g., we will not actually bind @('x.name')
+above.</p>
 
 <p>Detecting whether a variable is needed at macro-expansion time is inherently
 broken because we can't truly distinguish between function names, macro names,
@@ -356,119 +359,15 @@ necessary.  In such cases, the ACL2 user will be presented with either \"unused
 variable\" or \"unbound variable\" error.  If you can come up with a
 non-contrived example where this is really a problem, we might consider
 developing some workaround, perhaps extended syntax that lets you suppress the
-optimization altogether.</p>
+optimization altogether.</p>")
 
+;; <h4>Debug-mode (@(':debugp') parameter)</h4>
 
-<h3>Examples</h3>
-
-<p>BOZO provide explanations of what these examples do.</p>
-
-@({
-  (defaggregate taco
-    (shell meat cheese lettuce sauce)
-    :tag :taco
-    :require ((integerp-of-taco->shell (integerp shell))))
-
-  (taco 5 'beef 'swiss 'iceberg 'green)
-
-  (make-taco :shell 5
-	      :meat 'beef
-	      :cheese 'swiss
-	      :lettuce 'iceberg
-	      :sauce 'green)
-
-  ; This fails since :tomatoes isn't given a value.
-  (make-taco :shell 5
-	      :meat 'beef
-	      :cheese 'swiss
-	      :lettuce 'iceberg
-	      :sauce 'green
-	      :tomatoes)
-
-  ; This fails since :tomatoes isn't a valid field.
-  (make-taco :shell 5
-	      :tomatoes t
-	      :meat 'beef
-	      :cheese 'swiss
-	      :lettuce 'iceberg
-	      :sauce 'green)
-
-  ; This fails since it has an extra argument.
-  (make-taco :shell 5 3)
-
-  (change-taco (taco 5 'beef 'swiss 'iceberg 'green)
-	       :meat 'chicken
-	       :cheese 'american)
-
-  (change-taco (taco 5 'beef 'swiss 'iceberg 'green)
-	       :shell (+ 3 4))
-
-  ; Fails since it is malformed
-  (change-taco (taco 5 'beef 'swiss 'iceberg 'green)
-	       :meat 'chicken
-	       :tomatoes t
-	       :cheese 'american)
-
-  ; Fails since it is malformed
-  (change-taco (taco 5 'beef 'swiss 'iceberg 'green)
-	       :meat 'chicken
-	       :tomatoes)
-
-  (defaggregate taco2
-    (shell meat cheese lettuce sauce)
-    :tag :taco2
-    :legiblep nil
-    :require ((integerp-of-taco2->shell (integerp shell))))
-
-  (taco2 5 'beef 'swiss 'iceberg 'green)
-
-  (change-taco2 (taco2 5 'beef 'swiss 'iceberg 'green)
-		:cheese 'american
-		:sauce 'red)
-
-  (taco-p (change-taco2 (taco2 5 'beef 'swiss 'iceberg 'green)
-			:cheese 'american
-			:sauce 'red))
-
-  (taco2-p (change-taco2 (taco2 5 'beef 'swiss 'iceberg 'green)
-			 :cheese 'american
-			 :sauce 'red))
-
-  (thm (implies (and (taco-p taco)
-		     (taco2-p taco2))
-		(not (equal taco taco2))))
-
-})")
-
-
-
-(defsection tag
-  :parents (cutil)
-  :short "Alias for @('car') used by @(see defaggregate)."
-
-  :long "<p>The types introduced by @('defaggregate') are basically objects of
-the form @('(tag . field-data)'), where the tag says what kind of object is
-being represented (e.g., \"employee\").</p>
-
-<p>The @('tag') function is an alias for @('car'), and so it can be used to get
-the tag from these kinds of objects.  We introduce this alias and keep it
-disabled so that reasoning about the tags of objects does not slow down
-reasoning about @('car') in general.</p>"
-
-  (definlined tag (x)
-    (declare (xargs :guard t))
-    (mbe :logic (car x)
-         :exec (if (consp x)
-                   (car x)
-                 nil)))
-
-  (def-ruleset tag-reasoning nil)
-
-  (defthm tag-forward-to-consp
-    (implies (tag x)
-             (consp x))
-    :rule-classes :forward-chaining
-    :hints(("Goal" :in-theory (enable tag)))))
+;; <p>When set, adds calls of @('cw') that print the aggregate's data members that
+;; fail the predicate test.  This can be used to help debug executions whose
+;; guards were defined using predicates defined with defaggregate.  Note that the
+;; defined predicate can be called many times, even during proofs, so the use of
+;; @(':debugp') can result in a large amount of extra output.</p>
 
 
 
@@ -476,7 +375,7 @@ reasoning about @('car') in general.</p>"
 ;; care about reasoning about these functions, so we go ahead and implement
 ;; them in program mode.
 
-(program)
+
 
 (table defaggregate)
 (table defaggregate 'aggregates
@@ -515,61 +414,18 @@ reasoning about @('car') in general.</p>"
 ;(get-aggregate-fields 'cat (w state))
 
 
-;; We introduce some functions to generate the nmes of constructors,
-;; recognizers, accessors, making macros, changing macros, etc., when given the
-;; base name of the aggregate.
-
-(defun da-constructor-name (name)
-  name)
-
-(defun da-honsed-constructor-name (name)
-  (intern-in-package-of-symbol
-   (concatenate 'string "HONSED-" (symbol-name name))
-   name))
-
-(defun da-accessor-name (name field)
-  (intern-in-package-of-symbol
-   (concatenate 'string (symbol-name name) "->" (symbol-name field))
-   name))
-
-(defun da-recognizer-name (name)
-  (intern-in-package-of-symbol
-   (concatenate 'string (symbol-name name) "-P")
-   name))
-
-(defun da-changer-fn-name (name)
-  (intern-in-package-of-symbol
-   (concatenate 'string "CHANGE-" (symbol-name name) "-FN")
-   name))
-
-(defun da-changer-name (name)
-  (intern-in-package-of-symbol
-   (concatenate 'string "CHANGE-" (symbol-name name))
-   name))
-
-(defun da-maker-fn-name (name)
-  (intern-in-package-of-symbol
-   (concatenate 'string "MAKE-" (symbol-name name) "-FN")
-   name))
-
-(defun da-maker-name (name)
-  (intern-in-package-of-symbol
-   (concatenate 'string "MAKE-" (symbol-name name))
-   name))
-
-(defun da-honsed-maker-fn-name (name)
-  (intern-in-package-of-symbol
-   (concatenate 'string "MAKE-HONSED-" (symbol-name name) "-FN")
-   name))
-
-(defun da-honsed-maker-name (name)
-  (intern-in-package-of-symbol
-   (concatenate 'string "MAKE-HONSED-" (symbol-name name))
-   name))
-
-
 
 ;; Format for the :require field.
+;;
+;; Old style requirements:
+;;     (thmname term)
+;;  OR (thmname term :rule-classes classes)
+;;
+;; We still support :require fields for compatibility with legacy code.  At
+;; present our strategy is to keep most of our defaggregate processing code the
+;; same and just use requirements.  That is, we convert the extended-formal
+;; fields into requirements, then merge that with the :require field, then use
+;; the existing code base.
 
 (defun da-require-p (x)
   (or (and (true-listp x)
@@ -579,8 +435,7 @@ reasoning about @('car') in general.</p>"
                     (equal (third x) :rule-classes)))
            (consp (second x))
            (pseudo-termp (second x)))
-      (er hard? 'da-require-p
-          "Ill-formed requirement: ~x0.~%" x)))
+      (er hard? 'da-require-p "Ill-formed requirement: ~x0.~%" x)))
 
 (defun da-requirelist-p (x)
   (if (atom x)
@@ -590,186 +445,69 @@ reasoning about @('car') in general.</p>"
     (and (da-require-p (car x))
          (da-requirelist-p (cdr x)))))
 
+(defun da-formal-to-requires (basename x)
+  ;; Convert a parsed formal into old-style requirements
+  (declare (xargs :guard (formal-p x)))
+  (b* (((formal x) x)
+       ((when (equal x.guard t))
+        ;; No requirements
+        nil)
+       (rule-classes (or (cdr (assoc :rule-classes x.opts))
+                         :rewrite))
+       (thmname (intern-in-package-of-symbol
+                 (concatenate 'string "RETURN-TYPE-OF-"
+                              (symbol-name basename)
+                              "->"
+                              (symbol-name x.name))
+                 basename))
+       (req (list thmname x.guard :rule-classes rule-classes)))
+    (list req)))
 
+(defun da-formals-to-requires (basename x)
+  ;; Turns parsed formals into require fields
+  (declare (xargs :guard (formallist-p x)))
+  (if (atom x)
+      nil
+    (append (da-formal-to-requires basename (car x))
+            (da-formals-to-requires basename (cdr x)))))
 
-;; We can lay out the components of the structure in either "legibly" by using
-;; maps with named keys, or "illegibly" by using a tree structure.  Illegible
-;; structures are more efficient, but are not very convenient when you are
-;; trying to debug your code.  By default, we lay out the structure legibly.
+(defun da-make-constructor
+  ;; Careful if you change this, see gl/defagg.lisp
+  (basename
+   tag
+   plain-fields ; just names, not extended formals
+   require      ; requirements list
+   honsp
+   legiblep)
+  (da-make-constructor-raw basename tag plain-fields
+                           `(and ,@(strip-cadrs require))
+                           honsp legiblep))
 
+(defun da-make-honsed-constructor
+  (basename
+   tag
+   plain-fields
+   require
+   legiblep)
+  (da-make-honsed-constructor-raw basename tag plain-fields
+                                  `(and ,@(strip-cadrs require))
+                                  legiblep))
 
-; FIELDS MAP.  A "fields map" is an alist that binds each field name to an
-; s-expression that describes how to access it.  For instance, suppose the
-; fields are (A B C).  For a legible structure, the fields map will be:
-;
-;   ((A . (cdr (assoc 'a <body>)))
-;    (B . (cdr (assoc 'b <body>)))
-;    (C . (cdr (assoc 'c <body>))))
-;
-; Where <body> is either X or (cdr X), depending on whether the structure is
-; tagless or not.  For an illegible structure, the (cdr (assoc ...)) terms just
-; get replaced with something horrible like (CAR (CDR (CAR <body>))).
+#||
+(da-make-constructor 'taco :taco '(shell meat cheese lettuce sauce)
+                   '((shell-p-of-taco->shell (shellp shell)))
+                  nil nil)
 
-(defun da-illegible-split-fields (fields)
-  ;; Convert a linear list of fields into a balanced tree with the same fields
-  (let ((length (len fields)))
-    (cond ((equal length 1)
-           (first fields))
-          ((equal length 2)
-           (cons (first fields) (second fields)))
-          (t
-           (let* ((halfway   (floor length 2))
-                  (firsthalf (take halfway fields))
-                  (lasthalf  (nthcdr halfway fields)))
-             (cons (da-illegible-split-fields firsthalf)
-                   (da-illegible-split-fields lasthalf)))))))
-
-(defun da-illegible-fields-map-aux (split-fields path)
-  ;; Convert the balanced tree into a map from field names to paths, e.g.,
-  ;; field1 might be bound to (car (car x)), field2 to (cdr (car x)), etc.
-  (if (consp split-fields)
-      (append (da-illegible-fields-map-aux (car split-fields) `(car ,path))
-              (da-illegible-fields-map-aux (cdr split-fields) `(cdr ,path)))
-    (list (cons split-fields path))))
-
-(defun da-x (name)
-  (intern-in-package-of-symbol "X" name))
-
-(defun da-body (name tag)
-  (if tag
-      `(cdr ,(da-x name))
-    (da-x name)))
-
-(defun da-illegible-fields-map (name tag fields)
-  ;; Convert a linear list of fields into a map from field names to paths.
-  (da-illegible-fields-map-aux (da-illegible-split-fields fields)
-                               (da-body name tag)))
-
-(defun da-illegible-structure-checks-aux (split-fields path)
-  ;; Convert the balanced tree into a list of the consp checks we'll need.
-  (if (consp split-fields)
-      (cons `(consp ,path)
-            (append (da-illegible-structure-checks-aux (car split-fields) `(car ,path))
-                    (da-illegible-structure-checks-aux (cdr split-fields) `(cdr ,path))))
-    nil))
-
-(defun da-illegible-structure-checks (name tag fields)
-  ;; Convert a linear list of fields into the consp checks we'll need.
-  (da-illegible-structure-checks-aux (da-illegible-split-fields fields)
-                                     (da-body name tag)))
-
-(defun da-illegible-pack-aux (honsp split-fields)
-  ;; Convert the tree of split fields into a cons tree for building the struct.
-  (if (consp split-fields)
-      `(,(if honsp 'hons 'cons)
-        ,(da-illegible-pack-aux honsp (car split-fields))
-        ,(da-illegible-pack-aux honsp (cdr split-fields)))
-    split-fields))
-
-(defun da-illegible-pack-fields (honsp tag fields)
-  ;; Convert a linear list of fields into consing code
-  (let ((body (da-illegible-pack-aux honsp (da-illegible-split-fields fields))))
-    (if tag
-        `(,(if honsp 'hons 'cons) ,tag ,body)
-      body)))
-
-;; (da-illegible-pack-fields nil :taco '(shell meat cheese lettuce sauce))
-;;   ==>
-;; (CONS :TACO (CONS (CONS SHELL MEAT)
-;;                   (CONS CHEESE (CONS LETTUCE SAUCE))))
-
-
-
-(defun da-legible-fields-map (name tag fields)
-  ;; Convert a linear list of fields into a map from field names to paths.
-  (if (consp fields)
-      (cons (cons (car fields) `(cdr (assoc ',(car fields) ,(da-body name tag))))
-            (da-legible-fields-map name tag (cdr fields)))
-    nil))
-
-(defun da-legible-pack-fields-aux (honsp fields)
-  ;; Convert a linear list of fields into the pairs for a list operation
-  (if (consp fields)
-      `(,(if honsp 'hons 'cons)
-        (,(if honsp 'hons 'cons) ',(car fields) ,(car fields))
-        ,(da-legible-pack-fields-aux honsp (cdr fields)))
-    nil))
-
-(defun da-legible-pack-fields (honsp tag fields)
-  ;; Convert a linear list of fields into consing code for a legible map
-  (let ((body (da-legible-pack-fields-aux honsp fields)))
-    (if tag
-        `(,(if honsp 'hons 'cons) ,tag ,body)
-      body)))
-
-;; (da-legible-pack-fields nil :taco '(shell meat cheese lettuce sauce))
-;;   ==>
-;; (CONS :TACO (CONS (CONS 'SHELL SHELL)
-;;                   (CONS (CONS 'MEAT MEAT)
-;;                         (CONS (CONS 'CHEESE CHEESE)
-;;                               (CONS (CONS 'LETTUCE LETTUCE)
-;;                                     (CONS (CONS 'SAUCE SAUCE) NIL))))))
-
-
-
-(defun da-fields-map (name tag legiblep fields)
-  ;; Create a fields map of the appropriate type
-  (if legiblep
-      (da-legible-fields-map name tag fields)
-    (da-illegible-fields-map name tag fields)))
-
-(defun da-pack-fields (honsp legiblep tag fields)
-  ;; Create a fields map of the appropriate type
-  (if legiblep
-      (da-legible-pack-fields honsp tag fields)
-    (da-illegible-pack-fields honsp tag fields)))
-
-(defun da-structure-checks (name tag legiblep fields)
-  ;; Check that the object's cdr has the appropriate cons structure
-  (if legiblep
-      `((alistp ,(da-body name tag))
-        (consp ,(da-body name tag)))
-    (da-illegible-structure-checks name tag fields)))
-
-
-
-(defun da-fields-map-let-bindings (map)
-  ;; Convert a fields map into a list of let bindings
-  (if (consp map)
-      (let* ((entry (car map))
-             (field (car entry))
-             (path  (cdr entry)))
-        (cons (list field path)
-              (da-fields-map-let-bindings (cdr map))))
-    nil))
-
-(defun da-make-constructor (name tag fields require honsp legiblep)
-  ;; Previously we allowed construction to be inlined, but we prefer to only
-  ;; inline accessors.
-  `(defund ,(da-constructor-name name) ,fields
-    (declare (xargs :guard (and ,@(strip-cadrs require))))
-    ,(da-pack-fields honsp legiblep tag fields)))
-
-(defun da-make-honsed-constructor (name tag fields require legiblep)
-  `(defun ,(da-honsed-constructor-name name) ,fields
-    (declare (xargs :guard (and ,@(strip-cadrs require))
-                    :guard-hints(("Goal" :in-theory (enable ,(da-constructor-name name))))))
-    (mbe :logic (,(da-constructor-name name) . ,fields)
-         :exec ,(da-pack-fields t legiblep tag fields))))
-
-;; (da-make-constructor 'taco :taco '(shell meat cheese lettuce sauce)
-;;                    '((shell-p-of-taco->shell (shellp shell)))
-;;                   nil nil)
-;;  ==>
 ;; (DEFUND TACO (SHELL MEAT CHEESE LETTUCE SAUCE)
 ;;         (DECLARE (XARGS :GUARD (AND (SHELLP SHELL))))
 ;;         (CONS :TACO (CONS (CONS SHELL MEAT)
 ;;                           (CONS CHEESE (CONS LETTUCE SAUCE)))))
 
-;; (da-make-honsed-constructor 'taco :taco '(shell meat cheese lettuce sauce)
-;;                             '((shell-p-of-taco->shell (shellp shell)))
-;;                             nil)
-;;  ==>
+
+(da-make-honsed-constructor 'taco :taco '(shell meat cheese lettuce sauce)
+                            '((shell-p-of-taco->shell (shellp shell)))
+                            nil)
+
 ;; (DEFUN HONSED-TACO
 ;;        (SHELL MEAT CHEESE LETTUCE SAUCE)
 ;;        (DECLARE (XARGS :GUARD (AND (SHELLP SHELL))
@@ -778,65 +516,41 @@ reasoning about @('car') in general.</p>"
 ;;             :EXEC (HONS :TACO (HONS (HONS SHELL MEAT)
 ;;                                     (HONS CHEESE (HONS LETTUCE SAUCE))))))
 
-;; As discussed in the user-level docomentation, if the :debugp flag is used,
-;; the user can see a lot of extra output that can be distracting.  It would be
-;; better to make this output dynamically enabled/disabled, either via a table
-;; flag or some other trick.  However, time is valuable, and we leave this
-;; improvement as future work.  Anyone who wishes to enable the defaggregate
-;; user to dynamically toggle this debugging output should feel free to do so.
-;; It would be nice to avoid the use of a trust tag, and the defined predicate
-;; should continue to not require the ACL2 state or world as an argument.
+||#
 
-(defun da-insert-debugging-statements-into-require (require)
-  (cond ((atom require)
-         nil)
-        (t (cons `(or ,(car require)
+;; ;; As discussed in the user-level docomentation, if the :debugp flag is used,
+;; ;; the user can see a lot of extra output that can be distracting.  It would be
+;; ;; better to make this output dynamically enabled/disabled, either via a table
+;; ;; flag or some other trick.  However, time is valuable, and we leave this
+;; ;; improvement as future work.  Anyone who wishes to enable the defaggregate
+;; ;; user to dynamically toggle this debugging output should feel free to do so.
+;; ;; It would be nice to avoid the use of a trust tag, and the defined predicate
+;; ;; should continue to not require the ACL2 state or world as an argument.
 
-;; We use output locks, because this cw output can show up during proofs
-;; because of executable counterparts (and we've seen it occur regularly).
+;; (defun da-insert-debugging-statements-into-require (require)
+;;   (cond ((atom require)
+;;          nil)
+;;         (t (cons `(or ,(car require)
 
-                      (with-output-lock
-                       (cw "Check ~x0 failed~%"
-                           ',(car require))))
-                 (da-insert-debugging-statements-into-require (cdr require))))))
+;; ;; We use output locks, because this cw output can show up during proofs
+;; ;; because of executable counterparts (and we've seen it occur regularly).
 
-(defun da-make-recognizer (name tag fields require legiblep debugp)
-  ;; Previously we allowed recognizers to be inlined, but now we prefer to
-  ;; only inline accessors.
-  `(defund ,(da-recognizer-name name) (,(da-x name))
-     (declare (xargs :guard t))
-     (and ,@(if tag
-                (if debugp 
-                    (list `(or (and (consp ,(da-x name))
-                                    (eq (car ,(da-x name)) ,tag))
-                               (with-output-lock
-                                (cw "Stuctural check for consp and tag ~
-                                     equality failed.  Tag should be ~x0.  ~
-                                     Failing instance is:~% ~x1~%~%"
-                                    ,tag
-                                    ,(da-x name)))))
-                `((consp ,(da-x name))
-                  (eq (car ,(da-x name)) ,tag)))
-              nil)
-          ,@(if debugp
-                (list
-                 `(or (and ,@(da-structure-checks name tag legiblep fields))
-                      (with-output-lock
-                       (cw "Structural check for ~x0 failed.  Failing instance ~
-                         is:~% ~x1~%"
-                           ',name
-                           ,(da-x name)))))
-              (da-structure-checks name tag legiblep fields))
-          (let ,(da-fields-map-let-bindings (da-fields-map name tag legiblep fields))
-            (declare (ACL2::ignorable ,@fields))
-            ,(if debugp
-                `(and ,@(da-insert-debugging-statements-into-require (strip-cadrs require)))
-              `(and ,@(strip-cadrs require)))))))
+;;                       (with-output-lock
+;;                        (cw "Check ~x0 failed~%"
+;;                            ',(car require))))
+;;                  (da-insert-debugging-statements-into-require (cdr require))))))
 
-;; (da-make-recognizer 'taco :taco '(shell meat cheese lettuce sauce)
-;;                  '((shell-p-of-taco->shell (shellp shell)))
-;;                    t)
-;; ==>
+;; bozo removed debugp for now
+(defun da-make-recognizer (basename tag plain-fields require legiblep)
+  (da-make-recognizer-raw basename tag plain-fields
+                          `(and ,@(strip-cadrs require))
+                          legiblep))
+
+#||
+(da-make-recognizer 'taco :taco '(shell meat cheese lettuce sauce)
+                 '((shell-p-of-taco->shell (shellp shell)))
+                   t)
+
 ;; (DEFUND TACO-P (X)
 ;;         (DECLARE (XARGS :GUARD T))
 ;;         (AND (CONSP X)
@@ -851,62 +565,21 @@ reasoning about @('car') in general.</p>"
 ;;                   (DECLARE (IGNORABLE SHELL MEAT CHEESE LETTUCE SAUCE))
 ;;                   (AND (SHELLP SHELL)))))
 
-(defun da-make-accessor (name field map)
-  `(defund-inline
-    ,(da-accessor-name name field)
-    (,(da-x name)) ;; formals
-    (declare (xargs :guard (,(da-recognizer-name name) ,(da-x name))
-                    :guard-hints (("Goal" :in-theory (enable ,(da-recognizer-name name))))))
-    ,(cdr (assoc field map))))
+||#
 
-;; (da-make-accessor 'taco 'meat (da-fields-map t '(shell meat cheese lettuce sauce) ))
-;; ==>
-;; (DEFUND TACO->MEAT (X)
-;;         (DECLARE (XARGS :GUARD (TACO-P X)
-;;                         :GUARD-HINTS (("Goal" :IN-THEORY (ENABLE TACO-P)))))
-;;         (CDR (ASSOC 'MEAT (CDR X))))
 
-(defun da-make-accessors-aux (name fields map)
+(defun da-fields-recognizer-map (basename fields)
+  ;; Maps each field to (foo->field x)
   (if (consp fields)
-      (cons (da-make-accessor name (car fields) map)
-            (da-make-accessors-aux name (cdr fields) map))
+      (cons (cons (car fields) (list (da-accessor-name basename (car fields))
+                                     (da-x basename)))
+            (da-fields-recognizer-map basename (cdr fields)))
     nil))
 
-(defun da-make-accessors (name tag fields legiblep)
-  (da-make-accessors-aux name fields (da-fields-map name tag legiblep fields)))
-
-(defun da-make-accessor-of-constructor (name field all-fields)
-  `(defthm ,(intern-in-package-of-symbol (concatenate 'string
-                                                      (symbol-name (da-accessor-name name field))
-                                                      "-OF-"
-                                                      (symbol-name (da-constructor-name name)))
-                                         name)
-     (equal (,(da-accessor-name name field) (,(da-constructor-name name) ,@all-fields))
-            ,field)
-     :hints(("Goal" :in-theory (enable ,(da-accessor-name name field)
-                                       ,(da-constructor-name name))))))
-
-(defun da-make-accessors-of-constructor-aux (name fields all-fields)
+(defun da-accessor-names (basename fields)
   (if (consp fields)
-      (cons (da-make-accessor-of-constructor name (car fields) all-fields)
-            (da-make-accessors-of-constructor-aux name (cdr fields) all-fields))
-    nil))
-
-(defun da-make-accessors-of-constructor (name fields)
-  (da-make-accessors-of-constructor-aux name fields fields))
-
-
-(defun da-fields-recognizer-map (name fields)
-  (if (consp fields)
-      (cons (cons (car fields) (list (da-accessor-name name (car fields))
-                                     (da-x name)))
-            (da-fields-recognizer-map name (cdr fields)))
-    nil))
-
-(defun da-accessor-names (name fields)
-  (if (consp fields)
-      (cons (da-accessor-name name (car fields))
-            (da-accessor-names name (cdr fields)))
+      (cons (da-accessor-name basename (car fields))
+            (da-accessor-names basename (cdr fields)))
     nil))
 
 (defun da-make-requirement-of-recognizer (name require map accnames)
@@ -931,459 +604,338 @@ reasoning about @('car') in general.</p>"
                                           (da-accessor-names name fields)))
 
 
+(defun da-field-doc (x acc base-pkg state)
+  (declare (xargs :guard (formal-p x)))
+  (b* (((formal x) x)
 
-(defun da-changer-args-to-alist (args valid-fields)
-  (cond ((null args)
-         nil)
-        ((atom args)
-         (er hard? 'da-changer-args-to-alist
-             "Expected a true-list, but instead it ends with ~x0." args))
-        ((atom (cdr args))
-         (er hard? 'da-changer-args-to-alist
-             "Expected :field val pairs, but found ~x0." args))
-        (t
-         (let ((field (car args))
-               (value (cadr args)))
-           (and (or (member-equal field valid-fields)
-                    (er hard? 'da-changer-args-to-alist
-                        "~x0 is not among the allowed fields, ~&1." field valid-fields))
-                (cons (cons field value)
-                      (da-changer-args-to-alist (cddr args) valid-fields)))))))
+       (acc (str::revappend-chars "<li>" acc))
+       ((mv name-str state) (xdoc::fmt-to-str x.name base-pkg state))
+       (acc (str::revappend-chars "<tt>" acc))
+       (acc (xdoc::simple-html-encode-str name-str 0 (length name-str) acc))
+       (acc (str::revappend-chars "</tt>" acc))
 
-(defun da-make-valid-fields-for-changer (fields)
-  (if (consp fields)
-      (cons (intern-in-package-of-symbol (symbol-name (car fields)) :keyword)
-            (da-make-valid-fields-for-changer (cdr fields)))
-    nil))
+       ((when (and (eq x.guard t)
+                   (equal x.doc "")))
+        ;; Nothing more to say, just a plain field
+        (b* ((acc (str::revappend-chars "</li>" acc))
+             (acc (cons #\Newline acc)))
+          (mv acc state)))
 
+       (acc (str::revappend-chars " &mdash; " acc))
 
+       (acc (if (equal x.doc "")
+                acc
+              (b* ((acc (str::revappend-chars x.doc acc))
+                   (acc (if (ends-with-period-p x.doc)
+                            acc
+                          (cons #\. acc))))
+                acc)))
 
+       ((when (eq x.guard t))
+        (b* ((acc (str::revappend-chars "</li>" acc))
+             (acc (cons #\Newline acc)))
+          (mv acc state)))
 
-(defun da-make-changer-fn-aux (name fields)
-  (if (consp fields)
-      (let ((kwd-name (intern-in-package-of-symbol (symbol-name (car fields)) :keyword))
-            (alist (intern-in-package-of-symbol "ALIST" name))
-            (x     (da-x name)))
-        (cons `(if (assoc ,kwd-name ,alist)
-                   (cdr (assoc ,kwd-name ,alist))
-                 (list ',(da-accessor-name name (car fields)) ,x))
-              (da-make-changer-fn-aux name (cdr fields))))
-    nil))
+       (acc (if (equal x.doc "")
+                acc
+              (str::revappend-chars "<br/>&nbsp;&nbsp;&nbsp;&nbsp;" acc)))
+       (acc (str::revappend-chars "<color rgb='#606060'>" acc))
+       ((mv guard-str state) (xdoc::fmt-to-str x.guard base-pkg state))
+       ;; Using @('...') here isn't necessarily correct.  If the sexpr has
+       ;; something in it that can lead to '), we are hosed.  BOZO eventually
+       ;; check for this and make sure we use <code> tags instead, if it
+       ;; happens.
+       (acc (str::revappend-chars "Invariant @('" acc))
+       (acc (str::revappend-chars guard-str acc))
+       (acc (str::revappend-chars "').</color></li>" acc))
+       (acc (cons #\Newline acc)))
+    (mv acc state)))
 
-(defun da-make-changer-fn (name fields)
-  (let ((alist (intern-in-package-of-symbol "ALIST" name))
-        (x     (da-x name)))
-    `(defun ,(da-changer-fn-name name) (,x ,alist)
-       (declare (xargs :mode :program))
-       (cons ',(da-constructor-name name)
-             ,(cons 'list (da-make-changer-fn-aux name fields))))))
+(defun da-fields-doc-aux (x acc base-pkg state)
+  (declare (xargs :guard (formallist-p x)))
+  (b* (((when (atom x))
+        (mv acc state))
+       ((mv acc state)
+        (da-field-doc (car x) acc base-pkg state)))
+    (da-fields-doc-aux (cdr x) acc base-pkg state)))
 
-(defun da-make-changer (name fields)
-  `(defmacro ,(da-changer-name name) (,(da-x name) &rest args)
-     (,(da-changer-fn-name name) ,(da-x name)
-      (da-changer-args-to-alist args ',(da-make-valid-fields-for-changer fields)))))
+(defun da-fields-doc (x acc base-pkg state)
+  (declare (xargs :guard (formallist-p x)))
+  (b* ((acc (str::revappend-chars "<ul>" acc))
+       ((mv acc state) (da-fields-doc-aux x acc base-pkg state))
+       (acc (str::revappend-chars "</ul>" acc)))
+    (mv acc state)))
 
-
-
-
-
-(defun da-make-maker-fn-aux (name fields)
-  (if (consp fields)
-      (let ((kwd-name (intern-in-package-of-symbol (symbol-name (car fields)) :keyword))
-            (alist    (intern-in-package-of-symbol "ALIST" name)))
-        (cons `(if (assoc ,kwd-name ,alist)
-                   (cdr (assoc ,kwd-name ,alist))
-                 nil)
-              (da-make-maker-fn-aux name (cdr fields))))
-    nil))
-
-(defun da-make-maker-fn (name fields)
-  (let ((alist (intern-in-package-of-symbol "ALIST" name)))
-    `(defun ,(da-maker-fn-name name) (,alist)
-       (declare (xargs :mode :program))
-       (cons ',(da-constructor-name name)
-             ,(cons 'list (da-make-maker-fn-aux name fields))))))
-
-(defun da-make-maker (name fields)
-  `(defmacro ,(da-maker-name name) (&rest args)
-     (,(da-maker-fn-name name)
-      (da-changer-args-to-alist args ',(da-make-valid-fields-for-changer fields)))))
-
-
-(defun da-make-honsed-maker-fn (name fields)
-  (let ((alist (intern-in-package-of-symbol "ALIST" name)))
-    `(defun ,(da-honsed-maker-fn-name name) (,alist)
-       (declare (xargs :mode :program))
-       (cons ',(da-honsed-constructor-name name)
-             ,(cons 'list (da-make-maker-fn-aux name fields))))))
-
-(defun da-make-honsed-maker (name fields)
-  `(defmacro ,(da-honsed-maker-name name) (&rest args)
-     (,(da-honsed-maker-fn-name name)
-      (da-changer-args-to-alist args ',(da-make-valid-fields-for-changer fields)))))
-
-
-
-
-;; Support for B* Integration...
-
-(defun da-patbind-make-field-vars-alist (var fields)
-  ;; Given var = 'foo and fields = '(a b c),
-  ;; Constructs '((a . foo.a) (b . foo.b) (c . foo.c))
-  (if (atom fields)
-      nil
-    (acons (car fields)
-           (intern-in-package-of-symbol
-            (concatenate 'string (symbol-name var) "." (symbol-name (car fields)))
-            var)
-          (da-patbind-make-field-vars-alist var (cdr fields)))))
-
-(defun da-patbind-find-unused-vars (form vars)
-  ;; Return all vars not used in form.  We do this completely stupidly, not
-  ;; even avoiding quoted constants.  We can try to improve this if it's a
-  ;; problem, but at some level what we're trying to do is inherently broken
-  ;; anyway -- we just hope it's useful most of the time anyway.
-  (if (atom form)
-      (if (symbolp form)
-          (remove1 form vars)
-        vars)
-    (da-patbind-find-unused-vars (car form)
-                                 (da-patbind-find-unused-vars (cdr form) vars))))
-
-;; (da-patbind-find-unused-vars '(foo (+ 1 a) c) '(a b c d)) --> '(b d)
-
-(defun da-patbind-remove-unused-vars (valist unused)
-  (cond ((atom valist)
-         nil)
-        ((member (cdar valist) unused)
-         (da-patbind-remove-unused-vars (cdr valist) unused))
-        (t
-         (cons (car valist)
-               (da-patbind-remove-unused-vars (cdr valist) unused)))))
-
-(defun da-patbind-alist-to-bindings (name valist target)
-  (if (atom valist)
-      nil
-    (let* ((accessor (da-accessor-name name (caar valist)))
-           (call     (list accessor target))     ;; (taco->shell foo)
-           (binding  (list (cdar valist) call))) ;; (x.foo (taco->shell foo))
-      (cons binding
-            (da-patbind-alist-to-bindings name (cdr valist) target)))))
-
-
-(defun da-patbind-fn (name fields args forms rest-expr)
-  (b* ((- (or (and (tuplep 1 args)
-                   (tuplep 1 forms)
-                   (symbolp (car args))
-                   (not (booleanp (car args))))
-
-              (er hard? 'da-patbind-fn "B* bindings for ~x0 aggregates must have the ~
-form ((~x0 <name>) <expr>), where <name> is a symbol and <expr> is a single ~
-term.  The attempted binding of~|~% ~p1~%~%is not of this form."
-                  name (cons (cons name args) forms))))
-
-       (var             (car args))
-       (full-vars-alist (da-patbind-make-field-vars-alist var fields))
-       (field-vars      (strip-cdrs full-vars-alist))
-       (unused-vars     (da-patbind-find-unused-vars rest-expr field-vars))
-       (vars-alist      (da-patbind-remove-unused-vars full-vars-alist unused-vars))
-       ((unless vars-alist)
-        (progn$
-         (cw "Note: not introducing any ~x0 field bindings for ~x1, since ~
-              none of its fields appear to be used.~%" name var)
-         rest-expr))
-
-       ;;(- (cw "Var is ~x0.~%" var))
-       ;;(- (cw "Full vars alist is ~x0.~%" full-vars-alist))
-       ;;(- (cw "Unnecessary field vars are ~x0.~%" unused-vars))
-       ;;(- (cw "Optimized vars alist is ~x0.~%" vars-alist))
-
-       ;; The below is adapted from patbind-nth.  Sol is using (pack binding)
-       ;; to generate a name that is probably unused.  We'll do the same.
-
-       (binding  (if forms (car forms) var))
-       (evaledp  (or (atom binding) (eq (car binding) 'quote)))
-       (target   (if evaledp binding (acl2::pack binding)))
-       (bindings (da-patbind-alist-to-bindings name vars-alist target))
-
-       ;;(- (cw "Binding is ~x0.~%" var))
-       ;;(- (cw "Evaledp is ~x0.~%" var))
-       ;;(- (cw "Target is ~x0.~%" target))
-       ;;(- (cw "New bindings are ~x0.~%" bindings))
-
-       )
-
-      (if evaledp
-          `(b* ,bindings ,rest-expr)
-        `(let ((,target ,binding))
-           (b* ,bindings
-               (check-vars-not-free (,target) ,rest-expr))))))
-
-(defun da-make-binder (name fields)
-  `(defmacro ,(intern-in-package-of-symbol
-               (concatenate 'string "PATBIND-" (symbol-name name))
-               name)
-     (args forms rest-expr)
-     (da-patbind-fn ',name ',fields args forms rest-expr)))
-
-
-
-;; Autodoc support for aggregates:
-;; Ugh.  Generating these strings is nasty.  Hard to get the escaping right.
-
-(defun da-main-autodoc-for-requirements-aux (require acc)
-  (if (atom require)
-      acc
-    (let* ((name   (caar require))
-           (acc    (str::revappend-chars "@(gthm " acc))
-           ;; This isn't right, in general.  Need to properly get the name
-           ;; into escaped format.
-           (acc    (str::revappend-chars (symbol-package-name name) acc))
-           (acc    (str::revappend-chars "::" acc))
-           (acc    (str::revappend-chars (symbol-name name) acc))
-           (acc    (str::revappend-chars ")" acc))
-           (acc    (cons #\Newline acc)))
-      (da-main-autodoc-for-requirements-aux (cdr require) acc))))
-
-(defun da-main-autodoc-for-requirements (require acc)
-  (let* ((acc (str::revappend-chars "<h3>Field Requirements</h3>" acc))
-         (acc (cons #\Newline acc))
-         (acc (str::revappend-chars "<dl>" acc))
-         (acc (da-main-autodoc-for-requirements-aux require acc))
-         (acc (str::revappend-chars "</dl>" acc))
-         (acc (cons #\Newline acc)))
-    acc))
-
-(defun da-main-autodoc-for-fields-aux (fields acc)
-  (if (atom fields)
-      acc
-    (let* ((acc  (str::revappend-chars "<li><tt>" acc))
-           (acc  (xdoc::sym-mangle (car fields) (car fields) acc))
-           (acc  (str::revappend-chars "</tt></li>" acc))
-           (acc  (cons #\Newline acc)))
-      (da-main-autodoc-for-fields-aux (cdr fields) acc))))
-
-(defun da-main-autodoc-for-fields (fields acc)
-  (let* ((acc (str::revappend-chars "<ul>" acc))
-         (acc (cons #\Newline acc))
-         (acc (da-main-autodoc-for-fields-aux fields acc))
-         (acc (str::revappend-chars "</ul>" acc))
-         (acc (cons #\Newline acc)))
-    acc))
-
-(defun da-main-autodoc (name fields require parents short long)
-  (let* (;; We begin by constructing the :long string
-         (acc  nil)
-         (foop (da-recognizer-name name))
-         (acc  (str::revappend-chars "<p>@(call " acc))
-         ;; This isn't right, in general.  Need to properly get the name
-         ;; into escaped format.
-         (acc  (str::revappend-chars (symbol-package-name foop) acc))
-         (acc  (str::revappend-chars "::" acc))
-         (acc  (str::revappend-chars (symbol-name foop) acc))
-         (acc  (str::revappend-chars ") is a @(see vl::defaggregate) of the following fields.</p>" acc))
-         (acc  (da-main-autodoc-for-fields fields acc))
-         (acc  (str::revappend-chars "<p>Source link: @(srclink " acc))
-         (acc  (str::revappend-chars (string-downcase (symbol-name name)) acc))
-         (acc  (str::revappend-chars ")</p>" acc))
-         (acc  (str::revappend-chars (or long "") acc))
-         (acc  (da-main-autodoc-for-requirements require acc))
-         (long (coerce (reverse acc) 'string)))
-    `(defxdoc ,foop
-       :parents ,parents
-       :short ,short
-       :long ,long)))
+(defun da-main-autodoc (name fields parents short long base-pkg state)
+  (b* ( ;; We begin by constructing the :long string
+       (acc  nil)
+       (foop (da-recognizer-name name))
+       (acc  (str::revappend-chars "<p>@(call " acc))
+       ;; This isn't right, in general.  Need to properly get the name
+       ;; into escaped format.
+       (acc  (str::revappend-chars (symbol-package-name foop) acc))
+       (acc  (str::revappend-chars "::" acc))
+       (acc  (str::revappend-chars (symbol-name foop) acc))
+       (acc  (str::revappend-chars ") is a @(see cutil::defaggregate) of the following fields.</p>" acc))
+       ((mv acc state) (da-fields-doc fields acc base-pkg state))
+       (acc  (str::revappend-chars "<p>Source link: @(srclink " acc))
+       (acc  (str::revappend-chars (string-downcase (symbol-name name)) acc))
+       (acc  (str::revappend-chars ")</p>" acc))
+       (acc  (str::revappend-chars (or long "") acc))
+       (long (str::rchars-to-string acc)))
+    (mv `(defxdoc ,foop
+           :parents ,parents
+           :short ,short
+           :long ,long)
+        state)))
 
 (defun da-field-autodoc (name field)
-  (let* ((foop     (da-recognizer-name name))
-         (accessor (da-accessor-name name field))
-         (short    (str::cat "Access the <tt>" (string-downcase (symbol-name field))
-                             "</tt> field of a @(see "
-                             (symbol-package-name foop) "::" (symbol-name foop)
-                             ") structure.")))
+  (declare (xargs :guard (formal-p field)))
+  (b* (((formal field) field)
+       (foop     (da-recognizer-name name))
+       (accessor (da-accessor-name name field.name))
+       ;; bozo escaping issues...
+       (short    (str::cat "Access the <tt>" (string-downcase (symbol-name field.name))
+                           "</tt> field of a @(see "
+                           (symbol-package-name foop) "::" (symbol-name foop)
+                           ") structure.")))
     `(defxdoc ,accessor
        :parents (,foop)
        :short ,short)))
 
 (defun da-fields-autodoc (name fields)
+  (declare (xargs :guard (formallist-p fields)))
   (if (consp fields)
       (cons (da-field-autodoc name (car fields))
             (da-fields-autodoc name (cdr fields)))
     nil))
 
-(defun da-autodoc (name fields require parents short long)
-  (cons (da-main-autodoc name fields require parents short long)
-        (da-fields-autodoc name fields)))
+(defun da-autodoc (name fields parents short long base-pkg state)
+  (declare (xargs :guard (formallist-p fields)))
+  (b* (((mv main state)
+        (da-main-autodoc name fields parents short long base-pkg state))
+       (accessors (da-fields-autodoc name fields)))
+    (mv (cons main accessors) state)))
 
-(defun defaggregate-fn (name fields tag require honsp legiblep
-                             already-definedp debugp mode parents short long
-                             rest)
-  (and (or (symbolp name)
-           (er hard 'defaggregate "Name must be a symbol."))
-       (or (symbol-listp fields)
-           (er hard 'defaggregate "Fields must be a list of symbols."))
-       (or (not tag)
-           (and (symbolp tag)
-                (equal (symbol-package-name tag) "KEYWORD"))
-           (er hard 'defaggregate "Tag must be a keyword symbol or NIL."))
-       (or (no-duplicatesp fields)
-           (er hard 'defaggregate "Fields must be unique."))
-       (or (consp fields)
-           (er hard 'defaggregate "There must be at least one field."))
-       (or (da-requirelist-p require)
-           (er hard 'defaggregate "Malformed requirements."))
-       (or (no-duplicatesp (strip-cars require))
-           (er hard 'defaggregate "The names given to :require must be unique."))
-       (or (member debugp '(t nil))
-           (er hard 'defaggregate "Debugp must be t or nil"))
-       (or (member mode '(:logic :program))
-           (er hard 'defaggregate "The mode must be :logic or :program."))
-       (or (eq mode :logic)
-           (not already-definedp)
-           (er hard 'defaggregate ":mode :program and already-definedp cannot ~
-                                   be used together."))
-       (or (symbol-listp parents)
-           (er hard 'defaggregate "The :parents must be a list of symbols."))
-       (or (stringp short)
-           (not short)
-           (er hard 'defaggregate ":short must be a string (or nil)"))
-       (or (stringp long)
-           (not long)
-           (er hard 'defaggregate ":long must be a string (or nil)"))
 
-       (let* ((foop             (da-recognizer-name name))
-              (make-foo         (da-constructor-name name))
-              (legiblep         (and legiblep (not honsp)))
-              ;(accessors        (da-accessor-names name fields))
-              ;(maker            (da-maker-name name))
-              ;(maker-fn         (da-maker-fn-name name))
-              ;(changer          (da-changer-name name))
-              ;(changer-fn       (da-changer-fn-name name))
-              (foop-of-make-foo (intern-in-package-of-symbol (concatenate 'string
-                                                                          (symbol-name foop)
-                                                                          "-OF-"
-                                                                          (symbol-name make-foo))
-                                                             name))
-              (x                (da-x name)))
-         `(progn
+(defconst *da-valid-keywords*
+  '(:tag
+    :legiblep
+    :hons
+    :mode
+    :parents
+    :short
+    :long
+    :already-definedp
+    ;; deprecated options
+    :require
+    :rest))
 
-            (da-extend-table ',name ',fields)
-            ,@(da-autodoc name fields require parents short long)
+(defun formal->default (x)
+  (declare (xargs :guard (formal-p x)))
+  (cdr (assoc :default (formal->opts x))))
 
-            ,(if (eq mode :logic)
-                 '(logic)
-               '(program))
+(defun formallist->defaults (x)
+  (declare (xargs :guard (formallist-p x)))
+  (if (atom x)
+      nil
+    (cons (formal->default (car x))
+          (formallist->defaults (cdr x)))))
 
-            ,@(if already-definedp
+(defun defaggregate-fn (name rest state)
+  (b* ((__function__ 'defaggregate)
+
+       (current-defun-mode (default-defun-mode (w state)))
+       (base-pkg (pkg-witness (acl2::f-get-global 'acl2::current-package state)))
+
+       ((unless (symbolp name))
+        (mv (raise "Name must be a symbol.") state))
+       (ctx (list 'defaggregate name))
+       ((mv main-stuff other-events) (split-/// ctx rest))
+       ((mv kwd-alist field-specs)
+        (extract-keywords ctx *da-valid-keywords* main-stuff nil))
+
+       ((unless (consp field-specs))
+        (mv (raise "~x0: No fields given." name) state))
+       ((unless (tuplep 1 field-specs))
+        (mv (raise "~x0: Too many field specifiers: ~x1" name field-specs) state))
+       (efields     (parse-formals ctx (car field-specs) '(:rule-classes :default)))
+       (field-names (formallist->names efields))
+       (field-defaults (formallist->defaults efields))
+       ((unless (no-duplicatesp field-names))
+        (mv (raise "~x0: field names must be unique." name) state))
+       ((unless (consp field-names))
+        (mv (raise "~x0: there must be at least one field." name) state))
+
+       ;; legacy support for :rest, eventually remove this.
+       (legacy-rest (cdr (assoc :rest kwd-alist)))
+       ((unless (true-listp legacy-rest))
+        (mv (raise "~x0: :rest must be a true-listp." name) state))
+       (other-events (append legacy-rest other-events))
+
+       (tag (cdr (assoc :tag kwd-alist)))
+       ((unless (or (not tag)
+                    (and (symbolp tag)
+                         (equal (symbol-package-name tag) "KEYWORD"))))
+        (mv (raise "~x0: Tag must be a keyword symbol or NIL, found ~x1" name tag) state))
+
+       (parents (or (cdr (assoc :parents kwd-alist)) '(acl2::undocumented)))
+       ((unless (symbol-listp parents))
+        (mv (raise "~x0: :parents must be a list of symbols." name) state))
+
+       (short (cdr (assoc :short kwd-alist)))
+       ((unless (or (stringp short) (not short)))
+        (mv (raise "~x0: :short must be a string (or nil)" name) state))
+
+       (long (cdr (assoc :long kwd-alist)))
+       ((unless (or (stringp long) (not long)))
+        (mv (raise "~x0: :long must be a string (or nil)" name) state))
+
+       (mode (or (cdr (assoc :mode kwd-alist)) current-defun-mode))
+       ((unless (member mode '(:logic :program)))
+        (mv (raise "~x0: :mode must be :logic or :program" name) state))
+
+       (already-definedp (cdr (assoc :already-definedp kwd-alist)))
+       ((unless (booleanp already-definedp))
+        (mv (raise "~x0: :already-definedp should be a boolean." name) state))
+
+       (legiblep (if (assoc :legiblep kwd-alist)
+                     (cdr (assoc :legiblep kwd-alist))
+                   t))
+       ((unless (booleanp legiblep))
+        (mv (raise "~x0: :legiblep should be a boolean." name) state))
+
+       (honsp (cdr (assoc :hons kwd-alist)))
+       ((unless (booleanp honsp))
+        (mv (raise "~x0: :hons should be a boolean." name) state))
+
+       ;; Expand requirements to include stuff from the field specifiers.
+       (old-reqs   (cdr (assoc :require kwd-alist)))
+       (field-reqs (da-formals-to-requires name efields))
+       (require    (append field-reqs old-reqs))
+       ((unless (da-requirelist-p require))
+        (mv (raise "~x0: malformed :require field" name) state))
+       ((unless (no-duplicatesp (strip-cars require)))
+        (mv (raise "~x0: The names given to :require must be unique." name) state))
+
+       (x        (da-x name))
+       (foop     (da-recognizer-name name))
+       (make-foo (da-constructor-name name))
+       (legiblep (and legiblep (not honsp)))
+
+       (foop-of-make-foo
+        (intern-in-package-of-symbol (str::cat (symbol-name foop)
+                                               "-OF-"
+                                               (symbol-name make-foo))
+                                     name))
+       ((mv doc-events state)
+        (da-autodoc name efields parents short long base-pkg state))
+
+       (event
+        `(progn
+           (da-extend-table ',name ',field-names)
+           ,@doc-events
+
+           ,(if (eq mode :logic)
+                '(logic)
+              '(program))
+
+           ,@(if already-definedp
                  nil
-                (list (da-make-recognizer name tag fields require legiblep
-                                          debugp)))
-            ,(da-make-constructor name tag fields require honsp legiblep)
-            ,(da-make-honsed-constructor name tag fields require legiblep)
-            ,@(da-make-accessors name tag fields legiblep)
+               (list (da-make-recognizer name tag field-names require legiblep)))
+           ,(da-make-constructor name tag field-names require honsp legiblep)
+           ,(da-make-honsed-constructor name tag field-names require legiblep)
+           ,@(da-make-accessors name tag field-names legiblep)
 
-            ,@(and
-               (eq mode :logic)
-               `((defthm ,(intern-in-package-of-symbol
-                           (concatenate 'string (symbol-name make-foo) "-UNDER-IFF")
-                           name)
-                   (iff (,make-foo ,@fields)
-                        t)
-                   :hints(("Goal" :in-theory (enable ,make-foo))))
+           ,@(and
+              (eq mode :logic)
+              `((defthm ,(intern-in-package-of-symbol
+                          (concatenate 'string (symbol-name make-foo) "-UNDER-IFF")
+                          name)
+                  (iff (,make-foo ,@field-names)
+                       t)
+                  :hints(("Goal" :in-theory (enable ,make-foo))))
 
-                 (defthm ,(intern-in-package-of-symbol
-                           (concatenate 'string "BOOLEANP-OF-" (symbol-name foop))
-                           name)
-                   (equal (booleanp (,foop ,x))
-                          t)
-                   :rule-classes :type-prescription
-                   :hints(("Goal" :in-theory (enable ,foop))))
+                (defthm ,(intern-in-package-of-symbol
+                          (concatenate 'string "BOOLEANP-OF-" (symbol-name foop))
+                          name)
+                  (equal (booleanp (,foop ,x))
+                         t)
+                  :rule-classes :type-prescription
+                  :hints(("Goal" :in-theory (enable ,foop))))
 
-                 ,(if (consp require)
-                      `(defthm ,foop-of-make-foo
-                         (implies (force (and ,@(strip-cadrs require)))
-                                  (equal (,foop (,make-foo ,@fields))
-                                         t))
-                         :hints(("Goal" :in-theory (enable ,foop ,make-foo))))
-                    `(defthm ,foop-of-make-foo
-                       (equal (,foop (,make-foo ,@fields))
-                              t)
-                       :hints(("Goal" :in-theory (enable ,foop ,make-foo)))))
+                ,(if (consp require)
+                     `(defthm ,foop-of-make-foo
+                        (implies (force (and ,@(strip-cadrs require)))
+                                 (equal (,foop (,make-foo ,@field-names))
+                                        t))
+                        :hints(("Goal" :in-theory (enable ,foop ,make-foo))))
+                   `(defthm ,foop-of-make-foo
+                      (equal (,foop (,make-foo ,@field-names))
+                             t)
+                      :hints(("Goal" :in-theory (enable ,foop ,make-foo)))))
 
-                 ,@(and tag
-                        `((defthm ,(intern-in-package-of-symbol
-                                    (str::cat "TAG-OF-" (symbol-name make-foo))
-                                    name)
-                            (equal (tag (,make-foo ,@fields))
-                                   ,tag)
-                            :hints(("Goal" :in-theory (enable tag ,make-foo))))
+                ,@(and tag
+                       `((defthm ,(intern-in-package-of-symbol
+                                   (str::cat "TAG-OF-" (symbol-name make-foo))
+                                   name)
+                           (equal (tag (,make-foo ,@field-names))
+                                  ,tag)
+                           :hints(("Goal" :in-theory (enable tag ,make-foo))))
 
-                          (defthm ,(intern-in-package-of-symbol
-                                    (str::cat "TAG-WHEN-" (symbol-name foop))
-                                    name)
-                            (implies (,foop ,x)
-                                     (equal (tag ,x)
-                                            ,tag))
-                            :rule-classes ((:rewrite :backchain-limit-lst 0)
-                                           (:forward-chaining))
-                            :hints(("Goal" :in-theory (enable tag ,foop))))
+                         (defthm ,(intern-in-package-of-symbol
+                                   (str::cat "TAG-WHEN-" (symbol-name foop))
+                                   name)
+                           (implies (,foop ,x)
+                                    (equal (tag ,x)
+                                           ,tag))
+                           :rule-classes ((:rewrite :backchain-limit-lst 0)
+                                          (:forward-chaining))
+                           :hints(("Goal" :in-theory (enable tag ,foop))))
 
-                          (defthm ,(intern-in-package-of-symbol
-                                    (str::cat (symbol-name foop) "-WHEN-WRONG-TAG")
-                                    name)
-                            (implies (not (equal (tag ,x) ,tag))
-                                     (equal (,foop ,x)
-                                            nil))
-                            :rule-classes ((:rewrite :backchain-limit-lst 1)))
+                         (defthm ,(intern-in-package-of-symbol
+                                   (str::cat (symbol-name foop) "-WHEN-WRONG-TAG")
+                                   name)
+                           (implies (not (equal (tag ,x) ,tag))
+                                    (equal (,foop ,x)
+                                           nil))
+                           :rule-classes ((:rewrite :backchain-limit-lst 1)))
 
-                          (add-to-ruleset tag-reasoning
-                                          '(,(intern-in-package-of-symbol
-                                              (str::cat "TAG-WHEN-" (symbol-name foop))
-                                              name)
-                                            ,(intern-in-package-of-symbol
-                                              (str::cat (symbol-name foop) "-WHEN-WRONG-TAG")
-                                              name)))))
+                         (add-to-ruleset tag-reasoning
+                                         '(,(intern-in-package-of-symbol
+                                             (str::cat "TAG-WHEN-" (symbol-name foop))
+                                             name)
+                                           ,(intern-in-package-of-symbol
+                                             (str::cat (symbol-name foop) "-WHEN-WRONG-TAG")
+                                             name)))))
 
-                 (defthm ,(intern-in-package-of-symbol
-                           (concatenate 'string "CONSP-WHEN-" (symbol-name foop))
-                           name)
-                   (implies (,foop ,x)
-                            (consp ,x))
-                   :rule-classes :compound-recognizer
-                   :hints(("Goal" :in-theory (enable ,foop))))
+                (defthm ,(intern-in-package-of-symbol
+                          (concatenate 'string "CONSP-WHEN-" (symbol-name foop))
+                          name)
+                  (implies (,foop ,x)
+                           (consp ,x))
+                  :rule-classes :compound-recognizer
+                  :hints(("Goal" :in-theory (enable ,foop))))
 
-                 ,@(da-make-accessors-of-constructor name fields)
-                 ,@(da-make-requirements-of-recognizer name require fields)))
+                ,@(da-make-accessors-of-constructor name field-names)
+                ,@(da-make-requirements-of-recognizer name require field-names)))
 
+           ,(da-make-binder name field-names)
 
-            ,(da-make-binder name fields)
+           ,(da-make-changer-fn name field-names)
+           ,(da-make-changer name field-names)
 
-            ,(da-make-changer-fn name fields)
-            ,(da-make-changer name fields)
+           ,(da-make-maker-fn name field-names field-defaults)
+           ,(da-make-maker name field-names)
 
-            ,(da-make-maker-fn name fields)
-            ,(da-make-maker name fields)
+           ,(da-make-honsed-maker-fn name field-names field-defaults)
+           ,(da-make-honsed-maker name field-names)
 
-            ,(da-make-honsed-maker-fn name fields)
-            ,(da-make-honsed-maker name fields)
+           . ,other-events)))
+    (mv event state)))
 
-            . ,rest
-
-            ))))
-
-(defmacro defaggregate (name fields &key
-                             tag
-                             require
-                             (legiblep ''t)
-                             hons
-                             already-definedp
-                             debugp
-                             mode
-                             (parents '(acl2::undocumented))
-                             short
-                             long
-                             rest)
-  `(make-event (let ((mode (or ',mode (default-defun-mode (w state)))))
-                 (defaggregate-fn ',name ',fields ',tag ',require ',hons ',legiblep
-                   ',already-definedp ',debugp mode ',parents ',short ',long
-                   ',rest))))
+(defmacro defaggregate (name &rest args)
+  `(make-event
+    (b* (((mv event state)
+          (defaggregate-fn ',name ',args state)))
+      (value event))))

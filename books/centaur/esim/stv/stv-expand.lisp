@@ -30,50 +30,41 @@
 (local (include-book "centaur/vl/util/arithmetic" :dir :system))
 
 
-
-(defsection stv-maybe-match-select
+(define stv-maybe-match-select ((x vl::vl-expr-p))
+  :returns (mv (err? vl::vl-maybe-string-p :rule-classes :type-prescription)
+               (from vl::vl-expr-p :hyp :fguard)
+               (msb? vl::vl-maybe-natp :rule-classes :type-prescription)
+               (lsb? vl::vl-maybe-natp :rule-classes :type-prescription))
   :parents (stv-expand)
+  :short "Match an expression with an optional bit- or part-select."
+  (b* (((unless (vl::vl-nonatom-p x))
+        (mv nil x nil nil))
+       (op   (vl::vl-nonatom->op x))
+       (args (vl::vl-nonatom->args x))
 
-  (defund stv-maybe-match-select (x)
-    "Returns (MV FROM MSB? LSB?)"
-    (declare (xargs :guard (vl::vl-expr-p x)))
-    (b* (((unless (vl::vl-nonatom-p x))
-          (mv x nil nil))
-         (op   (vl::vl-nonatom->op x))
-         (args (vl::vl-nonatom->args x))
+       ((when (eq op :vl-partselect-colon))
+        (b* ((from (first args))
+             (msb  (second args))
+             (lsb  (third args))
+             ((unless (and (vl::vl-expr-resolved-p msb)
+                           (vl::vl-expr-resolved-p lsb)))
+              (mv (str::cat (symbol-name __function__)
+                            ": part select indicies are not resolved: "
+                            (vl::vl-pps-expr x))
+                  x nil nil)))
+          (mv nil from (vl::vl-resolved->val msb) (vl::vl-resolved->val lsb))))
 
-         ((when (eq op :vl-partselect-colon))
-          (b* ((from (first args))
-               (msb  (second args))
-               (lsb  (third args))
-               ((unless (and (vl::vl-expr-resolved-p msb)
-                             (vl::vl-expr-resolved-p lsb)))
-                (er hard? 'stv-maybe-match-select
-                    "Part select indicies are not resolved: ~s0"
-                    (vl::vl-pps-expr x))
-                (mv x nil nil)))
-            (mv from (vl::vl-resolved->val msb) (vl::vl-resolved->val lsb))))
-
-         ((when (eq op :vl-bitselect))
-          (b* ((from (first args))
-               (bit  (second args))
-               ((unless (vl::vl-expr-resolved-p bit))
-                (er hard? 'stv-maybe-match-select
-                    "Bit select index is not resolved: ~s0"
-                    (vl::vl-pps-expr x))
-                (mv x nil nil))
-               (val (vl::vl-resolved->val bit)))
-            (mv from val val))))
-      (mv x nil nil)))
-
-  (local (in-theory (enable stv-maybe-match-select)))
-
-  (defthm vl-expr-of-stv-maybe-match-select
-    (implies (force (vl::vl-expr-p x))
-             (vl::vl-expr-p (mv-nth 0 (stv-maybe-match-select x)))))
-
-  (defmvtypes stv-maybe-match-select
-    (nil (or (not x) (natp x)) (or (not x) (natp x)))))
+       ((when (eq op :vl-bitselect))
+        (b* ((from (first args))
+             (bit  (second args))
+             ((unless (vl::vl-expr-resolved-p bit))
+              (mv (str::cat (symbol-name __function__)
+                            ": bit select index is not resolved: "
+                            (vl::vl-pps-expr x))
+                  x nil nil))
+             (val (vl::vl-resolved->val bit)))
+          (mv nil from val val))))
+    (mv nil x nil nil)))
 
 
 
@@ -87,52 +78,48 @@
 ; identifiers) and we can do extra sanity checking to make sure that, e.g.,
 ; :input lines mention inputs, and :output lines mention outputs.
 
-(defsection stv-wirename-parse
+(define stv-wirename-parse ((str stringp))
+  :returns (mv (err?     vl::vl-maybe-string-p :rule-classes :type-prescription)
+               (basename stringp)
+               (msb?     vl::vl-maybe-natp :rule-classes :type-prescription)
+               (lsb?     vl::vl-maybe-natp :rule-classes :type-prescription))
   :parents (stv-expand)
   :short "Match a Verilog-style wire name, bit-select, or part-select."
-
-  :long "<p><b>Signature:</b> @(call stv-wirename-parse) returns @('(mv
-basename msb-idx lsb-idx)').</p>
-
-<p>Examples:</p>
+  :long "<p>Examples:</p>
 
 <ul>
- <li>\"foo\"      becomes (mv \"foo\" nil nil)</li>
- <li>\"foo[3]\"   becomes (mv \"foo\" 3 3)</li>
- <li>\"foo[5:3]\" becomes (mv \"foo\" 5 3)</li>
- <li>\"foo[3:5]\" becomes (mv \"foo\" 3 5)</li>
+ <li>\"foo\"      becomes (mv nil \"foo\" nil nil)</li>
+ <li>\"foo[3]\"   becomes (mv nil \"foo\" 3 3)</li>
+ <li>\"foo[5:3]\" becomes (mv nil \"foo\" 5 3)</li>
+ <li>\"foo[3:5]\" becomes (mv nil \"foo\" 3 5)</li>
 </ul>
 
-<p>If the wire name isn't of an acceptable form, an error is caused.</p>"
+<p>If the wire name isn't of an acceptable form, an error message is returned
+as the first return value.</p>"
 
-  (defund stv-wirename-parse (str)
-    (declare (xargs :guard (stringp str)))
-    (b* ((expr (vl::vl-parse-expr-from-str str))
-         ((unless expr)
-          (er hard? 'stv-wirename-parse "Failed to parse: ~s0" str)
-          (mv "" nil nil))
-         ((mv from msb lsb) (stv-maybe-match-select expr))
-         ((unless (vl::vl-idexpr-p from))
-          (er hard? 'stv-wirename-parse "Invalid STV wire name: ~s0~%" str)
-          (mv "" nil nil)))
-      (mv (vl::vl-idexpr->name from) msb lsb)))
-
-  (defmvtypes stv-wirename-parse
-    (stringp (or (not x) (natp x)) (or (not x) (natp x))))
-
+  (b* ((expr (vl::vl-parse-expr-from-str str))
+       ((unless expr)
+        (mv (str::cat (symbol-name __function__)
+                      ": failed to parse: " str)
+            "" nil nil))
+       ((mv err from msb lsb) (stv-maybe-match-select expr))
+       ((when err)
+        (mv err "" nil nil))
+       ((unless (vl::vl-idexpr-p from))
+        (mv (str::cat (symbol-name __function__)
+                      ": invalid wire name: " str)
+            "" nil nil)))
+    (mv nil (vl::vl-idexpr->name from) msb lsb))
+  ///
   (local
    (progn
-
-     (assert! (b* (((mv name msb lsb) (stv-wirename-parse "foo")))
+     (assert! (b* (((mv ?err name msb lsb) (stv-wirename-parse "foo")))
                 (equal (list name msb lsb) '("foo" nil nil))))
-
-     (assert! (b* (((mv name msb lsb) (stv-wirename-parse "foo[3]")))
+     (assert! (b* (((mv ?err name msb lsb) (stv-wirename-parse "foo[3]")))
                 (equal (list name msb lsb) '("foo" 3 3))))
-
-     (assert! (b* (((mv name msb lsb) (stv-wirename-parse "foo[3:5]")))
+     (assert! (b* (((mv ?err name msb lsb) (stv-wirename-parse "foo[3:5]")))
                 (equal (list name msb lsb) '("foo" 3 5))))
-
-     (assert! (b* (((mv name msb lsb) (stv-wirename-parse "foo[5:3]")))
+     (assert! (b* (((mv ?err name msb lsb) (stv-wirename-parse "foo[5:3]")))
                 (equal (list name msb lsb) '("foo" 5 3)))))))
 
 
@@ -174,7 +161,9 @@ or output bits.</p>"
 
          ((when (stringp x))
           (b* ( ;; Note: for plain names msb/lsb will be nil.
-               ((mv basename msb lsb) (stv-wirename-parse x))
+               ((mv ?err basename msb lsb) (stv-wirename-parse x))
+               ((when err)
+                (er hard? 'stv-expand-name "~s0" err))
                (basename-bits         (vl::esim-vl-find-io basename pat))
                ((unless basename-bits)
                 (er hard? 'stv-expand-name
@@ -360,7 +349,10 @@ caused.</p>"
          ((unless expr)
           (er hard? 'stv-hid-parse "Failed to parse: ~s0" str)
           (mv nil "" nil nil))
-         ((mv from msb lsb) (stv-maybe-match-select expr))
+         ((mv err from msb lsb) (stv-maybe-match-select expr))
+         ((when err)
+          (er hard? 'stv-hid-parse "~s0" err)
+          (mv nil "" nil nil))
 
          ((when (vl::vl-idexpr-p from))
           ;; This is legitimate for top-level internal wires like foo[3]; There

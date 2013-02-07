@@ -487,6 +487,9 @@ sanity checking."
        ;; wire [n-1:0] lhs_delfree;
        ((mv next-expr    next-decl)    (vl-occform-mkwire next-name    width :loc x.loc))
        ((mv delfree-expr delfree-decl) (vl-occform-mkwire delfree-name width :loc x.loc))
+       (delfree-decl
+        (change-vl-netdecl delfree-decl
+                           :atts (acons "VL_TARGET_REG" lhs (vl-netdecl->atts delfree-decl))))
 
        ;; assign lhs_next = rhs;
        (next-ass  (make-vl-assign :lvalue next-expr :expr rhs :loc x.loc))
