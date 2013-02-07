@@ -19,7 +19,7 @@
 ; Original author: Jared Davis <jared@centtech.com>
 
 (in-package "ACL2")
-(include-book "cutil/portcullis" :dir :system)
+(ld "cutil/package.lsp" :dir :system)
 
 (defpkg "OSLIB"
   (set-difference-eq
