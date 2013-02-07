@@ -177,9 +177,9 @@ wp-gen: ordinals
 # xdoc has no dependencies
 xdoc-impl: xdoc str tools finite-set-theory/osets
 system: tools arithmetic arithmetic-5 misc
-std/lists:
-std/ks: std/lists
-std/io: tools xdoc system std/lists std/ks
+std/lists: arithmetic
+std/ks: std/lists ihs arithmetic
+std/io: tools xdoc system std/lists std/ks arithmetic ihs arithmetic-3
 cutil: xdoc xdoc-impl tools str misc finite-set-theory/osets \
        defsort unicode clause-processors system
 countereg-gen: xdoc arithmetic-5 tools defexec finite-set-theory/osets \
