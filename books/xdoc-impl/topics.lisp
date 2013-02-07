@@ -153,17 +153,17 @@ and \"preformatted,\" i.e., newlines and spaces should be preserved.</li>
 
 </ul>
 
-<p><b>However</b>, it's often better to use the preprocessor's @('@@('...')')
-and @('@@({...})') macros.  These are nice because they automatically escape
-special HTML characters like &lt; into &amp;lt;, and also automatically add
-hyperlinks to documented functions.</p>
+<p><b>However</b>, it's often better to use the preprocessor's
+<tt>@@('...')</tt> and <tt>@@({...})</tt> macros.  These are nice because they
+automatically escape special HTML characters like &lt; into &amp;lt;, and also
+automatically add hyperlinks to documented functions.</p>
 
 <p>If you do decide to write raw @('&lt;code&gt;') blocks, your lisp forms
 should usually be <b>indented one space</b> to prevent Emacs problems.  For
 instance:</p>
 
 @({
- (defdoc foo
+ (defxdoc foo
    :long \"<h3>How to format @('<code>') blocks</h3>
 
  <p>GOOD -- the form is indented one space:</p>
@@ -180,7 +180,7 @@ instance:</p>
 })
 
 <p>Without this leading space, Emacs can become confused and think that
-@('(my-lisp-form ...)'), rather than @('(defdoc foo ...)'), is the top-level
+@('(my-lisp-form ...)'), rather than @('(defxdoc foo ...)'), is the top-level
 expression.  This can ruin syntax highlighting and also commands like @('C-t
 e') for sending s-expressions to the @('*shell*') window.</p>
 
