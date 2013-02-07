@@ -181,7 +181,7 @@ std/lists: arithmetic
 std/ks: std/lists ihs arithmetic
 std/io: tools xdoc system std/lists std/ks arithmetic ihs arithmetic-3
 cutil: xdoc xdoc-impl tools str misc finite-set-theory/osets \
-       defsort unicode clause-processors system
+       defsort unicode clause-processors system top-with-meta-cert
 countereg-gen: xdoc arithmetic-5 tools defexec finite-set-theory/osets \
 	arithmetic-3 arithmetic ordinals
 leftist-trees: arithmetic-5 sorting
