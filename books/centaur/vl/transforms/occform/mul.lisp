@@ -125,11 +125,10 @@ endmodule
     (append (vl-partprod-insts-aux i n)
             (vl-partprod-insts (+ 1 (nfix i)) n))))
 
-
 (local (defthm l0
-         (implies (and (vl-exprlist-p x)
-                       (consp x))
-                  (car (last x)))))
+         (implies (vl-exprlist-p x)
+                  (iff (car (last x))
+                       (consp x)))))
 
 (def-vl-modgen vl-make-n-bit-mult (n)
   :short "Generate an multiplier module."

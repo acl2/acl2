@@ -15,6 +15,8 @@
 (include-book "../aig/misc")
 (local (include-book "../aig/eval-restrict"))
 
+(local (in-theory (disable acl2::append-of-nil)))
+
 (defun bfr-to-param-space (p x)
   (declare (xargs :guard (and (bfr-p p) (bfr-p x)))
            (ignorable p))

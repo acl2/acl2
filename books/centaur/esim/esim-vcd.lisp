@@ -33,11 +33,6 @@
 ;; This really ought to be disabled
 (local (in-theory (disable good-esim-modulep)))
 
-;; These don't work well with vl-printedlist-ps because of their overly
-;; aggressive forcing.
-(local (in-theory (disable string-listp-of-append
-                           string-listp-of-rev)))
-
 
 ; Implementation Notes
 ;

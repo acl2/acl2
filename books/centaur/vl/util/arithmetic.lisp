@@ -29,6 +29,7 @@
 
 (include-book "arithmetic/top-with-meta" :dir :system)
 (include-book "centaur/bitops/integer-length" :dir :system)
+(include-book "cutil/deflist" :dir :system)
 
 (defthm rationalp-when-integerp
   (implies (integerp x)
@@ -216,10 +217,6 @@
              (equal (consp (cdddr x))
                     (< 3 n)))
     :hints(("Goal" :in-theory (enable len)))))
-
-
-
-
 
 
 
@@ -1181,135 +1178,61 @@
              (character-listp (nthcdr n x)))))
 
 
+
+#!ACL2
+(cutil::deflist string-listp (x)
+  (stringp x)
+  :true-listp t
+  :elementp-of-nil nil
+  :already-definedp t)
+
+#!ACL2
+(cutil::deflist symbol-listp (x)
+  (symbolp x)
+  :true-listp t
+  :elementp-of-nil t
+  :already-definedp t)
+
+
 (defsection string-listp
 
-  (local (in-theory (enable string-listp)))
-
-  (defthm string-listp-when-not-consp
-    (implies (not (consp x))
-             (equal (string-listp x)
-                    (not x))))
-
-  (defthm string-listp-of-cons
-    (equal (string-listp (cons a x))
-           (and (stringp a)
-                (string-listp x))))
+  ;;(local (in-theory (enable string-listp)))
 
   (defthm true-listp-when-string-listp
+    ;; Having the rewrite rule seems nice; otherwise type prescriptions
+    ;; sometimes don't go through, etc.
     (implies (string-listp x)
              (true-listp x))
-    :rule-classes ((:compound-recognizer)
+    :rule-classes ( ;;(:compound-recognizer)
                    (:rewrite :backchain-limit-lst 1)))
-
-  (defthm string-listp-of-append
-    (implies (and (force (string-listp x))
-                  (force (string-listp y)))
-             (string-listp (append x y))))
-
-  (defthm string-listp-of-rev
-    (implies (force (string-listp x))
-             (string-listp (rev x))))
 
   (defthm string-listp-of-intersection-equal
     (implies (and (force (string-listp x))
                   (force (string-listp y)))
-             (string-listp (intersection-equal x y)))
-    :hints(("Goal" :induct (len x))))
-
-  (defthm string-listp-of-set-difference-equal
-    (implies (string-listp x)
-             (string-listp (set-difference-equal x y))))
+             (string-listp (intersection-equal x y))))
 
   (defthm string-listp-of-remove-equal
+    ;; BOZO probably add to deflist
     (implies (string-listp x)
              (string-listp (remove-equal a x))))
-
-  (defthm stringp-when-member-equal-in-string-listp
-    (implies (and (member-equal name x)
-                  (string-listp x))
-             (stringp name))
-    :rule-classes ((:rewrite)
-                   (:rewrite :corollary (implies (and (string-listp x)
-                                                      (member-equal name x))
-                                                 (stringp name)))))
 
   (defthm string-listp-of-strip-cdrs-of-pairlis$
     ;; BOZO what nonsense is this?
     (implies (and (string-listp cdrs)
                   (force (equal (len cars) (len cdrs))))
-             (string-listp (strip-cdrs (pairlis$ cars cdrs)))))
+             (string-listp (strip-cdrs (pairlis$ cars cdrs))))))
 
-  (defthm string-listp-of-last
-    (implies (string-listp x)
-             (string-listp (last x))))
-
-  (defthm string-listp-of-repeat
-    (equal (string-listp (repeat a n))
-           (or (stringp a)
-               (zp n)))
-    :hints(("Goal" :in-theory (enable repeat))))
-
-  (defthm string-listp-of-simpler-take
-    (implies (string-listp x)
-             (equal (string-listp (simpler-take n x))
-                    (<= (nfix n) (len x))))
-    :hints(("Goal" :in-theory (enable simpler-take))))
-
-  (defthm string-listp-of-butlast
-    (implies (and (string-listp x)
-                  (natp n))
-             (string-listp (butlast x n)))
-    :hints(("Goal" :in-theory (enable butlast)))))
 
 
 (defsection symbol-listp
 
-  (local (in-theory (enable symbol-listp)))
-
-  (defthm symbol-listp-when-not-consp
-    (implies (not (consp x))
-             (equal (symbol-listp x)
-                    (not x))))
-
-  (defthm symbol-listp-of-cons
-    (equal (symbol-listp (cons a x))
-           (and (symbolp a)
-                (symbol-listp x))))
-
-  (defthm symbol-listp-of-append
-    (equal (symbol-listp (append x y))
-           (and (symbol-listp (list-fix x))
-                (symbol-listp y)))
-    :hints(("Goal" :induct (len x))))
-
-  (defthm symbol-listp-of-rev
-    (implies (symbol-listp x)
-             (symbol-listp (rev x))))
-
   (defthm true-listp-when-symbol-listp
+    ;; Having the rewrite rule seems nice; otherwise type prescriptions
+    ;; sometimes don't go through, etc.
     (implies (symbol-listp x)
              (true-listp x))
-    :rule-classes ((:compound-recognizer)
+    :rule-classes ( ;;(:compound-recognizer)
                    (:rewrite :backchain-limit-lst 1)))
-
-  (defthm symbolp-of-car-when-symbol-listp
-    (implies (symbol-listp x)
-             (symbolp (car x))))
-
-  (defthm symbol-listp-of-cdr-when-symbol-listp
-    (implies (symbol-listp x)
-             (symbol-listp (cdr x))))
-
-  (defthm symbol-listp-of-repeat
-    (equal (symbol-listp (repeat a n))
-           (or (symbolp a)
-               (zp n)))
-    :hints(("Goal" :in-theory (enable repeat))))
-
-  (defthm symbol-listp-of-simpler-take
-    (implies (force (symbol-listp x))
-             (symbol-listp (simpler-take n x)))
-    :hints(("Goal" :in-theory (enable simpler-take))))
 
   (defthm eqlable-listp-when-symbol-listp
     (implies (symbol-listp x)

@@ -123,7 +123,7 @@ significant bits comes first.  If the range is like @('[N:0]'), then we return
 @('foo_N, ..., foo_0').  But if the range goes the other way, i.e., @('[0:N]'),
 then we return @('foo_0, ..., foo_N').</p>"
 
-  (defund vl-preferred-replicate-names (low high instname)
+(defund vl-preferred-replicate-names (low high instname)
     ;; Preferred names from low to high, inclusive, e.g., (foo_3 foo_4 foo_5)
     (declare (xargs :guard (and (natp low)
                                 (natp high)
@@ -138,17 +138,17 @@ then we return @('foo_0, ..., foo_N').</p>"
           (list name)
         (cons name (vl-preferred-replicate-names (+ 1 low) high instname)))))
 
-  (defthm string-listp-of-vl-preferred-replicate-names
+(defthm string-listp-of-vl-preferred-replicate-names
     (string-listp (vl-preferred-replicate-names low high instname))
     :hints(("Goal" :in-theory (enable vl-preferred-replicate-names))))
 
-  (defthm len-of-vl-preferred-replicate-names
+(defthm len-of-vl-preferred-replicate-names
     (equal (len (vl-preferred-replicate-names low high instname))
            (+ 1 (nfix (- (nfix high) (nfix low)))))
     :hints(("Goal" :in-theory (enable vl-preferred-replicate-names))))
 
 
-  (defund vl-bad-replicate-names (n basename nf)
+(defund vl-bad-replicate-names (n basename nf)
     ;; Fallback names in case our preferred names aren't available.  Only called
     ;; if there is a name conflict that prevents us from using good names.
     "Returns (MV NAMES NF')."
@@ -163,22 +163,22 @@ then we return @('foo_0, ..., foo_N').</p>"
           (vl-bad-replicate-names (- n 1) basename nf)))
       (mv (cons name others) nf)))
 
-  (defthm vl-bad-replicate-names-props
+(defthm vl-bad-replicate-names-props
     (implies (and (force (stringp basename))
                   (force (vl-namefactory-p nf)))
              (and (string-listp (mv-nth 0 (vl-bad-replicate-names n basename nf)))
                   (vl-namefactory-p (mv-nth 1 (vl-bad-replicate-names n basename nf)))))
     :hints(("Goal" :in-theory (enable vl-bad-replicate-names))))
 
-  (defthm len-of-vl-bad-replicate-names
+(defthm len-of-vl-bad-replicate-names
     (equal (len (mv-nth 0 (vl-bad-replicate-names n basename nf)))
            (nfix n))
     :hints(("Goal" :in-theory (enable vl-bad-replicate-names))))
 
 
-  (local (in-theory (enable vl-range-resolved-p)))
+(local (in-theory (enable vl-range-resolved-p)))
 
-  (defund vl-replicated-instnames (instname instrange nf inst warnings)
+(defund vl-replicated-instnames (instname instrange nf inst warnings)
     "Returns (MV WARNINGS NAMES NF')"
     (declare (xargs :guard (and (vl-maybe-string-p instname)
                                 (vl-range-p instrange)
@@ -220,7 +220,7 @@ then we return @('foo_0, ..., foo_N').</p>"
                  :fatalp nil
                  :fn 'vl-replicated-instnames)
                 warnings)))
-      (mv warnings (reverse fresh) nf)))
+      (mv warnings (rev fresh) nf)))
 
   (local (in-theory (enable vl-replicated-instnames)))
 

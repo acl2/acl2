@@ -11,6 +11,7 @@
 (local (include-book "hyp-fix-logic"))
 ;(local (allow-arith5-help))
 
+(local (in-theory (disable acl2::revappend-removal)))
 
 
 
@@ -30,7 +31,7 @@
 ;;       ((g-boolean &) x)
 ;;       (& (if (general-concretep (car x))
 ;;              (cons (car x)
-;;                    (propagate-ites-above-conses 
+;;                    (propagate-ites-above-conses
 
 (local (in-theory (disable member-eq)))
 
@@ -54,7 +55,7 @@
      :hints(("Goal" :induct (revappend-concrete a b)
              :in-theory (enable revappend)
              :expand ((eval-g-base (cons (mk-g-concrete (car a)) b) env)))))))
-          
+
 
 ;; Collect concrete characters onto "pre".
 (defun coerce-string (x pre hyp)
@@ -97,7 +98,7 @@
                                                'string)))
              (&
               (coerce-string (cdr x) (cons (code-char 0) pre) hyp))))))))
-             
+
 
 (local
  (progn
@@ -394,7 +395,7 @@
             :induct (,gfn x y hyp clk)
             :expand ((,gfn x y hyp clk)))))
 
-(verify-g-guards 
+(verify-g-guards
  coerce
  :hints `(("Goal" :in-theory (disable ,gfn))))
 
@@ -421,7 +422,7 @@
                                     ((:definition ,gfn)
                                      eval-concrete-gobjectp
                                      ; eval-g-base-non-gobjectp
-                                     
+
                                      ; eval-g-base-g-concrete
                                      bfr-eval-booleanp
                                      bool-cond-itep-eval
@@ -444,4 +445,4 @@
            (and stable-under-simplificationp
                 '(:in-theory (enable general-concrete-obj-correct
                                      eval-g-base-not-equal-list)))))
-        
+

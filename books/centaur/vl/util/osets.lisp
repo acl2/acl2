@@ -168,10 +168,12 @@
    (iff (member-equal a (mergesort x))
         (member-equal a (double-rewrite x))))
 
-(defcong set-equiv equal (mergesort x) 1)
+;; moved to osets
+;; (defcong set-equiv equal (mergesort x) 1)
 
-(defthm mergesort-under-set-equiv
-  (set-equiv (mergesort x) x))
+;; moved to osets
+;; (defthm mergesort-under-set-equiv
+;;   (set-equiv (mergesort x) x))
 
 ;; (defthm subsetp-equal-of-mergesort-left
 ;;   ;; BOZO seems redundant with mergesort-under-set-equiv

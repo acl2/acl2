@@ -19,6 +19,8 @@
 ; Original author: Sol Swords <sswords@centtech.com>
 
 (in-package "ACL2")
+
+;; BOZO we could consider removing osets now...
 (include-book "finite-set-theory/osets/sets" :dir :system)
 (include-book "std/lists/sets" :dir :system)
 (include-book "witness-cp")
@@ -156,63 +158,6 @@
 
 
 
-
-
-
-
-
-;; BOZO talk to sol about whether these should become defwitness nonsense
-
-(local (defthm promote-member-to-in
-         (implies (sets::setp x)
-                  (iff (member a x)
-                       (sets::in a x)))
-         :hints(("Goal" :in-theory (enable sets::in-to-member)))))
-
-(defthm sets::insert-under-set-equiv
-  (implies (sets::setp x)
-           (set-equiv (sets::insert a x)
-                       (cons a (double-rewrite x))))
-  :hints((set-reasoning)))
-
-
-(defthm sets::delete-under-set-equiv
-  (implies (sets::setp x)
-           (set-equiv (sets::delete a x)
-                       (remove-equal a (double-rewrite x))))
-  :hints((set-reasoning)))
-
-(defthm sets::union-under-set-equiv
-  (implies (and (sets::setp x)
-                (sets::setp y))
-           (set-equiv (sets::union x y)
-                       (append (double-rewrite x)
-                               (double-rewrite y))))
-  :hints((set-reasoning)))
-
-(defthm sets::intersect-under-set-equiv
-  (implies (and (sets::setp x)
-                (sets::setp y))
-           (set-equiv (sets::intersect x y)
-                       (intersection-equal (double-rewrite x)
-                                           (double-rewrite y))))
-  :hints((set-reasoning)))
-
-(defthm sets::difference-under-set-equiv
-  (implies (and (sets::setp x)
-                (sets::setp y))
-           (set-equiv (sets::difference x y)
-                       (set-difference-equal (double-rewrite x)
-                                             (double-rewrite y))))
-  :hints((set-reasoning)))
-
-(defthm sets::mergesort-under-set-equiv
-  (set-equiv (sets::mergesort x)
-              x)
-  :hints((set-reasoning)))
-
-
-
-
+(in-theory (disable set-difference-equal intersection-equal))
 
 

@@ -262,3 +262,58 @@
 
 ))
 
+
+
+
+;; Hard cases for elementp stuff 
+
+(local (in-theory (theory 'minimal-theory)))
+
+(local (defun anyp (x)
+         (declare (ignore x)
+                  (xargs :guard t))
+         t))
+
+(local (defun nonep (x)
+         (declare (ignore x)
+                  (xargs :guard t))
+         nil))
+
+(local (encapsulate ()
+         (local (deflist any-listp (x)
+                  (anyp x)))))
+
+(local (encapsulate ()
+         (local (deflist none-listp (x)
+                  (nonep x)))))
+
+(local (encapsulate ()
+         (local (deflist not-listp (x)
+                  (not x)))))
+
+(local (encapsulate ()
+         (local (deflist null-listp (x)
+                  (null x)))))
+
+
+(local (encapsulate ()
+         (local (deflist any-listp2 (x)
+                  (anyp x)
+                  :elementp-of-nil t))))
+
+(local (encapsulate ()
+         (local (deflist none-listp (x)
+                  (nonep x)
+                  :elementp-of-nil nil))))
+
+(local (encapsulate ()
+         (local (deflist not-listp (x)
+                  (not x)
+                  :elementp-of-nil t))))
+
+(local (encapsulate ()
+         (local (deflist null-listp (x)
+                  (null x)
+                  :elementp-of-nil t))))
+
+

@@ -59,7 +59,8 @@
 
 (local (Defthm set-difference-equal-nil
          (equal (set-difference-equal x nil)
-                (list-fix x))))
+                (list-fix x))
+         :hints(("Goal" :in-theory (enable set-difference-equal)))))
 
 (defthm hons-remove-dups-is-remove-duplicates
   (equal (hons-remove-dups l)

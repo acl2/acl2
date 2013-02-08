@@ -192,14 +192,17 @@ each value satisfies @(see " (symbol-name valp) ")."))))
                 `((defxdoc ,name :parents ,parents :short ,short :long ,long))
               nil))
 
-       (last-ditch-hint
-        `(and stable-under-simplificationp
-              '(:in-theory (enable ,(mksym name '-last-ditch-rules)))))
-
        (def `(defund ,name (,@formals)
                (declare (xargs :guard ,guard
                                :verify-guards ,verify-guards
-                               :mode ,mode))
+                               :mode ,mode
+                               ;; We tell ACL2 not to normalize because
+                               ;; otherwise type reasoning can rewrite the
+                               ;; definition, and ruin some of our theorems
+                               ;; below, e.g., when KEYP is known to always be
+                               ;; true.
+                               :normalize nil
+                               ))
                (if (consp ,x)
                    (and (consp (car ,x))
                         (,keyp ,@(subst `(caar ,x) x key-formals))
@@ -216,29 +219,98 @@ each value satisfies @(see " (symbol-name valp) ")."))))
 
     `(encapsulate
        ()
-       (logic)
+       ,@doc
 
+       (logic)
        (set-inhibit-warnings "theory" "free" "non-rec") ;; Note: implicitly local
 
-       ,@doc
+       (local
+        (encapsulate
+          ()
+          ;; FAUGH.  It's horrible to get this to work in all cases.
+          ;;
+          ;; See defalist-tests: if we have something like ALLP or NONEP, ACL2
+          ;; can "helpfully" reduce them for us during preprocessing and then
+          ;; rejects our rules because they look like we're trying to prove
+          ;; (booleanp t) or (booleanp nil).
+          ;;
+          ;; To prevent that from happening, we have to turn off at least the
+          ;; tau system and the type-prescription rules for keyp/valp.  But we
+          ;; can't even do *THAT* reliably, because not all functions have
+          ;; type-prescriptions.  (Woah, really?  Yes really: for instance,
+          ;; built-ins like stringp.)
+          ;;
+          ;; So, as a horrible workaround, I'll prove these with rule-classes
+          ;; nil and then re-prove them in the nil theory.
+
+          (local (defthm ,(mksym 'booleanp-of- keyp '-for- name '-key-lemma)
+                   (or (equal (,keyp ,@key-formals) t)
+                       (equal (,keyp ,@key-formals) nil))
+                   :rule-classes nil))
+
+          (local (defthm ,(mksym 'booleanp-of- valp '-for- name '-val-lemma)
+                   (or (equal (,valp ,@val-formals) t)
+                       (equal (,valp ,@val-formals) nil))
+                   :rule-classes nil))
+
+          ,@(and (not (eq keyp-of-nil :unknown))
+                 `((local (defthm ,(mksym keyp '-of-nil-for- name '-key-lemma)
+                            (equal (,keyp ,@(subst ''nil x key-formals))
+                                   ',keyp-of-nil)
+                            :rule-classes nil))))
+
+          ,@(and (not (eq valp-of-nil :unknown))
+                 `((local (defthm ,(mksym valp '-of-nil-for- name '-val-lemma)
+                            (equal (,valp ,@(subst ''nil x val-formals))
+                                   ',valp-of-nil)
+                            :rule-classes nil))))
+
+          (local (in-theory nil))
+
+          (defthm ,(mksym 'booleanp-of- keyp '-for- name '-key)
+            (or (equal (,keyp ,@key-formals) t)
+                (equal (,keyp ,@key-formals) nil))
+            :rule-classes :type-prescription
+            :hints(("Goal" :by ,(mksym 'booleanp-of- keyp '-for- name '-key-lemma))))
+
+          (defthm ,(mksym 'booleanp-of- valp '-for- name '-val)
+            (or (equal (,valp ,@val-formals) t)
+                (equal (,valp ,@val-formals) nil))
+            :rule-classes :type-prescription
+            :hints(("Goal" :by ,(mksym 'booleanp-of- valp '-for- name '-val-lemma))))
+
+          ,@(and (not (eq keyp-of-nil :unknown))
+                 `((maybe-defthm-as-rewrite
+                    ,(mksym keyp '-of-nil-for- name '-key)
+                     (equal (,keyp ,@(subst ''nil x key-formals))
+                            ',keyp-of-nil)
+                     :hints(("Goal" :by ,(mksym keyp '-of-nil-for-
+                                                name '-key-lemma))))))
+
+          ,@(and (not (eq valp-of-nil :unknown))
+                 `((maybe-defthm-as-rewrite
+                    ,(mksym valp '-of-nil-for- name '-val)
+                    (equal (,valp ,@(subst ''nil x val-formals))
+                           ',valp-of-nil)
+                    :hints(("Goal" :by ,(mksym valp '-of-nil-for-
+                                               name '-val-lemma))))))
+          ))
+
        ,def
 
        (local (in-theory (theory 'minimal-theory)))
-       (local (in-theory (enable car-cons cdr-cons car-cdr-elim
-                                 zp len natp
-                                 deflist-lemma-1
-                                 deflist-lemma-2
-                                 deflist-lemma-3
-                                 deflist-lemma-4
-                                 ;; not 5.
-                                 deflist-lemma-6
-                                 )))
+       (local (in-theory (disable (:executable-counterpart tau-system))))
+       (local (in-theory (enable deflist-support-lemmas
+                                 ,(mksym 'booleanp-of- keyp '-for- name '-key)
+                                 ,(mksym 'booleanp-of- valp '-for- name '-val)
+                                 (:type-prescription ,name)
+                                 default-car
+                                 default-cdr)))
+       (local (enable-if-theorem ,(mksym keyp '-of-nil-for- name '-key)))
+       (local (enable-if-theorem ,(mksym valp '-of-nil-for- name '-val)))
 
-       (local (deftheory ,(mksym name '-last-ditch-rules)
-                (set-difference-equal (current-theory ',name)
-                                      (current-theory :here))))
 
-       ;; basic deflist style theorems
+; basic deflist style theorems ------------------------------------------------
 
        (defthm ,(mksym name '-when-not-consp)
          (implies (not (consp ,x))
@@ -246,8 +318,7 @@ each value satisfies @(see " (symbol-name valp) ")."))))
                          ,(if true-listp
                               `(not ,x)
                             t)))
-         :hints(("Goal" :in-theory (enable ,name))
-                ,last-ditch-hint))
+         :hints(("Goal" :in-theory (enable ,name))))
 
        (defthm ,(mksym name '-of-cons)
          (equal (,name ,@(subst `(cons ,a ,x) x formals))
@@ -255,27 +326,126 @@ each value satisfies @(see " (symbol-name valp) ")."))))
                      (,keyp ,@(subst `(car ,a) x key-formals))
                      (,valp ,@(subst `(cdr ,a) x val-formals))
                      (,name ,@formals)))
-         :hints(("Goal" :in-theory (enable ,name))
-                ,last-ditch-hint))
+         :hints(("Goal" :in-theory (enable ,name))))
 
-       ,@(and (not true-listp)
-              `((defthm ,(mksym name '-of-list-fix)
-                  (equal (,name ,@(subst `(list-fix ,x) x formals))
-                         (,name ,@formals))
-                  :hints(("Goal"
-                          :induct (len ,x)
-                          :in-theory (enable list-fix))
-                         ,last-ditch-hint))))
+       ;; Occasionally the user might prove these theorems on his own, e.g.,
+       ;; due to a mutual recursion.  When this happens, they can end up
+       ;; locally DISABLED!!!!  because of the theory hint we gave above.  So,
+       ;; make sure they're explicitly enabled.
+       (local (in-theory (enable ,(mksym name '-when-not-consp)
+                                 ,(mksym name '-of-cons))))
+
+       (local (in-theory (disable ,name)))
 
        ,@(and true-listp
+              `((defthm ,(mksym 'true-listp-when- name)
+                  (implies (,name ,@formals)
+                           (true-listp ,x))
+                  :rule-classes
+                  ,(if (eql (len formals) 1)
+                       :compound-recognizer
+                     ;; Unfortunately we can't use a compound recognizer rule
+                     ;; in this case.  I guess we'll try a rewrite rule, even
+                     ;; though it could get expensive.
+                     :rewrite)
+                  :hints(("Goal" :induct (len ,x))))
 
-; TODO: check the name for consistency with names of other lemmas
-
-              `((defthm ,(mksym name '-is-alistp)
-                  (implies (,name ,x)
+                (defthm ,(mksym 'alistp-when- name)
+                  (implies (,name ,@formals)
                            (alistp ,x))
-                  :hints (("Goal" :in-theory (enable ,name alistp)))
-                  :rule-classes :tau-system)))
+                  :rule-classes
+                  ,(if (eql (len formals) 1)
+                       :tau-system
+                     ;; Unfortunately we can't use a tau-system rule in this
+                     ;; case.  I guess we'll try a rewrite rule, even though it
+                     ;; could get expensive.
+                     :rewrite)
+                  :hints (("Goal" :in-theory (enable alistp))))
+
+                (defthm ,(mksym name '-of-list-fix)
+                  ;; See comments in deflist.lisp!
+                  (implies (,name ,@formals)
+                           (,name ,@(subst `(list-fix ,x) x formals))))))
+
+       (defthm ,(mksym 'consp-when-member-equal-of- name)
+         (implies (and (,name ,@formals)
+                       (member-equal ,a ,x))
+                  (equal (consp ,a)
+                         t))
+         :rule-classes ((:rewrite :backchain-limit-lst 0)
+                        (:rewrite :backchain-limit-lst 0
+                                  :corollary
+                                  (implies (and (member-equal ,a ,x)
+                                                (,name ,@formals))
+                                           (equal (consp ,a)
+                                                  t))))
+         :hints(("Goal"
+                 :induct (len ,x)
+                 :in-theory (enable member-equal))))
+
+       (defthm ,(mksym keyp '-of-car-when-member-equal-of- name)
+         (implies (and (,name ,@formals)
+                       (member-equal ,a ,x))
+                  (equal (,keyp ,@(subst `(car ,a) x key-formals))
+                         t))
+         :rule-classes
+         ((:rewrite)
+          (:rewrite :corollary
+                    (implies (and (member-equal ,a ,x)
+                                  (,name ,@formals))
+                             (equal (,keyp ,@(subst `(car ,a) x key-formals))
+                                    t))))
+         :hints(("Goal"
+                 :induct (len ,x)
+                 :in-theory (enable member-equal))))
+
+       (defthm ,(mksym valp '-of-cdr-when-member-equal-of- name)
+         (implies (and (,name ,@formals)
+                       (member-equal ,a ,x))
+                  (equal (,valp ,@(subst `(cdr ,a) x val-formals))
+                         t))
+         :rule-classes
+         ((:rewrite)
+          (:rewrite :corollary
+                    (implies (and (member-equal ,a ,x)
+                                  (,name ,@formals))
+                             (equal (,valp ,@(subst `(cdr ,a) x val-formals))
+                                    t))))
+         :hints(("Goal"
+                 :induct (len ,x)
+                 :in-theory (enable member-equal))))
+
+       (defthm ,(mksym name '-when-subsetp-equal)
+         (implies (and (,name ,@(subst y x formals))
+                       (subsetp-equal ,x ,y))
+                  (equal (,name ,@formals)
+                         ,(if true-listp
+                              `(true-listp ,x)
+                            t)))
+         :rule-classes ((:rewrite)
+                        (:rewrite :corollary
+                                  (implies (and (subsetp-equal ,x ,y)
+                                                (,name ,@(subst y x formals)))
+                                           (equal (,name ,@formals)
+                                                  ,(if true-listp
+                                                       `(true-listp ,x)
+                                                     t)))))
+         :hints(("Goal"
+                 :induct (len ,x)
+                 :in-theory (enable subsetp-equal)
+                 :expand ((,name ,@formals)
+                          (true-listp ,x)))))
+
+       ,@(and (not true-listp)
+              `((defthm ,(mksym name '-preserves-set-equiv)
+                  (implies (set-equiv ,x ,y)
+                           (equal (,name ,@formals)
+                                  (,name ,@(subst y x formals))))
+                  :rule-classes :congruence
+                  :hints(("Goal"
+                          :in-theory (enable set-equiv)
+                          :cases ((,name ,@formals))
+                          :do-not-induct t)))))
 
        (defthm ,(mksym name '-of-append)
          (equal (,name ,@(subst `(append ,x ,y) x formals))
@@ -285,29 +455,27 @@ each value satisfies @(see " (symbol-name valp) ")."))))
                      (,name ,@(subst y x formals))))
          :hints(("Goal"
                  :induct (len ,x)
-                 :in-theory (enable append))
-                ,last-ditch-hint))
+                 :in-theory (enable append))))
 
-       (defthm ,(mksym name '-of-rev)
-         (equal (,name ,@(subst `(rev ,x) x formals))
-                (,name ,@(if true-listp
-                             (subst `(list-fix ,x) x formals)
-                           formals)))
-         :hints(("Goal"
-                 :induct (len ,x)
-                 :in-theory (enable rev))
-                ,last-ditch-hint))
+       ,@(and true-listp
+              ;; We don't need these for the non true-listp case -- set
+              ;; reasoning handles it.
+              `((defthm ,(mksym name '-of-rev)
+                  (equal (,name ,@(subst `(rev ,x) x formals))
+                         (,name ,@(subst `(list-fix ,x) x formals)))
+                  :hints(("Goal"
+                          :induct (len ,x)
+                          :in-theory (enable rev list-fix))))
 
-       (defthm ,(mksym name '-of-revappend)
-         (equal (,name ,@(subst `(revappend ,x ,y) x formals))
-                (and (,name ,@(if true-listp
-                                  (subst `(list-fix ,x) x formals)
-                                formals))
-                     (,name ,@(subst y x formals))))
-         :hints(("Goal"
-                 :induct (revappend ,x ,y)
-                 :in-theory (enable revappend))
-                ,last-ditch-hint))
+                (defthm ,(mksym name '-of-revappend)
+                  (equal (,name ,@(subst `(revappend ,x ,y) x formals))
+                         (and (,name ,@(if true-listp
+                                           (subst `(list-fix ,x) x formals)
+                                         formals))
+                              (,name ,@(subst y x formals))))
+                  :hints(("Goal"
+                          :induct (revappend ,x ,y)
+                          :in-theory (enable revappend))))))
 
        (defthm ,(mksym keyp '-of-caar-when- name)
          (implies (,name ,@formals)
@@ -318,8 +486,7 @@ each value satisfies @(see " (symbol-name valp) ")."))))
                                  t)
                                 (t ;; keyp-of-nil is :unknown
                                  `(or (consp ,x)
-                                      (,keyp ,@(subst nil x key-formals)))))))
-         :hints(,last-ditch-hint))
+                                      (,keyp ,@(subst nil x key-formals))))))))
 
        (defthm ,(mksym valp '-of-cdar-when- name)
          (implies (,name ,@formals)
@@ -331,102 +498,27 @@ each value satisfies @(see " (symbol-name valp) ")."))))
                                 (t ;; keyp-of-nil is :unknown
                                  `(or (consp ,x)
                                       (,valp ,@(subst nil x val-formals)))))))
-         :hints(,last-ditch-hint))
+         :hints(("Goal" :expand (,name ,@formals))))
 
        (defthm ,(mksym name '-of-cdr-when- name)
          (implies (,name ,@formals)
                   (equal (,name ,@(subst `(cdr ,x) x formals))
-                         t))
-         :hints(,last-ditch-hint))
-
-       (defthm ,(mksym 'consp-when-member-equal-of- name)
-         (implies (and (,name ,@formals)
-                       (member-equal ,a (double-rewrite ,x)))
-                  (equal (consp ,a)
-                         t))
-         :rule-classes ((:rewrite :backchain-limit-lst 0)
-                        (:rewrite :backchain-limit-lst 0
-                                  :corollary
-                                  (implies (and (member-equal ,a (double-rewrite ,x))
-                                                (,name ,@formals))
-                                           (equal (consp ,a)
-                                                  t))))
-         :hints(("Goal"
-                 :induct (len ,x)
-                 :in-theory (enable member-equal))
-                ,last-ditch-hint))
-
-       (defthm ,(mksym keyp '-of-car-when-member-equal-of- name)
-         (implies (and (,name ,@formals)
-                       (member-equal ,a (double-rewrite ,x)))
-                  (equal (,keyp ,@(subst `(car ,a) x key-formals))
-                         t))
-         :rule-classes ((:rewrite)
-                        (:rewrite :corollary
-                                  (implies (and (member-equal ,a (double-rewrite ,x))
-                                                (,name ,@formals))
-                                           (equal (,keyp ,@(subst `(car ,a) x key-formals))
-                                                  t))))
-         :hints(("Goal"
-                 :induct (len ,x)
-                 :in-theory (enable member-equal))
-                ,last-ditch-hint))
-
-       (defthm ,(mksym valp '-of-cdr-when-member-equal-of- name)
-         (implies (and (,name ,@formals)
-                       (member-equal ,a (double-rewrite ,x)))
-                  (equal (,valp ,@(subst `(cdr ,a) x val-formals))
-                         t))
-         :rule-classes ((:rewrite)
-                        (:rewrite :corollary
-                                  (implies (and (member-equal ,a (double-rewrite ,x))
-                                                (,name ,@formals))
-                                           (equal (,valp ,@(subst `(cdr ,a) x val-formals))
-                                                  t))))
-         :hints(("Goal"
-                 :induct (len ,x)
-                 :in-theory (enable member-equal))
-                ,last-ditch-hint))
-
-       (defthm ,(mksym name '-when-subsetp-equal)
-         (implies (and (,name ,@(subst y x formals))
-                       (subsetp-equal (double-rewrite ,x)
-                                      (double-rewrite ,y)))
-                  (equal (,name ,@formals)
-                         ,(if true-listp
-                              `(true-listp ,x)
-                            t)))
-         :rule-classes ((:rewrite)
-                        (:rewrite :corollary
-                                  (implies (and (subsetp-equal (double-rewrite ,x) ,y)
-                                                (,name ,@(subst y x formals)))
-                                           (equal (,name ,@formals)
-                                                  ,(if true-listp
-                                                       `(true-listp ,x)
-                                                     t)))))
-         :hints(("Goal"
-                 :induct (len ,x)
-                 :in-theory (enable subsetp-equal))
-                ,last-ditch-hint))
+                         t)))
 
        (defthm ,(mksym name '-of-nthcdr)
-         (implies (previously-forced (,name ,@formals))
+         (implies (,name ,@(subst `(double-rewrite ,x) x formals))
                   (equal (,name ,@(subst `(nthcdr ,n ,x) x formals))
                          t))
-         :hints(("Goal"
-                 :induct (nthcdr ,n ,x)
-                 :in-theory (enable nthcdr))
-                ,last-ditch-hint))
+         :hints(("Goal" :do-not-induct t)))
 
        (defthm ,(mksym name '-of-simpler-take)
-         (implies (and (previously-forced (,name ,@formals))
+         (implies (and (,name ,@(subst `(double-rewrite ,x) x formals))
                        (force (<= ,n (len ,x))))
                   (equal (,name ,@(subst `(simpler-take ,n ,x) x formals))
                          t))
          :hints(("Goal"
                  :in-theory (enable simpler-take)
-                 :induct (simpler-take ,n ,x))
-                ,last-ditch-hint))
+                 :induct (simpler-take ,n ,x))))
 
        (defthm ,(mksym name '-of-repeat)
          (equal (,name ,@(subst `(repeat ,a ,n) x formals))
@@ -436,145 +528,168 @@ each value satisfies @(see " (symbol-name valp) ")."))))
                     (zp ,n)))
          :hints(("Goal"
                  :induct (repeat ,a ,n)
-                 :in-theory (enable repeat))
-                ,last-ditch-hint))
-
-       ,@(and (not true-listp)
-              `((defthm ,(mksym name '-of-mergesort)
-                  (equal (,name ,@(subst `(mergesort ,x) x formals))
-                         (,name ,@formals))
-                  :hints(("Goal" :cases ((,name ,@formals)))
-                         ,last-ditch-hint))))
+                 :in-theory (enable repeat))))
 
        (defthm ,(mksym name '-of-last)
-         (implies (previously-forced (,name ,@formals))
+         (implies (,name ,@(subst `(double-rewrite ,x) x formals))
                   (equal (,name ,@(subst `(last ,x) x formals))
                          t))
-         :hints(("Goal"
-                 :induct (last ,x)
-                 :in-theory (enable last))
-                ,last-ditch-hint))
+         :hints(("Goal" :do-not-induct t)))
 
        (defthm ,(mksym name '-of-butlast)
-         (implies (and (previously-forced (,name ,@formals))
-                       ;; (force (natp ,n)) not needed after butlast fixes
-                       )
+         (implies (,name ,@(subst `(double-rewrite ,x) x formals))
                   (equal (,name ,@(subst `(butlast ,x ,n) x formals))
                          t))
-         :hints(("Goal" :in-theory (enable butlast))
-                ,last-ditch-hint))
-
-       (defthm ,(mksym name '-of-set-difference-equal)
-         (implies (previously-forced (,name ,@formals))
-                  (equal (,name ,@(subst `(set-difference-equal ,x ,y) x formals))
-                         t))
-         :hints(("Goal"
-                 :induct (len ,x)
-                 :in-theory (enable set-difference-equal))
-                ,last-ditch-hint))
-
-       (encapsulate
-         ()
-         (local (defthm l0
-                  (implies (and (member ,a ,x)
-                                (,name ,@formals))
-                           (consp ,a))
-                  :hints(("Goal"
-                          :in-theory (enable member)
-                          :induct (len ,x)))))
-
-         (defthm ,(mksym name '-of-union-equal)
-           (equal (,name ,@(subst `(union-equal ,x ,y) x formals))
-                  (and ,(if true-listp
-                            `(,name ,@(subst `(list-fix ,x) x formals))
-                          `(,name ,@formals))
-                       (,name ,@(subst y x formals))))
-           :hints(("Goal"
-                   :induct (len ,x)
-                   :in-theory (enable union-equal))
-                  ,last-ditch-hint)))
-
-       (defthm ,(mksym name '-of-difference)
-         (implies (previously-forced (,name ,@formals))
-                  (equal (,name ,@(subst `(difference ,x ,y) x formals))
-                         t))
-         :hints(,last-ditch-hint))
-
-       (defthm ,(mksym name '-of-intersect-1)
-         (implies (,name ,@formals)
-                  (equal (,name ,@(subst `(intersect ,x ,y) x formals))
-                         t))
-         :hints(,last-ditch-hint))
-
-       (defthm ,(mksym name '-of-intersect-2)
-         (implies (,name ,@(subst y x formals))
-                  (equal (,name ,@(subst `(intersect ,x ,y) x formals))
-                         t))
-         :hints(,last-ditch-hint))
-
-       ,@(and (not true-listp)
-              `((defthm ,(mksym name '-of-union)
-                  (implies (and (previously-forced (,name ,@formals))
-                                (previously-forced (,name ,@(subst y x formals))))
-                           (,name ,@(subst `(union ,x ,y) x formals)))
-                  :hints(("Goal"
-                          :use ((:instance deflist-lemma-5 (x ,x) (y ,y))
-                                (:instance ,(mksym name '-of-append)))
-                          :in-theory (disable ,(mksym name '-of-append)))
-                         ,last-ditch-hint))))
+         :hints(("Goal" :do-not-induct t)))
 
        (defthm ,(mksym name '-of-duplicated-members)
-         (implies (previously-forced (,name ,@formals))
+         (implies (,name ,@(subst `(double-rewrite ,x) x formals))
                   (equal (,name ,@(subst `(duplicated-members ,x) x formals))
                          t))
-         :hints(,last-ditch-hint))
+         :hints(("Goal" :do-not-induct t)))
 
-       ;; additional theorems for alists
+       (defthm ,(mksym name '-of-set-difference-equal)
+         (implies (,name ,@(subst `(double-rewrite ,x) x formals))
+                  (equal (,name ,@(subst `(set-difference-equal ,x ,y) x formals))
+                         t))
+         :hints(("Goal" :do-not-induct t)))
+
+       (defthm ,(mksym name '-of-intersection-equal-1)
+         (implies (,name ,@(subst `(double-rewrite ,x) x formals))
+                  (equal (,name ,@(subst `(intersection-equal ,x ,y) x formals))
+                         t))
+         :hints(("Goal" :do-not-induct t)))
+
+       (defthm ,(mksym name '-of-intersection-equal-2)
+         (implies (,name ,@(subst `(double-rewrite ,y) x formals))
+                  (equal (,name ,@(subst `(intersection-equal ,x ,y) x formals))
+                         t))
+         :hints(("Goal" :do-not-induct t)))
+
+       (defthm ,(mksym name '-of-sfix)
+         ;; This rule is important for sets::under-set-equiv rules to work
+         ;; right in the context of a foo-listp.
+         (implies (,name ,@(subst `(double-rewrite ,x) x formals))
+                  (equal (,name ,@(subst `(sfix ,x) x formals))
+                         t))
+         :hints(("Goal"
+                 :do-not-induct t
+                 :cases ((setp ,x)))))
+
+       ,@(and true-listp
+              ;; Don't need these in the non true-listp case, set reasoning
+              ;; handles it.
+              `((defthm ,(mksym name '-of-union-equal)
+                  (equal (,name ,@(subst `(union-equal ,x ,y) x formals))
+                         (and (,name ,@(subst `(list-fix ,x) x formals))
+                              (,name ,@(subst y x formals))))
+                  :hints(("Goal"
+                          :induct (len ,x)
+                          :in-theory (enable union-equal))))
+
+                (defthm ,(mksym name '-of-difference)
+                  (implies (,name ,@formals)
+                           (equal (,name ,@(subst `(difference ,x ,y) x formals))
+                                  t))
+                  :hints(("Goal" :do-not-induct t)))
+
+                (defthm ,(mksym name '-of-intersect-1)
+                  (implies (,name ,@formals)
+                           (equal (,name ,@(subst `(intersect ,x ,y) x formals))
+                                  t))
+                  :hints(("Goal" :do-not-induct t)))
+
+                (defthm ,(mksym name '-of-intersect-2)
+                  (implies (,name ,@(subst y x formals))
+                           (equal (,name ,@(subst `(intersect ,x ,y) x formals))
+                                  t))
+                  :hints(("Goal" :do-not-induct t)))
+
+                (defthm ,(mksym name '-of-mergesort)
+                  (equal (,name ,@(subst `(mergesort ,x) x formals))
+                         (,name ,@(subst `(list-fix ,x) x formals)))
+                  :hints(("Goal"
+                          :do-not-induct t
+                          :use ((:instance ,(mksym name '-when-subsetp-equal)
+                                           (,x (mergesort ,x))
+                                           (,y (list-fix ,x)))
+                                (:instance ,(mksym name '-when-subsetp-equal)
+                                           (,y (mergesort ,x))
+                                           (,x (list-fix ,x)))))))
+
+                (local
+                 (defthm ,(mksym name '-of-union-lemma-1)
+                   (implies (,name ,@(subst `(union ,x ,y) x formals))
+                            (and (,name ,@(subst `(sfix ,x) x formals))
+                                 (,name ,@(subst `(sfix ,y) x formals))))
+                   :hints(("Goal" :do-not-induct t))))
+
+                (local
+                 (defthm ,(mksym name '-of-union-lemma-2)
+                   (implies (and (,name ,@(subst `(sfix ,x) x formals))
+                                 (,name ,@(subst `(sfix ,y) x formals)))
+                            (,name ,@(subst `(union ,x ,y) x formals)))
+                   :hints(("Goal"
+                           :do-not-induct t
+                           :in-theory (disable sets::union-under-set-equiv
+                                               deflist-lemma-subsetp-of-union)
+                           :use ((:instance deflist-lemma-subsetp-of-union
+                                            (x ,x)
+                                            (y ,y)))))))
+
+                (defthm ,(mksym name '-of-union)
+                  (equal (,name ,@(subst `(union ,x ,y) x formals))
+                         (and (,name ,@(subst `(sfix ,x) x formals))
+                              (,name ,@(subst `(sfix ,y) x formals))))
+                  :hints(("Goal"
+                          :cases ((,name ,@(subst `(union ,x ,y) x formals)))
+                          :do-not-induct t)))
+
+                ))
+
+; additional theorems for alists ----------------------------------------------
 
        (defthm ,(mksym name '-of-hons-acons)
+         ;; Not clear that hons-acons will ever be disabled, but just in case...
          (equal (,name ,@(subst `(hons-acons ,a ,n ,x) x formals))
                 (and (,keyp ,@(subst a x key-formals))
                      (,valp ,@(subst n x val-formals))
                      (,name ,@formals)))
-         :hints(("Goal"
-                 :in-theory (enable hons-acons))
-                ,last-ditch-hint))
+         :hints(("Goal" :in-theory (enable hons-acons))))
 
        (defthm ,(mksym name '-of-hons-shrink-alist)
-         (implies (and (previously-forced (,name ,@formals))
-                       (previously-forced (,name ,@(subst y x formals))))
+         (implies (and (,name ,@formals)
+                       (,name ,@(subst y x formals)))
                   (,name ,@(subst `(hons-shrink-alist ,x ,y) x formals)))
          :hints(("Goal"
                  :induct (hons-shrink-alist ,x ,y)
-                 :in-theory (enable hons-shrink-alist))
-                ,last-ditch-hint))
+                 :in-theory (enable hons-shrink-alist))))
 
        (defthm ,(mksym name '-of-make-fal)
-         (implies (and (previously-forced (,name ,@formals))
-                       (previously-forced (,name ,@(subst y x formals))))
+         (implies (and (,name ,@formals)
+                       (,name ,@(subst y x formals)))
                   (,name ,@(subst `(make-fal ,x ,y) x formals)))
          :hints(("Goal"
                  :induct (make-fal ,x ,y)
-                 :in-theory (enable make-fal))
-                ,last-ditch-hint))
+                 :in-theory (enable make-fal))))
 
        (defthm ,(mksym valp '-of-cdr-of-hons-assoc-equal-when- name)
-         (implies (,name ,@formals)
-                  (equal (,valp ,@(subst `(cdr (hons-assoc-equal ,a ,x)) x val-formals))
-                         ,(cond ((eq valp-of-nil t)
-                                 t)
-                                ((eq valp-of-nil nil)
-                                 `(if (hons-assoc-equal ,a ,x)
-                                      t
-                                    nil))
-                                (t
-                                 `(if (hons-assoc-equal ,a ,x)
-                                      t
-                                    (,valp ,@(subst nil x val-formals)))))))
+         (implies
+          (,name ,@formals)
+          (equal (,valp ,@(subst `(cdr (hons-assoc-equal ,a ,x)) x val-formals))
+                 ,(cond ((eq valp-of-nil t)
+                         t)
+                        ((eq valp-of-nil nil)
+                         `(if (hons-assoc-equal ,a ,x)
+                              t
+                            nil))
+                        (t
+                         `(if (hons-assoc-equal ,a ,x)
+                              t
+                            (,valp ,@(subst nil x val-formals)))))))
          :hints(("Goal"
                  :induct (len ,x)
-                 :in-theory (enable hons-assoc-equal))
-                ,last-ditch-hint))
+                 :in-theory (enable hons-assoc-equal))))
 
         )))
 

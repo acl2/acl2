@@ -274,10 +274,11 @@ restrictions are not used~%")
   (alistp
    (mv-nth 1 (match-lit-with-witnesses lit witness-rules state))))
 
-(defthm symbol-listp-of-append
-  (implies (and (symbol-listp x)
-                (symbol-listp y))
-           (symbol-listp (append x y))))
+(local (defthm symbol-listp-of-append
+         ;; Jared localizing this since it clashes with deflist theorem
+         (implies (and (symbol-listp x)
+                       (symbol-listp y))
+                  (symbol-listp (append x y)))))
 
 (defthm strip-cdrs-of-append
   (equal (strip-cdrs (append a b))

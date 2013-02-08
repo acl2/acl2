@@ -285,6 +285,11 @@ additional details about this decision.</p>")
     (declare (xargs :guard (vl-override-p x)))
     (mergesort (vl-override-requirement-names-aux (vl-override->requirements x))))
 
+  (defthm true-listp-of-vl-override-requirement-names
+    (true-listp (vl-override-requirement-names x))
+    :rule-classes :type-prescription
+    :hints(("Goal" :in-theory (enable vl-override-requirement-names))))
+
   (defthm string-listp-of-vl-override-requirement-names
     (implies (force (vl-override-p x))
              (string-listp (vl-override-requirement-names x)))

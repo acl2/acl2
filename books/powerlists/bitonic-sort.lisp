@@ -9,7 +9,8 @@ report TR97-02.
 
 To compile the book, I do the following:
 
-    (ld "defpkg.lisp")
+    (ld ;; Newline to fool dependency scanner
+      "defpkg.lisp")
     (certify-book "bitonic-sort" 4)
     (in-package "POWERLISTS")
 
@@ -20,8 +21,7 @@ To compile the book, I do the following:
 (include-book "simple")
 (include-book "sort")
 (include-book "batcher-sort")
-(include-book "arithmetic/top" :dir :system
-              :load-compiled-file nil)
+(include-book "arithmetic/top" :dir :system :load-compiled-file nil)
 
 (set-verify-guards-eagerness 2)
 

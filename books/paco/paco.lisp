@@ -24,7 +24,8 @@ v27
 ; ---------------------------------------------------------------------------
 ; To test
 
-(ld "books/proveall.lisp" :ld-pre-eval-print t)
+(ld  ;; newline to fool dependency scanner
+ "books/proveall.lisp" :ld-pre-eval-print t)
 
 ; ---------------------------------------------------------------------------
 ; To change the "PACO" package definition

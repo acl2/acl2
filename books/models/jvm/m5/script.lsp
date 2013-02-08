@@ -1,3 +1,6 @@
+;; Renamed from script.lisp to script.lsp by Jared, to follow Makefile
+;; convention of only using .lisp for certifiable books.
+
 ; You might want to comment out the certification of apprentice.lisp.
 
 ; (ld "script.lisp" :ld-pre-eval-print t)

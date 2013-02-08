@@ -125,3 +125,7 @@
 (defthm append-nil-under-list-equiv
   (list-equiv (append x nil) x))
 
+
+
+(defcong list-equiv equal (no-duplicatesp-equal x) 1
+  :hints(("Goal" :induct (cdr-cdr-ind x x-equiv))))

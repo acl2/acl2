@@ -24,7 +24,79 @@
 (include-book "misc/hons-help2" :dir :system)
 (include-book "cutil/defsection" :dir :system)
 (include-book "alist-defs")
+(include-book "std/lists/sets" :dir :system)
 
+(encapsulate
+  ()
+  (local (defthmd l0
+           (equal (alist-vals (list-fix x))
+                  (alist-vals x))
+           :hints(("Goal" :in-theory (enable alist-vals)))))
+
+  (defcong list-equiv equal (alist-vals x) 1
+    :hints(("Goal"
+            :use ((:instance l0 (x x))
+                  (:instance l0 (x acl2::x-equiv)))))))
+
+(encapsulate
+  ()
+  (local (defthmd l0
+           (equal (alist-keys (list-fix x))
+                  (alist-keys x))
+           :hints(("Goal" :in-theory (enable alist-keys)))))
+
+  (defcong list-equiv equal (alist-keys x) 1
+    :hints(("Goal"
+            :use ((:instance l0 (x x))
+                  (:instance l0 (x acl2::x-equiv)))))))
+
+(encapsulate
+  ()
+;  (local (in-theory (disable acl2::member-equal-of-alist-vals-under-iff)))
+
+  (local (defthm l0
+           (implies (member (cons a b) x)
+                    (member b (alist-vals x)))
+           :hints(("Goal" :in-theory (enable alist-vals)))))
+
+  (local (defthm l1
+           (implies (and (subsetp x y)
+                         (member a (alist-vals x)))
+                    (member a (alist-vals y)))
+           :hints(("Goal" :in-theory (enable alist-vals)))))
+
+  (local (defthm l2
+           (implies (subsetp x y)
+                    (subsetp (alist-vals x)
+                             (alist-vals y)))
+           :hints(("Goal" :in-theory (enable alist-vals)))))
+
+  (defcong set-equiv set-equiv (alist-vals x) 1
+    :hints(("Goal" :in-theory (enable set-equiv)))))
+
+(encapsulate
+  ()
+;  (local (in-theory (disable acl2::alist-keys-member-hons-assoc-equal)))
+
+  (local (defthm l0
+           (implies (member (cons a b) x)
+                    (member a (alist-keys x)))
+           :hints(("Goal" :in-theory (enable alist-keys)))))
+
+  (local (defthm l1
+           (implies (and (subsetp x y)
+                         (member a (alist-keys x)))
+                    (member a (alist-keys y)))
+           :hints(("Goal" :in-theory (enable alist-keys)))))
+
+  (local (defthm l2
+           (implies (subsetp x y)
+                    (subsetp (alist-keys x)
+                             (alist-keys y)))
+           :hints(("Goal" :in-theory (enable alist-keys)))))
+
+  (defcong set-equiv set-equiv (alist-keys x) 1
+    :hints(("Goal" :in-theory (enable set-equiv)))))
 
 
 (defthm hons-assoc-equal-append
@@ -317,7 +389,8 @@
   (local (defthm intersection-equal-repeat-1
            (implies (subsetp-equal a b)
                     (equal (intersection-equal a (intersection-equal b c))
-                           (intersection-equal a c)))))
+                           (intersection-equal a c)))
+           :hints(("Goal" :in-theory (enable intersection-equal)))))
 
   (local (defthm subsetp-equal-cons
            (implies (subsetp-equal a b)
@@ -444,7 +517,6 @@
             :use ((:instance alists-compatible-hons-assoc-equal
                    (x (alists-incompatible-witness a c)) (a a) (b (append c b))))
             :do-not-induct t))))
-  
 
 
 

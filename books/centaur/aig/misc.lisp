@@ -28,6 +28,8 @@
 (include-book "misc/hons-help" :dir :system)
 (local (include-book "eval-restrict"))
 
+(local (in-theory (disable append-of-nil)))
+
 (defn aig-print (x)
   (declare (xargs :verify-guards nil))
   (aig-cases

@@ -6,14 +6,14 @@ paper "Defthms about zip and tie", UTCS tech report TR97-02.
 
 To certify this book, I do the following:
 
-    (ld "defpkg.lisp")
+    (ld ;; Newline to fool dependency scanner
+      "defpkg.lisp")
     (certify-book "simple" 4)
 |#
 
 (in-package "POWERLISTS")
 (include-book "algebra")
-(include-book "arithmetic/top" :dir :system
-	      :load-compiled-file nil)
+(include-book "arithmetic/top" :dir :system :load-compiled-file nil)
 
 (set-verify-guards-eagerness 2)
 

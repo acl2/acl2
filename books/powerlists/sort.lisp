@@ -15,7 +15,8 @@ tech report TR97-02.
 To certify this book, you need to define the POWERLISTS package and then run
 certify-book on this file.  Here's how I do it:
 
-    (ld "defpkg.lisp")
+    (ld ;; newline to fool dependency scanner
+      "defpkg.lisp")
     (certify-book "sort" 4)
     (in-package "POWERLISTS")
 

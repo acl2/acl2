@@ -28,11 +28,12 @@
 (include-book "str/cat" :dir :system)
 (include-book "finite-set-theory/osets/sets" :dir :system)
 (include-book "defsort/duplicated-members" :dir :system)
+(include-book "std/lists/sets" :dir :system)
 (include-book "std/lists/list-fix" :dir :system)
 (include-book "std/lists/take" :dir :system)
 (include-book "std/lists/repeat" :dir :system)
 (include-book "std/lists/rev" :dir :system)
-(local (include-book "deflist-aux"))
+(include-book "maybe-defthm")
 
 (defxdoc deflist
   :parents (cutil)
@@ -265,46 +266,44 @@ of which recognizers require true-listp and which don't.</p>")
   ;; Deflist does most of its work in a very minimal theory.  These are a few
   ;; lemmas that we enable so that it will work.
 
-  (defthmd deflist-lemma-1
+  (local (include-book "finite-set-theory/osets/under-set-equiv" :dir :system))
+
+  (defthmd deflist-lemma-member-of-car
     (iff (member-equal (car x) x)
          (consp x)))
 
-  (local (defthm member-to-in
-           (implies (setp x)
-                    (iff (member a x)
-                         (in a x)))
-           :hints(("Goal" :in-theory (enable sets::in-to-member)))))
+  (defthmd deflist-lemma-subsetp-of-set-difference-equal
+    (subsetp-equal (set-difference-equal x y) x))
 
-  (local (defthm member-equal-of-append
-           (iff (member-equal a (append x y))
-                (or (member-equal a x)
-                    (member-equal a y)))))
+  (defthmd deflist-lemma-subsetp-of-intersection-equal
+    (and (subsetp-equal (intersection-equal x y) x)
+         (subsetp-equal (intersection-equal x y) y)))
 
-  (defthmd deflist-lemma-2
-    (and (subsetp-equal (mergesort x) x)
-         (subsetp-equal x (mergesort x))))
-
-  (defthmd deflist-lemma-3
-    (subsetp-equal (difference x y) x))
-
-  (defthmd deflist-lemma-4
-    (and (subsetp-equal (intersect x y) x)
-         (subsetp-equal (intersect x y) y)))
-
-  (defthmd deflist-lemma-5
-    (subsetp-equal (union x y) (append x y)))
-
-  (defthmd deflist-lemma-6
+  (defthmd deflist-lemma-subsetp-equal-of-duplicated-members
     (subsetp-equal (duplicated-members x) x))
 
-  ;; Support for nth
+  (defthmd deflist-lemma-subsetp-of-nthcdr
+    (subsetp-equal (nthcdr n x) x))
+
+  (defthmd deflist-lemma-true-listp-of-nthcdr
+    (equal (true-listp (nthcdr n x))
+           (or (< (len x) (nfix n))
+               (true-listp x)))
+    :hints(("Goal" :induct (nthcdr n x))))
+
+  (defthmd deflist-lemma-subsetp-of-last
+    (subsetp-equal (last x) x))
+
+  (defthmd deflist-lemma-true-listp-of-last
+    (equal (true-listp (last x))
+           (true-listp x)))
 
   (local (include-book "arithmetic/top-with-meta" :dir :system))
   (local (defthmd c0
            (equal (< (+ a b) (+ a c))
                   (< b c))))
 
-  (defthmd deflist-lemma-7
+  (defthmd deflist-lemma-cancel-negative-constant
     (implies (syntaxp (and (quotep a)
                            (< (acl2::unquote a) 0)))
              (equal (< (+ a b) c)
@@ -315,48 +314,140 @@ of which recognizers require true-listp and which don't.</p>")
                              (b (+ a b))
                              (c c))))))
 
-  (defthmd deflist-lemma-8
+  (defthmd deflist-lemma-len-over-zero
     (equal (< 0 (len x))
            (consp x)))
 
-  (defthmd deflist-lemma-9
+  (defthmd deflist-lemma-nth-when-zp
     (implies (zp n)
              (equal (nth n x)
                     (car x))))
 
-  (defthmd deflist-lemma-10
+  (defthmd deflist-lemma-nth-when-atom
     (implies (atom x)
              (equal (nth n x)
                     nil)))
 
-  (defthmd deflist-lemma-11
+  (defthmd deflist-lemma-nth-of-cons
     (equal (nth n (cons a x))
            (if (zp n)
                a
              (nth (+ -1 n) x))))
 
-  (defthm deflist-lemma-12
-    (equal (mergesort (list-fix x))
-           (mergesort x)))
-
-  (defthm deflist-lemma-13
-    (equal (subsetp-equal (list-fix x) y)
-           (subsetp-equal x y)))
 
   (local (defthm l0
-           (equal (member-equal a (list-fix x))
-                  (list-fix (member-equal a x)))))
+           (implies (and (member a (simpler-take n x))
+                         (<= (nfix n) (len x)))
+                    (member a x))
+           :hints(("Goal" :in-theory (enable simpler-take)))))
 
-  (defthm deflist-lemma-14
-    (equal (subsetp-equal x (list-fix y))
-           (subsetp-equal x y))))
+  (local (defthm l1
+           (implies (<= (nfix n) (len x))
+                    (subsetp-equal (simpler-take n x) x))
+           :hints(("Goal" :in-theory (enable simpler-take)))))
+
+  (defthmd deflist-lemma-subsetp-of-butlast
+    (subsetp-equal (butlast x n) x))
+
+  (defthmd deflist-lemma-true-listp-of-butlast
+    (true-listp (butlast x n))
+    :rule-classes :type-prescription)
+
+  (defthmd deflist-lemma-sfix-when-not-setp
+    (implies (not (setp x))
+             (equal (sfix x) nil))
+    :hints(("Goal" :in-theory (enable sfix empty))))
+
+  (defthmd deflist-lemma-sfix-when-setp
+    (implies (setp x)
+             (equal (sfix x)
+                    x))
+    :hints(("Goal" :in-theory (enable sfix empty))))
+
+  (defthmd deflist-lemma-subsetp-of-difference
+    (subsetp-equal (difference x y) x))
+
+  (local (defthm g1
+           (implies (member a (sfix x))
+                    (member a x))
+           :hints(("Goal"
+                   :do-not-induct t
+                   :use ((:instance sets::in-to-member
+                                    (sets::a a)
+                                    (sets::x (sfix x))))))))
+
+  (defthmd deflist-lemma-subsetp-of-intersect
+    (and (subsetp-equal (intersect x y) x)
+         (subsetp-equal (intersect x y) y))
+    :hints(("Goal" :do-not-induct t)))
+
+  (defthmd deflist-lemma-true-listp-of-sfix
+    (true-listp (sfix x))
+    :rule-classes :type-prescription)
+
+  (defthmd deflist-lemma-subsetp-of-union
+    (and (subsetp-equal (sfix x) (union x y))
+         (subsetp-equal (sfix y) (union x y))
+         (subsetp-equal (union x y) (append (sfix x) (sfix y))))))
 
 
-(defmacro previously-forced (x)
-  ;; Sol has pretty much convinced me that we shouldn't be forcing things here.
-  ;; I'm just leaving this as an annotation of what we were previously forcing,
-  ;; to make it easy to revisit this decision later.
-  x)
+
+(deftheory deflist-support-lemmas
+  '((:type-prescription intersection-equal)
+    (:type-prescription set-difference-equal)
+    (:type-prescription duplicated-members)
+    (:type-prescription list-fix)
+    (:type-prescription rev)
+    (:type-prescription len)
+    deflist-lemma-member-of-car
+    deflist-lemma-subsetp-of-set-difference-equal
+    deflist-lemma-subsetp-of-intersection-equal
+    deflist-lemma-subsetp-equal-of-duplicated-members
+    deflist-lemma-cancel-negative-constant
+    deflist-lemma-len-over-zero
+    deflist-lemma-nth-when-zp
+    deflist-lemma-nth-when-atom
+    deflist-lemma-nth-of-cons
+    deflist-lemma-sfix-when-not-setp
+    deflist-lemma-sfix-when-setp
+    deflist-lemma-subsetp-of-nthcdr
+    deflist-lemma-subsetp-of-last
+    deflist-lemma-subsetp-of-butlast
+    deflist-lemma-true-listp-of-last
+    deflist-lemma-true-listp-of-butlast
+    deflist-lemma-true-listp-of-nthcdr
+    deflist-lemma-subsetp-of-difference
+    deflist-lemma-subsetp-of-intersect
+    deflist-lemma-true-listp-of-sfix
+    deflist-lemma-subsetp-of-union
+    car-cons
+    cdr-cons
+    car-cdr-elim
+    zp
+    len
+    natp
+    nth
+    update-nth
+    nfix
+    acl2::default-+-2
+    acl2::default-<-1
+    acl2::default-unary-minus
+    acl2::unicity-of-0
+    acl2::take-redefinition
+    acl2::list-fix-when-not-consp
+    acl2::list-fix-when-true-listp
+    acl2::list-fix-of-cons
+    sets::sets-are-true-lists
+    sets::mergesort-set
+    sets::union-set
+    sets::intersect-set
+    sets::difference-set
+    acl2::set-equiv-implies-equal-subsetp-1
+    acl2::set-equiv-implies-equal-subsetp-2
+    acl2::subsetp-refl
+    acl2::list-fix-under-list-equiv
+    sets::mergesort-under-set-equiv))
+
 
 
 (defun deflist-fn (name formals element negatedp
@@ -462,17 +553,6 @@ list.</p>"
                          `(null ,x)
                        t))))))
 
-       ;; [Jared] I've made some improvements to the theory that, I think, mean
-       ;; we shouldn't need this last-ditch-hint stuff any more.  In fast, I think
-       ;; it's a good idea to NOT have last-ditch-stuff, because it fires before
-       ;; destructor elimination, which is required for some theorems below, and
-       ;; so if the user's in a sufficiently terrible theory, that could hose us.
-       ;;
-       ;; (last-ditch-hint
-       ;;  `(and stable-under-simplificationp
-       ;;        (prog2$ (cw "~s0 Last-ditchin' it~%Clause: ~x1~%" "***" clause)
-       ;;                '(:in-theory (enable ,(mksym name '-last-ditch-rules))))))
-
        ((when (eq mode :program))
         `(defsection ,name
            ,@(and parents `(:parents ,parents))
@@ -482,25 +562,10 @@ list.</p>"
            ,@def
            ,@rest))
 
-       (elementp-of-nil-rewritep
-        (and (not (eq elementp-of-nil :unknown))
-             ;; Subtle: it'd be nice if this next part weren't necessary.
-             ;;
-             ;; ACL2 is "too smart", and reduces some functions to their value
-             ;; when we apply them to NIL; see chk-acceptable-rewrite-rule,
-             ;; unprettyify, subcor-var, and cons-term.  For instance,
-             ;; (CONS-TERM 'CONSP '('NIL)) is 'NIL.
-             ;;
-             ;; We check here that ELEMENTP isn't one of these functions,
-             ;; because, if it is, then ACL2 will complain that our
-             ;; elementp-of-nil-thm is not a valid :rewrite rule, because
-             ;; instead of seeing (CONSP NIL) as the left-hand side, it only
-             ;; see NIL, and thinks we are trying to rewrite a constant.
-             (not (assoc elementp acl2::*cons-term1-alist*))))
-
        (events
         `((logic)
-          (set-inhibit-warnings "theory" "free" "non-rec") ;; Note: implicitly local
+          (set-inhibit-warnings ;; implicitly local
+           "theory" "free" "non-rec" "double-rewrite")
 
           ;; We start with the basic requirements about elementp.  Note that these
           ;; theorems are done in the user's current theory.  It's up to the user
@@ -511,63 +576,21 @@ list.</p>"
                        (equal ,element nil))
                    :rule-classes :type-prescription))
 
-          ,@(and elementp-of-nil-rewritep
-                 `((local (defthm deflist-local-elementp-of-nil-thm
-                            (let ((,x nil))
-                              (equal ,element ,elementp-of-nil))))))
+          ,@(and (not (eq elementp-of-nil  :unknown))
+                 `((local (maybe-defthm-as-rewrite
+                           deflist-local-elementp-of-nil-thm
+                           (equal (,elementp ,@(subst ''nil x elem-formals))
+                                  ',elementp-of-nil)))))
 
           ,@def
 
           (local (in-theory (theory 'minimal-theory)))
-          (local (in-theory (enable car-cons cdr-cons car-cdr-elim
-                                    zp len natp nth update-nth nfix
-                                    acl2::default-+-2
-                                    acl2::default-<-1
-                                    acl2::default-unary-minus
-                                    acl2::unicity-of-0
-                                    acl2::take-redefinition
-                                    acl2::list-fix-when-not-consp
-                                    acl2::list-fix-when-true-listp
-                                    acl2::list-fix-of-cons
-                                    (:type-prescription list-fix)
-                                    (:type-prescription rev)
-                                    (:type-prescription len)
-                                    sets::sets-are-true-lists
-                                    sets::mergesort-set
-                                    sets::union-set
-                                    sets::intersect-set
-                                    sets::difference-set
-                                    deflist-lemma-1
-                                    deflist-lemma-2
-                                    deflist-lemma-3
-                                    deflist-lemma-4
-                                    ;; not 5, it gets instanced explicitly below
-                                    deflist-lemma-6
-                                    deflist-lemma-7
-                                    deflist-lemma-8
-                                    deflist-lemma-9
-                                    deflist-lemma-10
-                                    deflist-lemma-11
-                                    deflist-lemma-12
-                                    deflist-lemma-13
-                                    deflist-lemma-14
+          (local (in-theory (enable deflist-support-lemmas
                                     ,name
                                     (:type-prescription ,name)
                                     deflist-local-booleanp-element-thm
-                                    ,@(and elementp-of-nil-rewritep
-                                           '(deflist-local-elementp-of-nil-thm))
                                     )))
-
-          ;; (local (deftheory ,(mksym name '-last-ditch-rules)
-          ;;          (set-difference-equal (current-theory ',name)
-          ;;                                (current-theory :here))))
-
-          ;; (local (make-event
-          ;;         (prog2$
-          ;;          (cw "LAST-DITCH-RULES: ~x0.~%"
-          ;;              (let ((world (w state)))
-          ;;                (theory '(mksym name '-last-ditch-rules))))
-          ;;          (value '(value-triple :invisible)))))
+          (local (enable-if-theorem deflist-local-elementp-of-nil-thm))
 
           (defthm ,(mksym name '-when-not-consp)
             (implies (not (consp ,x))
@@ -575,9 +598,7 @@ list.</p>"
                             ,(if true-listp
                                  `(not ,x)
                                t)))
-            :hints(("Goal" :in-theory (enable ,name))
-                   ;;,last-ditch-hint
-                   ))
+            :hints(("Goal" :in-theory (enable ,name))))
 
           (defthm ,(mksym name '-of-cons)
             (equal (,name ,@(subst `(cons ,a ,x) x formals))
@@ -594,6 +615,8 @@ list.</p>"
           (local (in-theory (enable ,(mksym name '-when-not-consp)
                                     ,(mksym name '-of-cons))))
 
+          (local (in-theory (disable ,name)))
+
           ,@(and true-listp
                  `((defthm ,(mksym 'true-listp-when- name)
                      (implies (,name ,@formals)
@@ -605,19 +628,94 @@ list.</p>"
                         ;; in this case.  I guess we'll try a rewrite rule, even
                         ;; though it could get expensive.
                         :rewrite)
-                     :hints(("Goal" :induct (len ,x))
-                            ;;,last-ditch-hint
-                            ))))
+                     :hints(("Goal" :induct (len ,x))))
+
+                   (defthm ,(mksym name '-of-list-fix)
+                     ;; This is not very satisfying.  Ideally, ACL2 would
+                     ;; deeply understand, from the compound-recognizer rule
+                     ;; showing true-listp when foo-listp, that whenever
+                     ;; (foo-listp x) holds then (true-listp x) holds.
+                     ;; Ideally, it could use this knowledge to rewrite
+                     ;; (list-fix x) to x whenever we can show (foo-listp x).
+                     ;;
+                     ;; But compound recognizers aren't quite good enough for
+                     ;; this.  For instance, ACL2 won't rewrite a term like
+                     ;; (list-fix (accessor x)) into (accessor x) even if we
+                     ;; have a rewrite rule that says (foo-listp (accessor x)).
+                     ;;
+                     ;; Some alternatives we considered:
+                     ;;
+                     ;;  - A rewrite rule version of (foo-listp x) ==>
+                     ;;    (true-listp x).  But it seems like this would get
+                     ;;    *really* expensive when you have 100 list
+                     ;;    recognizers and you encounter a true-listp term.
+                     ;;
+                     ;;  - A rewrite rule that rewrites (list-fix x) ==> x when
+                     ;;    (foo-listp x) is known.  This might be the right
+                     ;;    compromise.  It's at least somewhat less common to
+                     ;;    see list-fix than true-listp.  But it still suffers
+                     ;;    from the same kind of scaling problem.
+                     ;;
+                     ;; David's rule, below, is not as powerful as either of
+                     ;; these approaches, but it at least manages to localize
+                     ;; the performance impact, and helps at least in some
+                     ;; cases.  Perhaps TAU can somehow help with this in the
+                     ;; future.
+                     (implies (,name ,@formals)
+                              (,name ,@(subst `(list-fix ,x) x formals))))))
+
+          (defthm ,(mksym elementp '-when-member-equal-of- name)
+            ;; We previously used double-rewrite here, but it interferes with
+            ;; free-variable matching
+            (implies (and (,name ,@formals)
+                          (member-equal ,a ,x))
+                     (equal (,elementp ,@(subst a x elem-formals))
+                            ,(not negatedp)))
+            :rule-classes ((:rewrite)
+                           (:rewrite
+                            :corollary
+                            (implies (and (member-equal ,a ,x)
+                                          (,name ,@formals))
+                                     (equal (,elementp ,@(subst a x elem-formals))
+                                            ,(not negatedp)))))
+            :hints(("Goal"
+                    :induct (len ,x)
+                    :in-theory (enable member-equal))))
+
+          (defthm ,(mksym name '-when-subsetp-equal)
+            ;; We previously used double-rewrite here, but it interferes with
+            ;; free-variable matching
+            (implies (and (,name ,@(subst y x formals))
+                          (subsetp-equal ,x ,y))
+                     (equal (,name ,@formals)
+                            ,(if true-listp
+                                 `(true-listp ,x)
+                               t)))
+            :rule-classes ((:rewrite)
+                           (:rewrite :corollary
+                                     (implies (and (subsetp-equal ,x ,y)
+                                                   (,name ,@(subst y x formals)))
+                                              (equal (,name ,@formals)
+                                                     ,(if true-listp
+                                                          `(true-listp ,x)
+                                                        t)))))
+            :hints(("Goal"
+                    :induct (len ,x)
+                    :in-theory (enable subsetp-equal ,name)
+                    :expand (true-listp ,x))))
 
           ,@(and (not true-listp)
-                 `((defthm ,(mksym name '-of-list-fix)
-                     (equal (,name ,@(subst `(list-fix ,x) x formals))
-                            (,name ,@formals))
+                 ;; Awesome set congruence rule for loose recognizers, but not
+                 ;; a theorem for strict recognizers.
+                 `((defthm ,(mksym name '-preserves-set-equiv)
+                     (implies (set-equiv ,x ,y)
+                              (equal (,name ,@formals)
+                                     (,name ,@(subst y x formals))))
+                     :rule-classes :congruence
                      :hints(("Goal"
-                             :induct (len ,x)
-                             :expand (list-fix ,x))
-                            ;;,last-ditch-hint
-                            ))))
+                             :in-theory (enable set-equiv)
+                             :cases ((,name ,@formals))
+                             :do-not-induct t)))))
 
           (defthm ,(mksym name '-of-append)
             (equal (,name ,@(subst `(append ,x ,y) x formals))
@@ -628,184 +726,154 @@ list.</p>"
             :hints(("Goal"
                     :induct (len ,x)
                     :expand (list-fix ,x)
-                    :in-theory (enable append))
-                   ;;,last-ditch-hint
-                   ))
-
-          (defthm ,(mksym name '-of-rev)
-            (equal (,name ,@(subst `(rev ,x) x formals))
-                   (,name ,@(if true-listp
-                                (subst `(list-fix ,x) x formals)
-                              formals)))
-            :hints(("Goal"
-                    :induct (len ,x)
-                    :expand (list-fix ,x)
-                    :in-theory (enable rev))
-                   ;;,last-ditch-hint
-                   ))
-
-          (defthm ,(mksym name '-of-revappend)
-            (equal (,name ,@(subst `(revappend ,x ,y) x formals))
-                   (and (,name ,@(if true-listp
-                                     (subst `(list-fix ,x) x formals)
-                                   formals))
-                        (,name ,@(subst y x formals))))
-            :hints(("Goal"
-                    :induct (revappend ,x ,y)
-                    :in-theory (enable revappend))
-                   ;;,last-ditch-hint
-                   ))
-
-          (defthm ,(mksym elementp '-of-car-when- name)
-            (implies (,name ,@formals)
-                     (equal (,elementp ,@(subst `(car ,x) x elem-formals))
-                            ,(cond ((eq elementp-of-nil nil)
-                                    (if negatedp
-                                        ;; If x is a cons, then its car is not an element.
-                                        ;; Else its car is nil, which is not an element.
-                                        nil
-                                      ;; If x is a cons, then its car is an element.
-                                      ;; Else its car is nil, which is not an element.
-                                      `(consp ,x)))
-                                   ((eq elementp-of-nil t)
-                                    (if negatedp
-                                        ;; If x is a cons, then its car is not an element.
-                                        ;; Else its car is nil, which is an element.
-                                        `(not (consp ,x))
-                                      ;; If x is a cons, then its car is an element.
-                                      ;; Else its car is nil, which is an element.
-                                      t))
-                                   (t ;; elementp-of-nil is :unknown
-                                    `(if (consp ,x)
-                                         ,(not negatedp)
-                                       (,elementp ,@(subst nil x elem-formals)))))))
-            :hints(("Goal"
-                    :in-theory (enable default-car)
-                    :expand ((,name . ,formals)))
-                   ;;,last-ditch-hint
-                   ))
-
-          (defthm ,(mksym name '-of-cdr-when- name)
-            (implies (,name ,@formals)
-                     (equal (,name ,@(subst `(cdr ,x) x formals))
-                            t))
-            ;;:hints(,last-ditch-hint)
-            )
-
-          (defthm ,(mksym elementp '-of-nth-when- name)
-            (implies (,name ,@formals)
-                     (equal (,elementp ,@(subst `(nth ,n ,x) x formals))
-                            ,(cond ((eq elementp-of-nil nil)
-                                    (if negatedp
-                                        ;; (elementp {e \in X}) = NIL, (elementp nil) = NIL
-                                        nil
-                                      ;; (elementp {(e \in X}) = T, (elementp nil) = NIL
-                                      `(< (nfix ,n) (len ,x))))
-                                   ((eq elementp-of-nil t)
-                                    (if negatedp
-                                        ;; (elementp {e \in X}) = NIL, (elementp nil) = T
-                                        `(>= (nfix ,n) (len ,x))
-                                      ;; (elementp {e \in X}) = T, (elementp nil) = T
-                                      t))
-                                   (t
-                                    (if negatedp
-                                        ;; (elementp {e \in X}) = NIL, (elementp nil) = ???
-                                        `(and (,elementp ,@(subst nil x elem-formals))
-                                              (>= (nfix ,n) (len ,x)))
-                                      ;; (elementp {e \in X}) = T, (elementp nil) = ???
-                                      `(or (,elementp ,@(subst nil x elem-formals))
-                                           (< (nfix ,n) (len ,x))))))))
-            :hints(("Goal" :induct (nth ,n ,x))))
+                    :in-theory (enable append))))
 
           ,@(and true-listp
-                 `((defthm ,(mksym name '-of-update-nth-when- elementp)
-                     ;; 1. When (elementp nil) = NIL, there's a strong bound because if you
-                     ;; update something past the length of the list, you introduce NILs
-                     ;; into the list and then ruin foo-listp.
-                     ;; 2. When (elementp nil) = T, there's no bound because no matter whether
-                     ;; you add NILs, they're still valid.
-                     ;; 3. When (elementp nil) = Unknown, we restrict the rule to only fire
-                     ;; if N is in bounds.
-                     ,(let ((val-okp (if negatedp 
-                                         `(not (,elementp ,@(subst y x elem-formals)))
-                                       `(,elementp ,@(subst y x elem-formals)))))
-                        (cond ((eq elementp-of-nil negatedp)
-                               `(implies (,name ,@formals)
-                                         (equal (,name ,@(subst `(update-nth ,n ,y ,x) x formals))
-                                                (and (<= (nfix ,n) (len ,x))
-                                                     ,val-okp))))
-                              ((eq elementp-of-nil (not negatedp))
-                               `(implies (,name ,@formals)
-                                         (equal (,name ,@(subst `(update-nth ,n ,y ,x) x formals))
-                                                ,val-okp)))
-                              (t
-                               `(implies (and (<= (nfix ,n) (len ,x))
-                                              (,name ,@formals))
-                                         (equal (,name ,@(subst `(update-nth ,n ,y ,x) x formals))
-                                                ,val-okp))))))
+                 ;; We don't bother proving these for loose recognizers because
+                 ;; the set-equiv congruence should handle them automatically
+                 `((defthm ,(mksym name '-of-rev)
+                     (equal (,name ,@(subst `(rev ,x) x formals))
+                            (,name ,@(if true-listp
+                                         (subst `(list-fix ,x) x formals)
+                                       formals)))
+                     :hints(("Goal"
+                             :induct (len ,x)
+                             :expand (list-fix ,x)
+                             :in-theory (enable rev))))
 
-                   (defthm ,(mksym name '-of-list-fix)
-; This is not very satisfying.  Ideally, ACL2 would deeply understand, from the
-; compound-recognizer rule showing true-listp when foo-listp, that whenever
-; (foo-listp x) holds then (true-listp x) holds.  Ideally, it could use this
-; knowledge to rewrite (list-fix x) to x whenever we can show (foo-listp x).
-;
-; But compound recognizers aren't quite good enough for this.  For instance,
-; ACL2 won't rewrite a term like (list-fix (accessor x)) into (accessor x) even
-; if we have a rewrite rule that says (foo-listp (accessor x)).
-;
-; Some alternatives we considered:
-;  - A rewrite rule version of (foo-listp x) ==> (true-listp x).  But it seems
-;    like this would get *really* expensive when you have 100 list recognizers
-;    and you encounter a true-listp term.
-;  - A rewrite rule that rewrites (list-fix x) ==> x when (foo-listp x) is known.
-;    This might be the right compromise.  It's at least somewhat less common to
-;    see list-fix than true-listp.  But it still suffers from the same kind of
-;    scaling problem.
-;
-; David's rule, below, is not as powerful as either of these approaches, but it
-; at least manages to localize the performance impact, and helps at least in
-; some cases.  Perhaps TAU can somehow help with this in the future.
-                     (implies (,name ,@formals)
-                              (,name ,@(subst `(list-fix ,x) x formals))))))
+                   (defthm ,(mksym name '-of-revappend)
+                     (equal (,name ,@(subst `(revappend ,x ,y) x formals))
+                            (and (,name ,@(if true-listp
+                                              (subst `(list-fix ,x) x formals)
+                                            formals))
+                                 (,name ,@(subst y x formals))))
+                     :hints(("Goal"
+                             :induct (revappend ,x ,y)
+                             :in-theory (enable revappend))))))
 
-          (local (in-theory (disable ,name)))
+          (defthm ,(mksym elementp '-of-car-when- name)
+            (implies
+             (,name ,@(subst `(double-rewrite ,x) x formals))
+             (equal (,elementp ,@(subst `(car ,x) x elem-formals))
+                    ,(cond
+                      ((eq elementp-of-nil nil)
+                       (if negatedp
+                           ;; If x is a cons, then its car is not an element.
+                           ;; Else its car is nil, which is not an element.
+                           nil
+                         ;; If x is a cons, then its car is an element.
+                         ;; Else its car is nil, which is not an element.
+                         `(consp ,x)))
+                      ((eq elementp-of-nil t)
+                       (if negatedp
+                           ;; If x is a cons, then its car is not an element.
+                           ;; Else its car is nil, which is an element.
+                           `(not (consp ,x))
+                         ;; If x is a cons, then its car is an element.
+                         ;; Else its car is nil, which is an element.
+                         t))
+                      (t ;; elementp-of-nil is :unknown
+                       `(if (consp ,x)
+                            ,(not negatedp)
+                          (,elementp ,@(subst nil x elem-formals)))))))
+            :hints(("Goal"
+                    :in-theory (enable default-car)
+                    :expand ((,name . ,formals)))))
+
+          (defthm ,(mksym name '-of-cdr-when- name)
+            (implies (,name ,@(subst `(double-rewrite ,x) x formals))
+                     (equal (,name ,@(subst `(cdr ,x) x formals))
+                            t)))
+
+          (defthm ,(mksym elementp '-of-nth-when- name)
+            (implies
+             (,name ,@(subst `(double-rewrite ,x) x formals))
+             (equal (,elementp ,@(subst `(nth ,n ,x) x formals))
+                    ,(cond
+                      ((eq elementp-of-nil nil)
+                       (if negatedp
+                           ;; (elementp {e \in X}) = NIL, (elementp nil) = NIL
+                           nil
+                         ;; (elementp {(e \in X}) = T, (elementp nil) = NIL
+                         `(< (nfix ,n) (len ,x))))
+                      ((eq elementp-of-nil t)
+                       (if negatedp
+                           ;; (elementp {e \in X}) = NIL, (elementp nil) = T
+                           `(>= (nfix ,n) (len ,x))
+                         ;; (elementp {e \in X}) = T, (elementp nil) = T
+                         t))
+                      (t
+                       (if negatedp
+                           ;; (elementp {e \in X}) = NIL, (elementp nil) = ???
+                           `(and (,elementp ,@(subst nil x elem-formals))
+                                 (>= (nfix ,n) (len ,x)))
+                         ;; (elementp {e \in X}) = T, (elementp nil) = ???
+                         `(or (,elementp ,@(subst nil x elem-formals))
+                              (< (nfix ,n) (len ,x))))))))
+            :hints(("Goal" :induct (nth ,n ,x))))
+
+          (defthm ,(mksym name '-of-update-nth-when- elementp)
+            ;; 1. When (elementp nil) = NIL, there's a strong bound because if
+            ;; you update something past the length of the list, you introduce
+            ;; NILs into the list and then ruin foo-listp.
+            ;;
+            ;; 2. When (elementp nil) = T, there's no bound because no matter
+            ;; whether you add NILs, they're still valid.
+            ;;
+            ;; 3. When (elementp nil) = Unknown, we restrict the rule to only
+            ;; fire if N is in bounds
+            ,(let ((val-okp (if negatedp
+                                `(not (,elementp ,@(subst y x elem-formals)))
+                              `(,elementp ,@(subst y x elem-formals)))))
+               (cond ((eq elementp-of-nil negatedp)
+                      `(implies
+                        (,name ,@(subst `(double-rewrite ,x) x formals))
+                        (equal (,name ,@(subst `(update-nth ,n ,y ,x) x formals))
+                               (and (<= (nfix ,n) (len ,x))
+                                    ,val-okp))))
+                     ((eq elementp-of-nil (not negatedp))
+                      `(implies
+                        (,name ,@(subst `(double-rewrite ,x) x formals))
+                        (equal (,name ,@(subst `(update-nth ,n ,y ,x) x formals))
+                               ,val-okp)))
+                     (t
+                      `(implies
+                        (and (<= (nfix ,n) (len ,x))
+                             (,name ,@(subst `(double-rewrite ,x) x formals)))
+                        (equal (,name ,@(subst `(update-nth ,n ,y ,x) x formals))
+                               ,val-okp))))))
 
           (defthm ,(mksym name '-of-nthcdr)
-            (implies (previously-forced (,name ,@formals))
+            (implies (,name ,@(subst `(double-rewrite ,x) x formals))
                      (equal (,name ,@(subst `(nthcdr ,n ,x) x formals))
                             t))
-            :hints(("Goal"
-                    :induct (nthcdr ,n ,x)
-                    :in-theory (enable nthcdr))
-                   ;;,last-ditch-hint
-                   ))
+            :hints(("Goal" :do-not-induct t)))
 
           (defthm ,(mksym name '-of-simpler-take)
-            (implies (previously-forced (,name ,@formals))
-                     (equal (,name ,@(subst `(simpler-take ,n ,x) x formals))
-                            ,(cond ((eq elementp-of-nil nil)
-                                    (if negatedp
-                                        t
-                                      `(<= (nfix ,n) (len ,x))))
-                                   ((eq elementp-of-nil t)
-                                    (if negatedp
-                                        `(<= (nfix ,n) (len ,x))
-                                      t))
-                                   (t
-                                    (if negatedp
-                                        `(or (not (,elementp ,@(subst nil x elem-formals)))
-                                             (<= (nfix ,n) (len ,x)))
-                                      `(or (,elementp ,@(subst nil x elem-formals))
-                                           (<= (nfix ,n) (len ,x))))))))
+            (implies
+             (,name ,@(subst `(double-rewrite ,x) x formals))
+             (equal (,name ,@(subst `(simpler-take ,n ,x) x formals))
+                    ,(cond
+                      ((eq elementp-of-nil nil)
+                       (if negatedp
+                           t
+                         `(<= (nfix ,n) (len ,x))))
+                      ((eq elementp-of-nil t)
+                       (if negatedp
+                           `(<= (nfix ,n) (len ,x))
+                         t))
+                      (t
+                       (if negatedp
+                           `(or (not (,elementp ,@(subst nil x elem-formals)))
+                                (<= (nfix ,n) (len ,x)))
+                         `(or (,elementp ,@(subst nil x elem-formals))
+                              (<= (nfix ,n) (len ,x))))))))
             :hints(("Goal"
                     :in-theory (enable simpler-take)
                     :induct (simpler-take ,n ,x)
                     :expand ((,name ,@formals)
                              (:free (,x ,y)
-                                    (,name ,@(subst `(cons ,x ,y) x formals)))))
-                   ;;,last-ditch-hint
-                   ))
+                                    (,name ,@(subst `(cons ,x ,y) x formals)))))))
 
           (defthm ,(mksym name '-of-repeat)
             (equal (,name ,@(subst `(repeat ,x ,n) x formals))
@@ -819,170 +887,129 @@ list.</p>"
                     :in-theory (enable repeat deflist-local-booleanp-element-thm)
                     :expand ((,name ,@formals)
                              (:free (,x ,y)
-                                    (,name ,@(subst `(cons ,x ,y) x formals)))))
-                   ;;,last-ditch-hint
-                   ))
+                                    (,name ,@(subst `(cons ,x ,y) x formals)))))))
 
           (defthm ,(mksym name '-of-last)
-            (implies (previously-forced (,name ,@formals))
+            (implies (,name ,@(subst `(double-rewrite ,x) x formals))
                      (equal (,name ,@(subst `(last ,x) x formals))
                             t))
-            :hints(("Goal"
-                    :induct (last ,x)
-                    :in-theory (enable last))
-                   ;;,last-ditch-hint
-                   ))
+            :hints(("Goal" :do-not-induct t)))
 
           (defthm ,(mksym name '-of-butlast)
             ;; Historically this was much more complicated, but after Matt
             ;; fixed up butlast to not be totally crazy in the -N case
             ;; (introduce NILs, etc.)  it simplifies down nicely.
-            (implies (previously-forced (,name ,@formals))
+            (implies (,name ,@(subst `(double-rewrite ,x) x formals))
                      (equal (,name ,@(subst `(butlast ,x ,n) x formals))
                             t))
-            :hints(("Goal" :in-theory (enable butlast))
-                   ;;,last-ditch-hint
-                   ))
+            :hints(("Goal" :do-not-induct t)))
 
-          (defthm ,(mksym elementp '-when-member-equal-of- name)
-            (implies (and (,name ,@formals)
-                          (member-equal ,a (double-rewrite ,x)))
-                     (equal (,elementp ,@(subst a x elem-formals))
-                            ,(not negatedp)))
-            :rule-classes ((:rewrite)
-                           (:rewrite :corollary
-                                     (implies (and (member-equal ,a (double-rewrite ,x))
-                                                   (,name ,@formals))
-                                              (equal (,elementp ,@(subst a x elem-formals))
-                                                     ,(not negatedp)))))
-            :hints(("Goal"
-                    :induct (len ,x)
-                    :in-theory (enable member-equal))
-                   ;;,last-ditch-hint
-                   ))
-
-
-          (defthm ,(mksym name '-when-subsetp-equal)
-            (implies (and (,name ,@(subst y x formals))
-                          (subsetp-equal (double-rewrite ,x)
-                                         (double-rewrite ,y)))
-                     (equal (,name ,@formals)
-                            ,(if true-listp
-                                 `(true-listp ,x)
-                               t)))
-            :rule-classes ((:rewrite)
-                           (:rewrite :corollary
-                                     (implies (and (subsetp-equal (double-rewrite ,x) ,y)
-                                                   (,name ,@(subst y x formals)))
-                                              (equal (,name ,@formals)
-                                                     ,(if true-listp
-                                                          `(true-listp ,x)
-                                                        t)))))
-            :hints(("Goal"
-                    :induct (len ,x)
-                    :in-theory (enable subsetp-equal ,name)
-                    :expand (true-listp ,x))
-                   ;;,last-ditch-hint
-                   ))
-
-          (encapsulate
-            ()
-            (local (defthm deflist-mergesort-lemma-1
-                     (implies (,name ,@(subst `(mergesort ,x) x formals))
-                              (,name ,@(subst `(list-fix ,x) x formals)))))
-
-            (local (defthm deflist-mergesort-lemma-2
-                     (implies (,name ,@(subst `(list-fix ,x) x formals))
-                              (,name ,@(subst `(mergesort ,x) x formals)))))
-
-            (defthm ,(mksym name '-of-mergesort)
-              (equal (,name ,@(subst `(mergesort ,x) x formals))
-                     ,(if true-listp
-                          `(,name ,@(subst `(list-fix ,x) x formals))
-                        `(,name ,@formals)))
-              :hints(("Goal"
-                      :use ((:instance deflist-mergesort-lemma-1)
-                            (:instance deflist-mergesort-lemma-2)))
-                     ;;,last-ditch-hint
-                     )))
+          (defthm ,(mksym name '-of-duplicated-members)
+            (implies (,name ,@(subst `(double-rewrite ,x) x formals))
+                     (equal (,name ,@(subst `(duplicated-members ,x) x formals))
+                            t))
+            :hints(("Goal" :do-not-induct t)))
 
           (defthm ,(mksym name '-of-set-difference-equal)
-            ;; This doesn't have a nice EQUAL theorem because, e.g., if all of the
-            ;; non-elementp's in X are also in Y, then they'll be removed and
-            ;; leave us with a good foo-listp.  Arguably the forcing here is too
-            ;; aggressive, but I think most of the time, if you're expecting a
-            ;; set-difference to be all of one type, it's probably because you're
-            ;; expecting X to all be of that type.
-            (implies (previously-forced (,name ,@formals))
+            (implies (,name ,@(subst `(double-rewrite ,x) x formals))
                      (equal (,name ,@(subst `(set-difference-equal ,x ,y) x formals))
                             t))
+            :hints(("Goal" :do-not-induct t)))
+
+          (defthm ,(mksym name '-of-intersection-equal-1)
+            (implies (,name ,@(subst `(double-rewrite ,x) x formals))
+                     (equal (,name ,@(subst `(intersection-equal ,x ,y) x formals))
+                            t))
+            :hints(("Goal" :do-not-induct t)))
+
+          (defthm ,(mksym name '-of-intersection-equal-2)
+            (implies (,name ,@(subst `(double-rewrite ,y) x formals))
+                     (equal (,name ,@(subst `(intersection-equal ,x ,y) x formals))
+                            t))
+            :hints(("Goal" :do-not-induct t)))
+
+          (defthm ,(mksym name '-of-sfix)
+            ;; This rule is important for sets::under-set-equiv rules to work
+            ;; right in the context of a foo-listp.
+            (implies (,name ,@(subst `(double-rewrite ,x) x formals))
+                     (equal (,name ,@(subst `(sfix ,x) x formals))
+                            t))
             :hints(("Goal"
-                    :induct (len ,x)
-                    :in-theory (enable set-difference-equal)
-                    :expand ((,name ,@formals)
-                             (:free (,x ,y)
-                                    (,name ,@(subst `(cons ,x ,y) x formals)))))
-                   ;;,last-ditch-hint
-                   ))
+                    :do-not-induct t
+                    :cases ((setp ,x)))))
 
-          (defthm ,(mksym name '-of-union-equal)
-            (equal (,name ,@(subst `(union-equal ,x ,y) x formals))
-                   (and ,(if true-listp
-                             `(,name ,@(subst `(list-fix ,x) x formals))
-                           `(,name ,@formals))
-                        (,name ,@(subst y x formals))))
-            :hints(("Goal"
-                    :induct (len ,x)
-                    :in-theory (enable union-equal)
-                    ;; :expand ((,name ,@formals)
-                    ;;          (:free (,x ,y)
-                    ;;                 (,name ,@(subst `(cons ,x ,y) x formals))))
-                    )
-                   ;;,last-ditch-hint
-                   ))
+          ,@(and true-listp
+                 ;; These aren't needed in the non true-listp case, because set
+                 ;; reasoning will reduce them to, e.g., append,
+                 ;; set-difference-equal, intersection-equal, etc.
+                 `((defthm ,(mksym name '-of-union-equal)
+                     (equal (,name ,@(subst `(union-equal ,x ,y) x formals))
+                            (and (,name ,@(subst `(list-fix ,x) x formals))
+                                 (,name ,@(subst `(double-rewrite ,y) x formals))))
+                     :hints(("Goal"
+                             :induct (len ,x)
+                             :in-theory (enable union-equal))))
 
-          ,@(and (not true-listp)
-
-; TODO: create a suitable lemmas for the true-listp cases of the following.
-
-                 `((defthm ,(mksym name '-of-difference)
-                     (implies (previously-forced (,name ,@formals))
+                   (defthm ,(mksym name '-of-difference)
+                     (implies (,name ,@formals)
                               (equal (,name ,@(subst `(difference ,x ,y) x formals))
                                      t))
-                     ;;:hints(,last-ditch-hint)
-                     )
+                     :hints(("Goal" :do-not-induct t)))
 
                    (defthm ,(mksym name '-of-intersect-1)
                      (implies (,name ,@formals)
                               (equal (,name ,@(subst `(intersect ,x ,y) x formals))
                                      t))
-                     ;;:hints(,last-ditch-hint)
-                     )
+                     :hints(("Goal" :do-not-induct t)))
 
                    (defthm ,(mksym name '-of-intersect-2)
                      (implies (,name ,@(subst y x formals))
                               (equal (,name ,@(subst `(intersect ,x ,y) x formals))
                                      t))
-                     ;;:hints(,last-ditch-hint)
-                     )
+                     :hints(("Goal" :do-not-induct t)))
+
+                   (defthm ,(mksym name '-of-mergesort)
+                     (equal (,name ,@(subst `(mergesort ,x) x formals))
+                            (,name ,@(subst `(list-fix ,x) x formals)))
+                     :hints(("Goal"
+                             :do-not-induct t
+                             :use ((:instance ,(mksym name '-when-subsetp-equal)
+                                              (,x (mergesort ,x))
+                                              (,y (list-fix ,x)))
+                                   (:instance ,(mksym name '-when-subsetp-equal)
+                                              (,y (mergesort ,x))
+                                              (,x (list-fix ,x)))))))
+
+                   (local
+                    (defthm ,(mksym name '-of-union-lemma-1)
+                      (implies (,name ,@(subst `(union ,x ,y) x formals))
+                               (and (,name ,@(subst `(sfix ,x) x formals))
+                                    (,name ,@(subst `(sfix ,y) x formals))))
+                      :hints(("Goal" :do-not-induct t))))
+
+                   (local
+                    (defthm ,(mksym name '-of-union-lemma-2)
+                      (implies (and (,name ,@(subst `(sfix ,x) x formals))
+                                    (,name ,@(subst `(sfix ,y) x formals)))
+                               (,name ,@(subst `(union ,x ,y) x formals)))
+                      :hints(("Goal"
+                              :do-not-induct t
+                              :in-theory (disable sets::union-under-set-equiv
+                                                  deflist-lemma-subsetp-of-union)
+                              :use ((:instance deflist-lemma-subsetp-of-union
+                                               (x ,x)
+                                               (y ,y)))))))
 
                    (defthm ,(mksym name '-of-union)
-                     (implies (and (previously-forced (,name ,@formals))
-                                   (previously-forced (,name ,@(subst y x formals))))
-                              (,name ,@(subst `(union ,x ,y) x formals)))
+                     (equal (,name ,@(subst `(union ,x ,y) x formals))
+                            (and (,name ,@(subst `(sfix ,x) x formals))
+                                 (,name ,@(subst `(sfix ,y) x formals))))
                      :hints(("Goal"
-                             :use ((:instance deflist-lemma-5 (x ,x) (y ,y))
-                                   (:instance ,(mksym name '-of-append)))
-                             :in-theory (disable ,(mksym name '-of-append)))
-                            ;;,last-ditch-hint
-                            ))
+                             :cases ((,name ,@(subst `(union ,x ,y) x formals)))
+                             :do-not-induct t)))
+                   ))
 
-                   (defthm ,(mksym name '-of-duplicated-members)
-                     (implies (previously-forced (,name ,@formals))
-                              (equal (,name ,@(subst `(duplicated-members ,x) x formals))
-                                     t))
-                     ;;:hints(,last-ditch-hint)
-                     ))))))
+          )))
 
     `(defsection ,name
        ,@(and parents `(:parents ,parents))

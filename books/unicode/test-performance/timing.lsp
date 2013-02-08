@@ -1,5 +1,5 @@
 (in-package "ACL2")
-(include-book "../read-ints")
+(include-book "std/io/read-ints" :dir :system)
 (set-verify-guards-eagerness 2)
 (set-state-ok t)
 

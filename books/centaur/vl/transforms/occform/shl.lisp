@@ -189,9 +189,17 @@ operates on O(log_2 n) muxes.</p>"
 
 
 (local (defthm l0
-         (implies (and (vl-exprlist-p x)
-                       (consp x))
-                  (car (last x)))))
+         (implies (vl-exprlist-p x)
+                  (iff (car (last x))
+                       (consp x)))))
+
+(local (defthm l1
+         (implies (vl-exprlist-p x)
+                  (iff (car (last (rev x)))
+                       (consp x)))
+         :hints(("Goal"
+                 :in-theory (disable l0)
+                 :use ((:instance l0 (x (rev x))))))))
 
 (def-vl-modgen vl-make-n-bit-shl-by-m-bits (n m)
   :short "Generate a module that shifts an @('N') bit number left by an @('M')

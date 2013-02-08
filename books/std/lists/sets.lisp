@@ -22,6 +22,7 @@
 (in-package "ACL2")
 (include-book "equiv")
 (include-book "mfc-utils")
+(include-book "rev")
 
 (local (defthm equal-of-booleans-to-iff
          (implies (and (booleanp a) (booleanp b))
@@ -47,6 +48,11 @@
            (if (consp x)
                x
              nil)))
+
+  (defthm member-of-append
+    (iff (member a (append x y))
+         (or (member a x)
+             (member a y))))
 
   ;; We don't need member-of-append, it's already in witness-cp
 
@@ -289,118 +295,6 @@
 
 
 
-;; ;; Set reasoning for WITNESS-CP.
-
-;; ;; BOZO maybe change the variable names from all Ks to appropriate short names,
-;; ;; i.e. ssew for subsetp-witness?
-;; (defquantexpr subsetp
-;;   :predicate (subsetp x y)
-;;   :quantifier :forall
-;;   :witnesses ((k (subsetp-witness x y)))
-;;   :expr (implies (member k x)
-;;                  (member k y))
-;;   :witness-hints ('(:in-theory '(subsetp-witness-correct)))
-;;   :instance-hints ('(:in-theory '(subsetp-member))))
-
-;; (defquantexpr intersectp
-;;   :predicate (intersectp x y)
-;;   :quantifier :exists
-;;   :witnesses ((k (intersectp-witness x y)))
-;;   :expr (and (member k x)
-;;              (member k y))
-;;   :witness-hints ('(:in-theory '(intersectp-witness-correct)))
-;;   :instance-hints ('(:in-theory '(intersectp-member))))
-
-;; (defquantexpr set-equiv
-;;   :predicate (set-equiv x y)
-;;   :quantifier :forall
-;;   :witnesses ((k (set-unequal-witness x y)))
-;;   :expr (iff (member k x)
-;;              (member k y))
-;;   :witness-hints ('(:in-theory '(set-unequal-witness-correct)))
-;;   :instance-hints ('(:in-theory '(set-equiv-implies-iff-member-2))))
-
-;; (defquantexpr set-consp
-;;   :predicate (consp x)
-;;   :quantifier :exists
-;;   :witnesses ((k (car x)))
-;;   :expr (member k x)
-;;   :generalize nil
-;;   :witness-hints ('(:in-theory nil
-;;                     :expand ((:with member
-;;                               (:free (k) (member k x))))))
-;;   :instance-hints ('(:in-theory nil
-;;                     :expand ((:with member
-;;                               (:free (k) (member k x)))))))
-
-
-;; (defexample set-reasoning-member-template
-;;   :pattern (member k y)
-;;   :templates (k)
-;;   :instance-rules
-;;   (subsetp-instancing
-;;    intersectp-instancing
-;;    set-equiv-instancing
-;;    set-consp-instancing))
-
-;; (defexample set-reasoning-no-consp-member-template
-;;   :pattern (member k y)
-;;   :templates (k)
-;;   :instance-rules
-;;   (subsetp-instancing
-;;    intersectp-instancing
-;;    set-equiv-instancing))
-
-;; (def-witness-ruleset set-reasoning-rules
-;;   '(subsetp-witnessing
-;;     intersectp-witnessing
-;;     set-equiv-witnessing
-;;     set-consp-witnessing
-;;     subsetp-instancing
-;;     set-equiv-instancing
-;;     intersectp-instancing
-;;     set-consp-instancing
-;;     set-reasoning-member-template))
-
-;; (def-witness-ruleset set-reasoning-no-consp
-;;   '(subsetp-witnessing
-;;     intersectp-witnessing
-;;     set-equiv-witnessing
-;;     subsetp-instancing
-;;     set-equiv-instancing
-;;     intersectp-instancing
-;;     intersectp-member-template
-;;     subsetp-member-template
-;;     set-equiv-member-template
-;;     set-reasoning-no-consp-member-template))
-
-;; (def-witness-ruleset set-reasoning-no-consp-manual-examples
-;;   '(subsetp-witnessing
-;;     intersectp-witnessing
-;;     set-equiv-witnessing
-;;     subsetp-instancing
-;;     set-equiv-instancing
-;;     intersectp-instancing
-;;     intersectp-member-template
-;;     subsetp-member-template
-;;     set-equiv-member-template))
-
-;; (def-witness-ruleset set-reasoning-manual-examples
-;;   '(subsetp-witnessing
-;;     intersectp-witnessing
-;;     set-equiv-witnessing
-;;     set-consp-witnessing
-;;     subsetp-instancing
-;;     set-equiv-instancing
-;;     intersectp-instancing
-;;     set-consp-instancing))
-
-
-;; (defmacro set-reasoning ()
-;;   '(witness :ruleset set-reasoning-rules))
-
-
-
 (deftheory set-reasoning-witnesses
   '(set-unequal-witness-rw
     subsetp-witness-rw
@@ -428,7 +322,7 @@
   :hints(("Goal" :use ((:instance intersectp-iff-intersection-equal)
                        (:instance intersectp-iff-intersection-equal (y y-equiv))))))
 
-(in-theory (disable set-difference-equal intersection-equal))
+(local (in-theory (disable set-difference-equal intersection-equal)))
 
 
 
@@ -472,7 +366,7 @@
   :hints(("Goal" :in-theory (enable subsetp))))
 
 
-(defthm union-equal-is-append
+(defthm union-equal-under-set-equiv
   (set-equiv (union-equal a b)
              (append a b))
   :hints(("Goal" :in-theory (enable set-equiv))))
@@ -540,6 +434,8 @@
 
 (encapsulate
   ()
+  (local (in-theory (disable revappend-removal)))
+
   (defthm member-of-revappend
     (iff (member x (revappend a b))
          (or (member x a)
@@ -611,4 +507,10 @@
 
 (defcong set-equiv set-equiv (remove k a) 2
   :hints(("Goal" :in-theory (enable set-equiv))))
+
+(defthm rev-under-set-equiv
+  (set-equiv (rev x) x)
+  :hints(("Goal"
+          :in-theory (disable revappend-removal)
+          :use ((:instance revappend-removal (x x) (y nil))))))
 

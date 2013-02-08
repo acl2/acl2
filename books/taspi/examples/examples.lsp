@@ -1,3 +1,6 @@
+;; Renamed from .lisp to .lsp by Jared, to follow Makefile convention of only
+;; using .lisp for certifiable books.
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ; In addition to the examples given here, many files have
 ; examples given in comments at the end of the file. These

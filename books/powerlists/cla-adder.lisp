@@ -8,7 +8,8 @@ prefix-sum algorithms.
 
 To compile it, I do the following:
 
-    (ld "defpkg.lisp")
+    (ld ;; newline to fool dependency scanner
+     "defpkg.lisp")
     (certify-book "cla-adder" 4)
     (in-package "POWERLISTS")
 
@@ -17,8 +18,7 @@ To compile it, I do the following:
 (in-package "POWERLISTS")
 (include-book "prefix-sum" :load-compiled-file nil)
 (include-book "algebra" :load-compiled-file nil)
-(include-book "arithmetic/top" :dir :system
-	      :load-compiled-file nil)
+(include-book "arithmetic/top" :dir :system :load-compiled-file nil)
 
 ;;; First, we define our basic adder circuits.  We represent bit vectors as
 ;;; powerlists of zeros or ones.  In the carry-lookahed adder to come, we will

@@ -332,8 +332,6 @@ initially kept in a big, mixed list.</p>"
                      consp-under-iff-when-true-listp
                      consp-by-len
                      true-listp-when-character-listp
-                     true-listp-when-symbol-listp
-                     true-listp-when-string-listp
                      true-listp-when-not-consp
                      sets::sets-are-true-lists
                      consp-when-member-equal-of-cons-listp

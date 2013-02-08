@@ -28,6 +28,8 @@
 (include-book "clause-processors/sublis-var-meaning" :dir :system)
 (include-book "xdoc/top" :dir :system)
 
+(local (in-theory (disable append-of-nil)))
+
 (defxdoc contextual-rewriting
   :short "A meta-rule system that lets the ACL2 rewriter pass around contextual
 information.  Similar to Dave Greve's NARY.  This extends ACL2's notion of

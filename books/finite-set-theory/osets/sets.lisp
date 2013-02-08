@@ -40,6 +40,7 @@
 ; We now directly use the total order from misc/total-order.
 (include-book "misc/total-order" :dir :system)
 (include-book "tools/rulesets" :dir :system)
+(include-book "std/lists/list-defuns" :dir :system)
 
 ; We need some program-mode definitions which are used in order to automate the
 ; pick-a-point strategies.
@@ -53,6 +54,7 @@
 (local (include-book "membership"))
 (local (include-book "outer"))
 (local (include-book "sort"))
+(local (include-book "under-set-equiv"))
 
 (make-event
  ;; xdoc hack part 2: take all the docs we got from the local includes and
@@ -1117,3 +1119,36 @@ from the accompanying talk.</p>")
                    (def-ruleset! primitive-rules ',primitive-rules)
                    (def-ruleset! order-rules ',order-rules)
                    (def-ruleset! low-level-rules ',low-level-rules)))))
+
+
+
+
+; -------------------------------------------------------------------
+; Relation to acl2::set-equiv, for lightweight use of sets
+
+(defthm insert-under-set-equiv
+  (acl2::set-equiv (insert a x)
+                   (cons a (sfix x))))
+
+(defthm delete-under-set-equiv
+  (acl2::set-equiv (delete a x)
+                   (remove-equal a (sfix x))))
+
+(defthm union-under-set-equiv
+  (acl2::set-equiv (union x y)
+                   (append (sfix x) (sfix y))))
+
+(defthm intersect-under-set-equiv
+  (acl2::set-equiv (intersect x y)
+                   (intersection-equal (sfix x) (sfix y))))
+
+(defthm difference-under-set-equiv
+  (acl2::set-equiv (difference x y)
+                   (set-difference-equal (sfix x) (sfix y))))
+
+(defthm mergesort-under-set-equiv
+  (acl2::set-equiv (mergesort x)
+                   x))
+
+(defcong acl2::set-equiv equal (mergesort x) 1
+  :event-name set-equiv-implies-equal-mergesort-1)

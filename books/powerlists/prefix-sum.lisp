@@ -5,7 +5,8 @@ including the Ladner-Fischer algorithm.  The events are described in the paper
 
 To compile it, I do the following:
 
-    (ld "defpkg.lisp")
+    (ld ;; newline to fool dependency scanner
+     "defpkg.lisp")
     (certify-book "prefix-sum" 4)
     (in-package "POWERLISTS")
 
@@ -15,8 +16,7 @@ To compile it, I do the following:
 (in-package "POWERLISTS")
 (include-book "algebra" :load-compiled-file nil)
 (include-book "simple" :load-compiled-file nil)
-(include-book "arithmetic/top" :dir :system
-	      :load-compiled-file nil)
+(include-book "arithmetic/top" :dir :system :load-compiled-file nil)
 
 (set-verify-guards-eagerness 2)
 

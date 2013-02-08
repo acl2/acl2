@@ -150,12 +150,12 @@
 ; We introduce "list versions" of the functions so that we can reason through
 ; mergesorts.
 
-  (defun all-list (list-for-all-reduction)
-    (declare (xargs :guard (true-listp list-for-all-reduction)))
-    (if (endp list-for-all-reduction)
+  (defun all-list (x)
+    (declare (xargs :guard (true-listp x)))
+    (if (endp x)
 	t
-      (and (predicate (car list-for-all-reduction))
-	   (all-list (cdr list-for-all-reduction)))))
+      (and (predicate (car x))
+	   (all-list (cdr x)))))
 
   (defun exists-list (x)
     (declare (xargs :guard (true-listp x)))
@@ -548,17 +548,16 @@
 ; like to have a corresponding theorem to use with lists.  We create that here.
 
 (encapsulate
- (((all-list-hyps) => *)
-  ((all-list-list) => *))
+  (((all-list-hyps) => *)
+   ((all-list-list) => *))
 
- (local (defun all-list-hyps () nil))
- (local (defun all-list-list () nil))
+  (local (defun all-list-hyps () nil))
+  (local (defun all-list-list () nil))
 
- (defthmd list-membership-constraint
-   (implies (all-list-hyps)
-	    (implies (member arbitrary-element (all-list-list))
-		     (predicate arbitrary-element))))
-)
+  (defthmd list-membership-constraint
+    (implies (all-list-hyps)
+             (implies (member arbitrary-element (all-list-list))
+                      (predicate arbitrary-element)))))
 
 (encapsulate ()
 

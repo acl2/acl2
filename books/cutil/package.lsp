@@ -75,6 +75,8 @@
                make-fal
                xdoc-extend
                legal-variablep
+               set-equiv
+               list-equiv
 
                ;; BOZO consider moving these to cutil?
                defconsts

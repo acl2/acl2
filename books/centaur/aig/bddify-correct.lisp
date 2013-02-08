@@ -29,6 +29,8 @@
 
 (set-inhibit-warnings "theory")
 
+(local (in-theory (disable append-of-nil)))
+
 
 ;; --------- UBDDP-VAL-ALISTP
 

@@ -60,7 +60,7 @@
 (local (in-theory (disable ;ACL2-COUNT-OF-VL-READ-UNTIL-END-OF-DEFINE-WEAK
                            hons-assoc-equal
                            CONSP-WHEN-MEMBER-EQUAL-OF-CONS-LISTP
-                           STRINGP-WHEN-MEMBER-EQUAL-IN-STRING-LISTP
+                           acl2::STRINGP-WHEN-MEMBER-EQUAL-OF-STRING-LISTP
                            STRING-LISTP-WHEN-SUBSETP-EQUAL-OF-STRING-LISTP
                            STRING-LISTP-WHEN-MEMBER-EQUAL-OF-STRING-LIST-LISTP
                            SYMBOL-LISTP-WHEN-SUBSETP-EQUAL-OF-SYMBOL-LISTP

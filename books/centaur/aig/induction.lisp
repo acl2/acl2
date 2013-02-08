@@ -22,6 +22,8 @@
 
 (include-book "eval-restrict")
 
+(local (in-theory (disable append-of-nil)))
+
 ;; This book defines check-property, which checks that a safety property
 ;; on a FSM holds after some number of steps in which provided inputs are
 ;; applied.  The FSM is expressed as a set of AIG update functions and an AIG

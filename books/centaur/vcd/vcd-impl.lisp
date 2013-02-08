@@ -20,7 +20,7 @@
 
 (in-package "VL")
 (include-book "vcd-stub")
-(include-book "centaur/misc/date" :dir :system)
+(include-book "oslib/date" :dir :system)
 (include-book "centaur/misc/tshell" :dir :system)
 (include-book "centaur/aig/three-four" :dir :system)
 (include-book "centaur/misc/hons-extra" :dir :system)
@@ -1775,7 +1775,7 @@
   (declare (xargs :guard (stringp filename)
                   :mode :program
                   :stobjs state))
-  (b* (((mv date state) (acl2::date state))
+  (b* (((mv date state) (oslib::date))
        ((unless (consp snapshots))
         (er hard? 'vcd-dump "No snapshots?")
         state)

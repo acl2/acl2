@@ -60,7 +60,8 @@ generate a sorted powerlist when its inputs are sorted.
 To certify this book, you need to define the POWERLISTS package and then run
 certify-book on this file.  Here's how I do it:
 
-    (ld "defpkg.lisp")
+    (ld ;; newline to fool dependency scanner
+      "defpkg.lisp")
     (certify-book "batcher-sort" 4)
     (in-package "POWERLISTS")
 
@@ -68,8 +69,7 @@ certify-book on this file.  Here's how I do it:
 
 (in-package "POWERLISTS")
 (include-book "merge-sort")
-(include-book "arithmetic/top" :dir :system
-	      :load-compiled-file nil)
+(include-book "arithmetic/top" :dir :system :load-compiled-file nil)
 
 (set-verify-guards-eagerness 2)
 

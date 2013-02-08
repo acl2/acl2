@@ -6,7 +6,8 @@ algorithms.
 
 To compile it, I do the following:
 
-    (ld "defpkg.lisp")
+    (ld ;; newline to fool dependency scanner
+      "defpkg.lisp")
     (certify-book "gray-code" 4)
     (in-package "POWERLISTS")
 

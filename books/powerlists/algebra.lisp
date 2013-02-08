@@ -29,7 +29,8 @@ perfectly balanced cons trees.
 To certify this book, first define the POWERLISTS package, then execute an
 appropriate certify-book command.  Something like the following will work:
 
-    (ld "defpkg.lisp")
+    (ld ;; newline to fool dependency scanner
+      "defpkg.lisp")
     (certify-book "algebra" 4)
 
 |#

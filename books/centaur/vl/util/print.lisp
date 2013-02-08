@@ -40,11 +40,6 @@ makes the sequential printing of small chunks of text reasonably
 efficient.</p>")
 
 
-;; These rules force too aggressively since we're often doing things to
-;; printedlist's instead of string or character lists here.
-(local (in-theory (disable string-listp-of-append
-                           string-listp-of-rev)))
-
 
 (define vl-printed-p (x)
   :parents (printer)

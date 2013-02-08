@@ -3262,7 +3262,7 @@ and assignments that need to be added to the module.</li>
                              VL-VARDECLLIST-P-WHEN-SUBSETP-EQUAL
                              VL-FUNTEMPLATELIST-P-WHEN-SUBSETP-EQUAL
                              VL-PORTDECLLIST-P-WHEN-SUBSETP-EQUAL
-                             TRUE-LISTP-WHEN-STRING-LISTP
+                             ;TRUE-LISTP-WHEN-STRING-LISTP
                              TRUE-LISTP-WHEN-VL-ATTS-P
                              VL-ATTS-P-WHEN-NOT-CONSP
                              CONSP-WHEN-MEMBER-EQUAL-OF-VL-MODITEM-ALIST-P
