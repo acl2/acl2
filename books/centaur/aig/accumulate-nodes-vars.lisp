@@ -156,14 +156,14 @@
   :hints (("goal" :in-theory (enable subnode-lst-complete))))
 
 
-(defthm accumulate-nodes-post-under-set-equivp
+(defthm accumulate-nodes-post-under-set-equiv
   (implies (subnode-lst-complete lst)
-           (set-equivp (accumulate-nodes-post a lst)
+           (set-equiv (accumulate-nodes-post a lst)
                        (append (collect-nodes a) lst)))
   :hints ((set-reasoning)))
 
 (defthm accumulate-nodes-post-reduces-to-collect-nodes
-  (set-equivp (accumulate-nodes-post a nil)
+  (set-equiv (accumulate-nodes-post a nil)
               (collect-nodes a)))
 
 (in-theory (disable accumulate-nodes-post))
@@ -329,14 +329,14 @@
   :hints (("goal" :in-theory (enable subnode-lst-complete-for-subnodes))))
 
 
-(defthm accumulate-nodes-pre-under-set-equivp
+(defthm accumulate-nodes-pre-under-set-equiv
   (implies (subnode-lst-complete-for-subnodes a lst)
-           (set-equivp (accumulate-nodes-pre a lst)
+           (set-equiv (accumulate-nodes-pre a lst)
                        (append (collect-nodes a) lst)))
   :hints ((set-reasoning)))
 
 (defthm accumulate-nodes-pre-reduces-to-collect-nodes
-  (set-equivp (accumulate-nodes-pre a nil)
+  (set-equiv (accumulate-nodes-pre a nil)
               (collect-nodes a)))
 
 (in-theory (disable accumulate-nodes-pre))
@@ -390,7 +390,7 @@
   :hints (("goal" :use var-lst-complete-for-subnodes-necc))
   :rule-classes ((:rewrite :match-free :all)))
 
-(defcong set-equivp equal (var-lst-complete-for-subnodes a nodes vars) 2
+(defcong set-equiv equal (var-lst-complete-for-subnodes a nodes vars) 2
   :hints (("goal" :cases ((var-lst-complete-for-subnodes a nodes vars)))
           (and stable-under-simplificationp
                (append
@@ -398,7 +398,7 @@
                     `(:expand (,(car (last clause))))
                   `(:expand (,(car clause))))))))
 
-(defcong set-equivp equal (var-lst-complete-for-subnodes a nodes vars) 3
+(defcong set-equiv equal (var-lst-complete-for-subnodes a nodes vars) 3
   :hints (("goal" :cases ((var-lst-complete-for-subnodes a nodes vars)))
           (and stable-under-simplificationp
                (append
@@ -544,15 +544,15 @@
   :hints (("goal" :in-theory (enable var-lst-complete-for-subnodes))))
 
 
-(defthm accumulate-aig-vars-under-set-equivp
+(defthm accumulate-aig-vars-under-set-equiv
   (implies (and (var-lst-complete-for-subnodes a (alist-keys nodetable) vars)
                 (subnode-lst-complete-for-subnodes a (alist-keys nodetable)))
-           (set-equivp (mv-nth 1 (accumulate-aig-vars a nodetable vars))
+           (set-equiv (mv-nth 1 (accumulate-aig-vars a nodetable vars))
                        (append (aig-vars a) vars)))
   :hints ((set-reasoning)))
 
 (defthm accumulate-aig-vars-reduces-to-aig-vars
-  (set-equivp (mv-nth 1 (accumulate-aig-vars a nil nil))
+  (set-equiv (mv-nth 1 (accumulate-aig-vars a nil nil))
               (aig-vars a)))
 
 (in-theory (disable accumulate-aig-vars))

@@ -498,6 +498,9 @@
            (member a y)
            (member a z))))
 
+;; Jared fixing this... again...
+(local (in-theory (disable revappend-removal)))
+
 (defthm no-duplicatesp-sorted-revappend-2
   (implies (not (no-duplicatesp-sorted y))
            (not (no-duplicatesp-sorted (revappend x y)))))

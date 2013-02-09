@@ -1512,8 +1512,6 @@
 ; current values, and prints a litany of VCD value_change elements to reflect
 ; these changes.
 
-  (local (in-theory (disable string-listp-of-rev)))
-
   (defpp vcd-print-net-update (net snap)
     :guard (and (vcd-net-p net)
                 (vcd-snapshot-p snap))
