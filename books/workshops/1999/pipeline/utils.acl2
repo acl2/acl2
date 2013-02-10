@@ -6,7 +6,7 @@
 (value :q)
 (lp)
 (ld '((ubt! 1)
-      (ld "define-u-package.lisp")
+      (ld "define-u-package.lsp")
       (certify-book "utils" 1)))
 
 

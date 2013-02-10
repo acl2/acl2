@@ -16,7 +16,7 @@ BOOKS = alls arithmetic base close cnf derive		\
 
 # Original target from Ivy distribution:
 ivy:
-	acl2 < Certify.lisp > Certify.out
+	acl2 < Certify.lsp > Certify.out
 	grep -v FAIL Certify.out > /dev/null
 
 realclean:

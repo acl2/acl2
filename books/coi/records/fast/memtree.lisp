@@ -203,7 +203,7 @@
 (defthm _address-floor-2
   (implies (and (not (zp depth))
                 (_address-p addr depth))
-           (_address-p (floor addr 2) (1- depth)))))
+           (_address-p (floor addr 2) (1- depth))))
 
 (defthm _memtree-car/cdr
   (implies (and (not (zp depth))
@@ -257,6 +257,11 @@
 ; very fast.  However, its application is kind of limited because we will often
 ; have addresses past the fixnum range, e.g., for 64-bit memories.
 
+
+(encapsulate
+  ()
+(local (in-theory (enable signed-byte-p)))
+
 (defun _fix-addr/depth-memtree-load (addr mtree depth)
   (declare (xargs :guard (and (natp depth)
                               (_address-p addr depth)
@@ -271,7 +276,7 @@
                 (if (= (the-fixnum (logand addr 1)) 0)
                     (car mtree)
                   (cdr mtree))
-                (the-fixnum (1- depth))))))
+                (the-fixnum (1- depth)))))))
 
 
 
@@ -283,19 +288,23 @@
 ; version above.  In other words, the function is "self optimizing" in that it
 ; will switch over to the very-fast version above as soon as it can do so.
 
-(defun _fixnum-memtree-load (addr mtree depth)
-  (declare (xargs :guard (and (natp depth)
-                              (_address-p addr depth)
-                              (_memtree-p mtree depth)))
-           (type (signed-byte 29) depth))
-  (mbe :logic (_memtree-load addr mtree depth)
-       :exec (if (<= depth 28)
-                 (_fix-addr/depth-memtree-load addr mtree depth)
-               (_fixnum-memtree-load (ash addr -1)
-                                     (if (= (the-fixnum (logand addr 1)) 0)
-                                         (car mtree)
-                                       (cdr mtree))
-                                     (the-fixnum (1- depth))))))
+(encapsulate
+  ()
+  (local (in-theory (enable signed-byte-p)))
+
+  (defun _fixnum-memtree-load (addr mtree depth)
+    (declare (xargs :guard (and (natp depth)
+                                (_address-p addr depth)
+                                (_memtree-p mtree depth)))
+             (type (signed-byte 29) depth))
+    (mbe :logic (_memtree-load addr mtree depth)
+         :exec (if (<= depth 28)
+                   (_fix-addr/depth-memtree-load addr mtree depth)
+                 (_fixnum-memtree-load (ash addr -1)
+                                       (if (= (the-fixnum (logand addr 1)) 0)
+                                           (car mtree)
+                                         (cdr mtree))
+                                       (the-fixnum (1- depth)))))))
 
 
 
@@ -336,6 +345,8 @@
 
 ; As with loading, we create an efficient version that assumes addr and depth
 ; are fixnums.  This is our "most efficient" store implementation.
+
+(local (in-theory (enable signed-byte-p)))
 
 (defun _fix-addr/depth-memtree-store (addr elem mtree depth)
   (declare (xargs :guard (and (natp depth)
@@ -470,7 +481,7 @@
 
 
 
-
+(local (in-theory (disable signed-byte-p)))
 
 
 

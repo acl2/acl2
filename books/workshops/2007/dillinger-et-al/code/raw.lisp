@@ -1,7 +1,9 @@
 #|$ACL2s-Preamble$;
-(ld "hacker-pkg.lsp")
+(ld ;; Newline to fool dependency scanner
+  "hacker-pkg.lsp")
 
-(include-book "defcode" :ttags ((defcode)))
+(include-book ;; Newline to fool dependency scanner
+   "defcode" :ttags ((defcode)))
 
 (acl2::begin-book t :ttags ((defcode)));$ACL2s-Preamble$|#
 

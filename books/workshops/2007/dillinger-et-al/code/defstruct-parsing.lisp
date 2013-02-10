@@ -1,5 +1,6 @@
 #|$ACL2s-Preamble$;
-(ld "hacker-pkg.lsp")
+(ld ;; Newline to fool dependency scanner
+  "hacker-pkg.lsp")
 
 (begin-book);$ACL2s-Preamble$|#
 

@@ -616,7 +616,7 @@
 
 (defthm _store-smash
   (equal (_store a e1 (_store a e2 mem))
-         (_store a e1 mem))))
+         (_store a e1 mem)))
 
 (defthm _store-reorder
   (implies (not (equal a b))
@@ -692,7 +692,7 @@
 
 (defthm store-smash
   (equal (store a e1 (store a e2 mem))
-         (store a e1 mem))))
+         (store a e1 mem)))
 
 (defthm store-reorder
   (implies (not (equal a b))

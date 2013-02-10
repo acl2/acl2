@@ -648,7 +648,7 @@
 
 (defthm store-smash
   (equal (store a e1 (store a e2 mem))
-         (store a e1 mem))))
+         (store a e1 mem)))
 
 (defthm store-reorder
   (implies (not (equal a b))

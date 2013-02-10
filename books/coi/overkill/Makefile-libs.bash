@@ -97,7 +97,7 @@ echo ";; THE FOLLOWING IS BZO BZO BZO TERRIBLE FIXME BAD!!" >> $TEMP_ACL2OUT
 echo ";; We add bozo-ld so that we can fake having ld with :dir support" >> $TEMP_ACL2OUT
 echo ";; remove this in v2.9.3 and change all bozo-ld's to ld's." >> $TEMP_ACL2OUT
 echo "" >> $TEMP_ACL2OUT
-cat $MAKEDIR/bozo-ld.lisp >> $TEMP_ACL2OUT
+cat $MAKEDIR/bozo-ld.lsp >> $TEMP_ACL2OUT
 echo "" >> $TEMP_ACL2OUT
 echo "" >> $TEMP_ACL2OUT
 

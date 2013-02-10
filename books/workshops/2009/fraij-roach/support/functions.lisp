@@ -5,7 +5,8 @@
 
 ;; (include-book "books/arithmetic/top")
 #|
-(ld "c:/Program Files/ACL2-2.9.2/sources/supplementary/functions.lisp" :ld-pre-eval-print t)
+(ld ;; Newline to fool dependency scanner
+  "c:/Program Files/ACL2-2.9.2/sources/supplementary/functions.lisp" :ld-pre-eval-print t)
  
 function.lisp
 -------------------------------

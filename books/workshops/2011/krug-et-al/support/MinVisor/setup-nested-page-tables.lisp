@@ -225,7 +225,8 @@ or
 
 (set-waterfall-printing :limited)
 
-(time$ (ld "setup-nested-page-tables.lisp"))
+(time$ (ld ;; Newline to fool dependency scanner
+   "setup-nested-page-tables.lisp"))
 
 ||#
 

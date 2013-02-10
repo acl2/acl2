@@ -27,7 +27,8 @@
 #|
  To certify in ACL2 Version 2.6
 
-  (ld "defpkg.lisp")
+  (ld ;; Newline to fool dependency scanner
+    "defpkg.lsp")
   (certify-book "kalman-demo" 1)
 |#
 

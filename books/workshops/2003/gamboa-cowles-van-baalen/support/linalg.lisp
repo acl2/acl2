@@ -42,7 +42,8 @@ Subject: linear algebra
 ~ruben/home/projects/kalman/linalg.lisp
 |#
 #|
-  (ld "defpkg.lisp")
+  (ld ;; Newline to fool dependency scanner
+   "defpkg.lsp")
   (certify-book "linalg" 1)
 |#
 #|

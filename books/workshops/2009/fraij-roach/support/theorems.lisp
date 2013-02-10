@@ -1,7 +1,8 @@
 (in-package "ACL2")
 #|
 
-(ld "theorems.lisp" :ld-pre-eval-print t)
+(ld ;; Newline to fool dependency scanner
+  "theorems.lisp" :ld-pre-eval-print t)
 
 
 theorems.lisp
