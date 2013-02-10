@@ -1,0 +1,159 @@
+# -*- mode: makefile -*-
+
+# Experimental replacement for books/Makefile using cert.pl.
+# Usage:  make -f Makefile-jared -j ???
+#
+# Same conventions as in cert.pl / Makefile-generic:
+#   - Certifiable books should be named foo.lisp
+#   - Non-certifiable Lisp files should be named foo.lsp
+#   - Ordinary foo.acl2/foo.image and cert.acl2/cert.image stuff
+#
+# Why use this instead of books/Makefile?
+#   - Automatically scan for .lisp files with "find"
+#   - Automatically figure out their dependencies with cert.pl
+#   - No directory-level dependencies -- better parallelism
+#   - Automatically allow ttags, skip-proofs, axioms, etc
+#   - Supports startjob for cluster-distributed builds
+#
+# Missing Features, Bozos?
+#  - Doesn't support multi-lisp compilation stuff for Matt
+#  - Not sure if it supports provisional and/or two-pass certification
+#  - Dependencies won't automatically be re-scanned.  Remove Makefile-deps
+#    to force a re-scan.
+#  - Doesn't support nonstd books for ACL2(r)
+#  - Probably doesn't clean up everything.
+#
+# Should we auto-rescan dependencies?  Maybe. It's slow. But that might be
+# okay, since for ordinary development you would just cert.pl your files.
+
+ACL2 ?= acl2
+
+SHELL := $(shell which bash)
+STARTJOB ?= $(SHELL)
+
+.SUFFIXES:
+.SUFFIXES: .cert .lisp
+
+.PHONY: all
+all:
+
+# This was excluded from workshops/2000/Makefile.
+BROKEN_WK2000_COWLES := workshops/2000/cowles
+
+# This was excluded from workshops/2002/manolios-kaufmann/support/Makefile.
+BROKEN_WK2002_TOTAL := workshops/2002/manolios-kaufmann/support/total-order
+
+# This was excluded from workshops/2003/kaufmann/support/Makefile
+BROKEN_WK2003_KAUFMANN := workshops/2003/kaufmann/support/output
+
+# This apparently takes too long for mere mortals to build
+BROKEN_WK2004_MANOLIOS := manolios-srinivasan/support/Benchmark-Problems
+
+# This appears to depend on the nonstd books
+NONSTD_WK2006_COWLES := workshops/2006/cowles-gamboa-euclid
+
+# This wasn't getting built, it has a really slow book
+BROKEN_WK2011_KRUG := workshops/2011/krug-et-al/support/MinVisor
+
+Makefile-deps:
+	@echo "Scanning for books..."
+	@rm -f Makefile-books
+	@time find . -type f -name "*.lisp" \
+            | fgrep -v interface \
+            | fgrep -v nonstd \
+            | fgrep -v quicklisp \
+            | fgrep -v SULFA \
+            | fgrep -v $(BROKEN_WK2000_COWLES) \
+            | fgrep -v $(BROKEN_WK2002_TOTAL) \
+            | fgrep -v $(BROKEN_WK2003_KAUFMANN) \
+	    | fgrep -v $(BROKEN_WK2004_MANOLIOS) \
+            | fgrep -v $(NONSTD_WK2006_COWLES) \
+            | fgrep -v $(BROKEN_WK2011_KRUG) \
+          > Makefile-books
+	@echo "Calculating book dependencies..."
+	@rm -f Makefile-deps
+	@time ./cert.pl --quiet \
+                        --static-makefile Makefile-deps \
+                        --cache Makefile-cache \
+                        --targets Makefile-books
+        @echo 'MFDEPS_DEBUG := $$(shell echo Reading book deps ' \
+		'Makefile-deps created on' `date` '1>&2)' \
+		 >> Makefile-deps
+
+-include Makefile-deps
+
+all: $(CERT_PL_CERTS)
+
+.PHONY: workshop1999 workshop2000 workshop2001 workshop2002 \
+        workshop2003 workshop2004 workshop2006 workshop2007 \
+        workshop2009 workshop2011 \
+        workshops
+
+workshops : $(filter workshops/%, $(CERT_PL_CERTS))
+workshop1999 : $(filter workshops/1999/%, $(CERT_PL_CERTS))
+workshop2000 : $(filter workshops/2000/%, $(CERT_PL_CERTS))
+workshop2001 : $(filter workshops/2001/%, $(CERT_PL_CERTS))
+workshop2002 : $(filter workshops/2002/%, $(CERT_PL_CERTS))
+workshop2003 : $(filter workshops/2003/%, $(CERT_PL_CERTS))
+workshop2004 : $(filter workshops/2004/%, $(CERT_PL_CERTS))
+workshop2006 : $(filter workshops/2006/%, $(CERT_PL_CERTS))
+workshop2007 : $(filter workshops/2007/%, $(CERT_PL_CERTS))
+workshop2009 : $(filter workshops/2009/%, $(CERT_PL_CERTS))
+workshop2011 : $(filter workshops/2011/%, $(CERT_PL_CERTS))
+
+centaur : $(filter centaur/%, $(CERT_PL_CERTS))
+
+
+.PHONY: clean
+
+# BOZO I took out .h and .c files because (1) it seems crazy to remove them,
+# and (2) it inadvertently removes many files in workshops/2004/ruiz-et-al,
+# coi/overkill, unicode/performance-testing, clause-processors/SULFA.
+
+# BOZO temporarily removed *.acl2x* because it removes
+# system/pcert/acl2x-pcert-test-2.acl2x-source, which I don't know whether we
+# care about but is in version control.
+
+CLEAN_FILES := workxxx* *.out *@expansion.lsp *.date *.*cert *.pcert0 *.pcert1 \
+  *.port *.o *.sbin *.lbin *.fasl *.cert.* *.ufsl *.64ufasl *.ufasl \
+  *.pfsl *.dfsl *.dx32fsl *.lx32fsl *.d64fsl *.dx64fsl *.lx64fsl *.bin *.sparcf \
+  *.axpf *.x86f *.ppcf *.fas *.lib *.sse2f *.log TMP*.* temp-emacs-file.lsp \
+  Makefile-deps
+
+CLEAN_FIND_ARGS := $(patsubst %,-name "%" -o, $(CLEAN_FILES))
+
+clean:
+	find . -type f \
+               \( $(CLEAN_FIND_ARGS) -false \) \
+               \( -not -name "*svn-base" \) \
+               -print0 \
+          | xargs -0 rm
+
+
+# Workshops/1999/multiplier is tricky because there are generated .lisp files
+# invovled.  Cert.pl can't scan these, so we have to add them manually.
+
+workshops/1999/multiplier/fmul.cert: \
+  workshops/1999/multiplier/fmul.lisp \
+  workshops/1999/multiplier/rtl.cert
+
+workshops/1999/multiplier/fmul.lisp: \
+  workshops/1999/multiplier/compiler.cert \
+  workshops/1999/multiplier/fmul.trans
+	@echo "Making workshops/1999/multiplier/fmul.lisp"
+	@cd workshops/1999/multiplier; \
+              $(STARTJOB) -c "$(ACL2) < make-fmul.lsp &> fmul.lisp.log"
+	@ls -l workshops/1999/multiplier/fmul.lisp \
+               workshops/1999/multiplier/fmul-star.lisp
+
+workshops/1999/multiplier/fmul-star.lisp: \
+  workshops/1999/multiplier/fmul.lisp
+
+workshops/1999/multiplier/fmul-star.cert: \
+  workshops/1999/multiplier/spec.cert
+
+workshops/1999/multiplier/spec.cert: \
+  workshops/1999/multiplier/fmul.cert
+
+workshops/1999/multiplier/proof.cert: \
+  workshops/1999/multiplier/fmul-star.cert
