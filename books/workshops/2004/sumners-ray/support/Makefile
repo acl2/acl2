@@ -14,13 +14,13 @@ top1:
 
 top: success.txt
 
-success.txt: mesi.cert crit.cert invp.lisp
+success.txt: mesi.cert crit.cert invp.lsp
 	@echo "Making `pwd`/success.txt on `date`"
 	@rm -f success.txt workxxx
 	@date > run.date
 	@echo '(value :q)' > workxxx
 	@echo '(acl2::lp)' >> workxxx
-	@echo '(acl2::ld "invp.lisp")' >> workxxx
+	@echo '(acl2::ld "invp.lsp")' >> workxxx
 	@echo '(value :q)' >> workxxx
 	@echo '(acl2::good-bye)' >> workxxx
 	@$(ACL2) < workxxx > run.log 2> run.err
