@@ -84,10 +84,29 @@ Makefile-deps:
 
 all: $(CERT_PL_CERTS)
 
-.PHONY: workshop1999 workshop2000 workshop2001 workshop2002 \
+
+# The critical path report will work only if you have set up certificate timing
+# BEFORE you build the books.  See ./critpath.pl --help for details.
+
+critpath.txt : $(CERT_PL_CERTS)
+	echo "Building critpath.txt..."
+	time ./critpath.pl --targets Makefile-books > critpath.txt
+
+
+# Handy targets for building subsets of the books... others are easy to add.
+
+.PHONY: basic centaur coi workshops \
+        workshop1999 workshop2000 workshop2001 workshop2002 \
         workshop2003 workshop2004 workshop2006 workshop2007 \
-        workshop2009 workshop2011 \
-        workshops
+        workshop2009 workshop2011
+
+basic : $(filter-out centaur/%, \
+           $(filter-out coi/%, \
+              $(filter-out workshops/%, $(CERT_PL_CERTS))))
+
+centaur : $(filter centaur/%, $(CERT_PL_CERTS))
+
+coi     : $(filter coi/%, $(CERT_PL_CERTS))
 
 workshops : $(filter workshops/%, $(CERT_PL_CERTS))
 workshop1999 : $(filter workshops/1999/%, $(CERT_PL_CERTS))
@@ -101,7 +120,6 @@ workshop2007 : $(filter workshops/2007/%, $(CERT_PL_CERTS))
 workshop2009 : $(filter workshops/2009/%, $(CERT_PL_CERTS))
 workshop2011 : $(filter workshops/2011/%, $(CERT_PL_CERTS))
 
-centaur : $(filter centaur/%, $(CERT_PL_CERTS))
 
 
 .PHONY: clean
@@ -128,6 +146,9 @@ clean:
                \( -not -name "*svn-base" \) \
                -print0 \
           | xargs -0 rm
+
+
+
 
 
 # Workshops/1999/multiplier is tricky because there are generated .lisp files
