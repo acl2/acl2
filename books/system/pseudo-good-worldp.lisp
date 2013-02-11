@@ -996,9 +996,10 @@
 ; relationship between sym and val.
 
   (declare (xargs :guard (symbolp sym)))
-  (cond (sym (and (consp val)
-                  (natp (car val))
-                  (eq (cdr val) sym)))
+  (cond (sym
+         (and (consp val)
+              (natp (car val))
+              (eq (cdr val) sym)))
         (t (and (consp val)
                 (rationalp (car val))
                 (symbolp (cdr val))))))
@@ -1248,6 +1249,42 @@
               (< switch-var-pos (length formals))
               (equal (nth switch-var-pos formals) switch-var)
               (pseudo-termp body)))))
+
+;-----------------------------------------------------------------
+; TAU-BOUNDERS-FORM-1
+
+(defun tau-interval-domainsp (x)
+  (cond ((atom x) (eq x nil))
+        (t (and (member-eq (car x) '(integerp rationalp acl2-numberp nil))
+                (tau-interval-domainsp (cdr x))))))
+
+(defun tau-interval-domainsp-listp (x)
+  (cond ((atom x) (eq x nil))
+        (t (and (tau-interval-domainsp (car x))
+                (tau-interval-domainsp-listp (cdr x))))))
+
+(defun pseudo-bounder-correctnessp (sym x)
+  (and (consp x)
+       (consp (car x))
+       (consp (cdr x))
+       (symbolp (car (car x)))
+       (tau-interval-domainsp-listp (cdr (car x)))
+       (eq sym (car (car x)))
+       (symbolp (car (cdr x)))
+       (nat-listp (cdr (cdr x)))))
+
+(defun pseudo-tau-boundersp (sym val)
+  (cond ((atom val) (eq val nil))
+        (t (and (pseudo-bounder-correctnessp sym (car val))
+                (pseudo-tau-boundersp sym (cdr val))))))
+
+;-----------------------------------------------------------------
+; TAU-BOUNDERS-FORM-2
+
+(defun pseudo-tau-boundersp-listp (sym val)
+  (cond ((atom val) (eq val nil))
+        (t (and (pseudo-tau-boundersp sym (car val))
+                (pseudo-tau-boundersp-listp sym (cdr val))))))
 
 ;-----------------------------------------------------------------
 ; CLASSES
@@ -2591,10 +2628,11 @@
           (ABSOLUTE-EVENT-NUMBER
            (or (eq val *acl2-property-unbound*)
                (absolute-event-numberp sym val)))
-          (ABSSTOBJ-INFO (weak-absstobj-info-p val))
           (ACCESSOR-NAMES (accessor-namesp sym val))
           (ATTACHMENT (attachment-propertyp sym val))
           (BIG-SWITCH (pseudo-big-switchp sym val))
+          (TAU-BOUNDERS-FORM-1 (pseudo-tau-boundersp sym val))
+          (TAU-BOUNDERS-FORM-2 (pseudo-tau-boundersp-listp sym val))
           (CLASSES (classesp sym val))
           (CLASSICALP (or (eq val *acl2-property-unbound*)
                           (classicalpp sym val)))
