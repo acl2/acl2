@@ -7812,6 +7812,22 @@
   (implies (and (p1 x1) (p2 x2) ...)
            (q (mv-nth 'n (fn x1 x2 ...))))
 
+  ~i[Bounder Form 1 (or Form 2)]:
+  (implies (and (tau-intervalp i1)
+                ...
+                (or (equal (tau-interval-dom i1) 'dom1-1)
+                    ...)
+                ...
+                (in-tau-intervalp x1 i1)
+                ...)
+           (and (tau-intervalp (bounder-fn i1 ...))
+                (in-tau-intervalp ~i[target]
+                                  (bounder-fn i1 ...))))
+
+  where ~i[target] is
+  (fn x1 ... y1 ...)             in ~i[Form 1], and
+  (mv-nth 'n (fn x1 ... y1 ...)) in ~i[Form 2] 
+
   ~i[Big Switch]:
   (equal (fn . formals) body)
 
@@ -8046,6 +8062,38 @@
   ~ev[]
   This form of signature rule is just like form 1 except that it is useful for functions
   that return multiple-values and allows us to ``type-check'' their individual outputs.
+
+  ~bv[]
+  General Form: ~i[Bounder Forms 1 and 2]:
+  (implies (and (tau-intervalp i1)
+                ...
+                (or (equal (tau-interval-dom i1) 'dom1-1)
+                    ...)
+                ...
+                (in-tau-intervalp x1 i1)
+                ...)
+           (and (tau-intervalp (bounder-fn i1 ...))
+                (in-tau-intervalp ~i[target]
+                                  (bounder-fn i1 ...))))
+  ~ev[]
+  where ~i[target] is either ~c[(fn x1 ... y1 ...)] in ~i[Form 1] or
+  ~c[(mv-nth 'n (fn x1 ... y1 ...))] in ~i[Form 2].
+
+  This form is for advanced users only and the schema given above is
+  just a reminder of the general shape.  A ``bounder'' for a given function
+  symbol, ~c[fn], is a function symbol ~c[bounder-fn] that computes an interval
+  containing ~c[(fn x1 ... y1 ...)] (or its ~c[n]th component in the case of
+  Form 2 rules) from the intervals containing certain of the arguments of
+  ~c[fn].  The correctness theorem for a bounder function informs the tau
+  system that bounds for ~c[fn] are computed by ~c[bounder-fn] and sets up the
+  correspondence between the relevant arguments, ~c[xi], of ~c[fn] and the
+  intervals containing those arguments, ~c[ii] to which ~c[bounder-fn] is
+  applied.  When the tau system computes the tau for a call of ~c[fn], it
+  computes the tau of the relevant arguments and applies the bounder to the
+  intervals of those tau.  This provides a domain and upper and/or lower bounds
+  for the value of the term.  The tau system then further augments that with
+  signature rules.  ~l[bounders] for details on intervals, bounders, and
+  bounder correctness theorems.
 
   ~bv[]
   General Form: ~i[Big Switch]:
@@ -48909,3 +48957,438 @@ Lisp definition."
   (let ((form `(set-absstobj-debug-fn ,val ,always)))
     (cond (event-p `(value-triple ,form :on-skip-proofs ,on-skip-proofs))
           (t form))))
+
+; The following functions are defined in logic mode because they will be
+; used in tau bounder correctness theorems.  We basically define two functions,
+; intervalp and in-intervalp, but we also define various subroutines needed to
+; make those functions manageable.  In tau.lisp we define the record structure:
+
+; (defrec tau-interval (domain (lo-rel . lo) . (hi-rel . hi)) t)
+
+; and this is precisely the structure recognized by intervalp and given meaning
+; by in-intervalp.  We therefore achieve the goal that the user can prove
+; theorems about bounder functions defined in terms of the concepts named here
+; and we can run those functions on the actual tau-intervals constructed by the
+; tau system.  (Of course, those actual intervals could have been constructed
+; and accessed by these functions rather than the more efficient record
+; expressions, but efficiency matters.)
+
+; In the guard below, we know when both x and y are non-nil then (at least) one
+; is a rational.  Under that guard, the body below is actually equivalent to the
+; more elegant:
+
+;  (if (or (null x)
+;          (null y))
+;      t
+;      (if rel (< x y) (<= x y)))
+
+; except the body is guard-verifiable while the elegant one is not, since the
+; guard for < (and <=) requires that both arguments be rationals.  This is
+; proved by the thm following the definition.
+
+(defun <? (rel x y)
+  (declare (xargs :guard
+                  (implies (and x y)
+                           (or (real/rationalp x)
+                               (real/rationalp y)))))
+  (if (or (null x) (null y))
+      t
+      (let ((x (fix x))
+            (y (fix y)))
+        (if (real/rationalp x)
+            (if (real/rationalp y)
+                (if rel
+                    (< x y)
+                    (<= x y))
+                (or (< x (realpart y))
+                    (and (= x (realpart y))
+                         (< 0 (imagpart y)))))
+            (or (< (realpart x) y)
+                (and (= (realpart x) y)
+                     (< (imagpart x) 0)))))))
+
+#||
+(thm (implies (implies (and x y)
+                       (or (real/rationalp x)
+                           (real/rationalp y)))
+              (iff (<? rel x y)
+                   (if (or (null x)
+                           (null y))
+                       t
+                       (if rel (< x y) (<= x y)))))
+     :hints
+     (("Goal"
+       :use ((:instance completion-of-< (x x) (y y))
+             (:instance completion-of-< (x y) (y x))))))
+||#
+
+(defun tau-interval-domainp (dom x)
+  (declare (xargs :guard t))
+  (cond ((eq dom 'integerp) (integerp x))
+        ((eq dom 'rationalp) (rationalp x))
+        ((eq dom 'acl2-numberp) (acl2-numberp x))
+; Domain = nil means no restrictions.
+        (t t)))
+
+(defun tau-interval-dom (x)
+  (declare (xargs :guard (consp x)))
+
+  ":Doc-Section tau-system
+
+  access the domain of a tau interval~/
+
+  It is the case that
+  ~bv[]
+  (tau-interval-dom (make-tau-interval dom lo-rel lo hi-rel hi)) = dom
+  ~ev[]
+  ~/
+  For a well-formed interval, ~c[dom] is one of the symbols ~c[INTEGERP],
+  ~c[RATIONALP], ~c[ACL2-NUMBERP], or ~c[NIL].  When the domain is ~c[NIL]
+  there is no domain restriction.
+
+  When the domain is ~c[INTEGERP], there are additional constraints on the
+  other components.  ~l[make-tau-interval].~/"
+
+  (car x))
+
+(defun tau-interval-lo-rel (x)
+  (declare (xargs :guard (and (consp x) (consp (cdr x)) (consp (cadr x)))))
+
+  ":Doc-Section tau-system
+
+  access the lower bound relation of a tau interval~/
+
+  It is the case that
+  ~bv[]
+  (tau-interval-lo-rel (make-tau-interval dom lo-rel lo hi-rel hi)) = lo-rel
+  ~ev[]
+  ~/
+  For a well-formed interval, ~c[lo-rel] is a Boolean, where ~c[t]
+  denotes the ~ilc[<] (strong inequality or ``less-than'') relation and
+  ~c[nil] denotes ~ilc[<=] (weak inequality or ``less-than-or-equal'') relation
+  between the lower bound and the elements of the interval.
+
+  When the domain of an interval is ~c[INTEGERP], there are additional
+  constraints on the other components.  ~l[make-tau-interval].~/"
+
+  (car (cadr x)))
+
+(defun tau-interval-lo (x)
+  (declare (xargs :guard (and (consp x) (consp (cdr x)) (consp (cadr x)))))
+
+  ":Doc-Section tau-system
+
+  access the lower bound of a tau interval~/
+
+  It is the case that
+  ~bv[]
+  (tau-interval-lo (make-tau-interval dom lo-rel lo hi-rel hi)) = lo
+  ~ev[]
+  ~/
+  For a well-formed interval, ~c[lo] is either ~c[nil], denoting negative
+  infinity, or a rational number giving the lower bound of the interval.
+  It must be the case that the lower bound is weakly below the upper bound
+  of a well-formed interval.
+
+  When the domain of an interval is ~c[INTEGERP], there are additional
+  constraints on the other components.  ~l[make-tau-interval].~/"
+
+  (cdr (cadr x)))
+
+(defun tau-interval-hi-rel (x)
+  (declare (xargs :guard (and (consp x) (consp (cdr x)) (consp (cddr x)))))
+  ":Doc-Section tau-system
+
+  access the upper bound relation of a tau interval~/
+
+  It is the case that
+  ~bv[]
+  (tau-interval-hi-rel (make-tau-interval dom lo-rel lo hi-rel hi)) = hi-rel
+  ~ev[]
+  ~/
+  For a well-formed interval, ~c[hi-rel] is a Boolean, where ~c[t]
+  denotes the ~ilc[<] (strong inequality or ``less-than'') relation and
+  ~c[nil] denotes ~ilc[<=] (weak inequality or ``less-than-or-equal'') relation
+  between the elements of the interval and the upper bound.
+
+  When the domain of an interval is ~c[INTEGERP], there are additional
+  constraints on the other components.  ~l[make-tau-interval].~/"
+
+  (car (cddr x)))
+
+(defun tau-interval-hi (x)
+  (declare (xargs :guard (and (consp x) (consp (cdr x)) (consp (cddr x)))))
+
+  ":Doc-Section tau-system
+
+  access the upper bound of a tau interval~/
+
+  It is the case that
+  ~bv[]
+  (tau-interval-hi (make-tau-interval dom lo-rel lo hi-rel hi)) = hi
+  ~ev[]
+  ~/
+  For a well-formed interval, ~c[hi] is either ~c[nil], denoting positive
+  infinity, or a rational number giving the upper bound of the interval.
+  It must be the case that the upper bound is weakly above the lower bound
+  of a well-formed interval.
+
+  When the domain of an interval is ~c[INTEGERP], there are additional
+  constraints on the other components.  ~l[make-tau-interval].~/"
+
+  (cdr (cddr x)))
+
+(defun make-tau-interval (dom lo-rel lo hi-rel hi)
+  (declare (xargs :guard (and (or (null lo) (rationalp lo))
+                              (or (null hi) (rationalp hi)))))
+  ":Doc-Section tau-system
+
+  make a tau interval~/
+
+  ~bv[]
+  General Form:
+  (make-tau-interval doc lo-rel lo hi-rel hi)
+  ~ev[]
+
+  An interval is a structure of the form: ~c[(]~i[dom] ~c[(]~i[lo-rel] ~c[.]
+  ~i[lo]~c[)] ~c[.]  ~c[(]~i[hi-rel] ~c[.] ~i[hi]~c[))].  Every tau contains an
+  interval used to represent the domain, the upper, and the lower bounds of the
+  objects recognized by the tau.~/
+
+  ~c[make-tau-interval] constructs well-formed intervals only if its five arguments
+  satisfy certain restrictions given below.  When these restrictions are
+  violated ~c[make-tau-interval] can construct objects that are not intervals!
+  ~c[make-tau-interval] does not attempt to coerce or adjust its arguments to make
+  well-formed intervals.
+
+  For examples of intervals (and non-intervals!) constructed by
+  ~c[make-tau-interval] see ~ilc[tau-intervalp].  For examples of what objects are
+  contained in certain intervals, see ~ilc[in-tau-intervalp].
+
+  The components of an interval are as follows:
+
+  ~i[dom] (``domain'') -- must be one of four symbols: ~c[INTEGERP],
+  ~c[RATIONALP], ~c[ACL2-NUMBERP], or ~c[NIL] denoting no restriction
+  on the domain.
+
+  The two ``relations,'' ~i[lo-rel] and ~i[hi-rel] are Booleans, where ~c[t]
+  denotes less-than inequality (~ilc[<]) and ~c[nil] represents
+  less-than-or-equal inequality (~ilc[<=]).  Think of ~c[t] meaning ``strong''
+  and ~c[nil] meaning ``weak'' inequality.
+
+  ~i[Lo] and ~i[hi] must be either ~c[nil] or explicit rational numbers.  If
+  ~i[lo] is ~c[nil] it denotes negative infinity; if ~i[hi] is ~c[nil] it
+  denotes positive infinity.  ~i[Lo] must be no greater than ~i[hi].
+  ~i[Note]:  Even though ~c[ACL2-NUMBERP] intervals may contain complex
+  rationals, the ~i[lo] and ~i[hi] bounds must be rational.  This is an
+  arbitrary decision made by the implementors to simplify coding.
+
+  Finally, if the ~i[dom] is ~c[INTEGERP], then both relations should be weak
+  and ~i[lo] and ~i[hi] must be integers when they are non-~c[nil].
+
+  For ~i[x] to be ``in'' an interval it must be of the type described
+  by the domain predicate ~i[dom], ~i[lo] must be smaller than ~i[x] in the
+  strong or weak sense denoted by ~i[lo-rel], and ~i[x] must be smaller than
+  ~i[hi] in the strong or weak sense denoted by ~i[hi-rel].
+
+  The components of an interval may be accessed with the functions
+  ~ilc[tau-interval-dom], ~ilc[tau-interval-lo-rel], ~ilc[tau-interval-lo],
+  ~ilc[tau-interval-hi-rel], and ~ilc[tau-interval-hi].~/"
+
+  (cons dom (cons (cons lo-rel lo)
+                  (cons hi-rel hi))))
+
+(defun tau-intervalp (int)
+  (declare (xargs :guard t))
+
+  ":Doc-Section tau-system
+
+  Boolean recognizer for tau intervals~/
+
+  ~bv[]
+  General Form:
+  (tau-intervalp x)
+  ~ev[]
+  ~/  
+  An interval is a structure of the form: ~c[(]~i[dom] ~c[(]~i[lo-rel] ~c[.]
+  ~i[lo]~c[)] ~c[.]  ~c[(]~i[hi-rel] ~c[.] ~i[hi]~c[))].  Every tau contains an
+  interval used to represent the domain and the upper and lower bounds of the
+  objects recognized by the tau.
+
+  Restrictions on the components of an interval are as follows.  For an
+  interpretation of the meaning of the components, see ~ilc[in-tau-intervalp] or
+  ~ilc[make-tau-interval].
+
+  ~i[dom] (``domain'') -- must be one of four symbols: ~c[INTEGERP],
+  ~c[RATIONALP], ~c[ACL2-NUMBERP], or ~c[NIL].
+
+  The two ``relations,'' ~i[lo-rel] and ~i[hi-rel], must be Booleans.
+
+  ~i[Lo] and ~i[hi] must be either ~c[nil] or explicit rational numbers.
+  ~i[Lo] must be no greater than ~i[hi] (where ~c[nil]s represent negative or
+  positive infinity for ~i[lo] and ~i[hi] respectively.
+
+  Finally, if the ~i[dom] is ~c[INTEGERP], then both relations must ~c[nil]
+  and ~i[lo] and ~i[hi] must be integers when they are non-~c[nil].
+
+  Recall that ~ilc[make-tau-interval] constructs intervals.  The intervals it
+  constructs are well-formed only if the arguments to ~c[make-tau-interval] satisfy
+  the rules above; ~c[make-tau-interval] does not coerce or adjust its
+  arguments in any way.  Thus, it can be (mis-)used to create non-intervals.
+  Here are examples of ~c[tau-intervalp] using ~c[make-tau-interval].
+
+  ~bv[]
+  ; integers: 0 <= x <= 10:
+  (tau-intervalp (make-tau-interval 'INTEGERP nil 0 nil 10))      = t
+
+  ; integers: 0 <= x (i.e., the natural numbers):
+  (tau-intervalp (make-tau-interval 'INTEGERP nil 0 nil nil))     = t
+
+  ; violations of domain rules:
+  (tau-intervalp (make-tau-interval 'INTEGERP t 0 t 10))          = nil
+  (tau-intervalp (make-tau-interval 'INTEGERP nil 0 nil 10/11))   = nil
+
+  ; violation of rule that bounds must be rational if non-nil:
+  (tau-intervalp (make-tau-interval 'ACL2-NUMBERP t 0 t #c(3 5))) = nil
+
+  ; violation of rule that lo <= hi:
+  (tau-intervalp (make-tau-interval 'ACL2-NUMBERP t 0 t -10))     = nil
+
+  ; rationals: 0 < x <= 22/7:
+  (tau-intervalp (make-tau-interval 'RATIONALP t 0 nil 22/7))     = t
+
+  ; numbers: -10 < x < 10:
+  (tau-intervalp (make-tau-interval 'ACL2-NUMBERP t -10 t 10))    = t
+
+  ; any: -10 < x < 10:
+  (tau-intervalp (make-tau-interval nil t -10 t 10))              = t
+
+  : any:
+  (tau-intervalp (make-tau-interval nil nil nil nil nil))         = t
+  ~ev[]
+  Note that the second-to-last interval, with domain ~c[nil] contains all
+  non-numbers as well as numbers strictly between -10 and 10.  The reason is
+  that the interval contains ~c[0] and all non-numbers are coerced to ~c[0] by
+  the inequality functions.
+
+  Note that the last interval contains all ACL2 objects.  It is called the
+  ``universal interval.''~/"
+
+  (if (and (consp int)
+           (consp (cdr int))
+           (consp (cadr int))
+           (consp (cddr int)))
+      (let ((dom (tau-interval-dom int))
+            (lo-rel (tau-interval-lo-rel int))
+            (lo (tau-interval-lo int))
+            (hi-rel (tau-interval-hi-rel int))
+            (hi (tau-interval-hi int)))
+        (cond
+         ((eq dom 'integerp)
+          (and (null lo-rel)
+               (null hi-rel)
+               (if lo
+                   (and (integerp lo)
+                        (if hi
+                            (and (integerp hi)
+                                 (<= lo hi))
+                            t))
+                   (if hi
+                       (integerp hi)
+                       t))))
+         (t (and (member dom '(rationalp acl2-numberp nil))
+                 (booleanp lo-rel)
+                 (booleanp hi-rel)
+                 (if lo
+                     (and (rationalp lo)
+                          (if hi
+                              (and (rationalp hi)
+                                   (<= lo hi))
+                              t))
+                     (if hi
+                         (rationalp hi)
+                         t))))))
+      nil))
+
+(defun in-tau-intervalp (x int)
+  (declare (xargs :guard (tau-intervalp int)))
+
+  ":Doc-Section tau-system
+
+  Boolean membership in a tau interval~/
+
+  ~bv[]
+  General Form:
+  (in-tau-intervalp e x)
+  ~ev[]
+
+  Here, ~c[x] should be an interval (see ~ilc[tau-intervalp]).  This function
+  returns ~c[t] or ~c[nil] indicating whether ~c[e], which is generally but not
+  necessarily a number, is an element of interval ~c[x].  By that is meant that
+  ~c[e] satisfies the domain predicate of the interval and lies between the two
+  bounds.~/
+
+  Suppose ~c[x] is an interval with the components ~i[dom], ~i[lo-rel], ~i[lo],
+  ~i[hi-rel] and ~i[hi].  Suppose ~c[(<? ]~i[rel u v]~c[)] means ~c[(< ]~i[u v]~c[)]
+  when ~i[rel] is true and ~c[(<= ]~i[u v]~c[)] otherwise, with appropriate
+  treatment of infinities.
+
+  Then for ~c[e] to be in interval ~c[x], it must be the case that ~c[e]
+  satisfies the domain predicate ~i[dom] (where where ~i[dom]=~c[nil] means
+  there is no restriction on the domain) and ~c[(<? ]~i[lo-rel lo]~c[ e)] and
+  ~c[(<? ]~i[hi-rel]~c[ e ]~i[hi]~c[)].  [Note:  ``Appropriate treatment of
+  infinities'' is slightly awkward if both infinities are represented by the
+  same object, ~c[nil].  However, this is handled by coercing ~c[e] to a
+  number ~i[after] checking that it is in the domain.  By this trick, ``~c[<?]''
+  is presented with at most one ``infinity'' and it is always negative
+  when in the first argument and positive when in the second.]
+
+  Note that every element in an ~c[INTEGERP] interval is contained in the
+  analogous ~c[RATIONALP] interval (i.e., the interval obtained by just
+  replacing the domain ~c[INTEGERP] by ~c[RATIONALP]).  That is because every
+  integer is a rational.  Similarly, every rational is an ACL2 number.
+
+  Note that an interval in which the relations are weak and the bounds are
+  equal rationals is the ``unit'' or ``identity'' interval containing exactly
+  that rational.
+
+  Note that an interval in which the relations are strong and the bounds are
+  equal rationals is empty:  it contains no objects.
+
+  Note that the interval ~c[(make-tau-interval nil nil nil nil nil)] is the
+  ``universal interval:'' it contains all ACL2 objects.  It contains all
+  numbers because they statisfy the non-existent domain restriction and lie
+  between minus infinity and plus infinity.  It contains all non-numbers
+  because the interval contains ~c[0] and ACL2's inequalities coerce
+  non-numbers to ~c[0].  The universal interval is useful if you are defining a
+  bounder (~pl[bounders]) for a function and do not wish to address a certain
+  case: return the universal interval.
+
+  Recall that ~ilc[make-tau-interval] constructs intervals.  Using ~c[make-tau-interval]
+  we give several self-explanatory examples of ~c[in-tau-intervalp]:
+
+  ~bv[]
+  (in-tau-intervalp 3 (make-tau-interval 'INTEGERP nil 0 nil 10))           = t
+  (in-tau-intervalp 3 (make-tau-interval 'RATIONALP nil 0 nil 10))          = t
+  (in-tau-intervalp 3 (make-tau-interval NIL nil 0 nil 10))                 = t
+
+  (in-tau-intervalp -3 (make-tau-interval 'INTEGERP nil 0 nil 10))          = nil
+  (in-tau-intervalp 30 (make-tau-interval 'INTEGERP nil 0 nil 10))          = nil
+
+  (in-tau-intervalp 3/5 (make-tau-interval 'INTEGERP nil 0 nil 10))         = nil
+  (in-tau-intervalp 3/5 (make-tau-interval 'RATIONALP nil 0 nil 10))        = t
+
+  (in-tau-intervalp #c(3 5) (make-tau-interval 'RATIONALP nil 0 nil 10))    = nil
+  (in-tau-intervalp #c(3 5) (make-tau-interval 'ACL2-NUMBERP nil 0 nil 10)) = t
+
+  (in-tau-intervalp 'ABC (make-tau-interval NIL nil 0 nil 10))               = t
+  ~ev[]
+  ~/"
+
+  (and (tau-interval-domainp (tau-interval-dom int) x)
+       (<? (tau-interval-lo-rel int)
+           (tau-interval-lo int)
+           (fix x))
+       (<? (tau-interval-hi-rel int)
+           (fix x)
+           (tau-interval-hi int))))

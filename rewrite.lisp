@@ -12184,15 +12184,6 @@
 
                   (push-lemma (fn-rune-nume 'synp nil nil wrld) ttree)))))))
 
-(defmacro recursivep (fn wrld)
-
-; Experiments show a slight speedup in Allegro CL (perhaps a half percent on a
-; very small run) if we make this a macro.
-
-  `(access def-body
-          (def-body ,fn ,wrld)
-          :recursivep))
-
 (defun push-lemma? (rune ttree)
   (if rune
       (push-lemma rune ttree)

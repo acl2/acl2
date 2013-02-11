@@ -13695,6 +13695,8 @@
                          SIGNATURE-RULES-FORM-1
                          SIGNATURE-RULES-FORM-2
                          BIG-SWITCH
+                         TAU-BOUNDERS-FORM-1
+                         TAU-BOUNDERS-FORM-2
                          )
                        'current-acl2-world
                        wrld
@@ -14235,7 +14237,7 @@
     (COMMENT DEFLABEL)
     (COMPILE-UNCOMPILED-DEFNS COMP)
     (CONSTRAIN .    "See :DOC encapsulate and :DOC local.")
-    (DATA-BASE .     "Perhaps the closest ACL2 analogue of DATA-BASE
+    (DATA-BASE .    "Perhaps the closest ACL2 analogue of DATA-BASE
                      is PROPS.  But see :DOC history for a collection
                      of commands for querying the ACL2 database
                      (``world'').  Note that the notions of

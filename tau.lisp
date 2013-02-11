@@ -1085,12 +1085,12 @@
   ~ev[]                 
   For a complete description of acceptable forms see ~c[:]~ilc[tau-system].
 
-  (6) The tau system is ``greedy'' in its efforts to augment its database.
-  Its database is potentially augmented when rules of ~i[any]
-  ~c[:rule-class] (see ~c[:]~ilc[rule-classes]) are proved.  For example, if
-  you make a ~c[:]~ilc[rewrite] or ~c[:]~ilc[type-prescription] rule which
-  expresses relationship between tau, ACL2 will build it into the tau database.
-  The rule-class ~c[:]~ilc[tau-system] can be used to add a rule to the tau
+  (6) The tau system is ``greedy'' in its efforts to augment its database.  Its
+  database is potentially augmented when rules of ~i[any] ~c[:rule-class] (see
+  ~c[:]~ilc[rule-classes]) are proved.  For example, if you make a
+  ~c[:]~ilc[rewrite] or ~c[:]~ilc[type-prescription] rule which expresses
+  relationship between tau, ACL2 will build it into the tau database.  The
+  rule-class ~c[:]~ilc[tau-system] can be used to add a rule to the tau
   database without adding any other kind of rule.
 
   (7) Greediness is forced into the design by benignity: the tau system may
@@ -1120,7 +1120,7 @@
 
   These design criteria are not always achieved!  For example, the tau system's
   ``greediness'' can be turned off (see ~ilc[set-tau-auto-mode]), the tau
-  database can be regenerated from scratch to ingore disabled rules (see
+  database can be regenerated from scratch to ignore disabled rules (see
   ~ilc[regenerate-tau-database]), and disabling the
   ~ilc[executable-counterpart] of a tau predicate symbol will prevent the tau
   system from trying to run the predicate on constants.  The tau system's
@@ -1138,10 +1138,10 @@
   The tau system consists of both a database and an algorithm for using the
   database.  The database contains theorems that match certain schemas allowing
   them to be stored in the tau database.  Roughly speaking the schemas encode
-  ``inclusion'' and ``exclusion'' relations, e.g., that ~c[natp] implies ~c[integerp]
-  and that ~c[integerp] implies not ~c[consp], and they encode ``signatures'' of
-  functions, e.g., theorems that relate the output of a function to the input,
-  provided only tau predicates are involved.
+  ``inclusion'' and ``exclusion'' relations, e.g., that ~c[natp] implies
+  ~c[integerp] and that ~c[integerp] implies not ~c[consp], and they encode
+  ``signatures'' of functions, e.g., theorems that relate the output of a
+  function to the input, provided only tau predicates are involved.
 
   By ``tau predicates'' we mean the application of a monadic Boolean-valued
   function symbol, the equality of something to a quoted constant, an
@@ -1220,8 +1220,8 @@
   labeled ~c[:]~ilc[tau-system]. 
 
   To see what the tau system ``knows'' about a given function symbol
-  ~pl[tau-data].  To see the entire tau database, ~pl[tau-database].
-  To regenerate the tau database using only the runes listed in the current
+  ~pl[tau-data].  To see the entire tau database, ~pl[tau-database].  To
+  regenerate the tau database using only the runes listed in the current
   enabled theory, ~pl[regenerate-tau-database].~/
   :cite tau-system
   :cite set-tau-auto-mode
@@ -1842,27 +1842,42 @@
 
 ; where 
 
-; * domain is INTEGERP, RATIONALP, ACL2-NUMBERP, or NIL and indicates the domain of
-;   the interval.  That is, it is either the integer line, the rational line, the
-;   acl2-numberp line, or the entire ACL2 universe ``line''.  The ACL2 universe
-;   ``line'' is not quite a line:  the acl2-numbers are laid out linearly as one would
-;   expect, and all the non-acl2-numbers are in an equivalence class with 0.
+; * domain is INTEGERP, RATIONALP, ACL2-NUMBERP, or NIL and indicates the
+;   domain of the interval.  That is, it is either the integer line, the
+;   rational line, the acl2-numberp line, or the entire ACL2 universe ``line''.
+;   (The ACL2 universe ``line'' is not quite a line: the acl2-numbers are laid
+;   out linearly as one would expect, and all the non-acl2-numbers are in an
+;   equivalence class with 0.)  If the domain is INTEGERP, we impose additional
+;   invariants on the other components as described below.
 
 ; * lo-rel and hi-rel are T or NIL and indicate whether the corresponding
-;   relation is < or <= (T is strict; nil is weak inequality), and
+;   relation is < or <= (T is strict; nil is weak inequality); if the domain
+;   is INTEGERP, we always use weak inequalities; and
 
 ; * lo and hi are either NIL or rationals and represent the lower and upper
-;   bounds, with NIL being the corresponding infinity.  Technically there is no
-;   reason to exclude the bounds from being complex-rationals.  <= is a
-;   non-strict total order on acl2-numberp.  For example, it is a theorem that
-;   if (<= #c(1 2) x) and (<= x #c(1 2)) then x = #c(1 2).  So we could allow
-;   the bounds to be complex-rationals and continue more or less as we do here.
-;   However, (a) it gets a little more complicated because in squeezing
-;   intervals around integers we'd have to take the realpart of the bounds,
-;   e.g., to raise a strict lower bound on an integer we'd use (+ (floor
-;   (REALPART lo) 1) 1) instead of (+ (floor lo 1) 1) if lo can be complex, and
-;   (b) complex bounds probably never occur!  So the little added complexity
-;   probably wouldn't buy us anything.
+;   bounds, with NIL being the corresponding infinity.  If the domain is INTEGERP,
+;   we squeeze the bounds to be integers.  Thus, while it is technically
+;   possible to create a tau-interval with
+;   (make tau-interval
+;         :domain 'INTEGERP
+;         :lo 1/2
+;         :lo-rel t
+;         :hi-rel t
+;         :hi 5/2)
+;   we prefer to round the bounds up and down (respectively) and weaken the
+;   relations, converting 1/2 < x < 5/2 to 1 <= x <= 2.  This adjustment
+;   is done with the function squeeze-k.
+
+;   Technically there is no reason to exclude the bounds from being
+;   complex-rationals.  <= is a non-strict total order on acl2-numberp.  For
+;   example, it is a theorem that if (<= #c(1 2) x) and (<= x #c(1 2)) then x =
+;   #c(1 2).  So we could allow the bounds to be complex-rationals and continue
+;   more or less as we do here.  However, (a) it gets a little more complicated
+;   because in squeezing intervals around integers we'd have to take the
+;   realpart of the bounds, e.g., to raise a strict lower bound on an integer
+;   we'd use (+ (floor (REALPART lo) 1) 1) instead of (+ (floor lo 1) 1) if lo
+;   can be complex, and (b) complex bounds probably never occur!  So the little
+;   added complexity probably wouldn't buy us anything.
 
 ; Terminology: A ``bound'' is determined by a pair, namely a ``relation''
 ; (coded as a Boolean flag) and an ``extent'' (coded as either a NIL --
@@ -3137,7 +3152,7 @@
 
   (cond ((endp pairs) (cons pair pairs))
         ((>= (car (car pairs)) (car pair))
-         (if (eql (car (car pairs)) (car pair))
+         (if (equal (car (car pairs)) (car pair))
              t
              (let ((rest (insert-tau-pair pair (cdr pairs))))
                (if (eq rest t)
@@ -4296,17 +4311,6 @@ at this point because they use some functions not yet defines.
            (tau-subintervalp (access tau tau1 :interval)
                              (access tau tau2 :interval))))))
 
-; If the domain is INTEGERP, we can adjust the extent to shrink the interval it
-; bounds.  The table below shows how.
-
-; token        sign        lower          upper            k' (when INTEGERP)
-; :lessp-x-k    t                         (<= x k')        (- (ceiling k 1) 1)
-; :lessp-x-k    nil         (<= k' x)                      (ceiling k 1)
-; :lessp-k-x    t           (<= k' x)                      (+ (floor k 1) 1)
-; :lessp-k-x    nil                       (<= x k')        (floor k 1)
-
-; Note that on integer intervals, the relation is always weak (nil, <=).
-
 (defun empty-tau-intervalp (lo-rel lo hi-rel hi)
   
 ; We return t if the arguments describe an empty interval.
@@ -5379,6 +5383,65 @@ at this point because they use some functions not yet defines.
                                         tau2)))
                           tau2))))))))))))
          
+; The next two functions are used to implement the deduction that if a tau
+; includes all the rationals between between lo and hi but excludes each of the
+; the integers in that range, then the tau is non-INTEGERP.
+
+(defun all-integers-in-range-excludedp1 (lo hi neg-evgs)
+
+; Lo and hi are integers and neg-evgs is a :neg-evgs list from a tau except
+; that the leading (NIL), if any, has been stripped off, i.e., neg-evgs is a
+; duplicate-free ``ordered ascending according to lexorder'' (see ; Prelude:
+; General-Purpose Functions Having Nothing Specific to do with Tau) of
+; singleton evgs not including (NIL).  We check that every integer i such that
+; lo <= i <= hi that (list i) is an element of neg-evgs.  We know that the
+; ordering is such that (NIL), if present, precedes all rationals, all
+; rationals precede all complex-rationals, and all complex-rationals precede
+; everything else.  Integers and non-integer rationals are mixed by magnitude
+; with negatives first.  Thus, if we are looking for the intergers from -3 to
+; 2, say, we can cdr our way through neg-evgs until we find them all or hit a
+; rational bigger than hi or hit a non-rational.
+
+  (cond ((> lo hi) t)
+        ((endp neg-evgs) nil)
+        ((equal lo (car (car neg-evgs)))
+         (all-integers-in-range-excludedp1 (+ 1 lo) hi (cdr neg-evgs)))
+        ((or (not (rationalp (car (car neg-evgs))))
+             (> (car (car neg-evgs)) hi))
+         nil)
+        (t (all-integers-in-range-excludedp1 lo hi (cdr neg-evgs)))))
+
+
+(defun all-integers-in-range-excludedp (lo-rel lo hi-rel hi neg-evgs)
+
+; Lo and hi are rationals that bound an interval.  Neg-evgs is the :neg-evgs of
+; a tau.  We check that every integer between lo and hi is excluded -- which
+; means for each i from lo to hi inclusive, (list i) is a member of neg-evgs.
+; We can delete the NIL that might be at the front of neg-evgs.  Furthermore,
+; if the number of integers between lo and hi inclusive is greater than the
+; length of the exclusions, we know some integer is not excluded.  Otherwise,
+; we check each one.
+
+; We were once afraid that this deduction will be expensive.  For example, what
+; if lo is 0 and hi is (expt 2 32)?  However, we'll only check as many elements
+; of neg-evgs as the formula has excluded.  So we have hopes this won't kill
+; us!
+
+  (let* ((ilo (squeeze-k nil lo-rel lo))
+         (ihi (squeeze-k t   hi-rel hi))
+         (lst (if (and (consp neg-evgs)
+                       (eq nil (car (car neg-evgs))))
+                  (cdr neg-evgs)
+                  neg-evgs))
+         (k (+ 1 (- ihi ilo))))
+
+; After squeezing the rational extents, the relations are weak (<=), so we
+; check every integer between ilo and ihi, inclusive.
+
+    (cond ((> k (len lst))
+           nil)
+          (t (all-integers-in-range-excludedp1 ilo ihi lst)))))
+
 (defun add-to-tau (sign recog tau ens wrld)
 
 ; Recog is a tau-pair or singleton evg list.  Tau is a tau object, not
@@ -5417,7 +5480,7 @@ at this point because they use some functions not yet defines.
      (t
       (let* ((interval (access tau tau1 :interval))
              (domain (access tau-interval interval :domain))
-;            (lo-rel (access tau-interval interval :lo-rel))
+             (lo-rel (access tau-interval interval :lo-rel))
              (lo (access tau-interval interval :lo))
              (hi-rel (access tau-interval interval :hi-rel))
              (hi (access tau-interval interval :hi))
@@ -5525,6 +5588,9 @@ at this point because they use some functions not yet defines.
 ; sign/recog        condition          effect
 ; nil/NATP          0 <= ...           nil/INTEGERP
 ; nil/POSP          0 < ...            nil/INTEGERP
+; t/RATIONALP       lo <? ... <? hi    nil/INTEGERP
+;                   and every integer
+;                   in range is excluded
 
          ((and (tau-pair-member *tau-natp-pair* neg-pairs)
                lo
@@ -5544,6 +5610,18 @@ at this point because they use some functions not yet defines.
 ; we add nil/INTEGERP (if it is not already there).
 
           (add-to-tau nil *tau-integerp-pair* tau1 ens wrld))
+         ((and (tau-pair-member *tau-rationalp-pair* pos-pairs)
+               lo
+               hi
+               (not (tau-pair-member *tau-integerp-pair* neg-pairs))
+               (all-integers-in-range-excludedp lo-rel lo hi-rel hi
+                                                (access tau tau1 :neg-evgs)))
+
+; If tau1 includes t/RATIONALP and there is a finite interval from lo to hi but
+; every integer in that interval is excluded by the neg-evgs, then we add
+; nil/INTEGERP (if it is not already there).
+
+          (add-to-tau nil *tau-integerp-pair* tau1 ens wrld))         
          (t 
 ; Otherwise we can't deduce any new recognizers from this interval and return the
 ; simply extended tau1.
@@ -6399,6 +6477,16 @@ at this point because they use some functions not yet defines.
 
 ; big-switch                 see defrec for big-switch-rule; indicates
 ;                            that fn is a big switch function
+
+; tau-bounders-form-1        (bc1 ... bcn), a list of tau bounder-correctness
+;                            records, all of which have fn as their :subject-fn.
+
+; tau-bounders-form-2        ((bc1,1 ... bc1,n1)
+;                             (bc2,1 ... bc2,n2)
+;                             ...)
+;                             where each slot corresponds to a slot in the
+;                             MV returned by fn and each bc is a bounder
+;                             correctness record with :subject-fn fn.
 
 ; global-value               we use the global-value property of the following
 ;                            symbol                GLOBAL-VALUE
@@ -7330,6 +7418,34 @@ at this point because they use some functions not yet defines.
 (defconst *non-tau-monadic-boolean-functions*
   '(NOT DEBUGGER-ENABLEDP))
 
+#+:non-standard-analysis
+(defun classicalp (fn wrld)
+
+; WARNING: This function is expected to return t for fn = :?, in support of
+; measures (:? v1 ... vk), since classicalp is called by
+; get-non-classical-fns-from-list in support of get-non-classical-fns-aux.
+
+  (getprop fn 'classicalp
+
+; We guarantee a 'classicalp property of nil for all non-classical
+; functions.  We make no claims about the existence of a 'classicalp
+; property for classical functions; in fact, as of Version_2.5 our
+; intention is to put no 'classicalp property for classical functions.
+
+           t 
+           'current-acl2-world wrld))
+
+;; RAG - This function tests whether a list of names is made up purely
+;; of classical function names (i.e., not descended from the
+;; non-standard function symbols)
+
+#+:non-standard-analysis
+(defun classical-fn-list-p (names wrld)
+  (cond ((null names) t)
+        ((not (classicalp (car names) wrld))
+         nil)
+        (t (classical-fn-list-p (cdr names) wrld))))
+     
 (defun monadic-boolean-fnp (fn ens wrld)
 
 ; Fn is known to be a function symbol.  We return (mv t ttree) if fn is a
@@ -7337,6 +7453,13 @@ at this point because they use some functions not yet defines.
 ; that fn is Boolean.
 
   (cond ((and
+
+; We exclude all non-classical functions from consideration by tau.  It is not clear
+; that this is necessary but it's a safe thing to do until we've thought more about it.
+
+          #+:non-standard-analysis
+          (classicalp fn wrld)
+
           (equal (arity fn wrld) 1)
           (member-eq (symbol-class fn wrld)
                      '(:ideal :common-lisp-compliant))
@@ -7969,6 +8092,19 @@ at this point because they use some functions not yet defines.
 ; not!
 
   (cond
+
+
+; We exclude all non-classical functions from consideration by tau.  We could just check that
+; the fn being signed and the dependent hyps are classical, since we know that all tau predicates
+; are classical.  However, it is simplest to check that every function in the formula is
+; classical.
+
+   #+:non-standard-analysis
+   ((not (classical-fn-list-p
+          (all-fnnames1 t concl
+                        (all-fnnames1 nil hyps nil))
+          wrld))
+    nil)
    ((member-equal *nil* hyps)
 
 ; We first confirm that hyps is not identically nil.  While we handle this
@@ -8139,26 +8275,40 @@ at this point because they use some functions not yet defines.
 
 (defun tau-big-switch-equationp (term wrld)
   (case-match term
+
     (('EQUAL (fn . vars) ('IF test x y))
      (let* ((test-vars (all-vars test))
             (v (car test-vars))
             (body-vars (all-vars1 y (all-vars1 x test-vars))))
-       (and (symbolp fn)
-            (not (equal fn 'quote))
-            (not (getprop fn 'tau-pair nil 'current-acl2-world wrld))
-            (not (getprop fn 'big-switch nil 'current-acl2-world wrld))
-            (symbol-listp vars)
-            (no-duplicatesp vars)
-            test-vars
-            (null (cdr test-vars))
-            (subsetp-eq body-vars vars)
-            (mv-let (sign recog e criterion)
-                    (tau-like-term test :various-any wrld)
-                    (declare (ignore sign criterion))
-                    (and recog (eq e v)))
-            (not (ffnnamep fn (fargn term 2)))
-            (switch-varp v x wrld)
-            (switch-varp v y wrld))))
+       (and 
+            
+
+; We exclude all non-classical functions from consideration by tau.  We could just check that
+; the fn being signed and the dependent hyps are classical, since we know that all tau predicates
+; are classical.  However, it is simplest to check that every function in the formula is
+; classical.
+
+        #+:non-standard-analysis
+        (classical-fn-list-p
+         (all-fnnames1 t term nil)
+         wrld)
+
+        (symbolp fn)
+        (not (equal fn 'quote))
+        (not (getprop fn 'tau-pair nil 'current-acl2-world wrld))
+        (not (getprop fn 'big-switch nil 'current-acl2-world wrld))
+        (symbol-listp vars)
+        (no-duplicatesp vars)
+        test-vars
+        (null (cdr test-vars))
+        (subsetp-eq body-vars vars)
+        (mv-let (sign recog e criterion)
+                (tau-like-term test :various-any wrld)
+                (declare (ignore sign criterion))
+                (and recog (eq e v)))
+        (not (ffnnamep fn (fargn term 2)))
+        (switch-varp v x wrld)
+        (switch-varp v y wrld))))
     (& nil)))
 
 (defun tau-big-switch-var (term)
@@ -8235,6 +8385,508 @@ at this point because they use some functions not yet defines.
                             (global-set 'tau-mv-nth-synonyms
                                         (cons fn fns)
                                         wrld))))))
+
+; A bounder correctness theorem is parsed into the following 
+; record:
+
+(defrec bounder-correctness
+  ((subject-fn . acceptable-domains)
+   .
+   (bounder-fn . bounder-args))
+  t)
+
+; Here, subject-fn is the function symbol whose value is constrained to the
+; interval computed by bounder-fn.  Both are function symbols.
+; Acceptable-domains codes the domain requirements on the arguments to
+; subject-fn; it is a list of elements in 1:1 correspondence with the actuals
+; of subject-fn: each element is a list of interval domain recognizers,
+; indicating that the corresponding actual must lie in an interval over one of
+; the listed domains or that no restriction is made.  The last field of a
+; bounder-correctness record is a list of numbers, in 1:1 correspondence with
+; the arguments of bounder-fn, indicating which actual interval is to be passed
+; to bounder-fn in each position.
+
+; For example, here is a bounder correctness theorem for the function fn:
+
+;  (implies (and (tau-intervalp int1)
+;                (tau-intervalp int3)
+;                (or (equal (tau-interval-dom int1) 'integerp)
+;                    (equal (tau-interval-dom int1) 'rationalp))
+;                (equal (tau-interval-dom int3) 'integerp)
+;                (in-tau-intervalp x int1)
+;                (in-tau-intervalp z int3))
+;           (and (tau-intervalp (bounder int3 int1))
+;                (in-tau-intervalp (fn x y z) (bounder int3 int1))))
+ 
+; and here is the corresponding bounder-correctness record which
+; represents this theorem:
+ 
+; (make bounder-correctness
+;       :subject-fn         'fn
+;       :acceptable-domains '((INTEGERP RATIONALP)
+;                             (INTEGERP RATIONALP ACL2-NUMBERP NIL)
+;                             (INTEGERP))
+;       :bounder-fn         'bounder
+;       :bounder-args       '(2 0))
+  
+; If tau-term sees a call of fn, it determines the tau of the arguments (or at
+; least those with non-T acceptable-domains) and checks that each tau contains
+; an interval with an acceptable domain.  If so, it collects the intervals of
+; the tau in the positions listed in :bounder-args (in the order listed) and
+; applies bounder to that list of arguments to get an interval known to contain
+; the fn term.
+
+(defun all-cars-nil (pairs)
+  (cond ((endp pairs) t)
+        (t (and (null (car (car pairs)))
+                (all-cars-nil (cdr pairs))))))
+
+(defun find-subject-bounder-link-term (pairs pairs0)
+
+; Pairs is a list of (hyp . concl) pairs.  To be sensible, every hyp must be
+; nil; i.e., pairs is obtained by unprettyifying a conjunction and so is
+; essentially a list of conjuncts except each is embedded in (nil . conjunct).
+; Pairs0 is initially pairs.  We find the first conjunct of the form
+; (IN-TAU-INTERVALP subject-term bounder-term) such that (TAU-INTERVALP bounder-term)
+; is also among the conjuncts.  (Thus, we search pairs for the first pattern
+; and when we find a candidate, we check the full list, pairs0, for the
+; second.)  We return either the IN-TAU-INTERVALP term we found or nil.
+
+  (cond
+   ((endp pairs) nil)
+   ((and (null (car (car pairs)))
+         (nvariablep (cdr (car pairs)))
+         (eq (ffn-symb (cdr (car pairs))) 'in-tau-intervalp)
+         (member-equal (cons nil (cons 'tau-intervalp (cddr (cdr (car pairs))))) pairs0))
+    (cdr (car pairs)))
+   (t (find-subject-bounder-link-term (cdr pairs) pairs0))))
+
+(defun tau-bounder-doms-extraction (term ivars ivar)
+  (case-match term
+    (('EQUAL ('TAU-INTERVAL-DOM v) ('QUOTE evg))
+     (cond ((and (if ivar
+                     (eq v ivar)
+                     (member-eq v ivars))
+                 (member-eq evg '(INTEGERP RATIONALP ACL2-NUMBERP NIL)))
+            (mv v (list evg)))
+           (t (mv nil nil))))
+    (('IF ('EQUAL ('TAU-INTERVAL-DOM v) ('QUOTE evg))
+          ('EQUAL ('TAU-INTERVAL-DOM v) ('QUOTE evg))
+          else-term)
+     (cond ((and (if ivar
+                     (eq v ivar)
+                     (member-eq v ivars))
+                 (member-eq evg '(INTEGERP RATIONALP ACL2-NUMBERP NIL)))
+            (mv-let (ivar doms)
+                    (tau-bounder-doms-extraction else-term
+                                                 ivars
+                                                 v)
+                    (cond (ivar
+                           (mv ivar (add-to-set-eq evg doms)))
+                          (t (mv nil nil)))))
+           (t (mv nil nil))))
+    (& (mv nil nil))))
+
+(defun tau-bounder-hyp-extraction
+  (hyps svars ivars missing-ivars1 missing-ivars2
+        ivar-to-doms-alist
+        ivar-to-svar-pos-alist
+        svar-to-ivar-alist)
+  (cond
+   ((endp hyps)
+    (cond
+     ((and (null missing-ivars1)
+           (null missing-ivars2))
+
+; If both lists of missing ivars are empty then we know that for each ivar, (a)
+; we have an INTERVALP hyp, (b) we have an (IN-TAU-INTERVALP svar ivar) hyp, and
+; (c) ivar is paired with a unique svar position in ivar-to-svar-pos-alist.
+
+      (mv t ivar-to-doms-alist ivar-to-svar-pos-alist svar-to-ivar-alist))
+     (t (mv nil nil nil nil))))
+   ((or (variablep (car hyps))
+        (fquotep (car hyps)))
+    (mv nil nil nil nil))
+   ((eq (ffn-symb (car hyps)) 'TAU-INTERVALP)
+    (let ((ivar (fargn (car hyps) 1)))
+      (cond ((member-eq ivar missing-ivars1)
+
+; The hyp is (TAU-INTERVALP ivar), so we can ``check off'' ivar from the
+; ones we're looking for.
+
+             (tau-bounder-hyp-extraction
+              (cdr hyps)
+              svars ivars
+              (remove1-eq ivar missing-ivars1)
+              missing-ivars2
+              ivar-to-doms-alist
+              ivar-to-svar-pos-alist
+              svar-to-ivar-alist))
+            (t (mv nil nil nil nil)))))
+   ((eq (ffn-symb (car hyps)) 'IN-TAU-INTERVALP)
+    (let ((svar (fargn (car hyps) 1))
+          (ivar (fargn (car hyps) 2)))
+      (cond
+       ((and (member-eq svar svars)
+             (member-eq ivar missing-ivars2)
+             (not (assoc-eq svar svar-to-ivar-alist)))
+
+; The hyp is (IN-TAU-INTERVALP svar ivar).  Since we know that no such hyp for ivar
+; has been seen before -- ivar is not among the missing in-tau-intervalp-vars -- we
+; also know there is no correspondent for it in the ivar-to-svar-pos-alist.
+; Since we know that svar is not already mapped to another ivar, we know this
+; mapping will be unique.  So we ``check off'' ivar and record the position of
+; the svar it tracks and the correspondence between svar and ivar.
+
+        (let ((n (- (len svars)
+                    (len (member-eq svar svars)))))
+          (tau-bounder-hyp-extraction
+           (cdr hyps)
+           svars ivars
+           missing-ivars1
+           (remove1-eq ivar missing-ivars2)
+           ivar-to-doms-alist
+           (cons (cons ivar n) ivar-to-svar-pos-alist)
+           (cons (cons svar ivar) svar-to-ivar-alist))))
+       (t (mv nil nil nil nil)))))
+   (t (mv-let (ivar doms)
+              (tau-bounder-doms-extraction (car hyps) ivars nil)
+              (cond
+               ((and ivar
+                     (not (assoc-eq ivar ivar-to-doms-alist)))
+                (tau-bounder-hyp-extraction
+                 (cdr hyps)
+                 svars ivars
+                 missing-ivars1
+                 missing-ivars2
+                 (cons (cons ivar doms) ivar-to-doms-alist)
+                 ivar-to-svar-pos-alist
+                 svar-to-ivar-alist))
+               (t (mv nil nil nil nil)))))))
+
+(defconst *all-interval-domains*
+  '(INTEGERP RATIONALP ACL2-NUMBERP NIL))
+
+(defun acceptable-domains-for-bounder
+  (svars svar-to-ivar-alist ivar-to-doms-alist)
+  (cond
+   ((endp svars) nil)
+   (t (let ((temp (assoc-eq (car svars) svar-to-ivar-alist)))
+        (cons (cond ((null temp) *all-interval-domains*)
+                    (t (let* ((ivar (cdr temp))
+                              (temp (assoc-eq ivar ivar-to-doms-alist)))
+                         (cond ((null temp) *all-interval-domains*)
+                               (t (cdr temp))))))
+              (acceptable-domains-for-bounder
+               (cdr svars)
+               svar-to-ivar-alist
+               ivar-to-doms-alist))))))
+
+(defun bounder-args (ivars ivar-to-svar-pos-alist)
+  (cond
+   ((endp ivars) nil)
+   (t (cons (cdr (assoc-eq (car ivars) ivar-to-svar-pos-alist))
+            (bounder-args (cdr ivars) ivar-to-svar-pos-alist)))))
+
+(defun tau-bounder-formp (term wrld)
+
+; This function, while a peer of the other tau form recognizers, e.g.,
+; tau-boolean-formp, tau-simple-formp, etc., is actually quite odd.  Unlike
+; those other functions, it takes the whole term, not (hyps . concl) pairs
+; stripped out of the term.  Also, unlike those other functions which truly
+; just recognize the desired forms, this function returns some additional
+; information gleaned while parsing the term.  
+
+; This function returns (mv form j bc) where form is nil, 1, or 2, where nil
+; means term is NOT of the form of a bounder correctness rule, 1 means it is of
+; form 1, and 2 means it is of form 2.  If form is 1, then j is nil and bc is
+; the corresponding bounder-correctness record.  If form is 2, then j is the
+; slot in the MV tuple returned by the :subject-fn of bc, which is the
+; corresponding bounder-correctness record.
+
+; To be of form 1, term must be:
+; (implies (and (tau-intervalp i1)
+;               ...
+;               (tau-intervalp ik)
+;               (or (equal (tau-interval-dom i1) 'dom1,1)
+;                   ...
+;                   (equal (tau-interval-dom i1) 'dom1,n1))
+;               ...
+;               (or (equal (tau-interval-dom ik) 'domk,1)
+;                   ...
+;                   (equal (tau-interval-dom ik) 'domk,nk))
+;               (in-tau-intervalp x1 i1)
+;               ...
+;               (in-tau-intervalp xk ik))
+;          (and (tau-intervalp (bounder-fn i1 ... ik))
+;               (in-tau-intervalp (fn x1 ... xk y1 ...)
+;                                 (bounder-fn i1 ... ik))
+;               ...))
+
+; except we don't care about the order in which the hyps, the conclusion, or
+; their individual parts (including the variables presented as actuals to the
+; calls of fn and bounder-fn) occur, and not every interval i has to have a
+; domain restriction.
+
+; Form 2 is just like form 1 above except the (fn x1 ... xk y1 ...) is
+; (mv-nth 'j (fn x1 ... xk y1 ...)).
+
+  (cond
+   ((and (nvariablep term)
+         (not (fquotep term))
+         (eq (ffn-symb term) 'implies))
+    (let* ((hyp-pairs (unprettyify (fargn term 1)))
+           (concl-pairs (unprettyify (fargn term 2)))
+           (link-term (find-subject-bounder-link-term concl-pairs concl-pairs)))
+
+; Note: link-term is the (IN-TAU-INTERVALP x bounder) where the conclusion also
+; contains (TAU-INTERVALP bounder).  So next we do a few simple checks to see if it
+; is plausible that this is a bounder rule of either form and then we split the
+; two forms and check their pieces more carefully.
+
+      (cond
+       ((and link-term
+             (all-cars-nil hyp-pairs)
+             (nvariablep (fargn link-term 1))
+             (not (fquotep (fargn link-term 1)))
+             (nvariablep (fargn link-term 2))
+             (not (fquotep (fargn link-term 2)))
+             (symbolp (ffn-symb (fargn link-term 2)))
+             (symbol-listp (fargs (fargn link-term 2)))
+             (no-duplicatesp-eq (fargs (fargn link-term 2))))
+
+; So we know that the hyp-pairs is a list of conjuncts paired with nil (in the
+; cars), and that we found a link-term in the conclusion and that it is of the
+; form (IN-TAU-INTERVALP (g ...) (bounder-fn i1 ... ik)) where the i are distinct
+; variable symbols.  By looking at g we can decide if this is plausibly form 1
+; or form 2.
+
+        (cond
+         ((or (eq (ffn-symb (fargn link-term 1)) 'mv-nth)
+              (member-eq (ffn-symb (fargn link-term 1))
+                         (global-val 'tau-mv-nth-synonyms wrld)))
+          (cond
+           ((and (quotep (fargn (fargn link-term 1) 1))
+                 (natp (cadr (fargn (fargn link-term 1) 1))))
+
+; We are in the plausibly Form 2 case.  We know nothing about subject-term
+; below but we know bounder-fn below is a function symbol and the ivars are
+; distinct variable symbols.
+                              
+            (let ((j (cadr (fargn (fargn link-term 1) 1)))
+                  (subject-term (fargn (fargn link-term 1) 2))
+                  (bounder-fn (ffn-symb (fargn link-term 2)))
+                  (ivars (fargs (fargn link-term 2))))
+              (cond
+               ((and (nvariablep subject-term)
+                     (not (fquotep subject-term))
+                     (symbolp (ffn-symb subject-term))
+                     (symbol-listp (fargs subject-term))
+                     (no-duplicatesp-eq (fargs subject-term))
+                     (not (intersectp-eq (fargs subject-term) ivars)))
+                (let ((fn (ffn-symb subject-term))
+                      (svars (fargs subject-term))
+                      (hyps (strip-cdrs hyp-pairs)))
+
+; Let subject and bounder be the terms (fn . svars) and (bounder-fn . ivars).
+; We know that the conclusion contains (TAU-INTERVALP bounder) and also
+; (IN-TAU-INTERVALP (MV-NTH 'j subject) bounder).  Furthermore, we know that both
+; fn and bounder-fn are function symbols, that they are applied to distinct
+; variable symbols, svars and ivars, respectively, and that those variable
+; symbols do not overlap.  Finally, hyps is a list of hypothesis terms
+; implicitly conjoined.
+
+; Next, every hyp in hyps has to be of one of the following forms: (TAU-INTERVALP
+; ivar), (IN-TAU-INTERVALP svar ivar), or the IF form of a disjunction of (EQUAL
+; (TAU-INTERVAL-DOM ivar) 'dom).  Furthermore, we MUST have an INTERVALP hyp and an
+; IN-TAU-INTERVALP hyp for EVERY bounder-var, and a unique svar must be paired to
+; each ivar by those IN-TAU-INTERVALP hyps.
+
+                  (mv-let
+                   (flg ivar-to-doms-alist ivar-to-svar-pos-alist svar-to-ivar-alist)
+                   (tau-bounder-hyp-extraction
+                    hyps svars ivars
+                    ivars ; initial missing (TAU-INTERVALP ivar) ivars
+                    ivars ; initial missing (IN-TAU-INTERVALP * ivar) ivars
+                    nil   ; initial alist mapping ivars to domains
+                    nil   ; initial alist mapping ivars to svar positions
+                    nil   ; initial alist mapping svars to ivars
+                    )
+                   (cond
+                    (flg
+                     (mv 2 ; Form 2
+                         j ; mv-nth slot concerned
+                         (make bounder-correctness
+                               :subject-fn fn
+                               :acceptable-domains (acceptable-domains-for-bounder
+                                                    svars
+                                                    svar-to-ivar-alist
+                                                    ivar-to-doms-alist)
+                               :bounder-fn bounder-fn
+                               :bounder-args (bounder-args ivars
+                                                           ivar-to-svar-pos-alist))))
+                    (t (mv nil nil nil))))))
+               (t (mv nil nil nil)))))
+           (t (mv nil nil nil))))
+         (t
+
+; We are in the plausibly Form 1 case.  We know nothing about subject-term
+; below but we know bounder-fn below is a function symbol and the ivars are
+; distinct variable symbols.
+                              
+          (let ((j nil)
+                (subject-term (fargn link-term 1))
+                (bounder-fn (ffn-symb (fargn link-term 2)))
+                (ivars (fargs (fargn link-term 2))))
+            (cond
+             ((and (nvariablep subject-term)
+                   (not (fquotep subject-term))
+                   (symbolp (ffn-symb subject-term))
+                   (symbol-listp (fargs subject-term))
+                   (no-duplicatesp-eq (fargs subject-term))
+                   (not (intersectp-eq (fargs subject-term) ivars)))
+              (let ((fn (ffn-symb subject-term))
+                    (svars (fargs subject-term))
+                    (hyps (strip-cdrs hyp-pairs)))
+
+; Let subject and bounder be the terms (fn . svars) and (bounder-fn . ivars).
+; We know that the conclusion contains (TAU-INTERVALP bounder) and also
+; (IN-TAU-INTERVALP subject bounder).  Furthermore, we know that both
+; fn and bounder-fn are function symbols, that they are applied to distinct
+; variable symbols, svars and ivars, respectively, and that those variable
+; symbols do not overlap.  Finally, hyps is a list of hypothesis terms
+; implicitly conjoined.
+
+; Next, every hyp in hyps has to be of one of the following forms: (TAU-INTERVALP
+; ivar), (IN-TAU-INTERVALP svar ivar), or the IF form of a disjunction of (EQUAL
+; (TAU-INTERVAL-DOM ivar) 'dom).  Furthermore, we MUST have an INTERVALP hyp and an
+; IN-TAU-INTERVALP hyp for EVERY bounder-var, and a unique svar must be paired to
+; each ivar by those IN-TAU-INTERVALP hyps.
+
+                (mv-let
+                 (flg ivar-to-doms-alist ivar-to-svar-pos-alist svar-to-ivar-alist)
+                 (tau-bounder-hyp-extraction
+                  hyps svars ivars
+                  ivars ; initial missing (TAU-INTERVALP ivar) ivars
+                  ivars ; initial missing (IN-TAU-INTERVALP * ivar) ivars
+                  nil   ; initial alist mapping ivars to domains
+                  nil   ; initial alist mapping ivars to svar positions
+                  nil   ; initial alist mapping svars to ivars
+                  )
+                 (cond
+                  (flg
+                   (mv 1 ; Form 1
+                       j ; mv-nth slot concerned = nil
+                       (make bounder-correctness
+                             :subject-fn fn
+                             :acceptable-domains (acceptable-domains-for-bounder
+                                                  svars
+                                                  svar-to-ivar-alist
+                                                  ivar-to-doms-alist)
+                             :bounder-fn bounder-fn
+                             :bounder-args (bounder-args ivars
+                                                         ivar-to-svar-pos-alist))))
+                  (t (mv nil nil nil))))))
+             (t (mv nil nil nil)))))))
+       (t (mv nil nil nil)))))
+   (t (mv nil nil nil))))
+
+; In the following code we develop the idea of adding a bounder-correctness
+; record to a list of such records, except that we eliminate subsumed records.
+; A bounder-correctness record bc1 is subsumed by another, bc2, if the
+; subject-fn, bounder-fn, and bounder-args are all identical and the successive
+; acceptable domains of bc1 are subsets of the corresponding domains of bc2.
+; For example, bc1 might have :acceptable-domains of ((INTEGERP) (RATIONALP))
+; while bc2 might have :acceptable-domains of ((INTEGERP RATIONALP) (INTEGERP
+; RATIONALP)).  Given that everything else is the same, it is obvious that bc2
+; applies more often.
+
+; The reason we need such a function is that when developing a book of bounder
+; theorems we frequently encounter many lemmas (and also many corollaries of
+; each bounder correctness theorem) that are less complete than the final
+; bounder correctness theorem for a function.
+
+(defun pairwise-subsetp-eq (doms-lst1 doms-lst2)
+  (cond ((endp doms-lst1) t)
+        ((subsetp-eq (car doms-lst1) (car doms-lst2))
+         (pairwise-subsetp-eq (cdr doms-lst1) (cdr doms-lst2)))
+        (t nil)))
+
+(defun bounder-subsumedp (bc1 bc2)
+
+; Bc1 and bc2 are two bounder-correctness records.  We determine whether bc1 is
+; subsumed by bc2.  The only way one bounder subsumes another is if the
+; successive acceptable domains of bc1 are subsets of the corresponding ones of
+; bc2.  All other fields have to be the same.  Since we assume that both bc1
+; and bc2 are about the same subject-fn, we delay that test to the end because
+; it will most likely be true.  We check the bounder-fn and bounder-arg fields
+; first because they're fast checks.
+  
+  (and (eq (access bounder-correctness bc1 :bounder-fn)
+           (access bounder-correctness bc2 :bounder-fn))
+       (equal (access bounder-correctness bc1 :bounder-args)
+              (access bounder-correctness bc2 :bounder-args))
+       (pairwise-subsetp-eq
+        (access bounder-correctness bc1 :acceptable-domains)
+        (access bounder-correctness bc2 :acceptable-domains))
+       (eq (access bounder-correctness bc1 :subject-fn)
+           (access bounder-correctness bc2 :subject-fn))))
+
+(defun bounder-subsumedp-by-some (bc bounders)
+  (cond ((endp bounders) nil)
+        ((bounder-subsumedp bc (car bounders)) t)
+        (t (bounder-subsumedp-by-some bc (cdr bounders)))))
+
+(defun delete-some-subsumed-bounders (bc bounders)
+  (cond ((endp bounders) nil)
+        ((bounder-subsumedp (car bounders) bc)
+         (delete-some-subsumed-bounders bc (cdr bounders)))
+        (t
+         (cons (car bounders)
+               (delete-some-subsumed-bounders bc (cdr bounders))))))
+
+(defun add-bounder-to-bounders (bc bounders)
+  (cond ((bounder-subsumedp-by-some bc bounders) bounders)
+        (t (cons bc (delete-some-subsumed-bounders bc bounders)))))
+
+(defun add-tau-bounder-rule (rune form j bc wrld)
+
+; Form is 1 or 2, j is the slot that a form 2 rule occupies, and bc is the
+; bounder-correctness record representing a bounder correctness theorem.  We
+; store it under the 'tau-bounders-form-1 or -2 property of the subject-fn and
+; add rune to the tau runes.
+
+; Note that when we add a new bounder-correctness rule we may delete some old
+; ones or not actually add anything (if the new rule is subsumed).  So we
+; actually ``add'' the rule to the appropriate list of bounders and then see if
+; changed anything before modifying the world.
+
+  (let ((subject-fn (access bounder-correctness bc :subject-fn)))
+    (cond
+     ((equal form 1)
+      (let* ((bounders0 (getprop subject-fn 'tau-bounders-form-1 nil
+                                 'current-acl2-world wrld))
+             (bounders1 (add-bounder-to-bounders bc bounders0)))
+        (if (equal bounders0 bounders1)
+            wrld
+            (set-tau-runes nil rune
+                           (putprop subject-fn
+                                    'tau-bounders-form-1
+                                    bounders1
+                                    wrld)))))
+     (t
+      (let* ((slots (getprop subject-fn 'tau-bounders-form-2 nil
+                             'current-acl2-world wrld))
+             (bounders0 (nth j slots))
+             (bounders1 (add-bounder-to-bounders bc bounders0)))
+        (if (equal bounders0 bounders1)
+            wrld
+            (set-tau-runes nil rune
+                           (putprop subject-fn
+                                    'tau-bounders-form-2
+                                    (update-nth j bounders1 slots)
+                                    wrld))))))))
+
 
 ; Now we define the functions for checking and adding tau rules.
 
@@ -8489,27 +9141,41 @@ at this point because they use some functions not yet defines.
                               (split-on-conjoined-disjunctions-in-hyps-of-pairs (cdr pairs)))))))))
 
 (defun chk-acceptable-tau-rule (name term ctx wrld state)
-  (let ((pairs
-         (split-on-conjoined-disjunctions-in-hyps-of-pairs
-          (strip-force-and-case-split-in-hyps-of-pairs
-           (unprettyify (remove-guard-holders term))))))
-    (cond
-     ((acceptable-tau-rulesp :all pairs wrld)
-      (value nil))
-     ((null (cdr pairs))
-      (er soft ctx
-          "The formula of the theorem ~x0 fails to fit any of the forms for ~
-           acceptable :TAU-SYSTEM rules.  See :DOC tau-system for the details ~
-           of the acceptable forms."
-          name))
-     (t (er soft ctx
-            "The formula of the theorem ~x0 gives rise to ~n1 normalized ~
-             formulas (e.g., after stripping out conjuncts in the conclusion, ~
-             etc.).  In order to be a :TAU-SYSTEM rule, each of these ~
-             formulas must be acceptable as a tau rule and at least one of ~
-             them fails to be.  See :DOC tau for details of the acceptable ~
-             forms."
-            name (length pairs))))))
+  (let ((term1 (remove-guard-holders term)))
+    (mv-let
+     (form j bc)
+     (tau-bounder-formp term1 wrld)
+     (declare (ignore j bc))
+     (cond
+      (form
+
+; Term is a bounder correctness theorem of either form 1 or 2 (depending on
+; form) and about slot j (if form 2), where bc is the bounder-correctness
+; record representing it.  But all we care about here is to report that term is
+; acceptable.
+       (value nil))
+      (t
+       (let ((pairs
+              (split-on-conjoined-disjunctions-in-hyps-of-pairs
+               (strip-force-and-case-split-in-hyps-of-pairs
+                (unprettyify term1)))))
+         (cond
+          ((acceptable-tau-rulesp :all pairs wrld)
+           (value nil))
+          ((null (cdr pairs))
+           (er soft ctx
+               "The formula of the theorem ~x0 fails to fit any of the forms ~
+               for acceptable :TAU-SYSTEM rules.  See :DOC tau-system for the ~
+               details of the acceptable forms."
+               name))
+          (t (er soft ctx
+                 "The formula of the theorem ~x0 gives rise to ~n1 normalized ~
+                 formulas (e.g., after stripping out conjuncts in the ~
+                 conclusion, etc.).  In order to be a :TAU-SYSTEM rule, each ~
+                 of these formulas must be acceptable as a tau rule and at ~
+                 least one of them fails to be.  See :DOC tau for details of ~
+                 the acceptable forms."
+                 name (length pairs))))))))))
 
 ; On the Tau Msgp Protocol
 
@@ -8621,18 +9287,31 @@ at this point because they use some functions not yet defines.
 ; ACCUMULATE means we just add rune to 'tau-lost-runes, and IGNORE means we
 ; just quietly ignore the situation.
 
-  (let* ((pairs
-          (split-on-conjoined-disjunctions-in-hyps-of-pairs
-           (strip-force-and-case-split-in-hyps-of-pairs
-            (unprettyify
-             (remove-guard-holders term)))))
-         (lost-rune-action (if (eq (car rune) :tau-system) 
-                               (if first-visitp
-                                   'REPORT
-                                   'ACCUMULATE)
-                               'IGNORE)))
+  (let ((term1 (remove-guard-holders term)))
+    (mv-let
+     (form j bc)
+     (tau-bounder-formp term1 wrld0)
+     (cond
+      (form
+
+; Term is a bounder correctness theorem of form 1 or 2 (depending on form), j
+; is the form 2 slot, and bc is the bounder-correctness record that represents
+; term.  We add it to the list of of bounder-correctness records for the
+; subject-fn.
+
+       (mv nil (add-tau-bounder-rule rune form j bc wrld0)))
+      (t
+       (let* ((pairs
+               (split-on-conjoined-disjunctions-in-hyps-of-pairs
+                (strip-force-and-case-split-in-hyps-of-pairs
+                 (unprettyify term1))))
+              (lost-rune-action (if (eq (car rune) :tau-system) 
+                                    (if first-visitp
+                                        'REPORT
+                                        'ACCUMULATE)
+                                    'IGNORE)))
                                   
-    (add-tau-rule1 lost-rune-action rune pairs ens wrld0 wrld0)))
+         (add-tau-rule1 lost-rune-action rune pairs ens wrld0 wrld0)))))))
 
 ; We now turn to the topic of ``visiting'' events and building up the tau
 ; database.  Recall that we may be visiting an event for the first time (e.g.,
@@ -8707,6 +9386,11 @@ at this point because they use some functions not yet defines.
 ; Loser and so if it signalled an error, we'd get back what we gave it.  But
 ; because this function is recursive and maps over tp-lst, it could be that
 ; what we gave add-tau-rule1 has already been extended.  
+
+; Note also that this function uses add-tau-rule1 rather than add-tau-rule.  In
+; so doing, it precludes the possibility that the rule being added is a
+; tau-bounder-formp, which is handled by add-tau-rule.  But no
+; type-prescription can be a bounder correctness theorem.
 
   (cond
    ((endp tp-lst)
@@ -9786,12 +10470,18 @@ at this point because they use some functions not yet defines.
 
 (defun add-to-tau! (sign recog tau ens wrld calist)
 
-; Recog is a tau-pair or singleton evg list.  Tau is a tau object, not
-; *tau-contradiction*.  We add sign/recog, its implicants, and all conjunctive
-; rules to tau.  We return tau', where tau' may be *tau-contradiction*.
+; Recog is a tau-pair or singleton evg list or else the special symbol :SKIP.
+; Tau is a tau object, not *tau-contradiction*.  We add sign/recog, its
+; implicants, and all conjunctive rules to tau.  We return tau', where tau' may
+; be *tau-contradiction*.  When recog is :SKIP it means ``don't really add
+; anything to tau, just apply conjunctive rules!''
 
-  (let ((new-tau (add-to-tau sign recog tau ens wrld)))
-    (cond ((equal tau new-tau) (mv tau calist))
+  (let ((new-tau (if (eq recog :SKIP)
+                     tau
+                     (add-to-tau sign recog tau ens wrld))))
+    (cond ((and (not (eq recog :SKIP))
+                (equal tau new-tau))
+           (mv tau calist))
           (t (apply-conjunctive-tau-rules new-tau ens wrld calist)))))
   
 ; -----------------------------------------------------------------
@@ -9838,13 +10528,19 @@ at this point because they use some functions not yet defines.
 
 ; In trying to compute the tau of (IF a b c), we compute the tau of b and c and
 ; disjoin them.  Because taus are conjunctions of all the things we know,
-; disjoining them is akin to intersecting their representations.  For example,
-; if b has a tau that includes P and Q and c has a tau that includes P and R,
-; their disjunction includes P but not Q or R.  
+; disjoining them is akin to intersecting their representations.  This reduces
+; the number of recognizers in them and hence enlarges the set of objects in
+; the tau.  For example, if b has a tau that includes P and Q and c has a tau
+; that includes P and R, their disjunction includes P but not Q or R.
 
 ; We lose a lot of precision in disjoining tau.  Here are two examples.
 
-; Suppose both tau are an equalities-to-constant, say =0 and =100.  Then their
+; For example, b might include RATIONALP and hence also ACL2-NUMBERP; c might
+; include INTEGERP and hence also ACL2-NUMBERP; But their disjunction just
+; includes ACL2-NUMBERP.  We've lost that it is an integer or a rational.
+
+; Intervals raise another problem.  To take an extreme case, suppose the tau of
+; b and c are both equalities-to-constant, say =0 and =100.  Then their
 ; respective intervals are 0 <= ... <= 0 and 100 <= ... <= 100 and when we
 ; ``disjoin'' them the only interval we can create that captures both is 0 <=
 ; ... <= 100.
@@ -9858,24 +10554,24 @@ at this point because they use some functions not yet defines.
 ; two tau, we get the empty tau, even though it would have been legitimate to
 ; produce {WEEKDAYP}
 
-(defun combine-intervals (interval1 interval2)
+(defun disjoin-intervals (interval1 interval2)
 
 ; The two arguments are tau-intervals.  We form the interval that stretches
 ; from the lower lower bound of the two to the upper upper bound, and has as
-; its domain the most restrictive domain they both include.
+; its domain the less restrictive of the two domains.
 
 ; Motivation: Suppose we are finding the tau of (IF a b c) and suppose we have
 ; computed the tau of b and c and that they have intervals interval1 and
 ; interval2.  Then a tau for (IF a b c) will have the interval we compute
 ; here.
 
-; The domain of the new interval is the most specific domain both intervals
-; share.  For example, if one is INTEGERP and the other is RATIONALP, we choose
-; RATIONALP, since the first interval is also an interval over the rationals.
-; Note that the only way we can produce an INTEGERP interval is if both are
-; INTEGERP.  One implication is that the chosen endpoints are known to satisfy
-; the requirement on INTEGERP intervals of using the relation <= (nil) and
-; integer extends, since both endpoints come from INTEGERP intervals.
+; The domain of the new interval is the most less restrictive of the two.  For
+; example, if one is INTEGERP and the other is RATIONALP, we choose RATIONALP,
+; since the first interval is also an interval over the rationals.  Note that
+; the only way we can produce an INTEGERP interval is if both are INTEGERP.
+; One implication is that the chosen endpoints are known to satisfy the
+; requirement on INTEGERP intervals of using the relation <= (nil) and integer
+; extends, since both endpoints come from INTEGERP intervals.
 
 ; A more problematic issue is whether the new domain is derivable from the
 ; :pos-pairs of the tau into which we put this interval.  Our computation of
@@ -9928,6 +10624,127 @@ at this point because they use some functions not yet defines.
                 :lo lo
                 :hi-rel hi-rel
                 :hi hi))))))
+
+; The following theorem establishes the correctness of disjoin-intervals.  We
+; prove below that if int1 and int2 are intervals containing x and y
+; respectively, then their disjunction is an interval that contains x and y.
+; Recall that intervalp actually requires that its argument be a cons structure
+; whereas we sometimes use nil to represent the universal interval in which all
+; fields are nil.  Thus, we actually prove that disjoin-intervals is either nil
+; or an interval and we allow int1 and int2 the same freedom.
+
+; (verify-termination lower-bound->)
+; (verify-termination upper-bound-<)
+; (verify-termination disjoin-intervals)
+
+; (thm (implies (and (or (equal int1 nil) (tau-intervalp int1))
+;                    (or (equal int2 nil) (tau-intervalp int2))
+;                    (in-tau-intervalp x int1)
+;                    (in-tau-intervalp y int2))
+;               (and (or (equal (disjoin-intervals int1 int2) nil)
+;                        (tau-intervalp (disjoin-intervals int1 int2)))
+;                    (in-tau-intervalp x (disjoin-intervals int1 int2))
+;                    (in-tau-intervalp y (disjoin-intervals int1 int2))
+;                    ))
+;      :hints (("Goal" :in-theory (enable interval-dom interval-lo-rel interval-lo
+;                                         interval-hi-rel interval-hi))))
+
+; 67,143 Subgoals
+; Time:  275.32 seconds (prove: 271.52, print: 3.79, other: 0.00) [on Stirling]
+; Prover steps counted:  46971678
+
+; While we're at it we also define how to conjoin two intervals, which
+; shrinks them:
+
+(defun conjoin-intervals (interval1 interval2)
+
+; The two arguments are tau-intervals.  We form the interval that stretches
+; from the upper lower bound of the two to the lower upper bound, and has as
+; its domain the more restrictive of the two domains. 
+
+; Motivation: Suppose we are finding the tau of a term and know the term lies in
+; both interval1 and in interval2.  Then the conjunction of those two intervals
+; is a more restrictive interval that contains the term.
+
+; The domain of the new interval is the more restrictive of the two.  For
+; example, if one is INTEGERP and the other is RATIONALP, we choose INTEGERP.
+
+; A more problematic issue is whether the new domain is derivable from the
+; :pos-pairs of the tau into which we put this interval.  Our computation of
+; the :pos-pairs of the new tau will insure that it is because we will
+; explicitly include INTEGERP, RATIONALP, or ACL2-NUMBERP as needed.
+
+  (let* ((dom1 (access tau-interval interval1 :domain))
+         (dom2 (access tau-interval interval2 :domain))
+         (dom (cond ((eq dom1 dom2) dom1)
+                    ((eq dom1 'INTEGERP) dom1)
+                    ((eq dom2 'INTEGERP) dom2)
+                    ((eq dom1 'RATIONALP) dom1)
+                    ((eq dom2 'RATIONALP) dom2)
+                    ((eq dom1 'ACL2-NUMBERP) dom1)
+                    (t dom2)))
+         (lo-rel1 (access tau-interval interval1 :lo-rel))
+         (lo-rel2 (access tau-interval interval2 :lo-rel))
+         (lo1 (access tau-interval interval1 :lo))
+         (lo2 (access tau-interval interval2 :lo))
+         (hi-rel1 (access tau-interval interval1 :hi-rel))
+         (hi-rel2 (access tau-interval interval2 :hi-rel))
+         (hi1 (access tau-interval interval1 :hi))
+         (hi2 (access tau-interval interval2 :hi)))
+    (mv-let
+     (lo-rel lo)
+     (if (lower-bound-> lo-rel1 lo1 lo-rel2 lo2)
+         (mv lo-rel1 lo1)
+         (mv lo-rel2 lo2))
+     (mv-let
+      (hi-rel hi)
+      (if (upper-bound-< hi-rel1 hi1 hi-rel2 hi2)
+          (mv hi-rel1 hi1)
+          (mv hi-rel2 hi2))
+      (if (and (null dom) (null lo) (null hi))
+          nil ; universal interval
+          (if (eq dom 'integerp)
+              (let ((lo (squeeze-k nil lo-rel lo))
+                    (hi (squeeze-k t   hi-rel hi)))
+                (if (and lo hi (> lo hi))
+                    nil
+                    (make tau-interval
+                          :domain 'integerp
+                          :lo-rel nil
+                          :lo lo
+                          :hi-rel nil
+                          :hi hi)))
+              (if (and lo hi (> lo hi))
+                  nil
+                  (make tau-interval
+                        :domain dom
+                        :lo-rel lo-rel
+                        :lo lo
+                        :hi-rel hi-rel
+                        :hi hi))))))))
+
+; Here is the correctness of conjoin-intervals.  See the discussion of the correctness of
+; disjoin-intervals above.
+
+; (verify-termination lower-bound->)
+; (verify-termination upper-bound-<)
+; (verify-termination squeeze-k)
+; (verify-termination conjoin-intervals) 
+; (include-book "arithmetic-5/top" :dir :system)
+
+; (thm (implies (and (or (equal int1 nil) (tau-intervalp int1))
+;                    (or (equal int2 nil) (tau-intervalp int2))
+;                    (in-tau-intervalp x int1)
+;                    (in-tau-intervalp x int2))
+;               (and (or (equal (conjoin-intervals int1 int2) nil)
+;                        (tau-intervalp (conjoin-intervals int1 int2)))
+;                    (in-tau-intervalp x (conjoin-intervals int1 int2))
+;                    ))
+;      :hints (("Goal" :in-theory (enable interval-dom interval-lo-rel interval-lo
+;                                         interval-hi-rel interval-hi))))
+; 19,115 subgoals
+; Time:  247.28 seconds (prove: 246.14, print: 1.13, other: 0.00) [on Stirling]
+; Prover steps counted:  17455029
 
 (defun combine-pos/neg-pairs-from-tau1 (sign pos-evg1 pairs1 pos-evg2 pairs2 ens wrld)
 
@@ -10119,7 +10936,7 @@ at this point because they use some functions not yet defines.
 
           (pos-pairs (combine-pos/neg-pairs-from-tau t tau1 tau2 ens wrld))
           (neg-pairs (combine-pos/neg-pairs-from-tau nil tau1 tau2 ens wrld))
-          (interval (combine-intervals
+          (interval (disjoin-intervals
                      (access tau tau1 :interval)
                      (access tau tau2 :interval))))
       (let ((dom (access tau-interval interval :domain))
@@ -10139,7 +10956,7 @@ at this point because they use some functions not yet defines.
           (er hard 'combine-tau
               "We have just constructed an interval, ~x0, whose domain is not ~
                in the :pos-pairs of the tau we planned to put it into!  The ~
-               offending interval was constructed by combine-intervals from ~
+               offending interval was constructed by disjoin-intervals from ~
                the intervals in these two tau ~x1 and ~x2."
               interval
               tau1
@@ -10372,6 +11189,198 @@ at this point because they use some functions not yet defines.
                                 (decode-tau-alist (nth 3 values) nil))))
 ||#
 
+(defmacro recursivep (fn wrld)
+
+; Experiments show a slight speedup in Allegro CL (perhaps a half percent on a
+; very small run) if we make this a macro.
+
+  `(access def-body
+          (def-body ,fn ,wrld)
+          :recursivep))
+
+(defun find-first-acceptable-domain (actual-dom acceptable-domains)
+
+; Actual-dom is an interval domain, i.e., INTEGERP, RATIONALP, ACL2-NUMBERP, or
+; NIL, of an interval known to contain the value of some actual parameter to a
+; call of some (unspecified) function fn.  Acceptable-domains is a list of the
+; interval domains acceptable for a bounder of fn for that same argument of fn.
+; We determine whether actual-dom is one the acceptable ones.  In the most
+; trivial situation, we might expect the actual domain to be something like
+; INTEGERP and the acceptable domains to be (INTEGERP RATIONALP).  But we
+; consider INTEGERP to be ok for the acceptable domains (RATIONALP
+; ACL2-NUMBERP) too, because if the actual is an integer then it is also a
+; rational.  Therefore we actually return two results, (mv flg dom).  Flg is t
+; or nil indicating whether actual-dom is acceptable, and dom is the first
+; listed acceptable domain that includes the actual one.  For example, given
+; actual-dom = 'INTEGERP and acceptable-domains = '(RATIONALP ACL2-NUMBERP), we
+; return (mv t 'RATIONALP).  Note that if the acceptable domains are presented
+; in the reversed order we'd get (mv t 'ACL2-NUMBERP).  It would be best to
+; keep the acceptable domains ordered from most to least restrictive.
+
+  (cond ((endp acceptable-domains) (mv nil nil))
+        ((eq actual-dom (car acceptable-domains))
+         (mv t actual-dom))
+        (t (let* ((more-specific-acceptable-domains
+                   (cdr (assoc-eq (car acceptable-domains)
+                                  '((rationalp integerp)
+                                    (acl2-numberp rationalp integerp)
+                                    (nil acl2-numberp rationalp integerp)))))
+                  (winner (member-eq actual-dom more-specific-acceptable-domains)))
+             (cond
+              (winner (mv t (car acceptable-domains)))
+              (t (find-first-acceptable-domain actual-dom (cdr acceptable-domains))))))))
+
+(defun tau-lst-with-acceptable-domainsp (actual-tau-lst doms-lst)
+
+; Actual-tau-lst is a list of the tau of successive arguments to some call of
+; some function fn.  Doms-lst is the :acceptable-domains field of a
+; bounder-correctness rule for fn.  We check that the actual tau satisfy
+; the acceptable domain criteria of the rule.
+
+; An actual in domain INTEGERP satisfies a bounder with an acceptable domains
+; (RATIONALP ACL2-NUMBERP).  Note that it would be a mistake to pass such an
+; interval to the corresponding bounder!  The bounder was proved correct under
+; the assumption that the domain was either RATIONALP or ACL2-NUMBERP.  Thus,
+; the bounder could actually look at the domain of its argument and do
+; something completely wrong for INTEGERP and still be proved correct.
+; However, an INTEGERP interval is contained within the corresponding RATIONALP
+; interval, so we can modify the actual interval by enlarging the domain to
+; RATIONALP and get a correct answer from the bounder.
+
+; But note that this is a two-step process.  First we check that all the
+; actuals have acceptable domains.  Then we enlarge the actual intervals as
+; required and apply the bounder.  This function just checks acceptability.
+
+  (cond ((endp doms-lst) t)
+        ((eq (car doms-lst) t)
+         (tau-lst-with-acceptable-domainsp (cdr actual-tau-lst) (cdr doms-lst)))
+        (t (mv-let (flg dom)
+                   (find-first-acceptable-domain
+                    (access tau-interval
+                            (access tau (car actual-tau-lst) :interval)
+                            :domain)
+                    (car doms-lst))
+                   (declare (ignore dom))
+                   (and flg
+                        (tau-lst-with-acceptable-domainsp
+                         (cdr actual-tau-lst)
+                         (cdr doms-lst)))))))
+
+(defun collect-bounder-args (actual-tau-lst doms-lst bounder-args)
+
+; Actual-tau-lst is a list of tau corresponding to the arguments of some
+; (unspecified) function, fn.  Doms-lst is the corresponding list of acceptable
+; domains for some bounder function.  Bounder-args is a list of naturals
+; specifying the positions of the relevant arguments for the bounder function.
+; For example, actual-tau-lst might be (t0 t1 t2 t3) and the bounder function
+; requires in its first argument the interval from t3 and in its second
+; argument the interval from t1.  Then bounder-args would be (3 1).
+
+; We collect the intervals of those tau (whose positions are) listed in
+; bounder-args and we change the domain of each collected interval to be the
+; domain that admitted the actual one.  So for example, if we collect the
+; interval from t3 and its domain is INTEGERP but the acceptable domains there
+; are (RATIONALP ACL2-NUMBERP), the we change the interval's domain to
+; RATIONALP before collecting it.
+
+  (cond ((endp bounder-args) nil)
+        (t (let ((actual-int (access tau
+                                     (nth (car bounder-args) actual-tau-lst)
+                                     :interval))
+                 (acceptable-doms (nth (car bounder-args) doms-lst)))
+             (mv-let (flg dom)
+                     (find-first-acceptable-domain
+                      (access tau-interval actual-int :domain)
+                      acceptable-doms)
+                     (declare (ignore flg))
+                     (cons (change tau-interval actual-int :domain dom)
+                           (collect-bounder-args actual-tau-lst
+                                                 doms-lst
+                                                 (cdr bounder-args))))))))
+                 
+(defun bounding-interval (bc actual-tau-lst wrld)
+
+; Bc is a bounder-correctness record for some fn and actual-tau-lst is the list
+; of tau of the actuals of a call of fn.  If those actuals satisfy the domains
+; proved acceptable for the bounder, we apply the bounder appropriately and
+; return the resulting interval.  Otherwise, we return nil -- which is the
+; universal interval.
+
+  (let ((doms-lst (access bounder-correctness bc :acceptable-domains)))
+    (cond
+     ((tau-lst-with-acceptable-domainsp actual-tau-lst doms-lst)
+      (let ((bounder-fn (access bounder-correctness bc :bounder-fn))
+            (bounder-args
+             (collect-bounder-args
+              actual-tau-lst
+              doms-lst
+              (access bounder-correctness bc :bounder-args))))
+        (mv-let (erp val)
+                (ev-fncall-w bounder-fn
+                             bounder-args
+                             wrld nil nil t t nil)
+                (cond
+                 (erp nil)
+                 (t val)))))
+     (t nil))))
+
+(defun conjoin-bounding-intervals (bounders actual-tau-lst wrld)
+
+; Given a list of bounder-correctness records for some function and the actual
+; tau for a call of that function, we conjoin together all the intervals the
+; bounders compute for the call.  This interval will contain the value of the
+; call.
+
+  (cond
+   ((endp bounders) nil)
+   (t (conjoin-intervals
+       (bounding-interval (car bounders) actual-tau-lst wrld)
+       (conjoin-bounding-intervals (cdr bounders) actual-tau-lst wrld)))))
+                         
+(defun apply-tau-bounders (bounders actual-tau-lst ens wrld calist)
+
+; Given the bounders for a function and the tau of its actuals, we compute the
+; tau of the call -- as computed just by the bounders of the function.  This
+; function does not take account of the signature rules for the function.  We
+; return (mv tau' calist').
+
+  (let ((int (conjoin-bounding-intervals bounders actual-tau-lst wrld)))
+    (cond
+     ((null int)
+      (mv *tau-empty* calist))
+     (t (let ((dom    (access tau-interval int :domain))
+              (lo-rel (access tau-interval int :lo-rel))
+              (lo     (access tau-interval int :lo))
+              (hi-rel (access tau-interval int :hi-rel))
+              (hi     (access tau-interval int :hi)))
+          (cond
+           ((and (null dom) (null lo) (null hi))
+            (mv *tau-empty* calist))
+           (t
+            (let* ((dom-pair
+                    (case dom
+                      (integerp *tau-integerp-pair*)
+                      (rationalp *tau-rationalp-pair*)
+                      (acl2-numberp *tau-acl2-numberp-pair*)
+                      (otherwise nil)))
+                   (tau1 
+                    (if (null dom-pair)
+                        *tau-empty*
+                        (add-to-tau t dom-pair *tau-empty* ens wrld))))
+              (mv-let
+               (sign k token)
+               (tau-interval-endpoint-to-sign-k-token nil lo-rel lo)
+               (let ((tau2
+                      (if (null k)
+                          tau1
+                          (add-to-tau sign (cons k token) tau1 ens wrld))))
+                 (mv-let
+                  (sign k token)
+                  (tau-interval-endpoint-to-sign-k-token t hi-rel hi)
+                  (add-to-tau! sign
+                               (if (null k) :SKIP (cons k token))
+                               tau2 ens wrld calist))))))))))))
+
 (mutual-recursion
 
 (defun tau-term (term tau-alist type-alist pot-lst clause ens wrld calist)
@@ -10399,6 +11408,8 @@ at this point because they use some functions not yet defines.
 ;   under the appropriately augmented tau assumptions and then intersect the two
 ;   recognizer sets.
 
+; - (UNSIGNED-BYTE-P 'n x) where (natp n):  expand definition to conjunction
+
 ; - (MV-NTH 'i (fn ...)) where fn has form 2 signature rules: apply the ith set
 ;   of signature rules for fn.  We also handle mv-nth synonyms here.  Thus, for
 ;   synonyms we do not look for signatures or big-switch expansions.
@@ -10415,10 +11426,11 @@ at this point because they use some functions not yet defines.
 ; - sign/(recog e): compute the tau of e and return the tau for T, NIL, or
 ;   Boolean appropriately
 
-; - (fn ...) where fn has form 1 signature rules: compute the tau using all the
-;   applicable signature rules under the current assumptions.  Thus, a
-;   signature rule prevents us from considering the possibility that fn is a
-;   big-switch.
+; - (fn ...) where fn has bounder rules and/or form 1 signature rules: compute
+;   the tau of each actual, then apply the bounder rules to compute a tau
+;   containing (fn ...), and then further refine it with the applicable
+;   signature rules.  The existence of a bounder or signature rule us from
+;   opening the function or considering it as a big switch.
 
 ; - (fn ...) where fn is a big switch: Expand (if heuristically allowed) and
 ;   recur
@@ -10539,6 +11551,20 @@ at this point because they use some functions not yet defines.
                                     clause ens wrld calist)
                           (mv (combine-tau tau2 tau3 ens wrld)
                               calist))))))))))
+             ((and (eq (ffn-symb term) 'UNSIGNED-BYTE-P)
+                   (quotep (fargn term 1))
+                   (integerp (cadr (fargn term 1)))
+                   (<= 0 (cadr (fargn term 1))))
+
+; (UNSIGNED-BYTE-P bits x) = (AND (INTEGERP x) (<= 0 x) (< x (expt 2 bits))), provided 
+; bits is natp.  We just open UNSIGNED-BYTE-P under that condition.
+
+              (tau-term `(if (integerp ,(fargn term 2))
+                             (if (< ,(fargn term 2) '0)
+                                 'nil
+                                 (< ,(fargn term 2) (quote ,(expt 2 (cadr (fargn term 1))))))
+                             nil)
+                        tau-alist type-alist pot-lst clause ens wrld calist))
              ((or (eq (ffn-symb term) 'MV-NTH)
                   (member-eq (ffn-symb term)
                              (global-val 'tau-mv-nth-synonyms wrld)))
@@ -10552,20 +11578,31 @@ at this point because they use some functions not yet defines.
                     ((and (nvariablep (fargn term 2))
                           (not (fquotep (fargn term 2)))
                           (not (flambdap (ffn-symb (fargn term 2))))
-                          (nth (cadr (fargn term 1))
-                               (getprop (ffn-symb (fargn term 2))
-                                        'signature-rules-form-2 nil
-                                        'current-acl2-world wrld)))
+                          (or (nth (cadr (fargn term 1))
+                                   (getprop (ffn-symb (fargn term 2))
+                                            'signature-rules-form-2 nil
+                                            'current-acl2-world wrld))
+                              (nth (cadr (fargn term 1))
+                                   (getprop (ffn-symb (fargn term 2))
+                                            'tau-bounders-form-2 nil
+                                            'current-acl2-world wrld))))
 
 ; We are dealing with (MV-NTH 'i (fn a1 ... ak)), or a synonym of MV-NTH, where
 ; the ith slot of fn has some signature rules.  We confine our attention to
-; those rules and do not consider expanding fn because no function with
-; signature rules has a big-switch property.
+; those rules and do not consider expanding fn via the big-switch property.
+; Put another way, if signature and/or bounder rules are available then they are
+; all that tau uses.
 
                      (let* ((fn (ffn-symb (fargn term 2)))
                             (sigrules (nth (cadr (fargn term 1))
                                            (getprop fn
                                                     'signature-rules-form-2
+                                                    nil
+                                                    'current-acl2-world
+                                                    wrld)))
+                            (bounders (nth (cadr (fargn term 1))
+                                           (getprop fn
+                                                    'tau-bounders-form-2
                                                     nil
                                                     'current-acl2-world
                                                     wrld))))
@@ -10575,15 +11612,19 @@ at this point because they use some functions not yet defines.
                                       (fargs (fargn term 2))
                                       tau-alist type-alist pot-lst
                                       clause ens wrld calist)
-                        (apply-signature-tau-rules
-                         sigrules
-                         (fargs term)
-                         (if (all-unrestricted-signature-rulesp sigrules)
-                             nil ; Abuse of Tau Representation
-                             actual-tau-lst)
-                         *tau-empty*
-                         tau-alist type-alist pot-lst
-                         clause ens wrld calist))))
+                        (mv-let
+                         (tau1 calist)
+                         (apply-tau-bounders bounders actual-tau-lst
+                                             ens wrld calist)
+                         (apply-signature-tau-rules
+                          sigrules
+                          (fargs term)
+                          (if (all-unrestricted-signature-rulesp sigrules)
+                              nil ; Abuse of Tau Representation
+                              actual-tau-lst)
+                          tau1
+                          tau-alist type-alist pot-lst
+                          clause ens wrld calist)))))
                     (t
 
 ; Otherwise, we are dealing with (MV-NTH 'i y), or a synonym of MV-NTH.  We
@@ -10634,12 +11675,16 @@ at this point because they use some functions not yet defines.
                               calist))))))))
                 (t (let* ((fn (ffn-symb term))
                           (sigrules (getprop fn 'signature-rules-form-1 nil
+                                             'current-acl2-world wrld))
+                          
+                          (bounders (getprop fn 'tau-bounders-form-1 nil
                                              'current-acl2-world wrld)))
                      (cond
-                      ((null sigrules)
+                      ((and (null sigrules)
+                            (null bounders))
 
-; We are dealing with (fn a1 ... ak) and have no signature rules.  We expand,
-; if possible, and recur.
+; We are dealing with (fn a1 ... ak) and have no bounder or signature rules.
+; We expand, if possible, and recur.
               
                        (mv-let (contradictionp hitp term1 calist)
                                (tau-rewrite term
@@ -10652,22 +11697,31 @@ at this point because they use some functions not yet defines.
                                                 type-alist pot-lst
                                                 clause ens wrld calist))
                                 (t (mv *tau-empty* calist)))))
-                      (t (mv-let
+                      (t 
+
+; For all other functions we compute the tau of the actuals, then apply bounder rules,
+; and then apply signature rules.
+                         
+                         (mv-let
                           (actual-tau-lst calist)
                           (tau-term-lst nil
                                         (fargs term)
                                         tau-alist type-alist pot-lst
                                         clause ens wrld calist)
-                          (apply-signature-tau-rules
-                           sigrules
-                           (fargs term)
-                           (if (all-unrestricted-signature-rulesp sigrules)
-                               nil ; Abuse of Tau Representation
-                               actual-tau-lst)
-                           *tau-empty*
-                           tau-alist type-alist pot-lst
-                           clause ens wrld calist)))))))))))))))))
-
+                          (mv-let
+                           (tau1 calist)
+                           (apply-tau-bounders bounders actual-tau-lst
+                                               ens wrld calist)
+                           (apply-signature-tau-rules
+                            sigrules
+                            (fargs term)
+                            (if (all-unrestricted-signature-rulesp sigrules)
+                                nil ; Abuse of Tau Representation
+                                actual-tau-lst)
+                            tau1
+                            tau-alist type-alist pot-lst
+                            clause ens wrld calist))))))))))))))))))
+                           
 (defun tau-term-lst (vars terms tau-alist type-alist pot-lst clause ens wrld calist)
 
 ; When non-nil, vars is assumed to be of the same length as terms.  This
@@ -10961,6 +12015,8 @@ at this point because they use some functions not yet defines.
 
 ; - (IF a b NIL) and other forms of conjunction:  assume both conjuncts
 
+; - (UNSIGNED-BYTE-P 'n x) where (natp n):  expand definition to conjunction
+
 ; - (recog a): add recog (and its implicants) to the tau of a as computed under
 ;   tau-alist
 
@@ -11046,6 +12102,21 @@ at this point because they use some functions not yet defines.
                     (t (tau-assume-basic sign term
                                          tau-alist type-alist pot-lst
                                          clause ens wrld calist)))))))))))
+      ((and (eq (ffn-symb term) 'UNSIGNED-BYTE-P)
+            (quotep (fargn term 1))
+            (integerp (cadr (fargn term 1)))
+            (<= 0 (cadr (fargn term 1))))
+
+; (UNSIGNED-BYTE-P bits x) = (AND (INTEGERP x) (<= 0 x) (< x (expt 2 bits))), provided 
+; bits is natp.  We just open UNSIGNED-BYTE-P under that condition.
+
+       (tau-assume sign
+                   `(if (integerp ,(fargn term 2))
+                        (if (< ,(fargn term 2) '0)
+                            'nil
+                            (< ,(fargn term 2) (quote ,(expt 2 (cadr (fargn term 1))))))
+                        nil)
+                   tau-alist type-alist pot-lst clause ens wrld calist))
       (t
        (mv-let
         (rsign recog e criterion)
@@ -11851,13 +12922,11 @@ at this point because they use some functions not yet defines.
              ,(car tau-pair))
             (pos-implicants
              ,(decode-tau
-               (getprop fn 'pos-implicants *tau-empty* 'current-acl2-world
-                        wrld)
+               (getprop fn 'pos-implicants *tau-empty* 'current-acl2-world wrld)
                'v))
             (neg-implicants
              ,(decode-tau
-               (getprop fn 'neg-implicants *tau-empty* 'current-acl2-world
-                        wrld)
+               (getprop fn 'neg-implicants *tau-empty* 'current-acl2-world wrld)
                'v))
             (signatures
              ,(let ((sigs1 (decode-tau-signature-rules nil fn sigs1 wrld))
@@ -12048,3 +13117,213 @@ at this point because they use some functions not yet defines.
 ; infrastructure (e.g., how to interpret the event tuples stored as
 ; EVENT-LANDMARKs, not to mention ctx computation, install-event, etc.  So we
 ; delay the rest of the regeneration event until other-events.lisp.
+
+(deflabel bounders
+  :doc
+  ":Doc-Section Tau-System
+
+  intervals, bounder functions, and bounder correctness~/
+
+  ~bv[]
+  ~i[Bounder Forms 1 and 2]:
+  (implies (and (tau-intervalp i1)
+                ...
+                (or (equal (tau-interval-dom i1) 'dom1-1)
+                    ...)
+                ...
+                (in-tau-intervalp x1 i1)
+                ...)
+           (and (tau-intervalp (bounder-fn i1 ...))
+                (in-tau-intervalp ~i[target]
+                                  (bounder-fn i1 ...))))
+  ~ev[]
+  where ~i[target] is either ~c[(fn x1 ... y1 ...)] or 
+  ~c[(mv-nth 'n (fn x1 ... y1 ...))], depending on whether we are in the
+  ~i[Form 1] or ~i[Form 2] case, respectively.  However, the shape above
+  is meant just as a reminder.  Details are given below.~/
+
+  A bounder correctness theorem establishes that ~c[bounder-fn] is a
+  ``bounder'' for the function ~c[fn].  That means that when trying to compute
+  a tau for a call of ~c[fn] (or, in the case of ~i[Form 2], for the ~c[n]th
+  component of the multiple-value vector returned by a call of ~c[fn]) the tau
+  system can call ~c[bounder-fn] on the intervals containing certain arguments
+  of ~c[fn].
+
+  Let us start with an example.  Let ~c[fn] be the addition function,
+  ~c[+] (actually, ~ilc[binary-+]).  Consider the target term ~c[(+ x y)] and
+  contemplate the question: if you know intervals containing ~c[x] and ~c[y],
+  say ~c[intx] and ~c[inty] respectively, what is an interval containing their
+  sum?  The answer is pretty easy to state in English: the domain of the answer
+  interval is the less restrictive of the domains of ~c[intx] and ~c[inty].
+  The lower bound of the answer interval is the sum of the lower bounds of
+  ~c[intx] and ~c[inty], and the lower relation is the stronger of the lower
+  relations of ~c[intx] and ~c[inty].  Analogous comments define the upper
+  bound and relation of the answer interval.  So for example, if ~c[x] is an
+  ~c[INTEGERP] such that ~c[0 <= x <= 10] and ~c[y] is a ~c[RATIONALP] such
+  that ~c[0 < y <= 20], then ~c[(+ x y)] is a ~c[RATIONALP] such that
+  ~c[0 < (+ x y) <= 30].
+
+  Defining this precisely is more tedious than describing it in English because
+  one must make precise the notions of ``less restrictive'' domains, ``weaker''
+  relations, and the possibility that either or both of the bounds could be
+  ``infinite.''  But we can easily imagine defining the function
+  ~c[bounder-for-+] that returns the answer interval described, given ~c[intx]
+  and ~c[inty].
+
+  Then the following ~i[Bounder Form 1] formula establishes the correctness of
+  ~c[bounder-for-+] and allows the tau system to use it to produce bounds in
+  the tau computed for ~c[+]-expressions:
+
+  ~bv[]
+  (implies (and (tau-intervalp intx)
+                (tau-intervalp inty)
+                (in-tau-intervalp x intx)
+                (in-tau-intervalp y inty))
+           (and (tau-intervalp (bounder-for-+ intx inty))
+                (in-tau-intervalp (+ x y)
+                                  (bounder-for-+ intx inty))))
+  ~ev[]
+
+  For example, suppose we have a formula with the following hypotheses
+  ~bv[]
+  (and (integerp a)
+       (<= 0 a)
+       (<= a 10)
+       (rationalp b)
+       (< 0 b)
+       (<= b 20))
+  ~ev[]
+  and suppose the tau system encounters the term ~c[(+ a b)].  When the term is
+  enountered, the tau for ~c[a] would include an ~c[INTEGERP] interval such
+  that ~c[0 <= a <= 10] and the tau for ~c[b] would include a ~c[RATIONALP]
+  interval such that ~c[0 < b <= 20].  In its most primitive configuration, the
+  tau system would only know that the tau for ~c[(+ a b)] includes the
+  recognizer ~c[RATIONALP] (and all that it is known to imply).  But after the
+  bounder theorem above is proved and available as a ~c[:tau-system] rule the
+  tau system would infer that ~c[(+ a b)] was in the ~c[RATIONALP] interval
+  such that ~c[0 < (+ a b) <= 30].
+
+  Thus, by defining bounder functions and proving them correct the user can
+  give the tau system the ability to compute the bounds on function calls as a
+  function of the known bounds on their actuals.
+
+  It is sometimes useful to restrict the domains of the intervals to be
+  considered.  For example, in bounding ~c[*]-expressions it is simplifying
+  to restrict one's attention to intervals over the integers or rationals
+  (and thus exclude the complex rationals so one need not think about the
+  getting negative bounds by multiplying two ``positive'' complex rationals
+  or how to ``round up'' from complex bounds to the rationals required
+  by our intervals).
+
+  If we were to define ~c[bounder-for-*] so that it works correctly to bound
+  ~c[*]-expressions, but only for integer or rational arguments, its
+  correctness theorem would be:
+
+  ~bv[]
+  (implies (and (tau-intervalp intx)                             ; (a)
+                (tau-intervalp inty)
+                (or (equal (tau-interval-dom intx) 'INTEGERP)    ; (b)
+                    (equal (tau-interval-dom intx) 'RATIONALP))
+                (or (equal (tau-interval-dom inty) 'INTEGERP)
+                    (equal (tau-interval-dom inty) 'RATIONALP))
+                (in-tau-intervalp x intx)                        ; (c)
+                (in-tau-intervalp y inty))
+           (and (tau-intervalp (bounder-for-* intx inty))       ; (d)
+                (in-tau-intervalp (* x y)                        ; (e)
+                                  (bounder-for-* intx inty))))
+  ~ev[]
+
+  In this case, ~c[bounder-for-*] would be applied to the intervals for ~c[x]
+  and ~c[y] only if those intervals were over the integers or the rationals.
+
+  The above theorem for ~c[bounder-for-*] begins to suggest the general form of
+  a bounder theorem and we will use it to explain the general form.
+
+  The hypotheses of a bounder theorem must be a conjunction and the conjuncts
+  must be partitionable into three parts, (a), (b), and (c).  The conclusion,
+  must be a conjunction, must contain at least two conjuncts, (d) and (e), and
+  is allowed to contain others that are simply ignored for purposes of
+  bounders.  (See the note below about why we allow but ignore additional
+  conjuncts in the conclusion.)
+
+  Part (a) introduces some distinct ``interval variables,'' here called
+  ``ivars,'' that are known to denote intervals; for the example above, the
+  ivars are ~c[intx] and ~c[inty].  Each hypothesis in part (a) is of the form
+  ~c[(TAU-INTERVALP ivar)].
+
+  Part (b) allows us to restrict the domains of some of the intervals.  Each
+  hypothesis in part (b) must be a disjunction and each of the disjuncts must
+  be of the form ~c[(EQUAL (TAU-INTERVAL-DOM ivar) 'dom)], where ~c[ivar] is one of
+  the interval variables and ~c[dom] is one of ~c[INTEGERP], ~c[RATIONALP],
+  ~c[ACL2-NUMBERP], or ~c[NIL].  It is not necessary to restrict every interval
+  variable.  Indeed, part (b) may be empty, as in the theorem for
+  ~c[bounder-for-+] above.
+
+  Part (c) consists of a set of ~c[(IN-TAU-INTERVALP avar ivar)] hypotheses where
+  each ~c[avar] is a variable and no two hypotheses in part (c) use the same
+  ~c[avar] or ~c[ivar].  We call the set of all such ~c[avar] the ``actual
+  variables'' or ``avars.''  The avars and ivars must be distinct.  Part (c)
+  sets up a correspondence between the avars and the ivars, each avar is in an
+  interval denoted by one ivar.
+
+  Part (d) introduces the name of the bounder function, here ~c[bounder-for-*],
+  and the order of its ivar arguments.  We see that ~c[bounder-for-*] takes two
+  arguments and they correspond, in order, to the intervals containing ~c[x]
+  and ~c[y].  Part (d) also establishes that the bounder function always
+  returns an interval under hypotheses (a), (b), and (c).  Note that it is
+  sometimes useful to return the ``universal interval'' (one that contains
+  everything) if you don't want to compute a better interval for some case;
+  see ~ilc[tau-intervalp] or ~ilc[in-tau-intervalp].
+
+  Part (e) introduces the name of the function being bounded, here ~c[*], and the
+  order of its arguments.  It establishes that the function being bounded really
+  is bounded by the interval computed by the bounder function.  In general, the
+  function being bounded may take additional arguments.  It is possible that the
+  function being bounded takes some arguments that do not affect the bounds of its
+  output.
+
+  Thus, parts (c) and (e) together establish a mapping between the actuals of a
+  call of the function being bounded and the intervals to be supplied to the
+  bounder.
+
+  The parts identified above may be presented in any order and the literals
+  constituting those parts may be mingled.  Thus, for example, here is another
+  version of the theorem above that generates the same bounding information for
+  the tau system.  In this version, the hypotheses and conclusions are
+  rearranged, ~c[bounder-for-*] takes its arguments in the opposite order,
+  and the theorem includes an additional conclusion.
+
+  ~bv[]
+  (implies (and (tau-intervalp intx)                             ; (a)
+                (or (equal (tau-interval-dom intx) 'INTEGERP)    ; (b)
+                    (equal (tau-interval-dom intx) 'RATIONALP))
+                (in-tau-intervalp x intx)                        ; (c)
+ 
+                (tau-intervalp inty)                             ; (a)
+                (or (equal (tau-interval-dom inty) 'INTEGERP)    ; (b)
+                    (equal (tau-interval-dom inty) 'RATIONALP))
+                (in-tau-intervalp y inty))
+           (and (in-tau-intervalp (* x y)                        ; (e)
+                                  (bounder-for-* inty intx))
+                (tau-intervalp (bounder-for-* inty intx))       ; (d)))
+
+                (or (equal (tau-interval-dom (bounder-for-* inty intx))
+                           'INTEGERP)
+                    (equal (tau-interval-dom (bounder-for-* inty intx))
+                           'RATIONALP))
+  ~ev[]
+
+  Note on why bounder forms allow additional conjuncts in the conclusion: It is
+  often the case that one creates bounders by composing other bounders.  To
+  prove compositional bounds correct one must often prove about the components
+  stronger theorems than their mere correctness.  For example, one might wish
+  to prove that the domain of the new bounding interval is INTEGERP or
+  otherwise restricted.  We allow such unnecessary conclusions simply to save
+  the user the burden of stating multiple theorems. ~/")
+
+  
+
+
+
+
+

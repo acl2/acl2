@@ -2840,34 +2840,6 @@
             (remove-trivial-clauses (cdr clauses) wrld)))))
 
 #+:non-standard-analysis
-(defun classicalp (fn wrld)
-
-; WARNING: This function is expected to return t for fn = :?, in support of
-; measures (:? v1 ... vk), since classicalp is called by
-; get-non-classical-fns-from-list in support of get-non-classical-fns-aux.
-
-  (getprop fn 'classicalp
-
-; We guarantee a 'classicalp property of nil for all non-classical
-; functions.  We make no claims about the existence of a 'classicalp
-; property for classical functions; in fact, as of Version_2.5 our
-; intention is to put no 'classicalp property for classical functions.
-
-           t 
-           'current-acl2-world wrld))
-
-;; RAG - This function tests whether a list of names is made up purely
-;; of classical function names (i.e., not descended from the
-;; non-standard function symbols)
-
-#+:non-standard-analysis
-(defun classical-fn-list-p (names wrld)
-  (cond ((null names) t)
-        ((not (classicalp (car names) wrld))
-         nil)
-        (t (classical-fn-list-p (cdr names) wrld))))
-     
-#+:non-standard-analysis
 (defun non-standard-vector-check (vars accum)
   (if (null vars)
       accum

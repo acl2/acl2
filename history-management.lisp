@@ -2675,6 +2675,8 @@
                  SIGNATURE-RULES-FORM-1
                  SIGNATURE-RULES-FORM-2
                  BIG-SWITCH
+                 TAU-BOUNDERS-FORM-1
+                 TAU-BOUNDERS-FORM-2
                  ))
    (renew-name/overwrite
     name
