@@ -6361,6 +6361,8 @@
 
 (defmacro accumulated-persistence (flg)
 
+; Warning: Keep this in syc with set-waterfall-parallelism-fn.
+
   ":Doc-Section Other
 
   to get statistics on which ~il[rune]s are being tried~/
@@ -6737,20 +6739,26 @@
   (declare (xargs :guard (member-equal flg '(t 't nil 'nil :all ':all))))
   (let* ((flg (if (consp flg) (cadr flg) flg))
          (collect-hyp-and-conc-xrunes (eq flg :all)))
-    `(wormhole-eval
-      'accumulated-persistence
-      '(lambda (whs)
-         (set-wormhole-data whs
-                            (if ,flg
-                                (make accp-info
-                                      :cnt-s 0
-                                      :cnt-f 0
-                                      :stack-s nil
-                                      :stack-f nil
-                                      :xrunep ,collect-hyp-and-conc-xrunes
-                                      :totals '(nil))
-                              nil)))
-      nil)))
+    `(cond
+      #+acl2-par ; the following test is always false when #-acl2-par
+      ((f-get-global 'waterfall-parallelism state)
+       (er hard! 'accumulated-persistence
+           "~x0 is not supported when waterfall-parallelism is enabled."
+           'accumulated-persistence))
+      (t (wormhole-eval
+          'accumulated-persistence
+          '(lambda (whs)
+             (set-wormhole-data whs
+                                (if ,flg
+                                    (make accp-info
+                                          :cnt-s 0
+                                          :cnt-f 0
+                                          :stack-s nil
+                                          :stack-f nil
+                                          :xrunep ,collect-hyp-and-conc-xrunes
+                                          :totals '(nil))
+                                  nil)))
+          nil)))))
 
 (defmacro set-accumulated-persistence (flg)
   `(accumulated-persistence ,flg))
@@ -7338,7 +7346,12 @@
                                      :totals (cons nil
                                                    (access accp-info info :totals)))))
                           whs)))
-                 rune))
+
+; We avoid locking push-accp, in order to benefit the performance of ACL2(p).
+; Note that accumulated persistence is disallowed when waterfall-parallelism is
+; enabled; see accumulated-persistence and set-waterfall-parallelism-fn.
+
+                 (cons :no-wormhole-lock rune)))
 
 (defun pop-accp (success-p x-info)
   (wormhole-eval 'accumulated-persistence
@@ -7350,7 +7363,12 @@
                           (set-wormhole-data whs
                                              (pop-accp-fn info success-p))
                           whs)))
-                 success-p))
+
+; We avoid locking pop-accp, in order to benefit the performance of ACL2(p).
+; Note that accumulated persistence is disallowed when waterfall-parallelism is
+; enabled; see accumulated-persistence and set-waterfall-parallelism-fn.
+
+                 (cons :no-wormhole-lock success-p)))
 
 (defmacro with-accumulated-persistence (rune vars success-p body
                                              &optional

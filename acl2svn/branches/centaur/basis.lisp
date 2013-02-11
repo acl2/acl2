@@ -68,142 +68,6 @@
                          (,var)
                          ,form)))))))
 
-; System calls
-
-#-acl2-loop-only
-(defvar *last-sys-call-status* 0)
-
-(defun sys-call (command-string args)
-
-  ":Doc-Section ACL2::ACL2-built-ins
-
-  make a system call to the host operating system~/
-  ~bv[]
-  Example Forms:
-  (sys-call \"cp\" '(\"foo.lisp\" \"foo-copied.lisp\"))
-  (prog2$ (sys-call \"cp\" '(\"foo.lisp\" \"foo-copied.lisp\"))
-          (sys-call-status state))
-  ~ev[]
-  The first argument of ~c[sys-call] is a command for the host operating
-  system, and the second argument is a list of strings that are the
-  arguments for that command.  In GCL and perhaps other lisps, you can put the
-  arguments with the command; but this is not the case, for example, in Allegro
-  CL running on Linux.
-
-  The use of ~ilc[prog2$] above is optional, but illustrates a typical sort
-  of use when one wishes to get the return status.  ~l[sys-call-status].~/
-  ~bv[]
-  General Form:
-  (sys-call cmd args)
-  ~ev[]
-  This function logically returns ~c[nil].  However, it makes the
-  indicated call to the host operating system, as described above,
-  using a function supplied ``under the hood'' by the underlying Lisp
-  system.  On occasions where one wishes to obtain the numeric status
-  returned by the host operating system (or more precisely, by the
-  Lisp function under the hood that passes the system call to the host
-  operating system), one may do so;  ~pl[sys-call-status].  The
-  status value is the value returned by that Lisp function, which may
-  well be the same numeric value returned by the host operating system
-  for the underlying system call.
-
-  Note that ~c[sys-call] does not touch the ACL2 ~ilc[state]; however,
-  ~ilc[sys-call-status] updates the ~c[file-clock] field of the ~c[state].  One may
-  view that update as modifying the ~c[file~clock] to be at least as
-  recent as the time of the most recent ~c[sys-call].
-
-  Be careful if you use ~c[sys-call]!  It can be used for example to overwrite
-  files, or worse!  We view a use of ~c[sys-call] as a call to the operating
-  system that is made outside ACL2.  The following example from Bob Boyer shows
-  how to use ~c[sys-call] to execute, in effect, arbitrary Lisp forms.  ACL2
-  provides a ``trust tag'' mechanism that requires execution of a ~ilc[defttag]
-  form before you can use ~c[sys-call]; ~pl[defttag].  (Note: The setting of
-  the raw Lisp variable ~c[*features*] below is just to illustrate that any
-  such mischief is possible.  Normally ~c[*features*] is a list with more than
-  a few elements.)
-  ~bv[]
-  % cat foo
-  print *0x85d2064=0x838E920
-  detach
-  q
-  % acl2
-  ... boilerplate deleted
-  ACL2 !>(sys-call \"gdb -p $PPID -w < foo >& /dev/null \" nil)
-  NIL
-  ACL2 !>:q
-
-  Exiting the ACL2 read-eval-print loop.  To re-enter, execute (LP).
-  ACL2>*features*
-
-  (:AKCL-SET-MV)
-
-  ACL2>
-  ~ev[]
-
-  Finally, we make a comment about output redirection, which also applies to
-  other related features that one may expect of a shell.  ~c[Sys-call] does not
-  directly support output redirection.  If you want to run a program, ~c[P],
-  and redirect its output, we suggest that you create a wrapper script, ~c[W]
-  to call instead.  Thus ~c[W] might be a shell script containing the line:
-  ~bv[]
-  P $* >& foo.out
-  ~ev[]
-  If this sort of solution proves inadequate, please contact the ACL2
-  implementors and perhaps we can come up with a solution."
-
-  #+acl2-loop-only
-  (declare (ignore command-string args))
-  #-acl2-loop-only 
-  (let ((rslt (system-call command-string args)))
-    (progn (setq *last-sys-call-status* rslt)
-           nil))
-  #+acl2-loop-only
-  nil
-  )
-
-(encapsulate
- (((sys-call-status-sequence *) => *))
- (local (defun sys-call-status-sequence (n)
-          (declare (ignore n)) 0)))
-
-(defun sys-call-status (state-state)
-
-; This function needs to stay in :program mode!  It isn't even a function!
-; Well, except there seems to be no way for anything to go terribly wrong even
-; if we verify-termination and verify-guards.
-
-  ":Doc-Section ACL2::ACL2-built-ins
-
-  exit status from the preceding system call~/
-
-  This function returns two values, ~c[(mv status state)].  The first is
-  the status returned by the most recent invocation of function
-  ~c[sys-call]; ~pl[sys-call].  The second is the ACL2 ~ilc[state] object,
-  which is also the input to this function.~/
-
-  The function ~ilc[sys-call] makes a system call to the host operating
-  system using a function supplied ``under the hood'' by the
-  underlying Lisp system.  The status value is the value returned by
-  that Lisp function, which may well be the same numeric value
-  returned by the host operating system for the underlying system
-  call.  For more information, ~pl[sys-call].~/"
-
-; There is a signature problem here:
-; (declare (xargs :guard (state-p state-state)))
-
-  #-acl2-loop-only
-  (when (live-state-p state-state)
-    (return-from sys-call-status
-                 (progn (setq *file-clock* (1+ *file-clock*))
-                        (mv *last-sys-call-status* state-state))))
-  (let* ((new-clock (1+ (file-clock state-state)))
-         (status
-          (sys-call-status-sequence new-clock))
-         (state-state (update-file-clock new-clock state-state)))
-    (mv status state-state)))
-
-; End of system calls
-
 (defdoc gcl
   ":Doc-Section miscellaneous
 
@@ -604,8 +468,19 @@
 ; user has messed up our wormhole status.  Of course, if the user has messed up
 ; the status, there is no guarantee about what happens inside the wormhole.
 
+(defun tree-occur-eq (x y)
+
+; Does symbol x occur in the cons tree y?
+
+  (declare (xargs :guard (symbolp x)))
+  (cond ((consp y)
+         (or (tree-occur-eq x (car y))
+             (tree-occur-eq x (cdr y))))
+        (t (eq x y))))
+
 #+acl2-loop-only
 (defun wormhole-eval (qname qlambda free-vars)
+
 ; A typical call of this function is
 ; (wormhole-eval 'my-wormhole 
 ;                '(lambda (output) (p x y output))
@@ -654,6 +529,13 @@
   expression occurs.  The value of ~c[varterm] is irrelevant and if you provide ~c[nil]
   ACL2 will automatically provide a suitable term, namely a ~c[prog2$] form
   like the one shown in the example above.  
+
+  Aside: Exception for ACL2(p) (~pl[parallelism]) to the irrelevance of
+  ~c[varterm].  By default, calls of ~c[wormhole-eval] employ a lock,
+  ~c[*wormhole-lock*].  To avoid such a lock, include the symbol
+  ~c[:NO-WORMHOLE-LOCK] in ~c[varterm]; for example, you might replace a last
+  argument of ~c[nil] in ~c[wormhole-eval] by ~c[:NO-WORMHOLE-LOCK].  End of
+  Aside.
 
   ~l[wormhole] for a full explanation of wormholes.  Most relevant here is that
   every wormhole has a name and a status.  The status is generally a cons pair
@@ -704,8 +586,7 @@
 
 #-acl2-loop-only
 (defmacro wormhole-eval (qname qlambda free-vars)
-  (declare (xargs :guard t)
-           (ignore free-vars))
+  (declare (xargs :guard t))
 
 ; All calls of wormhole-eval that have survived translation are of a special
 ; form.  Qname is a quoted object (used as the name of a wormhole), and qlambda
@@ -730,32 +611,35 @@
 ; (ii) no arguments, appropriately, and stores the result as the most recent
 ; output, and then returns nil.
 
-  (let ((whs (if (car (cadr (cadr qlambda)))
-                 (car (cadr (cadr qlambda))) ; Case (i)
-               (gensym)))                    ; Case (ii)
-        (val (gensym)))
+  (let* ((whs (if (car (cadr (cadr qlambda)))
+                  (car (cadr (cadr qlambda))) ; Case (i)
+                (gensym)))                    ; Case (ii)
+         (val (gensym))
+         (form
 
 ; The code we lay down is the same in both cases, because we use the variable whs to
 ; store the old value of the status to see whether it has changed.  But we have
 ; to generate a name if one isn't supplied.
 
-    `(with-wormhole-lock
-      (progn
-        (cond (*wormholep*
-               (setq *wormhole-status-alist*
-                     (put-assoc-equal
-                      (f-get-global 'wormhole-name
-                                    *the-live-state*)
-                      (f-get-global 'wormhole-status
-                                    *the-live-state*)
-                      *wormhole-status-alist*))))
-        (let* ((*wormholep* t)
-               (,whs (cdr (assoc-equal ,qname *wormhole-status-alist*)))
-               (,val ,(caddr (cadr qlambda))))
-          (or (equal ,whs ,val)
-              (setq *wormhole-status-alist*
-                    (put-assoc-equal ,qname ,val *wormhole-status-alist*)))
-          nil)))))
+          `(progn
+             (cond (*wormholep*
+                    (setq *wormhole-status-alist*
+                          (put-assoc-equal
+                           (f-get-global 'wormhole-name
+                                         *the-live-state*)
+                           (f-get-global 'wormhole-status
+                                         *the-live-state*)
+                           *wormhole-status-alist*))))
+             (let* ((*wormholep* t)
+                    (,whs (cdr (assoc-equal ,qname *wormhole-status-alist*)))
+                    (,val ,(caddr (cadr qlambda))))
+               (or (equal ,whs ,val)
+                   (setq *wormhole-status-alist*
+                         (put-assoc-equal ,qname ,val *wormhole-status-alist*)))
+               nil))))
+    (cond ((tree-occur-eq :no-wormhole-lock free-vars)
+           form)
+          (t `(with-wormhole-lock ,form)))))
 
 (defmacro wormhole (name entry-lambda input form
                          &key
@@ -1215,7 +1099,12 @@
 
   `(with-wormhole-lock
     (prog2$
-     (wormhole-eval ,name ,entry-lambda nil)
+     (wormhole-eval ,name ,entry-lambda
+
+; It is probably harmless to allow a second lock under the one above, but there
+; is no need, so we avoid it.
+
+                    :no-wormhole-lock)
      (wormhole1
       ,name
       ,input
@@ -13806,6 +13695,8 @@
                          SIGNATURE-RULES-FORM-1
                          SIGNATURE-RULES-FORM-2
                          BIG-SWITCH
+                         TAU-BOUNDERS-FORM-1
+                         TAU-BOUNDERS-FORM-2
                          )
                        'current-acl2-world
                        wrld
@@ -14346,7 +14237,7 @@
     (COMMENT DEFLABEL)
     (COMPILE-UNCOMPILED-DEFNS COMP)
     (CONSTRAIN .    "See :DOC encapsulate and :DOC local.")
-    (DATA-BASE .     "Perhaps the closest ACL2 analogue of DATA-BASE
+    (DATA-BASE .    "Perhaps the closest ACL2 analogue of DATA-BASE
                      is PROPS.  But see :DOC history for a collection
                      of commands for querying the ACL2 database
                      (``world'').  Note that the notions of

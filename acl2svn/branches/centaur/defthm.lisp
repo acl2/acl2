@@ -5172,7 +5172,27 @@
 
   Below we describe properties of ~c[meta-extract-contextual-fact] and
   ~c[meta-extract-global-fact], but after we illustrate their utility with an
-  example.  This example comes from the community book,
+  example.  But even before we present that example, we first give a sense of
+  how to think about these functions by showing a theorem that one can prove
+  about the first of them.  If this snippet doesn't help your intuition, then
+  just skip over it and start with the example.
+  ~bv[]
+  (defevaluator evl evl-list
+    ((binary-+ x y) (typespec-check x y)))
+
+  (thm (implies
+        (not (bad-atom (cdr (assoc-equal 'x alist))))
+        (equal (evl (meta-extract-contextual-fact (list :typeset 'x)
+                                                  mfc
+                                                  state)
+                    alist)
+               (not (equal 0 ; indicates non-empty intersection
+                           (logand (type-set-quote ; type-set of a constant
+                                    (cdr (assoc-equal 'x alist)))
+                                   (mfc-ts-fn 'x mfc state nil)))))))
+  ~ev[]
+
+  The following example comes from the community book,
   ~c[books/clause-processors/meta-extract-simple-test.lisp], which presents
   very basic (and contrived) examples that nevertheless illustrate meta-extract
   hypotheses.
@@ -6448,6 +6468,14 @@
   (let* ((imm (immediate-canonical-ancestors fn wrld (list fn) rlp)))
     (canonical-ancestors-rec imm wrld nil rlp)))
 
+(defun canonical-ancestors-lst (fns wrld)
+
+; Fns is a set of function symbols, not necessarily canonical.  We return all
+; canonical ancestors of fns.
+
+  (canonical-ancestors-rec (collect-canonical-siblings fns wrld nil nil)
+                           wrld nil t))
+
 (defun chk-evaluator-use-in-rule (name meta-fn hyp-fn extra-fns rule-type ev
                                        ctx wrld state)
   (er-progn
@@ -6509,23 +6537,16 @@
              (meta-fn-lst (if hyp-fn
                               (list meta-fn hyp-fn)
                             (list meta-fn)))
-             (meta-anc (canonical-ancestors-rec
-                        (collect-canonical-siblings meta-fn-lst wrld nil nil)
-                        wrld
-                        nil
-                        t))
-             (ev-anc (canonical-ancestors-rec
-                      (collect-canonical-siblings (list ev) wrld nil nil)
-                      wrld
-                      nil
-                      t)))
+             (meta-anc (canonical-ancestors-lst meta-fn-lst wrld))
+             (extra-anc (canonical-ancestors-lst extra-fns wrld))
+             (ev-anc (canonical-ancestors-lst (list ev) wrld)))
         (cond
          ((and extra-fns
                (or (getprop ev 'predefined nil 'current-acl2-world wrld)
                    (getprop ev-lst 'predefined nil 'current-acl2-world wrld)))
 
 ; See the comment below about this case in the comment in a case below, where
-; we reference the Essay on Correctness of Meta Reasoning.
+; we point out that extra-fns are defined in the boot-strap world.
 
           (er soft ctx
               "The proposed evaluator function, ~x0, was defined in the ~
@@ -6547,10 +6568,9 @@
               (or ev-prop ev-lst-prop)))
          ((intersectp-eq ev-fns meta-anc)
 
-; As explained in the Essay on Correctness of Meta Reasoning, we might expect
-; also to check here that ev and ev-lst are not ancestral in extra-fns.  But
-; extra-fns are defined in the boot-strap world while ev and ev-lst, as
-; we check above, are not.
+; As explained in defaxiom-supporters, we might expect also to check here that
+; ev and ev-lst are not ancestral in extra-fns.  But extra-fns are defined in
+; the boot-strap world while ev and ev-lst, as we check above, are not.
 
 ; It would be nice to improve the following error message by finding the
 ; particular function symbol in the meta or clause-processor rule for which ev
@@ -6566,24 +6586,46 @@
               (if (member-eq ev meta-anc) 0 1)
               (if (member-eq ev meta-anc) ev ev-lst)
               meta-fn-lst))
-         (t (let ((bad-attached-fns
+         (t
 
 ; We would like to be able to use attachments where possible.  However, the
 ; example at the end of :doc evaluator-restrictions shows that this is unsound
 ; in general and is followed by other relevant remarks.
 
-                   (attached-fns (intersection-eq ev-anc meta-anc) wrld)))
+          (let ((bad-attached-fns-1
+                 (attached-fns (intersection-eq ev-anc meta-anc) wrld))
+                (bad-attached-fns-2
+
+; Although we need bad-attached-fns-2 to be empty (see the Essay on Correctness
+; of Meta Reasoning), we could at the very least store extra-anc in the world,
+; based on both meta-extract-contextual-fact and meta-extract-global-fact,
+; so that we don't have to compute extra-anc every time.  But that check is
+; probably cheap, so we opt for simplicity.
+
+                 (attached-fns (intersection-eq extra-anc meta-anc) wrld)))
               (cond
-               (bad-attached-fns
-                (er soft ctx ; see comment in defaxiom-supporters
-                    "The proposed ~x0 rule, ~x1, is illegal because the ~
-                     following function~#2~[ is~/s are~] ancestral in both ~
-                     the evaluator and ~@3 functions: ~&2.  See :DOC ~
-                     evaluator-restrictions."
-                    rule-type
-                    name
-                    bad-attached-fns
-                    (if (eq rule-type :meta) "meta" "clause-processor")))
+               ((or bad-attached-fns-1 bad-attached-fns-2)
+                (let ((msg "because the attached function~#0~[~/s~] ~&0 ~
+                            ~#0~[is~/are~] ancestral in both the ~@1 and ~@2 ~
+                            functions")
+                      (type-string
+                       (if (eq rule-type :meta) "meta" "clause-processor")))
+                  (er soft ctx ; see comment in defaxiom-supporters
+                      "The proposed ~x0 rule, ~x1, is illegal ~@2~@3.  See ~
+                       :DOC evaluator-restrictions."
+                      rule-type
+                      name
+                      (msg msg
+                           (or bad-attached-fns-1 bad-attached-fns-2)
+                           (if bad-attached-fns-1 "evaluator" "meta-extract")
+                           type-string)
+                      (cond ((and bad-attached-fns-1 bad-attached-fns-2)
+                             (msg ", and because ~@0"
+                                  (msg msg
+                                       bad-attached-fns-2
+                                       "meta-extract"
+                                       type-string)))
+                            (t "")))))
                (t (value nil))))))))))))
 
 (defun chk-rule-fn-guard (function-string rule-type fn ctx wrld state)
@@ -6811,14 +6853,8 @@
 ; before marking (in mark-attachment-disallowed2).
 
   (mark-attachment-disallowed1
-   (intersection-eq (canonical-ancestors-rec
-                     (collect-canonical-siblings
-                      meta-fns wrld nil nil)
-                     wrld nil t)
-                    (canonical-ancestors-rec
-                     (collect-canonical-siblings
-                      (list ev) wrld nil nil)
-                     wrld nil t))
+   (intersection-eq (canonical-ancestors-lst meta-fns wrld)
+                    (canonical-ancestors-lst (list ev) wrld))
    msg
    wrld))
 
@@ -14221,13 +14257,6 @@
                     (t state))))
        (value nil)))))
 
-(defun some-getprop (symbols prop wrld)
-  (cond ((endp symbols) (mv nil nil))
-        (t (let ((val (getprop (car symbols) prop nil 'current-acl2-world
-                               wrld)))
-             (cond (val (mv (car symbols) val))
-                   (t (some-getprop (cdr symbols) prop wrld)))))))
-
 (defun defaxiom-supporters (tterm name ctx wrld state)
 
 ; Here we document requirements on disjointness of the sets of evaluator
@@ -14246,44 +14275,36 @@
 ;       OR
 ;      (ii) term is the body of a defaxiom.
 
-; Then when we (conceptually at least) functionally instantiate a :meta or
+ ; Then when we (conceptually at least) functionally instantiate a :meta or
 ; :clause-processor rule using a functional substitution of the form ((evl
 ; evl') (evl-list evl'-list)), we need to know that the above proof obligations
 ; are met.
 
-; ACL2 insists that the evaluator of a proposed :meta or :clause-processor rule
-; is not ancestral in any defaxiom or in the definition of, or constraint on,
-; the rule's metafunction or hypotheses.  Thus, when we imagine functionally
-; instantiating the rule as discussed above, at the point of its application,
-; the only relevant theorems for (i) above are the constraints on the
-; evaluator, and there are no relevant theorems for (ii) above.  We can use our
-; usual computation of "ancestral", which does not explore below functions that
-; are not instantiablep, since (presumably!) no evaluator functions occur in
-; the boot-strap world.
+; ACL2 insists (in function chk-evaluator-use-in-rule) that the evaluator of a
+; proposed :meta or :clause-processor rule is not ancestral in any defaxiom or
+; in the definition of, or constraint on, the rule's metafunctions, nor is the
+; evaluator ancestral in meta-extract-global-fact and
+; meta-extract-contextual-fact if they are used in the rule.  Thus, when we
+; imagine functionally instantiating the rule as discussed above, at the point
+; of its application, the only relevant theorems for (i) above are the
+; constraints on the evaluator, and there are no relevant theorems for (ii)
+; above.  We can use our usual computation of "ancestral", which does not
+; explore below functions that are not instantiablep, since (presumably!)
+; non-instantiablep functions are primitives in which no evaluator functions is
+; ancestral.
 
 ; But there is a subtlety not fully addressed above.  Consider the following
-; case: a legitimate :meta (or :clause-processor) rule P, with evaluator evl,
-; is followed by a defaxiom event for which evl (or evl-list) is ancestral.
-; Does this new defaxiom invalidate the existing rule?  The answer is no, but
-; the argument above doesn't quite explain why, so we elaborate here.  If we
-; look again at the Essay on Correctness of Meta Reasoning, we see that the
-; issue is whether an evaluator evl', for a larger set of function symbols than
-; those associated with evl, satisfies the result P' of applying the following
-; functional substitution to P: evl and evl-list are replaced by evl' and
-; evl'-list, respectively.  Now the usual conservativity argument shows that P
-; is provable from the subset S of the sub-chronology C_P ending with P that
-; contains all defaxioms together with the constraints on evl, evl-list, and
-; the metafunction(s) in P, along with the constraints on ancestors of all
-; these.  (So since defaxioms are not allowed in encapsulates, then when we
-; show that only defaxioms in C_P need to have supporters avoiding evl and
-; evl-list, we are only talking about defaxioms that precede P.)  The only
-; members of S that mention evl or evl-list are those forming the constraint on
-; evl, since evl is not ancestral in any defaxiom or in P's metafunction(s).
-; Since P is provable from S, it is clear (by trivial renaming) that P' is
-; provable from the result S' of replacing evl and evl-list by ev' and ev'-list
-; in P.  But clearly S' is contained in any chronology extending the current
-; chronology that defines evl'; so P' is provable in any such chronology, as
-; desired.
+; case: a legitimate :meta (or :clause-processor) rule, with evaluator evl, is
+; followed by a defaxiom event for which evl (or evl-list) is ancestral.  Does
+; this new defaxiom invalidate the existing rule?  The answer is no, but the
+; argument above doesn't quite explain why, so we elaborate here.  Let C0 be
+; the chronology in which the meta rule was proved and let C1 be the current
+; chronology, which extends C0.  Let C2 be the result of extending C0 with a
+; defstub for every function symbol of C1 that is not in C0, except for the
+; evaluator pair evl'/evl'-list, introduced at the end for all function symbols
+; of C1.  Then the argument applies to C2, so the desired functional instance
+; is a theorem of C2.  But the theory of C2 is a subtheory of C1, so the
+; desired functional instance is a theorem of C1.
 
   (declare (ignore name ctx))
   (let ((supporters (instantiable-ancestors (all-fnnames tterm) wrld nil)))
@@ -14291,8 +14312,8 @@
 
 (defun defaxiom-fn (name term state rule-classes doc event-form)
 
-; Important Note:  Don't change the formals of this function without
-; reading the *initial-event-defmacros* discussion in axioms.lisp.
+; Important Note: Don't change the formals of this function without reading the
+; *initial-event-defmacros* discussion in axioms.lisp.
 
   (when-logic
    "DEFAXIOM"
@@ -14311,52 +14332,72 @@
                                            nil))))))
       (er-progn
        (chk-all-but-new-name name ctx nil wrld state)
-       (er-let*
-        ((tterm (translate term t t t ctx wrld state))
+       (er-let* ((tterm (translate term t t t ctx wrld state))
 ; known-stobjs = t (stobjs-out = t)
-         (supporters (defaxiom-supporters tterm name ctx wrld state))
-         (classes
-          (translate-rule-classes name rule-classes tterm ctx ens wrld state)))
-        (cond
-         ((redundant-theoremp name tterm classes wrld)
-          (stop-redundant-event ctx state))
-         (t
-          (enforce-redundancy
-           event-form ctx wrld
-           (er-let*
-            ((ttree1 (chk-acceptable-rules name classes ctx ens wrld state))
-             (wrld1 (chk-just-new-name name 'theorem nil ctx wrld state))
-             (doc-pair (translate-doc name doc ctx state))
-             (ttree3
-              (cond ((ld-skip-proofsp state)
-                     (value nil))
-                    (t 
-                     (prove-corollaries name tterm classes ens wrld1 ctx
-                                        state)))))
-            (let* ((wrld2
-                    (update-doc-database
-                     name doc doc-pair
-                     (add-rules name classes tterm term ens wrld1 state)))
-                   (wrld3 (global-set
-                           'nonconstructive-axiom-names
-                           (cons name
-                                 (global-val 'nonconstructive-axiom-names wrld))
-                           wrld2))
-                   (wrld4 (maybe-putprop-lst supporters 'defaxiom-supporter
-                                             name wrld3))
-                   (ttree4 (cons-tag-trees ttree1 ttree3)))
-              (pprogn
-               (f-put-global 'axiomsp t state)
-               (er-progn
-                (chk-assumption-free-ttree ttree4 ctx state)
-                (print-rule-storage-dependencies name ttree1 state)
-                (install-event name
-                               event-form
-                               'defaxiom
-                               name
-                               ttree4
-                               nil :protect ctx wrld4
-                               state))))))))))))))
+                 (supporters (defaxiom-supporters tterm name ctx wrld state))
+                 (classes (translate-rule-classes name rule-classes tterm ctx
+                                                  ens wrld state)))
+         (cond
+          ((redundant-theoremp name tterm classes wrld)
+           (stop-redundant-event ctx state))
+          (t
+
+; Next we implement Defaxiom Restriction for Defattach from The Essay on
+; Defattach: no ancestor (according to the transitive closure of the
+; immediate-supporter relation) of a defaxiom event has an attachment.  Since
+; this is all about logic, we remove guard-holders from term before doing this
+; check.
+
+           (let ((attached-fns
+                  (attached-fns (canonical-ancestors-lst
+                                 (all-ffn-symbs (remove-guard-holders tterm)
+                                                nil)
+                                 wrld)
+                                wrld)))
+             (cond
+              (attached-fns
+               (er soft ctx
+                   "The following function~#0~[ has an attachment, but is~/s ~
+                    have attachments, but are~] ancestral in the proposed ~
+                    axiom: ~&0. ~ See :DOC defattach."
+                   attached-fns))
+              (t
+               (enforce-redundancy
+                event-form ctx wrld
+                (er-let*
+                    ((ttree1 (chk-acceptable-rules name classes ctx ens wrld state))
+                     (wrld1 (chk-just-new-name name 'theorem nil ctx wrld state))
+                     (doc-pair (translate-doc name doc ctx state))
+                     (ttree3
+                      (cond ((ld-skip-proofsp state)
+                             (value nil))
+                            (t 
+                             (prove-corollaries name tterm classes ens wrld1 ctx
+                                                state)))))
+                  (let* ((wrld2
+                          (update-doc-database
+                           name doc doc-pair
+                           (add-rules name classes tterm term ens wrld1 state)))
+                         (wrld3 (global-set
+                                 'nonconstructive-axiom-names
+                                 (cons name
+                                       (global-val 'nonconstructive-axiom-names wrld))
+                                 wrld2))
+                         (wrld4 (maybe-putprop-lst supporters 'defaxiom-supporter
+                                                   name wrld3))
+                         (ttree4 (cons-tag-trees ttree1 ttree3)))
+                    (pprogn
+                     (f-put-global 'axiomsp t state)
+                     (er-progn
+                      (chk-assumption-free-ttree ttree4 ctx state)
+                      (print-rule-storage-dependencies name ttree1 state)
+                      (install-event name
+                                     event-form
+                                     'defaxiom
+                                     name
+                                     ttree4
+                                     nil :protect ctx wrld4
+                                     state)))))))))))))))))
 
 
 ;---------------------------------------------------------------------------
