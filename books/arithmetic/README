@@ -10,15 +10,9 @@ Robert Krug, and repeated in ../arithmetic-5/README):
   sometimes-slower (but more complete) reasoning, use arithmetic-5.
   Robert is not aware of any rewriting loops.
 
-  If you are willing tolerate sometimes-slower (but more complete)
-  reasoning, but you want to avoid dmr, use arithmetic-4.  However, if
-  you're willing to use arithmetic-4, consider using arithmetic-5
-  instead -- it doesn't require much more use of dmr, and it's much
-  more up-to-date.  You may encounter rewriting loops.
-
-  Don't use arithmetic-3.  It's not as powerful as arithmetic-4
-  (Robert doesn't know if it's faster), and it has more rewriting
-  loops than arithmetic-4.
+  Don't use arithmetic-3.  It's not as powerful as arithmetic-5
+  (Robert doesn't know if it's faster), and it may have more rewriting
+  loops than arithmetic-5.
 
   Note that arithmetic-2 is totally obsolete.  We may stop
   distributing it.
