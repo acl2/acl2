@@ -460,11 +460,17 @@ flag or ACL2 environment variable.\n";
 
 if (! $acl2_books) {
     if ($acl2) {
-	$acl2_books = rel_path(dirname($acl2), "books");
+	my $tmp_acl2_books = rel_path(dirname($acl2), "books");
+	if (-d $tmp_acl2_books) {
+	    $acl2_books = $tmp_acl2_books;
+	} else {
+	    $acl2_books = $RealBin;
+	}
     } else {
 	$acl2_books = $RealBin;
     }
 }
+
 $acl2_books = abs_canonical_path($acl2_books);
 unless($quiet) {
     print "System books directory is ${acl2_books}\n";
