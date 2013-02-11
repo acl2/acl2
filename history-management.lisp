@@ -15717,13 +15717,21 @@
 
             (cond
              ((eq x *unknown-constraints*)
-              (mv x
-                  name
-                  (getprop name 'constrainedp
-                           '(:error
-                             "See relevant-constraints1: expected to find a ~
-                              'constrainedp property where we did not.")
-                           'current-acl2-world wrld)))
+              (let ((cl-proc
+                     (getprop name 'constrainedp
+                              '(:error
+                                "See relevant-constraints1: expected to find ~
+                                 a 'constrainedp property where we did not.")
+                              'current-acl2-world wrld)))
+                (cond
+                 ((first-assoc-eq (unknown-constraint-supporters cl-proc wrld)
+                                  alist)
+                  (mv x name cl-proc))
+                 (t (relevant-constraints1
+                     (cdr names) alist proved-fnl-insts-alist
+                     constraints event-names new-entries
+                     seen
+                     wrld)))))
              ((and name
                    (not (eq name (car names)))
 

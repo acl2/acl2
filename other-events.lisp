@@ -1550,18 +1550,13 @@
 ; functions cannot receive attachments for execution.  So we search the code
 ; for encapsulated functions that we do not want executed.
 
-  '(big-n decrement-big-n zp-big-n sys-call-status-sequence
-          canonical-pathname
+  '(big-n decrement-big-n zp-big-n
 
-; The following mfc-xx functions have implicit constraints, based on the
-; implicit constraint for meta-extract-contextual-fact.  See the Essay on
-; Correctness of Meta Reasoning.
+; At one time we also included canonical-pathname and various mfc-xx functions.
+; But these are all handled now by dependent clause-processors, which gives
+; them unknown-constraints and hence defeats attachability.
 
-          mfc-ts-fn mfc-ts-ttree
-          mfc-rw-fn mfc-rw-ttree
-          mfc-rw+-fn mfc-rw+-ttree
-          mfc-relieve-hyp-fn mfc-relieve-hyp-ttree
-          mfc-ap-fn mfc-ap-ttree))
+          ))
 
 ;; RAG - I added the treatment of *non-standard-primitives*
 
@@ -3078,13 +3073,7 @@
                                    'table-alist
                                    *initial-return-last-table*
                                    wrld))))
-         (wrld2 (update-current-theory (current-theory1 wrld nil nil) wrld1))
-         (wrld3 (putprop-x-lst1
-                 *unattachable-primitives* 'attachment
-                 (cons :attachment-disallowed
-                       (msg "it is given special treatment by the ACL2 ~
-                             implementation"))
-                 wrld2)))
+         (wrld2 (update-current-theory (current-theory1 wrld nil nil) wrld1)))
     (add-command-landmark
      :logic
      '(exit-boot-strap-mode)
@@ -3094,7 +3083,7 @@
       '(exit-boot-strap-mode)
       'exit-boot-strap-mode
       0
-      wrld3
+      wrld2
       t))))
 
 (defun theory-namep (name wrld)
@@ -9965,35 +9954,58 @@
                                 dir-p
                                 state)))
 
-(defun canonical-pathname (pathname dir-p state)
+)
+
+#-acl2-loop-only
+(defun chk-live-state-p (fn state)
+  (or (live-state-p state)
+
+; It is perhaps a bit extreme to call interface-er, which calls (raw Lisp)
+; error.  But this is the conservative thing to do, and it doesn't cause a
+; problem with the rewriter provided fn is constrained; see the comment about
+; chk-live-state-p in rewrite.
+
+      (interface-er "Function ~x0 was passed a non-live state!"
+                    fn)))
+
+#-acl2-loop-only
+(defun-overrides canonical-pathname (pathname dir-p state)
 
 ; This is essentially an interface to raw Lisp function unix-truename-pathname.
 ; See the comments for that function.
 
-  (cond ((live-state-p state)
-         (unix-truename-pathname pathname dir-p state))
-        (t (er hard 'canonical-pathname
-               "We do not support calling canonical-pathname on a state that ~
-                is not the live state.  Contact the ACL2 implementors if you ~
-                feel you need such support."))))
+  (unix-truename-pathname pathname dir-p state))
 
-)
+(defun acl2-magic-canonical-pathname (x)
+
+; This function is a sort of placeholder, used in a
+; define-trusted-clause-processor event for noting that canonical-pathname has
+; unknown constraints.
+
+  (declare (xargs :guard t))
+  x)
 
 #+acl2-loop-only
 (encapsulate
- (((canonical-pathname * * state) => *))
- (logic)
- (local (defun canonical-pathname (x dir-p state)
-          (declare (xargs :mode :logic))
-          (declare (ignore dir-p state))
-          (if (stringp x) x nil)))
- (defthm canonical-pathname-is-idempotent
-   (equal (canonical-pathname (canonical-pathname x dir-p state) dir-p state)
-          (canonical-pathname x dir-p state)))
- (defthm canonical-pathname-type
-   (or (equal (canonical-pathname x dir-p state) nil)
-       (stringp (canonical-pathname x dir-p state)))
-   :rule-classes :type-prescription))
+ ()
+ (define-trusted-clause-processor
+   acl2-magic-canonical-pathname
+   (canonical-pathname)
+   :partial-theory
+   (encapsulate
+    (((canonical-pathname * * state) => *))
+    (logic)
+    (local (defun canonical-pathname (x dir-p state)
+             (declare (xargs :mode :logic))
+             (declare (ignore dir-p state))
+             (if (stringp x) x nil)))
+    (defthm canonical-pathname-is-idempotent
+      (equal (canonical-pathname (canonical-pathname x dir-p state) dir-p state)
+             (canonical-pathname x dir-p state)))
+    (defthm canonical-pathname-type
+      (or (equal (canonical-pathname x dir-p state) nil)
+          (stringp (canonical-pathname x dir-p state)))
+      :rule-classes :type-prescription))))
 
 (defdoc canonical-pathname
   ":Doc-Section ACL2::ACL2-built-ins
@@ -31336,9 +31348,10 @@
 ; as described below.  Note that we only admit attachment pairs <f,g> with the
 ; same signatures (up to renaming of formals).
 
-; In what follows we assume the absence of defaxiom events.  We may consider
-; those later; for now, we make no logical claims about defattach when defaxiom
-; events are present.
+; In what follows we allow defaxiom events.  However, we insist on the
+; following Defaxiom Restriction for Defattach: no ancestor (according to the
+; transitive closure of the immediate-supporter relation) of a defaxiom event
+; has an attachment.
 
 ; Most of the focus in this essay is on logical issues related to defattach,
 ; but we first say a few words about the implementation.
@@ -31375,14 +31388,15 @@
 
 ; Since ACL2 supports two theories -- the current theory and its corresponding
 ; evaluation theory (described below) -- we add an argument to all ev functions
-; (ev-w, ev-fncall, etc.) specifying whether or not to use attachments.  We
-; will tend to use attachments at the top level but not in logical contexts,
+; (ev-w, ev-fncall, etc.), aok, specifying whether or not to use attachments.
+; We will tend to use attachments at the top level but not in logical contexts,
 ; hence not under waterfall-step except in subroutines where it is again
-; appropriate, such as evaluation of syntaxp expressions (ev-synp).  Note that
-; ev-fncall-rec-logical really needs this information.  With this fine-grained
-; control of which of the two theories to use, we can for example arrange that
-; mfc-rewrite behave the same inside syntaxp as does rewrite (at the top
-; level), as requested by Robert Krug.
+; appropriate, such as evaluation of syntaxp expressions (ev-synp), meta rules,
+; and clause-processor rules (see the Essay on Correctness of Meta Reasoning).
+; Note that ev-fncall-rec-logical really needs this information.  With this
+; fine-grained control of which of the two theories to use, we can for example
+; arrange that mfc-rewrite behave the same inside syntaxp as does rewrite (at
+; the top level), as suggested by Robert Krug.
 
 ; We next describe the implementation of defattach as an event.  In particular:
 ; Why is it a separate event type, rather than a macro that generates some
@@ -31432,7 +31446,7 @@
 ; handling of the 'constraint-lst property.  We maintain the invariant that for
 ; every function symbol g with an attachment h to its code, g is associated
 ; with h using the lookup method described above: if g is associated with an
-; alist then h is the result of looking up g in that alist, else g is a
+; alist then h is the result of looking up g in that alist, else g is
 ; associated with a "canonical" symbol g' that is associated with an alist
 ; associating g with h.  (Note that this notion of "canonical" is not related
 ; to the notion of "canonical sibling", described elsewhere.)
@@ -31440,28 +31454,29 @@
 ; Turning now to logical issues:
 
 ; The fundamental guiding notion is that the attachment pairs extend the
-; session's set of axioms to form what we call the current "evaluation theory".
-; We say more about this theory (and its consistency) below.  But we also want
-; to support the use of defattach for specifying refinements, with the
-; following understanding: "refinement" means that the new function
-; definitions, together with the attachment axioms, extend the current theory
-; (to the evaluation theory), and this extension remains consistent, indeed
-; with a standard model.  Moreover, it would be a kindness to the user if
-; whenever an attachment substitution is subsequently used for functional
-; instantiation, the resulting proof obligations generated are all dispatched
-; without proof because they were cached at the time the defattach event was
-; admitted.  However, we do not restrict the design to ensure definitively that
-; this "kindness" must take place.
+; session's set of axioms to form what we call the "evaluation theory".  We say
+; more about this theory (and its consistency) below.  But we also want to
+; support the use of defattach for specifying refinements, with the following
+; understanding: "refinement" means that the new function definitions, together
+; with the attachment axioms, extend the current theory (to the evaluation
+; theory), and this extension remains consistent, indeed with a standard model
+; if there are no defaxiom events.  Moreover, it would be a kindness to the
+; user if whenever an attachment substitution is subsequently used for
+; functional instantiation, the resulting proof obligations generated are all
+; dispatched without proof because they were cached at the time the defattach
+; event was admitted.  However, we do not restrict the design to ensure
+; definitively that this "kindness" must take place.
 
 ; Our logical characterization is based on the idea of an "evaluation theory",
 ; obtained by extending the current theory with the attachment axiom for each
 ; attachment pair.  We show that evaluation in the top-level loop is performed
 ; with respect to the evaluation theory.  Below we also show -- and this is
 ; where most of our effort lies -- that the evaluation theory is consistent,
-; assuming that there are no defaxiom events in the current history.  It
-; suffices to show that the evaluation theory is contained in the theory of a
-; defaxiom-free "evaluation history", which replaces constraints in the
-; original history by attachment axioms.  Consider the following example.
+; assuming that there are no defaxiom events in the current history.  More
+; generally, we show that the evaluation theory is contained in the theory of a
+; "evaluation history" containing no new defaxiom events, which replaces
+; constraints in the original history by attachment axioms.  Consider the
+; following example.
 
 ; (encapsulate ((f1 (x) t))
 ;              (local (defun f1 (x) x)))
@@ -31596,14 +31611,15 @@
 ; catch a loop, but the include-book pass would encounter a loop that needs to
 ; be detected.
 
-; Acyclicity checking will be unnecessary when including a book in a world
-; where there are no defattach events outside the boot-strap world, because the
-; necessary acyclicity checks for the book's defattach events were already made
-; when certifying the book.  (At the time of this writing, however, no such
-; optimization is implemented.)  But otherwise, we need to do an acyclicity
-; check for the defattach events encountered while including a book.  The
-; following example illustrates why this is necessary.  Imagine that we have
-; two books, each containing the following events.
+; Acyclicity checking will be unnecessary when including a certified book in a
+; world where there are no defattach events outside the boot-strap world,
+; because the necessary acyclicity checks for the book's defattach events were
+; already made when certifying the book, during its include-book pass.  (At the
+; time of this writing, however, no such optimization is implemented.)  But
+; otherwise, we need to do an acyclicity check for the defattach events
+; encountered while including a book.  The following example illustrates why
+; this is necessary.  Imagine that we have two books, each containing the
+; following events.
 
 ; (defstub g () t)
 ; (defun h () (not (g)))
@@ -31644,14 +31660,40 @@
 ; some detail the extended ancestor relation, which is the transitive closure
 ; of the union of the ordinary and extended immediate ancestor relations.  In
 ; particular, we defer to that essay how we check for cycles.  In summary: our
-; ancestor relation is essentially on events.  This is important for the
-; argument below, in which we completing a our ancestor relation on events to a
-; total order, essentially rearranging events so that for attachment pair
-; <f,g>, g is introduced before f.  Because we want to rearrange entire events,
-; our notion of event ancestor incorporates mbe when relevant to evaluation
-; (i.e., in defun bodies) and guards.  We could perhaps avoid considering
-; guards, actually, were it not for the issue related to guards raised at the
-; end of the Essay on Correctness of Meta Reasoning.
+; ancestor relation is essentially on encapsulate and definitional events.
+; This is important for the argument below, in which we complete our ancestor
+; relation on events to a total order, essentially rearranging events so that
+; for attachment pair <f,g>, g is introduced before f.  Because we want to
+; rearrange entire events, our notion of event ancestor incorporates mbe when
+; relevant to evaluation (i.e., in defun bodies) and guards.  We could perhaps
+; avoid considering guards, actually, were it not for the issue related to
+; guards raised at the end of the Essay on Correctness of Meta Reasoning.
+
+; Before leaving the notion of extended ancestor relation, we make the
+; following claim.
+
+;   Defaxiom Acyclicity Claim.  If the extended ancestor relation is acyclic
+;   without considering defaxiom events, then it remains acyclic when taking
+;   the transitive closure after including defaxiom events in the following
+;   sense: every event depends on every earlier defaxiom event, and every
+;   defaxiom event depends on all its immediate ancestors.
+
+; Because of this claim, we check for acyclicity of the extended ancestor
+; relation, R, without considering defaxiom events, but when we assume
+; acyclicity of R, we include the extra dependencies for defaxiom events
+; mentioned in the claim above.  We may say "(without defaxioms" to refer to
+; the version of the extended ancestor relation that does not include defaxiom
+; events as above.
+
+; To prove the claim, suppose for a contradiction that C is a cycle in the
+; indicated extension for defaxiom events.  Since the extension is assumed
+; acyclic before extending by defaxiom events, then C must go through an edge
+; linking a defaxiom to a supporting function symbol, f.  But when we restrict
+; C to start with f, we stay in the original ancestor relation, since no
+; attached function is ancestral in any defaxiom, by the Defaxiom Restriction
+; for Defattach (stated above).  Thus we have a cycle starting with f in the
+; original ancestor relation (without extending for defaxiom events), a
+; contradiction.
 
 ; We turn now to the promised logical characterization of defattach, deferring
 ; for several paragraphs the proof that it actually holds for admissible
@@ -31661,8 +31703,9 @@
 ; "evaluation theory", T', whose axioms include T together with the attachment
 ; axioms: again, these are the definitions (f x1 ... xn) = (g x1 ... xn), as
 ; <f,g> ranges over all current attachment pairs.  We assume that the defattach
-; events produce an acyclic extended ancestors relation.  The key desired
-; property is as follows:
+; events produce an acyclic extended ancestors relation.  A key desired
+; property is as follows (see also the Evaluation History Theorem below for a
+; sort of generalization).
 
 ;   Proposition (Attachment Consistency).  If a history is defaxiom-free,
 ;   then its evaluation theory is consistent and in fact has a standard model.
@@ -31702,9 +31745,9 @@
 ; g; hence if we replace the guard of f by the guard of g in every guard proof
 ; obligation, provability of the original guard proof obligation implies
 ; provability of this weaker, new guard proof obligation.  Another way of
-; thinking about evaluation is that it takes place in the evaluation
-; chronology, where guard verification for the new definition of f (i.e.,
-; equating f with g) is trivial, since the guard of f implies the guard of g.
+; thinking about evaluation is that it takes place in the evaluation chronology
+; but with the guard of f set to the guard of g; thus guard verification for
+; the new definition of f (i.e., equating f with g) is trivial.
 
 ; To be more precise: The actual guard proof obligation is obtained from the
 ; basic one, described above, by applying the attachment substitution.  The
@@ -31724,7 +31767,7 @@
 ; equations.  This refers to the process, for each function symbol being
 ; provided an attachment, of replacing the encapsulate with a sequence
 ; consisting first of attachment equations (as defun events) for each function
-; f that is both attached and in the domain of the encapsulate, and then
+; f that is both attached and is introduced by the encapsulate, and then
 ; modifying the encapsulate by eliminating a part of it for each such symbol f
 ; as follows: remove f from the signature if it's present there, and otherwise
 ; remove the definition of f from the encapsulate.  (If the definition is via a
@@ -31740,14 +31783,16 @@
 ; a binary relation on function symbols if whenever <f,g> is in the relation,
 ; the axiomatic event for f is introduced before the axiomatic event for g.
 
-;   Theorem (Evaluation History).  Let h1 be a defaxiom-free history, and fix
-;   legal attachments for h1.  Then there is a permutation h2 of h1 that
-;   respects the extended dependency relation for h1.  Let h3 be obtained from
-;   h2 by replacing each attached encapsulate using the attachment equations of
-;   an admissible defattach event.  Then h3 is a history whose theory is the
-;   evaluation theory for h1 with respect to the given attachments, and whose
-;   dependency relation is the extended dependency relation of h1 with respect
-;   to the given attachments.
+;   Theorem (Evaluation History).  Let h1 be a history, and fix legal
+;   attachments for h1, that is: the extended ancestors relation is acyclic,
+;   and no attached function is ancestral in any defaxiom.  Then there is a
+;   permutation h2 of h1 that respects the extended dependency relation for h1.
+;   Let h3 be obtained from any such h2 by replacing each attached encapsulate
+;   using the attachment equations of an admissible defattach event.  Then h3
+;   is a history whose theory is the evaluation theory for h1 with respect to
+;   the given attachments, and whose syntactic dependency relation is the
+;   extended dependency relation (without defaxioms) of h1 with respect to the
+;   given attachments.
 
 ; Proof. The existence of h2 is immediate by completing the extended dependency
 ; relation to a total order.  So we focus on the claim that h3 is a history
@@ -31757,49 +31802,67 @@
 ; proof obligations are met for h3 and that its theory is the evaluation theory
 ; for h1 with respect to the given attachments.
 
-; Since h2 respects the extended ancestors relation, h2 is a weak history, and
-; indeed a history since all proof obligations are met because each initial
+; Since h2 respects the extended ancestors relation, h2 is a weak history.  To
+; see that h2 is a history, it suffices to show that all proof obligations are
+; met.  This is clear if there are no defaxiom events, because each initial
 ; segment of h2 forms a subset of (the events in) h1 that is closed under
-; ancestors in h1.  Each replacement of an encapsulate by corresponding
-; attachment equations, as described above, only strengthens the theory: if
-; E(f1,...) is an encapsulate replaced by attachment equations fi=gi, then
-; since E(g1,...) is a theorem (by admissibility of the relevant defattach
-; event), so is the original constraint provable in the new history, because of
-; the equality of the fi and gi by the attachment equations.
+; ancestors in h1.  The argument is similar even if there are defaxiom events,
+; as follows.  Fix an event A in h2; we show that the proof obligations are met
+; for A.  Let B be the predecessor of A in h2 (possibly A itself) that occurs
+; latest in h1, and let let h1' be the predecessors of B (including B) in h1,
+; and let h2' be the predecessors of A (including A) in h2.  It's easy to see
+; that h2' is closed under ancestors in h1'; here we use the fact that h2 is
+; closed under the version of the extended ancestors relation that includes
+; defaxiom events (see the discussion around the Defaxiom Acyclicity Claim,
+; above).  Since h1' is a history (as it is an initial segment of h1), then it
+; conservatively extends h2', and thus the proof obligations are met for A as
+; it sits in h2.
 
-; The usual conservativity argument shows that all proof obligations are met.
-; It is clear that this transformation suitably extends the existing theory,
-; since under the attachment equations, C and C\s are equivalent as are the
-; original and new definitions of f. -|
+; We return now to the task of showing that proof obligations are met for
+; events in h3.  It suffices to show that each replacement of an encapsulate by
+; corresponding attachment equations, as described above, can only strengthen
+; the theory.  So for E = E(f1,f2,...) an encapsulate replaced by the use of
+; attachment equations A = {fi=gi}, we must show that for E' = E(g1,g2,...),
+; the first pass of E' is provable from A together with the predecessors of E'
+; in h3.  We induct on the length of h3, so it suffices by the inductive
+; hypothesis to show that the first pass of E' is provable from A together with
+; the predecessors of E in h2.  But this is obvious, since the first passes of
+; E and E' are provably equal under A.
+
+; We have shown that h3 is a history.  Clearly the theory of h3 is axiomatized
+; by the theory of h1 together with the attachment equations, so the remaining
+; properties of h3 are obvious. -|
 
 ; Note that since each defattach event's proof obligations are done without
 ; taking into account any attachment pairs outside those specified by the
 ; event, then we can delete any set of defattach events from the world and the
 ; result is still a legal set of defattach events (as acyclicity is of course
-; preserved when we shrink a relation).  But we can do even more: we can
+; preserved when we shrink a relation).  But we can do something else: we can
 ; restrict the set of attachments to any set closed under ancestors, and hence
 ; under that restriction we can even remove pairs within a single defattach
 ; event.  (As of this writing we don't support such removal, however, and
-; perhaps we won't ever support it since the story is simpler for removing
-; entire defattach events when we erase.)  A long comment in function
+; perhaps we won't ever support it since the implementation is simpler for
+; removing entire defattach events when we erase.)  A long comment in function
 ; chk-evaluator-use-in-rule takes advantage of this fact, which we now state
 ; and prove.
 
 ;   Attachment Restriction Lemma.  Let s0 be a set of attachment pairs and let
-;   s1 be a subset of s0 such that every function symbol in the domain of s0
-;   that is ancestral (including siblings) in the domain of s1 is also in the
-;   domain of s1.  Let C0 and C1 be the respective lists of constraints on the
-;   domains of s0 and s1, and similarly G0 and G1 for guard proof obligations,
-;   and assume that the functional instances C0\s0 and G0\s0 are provable in
-;   the current history.  Then C1\s1 and G1\s1 are also provable in the current
-;   history.
+;   s1 be a subset of s0, such that every function symbol in the domain of s0
+;   that is ancestral (including siblings, but ignoring defaxioms) in the
+;   domain of s1 is also in the domain of s1.  Let C0 and C1 be the respective
+;   lists of constraints on the domains of s0 and s1, and similarly G0 and G1
+;   for guard proof obligations, and assume that the functional instances C0\s0
+;   and G0\s0 are provable in the current history.  Then C1\s1 and G1\s1 are
+;   also provable in the current history.
 
 ; Proof: Note that every function symbol occurring in the constraint or guard
-; on a function symbol, f, is ancestral in f.  Therefore any function symbol h
-; in the domain of s0 that occurs in C1 or G1 is ancestral in some element of
-; the domain of s1, and therefore h is in the domain of s1, by the assumption
-; about ancestors.  It follows trivially that C1\s1 is a subset of C0\s0 and
-; that G1\s1 is a subset of G0\s0.  -|
+; obligation for attaching to a function symbol, f, is ancestral in f
+; (syntactically ancestral, ignoring defaxioms, as defaxioms are not considered
+; when gathering such constraints; see function defattach-constraint).
+; Therefore any function symbol h in the domain of s0 that occurs in C1 or G1
+; is ancestral in some element of the domain of s1, and therefore h is in the
+; domain of s1, by the assumption about ancestors.  It follows trivially that
+; C1\s1 is a subset of C0\s0 and that G1\s1 is a subset of G0\s0.  -|
 
 ; We conclude this essay with some remarks.
 
@@ -31817,10 +31880,11 @@
 ; There are circumstances where we prohibit attachments to a constrained
 ; function, by associating a value (:ATTACHMENT-DISALLOWED . msg) with the
 ; 'attachment property of the function, where msg may be used in error
-; messages.  This association prohibits the functions in
-; *unattachable-primitives* from receiving attachments, and it also enforces
-; some restrictions on receiving attachments in the cases of meta functions and
-; clause-processor functions; see the Essay on Correctness of Meta Reasoning.
+; messages.  This association enforces some restrictions on receiving
+; attachments in the cases of meta functions and clause-processor functions;
+; see the Essay on Correctness of Meta Reasoning.  (A different mechanism
+; prohibits the functions in *unattachable-primitives* from receiving
+; attachments.)
 
 ; We discuss a few aspects of how we handle this :ATTACHMENT-DISALLOWED case.
 ; Source function redefinition-renewal-mode disallows redefinition when there
@@ -32026,6 +32090,13 @@
                             "Only function symbols in :LOGIC mode may have ~
                              attachments~@0, but ~x1 is in :PROGRAM mode.~@2"
                             unless-ttag f see-doc))))
+                ((and (member-eq f *unattachable-primitives*)
+                      (not (global-val 'boot-strap-flg wrld)))
+                 (er soft ctx
+                     "It is illegal to add or remove an attachment to the ~
+                      function symbol ~x0 because it is given special ~
+                      treatment by the ACL2 implementation."
+                     f))
                 (t
                  (let ((at-alist (attachment-alist f wrld)))
                    (cond
@@ -33452,6 +33523,16 @@
                                                      ctx state)))
                        (defattach-close records ctx state)))))))
 
+(defun defaxiom-supporter-msg-list (symbols wrld)
+  (cond ((endp symbols) nil)
+        (t (let ((prop (getprop (car symbols) 'defaxiom-supporter nil
+                                'current-acl2-world wrld)))
+             (cond
+              (prop (cons (msg "function symbol ~x0 supports defaxiom ~x1"
+                               (car symbols) prop)
+                          (defaxiom-supporter-msg-list (cdr symbols) wrld)))
+              (t (defaxiom-supporter-msg-list (cdr symbols) wrld)))))))
+
 (defun chk-acceptable-defattach (args proved-fnl-insts-alist ctx wrld state)
 
 ; Given the arguments to defattach, args, we either return an error (mv t nil
@@ -33488,57 +33569,80 @@
                       (global-val 'embedded-event-lst wrld))))))
    (t
     (er-let*
-     ((tuple (process-defattach-args args ctx state)))
-     (let ((constraint-helper-alist (nth 0 tuple))
-           (erasures                (nth 1 tuple))
-           (explicit-erasures       (nth 2 tuple))
-           (attachment-alist        (nth 3 tuple))
-           (attachment-alist-exec   (nth 4 tuple))
-           (guard-helpers-lst       (nth 5 tuple))
-           (skip-checks             (nth 6 tuple))
-           (skip-checks-t           (eq (nth 6 tuple) t))
-           (ens (ens state))
-           (ld-skip-proofsp (ld-skip-proofsp state)))
-       (er-let*
-        ((records (cond (skip-checks (value :skipped)) ; not used
-                        (t (chk-defattach-loop attachment-alist erasures wrld
-                                               ctx state))))
-         (goal/event-names/new-entries
-          (cond ((and (not skip-checks-t)
-                      attachment-alist)
-                 (defattach-constraint attachment-alist proved-fnl-insts-alist
-                   wrld ctx state))
-                (t (value nil))))
-         (goal (value (car goal/event-names/new-entries)))
-         (event-names (value (cadr goal/event-names/new-entries)))
-         (new-entries (value (cddr goal/event-names/new-entries)))
-         (ttree1 (cond ((or skip-checks-t
-                            ld-skip-proofsp
-                            (null attachment-alist-exec))
-                        (value nil))
-                       (t (prove-defattach-guards attachment-alist-exec
-                                                  guard-helpers-lst
-                                                  ctx ens wrld state))))
-         (ttree2
-          (er-progn
-           (chk-assumption-free-ttree ttree1 ctx state)
-           (cond ((and (not skip-checks-t)
-                       (not ld-skip-proofsp)
-                       attachment-alist)
-                  (prove-defattach-constraint goal event-names attachment-alist
-                                              constraint-helper-alist ctx ens
-                                              wrld state))
-                 (t (value nil))))))
-        (er-progn
-         (chk-assumption-free-ttree ttree2 ctx state)
-         (value (list erasures
-                      explicit-erasures
-                      attachment-alist
-                      attachment-alist-exec
-                      new-entries
-                      (cons-tag-trees ttree1 ttree2)
-                      records
-                      skip-checks)))))))))
+        ((tuple (process-defattach-args args ctx state)))
+      (let* ((constraint-helper-alist (nth 0 tuple))
+             (erasures                (nth 1 tuple))
+             (explicit-erasures       (nth 2 tuple))
+             (attachment-alist        (nth 3 tuple))
+             (attachment-alist-exec   (nth 4 tuple))
+             (guard-helpers-lst       (nth 5 tuple))
+             (skip-checks             (nth 6 tuple))
+             (skip-checks-t           (eq (nth 6 tuple) t))
+             (ens (ens state))
+             (ld-skip-proofsp (ld-skip-proofsp state))
+             (defaxiom-supporter-msg-list
+               (and (not skip-checks-t)
+                    (defaxiom-supporter-msg-list
+
+; With some thought we might be able to replace attachment-alist just below by
+; attachment-alist-exec.  But as we write this comment, we prefer to be
+; conservative, in order to avoid rethinking the underlying theory merely in
+; order to support what we think is an optimization that is unlikely ever to
+; matter.
+
+                      (strip-cars attachment-alist)
+                      wrld))))
+        (cond
+         (defaxiom-supporter-msg-list
+           (er soft ctx
+               "It is illegal for supporters of DEFAXIOM events to receive ~
+                attachments, but ~*0.  See :DOC defattach."
+               `(impossible
+                 "~@*"
+                 "~@*, and "
+                 "~@*, "
+                 ,defaxiom-supporter-msg-list)))
+         (t
+          (er-let*
+              ((records (cond (skip-checks (value :skipped)) ; not used
+                              (t (chk-defattach-loop attachment-alist erasures wrld
+                                                     ctx state))))
+               (goal/event-names/new-entries
+                (cond ((and (not skip-checks-t)
+                            attachment-alist)
+                       (defattach-constraint attachment-alist proved-fnl-insts-alist
+                         wrld ctx state))
+                      (t (value nil))))
+               (goal (value (car goal/event-names/new-entries)))
+               (event-names (value (cadr goal/event-names/new-entries)))
+               (new-entries (value (cddr goal/event-names/new-entries)))
+               (ttree1 (cond ((or skip-checks-t
+                                  ld-skip-proofsp
+                                  (null attachment-alist-exec))
+                              (value nil))
+                             (t (prove-defattach-guards attachment-alist-exec
+                                                        guard-helpers-lst
+                                                        ctx ens wrld state))))
+               (ttree2
+                (er-progn
+                 (chk-assumption-free-ttree ttree1 ctx state)
+                 (cond ((and (not skip-checks-t)
+                             (not ld-skip-proofsp)
+                             attachment-alist)
+                        (prove-defattach-constraint goal event-names attachment-alist
+                                                    constraint-helper-alist ctx ens
+                                                    wrld state))
+                       (t (value nil))))))
+            (er-progn
+             (chk-assumption-free-ttree ttree2 ctx state)
+             (value (list erasures
+                          explicit-erasures
+                          attachment-alist
+                          attachment-alist-exec
+                          new-entries
+                          (cons-tag-trees ttree1 ttree2)
+                          records
+                          skip-checks)))))))))))
 
 (defun attachment-cltl-cmd (erasures alist)
 

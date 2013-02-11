@@ -653,15 +653,6 @@
 
 ; End of Essay on Evaluation in ACL2
 
-(defmacro defun-*1* (fn &rest args)
-  `(defun ,(*1*-symbol fn) ,@args))
-
-(defmacro defun-overrides (name formals &rest rest)
-  (list 'quote
-        (list `(defun ,name ,formals ,@rest)
-              `(defun-*1* ,name ,formals
-                 (,name ,@formals)))))
-
 ;          ONEIFICATION
 
 ; Here are the *1* functions.  They should be kept in sync with
@@ -5262,10 +5253,13 @@
 
                      (or (member-eq (car def)
 
-; For explanation of the special handling of the following function symbols,
-; see the comments in their defun-*1* forms.
+; For explanation of the special handling of the first three of the following
+; function symbols, see the comments in their defun-*1* forms.  For
+; *defun-overrides*, we have already taken responsibility for defining *1*
+; functions that we don't want to override here.
 
-                                    '(mv-list return-last wormhole-eval))
+                                    `(mv-list return-last wormhole-eval
+                                              . ,*defun-overrides*))
                          (setq new-*1*-defs
                                (cons (list* 'oneify-cltl-code
                                             defun-mode
@@ -6434,75 +6428,59 @@
                                        (symbol-plist (caar wrld)))))))))
            (move-current-acl2-world-key-to-front (cdr wrld)))))
 
-(defun chk-live-state-p (fn state)
-  (or (live-state-p state)
-      (interface-er "Function ~x0 was passed a non-live state!"
-                    fn)))
-
-(defparameter *built-in-defun-overrides*
+(progn
 
 ; Warning: These definitions will replace both the raw Lisp and *1* definitions
-; of the first argument of each defun-override.  We ensure that these
-; definitions can't be evaluated when proving theorems, thus avoiding
-; unsoundness we could otherwise get, say by way of a standard functional
-; instantiation approach, by allowing axioms during proofs (through evaluation)
-; that aren't recorded as axioms.
+; of the first argument of each defun-overrides call.  We must ensure that these
+; definitions can't be evaluated when proving theorems unless each has
+; unknown-constraints and never returns two values for the same input (which is
+; automatically taken care of by passing in live states with unknown oracles).
 
-  '((defun-overrides mfc-ts-fn (term mfc state forcep)
-      (progn (chk-live-state-p 'mfc-ts state)
-             (mv-let (ans ttree)
-                     (mfc-ts-raw term mfc state forcep)
-                     (declare (ignore ttree))
-                     ans)))
-    (defun-overrides mfc-ts-ttree (term mfc state forcep)
-      (progn (chk-live-state-p 'mfc-ts state)
-             (mfc-ts-raw term mfc state forcep)))
+  (defun-overrides mfc-ts-fn (term mfc state forcep)
+    (mv-let (ans ttree)
+            (mfc-ts-raw term mfc state forcep)
+            (declare (ignore ttree))
+            ans))
+  (defun-overrides mfc-ts-ttree (term mfc state forcep)
+    (mfc-ts-raw term mfc state forcep))
 
-    (defun-overrides mfc-rw-fn (term obj equiv-info mfc state forcep)
-      (progn (chk-live-state-p 'mfc-rw state)
-             (mv-let (ans ttree)
-                     (mfc-rw-raw term nil obj equiv-info mfc 'mfc-rw state
+  (defun-overrides mfc-rw-fn (term obj equiv-info mfc state forcep)
+    (mv-let (ans ttree)
+            (mfc-rw-raw term nil obj equiv-info mfc 'mfc-rw state
+                        forcep)
+            (declare (ignore ttree))
+            ans))
+  (defun-overrides mfc-rw-ttree (term obj equiv-info mfc state forcep)
+    (mfc-rw-raw term nil obj equiv-info mfc 'mfc-rw state forcep))
+
+  (defun-overrides mfc-rw+-fn (term alist obj equiv-info mfc state forcep)
+    (mfc-rw-raw term alist obj equiv-info mfc 'mfc-rw+ state forcep))
+  (defun-overrides mfc-rw+-ttree (term alist obj equiv-info mfc state forcep)
+    (mv-let (ans ttree)
+            (mfc-rw-raw term alist obj equiv-info mfc 'mfc-rw+ state
+                        forcep)
+            (declare (ignore ttree))
+            ans))
+
+  (defun-overrides mfc-relieve-hyp-fn (hyp alist rune target bkptr mfc state
+                                           forcep)
+    (mfc-relieve-hyp-raw hyp alist rune target bkptr mfc state
+                         forcep))
+  (defun-overrides mfc-relieve-hyp-ttree (hyp alist rune target bkptr mfc
+                                              state forcep)
+    (mv-let (ans ttree)
+            (mfc-relieve-hyp-raw hyp alist rune target bkptr mfc state
                                  forcep)
-                     (declare (ignore ttree))
-                     ans)))
-    (defun-overrides mfc-rw-ttree (term obj equiv-info mfc state forcep)
-      (progn (chk-live-state-p 'mfc-rw state)
-             (mfc-rw-raw term nil obj equiv-info mfc 'mfc-rw state forcep)))
+            (declare (ignore ttree))
+            ans))
 
-    (defun-overrides mfc-rw+-fn (term alist obj equiv-info mfc state forcep)
-      (progn (chk-live-state-p 'mfc-rw+ state)
-             (mfc-rw-raw term alist obj equiv-info mfc 'mfc-rw+ state forcep)))
-    (defun-overrides mfc-rw+-ttree (term alist obj equiv-info mfc state forcep)
-      (progn (chk-live-state-p 'mfc-rw+ state)
-             (mv-let (ans ttree)
-                     (mfc-rw-raw term alist obj equiv-info mfc 'mfc-rw+ state
-                                 forcep)
-                     (declare (ignore ttree))
-                     ans)))
-
-    (defun-overrides mfc-relieve-hyp-fn (hyp alist rune target bkptr mfc state
-                                             forcep)
-      (progn (chk-live-state-p 'mfc-relieve-hyp state)
-             (mfc-relieve-hyp-raw hyp alist rune target bkptr mfc state
-                                  forcep)))
-    (defun-overrides mfc-relieve-hyp-ttree (hyp alist rune target bkptr mfc
-                                                state forcep)
-      (progn (chk-live-state-p 'mfc-relieve-hyp state)
-             (mv-let (ans ttree)
-                     (mfc-relieve-hyp-raw hyp alist rune target bkptr mfc state
-                                          forcep)
-                     (declare (ignore ttree))
-                     ans)))
-
-    (defun-overrides mfc-ap-fn (term mfc state forcep)
-      (progn (chk-live-state-p 'mfc-ap state)
-             (mfc-ap-raw term mfc state forcep)))
-    (defun-overrides mfc-ap-ttree (term mfc state forcep)
-      (progn (chk-live-state-p 'mfc-ap state)
-             (mv-let (ans ttree)
-                     (mfc-ap-raw term mfc state forcep)
-                     (declare (ignore ttree))
-                     ans)))))
+  (defun-overrides mfc-ap-fn (term mfc state forcep)
+    (mfc-ap-raw term mfc state forcep))
+  (defun-overrides mfc-ap-ttree (term mfc state forcep)
+    (mv-let (ans ttree)
+            (mfc-ap-raw term mfc state forcep)
+            (declare (ignore ttree))
+            ans)))
 
 (defun-one-output exit-boot-strap-mode ()
 
@@ -6525,9 +6503,6 @@
   (stop-proof-tree-fn *the-live-state*)
   (f-put-global 'ld-skip-proofsp nil *the-live-state*)
   (move-current-acl2-world-key-to-front (w *the-live-state*))
-  (dolist (override-defs *built-in-defun-overrides*)
-    (dolist (form (eval override-defs))
-      (compile (eval form))))
   (checkpoint-world1 t (w *the-live-state*) *the-live-state*))
 
 (defun-one-output ld-alist-raw (standard-oi ld-skip-proofsp ld-error-action)
@@ -6598,7 +6573,7 @@
   (and (consp form)
        (case (car form)
          ((defun defund defn defproxy defun-nx defun-one-output defstub
-            defmacro defabbrev defun@par defmacro-last)
+            defmacro defabbrev defun@par defmacro-last defun-overrides)
           (setf (gethash (cadr form) ht)
                 form))
          (save-def

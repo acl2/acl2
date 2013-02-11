@@ -1428,6 +1428,20 @@
                    (intern (symbol-name x)
                            pack))))))
 
+(defmacro defun-*1* (fn &rest args)
+  `(defun ,(*1*-symbol fn) ,@args))
+
+(defparameter *defun-overrides* nil)
+
+(defmacro defun-overrides (name formals &rest rest)
+  `(progn (push ',name *defun-overrides*) ; see add-trip
+          (defun ,name ,formals
+            ,@(butlast rest 1)
+            (progn (chk-live-state-p ',name state)
+                   ,(car (last rest))))
+          (defun-*1* ,name ,formals
+            (,name ,@formals))))
+
 (defun our-import (syms pkg)
 
 ; We have seen a case in which Allegro CL 8.0 spent about 20% of the time in
@@ -21178,8 +21192,8 @@
   ~c[defattach], by permitting use of ~c[:]~ilc[program] mode functions and the
   skipping of semantic checks.  Also permitted is ~c[:skip-checks nil] (the
   default) and ~c[:skip-checks :cycles], which turns off only the update of the
-  extended ancestor relation and hence the check for cycles in this relation;
-  see below.  We do not make any logical claims when the value of
+  extended ancestor relation (see below) and hence the check for cycles in this
+  relation; see below.  We do not make any logical claims when the value of
   ~c[:skip-checks] is non-~c[nil]; indeed, a trust tag is required in this
   case (~pl[defttag]).  Remark for those who use the experimental HONS
   extension (~pl[hons-and-memoization]): the interaction of memoization and
@@ -21263,9 +21277,16 @@
   in mind that evaluation with the attachment equations takes place in an
   extension of the logical theory of the session.  ACL2 guarantees that this
   so-called ``evaluation theory'' remains consistent, assuming that the absence
-  of ~ilc[defaxiom] ~il[events] from the user.  A deeper discussion of the
-  logical issues is available (but not intended to be read by most users) in a
-  comment in the ACL2 source code labeled ``Essay on Defattach.''
+  of ~ilc[defaxiom] ~il[events] from the user.  This guarantee is a consequence
+  of a more general guarantee: an ACL2 logical ~il[world] exists in
+  which (loosely speaking) the attachment equation for ~c[(defattach f g)], as
+  ~c[(defun f (...) (g ...))], takes the place of the original defining event
+  for ~c[f], for each ~c[defattach] event.  This more general guarantee holds
+  even if there are ~ilc[defaxiom] events, though as explained below, no
+  function symbol that syntactically supports a ~c[defaxiom] formula is allowed
+  to get an attachment.  A deeper discussion of the logical issues is
+  available (but not intended to be read by most users) in a long comment in
+  the ACL2 source code labeled ``Essay on Defattach.''
 
   ~bv[]
   Example Forms:
@@ -21443,15 +21464,14 @@
   practical perspective, there would be an infinite loop resulting from any
   call of ~c[f].
 
-  We consider a function symbol ~c[g] to be an ``extended ancestor of'' a
-  function symbol ~c[f] if either of the following two criteria is met: (a)
-  ~c[g] occurs in the formula that introduces ~c[f] (i.e., definition body or
-  constraint) and ~c[g] is introduced by an event different from (earlier than)
-  the event introducing ~c[f]; or (b) ~c[g] is attached to ~c[f].  For a
-  proposed ~c[defattach] event, we check that the resulting extended ancestor
-  relation has no cycles, where for condition (b) we include all attachment
-  pairs that would result, including those remaining from earlier ~c[defattach]
-  events.
+  We consider a function symbol ~c[g] to be an ``extended immediate ancestor
+  of'' a function symbol ~c[f] if either of the following two criteria is
+  met: (a) ~c[g] occurs in the formula that introduces ~c[f] (i.e., definition
+  body or constraint) and ~c[g] is introduced by an event different
+  from (earlier than) the event introducing ~c[f]; or (b) ~c[g] is attached to
+  ~c[f].  For a proposed ~c[defattach] event, we check that this relation has
+  no cycles, where for condition (b) we include all attachment pairs that would
+  result, including those remaining from earlier ~c[defattach] events.
 
   Of course, a special case is that no function symbol may be attached to
   itself.  Similarly, no function symbol may be attached to any of its
@@ -21521,6 +21541,44 @@
 
   ~c[Defattach] events are illegal inside any ~ilc[encapsulate] event with a
   non-empty ~il[signature] unless they are ~il[local] to the ~ilc[encapsulate].
+
+  We next discuss a restriction based on a notion of a function symbol
+  syntactically supporting an event.  Function symbol ~c[f] is ~em[ancestral]
+  in event ~c[E] if either ~c[f] occurs in ~c[E], or (recursively) ~c[f] occurs
+  in an event ~c[E'] that introduces some function symbol ~c[g] that is
+  ancestral in ~c[E].  We require that no function symbol ancestral in the
+  formula of a ~ilc[defaxiom] event may have an attachment.  Theoretical
+  reasons are discussed in comments in the ACL2 source code, but here we give a
+  little example showing the need for some such restriction: without it, we
+  show how to prove ~c[nil]!
+  ~bv[]
+  (defn g1 () 1)
+  (defn g2 () 2)
+  (defstub f1 () t)
+  (defstub f2 () t)
+  (defund p (x)
+    (declare (ignore x))
+    t)
+  (defevaluator evl evl-list
+    ((p x)))
+  (defaxiom f1-is-f2
+    (equal (f1) (f2)))
+  (defun meta-fn (x)
+    (cond ((equal (f1) (f2))
+           x)
+          (t *nil*)))
+  (defthm bad-meta-rule
+    (equal (evl x a)
+           (evl (meta-fn x) a))
+    :rule-classes ((:meta :trigger-fns (p))))
+  (defattach f1 g1)
+  (defattach f2 g2)
+  (defthm contradiction
+    nil
+    :hints ((\"Goal\" :use ((:instance (:theorem (not (p x)))
+                                     (x t)))))
+    :rule-classes nil)
+  ~ev[]
 
   To see all attachments: ~c[(all-attachments (w state))].  (Note that
   attachments introduced with a non-~c[nil] value of ~c[:skip-checks] will be
@@ -23367,7 +23425,7 @@
               (symbolp (cadr x))
               (null (cddr x)))
 
-; The cmulisp complier complains about unreachable code every (perhaps) time
+; The cmulisp compiler complains about unreachable code every (perhaps) time
 ; that f-get-global is called in which st is *the-live-state*.  The following
 ; optimization is included primarily in order to eliminate those warnings;
 ; the extra efficiency is pretty minor, though a nice side effect.
@@ -27106,11 +27164,9 @@
 ; Functions in this list should be executed only in raw Lisp, hence perhaps not
 ; in safe-mode.  See the case of 'program-only-er in ev-fncall-msg.
 
-; This list is used in defining state global 'program-fns-with-raw-code, whose
-; value has been expanded significantly (from the corresponding old state
-; global, 'built-in-program-mode-fns) in Version_3.4.  If errors are caused by
-; attempting to call some of these functions in safe-mode, consider adding such
-; functions to the list *oneify-primitives*.
+; This list is used in defining state global 'program-fns-with-raw-code.  If
+; errors are caused by attempting to call some of these functions in safe-mode,
+; consider adding such functions to the list *oneify-primitives*.
 
   '(relieve-hyp-synp ; *deep-gstack*
     apply-abbrevs-to-lambda-stack1 ; *nth-update-tracingp*
@@ -27140,7 +27196,6 @@
     dmr-start-fn ; dmr-start-fn-raw
     memo-exit ; *nu-memos*
     memo-key1 ; *nu-memos*
-    sys-call-status ; *last-sys-call-status*
     ev-fncall-meta ; *metafunction-context*
     ld-loop ; *ld-level*
     print-summary ; dmr-flush
@@ -27169,7 +27224,6 @@
     flpr ; print-flat-infix
     close-trace-file-fn ; *trace-output*
     ev-fncall-rec ; raw-ev-fncall
-    sys-call ; system-call
     ev-fncall ; live-state-p
     ld-fn0 ; *acl2-unwind-protect-stack*, etc.
     ld-fn  ; unwind-protect
@@ -27228,7 +27282,6 @@
     state-p1 ; LIVE-STATE-P
     aref2 ; aref, slow-array-warning
     aref1 ; aref, slow-array-warning
-    mfc-ancestors ; *metafunction-context*
     fgetprop ; EQ, GET, ...
     getenv$ ; GETENV$-RAW
     wormhole-eval ; *WORMHOLE-STATUS-ALIST*
@@ -27242,7 +27295,6 @@
     time-limit5-reached-p ; THROW
     fmt-to-comment-window ; *THE-LIVE-STATE*
     len ; len1
-    mfc-clause ; *metafunction-context*
     cpu-core-count ; CORE-COUNT-RAW
     nonnegative-integer-quotient ; floor
     check-print-base ; PRIN1-TO-STRING
@@ -27256,14 +27308,11 @@
     strip-cars ; strip-cars1
     plist-worldp ; *the-live-state* (huge performance penalty?)
     wormhole-p ; *WORMHOLEP*
-    mfc-type-alist ; *metafunction-context*
     may-need-slashes-fn ;*suspiciously-first-numeric-array* ...
     fmt-to-comment-window! ; *THE-LIVE-STATE*
     has-propsp ; EQ, GET, ...
     hard-error ; *HARD-ERROR-RETURNS-NILP*, FUNCALL, ...
     abort! p! ; THROW
-    mfc-rdepth ; *metafunction-context*
-    mfc-unify-subst ; *metafunction-context*
     flush-compress ; SETF [may be critical for correctness]
     alphorder ; [bad atoms]
     extend-world ; EXTEND-WORLD1
@@ -27312,7 +27361,6 @@
     good-bye-fn ; exit-lisp
     remove-eq remove-equal
     take
-    canonical-pathname
     file-write-date$
     print-call-history
     set-debugger-enable-fn ; lisp::*break-enable* and *debugger-hook*
@@ -27338,6 +27386,28 @@
     time-tracker-fn
     gc-verbose-fn
     set-absstobj-debug-fn
+    sys-call-status ; *last-sys-call-status*
+    sys-call ; system-call
+
+    canonical-pathname ; under dependent clause-processor
+
+; mfc functions
+
+    mfc-ancestors ; *metafunction-context*
+    mfc-clause ; *metafunction-context*
+    mfc-rdepth ; *metafunction-context*
+    mfc-type-alist ; *metafunction-context*
+    mfc-unify-subst ; *metafunction-context*
+    mfc-ap-fn ; under dependent clause-processor
+    mfc-ap-ttree ; under dependent clause-processor
+    mfc-relieve-hyp-fn ; under dependent clause-processor
+    mfc-relieve-hyp-ttree ; under dependent clause-processor
+    mfc-rw+-fn ; under dependent clause-processor
+    mfc-rw+-ttree ; under dependent clause-processor
+    mfc-rw-fn ; under dependent clause-processor
+    mfc-rw-ttree ; under dependent clause-processor
+    mfc-ts-fn ; under dependent clause-processor
+    mfc-ts-ttree ; under dependent clause-processor
   ))
 
 (defconst *primitive-macros-with-raw-code*
@@ -34282,6 +34352,125 @@
 ; are likely to be used.
 
                     natp-random$ random$-linear))
+
+; System calls
+
+#-acl2-loop-only
+(defvar *last-sys-call-status* 0)
+
+(defun sys-call (command-string args)
+
+  ":Doc-Section ACL2::ACL2-built-ins
+
+  make a system call to the host operating system~/
+  ~bv[]
+  Example Forms:
+  (sys-call \"cp\" '(\"foo.lisp\" \"foo-copied.lisp\"))
+  (prog2$ (sys-call \"cp\" '(\"foo.lisp\" \"foo-copied.lisp\"))
+          (sys-call-status state))
+  ~ev[]
+  The first argument of ~c[sys-call] is a command for the host operating
+  system, and the second argument is a list of strings that are the
+  arguments for that command.  In GCL and perhaps other lisps, you can put the
+  arguments with the command; but this is not the case, for example, in Allegro
+  CL running on Linux.
+
+  The use of ~ilc[prog2$] above is optional, but illustrates a typical sort
+  of use when one wishes to get the return status.  ~l[sys-call-status].~/
+  ~bv[]
+  General Form:
+  (sys-call cmd args)
+  ~ev[]
+  This function logically returns ~c[nil].  However, it makes the indicated
+  call to the host operating system, as described above, using a function
+  supplied ``under the hood'' by the underlying Lisp system.  On occasions
+  where one wishes to obtain the numeric status returned by the host operating
+  system (or more precisely, by the Lisp function under the hood that passes
+  the system call to the host operating system), one may do so;
+  ~pl[sys-call-status].  The status value is the value returned by that Lisp
+  function, which may well be the same numeric value returned by the host
+  operating system for the underlying system call.
+
+  Note that ~c[sys-call] does not touch the ACL2 ~ilc[state]; however,
+  ~ilc[sys-call-status] updates the ~c[acl2-oracle] field of the ~c[state].
+
+  Be careful if you use ~c[sys-call]!  It can be used for example to overwrite
+  files, or worse!  We view a use of ~c[sys-call] as a call to the operating
+  system that is made outside ACL2.  The following example from Bob Boyer shows
+  how to use ~c[sys-call] to execute, in effect, arbitrary Lisp forms.  ACL2
+  provides a ``trust tag'' mechanism that requires execution of a ~ilc[defttag]
+  form before you can use ~c[sys-call]; ~pl[defttag].  (Note: The setting of
+  the raw Lisp variable ~c[*features*] below is just to illustrate that any
+  such mischief is possible.  Normally ~c[*features*] is a list with more than
+  a few elements.)
+  ~bv[]
+  % cat foo
+  print *0x85d2064=0x838E920
+  detach
+  q
+  % acl2
+  ... boilerplate deleted
+  ACL2 !>(sys-call \"gdb -p $PPID -w < foo >& /dev/null \" nil)
+  NIL
+  ACL2 !>:q
+
+  Exiting the ACL2 read-eval-print loop.  To re-enter, execute (LP).
+  ACL2>*features*
+
+  (:AKCL-SET-MV)
+
+  ACL2>
+  ~ev[]
+
+  Finally, we make a comment about output redirection, which also applies to
+  other related features that one may expect of a shell.  ~c[Sys-call] does not
+  directly support output redirection.  If you want to run a program, ~c[P],
+  and redirect its output, we suggest that you create a wrapper script, ~c[W]
+  to call instead.  Thus ~c[W] might be a shell script containing the line:
+  ~bv[]
+  P $* >& foo.out
+  ~ev[]
+  If this sort of solution proves inadequate, please contact the ACL2
+  implementors and perhaps we can come up with a solution."
+
+  (declare (xargs :guard t))
+  #+acl2-loop-only
+  (declare (ignore command-string args))
+  #-acl2-loop-only 
+  (let ((rslt (system-call command-string args)))
+    (progn (setq *last-sys-call-status* rslt)
+           nil))
+  #+acl2-loop-only
+  nil
+  )
+
+(defun sys-call-status (state)
+
+  ":Doc-Section ACL2::ACL2-built-ins
+
+  exit status from the preceding system call~/
+
+  This function returns two values, ~c[(mv status state)].  The first is the
+  status resulting from the most recent invocation of function ~c[sys-call];
+  ~pl[sys-call].  The second is the ACL2 ~ilc[state] object, which is also the
+  input to this function.~/
+
+  The function ~ilc[sys-call] makes a system call to the host operating system
+  using a function supplied ``under the hood'' by the underlying Lisp system.
+  The status value is the value returned by that Lisp function, which may well
+  be the numeric value returned by the host operating system for the underlying
+  system call.  For more information, ~pl[sys-call].~/"
+
+  (declare (xargs :stobjs state))
+  #-acl2-loop-only
+  (when (live-state-p state)
+    (return-from sys-call-status
+                 (mv *last-sys-call-status* state)))
+  (mv-let (erp val state)
+          (read-acl2-oracle state)
+          (mv (and erp val) state)))
+
+; End of system calls
 
 ; Time:  idate, run-time, and timers.
 
@@ -46010,7 +46199,7 @@ Lisp definition."
   their own hint keywords.  For examples, see the community books directory
   ~c[books/hints/], in particular ~c[basic-tests.lisp].~/~/")
 
-; Start implemenation of search.
+; Start implementation of search.
 
 (defun search-fn-guard (seq1 seq2 from-end test start1 start2 end1 end2
                              end1p end2p)

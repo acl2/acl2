@@ -1204,7 +1204,7 @@
 (progn
 
 ; (defconstant *big-n-special-object* '(nil . nil)) has been moved to
-; acl2.lisp, to avoid a CLISP complier warning.
+; acl2.lisp, to avoid a CLISP compiler warning.
 
   (defun big-n () *big-n-special-object*)
   (defmacro decrement-big-n (n)

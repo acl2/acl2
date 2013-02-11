@@ -20046,6 +20046,98 @@
 ;     (equal (foo) 17)
 ;     :rule-classes nil)
 
+; Here is a proof of nil for "a soundness bug involving system function
+; canonical-pathname...."  This is a trivial modification (being very slightly
+; simpler) of the example sent by Jared Davis and Sol Swords.
+
+;   (in-package "ACL2")
+;   
+;   (defchoose state-for-canonical-pathname (st) ()
+;      (not (canonical-pathname nil nil st)))
+;   
+;   (defevaluator ncp-ev ncp-ev-lst ((state-for-canonical-pathname)
+;                                     (canonical-pathname a b c)
+;                                     (if a b c)
+;                                     (equal a b)))
+;   
+;   (defun run-canonical-pathname-cp (clause hints state)
+;      (declare (xargs :guard (pseudo-term-listp clause)
+;                      :stobjs state)
+;               (ignore hints))
+;      (mv nil
+;          (if (equal clause '((equal (canonical-pathname
+;                                      'nil 'nil
+;                                      (state-for-canonical-pathname))
+;                                     'nil)))
+;              (if (canonical-pathname nil nil state)
+;                  (list clause)
+;                nil)
+;            (list clause))
+;          state))
+;   
+;   (defthm run-canonical-pathname-cp-correct
+;      (implies (and (pseudo-term-listp clause)
+;                    (alistp a)
+;                    (ncp-ev (conjoin-clauses
+;                             (clauses-result
+;                              (run-canonical-pathname-cp clause hint state)))
+;                            a))
+;               (ncp-ev (disjoin clause) a))
+;      :hints (("goal" :use ((:instance state-for-canonical-pathname
+;                                       (st state)))))
+;      :rule-classes :clause-processor)
+;   
+;   (defthm canonical-pathname-is-nil
+;      (equal (canonical-pathname
+;              'nil 'nil
+;              (state-for-canonical-pathname))
+;             'nil)
+;      :hints (("goal" :clause-processor
+;               (run-canonical-pathname-cp clause nil state))))
+;   
+;   (defun foo (x dir-p st)
+;      ;; Matches the constraints of canonical-pathname but never returns NIL.
+;      (declare (ignore x dir-p st))
+;      "hello")
+;   
+;   (defthm foo-never-returns-nil
+;      (foo x dir-p st))
+;   
+;   (defchoose state-for-foo (st) ()
+;      (not (foo nil nil st)))
+;   
+;   (defthm foo-sometimes-returns-nil
+;      (not (foo nil nil (state-for-foo)))
+;      :hints (("goal" :use ((:functional-instance
+;                             canonical-pathname-is-nil
+;                             (canonical-pathname foo)
+;                             (state-for-canonical-pathname
+;                              state-for-foo))))))
+;   
+;   (defthm contradiction
+;      nil
+;      :rule-classes nil
+;      :hints (("Goal" :use ((:instance foo-sometimes-returns-nil)))))
+
+; Elaborating here on "the functions ~ilc[sys-call] and ~ilc[sys-call-status]
+; are now ~il[guard]-verified ~c[:]~ilc[logic]-mode functions": Sys-call-status
+; now modifies the oracle, not the file-clock.  It was misguided anyhow to
+; expect that modifying the file-clock would provide a coherent story, since
+; one might call sys-call to modify the file-system but never call
+; sys-call-status to update the file-clock.  Since a trust-tag is necessary in
+; order to call sys-call, there is no soundness problem here.  Indeed, :doc
+; sys-call is already quite clear on such matters.
+
+; As part of the process of fixing two soundness bugs -- one related to
+; canonical-pathname and the other about defaxiom and defattach -- we made a
+; number of changes, in particular improving the Essay on Correctness of Meta
+; Reasoning and the Essay on Defattach.  In particular, the Essay on Defattach
+; now comprehends the use of defaxiom.  Also note that now, as part of fixing
+; that first bug, canonical-pathname and mfc-xx functions have been given
+; unknown-constraints (by introducing them with dependent clause processors),
+; and are no longer in *unattachable-primitives* (as their unattachability is
+; enforced by their having unknown-constraints).
+
   :doc
   ":Doc-Section release-notes
 
@@ -20083,6 +20175,15 @@
   (~pl[EXTENDED-METAFUNCTIONS]), accessed with function ~c[mfc-unify-subst].
   Thanks to Sol Swords for requesting this enhancement.
 
+  The functions ~ilc[sys-call] and ~ilc[sys-call-status] are now
+  ~il[guard]-verified ~c[:]~ilc[logic]-mode functions.
+
+  It had been the case that if any supporter of a dependent clause processor
+  (~pl[define-trusted-clause-processor]) is among the ancestors of a given
+  formula, then it was illegal to apply functional instantiation
+  (~pl[lemma-instance]) to that formula.  Now, this is illegal only if some
+  such supporter is in the domain of the functional substitution.
+
   ~st[NEW FEATURES]
 
   A new utility, ~c[set-splitter-output], can direct the prover to give
@@ -20098,6 +20199,21 @@
   (~pl[book-compiled-file]) together with ~ilc[defstobj].  For an example
   illustrating this bug, see the comment about ``Expansion/Defstobj Bug'' in
   the form ~c[(deflabel note-6-1 ...)] in ACL2 source file ~c[ld.lisp].
+
+  We fixed a soundness bug involving system function ~ilc[canonical-pathname]
+  and (most likely) other functions in the former value of constant
+  ~c[*unattachable-primitives*].  Thanks to Jared Davis and Sol Swords for
+  bringing this bug to our attention by way of an example.  We include a very
+  slight variant of that example in a comment within the form
+  ~c[(deflabel note-6-1 ...)] in ACL2 source file ~c[ld.lisp].
+
+  There was a soundness bug that allowed attachments to prove ~c[nil] in a
+  consistent logical ~il[world] involving ~ilc[defaxiom] ~il[events].  This has
+  been fixed, by requiring that no function symbol ancestral in a
+  ~ilc[defaxiom] formula is allowed to get an attachment.  ~l[defattach], in
+  particular discussion of ``a restriction based on a notion of a function
+  symbol syntactically supporting an event'', which concludes with a proof of
+  ~c[nil] that is no longer possible.
 
   (ACL2(h) only) We fixed a soundness bug in the interaction of memoization
   with congruent stobjs, in cases where the ~c[:congruent-to] field of
@@ -25437,140 +25553,53 @@ tail recursion.
    your situation, contact the authors.~%~%")
 
 ; We next introduce uninterpreted :logic mode functions with
-; execute-only-in-meta-level-functions semantics, as per
-; *built-in-defun-overrides*.
+; execute-only-in-meta-level-functions semantics, as per defun-overrides calls
+; for mfc-ts-fn and such.
 
-(defstub mfc-ts-fn (term mfc state forcep) t)
-(defstub mfc-ts-ttree (term mfc state forcep) t)
-(defstub mfc-rw-fn (term obj equiv-info mfc state forcep) t)
-(defstub mfc-rw-ttree (term obj equiv-info mfc state forcep) t)
-(defstub mfc-rw+-fn (term alist obj equiv-info mfc state forcep) t)
-(defstub mfc-rw+-ttree (term alist obj equiv-info mfc state forcep) t)
-(defstub mfc-relieve-hyp-fn (hyp alist rune target bkptr mfc state forcep)
-  t)
-(defstub mfc-relieve-hyp-ttree (hyp alist rune target bkptr mfc state forcep)
-  t)
-(defstub mfc-ap-fn (term mfc state forcep) t)
-(defstub mfc-ap-ttree (term mfc state forcep) t)
+(defun acl2-magic-mfc (x)
 
-(defmacro mfc-ts (term mfc st &key
-                       (forcep ':same)
-                       ttreep)
-  (declare (xargs :guard (and (member-eq forcep '(t nil :same))
-                              (booleanp ttreep))))
-  (if ttreep
-      `(mfc-ts-ttree ,term ,mfc ,st ,forcep)
-    `(mfc-ts-fn ,term ,mfc ,st ,forcep)))
+; This function is a sort of placeholder, used in a
+; define-trusted-clause-processor event for noting that various mfc functions
+; have unknown constraints.
 
-(defmacro mfc-rw (term obj equiv-info mfc st &key
-                       (forcep ':same)
-                       ttreep)
+  (declare (xargs :guard t))
+  x)
 
-; We introduced mfc-rw+ after Version_3.0.1.  It was tempting to eliminate
-; mfc-rw altogether (and then use the name mfc-rw for what we now call
-; mfc-rw+), but we decided to leave mfc-rw unchanged for backward
-; compatibility.  Worth mentioning: An attempt to replace mfc-rw by
-; corresponding calls of mfc-rw+ in community book books/arithmetic-3/ resulted
-; in a failed proof (of floor-floor-integer in community book
-; books/arithmetic-3/floor-mod/floor-mod.lisp).
-
-  (declare (xargs :guard (and (member-eq forcep '(t nil :same))
-                              (booleanp ttreep))))
-  (if ttreep
-      `(mfc-rw-ttree ,term ,obj ,equiv-info ,mfc ,st ,forcep)
-    `(mfc-rw-fn ,term ,obj ,equiv-info ,mfc ,st ,forcep)))
-
-(defmacro mfc-rw+ (term alist obj equiv-info mfc st &key
-                        (forcep ':same)
-                        ttreep)
-  (declare (xargs :guard (and (member-eq forcep '(t nil :same))
-                              (booleanp ttreep))))
-  (if ttreep
-      `(mfc-rw+-ttree ,term ,alist ,obj ,equiv-info ,mfc ,st ,forcep)
-    `(mfc-rw+-fn ,term ,alist ,obj ,equiv-info ,mfc ,st ,forcep)))
-
-(defmacro mfc-relieve-hyp (hyp alist rune target bkptr mfc st &key
-                               (forcep ':same)
-                               ttreep)
-  (declare (xargs :guard (and (member-eq forcep '(t nil :same))
-                              (booleanp ttreep))))
-  (if ttreep
-      `(mfc-relieve-hyp-ttree ,hyp ,alist ,rune ,target ,bkptr ,mfc ,st
-                              ,forcep)
-    `(mfc-relieve-hyp-fn ,hyp ,alist ,rune ,target ,bkptr ,mfc ,st
-                         ,forcep)))
-
-(defmacro mfc-ap (term mfc st &key
-                       (forcep ':same)
-                       ttreep)
-  (declare (xargs :guard (and (member-eq forcep '(t nil :same))
-                              (booleanp ttreep))))
-  (if ttreep
-      `(mfc-ap-ttree ,term ,mfc ,st ,forcep)
-    `(mfc-ap-fn ,term ,mfc ,st ,forcep)))
-
-(defmacro defun-overrides (name formals &rest rest)
-  (list 'quote
-        (list `(defun ,name ,formals ,@rest)
-              `(defun-*1* ,name ,formals
-                 (,name ,@formals)))))
-
-(defun congruence-rule-listp (x wrld)
-  (if (atom x)
-      (null x)
-    (and (let ((rule (car x)))
-           (case-match rule
-             ((nume equiv . rune)
-              (and (equivalence-relationp equiv wrld)
-                   (or (runep rune wrld)
-                       (equal rune
-                              *fake-rune-for-anonymous-enabled-rule*))
-                   (eql (fnume rune wrld) nume)))))
-         (congruence-rule-listp (cdr x) wrld))))
-
-(defun term-alistp-failure-msg (alist wrld)
-
-; Returns nil if alist is an alist binding variables to terms.  Otherwise,
-; returns a message suitable for use in *meta-level-function-problem-1a*.
-
-  (cond ((atom alist)
-         (and alist
-              (msg "a non-nil final cdr")))
-        ((atom (car alist))
-         (msg "a non-consp element, ~x0" (car alist)))
-        ((not (and (termp (caar alist) wrld)
-                   (variablep (caar alist))))
-         (msg "an element, ~p0, whose car is not a variable" (caar alist)))
-        ((not (termp (cdar alist) wrld))
-         (msg "an element, ~p0, whose cdr is not a term" (cdar alist)))
-        (t (term-alistp-failure-msg (cdr alist) wrld))))
-
-(defun find-runed-linear-lemma (rune lst)
-
-; Lst must be a list of lemmas.  We find the first one with :rune rune (but we
-; make no assumptions on the form of rune).
-
-  (cond ((null lst) nil)
-        ((equal rune
-                (access linear-lemma (car lst) :rune))
-         (car lst))
-        (t (find-runed-linear-lemma rune (cdr lst)))))
-
-(defun mfc-force-flg (forcep mfc)
-  (cond ((eq forcep :same)
-         (ok-to-force (access metafunction-context mfc :rcnst)))
-        (t forcep)))
-
-(defun update-rncst-for-forcep (forcep rcnst)
-  (cond ((or (eq forcep :same)
-             (iff forcep
-                  (ok-to-force rcnst)))
-         rcnst)
-        (t (change rewrite-constant rcnst
-                   :force-info
-                   (if forcep
-                       t
-                     'weak)))))
+#+acl2-loop-only
+(encapsulate
+ ()
+ (define-trusted-clause-processor
+   acl2-magic-mfc
+   (mfc-ts-fn mfc-ts-ttree mfc-rw-fn mfc-rw-ttree mfc-rw+-fn mfc-rw+-ttree
+              mfc-relieve-hyp-fn mfc-relieve-hyp-ttree mfc-ap-fn mfc-ap-ttree)
+   :partial-theory
+   (encapsulate
+    (((mfc-ap-fn * * state *) => *)
+     ((mfc-ap-ttree * * state *) => *)
+     ((mfc-relieve-hyp-fn * * * * * * state *) => *)
+     ((mfc-relieve-hyp-ttree * * * * * * state *) => *)
+     ((mfc-rw+-fn * * * * * state *) => *)
+     ((mfc-rw+-ttree * * * * * state *) => *)
+     ((mfc-rw-fn * * * * state *) => *)
+     ((mfc-rw-ttree * * * * state *) => *)
+     ((mfc-ts-fn * * state *) => *)
+     ((mfc-ts-ttree * * state *) => *))
+    (logic)
+    (set-ignore-ok t)
+    (set-irrelevant-formals-ok t)
+    (local (defun mfc-ts-fn (term mfc state forcep) t))
+    (local (defun mfc-ts-ttree (term mfc state forcep) t))
+    (local (defun mfc-rw-fn (term obj equiv-info mfc state forcep) t))
+    (local (defun mfc-rw-ttree (term obj equiv-info mfc state forcep) t))
+    (local (defun mfc-rw+-fn (term alist obj equiv-info mfc state forcep) t))
+    (local (defun mfc-rw+-ttree (term alist obj equiv-info mfc state forcep) t))
+    (local
+     (defun mfc-relieve-hyp-fn (hyp alist rune target bkptr mfc state forcep) t))
+    (local
+     (defun mfc-relieve-hyp-ttree (hyp alist rune target bkptr mfc state
+                                       forcep) t))
+    (local (defun mfc-ap-fn (term mfc state forcep) t))
+    (local (defun mfc-ap-ttree (term mfc state forcep) t)))))
 
 #-acl2-loop-only
 (progn
@@ -25580,17 +25609,21 @@ tail recursion.
 (defun-one-output mfc-ts-raw (term mfc state forcep)
   (declare (xargs :guard (state-p state)))
 
-; Type-set doesn't really use state.  But we use the presence of the
-; live state as authorization to execute, since we know the live state
-; object cannot arise in an execution on behalf of an evaluation of a
-; subexpression in a theorem or proof.
+; Type-set doesn't really use state.  We originally used the presence of the
+; live state as authorization to execute, believing that the live state object
+; cannot arise in an execution on behalf of an evaluation of a subexpression in
+; a theorem or proof.  We now know that this is not the case; see the
+; "soundness bug involving system function canonical-pathname" in :doc
+; note-6-1.  However, we keep state around for legacy reasons.  If a reason is
+; brought to our attention why it would be useful to remove state as a
+; parameter, we can consider doing so.
 
   (let ((ev-fncall-val `(ev-fncall-null-body-er nil mfc-ts ,term mfc state)))
     (cond
      ((not (live-state-p state))
 
 ; This function acts like an undefined function unless it is applied to the
-; live state.  
+; live state.  See comment above.
 
       (throw-raw-ev-fncall ev-fncall-val))
 
@@ -25632,19 +25665,18 @@ tail recursion.
           (throw-raw-ev-fncall ev-fncall-val))))
 
 ; We are not within the application of a meta-level function by the theorem
-; prover.  We don't actually know if we are in the theorem prover.
-; This could be a proof-time evaluation of a subterm of a conjecture
-; about MFC-TS (e.g., the proof of the metatheorem justifying a
-; metafunction using MFC-TS, or the proof of a lemma involved in that
-; metatheorem proof).  Or, this could be a top-level call of MFC-TS or
-; some function using it, as part of the user's testing of a
-; meta-level function's development.
+; prover.  We don't actually know if we are in the theorem prover.  This could
+; be a proof-time evaluation of a subterm of a conjecture about MFC-TS (e.g.,
+; the proof of the metatheorem justifying a metafunction using MFC-TS, or the
+; proof of a lemma involved in that metatheorem proof).  Or, this could be a
+; top-level call of MFC-TS or some function using it, as part of the user's
+; testing of a meta-level function's development.
 
      (*hard-error-returns-nilp*
 
-; This evaluation is part of a conjecture being proved.  Quietly act
-; as though mfc-ts is an undefined function.  It is believed that this
-; can never happen, because STATE is live.
+; This evaluation is part of a conjecture being proved.  Quietly act as though
+; mfc-ts is an undefined function.  It is believed that this can never happen,
+; because STATE is live.
 
       (throw-raw-ev-fncall ev-fncall-val))
         
@@ -25951,6 +25983,119 @@ tail recursion.
       (cw *meta-level-function-problem-3* 'mfc-ap)
       (throw-raw-ev-fncall ev-fncall-val)))))
 )
+
+(defmacro mfc-ts (term mfc st &key
+                       (forcep ':same)
+                       ttreep)
+  (declare (xargs :guard (and (member-eq forcep '(t nil :same))
+                              (booleanp ttreep))))
+  (if ttreep
+      `(mfc-ts-ttree ,term ,mfc ,st ,forcep)
+    `(mfc-ts-fn ,term ,mfc ,st ,forcep)))
+
+(defmacro mfc-rw (term obj equiv-info mfc st &key
+                       (forcep ':same)
+                       ttreep)
+
+; We introduced mfc-rw+ after Version_3.0.1.  It was tempting to eliminate
+; mfc-rw altogether (and then use the name mfc-rw for what we now call
+; mfc-rw+), but we decided to leave mfc-rw unchanged for backward
+; compatibility.  Worth mentioning: An attempt to replace mfc-rw by
+; corresponding calls of mfc-rw+ in community book books/arithmetic-3/ resulted
+; in a failed proof (of floor-floor-integer in community book
+; books/arithmetic-3/floor-mod/floor-mod.lisp).
+
+  (declare (xargs :guard (and (member-eq forcep '(t nil :same))
+                              (booleanp ttreep))))
+  (if ttreep
+      `(mfc-rw-ttree ,term ,obj ,equiv-info ,mfc ,st ,forcep)
+    `(mfc-rw-fn ,term ,obj ,equiv-info ,mfc ,st ,forcep)))
+
+(defmacro mfc-rw+ (term alist obj equiv-info mfc st &key
+                        (forcep ':same)
+                        ttreep)
+  (declare (xargs :guard (and (member-eq forcep '(t nil :same))
+                              (booleanp ttreep))))
+  (if ttreep
+      `(mfc-rw+-ttree ,term ,alist ,obj ,equiv-info ,mfc ,st ,forcep)
+    `(mfc-rw+-fn ,term ,alist ,obj ,equiv-info ,mfc ,st ,forcep)))
+
+(defmacro mfc-relieve-hyp (hyp alist rune target bkptr mfc st &key
+                               (forcep ':same)
+                               ttreep)
+  (declare (xargs :guard (and (member-eq forcep '(t nil :same))
+                              (booleanp ttreep))))
+  (if ttreep
+      `(mfc-relieve-hyp-ttree ,hyp ,alist ,rune ,target ,bkptr ,mfc ,st
+                              ,forcep)
+    `(mfc-relieve-hyp-fn ,hyp ,alist ,rune ,target ,bkptr ,mfc ,st
+                         ,forcep)))
+
+(defmacro mfc-ap (term mfc st &key
+                       (forcep ':same)
+                       ttreep)
+  (declare (xargs :guard (and (member-eq forcep '(t nil :same))
+                              (booleanp ttreep))))
+  (if ttreep
+      `(mfc-ap-ttree ,term ,mfc ,st ,forcep)
+    `(mfc-ap-fn ,term ,mfc ,st ,forcep)))
+
+(defun congruence-rule-listp (x wrld)
+  (if (atom x)
+      (null x)
+    (and (let ((rule (car x)))
+           (case-match rule
+             ((nume equiv . rune)
+              (and (equivalence-relationp equiv wrld)
+                   (or (runep rune wrld)
+                       (equal rune
+                              *fake-rune-for-anonymous-enabled-rule*))
+                   (eql (fnume rune wrld) nume)))))
+         (congruence-rule-listp (cdr x) wrld))))
+
+(defun term-alistp-failure-msg (alist wrld)
+
+; Returns nil if alist is an alist binding variables to terms.  Otherwise,
+; returns a message suitable for use in *meta-level-function-problem-1a*.
+
+  (cond ((atom alist)
+         (and alist
+              (msg "a non-nil final cdr")))
+        ((atom (car alist))
+         (msg "a non-consp element, ~x0" (car alist)))
+        ((not (and (termp (caar alist) wrld)
+                   (variablep (caar alist))))
+         (msg "an element, ~p0, whose car is not a variable" (caar alist)))
+        ((not (termp (cdar alist) wrld))
+         (msg "an element, ~p0, whose cdr is not a term" (cdar alist)))
+        (t (term-alistp-failure-msg (cdr alist) wrld))))
+
+(defun find-runed-linear-lemma (rune lst)
+
+; Lst must be a list of lemmas.  We find the first one with :rune rune (but we
+; make no assumptions on the form of rune).
+
+  (cond ((null lst) nil)
+        ((equal rune
+                (access linear-lemma (car lst) :rune))
+         (car lst))
+        (t (find-runed-linear-lemma rune (cdr lst)))))
+
+(defun mfc-force-flg (forcep mfc)
+  (cond ((eq forcep :same)
+         (ok-to-force (access metafunction-context mfc :rcnst)))
+        (t forcep)))
+
+(defun update-rncst-for-forcep (forcep rcnst)
+  (cond ((or (eq forcep :same)
+             (iff forcep
+                  (ok-to-force rcnst)))
+         rcnst)
+        (t (change rewrite-constant rcnst
+                   :force-info
+                   (if forcep
+                       t
+                     'weak)))))
 
 ; Essay on Saved-output
 
