@@ -22478,8 +22478,8 @@ tail recursion site:http://www.cs.utexas.edu/users/moore/acl2/v6-0
 Now you are ready to follow the link.
 <p>
 <a href=\"http://www.google.com/search?q=search_term
-		 site:http://www.cs.utexas.edu/users/moore/acl2/v6-0\">SEARCH
-		 THE DOCUMENTATION</a>
+                 site:http://www.cs.utexas.edu/users/moore/acl2/v6-0\">SEARCH
+                 THE DOCUMENTATION</a>
 </li>
 
 <p>

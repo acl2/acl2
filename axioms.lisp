@@ -21777,10 +21777,10 @@
 ; regressions using identical books, on the same unloaded machine.
 
 ; With shortcut:
-; 15634.000u 1057.650s 53:22.39 521.2%	0+0k 352216+1367056io 1789pf+0w
+; 15634.000u 1057.650s 53:22.39 521.2%  0+0k 352216+1367056io 1789pf+0w
 
 ; Without shortcut:
-; 16414.440u 1048.600s 57:20.82 507.5%	0+0k 354128+1367184io 1696pf+0w
+; 16414.440u 1048.600s 57:20.82 507.5%  0+0k 354128+1367184io 1696pf+0w
 
 ; So we have decided to keep the shortcut, since we really do expect this
 ; simple property to hold of any ACL2 world.
@@ -49007,20 +49007,18 @@ Lisp definition."
                 (and (= (realpart x) y)
                      (< (imagpart x) 0)))))))
 
-#||
-(thm (implies (implies (and x y)
-                       (or (real/rationalp x)
-                           (real/rationalp y)))
-              (iff (<? rel x y)
-                   (if (or (null x)
-                           (null y))
-                       t
-                       (if rel (< x y) (<= x y)))))
-     :hints
-     (("Goal"
-       :use ((:instance completion-of-< (x x) (y y))
-             (:instance completion-of-< (x y) (y x))))))
-||#
+;   (thm (implies (implies (and x y)
+;                          (or (real/rationalp x)
+;                              (real/rationalp y)))
+;                 (iff (<? rel x y)
+;                      (if (or (null x)
+;                              (null y))
+;                          t
+;                          (if rel (< x y) (<= x y)))))
+;        :hints
+;        (("Goal"
+;          :use ((:instance completion-of-< (x x) (y y))
+;                (:instance completion-of-< (x y) (y x))))))
 
 (defun tau-interval-domainp (dom x)
   (declare (xargs :guard t))

@@ -1886,14 +1886,12 @@
 
 ; We sometimes use the following notation:
 
-#||
-(defun <? (rel x y)
-  (if (or (null x) (null y))
-     t
-      (if rel
-          (< x y)
-          (<= x y))))
-||#
+;   (defun <? (rel x y)
+;     (if (or (null x) (null y))
+;        t
+;         (if rel
+;             (< x y)
+;             (<= x y))))
 
 ; This function implements the notion of rel being a boolean encoding of strong or
 ; weak inequality and nil representing the ``appropriate'' infinity.  So for
@@ -2013,143 +2011,140 @@
 ; example, some obvious properties of < and <= are missing hypotheses that
 ; would restrict them to numeric inputs.
 
-#|
-
-(er-progn
-
-; All of the following could be proved before tau was involved.
- (in-theory (disable (tau-system)))
- (include-book "arithmetic-5/top" :dir :system)
-
-; Integers are rationals and rationals are (acl2-)numbers.
-(thm (and (implies (integerp x)
-                   (rationalp x))
-          (implies (rationalp x)
-                   (acl2-numberp x))))
-     
-; Numbers are partitioned into rationals and complex-rationals.
-(thm (and (iff (acl2-numberp x)
-               (or (rationalp x)
-                   (complex-rationalp x)))
-          (implies (rationalp x) (not (complex-rationalp x)))))
-
-; < is transitive, whether applied to numbers or not.
-(thm (implies (and (< x y) (< y z)) (< x z)))
-
-; < is anti-symmetric, whether applied to numbers or not.
-(thm (implies (< x y) (not (< y x))))
-
-; Trichotomy holds, but you must know the arguments are both numbers.
-(thm
- (implies (and (acl2-numberp x)
-               (acl2-numberp y))
-          (or (< x y)
-              (< y x)
-              (equal x y))))
-
-; If something is strictly above or below 0, it must be a number.
-(thm (implies (or (< x 0) (< 0 x))
-              (acl2-numberp x)))
-
-; Strict lower bounds on integers can be raised and weakened:
-(thm
- (implies (and (integerp x)
-               (rationalp bound))
-          (iff (< bound x)
-               (<= (+ (floor bound 1) 1) x))))
-
-; Weak lower bounds on integers can be raised:
-(thm
- (implies (and (integerp x)
-               (rationalp bound))
-          (iff (<= bound x)
-               (<= (ceiling bound 1) x))))
-
-; Strict upper bounds on integers can be lowered and weakened:
-(thm
- (implies (and (integerp x)
-               (rationalp bound))
-          (iff (<  x bound)
-               (<= x (- (ceiling bound 1) 1)))))
-
-; Weak upper bounds on integers can be lowered:
-(thm
- (implies (and (integerp x)
-               (rationalp bound))
-          (iff (<=  x bound)
-               (<= x (floor bound 1)))))
-
-; The other inequalities are just signed less thans, whether applied to numbers
-; or not:
-
-(thm (and (iff (<= x y) (not (< y x)))
-          (iff (>  x y) (< y x))
-          (iff (>= x y) (not (< x y)))
-          (iff (>= x y) (<= y x))))
-
-; Note that the theorem above shows that we can do everything with signed < or
-; with < and <=.  These theorems are interesting only because they don't have
-; hypotheses about x and y being numbers.
-
-; An interval bounded above and below by the same rational contains exactly one
-; element, provided either the interval is restricted to numbers or one of the
-; bounds is non-0.
-
-(thm (implies
-      (and (rationalp lo)
-           (rationalp hi)
-           (<= lo x)
-           (<= x hi)
-           (equal lo hi)
-           (or (acl2-numberp x)
-               (not (equal hi 0))))
-      (equal x hi)))
-
-; Stated slightly differently, the recognizer (lambda (x) (equal x 'b)) for a 
-; rational constant b, is equivalent to the interval recognizer:
-; (lambda (x) (and (rationalp x) (<= b x) (<= x b))):
-
-(thm (implies (rationalp b)
-              (iff (equal x b)
-                   (and (rationalp x)
-                        (<= b x)
-                        (<= x b)))))
-
-; Or, in the even more special case that b is an integer:
-
-(thm (implies (integerp b)
-              (iff (equal x b)
-                   (and (integerp x)
-                        (<= b x)
-                        (<= x b)))))
-
-; (By the way, one might ask how it is that a complex cannot lie ``between''
-; the rational b and the rational b. The reason is that if u+iv <= b and b <=
-; u+iv then one can show that u=b and v=0.  This happens because (u+iv <= b) is
-; equivalent to (u<b v (u=b & v<= 0)).  If you work out the four cases of the
-; conjunction of (u+iv <= b) & (b <= u+iv) you get three impossible ones (where
-; b<u and u<b or u=b) and one other which says u=b and v=0.)
-
-; I do not anticipate tau using it, but here is how < is completed: first, both
-; arguments are coerced to numbers with 0 being the default.  Then, two
-; rationals are compared with the traditional <; if either argument is a
-; complex-rational, they are compared lexicographically on the real- and
-; imagparts.  (On rationals, realpart is the identity and imagpart is always
-; 0.)
-
-(thm
- (equal (< x y)
-        (let ((x1 (if (acl2-numberp x) x 0))
-              (y1 (if (acl2-numberp y) y 0)))
-          (if (and (rationalp x)
-                   (rationalp y))
-              (< x1 y1)
-              (or (< (realpart x1) (realpart y1))
-                  (and (equal (realpart x1) (realpart y1))
-                       (< (imagpart x1) (imagpart y1)))))))
- :hints (("Goal" :use completion-of-<)))
-)
-|#
+;   (er-progn
+;   
+;   ; All of the following could be proved before tau was involved.
+;    (in-theory (disable (tau-system)))
+;    (include-book "arithmetic-5/top" :dir :system)
+;   
+;   ; Integers are rationals and rationals are (acl2-)numbers.
+;   (thm (and (implies (integerp x)
+;                      (rationalp x))
+;             (implies (rationalp x)
+;                      (acl2-numberp x))))
+;        
+;   ; Numbers are partitioned into rationals and complex-rationals.
+;   (thm (and (iff (acl2-numberp x)
+;                  (or (rationalp x)
+;                      (complex-rationalp x)))
+;             (implies (rationalp x) (not (complex-rationalp x)))))
+;   
+;   ; < is transitive, whether applied to numbers or not.
+;   (thm (implies (and (< x y) (< y z)) (< x z)))
+;   
+;   ; < is anti-symmetric, whether applied to numbers or not.
+;   (thm (implies (< x y) (not (< y x))))
+;   
+;   ; Trichotomy holds, but you must know the arguments are both numbers.
+;   (thm
+;    (implies (and (acl2-numberp x)
+;                  (acl2-numberp y))
+;             (or (< x y)
+;                 (< y x)
+;                 (equal x y))))
+;   
+;   ; If something is strictly above or below 0, it must be a number.
+;   (thm (implies (or (< x 0) (< 0 x))
+;                 (acl2-numberp x)))
+;   
+;   ; Strict lower bounds on integers can be raised and weakened:
+;   (thm
+;    (implies (and (integerp x)
+;                  (rationalp bound))
+;             (iff (< bound x)
+;                  (<= (+ (floor bound 1) 1) x))))
+;   
+;   ; Weak lower bounds on integers can be raised:
+;   (thm
+;    (implies (and (integerp x)
+;                  (rationalp bound))
+;             (iff (<= bound x)
+;                  (<= (ceiling bound 1) x))))
+;   
+;   ; Strict upper bounds on integers can be lowered and weakened:
+;   (thm
+;    (implies (and (integerp x)
+;                  (rationalp bound))
+;             (iff (<  x bound)
+;                  (<= x (- (ceiling bound 1) 1)))))
+;   
+;   ; Weak upper bounds on integers can be lowered:
+;   (thm
+;    (implies (and (integerp x)
+;                  (rationalp bound))
+;             (iff (<=  x bound)
+;                  (<= x (floor bound 1)))))
+;   
+;   ; The other inequalities are just signed less thans, whether applied to numbers
+;   ; or not:
+;   
+;   (thm (and (iff (<= x y) (not (< y x)))
+;             (iff (>  x y) (< y x))
+;             (iff (>= x y) (not (< x y)))
+;             (iff (>= x y) (<= y x))))
+;   
+;   ; Note that the theorem above shows that we can do everything with signed < or
+;   ; with < and <=.  These theorems are interesting only because they don't have
+;   ; hypotheses about x and y being numbers.
+;   
+;   ; An interval bounded above and below by the same rational contains exactly one
+;   ; element, provided either the interval is restricted to numbers or one of the
+;   ; bounds is non-0.
+;   
+;   (thm (implies
+;         (and (rationalp lo)
+;              (rationalp hi)
+;              (<= lo x)
+;              (<= x hi)
+;              (equal lo hi)
+;              (or (acl2-numberp x)
+;                  (not (equal hi 0))))
+;         (equal x hi)))
+;   
+;   ; Stated slightly differently, the recognizer (lambda (x) (equal x 'b)) for a 
+;   ; rational constant b, is equivalent to the interval recognizer:
+;   ; (lambda (x) (and (rationalp x) (<= b x) (<= x b))):
+;   
+;   (thm (implies (rationalp b)
+;                 (iff (equal x b)
+;                      (and (rationalp x)
+;                           (<= b x)
+;                           (<= x b)))))
+;   
+;   ; Or, in the even more special case that b is an integer:
+;   
+;   (thm (implies (integerp b)
+;                 (iff (equal x b)
+;                      (and (integerp x)
+;                           (<= b x)
+;                           (<= x b)))))
+;   
+;   ; (By the way, one might ask how it is that a complex cannot lie ``between''
+;   ; the rational b and the rational b. The reason is that if u+iv <= b and b <=
+;   ; u+iv then one can show that u=b and v=0.  This happens because (u+iv <= b) is
+;   ; equivalent to (u<b v (u=b & v<= 0)).  If you work out the four cases of the
+;   ; conjunction of (u+iv <= b) & (b <= u+iv) you get three impossible ones (where
+;   ; b<u and u<b or u=b) and one other which says u=b and v=0.)
+;   
+;   ; I do not anticipate tau using it, but here is how < is completed: first, both
+;   ; arguments are coerced to numbers with 0 being the default.  Then, two
+;   ; rationals are compared with the traditional <; if either argument is a
+;   ; complex-rational, they are compared lexicographically on the real- and
+;   ; imagparts.  (On rationals, realpart is the identity and imagpart is always
+;   ; 0.)
+;   
+;   (thm
+;    (equal (< x y)
+;           (let ((x1 (if (acl2-numberp x) x 0))
+;                 (y1 (if (acl2-numberp y) y 0)))
+;             (if (and (rationalp x)
+;                      (rationalp y))
+;                 (< x1 y1)
+;                 (or (< (realpart x1) (realpart y1))
+;                     (and (equal (realpart x1) (realpart y1))
+;                          (< (imagpart x1) (imagpart y1)))))))
+;    :hints (("Goal" :use completion-of-<)))
+;   )
 
 (defun <?-number-v-rational (rel x k)
 
@@ -2807,150 +2802,149 @@
                  (t nil)))))))
    (t :UNEVALABLE)))
 
-#||
 ; Some Implementor-Level Performance Investigation Tools
- 
-; Ev-fncall-w-tau-recog, above, is used to evaluate tau predicates on
-; constants.  Of course, if the tau predicate in question is complicated this
-; evaluation can be slow.  Tau Eval rules can be used to store pre-computed
-; results and speed up subsequent evaluations.  But what predicates and what
-; constants need to be pre-computed and stored?
-
-; In this comment we drop some raw Lisp code used to collect every call of
-; ev-fncall-w-tau-recog.  Data is stored in a simple alist and so if the number
-; of distinct recognizers grows large, this data collection will slow down the
-; proof.  After collecting the data, one can learn what recognizers were
-; called, what constants they were called on, how many times each recognizer
-; was called on each constant, and how long the first (and only computed) call
-; of each recognizer took.
-
-; When you are ready to collect the data for a proof or proofs, do this to
-; exit the ACL2 loop and enter raw Lisp.
-
-(value :q)
-
-; Next, save the current definition of ev-fncall-w-tau-recog in
-; ev-fncall-w-tau-recog1.
-
-; Warning:  This setf hack works only if ev-fncall-w-tau-recog is not
-; recursively defined and our sources don't already use the symbol
-; ev-fncall-w-tau-recog1.
-
-(setf (symbol-function 'ev-fncall-w-tau-recog1) 
-      (symbol-function 'ev-fncall-w-tau-recog))
-
-; Now declare the collection site.  The setq after this defvar is useful if
-; you run multiple tests and want to clear the site.
-
-(defvar ev-fncall-w-tau-recog-alist nil)
-(setq ev-fncall-w-tau-recog-alist nil)
-
-; Now redefine the raw Lisp version of  ev-fncall-w-tau-recog to
-; collect the data:
-
-(defun ev-fncall-w-tau-recog (fn evg-lst ens wrld)
-  (let ((fn-alist (assoc-eq fn ev-fncall-w-tau-recog-alist)))
-    (cond
-     (fn-alist
-      (let ((evg-val-cnt-time (assoc-equal (car evg-lst) (cdr fn-alist))))
-        (cond
-         (evg-val-cnt-time
-          (setf (caddr evg-val-cnt-time) (+ 1 (caddr evg-val-cnt-time)))
-          (cadr evg-val-cnt-time))
-         (t
-          (let* ((start-time (get-internal-run-time))
-                 (val (ev-fncall-w-tau-recog1 fn evg-lst ens wrld))
-                 (total-time (- (get-internal-run-time) start-time)))
-            (setf (cdr fn-alist)
-                  (cons (list (car evg-lst) val 1 total-time) (cdr fn-alist)))
-            val)))))
-     (t (let* ((start-time (get-internal-run-time))
-               (val (ev-fncall-w-tau-recog1 fn evg-lst ens wrld))
-               (total-time (- (get-internal-run-time) start-time)))
-          (setq ev-fncall-w-tau-recog-alist
-                (cons (cons fn (list (list (car evg-lst) val 1 total-time)))
-                      ev-fncall-w-tau-recog-alist))
-          val)))))
-
-; Return to the loop and run your proof(s).
-(lp)
-
-; <your proof event(s) here>
-
-; Exit ACL2 and re-enter raw Lisp:
-(value :q)
-
-; The collected data is stored in  ev-fncall-w-tau-recog-alist.  But this
-; list can be big so we tend to investigate its size before just printing it.
-
-; For the record, every element of ev-fncall-w-tau-recog-alist is a
-; fn-dot-alist, e.g., (fn . alist), and alist is a list of 4-tuples, each of
-; the form (const val count time), where
-
-; (nth 0 fourtuple) -- evg that fn is applied to
-; (nth 1 fourtuple) -- val of fn on evg
-; (nth 2 fourtuple) -- number of times fn applied to evg
-; (nth 3 fourtuple) -- time it took to eval (fn evg) once
-
-; Time, above, is measured in CLTL internal time units, where the Common Lisp
-; global internal-time-units-per-second says how many of these units are in 
-; one second.
-
-; Some typical expressions for investigating the evaluation of recognizers on
-; constants:
-
-; Number of distinct tau recogs evaluated:
-(len ev-fncall-w-tau-recog-alist)
-
-; Total amount of time, in seconds, devoted to ev-fncall-w-tau-recog
-; if every call were computed from the definition of the recognizers.
-(list (float
-       (/ (loop for fn-dot-alist in ev-fncall-w-tau-recog-alist
-                sum
-                (loop for fourtuple in (cdr fn-dot-alist)
-                      sum (* (nth 2 fourtuple)
-                             (nth 3 fourtuple))))
-          internal-time-units-per-second))
-      'seconds)
-
-; Number of distinct constants concerned:
-(len (loop for fn-dot-alist in ev-fncall-w-tau-recog-alist
-           with ans
-           do (setq ans (union-equal (loop for fourtuple in (cdr fn-dot-alist)
-                                           collect (nth 0 fourtuple))
-                                     ans))
-           finally (return ans)))
-; To see the constants themselves, just drop the len above.
-
-; Number of calls of ev-fncall-tau-recog
-(loop for fn-dot-alist in ev-fncall-w-tau-recog-alist
-      sum (loop for fourtuple in (cdr fn-dot-alist) sum (nth 3 fourtuple)))
-
-; Display of all the data, sorted to show most expensive calls first:
-; Time is measured in internal-time-units and internal-time-units-per-second
-; says how big those units are.
-(loop for x in
-      (cons '(time (fn evg) = val (count))
-            (merge-sort-car->
-             (loop for fn-dot-alist in ev-fncall-w-tau-recog-alist
-                   append
-                   (let ((fn (car fn-dot-alist)))
-                     (loop for fourtuple in (cdr fn-dot-alist)
-                           collect (list (nth 3 fourtuple)
-                                         (list fn (nth 0 fourtuple))
-                                         '= (nth 1 fourtuple)
-                                         (list (nth 2 fourtuple))))))))
-      do (print x))
-
-; Sort the list of recognizers by total time spent in each.
-(merge-sort-car->
- (loop for fn-dot-alist in ev-fncall-w-tau-recog-alist
-       collect
-       (list (loop for fourtuple in (cdr fn-dot-alist)
-                   sum (* (nth 2 fourtuple) (nth 3 fourtuple)))
-             (car fn-dot-alist))))
-
-||#
+;    
+;   ; Ev-fncall-w-tau-recog, above, is used to evaluate tau predicates on
+;   ; constants.  Of course, if the tau predicate in question is complicated this
+;   ; evaluation can be slow.  Tau Eval rules can be used to store pre-computed
+;   ; results and speed up subsequent evaluations.  But what predicates and what
+;   ; constants need to be pre-computed and stored?
+;   
+;   ; In this comment we drop some raw Lisp code used to collect every call of
+;   ; ev-fncall-w-tau-recog.  Data is stored in a simple alist and so if the number
+;   ; of distinct recognizers grows large, this data collection will slow down the
+;   ; proof.  After collecting the data, one can learn what recognizers were
+;   ; called, what constants they were called on, how many times each recognizer
+;   ; was called on each constant, and how long the first (and only computed) call
+;   ; of each recognizer took.
+;   
+;   ; When you are ready to collect the data for a proof or proofs, do this to
+;   ; exit the ACL2 loop and enter raw Lisp.
+;   
+;   (value :q)
+;   
+;   ; Next, save the current definition of ev-fncall-w-tau-recog in
+;   ; ev-fncall-w-tau-recog1.
+;   
+;   ; Warning:  This setf hack works only if ev-fncall-w-tau-recog is not
+;   ; recursively defined and our sources don't already use the symbol
+;   ; ev-fncall-w-tau-recog1.
+;   
+;   (setf (symbol-function 'ev-fncall-w-tau-recog1) 
+;         (symbol-function 'ev-fncall-w-tau-recog))
+;   
+;   ; Now declare the collection site.  The setq after this defvar is useful if
+;   ; you run multiple tests and want to clear the site.
+;   
+;   (defvar ev-fncall-w-tau-recog-alist nil)
+;   (setq ev-fncall-w-tau-recog-alist nil)
+;   
+;   ; Now redefine the raw Lisp version of  ev-fncall-w-tau-recog to
+;   ; collect the data:
+;   
+;   (defun ev-fncall-w-tau-recog (fn evg-lst ens wrld)
+;     (let ((fn-alist (assoc-eq fn ev-fncall-w-tau-recog-alist)))
+;       (cond
+;        (fn-alist
+;         (let ((evg-val-cnt-time (assoc-equal (car evg-lst) (cdr fn-alist))))
+;           (cond
+;            (evg-val-cnt-time
+;             (setf (caddr evg-val-cnt-time) (+ 1 (caddr evg-val-cnt-time)))
+;             (cadr evg-val-cnt-time))
+;            (t
+;             (let* ((start-time (get-internal-run-time))
+;                    (val (ev-fncall-w-tau-recog1 fn evg-lst ens wrld))
+;                    (total-time (- (get-internal-run-time) start-time)))
+;               (setf (cdr fn-alist)
+;                     (cons (list (car evg-lst) val 1 total-time) (cdr fn-alist)))
+;               val)))))
+;        (t (let* ((start-time (get-internal-run-time))
+;                  (val (ev-fncall-w-tau-recog1 fn evg-lst ens wrld))
+;                  (total-time (- (get-internal-run-time) start-time)))
+;             (setq ev-fncall-w-tau-recog-alist
+;                   (cons (cons fn (list (list (car evg-lst) val 1 total-time)))
+;                         ev-fncall-w-tau-recog-alist))
+;             val)))))
+;   
+;   ; Return to the loop and run your proof(s).
+;   (lp)
+;   
+;   ; <your proof event(s) here>
+;   
+;   ; Exit ACL2 and re-enter raw Lisp:
+;   (value :q)
+;   
+;   ; The collected data is stored in  ev-fncall-w-tau-recog-alist.  But this
+;   ; list can be big so we tend to investigate its size before just printing it.
+;   
+;   ; For the record, every element of ev-fncall-w-tau-recog-alist is a
+;   ; fn-dot-alist, e.g., (fn . alist), and alist is a list of 4-tuples, each of
+;   ; the form (const val count time), where
+;   
+;   ; (nth 0 fourtuple) -- evg that fn is applied to
+;   ; (nth 1 fourtuple) -- val of fn on evg
+;   ; (nth 2 fourtuple) -- number of times fn applied to evg
+;   ; (nth 3 fourtuple) -- time it took to eval (fn evg) once
+;   
+;   ; Time, above, is measured in CLTL internal time units, where the Common Lisp
+;   ; global internal-time-units-per-second says how many of these units are in 
+;   ; one second.
+;   
+;   ; Some typical expressions for investigating the evaluation of recognizers on
+;   ; constants:
+;   
+;   ; Number of distinct tau recogs evaluated:
+;   (len ev-fncall-w-tau-recog-alist)
+;   
+;   ; Total amount of time, in seconds, devoted to ev-fncall-w-tau-recog
+;   ; if every call were computed from the definition of the recognizers.
+;   (list (float
+;          (/ (loop for fn-dot-alist in ev-fncall-w-tau-recog-alist
+;                   sum
+;                   (loop for fourtuple in (cdr fn-dot-alist)
+;                         sum (* (nth 2 fourtuple)
+;                                (nth 3 fourtuple))))
+;             internal-time-units-per-second))
+;         'seconds)
+;   
+;   ; Number of distinct constants concerned:
+;   (len (loop for fn-dot-alist in ev-fncall-w-tau-recog-alist
+;              with ans
+;              do (setq ans (union-equal (loop for fourtuple in (cdr fn-dot-alist)
+;                                              collect (nth 0 fourtuple))
+;                                        ans))
+;              finally (return ans)))
+;   ; To see the constants themselves, just drop the len above.
+;   
+;   ; Number of calls of ev-fncall-tau-recog
+;   (loop for fn-dot-alist in ev-fncall-w-tau-recog-alist
+;         sum (loop for fourtuple in (cdr fn-dot-alist) sum (nth 3 fourtuple)))
+;   
+;   ; Display of all the data, sorted to show most expensive calls first:
+;   ; Time is measured in internal-time-units and internal-time-units-per-second
+;   ; says how big those units are.
+;   (loop for x in
+;         (cons '(time (fn evg) = val (count))
+;               (merge-sort-car->
+;                (loop for fn-dot-alist in ev-fncall-w-tau-recog-alist
+;                      append
+;                      (let ((fn (car fn-dot-alist)))
+;                        (loop for fourtuple in (cdr fn-dot-alist)
+;                              collect (list (nth 3 fourtuple)
+;                                            (list fn (nth 0 fourtuple))
+;                                            '= (nth 1 fourtuple)
+;                                            (list (nth 2 fourtuple))))))))
+;         do (print x))
+;   
+;   ; Sort the list of recognizers by total time spent in each.
+;   (merge-sort-car->
+;    (loop for fn-dot-alist in ev-fncall-w-tau-recog-alist
+;          collect
+;          (list (loop for fourtuple in (cdr fn-dot-alist)
+;                      sum (* (nth 2 fourtuple) (nth 3 fourtuple)))
+;                (car fn-dot-alist))))
+;
+; End of Some Implementor-Level Performance Investigation Tools
 
 (defun bad-val-or-unknowns (bad-val pairs evg-lst ens wrld)
 
@@ -3152,7 +3146,7 @@
 
   (cond ((endp pairs) (cons pair pairs))
         ((>= (car (car pairs)) (car pair))
-         (if (equal (car (car pairs)) (car pair))
+         (if (eql (car (car pairs)) (car pair))
              t
              (let ((rest (insert-tau-pair pair (cdr pairs))))
                (if (eq rest t)
@@ -3269,71 +3263,68 @@
 
 ; We can prove interval-decider sound as follows:
 
-#||
-(verify-termination interval-decider)
-(verify-termination signate)
-
-(tau-status :system nil)
-
-(defun <? (rel x y)
-  (if (or (null x) (null y))
-     t
-      (if rel
-          (< x y)
-          (<= x y))))
-
-(thm
- (implies (and (rationalp k)
-               (not (equal x nil))  x can't be an infinity
-               (<? lo-rel lo x)
-               (<? hi-rel x hi)
-               (not (equal (interval-decider lo-rel lo hi-rel hi rel k) '?)))
-          (equal (<? rel x k)
-                 (interval-decider lo-rel lo hi-rel hi rel k))))
-
-; Here is the theorem that shows how to use interval-decider to decide
-; (<? rel k x) instead of (<? rel x k).
-
-(thm
- (implies (and (rationalp k)
-               (not (equal x nil))  x can't be an infinity
-               (<? lo-rel lo x)
-               (<? hi-rel x hi)
-               (not (equal (interval-decider lo-rel lo hi-rel hi (not rel) k) '?)))
-          (equal (<? rel k x)
-                 (signate nil (interval-decider lo-rel lo hi-rel hi (not rel) k)))))
-
-; Alternatively, the two theorems below show how interval-decider is used to
-; decide signed :lessp-x-k or signed :lessp-k-x recognizers.  Note that
-; since < is Boolean, (signate sign (< x k)) is just (< x k) or (NOT (< x k))
-; depending on sign.
-
-(thm
- (implies (and (rationalp k)
-               (not (equal x nil))  x can't be an infinity
-               (<? lo-rel lo x)
-               (<? hi-rel x hi)
-               (not (equal (interval-decider lo-rel lo hi-rel hi t k) '?)))
-          (equal (signate sign (< x k))  ; sign/(k . :lessp-x-k)
-                 (signate sign
-                          (interval-decider lo-rel lo hi-rel hi t k)))))
-
-(thm
- (implies (and (rationalp k)
-               (not (equal x nil))  x can't be an infinity
-               (<? lo-rel lo x)
-               (<? hi-rel x hi)
-               (not (equal (interval-decider lo-rel lo hi-rel hi nil k) '?)))
-          (equal (signate sign (< k x)) ; sign/(k . :lessp-k-x)
-                 (signate (not sign)
-                          (interval-decider lo-rel lo hi-rel hi nil k)))))
-
-; Note that to use interval-decider on sign/(k . :lessp-x-k) you call it
-; with rel = t and then just interpret the non-? answers via sign as usual.
-; To use it on sign/(k . :lessp-k-x) you call it with rel = nil and then
-; interpret the non-? answers with via (not sign).
-
-||#
+;   (verify-termination interval-decider)
+;   (verify-termination signate)
+;   
+;   (tau-status :system nil)
+;   
+;   (defun <? (rel x y)
+;     (if (or (null x) (null y))
+;        t
+;         (if rel
+;             (< x y)
+;             (<= x y))))
+;   
+;   (thm
+;    (implies (and (rationalp k)
+;                  (not (equal x nil))  x can't be an infinity
+;                  (<? lo-rel lo x)
+;                  (<? hi-rel x hi)
+;                  (not (equal (interval-decider lo-rel lo hi-rel hi rel k) '?)))
+;             (equal (<? rel x k)
+;                    (interval-decider lo-rel lo hi-rel hi rel k))))
+;   
+;   ; Here is the theorem that shows how to use interval-decider to decide
+;   ; (<? rel k x) instead of (<? rel x k).
+;   
+;   (thm
+;    (implies (and (rationalp k)
+;                  (not (equal x nil))  x can't be an infinity
+;                  (<? lo-rel lo x)
+;                  (<? hi-rel x hi)
+;                  (not (equal (interval-decider lo-rel lo hi-rel hi (not rel) k) '?)))
+;             (equal (<? rel k x)
+;                    (signate nil (interval-decider lo-rel lo hi-rel hi (not rel) k)))))
+;   
+;   ; Alternatively, the two theorems below show how interval-decider is used to
+;   ; decide signed :lessp-x-k or signed :lessp-k-x recognizers.  Note that
+;   ; since < is Boolean, (signate sign (< x k)) is just (< x k) or (NOT (< x k))
+;   ; depending on sign.
+;   
+;   (thm
+;    (implies (and (rationalp k)
+;                  (not (equal x nil))  x can't be an infinity
+;                  (<? lo-rel lo x)
+;                  (<? hi-rel x hi)
+;                  (not (equal (interval-decider lo-rel lo hi-rel hi t k) '?)))
+;             (equal (signate sign (< x k))  ; sign/(k . :lessp-x-k)
+;                    (signate sign
+;                             (interval-decider lo-rel lo hi-rel hi t k)))))
+;   
+;   (thm
+;    (implies (and (rationalp k)
+;                  (not (equal x nil))  x can't be an infinity
+;                  (<? lo-rel lo x)
+;                  (<? hi-rel x hi)
+;                  (not (equal (interval-decider lo-rel lo hi-rel hi nil k) '?)))
+;             (equal (signate sign (< k x)) ; sign/(k . :lessp-k-x)
+;                    (signate (not sign)
+;                             (interval-decider lo-rel lo hi-rel hi nil k)))))
+;   
+;   ; Note that to use interval-decider on sign/(k . :lessp-x-k) you call it
+;   ; with rel = t and then just interpret the non-? answers via sign as usual.
+;   ; To use it on sign/(k . :lessp-k-x) you call it with rel = nil and then
+;   ; interpret the non-? answers with via (not sign).
 
 (defun reduce-sign/recog (tau sign recog ens wrld)
 
@@ -3478,297 +3469,294 @@
         nil)
        (t '?))))))
 
-#||
+; Before running these tests, add the defuns and macros for ptrans and mktau
+; from the section ``On Tau Debugging Features'' below.  They can't be defined
+; at this point because they use some functions not yet defined.
+;   
+;   (logic)
+;   
+;   (defun predicted (expr val)
+;     (if (equal expr val) 'Passed 'Failed!))
+;   
+;   ; Every element of the following list should be PASSED.
+;   
+;   (list
+;   (let ((tau (mktau t (natp x) (evenp x) (not (equal x 20)))))
+;     (predicted (reduce-sign/recog tau t *tau-natp-pair*
+;                                   (ens state) (w state))
+;                t))
+;   
+;   (let ((tau (mktau t (natp x) (evenp x) (not (equal x 20)))))
+;     (predicted (reduce-sign/recog tau nil *tau-natp-pair*
+;                                   (ens state) (w state))
+;                nil))
+;   
+;   (let ((tau (mktau t (natp x) (evenp x) (not (equal x 20)))))
+;     (predicted (reduce-sign/recog tau t '(16 . nil)
+;                                   (ens state) (w state))
+;                '?))
+;   
+;   (let ((tau (mktau t (natp x) (evenp x) (not (equal x 20)))))
+;     (predicted (reduce-sign/recog tau t '(15 . nil)
+;                                   (ens state) (w state))
+;                NIL))
+;   
+;   (let ((tau (mktau t (natp x) (evenp x) (not (equal x 20)))))
+;     (predicted (reduce-sign/recog tau nil '(15 . nil)
+;                                   (ens state) (w state))
+;                T))
+;   (let ((tau (mktau t (natp x) (evenp x) (not (equal x 20)))))
+;     (predicted (reduce-sign/recog tau nil '(20 . nil)
+;                                   (ens state) (w state))
+;                T))
+;   (let ((tau (mktau t (natp x) (evenp x) (not (equal x 20)))))
+;     (predicted (reduce-sign/recog tau t '(20 . nil)
+;                                   (ens state) (w state))
+;                NIL))
+;   (let ((tau (mktau t (natp x) (evenp x))))
+;     (predicted (reduce-sign/recog tau t '(17 . nil)
+;                                   (ens state) (w state))
+;                NIL))
+;   
+;   ; If (10 <= x <= 20) then (x =17) may or may not be true.
+;   (let ((tau (mktau t (<= 10 x) (<= x 20))))
+;     (predicted (reduce-sign/recog tau t '(17 . nil)
+;                                   (ens state) (w state))
+;                '?))
+;   
+;   ; If (10 <= x <= 20) then (x/=17) may or may not be true
+;   (let ((tau (mktau t (<= 10 x) (<= x 20))))
+;     (predicted (reduce-sign/recog tau nil '(17 . nil)
+;                                   (ens state) (w state))
+;                '?))
+;   
+;   ; If (10 <= x <= 20) then (x =21) is false
+;   (let ((tau (mktau t (<= 10 x) (<= x 20))))
+;     (predicted (reduce-sign/recog tau t '(21 . nil)
+;                                   (ens state) (w state))
+;                nil))
+;   
+;   ; If (10 <= x <= 20) then (x/=21) is true
+;   (let ((tau (mktau t (<= 10 x) (<= x 20))))
+;     (predicted (reduce-sign/recog tau nil '(21 . nil)
+;                                   (ens state) (w state))
+;                t))
+;   
+;   ; If (10 <= x <= 20) then (x ='ABC) is false
+;   (let ((tau (mktau t (<= 10 x) (<= x 20))))
+;     (predicted (reduce-sign/recog tau t '(abc . nil)
+;                                   (ens state) (w state))
+;                nil))
+;   
+;   ; If (10 <= x <= 20) then (x/='ABC) is true
+;   (let ((tau (mktau t (<= 10 x) (<= x 20))))
+;     (predicted (reduce-sign/recog tau nil '(abc . nil)
+;                                   (ens state) (w state))
+;                t))
+;   
+;   ; If (10 <= x <= 20) then (x =20) may or may not be true
+;   (let ((tau (mktau t (<= 10 x) (<= x 20))))
+;     (predicted (reduce-sign/recog tau t '(20 . nil)
+;                                   (ens state) (w state))
+;                '?))
+;   
+;   ; If (10 <= x <= 20) then (x/=20) may or may not be true
+;   (let ((tau (mktau t (<= 10 x) (<= x 20))))
+;     (predicted (reduce-sign/recog tau nil '(20 . nil)
+;                                   (ens state) (w state))
+;                '?))
+;   
+;   ; If (10 <= x < 20) then (x =20) is false
+;   (let ((tau (mktau t (<= 10 x) (< x 20))))
+;     (predicted (reduce-sign/recog tau t '(20 . nil)
+;                                   (ens state) (w state))
+;                nil))
+;   
+;   ; If (10 <= x < 20) then (x/=20) is true
+;   (let ((tau (mktau t (<= 10 x) (< x 20))))
+;     (predicted (reduce-sign/recog tau nil '(20 . nil)
+;                                   (ens state) (w state))
+;                t))
+;   
+;   ; If (10 <= x <= 20) then (x =9) is false
+;   (let ((tau (mktau t (<= 10 x) (<= x 20))))
+;     (predicted (reduce-sign/recog tau t '(9 . nil)
+;                                   (ens state) (w state))
+;                nil))
+;   
+;   ; If (10 <= x <= 20) then (x < 9) is false
+;   (let ((tau (mktau t (<= 10 x) (<= x 20))))
+;     (predicted (reduce-sign/recog tau t '(9 . :lessp-x-k)
+;                                   (ens state) (w state))
+;                nil))
+;   
+;   ; If (10 <= x <= 20) then (x < 15) is unknown
+;   (let ((tau (mktau t (<= 10 x) (<= x 20))))
+;     (predicted (reduce-sign/recog tau t '(15 . :lessp-x-k)
+;                                   (ens state) (w state))
+;                '?))
+;   
+;   ; If (10 <= x <= 20) then (x < 24) is true
+;   (let ((tau (mktau t (<= 10 x) (<= x 20))))
+;     (predicted (reduce-sign/recog tau t '(24 . :lessp-x-k)
+;                                   (ens state) (w state))
+;                t))
+;   
+;   ; If (10 <= x <= 20) then (x < 21) is true
+;   (let ((tau (mktau t (<= 10 x) (<= x 20))))
+;     (predicted (reduce-sign/recog tau t '(21 . :lessp-x-k)
+;                                   (ens state) (w state))
+;                t))
+;   
+;   ; If (10 <= x <= 20) then (x < 20) is unknown
+;   (let ((tau (mktau t (<= 10 x) (<= x 20))))
+;     (predicted (reduce-sign/recog tau t '(20 . :lessp-x-k)
+;                                   (ens state) (w state))
+;                '?))
+;   
+;   ; If (10 <= x <= 20) then (x < 10) is false
+;   (let ((tau (mktau t (<= 10 x) (<= x 20))))
+;     (predicted (reduce-sign/recog tau t '(10 . :lessp-x-k)
+;                                   (ens state) (w state))
+;                nil))
+;   
+;   ; If (10 <= x <= 20) then (5 < x) is true
+;   (let ((tau (mktau t (<= 10 x) (<= x 20))))
+;     (predicted (reduce-sign/recog tau t '(5 . :lessp-k-x)
+;                                   (ens state) (w state))
+;                t))
+;   
+;   ; If (10 <= x <= 20) then (25 < x) is false
+;   (let ((tau (mktau t (<= 10 x) (<= x 20))))
+;     (predicted (reduce-sign/recog tau t '(25 . :lessp-k-x)
+;                                   (ens state) (w state))
+;                nil))
+;   
+;   ; If (10 <= x <= 20) then (15 < x) is unknown
+;   (let ((tau (mktau t (<= 10 x) (<= x 20))))
+;     (predicted (reduce-sign/recog tau t '(15 . :lessp-k-x)
+;                                   (ens state) (w state))
+;                '?))
+;   
+;   ; If (10 <= x <= 20) then (5 <= x) is true
+;   (let ((tau (mktau t (<= 10 x) (<= x 20))))
+;     (predicted (reduce-sign/recog tau nil '(5 . :lessp-x-k)
+;                                   (ens state) (w state))
+;                t))
+;   
+;   ; If (10 <= x <= 20) then (25 <= x) is false
+;   (let ((tau (mktau t (<= 10 x) (<= x 20))))
+;     (predicted (reduce-sign/recog tau nil '(25 . :lessp-x-k)
+;                                   (ens state) (w state))
+;                nil))
+;   
+;   ; If (10 <= x <= 20) then (15 <= x) is unknown
+;   (let ((tau (mktau t (<= 10 x) (<= x 20))))
+;     (predicted (reduce-sign/recog tau nil '(15 . :lessp-x-k)
+;                                   (ens state) (w state))
+;                '?))
+;   
+;   ; If (10 <= x <= infinity) then (x <= 15) is unknown
+;   (let ((tau (mktau t (<= 10 x))))
+;     (predicted (reduce-sign/recog tau nil '(15 . :lessp-k-x)
+;                                   (ens state) (w state))
+;                '?))
+;   
+;   ; If (10 <= x <= infinity) then (x <= 15) is true
+;   (let ((tau (mktau t (<= x 10))))
+;     (predicted (reduce-sign/recog tau nil '(15 . :lessp-k-x)
+;                                   (ens state) (w state))
+;                t))
+;   
+;   ; If (10 <= x <= infinity) then (x = 'abc) is false
+;   (let ((tau (mktau t (<= 10 x))))
+;     (predicted (reduce-sign/recog tau t '(abc . nil)
+;                                   (ens state) (w state))
+;                nil))
+;   
+;   ; If (10 <= x <= infinity) then (x = 20) is unknown
+;   (let ((tau (mktau t (<= 10 x))))
+;     (predicted (reduce-sign/recog tau t '(20 . nil)
+;                                   (ens state) (w state))
+;                '?))
+;   
+;   ; If (10 <= x <= infinity) then (acl2-numberp x) is true
+;   (let ((tau (mktau t (<= 10 x))))
+;     (predicted (reduce-sign/recog tau t *tau-acl2-numberp-pair*
+;                                   (ens state) (w state))
+;                t))
+;   ; If (not (acl2-numberp x)), then (< x 30) is true.
+;   (let ((tau (mktau t (not (acl2-numberp x)))))
+;     (predicted (reduce-sign/recog tau t '(30 . :lessp-x-k)
+;                                   (ens state) (w state))
+;                t))
+;   
+;   ; If (not (acl2-numberp x)), then (< x -30) is false
+;   (let ((tau (mktau t (not (acl2-numberp x)))))
+;     (predicted (reduce-sign/recog tau t '(-30 . :lessp-x-k)
+;                                   (ens state) (w state))
+;                nil))
+;   
+;   ; If (< x -30) then (acl2-numberp x) is true
+;   (let ((tau (mktau t (< x -30))))
+;     (predicted (reduce-sign/recog tau t *tau-acl2-numberp-pair*
+;                                   (ens state) (w state))
+;                t))
+;   
+;   ; If 0 <= x <= 0 and (acl2-numberp x) then x is 0
+;   (let ((tau (mktau t (<= 0 x) (<= x 0) (acl2-numberp x))))
+;     (predicted (reduce-sign/recog tau t '(0 . nil)
+;                                   (ens state) (w state))
+;                t))
+;   
+;   ; Here I repeat the above for other permutations of the order in which the
+;   ; hyps are processed:
+;   
+;   (let ((tau (mktau t (<= x 0) (<= 0 x) (acl2-numberp x))))
+;     (predicted (reduce-sign/recog tau t '(0 . nil)
+;                                   (ens state) (w state))
+;                t))
+;   
+;   (let ((tau (mktau t (<= x 0) (acl2-numberp x) (<= 0 x))))
+;     (predicted (reduce-sign/recog tau t '(0 . nil)
+;                                   (ens state) (w state))
+;                t))
+;   
+;   (let ((tau (mktau t  (<= 0 x) (acl2-numberp x) (<= x 0))))
+;     (predicted (reduce-sign/recog tau t '(0 . nil)
+;                                   (ens state) (w state))
+;                t))
+;   
+;   (let ((tau (mktau t (acl2-numberp x) (<= x 0) (<= 0 x))))
+;     (predicted (reduce-sign/recog tau t '(0 . nil)
+;                                   (ens state) (w state))
+;                t))
+;   
+;   (let ((tau (mktau t (acl2-numberp x) (<= 0 x) (<= x 0))))
+;     (predicted (reduce-sign/recog tau t '(0 . nil)
+;                                   (ens state) (w state))
+;                t))
+;   
+;   ; IF (0 <= x <= 0) then (x=0) is unknown.
+;   (let ((tau (mktau t (<= 0 x) (<= x 0))))
+;     (predicted (reduce-sign/recog tau t '(0 . nil)
+;                                   (ens state) (w state))
+;                '?))
+;   
+;   ; IF (1/2 <= x <= 1/2) then (x=1/2) is t
+;   (let ((tau (mktau t (<= 1/2 x) (<= x 1/2))))
+;     (predicted (reduce-sign/recog tau t '(1/2 . nil)
+;                                   (ens state) (w state))
+;                t))
+;   
+;   ; IF (#c(1 2) <= x <= #c(1 2)) then (x=#c(1 2)) is '? -- because we can't handle 
+;   ;  complex bounds!  
+;   (let ((tau (mktau t (<= #c(1 2) x) (<= x #c(1 2)))))
+;     (predicted (reduce-sign/recog tau t '(#c(1 2) . nil)
+;                                   (ens state) (w state))
+;                '?))
+;   )
 
-Before running these tests, add the defuns and macros for ptrans and mktau
-from the section ``On Tau Debugging Features'' below.  They can't be defined
-at this point because they use some functions not yet defines.
-
-(logic)
-
-(defun predicted (expr val)
-  (if (equal expr val) 'Passed 'Failed!))
-
-; Every element of the following list should be PASSED.
-
-(list
-(let ((tau (mktau t (natp x) (evenp x) (not (equal x 20)))))
-  (predicted (reduce-sign/recog tau t *tau-natp-pair*
-                                (ens state) (w state))
-             t))
-
-(let ((tau (mktau t (natp x) (evenp x) (not (equal x 20)))))
-  (predicted (reduce-sign/recog tau nil *tau-natp-pair*
-                                (ens state) (w state))
-             nil))
-
-(let ((tau (mktau t (natp x) (evenp x) (not (equal x 20)))))
-  (predicted (reduce-sign/recog tau t '(16 . nil)
-                                (ens state) (w state))
-             '?))
-
-(let ((tau (mktau t (natp x) (evenp x) (not (equal x 20)))))
-  (predicted (reduce-sign/recog tau t '(15 . nil)
-                                (ens state) (w state))
-             NIL))
-
-(let ((tau (mktau t (natp x) (evenp x) (not (equal x 20)))))
-  (predicted (reduce-sign/recog tau nil '(15 . nil)
-                                (ens state) (w state))
-             T))
-(let ((tau (mktau t (natp x) (evenp x) (not (equal x 20)))))
-  (predicted (reduce-sign/recog tau nil '(20 . nil)
-                                (ens state) (w state))
-             T))
-(let ((tau (mktau t (natp x) (evenp x) (not (equal x 20)))))
-  (predicted (reduce-sign/recog tau t '(20 . nil)
-                                (ens state) (w state))
-             NIL))
-(let ((tau (mktau t (natp x) (evenp x))))
-  (predicted (reduce-sign/recog tau t '(17 . nil)
-                                (ens state) (w state))
-             NIL))
-
-; If (10 <= x <= 20) then (x =17) may or may not be true.
-(let ((tau (mktau t (<= 10 x) (<= x 20))))
-  (predicted (reduce-sign/recog tau t '(17 . nil)
-                                (ens state) (w state))
-             '?))
-
-; If (10 <= x <= 20) then (x/=17) may or may not be true
-(let ((tau (mktau t (<= 10 x) (<= x 20))))
-  (predicted (reduce-sign/recog tau nil '(17 . nil)
-                                (ens state) (w state))
-             '?))
-
-; If (10 <= x <= 20) then (x =21) is false
-(let ((tau (mktau t (<= 10 x) (<= x 20))))
-  (predicted (reduce-sign/recog tau t '(21 . nil)
-                                (ens state) (w state))
-             nil))
-
-; If (10 <= x <= 20) then (x/=21) is true
-(let ((tau (mktau t (<= 10 x) (<= x 20))))
-  (predicted (reduce-sign/recog tau nil '(21 . nil)
-                                (ens state) (w state))
-             t))
-
-; If (10 <= x <= 20) then (x ='ABC) is false
-(let ((tau (mktau t (<= 10 x) (<= x 20))))
-  (predicted (reduce-sign/recog tau t '(abc . nil)
-                                (ens state) (w state))
-             nil))
-
-; If (10 <= x <= 20) then (x/='ABC) is true
-(let ((tau (mktau t (<= 10 x) (<= x 20))))
-  (predicted (reduce-sign/recog tau nil '(abc . nil)
-                                (ens state) (w state))
-             t))
-
-; If (10 <= x <= 20) then (x =20) may or may not be true
-(let ((tau (mktau t (<= 10 x) (<= x 20))))
-  (predicted (reduce-sign/recog tau t '(20 . nil)
-                                (ens state) (w state))
-             '?))
-
-; If (10 <= x <= 20) then (x/=20) may or may not be true
-(let ((tau (mktau t (<= 10 x) (<= x 20))))
-  (predicted (reduce-sign/recog tau nil '(20 . nil)
-                                (ens state) (w state))
-             '?))
-
-; If (10 <= x < 20) then (x =20) is false
-(let ((tau (mktau t (<= 10 x) (< x 20))))
-  (predicted (reduce-sign/recog tau t '(20 . nil)
-                                (ens state) (w state))
-             nil))
-
-; If (10 <= x < 20) then (x/=20) is true
-(let ((tau (mktau t (<= 10 x) (< x 20))))
-  (predicted (reduce-sign/recog tau nil '(20 . nil)
-                                (ens state) (w state))
-             t))
-
-; If (10 <= x <= 20) then (x =9) is false
-(let ((tau (mktau t (<= 10 x) (<= x 20))))
-  (predicted (reduce-sign/recog tau t '(9 . nil)
-                                (ens state) (w state))
-             nil))
-
-; If (10 <= x <= 20) then (x < 9) is false
-(let ((tau (mktau t (<= 10 x) (<= x 20))))
-  (predicted (reduce-sign/recog tau t '(9 . :lessp-x-k)
-                                (ens state) (w state))
-             nil))
-
-; If (10 <= x <= 20) then (x < 15) is unknown
-(let ((tau (mktau t (<= 10 x) (<= x 20))))
-  (predicted (reduce-sign/recog tau t '(15 . :lessp-x-k)
-                                (ens state) (w state))
-             '?))
-
-; If (10 <= x <= 20) then (x < 24) is true
-(let ((tau (mktau t (<= 10 x) (<= x 20))))
-  (predicted (reduce-sign/recog tau t '(24 . :lessp-x-k)
-                                (ens state) (w state))
-             t))
-
-; If (10 <= x <= 20) then (x < 21) is true
-(let ((tau (mktau t (<= 10 x) (<= x 20))))
-  (predicted (reduce-sign/recog tau t '(21 . :lessp-x-k)
-                                (ens state) (w state))
-             t))
-
-; If (10 <= x <= 20) then (x < 20) is unknown
-(let ((tau (mktau t (<= 10 x) (<= x 20))))
-  (predicted (reduce-sign/recog tau t '(20 . :lessp-x-k)
-                                (ens state) (w state))
-             '?))
-
-; If (10 <= x <= 20) then (x < 10) is false
-(let ((tau (mktau t (<= 10 x) (<= x 20))))
-  (predicted (reduce-sign/recog tau t '(10 . :lessp-x-k)
-                                (ens state) (w state))
-             nil))
-
-; If (10 <= x <= 20) then (5 < x) is true
-(let ((tau (mktau t (<= 10 x) (<= x 20))))
-  (predicted (reduce-sign/recog tau t '(5 . :lessp-k-x)
-                                (ens state) (w state))
-             t))
-
-; If (10 <= x <= 20) then (25 < x) is false
-(let ((tau (mktau t (<= 10 x) (<= x 20))))
-  (predicted (reduce-sign/recog tau t '(25 . :lessp-k-x)
-                                (ens state) (w state))
-             nil))
-
-; If (10 <= x <= 20) then (15 < x) is unknown
-(let ((tau (mktau t (<= 10 x) (<= x 20))))
-  (predicted (reduce-sign/recog tau t '(15 . :lessp-k-x)
-                                (ens state) (w state))
-             '?))
-
-; If (10 <= x <= 20) then (5 <= x) is true
-(let ((tau (mktau t (<= 10 x) (<= x 20))))
-  (predicted (reduce-sign/recog tau nil '(5 . :lessp-x-k)
-                                (ens state) (w state))
-             t))
-
-; If (10 <= x <= 20) then (25 <= x) is false
-(let ((tau (mktau t (<= 10 x) (<= x 20))))
-  (predicted (reduce-sign/recog tau nil '(25 . :lessp-x-k)
-                                (ens state) (w state))
-             nil))
-
-; If (10 <= x <= 20) then (15 <= x) is unknown
-(let ((tau (mktau t (<= 10 x) (<= x 20))))
-  (predicted (reduce-sign/recog tau nil '(15 . :lessp-x-k)
-                                (ens state) (w state))
-             '?))
-
-; If (10 <= x <= infinity) then (x <= 15) is unknown
-(let ((tau (mktau t (<= 10 x))))
-  (predicted (reduce-sign/recog tau nil '(15 . :lessp-k-x)
-                                (ens state) (w state))
-             '?))
-
-; If (10 <= x <= infinity) then (x <= 15) is true
-(let ((tau (mktau t (<= x 10))))
-  (predicted (reduce-sign/recog tau nil '(15 . :lessp-k-x)
-                                (ens state) (w state))
-             t))
-
-; If (10 <= x <= infinity) then (x = 'abc) is false
-(let ((tau (mktau t (<= 10 x))))
-  (predicted (reduce-sign/recog tau t '(abc . nil)
-                                (ens state) (w state))
-             nil))
-
-; If (10 <= x <= infinity) then (x = 20) is unknown
-(let ((tau (mktau t (<= 10 x))))
-  (predicted (reduce-sign/recog tau t '(20 . nil)
-                                (ens state) (w state))
-             '?))
-
-; If (10 <= x <= infinity) then (acl2-numberp x) is true
-(let ((tau (mktau t (<= 10 x))))
-  (predicted (reduce-sign/recog tau t *tau-acl2-numberp-pair*
-                                (ens state) (w state))
-             t))
-; If (not (acl2-numberp x)), then (< x 30) is true.
-(let ((tau (mktau t (not (acl2-numberp x)))))
-  (predicted (reduce-sign/recog tau t '(30 . :lessp-x-k)
-                                (ens state) (w state))
-             t))
-
-; If (not (acl2-numberp x)), then (< x -30) is false
-(let ((tau (mktau t (not (acl2-numberp x)))))
-  (predicted (reduce-sign/recog tau t '(-30 . :lessp-x-k)
-                                (ens state) (w state))
-             nil))
-
-; If (< x -30) then (acl2-numberp x) is true
-(let ((tau (mktau t (< x -30))))
-  (predicted (reduce-sign/recog tau t *tau-acl2-numberp-pair*
-                                (ens state) (w state))
-             t))
-
-; If 0 <= x <= 0 and (acl2-numberp x) then x is 0
-(let ((tau (mktau t (<= 0 x) (<= x 0) (acl2-numberp x))))
-  (predicted (reduce-sign/recog tau t '(0 . nil)
-                                (ens state) (w state))
-             t))
-
-; Here I repeat the above for other permutations of the order in which the
-; hyps are processed:
-
-(let ((tau (mktau t (<= x 0) (<= 0 x) (acl2-numberp x))))
-  (predicted (reduce-sign/recog tau t '(0 . nil)
-                                (ens state) (w state))
-             t))
-
-(let ((tau (mktau t (<= x 0) (acl2-numberp x) (<= 0 x))))
-  (predicted (reduce-sign/recog tau t '(0 . nil)
-                                (ens state) (w state))
-             t))
-
-(let ((tau (mktau t  (<= 0 x) (acl2-numberp x) (<= x 0))))
-  (predicted (reduce-sign/recog tau t '(0 . nil)
-                                (ens state) (w state))
-             t))
-
-(let ((tau (mktau t (acl2-numberp x) (<= x 0) (<= 0 x))))
-  (predicted (reduce-sign/recog tau t '(0 . nil)
-                                (ens state) (w state))
-             t))
-
-(let ((tau (mktau t (acl2-numberp x) (<= 0 x) (<= x 0))))
-  (predicted (reduce-sign/recog tau t '(0 . nil)
-                                (ens state) (w state))
-             t))
-
-; IF (0 <= x <= 0) then (x=0) is unknown.
-(let ((tau (mktau t (<= 0 x) (<= x 0))))
-  (predicted (reduce-sign/recog tau t '(0 . nil)
-                                (ens state) (w state))
-             '?))
-
-; IF (1/2 <= x <= 1/2) then (x=1/2) is t
-(let ((tau (mktau t (<= 1/2 x) (<= x 1/2))))
-  (predicted (reduce-sign/recog tau t '(1/2 . nil)
-                                (ens state) (w state))
-             t))
-
-; IF (#c(1 2) <= x <= #c(1 2)) then (x=#c(1 2)) is '? -- because we can't handle 
-;  complex bounds!  
-(let ((tau (mktau t (<= #c(1 2) x) (<= x #c(1 2)))))
-  (predicted (reduce-sign/recog tau t '(#c(1 2) . nil)
-                                (ens state) (w state))
-             '?))
-)
-
-||#
 ; -----------------------------------------------------------------
 
 ; On Firing Signature Rules
@@ -5861,53 +5849,51 @@ at this point because they use some functions not yet defines.
 
 ; The commented-out code below actually checks these entries.
 
-#||
-(tau-status :system nil)
-(include-book "arithmetic-5/top" :dir :system)
-
-(defun generate-ABC-thms (lst)
-  (cond ((endp lst) nil)
-        (t (let ((A (nth 0 (car lst)))
-                 (B (nth 1 (car lst)))
-                 (C (nth 2 (car lst)))
-                 (Z (nth 3 (car lst))))
-             (cons `(implies (and (rationalp k)
-                                  (rationalp d))
-                             (and
-                              (implies ,C (implies ,A ,B))
-                              (implies (let ((x ,Z))
-                                         (implies ,A ,B))
-                                       ,C)))
-                   (generate-ABC-thms (cdr lst)))))))
-
-(defmacro confirm-ABC-table nil
-  `(thm
-    (and
-     ,@(generate-ABC-thms
-;           fact        question
-;           (A x)       (B x)         C              Z
-        '(((<  k x)    (<  d x)    (<= d k)    (+ k (/ (- d k) 2)))	;  1
-          ((<  k x)    (<= d x)    (<= d k)    (+ k (/ (- d k) 2)))	;  2
-          ((<  k x)    (<= x d)    NIL         (+ (max k d) 1))		;  3
-          ((<  k x)    (<  x d)    NIL         (+ (max k d) 1))		;  4
-
-          ((<= k x)    (<  d x)    (<  d k)    (+ k (/ (- d k) 2)))	;  5
-          ((<= k x)    (<= d x)    (<= d k)    (+ k (/ (- d k) 2)))	;  6
-          ((<= k x)    (<= x d)    NIL         (+ (max k d) 1))		;  7
-          ((<= k x)    (<  x d)    NIL         (+ (max k d) 1))		;  8
-
-          ((<= x k)    (<  d x)    NIL         (- (min k d) 1))		;  9
-          ((<= x k)    (<= d x)    NIL         (- (min k d) 1))		; 10
-          ((<= x k)    (<= x d)    (<= k d)    (+ d (/ (- k d) 2)))	; 11
-          ((<= x k)    (<  x d)    (<  k d)    (+ d (/ (- k d) 2)))	; 12
-
-          ((<  x k)    (<  d x)    NIL         (- (min k d) 1))		; 13
-          ((<  x k)    (<= d x)    NIL         (- (min k d) 1))		; 14
-          ((<  x k)    (<= x d)    (<= k d)    (+ d (/ (- k d) 2)))	; 15
-          ((<  x k)    (<  x d)    (<= k d)    (+ d (/ (- k d) 2)))))))); 16
-
-(confirm-ABC-table)
-||#
+;   (tau-status :system nil)
+;   (include-book "arithmetic-5/top" :dir :system)
+;   
+;   (defun generate-ABC-thms (lst)
+;     (cond ((endp lst) nil)
+;           (t (let ((A (nth 0 (car lst)))
+;                    (B (nth 1 (car lst)))
+;                    (C (nth 2 (car lst)))
+;                    (Z (nth 3 (car lst))))
+;                (cons `(implies (and (rationalp k)
+;                                     (rationalp d))
+;                                (and
+;                                 (implies ,C (implies ,A ,B))
+;                                 (implies (let ((x ,Z))
+;                                            (implies ,A ,B))
+;                                          ,C)))
+;                      (generate-ABC-thms (cdr lst)))))))
+;   
+;   (defmacro confirm-ABC-table nil
+;     `(thm
+;       (and
+;        ,@(generate-ABC-thms
+;   ;           fact        question
+;   ;           (A x)       (B x)         C              Z
+;           '(((<  k x)    (<  d x)    (<= d k)    (+ k (/ (- d k) 2))) ;  1
+;             ((<  k x)    (<= d x)    (<= d k)    (+ k (/ (- d k) 2))) ;  2
+;             ((<  k x)    (<= x d)    NIL         (+ (max k d) 1))             ;  3
+;             ((<  k x)    (<  x d)    NIL         (+ (max k d) 1))             ;  4
+;   
+;             ((<= k x)    (<  d x)    (<  d k)    (+ k (/ (- d k) 2))) ;  5
+;             ((<= k x)    (<= d x)    (<= d k)    (+ k (/ (- d k) 2))) ;  6
+;             ((<= k x)    (<= x d)    NIL         (+ (max k d) 1))             ;  7
+;             ((<= k x)    (<  x d)    NIL         (+ (max k d) 1))             ;  8
+;   
+;             ((<= x k)    (<  d x)    NIL         (- (min k d) 1))             ;  9
+;             ((<= x k)    (<= d x)    NIL         (- (min k d) 1))             ; 10
+;             ((<= x k)    (<= x d)    (<= k d)    (+ d (/ (- k d) 2))) ; 11
+;             ((<= x k)    (<  x d)    (<  k d)    (+ d (/ (- k d) 2))) ; 12
+;   
+;             ((<  x k)    (<  d x)    NIL         (- (min k d) 1))             ; 13
+;             ((<  x k)    (<= d x)    NIL         (- (min k d) 1))             ; 14
+;             ((<  x k)    (<= x d)    (<= k d)    (+ d (/ (- k d) 2))) ; 15
+;             ((<  x k)    (<  x d)    (<= k d)    (+ d (/ (- k d) 2)))))))); 16
+;   
+;   (confirm-ABC-table)
 
 ; The success of confirm-ABC-table means that the entries in the above table
 ; are correct.  Thus, we know that
@@ -7981,7 +7967,7 @@ at this point because they use some functions not yet defines.
 ; cd books/workshops/2006/cowles-gamboa-euclid/Euclid/
 ; (defpkg "GAUSS-INT"
 ;         (union-eq *acl2-exports*
-; 		  *common-lisp-symbols-from-main-lisp-package*))
+;                   *common-lisp-symbols-from-main-lisp-package*))
 ; (ld "ed5aa.lisp" :ld-pre-eval-print t)
 
 ; The command above will fail with a stack overflow at in the [GAUSS-INT::] event
@@ -9839,49 +9825,43 @@ at this point because they use some functions not yet defines.
 ; unimportant because stripping the branches of normalized IFs produces the
 ; regular order that we exploit.  
 
-#||
-(remove-ancestor-literals-from-pairs
- '(((x y  A        u) . concl)
-   ((x y (NOT A)  B        u v) . concl)
-   ((x y (NOT A) (NOT B)  C        u v w) . concl)
-   ((x y (NOT A) (NOT B) (NOT C) D u v w z) . concl)))
-=
-(((x y A u) . concl)
- ((x y B u v) . concl)
- ((x y C u v w) . concl)
- ((x y D u v w z) . concl))
-||#
+;   (remove-ancestor-literals-from-pairs
+;    '(((x y  A        u) . concl)
+;      ((x y (NOT A)  B        u v) . concl)
+;      ((x y (NOT A) (NOT B)  C        u v w) . concl)
+;      ((x y (NOT A) (NOT B) (NOT C) D u v w z) . concl)))
+;   =
+;   (((x y A u) . concl)
+;    ((x y B u v) . concl)
+;    ((x y C u v w) . concl)
+;    ((x y D u v w z) . concl))
 
 ; However, if we permute the first pair we fail to get any of the -A, but we do
 ; knock off the -B, -C, and -D:
 
-#||
-(remove-ancestor-literals-from-pairs
- '(((x A  y        u) . concl)
-   ((x y (NOT A)  B        u v) . concl)
-   ((x y (NOT A) (NOT B)  C        u v w) . concl)
-   ((x y (NOT A) (NOT B) (NOT C) D u v w z) . concl)))
-=
-(((x A y u) . concl)
- ((x y (not A) B u v) . concl)
- ((x y (not A) C u v w) . concl)
- ((x y (not A) D u v w z) . concl))
-||#
+;   (remove-ancestor-literals-from-pairs
+;    '(((x A  y        u) . concl)
+;      ((x y (NOT A)  B        u v) . concl)
+;      ((x y (NOT A) (NOT B)  C        u v w) . concl)
+;      ((x y (NOT A) (NOT B) (NOT C) D u v w z) . concl)))
+;   =
+;   (((x A y u) . concl)
+;    ((x y (not A) B u v) . concl)
+;    ((x y (not A) C u v w) . concl)
+;    ((x y (not A) D u v w z) . concl))
 
 ; Similarly, if the second pair fails the subset test, we start over.
 
-#||
-(remove-ancestor-literals-from-pairs
- '(((x y  A           u1) . concl)
-   ((x y (NOT A)  B        u1 v) . concl)
-   ((x y         (NOT B)  C        u2 v w) . concl)
-   ((x y (NOT A) (NOT B) (NOT C) D u2 v w z) . concl)))
-=
-(((x y A u1) . concl)
- ((x y B u1 v) . concl)
- ((x y (not B) C u2 v w) . concl)
- ((x y (not A) (not B) (not C) D u2 v w z) . concl))
-||#
+;   (remove-ancestor-literals-from-pairs
+;    '(((x y  A           u1) . concl)
+;      ((x y (NOT A)  B        u1 v) . concl)
+;      ((x y         (NOT B)  C        u2 v w) . concl)
+;      ((x y (NOT A) (NOT B) (NOT C) D u2 v w z) . concl)))
+;   =
+;   (((x y A u1) . concl)
+;    ((x y B u1 v) . concl)
+;    ((x y (not B) C u2 v w) . concl)
+;    ((x y (not A) (not B) (not C) D u2 v w z) . concl))
 
 ; Note that we do not get to knock off the -B in the third pair or the -A and
 ; -B in the fourth, because u1 is not u2.  We would actually be justified in
@@ -9889,34 +9869,31 @@ at this point because they use some functions not yet defines.
 ; blocking the subset check for going deep enough to find the -C.  We would get
 ; the improved result if we permuted the fourth input pair:
 
-#||
-(remove-ancestor-literals-from-pairs
- '(((x y  A           u1) . concl)
-   ((x y (NOT A)  B        u1 v) . concl)
-   ((x y         (NOT B)  C        u2 v w) . concl)
-   ((x y         (NOT B) (NOT C) D u2 v w z (NOT A)) . concl))) ; moved the -A to end.
-=
-(((x y A u1) . concl)
- ((x y B u1 v) . concl)
- ((x y (not B) C u2 v w) . concl)
- ((x y (not B) D u2 v w z (not A)) . concl))
-||#
+;   (remove-ancestor-literals-from-pairs
+;    '(((x y  A           u1) . concl)
+;      ((x y (NOT A)  B        u1 v) . concl)
+;      ((x y         (NOT B)  C        u2 v w) . concl)
+;   ; On the next line, moved the -A to end.
+;      ((x y         (NOT B) (NOT C) D u2 v w z (NOT A)) . concl)))
+;   =
+;   (((x y A u1) . concl)
+;    ((x y B u1 v) . concl)
+;    ((x y (not B) C u2 v w) . concl)
+;    ((x y (not B) D u2 v w z (not A)) . concl))
 
 ; Returning to the first, classic, example but changing the concl of the last
 ; two rules:
 
-#||
-(remove-ancestor-literals-from-pairs
- '(((x y  A        u) . concl1)
-   ((x y (NOT A)  B        u v) . concl1)
-   ((x y (NOT A) (NOT B)  C        u v w) . concl2)
-   ((x y (NOT A) (NOT B) (NOT C) D u v w z) . concl2)))
-=
-(((x y A u) . concl1)
- ((x y B u v) . concl1)
- ((x y (not A) (not B) C u v w) . concl2)
- ((x y (not A) (not B) D u v w z) . concl2))
-||#
+;   (remove-ancestor-literals-from-pairs
+;    '(((x y  A        u) . concl1)
+;      ((x y (NOT A)  B        u v) . concl1)
+;      ((x y (NOT A) (NOT B)  C        u v w) . concl2)
+;      ((x y (NOT A) (NOT B) (NOT C) D u v w z) . concl2)))
+;   =
+;   (((x y A u) . concl1)
+;    ((x y B u v) . concl1)
+;    ((x y (not A) (not B) C u v w) . concl2)
+;    ((x y (not A) (not B) D u v w z) . concl2))
 
 ; we see we simplify the two concl1 pairs and the two concl2 pairs, but we
 ; don't carry over from concl1 to concl2.
@@ -11169,25 +11146,23 @@ at this point because they use some functions not yet defines.
 
 ; Here are useful trace$ commands for tau-term and tau-assume:
 
-#||
-(trace$ (tau-term :entry
-                  (list 'tau-term (car arglist)
-                        (decode-tau-alist (cadr arglist) nil) (caddr arglist))
-                  :exit
-                  (list 'tau-term (if (eq value *tau-contradiction*) value
-                                      (decode-tau value (car arglist))))))
-
-(trace$ (tau-assume :entry (list 'tau-assume
-                                 (if (car arglist) 'positive 'negative)
-                                 (cadr arglist)
-                                 (decode-tau-alist (caddr arglist) nil)
-                                 (cadddr arglist))
-                    :exit (list 'tau-assume
-                                (if (nth 0 values) 'contradiction! nil)
-                                (if (nth 1 values) 'must-be-true! nil)
-                                (if (nth 2 values) 'must-be-false! nil)
-                                (decode-tau-alist (nth 3 values) nil))))
-||#
+;   (trace$ (tau-term :entry
+;                     (list 'tau-term (car arglist)
+;                           (decode-tau-alist (cadr arglist) nil) (caddr arglist))
+;                     :exit
+;                     (list 'tau-term (if (eq value *tau-contradiction*) value
+;                                         (decode-tau value (car arglist))))))
+;   
+;   (trace$ (tau-assume :entry (list 'tau-assume
+;                                    (if (car arglist) 'positive 'negative)
+;                                    (cadr arglist)
+;                                    (decode-tau-alist (caddr arglist) nil)
+;                                    (cadddr arglist))
+;                       :exit (list 'tau-assume
+;                                   (if (nth 0 values) 'contradiction! nil)
+;                                   (if (nth 1 values) 'must-be-true! nil)
+;                                   (if (nth 2 values) 'must-be-false! nil)
+;                                   (decode-tau-alist (nth 3 values) nil))))
 
 (defmacro recursivep (fn wrld)
 
@@ -12496,64 +12471,61 @@ at this point because they use some functions not yet defines.
               ((endp (cdr terms)) (car terms))
               (t `(and ,@terms)))))))
 
-#||
 ; On Tau Debugging Features
 
 ; These functions and macros are for debugging only.  They're not used by
 ; our code.
 
-(program)
-
-(mutual-recursion
- (defun ptrans (term)
-; Like translate, but very limited:  quote unquoted constants and expand >, <=, and >=.
-   (cond ((atom term)
-          (cond
-           ((or (eq term nil)
-                (eq term t))
-            (list 'quote term))
-           ((symbolp term) term)
-           ((or (acl2-numberp term)
-                (stringp term)
-                (characterp term))
-            (list 'quote term))
-           (t term)))
-         ((eq (car term) 'quote)
-          term)
-         ((member (car term) '(> <= >=))
-          (let ((a1 (ptrans (nth 1 term)))
-                (a2 (ptrans (nth 2 term))))
-            (case (car term)
-              (> `(< ,a2 ,a1))
-              (<= `(not (< ,a2 ,a1)))
-              (otherwise `(not (< ,a1 ,a2))))))
-         (t (cons (car term)
-                  (ptrans-lst (cdr term))))))
- (defun ptrans-lst (terms)
-   (cond ((endp terms) nil)
-         (t (cons (ptrans (car terms))
-                  (ptrans-lst (cdr terms)))))))
-
-; (mktau nil (natp e) (<= e 100)) produces a tau representing just those two
-; recognizers.  Replacing the nil by t produces a ``complete'' tau with the
-; implicants.  Mktau! makes such a tau and then decodes it back to a pseudo-term.
-
-(defmacro mktau (complete-flg &rest terms)
-  `(convert-tau-like-terms-to-tau ,complete-flg ',(ptrans-lst terms)
-                                  (ens state) (w state)))
-
-(defmacro mktau! (complete-flg &rest terms)
-  `(decode-tau
-    (convert-tau-like-terms-to-tau ,complete-flg
-                                   ',(ptrans-lst terms)
-                                   (ens state)
-                                   (w state))
-    'e))
-
-(logic)
-
-||#
-
+;   (program)
+;   
+;   (mutual-recursion
+;    (defun ptrans (term)
+;   ; Like translate, but very limited: quote unquoted constants and expand
+;   ; >, <=, and >=.
+;      (cond ((atom term)
+;             (cond
+;              ((or (eq term nil)
+;                   (eq term t))
+;               (list 'quote term))
+;              ((symbolp term) term)
+;              ((or (acl2-numberp term)
+;                   (stringp term)
+;                   (characterp term))
+;               (list 'quote term))
+;              (t term)))
+;            ((eq (car term) 'quote)
+;             term)
+;            ((member (car term) '(> <= >=))
+;             (let ((a1 (ptrans (nth 1 term)))
+;                   (a2 (ptrans (nth 2 term))))
+;               (case (car term)
+;                 (> `(< ,a2 ,a1))
+;                 (<= `(not (< ,a2 ,a1)))
+;                 (otherwise `(not (< ,a1 ,a2))))))
+;            (t (cons (car term)
+;                     (ptrans-lst (cdr term))))))
+;    (defun ptrans-lst (terms)
+;      (cond ((endp terms) nil)
+;            (t (cons (ptrans (car terms))
+;                     (ptrans-lst (cdr terms)))))))
+;   
+;   ; (mktau nil (natp e) (<= e 100)) produces a tau representing just those two
+;   ; recognizers.  Replacing the nil by t produces a ``complete'' tau with the
+;   ; implicants.  Mktau! makes such a tau and then decodes it back to a pseudo-term.
+;   
+;   (defmacro mktau (complete-flg &rest terms)
+;     `(convert-tau-like-terms-to-tau ,complete-flg ',(ptrans-lst terms)
+;                                     (ens state) (w state)))
+;   
+;   (defmacro mktau! (complete-flg &rest terms)
+;     `(decode-tau
+;       (convert-tau-like-terms-to-tau ,complete-flg
+;                                      ',(ptrans-lst terms)
+;                                      (ens state)
+;                                      (w state))
+;       'e))
+;   
+;   (logic)
 
 (defun decode-tau-conjunctive-rule (tau)
   (cond
@@ -13320,10 +13292,3 @@ at this point because they use some functions not yet defines.
   to prove that the domain of the new bounding interval is INTEGERP or
   otherwise restricted.  We allow such unnecessary conclusions simply to save
   the user the burden of stating multiple theorems. ~/")
-
-  
-
-
-
-
-

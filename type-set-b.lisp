@@ -5316,12 +5316,12 @@
 
 (defun insert-cdr-term-order (item list)
   (cond ((endp list)
-	 (list item))
-	((term-order (cdr (car list)) (cdr item))
-	 (cons (car list)
-	       (insert-cdr-term-order item (cdr list))))
-	(t
-	 (cons item list))))
+         (list item))
+        ((term-order (cdr (car list)) (cdr item))
+         (cons (car list)
+               (insert-cdr-term-order item (cdr list))))
+        (t
+         (cons item list))))
 
 (defun normalize-linear-sum-2 (term)
 
@@ -5373,8 +5373,8 @@
 ; Temp-1 is a list of pairs --- (multiplicative-constant . rest-of-addend).
 ; These pairs are sorted by term order on rest-of-addend.
 
-		(multiplicative-constant (car (car temp-1))))
-	   (cond ((or (eql multiplicative-constant 0) ; degenerate case
+                (multiplicative-constant (car (car temp-1))))
+           (cond ((or (eql multiplicative-constant 0) ; degenerate case
                       (eql multiplicative-constant 1))
                   (mv additive-constant 1 temp-1))
                  (t

@@ -4836,7 +4836,7 @@
                (defparameter
                  (setf (symbol-value name)
                        (cond ((and (consp (caddr def))
-				   (eq (car (caddr def)) 'quote))
+                                   (eq (car (caddr def)) 'quote))
 
 ; Remark on Fast-alists.
 
@@ -4864,8 +4864,8 @@
 
 ; See also related comments in defconst-val, make-certificate-file1.
 
-			      (cadr (caddr def)))
-			     (t val))))
+                              (cadr (caddr def)))
+                             (t val))))
                (otherwise
                 (assert$ (member-eq type '(defabbrev defmacro))
                          (setf (macro-function name) val))))

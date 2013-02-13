@@ -8964,14 +8964,14 @@
 
 ;   (defun first-nondecrease (lst)
 ;     (cond ((endp lst) nil)
-;   	((endp (cdr lst)) (list (car lst)))
-;   	((> (car lst) (cadr lst)) (list (car lst)))
-;   	(t (cons (car lst) (first-nondecrease (cdr lst))))))
+;       ((endp (cdr lst)) (list (car lst)))
+;       ((> (car lst) (cadr lst)) (list (car lst)))
+;       (t (cons (car lst) (first-nondecrease (cdr lst))))))
 ;   
 ;   (defun removeN (lst n)
-;     (cond ((endp lst) nil)		
-;   	((zp n) lst)	
-;   	(t (removeN (cdr lst) (1- n)))))
+;     (cond ((endp lst) nil)            
+;       ((zp n) lst)    
+;       (t (removeN (cdr lst) (1- n)))))
 ;   
 ;   (defthm len-removen  ; Needed to admint next fn.  If you disable this
 ;     (implies (natp n)  ; lemma, the overflow no longer occurs.
@@ -8984,9 +8984,9 @@
 ;     (declare (xargs :measure (len lst)))
 ;     (if (or (endp lst) (not (true-listp lst))) nil
 ;         (let* ((first (first-nondecrease lst))
-;   	     (n (len first)))
-;   	(let ((remain (longest-nondecrease (removeN lst n))))
-;   	  (if (>= n (len remain)) first remain)))))
+;            (n (len first)))
+;       (let ((remain (longest-nondecrease (removeN lst n))))
+;         (if (>= n (len remain)) first remain)))))
 ;   
 ;   ; This is an arithmetic lemma that may seem benign.
 ;   (defthm equality-difference-hack
