@@ -20184,6 +20184,11 @@
   (~pl[lemma-instance]) to that formula.  Now, this is illegal only if some
   such supporter is in the domain of the functional substitution.
 
+  The tau system (~pl[tau-system], or if you are unfamiliar with the tau
+  system, ~pl[introduction-to-the-tau-system]) now allows the user to define
+  and verify functions that compute bounds on arithmetic expressions.
+  ~l[bounders].
+
   ~st[NEW FEATURES]
 
   A new utility, ~c[set-splitter-output], can direct the prover to give
