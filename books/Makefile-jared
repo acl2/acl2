@@ -16,10 +16,9 @@
 #   - Supports startjob for cluster-distributed builds
 #
 # Missing Features, Bozos?
+#  - Requires perl on the client machine
 #  - Doesn't support multi-lisp compilation stuff for Matt
 #  - Not sure if it supports provisional and/or two-pass certification
-#  - Dependencies won't automatically be re-scanned.  Remove Makefile-deps
-#    to force a re-scan.
 #  - Doesn't support nonstd books for ACL2(r)
 #  - Probably doesn't clean up everything.
 #
@@ -55,33 +54,42 @@ NONSTD_WK2006_COWLES := workshops/2006/cowles-gamboa-euclid
 # This wasn't getting built, it has a really slow book
 BROKEN_WK2011_KRUG := workshops/2011/krug-et-al/support/MinVisor
 
-Makefile-deps:
-	@echo "Scanning for books..."
-	@rm -f Makefile-books
-	@time find . -type f -name "*.lisp" \
-            | fgrep -v interface \
-            | fgrep -v nonstd \
-            | fgrep -v quicklisp \
-            | fgrep -v SULFA \
-            | fgrep -v $(BROKEN_WK2000_COWLES) \
-            | fgrep -v $(BROKEN_WK2002_TOTAL) \
-            | fgrep -v $(BROKEN_WK2003_KAUFMANN) \
-	    | fgrep -v $(BROKEN_WK2004_MANOLIOS) \
-            | fgrep -v $(NONSTD_WK2006_COWLES) \
-            | fgrep -v $(BROKEN_WK2011_KRUG) \
-          > Makefile-books
-	@echo "Calculating book dependencies..."
-	@rm -f Makefile-deps
-	@time ./cert.pl --quiet \
-                        --static-makefile Makefile-deps \
-                        --cache Makefile-cache \
-                        --acl2-books `pwd` \
-                        --targets Makefile-books
-        @echo 'MFDEPS_DEBUG := $$(shell echo Reading book deps ' \
-		'Makefile-deps created on' `date` '1>&2)' \
-		 >> Makefile-deps
+$(info Scanning for books...)
+REBUILD_MAKEFILE_BOOKS := $(shell \
+  rm -f Makefile-books; \
+  time find . -type f -name "*.lisp" \
+    | fgrep -v interface \
+    | fgrep -v nonstd \
+    | fgrep -v quicklisp \
+    | fgrep -v SULFA \
+    | fgrep -v $(BROKEN_WK2000_COWLES) \
+    | fgrep -v $(BROKEN_WK2002_TOTAL) \
+    | fgrep -v $(BROKEN_WK2003_KAUFMANN) \
+    | fgrep -v $(BROKEN_WK2004_MANOLIOS) \
+    | fgrep -v $(NONSTD_WK2006_COWLES) \
+    | fgrep -v $(BROKEN_WK2011_KRUG) \
+  > Makefile-books; \
+  ls -l Makefile-books)
+#$(info $(REBUILD_MAKEFILE_BOOKS))
 
--include Makefile-deps
+$(info Scanning for dependencies...)
+REBUILD_MAKEFILE_DEPS := $(shell \
+  rm -f Makefile-deps Makefile-deps.log; \
+  time (./cert.pl \
+          --quiet \
+          --static-makefile Makefile-deps \
+          --cache Makefile-cache \
+          --acl2-books `pwd` \
+          --targets Makefile-books \
+          1>&2) ;\
+  echo 'MFDEPS_DEBUG := $$(shell echo Reading book deps ' \
+       'Makefile-deps created on' `date` '1>&2)' \
+    >> Makefile-deps; \
+  ls -l Makefile-deps)
+#$(info $(REBUILD_MAKEFILE_DEPS))
+$(info Done scanning.)
+
+include Makefile-deps
 
 all: $(CERT_PL_CERTS)
 
