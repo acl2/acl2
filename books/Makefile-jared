@@ -75,6 +75,7 @@ Makefile-deps:
 	@time ./cert.pl --quiet \
                         --static-makefile Makefile-deps \
                         --cache Makefile-cache \
+                        --acl2-books `pwd` \
                         --targets Makefile-books
         @echo 'MFDEPS_DEBUG := $$(shell echo Reading book deps ' \
 		'Makefile-deps created on' `date` '1>&2)' \
@@ -146,6 +147,7 @@ clean:
                \( -not -name "*svn-base" \) \
                -print0 \
           | xargs -0 rm
+	rm -f xdoc-impl/bookdoc.dat
 
 
 
@@ -178,3 +180,18 @@ workshops/1999/multiplier/spec.cert: \
 
 workshops/1999/multiplier/proof.cert: \
   workshops/1999/multiplier/fmul-star.cert
+
+
+# Special handling for xdoc/bookdoc.dat.
+
+xdoc-impl/bookdoc.dat: \
+  xdoc-impl/acl2-customization.lsp \
+  xdoc-impl/bookdoc.lsp \
+  xdoc/package.lsp \
+  $(wildcard xdoc/*.lisp) \
+  $(wildcard xdoc-impl/*.lisp) \
+  xdoc-impl/extra-packages.cert
+	@echo "Making xdoc-impl/bookdoc.dat"
+	@cd xdoc-impl; \
+          $(STARTJOB) -c "$(ACL2) < bookdoc.lsp &> bookdoc.out"
+	@ls -l xdoc-impl/bookdoc.dat
