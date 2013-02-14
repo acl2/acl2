@@ -8343,6 +8343,8 @@
 
 (link-doc-to gcs history get-command-sequence)
 
+(link-doc-to single-threaded-objects programming stobj)
+
 #+:non-standard-analysis
 (defun build-valid-std-usage-clause (arglist body)
   (cond ((null arglist)

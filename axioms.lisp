@@ -18124,8 +18124,8 @@
   community book ~c[books/data-structures/structures.lisp].  At the least,
   consider using ~c[(]~ilc[set-verify-guards-eagerness]~c[ 0)] to avoid
   ~il[guard] verification.  On the other hand, after you learn to use
-  ~c[defstobj], ~pl[defabsstobj] for another way to introduce single-threaded
-  objects.
+  ~c[defstobj], ~pl[defabsstobj] for a way to introduce so-called abstract
+  single-threaded objects.
 
   ~bv[]
   Example:
