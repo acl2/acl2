@@ -18254,7 +18254,7 @@
   You can also specify just the directories you want, among those offered in
   ~c[Makefile].  For example:
   ~bv[]
-  make -j 8 regression ACL2_BOOK_DIRS='symbolic paco'
+  make ACL2_JOBS=8 regression ACL2_BOOK_DIRS='symbolic paco'
   ~ev[]
 
   By default, your acl2-customization file (~pl[acl2-customization]) is ignored
@@ -18378,7 +18378,7 @@
   but you can use ~c[make -i] to force make to continue past failures.  You can
   also use the ~c[-j] option to speed things up if you have a multi-core
   machine, e.g., ~c[make -j 8] in a book directory or, if in the ACL2 sources
-  directory, ~c[make -j 8 regression].
+  directory, ~c[make ACL2_JOBS=8 regression].
 
   This concludes the basic instructions for creating a ~c[Makefile] in a
   directory including books.  Here are some other capabilities offered by
