@@ -1,1 +1,9 @@
+#+acl2-par
+(set-waterfall-parallelism 
+
+; This book uses a clause-processor that can modify state, which is not allowed
+; when waterfall-parallelism is enabled.
+
+ nil)
+
 (certify-book "examples" 0 t :ttags :all)
