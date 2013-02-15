@@ -20154,7 +20154,7 @@
 ; Perhaps more important is the comparison between these two alternatives and
 ; Version_6.0.  They don't have identical regression suites (of course).  But
 ; they have 3,075 books in common as of Feb. 2013.  The new .out comparison
-; utility can compare total book reported book certification time for books in
+; utility can compare total reported book certification time for books in
 ; common.  Based on that, the less aggressive use of tau was measured at about
 ; 1% faster than Version_6.0 and the more aggressive use of tau was measured as
 ; about the same speed as Version_6.0.
