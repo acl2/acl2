@@ -6855,6 +6855,16 @@
                            'current-acl2-world (w *the-live-state*)))))
   (cond
    ((not
+     (equal *tau-booleanp-pair*
+            (getprop 'booleanp 'tau-pair nil
+                     'current-acl2-world (w *the-live-state*))))
+    (interface-er str
+                  '*tau-booleanp-pair*
+                  *tau-booleanp-pair*
+                  (getprop 'booleanp 'tau-pair nil
+                           'current-acl2-world (w *the-live-state*)))))
+  (cond
+   ((not
      (and (equal
            *min-type-set*
            #-:non-standard-analysis -8192 #+:non-standard-analysis -65536)

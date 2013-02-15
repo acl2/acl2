@@ -21595,9 +21595,11 @@
 ; of these functions anticipate application to the live object itself.
 
 ; It is permissible for wrld to be nil, as this merely defeats additional
-; checking by translate-declaration-to-guard.  If wrld is nil, then we
-; congruent-stobj-rep should be the congruent-stobj-rep of name in the world
-; where the corresponding defstobj is executed.
+; checking by translate-declaration-to-guard.  If wrld is nil, then
+; congruent-stobj-rep should be the result of calling congruent-stobj-rep on
+; name and the world where the corresponding defstobj is executed.  If wrld is
+; non-nil, then it should be an ACL2 world and congruent-stobj-rep is
+; irrelevant.
 
 ; WARNING: If you change the formals of these generated raw defs be
 ; sure to change the formals of the corresponding axiomatic defs.

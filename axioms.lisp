@@ -8253,6 +8253,15 @@
   '(29 . MINUSP)
   #-non-standard-analysis
   '(26 . MINUSP))
+(defconst *tau-booleanp-pair*
+  #+(and (not non-standard-analysis) acl2-par)
+  '(102 . BOOLEANP)
+  #+(and (not non-standard-analysis) (not acl2-par))
+  '(101 . BOOLEANP)
+  #+non-standard-analysis
+  '(104 . BOOLEANP)           ; Ruben:  I just guessed at this, and
+  )                           ; do you ever build ``ACL2(r)(p)''?
+
 
 ; Note: The constants declared above are checked for accuracy after bootstrap
 ; by check-built-in-constants in interface-raw.lisp.
@@ -8366,7 +8375,19 @@
        (implies (stringp v) (not (consp v)))
        (implies (stringp v) (not (symbolp v)))
 
-       (implies (consp v) (not (symbolp v))))
+       (implies (consp v) (not (symbolp v)))
+
+; We catch Boolean type-prescriptions and convert them to tau signature rules.
+; The first lemma below links booleanp to symbolp and thus to the other recogs.
+; The next two deal with special cases: boolean functionse that do not have
+; type-prescriptions because we have special functions for computing their
+; type-sets.
+
+       (implies (booleanp v) (symbolp v))
+       (booleanp (equal x y))
+       (booleanp (< x y))
+
+       )
        
   :rule-classes :tau-system)
 
@@ -18124,8 +18145,8 @@
   community book ~c[books/data-structures/structures.lisp].  At the least,
   consider using ~c[(]~ilc[set-verify-guards-eagerness]~c[ 0)] to avoid
   ~il[guard] verification.  On the other hand, after you learn to use
-  ~c[defstobj], ~pl[defabsstobj] for a way to introduce so-called abstract
-  single-threaded objects.
+  ~c[defstobj], ~pl[defabsstobj] for another way to introduce single-threaded
+  objects.
 
   ~bv[]
   Example:
@@ -49379,7 +49400,7 @@ Lisp definition."
   (in-tau-intervalp #c(3 5) (make-tau-interval 'RATIONALP nil 0 nil 10))    = nil
   (in-tau-intervalp #c(3 5) (make-tau-interval 'ACL2-NUMBERP nil 0 nil 10)) = t
 
-  (in-tau-intervalp 'ABC (make-tau-interval NIL nil 0 nil 10))               = t
+  (in-tau-intervalp 'ABC (make-tau-interval NIL nil 0 nil 10))              = t
   ~ev[]
   ~/"
 

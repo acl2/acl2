@@ -20138,6 +20138,27 @@
 ; and are no longer in *unattachable-primitives* (as their unattachability is
 ; enforced by their having unknown-constraints).
 
+; We improved (and slowed down) the algorithm for computing the tau of a term.
+; For example it dives into NOT now. The biggest change is that it in
+; Version_6.0, preprocess-clause tried tau only before the first simplification
+; (when hist=nil) and after the clause was stable under simplification.  The
+; new one tries tau more aggressively: before the first three simplifications.
+; We found proofs where the more aggressive use of tau -- try after a little
+; rewriting got rid of functions the users means to expand -- helped.
+; 
+; Some tests showed that the more aggressive use of tau slows down the
+; regression a little compared to the less aggressive use of tau.  But because
+; as more tau-based scripts are developed, we expect the more aggressive use of
+; tau will pay for itself.
+; 
+; Perhaps more important is the comparison between these two alternatives and
+; Version_6.0.  They don't have identical regression suites (of course).  But
+; they have 3,075 books in common as of Feb. 2013.  The new .out comparison
+; utility can compare total book reported book certification time for books in
+; common.  Based on that, the less aggressive use of tau was measured at about
+; 1% faster than Version_6.0 and the more aggressive use of tau was measured as
+; about the same speed as Version_6.0.
+
   :doc
   ":Doc-Section release-notes
 

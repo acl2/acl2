@@ -936,7 +936,7 @@
          (mv-let
           (flg calist)
           (tau-clause1p triples nil type-alist pot-lst
-                        clause ens wrld calist)
+                        ens wrld calist)
           (cond
            ((eq flg t)
             (mv t *tau-ttree* calist))
@@ -1102,6 +1102,20 @@
                            (mv-let
                             (clauses1 ttree1 new-tau-completion-alist)
                             (if (or (null hist)
+
+; If (null (cdr hist)) and (null (cddr hist)) are tested in this disjunction,
+; then tau is tried during the first three simplifications and then again when
+; the clause settles down.  Call this the ``more aggressive'' approach.  If
+; they are not tested, tau is tried only on the first simplification and upon
+; settling down.  Call this ``less aggressive.''  There are, of course, proofs
+; where the more aggressive use of tau speeds things up.  But of course it
+; slows down many more proofs.  Overall, experiments on the regression suggest
+; that the more aggressive approach slows total reported book certification
+; time down by about 1.5% compared to the less agressive approach.  However, we
+; think it might be worth it as more tau-based proofs scripts are developed.
+
+                                    (null (cdr hist))
+                                    (null (cddr hist))
                                     (eq (car (car hist)) 'settled-down-clause))
                                 (let ((ens (access rewrite-constant
                                                    rcnst
