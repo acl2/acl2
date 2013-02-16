@@ -8173,8 +8173,8 @@
 
    #+:non-standard-analysis
    ((not (classical-fn-list-p
-          (all-fnnames1 t concl
-                        (all-fnnames1 nil hyps nil))
+          (all-fnnames1 nil concl
+                        (all-fnnames1 t hyps nil))
           wrld))
     nil)
    ((member-equal *nil* hyps)
@@ -8361,17 +8361,16 @@
      (let* ((test-vars (all-vars test))
             (v (car test-vars))
             (body-vars (all-vars1 y (all-vars1 x test-vars))))
-       (and 
-            
+       (and
 
-; We exclude all non-classical functions from consideration by tau.  We could just check that
-; the fn being signed and the dependent hyps are classical, since we know that all tau predicates
-; are classical.  However, it is simplest to check that every function in the formula is
-; classical.
+; We exclude all non-classical functions from consideration by tau.  We could
+; just check that the fn being signed and the dependent hyps are classical,
+; since we know that all tau predicates are classical.  However, it is simplest
+; to check that every function in the formula is classical.
 
         #+:non-standard-analysis
         (classical-fn-list-p
-         (all-fnnames1 t term nil)
+         (all-fnnames1 nil term nil)
          wrld)
 
         (symbolp fn)
