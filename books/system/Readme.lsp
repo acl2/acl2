@@ -4,6 +4,7 @@
 .:
 Makefile
 Readme.lsp
+compare-out-files.lisp
 convert-normalized-term-to-pairs.lisp
 extend-pathname.lisp
 f-put-global.lisp
@@ -40,7 +41,7 @@ worldp-check.lisp
    Sol Swords for:
      f-put-global.lisp
      io.lisp
-   Matt Kaufmann and J Moore for the rest")
+   Matt Kaufmann and/or J Moore for the rest")
  (:Keywords "Logical World")
  (:ABSTRACT
 
