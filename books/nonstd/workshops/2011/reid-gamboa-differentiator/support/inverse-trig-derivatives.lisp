@@ -97,9 +97,9 @@
                  (:instance sine-acos-positive)
                  (:instance reciprocal-minus
                             (x (acl2-sqrt (- 1 (* x x)))))))
-          ("Subgoal 6"
-; changed after v4-3 from "Subgoal 10" by Matt K. for tau-system, and
-; then 12/13/12 from "Subgoal 7" (probably for tau-system)
+          ("Subgoal 8"
+; changed after v4-3 from "Subgoal 10", and then 12/13/12 from "Subgoal 7", and
+; then again 2/16/13 from "Subgoal 6", probably all for tau-system, by Matt K.
            :use (:instance acl2-acos-continuous)
            :in-theory (enable interval-definition-theory))
           ("Subgoal 4"
@@ -399,8 +399,9 @@
                  
                  ))
           
-          ("Subgoal 5"
-; changed 12/13/12 by Matt K. from "Subgoal 7" (probably for tau-system)
+          ("Subgoal 6"
+; changed 12/13/12 from "Subgoal 7" and then 2/16/13 from "Subgoal 5", both
+; probably for tau-system,by Matt K
            :use ((:instance acl2-tangent-continuous (x x) (y y))
                  (:instance cos-positive--pi/2-to-pi/2)))
           ("Subgoal 4"

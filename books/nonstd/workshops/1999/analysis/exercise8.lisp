@@ -222,8 +222,9 @@ result about continuous functions.)
 	    :by (:functional-instance rdfn-continuous
 				      (rdfn f2)))
 ; Changed by Matt K. after v4-3 for tau-system to include these under "Goal'"
-; instead of under "Subgoal 3":
-           ("Goal'"
+; instead of under "Subgoal 3", then again after 6.0 for (most likely)
+; tau-system changing "Goal'" to "Subgoal 2".
+           ("Subgoal 2"
 	    :use (:instance f2-differentiable)
 	    :in-theory (disable f2-differentiable))))
 
