@@ -3339,8 +3339,14 @@ id processor (acl2::prettyify-clause cl nil (w state))))
   "
  )
 
-(defattach (acl2::print-summary-user 
-            print-summary-user-testing))
+; Temporary (?) mod by Matt K. for Version_6.1, converting from the use of
+; print-summary-user as per :doc note-6-1:
+(defun finalize-event-user-testing (state)
+       (declare (xargs :mode :logic :stobjs state))
+       (prog2$ (print-summary-user-testing state)
+               state))
+(defattach (acl2::finalize-event-user
+            finalize-event-user-testing))
 
 (defmacro test? (form &key hints override-defaults dont-print-summary)
   `(with-output
