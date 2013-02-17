@@ -34296,12 +34296,6 @@
 
 ; Start code supporting extended-ancestors.
 
-(defun attachment-pair (fn wrld)
-  (let ((attachment-alist (attachment-alist fn wrld)))
-    (and attachment-alist
-         (not (eq (car attachment-alist) :attachment-disallowed))
-         (assoc-eq fn attachment-alist))))
-
 (defun attachment-pairs (fns wrld acc)
 
 ; Accumulate into acc all attachment pairs (f . g) for f in fns.

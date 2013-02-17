@@ -18772,8 +18772,10 @@
   helpful bug report on a preliminary implementation.
 
   Users may now arrange for additional summary information to be printed at the
-  end of ~il[events]; ~pl[print-summary-user].  Thanks to Harsh Raju Chamarthi
-  for requesting this feature and participating in a design discussion.
+  end of ~il[events].  [Note added at Version_6.1: Formerly we pointed here to
+  ~c[print-summary-user], but now, ~pl[finalize-event-user]; also
+  ~pl[note-6-1]].  Thanks to Harsh Raju Chamarthi for requesting this feature
+  and participating in a design discussion.
 
   A new, advanced ~il[proof-checker] command, ~c[geneqv], shows the generated
   equivalence relation at the current subterm.  Thanks to Dave Greve for an
@@ -20210,12 +20212,30 @@
   and verify functions that compute bounds on arithmetic expressions.
   ~l[bounders].
 
+  The utility ~c[print-summary-user] has been replaced by
+  ~ilc[finalize-event-user], which is described below.  If you previously
+  attached a function to ~c[print-summary-user], say ~c[my-print-summary-user],
+  then you can get the effect you had previously as follows.
+  ~bv[]
+  (defun my-finalize-event-user (state)
+    (declare (xargs :mode :logic :stobjs state))
+    (prog2$ (my-print-summary-user state)
+            state))
+  (defattach finalize-event-user my-finalize-event-user)
+  ~ev[]
+
   ~st[NEW FEATURES]
 
   A new utility, ~c[set-splitter-output], can direct the prover to give
   information about case splits.  ~l[set-splitter-output].  Thanks to many
   ACL2 users, most recently David Rager, for requesting such a capability.
   Also thanks to David Rager and Jared Davis for helpful discussions.
+
+  New utilities ~ilc[initialize-event-user] and ~ilc[finalize-event-user] allow
+  the user to run ~il[state]-modifying code at the start and end of
+  ~il[events].  Thanks to Harsh Raju Chamarthi for requesting these
+  capabilities.  Note that ~ilc[finalize-event-user] replaces
+  ~c[print-summary-user].
 
   ~st[HEURISTIC IMPROVEMENTS]
 

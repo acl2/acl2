@@ -3351,71 +3351,159 @@
                   (newline channel state)
                   (fms *proof-failure-string* nil channel state nil))))))
 
-(defstub print-summary-user (state) t)
+(defstub initialize-event-user (state) state)
 
-(defun print-summary-user-builtin (state)
-   (declare (ignore state)
-            (xargs :mode :logic :verify-guards t))
-   nil)
+(defstub finalize-event-user (state) state)
 
-(defattach print-summary-user print-summary-user-builtin)
-
-(defdoc print-summary-user
+(defdoc initialize-event-user
   ":Doc-Section switches-parameters-and-modes
 
-  causing additional summary output~/
+  user-supplied code to initiate ~il[events]~/
+
+  ~l[finalize-event-user] to see how to supply code to be run at the end of
+  ~il[events].  We assume familiarity with ~c[finalize-event-user]; here we
+  focus on how to supply code for the beginning as well as the end of events.
+
+  As with ~il[initialize-event-user], you attach your own function of
+  ~ilc[state], which returns ~c[state] and has a trivial guard, requiring
+  (implicitly) only that ~c[state] satisfies ~c[state-p] unless you use trust
+  tags to avoid that requirement.  For example:
+  ~bv[]
+  (defattach initialize-event-user initialize-event-user-test)
+  ~ev[]
+
+  Why would you want to do this?  Presumably you are building a system on top
+  of ACL2 and you want to track your own data.  For example, suppose you want
+  to save the time in some ~il[state] global variable, ~c[my-time].  You could
+  do the following.
+
+  ~bv[]
+  (defun my-init (state)
+    (declare (xargs :stobjs state
+                    :guard-hints
+                    ((\"Goal\" :in-theory (enable read-run-time)))))
+    (mv-let (seconds state)
+            (read-run-time state)
+            (f-put-global 'start-time seconds state)))
+
+  (defun my-final (state)
+    (declare (xargs :stobjs state
+                    :guard-hints
+                    ((\"Goal\" :in-theory (enable read-run-time)))))
+    (mv-let (seconds state)
+            (read-run-time state)
+            (prog2$ (if (boundp-global 'start-time state)
+                        (cw \"Time: ~~x0 seconds~~%\"
+                            (- seconds (fix (@ start-time))))
+                      (cw \"BIG SURPRISE!~~%\"))
+                    (f-put-global 'end-time seconds state))))
+
+  (defattach initialize-event-user my-init)
+  (defattach finalize-event-user my-final)
+  ~ev[]
+  Here is an abbreviated log, showing the time being printed at the end.
+  ~bv[]
+  ACL2 !>(thm (equal (append (append x y) x y x y x y x y)
+                     (append x y x y x y x y x y)))
+
+  *1 (the initial Goal, a key checkpoint) is pushed for proof by induction.
+  ....
+  ACL2 Error in ( THM ...):  See :DOC failure.
+
+  ******** FAILED ********
+  Time: 869/100 seconds
+  ACL2 !>
+  ~ev[]
+
+  ~/~/")
+
+(defdoc finalize-event-user
+  ":Doc-Section switches-parameters-and-modes
+
+  user-supplied code to complete ~il[events], e.g., with extra summary output~/
 
   ACL2 prints summaries at the conclusions of processing ~il[events] (unless
   summaries are inhibited; ~pl[set-inhibit-output-lst] and also
-  ~pl[set-inhibited-summary-types]).  You may arrange for information to be
-  printed at the end of the summary, by defining a function of ~c[state] that
-  returns an ordinary value (typically ~c[nil], but the value is irrelevant).
-  This function should normally be a ~il[guard]-verified ~c[:]~ilc[logic] mode
-  function with no explicit guard (hence, its guard is actually
-  ~c[(state-p state)]), but later below we discuss how to avoid this
-  requirement.  It is then attached (~pl[defattach]) to the function
-  ~c[print-summary-user].  The following example illustrates how this all
+  ~pl[set-inhibited-summary-types]).  You may arrange for processing to take
+  place just after the summary, by defining a function of ~ilc[state] that
+  returns one value, namely ~c[state].  Your function should normally be a
+  ~il[guard]-verified ~c[:]~ilc[logic] mode function with no guard other than
+  that provided by the input requirement on ~ilc[state], that is,
+  ~c[(state-p state)]; but later below we discuss how to avoid this
+  requirement.  You then attach (~pl[defattach]) your function to the function
+  ~c[finalize-event-user].  The following example illustrates how this all
   works.
 
   ~bv[]
-  (defun print-summary-user-test (state)
+  (defun finalize-event-user-test (state)
     (declare (xargs :stobjs state))
-    (and (f-boundp-global 'abbrev-evisc-tuple state)
-         (observation-cw
-          'my-test
-          \"~~|Value of abbrev-evisc-tuple: ~~x0~~|\"
-          (f-get-global 'abbrev-evisc-tuple state))))
+    (cond ((and (boundp-global 'abbrev-evisc-tuple state)
+                (open-output-channel-p *standard-co*
+                                       :character
+                                       state))
+           (pprogn
+            (if (eq (f-get-global 'abbrev-evisc-tuple state) :DEFAULT)
+                (princ$ \"Abbrev-evisc-tuple has its default value.~~%\"
+                        *standard-co*
+                        state)
+              (princ$ \"Abbrev-evisc-tuple has been modified.~~%\"
+                      *standard-co*
+                      state))))
+          (t state)))
   
-  (defattach print-summary-user print-summary-user-test)
+  (defattach finalize-event-user finalize-event-user-test)
   ~ev[]
 
-  After admission of the two events above, every event summary will conclude
+  After admission of the two events above, an event summary will conclude
   with extra printout, for example:
 
   ~bv[]
-  ACL2 Observation in MY-TEST:  
-  Value of abbrev-evisc-tuple: :DEFAULT
+  Note: Abbrev-evisc-tuple has its default value.
   ~ev[]
 
-  If the attachment function (above, ~c[print-summary-user-test]) does not meet
-  all the requirements stated above, then you can use the ~c[:skip-checks]
+  If the attachment function (above, ~c[finalize-event-user-test]) does not
+  meet all the requirements stated above, then you can use the ~c[:skip-checks]
   argument of ~ilc[defattach] to get around the requirement, as illustrated by
   the following example.
 
   ~bv[]
-  (defun print-summary-user-test2 (state)
+  (defun finalize-event-user-test2 (state)
     (declare (xargs :stobjs state
                     :mode :program))
-    (observation-cw
+    (observation
      'my-test
      \"~~|Value of term-evisc-tuple: ~~x0~~|\"
      (f-get-global 'term-evisc-tuple state)))
 
   (defttag t) ; needed for :skip-checks t
 
-  (defattach (print-summary-user print-summary-user-test2)
+  (defattach (finalize-event-user finalize-event-user-test2)
              :skip-checks t)
-  ~ev[]~/~/")
+  ~ev[]
+  So for example:
+  ~bv[]
+  ACL2 !>(set-term-evisc-tuple (evisc-tuple 2 7 nil nil) state)
+   (:TERM)
+  ACL2 !>(defconst *foo6* '(a b c))
+
+  Summary
+  Form:  ( DEFCONST *FOO6* ...)
+  Rules: NIL
+  Time:  0.00 seconds (prove: 0.00, print: 0.00, other: 0.00)
+
+  ACL2 Observation in MY-TEST:  
+  Value of term-evisc-tuple: (NIL 2 7 NIL)
+   *FOO6*
+  ACL2 !>
+  ~ev[]
+
+  Note that (as of this writing) the macro ~ilc[observation] expands to a call
+  of a ~c[:]~ilc[program]-mode function.  Thus, this trick involving
+  ~c[:skip-checks] allows the use of ~c[:program]-mode functions; for example,
+  you can print with ~ilc[fmt].
+
+  Also ~pl[initialize-event-user], which discusses the handling of ~il[state]
+  globals by that utility as well as by ~c[finalize-event-user].~/~/")
 
 (defun lmi-seed (lmi)
 
@@ -3760,8 +3848,7 @@
                  #+acl2-par
                  (erase-acl2p-checkpoints-for-summary state)
                  state)))
-       (prog2$ (print-summary-user state)
-               (f-put-global 'proof-tree nil state)))))))
+       (f-put-global 'proof-tree nil state))))))
 
 (defun make-step-limit-record (limit)
   (make step-limit-record
@@ -4016,97 +4103,8 @@
   (declare (xargs :guard (booleanp no-change-flg)))
   (with-prover-step-limit-fn limit form no-change-flg))
 
-(defmacro save-event-state-globals (form)
-
-; Form should evaluate to an error triple.
-
-; We assign to saved-output-reversed, rather than binding it, so that saved
-; output for gag-mode reply (using pso or psog) is available outside the scope
-; of with-ctx-summarized.
-
-  `(state-global-let*
-    ((accumulated-ttree nil)
-     (gag-state nil)
-     (print-base 10 set-print-base)
-     (print-radix nil set-print-radix)
-     (proof-tree-ctx nil)
-     (saved-output-p t))
-    (pprogn (f-put-global 'saved-output-reversed nil state)
-            (with-prover-step-limit! :START ,form))))
-
-(defmacro with-ctx-summarized (ctx body)
-
-; A typical use of this macro by an event creating function is:
-; (with-ctx-summarized (cons 'defun name)
-;   (er-progn ... 
-;             (er-let* (... (v form) ...)
-;             (install-event ...))))
-
-; If body changes the installed world then the new world must end with an
-; event-landmark (we cause an error otherwise).  The segment of the new world
-; back to the previous event-landmark is scanned for redefined names and an
-; appropriate warning message is printed, as per ld-redefinition-action.
-
-; The most obvious way to satisfy this restriction on world is for each
-; branch through body to (a) stop with stop-redundant-event, (b) signal an
-; error, or (c) conclude with install-event.  Two of our current uses of this
-; macro do not follow so simple a paradigm.  In include-book-fn we add many
-; events (in process-embedded-events) but we do conclude with an install-event
-; which couldn't possibly redefine any names because no names are defined in
-; the segment from the last embedded event to the landmark for the include-book
-; itself.  In certify-book-fn we conclude with an include-book-fn.  So in both
-; of those cases the scan for redefined names ends quickly (without going into
-; the names possibly redefined in the embedded events) and finds nothing to
-; report.
-
-; This macro initializes the timers for an event and then executes the supplied
-; body, which should return an error triple.  Whether an error is signalled or
-; not, the macro prints the summary and then pass the error triple on up.  The
-; stats must be available from the state.  In particular, we print redefinition
-; warnings that are recovered from the currently installed world in state and
-; we print the runes from 'accumulated-ttree.
-
-  `(let ((ctx ,ctx)
-         (wrld0 (w state)))
-     (pprogn (initialize-summary-accumulators state)
-             (mv-let
-              (erp val state)
-              (save-event-state-globals
-               (mv-let (erp val state)
-                       (pprogn
-                        (push-io-record
-                         :ctx
-                         (list 'mv-let
-                               '(col state)
-                               '(fmt "Output replay for: "
-                                     nil (standard-co state) state nil)
-                               (list 'mv-let
-                                     '(col state)
-                                     (list 'fmt-ctx
-                                           (list 'quote ,ctx)
-                                           'col
-                                           '(standard-co state)
-                                           'state)
-                                     '(declare (ignore col))
-                                     '(newline (standard-co state) state)))
-                         state)
-                        ,body)
-                       (pprogn (print-summary erp
-                                              (equal wrld0 (w state))
-                                              ctx state)
-                               (mv erp val state))))
-
-; In the case of a compound event such as encapsulate, we do not want to save
-; io? forms for proof replay that were generated after a failed proof attempt.
-; Otherwise, if we do not set the value of 'saved-output-p below to nil, then
-; replay from an encapsulate with a failed defthm will pop warnings more often
-; than pushing them (resulting in an error from pop-warning-frame).  This
-; failure (without setting 'saved-output-p below) happens because the pushes
-; are only from io? forms saved inside the defthm, yet we were saving the
-; pops from the enclosing encapsulate.
-
-              (pprogn (f-put-global 'saved-output-p nil state)
-                      (mv erp val state))))))
+; Start development of with-ctx-summarized.  But first we need to define
+; set-w!.
 
 ; Essay on the proved-functional-instances-alist
 
@@ -4712,6 +4710,499 @@
                    (set-w 'extension
                           wrld
                           state))))))
+
+(defmacro save-event-state-globals (form)
+
+; Form should evaluate to an error triple.
+
+; We assign to saved-output-reversed, rather than binding it, so that saved
+; output for gag-mode reply (using pso or psog) is available outside the scope
+; of with-ctx-summarized.
+
+  `(state-global-let*
+    ((accumulated-ttree nil)
+     (gag-state nil)
+     (print-base 10 set-print-base)
+     (print-radix nil set-print-radix)
+     (proof-tree-ctx nil)
+     (saved-output-p t))
+    (pprogn (f-put-global 'saved-output-reversed nil state)
+            (with-prover-step-limit! :START ,form))))
+
+(defun attachment-alist (fn wrld)
+  (let ((prop (getprop fn 'attachment nil 'current-acl2-world wrld)))
+    (and prop
+         (cond ((symbolp prop)
+                (getprop prop 'attachment nil 'current-acl2-world wrld))
+               ((eq (car prop) :attachment-disallowed)
+                prop) ; (cdr prop) follows "because", e.g., (msg "it is bad")
+               (t prop)))))
+
+(defun attachment-pair (fn wrld)
+  (let ((attachment-alist (attachment-alist fn wrld)))
+    (and attachment-alist
+         (not (eq (car attachment-alist) :attachment-disallowed))
+         (assoc-eq fn attachment-alist))))
+
+(defconst *protected-system-state-globals*
+  (let ((val
+         (set-difference-eq
+          (union-eq (strip-cars *initial-ld-special-bindings*)
+                    (strip-cars *initial-global-table*))
+          '(acl2-raw-mode-p            ;;; keep raw mode status
+            bddnotes                   ;;; for feedback after expansion failure
+
+; We handle world and enabled structure installation ourselves, with set-w! and
+; revert-world-on-error.  We do not want to rely just on state globals because
+; the world protection/modification functions do pretty fancy things.
+
+            current-acl2-world global-enabled-structure
+            inhibit-output-lst         ;;; allow user to modify this in a book
+            inhibited-summary-types    ;;; allow user to modify this in a book
+            keep-tmp-files             ;;; allow user to modify this in a book
+            make-event-debug           ;;; allow user to modify this in a book
+            saved-output-token-lst     ;;; allow user to modify this in a book
+            print-clause-ids           ;;; allow user to modify this in a book
+            fmt-soft-right-margin      ;;; allow user to modify this in a book
+            fmt-hard-right-margin      ;;; allow user to modify this in a book
+            parallel-execution-enabled ;;; allow user to modify this in a book
+            waterfall-parallelism      ;;; allow user to modify this in a book
+            waterfall-parallelism-timing-threshold ;;; see just above
+            waterfall-printing         ;;; allow user to modify this in a book
+            waterfall-printing-when-finished ;;; see just above
+            saved-output-reversed      ;;; for feedback after expansion failure
+            saved-output-p             ;;; for feedback after expansion failure
+            ttags-allowed              ;;; propagate changes outside expansion
+            ld-evisc-tuple             ;;; allow user to modify this in a book
+                                       ;;;   (e.g. misc/hons-help.lisp)
+            term-evisc-tuple           ;;; see just above
+            abbrev-evisc-tuple         ;;; see just above
+            gag-mode-evisc-tuple       ;;; see just above
+            slow-array-action          ;;; see just above
+            iprint-ar                  ;;; see just above
+            iprint-soft-bound          ;;; see just above
+            iprint-hard-bound          ;;; see just above
+            writes-okp                 ;;; protected a different way (see
+                                       ;;;   protect-system-state-globals)
+            show-custom-keyword-hint-expansion
+            trace-specs                ;;; keep in sync with functions that are
+                                       ;;;   actually traced, e.g. trace! macro
+            timer-alist                ;;; preserve accumulated summary info
+            main-timer                 ;;; preserve accumulated summary info
+            verbose-theory-warning     ;;; for warning on disabled mv-nth etc.
+            more-doc-state             ;;; for proof-checker :more command
+            pc-ss-alist                ;;; for saves under :instructions hints
+            last-step-limit            ;;; propagate step-limit past expansion
+            illegal-to-certify-message ;;; needs to persist past expansion
+            splitter-output            ;;; allow user to modify this in a book
+            ))))
+    val))
+
+(defun state-global-bindings (names)
+  (cond ((endp names)
+         nil)
+        (t (cons `(,(car names) (f-get-global ',(car names) state))
+                 (state-global-bindings (cdr names))))))
+
+(defmacro protect-system-state-globals (form)
+
+; Form must return an error triple.  This macro not only reverts built-in state
+; globals after evaluating form, but it also disables the opening of output
+; channels.
+
+  `(state-global-let*
+    ,(cons `(writes-okp nil)
+           (state-global-bindings *protected-system-state-globals*))
+    ,form))
+
+(defun formal-value-triple (erp val)
+
+; Keep in sync with formal-value-triple@par.
+
+; Returns a form that evaluates to the error triple (mv erp val state).
+
+  (fcons-term* 'cons erp
+               (fcons-term* 'cons val
+                            (fcons-term* 'cons 'state *nil*))))
+
+#+acl2-par
+(defun formal-value-triple@par (erp val)
+
+; Keep in sync with formal-value-triple.
+
+  (fcons-term* 'cons erp
+               (fcons-term* 'cons val *nil*)))
+
+(defun@par translate-simple-or-error-triple (uform ctx wrld state)
+
+; First suppose either #-acl2-par or else #+acl2-par with waterfall-parallelism
+; disabled.  Uform is an untranslated term that is expected to translate either
+; to an error triple or to an ordinary value.  In those cases we return an
+; error triple whose value component is the translated term or, respectively,
+; the term representing (mv nil tterm state) where tterm is the translated
+; term.  Otherwise, we return a soft error.
+
+; Now consider the case of #+acl2-par with waterfall-parallelism enabled.
+; Uform is an untranslated term that is expected to translate to an ordinary
+; value.  In this case, we return an error pair (mv nil val) where val is the
+; translated term.  Otherwise, uform translates into an error pair (mv t nil).
+
+  (mv-let@par
+   (erp term bindings state)
+   (translate1@par uform
+                   :stobjs-out ; form must be executable
+                   '((:stobjs-out . :stobjs-out))
+                   '(state) ctx wrld state)
+   (cond
+    (erp (mv@par t nil state))
+    (t
+     (let ((stobjs-out (translate-deref :stobjs-out bindings)))
+       (cond
+        ((equal stobjs-out '(nil)) ; replace term by (value@par term)
+         (value@par (formal-value-triple@par *nil* term)))
+        ((equal stobjs-out *error-triple-sig*)
+         (serial-first-form-parallel-second-form@par
+          (value@par term)
+
+; #+ACL2-PAR note: This message is used to check that computed hints and custom
+; keyword hints (and perhaps other hint mechanisms too) do not modify state.
+; Note that not all hint mechanisms rely upon this check.  For example,
+; apply-override-hint@par and eval-clause-processor@par perform their own
+; checks.
+
+; Parallelism wart: it should be possible to return (value@par term) when
+; waterfall-parallelism-hacks-enabled is non-nil.  This would allow more types
+; of hints to fire when waterfall-parallelism-hacks are enabled.
+
+          (er@par soft ctx
+            "Since we are translating a form in ACL2(p) intended to be ~
+             executed with waterfall parallelism enabled, the form ~x0 was ~
+             expected to represent an ordinary value, not an error triple (mv ~
+             erp val state), as would be acceptable in a serial execution of ~
+             ACL2.  Therefore, the form returning a tuple of the form ~x1 is ~
+             an error.  See :DOC unsupported-waterfall-parallelism-features ~
+             and :DOC error-triples-and-parallelism for further explanation."
+            uform
+            (prettyify-stobj-flags stobjs-out))))
+        #+acl2-par
+        ((serial-first-form-parallel-second-form@par
+          nil
+          (and 
+
+; The test of this branch is never true in the non-@par version of the
+; waterfall.  We need this test for custom-keyword-hints, which are evaluated
+; using the function eval-and-translate-hint-expression[@par].  Since
+; eval-and-translate-hint-expression[@par] calls
+; translate-simple-or-error-triple[@par] to check the return signature of the
+; custom hint, we must not cause an error when we encounter this legitimate
+; use.
+
+; Parallelism wart: consider eliminating the special case below, given the spec
+; for translate-simple-or-error-triple[@par] in the comment at the top of this
+; function.  This could be achieved by doing the test below before calling
+; translate-simple-or-error-triple@par, either inline where we now call
+; translate-simple-or-error-triple@par or else with a wrapper that handles this
+; special case before calling translate-simple-or-error-triple@par.
+
+           (equal stobjs-out *cmp-sig*) 
+           (eq (car uform) 'custom-keyword-hint-interpreter@par)))
+         (value@par term))
+        (t (serial-first-form-parallel-second-form@par
+            (er soft ctx
+                "The form ~x0 was expected to represent an ordinary value or ~
+                 an error triple (mv erp val state), but it returns a tuple ~
+                 of the form ~x1."
+                uform
+                (prettyify-stobj-flags stobjs-out))
+            (er@par soft ctx
+              "The form ~x0 was expected to represent an ordinary value, but ~
+               it returns a tuple of the form ~x1.  Note that error triples ~
+               are not allowed in this feature in ACL2(p) (see :doc ~
+               error-triples-and-parallelism)"
+              uform
+              (prettyify-stobj-flags stobjs-out))))))))))
+
+(defun xtrans-eval (uterm alist trans-flg ev-flg ctx state aok)
+
+; NOTE: Do not call this function with er-let* if ev-flg is nil.  Use mv-let
+; and check erp manually.  See the discussion of 'wait below.
+
+; Ignore trans-flg and ev-flg for the moment (or imagine their values are t).
+; Then the spec of this function is as follows:
+
+; Uterm is an untranslated term with an output signature of * or (mv * *
+; state).  We translate it and eval it under alist (after extending alist with
+; state bound to the current state) and return the resulting error triple or
+; signal a translate or evaluation error.  We restore the world and certain
+; state globals (*protected-system-state-globals*) after the evaluation.
+
+; If trans-flg is nil, we do not translate.  We *assume* uterm is a
+; single-threaded translated term with output signature (mv * * state)!
+
+; Ev-flg is either t or nil.  If ev-flg is nil, we are to evaluate uterm only
+; if all of its free vars are bound in the evaluation environment.  If ev-flg
+; is nil and we find that a free variable of uterm is not bound, we return a
+; special error triple, namely (mv t 'wait state) indicating that the caller
+; should wait until it can get all the vars bound.  On the other hand, if
+; ev-flg is t, it means eval the translated uterm, which will signal an error
+; if there is an unbound var.
+
+; Note that we do not evaluate in safe-mode.  Perhaps we should.  However, we
+; experimented by timing certification for community books directory
+; books/hints/ without and with safe-mode, and found times of 13.5 and 16.4
+; user seconds, respectively.  That's not a huge penalty for safe-mode but it's
+; not small, either, so out of concern for scalability we will avoid safe-mode
+; for now.
+
+  (er-let* ((term
+             (if trans-flg
+                 (translate-simple-or-error-triple uterm ctx (w state) state)
+               (value uterm))))
+    (cond
+     ((or ev-flg
+          (subsetp-eq (all-vars term)
+                      (cons 'state (strip-cars alist))))
+
+; We are to ev the term. But first we protect ourselves by arranging
+; to revert the world and restore certain state globals.
+
+      (let ((original-world (w state)))
+        (er-let*
+          ((val
+            (acl2-unwind-protect
+             "xtrans-eval"
+             (protect-system-state-globals
+              (mv-let (erp val latches)
+                      (ev term
+                          (cons (cons 'state
+                                      (coerce-state-to-object state))
+                                alist)
+                          state
+                          (list (cons 'state
+                                      (coerce-state-to-object state)))
+                          nil
+                          aok)
+                      (let ((state (coerce-object-to-state
+                                    (cdr (car latches)))))
+                        (cond
+                         (erp
+
+; An evaluation error occurred.  This could happen if we encountered
+; an undefined (but constrained) function.  We print the error
+; message.
+
+                          (er soft ctx "~@0" val))
+                         (t
+
+; Val is the list version of (mv erp' val' state) -- and it really is
+; state in that list (typically, the live state).  We assume that if
+; erp' is non-nil then the evaluation also printed the error message.
+; We return an error triple.
+
+                          (mv (car val)
+                              (cadr val)
+                              state))))))
+             (set-w! original-world state)
+             (set-w! original-world state))))
+          (value val))))
+     (t 
+
+; In this case, ev-flg is nil and there are variables in tterm that are
+; not bound in the environment.  So we tell our caller to wait to ev the
+; term.
+
+      (mv t 'wait state)))))
+
+#+acl2-par
+(defun xtrans-eval-with-ev-w (uterm alist trans-flg ev-flg ctx state aok)
+
+; See xtrans-eval documentation.
+
+; This function was originally introduced in support of the #+acl2-par version.
+; We could have named it "xtrans-eval@par".  However, this function seems
+; worthy of having its own name, suggestive of what it is: a version of
+; xtrans-eval that uses ev-w for evaluation rather than using ev.  The extra
+; function call adds only trivial cost.
+
+  (er-let*@par
+   ((term
+     (if trans-flg
+
+; #+ACL2-PAR note: As of August 2011, there are two places that call
+; xtrans-eval@par with the trans-flg set to nil: apply-override-hint@par and
+; eval-and-translate-hint-expression@par.  In both of these cases, we performed
+; a manual inspection of the code (aided by testing) to determine that if state
+; can be modified by executing uterm, that the user will receive an error
+; before even reaching this call of xtrans-eval@par.  In this way, we guarantee
+; that the invariant for ev-w (that uterm does not modify state) is maintained.
+
+         (translate-simple-or-error-triple@par uterm ctx (w state) state)
+       (value@par uterm))))
+   (cond
+    ((or ev-flg
+         (subsetp-eq (all-vars term)
+                     (cons 'state (strip-cars alist))))
+
+; #+ACL2-PAR note: we currently discard any changes to the world of the live
+; state.  But if we restrict to terms that don't modify state, as discussed in
+; the #+ACL2-PAR note above, then there is no issue because state hasn't
+; changed.  Otherwise, if we cheat, the world could indeed change out from
+; under us, which is just one example of the evils of cheating by modifying
+; state under the hood.
+
+     (er-let*-cmp
+      ((val
+        (mv-let (erp val)
+                (ev-w term
+                      (cons (cons 'state
+                                  (coerce-state-to-object state))
+                            alist)
+                      (w state)
+                      (user-stobj-alist state)
+                      (f-get-global 'safe-mode state)
+                      (gc-off state)
+                      nil
+                      aok)
+                (cond
+                 (erp
+                 
+; An evaluation error occurred.  This could happen if we encountered
+; an undefined (but constrained) function.  We print the error
+; message.
+                       
+                  (er@par soft ctx "~@0" val))
+                 (t
+                       
+; Val is the list version of (mv erp' val' state) -- and it really is
+; state in that list (typically, the live state).  We assume that if
+; erp' is non-nil then the evaluation also printed the error message.
+; We return an error triple.
+                       
+                  (mv (car val)
+                      (cadr val)))))))
+      (value@par val)))
+    (t
+
+; In this case, ev-flg is nil and there are variables in tterm that are
+; not bound in the environment.  So we tell our caller to wait to ev the
+; term.
+
+     (mv t 'wait)))))
+
+#+acl2-par
+(defun xtrans-eval@par (uterm alist trans-flg ev-flg ctx state aok)
+  (xtrans-eval-with-ev-w uterm alist trans-flg ev-flg ctx state aok))
+
+(defmacro xtrans-eval-state-fn-attachment (fn ctx)
+
+; We call xtrans-eval on (pprogn (fn state) (value nil)), unless we are in the
+; boot-strap or fn is unattached, in which cases we return (value nil).
+
+; Note that arguments trans-flg and aok are t in our call of xtrans-eval.
+
+  (declare (xargs :guard (symbolp fn)))
+  `(let ((fn ',fn)
+         (ctx ,ctx)
+         (wrld (w state)))
+     (cond ((or (global-val 'boot-strap-flg wrld)
+                (null (attachment-pair fn wrld)))
+            (value nil))
+           (t (let ((form `(pprogn (,fn state) (value nil))))
+                (mv-let (erp val state)
+                        (xtrans-eval form
+                                     nil ; alist
+                                     t   ; trans-flg
+                                     t   ; ev-flg
+                                     ctx
+                                     state
+                                     t ; aok
+                                     )
+                        (cond (erp (er soft ctx
+                                       "The error above occurred during ~
+                                        evaluation of ~x0."
+                                       form))
+                              (t (value val)))))))))
+
+(defmacro with-ctx-summarized (ctx body)
+
+; A typical use of this macro by an event creating function is:
+; (with-ctx-summarized (cons 'defun name)
+;   (er-progn ... 
+;             (er-let* (... (v form) ...)
+;             (install-event ...))))
+
+; If body changes the installed world then the new world must end with an
+; event-landmark (we cause an error otherwise).  The segment of the new world
+; back to the previous event-landmark is scanned for redefined names and an
+; appropriate warning message is printed, as per ld-redefinition-action.
+
+; The most obvious way to satisfy this restriction on world is for each
+; branch through body to (a) stop with stop-redundant-event, (b) signal an
+; error, or (c) conclude with install-event.  Two of our current uses of this
+; macro do not follow so simple a paradigm.  In include-book-fn we add many
+; events (in process-embedded-events) but we do conclude with an install-event
+; which couldn't possibly redefine any names because no names are defined in
+; the segment from the last embedded event to the landmark for the include-book
+; itself.  In certify-book-fn we conclude with an include-book-fn.  So in both
+; of those cases the scan for redefined names ends quickly (without going into
+; the names possibly redefined in the embedded events) and finds nothing to
+; report.
+
+; This macro initializes the timers for an event and then executes the supplied
+; body, which should return an error triple.  Whether an error is signalled or
+; not, the macro prints the summary and then pass the error triple on up.  The
+; stats must be available from the state.  In particular, we print redefinition
+; warnings that are recovered from the currently installed world in state and
+; we print the runes from 'accumulated-ttree.
+
+  `(let ((ctx ,ctx)
+         (wrld0 (w state)))
+     (pprogn (initialize-summary-accumulators state)
+             (mv-let
+              (erp val state)
+              (save-event-state-globals
+               (mv-let (erp val state)
+                       (pprogn
+                        (push-io-record
+                         :ctx
+                         (list 'mv-let
+                               '(col state)
+                               '(fmt "Output replay for: "
+                                     nil (standard-co state) state nil)
+                               (list 'mv-let
+                                     '(col state)
+                                     (list 'fmt-ctx
+                                           (list 'quote ,ctx)
+                                           'col
+                                           '(standard-co state)
+                                           'state)
+                                     '(declare (ignore col))
+                                     '(newline (standard-co state) state)))
+                         state)
+                        (er-progn
+                         (xtrans-eval-state-fn-attachment initialize-event-user
+                                                          ,ctx)
+                         ,body))
+                       (pprogn
+                        (print-summary erp
+                                       (equal wrld0 (w state))
+                                       ctx state)
+                        (er-progn
+                         (xtrans-eval-state-fn-attachment finalize-event-user
+                                                          ,ctx)
+                         (mv erp val state)))))
+
+; In the case of a compound event such as encapsulate, we do not want to save
+; io? forms for proof replay that were generated after a failed proof attempt.
+; Otherwise, if we do not set the value of 'saved-output-p below to nil, then
+; replay from an encapsulate with a failed defthm will pop warnings more often
+; than pushing them (resulting in an error from pop-warning-frame).  This
+; failure (without setting 'saved-output-p below) happens because the pushes
+; are only from io? forms saved inside the defthm, yet we were saving the
+; pops from the enclosing encapsulate.
+
+              (pprogn (f-put-global 'saved-output-p nil state)
+                      (mv erp val state))))))
 
 (defmacro revert-world-on-error (form)
 
@@ -7956,15 +8447,6 @@
               (eq new-type 'function))
          mode)
         (t :erase)))
-
-(defun attachment-alist (fn wrld)
-  (let ((prop (getprop fn 'attachment nil 'current-acl2-world wrld)))
-    (and prop
-         (cond ((symbolp prop)
-                (getprop prop 'attachment nil 'current-acl2-world wrld))
-               ((eq (car prop) :attachment-disallowed)
-                prop) ; (cdr prop) follows "because", e.g., (msg "it is bad")
-               (t prop)))))
 
 (defun redefinition-renewal-mode (name old-type new-type reclassifyingp ctx
                                        wrld state)
@@ -17276,355 +17758,6 @@
 
 ; We next develop code for :custom hints.  See the Essay on the Design of
 ; Custom Keyword Hints.
-
-(defconst *protected-system-state-globals*
-  (let ((val
-         (set-difference-eq
-          (union-eq (strip-cars *initial-ld-special-bindings*)
-                    (strip-cars *initial-global-table*))
-          '(acl2-raw-mode-p            ;;; keep raw mode status
-            bddnotes                   ;;; for feedback after expansion failure
-
-; We handle world and enabled structure installation ourselves, with set-w! and
-; revert-world-on-error.  We do not want to rely just on state globals because
-; the world protection/modification functions do pretty fancy things.
-
-            current-acl2-world global-enabled-structure
-            inhibit-output-lst         ;;; allow user to modify this in a book
-            inhibited-summary-types    ;;; allow user to modify this in a book
-            keep-tmp-files             ;;; allow user to modify this in a book
-            make-event-debug           ;;; allow user to modify this in a book
-            saved-output-token-lst     ;;; allow user to modify this in a book
-            print-clause-ids           ;;; allow user to modify this in a book
-            fmt-soft-right-margin      ;;; allow user to modify this in a book
-            fmt-hard-right-margin      ;;; allow user to modify this in a book
-            parallel-execution-enabled ;;; allow user to modify this in a book
-            waterfall-parallelism      ;;; allow user to modify this in a book
-            waterfall-parallelism-timing-threshold ;;; see just above
-            waterfall-printing         ;;; allow user to modify this in a book
-            waterfall-printing-when-finished ;;; see just above
-            saved-output-reversed      ;;; for feedback after expansion failure
-            saved-output-p             ;;; for feedback after expansion failure
-            ttags-allowed              ;;; propagate changes outside expansion
-            ld-evisc-tuple             ;;; allow user to modify this in a book
-                                       ;;;   (e.g. misc/hons-help.lisp)
-            term-evisc-tuple           ;;; see just above
-            abbrev-evisc-tuple         ;;; see just above
-            gag-mode-evisc-tuple       ;;; see just above
-            slow-array-action          ;;; see just above
-            iprint-ar                  ;;; see just above
-            iprint-soft-bound          ;;; see just above
-            iprint-hard-bound          ;;; see just above
-            writes-okp                 ;;; protected a different way (see
-                                       ;;;   protect-system-state-globals)
-            show-custom-keyword-hint-expansion
-            trace-specs                ;;; keep in sync with functions that are
-                                       ;;;   actually traced, e.g. trace! macro
-            timer-alist                ;;; preserve accumulated summary info
-            main-timer                 ;;; preserve accumulated summary info
-            verbose-theory-warning     ;;; for warning on disabled mv-nth etc.
-            more-doc-state             ;;; for proof-checker :more command
-            pc-ss-alist                ;;; for saves under :instructions hints
-            last-step-limit            ;;; propagate step-limit past expansion
-            illegal-to-certify-message ;;; needs to persist past expansion
-            splitter-output            ;;; allow user to modify this in a book
-            ))))
-    val))
-
-(defun state-global-bindings (names)
-  (cond ((endp names)
-         nil)
-        (t (cons `(,(car names) (f-get-global ',(car names) state))
-                 (state-global-bindings (cdr names))))))
-
-(defmacro protect-system-state-globals (form)
-
-; Form must return an error triple.  This macro not only reverts built-in state
-; globals after evaluating form, but it also disables the opening of output
-; channels.
-
-  `(state-global-let*
-    ,(cons `(writes-okp nil)
-           (state-global-bindings *protected-system-state-globals*))
-    ,form))
-
-(defun formal-value-triple (erp val)
-
-; Keep in sync with formal-value-triple@par.
-
-; Returns a form that evaluates to the error triple (mv erp val state).
-
-  (fcons-term* 'cons erp
-               (fcons-term* 'cons val
-                            (fcons-term* 'cons 'state *nil*))))
-
-#+acl2-par
-(defun formal-value-triple@par (erp val)
-
-; Keep in sync with formal-value-triple.
-
-  (fcons-term* 'cons erp
-               (fcons-term* 'cons val *nil*)))
-
-(defun@par translate-simple-or-error-triple (uform ctx wrld state)
-
-; First suppose either #-acl2-par or else #+acl2-par with waterfall-parallelism
-; disabled.  Uform is an untranslated term that is expected to translate either
-; to an error triple or to an ordinary value.  In those cases we return an
-; error triple whose value component is the translated term or, respectively,
-; the term representing (mv nil tterm state) where tterm is the translated
-; term.  Otherwise, we return a soft error.
-
-; Now consider the case of #+acl2-par with waterfall-parallelism enabled.
-; Uform is an untranslated term that is expected to translate to an ordinary
-; value.  In this case, we return an error pair (mv nil val) where val is the
-; translated term.  Otherwise, uform translates into an error pair (mv t nil).
-
-  (mv-let@par
-   (erp term bindings state)
-   (translate1@par uform
-                   :stobjs-out ; form must be executable
-                   '((:stobjs-out . :stobjs-out))
-                   '(state) ctx wrld state)
-   (cond
-    (erp (mv@par t nil state))
-    (t
-     (let ((stobjs-out (translate-deref :stobjs-out bindings)))
-       (cond
-        ((equal stobjs-out '(nil)) ; replace term by (value@par term)
-         (value@par (formal-value-triple@par *nil* term)))
-        ((equal stobjs-out *error-triple-sig*)
-         (serial-first-form-parallel-second-form@par
-          (value@par term)
-
-; #+ACL2-PAR note: This message is used to check that computed hints and custom
-; keyword hints (and perhaps other hint mechanisms too) do not modify state.
-; Note that not all hint mechanisms rely upon this check.  For example,
-; apply-override-hint@par and eval-clause-processor@par perform their own
-; checks.
-
-; Parallelism wart: it should be possible to return (value@par term) when
-; waterfall-parallelism-hacks-enabled is non-nil.  This would allow more types
-; of hints to fire when waterfall-parallelism-hacks are enabled.
-
-          (er@par soft ctx
-            "Since we are translating a form in ACL2(p) intended to be ~
-             executed with waterfall parallelism enabled, the form ~x0 was ~
-             expected to represent an ordinary value, not an error triple (mv ~
-             erp val state), as would be acceptable in a serial execution of ~
-             ACL2.  Therefore, the form returning a tuple of the form ~x1 is ~
-             an error.  See :DOC unsupported-waterfall-parallelism-features ~
-             and :DOC error-triples-and-parallelism for further explanation."
-            uform
-            (prettyify-stobj-flags stobjs-out))))
-        #+acl2-par
-        ((serial-first-form-parallel-second-form@par
-          nil
-          (and 
-
-; The test of this branch is never true in the non-@par version of the
-; waterfall.  We need this test for custom-keyword-hints, which are evaluated
-; using the function eval-and-translate-hint-expression[@par].  Since
-; eval-and-translate-hint-expression[@par] calls
-; translate-simple-or-error-triple[@par] to check the return signature of the
-; custom hint, we must not cause an error when we encounter this legitimate
-; use.
-
-; Parallelism wart: consider eliminating the special case below, given the spec
-; for translate-simple-or-error-triple[@par] in the comment at the top of this
-; function.  This could be achieved by doing the test below before calling
-; translate-simple-or-error-triple@par, either inline where we now call
-; translate-simple-or-error-triple@par or else with a wrapper that handles this
-; special case before calling translate-simple-or-error-triple@par.
-
-           (equal stobjs-out *cmp-sig*) 
-           (eq (car uform) 'custom-keyword-hint-interpreter@par)))
-         (value@par term))
-        (t (serial-first-form-parallel-second-form@par
-            (er soft ctx
-                "The form ~x0 was expected to represent an ordinary value or ~
-                 an error triple (mv erp val state), but it returns a tuple ~
-                 of the form ~x1."
-                uform
-                (prettyify-stobj-flags stobjs-out))
-            (er@par soft ctx
-              "The form ~x0 was expected to represent an ordinary value, but ~
-               it returns a tuple of the form ~x1.  Note that error triples ~
-               are not allowed in this feature in ACL2(p) (see :doc ~
-               error-triples-and-parallelism)"
-              uform
-              (prettyify-stobj-flags stobjs-out))))))))))
-
-(defun xtrans-eval (uterm alist trans-flg ev-flg ctx state aok)
-
-; NOTE: Do not call this function with er-let* if ev-flg is nil.  Use mv-let
-; and check erp manually.  See the discussion of 'wait below.
-
-; Ignore trans-flg and ev-flg for the moment (or imagine their values are t).
-; Then the spec of this function is as follows:
-
-; Uterm is an untranslated term with an output signature of * or (mv * *
-; state).  We translate it and eval it under alist (after extending alist with
-; state bound to the current state) and return the resulting error triple or
-; signal a translate or evaluation error.  We restore the world and certain
-; state globals (*protected-system-state-globals*) after the evaluation.
-
-; If trans-flg is nil, we do not translate.  We *assume* uterm is a
-; single-threaded translated term with output signature (mv * * state)!
-
-; Ev-flg is either t or nil.  If ev-flg is nil, we are to evaluate uterm only
-; if all of its free vars are bound in the evaluation environment.  If ev-flg
-; is nil and we find that a free variable of uterm is not bound, we return a
-; special error triple, namely (mv t 'wait state) indicating that the caller
-; should wait until it can get all the vars bound.  On the other hand, if
-; ev-flg is t, it means eval the translated uterm, which will signal an error
-; if there is an unbound var.
-
-; Note that we do not evaluate in safe-mode.  Perhaps we should.  However, we
-; experimented by timing certification for community books directory
-; books/hints/ without and with safe-mode, and found times of 13.5 and 16.4
-; user seconds, respectively.  That's not a huge penalty for safe-mode but it's
-; not small, either, so out of concern for scalability we will avoid safe-mode
-; for now.
-
-  (er-let* ((term
-             (if trans-flg
-                 (translate-simple-or-error-triple uterm ctx (w state) state)
-               (value uterm))))
-    (cond
-     ((or ev-flg
-          (subsetp-eq (all-vars term)
-                      (cons 'state (strip-cars alist))))
-
-; We are to ev the term. But first we protect ourselves by arranging
-; to revert the world and restore certain state globals.
-
-      (let ((original-world (w state)))
-        (er-let*
-          ((val
-            (acl2-unwind-protect
-             "xtrans-eval"
-             (protect-system-state-globals
-              (mv-let (erp val latches)
-                      (ev term
-                          (cons (cons 'state
-                                      (coerce-state-to-object state))
-                                alist)
-                          state
-                          (list (cons 'state
-                                      (coerce-state-to-object state)))
-                          nil
-                          aok)
-                      (let ((state (coerce-object-to-state
-                                    (cdr (car latches)))))
-                        (cond
-                         (erp
-
-; An evaluation error occurred.  This could happen if we encountered
-; an undefined (but constrained) function.  We print the error
-; message.
-
-                          (er soft ctx "~@0" val))
-                         (t
-
-; Val is the list version of (mv erp' val' state) -- and it really is
-; state in that list (typically, the live state).  We assume that if
-; erp' is non-nil then the evaluation also printed the error message.
-; We return an error triple.
-
-                          (mv (car val)
-                              (cadr val)
-                              state))))))
-             (set-w! original-world state)
-             (set-w! original-world state))))
-          (value val))))
-     (t 
-
-; In this case, ev-flg is nil and there are variables in tterm that are
-; not bound in the environment.  So we tell our caller to wait to ev the
-; term.
-
-      (mv t 'wait state)))))
-
-#+acl2-par
-(defun xtrans-eval-with-ev-w (uterm alist trans-flg ev-flg ctx state aok)
-
-; See xtrans-eval documentation.
-
-; This function was originally introduced in support of the #+acl2-par version.
-; We could have named it "xtrans-eval@par".  However, this function seems
-; worthy of having its own name, suggestive of what it is: a version of
-; xtrans-eval that uses ev-w for evaluation rather than using ev.  The extra
-; function call adds only trivial cost.
-
-  (er-let*@par
-   ((term
-     (if trans-flg
-
-; #+ACL2-PAR note: As of August 2011, there are two places that call
-; xtrans-eval@par with the trans-flg set to nil: apply-override-hint@par and
-; eval-and-translate-hint-expression@par.  In both of these cases, we performed
-; a manual inspection of the code (aided by testing) to determine that if state
-; can be modified by executing uterm, that the user will receive an error
-; before even reaching this call of xtrans-eval@par.  In this way, we guarantee
-; that the invariant for ev-w (that uterm does not modify state) is maintained.
-
-         (translate-simple-or-error-triple@par uterm ctx (w state) state)
-       (value@par uterm))))
-   (cond
-    ((or ev-flg
-         (subsetp-eq (all-vars term)
-                     (cons 'state (strip-cars alist))))
-
-; #+ACL2-PAR note: we currently discard any changes to the world of the live
-; state.  But if we restrict to terms that don't modify state, as discussed in
-; the #+ACL2-PAR note above, then there is no issue because state hasn't
-; changed.  Otherwise, if we cheat, the world could indeed change out from
-; under us, which is just one example of the evils of cheating by modifying
-; state under the hood.
-
-     (er-let*-cmp
-      ((val
-        (mv-let (erp val)
-                (ev-w term
-                      (cons (cons 'state
-                                  (coerce-state-to-object state))
-                            alist)
-                      (w state)
-                      (user-stobj-alist state)
-                      (f-get-global 'safe-mode state)
-                      (gc-off state)
-                      nil
-                      aok)
-                (cond
-                 (erp
-                 
-; An evaluation error occurred.  This could happen if we encountered
-; an undefined (but constrained) function.  We print the error
-; message.
-                       
-                  (er@par soft ctx "~@0" val))
-                 (t
-                       
-; Val is the list version of (mv erp' val' state) -- and it really is
-; state in that list (typically, the live state).  We assume that if
-; erp' is non-nil then the evaluation also printed the error message.
-; We return an error triple.
-                       
-                  (mv (car val)
-                      (cadr val)))))))
-      (value@par val)))
-    (t
-
-; In this case, ev-flg is nil and there are variables in tterm that are
-; not bound in the environment.  So we tell our caller to wait to ev the
-; term.
-
-     (mv t 'wait)))))
-
-#+acl2-par
-(defun xtrans-eval@par (uterm alist trans-flg ev-flg ctx state aok)
-  (xtrans-eval-with-ev-w uterm alist trans-flg ev-flg ctx state aok))
 
 (defun@par translate-custom-keyword-hint (arg uterm2 ctx wrld state)
 
