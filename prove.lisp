@@ -3555,11 +3555,11 @@
   status for reporting of ~il[splitter] rules~/
 
   ~l[splitter] for a discussion of splitter rules.  ~l[set-splitter-output] for
-  how to turn on, or off, the reporting of splitter rules.  When off (the
-  default), either because ~ilc[set-splitter-output] has not been invoked to
-  turn on such reporting or because ~c[prove] output is inhibited
-  (~pl[set-inhibit-output-lst]), then the value of ~c[(splitter-output)] is
-  ~c[nil].  Otherwise, such reporting is on and the value is non-~c[nil].~/~/"
+  how to turn off, or on, the reporting of splitter rules.  When
+  splitter-output is off, because either ~c[prove] output is inhibited
+  (~pl[set-inhibit-output-lst]) or ~c[(]~ilc[set-splitter-output]~c[ nil)] has
+  been invoked, then the value of ~c[(splitter-output)] is ~c[nil].  Otherwise,
+  such reporting is on and the value is non-~c[nil].~/~/"
 
   `(and (f-get-global 'splitter-output state)
         (not (member-eq 'prove
@@ -3570,14 +3570,14 @@
 
   reporting of rules whose application may have caused case splits~/
 
-  ~l[set-splitter-output] for how to turn on, or off, the reporting of rule
+  ~l[set-splitter-output] for how to turn of, or on, the reporting of rule
   applications that may have caused a goal to simplify to more than one
   subgoal.  A rule with such an application is called a ``splitter''.  Here, we
   explain the output produced for splitters when proof output is enabled
-  (~pl[set-inhibit-output-lst]) and such reporting is turned on ~-[] that is,
-  when the value of ~c[(]~ilc[splitter-output]~c[)] is true.  Also
-  ~pl[set-case-split-limitations] for information on how to control case
-  splits.
+  (~pl[set-inhibit-output-lst]) and such reporting is turned on (as it is by
+  default) ~-[] that is, when the value of ~c[(]~ilc[splitter-output]~c[)] is
+  true.  Also ~pl[set-case-split-limitations] for information on how to control
+  case splits.
 
   We begin by describing three types of splitters.~bq[]
 
@@ -3722,19 +3722,19 @@
   turn on or off reporting of rules that may have caused case splits~/
   ~bv[]
   Examples:
-  (set-splitter-output t)   ; enable  reports of ``splitter'' rules
-  (set-splitter-output nil) ; disable reports of ``splitter'' rules (default)
+  (set-splitter-output t)   ; enable  reports of ``splitter'' rules (default)
+  (set-splitter-output nil) ; disable reports of ``splitter'' rules
   ~ev[]~/
 
-  After evaluation of the form ~c[(set-splitter-output t)], then whenever
-  ~c[prove] output is not inhibited (~pl[set-inhibit-output-lst]), ACL2 will
-  report ~il[rewrite] and ~il[definition] rules that may have reduced a goal to
-  more than one subgoal.  ~l[splitter] for how to interpret such reports.  We
-  call such rules ``splitter rules'' for the goal that is being split.  This
-  information can be useful in deciding how to eliminate large splits, for
-  example of Goal into Subgoal 1000 through Subgoal 1, by disabling some
-  splitter rules.  Advanced users who traffic in large proofs might thus want
-  to put the form ~c[(set-splitter-output t)] in their customization file;
+  After evaluation of the form ~c[(set-splitter-output t)] (the default), then
+  whenever ~c[prove] output is not inhibited (~pl[set-inhibit-output-lst]),
+  ACL2 will report ~il[rewrite] and ~il[definition] rules that may have reduced
+  a goal to more than one subgoal.  ~l[splitter] for how to interpret such
+  reports.  We call such rules ``splitter rules'' for the goal that is being
+  split.  This information can be useful in deciding how to eliminate large
+  splits, for example of Goal into Subgoal 1000 through Subgoal 1, by disabling
+  some splitter rules.  If you want to avoid the printing of such information,
+  you can put the form ~c[(set-splitter-output t)] in your customization file;
   ~pl[acl2-customization].
 
   Note that this command does not change the ACL2 ~il[world]; it only modifies

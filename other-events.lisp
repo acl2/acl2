@@ -21310,8 +21310,12 @@
 (defun simple-array-type (array-etype dimensions)
   (declare (ignore dimensions))
   (cond
-   ((member-eq array-etype '(* t))
+   ((eq array-etype t)
     `(simple-vector *))
+   ((eq array-etype '*)
+    (er hard 'simple-array-type
+        "Implementation error: We had thought that * is an invalid type-spec! ~
+         ~ Please contact the ACL2 implementors."))
    (t `(simple-array ,array-etype (*)))))
 
 #-acl2-loop-only

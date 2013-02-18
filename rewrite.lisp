@@ -5023,7 +5023,7 @@
         :active-theory :standard
         :backchain-limit-rw nil
         :case-split-limitations nil
-        :splitter-output nil
+        :splitter-output t ; initial value of state global splitter-output
         :current-clause nil
         :current-enabled-structure nil
         :current-literal nil
@@ -5039,7 +5039,7 @@
         :terms-to-be-ignored-by-rewrite nil
         :top-clause nil))
 
-; So much for the rcnst.  
+; So much for the rcnst.
 
 (defrec metafunction-context
 

@@ -259,9 +259,6 @@ ACL2_SIZE =
 # on the make command line.
 ACL2_IGNORE = -i
 
-# Supporting regressions (see community books file, books/Makefile):
-export ACL2_PCERT
-
 # Here we provide support for a convenient way to pass -j down to the
 # community books Makefile, for both `make' and cert.pl.  It seems
 # cleanest and perhaps critical that below, when we call in the books

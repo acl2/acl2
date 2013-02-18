@@ -20161,6 +20161,13 @@
 ; 1% faster than Version_6.0 and the more aggressive use of tau was measured as
 ; about the same speed as Version_6.0.
 
+; Source function simple-array-type formerly accepted '* as a valid array-etype
+; for deducing a type of `(simple-vector *).  But since '* is not a valid
+; type-spec, we should never hit this case, so we now cause a hard error in
+; order to detect a mistake in that thinking.  Note that we tried evaluating
+; (make-array '(5) :element-type *) in several (raw) Lisps, and often got an
+; error (though it took two evaluations in CCL to get the error).
+
   :doc
   ":Doc-Section release-notes
 
@@ -20226,10 +20233,10 @@
 
   ~st[NEW FEATURES]
 
-  A new utility, ~c[set-splitter-output], can direct the prover to give
-  information about case splits.  ~l[set-splitter-output].  Thanks to many
-  ACL2 users, most recently David Rager, for requesting such a capability.
-  Also thanks to David Rager and Jared Davis for helpful discussions.
+  By default, the prover now gives information about case splits.
+  ~l[splitter].  Thanks to many ACL2 users, most recently David Rager, for
+  requesting such a capability.  Also thanks to David Rager and Jared Davis for
+  helpful discussions.
 
   New utilities ~ilc[initialize-event-user] and ~ilc[finalize-event-user] allow
   the user to run ~il[state]-modifying code at the start and end of
@@ -20238,6 +20245,11 @@
   ~c[print-summary-user].
 
   ~st[HEURISTIC IMPROVEMENTS]
+
+  Several heuristic improvements have been made to the tau system, even if you
+  do not explicitly use the new capability for computing bounds on arithmetic
+  expressions, mentioned above.  ~l[tau-system], or if you are unfamiliar with
+  the tau system, ~pl[introduction-to-the-tau-system].
 
   ~st[BUG FIXES]
 
@@ -25725,8 +25737,8 @@ tail recursion.
 ; because STATE is live.
 
       (throw-raw-ev-fncall ev-fncall-val))
-        
-     (t 
+
+     (t
 
 ; This is a top-level call of mfc-ts or some function using it.  Cause an error
 ; no matter what context the user has supplied.  See the error message.
@@ -25812,7 +25824,7 @@ tail recursion.
           (throw-raw-ev-fncall ev-fncall-val))))
      (*hard-error-returns-nilp*
       (throw-raw-ev-fncall ev-fncall-val))
-     (t 
+     (t
       (cw *meta-level-function-problem-3* fn)
       (throw-raw-ev-fncall ev-fncall-val)))))
 

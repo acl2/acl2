@@ -8345,6 +8345,11 @@
 
 (link-doc-to single-threaded-objects programming stobj)
 
+(link-doc-to if-intro miscellaneous splitter)
+; (link-doc-to case-split miscellaneous splitter) ; no; :doc case-split exists
+(link-doc-to immed-forced miscellaneous splitter)
+(link-doc-to forced miscellaneous force)
+
 #+:non-standard-analysis
 (defun build-valid-std-usage-clause (arglist body)
   (cond ((null arglist)

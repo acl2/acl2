@@ -28071,7 +28071,7 @@
     (skip-proofs-by-system . nil)
     (skip-proofs-okp-cert . t) ; t when not inside certify-book
     (slow-array-action . :break) ; set to :warning in exit-boot-strap-mode
-    (splitter-output . nil)
+    (splitter-output . t)
     (standard-co . acl2-output-channel::standard-character-output-0)
     (standard-oi . acl2-output-channel::standard-object-input-0)
     (step-limit-record . nil)
@@ -34179,8 +34179,8 @@
   read elapsed runtime~/
 
   ~c[(Read-run-time state)] returns ~c[(mv runtime state)], where runtime is
-  the elapsed runtime since the start of the current ACL2 session and ~c[state]
-  is the resulting ACL2 ~il[state].~/
+  the elapsed runtime in seconds since the start of the current ACL2 session
+  and ~c[state] is the resulting ACL2 ~il[state].~/
 
   The logical definition probably won't concern many users, but for
   completeness, we say a word about it here.  That definition uses the function
@@ -39737,7 +39737,7 @@
   ~pl[acl2-defaults-table].
 
   ~l[hints] for discussion of a related hint, ~c[:case-split-limitations].
-  Also ~pl[set-splitter-output] for how to obtain reports on rules that may be
+  Also ~pl[splitter] for information about reports on rules that may be
   responsible for case splits.~/
 
   ~bv[]
@@ -44501,18 +44501,18 @@
 #-acl2-loop-only
 (defparameter *metafunction-context* nil)
 
-; The ``term'' passed to the type-set and rewrite is checked
-; explicitly to be well-formed with respect to the world passed in the
-; context.  This gives the meta-level function author the freedom to ask
-; type-set questions about subterms of what the meta-level function was
-; passed, or even questions about newly consed up terms.
+; The ``term'' passed to the type-set and rewrite is checked explicitly to be
+; well-formed with respect to the world passed in the context.  This gives the
+; meta-level function author the freedom to ask type-set questions about
+; subterms of what the meta-level function was passed, or even questions about
+; newly consed up terms.
 
-; In this section we define the metafunction context accessors, i.e.,
-; :logic mode functions of the first type noted above.  The comment in
-; mfc-clause is lengthy and explains the scheme used.  We are free to
-; add more functions analogous to mfc-clause to recover components of
-; the metafunction-context mfc.  If you add more functions, list them
-; in the comment in the defrec for rewrite-constant!
+; In this section we define the metafunction context accessors, i.e., :logic
+; mode functions of the first type noted above.  We are free to add more
+; functions analogous to mfc-clause to recover components of the
+; metafunction-context mfc.  If you add more functions to the
+; metafunction-context record, be sure to define them below, updating existing
+; definitions as necessary due to layout changes for that record.
 
 ; First, we define some accessor functions that should really be defined by
 ; defrec, except that we don't want to go through the effort to move the
@@ -44621,6 +44621,9 @@
 
 (DEFMACRO |Access REWRITE-CONSTANT record field CURRENT-CLAUSE|
   (CURRENT-CLAUSE)
+
+; WARNING: This  definition must be kept in sync with the defrec for
+; rewrite-constant!
 
 ; This form comes from the definition of the :current-clause accessor of defrec
 ; rewrite-constant, by using trans1 to eliminate defabbrev in favor of defmacro.
