@@ -66,8 +66,8 @@ DIRS2_EXCEPT_WK_COI = ordinals data-structures bdd ihs arithmetic-2 arithmetic-3
 	concurrent-programs/german-protocol deduction/passmore clause-processors \
 	quadratic-reciprocity tools paco hacking security regex \
 	defsort serialize wp-gen xdoc-impl system tutorial-problems \
-    cutil countereg-gen demos leftist-trees taspi std std/ks std/lists std/io \
-    oslib
+	cutil countereg-gen demos leftist-trees taspi std std/ks std/lists std/io \
+	oslib tau
 # Add directories other than centaur that depend on hons, say, for performance:
 HONS_ONLY_DIRS = models/y86 security/des
 ifdef ACL2_HONS_REGRESSION
@@ -189,6 +189,7 @@ demos: make-event cutil misc tools arithmetic
 taspi: misc arithmetic-3
 models/y86: tools centaur misc arithmetic-5 rtl arithmetic defexec
 oslib : cutil str tools misc
+tau: arithmetic-5
 
 # Let us wait for everything else before workshops.  Starting after
 # Version_4.3 we include the coi books, because of
