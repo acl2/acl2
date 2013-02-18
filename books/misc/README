@@ -102,6 +102,12 @@ check-acl2-exports.lisp -- check for accidental omissions from *acl2-exports*
 
 ===============================================================================
 
+check-state.lisp -- check conditions on state, causing soft error if violated;
+                    in particular, check-hons-enabled checks that we are
+                    running ACL2(h) (or ACL2(hp)) rather than ACL2
+
+===============================================================================
+
 computed-hint-rewrite.lisp -- interface to the rewriter for computed hints
 
 ===============================================================================

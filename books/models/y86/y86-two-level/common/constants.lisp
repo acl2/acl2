@@ -5,6 +5,11 @@
 
 (in-package "ACL2")
 
+; Added by Matt K.:
+; Require ACL2(h) or ACL2(hp) because of the use of GL in this directory.
+(local (include-book "misc/check-state" :dir :system))
+(local (check-hons-enabled (:book "constants.lisp")))
+
 (include-book "tools/bstar"    :dir :system)
 (include-book "misc-events")
 (include-book "operations")

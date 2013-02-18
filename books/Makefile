@@ -47,8 +47,6 @@ TIME = time
 # hons target.)
 export ACL2_CUSTOMIZATION ?= NONE
 
-export ACL2_PCERT
-
 # Directories go here; first those before certifying arithmetic/top-with-meta,
 # then those afterwards.
 
