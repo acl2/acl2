@@ -13395,7 +13395,14 @@
 
   This topic first explains the basic shape of ~i[Bounder Form 1].  Then it
   illustrates ~i[Bounder Form 2].  Finally, it deals briefly with proving
-  bounder correctness theorems.
+  bounder correctness theorems.  The community book
+  ~c[tau-bounders/elementary-bounders] contains bounders for various elementary
+  functions including ~ilc[+], ~ilc[*], ~ilc[/], ~ilc[FLOOR], ~ilc[MOD],
+  ~ilc[LOGAND], ~ilc[LOGNOT], ~ilc[LOGIOR], ~ilc[LOGORC1], ~ilc[LOGEQV],
+  ~ilc[LOGXOR], and ~ilc[ASH].  You might look at or include this book to see
+  more example theorems, to see how proofs of such theorems are managed, and to
+  experiment with their effects on proving theorems involving arithmetic over
+  finite or half-finite intervals.
 
   A bounder correctness theorem establishes that ~c[bounder-fn] is a
   ``bounder'' for the function ~c[fn].  That means that when trying to compute

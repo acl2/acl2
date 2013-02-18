@@ -3360,6 +3360,8 @@
 
   user-supplied code to initiate ~il[events]~/
 
+  This utility is intended for system hackers, not standard ACL2 users.
+
   ~l[finalize-event-user] to see how to supply code to be run at the end of
   ~il[events].  We assume familiarity with ~c[finalize-event-user]; here we
   focus on how to supply code for the beginning as well as the end of events.
@@ -3421,6 +3423,8 @@
   ":Doc-Section switches-parameters-and-modes
 
   user-supplied code to complete ~il[events], e.g., with extra summary output~/
+
+  This utility is intended for system hackers, not standard ACL2 users.
 
   ACL2 prints summaries at the conclusions of processing ~il[events] (unless
   summaries are inhibited; ~pl[set-inhibit-output-lst] and also
