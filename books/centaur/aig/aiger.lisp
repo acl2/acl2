@@ -1,4 +1,4 @@
-; Centaur Miscellaneous Books
+; Centaur AIG Library
 ; Copyright (C) 2012 Centaur Technology
 ;
 ; Contact:
@@ -20,8 +20,6 @@
 ; Original author: Sol Swords <sswords@centtech.com>
 
 (in-package "ACL2")
-
-
 (include-book "tools/bstar" :dir :system)
 (include-book "tools/mv-nth" :dir :system)
 (include-book "data-structures/list-defthms" :dir :system)

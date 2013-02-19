@@ -1,4 +1,4 @@
-; Centaur Miscellaneous Books
+; Centaur AIG Library
 ; Copyright (C) 2012 Centaur Technology
 ;
 ; Contact:
@@ -20,7 +20,6 @@
 ; Original author: Sol Swords <sswords@centtech.com>
 
 (in-package "ACL2")
-
 (include-book "defsort/defsort" :dir :system)
 (include-book "centaur/aig/base" :dir :system)
 (include-book "tools/bstar" :dir :system)
@@ -93,7 +92,7 @@
                         nil))
 
 
-        
+
 
 (defun aig-vars-1pass (x)
   (declare (xargs :guard t))
@@ -159,7 +158,7 @@
         nil)
        ((mv vars1 memo-table)
         (aig-vars-sparse/trans-aux (car x) memo-table nalist)))
-    (cons vars1 
+    (cons vars1
           (map-aig-vars-sparse/trans (cdr x) memo-table nalist))))
 
 (defmacro maybe-add-translated-sbit (bit x offset acc tbl)
@@ -264,7 +263,7 @@
 
 
 
-#||  
+#||
 
 bunch of messy stuff about all the different things we tried
 
@@ -359,8 +358,8 @@ bunch of messy stuff about all the different things we tried
  (let ((alist '((a . 1) (b . 2) (c . 3) (d . 4))))
    (with-fast-alist alist
      (translate-back-top '((1 2) (3 4)) alist))))
-           
-    
+
+
 
 
 (defconst *tmp*
@@ -376,7 +375,7 @@ bunch of messy stuff about all the different things we tried
 
 (resize-translate-back-arr 256 translate-back-stobj)
 
-(defconst *ht* 
+(defconst *ht*
   (let ((ht (make-hash-table :size 1000 :test 'eql)))
     (loop for i fixnum from 0 to 256 do
           (setf (gethash i ht) 'foo))
@@ -503,7 +502,7 @@ bunch of messy stuff about all the different things we tried
        ((with-fast valist)))
     (cwtime (translate-back-to-vars nlists valist))))
 
- 
+
 
 
 (defun aig-vars-sparse/trans-aux (x memo-table nalist)
@@ -532,7 +531,7 @@ bunch of messy stuff about all the different things we tried
         nil)
        ((mv vars1 memo-table)
         (aig-vars-sparse/trans-aux (car x) memo-table nalist)))
-    (cons vars1 
+    (cons vars1
           (map-aig-vars-sparse/trans (cdr x) memo-table nalist))))
 
 (defun map-aig-vars-smarter3 (aigs)
@@ -579,7 +578,7 @@ bunch of messy stuff about all the different things we tried
 ;;; 8406 soft faults, 0 faults, 0 pageins
 
 ; TRANSLATE-BACK-TO-VARS: 173.32 seconds, 16,177,948,112 bytes.
-; (EV-REC *RETURN-LAST-ARG3* ...) took 
+; (EV-REC *RETURN-LAST-ARG3* ...) took
 ; 183.44 seconds realtime, 183.40 seconds runtime
 ; (24,617,664,416 bytes allocated).
 
@@ -614,7 +613,7 @@ bunch of messy stuff about all the different things we tried
 ; LOAD-UP-TRANSLATE-BACK-STOBJ: 0.00 seconds, 944 bytes.
 ; TRANSLATE-BACK-TO-VARS2: 12.89 seconds, 8,093,634,080 bytes.
 ; TRANSLATE-BACK-TOP: 12.90 seconds, 8,093,812,624 bytes.
-; (EV-REC *RETURN-LAST-ARG3* ...) took 
+; (EV-REC *RETURN-LAST-ARG3* ...) took
 ; 21.80 seconds realtime, 21.80 seconds runtime
 ; (16,530,845,920 bytes allocated).
 (defun map-aig-vars-smarter5 (aigs)
@@ -642,7 +641,7 @@ bunch of messy stuff about all the different things we tried
 ; AIG-VARS-DFSORDER-AUX2: 2.21 seconds, 169,402,592 bytes.
 ; MAP-AIG-VARS-SPARSE/TRANS: 0.50 seconds, 170,983,248 bytes.
 ; MAP-SBITSET-MEMBERS-TRANS: 23.54 seconds, 2,946,840,192 bytes.
-; (EV-REC *RETURN-LAST-ARG3* ...) took 
+; (EV-REC *RETURN-LAST-ARG3* ...) took
 ; 26.28 seconds realtime, 26.28 seconds runtime
 ; (3,293,220,816 bytes allocated).
 
@@ -670,7 +669,7 @@ ACL2 p!>(prog2$ (time$ (map-aig-vars-smarter7 *foo*))
 ; AIG-VARS-DFSORDER-AUX2: 2.21 seconds, 169,403,072 bytes.
 ; MAP-AIG-VARS-SPARSE/TRANS: 0.57 seconds, 170,937,024 bytes.
 ; MAP-SBITSET-MEMBERS-TRANS: 6.46 seconds, 2,946,840,192 bytes.
-; (EV-REC *RETURN-LAST-ARG3* ...) took 
+; (EV-REC *RETURN-LAST-ARG3* ...) took
 ; 9.26 seconds realtime, 9.26 seconds runtime
 ; (3,291,378,848 bytes allocated).
 
@@ -706,7 +705,7 @@ ACL2 p!>(prog2$ (time$ (map-aig-vars-smarter7 *foo*))
 ; AIG-VARS-1PASS: 7.30 seconds, 66,538,832 bytes.
 ; MAP-AIG-VARS-SPARSE/TRANS: 0.86 seconds, 336,210,224 bytes.
 ; MAP-SBITSET-MEMBERS-TRANS: 7.55 seconds, 2,950,279,712 bytes.
-; (EV-REC *RETURN-LAST-ARG3* ...) took 
+; (EV-REC *RETURN-LAST-ARG3* ...) took
 ; 15.74 seconds realtime, 15.74 seconds runtime
 ; (3,356,884,976 bytes allocated).
 
@@ -743,7 +742,7 @@ ACL2 p!>(prog2$ (time$ (map-aig-vars-smarter7 *foo*))
 ; AIG-VARS-DFSORDER2: 2.22 seconds, 169,790,992 bytes.
 ; MAP-AIG-VARS-SPARSE/TRANS: 0.59 seconds, 163,065,568 bytes.
 ; MAP-SBITSET-MEMBERS-TRANS: 6.53 seconds, 2,948,558,224 bytes.
-; (EV-REC *RETURN-LAST-ARG3* ...) took 
+; (EV-REC *RETURN-LAST-ARG3* ...) took
 ; 9.36 seconds realtime, 9.36 seconds runtime
 ; (3,285,271,024 bytes allocated).
 NIL
@@ -785,7 +784,7 @@ ACL2 p!>(prog2$ (time$ (map-aig-vars-smarter10 *foo*))
 ; AIG-VARS-DFSORDER: 2.11 seconds, 183,191,360 bytes.
 ; MAP-AIG-VARS-SPARSE/TRANS: 0.59 seconds, 163,065,568 bytes.
 ; MAP-SBITSET-MEMBERS-TRANS: 6.57 seconds, 2,956,304,272 bytes.
-; (EV-REC *RETURN-LAST-ARG3* ...) took 
+; (EV-REC *RETURN-LAST-ARG3* ...) took
 ; 9.29 seconds realtime, 9.29 seconds runtime
 ; (3,306,417,440 bytes allocated).
 NIL
@@ -919,7 +918,7 @@ NIL
    (asm :prop-nodes-to-deps reduced-nodes-to-deps)
    (asm :prop-deps-to-nodes reduced-deps-to-nodes)))
 
-     
+
 
 
 ||#
