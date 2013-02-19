@@ -4005,20 +4005,34 @@
             (pspv ttree new-hist clauses signal cl-id processor msg)
             (waterfall-msg1 processor cl-id signal clauses new-hist msg ttree
                             pspv state))
+
+; Parallelism wart: consider replacing print-splitter-rules-summary below.  A
+; version of printing that does not involve wormholes will be required.  See
+; book parallel/proofs/stress-waterfall-parallelism.lsp.  Note that it is
+; unclear to Rager whether the :limited (or nil) version of waterfall-printing
+; should print splitter-rules.  :Limited waterfall-printing should probably
+; follow whatever gag-mode does.
+
+; We could similarly comment out the :full case just below, since it also uses
+; wormholes.  But we prefer to leave it, noting that :full is primarily used by
+; developers.
+
        (cond ((equal (f-get-global 'waterfall-printing state) :full)
               (io? prove t
                    state
                    (pspv ttree new-hist clauses signal cl-id processor msg)
-                   (waterfall-msg1 processor cl-id signal clauses new-hist msg 
-                                   ttree pspv state))) 
-             (t (io? prove t
-                     state
-                     (cl-id ttree clauses)
-                     (print-splitter-rules-summary
-                      cl-id clauses ttree (proofs-co state) state)))))
+                   (waterfall-msg1 processor cl-id signal clauses new-hist msg
+                                   ttree pspv state)))
+             (t 'nothing-to-print
+;               (io? prove t
+;                    state
+;                    (cl-id ttree clauses)
+;                    (print-splitter-rules-summary
+;                     cl-id clauses ttree (proofs-co state) state))
+                )))
       (increment-timer@par 'print-time state)
       (mv@par (cond ((eq processor 'push-clause)
-                          
+
 ; Keep the following in sync with the corresponding call of pool-lst in
 ; waterfall0-or-hit.  See the comment there.
 

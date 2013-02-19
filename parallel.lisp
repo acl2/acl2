@@ -434,6 +434,9 @@
 
   The use of ~ilc[set-inhibit-output-lst] may not fully inhibit proof output.
 
+  Reporting of ~il[splitter] rules is currently unsupported when
+  waterfall-parallelism is on.
+
   Interrupting a proof attempt is not yet properly supported.  At a minimum,
   interrupts are trickier with waterfall parallelism enabled.  For one, the
   user typically needs to issue the interrupt twice before the proof attempt is
