@@ -18254,7 +18254,7 @@
   You can also specify just the directories you want, among those offered in
   ~c[Makefile].  For example:
   ~bv[]
-  make -j 8 regression ACL2_BOOK_DIRS='symbolic paco'
+  make ACL2_JOBS=8 regression ACL2_BOOK_DIRS='symbolic paco'
   ~ev[]
 
   By default, your acl2-customization file (~pl[acl2-customization]) is ignored
@@ -18378,7 +18378,7 @@
   but you can use ~c[make -i] to force make to continue past failures.  You can
   also use the ~c[-j] option to speed things up if you have a multi-core
   machine, e.g., ~c[make -j 8] in a book directory or, if in the ACL2 sources
-  directory, ~c[make -j 8 regression].
+  directory, ~c[make ACL2_JOBS=8 regression].
 
   This concludes the basic instructions for creating a ~c[Makefile] in a
   directory including books.  Here are some other capabilities offered by
@@ -21310,8 +21310,12 @@
 (defun simple-array-type (array-etype dimensions)
   (declare (ignore dimensions))
   (cond
-   ((member-eq array-etype '(* t))
+   ((eq array-etype t)
     `(simple-vector *))
+   ((eq array-etype '*)
+    (er hard 'simple-array-type
+        "Implementation error: We had thought that * is an invalid type-spec! ~
+         ~ Please contact the ACL2 implementors."))
    (t `(simple-array ,array-etype (*)))))
 
 #-acl2-loop-only
@@ -21595,9 +21599,11 @@
 ; of these functions anticipate application to the live object itself.
 
 ; It is permissible for wrld to be nil, as this merely defeats additional
-; checking by translate-declaration-to-guard.  If wrld is nil, then we
-; congruent-stobj-rep should be the congruent-stobj-rep of name in the world
-; where the corresponding defstobj is executed.
+; checking by translate-declaration-to-guard.  If wrld is nil, then
+; congruent-stobj-rep should be the result of calling congruent-stobj-rep on
+; name and the world where the corresponding defstobj is executed.  If wrld is
+; non-nil, then it should be an ACL2 world and congruent-stobj-rep is
+; irrelevant.
 
 ; WARNING: If you change the formals of these generated raw defs be
 ; sure to change the formals of the corresponding axiomatic defs.
@@ -34293,12 +34299,6 @@
 ;;; clear all memo tables unless I find a better idea.)
 
 ; Start code supporting extended-ancestors.
-
-(defun attachment-pair (fn wrld)
-  (let ((attachment-alist (attachment-alist fn wrld)))
-    (and attachment-alist
-         (not (eq (car attachment-alist) :attachment-disallowed))
-         (assoc-eq fn attachment-alist))))
 
 (defun attachment-pairs (fns wrld acc)
 

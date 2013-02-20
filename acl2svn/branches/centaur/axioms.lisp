@@ -8302,6 +8302,15 @@
   '(29 . MINUSP)
   #-non-standard-analysis
   '(26 . MINUSP))
+(defconst *tau-booleanp-pair*
+  #+(and (not non-standard-analysis) acl2-par)
+  '(102 . BOOLEANP)
+  #+(and (not non-standard-analysis) (not acl2-par))
+  '(101 . BOOLEANP)
+  #+non-standard-analysis
+  '(104 . BOOLEANP)           ; Ruben:  I just guessed at this, and
+  )                           ; do you ever build ``ACL2(r)(p)''?
+
 
 ; Note: The constants declared above are checked for accuracy after bootstrap
 ; by check-built-in-constants in interface-raw.lisp.
@@ -8415,7 +8424,19 @@
        (implies (stringp v) (not (consp v)))
        (implies (stringp v) (not (symbolp v)))
 
-       (implies (consp v) (not (symbolp v))))
+       (implies (consp v) (not (symbolp v)))
+
+; We catch Boolean type-prescriptions and convert them to tau signature rules.
+; The first lemma below links booleanp to symbolp and thus to the other recogs.
+; The next two deal with special cases: boolean functionse that do not have
+; type-prescriptions because we have special functions for computing their
+; type-sets.
+
+       (implies (booleanp v) (symbolp v))
+       (booleanp (equal x y))
+       (booleanp (< x y))
+
+       )
        
   :rule-classes :tau-system)
 
@@ -21864,10 +21885,10 @@
 ; regressions using identical books, on the same unloaded machine.
 
 ; With shortcut:
-; 15634.000u 1057.650s 53:22.39 521.2%	0+0k 352216+1367056io 1789pf+0w
+; 15634.000u 1057.650s 53:22.39 521.2%  0+0k 352216+1367056io 1789pf+0w
 
 ; Without shortcut:
-; 16414.440u 1048.600s 57:20.82 507.5%	0+0k 354128+1367184io 1696pf+0w
+; 16414.440u 1048.600s 57:20.82 507.5%  0+0k 354128+1367184io 1696pf+0w
 
 ; So we have decided to keep the shortcut, since we really do expect this
 ; simple property to hold of any ACL2 world.
@@ -28137,7 +28158,7 @@
     (skip-proofs-by-system . nil)
     (skip-proofs-okp-cert . t) ; t when not inside certify-book
     (slow-array-action . :break) ; set to :warning in exit-boot-strap-mode
-    (splitter-output . nil)
+    (splitter-output . t)
     (standard-co . acl2-output-channel::standard-character-output-0)
     (standard-oi . acl2-output-channel::standard-object-input-0)
     (step-limit-record . nil)
@@ -34269,8 +34290,8 @@
   read elapsed runtime~/
 
   ~c[(Read-run-time state)] returns ~c[(mv runtime state)], where runtime is
-  the elapsed runtime since the start of the current ACL2 session and ~c[state]
-  is the resulting ACL2 ~il[state].~/
+  the elapsed runtime in seconds since the start of the current ACL2 session
+  and ~c[state] is the resulting ACL2 ~il[state].~/
 
   The logical definition probably won't concern many users, but for
   completeness, we say a word about it here.  That definition uses the function
@@ -39830,7 +39851,7 @@
   ~pl[acl2-defaults-table].
 
   ~l[hints] for discussion of a related hint, ~c[:case-split-limitations].
-  Also ~pl[set-splitter-output] for how to obtain reports on rules that may be
+  Also ~pl[splitter] for information about reports on rules that may be
   responsible for case splits.~/
 
   ~bv[]
@@ -44594,18 +44615,18 @@
 #-acl2-loop-only
 (defparameter *metafunction-context* nil)
 
-; The ``term'' passed to the type-set and rewrite is checked
-; explicitly to be well-formed with respect to the world passed in the
-; context.  This gives the meta-level function author the freedom to ask
-; type-set questions about subterms of what the meta-level function was
-; passed, or even questions about newly consed up terms.
+; The ``term'' passed to the type-set and rewrite is checked explicitly to be
+; well-formed with respect to the world passed in the context.  This gives the
+; meta-level function author the freedom to ask type-set questions about
+; subterms of what the meta-level function was passed, or even questions about
+; newly consed up terms.
 
-; In this section we define the metafunction context accessors, i.e.,
-; :logic mode functions of the first type noted above.  The comment in
-; mfc-clause is lengthy and explains the scheme used.  We are free to
-; add more functions analogous to mfc-clause to recover components of
-; the metafunction-context mfc.  If you add more functions, list them
-; in the comment in the defrec for rewrite-constant!
+; In this section we define the metafunction context accessors, i.e., :logic
+; mode functions of the first type noted above.  We are free to add more
+; functions analogous to mfc-clause to recover components of the
+; metafunction-context mfc.  If you add more functions to the
+; metafunction-context record, be sure to define them below, updating existing
+; definitions as necessary due to layout changes for that record.
 
 ; First, we define some accessor functions that should really be defined by
 ; defrec, except that we don't want to go through the effort to move the
@@ -44714,6 +44735,9 @@
 
 (DEFMACRO |Access REWRITE-CONSTANT record field CURRENT-CLAUSE|
   (CURRENT-CLAUSE)
+
+; WARNING: This  definition must be kept in sync with the defrec for
+; rewrite-constant!
 
 ; This form comes from the definition of the :current-clause accessor of defrec
 ; rewrite-constant, by using trans1 to eliminate defabbrev in favor of defmacro.
@@ -49121,20 +49145,18 @@ Lisp definition."
                 (and (= (realpart x) y)
                      (< (imagpart x) 0)))))))
 
-#||
-(thm (implies (implies (and x y)
-                       (or (real/rationalp x)
-                           (real/rationalp y)))
-              (iff (<? rel x y)
-                   (if (or (null x)
-                           (null y))
-                       t
-                       (if rel (< x y) (<= x y)))))
-     :hints
-     (("Goal"
-       :use ((:instance completion-of-< (x x) (y y))
-             (:instance completion-of-< (x y) (y x))))))
-||#
+;   (thm (implies (implies (and x y)
+;                          (or (real/rationalp x)
+;                              (real/rationalp y)))
+;                 (iff (<? rel x y)
+;                      (if (or (null x)
+;                              (null y))
+;                          t
+;                          (if rel (< x y) (<= x y)))))
+;        :hints
+;        (("Goal"
+;          :use ((:instance completion-of-< (x x) (y y))
+;                (:instance completion-of-< (x y) (y x))))))
 
 (defun tau-interval-domainp (dom x)
   (declare (xargs :guard t))
@@ -49495,7 +49517,7 @@ Lisp definition."
   (in-tau-intervalp #c(3 5) (make-tau-interval 'RATIONALP nil 0 nil 10))    = nil
   (in-tau-intervalp #c(3 5) (make-tau-interval 'ACL2-NUMBERP nil 0 nil 10)) = t
 
-  (in-tau-intervalp 'ABC (make-tau-interval NIL nil 0 nil 10))               = t
+  (in-tau-intervalp 'ABC (make-tau-interval NIL nil 0 nil 10))              = t
   ~ev[]
   ~/"
 

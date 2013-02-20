@@ -936,7 +936,7 @@
          (mv-let
           (flg calist)
           (tau-clause1p triples nil type-alist pot-lst
-                        clause ens wrld calist)
+                        ens wrld calist)
           (cond
            ((eq flg t)
             (mv t *tau-ttree* calist))
@@ -1102,6 +1102,20 @@
                            (mv-let
                             (clauses1 ttree1 new-tau-completion-alist)
                             (if (or (null hist)
+
+; If (null (cdr hist)) and (null (cddr hist)) are tested in this disjunction,
+; then tau is tried during the first three simplifications and then again when
+; the clause settles down.  Call this the ``more aggressive'' approach.  If
+; they are not tested, tau is tried only on the first simplification and upon
+; settling down.  Call this ``less aggressive.''  There are, of course, proofs
+; where the more aggressive use of tau speeds things up.  But of course it
+; slows down many more proofs.  Overall, experiments on the regression suggest
+; that the more aggressive approach slows total reported book certification
+; time down by about 1.5% compared to the less agressive approach.  However, we
+; think it might be worth it as more tau-based proofs scripts are developed.
+
+                                    (null (cdr hist))
+                                    (null (cddr hist))
                                     (eq (car (car hist)) 'settled-down-clause))
                                 (let ((ens (access rewrite-constant
                                                    rcnst
@@ -3541,11 +3555,11 @@
   status for reporting of ~il[splitter] rules~/
 
   ~l[splitter] for a discussion of splitter rules.  ~l[set-splitter-output] for
-  how to turn on, or off, the reporting of splitter rules.  When off (the
-  default), either because ~ilc[set-splitter-output] has not been invoked to
-  turn on such reporting or because ~c[prove] output is inhibited
-  (~pl[set-inhibit-output-lst]), then the value of ~c[(splitter-output)] is
-  ~c[nil].  Otherwise, such reporting is on and the value is non-~c[nil].~/~/"
+  how to turn off, or on, the reporting of splitter rules.  When
+  splitter-output is off, because either ~c[prove] output is inhibited
+  (~pl[set-inhibit-output-lst]) or ~c[(]~ilc[set-splitter-output]~c[ nil)] has
+  been invoked, then the value of ~c[(splitter-output)] is ~c[nil].  Otherwise,
+  such reporting is on and the value is non-~c[nil].~/~/"
 
   `(and (f-get-global 'splitter-output state)
         (not (member-eq 'prove
@@ -3556,14 +3570,14 @@
 
   reporting of rules whose application may have caused case splits~/
 
-  ~l[set-splitter-output] for how to turn on, or off, the reporting of rule
+  ~l[set-splitter-output] for how to turn of, or on, the reporting of rule
   applications that may have caused a goal to simplify to more than one
   subgoal.  A rule with such an application is called a ``splitter''.  Here, we
   explain the output produced for splitters when proof output is enabled
-  (~pl[set-inhibit-output-lst]) and such reporting is turned on ~-[] that is,
-  when the value of ~c[(]~ilc[splitter-output]~c[)] is true.  Also
-  ~pl[set-case-split-limitations] for information on how to control case
-  splits.
+  (~pl[set-inhibit-output-lst]) and such reporting is turned on (as it is by
+  default) ~-[] that is, when the value of ~c[(]~ilc[splitter-output]~c[)] is
+  true.  Also ~pl[set-case-split-limitations] for information on how to control
+  case splits.
 
   We begin by describing three types of splitters.~bq[]
 
@@ -3708,19 +3722,19 @@
   turn on or off reporting of rules that may have caused case splits~/
   ~bv[]
   Examples:
-  (set-splitter-output t)   ; enable  reports of ``splitter'' rules
-  (set-splitter-output nil) ; disable reports of ``splitter'' rules (default)
+  (set-splitter-output t)   ; enable  reports of ``splitter'' rules (default)
+  (set-splitter-output nil) ; disable reports of ``splitter'' rules
   ~ev[]~/
 
-  After evaluation of the form ~c[(set-splitter-output t)], then whenever
-  ~c[prove] output is not inhibited (~pl[set-inhibit-output-lst]), ACL2 will
-  report ~il[rewrite] and ~il[definition] rules that may have reduced a goal to
-  more than one subgoal.  ~l[splitter] for how to interpret such reports.  We
-  call such rules ``splitter rules'' for the goal that is being split.  This
-  information can be useful in deciding how to eliminate large splits, for
-  example of Goal into Subgoal 1000 through Subgoal 1, by disabling some
-  splitter rules.  Advanced users who traffic in large proofs might thus want
-  to put the form ~c[(set-splitter-output t)] in their customization file;
+  After evaluation of the form ~c[(set-splitter-output t)] (the default), then
+  whenever ~c[prove] output is not inhibited (~pl[set-inhibit-output-lst]),
+  ACL2 will report ~il[rewrite] and ~il[definition] rules that may have reduced
+  a goal to more than one subgoal.  ~l[splitter] for how to interpret such
+  reports.  We call such rules ``splitter rules'' for the goal that is being
+  split.  This information can be useful in deciding how to eliminate large
+  splits, for example of Goal into Subgoal 1000 through Subgoal 1, by disabling
+  some splitter rules.  If you want to avoid the printing of such information,
+  you can put the form ~c[(set-splitter-output t)] in your customization file;
   ~pl[acl2-customization].
 
   Note that this command does not change the ACL2 ~il[world]; it only modifies
@@ -3991,20 +4005,34 @@
             (pspv ttree new-hist clauses signal cl-id processor msg)
             (waterfall-msg1 processor cl-id signal clauses new-hist msg ttree
                             pspv state))
+
+; Parallelism wart: consider replacing print-splitter-rules-summary below.  A
+; version of printing that does not involve wormholes will be required.  See
+; book parallel/proofs/stress-waterfall-parallelism.lsp.  Note that it is
+; unclear to Rager whether the :limited (or nil) version of waterfall-printing
+; should print splitter-rules.  :Limited waterfall-printing should probably
+; follow whatever gag-mode does.
+
+; We could similarly comment out the :full case just below, since it also uses
+; wormholes.  But we prefer to leave it, noting that :full is primarily used by
+; developers.
+
        (cond ((equal (f-get-global 'waterfall-printing state) :full)
               (io? prove t
                    state
                    (pspv ttree new-hist clauses signal cl-id processor msg)
-                   (waterfall-msg1 processor cl-id signal clauses new-hist msg 
-                                   ttree pspv state))) 
-             (t (io? prove t
-                     state
-                     (cl-id ttree clauses)
-                     (print-splitter-rules-summary
-                      cl-id clauses ttree (proofs-co state) state)))))
+                   (waterfall-msg1 processor cl-id signal clauses new-hist msg
+                                   ttree pspv state)))
+             (t 'nothing-to-print
+;               (io? prove t
+;                    state
+;                    (cl-id ttree clauses)
+;                    (print-splitter-rules-summary
+;                     cl-id clauses ttree (proofs-co state) state))
+                )))
       (increment-timer@par 'print-time state)
       (mv@par (cond ((eq processor 'push-clause)
-                          
+
 ; Keep the following in sync with the corresponding call of pool-lst in
 ; waterfall0-or-hit.  See the comment there.
 

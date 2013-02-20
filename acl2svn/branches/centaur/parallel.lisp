@@ -142,9 +142,8 @@
   compiling ACL2(p)~/
 
   This ~il[documentation] topic relates to the experimental extension of ACL2
-  supporting parallel execution and proof; ~pl[parallelism].  ~l[parallel] and
-  ~pl[parallelism-tutorial] for an introduction to parallel programming in
-  ACL2.
+  supporting parallel execution and proof; ~pl[parallelism].
+  ~l[parallelism-tutorial] for an introduction to parallel programming in ACL2.
 
   You can build an experimental version of ACL2 that supports parallel
   execution in the following host Common Lisp implementations:
@@ -239,8 +238,8 @@
   for ACL2(p): enabling parallel execution for four parallelism primitives~/
 
   This ~il[documentation] topic relates to the experimental extension of ACL2
-  supporting parallel execution and proof; ~pl[parallelism].  ~l[parallel] and
-  ~pl[parallelism-tutorial] for an introduction to parallel execution in ACL2.
+  supporting parallel execution and proof; ~pl[parallelism].
+  ~l[parallelism-tutorial] for an introduction to parallel execution in ACL2.
 
   ~bv[]
   General Forms:
@@ -435,6 +434,9 @@
 
   The use of ~ilc[set-inhibit-output-lst] may not fully inhibit proof output.
 
+  Reporting of ~il[splitter] rules is currently unsupported when
+  waterfall-parallelism is on.
+
   Interrupting a proof attempt is not yet properly supported.  At a minimum,
   interrupts are trickier with waterfall parallelism enabled.  For one, the
   user typically needs to issue the interrupt twice before the proof attempt is
@@ -491,8 +493,8 @@
   ACL2 features not supported in ACL2(p)~/
 
   This ~il[documentation] topic relates to the experimental extension of ACL2
-  supporting parallel execution and proof; ~pl[parallelism].  ~l[parallel] and
-  ~pl[parallelism-tutorial] for an introduction to parallel execution in ACL2.
+  supporting parallel execution and proof; ~pl[parallelism].
+  ~l[parallelism-tutorial] for an introduction to parallel programming in ACL2.
 
   For proof features of ACL2 that are not yet supported when parallel
   execution is enabled for the primary ACL2 proof process, generally known as

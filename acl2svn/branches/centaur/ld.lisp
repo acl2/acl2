@@ -415,8 +415,8 @@
            (close-output-channel (caar channel-closing-alist) state))
           (t state)))
         (t (let ((temp (er hard 'close-channels
-                           "The channel ~x0 was tagged with an ~
-                                 unimplemented channel type, ~x1."
+                           "The channel ~x0 was tagged with an unimplemented ~
+                            channel type, ~x1."
                            (caar channel-closing-alist)
                            (cdar channel-closing-alist))))
              (declare (ignore temp))
@@ -490,7 +490,7 @@
   (cond
    ((null alist) (value (cons new-alist channel-closing-alist)))
    (t (mv-let
-       (erp pair state) 
+       (erp pair state)
        (chk-acceptable-ld-fn1-pair (car alist) ctx state co-string co-channel)
        (cond
         (erp (pprogn
@@ -1348,14 +1348,36 @@
 #-acl2-loop-only
 (defvar *first-entry-to-ld-fn-body-flg*)
 
-(defun update-cbd (standard-oi0 state)
+(defun update-cbd (filename state)
+
+; At one time we used extend-pathname to compute the new cbd from the old cbd
+; and filename.  However, this caused us to follow soft links when that was
+; undesirable.  Here is a suitable experiment, after building the nonstd books
+; by connecting to books/nonstd/ and running "make clean-nonstd" followed by
+; "make all-nonstd".  In this experiment, we had already certified the regular
+; books using ACL2(h), and an error occurred because of an attempt to read
+; books/arithmetic/equalities.cert, which used a special hons-only format.
+
+; cd /projects/acl2/devel/books/nonstd/arithmetic/
+; /projects/acl2/devel/allegro-saved_acl2r
+; (ld "top.lisp")
+
   (let ((old-cbd (f-get-global 'connected-book-directory state)))
-    (if (and old-cbd (stringp standard-oi0))
-        (let ((dir (maybe-add-separator
-                    (remove-after-last-directory-separator
-                     (extend-pathname old-cbd standard-oi0 state)))))
-          (f-put-global 'connected-book-directory dir state))
-      state)))
+    (cond ((and old-cbd
+                (stringp filename)
+                (position *directory-separator* filename))
+           (f-put-global
+            'connected-book-directory
+            (if (absolute-pathname-string-p filename nil (os (w state)))
+                (maybe-add-separator
+                 (remove-after-last-directory-separator filename))
+              (our-merge-pathnames
+               old-cbd
+               (concatenate 'string
+                            (remove-after-last-directory-separator filename)
+                            *directory-separator-string*)))
+            state))
+          (t state))))
 
 (defun ld-fn-body (standard-oi0 new-ld-specials-alist state)
 
@@ -18772,8 +18794,10 @@
   helpful bug report on a preliminary implementation.
 
   Users may now arrange for additional summary information to be printed at the
-  end of ~il[events]; ~pl[print-summary-user].  Thanks to Harsh Raju Chamarthi
-  for requesting this feature and participating in a design discussion.
+  end of ~il[events].  [Note added at Version_6.1: Formerly we pointed here to
+  ~c[print-summary-user], but now, ~pl[finalize-event-user]; also
+  ~pl[note-6-1]].  Thanks to Harsh Raju Chamarthi for requesting this feature
+  and participating in a design discussion.
 
   A new, advanced ~il[proof-checker] command, ~c[geneqv], shows the generated
   equivalence relation at the current subterm.  Thanks to Dave Greve for an
@@ -20138,6 +20162,34 @@
 ; and are no longer in *unattachable-primitives* (as their unattachability is
 ; enforced by their having unknown-constraints).
 
+; We improved (and slowed down) the algorithm for computing the tau of a term.
+; For example it dives into NOT now. The biggest change is that it in
+; Version_6.0, preprocess-clause tried tau only before the first simplification
+; (when hist=nil) and after the clause was stable under simplification.  The
+; new one tries tau more aggressively: before the first three simplifications.
+; We found proofs where the more aggressive use of tau -- try after a little
+; rewriting got rid of functions the users means to expand -- helped.
+; 
+; Some tests showed that the more aggressive use of tau slows down the
+; regression a little compared to the less aggressive use of tau.  But because
+; as more tau-based scripts are developed, we expect the more aggressive use of
+; tau will pay for itself.
+; 
+; Perhaps more important is the comparison between these two alternatives and
+; Version_6.0.  They don't have identical regression suites (of course).  But
+; they have 3,075 books in common as of Feb. 2013.  The new .out comparison
+; utility can compare total reported book certification time for books in
+; common.  Based on that, the less aggressive use of tau was measured at about
+; 1% faster than Version_6.0 and the more aggressive use of tau was measured as
+; about the same speed as Version_6.0.
+
+; Source function simple-array-type formerly accepted '* as a valid array-etype
+; for deducing a type of `(simple-vector *).  But since '* is not a valid
+; type-spec, we should never hit this case, so we now cause a hard error in
+; order to detect a mistake in that thinking.  Note that we tried evaluating
+; (make-array '(5) :element-type *) in several (raw) Lisps, and often got an
+; error (though it took two evaluations in CCL to get the error).
+
   :doc
   ":Doc-Section release-notes
 
@@ -20184,14 +20236,57 @@
   (~pl[lemma-instance]) to that formula.  Now, this is illegal only if some
   such supporter is in the domain of the functional substitution.
 
+  The tau system (~pl[tau-system], or if you are unfamiliar with the tau
+  system, ~pl[introduction-to-the-tau-system]) now allows the user to define
+  and verify functions that compute bounds on arithmetic expressions.
+  ~l[bounders].
+
+  The utility ~c[print-summary-user] has been replaced by
+  ~ilc[finalize-event-user], which is described below.  If you previously
+  attached a function to ~c[print-summary-user], say ~c[my-print-summary-user],
+  then you can get the effect you had previously as follows.
+  ~bv[]
+  (defun my-finalize-event-user (state)
+    (declare (xargs :mode :logic :stobjs state))
+    (prog2$ (my-print-summary-user state)
+            state))
+  (defattach finalize-event-user my-finalize-event-user)
+  ~ev[]
+
+  It had been the case that when you ~ilc[LD] a file, the connected book
+  directory (~pl[cbd]) was set to the canonical pathname of that file's
+  directory for the duration of the ~c[LD] call.  This could cause problems,
+  however, if the file is actually a soft link: an ~ilc[include-book] form in
+  the book with a relative pathname for the book would be resolved with respect
+  to the absolute pathname for that link, which is probably not what was
+  intended.  So soft links are no longer followed when computing the above
+  connected book directory.  The following example, which is how we discovered
+  this problem, may clarify.  We attempted to execute the form
+  ~c[(ld \"top.lisp\")] using ACL2(r) (~pl[real]) in community books directory
+  ~c[nonstd/arithmetic/], where all of the ~c[.lisp] files are soft links to
+  files in ~c[arithmetic/].  Thus, the form ~c[(include-book \"equalities\")]
+  attempted to include ~c[arithmetic/equalities] instead of
+  ~c[nonstd/arithmetic/equalities], which caused an error.
+
   ~st[NEW FEATURES]
 
-  A new utility, ~c[set-splitter-output], can direct the prover to give
-  information about case splits.  ~l[set-splitter-output].  Thanks to many
-  ACL2 users, most recently David Rager, for requesting such a capability.
-  Also thanks to David Rager and Jared Davis for helpful discussions.
+  By default, the prover now gives information about case splits.
+  ~l[splitter].  Thanks to many ACL2 users, most recently David Rager, for
+  requesting such a capability.  Also thanks to David Rager and Jared Davis for
+  helpful discussions.
+
+  New utilities ~ilc[initialize-event-user] and ~ilc[finalize-event-user] allow
+  the user to run ~il[state]-modifying code at the start and end of
+  ~il[events].  Thanks to Harsh Raju Chamarthi for requesting these
+  capabilities.  Note that ~ilc[finalize-event-user] replaces
+  ~c[print-summary-user].
 
   ~st[HEURISTIC IMPROVEMENTS]
+
+  Several heuristic improvements have been made to the tau system, even if you
+  do not explicitly use the new capability for computing bounds on arithmetic
+  expressions, mentioned above.  ~l[tau-system], or if you are unfamiliar with
+  the tau system, ~pl[introduction-to-the-tau-system].
 
   ~st[BUG FIXES]
 
@@ -22478,8 +22573,8 @@ tail recursion site:http://www.cs.utexas.edu/users/moore/acl2/v6-0
 Now you are ready to follow the link.
 <p>
 <a href=\"http://www.google.com/search?q=search_term
-		 site:http://www.cs.utexas.edu/users/moore/acl2/v6-0\">SEARCH
-		 THE DOCUMENTATION</a>
+                 site:http://www.cs.utexas.edu/users/moore/acl2/v6-0\">SEARCH
+                 THE DOCUMENTATION</a>
 </li>
 
 <p>
@@ -25679,8 +25774,8 @@ tail recursion.
 ; because STATE is live.
 
       (throw-raw-ev-fncall ev-fncall-val))
-        
-     (t 
+
+     (t
 
 ; This is a top-level call of mfc-ts or some function using it.  Cause an error
 ; no matter what context the user has supplied.  See the error message.
@@ -25766,7 +25861,7 @@ tail recursion.
           (throw-raw-ev-fncall ev-fncall-val))))
      (*hard-error-returns-nilp*
       (throw-raw-ev-fncall ev-fncall-val))
-     (t 
+     (t
       (cw *meta-level-function-problem-3* fn)
       (throw-raw-ev-fncall ev-fncall-val)))))
 

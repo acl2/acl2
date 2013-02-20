@@ -4301,6 +4301,26 @@
 ; original let form binding bound-vars to value-forms (or the corresponding
 ; untranslations of the terms in value-forms).
 
+; We note that this approach can lead to accepting definitions that cause
+; warnings in raw Lisp, but we can live with that, especially since warnings
+; are generally inhibited inside the ACL2 loop.  The following definition
+; illustrates our point.
+
+; (defun foo (x)
+;   (let ((y (hide x))
+;         (z x))
+;     z))
+
+; This leads to the call (AUGMENT-IGNORE-VARS (Y Z) ((HIDE X) X) NIL), which
+; returns (Y).  So ACL2 translate doesn't complain about the lack of an IGNORE
+; declaration for Y, and the definition is accepted.  In a nutshell: ACL2
+; doesn't know if the HIDE was there initially or was put there by ACL2, so
+; augment-ignore-vars is generous and proceeds as though it was put there by
+; ACL2 and thus Y needn't be declared IGNOREd.  This seems fine though: after
+; all, if the user explicitly binds a variable to a HIDE expression, as in our
+; example, it isn't unreasonable to assume that the variable is intended to be
+; ignored!
+
   (cond ((endp bound-vars)
          acc)
         ((let ((form (car value-forms)))

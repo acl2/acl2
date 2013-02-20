@@ -439,6 +439,19 @@
   (:executable-counterpart length)
   ~ev[]~/
 
+  Note: This topic discusses a basic notion of ``rule name'', or ``rune'' for
+  short.  Users often use abbrevitions for runes; for example, a ~il[theory]
+  expression ~c[(DISABLE APPEND)] abbreviates the following set of runes:
+  ~c[{(:DEFINITION BINARY-APPEND), (:INDUCTION BINARY-APPEND)}].  ~l[theories]
+  for a discussion of so-called ``runic designators'', which include
+  expressions like ~c[APPEND] (as above) as well as ~c[(APPEND)] (for the
+  executable-counterpart of ~c[BINARY-APPEND].  Runic designators can also be
+  abbreviations including ~c[(:d APPEND)], ~c[(:e APPEND)], ~c[(:i APPEND)],
+  and ~c[(:t APPEND)], which designate the definition, executable-counterpart,
+  induction, and type-prescription rules for ~c[BINARY-APPEND].  For a complete
+  description of runic designators, ~pl[theories]; we return now to the more
+  basic notion of a rune.
+
   Background: The theorem prover is driven from a database of rules.  The most
   common rules are ~c[:]~ilc[rewrite] rules, which cause the simplifier to
   replace one term with another.  ~il[Events] introduce rules into the
@@ -5316,12 +5329,12 @@
 
 (defun insert-cdr-term-order (item list)
   (cond ((endp list)
-	 (list item))
-	((term-order (cdr (car list)) (cdr item))
-	 (cons (car list)
-	       (insert-cdr-term-order item (cdr list))))
-	(t
-	 (cons item list))))
+         (list item))
+        ((term-order (cdr (car list)) (cdr item))
+         (cons (car list)
+               (insert-cdr-term-order item (cdr list))))
+        (t
+         (cons item list))))
 
 (defun normalize-linear-sum-2 (term)
 
@@ -5373,8 +5386,8 @@
 ; Temp-1 is a list of pairs --- (multiplicative-constant . rest-of-addend).
 ; These pairs are sorted by term order on rest-of-addend.
 
-		(multiplicative-constant (car (car temp-1))))
-	   (cond ((or (eql multiplicative-constant 0) ; degenerate case
+                (multiplicative-constant (car (car temp-1))))
+           (cond ((or (eql multiplicative-constant 0) ; degenerate case
                       (eql multiplicative-constant 1))
                   (mv additive-constant 1 temp-1))
                  (t
