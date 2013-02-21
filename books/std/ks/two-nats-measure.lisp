@@ -20,6 +20,20 @@
 (local (include-book "arithmetic/top-with-meta" :dir :system))
 
 (defund two-nats-measure (a b)
+
+  "Two-nats-measure provides one of the simplest non-natural ordinal measures
+   imaginable.  It is useful if one has a one count that is decreasing most of
+   the time but not always and another count that decreases the rest of the
+   time but might be reset to some value after a chunk of work is finished.
+
+   Imagine one has a pile of red socks and a pile of blue socks, and that one
+   wants to place them in drawers.  Everytime one puts away a red sock a bunch
+   more blue socks are allowed to be added.  But when one puts away a blue
+   sock, neither red nor blue socks can be added.  One can use two-nats-measure
+   to show that one will eventually finish putting away the socks.  The number
+   of red socks is the first argument to the two-nats-measure, and the number
+   of blue socks is the second argument to the two-nats-measure."
+
   (declare (xargs :guard (and (natp a)
                               (natp b))))
   (make-ord 2
