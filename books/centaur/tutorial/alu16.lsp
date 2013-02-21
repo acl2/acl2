@@ -571,3 +571,6 @@
 ;
 ; Then, continue to counter.lisp, where we look at a simple counter module
 ; with some state.
+;
+; Alternately, continue to sat.lsp, where we look at how to switch the GL
+; mode to use SAT solvers.

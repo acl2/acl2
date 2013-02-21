@@ -317,11 +317,12 @@ produces.)</li>
 (progn!
  (set-raw-mode t)
  (defun satlink-run (config formula env$)
-   (mv-let (res env$ state)
-     (satlink-run-impl config formula env$ :state acl2::*the-live-state*)
-     (declare (ignore state))
+   (b* ((state acl2::*the-live-state*)
+        (prev-okp            (f-get-global 'acl2::writes-okp state))
+        (state               (f-put-global 'acl2::writes-okp t state))
+        ((mv res env$ state) (satlink-run-impl config formula env$))
+        (?state              (f-put-global 'acl2::writes-okp prev-okp state)))
      (mv res env$))))
-
 
 (define sat ((formula "A CNF formula to solve." lit-list-listp)
              (env$    "Environment to populate with a satisfying assignment,
@@ -361,3 +362,16 @@ produces.)</li>
     :hints (("goal" :use ((:instance satlink-run-fn-unsat-claim
                                      (env$ nil)))))))
 
+
+#||
+
+(tshell-ensure)
+
+(sat '((1 2)) env$)
+
+;; This is a good check to make sure writes-okp stuff is working.
+(make-event
+ (b* (((mv ans env$) (sat '((1 2)) env$)))
+   (mv nil `(value-triple ,ans) state env$)))
+
+||#

@@ -33,7 +33,7 @@ invoke the SAT solver.</p>"
   :tag :satlink-config
 
   ((cmdline "Command line to use to invoke the SAT solver, except for the
-             filename.  For instance, @('\"lingeling\")."
+             filename.  For instance, @('\"lingeling\"')."
             stringp :rule-classes :type-prescription)
 
    (verbose "Should we print excessive output for debugging?"
@@ -60,3 +60,4 @@ invoke the SAT solver.</p>"
                  :verbose t
                  :mintime 1/2
                  :remove-temps t)))
+
