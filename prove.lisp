@@ -3706,14 +3706,15 @@
   want to find the causes of case-splitting, the list of ~c[if-intro] splitters
   can help you narrow your search, but may include irrelevant rules as well.
 
-  Finally, note that if the reason for introducing an ~c[IF] call is an
-  ~c[:expand] hint (~pl[hints]), then that expansion will not be associated
-  with an ~c[if-intro] splitter.  This makes sense when one considers that the
-  point of reporting splitters is to assist users in deciding on rules to
-  disable, and ~c[:expand] hints apply regardless of whether a definition is
-  disabled.  A subtlely here is that during proofs by induction, ACL2 may
-  generate implicit expand hints for certain ``induction conclusion''
-  terms.~/~/")
+  Finally, note that you may see splits not attributed to a splitter.  While we
+  believe this will normally be rare, one case is when the reason for
+  introducing an ~c[IF] call is an ~c[:expand] hint (~pl[hints]), in which case
+  that expansion will not be associated with an ~c[if-intro] splitter.  This
+  makes sense when one considers that the point of reporting splitters is to
+  assist users in deciding on rules to disable, and ~c[:expand] hints apply
+  regardless of whether a definition is disabled.  A subtlely here is that
+  during proofs by induction, ACL2 may generate implicit expand hints for
+  certain ``induction conclusion'' terms.~/~/")
 
 (defmacro set-splitter-output (val)
 

@@ -81,12 +81,14 @@ by specifying a value for <code>ACL2_JOBS</code> if you have an N-core
 machine, N&gt;1, for example as
 follows.  <font color="red">WARNING</font>:  if instead you use
 `<code>make</code>' option <code>-j</code>, you will not see
-parallel certification for books in the ~c[centaur/] directory.
+parallel certification for books in the <code>centaur/</code> directory.
 <pre>
 make regression ACL2_JOBS=8
 </pre>
 If your system has difficulty certifying the books in the ~c[centaur/]
-directory, say because of issues with Perl, you can skip them by
+directory, say because of issues with Perl (but
+please <A HREF="mailto:kaufmann@cs.utexas.edu">tell us</A> if that
+happens!), you can skip them by
 specifying <code>ACL2_CENTAUR=skip</code>, for example as follows.
 <pre>
 make regression ACL2_CENTAUR=skip

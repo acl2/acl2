@@ -39393,7 +39393,7 @@
   function (~pl[extended-metafunctions]), the steps taken during that call are
   forgotten when returning from that call.
 
-  Finally, we discuss in some detail with a ~c[set-prover-step-limit] event is
+  Finally, we discuss in some detail when a ~c[set-prover-step-limit] event is
   in force: it applies to a subsequent form that is either at the top level or
   at the same level as the ~c[set-prover-step-limit] form, in the following
   sense.  Let us say that a ``summary context'' is any context for which the
@@ -39403,7 +39403,7 @@
   establishes a summary context, as do certain other top-level forms such as
   calls of ~ilc[thm] and ~ilc[certify-book].  (But a call of ~ilc[ld] does not
   establish a summary context.)  Here, we consider two forms to be at the same
-  level if they are in the same summary contexts.  Thus, if
+  level if they are in the same summary context.  Thus, if
   ~c[set-prover-step-limit] is called at the top level, then this call is not
   in force for ~il[events] under a call of ~ilc[certify-book],
   ~ilc[encapsulate], ~ilc[progn], ~ilc[make-event], or (more generally) under
