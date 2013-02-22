@@ -167,6 +167,7 @@
                (aig-vars-fast1 x nodetable memtable nil))))
       (setf (gethash x memtable) ans))))
 
+#+HONS
 (unless (memoizedp-raw 'aig-vars-fast)
   (setf (gethash 'aig-vars-fast *number-of-arguments-and-values-ht*)
         '(1 . 1))
