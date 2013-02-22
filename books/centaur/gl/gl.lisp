@@ -38,7 +38,10 @@
 (include-book "gify-thms")
 (include-book "gl-misc-doc")
 (include-book "auto-bindings")
-(include-book "bfr-aig-bddify")
+;;; Matt K., 2/22/13: Sol Swords suggested commenting out the following
+;;; include-book form, in order to avoid dependence on ttag :COUNT-BRANCHES-TO
+;;; from centaur/aig/bddify.lisp.
+; (include-book "bfr-aig-bddify")
 (include-book "g-gl-mbe")
 
 (local (include-book "general-object-thms"))
