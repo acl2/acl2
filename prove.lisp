@@ -3712,7 +3712,7 @@
   that expansion will not be associated with an ~c[if-intro] splitter.  This
   makes sense when one considers that the point of reporting splitters is to
   assist users in deciding on rules to disable, and ~c[:expand] hints apply
-  regardless of whether a definition is disabled.  A subtlely here is that
+  regardless of whether a definition is disabled.  A subtlety here is that
   during proofs by induction, ACL2 may generate implicit expand hints for
   certain ``induction conclusion'' terms.~/~/")
 

@@ -36701,7 +36701,7 @@
 ; preceding events, takes over 40,000 steps.  Set the following to 40000 in
 ; order to make that event quickly exceed the default limit.
 
-  (fixnum-bound))
+   (fixnum-bound))
 
 (table acl2-defaults-table nil nil
 
@@ -39220,8 +39220,38 @@
 
 ; Essay on Step-limits
 
-; Here we document just the basics of how to use step-limits.  We may grow this
-; essay in the future.
+; We assume familiarity with step-limits at the user level; see :DOC
+; set-prover-step-limit and see :DOC with-prover-step-limit.
+
+; Step-limits are managed through the following three global data structures.
+
+; - (f-get-global 'last-step-limit state)
+
+; This value records the current step-limit (updated from time to time, but not
+; constantly within the rewriter).  In a compound event, this decreases as
+; events are executed, except for those within a call of with-prover-step-limit
+; whose flag is t (see :DOC with-prover-step-limit).
+
+; - (table acl2-defaults-table :step-limit)
+
+; The table value supplies a starting step-limit for top-level calls that are
+; not in the scope of with-prover-step-limit, hence not in the scope of
+; with-ctx-summarized (which calls save-event-state-globals, which calls
+; with-prover-step-limit with argument :START).
+
+; - (f-get-global 'step-limit-record state)
+
+; This global is bound whenever entering the scope of with-prover-step-limit.
+; It stores information about the step-limit being established for that scope,
+; including the starting value to use for state global 'last-step-limit.  That
+; value is the current value of that state global, unless a call of
+; set-prover-step-limit has set a different limit in the same context.
+
+; We may write more if that becomes necessary, but we hope that the summary
+; above provides sufficient orientation to make sense of the implementation.
+
+; NOTE: If you change the implementation of step-limits, be sure to LD and
+; also certify community book books/misc/misc2/step-limits.lisp.
 
 ; When writing a recursive function that uses step-limits, for which you are
 ; willing to have a return type of (mv step-limit erp val state):
@@ -39266,17 +39296,18 @@
 #+acl2-loop-only
 (defmacro set-prover-step-limit (limit)
 
+; See the Essay on Step-limits.
+
   ":Doc-Section switches-parameters-and-modes
 
-  sets the step-limit used by the ACL2 prover at the top level only~/
+  sets the step-limit used by the ACL2 prover~/
 
   This event provides a way to limit the number of so-called ``prover steps''
   permitted for an event.  ~l[with-prover-step-limit] for a way to specify the
-  limit on prover steps for a single event, rather than globally (and without
-  the restriction mentioned above, pertaining to the top level).  For a related
-  utility based on time instead of prover steps, ~pl[with-prover-time-limit].
-  For examples of how step limits work, see the community book
-  ~c[books/misc/misc2/step-limits.lisp].
+  limit on prover steps for a single event, rather than globally.  For a
+  related utility based on time instead of prover steps,
+  ~pl[with-prover-time-limit].  For examples of how step limits work, see the
+  community book ~c[books/misc/misc2/step-limits.lisp].
 
   Note: This is an event!  It does not print the usual event summary
   but nevertheless changes the ACL2 logical ~il[world] and is so
@@ -39307,22 +39338,22 @@
   would probably be well served by avoiding the assumption that only the above
   two calls are counted as prover steps.
 
-  Depending on the computer you are using, you may have only (very roughly) a
-  half-hour of time before the number of prover steps exceeds the maximum
-  step-limit, which is one less than the value of ~c[*default-step-limit*].
-  Note however the exception stated above: if the ``limit'' is ~c[nil] or is
-  the value of ~c[*default-step-limit*], then no limit is imposed.
+  Depending on the computer you are using, you may have less than a half-hour
+  of time before the number of prover steps exceeds the maximum step-limit,
+  which is one less than the value of ~c[*default-step-limit*].  Note however
+  the exception stated above: if the ``limit'' is ~c[nil] or is the value of
+  ~c[*default-step-limit*], then no limit is imposed.
 
-  The limit is relevant for every event, to calls of ~ilc[thm] and
-  ~ilc[certify-book], and more generally, to any form that creates a ``summary
-  context'' to print the usual event summary.  The limit is also put in force
-  when entering the ~il[proof-checker].  Below, at the end of this
-  ~il[documentation] topic, we explain in detail when a call of
-  ~c[set-prover-step-limit] is in force: in brief, it applies to all forms that
-  are either at the top level or are inside the same summary contexts.
+  The limit is relevant for every event, as well as for calls of ~ilc[thm] and
+  ~ilc[certify-book] ~-[] and more generally, to any form that creates a
+  ``summary context'' to print the usual event summary.  The limit is also put
+  in force when entering the ~il[proof-checker].  A call of
+  ~c[set-prover-step-limit] applies to each subsequent form unless the call of
+  ~c[set-prover-step-limit] is within a summary context, in which case its
+  effect disappears when exiting that summary context.
 
-  Note that the limit applies to each event, not just ``atomic'' events.
-  Consider the following example.
+  The limit applies to each event, not just ``atomic'' events.  Consider the
+  following example.
   ~bv[]
   (set-prover-step-limit 500)
 
@@ -39355,7 +39386,7 @@
   ~bv[]
   Prover steps counted:  More than 120
   ~ev[]
-  The  summary for the ~ilc[encapsulate] events then indicates that the
+  The summary for the ~ilc[encapsulate] event then indicates that the
   available steps for that event have also been exceeded:
   ~bv[]
   Prover steps counted:  More than 500
@@ -39391,39 +39422,33 @@
 
   Technical Remark.  For a call of ~c[mfc-rw] or any ~c[mfc-]
   function (~pl[extended-metafunctions]), the steps taken during that call are
-  forgotten when returning from that call.
-
-  Finally, we discuss in some detail when a ~c[set-prover-step-limit] event is
-  in force: it applies to a subsequent form that is either at the top level or
-  at the same level as the ~c[set-prover-step-limit] form, in the following
-  sense.  Let us say that a ``summary context'' is any context for which the
-  usual ACL2 summary will ultimately be printed (if summary printing is not
-  inhibited).  Every event ~-[] a call of ~ilc[defun] or ~ilc[defthm], or more
-  generally, every embedded event form (~pl[embedded-event-form]) ~-[]
-  establishes a summary context, as do certain other top-level forms such as
-  calls of ~ilc[thm] and ~ilc[certify-book].  (But a call of ~ilc[ld] does not
-  establish a summary context.)  Here, we consider two forms to be at the same
-  level if they are in the same summary context.  Thus, if
-  ~c[set-prover-step-limit] is called at the top level, then this call is not
-  in force for ~il[events] under a call of ~ilc[certify-book],
-  ~ilc[encapsulate], ~ilc[progn], ~ilc[make-event], or (more generally) under
-  any form that establishes a summary context.  Also, if
-  ~c[set-prover-step-limit] is called inside a summary context, then it does
-  not apply above that summary context except, if it is not local to some
-  event, at the very top level.~/"
+  forgotten when returning from that call.~/"
 
   `(state-global-let*
     ((inhibit-output-lst (cons 'summary (@ inhibit-output-lst))))
     (pprogn
-     (let ((rec (f-get-global 'step-limit-record state)))
-       (cond (rec (f-put-global 'step-limit-record
-                                (change step-limit-record rec
-                                        :sub-limit
-                                        (or ,limit *default-step-limit*))
-                                state))
+     (let ((rec (f-get-global 'step-limit-record state))
+           (limit (or ,limit *default-step-limit*)))
+       (cond ((and rec
+
+; We check here that limit is legal, even though this is also checked by the
+; table event below.  Otherwise, we can get a raw Lisp error from, for example:
+
+; (progn (set-prover-step-limit '(a b)))
+
+                   (natp limit)
+                   (<= limit *default-step-limit*))
+              (f-put-global 'step-limit-record
+                            (change step-limit-record rec
+                                    :sub-limit
+                                    limit
+                                    :strictp
+                                    (or (< limit *default-step-limit*)
+                                        (access step-limit-record rec
+                                                :strictp)))
+                            state))
              (t state)))
-     (progn (table acl2-defaults-table :step-limit
-                   (or ,limit *default-step-limit*))
+     (progn (table acl2-defaults-table :step-limit ,limit)
             (table acl2-defaults-table :step-limit)))))
 
 #-acl2-loop-only
@@ -48282,7 +48307,7 @@ Lisp definition."
   multiple values, we can perhaps provide such a utility; feel free to contact
   the ACL2 implementors to request it.)
 
-  A subtlely is that the evaluation takes place in so-called ``safe mode'',
+  A subtlety is that the evaluation takes place in so-called ``safe mode'',
   which avoids raw Lisp errors due to calls of ~c[:]~ilc[program] mode
   functions.  The use of safe mode is unlikely to be noticed if the value of
   the first argument of ~c[oracle-apply] is a ~c[:]~ilc[logic] mode function

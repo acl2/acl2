@@ -20268,6 +20268,11 @@
   attempted to include ~c[arithmetic/equalities] instead of
   ~c[nonstd/arithmetic/equalities], which caused an error.
 
+  We no longer document the use of value ~c[:START] for
+  ~ilc[with-prover-step-limit].  This value has always been used by the ACL2
+  implementation and may have semantics that change with new ACL2 versions.  If
+  you have reason to use this value, please contact the ACL2 implementors.
+
   ~st[NEW FEATURES]
 
   By default, the prover now gives information about case splits.
@@ -20354,6 +20359,15 @@
 
   Fixed a bug in ~ilc[defabsstobj-missing-events] (which macroexpanded
   incorrectly).  Thanks to Sol Swords for bringing this bug to our attention.
+
+  Fixed two bugs in the handling of step-limits.  Thanks to Hanbing Liu for
+  bringing the main such bug to our attention, which was that ACL2 could report
+  a step-limit violation during ~ilc[certify-book] (in fact, during any
+  compound event such as a call of ~ilc[encapsulate] or ~ilc[progn]), even
+  without direct user involvement in managing step-limits
+  (~pl[set-prover-step-limit] and ~pl[with-prover-step-limit]).  The other bug
+  was that a bad argument to ~ilc[set-prover-step-limit] could result in a raw
+  Lisp error, for example: ~c[(progn (set-prover-step-limit '(a b)))].
 
   ~st[CHANGES AT THE SYSTEM LEVEL]
 

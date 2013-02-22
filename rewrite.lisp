@@ -5185,6 +5185,8 @@
 
 (defrec step-limit-record
 
+; See the Essay on Step-limits.
+
 ; The state global 'step-limit-record is bound to one of these records at the
 ; start of an event by with-ctx-summarized (specifically, by the call of
 ; with-prover-step-limit in save-event-state-globals).  Then, :start is the
@@ -5207,6 +5209,9 @@
 
 (defun step-limit-strictp (state)
 
+; Warning: Keep this in sync with code in with-prover-step-limit-fn near the
+; comment there about step-limit-strictp.
+
 ; Return true if in the present context, we are to cause an error if the
 ; step-limit is exceeded.  See defrec step-limit-record.
 
@@ -5215,6 +5220,11 @@
           (t nil))))
 
 (defun initial-step-limit (wrld state)
+
+; Warning: Keep this in sync with code in with-prover-step-limit-fn near the
+; comment there about initial-step-limit.
+
+; See the Essay on Step-limits.
 
 ; This function returns the current step limit.  If 'step-limit-record has a
 ; non-nil value (see defrec step-limit-record), then we are already tracking
