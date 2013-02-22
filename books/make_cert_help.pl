@@ -64,6 +64,8 @@ use FindBin qw($RealBin);
 use POSIX qw(strftime);
 use Cwd;
 
+(do "$RealBin/paths.pl") or die ("Error loading $RealBin/paths.pl:\n!: $!\n\@: $@\n");
+
 sub trim
 {
 	my $str = shift;
@@ -369,8 +371,10 @@ if ($ENV{"ACL2_BIN_DIR"}) {
     print "canonical bin dir: $canon_bin_dir\n" if $DEBUG;
     $ENV{"PATH"} = $ENV{"PATH"} ? "$canon_bin_dir:$ENV{'PATH'}" : $canon_bin_dir;
 }
-
-my $default_acl2 = `which $ACL2 2>/dev/null`;
+# fix up the acl2 path as in cert.pl
+my $devnull = File::Spec->devnull;
+$ACL2 = path_import($ACL2);
+my $default_acl2 = `which $ACL2 2>$devnull`;
 if (($? >> 8) != 0) {
     print "Error: failed to find \$ACL2 ($ACL2) in the PATH.\n";
     exit(1);
@@ -407,8 +411,9 @@ if ($DEBUG)
 my $full_file = File::Spec->rel2abs($TARGET);
 (my $vol, my $dir, my $file) = File::Spec->splitpath($full_file);
 my $goal = "$file.$TARGETEXT";
+my $printgoal = path_export($full_file);
 
-print "Making $dir$goal on " . strftime('%d-%b-%Y %H:%M:%S',localtime) . "\n";
+print "Making $printgoal on " . strftime('%d-%b-%Y %H:%M:%S',localtime) . "\n";
 
 my $fulldir = File::Spec->canonpath(File::Spec->catpath($vol, $dir, ""));
 print "-- Entering directory $fulldir\n" if $DEBUG;
@@ -545,7 +550,7 @@ if ($STEP eq "complete") {
     $shinsts .= "echo Start of output: >> $outfile\n";
     $shinsts .= "echo >> $outfile\n";
 
-
+    $shinsts .= "echo ACL2_SYSTEM_BOOKS: \${ACL2_SYSTEM_BOOKS} >> $outfile\n";
 
     if ($TIME_CERT) {
 	$shinsts .= "(time (($acl2 < $lisptmp 2>&1) >> $outfile)) 2> $timefile\n";
@@ -600,7 +605,7 @@ if ($status == 43) {
 }
 
 if ($success) {
-    print "Successfully built $dir$goal\n";
+    print "Successfully built $printgoal\n";
 } else {
     my $taskname = ($STEP eq "acl2x" || $STEP eq "acl2xskip") ? "ACL2X GENERATION" :
 	($STEP eq "certify")  ? "CERTIFICATION" :

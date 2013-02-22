@@ -52,6 +52,8 @@ use FindBin qw($RealBin);
 use Getopt::Long qw(:config bundling_override);
 
 (do "$RealBin/certlib.pl") or die ("Error loading $RealBin/certlib.pl:\n!: $!\n\@: $@\n");
+(do "$RealBin/paths.pl") or die ("Error loading $RealBin/paths.pl:\n!: $!\n\@: $@\n");
+
 
 # use lib "/usr/lib64/perl5/5.8.8/x86_64-linux-thread-multi/Devel";
 # use Devel::DProf;
@@ -441,10 +443,16 @@ unless ($acl2) {
     $acl2 = "acl2";
 }
 
-$acl2 = `which $acl2 2>/dev/null`;
-chomp($acl2);
+# convert user-provided ACL2 to cygwin path, under cygwin
+$acl2 = path_import($acl2);
+# this is probably always /dev/null but who knows under windows
+my $devnull = File::Spec->devnull;
+# get the absolute path
+$acl2 = `which $acl2 2>$devnull`;
+chomp($acl2);  # remove trailing newline
 
 if ($acl2) {
+    # canonicalize the path
     $acl2 = abs_canonical_path($acl2);
     unless($quiet || $no_build) {
 	print "ACL2 executable is ${acl2}\n";
@@ -479,8 +487,10 @@ unless($quiet) {
 certlib_add_dir("SYSTEM", $acl2_books);
 # In case we're going to run Make, set the ACL2_SYSTEM_BOOKS
 # and ACL2 environment variables to match our assumption.
-$ENV{"ACL2_SYSTEM_BOOKS"} = $acl2_books;
-
+# In cygwin, ACL2 reads paths like c:/foo/bar whereas we're dealing in
+# paths like /cygdrive/c/foo/bar, so "export" it
+my $acl2_books_env = path_export($acl2_books);
+$ENV{"ACL2_SYSTEM_BOOKS"} = $acl2_books_env;
 
 my %tscache = ();
 
