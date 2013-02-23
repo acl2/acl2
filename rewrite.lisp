@@ -12200,6 +12200,10 @@
     ttree))
 
 (defmacro push-lemma+ (rune ttree rcnst ancestors rhs rewritten-rhs)
+
+; Warning: Keep this in sync with push-splitter?; see the comment there for how
+; these two macros differ.
+
   `(cond ((and (null ,ancestors)
                (access rewrite-constant ,rcnst :splitter-output)
                (ffnnamep 'if ,rhs)
@@ -12209,6 +12213,24 @@
             (add-to-tag-tree 'splitter-if-intro rune
                              (push-lemma rune ttree))))
          (t (push-lemma ,rune ,ttree))))
+
+(defmacro push-splitter? (rune ttree rcnst ancestors rhs rewritten-rhs)
+
+; Warning: Keep this in sync with push-lemma+, which differs in three ways:
+; that macro does not require that rune is bound to a symbol, it does not allow
+; the value of rune to be nil, and it also adds a 'lemma tag.
+
+; We could easily remove the guard below, which simply avoids the need to bind
+; rune and hence ttree.
+
+  (declare (xargs :guard (symbolp rune)))
+  `(cond ((and ,rune
+               (null ,ancestors)
+               (access rewrite-constant ,rcnst :splitter-output)
+               (ffnnamep 'if ,rhs)
+               (ffnnamep 'if ,rewritten-rhs))
+          (add-to-tag-tree 'splitter-if-intro ,rune ,ttree))
+         (t ,ttree)))
 
 (defmacro prepend-step-limit (n form)
   (let ((vars (if (consp n)
@@ -16518,6 +16540,12 @@
 
                   (sl-let
                    (rewritten-test ttree)
+
+; We could save the original ttree to use below when we don't use
+; rewritten-test.  But this way we record runes that participated even in a
+; failed expansion, which could be of use for those who want to use that
+; information for constructing a theory in which the proof may replay.
+
                    (rewrite-entry (rewrite hyp alist 'expansion)
                                   :ttree (push-lemma? rune ttree))
                    (let ((ens (access rewrite-constant rcnst
@@ -16533,10 +16561,16 @@
                       (declare (ignore false-type-alist))
                       (cond
                        (must-be-true
-                        (rewrite-entry
-                         (rewrite new-term alist 'expansion)
-                         :type-alist true-type-alist
-                         :ttree (cons-tag-trees ts-ttree ttree)))
+                        (sl-let
+                         (rewritten-new-term ttree)
+                         (rewrite-entry
+                          (rewrite new-term alist 'expansion)
+                          :type-alist true-type-alist
+                          :ttree (cons-tag-trees ts-ttree ttree))
+                         (mv step-limit
+                             rewritten-new-term
+                             (push-splitter? rune ttree rcnst ancestors
+                                             new-term rewritten-new-term))))
                        (must-be-false
                         (mv step-limit
                             (fcons-term* 'hide term)
@@ -16553,8 +16587,8 @@
                          (rewrite-entry (rewrite new-term alist 2)
                                         :type-alist true-type-alist
                                         :ttree (rw-cache-enter-context ttree))
-                         (prepend-step-limit
-                          2
+                         (mv-let
+                          (final-term ttree)
                           (rewrite-if11 (fcons-term* 'if
                                                      rewritten-test
                                                      rewritten-left
@@ -16563,10 +16597,23 @@
                                         (push-lemma (fn-rune-nume 'hide nil
                                                                   nil wrld)
                                                     (rw-cache-exit-context
-                                                     ttree ttree1)))))))))))
+                                                     ttree ttree1)))
+                          (mv step-limit
+                              final-term
+
+; We avoid push-lemma+ just below, because ttree already incorporates a call of
+; push-lemma? on rune.
+
+                              (push-splitter? rune ttree rcnst ancestors
+                                              new-term final-term))))))))))
                  (new-term
-                  (rewrite-entry (rewrite new-term alist 'expansion)
-                                 :ttree (push-lemma? rune ttree)))
+                  (sl-let (final-term ttree)
+                          (rewrite-entry (rewrite new-term alist 'expansion)
+                                         :ttree (push-lemma? rune ttree))
+                          (mv step-limit
+                              final-term
+                              (push-splitter? rune ttree rcnst ancestors
+                                              new-term final-term))))
                  (t (prepend-step-limit
                      2
                      (rewrite-solidify term type-alist obj geneqv

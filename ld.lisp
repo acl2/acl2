@@ -20278,7 +20278,8 @@
   By default, the prover now gives information about case splits.
   ~l[splitter].  Thanks to many ACL2 users, most recently David Rager, for
   requesting such a capability.  Also thanks to David Rager and Jared Davis for
-  helpful discussions.
+  helpful discussions, and thanks to Robert Krug for feedback on the initial
+  implementation and documentation that led us to make improvements.
 
   New utilities ~ilc[initialize-event-user] and ~ilc[finalize-event-user] allow
   the user to run ~il[state]-modifying code at the start and end of

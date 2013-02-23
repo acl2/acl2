@@ -3570,14 +3570,16 @@
 
   reporting of rules whose application may have caused case splits~/
 
-  ~l[set-splitter-output] for how to turn of, or on, the reporting of rule
-  applications that may have caused a goal to simplify to more than one
+  The application of a rule to a term may cause a goal to simplify to more than one
   subgoal.  A rule with such an application is called a ``splitter''.  Here, we
   explain the output produced for splitters when proof output is enabled
   (~pl[set-inhibit-output-lst]) and such reporting is turned on (as it is by
   default) ~-[] that is, when the value of ~c[(]~ilc[splitter-output]~c[)] is
-  true.  Also ~pl[set-case-split-limitations] for information on how to control
-  case splits.
+  true.
+
+  ~l[set-splitter-output] for how to turn off, or on, the reporting of
+  splitters.  Also ~pl[set-case-split-limitations] for information on how to
+  control case splits.
 
   We begin by describing three types of splitters.~bq[]
 
@@ -3690,15 +3692,21 @@
   o The term to which the rule is applied is at the top level, rather than
   being encountered when trying to establish the hypothesis of a rule.
 
-  o There is a call of the function symbol ~c[IF] in the right-hand side of the
-  rewrite rule, or, in the case of a definition rule, in the body of the
-  definition.
+  o The rule is a ~il[rewrite] rule, a ~il[definition] rule, or a ~il[meta]
+  rule.
 
-  o There is a call of the function symbol ~c[IF] in the rewritten right-hand
-  side (for a rewrite rule) or definition body (for a definition rule).
+  o There is a call of the function symbol ~c[IF] in the right-hand side of the
+  ~il[rewrite] rule; or, in the case of a ~il[definition] rule, in the body of
+  the definition; or, in the case of a ~il[meta] rule, in the result of
+  applying the metafunction.
+
+  o There is a call of the function symbol ~c[IF] in the result of rewriting:
+  the right-hand side (for a ~il[rewrite] rule), the definition body (for a
+  ~il[definition] rule), or the metafunction application (for a ~il[meta]
+  rule).
   ~eq[]
 
-  Any rule application meeting the above criteria will be consider a splitter
+  Any rule application meeting the above criteria will be considered a splitter
   of type ~c[if-intro], even if the call does not actually cause a case split.
   For example, if you are proving ~c[(implies (hyp x) (conc x))] and rule R
   rewrites ~c[(hyp x)] to ~c[(if (h1 x) (h2 x) nil)], which is really the term
@@ -3706,15 +3714,12 @@
   want to find the causes of case-splitting, the list of ~c[if-intro] splitters
   can help you narrow your search, but may include irrelevant rules as well.
 
-  Finally, note that you may see splits not attributed to a splitter.  While we
-  believe this will normally be rare, one case is when the reason for
-  introducing an ~c[IF] call is an ~c[:expand] hint (~pl[hints]), in which case
-  that expansion will not be associated with an ~c[if-intro] splitter.  This
-  makes sense when one considers that the point of reporting splitters is to
-  assist users in deciding on rules to disable, and ~c[:expand] hints apply
-  regardless of whether a definition is disabled.  A subtlety here is that
-  during proofs by induction, ACL2 may generate implicit expand hints for
-  certain ``induction conclusion'' terms.~/~/")
+  Finally, note that you may see splits not attributed to splitters.  We
+  believe that this will be uncommon during simplification, though it can occur
+  for example when a call of ~c[IF] is in the body of a ~ilc[LET] expression,
+  i.e., in a call of a ~ilc[LAMBDA] expression.  But splits caused by other
+  processes, notably destructor elimination (~pl[elim]), will typically not be
+  attributed to splitters.~/~/")
 
 (defmacro set-splitter-output (val)
 
@@ -5270,9 +5275,9 @@
               (cond
                ((tagged-objectsp 'assumption ttree1)
                 (er hard 'extract-and-clausify-assumptions
-                    "Convert-type-set-to-term apparently returned a ttree that ~
-                   contained an 'assumption tag.  This violates the assumption ~
-                   in this function."))
+                    "Convert-type-set-to-term apparently returned a ttree ~
+                     that contained an 'assumption tag.  This violates the ~
+                     assumption in this function."))
                (t ttree1))
               (delete-assumptions ttree 'non-nil))))))))
    (t (mv 0 nil
