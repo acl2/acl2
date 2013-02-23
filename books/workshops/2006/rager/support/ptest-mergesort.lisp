@@ -14,6 +14,10 @@
 (include-book "finite-set-theory/osets/sets" :dir :system)
 
 (defun integers (n acc)
+; Matt K.: Added guard declaration to avoid stack overflow when building
+; compiled file for Lisps including Allegro CL and LispWorks.
+  (declare (xargs :guard (and (natp n)
+                              (true-listp acc))))
   (if (zp n)
       (reverse acc)
     (integers (1- n) (cons n acc))))
