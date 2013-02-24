@@ -2136,9 +2136,28 @@ which is saved just in case it's needed later.")
   #+(and mcl (not ccl))
   (cl-user::quit) ; mcl support is deprecated, so we don't worry about status
   #+sbcl
-  (if status-p
-      (sb-ext:quit :unix-status status)
-    (sb-ext:quit))
+  (let ((sym (or (find-symbol "EXIT" 'sb-ext)
+                 (find-symbol "QUIT" 'sb-ext))))
+
+; Quoting http://www.sbcl.org/manual/#Exit, regarding sb-ext:quit:
+
+;   Deprecated in favor of sb-ext:exit as of 1.0.56.55 in May 2012. Expected to
+;   move into late deprecation in May 2013.
+
+    (cond ((or (null sym)
+               (not (fboundp sym)))
+           (error "No function named \"EXIT\" or \"QUIT\" is defined in the ~%~
+                   \"SB-EXT\" package.  Perhaps you are using a very old or ~%~
+                   very new version of SBCL.  If you are surprised by this ~%~
+                   message, feel free to contact the ACL2 implementors."))
+          ((equal (symbol-name sym) "EXIT")
+           (if status-p
+               (funcall sym :code status)
+             (funcall sym)))
+          (t ; (equal (symbol-name sym) "QUIT")
+           (if status-p
+               (funcall sym :unix-status status)
+             (funcall sym)))))
 
 ; Return status (to avoid an ignore declaration) if we cannot exit lisp.  The
 ; caller of this function should complain if Lisp survives the call.  The panic

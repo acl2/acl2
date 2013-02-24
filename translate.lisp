@@ -3688,9 +3688,13 @@
 
 (defun acceptable-dcls-alist (state-vars)
 
+; Warning: Keep this in sync with :DOC declare.
+
 ; The declarations when (hons-enabledp state) have been found useful by Bob
 ; Boyer for the experimental hons version, but have not yet been carefully
-; evaluated for soundness.
+; evaluated for soundness, so we do not advertise them.  In fact, we decided
+; that inline and notinline are not appropriate to support when we introduced
+; defun-inline.
 
   (let ((hons-enabledp (access state-vars state-vars :hons-enabled)))
     `((let ignore ignorable type
@@ -4293,6 +4297,15 @@
 
 (defun augment-ignore-vars (bound-vars value-forms acc)
 
+; Note added shortly before releasing ACL2 Version_6.1.  This function seems to
+; have been added in Version_2.9.4.  It's not clear that we need this function,
+; since it doesn't seem that translate11 is passed a form with HIDE calls
+; already added in the manner described below.  For now we'll continue to calls
+; this function, as it seems harmless enough.  We might want to try a
+; regression sometime with it redefined simply to return acc, and if that
+; succeeds, we could consider deleting it.  (But that seems dangerous to do
+; just before a release!)
+
 ; Bound-vars and value-forms are lists of the same length.  Return the result
 ; of extending the list acc by each member of bound-vars for which the
 ; corresponding element of value-forms (i.e., in the same position) is a call
@@ -4300,26 +4313,6 @@
 ; function returns a list that contains every variable declared ignored in the
 ; original let form binding bound-vars to value-forms (or the corresponding
 ; untranslations of the terms in value-forms).
-
-; We note that this approach can lead to accepting definitions that cause
-; warnings in raw Lisp, but we can live with that, especially since warnings
-; are generally inhibited inside the ACL2 loop.  The following definition
-; illustrates our point.
-
-; (defun foo (x)
-;   (let ((y (hide x))
-;         (z x))
-;     z))
-
-; This leads to the call (AUGMENT-IGNORE-VARS (Y Z) ((HIDE X) X) NIL), which
-; returns (Y).  So ACL2 translate doesn't complain about the lack of an IGNORE
-; declaration for Y, and the definition is accepted.  In a nutshell: ACL2
-; doesn't know if the HIDE was there initially or was put there by ACL2, so
-; augment-ignore-vars is generous and proceeds as though it was put there by
-; ACL2 and thus Y needn't be declared IGNOREd.  This seems fine though: after
-; all, if the user explicitly binds a variable to a HIDE expression, as in our
-; example, it isn't unreasonable to assume that the variable is intended to be
-; ignored!
 
   (cond ((endp bound-vars)
          acc)

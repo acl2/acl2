@@ -72,27 +72,15 @@ into the <CODE>books/</CODE> directory (but first
 
 <li><A NAME="certify-books">Certify books (but first
     create <CODE>books/</CODE> if you
-    skipped <A HREF="#create-books">that step</A>):</A>
+    skipped <A HREF="#create-books">that step</A>), for example as
+    follows.
 <pre>
 make regression
+(time nice make ACL2_JOBS=8 ACL2=/u/smith/bin/acl2 regression) >& make-regression.log
 </pre>
-This may take a few hours; you can speed this up
-by specifying a value for <code>ACL2_JOBS</code> if you have an N-core
-machine, N&gt;1, for example as
-follows.  <font color="red">WARNING</font>:  if instead you use
-`<code>make</code>' option <code>-j</code>, you will not see
-parallel certification for books in the <code>centaur/</code> directory.
-<pre>
-make regression ACL2_JOBS=8
-</pre>
-If your system has difficulty certifying the books in the ~c[centaur/]
-directory, say because of issues with Perl (but
-please <A HREF="mailto:kaufmann@cs.utexas.edu">tell us</A> if that
-happens!), you can skip them by
-specifying <code>ACL2_CENTAUR=skip</code>, for example as follows.
-<pre>
-make regression ACL2_CENTAUR=skip
-</pre>
+    <A HREF="http://www.cs.utexas.edu/users/moore/acl2/current/REGRESSION.html">See
+    :DOC regression</A> for explanation and further options, e.g.
+    for using <A HREF="http://www.cs.utexas.edu/users/moore/acl2/current/HONS-AND-MEMOIZATION.html">ACL2(h)</A>.
 
 </ol>
 

@@ -3366,10 +3366,11 @@
   ~il[events].  We assume familiarity with ~c[finalize-event-user]; here we
   focus on how to supply code for the beginning as well as the end of events.
 
-  As with ~il[initialize-event-user], you attach your own function of
-  ~ilc[state], which returns ~c[state] and has a trivial guard, requiring
-  (implicitly) only that ~c[state] satisfies ~c[state-p] unless you use trust
-  tags to avoid that requirement.  For example:
+  As with ~il[finalize-event-user], you attach your own function of ~ilc[state]
+  to ~c[initialize-event-user].  The attachment should return ~c[state] and
+  have a trivial guard, requiring (implicitly) only that ~c[state] satisfies
+  ~c[state-p] unless you use trust tags to avoid that requirement.  For
+  example:
   ~bv[]
   (defattach initialize-event-user initialize-event-user-test)
   ~ev[]
@@ -3502,9 +3503,13 @@
   ~ev[]
 
   Note that (as of this writing) the macro ~ilc[observation] expands to a call
-  of a ~c[:]~ilc[program]-mode function.  Thus, this trick involving
+  of a ~c[:]~ilc[program]-mode function.  Thus, the trick shown above involving
   ~c[:skip-checks] allows the use of ~c[:program]-mode functions; for example,
   you can print with ~ilc[fmt].
+
+  See community book ~c[books/misc/defattach-bang.lisp] for a variant of
+  ~ilc[defattach] that uses ~ilc[ec-call] to avoid issues of ~il[guard]
+  verification.
 
   Also ~pl[initialize-event-user], which discusses the handling of ~il[state]
   globals by that utility as well as by ~c[finalize-event-user].~/~/")

@@ -21413,8 +21413,9 @@
   value of each ~c[:ATTACH] keyword is either ~c[t] or ~c[nil], with default
   ~c[t] except that the value of ~c[:ATTACH] at the ``top level,'' after each
   entry ~c[(fi gi ...)], is the default for each ~c[:ATTACH] keyword supplied
-  in such an entry.  The associated values for the other keywords have the
-  usual meanings for the proof obligations described below: the guard proof
+  in such an entry.  We discuss the ~c[:ATTACH] keyword later in this
+  ~il[documentation] topic.  The associated values for the other keywords have
+  the usual meanings for the proof obligations described below: the guard proof
   obligation for keywords within each ~c[(fi gi ...)] entry, and the constraint
   proof obligation for keywords at the top level.  No keyword may occur twice
   in the same context, i.e., within the same ~c[(fi gi ...)] entry or at the
@@ -21652,6 +21653,59 @@
   To see all attachments: ~c[(all-attachments (w state))].  (Note that
   attachments introduced with a non-~c[nil] value of ~c[:skip-checks] will be
   omitted from this list.)
+
+  Next we discuss the ~c[:ATTACH] keyword.  There is rarely if ever a reason to
+  specify ~c[:ATTACH T], but the following (admittedly contrived) example shows
+  why it may be necessary to specify ~c[:ATTACH NIL].  First we introduce three
+  new function symbols.
+  ~bv[]
+    (defstub f (x) t)
+
+    (defun g (x)
+      (f x))
+
+    (encapsulate ((h (x) t))
+      (local (defun h (x) (g x)))
+      (defthm h-prop
+        (equal (h x) (g x))))
+  ~ev[]
+  Now suppose we want to attach the function ~ilc[acl2-numberp] to both ~c[f]
+  and ~c[h].
+  ~bv[]
+    (defattach (f acl2-numberp) (h acl2-numberp))
+  ~ev[]
+  Such an attempt fails, because the following constraint is generated but is
+  not a theorem: ~c[(EQUAL (ACL2-NUMBERP X) (G X))].  Clearly we also need to
+  attach to ~c[g] as well.
+  ~bv[]
+    (defattach (f acl2-numberp) (h acl2-numberp) (g acl2-numberp))
+  ~ev[]
+  But this fails for a different reason, as explained by the error message:
+  ~bv[]
+    ACL2 Error in ( DEFATTACH (F ACL2-NUMBERP) ...):  It is illegal to
+    attach to function symbol G, because it was introduced with DEFUN.
+    See :DOC defattach.
+  ~ev[]
+  That is: logically, we need to attach ~c[acl2-numberp] to ~c[g], but we
+  cannot actually attach to ~c[g] because it was introduced with ~ilc[defun],
+  not with ~ilc[encapsulate].  So we specify ~c[:ATTACH NIL] for the attachment
+  to ~c[g], saying that no actual attachment should be made to the code for
+  ~c[g], even though for logical purposes we should consider that ~c[g] has
+  been given the indicated attachment.
+  ~bv[]
+    (defattach (f acl2-numberp) (h acl2-numberp) (g acl2-numberp :attach nil))
+  ~ev[]
+  Finally, we can check that ~c[f], ~c[g], and ~c[h] execute as expected.
+  ~bv[]
+      ACL2 !>(assert-event (and (f 3)
+                         (not (f t))
+                         (g 3)
+                         (not (g t))
+                         (h 3)
+                         (not (h t))))
+       :PASSED
+      ACL2 !>
+  ~ev[]
 
   We conclude with an example promised above, showing why it is necessary in
   general to unattach all function symbols in an existing attachment nest when
@@ -22819,6 +22873,9 @@
 )
 
 (deflabel declare
+
+; Warning: Keep this in sync with acceptable-dcls-alist.
+
   :doc
   ":Doc-Section ACL2::Programming
 
@@ -22853,7 +22910,8 @@
 
     (xargs :key1 val1 ... :keyn valn) -- where the legal values of the keyi's
     and their respective vali's are described in the documentation for
-    ~il[xargs].
+    ~il[xargs].  Xargs declarations are only allowed at the top level of
+    definitions (defun and defmacro, as shown below).
 
     (optimize ...) -- for example, ~c[(optimize (safety 3))].  This is allowed
     only at the top level of ~ilc[defun] forms.  See any Common Lisp
@@ -22866,6 +22924,8 @@
     (DEFMACRO name args doc-string dcl ... dcl body)
     (LET ((v1 t1) ...) dcl ... dcl body)
     (MV-LET (v1 ...) term dcl ... dcl body)
+    (FLET ((name args dcl ... dcl body)
+           ...))
   ~ev[]
   Of course, if a form macroexpands into one of these (as ~ilc[let*] expands
   into nested ~ilc[let]s and our ~c[er-let*] expands into nested ~ilc[mv-let]s)

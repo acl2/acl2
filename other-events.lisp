@@ -18499,6 +18499,106 @@
 
 (link-doc-to makefiles books book-makefiles)
 
+(defdoc regression
+
+  ":Doc-Section Books
+
+  running regressions using the ACL2 community books~/
+
+  Here we provide a concise summary of how to certify the ACL2 community books
+  when you install ACL2.  For more information about installing ACL2, see the
+  installation instructions, either by following a link from the ACL2 home page
+  or by going directly to the page
+  ~url[http://www.cs.utexas.edu/users/moore/acl2/current/installation/installation.html].
+  For more information about the ACL2 community books and how to certify them,
+  ~pl[community-books] and ~pl[book-makefiles].
+
+  ~st[The Basics]
+
+  We assume that you have built or obtained an ACL2 executable, that the ACL2
+  community books are in subdirectory ~c[books/], and that you are standing in
+  the ACL2 sources directory.  If you built that executable, then by default
+  its name is ~c[saved_acl2], and you can issue the following command to the
+  shell.
+  ~bv[]
+    make regression
+  ~ev[]
+  Better yet, save a log file in case there are problems, for example
+  ~bv[]
+    (make regression) >& make-regression.log
+  ~ev[]
+  or perhaps better yet:
+  ~bv[]
+    (time nice make regression) >& make-regression.log
+  ~ev[]
+  For the sake of brevity, below we'll skip mentioning any of `~c[time]',
+  `~c[nice]', or `~c[>& make-regression.log]'; but we do generally recommend
+  using these as shown above.
+
+  Such a certification run may take a few hours, but if you have a
+  multiprocessing computer, you can speed it up by specifying a value for
+  ~c[ACL2_JOBS].  For example, if you have 8 hardware threads then you might
+  want to issue the following command.
+  ~bv[]
+    make regression ACL2_JOBS=8
+  ~ev[]
+  Warning: if instead you use `~c[make -j 8 regression]', you will not see
+  parallel certification for books in the ~c[centaur/] directory.~/
+
+  ~st[Specifying the ACL2 Executable]
+
+  If your ACL2 executable is not file ~c[saved_acl2] in the ACL2 sources
+  directory, then you will need to specify that executable.  You can do that by
+  setting variable ~c[ACL2], either as an environment variable or, as displayed
+  below, as a `~c[make]' variable.  Either way, you will need to avoid relative
+  pathnames.  For example, the first two forms below are legal, but the third
+  is not, assuming that ~c[my-acl2] is on your ~c[PATH] in a Unix-like
+  environment (e.g., linux or MacOS) and that ~c[my-saved_acl2] is just a
+  pathname relative to your ACL2 sources directory, which is not on your path.
+  ~bv[]
+    make regression ACL2_JOBS=8 ACL2=my-acl2
+    make regression ACL2_JOBS=8 ACL2=/u/smith/bin/acl2
+    # The following is unlikely to work (see above).
+    make regression ACL2_JOBS=8 ACL2=my-saved_acl2
+  ~ev[]
+
+  ~st[Regressions for Experimental Extensions of ACL2]
+
+  The instructions are similar if you are using ACL2(h), the experimental
+  extension supporting hash-cons, function memoization, and fast alists
+  (~pl[hons-and-memoization]).  However, in that case you should use target
+  ~c[regression-hons] in place of target ~c[regression], which will include
+  directories that depend on ACL2(h) features not present in ACL2, and which
+  will use ~c[saved_acl2h] instead of ~c[saved_acl2] as the default executable
+  name.  So for example:
+  ~bv[]
+    make ACL2_JOBS=8 regression-hons
+  ~ev[]
+
+  If you wish to use ACL2(p), the extension of ACL2 that supports parallel
+  proof and execution (~pl[parallelism]), then we recommend that you use ACL2
+  for your regression as discussed above.  Then you can use ACL2(p) for your
+  own proof developments.  (The analogous comment applies to ACL2(hp) and
+  ACL2(h), i.e., to the use of parallelism on top of ACL2(h).)
+
+  ~l[real] for a discussion of how to certify books in subdirectory
+  ~c[books/nonstd] using ACL2(r).
+
+  ~st[Troubleshooting]
+
+  If your system has difficulty certifying the books in the ~c[centaur/]
+  directory, say because of issues with Perl, you can skip them by
+  specifying ~c[ACL2_CENTAUR=skip], for example as follows.
+  ~bv[]
+    make regression ACL2_CENTAUR=skip
+  ~ev[]
+  (But this should't be necessary, so please email the ACL2 implementors if
+  that happens!)
+
+  If you run into other problems, you can get help by joining the ~c[acl2-help]
+  email list (follow the link from the ACL2 home page) and sending a message to
+  that list.~/")
+
 ; Next we implement defchoose and defun-sk.
 
 (defun redundant-defchoosep (name event-form wrld)

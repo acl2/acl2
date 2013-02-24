@@ -8059,15 +8059,18 @@
   :doc
   ":Doc-Section Miscellaneous
 
-  giving ~il[hints] to ~ilc[defun]~/
+  extra arguments, for example to give ~il[hints] to ~ilc[defun]~/
 
   Common Lisp's ~ilc[defun] function does not easily allow one to pass extra
   arguments such as ``~il[hints]''.  ACL2 therefore supports a peculiar new
-  declaration (~pl[declare]) designed explicitly for passing
-  additional arguments to ~ilc[defun] via a keyword-like syntax.
+  declaration (~pl[declare]) designed explicitly for passing additional
+  arguments to ~ilc[defun] via a keyword-like syntax.  This declaration can
+  also be used with ~ilc[defmacro], but only for ~c[xargs] keyword ~c[:GUARD];
+  so we restrict attention below to use of ~c[xargs] in ~ilc[defun]
+  ~il[events].
 
-  The following declaration is nonsensical but does illustrate all of
-  the ~ilc[xargs] keywords (which are the members of the list
+  The following declaration is nonsensical but does illustrate all of the
+  ~c[xargs] keywords for ~ilc[defun] (which are the members of the list
   ~c[*xargs-keywords*]).
   ~bv[]
   (declare (xargs :guard (symbolp x)
@@ -8087,38 +8090,37 @@
   General Form:
   (xargs :key1 val1 ... :keyn valn)
   ~ev[]
-  where the keywords and their respective values are as shown below.
-  Note that once ``inside'' the xargs form, the ``extra arguments'' to
-  ~ilc[defun] are passed exactly as though they were keyword arguments.
+  where the keywords and their respective values are as shown below.  Note that
+  once ``inside'' the xargs form, the ``extra arguments'' to ~ilc[defun] are
+  passed exactly as though they were keyword arguments.
 
   ~c[:]~ilc[GUARD]~nl[]
-  ~c[Value] is a term involving only the formals of the function being
-  defined.  The actual ~il[guard] used for the definition is the
-  conjunction of all the ~il[guard]s and types (~pl[declare]) ~il[declare]d.
+  ~c[Value] is a term involving only the formals of the function being defined.
+  The actual ~il[guard] used for the definition is the conjunction of all the
+  ~il[guard]s and types (~pl[declare]) ~il[declare]d.
 
   ~c[:GUARD-HINTS]~nl[]
-  ~c[Value]:  hints (~pl[hints]), to be used during the ~il[guard]
-  verification proofs as opposed to the termination proofs of the
-  ~ilc[defun].
+  ~c[Value]: hints (~pl[hints]), to be used during the ~il[guard] verification
+  proofs as opposed to the termination proofs of the ~ilc[defun].
 
   ~c[:GUARD-DEBUG]~nl[]
-  ~c[Value]:  ~c[nil] by default, else directs ACL2 to decorate each guard
-  proof obligation with hypotheses indicating its sources.  ~l[guard-debug].
+  ~c[Value]: ~c[nil] by default, else directs ACL2 to decorate each guard proof
+  obligation with hypotheses indicating its sources.  ~l[guard-debug].
 
   ~c[:]~ilc[HINTS]~nl[]
-  Value:  hints (~pl[hints]), to be used during the termination
-  proofs as opposed to the ~il[guard] verification proofs of the ~ilc[defun].
+  Value: hints (~pl[hints]), to be used during the termination proofs as
+  opposed to the ~il[guard] verification proofs of the ~ilc[defun].
 
   ~c[:MEASURE]~nl[]
-  ~c[Value] is a term involving only the formals of the function being
-  defined.  This term is indicates what is getting smaller in the
-  recursion.  The well-founded relation with which successive measures
-  are compared is ~ilc[o<].  Also allowed is a special case,
-  ~c[(:? v1 ... vk)], where ~c[(v1 ... vk)] enumerates a subset of the
-  formal parameters such that some valid measure involves only those
-  formal parameters.  However, this special case is only allowed for
-  definitions that are redundant (~pl[redundant-events]) or are
-  executed when skipping proofs (~pl[skip-proofs]).
+  ~c[Value] is a term involving only the formals of the function being defined.
+  This term is indicates what is getting smaller in the recursion.  The
+  well-founded relation with which successive measures are compared is
+  ~ilc[o<].  Also allowed is a special case, ~c[(:? v1 ... vk)], where
+   ~c[(v1 ... vk)] enumerates a subset of the formal parameters such that some
+  valid measure involves only those formal parameters.  However, this special
+  case is only allowed for definitions that are redundant
+  (~pl[redundant-events]) or are executed when skipping proofs
+  (~pl[skip-proofs]).
 
   ~c[:RULER-EXTENDERS]~nl[]
   For recursive definitions (possibly mutually recursive), ~c[value] controls
@@ -8126,11 +8128,11 @@
   ~l[ruler-extenders] for a discussion of legal values and their effects.
 
   ~c[:MODE]~nl[]
-  ~c[Value] is ~c[:]~ilc[program] or ~c[:]~ilc[logic], indicating the ~ilc[defun] mode of the
-  function introduced.  ~l[defun-mode].  If unspecified, the
-  ~ilc[defun] mode defaults to the default ~ilc[defun] mode of the current ~il[world].
-  To convert a function from ~c[:]~ilc[program] mode to ~c[:]~ilc[logic] mode,
-  ~pl[verify-termination].
+  ~c[Value] is ~c[:]~ilc[program] or ~c[:]~ilc[logic], indicating the
+  ~ilc[defun] mode of the function introduced.  ~l[defun-mode].  If
+  unspecified, the ~ilc[defun] mode defaults to the default ~ilc[defun] mode of
+  the current ~il[world].  To convert a function from ~c[:]~ilc[program] mode
+  to ~c[:]~ilc[logic] mode, ~pl[verify-termination].
 
   ~c[:NON-EXECUTABLE]~nl[]
   ~c[Value] is normally ~c[t] or ~c[nil] (the default).  Rather than stating
@@ -8167,15 +8169,15 @@
   object.
 
   ~c[:]~ilc[VERIFY-GUARDS]~nl[]
-  ~c[Value] is ~c[t] or ~c[nil], indicating whether or not ~il[guard]s are to be
-  verified upon completion of the termination proof.  This flag should
-  only be ~c[t] if the ~c[:mode] is unspecified but the default ~ilc[defun] mode is
+  ~c[Value] is ~c[t] or ~c[nil], indicating whether or not ~il[guard]s are to
+  be verified upon completion of the termination proof.  This flag should only
+  be ~c[t] if the ~c[:mode] is unspecified but the default ~ilc[defun] mode is
   ~c[:]~ilc[logic], or else the ~c[:mode] is ~c[:]~ilc[logic].
 
   ~c[:]~ilc[WELL-FOUNDED-RELATION]~nl[]
-  ~c[Value] is a function symbol that is known to be a well-founded
-  relation in the sense that a rule of class ~c[:]~ilc[well-founded-relation]
-  has been proved about it.  ~l[well-founded-relation].~/")
+  ~c[Value] is a function symbol that is known to be a well-founded relation in
+  the sense that a rule of class ~c[:]~ilc[well-founded-relation] has been
+  proved about it.  ~l[well-founded-relation].~/")
 
 (defmacro link-doc-to-keyword (name parent see)
   `(defdoc ,name
