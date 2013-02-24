@@ -1636,8 +1636,8 @@
 ; changed the induction scheme.
 
 ; Warning: Do not be tempted to skip the call of cross-tests-and-calls in the
-; special cases below for mv-list,prog2$ and arity 1.  It is needed in order to
-; handle :no-calls (used above).
+; special cases below for mv-list, prog2$ and arity 1.  It is needed in order
+; to handle :no-calls (used above).
 
             (cond ((and (eq (ffn-symb body) 'mv-list)
                         (not (ffnnamesp names (fargn body 1))))

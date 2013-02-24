@@ -4653,7 +4653,9 @@
 ; Lisp rather than somehow considering its *1* function.  We considered adding
 ; return-last as well, but not only does return-last have a guard other than T,
 ; but indeed (return-last 'mbe1-raw exec logic) macroexpands in raw Lisp to
-; exec, which isn't what we want in oneified code.
+; exec, which isn't what we want in oneified code.  We considered adding
+; functions in *defun-overrides*, but there is no need, since defun-overrides
+; makes suitable definitions for *1* functions.
 
        mv-list
        ))

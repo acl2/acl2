@@ -5259,7 +5259,7 @@
 ; functions that we don't want to override here.
 
                                     `(mv-list return-last wormhole-eval
-                                              . ,*defun-overrides*))
+                                              ,@*defun-overrides*))
                          (setq new-*1*-defs
                                (cons (list* 'oneify-cltl-code
                                             defun-mode
@@ -8145,7 +8145,8 @@ Missing functions:
                         (x (cdddr (cddr trip)))
                         (when (not (member-eq
                                     (car x)
-                                    '(mv-list return-last wormhole-eval)))
+                                    `(mv-list return-last wormhole-eval
+                                              ,@*defun-overrides*)))
                           (let ((*1*fn (*1*-symbol (car x))))
                             (cond
                              ((and (fboundp *1*fn)
