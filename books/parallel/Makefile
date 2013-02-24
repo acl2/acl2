@@ -5,23 +5,21 @@
 # provisional certification.
 override ACL2_PCERT =
 
-# It can be useful to extend the :all target for use in ACL2(p)
-# regressions, as shown just below.  However, we have seen the first
-# theorem in proofs/ideal-speedup.lisp, ideal-4-way, take over 9 hours
-# using ACL2(h) built on CCL with safety 3, on a fast 2012-vintage
-# Linux machine.  So we avoid adding certification of that book to the
+# It can be desirable to include proofs/ideal-speedup in ACL2(p)
+# regressions.  However, we have seen the first theorem in
+# proofs/ideal-speedup.lisp, ideal-4-way, take over 9 hours using
+# ACL2(h) built on CCL with safety 3, on a fast 2012-vintage Linux
+# machine.  So we avoid adding certification of that book to the
 # default regression.
-#
-# all: proofs/ideal-speedup.cert
+
+# DIRS = proofs
+# include ../Makefile-subdirs
+
+include ../Makefile-generic
+-include Makefile-deps
 
 matrix-multiplication-parallel.cert: matrix-multiplication-serial.cert
 fibonacci.cert: matrix-multiplication-parallel.cert
-
-DIRS = proofs
-
-include ../Makefile-subdirs
-include ../Makefile-generic
--include Makefile-deps
 
 # This is really gross and taken from the xdoc directory for lack of knowing of
 # something better.
