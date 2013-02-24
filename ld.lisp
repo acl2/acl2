@@ -20379,6 +20379,13 @@
   executable.  Thanks to Robert Krug for pointing out that the installation
   instructions had suggested that this was already the case.
 
+  Many changes have been made to the community books (~pl[community-books]).
+  For example, some community books now include ~c[std/lists/rev.lisp], which
+  contains the rule ~c[revappend-removal], which may cause some proofs
+  involving ~ilc[revappend] to fail where they formerly succeeded, or
+  vice-versa.  When a proof fails that formerly succeeded, it may be useful for
+  you to look over the ~il[rune]s printed in the event summary.
+
   ~st[EMACS SUPPORT]
 
   ~st[EXPERIMENTAL/ALTERNATE VERSIONS]
