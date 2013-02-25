@@ -1,12 +1,11 @@
-; This book is designed to break waterfall parallelism.  We created it from a
+; This script is designed to break waterfall parallelism.  We created it from a
 ; proof attempt that we know fails.  Furthermore, this proof fails in such a
-; way that it triggers waterfall parallelism bugs.  This is probably due to a
-; use of wormhole printing and an ACL2(p) bug involving wormholes.
+; way that it triggers waterfall parallelism bugs.  This could be due to a use
+; of wormhole printing and an ACL2(p) bug involving wormholes.
 
 ; Note the below number of iterations for dotimes$.  We can do up to 100
-; iterations pretty easily, but we have yet to perform 1000 iterations
-; successfully, in any version of ACL2(p).  This gives us something to work
-; towards.
+; iterations pretty easily, but a bad ACL2(p) image tends to fail before
+; performing 1000 iterations.
 
 ; Observers should not conclude from this book that ACL2(p) is horribly broken.
 ; In practice, users will only very rarely experience these problems.
@@ -17,7 +16,15 @@
 
 (set-debugger-enable t)
 
-(include-book "demos/modeling/network-state-basic" :dir :system)
+(set-compiler-enabled 
+
+; So we can use different versions of the same Lisp implementation
+
+ nil state)
+
+
+(include-book "demos/modeling/network-state-basic" :dir :system
+              :load-compiled-file nil)
 
 (include-book "make-event/dotimes" :dir :system)
 
