@@ -114,7 +114,7 @@ ACL2_COMPILE_FLG ?= :default
 
 # Set the following variable to T in order to use provisional
 # certification towards the certification of books.
-export ACL2_PCERT
+# export ACL2_PCERT
 
 export ACL2_PCERT_ARG ?=
 export ACL2_OUTFILE_SUFFIX  ?=
