@@ -103,8 +103,8 @@ ifdef ACL2
 	ACL2_FOR_HONS ?= $(ACL2)
 	ACL2_FOR_CENTAUR ?= $(ACL2)
 else
-	ACL2_FOR_HONS ?= `cd .. ; pwd`/saved_acl2h
-	ACL2_FOR_CENTAUR ?= `cd .. ; pwd`/saved_acl2
+	ACL2_FOR_HONS ?= $(shell cd .. ; pwd)/saved_acl2h
+	ACL2_FOR_CENTAUR ?= $(shell cd .. ; pwd)/saved_acl2
 ifdef ACL2_HONS_REGRESSION
 # and ACL2 not defined
 	export ACL2 = $(shell cd .. ; pwd)/saved_acl2h
