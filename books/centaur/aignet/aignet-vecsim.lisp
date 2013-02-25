@@ -490,14 +490,14 @@
                      (let* ((aignet-vals
                              (vecsim-to-eval slot bit s61v aignet-vals
                                              aignet))
-                            (in-vals (aignet-vals-in-vals nil aignet-vals
+                            (in-vals (aignet-vals->invals nil aignet-vals
                                                           aignet))
-                            (reg-vals (aignet-vals-reg-vals nil aignet-vals aignet)))
+                            (reg-vals (aignet-vals->regvals nil aignet-vals aignet)))
                        (id-eval id in-vals reg-vals aignet))))
            :hints(("Goal" :in-theory (e/d (lit-eval)
                                           (id-eval
                                            aignet-vecsim-iter))
-                   :induct (id-eval-ind id in-vals reg-vals aignet)
+                   :induct (id-eval-ind id aignet)
                    :expand ((:free (in-vals reg-vals) (id-eval id in-vals reg-vals aignet))
                             (aignet-vecsim-iter (+ 1 (id-val id))
                                                 s61v aignet)
@@ -512,9 +512,9 @@
                     (let* ((aignet-vals
                              (vecsim-to-eval slot bit s61v aignet-vals
                                              aignet))
-                            (in-vals (aignet-vals-in-vals nil aignet-vals
+                            (in-vals (aignet-vals->invals nil aignet-vals
                                                           aignet))
-                            (reg-vals (aignet-vals-reg-vals nil aignet-vals aignet)))
+                            (reg-vals (aignet-vals->regvals nil aignet-vals aignet)))
                       (id-eval (to-id m) in-vals reg-vals aignet))))
     :hints (("goal" :use ((:instance aignet-vecsim-stores-id-evals-lemma
                            (id (to-id m))))
