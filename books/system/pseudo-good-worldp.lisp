@@ -1190,6 +1190,16 @@
   (natp val))
 
 ;-----------------------------------------------------------------
+; ABSSTOBJ-INFO
+
+(defun absstobj-infop (val)
+  (and (weak-absstobj-info-p val)
+       (symbolp (access absstobj-info val :st$c))
+       (let ((logic-exec-pairs (access absstobj-info val :logic-exec-pairs)))
+         (and (symbol-alistp logic-exec-pairs)
+              (r-symbol-alistp logic-exec-pairs)))))
+
+;-----------------------------------------------------------------
 ; ACCESSOR-NAMES
 
 ; This is an array that maps stobj argument positions to name of the constant with
@@ -2628,6 +2638,7 @@
           (ABSOLUTE-EVENT-NUMBER
            (or (eq val *acl2-property-unbound*)
                (absolute-event-numberp sym val)))
+          (ABSSTOBJ-INFO (absstobj-infop val))
           (ACCESSOR-NAMES (accessor-namesp sym val))
           (ATTACHMENT (attachment-propertyp sym val))
           (BIG-SWITCH (pseudo-big-switchp sym val))
