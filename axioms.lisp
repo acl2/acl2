@@ -19464,19 +19464,23 @@
   ~c[(set-guard-checking nil)] has been evaluated; ~Pl[set-guard-checking].  If
   you want guards checked, please ~pl[ld] and/or ~pl[rebuild].
 
-  The value, ~c[action], of ~c[:load-compiled-file] controls whether a compiled
-  file is loaded by ~c[include-book].  If compilation has been suppressed by
-  ~c[(set-compiler-enabled nil)], then ~c[action] is coerced to ~c[nil];
-  ~pl[compilation].  Otherwise, if ~c[action] is missing or its value is the
-  keyword ~c[:default], then it is treated as ~c[:warn].  If ~c[action] is
-  ~c[nil], no attempt is made to load the compiled file for the book provided.
-  In order to load the compiled file, it must be more recent than the book's
-  ~il[certificate] (except in raw mode, where it must be more recent than the
-  book itself; ~pl[set-raw-mode]).  For non-~c[nil] values of ~c[action] that
-  do not result in a loaded compiled file, ACL2 proceeds as follows.  Note that
-  a load of a compiled file or expansion file aborts partway through whenever
-  an ~ilc[include-book] form is encountered for which no suitable compiled or
-  expansion file can be loaded.  For much more detail, ~pl[book-compiled-file].
+  The value of ~c[:load-compiled-file] controls whether a compiled file for the
+  given ~c[file] is loaded by ~c[include-book].  Note that this keyword applies
+  only to the given ~c[file], not to any included sub-books.  In order to skip
+  loading all compiled files, for the given ~c[file] as well as all included
+  sub-books ~-[] for example, to avoid Lisp errors such as ``Wrong FASL
+  version'' ~-[] use ~c[(set-compiler-enabled nil state)]; ~pl[compilation].
+  Otherwise, if keyword argument ~c[:load-compiled-file] is missing or its
+  value is the keyword ~c[:default], then it is treated as ~c[:warn].  If its
+  value is ~c[nil], no attempt is made to load the compiled file for the book
+  provided.  In order to load the compiled file, it must be more recent than
+  the book's ~il[certificate] (except in raw mode, where it must be more recent
+  than the book itself; ~pl[set-raw-mode]).  For non-~c[nil] values of
+  ~c[:load-compiled-file] that do not result in a loaded compiled file, ACL2
+  proceeds as follows.  Note that a load of a compiled file or expansion file
+  aborts partway through whenever an ~ilc[include-book] form is encountered for
+  which no suitable compiled or expansion file can be loaded.  For much more
+  detail, ~pl[book-compiled-file].
   ~bq[]
 
   ~c[t]: Cause an error if the compiled file is not loaded.  This same

@@ -3105,7 +3105,8 @@
   ~bv[]
   (set-compiler-enabled t state)
   ~ev[]
-  To suppress compilation and loading of compiled files by ~ilc[include-book]:
+  To suppress compilation and loading of compiled files by ~ilc[include-book]
+  (for example, if you get a raw Lisp error such as ``Wrong FASL version''):
   ~bv[]
   (set-compiler-enabled nil state)
   ~ev[]~/

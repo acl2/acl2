@@ -14535,7 +14535,7 @@
                       :DOC compilation."
                      load-compiled-file
                      nil
-                     '(set-compiler-enabled nil)))
+                     '(set-compiler-enabled nil state)))
           (t state))
     (er-let*
      ((dir-value
@@ -16882,23 +16882,23 @@
   certification ~il[world] may be as expected.
 
   We next describe the meaning of ~c[compile-flg] and how it defaults.  If
-  explicit compilation has been suppressed by ~c[(set-compiler-enabled nil)],
-  then ~c[compile-flg] is coerced to ~c[nil]; ~pl[compilation].  Otherwise
-  ~c[compile-flg] may be given the value of ~c[t] (or ~c[:all], which is
-  equivalent to ~c[t] except during provisional certification;
-  ~pl[provisional-certification]), indicating that the book is to be compiled,
-  or else ~c[nil].  (Note that compilation initially creates a compiled file
-  with a temporary file name, and then moves that temporary file to the final
-  compiled file name obtained by adding a suitable extension to the book name.
-  Thus, a compiled file will appear atomically in its intended location.)
-  Finally, suppose that ~c[compile-flg] is not supplied (or is ~c[:default]).
-  If environment variable ~c[ACL2_COMPILE_FLG] is defined and not the empty
-  string, then its value should be ~c[T], ~c[NIL], or ~c[ALL] after converting
-  to upper case, in which case ~c[compile-flg] is considered to have value
-  ~c[t], ~c[nil], or ~c[:all] (respectively).  Otherwise ~c[compile-flg]
-  defaults to ~c[t].  Note that the value ~c[:all] is equivalent to ~c[t]
-  except for during the Convert procedure of provisional certification;
-  ~pl[provisional-certification].
+  explicit compilation has been suppressed by
+  ~c[(set-compiler-enabled nil state)], then ~c[compile-flg] is coerced to
+  ~c[nil]; ~pl[compilation].  Otherwise ~c[compile-flg] may be given the value
+  of ~c[t] (or ~c[:all], which is equivalent to ~c[t] except during provisional
+  certification; ~pl[provisional-certification]), indicating that the book is
+  to be compiled, or else ~c[nil].  (Note that compilation initially creates a
+  compiled file with a temporary file name, and then moves that temporary file
+  to the final compiled file name obtained by adding a suitable extension to
+  the book name.  Thus, a compiled file will appear atomically in its intended
+  location.)  Finally, suppose that ~c[compile-flg] is not supplied (or is
+  ~c[:default]).  If environment variable ~c[ACL2_COMPILE_FLG] is defined and
+  not the empty string, then its value should be ~c[T], ~c[NIL], or ~c[ALL]
+  after converting to upper case, in which case ~c[compile-flg] is considered
+  to have value ~c[t], ~c[nil], or ~c[:all] (respectively).  Otherwise
+  ~c[compile-flg] defaults to ~c[t].  Note that the value ~c[:all] is
+  equivalent to ~c[t] except for during the Convert procedure of provisional
+  certification; ~pl[provisional-certification].
 
   Two keyword arguments, ~c[:defaxioms-okp] and ~c[:skip-proofs-okp], determine
   how the system handles the inclusion of ~ilc[defaxiom] events and
