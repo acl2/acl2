@@ -1,5 +1,5 @@
 ; Here is a classic Boyer-Moore test.
-; (ld "proveall.lisp" :ld-pre-eval-print t)
+; (ld "proveall.lsp" :ld-pre-eval-print t)
 (include-book "../paco")
 (in-package "PACO")
 

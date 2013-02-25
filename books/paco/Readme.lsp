@@ -29,7 +29,7 @@ utilities.acl2
 utilities.lisp
 
 books:
-proveall.lisp
+proveall.lsp
 ")
  (:TITLE    "Paco")
  (:AUTHOR/S 
@@ -43,7 +43,7 @@ proveall.lisp
 pedagogical use.
 
 Type ``make'' to certify all books in this directory.  Then to run paco, connect
-to subdirectory books/ and execute (ld \"proveall.lisp\" :ld-pre-eval-print t).
+to subdirectory books/ and execute (ld \"proveall.lsp\" :ld-pre-eval-print t).
 
 "
 )
