@@ -65,7 +65,7 @@ sub human_time {
 
 
 
-
+# DEPRECATED
 sub rel_path {
 # Composes two paths together.  Basically just builds "$base/$path"
 # but handles the special cases where $base is empty or $path is
@@ -79,6 +79,7 @@ sub rel_path {
     }
 }
 
+# DEPRECATED
 sub rec_readlink {
     my $path = shift;
     while (-l $path) {
@@ -90,7 +91,12 @@ sub rec_readlink {
 
 sub abs_canonical_path {
     my $path = shift;
-    my $abspath = File::Spec->rel2abs(rec_readlink($path));
+    # print "path: $path\n";
+    # my $pathlink = rec_readlink($path);
+    # print "pathlink: $pathlink\n";
+    # my $abspath = File::Spec->rel2abs($pathlink);
+    my $abspath = abs_path($path);
+    # print "abspath: $abspath\n";
     my ($vol, $dir, $file) = File::Spec->splitpath($abspath);
     # print "path: $path vol: $vol dir: $dir file: $file\n";
     my $voldir = File::Spec->catpath($vol, $dir, "");
@@ -99,7 +105,11 @@ sub abs_canonical_path {
 	print "Oops, trying to go into $voldir\n";
 	return 0;
     }
-    my $absdir = Cwd::fast_abs_path($voldir);
+    # fast_abs_path is supposed to be faster, but it seems not to be
+    # on a test system with linux over nfs etc etc.  Who knows.  Doc
+    # also says fast_abs_path is "more dangerous", whatever that
+    # means.
+    my $absdir = abs_path($voldir); # Cwd::fast_abs_path($voldir);
     # print "absdir: $absdir\n";
     if ($absdir) {
 	return File::Spec->catfile($absdir, $file);
@@ -963,7 +973,8 @@ sub excludep {
     my $prev = shift;
     my $dirname = dirname($prev);
     while ($dirname ne $prev) {
-	if (-e rel_path($dirname, "cert_pl_exclude")) {
+	if (-e File::Spec->catfile($dirname, "cert_pl_exclude")) {
+	    # (-e rel_path($dirname, "cert_pl_exclude")) {
 	    return 1;
 	}
 	$prev = $dirname;
@@ -1056,13 +1067,17 @@ sub expand_dirname_cmd {
 	    return 0;
 	}
 	print "expand $dirname -> $dirpath\n" if $debugging;
-	$fullname = canonical_path(rel_path($dirpath, $relname . $ext));
+	# was:
+	# $fullname = canonical_path(rel_path($dirpath, $relname . $ext));
+	$fullname = canonical_path(File::Spec->catfile($dirpath, $relname . $ext));
 	if (! $fullname) {
 	    print ":dir entry in ($cmd \"$relname\" :dir $dirname) produced bad path\n";
 	}
     } else {
 	my $dir = dirname($basename);
-	$fullname = canonical_path(rel_path($dir, $relname . $ext));
+	# was:
+	# $fullname = canonical_path(rel_path($dir, $relname . $ext));
+	$fullname = canonical_path(File::Spec->catfile($dir, $relname . $ext));
 	if (! $fullname) {
 	    print "bad path in ($cmd \"$relname\")\n";
 	}
@@ -1138,7 +1153,9 @@ sub src_deps {
 	    my $name = $event->[1];
 	    my $dir = $event->[2];
 	    my $basedir = dirname($fname);
-	    my $newdir = canonical_path(rel_path($basedir, $dir));
+	    # was:
+	    # my $newdir = canonical_path(rel_path($basedir, $dir));
+	    my $newdir = canonical_path(File::Spec->catfile($basedir, $dir));
 	    if (! $newdir) {
 		print "Bad path processing (add-include-book-dir :$name \"$dir\") in $fname\n";
 	    }
@@ -1279,7 +1296,9 @@ sub find_deps {
 	( $base = $lispfile ) =~ s/\.lisp$//;
 	my $acl2file = $base . ".acl2";
 	if (! -e $acl2file) {
-	    $acl2file = rel_path(dirname($base), "cert.acl2");
+	    # was:
+	    # $acl2file = rel_path(dirname($base), "cert.acl2");
+	    $acl2file = File::Spec->catfile(dirname($base), "cert.acl2");
 	    if (! -e $acl2file) {
 		$acl2file = 0;
 	    }
@@ -1325,7 +1344,9 @@ sub find_deps {
 	# ACL2 image specified in that file and the .image file itself.
 	my $imagefile = $base . ".image";
 	if (! -e $imagefile) {
-	    $imagefile = rel_path(dirname($base), "cert.image");
+	    # was:
+	    # $imagefile = rel_path(dirname($base), "cert.image");
+	    $imagefile = File::Spec->catfile(dirname($base), "cert.image");
 	    if (! -e $imagefile) {
 		$imagefile = 0;
 	    }

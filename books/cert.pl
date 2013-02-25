@@ -468,7 +468,9 @@ flag or ACL2 environment variable.\n";
 
 if (! $acl2_books) {
     if ($acl2) {
-	my $tmp_acl2_books = rel_path(dirname($acl2), "books");
+	# was:
+	# my $tmp_acl2_books = rel_path(dirname($acl2), "books");
+	my $tmp_acl2_books = File::Spec->catfile(dirname($acl2), "books");
 	if (-d $tmp_acl2_books) {
 	    $acl2_books = $tmp_acl2_books;
 	} else {
@@ -715,7 +717,9 @@ unless ($no_makefile) {
 	}
 	if ($image && ($image ne "acl2")) {
 	    if ($bin_dir) {
-		print $mf " \\\n     " . rel_path($bin_dir, $image);
+		# was:
+		# print $mf " \\\n     " . rel_path($bin_dir, $image);
+		print $mf " \\\n     " . File::Spec->catfile($bin_dir, $image);
 	    } elsif (! $warned_bindir) {
 		print "Warning: no --bin set, so not adding image dependencies,\n";
 		print " e.g.   $cert : $image\n";
@@ -741,7 +745,9 @@ unless ($no_makefile) {
 	    }
 	    if ($image && ($image ne "acl2")) {
 		if ($bin_dir) {
-		    print $mf " \\\n     " . rel_path($bin_dir, $image);
+		    # was:
+		    # print $mf " \\\n     " . rel_path($bin_dir, $image);
+		    print $mf " \\\n     " . File::Spec->catfile($bin_dir, $image);
 		} elsif (! $warned_bindir) {
 		    print "Warning: no --bin set, so not adding image dependencies,\n";
 		    print " e.g.   $cert : $image\n";
@@ -782,7 +788,9 @@ unless ($no_makefile) {
 	}
 	if ($image && ($image ne "acl2")) {
 	    if ($bin_dir) {
-		print $mf " \\\n     " . rel_path($bin_dir, $image);
+		# was:
+		# print $mf " \\\n     " . rel_path($bin_dir, $image);
+		print $mf " \\\n     " . File::Spec->catfile($bin_dir, $image);
 	    } elsif (! $warned_bindir) {
 		print "Warning: no --bin set, so not adding image dependencies,\n";
 		print " e.g.   $cert : $image\n";
