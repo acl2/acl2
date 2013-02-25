@@ -364,7 +364,9 @@
          ,@decls
          (b* ,init-vals
            (mbe :logic (,iter ,last . ,(cdr iter-formals))
-                :exec (,tailrec ,first . ,(cdr iter-formals))))))))
+                :exec (,tailrec ,first . ,(cdr iter-formals)))))
+
+       (in-theory (enable (:induction ,iter))))))
 
 
 (defmacro defiteration (name formals &rest args)

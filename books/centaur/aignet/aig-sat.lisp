@@ -32,6 +32,7 @@
                  ((config satlink::config-p) 'satlink::*default-config*))
   :returns (mv (status "one of :sat, :unsat, or :failed")
                (env    "alist binding aig vars to t/nil, when sat"))
+  :guard-debug t
   (b* (;; Locally create arrays to work with
        ((local-stobjs satlink::env$ sat-lits aignet)
         (mv status env satlink::env$ sat-lits aignet))
@@ -46,7 +47,7 @@
        ((unless (eq result :sat))
         (mv result nil satlink::env$ sat-lits aignet))
 
-       (env (aig-cnf-eval->env satlink::env$ vars sat-lits aignet)))
+       (env (aig-cnf-vals->env satlink::env$ vars sat-lits aignet)))
 
     (mv :sat env satlink::env$ sat-lits aignet))
 
