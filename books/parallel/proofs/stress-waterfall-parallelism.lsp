@@ -21,7 +21,9 @@
 
 (include-book "make-event/dotimes" :dir :system)
 
-(dotimes$
+(defttag t)
+
+(dotimes$-with-error-triple
  (i 1000) ; works up to 100 fairly reliably
 
 ; Technically being unable to prove this theorem in ACL2 doesn't mean that the
