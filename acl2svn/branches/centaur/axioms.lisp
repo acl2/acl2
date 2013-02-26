@@ -19551,19 +19551,23 @@
   ~c[(set-guard-checking nil)] has been evaluated; ~Pl[set-guard-checking].  If
   you want guards checked, please ~pl[ld] and/or ~pl[rebuild].
 
-  The value, ~c[action], of ~c[:load-compiled-file] controls whether a compiled
-  file is loaded by ~c[include-book].  If compilation has been suppressed by
-  ~c[(set-compiler-enabled nil)], then ~c[action] is coerced to ~c[nil];
-  ~pl[compilation].  Otherwise, if ~c[action] is missing or its value is the
-  keyword ~c[:default], then it is treated as ~c[:warn].  If ~c[action] is
-  ~c[nil], no attempt is made to load the compiled file for the book provided.
-  In order to load the compiled file, it must be more recent than the book's
-  ~il[certificate] (except in raw mode, where it must be more recent than the
-  book itself; ~pl[set-raw-mode]).  For non-~c[nil] values of ~c[action] that
-  do not result in a loaded compiled file, ACL2 proceeds as follows.  Note that
-  a load of a compiled file or expansion file aborts partway through whenever
-  an ~ilc[include-book] form is encountered for which no suitable compiled or
-  expansion file can be loaded.  For much more detail, ~pl[book-compiled-file].
+  The value of ~c[:load-compiled-file] controls whether a compiled file for the
+  given ~c[file] is loaded by ~c[include-book].  Note that this keyword applies
+  only to the given ~c[file], not to any included sub-books.  In order to skip
+  loading all compiled files, for the given ~c[file] as well as all included
+  sub-books ~-[] for example, to avoid Lisp errors such as ``Wrong FASL
+  version'' ~-[] use ~c[(set-compiler-enabled nil state)]; ~pl[compilation].
+  Otherwise, if keyword argument ~c[:load-compiled-file] is missing or its
+  value is the keyword ~c[:default], then it is treated as ~c[:warn].  If its
+  value is ~c[nil], no attempt is made to load the compiled file for the book
+  provided.  In order to load the compiled file, it must be more recent than
+  the book's ~il[certificate] (except in raw mode, where it must be more recent
+  than the book itself; ~pl[set-raw-mode]).  For non-~c[nil] values of
+  ~c[:load-compiled-file] that do not result in a loaded compiled file, ACL2
+  proceeds as follows.  Note that a load of a compiled file or expansion file
+  aborts partway through whenever an ~ilc[include-book] form is encountered for
+  which no suitable compiled or expansion file can be loaded.  For much more
+  detail, ~pl[book-compiled-file].
   ~bq[]
 
   ~c[t]: Cause an error if the compiled file is not loaded.  This same
@@ -21500,8 +21504,9 @@
   value of each ~c[:ATTACH] keyword is either ~c[t] or ~c[nil], with default
   ~c[t] except that the value of ~c[:ATTACH] at the ``top level,'' after each
   entry ~c[(fi gi ...)], is the default for each ~c[:ATTACH] keyword supplied
-  in such an entry.  The associated values for the other keywords have the
-  usual meanings for the proof obligations described below: the guard proof
+  in such an entry.  We discuss the ~c[:ATTACH] keyword later in this
+  ~il[documentation] topic.  The associated values for the other keywords have
+  the usual meanings for the proof obligations described below: the guard proof
   obligation for keywords within each ~c[(fi gi ...)] entry, and the constraint
   proof obligation for keywords at the top level.  No keyword may occur twice
   in the same context, i.e., within the same ~c[(fi gi ...)] entry or at the
@@ -21739,6 +21744,59 @@
   To see all attachments: ~c[(all-attachments (w state))].  (Note that
   attachments introduced with a non-~c[nil] value of ~c[:skip-checks] will be
   omitted from this list.)
+
+  Next we discuss the ~c[:ATTACH] keyword.  There is rarely if ever a reason to
+  specify ~c[:ATTACH T], but the following (admittedly contrived) example shows
+  why it may be necessary to specify ~c[:ATTACH NIL].  First we introduce three
+  new function symbols.
+  ~bv[]
+    (defstub f (x) t)
+
+    (defun g (x)
+      (f x))
+
+    (encapsulate ((h (x) t))
+      (local (defun h (x) (g x)))
+      (defthm h-prop
+        (equal (h x) (g x))))
+  ~ev[]
+  Now suppose we want to attach the function ~ilc[acl2-numberp] to both ~c[f]
+  and ~c[h].
+  ~bv[]
+    (defattach (f acl2-numberp) (h acl2-numberp))
+  ~ev[]
+  Such an attempt fails, because the following constraint is generated but is
+  not a theorem: ~c[(EQUAL (ACL2-NUMBERP X) (G X))].  Clearly we also need to
+  attach to ~c[g] as well.
+  ~bv[]
+    (defattach (f acl2-numberp) (h acl2-numberp) (g acl2-numberp))
+  ~ev[]
+  But this fails for a different reason, as explained by the error message:
+  ~bv[]
+    ACL2 Error in ( DEFATTACH (F ACL2-NUMBERP) ...):  It is illegal to
+    attach to function symbol G, because it was introduced with DEFUN.
+    See :DOC defattach.
+  ~ev[]
+  That is: logically, we need to attach ~c[acl2-numberp] to ~c[g], but we
+  cannot actually attach to ~c[g] because it was introduced with ~ilc[defun],
+  not with ~ilc[encapsulate].  So we specify ~c[:ATTACH NIL] for the attachment
+  to ~c[g], saying that no actual attachment should be made to the code for
+  ~c[g], even though for logical purposes we should consider that ~c[g] has
+  been given the indicated attachment.
+  ~bv[]
+    (defattach (f acl2-numberp) (h acl2-numberp) (g acl2-numberp :attach nil))
+  ~ev[]
+  Finally, we can check that ~c[f], ~c[g], and ~c[h] execute as expected.
+  ~bv[]
+      ACL2 !>(assert-event (and (f 3)
+                         (not (f t))
+                         (g 3)
+                         (not (g t))
+                         (h 3)
+                         (not (h t))))
+       :PASSED
+      ACL2 !>
+  ~ev[]
 
   We conclude with an example promised above, showing why it is necessary in
   general to unattach all function symbols in an existing attachment nest when
@@ -22906,6 +22964,9 @@
 )
 
 (deflabel declare
+
+; Warning: Keep this in sync with acceptable-dcls-alist.
+
   :doc
   ":Doc-Section ACL2::Programming
 
@@ -22940,7 +23001,8 @@
 
     (xargs :key1 val1 ... :keyn valn) -- where the legal values of the keyi's
     and their respective vali's are described in the documentation for
-    ~il[xargs].
+    ~il[xargs].  Xargs declarations are only allowed at the top level of
+    definitions (defun and defmacro, as shown below).
 
     (optimize ...) -- for example, ~c[(optimize (safety 3))].  This is allowed
     only at the top level of ~ilc[defun] forms.  See any Common Lisp
@@ -22953,6 +23015,8 @@
     (DEFMACRO name args doc-string dcl ... dcl body)
     (LET ((v1 t1) ...) dcl ... dcl body)
     (MV-LET (v1 ...) term dcl ... dcl body)
+    (FLET ((name args dcl ... dcl body)
+           ...))
   ~ev[]
   Of course, if a form macroexpands into one of these (as ~ilc[let*] expands
   into nested ~ilc[let]s and our ~c[er-let*] expands into nested ~ilc[mv-let]s)
@@ -36815,7 +36879,7 @@
 ; preceding events, takes over 40,000 steps.  Set the following to 40000 in
 ; order to make that event quickly exceed the default limit.
 
-  (fixnum-bound))
+   (fixnum-bound))
 
 (table acl2-defaults-table nil nil
 
@@ -39334,8 +39398,38 @@
 
 ; Essay on Step-limits
 
-; Here we document just the basics of how to use step-limits.  We may grow this
-; essay in the future.
+; We assume familiarity with step-limits at the user level; see :DOC
+; set-prover-step-limit and see :DOC with-prover-step-limit.
+
+; Step-limits are managed through the following three global data structures.
+
+; - (f-get-global 'last-step-limit state)
+
+; This value records the current step-limit (updated from time to time, but not
+; constantly within the rewriter).  In a compound event, this decreases as
+; events are executed, except for those within a call of with-prover-step-limit
+; whose flag is t (see :DOC with-prover-step-limit).
+
+; - (table acl2-defaults-table :step-limit)
+
+; The table value supplies a starting step-limit for top-level calls that are
+; not in the scope of with-prover-step-limit, hence not in the scope of
+; with-ctx-summarized (which calls save-event-state-globals, which calls
+; with-prover-step-limit with argument :START).
+
+; - (f-get-global 'step-limit-record state)
+
+; This global is bound whenever entering the scope of with-prover-step-limit.
+; It stores information about the step-limit being established for that scope,
+; including the starting value to use for state global 'last-step-limit.  That
+; value is the current value of that state global, unless a call of
+; set-prover-step-limit has set a different limit in the same context.
+
+; We may write more if that becomes necessary, but we hope that the summary
+; above provides sufficient orientation to make sense of the implementation.
+
+; NOTE: If you change the implementation of step-limits, be sure to LD and
+; also certify community book books/misc/misc2/step-limits.lisp.
 
 ; When writing a recursive function that uses step-limits, for which you are
 ; willing to have a return type of (mv step-limit erp val state):
@@ -39380,17 +39474,18 @@
 #+acl2-loop-only
 (defmacro set-prover-step-limit (limit)
 
+; See the Essay on Step-limits.
+
   ":Doc-Section switches-parameters-and-modes
 
-  sets the step-limit used by the ACL2 prover at the top level only~/
+  sets the step-limit used by the ACL2 prover~/
 
   This event provides a way to limit the number of so-called ``prover steps''
   permitted for an event.  ~l[with-prover-step-limit] for a way to specify the
-  limit on prover steps for a single event, rather than globally (and without
-  the restriction mentioned above, pertaining to the top level).  For a related
-  utility based on time instead of prover steps, ~pl[with-prover-time-limit].
-  For examples of how step limits work, see the community book
-  ~c[books/misc/misc2/step-limits.lisp].
+  limit on prover steps for a single event, rather than globally.  For a
+  related utility based on time instead of prover steps,
+  ~pl[with-prover-time-limit].  For examples of how step limits work, see the
+  community book ~c[books/misc/misc2/step-limits.lisp].
 
   Note: This is an event!  It does not print the usual event summary
   but nevertheless changes the ACL2 logical ~il[world] and is so
@@ -39421,22 +39516,22 @@
   would probably be well served by avoiding the assumption that only the above
   two calls are counted as prover steps.
 
-  Depending on the computer you are using, you may have only (very roughly) a
-  half-hour of time before the number of prover steps exceeds the maximum
-  step-limit, which is one less than the value of ~c[*default-step-limit*].
-  Note however the exception stated above: if the ``limit'' is ~c[nil] or is
-  the value of ~c[*default-step-limit*], then no limit is imposed.
+  Depending on the computer you are using, you may have less than a half-hour
+  of time before the number of prover steps exceeds the maximum step-limit,
+  which is one less than the value of ~c[*default-step-limit*].  Note however
+  the exception stated above: if the ``limit'' is ~c[nil] or is the value of
+  ~c[*default-step-limit*], then no limit is imposed.
 
-  The limit is relevant for every event, to calls of ~ilc[thm] and
-  ~ilc[certify-book], and more generally, to any form that creates a ``summary
-  context'' to print the usual event summary.  The limit is also put in force
-  when entering the ~il[proof-checker].  Below, at the end of this
-  ~il[documentation] topic, we explain in detail when a call of
-  ~c[set-prover-step-limit] is in force: in brief, it applies to all forms that
-  are either at the top level or are inside the same summary contexts.
+  The limit is relevant for every event, as well as for calls of ~ilc[thm] and
+  ~ilc[certify-book] ~-[] and more generally, to any form that creates a
+  ``summary context'' to print the usual event summary.  The limit is also put
+  in force when entering the ~il[proof-checker].  A call of
+  ~c[set-prover-step-limit] applies to each subsequent form unless the call of
+  ~c[set-prover-step-limit] is within a summary context, in which case its
+  effect disappears when exiting that summary context.
 
-  Note that the limit applies to each event, not just ``atomic'' events.
-  Consider the following example.
+  The limit applies to each event, not just ``atomic'' events.  Consider the
+  following example.
   ~bv[]
   (set-prover-step-limit 500)
 
@@ -39469,7 +39564,7 @@
   ~bv[]
   Prover steps counted:  More than 120
   ~ev[]
-  The  summary for the ~ilc[encapsulate] events then indicates that the
+  The summary for the ~ilc[encapsulate] event then indicates that the
   available steps for that event have also been exceeded:
   ~bv[]
   Prover steps counted:  More than 500
@@ -39505,39 +39600,33 @@
 
   Technical Remark.  For a call of ~c[mfc-rw] or any ~c[mfc-]
   function (~pl[extended-metafunctions]), the steps taken during that call are
-  forgotten when returning from that call.
-
-  Finally, we discuss in some detail with a ~c[set-prover-step-limit] event is
-  in force: it applies to a subsequent form that is either at the top level or
-  at the same level as the ~c[set-prover-step-limit] form, in the following
-  sense.  Let us say that a ``summary context'' is any context for which the
-  usual ACL2 summary will ultimately be printed (if summary printing is not
-  inhibited).  Every event ~-[] a call of ~ilc[defun] or ~ilc[defthm], or more
-  generally, every embedded event form (~pl[embedded-event-form]) ~-[]
-  establishes a summary context, as do certain other top-level forms such as
-  calls of ~ilc[thm] and ~ilc[certify-book].  (But a call of ~ilc[ld] does not
-  establish a summary context.)  Here, we consider two forms to be at the same
-  level if they are in the same summary contexts.  Thus, if
-  ~c[set-prover-step-limit] is called at the top level, then this call is not
-  in force for ~il[events] under a call of ~ilc[certify-book],
-  ~ilc[encapsulate], ~ilc[progn], ~ilc[make-event], or (more generally) under
-  any form that establishes a summary context.  Also, if
-  ~c[set-prover-step-limit] is called inside a summary context, then it does
-  not apply above that summary context except, if it is not local to some
-  event, at the very top level.~/"
+  forgotten when returning from that call.~/"
 
   `(state-global-let*
     ((inhibit-output-lst (cons 'summary (@ inhibit-output-lst))))
     (pprogn
-     (let ((rec (f-get-global 'step-limit-record state)))
-       (cond (rec (f-put-global 'step-limit-record
-                                (change step-limit-record rec
-                                        :sub-limit
-                                        (or ,limit *default-step-limit*))
-                                state))
+     (let ((rec (f-get-global 'step-limit-record state))
+           (limit (or ,limit *default-step-limit*)))
+       (cond ((and rec
+
+; We check here that limit is legal, even though this is also checked by the
+; table event below.  Otherwise, we can get a raw Lisp error from, for example:
+
+; (progn (set-prover-step-limit '(a b)))
+
+                   (natp limit)
+                   (<= limit *default-step-limit*))
+              (f-put-global 'step-limit-record
+                            (change step-limit-record rec
+                                    :sub-limit
+                                    limit
+                                    :strictp
+                                    (or (< limit *default-step-limit*)
+                                        (access step-limit-record rec
+                                                :strictp)))
+                            state))
              (t state)))
-     (progn (table acl2-defaults-table :step-limit
-                   (or ,limit *default-step-limit*))
+     (progn (table acl2-defaults-table :step-limit ,limit)
             (table acl2-defaults-table :step-limit)))))
 
 #-acl2-loop-only
@@ -48396,7 +48485,7 @@ Lisp definition."
   multiple values, we can perhaps provide such a utility; feel free to contact
   the ACL2 implementors to request it.)
 
-  A subtlely is that the evaluation takes place in so-called ``safe mode'',
+  A subtlety is that the evaluation takes place in so-called ``safe mode'',
   which avoids raw Lisp errors due to calls of ~c[:]~ilc[program] mode
   functions.  The use of safe mode is unlikely to be noticed if the value of
   the first argument of ~c[oracle-apply] is a ~c[:]~ilc[logic] mode function

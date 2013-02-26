@@ -3105,7 +3105,8 @@
   ~bv[]
   (set-compiler-enabled t state)
   ~ev[]
-  To suppress compilation and loading of compiled files by ~ilc[include-book]:
+  To suppress compilation and loading of compiled files by ~ilc[include-book]
+  (for example, if you get a raw Lisp error such as ``Wrong FASL version''):
   ~bv[]
   (set-compiler-enabled nil state)
   ~ev[]~/
@@ -19990,6 +19991,9 @@
 
 (deflabel note-6-1
 
+; As usual, we made a number of improvements to the documentation, based in
+; part on useful feedback from users.
+
 ; "Theory" warnings about disabling primitives (such as mv-nth) have been made
 ; much more compact, pointing to a new :doc topic, theories-and-primitives.
 ; Thanks to David Rager and Jared Davis for helpful discussions leading to this
@@ -20268,12 +20272,18 @@
   attempted to include ~c[arithmetic/equalities] instead of
   ~c[nonstd/arithmetic/equalities], which caused an error.
 
+  We no longer document the use of value ~c[:START] for
+  ~ilc[with-prover-step-limit].  This value has always been used by the ACL2
+  implementation and may have semantics that change with new ACL2 versions.  If
+  you have reason to use this value, please contact the ACL2 implementors.
+
   ~st[NEW FEATURES]
 
   By default, the prover now gives information about case splits.
   ~l[splitter].  Thanks to many ACL2 users, most recently David Rager, for
   requesting such a capability.  Also thanks to David Rager and Jared Davis for
-  helpful discussions.
+  helpful discussions, and thanks to Robert Krug for feedback on the initial
+  implementation and documentation that led us to make improvements.
 
   New utilities ~ilc[initialize-event-user] and ~ilc[finalize-event-user] allow
   the user to run ~il[state]-modifying code at the start and end of
@@ -20355,11 +20365,27 @@
   Fixed a bug in ~ilc[defabsstobj-missing-events] (which macroexpanded
   incorrectly).  Thanks to Sol Swords for bringing this bug to our attention.
 
+  Fixed two bugs in the handling of step-limits.  Thanks to Hanbing Liu for
+  bringing the main such bug to our attention, which was that ACL2 could report
+  a step-limit violation during ~ilc[certify-book] (in fact, during any
+  compound event such as a call of ~ilc[encapsulate] or ~ilc[progn]), even
+  without direct user involvement in managing step-limits
+  (~pl[set-prover-step-limit] and ~pl[with-prover-step-limit]).  The other bug
+  was that a bad argument to ~ilc[set-prover-step-limit] could result in a raw
+  Lisp error, for example: ~c[(progn (set-prover-step-limit '(a b)))].
+
   ~st[CHANGES AT THE SYSTEM LEVEL]
 
   The ~c[books/] directory no longer needs to exist in order to build an ACL2
   executable.  Thanks to Robert Krug for pointing out that the installation
   instructions had suggested that this was already the case.
+
+  Many changes have been made to the community books (~pl[community-books]).
+  For example, some community books now include ~c[std/lists/rev.lisp], which
+  contains the rule ~c[revappend-removal], which may cause some proofs
+  involving ~ilc[revappend] to fail where they formerly succeeded, or
+  vice-versa.  When a proof fails that formerly succeeded, it may be useful for
+  you to look over the ~il[rune]s printed in the event summary.
 
   ~st[EMACS SUPPORT]
 

@@ -9,7 +9,7 @@ ACL2(p):
 
 For example:
 
-(time nice make -j 8 regression-fresh ACL2=/projects/acl2/devel/ccl-saved_acl2p ACL2_CUSTOMIZATION=/projects/acl2/devel/acl2-customization-files/parallel-full.lisp) >& logs/make-regression-par-ccl-j-8-feb27.log&
+(time nice make -j 8 regression-fresh ACL2_CENTAUR=skip ACL2=/projects/acl2/devel/ccl-saved_acl2p ACL2_CUSTOMIZATION=/projects/acl2/devel/acl2-customization-files/parallel-full.lisp) >& logs/make-regression-par-ccl-j-8-feb27.log&
 
 Note: Sometimes parallelism is defeated or modified for individual
 books.  To find out where:

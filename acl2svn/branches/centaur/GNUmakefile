@@ -184,7 +184,6 @@
 
 LISP = ccl
 DIR = /tmp
-ACL2_VERSION = v5-0
 
 # The variable NONSTD should be defined for the non-standard version and not
 # for the standard version.  Non-standard ACL2 images will end in saved_acl2r
@@ -886,64 +885,6 @@ devel-check:
 		exit 1 ;\
 	fi \
 	done
-
-# The next two targets can be used with certify-books-test to run the
-# test with infix syntax output.  Just do
-
-# make infix-init certify-books-test infix-fin >& make.log &
-
-# If you want to do the certification twice, first with infix and then
-# without, use
- 
-# make infix-init certify-books-test infix-fin certify-books-test >& make.log &
-
-# To get the books certified while using infix printing we arrange for the
-# connected directory to contain an init.lsp file which is not normally there.
-# The init.lsp file we put there is just a symbolic link to our
-# infix-patch.lisp which loads all the infix stuff.  If we do not want infix
-# printing during the book certification, we must make sure to remove those
-# init.lsp files, as done by infix-fin.  That also moves the .log and .out
-# files to the ${ACL2_VERSION}/infix-logs/ subdirectory, where they overwrite the old
-# files there, if any.
-
-.PHONY: infix-init
-infix-init:
-	cd /projects/acl2/${ACL2_VERSION}/books ; \
-	rm -f */init.lsp ; \
-	rm -f *.log ; \
-	rm -f public/*.cert ; \
-	rm -f data-structures/*.cert ; \
-	ln -s /projects/acl2/${ACL2_VERSION}/infix-patch.lisp arithmetic/init.lsp ; \
-	ln -s /projects/acl2/${ACL2_VERSION}/infix-patch.lisp bdd/init.lsp ; \
-	ln -s /projects/acl2/${ACL2_VERSION}/infix-patch.lisp cowles/init.lsp ; \
-	ln -s /projects/acl2/${ACL2_VERSION}/infix-patch.lisp meta/init.lsp ; \
-	ln -s /projects/acl2/${ACL2_VERSION}/infix-patch.lisp nqthm/init.lsp ; \
-	ln -s /projects/acl2/${ACL2_VERSION}/infix-patch.lisp public/init.lsp ; \
-	ln -s /projects/acl2/${ACL2_VERSION}/infix-patch.lisp data-structures/init.lsp
-
-.PHONY: infix-init10
-infix-init10:
-	cd /projects/acl2/${ACL2_VERSION}/books ; \
-	rm -f */init.lsp ; \
-	rm -f *.log ; \
-	rm -f public/*.cert ; \
-	rm -f data-structures/*.cert ; \
-	ln -s /projects/acl2/${ACL2_VERSION}/infix-patch-10.lisp arithmetic/init.lsp ; \
-	ln -s /projects/acl2/${ACL2_VERSION}/infix-patch-10.lisp bdd/init.lsp ; \
-	ln -s /projects/acl2/${ACL2_VERSION}/infix-patch-10.lisp cowles/init.lsp ; \
-	ln -s /projects/acl2/${ACL2_VERSION}/infix-patch-10.lisp meta/init.lsp ; \
-	ln -s /projects/acl2/${ACL2_VERSION}/infix-patch-10.lisp nqthm/init.lsp ; \
-	ln -s /projects/acl2/${ACL2_VERSION}/infix-patch-10.lisp public/init.lsp ; \
-	ln -s /projects/acl2/${ACL2_VERSION}/infix-patch-10.lisp data-structures/init.lsp
-
-.PHONY: infix-fin
-infix-fin:
-	rm -f /projects/acl2/${ACL2_VERSION}/infix-logs/*.* ; \
-	cd /projects/acl2/${ACL2_VERSION}/books ; \
-	cp *.log /projects/acl2/${ACL2_VERSION}/infix-logs/ ; \
-	cp public/*.out /projects/acl2/${ACL2_VERSION}/infix-logs/ ; \
-	cp data-structures/*.out /projects/acl2/${ACL2_VERSION}/infix-logs/ ; \
-	rm -f */init.lsp
 
 .PHONY: clean-doc
 clean-doc:

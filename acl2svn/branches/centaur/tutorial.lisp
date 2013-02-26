@@ -2700,18 +2700,16 @@
 
   a small proof about mutually recursive functions~/
 
-  Sometimes one wants to reason about mutually recursive functions.
-  Although this is possible in ACL2, it can be a bit awkward.  This
-  example is intended to give some ideas about how one can go about
-  such proofs.
+  Sometimes one wants to reason about mutually recursive functions.  Although
+  this is possible in ACL2, it can be a bit awkward.  This example is intended
+  to give some ideas about how one can go about such proofs.
 
-  For an introduction to mutual recursion in ACL2,
-  ~pl[mutual-recursion].~/
+  For an introduction to mutual recursion in ACL2, ~pl[mutual-recursion].~/
 
-  We begin by defining two mutually recursive functions:  one that
-  collects the variables from a ~il[term], the other that collects the
-  variables from a list of ~il[term]s.  We actually imagine the ~il[term]
-  argument to be a ~ilc[pseudo-termp]; ~pl[pseudo-termp].
+  We begin by defining two mutually recursive functions: one that collects the
+  variables from a ~il[term], the other that collects the variables from a list
+  of ~il[term]s.  We actually imagine the ~il[term] argument to be a
+  ~c[pseudo-termp]; ~pl[pseudo-termp].
   ~bv[]
   (mutual-recursion
 
@@ -2728,31 +2726,50 @@
 
   )
   ~ev[]
-  The idea of the following function is that it suggests a proof by
-  induction in two cases, according to the top-level ~ilc[if] structure of
-  the body.  In one case, ~c[(atom x)] is true, and the theorem to be
-  proved should be proved under no additional hypotheses except for
-  ~c[(atom x)].  In the other case, ~c[(not (atom x))] is assumed together
-  with three instances of the theorem to be proved, one for each
-  recursive call in this case.  So, one instance substitutes ~c[(car x)]
-  for ~c[x]; one substitutes ~c[(cdr x)] for ~c[x]; and the third substitutes
-  ~c[(cdr x)] for ~c[x] and ~c[(free-vars1 (car x) ans)] for ~c[ans].  If you think
-  about how you would go about a hand proof of the theorem to follow,
-  you'll come up with a similar scheme.
+  Now suppose that we want to prove the following theorem.
+  ~bv[]
+  (defthm symbol-listp-free-vars1-try-1
+    (implies (and (pseudo-termp x)
+                  (symbol-listp ans))
+             (symbol-listp (free-vars1 x ans))))
+  ~ev[]
+  Often ACL2 can generate a proof by induction based on the structure of
+  definitions of function symbols occurring in the conjecture.  In this case,
+  ACL2 chooses to use an induction scheme suggested by ~c[(symbol-listp ans)],
+  and sadly, that doesn't work.  If one were doing this proof with pencil and
+  paper, one would be more likely to prove a combination of the conjecture
+  above and an analogous conjecture about free-vars1-lst.  Feel free to try a
+  pencil and paper proof!  Or you can read on, to see how one can get ACL2 to
+  do such a proof after all.
+
+  The trick is to define a function that suggests an appropriate induction.
+  The induction suggested is based on the if-then-else structure of the
+  function's definition, where inductive hypotheses are generated for recursive
+  calls ~-[] below we explain how that works for this function.
   ~bv[]
   (defun symbol-listp-free-vars1-induction (x ans)
     (if (atom x)
-  ; then we just make sure x and ans aren't considered irrelevant
+  ; then we just make sure x and ans aren't considered irrelevant:
         (list x ans)
       (list (symbol-listp-free-vars1-induction (car x) ans)
             (symbol-listp-free-vars1-induction (cdr x) ans)
-            (symbol-listp-free-vars1-induction
-             (cdr x)
-             (free-vars1 (car x) ans)))))
+            (symbol-listp-free-vars1-induction (cdr x)
+                                               (free-vars1 (car x) ans)))))
   ~ev[]
+  The if-then-else structure of this function generates two cases.  In one
+  case, ~c[(atom x)] is true, and the theorem to be proved should be proved
+  under no additional hypotheses except for ~c[(atom x)]; in other words,
+  ~c[(atom x)] gives us the base case of the induction.  In the other case,
+  ~c[(not (atom x))] is assumed together with three instances of the theorem to
+  be proved, one for each recursive call.  So, one instance substitutes
+  ~c[(car x)] for ~c[x]; one substitutes ~c[(cdr x)] for ~c[x]; and the third
+  substitutes ~c[(cdr x)] for ~c[x] and ~c[(free-vars1 (car x) ans)] for
+  ~c[ans].  If you think about how you would go about a hand proof of the
+  theorem to follow, you'll likely come up with a similar scheme.
+
   We now prove the two theorems together as a conjunction, because the
-  inductive hypotheses for one are sometimes needed in the proof of
-  the other (even when you do this proof on paper!).
+  inductive hypotheses for one are sometimes needed in the proof of the
+  other (even when you do this proof on paper!).
   ~bv[]
   (defthm symbol-listp-free-vars1
     (and (implies (and (pseudo-termp x)
@@ -2764,62 +2781,65 @@
     :hints
     ((\"Goal\" :induct (symbol-listp-free-vars1-induction x ans))))
   ~ev[]
-  The above works, but let's try for a more efficient proof, which
-  avoids cluttering the proof with irrelevant (false) inductive
-  hypotheses.
+
+  The above works, but we conclude by illustrating a more efficient approach,
+  in which we restrict to appropriate inductive hypotheses for each case.
   ~bv[]
   (ubt 'symbol-listp-free-vars1-induction)
 
   (defun symbol-listp-free-vars1-induction (flg x ans)
 
-  ; Flg is non-nil (or t) if we are ``thinking'' of a single term.
+  ; Flg is nil if we are ``thinking'' of a single term.
 
-    (if (atom x)
+    (if (atom x) ; whether x is a single term or a list of terms
         (list x ans)
-      (if flg
-          (symbol-listp-free-vars1-induction nil (cdr x) ans)
-        (list (symbol-listp-free-vars1-induction t (car x) ans)
-              (symbol-listp-free-vars1-induction
-               nil
-               (cdr x)
-               (free-vars1 (car x) ans))))))
+      (if flg ; i.e., if x is a list of terms
+          (list (symbol-listp-free-vars1-induction nil (car x) ans)
+                (symbol-listp-free-vars1-induction t
+                                                   (cdr x)
+                                                   (free-vars1 (car x) ans)))
+        (symbol-listp-free-vars1-induction t (cdr x) ans))))
   ~ev[]
-  We now state the theorem as a conditional, so that it can be proved
-  nicely using the ~il[induction] scheme that we have just coded.  The
-  prover will not store an ~ilc[if] ~il[term] as a ~il[rewrite] rule, but that's OK
-  (as long as we tell it not to try), because we're going to derive
-  the corollaries of interest later and make ~b[them] into ~il[rewrite]
-  rules.
+  We now state the theorem as a conditional, so that it can be proved nicely
+  using the ~il[induction] scheme that we have just coded.  The prover will not
+  store an ~ilc[IF] ~il[term] as a ~il[rewrite] rule, but that's OK (provided
+  we tell it not to try), because we're going to derive the corollaries of
+  interest later and make ~b[them] into ~il[rewrite] rules.
   ~bv[]
   (defthm symbol-listp-free-vars1-flg
     (if flg
-        (implies (and (pseudo-termp x)
+        (implies (and (pseudo-term-listp x)
                       (symbol-listp ans))
-                 (symbol-listp (free-vars1 x ans)))
-      (implies (and (pseudo-term-listp x)
+                 (symbol-listp (free-vars1-lst x ans)))
+      (implies (and (pseudo-termp x)
                     (symbol-listp ans))
-               (symbol-listp (free-vars1-lst x ans))))
+               (symbol-listp (free-vars1 x ans))))
     :hints
     ((\"Goal\" :induct (symbol-listp-free-vars1-induction flg x ans)))
     :rule-classes nil)
   ~ev[]
-  And finally, we may derive the theorems we are interested in as
-  immediate corollaries.
+  And finally, we may derive the theorems we are interested in as immediate
+  corollaries.
   ~bv[]
   (defthm symbol-listp-free-vars1
     (implies (and (pseudo-termp x)
                   (symbol-listp ans))
              (symbol-listp (free-vars1 x ans)))
     :hints ((\"Goal\" :by (:instance symbol-listp-free-vars1-flg
-                                   (flg t)))))
+                                   (flg nil)))))
 
   (defthm symbol-listp-free-vars1-lst
     (implies (and (pseudo-term-listp x)
                   (symbol-listp ans))
              (symbol-listp (free-vars1-lst x ans)))
     :hints ((\"Goal\" :by (:instance symbol-listp-free-vars1-flg
-                                   (flg nil)))))
+                                   (flg t)))))
     ~ev[]
+
+  You may find community books (~pl[community-books] that help you to automate
+  this kind of reasoning about mutually recursive functions.  See for example
+  the community book ~c[tools/flag.lisp].
+
   ")
 
 (deflabel functional-instantiation-example
