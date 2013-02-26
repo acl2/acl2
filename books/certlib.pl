@@ -332,7 +332,7 @@ sub cert_sequential_dep {
     my ($certfile, $deps) = @_;
     my $res;
     if (cert_get_param($certfile, $deps, "acl2x")
-	|| cert_get_param($certfile, $deps, "no_pcert")) {
+	|| ! cert_get_param($certfile, $deps, "pcert")) {
 	($res = $certfile) =~ s/\.cert$/\.pcert1/;
     } else {
 	($res = $certfile) =~ s/\.cert$/\.pcert0/;
@@ -349,7 +349,7 @@ sub read_costs {
 	    my $pcert1file = cert_to_pcert1($certfile);
 	    $basecosts->{$certfile} = get_cert_time($certfile, $warnings, $use_realtime, $pcert);
 	    $basecosts->{$pcert1file} = get_cert_time($pcert1file, $warnings, $use_realtime, $pcert);
-	    if (! cert_get_param($certfile, $deps, "no_pcert")
+	    if (cert_get_param($certfile, $deps, "pcert")
 		&& ! cert_get_param($certfile, $deps, "acl2x")) {
 		# print "file: $certfile no_pcert: " . cert_get_param($certfile, $deps, "no_pcert") . "\n";
 		my $pcert0file = cert_to_pcert0($certfile);
@@ -422,7 +422,7 @@ sub compute_cost_paths_aux {
 	    }
 	} elsif ($target =~ /\.pcert1$/) {
 	    (my $certfile = $target) =~ s/\.pcert1$/\.cert/;
-	    if (cert_get_param($certfile, $deps, "no_pcert") ||
+	    if (! cert_get_param($certfile, $deps, "pcert") ||
 		cert_get_param($certfile, $deps, "acl2x")) {
 		## Depends on the sequential deps of the other certs
 		my $certdeps = cert_deps($certfile, $deps);
@@ -885,12 +885,18 @@ sub get_loads {
 
 my $two_pass_warning_printed = 0;
 
+# Cert_param lines are currently of the form:
+# cert_param: ( foo = bar , baz = 1 , bla )
+# (the whitespace is optional.)
+# An entry without an = is just set to 1.
 sub parse_params {
     my $param_str = shift;
     my @params = split(/,/, $param_str);
     my @pairs = ();
     foreach my $param (@params) {
-	my @assign = $param =~ m/[\s]*([^\s=]*)[\s]*=[\s]*([^\s=]*)[\s]*/;
+	$param =~ s/^\s+//;
+	$param =~ s/\s+$//; #remove leading/trailing whitespace
+	my @assign = $param =~ m/([^\s=]*)[\s]*=[\s]*([^\s=]*)/;
 	if (@assign) {
 	    push(@pairs, [$assign[0], $assign[1]]);
 	} else {
@@ -905,7 +911,7 @@ sub parse_params {
 sub get_cert_param {
     my ($base,$the_line,$events) = @_;
 
-    my $regexp = "cert_param:[\\s]*\\(?([^)]*)\\)?";
+    my $regexp = "cert[-_]param:[\\s]*\\(?([^)]*)\\)?";
     my @match = $the_line =~ m/$regexp/;
     if (@match) {
 	debug_print_event($base, "cert_param", \@match);
@@ -1411,7 +1417,27 @@ sub deps_dfs {
     }
 }
 
-    
+# Depth-first search through the dependency map in order to propagate requirements (e.g. hons-only)
+# from books with that cert_param to books that include them.
+sub propagate_reqparam {
+    my ($target, $paramname, $visited, $depmap) = @_;
+    if ($visited->{$target}) {
+	return;
+    }
+    $visited->{$target} = 1;
+    my $certdeps = cert_deps($target, $depmap);
+    my $set_param = 0;
+    foreach my $dep (@$certdeps) {
+	propagate_reqparam($dep, $paramname, $visited, $depmap);
+	$set_param = $set_param || cert_get_param($dep, $depmap, $paramname);
+    }
+    if ($set_param && ! cert_get_param($target, $depmap, $paramname)) {
+	my $params = cert_get_params($target, $depmap);
+	$params->{$paramname} = $set_param;
+    }
+}
+
+
 
 # During a dependency search, this is run with $target set to each
 # cert and source file in the dependencies of the top-level targets.

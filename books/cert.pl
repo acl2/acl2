@@ -157,7 +157,7 @@ if it were part of the current file.
  - ;; cert_param: (<paramname>[=<paramval>])
      Cert_param directives control various things about how the file
 gets certified, such as whether it uses provisional certification
-(no_pcert), acl2x expansion (acl2x), and skip-proofs during acl2x
+(pcert), acl2x expansion (acl2x), and skip-proofs during acl2x
 expansion (acl2xskip).
 
 See files make-targets and regression-targets for example uses of
@@ -344,7 +344,7 @@ OPTIONS:
 
    --params <filename>
           Specifies a file that contains lines like:
-             mybook.cert:  no_pcert = 1, acl2x = 0
+             mybook.cert:  pcert = 1, acl2x = 0
           with the grammar:
              <bookname>.cert: <param> = <val> [ , <param> = <val> ]*
           The parameters specified have the same meaning as cert_param
@@ -652,12 +652,26 @@ unless ($no_makefile) {
     }
     print $mf "\n\n";
 
+    # Write out the list of hons-only certs
+    # Propagate the hons-only requirement:
+    my %visited = ();
+    foreach my $cert (@certs) {
+	propagate_reqparam($cert, "hons-only", \%visited, \%depmap);
+    }
+    print $mf "${var_prefix}_HONS_ONLY :=";
+    foreach my $cert (@certs) {
+	if (cert_get_param($cert, \%depmap, "hons-only")) {
+	    print $mf " \\\n     $cert ";
+	}
+    }
+    print $mf "\n\n";
+
     # If there are labels, write out the sources and certs for those
     foreach my $label (sort(keys %labels)) {
 	my @topcerts = @{$labels{$label}};
 	my @labelcerts = ();
 	my @labelsources = ();
-	my %visited = ();
+	%visited = ();
 	# print "Processing label: $label\n";
 	foreach my $topcert (@topcerts) {
 	    # print "Visiting $topcert\n";
@@ -701,10 +715,10 @@ unless ($no_makefile) {
 	my $image = cert_image($cert, \%depmap);
 	my $useacl2x = cert_get_param($cert, \%depmap, "acl2x") || 0;
 	# BOZO acl2x implies no pcert
-	my $nopcert = $useacl2x || cert_get_param($cert, \%depmap, "no_pcert") || 0;
+	my $pcert_ok = ( ! $useacl2x && cert_get_param($cert, \%depmap, "pcert")) || 0;
 	my $acl2xskip = cert_get_param($cert, \%depmap, "acl2xskip") || 0;
 	print $mf "$cert : acl2x = $useacl2x\n";
-	print $mf "$cert : no_pcert = $nopcert\n";
+	print $mf "$cert : pcert = $pcert_ok\n";
 	# print $mf "#$cert params: ";
 	# my $params = cert_get_params($cert, \%depmap);
 	# while (my ($key, $val) = each %$params) {
@@ -765,7 +779,7 @@ unless ($no_makefile) {
     foreach my $cert (@certs) {
 	my $useacl2x = cert_get_param($cert, \%depmap, "acl2x") || 0;
 	# BOZO acl2x implies no pcert
-	my $nopcert = $useacl2x || cert_get_param($cert, \%depmap, "no_pcert") || 0;
+	my $pcert_ok = (! $useacl2x && cert_get_param($cert, \%depmap, "pcert")) || 0;
 	
 	my $bookdeps = cert_bookdeps($cert, \%depmap);
 	my $portdeps = cert_portdeps($cert, \%depmap);
@@ -773,14 +787,14 @@ unless ($no_makefile) {
 	my $otherdeps = cert_otherdeps($cert, \%depmap);
 	my $image = cert_image($cert, \%depmap);
 	(my $base = $cert) =~ s/\.cert$//;
-	# this is either the pcert0 or pcert1 depending on no_pcert
+	# this is either the pcert0 or pcert1 depending on pcert_ok
 	my $pcert = cert_sequential_dep($cert, \%depmap);
-	print $mf "$pcert : no_pcert = $nopcert\n";
+	print $mf "$pcert : pcert = $pcert_ok\n";
 	print $mf "$pcert : acl2x = $useacl2x\n";
 	print $mf "$pcert :";
 	foreach my $dep (@$bookdeps, @$portdeps) {
 	    # this is either the pcert0 or pcert1 depending whether the dependency
-	    # has no_pcert set
+	    # has pcert set
 	    print $mf " \\\n     " . cert_sequential_dep($dep, \%depmap);
 	}
 	foreach my $dep (@$srcdeps, @$otherdeps) {
@@ -799,10 +813,10 @@ unless ($no_makefile) {
 	}
 	print $mf "\n";
 	# If we're doing prov cert, pcert1 depends on pcert0
-	if (! $nopcert) {
+	if ($pcert_ok) {
 	    # Pcert1 files depend only on the corresp. pcert0.
 	    print $mf "$base.pcert1 : acl2x = $useacl2x\n";
-	    print $mf "$base.pcert1 : no_pcert = $nopcert\n";
+	    print $mf "$base.pcert1 : pcert = $pcert_ok\n";
 	    print $mf "$base.pcert1 : $base.pcert0\n";
 	} elsif ($useacl2x) {
 	    # pcert1 depends on .acl2x
