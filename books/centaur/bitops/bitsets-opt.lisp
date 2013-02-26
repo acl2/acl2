@@ -55,7 +55,7 @@
 (local
  (progn
 
-   (include-book "make-event/assert" :dir :system)
+   (include-book "misc/assert" :dir :system)
 
    (defconst *test-numbers*
      (list 1 0 -1

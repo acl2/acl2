@@ -40,7 +40,7 @@
   (atom (foo))
   :hints (("Goal" :in-theory (disable atom))))
 
-(include-book "make-event/eval" :dir :system) ; define must-fail
+(include-book "misc/eval" :dir :system) ; define must-fail
 
 (must-fail
  (thm (equal (foo) t)))

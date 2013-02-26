@@ -4,8 +4,9 @@
 #|                                                                           |#
 #|===========================================================================|#
 
+(in-package "ACL2")
 (ld "cert.acl2")
 (ld "rule-sets-defpkg.lsp")
 (ld "table-defpkg.lsp")
 (ld "def-defpkg.lsp")
-(certify-book "rule-sets" ?)
+(certify-book "rule-sets" ? t)

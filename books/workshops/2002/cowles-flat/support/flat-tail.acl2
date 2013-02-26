@@ -1,14 +1,7 @@
-(value :q)
-
-(LP)
+(in-package "ACL2")
 
 (defpkg "FLAT"
-  (union-eq 
-   *acl2-exports*
-   *common-lisp-symbols-from-main-lisp-package*))
+  (union-eq *acl2-exports*
+            *common-lisp-symbols-from-main-lisp-package*))
 
-(certify-book "flat-tail" 
-	      1
-	      nil ; compile-flg
-	      :defaxioms-okp nil 
-	      :skip-proofs-okp nil)
+(certify-book "flat-tail" ? t)

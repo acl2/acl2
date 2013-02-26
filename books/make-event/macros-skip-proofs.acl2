@@ -1,1 +1,3 @@
-(certify-book "macros-skip-proofs" 0 t :skip-proofs-okp t)
+(in-package "ACL2")
+; cert-flags: ? t :skip-proofs-okp t
+(certify-book "macros-skip-proofs" ? t :skip-proofs-okp t)

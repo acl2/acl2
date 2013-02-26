@@ -11,5 +11,6 @@
 ; ense along with this program; if not, write to the Free Soft- ware
 ; Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
 
+(in-package "ACL2")
 (ld "sets.defpkg")
-(certify-book "portcullis" ?)
+(certify-book "portcullis" ? t)

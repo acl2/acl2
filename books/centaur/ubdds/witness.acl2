@@ -18,5 +18,7 @@
 ; License along with this program; if not, write to the Free Software
 ; Foundation, Inc., 51 Franklin Street, Suite 500, Boston, MA 02110-1335, USA.
 
+(in-package "ACL2")
 (ld "tools/flag-package.lsp" :dir :system)
-(certify-book "witness" ? t)
+; cert-flags: ? t :ttags :all
+(certify-book "witness" ? t :ttags :all)

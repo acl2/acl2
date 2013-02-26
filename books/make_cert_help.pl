@@ -27,12 +27,12 @@
 
 
 # make_cert_help.pl -- this is a companion file that is used by "make_cert".
-# It is the core script responsible for certifying a single ACL2 book.
-
-# The code here is largely similar to the %.cert: %.lisp rule from
+# It is the core script responsible for certifying a single ACL2 book.  The
+# code here is largely similar to the %.cert: %.lisp rule from
 # Makefile-generic, but with several extensions.  For instance,
 #
-#   - We try to gracefully NFS lag, and
+#   - We try to gracefully NFS lag
+#   - We support cert-flags comments that say how to run certify-book
 #   - We can certify certain books with other save-images, using .image files
 #   - We support .acl2x files and two-pass certification,
 #   - We support adding #PBS directives to limit memory and wall time
@@ -40,8 +40,8 @@
 #
 # We only expect to invoke this through make_cert, so it is not especially
 # user-friendly.  We rely on several environment variables that are given to us
-# by make_cert.  See make_cert for the defaults and meanings of ACL2,
-# COMPILE_FLG, and other variables used in this script.
+# by make_cert.  See make_cert for the defaults and meanings of, e.g., ACL2 and
+# other variables used in this script.
 
 # Usage: make_cert_help.pl TARGET STEP
 #   - TARGET is like "foo" for "foo.lisp"
@@ -124,7 +124,7 @@ sub find_matching_parens {
     }
 }
 
-   
+
 sub skip_certify_books {
     my $str = shift;
     my $pos = 0;
@@ -303,26 +303,24 @@ sub scan_for_set_max_time
     return 0;
 }
 
-sub collect_ls_dirs {
-# Hi.  This is a horrible hack to compensate for NFS lag.  In our
-# setup, it seems to help to run "ls" on the directories containing
-# our dependencies (otherwise they often are not there yet when we try
-# to load them.)  To minimize the impact of this atrocity, we collect
-# the full set of these directories and uniqify them so that our
-# remote job doesn't do lots of redundant work.
-    my ($prereqs, $startdir) = @_;
-    my %dirs = ();
+sub parse_certify_flags
+{
+    my $filename = shift;  # just for error messages
+    my $str = shift;       # contents of the .acl2 file as a string
+    my @lines = split /^/, $str;
 
-    foreach my $prereq (@$prereqs) {
-	(my $vol, my $dir, my $file) = File::Spec->splitpath("$startdir/$prereq");
-	my $fulldir = File::Spec->canonpath(File::Spec->catpath($vol, $dir, ""));
-
-	$dirs{$fulldir} = 1;
+    # default: any number of portcullis commands are fine, and let's set the
+    # compile flag to true.
+    my $ret = "? t";
+    my $seen = 0;
+    foreach my $line (@lines) {
+	chomp($line);
+	if ($line =~ m/^[ \t]*;[; \t]*cert-flags: (.*)$/) {
+	    die("Multiple cert-flags directives are not allowed.") if $seen;
+	    $ret = $1;
+	}
     }
-
-    my @dirnames = keys %dirs;
-
-    return \@dirnames;
+    return $ret;
 }
 
 my $TARGET = shift;
@@ -336,7 +334,6 @@ my $PREREQS = \@ARGV;
 # }
 
 my $startdir = getcwd;
-# my $prereq_dirs = collect_ls_dirs($PREREQS, $startdir);
 
 my $TARGETEXT;
 if ($STEP eq "complete" || $STEP eq "certify") {
@@ -354,13 +351,12 @@ if ($STEP eq "complete" || $STEP eq "certify") {
 # normalize acl2x flag to Boolean
 $ACL2X = ($ACL2X eq "yes") ? ":acl2x t" : "";
 
-my $INHIBIT     = $ENV{"INHIBIT"} || "";
-my $HEADER      = $ENV{"OUTFILE_HEADER"} || "";
-my $MAX_NFS_LAG = $ENV{"MAX_NFS_LAG"} || 100;
-my $DEBUG       = $ENV{"ACL2_BOOKS_DEBUG"} ? 1 : 0;
-my $FLAGS       = $ENV{"COMPILE_FLG"};
-my $TIME_CERT   = $ENV{"TIME_CERT"} ? 1 : 0;
-my $STARTJOB    = $ENV{"STARTJOB"} || "";
+my $INHIBIT        = $ENV{"INHIBIT"} || "";
+my $HEADER         = $ENV{"OUTFILE_HEADER"} || "";
+my $MAX_NFS_LAG    = $ENV{"MAX_NFS_LAG"} || 100;
+my $DEBUG          = $ENV{"ACL2_BOOKS_DEBUG"} ? 1 : 0;
+my $TIME_CERT      = $ENV{"TIME_CERT"} ? 1 : 0;
+my $STARTJOB       = $ENV{"STARTJOB"} || "";
 my $ON_FAILURE_CMD = $ENV{"ON_FAILURE_CMD"} || "";
 my $ACL2           = $ENV{"ACL2"} || "acl2";
 # Figure out what ACL2 points to before we switch directories.
@@ -401,7 +397,6 @@ if ($DEBUG)
     print "-- TARGETEXT    = $TARGETEXT\n";
     print "-- INHIBIT      = $INHIBIT\n";
     print "-- MAX_NFS_LAG  = $MAX_NFS_LAG\n";
-    print "-- FLAGS        = $FLAGS\n";
     print "-- PCERT        = $PCERT\n";
     print "-- ACL2X        = $ACL2X\n";
     print "-- HEADER       = $HEADER\n";
@@ -471,34 +466,29 @@ if ($STEP eq "complete") {
     $instrs .= "(set-write-acl2x t state)\n" if ($STEP eq "acl2x");
     $instrs .= "(set-write-acl2x '(t) state)\n" if ($STEP eq "acl2xskip");
     $instrs .= "$INHIBIT\n" if ($INHIBIT);
-
     $instrs .= "\n";
 
 
-    my $cert_cmd = "#!ACL2 (er-progn (time\$ (certify-book \"$file\" ? $FLAGS $PCERT $ACL2X))
-                                 (value (prog2\$ #+acl2-hons (memsum)
-                                                 #-acl2-hons nil
-                                                 (exit 43))))";
-
 # Get the certification instructions from foo.acl2 or cert.acl2, if either
 # exists, or make a generic certify-book command.
-    if (-f "$file.acl2") {
-	$instrs .= "; instructions from $file.acl2\n";
-	$instrs .= "; (omitting any certify-book line):\n";    
-	$instrs .= read_file_except_certify("$file.acl2");
-	$instrs .= "\n; certify-book command added automatically:\n";
-	$instrs .= "$cert_cmd\n\n";
-    }
-    elsif (-f "cert.acl2") {
-	$instrs .= "; instructions from cert.acl2:\n";
-	$instrs .= read_whole_file("cert.acl2");
-	$instrs .= "\n; certify-book command added automatically:\n";
-	$instrs .= "$cert_cmd\n\n";
-    }
-    else {
-	$instrs .= "; certify-book generated automatically:\n";
-	$instrs .= "$cert_cmd\n\n";
-    }
+    my $acl2file = (-f "$file.acl2") ? "$file.acl2"
+                 : (-f "cert.acl2")  ? "cert.acl2"
+		 : "";
+
+    my $usercmds = $acl2file ? read_file_except_certify($acl2file) : "";
+
+    $instrs .= "; instructions from .acl2 file $acl2file:\n";
+    $instrs .= "$usercmds\n";
+
+    my $cert_flags = parse_certify_flags($acl2file, $usercmds);
+    $instrs .= "; certify-book command flags: $cert_flags\n";
+
+    my $cert_cmd = "#!ACL2 (er-progn (time\$ (certify-book \"$file\" $cert_flags $PCERT $ACL2X))
+                                 (value (prog2\$ #+acl2-hons (memsum)
+                                                 #-acl2-hons nil
+                                                 (exit 43))))\n";
+
+    $instrs .= $cert_cmd;
 
     if ($DEBUG) {
 	print "-- ACL2 Instructions: $lisptmp --\n";

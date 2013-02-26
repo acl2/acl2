@@ -4,4 +4,4 @@
 
 (include-book "WyoM1")
 
-(certify-book "WyoM1-utilities" 1)
+(certify-book "WyoM1-utilities" ? t)

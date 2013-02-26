@@ -6,4 +6,4 @@
 
 (include-book "defs-out")
 
-(certify-book "defs-eq" 2)
+(certify-book "defs-eq" ? t)

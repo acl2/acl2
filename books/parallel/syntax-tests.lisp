@@ -3,8 +3,8 @@
 
 (in-package "ACL2")
 
-(include-book "make-event/assert" :dir :system)
-(include-book "make-event/eval" :dir :system)
+(include-book "misc/assert" :dir :system)
+(include-book "misc/eval" :dir :system)
 ;(include-book "make-event/dotimes" :dir :system)
 
 (defun plet-test10 ()

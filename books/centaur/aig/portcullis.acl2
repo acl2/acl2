@@ -18,7 +18,9 @@
 ;
 ; Original author: Sol Swords <sswords@centtech.com>
 
+(in-package "ACL2")
 (ld "centaur/vl/package.lsp" :dir :system)
 (ld "centaur/vl/other-packages.lsp" :dir :system)
 (ld "fsm-pkg.lsp")
-(certify-book "portcullis" ?)
+; cert-flags: ? t :ttags :all
+(certify-book "portcullis" ? t :ttags :all)

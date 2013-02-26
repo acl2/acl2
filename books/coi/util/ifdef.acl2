@@ -4,5 +4,6 @@
 #|                                                                           |#
 #|===========================================================================|#
 
+(in-package "ACL2")
 (ld "def-defpkg.lsp")
-(certify-book "ifdef" ?)
+(certify-book "ifdef" ? t)

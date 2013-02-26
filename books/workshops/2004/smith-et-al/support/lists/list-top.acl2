@@ -2,4 +2,4 @@
 (include-book "list-exports")
 (include-book "mv-nth")
 
-(certify-book "list-top" 3)
+(certify-book "list-top" ? t)

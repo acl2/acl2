@@ -1,1 +1,4 @@
-(certify-book "acl2x-help-test" 0 t :acl2x t)
+(in-package "ACL2")
+; cert-flags: ? t :acl2x t
+; cert_param: (acl2x)
+(certify-book "acl2x-help-test" ? t :acl2x t)

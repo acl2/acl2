@@ -1,4 +1,4 @@
-(INCLUDE-BOOK "preliminaries")
-
-(CERTIFY-BOOK "gauss-fns" ? T)
+(in-package "ACL2")
+(include-book "preliminaries")
+(certify-book "gauss-fns" ? t)
 

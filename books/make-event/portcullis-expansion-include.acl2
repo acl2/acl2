@@ -1,3 +1,5 @@
+(in-package "ACL2")
+
 (encapsulate
  ((local-fn (x) t))
  (local (defun local-fn (x) x))
@@ -11,4 +13,4 @@
 
 (u)
 
-(certify-book "portcullis-expansion-include" ?)
+(certify-book "portcullis-expansion-include" ? t)

@@ -64,7 +64,7 @@
 
  (defun test9 (x) x))
 
-(include-book "eval")
+(include-book "misc/eval" :dir :system)
 
 (must-fail
  (local

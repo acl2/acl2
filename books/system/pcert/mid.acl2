@@ -2,4 +2,6 @@
 ; since (p)certification of sub and top will load cert.acl2.
 ; (load "cert.acl2")
 
+(in-package "ACL2")
+; cert-flags: ? :default :skip-proofs-okp t
 (certify-book "mid" ? :default :skip-proofs-okp t)

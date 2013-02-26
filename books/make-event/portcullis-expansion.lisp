@@ -37,7 +37,7 @@
 
 (defun bar (x) (cons x x))
 
-(include-book "eval")
+(include-book "misc/eval" :dir :system)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

@@ -1,2 +1,4 @@
+(in-package "ACL2")
 (ld "finite-set-theory/osets/sets.defpkg" :dir :system)
+; cert-flags: ? t :skip-proofs-okp t
 (certify-book "ptest-mergesort" ? t :skip-proofs-okp t)

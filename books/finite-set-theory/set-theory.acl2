@@ -17,4 +17,4 @@
                        *common-lisp-symbols-from-main-lisp-package*))
    '(union intersection subsetp add-to-set functionp = apply)))
 
-(certify-book "set-theory" 1)
+(certify-book "set-theory" ? t)

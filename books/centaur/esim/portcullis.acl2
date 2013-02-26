@@ -16,7 +16,7 @@
 ; License along with this program; if not, write to the Free Software
 ; Foundation, Inc., 51 Franklin Street, Suite 500, Boston, MA 02110-1335, USA.
 
-; portcullis.acl2
-
+(in-package "ACL2")
 (ld "packages.lsp")
-(certify-book "portcullis" ? t)
+; cert-flags: ? t :ttags :all
+(certify-book "portcullis" ? t :ttags :all)

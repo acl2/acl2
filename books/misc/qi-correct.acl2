@@ -13,4 +13,4 @@
 
  nil)
 
-(certify-book "qi-correct")
+(certify-book "qi-correct" ? t)

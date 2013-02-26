@@ -1,2 +1,2 @@
 (include-book "m5")
-(certify-book "utilities" 1)
+(certify-book "utilities" ? t)

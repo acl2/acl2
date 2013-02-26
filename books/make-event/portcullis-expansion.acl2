@@ -1,3 +1,5 @@
+(in-package "ACL2")
+
 (make-event
  '(defun test1 (x)
     (cons x x)))
@@ -63,4 +65,4 @@
  (defthm bar4-prop
    (consp (bar4 x))))
 
-(certify-book "portcullis-expansion" ?)
+(certify-book "portcullis-expansion" ? t)

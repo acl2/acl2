@@ -4,6 +4,7 @@
 #|                                                                           |#
 #|===========================================================================|#
 
+(in-package "ACL2")
 (ld "cert.acl2")
 
 ;Since path appears before :: in gacc2.lisp.
@@ -15,5 +16,5 @@
 (include-book "ram")
 (include-book "ordinals/e0-ordinal" :dir :system)
 
-(certify-book "gacc" ?)
+(certify-book "gacc" ? t)
 

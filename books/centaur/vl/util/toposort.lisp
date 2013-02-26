@@ -651,7 +651,7 @@ strategy is the easiest way to topologically sort your data.</p>"
 ;; Some basic unit tests.  It's okay if these particular orders change, as long
 ;; as they're still valid.
 
-   (include-book "make-event/assert" :dir :system)
+   (include-book "misc/assert" :dir :system)
 
    (assert!
     (mv-let (successp order)

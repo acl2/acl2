@@ -3,4 +3,4 @@
 	     (union-eq *acl2-exports*
 		       *common-lisp-symbols-from-main-lisp-package*)))
 
-(certify-book "basic-pkg-check" 1)
+(certify-book "basic-pkg-check" ? t)

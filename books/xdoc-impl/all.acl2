@@ -19,4 +19,5 @@
 ; Original author: Jared Davis <jared@centtech.com>
 
 (ld "cert.acl2")
-(certify-book "all" ? t :ttags '(:xdoc))
+; cert-flags: ? t :ttags :all
+(certify-book "all" ? t :ttags :all)

@@ -326,7 +326,7 @@ sublis-fn.
 ;; use the must-succeed and must-fail macros.
 
 (local
- (include-book "eval"))
+ (include-book "misc/eval" :dir :system))
 
 ;; All the tests are marked local.  I do it this way rather than in comments
 ;; since I want to make sure that the tests execute when I certify the book,

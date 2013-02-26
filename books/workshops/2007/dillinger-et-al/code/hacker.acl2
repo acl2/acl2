@@ -6,8 +6,6 @@
 ;;
 ;; Last modified: 
 
-
+(in-package "ACL2")
 (ld "hacker-pkg.lsp")
-
-
-(ACL2::CERTIFY-BOOK "hacker" ACL2::?)
+(certify-book "hacker" ? t)

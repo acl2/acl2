@@ -1,4 +1,4 @@
 (value :q)
 (lp)
 (ld "defpkg.lsp")
-(certify-book "bv" 4)
+(certify-book "bv" ? t)

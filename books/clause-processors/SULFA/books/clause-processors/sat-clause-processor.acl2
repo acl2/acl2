@@ -1,5 +1,3 @@
-
-(acl2::value :q)
-(acl2::lp)
-(ld '((ubt! 1)
-      (certify-book "sat-clause-processor" 0 t :ttags (sat sat-cl))))
+(in-package "ACL2")
+; cert-flags: ? t :ttags (sat sat-cl)
+(certify-book "sat-clause-processor" ? t :ttags (sat sat-cl))

@@ -13,4 +13,4 @@
 	      *common-lisp-symbols-from-main-lisp-package*))
    '(PC PROGRAM PUSH POP REVERSE STEP ++)))
 
-(certify-book "WyoM1" 1)
+(certify-book "WyoM1" ? t)

@@ -1,6 +1,4 @@
-
-(acl2::value :q)
-(acl2::lp)
-(ld '((ubt! 1)
-      (ld "../sat/sat-package.acl2")
-      (certify-book "redundancy-removal" 1 t :ttags (sat smt))))
+(in-package "ACL2")
+(ld "../sat/sat-package.acl2")
+; cert-flags: ? t :ttags (sat smt)
+(certify-book "redundancy-removal" ? t :ttags (sat smt))

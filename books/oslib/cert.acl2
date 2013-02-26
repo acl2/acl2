@@ -19,4 +19,4 @@
 ; Original author: Jared Davis <jared@centtech.com>
 
 (include-book "portcullis")
-
+; cert-flags: ? t :ttags :all

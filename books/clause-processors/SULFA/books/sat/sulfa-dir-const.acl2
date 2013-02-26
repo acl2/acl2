@@ -1,6 +1,4 @@
-
-(acl2::value :q)
-(acl2::lp)
-(ld '((ubt! 1)
-      (ld "sat-package.acl2")
-      (certify-book "sulfa-dir-const" 1 :all)))
+(in-package "ACL2")
+(ld "sat-package.acl2")
+; cert-flags: ? :all
+(certify-book "sulfa-dir-const" ? :all)

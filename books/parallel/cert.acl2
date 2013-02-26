@@ -1,5 +1,4 @@
-(ld "package.lsp")
-(include-book "finite-set-theory/osets/portcullis" :dir :system)
+(in-package "ACL2")
 
 ; Added by Jared, justified by ACL2_COMPILE_FLG setting in Makefile
 ; cert-flags: ? t :ttags :all

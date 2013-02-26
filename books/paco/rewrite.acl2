@@ -1,4 +1,4 @@
 (ld "acl2-customization.lsp") ; adds the :paco keyword command
 (set-verify-guards-eagerness 0)
 (include-book "type-set")
-(certify-book "rewrite" 3)
+(certify-book "rewrite" ? t)

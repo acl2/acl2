@@ -1,3 +1,5 @@
+(in-package "ACL2")
+
 (ld "cutil/package.lsp" :dir :system)
 (ld "tools/flag-package.lsp" :dir :system)
 
@@ -6,4 +8,4 @@
 ; the Pcertify step for input-list.pcert.
 (include-book "xdoc/top" :dir :system)
 
-(certify-book "portcullis" ?)
+(certify-book "portcullis" ? t)

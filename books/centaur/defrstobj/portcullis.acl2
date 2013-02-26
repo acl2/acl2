@@ -20,4 +20,5 @@
 
 (in-package "ACL2")
 (ld "package.lsp")
-(certify-book "portcullis" ? t)
+; cert-flags: ? t :ttags :all
+(certify-book "portcullis" ? t :ttags :all)

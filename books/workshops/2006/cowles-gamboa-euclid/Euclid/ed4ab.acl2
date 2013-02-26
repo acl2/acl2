@@ -1,3 +1,5 @@
+(in-package "ACL2")
+
 (defpkg "INT-MOD"
   (set-difference-eq
    (union-eq *acl2-exports*
@@ -5,5 +7,4 @@
 ; Subtracted 12/4/2012 by Matt K. for addition to *acl2-exports*
    '(nat-listp acl2-number-listp)))
 
-(certify-book "ed4ab" 
-	      1)
+(certify-book "ed4ab" ? t)

@@ -1,5 +1,3 @@
-
-(acl2::value :q)
-(acl2::lp)
-(ld '((ubt! 1)
-      (certify-book "bv-lib-definitions" 0 t :skip-proofs-okp t)))
+(in-package "ACL2")
+; cert-flags: ? t :skip-proofs-okp t
+(certify-book "bv-lib-definitions" ? t :skip-proofs-okp t)

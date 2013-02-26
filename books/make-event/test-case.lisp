@@ -4,7 +4,7 @@
 
 (in-package "ACL2")
 
-(include-book "assert")
+(include-book "misc/assert" :dir :system)
 
 (defmacro test-case (form &key (expected 'nil expected-p))
   (let ((form (if expected-p

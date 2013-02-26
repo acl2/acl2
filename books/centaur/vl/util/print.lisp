@@ -25,7 +25,7 @@
 (include-book "cw-unformatted")
 (include-book "str/natstr" :dir :system)
 (local (include-book "arithmetic"))
-(local (include-book "make-event/assert" :dir :system))
+(local (include-book "misc/assert" :dir :system))
 (local (in-theory (disable acl2::print-base-p)))
 
 (defxdoc printer

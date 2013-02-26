@@ -20,10 +20,8 @@
 ; the U package definition is for your system.  When you installed the system
 ; it was in ...<acl2 stuff>.../books/data-structures.
 
-(acl2::value :q)
-(acl2::lp)
-(ld '((ubt! 1)
-      (ld "data-structures/define-u-package.lsp" :dir :system)
-      (certify-book "ihs-init" 1)))
+(in-package "ACL2")
+(ld "data-structures/define-u-package.lsp" :dir :system)
+(certify-book "ihs-init" ? t)
 
 

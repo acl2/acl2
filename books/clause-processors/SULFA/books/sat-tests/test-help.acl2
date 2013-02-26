@@ -1,6 +1,4 @@
-
-(acl2::value :q)
-(acl2::lp)
-(ld '((ubt! 1)
-      (ld "../sat/sat-package.acl2")
-      (certify-book "test-help" 1 t :ttags (sat sat-cl))))
+(in-package "ACL2")
+(ld "../sat/sat-package.acl2")
+; cert-flags: ? t :ttags (sat sat-cl)
+(certify-book "test-help" ? t :ttags (sat sat-cl))

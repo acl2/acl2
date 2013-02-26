@@ -16,4 +16,4 @@
 (defpkg "CNV" (cons 'multiset-diff *cnf-package-exports*))
 
 
-(certify-book "generate-degenerate" 3)
+(certify-book "generate-degenerate" ? t)

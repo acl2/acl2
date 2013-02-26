@@ -1,3 +1,5 @@
+(in-package "ACL2")
+
 (defconst *import-symbols*
   (set-difference-eq
    (union-eq *acl2-exports*
@@ -8,7 +10,5 @@
 (defpkg "FUTER"
   *import-symbols*)
 
-(certify-book "futermino"
-	      2
-	      nil ;;compile-flg
-	      )
+(certify-book "futermino" ? t)
+

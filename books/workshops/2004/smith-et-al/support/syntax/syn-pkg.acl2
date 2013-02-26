@@ -15,4 +15,4 @@
      len
      )))
 
-(certify-book "syn-pkg" 1)
+(certify-book "syn-pkg" ? t)

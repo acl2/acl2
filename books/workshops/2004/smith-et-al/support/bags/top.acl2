@@ -1,2 +1,2 @@
 (include-book "bag-exports")
-(certify-book "top" 1)
+(certify-book "top" ? t)

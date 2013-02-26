@@ -79,7 +79,7 @@
 (include-book "macros")
 
 ; Define must-succeed (used below).
-(include-book "eval")
+(include-book "misc/eval" :dir :system)
 
 ; Define read-list (used below).
 (include-book "misc/file-io" :dir :system)

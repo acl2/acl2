@@ -1,4 +1,3 @@
-(value :q)
-(LP)
-(ld "certification.acl2")
-(certify-book "congruences-1" 5)
+(in-package "ACL2")
+(ld "certification.lsp")
+(certify-book "congruences-1" ? t)

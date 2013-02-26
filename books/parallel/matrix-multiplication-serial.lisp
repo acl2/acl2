@@ -1,6 +1,6 @@
 (in-package "ACL2")
 
-(include-book "make-event/assert" :dir :system)
+(include-book "misc/assert" :dir :system)
 (include-book "make-event/embeddable-event-forms" :dir :system)
 (include-book "matrix-multiplication-setup")
 

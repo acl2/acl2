@@ -18,7 +18,9 @@
 ;
 ; Original author: Sol Swords <sswords@centtech.com>
 
+(in-package "ACL2")
 (ld "tools/flag-package.lsp" :dir :system)
 (ld "xdoc/package.lsp" :dir :system)
 (ld "centaur/vl/package.lsp" :dir :system)
-(certify-book "portcullis" ? t)
+; cert-flags: ? t :ttags :all
+(certify-book "portcullis" ? t :ttags :all)

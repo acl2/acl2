@@ -2,4 +2,4 @@
         (union-eq *acl2-exports*
                   *common-lisp-symbols-from-main-lisp-package*))
 
-(certify-book "sets" 1)
+(certify-book "sets" ? t)

@@ -171,4 +171,4 @@
     ))
     
 (set-verify-guards-eagerness 0)
-(certify-book "utilities" 3)
+(certify-book "utilities" ? t)

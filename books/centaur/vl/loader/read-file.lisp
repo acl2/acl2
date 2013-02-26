@@ -20,7 +20,7 @@
 
 (in-package "VL")
 (include-book "../util/echars")
-(include-book "std/io/file-measure" :dir :system)
+(include-book "std/io/base" :dir :system)
 (local (include-book "std/io/open-input-channel" :dir :system))
 (local (include-book "std/io/read-byte" :dir :system))
 (local (include-book "std/io/close-input-channel" :dir :system))

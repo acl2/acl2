@@ -1,1 +1,3 @@
-(certify-book "time-dollar-with-gc" 0 t :ttags (:profiling))
+(in-package "ACL2")
+; cert-flags: ? t :ttags (:profiling)
+(certify-book "time-dollar-with-gc" ? t :ttags (:profiling))

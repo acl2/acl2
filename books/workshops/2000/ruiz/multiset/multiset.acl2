@@ -8,4 +8,4 @@
 			   make-ord e0-ordinalp e0-ord-<
 			   ctoa atoc))))
 
-(certify-book "multiset" 1)
+(certify-book "multiset" ? t)

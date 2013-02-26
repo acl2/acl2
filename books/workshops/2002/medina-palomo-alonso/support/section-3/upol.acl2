@@ -19,4 +19,4 @@
   (union-eq (set-difference-eq *acl2-and-lisp-exports* '(<))
 	    '(MON::monomialp MON::monomial->o-p ACL2::make-ord)))
 
-(certify-book "upol" 5)
+(certify-book "upol" ? t)

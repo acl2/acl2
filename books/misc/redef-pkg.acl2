@@ -1,1 +1,2 @@
-(certify-book "redef-pkg" 0 t :ttags (:redef-pkg))
+; cert-flags: ? t :ttags (:redef-pkg)
+(certify-book "redef-pkg" ? t :ttags (:redef-pkg))

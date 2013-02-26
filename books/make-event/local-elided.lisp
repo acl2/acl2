@@ -51,7 +51,7 @@
             (consp (bar3 x)))))
 
 ; not still redundant
-(include-book "eval")
+(include-book "misc/eval" :dir :system)
 (must-fail
  (encapsulate
   ((bar3 (x) t))

@@ -1,3 +1,5 @@
+(in-package "ACL2")
+
 (defconst *import-symbols*
   (set-difference-eq
    (union-eq *acl2-exports*
@@ -24,7 +26,4 @@
   (set-difference-eq *import-symbols*
 		     '(rem)))
 
-(certify-book "fupolinomio-normalizado"
-	      6
-	      nil ;;compile-flg
-	      )
+(certify-book "fupolinomio-normalizado" ? t)

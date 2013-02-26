@@ -1,4 +1,3 @@
+(in-package "ACL2")
 (ld "hacker-pkg.lsp")
-
-
-(ACL2::CERTIFY-BOOK "defstruct-parsing" ACL2::?)
+(certify-book "defstruct-parsing" ? t)

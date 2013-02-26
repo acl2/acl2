@@ -1,2 +1,2 @@
 (include-book "defsys-utilities")
-(certify-book "defsys" 1)
+(certify-book "defsys" ? t)

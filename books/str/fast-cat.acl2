@@ -1,2 +1,3 @@
 (ld "cert.acl2")
+; cert-flags: ? t :ttags :all
 (certify-book "fast-cat" ? t :ttags :all)

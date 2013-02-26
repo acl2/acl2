@@ -38,4 +38,4 @@
 
 (defpkg "FAST-SETS" *fast-sets-symbols*)
 
-(certify-book "fast-sets" 6)
+(certify-book "fast-sets" ? t)

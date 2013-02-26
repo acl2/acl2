@@ -20,7 +20,7 @@
 
 (in-package "VL")
 (include-book "tools/bstar" :dir :system)
-(local (include-book "make-event/assert" :dir :system))
+(local (include-book "misc/assert" :dir :system))
 (local (include-book "arithmetic"))
 
 

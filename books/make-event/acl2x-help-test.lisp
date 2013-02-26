@@ -1,8 +1,6 @@
 
 (in-package "ACL2")
 
-;; two-pass certification   (note: include this comment for cert.pl)
-
 ;; Yes, this include-book may be local even though we'll use macros defined in
 ;; it, in an apparently nonlocal manner.
 (local (include-book "acl2x-help"))

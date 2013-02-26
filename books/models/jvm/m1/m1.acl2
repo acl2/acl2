@@ -4,4 +4,4 @@
                      '(push pop pc program step
                             nth update-nth nth-update-nth)))
 
-(certify-book "m1" 1)
+(certify-book "m1" ? t)

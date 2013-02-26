@@ -4,5 +4,6 @@
 #|                                                                           |#
 #|===========================================================================|#
 
+(in-package "ACL2")
 (ld "gensym-defpkg.lsp")
-(certify-book "mv-nth" ?)
+(certify-book "mv-nth" ? t)

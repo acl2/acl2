@@ -9,4 +9,4 @@ acl2x-pcert-test-2-include.pcert0: acl2x-pcert-test-2.cert
 
 # Override:
 acl2x-pcert-test-2.acl2x:
-	cp -p acl2x-pcert-test-2.acl2x-source acl2x-pcert-test-2.acl2x
+	cp acl2x-pcert-test-2.acl2x-source acl2x-pcert-test-2.acl2x

@@ -19,4 +19,4 @@
              *common-lisp-symbols-from-main-lisp-package*)
    '(pop push top compile step eval)))
 
-(certify-book "compiler" 1)
+(certify-book "compiler" ? t)

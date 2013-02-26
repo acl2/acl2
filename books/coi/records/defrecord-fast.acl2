@@ -3,6 +3,8 @@
 #| coi: Computational Object Inference                                       |#
 #|                                                                           |#
 #|===========================================================================|#
+
+(in-package "ACL2")
 (ld "cert.acl2")
 (ld "data-structures/memories/package.lsp" :dir :system)
-(certify-book "defrecord-fast" ?)
+(certify-book "defrecord-fast" ? t)

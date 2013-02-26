@@ -9,4 +9,4 @@
                              *common-lisp-symbols-from-main-lisp-package*))
          '(PC PROGRAM PUSH POP REVERSE STEP ++)))
 
-      (certify-book "tjvm" 1)
+(certify-book "tjvm" ? t)

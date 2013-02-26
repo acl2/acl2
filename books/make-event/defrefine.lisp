@@ -343,7 +343,7 @@ Future Work
 
 ;; But look that the following fails.
 
-(include-book "eval")
+(include-book "misc/eval" :dir :system)
 
 (must-fail
  (defrefine flawed-more-concrete-fn generic-fn  

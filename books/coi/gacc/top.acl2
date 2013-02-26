@@ -4,6 +4,7 @@
 #|                                                                           |#
 #|===========================================================================|#
 
+(in-package "ACL2")
 (ld "gacc-defpkg.lsp")
 
 ;; The include-book commands below are copied here for effiency (ask Eric for
@@ -11,4 +12,4 @@
 
 (include-book "gacc3")
 
-(certify-book "top" ?)
+(certify-book "top" ? t)

@@ -3,4 +3,4 @@
 (lp)
 
 (include-book "utilities")
-(certify-book "vcg-examples" 1)
+(certify-book "vcg-examples" ? t)

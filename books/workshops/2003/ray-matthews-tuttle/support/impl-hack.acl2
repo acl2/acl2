@@ -1,5 +1,3 @@
-(value :q)
-
-(lp)
-
-(certify-book "impl-hack" 0 t :defaxioms-okp t)
+(in-package "ACL2")
+; cert-flags: ? t :defaxioms-okp t
+(certify-book "impl-hack" ? t :defaxioms-okp t)

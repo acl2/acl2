@@ -1,2 +1,2 @@
 (include-book "utilities")
-(certify-book "universal" 1)
+(certify-book "universal" ? t)

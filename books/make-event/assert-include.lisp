@@ -6,4 +6,4 @@
 
 (deflabel assert-include-label)
 
-(include-book "assert")
+(include-book "misc/assert" :dir :system)

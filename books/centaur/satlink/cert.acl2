@@ -19,4 +19,6 @@
 ; Original authors: Jared Davis <jared@centtech.com>
 ;                   Sol Swords <sswords@centtech.com>
 
+(in-package "ACL2")
 (include-book "portcullis")
+; cert-flags: ? t :ttags :all

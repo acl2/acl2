@@ -59,4 +59,4 @@
 
 (defpkg "MODEL-CHECK" *model-check-symbols*)
 
-(certify-book "models" 10)
+(certify-book "models" ? t)

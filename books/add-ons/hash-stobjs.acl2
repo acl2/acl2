@@ -1,4 +1,4 @@
+(in-package "ACL2")
 (ld "hacking/hacker-pkg.lsp" :dir :system)
-
-
-(ACL2::CERTIFY-BOOK "hash-stobjs" ACL2::? T :TTAGS ((HASH-STOBJS)))
+; cert-flags: ? t :ttags :all
+(certify-book "hash-stobjs" ? t :ttags :all)

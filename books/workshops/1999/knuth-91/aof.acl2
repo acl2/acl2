@@ -26,16 +26,7 @@
 
 ;; Certify the ACL2 Archimedean Ordered Field book.
 
-; (in-package "ACL2")
-
-; (ubt! 1)
-
-(value :q)
-
-(lp)
-
-;; We certify a book, then we undo back to the start, 
-;;  avoiding all queries by using :u.
+(in-package "ACL2")
 
 (defpkg 
   "ACL2-ASG"
@@ -56,4 +47,5 @@
              *common-lisp-symbols-from-main-lisp-package*)
    '(zero)))
 
-(certify-book "aof" 3 nil)
+; cert-flags: ? nil
+(certify-book "aof" ? nil)

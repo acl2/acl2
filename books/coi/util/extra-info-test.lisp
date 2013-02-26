@@ -7,7 +7,7 @@
 (in-package "ACL2")
 
 (include-book "extra-info")
-(include-book "make-event/eval" :dir :system)
+(include-book "misc/eval" :dir :system)
 
 ; We have to disable tau for this whole file.  The reason is that the
 ; author is taking advantage of disable to make a defined function, e.g., 

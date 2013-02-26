@@ -4,6 +4,7 @@
 #|                                                                           |#
 #|===========================================================================|#
 
+(in-package "ACL2")
 (ld "def-defpkg.lsp")
 (ld "defun-defpkg.lsp")
 
@@ -11,4 +12,4 @@
 ; symbols rule-sets::SYM in defsubtype.acl2x at the start of the Pcertify step.
 (include-book "rule-sets")
 
-(certify-book "defsubtype" ?)
+(certify-book "defsubtype" ? t)

@@ -1,5 +1,5 @@
+(in-package "ACL2")
 (include-book "defcode" :ttags ((defcode)))
 (include-book "redefun" :ttags ((defcode)))
-
-
-(ACL2::CERTIFY-BOOK "table-guard" ACL2::? T :TTAGS ((DEFCODE) (TABLE-GUARD)))
+; cert-flags: ? t :ttags ((defcode) (table-guard))
+(certify-book "table-guard" ? t :ttags ((defcode) (table-guard)))

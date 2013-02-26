@@ -20,7 +20,7 @@
 
 (in-package "RSTOBJ")
 (include-book "misc/total-order" :dir :system)
-(include-book "centaur/misc/mfc-utils" :dir :system)
+(include-book "std/lists/mfc-utils" :dir :system)
 (include-book "centaur/misc/introduce-var" :dir :system)
 (local (include-book "centaur/misc/equal-by-nths" :dir :system))
 (local (include-book "array-lemmas"))

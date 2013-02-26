@@ -59,7 +59,7 @@
 
 (in-package "ACL2")
 
-(include-book "make-event/eval" :dir :system)
+(include-book "misc/eval" :dir :system)
 (include-book "cutil/defaggregate" :dir :system)
 (include-book "cutil/deflist" :dir :system)
 (include-book "misc/defun-plus" :dir :system)

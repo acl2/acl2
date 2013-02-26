@@ -1,3 +1,4 @@
+(in-package "ACL2")
 (ld "def-defpkg.lsp")
 (ld "debug-defpkg.lsp")
-(certify-book "debug" ?)
+(certify-book "debug" ? t)

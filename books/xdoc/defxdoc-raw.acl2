@@ -19,4 +19,5 @@
 ; Original author: Jared Davis <jared@centtech.com>
 
 (include-book "portcullis")
-(certify-book "defxdoc-raw" ? t :ttags '(:xdoc))
+; cert-flags: ? t :ttags :all
+(certify-book "defxdoc-raw" ? t :ttags :all)

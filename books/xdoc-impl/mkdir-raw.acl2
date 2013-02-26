@@ -22,4 +22,5 @@
 ;; for stupid-mkdir
 
 (ld "cert.acl2")
-(certify-book "mkdir-raw" ? t :ttags '(:xdoc))
+; cert-flags: ? t :ttags :all
+(certify-book "mkdir-raw" ? t :ttags :all)

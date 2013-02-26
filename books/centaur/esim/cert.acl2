@@ -19,3 +19,4 @@
 ; cert.acl2
 
 (include-book "portcullis")
+; cert-flags: ? t :ttags :all

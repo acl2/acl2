@@ -4,4 +4,4 @@
 
 (include-book "utilities")
 
-(certify-book "demo" 1)
+(certify-book "demo" ? t)

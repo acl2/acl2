@@ -1,5 +1,7 @@
 ; We need to specify :skip-proofs-okp t because of the skip-proofs in
 ; mid.lisp.
 
+(in-package "ACL2")
 (ld "cert.acl2")
+; cert-flags: ? :default :skip-proofs-okp t
 (certify-book "top" ? :default :skip-proofs-okp t)

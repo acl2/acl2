@@ -15,4 +15,6 @@
 ; this program; if not, write to the Free Software Foundation, Inc., 51
 ; Franklin Street, Suite 500, Boston, MA 02110-1335, USA.
 
-(certify-book "elim-hint" 0 t :ttags (the-ultimate-clause-processor-ttag))
+(in-package "ACL2")
+; cert-flags: ? t :ttags (the-ultimate-clause-processor-ttag)
+(certify-book "elim-hint" ? t :ttags (the-ultimate-clause-processor-ttag))

@@ -1,4 +1,4 @@
 (value :q)
 (lp)
 (include-book "../../../../data-structures/set-theory")
-(certify-book "separation" 1)
+(certify-book "separation" ? t)

@@ -18,6 +18,7 @@
 ;
 ; Original author: Sol Swords <sswords@centtech.com>
 
+(in-package "ACL2")
 (include-book "centaur/gl/portcullis" :dir :system)
-
+; cert-flags: ? t :ttags :all
 (certify-book "g-sexpr-eval" ? t :ttags :all)

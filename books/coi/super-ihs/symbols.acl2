@@ -5,4 +5,4 @@
 #|===========================================================================|#
 
 (ld "symbols-defpkg.lsp")
-(certify-book "symbols" 1)
+(certify-book "symbols" ? t)

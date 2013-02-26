@@ -15,4 +15,4 @@
 
 (defpkg "CNF" *cnf-package-exports*)
 
-(certify-book "confluence" 3)
+(certify-book "confluence" ? t)

@@ -1,3 +1,5 @@
+(in-package "ACL2")
+
 (defpkg "INT-RND-REM"
   (set-difference-eq (union-eq
                       *acl2-exports*
@@ -5,6 +7,4 @@
 ; Subtracted 12/4/2012 by Matt K. for addition to *acl2-exports* ; ; ;
                      '(nat-listp acl2-number-listp)))
 
-(certify-book "ed4db" 
-	      1
-	      )
+(certify-book "ed4db" ? t)

@@ -1,1 +1,2 @@
-(certify-book "defabsstobj-example-4" 0 t :ttags (:restore-state))
+; cert-flags: ? t :ttags (:restore-state)
+(certify-book "defabsstobj-example-4" ? t :ttags (:restore-state))

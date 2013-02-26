@@ -1,3 +1,4 @@
+(in-package "ACL2")
 (ld "hacker-pkg.lsp")
 
 ; We need the following for provisional certification, so that ACL2 can read
@@ -5,4 +6,5 @@
 ; Pcertify step.
 (include-book "rewrite-code")
 
-(ACL2::CERTIFY-BOOK "table-guard" ACL2::? T :TTAGS ((DEFCODE) (TABLE-GUARD)))
+; cert-flags: ? t :ttags ((defcode) (table-guard))
+(certify-book "table-guard" ? t :ttags ((defcode) (table-guard)))

@@ -20,4 +20,5 @@
 
 (ld "xdoc/package.lsp" :dir :system)
 (ld "str/package.lsp" :dir :system)
+; cert-flags: ? t :ttags :all
 (certify-book "portcullis" ? t :ttags :all)

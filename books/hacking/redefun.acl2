@@ -1,4 +1,3 @@
+(in-package "ACL2")
 (ld "hacker-pkg.lsp")
-
-
-(ACL2::CERTIFY-BOOK "redefun" ACL2::? T)
+(certify-book "redefun" ? t)

@@ -1,1 +1,2 @@
-(certify-book "ruler-extenders-tests" 0 t :skip-proofs-okp t)
+; cert-flags: ? t :skip-proofs-okp t
+(certify-book "ruler-extenders-tests" ? t :skip-proofs-okp t)

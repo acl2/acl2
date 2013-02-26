@@ -22,5 +22,7 @@
 ;                   Anna Slobadova <anna@centtech.com>
 ;                   Sol Swords <sswords@centtech.com>
 
+(in-package "ACL2")
 (include-book "centaur/vl/portcullis" :dir :system)
+; cert-flags: ? t :ttags :all
 (certify-book "introduce-var" ? t :ttags :all)

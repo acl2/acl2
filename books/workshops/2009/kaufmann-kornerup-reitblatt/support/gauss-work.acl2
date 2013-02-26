@@ -1,4 +1,4 @@
-(INCLUDE-BOOK "gauss-fns")
-
-(CERTIFY-BOOK "gauss-work" ? T)
+(in-package "ACL2")
+(include-book "gauss-fns")
+(certify-book "gauss-work" ? t)
 

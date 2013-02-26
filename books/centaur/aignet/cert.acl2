@@ -18,4 +18,6 @@
 ;
 ; Original author: Sol Swords <sswords@centtech.com>
 
+(in-package "ACL2")
 (include-book "portcullis")
+; cert-flags: ? t :ttags :all

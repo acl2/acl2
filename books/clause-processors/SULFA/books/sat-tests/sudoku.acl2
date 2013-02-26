@@ -1,11 +1,9 @@
-
-(acl2::value :q)
-(acl2::lp)
+(in-package "ACL2")
 
 #+acl2-par
 ; clause processors that modify state
 (set-waterfall-parallelism nil)
 
-(ld '((ubt! 1)
-      (ld "../sat/sat-package.acl2")
-      (certify-book "sudoku" 1 t :ttags (sat sat-cl))))
+(ld "../sat/sat-package.acl2")
+; cert-flags: ? t :ttags (sat sat-cl)
+(certify-book "sudoku" ? t :ttags (sat sat-cl))

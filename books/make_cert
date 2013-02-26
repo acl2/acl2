@@ -46,12 +46,6 @@ export ON_FAILURE_CMD ?=
 # critpath.pl
 export TIME_CERT ?=
 
-# Complilation, ttag, and skip-proofs arguments for certify-book.  We
-# prefer to allow proof-skipping and ttags by default, since otherwise
-# adding a ttag or skipping a single proof in a widely-included book
-# could lead to a huge problem in updating all of the affected books.
-export COMPILE_FLG ?= t :ttags :all :skip-proofs-okp t :defaxioms-okp t
-
 # Typically you want to inhibit most proof output during certification, since
 # this can greatly reduce the size of .out files.
 export INHIBIT ?= (set-inhibit-output-lst (list (quote prove) \

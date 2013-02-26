@@ -1,7 +1,8 @@
+(in-package "ACL2")
 (include-book "pseudo-good-worldp")
 
 (make-event
  (er-progn (chk-pseudo-good-worldp "pseudo-good-worldp")
            (value '(defun worldp-check-fn (x) x))))
 
-(certify-book "worldp-check" ?)
+(certify-book "worldp-check" ? t)

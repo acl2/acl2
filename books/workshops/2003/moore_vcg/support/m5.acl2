@@ -157,4 +157,4 @@
                        *common-lisp-symbols-from-main-lisp-package*))
    '(PC PROGRAM PUSH POP RETURN REVERSE STEP ++)))
 
-(certify-book "m5" 3)
+(certify-book "m5" ? t)

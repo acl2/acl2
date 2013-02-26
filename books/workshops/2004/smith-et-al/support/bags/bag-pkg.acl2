@@ -8,4 +8,4 @@
 			let 
 			term-order) 
 		      *acl2-exports* list::*exports*))
-(certify-book "bag-pkg" 3)
+(certify-book "bag-pkg" ? t)

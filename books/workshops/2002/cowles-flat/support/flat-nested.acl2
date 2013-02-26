@@ -1,14 +1,5 @@
-(value :q)
-
-(LP)
-
+(in-package "ACL2")
 (defpkg "FLAT"
-  (union-eq 
-   *acl2-exports*
-   *common-lisp-symbols-from-main-lisp-package*))
-
-(certify-book "flat-nested" 
-	      1
-	      nil ; compile-flg
-	      :defaxioms-okp nil 
-	      :skip-proofs-okp nil)
+  (union-eq *acl2-exports*
+            *common-lisp-symbols-from-main-lisp-package*))
+(certify-book "flat-nested" ? t)

@@ -55,7 +55,7 @@
 
 ; Needed for definition of must-fail, used below:
 ; [9]
-(include-book "eval")
+(include-book "misc/eval" :dir :system)
 
 ; Not redundant with command 3 (my-mac call is missing).
 ; [10]

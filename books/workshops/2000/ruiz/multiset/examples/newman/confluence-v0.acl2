@@ -17,4 +17,4 @@
 
 (defpkg "CNF" *cnf-package-exports*)
 
-(certify-book "confluence-v0" 3)
+(certify-book "confluence-v0" ? t)

@@ -1,3 +1,5 @@
+(in-package "ACL2")
+
 (defconst *import-symbols*
   (set-difference-eq
    (union-eq *acl2-exports*
@@ -20,7 +22,5 @@
 	    '(FUTER::naturalp FUTER::terminop FUMON::monomio FUMON::coeficiente
 			    FUMON::termino FUMON::monomiop)))
 
-(certify-book "fuopuesto"
-	      5
-	      nil ;;compile-flg
-	      )
+(certify-book "fuopuesto" ? t)
+

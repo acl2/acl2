@@ -13,4 +13,4 @@
 			      :rewrite
 			      (:forward-chaining :trigger-terms ((unknown key size n))))))
 
-(certify-book "exec" 9)
+(certify-book "exec" ? t)

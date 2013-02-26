@@ -21,7 +21,7 @@
 (in-package "VL")
 (include-book "xdoc/top" :dir :system)
 (include-book "misc/definline" :dir :system)
-(local (include-book "make-event/assert" :dir :system))
+(local (include-book "misc/assert" :dir :system))
 (local (include-book "arithmetic"))
 
 

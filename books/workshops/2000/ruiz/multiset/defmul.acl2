@@ -8,4 +8,4 @@
 			   make-ord e0-ordinalp e0-ord-<
 			   ctoa atoc))))
 
-(certify-book "defmul" 1)
+(certify-book "defmul" ? t)

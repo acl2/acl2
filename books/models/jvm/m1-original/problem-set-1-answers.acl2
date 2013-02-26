@@ -1,3 +1,5 @@
+(in-package "ACL2")
+
 (defpkg "M1"
   '(defun declare ignore xargs defthm mutual-recursion
     include-book in-theory disable defconst
@@ -18,4 +20,4 @@
     if equal
     zp + - * / mod expt < <= > >=))
 
-(certify-book "problem-set-1-answers" 1 t)
+(certify-book "problem-set-1-answers" ? t)

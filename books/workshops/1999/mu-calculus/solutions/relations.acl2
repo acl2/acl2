@@ -46,4 +46,4 @@
 (defpkg "RELATIONS"
   *relations-symbols*)
 
-(certify-book "relations" 8)
+(certify-book "relations" ? t)

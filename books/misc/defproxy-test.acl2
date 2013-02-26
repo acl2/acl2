@@ -1,1 +1,2 @@
-(certify-book "defproxy-test" 0 t :ttags (:defproxy-test))
+; cert-flags: ? t :ttags (:defproxy-test)
+(certify-book "defproxy-test" ? t :ttags (:defproxy-test))

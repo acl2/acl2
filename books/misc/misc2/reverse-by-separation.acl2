@@ -1,2 +1,2 @@
 (include-book "coi/bags/top" :dir :system)
-(certify-book "reverse-by-separation" 1)
+(certify-book "reverse-by-separation" ? t)

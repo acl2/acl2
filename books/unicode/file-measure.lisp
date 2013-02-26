@@ -3,4 +3,4 @@
 
 ;; cert_param: (reloc_stub)
 
-(include-book "std/io/file-measure" :dir :system)
+(include-book "std/io/base" :dir :system)

@@ -1,4 +1,4 @@
-(value :q)
-(lp)
+(in-package "ACL2")
 (ld "defpkg.lsp")
-(certify-book "kalman-demo" 1 t :skip-proofs-okp t :defaxioms-okp t)
+; cert-flags: ? t :skip-proofs-okp t :defaxioms-okp t
+(certify-book "kalman-demo" ? t :skip-proofs-okp t :defaxioms-okp t)

@@ -72,7 +72,7 @@
 
 (include-book "macros-skip-proofs")
 
-(include-book "eval")
+(include-book "misc/eval" :dir :system)
 
 (include-book "misc/file-io" :dir :system)
 

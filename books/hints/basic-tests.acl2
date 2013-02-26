@@ -1,3 +1,5 @@
+(in-package "ACL2")
+
 ; Enable proof output.
 (set-inhibit-output-lst '(proof-tree))
 
@@ -5,4 +7,5 @@
 ; computed hints that modify state
 (set-waterfall-parallelism nil)
 
-(certify-book "basic-tests" 0 t :skip-proofs-okp t :defaxioms-okp t)
+; cert-flags: ? t :skip-proofs-okp t :defaxioms-okp t
+(certify-book "basic-tests" ? t :skip-proofs-okp t :defaxioms-okp t)

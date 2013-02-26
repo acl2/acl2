@@ -1,3 +1,5 @@
+(in-package "ACL2")
+
 (defconst *import-symbols*
   (set-difference-eq
    (union-eq *acl2-exports*
@@ -15,7 +17,5 @@
   (union-eq *import-symbols*
 	    '(FLD::fdp FUTER::terminop)))
 
-(certify-book "fumonomio"
-	      4
-	      nil ;;compile-flg
-	      )
+(certify-book "fumonomio" ? t)
+

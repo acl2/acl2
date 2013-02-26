@@ -4,4 +4,4 @@
 
 (include-book "inputs")
 
-(certify-book "defs-in" 1)
+(certify-book "defs-in" ? t)

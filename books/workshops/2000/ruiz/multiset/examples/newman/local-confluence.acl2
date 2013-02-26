@@ -20,4 +20,4 @@
 
 (defpkg "LCNF" (cons 'multiset-diff *cnf-package-exports*))
 
-(certify-book "local-confluence" 5)
+(certify-book "local-confluence" ? t)

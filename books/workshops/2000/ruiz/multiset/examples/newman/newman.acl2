@@ -16,4 +16,4 @@
 
 (defpkg "NWM" (cons 'multiset-diff *cnf-package-exports*))
 
-(certify-book "newman" 3)
+(certify-book "newman" ? t)

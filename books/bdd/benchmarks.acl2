@@ -12,4 +12,4 @@
 
 :u
 
-(certify-book "benchmarks")
+(certify-book "benchmarks" ? t)

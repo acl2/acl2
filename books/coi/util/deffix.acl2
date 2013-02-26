@@ -4,7 +4,8 @@
 #|                                                                           |#
 #|===========================================================================|#
 
+(in-package "ACL2")
 ; (ld "Makefile.acl2")
 (ld "def-defpkg.lsp")
 (ld "../symbol-fns/symbol-fns-defpkg.lsp")
-(certify-book "deffix" ?)
+(certify-book "deffix" ? t)

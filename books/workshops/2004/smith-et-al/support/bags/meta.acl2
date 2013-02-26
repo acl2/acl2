@@ -1,4 +1,4 @@
 (include-book "bag-exports")
 (include-book "../lists/mv-nth")
 (include-book "../syntax/syntax")
-(certify-book "meta" 3)
+(certify-book "meta" ? t)

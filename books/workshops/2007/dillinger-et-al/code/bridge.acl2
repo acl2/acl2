@@ -1,6 +1,5 @@
+(in-package "ACL2")
 (ld "hacker-pkg.lsp")
-
 (include-book "defcode" :ttags ((defcode)))
-
-
-(ACL2::CERTIFY-BOOK "bridge" ACL2::? T :TTAGS ((DEFCODE)))
+; cert-flags: ? t :ttags ((defcode))
+(certify-book "bridge" ? t :ttags ((defcode)))

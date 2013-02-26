@@ -18,6 +18,8 @@
 ;
 ; This just has the defpackage events for the set theory library.
 
+(in-package "ACL2")
+
 (ld "xdoc/package.lsp" :dir :system)
 
 (defpkg "INSTANCE"

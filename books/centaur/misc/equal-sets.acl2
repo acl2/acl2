@@ -18,5 +18,7 @@
 ;
 ; Original author: Sol Swords <sswords@centtech.com>
 
+(in-package "ACL2")
 (ld "finite-set-theory/osets/sets.defpkg" :dir :system)
+; cert-flags: ? t :ttags :all
 (certify-book "equal-sets" ? t :ttags :all)

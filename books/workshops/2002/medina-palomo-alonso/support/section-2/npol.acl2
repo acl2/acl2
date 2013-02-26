@@ -11,4 +11,4 @@
 (defpkg "NPOL"
   (set-difference-eq *acl2-and-lisp-exports* '(= + * - null identity)))
 
-(certify-book "npol" 3)
+(certify-book "npol" ? t)

@@ -1,2 +1,2 @@
 (include-book "utilities")
-(certify-book "idemo" 1)
+(certify-book "idemo" ? t)

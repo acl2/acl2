@@ -1,3 +1,5 @@
+(in-package "ACL2")
+
 #+acl2-par
 (set-waterfall-parallelism 
 
@@ -6,4 +8,5 @@
 
  nil)
 
-(certify-book "examples" 0 t :ttags :all)
+; cert-flags: ? t :ttags :all
+(certify-book "examples" ? t :ttags :all)

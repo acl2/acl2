@@ -1,1 +1,3 @@
+(in-package "ACL2")
+; cert-flags: ? t :ttags (:ccg)
 (certify-book "wp-gen" ? t :ttags (:ccg))

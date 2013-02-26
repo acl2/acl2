@@ -25,7 +25,7 @@
 (in-package "ACL2")
 (include-book "cutil/defsection" :dir :system)
 (include-book "centaur/misc/arith-equivs" :dir :system)
-(include-book "centaur/misc/mfc-utils" :dir :system)
+(include-book "std/lists/mfc-utils" :dir :system)
 (include-book "centaur/misc/introduce-var" :dir :system)
 (include-book "equal-by-logbitp")
 (local (include-book "ihsext-basics"))

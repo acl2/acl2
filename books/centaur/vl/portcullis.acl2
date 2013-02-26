@@ -18,7 +18,8 @@
 ;
 ; Original author: Jared Davis <jared@centtech.com>
 
+(in-package "ACL2")
 (ld "package.lsp")
 (ld "other-packages.lsp")
-
+; cert-flags: ? t :ttags :all
 (certify-book "portcullis" ? t :ttags :all)

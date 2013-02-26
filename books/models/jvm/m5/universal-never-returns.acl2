@@ -1,2 +1,2 @@
 (include-book "universal")
-(certify-book "universal-never-returns" 1)
+(certify-book "universal-never-returns" ? t)

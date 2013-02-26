@@ -20,3 +20,4 @@
 
 (in-package "ACL2")
 (include-book "portcullis")
+; cert-flags: ? t :ttags :all

@@ -8,4 +8,4 @@
 
   nil)
 
-(certify-book "mult-proofs")
+(certify-book "mult-proofs" ? t)

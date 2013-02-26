@@ -1,1 +1,2 @@
-(certify-book "fib" 0 t :skip-proofs-okp t)
+; cert-flags: ? t :skip-proofs-okp t
+(certify-book "fib" ? t :skip-proofs-okp t)

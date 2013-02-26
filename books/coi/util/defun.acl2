@@ -4,9 +4,10 @@
 #|                                                                           |#
 #|===========================================================================|#
 
+(in-package "ACL2")
 (ld "cert.acl2")
 (ld "defun-defpkg.lsp")
 (ld "def-defpkg.lsp")
 (ld "debug-defpkg.lsp")
 (ld "../symbol-fns/symbol-fns-defpkg.lsp")
-(certify-book "defun" ?)
+(certify-book "defun" ? t)

@@ -30,4 +30,4 @@
 
 (defpkg "SETS" *sets-symbols*)
 
-(certify-book "sets" 4)
+(certify-book "sets" ? t)

@@ -6,4 +6,4 @@
         (union-eq *acl2-exports*
 		  *common-lisp-symbols-from-main-lisp-package*))
 
-(certify-book "tail-rec" 1)
+(certify-book "tail-rec" ? t)

@@ -8,7 +8,7 @@
 (in-package "ACL2")
 
 ; Define must-succeed and must-fail:
-(include-book "eval")
+(include-book "misc/eval" :dir :system)
 
 ; A simple test:
 (must-succeed

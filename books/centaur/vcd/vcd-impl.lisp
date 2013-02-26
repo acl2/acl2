@@ -28,7 +28,7 @@
 (include-book "centaur/vl/toe/toe-emodwire" :dir :system)
 (include-book "centaur/vl/toe/toe-verilogify" :dir :system)
 (include-book "centaur/vl/util/prefix-hash" :dir :system)
-(local (include-book "make-event/assert" :dir :system))
+(local (include-book "misc/assert" :dir :system))
 (local (include-book "centaur/vl/util/arithmetic" :dir :system))
 (local (include-book "centaur/vl/util/osets" :dir :system))
 (set-state-ok t)

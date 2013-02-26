@@ -1,10 +1,4 @@
-
-(acl2::value :q)
-(acl2::lp)
-
-(ld '((ubt! 1)
-      (ld "../sat/sat-package.acl2")
-      (certify-book "benchmark" 1 t
-                    :ttags (sat sat-cl
-                                #+acl2-par
-                                our-waterfall-parallelism-hacks))))
+(in-package "ACL2")
+(ld "../sat/sat-package.acl2")
+; cert-flags: ? t :ttags (sat sat-cl #+acl2-par our-waterfall-parallelism-hacks)
+(certify-book "benchmark" ? t :ttags (sat sat-cl #+acl2-par our-waterfall-parallelism-hacks))

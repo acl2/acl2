@@ -1,4 +1,4 @@
 (value :q)
 (lp)
 (include-book "examples")
-(certify-book "tjvm-examples" 1)
+(certify-book "tjvm-examples" ? t)

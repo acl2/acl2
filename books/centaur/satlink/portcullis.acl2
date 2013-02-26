@@ -19,5 +19,6 @@
 ; Original authors: Jared Davis <jared@centtech.com>
 ;                   Sol Swords <sswords@centtech.com>
 
+(in-package "ACL2")
 (ld "package.lsp")
 (certify-book "portcullis" ? t)

@@ -89,7 +89,7 @@
 (include-book "coi/syntax/syntax" :dir :system)
 (include-book "coi/util/mv-nth" :dir :system)
 (include-book "compiler-proof")
-(include-book "make-event/eval" :dir :system)
+(include-book "misc/eval" :dir :system)
 (include-book "coi/util/pseudo-translate" :dir :system)
 (include-book "coi/util/recursion-support" :dir :system)
 
