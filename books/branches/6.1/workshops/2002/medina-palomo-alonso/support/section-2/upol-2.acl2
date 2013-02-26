@@ -1,0 +1,14 @@
+;;; --------
+;;; Packages
+;;; --------
+
+(defconst *acl2-and-lisp-exports*
+  (union-eq *acl2-exports* *common-lisp-symbols-from-main-lisp-package*))
+
+(defpkg "UPOL"
+  (set-difference-eq *acl2-and-lisp-exports* '(= + * - null identity)))
+
+(defpkg "NPOL"
+  (set-difference-eq *acl2-and-lisp-exports* '(= + * - null identity)))
+
+(certify-book "upol-2" 3)

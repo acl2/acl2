@@ -1,0 +1,14 @@
+(encapsulate
+ ((local-fn (x) t))
+ (local (defun local-fn (x) x))
+ (make-event '(defun bar4 (x) (cons x x))
+             :check-expansion nil)
+ (defthm bar4-prop
+   (consp (bar4 x))))
+
+; Includes an encapsulate redundant with the above.
+(include-book "portcullis-expansion")
+
+(u)
+
+(certify-book "portcullis-expansion-include" ?)

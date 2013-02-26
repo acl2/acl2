@@ -1,0 +1,7 @@
+;; Package for hexadecimal printing
+(defpkg "RADIX"
+  (union-eq '(fmx)
+	    (union-eq *acl2-exports*
+		      *common-lisp-symbols-from-main-lisp-package*)))
+
+(certify-book "radix" 1)

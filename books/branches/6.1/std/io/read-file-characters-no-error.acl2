@@ -1,0 +1,1 @@
+(certify-book "read-file-characters-no-error" 0 t :ttags (:cutil-optimize))

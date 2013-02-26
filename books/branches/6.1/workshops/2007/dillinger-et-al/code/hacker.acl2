@@ -1,0 +1,13 @@
+;; hacker.lisp
+;;
+;; Functions for extending ACL2 in ways that are potentially unsound
+;;
+;; By Peter C. Dillinger with contributions by Matt Kaufmann
+;;
+;; Last modified: 
+
+
+(ld "hacker-pkg.lsp")
+
+
+(ACL2::CERTIFY-BOOK "hacker" ACL2::?)

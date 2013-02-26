@@ -1,0 +1,2 @@
+(include-book "sets")
+(certify-book "omerge-good-order" 1)

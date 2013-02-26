@@ -1,0 +1,5 @@
+
+(acl2::value :q)
+(acl2::lp)
+(ld '((ubt! 1)
+      (certify-book "bv-lib-lemmas" 0 t :skip-proofs-okp t :ttags (sat sat-cl))))

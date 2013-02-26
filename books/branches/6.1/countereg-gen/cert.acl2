@@ -1,0 +1,2 @@
+(ld "package.lsp")
+(include-book "finite-set-theory/osets/portcullis" :dir :system)

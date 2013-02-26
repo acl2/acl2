@@ -1,0 +1,2 @@
+(include-book "defsys")
+(certify-book "low-seven" 1)

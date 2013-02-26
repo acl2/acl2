@@ -1,0 +1,12 @@
+(value :q)
+(lp)
+
+      (DEFPKG "TJVM"
+        (set-difference-equal
+         (union-eq '(ASSOC-EQUAL LEN NTH ZP SYNTAXP
+                                 QUOTEP FIX NFIX E0-ORDINALP E0-ORD-<)
+                   (union-eq *acl2-exports*
+                             *common-lisp-symbols-from-main-lisp-package*))
+         '(PC PROGRAM PUSH POP REVERSE STEP ++)))
+
+      (certify-book "tjvm" 1)

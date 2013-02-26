@@ -1,0 +1,6 @@
+#+gcl (acl2::value :q)
+#+gcl (setq si::*optimize-maximum-pages* nil)
+#+gcl (acl2::lp)
+(include-book "../portcullis")
+; The following form should be uncommented if we ever use Makefile-generic here.
+; (certify-book "lint" ? t :ttags :all)

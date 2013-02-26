@@ -1,0 +1,4 @@
+(ld "hacker-pkg.lsp")
+
+
+(ACL2::CERTIFY-BOOK "defstruct-parsing" ACL2::?)
