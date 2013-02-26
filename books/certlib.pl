@@ -64,28 +64,17 @@ sub human_time {
 }
 
 
-
-# DEPRECATED
-sub rel_path {
-# Composes two paths together.  Basically just builds "$base/$path"
-# but handles the special cases where $base is empty or $path is
-# absolute.
-    my $base = shift;
+my %abs_path_memo = ();
+# must only be called on existing paths, at least in cygwin
+sub get_abs_path {
     my $path = shift;
-    if (substr($path,0,1) eq "/" || !$base) {
-	return $path;
-    } else {
-	return "$base/$path";
+    my $entry = $abs_path_memo{$path};
+    if ($entry) {
+	return $entry;
     }
-}
-
-# DEPRECATED
-sub rec_readlink {
-    my $path = shift;
-    while (-l $path) {
-	$path = readlink $path;
-    }
-    return $path;
+    my $res = Cwd::abs_path($path);
+    $abs_path_memo{$path}=$res;
+    return $res;
 }
 
 # We're mostly interested in resolving directory symlinks here.
@@ -109,7 +98,7 @@ sub abs_canonical_path {
     # on a test system with linux over nfs etc etc.  Who knows.  Doc
     # also says fast_abs_path is "more dangerous", whatever that
     # means.
-    my $absdir = Cwd::abs_path($voldir); # Cwd::fast_abs_path($voldir);
+    my $absdir = get_abs_path($voldir); # Cwd::fast_abs_path($voldir);
     # print "absdir: $absdir\n";
     if ($absdir) {
 	return File::Spec->catfile($absdir, $file);
@@ -123,43 +112,28 @@ my $BASE_PATH = abs_canonical_path(".");
 
 my %canonical_path_memo = ();
 
+sub canonical_path_aux {
+    my $fname = shift;
+    
+    my $abs_path = abs_canonical_path($fname);
+    if ($BASE_PATH && $abs_path) {
+	my $relpath =  File::Spec->abs2rel($abs_path, $BASE_PATH);
+	return $relpath ? $relpath : ".";
+    }
+    return $abs_path;
+}
+
 sub canonical_path {
     my $fname = shift;
     my $entry = $canonical_path_memo{$fname};
     if ($entry) {
 	return $entry;
     } else {
-	my $res;
-	my $abs_path = abs_canonical_path($fname);
-	if ($BASE_PATH && $abs_path) {
-	    my $relpath =  File::Spec->abs2rel($abs_path, $BASE_PATH);
-	    $res = $relpath ? $relpath : ".";
-	} else {
-	    $res = $abs_path;
-	}
+	my $res = canonical_path_aux($fname);
 	$canonical_path_memo{$fname} = $res;
 	return $res;
     }
 }
-
-# not at all cross-platform
-# sub which {
-#     my $name = shift;
-#     # test to see if this is just a filename with no directory -- is this correct?
-#     if (basename($name) eq $name) {
-# 	foreach my $dir (split(":", $ENV{"PATH"})) {
-# 	    my $file = rel_path($dir, $name);
-# 	    if ((! -d $file) && -x $file) {
-# 		return abs_canonical_path($file);
-# 	    }
-# 	}
-#     } elsif ((! -d $name) && -x $name) {
-# 	return abs_canonical_path($name);
-#     }
-#     return 0;
-# }
-	
-
 
 
 
