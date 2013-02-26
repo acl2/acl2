@@ -1348,10 +1348,11 @@
 #-acl2-loop-only
 (defvar *first-entry-to-ld-fn-body-flg*)
 
-(defun update-cbd (filename state)
+(defun update-cbd (standard-oi0 state)
 
-; At one time we used extend-pathname to compute the new cbd from the old cbd
-; and filename.  However, this caused us to follow soft links when that was
+; For the case that standard-oi0 is a string (representing a file), we formerly
+; used extend-pathname to compute the new cbd from the old cbd and
+; standard-oi0.  However, this caused us to follow soft links when that was
 ; undesirable.  Here is a suitable experiment, after building the nonstd books
 ; by connecting to books/nonstd/ and running "make clean-nonstd" followed by
 ; "make all-nonstd".  In this experiment, we had already certified the regular
@@ -1364,19 +1365,22 @@
 
   (let ((old-cbd (f-get-global 'connected-book-directory state)))
     (cond ((and old-cbd
-                (stringp filename)
-                (position *directory-separator* filename))
-           (f-put-global
-            'connected-book-directory
-            (if (absolute-pathname-string-p filename nil (os (w state)))
-                (maybe-add-separator
-                 (remove-after-last-directory-separator filename))
-              (our-merge-pathnames
-               old-cbd
-               (concatenate 'string
-                            (remove-after-last-directory-separator filename)
-                            *directory-separator-string*)))
-            state))
+                (stringp standard-oi0)
+                (position *directory-separator* standard-oi0))
+           (let* ((os (os (w state)))
+                  (filename-dir
+                   (expand-tilde-to-user-home-dir
+                    (concatenate 'string
+                                 (remove-after-last-directory-separator
+                                  standard-oi0)
+                                 *directory-separator-string*)
+                    os 'update-cbd state)))
+             (f-put-global
+              'connected-book-directory
+              (if (absolute-pathname-string-p filename-dir nil os)
+                  filename-dir
+                (our-merge-pathnames old-cbd filename-dir))
+              state)))
           (t state))))
 
 (defun ld-fn-body (standard-oi0 new-ld-specials-alist state)
