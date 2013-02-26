@@ -88,14 +88,14 @@ sub rec_readlink {
     return $path;
 }
 
-
+# We're mostly interested in resolving directory symlinks here.
+# If we have source files themselves symlinked, we won't canonicalize them
+# b/c presumably they are supposed to be considered different files?
+# This assumes that the file isn't necessarily supposed to exist, but the directory is.
 sub abs_canonical_path {
     my $path = shift;
     # print "path: $path\n";
-    # my $pathlink = rec_readlink($path);
-    # print "pathlink: $pathlink\n";
-    # my $abspath = File::Spec->rel2abs($pathlink);
-    my $abspath = abs_path($path);
+    my $abspath = File::Spec->rel2abs($path);
     # print "abspath: $abspath\n";
     my ($vol, $dir, $file) = File::Spec->splitpath($abspath);
     # print "path: $path vol: $vol dir: $dir file: $file\n";
@@ -109,7 +109,7 @@ sub abs_canonical_path {
     # on a test system with linux over nfs etc etc.  Who knows.  Doc
     # also says fast_abs_path is "more dangerous", whatever that
     # means.
-    my $absdir = abs_path($voldir); # Cwd::fast_abs_path($voldir);
+    my $absdir = Cwd::abs_path($voldir); # Cwd::fast_abs_path($voldir);
     # print "absdir: $absdir\n";
     if ($absdir) {
 	return File::Spec->catfile($absdir, $file);
