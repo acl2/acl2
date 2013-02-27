@@ -351,6 +351,18 @@ OPTIONS:
           directives in the books themselves, and if the same parameter
           is assigned in the book and in the params file, the params
           file takes precedence.
+
+   --cache <filename>
+          Specifies a file to use as a sourcefile events cache.  Such
+          a file records events such as include-book, cert-param,
+          etc., that are present in each source file.  When this
+          option is given, cached information is read from that file
+          if it is present, and updated information is written to it
+          when we are done.  Using a cache may improve performance by
+          reducing the number of source files that must be scanned for
+          events.  File modification times are used to determine when
+          the cached information about a file must be updated.
+
 ';
 
 GetOptions ("help|h"               => sub { print $summary_str;
@@ -417,8 +429,7 @@ GetOptions ("help|h"               => sub { print $summary_str;
 					    read_targets(shift, \@user_targets);
 					},
 	    "debug"                => \$certlib_opts{"debugging"},
-	    # Note: this doesn't do anything yet.
-	    "cache|h=s"            => \$cache_file,
+	    "cache=s"              => \$cache_file,
 	    "accept-cache"         => \$certlib_opts{"believe_cache"},
 	    "deps-of|p=s"          => sub { shift; push(@user_targets, "-p " . shift); },
 	    "params=s"             => \$params_file,

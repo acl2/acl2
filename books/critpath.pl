@@ -49,10 +49,6 @@ my $HELP_MESSAGE = "
 
  Steps for using this program:
 
- 0. Ensure that you have GNU time installed and accessible by running \"env
-    time\".  For example, running \"env time --version\" should print something
-    like \"GNU time 1.7\".
-
  1. Use cert.pl to certify all the books you're interested in (from scratch)
     with the TIME_CERT environment variable set to \"yes\" and exported.
 
@@ -82,8 +78,18 @@ my $HELP_MESSAGE = "
                     to any given on the command line.
 
        -p, --deps-of <filename>
-                    Add as targets all dependencies of the book <filename>.
- ";
+                    Add as targets all dependencies of the specified
+                    source file.
+
+       -m, --max-depth <N>
+                    Print a maximum of N levels of directory context;
+                    default 1.
+
+       -c, --cache <filename>
+                    Read/write a sourcefile events cache, which may
+                    improve performance.  See 'cert.pl --help' for
+                    more info.
+";
 
 my %OPTIONS = (
   'html'    => '',
@@ -110,6 +116,7 @@ my $options_okp = GetOptions('h|html' => \$OPTIONS{'html'},
 			     'nopath' => \$OPTIONS{'nopath'},
 			     'nolist' => \$OPTIONS{'nolist'},
 			     'short=i' =>  \$OPTIONS{'short'},
+			     'max-depth|m=i' =>  \$OPTIONS{'short'},
 			     'real|r'  => \$OPTIONS{'real'},
 			     'debug|d' => \$debug,
 			     "targets|t=s"          
@@ -118,7 +125,7 @@ my $options_okp = GetOptions('h|html' => \$OPTIONS{'html'},
 					   },
 			     "deps-of|p=s"
 			              => \@deps_of,
-			     "cache|h=s"
+			     "cache|c=s"
 			              => \$cache_file,
 			     "params=s"             => \$params_file,
 			     );
