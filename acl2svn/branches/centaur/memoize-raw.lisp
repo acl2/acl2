@@ -5706,65 +5706,26 @@ the calls took.")
          (ofd "~%; memoize init: Error **"))))))
 
 
+
+;; [Jared and Sol]: It is gross to leave these in here, but we're going to do
+;; it, because right now they're used within WATCH.  If we eventually decide
+;; that WATCH is deprecated or anything like that, we can move these to
+;; centaur/misc/memory-mgmt, where they are actually used now.
+
 (defg *max-mem-usage* (expt 2 32)
 
   "*MAX-MEM-USAGE* an upper bound, in bytes of memory used, that when
-  exceeded results in certain garbage collection actions.")
+  exceeded results in certain garbage collection actions.
 
-(defg *gc-min-threshold* (expt 2 30))
+  Note: not used by ACL2(h) itself; see the centaur/misc/memory-mgmt
+  books.")
 
-#+Clozure
-(defn1 set-and-reset-gc-thresholds ()
-  (let ((n (max (- *max-mem-usage* (ccl::%usedbytes))
-                *gc-min-threshold*)))
-    (cond ((not (eql n (ccl::lisp-heap-gc-threshold)))
-           (ccl::set-lisp-heap-gc-threshold n)
-           (ofvv "~&; set-and-reset-gc-thresholds: Reserving ~:d additional bytes.~%"
-                 n))))
-  (ccl::use-lisp-heap-gc-threshold)
-; (ofvv "~&; set-and-reset-gc-thresholds: Calling ~
-;        ~%(use-lisp-heap-gc-threshold).")
-  (cond ((not (eql *gc-min-threshold*
-                   (ccl::lisp-heap-gc-threshold)))
-         (ccl::set-lisp-heap-gc-threshold *gc-min-threshold*)
-         (ofvv "~&; set-and-reset-gc-thresholds: Will reserve ~:d bytes after
-next GC.~%"
-               *gc-min-threshold*))))
+(defg *gc-min-threshold* (expt 2 30)
+  "Note: not used by ACL2(h) itself; see the centaur/misc/memory-mgmt
+  books.")
 
-(defvar *sol-gc-installed* nil)
 
-#+Clozure
-(defn1 start-sol-gc ()
 
-; The following settings are highly heuristic.  We arrange that gc
-; occurs at 1/8 of the physical memory size in bytes, in order to
-; leave room for the gc point to grow (as per
-; set-and-reset-gc-thresholds).  If we can determine the physical
-; memory; great; otherwise we assume that it it contains at least 4GB,
-; a reasonable assumption we think for anyone using the HONS version
-; of ACL2.
-
-  (let* ((phys (physical-memory))
-         (memsize (cond ((> phys 0) (* phys 1024)) ; to bytes
-                        (t (expt 2 32)))))
-    (setq *max-mem-usage* (min (floor memsize 8)
-                               (expt 2 32)))
-    (setq *gc-min-threshold* (floor *max-mem-usage* 4)))
-
-; OLD COMMENT:
-; Trigger GC after we've used all but (1/8, but not more than 1 GB) of
-; the physical memory.
-
-  (unless *sol-gc-installed*
-    (ccl::add-gc-hook
-     #'(lambda ()
-         (ccl::process-interrupt
-          (slot-value ccl:*application* 'ccl::initial-listener-process)
-          #'set-and-reset-gc-thresholds))
-     :post-gc)
-    (setq *sol-gc-installed* t))
-
-  (set-and-reset-gc-thresholds))
 
 #+Clozure
 (defn1 set-gc-threshold (bound)
@@ -6238,10 +6199,12 @@ next GC.~%"
          (ofvv "*hons-init-hook*:  Turning off CCL's ephemeral gc.")
          (ccl::egc nil))
 
-       "Sol Swords's scheme to control GC in CCL.  See long comment in
-        memoize-raw.lisp."
+;; [Jared and Sol]: Moved GC stuff to centaur/misc/memory-mgmt.lisp
 
-       #+Clozure (start-sol-gc)
+       ;; "Sol Swords's scheme to control GC in CCL.  See long comment in
+       ;;  memoize-raw.lisp."
+
+       ;; #+Clozure (start-sol-gc)
 
 
 ;; [Jared]: removing the (user-INIT) thing because it's just asking
@@ -6262,9 +6225,10 @@ next GC.~%"
        ;;         (t (ofvv "~% ~a not fboundp, hence not funcalled."
        ;;                  init-fn))))
 
-       #+Clozure
-       (progn (ccl::egc nil)
-              (set-and-reset-gc-thresholds))
+;; [Jared and Sol]: Moved GC stuff to centaur/misc/memory-mgmt.lisp
+
+       ;; #+Clozure
+       ;; (set-and-reset-gc-thresholds)
 
        ))
 
