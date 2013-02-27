@@ -248,10 +248,6 @@ workshop2009 : $(filter workshops/2009/%, $(OK_CERTS))
 workshop2011 : $(filter workshops/2011/%, $(OK_CERTS))
 
 
-"stupid file.txt":
-	echo "Hello" > "stupid file.txt"
-
-
 
 
 # CLEANING -------------------------------------------------------------------
