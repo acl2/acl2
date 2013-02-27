@@ -1,29 +1,119 @@
 # -*- mode: makefile -*-
 
-# Experimental replacement for books/Makefile using cert.pl.
-# Usage:  make -f Makefile-jared -j ???
+# Makefile-jared
 #
-# Same conventions as in cert.pl / Makefile-generic:
+# This is Jared's proposed replacement for books/Makefile using cert.pl.
+#
+#  - It simplifies the build system, doing away with hundreds of Makefiles in
+#    individual directories, and replacing them with this single file.  This is
+#    possible because I've gone through and fixed up many books so that they
+#    follow certain conventions, explained below.
+#
+#  - It increases (significantly) opportunities for parallelism, by doing away
+#    with directory-level dependencies.  Essentially, any books that do not
+#    have an include-book dependency can be built in parallel.  At the same
+#    time, this means that books can be reorganized based on their logical
+#    content, without regards to directory build order.
+#
+#  - It generally increases build-system automation.  We use "find" commands to
+#    find Lisp files instead of maintaining (by hand) lists of directories.  We
+#    also do not need to manually keep track of dependencies between
+#    directories, etc.
+#
+# Basic usage:
+#    make -f Makefile-jared -j <jobs> [<target>]
+#
+# Where:
+#    - <jobs> is how many books you want to certify in parallel,
+#        typically the number of cores on your machine
+#    - <target> is optional and defaults to "all" when omitted,
+#        or names the target you want to build (see below).
+#
+#          (Note: if some day this replaces books/Makefile, the "-f
+#           Makefile-jared" part won't be needed.)
+#
+# Makefile-jared starts by automatically scanning for books and their
+# depenedencies.  This scanning can be slightly expensive, especially on slow
+# NFS systems.  When you know that you haven't added or changed any books, you
+# might prefer to avoid rescanning by adding NO_RESCAN=1 to the command line.
+#
+# In order to make the book- and dependency-scanning simple and reliable, books
+# are expected to follow certain conventions.  These conventions are generally
+# very similar to the previous behavior of cert.pl and Makefile-generic.
+#
+#   - We scan for lines like (include-book "foo") and (ld "foo.lisp"); for
+#     dependency scannign to work, these commands must be on a single line and
+#     can't be wrapped up in macros.  Occasionally it is useful to fool the #
+#     dependency scanner, e.g., in a multi-line comments you might do:
+#
+#        #| Here's an example of how to use this stuff:
+#
+#           (include-book ;; newline to fool dependency scanner
+#             "foo")
+#
+#           (demo-of-how-to-use-foo)
+#        |#
+#
+#   - Additional dependencies (e.g., on raw-lisp files or other kinds of data
+#     files) can be added using depends-on comments, e.g.,
+#
+#        ; (depends-on "foo-raw.lsp")
+#
 #   - Certifiable books should be named foo.lisp
 #   - Non-certifiable Lisp files should be named foo.lsp
-#   - Ordinary foo.acl2/foo.image and cert.acl2/cert.image stuff
+#   - The instructions for certifying foo.lisp are found in:
+#       foo.acl2, if it exists, or else
+#       cert.acl2, if it exists, or else
+#       default to simply (certify-book "foo" ? t)
 #
-# Why use this instead of books/Makefile?
-#   - Automatically scan for .lisp files with "find"
-#   - Automatically figure out their dependencies with cert.pl
-#   - No directory-level dependencies -- better parallelism
-#   - Automatically allow ttags, skip-proofs, axioms, etc
-#   - Supports startjob for cluster-distributed builds
+# CHANGE/BOZO: In Makefile-jared (as in cert.pl), any certify-book lines given
+# in the .acl2 file are ignored.  Instead, we generate the certify-book command
+# to use by looking for comments like:
 #
-# Missing Features, Bozos?
-#  - Requires perl on the client machine
-#  - Doesn't support multi-lisp compilation stuff for Matt
-#  - Not sure if it supports provisional and/or two-pass certification
-#  - Doesn't support nonstd books for ACL2(r)
-#  - Probably doesn't clean up everything.
+#         ; cert-flags: ? t :ttags :all
 #
-# Should we auto-rescan dependencies?  Maybe. It's slow. But that might be
-# okay, since for ordinary development you would just cert.pl your files.
+# These comments can be put in the individual foo.acl2 or (for directory-level
+# defaults) in cert.acl2.  The default cert-flags are "? t".  Using special
+# comments instead of certify-book forms means that the certification flags
+# can't be hidden inside macros, possibly easing the job of an "evaluator."
+#
+# BOZO So far, I have gone through the ACL2 regression suite and replaced
+# certify-book lines throughout .acl2 files with cert-flags comments.  However,
+# for now I've left the certify-book commands intact, for compatiblity with
+# Makefile-generic.  Eventually, we should not have both things in .acl2 files.
+# Before we can do that, we'll need to change Makefile-generic to look for
+# cert-flags instead of certify-book commands.  Alternately, maybe the scheme
+# should be something like: if you give a certify-book command, we use it;
+# otherwise we generate one using the cert-flags.
+
+
+# STATUS / TODO LIST / MISSING FEATURES / BOZOS:
+#
+#  [DONE] Requires perl on the client machine (I think we've agreed this is
+#         okay)
+#
+#  [DONE] Two-pass certification seems to work, using the cert.pl directive
+#         cert_param(acl2x).  See for instance
+#         books/make-event/stobj-test.acl2.
+#
+#  [BOZO] Does provisional certification work?
+#
+#  [BOZO] Add multi-lisp compilation stuff for Matt (might be easy)
+#
+#  [BOZO] Add support for ACL2(r).  Possibly the right way to do that would be
+#         to use soething like the $(info Scanning for books...)  sections
+#         below, to set up the symlinks, and then just let everything else fall
+#         out automatically.
+#
+#  [BOZO] How should cleaning work?
+#
+#    Using a find command has the advantage that it will get rid of old files
+#    even after the .lisp files have been deleted.  It has the disadvantage
+#    that it seems tricky to properly delete .h and .c files using a find
+#    command.  An alternative would be to use CERT_PL_CERTS to generate a huge
+#    list of files to remove.  This will require using xargs, etc., which is
+#    gross, but so does the find command.  Blah.
+
 
 ACL2 ?= acl2
 
@@ -53,6 +143,8 @@ NONSTD_WK2006_COWLES := workshops/2006/cowles-gamboa-euclid
 
 # This wasn't getting built, it has a really slow book
 BROKEN_WK2011_KRUG := workshops/2011/krug-et-al/support/MinVisor
+
+ifndef NO_RESCAN
 
 $(info Scanning for books...)
 REBUILD_MAKEFILE_BOOKS := $(shell \
@@ -89,15 +181,41 @@ REBUILD_MAKEFILE_DEPS := $(shell \
 #$(info $(REBUILD_MAKEFILE_DEPS))
 $(info Done scanning.)
 
+endif
+
 include Makefile-deps
 
-all: $(CERT_PL_CERTS)
+$(info Determining ACL2 features (for ACL2 = $(ACL2)))
+ACL2_FEATURES := $(shell \
+  rm -f Makefile-features ; \
+  $(STARTJOB) -c "$(ACL2) < cert_features.lsp &> Makefile-features.log" ;\
+  ls -l Makefile-features)
+include Makefile-features
+$(info ACL2_HAS_HONS     := $(ACL2_HAS_HONS))
+$(info ACL2_HAS_PARALLEL := $(ACL2_HAS_PARALLEL))
+$(info ACL2_HAS_REALS    := $(ACL2_HAS_REALS))
+$(info Done with features.)
+
+
+OK_CERTS := $(CERT_PL_CERTS)
+
+# BOZO fix this to actually do the right thing with new cert.pl stuff
+ifeq ($(ACL2_HAS_HONS), )
+$(info Excluding books that depend on ACL2(h))
+OK_CERTS := $(filter-out $(CERT_PL_HONS_ONLY), $(OK_CERTS))
+endif
+
+# BOZO probably do something similar for ACL2(r)?
+
+
+all: $(OK_CERTS)
 
 
 # The critical path report will work only if you have set up certificate timing
 # BEFORE you build the books.  See ./critpath.pl --help for details.
 
-critpath.txt : $(CERT_PL_CERTS)
+# BOZO I probably broke this, we shouldn't use --targets, we should use ok_certs...
+critpath.txt : $(OK_CERTS)
 	echo "Building critpath.txt..."
 	time ./critpath.pl --targets Makefile-books > critpath.txt
 
@@ -111,58 +229,77 @@ critpath.txt : $(CERT_PL_CERTS)
 
 basic : $(filter-out centaur/%, \
            $(filter-out coi/%, \
-              $(filter-out workshops/%, $(CERT_PL_CERTS))))
+              $(filter-out workshops/%, $(OK_CERTS))))
 
-centaur : $(filter centaur/%, $(CERT_PL_CERTS))
+centaur : $(filter centaur/%, $(OK_CERTS))
 
-coi     : $(filter coi/%, $(CERT_PL_CERTS))
+coi     : $(filter coi/%, $(OK_CERTS))
 
-workshops : $(filter workshops/%, $(CERT_PL_CERTS))
-workshop1999 : $(filter workshops/1999/%, $(CERT_PL_CERTS))
-workshop2000 : $(filter workshops/2000/%, $(CERT_PL_CERTS))
-workshop2001 : $(filter workshops/2001/%, $(CERT_PL_CERTS))
-workshop2002 : $(filter workshops/2002/%, $(CERT_PL_CERTS))
-workshop2003 : $(filter workshops/2003/%, $(CERT_PL_CERTS))
-workshop2004 : $(filter workshops/2004/%, $(CERT_PL_CERTS))
-workshop2006 : $(filter workshops/2006/%, $(CERT_PL_CERTS))
-workshop2007 : $(filter workshops/2007/%, $(CERT_PL_CERTS))
-workshop2009 : $(filter workshops/2009/%, $(CERT_PL_CERTS))
-workshop2011 : $(filter workshops/2011/%, $(CERT_PL_CERTS))
+workshops : $(filter workshops/%, $(OK_CERTS))
+workshop1999 : $(filter workshops/1999/%, $(OK_CERTS))
+workshop2000 : $(filter workshops/2000/%, $(OK_CERTS))
+workshop2001 : $(filter workshops/2001/%, $(OK_CERTS))
+workshop2002 : $(filter workshops/2002/%, $(OK_CERTS))
+workshop2003 : $(filter workshops/2003/%, $(OK_CERTS))
+workshop2004 : $(filter workshops/2004/%, $(OK_CERTS))
+workshop2006 : $(filter workshops/2006/%, $(OK_CERTS))
+workshop2007 : $(filter workshops/2007/%, $(OK_CERTS))
+workshop2009 : $(filter workshops/2009/%, $(OK_CERTS))
+workshop2011 : $(filter workshops/2011/%, $(OK_CERTS))
+
+
+"stupid file.txt":
+	echo "Hello" > "stupid file.txt"
 
 
 
-.PHONY: clean
 
-# BOZO I took out .h and .c files because (1) it seems crazy to remove them,
-# and (2) it inadvertently removes many files in workshops/2004/ruiz-et-al,
-# coi/overkill, unicode/performance-testing, clause-processors/SULFA.
+# CLEANING -------------------------------------------------------------------
 
-# BOZO temporarily removed *.acl2x* because it removes
-# system/pcert/acl2x-pcert-test-2.acl2x-source, which I don't know whether we
-# care about but is in version control.
+# There are so many files to delete that we can run into shell limitations.  To
+# avoid this sort of thing, we delegate most of the cleaning process to
+# clean.pl, a very simple script.  But there are certain files that we also
+# want to remove, even beyond what clean.pl takes care of for us
 
-CLEAN_FILES := workxxx* *.out *@expansion.lsp *.date *.*cert *.pcert0 *.pcert1 \
-  *.port *.o *.sbin *.lbin *.fasl *.cert.* *.ufsl *.64ufasl *.ufasl \
-  *.pfsl *.dfsl *.dx32fsl *.lx32fsl *.d64fsl *.dx64fsl *.lx64fsl *.bin *.sparcf \
-  *.axpf *.x86f *.ppcf *.fas *.lib *.sse2f *.log TMP*.* temp-emacs-file.lsp \
-  Makefile-deps
+CLEAN_FILES_EXPLICIT := \
+   xdoc-impl/bookdoc.dat \
+   Makefile-deps \
+   Makefile-books \
+   Makefile-features
 
-CLEAN_FIND_ARGS := $(patsubst %,-name "%" -o, $(CLEAN_FILES))
+CLEAN_FILES_SEARCH := \
+   workxxx* \
+   *@expansion.lsp \
+   TMP*.* \
+   temp-emacs-file.lsp
 
-clean:
+CLEAN_FIND_ARGS := \
+   $(patsubst %,-name "%" -o, $(CLEAN_FILES_SEARCH))
+
+.PHONY: clean_books clean
+
+clean_books:
+	@echo "Using clean.pl to remove certificates, etc."
+	./clean.pl --targets Makefile-books
+
+clean: clean_books
+	@echo "Removing extra, explicitly temporary files."
+	rm -f $(CLEAN_FILES_EXPLICIT)
+	@echo "Removing extra, implicitly temporary files by searching..."
 	find . -type f \
                \( $(CLEAN_FIND_ARGS) -false \) \
                \( -not -name "*svn-base" \) \
                -print0 \
           | xargs -0 rm
-	rm -f xdoc-impl/bookdoc.dat
 
 
 
 
+.PHONY: dummy
+dummy:
 
 # Workshops/1999/multiplier is tricky because there are generated .lisp files
-# invovled.  Cert.pl can't scan these, so we have to add them manually.
+# involved.  Cert.pl can't scan these, so we have to add them manually.
 
 workshops/1999/multiplier/fmul.cert: \
   workshops/1999/multiplier/fmul.lisp \
@@ -190,7 +327,7 @@ workshops/1999/multiplier/proof.cert: \
   workshops/1999/multiplier/fmul-star.cert
 
 
-# Special handling for xdoc/bookdoc.dat.
+# xdoc-impl is tricky because we have to generate bookdoc.dat.
 
 xdoc-impl/bookdoc.dat: \
   xdoc-impl/acl2-customization.lsp \
@@ -203,3 +340,5 @@ xdoc-impl/bookdoc.dat: \
 	@cd xdoc-impl; \
           $(STARTJOB) -c "$(ACL2) < bookdoc.lsp &> bookdoc.out"
 	@ls -l xdoc-impl/bookdoc.dat
+
+

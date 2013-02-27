@@ -21,9 +21,65 @@
 (in-package "ACL2")
 
 
+(defvar *sol-gc-installed* nil)
+
+
+#+Clozure
+(defn1 set-and-reset-gc-thresholds ()
+  (let ((n (max (- *max-mem-usage* (ccl::%usedbytes))
+                *gc-min-threshold*)))
+    (cond ((not (eql n (ccl::lisp-heap-gc-threshold)))
+           (ccl::set-lisp-heap-gc-threshold n)
+           (ofvv "~&; set-and-reset-gc-thresholds: Reserving ~:d additional bytes.~%"
+                 n))))
+  (ccl::use-lisp-heap-gc-threshold)
+; (ofvv "~&; set-and-reset-gc-thresholds: Calling ~
+;        ~%(use-lisp-heap-gc-threshold).")
+  (cond ((not (eql *gc-min-threshold*
+                   (ccl::lisp-heap-gc-threshold)))
+         (ccl::set-lisp-heap-gc-threshold *gc-min-threshold*)
+         (ofvv "~&; set-and-reset-gc-thresholds: Will reserve ~:d bytes after
+next GC.~%"
+               *gc-min-threshold*))))
+
+
+#+Clozure
+(defn1 start-sol-gc ()
+
+; The following settings are highly heuristic.  We arrange that gc
+; occurs at 1/8 of the physical memory size in bytes, in order to
+; leave room for the gc point to grow (as per
+; set-and-reset-gc-thresholds).  If we can determine the physical
+; memory; great; otherwise we assume that it it contains at least 4GB,
+; a reasonable assumption we think for anyone using the HONS version
+; of ACL2.
+
+  (let* ((phys (physical-memory))
+         (memsize (cond ((> phys 0) (* phys 1024)) ; to bytes
+                        (t (expt 2 32)))))
+    (setq *max-mem-usage* (min (floor memsize 8)
+                               (expt 2 31)))
+    (setq *gc-min-threshold* (floor *max-mem-usage* 4)))
+
+; OLD COMMENT:
+; Trigger GC after we've used all but (1/8, but not more than 1 GB) of
+; the physical memory.
+
+  (unless *sol-gc-installed*
+    (ccl::add-gc-hook
+     #'(lambda ()
+         (ccl::process-interrupt
+          (slot-value ccl:*application* 'ccl::initial-listener-process)
+          #'set-and-reset-gc-thresholds))
+     :post-gc)
+    (setq *sol-gc-installed* t))
+
+  (set-and-reset-gc-thresholds))
+
+
 ;; Use defvar so these aren't clobbered.
 (defvar *gc-min-threshold* (expt 2 30))
-(defvar *max-mem-usage*    (expt 2 32))
+(defvar *max-mem-usage*    (expt 2 31))
 
 (defvar *last-chance-threshold*
   ;; We'll automatically wash if we get within 1/400 of the max memory usage.

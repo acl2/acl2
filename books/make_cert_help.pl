@@ -507,9 +507,9 @@ if ($STEP eq "complete") {
     my $shinsts = "#!/bin/sh\n\n";
 
 # If we find a set-max-mem line, add 3 gigs of padding for the stacks and to
-# allow the lisp to have some room to go over.  Default to 6 gigs.
+# allow the lisp to have some room to go over.  Default to 4 gigs.
     my $max_mem = scan_for_set_max_mem("$file.lisp");
-    $max_mem = $max_mem ? ($max_mem + 3) : 6;
+    $max_mem = $max_mem ? ($max_mem + 3) : 4;
 
 # If we find a set-max-time line, honor it directly; otherwise default to
 # 240 minutes.

@@ -22,12 +22,18 @@
 
 (include-book "memory-mgmt-logic")
 (include-book "tools/include-raw" :dir :system)
-; (depends-on "hons-analyze-memory-raw.lsp")
+
+;; BOZO eventually rename this to memory-mgmt-raw.lsp, but right now we have
+;; a stub that conflicts, so use a different name
+; (depends-on "hons-memory-mgmt.lsp")
 
 (defttag memory-mgmt)
 
 #+hons
-(include-raw "hons-analyze-memory-raw.lsp")
+(include-raw "hons-memory-mgmt.lsp")
 
-
-
+#+(and hons Clozure)
+(progn!
+ (set-raw-mode t)
+ (when (null *hcomp-fn-macro-restore-ht*)
+   (start-sol-gc)))

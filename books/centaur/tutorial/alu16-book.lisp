@@ -35,6 +35,7 @@
 (in-package "ACL2")
 (include-book "intro")
 (value-triple (set-max-mem (* 3 (expt 2 30))))
+; cert_param: (hons-only)
 
 (defmodules *alu16-translation*
   :start-files (list "alu16.v"))

@@ -63,10 +63,10 @@
   (setq *initial-listener-default-temp-stack-size* (floor stack-size 2)))
 
 ; Set up the garbage collector to wait until 1 GB has been allocated on a
-; 32-bit system, or 4 GB on a 64-bit system.
+; 32-bit system, or 2 GB on a 64-bit system.
 (set-lisp-heap-gc-threshold (if (< most-positive-fixnum (expt 2 34))
                                 (expt 2 30)
-                              (expt 2 32)))
+                              (expt 2 31)))
 
 (use-lisp-heap-gc-threshold)
 
