@@ -266,6 +266,12 @@ other @(see rule-classes), then you will want to override this default.</dd>
        (hyp (if (assoc :hyp kwd-alist)
                 (cdr (assoc :hyp kwd-alist))
               t))
+       ((when (and (keywordp hyp)
+                   (not (eq hyp :guard))
+                   (not (eq hyp :fguard))))
+        ;; bozo not really a very good place to check for this.
+        (raise "Error in ~x0: invalid keyword ~x1 used as a :hyp." fnname hyp)
+        *default-returnspec*)
        (hints (if (assoc :hints kwd-alist)
                   (cdr (assoc :hints kwd-alist))
                 nil))
