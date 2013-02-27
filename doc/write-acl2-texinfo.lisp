@@ -1,5 +1,5 @@
-; ACL2 Version 6.0 -- A Computational Logic for Applicative Common Lisp
-; Copyright (C) 2012, Regents of the University of Texas
+; ACL2 Version 6.1 -- A Computational Logic for Applicative Common Lisp
+; Copyright (C) 2013, Regents of the University of Texas
 
 ; This version of ACL2 was produced by modifying ACL2 Version 1.9, Copyright
 ; (C) 1997 Computational Logic, Inc.  See the documentation topic NOTES-2-0.
@@ -267,7 +267,7 @@
 
 @ifinfo
 This is documentation for ~sv@*
-Copyright @copyright{} 2012  University of Texas at Austin
+Copyright @copyright{} 2013  University of Texas at Austin
 
 This program is free software; you can redistribute it and/or modify@*
 it under the terms of Version 2 of the GNU General Public License as@*
@@ -306,7 +306,7 @@ END-INFO-DIR-ENTRY
 @center ~sm ~fy
 @page
 @vskip 0pt plus 1filll
-Copyright @copyright{} 2012  University of Texas at Austin
+Copyright @copyright{} 2013  University of Texas at Austin
 Distributed under the terms of the GNU General Public License.
 @sp 2
 This is documentation for ~sv @*
