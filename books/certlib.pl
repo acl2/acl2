@@ -28,7 +28,7 @@ use File::Basename;
 use File::Spec;
 # don't know how to get it on msys
 # use File::Which qw(which where);
-use Storable;
+use Storable qw(nstore retrieve);
 use Cwd 'abs_path';
 
 my $cache_version_code = 3;
@@ -910,6 +910,11 @@ sub get_cert_param {
 	push (@$events, [$cert_param_event, "acl2x", 1]);
 	return 1;
     }
+    $regexp = "\\(check-hons-enabled[\\s]+\\(:book";
+    if ($the_line =~ m/$regexp/) {
+	push (@$events, [$cert_param_event, "hons-only", 1]);
+	return 1;
+    }
     return 0;
 }
 
@@ -1725,7 +1730,7 @@ sub compute_savings
 sub store_cache {
     my ($cache, $fname) = @_;
     if ($fname) {
-	store([$cache_version_code, $cache], $fname);
+	nstore([$cache_version_code, $cache], $fname);
     }
 }
 
