@@ -7,4 +7,5 @@
   '(value-triple :invisible))
  :check-expansion t)
 
+;; cert_param: (reloc_stub)
 (include-book "std/io/base" :dir :system)

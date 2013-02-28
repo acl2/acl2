@@ -225,14 +225,9 @@ same bitset.  That is, instead of showing:</p>
 })
 
 <p>It should be automatic to prove this stronger form (after first proving the
-weaker form) by adding the hint:</p>
+weaker form) by using the theorem:</p>
 
-@({
- :hints ((bitset-witnessing))
-})
-
-<p>which ties into the witnessing stuff from @('centaur/misc/witness-cp') to
-show that bitsets are equal when they have the same members.</p>")
+@(def equal-bitsets-by-membership)")
 
 
 
@@ -933,20 +928,6 @@ like @(see bitset-intersect) and @(see bitset-difference).</p>"
                    (logbitp-lhs (lambda () x))
                    (logbitp-rhs (lambda () y))))))))
 
-(table bitset-fns nil
-
-; Table that lists functions that produce bitsets.  You can add to this table
-; if you develop your own bitset-producing functions.
-
-       '((bitset-singleton$inline . t)
-         (bitset-insert$inline . t)
-         (bitset-delete$inline . t)
-         (bitset-intersect$inline . t)
-         (bitset-union$inline . t)
-         (bitset-difference$inline . t))
-
-       :clear)
-
 (defthm bitset-equal-witnessing-lemma
   (implies (not (equal a b))
            (let ((k (logbitp-mismatch (nfix a) (nfix b))))
@@ -964,47 +945,66 @@ like @(see bitset-intersect) and @(see bitset-difference).</p>"
                             logbitp-mismatch-correct))))
   :rule-classes nil)
 
-(defwitness bitset-equal-witnessing
-  :predicate (not (equal a b))
-  :expr (let ((k (logbitp-mismatch (nfix a) (nfix b))))
-          (implies (and (natp a) (natp b))
-                   (not (iff (sets::in k (bitset-members a))
-                             (sets::in k (bitset-members b))))))
-  :restriction (let ((bitset-fns (table-alist 'bitset-fns (w state))))
-                 (or (and (consp a)
-                          (assoc (car a) bitset-fns))
-                     (and (consp b)
-                          (assoc (car b) bitset-fns))))
-  :generalize (((logbitp-mismatch (nfix a) (nfix b)) . badbit))
-  :hints ('(:use bitset-equal-witnessing-lemma :in-theory nil)))
+(local
+ (progn
 
-(definstantiate bitset-equal-instancing
-  :predicate (equal a b)
-  :expr (iff (sets::in k (bitset-members a))
-             (sets::in k (bitset-members b)))
-  :vars (k)
-  :restriction (let ((bitset-fns (table-alist 'bitset-fns (w state))))
-                 (or (and (consp a)
-                          (assoc (car a) bitset-fns))
-                     (and (consp b)
-                          (assoc (car b) bitset-fns))))
-  :hints ('(:in-theory nil)))
+   (table bitset-fns nil
 
-(defexample bitset-equal-example
-  :pattern (sets::in k (bitset-members x))
-  :templates (k)
-  :instance-rulename bitset-equal-instancing)
+; Table that lists functions that produce bitsets.  You can add to this table
+; if you develop your own bitset-producing functions.
 
-(defmacro bitset-witnessing ()
-  ;; Typical use:  (defthm ... :hints ((bitset-witnessing)))
-  `(witness :ruleset (bitset-equal-witnessing
-                      bitset-equal-instancing
-                      bitset-equal-example)))
+; This doesn't work at the moment due to witness-cp changes
+
+          '((bitset-singleton$inline . t)
+            (bitset-insert$inline . t)
+            (bitset-delete$inline . t)
+            (bitset-intersect$inline . t)
+            (bitset-union$inline . t)
+            (bitset-difference$inline . t))
+
+          :clear)
+
+   (defwitness bitset-equal-witnessing
+     :predicate (not (equal a b))
+     :expr (let ((k (logbitp-mismatch (nfix a) (nfix b))))
+             (implies (and (natp a) (natp b))
+                      (not (iff (sets::in k (bitset-members a))
+                                (sets::in k (bitset-members b))))))
+     :restriction (let ((bitset-fns (table-alist 'bitset-fns (w state))))
+                    (or (and (consp a)
+                             (assoc (car a) bitset-fns))
+                        (and (consp b)
+                             (assoc (car b) bitset-fns))))
+     :generalize (((logbitp-mismatch (nfix a) (nfix b)) . badbit))
+     :hints ('(:use bitset-equal-witnessing-lemma :in-theory nil)))
+
+   (definstantiate bitset-equal-instancing
+     :predicate (equal a b)
+     :expr (iff (sets::in k (bitset-members a))
+                (sets::in k (bitset-members b)))
+     :vars (k)
+     :restriction (let ((bitset-fns (table-alist 'bitset-fns (w state))))
+                    (or (and (consp a)
+                             (assoc (car a) bitset-fns))
+                        (and (consp b)
+                             (assoc (car b) bitset-fns))))
+     :hints ('(:in-theory nil)))
+
+   (defexample bitset-equal-example
+     :pattern (sets::in k (bitset-members x))
+     :templates (k)
+     :instance-rulename bitset-equal-instancing)
+
+   (defmacro bitset-witnessing ()
+     ;; Typical use:  (defthm ... :hints ((bitset-witnessing)))
+     `(witness :ruleset (bitset-equal-witnessing
+                         bitset-equal-instancing
+                         bitset-equal-example)))))
 
 (local
  (encapsulate
    ()
-   (local (allow-real-oracle-eval))
+   ;;(local (allow-real-oracle-eval))
    (local (defthm test1
             (implies (equal (bitset-union (bitset-union a d) b)
                             (bitset-intersect b c))
@@ -1062,7 +1062,7 @@ of @('Y')."
 
   (encapsulate
     ()
-    (local (allow-real-oracle-eval))
+;    (local (allow-real-oracle-eval))
     (local (defthm l0
              (implies (and (bitset-subsetp x y)
                            (sets::in a (bitset-members x)))

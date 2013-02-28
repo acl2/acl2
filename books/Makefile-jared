@@ -150,10 +150,7 @@ $(info Scanning for books...)
 REBUILD_MAKEFILE_BOOKS := $(shell \
   rm -f Makefile-books; \
   time find . -type f -name "*.lisp" \
-    | fgrep -v interface \
-    | fgrep -v nonstd \
-    | fgrep -v quicklisp \
-    | fgrep -v SULFA \
+    | egrep -v '^(\./)?(interface|nonstd|centaur/quicklisp|clause-processors/SULFA)/' \
     | fgrep -v $(BROKEN_WK2000_COWLES) \
     | fgrep -v $(BROKEN_WK2002_TOTAL) \
     | fgrep -v $(BROKEN_WK2003_KAUFMANN) \

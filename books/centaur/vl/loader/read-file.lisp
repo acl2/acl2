@@ -249,8 +249,6 @@ character.</p>"
              (vl-echarlist-p (mv-nth 0 (vl-read-file filename state)))))
 
   (defthm true-listp-of-vl-read-file-on-success
-    (implies (and (not (stringp (mv-nth 0 (vl-read-file filename state))))
-                  (force (state-p1 state))
-                  (force (stringp filename)))
-             (true-listp (mv-nth 0 (vl-read-file filename state))))))
+    (equal (stringp (mv-nth 0 (vl-read-file filename state)))
+           (not (true-listp (mv-nth 0 (vl-read-file filename state)))))))
 

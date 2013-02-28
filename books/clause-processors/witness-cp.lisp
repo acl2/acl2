@@ -29,7 +29,6 @@
 (include-book "tools/bstar" :dir :system)
 (include-book "ev-theoremp")
 (include-book "tools/def-functional-instance" :dir :system)
-(include-book "tools/oracle-eval" :dir :system)
 (include-book "data-structures/no-duplicates" :dir :system)
 
 (set-inhibit-warnings "theory")
@@ -140,6 +139,30 @@
 
 (in-theory (Disable witness-generalize-alist))
 
+
+;; Witness-eval-restriction --
+;; This is an attachable function that may be used to implement arbitrary
+;; restrictions on the application of witness rules.
+;; A :restrict term may be added to witness/instance/example rules.  When
+;; attempting to apply such a rule, this term is passed to
+;; witness-eval-restriction along with the substitution alist.
+;; Witness-eval-restriction returns (mv err okp), where ERR should be an error
+;; message or NIL, and OKP says (in absence of an error) whether to apply the
+;; rule or not.
+(encapsulate
+  (((witness-eval-restriction * * state) => (mv * *)))
+  (local (defun witness-eval-restriction (term alist state)
+           (declare (xargs :stobjs state)
+                    (ignore term alist state))
+           (mv nil t))))
+
+(defun witness-eval-restriction-default (term alist state)
+  (declare (xargs :stobjs state)
+           (ignore term alist state))
+  (mv nil t))
+
+(defattach witness-eval-restriction witness-eval-restriction-default)
+
 ;; Lit is a member of the clause.  witness-rules is a list of tuples
 ;; conaining:
 ;; rulename: name of the witness rule
@@ -175,37 +198,37 @@
                               (good-witness-rulesp witness-rules))
                   :stobjs state))
   (b* (((when (atom witness-rules))
-        (mv nil nil nil state))
+        (mv nil nil nil))
        ((when (not (mbt (pseudo-termp lit))))
-        (mv nil nil nil state))
-       ((mv newlits genmap obligs state)
+        (mv nil nil nil))
+       ((mv newlits genmap obligs)
         (match-lit-with-witnesses lit (cdr witness-rules) state))
        ((nths ?rulename enabledp term expr restriction hint generalize)
         (car witness-rules))
        ((when (not enabledp))
-        (mv newlits genmap obligs state))
+        (mv newlits genmap obligs))
        ((when (not (mbt (and (pseudo-termp term)
                              (pseudo-termp expr)))))
-        (mv newlits genmap obligs state))
+        (mv newlits genmap obligs))
        ((mv unify-ok alist)
         (simple-one-way-unify term lit nil))
        ((when (not unify-ok))
-        (mv newlits genmap obligs state))
-       ((mv erp val state)
+        (mv newlits genmap obligs))
+       ((mv erp val)
         (if (equal restriction ''t)
-            (mv nil t state)
-          (oracle-eval restriction alist state)))
+            (mv nil t)
+          (witness-eval-restriction restriction alist state)))
        ((when erp)
-        (if (equal erp *fake-oracle-eval-msg*)
-            (cw "Note: Oracle-eval is not enabled, so witness rules with
-restrictions are not used~%")
-          (er hard? 'match-lit-with-witnesses
-              "Evaluation of the restriction term, ~x0, produced an error: ~@1~%"
-              restriction erp))
-        (mv newlits genmap obligs state))
+        (er hard? 'match-lit-with-witnesses
+            "Evaluation of the restriction term, ~x0, produced an error: ~@1~%"
+            restriction erp)
+        (mv newlits genmap obligs))
        ((when (not val))
         ;; Did not conform to restriction
-        (mv newlits genmap obligs state))
+        (mv newlits genmap obligs))
+       (- (and (boundp-global :witness-cp-debug state)
+               (@ :witness-cp-debug)
+               (cw "Applying witness rule ~x0~%" rulename)))
        (genmap1 (witness-generalize-alist generalize alist))
        (new-lit (substitute-into-term expr alist))
        (oblig (list `(not (use-these-hints ',hint))
@@ -217,17 +240,16 @@ restrictions are not used~%")
                       ,(dumb-negate-lit expr)))))
     (mv (cons new-lit newlits)
         (append genmap1 genmap)
-        (cons oblig obligs)
-        state)))
+        (cons oblig obligs))))
 
 (local (in-theory (Disable substitute-into-one-way-unify-reduce-list
                            substitute-into-one-way-unify-reduce)))
 
 (defthm match-lit-with-witnesses-correct
   (implies (not (witness-ev lit a)) ;; (not (subsetp-equal a b))
-           (mv-let (newlits rules obligs state)
+           (mv-let (newlits rules obligs)
              (match-lit-with-witnesses lit witness-rules state)
-             (declare (ignore rules state))
+             (declare (ignore rules))
              (implies (witness-ev-theoremp
                        (conjoin-clauses obligs))
                       ;; (not (or (not (and (member-equal ... a)
@@ -290,12 +312,6 @@ restrictions are not used~%")
             (strip-cdrs
              (mv-nth 1 (match-lit-with-witnesses lit witness-rules state))))))
 
-(defthm state-p1-match-lit-with-witnesses-3
-  (implies
-   (state-p1 state)
-   (state-p1
-    (mv-nth 3 (match-lit-with-witnesses lit witness-rules state)))))
-
 (in-theory (disable match-lit-with-witnesses))
 
 (defthmd pseudo-term-listp-true-listp
@@ -320,13 +336,13 @@ restrictions are not used~%")
                   :verify-guards nil
                   :stobjs state))
   (b* (((when (atom clause))
-        (mv nil nil nil state))
-       ((mv rest genmap obligs state)
+        (mv nil nil nil))
+       ((mv rest genmap obligs)
         (witness-cp-expand-witnesses (cdr clause) witness-rules state))
        (lit (car clause))
        ((when (not (mbt (pseudo-termp lit))))
-        (mv (cons lit rest) genmap obligs state))
-       ((mv new-lits genmap1 obligs1 state)
+        (mv (cons lit rest) genmap obligs))
+       ((mv new-lits genmap1 obligs1)
         (match-lit-with-witnesses lit witness-rules state))
        (clause (if new-lits
                    (cons `(not (hide ,(dumb-negate-lit lit)))
@@ -336,8 +352,7 @@ restrictions are not used~%")
                                 clause
                               (cons lit rest))))))
     (mv clause (append genmap1 genmap)
-        (append obligs1 obligs)
-        state)))
+        (append obligs1 obligs))))
 
 (verify-guards witness-cp-expand-witnesses
                :hints (("goal" :do-not-induct t
@@ -404,11 +419,6 @@ restrictions are not used~%")
             (strip-cdrs
              (mv-nth 1 (witness-cp-expand-witnesses
                         clause witness-rules state))))))
-
-(defthm state-p1-witness-cp-expand-witnesses-3
-  (implies (state-p1 state)
-           (state-p1 (mv-nth 3 (witness-cp-expand-witnesses
-                                clause witness-rules state)))))
 
 (in-theory (disable witness-cp-expand-witnesses))
 
@@ -588,16 +598,16 @@ restrictions are not used~%")
                                instance-rules example-alist))
                   :stobjs state))
   (b* (((when (atom instance-rules))
-        (mv nil nil state))
+        (mv nil nil))
        ((when (not (mbt (pseudo-termp lit))))
-        (mv nil nil state))
-       ((mv newlits obligs state)
+        (mv nil nil))
+       ((mv newlits obligs)
         (match-lit-with-instances
          lit example-alist (cdr instance-rules) state))
        ((nths rulename enabledp pred vars expr restriction hint)
         (car instance-rules))
        ((when (not enabledp))
-        (mv newlits obligs state))
+        (mv newlits obligs))
        ((when (not (mbt (and (pseudo-termp pred)
                              (pseudo-termp expr)
                              (not (intersectp-equal
@@ -605,42 +615,40 @@ restrictions are not used~%")
         (er hard? 'match-lit-with-instances
             "Non pseudo-term: bad instantiate rule? ~x0~%"
             (car instance-rules))
-        (mv newlits obligs state))
+        (mv newlits obligs))
        ((mv unify-ok alist)
         (simple-one-way-unify pred lit nil))
-       ((when (not unify-ok)) (mv newlits obligs state))
-       ((mv erp val state)
+       ((when (not unify-ok)) (mv newlits obligs))
+       ((mv erp val)
         (if (equal restriction ''t)
-            (mv nil t state)
-          (oracle-eval restriction alist state)))
+            (mv nil t)
+          (witness-eval-restriction restriction alist state)))
        ((when erp)
-        (if (equal erp *fake-oracle-eval-msg*)
-            (cw "Note: Oracle-eval is not enabled, so instantiations with
-restrictions are not used~%")
-          (er hard? 'match-lit-with-instances
-              "Evaluation of the restriction term, ~x0, produced an error: ~@1~%"
-              restriction erp))
-        (mv newlits obligs state))
+        (er hard? 'match-lit-with-instances
+            "Evaluation of the restriction term, ~x0, produced an error: ~@1~%"
+            restriction erp)
+        (mv newlits obligs))
        ((when (not val))
         ;; Did not conform to restriction
-        (mv newlits obligs state))
+        (mv newlits obligs))
+       (- (and (boundp-global :witness-cp-debug state)
+               (@ :witness-cp-debug)
+               (cw "Applying instance rule ~x0~%" rulename)))
        (examples (cdr (assoc rulename example-alist)))
        (new-lits1 (instantiate-examples expr vars examples alist))
        (oblig (list `(not (use-these-hints ',hint))
                     `(implies ,(dumb-negate-lit pred)
                               ,(dumb-negate-lit expr)))))
     (mv (append new-lits1 newlits)
-        (cons oblig obligs)
-        state)))
+        (cons oblig obligs))))
 
 
 
 (defthm match-lit-with-instances-correct
   (implies (not (witness-ev lit a))
-           (mv-let (newlits obligs state)
+           (mv-let (newlits obligs)
              (match-lit-with-instances lit example-alist
                                        instance-rules state)
-             (declare (ignore state))
              (implies (witness-ev-theoremp
                        (conjoin-clauses obligs))
                       (not (witness-ev (disjoin newlits) a)))))
@@ -688,16 +696,6 @@ restrictions are not used~%")
                                     pseudo-term-listp
                                     pseudo-termp))))
 
-(defthm state-p1-match-lit-with-instances-2
-  (implies (state-p1 state)
-           (state-p1
-            (mv-nth 2 (match-lit-with-instances
-                       lit example-alist instance-rules state))))
-  :hints(("Goal" :in-theory (e/d ()
-                                 (state-p-implies-and-forward-to-state-p1
-                                  pseudo-termp state-p1
-                                  (:type-prescription state-p1))))))
-
 (in-theory (disable match-lit-with-instances))
 
 
@@ -713,14 +711,14 @@ restrictions are not used~%")
                   :verify-guards nil
                   :stobjs state))
   (b* (((when (atom clause))
-        (mv nil nil state))
-       ((mv rest obligs state)
+        (mv nil nil))
+       ((mv rest obligs)
         (witness-cp-expand-instances
          (cdr clause) example-alist instance-rules state))
        (lit (car clause))
        ((when (not (mbt (pseudo-termp lit))))
-        (mv (cons lit rest) obligs state))
-       ((mv new-lits obligs1 state)
+        (mv (cons lit rest) obligs))
+       ((mv new-lits obligs1)
         (match-lit-with-instances lit example-alist instance-rules
                                   state))
        (clause (if new-lits
@@ -730,7 +728,7 @@ restrictions are not used~%")
                       :exec (if (equal rest (cdr clause))
                                 clause
                               (cons lit rest))))))
-    (mv clause (append obligs1 obligs) state)))
+    (mv clause (append obligs1 obligs))))
 
 (verify-guards witness-cp-expand-instances
                :hints (("goal" :in-theory
@@ -758,8 +756,6 @@ restrictions are not used~%")
            :expand ((:free (x) (hide x))))))
 
 
-
-
 (defthm pseudo-term-listp-witness-cp-expand-instances-0
   (implies (pseudo-term-listp clause)
            (pseudo-term-listp
@@ -776,12 +772,6 @@ restrictions are not used~%")
             (mv-nth 1 (witness-cp-expand-instances
                        clause example-alist instance-rules state))))
   :hints(("Goal" :in-theory (enable pseudo-term-listp))))
-
-(defthm state-p1-witness-cp-expand-instances-2
-  (implies (state-p1 state)
-           (state-p1
-            (mv-nth 2 (witness-cp-expand-instances
-                       clause example-alist instance-rules state)))))
 
 
 
@@ -884,28 +874,28 @@ restrictions are not used~%")
                               (pseudo-term-list-list-alistp acc))
                   :verify-guards nil
                   :stobjs state))
-  (b* (((when (atom templates)) (mv acc state))
+  (b* (((when (atom templates)) acc)
        ((nths ?exname enabledp pat templ rulenames restriction) (car templates))
        ((when (not enabledp))
         (examples-for-term term (cdr templates) acc state))
        ((mv unify-ok alist) (simple-one-way-unify pat term nil))
        ((when (not unify-ok))
         (examples-for-term term (cdr templates) acc state))
-       ((mv erp val state)
+       ((mv erp val)
         (if (equal restriction ''t)
-            (mv nil t state)
-          (oracle-eval restriction alist state)))
+            (mv nil t)
+          (witness-eval-restriction restriction alist state)))
        ((when erp)
-        (if (equal erp *fake-oracle-eval-msg*)
-            (cw "Note: Oracle-eval is not enabled, so examples with
-restrictions are not used~%")
-          (er hard? 'examples-for-term
-              "Evaluation of the restriction term, ~x0, produced an error: ~@1~%"
-              restriction erp))
+        (er hard? 'examples-for-term
+            "Evaluation of the restriction term, ~x0, produced an error: ~@1~%"
+            restriction erp)
         (examples-for-term term (cdr templates) acc state))
        ((when (not val))
         ;; Restriction not met
         (examples-for-term term (cdr templates) acc state))
+       (- (and (boundp-global :witness-cp-debug state)
+               (@ :witness-cp-debug)
+               (cw "Applying example rule ~x0~%" exname)))
        (example (substitute-into-list templ alist))
        (acc (add-example-for-instance-rules rulenames example acc)))
     (examples-for-term term (cdr templates) acc state)))
@@ -922,19 +912,14 @@ restrictions are not used~%")
                 (good-templatesp templates)
                 (pseudo-term-list-list-alistp acc))
            (pseudo-term-list-list-alistp
-            (mv-nth 0 (examples-for-term term templates acc state))))
+            (examples-for-term term templates acc state)))
   :hints(("Goal" :in-theory (enable pseudo-term-list-listp))))
 
 (defthm alistp-examples-for-term
   (implies (alistp acc)
-           (alistp
-            (mv-nth 0 (examples-for-term term templates acc state))))
+           (alistp (examples-for-term term templates acc state)))
   :hints(("Goal" :in-theory (enable alistp))))
 
-(defthm state-p1-examples-for-term
-  (implies (state-p1 state)
-           (state-p1
-            (mv-nth 1 (examples-for-term term templates acc state)))))
 
 (in-theory (disable examples-for-term))
 
@@ -983,9 +968,9 @@ restrictions are not used~%")
                                (pseudo-term-list-list-alistp acc))
                    :verify-guards nil
                    :stobjs state))
-   (b* (((when (atom x)) (mv acc state))
-        ((when (eq (car x) 'quote)) (mv acc state))
-        ((mv acc state)
+   (b* (((when (atom x)) acc)
+        ((when (eq (car x) 'quote)) acc)
+        (acc
          (witness-cp-collect-examples-list (cdr x) templates acc state))
         ;; no lambdas -- beta reduced
         )
@@ -997,8 +982,8 @@ restrictions are not used~%")
                                (alistp acc)
                                (pseudo-term-list-list-alistp acc))
                    :stobjs state))
-   (b* (((when (atom x)) (mv acc state))
-        ((mv acc state)
+   (b* (((when (atom x)) acc)
+        (acc
          (witness-cp-collect-examples-list
           (cdr x) templates acc state)))
      (witness-cp-collect-examples-term
@@ -1013,13 +998,13 @@ restrictions are not used~%")
   alistp-witness-cp-collect-examples
   (witness-cp-collect-examples-term
    (implies (alistp acc)
-            (alistp (mv-nth 0 (witness-cp-collect-examples-term
-                               x templates acc state))))
+            (alistp (witness-cp-collect-examples-term
+                     x templates acc state)))
    :name alistp-witness-cp-collect-examples-term)
   (witness-cp-collect-examples-list
    (implies (alistp acc)
-            (alistp (mv-nth 0 (witness-cp-collect-examples-list
-                               x templates acc state))))
+            (alistp (witness-cp-collect-examples-list
+                     x templates acc state)))
    :name alistp-witness-cp-collect-examples-list)
   :hints (("goal" :induct (witness-cp-collect-examples-flag
                            flag x templates acc state))))
@@ -1031,16 +1016,16 @@ restrictions are not used~%")
                  (good-templatesp templates)
                  (pseudo-term-list-list-alistp acc))
             (pseudo-term-list-list-alistp
-             (mv-nth 0 (witness-cp-collect-examples-term
-                        x templates acc state))))
+             (witness-cp-collect-examples-term
+              x templates acc state)))
    :name pseudo-term-list-list-alistp-witness-cp-collect-examples-term)
   (witness-cp-collect-examples-list
    (implies (and (pseudo-term-listp x)
                  (good-templatesp templates)
                  (pseudo-term-list-list-alistp acc))
             (pseudo-term-list-list-alistp
-             (mv-nth 0 (witness-cp-collect-examples-list
-                        x templates acc state))))
+             (witness-cp-collect-examples-list
+              x templates acc state)))
    :name pseudo-term-list-list-alistp-witness-cp-collect-examples-list)
   :hints (("goal" :induct (witness-cp-collect-examples-flag
                            flag x templates acc state)
@@ -1051,23 +1036,6 @@ restrictions are not used~%")
                :hints(("Goal" :in-theory (enable pseudo-term-listp
                                                  pseudo-termp)
                        :expand ((pseudo-termp x)))))
-
-(defthm-witness-cp-collect-examples-flag
-  state-p1-witness-cp-collect-examples-lemma
-  (witness-cp-collect-examples-term
-   (implies (state-p1 state)
-            (state-p1
-             (mv-nth 1 (witness-cp-collect-examples-term
-                        x templates acc state))))
-   :name state-p1-witness-cp-collect-examples-term)
-  (witness-cp-collect-examples-list
-   (implies (state-p1 state)
-            (state-p1
-             (mv-nth 1 (witness-cp-collect-examples-list
-                        x templates acc state))))
-   :name state-p1-witness-cp-collect-examples-list)
-  :hints (("goal" :induct (witness-cp-collect-examples-flag
-                           flag x templates acc state))))
 
 
 
@@ -1482,32 +1450,32 @@ restrictions are not used~%")
   (b* (((when (not (and (true-listp hints)
                         (>= (len hints) 5))))
         (er hard? 'witness-cp "Bad hints: wrong format~%")
-        (value (list clause)))
+        (mv nil (list clause)))
        ((nths generalizep
               witness-rules example-templates instance-rules
               user-examples) hints)
        ((when (not (good-witness-rulesp witness-rules)))
         (er hard? 'witness-cp "Bad hints: bad witness-rules~%")
-        (value (list clause)))
+        (mv nil (list clause)))
        ((when (not (good-templatesp example-templates)))
         (er hard? 'witness-cp "Bad hints: bad example-templates~%")
-        (value (list clause)))
+        (mv nil (list clause)))
        ((when (not (good-user-examplesp user-examples)))
         (er hard? 'witness-cp "Bad hints: bad user examples~%")
-        (value (list clause)))
+        (mv nil (list clause)))
        (example-alist (user-examples-to-example-alist user-examples nil))
        ((when (not (good-instance-rules-and-examplesp
                     instance-rules example-alist)))
         (er hard? 'witness-cp "Bad hints: bad instance rule or user example~%")
-        (value (list clause)))
-       ((mv witnessed-clause generalize-alist witness-obligs state)
+        (mv nil (list clause)))
+       ((mv witnessed-clause generalize-alist witness-obligs)
         (witness-cp-expand-witnesses clause witness-rules state))
        (generalized-clause
         (if generalizep
             (witness-cp-generalize-clause
              generalize-alist witnessed-clause)
           witnessed-clause))
-       ((mv example-alist state)
+       (example-alist
         (witness-cp-collect-examples-list
          (beta-reduce-list generalized-clause)
          example-templates example-alist state))
@@ -1515,8 +1483,8 @@ restrictions are not used~%")
                     instance-rules example-alist)))
         (er hard? 'witness-cp
             "Bad hints: bad instance rule or generated example~%")
-        (value (list clause)))
-       ((mv instanced-clause instance-obligs state)
+        (mv nil (list clause)))
+       ((mv instanced-clause instance-obligs)
         (witness-cp-expand-instances
          generalized-clause example-alist instance-rules state))
        ;; (generalized-clause
@@ -1525,17 +1493,14 @@ restrictions are not used~%")
        ;;       generalize-alist instanced-clause)
        ;;    instanced-clause))
        )
-    (value
-     (cons instanced-clause
-           (remove-duplicates-equal
-            (append instance-obligs witness-obligs))))))
+    (mv nil 
+        (cons instanced-clause
+              (remove-duplicates-equal
+               (append instance-obligs witness-obligs))))))
 
 (verify-guards witness-cp
                :hints (("goal" :in-theory
                         (enable pseudo-term-list-listp-true-listp))))
-
-
-
 
 (defthm conjoin-clauses-remove-duplicates-equal
   (iff (witness-ev-theoremp
