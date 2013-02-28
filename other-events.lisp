@@ -9983,7 +9983,7 @@
 ; unknown constraints.
 
   (declare (xargs :guard t))
-  x)
+  (list x))
 
 #+acl2-loop-only
 (encapsulate

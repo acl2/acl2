@@ -20406,6 +20406,21 @@
 
 (deflabel note-6-2
 
+; Here is the example from Sol Swords for the item below about acl2-magic-mfc
+; and acl2-magic-canonical-pathname.  The problem was that these "placeholder"
+; functions are really clause processors, and hence should return a list of
+; clauses, not (as erroneously done before) a single clause.
+;
+;  (defun foo (x)
+;     (declare (ignore x))
+;     nil)
+;
+;  (defthm foo-of-t
+;     (foo t)
+;     :hints (("goal" :clause-processor acl2-magic-mfc)))
+;
+;  (thm nil :hints (("goal" :use foo-of-t)))
+
   :doc
   ":Doc-Section release-notes
 
@@ -20428,6 +20443,10 @@
   ~st[HEURISTIC IMPROVEMENTS]
 
   ~st[BUG FIXES]
+
+  Fixed a soundness bug that could be exploited by calling system functions
+  ~c[acl2-magic-mfc] or ~c[acl2-magic-canonical-pathname].  Thanks to Sol
+  Swords for bringing this bug to our attention.
 
   ~st[CHANGES AT THE SYSTEM LEVEL]
 
@@ -25721,7 +25740,7 @@ tail recursion.
 ; have unknown constraints.
 
   (declare (xargs :guard t))
-  x)
+  (list x))
 
 #+acl2-loop-only
 (encapsulate
