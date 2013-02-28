@@ -2,6 +2,7 @@
 
 ; Added by Matt K.:
 ; Require ACL2(h) or ACL2(hp) because of the use of GL in this directory.
+; cert_param: (hons-only)
 (local (include-book "misc/check-state" :dir :system))
 (local (check-hons-enabled (:book "des.lisp")))
 
