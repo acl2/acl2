@@ -1,5 +1,5 @@
-; ACL2 Version 6.0 -- A Computational Logic for Applicative Common Lisp
-; Copyright (C) 2012, Regents of the University of Texas
+; ACL2 Version 6.1 -- A Computational Logic for Applicative Common Lisp
+; Copyright (C) 2013, Regents of the University of Texas
 
 ; This version of ACL2 is a descendent of ACL2 Version 1.9, Copyright
 ; (C) 1997 Computational Logic, Inc.  See the documentation topic NOTE-2-0.
@@ -1348,10 +1348,11 @@
 #-acl2-loop-only
 (defvar *first-entry-to-ld-fn-body-flg*)
 
-(defun update-cbd (filename state)
+(defun update-cbd (standard-oi0 state)
 
-; At one time we used extend-pathname to compute the new cbd from the old cbd
-; and filename.  However, this caused us to follow soft links when that was
+; For the case that standard-oi0 is a string (representing a file), we formerly
+; used extend-pathname to compute the new cbd from the old cbd and
+; standard-oi0.  However, this caused us to follow soft links when that was
 ; undesirable.  Here is a suitable experiment, after building the nonstd books
 ; by connecting to books/nonstd/ and running "make clean-nonstd" followed by
 ; "make all-nonstd".  In this experiment, we had already certified the regular
@@ -1364,19 +1365,22 @@
 
   (let ((old-cbd (f-get-global 'connected-book-directory state)))
     (cond ((and old-cbd
-                (stringp filename)
-                (position *directory-separator* filename))
-           (f-put-global
-            'connected-book-directory
-            (if (absolute-pathname-string-p filename nil (os (w state)))
-                (maybe-add-separator
-                 (remove-after-last-directory-separator filename))
-              (our-merge-pathnames
-               old-cbd
-               (concatenate 'string
-                            (remove-after-last-directory-separator filename)
-                            *directory-separator-string*)))
-            state))
+                (stringp standard-oi0)
+                (position *directory-separator* standard-oi0))
+           (let* ((os (os (w state)))
+                  (filename-dir
+                   (expand-tilde-to-user-home-dir
+                    (concatenate 'string
+                                 (remove-after-last-directory-separator
+                                  standard-oi0)
+                                 *directory-separator-string*)
+                    os 'update-cbd state)))
+             (f-put-global
+              'connected-book-directory
+              (if (absolute-pathname-string-p filename-dir nil os)
+                  filename-dir
+                (our-merge-pathnames old-cbd filename-dir))
+              state)))
           (t state))))
 
 (defun ld-fn-body (standard-oi0 new-ld-specials-alist state)
@@ -3227,8 +3231,8 @@
 
   ACL2 copyright, license, sponsorship~/~/
 
-  ACL2 Version 6.0 -- A Computational Logic for Applicative Common Lisp
-  Copyright (C) 2012, Regents of the University of Texas
+  ACL2 Version 6.1 -- A Computational Logic for Applicative Common Lisp
+  Copyright (C) 2013, Regents of the University of Texas
 
   This version of ACL2 is a descendent of ACL2 Version 1.9, Copyright
   (C) 1997 Computational Logic, Inc.  See the documentation topic NOTE-2-0.
@@ -20197,7 +20201,7 @@
   :doc
   ":Doc-Section release-notes
 
-  ACL2 Version  6.1 (xx, xxxx) Notes~/
+  ACL2 Version  6.1 (February, 2013) Notes~/
 
   NOTE!  New users can ignore these release notes, because the
   ~il[documentation] has been updated to reflect all changes that are recorded
@@ -20397,6 +20401,39 @@
   implementations of ~il[accumulated-persistence] and
   ~il[forward-chaining-reports], which are not supported in ACL2(p)
   (~pl[unsupported-waterfall-parallelism-features]).
+
+  ~/~/")
+
+(deflabel note-6-2
+
+  :doc
+  ":Doc-Section release-notes
+
+  ACL2 Version  6.2 (xx, 20xx) Notes~/
+
+  NOTE!  New users can ignore these release notes, because the
+  ~il[documentation] has been updated to reflect all changes that are recorded
+  here.
+
+  Below we roughly organize the changes since Version  6.1 into the following
+  categories of changes: existing features, new features, heuristic
+  improvements, bug fixes, changes at the system level, Emacs support, and
+  experimental versions.  Each change is described in just one category, though
+  of course many changes could be placed in more than one category.
+
+  ~st[CHANGES TO EXISTING FEATURES]
+
+  ~st[NEW FEATURES]
+
+  ~st[HEURISTIC IMPROVEMENTS]
+
+  ~st[BUG FIXES]
+
+  ~st[CHANGES AT THE SYSTEM LEVEL]
+
+  ~st[EMACS SUPPORT]
+
+  ~st[EXPERIMENTAL/ALTERNATE VERSIONS]
 
   ~/~/")
 
@@ -22343,7 +22380,7 @@ Recent changes to this page</A>
 <A HREF=\"~sg\"><IMG SRC=\"note02.gif\" BORDER=0></A>
 </TD>
 <TD>
-<A HREF=\"~sg\">Differences from Version 5.0</A><A HREF=\"~s7\"> <IMG SRC=\"twarning.gif\"></A>
+<A HREF=\"~sg\">Differences from Version 6.0</A><A HREF=\"~s7\"> <IMG SRC=\"twarning.gif\"></A>
 </TD>
 <TD ALIGN=CENTER VALIGN=MIDDLE>
 <A HREF=\"other-releases.html\">
@@ -22405,7 +22442,7 @@ HREF=\"http://acl2-books.googlecode.com/\">http://acl2-books.googlecode.com/</A>
 in particular, the [Source] tab near the top takes you to a search box)
 and their authors are generally noted in each book or its
 <code>README</code> file.  There is a <A
-HREF=\"http://fv.centtech.com/acl2/6.0/doc/\">combined manual</A> that
+HREF=\"http://fv.centtech.com/acl2/6.1/doc/\">combined manual</A> that
 incorporates not only <A HREF=\"#User's-Manual\">The User's Manual</A>
 for ACL2 but also documentation for many books; thanks to Jared Davis
 for building this view of the documentation.
@@ -22490,7 +22527,7 @@ with ACL2.
 
 <B>Note</B>: The documentation is available for reading in a Web
 browser (recommended), in Emacs Info, using the ACL2 <CODE>:DOC</CODE> command,
-or as a printed book (about 2050 pages).  These are available as follows.
+or as a printed book (over 2100 pages).  These are available as follows.
 
 <ul>
 
@@ -22500,7 +22537,7 @@ which you can find under your local <CODE>acl2-sources/</CODE> diretory at
 <CODE>doc/HTML/acl2-doc.html</CODE>.</li>
 
 <li>Alternatively, for web browsing you can use <A
-HREF=\"http://fv.centtech.com/acl2/6.0/doc/\">documentation generated by Jared
+HREF=\"http://fv.centtech.com/acl2/6.1/doc/\">documentation generated by Jared
 Davis's xdoc utility</A>.  After you install and certify the ACL2 community
 books (see <A HREF=\"#Tools\">below</A>), you will find a complete local copy
 at <CODE>books/xdoc-impl/manual/preview.html</A></CODE>.
@@ -22516,7 +22553,7 @@ directory):<br>
 
 <li>To read a printed copy, obtain a Postscript version <A HREF=
 \"http://www.cs.utexas.edu/users/moore/publications/acl2-book.ps.gz\">here</A>
-(about 2.4 MB).</li>
+(about 2.5 MB).</li>
 
 </ul>
 
@@ -22588,18 +22625,18 @@ each of these.
 The following link will take you to a search box on a Google page,
 which has the following contents.
 <pre>
-search_term site:http://www.cs.utexas.edu/users/moore/acl2/v6-0
+search_term site:http://www.cs.utexas.edu/users/moore/acl2/v6-1
 </pre>
 Now simply replace the word `search_term' with your topic.  For example, replace
 `<code>search_term</code>' by `<code>tail recursion</code>' to get
 documentation about tail recursion.
 <pre>
-tail recursion site:http://www.cs.utexas.edu/users/moore/acl2/v6-0
+tail recursion site:http://www.cs.utexas.edu/users/moore/acl2/v6-1
 </pre>
 Now you are ready to follow the link.
 <p>
 <a href=\"http://www.google.com/search?q=search_term
-                 site:http://www.cs.utexas.edu/users/moore/acl2/v6-0\">SEARCH
+                 site:http://www.cs.utexas.edu/users/moore/acl2/v6-1\">SEARCH
                  THE DOCUMENTATION</a>
 </li>
 
@@ -22636,7 +22673,7 @@ tail recursion.
     programming                         ;;; d
     rule-classes                        ;;; e
     books                               ;;; f
-    note-6-0                            ;;; g   ; current release notes
+    note-6-1                            ;;; g   ; current release notes
     the-method                          ;;; h
     introduction-to-the-theorem-prover  ;;; i   ; This is not used right now.
     interesting-applications            ;;; j
@@ -26912,7 +26949,7 @@ tail recursion.
 
   about ACL2~/
 
-  This is ACL2 Version 6.0, copyright (C) 2012, Regents of the University of
+  This is ACL2 Version 6.1, copyright (C) 2013, Regents of the University of
   Texas, authored by Matt Kaufmann and J Strother Moore.
 
   For past versions, see
