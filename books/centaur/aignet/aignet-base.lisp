@@ -58,6 +58,9 @@
                            sets::sets-are-true-lists
                            make-list-ac)))
 
+(set-waterfall-parallelism nil) ; currently unknown why we need to disable
+                                ; waterfall-parallelism; something to examine
+
 (local (in-theory (disable true-listp-update-nth
                            acl2::nth-with-large-index)))
 
