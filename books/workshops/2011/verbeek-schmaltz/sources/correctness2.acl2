@@ -1,4 +1,0 @@
-#+acl2-par
-(set-waterfall-parallelism t)
-
-(certify-book "correctness2")
