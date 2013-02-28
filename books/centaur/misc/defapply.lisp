@@ -31,6 +31,7 @@
 (include-book "tools/defevaluator-fast" :dir :system)
 (include-book "tools/mv-nth" :dir :system)
 
+(set-waterfall-parallelism nil) ; for apply-for-ev-cp
 
 (defmacro ecc (call)
   (declare (xargs :guard (consp call)))
