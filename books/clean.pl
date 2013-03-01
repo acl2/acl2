@@ -99,6 +99,8 @@ while (my $line = <FD>) {
     push(@rm, "$book.dx64fsl");
     push(@rm, "$book.lx32fsl");
     push(@rm, "$book.lx64fsl");
+    push(@rm, "$book.wx32fsl");
+    push(@rm, "$book.wx64fsl");
     push(@rm, "$book.sparcf");
     push(@rm, "$book.axpf");
     push(@rm, "$book.x86f");
