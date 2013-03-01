@@ -29,6 +29,17 @@
 (local (include-book "../../util/osets"))
 (local (in-theory (disable all-equalp)))
 
+(make-event
+
+; Disabling waterfall parallelism because this book allegedly uses memoization
+; while performing its proofs.  
+
+ (if (and (ACL2::hons-enabledp state) 
+          (f-get-global 'ACL2::parallel-execution-enabled state)) 
+     (er-progn (set-waterfall-parallelism nil)
+               (value '(value-triple nil)))
+   (value '(value-triple nil))))
+
 (define vl-flopcode-fix ((x (and (vl-expr-p x)
                                  (vl-expr-welltyped-p x)
                                  (posp (vl-expr->finalwidth x)))))

@@ -30,6 +30,16 @@
 (local (in-theory (disable sets::double-containment)))
 (local (in-theory (disable occmap append-of-nil)))
 
+(make-event
+
+; Disabling waterfall parallelism because this book allegedly uses memoization
+; while performing its proofs.  
+
+ (if (and (hons-enabledp state) 
+          (f-get-global 'parallel-execution-enabled state)) 
+     (er-progn (set-waterfall-parallelism nil)
+               (value '(value-triple nil)))
+   (value '(value-triple nil))))
 
 (defthm hons-assoc-equal-4v-sexpr-alist-extract
   (equal (hons-assoc-equal k (4v-sexpr-alist-extract keys al))

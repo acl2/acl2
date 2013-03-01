@@ -25,6 +25,17 @@
 (local (include-book "../../util/osets"))
 (local (in-theory (disable vl-maybe-module-p-when-vl-module-p)))
 
+(make-event
+
+; Disabling waterfall parallelism because this book allegedly uses memoization
+; while performing its proofs.  
+
+ (if (and (ACL2::hons-enabledp state) 
+          (f-get-global 'ACL2::parallel-execution-enabled state)) 
+     (er-progn (set-waterfall-parallelism nil)
+               (value '(value-triple nil)))
+   (value '(value-triple nil))))
+
 (defsection *vl-1-bit-dynamic-bitselect*
   :parents (occform)
   :short "Degenerate 1-bit dynamic bit-selection module."

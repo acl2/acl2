@@ -29,6 +29,24 @@
 (include-book "arithmetic/nat-listp" :dir :system)
 (set-well-founded-relation nat-list-<)
 
+(make-event
+
+; Disabling waterfall parallelism because this book allegedly uses memoization
+; while performing its proofs.  If we were to leave waterfall parallelism
+; enabled, we would receive a message like:
+
+;   | ***********************************************
+;   | ************ ABORTING from raw Lisp ***********
+;   | Error:  Not owner of hash table #<HASH-TABLE :TEST EQL size 0/150002 #x3020008057CD>
+;   | ***********************************************
+
+ (if (and (hons-enabledp state) 
+          (f-get-global 'parallel-execution-enabled state)) 
+     (er-progn (set-waterfall-parallelism nil)
+               (value '(value-triple nil)))
+   (value '(value-triple nil))))
+
+
 (defund stringify-atom (x)
   (declare (xargs :guard (atom x)))
   (cond ((symbolp x) (symbol-name x))

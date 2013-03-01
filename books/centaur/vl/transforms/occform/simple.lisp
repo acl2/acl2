@@ -34,6 +34,16 @@
 ;  - N-bit case equality modules (===)
 ;  - N-bit pure-X module
 
+(make-event
+
+; Disabling waterfall parallelism because this book allegedly uses memoization
+; while performing its proofs.  
+
+ (if (and (ACL2::hons-enabledp state) 
+          (f-get-global 'ACL2::parallel-execution-enabled state)) 
+     (er-progn (set-waterfall-parallelism nil)
+               (value '(value-triple nil)))
+   (value '(value-triple nil))))
 
 (def-vl-modgen vl-make-n-bit-binary-op (type n)
   :short "Generate a wide, pointwise AND, OR, XOR, or XNOR module."

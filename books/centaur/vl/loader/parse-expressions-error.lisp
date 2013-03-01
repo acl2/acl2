@@ -22,6 +22,17 @@
 (include-book "parse-expressions-def")
 (local (include-book "../util/arithmetic"))
 
+(make-event
+
+; Disabling waterfall parallelism because this book allegedly uses memoization
+; while performing its proofs.  
+
+ (if (and (ACL2::hons-enabledp state) 
+          (f-get-global 'ACL2::parallel-execution-enabled state)) 
+     (er-progn (set-waterfall-parallelism nil)
+               (value '(value-triple nil)))
+   (value '(value-triple nil))))
+
 (local (in-theory (disable consp-under-iff-when-true-listp
                            member-equal-when-member-equal-of-cdr-under-iff
                            default-car

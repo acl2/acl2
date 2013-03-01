@@ -22,6 +22,19 @@
 (include-book "expr-tools")
 (local (include-book "../util/arithmetic"))
 
+(make-event
+
+; Disabling waterfall parallelism because this book allegedly uses memoization
+; while performing its proofs.  In addition to that reason, the book also
+; exhibits the slow array access warning that waterfall parallelism sometimes
+; causes and might be problematic.
+
+ (if (and (ACL2::hons-enabledp state) 
+          (f-get-global 'ACL2::parallel-execution-enabled state)) 
+     (er-progn (set-waterfall-parallelism nil)
+               (value '(value-triple nil)))
+   (value '(value-triple nil))))
+
 
 (defxdoc expr-building
   :parents (mlib)

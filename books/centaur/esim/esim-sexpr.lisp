@@ -35,6 +35,16 @@
 (local (include-book "esim-sexpr-support-thms"))
 (local (include-book "centaur/4v-sexpr/sexpr-advanced" :dir :system))
 
+(make-event
+
+; Disabling waterfall parallelism because this book allegedly uses memoization
+; while performing its proofs.  
+
+ (if (and (hons-enabledp state) 
+          (f-get-global 'parallel-execution-enabled state)) 
+     (er-progn (set-waterfall-parallelism nil)
+               (value '(value-triple nil)))
+   (value '(value-triple nil))))
 
 (local (in-theory (disable* sets::double-containment)))
 

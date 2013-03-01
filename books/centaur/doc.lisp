@@ -125,6 +125,16 @@
 ||#
 
 
+(make-event
+
+; Disabling waterfall parallelism for unknown reasons other than that
+; certification stalls out with it enabled (tried for 10 minutes).
+
+ (if (and (hons-enabledp state) 
+          (f-get-global 'parallel-execution-enabled state)) 
+     (er-progn (set-waterfall-parallelism nil)
+               (value '(value-triple nil)))
+   (value '(value-triple nil))))
 
 (make-event
 ; xdoc::save is an event, so we might have just called it directly.  But for

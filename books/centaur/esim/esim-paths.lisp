@@ -28,6 +28,17 @@
 (include-book "cutil/deflist" :dir :system)
 (include-book "cutil/defmvtypes" :dir :system)
 
+(make-event
+
+; Disabling waterfall parallelism because this book allegedly uses memoization
+; while performing its proofs.  
+
+ (if (and (hons-enabledp state) 
+          (f-get-global 'parallel-execution-enabled state)) 
+     (er-progn (set-waterfall-parallelism nil)
+               (value '(value-triple nil)))
+   (value '(value-triple nil))))
+
 (cutil::deflist cons-listp (x)
                 (consp x)
                 :guard t

@@ -23,6 +23,16 @@
 (include-book "str/top" :dir :system)
 (include-book "../esim/esim-paths")
 
+(make-event
+
+; Disabling waterfall parallelism because this book allegedly uses memoization
+; while performing its proofs.  
+
+ (if (and (hons-enabledp state) 
+          (f-get-global 'parallel-execution-enabled state)) 
+     (er-progn (set-waterfall-parallelism nil)
+               (value '(value-triple nil)))
+   (value '(value-triple nil))))
 
 ; esim-snapshot.lisp -- this is a tool for building nice snapshots from ESIM
 ; runs of VL-generated modules.

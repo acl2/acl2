@@ -35,6 +35,16 @@
 
 (set-well-founded-relation nat-list-<)
 
+(make-event
+
+; Disabling waterfall parallelism because this book allegedly uses memoization
+; while performing its proofs.  
+
+ (if (and (hons-enabledp state) 
+          (f-get-global 'parallel-execution-enabled state)) 
+     (er-progn (set-waterfall-parallelism nil)
+               (value '(value-triple nil)))
+   (value '(value-triple nil))))
 
 (defun 4v-x-res (i alist)
   (declare (xargs :guard t))

@@ -38,6 +38,24 @@
 (in-theory (enable eval-bdd eval-bdd-list ubddp ubdd-listp
                    q-compose q-compose-list))
 
+(make-event
+
+; Disabling waterfall parallelism because this book allegedly uses memoization
+; while performing its proofs.  If we were to leave waterfall parallelism
+; enabled, we would receive a message like:
+
+;   | ***********************************************
+;   | ************ ABORTING from raw Lisp ***********
+;   | Error:  Not owner of hash table #<HASH-TABLE :TEST EQL size 0/150002 #x3020008057CD>
+;   | ***********************************************
+
+ (if (and (hons-enabledp state) 
+          (f-get-global 'parallel-execution-enabled state)) 
+     (er-progn (set-waterfall-parallelism nil)
+               (value '(value-triple nil)))
+   (value '(value-triple nil))))
+
+
 ;; -------------------------------------------------------------------
 ;; Function Definitions
 ;; -------------------------------------------------------------------
