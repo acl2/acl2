@@ -9902,11 +9902,12 @@
 
 ; In Windows, it appears that the value returned by truename can start with
 ; (for example) "C:/" or "c:/" depending on whether "c" is capitalized in the
-; input to truename.  Since tmp is constructed from mswindows-drive and
-; components of truename, we are really just doing a minor sanity check here,
-; so we content ourselves with a case-insensitive string-equality check.  That
-; seems reasonable for Windows, whose pathnames are generally (as far as we
-; know) considered to be case-insensitive.
+; input to truename.  (See the comment in mswindows-drive1.)  Since tmp is
+; constructed from mswindows-drive and components of truename, we are really
+; just doing a minor sanity check here, so we content ourselves with a
+; case-insensitive string-equality check.  That seems reasonable for Windows,
+; whose pathnames are generally (as far as we know) considered to be
+; case-insensitive.
 
                                          (string-equal namestring-truename
                                                        namestring-tmp))

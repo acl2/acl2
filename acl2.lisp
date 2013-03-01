@@ -1405,6 +1405,16 @@ of backquote.")
   "*host-readtable* is the original readtable provided by the host Lisp,
 which is saved just in case it's needed later.")
 
+(defun set-new-dispatch-macro-character (char subchar fn)
+  (let ((old (get-dispatch-macro-character char subchar)))
+    (cond ((or (null old)
+               (eql fn old))
+           (set-dispatch-macro-character char subchar fn))
+          (t (error "ACL2(h) cannot be built in this host Lisp, because ~%~
+                     ~s is already defined, to be: ~s"
+                    `(get-dispatch-macro-character ,char ,subchar)
+                    old)))))
+
 (defun define-sharp-dot ()
   (set-dispatch-macro-character
    #\#
@@ -1418,19 +1428,33 @@ which is saved just in case it's needed later.")
    #'sharp-comma-read))
 
 (defun define-sharp-atsign ()
-  (set-dispatch-macro-character
+  (set-new-dispatch-macro-character
    #\#
    #\@
    #'sharp-atsign-read))
 
 (defun define-sharp-bang ()
-  (set-dispatch-macro-character
+  (set-new-dispatch-macro-character
    #\#
    #\!
    #'sharp-bang-read))
 
 (defun define-sharp-u ()
-  (set-dispatch-macro-character
+  (#-allegro
+   set-new-dispatch-macro-character
+   #+allegro
+
+; The #u reader has been defined in Allegro CL to invoke parse-uri.  It seems
+; harmless to overwrite it (especially since we only smash #u in
+; *acl2-readtable*).  David Margolies of Franz Inc. has kindly pointed us to
+; the web page
+; http://www.franz.com/support/documentation/8.1/doc/uri.htm#acl-implementation-1
+; where we find this:
+
+;   4. #u"..." is shorthand for (parse-uri "...") but if an existing #u
+;   dispatch macro definition exists, it will not be overridden.
+
+   set-dispatch-macro-character
    #\#
    #\u
    #'sharp-u-read))
@@ -1443,17 +1467,18 @@ which is saved just in case it's needed later.")
 
 ; Thanks to Jared Davis for contributing the code for #\Y and #\Z (see
 ; serialize-raw.lisp).  Note that p. 531 of CLtL2 specifies that #\Y and #\Z
-; are available to us.  Keep these two settings in sync with
+; may be available to us (though we check this by using
+; set-new-dispatch-macro-character).  Keep these two settings in sync with
 ; *reckless-acl2-readtable*.
 
     #+hons ; SBCL requires #+hons (same restriction as ser-hons-reader-macro)
-    (set-dispatch-macro-character
+    (set-new-dispatch-macro-character
      #\#
      #\Z
      'ser-hons-reader-macro)
 
     #+hons ; SBCL requires #+hons (same restriction as ser-cons-reader-macro)
-    (set-dispatch-macro-character
+    (set-new-dispatch-macro-character
      #\#
      #\Y
      'ser-cons-reader-macro)
@@ -1554,13 +1579,13 @@ which is saved just in case it's needed later.")
 ; in sync with modify-acl2-readtable.
 
     #+hons ; SBCL requires #+hons (same restriction as ser-hons-reader-macro)
-    (set-dispatch-macro-character
+    (set-new-dispatch-macro-character
      #\#
      #\Z
      'ser-hons-reader-macro)
 
     #+hons ; SBCL requires #+hons (same restriction as ser-cons-reader-macro)
-    (set-dispatch-macro-character
+    (set-new-dispatch-macro-character
      #\#
      #\Y
      'ser-cons-reader-macro)

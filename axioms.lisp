@@ -33739,7 +33739,18 @@
   (let ((pos-colon (position #\: filename))
         (pos-sep (position *directory-separator* filename)))
     (cond (pos-colon (cond ((eql pos-sep (1+ pos-colon))
-                            (subseq filename 0 pos-sep))
+
+; In Windows, it appears that the value returned by truename can start with
+; (for example) "C:/" or "c:/" depending on whether "c" is capitalized in the
+; input to truename.  Indeed, quoting
+; http://msdn.microsoft.com/en-us/library/windows/desktop/aa365247(v=vs.85).aspx:
+
+;   Volume designators (drive letters) are similarly case-insensitive. For
+;   example, "D:\" and "d:\" refer to the same volume.
+
+; So we take responsibility for canonicalizing, here.
+
+                            (string-upcase (subseq filename 0 pos-sep)))
                            (t (illegal 'mswindows-drive1
                                        "Implementation error: Unable to ~
                                         compute mswindows-drive for ~

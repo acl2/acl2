@@ -14931,12 +14931,8 @@
                               (on-ancestorsp assumed-true)
                               (ancestors-check inst-hyp ancestors (list rune))
                               (cond
-                               (on-ancestorsp (mv step-limit
-                                                  assumed-true
-                                                  (if (null assumed-true)
-                                                      'ancestors
-                                                    nil)
-                                                  unify-subst ttree))
+                               ((and on-ancestorsp assumed-true)
+                                (mv step-limit t nil unify-subst ttree))
                                (t
                                 (let* ((forcer-fn (and forcep1 (ffn-symb hyp0)))
                                        (force-flg (ok-to-force rcnst))
@@ -14966,9 +14962,10 @@
                                            nil
                                            unify-subst
                                            nilp-ttree))))
-                                    ((backchain-limit-reachedp
-                                      backchain-limit
-                                      ancestors)
+                                    ((or on-ancestorsp ; and (not assumed-true)
+                                         (backchain-limit-reachedp
+                                          backchain-limit
+                                          ancestors))
                                      (mv-let
                                       (force-flg ttree)
                                       (cond
@@ -14990,8 +14987,10 @@
                                        (t
                                         (mv step-limit
                                             nil
-                                            (cons 'backchain-limit
-                                                  backchain-limit)
+                                            (if on-ancestorsp
+                                                'ancestors
+                                              (cons 'backchain-limit
+                                                    backchain-limit))
                                             unify-subst ttree)))))
                                     (t
                                      (mv-let

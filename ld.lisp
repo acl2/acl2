@@ -20421,6 +20421,38 @@
 ;
 ;  (thm nil :hints (("goal" :use foo-of-t)))
 
+; Defined function set-new-dispatch-macro-character, which we use instead of
+; set-dispatch-macro-character to extend the reader with #\@, #\!, #\u, and in
+; ACL2(h), also #\Y and #\Z.  This way, we check that the character hasn't
+; already being appropriated for the reader by the host Lisp.  Now, for
+; example, CLISP causes an error when trying to build ACL2(h), because #\Y is
+; already defined as a dispatch macro character.
+
+; Here is Robert Krug's example, trivially modified, for the heuristic
+; improvement pertaining to the ancestors check.
+
+;   (defstub rm-low-32 (addr x86) t)
+;
+;   (defaxiom n32p-rm-low-32-axiom
+;     (implies (and (integerp addr)
+;                   (<= 0 addr)
+;                   (force (< (+ 3 addr) 1000)))
+;              (and (integerp (rm-low-32 addr x86))
+;                   (<= 0 (rm-low-32 addr x86)))))
+;
+;   (defstub foo-p (x) t)
+;
+;   (defaxiom axiom-2
+;     (implies (<= 0 (rm-low-32 addr x86))
+;              (foo-p (rm-low-32 addr x86))))
+;
+;   ; The following fails, which is to be expected.  But we expect to see a forcing
+;   ; round.  This is indeed the case now, but it was not in Version 6.1 (and
+;   ; probably many versions preceding that one).
+;   (thm (implies (and (integerp addr)
+;                      (<= 0 addr))
+;                 (foo-p (rm-low-32 addr x86))))
+
   :doc
   ":Doc-Section release-notes
 
@@ -20442,11 +20474,24 @@
 
   ~st[HEURISTIC IMPROVEMENTS]
 
+  It had been the case that an ``ancestors check'' heuristic (see source
+  function ~c[ancestors-check-builtin] if you want details) could prevent a
+  ~il[rewrite] rule's hypothesis from being rewritten to true, even when that
+  hypothesis is of the form ~c[(force <term>)].  Now, forcing will take place
+  as expected; ~pl[force].  Thanks to Robert Krug for bringing this issue to
+  our attention and sending an example, which we include as a comment in the
+  ACL2 source code (see ~c[(deflabel note-6-2 ...)]).
+
   ~st[BUG FIXES]
 
   Fixed a soundness bug that could be exploited by calling system functions
   ~c[acl2-magic-mfc] or ~c[acl2-magic-canonical-pathname].  Thanks to Sol
   Swords for bringing this bug to our attention.
+
+  (Windows only) On Windows, it had been possible for ACL2 not to consider two
+  pathnames to name the same file when the only difference is the case of the
+  drive, e.g., `~c[C:]' vs. `~c[c:]'.  This has been fixed.  Thanks to Sol
+  Swords for reporting this issue.
 
   ~st[CHANGES AT THE SYSTEM LEVEL]
 
