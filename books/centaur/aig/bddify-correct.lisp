@@ -28,6 +28,7 @@
                     aig-q-compose-correct))
 
 (set-inhibit-warnings "theory")
+(set-waterfall-parallelism nil) ; for defthm aig-bddify-x-weakening-ok-point
 
 (local (in-theory (disable append-of-nil)))
 
