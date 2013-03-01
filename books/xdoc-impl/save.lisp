@@ -33,21 +33,6 @@
 (include-book "sort")
 (set-state-ok t)
 
-(defun cw-princ$ (str)
-  ;; Same as princ$ to *standard-co*, but doesn't require state.
-  (declare (xargs :guard t))
-  (mbe :logic nil
-       :exec
-       (wormhole 'cw-raw-wormhole
-                 '(lambda (whs) whs)
-                 nil
-                 `(let ((state (princ$ ',str *standard-co* state)))
-                    (value :q))
-                 :ld-prompt nil
-                 :ld-pre-eval-print nil
-                 :ld-post-eval-print nil
-                 :ld-verbose nil)))
-
 (program)
 
 (defun clean-topics-aux (x seen-names-fal)
@@ -465,11 +450,15 @@
        (short-str  (reverse (coerce short-acc 'string)))
        (acc        (append short-acc acc))
        ((mv err &) (parse-xml short-str))
-       (- (or (not err)
-              (acl2::progn$
-               (cw "~|~%WARNING: problem with :short in topic ~x0:~%" name)
-               (cw-princ$ err)
-               (cw "~%~%"))))
+       (state
+        (if err
+            (pprogn
+               (fms "~|~%WARNING: problem with :short in topic ~x0:~%" 
+                    (list (cons #\0 name))
+                    *standard-co* state nil)
+               (princ$ err *standard-co* state)
+               (fms "~%~%" nil *standard-co* state nil))
+          state))
 
        (acc    (str::revappend-chars "</short>" acc))
        (acc    (cons #\Newline acc))
@@ -480,11 +469,15 @@
        (long-str (reverse (coerce long-acc 'string)))
        (acc      (append long-acc acc))
        ((mv err &) (parse-xml long-str))
-       (- (or (not err)
-              (acl2::progn$
-               (cw "~|~%WARNING: problem with :long in topic ~x0:~%" name)
-               (cw-princ$ err)
-               (cw "~%~%"))))
+       (state
+        (if err
+            (pprogn
+               (fms "~|~%WARNING: problem with :short in topic ~x0:~%" 
+                    (list (cons #\0 name))
+                    *standard-co* state nil)
+               (princ$ err *standard-co* state)
+               (fms "~%~%" nil *standard-co* state nil))
+          state))
 
        (acc    (str::revappend-chars "</long>" acc))
        (acc    (cons #\Newline acc))
