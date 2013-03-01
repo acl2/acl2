@@ -2238,9 +2238,16 @@
 
   (cond 
    ((and
+
 ; Note that potential conjunct (f-get-global 'waterfall-parallelism state) is
-; not needed, since we are in an @par definition.
-     (not (equal stobjs-out '(nil)))
+; not needed, since we are in an @par definition.  Also note that a
+; clause-processor returns (as per :doc clause-processor) either a list cl-list
+; of clauses, or else (mv erp cl-list st_i1 ... st_in) where erp and cl-list
+; are not stobjs and the st_ik are all stobjs.  Since we want to rule out
+; stobjs, we therefore check that stobjs-out is (nil) or (nil nil).
+
+     (not (or (equal stobjs-out '(nil))
+              (equal stobjs-out '(nil nil))))
      (not (cdr (assoc-eq 'hacks-enabled
                          (table-alist 'waterfall-parallelism-table 
                                       (w state))))))

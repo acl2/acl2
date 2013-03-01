@@ -10051,7 +10051,7 @@
 
   [2]  ((CL-PROC cl hint) => cl-list)
 
-  [3]  ((CL-PROC cl hint st_1 ... st_k) => (erp cl-list st_i1 ... st_in))
+  [3]  ((CL-PROC cl hint st_1 ... st_k) => (mv erp cl-list st_i1 ... st_in))
   ~ev[]
   In [3], we think of the first component of the result as an error flag.
   Indeed, a proof will instantly abort if that error flag is not ~c[nil].
@@ -10130,7 +10130,7 @@
   or any term macroexpanding to ~c[(CL-PROC clause HINT)], where ~c[HINT] is
   any term with at most ~c[CLAUSE] free.
 
-  Signature [3], ((CL-PROC cl hint ...) => (erp cl-list ...))
+  Signature [3], ((CL-PROC cl hint ...) => (mv erp cl-list ...))
   ~bv[]
   :clause-processor (:function CL-PROC :hint HINT)
   :clause-processor (CL-PROC clause HINT st_1 ... st_k)
