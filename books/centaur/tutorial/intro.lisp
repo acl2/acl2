@@ -68,6 +68,7 @@
 (include-book "tools/plev-ccl" :dir :system)
 (include-book "centaur/misc/memory-mgmt-raw" :dir :system)
 
+(set-waterfall-parallelism nil) ; for below call of def-gl-clause-processor
 
 ; This is critical.  It introduces a GL clause processor that can natively
 ; execute at least the functions from the above books that get marked with

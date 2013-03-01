@@ -31,6 +31,7 @@
 (in-package "ACL2")
 (include-book "intro")
 (value-triple (set-max-mem (* 3 (expt 2 30))))
+; cert_param: (hons-only)
 
 
 ;; For interactive use, you'll probably want to run (plev)
