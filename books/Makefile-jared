@@ -283,7 +283,7 @@ clean: clean_books
                \( $(CLEAN_FIND_ARGS) -false \) \
                \( -not -name "*svn-base" \) \
                -print0 \
-          | xargs -0 rm
+          | xargs -0 rm -f
 
 
 
