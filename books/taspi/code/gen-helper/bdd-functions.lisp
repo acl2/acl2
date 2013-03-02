@@ -5,6 +5,18 @@
 (in-package "ACL2")
 (include-book "sets")
 
+(make-event
+
+; ; David Rager, 3/1/2013: Disabling waterfall parallelism because this book
+; allegedly uses memoization while performing its proofs.
+
+ (if (and (hons-enabledp state) 
+          (f-get-global 'parallel-execution-enabled state)) 
+     (er-progn (set-waterfall-parallelism nil)
+               (value '(value-triple nil)))
+   (value '(value-triple nil)))
+ :check-expansion nil)
+
 (defmacro qcons (x y)
   ;; should this be called qhons?
   `(cond ((or (and (eq ,x t)   (eq ,y t))

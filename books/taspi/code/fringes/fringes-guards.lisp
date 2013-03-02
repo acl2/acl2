@@ -6,6 +6,19 @@
 (include-book "../gen-trees/btrees-bdds-sets")
 (include-book "../gen-trees/app-rev-lists")
 
+(make-event
+
+; David Rager, 3/1/2013: Disabling waterfall parallelism because this book
+; allegedly uses memoization while performing its proofs.
+
+ (if (and (hons-enabledp state) 
+          (f-get-global 'parallel-execution-enabled state)) 
+     (er-progn (set-waterfall-parallelism nil)
+               (value '(value-triple nil)))
+   (value '(value-triple nil)))
+ :check-expansion nil)
+
+
 ;;;;;;;;;;;;;;;;;;;;;; ofringe ;;;;;;;;;;;;;;;;;;;;;;;;;
 (defthm tip-listp-omerge-oless
   (implies (and (tip-listp x)
