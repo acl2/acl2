@@ -143,54 +143,69 @@ differences between ACL2's reader and what raw Lisp code is expecting.</p>")
       (set-raw-mode t)
 
       (defun raw-compile (name error-on-fail on-fail state)
-        #-cltl2
-        (compile-file (extend-pathname (cbd) name state))
-        #+cltl2
-        (handler-case
-         (compile-file (extend-pathname (cbd) name state))
-         (error (condition)
-                (if error-on-fail
-                    (let ((condition-str (format nil "~a" condition)))
-                      (er hard 'include-raw
-                          "Compilation of ~x0 failed with the following message:~%~@1~%"
-                          name condition-str))
-                  (eval `(let ((condition ',condition))
-                           (declare (ignorable condition))
-                           ,on-fail)))))
-        nil)
+        ;; Matt K., 3/1/2013: We avoid the use of #+cltl2/#-cltl2 below.  Otherwise, if
+        ;; we certify this book with (non-ANSI) GCL, then the book will be uncertified
+        ;; when included it with another Lisp -- and, vice-versa.  Worse yet is the
+        ;; handling of expansion files on behalf of include-book option
+        ;; :load-compiled-file :comp (see :DOC book-compiled-file).  We have seen a hard
+        ;; lisp error when certifying the book with (non-ANSI) GCL and then trying to
+        ;; use it with Allegro CL.  In that case, this book is included as uncertified,
+        ;; but worse yet, the expansion file has saved the #-cltl2 definition, so
+        ;; Allegro CL caused an error when a .fasl file was missing under the call just
+        ;; below of load-compiled.
+        (cond
+         ((not (member :cltl2 *features*)) ; #-cltl2
+          (compile-file (extend-pathname (cbd) name state)))
+         (t ; #+cltl2
+          (handler-case
+           (compile-file (extend-pathname (cbd) name state))
+           (error (condition)
+                  (if error-on-fail
+                      (let ((condition-str (format nil "~a" condition)))
+                        (er hard 'include-raw
+                            "Compilation of ~x0 failed with the following message:~%~@1~%"
+                            name condition-str))
+                    (eval `(let ((condition ',condition))
+                             (declare (ignorable condition))
+                             ,on-fail)))))
+          nil)))
 
       (defun raw-load-uncompiled (name error-on-fail on-fail state)
-        #-cltl2
-        (load (extend-pathname (cbd) name state))
-        #+cltl2
-        (handler-case
-         (load (extend-pathname (cbd) name state))
-         (error (condition)
-                (if error-on-fail
-                    (let ((condition-str (format nil "~a" condition)))
-                      (er hard 'include-raw
-                          "Load of ~x0 failed with the following message:~%~@1~%"
-                          name condition-str))
-                  (eval `(let ((condition ',condition))
-                           (declare (ignorable condition))
-                           ,on-fail)))))
-        nil)
+        ;; See comment in raw-compile, above, for why we avoid #+cltl2/#-cltl2.
+        (cond
+         ((not (member :cltl2 *features*)) ; #-cltl2
+          (load (extend-pathname (cbd) name state)))
+         (t ; #+cltl2
+          (handler-case
+           (load (extend-pathname (cbd) name state))
+           (error (condition)
+                  (if error-on-fail
+                      (let ((condition-str (format nil "~a" condition)))
+                        (er hard 'include-raw
+                            "Load of ~x0 failed with the following message:~%~@1~%"
+                            name condition-str))
+                    (eval `(let ((condition ',condition))
+                             (declare (ignorable condition))
+                             ,on-fail)))))
+          nil)))
 
       (defun raw-load (name error-on-fail on-fail state)
+        ;; See comment in raw-compile, above, for why we avoid #+cltl2/#-cltl2.
         (let* ((fname (extend-pathname (cbd) name state))
                (compiled-fname (compile-file-pathname fname)))
-          #-cltl2
-          (load-compiled compiled-fname)
-          #+cltl2
-          (handler-case
-           (load-compiled compiled-fname)
-           (error (condition)
-                  (progn
-                    (format t "Compiled file ~a did not load; loading uncompiled ~a.~%Message: ~a~%"
-                            (namestring compiled-fname)
-                            fname condition)
-                    (raw-load-uncompiled name error-on-fail on-fail state)))))
-        nil))
+          (cond
+           ((not (member :cltl2 *features*)) ; #-cltl2
+            (load-compiled compiled-fname))
+           (t ; #+cltl2
+            (handler-case
+             (load-compiled compiled-fname)
+             (error (condition)
+                    (progn
+                      (format t "Compiled file ~a did not load; loading uncompiled ~a.~%Message: ~a~%"
+                              (namestring compiled-fname)
+                              fname condition)
+                      (raw-load-uncompiled name error-on-fail on-fail state)))))
+           nil))))
 
      (make-event
       (mv-let (erp val state)
