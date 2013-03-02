@@ -20,6 +20,20 @@
 
 (in-package "ACL2")
 
+(make-event
+
+; Disabling waterfall parallelism because the include-books are too slow with
+; it enabled, since waterfall parallelism unmemoizes the six or so functions
+; that ACL2(h) memoizes by default (in particular, fchecksum-obj needs to be
+; memoized to include centaur/tutorial/alu16-book).
+
+ (if (and (hons-enabledp state) 
+          (f-get-global 'parallel-execution-enabled state)) 
+     (er-progn (set-waterfall-parallelism nil)
+               (value '(value-triple nil)))
+   (value '(value-triple nil))))
+
+
 (include-book "vl/top")
 (include-book "vl/lint/lint")
 (include-book "vl/mlib/clean-concats")
@@ -123,18 +137,6 @@
 (include-book "vl/util/prefixp")
 
 ||#
-
-
-(make-event
-
-; Disabling waterfall parallelism for unknown reasons other than that
-; certification stalls out with it enabled (tried for 10 minutes).
-
- (if (and (hons-enabledp state) 
-          (f-get-global 'parallel-execution-enabled state)) 
-     (er-progn (set-waterfall-parallelism nil)
-               (value '(value-triple nil)))
-   (value '(value-triple nil))))
 
 (make-event
 ; xdoc::save is an event, so we might have just called it directly.  But for
