@@ -41,13 +41,7 @@
 (make-event
 
 ; Disabling waterfall parallelism because this book allegedly uses memoization
-; while performing its proofs.  If we were to leave waterfall parallelism
-; enabled, we would receive a message like:
-
-;   | ***********************************************
-;   | ************ ABORTING from raw Lisp ***********
-;   | Error:  Not owner of hash table #<HASH-TABLE :TEST EQL size 0/150002 #x3020008057CD>
-;   | ***********************************************
+; while performing its proofs.
 
  (if (and (hons-enabledp state) 
           (f-get-global 'parallel-execution-enabled state)) 
