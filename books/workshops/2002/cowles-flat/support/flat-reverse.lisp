@@ -69,6 +69,15 @@
 		     (cons c (f (cons a y)))))))
 |#
 
+
+#||
+
+[Jared]: fool make_cert_help into allowing more memory for this book.
+
+(set-max-mem (* 6 (expt 2 30)))
+
+||#
+
 (defun
     <def= (x y)
     (or (eq x 'undef$)
