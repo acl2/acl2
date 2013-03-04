@@ -21315,10 +21315,6 @@
       (cond
        ((variablep term) alists)
        ((fquotep term) alists)
-       ((flambdap (ffn-symb term))
-        (find-all-instances pat
-                            (lambda-body (ffn-symb term))
-                            (find-all-instances-list pat (fargs term) alists)))
        (t (find-all-instances-list pat (fargs term) alists))))))
 
   (defun find-all-instances-list (pat list-of-terms alists)
@@ -21331,6 +21327,13 @@
                                                     (cdr list-of-terms)
                                                     alists))))))
   ~ev[]
+
+  Caveat: The following aside has nothing to do with computed hints.  Does an
+  instance of ~c[(CAR (CDR x))] occur in ~c[((LAMBDA (V) (CAR V)) (CDR A))]?
+  It does if one beta-reduces the lambda-expression to ~c[(CAR (CDR A))];
+  the appropriate substitution is to replace ~c[x] by ~c[A].  But the
+  definition of ~c[find-all-instances] above does ~i[not] find this instance
+  because it does not do beta-reduction.
 
   We now turn our attention to converting a list of substitutions into
   a list of lemma instances, each of the form
