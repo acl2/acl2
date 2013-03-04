@@ -19734,7 +19734,7 @@
   experiment with other such direct methods to define such a macro, but they
   won't work.
 
-  Instead, however, you use the approach illustrated by the ~c[make-event]
+  Instead, however, you can use the approach illustrated by the ~c[make-event]
   example above to define the desired macro, as follows.
   ~bv[]
   (defmacro define-world-length-constant (name)
@@ -19828,8 +19828,8 @@
   certification but not, by default, when the book is included.  So for the
   example ~c[(define-world-length-constant *foo*)] given above, if that form is
   in a book, then the value of ~c[*foo*] will be the length of the world at the
-  time this form was invoked during book certified, regardless of world length
-  at ~ilc[include-book] time.  (The expansion is recorded in the book's
+  time this form was invoked during book certification, regardless of world
+  length at ~ilc[include-book] time.  (The expansion is recorded in the book's
   ~il[certificate], and re-used.)  To overcome this default, you can specified
   keyword value ~c[:CHECK-EXPANSION t].  This will cause an error if the
   expansion is different, but it can be useful for side effects.  For example,
