@@ -1,5 +1,14 @@
 (in-package "ACL2")
 
+#||
+
+; [Jared and Sol]: fool make_cert_help.pl into allowing more memory for this
+; book. We would just include centaur/misc/memory-mgmt, but that has a ttag.
+
+(set-max-mem (* 6 (expt 2 30)))
+
+||#
+
 ; All theorems in this file are local except for those that are to be exported,
 ; which are labeled with the comment "; Exported theorem:".  We use def-gl-thm
 ; (actually a local version) so dispatch lemmas that were seen to be needed
