@@ -82,6 +82,19 @@
   :already-definedp t
   :true-listp t)
 
+(cutil::defaggregate pair-o-ints
+  ((left integerp "Left part of pair")
+   (right integerp "Right part of pair"))
+  :tag :pair-o-ints)
+
+(defund sum-a-pair (x)
+  (declare (xargs :guard (pair-o-ints-p x)))
+  (b* (((pair-o-ints x) x)
+       (- (cw "left is ~x0~%" x.left))
+       (- (cw "right is ~x0~%" x.right)))
+    (+ x.left x.right)))
+
+(assert! (equal (sum-a-pair (make-pair-o-ints :left 4 :right 5)) 9))
 
 #||
 
