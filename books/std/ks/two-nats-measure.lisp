@@ -18,13 +18,15 @@
 (in-package "ACL2")
 
 (local (include-book "arithmetic/top-with-meta" :dir :system))
+(include-book "xdoc/top" :dir :system)
 
-(defund two-nats-measure (a b)
-
-  "Two-nats-measure provides one of the simplest non-natural ordinal measures
-   imaginable.  It is useful if one has a one count that is decreasing most of
-   the time but not always and another count that decreases the rest of the
-   time but might be reset to some value after a chunk of work is finished.
+(defsection two-nats-measure
+  :parents (misc)
+  :short "One of the simplest non-natural ordinal measures imaginable"
+  :long "Two-nats-measure provides one of the simplest non-natural ordinal
+   measures imaginable.  It is useful if one has a one count that is decreasing
+   most of the time but not always and another count that decreases the rest of
+   the time but might be reset to some value after a chunk of work is finished.
 
    Imagine one has a pile of red socks and a pile of blue socks, and that one
    wants to place them in drawers.  Everytime one puts away a red sock a bunch
@@ -34,6 +36,7 @@
    of red socks is the first argument to the two-nats-measure, and the number
    of blue socks is the second argument to the two-nats-measure."
 
+(defund two-nats-measure (a b)
   (declare (xargs :guard (and (natp a)
                               (natp b))))
   (make-ord 2
@@ -139,3 +142,5 @@
            :in-theory (disable o<-of-nat-list-measure))))
 
 (in-theory (disable nat-list-<))
+
+) ; defsection
