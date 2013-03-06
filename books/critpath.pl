@@ -89,6 +89,17 @@ my $HELP_MESSAGE = "
                     Read/write a sourcefile events cache, which may
                     improve performance.  See 'cert.pl --help' for
                     more info.
+
+       -w, --write-costs <filename>
+                    Write the base costs for each file into <filename>
+                    in perl's Storable format.
+
+       --costs-file <filename>
+                    Instead of reading the costs for each file from
+                    its .cert.time file, read them all from a file (as
+                    written by write_costs).  Only really works
+                    correctly if all targets/dependencies are the
+                    same.
 ";
 
 my %OPTIONS = (
@@ -99,7 +110,9 @@ my %OPTIONS = (
   'nolist'  => '',
   'short'   => 1,
   'real'    => 0,
-  'pcert'   => $ENV{'ACL2_PCERT'}
+  'pcert'   => $ENV{'ACL2_PCERT'},
+  'write_costs' => 0,
+  'costs_file' => 0,
 );
 
 my @user_targets = ();
@@ -128,6 +141,8 @@ my $options_okp = GetOptions('h|html' => \$OPTIONS{'html'},
 			     "cache|c=s"
 			              => \$cache_file,
 			     "params=s"             => \$params_file,
+			     "write-costs|w=s" => \$OPTIONS{'write_costs'},
+			     "costs-file=s" => \$OPTIONS{'costs_file'},
 			     );
 
 my $cache = {};
@@ -210,15 +225,24 @@ if ($params_file && open (my $params, "<", $params_file)) {
 
 store_cache($cache, $cache_file);
 
-my $basecosts = {};
-read_costs(\%deps, $basecosts, $warnings, $OPTIONS{'real'}, $OPTIONS{'pcert'});
-print "done read_costs\n" if $debug;
+my $basecosts;
+if ($OPTIONS{'costs_file'}) {
+    $basecosts = retrieve($OPTIONS{'costs_file'});
+} else {
+    $basecosts = {};
+    read_costs(\%deps, $basecosts, $warnings, $OPTIONS{'real'}, $OPTIONS{'pcert'});
+    print "done read_costs\n" if $debug;
+}
 
 # foreach my $file (keys %$basecosts) {
 #     if ($file =~ /\.cert$/) {
 # 	$basecosts->{$file} = 0.00001;
 #     }
 # }
+
+if ($OPTIONS{'write_costs'}) {
+    nstore($basecosts, $OPTIONS{'write_costs'});
+}
 
 
 compute_cost_paths(\%deps, $basecosts, $costs, $warnings, $OPTIONS{'pcert'});
