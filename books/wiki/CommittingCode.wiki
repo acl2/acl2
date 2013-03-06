@@ -13,3 +13,22 @@
   * When using include-book for any book that is not part of your submission, use :dir :system (see :doc include-book).  Do not use absolute pathnames.
   * Include a copyright and license for each book, either directly or by pointing to a license file.
   * Comment all non-trivial changes with your name.
+
+
+= Integration of Version Control and Issue-tracking =
+
+There are commit-log commands to:
+
+  * Easily set an issue's status to Fixed.
+  * Update any aspect of the issue, and add a comment.
+  * Enter a new issue.
+  * Request a code review.
+
+The issue tracker handles an easy-to-use "short form" syntax to set an issue's status to Fixed. This would be used when the source code change you are committing completely fixes a defect or implements a requested enhancement. The syntax is any one of the following:
+
+|| (Fixes issue NNN) || Enclose command in parentheses ||
+|| Fixes issue NNN. || Full sentence in your log message description ||
+|| Fixes issue NNN || On a line by itself ||
+
+See 
+[https://code.google.com/p/support/wiki/IssueTracker#Integration_with_version_control Google Code Wiki] for more information.
