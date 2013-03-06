@@ -176,7 +176,7 @@ wp-gen: ordinals
 xdoc-impl: xdoc str tools finite-set-theory/osets
 system: tools arithmetic arithmetic-5 misc
 std/lists: arithmetic
-std/ks: std/lists ihs arithmetic
+std/ks: std/lists ihs arithmetic xdoc
 std/io: tools xdoc system std/lists std/ks arithmetic ihs arithmetic-3
 cutil: xdoc xdoc-impl tools str misc finite-set-theory/osets \
        defsort unicode clause-processors system top-with-meta-cert
