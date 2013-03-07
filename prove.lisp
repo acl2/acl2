@@ -2252,10 +2252,11 @@
                          (table-alist 'waterfall-parallelism-table 
                                       (w state))))))
     (mv (msg
-         "Clause-processors that do not return a single value are not ~
-          officially supported in ACL2(p).  If you wish to use ~
-          clause-processors anyway, you can call ~x0. See :DOC ~
-          set-waterfall-parallelism-hacks-enabled for more information.  "
+         "Clause-processors that do not return exactly one or two values are ~
+          not officially supported when waterfall parallelism is enabled.  If ~
+          you wish to use such a clause-processor anyway, you can call ~x0. ~
+          See :DOC set-waterfall-parallelism-hacks-enabled for more ~
+          information.  "
          '(set-waterfall-parallelism-hacks-enabled t))
         nil))
    (t
