@@ -197,7 +197,7 @@ preprocessor).</p>
 links, e.g.,</p>
 
 @({
-<a href=\"http://www.centtech.com/\">Centaur Technology</a>
+<a href=\\\"http://www.centtech.com/\\\">Centaur Technology</a>
 })
 
 <p>Produces a link to <a href=\"http://www.centtech.com/\">Centaur
@@ -453,7 +453,10 @@ future.</p>
 <p>Converting to HTML is a good idea because it ensures that all of your tags
 are balanced on every page.  Without this sanity check, your manual might
 contain errors that will prevent some topics from being loaded in a web
-browser.</p>")
+browser.</p>
+
+<p>Creating the HTML code requires Xalan-C++ (note the capitalization).  See 
+<a href=\"http://xml.apache.org/xalan-c/\">Apache Xalan</a> to download.</p>")
 
 
 (defxdoc emacs-links
