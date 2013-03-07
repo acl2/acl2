@@ -441,8 +441,10 @@ to view @('preview.html') without any additional steps.</p>
 <h3>HTML and Other Formats</h3>
 
 <p>You can generate a plain HTML or TEXT version of your manual by using
-@('make html') or @('make text').  We might add support for TEXINFO or other
-formats in the future.</p>
+@('make html') or @('make text') from within the directory target of the above
+mentioned @('xdoc::save') command (in this example, the @('mylib-manual')
+directory).  We might add support for TEXINFO or other formats in the
+future.</p>
 
 <p>After running @('make html'), you may wish to open @('frames2.html') and
 @('frames3.html'), which allow you to navigate the HTML manual much like
