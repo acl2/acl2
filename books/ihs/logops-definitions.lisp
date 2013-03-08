@@ -1543,7 +1543,7 @@ Example:
 
   The above macro call will bind A, B, and C to the 0th, 1st, and 2nd bit
   of I, and then evaluate the logical expression under those bindings.
-  The list of bit names is always intrepreted from low to high order.~/~/"
+  The list of bit names is always interpreted from low to high order.~/~/"
 
   (declare (xargs :guard (and (symbol-listp bit-names)
 			      (no-duplicatesp bit-names))))
