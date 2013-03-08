@@ -42,17 +42,18 @@
   ~/~/
 
   Including the \"ihs-definitions\" book includes all of the books of
-  definitions in the IHS library.  Thus, for :RED mode specification, simply
-
+  definitions in the IHS library.  Thus, for :PROGRAM mode specification,
+  simply
+  ~bv[]
   (INCLUDE-BOOK
    \"ihs-definitions\")
-
-  at the beginning of a specification book.  For :BLUE or :GOLD mode, follow
-  the above by including the book \"ihs-lemmas\", e.g.,
-
+  ~ev[]
+  at the beginning of a specification book.  If you want to do proofs, then
+  also include the book \"ihs-lemmas\", e.g.,
+  ~bv[]
   (LOCAL (INCLUDE-BOOK
           \"ihs-lemmas\")).
-
+  ~ev[]
   which will INCLUDE all of IHS lemma books.  See :DOC IHS-LEMMAS for more
   details.~/")
 
