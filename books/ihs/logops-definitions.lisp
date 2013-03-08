@@ -1522,7 +1522,7 @@ Example:
 
 (deflabel word/bit-macros
   :doc ":doc-section logops-definitions
-  Macros for manipulating integer words defined as contguous bits.
+  Macros for manipulating integer words defined as contiguous bits.
   ~/~/
   These macros were defined to support the functions produced by translating
   SPW .eqn files to ACL2 functions.~/")
