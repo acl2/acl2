@@ -6778,55 +6778,71 @@
                              contact the maintainers of ACL2."
                             x))
                  ((eql (length x) 4)
-                  (trans-er-let*
-                   ((quoted-vars (translate11 (cadr x)
-                                              '(nil) ; stobjs-out
-                                              bindings
-                                              '(state) ; known-stobjs
-                                              flet-alist x ctx wrld state-vars))
-                    (quoted-user-form (translate11 (caddr x)
-                                                   '(nil) ; stobjs-out
-                                                   bindings
-                                                   '(state) ; known-stobjs
-                                                   flet-alist x ctx wrld
-                                                   state-vars))
-                    (quoted-term (translate11 (cadddr x)
-                                              '(nil) ; stobjs-out
-                                              bindings
-                                              '(state) ; known-stobjs
-                                              flet-alist x ctx wrld state-vars)))
-                   (let ((quoted-term (if (quotep quoted-term)
-                                          quoted-term
-                                        (sublis-var nil quoted-term))))
-                     (cond ((quotep quoted-term)
-                            (trans-er-let*
-                             ((term-to-be-evaluated
-                               (translate11 (cadr quoted-term)
-                                            '(nil) ; stobjs-out
-                                            bindings
-                                            '(state) ; known-stobjs
-                                            flet-alist x ctx wrld state-vars)))
-                             (let ((quoted-vars (if (quotep quoted-vars)
-                                                    quoted-vars
-                                                  (sublis-var nil quoted-vars)))
-                                   (quoted-user-form (if (quotep quoted-user-form)
-                                                         quoted-user-form
-                                                       (sublis-var nil
-                                                                   quoted-user-form))))
-                               (cond ((and (quotep quoted-vars)
-                                           (quotep quoted-user-form))
-                                      (trans-value 
-                                       (fcons-term* 'synp quoted-vars
-                                                    quoted-user-form
-                                                    (kwote
-                                                     term-to-be-evaluated))))
-                                     (t (trans-er ctx
-                                                  *synp-trans-err-string*
-                                                  x))))))
-                           (t
-                            (trans-er ctx
-                                      *synp-trans-err-string*
-                                      x))))))
+                  (mv-let
+                   (erp val bindings)
+                   (trans-er-let*
+                    ((quoted-vars (translate11 (cadr x)
+                                               '(nil) ; stobjs-out
+                                               bindings
+                                               '(state) ; known-stobjs
+                                               flet-alist x ctx wrld state-vars))
+                     (quoted-user-form (translate11 (caddr x)
+                                                    '(nil) ; stobjs-out
+                                                    bindings
+                                                    '(state) ; known-stobjs
+                                                    flet-alist x ctx wrld
+                                                    state-vars))
+                     (quoted-term (translate11 (cadddr x)
+                                               '(nil) ; stobjs-out
+                                               bindings
+                                               '(state) ; known-stobjs
+                                               flet-alist x ctx wrld state-vars)))
+                    (let ((quoted-term (if (quotep quoted-term)
+                                           quoted-term
+                                         (sublis-var nil quoted-term))))
+                      (cond ((quotep quoted-term)
+                             (trans-er-let*
+                              ((term-to-be-evaluated
+                                (translate11 (cadr quoted-term)
+                                             '(nil) ; stobjs-out
+                                             bindings
+                                             '(state) ; known-stobjs
+                                             flet-alist x ctx wrld state-vars)))
+                              (let ((quoted-vars (if (quotep quoted-vars)
+                                                     quoted-vars
+                                                   (sublis-var nil quoted-vars)))
+                                    (quoted-user-form (if (quotep quoted-user-form)
+                                                          quoted-user-form
+                                                        (sublis-var nil
+                                                                    quoted-user-form))))
+                                (cond ((and (quotep quoted-vars)
+                                            (quotep quoted-user-form))
+                                       (trans-value
+                                        (fcons-term* 'synp quoted-vars
+                                                     quoted-user-form
+                                                     (kwote
+                                                      term-to-be-evaluated))))
+                                      (t (trans-er ctx
+                                                   *synp-trans-err-string*
+                                                   x))))))
+                            (t
+                             (trans-er ctx
+                                       *synp-trans-err-string*
+                                       x)))))
+                   (cond (erp
+                          (let ((quoted-user-form (caddr x)))
+                            (case-match quoted-user-form
+                              (('QUOTE ('SYNTAXP form))
+                               (mv erp
+                                   (msg "The form ~x0, from a ~x1 hypothesis, ~
+                                         is not suitable for evaluation in an ~
+                                         environment where its variables are ~
+                                         bound to terms.  See :DOC ~x1.  Here ~
+                                         is further explanation:~|~t2~@3"
+                                        form 'syntaxp 5 val)
+                                   bindings))
+                              (& (mv erp val bindings)))))
+                         (t (mv erp val bindings)))))
                  (t
                   (trans-er ctx
                             *synp-trans-err-string*

@@ -20453,6 +20453,9 @@
 ;                      (<= 0 addr))
 ;                 (foo-p (rm-low-32 addr x86))))
 
+; Improved error messages and documentation pertaining to certain ill-formed
+; uses of syntaxp, in response to feedback from Robert Krug.
+
   :doc
   ":Doc-Section release-notes
 
