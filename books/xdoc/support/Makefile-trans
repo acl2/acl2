@@ -68,11 +68,6 @@ $(error Xalan-C++ not found)
 endif
 endif
 
-ifneq "$(XALAN)" ""
-$(info Using $(XALAN))
-else
-$(info Using $(XALAN_UBUNTU) with flags)
-endif
 
 # ----------------------------------------------------------------------------
 
