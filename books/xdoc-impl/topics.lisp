@@ -455,8 +455,13 @@ are balanced on every page.  Without this sanity check, your manual might
 contain errors that will prevent some topics from being loaded in a web
 browser.</p>
 
-<p>Creating the HTML code requires Xalan-C++ (note the capitalization).  See 
-<a href=\"http://xml.apache.org/xalan-c/\">Apache Xalan</a> to download.</p>")
+<p>Creating the HTML code requires Xalan-C++.  Xalan is distributed with many
+Linux distributions.  For example, on Ubuntu, one can run <tt>sudo apt-get
+install xalan</tt> to install it.  Alternatively, see <a
+href=\"http://xml.apache.org/xalan-c/\">Apache Xalan</a> to download.  We have
+accomodated the various versions of Xalan that we know about and use, but we
+welcome modifications to file <tt>support/Makefile-trans</tt> if you wish to
+use a version we do not currently support.</p>")
 
 
 (defxdoc emacs-links

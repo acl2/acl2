@@ -39,8 +39,10 @@
 # --- Sanity check that Xalan is installed -----------------------------------
 
 XALAN ?= $(shell which Xalan 2>/dev/null || echo "")
+XALAN_UBUNTU ?= $(shell which xalan 2>/dev/null || echo "")
 
 ifeq "$(XALAN)" ""
+ifeq "$(XALAN_UBUNTU)" ""
 
 $(info )
 $(info Error: Xalan-C++ not found.)
@@ -64,8 +66,36 @@ $(info )
 $(error Xalan-C++ not found)
 
 endif
+endif
+
+ifneq "$(XALAN)" ""
+$(info Using $(XALAN))
+else
+$(info Using $(XALAN_UBUNTU) with flags)
+endif
 
 # ----------------------------------------------------------------------------
+
+# Define a function named xslt-translate that take three arguments:
+# (1) the input xml file, (2) the xsl file that indicates how the xml
+# should be rendered, and (3) the output file.
+ifneq "$(XALAN)" ""
+$(info Using $(XALAN) with $(1) $(2) -o $(3)
+xslt-translate = $(XALAN) $(1) $(2) -o $(3)
+else
+$(info Using $(XALAN_UBUNTU) with -in $(1) -xsl $(2) -out $(3))
+xslt-translate = $(XALAN_UBUNTU) -in $(1) -xsl $(2) -out $(3)
+endif
+
+# define xslt-translate =
+# ifneq "$(XALAN)" ""
+# $(info Using $(XALAN) with $(1) $(2) -o $(3)
+# xslt-translate = $(XALAN) $(1) $(2) -o $(3)
+# else
+# $(info Using $(XALAN_UBUNTU) with -in $(1) -xsl $(2) -out $(3))
+# xslt-translate = $(XALAN_UBUNTU) -in $(1) -xsl $(2) -out $(3)
+# endif
+# endef
 
 
 XML_TOPICS := $(wildcard xml/*.xml)
@@ -93,9 +123,7 @@ text-dir:
 
 text/%.text: xml/%.xml xml/text-topic.xsl text-dir
 	@echo $@
-	@$(XALAN) -o text/$*.text xml/$*.xml xml/text-topic.xsl
-
-
+	@$(call xslt-translate,xml/$*.xml,xml/text-topic.xsl,text/$*.text)
 
 .PHONY: html
 html: $(HTML_TOPICS) \
@@ -119,20 +147,16 @@ html/%.xdoc-link: xml/%.xdoc-link
 
 html/%.html: xml/%.xml xml/html-topic.xsl html-dir
 	@echo $@
-	@$(XALAN) -o html/$*.html xml/$*.xml xml/html-topic.xsl
+	@$(call xslt-translate,xml/$*.xml,xml/html-topic.xsl,html/$*.html)
 
 html/full-index.html: xml/index.xml xml/html-full-index.xsl html-dir
 	@echo $@
-	@$(XALAN) -o $@ xml/index.xml xml/html-full-index.xsl
+	@$(call xslt-translate,xml/index.xml,xml/html-full-index.xsl,$@)
 
 html/brief-index.html: xml/index.xml xml/html-brief-index.xsl html-dir
 	@echo $@
-	@$(XALAN) -o $@ xml/index.xml xml/html-brief-index.xsl
+	@$(call xslt-translate,xml/index.xml,xml/html-brief-index.xsl,$@)
 
 html/topic-index.html: xml/topics.xml xml/html-topic-index.xsl html-dir
 	@echo $@
-	@$(XALAN) -o $@ xml/topics.xml xml/html-topic-index.xsl
-
-
-
-
+	@$(call xslt-translate,xml/topics.xml,xml/html-topic-index.xsl,$@)
