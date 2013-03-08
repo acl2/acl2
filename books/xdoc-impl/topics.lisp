@@ -158,8 +158,8 @@ and \"preformatted,\" i.e., newlines and spaces should be preserved.</li>
 automatically escape special HTML characters like &lt; into &amp;lt;, and also
 automatically add hyperlinks to documented functions.</p>
 
-<p>If you do decide to write raw @('&lt;code&gt;') blocks, your lisp forms
-should usually be <b>indented one space</b> to prevent Emacs problems.  For
+<p>If you do decide to write raw @('<code>') blocks, your lisp forms should
+usually be <b>indented one space</b> to prevent Emacs problems.  For
 instance:</p>
 
 @({
@@ -197,7 +197,7 @@ preprocessor).</p>
 links, e.g.,</p>
 
 @({
-<a href=\\\"http://www.centtech.com/\\\">Centaur Technology</a>
+<a href=\"http://www.centtech.com/\">Centaur Technology</a>
 })
 
 <p>Produces a link to <a href=\"http://www.centtech.com/\">Centaur
