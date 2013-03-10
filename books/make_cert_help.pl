@@ -279,9 +279,11 @@ sub scan_for_set_max_mem
 	if ($line =~ m/^[^;]*\((acl2::)?set-max-mem (.*)\)/)
 	{
 	    my $gb = parse_max_mem_arg($2);
+	    close $fd;
 	    return $gb;
 	}
     }
+    close $fd;
 
     return 0;
 }
@@ -297,9 +299,11 @@ sub scan_for_set_max_time
 	if ($line =~ m/^[^;]*\((acl2::)?set-max-time ([0-9]*)\)/)
 	{
 	    my $minutes = $2;
+	    close $fd;
 	    return $minutes;
 	}
     }
+    close $fd;
     return 0;
 }
 
