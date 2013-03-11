@@ -20485,6 +20485,13 @@
   our attention and sending an example, which we include as a comment in the
   ACL2 source code (see ~c[(deflabel note-6-2 ...)]).
 
+  We further changed the ``ancestors check'' heuristic (mentioned above) so
+  that it is delayed until after we check whether the hypothesis is already
+  known, by ~il[type-set] reasoning alone (in particular, not using rewriting),
+  to be true or to be false.  We believe that this is now the ``right'' order
+  for those two operations.  We saw a slight speed up in the regression tests
+  (about a percent) with this change, but that might be in the noise.
+
   ~st[BUG FIXES]
 
   Fixed a soundness bug that could be exploited by calling system functions

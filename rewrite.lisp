@@ -14926,150 +14926,112 @@
                           (lookup-hyp-ans
                            (mv step-limit t nil unify-subst ttree))
                           (t
-                           (let ((inst-hyp (sublis-var unify-subst hyp)))
+                           (let* ((inst-hyp (sublis-var unify-subst hyp))
+                                  (forcer-fn (and forcep1 (ffn-symb hyp0)))
+                                  (force-flg (ok-to-force rcnst))
+                                  (forcep (and forcep1 force-flg)))
                              (mv-let
-                              (on-ancestorsp assumed-true)
-                              (ancestors-check inst-hyp ancestors (list rune))
+                              (knownp nilp nilp-ttree)
+                              (known-whether-nil
+                               inst-hyp type-alist
+                               (access rewrite-constant rcnst
+                                       :current-enabled-structure)
+                               force-flg
+                               nil ; dwp
+                               wrld
+                               ttree)
                               (cond
-                               ((and on-ancestorsp assumed-true)
-                                (mv step-limit t nil unify-subst ttree))
+                               (knownp
+                                (cond
+                                 (nilp
+                                  (mv step-limit
+                                      nil
+                                      'known-nil
+                                      unify-subst
+                                      ttree))
+                                 (t
+                                  (mv step-limit
+                                      t
+                                      nil
+                                      unify-subst
+                                      nilp-ttree))))
                                (t
-                                (let* ((forcer-fn (and forcep1 (ffn-symb hyp0)))
-                                       (force-flg (ok-to-force rcnst))
-                                       (forcep (and forcep1 force-flg)))
-                                  (mv-let
-                                   (knownp nilp nilp-ttree)
-                                   (known-whether-nil
-                                    inst-hyp type-alist
-                                    (access rewrite-constant rcnst
-                                            :current-enabled-structure)
-                                    force-flg
-                                    nil ; dwp
-                                    wrld
-                                    ttree)
-                                   (cond
-                                    (knownp
+                                (mv-let
+                                 (on-ancestorsp assumed-true)
+                                 (ancestors-check inst-hyp ancestors (list rune))
+                                 (cond
+                                  ((and on-ancestorsp assumed-true)
+                                   (mv step-limit t nil unify-subst ttree))
+                                  ((or on-ancestorsp ; and (not assumed-true)
+                                       (backchain-limit-reachedp
+                                        backchain-limit
+                                        ancestors))
+                                   (mv-let
+                                    (force-flg ttree)
+                                    (cond
+                                     ((not forcep)
+                                      (mv nil ttree))
+                                     (t
+                                      (force-assumption
+                                       rune target inst-hyp
+                                       type-alist nil
+                                       (immediate-forcep
+                                        forcer-fn
+                                        (access rewrite-constant rcnst
+                                                :current-enabled-structure))
+                                       force-flg
+                                       ttree)))
+                                    (cond
+                                     (force-flg
+                                      (mv step-limit t nil unify-subst ttree))
+                                     (t
+                                      (mv step-limit
+                                          nil
+                                          (if on-ancestorsp
+                                              'ancestors
+                                            (cons 'backchain-limit
+                                                  backchain-limit))
+                                          unify-subst ttree)))))
+                                  (t
+                                   (mv-let
+                                    (not-flg atm)
+                                    (strip-not hyp)
+                                    (sl-let
+                                     (rewritten-atm new-ttree)
+                                     (rewrite-entry (rewrite atm
+                                                             unify-subst
+                                                             bkptr)
+                                                    :obj (if not-flg nil t)
+                                                    :geneqv *geneqv-iff*
+                                                    :ancestors
+                                                    (push-ancestor
+                                                     (dumb-negate-lit
+                                                      inst-hyp)
+                                                     (list rune)
+                                                     ancestors))
                                      (cond
-                                      (nilp
-                                       (mv step-limit
-                                           nil
-                                           'known-nil
-                                           unify-subst
-                                           ttree))
-                                      (t
-                                       (mv step-limit
-                                           t
-                                           nil
-                                           unify-subst
-                                           nilp-ttree))))
-                                    ((or on-ancestorsp ; and (not assumed-true)
-                                         (backchain-limit-reachedp
-                                          backchain-limit
-                                          ancestors))
-                                     (mv-let
-                                      (force-flg ttree)
-                                      (cond
-                                       ((not forcep)
-                                        (mv nil ttree))
-                                       (t
-                                        (force-assumption
-                                         rune target inst-hyp
-                                         type-alist nil
-                                         (immediate-forcep
-                                          forcer-fn
-                                          (access rewrite-constant rcnst
-                                                  :current-enabled-structure))
-                                         force-flg
-                                         ttree)))
-                                      (cond
-                                       (force-flg
-                                        (mv step-limit t nil unify-subst ttree))
-                                       (t
-                                        (mv step-limit
-                                            nil
-                                            (if on-ancestorsp
-                                                'ancestors
-                                              (cons 'backchain-limit
-                                                    backchain-limit))
-                                            unify-subst ttree)))))
-                                    (t
-                                     (mv-let
-                                      (not-flg atm)
-                                      (strip-not hyp)
-                                      (sl-let
-                                       (rewritten-atm new-ttree)
-                                       (rewrite-entry (rewrite atm
-                                                               unify-subst
-                                                               bkptr)
-                                                      :obj (if not-flg nil t)
-                                                      :geneqv *geneqv-iff*
-                                                      :ancestors
-                                                      (push-ancestor
-                                                       (dumb-negate-lit
-                                                        inst-hyp)
-                                                       (list rune)
-                                                       ancestors))
-                                       (cond
-                                        (not-flg
-                                         (if (equal rewritten-atm *nil*)
-                                             (mv step-limit t nil unify-subst
-                                                 new-ttree)
-                                           (mv-let
-                                            (force-flg new-ttree)
-                                            (if (and forcep
+                                      (not-flg
+                                       (if (equal rewritten-atm *nil*)
+                                           (mv step-limit t nil unify-subst
+                                               new-ttree)
+                                         (mv-let
+                                          (force-flg new-ttree)
+                                          (if (and forcep
 
 ; Since we rewrote under *geneqv-iff*, the only way that rewritten-atm
 ; is known not to be nil is if it's t.
 
-                                                     (not (equal rewritten-atm
-                                                                 *t*)))
-                                                (force-assumption
-                                                 rune
-                                                 target
-                                                 (mcons-term* 'not rewritten-atm)
-                                                 type-alist
-; Note:  :rewrittenp = instantiated unrewritten term.
-                                                 (mcons-term*
-                                                  'not
-                                                  (sublis-var unify-subst atm))
-                                                 (immediate-forcep
-                                                  forcer-fn
-                                                  (access
-                                                   rewrite-constant
-                                                   rcnst
-                                                   :current-enabled-structure))
-                                                 force-flg
-                                                 new-ttree)
-                                              (mv nil new-ttree))
-                                            (cond
-                                             (force-flg
-                                              (mv step-limit t nil unify-subst
-                                                  new-ttree))
-                                             (t
-                                              (mv step-limit
-                                                  nil
-                                                  (cons 'rewrote-to
-                                                        (dumb-negate-lit
-                                                         rewritten-atm))
-                                                  unify-subst
-                                                  (accumulate-rw-cache
-                                                   t new-ttree ttree)))))))
-                                        ((if-tautologyp rewritten-atm)
-                                         (mv step-limit t nil unify-subst
-                                             new-ttree))
-                                        (t (mv-let
-                                            (force-flg new-ttree)
-                                            (cond
-                                             ((and forcep
                                                    (not (equal rewritten-atm
-                                                               *nil*)))
+                                                               *t*)))
                                               (force-assumption
                                                rune
                                                target
-                                               rewritten-atm
+                                               (mcons-term* 'not rewritten-atm)
                                                type-alist
 ; Note:  :rewrittenp = instantiated unrewritten term.
-                                               (sublis-var unify-subst atm)
+                                               (mcons-term*
+                                                'not
+                                                (sublis-var unify-subst atm))
                                                (immediate-forcep
                                                 forcer-fn
                                                 (access
@@ -15077,21 +15039,59 @@
                                                  rcnst
                                                  :current-enabled-structure))
                                                force-flg
-                                               new-ttree))
-                                             (t (mv nil new-ttree)))
-                                            (cond
-                                             (force-flg
-                                              (mv step-limit t nil unify-subst
-                                                  new-ttree))
-                                             (t (mv step-limit
-                                                    nil
-                                                    (cons 'rewrote-to
-                                                          rewritten-atm)
-                                                    unify-subst
-                                                    (accumulate-rw-cache
-                                                     t
-                                                     new-ttree
-                                                     ttree)))))))))))))))))))))
+                                               new-ttree)
+                                            (mv nil new-ttree))
+                                          (cond
+                                           (force-flg
+                                            (mv step-limit t nil unify-subst
+                                                new-ttree))
+                                           (t
+                                            (mv step-limit
+                                                nil
+                                                (cons 'rewrote-to
+                                                      (dumb-negate-lit
+                                                       rewritten-atm))
+                                                unify-subst
+                                                (accumulate-rw-cache
+                                                 t new-ttree ttree)))))))
+                                      ((if-tautologyp rewritten-atm)
+                                       (mv step-limit t nil unify-subst
+                                           new-ttree))
+                                      (t (mv-let
+                                          (force-flg new-ttree)
+                                          (cond
+                                           ((and forcep
+                                                 (not (equal rewritten-atm
+                                                             *nil*)))
+                                            (force-assumption
+                                             rune
+                                             target
+                                             rewritten-atm
+                                             type-alist
+; Note:  :rewrittenp = instantiated unrewritten term.
+                                             (sublis-var unify-subst atm)
+                                             (immediate-forcep
+                                              forcer-fn
+                                              (access
+                                               rewrite-constant
+                                               rcnst
+                                               :current-enabled-structure))
+                                             force-flg
+                                             new-ttree))
+                                           (t (mv nil new-ttree)))
+                                          (cond
+                                           (force-flg
+                                            (mv step-limit t nil unify-subst
+                                                new-ttree))
+                                           (t (mv step-limit
+                                                  nil
+                                                  (cons 'rewrote-to
+                                                        rewritten-atm)
+                                                  unify-subst
+                                                  (accumulate-rw-cache
+                                                   t
+                                                   new-ttree
+                                                   ttree))))))))))))))))))))
                       (cond
                        (relieve-hyp-ans
                         (mv step-limit relieve-hyp-ans failure-reason
