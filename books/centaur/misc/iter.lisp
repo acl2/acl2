@@ -221,6 +221,7 @@
                                  :init-vals"))
        (hints (get-kw :hints nil kwlist))
        (iter-guard (get-kw :iter-guard t kwlist))
+       (top-guard (get-kw :top-guard t kwlist))
        (guard-hints (get-kw :guard-hints nil kwlist))
        (package (get-kw :package name kwlist))
        (val-vars (if (symbolp returns)
@@ -362,6 +363,8 @@
        (defun-inline ,name ,formals
          ,@(if doc (list doc) nil)
          ,@decls
+         ,@(and top-guard
+                `((declare (xargs :guard ,top-guard))))
          (b* ,init-vals
            (mbe :logic (,iter ,last . ,(cdr iter-formals))
                 :exec (,tailrec ,first . ,(cdr iter-formals)))))
