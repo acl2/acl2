@@ -2238,17 +2238,25 @@
 
   (cond 
    ((and
+
 ; Note that potential conjunct (f-get-global 'waterfall-parallelism state) is
-; not needed, since we are in an @par definition.
-     (not (equal stobjs-out '(nil)))
+; not needed, since we are in an @par definition.  Also note that a
+; clause-processor returns (as per :doc clause-processor) either a list cl-list
+; of clauses, or else (mv erp cl-list st_i1 ... st_in) where erp and cl-list
+; are not stobjs and the st_ik are all stobjs.  Since we want to rule out
+; stobjs, we therefore check that stobjs-out is (nil) or (nil nil).
+
+     (not (or (equal stobjs-out '(nil))
+              (equal stobjs-out '(nil nil))))
      (not (cdr (assoc-eq 'hacks-enabled
                          (table-alist 'waterfall-parallelism-table 
                                       (w state))))))
     (mv (msg
-         "Clause-processors that do not return a single value are not ~
-          officially supported in ACL2(p).  If you wish to use ~
-          clause-processors anyway, you can call ~x0. See :DOC ~
-          set-waterfall-parallelism-hacks-enabled for more information.  "
+         "Clause-processors that do not return exactly one or two values are ~
+          not officially supported when waterfall parallelism is enabled.  If ~
+          you wish to use such a clause-processor anyway, you can call ~x0. ~
+          See :DOC set-waterfall-parallelism-hacks-enabled for more ~
+          information.  "
          '(set-waterfall-parallelism-hacks-enabled t))
         nil))
    (t

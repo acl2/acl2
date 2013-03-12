@@ -6754,52 +6754,47 @@
            (EQUAL (LXD X)
                   (LXD (NORM X)))).
   ~ev[]
-  The ~c[syntaxp] hypothesis in this rule will allow the rule to be
-  applied to ~c[(lxd (trn a b))] but will not allow it to be applied to
+  The ~c[syntaxp] hypothesis in this rule will allow the rule to be applied to
+  ~c[(lxd (trn a b))] but will not allow it to be applied to
   ~c[(lxd (norm a))].~/
   ~bv[]
   General Form:
   (SYNTAXP test)
   ~ev[]
-  ~c[Syntaxp] always returns ~c[t] and so may be added as a vacuous
-  hypothesis.  However, when relieving the hypothesis, the test
-  ``inside'' the ~c[syntaxp] form is actually treated as a meta-level
-  proposition about the proposed instantiation of the rule's variables
-  and that proposition must evaluate to true (non-~c[nil]) to
-  ``establish'' the ~c[syntaxp] hypothesis.
+  ~c[Syntaxp] always returns ~c[t] and so may be added as a vacuous hypothesis.
+  However, when relieving the hypothesis, the test ``inside'' the ~c[syntaxp]
+  form is actually treated as a meta-level proposition about the proposed
+  instantiation of the rule's variables and that proposition must evaluate to
+  true (non-~c[nil]) to ``establish'' the ~c[syntaxp] hypothesis.
 
-  Note that the test of a ~c[syntaxp] hypothesis does not, in general,
-  deal with the meaning or semantics or values of the terms, but rather
-  with their syntactic forms.  In the example above, the ~c[syntaxp]
-  hypothesis allows the rule to be applied to every target of the form
-  ~c[(lxd u)], provided ~c[u] is not of the form ~c[(norm v)].
-  Observe that without this syntactic restriction the rule above could
-  loop producing a sequence of increasingly complex targets ~c[(lxd a)],
-  ~c[(lxd (norm a))], ~c[(lxd (norm (norm a)))], etc.  An intuitive reading
-  of the rule might be ``~c[norm] the argument of ~c[lxd] unless it has
-  already been ~c[norm]ed.''
+  Note that the test of a ~c[syntaxp] hypothesis does not, in general, deal
+  with the meaning or semantics or values of the terms, but rather with their
+  syntactic forms.  In the example above, the ~c[syntaxp] hypothesis allows the
+  rule to be applied to every target of the form ~c[(lxd u)], provided ~c[u] is
+  not of the form ~c[(norm v)].  Observe that without this syntactic
+  restriction the rule above could loop, producing a sequence of increasingly
+  complex targets ~c[(lxd a)], ~c[(lxd (norm a))], ~c[(lxd (norm (norm a)))],
+  etc.  An intuitive reading of the rule might be ``~c[norm] the argument of
+  ~c[lxd] unless it has already been ~c[norm]ed.''
 
-  Note also that a ~c[syntaxp] hypothesis deals with the syntactic
-  form used internally by ACL2, rather than that seen by the user.  In
-  some cases these are the same, but there can be subtle differences
-  with which the writer of a ~c[syntaxp] hypothesis must be aware.
-  You can use ~c[:]~ilc[trans] to display this internal representation.
+  Note also that a ~c[syntaxp] hypothesis deals with the syntactic form used
+  internally by ACL2, rather than that seen by the user.  In some cases these
+  are the same, but there can be subtle differences with which the writer of a
+  ~c[syntaxp] hypothesis must be aware.  You can use ~c[:]~ilc[trans] to
+  display this internal representation.
 
-  There are two types of ~c[syntaxp] hypotheses.  The simpler type of
-  ~c[syntaxp] hypothesis may be used as the nth hypothesis in a
-  ~c[:]~ilc[rewrite] or ~c[:]~ilc[linear] rule whose ~c[:]~ilc[corollary] is
-  ~c[(implies (and hyp1 ... hypn ... hypk) (equiv lhs rhs))]
-  provided ~c[test] is a term, ~c[test] contains at least one variable, and
-  every variable occuring freely in ~c[test] occurs freely in ~c[lhs] or in
-  some ~c[hypi], ~c[i<n].  In addition, ~c[test] must not use any
-  stobjs.  The case of ~c[:]~ilc[meta] rules is similar to the above, except
-  that it applies to the result of applying the hypothesis metafunction.
-  (Later below we will describe the second type, an ~em[extended] ~c[syntaxp]
-  hypothesis, which may use ~ilc[state].)
+  There are two types of ~c[syntaxp] hypotheses.  The simpler type may be a
+  hypothesis of a ~c[:]~ilc[rewrite] or ~c[:]~ilc[linear] rule provided
+  ~c[test] contains at least one variable but no free variables
+  (~pl[free-variables]).  In particular, ~c[test] may not use ~il[stobj]s; any
+  stobj name will be treated as an ordinary variable.  The case of
+  ~c[:]~ilc[meta] rules is similar to the above, except that it applies to the
+  result of applying the hypothesis metafunction.  (Later below we will
+  describe the second type, an ~em[extended] ~c[syntaxp] hypothesis, which may
+  use ~ilc[state].)
 
   We illustrate the use of simple ~c[syntaxp] hypotheses by slightly
-  elaborating the example given above.  Consider a ~c[:]~ilc[rewrite]
-  rule whose ~c[:]~ilc[corollary] is:
+  elaborating the example given above.  Consider a ~c[:]~ilc[rewrite] rule:
   ~bv[]
   (IMPLIES (AND (RATIONALP X)
                 (SYNTAXP (NOT (AND (CONSP X)
@@ -6808,46 +6803,45 @@
                   (LXD (NORM X))))
   ~ev[]
   How is this rule applied to ~c[(lxd (trn a b))]?  First, we form a
-  substitution that instantiates the left-hand side of the conclusion
-  of the rule so that it is identical to the target term.  In the
-  present case, the substitution replaces ~c[x] with ~c[(trn a b)].
+  substitution that instantiates the left-hand side of the conclusion of the
+  rule so that it is identical to the target term.  In the present case, the
+  substitution replaces ~c[x] with ~c[(trn a b)].
   ~bv[]
   (LXD X) ==> (LXD (trn a b)).
   ~ev[]
   Then we backchain to establish the hypotheses, in order.  Ordinarily this
-  means that we instantiate each hypothesis with our substitution and
-  then attempt to rewrite the resulting instance to true.
-  Thus, in order to relieve the first hypothesis above, we rewrite
+  means that we instantiate each hypothesis with our substitution and then
+  attempt to rewrite the resulting instance to true.  Thus, in order to relieve
+  the first hypothesis above, we rewrite
   ~bv[]
   (RATIONALP (trn a b)).
   ~ev[]
   If this rewrites to true, we continue.
 
-  Of course, most users are aware of some exceptions to this general
-  description of the way we relieve hypotheses.  For
-  example, if a hypothesis contains a ``free-variable'' ~-[] one not
-  bound by the current substitution ~-[] we attempt to extend the
-  substitution by searching for an instance of the hypothesis among
-  known truths.  ~l[free-variables].  ~ilc[Force]d hypotheses are another exception to the
-  general rule of how hypotheses are relieved.
+  Of course, many users are aware of some exceptions to this general
+  description of the way we relieve hypotheses.  For example, if a hypothesis
+  contains a ``free-variable'' ~-[] one not bound by the current substitution
+  ~-[] we attempt to extend the substitution by searching for an instance of
+  the hypothesis among known truths.  ~l[free-variables].  ~ilc[Force]d
+  hypotheses are another exception to the general rule of how hypotheses are
+  relieved.
 
-  Hypotheses marked with ~c[syntaxp], as in ~c[(syntaxp test)], are
-  also exceptions.  We instantiate such a hypothesis; but instead of
-  rewriting the instantiated instance, we evaluate the instantiated
-  ~c[test].  More precisely, we evaluate ~c[test] in an environment in
-  which its variable symbols are bound to the quotations of the terms
-  to which those variables are bound in the instantiating
-  substitution.  So in the case in point, we (in essence) evaluate
+  Hypotheses marked with ~c[syntaxp], as in ~c[(syntaxp test)], are also
+  exceptions.  We instantiate such a hypothesis; but instead of rewriting the
+  instantiated instance, we evaluate the instantiated ~c[test].  More
+  precisely, we evaluate ~c[test] in an environment in which its variable
+  symbols are bound to the quotations of the terms to which those variables are
+  bound in the instantiating substitution.  So in the case in point, we (in
+  essence) evaluate
   ~bv[]
   (NOT (AND (CONSP '(trn a b)) (EQ (CAR '(trn a b)) 'NORM))).
   ~ev[]
-  This clearly evaluates to ~c[t].  When a ~c[syntaxp] test evaluates
-  to true, we consider the ~c[syntaxp] hypothesis to have been
-  established; this is sound because logically ~c[(syntaxp test)] is
-  ~c[t] regardless of ~c[test].  If the test evaluates to ~c[nil] (or
-  fails to evaluate because of ~il[guard] violations) we act as though
-  we cannot establish the hypothesis and abandon the attempt to apply
-  the rule; it is always sound to give up.
+  This clearly evaluates to ~c[t].  When a ~c[syntaxp] test evaluates to true,
+  we consider the ~c[syntaxp] hypothesis to have been established; this is
+  sound because logically ~c[(syntaxp test)] is ~c[t] regardless of ~c[test].
+  If the test evaluates to ~c[nil] (or fails to evaluate because of ~il[guard]
+  violations) we act as though we cannot establish the hypothesis and abandon
+  the attempt to apply the rule; it is always sound to give up.
 
   The acute reader will have noticed something odd about the form
   ~bv[]
@@ -6856,16 +6850,15 @@
   When relieving the first hypothesis, ~c[(RATIONALP X)], we substituted
   ~c[(trn a b)] for ~c[X]; but when relieving the second hypothesis,
   ~c[(SYNTAXP (NOT (AND (CONSP X) (EQ (CAR X) 'NORM))))], we substituted the
-  quotation of ~c[(trn a b)] for ~c[X].  Why the difference?  Remember
-  that in the first hypothesis we are talking about the value of
-  ~c[(trn a b)] ~-[] is it rational ~-[] while in the second one we are
-  talking about its syntactic form.  Remember also that Lisp, and hence
-  ACL2, evaluates the arguments to a function before applying the function
-  to the resulting values. Thus, we are asking ``Is the list ~c[(trn a b)]
-  a ~ilc[consp] and if so, is its ~ilc[car] the symbol ~c[NORM]?''  The
-  ~c[quote]s on both ~c[(trn a b)] and ~c[NORM] are therefore necessary.
-  One can verify this by defining ~c[trn] to be, say ~ilc[cons], and then
-  evaluating forms such as
+  quotation of ~c[(trn a b)] for ~c[X].  Why the difference?  Remember that in
+  the first hypothesis we are talking about the value of ~c[(trn a b)] ~-[] is
+  it rational ~-[] while in the second one we are talking about its syntactic
+  form.  Remember also that Lisp, and hence ACL2, evaluates the arguments to a
+  function before applying the function to the resulting values. Thus, we are
+  asking ``Is the list ~c[(trn a b)] a ~ilc[consp] and if so, is its ~ilc[car]
+  the symbol ~c[NORM]?''  The ~c[quote]s on both ~c[(trn a b)] and ~c[NORM] are
+  therefore necessary.  One can verify this by defining ~c[trn] to be, say
+  ~ilc[cons], and then evaluating forms such as
   ~bv[]
   (AND (CONSP '(trn a b)) (EQ (CAR '(trn a b)) 'NORM))
   (AND (CONSP (trn a b)) (EQ (CAR (trn a b)) NORM))
@@ -6876,16 +6869,98 @@
 
   ~l[syntaxp-examples] for more examples of the use of ~c[syntaxp].
 
-  An extended ~c[syntaxp] hypothesis is similar to the simple type
-  described above, but it uses two additional variables, ~c[mfc] and ~c[state],
-  which must not be bound by the left hand side or an earlier hypothesis
-  of the rule.  They must be the last two variables mentioned by ~c[form];
-  first ~c[mfc], then ~c[state].  These two variables give access to
-  the functions ~c[mfc-]xxx; ~pl[extended-metafunctions].  As
-  described there, ~c[mfc] is bound to the so-called
-  metafunction-context and ~c[state] to ACL2's ~ilc[state].
-  ~l[syntaxp-examples] for an example of the use of these extended
-  ~c[syntaxp] hypotheses."
+  An extended ~c[syntaxp] hypothesis is similar to the simple type described
+  above, but it uses two additional variables, ~c[mfc] and ~c[state], which
+  must not be bound by the left hand side or an earlier hypothesis of the rule.
+  They must be the last two variables mentioned by ~c[form]; first ~c[mfc],
+  then ~c[state].  These two variables give access to the functions
+  ~c[mfc-]xxx; ~pl[extended-metafunctions].  As described there, ~c[mfc] is
+  bound to the so-called metafunction-context and ~c[state] to ACL2's
+  ~ilc[state].  ~l[syntaxp-examples] for an example of the use of these
+  extended ~c[syntaxp] hypotheses.
+
+  We conclude with an example illustrating an error that may occur if you
+  forget that a ~c[syntaxp] hypothesis will be evaluated in an environment
+  where variables are bound to syntactic terms, not to values.  Consider the
+  following ~il[stobj] introduction (~pl[defstobj]).
+  ~bv[]
+    (defstobj st
+      (fld1 :type (signed-byte 3) :initially 0)
+      fld2)
+  ~ev[]
+  The following ~c[syntaxp] hypothesis is ill-formed for evaluation.  Indeed,
+  ACL2 causes an error because it anticipates that when trying to relieve the
+  ~c[syntaxp] hypothesis of this rule, ACL2 would be evaluating ~c[(fld1 st)]
+  where ~c[st] is bound to a term, not to an actual ~c[stobj] as required by
+  the function ~c[fld1].  The error message is intended to explain this
+  problem.
+  ~bv[]
+    ACL2 !>(defthm bad
+             (implies (syntaxp (quotep (fld1 st)))
+                      (equal (stp st)
+                             (and (true-listp st)
+                                  (equal (len st) 2)
+                                  (fld1p (car st))))))
+
+
+    ACL2 Error in ( DEFTHM BAD ...):  The form (QUOTEP (FLD1 ST)), from
+    a SYNTAXP hypothesis, is not suitable for evaluation in an environment
+    where its variables are bound to terms.  See :DOC SYNTAXP.  Here is
+    further explanation:
+         The form ST is being used, as an argument to a call of FLD1, where
+    the single-threaded object of that name is required.  But in the current
+    context, the only declared stobj name is STATE.  Note:  this error
+    occurred in the context (FLD1 ST).
+
+
+    Summary
+    Form:  ( DEFTHM BAD ...)
+    Rules: NIL
+    Time:  0.00 seconds (prove: 0.00, print: 0.00, other: 0.00)
+
+    ACL2 Error in ( DEFTHM BAD ...):  See :DOC failure.
+
+    ******** FAILED ********
+    ACL2 !>
+  ~ev[]
+  Presumably the intention was to rewrite the term ~c[(stp st)] when the
+  ~c[fld1] component of ~c[st] is seen to be an explicit constant.  As
+  explained elsewhere (~pl[free-variables]), we can obtain the result of
+  rewriting ~c[(fld1 st)] by binding a fresh variable to that term using
+  ~c[EQUAL], as follows.
+  ~bv[]
+    (defthm good
+      (implies (and (equal f (fld1 st))
+                    (syntaxp (quotep f)))
+               (equal (stp st)
+                      (and (true-listp st)
+                           (equal (len st) 2)
+                           (fld1p (car st))))))
+  ~ev[]
+  The event above is admitted by ACL2.  We can see it in action by disabling
+  the definition of ~c[stp] so that only the rule above, ~c[good], is available
+  for reasoning about ~c[stp].
+  ~bv[]
+    (in-theory (disable stp))
+  ~ev[]
+  Then the proof fails for the following, because the ~c[syntaxp] hypothesis of
+  the rule, ~c[good], fails: ~c[(quotep f)] evaluates to ~c[nil] when ~c[f] is
+  bound to the term ~c[(fld1 st)].
+  ~bv[]
+    (thm (stp st))
+  ~ev[]
+  However, the proof succeeds for the next form, as we explain below.
+  ~bv[]
+    (thm (stp (list 3 rest)))
+  ~ev[]
+  Consider what happens in that case when rule ~c[good] is applied to the term
+  ~c[(stp (list 3 rest))].  (~l[free-variables] for relevant background.)  The
+  first hypothesis of ~c[good] binds the variable ~c[f] to the result of
+  rewriting ~c[(fld1 st)], where ~c[st] is bound to the (internal form of) the
+  term ~c[(list 3 rest)] ~-[] and that result is clearly the term, ~c['3].
+  Then the ~c[syntaxp] hypothesis is successfully relieved, because the
+  evaluation of ~c[(quotep f)] returns ~c[t] in the environment that binds
+  ~c[f] to ~c['3]."
 
   `(synp (quote nil) (quote (syntaxp ,form)) (quote (and ,form t))))
 
@@ -19747,10 +19822,192 @@
   the ACL2 ~ilc[state] and logical ~il[world].  In essence, the expression
   ~c[(make-event form)] replaces itself with the result of evaluating ~c[form],
   say, ~c[ev], as though one had submitted ~c[ev] instead of the ~c[make-event]
-  call.  But the evaluation of ~c[form] may involve ~ilc[state] and even modify
-  ~c[state], for example by attempting to admit some definitions and theorems.
-  ~c[Make-event] protects the ACL2 logical ~il[world] so that it is restored
-  after ~c[form] is evaluated, before ~c[ev] is submitted.~/
+  call.  For example, ~c[(make-event (quote (defun f (x) x)))] is equivalent to
+  the event ~c[(defun f (x) x)].
+
+  We break this documentation into the following sections.
+
+  ~st[Introduction]~nl[]
+  ~st[Detailed Documentation]~nl[]
+  ~st[Error Reporting]~nl[]
+  ~st[Restriction to Event Contexts]~nl[]
+  ~st[Examples illustrating how to access state]
+
+  We begin with an informal introduction, which focuses on examples and
+  introduces the key notion of ``expansion phase''.
+
+  ~st[Introduction]
+
+  ~c[Make-event] is particularly useful for those who program using the ACL2
+  ~ilc[state]; ~pl[programming-with-state].  That is because the evaluation of
+  ~c[form] may read and even modify the ACL2 ~ilc[state].
+
+  Suppose for example that we want to define a constant ~c[*world-length*],
+  that is the length of the current ACL2 ~il[world].  A ~c[make-event] form can
+  accomplish this task, as follows.
+  ~bv[]
+    ACL2 !>(length (w state))
+    98883
+    ACL2 !>(make-event
+            (list 'defconst '*world-length* (length (w state))))
+
+    Summary
+    Form:  ( DEFCONST *WORLD-LENGTH* ...)
+    Rules: NIL
+    Time:  0.00 seconds (prove: 0.00, print: 0.00, other: 0.00)
+
+    Summary
+    Form:  ( MAKE-EVENT (LIST ...))
+    Rules: NIL
+    Time:  0.01 seconds (prove: 0.00, print: 0.00, other: 0.01)
+     *WORLD-LENGTH*
+    ACL2 !>*world-length*
+    98883
+    ACL2 !>(length (w state))
+    98890
+    ACL2 !>
+  ~ev[]
+  How did this work?  First, evaluation of the form
+  ~c[(list 'defconst '*world-length* (length (w state)))] returned the event
+  form ~c[(defconst *world-length* 98883)].  Then that event form was
+  automatically submitted to ACL2.  Of course, that changed the ACL2 logical
+  ~il[world], which is why the final value of ~c[(length (w state))] is greater
+  than its initial value.
+
+  The example above illustrates how the evaluation of a ~c[make-event] call
+  takes place in two phases.  The first phase evaluates the argument of the
+  call, in this case ~c[(list 'defconst '*world-length* (length (w state)))],
+  to compute an event form, in this case ~c[(defconst *world-length* 98883)].
+  We call this evaluation the ``expansion'' phase.  Then the resulting event
+  form is evaluated, which in this case defines the constant
+  ~c[*world-length*].
+
+  Now suppose we would like to introduce such a ~ilc[defconst] form any time we
+  like.  It is common practice to define macros to automate such tasks.  Now we
+  might be tempted simply to make the following definition.
+  ~bv[]
+  ; WRONG!
+  (defmacro define-world-length-constant (name state)
+    (list 'defconst name (length (w state))))
+  ~ev[]
+  But ACL2 rejects such a definition, because a macro cannot take the ACL2
+  state as a parameter; instead, the formal parameter to this macro named
+  ~c[\"STATE\"] merely represents an ordinary object.  You can try to
+  experiment with other such direct methods to define such a macro, but they
+  won't work.
+
+  Instead, however, you can use the approach illustrated by the ~c[make-event]
+  example above to define the desired macro, as follows.
+  ~bv[]
+  (defmacro define-world-length-constant (name)
+    `(make-event (list 'defconst ',name (length (w state)))))
+  ~ev[]
+  Here are example uses of this macro.
+  ~bv[]
+    ACL2 !>(define-world-length-constant *foo*)
+
+    Summary
+    Form:  ( DEFCONST *FOO* ...)
+    Rules: NIL
+    Time:  0.00 seconds (prove: 0.00, print: 0.00, other: 0.00)
+
+    Summary
+    Form:  ( MAKE-EVENT (LIST ...))
+    Rules: NIL
+    Time:  0.00 seconds (prove: 0.00, print: 0.00, other: 0.00)
+     *FOO*
+    ACL2 !>*foo*
+    98891
+    ACL2 !>:pe *foo*
+              2:x(DEFINE-WORLD-LENGTH-CONSTANT *FOO*)
+                 \
+    >             (DEFCONST *FOO* 98891)
+    ACL2 !>(length (w state))
+    98897
+    ACL2 !>(define-world-length-constant *bar*)
+
+    Summary
+    Form:  ( DEFCONST *BAR* ...)
+    Rules: NIL
+    Time:  0.00 seconds (prove: 0.00, print: 0.00, other: 0.00)
+
+    Summary
+    Form:  ( MAKE-EVENT (LIST ...))
+    Rules: NIL
+    Time:  0.01 seconds (prove: 0.00, print: 0.00, other: 0.01)
+     *BAR*
+    ACL2 !>*bar*
+    98897
+    ACL2 !>:pe *bar*
+              3:x(DEFINE-WORLD-LENGTH-CONSTANT *BAR*)
+                 \
+    >             (DEFCONST *BAR* 98897)
+    ACL2 !>(length (w state))
+    98903
+    ACL2 !>
+  ~ev[]
+
+  Finally, we note that the expansion phase can be used for computation that
+  has side effects, generally by modifying state.  Here is a modification of
+  the above example that does not change the world at all, but instead saves
+  the length of the world in a state global.
+  ~bv[]
+  (make-event
+   (pprogn (f-put-global 'my-world-length (length (w state)) state)
+           (value '(value-triple nil))))
+  ~ev[]
+  Notice that this time, the value returned by the expansion phase is not an
+  event form, but rather, is an error triple (~pl[error-triples]) whose value
+  component is an event form, namely, the event form ~c[(value-triple nil)].
+  Evaluation of that event form does not change the ACL2 world
+  (~pl[value-triple]).  Thus, the sole purpose of the ~c[make-event] call above
+  is to change the ~il[state] by associating the length of the current logical
+  world with the state global named ~c['my-world-length].  After evaluating
+  this form, ~c[(@ my-world-length)] provides the length of the ACL2 world, as
+  illustrated by the following transcript.
+  ~bv[]
+    ACL2 !>:pbt 0
+              0:x(EXIT-BOOT-STRAP-MODE)
+    ACL2 !>(length (w state))
+    98883
+    ACL2 !>(make-event
+            (pprogn (f-put-global 'my-world-length (length (w state)) state)
+                    (value '(value-triple nil))))
+
+    Summary
+    Form:  ( MAKE-EVENT (PPROGN ...))
+    Rules: NIL
+    Time:  0.01 seconds (prove: 0.00, print: 0.00, other: 0.01)
+     NIL
+    ACL2 !>(length (w state))
+    98883
+    ACL2 !>:pbt 0
+              0:x(EXIT-BOOT-STRAP-MODE)
+    ACL2 !>
+  ~ev[]
+
+  When ~c[make-event] is invoked by a book, it is expanded during book
+  certification but not, by default, when the book is included.  So for the
+  example ~c[(define-world-length-constant *foo*)] given above, if that form is
+  in a book, then the value of ~c[*foo*] will be the length of the world at the
+  time this form was invoked during book certification, regardless of world
+  length at ~ilc[include-book] time.  (The expansion is recorded in the book's
+  ~il[certificate], and re-used.)  To overcome this default, you can specified
+  keyword value ~c[:CHECK-EXPANSION t].  This will cause an error if the
+  expansion is different, but it can be useful for side effects.  For example,
+  if you insert the following form in a book, then the length of the world will
+  be printed when the form is encountered, whether during ~ilc[certify-book] or
+  during ~ilc[include-book].
+  ~bv[]
+  (make-event
+   (pprogn (fms \"Length of current world: ~~x0~~|\"
+                (list (cons #\\0 (length (w state))))
+                *standard-co* state nil)
+           (value '(value-triple nil)))
+   :check-expansion t)
+  ~ev[]~/
+
+  ~st[Detailed Documentation]
 
   ~bv[]
   Examples:
@@ -19919,7 +20176,7 @@
                                  (DEFUN FOO (X) X)))
   ~ev[]
 
-  ~st[Error Reporting.]
+  ~st[Error Reporting]
 
   Suppose that expansion produces a soft error as described above.  That is,
   suppose that the argument of a ~c[make-event] call evaluates to a multiple
@@ -19929,7 +20186,7 @@
   ~c[\"~~@0\"] with ~c[#\\0] bound to that ~c[cons] pair; ~pl[fmt].  Any other
   non-~c[nil] value of ~c[erp] causes a generic error message to be printed.
 
-  ~st[Restriction to Event Contexts.]
+  ~st[Restriction to Event Contexts]
 
   A ~c[make-event] call must occur either at the top level or as an argument of
   an event constructor, as explained in more detail below.  This restriction is
@@ -19995,7 +20252,7 @@
   ~bv[]
   (progn! :state-global-bindings <bindings> (make-event ...))
   ~ev[]
-  ~l[remove-untouchable] for an interesting use of this exception.
+  Also ~pl[remove-untouchable] for an interesting use of this exception.
 
   ~st[Examples illustrating how to access state]
 
@@ -20261,7 +20518,7 @@
   ACL2 does provide a way to avoid the need for ~c[:ttags] arguments in such
   cases.  The idea is to certify a book twice, where the results of
   ~c[make-event] expansion are saved from the first call of ~ilc[certify-book]
-  and provided to the second call.  ~pl[set-write-acl2x].
+  and provided to the second call.  ~l[set-write-acl2x].
 
   Finally, we discuss a very unusual case where certification does not involve
   trust tags but a subsequent ~ilc[include-book] does involve trust tags: a
@@ -26484,7 +26741,7 @@
   section is organized as follows.
   ~bf[]
   ~sc[Enabling programming with state]
-  ~sc[State globals]
+  ~sc[State globals and the ACL2 logical world]
   ~sc[A remark on guards]
   ~sc[Errors and error triples]
   ~sc[Sequential programming]
@@ -26528,7 +26785,7 @@
   obligation is generated by default.  See the section below entitled ``A
   remark on guards''.
 
-  ~sc[State globals]
+  ~sc[State globals and the ACL2 logical world]
 
   Recall (~pl[state]) that one of the fields of the ACL2 state object is the
   global-table, which logically is an alist associating symbols, known as
@@ -26575,6 +26832,14 @@
   insure that all the tokens in the new list are legal.  When deciding whether
   to print output, the ACL2 system reads the value of state global variable
   ~c[inhibit-output-lst].
+
+  A particularly useful state global is ~c[current-acl2-world], whose value is
+  the ACL2 logical ~il[world].  Because the ACL2 world is commonly accessed in
+  applications that use the ACL2 state, ACL2 provides a function that returns
+  the world: ~c[(w state) = (f-get-global 'current-acl2-world state)].  While
+  it is common to read the world, only functions ~c[set-w] and ~c[set-w!] are
+  available to write the world, but these are untouchable and these should
+  generally be avoided except by system implementors (pl[remove-untouchable]).
 
   ~sc[A remark on guards]
 
@@ -33850,7 +34115,18 @@
   (let ((pos-colon (position #\: filename))
         (pos-sep (position *directory-separator* filename)))
     (cond (pos-colon (cond ((eql pos-sep (1+ pos-colon))
-                            (subseq filename 0 pos-sep))
+
+; In Windows, it appears that the value returned by truename can start with
+; (for example) "C:/" or "c:/" depending on whether "c" is capitalized in the
+; input to truename.  Indeed, quoting
+; http://msdn.microsoft.com/en-us/library/windows/desktop/aa365247(v=vs.85).aspx:
+
+;   Volume designators (drive letters) are similarly case-insensitive. For
+;   example, "D:\" and "d:\" refer to the same volume.
+
+; So we take responsibility for canonicalizing, here.
+
+                            (string-upcase (subseq filename 0 pos-sep)))
                            (t (illegal 'mswindows-drive1
                                        "Implementation error: Unable to ~
                                         compute mswindows-drive for ~
