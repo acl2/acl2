@@ -35,7 +35,8 @@
    defines
    loadwarnings
    useset-report
-   dregs)
+   ;; dregs  awful, trying to deprecate this
+   )
   :tag :vl-translation
   :require ((vl-modulelist-p-of-vl-translation->mods
              (vl-modulelist-p mods))
@@ -49,8 +50,8 @@
              (vl-warninglist-p loadwarnings))
             (vl-useset-report-p-of-vl-translation->useset-report
              (vl-useset-report-p useset-report))
-            (vl-dregalist-p-of-vl-translation->dregs
-             (vl-dregalist-p dregs))
+            ;; (vl-dregalist-p-of-vl-translation->dregs
+            ;;  (vl-dregalist-p dregs))
             )
   :parents (defmodules)
   :short "The result of translating Verilog modules."
@@ -85,9 +86,9 @@ warnings produced by the simplifier: such warning are found in the modules of
 <li>@('useset-report'), a @(see vl-useset-report-p) that records the results of
 the @(see use-set) tool.</li>
 
-<li>@('dregs'), the @(see design-regs) alist for this translation.</li>
-
 </ul>")
+
+;; <li>@('dregs'), the @(see design-regs) alist for this translation.</li>
 
 (defxdoc translation-interface
   :parents (defmodules)

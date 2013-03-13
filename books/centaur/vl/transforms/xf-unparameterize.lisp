@@ -692,8 +692,8 @@ unparameterized modules.</p>
 
 <p>@('Origname') is the original name of the module, e.g., @('plus'), and
 @('sigma') is a @(see vl-sigma-p) that maps the parameter names to their
-values, say @('size') &lt;-- 5 and @('width') &lt;-- 32.  We generate a new
-name by appending on the attributes and their bindings as strings of the form
+values, say @('size <-- 5') and @('width <-- 32').  We generate a new name by
+appending on the attributes and their bindings as strings of the form
 @('$key=val'), e.g., @('plus$size=5$width=32').</p>
 
 <p>At Centaur, this is very likely to form unique new names since, since we do
@@ -776,12 +776,19 @@ unparameterization code that no conflicts are introduced.</p>"
               duplicated keys are ~&1, sigma is ~x2."
              origname (duplicated-members (alist-keys sigma)) sigma))
 
-     ;; We just standardize the sigma a little bit: we eliminate any duplicates
-     ;; and sort all of the parameters.
-     (b* ((shrink (hons-shrink-alist sigma nil))
-          (-      (flush-hons-get-hash-table-link shrink))
-          (sorted (mergesort shrink)))
-       (hons-copy (vl-unparam-newname-aux origname sorted)))))
+;; We previously shrunk and sorted the sigma.  This was fine but silly since
+;; the parameter names for any reasonable module should be unique and, at any
+;; rate, we just checked that they were in the above extralogical check.
+;;
+;; I no longer want to do this sorting because other tools, like Synopsys
+;; Design Compiler, seem to generate the names of their unparameterized modules
+;; just using the parameter declaration order.  So, by not sorting the names,
+;; we can come up with names that more closely agree with these other tools.
+;;
+;; Implicitly here, are assuming that SIGMA comes in with its keys in the same
+;; order as the module's parameter declarations.
+
+       (hons-copy (vl-unparam-newname-aux origname sigma))))
 
   (defthm stringp-of-vl-unparam-newname
     (stringp (vl-unparam-newname origname sigma))

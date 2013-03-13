@@ -371,3 +371,79 @@ to any other part of the program.</p>"
       (reverse
        (the string (coerce (the list rchars) 'string))))))
 
+
+
+
+(defsection join
+  :parents (concatenation)
+  :short "Concatenate a list of strings with some separator between."
+
+  :long "<p>@(call join) joins together the list of strings @('x'), inserting
+the string @('separator') between the members.  For example:</p>
+
+@({
+ (join '(\"a\" \"b\" \"c\") \".\") = \"a.b.c\"
+ (join '(\"a\" \"b\" \"c\") \"->\") = \"a->b->c\"
+})
+
+<p>We always return a string; an empty @('x') results in the empty string, and
+any empty strings within @('x') just implicitly don't contribute to the
+result.</p>
+
+<p>Any sort of string concatenation is slow, but @('join') is reasonably
+efficient: it creates a single character list for the result (in reverse order)
+without any use of @(see coerce), then uses @(see rchars-to-string) to build
+and reverse the result string.</p>"
+
+  (defund join-aux (x separator acc)
+    (declare (xargs :guard (and (string-listp x)
+                                (stringp separator))))
+    (cond ((atom x)
+           acc)
+          ((atom (cdr x))
+           (revappend-chars (car x) acc))
+          (t
+           (let* ((acc (revappend-chars (car x) acc))
+                  (acc (revappend-chars separator acc)))
+             (join-aux (cdr x) separator acc)))))
+
+  (defund join (x separator)
+    (declare (xargs :guard (and (string-listp x)
+                                (stringp separator))
+                    :verify-guards nil))
+    (mbe :logic
+         (cond ((atom x)
+                "")
+               ((atom (cdr x))
+                (if (stringp (car x))
+                    (car x)
+                  ""))
+               (t
+                (cat (car x) separator (join (cdr x) separator))))
+         :exec
+         (rchars-to-string (join-aux x separator nil))))
+
+  (local (in-theory (enable join join-aux)))
+
+  (local (include-book "std/lists/rev" :dir :system))
+
+  (local (defthm l1
+           (equal (append (append x y) z)
+                  (append x (append y z)))))
+
+  (defthm join-aux-removal
+    (implies (and (string-listp x)
+                  (stringp separator))
+             (equal (join-aux x separator acc)
+                    (revappend (coerce (join x separator) 'list)
+                               acc)))
+    :hints(("Goal"
+            :induct (join-aux x separator acc)
+            :in-theory (enable revappend-chars))))
+
+  (verify-guards join)
+
+  (defthm stringp-of-join
+    (stringp (join x separator))
+    :rule-classes :type-prescription))
+

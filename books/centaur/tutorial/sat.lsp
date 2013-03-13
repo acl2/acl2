@@ -171,7 +171,8 @@
 ; Basic stuff copied from alu16.lsp to get the Verilog module loaded:
 
 (defmodules *translation*
-  :start-files (list "alu16.v"))
+  (vl::vl-make-loadconfig
+   :start-files (list "alu16.v")))
 
 (defconst *alu16-vl*
   (vl::vl-find-module "alu16" (vl::vl-translation->mods *translation*)))

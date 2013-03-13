@@ -849,18 +849,27 @@ optimization altogether.</p>")
 
            ,@(and
               (eq mode :logic)
-              `((defthm ,(intern-in-package-of-symbol
-                          (concatenate 'string (symbol-name make-foo) "-UNDER-IFF")
+              `(
+
+                ;; (defthm ,(intern-in-package-of-symbol
+                ;;           (concatenate 'string (symbol-name make-foo) "-UNDER-IFF")
+                ;;           name)
+                ;;   (iff (,make-foo ,@field-names)
+                ;;        t)
+                ;;   :hints(("Goal" :in-theory (enable ,make-foo))))
+
+                (defthm ,(intern-in-package-of-symbol
+                          ;; This seems like a stronger replacement for the above?
+                          (concatenate 'string "CONSP-OF-" (symbol-name make-foo))
                           name)
-                  (iff (,make-foo ,@field-names)
-                       t)
+                  (consp (,make-foo ,@field-names))
+                  :rule-classes :type-prescription
                   :hints(("Goal" :in-theory (enable ,make-foo))))
 
                 (defthm ,(intern-in-package-of-symbol
                           (concatenate 'string "BOOLEANP-OF-" (symbol-name foop))
                           name)
-                  (equal (booleanp (,foop ,x))
-                         t)
+                  (booleanp (,foop ,x))
                   :rule-classes :type-prescription
                   :hints(("Goal" :in-theory (enable ,foop))))
 

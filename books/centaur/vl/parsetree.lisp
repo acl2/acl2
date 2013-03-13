@@ -4119,14 +4119,16 @@ register and variable declarations with initial values, i.e., @('reg r =
 0;').</p>"
 
   :rest
-  ((defthm acl2-count-of-vl-initial->stmt
-     (and (<= (acl2-count (vl-initial->stmt x))
-              (acl2-count x))
-          (implies (consp x)
-                   (< (acl2-count (vl-initial->stmt x))
-                      (acl2-count x))))
-     :hints(("Goal" :in-theory (enable vl-initial->stmt)))
-     :rule-classes ((:rewrite) (:linear)))))
+  (
+   ;; (defthm acl2-count-of-vl-initial->stmt
+   ;;   (and (<= (acl2-count (vl-initial->stmt x))
+   ;;            (acl2-count x))
+   ;;        (implies (consp x)
+   ;;                 (< (acl2-count (vl-initial->stmt x))
+   ;;                    (acl2-count x))))
+   ;;   :hints(("Goal" :in-theory (enable vl-initial->stmt)))
+   ;;   :rule-classes ((:rewrite) (:linear)))
+   ))
 
 
 
@@ -4168,14 +4170,16 @@ statement was read from in the source code.</li>
 </ul>"
 
   :rest
-  ((defthm acl2-count-of-vl-always->stmt
-     (and (<= (acl2-count (vl-always->stmt x))
-              (acl2-count x))
-          (implies (consp x)
-                   (< (acl2-count (vl-always->stmt x))
-                      (acl2-count x))))
-     :hints(("Goal" :in-theory (enable vl-always->stmt)))
-     :rule-classes ((:rewrite) (:linear)))))
+  (
+   ;; (defthm acl2-count-of-vl-always->stmt
+   ;;   (and (<= (acl2-count (vl-always->stmt x))
+   ;;            (acl2-count x))
+   ;;        (implies (consp x)
+   ;;                 (< (acl2-count (vl-always->stmt x))
+   ;;                    (acl2-count x))))
+   ;;   :hints(("Goal" :in-theory (enable vl-always->stmt)))
+   ;;   :rule-classes ((:rewrite) (:linear))))
+  ))
 
 (deflist vl-initiallist-p (x)
   (vl-initial-p x)
@@ -4408,15 +4412,16 @@ function.  The attributes come before the @('function') keyword.</p>
 <p>The @('loc') is the @(see vl-location-p) where the @('function') keyword was
 found in the source code.</p>"
 
-  :rest
-  ((defthm acl2-count-of-vl-fundecl->body
-     (and (<= (acl2-count (vl-fundecl->body x))
-              (acl2-count x))
-          (implies (consp x)
-                   (< (acl2-count (vl-fundecl->body x))
-                      (acl2-count x))))
-     :hints(("Goal" :in-theory (enable vl-fundecl->body)))
-     :rule-classes ((:rewrite) (:linear)))))
+  ;; :rest
+  ;; ((defthm acl2-count-of-vl-fundecl->body
+  ;;    (and (<= (acl2-count (vl-fundecl->body x))
+  ;;             (acl2-count x))
+  ;;         (implies (consp x)
+  ;;                  (< (acl2-count (vl-fundecl->body x))
+  ;;                     (acl2-count x))))
+  ;;    :hints(("Goal" :in-theory (enable vl-fundecl->body)))
+  ;;    :rule-classes ((:rewrite) (:linear)))))
+  )
 
 (deflist vl-fundecllist-p (x)
   (vl-fundecl-p x)

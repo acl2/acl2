@@ -93,7 +93,8 @@
 ; load libraries, etc., our use is very simple:
 
 (defmodules *translation*
-  :start-files (list "alu16.v"))
+  (vl::make-vl-loadconfig
+   :start-files (list "alu16.v")))
 
 ; This *translation* object is a data structure that contains all sorts of
 ; things.  It has "simplified VL modules" that were derived from the Verilog
@@ -103,21 +104,20 @@
 ; If you ask ACL2 to print *translation*, you will see that several parts of it
 ; are hidden.  This is because of the (plev) command we issued above, and it is
 ; really a very good thing.  If you disable plev, e.g., by typing (plev-max),
-; and ask ACL2 to print *translation*, then you will end up with over 100,000]
+; and ask ACL2 to print *translation*, then you will end up with over 100,000
 ; lines of output, and it will probably take over a minute.  PLEV protects you
 ; from this kind of thing.
 ;
 ; The DEFMODULES command prints some commentary as it runs.  One of the things
 ; it says is:
 ;
-;    Finished parsing 1 files; found 1 modules.
 ;    Beginning simplification of 1 modules.
 ;    Successfully simplified 30 module(s).
 ;    Failed to simplify 0 modules.
 ;
-; How can DEFMODULES have "successfully simplified 30 modules" when it only
-; parsed a single module?  The answer is that VL's simplification process will
-; generate several supporting modules.  We can pretty-print the list of
+; How can DEFMODULES have "successfully simplified 30 modules" when the file
+; only has a single module?  The answer is that VL's simplification process
+; will generate several supporting modules.  We can pretty-print the list of
 ; simplified modules with the following command.  PPCS stands for "pretty print
 ; with comments to string."
 
@@ -249,7 +249,7 @@
 
 
 ; Now, if you have installed GTKWave and configured your PATH so that you can
-; run it by typing "gtkwave", then you can also generate a waveform.  
+; run it by typing "gtkwave", then you can also generate a waveform.
 
 (stv-debug (test-vector)
            `((op . ,*op-min*)

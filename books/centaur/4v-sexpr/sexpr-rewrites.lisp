@@ -1538,18 +1538,18 @@ carry over."
 (defsection 4v-sexpr-restrict-with-rw
   :parents (sexpr-rewriting 4v-sexprs)
   :short "4v-sexpr-restrict with inline rewriting."
-  :long "This is different from
-sexpr-rewrite-of-restrict because it doesn't apply rewriting to the alist
-lookups; it basically assumes they've already been rewritten.  So while we
-can't prove that this is equal to sexpr-rewrite of 4v-sexpr-restrict, we can
-prove that it's sexpr-equivalent to 4v-sexpr-restrict, and contains a subset of
-its variables.
 
-Careful about
-memoization here; wouldn't want to use this when you're about to (or just have)
-done a 4v-sexpr-restrict of a similar sexpression with the same alist, or done a
-sexpr-rewrite of an sexpression similar to your result.  Memoization won't
-carry over."
+  :long "<p>This is different from sexpr-rewrite-of-restrict because it doesn't
+apply rewriting to the alist lookups; it basically assumes they've already been
+rewritten.  So while we can't prove that this is equal to sexpr-rewrite of
+4v-sexpr-restrict, we can prove that it's sexpr-equivalent to
+4v-sexpr-restrict, and contains a subset of its variables.</p>
+
+<p>Careful about memoization here; wouldn't want to use this when you're about
+to (or just have) done a 4v-sexpr-restrict of a similar sexpression with the
+same alist, or done a sexpr-rewrite of an sexpression similar to your result.
+Memoization won't carry over.</p>"
+
   (mutual-recursion
    (defun 4v-sexpr-restrict-with-rw (x al)
      (declare (xargs :guard t))
@@ -1570,7 +1570,6 @@ carry over."
 
   (memoize '4v-sexpr-restrict-with-rw :condition '(consp x))
 
-
   (defthm-4v-sexpr-flag
     (defthm 4v-sexpr-restrict-with-rw-equiv-to-4v-sexpr-restrict
       (4v-sexpr-equiv (4v-sexpr-restrict-with-rw x al)
@@ -1581,7 +1580,6 @@ carry over."
                            (4v-sexpr-restrict-list x al))
       :hints ((witness :ruleset 4v-sexpr-list-equiv-witnessing))
       :flag sexpr-list))
-
 
   (defthm-4v-sexpr-flag
     (defthm 4v-sexpr-vars-4v-sexpr-restrict-with-rw
@@ -1599,14 +1597,37 @@ carry over."
       :flag sexpr-list))
 
 
-  (defun 4v-sexpr-restrict-with-rw-alist (x al)
+
+
+  (defun 4v-sexpr-restrict-with-rw-alist-exec (x al acc)
+    ;; Tail recursive version, because, e.g., in our unsynth tool, we've run into
+    ;; stack overflows due to restricting enormous sexpr alists.
     (declare (xargs :guard t))
     (if (atom x)
-        nil
+        acc
       (if (atom (car x))
-          (4v-sexpr-restrict-with-rw-alist (cdr x) al)
-        (cons (cons (caar x) (4v-sexpr-restrict-with-rw (cdar x) al))
-              (4v-sexpr-restrict-with-rw-alist (cdr x) al)))))
+          (4v-sexpr-restrict-with-rw-alist-exec (cdr x) al acc)
+        (4v-sexpr-restrict-with-rw-alist-exec
+         (cdr x) al
+         (cons (cons (caar x) (4v-sexpr-restrict-with-rw (cdar x) al))
+               acc)))))
+
+  (defun 4v-sexpr-restrict-with-rw-alist (x al)
+    (declare (xargs :guard t :verify-guards nil))
+    (mbe :logic
+         (if (atom x)
+             nil
+           (if (atom (car x))
+               (4v-sexpr-restrict-with-rw-alist (cdr x) al)
+             (cons (cons (caar x) (4v-sexpr-restrict-with-rw (cdar x) al))
+                   (4v-sexpr-restrict-with-rw-alist (cdr x) al))))
+         :exec (reverse (4v-sexpr-restrict-with-rw-alist-exec x al nil))))
+
+  (defthm 4v-sexpr-restrict-with-rw-alist-exec-removal
+    (equal (4v-sexpr-restrict-with-rw-alist-exec x al acc)
+           (revappend (4v-sexpr-restrict-with-rw-alist x al) acc)))
+
+  (verify-guards 4v-sexpr-restrict-with-rw-alist)
 
   (defthm hons-assoc-equal-4v-sexpr-restrict-with-rw-alist
     (equal (hons-assoc-equal k (4v-sexpr-restrict-with-rw-alist x al))

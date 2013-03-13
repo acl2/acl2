@@ -43,7 +43,8 @@
 ; Get counter.v loaded, inspect what we've loaded...
 
 (defmodules *counter-translation*
-  :start-files (list "counter.v"))
+  (vl::make-vl-loadconfig
+   :start-files (list "counter.v")))
 
 ; (vl::vl-ppcs-modulelist (vl::vl-translation->mods *counter-translation*))
 

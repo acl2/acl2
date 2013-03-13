@@ -49,7 +49,8 @@
    (value '(value-triple nil))))
 
 (defmodules *alu16-translation*
-  :start-files (list "alu16.v"))
+  (vl::make-vl-loadconfig
+   :start-files (list "alu16.v")))
 
 (defconst *alu16*
   (b* ((mods  (vl::vl-translation->mods *alu16-translation*))

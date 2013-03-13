@@ -20,36 +20,32 @@
 
 (in-package "VL")
 
-; Originally, I added (vl-gc) because calling (gc$) directly could sometimes
-; lead to bad printing confusion.  (vl-gc) avoided this by calling "our-gc"
-; from hons-raw.lisp, which sleeps until the GC actually happens.
-;
-; I later found that I wanted to GC less frequently in some cases.  So, now
-; vl-gc only tries to garbage collect if more than 1 GB has been allocated
-; since the last time it was called.  In some cases this might not quite work.
-; In particular, intervening (gc$) calls and ordinary GC might cause the
-; *vl-gc-previously-used* variable to have the "wrong" value.  But, I think
-; that in the cases that (vl-gc) is called, it's called frequently enough that
-; this shouldn't typically be that much of a problem.
-
-(defparameter *vl-gc-previously-used*
+(defparameter *vl-gc-baseline*
   ;; Originally this was 0, but now I've upped it to 1 GB.  This only affects
   ;; the initial GC.  This is probably better than assuming the whole system
   ;; uses no memory.
   (expt 2 30))
 
+(defparameter *vl-gc-threshold*
+  (expt 2 30))
+
+(defun set-vl-gc-baseline ()
+  #+Clozure
+  (setq *vl-gc-baseline* (ccl::%usedbytes))
+  nil)
+
+(defun set-vl-gc-threshold (bytes)
+  (setq *vl-gc-threshold* bytes)
+  nil)
+
 (defun vl-gc ()
 
   #+Clozure
   (let* ((currently-used (ccl::%usedbytes))
-         (allocated      (- currently-used *vl-gc-previously-used*)))
-;     (cw "vl-gc: currently used: ~x0~%" currently-used)
-;     (cw "vl-gc: previously used: ~x0~%" *vl-gc-previously-used*)
-;     (cw "vl-gc: allocated since last: ~x0~%" allocated)
-    (when (> allocated (expt 2 30))
+         (allocated      (- currently-used *vl-gc-baseline*)))
+    (when (> allocated *vl-gc-threshold*)
       (finish-output)
       (acl2::hl-system-gc)
-      (setq *vl-gc-previously-used* (ccl::%usedbytes)))
-    nil)
+      (set-vl-gc-baseline)))
 
   nil)

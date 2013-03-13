@@ -6,7 +6,7 @@
 
 (defconst *glcp-interp-template*
   '(mutual-recursion
-    (defun interp-term (x alist hyp clk obligs overrides world state)
+    (defun interp-term (x alist hyp clk obligs config state)
       (declare (xargs :measure (make-ord 1 (1+ (nfix clk)) (acl2-count x))
                       :hints (("goal" :in-theory
                                (e/d**
@@ -24,10 +24,9 @@
                       :guard (and (natp clk)
                                   (pseudo-termp x)
                                   (bfr-p hyp)
-                                  (plist-worldp world)
                                   (acl2::interp-defs-alistp obligs)
-                                  (acl2::interp-defs-alistp
-                                   overrides)
+                                  (glcp-config-p config)
+                                  (acl2::interp-defs-alistp (glcp-config->overrides config))
                                   (gobject-vals-alistp alist))
                       :stobjs state))
       (cond ((zp clk)
@@ -58,7 +57,7 @@
             ;; the formals with these values, then interpret the body.
             ((consp (car x))
              (b* (((glcp-er actuals)
-                   (interp-list (cdr x) alist hyp clk obligs overrides world state))
+                   (interp-list (cdr x) alist hyp clk obligs config state))
                   (formals (car (cdar x)))
                   (body (car (cdr (cdar x)))))
                (if (and (equal (len actuals) (len formals))
@@ -66,7 +65,7 @@
                         (acl2::no-dupsp formals))
                    (interp-term
                     body (pairlis$ formals actuals)
-                    hyp clk obligs overrides world state)
+                    hyp clk obligs config state)
                  (glcp-interp-error
                   (acl2::msg "Badly formed lambda application: ~x0~%" x)))))
 
@@ -80,12 +79,12 @@
                        (fbr (car (cdr (cdr (cdr x))))))
                    (if (hons-equal test tbr)
                        (glcp-or
-                        (interp-term test alist hyp clk obligs overrides world state)
-                        (interp-term fbr alist hyp clk obligs overrides world state))
+                        (interp-term test alist hyp clk obligs config state)
+                        (interp-term fbr alist hyp clk obligs config state))
                      (glcp-if
-                      (interp-term test alist hyp clk obligs overrides world state)
-                      (interp-term tbr alist hyp clk obligs overrides world state)
-                      (interp-term fbr alist hyp clk obligs overrides world state))))
+                      (interp-term test alist hyp clk obligs config state)
+                      (interp-term tbr alist hyp clk obligs config state)
+                      (interp-term fbr alist hyp clk obligs config state))))
                (glcp-interp-error
                 "Error: wrong number of args to IF~%")))
 
@@ -107,7 +106,7 @@
             ((eq (car x) 'gl-error)
              (if (eql (len x) 2)
                  (b* (((glcp-er result)
-                       (interp-term (cadr x) alist hyp clk obligs overrides world
+                       (interp-term (cadr x) alist hyp clk obligs config
                                     state))
                       (state (acl2::f-put-global 'gl-error-result result state)))
                    (glcp-interp-error
@@ -124,20 +123,15 @@
              (if (eql (len x) 4)
                  (if (equal (cadr x) ''acl2::time$1-raw)
                      (b* (((mv err & time$-args state)
-                           (interp-term (caddr x) alist hyp clk obligs overrides
-                                        world state)))
-                       (mbe :logic (interp-term (car (last x)) alist hyp clk obligs overrides
-                                                world state)
+                           (interp-term (caddr x) alist hyp clk obligs config state)))
+                       (mbe :logic (interp-term (car (last x)) alist hyp clk obligs config state)
                             :exec (if (and (not err) (general-concretep time$-args))
                                       (return-last
                                        'acl2::time$1-raw
                                        (general-concrete-obj time$-args)
-                                       (interp-term (car (last x)) alist hyp clk obligs overrides
-                                                                world state))
-                                    (time$ (interp-term (car (last x)) alist hyp clk obligs overrides
-                                                        world state)))))
-                   (interp-term (car (last x)) alist hyp clk obligs overrides
-                                world state))
+                                       (interp-term (car (last x)) alist hyp clk obligs config state))
+                                    (time$ (interp-term (car (last x)) alist hyp clk obligs config state)))))
+                   (interp-term (car (last x)) alist hyp clk obligs config state))
                (glcp-interp-error
                 "Error: wrong number of args to RETURN-LAST~%")))
 
@@ -146,7 +140,7 @@
 
                     ;; Interpret the actuals first.
                     ((glcp-er actuals)
-                     (interp-list (cdr x) alist hyp clk obligs overrides world state))
+                     (interp-list (cdr x) alist hyp clk obligs config state))
 
                     ;; This function returns the correct result if the function has
                     ;; a symbolic counterpart which is known to it.
@@ -162,7 +156,8 @@
                     ((when ok) (glcp-value (mk-g-concrete ans)))
                  
                     ((mv erp body formals obligs)
-                     (acl2::interp-function-lookup fn obligs overrides world))
+                     (acl2::interp-function-lookup
+                      fn obligs (glcp-config->overrides config) (w state)))
                     ((when erp) (glcp-interp-error erp))
                     ((unless (equal (len formals) (len actuals)))
                      (glcp-interp-error
@@ -172,31 +167,30 @@ but its arity is ~x3.  Its formal parameters are ~x4."
                                  x fn (len actuals) (len formals) formals))))
                  (interp-term
                   body (pairlis$ formals actuals) hyp (1- clk)
-                  obligs overrides world state)))))
-    (defun interp-list (x alist hyp clk obligs overrides world state)
+                  obligs config state)))))
+    (defun interp-list (x alist hyp clk obligs config state)
       (declare (xargs :measure (make-ord 1 (1+ (nfix clk)) (acl2-count x))
                       :guard (and (natp clk)
                                   (bfr-p hyp)
                                   (pseudo-term-listp x)
                                   (acl2::interp-defs-alistp obligs)
-                                  (acl2::interp-defs-alistp overrides)
-                                  (plist-worldp world)
+                                  (glcp-config-p config)
+                                  (acl2::interp-defs-alistp (glcp-config->overrides config))
                                   (gobject-vals-alistp alist))
                       :stobjs state))
       (if (atom x)
           (glcp-value nil)
         (b* (((glcp-er car)
-              (interp-term (car x) alist hyp clk obligs overrides world state))
+              (interp-term (car x) alist hyp clk obligs config state))
              ((glcp-er cdr)
-              (interp-list (cdr x) alist hyp clk obligs overrides world state)))
+              (interp-list (cdr x) alist hyp clk obligs config state)))
           (glcp-value (cons car cdr)))))))
 
 (defconst *glcp-run-parametrized-template*
   '(defun run-parametrized
-     (hyp concl untrans-concl vars bindings id abort-unknown abort-ctrex exec-ctrex
-          abort-vacuous nexamples hyp-clk concl-clk obligs overrides world
-          state)
+     (hyp concl untrans-concl vars bindings id obligs config state)
      (b* ((bound-vars (strip-cars bindings))
+          ((glcp-config config) config)
           ((er hyp)
            (if (pseudo-termp hyp)
                (let ((hyp-unbound-vars
@@ -238,72 +232,64 @@ In ~@0: The conclusion countains the following unbound variables: ~x1~%"
                    ,(list*-macro (append (strip-cars bindings)
                                          (list ''nil))))))
           ((mv er obligs1 hyp-val state)
-           (interp-term hyp al t hyp-clk obligs overrides world state))
+           (interp-term hyp al t config.hyp-clk obligs config state))
           ((when er)
            (flush-hons-get-hash-table-link obligs1)
            (glcp-error
             (acl2::msg
              "~x0 failed to run the hyp, error: ~@1~%"
-             clause-proc-name er)))
+             config.clause-proc-name er)))
           (hyp-test (gtests hyp-val t))
           (hyp-bdd (bfr-or (gtests-nonnil hyp-test)
                            (gtests-unknown hyp-test)))
           ((when (not hyp-bdd))
-           (if abort-vacuous
+           (if config.abort-vacuous
                (glcp-error "Hypothesis is not satisfiable.")
              (prog2$ (cw "NOTE: Hypothesis is not satisfiable~%")
                      (value (cons (list cov-clause) obligs1)))))
           (param-al (gobj-alist-to-param-space al hyp-bdd))
           (hyp-param (bfr-to-param-space hyp-bdd hyp-bdd))
           ((mv er obligs2 val state)
-           (interp-term concl param-al hyp-param concl-clk obligs1 overrides
-                        world state))
+           (interp-term concl param-al hyp-param config.concl-clk obligs1 config state))
           ((when er)
            (flush-hons-get-hash-table-link obligs2)
            (glcp-error
             (acl2::msg
-             "~x0 failed with error: ~@1~%" clause-proc-name er)))
+             "~x0 failed with error: ~@1~%" config.clause-proc-name er)))
           ((er val-clause)
            (glcp-analyze-interp-result
-            val bindings hyp-bdd abort-unknown abort-ctrex exec-ctrex
-            nexamples geval-name clause-proc-name id untrans-concl state)))
+            val bindings hyp-bdd id untrans-concl config state)))
        (value (cons (list val-clause cov-clause) obligs2)))))
+
+     ;; abort-unknown abort-ctrex exec-ctrex abort-vacuous nexamples hyp-clk concl-clk
+     ;; clause-proc-name overrides  run-before run-after case-split-override
+
 
 (defconst *glcp-run-cases-template*
   '(defun run-cases
-     (param-alist concl untrans-concl vars abort-unknown abort-ctrex exec-ctrex
-                  abort-vacuous nexamples hyp-clk concl-clk run-before
-                  run-after obligs overrides world state)
-     (declare (ignorable run-after))
+     (param-alist concl untrans-concl vars obligs config state)
      (if (atom param-alist)
          (value (cons nil obligs))
        (b* (((er (cons rest obligs))
              (run-cases
-              (cdr param-alist) concl untrans-concl vars abort-unknown
-              abort-ctrex exec-ctrex abort-vacuous nexamples hyp-clk concl-clk run-before
-              run-after obligs overrides world state))
+              (cdr param-alist) concl untrans-concl vars obligs config state))
             (hyp (caar param-alist))
             (id (cadar param-alist))
             (g-bindings (cddar param-alist))
-            (- (glcp-cases-wormhole run-before id))
+            (- (glcp-cases-wormhole (glcp-config->run-before config) id))
             ((er (cons clauses obligs))
              (run-parametrized
-              hyp concl untrans-concl vars g-bindings id abort-unknown
-              abort-ctrex exec-ctrex abort-vacuous nexamples hyp-clk concl-clk obligs
-              overrides world state))
-            (- (glcp-cases-wormhole run-after id)))
+              hyp concl untrans-concl vars g-bindings id obligs config state))
+            (- (glcp-cases-wormhole (glcp-config->run-after config) id)))
          (value (cons (append clauses rest) obligs))))))
 
 (defconst *glcp-clause-proc-template*
   '(defun clause-proc (clause hints state)
-     (b* (((list bindings param-bindings hyp param-hyp concl untrans-concl
-                 hyp-clk concl-clk param-clk nexamples abort-unknown
-                 abort-ctrex exec-ctrex abort-vacuous run-before run-after
-                 case-split-override) hints)
-          (world (w state))
+     (b* (((list bindings param-bindings hyp param-hyp concl untrans-concl config) hints)
           ((er overrides)
            (preferred-defs-to-overrides
-            (table-alist 'preferred-defs world) state))
+            (table-alist 'preferred-defs (w state)) state))
+          (config (change-glcp-config config :overrides overrides))
           ((er hyp)
            (if (pseudo-termp hyp)
                (value hyp)
@@ -331,21 +317,18 @@ In ~@0: The conclusion countains the following unbound variables: ~x1~%"
                 (params-cov-vars (collect-vars params-cov-term))
                 (- (cw "Checking case split coverage ...~%"))
                 ((er (cons params-cov-res-clauses obligs0))
-                 (if case-split-override
+                 (if (glcp-config->case-split-override config)
                      (value (cons (list `((not (gl-cp-hint 'casesplit))
-                                        (not ,hyp)
-                                        ,params-cov-term))
-                                'obligs))
+                                          (not ,hyp)
+                                          ,params-cov-term))
+                                  'obligs))
                    (run-parametrized
                     hyp params-cov-term params-cov-term params-cov-vars bindings
-                    "case-split coverage" abort-unknown abort-ctrex exec-ctrex abort-vacuous nexamples hyp-clk
-                    param-clk 'obligs overrides world state)))
+                    "case-split coverage" 'obligs config state)))
                 (- (cw "Case-split coverage OK~%"))
                 ((er (cons cases-res-clauses obligs1))
                  (run-cases
-                  param-alist concl untrans-concl (collect-vars concl)
-                  abort-unknown abort-ctrex exec-ctrex abort-vacuous nexamples hyp-clk concl-clk
-                  run-before run-after obligs0 overrides world state)))
+                  param-alist concl untrans-concl (collect-vars concl) obligs0 config state)))
              (value (list* hyp-clause concl-clause
                            (append cases-res-clauses
                                    params-cov-res-clauses
@@ -355,9 +338,7 @@ In ~@0: The conclusion countains the following unbound variables: ~x1~%"
          (b* (((er (cons res-clauses obligs))
                (run-parametrized
                 hyp concl untrans-concl (collect-vars concl) bindings
-                "main theorem"
-                abort-unknown abort-ctrex exec-ctrex abort-vacuous nexamples hyp-clk concl-clk nil
-                overrides world state)))
+                "main theorem" nil config state)))
            (cw "GL symbolic simulation OK~%")
            (value (list* hyp-clause concl-clause
                          (append res-clauses

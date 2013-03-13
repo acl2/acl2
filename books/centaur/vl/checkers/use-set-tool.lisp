@@ -70,27 +70,33 @@
   (b* ((defines (append (vl-make-initial-defines defines)
                         *use-set-defines*))
 
-       ((mv successp mods ?filemap ?defines warnings state)
-        (cwtime (vl-load :override-dirs override-dirs
-                         :start-files   start-files
-                         :search-path   search-path
-                         :defines       defines)
-                :name initial-parsing))
-       (-
-        (or successp (cw "Note: Not all loading was successful.~%")))
+       (config (make-vl-loadconfig :override-dirs override-dirs
+                                   :start-files start-files
+                                   :search-path search-path
+                                   :defines defines
+                                   :filemapp nil))
 
+       ((mv load state)
+        (cwtime (vl-load config)
+                :name initial-parsing))
+
+       ((vl-loadresult res) load)
 
 ; We print out the warnings from the parse, but hide warnings like ifxz and
 ; noports since they're chatty and aren't particularly relevant to the use-set
 ; analysis.
 
-       (warnings (vl-remove-warnings '(:vl-warn-ifxz :vl-warn-noports) warnings))
-       (state (ec-call (princ$ (with-local-ps (vl-print-warnings warnings))
-                               *standard-co* state)))
+       (warnings (vl-remove-warnings '(:vl-warn-ifxz :vl-warn-noports)
+                                     res.warnings))
+       (state (ec-call (princ$
+                        (with-local-ps (vl-print-warnings warnings))
+                        *standard-co* state)))
 
 
 ; Throw away modules the user isn't interested in.  (We'll keep the ignore mods
 ; for now, since they might be necessary for argresolve, etc.)
+
+       (mods res.mods)
 
        (mods
         (if top-mods
@@ -128,8 +134,9 @@
        (mods (vl-delete-modules ignore-mods mods))
 
 
-       ((mv mods report) (cwtime (vl-mark-wires-for-modulelist mods omit)
-                              :name use-set-analysis))
+       ((mv mods report)
+        (cwtime (vl-mark-wires-for-modulelist mods omit)
+                :name use-set-analysis))
 
 
        (state (ec-call

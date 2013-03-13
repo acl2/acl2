@@ -301,7 +301,8 @@
                           default-+-2 default-+-1 acl2::natp-rw
                           generic-geval-non-gobjectp
                           gobj-fix-when-not-gobjectp
-                          len))))
+                          len)
+           ((:type-prescription g-number-consp)))))
   (local (defthm len-open-cons
            (equal (len (cons x y))
                   (+ 1 (len y)))

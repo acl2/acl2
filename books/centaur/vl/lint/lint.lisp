@@ -159,16 +159,18 @@
                   :stobjs state))
   (b* ((- (cw "Starting VL-Lint ~s0~%" *vl-lint-version*))
        (- (cw "~%vl-lint: loading modules...~%"))
-       ((mv ?successp mods ?filemap ?defines ?warnings state)
-        (cwtime (vl-load :override-dirs nil
-                         :start-files   start-files
-                         :search-path   search-path
-                         :searchext     searchext)))
+       ((mv loadres state)
+        (cwtime (vl-load (make-vl-loadconfig
+                          :override-dirs nil
+                          :start-files   start-files
+                          :search-path   search-path
+                          :search-exts   searchext))))
 
        ;; Historically we dealt with top-mods here.  But it's no good
        ;; to throw away modules that have hierarchical identifiers pointing
        ;; into them, so now we do it later, after HID resolution.
 
+       (mods (vl-loadresult->mods loadres))
        ;; Mods0 is used for skip-detection.  If we have topmods, go ahead
        ;; and remove them from mods0, to avoid skip-detect warnings about
        ;; irrelevant mods.

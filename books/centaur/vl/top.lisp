@@ -60,6 +60,7 @@
 (include-book "transforms/xf-annotate-mods")
 (include-book "util/clean-alist")
 (include-book "translation")
+(include-book "simpconfig")
 (include-book "centaur/misc/sneaky-load" :dir :system)
 (local (include-book "mlib/modname-sets"))
 (local (include-book "util/arithmetic"))
@@ -246,6 +247,9 @@ expressions and ranges, finding modules and module items, working with the
 module hierarchy, generating fresh names, and working with modules at the bit
 level.</p>")
 
+
+
+
 (define vl-warn-problem-module ((x vl-module-p)
                                 (problems string-listp))
   :returns (new-x vl-module-p :hyp :fguard)
@@ -293,8 +297,11 @@ the caller.</p>"
             (vl-modulelist->names x)))))
 
 
-(define vl-simplify-part1-annotate-mods ((mods vl-modulelist-p))
+(define vl-simplify-part1-annotate-mods
+  ((mods vl-modulelist-p)
+   (config vl-simpconfig-p))
   :returns (new-mods vl-modulelist-p :hyp :fguard)
+  (declare (ignorable config))
 
   (b* (;;this was never any good
        ;;mods (xf-cwtime (vl-modulelist-cross-active mods)
@@ -306,7 +313,7 @@ the caller.</p>"
 
   ///
   (defthm vl-modulelist->names-of-vl-simplify-part1-annotate-mods
-    (equal (vl-modulelist->names (vl-simplify-part1-annotate-mods mods))
+    (equal (vl-modulelist->names (vl-simplify-part1-annotate-mods mods config))
            (vl-modulelist->names mods))))
 
 
@@ -314,7 +321,7 @@ the caller.</p>"
 (define vl-simplify-part1-sanify-mods
   ((mods (and (vl-modulelist-p mods)
               (uniquep (vl-modulelist->names mods))))
-   (problem-mods string-listp))
+   (config vl-simpconfig-p))
   :returns (mv (mods vl-modulelist-p :hyp :fguard)
                (failmods vl-modulelist-p :hyp :fguard))
 
@@ -333,7 +340,8 @@ the caller.</p>"
 ; documentation for warnings.  In short: we annotate any bad module with a
 ; fatal warning, then use vl-propagate-errors to throw these modules away.
 
-  (b* ((mods (xf-cwtime (vl-warn-problem-modulelist mods problem-mods)
+  (b* (((vl-simpconfig config) config)
+       (mods (xf-cwtime (vl-warn-problem-modulelist mods config.problem-mods)
                         :name warn-problem-mods))
 
        (mods (xf-cwtime (vl-modulelist-check-reasonable mods)
@@ -371,15 +379,14 @@ the caller.</p>"
     (implies (no-duplicatesp-equal (vl-modulelist->names mods))
              (no-duplicatesp-equal
               (vl-modulelist->names
-               (mv-nth 0 (vl-simplify-part1-sanify-mods mods problem-mods)))))))
+               (mv-nth 0 (vl-simplify-part1-sanify-mods mods config)))))))
 
 
 
 (define vl-simplify-part1
-  ((mods (and (vl-modulelist-p mods)
-              (uniquep (vl-modulelist->names mods))))
-   (problem-mods string-listp)
-   (omit-wires   string-listp))
+  ((mods   (and (vl-modulelist-p mods)
+                (uniquep (vl-modulelist->names mods))))
+   (config vl-simpconfig-p))
   :returns (mv (mods vl-modulelist-p :hyp :fguard)
                (failmods vl-modulelist-p :hyp :fguard)
                (use-set-report vl-useset-report-p :hyp :fguard))
@@ -396,7 +403,8 @@ the caller.</p>"
  <li>Carrying out @(see unparameterization).</li>
 </ul>"
 
-  (b* ((- (cw "Beginning simplification of ~x0 modules.~%" (len mods)))
+  (b* (((vl-simpconfig config) config)
+       (- (cw "Beginning simplification of ~x0 modules.~%" (len mods)))
 
 ; We begin by trying to resolve argument lists and adding other basic
 ; annotations.  This is the minimum we need for use-set generation.  These
@@ -405,7 +413,7 @@ the caller.</p>"
 ; first.  This is good, because it means the use-set report can span the entire
 ; list of modules, rather than just the reasonable ones.
 
-       (mods (vl-simplify-part1-annotate-mods mods))
+       (mods (vl-simplify-part1-annotate-mods mods config))
 
 ; Use-Set report generation.  Even though argresolve can sometimes produce
 ; fatal warnings, the use-set report is intended to do as much as it can for
@@ -413,8 +421,10 @@ the caller.</p>"
 ; away.
 
        ((mv mods use-set-report)
-        (xf-cwtime (vl-mark-wires-for-modulelist mods omit-wires)
-                   :name use-set-analysis))
+        (if config.use-set-p
+            (xf-cwtime (vl-mark-wires-for-modulelist mods config.use-set-omit-wires)
+                       :name use-set-analysis)
+          (mv mods nil)))
 
 ; I'll eliminate functions before cleaning params, since we don't want to
 ; allow function parameters to overlap with module parameters.
@@ -422,11 +432,14 @@ the caller.</p>"
        (mods (xf-cwtime (vl-modulelist-expand-functions mods)
                         :name xf-expand-functions))
 
-       (mods (xf-cwtime (vl-modulelist-clean-params mods)
-                        :name xf-clean-params))
+       (mods
+        (if config.clean-params-p
+            (xf-cwtime (vl-modulelist-clean-params mods)
+                       :name xf-clean-params)
+          mods))
 
        ((mv mods failmods)
-        (vl-simplify-part1-sanify-mods mods problem-mods))
+        (vl-simplify-part1-sanify-mods mods config))
 
 ; Unparameterization.  Our final move is to carry out the unparameterization.
 ; The guard for unparameterize is rather confining, so we want to make sure
@@ -477,13 +490,7 @@ the caller.</p>"
                   (force (no-duplicatesp-equal (vl-modulelist->names mods))))
              (no-duplicatesp-equal
               (vl-modulelist->names
-               (mv-nth 0 (vl-simplify-part1 mods problem-mods omit-wires))))))
-
-  (defthm vl-useset-report-p-of-vl-simplify-part1-report
-    (implies (and (force (vl-modulelist-p mods))
-                  (force (string-listp omit-wires)))
-             (vl-useset-report-p
-              (mv-nth 2 (vl-simplify-part1 mods problem-mods omit-wires))))))
+               (mv-nth 0 (vl-simplify-part1 mods config)))))))
 
 
 
@@ -491,20 +498,19 @@ the caller.</p>"
   ((mods         (and (vl-modulelist-p mods)
                       (uniquep (vl-modulelist->names mods))))
    (failmods     vl-modulelist-p)
-   (safe-mode-p  booleanp)
-   (unroll-limit natp))
+   (config       vl-simpconfig-p))
   :returns (mv (mods vl-modulelist-p :hyp :fguard)
                (failmods vl-modulelist-p :hyp :fguard))
   :parents (vl-simplify)
   :short "Expression rewriting, sizing, splitting; instance replication,
 assignment truncation, etc."
-  (declare (ignorable safe-mode-p))
-  (b*
+
+  (b* (((vl-simpconfig config) config)
 
 ; <<Previous safe-mode checks: :vl-modules :vl-unique-names :vl-complete
 ; :vl-reasonable :vl-always-known :vl-param-free>>
 
-      ((mods (xf-cwtime (vl-modulelist-rangeresolve mods)
+       (mods (xf-cwtime (vl-modulelist-rangeresolve mods)
                         :name xf-rangeresolve))
        ((mv mods failmods) (xf-cwtime (vl-propagate-new-errors mods failmods)
                                       :name propagate-errors))
@@ -525,7 +531,7 @@ assignment truncation, etc."
 ; Subtle.  Rewrite statements before doing HID elimination because our "reset
 ; alias detection" doesn't look very hard.
 
-       (mods (xf-cwtime (vl-modulelist-stmtrewrite mods unroll-limit)
+       (mods (xf-cwtime (vl-modulelist-stmtrewrite mods config.unroll-limit)
                         :name xf-stmtrewrite))
 
 ;      (- (acl2::sneaky-save :pre-hid-elim mods))
@@ -551,7 +557,7 @@ assignment truncation, etc."
        ;; (1) reset elimination can look for simpler forms, and (2) we can
        ;; eliminate null statements produced by reset elimination.
 
-;; no, don't do this here, now we want it to be sized
+       ;; no, don't do this here, now we want it to be sized
 ;       (mods (xf-cwtime (vl-modulelist-negedge-elim mods)
 ;                        :name xf-negedge-elim))
 
@@ -559,7 +565,7 @@ assignment truncation, etc."
 ;      (mods (cwtime (vl-modulelist-drop-vcovers-hook mods)
 ;                    :name xf-vcover-elim))
 
-       (mods (xf-cwtime (vl-modulelist-stmtrewrite mods unroll-limit)
+       (mods (xf-cwtime (vl-modulelist-stmtrewrite mods config.unroll-limit)
                         :name xf-stmtrewrite))
 
 ; Jared -- removing reset elimination!  Now gets handled by ordinary HID stuff.
@@ -665,8 +671,11 @@ assignment truncation, etc."
        ;; we've got the widths figured out and there isn't too much serious
        ;; stuff left to do.
 
-       (mods (xf-cwtime (vl-modulelist-multidrive-detect mods)
-                        :name xf-multidrive-detect))
+       (mods
+        (if config.multidrive-detect-p
+            (xf-cwtime (vl-modulelist-multidrive-detect mods)
+                       :name xf-multidrive-detect)
+          mods))
 
 
        ((mv mods failmods) (xf-cwtime (vl-propagate-new-errors mods failmods)
@@ -683,31 +692,32 @@ assignment truncation, etc."
        )
 
     (mv mods failmods))
-  ///
+    ///
 
-  (defmvtypes vl-simplify-part2 (true-listp true-listp))
+    (defmvtypes vl-simplify-part2 (true-listp true-listp))
 
-  (defthm no-duplicatesp-equal-of-vl-simplify-part2
-    (implies (and (force (vl-modulelist-p mods))
-                  (force (no-duplicatesp-equal (vl-modulelist->names mods))))
-             (b* (((mv mods ?failmods)
-                   (vl-simplify-part2 mods failmods safe-mode-p unroll-limit)))
-               (no-duplicatesp-equal (vl-modulelist->names mods))))))
+    (defthm no-duplicatesp-equal-of-vl-simplify-part2
+      (implies (and (force (vl-modulelist-p mods))
+                    (force (no-duplicatesp-equal (vl-modulelist->names mods))))
+               (b* (((mv mods ?failmods)
+                     (vl-simplify-part2 mods failmods config)))
+                 (no-duplicatesp-equal (vl-modulelist->names mods))))))
 
 
 (define vl-simplify-part3
   ((mods (and (vl-modulelist-p mods)
               (uniquep (vl-modulelist->names mods))))
    (failmods vl-modulelist-p)
-   (safe-mode-p booleanp))
+   (config   vl-simpconfig-p))
   :returns (mv (mods vl-modulelist-p :hyp :fguard)
                (failmods vl-modulelist-p :hyp :fguard))
-  (declare (ignorable safe-mode-p))
   :parents (vl-simplify)
   :short "Occforming, gate simplification and splitting, naming blank
 instances, supply elimination, dependency-order sorting, E translation."
 
-  (b* ((mods (xf-cwtime (vl-modulelist-optimize mods)
+  (declare (ignorable config))
+  (b* (;((vl-simpconfig config) config)
+       (mods (xf-cwtime (vl-modulelist-optimize mods)
                         :name optimize))
 
        ((mv mods failmods) (xf-cwtime (vl-propagate-new-errors mods failmods)
@@ -851,17 +861,14 @@ instances, supply elimination, dependency-order sorting, E translation."
     (implies (and (force (vl-modulelist-p mods))
                   (force (no-duplicatesp-equal (vl-modulelist->names mods))))
              (b* (((mv mods ?failmods)
-                   (vl-simplify-part3 mods failmods safe-mode-p)))
+                   (vl-simplify-part3 mods failmods config)))
                (no-duplicatesp-equal (vl-modulelist->names mods))))))
 
 
 (define vl-simplify-main
   ((mods (and (vl-modulelist-p mods)
               (uniquep (vl-modulelist->names mods))))
-   (problem-mods string-listp)
-   (omit-wires   string-listp)
-   (safe-mode-p  booleanp)
-   (unroll-limit natp))
+   (config vl-simpconfig-p))
   :returns (mv (mods :hyp :fguard
                      (and (vl-modulelist-p mods)
                           (no-duplicatesp-equal (vl-modulelist->names mods))))
@@ -869,11 +876,11 @@ instances, supply elimination, dependency-order sorting, E translation."
                (use-set-report vl-useset-report-p :hyp :fguard))
   ;; Combines parts 1-3, but doesn't do the annotations.
   (b* (((mv mods failmods use-set-report)
-        (vl-simplify-part1 mods problem-mods omit-wires))
+        (vl-simplify-part1 mods config))
        ((mv mods failmods)
-        (vl-simplify-part2 mods failmods safe-mode-p (nfix unroll-limit)))
+        (vl-simplify-part2 mods failmods config))
        ((mv mods failmods)
-        (vl-simplify-part3 mods failmods safe-mode-p)))
+        (vl-simplify-part3 mods failmods config)))
     (mv mods failmods use-set-report))
   ///
   (defmvtypes vl-simplify-main (true-listp true-listp nil)))
@@ -883,18 +890,8 @@ instances, supply elimination, dependency-order sorting, E translation."
   ((mods "parsed Verilog modules, typically from @(see vl-load)."
          (and (vl-modulelist-p mods)
               (uniquep (vl-modulelist->names mods))))
-   (problem-mods "names of modules that should thrown out, perhaps because they
-                  cause some kind of problems for simplification."
-                 string-listp)
-   (omit-wires "names of wires to omit from the use-set report."
-               string-listp)
-   (safe-mode-p "enable extra, expensive run-time checks that may catch
-                 problems; mostly deprecated, probably useless."
-                booleanp)
-   (unroll-limit "maximum number of times to unroll loops; we usually use 100,
-                  but this is mainly just to avoid going crazy if we see a loop
-                  with some absurd number of iterations."
-                 natp))
+   (config "various options that govern how to simplify the modules."
+           vl-simpconfig-p))
   :returns
   (mv (mods "modules that we simplified successfully"
             :hyp :fguard
@@ -909,333 +906,136 @@ instances, supply elimination, dependency-order sorting, E translation."
   :long "<p>This is a high-level routine that applies our @(see transforms) in
 a suitable order to simplify Verilog modules and to produce E modules.</p>"
 
-  (vl-simplify-main (vl-annotate-mods mods)
-                    problem-mods omit-wires
-                    safe-mode-p unroll-limit)
+  (vl-simplify-main (vl-annotate-mods mods) config)
   ///
   (defmvtypes vl-simplify (true-listp true-listp nil)))
+
+
+
+(define defmodules-fn ((loadconfig vl-loadconfig-p)
+                       (simpconfig vl-simpconfig-p)
+                       &key
+                       (state 'state))
+  :returns (mv (trans vl-translation-p :hyp :fguard)
+               (state state-p1         :hyp :fguard))
+  :parents (defmodules)
+  :short "Load and simplify some modules."
+
+  (b* (((mv loadresult state)
+        (cwtime (vl-load loadconfig)))
+
+       ((vl-loadresult loadresult) loadresult)
+
+       ((mv mods failmods use-set-report)
+        (cwtime (vl-simplify loadresult.mods simpconfig)))
+
+       (walist (vl-origname-modwarningalist (append mods failmods)))
+       (- (vl-cw-ps-seq
+           (vl-cw "Successfully simplified ~x0 module(s).~%" (len mods))
+           ;; (vl-print-strings-with-commas (vl::vl-modulelist->names-exec mods nil) 4)
+           ;; (vl-println "")
+           (vl-cw "Failed to simplify ~x0 module~s1~%"
+                  (len failmods)
+                  (cond ((atom failmods) "s.")
+                        ((atom (cdr failmods)) ":")
+                        (t "s:")))
+           (if (atom failmods)
+               ps
+             (vl-print-strings-with-commas (vl::vl-modulelist->names-exec failmods nil) 4))
+           (vl-println "")
+           (vl-println "Warnings for all modules:")
+           (vl-print-modwarningalist walist)
+           (vl-println "")))
+       (- (fast-alist-free walist))
+
+       ;; DREGS are awful, want to deprecate them...
+       ;; (dregs (xf-cwtime (vl-modulelist-collect-dregs mods)
+       ;;                   :name :collect-dregs))
+
+       (result (make-vl-translation :mods          mods
+                                    :failmods      failmods
+                                    :filemap       loadresult.filemap
+                                    :defines       loadresult.defines
+                                    :loadwarnings  loadresult.warnings
+                                    :useset-report use-set-report
+                                    ;;:dregs         dregs
+                                    )))
+    (mv result state)))
+
 
 
 
 (defsection defmodules
   :parents (vl)
   :short "High level command to load Verilog files, transform them, and
-introduce the corresponding E modules."
+generate the corresponding E modules."
 
-  :long "<p>The @('defmodules') macro allows you to load Verilog files into
-your ACL2 session \"on the fly.\"</p>
+  :long "<p>Note: if you are new to VL and are trying to load some Verilog
+modules, you might want to start with the <i>Centaur Hardware Verification
+Tutorial</i> located in @({ books/centaur/tutorial/intro.lisp }), which shows
+some examples of using @('defmodules') and working with the resulting
+translation.</p>
 
-<p>Defmodules is is the preferred way to load \"small\" Verilog modules for
-one-off projects.  It is basically just a thin wrapper around @(see vl-load)
-and @(see vl-simplify), but it usefully hides some of the complexity with good
-default values, and ensures that all of the warnings generated during
-simplification are printed for you to inspect.</p>
+<p>The @('defmodules') macro allows you to load Verilog files into your ACL2
+session \"on the fly.\"</p>
 
+<p>General Form:</p>
 
-<h3>Using Defmodules</h3>
+@({
+  (defmodules *name*         ;; a name for this translation
+    loadconfig               ;; required, says which files to load
+    [:simpconfig simpconfig] ;; optional, simplification options
+})
 
-<p>The simplest case is that you want to load some \"self-contained\" Verilog
-files.  The list of files to parse is given in the @('start-files') argument;
-these files will be parsed in the order they are given.</p>
+<p>The required @('loadconfig') is @(see vl-loadconfig-p) that says which files
+to load, which directories to search for modules in, etc.  For very simple
+cases where you just want to load a few self-contained Verilog files, you can
+just do something like this:</p>
+
+@({
+  (defmodules *foo*
+    (make-vl-loadconfig
+      :start-files (list \"foo_control.v\" \"foo_datapath.v\")))
+})
+
+<p>After submitting this event, @('*foo*') will be an ACL2 @(see defconst) that
+holds a @(see vl-translation-p) object.  This object contains the parsed,
+simplified Verilog modules, their corresponding E modules, etc.</p>
+
+<p>The @(see vl-loadconfig-p) has many options for setting up include paths,
+search paths, search extensions, initial @('`define') settings, etc.  For
+instance, to parse a larger project that makes use of library modules, you
+might need a command like:</p>
 
 @({
  (defmodules *foo*
-    :start-files (list \"foo_control.v\" \"foo_datapath.v\"))
+   (make-vl-loadconfig
+     :start-files  (list \"foo_control.v\" \"foo_datapath.v\")
+     :search-path  (list \"/my/project/libs1\" \"/my/project/libs2\" ...)
+     :searchext    (list \"v\" \"V\")
+     :include-dirs (list \"./foo_incs1\" \"./foo_incs2\")
+     :defines      (vl-make-initial-defines '(\"NO_ASSERTS\" \"NEW_CLKTREE\"))))
 })
 
-<p><b>BOZO</b> fix me, this doesn't currently introduce the E modules.</p>
+<p>Aside from the load configuration, you can also control certain aspects of
+how simplification is done with the @('simpconfig') option; see @(see
+vl-simpconfig-p).  In many cases, the defaults will probably be fine.</p>"
 
-<p>After submitting this event, E modules for all successfully translated
-modules will be introduced, e.g., @('|*foo_control*|').  Additionally, the
-constant @('*foo*') will be defined as a @(see vl-translation-p) that allows
-you to inspect the translation in other ways.</p>
-
-
-<h4>Search Paths and Include Dirs</h4>
-
-<p>Verilog files often rely on modules defined in other files.</p>
-
-<p>VL can use a @('search-path'), which is a list of directories that will be
-searched, in order, for any modules that are used but not defined (and not
-explicitly @('`include')d in the start-files).  For example:</p>
-
-@({
- (defmodules foo
-    :start-files (list \"foo_control.v\" \"foo_datapath.v\")
-    :search-path (list \"/my/project/libs1\" \"/my/project/libs2\" ...))
-})
-
-<p>By default only @('.v') files will be loaded in this way, but the
-@(':searchext') option can also be used to give more extensions, e.g., you
-could write:</p>
-
-@({
- (defmodules foo
-    :start-files (list \"foo_control.v\" \"foo_datapath.v\")
-    :search-path (list \"/my/project/libs1\" \"/my/project/libs2\" ...)
-    :searchext   (list \"v\" \"V\"))
-})
-
-<p>to include both @('.v') and @('.V') files.</p>
-
-
-<p>You can separately set up the @('include-dirs') that should be searched when
-loading files with @('`include').  By default, @('`include \"foo.v\"') only
-looks for @('foo.v') in the current directory (i.e., @('\".\"')).  But you can
-add additional include directories, which will be searched in priority
-order (with @('\".\"'), always implicitly taking priority).  For instance,</p>
-
-@({
- (defmodules foo
-   :start-files (list \"foo_wrapper.v\")
-   :include-dirs (list \"./foo_extra1\" \"./foo_extra2\"))
-})
-
-
-<h4>Initial `defines</h4>
-
-<p>The @(':defines') option can be used to set up any extra @('`define')
-directives.  For instance, the following:</p>
-
-@({
- (defmodules foo
-    :start-files (list \"foo_control.v\" \"foo_datapath.v\")
-    :defines     (list \"FOO_BAR\" \"FOO_BAZ\"))
-})
-
-<p>is essentially like writing:</p>
-
-@({
-`define FOO_BAR 1
-`define FOO_BAZ 1
-})
-
-<p>at the top of your first start-file.  If you need more sophisticated
-defines, you might add an extra start-file, instead.</p>
-
-
-<h4>Overriding and Customizing Modules</h4>
-
-<p>You can also specify an @(':override-dirs') argument to \"safely\" replace
-particular Verilog modules with custom definitions.  See @(see overrides) for
-details on how to write override files.</p>
-
-<p>VL also supports a special comment syntax:</p>
-
-@({
-//+VL single-line version
-/*+VL multi-line version */
-})
-
-<p>Which can be used to hide VL-specific code from other tools, e.g., if
-you need your modules to work with an older Verilog implementation that
-doesn't support Verilog-2005 style attributes, you might write something
-like:</p>
-
-@({
-//+VL (* my_attribute *)
-assign foo = bar;
-})
-
-<p>There is also a special, more concise syntax for attributes:</p>
-
-@({
-//@VL my_attribute
-})
-
-
-<h4>Start Modnames</h4>
-
-<p>Instead of (or in addition to) explicitly providing @('start-files'), you
-can provide the names of some modules that you want to load from the search
-path, e.g.,:</p>
-
-@({
- (defmodules foo
-    :start-modnames (list \"foo_control\" \"foo_datapath\")
-    :search-path (list \".\" \"/my/project/libs1\" \"/my/project/libs2\" ...))
-})
-
-
-<h4>Advanced Options</h4>
-
-<p>If some module causes errors that are not handled gracefully, you can mark
-it as a @(':problem-module') so that it will not be simplified.  For
-instance,</p>
-
-@({
- (defmodules foo
-    :start-files (list \"foo_control.v\" \"foo_datapath.v\")
-    :problem-modules (list \"bad_module_1\" \"bad_module_2\"))
-})
-
-<p>The other options taken by @(see vl-simplify) and @(see vl-load) are given
-sensible defaults that are not currently configurable.  We may add these
-options in the future, as the need arises.</p>"
-
-  (defund defmodules-fn (override-dirs start-files start-modnames
-                                       search-path searchext include-dirs
-                                       defines problem-modules state)
-    "Returns (MV TRANS STATE)"
-    (declare (xargs :guard (and (string-listp override-dirs)
-                                (string-listp start-files)
-                                (string-listp start-modnames)
-                                (string-listp search-path)
-                                (string-listp searchext)
-                                (string-listp include-dirs)
-                                (string-listp defines)
-                                (string-listp problem-modules))
-                    :stobjs state))
-    (b* ((- (cw "Override directories: ~&0.~%" override-dirs))
-         (- (cw "Reading Verilog files ~&0.~%" start-files))
-         (- (cw "Search path:~%  ~x0.~%" search-path))
-
-         (initial-defs (vl::vl-make-initial-defines defines))
-         (filemapp     t)
-         ((mv successp mods filemap defines warnings state)
-          (vl::vl-load :override-dirs  override-dirs
-                       :start-files    start-files
-                       :start-modnames start-modnames
-                       :search-path    search-path
-                       :searchext      searchext
-                       :include-dirs   include-dirs
-                       :defines        initial-defs
-                       :filemapp       filemapp))
-
-         (- (cw "Finished parsing ~x0 files; found ~x1 modules.~%"
-                (len filemap)
-                (len mods)))
-         (- (or successp
-                (cw "*** WARNING: not all modules were successfully loaded ***~%")))
-         (- (or (atom warnings)
-                (vl-cw-ps-seq
-                 (vl-println "All warnings from parsing:")
-                 (vl-print-warnings warnings))))
-
-         (omit-wires   nil) ;; only used in use-set
-         (safe-modep   nil) ;; doesn't actually do anything
-         (unroll-limit 1000)
-         ((mv mods failmods use-set-report)
-          (vl::vl-simplify mods problem-modules omit-wires safe-modep
-                           unroll-limit))
-
-         (walist (vl-origname-modwarningalist (append mods failmods)))
-         (- (vl-cw-ps-seq
-             (vl-cw "Successfully simplified ~x0 module(s).~%" (len mods))
-             ;; (vl-print-strings-with-commas (vl::vl-modulelist->names-exec mods nil) 4)
-             ;; (vl-println "")
-             (vl-cw "Failed to simplify ~x0 module~s1~%"
-                    (len failmods)
-                    (cond ((atom failmods) "s.")
-                          ((atom (cdr failmods)) ":")
-                          (t "s:")))
-             (if (atom failmods)
-                 ps
-               (vl-print-strings-with-commas (vl::vl-modulelist->names-exec failmods nil) 4))
-             (vl-println "")
-             (vl-println "Warnings for all modules:")
-             (vl-print-modwarningalist walist)
-             (vl-println "")))
-         (- (fast-alist-free walist))
-
-         (dregs (xf-cwtime (vl-modulelist-collect-dregs mods)
-                           :name :collect-dregs))
-
-         (result (make-vl-translation :mods mods
-                                      :failmods failmods
-                                      :filemap filemap
-                                      :defines defines
-                                      :loadwarnings warnings
-                                      :useset-report use-set-report
-                                      :dregs dregs
-                                      )))
-
-        (mv result state)))
-
-  (local (in-theory (enable defmodules-fn)))
-
-  (defthm defmodules-fn-basics
-    (implies (and (force (string-listp override-dirs))
-                  (force (string-listp start-files))
-                  (force (string-listp start-modnames))
-                  (force (string-listp search-path))
-                  (force (string-listp searchext))
-                  (force (string-listp include-dirs))
-                  (force (string-listp defines))
-                  (force (string-listp problem-modules))
-                  (force (state-p1 state)))
-             (and
-              (vl-translation-p
-               (mv-nth 0 (defmodules-fn override-dirs start-files start-modnames
-                           search-path searchext include-dirs
-                           defines problem-modules state)))
-              (state-p1
-               (mv-nth 1 (defmodules-fn override-dirs start-files start-modnames
-                           search-path searchext include-dirs
-                           defines problem-modules state))))))
-
-  (defmacro defmodules (name &key
-                             override-dirs
-                             start-files
-                             start-modnames
-                             search-path
-                             (searchext ''("v"))
-                             include-dirs
-                             defines
-                             problem-modules)
+  (defmacro defmodules (name loadconfig
+                             &key
+                             (simpconfig '*vl-default-simpconfig*))
     `(make-event
       (b* ((name ',name)
-           ((unless (symbolp name))
-            (er soft 'defmodules "Expected name to be a symbol."))
-
-           (start-files ,start-files)
-           ((unless (string-listp start-files))
-            (er soft 'defmodules "Expected start-files to be a string list."))
-
-           (start-modnames ,start-modnames)
-           ((unless (string-listp start-modnames))
-            (er soft 'defmodules "Expected start-modnames to be a string list."))
-
-           ((unless (or start-files start-modnames))
-            (er soft 'defmodules "Expected either some start-files or start-modnames."))
-
-           (override-dirs ,override-dirs)
-           ((unless (string-listp override-dirs))
-            (er soft 'defmodules "Expected override-dirs to be a string list."))
-
-           (search-path ,search-path)
-           ((unless (string-listp search-path))
-            (er soft 'defmodules "Expected search-path to be a string list."))
-
-           (include-dirs ,include-dirs)
-           ((unless (string-listp include-dirs))
-            (er soft 'defmodules "Expected include-dirs to be a string list."))
-
-           (searchext ,searchext)
-           ((unless (string-listp searchext))
-            (er soft 'defmodules "Expected searchext to be a string list."))
-
-           (defines ,defines)
-           ((unless (string-listp defines))
-            (er soft 'defmodules "Expected defines to be a string list."))
-
-           (problem-modules ,problem-modules)
-           ((unless (string-listp problem-modules))
-            (er soft 'defmodules "Expected problem-modules to be a string list."))
-
+           (loadconfig ,loadconfig)
+           (simpconfig ,simpconfig)
            ((mv translation state)
-            (cwtime (defmodules-fn override-dirs start-files start-modnames
-                      search-path searchext include-dirs
-                      defines problem-modules state)
+            (cwtime (defmodules-fn loadconfig simpconfig)
                     :name defmodules-fn)))
-
-          (value
-           `(with-output
-             :off (summary)
-             (progn (defconst ,name ',translation)
-                    ;; BOZO fix this to introduce the E modules again, and
-                    ;; update the documentation above after it's been fixed.
-                    (value-triple ',name))))))))
+        (value
+         `(with-output
+            :off (summary)
+            (progn (defconst ,name ',translation)
+                   (value-triple ',name))))))))
 
 
 

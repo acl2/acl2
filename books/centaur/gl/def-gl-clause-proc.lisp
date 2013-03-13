@@ -314,7 +314,6 @@
                 (run-cases . ,run-cases)
                 (clause-proc-name . ',clause-proc)
                 (clause-proc . ,clause-proc)
-                (geval-name . ',geval)
                 (run-gified . ,run-gified)
                 (apply-concrete . ,apply-concrete)))
        (f-i-lemmas (incat clause-proc (symbol-name clause-proc)
@@ -536,10 +535,7 @@
             generic-geval-non-cons ,geval generic-geval)
 
            (def-ruleset! ,f-i-lemmas
-             (append '(car-cons cdr-cons
-; [Removed by Matt K. to handle changes to member, assoc, etc. after ACL2 4.2.]
-;                                 acl2::no-duplicatesp-is-no-duplicatesp-equal
-                                )
+             (append '(car-cons cdr-cons)
                      (let ((constr (acl2::ruleset ',constraints)))
                        (nthcdr (- (len constr) 18) constr))
                      '(,ctrex-thm
@@ -579,14 +575,11 @@
                    (glcp-generic-run-gified ,run-gified)
                    (glcp-generic-run-gified-guard-wrapper ,run-gified)
                    (glcp-generic-ev-falsify ,falsify)
-                   (glcp-generic-geval-name (lambda () ',geval))
                    (glcp-generic-apply-concrete ,apply-concrete)
                    (glcp-generic-apply-concrete-guard-wrapper ,apply-concrete))
                   :in-theory (e/d** ((:ruleset ,f-i-lemmas)))
-                  :expand ((,interp-list x alist hyp clk obligs
-                                         overrides world state)
-                           (,interp-term x alist hyp clk obligs
-                                         overrides world state))
+                  :expand ((,interp-list x alist hyp clk obligs config state)
+                           (,interp-term x alist hyp clk obligs config state))
                   :do-not-induct t)
                  (and stable-under-simplificationp
                       '(:in-theory (e/d** ((:ruleset ,f-i-lemmas)
@@ -619,8 +612,6 @@
                         (glcp-generic-apply-concrete ,apply-concrete)
                         (glcp-generic-apply-concrete-guard-wrapper ,apply-concrete)
                         (glcp-generic-ev-falsify ,falsify)
-                        (glcp-generic-geval-name (lambda ()
-                                                   ',geval))
                         (glcp-generic-run-parametrized
                          ,run-parametrized)
                         (glcp-generic-run-cases ,run-cases)
@@ -799,7 +790,7 @@ See :DOC GL::COVERAGE-PROOFS.
 
 
 (defun gl-hint-fn (clause-proc bindings param-bindings hyp param-hyp
-                               concl hyp-clk concl-clk param-clk
+                               concl hyp-clk concl-clk
                                cov-hints cov-hints-position cov-theory-add
                                do-not-expand hyp-hints result-hints
                                n-counterexamples abort-indeterminate
@@ -808,17 +799,37 @@ See :DOC GL::COVERAGE-PROOFS.
                                case-split-override case-split-hints test-side-goals)
   (declare (xargs :mode :program))
   `(b* (((mv clause-proc bindings param-bindings hyp param-hyp concl
-             hyp-clk concl-clk param-clk cov-hints cov-hints-position
+             hyp-clk concl-clk cov-hints cov-hints-position
              cov-theory-add do-not-expand hyp-hints result-hints
              n-counterexamples abort-indeterminate abort-ctrex exec-ctrex abort-vacuous
              run-before-cases run-after-cases case-split-override
              case-split-hints test-side-goals)
          (mv ',clause-proc ,bindings ,param-bindings ,hyp ,param-hyp
-             ,concl ,hyp-clk ,concl-clk ,param-clk ',cov-hints
+             ,concl ,hyp-clk ,concl-clk ',cov-hints
              ',cov-hints-position ',cov-theory-add ',do-not-expand
              ',hyp-hints ',result-hints ,n-counterexamples
              ,abort-indeterminate ,abort-ctrex ,exec-ctrex ,abort-vacuous ',run-before-cases ',run-after-cases
              ,case-split-override ',case-split-hints ,test-side-goals))
+
+        ;; ((er overrides)
+        ;;  (preferred-defs-to-overrides
+        ;;   (table-alist 'preferred-defs (w state)) state))
+
+        (config (make-glcp-config
+                 :abort-unknown abort-indeterminate
+                 :abort-ctrex abort-ctrex
+                 :exec-ctrex exec-ctrex
+                 :abort-vacuous abort-vacuous
+                 :nexamples n-counterexamples
+                 :hyp-clk hyp-clk
+                 :concl-clk concl-clk
+                 :clause-proc-name clause-proc
+                 ;; :overrides overrides
+                 :overrides nil ;; they get generated inside the clause proc
+                 :run-before (and (not test-side-goals) run-before-cases)
+                 :run-after (and (not test-side-goals) run-after-cases)
+                 :case-split-override case-split-override))
+
         (cov-hints (glcp-coverage-hints
                     do-not-expand cov-theory-add cov-hints cov-hints-position)) 
         ((er trhyp)
@@ -845,12 +856,7 @@ bindings:
         (param-bindings (add-param-var-bindings vars param-bindings))
         (call `(,(if test-side-goals 'glcp-side-goals-clause-proc clause-proc)
                 clause (list ',bindings ',param-bindings ',trhyp
-                             ',trparam ',trconcl ',concl ,hyp-clk ,concl-clk
-                             ,param-clk ,n-counterexamples
-                             ,abort-indeterminate ,abort-ctrex ,exec-ctrex ,abort-vacuous
-                             ',(and (not test-side-goals) run-before-cases)
-                             ',(and (not test-side-goals) run-after-cases)
-                             ,case-split-override)
+                             ',trparam ',trconcl ',concl ',config)
                 state)))
      (value (glcp-combine-hints call cov-hints hyp-hints result-hints case-split-hints))))
 
@@ -858,7 +864,6 @@ bindings:
                                bindings param-bindings
                                (hyp-clk '1000000)
                                (concl-clk '1000000)
-                               (param-clk '1000000)
                                cov-hints cov-hints-position
                                cov-theory-add do-not-expand
                                hyp-hints
@@ -937,8 +942,7 @@ descriptions of each keyword argument:
           ;; Ignored unless case-splitting:
           :param-hyp               nil
           :run-before-cases        nil
-          :run-after-cases         nil
-          :param-clk               1000000)
+          :run-after-cases         nil)
 ~ev[]
 
 The keyword arguments to ~c[GL-HINT] are similar to ones for the
@@ -947,7 +951,7 @@ documented there.
 ~/"
 
   (gl-hint-fn clause-proc bindings param-bindings hyp param-hyp concl
-              hyp-clk concl-clk param-clk cov-hints cov-hints-position
+              hyp-clk concl-clk cov-hints cov-hints-position
               cov-theory-add do-not-expand hyp-hints result-hints
               n-counterexamples abort-indeterminate abort-ctrex exec-ctrex abort-vacuous
               run-before-cases run-after-cases
@@ -1026,11 +1030,11 @@ in DEF-GL-THM.~%"))
   (declare (xargs :mode :program))
   (if clause-procp
       `(without-waterfall-parallelism
-         ,(def-gl-thm-fn name clause-proc rest))
+        ,(def-gl-thm-fn name clause-proc rest))
     `(without-waterfall-parallelism
-       (make-event
-        (let ((clause-proc (latest-gl-clause-proc)))
-          (def-gl-thm-fn ',name clause-proc ',rest))))))
+      (make-event
+       (let ((clause-proc (latest-gl-clause-proc)))
+         (def-gl-thm-fn ',name clause-proc ',rest))))))
 
 
 
@@ -1201,7 +1205,7 @@ for the theorem produced, as in ~c[defthm]; the default is ~c[:rewrite].
   (b* (((list hyp hyp-p param-hyp param-hyp-p concl concl-p cov-bindings
               cov-bindings-p param-bindings param-bindings-p
               cov-hints cov-hints-position cov-theory-add do-not-expand
-              hyp-clk concl-clk param-clk n-counterexamples
+              hyp-clk concl-clk n-counterexamples
               abort-indeterminate abort-ctrex exec-ctrex abort-vacuous run-before-cases run-after-cases
               case-split-override case-split-hints test-side-goals rule-classes)
         rest)
@@ -1218,7 +1222,6 @@ PARAM-BINDINGS must be provided in DEF-GL-PARAM-THM.~%"))
                          :param-bindings ,param-bindings
                          :hyp-clk ,hyp-clk
                          :concl-clk ,concl-clk
-                         :param-clk ,param-clk
                          :cov-hints ,cov-hints
                          :cov-hints-position ,cov-hints-position
                          :cov-theory-add ,cov-theory-add
@@ -1279,7 +1282,6 @@ PARAM-BINDINGS must be provided in DEF-GL-PARAM-THM.~%"))
         do-not-expand 
         (hyp-clk '1000000)
         (concl-clk '1000000)
-        (param-clk '1000000)
         (n-counterexamples '3)
         (abort-indeterminate 't) (abort-ctrex 't) (exec-ctrex 't) (abort-vacuous 't)
         run-before-cases run-after-cases
@@ -1300,7 +1302,7 @@ Usage:
 
    :rule-classes <rule classes expression>
 
-   :hyp-clk <number> :concl-clk <number> :param-clk <number>
+   :hyp-clk <number> :concl-clk <number>
    :clause-proc <clause processor name>
 
    :n-counterexamples <number>
@@ -1403,11 +1405,6 @@ variable ~c[id], which is bound to the current assignment of the case-splitting
 variables.  These can be used to print a message before and after running each
 case so that the user can monitor the theorem's progress.
 
-~c[:PARAM-CLK] is similar to ~c[:HYP-CLK] and ~c[:CONCL-CLK]
- (~l[DEF-GL-THM]); it governs the recursion depth of the symbolic simulation
-showing that the disjunction of the case assumptions is complete.  Its default
-is 1000000.
-
 By default, if a counterexample is encountered on any of the cases, the proof
 will abort.  Setting ~c[:ABORT-CTREX] to ~c[NIL] causes it to go on; the proof
 will fail after the clause processor returns because it will produce a goal of
@@ -1416,14 +1413,14 @@ will fail after the clause processor returns because it will produce a goal of
 By default, if any case hypothesis is unsatisfiable, the proof will abort.
 Setting ~c[:ABORT-VACUOUS] to ~c[NIL] causes it to go on.
 
-~/   
+~/
 "
   (declare (ignore skip-g-proofs local))
   (def-gl-param-thm-find-cp name clause-proc clause-procp
     (list hyp hyp-p param-hyp param-hyp-p concl concl-p cov-bindings
           cov-bindings-p param-bindings param-bindings-p cov-hints
           cov-hints-position cov-theory-add do-not-expand hyp-clk concl-clk
-          param-clk n-counterexamples abort-indeterminate abort-ctrex exec-ctrex
+          n-counterexamples abort-indeterminate abort-ctrex exec-ctrex
           abort-vacuous run-before-cases run-after-cases case-split-override
           case-split-hints test-side-goals rule-classes)))
 

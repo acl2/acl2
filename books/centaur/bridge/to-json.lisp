@@ -359,8 +359,7 @@ character list."
   (local (in-theory (enable json-encode-atom)))
 
   (defthm character-listp-of-json-encode-atom
-    (implies (and (atom x)
-                  (character-listp acc))
+    (implies (character-listp acc)
              (character-listp (json-encode-atom x acc))))
 
   (local (defun test (x)
@@ -544,7 +543,8 @@ to fix up atoms.</p>"
        :flag json-encode-main)
      (defthm l1
        (implies (and (character-listp acc)
-                     (json-simple-alist-p x))
+                     ;(json-simple-alist-p x)
+                     )
                 (character-listp (json-encode-simple-alist x acc)))
        :flag json-encode-simple-alist)
      (defthm l2
@@ -564,7 +564,19 @@ to fix up atoms.</p>"
 
   (defthm character-listp-of-json-encode-main
     (implies (character-listp acc)
-             (character-listp (json-encode-main x acc)))))
+             (character-listp (json-encode-main x acc))))
+
+  (defthm character-listp-of-json-encode-simple-alist
+    (implies (character-listp acc)
+             (character-listp (json-encode-simple-alist x acc))))
+
+  (defthm character-listp-of-json-encode-true-list
+    (implies (character-listp acc)
+             (character-listp (json-encode-true-list x acc))))
+
+  (defthm character-listp-of-json-encode-improper-cons-list
+    (implies (character-listp acc)
+             (character-listp (json-encode-improper-cons-list x acc)))))
 
 
 (defsection json-encode

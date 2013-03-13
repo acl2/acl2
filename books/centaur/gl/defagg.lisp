@@ -25,16 +25,16 @@
 ;;        (eq (car x) ',tag))))
 
 (defun da-acl2-count-thm (name field)
-  (let* ((acc (cutil::da-accessor-name name field))
-         (recog (cutil::da-recognizer-name name))
-         (thm-name (intern-in-package-of-symbol
-                    (concatenate 'string
-                                 (symbol-name acc)
-                                 "-ACL2-COUNT-THM")
-                    name))
-         (x (cutil::da-x name)))
+  (b* ((acc (cutil::da-accessor-name name field))
+       (?recog (cutil::da-recognizer-name name))
+       (thm-name (intern-in-package-of-symbol
+                  (concatenate 'string
+                               (symbol-name acc)
+                               "-ACL2-COUNT-THM")
+                  name))
+       (x (cutil::da-x name)))
     `(defthm ,thm-name
-       (implies (or (,recog ,x) (consp ,x))
+       (implies (consp ,x) ;; (or (,recog ,x) (consp ,x))
                 (< (acl2-count (,acc ,x)) (acl2-count ,x)))
        :hints (("goal" :in-theory (enable ,acc)))
        :rule-classes (:rewrite :linear))))
@@ -53,7 +53,8 @@
                     name)))
     `(defthm ,thm-name
        (consp (,name . ,fields))
-       :rule-classes (:rewrite :type-prescription))))
+       :rule-classes (;; :rewrite
+                      :type-prescription))))
 
 (defmacro da-extras (name fields &key (tag 'nil tagp)
                           (legiblep 'nil))
@@ -65,8 +66,8 @@
          (x    (cutil::da-x name)))
     `(progn
        (def-pattern-match-constructor
-         (,x) ,name (and (consp ,x) (eq (tag ,x) ',tag)) ,accs)
-       ,(da-consp-thm name fields)
+         (,x) ,name (eq (tag ,x) ',tag) ,accs)
+        ,(da-consp-thm name fields)
        . ,thms)))
 
 
@@ -105,7 +106,7 @@
                  ,(da-make-constructor name tag fields require hons legiblep)
                  ,@(da-make-accessors name tag fields legiblep)
                  (gl::def-pattern-match-constructor
-                  (,x) ,name (and (consp ,x) (eq (gl::tag ,x) ',tag))
+                  (,x) ,name (eq (tag ,x) ',tag)
                   ,(gl::da-accessors name fields))))))
 
 

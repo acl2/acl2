@@ -1401,7 +1401,6 @@ to enforce this restriction since it is somewhat awkward to do so.</p>"
 
          (echar1 (car echars))
          (char1  (vl-echar->char echar1))
-         (loc    (vl-echar->loc echar1))
 
          ((when (mbe :logic (zp n)
                      :exec (= n 0)))
@@ -1428,7 +1427,7 @@ to enforce this restriction since it is somewhat awkward to do so.</p>"
           (b* (((mv name prefix remainder) (vl-read-escaped-identifier echars)))
             (if (not name)
                 (mv (cw "Preprocessor error (~s0): stray backslash?~%"
-                        (vl-location-string (vl-echar->loc (car echars))))
+                        (vl-location-string (vl-echar->loc echar1)))
                     defines acc echars state)
               (vl-preprocess-loop remainder defines istack activep include-dirs
                                   (if activep (revappend prefix acc) acc)
@@ -1519,7 +1518,7 @@ to enforce this restriction since it is somewhat awkward to do so.</p>"
           (b* (((mv successp prefix remainder) (vl-read-through-literal "*/" (cddr echars)))
                ((unless successp)
                 (mv (cw "Preprocessor error (~s0): block comment is never closed.~%"
-                        (vl-location-string loc))
+                        (vl-location-string (vl-echar->loc echar1)))
                     defines acc echars state))
 
                ((when (vl-matches-string-p "+VL" prefix))
@@ -1567,7 +1566,7 @@ to enforce this restriction since it is somewhat awkward to do so.</p>"
 
          ((when (not directive))
           (mv (cw "Preprocessor error (~s0): stray ` character.~%"
-                  (vl-location-string loc))
+                  (vl-location-string (vl-echar->loc echar1)))
               defines acc echars state))
 
          ((when (not (vl-is-compiler-directive-p directive)))
@@ -1584,7 +1583,8 @@ to enforce this restriction since it is somewhat awkward to do so.</p>"
             (let ((lookup (vl-lookup-in-defines directive defines)))
               (if (not lookup)
                   (mv (cw "Preprocessor error (~s0): `~s1 is not defined.~%"
-                          (vl-location-string loc) directive)
+                          (vl-location-string (vl-echar->loc echar1))
+                          directive)
                       defines acc echars state)
                 (let* ((text (cdr lookup))
                        ;; Subtle.  If we just inserted the echars stored in the
@@ -1598,6 +1598,7 @@ to enforce this restriction since it is somewhat awkward to do so.</p>"
                        ;; is, if `foo occurs on line 37 from characters 5 through
                        ;; 8, then every character of foo's expansion is said to
                        ;; be located at 37:5.
+                       (loc    (vl-echar->loc echar1))
                        (insert (vl-change-echarlist-locations text loc)))
 
                   ;; Subtle.  Variables in `define are lazy, e.g., if I first
@@ -1616,14 +1617,14 @@ to enforce this restriction since it is somewhat awkward to do so.</p>"
          ((when (eql (vl-echar->char (car prefix)) #\\))
           ;; We explicitly disallow `\define, `\ifdef, etc.
           (mv (cw "Preprocessor error (~s0): we do not allow the use of \~s1.~%"
-                  (vl-location-string loc) directive)
+                  (vl-location-string (vl-echar->loc echar1)) directive)
               defines acc echars state))
 
          ((when (or (equal directive "define")
                     (equal directive "centaur_define")))
           ;; CENTAUR EXTENSION: we also support centaur_define
           (b* (((mv successp new-defines remainder)
-                (vl-process-define loc remainder defines activep))
+                (vl-process-define (vl-echar->loc echar1) remainder defines activep))
                ((unless successp)
                 (mv nil defines acc echars state)))
             (vl-preprocess-loop remainder new-defines istack activep include-dirs
@@ -1631,7 +1632,7 @@ to enforce this restriction since it is somewhat awkward to do so.</p>"
 
          ((when (equal directive "undef"))
           (b* (((mv successp new-defines remainder)
-                (vl-process-undef loc remainder defines activep))
+                (vl-process-undef (vl-echar->loc echar1) remainder defines activep))
                ((unless successp)
                 (mv nil defines acc echars state)))
             (vl-preprocess-loop remainder new-defines istack activep include-dirs
@@ -1641,7 +1642,7 @@ to enforce this restriction since it is somewhat awkward to do so.</p>"
                     (equal directive "ifndef")
                     (equal directive "elsif")))
           (b* (((mv successp new-istack new-activep remainder)
-                (vl-process-ifdef loc directive remainder defines istack activep))
+                (vl-process-ifdef (vl-echar->loc echar1) directive remainder defines istack activep))
                ((unless successp)
                 (mv nil defines acc echars state)))
             (vl-preprocess-loop remainder defines new-istack new-activep include-dirs
@@ -1649,7 +1650,7 @@ to enforce this restriction since it is somewhat awkward to do so.</p>"
 
          ((when (equal directive "else"))
           (b* (((mv successp new-istack new-activep)
-                (vl-process-else loc istack activep))
+                (vl-process-else (vl-echar->loc echar1) istack activep))
                ((unless successp)
                 (mv nil defines acc echars state)))
             (vl-preprocess-loop remainder defines new-istack new-activep include-dirs
@@ -1657,7 +1658,7 @@ to enforce this restriction since it is somewhat awkward to do so.</p>"
 
          ((when (equal directive "endif"))
           (b* (((mv successp new-istack new-activep)
-                (vl-process-endif loc istack activep))
+                (vl-process-endif (vl-echar->loc echar1) istack activep))
                ((unless successp)
                 (mv nil defines acc echars state)))
             (vl-preprocess-loop remainder defines new-istack new-activep include-dirs
@@ -1698,7 +1699,7 @@ to enforce this restriction since it is somewhat awkward to do so.</p>"
                ((unless realfile)
                 (mv (cw "Preprocessor error (~s0): unable to find ~s1.  The ~
                          include directories are ~&2."
-                        (vl-location-string loc) filename include-dirs)
+                        (vl-location-string (vl-echar->loc echar1)) filename include-dirs)
                     defines acc echars state))
 
                ((mv contents state)
@@ -1706,7 +1707,7 @@ to enforce this restriction since it is somewhat awkward to do so.</p>"
                         :mintime 1/2))
                ((when (stringp contents))
                 (mv (cw "Preprocessor error (~s0): unable to read ~s1."
-                        (vl-location-string loc) realfile)
+                        (vl-location-string (vl-echar->loc echar1)) realfile)
                     defines acc echars state)))
 
             (vl-preprocess-loop
@@ -1732,7 +1733,7 @@ to enforce this restriction since it is somewhat awkward to do so.</p>"
                               acc n state)))
 
       (mv (cw "Preprocessor error (~s0): we do not support ~s1.~%"
-              (vl-location-string loc) directive)
+              (vl-location-string (vl-echar->loc echar1)) directive)
           defines acc echars state)))
 
   (local (in-theory (enable vl-preprocess-loop)))

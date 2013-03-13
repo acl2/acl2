@@ -39,776 +39,198 @@
 
 (defxdoc loader
   :parents (vl)
-  :short "How we read Verilog source files and convert them into @(see
-modules)."
+  :short "Finds and loads Verilog source files into parsed @(see modules)."
 
-  :long "<p>Our top-level function for loading Verilog sources is @(see
-vl-load).  For any particular source file, the process is roughly as
-follows:</p>
+  :long "<p>Most Verilog designs involve many files spread out across multiple
+directories.  To really load a high-level module @('top'), we typically need
+to:</p>
 
 <ul>
 
-<li>We use @(see vl-read-file) to read the file from disk and convert it into a
-list of @(see extended-characters) in memory.</li>
+<li>start by parsing its file, say @('top.v'), then</li>
 
-<li>The @(see preprocessor) then expands away compiler directives such as
-@('`define'), producing a new list of characters.</li>
+<li>figure out which supporting modules are used within @('top') and </li>
 
-<li>The @(see lexer) tokenizes this character list into a list of @(see
-vl-token-p)s.</li>
-
-<li>Any applicable @(see overrides) are applied.</li>
-
-<li>The @(see parser) transforms the token list into a list of @(see
-vl-module-p)s, our internal module representation.</li>
+<li>use a search procedure to load these supporting modules from library
+directories.</li>
 
 </ul>
 
-<p>The @(see vl-load) function manages this process and deals with searching
-for modules in other files.</p>")
-
-(defsection vl-load-file
-  :parents (vl-load)
-  :short "Load an individual file."
-
-  :long "<p><b>Signature:</b> @(call vl-load-file) returns @('(mv successp mods
-filemap oused mtokens defines warnings walist state)')</p>
-
-<p>This is our main file-loading routine.  The filename to load and initial
-defines to use have already been provided.  We read the file, preprocess it,
-lex it, clean it up by removing whitespace and comments, apply any overrides,
-and finally parse it into a list of modules.</p>"
-
-  (defund vl-load-file (filename include-dirs defines overrides warnings walist filemapp state)
-    "Returns (MV SUCCESSP MODS FILEMAP OUSED MTOKENS DEFINES WARNINGS WALIST STATE)"
-    (declare (xargs :guard (and (stringp filename)
-                                (string-listp include-dirs)
-                                (vl-defines-p defines)
-                                (vl-warninglist-p warnings)
-                                (vl-override-db-p overrides)
-                                (vl-modwarningalist-p walist)
-                                (booleanp filemapp))
-                    :stobjs state))
-    (b* (((mv contents state)
-          (cwtime (vl-read-file (string-fix filename) state)
-                  :mintime 1/2))
-
-         ((when (stringp contents))
-          (mv nil nil nil nil nil defines
-              (cons (make-vl-warning :type :vl-read-failed
-                                     :msg "Error reading file ~s0."
-                                     :args (list filename)
-                                     :fn 'vl-load-file)
-                    warnings)
-              walist state))
-
-         (filemap (and filemapp
-                       (list (cons filename (vl-echarlist->string contents)))))
-
-         ((mv successp defines preprocessed state)
-          (cwtime (vl-preprocess contents defines include-dirs state)
-                  :mintime 1/2))
-
-         ((unless successp)
-          (mv nil nil filemap nil nil defines
-              (cons (make-vl-warning :type :vl-preprocess-failed
-                                     :msg "Preprocessing failed for ~s0."
-                                     :args (list filename)
-                                     :fn 'vl-load-file)
-                    warnings)
-              walist state))
-
-         ((mv successp lexed warnings)
-          (cwtime (vl-lex preprocessed warnings)
-                  :mintime 1))
-
-         ((unless successp)
-          (mv nil nil filemap nil nil defines
-              (cons (make-vl-warning :type :vl-lex-failed
-                                     :msg "Lexing failed for ~s0."
-                                     :args (list filename)
-                                     :fn 'vl-load-file)
-                    warnings)
-              walist state))
-
-         ((mv cleaned comment-map)
-          (cwtime (vl-kill-whitespace-and-comments lexed)
-                  :mintime 1))
-
-         ((mv walist cleaned oused mtokens)
-          (cwtime (vl-apply-overrides cleaned overrides walist)
-                  :mintime 1))
-
-         ((mv successp mods warnings)
-          (cwtime (vl-parse cleaned warnings)
-                  :mintime 1))
-
-         ((when (not successp))
-          ;; I think we want to not include oused and mtokens here, since
-          ;; the parsing failed and we're not building any modules.
-          (mv nil nil filemap nil nil defines
-              (cons (make-vl-warning :type :vl-parse-failed
-                                     :msg "Parsing failed for ~s0."
-                                     :args (list filename)
-                                     :fn 'vl-load-file)
-                    warnings)
-              walist state))
-
-         (mods  (cwtime (vl-inject-comments-modulelist mods comment-map)
-                        :mintime 1/2)))
-
-      (mv t mods filemap oused mtokens defines warnings walist state)))
-
-  (local (in-theory (enable vl-load-file)))
-
-  (defmvtypes vl-load-file
-    (booleanp true-listp true-listp true-listp true-listp nil))
-
-  (defthm state-p1-of-vl-load-file
-    (implies (force (state-p1 state))
-             (state-p1
-              (mv-nth 8 (vl-load-file filename include-dirs defines overrides warnings walist
-                                      filemapp state)))))
-
-  (defthm vl-load-file-basics
-    (implies
-     (and (force (stringp filename))
-          (force (string-listp include-dirs))
-          (force (vl-defines-p defines))
-          (force (vl-override-db-p overrides))
-          (force (vl-warninglist-p warnings))
-          (force (vl-modwarningalist-p walist))
-          (force (state-p state)))
-     (let ((result (vl-load-file filename include-dirs defines overrides warnings walist
-                                 filemapp state)))
-       (and (vl-modulelist-p      (mv-nth 1 result))
-            (vl-filemap-p         (mv-nth 2 result))
-            (vl-overridelist-p    (mv-nth 3 result))
-            (vl-modtokensalist-p  (mv-nth 4 result))
-            (vl-defines-p         (mv-nth 5 result))
-            (vl-warninglist-p     (mv-nth 6 result))
-            (vl-modwarningalist-p (mv-nth 7 result)))))))
-
-
-
-(defsection vl-load-files
-  :parents (vl-load)
-  :short "Extend @(see vl-load-file) for a list of files."
-
-  :long "<p><b>Signature:</b> @(call vl-load-files) returns @('(mv successp
-mods filemap oused mtokens defines warnings walist state)').</p>
-
-<p>We just call @(see vl-load-file) on each file in @('filenames') and append
-together all of the modules, origsrc entries, and warnings which result.</p>
-
-<p>In this function, @('successp') indicates if <b>all</b> of the files were
-loaded successfully.  But even if @('successp') is @('nil'), the resulting
-module-list may contain at least some partial results.  That is, we try to load
-as much as possbile, even in the face of errors in some files.</p>"
-
-  (defund vl-load-files (filenames include-dirs defines overrides warnings walist filemapp state)
-    "Returns (MV SUCCESSP MODS FILEMAP OUSED MTOKENS DEFINES WARNINGS WALIST STATE)"
-    (declare (xargs :guard (and (string-listp filenames)
-                                (string-listp include-dirs)
-                                (vl-defines-p defines)
-                                (vl-override-db-p overrides)
-                                (vl-warninglist-p warnings)
-                                (vl-modwarningalist-p walist)
-                                (booleanp filemapp))
-                    :stobjs state))
-    (if (atom filenames)
-        (mv t nil nil nil nil defines warnings walist state)
-      (b* (((mv car-successp car-mods car-filemap car-oused car-mtokens
-                defines warnings walist state)
-            (vl-load-file (car filenames) include-dirs defines overrides warnings walist
-                          filemapp state))
-           ((mv cdr-successp cdr-mods cdr-filemap cdr-oused cdr-mtokens
-                defines warnings walist state)
-            (vl-load-files (cdr filenames) include-dirs defines overrides warnings walist
-                           filemapp state)))
-        (mv (and car-successp cdr-successp)
-            (append car-mods cdr-mods)
-            (append car-filemap cdr-filemap)
-            (append car-oused cdr-oused)
-            (append car-mtokens cdr-mtokens)
-            defines
-            warnings
-            walist
-            state))))
-
-  (local (in-theory (enable vl-load-files)))
-
-  (defmvtypes vl-load-files
-    (booleanp true-listp true-listp true-listp true-listp nil))
-
-  (defthm state-p1-of-vl-load-files
-    (implies (force (state-p1 state))
-             (state-p1
-              (mv-nth 8 (vl-load-files filenames include-dirs defines overrides warnings walist
-                                       filemapp state)))))
-
-  (defthm vl-load-files-basics
-    (implies
-     (and (force (string-listp filenames))
-          (force (string-listp include-dirs))
-          (force (vl-defines-p defines))
-          (force (vl-override-db-p overrides))
-          (force (vl-warninglist-p warnings))
-          (force (vl-modwarningalist-p walist))
-          (force (state-p state)))
-     (let ((result (vl-load-files filenames include-dirs defines overrides warnings walist
-                                  filemapp state)))
-       (and (vl-modulelist-p      (mv-nth 1 result))
-            (vl-filemap-p         (mv-nth 2 result))
-            (vl-overridelist-p    (mv-nth 3 result))
-            (vl-modtokensalist-p  (mv-nth 4 result))
-            (vl-defines-p         (mv-nth 5 result))
-            (vl-warninglist-p     (mv-nth 6 result))
-            (vl-modwarningalist-p (mv-nth 7 result)))))))
-
-
-
-(defsection vl-load-module
-  :parents (vl-load)
-  :short "Try to load a module from the search path."
-
-  :long "<p><b>Signature:</b> @(call vl-load-module) returns @('(mv successp
-mods filemap oused mtokens defines warnings walist state)').</p>
-
-<p>This is a thin wrapper around @(see vl-load-file) which, instead of taking a
-filename, takes a module name, e.g., \"foo\", and uses the search path to
-decide where the corresponding \"foo.v\" file is.</p>
-
-<p>The search is controlled by the @('searchpath'), which is a list of strings.
-We look for a file named @('foo.v') in each directory in the search path, and
-try to process the first such file that we find using @(see vl-load-file).</p>
-
-<p>Note that this process can lead us to load any additional modules besides
-@('foo') that happen to be defined in @('foo.v').  Also, if @('foo.v') does not
-actually include a definition for @('foo'), this may not yield @('foo') at
-all.</p>
-
-<p>In other words, the successful return of this function only actually results
-in a module @('foo') being loaded if the logic designers are disciplined in
-their file naming.</p>"
-
-  (defund vl-load-module (modname searchpath searchext include-dirs defines overrides
-                                  warnings walist filemapp state)
-    "Returns (MV SUCCESSP MODS FILEMAP OUSED MTOKENS DEFINES WARNINGS WALIST STATE)"
-    (declare (xargs :guard (and (stringp modname)
-                                (string-listp searchpath)
-                                (string-listp searchext)
-                                (string-listp include-dirs)
-                                (vl-defines-p defines)
-                                (vl-override-db-p overrides)
-                                (vl-warninglist-p warnings)
-                                (vl-modwarningalist-p walist)
-                                (booleanp filemapp))
-                    :stobjs state))
-    (b* (((mv filename warnings state)
-          (vl-find-basename/extension modname searchext searchpath warnings state))
-         ((unless filename)
-          (mv nil nil nil nil nil defines
-              (cons (make-vl-warning :type :vl-warn-find-failed
-                                     :msg "Unable to find module ~s0."
-                                     :args (list modname)
-                                     :fn 'vl-load-module)
-                    warnings)
-              walist state)))
-      (vl-load-file filename include-dirs defines overrides warnings walist filemapp state)))
-
-  (local (in-theory (enable vl-load-module)))
-
-  (defmvtypes vl-load-module
-    (booleanp true-listp true-listp true-listp true-listp nil))
-
-  (defthm state-p1-of-vl-load-module
-    (implies (force (state-p1 state))
-             (state-p1
-              (mv-nth 8 (vl-load-module modname searchpath searchext include-dirs defines overrides
-                                        warnings walist filemapp state)))))
-
-  (defthm vl-load-module-basics
-    (implies
-     (and (force (stringp modname))
-          (force (string-listp searchpath))
-          (force (string-listp searchext))
-          (force (string-listp include-dirs))
-          (force (vl-defines-p defines))
-          (force (vl-override-db-p overrides))
-          (force (vl-warninglist-p warnings))
-          (force (vl-modwarningalist-p walist))
-          (force (state-p state)))
-     (let ((result (vl-load-module modname searchpath searchext include-dirs defines overrides
-                                   warnings walist filemapp state)))
-       (and (vl-modulelist-p      (mv-nth 1 result))
-            (vl-filemap-p         (mv-nth 2 result))
-            (vl-overridelist-p    (mv-nth 3 result))
-            (vl-modtokensalist-p  (mv-nth 4 result))
-            (vl-defines-p         (mv-nth 5 result))
-            (vl-warninglist-p     (mv-nth 6 result))
-            (vl-modwarningalist-p (mv-nth 7 result)))))))
-
-
-
-
-(defsection vl-load-modules
-  :parents (vl-load)
-  :short "Extend @(see vl-load-module) to a list of modules."
-
-  :long "<p><b>Signature:</b> @(call vl-load-modules) returns @('(mv successp
-mods filemap oused mtokens defines warnings walist state)').</p>
-
-<p>As with @(see vl-load-filenames), here @('successp') indicates whether
-<b>all</b> of the files were loaded successfully.  Even if @('successp') is
-@('nil'), the resulting mods may contain at least some of the modules.  That
-is, we try to load as much as possible, even in the face of errors.</p>
-
-<p>Note that as in @(see vl-load-module), a successful return does not
-necessarily indicate that we have loaded modules of the desired names, and we
-may also load additional modules.  See the comments in @(see vl-load-module)
-for details.</p>"
-
-  (defund vl-load-modules (modnames searchpath searchext include-dirs defines overrides
-                                    warnings walist filemapp state)
-    "Returns (MV SUCCESSP MODS FILEMAP DEFINES WARNINGS WALIST STATE)"
-    (declare (xargs :guard (and (string-listp modnames)
-                                (string-listp searchpath)
-                                (string-listp searchext)
-                                (string-listp include-dirs)
-                                (vl-defines-p defines)
-                                (vl-override-db-p overrides)
-                                (vl-warninglist-p warnings)
-                                (vl-modwarningalist-p walist)
-                                (booleanp filemapp))
-                    :stobjs state))
-
-    (if (atom modnames)
-        (mv t nil nil nil nil defines warnings walist state)
-      (b* (((mv car-successp car-mods car-filemap car-oused car-mtokens
-                defines warnings walist state)
-            (vl-load-module (car modnames) searchpath searchext include-dirs defines overrides
-                            warnings walist filemapp state))
-           ((mv cdr-successp cdr-mods cdr-filemap cdr-oused cdr-mtokens
-                defines warnings walist state)
-            (vl-load-modules (cdr modnames) searchpath searchext include-dirs defines overrides
-                             warnings walist filemapp state)))
-        (mv (and car-successp cdr-successp)
-            (append car-mods cdr-mods)
-            (append car-filemap cdr-filemap)
-            (append car-oused cdr-oused)
-            (append car-mtokens cdr-mtokens)
-            defines
-            warnings
-            walist
-            state))))
-
-  (local (in-theory (enable vl-load-modules)))
-
-  (defmvtypes vl-load-modules
-    (booleanp true-listp true-listp true-listp true-listp nil))
-
-  (defthm state-p1-of-vl-load-modules
-    (implies (force (state-p1 state))
-             (state-p1
-              (mv-nth 8 (vl-load-modules modnames searchpath searchext include-dirs defines overrides
-                                         warnings walist filemapp state)))))
-
-  (defthm vl-load-modules-basics
-    (implies
-     (and (force (string-listp modnames))
-          (force (string-listp searchpath))
-          (force (string-listp searchext))
-          (force (string-listp include-dirs))
-          (force (vl-defines-p defines))
-          (force (vl-override-db-p overrides))
-          (force (vl-warninglist-p warnings))
-          (force (vl-modwarningalist-p walist))
-          (force (state-p state)))
-     (let ((result (vl-load-modules modnames searchpath searchext include-dirs defines overrides
-                                    warnings walist filemapp state)))
-       (and (vl-modulelist-p      (mv-nth 1 result))
-            (vl-filemap-p         (mv-nth 2 result))
-            (vl-overridelist-p    (mv-nth 3 result))
-            (vl-modtokensalist-p  (mv-nth 4 result))
-            (vl-defines-p         (mv-nth 5 result))
-            (vl-warninglist-p     (mv-nth 6 result))
-            (vl-modwarningalist-p (mv-nth 7 result)))))))
-
-
-
-(defsection vl-flush-out-modules
-  :parents (vl-load)
-  :short "Attempt to find and load any missing modules."
-
-  :long "<p><b>Signature:</b> @(call vl-flush-out-modules) returns @('(mv
-successp mods filemap oused mtokens defines warnings walist state)').</p>
-
-<p>After some initial files have been loaded, it is generally necessary to
-track down and load any submodules that have been referenced but not defined.
-We call this process \"flushing out\" the module list.</p>
-
-<p>Note that flushing out the modules is an iterative process.  That is, after
-we load some missing module, we might find that it references other missing
-modules that will also need to be loaded.</p>
-
-<p>One could probably argue that flushing out will reach a fixed point so long
-as the file system is finite.  But there isn't any good way to argue that this
-function terminates within the ACL2 logic, so we simply cap the maximum number
-of times we will look for new modules with the counter @('n').</p>
-
-<p>We return successfully only if, after some number of iterations, we arrive
-at a <see topic=\"@(url completeness)\">complete</see> module list, i.e., one
-where every referenced module is defined.</p>
-
-<p>However, even when @('successp') is @('nil'), there may be many useful
-modules in the module list.  We return everything we were able to parse.  You
-can get a complete subset of these modules by, e.g., using @(see
-vl-remove-bad-modules) to eliminate all of the modules named by @(see
-vl-modulelist-missing).</p>"
-
-  ;; speed hint
-  (local (in-theory (disable consp-under-iff-when-true-listp
-                             vl-modulelist-p-when-subsetp-equal
-                             vl-warninglist-p-when-subsetp-equal
-                             mergesort
-                             difference
-                             length
-                             subsetp-equal-when-first-two-same-yada-yada
-                             vl-overridelist-p-when-subsetp-equal
-                             consp-when-member-equal-of-cons-listp
-                             (:ruleset tag-reasoning)
-                             append-when-not-consp
-                             consp-by-len
-                             sets::nonempty-means-set
-                             string-listp-when-subsetp-equal-of-string-listp
-                             )))
-
-
-  (defund vl-flush-out-modules (mods start-modnames searchpath searchext include-dirs defines overrides
-                                     required warnings walist filemapp state n)
-    "Returns (MV SUCCESSP MODS FILEMAP OUSED MTOKENS DEFINES WARNINGS WALIST STATE)"
-    (declare (xargs :guard (and (vl-modulelist-p mods)
-                                (true-listp mods)
-                                (string-listp start-modnames)
-                                (string-listp searchpath)
-                                (string-listp searchext)
-                                (string-listp include-dirs)
-                                (vl-defines-p defines)
-                                (vl-override-db-p overrides)
-                                ;; The modules required by overrides
-                                (string-listp required)
-                                (vl-warninglist-p warnings)
-                                (vl-modwarningalist-p walist)
-                                (booleanp filemapp)
-                                (natp n))
-                    :stobjs state
-                    :measure (nfix n)))
-    (b* ( ;; Before we introduced overrides, we just determined which modules
-         ;; were missing with (vl-modulelist-missing).  But now, we also need
-         ;; to try to find the current definitions for any modules that are
-         ;; "required" by overrides and not yet loaded.
-         (mentioned (mergesort (append start-modnames
-                                       (vl-modulelist-everinstanced-exec mods required))))
-         (defined   (mergesort (vl-modulelist->names-exec mods nil)))
-         (missing   (difference mentioned defined))
-
-         ((unless missing)
-;          (cw "No modules are missing; stopping.~%")
-          (mv t mods nil nil nil defines warnings walist state))
-
-         ((when (zp n))
-          (cw "Ran out of steps in vl-flush-out-modules.~%")
-          (mv nil mods nil nil nil defines
-              (cons (make-vl-warning
-                     :type :vl-flush-failed
-                     :msg "Ran out of steps for flushing out modules."
-                     :args nil
-                     :fn 'vl-flush-out-modules)
-                    warnings)
-              walist state))
-
-;         (- (cw "Searching for ~x0 missing modules (~x1 tries left).~%"
-;                (length missing) n))
-
-         ((mv successp new-mods new-filemap new-oused new-mtokens
-              defines warnings walist state)
-          (vl-load-modules missing searchpath searchext include-dirs defines overrides
-                           warnings walist filemapp state))
-
-         ;; When we switched to the new overrides system, we found that we
-         ;; needed to be careful to make sure the new modules aren't the exact
-         ;; same ones we've seen before, or this could get into a bad loop.
-         (new-mods (set-difference-equal new-mods mods))
-
-;         (- (cw "Found ~x0 new modules in this iteration.~%" (len new-mods)))
-         ((unless new-mods)
-          ;; We check the module list, not successp, because we want to keep
-          ;; going as long as some new things were found, even if some files have
-          ;; problems.
-;          (cw "Stopping since no new modules were found.~%")
-          (mv nil mods new-filemap new-oused new-mtokens defines
-              (cons (make-vl-warning
-                     :type :vl-search-failed
-                     :msg "~x0 module~s1 could not be found: ~&2."
-                     :args (list (length missing)
-                                 (if (= (length missing) 1) "" "s")
-                                 (mergesort missing))
-                     :fatalp nil
-                     :fn 'vl-flush-out-modules)
-                    warnings)
-              walist state))
-
-         (required (vl-overridelist-requirement-names-exec new-oused required))
-
-         ;; We previously tried to defend against multiply-defined modules here.
-         ;; But in our new scheme, we permit multiple definitions and throw away
-         ;; the subsequent ones during vl-simplify-part1.  So, we no longer need
-         ;; to do anything here.  The new scheme is really nice for being able to
-         ;; override modules.
-
-         ((mv rest-successp rest-mods rest-filemap rest-oused rest-mtokens
-              defines warnings walist state)
-          (vl-flush-out-modules (append mods new-mods) start-modnames
-                                searchpath searchext include-dirs defines overrides required
-                                warnings walist filemapp state (- n 1))))
-
-      (mv (and successp rest-successp)
-          rest-mods
-          (append new-filemap rest-filemap)
-          (append new-oused rest-oused)
-          (append new-mtokens rest-mtokens)
-          defines
-          warnings
-          walist
-          state)))
-
-  (local (in-theory (enable vl-flush-out-modules)))
-
-; (local (in-theory (disable vl-modulelist-everinstanced-exec-removal)))
-  (local (in-theory (disable (force))))
-
-  (defthm booleanp-of-vl-flush-out-modules-0
-    (booleanp
-     (mv-nth 0 (vl-flush-out-modules mods start-modnames searchpath searchext include-dirs defines overrides required
-                                     warnings walist filemapp state n)))
-    :rule-classes :type-prescription)
-
-  (defthm true-listp-of-vl-flush-out-modules-1
-    (implies (true-listp mods)
-             (true-listp
-              (mv-nth 1 (vl-flush-out-modules mods start-modnames searchpath searchext include-dirs defines overrides required
-                                              warnings walist filemapp state n))))
-    :rule-classes :type-prescription)
-
-  (defthm true-listp-of-vl-flush-out-modules-2
-    (true-listp
-     (mv-nth 2 (vl-flush-out-modules mods start-modnames searchpath searchext include-dirs defines overrides required
-                                     warnings walist filemapp state n)))
-    :rule-classes :type-prescription)
-
-  (defthm true-listp-of-vl-flush-out-modules-3
-    (implies (true-listp mods)
-             (true-listp
-              (mv-nth 3 (vl-flush-out-modules mods start-modnames searchpath searchext include-dirs defines overrides required
-                                              warnings walist filemapp state n))))
-    :rule-classes :type-prescription)
-
-  (defthm true-listp-of-vl-flush-out-modules-4
-    (true-listp
-     (mv-nth 4 (vl-flush-out-modules mods start-modnames searchpath searchext include-dirs defines overrides required
-                                     warnings walist filemapp state n)))
-    :rule-classes :type-prescription)
-
-  (defthm state-p1-of-vl-flush-out-modules
-    (implies (force (state-p1 state))
-             (state-p1
-              (mv-nth 8 (vl-flush-out-modules mods start-modnames searchpath searchext include-dirs defines overrides required
-                                              warnings walist filemapp state n)))))
-
-  (local (in-theory (enable (force))))
-
-  (local (in-theory (disable mergesort difference string-listp
-                             true-listp symbol-listp
-                             set-difference-equal-when-subsetp-equal
-                             true-listp-when-symbol-listp)))
-
-  (defthm vl-flush-out-modules-basics
-    (implies
-     (and (force (vl-modulelist-p mods))
-          (force (true-listp mods))
-          (force (string-listp start-modnames))
-          (force (string-listp searchpath))
-          (force (string-listp searchext))
-          (force (string-listp include-dirs))
-          (force (vl-defines-p defines))
-          (force (vl-override-db-p overrides))
-          (force (string-listp required))
-          (force (vl-warninglist-p warnings))
-          (force (vl-modwarningalist-p walist))
-          (force (state-p state)))
-     (let ((result (vl-flush-out-modules mods start-modnames searchpath searchext include-dirs defines overrides required
-                                         warnings walist filemapp state n)))
-       (and (vl-modulelist-p      (mv-nth 1 result))
-            (vl-filemap-p         (mv-nth 2 result))
-            (vl-overridelist-p    (mv-nth 3 result))
-            (vl-modtokensalist-p  (mv-nth 4 result))
-            (vl-defines-p         (mv-nth 5 result))
-            (vl-warninglist-p     (mv-nth 6 result))
-            (vl-modwarningalist-p (mv-nth 7 result)))))))
-
-
-
-
-(defsection vl-handle-multidef-mods
-  :parents (vl-simplify)
-  :short "Add warnings about modules with multiple definitions, and throw away
-all but the first definition of any multiply-defined module."
-
-  :long "<p><b>Signature:</b> @(call vl-handle-multidef-mods) returns @('(mv
-x-prime warnings)').</p>
-
-<p>The new list of modules, @('x-prime'), has uniquely named modules and is
-formed by removing from @('x') all but the first definition of any module that
-has been encountered.  Non-fatal warnings are also added to any surviving
-modules which had multiple definitions.</p>
-
-<p>The list of @('warnings') contains no additional information, but merely
-collects up the warnings that have been added to modules in @('x').</p>"
-
-  (defund vl-gather-multidef-locstrings (name mods)
-    "Returns a string list."
-    (declare (xargs :guard (and (stringp name)
-                                (vl-modulelist-p mods))))
-    (cond ((atom mods)
-           nil)
-          ((equal name (vl-module->name (car mods)))
-           (cons (vl-location-string (vl-module->minloc (car mods)))
-                 (vl-gather-multidef-locstrings name (cdr mods))))
-          (t
-           (vl-gather-multidef-locstrings name (cdr mods)))))
-
-  (defund vl-add-multidef-warnings (x names mods)
-    "Returns (MV X-PRIME WARNINGS)"
-    (declare (xargs :guard (and (vl-modulelist-p x)
-                                (string-listp names)
-                                (vl-modulelist-p mods))))
-    (b* (((when (atom x))
-          (mv nil nil))
-
-         ((mv cdr-prime warnings)
-          (vl-add-multidef-warnings (cdr x) names mods))
-
-         (car  (car x))
-         (name (vl-module->name car))
-         ((unless (member-equal name names))
-          (mv (cons car cdr-prime) warnings))
-
-         (car-warning (make-vl-warning
-                       :type :vl-multidef-mod
-                       :msg "~m0 is defined multiple times, so we are keeping only ~
-                           the definition which occurs at ~l1.  The definition(s) ~
-                           from ~&2 have been discarded!"
-                       :args (list name
-                                   (vl-module->minloc car)
-                                   (remove-equal
-                                    (vl-location-string (vl-module->minloc car))
-                                    (vl-gather-multidef-locstrings name mods)))
-                       :fn 'vl-add-multidef-warnings))
-         (car-warnings (cons car-warning (vl-module->warnings car)))
-         (car-prime    (change-vl-module car :warnings car-warnings)))
-        (mv (cons car-prime cdr-prime)
-            (cons car-warning warnings))))
-
-  (defmvtypes vl-add-multidef-warnings (true-listp true-listp))
-
-  (defthm vl-modulelist-p-of-vl-add-multidef-warnings
-    (implies (force (vl-modulelist-p x))
-             (vl-modulelist-p (mv-nth 0 (vl-add-multidef-warnings x names mods))))
-    :hints(("Goal" :in-theory (enable vl-add-multidef-warnings))))
-
-  (defthm vl-warninglist-p-of-vl-add-multidef-warnings
-    (vl-warninglist-p (mv-nth 1 (vl-add-multidef-warnings x names mods)))
-    :hints(("Goal" :in-theory (enable vl-add-multidef-warnings))))
-
-
-  (defund vl-remove-multidef-modules (names seen x)
-    "Returns X-PRIME"
-    (declare (xargs :guard (and (string-listp names)
-                                (string-listp seen)
-                                (vl-modulelist-p x))))
-    ;; Remove all but the first instance of names.  NAMES are the names of all
-    ;; multiply-defined modules.  SEEN are those members of NAMES we have already
-    ;; encountered.
-    (if (atom x)
-        nil
-      (let ((name (vl-module->name (car x))))
-        (cond ((not (member-equal name names))
-               ;; Not multiply defined, so keep it.
-               (cons (car x)
-                     (vl-remove-multidef-modules names seen (cdr x))))
-
-              ((not (member-equal name seen))
-               ;; Multiply-defined, but this is the first time we've seen it.  Keep
-               ;; this occurrence and add name to the seen list.
-               (cons (car x)
-                     (vl-remove-multidef-modules names (cons name seen) (cdr x))))
-
-              (t
-               ;; Multiply-defined, and already seen.  Skip it.
-               (vl-remove-multidef-modules names seen (cdr x)))))))
-
-  (defthm vl-modulelist-p-of-vl-remove-multidef-modules
-    (implies (force (vl-modulelist-p x))
-             (vl-modulelist-p (vl-remove-multidef-modules names seen x)))
-    :hints(("Goal" :in-theory (enable vl-remove-multidef-modules))))
-
-  (defund vl-handle-multidef-mods (x)
-    "Returns (MV X-PRIME WARNINGS)"
-    (declare (xargs :guard (vl-modulelist-p x)))
-    (b* ((names (vl-modulelist->names x))
-         ((when (cwtime (uniquep names)
-                        :name check-unique-names
-                        :mintime 1/2))
-          (mv x nil))
-         (dupes   (duplicated-members names))
-         ;; First eliminate any shadowed modules
-         (x-clean (vl-remove-multidef-modules dupes nil x))
-         ;; Now add warnings about any shadowed modules
-         ((mv x-prime warnings)
-          (vl-add-multidef-warnings x-clean dupes x)))
-        ;; This is kind of gross.  Explicitly check that our handling worked to
-        ;; eliminate any duplicated modules.  Eventually one might try to prove
-        ;; this never happens, and hence avoid the check.
-        (if (uniquep (vl-modulelist->names x-prime))
-            (mv x-prime warnings)
-          (prog2$
-           (er hard? 'vl-handle-multidef-mods
-               "Programming error.  Expected names to be unique.")
-           (mv nil warnings)))))
-
-  (local (in-theory (enable vl-handle-multidef-mods)))
-
-  (defthm true-listp-of-vl-handle-multidef-mods-0
-    (implies (true-listp x)
-             (true-listp (mv-nth 0 (vl-handle-multidef-mods x))))
-    :rule-classes :type-prescription)
-
-  (defthm true-listp-of-vl-handle-multidef-mods-1
-    (true-listp (mv-nth 1 (vl-handle-multidef-mods x)))
-    :rule-classes :type-prescription)
-
-  (defthm vl-modulelist-p-of-vl-handle-multidef-mods
-    (implies (force (vl-modulelist-p x))
-             (vl-modulelist-p (mv-nth 0 (vl-handle-multidef-mods x)))))
-
-  (defthm vl-warninglist-p-of-vl-handle-multidef-mods
-    (vl-warninglist-p (mv-nth 1 (vl-handle-multidef-mods x))))
-
-  (defthm no-duplicatesp-equal-of-vl-modulelist->names-of-vl-handle-multidef-mods
-    (no-duplicatesp-equal
-     (vl-modulelist->names
-      (mv-nth 0 (vl-handle-multidef-mods x))))))
+<p>Our top-level function for loading Verilog files, @(see vl-load), implements
+such a scheme.  It has various <see topic='@(url
+vl-loadconfig-p)'>options</see> that allow you to specify the search paths and
+extensions to use when looking for files, etc.  It also features an @(see
+overrides) mechanism that can be used to \"safely\" use alternate definitions
+for certain (usually low-level) modules.</p>
+
+
+<h3>VL-Only Comments</h3>
+
+<p>VL supports a special comment syntax:</p>
+
+@({
+//+VL single-line version
+/*+VL multi-line version */
+})
+
+<p>Which can be used to hide VL-specific code from other tools, e.g., if you
+need your modules to work with an older Verilog implementation that doesn't
+support Verilog-2005 style attributes, you might write something like:</p>
+
+@({
+//+VL (* my_attribute *)
+assign foo = bar;
+})
+
+<p>There is also a special, more concise syntax for attributes:</p>
+
+@({
+//@VL my_attribute
+})
+
+<p><b>BOZO</b> where should things like VL-Only comments be documented?  There
+are lots of special implementation details (and extensions like @(see
+overrides)) that we should probably discuss somewhere.</p>")
+
+
+(defaggregate vl-loadconfig
+  :parents (loader)
+  :short "Options for how to load Verilog modules."
+
+  ((start-files    string-listp
+                   "A list of file names (not module names) that you want to
+                    load; @(see vl-load) begins by trying to read, preprocess,
+                    lex, and parse the contents of these files.")
+
+   (start-modnames string-listp
+                   "Instead of (or in addition to) explicitly providing the
+                    @('start-files'), you can also provide a list of module
+                    names that you want to load.  @(see vl-load) will look for
+                    these modules in the search path, unless they happen to get
+                    loaded while processing the @('start-files').")
+
+   (search-path    string-listp
+                   "A list of directories to search (in order) for modules in
+                    @('start-modnames') that were in the @('start-files'), and
+                    for <see topic=\"@(url vl-modulelist-missing)\">missing
+                    modules</see>.  This is similar to \"library directories\"
+                    in tools like Verilog-XL and NCVerilog.")
+
+   (search-exts    string-listp
+                   :default '("v")
+                   "List of file extensions to search (in order) to find files
+                    in the @('search-path').  The default is @('(\"v\")'),
+                    meaning that only files like @('foo.v') are considered.")
+
+   (include-dirs   string-listp
+                   "A list of directories that will be searched (in order) when
+                    @('`include') directives are encountered.  This is similar
+                    to the \"include directories\" for Verilog-XL.  Any
+                    includes with relative path names are searched for in (1)
+                    the current directory, then (2) these include dirs, in the
+                    specified order.")
+
+   (defines        vl-defines-p
+                   "A list of initial definitions (i.e., @('`define')s) that
+                    will be given to the @(see preprocessor).  You may want to
+                    see @(see vl-make-initial-defines), and you should probably
+                    be aware of the @(see scope-of-defines).")
+
+   (filemapp       booleanp
+                   :rule-classes :type-prescription
+                   :default t
+                   "This flag controls whether a @(see vl-filemap-p) will be
+                    constructed for the files we have loaded.  You may wish to
+                    turn this off to save some memory.")
+
+   (override-dirs  string-listp
+                   "Directories to scan for any @(see overrides).")
+
+   (flush-tries    posp
+                   :default 10000
+                   "How many rounds of @(see vl-flush-out-modules) are
+                    allowed.")
+
+   (mintime        :default 1
+                   "Minimum time threshold for performance messages."))
+
+  :tag :vl-loadconfig)
+
+
+
+(defaggregate vl-loadstate
+  :parents (loader)
+  :short "Internal state object used throughout the VL loading routines."
+
+  ((config    vl-loadconfig-p
+              "Original configuration passed to @(see vl-load).  This remains
+               constant throughout our loading routines.")
+
+
+   (overrides vl-override-db-p
+              "Database of modules to override; see @(see overrides).")
+
+   (oused     vl-overridelist-p
+              "List of overrides that we have actually used so far.  This is
+               needed so we can check that overrides are up to date with @(see
+               vl-check-override-requirements), etc.")
+
+   (mtokens   vl-modtokensalist-p
+              "Alist binding module names to their actual tokens, used for
+               checking that @(see overrides) are correct.")
+
+   (required  string-listp
+              "List of module names that must be defined because they are
+               required by overrides.  Should always be equal to
+               @('(vl-override-requirement-names oused)'), but that would
+               be expensive to recompute during flushing, so we keep it as
+               part of the state.")
+
+
+   (mods      (and (vl-modulelist-p mods)
+                   (uniquep (vl-modulelist->names mods)))
+              "@(see modules) we have loaded so far.  These modules have been
+               only minimally transformed, and are intended to capture the
+               actual source code in the files on disk.")
+
+   (modalist  (equal modalist (vl-modalist mods))
+              "Provides fast module-name lookups.")
+
+   (defines   vl-defines-p
+              "The current set of @('`define')s at any point in time.")
+
+   (walist    vl-modwarningalist-p
+              "Associates module names with warnings we want to add to those modules.
+               This is where most warnings from loading can be found.")
+
+   (warnings  vl-warninglist-p
+              "This holds any \"floating\" @(see warnings) that aren't
+               associated with any module.  Few warnings get put here. Instead,
+               most warnings get associated with particular modules. But some
+               warnings from the early stages of file loading (like
+               preprocessing and lexing), or warnings about malformed syntax
+               that occurs <i>between</i> modules, can end up here.")
+
+   (filemap   vl-filemap-p
+              "Database mapping the names of files we have read to their contents.
+               This is occasionally useful for seeing the original code for a
+               module.  To save memory, you can avoid constructing this alist;
+               see the @('filemapp') option in @(see vl-loadconfig-p)."))
+
+  :tag :vl-loadstate)
+
+(defthm return-type-vl-loadstate->modalist*
+  ;; Non-forcing version.  Forcing things like (foop (accessor x)) is generally
+  ;; fine.  But this rule is different: it unconditionally rewrites (accessor
+  ;; x) into something else.  That leads to forcing any time that we ever see a
+  ;; call of (accessor x), e.g., any time we ever call change-blah, and is just
+  ;; generally problematic.  BOZO consider adding a :force nil option to
+  ;; aggregate field specifiers.
+  (implies (vl-loadstate-p x)
+           (equal (vl-loadstate->modalist x)
+                  (vl-modalist (vl-loadstate->mods x)))))
+
+(in-theory (disable (:rewrite return-type-of-vl-loadstate->modalist)))
 
 
 
@@ -866,266 +288,573 @@ warning that maybe something is amiss with file loading.</p>")
 
 
 
-(defsection vl-load
-  :parents (loader)
-  :short "Top level interface for loading Verilog sources."
+(define vl-load-merge-modules ((new      vl-modulelist-p)
+                               (old      vl-modulelist-p)
+                               (modalist (equal modalist (vl-modalist old)))
+                               (walist   vl-modwarningalist-p))
+  :returns (mv (merged   (vl-modulelist-p merged) :hyp :fguard)
+               (modalist (equal modalist (vl-modalist merged)) :hyp :fguard)
+               (walist   vl-modwarningalist-p :hyp :fguard))
+  :parents (vl-load)
+  :short "Merge newly found Verilog modules with previously loaded modules,
+warning about multiply defined modules."
 
-  :long "<p><b>Signature:</b> @(call vl-load) returns @('(mv successp mods
-filemap defines warnings state)')</p>
+  :long "<p>As a simple rule, we always keep the first definition of any module
+we encounter.  This function is responsible for enforcing this rule: we merge
+some newly parsed modules in with the already-parsed modules.  In case of any
+name clashes, the previous definition wins, and we add a warning to the
+@('walist') to say that the original definition is being kept.</p>"
 
-<h5>Inputs</h5>
+  (b* (((when (atom new))
+        (mv old modalist walist))
+       (new-mod  (car new))
+       (new-name (vl-module->name new-mod))
+       (prev-def (vl-fast-find-module new-name old modalist))
+       ((unless prev-def)
+        ;; Great, new module, no redefinition.
+        (vl-load-merge-modules (cdr new)
+                               (cons new-mod old)
+                               (hons-acons new-name new-mod modalist)
+                               walist))
+       ;; Warn about the redefinition,
+       (warning (make-vl-warning
+                 :type :vl-multidef-mod
+                 :msg "~m0 is defined multiple times.  Keeping the old ~
+                       definition (~a1) and ignoring the new one (~a2)."
+                 :args (list new-name
+                             (vl-module->minloc prev-def)
+                             (vl-module->minloc new-mod))))
+       (walist (vl-extend-modwarningalist new-name warning walist)))
+    (vl-load-merge-modules (cdr new) old modalist walist))
+  ///
+  (defthm unique-names-after-vl-load-merge-modules
+    (implies (and (uniquep (vl-modulelist->names old))
+                  (force (vl-modulelist-p new))
+                  (force (vl-modulelist-p old)))
+             (b* (((mv merged ?modalist ?walist)
+                   (vl-load-merge-modules new old modalist walist)))
+               (uniquep (vl-modulelist->names merged))))))
+
+
+
+(define vl-load-file ((filename stringp)
+                      (st       vl-loadstate-p)
+                      state)
+  :returns (mv (st    vl-loadstate-p :hyp :fguard)
+               (state state-p1       :hyp (force (state-p1 state))))
+  :parents (vl-load)
+  :short "Main function for loading a single Verilog file."
+
+  :long "<p>Even loading a single file is a multi-step process:</p>
 
 <ul>
 
-<li>@('override-dirs') give the directories to find any @(see overrides) that
-you wish to use.</li>
+<li>The contents of the file are loaded via @(see vl-read-file) into a list of
+@(see extended-characters) in memory.</li>
 
-<li>@('start-files') is a list of file names (not module names) that you want
-to load.  We begin by trying to read, preprocess, lex, and parse the contents
-of these files.</li>
+<li>The @(see preprocessor) then expands away compiler directives like
+@('`define')s, producing a new list of extended characters.</li>
 
-<li>@('start-modnames') is a list of module names that you want to load.  We
-look for these in the search path unless they are defined after we have loaded
-the @('start-files').</li>
+<li>The @(see lexer) converts the preprocessed character list into a list of
+<see topic='@(url vl-token-p)'>tokens</see>.</li>
 
-<li>@('search-path') is a list of directories that may contain additional
-Verilog files.  After we load the @('start-files'), we will start looking for
-any <see topic=\"@(url vl-modulelist-missing)\">missing modules</see> in the
-search path.  This is similar to the \"library directories\" of tools like
-Verilog-XL and NCVerilog; see @(see vl-load-module) and @(see
-vl-flush-out-modules) for details.</li>
+<li>Any applicable @(see overrides) are applied, perhaps resulting in a new
+token list.</li>
 
-<li>@('searchext') is a list of file extensions to consider Verilog files when
-looking in the @('search-path').  The default is @('(\"v\")'), meaning that
-only files such as @('foo.v') are considered.</li>
-
-<li>@('include-dirs') is a list of directories that will be searched when
-@('`include') directives are encountered.  This is similar to the \"include
-directories\" for Verilog-XL.  Any includes with relative path names are
-searched for in (1) the current directory, then (2) these include dirs, in the
-specified order.</li>
-
-<li>@('defines') is a @(see vl-defines-p) alist which will be given to the
-@(see preprocessor), and can be used to set up any initial @('`defines') that
-you want to use.  See also @(see scope-of-defines).</li>
-
-<li>@('filemapp') is a flag that says whether to generate a filemap; see below
-where we describe the @('filemap') output.</li>
-
-<li>@('state') is the ACL2 state stobj, which is needed since this function
-reads from files.</li>
-
-</ul>
-
-<h5>Outputs</h5>
-
-<ul>
-
-<li>@('successp') indicates whether all modules were loaded successfully.  Even
-when @('successp') is @('nil'), there may be at least some portion of the
-modules that have been loaded successfully.</li>
-
-<li>@('mods') are our representation of any @(see modules) that have been
-successfully parsed from the files.  The modules have not been transformed, and
-is intended to capture the actual source code as it occurs on the disk.  The
-modules in the list are guaranteed to have unique names.  To accomplish this,
-we keep only the first definition of any module we encounter.</li>
-
-<li>@('filemap') is an ordinary alist that maps filenames to their contents;
-see @(see vl-filemap-p).  This alist is only constructed if @('filemapp') is
-@('t').</li>
-
-<li><p>@('defines') is an updated @(see vl-defines-p) alist, which represents
-the final list of define bindings at the end of the loading process.</p>
-
-</li>
-
-<li>@('warnings') are any \"floating\" @(see warnings) that were generated
-during the loading process.  Note that most warnings generated during the
-parsing of modules are automatically associated with their modules, and these
-warnings are <i>not</i> included.  Instead, this list will have warnings
-generated in the early stages of file loading, such as preprocessing and
-lexing, and perhaps any warnings about malformed syntax that occurs
-<i>between</i> modules, etc.</li>
+<li>The @(see parser) transforms the token list into a list of @(see modules),
+our internal representation of Verilog.</li>
 
 </ul>"
 
-  (defmacro vl-load (&key override-dirs start-files start-modnames
-                          search-path
-                          (searchext ''("v"))
-                          include-dirs defines filemapp)
-    `(vl-load-fn ,override-dirs ,start-files ,start-modnames
-                 ,search-path ,searchext ,include-dirs
-                 ,defines ,filemapp state))
+  (b* (((vl-loadstate st) st)
+       ((vl-loadconfig config) st.config)
 
-  (defund vl-load-fn (override-dirs start-files start-modnames
-                                    search-path searchext include-dirs
-                                    defines filemapp state)
-    "Returns (MV SUCCESSP MODS FILEMAP DEFINES WARNINGS STATE)"
-    (declare (xargs :guard (and (string-listp override-dirs)
-                                (string-listp start-files)
-                                (string-listp start-modnames)
-                                (string-listp search-path)
-                                (string-listp searchext)
-                                (string-listp include-dirs)
-                                (vl-defines-p defines)
-                                (booleanp filemapp))
-                    :guard-debug t
-                    :stobjs state))
-    (mv-let (successp mods filemap defines warnings state)
+       (warnings st.warnings)
 
-      ;; Kind of subtle -- we do all the computation inside this mv-let body,
-      ;; so that all of the local variables we bind here go out of scope before
-      ;; we garbage collect at the end of this function.  This is particularly
-      ;; important for the oused and mtokens stuff, since those can be become
-      ;; really giant lists of tokens that we really want to be freed.
-      (b* ((warnings    nil)
+       ;; BOZO we should switch this to use some more subtle b* structure that
+       ;; lets contents become unreachable.
 
-           (include-dirs
-            ;; I'm pretty sure this is the right thing to do.  I've done a few
-            ;; simple tests, and both Verilog-XL and NCVerilog seem to always
-            ;; include files from the current directory first, even if +incdir
-            ;; arguments are given, and even if there is a +incdir argument
-            ;; that comes before an explicit +incdir+. or +incdir+`pwd`.  So,
-            ;; it seems like "." is always implicitly the first place to search
-            ;; for includes.
-            (cons "." include-dirs))
+       ((mv contents state)
+        (time$ (vl-read-file (string-fix filename) state)
+               :msg "; ~s0: read: ~st sec, ~sa bytes~%"
+               :args (list filename)
+               :mintime config.mintime))
+       ((when (stringp contents))
+        (b* ((warnings (warn :type :vl-read-failed
+                             :msg  "Error reading file ~s0."
+                             :args (list filename)))
+             (st       (change-vl-loadstate st :warnings warnings)))
+          (mv st state)))
 
-           ((mv override-successp overrides ov-filemap
-                defines override-comments
-                walist state)
-            (cwtime (vl-read-overrides override-dirs defines filemapp state)
-                    :mintime 1))
-
-           ((mv start-successp start-mods start-filemap
-                start-oused start-mtokens
-                defines warnings walist state)
-            (cwtime (vl-load-files start-files include-dirs defines overrides
-                                   warnings walist filemapp state)
-                    :mintime 1))
-
-           (required (vl-overridelist-requirement-names-exec start-oused nil))
-
-           ((mv flush-successp flushed-mods flushed-filemap
-                flushed-oused flushed-mtokens
-                defines warnings walist state)
-            (cwtime (vl-flush-out-modules start-mods start-modnames search-path
-                                          searchext include-dirs defines overrides
-                                          required warnings walist filemapp
-                                          state 10000)
-                    :mintime 1))
-
-           (- (fast-alist-free overrides))
-
-           ((mv mods multidef-warnings)
-            (cwtime (vl-handle-multidef-mods flushed-mods)
-                    :mintime 1))
-
-           ;; Final override handling.  Need to add comments to the overridden
-           ;; modules and check that all requirements are met.
-
-           (mods (cwtime (vl-inject-comments-modulelist mods override-comments)
-                         :mintime 1/2))
-
-           (oused   (append start-oused flushed-oused))
-           (mtokens (make-fast-alist (append start-mtokens flushed-mtokens)))
-           (walist  (cwtime (vl-check-override-requirements oused mtokens walist)
-                            :mintime 1/2))
-           (- (fast-alist-free mtokens))
-
-           ;; Apply the walist throughout all modules
-           (mods (cwtime (vl-apply-modwarningalist mods walist)
-                         :mintime 1/2))
+       (filemap
+        (time$ (and config.filemapp
+                    (cons (cons filename (vl-echarlist->string contents))
+                          st.filemap))
+               :msg "; ~s0: filemap: ~st sec, ~sa bytes~%"
+               :args (list filename)
+               :mintime config.mintime))
 
 
-           (successp (and override-successp start-successp flush-successp))
-           (filemap  (append ov-filemap start-filemap flushed-filemap))
+; Subtle: If preprocessing fails, should we return the updated defines?  The
+; answer isn't very clear, and you can probably make a case for it either way.
+; I think it makes the most sense to impose a simple, consistent rule:
+;
+;   +---------------------------------------------------------------+
+;   | If we can't parse the file successfully, we don't update any  |
+;   | part of the state except the warnings (warnings and walist).  |
+;   +---------------------------------------------------------------|
+;
+; This way things are pretty clear.  Whatever was in that file we couldn't
+; parse didn't affect us.  If it had defines we wanted, that's too bad.
 
-           (- (cw "vl-load-fn: loaded ~x0 modules.~%" (len mods)))
-           (- (or successp
-                  ;; We don't really care that not everything was loaded, because
-                  ;; vl-load-fn gives us as much as it can.  We'll just print a
-                  ;; message, but the real reasons are in the warnings list.
-                  (cw "vl-load-fn: not all modules were loaded successfully.~%")))
+       ((mv successp defines preprocessed state)
+        (time$ (vl-preprocess contents st.defines config.include-dirs state)
+               :msg "; ~s0: preprocess: ~st sec, ~sa bytes~%"
+               :args (list filename)
+               :mintime config.mintime))
+       ((unless successp)
+        (b* ((warnings (warn :type :vl-preprocess-failed
+                             :msg "Preprocessing failed for ~s0."
+                             :args (list filename)))
+             (st       (change-vl-loadstate st :warnings warnings)))
+          (mv st state)))
 
-           ;; The warnings get returned, but we also summarize the floating
-           ;; warnings as a convenience to whomever is running the translator.
-           (mod-warnings (mergesort (vl-modulelist-flat-warnings mods)))
-           (all-warnings (mergesort (append multidef-warnings
-                                            (redundant-list-fix warnings)
-                                            mod-warnings)))
-           (floating-warnings (difference all-warnings mod-warnings))
-           (- (or (not all-warnings)
-                  (cw "vl-load-fn: total number of warnings: ~x0.~%"
-                      (len all-warnings))))
-           (- (or (not floating-warnings)
-                  (vl-cw-ps-seq
-                   (vl-ps-update-autowrap-col 68)
-                   (vl-cw "vl-load-fn: ~x0 floating warning~s1:~%"
-                          (len floating-warnings)
-                          (if (= (len floating-warnings) 1) "" "s"))
-                   (vl-print-warnings warnings)
-                   (vl-println "")))))
-        (mv successp mods filemap defines floating-warnings state))
+       ((mv successp lexed warnings)
+        (time$ (vl-lex preprocessed warnings)
+               :msg "; ~s0: lex: ~st sec, ~sa bytes~%"
+               :args (list filename)
+               :mintime config.mintime))
+       ((unless successp)
+        (b* ((warnings (warn :type :vl-lex-failed
+                             :msg "Lexing failed for ~s0."
+                             :args (list filename)))
+             (st       (change-vl-loadstate st :warnings warnings)))
+          (mv st state)))
 
-      (progn$
-       ;; We're now after the mv-let's body, so the temporary bindings above
-       ;; should now be out of scope.  This is a reasonably good time to
-       ;; garbage collect since file reading, lexing, etc. create a lot of
-       ;; garbage.  There is a trade-off: it's slower to GC here than to not GC
-       ;; here when we run our nightly translations, but it frees up a lot of
-       ;; memory and helps when running the translator on any more modest
-       ;; machine (e.g., in the command-line use-set and vl-prove tools).  So,
-       ;; I'm willing to wait slightly longer.
-       (clear-memoize-table 'vl-actually-report-parse-error)
-       (vl-gc)
-       (mv successp mods filemap defines warnings state))))
+       ((mv cleaned comment-map)
+        (time$ (vl-kill-whitespace-and-comments lexed)
+               :msg "; ~s0: whitespace: ~st sec, ~sa bytes~%"
+               :args (list filename)
+               :mintime config.mintime))
+       ((mv walist cleaned oused mtokens)
+        (time$ (vl-apply-overrides cleaned st.overrides st.walist)
+               :msg "; ~s0: override: ~st sec, ~sa bytes~%"
+               :args (list filename)
+               :mintime config.mintime))
 
-  (local (in-theory (enable vl-load-fn)))
+       ((mv successp mods warnings)
+        (time$ (vl-parse cleaned warnings)
+               :msg "; ~s0: parse: ~st sec, ~sa bytes~%"
+               :args (list filename)
+               :mintime config.mintime))
+       ((unless successp)
+        ;; In practice this should be rare.  See vl-parse-module-declaration:
+        ;; We do something pretty fancy to make sure that parse errors that
+        ;; occur within a module only kill that particular module.
+        (b* ((warnings (warn :type :vl-parse-failed
+                             :msg "Parsing failed for ~s0."
+                             :args (list filename)))
+             (st       (change-vl-loadstate st
+                                            :warnings warnings
+                                            :walist walist)))
+          (mv st state)))
 
-  (defthm booleanp-of-vl-load-fn-0
-    (booleanp (mv-nth 0 (vl-load-fn override-dirs start-files start-modnames
-                                    search-path searchext include-dirs defines filemapp state)))
-    :rule-classes :type-prescription)
+       (mods
+        (time$ (vl-inject-comments-modulelist mods comment-map)
+               :msg "; ~s0: comment: ~st sec, ~sa bytes~%"
+               :args (list filename)
+               :mintime config.mintime))
 
-  (defthm true-listp-of-vl-load-fn-1
-    (implies (true-listp mods)
-             (true-listp (mv-nth 1 (vl-load-fn override-dirs start-files start-modnames
-                                               search-path searchext include-dirs defines filemapp state))))
-    :rule-classes :type-prescription)
+       ;; Merge new modules into previous modules.
+       ((mv mods modalist walist)
+        (time$ (vl-load-merge-modules mods st.mods st.modalist walist)
+               :msg "; ~s0: merge: ~st sec, ~sa bytes~%"
+               :args (list filename)
+               :mintime config.mintime))
 
-  (defthm true-listp-of-vl-load-fn-2
-    (true-listp (mv-nth 2 (vl-load-fn override-dirs start-files start-modnames
-                                      search-path searchext include-dirs defines filemapp state)))
-    :rule-classes :type-prescription)
+       ;; Overrides tracking stuff.  BOZO this might not be quite right for
+       ;; modules that are multiply defined, because we've dropped them during
+       ;; the merge but not from oused/mtokens.  Blah.
+       ((mv required oused mtokens)
+        (time$
+         (b* ((required (union (mergesort (vl-overridelist-requirement-names oused))
+                               (redundant-mergesort st.required)))
+              (oused    (append oused st.oused))
+              (mtokens  (append mtokens st.mtokens)))
+           (mv required oused mtokens))
+         :msg "; ~s0: track overrides: ~st sec, ~sa bytes~%"
+         :args (list filename)
+         :mintime config.mintime))
 
-  (defthm state-p1-of-vl-load-fn
-    (implies (force (state-p1 state))
-             (state-p1 (mv-nth 5 (vl-load-fn override-dirs start-files start-modnames
-                                             search-path searchext include-dirs defines filemapp state)))))
+       (st    (change-vl-loadstate st
+                                   :warnings warnings
+                                   :defines  defines
+                                   :filemap  filemap
+                                   :mods     mods
+                                   :modalist modalist
+                                   :walist   walist
+                                   :oused    oused
+                                   :mtokens  mtokens
+                                   :required required)))
 
-  (defthm no-duplicatesp-equal-of-vl-load-fn
-    (no-duplicatesp-equal
-     (vl-modulelist->names (mv-nth 1 (vl-load-fn override-dirs start-files start-modnames
-                                                 search-path searchext include-dirs defines filemapp state)))))
+    (mv st state)))
 
-  (defthm vl-load-fn-basics
-    (implies
-     (and (force (string-listp override-dirs))
-          (force (string-listp start-files))
-          (force (string-listp start-modnames))
-          (force (string-listp search-path))
-          (force (string-listp searchext))
-          (force (string-listp include-dirs))
-          (force (vl-defines-p defines))
-          (force (state-p state)))
-     (let ((result (vl-load-fn override-dirs start-files start-modnames
-                               search-path searchext include-dirs
-                               defines filemapp state)))
-       (and (vl-modulelist-p (mv-nth 1 result))
-            (vl-filemap-p (mv-nth 2 result))
-            (vl-defines-p (mv-nth 3 result))
-            (vl-warninglist-p (mv-nth 4 result)))))))
+(define vl-load-files ((filenames string-listp)
+                       (st        vl-loadstate-p)
+                       state)
+  :returns (mv (st       vl-loadstate-p :hyp :fguard)
+               (state    state-p1       :hyp (force (state-p1 state))))
+  :short "Load a list of files."
+  (b* (((when (atom filenames))
+        (mv st state))
+       ((mv st state) (vl-load-file (car filenames) st state)))
+    (vl-load-files (cdr filenames) st state)))
 
 
 
+(define vl-load-module ((modname stringp)
+                        (st      vl-loadstate-p)
+                        state)
+  :returns (mv (st    vl-loadstate-p :hyp :fguard)
+               (state state-p1       :hyp (force (state-p1 state))))
+  :parents (vl-load)
+  :short "Try to load a module from the search path."
+
+  (b* (((vl-loadstate st) st)
+       ((vl-loadconfig config) st.config)
+       (warnings st.warnings)
+
+       ((mv filename warnings state)
+        (vl-find-basename/extension modname config.search-exts config.search-path
+                                    warnings state))
+       ((unless filename)
+        (b* ((warnings (warn :type :vl-warn-find-failed
+                             :msg "Unable to find a file for module ~s0."
+                             :args (list modname)))
+             (st (change-vl-loadstate st :warnings warnings)))
+          (mv st state)))
+
+       (st (change-vl-loadstate st :warnings warnings)))
+
+    (vl-load-file filename st state)))
+
+
+(define vl-load-modules ((modnames string-listp)
+                         (st       vl-loadstate-p)
+                         state)
+  :returns (mv (st    vl-loadstate-p :hyp :fguard)
+               (state state-p1       :hyp (force (state-p1 state))))
+  :parents (vl-load)
+  :short "Extend @(see vl-load-module) to try to load a list of modules."
+
+  (b* (((when (atom modnames))
+        (mv st state))
+       ((mv st state) (vl-load-module (car modnames) st state))
+       ((mv st state) (vl-load-modules (cdr modnames) st state)))
+    (mv st state)))
+
+
+(define vl-modules-left-to-load ((st vl-loadstate-p))
+  :returns (names string-listp :hyp :fguard)
+  :parents (vl-load)
+  :short "Determine which modules we still need to load."
+
+  :long "<p>For loading to be completely done, we want to have:</p>
+
+<ul>
+
+<li>All modules that the user told us to load in the @(':start-modnames')</li>
+
+<li>All modules that are ever instanced anywhere in any module that we have
+loaded, and</li>
+
+<li>All modules that are required to be loaded because of @(see
+overrides).</li>
+
+</ul>
+
+<p>This function computes the names of modules that we want for the above
+reasons, but which we do not yet have loaded.  These are the modules we'll end
+up searching for.</p>"
+
+  (b* (((vl-loadstate st) st)
+       ((vl-loadconfig config) st.config)
+
+       (mods-we-want-loaded
+        (mergesort (vl-modulelist-everinstanced-exec
+                    st.mods
+                    (append st.required config.start-modnames))))
+
+       (mods-we-have-loaded
+        (mergesort (vl-modulelist->names-exec st.mods nil))))
+
+    (difference mods-we-want-loaded mods-we-have-loaded)))
+
+
+(define vl-flush-out-modules ((st vl-loadstate-p)
+                              (n  natp "Counter to force termination.")
+                              state)
+  :returns (mv (st    vl-loadstate-p :hyp :fguard)
+               (state state-p1       :hyp (force (state-p1 state))
+                      :hints(("Goal" :in-theory (disable (force))))))
+  :parents (vl-load)
+  :short "Attempt to find and load any missing modules."
+
+  :long "<p>After some initial files have been loaded, it is generally
+necessary to track down and load any submodules that have been referenced but
+not defined.  We call this process \"flushing out\" the module list.</p>
+
+<p>To find some module @('foo'), we look through the provided search
+directories, in order, for a file whose name is @('foo.v').  (We can also
+consider files with other extensions, see the @('search-exts') option in @(see
+vl-loadconfig-p).)</p>
+
+<p>We try to load the first such @('foo.v') that we find.  This is <b>not
+necessarily sensible</b>.  It might be, for instance, that @('foo.v') will not
+define a module named @('foo'), or that it will define all sorts of other
+modules instead of @('foo').  In other words, for this search procedure to make
+sense, you need to follow a sort of naming discipline and keep library modules
+in files that have appropriate names.</p>
+
+<p>Flushing out the modules is necessarily an <b>iterative</b> process.  After
+we load some library module @('foo'), we might find that it references some
+other library module @('bar') that we have not yet loaded.  To ensure that the
+process will eventually terminate, so cap the maximum number of times we will
+look for new modules.</p>"
+
+  :measure (nfix n)
+
+  (b* ((missing (vl-modules-left-to-load st))
+       ((unless missing)
+        ;; We have everything loaded that we want, so we're all done.
+        (mv st state))
+
+       ((when (zp n))
+        ;; (cw "Ran out of steps in vl-flush-out-modules.~%")
+        (b* ((warnings (vl-loadstate->warnings st))
+             (warnings (warn :type :vl-flush-failed
+                             :msg "Failed to load module~s0 ~&1 because we ~
+                                   reached the maximum number of tries."
+                             :args (list (if (vl-plural-p missing) "s" "")
+                                         missing)))
+             (st (change-vl-loadstate st :warnings warnings)))
+          (mv st state)))
+
+       ;; (- (cw "Searching for ~x0 missing modules (~x1 tries left).~%" (length missing) n))
+
+       (num-prev      (len (vl-loadstate->mods st)))
+       ((mv st state) (vl-load-modules missing st state))
+       (num-new       (len (vl-loadstate->mods st)))
+
+       ((when (equal num-prev num-new))
+        ;; Failed to load anything new, so we've loaded as much as we can.
+        (b* ((warnings (vl-loadstate->warnings st))
+             (warnings (warn :type :vl-search-failed
+                             :msg  "Failed to find ~x0 module~s1: ~&2."
+                             :args (list (length missing)
+                                         (if (vl-plural-p missing) "s" "")
+                                         (mergesort missing))))
+             (st       (change-vl-loadstate st :warnings warnings)))
+          (mv st state))))
+
+    ;; Else, got at least some modules.  But remember: just because we
+    ;; loaded N modules doesn't mean we loaded the ones we needed, and it
+    ;; doesn't mean we don't now need new ones!  So don't try to detect
+    ;; whether we're successful, just keep flushing out until we stop making
+    ;; progress or find everything.
+    (vl-flush-out-modules st (- n 1) state)))
+
+
+(defaggregate vl-loadresult
+  :parents (loader)
+  :short "Return value from @(see vl-load)."
+
+  ((mods        (and (vl-modulelist-p mods)
+                     (uniquep (vl-modulelist->names mods)))
+                "The @(modules) that were loaded.  These modules have been only
+                 minimally transformed (e.g., to add declarations for implicit
+                 wires).  They meant to be close to the actual source code as
+                 it occurs on the disk.  They are guaranteed to have unique
+                 names.")
+
+   (filemap     vl-filemap-p
+                "Alist mapping file names to their original, unmodified
+                 contents as strings.  This can be useful for interactively
+                 looking at module definitions, but takes some memory.  You can
+                 control whether a filemap is generated in your @(see
+                 vl-loadconfig-p).")
+
+   (warnings    vl-warninglist-p
+                "This holds any <b>floating</b> @(see warnings)&mdash;those
+                 that aren't associated with any module.  Few warnings get put
+                 here.  Instead, most warnings are associated with particular
+                 modules.  But some warnings from the early stages of file
+                 loading (like preprocessing and lexing), or warnings that
+                 somehow occur <i>between</i> modules, can end up here.")
+
+   (defines     vl-defines-p
+                "Final defines that we ended up with.  This can be useful for
+                 extracting the values of @('`define')s.  See also @(see
+                 scope-of-defines)."))
+
+  :tag :vl-loadresult)
+
+
+(define vl-load-main ((config vl-loadconfig-p)
+                      state)
+  :returns (mv (result vl-loadresult-p :hyp :fguard)
+               (state  state-p1        :hyp (force (state-p1 state))))
+  :parents (vl-load)
+  :short "Top level interface for loading Verilog sources."
+
+  (b* ((config
+        ;; I'm pretty sure this is the right thing to do.  I've done a few
+        ;; simple tests, and both Verilog-XL and NCVerilog seem to always
+        ;; include files from the current directory first, even if +incdir
+        ;; arguments are given, and even if there is a +incdir argument that
+        ;; comes before an explicit +incdir+. or +incdir+`pwd`.  So, it seems
+        ;; like "." is always implicitly the first place to search for
+        ;; includes.
+        (change-vl-loadconfig config
+                              :include-dirs
+                              (cons "." (vl-loadconfig->include-dirs config))))
+
+       ((vl-loadconfig config) config)
+
+       ((mv ?okp overrides filemap defines override-comments walist state)
+        (time$ (vl-read-overrides config.override-dirs
+                                  config.defines
+                                  config.filemapp
+                                  state)
+               :msg "; read overrides: ~st sec, ~sa bytes~%"
+               :mintime config.mintime))
+
+       (st (make-vl-loadstate :config    config
+                              :overrides overrides
+                              :oused     nil
+                              :mtokens   nil
+                              :required  nil
+                              :mods      nil
+                              :modalist  nil
+                              :defines   defines
+                              :walist    walist
+                              :warnings  nil
+                              :filemap   filemap))
+
+       ((mv st state)
+        (time$ (vl-load-files config.start-files st state)
+               :msg "; load start-files: ~st sec, ~sa bytes~%"
+               :mintime config.mintime))
+
+       ((mv st state)
+        (time$ (vl-flush-out-modules st config.flush-tries state)
+               :msg "; load missing modules: ~st sec, ~sa bytes~%"
+               :mintime config.mintime))
+
+       ;; Final override handling.  Need to add comments to the overridden
+       ;; modules and check that all requirements are met.
+
+       ((vl-loadstate st) st)
+
+       (mods
+        (time$ (vl-inject-comments-modulelist st.mods override-comments)
+               :msg "; override comments: ~st sec, ~sa bytes~%"
+               :mintime config.mintime))
+
+       (walist
+        (time$ (with-fast-alist st.mtokens
+                 (vl-check-override-requirements st.oused st.mtokens st.walist))
+               :msg "; override checks: ~st sec, ~sa bytes~%"
+               :mintime config.mintime))
+
+       (mods
+        (time$ (vl-apply-modwarningalist mods walist)
+               :msg "; apply warnings: ~st sec, ~sa bytes~%"
+               :mintime config.mintime))
+
+       (result (make-vl-loadresult :mods mods
+                                   :filemap st.filemap
+                                   :warnings st.warnings)))
+
+    (fast-alist-free overrides)
+    (fast-alist-free (vl-loadstate->modalist st))
+    (mv result state)))
+
+
+
+(defsection vl-load-summary
+  :parents (vl-load)
+  :short "Print summary information (e.g., warnings, numbers of modules loaded,
+etc.) after modules have been loaded."
+
+  :long "<p>This is attachable.  By default we print a rather elaborate report
+that says how many modules were loaded.  Depending on the tool you are building
+you might want to attach some other kind of report here.</p>
+
+@(def vl-load-summary)"
+
+  (encapsulate
+    (((vl-load-summary * *) => *
+      :formals (config result)
+      :guard (and (vl-loadconfig-p config)
+                  (vl-loadresult-p result))))
+    (local (defun vl-load-summary (config result)
+             (declare (ignore config result))
+             nil))))
+
+(define vl-default-load-summary ((config vl-loadconfig-p)
+                                 (result vl-loadresult-p))
+  :returns (nil)
+  :parents (vl-load-summary)
+  (declare (ignore config))
+  (b* (((vl-loadresult result) result)
+       (mods result.mods)
+       (- (cw "Loaded ~x0 modules.~%" (len mods)))
+
+       ;; The warnings get returned, but we also summarize the floating
+       ;; warnings as a convenience to whomever is running the translator.
+       (mod-warnings      (mergesort (vl-modulelist-flat-warnings mods)))
+       (all-warnings      (mergesort (append-without-guard result.warnings mod-warnings)))
+       (- (or (not all-warnings)
+              (cw "Total number of warnings: ~x0.~%"
+                  (len all-warnings))))
+
+       (floating-warnings (difference all-warnings mod-warnings))
+       (- (or (not floating-warnings)
+              (vl-cw-ps-seq
+               (vl-ps-update-autowrap-col 68)
+               (vl-cw "~x0 floating warning~s1:~%"
+                      (len floating-warnings)
+                      (if (= (len floating-warnings) 1) "" "s"))
+               (vl-print-warnings floating-warnings)
+               (vl-println ""))))
+
+       (multidef-warnings (vl-keep-warnings '(:vl-multidef-mod) mod-warnings))
+       (- (or (not multidef-warnings)
+              (vl-cw-ps-seq
+               (vl-ps-update-autowrap-col 68)
+               (vl-cw "~x0 multiply defined module warning~s1:~%"
+                      (len multidef-warnings)
+                      (if (= (len multidef-warnings) 1) "" "s"))
+               (vl-print-warnings multidef-warnings)
+               (vl-println "")))))
+    nil))
+
+(defattach vl-load-summary vl-default-load-summary)
+
+(define vl-load ((config vl-loadconfig-p)
+                 &key
+                 (state 'state))
+  :returns (mv (result vl-loadresult-p :hyp :fguard)
+               (state  state-p1        :hyp (force (state-p1 state))))
+  (b* (((vl-loadconfig config) config)
+       ((mv result state)
+        (time$ (vl-load-main config state)
+               :msg "; vl-load-main: ~st sec, ~sa bytes~%"
+               :mintime config.mintime)))
+    ;; This is a reasonably good time to garbage collect since file reading,
+    ;; lexing, etc. create a lot of garbage.
+    (clear-memoize-table 'vl-actually-report-parse-error)
+    (vl-gc)
+    (vl-load-summary config result)
+    (mv result state)))

@@ -129,7 +129,6 @@
    ((glcp-generic-ev * *) => *)
    ((glcp-generic-ev-lst * *) => *)
    ((glcp-generic-geval * *) => *)
-   ((glcp-generic-geval-name) => *)
    ((glcp-generic-clause-proc-name) => *))
 
   (local (defun glcp-generic-geval (x env)
@@ -144,8 +143,6 @@
            (declare (ignore fn actuals)
                     (xargs :stobjs state))
            (mv nil nil state)))
-
-  (local (defun glcp-generic-geval-name () 'glcp-generic-geval))
 
   (local (defevaluator glcp-generic-ev glcp-generic-ev-lst
            ((if a b c)
@@ -221,18 +218,6 @@
                (gl-aside x)
                (gl-ignore x)
                (gl-error x))))))
-
-;;   (defthm glcp-generic-ev-constraint-19
-;;     (implies (and (consp x)
-;;                   (equal (car x)
-;;                          (glcp-generic-geval-name)))
-;;              (equal (glcp-generic-ev x a)
-;;                     (glcp-generic-geval
-;;                      (glcp-generic-ev (cadr x) a)
-;;                      (glcp-generic-ev (caddr x) a)))))
-
-  (defthm glcp-generic-geval-name-not-quote
-    (not (equal (glcp-generic-geval-name) 'quote)))
 
   (defthm glcp-generic-geval-atom
     (implies (atom x)
@@ -505,7 +490,6 @@
     (run-parametrized . glcp-generic-run-parametrized)
     (clause-proc . glcp-generic)
     (clause-proc-name . (glcp-generic-clause-proc-name))
-    (geval-name . (glcp-generic-geval-name))
     (run-gified . glcp-generic-run-gified-guard-wrapper)
     (apply-concrete . glcp-generic-apply-concrete-guard-wrapper)))
 
@@ -556,6 +540,25 @@
   (implies (gobject-listp vals)
            (gobject-vals-alistp (pairlis$ keys vals)))
   :hints(("Goal" :in-theory (enable gobject-listp))))
+
+
+(cutil::defaggregate glcp-config
+  ((abort-unknown booleanp :default t)
+   (abort-ctrex booleanp :default t)
+   (exec-ctrex booleanp :default t)
+   (abort-vacuous booleanp :default t)
+   (nexamples natp :rule-classes :type-prescription :default 3)
+   (hyp-clk natp :rule-classes :type-prescription :default 1000000)
+   (concl-clk natp :rule-classes :type-prescription :default 1000000)
+   (clause-proc-name symbolp :rule-classes :type-prescription)
+   (overrides) ;;  acl2::interp-defs-alistp but might be too expensive to check the guards in clause processors
+   run-before
+   run-after
+   case-split-override)
+  :tag :glcp-config)
+
+
+
 
 
 (make-event
@@ -617,27 +620,26 @@
                                   (last)))))
 
    (defthm-glcp-generic-interp-flg
-     glcp-generic-interp-gobjectp-lemma
-     (glcp-generic-interp-term
+     (defthm gobjectp-glcp-generic-interp-term
       (implies (and (bfr-p hyp)
                     (not (mv-nth 0 (glcp-generic-interp-term
-                                    x alist hyp clk obligs overrides world state))))
+                                    x alist hyp clk obligs config state))))
                (gobjectp (mv-nth 2 (glcp-generic-interp-term
-                                    x alist hyp clk obligs overrides world state))))
-      :name gobjectp-glcp-generic-interp-term)
+                                    x alist hyp clk obligs config state))))
+      :flag glcp-generic-interp-term)
 
-     (glcp-generic-interp-list
+     (defthm gobject-listp-glcp-generic-interp-list
       (implies (and (bfr-p hyp)
                     (not (mv-nth 0 (glcp-generic-interp-list
-                                    x alist hyp clk obligs overrides world state))))
+                                    x alist hyp clk obligs config state))))
                (gobject-listp (mv-nth 2 (glcp-generic-interp-list
-                                         x alist hyp clk obligs overrides world state))))
-      :name gobject-listp-glcp-generic-interp-list)
-     :hints (("goal" :induct (glcp-generic-interp-flg flag x alist hyp clk obligs overrides world state)
-              :expand ((glcp-generic-interp-term x alist hyp clk obligs overrides world state)
-                       (glcp-generic-interp-list x alist hyp clk obligs overrides world state)
-                       (glcp-generic-interp-term nil alist hyp clk obligs overrides world state)
-                       (glcp-generic-interp-list nil alist hyp clk obligs overrides world state)
+                                         x alist hyp clk obligs config state))))
+      :flag glcp-generic-interp-list)
+     :hints (("goal" ;; :induct (glcp-generic-interp-flg flag x alist hyp clk obligs config state)
+              :expand ((glcp-generic-interp-term x alist hyp clk obligs config state)
+                       (glcp-generic-interp-list x alist hyp clk obligs config state)
+                       (glcp-generic-interp-term nil alist hyp clk obligs config state)
+                       (glcp-generic-interp-list nil alist hyp clk obligs config state)
                        (gobject-listp nil)
                        (:free (a b) (gobject-listp (cons a b))))
               :in-theory (e/d** ( ;; gobjectp-gobj-ite-merge
@@ -718,33 +720,32 @@
                 
 
    (defthm-glcp-generic-interp-flg
-     glcp-generic-interp-obligs-okp-lemma
-     (glcp-generic-interp-term
+     (defthm obligs-okp-glcp-generic-interp-term
       (implies (and (pseudo-termp x)
                     (acl2::interp-defs-alistp obligs)
-                    (acl2::interp-defs-alistp overrides)
+                    (acl2::interp-defs-alistp (glcp-config->overrides config))
                     (not (mv-nth 0 (glcp-generic-interp-term
-                                    x alist hyp clk obligs overrides world state))))
+                                    x alist hyp clk obligs config state))))
                (acl2::interp-defs-alistp
                 (mv-nth 1 (glcp-generic-interp-term
-                           x alist hyp clk obligs overrides world state))))
-      :name obligs-okp-glcp-generic-interp-term)
+                           x alist hyp clk obligs config state))))
+      :flag glcp-generic-interp-term)
 
-     (glcp-generic-interp-list
+     (defthm obligs-okp-glcp-generic-interp-list
       (implies (and (pseudo-term-listp x)
                     (acl2::interp-defs-alistp obligs)
-                    (acl2::interp-defs-alistp overrides)
+                    (acl2::interp-defs-alistp (glcp-config->overrides config))
                     (not (mv-nth 0 (glcp-generic-interp-list
-                                    x alist hyp clk obligs overrides world state))))
+                                    x alist hyp clk obligs config state))))
                (acl2::interp-defs-alistp
                 (mv-nth 1 (glcp-generic-interp-list
-                           x alist hyp clk obligs overrides world state))))
-      :name obligs-okp-glcp-generic-interp-list)
-     :hints (("goal" :induct (glcp-generic-interp-flg flag x alist hyp clk obligs overrides world state)
-              :expand ((glcp-generic-interp-term x alist hyp clk obligs overrides world state)
-                       (glcp-generic-interp-list x alist hyp clk obligs overrides world state)
-                       (glcp-generic-interp-term nil alist hyp clk obligs overrides world state)
-                       (glcp-generic-interp-list nil alist hyp clk obligs overrides world state)
+                           x alist hyp clk obligs config state))))
+      :flag glcp-generic-interp-list)
+     :hints (("goal" ;; :induct (glcp-generic-interp-flg flag x alist hyp clk obligs config state)
+              :expand ((glcp-generic-interp-term x alist hyp clk obligs config state)
+                       (glcp-generic-interp-list x alist hyp clk obligs config state)
+                       (glcp-generic-interp-term nil alist hyp clk obligs config state)
+                       (glcp-generic-interp-list nil alist hyp clk obligs config state)
                        (:free (a b) (acl2::interp-defs-alistp (cons a b))))
               :in-theory (e/d** (glcp-generic-interp-flg-equivalences
                                  car-cons cdr-cons ; pseudo-termp
@@ -774,34 +775,33 @@
    (defthm true-listp-glcp-generic-interp-list
      (implies (and (bfr-p hyp)
                    (not (mv-nth 0 (glcp-generic-interp-list
-                                   x alist hyp clk obligs overrides world state))))
+                                   x alist hyp clk obligs config state))))
               (true-listp (mv-nth 2 (glcp-generic-interp-list
-                                     x alist hyp clk obligs overrides world state))))
+                                     x alist hyp clk obligs config state))))
      :hints(("Goal" :in-theory (enable gobject-listp-true-listp))))
 
 
    (include-book "system/f-put-global" :dir :system)
 
    (defthm-glcp-generic-interp-flg
-     glcp-generic-interp-state-p1-lemma
-     (glcp-generic-interp-term
+     (defthm state-p1-glcp-generic-interp-term
       (implies (state-p1 state)
                (state-p1
                 (mv-nth 3 (glcp-generic-interp-term
-                           x alist hyp clk obligs overrides world state))))
-      :name state-p1-glcp-generic-interp-term)
+                           x alist hyp clk obligs config state))))
+      :flag glcp-generic-interp-term)
 
-     (glcp-generic-interp-list
+     (defthm state-p1-glcp-generic-interp-list
       (implies (state-p1 state)
                (state-p1
                 (mv-nth 3 (glcp-generic-interp-list
-                           x alist hyp clk obligs overrides world state))))
-      :name state-p1-glcp-generic-interp-list)
-     :hints (("goal" :induct (glcp-generic-interp-flg flag x alist hyp clk obligs overrides world state)
-              :expand ((glcp-generic-interp-term x alist hyp clk obligs overrides world state)
-                       (glcp-generic-interp-list x alist hyp clk obligs overrides world state)
-                       (glcp-generic-interp-term nil alist hyp clk obligs overrides world state)
-                       (glcp-generic-interp-list nil alist hyp clk obligs overrides world state))
+                           x alist hyp clk obligs config state))))
+      :flag glcp-generic-interp-list)
+     :hints (("goal" :induct (glcp-generic-interp-flg flag x alist hyp clk obligs config state)
+              :expand ((glcp-generic-interp-term x alist hyp clk obligs config state)
+                       (glcp-generic-interp-list x alist hyp clk obligs config state)
+                       (glcp-generic-interp-term nil alist hyp clk obligs config state)
+                       (glcp-generic-interp-list nil alist hyp clk obligs config state))
               :in-theory (e/d** (glcp-generic-interp-flg-equivalences
                                  acl2::state-p1-put-global
                                  glcp-interp-error-fn
@@ -820,6 +820,11 @@
 
 
 (set-ignore-ok t)
+
+(local (defthm plist-worldp-of-w-state
+         (implies (state-p1 state)
+                  (plist-worldp (w state)))
+         :hints(("Goal" :in-theory (enable state-p1 get-global)))))
 
 (make-event
  (b* (((er &) (in-theory nil))
@@ -845,6 +850,7 @@
                        glcp-generic-interp-list
                        consp-assoc-equal
                        pseudo-term-listp
+                       w
                        nonnil-symbol-listp-pseudo-term-listp
                        bfr-p true-listp symbol-listp
                        not no-duplicatesp-equal
@@ -910,36 +916,35 @@
                        (acl2::interp-defs-alist-clauses out-defs)))))))
 
    (defthm-glcp-generic-interp-flg
-     glcp-generic-bad-obligs-lemma
-     (glcp-generic-interp-term
+     (defthm glcp-generic-interp-term-bad-obligs
       (implies (and (not (glcp-generic-ev-theoremp
                           (conjoin-clauses
                            (acl2::interp-defs-alist-clauses obligs))))
                     (not (mv-nth 0 (glcp-generic-interp-term
-                                    x alist hyp clk obligs overrides world state))))
+                                    x alist hyp clk obligs config state))))
                (not (glcp-generic-ev-theoremp
                      (conjoin-clauses
                       (acl2::interp-defs-alist-clauses
                        (mv-nth 1 (glcp-generic-interp-term
-                                  x alist hyp clk obligs overrides world state)))))))
-      :name glcp-generic-interp-term-bad-obligs)
-     (glcp-generic-interp-list
+                                  x alist hyp clk obligs config state)))))))
+      :flag glcp-generic-interp-term)
+     (defthm glcp-generic-interp-list-bad-obligs
       (implies (and (not (glcp-generic-ev-theoremp
                           (conjoin-clauses
                            (acl2::interp-defs-alist-clauses obligs))))
                     (not (mv-nth 0 (glcp-generic-interp-list
-                                    x alist hyp clk obligs overrides world state))))
+                                    x alist hyp clk obligs config state))))
                (not (glcp-generic-ev-theoremp
                      (conjoin-clauses
                       (acl2::interp-defs-alist-clauses
                        (mv-nth 1 (glcp-generic-interp-list
-                                  x alist hyp clk obligs overrides world state)))))))
-      :name glcp-generic-interp-list-bad-obligs)
-     :hints (("goal" :induct (glcp-generic-interp-flg flag x alist hyp clk obligs overrides world state)
-              :expand ((glcp-generic-interp-term x alist hyp clk obligs overrides world state)
-                       (glcp-generic-interp-list x alist hyp clk obligs overrides world state)
-                       (glcp-generic-interp-term nil alist hyp clk obligs overrides world state)
-                       (glcp-generic-interp-list nil alist hyp clk obligs overrides world state))
+                                  x alist hyp clk obligs config state)))))))
+      :flag glcp-generic-interp-list)
+     :hints (("goal" :induct (glcp-generic-interp-flg flag x alist hyp clk obligs config state)
+              :expand ((glcp-generic-interp-term x alist hyp clk obligs config state)
+                       (glcp-generic-interp-list x alist hyp clk obligs config state)
+                       (glcp-generic-interp-term nil alist hyp clk obligs config state)
+                       (glcp-generic-interp-list nil alist hyp clk obligs config state))
               :in-theory (e/d** (glcp-generic-interp-flg-equivalences
                                  hons-acons car-cons cdr-cons
                                  glcp-interp-error           
@@ -958,10 +963,9 @@
                     (conjoin-clauses
                      (acl2::interp-defs-alist-clauses
                       (mv-nth 1 (glcp-generic-interp-term
-                                 x alist hyp clk obligs overrides world state))))))
+                                 x alist hyp clk obligs config state))))))
               (mv-nth 0 (glcp-generic-interp-term
-                         x alist hyp clk obligs overrides
-                         world state))))
+                         x alist hyp clk obligs config state))))
 
 
    (defthm-glcp-generic-interp-flg
@@ -970,16 +974,16 @@
      (glcp-generic-interp-list
       (mv-let (erp obligs res)
         (glcp-generic-interp-list
-         x alist hyp clk obligs overrides world state)
+         x alist hyp clk obligs config state)
         (declare (ignore obligs))
         (implies (not erp)
                  (equal (len res)
                         (len x))))
       :name len-glcp-generic-interp-list)
      :hints (("goal" :induct (glcp-generic-interp-flg flag x alist hyp clk obligs
-                                                      overrides world state)
-              :expand ((glcp-generic-interp-list x alist hyp clk obligs overrides world state)
-                       (glcp-generic-interp-list nil alist hyp clk obligs overrides world state)))))
+                                                      config state)
+              :expand ((glcp-generic-interp-list x alist hyp clk obligs config state)
+                       (glcp-generic-interp-list nil alist hyp clk obligs config state)))))
            
 
    (defthm glcp-generic-obligs-okp-final-implies-start
@@ -987,9 +991,9 @@
                     (conjoin-clauses
                      (acl2::interp-defs-alist-clauses
                       (mv-nth 1 (glcp-generic-interp-term
-                                 x alist hyp clk obligs overrides world state)))))
+                                 x alist hyp clk obligs config state)))))
                    (not (mv-nth 0 (glcp-generic-interp-term
-                                   x alist hyp clk obligs overrides world state))))
+                                   x alist hyp clk obligs config state))))
               (glcp-generic-ev-theoremp
                (conjoin-clauses
                 (acl2::interp-defs-alist-clauses
@@ -1200,54 +1204,53 @@
 ;;                                                 bfr-and)))))
 
      (defthm-glcp-generic-interp-flg
-       glcp-generic-interp-correct-lemma
-       (glcp-generic-interp-term
-        (implies (and (bfr-p hyp)
-                      (bfr-eval hyp (car env))
-                      (alistp alist)
-                      (pseudo-termp x)
-                      (not (mv-nth 0 (glcp-generic-interp-term
-                                      x alist hyp clk obligs overrides world state)))
-                      (acl2::interp-defs-alistp obligs)
-                      (acl2::interp-defs-alistp overrides)
-                      (glcp-generic-ev-theoremp
-                       (conjoin-clauses
-                        (acl2::interp-defs-alist-clauses
-                         (mv-nth 1 (glcp-generic-interp-term
-                                    x alist hyp clk obligs overrides world state))))))
-                 (equal (glcp-generic-geval
-                         (mv-nth 2 (glcp-generic-interp-term
-                                    x alist hyp clk obligs overrides world state))
-                         env)
-                        (glcp-generic-ev x (glcp-generic-geval-alist alist env))))
-        :name glcp-generic-interp-term-correct)
+       (defthm glcp-generic-interp-term-correct
+         (implies (and (bfr-p hyp)
+                       (bfr-eval hyp (car env))
+                       (alistp alist)
+                       (pseudo-termp x)
+                       (not (mv-nth 0 (glcp-generic-interp-term
+                                       x alist hyp clk obligs config state)))
+                       (acl2::interp-defs-alistp obligs)
+                       (acl2::interp-defs-alistp (glcp-config->overrides config))
+                       (glcp-generic-ev-theoremp
+                        (conjoin-clauses
+                         (acl2::interp-defs-alist-clauses
+                          (mv-nth 1 (glcp-generic-interp-term
+                                     x alist hyp clk obligs config state))))))
+                  (equal (glcp-generic-geval
+                          (mv-nth 2 (glcp-generic-interp-term
+                                     x alist hyp clk obligs config state))
+                          env)
+                         (glcp-generic-ev x (glcp-generic-geval-alist alist env))))
+         :flag glcp-generic-interp-term)
 
-       (glcp-generic-interp-list
-        (implies (and (bfr-p hyp)
-                      (bfr-eval hyp (car env))
-                      (not (mv-nth 0 (glcp-generic-interp-list
-                                      x alist hyp clk obligs overrides world state)))
-                      (acl2::interp-defs-alistp obligs)
-                      (acl2::interp-defs-alistp overrides)
-                      (alistp alist)
-                      (pseudo-term-listp x)
-                      (glcp-generic-ev-theoremp
-                       (conjoin-clauses
-                        (acl2::interp-defs-alist-clauses
-                         (mv-nth 1 (glcp-generic-interp-list
-                                    x alist hyp clk obligs overrides world state))))))
-                 (equal (glcp-generic-geval-lst
-                         (mv-nth 2 (glcp-generic-interp-list
-                                    x alist hyp clk obligs overrides world state))
-                         env)
-                        (glcp-generic-ev-lst x (glcp-generic-geval-alist alist env))))
-        :name glcp-generic-interp-list-correct)
-       :hints (("goal" :induct (glcp-generic-interp-flg flag x alist hyp clk obligs overrides world state)
+       (defthm glcp-generic-interp-list-correct
+         (implies (and (bfr-p hyp)
+                       (bfr-eval hyp (car env))
+                       (not (mv-nth 0 (glcp-generic-interp-list
+                                       x alist hyp clk obligs config state)))
+                       (acl2::interp-defs-alistp obligs)
+                       (acl2::interp-defs-alistp (glcp-config->overrides config))
+                       (alistp alist)
+                       (pseudo-term-listp x)
+                       (glcp-generic-ev-theoremp
+                        (conjoin-clauses
+                         (acl2::interp-defs-alist-clauses
+                          (mv-nth 1 (glcp-generic-interp-list
+                                     x alist hyp clk obligs config state))))))
+                  (equal (glcp-generic-geval-lst
+                          (mv-nth 2 (glcp-generic-interp-list
+                                     x alist hyp clk obligs config state))
+                          env)
+                         (glcp-generic-ev-lst x (glcp-generic-geval-alist alist env))))
+         :flag glcp-generic-interp-list)
+       :hints (("goal" ;; :induct (glcp-generic-interp-flg flag x alist hyp clk obligs config state)
                 :expand
-                ((glcp-generic-interp-term x alist hyp clk obligs overrides world state)
-                 (glcp-generic-interp-list x alist hyp clk obligs overrides world state)
-                 (glcp-generic-interp-term nil alist hyp clk obligs overrides world state)
-                 (glcp-generic-interp-list nil alist hyp clk obligs overrides world state)
+                ((glcp-generic-interp-term x alist hyp clk obligs config state)
+                 (glcp-generic-interp-list x alist hyp clk obligs config state)
+                 (glcp-generic-interp-term nil alist hyp clk obligs config state)
+                 (glcp-generic-interp-list nil alist hyp clk obligs config state)
                  (:free (a b) (glcp-generic-geval-lst (cons a b) env))
                  (glcp-generic-geval-lst nil env))
                 :do-not '(generalize fertilize)
@@ -1293,7 +1296,7 @@
       nil
     (cons (cadr (car x))
           (strip-cadrs (cdr x)))))
-                  
+
 
 (mutual-recursion
  (defun collect-vars (x)
@@ -1622,51 +1625,8 @@
 
 
 
-;; (defun glcp-run-evfn (evfn obj env state)
-;;   (declare (xargs :stobjs state
-;;                   :mode :program))
-;;   (b* ((term `(,evfn ',obj ',env))
-;;        ((er (cons & val))
-;;         (acl2::simple-translate-and-eval
-;;          term nil nil (acl2::msg "glcp-run-evfn ~x0" evfn)
-;;          'glcp-run-evfn (w state) state)))
-;;     (value val)))
-
-;; (defun glcp-run-evfn-alist (evfn alist env state)
-;;   (declare (xargs :stobjs state
-;;                   :mode :program))
-;;   (if (atom alist)
-;;       (value nil)
-;;     (b* (((er val) (glcp-run-evfn evfn (cdar alist) env state))
-;;          ((er rest) (glcp-run-evfn-alist evfn (cdr alist) env state)))
-;;       (value (cons (cons (caar alist) val) rest)))))
-
 (include-book "centaur/misc/vecs-ints" :dir :system)
 
-;; (defun glcp-satisfying-assignment (evfn bdd alist bound rand state)
-;;   (declare (xargs :stobjs state
-;;                   :mode :program))
-;;   (b* ((bdd-assign (to-satisfying-assign (acl2::nat-to-v rand bound) bdd)))
-;;     (glcp-run-evfn-alist evfn alist (list bdd-assign) state)))
-
-;; (defun glcp-n-satisfying-assignments (n bdd evfn alist bound state)
-;;   (declare (xargs :stobjs state
-;;                   :mode :program))
-;;   (if (zp n)
-;;       (value nil)
-;;     (b* (((mv rand state) (acl2::random$ (ash 1 bound) state))
-;;          ((er assign)
-;;           (glcp-satisfying-assignment evfn bdd alist bound rand state))
-;;          ((er rest)
-;;           (glcp-n-satisfying-assignments
-;;            (1- n) bdd evfn alist bound state)))
-;;       (value (cons assign rest)))))
-
-;; (defun glcp-pretty-print-assignments (alists)
-;;   (if (atom alists)
-;;       nil
-;;     (prog2$ (cw "~x0~%~%" (glcp-make-pretty-bindings (car alists)))
-;;             (glcp-pretty-print-assignments (cdr alists)))))
 
 (defun n-satisfying-assigns-and-specs (n hyp-bdd bdd bound state)
   (if (zp n)
@@ -1764,10 +1724,9 @@
          (- (cw "Result: ~x0~%~%" val)))
       (glcp-pretty-print-assignments (1+ n) (cdr ctrexes) concl execp state))))
 
-(defun glcp-print-ctrexamples (evfn ctrexes warn-err type concl execp state)
+(defun glcp-print-ctrexamples (ctrexes warn-err type concl execp state)
   (declare (xargs :stobjs state
-                  :mode :program)
-           (ignorable evfn))
+                  :mode :program))
   (b* ((- (cw "
 *** SYMBOLIC EXECUTION ~@0 ***: ~@1 found." warn-err type))
        (- (and ctrexes
@@ -1782,14 +1741,14 @@ class:~%~%" (len ctrexes)))))
        ((er &) (glcp-pretty-print-assignments 1 ctrexes concl execp state)))
     (value nil)))
 
-(defun glcp-counterexample-wormhole (ctrexes warn-err type evfn concl execp)
+(defun glcp-counterexample-wormhole (ctrexes warn-err type concl execp)
   (wormhole
    'glcp-counterexample-wormhole
    '(lambda (whs) whs)
    nil
    `(b* (((er &)
           (glcp-print-ctrexamples
-           ',evfn ',ctrexes ',warn-err ',type ',concl ',execp state)))
+           ',ctrexes ',warn-err ',type ',concl ',execp state)))
       (value :q))
    :ld-prompt nil
    :ld-pre-eval-print nil
@@ -1827,10 +1786,9 @@ class:~%~%" (len ctrexes)))))
 (in-theory (disable glcp-gen-ctrexes))
   
 
-(defun glcp-analyze-interp-result (val al hyp-bdd abort-unknown abort-ctrex
-                                       exec-ctrex n geval-name clause-proc id
-                                       concl state)
-  (b* ((test (gtests val t))
+(defun glcp-analyze-interp-result (val al hyp-bdd id concl config state)
+  (b* (((glcp-config config) config)
+       (test (gtests val t))
        (hyp-param (bfr-to-param-space hyp-bdd hyp-bdd))
        (unk (bfr-and hyp-param (gtests-unknown test)))
        (false (bfr-and hyp-param
@@ -1842,32 +1800,32 @@ class:~%~%" (len ctrexes)))))
        ((mv false-sat false-succ false-ctrex) (bfr-sat false))
        ((when (and false-sat false-succ))
         (b* (((er ctrexes) (glcp-gen-ctrexes
-                            false-ctrex al hyp-bdd n state))
+                            false-ctrex al hyp-bdd config.nexamples state))
              (state (acl2::f-put-global 'glcp-counterex-assignments
                                         ctrexes state)))
           (prog2$ (glcp-counterexample-wormhole
-                   ctrexes "ERROR" "Counterexamples" geval-name
-                   concl exec-ctrex)
-                  (if abort-ctrex
+                   ctrexes "ERROR" "Counterexamples"
+                   concl config.exec-ctrex)
+                  (if config.abort-ctrex
                       (glcp-error
                        (acl2::msg "~
-~x0: Counterexamples found in ~@1; aborting~%" clause-proc id))
+~x0: Counterexamples found in ~@1; aborting~%" config.clause-proc-name id))
                     (value (list ''nil))))))
        ;; False was either unsat or the check failed.  Either way we check unknown.
        ((mv unk-sat unk-succ unk-ctrex) (bfr-sat unk))
        ((when (and unk-sat unk-succ))
         (b* (((er ctrexes) (glcp-gen-ctrexes
-                            unk-ctrex al hyp-bdd n state))
+                            unk-ctrex al hyp-bdd config.nexamples state))
              (state (acl2::f-put-global 'glcp-indeterminate-assignments
                                         ctrexes state)))
           (prog2$ (glcp-counterexample-wormhole
-                   ctrexes (if abort-unknown "ERROR" "WARNING")
-                   "Indeterminate results" geval-name concl exec-ctrex)
-                  (if abort-unknown
+                   ctrexes (if config.abort-unknown "ERROR" "WARNING")
+                   "Indeterminate results" concl config.exec-ctrex)
+                  (if config.abort-unknown
                       (glcp-error
                        (acl2::msg "~
 ~x0: Indeterminate results found in ~@1; aborting~%"
-                                  clause-proc id))
+                                  config.clause-proc-name id))
                     (value (list ''nil))
                     ;; NOTE: We used to produce the following clause when an
                     ;; unknown result was encountered, giving the user the chance
@@ -1889,10 +1847,10 @@ class:~%~%" (len ctrexes)))))
         ;; (modulo side-goals).
         (value (list ''t))))
     ;; One or both of the SAT checks failed.
-    (if abort-unknown
+    (if config.abort-unknown
         (glcp-error
          (acl2::msg "~ ~x0: SAT check failed in ~@1; aborting~%"
-                    clause-proc id))
+                    config.clause-proc-name id))
       (value (list ''nil))
       ;; NOTE: See above comment about soundness problems with
       ;; geval/bfr-mode/attachment.
@@ -1901,36 +1859,37 @@ class:~%~%" (len ctrexes)))))
       )))
 
 (local
- (defthm glcp-analyze-interp-result-irrelevant
-   (and (implies (syntaxp (not (and (equal al ''nil)
-                                    (equal n ''nil)
-                                    (equal geval-name ''nil)
-                                    (equal concl ''nil)
-                                    (equal st ''nil))))
-                 (equal (mv-nth 0 (glcp-analyze-interp-result
-                                   val al hyp-bdd abort-unknown abort-ctrex
-                                   exec-ctrex n
-                                   geval-name clause-proc id concl st))
-                        (mv-nth 0 (glcp-analyze-interp-result
-                                   val nil hyp-bdd abort-unknown abort-ctrex
-                                   nil nil nil clause-proc id nil nil))))
-        (implies (syntaxp (not (and (equal al ''nil)
-                                    (equal n ''nil)
-                                    (equal concl ''nil)
-                                    (equal st ''nil) 
-                                    (equal clause-proc ''nil))))
-                 (equal (mv-nth 1 (glcp-analyze-interp-result
-                                   val al hyp-bdd  abort-unknown abort-ctrex
-                                   exec-ctrex n
-                                   geval-name clause-proc id concl st))
-                        (mv-nth 1 (glcp-analyze-interp-result
-                                   val nil hyp-bdd abort-unknown abort-ctrex nil nil
-                                   geval-name nil nil nil nil)))))
-   :hints(("Goal" :in-theory '(glcp-analyze-interp-result
-                               glcp-gen-ctrexes-does-not-fail
-                               glcp-error)))))
+ (encapsulate nil
+   (local (defthm equal-of-cons
+            (equal (equal (cons a b) c)
+                   (and (consp c)
+                        (equal a (car c))
+                        (equal b (cdr c))))))
+   (defthm glcp-analyze-interp-result-irrelevant
+     (and (implies (syntaxp (not (and (equal al ''nil)
+                                      (equal concl ''nil)
+                                      (equal st ''nil))))
+                   (and (equal (mv-nth 0 (glcp-analyze-interp-result
+                                          val al hyp-bdd id concl config st))
+                               (mv-nth 0 (glcp-analyze-interp-result
+                                          val nil hyp-bdd id nil config nil)))
+                        (equal (mv-nth 1 (glcp-analyze-interp-result
+                                          val al hyp-bdd id concl config st))
+                               (mv-nth 1 (glcp-analyze-interp-result
+                                          val nil hyp-bdd id nil config nil)))))
+          ;; (implies (syntaxp (not (and (equal al ''nil)
+          ;;                             (equal concl ''nil)
+          ;;                             (equal st ''nil))))
+          ;;          (equal (mv-nth 1 (glcp-analyze-interp-result
+          ;;                            val al hyp-bdd id concl config st))
+          ;;                 (mv-nth 1 (glcp-analyze-interp-result
+          ;;                            val nil hyp-bdd abort-unknown abort-ctrex nil nil
+          ;;                            geval-name nil nil nil nil))))
+          )
+     :hints(("Goal" :in-theory '(glcp-analyze-interp-result
+                                 glcp-gen-ctrexes-does-not-fail
+                                 glcp-error))))))
 
-                               
 
 
 
@@ -1943,9 +1902,7 @@ class:~%~%" (len ctrexes)))))
             (not (glcp-generic-ev
                   (disjoin
                    (mv-nth 1 (glcp-analyze-interp-result
-                              val al hyp-bdd abort-unknown abort-ctrex
-                              exec-ctrex n (glcp-generic-geval-name)
-                              clause-proc id concl state)))
+                              val al hyp-bdd id concl config state)))
                   alist)))
    :hints (("goal" :use
             ((:instance glcp-generic-geval-gtests-nonnil-correct
@@ -1972,14 +1929,11 @@ class:~%~%" (len ctrexes)))))
 
 (local
  (defthm glcp-analyze-interp-result-pseudo-term-listp
-   (implies (and (symbolp geval-name)
-                 (not (equal geval-name 'quote)))
-            (pseudo-term-listp
-             (mv-nth 1 (glcp-analyze-interp-result
-                        val al hyp-bdd abort-unknown abort-ctrex exec-ctrex n geval-name
-                        clause-proc id concl state))))))
+   (pseudo-term-listp
+    (mv-nth 1 (glcp-analyze-interp-result
+               val al hyp-bdd id concl config state)))))
 
-(in-theory (disable glcp-analyze-interp-result))  
+(in-theory (disable glcp-analyze-interp-result))
 
 (local
  (progn
@@ -2139,7 +2093,7 @@ The definition body, ~x1, is not a pseudo-term."
                 (cadr term))
                (t `(not ,term))))
         (t `(not ,term))))
-                
+
 (local
  (progn
    (defthm glcp-generic-ev-dumb-negate-lit
@@ -2218,9 +2172,8 @@ The definition body, ~x1, is not a pseudo-term."
      (defthm glcp-generic-run-parametrized-correct
        (b* (((mv erp (cons clauses out-obligs) &)
              (glcp-generic-run-parametrized
-              hyp concl untrans-concl vars bindings id abort-unknown
-              abort-ctrex exec-ctrex abort-vacuous nexamples hyp-clk concl-clk obligs
-              overrides world state)))
+              hyp concl untrans-concl vars bindings id obligs
+              config state)))
          (implies (and (not (glcp-generic-ev concl alist))
                        (glcp-generic-ev-theoremp
                         (conjoin-clauses
@@ -2228,7 +2181,7 @@ The definition body, ~x1, is not a pseudo-term."
                        (not erp)
                        (glcp-generic-ev hyp alist)
                        (acl2::interp-defs-alistp obligs)
-                       (acl2::interp-defs-alistp overrides)
+                       (acl2::interp-defs-alistp (glcp-config->overrides config))
                        (pseudo-termp concl)
                        (pseudo-termp hyp)
                        (equal vars (collect-vars concl)))
@@ -2246,14 +2199,11 @@ The definition body, ~x1, is not a pseudo-term."
                       (gl-cp-hint acl2::clauses-result assoc-equal
                                   glcp-generic-run-parametrized not
                                   glcp-error))
-               
                 :restrict ((glcp-generic-ev-disjoin-append ((a alist)))))
                (and stable-under-simplificationp
                     (acl2::bind-as-in-definition
                      (glcp-generic-run-parametrized
-                      hyp concl untrans-concl (collect-vars concl) bindings id
-                      abort-unknown abort-ctrex exec-ctrex abort-vacuous nexamples hyp-clk
-                      concl-clk obligs overrides world state)
+                      hyp concl untrans-concl (collect-vars concl) bindings id obligs config state)
                      (cov-clause val-clause hyp-bdd hyp-val)
                      (b* ((binding-env '(shape-spec-to-env
                                          (strip-cadrs bindings)
@@ -2278,8 +2228,7 @@ The definition body, ~x1, is not a pseudo-term."
    (defthm glcp-generic-run-parametrized-bad-obligs
      (b* (((mv erp (cons & out-obligs) &)
            (glcp-generic-run-parametrized
-            hyp concl untrans-concl vars bindings id abort-unknown abort-ctrex exec-ctrex abort-vacuous
-            nexamples hyp-clk concl-clk obligs overrides world state)))
+            hyp concl untrans-concl vars bindings id obligs config state)))
        (implies (and (not erp)
                      (not (glcp-generic-ev-theoremp
                            (conjoin-clauses
@@ -2291,8 +2240,7 @@ The definition body, ~x1, is not a pseudo-term."
    (defthm glcp-generic-run-parametrized-ok-obligs
      (b* (((mv erp (cons & out-obligs) &)
            (glcp-generic-run-parametrized
-            hyp concl untrans-concl vars bindings id abort-unknown abort-ctrex exec-ctrex abort-vacuous
-            nexamples hyp-clk concl-clk obligs overrides world state)))
+            hyp concl untrans-concl vars bindings id obligs config state)))
        (implies (and (not erp)
                      (glcp-generic-ev-theoremp
                       (conjoin-clauses
@@ -2304,15 +2252,14 @@ The definition body, ~x1, is not a pseudo-term."
    (defthm glcp-generic-run-parametrized-defs-alistp
      (b* (((mv erp (cons & out-obligs) &)
            (glcp-generic-run-parametrized
-            hyp concl untrans-concl vars bindings id abort-unknown abort-ctrex exec-ctrex abort-vacuous
-            nexamples hyp-clk concl-clk obligs overrides world state)))
+            hyp concl untrans-concl vars bindings id obligs config state)))
        (implies (and (acl2::interp-defs-alistp obligs)
-                     (acl2::interp-defs-alistp overrides)
+                     (acl2::interp-defs-alistp (glcp-config->overrides config))
                      (pseudo-termp concl)
                      (not erp))
                 (acl2::interp-defs-alistp out-obligs))))))
 
-             
+
 (in-theory (disable glcp-generic-run-parametrized))
 
 (defun glcp-cases-wormhole (term id)
@@ -2340,22 +2287,17 @@ The definition body, ~x1, is not a pseudo-term."
    (defthm glcp-generic-run-cases-interp-defs-alistp
      (b* (((mv erp (cons & out-obligs) &)
            (glcp-generic-run-cases
-            param-alist concl untrans-concl vars abort-unknown abort-ctrex exec-ctrex abort-vacuous
-            nexamples hyp-clk concl-clk run-before run-after obligs overrides
-            world state)))
+            param-alist concl untrans-concl vars obligs config state)))
        (implies (and (acl2::interp-defs-alistp obligs)
-                     (acl2::interp-defs-alistp overrides)
+                     (acl2::interp-defs-alistp (glcp-config->overrides config))
                      (pseudo-termp concl)
                      (not erp))
                 (acl2::interp-defs-alistp out-obligs))))
-  
 
    (defthm glcp-generic-run-cases-correct
      (b* (((mv erp (cons clauses out-obligs) &)
            (glcp-generic-run-cases
-            param-alist concl untrans-concl vars abort-unknown abort-ctrex exec-ctrex abort-vacuous
-            nexamples hyp-clk concl-clk run-before run-after obligs overrides
-            world state)))
+            param-alist concl untrans-concl vars obligs config state)))
        (implies (and (glcp-generic-ev-theoremp
                       (conjoin-clauses
                        (acl2::interp-defs-alist-clauses out-obligs)))
@@ -2364,7 +2306,7 @@ The definition body, ~x1, is not a pseudo-term."
                                       a)
                      (not erp)
                      (acl2::interp-defs-alistp obligs)
-                     (acl2::interp-defs-alistp overrides)
+                     (acl2::interp-defs-alistp (glcp-config->overrides config))
                      (pseudo-termp concl)
                      (pseudo-term-listp (strip-cars param-alist))
                      (equal vars (collect-vars concl)))
@@ -2374,9 +2316,7 @@ The definition body, ~x1, is not a pseudo-term."
    (defthm glcp-generic-run-cases-bad-obligs
      (b* (((mv erp (cons & out-obligs) &)
            (glcp-generic-run-cases
-            param-alist concl untrans-concl vars abort-unknown abort-ctrex exec-ctrex abort-vacuous
-            nexamples hyp-clk concl-clk run-before run-after obligs overrides
-            world state)))
+            param-alist concl untrans-concl vars obligs config state)))
        (implies (and (not erp)
                      (not (glcp-generic-ev-theoremp
                            (conjoin-clauses
@@ -2388,9 +2328,7 @@ The definition body, ~x1, is not a pseudo-term."
    (defthm glcp-generic-run-cases-ok-obligs
      (b* (((mv erp (cons & out-obligs) &)
            (glcp-generic-run-cases
-            param-alist concl untrans-concl vars abort-unknown abort-ctrex exec-ctrex abort-vacuous
-            nexamples hyp-clk concl-clk run-before run-after obligs overrides
-            world state)))
+            param-alist concl untrans-concl vars obligs config state)))
        (implies (and (not erp)
                      (glcp-generic-ev-theoremp
                       (conjoin-clauses
@@ -2483,8 +2421,7 @@ The definition body, ~x1, is not a pseudo-term."
    (defthmd glcp-generic-run-parametrized-correct-rw
      (b* (((mv erp (cons clauses out-obligs) &)
            (glcp-generic-run-parametrized
-            hyp concl untrans-concl vars bindings id abort-unknown abort-ctrex exec-ctrex abort-vacuous
-            nexamples hyp-clk concl-clk obligs overrides world st)))
+            hyp concl untrans-concl vars bindings id obligs config st)))
        (implies (and (bind-free (check-top-level-bind-free
                                  '((alist . alist)) acl2::mfc state)
                                 (alist))
@@ -2494,7 +2431,7 @@ The definition body, ~x1, is not a pseudo-term."
                      (not erp)
                      (glcp-generic-ev hyp alist)
                      (acl2::interp-defs-alistp obligs)
-                     (acl2::interp-defs-alistp overrides)
+                     (acl2::interp-defs-alistp (glcp-config->overrides config))
                      (pseudo-termp concl)
                      (pseudo-termp hyp)
                      (equal vars (collect-vars concl)))
@@ -2511,9 +2448,7 @@ The definition body, ~x1, is not a pseudo-term."
    (defthmd glcp-generic-run-cases-correct-rw
      (b* (((mv erp (cons clauses out-obligs) &)
            (glcp-generic-run-cases
-            param-alist concl untrans-concl vars abort-unknown abort-ctrex exec-ctrex abort-vacuous
-            nexamples hyp-clk concl-clk run-before run-after obligs overrides
-            world st)))
+            param-alist concl untrans-concl vars obligs config st)))
        (implies (and (bind-free (check-top-level-bind-free
                                  '((alist . alist)) mfc state) (alist))
                      (glcp-generic-ev-theoremp
@@ -2523,7 +2458,7 @@ The definition body, ~x1, is not a pseudo-term."
                                       a)
                      (not erp)
                      (acl2::interp-defs-alistp obligs)
-                     (acl2::interp-defs-alistp overrides)
+                     (acl2::interp-defs-alistp (glcp-config->overrides config))
                      (pseudo-termp concl)
                      (pseudo-term-listp (strip-cars param-alist))
                      (equal vars (collect-vars concl)))
@@ -2565,7 +2500,7 @@ The definition body, ~x1, is not a pseudo-term."
            acl2::clauses-result
            glcp-generic glcp-error
            assoc-equal pseudo-term-listp))
-               
+
     :restrict ((glcp-generic-ev-disjoin-append ((a alist)))
                (glcp-generic-ev-disjoin-cons ((a alist)))))
    (and stable-under-simplificationp
@@ -2600,16 +2535,13 @@ The definition body, ~x1, is not a pseudo-term."
 ;; produces all the other necessary clauses.  We define this by
 ;; using a mock interp-term function that just returns T and no
 ;; obligs, and also a mock analyze-term
-(defun glcp-fake-interp-term (x bindings hyp clk obligs overrides
-                                world state)
-  (declare (ignore x bindings hyp clk overrides world))
+(defun glcp-fake-interp-term (x bindings hyp clk obligs config state)
+  (declare (ignore x bindings hyp clk config))
   (mv nil obligs t state))
 
 (defun glcp-fake-analyze-interp-result
-  (val param-al hyp-bdd abort-unknown abort-ctrex exec-ctrex nexamples geval-name clause-proc-name id
-       concl state)
-  (declare (ignore val param-al hyp-bdd abort-unknown abort-ctrex exec-ctrex nexamples geval-name
-                   clause-proc-name id concl)
+  (val param-al hyp-bdd id concl config state)
+  (declare (ignore val param-al hyp-bdd id concl config)
            (xargs :stobjs state))
   (mv nil '('t) state))
 
@@ -2619,7 +2551,6 @@ The definition body, ~x1, is not a pseudo-term."
     (run-parametrized . glcp-side-goals-run-parametrized)
     (clause-proc . glcp-side-goals-clause-proc1)
     (clause-proc-name . 'glcp-side-goals-clause-proc)
-    (geval-name . 'glcp-fake-geval)
     (glcp-analyze-interp-result . glcp-fake-analyze-interp-result)))
 
 (make-event (sublis *glcp-side-goals-subst*
@@ -2637,7 +2568,7 @@ The definition body, ~x1, is not a pseudo-term."
         (mv "This clause processor can be used only on clause '('T)."
             nil state))
        ((list* & & hyp & concl &) hints))
-    (glcp-side-goals-clause-proc1 
+    (glcp-side-goals-clause-proc1
      `((implies ,hyp ,concl)) hints state)))
 
 (defevaluator glcp-side-ev glcp-side-ev-lst ((if a b c)))
@@ -2723,8 +2654,7 @@ The definition body, ~x1, is not a pseudo-term."
     (run-cases . gl-universal-run-cases)
     (run-parametrized . gl-universal-run-parametrized)
     (clause-proc . gl-universal-clause-proc)
-    (clause-proc-name . 'gl-universal-clause-proc)
-    (geval-name . 'generic-geval)))
+    (clause-proc-name . 'gl-universal-clause-proc)))
 
 (program)
 
@@ -2748,14 +2678,6 @@ The definition body, ~x1, is not a pseudo-term."
     gl-universal-clause-proc
     nil :ttag gl-universal-clause-proc))
 
-         
-       
-
-
-
-
-
-
 
 
 
@@ -2773,7 +2695,7 @@ The definition body, ~x1, is not a pseudo-term."
          (table-alist 'preferred-defs world) state))
        ((mv er obligs ans state)
         (gl-universal-interp-term
-         x alist hyp clk nil overrides world state))
+         x alist hyp clk nil (make-glcp-config :overrides overrides) state))
        ((when er) (mv er nil state))
        (- (flush-hons-get-hash-table-link obligs)))
     (value ans)))

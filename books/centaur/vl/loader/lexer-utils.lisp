@@ -455,11 +455,11 @@ where @('prefix') holds all of the leading characters of @('echars') that
 satisfy @('vl-ctype-p'), and @('remainder') holds the rest.</p>"
 
   (encapsulate
-   (((vl-ctype-p *) => *))
-   (local (defun vl-ctype-p (x)
-            (eql x #\a)))
-   (defthm vl-type-p-of-nil
-     (not (vl-ctype-p nil))))
+    (((vl-ctype-p *) => *))
+    (local (defun vl-ctype-p (x)
+             (eql x #\a)))
+    (defthm vl-type-p-of-nil
+      (not (vl-ctype-p nil))))
 
   (defund vl-ctype-list-p (x)
     (declare (xargs :guard (vl-echarlist-p x)))
@@ -496,13 +496,13 @@ satisfy @('vl-ctype-p'), and @('remainder') holds the rest.</p>"
                        (mv nil echars))
                       ((vl-ctype-p (vl-echar->char (car echars)))
                        (mv-let (prefix remainder)
-                               (vl-read-while-ctype (cdr echars))
-                               (mv (cons (car echars) prefix) remainder)))
+                         (vl-read-while-ctype (cdr echars))
+                         (mv (cons (car echars) prefix) remainder)))
                       (t
                        (mv nil echars)))
          :exec (mv-let (prefix-rev remainder)
-                       (vl-read-while-ctype-impl echars nil)
-                       (mv (reverse prefix-rev) remainder))))
+                 (vl-read-while-ctype-impl echars nil)
+                 (mv (reverse prefix-rev) remainder))))
 
   (local (in-theory (enable vl-read-while-ctype)))
 
@@ -540,7 +540,7 @@ satisfy @('vl-ctype-p'), and @('remainder') holds the rest.</p>"
   (defthm prefix-of-vl-read-while-ctype-when-vl-ctype-p
     (implies (vl-ctype-p (vl-echar->char (car echars)))
              (iff (mv-nth 0 (vl-read-while-ctype echars))
-                  t)))
+                  (consp echars))))
 
   (defthm vl-read-while-ctype-sound
     ;; This says that all the characters vl-read-while-ctype reads are, indeed,
@@ -552,7 +552,9 @@ satisfy @('vl-ctype-p'), and @('remainder') holds the rest.</p>"
     ;; it leaves a non vl-ctype-p at the front.  In other words, it reads
     ;; exactly as far as it can.
     (equal (vl-ctype-p (vl-echar->char (car (mv-nth 1 (vl-read-while-ctype echars)))))
-           nil))
+           (if (consp (mv-nth 1 (vl-read-while-ctype echars)))
+               nil
+             (vl-ctype-p (vl-echar->char nil)))))
 
   (defthm append-of-vl-read-while-ctype
     (equal (append (mv-nth 0 (vl-read-while-ctype echars))
@@ -755,7 +757,7 @@ vl-read-while-ctype).</p>"
               (defthm ,(mksym (cat "PREFIX-OF-" readwhilestr "-WHEN-" namestr) pkg)
                 (implies (,char-p (vl-echar->char (car echars)))
                          (iff (mv-nth 0 (,read-while echars))
-                              t))
+                              (consp echars)))
                 :hints(("Goal" :use ((:functional-instance prefix-of-vl-read-while-ctype-when-vl-ctype-p . ,fi-pairs)))))
 
               (defthm ,(mksym (cat readwhilestr "-SOUND") pkg)
@@ -764,7 +766,9 @@ vl-read-while-ctype).</p>"
 
               (defthm ,(mksym (cat readwhilestr "-COMPLETE") pkg)
                 (equal (,char-p (vl-echar->char (car (mv-nth 1 (,read-while echars)))))
-                       nil)
+                       (if (consp (mv-nth 1 (,read-while echars)))
+                           nil
+                         (,char-p (vl-echar->char nil))))
                 :hints(("Goal" :use ((:functional-instance vl-read-while-ctype-complete . ,fi-pairs)))))
 
               (defthm ,(mksym (cat "APPEND-OF-" readwhilestr) pkg)
@@ -814,10 +818,11 @@ vl-read-while-ctype).</p>"
 (local
  (encapsulate
   ()
-  ;; Simple test to make sure defchar is working
-
+  ;; Simple tests to make sure defchar is working
   (defchar nine
-    (eql x #\9))))
+    (eql x #\9))
+  (defchar not-nine
+    (not (eql x #\9)))))
 
 
 (defun vl-orcar-mv2s-fn (forms)

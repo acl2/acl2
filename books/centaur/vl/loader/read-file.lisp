@@ -61,8 +61,10 @@ tail-recursive alternative, which is more useful for reasoning.</p>"
          ((when (eq byte nil)) ;; EOF
           (mv acc state))
          (char      (code-char (the (unsigned-byte 8) byte)))
-         (echar     (make-vl-echar :char char
-                                   :loc (vl-location filename line col)))
+         (echar     (make-vl-echar-fast :char char
+                                        :filename filename
+                                        :line line
+                                        :col col))
          (newlinep  (eql char #\Newline))
          (next-line (if newlinep (+ 1 line) line))
          (next-col  (if newlinep 0 (+ 1 col))))
@@ -98,8 +100,10 @@ we actually optimize this function even more, using @('nreverse').</p>"
               ((when (eq byte nil)) ;; EOF
                (mv nil state))
               (char      (code-char (the (unsigned-byte 8) byte)))
-              (echar     (make-vl-echar :char char
-                                        :loc (vl-location filename line col)))
+              (echar     (make-vl-echar-fast :char char
+                                             :filename filename
+                                             :line line
+                                             :col col))
               (newlinep  (eql char #\Newline))
               (next-line (if newlinep (+ 1 line) line))
               (next-col  (if newlinep 0 (+ 1 col)))
