@@ -31,7 +31,8 @@ setup.lisp: quicklisp.lisp install.lsp
 
 clean:
 	rm -rf setup.lisp quicklisp.lisp asdf.lisp cache dists local-projects \
-	       tmp install.out quicklisp *.cert.out *.cert.time *.lx64fsl Makefile-tmp
+	       tmp install.out quicklisp *.cert.out *.cert.time *.lx64fsl \
+               Makefile-tmp *.cert
 
 top.cert: setup.lisp
 	cert.pl top.cert

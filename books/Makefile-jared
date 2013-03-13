@@ -43,7 +43,7 @@
 #
 #   - We scan for lines like (include-book "foo") and (ld "foo.lisp"); for
 #     dependency scannign to work, these commands must be on a single line and
-#     can't be wrapped up in macros.  Occasionally it is useful to fool the #
+#     can't be wrapped up in macros.  Occasionally it is useful to fool the
 #     dependency scanner, e.g., in a multi-line comments you might do:
 #
 #        #| Here's an example of how to use this stuff:
@@ -96,6 +96,19 @@
 #         cert_param(acl2x).  See for instance
 #         books/make-event/stobj-test.acl2.
 #
+#  [DONE] How should cleaning work?
+#
+#    Using a find command has the advantage that it will get rid of old files
+#    even after the .lisp files have been deleted.  It has the disadvantage
+#    that it seems tricky to properly delete .h and .c files using a find
+#    command.  An alternative would be to use CERT_PL_CERTS to generate a huge
+#    list of files to remove.  This will require using xargs, etc., which is
+#    gross, but so does the find command.  Blah.
+#
+#    We now implement the CERT_PL_CERTS-based approach, but using clean.pl,
+#    which nicely deals with the whole too-many-arguments issue.  It seems to
+#    perform well.  I think this is probably as good as we can do.
+#
 #  [BOZO] Does provisional certification work?
 #
 #  [BOZO] Add multi-lisp compilation stuff for Matt (might be easy)
@@ -105,14 +118,6 @@
 #         below, to set up the symlinks, and then just let everything else fall
 #         out automatically.
 #
-#  [BOZO] How should cleaning work?
-#
-#    Using a find command has the advantage that it will get rid of old files
-#    even after the .lisp files have been deleted.  It has the disadvantage
-#    that it seems tricky to properly delete .h and .c files using a find
-#    command.  An alternative would be to use CERT_PL_CERTS to generate a huge
-#    list of files to remove.  This will require using xargs, etc., which is
-#    gross, but so does the find command.  Blah.
 
 
 ACL2 ?= acl2
