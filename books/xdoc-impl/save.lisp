@@ -472,7 +472,7 @@
        (state
         (if err
             (pprogn
-               (fms "~|~%WARNING: problem with :short in topic ~x0:~%" 
+               (fms "~|~%WARNING: problem with :long in topic ~x0:~%" 
                     (list (cons #\0 name))
                     *standard-co* state nil)
                (princ$ err *standard-co* state)

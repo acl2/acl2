@@ -240,18 +240,18 @@ field of each @(see vl-module-p).</p>")
 ;
 ; -----------------------------------------------------------------------------
 
-(defsection vl-module-to-e
+(defsection vl-module-make-esim
   :parents (e-conversion)
   :short "Convert a Verilog module into an E module."
 
-  :long "<p><b>Signature:</b> @(call vl-module-to-e) returns @('(mv x'
+  :long "<p><b>Signature:</b> @(call vl-module-make-esim) returns @('(mv x'
 eal')').</p>
 
 <ul>
 
 <li>@('x') is the module that we want to convert into an E module.  We assume
 that the module has no unsupported constructs, okay port bits, etc, since these
-are checked in @(see vl-modulelist-to-e).</li>
+are checked in @(see vl-modulelist-make-esim).</li>
 
 <li>@('mods') is the list of all modules; @('modalist') is its @(see
 vl-modalist) for fast lookups.  We use this mainly for looking up submodules.

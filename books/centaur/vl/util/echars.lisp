@@ -118,7 +118,7 @@ bounds."
   :parents (extended-characters)
   :short "Representation of a single extended character."
 
-  :long "<p>Historically, a @('vl-echar-p) was an ordinary aggregate with a
+  :long "<p>Historically, a @('vl-echar-p') was an ordinary aggregate with a
 character and a location.  This was nice and simple, but required a lot of
 memory.  Here is a back-of-the-napkin analysis, where the underlying cons-tree
 representation of each echar is understood as:</p>

@@ -382,14 +382,14 @@ agree, and are simple enough for E conversion."
 list and make sure that we can generate the port pattern for each module
 appropriately.</p>")
 
-(defsection vl-check-port-bits
+(defsection vl-module-check-port-bits
   :parents (port-bit-checking)
   :short "Ensure the port pattern for a module is reasonable."
 
-  :long "<p>@(call vl-check-port-bits) separately builds up the bit patterns
-for ports and the port declarations of the module @('x'), then makes sure that
-there is exactly one port bit for every port declaration bit and vice versa.
-We extend @('X') with a fatal warning if this doesn't hold.</p>"
+  :long "<p>@(call vl-module-check-port-bits) separately builds up the bit
+patterns for ports and the port declarations of the module @('x'), then makes
+sure that there is exactly one port bit for every port declaration bit and vice
+versa.  We extend @('X') with a fatal warning if this doesn't hold.</p>"
 
   (local
    (encapsulate

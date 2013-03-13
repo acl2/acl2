@@ -1,3 +1,4 @@
+# -*- mode: Makefile -*-
 # XDOC Documentation System for ACL2
 # Copyright (C) 2009 Centaur Technology
 #
@@ -75,22 +76,12 @@ endif
 # (1) the input xml file, (2) the xsl file that indicates how the xml
 # should be rendered, and (3) the output file.
 ifneq "$(XALAN)" ""
-$(info Using $(XALAN) with $(1) $(2) -o $(3)
-xslt-translate = $(XALAN) $(1) $(2) -o $(3)
+$(info Using $(XALAN) with -o [output] [input] [stylesheet])
+xslt-translate = $(XALAN) -o $(3) $(1) $(2)
 else
-$(info Using $(XALAN_UBUNTU) with -in $(1) -xsl $(2) -out $(3))
+$(info Using $(XALAN_UBUNTU) with -in [input] -xsl [stylesheet] -out [output])
 xslt-translate = $(XALAN_UBUNTU) -in $(1) -xsl $(2) -out $(3)
 endif
-
-# define xslt-translate =
-# ifneq "$(XALAN)" ""
-# $(info Using $(XALAN) with $(1) $(2) -o $(3)
-# xslt-translate = $(XALAN) $(1) $(2) -o $(3)
-# else
-# $(info Using $(XALAN_UBUNTU) with -in $(1) -xsl $(2) -out $(3))
-# xslt-translate = $(XALAN_UBUNTU) -in $(1) -xsl $(2) -out $(3)
-# endif
-# endef
 
 
 XML_TOPICS := $(wildcard xml/*.xml)

@@ -36,8 +36,7 @@
   :short "Eat the leading @('//') from a comment string, or eliminate the @('/*
 ... */') pair from a comment string."
 
-  :long "<p><b>Signature:</b> @(call vl-eliminate-comment-characters) returns a
-string.</p>
+  :long "<p><b>Signature:</b> @(call vl-uncomment-string) returns a string.</p>
 
 <p>@('x') must be a string.  It should be either a @('//')-style comment or a
 @('/*...*/')-style comment; otherwise we just return it unchanged.  Typically

@@ -237,7 +237,7 @@ the the following is a theorem:</p>
 
 
 (defsection q-ite-fn
-  :parents (ubdd-construtors)
+  :parents (ubdd-constructors)
   :short "Basic way to construct a new if-then-else UBDD."
 
   :long "<p>@(call q-ite-fn) builds a new UBDD representing @('(if x y z)').

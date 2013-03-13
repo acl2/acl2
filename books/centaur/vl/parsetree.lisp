@@ -3660,7 +3660,7 @@ parallel (@('fork ... join')) blocks.  See the compound statement's
   :returns okp
   :parents (vl-compoundstmt-p)
   :short "Additional structural checks for compound statements."
-  :long "<p>This is a well-formedness constraint imposed on @(@see
+  :long "<p>This is a well-formedness constraint imposed on @(see
 vl-compoundstmt-p) structures.  It is responsible for ensuring that, e.g., an
 @('if') statement properly has a single expression (its condition), two
 sub-statements (its true and false branches), and no inappropriate fields such

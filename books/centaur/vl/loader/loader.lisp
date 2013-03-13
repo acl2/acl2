@@ -671,11 +671,11 @@ look for new modules.</p>"
 
   ((mods        (and (vl-modulelist-p mods)
                      (uniquep (vl-modulelist->names mods)))
-                "The @(modules) that were loaded.  These modules have been only
-                 minimally transformed (e.g., to add declarations for implicit
-                 wires).  They meant to be close to the actual source code as
-                 it occurs on the disk.  They are guaranteed to have unique
-                 names.")
+                "The @(see modules) that were loaded.  These modules have been
+                 only minimally transformed (e.g., to add declarations for
+                 implicit wires).  They meant to be close to the actual source
+                 code as it occurs on the disk.  They are guaranteed to have
+                 unique names.")
 
    (filemap     vl-filemap-p
                 "Alist mapping file names to their original, unmodified
