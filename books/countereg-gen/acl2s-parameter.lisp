@@ -459,9 +459,9 @@ For internal flags dont use a doc-string"
                                  'acl2::acl2-defaults-table 
                                  (w state))))))
        (let ((forms ',forms))
-         (value `(progn
-                   ,(set-acl2s-random-testing-flag-fn ,v mode state)
-                   ,@forms))))))
+          (value `(progn
+                    ,(set-acl2s-random-testing-flag-fn ,v mode state)
+                    ,@forms))))))
 
 (defmacro acl2s-defaults (&rest rst)
   (b* (((unless (consp (cdr rst)));atleast 2 elems
@@ -548,8 +548,13 @@ For internal flags dont use a doc-string"
 ;; this has to be a makevent because enable-acl2s-random-testing is the
 ;; expansion result of the make-event in set-acl2s-random-testing-enabled
 `(make-event  
-  '(acl2::add-override-hints 
-    '((list* :backtrack 
+  '(progn 
+; March 7th 2013
+; The following computed hint resets the cgen globals at the top of cgen-stats-event-stack.
+; It will do the needful at (null hist) i.e at the very beginning of the proof attempt.
+     (acl2::add-override-hints '((defdata::reset-cgen-globals-hint)))
+     (acl2::add-override-hints 
+      '((list* :backtrack 
 ;take parent pspv and hist, not the ones returned by clause-processor
 
              `(test-checkpoint acl2::id 
@@ -559,6 +564,7 @@ For internal flags dont use a doc-string"
 ;TODO:ask Matt about sending parent pspv and hist
                                     ',acl2::pspv 
                                     ',acl2::hist
+                                    acl2::ctx
                                     state
                                     )
 
@@ -578,18 +584,22 @@ For internal flags dont use a doc-string"
              ;;          (mv (cadr tval) (caddr tval) state))
 
 ;`(test-each-checkpoint acl2::id acl2::clause acl2::processor ',acl2::pspv ',acl2::hist state)
-             acl2::keyword-alist)))))
+             acl2::keyword-alist)))
+     )))
 
 (defmacro disable-acl2s-random-testing ()
 `(make-event  
-     '(acl2::remove-override-hints 
-       '((list* :backtrack 
+     '(progn
+        (acl2::remove-override-hints '((defdata::reset-cgen-globals-hint)))
+        (acl2::remove-override-hints 
+         '((list* :backtrack 
                 `(test-checkpoint acl2::id 
                                        acl2::clause 
                                        acl2::clause-list
                                        acl2::processor 
                                        ',acl2::pspv 
                                        ',acl2::hist
+                                       acl2::ctx
                                        state
                                       )
 ;take parent pspv and hist, not the ones returned by clause-processor
@@ -608,7 +618,8 @@ For internal flags dont use a doc-string"
                  ;;      (declare (ignorable erp))
                  ;;      (mv (cadr tval) (caddr tval) state))
 ;`(test-each-checkpoint acl2::id acl2::clause acl2::processor ',acl2::pspv ',acl2::hist state)
-                acl2::keyword-alist)))))
+                acl2::keyword-alist)))
+        )))
 
 
 

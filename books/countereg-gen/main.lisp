@@ -48,7 +48,7 @@
   (unsigned-29bits-p x))
 
 ;;; Style of accessing/changing defrec objects. The name of the object is
-;;; always same as the name of the defrec, just like in stobjs. THis was we
+;;; always same as the name of the defrec, just like in stobjs. THis way we
 ;;; can drop in stobjs in their place!
 (defmacro access (r a)
   `(acl2::access ,r ,r ,(intern-in-package-of-symbol (symbol-name a) :key)))
@@ -579,15 +579,18 @@ processed, the annotation of edges is also returned"
   ((total-runs dups . vacs)
    (cts . wts) 
    (cts-to-reach . wts-to-reach)
-   (start-time . end-time) id) NIL) ;(hyps . concl) serves as an id
+   (start-time . end-time) all-bets-off? id) ; id is prettyified form
+  NIL) 
 
 
-(def initial-gcs% (nc nw start id)
+(def initial-gcs% (nc nw start pform)
   (decl :sig ((fixnump fixnump rationalp allp) -> gcs%-p)
         :doc "reset/initialized global coverage stats record")
   (acl2::make gcs% :cts 0 :wts 0 :cts-to-reach nc :wts-to-reach nw
-        :total-runs 0 :vacs 0 :dups 0 :start-time start :end-time start
-        :id id))
+        :total-runs 0 :vacs 0 :dups 0 
+        :start-time start :end-time start
+        :all-bets-off? nil
+        :id pform))
 
 (defun gcs%-p (v)
   (declare (xargs :guard T))
@@ -596,7 +599,7 @@ processed, the annotation of edges is also returned"
      ('gcs% (total-runs dups . vacs)
             (cts . wts) 
             (cts-to-reach . wts-to-reach)
-            (start-time . end-time) &)
+            (start-time . end-time) all-bets-off? &)
      (and (unsigned-29bits-p cts)
           (unsigned-29bits-p wts)
           (unsigned-29bits-p cts-to-reach)
@@ -605,7 +608,8 @@ processed, the annotation of edges is also returned"
           (rationalp end-time)
           (unsigned-29bits-p total-runs)
           (unsigned-29bits-p dups)
-          (unsigned-29bits-p vacs)))))
+          (unsigned-29bits-p vacs)
+          (booleanp all-bets-off?)))))
 
 (defmacro gcs-1+ (fld-nm)
   `(change gcs% ,fld-nm
@@ -924,7 +928,13 @@ overridden by entries in override-alist"
 ; cvars should always be in front, i.e they should be chosen first
        (ord-vs (union-eq svars ord-vs)) ;NOT a set operation
        (ord-vs (union-eq cvars 
-                         (set-difference-eq ord-vs cvars))))
+                         (set-difference-eq ord-vs cvars)))
+
+; 8th Jan 2013 Possible CCG bug
+; Overcaution: remove t and nil which escape pseudo-termp
+       (ord-vs (set-difference-eq  ord-vs '(t nil)))
+       )
+
    ord-vs))
        
 ;;;; Collecting type and additional constraints
@@ -1361,7 +1371,7 @@ enumerator call expression")
         (var-enumcall-alist 
          (make-enumerator-call-alist v-cs%-alst ctx wrld '()))
         (- (cw? (verbose-flag vl) 
-"~|Subgoal ~x0 variable - enumerator expr : ~x1~%" name var-enumcall-alist)))
+"~|Cgen: Test data enumeration with ~x1~%" name var-enumcall-alist)))
     (defun-forms))))
 
 
@@ -1414,21 +1424,6 @@ enumerator call expression")
                  ))
 
 
-;NOTE: interesting to note that I cant use defmacro instead of defabbrev
-(defabbrev get-gcs%-global () 
-  (if (f-boundp-global 'gcs% state)
-    (b* ((gcs% (@ gcs%)))
-        (if (gcs%-p gcs%)
-          gcs%
-          (er hard? ctx "~|gcs% found in globals is of bad type~|")))
-    (er hard? ctx "~|gcs% not found in globals ~|")))
-
-(defabbrev put-gcs%-global (gcs%) 
-  (if (gcs%-p gcs%)
-      (f-put-global 'gcs% gcs% state)
-    (prog2$ 
-     (er hard? ctx "~|gcs% being put in globals is of bad type~|")
-     state)))
  
 (defrec s-hist-entry% (run-hist 
                        (hyps vars . concl)
@@ -1463,21 +1458,91 @@ enumerator call expression")
          (s-hist-entry%-p (cdar v))
          (s-hist-p (cdr v)))))
 
+(defun cgen-stats-p (v)
+;todo - probably inefficient
+  (declare (xargs :guard T))
+  (and (keyword-value-listp v)
+       ;(= (len v) 4) extensible
+       (assoc-keyword :gcs% v)
+       (assoc-keyword :s-hist v)))
+
+(defun cgen-stats-event-stackp (s)
+  (declare (xargs :guard T))
+  (if (atom s)
+      (null s)
+    (and (cgen-stats-p (car s))
+         (cgen-stats-event-stackp (cdr s)))))
+
+(defun valid-cgen-stats-event-stackp (s)
+  (declare (xargs :guard T))
+  "Should be a non-empty list whose member satisfies cgen-stats-event-stackp"
+  (and (cgen-stats-event-stackp s)
+       (consp s)))
+
+;; Feb 22 2013 Add a new global state variable which points to
+;; a stack of accumulated cgen recorded statistics. Its a stack
+;; because we can have nested events, but only the innermost
+;; member of the stack should ever be non-empty i.e only the top-level
+;; events like defthm/thm/test? should ever hold valid recorded data.
+;NOTE: interesting - I cant use defmacro instead of defabbrev
+(defabbrev get-gcs%-global () 
+  (if (f-boundp-global 'cgen-stats-event-stack state)
+    (b* ((cse-stack (@ cgen-stats-event-stack))
+         ((unless (valid-cgen-stats-event-stackp cse-stack))
+            (er hard? ctx "~|cgen-stats-event-stack is ill-formed~|"))
+         (gcs% (cadr (assoc-keyword :gcs% (car cse-stack)))))
+      (if (gcs%-p gcs%)
+          gcs%
+        (er hard? ctx "~|gcs% found in globals is of bad type~|")))
+    (er hard? ctx "~|cgen-stats-event-stack not found in globals ~|")))
+
 (defabbrev get-s-hist-global () 
-  (if (f-boundp-global 's-hist state)
-    (b* ((s-hist (@ s-hist)))
-        (if (s-hist-p s-hist)
+  (if (f-boundp-global 'cgen-stats-event-stack state)
+    (b* ((cse-stack (@ cgen-stats-event-stack))
+         ((unless (valid-cgen-stats-event-stackp cse-stack))
+          (er hard? ctx "~|cgen-stats-event-stack is ill-formed~|"))
+         (s-hist (cadr (assoc-keyword :s-hist (car cse-stack)))))
+      (if (s-hist-p s-hist)
           s-hist
-          (er hard? ctx "~|hist found in globals is of bad type~|")))
-    (er hard? ctx "~|hist not found in globals ~|")))
+        (er hard? ctx "~|hist found in globals is of bad type~|")))
+    (er hard? ctx "~|cgen-stats-event-stack not found in globals ~|")))
+
+(defabbrev put-gcs%-global (gcs%) 
+  (if (f-boundp-global 'cgen-stats-event-stack state)
+      (if (gcs%-p gcs%)
+          (b* ((cse-stack (@ cgen-stats-event-stack))
+               ((unless (valid-cgen-stats-event-stackp cse-stack))
+                  (prog2$ 
+                 (er hard? ctx "~|cgen-stats-event-stack is ill-formed~|")
+                 state))
+               (cse-stack (cons (list* :gcs% gcs% (acl2::remove-keyword :gcs% (car cse-stack))) 
+                                (cdr cse-stack)));update 
+               (- (assert$ (valid-cgen-stats-event-stackp cse-stack) t)))
+          (f-put-global 'cgen-stats-event-stack cse-stack state))
+        (prog2$ 
+         (er hard? ctx "~|gcs% being put in globals is of bad type~|")
+         state))
+    (prog2$ (er hard? ctx "~|cgen-stats-event-stack not found in globals ~|")
+            state)))
 
 (defabbrev put-s-hist-global (s-hist) 
-  (if (s-hist-p s-hist)
-      (f-put-global 's-hist s-hist state)
-    (progn$
-     (cw? (verbose-flag vl) "~|BAD s-hist : ~x0~|" s-hist)
-     (er hard? ctx "~|hist being put in globals is of bad type~|")
-     state)))
+  (if (f-boundp-global 'cgen-stats-event-stack state)
+      (if (s-hist-p s-hist)
+          (b* ((cse-stack (@ cgen-stats-event-stack))
+               ((unless (valid-cgen-stats-event-stackp cse-stack))
+                (prog2$ 
+                 (er hard? ctx "~|cgen-stats-event-stack is ill-formed~|")
+                 state))
+               (cse-stack (cons (list* :s-hist s-hist (acl2::remove-keyword :s-hist (car cse-stack))) 
+                                (cdr cse-stack)));update
+               (- (assert$ (valid-cgen-stats-event-stackp cse-stack) t)))
+          (f-put-global 'cgen-stats-event-stack cse-stack state))
+        (progn$
+         (cw? (debug-flag vl) "~|BAD s-hist : ~x0~|" s-hist)
+         (er hard? ctx "~|hist being put in globals is of bad type~|")
+         state))
+    (prog2$ (er hard? ctx "~|cgen-stats-event-stack not found in globals ~|")
+            state)))
 
 
 (defconst *initial-run-hist%* 
@@ -1546,9 +1611,9 @@ Use :simple search strategy to find counterexamples and witnesses.
                             ,rseed. ',run-hist% ',gcs%))
                (state (putseed rseed. state)))
            (prog2$ 
-            (cw? (and (verbose-flag ,vl)
+            (cw? (and (debug-flag ,vl)
                       stop?)
-                 "Search aborted, because we reached stopping condition.~|")
+                 "~| Search to be aborted, because we reached stopping condition.~|")
             (mv NIL `(value-triple ',(list stop? run-hist% gcs%)) state)))))
        );end b* bindings
 ;  IN
@@ -1564,16 +1629,20 @@ Use :simple search strategy to find counterexamples and witnesses.
                                   proof-tree summary)))) 
                   (make-event
                    (er-progn
-; dont even think of nested testing
+; dont even think of nested testing (nested waterfall call to test checkpoint)
                     (acl2s-defaults :set testing-enabled nil)
                     
                     ;; added 2nd May '12. Why leave out program context
+                    
                     ,@(and programp '((program)))
                     
                     ,@hyp-val-defuns
                     ,@concl-val-defuns
                     ,@next-sigma-defuns
-;                    (defttag :testing)
+; Jan 8th 2013 - program mode doesnt work anymore since
+; we dont have trust tags and skip-checks in place, lets
+; fix it here.
+                    ,@(and programp '((defttag :testing)))
 ; Note: all of these defuns are non-recursive and guards not verified, so
 ; none of these events will cause a call to prove (we hope)
 ; This is an important observation, since we rely on test-checkpoint
@@ -1587,11 +1656,17 @@ Use :simple search strategy to find counterexamples and witnesses.
 ; Folllowing a helpful email by Matt, found a way to fool the function
 ; to be guard verified, by wrapping its call in an ec-call
 ; This way I also get rid of the trust tag .... Hurrah!!
-                    (defattach (hypotheses-val hypotheses-val-current-gv))
-                    (defattach (conclusion-val conclusion-val-current-gv))
-                    (defattach (next-sigma next-sigma-current-gv))
+; Update Jan 8th 2013, but have to bring back the ttag and skip-checks for
+; program mode testing :((
+                    ,@(if programp
+                          '((defattach (hypotheses-val hypotheses-val-current-gv) :skip-checks t)
+                            (defattach (conclusion-val conclusion-val-current-gv) :skip-checks t)
+                            (defattach (next-sigma next-sigma-current-gv) :skip-checks t))
+                        '((defattach (hypotheses-val hypotheses-val-current-gv))
+                          (defattach (conclusion-val conclusion-val-current-gv))
+                          (defattach (next-sigma next-sigma-current-gv))))
  
-;                    (defttag nil)
+                   ,@(and programp '((defttag nil)))
                     
                     ,call-form))
                   )
@@ -2164,7 +2239,9 @@ last decision made in Assign. For more details refer to the FMCAD paper.")
 ")
 
   (f* ((update-cts-search-globals ()
-         (b* ((s-hist-entry% (change s-hist-entry% run-hist run-hist%))
+         (b* ((- (cw? (debug-flag vl)
+"~|DEBUG: Updating cts-search-globals in csearch~|"))
+              (s-hist-entry% (change s-hist-entry% run-hist run-hist%))
               ((mv end state) (acl2::read-run-time state))
               (s-hist-entry% (change s-hist-entry% end-time end))
               (s-hist (get-s-hist-global))
@@ -2172,27 +2249,28 @@ last decision made in Assign. For more details refer to the FMCAD paper.")
 ;put the pair (name . s-hist-entry%) in a list (looks like a stack)
               (s-hist (put-assoc-equal name s-hist-entry% s-hist))
               (state (put-s-hist-global s-hist))
-              (state  (put-gcs%-global gcs%)))
+              (state (put-gcs%-global gcs%)))
           state)))
-      (b* (((mv start state) (acl2::read-run-time state))
-           (vl (get-acl2s-default 'verbosity-level defaults 1))
-           (vars (vars-in-dependency-order H C vl wrld))
-           (s-hist-entry% (initial-s-hist-entry% 
-                           name H C vars 
-                           type-alist elide-map start))
-          (run-hist% (access s-hist-entry% run-hist))
-          (gcs% (get-gcs%-global))
 
-          ((mv erp (list stop? run-hist% gcs%) state)
-           (cts-wts-search name H C vars type-alist programp 
-                           defaults run-hist% gcs%
-                           ctx wrld state))
-          (state (update-cts-search-globals)))
-       (prog2$ 
-        (and erp
-             (cw? (verbose-flag vl)
-                  "~|Error occurred in cts-wts-search.~|"))
-        (mv erp stop? state)))))
+    (b* (((mv start state) (acl2::read-run-time state))
+         (vl (get-acl2s-default 'verbosity-level defaults 1))
+         (vars (vars-in-dependency-order H C vl wrld))
+         (s-hist-entry% (initial-s-hist-entry% 
+                         name H C vars 
+                         type-alist elide-map start))
+         (run-hist% (access s-hist-entry% run-hist))
+         (gcs% (get-gcs%-global))
+
+         ((mv erp (list stop? run-hist% gcs%) state)
+          (cts-wts-search name H C vars type-alist programp 
+                          defaults run-hist% gcs%
+                          ctx wrld state))
+         (state (update-cts-search-globals)))
+      (prog2$ 
+       (and erp
+            (cw? (verbose-flag vl)
+                 "~|Error occurred in cts-wts-search.~|"))
+       (mv erp stop? state)))))
        
    
 (def csearch-with-timeout (name H C 
@@ -2516,7 +2594,7 @@ doesnt work on an make-event
              (list ,top-cl
 ; make list/let A (list `(var ,var) ...) 
                    ,(make-var-value-list-bindings top-vars nil)))
-          'get-top-level-assignment state nil)))
+          'get-top-level-assignment state T))) ;defttach ok
        ((list form-eval-res top-A) (cdr res)))
 
 ;  in
@@ -2702,13 +2780,6 @@ history s-hist.")
           (total-time-spent-in-testing (cdr s-hist))))))
       
   
-(defmacro acl2::pts ()
-  "prints the last test?/thm's testing summary"
-  `(er-progn
-    (assign print-summary-user-flag NIL) ;reset, especially important for
-      ;thm/defthm forms where I have no POST control
-    (print-testing-summary-fn (acl2s-defaults :get verbosity-level) 
-                              state)))
 
 (defun print-testing-summary-fn (vl state)
   (declare (xargs :mode :program
@@ -2716,20 +2787,22 @@ history s-hist.")
   (b* ((ctx 'print-testing-summary)
 ;when testing errored out or timed out, theres no point of printing.
        (s-hist (get-s-hist-global))
-       ((unless (and (consp s-hist) (consp (car s-hist))
-                     (equal "top" (caar s-hist))))
-        (value (cw? (normal-output-flag vl) "~|BAD s-hist found in globals")))
-                  
-       (num-subgoals (len s-hist))
        (gcs%   (get-gcs%-global))
        (- (cw? (debug-flag vl) "~|testing summary - gcs% = ~x0~%" gcs%))
        (- (cw? (debug-flag vl) "~|testing summary - s-hist = ~x0~%" s-hist))
+       ((unless (and (consp s-hist) (consp (car s-hist))
+                     (equal "top" (caar s-hist))
+                     (> (access gcs% total-runs) 0)))
+        (value (cw? (normal-output-flag vl) "~|No testing summary to print~|")))
+                  
+       (num-subgoals (len s-hist))
+       
        )
    (case-match gcs%
      (('gcs% (total dups . vacs) 
              (num-cts . num-wts) 
              (cts-to-reach . wts-to-reach) 
-             (start . end) &)
+             (start . end) & id)
 ;ACHTUNG: gcs% defrec exposed
       (b* ((uniq-runs  (my+ num-wts num-cts))
            (sat-runs (my- total (my+ vacs dups)))
@@ -2737,6 +2810,9 @@ history s-hist.")
            (delta-testing-t-total (total-time-spent-in-testing s-hist))
            (-  (cw? (normal-output-flag vl) 
                 "~%**Summary of testing**~%"))
+           (pform id)
+           (- (cw? (verbose-flag vl)
+                   "~x0~%" pform))
            (- (cw? (normal-output-flag vl)
                "~|We tested ~x0 examples across ~x1 subgoals, of which ~x2 (~x3 unique) satisfied the hypotheses, and found ~x4 counterexamples and ~x5 witnesses.~%"
                total num-subgoals sat-runs uniq-runs num-cts num-wts))
@@ -2769,36 +2845,9 @@ history s-hist.")
                                   (> num-wts 0);print wts if true
                                   cts-to-reach wts-to-reach vl state)))
        (value nil)))
-     (& (value (cw? (normal-output-flag vl) "~|BAD gcs% found in globals"))))))
+     (& (value (cw? (normal-output-flag vl) "~|BAD gcs% found in globals~|"))))))
 
 
-(set-verify-guards-eagerness 2)
-(defun print-summary-user-testing (state)
-  (declare (xargs :stobjs state))
-
-  (and 
-       (b* ((ctx 'print-summary-user)
-            ((unless (and (f-boundp-global 'print-summary-user-flag state)
-                          (@ print-summary-user-flag)))
-             nil)
-            (?er-str "~|BAD global-coverage-stats. ~
-Please report to ACL2s maintainer the context in which this happened!~|")
-            ((unless (f-boundp-global 'gcs% state))
-             nil)
-            (gcs% (get-gcs%-global))
-            ((unless (gcs%-p gcs%))
-             nil)
-            (num-wts (access gcs% wts))
-            (num-cts (access gcs% cts))
-            (vl 1) ;TODO
-            (- (cw? (normal-output-flag vl)
-                    "~|ACL2s found ~x0 counterexamples and ~x1 witnesses. ~
-To print the testing summary, do :pts~|"
-                    num-cts num-wts))
-            )
-        nil)))
-
-(set-verify-guards-eagerness 1)                      
 
 
 ;----------------------------------------------------------------
@@ -2834,13 +2883,17 @@ To print the testing summary, do :pts~|"
    
   
 
-(defun cts-wts-search-clause (cl name pspv hist vl ctx wrld state)
+(defun cts-wts-search-clause (cl name pspv hist abo? vl ctx wrld state)
   "helper function for test-checkpoint. It basically sets up 
    everything for the call to csearch."
   (declare (xargs :stobjs (state)
                   :mode :program))
                   
-  (b* ((vt-acl2-alst (get-acl2-type-alist cl pspv vl wrld state))
+  (b* (((when abo?)
+        ;; if subgoal is not equivalid, dont even test it.
+        (mv nil nil state)) 
+       
+       (vt-acl2-alst (get-acl2-type-alist cl pspv vl wrld state))
        
        ((mv hyps concl) (clause-mv-hyps-concl cl))
        
@@ -2911,7 +2964,7 @@ To print the testing summary, do :pts~|"
 ;; engineering design of ACL2 theorem prover.
 ;; If somebody reads this comment, I would be very interested in any other
 ;; theorem-provers having a call-back mechanism in their implementation.
-(defun acl2::test-checkpoint (id cl cl-list processor pspv hist state)
+(defun acl2::test-checkpoint (id cl cl-list processor pspv hist ctx state)
   (declare (xargs :stobjs (state)
                   :mode :program))
 
@@ -2919,18 +2972,22 @@ To print the testing summary, do :pts~|"
 ;;         :mode :program
 ;;         :doc
 ;; "?:
-;; This function uses override hint + backtrack hint combination.
-;; On the top-level GOAL it initializes gcs% and s-hist. On SUBGOALS 
+;; This function uses override hint + backtrack no-op hint combination.
+;;  On SUBGOALS 
 ;; that are not checkpoints does no-op. On checkpoints it calls the 
-;; cts search procedure.
+;; cts search procedure. Note that this (observer) hint combination
+;; means that when this callback function is called, that particular
+;; processor had a HIT and resulted in one or more subgoals, each of
+;;  which will fall on top of the waterfall like in a Escher drawing.
 ;; ")
 ; RETURN either (mv t nil state) or (mv nil nil state) 
 ; PRECONDITION -
 ; INVARIANT - no new prove call is made during the computation of this
-; function (this is very important)
+; function (this is very important, but now I can relax this invariant,
+; with the introduction of post and pre functions at event level)
   (acl2::with-timeout1 
    (acl2s-defaults :get subgoal-timeout)
-   (b* ((ctx 'acl2::test-checkpoint)
+   (b* (
 ;TODObug: test? defaults should be the one to be used
        (vl (acl2s-defaults :get verbosity-level)) 
 ;27 June 2012 - Fixed bug, in CCG, some lemmas are non-executable, since they
@@ -2942,47 +2999,12 @@ To print the testing summary, do :pts~|"
 "~|Skip testing completely, since not all functions in this conjecture
 are defined.~|")
          (value nil)))
-       ((mv hyps concl) (clause-mv-hyps-concl cl))
-       (- (cw? (debug-flag vl)
-"test-checkpoint : id=~x0 and processor=~x1 ~ formula=~x2 ~|" 
-id processor (acl2::prettyify-clause cl nil (w state))))
- 
-       ((when (null hist)) ;thanks to Matt! (earlier code was buggy)
-;Top Goal (The beginning of waterfall)
-        (b* (((when (acl2::function-symbolp 'inside-test? (w state)))
-              (value nil));dont overwrite initial work by test? top
-             
-             (- (cw? (debug-flag vl) 
-"~|Initialising gcs% and s-hist in test-checkpoint for Goal.~|"))
-             ((mv start state) (acl2::read-run-time state))
-             (gcs% (initial-gcs% (acl2s-defaults :get num-counterexamples)
-                                 (acl2s-defaults :get num-witnesses)
-                                 start (cons hyps concl)))
-             (state (put-gcs%-global gcs%))
-             (vars (vars-in-dependency-order hyps concl vl (w state)))
-             (?d-type-alist (dumb-type-alist-infer
-                            (cons (dumb-negate-lit concl) hyps) 
-                            (w state)
-                            (pairlis$ vars (make-list (len vars)
-                                                      :initial-element 
-;TODO - check if type-alist is symbol-alist or symbol-doublet-listp
-;30th Aug '12: it seems acl2 type-alist is (listof (cons sym (listof type)))
-                                                      (list 'ACL2::ALL)))))
-                         
-             )
-         (er-progn
-;"top" and "Goal" are names of the same top-level goal
-;TODO: Not recording top-level type information. But I probably dont
-;have to do it here, since later on, we can walk the HIST and obtain
-;it
-          (assign print-summary-user-flag NIL) ;reset
-          (assign s-hist 
-                  (acons "top" 
-                         (initial-s-hist-entry% "top" hyps concl vars 
-                                                '() '() start)
-                         '()))
-          (value nil))))
 
+
+       (- (cw? (debug-flag vl)
+"test-checkpoint : id=~x0 processor=~x1 ctx= ~x2 ~ formula=~x3 hist-len=~x4~|" 
+id processor ctx (acl2::prettyify-clause cl nil (w state)) (len hist)))
+ 
        ((unless (member-eq processor
                            '(;acl2::preprocess-clause
                              ;;acl2::simplify-clause
@@ -2995,38 +3017,66 @@ id processor (acl2::prettyify-clause cl nil (w state))))
 ; NOTE: I can also use (f-get-global 'checkpoint-processors state)
         (value nil));ignore backtrack hint
        
-       
        (name (acl2::string-for-tilde-@-clause-id-phrase id))
        (wrld (w state))
-       ((mv & stop? state) (cts-wts-search-clause cl name pspv hist 
-                                                  vl ctx wrld state))
        (gcs% (get-gcs%-global))
-       ((er &) (if (and (> (access gcs% cts) 0)
-;1. only print summary if there is a counterexample
-;2. dont bother with test?, since test? does give a summary at the end
-                        (not (acl2::function-symbolp 'inside-test? (w state))))
-                   (er-progn
-                    (if (acl2s-defaults :get acl2::acl2s-pts-subgoalp)
-                        (print-testing-summary-fn vl state)
-                      (value nil))
-; 10th Sep '12
-;as requested by Pete, do print cts at checkpoint, but also print the
-;user-summary msg
-                    (assign print-summary-user-flag T))
-                 (value nil)))
+       (- (cw? (verbose-flag vl)
+"~|Cgen: At checkpoint ~x0 ~x1~|" name processor))
+       ((mv & stop? state) 
+        (cts-wts-search-clause cl name pspv hist
+                               (access gcs% all-bets-off?)
+                               vl ctx wrld state))
+       (gcs% (get-gcs%-global)) ;gcs% updated by the above csearch
+       
+;;; Jan 10th 2013 - Not printing at subgoal TODO
+       ;; ((er &) (if (and (> (access gcs% cts) 0)
+;; ;1. only print summary if there is a counterexample
+;; ;2. dont bother with test?, since test? does give a summary at the end
+;;                         (not (acl2::function-symbolp 'inside-test? (w state)))
+;;                         (acl2s-defaults :get acl2::acl2s-pts-subgoalp))
+;;                    (print-testing-summary-fn vl state)
+;;                  ;; else (assign print-summary-user-flag T)
+;;                  (value nil)))
+       
+; Assumption Jan 6th 2013 (check with Matt)
+; We only arrive here with processor P, if it was a hit i.e if P
+; is fertilize-clause then cross-fertilization was successful and
+; potentially the generalization was unsound.
+       (all-bets-off? (member-eq processor
+                                 '(acl2::fertilize-clause
+                                   acl2::generalize-clause
+                                   acl2::eliminate-irrelevance-clause)))
+ ; Monotonic change from nil to t, so its okay if we repeat it.                        
+       (gcs% (if all-bets-off?
+                 (prog2$ 
+                  (cw? (debug-flag vl) 
+                       "~| All bets off ... ~x0 in ~x1~%" name ctx)
+                  (change gcs% all-bets-off? t))
+               gcs%))
+; update gcs% in globals. so gcs% and global gcs% are in sync
+       (state (put-gcs%-global gcs%))
        )
    
    
 ;  in  
-   (if stop?
+   (if (or stop?
+           (and (> (access gcs% cts) 0)
+                (or (access gcs% all-bets-off?)
+                    (eq processor 'acl2::push-clause))))
+; jan 6th 2013
+; why bother continuing with a generalized (possibly unsound) subgoal
+; or an induction when we already have found a counterexample.
+; simply abort!
+
+;Note: On abort, we *always* print the summary unless its a test? form!
        (er-progn
         (if (acl2::function-symbolp 'inside-test? (w state))
             (value nil)
-;most probably redundant, but dont assume that stopping condition will
-;always be nc>3 and nw>3
-          (assign print-summary-user-flag T))
-
+          (print-testing-summary-fn vl state))
         (mv t nil state))
+
+; Check for false generalizations. TODO also do the same for
+; cross-fertilization and eliminate-irrelevance if its worth the trouble
      (if (equal processor 'acl2::generalize-clause)
          ;NOTE: this pspv is for the cl not for cl-list, so there
          ;might be some inconsistency or wierdness here
@@ -3045,16 +3095,100 @@ id processor (acl2::prettyify-clause cl nil (w state))))
               (num-cts-found (access run-hist% |#cts|)))
           (value (if (and (not erp)
                           (> num-cts-found 0))
-                     '(:do-not '(acl2::generalize)
-                               :no-thanks t)
+                     (progn$ 
+                      (cw? (normal-output-flag vl) "~| Generalized subgoal: ~x0~|" 
+                           (acl2::prettyify-clause gen-cl nil (w state)))
+                      (cw? (normal-output-flag vl)
+                           "~| Counterexample found: ~x0 ~|"
+                           (car (access run-hist% cts)))
+                      (cw? (normal-output-flag vl) "~| Backtracking...~|")
+                      '(:do-not '(acl2::generalize)
+                                :no-thanks t))
                    nil)))
 ;ignore errors in cts search function
        (value nil))))
    (prog2$
     (cw? (normal-output-flag (acl2s-defaults :get verbosity-level))
-         "~|Subgoal counterexample search TIMED OUT!~%")
+         "~| Subgoal counterexample search TIMED OUT!~%")
     (value nil))
    ))
+
+
+;; Jan 9th 2013.
+;; At the very beginning (null hist) initializes gcs% and s-hist for the
+;; top entry in the cgen-stats-event-stack
+ (defun initialize-cgen-globals-on-empty-history (id cl hist ctx state keyword-alist)
+   (declare (xargs :mode :program 
+                   :stobjs (state)))
+
+   (b* ((vl (acl2s-defaults :get verbosity-level)) 
+       ((mv hyps concl) (clause-mv-hyps-concl cl))
+       (pform (acl2::prettyify-clause cl nil (w state)))
+       (- (cw? (debug-flag vl)
+               "~|DEBUG: initialize-cgen-globals : id=~x0 ctx= ~x1 ~ formula=~x2 hist-len=~x3~|"                
+               id  ctx pform (len hist)))
+       
+       (cse-stack (@ cgen-stats-event-stack))
+       ((when (null hist)) ;thanks to Matt! (earlier code was buggy)
+;Top Goal (The beginning of waterfall)
+        (b* (((when ;(acl2::function-symbolp 'inside-test? (w state))
+                  (and (consp cse-stack)
+                       (consp (cdr cse-stack))
+; if the second item is an inside-test? entry, then the first one would
+; be a copy of it, and we better not initialize our own globals
+                       (assoc-keyword :inside-test? (cadr cse-stack))))
+              (value keyword-alist));dont overwrite initial work by test? i.e "top" entry
+            
+             (- (cw? (verbose-flag vl) "~| Initializing cgen globals for ~x0 ...~%" ctx))
+             ((mv start state) (acl2::read-run-time state))
+             (gcs% (initial-gcs% (acl2s-defaults :get num-counterexamples)
+                                 (acl2s-defaults :get num-witnesses)
+                                 start pform))
+             (state (put-gcs%-global gcs%)) ;put in top of cse-stack
+             (vars (vars-in-dependency-order hyps concl vl (w state)))
+             (?d-type-alist (dumb-type-alist-infer
+                            (cons (dumb-negate-lit concl) hyps) 
+                            (w state)
+                            (pairlis$ vars (make-list (len vars)
+                                                      :initial-element 
+;TODO - check if type-alist is symbol-alist or symbol-doublet-listp
+;30th Aug '12: it seems acl2 type-alist is (listof (cons sym (listof type)))
+                                                      (list 'ACL2::ALL)))))
+             (- (cw? (verbose-flag vl)
+                     "~|INTERNAL: initialize-cgen-globals : acl2 type-alist: ~x0 ~|" 
+                     d-type-alist))
+
+; Note on why "top" s-hist-entry is being inserted into s-hist.
+; "top" is the name of the top-level goal and might be slightly different that "goal".
+; To maintain compatibility with test?, I explicitly add an
+; an entry with "top" key, because I check the validity of a s-hist-entry
+; by searching for the above key. Moreover its important to keep around the
+; the top-level hyps concl if the "Goal" entry gets pre-processed and we lose
+; some (syntactic type) information. Note that we will never see s-hist-entry
+; of "top" being filled with run time testing history, since the first call
+; to csearch function would be from the first checkpoint, which might or might
+; not be "goal".
+          
+; TODO: Not recording top-level type information. But I probably dont
+; have to do it here, later on, we can walk the HIST and obtain it
+             ;; (assign print-summary-user-flag NIL) ;reset
+             (s-hist 
+              (acons "top" 
+                     (initial-s-hist-entry% "top" hyps concl vars 
+                                            '() '() start)
+                     '()))
+             (state (put-s-hist-global s-hist))) ;put in top of cse-stack
+          ;;in 
+          (value keyword-alist))))
+;    in
+; no-op wrt hints ; i.e an observer hint that resets some state variables.
+   (value keyword-alist)))
+
+; reset the globals at the top of cgen-stats-event-stack in the following computed hint
+; which will do the needful at (null hist) i.e at the very beginning of the proof attempt.
+(defmacro reset-cgen-globals-hint ()
+  `(initialize-cgen-globals-on-empty-history acl2::id acl2::clause acl2::hist acl2::ctx state acl2::keyword-alist))
+
 
 
 ;Dont print the "Thanks" message:
@@ -3106,6 +3240,7 @@ id processor (acl2::prettyify-clause cl nil (w state))))
 ;Note on xdoc: <= or < cannot be used inside defxdoc!!
 
 (def test?-fn (form hints override-defaults dont-pts? ctx wrld state)
+; Jan 9th 2013, dont print summary unless there was a counterexample.
   (decl :mode :program
         :sig ((any true-list symbol-alist symbol plist-world state) 
               -> (mv erp any state))
@@ -3160,14 +3295,21 @@ id processor (acl2::prettyify-clause cl nil (w state))))
 ; initialize these per test?/thm/defthm globals that store information
 ; across subgoals in a single thm event
           ((mv start-top state) (acl2::read-run-time state))
+          
+          (cse-stack (@ cgen-stats-event-stack))
+          ((unless (cgen-stats-event-stackp cse-stack)) ;can be empty
+           (er soft ctx "~|cgen-stats-event-stack is ill-formed~|"))
           (gcs%  (initial-gcs% 
                   (get-acl2s-default 'num-counterexamples defaults)
                   (get-acl2s-default 'num-witnesses defaults)
-                  start-top (cons hyps concl)))
-          (state (put-gcs%-global gcs%))
-          (state (put-s-hist-global '()))
-          ((er &) (assign print-summary-user-flag NIL)) ;reset
-         
+                  start-top pform))
+          (state (f-put-global 'cgen-stats-event-stack 
+                               (cons (list :gcs% gcs%
+                                           :s-hist '()
+                                           :inside-test? t) ;distinguishes a test? entry March 7th 2013
+                                     cse-stack)
+                               state))
+          
           ((mv & type-alist &)
            (if programp (mv nil '() nil)
              (acl2::forward-chain (list term);cl CHECK with Matt!
@@ -3203,12 +3345,13 @@ id processor (acl2::prettyify-clause cl nil (w state))))
           
 ; Else call ACL2 prover with a hint
 ; that does random testing on every checkpoint.
-          (- (cw? (system-debug-flag vl) "~|thm+testing: ~x0~%" no-thm-help?))
+          (- (cw? (debug-flag vl) "~|DEBUG: thm+testing OFF: ~x0~%" no-thm-help?))
           ((mv thm-erp & state)
            (if no-thm-help? 
                (mv T '? state) ;TODO: I am throwing information here!
              (er-progn
               ;; dummy world event to recognize we are inside test?
+              ;; TODO - I believe the this trick prevents test? from being nestable. 
               (acl2::defun-fn '(inside-test? nil t)
                               state '(defun inside-test? nil t))
               (acl2::thm-fn form state
@@ -3225,39 +3368,43 @@ id processor (acl2::prettyify-clause cl nil (w state))))
 ; TODO: errors in print functions will abort the whole form
           ((mv end state) (acl2::read-run-time state))
           (gcs%  (get-gcs%-global))
-          (gcs% (change gcs% end-time end))
+          (gcs%  (change gcs% end-time end))
           (state (put-gcs%-global gcs%))
           ((er &) (if (or error-or-timeoutp 
-                          dont-pts?)
+                          (and (<= (access gcs% cts) 0)
+                               dont-pts?))
 ;no point in printing if error or timeout OR we specifically ask not
-;to print the testing summary here, in case the user wants to print it
-;himself or defunc might want to print it in its code.
-;Sep 3rd 2012
-                      (value nil) 
-                    (acl2::pts)))
+;to print the testing summary here if no cts was found.  Sep 3rd 2012 -- modified Jan 9th 2013
+                      (value nil)
+                    (print-testing-summary-fn vl state)))
+
+          
           ((mv cts-found? state)      
 ; If testing found a counterexample, print so and abort.
            (b* ((gcs% (get-gcs%-global))
                 (num-cts (access gcs% cts)))
-            (cond ((posp num-cts) 
-                   (prog2$
-                    (cw? (normal-output-flag vl)
-                         "~%Test? found a counterexample.~%")
-                    (mv T state)))
+             (cond ((posp num-cts) (prog2$
+                                    (cw? (normal-output-flag vl)
+                                         "~%Test? found a counterexample.~%")
+                                    (mv T state)))
 ; either thm failed, or we didnt call thm. Either way if we didnt find a cts
 ; then we say the test? succeeded!
-                  (thm-erp
-                   (prog2$
-                    (cw? (normal-output-flag vl)
-                         "~%Test? succeeded. No counterexamples were found.~%")
-                    (mv NIL state)))
+                   (thm-erp  (prog2$
+                              (cw? (normal-output-flag vl)
+                                   "~%Test? succeeded. No counterexamples were found.~%")
+                              (mv NIL state)))
 ;Success means the prover actually proved the conjecture under consideration
-                  (t 
-                   (prog2$
-                    (cw? (normal-output-flag vl)
-                         "~%Test? proved the conjecture under consideration (without induction). ~
+                   (t  (prog2$
+                        (cw? (normal-output-flag vl)
+                             "~%Test? proved the conjecture under consideration (without induction). ~
  Therefore, no counterexamples exist. ~%" nil )
-                    (mv NIL state)))))))
+                        (mv NIL state))))))
+
+; pop the cse-stack
+          (cse-stack (@ cgen-stats-event-stack))
+          (- (assert$ (valid-cgen-stats-event-stackp cse-stack) t))
+          (state (f-put-global 'cgen-stats-event-stack (cdr cse-stack) state)))
+
       
       (mv cts-found? '(value-triple :invisible) state ))))))
 
@@ -3339,24 +3486,148 @@ id processor (acl2::prettyify-clause cl nil (w state))))
   "
  )
 
-; Temporary (?) mod by Matt K. for Version_6.1, converting from the use of
-; print-summary-user as per :doc note-6-1:
-(defun finalize-event-user-testing (state)
-       (declare (xargs :mode :logic :stobjs state))
-       (prog2$ (print-summary-user-testing state)
-               state))
+
+;; (defun print-summary-user-testing (state)
+;;   (declare (xargs :stobjs state))
+
+;;   (and 
+;;        (b* ((ctx 'print-summary-user)
+;;             ((unless (and (f-boundp-global 'print-summary-user-flag state)
+;;                           (@ print-summary-user-flag)))
+;;              nil)
+;;             (?er-str "~|BAD global-coverage-stats. ~
+;; Please report to ACL2s maintainer the context in which this happened!~|")
+;;             ((unless (f-boundp-global 'gcs% state))
+;;              nil)
+;;             (gcs% (get-gcs%-global))
+;;             ((unless (gcs%-p gcs%))
+;;              nil)
+;;             (num-wts (access gcs% wts))
+;;             (num-cts (access gcs% cts))
+;;             (vl 1) ;TODO
+;;             (- (cw? (normal-output-flag vl)
+;;                     "~|ACL2s found ~x0 counterexamples and ~x1 witnesses. ~
+;; To print the testing summary, do :pts~|"
+;;                     num-cts num-wts))
+;;             )
+;;         nil)))
+
+(defun initialize-event-user-cgen (state)
+  (declare (xargs :mode :logic 
+                  :stobjs state
+                  :verify-guards nil))
+  (b* (((unless (f-boundp-global 'cgen-stats-event-stack state))
+        state) ;ignore
+       (cse-stack (@ cgen-stats-event-stack))
+       (- (assert$ (cgen-stats-event-stackp cse-stack) t))
+       (default-initial-gcs% (defdata::initial-gcs% 
+                               (acl2s-defaults :get num-counterexamples)
+                               (acl2s-defaults :get num-witnesses)
+                               0 (cons nil t)))
+       (vl (acl2s-defaults :get verbosity-level))
+
+; if the top entry is by a test?, then copy its
+; contents into the new entry to be pushed into stack
+       ((mv gcs% s-hist)
+        (if (and (consp cse-stack)
+                 (assoc-keyword :inside-test? (car cse-stack)))
+            (b* ((v (car cse-stack))
+                 (- (cw? (debug-flag vl)
+               "~|DEBUG: Pushing entry into cgen-stats-event-stack, ~
+but also copying the test? event stats into the new entry ~%")))
+              (mv (cadr (assoc-keyword :gcs% v)) (cadr (assoc-keyword :s-hist v))))
+          (prog2$
+           (cw? (debug-flag vl)
+                "~|DEBUG: Pushing entry into cgen-stats-event-stack ~%")
+           (mv default-initial-gcs% '())))))
+       
+
+       (f-put-global 'cgen-stats-event-stack 
+                     (cons (list :gcs% gcs% :s-hist s-hist) cse-stack)
+                     state)))
+  
+(defun initialize-event-user-cgen-gv (state)
+  (declare (xargs :mode :logic 
+                  :stobjs state
+                  :guard T))
+  (ec-call (initialize-event-user-cgen state)))
+  
+                                          
+
+(defun finalize-event-user-cgen (state)
+  (declare (xargs :mode :logic :verify-guards nil :stobjs state))
+  (b* (((unless (f-boundp-global 'cgen-stats-event-stack state))
+        state) ;ignore
+       (cse-stack (@ cgen-stats-event-stack))
+       ((unless (valid-cgen-stats-event-stackp cse-stack))
+; Design decision - Lets fix a bad stack here, without complaining.
+        (f-put-global 'cgen-stats-event-stack nil state))
+       (vl (acl2s-defaults :get verbosity-level))
+       
+       
+       (rest-stack (cdr cse-stack))
+
+; Fixed bug: There is a symmetry in initialize-event and finalize-event, that
+; was ignored by me, and hence the bug. Specifically, the cts and wts collected
+; inside thm-fn event are being thrown away, but test? needs to print these. So
+; just like in initialize-event we copy contents of test? entry into the new
+; entry, we need to copy the top entry into the test? entry, preserving the
+; symmetry that these functions ought to keep.
+; March 14th 2013.
+       (state (if (and (consp rest-stack)
+; NOTE: guards are really nice, it below caught the error, where i was
+; directly searching in rest-stack instead of car of it.
+                       (assoc-keyword :inside-test? (car rest-stack)))
+                  ;; copy
+                  (b* ((v (car cse-stack))
+                       ((mv gcs% s-hist)
+                        (mv (cadr (assoc-keyword :gcs% v)) (cadr (assoc-keyword :s-hist v))))
+                       (rest-stack~ (cons (list :gcs% gcs% 
+                                                :s-hist s-hist
+                                                :inside-test? t)
+                                          (cdr rest-stack)))
+                       (- (cw? (debug-flag vl)
+            "~|DEBUG: Popping entry in cgen-stats-event-stack, ~
+but copying its contents into the test? stats entry ~%")))
+                    (f-put-global 'cgen-stats-event-stack
+                                  rest-stack~ state))
+                (prog2$
+                 (cw? (debug-flag vl)
+            "~|DEBUG: Popping entry in cgen-stats-event-stack ~%")
+                (f-put-global 'cgen-stats-event-stack rest-stack state)))))
+           
+    (prog2$ 
+; (print-summary-user-testing state)
+     nil ; TODO add regression statistics code here
+     state)))
+
+(defun finalize-event-user-cgen-gv (state)
+  (declare (xargs :mode :logic 
+                  :guard T
+                  :stobjs state))
+  (ec-call (finalize-event-user-cgen state)))
+
+(defattach (acl2::initialize-event-user
+            initialize-event-user-cgen-gv))
+
 (defattach (acl2::finalize-event-user
-            finalize-event-user-testing))
+            finalize-event-user-cgen-gv))
+
+
 
 (defmacro test? (form &key hints override-defaults dont-print-summary)
   `(with-output
      :stack :push
-     :off :all
+     ,(if (let ((vl (get-acl2s-default 'verbosity-level 
+                                       override-defaults)))
+            (and (natp vl)
+                 (system-debug-flag vl)))
+          :on :off) :all
      :gag-mode T
      (make-event
       (test?-fn ',form ',hints 
                 ',override-defaults ',dont-print-summary
-                'test? (w state) state))))#|ACL2s-ToDo-Line|#
+                'test? (w state) state))))
 
    
 ;Lets start with the canonical rev-rev example!

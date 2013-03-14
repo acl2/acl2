@@ -89,7 +89,7 @@
            #\W #\X #\Y #\Z 
            ))
 
-(defconst *z-values* '(1)) ;for zp
+(defconst *z-values* '(0)) ;for zp
 
 
 ;-------- define some enumerators --------;

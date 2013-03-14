@@ -18,25 +18,11 @@
 (include-book "base")
 
 
-; initialize gcs% global which keeps track of the
-; number of cts/wts collected across a thm/defthm/test?
-(make-event
-;idempotent. everytime top.lisp is included, the
-;globals for recording cts/wts are reset.
- (b* ((gcs%  (defdata::initial-gcs% 
-              (acl2s-defaults :get num-counterexamples)
-              (acl2s-defaults :get num-witnesses)
-              0 (cons nil t)))
-      (defdata::vl (acl2s-defaults :get verbosity-level))
-      (defdata::ctx 'top.lisp)
-      (state (defdata::put-gcs%-global gcs%))
-      (state (defdata::put-s-hist-global '()))
-      (- (defdata::cw? (defdata::verbose-flag defdata::vl)
-              "Initializing gcs% global in top.lisp~%")))
-   (value '(value-triple :gcs%-global-initialized)))
+(make-event 
+ (er-progn
+  (assign defdata::cgen-stats-event-stack nil)
+  (value '(value-triple :invisible)))
  :check-expansion t)
-  
-
 
 ; For now lets keep the nats not more than 1000 to avoid stack-overflow
 ; on non-tail-recursive functions. If you dont like these, comment

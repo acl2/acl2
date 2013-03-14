@@ -1,7 +1,7 @@
 ;; this regression file aims at testing the various features of 
 ;; counterexample generation in ACL2 Sedan
 
-(include-book "top")
+(include-book "countereg-gen/top" :dir :system)
 
 ;++++++++++++++++testcase 1 [classic reverse example]++++++++++++++++++++++++++
 ;Define Reverse function
@@ -10,8 +10,12 @@
     nil
     (append (rev (cdr x)) (list (car x)))))
 
-(acl2s-defaults :set verbosity-level 3)
+(acl2s-defaults :set verbosity-level 2)
 (test? (equal (rev (rev x)) x))
+
+(acl2s-defaults :set testing-enabled T)
+(thm (equal (rev (rev x)) x))
+(acl2s-defaults :set testing-enabled :naive)
 
 ;Modify the conjecture, add the type hypothesis
 (test? (implies (true-listp x)
@@ -103,8 +107,6 @@ of which have not yet been verified.  See :DOC verify-guards.
 ;of the memory.
 (defdata memory (listof (cons nat integer))) 
 ;ISSUE: map not working due to guards
-;ISSUE: print-summary-user-testing is firing where it shouldnt. How should I
-;reset this global flag correctly??
 
 ;; (defdata memory (map nat integer))
 
