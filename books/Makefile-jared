@@ -192,7 +192,10 @@ ACL2_FEATURES := $(shell \
   rm -f Makefile-features ; \
   $(STARTJOB) -c "$(ACL2) < cert_features.lsp &> Makefile-features.log" ;\
   ls -l Makefile-features)
-include Makefile-features
+
+# Only conditionally include Makefile-features, so that make clean works even
+# if ACL2 isn't built.
+-include Makefile-features
 $(info ACL2_HAS_HONS     := $(ACL2_HAS_HONS))
 $(info ACL2_HAS_PARALLEL := $(ACL2_HAS_PARALLEL))
 $(info ACL2_HAS_REALS    := $(ACL2_HAS_REALS))
@@ -340,3 +343,17 @@ xdoc-impl/bookdoc.dat: \
 	@ls -l xdoc-impl/bookdoc.dat
 
 
+
+
+# Multi-lisp compilation stuff for Matt.
+
+# Note: these targets won't work unless you've already done a build using a
+# "compatible" ACL2 (i.e., the same feature set) after first setting
+# ACL2_SAVE_EXPANSION=t.
+
+%.fasl: %.cert
+	@echo "Making $$PWD/$@"
+	echo '(ld `((include-book "$(patsubst %.fasl,%,$(@))" :load-compiled-file :comp :ttags :all))) (acl2::value :q) (acl2::exit-lisp)' | $(ACL2)
+
+.PHONY: fasl
+fasl : $(patsubst %.cert,%.fasl,$(OK_CERTS))
