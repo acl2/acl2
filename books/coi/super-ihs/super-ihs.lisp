@@ -1217,10 +1217,12 @@
 ;; some lemmas that assist in the proof of the guards
 ;; for the JEM1 ALU demo
 ;where do we use this?
-(defthm the-error-noop
-  (equal (the-error y x)
+;; Changed after Version 6.1 by Matt Kaufmann to replace obsolete the-error by
+;; the-check.
+(defthm the-check-noop
+  (equal (the-check g y x)
          x)
-  :hints (("goal" :in-theory (enable the-error))))
+  :hints (("goal" :in-theory (enable the-check))))
 
 ;this rule seems to be expensive
 (defthm logand-bound

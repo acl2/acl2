@@ -55,8 +55,10 @@ September 1999
 (defmacro ctosloc ()  3)
 
 ;; Some proof speedup lemmas
-(defthm the-error-noop
-  (equal (the-error x y) y))
+;; Changed after Version 6.1 by Matt Kaufmann to replace obsolete the-error by
+;; the-check.
+(defthm the-check-noop
+  (equal (the-check g x y) y))
 
 (defthm nth-update-nth-const
   (implies
@@ -67,7 +69,7 @@ September 1999
 	  (if (equal (nfix n1) (nfix n2)) v (nth n1 l))))
   :rule-classes ((:rewrite :loop-stopper nil)))
 
-(in-theory (disable the-error nth update-nth))
+(in-theory (disable the-check nth update-nth))
 
 ;; Some macros for convenient expression of declarations
 (defmacro Int32 (x) `(the   (signed-byte 32) ,x))

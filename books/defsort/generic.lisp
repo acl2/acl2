@@ -506,78 +506,34 @@
 
 
 (defthm fast-comparable-mergesort-integers-admission
+; Modified after v6-1 by Matt K. because the-error no longer is defined.
   (and (o-p (nfix len))
        (implies
         (and (not (zp len)) (not (= len 1)))
         (o<
          (nfix
-          (let
-           ((var
-             (+ (let ((var (let ((var (ash (let ((var len))
-                                                (if (integerp var)
-                                                    var (the-error 'integer var)))
-                                           -1)))
-                                (if (integerp var)
-                                    var (the-error 'integer var)))))
-                     (if (integerp var)
-                         var (the-error 'integer var)))
-                (let ((var (logand (let ((var len))
-                                        (if (integerp var)
-                                            var (the-error 'integer var)))
-                                   1)))
-                     (if (integerp var)
-                         var (the-error 'integer var))))))
-           (if (integerp var)
-               var (the-error 'integer var))))
+          (+ (ash len -1)
+             (logand len 1)))
          (nfix len)))
        (implies (and (not (zp len)) (not (= len 1)))
-                (o< (nfix (let ((var (ash (let ((var len))
-                                               (if (integerp var)
-                                                   var (the-error 'integer var)))
-                                          -1)))
-                               (if (integerp var)
-                                   var (the-error 'integer var))))
+                (o< (nfix (ash len -1))
                     (nfix len))))
   :rule-classes nil)
 
 
 (defthm fast-comparable-mergesort-fixnums-admission
+; Modified after v6-1 by Matt K. because the-error no longer is defined.
   (and (o-p (nfix len))
        (implies
         (and (not (zp len)) (not (= len 1)))
         (o<
          (nfix
-          (let
-              ((var
-                (+
-                 (let
-                     ((var
-                       (let ((var (ash (let ((var len))
-                                         (if (signed-byte-p 30 var)
-                                             var (the-error '(signed-byte 30) var)))
-                                       -1)))
-                         (if (signed-byte-p 30 var)
-                             var
-                           (the-error '(signed-byte 30) var)))))
-                   (if (signed-byte-p 30 var)
-                       var (the-error '(signed-byte 30) var)))
-                 (let ((var (logand (let ((var len))
-                                      (if (signed-byte-p 30 var)
-                                          var (the-error '(signed-byte 30) var)))
-                                    1)))
-                   (if (signed-byte-p 30 var)
-                       var
-                     (the-error '(signed-byte 30) var))))))
-            (if (signed-byte-p 30 var)
-                var (the-error '(signed-byte 30) var))))
+          (+
+           (ash len -1)
+           (logand len 1)))
          (nfix len)))
        (implies
         (and (not (zp len)) (not (= len 1)))
-        (o< (nfix (let ((var (ash (let ((var len))
-                                    (if (signed-byte-p 30 var)
-                                        var (the-error '(signed-byte 30) var)))
-                                  -1)))
-                    (if (signed-byte-p 30 var)
-                        var (the-error '(signed-byte 30) var))))
+        (o< (nfix (ash len -1))
             (nfix len))))
   :rule-classes nil)

@@ -483,44 +483,20 @@
 ; the arithmetic faster.
 
 (defthm fast-comparable-mergesort-fixnums-admission
-  (AND (O-P (NFIX LEN))
-       (IMPLIES
-        (AND (NOT (ZP LEN)) (NOT (= LEN 1)))
-        (O<
-         (NFIX
-          (LET
-           ((VAR
-             (+
-              (LET
-               ((VAR
-                 (LET ((VAR (ASH (LET ((VAR LEN))
-                                      (IF (SIGNED-BYTE-P 30 VAR)
-                                          VAR (THE-ERROR '(SIGNED-BYTE 30) VAR)))
-                                 -1)))
-                      (IF (SIGNED-BYTE-P 30 VAR)
-                          VAR
-                          (THE-ERROR '(SIGNED-BYTE 30) VAR)))))
-               (IF (SIGNED-BYTE-P 30 VAR)
-                   VAR (THE-ERROR '(SIGNED-BYTE 30) VAR)))
-              (LET ((VAR (LOGAND (LET ((VAR LEN))
-                                      (IF (SIGNED-BYTE-P 30 VAR)
-                                          VAR (THE-ERROR '(SIGNED-BYTE 30) VAR)))
-                                 1)))
-                   (IF (SIGNED-BYTE-P 30 VAR)
-                       VAR
-                       (THE-ERROR '(SIGNED-BYTE 30) VAR))))))
-           (IF (SIGNED-BYTE-P 30 VAR)
-               VAR (THE-ERROR '(SIGNED-BYTE 30) VAR))))
-         (NFIX LEN)))
-       (IMPLIES
-        (AND (NOT (ZP LEN)) (NOT (= LEN 1)))
-        (O< (NFIX (LET ((VAR (ASH (LET ((VAR LEN))
-                                       (IF (SIGNED-BYTE-P 30 VAR)
-                                           VAR (THE-ERROR '(SIGNED-BYTE 30) VAR)))
-                                  -1)))
-                       (IF (SIGNED-BYTE-P 30 VAR)
-                           VAR (THE-ERROR '(SIGNED-BYTE 30) VAR))))
-            (NFIX LEN))))
+; Modified after v6-1 by Matt K. because the-error no longer is defined.
+  (and (o-p (nfix len))
+       (implies
+        (and (not (zp len)) (not (= len 1)))
+        (o<
+         (nfix
+          (+
+           (ash len -1)
+           (logand len 1)))
+         (nfix len)))
+       (implies
+        (and (not (zp len)) (not (= len 1)))
+        (o< (nfix (ash len -1))
+            (nfix len))))
   :rule-classes nil)
 
 (defund fast-comparable-mergesort-fixnums (x len)
@@ -678,38 +654,18 @@
 
 
 (defthm fast-comparable-mergesort-integers-admission
-  (AND (O-P (NFIX LEN))
-       (IMPLIES
-        (AND (NOT (ZP LEN)) (NOT (= LEN 1)))
-        (O<
-         (NFIX
-          (LET
-           ((VAR
-             (+ (LET ((VAR (LET ((VAR (ASH (LET ((VAR LEN))
-                                                (IF (INTEGERP VAR)
-                                                    VAR (THE-ERROR 'INTEGER VAR)))
-                                           -1)))
-                                (IF (INTEGERP VAR)
-                                    VAR (THE-ERROR 'INTEGER VAR)))))
-                     (IF (INTEGERP VAR)
-                         VAR (THE-ERROR 'INTEGER VAR)))
-                (LET ((VAR (LOGAND (LET ((VAR LEN))
-                                        (IF (INTEGERP VAR)
-                                            VAR (THE-ERROR 'INTEGER VAR)))
-                                   1)))
-                     (IF (INTEGERP VAR)
-                         VAR (THE-ERROR 'INTEGER VAR))))))
-           (IF (INTEGERP VAR)
-               VAR (THE-ERROR 'INTEGER VAR))))
-         (NFIX LEN)))
-       (IMPLIES (AND (NOT (ZP LEN)) (NOT (= LEN 1)))
-                (O< (NFIX (LET ((VAR (ASH (LET ((VAR LEN))
-                                               (IF (INTEGERP VAR)
-                                                   VAR (THE-ERROR 'INTEGER VAR)))
-                                          -1)))
-                               (IF (INTEGERP VAR)
-                                   VAR (THE-ERROR 'INTEGER VAR))))
-                    (NFIX LEN))))
+; Modified after v6-1 by Matt K. because the-error no longer is defined.
+  (and (o-p (nfix len))
+       (implies
+        (and (not (zp len)) (not (= len 1)))
+        (o<
+         (nfix
+          (+ (ash len -1)
+             (logand len 1)))
+         (nfix len)))
+       (implies (and (not (zp len)) (not (= len 1)))
+                (o< (nfix (ash len -1))
+                    (nfix len))))
   :rule-classes nil)
 
 (defund fast-comparable-mergesort-integers (x len)

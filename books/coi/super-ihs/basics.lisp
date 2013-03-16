@@ -39,7 +39,7 @@
    ;         (:DEFINITION NTHCDR)
   ;          (:DEFINITION LAST)
 
- ;           (:DEFINITION THE-ERROR)
+ ;           (:DEFINITION THE-CHECK) ; through ACL2 6.1, the-error
 ;            (:DEFINITION ZPF)
 ;;             (:DEFINITION LOGTEST)
 ;;             (:DEFINITION SUBSEQ-LIST)
