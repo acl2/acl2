@@ -20456,6 +20456,10 @@
 ; Improved error messages and documentation pertaining to certain ill-formed
 ; uses of syntaxp, in response to feedback from Robert Krug.
 
+; Regarding the change for THE, note that the-error has been replaced by
+; the-check, a 3-place function that results in a macroexpansion of THE forms
+; that differs from what we got previously.
+
   :doc
   ":Doc-Section release-notes
 
@@ -20472,6 +20476,18 @@
   of course many changes could be placed in more than one category.
 
   ~st[CHANGES TO EXISTING FEATURES]
+
+  The macro ~ilc[top-level] has been changed, so that evaluation of a form
+  ~c[(top-level x)] results in an error when evaluation of ~c[x] results in an
+  error.  Thanks to Jared Davis for observing that when evaluating a file using
+  ~ilc[ld], an interrupt of a call of a ~ilc[top-level] call in that file would
+  not prevent evaluation of later forms in the file.
+
+  The macro ~ilc[THE] no longer causes an error when ~il[guard]-checking is
+  ~c[:NONE].  For example, it had been the case that evaluation of
+  ~c[(the integer t)] always caused an error; but now, there is no error after
+  executing command ~c[:]~ilc[set-guard-checking]~c[ :NONE].  Thanks to Jared
+  Davis for asking for a way to avoid such errors.
 
   ~st[NEW FEATURES]
 

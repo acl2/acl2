@@ -23272,14 +23272,14 @@
   strict.  An analogous remark holds for the ~c[(j)] case.  The ~c[RATIONAL]
   and ~c[REAL] type specifiers are similarly generalized.~/")
 
-(defun the-error (x y)
-  (declare (xargs :guard
-                  (hard-error
-                   nil
-                   "The object ~xa does not satisfy the declaration ~xb."
-                   (list (cons #\a y)
-                         (cons #\b x)))))
-  (declare (ignore x))
+(defun the-check (guard x y)
+  (declare (xargs :guard (or guard (hard-error
+                                    nil
+                                    "The object ~xa does not satisfy the ~
+                                     declaration ~xb."
+                                    (list (cons #\a y)
+                                          (cons #\b x))))))
+  (declare (ignore x guard))
   y)
 
 (defun the-fn (x y)
@@ -23291,31 +23291,34 @@
                   :mode :program))
   (let ((guard (translate-declaration-to-guard x 'var nil)))
 
-; Observe that we translate the type expression, x, wrt the variable var
-; and then bind var to y below.  It is logically equivalent to translate
-; wrt to y instead and then generate the if-expression below instead of the
-; let.   Why do we do that?  Because y (or var) is liable to occur many times
-; in the guard (and one more time in the if) and if y is a huge expression we
-; blow ourselves away there.  A good example of this comes up if one
-; translates the expression (the-type-set xxx).  When we translated the
-; declaration wrt to 'xxx we got an expression in which 'xxx occurred
-; five times.  By generating the let below, it occurs only once.
+; Observe that we translate the type expression, x, wrt the variable var and
+; then bind var to y below.  It is logically equivalent to translate wrt to y
+; instead and then generate the if-expression below instead of the let.  Why do
+; we do that?  Because y (or var) is liable to occur many times in the guard
+; and if y is a huge expression we blow ourselves away there.  A good example
+; of this comes up if one translates the expression (the-type-set xxx).  When
+; we translated the declaration wrt to 'xxx we got an expression in which 'xxx
+; occurred five times (using a version of this function present through
+; Version_6.1).  By generating the let below, it occurs only once.
 
-; We have tried an experiment in which we treat the (symbolp y) case
-; specially:  translate wrt to y and just lay down the if-expression
-; (if guard y (the-error 'x y)).  The system was able to do an :init, so
-; this did not blow us out of the water -- as we know it does if you so
-; treat all y's.  But this IF-expressions in the guard are therefore
-; turned loose in the surrounding term and contribute to the explosion of
-; normalized bodies.  So we have backtracked to this, which has the
-; advantage of keeping the normalized sizes just linearly bigger.
+; Comment from Version_6.1 and before, probably still mostly relevant today,
+; although (the-error type val) has been supplanted using the-check.
+
+;   We have tried an experiment in which we treat the (symbolp y) case
+;   specially: translate wrt to y and just lay down the if-expression (if guard
+;   y (the-error 'x y)).  The system was able to do an :init, so this did not
+;   blow us out of the water -- as we know it does if you so treat all y's.
+;   But this IF-expressions in the guard are therefore turned loose in the
+;   surrounding term and contribute to the explosion of normalized bodies.  So
+;   we have backtracked to this, which has the advantage of keeping the
+;   normalized sizes just linearly bigger.
 
     (cond ((null guard)
            (illegal nil
                     "Illegal-type."
                     (list (cons #\0 x))))
           (t
-           (list 'let (list (list 'var y))
+           `(let ((var ,y))
 
 ; The following declaration allows a check at translate time that any part
 ; (satisfies pred) of x is such that pred is a unary function symbol in the
@@ -23325,10 +23328,8 @@
 ; WARNING: Do not change the form of this declaration without visiting the
 ; corresponding code for the-fn in chk-dcl-lst and dcl-guardian.
 
-                 `(declare (type (or t ,x) var))
-                 (list 'if
-                       guard 'var
-                       (list 'the-error (list 'quote x) 'var)))))))
+              (declare (type (or t ,x) var))
+              (the-check ,guard ',x var))))))
 
 #+acl2-loop-only
 (defmacro the (x y)
@@ -23338,16 +23339,19 @@
   run-time type check~/
 
   ~c[(The typ val)] checks that ~c[val] satisfies the type specification
-  ~c[typ] (~pl[type-spec]).  An error is caused if the check fails,
-  and otherwise, ~c[val] is the value of this expression.  Here are
-  some examples.
+  ~c[typ] (~pl[type-spec]).  An error is caused if the check fails, and
+  otherwise, ~c[val] is the value of this expression.  Here are some examples.
   ~bv[]
   (the integer 3)       ; returns 3
   (the (integer 0 6) 3) ; returns 3
-  (the (integer 0 6) 7) ; causes an error
+  (the (integer 0 6) 7) ; causes an error (see below for exception)
   ~ev[]
-  ~l[type-spec] for a discussion of the legal type
-  specifications.~/
+  ~l[type-spec] for a discussion of the legal type specifications.
+
+  There is an exception to the rule that failure of the type-check causes an
+  error: there is no error when ~il[guard]-checking has been turned off with
+  ~c[:set-guard-checking :NONE] or ~c[(with-guard-checking :NONE ...)].
+  ~l[set-guard-checking] and ~pl[with-guard-checking].~/
 
   The following remark is for those who verify guards for their
   functions (~pl[guard] and ~pl[verify-guards]).  We remark that a call of
@@ -23365,7 +23369,7 @@
   as follows.
   ~bv[]
   (implies (and (p1 x) (p2 x))
-           (integerp x))
+           (let ((var x)) (integerp var)))
   ~ev[]
 
   ~c[THE] is defined in Common Lisp.  See any Common Lisp documentation
