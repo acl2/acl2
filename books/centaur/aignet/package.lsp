@@ -58,61 +58,128 @@
     swap-aignets
     aig-sat))
 
+(defconst *aignet-imports*
+  '(nat-listp
+    defconsts
+    definline
+    definlined
+    defxdoc
+    define
+    defsection
+    defmvtypes
+    cutil::defprojection
+    cutil::deflist
+    b*
+    aig-eval
+    aig-not
+    aig-and
+    aig-xor
+    aig-xor-lists
+    aig-cases
+    aig-vars
+    aig-vars-1pass
+    aig-restrict
+    aig-restrict-list
+    aig-restrict-alist
+    lnfix lifix
+    zz-sat
+    zz-batch-sat
+    aiger-read
+    unsigned-byte-p
+    signed-byte-p
+    make-fast-alist
+    alist-keys
+    alist-vals
+    with-fast
+    with-fast-alist
+    with-fast-alists
+    nat-equiv
+    nth-equiv
+    value
+    def-ruleset
+    def-ruleset!
+    add-to-ruleset
+    enable*
+    disable*
+    e/d*
+    e/d**
+    cwtime
+    local-stobjs
+    def-array-set
+    def-slot-set
+    defiteration
+    defstobj-clone
+    x
+    bitp bfix b-and b-xor b-ior b-not bit-equiv
+    bitarr get-bit set-bit bits-length resize-bits bits-equiv
+    tag
+    list-equiv
+    duplicity))
 
 (defpkg "AIGNET"
   (union-eq *acl2-exports*
             *common-lisp-symbols-from-main-lisp-package*
             *aignet-exports*
-            '(nat-listp
-              defconsts
-              definline
-              definlined
-              defxdoc
-              define
-              defsection
-              defmvtypes
-              cutil::defprojection
-              cutil::deflist
-              b*
-              aig-eval
-              aig-not
-              aig-and
-              aig-xor
-              aig-xor-lists
-              aig-cases
-              aig-vars
-              aig-vars-1pass
-              aig-restrict
-              aig-restrict-list
-              aig-restrict-alist
-              lnfix lifix
-              zz-sat
-              zz-batch-sat
-              aiger-read
-              unsigned-byte-p
-              signed-byte-p
-              make-fast-alist
-              alist-keys
-              alist-vals
-              with-fast
-              with-fast-alist
-              with-fast-alists
-              nat-equiv
-              nth-equiv
-              value
-              def-ruleset
-              def-ruleset!
-              add-to-ruleset
-              enable*
-              disable*
-              e/d*
-              e/d**
-              cwtime
-              local-stobjs
-              def-array-set
-              def-slot-set
-              defiteration
-              defstobj-clone
-              x
-              bitp bfix b-and b-xor b-ior b-not bit-equiv
-              bitarr get-bit set-bit bits-length resize-bits bits-equiv)))
+            *aignet-imports*))
+
+(defconst *aignet$a-exports*
+  #!AIGNET
+  '(const-type
+    gate-type
+    in-type
+    out-type
+    gate-node
+    gate-node-p
+    gate-node->fanin0
+    gate-node->fanin1
+    po-node
+    po-node-p
+    po-node->fanin
+    ri-node
+    ri-node-p
+    ri-node->fanin
+    node-p
+    node-listp
+    proper-node-listp
+    tags
+    suffixp
+    suffixp-bind
+    reg-count
+    lookup-node
+    lookup-pi
+    lookup-ro
+    lookup-po
+    lookup-ri
+    pi->id
+    po->id
+    ro->id
+    ri->id
+    aignet-nodes-ok
+    aignet-well-formedp))
+
+(defconst *aignet$a/c-imports*
+  #!AIGNET '(idp
+             litp
+             id-val
+             id-fix
+             lit-id
+             lit-neg
+             to-lit
+             to-id
+             lit-fix
+             lit-val
+             id-equiv
+             lit-equiv))
+
+(defpkg "AIGNET$A"
+  (union-eq *acl2-exports*
+            *common-lisp-symbols-from-main-lisp-package*
+            *aignet$a-exports*
+            *aignet-imports*
+            *aignet$a/c-imports*))
+
+(defpkg "AIGNET$C"
+  (union-eq *acl2-exports*
+            *common-lisp-symbols-from-main-lisp-package*
+            *aignet-imports*
+            *aignet$a/c-imports*))

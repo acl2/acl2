@@ -494,7 +494,7 @@
                                                           aignet))
                             (reg-vals (aignet-vals->regvals nil aignet-vals aignet)))
                        (id-eval id in-vals reg-vals aignet))))
-           :hints(("Goal" :in-theory (e/d (lit-eval)
+           :hints(("Goal" :in-theory (e/d (lit-eval eval-and-of-lits)
                                           (id-eval
                                            aignet-vecsim-iter))
                    :induct (id-eval-ind id aignet)

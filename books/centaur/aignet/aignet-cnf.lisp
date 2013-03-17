@@ -206,7 +206,8 @@ correctness criterion we've described.
                                     (acl2::b-not (lit-eval c in-vals reg-vals aignet))
                                     (lit-eval fb in-vals reg-vals aignet))))))
     :hints (("goal" :in-theory (e/d (lit-eval-of-mk-lit-split-rw
-                                     equal-1-by-bitp)
+                                     equal-1-by-bitp
+                                     eval-and-of-lits)
                                     (lit-eval acl2::b-xor acl2::b-and
                                               acl2::b-ior acl2::b-not))
              :expand ((id-eval id in-vals reg-vals aignet)
@@ -398,7 +399,8 @@ correctness criterion we've described.
     :hints (("goal" :induct (lit-collect-supergate lit top use-muxes supergate
                                                    aignet-refcounts aignet)
              :do-not-induct t
-             :in-theory (enable (:induction lit-collect-supergate))
+             :in-theory (enable (:induction lit-collect-supergate)
+                                eval-and-of-lits)
              :expand ((:free (top use-muxes)
                        (lit-collect-supergate lit top use-muxes supergate
                                               aignet-refcounts aignet))))

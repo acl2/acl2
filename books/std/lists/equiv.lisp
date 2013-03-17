@@ -46,6 +46,8 @@
   (mbe :logic (equal (list-fix x) (list-fix y))
        :exec (fast-list-equiv x y)))
 
+(verify-guards list-equiv)
+
 (local (in-theory (enable list-equiv)))
 
 (defequiv list-equiv)
