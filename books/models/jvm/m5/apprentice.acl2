@@ -5,7 +5,6 @@
 (set-total-parallelism-work-limit-error nil)
 #+acl2-par
 (set-total-parallelism-work-limit 8000)
-
 #+acl2-par
 (set-waterfall-parallelism t)
 
