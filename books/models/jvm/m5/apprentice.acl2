@@ -6,5 +6,7 @@
 #+acl2-par
 (set-total-parallelism-work-limit 8000)
 
+(set-waterfall-parallelism t)
+
 (include-book "m5")
 (certify-book "apprentice" ? t)
