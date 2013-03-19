@@ -17,4 +17,7 @@
 #+acl2-par
 (set-total-parallelism-work-limit 8000)
 
+#+acl2-par
+(set-waterfall-parallelism t)
+
 (certify-book "complex" ? t)
