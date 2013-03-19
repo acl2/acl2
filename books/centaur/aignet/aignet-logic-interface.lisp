@@ -36,7 +36,7 @@
 
 (define num-regs ((aignet aignet-well-formedp))
   :enabled t
-  (reg-count aignet))
+  (duplicity :ro (tags aignet)))
 
 (define num-outs ((aignet aignet-well-formedp))
   (duplicity :po (tags aignet))
@@ -55,170 +55,95 @@
   :guard (< n (num-ins aignet))
   :returns (id idp)
   :enabled t
-  (to-id (1- (num-nodes (lookup-pi n aignet))))
-  ;; ///
-  ;; (defcong nat-equiv equal (innum->id n aignet) 1)
-  ;; (defthm lookup-node-of-innum->id-exists
-  ;;   (iff (lookup-node (innum->id n aignet) aignet)
-  ;;        (< (nfix n) (num-ins aignet))))
-  ;; (defthm car-lookup-node-of-innum->id
-  ;;   (implies (< (nfix n) (num-ins aignet))
-  ;;            (equal (tag (car (lookup-node
-  ;;                              (innum->id n aignet)
-  ;;                              aignet)))
-  ;;                   :pi))
-  ;;   :hints(("Goal" :in-theory (enable lookup-pi
-  ;;                                     lookup-node
-  ;;                                     tags))))
-  ;; (defthm num-ins-of-lookup-node-of-innum->id
-  ;;   (implies (< (nfix n) (num-ins aignet))
-  ;;            (equal (duplicity :pi (tags (cdr (lookup-node
-  ;;                                              (innum->id n aignet)
-  ;;                                              aignet))))
-  ;;                   (nfix n)))
-  ;;   :hints(("Goal" :in-theory (enable lookup-pi
-  ;;                                     lookup-node
-  ;;                                     tags))))
-  )
+  (to-id (len (lookup-pi n aignet))))
 
 (define outnum->id ((n natp)
                    (aignet aignet-well-formedp))
   :guard (< n (num-outs aignet))
   :returns (id idp)
   :enabled t
-  (to-id (1- (num-nodes (lookup-po n aignet))))
-  ;; ///
-  ;; (defcong nat-equiv equal (outnum->id n aignet) 1)
-  ;; (defthm lookup-node-of-outnum->id-exists
-  ;;   (iff (lookup-node (outnum->id n aignet) aignet)
-  ;;        (< (nfix n) (num-outs aignet))))
-  ;; (defthm car-lookup-node-of-outnum->id
-  ;;   (implies (< (nfix n) (num-outs aignet))
-  ;;            (equal (tag (car (lookup-node
-  ;;                              (outnum->id n aignet)
-  ;;                              aignet)))
-  ;;                   :po))
-  ;;   :hints(("Goal" :in-theory (enable lookup-po
-  ;;                                     lookup-node
-  ;;                                     tags))))
-  ;; (defthm num-outs-of-lookup-node-of-outnum->id
-  ;;   (implies (< (nfix n) (num-outs aignet))
-  ;;            (equal (duplicity :po (tags (cdr (lookup-node
-  ;;                                              (outnum->id n aignet)
-  ;;                                              aignet))))
-  ;;                   (nfix n)))
-  ;;   :hints(("Goal" :in-theory (enable lookup-po
-  ;;                                     lookup-node
-  ;;                                     tags))))
-  )
-
-(define regnum->ri ((n natp)
-                   (aignet aignet-well-formedp))
-  :guard (< n (num-regs aignet))
-  :returns (id idp)
-  :enabled t
-  (to-id (1- (num-nodes (lookup-ri n aignet))))
-  ;; ///
-  ;; (defcong nat-equiv equal (regnum->ri n aignet) 1)
-  ;; (defthm lookup-node-of-regnum->ri-exists
-  ;;   (iff (lookup-node (regnum->ri n aignet) aignet)
-  ;;        (< (nfix n) (num-regins aignet))))
-  ;; (defthm car-lookup-node-of-regnum->ri
-  ;;   (implies (< (nfix n) (num-regins aignet))
-  ;;            (equal (tag (car (lookup-node
-  ;;                              (regnum->ri n aignet)
-  ;;                              aignet)))
-  ;;                   :ri))
-  ;;   :hints(("Goal" :in-theory (enable lookup-ri
-  ;;                                     lookup-node
-  ;;                                     tags))))
-  ;; (defthm num-regins-of-lookup-node-of-regnum->ri
-  ;;   (implies (< (nfix n) (num-regins aignet))
-  ;;            (equal (duplicity :ri (tags (cdr (lookup-node
-  ;;                                              (regnum->ri n aignet)
-  ;;                                              aignet))))
-  ;;                   (nfix n)))
-  ;;   :hints(("Goal" :in-theory (enable lookup-ri
-  ;;                                     lookup-node
-  ;;                                     tags))))
-  )
+  (to-id (len (lookup-po n aignet))))
 
 (define regnum->ro ((n natp)
-                   (aignet aignet-well-formedp))
+                    (aignet aignet-well-formedp))
   :guard (< n (num-regs aignet))
   :returns (id idp)
   :enabled t
-  (to-id (1- (num-nodes (lookup-ro n aignet))))
-  ;; ///
-  ;; (defcong nat-equiv equal (regnum->ro n aignet) 1)
-  ;; (defthm car-lookup-node-of-regnum->ro
-  ;;   (implies (lookup-node (regnum->ro n aignet) aignet)
-  ;;            (equal (tag (car (lookup-node
-  ;;                              (regnum->ro n aignet)
-  ;;                              aignet)))
-  ;;                   :ro))
-  ;;   :hints(("Goal" :in-theory (enable lookup-ro
-  ;;                                     lookup-node
-  ;;                                     tags))))
-  ;; (defthm reg-count-of-lookup-node-of-regnum->ro
-  ;;   (implies (lookup-node (regnum->ro n aignet) aignet)
-  ;;            (equal (reg-count (cdr (lookup-node
-  ;;                                  (regnum->ro n aignet)
-  ;;                                  aignet)))
-  ;;                   (nfix n)))
-  ;;   :hints(("Goal" :in-theory (enable lookup-ro
-  ;;                                     lookup-node
-  ;;                                     tags))))
-  )
+  (to-id (len (lookup-ro n aignet))))
 
+(define id-existsp ((id idp) (aignet aignet-well-formedp))
+  :enabled t
+  (aignet-idp id aignet))
 
 (define id->type ((id idp)
                   (aignet aignet-well-formedp))
-  :guard (< (id-val id) (num-nodes aignet))
+  :guard (id-existsp id aignet)
   :enabled t
   (node->type (car (lookup-node id aignet))))
 
 (define io-id->regp ((id idp)
                      (aignet aignet-well-formedp))
-  :guard (and (< (id-val id) (num-nodes aignet))
-              (or (int= (id->type id aignet) (in-type))
-                  (int= (id->type id aignet) (out-type))))
+  :guard (and (id-existsp id aignet)
+              (or (eql (id->type id aignet) (in-type))
+                  (eql (id->type id aignet) (out-type))))
   :enabled t
   (io-node->regp (car (lookup-node id aignet))))
 
 (define co-id->fanin ((id idp)
                       (aignet aignet-well-formedp))
-  :guard (and (< (id-val id) (num-nodes aignet))
-              (int= (id->type id aignet) (out-type)))
+  :guard (and (id-existsp id aignet)
+              (eql (id->type id aignet) (out-type)))
   :enabled t
   (co-node->fanin (car (lookup-node id aignet))))
 
 (define gate-id->fanin0 ((id idp)
                         (aignet aignet-well-formedp))
-  :guard (and (< (id-val id) (num-nodes aignet))
-              (int= (id->type id aignet) (gate-type)))
+  :guard (and (id-existsp id aignet)
+              (eql (id->type id aignet) (gate-type)))
   :enabled t
   (gate-node->fanin0 (car (lookup-node id aignet))))
 
 (define gate-id->fanin1 ((id idp)
                         (aignet aignet-well-formedp))
-  :guard (and (< (id-val id) (num-nodes aignet))
-              (int= (id->type id aignet) (gate-type)))
+  :guard (and (id-existsp id aignet)
+              (eql (id->type id aignet) (gate-type)))
   :enabled t
   (gate-node->fanin1 (car (lookup-node id aignet))))
 
 (define io-id->ionum ((id idp) (aignet aignet-well-formedp))
-  :guard (and (< (id-val id) (num-nodes aignet))
-              (or (int= (id->type id aignet) (in-type))
-                  (int= (id->type id aignet) (out-type))))
+  :guard (and (id-existsp id aignet)
+              (or (eql (id->type id aignet) (in-type))
+                  (and (eql (id->type id aignet) (out-type))
+                       (eql (io-id->regp id aignet) 0))))
   :enabled t
   (b* (((cons node rest) (lookup-node id aignet)))
     (io-node->ionum node rest)))
 
+(define reg-id->ri ((id idp)
+                    (aignet aignet-well-formedp))
+  :guard (and (id-existsp id aignet)
+              (eql (id->type id aignet) (in-type))
+              (eql (io-id->regp id aignet) 1))
+  :returns (id idp)
+  :enabled t
+  (to-id (len (lookup-reg->ri id aignet))))
+
+(define ri-id->reg ((id idp)
+                    (aignet aignet-well-formedp))
+  :guard (and (id-existsp id aignet)
+              (eql (id->type id aignet) (out-type))
+              (eql (io-id->regp id aignet) 1))
+  :returns (id idp)
+  :enabled t
+  (id-fix ;; so that the result is an ID regardless of malformed input
+   (ri-node->reg (car (lookup-node id aignet)))))
+
+
+
 (define fanout-litp ((lit litp) (aignet aignet-well-formedp))
   :enabled t
   (aignet-litp lit aignet))
-  
+
 
 
 (defsection id->phase
@@ -236,17 +161,17 @@
    (defun id->phase (id aignet)
      (declare (Xargs :guard (and (aignet-well-formedp aignet)
                                  (idp id)
-                                 (< (id-val id) (num-nodes aignet)))
+                                 (id-existsp id aignet))
                      :measure (acl2::two-nats-measure
                                (id-val id) 0)
                      :hints (("goal" :in-theory (enable co-orderedp
                                                         gate-orderedp)))))
      (let ((type (id->type id aignet)))
-       (cond ((int= type (out-type))
+       (cond ((eql type (out-type))
               (if (co-orderedp id aignet)
                   (lit->phase (co-id->fanin id aignet) aignet)
                 0))
-             ((int= type (gate-type))
+             ((eql type (gate-type))
               (if (gate-orderedp id aignet)
                   (b-and (lit->phase (gate-id->fanin0 id aignet) aignet)
                          (lit->phase (gate-id->fanin1 id aignet) aignet))
@@ -309,6 +234,9 @@
              :expand ((:free (a b)
                        (suffixp a (cons b a))))))))
 
+
+
+
 (define aignet-add-in ((aignet aignet-well-formedp))
   (cons (pi-node) aignet)
   :enabled t
@@ -332,7 +260,9 @@
                          (aignet aignet-well-formedp))
   :guard (and (fanout-litp f0 aignet)
               (fanout-litp f1 aignet))
-  (cons (gate-node f0 f1) aignet)
+  (cons (gate-node (aignet-lit-fix f0 aignet)
+                   (aignet-lit-fix f1 aignet))
+        aignet)
   :enabled t
   ///
   (defthm aignet-nodes-ok-of-aignet-add-gate
@@ -345,7 +275,8 @@
 (define aignet-add-out ((f litp)
                         (aignet aignet-well-formedp))
   :guard (fanout-litp f aignet)
-  (cons (po-node f) aignet)
+  (cons (po-node (aignet-lit-fix f aignet))
+        aignet)
   :enabled t
   ///
   (defthm aignet-nodes-ok-of-aignet-add-out
@@ -355,15 +286,22 @@
     :hints(("Goal" :in-theory (enable aignet-nodes-ok)))))
 
 (define aignet-add-regin ((f litp)
+                          (regid idp)
                           (aignet aignet-well-formedp))
-  :guard (fanout-litp f aignet)
-  (cons (ri-node f) aignet)
+  :guard (and (fanout-litp f aignet)
+              (id-existsp regid aignet)
+              (eql (id->type regid aignet) (in-type))
+              (eql (io-id->regp regid aignet) 1))
+  (cons (ri-node (aignet-lit-fix f aignet)
+                 (aignet-id-fix regid aignet))
+        aignet)
   :enabled t
   ///
   (defthm aignet-nodes-ok-of-aignet-add-regin
     (implies (and (aignet-nodes-ok aignet)
-                  (fanout-litp f aignet))
-             (aignet-nodes-ok (cons (ri-node f) aignet)))
+                  (fanout-litp f aignet)
+                  (aignet-idp regid aignet))
+             (aignet-nodes-ok (cons (ri-node f regid) aignet)))
     :hints(("Goal" :in-theory (enable aignet-nodes-ok)))))
 
 (define aignet-clear (aignet)

@@ -93,10 +93,6 @@
            (outs-length aignet))
        (<= (lnfix (num-regs aignet))
            (regs-length aignet))
-       (<= (lnfix (num-regins aignet))
-           (lnfix (num-regs aignet)))
-       (<= (lnfix (num-regins aignet))
-           (regs-length aignet))
        (<= (* 2 (lnfix (num-nodes aignet)))
            (nodes-length aignet))))
 
@@ -155,11 +151,11 @@
   ;; connected RO/RI:   RO --> RI --> regnum
   ;;                     \______________/
 
-  (definlined snode->regin (slot0)
+  (definlined snode->regid (slot0)
     (declare (type (integer 0 *) slot0))
     (to-id (ash (lnfix slot0) -2)))
 
-  (definlined set-snode->regin (regin slot0)
+  (definlined set-snode->regid (regin slot0)
     (declare (type (integer 0 *) slot0)
              (type (integer 0 *) regin)
              (xargs :guard (idp regin)))
@@ -215,13 +211,21 @@
                                 (< (id-val id) (num-nodes aignet)))))
     (snode->fanin1 (get-node-slot id 1 aignet)))
 
-  (definline id->regin (id aignet)
+  (definline reg-id->ri (id aignet)
     (declare (type (integer 0 *) id)
              (xargs :stobjs aignet
                     :guard (and (aignet-sizes-ok aignet)
                                 (idp id)
                                 (< (id-val id) (num-nodes aignet)))))
-    (snode->regin (get-node-slot id 0 aignet)))
+    (snode->regid (get-node-slot id 0 aignet)))
+
+  (definline ri-id->reg (id aignet)
+    (declare (type (integer 0 *) id)
+             (xargs :stobjs aignet
+                    :guard (and (aignet-sizes-ok aignet)
+                                (idp id)
+                                (< (id-val id) (num-nodes aignet)))))
+    (snode->regid (get-node-slot id 1 aignet)))
 
   (definline update-node-slot (id slot val aignet)
     (declare (type (integer 0 *) id)
@@ -274,13 +278,6 @@
           (resize-regs (max 16 (* 2 target)) aignet)
         aignet)))
 
-  (definlined maybe-grow-regins (aignet)
-    (declare (xargs :stobjs aignet))
-    (let ((target (+ 1 (lnfix (num-regins aignet)))))
-      (if (< (regs-length aignet) target)
-          (resize-regs (max 16 (* 2 target)) aignet)
-        aignet)))
-
   (definlined maybe-grow-outs (aignet)
     (declare (xargs :stobjs aignet))
     (let ((target (+ 1 (lnfix (num-outs aignet)))))
@@ -288,17 +285,17 @@
           (resize-outs (max 16 (* 2 target)) aignet)
         aignet))))
 
-(define regs-in-bounds ((n natp) aignet)
-  :guard (and (aignet-sizes-ok aignet)
-              (<= n (num-regs aignet)))
-  (if (zp n)
-      t
-    (and (< (id-val (regsi (1- n) aignet)) (lnfix (num-nodes aignet)))
-         (regs-in-bounds (1- n) aignet))))
+;; (define regs-in-bounds ((n natp) aignet)
+;;   :guard (and (aignet-sizes-ok aignet)
+;;               (<= n (num-regs aignet)))
+;;   (if (zp n)
+;;       t
+;;     (and (< (id-val (regsi (1- n) aignet)) (lnfix (num-nodes aignet)))
+;;          (regs-in-bounds (1- n) aignet))))
 
-(define aignet-regs-in-bounds (aignet)
-  :guard (aignet-sizes-ok aignet)
-  (regs-in-bounds (num-regs aignet) aignet))
+;; (define aignet-regs-in-bounds (aignet)
+;;   :guard (aignet-sizes-ok aignet)
+;;   (regs-in-bounds (num-regs aignet) aignet))
 
 (defsection io-accessors/updaters
   (definline set-innum->id (n id aignet)
@@ -363,27 +360,24 @@
     (id-fix (outsi n aignet)))
 
 
-  (definline regnum->ri (n aignet)
-    (declare (type (integer 0 *) n)
-             (xargs :stobjs aignet
-                    :guard (and (aignet-sizes-ok aignet)
-                                (aignet-regs-in-bounds aignet)
-                                (< n (num-regs aignet)))))
-    (b* ((id (id-fix (regsi n aignet))))
-      (if (int= (id->type id aignet) (in-type))
-          (id->regin id aignet)
-        id)))
+  ;; (definline regnum->ri (n aignet)
+  ;;   (declare (type (integer 0 *) n)
+  ;;            (xargs :stobjs aignet
+  ;;                   :guard (and (aignet-sizes-ok aignet)
+  ;;                               (aignet-regs-in-bounds aignet)
+  ;;                               (< n (num-regs aignet)))))
+  ;;   (b* ((id (id-fix (regsi n aignet))))
+  ;;     (if (int= (id->type id aignet) (in-type))
+  ;;         (reg-id->ri id aignet)
+  ;;       id)))
 
   (definline regnum->ro (n aignet)
     (declare (type (integer 0 *) n)
              (xargs :stobjs aignet
                     :guard (and (aignet-sizes-ok aignet)
-                                (aignet-regs-in-bounds aignet)
+                                ;; (aignet-regs-in-bounds aignet)
                                 (< n (num-regs aignet)))))
-    (b* ((id (id-fix (regsi n aignet))))
-      (if (int= (id->type id aignet) (in-type))
-          id
-        0))))
+    (id-fix (regsi n aignet))))
 
 (definline lit->phase (lit aignet)
   (declare (type (integer 0 *) lit)
@@ -516,34 +510,31 @@
          (aignet (update-node-slot (to-id nodes) 1 slot1 aignet)))
       aignet))
 
-  (defund aignet-add-regin (f aignet)
+  (defund aignet-add-regin (f regid aignet)
     (declare (xargs :stobjs aignet
                     :guard (and (aignet-sizes-ok aignet)
-                                (aignet-regs-in-bounds aignet)
                                 (litp f)
                                 (< (id-val (lit-id f))
                                    (num-nodes aignet))
                                 (not (int= (id->type (lit-id f) aignet)
-                                           (out-type))))
+                                           (out-type)))
+                                (idp regid)
+                                (< (id-val regid) (num-nodes aignet))
+                                (int= (id->type regid aignet)
+                                      (in-type))
+                                (int= (id->regp regid aignet) 1))
                     :guard-hints ((and stable-under-simplificationp
                                        '(:use aignet-sizes-ok
                                          :in-theory (disable aignet-sizes-ok))))))
     (b* ((nodes  (num-nodes aignet))
-         (ri-num (num-regins aignet))
          (aignet (add-node aignet))
-         (connected (< ri-num (num-regs aignet)))
-         (aignet (if connected
-                     (b* ((ro-node (id-fix (regsi ri-num aignet)))
-                          (slot0 (get-node-slot ro-node 0 aignet))
-                          (new-slot0 (set-snode->regin
-                                      (to-id nodes) slot0)))
-                       (update-node-slot ro-node 0 new-slot0 aignet))
-                   (b* ((aignet (add-reg aignet)))
-                     (set-regnum->id ri-num (to-id nodes) aignet))))
-         (aignet (update-num-regins (+ 1 ri-num) aignet))
+         (aignet (update-num-regins (+ 1 (lnfix (num-regins aignet))) aignet))
+         (slot0 (get-node-slot regid 0 aignet))
+         (new-slot0 (set-snode->regid (to-id nodes) slot0))
+         (aignet (update-node-slot regid 0 new-slot0 aignet))
          (phase  (lit->phase f aignet))
          ((mv slot0 slot1)
-          (mk-node (out-type) 1 phase (lit-val f) ri-num))
+          (mk-node (out-type) 1 phase (lit-val f) (id-val regid)))
          (aignet (update-node-slot (to-id nodes) 0 slot0 aignet))
          (aignet (update-node-slot (to-id nodes) 1 slot1 aignet)))
       aignet)))
@@ -584,3 +575,9 @@
          (aignet (resize-outs (lnfix max-outs) aignet))
          (aignet (resize-regs (lnfix max-regs) aignet)))
       (aignet-clear aignet))))
+
+
+(definline id-existsp (id aignet)
+  (declare (xargs :stobjs aignet
+                  :guard (idp id)))
+  (< (id-val id) (lnfix (num-nodes aignet))))

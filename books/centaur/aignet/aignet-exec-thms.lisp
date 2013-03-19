@@ -185,10 +185,6 @@
              (outs-length aignet))
          (<= (lnfix (num-regs aignet))
              (regs-length aignet))
-         (<= (lnfix (num-regins aignet))
-             (lnfix (num-regs aignet)))
-         (<= (lnfix (num-regins aignet))
-             (regs-length aignet))
          (<= (* 2 (lnfix (num-nodes aignet)))
              (nodes-length aignet))))
 
@@ -211,12 +207,6 @@
   (defthm aignet-sizes-ok-regs
     (implies (aignet-sizes-ok aignet)
              (<= (nth *num-regs* aignet)
-                 (len (nth *regsi* aignet))))
-    :rule-classes (:rewrite :linear))
-
-  (defthm aignet-sizes-ok-regins
-    (implies (aignet-sizes-ok aignet)
-             (<= (nth *num-regins* aignet)
                  (len (nth *regsi* aignet))))
     :rule-classes (:rewrite :linear))
 
@@ -494,33 +484,40 @@
   ;; connected RO/RI:   RO --> RI --> regnum
   ;;                     \______________/
 
-  (definlined snode->regin (slot0)
+  (definlined snode->regid (slot0)
     (declare (type (integer 0 *) slot0))
     (to-id (ash (lnfix slot0) -2)))
 
-  (defcong nat-equiv equal (snode->regin slot) 1
-    :hints(("Goal" :in-theory (enable snode->regin))))
+  (defcong nat-equiv equal (snode->regid slot) 1
+    :hints(("Goal" :in-theory (enable snode->regid))))
 
-  (definlined set-snode->regin (regin slot0)
+  (definlined set-snode->regid (regin slot0)
     (declare (type (integer 0 *) slot0)
              (type (integer 0 *) regin)
              (xargs :guard (idp regin)))
     (logior (ash (id-val regin) 2)
             (logand 3 (lnfix slot0))))
 
-  (defthm snode->regin-of-set-snode->regin
-    (equal (snode->regin (set-snode->regin regin slot0))
+  (defthm snode->regid-of-set-snode->regid
+    (equal (snode->regid (set-snode->regid regin slot0))
            (id-fix regin))
-    :hints(("Goal" :in-theory (enable snode->regin
-                                      set-snode->regin))))
-  (defthm snode->type-of-set-snode->regin
-    (equal (snode->type (set-snode->regin regin slot0))
+    :hints(("Goal" :in-theory (enable snode->regid
+                                      set-snode->regid))))
+
+  (defthm snode->type-of-set-snode->regid
+    (equal (snode->type (set-snode->regid regin slot0))
            (snode->type slot0))
     :hints(("Goal" :in-theory (enable snode->type
-                                      set-snode->regin))))
+                                      set-snode->regid))))
 
-  (defcong nat-equiv equal (set-snode->regin regin slot0) 2
-    :hints(("Goal" :in-theory (enable set-snode->regin))))
+  (defthm snode->phase-of-set-snode->regid
+    (equal (snode->phase (set-snode->regid regin slot0))
+           (snode->phase slot0))
+    :hints(("Goal" :in-theory (enable snode->phase
+                                      set-snode->regid))))
+
+  (defcong nat-equiv equal (set-snode->regid regin slot0) 2
+    :hints(("Goal" :in-theory (enable set-snode->regid))))
 
   ;; get a particular field by ID
   (definline id->type (id aignet)
@@ -571,13 +568,21 @@
                                 (< (id-val id) (num-nodes aignet)))))
     (snode->fanin1 (get-node-slot id 1 aignet)))
 
-  (definline id->regin (id aignet)
+  (definline reg-id->ri (id aignet)
     (declare (type (integer 0 *) id)
              (xargs :stobjs aignet
                     :guard (and (aignet-sizes-ok aignet)
                                 (idp id)
                                 (< (id-val id) (num-nodes aignet)))))
-    (snode->regin (get-node-slot id 0 aignet)))
+    (snode->regid (get-node-slot id 0 aignet)))
+
+  (definline ri-id->reg (id aignet)
+    (declare (type (integer 0 *) id)
+             (xargs :stobjs aignet
+                    :guard (and (aignet-sizes-ok aignet)
+                                (idp id)
+                                (< (id-val id) (num-nodes aignet)))))
+    (snode->regid (get-node-slot id 1 aignet)))
 
   (definline update-node-slot (id slot val aignet)
     (declare (type (integer 0 *) id)
@@ -641,10 +646,15 @@
            (to-lit fanin1))
     :hints(("Goal" :in-theory (enable snode->fanin1))))
 
-  (defthm snode->regin-of-mk-node
-    (equal (snode->regin (mv-nth 0 (mk-node type regp phase fanin0 fanin1)))
+  (defthm snode->regid-of-mk-node-0
+    (equal (snode->regid (mv-nth 0 (mk-node type regp phase fanin0 fanin1)))
            (to-id fanin0))
-    :hints(("Goal" :in-theory (enable snode->regin))))
+    :hints(("Goal" :in-theory (enable snode->regid))))
+
+  (defthm snode->regid-of-mk-node-1
+    (equal (snode->regid (mv-nth 1 (mk-node type regp phase fanin0 fanin1)))
+           (to-id fanin1))
+    :hints(("Goal" :in-theory (enable snode->regid))))
 
   (defthm snode->ionum-of-mk-node
     (equal (snode->ionum (mv-nth 1 (mk-node type regp phase fanin0 fanin1)))
@@ -653,10 +663,12 @@
 
 
 (defsection maybe-grow-arrays
-
   (local (in-theory (enable acl2::nth-of-resize-list-split
-                            acl2::nth-with-large-index)))
+                            ;; acl2::nth-with-large-index
+                            )))
   (local (in-theory (enable aignetp)))
+  (local (in-theory (disable aignetp-implies-num-nodes
+                             len)))
 
   ;; Reallocate the array if there isn't room to add an node.
   (definlined maybe-grow-nodes (aignet)
@@ -672,7 +684,8 @@
 
   (defthm nth-of-maybe-grow-nodes
     (nat-equiv (nth id (nth *nodesi* (maybe-grow-nodes aignet)))
-               (nth id (nth *nodesi* aignet))))
+               (nth id (nth *nodesi* aignet)))
+    :hints(("Goal" :in-theory (enable acl2::nth-with-large-index))))
 
   (defthm len-nodes-of-maybe-grow-nodes
     (<= (+ 2 (* 2 (nfix (nth *num-nodes* aignet))))
@@ -684,7 +697,8 @@
   (defthm aignet-sizes-ok-of-maybe-grow-nodes
     (implies (aignet-sizes-ok aignet)
              (aignet-sizes-ok (maybe-grow-nodes aignet)))
-    :hints(("Goal" :in-theory (enable aignet-sizes-ok))))
+    :hints((and stable-under-simplificationp
+                `(:expand (,(car (last clause)))))))
 
   (defthm len-of-maybe-grow-nodes
     (<= (len aignet) (len (maybe-grow-nodes aignet)))
@@ -739,7 +753,8 @@
   (defthm aignet-sizes-ok-of-maybe-grow-ins
     (implies (aignet-sizes-ok aignet)
              (aignet-sizes-ok (maybe-grow-ins aignet)))
-    :hints(("Goal" :in-theory (enable aignet-sizes-ok))))
+    :hints((and stable-under-simplificationp
+                `(:expand (,(car (last clause)))))))
 
   (defthm len-of-maybe-grow-ins
     (<= (len aignet) (len (maybe-grow-ins aignet)))
@@ -789,7 +804,8 @@
   (defthm aignet-sizes-ok-of-maybe-grow-regs
     (implies (aignet-sizes-ok aignet)
              (aignet-sizes-ok (maybe-grow-regs aignet)))
-    :hints(("Goal" :in-theory (enable aignet-sizes-ok))))
+    :hints((and stable-under-simplificationp
+                `(:expand (,(car (last clause)))))))
 
   (defthm len-of-maybe-grow-regs
     (<= (len aignet) (len (maybe-grow-regs aignet)))
@@ -798,47 +814,6 @@
   (defthm aignetp-of-maybe-grow-regs
     (implies (aignetp aignet)
              (aignetp (maybe-grow-regs aignet))))
-
-  (definlined maybe-grow-regins (aignet)
-    (declare (xargs :stobjs aignet))
-    (let ((target (+ 1 (lnfix (num-regins aignet)))))
-      (if (< (regs-length aignet) target)
-          (resize-regs (max 16 (* 2 target)) aignet)
-        aignet)))
-
-  (local (in-theory (enable maybe-grow-regins)))
-
-  (def-aignet-frame maybe-grow-regins)
-
-  (defthm nth-reg-of-maybe-grow-regins
-    (id-equiv (nth n (nth *regsi* (maybe-grow-regins aignet)))
-              (nth n (nth *regsi* aignet)))
-    :hints(("Goal" :in-theory (enable acl2::nth-with-large-index))))
-
-  (defthm len-regs-of-maybe-grow-regins
-    (<= (+ 1 (nfix (nth *num-regins* aignet)))
-        (len (nth *regsi* (maybe-grow-regins aignet))))
-    :rule-classes ((:linear :trigger-terms
-                    ((len (nth *regsi* (maybe-grow-regins aignet)))))))
-
-  (defthm aignet-sizes-ok-of-maybe-grow-regins
-    (implies (aignet-sizes-ok aignet)
-             (aignet-sizes-ok (maybe-grow-regins aignet)))
-    :hints(("Goal" :in-theory (enable aignet-sizes-ok))))
-
-  (defthm len-of-maybe-grow-regins
-    (<= (len aignet) (len (maybe-grow-regins aignet)))
-    :rule-classes :linear)
-
-  (defthm len-incr-of-maybe-grow-regins
-    (<= (len (nth n aignet))
-        (len (nth n (maybe-grow-regins aignet))))
-    :rule-classes ((:linear :trigger-terms
-                    ((len (nth n (maybe-grow-regins aignet)))))))
-
-  (defthm aignetp-of-maybe-grow-regins
-    (implies (aignetp aignet)
-             (aignetp (maybe-grow-regins aignet))))
 
   (definlined maybe-grow-outs (aignet)
     (declare (xargs :stobjs aignet))
@@ -865,7 +840,8 @@
   (defthm aignet-sizes-ok-of-maybe-grow-outs
     (implies (aignet-sizes-ok aignet)
              (aignet-sizes-ok (maybe-grow-outs aignet)))
-    :hints(("Goal" :in-theory (enable aignet-sizes-ok))))
+    :hints((and stable-under-simplificationp
+                `(:expand (,(car (last clause)))))))
 
   (defthm len-of-maybe-grow-outs
     (<= (len aignet) (len (maybe-grow-outs aignet)))
@@ -881,35 +857,35 @@
     (implies (aignetp aignet)
              (aignetp (maybe-grow-outs aignet)))))
 
-(define regs-in-bounds ((n natp) aignet)
-  :guard (and (aignet-sizes-ok aignet)
-              (<= n (num-regs aignet)))
-  (if (zp n)
-      t
-    (and (< (id-val (regsi (1- n) aignet)) (lnfix (num-nodes aignet)))
-         (regs-in-bounds (1- n) aignet)))
-  ///
-  (defthm regs-in-bounds-implies
-    (implies (and (regs-in-bounds n aignet)
-                  (< (nfix m) (nfix n)))
-             (< (id-val (nth m (nth *regsi* aignet)))
-                (nfix (num-nodes aignet))))
-    :rule-classes ((:linear :trigger-terms
-                    ((id-val (nth m (nth *regsi* aignet)))))))
-  (def-aignet-frame regs-in-bounds))
+;; (define regs-in-bounds ((n natp) aignet)
+;;   :guard (and (aignet-sizes-ok aignet)
+;;               (<= n (num-regs aignet)))
+;;   (if (zp n)
+;;       t
+;;     (and (< (id-val (regsi (1- n) aignet)) (lnfix (num-nodes aignet)))
+;;          (regs-in-bounds (1- n) aignet)))
+;;   ///
+;;   (defthm regs-in-bounds-implies
+;;     (implies (and (regs-in-bounds n aignet)
+;;                   (< (nfix m) (nfix n)))
+;;              (< (id-val (nth m (nth *regsi* aignet)))
+;;                 (nfix (num-nodes aignet))))
+;;     :rule-classes ((:linear :trigger-terms
+;;                     ((id-val (nth m (nth *regsi* aignet)))))))
+;;   (def-aignet-frame regs-in-bounds))
 
-(define aignet-regs-in-bounds (aignet)
-  :guard (aignet-sizes-ok aignet)
-  (regs-in-bounds (num-regs aignet) aignet)
-  ///
-  (def-aignet-frame aignet-regs-in-bounds)
-  (defthm aignet-regs-in-bounds-implies
-    (implies (and (aignet-regs-in-bounds aignet)
-                  (< (nfix m) (nfix (num-regs aignet))))
-             (< (id-val (nth m (nth *regsi* aignet)))
-                (nfix (num-nodes aignet))))
-    :rule-classes ((:linear :trigger-terms
-                    ((id-val (nth m (nth *regsi* aignet))))))))
+;; (define aignet-regs-in-bounds (aignet)
+;;   :guard (aignet-sizes-ok aignet)
+;;   (regs-in-bounds (num-regs aignet) aignet)
+;;   ///
+;;   (def-aignet-frame aignet-regs-in-bounds)
+;;   (defthm aignet-regs-in-bounds-implies
+;;     (implies (and (aignet-regs-in-bounds aignet)
+;;                   (< (nfix m) (nfix (num-regs aignet))))
+;;              (< (id-val (nth m (nth *regsi* aignet)))
+;;                 (nfix (num-nodes aignet))))
+;;     :rule-classes ((:linear :trigger-terms
+;;                     ((id-val (nth m (nth *regsi* aignet))))))))
 
 (defsection io-accessors/updaters
   (definline set-innum->id (n id aignet)
@@ -974,27 +950,13 @@
     (id-fix (outsi n aignet)))
 
 
-  (definline regnum->ri (n aignet)
-    (declare (type (integer 0 *) n)
-             (xargs :stobjs aignet
-                    :guard (and (aignet-sizes-ok aignet)
-                                (aignet-regs-in-bounds aignet)
-                                (< n (num-regs aignet)))))
-    (b* ((id (id-fix (regsi n aignet))))
-      (if (int= (id->type id aignet) (in-type))
-          (id->regin id aignet)
-        id)))
-
   (definline regnum->ro (n aignet)
     (declare (type (integer 0 *) n)
              (xargs :stobjs aignet
                     :guard (and (aignet-sizes-ok aignet)
-                                (aignet-regs-in-bounds aignet)
+                                ;; (aignet-regs-in-bounds aignet)
                                 (< n (num-regs aignet)))))
-    (b* ((id (id-fix (regsi n aignet))))
-      (if (int= (id->type id aignet) (in-type))
-          id
-        0))))
+    (id-fix (regsi n aignet))))
 
 (definline lit->phase (lit aignet)
   (declare (type (integer 0 *) lit)
@@ -1060,8 +1022,7 @@
                               maybe-grow-nodes
                               maybe-grow-ins
                               maybe-grow-regs
-                              maybe-grow-outs
-                              maybe-grow-regins)))
+                              maybe-grow-outs)))
     (define add-node (aignet)
       :inline t
       (declare (xargs :stobjs aignet
@@ -1142,11 +1103,11 @@
               (aignet-add-in aignet)))
     :hints(("Goal" :in-theory (enable aignet-sizes-ok))))
 
-  (defthm aignet-add-in-preserves-regs-in-bounds
-    (implies (regs-in-bounds n aignet)
-             (regs-in-bounds n
-              (aignet-add-in aignet)))
-    :hints(("Goal" :in-theory (enable regs-in-bounds))))
+  ;; (defthm aignet-add-in-preserves-regs-in-bounds
+  ;;   (implies (regs-in-bounds n aignet)
+  ;;            (regs-in-bounds n
+  ;;             (aignet-add-in aignet)))
+  ;;   :hints(("Goal" :in-theory (enable regs-in-bounds))))
 
 
   (defthm num-ins-of-add-in
@@ -1181,7 +1142,7 @@
                                (nth *nodesi* (aignet-add-in aignet)))))
                (and (equal (snode->type slot0)
                            (in-type))
-                    (equal (snode->regin slot0)
+                    (equal (snode->regid slot0)
                            0)))))
 
   (defthm new-node-of-add-in-slot1
@@ -1203,11 +1164,11 @@
   ;;   :hints(("Goal" :in-theory (enable regnum->ro))))
   
   
-  (defthm aignet-add-in-preserves-aignet-regs-in-bounds
-    (implies (aignet-regs-in-bounds aignet)
-             (aignet-regs-in-bounds (aignet-add-in aignet)))
-    :hints(("Goal" :in-theory (e/d* (aignet-regs-in-bounds)
-                                    (aignet-add-in)))))
+  ;; (defthm aignet-add-in-preserves-aignet-regs-in-bounds
+  ;;   (implies (aignet-regs-in-bounds aignet)
+  ;;            (aignet-regs-in-bounds (aignet-add-in aignet)))
+  ;;   :hints(("Goal" :in-theory (e/d* (aignet-regs-in-bounds)
+  ;;                                   (aignet-add-in)))))
 
   
 
@@ -1236,17 +1197,17 @@
     :hints(("Goal" :in-theory (enable aignet-sizes-ok
                                       add-node add-reg))))
 
-  (defthm aignet-add-reg-preserves-regs-in-bounds
-    (implies (regs-in-bounds n aignet)
-             (regs-in-bounds n
-                             (aignet-add-reg aignet)))
-    :hints(("Goal" :in-theory (enable regs-in-bounds
-                                      add-node
-                                      add-reg)))
-    ;; :hints(("Goal" :in-theory (disable aignet-sizes-ok
-    ;;                                    len-update-nth
-    ;;                                    acl2::len-update-nth1)))
-    )
+  ;; (defthm aignet-add-reg-preserves-regs-in-bounds
+  ;;   (implies (regs-in-bounds n aignet)
+  ;;            (regs-in-bounds n
+  ;;                            (aignet-add-reg aignet)))
+  ;;   :hints(("Goal" :in-theory (enable regs-in-bounds
+  ;;                                     add-node
+  ;;                                     add-reg)))
+  ;;   ;; :hints(("Goal" :in-theory (disable aignet-sizes-ok
+  ;;   ;;                                    len-update-nth
+  ;;   ;;                                    acl2::len-update-nth1)))
+  ;;   )
 
 
   (defthm new-reg-of-add-reg
@@ -1278,7 +1239,7 @@
                                (nth *nodesi* (aignet-add-reg aignet)))))
                (and (equal (snode->type slot0)
                            (in-type))
-                    (equal (snode->regin slot0)
+                    (equal (snode->regid slot0)
                            0)))))
 
   (defthm new-node-of-add-reg-slot1
@@ -1298,15 +1259,15 @@
            (+ 1 (nfix (nth *num-nodes* aignet))))
     :hints(("Goal" :in-theory (enable add-node add-reg))))
 
-  (defthm aignet-add-reg-preserves-aignet-regs-in-bound
-    (implies (and (aignet-regs-in-bounds aignet)
-                  (aignet-sizes-ok aignet))
-             (aignet-regs-in-bounds (aignet-add-reg aignet)))
-    :hints(("Goal" :in-theory (e/d (aignet-regs-in-bounds
-                                    regs-in-bounds)
-                                   (aignet-add-reg)))
-           (and stable-under-simplificationp
-                '(:in-theory (enable aignet-add-reg)))))
+  ;; (defthm aignet-add-reg-preserves-aignet-regs-in-bound
+  ;;   (implies (and (aignet-regs-in-bounds aignet)
+  ;;                 (aignet-sizes-ok aignet))
+  ;;            (aignet-regs-in-bounds (aignet-add-reg aignet)))
+  ;;   :hints(("Goal" :in-theory (e/d (aignet-regs-in-bounds
+  ;;                                   regs-in-bounds)
+  ;;                                  (aignet-add-reg)))
+  ;;          (and stable-under-simplificationp
+  ;;               '(:in-theory (enable aignet-add-reg)))))
 
 
   (defund aignet-add-gate (f0 f1 aignet)
@@ -1345,16 +1306,16 @@
         :hints(("Goal" :in-theory (enable aignet-sizes-ok
                                       add-node))))
 
-  (defthm aignet-add-gate-preserves-regs-in-bounds
-    (implies (regs-in-bounds n aignet)
-             (regs-in-bounds n
-                             (aignet-add-gate f0 f1 aignet)))
-    :hints(("Goal" :in-theory (enable regs-in-bounds
-                                      add-node)))
-    ;; :hints(("Goal" :in-theory (disable aignet-sizes-ok
-    ;;                                    len-update-nth
-    ;;                                    acl2::len-update-nth1)))
-    )
+  ;; (defthm aignet-add-gate-preserves-regs-in-bounds
+  ;;   (implies (regs-in-bounds n aignet)
+  ;;            (regs-in-bounds n
+  ;;                            (aignet-add-gate f0 f1 aignet)))
+  ;;   :hints(("Goal" :in-theory (enable regs-in-bounds
+  ;;                                     add-node)))
+  ;;   ;; :hints(("Goal" :in-theory (disable aignet-sizes-ok
+  ;;   ;;                                    len-update-nth
+  ;;   ;;                                    acl2::len-update-nth1)))
+  ;;   )
 
   (defthm num-gates-of-add-gate
     (equal (nth *num-gates* (aignet-add-gate f0 f1 aignet))
@@ -1396,11 +1357,11 @@
 
 
 
-  (defthm aignet-add-gate-preserves-aignet-regs-in-bound
-    (implies (aignet-regs-in-bounds aignet)
-             (aignet-regs-in-bounds (aignet-add-gate f0 f1 aignet)))
-    :hints(("Goal" :in-theory (e/d (aignet-regs-in-bounds)
-                                   (aignet-add-gate)))))
+  ;; (defthm aignet-add-gate-preserves-aignet-regs-in-bound
+  ;;   (implies (aignet-regs-in-bounds aignet)
+  ;;            (aignet-regs-in-bounds (aignet-add-gate f0 f1 aignet)))
+  ;;   :hints(("Goal" :in-theory (e/d (aignet-regs-in-bounds)
+  ;;                                  (aignet-add-gate)))))
 
   (defund aignet-add-out (f aignet)
     (declare (xargs :stobjs aignet
@@ -1433,15 +1394,15 @@
               (aignet-add-out f aignet)))
     :hints(("Goal" :in-theory (enable aignet-sizes-ok))))
 
-  (defthm aignet-add-out-preserves-regs-in-bounds
-    (implies (regs-in-bounds n aignet)
-             (regs-in-bounds n
-              (aignet-add-out f aignet)))
-    :hints(("Goal" :in-theory (enable regs-in-bounds)))
-    ;; :hints(("Goal" :in-theory (disable aignet-sizes-ok
-    ;;                                    len-update-nth
-    ;;                                    acl2::len-update-nth1)))
-    )
+  ;; (defthm aignet-add-out-preserves-regs-in-bounds
+  ;;   (implies (regs-in-bounds n aignet)
+  ;;            (regs-in-bounds n
+  ;;             (aignet-add-out f aignet)))
+  ;;   :hints(("Goal" :in-theory (enable regs-in-bounds)))
+  ;;   ;; :hints(("Goal" :in-theory (disable aignet-sizes-ok
+  ;;   ;;                                    len-update-nth
+  ;;   ;;                                    acl2::len-update-nth1)))
+  ;;   )
 
   (defthm num-outs-of-add-out
     (equal (nth *num-outs* (aignet-add-out f aignet))
@@ -1493,40 +1454,37 @@
 
 
 
-  (defthm aignet-add-out-preserves-aignet-regs-in-bound
-    (implies (aignet-regs-in-bounds aignet)
-             (aignet-regs-in-bounds (aignet-add-out f aignet)))
-    :hints(("Goal" :in-theory (e/d (aignet-regs-in-bounds)
-                                   (aignet-add-out)))))
+  ;; (defthm aignet-add-out-preserves-aignet-regs-in-bound
+  ;;   (implies (aignet-regs-in-bounds aignet)
+  ;;            (aignet-regs-in-bounds (aignet-add-out f aignet)))
+  ;;   :hints(("Goal" :in-theory (e/d (aignet-regs-in-bounds)
+  ;;                                  (aignet-add-out)))))
 
-  (defund aignet-add-regin (f aignet)
+  (defund aignet-add-regin (f regid aignet)
     (declare (xargs :stobjs aignet
                     :guard (and (aignet-sizes-ok aignet)
-                                (aignet-regs-in-bounds aignet)
                                 (litp f)
                                 (< (id-val (lit-id f))
                                    (num-nodes aignet))
                                 (not (int= (id->type (lit-id f) aignet)
-                                           (out-type))))
+                                           (out-type)))
+                                (idp regid)
+                                (< (id-val regid) (num-nodes aignet))
+                                (int= (id->type regid aignet)
+                                      (in-type))
+                                (int= (id->regp regid aignet) 1))
                     :guard-hints ((and stable-under-simplificationp
                                        '(:use aignet-sizes-ok
                                          :in-theory (disable aignet-sizes-ok))))))
     (b* ((nodes  (num-nodes aignet))
-         (ri-num (num-regins aignet))
          (aignet (add-node aignet))
-         (connected (< ri-num (num-regs aignet)))
-         (aignet (if connected
-                     (b* ((ro-node (id-fix (regsi ri-num aignet)))
-                          (slot0 (get-node-slot ro-node 0 aignet))
-                          (new-slot0 (set-snode->regin
-                                      (to-id nodes) slot0)))
-                       (update-node-slot ro-node 0 new-slot0 aignet))
-                   (b* ((aignet (add-reg aignet)))
-                     (set-regnum->id ri-num (to-id nodes) aignet))))
-         (aignet (update-num-regins (+ 1 ri-num) aignet))
+         (aignet (update-num-regins (+ 1 (lnfix (num-regins aignet))) aignet))
+         (slot0 (get-node-slot regid 0 aignet))
+         (new-slot0 (set-snode->regid (to-id nodes) slot0))
+         (aignet (update-node-slot regid 0 new-slot0 aignet))
          (phase  (lit->phase f aignet))
          ((mv slot0 slot1)
-          (mk-node (out-type) 1 phase (lit-val f) ri-num))
+          (mk-node (out-type) 1 phase (lit-val f) (id-val regid)))
          (aignet (update-node-slot (to-id nodes) 0 slot0 aignet))
          (aignet (update-node-slot (to-id nodes) 1 slot1 aignet)))
       aignet))
@@ -1537,130 +1495,129 @@
   (defthm aignet-add-regin-preserves-sizes-ok
     (implies (aignet-sizes-ok aignet)
              (aignet-sizes-ok
-              (aignet-add-regin f aignet)))
+              (aignet-add-regin f regid aignet)))
     :hints(("Goal" :in-theory (enable aignet-sizes-ok
                                       add-node
                                       add-reg))))
 
-  (defthm aignet-add-regin-preserves-regs-in-bounds
-    (implies (regs-in-bounds n aignet)
-             (regs-in-bounds n
-                             (aignet-add-regin f aignet)))
-    :hints(("Goal" :in-theory (enable regs-in-bounds
-                                      add-node
-                                      add-reg)))
-    ;; :hints(("Goal" :in-theory (disable aignet-sizes-ok
-    ;;                                    len-update-nth
-    ;;                                    acl2::len-update-nth1)))
-    )
+  ;; (defthm aignet-add-regin-preserves-regs-in-bounds
+  ;;   (implies (regs-in-bounds n aignet)
+  ;;            (regs-in-bounds n
+  ;;                            (aignet-add-regin f regid aignet)))
+  ;;   :hints(("Goal" :in-theory (enable regs-in-bounds
+  ;;                                     add-node
+  ;;                                     add-reg)))
+  ;;   ;; :hints(("Goal" :in-theory (disable aignet-sizes-ok
+  ;;   ;;                                    len-update-nth
+  ;;   ;;                                    acl2::len-update-nth1)))
+  ;;   )
 
-  (defthm num-regs-of-add-regin
-    (implies (aignet-sizes-ok aignet)
-             (equal (nth *num-regs* (aignet-add-regin f aignet))
-                    (if (< (num-regins aignet)
-                           (num-regs aignet))
-                        (num-regs aignet)
-                      (+ 1 (num-regs aignet)))))
-    :hints(("Goal" :in-theory (enable add-node add-reg))))
+  ;; (defthm num-regs-of-add-regin
+  ;;   (implies (aignet-sizes-ok aignet)
+  ;;            (equal (nth *num-regs* (aignet-add-regin f regid aignet))
+  ;;                   (if (< (num-regins aignet)
+  ;;                          (num-regs aignet))
+  ;;                       (num-regs aignet)
+  ;;                     (+ 1 (num-regs aignet)))))
+  ;;   :hints(("Goal" :in-theory (enable add-node add-reg))))
 
   (defthm num-regins-of-add-regin
     (implies (aignet-sizes-ok aignet)
-             (equal (nth *num-regins* (aignet-add-regin f aignet))
+             (equal (nth *num-regins* (aignet-add-regin f regid aignet))
                     (+ 1 (num-regins aignet))))
     :hints(("Goal" :in-theory (enable add-node add-reg))))
 
-  (defthm num-regs-of-add-regin
-    (implies (aignet-sizes-ok aignet)
-             (equal (nth *num-regs* (aignet-add-regin f aignet))
-                    (if (< (num-regins aignet)
-                           (num-regs aignet))
-                        (num-regs aignet)
-                      (+ 1 (num-regs aignet)))))
-    :hints(("Goal" :in-theory (enable add-node add-reg))))
+  ;; (defthm num-regs-of-add-regin
+  ;;   (implies (aignet-sizes-ok aignet)
+  ;;            (equal (nth *num-regs* (aignet-add-regin f regid aignet))
+  ;;                   (if (< (num-regins aignet)
+  ;;                          (num-regs aignet))
+  ;;                       (num-regs aignet)
+  ;;                     (+ 1 (num-regs aignet)))))
+  ;;   :hints(("Goal" :in-theory (enable add-node add-reg))))
 
   (defthm num-nodes-of-add-regin
-    (equal (nth *num-nodes* (aignet-add-regin f aignet))
+    (equal (nth *num-nodes* (aignet-add-regin f regid aignet))
            (+ 1 (nfix (nth *num-nodes* aignet))))
     :hints(("Goal" :in-theory (enable add-node add-reg))))
 
-  (defthm new-reg-of-add-regin
-    (implies (nat-equiv n (nth *num-regins* aignet))
-             (equal (nth n
-                         (nth *regsi*
-                              (aignet-add-regin f aignet)))
-                    (if (< (num-regins aignet)
-                           (num-regs aignet))
-                        (nth n (nth *regsi* aignet))
-                      (to-id (num-nodes aignet))))))
+  ;; (defthm new-reg-of-add-regin
+  ;;   (implies (nat-equiv n (nth *num-regins* aignet))
+  ;;            (equal (nth n
+  ;;                        (nth *regsi*
+  ;;                             (aignet-add-regin f regid aignet)))
+  ;;                   (if (< (num-regins aignet)
+  ;;                          (num-regs aignet))
+  ;;                       (nth n (nth *regsi* aignet))
+  ;;                     (to-id (num-nodes aignet))))))
 
-  (defthm nth-reg-of-add-regin
-    (implies (case-split (not (equal (nfix n) (nfix (nth *num-regins* aignet)))))
-             (id-equiv (nth n (nth *regsi* (aignet-add-regin f aignet)))
-                       (nth n (nth *regsi* aignet)))))
+  ;; (defthm nth-reg-of-add-regin
+  ;;   (implies (case-split (not (equal (nfix n) (nfix (nth *num-regins* aignet)))))
+  ;;            (id-equiv (nth n (nth *regsi* (aignet-add-regin f regid aignet)))
+  ;;                      (nth n (nth *regsi* aignet)))))
 
 
   (defthm nth-node-of-add-regin
-    (implies (case-split (< (nfix n) (* 2 (nfix (nth *num-nodes* aignet)))))
-             (nat-equiv (nth n (nth *nodesi* (aignet-add-regin f aignet)))
-                        (if (and (< (num-regins aignet)
-                                    (num-regs aignet))
-                                 (nat-equiv
-                                  n (* 2 (id-val (regsi (num-regins aignet)
-                                                        aignet)))))
-                            (set-snode->regin
+    (implies (and (case-split (< (nfix n) (* 2 (nfix (nth *num-nodes* aignet)))))
+                  (< (id-val regid) (num-nodes aignet))
+                  (int= (id->type regid aignet)
+                        (in-type))
+                  (int= (id->regp regid aignet) 1))
+             (nat-equiv (nth n (nth *nodesi* (aignet-add-regin f regid aignet)))
+                        (if (nat-equiv
+                             n (* 2 (id-val regid)))
+                            (set-snode->regid
                              (to-id (num-nodes aignet))
-                             (get-node-slot
-                              (regsi (num-regins aignet) aignet)
-                              0 aignet))
+                             (get-node-slot regid 0 aignet))
                           (nth n (nth *nodesi* aignet))))))
 
   (defthm new-node-of-add-regin-slot0
     (implies (and (nat-equiv idx (* 2 (nth *num-nodes* aignet)))
                   (aignet-sizes-ok aignet))
              (let ((slot0 (nth idx
-                               (nth *nodesi* (aignet-add-regin f aignet)))))
+                               (nth *nodesi* (aignet-add-regin f regid aignet)))))
                (and (equal (snode->type slot0)
                            (out-type))
                     (equal (snode->fanin0 slot0)
                            (lit-fix f))))))
 
-  (local (defthm even-is-not-odd
-           (implies (and (integerp a) (integerp b))
-                    (not (equal (+ 1 (* 2 a)) (* 2 b))))
-           :hints (("goal" :use ((:theorem
-                                  (implies
-                                   (and (integerp a)
-                                        (integerp b))
-                                   (not (equal (acl2::logcar (+ 1 (* 2 a)))
-                                               (acl2::logcar (* 2 b)))))))))))
+  ;; (local (defthm even-is-not-odd
+  ;;          (implies (and (integerp a) (integerp b))
+  ;;                   (not (equal (+ 1 (* 2 a)) (* 2 b))))
+  ;;          :hints (("goal" :use ((:theorem
+  ;;                                 (implies
+  ;;                                  (and (integerp a)
+  ;;                                       (integerp b))
+  ;;                                  (not (equal (acl2::logcar (+ 1 (* 2 a)))
+  ;;                                              (acl2::logcar (* 2 b)))))))))))
 
   (defthm new-node-of-add-regin-slot1
     (implies (and (nat-equiv idx (+ 1 (* 2 (nth *num-nodes* aignet))))
                   (aignet-sizes-ok aignet))
              (let ((slot1 (nth idx
-                               (nth *nodesi* (aignet-add-regin f aignet)))))
+                               (nth *nodesi* (aignet-add-regin f regid aignet)))))
                (and (equal (snode->regp slot1)
                            1)
-                    (equal (snode->ionum slot1)
-                           (nth *num-regins* aignet))
+                    (equal (snode->regid slot1)
+                           (id-fix regid))
                     (equal (snode->phase slot1)
                            (lit->phase f aignet))))))
 
 
-  (defthm aignet-add-regin-preserves-aignet-regs-in-bounds
-    (implies (and (aignet-regs-in-bounds aignet)
-                  (aignet-sizes-ok aignet))
-             (aignet-regs-in-bounds (aignet-add-regin f aignet)))
-    :hints(("Goal" :in-theory (e/d (aignet-regs-in-bounds
-                                    regs-in-bounds)
-                                   (aignet-add-regin
-                                    aignet-add-regin-preserves-regs-in-bounds))
-            :use ((:instance aignet-add-regin-preserves-regs-in-bounds
-                   (n (num-regs aignet)))
-                  num-regs-of-add-regin))
-           (and stable-under-simplificationp
-                '(:in-theory (enable aignet-add-regin
-                                     add-node))))))
+  ;; (defthm aignet-add-regin-preserves-aignet-regs-in-bounds
+  ;;   (implies (and (aignet-regs-in-bounds aignet)
+  ;;                 (aignet-sizes-ok aignet))
+  ;;            (aignet-regs-in-bounds (aignet-add-regin f regid aignet)))
+  ;;   :hints(("Goal" :in-theory (e/d (aignet-regs-in-bounds
+  ;;                                   regs-in-bounds)
+  ;;                                  (aignet-add-regin
+  ;;                                   aignet-add-regin-preserves-regs-in-bounds))
+  ;;           :use ((:instance aignet-add-regin-preserves-regs-in-bounds
+  ;;                  (n (num-regs aignet)))))
+  ;;          (and stable-under-simplificationp
+  ;;               '(:in-theory (enable aignet-add-regin
+  ;;                                    add-node)))))
+  )
 
 
 
@@ -1702,3 +1659,8 @@
          (aignet (resize-outs (lnfix max-outs) aignet))
          (aignet (resize-regs (lnfix max-regs) aignet)))
       (aignet-clear aignet))))
+
+(definline id-existsp (id aignet)
+  (declare (xargs :stobjs aignet
+                  :guard (idp id)))
+  (< (id-val id) (lnfix (num-nodes aignet))))

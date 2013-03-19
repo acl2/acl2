@@ -138,6 +138,7 @@
     ri-node
     ri-node-p
     ri-node->fanin
+    ri-node->reg
     node-p
     node-listp
     proper-node-listp
@@ -149,11 +150,15 @@
     lookup-pi
     lookup-ro
     lookup-po
-    lookup-ri
+    lookup-reg->ri
     pi->id
     po->id
     ro->id
     ri->id
+    co-orderedp
+    gate-orderedp
+    aignet-litp
+    aignet-idp
     aignet-nodes-ok
     aignet-well-formedp))
 
@@ -164,6 +169,9 @@
              id-fix
              lit-id
              lit-neg
+             mk-lit
+             lit-negate
+             lit-negate-cond
              to-lit
              to-id
              lit-fix
