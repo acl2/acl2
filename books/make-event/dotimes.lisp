@@ -120,9 +120,11 @@ Jared Davis, Matt Kaufmann, and Sandip Ray contributed to this book.
   (dotimes$ (i 4) (time$ (fib 25)) :name dotimes-foo)))
 
 #|
-; The following example works, but I have disabled it so that people can
+; The following examples work, but I have disabled them so that people can
 ; include this book without needing an active ttag.  Note that the use of
 ; dotimes$-with-error-triple does require an active ttag.
+
+(defttag t)
 
 (local
  (encapsulate
@@ -130,4 +132,11 @@ Jared Davis, Matt Kaufmann, and Sandip Ray contributed to this book.
   (dotimes$-with-error-triple
    (i 4)
    (time$ (thm (equal 3 3))))))
+
+(dotimes$-with-error-triple 
+ (i 100) 
+ (thm (equal (append x (append y z))
+             (append (append x y) z))) 
+ :name dotimes-thmm)
+
 |#
