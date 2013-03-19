@@ -66,7 +66,7 @@
 (include-book "centaur/esim/stv/stv-debug" :dir :system)
 (include-book "centaur/4v-sexpr/top" :dir :system)
 (include-book "tools/plev-ccl" :dir :system)
-(include-book "centaur/misc/memory-mgmt-raw" :dir :system)
+(include-book "centaur/misc/memory-mgmt" :dir :system)
 
 (set-waterfall-parallelism nil) ; for below call of def-gl-clause-processor
 

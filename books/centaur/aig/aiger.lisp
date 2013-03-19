@@ -29,7 +29,7 @@
 (include-book "centaur/misc/numlist" :dir :system)
 (include-book "tools/defmacfun" :dir :system)
 (include-book "misc/definline" :dir :system)
-(include-book "system/io" :dir :system)
+(include-book "std/io/base" :dir :system)
 (include-book "arithmetic/nat-listp" :dir :system)
 (local (include-book "clause-processors/instantiate" :dir :system))
 (local (include-book "centaur/bitops/ihsext-basics" :dir :system))

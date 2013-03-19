@@ -41,7 +41,7 @@
 (include-book "hons-sets")
 (include-book "interp-function-lookup")
 (include-book "memory-mgmt-logic")
-(include-book "memory-mgmt-raw")
+(include-book "memory-mgmt")
 (include-book "nat-list-duplicates")
 (include-book "numlist")
 (include-book "patterns")
