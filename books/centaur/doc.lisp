@@ -104,6 +104,8 @@
 (include-book "vl/mlib/sub-counts")
 (include-book "vl/util/prefix-hash")
 
+(include-book "regex/regex-ui" :dir :system)
+
 #||
 
 ;; This really doesn't belong here, but I want it out of cutil/top to improve
