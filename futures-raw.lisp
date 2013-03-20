@@ -1407,6 +1407,14 @@
              (print (faref array n)) 
              (print-non-nils-in-array array (1+ n))))))
 
+(defun futures-still-in-flight ()
+
+; Returns t if there are futures still in the work-queue to process or if there
+; are futures already being processed.
+
+  (< 1 *unassigned-and-active-future-count*))
+
+
 ;---------------------------------------------------------------------
 ; Section:  Futures Interface
 

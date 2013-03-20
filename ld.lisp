@@ -20525,6 +20525,11 @@
 
   ~st[EXPERIMENTAL/ALTERNATE VERSIONS]
 
+  For ACL2(p), some anomalous behavior may no longer occur because prover
+  calls (more specifically, trips through the ACL2 ``waterfall'') will return
+  only after all sub-computations (threads) have finished.  Thanks to David
+  Rager for contributing this improvement.
+
   ~/~/")
 
 (deflabel the-method

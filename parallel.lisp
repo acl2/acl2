@@ -473,6 +473,9 @@
   supported when the host Lisp is other than CCL.  It may work, but we have not
   attempted to address a potential race condition.
 
+  Proof output for splitter rules (~pl[splitter]) is currently unsupported when
+  waterfall-parallelism is enabled.
+
   (Comment for ACL2(h) users; ~pl[hons-and-memoization].)  Memoization may not
   work as intended when executing in parallel (including the waterfall).  In an
   effort to be helpful to the user, the functions automatically memoized by

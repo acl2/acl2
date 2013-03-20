@@ -27895,6 +27895,7 @@
     with-waterfall-parallelism-timings ; for #+acl2-par
     with-parallelism-hazard-warnings ; for #+acl2-par
     warn-about-parallelism-hazard ; for #+acl2-par
+    with-ensured-parallelism-finishing ; for #+acl2-par
     state-global-let* ; raw Lisp version for efficiency
     with-reckless-readtable
     with-lock
@@ -29407,6 +29408,10 @@
 ; warn-about-parallelism-hazard inside state-global-let* for how we warn the
 ; user of such potential pitfalls.
 
+; Note that the ACL2 developer is not anticipated to set and clear this
+; variable with a call like "setf" -- this should probably be done by using
+; with-parallelism-hazard-warnings.
+
 ; Here is a simple example that demonstrates their use:
 
 ;   (set-state-ok t)
@@ -29483,10 +29488,12 @@
        (format t
                "~%WARNING: A macro or function has been called that is not~%~
                 thread-safe.  Please email this message, including the~%~
-                offending call just below, to the ACL2 implementors.~%")
+                offending call and call history just below, to the ACL2 ~%~
+                implementors.~%")
        (let ((*print-length* 10)
              (*print-level* 10))
-         (pprint ',call))
+         (pprint ',call)
+         (print-call-history))
        (format t
                "~%~%To disable the above warning, issue the form:~%~%~
                 ~s~%~%"
@@ -29497,6 +29504,16 @@
      ,body)
   #-(and acl2-par (not acl2-loop-only))
   body)
+
+(defmacro with-ensured-parallelism-finishing (form)
+  #+(or acl2-loop-only (not acl2-par))
+  form
+  #-(or acl2-loop-only (not acl2-par))
+  `(our-multiple-value-prog1
+    ,form
+    (loop while (futures-still-in-flight) do
+          (cw "Waiting for all proof threads to finish~%") ; for debug only
+          (sleep 0.1))))
 
 (defmacro state-global-let* (bindings body)
 
