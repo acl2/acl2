@@ -32,7 +32,8 @@ The issue tracker handles an easy-to-use "short form" syntax to set an issue's s
 
 There is also syntax for flagging a commit as part of fixing an issue.
 
-|| Update issue NNN || Placed on its own line at the end of the commit message ||
+|| Update issue NNN  || Placed on its own line near the end of the commit message ||
+|| any comments that you want to include || Placed below the "Update issue NNN" ||
 
 See 
 [https://code.google.com/p/support/wiki/IssueTracker#Integration_with_version_control Google Code Wiki] for more information.
