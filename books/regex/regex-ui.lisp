@@ -281,7 +281,7 @@
 
 (local (defun f (x)
          (declare (type string x)
-; Added by Matt K. foo tau change 11/2012 that pays attention to enabled status
+; Added by Matt K. for tau change 11/2012 that pays attention to enabled status
 ; of executable counterparts:
                   (xargs :guard-hints
                          (("Goal"
