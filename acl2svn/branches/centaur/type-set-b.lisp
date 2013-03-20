@@ -3352,15 +3352,15 @@
 
     synp plusp minusp listp return-last mv-list
 
-; We added the-error for Version_4.0.  Before that change, but after
-; changing constraint-info to avoid calling remove-guard-holders on a
-; definition body (a change in support of canonical-ancestors, for use of the
-; Attachment Restriction Lemma in justifying attachment to metafunctions and
-; clause-procrocessors, cf. chk-evaluator-use-in-rule), the event
-; (defsort :compare< << :prefix <<) failed from community book
-; defsort/uniquep.lisp.
+; We added the-error for Version_4.0 (replaced by the-check after Version_6.1).
+; Before that change, but after changing constraint-info to avoid calling
+; remove-guard-holders on a definition body (a change in support of
+; canonical-ancestors, for use of the Attachment Restriction Lemma in
+; justifying attachment to metafunctions and clause-procrocessors,
+; cf. chk-evaluator-use-in-rule), the event (defsort :compare< << :prefix <<)
+; failed from community book defsort/uniquep.lisp.
 
-    the-error wormhole-eval force case-split double-rewrite))
+    the-check wormhole-eval force case-split double-rewrite))
 
 ; Warning: All functions listed above must be defun'd non-recursively
 ; before deftheory definition-minimal-theory!

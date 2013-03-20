@@ -11,10 +11,15 @@ For example:
 
 (time nice make -j 8 regression-fresh ACL2_CENTAUR=skip ACL2=/projects/acl2/devel/ccl-saved_acl2p ACL2_CUSTOMIZATION=/projects/acl2/devel/acl2-customization-files/parallel-full.lisp) >& logs/make-regression-par-ccl-j-8-feb27.log&
 
-Note: Sometimes parallelism is defeated or modified for individual
-books.  To find out where:
+To find all calls of set-waterfall-parallelism, issue the following
+command in your books directory.
 
-  cd books
+grep -l "set-waterfall-parallelism" `find . -name "*.acl2" -o -name "*.lisp"`
+
+Note: Sometimes parallelism is defeated or modified for individual
+books.  To find some of these occurrences, you can issue the following
+command in your books directory.
+
   grep -l acl2-par `find . -name "*.acl2"`
 
 For example, hints/basic-tests.acl2 has this:
@@ -22,6 +27,30 @@ For example, hints/basic-tests.acl2 has this:
   #+acl2-par
   ; computed hints that modify state
   (set-waterfall-parallelism nil)
+
+And models/jvm/m5/apprentice.acl2 has this:
+
+  #+acl2-par
+  (set-waterfall-parallelism t)
+
+Many books use a stylized make-event inside the actual file to disable
+parallelism.  To find these, issue:
+
+  cd books
+  grep -l "Disabling waterfall parallelism" `find . -name "*.lisp"`
+
+For example, centaur/4v-sexpr/sexpr-rewrites.lisp has the following.
+
+  (make-event
+
+  ; Disabling waterfall parallelism because this book allegedly uses memoization
+  ; while performing its proofs.
+
+   (if (and (hons-enabledp state)
+            (f-get-global 'parallel-execution-enabled state))
+       (er-progn (set-waterfall-parallelism nil)
+                 (value '(value-triple nil)))
+     (value '(value-triple nil))))
 
 Here is a note relevant to ACL2(p) from David Rager.
 

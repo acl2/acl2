@@ -1510,9 +1510,11 @@
 ; value :none.  But it seems scary to allow :none to avoid raw Lisp for
 ; built-ins, even in :logic mode, because of efficiency.  So when we are in the
 ; boot-strap, we do the early exit code (which can call the raw Lisp function)
-; even if 'guard-checking-on has value :none.
+; even if 'guard-checking-on has value :none.  Exception: We want the-check to
+; avoid guard errors when 'guard-checking-on has value :none.
 
-                   (not boot-strap-p)))
+                   (or (not boot-strap-p)
+                       (eq fn 'the-check))))
              (guard-checking-is-really-on-form
 
 ; This variable should only be used in the scope of the binding expression for

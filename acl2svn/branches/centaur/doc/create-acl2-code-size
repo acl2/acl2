@@ -10,6 +10,8 @@ fi
 
 echo 'Computing code size statistics.'
 
+echo 'ACL2 sources: ' ${ACL2_SOURCES} > tmp
+
 echo '; Lines / Characters'                               > doc/acl2-wc.txt
 echo '; Code lines (whitespace followed by non-whitespace other than ; ):' >> doc/acl2-wc.txt
 

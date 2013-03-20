@@ -31410,11 +31410,17 @@
 
   ~ilc[Top-level] generates a call of ~ilc[ld], so that the value returned is
   printed in the normal way.  The call of ~ilc[top-level] itself actually
-  evaluates to ~c[(mv nil :invisible state)], which normally results in no
-  additional output.~/"
+  evaluates to ~c[(mv erp :invisible state)], where ~c[erp] is ~c[t] if and
+  only evaluation of the call of ~c[top-level-fn] caused an error, which
+  normally results in no additional output.  (For details about ``caused an
+  error'', see the definition of ~c[top-level] in the ACL2 source code, and
+  ~pl[ld-error-action].)~/"
 
   `(mv-let (erp val state)
-           (ld '((with-output
+           (ld '((pprogn ; ensure initialization
+                  (f-put-global 'top-level-errorp nil state)
+                  (value :invisible))
+                 (with-output
                   :off :all
                   :on error
                   (defun top-level-fn (state)
@@ -31422,9 +31428,16 @@
                              (ignorable state))
                     ,@declares
                     ,form))
-                 (ld '((top-level-fn state))
+                 (ld '((pprogn
+                        (f-put-global 'top-level-errorp t state)
+                        (value :invisible))
+                       (top-level-fn state)
+                       (pprogn
+                        (f-put-global 'top-level-errorp nil state)
+                        (value :invisible)))
                      :ld-post-eval-print :command-conventions
-                     :ld-error-action :continue)
+                     :ld-error-action :return
+                     :ld-error-triples t)
                  (with-output
                   :off :all
                   :on error
@@ -31432,10 +31445,11 @@
                :ld-pre-eval-print nil
                :ld-post-eval-print nil
                :ld-error-action :error ; in case top-level-fn fails
+               :ld-error-triples t
                :ld-verbose nil
                :ld-prompt nil)
            (declare (ignore erp val))
-           (value :invisible)))
+           (mv (@ top-level-errorp) :invisible state)))
 
 ; Essay on Defattach
 
