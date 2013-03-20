@@ -29511,9 +29511,12 @@
   #-(or acl2-loop-only (not acl2-par))
   `(our-multiple-value-prog1
     ,form
-    (loop while (futures-still-in-flight) do
-          (cw "Waiting for all proof threads to finish~%") ; for debug only
-          (sleep 0.1))))
+    (loop while (futures-still-in-flight)
+          as i from 1
+          do
+          (progn (when (eql (mod i 10) 5)
+                   (cw "Waiting for all proof threads to finish~%"))
+                 (sleep 0.1)))))
 
 (defmacro state-global-let* (bindings body)
 
