@@ -4303,9 +4303,9 @@
 
   The form ~c[(mbe :exec exec-code :logic logic-code)] macroexpands in ACL2 to
   a form that generates the guard proof obligation
-  ~c[(equal logic-code exec-code).  The ~c[:exec] and the ~c[:logic] code in an
-  ~c[mbe] call must have the same return type; for example, one cannot return
-  ~c[(]~ilc[mv]~c[ * *)] while the other returns just a single value.
+  ~c[(equal logic-code exec-code)].  The ~c[:exec] and the ~c[:logic] code in
+  an ~c[mbe] call must have the same return type; for example, one cannot
+  return ~c[(]~ilc[mv]~c[ * *)] while the other returns just a single value.
 
   Also ~pl[mbt], which stands for ``must be true.''  You may find it more
   natural to use ~ilc[mbt] for certain applications, as described in its
