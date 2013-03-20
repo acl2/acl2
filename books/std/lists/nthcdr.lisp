@@ -151,3 +151,15 @@
   (equal (nthcdr a (nthcdr b x))
          (nthcdr (+ (nfix a) (nfix b)) x))
   :hints(("Goal" :induct (nthcdr b x))))
+
+
+(defun rest-n (n x)
+  (declare (xargs :guard (natp n)))
+  (mbe :logic (nthcdr n x)
+       :exec
+       (cond ((zp n)
+              x)
+             ((atom x)
+              nil)
+             (t
+              (rest-n (- n 1) (cdr x))))))

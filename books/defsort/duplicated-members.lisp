@@ -20,7 +20,6 @@
 
 (in-package "ACL2")
 (include-book "uniquep")
-(include-book "duplicity")
 
 
 

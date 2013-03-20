@@ -172,10 +172,10 @@
 (in-theory (disable binary-logand))
 
 
-(defthm unsigned-byte-listp-of-app
-  (equal (unsigned-byte-listp bytes (app x y))
+(defthm unsigned-byte-listp-of-append
+  (equal (unsigned-byte-listp bytes (append x y))
          (and (unsigned-byte-listp bytes (list-fix x))
-              (unsigned-byte-listp bytes (list-fix y))))
+              (unsigned-byte-listp bytes y)))
   :hints(("Goal" :induct (len x))))
 
 (defthm unsigned-byte-listp-of-list-fix-when-unsigned-byte-listp
@@ -193,25 +193,23 @@
                   (equal (not (< 1 n))
                          (equal 1 n)))))
 
-(defthm unsigned-byte-listp-of-simpler-take
+(defthm unsigned-byte-listp-of-take
   (implies (unsigned-byte-listp bytes x)
-           (equal (unsigned-byte-listp bytes (simpler-take n x))
+           (equal (unsigned-byte-listp bytes (take n x))
                   (or (zp n)
-                      (<= n (len x)))))
-  :hints(("Goal" :in-theory (enable simpler-take))))
+                      (<= n (len x))))))
 
-(defthm unsigned-byte-listp-of-simpler-take-past-length
+(defthm unsigned-byte-listp-of-take-past-length
   (implies (and (natp k)
                 (< (len x) k))
-           (not (unsigned-byte-listp bytes (simpler-take k x))))
-  :hints(("Goal" :in-theory (enable simpler-take))))
+           (not (unsigned-byte-listp bytes (take k x)))))
 
 (defthm unsigned-byte-listp-of-nthcdr
   (implies (unsigned-byte-listp bytes x)
            (unsigned-byte-listp bytes (nthcdr n x))))
 
-(defthm unsigned-byte-listp-when-simpler-take-and-nthcdr
-  (implies (and (unsigned-byte-listp bytes (simpler-take n x))
+(defthm unsigned-byte-listp-when-take-and-nthcdr
+  (implies (and (unsigned-byte-listp bytes (take n x))
                 (unsigned-byte-listp bytes (nthcdr n x)))
            (unsigned-byte-listp bytes x)))
 

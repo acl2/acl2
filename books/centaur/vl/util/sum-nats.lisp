@@ -288,15 +288,15 @@ reasonable default we say the minimum of the empty list is @('0').</p>"
                 (list k a b)
               (ind (+ -1 k) (+ 1 (nfix a)) b))))
 
-   (defthm simpler-take-of-nats-from
-     (equal (simpler-take k (nats-from a b))
+   (defthm take-of-nats-from
+     (equal (take k (nats-from a b))
             (if (< (nfix k) (nfix (- (nfix b) (nfix a))))
                 (nats-from a (+ (nfix a) (nfix k)))
               (append (nats-from a b)
                       (repeat nil (- (nfix k) (nfix (- (nfix b) (nfix a))))))))
      :hints(("Goal"
              :induct (ind k a b)
-             :in-theory (enable simpler-take nats-from)))))
+             :in-theory (enable acl2::take-redefinition nats-from)))))
 
 
   (encapsulate

@@ -443,11 +443,11 @@ the interface for constructing echars can be kept simple and bound-free.</p>"
   ;; way.  I'm not sure why I wanted the rule to go this way.  If we extend
   ;; defprojection to add the other rule, we'll need to mark them as
   ;; incompatible, disable its rule, etc.
-  ((defthm vl-echarlist->chars-of-simpler-take
+  ((defthm vl-echarlist->chars-of-take
      (implies (force (<= (nfix n) (len x)))
-              (equal (vl-echarlist->chars (simpler-take n x))
-                     (simpler-take n (vl-echarlist->chars x))))
-     :hints(("Goal" :in-theory (enable simpler-take))))))
+              (equal (vl-echarlist->chars (take n x))
+                     (take n (vl-echarlist->chars x))))
+     :hints(("Goal" :in-theory (enable acl2::take-redefinition))))))
 
 
 

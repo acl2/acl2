@@ -174,14 +174,13 @@
                                                                      ))))
                           :guard ,(if comparablep
                                       `(and (,comparable-listp x)
-                                            (,comparable-listp y)
-                                            (true-listp acc))
-                                    `(true-listp acc))
+                                            (,comparable-listp y))
+                                    t)
                           :verify-guards nil))
           (cond ((atom x)
-                 (revappend acc y))
+                 (revappend-without-guard acc y))
                 ((atom y)
-                 (revappend acc x))
+                 (revappend-without-guard acc x))
                 ((,compare< (car y) (car x))
                  (,merge-tr x (cdr y) (cons (car y) acc)))
                 (t
@@ -208,8 +207,7 @@
                                                 (comparable-merge ,merge)
                                                 (comparable-merge-tr ,merge-tr)
                                                 ))))
-                          :guard (and (true-listp x)
-                                      ,(if comparablep
+                          :guard (and ,(if comparablep
                                            `(,comparable-listp x)
                                          t)
                                       (natp len)
@@ -217,10 +215,10 @@
                           :verify-guards nil)
                    (type (signed-byte 30) len))
           (cond ((mbe :logic (zp len)
-                      :exec (= (the (signed-byte 30) len) 0))
+                      :exec (eql (the (signed-byte 30) len) 0))
                  nil)
 
-                ((= (the (signed-byte 30) len) 1)
+                ((eql (the (signed-byte 30) len) 1)
                  (list (car x)))
 
                 (t
@@ -231,7 +229,7 @@
                                     (the (signed-byte 30)
                                       (logand (the (signed-byte 30) len) 1)))))
                         (part1 (,fixnum x len1))
-                        (part2 (,fixnum (nthcdr len1 x) len2)))
+                        (part2 (,fixnum (rest-n len1 x) len2)))
                    (,merge-tr part1 part2 nil)))))
 
         (verify-guards ,fixnum
@@ -256,8 +254,7 @@
                                                 (comparable-merge-tr ,merge-tr)
                                                 (fast-comparable-mergesort-fixnums ,fixnum)
                                                 ))))
-                          :guard (and (true-listp x)
-                                      ,(if comparablep
+                          :guard (and ,(if comparablep
                                            `(,comparable-listp x)
                                          t)
                                       (natp len)
@@ -265,21 +262,21 @@
                           :verify-guards nil)
                    (type integer len))
           (cond ((mbe :logic (zp len)
-                      :exec (= (the integer len) 0))
+                      :exec (eql (the integer len) 0))
                  nil)
-                ((= (the integer len) 1)
+                ((eql (the integer len) 1)
                  (list (car x)))
                 (t
                  (let* ((len1  (the integer (ash (the integer len) -1)))
                         (len2  (the integer
                                  (+ (the integer len1)
                                     (the integer (logand (the integer len) 1)))))
-                        (part1 (if (< (the integer len1) *mergesort-fixnum-threshold*)
+                        (part1 (if (< (the integer len1) (mergesort-fixnum-threshold))
                                    (,fixnum x len1)
                                  (,integer x len1)))
-                        (part2 (if (< (the integer len2) *mergesort-fixnum-threshold*)
-                                   (,fixnum (nthcdr len1 x) len2)
-                                 (,integer (nthcdr len1 x) len2))))
+                        (part2 (if (< (the integer len2) (mergesort-fixnum-threshold))
+                                   (,fixnum (rest-n len1 x) len2)
+                                 (,integer (rest-n len1 x) len2))))
                    (,merge-tr part1 part2 nil)))))
 
         (verify-guards ,integer
@@ -296,19 +293,17 @@
                                                            )))))
 
         (defund ,sort (x)
-          (declare (xargs :guard (and (true-listp x)
-                                      ,(if comparablep
-                                           `(,comparable-listp x)
-                                         t))
+          (declare (xargs :guard ,(if comparablep
+                                      `(,comparable-listp x)
+                                    t)
                           :guard-hints (("Goal" :in-theory (enable signed-byte-p
                                                                    integer-range-p
                                                                    length
                                                                    natp
                                                                    (:type-prescription len)
                                                                    (:executable-counterpart expt))))))
-          (let ((len (mbe :logic (len x)
-                          :exec (length x))))
-            (if (< (the integer len) *mergesort-fixnum-threshold*)
+          (let ((len (len x)))
+            (if (< len (mergesort-fixnum-threshold))
                 (,fixnum x len)
               (,integer x len))))
 

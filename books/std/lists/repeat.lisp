@@ -18,14 +18,6 @@
 (in-package "ACL2")
 (local (include-book "take"))
 
-(defund simpler-take (n xs)
-  ;; Redundant from take.lisp
-  (declare (xargs :guard (and (natp n)
-                              (true-listp xs))))
-  (if (zp n)
-      nil
-    (cons (car xs)
-          (simpler-take (1- n) (cdr xs)))))
 
 (defund repeat (x n)
   (declare (xargs :guard (natp n)
@@ -50,11 +42,11 @@
        (not (zp n)))
   :hints(("Goal" :in-theory (enable repeat))))
 
-(defthm simpler-take-when-not-consp
-  (implies (not (consp x))
-           (equal (simpler-take n x)
+(defthm take-when-atom
+  (implies (atom x)
+           (equal (take n x)
                   (repeat nil n)))
-  :hints(("Goal" :in-theory (enable repeat simpler-take))))
+  :hints(("Goal" :in-theory (enable repeat))))
 
 (defthm len-of-repeat
   (equal (len (repeat x n))

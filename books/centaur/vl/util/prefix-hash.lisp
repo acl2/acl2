@@ -70,21 +70,21 @@
     :rule-classes ((:rewrite) (:linear)))
 
   (defthm prefixp-of-take-prefix-len-1
-    (prefixp (simpler-take (prefix-len a b) a) a)
-    :hints(("Goal" :in-theory (enable prefixp simpler-take))))
+    (prefixp (take (prefix-len a b) a) a)
+    :hints(("Goal" :in-theory (enable prefixp acl2::take-redefinition))))
 
   (defthm prefixp-of-take-prefix-len-2
-    (prefixp (simpler-take (prefix-len a b) a) b)
-    :hints(("Goal" :in-theory (enable prefixp simpler-take))))
+    (prefixp (take (prefix-len a b) a) b)
+    :hints(("Goal" :in-theory (enable prefixp acl2::take-redefinition))))
 
-  (defthm prefix-len-of-simpler-take
+  (defthm prefix-len-of-take
     (implies (and (natp n)
                   (<= n (len x)))
-             (equal (prefix-len a (simpler-take n x))
+             (equal (prefix-len a (take n x))
                     (if (< (prefix-len a x) n)
                         (prefix-len a x)
                       n)))
-    :hints(("Goal" :in-theory (enable simpler-take))))
+    :hints(("Goal" :in-theory (enable acl2::take-redefinition))))
 
   (defthm prefix-len-of-butlast
     ;; The hyp is ugly, but butlast has terrible behavior when N is not a natural
@@ -184,7 +184,7 @@
                                 (true-listp x))))
     (if (zp n)
         (list nil)
-      (cons (simpler-take n x)
+      (cons (take n x)
             (all-prefixes-aux (- n 1) x))))
 
   (defund all-prefixes (x)
@@ -222,9 +222,9 @@
   (local (defthm l2
            (implies (and (prefixp p x)
                          (true-listp p))
-                    (equal (simpler-take (len p) x)
+                    (equal (take (len p) x)
                            p))
-           :hints(("Goal" :in-theory (enable prefixp simpler-take)))))
+           :hints(("Goal" :in-theory (enable prefixp acl2::take-redefinition)))))
 
   (local (defthm l3
            (implies (and (prefixp p x)

@@ -16,29 +16,27 @@
 
 (in-package "SETS")
 (include-book "union")
-(local (include-book "std/lists/app" :dir :system))
+(local (include-book "std/lists/append" :dir :system))
 (local (include-book "std/lists/rev" :dir :system))
 (local (include-book "tools/mv-nth" :dir :system))
 (set-verify-guards-eagerness 2)
 
-(local (defthm app-of-cons-of-list-fix
-         (equal (acl2::app x (cons a (acl2::list-fix y)))
-                (acl2::app x (cons a y)))
-         :hints(("Goal" :induct (len x)))))
+(local (defthm member-of-append
+         (iff (member a (append x y))
+              (or (member a x)
+                  (member a y)))))
 
 (local (defthm member-of-list-fix
          (iff (member a (acl2::list-fix x))
               (member a x))))
 
-(local (defthm member-of-app
-         (iff (member a (acl2::app x y))
-              (or (member a x)
-                  (member a y)))))
-
 (local (defthm member-of-rev
          (iff (member a (acl2::rev x))
               (member a x))))
 
+(local (defthm append-assoc
+         (equal (append (append x y) z)
+                (append x (append y z)))))
 
 (defsection halve-list
   :parents (mergesort)
@@ -141,16 +139,16 @@ really we could avoid that by just being a bit smarter, like in defsort.</p>"
 
   (local (defthm halve-list-aux-append-property
            (implies (<= (len x) (len mid))
-                    (equal (acl2::app (acl2::rev (mv-nth 0 (halve-list-aux mid x acc)))
-                                      (mv-nth 1 (halve-list-aux mid x acc)))
-                           (acl2::app (acl2::rev acc)
-                                      mid)))
+                    (equal (append (acl2::rev (mv-nth 0 (halve-list-aux mid x acc)))
+                                   (mv-nth 1 (halve-list-aux mid x acc)))
+                           (append (acl2::rev acc)
+                                   mid)))
            :hints(("Goal" :do-not '(generalize fertilize)))))
 
   (local (defthm halve-list-correct
-           (equal (acl2::app (acl2::rev (mv-nth 0 (halve-list x)))
-                             (mv-nth 1 (halve-list x)))
-                  (acl2::list-fix x))
+           (equal (append (acl2::rev (mv-nth 0 (halve-list x)))
+                          (mv-nth 1 (halve-list x)))
+                  x)
            :hints(("Goal" :in-theory (enable halve-list)))))
 
   (defthm halve-list-len-1
@@ -178,8 +176,8 @@ really we could avoid that by just being a bit smarter, like in defsort.</p>"
     :rule-classes nil
     :hints(("Goal"
             :do-not-induct t
-            :in-theory (disable member-of-app)
-            :use ((:instance member-of-app
+            :in-theory (disable member-of-append)
+            :use ((:instance member-of-append
                              (x (acl2::rev (mv-nth 0 (halve-list x))))
                              (y (mv-nth 1 (halve-list x)))))))))
 

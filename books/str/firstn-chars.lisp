@@ -22,6 +22,7 @@
 (include-book "eqv")
 (local (include-book "arithmetic"))
 (local (include-book "std/lists/take" :dir :system))
+(local (in-theory (disable acl2::take-redefinition)))
 
 (defsection firstn-chars
   :parents (str)

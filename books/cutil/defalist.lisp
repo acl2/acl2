@@ -511,14 +511,14 @@ each value satisfies @(see " (symbol-name valp) ")."))))
                          t))
          :hints(("Goal" :do-not-induct t)))
 
-       (defthm ,(mksym name '-of-simpler-take)
+       (defthm ,(mksym name '-of-take)
          (implies (and (,name ,@(subst `(double-rewrite ,x) x formals))
                        (force (<= ,n (len ,x))))
-                  (equal (,name ,@(subst `(simpler-take ,n ,x) x formals))
+                  (equal (,name ,@(subst `(take ,n ,x) x formals))
                          t))
          :hints(("Goal"
-                 :in-theory (enable simpler-take)
-                 :induct (simpler-take ,n ,x))))
+                 :in-theory (enable acl2::take-redefinition)
+                 :induct (take ,n ,x))))
 
        (defthm ,(mksym name '-of-repeat)
          (equal (,name ,@(subst `(repeat ,a ,n) x formals))

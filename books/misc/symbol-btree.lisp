@@ -535,6 +535,7 @@ ACL2 !>
 
 
 (local (include-book "std/lists/take" :dir :system))
+(local (include-book "std/lists/nthcdr" :dir :system))
 (local
  (encapsulate nil
    (local (include-book "arithmetic/top" :dir :system))
@@ -546,17 +547,18 @@ ACL2 !>
                    (<= n (len x))
                    (equal m (+ 1 n)))
               (equal (cons (nth n x)
-                           (simpler-take k (nthcdr m x)))
+                           (take k (nthcdr m x)))
                      (take (+ 1 k) (nthcdr n x))))
-     :hints (("goal" :expand ((:free (x) (simpler-take (+ 1 k) x))))))
+     :hints (("goal"
+              :expand ((:free (x) (take (+ 1 k) x))))))
 
-   (defthm simpler-take-append
+   (defthm take-append
      (implies (and (natp n) (natp k))
-              (equal (append (simpler-take n x)
-                             (simpler-take k (nthcdr n x)))
+              (equal (append (take n x)
+                             (take k (nthcdr n x)))
                      (take (+ n k) x)))
-     :hints (("goal" :induct (simpler-take n x)
-              :in-theory (enable simpler-take))))
+     :hints (("goal" :induct (take n x)
+              :in-theory (enable take-redefinition))))
 
    (defthm consp-nth-symbol-alist
      (implies (and (symbol-alistp x)
@@ -589,7 +591,7 @@ ACL2 !>
                                ;; floor-=-x/y
                                default-+-1 default-<-1 default-<-2
                                true-listp-symbol-btree-to-alist
-                               (:type-prescription simpler-take)
+                               (:type-prescription take)
                                (:type-prescription symbol-btree-to-alist)
                                (:type-prescription symbol-alist-sortedp)
                                (:type-prescription symbol-alistp)
@@ -602,13 +604,9 @@ ACL2 !>
               :expand ((symbol-alist-to-btree-aux x n)
                        (symbol-alist-to-btree-aux x 1)
                        (:free (a b)
-                        (symbol-btree-to-alist (cons a b)))))
+                              (symbol-btree-to-alist (cons a b)))))
              (and stable-under-simplificationp
-                  '(:expand ((simpler-take n x))))))))
-
-
-
-
+                  '(:expand ((take n x))))))))
 
 
 (local (defthm len-evens-<
@@ -701,9 +699,9 @@ ACL2 !>
 
 (local (encapsulate nil
          (local (include-book "arithmetic/top" :dir :system))
-         (defthm simpler-take-of-own-len
+         (defthm take-of-own-len
            (implies (true-listp x)
-                    (equal (simpler-take (len x) x)
+                    (equal (take (len x) x)
                            x)))))
 (defthm symbol-btree-to-alist-of-rebalance-symbol-btree
   (implies (symbol-btreep x)

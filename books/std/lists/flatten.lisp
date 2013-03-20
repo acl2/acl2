@@ -16,8 +16,7 @@
 ;; Place - Suite 330, Boston, MA 02111-1307, USA.
 
 (in-package "ACL2")
-(include-book "app")
-(include-book "consless-listp")
+(include-book "list-fix")
 
 (defun binary-append-without-guard (x y)
   (declare (xargs :guard t))
@@ -37,10 +36,8 @@
 (defund flatten (x)
   (declare (xargs :guard t))
   (if (consp x)
-      (mbe :logic (app (car x)
-                       (flatten (cdr x)))
-           :exec (binary-append-without-guard (car x)
-                                          (flatten (cdr x))))
+      (append-without-guard (car x)
+                            (flatten (cdr x)))
     nil))
 
 (defthm flatten-when-not-consp
@@ -51,7 +48,7 @@
 
 (defthm flatten-of-cons
   (equal (flatten (cons a x))
-         (app a (flatten x)))
+         (append a (flatten x)))
   :hints(("Goal" :in-theory (enable flatten))))
 
 (defthm flatten-of-list-fix
@@ -59,13 +56,9 @@
          (flatten x))
   :hints(("Goal" :induct (len x))))
 
-(defthm flattenp-of-app
-  (equal (flatten (app x y))
-         (app (flatten x)
-              (flatten y)))
+(defthm flattenp-of-append
+  (equal (flatten (append x y))
+         (append (flatten x)
+                 (flatten y)))
   :hints(("Goal" :induct (len x))))
 
-(defthm flatten-under-iff
-  (iff (flatten x)
-       (not (consless-listp x)))
-  :hints(("Goal" :induct (len x))))

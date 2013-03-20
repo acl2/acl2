@@ -61,7 +61,7 @@
                   (consp b))
              (cdr-cdr-induction (cdr a) (cdr b))
            nil)))
- 
+
 (defthm equal-of-appends-when-true-listps
   (implies (and (true-listp x1)
                 (true-listp x2))

@@ -20,6 +20,7 @@
 
 (in-package "ACL2")
 (include-book "arithmetic/top" :dir :system)
+(include-book "std/lists/take" :dir :system)
 (include-book "std/lists/nthcdr" :dir :system)
 (include-book "std/lists/append" :dir :system)
 (include-book "std/lists/repeat" :dir :system)
@@ -90,21 +91,21 @@
           :in-theory (disable coerce-inverse-2)
           :use ((:instance coerce-inverse-2)))))
 
-(defthm simpler-take-of-len
-  (equal (simpler-take (len x) x)
+(defthm take-of-len
+  (equal (take (len x) x)
          (list-fix x))
-  :hints(("Goal" :in-theory (enable simpler-take))))
+  :hints(("Goal" :in-theory (enable take-redefinition))))
 
-(defthm simpler-take-of-zero
-  (equal (simpler-take 0 x)
+(defthm take-of-zero
+  (equal (take 0 x)
          nil)
-  :hints(("Goal" :in-theory (enable simpler-take))))
+  :hints(("Goal" :in-theory (enable take-redefinition))))
 
-(defthm character-listp-of-simpler-take
+(defthm character-listp-of-take
   (implies (character-listp x)
-           (equal (character-listp (simpler-take n x))
+           (equal (character-listp (take n x))
                   (<= (nfix n) (len x))))
-  :hints(("Goal" :in-theory (enable simpler-take))))
+  :hints(("Goal" :in-theory (enable take-redefinition))))
 
 (defthm subsetp-equal-of-cons-right
   (implies (subsetp-equal x y)

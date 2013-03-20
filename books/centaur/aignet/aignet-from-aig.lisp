@@ -899,7 +899,8 @@
   (local (in-theory (enable first-n-rev-alist-keys
                             set-difference$)))
   (local (include-book "centaur/misc/lists" :dir :system))
-  (local (in-theory (disable acl2::take-redefinition)))
+  (local (in-theory (e/d (take)
+                         (acl2::take-redefinition))))
 
   (defthm first-n-rev-def
     (implies (and (alistp alist)
@@ -1126,11 +1127,11 @@
 
 
 
-(local (defthm lit-listp-of-simpler-take
+(local (defthm lit-listp-of-take
          (implies (and (lit-listp x)
                        (<= (nfix n) (len x)))
-                  (lit-listp (acl2::simpler-take n x)))
-         :hints(("Goal" :in-theory (enable acl2::simpler-take
+                  (lit-listp (acl2::take n x)))
+         :hints(("Goal" :in-theory (enable acl2::take-redefinition
                                            acl2::repeat)))))
 
 (local (defthm lit-listp-of-nthcdr
@@ -1143,12 +1144,12 @@
          :hints(("Goal" :in-theory (enable alist-keys alist-vals)))))
 
 
-(local (defthm aignet-lit-listp-of-simpler-take
+(local (defthm aignet-lit-listp-of-take
          (implies (and (aignet-lit-listp x aignet)
                        (<= (nfix n) (len x)))
-                  (aignet-lit-listp (acl2::simpler-take n x) aignet))
+                  (aignet-lit-listp (acl2::take n x) aignet))
          :hints(("Goal" :in-theory (enable aignet-lit-listp
-                                           acl2::simpler-take
+                                           acl2::take-redefinition
                                            acl2::repeat)))))
 
 (local (defthm aignet-lit-listp-of-nthcdr
@@ -1165,11 +1166,12 @@
 ;;                 (<= (nfix (nth *num-regs* aignet)) (nfix n)))
 ;;            (aignet-lit-listp lits (set-regs-logic n aignet))))
 
-(defthm lit-eval-list-of-simpler-take
+(defthm lit-eval-list-of-take
   (implies (<= (nfix n) (len x))
-           (equal (lit-eval-list (acl2::simpler-take n x) in-vals reg-vals aignet)
-                  (acl2::simpler-take n (lit-eval-list x in-vals reg-vals aignet))))
-  :hints(("Goal" :in-theory (enable acl2::simpler-take acl2::repeat
+           (equal (lit-eval-list (acl2::take n x) in-vals reg-vals aignet)
+                  (acl2::take n (lit-eval-list x in-vals reg-vals aignet))))
+  :hints(("Goal" :in-theory (enable acl2::take-redefinition
+                                    acl2::repeat
                                     acl2::nfix))))
 
 (defthm aig-eval-list-of-append
@@ -1227,15 +1229,15 @@
 ;;      (equal (len (acl2::aig-eval-list x env))
 ;;             (len x)))
 
-;;    (defthm simpler-take-redundant
+;;    (defthm take-redundant
 ;;      (implies (and (equal (nfix n) (len x))
 ;;                    (true-listp x))
-;;               (equal (acl2::simpler-take n x) x))
-;;      :hints(("Goal" :in-theory (enable acl2::simpler-take))))
+;;               (equal (acl2::take n x) x))
+;;      :hints(("Goal" :in-theory (enable acl2::take-redefinition))))
 
-;;    (defthm simpler-take-0
-;;      (equal (acl2::simpler-take 0 x) nil)
-;;      :hints(("Goal" :in-theory (enable acl2::simpler-take))))
+;;    (defthm take-0
+;;      (equal (acl2::take 0 x) nil)
+;;      :hints(("Goal" :in-theory (enable acl2::take-redefinition))))
 
 ;;    (defthm set-regs-logic-preserves-good-varmap-p
 ;;      (equal (good-varmap-p varmap (set-regs-logic lits aignet))

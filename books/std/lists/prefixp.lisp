@@ -72,11 +72,10 @@
                                               (<= (len x) (len y)))))
   :hints(("Goal" :in-theory (enable (:induction prefixp)))))
 
-(defthm simpler-take-when-prefixp
+(defthm take-when-prefixp
   (implies (prefixp x y)
-           (equal (simpler-take (len x) y)
+           (equal (take (len x) y)
                   (list-fix x)))
   :hints(("Goal"
-          :in-theory (enable (:induction prefixp)
-                             simpler-take))))
+          :in-theory (enable (:induction prefixp)))))
 

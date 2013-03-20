@@ -52,6 +52,7 @@
                defsection
                defsection-progn
                defmvtypes
+               defrule
                define
                xdoc
 ;               defaggregate

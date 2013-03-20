@@ -24,6 +24,8 @@
 (local (include-book "tools/mv-nth" :dir :system))
 (set-state-ok t)
 
+(local (in-theory (disable take-redefinition)))
+
 
 ;; We now want to recreate our utf8=>ustring function but directly using the
 ;; file reading operations.  We begin by writing equivalents of "take" and
@@ -210,7 +212,7 @@
 ;; The proof is sort of cute.  We rewrite everything to be in terms of
 ;; read-byte$-all.  For example, we first show that read-byte$ is nothing more
 ;; than the car of read-byte$-all.  Similarly, in take-bytes.lisp, we have
-;; shown that take-bytes is just the simpler-take of read-byte$-all.
+;; shown that take-bytes is just the take of read-byte$-all.
 
 (local (defthm car-of-read-byte$
          (implies (and (force (state-p state))
@@ -256,7 +258,7 @@
                                       acc)))
   :hints(("Goal"
           :in-theory (e/d (read-utf8-fast utf8=>ustring-fast
-                                          simpler-take)
+                                          take-redefinition)
                           (nthcdr-bytes-2
                            nthcdr-bytes-3
                            nthcdr-bytes-4))
@@ -273,7 +275,7 @@
 
 (encapsulate
  ()
- (local (in-theory (enable simpler-take)))
+ (local (in-theory (enable take-redefinition)))
 
  (local (defthm terrible-lemma-1
           (implies (and (integerp x)

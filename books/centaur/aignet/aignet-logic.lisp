@@ -190,8 +190,6 @@ stobj.</p>
                    :scheme (acl2::fast-list-equiv x y)))))
 (local (in-theory (enable (:induction acl2::fast-list-equiv))))
 
-(defcong list-equiv equal (duplicity k x) 2
-  :hints(("Goal" :in-theory (enable duplicity))))
 
 (defcong list-equiv equal (tags x) 1
   :hints(("Goal" :in-theory (enable tags))))

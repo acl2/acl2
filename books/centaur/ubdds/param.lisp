@@ -533,8 +533,8 @@
 (local
  (encapsulate nil
    (local (include-book "arithmetic/top" :dir :system))
-   (defthm simpler-take-bfix-list
-     (equal (simpler-take (len vars) (bfix-list vars))
+   (defthm take-bfix-list
+     (equal (take (len vars) (bfix-list vars))
             (bfix-list vars)))))
 
 (defthm bfix-list-bfix-list
@@ -547,7 +547,7 @@
                                  vars)
                   (bfix-list
                    (take n (nthcdr start vars)))))
-  :hints(("Goal" :in-theory (enable simpler-take))))
+  :hints(("Goal" :in-theory (enable take-redefinition))))
 
 (defthm ubdd-listp-make-list-ac
   (equal (ubdd-listp (make-list-ac n nil acc))
@@ -586,8 +586,8 @@
 
 
 (local
- (defthm bfix-list-simpler-take-len
-   (equal (bfix-list (simpler-take (len x) x))
+ (defthm bfix-list-take-len
+   (equal (bfix-list (take (len x) x))
           (bfix-list x))))
 
 ;; (defthm eval-q-param-inv

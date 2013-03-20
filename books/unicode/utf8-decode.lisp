@@ -28,6 +28,34 @@
 (set-state-ok t)
 
 
+;; BOZO library stuff
+
+(local (include-book "std/lists/append" :dir :system))
+
+(local
+ (encapsulate
+   ()
+   (local (include-book "arithmetic/top" :dir :system))
+
+   (defthm car-of-append
+     (equal (car (append x y))
+            (if (consp x)
+                (car x)
+              (car y))))
+
+   (defthm nthcdr-of-increment-and-cons
+     (implies (natp n)
+              (equal (nthcdr (+ 1 n) (cons a x))
+                     (nthcdr n x)))
+     :hints(("Goal"
+             :do-not-induct t
+             :expand (nthcdr (+ 1 n) (cons a x)))))
+
+   (defthm nthcdr-of-len-append
+     (equal (nthcdr (len x) (append x y))
+            y))))
+
+
 ;; The conversion into UTF-8 was pretty straightforward.  Unfortunately, the
 ;; conversion from UTF-8 is much more complicated, becuase we have to deal with
 ;; lists of bytes rather than atomic code points.
@@ -682,11 +710,11 @@
            (nat-listp (list-fix sizes)))
   :hints(("Goal" :in-theory (enable partition))))
 
-(defthm utf8-char?-of-simple-take-when-partition-creates-utf8-string
+(defthm utf8-char?-of-take-when-partition-creates-utf8-string
   (implies (and (consp x)
                 (consp sizes)
                 (utf8-string? (partition sizes x)))
-           (utf8-char? (simpler-take (car sizes) x))))
+           (utf8-char? (take (car sizes) x))))
 
 
 
@@ -788,13 +816,13 @@
           :in-theory (disable unsigned-byte-listp-when-utf8-partition)
           :use ((:instance unsigned-byte-listp-when-utf8-partition)))))
 
-(defthm utf8-partition-of-app-utf8-char
+(defthm utf8-partition-of-append-utf8-char
   (implies (and (utf8-char? a)
                 (mv-nth 0 (utf8-partition x)))
-           (mv-nth 0 (utf8-partition (app a x))))
+           (mv-nth 0 (utf8-partition (append a x))))
   :hints(("Goal"
           :in-theory (disable utf8-table35-expected-length)
-          :expand (utf8-partition (app a x)))))
+          :expand (utf8-partition (append a x)))))
 
 (defthm sum-list-of-sizes-of-utf8-partition
   (implies (mv-nth 0 (utf8-partition x))
@@ -845,10 +873,10 @@
          :hints(("Goal"
                  :in-theory (disable utf8-table35-expected-length
                                      utf8-table35-expected-length-when-utf8-char=>uchar
-                                     utf8-char?-of-simple-take-when-partition-creates-utf8-string)
-                 :use ((:instance utf8-char?-of-simple-take-when-partition-creates-utf8-string)
+                                     utf8-char?-of-take-when-partition-creates-utf8-string)
+                 :use ((:instance utf8-char?-of-take-when-partition-creates-utf8-string)
                        (:instance utf8-table35-expected-length-when-utf8-char=>uchar
-                                  (x (simpler-take (car sizes) x))))))))
+                                  (x (take (car sizes) x))))))))
 
 (defthm utf8-partition-successful-when-any-valid-partitioning-exists
   (implies (and (unsigned-byte-listp 8 x)

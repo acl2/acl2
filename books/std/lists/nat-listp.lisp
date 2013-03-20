@@ -16,16 +16,16 @@
 ;; Place - Suite 330, Boston, MA 02111-1307, USA.
 
 (in-package "ACL2")
-
-(include-book "app")
-
+(include-book "list-fix")
 (include-book "arithmetic/nat-listp" :dir :system)
 
-(defthm nat-listp-of-app
-  (implies (true-listp x)
-           (equal (nat-listp (app x y))
-                  (and (nat-listp x)
-                       (nat-listp (list-fix y)))))
+(in-theory (disable nat-listp-of-append))
+
+(defthm nat-listp-of-append-better
+  ;; BOZO probably should replace original rule instead.
+  (equal (nat-listp (append x y))
+         (and (nat-listp (list-fix x))
+              (nat-listp y)))
   :hints(("Goal" :induct (len x))))
 
 (defthm natp-of-car-when-nat-listp

@@ -53,9 +53,9 @@
                 (force (symbolp channel))
                 (force (open-input-channel-p1 channel :byte state)))
            (equal (mv-nth 0 (take-bytes n channel state))
-                  (simpler-take n (mv-nth 0 (read-byte$-all channel state)))))
+                  (take n (mv-nth 0 (read-byte$-all channel state)))))
   :hints(("Goal"
-          :in-theory (enable simpler-take take-bytes read-byte$-all)
+          :in-theory (enable take-redefinition take-bytes read-byte$-all)
           :induct (take-bytes n channel state))))
 
 (defthm mv-nth1-of-take-bytes$

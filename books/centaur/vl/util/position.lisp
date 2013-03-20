@@ -169,7 +169,7 @@
                          (natp n)
                          (natp acc)
                          (<= n (- (position-equal-ac item lst acc) acc)))
-                    (not (member-equal item (simpler-take n lst))))
+                    (not (member-equal item (take n lst))))
            :hints(("Goal"
                    :in-theory (enable position-equal-ac)
                    :induct (my-induct item n lst acc)))))
@@ -178,7 +178,7 @@
            (implies (and (<= n (position-equal-ac item lst 0))
                          (position-equal-ac item lst 0)
                          (natp n))
-                    (not (member-equal item (simpler-take n lst))))
+                    (not (member-equal item (take n lst))))
            :hints(("Goal"
                    :in-theory (disable l0)
                    :use ((:instance l0 (acc 0)))))))

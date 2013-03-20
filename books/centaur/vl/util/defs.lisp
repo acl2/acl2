@@ -405,12 +405,12 @@ consing.</p>"
                (zp n)))
     :hints(("Goal" :in-theory (enable repeat))))
 
-  (defthm all-equalp-of-simpler-take
+  (defthm all-equalp-of-take
     (implies (all-equalp a x)
-             (equal (all-equalp a (simpler-take n x))
+             (equal (all-equalp a (take n x))
                     (or (not a)
                         (<= (nfix n) (len x)))))
-    :hints(("Goal" :in-theory (enable simpler-take))))
+    :hints(("Goal" :in-theory (enable acl2::take-redefinition))))
 
   (defthm all-equalp-of-nthcdr
     (implies (all-equalp a x)

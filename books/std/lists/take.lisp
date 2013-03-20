@@ -20,82 +20,129 @@
 ; included in symbol-btree.lisp.
 
 (in-package "ACL2")
-
 (local (include-book "arithmetic/top" :dir :system))
 
-(defund simpler-take (n xs)
-  (declare (xargs :guard (and (natp n)
-                              (true-listp xs))))
+(in-theory (disable (:definition take)))
+
+(defun simpler-take-induction (n xs)
+  ;; Not generally meant to be used; only meant for take-induction
+  ;; and take-redefinition.
   (if (zp n)
       nil
     (cons (car xs)
-          (simpler-take (1- n) (cdr xs)))))
-
-(local (in-theory (enable simpler-take)))
+          (simpler-take-induction (1- n) (cdr xs)))))
 
 (encapsulate
- ()
- (local (defthm equivalence-lemma
-          (implies (true-listp acc)
-                   (equal (first-n-ac n xs acc)
-                          (revappend acc (simpler-take n xs))))))
+  ()
+  (local (in-theory (enable take)))
 
- (defthm take-redefinition
-   (equal (take n xs)
-          (simpler-take n xs))
-   :rule-classes :definition)
+  (local (defthm equivalence-lemma
+           (implies (true-listp acc)
+                    (equal (first-n-ac n xs acc)
+                           (revappend acc (simpler-take-induction n xs))))))
 
- (in-theory (disable (:definition take))))
+  (defthm take-redefinition
+    (equal (take n x)
+           (if (zp n)
+               nil
+             (cons (car x)
+                   (take (1- n) (cdr x)))))
+    :rule-classes ((:definition :controller-alist ((TAKE T NIL))))))
 
-(defthm consp-of-simpler-take
-  (equal (consp (simpler-take n xs))
+(defthm take-induction t
+  :rule-classes ((:induction
+                  :pattern (take n x)
+                  :scheme (simpler-take-induction n x))))
+
+;; The built-in type-prescription for take is awful:
+;;
+;; (OR (CONSP (TAKE N L))
+;;            (EQUAL (TAKE N L) NIL)
+;;            (STRINGP (TAKE N L)))
+;;
+;; So fix it...
+
+(in-theory (disable (:type-prescription take)))
+
+(defthm true-listp-of-take
+  (true-listp (take n xs))
+  :rule-classes :type-prescription)
+
+(defthm consp-of-take
+  (equal (consp (take n xs))
          (not (zp n))))
 
-(defthm len-of-simpler-take
-  (equal (len (simpler-take n xs))
+(defthm len-of-take
+  (equal (len (take n xs))
          (nfix n)))
 
-(defthm simpler-take-of-cons
-  (equal (simpler-take n (cons a x))
+(defthm take-of-cons
+  (equal (take n (cons a x))
          (if (zp n)
              nil
-           (cons a (simpler-take (1- n) x)))))
+           (cons a (take (1- n) x)))))
 
-(local (defun simpler-take-induction (n x)
-         (declare (xargs :guard (natp n)))
-         (if (zp n)
-             (list n x)
-           (if (consp x)
-               (simpler-take-induction (1- n) (cdr x))
-             (list n x)))))
-
-(defthm simpler-take-of-append
-  (equal (simpler-take n (append x y))
+(defthm take-of-append
+  (equal (take n (append x y))
          (if (< (nfix n) (len x))
-             (simpler-take n x)
-           (append x (simpler-take (- n (len x)) y))))
-  :hints(("Goal" :induct (simpler-take-induction n x))))
+             (take n x)
+           (append x (take (- n (len x)) y))))
+  :hints(("Goal" :induct (take n x))))
 
-(defthm simpler-take-of-1
-  (equal (simpler-take 1 x)
+(defthm take-of-1
+  (equal (take 1 x)
          (list (car x))))
 
 (defthm car-of-simple-take
   (implies (<= 1 (nfix n))
-           (equal (car (simpler-take n x))
+           (equal (car (take n x))
                   (car x))))
 
 (defthm second-of-simple-take
   (implies (<= 2 (nfix n))
-           (equal (second (simpler-take n x))
+           (equal (second (take n x))
                   (second x))))
 
 (defthm third-of-simple-take
   (implies (<= 3 (nfix n))
-           (equal (third (simpler-take n x))
+           (equal (third (take n x))
                   (third x))))
 
 (defthm fourth-of-simple-take
   (implies (<= 4 (nfix n))
-           (equal (fourth (simpler-take n x))
+           (equal (fourth (take n x))
                   (fourth x))))
+
+(encapsulate
+  ()
+  (local (defun repeat (x n)
+           (if (zp n)
+               nil
+             (cons x (repeat x (- n 1))))))
+
+  (local (defthm l0
+           (equal (append (repeat x n) (cons x y))
+                  (cons x (append (repeat x n) y)))))
+
+  (local (defthm l1
+           (equal (make-list-ac n val acc)
+                  (append (repeat val n) acc))
+           :hints(("Goal"
+                   :induct (make-list-ac n val acc)))))
+
+  (local (defthm l2
+           (implies (atom x)
+                    (equal (take n x)
+                           (make-list n)))))
+
+  (defun first-n (n x)
+    (declare (xargs :guard (natp n)))
+    (mbe :logic (take n x)
+         :exec
+         (cond ((zp n)
+                nil)
+               ((atom x)
+                (make-list n))
+               (t
+                (cons (car x)
+                      (first-n (- n 1) (cdr x))))))))

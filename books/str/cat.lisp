@@ -128,11 +128,11 @@ conses, where @('n') is the length of @('x').</p>"
   (local (defthm lemma
            (implies (and (not (zp n))
                          (<= n (len x)))
-                    (equal (append (simpler-take (- n 1) x) (cons (nth (- n 1) x) y))
-                           (append (simpler-take n x) y)))
+                    (equal (append (take (- n 1) x) (cons (nth (- n 1) x) y))
+                           (append (take n x) y)))
            :hints(("goal"
-                   :in-theory (enable simpler-take)
-                   :induct (simpler-take n x)))))
+                   :in-theory (enable acl2::take-redefinition)
+                   :induct (take n x)))))
 
   (defthm append-chars-aux-correct
     (implies (and (stringp x)
@@ -151,7 +151,7 @@ conses, where @('n') is the length of @('x').</p>"
                          (natp n)
                          (< n (length x)))
                     (equal (append-chars-aux x n y)
-                           (append (simpler-take (+ 1 n) (coerce x 'list)) y)))
+                           (append (take (+ 1 n) (coerce x 'list)) y)))
            :hints(("Goal" :use ((:instance append-chars-aux-correct))))))
 
   (definlined append-chars (x y)

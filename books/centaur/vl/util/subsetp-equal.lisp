@@ -188,10 +188,10 @@
 
 ;; BOZO why are these here?
 
-(defthm simpler-take-of-len
-  (equal (simpler-take (len x) x)
+(defthm take-of-len
+  (equal (take (len x) x)
          (list-fix x))
-  :hints(("Goal" :in-theory (enable simpler-take))))
+  :hints(("Goal" :in-theory (enable acl2::take-redefinition))))
 
 (defthm no-duplicatesp-equal-of-list-fix
   (equal (no-duplicatesp-equal (list-fix x))

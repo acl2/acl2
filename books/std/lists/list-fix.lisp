@@ -26,15 +26,6 @@
             (list-fix (cdr x)))
     nil))
 
-(defund simpler-take (n xs)
-  ;; Redundant from take.lisp
-  (declare (xargs :guard (and (natp n)
-                              (true-listp xs))))
-  (if (zp n)
-      nil
-    (cons (car xs)
-          (simpler-take (1- n) (cdr xs)))))
-
 (defthm list-fix-when-not-consp
   (implies (not (consp x))
            (equal (list-fix x)
@@ -83,11 +74,6 @@
 (defthm last-of-list-fix
   (equal (last (list-fix x))
          (list-fix (last x))))
-
-(defthm simpler-take-of-list-fix
-  (equal (simpler-take n (list-fix l))
-         (simpler-take n l))
-  :hints(("Goal" :in-theory (enable simpler-take))))
 
 (defthm take-of-list-fix
   (equal (take n (list-fix l))

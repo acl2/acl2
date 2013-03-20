@@ -416,12 +416,12 @@ the user wishes to parallelize the execution of the defined function.</p>")
                               (,list-fn ,@(subst y x list-args)))))
 
           ,@(if nil-preservingp
-                `((defthm ,(mksym 'simpler-take-of- list-fn)
-                    (equal (simpler-take ,n (,list-fn ,@list-args))
-                           (,list-fn ,@(subst `(simpler-take ,n ,x) x list-args)))
+                `((defthm ,(mksym 'take-of- list-fn)
+                    (equal (take ,n (,list-fn ,@list-args))
+                           (,list-fn ,@(subst `(take ,n ,x) x list-args)))
                     :hints(("Goal"
-                            :in-theory (enable simpler-take)
-                            :induct (simpler-take ,n ,x)))))
+                            :in-theory (enable acl2::take-redefinition)
+                            :induct (take ,n ,x)))))
               nil)
 
           (defthm ,(mksym 'nthcdr-of- list-fn)

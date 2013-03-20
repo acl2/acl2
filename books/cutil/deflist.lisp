@@ -336,15 +336,15 @@ of which recognizers require true-listp and which don't.</p>")
 
 
   (local (defthm l0
-           (implies (and (member a (simpler-take n x))
+           (implies (and (member a (take n x))
                          (<= (nfix n) (len x)))
                     (member a x))
-           :hints(("Goal" :in-theory (enable simpler-take)))))
+           :hints(("Goal" :in-theory (enable acl2::take-redefinition)))))
 
   (local (defthm l1
            (implies (<= (nfix n) (len x))
-                    (subsetp-equal (simpler-take n x) x))
-           :hints(("Goal" :in-theory (enable simpler-take)))))
+                    (subsetp-equal (take n x) x))
+           :hints(("Goal" :in-theory (enable acl2::take-redefinition)))))
 
   (defthmd deflist-lemma-subsetp-of-butlast
     (subsetp-equal (butlast x n) x))
@@ -434,6 +434,8 @@ of which recognizers require true-listp and which don't.</p>")
     acl2::default-unary-minus
     acl2::unicity-of-0
     acl2::take-redefinition
+    acl2::take-induction
+    acl2::simpler-take-induction
     acl2::list-fix-when-not-consp
     acl2::list-fix-when-true-listp
     acl2::list-fix-of-cons
@@ -849,10 +851,10 @@ list.</p>"
                             t))
             :hints(("Goal" :do-not-induct t)))
 
-          (defthm ,(mksym name '-of-simpler-take)
+          (defthm ,(mksym name '-of-take)
             (implies
              (,name ,@(subst `(double-rewrite ,x) x formals))
-             (equal (,name ,@(subst `(simpler-take ,n ,x) x formals))
+             (equal (,name ,@(subst `(take ,n ,x) x formals))
                     ,(cond
                       ((eq elementp-of-nil nil)
                        (if negatedp
@@ -869,8 +871,8 @@ list.</p>"
                          `(or (,elementp ,@(subst nil x elem-formals))
                               (<= (nfix ,n) (len ,x))))))))
             :hints(("Goal"
-                    :in-theory (enable simpler-take)
-                    :induct (simpler-take ,n ,x)
+                    :in-theory (enable acl2::take-redefinition)
+                    :induct (take ,n ,x)
                     :expand ((,name ,@formals)
                              (:free (,x ,y)
                                     (,name ,@(subst `(cons ,x ,y) x formals)))))))

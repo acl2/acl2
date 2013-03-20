@@ -523,10 +523,10 @@
    :hints(("Goal" :in-theory (enable run-gified-ev-constraint-0)))))
 
 (local
- (defthm run-gified-ev-lst-simple-take
-   (equal (run-gified-ev-lst (acl2::simpler-take n x) a)
-          (acl2::simpler-take n (run-gified-ev-lst x a)))
-   :hints(("Goal" :in-theory (enable acl2::simpler-take)))))
+ (defthm run-gified-ev-lst-take
+   (equal (run-gified-ev-lst (acl2::take n x) a)
+          (acl2::take n (run-gified-ev-lst x a)))
+   :hints(("Goal" :in-theory (enable acl2::take-redefinition)))))
 
 (local
  (defthm list-fix-run-gified-ev-lst
@@ -756,8 +756,8 @@
 
 
 (local
- (defthm len-simpler-take
-   (Equal (len (acl2::simpler-take n lst)) (nfix n))))
+ (defthm len-take
+   (Equal (len (acl2::take n lst)) (nfix n))))
 
 
 (local
@@ -1000,25 +1000,25 @@
               (gobject-listp (nthcdr n lst)))
      :hints(("Goal" :in-theory (enable gobject-listp))))
 
-   (defthm gobject-listp-simpler-take
+   (defthm gobject-listp-take
      (implies (gobject-listp gobj)
-              (gobject-listp (acl2::simpler-take n gobj)))
-     :hints(("Goal" :in-theory (enable gobject-listp acl2::simpler-take))))
+              (gobject-listp (acl2::take n gobj)))
+     :hints(("Goal" :in-theory (enable gobject-listp acl2::take-redefinition))))
 
    (defun count-down2-cdr (n m l)
      (if (zp n)
          (list m l)
        (count-down2-cdr (1- (nfix n)) (1- (nfix m)) (cdr l))))
 
-   (defthm gobject-listp-simpler-take1
-     (implies (and (gobject-listp (acl2::simpler-take m gobj))
+   (defthm gobject-listp-take1
+     (implies (and (gobject-listp (acl2::take m gobj))
                    (< (nfix n) (nfix m)))
-              (gobject-listp (acl2::simpler-take n gobj)))
+              (gobject-listp (acl2::take n gobj)))
      :hints (("goal" :induct (count-down2-cdr m n gobj)
-              :in-theory (enable gobject-listp acl2::simpler-take))))
+              :in-theory (enable gobject-listp acl2::take-redefinition))))
 
-   (Defthm gobjectp-nth-when-gobject-listp-simpler-take
-     (implies (and (gobject-listp (acl2::simpler-take m x))
+   (Defthm gobjectp-nth-when-gobject-listp-take
+     (implies (and (gobject-listp (acl2::take m x))
                    (< (nfix n) (nfix m)))
               (gobjectp (nth n x)))
      :hints (("goal" :induct (count-down2-cdr m n x)
@@ -1044,7 +1044,7 @@
                               gevalfn geval-car-cdr)))
                    (not (equal gevalfn 'quote))
                    (gobject-listp (run-gified-ev args a))
-                   ;; (acl2::simpler-take n (run-gified-ev args a))
+                   ;; (acl2::take n (run-gified-ev args a))
                    )
               (equal
                (nthcdr n (run-gified-ev (list gevalfn args env) a))
@@ -1141,9 +1141,9 @@
      (implies (natp n)
               (equal (run-gified-ev-lst (make-nths-matching-formals
                                          n formals actuals) a)
-                     (acl2::simpler-take (len formals)
+                     (acl2::take (len formals)
                                         (nthcdr n (run-gified-ev actuals a)))))
-     :hints(("Goal" :in-theory (enable nth nthcdr acl2::simpler-take))))
+     :hints(("Goal" :in-theory (enable nth nthcdr acl2::take-redefinition))))
 
 
 
@@ -1168,7 +1168,7 @@
                           gevalfn geval-car-cdr)))
                (not (equal gevalfn 'quote))
                (not (equal evalfn 'quote))
-               ;; (gobject-listp (acl2::simpler-take n actuals))
+               ;; (gobject-listp (acl2::take n actuals))
                (gobject-listp actuals))
               (equal (run-gified-ev-lst
                       (acl2::ev-apply-arglist-on-result
@@ -1185,14 +1185,14 @@
                      (run-gified-ev-lst
                       (make-evals-of-formals
                        (acl2::kwote-lst
-                        (acl2::simpler-take
+                        (acl2::take
                          n
                          actuals))
                        gevalfn env)
                       nil)))
      :hints(("Goal" 
              :induct t
-             :in-theory (enable gobject-listp acl2::simpler-take)
+             :in-theory (enable gobject-listp acl2::take-redefinition)
              :expand ((:free (a b c)
                              (acl2::ev-apply-arglist-on-result
                               n a b c))))
@@ -1209,17 +1209,17 @@
        (implies (and (nths-matching-formalsp idx formals varname list)
                      (natp idx))
                 (equal (run-gified-ev-lst list a)
-                       (acl2::simpler-take
+                       (acl2::take
                         (len formals)
                         (nthcdr idx (run-gified-ev varname a)))))
        :hints(("Goal" :in-theory (enable my-equal-of-cons
-                                         acl2::simpler-take
+                                         acl2::take-redefinition
                                          nths-matching-formalsp))))
 
      (defthmd nths-matching-formalsp-make-nths-matching-formals-ev1
        (implies (nths-matching-formalsp 0 formals varname list)
                 (equal (run-gified-ev-lst list a)
-                       (acl2::simpler-take
+                       (acl2::take
                         (len formals)
                         (run-gified-ev varname a))))
        :hints(("Goal" :in-theory (enable nthcdr)
@@ -1325,7 +1325,7 @@
 
    (local
     (in-theory (disable geval-consp-when-gobject-listp-thm-correct
-                        cheap-default-car cheap-default-cdr acl2::simpler-take
+                        cheap-default-car cheap-default-cdr acl2::take-redefinition
                         ev-quote-clause-correct-for-run-gified-ev
                         ev-lookup-var-clause-correct-for-run-gified-ev
                         nth-when-len-smaller
@@ -1437,10 +1437,10 @@
                                                     BODY))))))
                           (:instance
                            nths-matching-formalsp-make-nths-matching-formals-ev1
-                           (list (ACL2::SIMPLER-TAKE (+ -2
+                           (list (ACL2::TAKE (+ -2
                                                        (LEN (MV-NTH 3 (RUN-GIFIED-CASE-BREAKDOWN BODY))))
                                                     (MV-NTH 3 (RUN-GIFIED-CASE-BREAKDOWN BODY))))
-                           (formals (ACL2::SIMPLER-TAKE
+                           (formals (ACL2::TAKE
                                      (+ -2
                                         (LEN (MV-NTH 3 (RUN-GIFIED-CASE-BREAKDOWN BODY))))
                                      (MV-NTH

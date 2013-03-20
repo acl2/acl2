@@ -42,8 +42,8 @@
          (sum-list x))
   :hints(("Goal" :induct (len x))))
 
-(defthm sum-list-of-app
-  (equal (sum-list (app x y))
+(defthm sum-list-of-append
+  (equal (sum-list (append x y))
          (+ (sum-list x)
             (sum-list y)))
   :hints(("Goal" :induct (len x))))

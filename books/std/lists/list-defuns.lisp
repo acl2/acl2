@@ -16,7 +16,6 @@
 ;; Place - Suite 330, Boston, MA 02111-1307, USA.
 
 (in-package "ACL2")
-(local (include-book "app"))
 (local (include-book "append"))
 (local (include-book "list-fix"))
 (local (include-book "flatten"))
@@ -25,6 +24,7 @@
 (local (include-book "take"))
 (local (include-book "repeat"))
 (local (include-book "revappend"))
+(local (include-book "nthcdr"))
 (local (include-book "rev"))
 (local (include-book "equiv"))
 (local (include-book "sets"))
@@ -69,18 +69,6 @@
 (defrefinement list-equiv set-equiv)
 
 
-(defund binary-app (x y)
-  (declare (xargs :guard t))
-  (if (consp x)
-      (cons (car x)
-            (binary-app (cdr x) y))
-    (list-fix y)))
-
-(defmacro app (x y &rest rst)
-  (xxxjoin 'binary-app (list* x y rst)))
-
-(add-macro-alias app binary-app)
-
 (defun binary-append-without-guard (x y)
   (declare (xargs :guard t))
   (mbe :logic
@@ -112,14 +100,6 @@
                 nil)
        :exec (revappend-without-guard x nil)))
 
-(defund simpler-take (n xs)
-  (declare (xargs :guard (and (natp n)
-                              (true-listp xs))))
-  (if (zp n)
-      nil
-    (cons (car xs)
-          (simpler-take (1- n) (cdr xs)))))
-
 (defund prefixp (x y)
   (declare (xargs :guard t))
   (if (consp x)
@@ -131,10 +111,8 @@
 (defund flatten (x)
   (declare (xargs :guard t))
   (if (consp x)
-      (mbe :logic (app (car x)
-                       (flatten (cdr x)))
-           :exec (binary-append-without-guard (car x)
-                                          (flatten (cdr x))))
+      (append-without-guard (car x)
+                            (flatten (cdr x)))
     nil))
 
 (defund repeat (x n)
@@ -149,3 +127,26 @@
   (if (atom x)
       x
     (final-cdr (cdr x))))
+
+(defun rest-n (n x)
+  (declare (xargs :guard (natp n)))
+  (mbe :logic (nthcdr n x)
+       :exec
+       (cond ((zp n)
+              x)
+             ((atom x)
+              nil)
+             (t
+              (rest-n (- n 1) (cdr x))))))
+
+(defun first-n (n x)
+  (declare (xargs :guard (natp n)))
+  (mbe :logic (take n x)
+       :exec
+       (cond ((zp n)
+              nil)
+             ((atom x)
+              (make-list n))
+             (t
+              (cons (car x)
+                    (first-n (- n 1) (cdr x)))))))

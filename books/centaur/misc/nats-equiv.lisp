@@ -87,10 +87,8 @@
 (defcong nats-equiv nats-equiv (append x y) 2)
 (defcong nats-equiv nats-equiv (revappend x y) 2)
 
-(defcong nats-equiv nats-equiv (simpler-take n x) 2
-  :hints(("Goal" :in-theory (enable simpler-take))))
-
-(defcong nats-equiv nats-equiv (take n x) 2)
+(defcong nats-equiv nats-equiv (take n x) 2
+  :hints(("Goal" :in-theory (enable take-redefinition))))
 
 (defcong nats-equiv nats-equiv (nthcdr n x) 2)
 

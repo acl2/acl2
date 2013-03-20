@@ -548,9 +548,9 @@ case there are any bugs, but perhaps we should re-integrate it.</p>"
   (local (defthm c0
            (implies (and (all-equalp 1 (vl-exprlist->finalwidths x))
                          (<= (nfix n) (len x)))
-                    (all-equalp 1 (vl-exprlist->finalwidths (simpler-take n x))))
+                    (all-equalp 1 (vl-exprlist->finalwidths (take n x))))
            :hints(("goal"
-                   :in-theory (e/d (simpler-take)
+                   :in-theory (e/d (acl2::take-redefinition)
                                    (all-equalp))))))
 
   (local (defthm c1

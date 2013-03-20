@@ -16,8 +16,7 @@
 ;; Place - Suite 330, Boston, MA 02111-1307, USA.
 
 (in-package "ACL2")
-
-(include-book "std/lists/app" :dir :system)
+(include-book "std/lists/append" :dir :system)
 
 (defund z-listp (x)
   (declare (xargs :guard t))
@@ -44,9 +43,9 @@
          (z-listp x))
   :hints(("Goal" :induct (len x))))
 
-(defthm z-listp-of-app
-  (equal (z-listp (app x y))
-         (and (z-listp x)
+(defthm z-listp-of-append
+  (equal (z-listp (append x y))
+         (and (z-listp (list-fix x))
               (z-listp y)))
   :hints(("Goal" :induct (len x))))
 

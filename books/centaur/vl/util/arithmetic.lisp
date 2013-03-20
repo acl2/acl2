@@ -85,8 +85,8 @@
 (include-book "std/ks/explode-atom" :dir :system)
 (include-book "std/lists/repeat" :dir :system)
 (include-book "std/lists/rev" :dir :system)
+(include-book "std/lists/duplicity" :dir :system)
 
-(include-book "defsort/duplicity" :dir :system)
 (include-book "tools/mv-nth" :dir :system)
 (include-book "tools/bstar" :dir :system)
 
@@ -126,7 +126,7 @@
             pairlis$
             make-character-list
 
-            simpler-take
+            acl2::take-redefinition
             nthcdr
 
             true-listp
@@ -320,13 +320,7 @@
     (equal (acl2-count (append x y))
            (+ (acl2-count (list-fix x))
               (acl2-count y)))
-    :hints(("Goal" :in-theory (enable acl2-count))))
-
-  (defthm app-removal
-    (equal (acl2::app x y)
-           (append x (list-fix y)))
-    :hints(("Goal" :in-theory (enable acl2::binary-app)))))
-
+    :hints(("Goal" :in-theory (enable acl2-count)))))
 
 
 (defsection rev
@@ -504,21 +498,21 @@
 
 
 
-(defsection simpler-take
+(defsection take
 
-  (local (in-theory (enable simpler-take)))
+  (local (in-theory (enable acl2::take-redefinition)))
 
-  (defthm simpler-take-under-iff
-    (iff (simpler-take n x)
+  (defthm take-under-iff
+    (iff (take n x)
          (posp n)))
 
-  (defthm simpler-take-of-len-free
+  (defthm take-of-len-free
     (implies (equal len (len x))
-             (equal (simpler-take len x)
+             (equal (take len x)
                     (list-fix x))))
 
-  (defthm simpler-take-of-repeat
-    (equal (simpler-take n (repeat a k))
+  (defthm take-of-repeat
+    (equal (take n (repeat a k))
            (if (<= (nfix n) (nfix k))
                (repeat a n)
              (append (repeat a k)
@@ -527,9 +521,9 @@
             :induct (dec-dec-induct k n)
             :in-theory (enable repeat))))
 
-  (defthm subsetp-equal-of-simpler-take
+  (defthm subsetp-equal-of-take
     (implies (<= (nfix n) (len x))
-             (subsetp-equal (simpler-take n x) x))))
+             (subsetp-equal (take n x) x))))
 
 
 
@@ -558,9 +552,9 @@
     (equal (nthcdr i (cdr x))
            (cdr (nthcdr i x))))
 
-  (defthm append-of-simpler-take-and-nthcdr
+  (defthm append-of-take-and-nthcdr
     (implies (force (<= n (len x)))
-             (equal (append (simpler-take n x)
+             (equal (append (take n x)
                             (nthcdr n x))
                     x)))
 
@@ -585,7 +579,7 @@
     (equal (acl2-count (nthcdr n x))
            (if (<= (nfix n) (len x))
                (- (acl2-count x)
-                  (acl2-count (simpler-take n x)))
+                  (acl2-count (take n x)))
              0)))
 
   (defthm nthcdr-of-repeat
@@ -618,8 +612,8 @@
                          (equal x (nthcdr n y)))
                     (equal (append (repeat a n) x) y))
            :hints(("Goal"
-                   :in-theory (disable append-of-simpler-take-and-nthcdr)
-                   :use ((:instance append-of-simpler-take-and-nthcdr
+                   :in-theory (disable append-of-take-and-nthcdr)
+                   :use ((:instance append-of-take-and-nthcdr
                                     (n n)
                                     (x y)))))))
 
@@ -744,10 +738,10 @@
   ;;            (equal (prefixp x y)
   ;;                   (atom x))))
 
-  (defthm prefixp-of-simpler-take
-    (equal (prefixp (simpler-take n x) x)
+  (defthm prefixp-of-take
+    (equal (prefixp (take n x) x)
            (<= (nfix n) (len x)))
-    :hints(("Goal" :in-theory (enable simpler-take))))
+    :hints(("Goal" :in-theory (enable acl2::take-redefinition))))
 
   (defthm prefixp-impossible-by-len
     (implies (< (len x) (len p))
@@ -899,7 +893,7 @@
   (defthm strip-cdrs-of-pairlis$
     (equal (strip-cdrs (pairlis$ x y))
            (if (<= (len x) (len y))
-               (simpler-take (len x) y)
+               (take (len x) y)
              (append y (repeat nil (- (len x) (len y))))))
     :hints(("Goal"
             :induct (pairlis$ x y)
@@ -1156,11 +1150,11 @@
                (characterp a)))
     :hints(("Goal" :in-theory (enable repeat))))
 
-  (defthm character-listp-of-simpler-take
+  (defthm character-listp-of-take
     (implies (and (character-listp x)
                   (force (<= (nfix n) (len x))))
-             (character-listp (simpler-take n x)))
-    :hints(("Goal" :in-theory (enable simpler-take))))
+             (character-listp (take n x)))
+    :hints(("Goal" :in-theory (enable acl2::take-redefinition))))
 
   (defthm character-listp-of-butlast
     (implies (and (character-listp x)

@@ -714,7 +714,7 @@ details.</p>"
 
   ;; (defthm c1
   ;;   (implies (not (str::digitp (nth n x)))
-  ;;            (equal (str::take-leading-digits (simpler-take n x))
+  ;;            (equal (str::take-leading-digits (take n x))
   ;;                   (str::take-leading-digits x)))
   ;;   :hints(("Goal" :in-theory (enable str::take-leading-digits
   ;;                                     nth))))
@@ -727,7 +727,7 @@ details.</p>"
   ;;         (<= 2 (+ (- OPEN) (LEN X))))
   ;;    (EQUAL
   ;;     (STR::DIGIT-LIST-VALUE
-  ;;      (STR::TAKE-LEADING-DIGITS (SIMPLER-TAKE (+ -2 (- OPEN) (LEN X))
+  ;;      (STR::TAKE-LEADING-DIGITS (TAKE (+ -2 (- OPEN) (LEN X))
   ;;                                              (NTHCDR (+ 1 OPEN) X))))
   ;;     (STR::DIGIT-LIST-VALUE
   ;;      (STR::TAKE-LEADING-DIGITS (NTHCDR (+ 1 OPEN) X))))))
@@ -1150,7 +1150,7 @@ index of @('|reset|') is @('nil').</p>"
                               (equal (coerce x 'list) y)))))
 
      (local (defthm equal-with-append-take-self
-              (equal (equal x (append (simpler-take n x) y))
+              (equal (equal x (append (take n x) y))
                      (and (<= (nfix n) (len x))
                           (equal (nthcdr (nfix n) x) y)))))
 
@@ -1213,11 +1213,11 @@ index of @('|reset|') is @('nil').</p>"
                                ;; This weird hyp ensures that the list doesn't end on a
                                ;; { escape.  Ugly but effective.
                                (equal (nth n x) #\[))
-                          (vl-emodwire-encoding-valid-p (simpler-take n x)))
+                          (vl-emodwire-encoding-valid-p (take n x)))
                  :hints(("Goal"
                          :induct (my-induct n x)
                          :in-theory (enable vl-emodwire-encoding-valid-p
-                                            simpler-take)))))
+                                            acl2::take-redefinition)))))
 
         (defthm f2
           (implies (vl-emodwire-p x)

@@ -27,18 +27,10 @@
   :elementp-of-nil t
   :parents (utilities))
 
-(encapsulate
- ()
- (local (defthm character-listp-of-binary-app
-          (implies (and (character-listp x)
-                        (character-listp y))
-                   (character-listp (acl2::binary-app x y)))
-          :hints(("Goal" :in-theory (enable acl2::binary-app)))))
-
- (defthm character-listp-of-flatten
-   (implies (character-list-listp x)
-            (character-listp (flatten x)))
-   :hints(("Goal" :in-theory (enable flatten)))))
+(defthm character-listp-of-flatten
+  (implies (character-list-listp x)
+           (character-listp (flatten x)))
+  :hints(("Goal" :in-theory (enable flatten))))
 
 
 (defsection vl-character-list-list-values-p

@@ -663,8 +663,8 @@
       (defthm get-mv-nths-correct
         (implies (and (natp start) (natp n))
                  (equal (partial-ev-lst (get-mv-nths start n term) al)
-                        (simpler-take n (nthcdr start (partial-ev term al)))))
-        :hints(("Goal" :in-theory (enable simpler-take nthcdr)
+                        (take n (nthcdr start (partial-ev term al)))))
+        :hints(("Goal" :in-theory (enable take-redefinition nthcdr)
                 :induct t
                 :expand ((:free (x) (nthcdr (+ 1 start) x))))))))
 
@@ -689,9 +689,9 @@
             (partial-ev-lst x al)))
 
    (local
-    (defthm simpler-take-len-when-true-listp
+    (defthm take-len-when-true-listp
       (implies (and (true-listp x) (equal n (len x)))
-               (equal (simpler-take n x)
+               (equal (take n x)
                       x))))
 
    (defthm partial-ev-lst-type

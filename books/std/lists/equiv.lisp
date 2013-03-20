@@ -107,19 +107,10 @@
 (defcong list-equiv list-equiv (make-list-ac n val ac) 3)
 
 
-(defund simpler-take (n xs)
-  ;; Redundant with take.lisp
-  (declare (xargs :guard (and (natp n)
-                              (true-listp xs))))
-  (if (zp n)
-      nil
-    (cons (car xs)
-          (simpler-take (1- n) (cdr xs)))))
 
-(defcong list-equiv equal (simpler-take n x) 2
+(defcong list-equiv equal (take n x) 2
   :hints(("Goal"
-          :in-theory (enable simpler-take)
-          :induct (and (simpler-take n x)
+          :induct (and (take n x)
                        (cdr-cdr-ind x x-equiv)))))
 
 (defcong list-equiv equal (take n x) 2)

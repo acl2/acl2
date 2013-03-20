@@ -463,7 +463,7 @@
      (implies (true-list-listp x)
               (equal (take-lists (len-of-each x) (append-lists x))
                      x))
-     :hints(("Goal" :in-theory (enable simpler-take))))
+     :hints(("Goal" :in-theory (enable take-redefinition))))
 
    (defthm 4v-sexpr-eval-list-of-append
      (equal (4v-sexpr-eval-list (append a b) env)

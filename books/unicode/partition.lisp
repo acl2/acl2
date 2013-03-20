@@ -52,11 +52,6 @@
            nil))
   :hints(("Goal" :in-theory (enable partition))))
 
-(local (defthm consless-listp-of-partition
-         (equal (consless-listp (partition sizes x))
-                (z-listp sizes))
-         :hints(("Goal" :in-theory (enable partition)))))
-
 (local (defthm sum-list-when-nat-listp-and-z-listp
          (implies (and (nat-listp x)
                        (z-listp x))
@@ -64,10 +59,16 @@
                          0))
          :hints(("Goal" :induct (len x)))))
 
-(local (defthm equal-of-simpler-take-and-list-fix
-         (equal (equal (simpler-take n x) (list-fix x))
+(local (defthm equal-of-take-and-list-fix
+         (equal (equal (take n x) (list-fix x))
                 (equal (nfix n) (len x)))
-         :hints(("Goal" :in-theory (enable simpler-take)))))
+         :hints(("Goal" :in-theory (enable take-redefinition)))))
+
+(local (defthm reassemble-lemma
+         (implies (<= (nfix n) (len x))
+                  (equal (append (take n x)
+                                 (list-fix (nthcdr n x)))
+                         (list-fix x)))))
 
 (defthm flatten-of-partition
   (implies (and (nat-listp sizes)
