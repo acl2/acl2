@@ -22,45 +22,25 @@
 (include-book "regex-parse")
 (include-book "regex-exec")
 (include-book "str/case-conversion" :dir :system)
+(include-book "cutil/define" :dir :system)
 (local (include-book "tools/mv-nth" :dir :system))
 (local (include-book "misc/assert" :dir :system))
 
+(defxdoc regex
+  :short "Regular expression library for ACL2"
+  :long "This library is modeled after the regular expression parsing
+         functionality of GNU grep.  While the code is mostly considered to be
+         complete enough for now, we invite those who wish to improve the
+         documentation to go ahead and do so.  As of March 2013, this library
+         is compliant with 579 of the 646 GNU grep regression suite tests (see
+         book regex/regex-tests for those tests).
+
+         To start using the regex library, include book
+         <tt>regex/regex-ui</tt>.")
+
 (local (in-theory (enable length-equiv length)))
 
-(defun do-regex-match-precomp (str regex opts)
-  (declare (xargs :guard (and (regex-p regex)
-                              (stringp str)
-                              (parse-opts-p opts))))
-  (b* ((str (mbe :logic (if (stringp str) str "")
-                 :exec str))
-       (transstr (if (parse-options-case-insensitive opts)
-                     (str::downcase-string str)
-                   str))
-       ((mv ?matchp whole substrs)
-        (match-regex regex transstr str)))
-    (mv whole substrs)))
-
-;; returns:
-;;  (mv error-msg whole-match substrs) ?
-(defun do-regex-match (str pat opts)
-  (declare (xargs :guard (and (stringp pat)
-                              (stringp str)
-                              (parse-opts-p opts))))
-  (b* ((str (mbe :logic (if (stringp str) str "") :exec str))
-       (pat (mbe :logic (if (stringp pat) pat "") :exec pat))
-       (pat (if (parse-options-case-insensitive opts)
-                (str::downcase-string pat)
-              pat))
-       (regex (regex-do-parse pat opts))
-       ((when (stringp regex))
-        (mv regex nil nil))
-       ((mv whole substrs)
-        (do-regex-match-precomp str regex opts)))
-    (mv nil whole substrs)))
-
-
-;; We'll leave the above functions disabled, but prove some basic type lemmas
-;; about them.
+; Some prepwork for the admission of do-regex-match-precomp and do-regex-match:
 
 (local (defthm l0
          (implies (not (mv-nth 0 (match-regex-fun regex str untrans-str n)))
@@ -93,38 +73,78 @@
          :rule-classes :type-prescription
          :hints(("Goal" :in-theory (enable match-regex-fun)))))
 
+(define do-regex-match-precomp 
+  ((str stringp "String to test")
+   (regex regex-p "Regular expression specifying the pattern to find")
+   (opts parse-opts-p "Options for test.  <br />
 
+                       BOZO: state and explain the possible options.  Possible
+                       options might include
+                       <tt>:b</tt>/<tt>:e</tt>/<tt>:f</tt> for
+                       basic/extended/fixed, <tt>:i</tt> for case-insensitive,
+                       <tt>:full</tt> for something, etc."))
+  :short "Test whether a given string matches a given regular expression"
+  :long "Intended for use during macroexpansion, as occurs in @(see B*)."
+  :parents (regex)
+  :returns (mv (whole (or (stringp whole)
+                          (not whole))
+                      "The portion of <tt>str</tt> that matches the pattern
+                       provided by <tt>regex</tt>.  <tt>Nil</tt> if there is
+                       not a match."
+                      :rule-classes :type-prescription)
+               (substrs true-listp
+                        "List of substrings that match parenthesized
+                         subexpressions of the pattern (when applicable).
+                         <tt>Nil</tt> if there is not a match."
+                        :rule-classes :type-prescription))
+  (b* ((str (mbe :logic (if (stringp str) str "")
+                 :exec str))
+       (transstr (if (parse-options-case-insensitive opts)
+                     (str::downcase-string str)
+                   str))
+       ((mv ?matchp whole substrs)
+        (match-regex regex transstr str)))
+    (mv whole substrs)))
 
-(defthm type-of-do-regex-match-precomp-0
-  ;; Full match is a string or nil.
-  (or (stringp (mv-nth 0 (do-regex-match-precomp str regex opts)))
-      (not (mv-nth 0 (do-regex-match-precomp str regex opts))))
-  :rule-classes :type-prescription)
+(define do-regex-match
+  ((str stringp "String to test")
+   (pat stringp "String representing the pattern to find")
+   (opts parse-opts-p "Options for test.  <br />
 
-(defthm type-of-do-regex-match-precomp-1
-  ;; Substrings are a true-list (for guards of Nth)
-  (true-listp (mv-nth 1 (do-regex-match-precomp str regex opts)))
-  :rule-classes :type-prescription)
-
-
-(defthm type-of-do-regex-match-0
-  ;; Error message is a string or nil.
-  (or (stringp (mv-nth 0 (do-regex-match str regex opts)))
-      (not (mv-nth 0 (do-regex-match str regex opts))))
-  :rule-classes :type-prescription)
-
-(defthm type-of-do-regex-match-1
-  ;; Lemma to show :full is a string (or nil) in the dynamically compiled case.
-  (or (stringp (mv-nth 1 (do-regex-match str regex opts)))
-      (not (mv-nth 1 (do-regex-match str regex opts))))
-  :rule-classes :type-prescription)
-
-(defthm type-of-do-regex-match-2
-  ;; Substrings are a true-list (for guards of Nth)
-  (true-listp (mv-nth 2 (do-regex-match str regex opts)))
-  :rule-classes :type-prescription)
-
-
+                       BOZO: state and explain the possible options.  Possible
+                       options might include
+                       <tt>:b</tt>/<tt>:e</tt>/<tt>:f</tt> for
+                       basic/extended/fixed, <tt>:i</tt> for case-insensitive,
+                       <tt>:full</tt> for something, etc."))
+  :short "Test whether a given string matches a given regular expression"
+  :long "Intended for use in the dynamically compiled case"
+  :parents (regex)
+  :returns (mv (error-msg (or (stringp error-msg)
+                              (not error-msg))
+                          "Error message"
+                          :rule-classes :type-prescription)
+                (whole (or (stringp whole)
+                           (not whole))
+                       "The portion of <tt>str</tt> that matches the pattern
+                        provided by <tt>pat</tt>.  <tt>Nil</tt> if there is not
+                        a match."
+                       :rule-classes :type-prescription)
+                (substrs true-listp
+                         "List of substrings that match parenthesized
+                          subexpressions of the pattern (when applicable).
+                          <tt>Nil</tt> if there is not a match."
+                        :rule-classes :type-prescription))
+  (b* ((str (mbe :logic (if (stringp str) str "") :exec str))
+       (pat (mbe :logic (if (stringp pat) pat "") :exec pat))
+       (pat (if (parse-options-case-insensitive opts)
+                (str::downcase-string pat)
+              pat))
+       (regex (regex-do-parse pat opts))
+       ((when (stringp regex))
+        (mv regex nil nil))
+       ((mv whole substrs)
+        (do-regex-match-precomp str regex opts)))
+    (mv nil whole substrs)))
 
 ;; We also want to know that the substrings are strings or NIL.  Since we're
 ;; going to lay down Nths bindings, I'll write these in terms of Nth.
@@ -142,6 +162,10 @@
                          (if (car x)
                              t
                            nil)))))
+
+(in-theory (enable do-regex-match do-regex-match-precomp))
+
+;; BOZO: it would be nice to merge the following into the above define calls.
 
 (defthm type-of-nth-of-do-regex-match-precomp-substrings
   ;; Lemma for the precompiled case
@@ -169,7 +193,6 @@
   (or (stringp (car (mv-nth 2 (do-regex-match str regex opts))))
       (not (car (mv-nth 2 (do-regex-match str regex opts)))))
   :rule-classes :type-prescription)
-
 
 ;; That *should* be enough for guards, as long as you're not trying to prove
 ;; something about the actual strings you're matching.  But that'd be crazy,
@@ -311,10 +334,5 @@
 (local (assert! (equal (f "FOO_37") (list "FOO_37" "FOO" "37"))))
 (local (assert! (equal (f "FOO_37_abc") (list "FOO_37" "FOO" "37"))))
 (local (assert! (equal (f "abc_FOO_37_abc") (list "FOO_37" "FOO" "37"))))
-
-
-
-
-
 
 
