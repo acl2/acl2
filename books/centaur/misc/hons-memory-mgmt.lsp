@@ -20,6 +20,67 @@
 
 (in-package "ACL2")
 
+; Comments rescued from memoize-raw.lisp
+
+;          Sol Sword's scheme to control GC in CCL
+;
+; The goal is to get CCL to perform a GC whenever we're using almost
+; all the physical memory, but not otherwise.
+;
+; The usual way of controlling GC on CCL is via LISP-HEAP-GC-THRESHOLD.
+; This value is approximately amount of memory that will be allocated
+; immediately after GC.  This means that the next GC will occur after
+; LISP-HEAP-GC-THRESHOLD more bytes are used (by consing or array
+; allocation or whatever.)  But this means the total memory used by the
+; time the next GC comes around is the threshold plus the amount that
+; remained in use at the end of the previous GC.  This is a problem
+; because of the following scenario:
+;
+;  - We set the LISP-HEAP-GC-THRESHOLD to 3GB since we'd like to be able
+;    to use most of the 4GB physical memory available.
+;
+;  - A GC runs or we say USE-LISP-HEAP-GC-THRESHOLD to ensure that 3GB
+;    is available to us.
+;
+;  - We run a computation until we've exhausted this 3GB, at which point
+;    a GC occurs.
+;
+;  - The GC reclaims 1.2 GB out of the 3GB used, so there is 1.8 GB
+;    still in use.
+;
+;  - After GC, 3GB more is automatically allocated -- but this means we
+;    won't GC again until we have 4.8 GB in use, meaning we've gone to
+;    swap.
+;
+; What we really want is, instead of allocating a constant additional
+; amount after each GC, to allocate up to a fixed total amount including
+; what's already in use.  To emulate that behavior, we use the hack
+; below.  This operates as follows (assuming the same 4GB total physical
+; memory as in the above example:)
+;
+; 1. We set the LISP-HEAP-GC-THRESHOLD to (3.5G - used bytes) and call
+; USE-LISP-HEAP-GC-THRESHOLD so that our next GC will occur when we've
+; used a total of 3.5G.
+;
+; 2. We set the threshold back to 1GB without calling
+; USE-LISP-HEAP-GC-THRESHOLD.
+;
+; 3. Run a computation until we use up the 3.5G and the GC is called.
+; Say the GC reclaims 1.2GB so there's 2.3GB in use.  1GB more (the
+; current LISP-HEAP-GC-THRESHOLD) is allocated so the ceiling is 3.3GB.)
+;
+; 4. A post-GC hook runs which again sets the threshold to (3.5G -
+; used bytes), calls USE-LISP-HEAP-GC-THRESHOLD to raise the ceiling to
+; 3.5G, then sets the threshold back to 1GB, and the process repeats.
+;
+; A subtlety about this scheme is that post-GC hooks runs in a separate
+; thread from the main execution.  A possible bug is that in step 4,
+; between checking the amount of memory in use and calling
+; USE-LISP-HEAP-GC-THRESHOLD, more memory might be used up by the main
+; execution, which would set the ceiling higher than we intended.  To
+; prevent this, we interrupt the main thread to run step 4.
+
+
 
 (defvar *sol-gc-installed* nil)
 
