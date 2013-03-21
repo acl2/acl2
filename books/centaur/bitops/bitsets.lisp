@@ -497,7 +497,7 @@ bignum in a particularly efficient way on 64-bit CCL.</li>
  Optimized TTAG: 3.57 sec, 4,001,845,424 bytes
 })"
 
-  (local (in-theory (disable assoc-append)))
+  (local (in-theory (disable associativity-of-append)))
 
   (local (defthm rassoc-append
            (equal (append x (append y z))

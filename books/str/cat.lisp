@@ -24,7 +24,6 @@
 (local (include-book "arithmetic"))
 (local (include-book "std/lists/take" :dir :system))
 
-
 (defsection cat
   :parents (concatenation)
   :short "Concatenate strings."
@@ -232,7 +231,8 @@ more efficient way to do the final @(see reverse)/@(see coerce) steps.</p>"
              (equal (revappend-chars-aux x n xl y)
                     (revappend (nthcdr n (coerce x 'list)) y)))
     :hints(("Goal"
-            :in-theory (enable revappend-chars-aux)
+            :in-theory (e/d (revappend-chars-aux)
+                            (acl2::revappend-removal))
             :induct (revappend-chars-aux x n xl y))))
 
   (definlined revappend-chars (x y)

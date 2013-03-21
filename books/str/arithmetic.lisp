@@ -21,6 +21,7 @@
 (in-package "ACL2")
 (include-book "arithmetic/top" :dir :system)
 (include-book "std/lists/take" :dir :system)
+(include-book "std/lists/len" :dir :system)
 (include-book "std/lists/nthcdr" :dir :system)
 (include-book "std/lists/append" :dir :system)
 (include-book "std/lists/repeat" :dir :system)
@@ -35,9 +36,10 @@
 (defthm eqlablep-when-characterp
   (implies (characterp x) (eqlablep x)))
 
-(defthm len-zero
-  (equal (equal 0 (len x))
-         (not (consp x))))
+;; moved to std/lists/len
+;; (defthm len-zero
+;;   (equal (equal 0 (len x))
+;;          (not (consp x))))
 
 (defthm nth-of-len
   (equal (nth (len x) x)
@@ -54,21 +56,24 @@
            (character-listp (acl2::repeat x n)))
   :hints(("Goal" :in-theory (enable acl2::repeat))))
 
-(defthm len-of-append
-  (equal (len (append x y))
-         (+ (len x)
-            (len y))))
+;; moved to std/lists/append
+;; (defthm len-of-append
+;;   (equal (len (append x y))
+;;          (+ (len x)
+;;             (len y))))
 
-(defthm consp-of-repeat
-  (equal (consp (acl2::repeat x n))
-         (not (zp n)))
-  :hints(("Goal" :in-theory (enable acl2::repeat))))
+;; moved to std/lists/repeat
+;; (defthm consp-of-repeat
+;;   (equal (consp (acl2::repeat x n))
+;;          (not (zp n)))
+;;   :hints(("Goal" :in-theory (enable acl2::repeat))))
 
-(defthm car-of-append
-  (equal (car (append x y))
-         (if (consp x)
-             (car x)
-           (car y))))
+;; moved to std/lists/append
+;; (defthm car-of-append
+;;   (equal (car (append x y))
+;;          (if (consp x)
+;;              (car x)
+;;            (car y))))
 
 (defthm car-of-repeat
   (equal (car (acl2::repeat x n))
@@ -77,10 +82,11 @@
            x))
   :hints(("Goal" :in-theory (enable acl2::repeat))))
 
-(defthm append-of-repeat-to-cons-of-same
-  (equal (append (acl2::repeat a n) (cons a x))
-         (cons a (append (acl2::repeat a n) x)))
-  :hints(("Goal" :in-theory (enable acl2::repeat))))
+;; moved to std/lists/repeat
+;; (defthm append-of-repeat-to-cons-of-same
+;;   (equal (append (acl2::repeat a n) (cons a x))
+;;          (cons a (append (acl2::repeat a n) x)))
+;;   :hints(("Goal" :in-theory (enable acl2::repeat))))
 
 
 (defthm len-of-nonempty-string-is-positive
@@ -91,15 +97,17 @@
           :in-theory (disable coerce-inverse-2)
           :use ((:instance coerce-inverse-2)))))
 
-(defthm take-of-len
-  (equal (take (len x) x)
-         (list-fix x))
-  :hints(("Goal" :in-theory (enable take-redefinition))))
+;; moved to std/lists/take
+;; (defthm take-of-len
+;;   (equal (take (len x) x)
+;;          (list-fix x))
+;;   :hints(("Goal" :in-theory (enable take-redefinition))))
 
-(defthm take-of-zero
-  (equal (take 0 x)
-         nil)
-  :hints(("Goal" :in-theory (enable take-redefinition))))
+;; moved to std/lists/take
+;; (defthm take-of-zero
+;;   (equal (take 0 x)
+;;          nil)
+;;   :hints(("Goal" :in-theory (enable take-redefinition))))
 
 (defthm character-listp-of-take
   (implies (character-listp x)

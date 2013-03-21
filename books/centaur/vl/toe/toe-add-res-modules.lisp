@@ -395,7 +395,7 @@ for N=1 (in which case it acts like an ordinary assignment).</p>"
                             (;NO-DUPLICATESP-EQUAL-WHEN-SAME-LENGTH-MERGESORT
                              ;; leaving this one enabled--- NO-DUPLICATESP-EQUAL-OF-APPEND
                              ACL2::NO-DUPLICATESP-EQUAL-APPEND-IFF
-                             NO-DUPLICATESP-EQUAL-OF-APPEND-OF-APPEND))))))
+                             acl2::NO-DUPLICATESP-EQUAL-OF-APPEND-OF-APPEND))))))
 
 
 

@@ -112,9 +112,9 @@ strings are ever found in @('strtok')'s output.</p>"
     :rule-classes :type-prescription)
 
   (local (defthm lemma
-           (implies (and (string-listp x)
-                         (string-listp y))
-                    (string-listp (revappend x y)))))
+           (implies (string-listp x)
+                    (string-listp (acl2::rev x)))))
+
 
   (defthm string-listp-of-strtok
     (implies (force (stringp x))

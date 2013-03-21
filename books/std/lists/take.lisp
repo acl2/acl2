@@ -20,6 +20,7 @@
 ; included in symbol-btree.lisp.
 
 (in-package "ACL2")
+(include-book "list-fix")
 (local (include-book "arithmetic/top" :dir :system))
 
 (in-theory (disable (:definition take)))
@@ -72,6 +73,10 @@
   (equal (consp (take n xs))
          (not (zp n))))
 
+(defthm take-under-iff
+  (iff (take n xs)
+       (not (zp n))))
+
 (defthm len-of-take
   (equal (len (take n xs))
          (nfix n)))
@@ -89,29 +94,55 @@
            (append x (take (- n (len x)) y))))
   :hints(("Goal" :induct (take n x))))
 
+(defthm take-of-zero
+  (equal (take 0 x)
+         nil))
+
 (defthm take-of-1
   (equal (take 1 x)
          (list (car x))))
 
-(defthm car-of-simple-take
+(defthm car-of-take
   (implies (<= 1 (nfix n))
            (equal (car (take n x))
                   (car x))))
 
-(defthm second-of-simple-take
+(defthm second-of-take
   (implies (<= 2 (nfix n))
            (equal (second (take n x))
                   (second x))))
 
-(defthm third-of-simple-take
+(defthm third-of-take
   (implies (<= 3 (nfix n))
            (equal (third (take n x))
                   (third x))))
 
-(defthm fourth-of-simple-take
+(defthm fourth-of-take
   (implies (<= 4 (nfix n))
            (equal (fourth (take n x))
                   (fourth x))))
+
+(defthm take-of-len-free
+  (implies (equal len (len x))
+           (equal (take len x)
+                  (list-fix x))))
+
+(defthm take-of-len
+  (equal (take (len x) x)
+         (list-fix x)))
+
+(defthm subsetp-of-take
+  (implies (<= (nfix n) (len x))
+           (subsetp (take n x) x)))
+
+(defthm take-of-take
+  (implies (< (nfix a) (nfix b))
+           (equal (take a (take b x))
+                  (take a x))))
+
+(defthm take-of-take-same
+  (equal (take a (take a x))
+         (take a x)))
 
 (encapsulate
   ()

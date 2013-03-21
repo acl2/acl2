@@ -586,8 +586,8 @@
 
 
 (local
- (defthm bfix-list-take-len
-   (equal (bfix-list (take (len x) x))
+ (defthm bfix-list-list-fix
+   (equal (bfix-list (list-fix x))
           (bfix-list x))))
 
 ;; (defthm eval-q-param-inv
@@ -626,7 +626,7 @@
                                                 vars))
                   (bfix-list vars)))
   :hints (("goal" :induct (eqpib-ind x vars)
-           :in-theory (enable max-depth))))
+           :in-theory (e/d (max-depth)))))
 
 (defthm len-q-param-inv-upper-bound
   (<= (len (q-param-inv x nvars))

@@ -330,7 +330,7 @@ initially kept in a big, mixed list.</p>"
                      double-containment
                      sets::nonempty-means-set
                      consp-under-iff-when-true-listp
-                     consp-by-len
+                     acl2::consp-by-len
                      true-listp-when-character-listp
                      true-listp-when-not-consp
                      sets::sets-are-true-lists

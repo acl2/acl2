@@ -32,7 +32,7 @@
                    consp-under-iff-when-true-listp
                    VL-IS-TOKEN?-FN-WHEN-NOT-CONSP-OF-TOKENS
                    double-containment
-                   consp-by-len
+                   acl2::consp-by-len
                    consp-when-member-equal-of-cons-listp
                    member-equal-when-member-equal-of-cdr-under-iff
                    default-<-1 default-<-2

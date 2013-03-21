@@ -42,7 +42,6 @@
                            acl2::subsetp-append1
                            vl-echar-p-when-member-equal-of-vl-echarlist-p)))
 
-
 (local (defthm append-nil
          (equal (append nil y) y)))
 
@@ -51,8 +50,8 @@
                 (true-listp y))))
 
 (local (in-theory (disable acl2-count-positive-when-consp
-                           append-when-not-consp
-                           append-of-cons
+                           acl2::append-when-not-consp
+                           acl2::append-of-cons
                            acl2::true-listp-append
                            (:type-prescription true-listp)
                            )))

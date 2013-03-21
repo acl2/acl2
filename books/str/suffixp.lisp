@@ -22,9 +22,7 @@
 (include-book "strprefixp")
 (local (include-book "misc/assert" :dir :system))
 
-(local (defthm prefixp-reflexive
-         (prefixp x x)
-         :hints(("Goal" :in-theory (enable prefixp)))))
+(local (in-theory (disable acl2::prefixp-when-equal-lengths)))
 
 (local (defthm crock
          (implies (and (equal (len x) (len y))

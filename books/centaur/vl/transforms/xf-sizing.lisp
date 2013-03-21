@@ -4168,9 +4168,9 @@ context-determined expressions."
                              vl-module-p-when-member-equal-of-vl-modulelist-p
                              vl-maybe-module-p-when-vl-module-p
                              consp-under-iff-when-true-listp
-                             consp-by-len
-                             consp-of-cdr-by-len
-                             consp-of-cddr-by-len
+                             acl2::consp-by-len
+                             acl2::consp-of-cdr-by-len
+                             acl2::consp-of-cddr-by-len
                              car-when-all-equalp
 
                              ;; bozo these should be part of tag reasoning
@@ -4344,12 +4344,12 @@ context-determined expressions."
                      (:ruleset tag-reasoning)
                      car-when-all-equalp
                      member-equal-when-member-equal-of-cdr-under-iff
-                     consp-by-len
                      vl-atom-p-by-tag-when-vl-expr-p
                      tag-when-vl-arguments-p
                      (:ruleset basic-arithmetic-rules)
-                     consp-of-cdr-by-len
-                     consp-of-cddr-by-len
+                     acl2::consp-by-len
+                     acl2::consp-of-cdr-by-len
+                     acl2::consp-of-cddr-by-len
                      vl-exprlist-p-when-subsetp-equal
                      vl-expr-p-when-member-equal-of-vl-exprlist-p
                      vl-module-p-when-member-equal-of-vl-modulelist-p

@@ -73,19 +73,13 @@
 
 (include-book "subsetp-equal")
 
+;; BOZO question: how much of this do we really need?
 (include-book "data-structures/list-defthms" :dir :system)
 
 (include-book "misc/hons-help" :dir :system)
 
-(include-book "std/lists/list-defuns" :dir :system)
-(include-book "std/lists/nthcdr" :dir :system)
-(include-book "std/lists/take" :dir :system)
-(include-book "std/lists/coerce" :dir :system)
-(include-book "std/lists/list-fix" :dir :system)
+(include-book "std/lists/top" :dir :system)
 (include-book "std/ks/explode-atom" :dir :system)
-(include-book "std/lists/repeat" :dir :system)
-(include-book "std/lists/rev" :dir :system)
-(include-book "std/lists/duplicity" :dir :system)
 
 (include-book "tools/mv-nth" :dir :system)
 (include-book "tools/bstar" :dir :system)
@@ -116,7 +110,6 @@
             explode-atom
             string-append
             string-append-lst
-            append
             subseq
             subseq-list
             intersectp-equal
@@ -124,10 +117,12 @@
             no-duplicatesp-equal
             set-difference-equal
             pairlis$
-            make-character-list
 
-            acl2::take-redefinition
-            nthcdr
+            ;; Now disabled due to lists/top
+            ;append
+            ;make-character-list
+            ;acl2::take-redefinition
+            ;nthcdr
 
             true-listp
             string-listp
@@ -140,13 +135,7 @@
             strip-cdrs
 
             hons-shrink-alist
-            make-fal
-
-            ;; I often use len as a way to induct, so I only disable its
-            ;; definition.  It would probably be better to use cdr-induction
-            ;; instead, but oh well.
-            (:definition len)))
-
+            make-fal))
 
 
 (defsection true-listp
@@ -169,54 +158,54 @@
     :rule-classes ((:rewrite :backchain-limit-lst 0))))
 
 
+;; moved to std/lists/len
+;; (defsection len
 
-(defsection len
+;;   (local (in-theory (enable len)))
 
-  (local (in-theory (enable len)))
+;;   (defthm len-when-not-consp
+;;     (implies (not (consp x))
+;;              (equal (len x)
+;;                     0)))
 
-  (defthm len-when-not-consp
-    (implies (not (consp x))
-             (equal (len x)
-                    0)))
+;;   (defthm len-of-cons
+;;     (equal (len (cons a x))
+;;            (+ 1 (len x))))
 
-  (defthm len-of-cons
-    (equal (len (cons a x))
-           (+ 1 (len x))))
+;;   (defthm |(equal 0 (len x))|
+;;     (equal (equal 0 (len x))
+;;            (atom x)))
 
-  (defthm |(equal 0 (len x))|
-    (equal (equal 0 (len x))
-           (atom x)))
+;;   (defthm |(< 0 (len x))|
+;;     (equal (< 0 (len x))
+;;            (consp x)))
 
-  (defthm |(< 0 (len x))|
-    (equal (< 0 (len x))
-           (consp x)))
+;;   (defthm consp-by-len
+;;     (implies (and (equal (len x) n)
+;;                   (syntaxp (quotep n)))
+;;              (equal (consp x)
+;;                     (< 0 n))))
 
-  (defthm consp-by-len
-    (implies (and (equal (len x) n)
-                  (syntaxp (quotep n)))
-             (equal (consp x)
-                    (< 0 n))))
+;;   (defthm consp-of-cdr-by-len
+;;     (implies (and (equal (len x) n)
+;;                   (syntaxp (quotep n)))
+;;              (equal (consp (cdr x))
+;;                     (< 1 n)))
+;;     :hints(("Goal" :in-theory (enable len))))
 
-  (defthm consp-of-cdr-by-len
-    (implies (and (equal (len x) n)
-                  (syntaxp (quotep n)))
-             (equal (consp (cdr x))
-                    (< 1 n)))
-    :hints(("Goal" :in-theory (enable len))))
+;;   (defthm consp-of-cddr-by-len
+;;     (implies (and (equal (len x) n)
+;;                   (syntaxp (quotep n)))
+;;              (equal (consp (cddr x))
+;;                     (< 2 n)))
+;;     :hints(("Goal" :in-theory (enable len))))
 
-  (defthm consp-of-cddr-by-len
-    (implies (and (equal (len x) n)
-                  (syntaxp (quotep n)))
-             (equal (consp (cddr x))
-                    (< 2 n)))
-    :hints(("Goal" :in-theory (enable len))))
-
-  (defthm consp-of-cdddr-by-len
-    (implies (and (equal (len x) n)
-                  (syntaxp (quotep n)))
-             (equal (consp (cdddr x))
-                    (< 3 n)))
-    :hints(("Goal" :in-theory (enable len)))))
+;;   (defthm consp-of-cdddr-by-len
+;;     (implies (and (equal (len x) n)
+;;                   (syntaxp (quotep n)))
+;;              (equal (consp (cdddr x))
+;;                     (< 3 n)))
+;;     :hints(("Goal" :in-theory (enable len)))))
 
 
 
@@ -276,11 +265,11 @@
              (o-p x))))
 
 
-
-(defthm duplicity-of-list-fix
-  (equal (acl2::duplicity a (list-fix x))
-         (acl2::duplicity a x))
-  :hints(("Goal" :induct (len x))))
+;; not needed, have list-equiv rule instead
+;; (defthm duplicity-of-list-fix
+;;   (equal (acl2::duplicity a (list-fix x))
+;;          (acl2::duplicity a x))
+;;   :hints(("Goal" :induct (len x))))
 
 (defthm acl2-count-of-list-fix-weak
   (<= (acl2-count (list-fix x))
@@ -293,28 +282,33 @@
 
   (local (in-theory (enable append)))
 
-  (defthm append-when-not-consp
-    (implies (not (consp x))
-             (equal (append x y)
-                    y)))
+  ;; in std/lists/append
+  ;; (defthm append-when-not-consp
+  ;;   (implies (not (consp x))
+  ;;            (equal (append x y)
+  ;;                   y)))
 
-  (defthm append-of-cons
-    (equal (append (cons a x) y)
-           (cons a (append x y))))
+  ;; in std/lists/append
+  ;; (defthm append-of-cons
+  ;;   (equal (append (cons a x) y)
+  ;;          (cons a (append x y))))
 
-  (defthm append-of-nil
-    (equal (append x nil)
-           (list-fix x)))
+  ;; in std/lists/append
+  ;; (defthm append-of-nil
+  ;;   (equal (append x nil)
+  ;;          (list-fix x)))
 
-  (defthm consp-of-append
-    (equal (consp (append x y))
-           (or (consp x)
-               (consp y))))
+  ;; in std/lists/append
+  ;; (defthm consp-of-append
+  ;;   (equal (consp (append x y))
+  ;;          (or (consp x)
+  ;;              (consp y))))
 
-  (defthm append-under-iff
-    (iff (append x y)
-         (or (consp x)
-             y)))
+  ;; in std/lists/append
+  ;; (defthm append-under-iff
+  ;;   (iff (append x y)
+  ;;        (or (consp x)
+  ;;            y)))
 
   (defthm acl2-count-of-append
     (equal (acl2-count (append x y))
@@ -323,207 +317,216 @@
     :hints(("Goal" :in-theory (enable acl2-count)))))
 
 
-(defsection rev
+;; (defsection rev
 
-  (local (in-theory (enable rev)))
+;;   (local (in-theory (enable rev)))
 
-  (defthm rev-under-iff
-    ;; BOZO move me to system/lists/rev
-    (iff (rev x) (consp x)))
+  ;; Now in std/lists/rev
+  ;; (defthm rev-under-iff
+  ;;   (iff (rev x) (consp x)))
 
-  (defthm member-equal-of-rev
-    (iff (member-equal a (rev x))
-         (member-equal a x)))
+  ;; Unnecessary due to rev-under-set-equiv
+  ;; (defthm member-equal-of-rev
+  ;;   (iff (member-equal a (rev x))
+  ;;        (member-equal a x)))
 
-  (defthm rev-under-set-equiv
-    (set-equiv (rev x) (double-rewrite x))
-    :hints(("Goal" :in-theory (enable set-equiv))))
+  ;; Already in std/lists/sets
+  ;; (defthm rev-under-set-equiv
+  ;;   (set-equiv (rev x) (double-rewrite x))
+  ;;   :hints(("Goal" :in-theory (enable set-equiv))))
 
-  (defthm duplicity-of-rev
-    (equal (acl2::duplicity a (rev x))
-           (acl2::duplicity a x))))
-
-
-
-(defsection no-duplicatesp-equal
-
-  (local (in-theory (enable no-duplicatesp-equal)))
-
-  (defthm no-duplicatesp-equal-when-not-consp
-    (implies (not (consp x))
-             (equal (no-duplicatesp-equal x)
-                    t)))
-
-  (defthm no-duplicatesp-equal-of-cons
-    (equal (no-duplicatesp-equal (cons a x))
-           (and (not (member-equal a (double-rewrite x)))
-                (no-duplicatesp-equal x))))
-
-  (defthm no-duplicatesp-equal-of-list-fix
-    (equal (no-duplicatesp-equal (list-fix x))
-           (no-duplicatesp-equal x)))
-
-  (defthm no-duplicatesp-equal-of-rev
-    (equal (no-duplicatesp-equal (rev x))
-           (no-duplicatesp-equal x))
-    :hints(("Goal"
-            :use ((:functional-instance
-                   acl2::no-duplicatesp-equal-same-by-duplicity
-                   (acl2::duplicity-hyp (lambda () t))
-                   (acl2::duplicity-lhs (lambda () (rev x)))
-                   (acl2::duplicity-rhs (lambda () x)))))))
-
-  (defthm no-duplicatesp-equal-of-append-of-rev-1
-    (equal (no-duplicatesp-equal (append (rev x) y))
-           (no-duplicatesp-equal (append x y)))
-    :hints(("Goal"
-            :use ((:functional-instance
-                   acl2::no-duplicatesp-equal-same-by-duplicity
-                   (acl2::duplicity-hyp (lambda () t))
-                   (acl2::duplicity-lhs (lambda () (append (rev x) y)))
-                   (acl2::duplicity-rhs (lambda () (append x y))))))))
-
-  (defthm no-duplicatesp-equal-of-append-of-rev-2
-    (equal (no-duplicatesp-equal (append x (rev y)))
-           (no-duplicatesp-equal (append x y)))
-    :hints(("Goal"
-            :use ((:functional-instance
-                   acl2::no-duplicatesp-equal-same-by-duplicity
-                   (acl2::duplicity-hyp (lambda () t))
-                   (acl2::duplicity-lhs (lambda () (append x (rev y))))
-                   (acl2::duplicity-rhs (lambda () (append x y))))))))
-
-  (defthm no-duplicatesp-equal-of-append-of-append
-    (equal (no-duplicatesp-equal (append x y))
-           (no-duplicatesp-equal (append y x)))
-    :rule-classes ((:rewrite :loop-stopper ((x y))))
-    :hints (("Goal" :use ((:functional-instance
-                           acl2::no-duplicatesp-equal-same-by-duplicity
-                           (acl2::duplicity-hyp (lambda () t))
-                           (acl2::duplicity-lhs (lambda () (append x y)))
-                           (acl2::duplicity-rhs (lambda () (append y x)))))))))
+  ;; Moved to std/lists/duplicity
+  ;; (defthm duplicity-of-rev
+  ;;   (equal (acl2::duplicity a (rev x))
+  ;;          (acl2::duplicity a x)))
+;;   )
 
 
-(defsection flatten
+;; Moved all this to std/lists/no-duplicatesp
+;; (defsection no-duplicatesp-equal
 
-  (local (in-theory (enable flatten)))
+;;   (local (in-theory (enable no-duplicatesp-equal)))
 
-  (defthm true-listp-of-flatten
-    (true-listp (flatten x))
-    :rule-classes :type-prescription)
+;;   (defthm no-duplicatesp-equal-when-not-consp
+;;     (implies (not (consp x))
+;;              (equal (no-duplicatesp-equal x)
+;;                     t)))
 
-  (defthm flatten-when-not-consp
-    (implies (not (consp x))
-             (equal (flatten x)
-                    nil)))
+;;   (defthm no-duplicatesp-equal-of-cons
+;;     (equal (no-duplicatesp-equal (cons a x))
+;;            (and (not (member-equal a (double-rewrite x)))
+;;                 (no-duplicatesp-equal x))))
 
-  (defthm flatten-of-cons
-    (equal (flatten (cons a x))
-           (append a (flatten x))))
+;;   (defthm no-duplicatesp-equal-of-list-fix
+;;     (equal (no-duplicatesp-equal (list-fix x))
+;;            (no-duplicatesp-equal x)))
 
-  (defthm flatten-of-list-fix
-    (equal (flatten (list-fix x))
-           (flatten x)))
+;;   (defthm no-duplicatesp-equal-of-rev
+;;     (equal (no-duplicatesp-equal (rev x))
+;;            (no-duplicatesp-equal x))
+;;     :hints(("Goal"
+;;             :use ((:functional-instance
+;;                    acl2::no-duplicatesp-equal-same-by-duplicity
+;;                    (acl2::duplicity-hyp (lambda () t))
+;;                    (acl2::duplicity-lhs (lambda () (rev x)))
+;;                    (acl2::duplicity-rhs (lambda () x)))))))
 
-  (defthm flatten-of-append
-    (equal (flatten (append x y))
-           (append (flatten x) (flatten y))))
+;;   (defthm no-duplicatesp-equal-of-append-of-rev-1
+;;     (equal (no-duplicatesp-equal (append (rev x) y))
+;;            (no-duplicatesp-equal (append x y)))
+;;     :hints(("Goal"
+;;             :use ((:functional-instance
+;;                    acl2::no-duplicatesp-equal-same-by-duplicity
+;;                    (acl2::duplicity-hyp (lambda () t))
+;;                    (acl2::duplicity-lhs (lambda () (append (rev x) y)))
+;;                    (acl2::duplicity-rhs (lambda () (append x y))))))))
 
-  (local (defthm l1
-           (implies (and (subsetp-equal x y)
-                         (member-equal a (flatten x)))
-                    (member-equal a (flatten y)))))
+;;   (defthm no-duplicatesp-equal-of-append-of-rev-2
+;;     (equal (no-duplicatesp-equal (append x (rev y)))
+;;            (no-duplicatesp-equal (append x y)))
+;;     :hints(("Goal"
+;;             :use ((:functional-instance
+;;                    acl2::no-duplicatesp-equal-same-by-duplicity
+;;                    (acl2::duplicity-hyp (lambda () t))
+;;                    (acl2::duplicity-lhs (lambda () (append x (rev y))))
+;;                    (acl2::duplicity-rhs (lambda () (append x y))))))))
 
-  (local (defthm l2
-           (implies (subsetp-equal x y)
-                    (subsetp-equal (flatten x) (flatten y)))
-           :hints((acl2::witness
-                   :ruleset (acl2::subsetp-witnessing)))))
-
-  (defcong set-equiv set-equiv (flatten x) 1
-    :hints(("Goal" :in-theory (enable set-equiv))))
-
-  (defthm duplicity-of-flatten-of-rev
-    (equal (acl2::duplicity a (flatten (rev x)))
-           (acl2::duplicity a (flatten x)))
-    :hints(("Goal" :induct (len x))))
-
-  (defthm no-duplicatesp-equal-of-flatten-of-rev
-    (equal (no-duplicatesp-equal (flatten (rev x)))
-           (no-duplicatesp-equal (flatten x)))
-    :hints(("Goal"
-            :use ((:functional-instance
-                   acl2::no-duplicatesp-equal-same-by-duplicity
-                   (acl2::duplicity-hyp (lambda () t))
-                   (acl2::duplicity-lhs (lambda () (flatten (rev x))))
-                   (acl2::duplicity-rhs (lambda () (flatten x)))))))))
+;;   (defthm no-duplicatesp-equal-of-append-of-append
+;;     (equal (no-duplicatesp-equal (append x y))
+;;            (no-duplicatesp-equal (append y x)))
+;;     :rule-classes ((:rewrite :loop-stopper ((x y))))
+;;     :hints (("Goal" :use ((:functional-instance
+;;                            acl2::no-duplicatesp-equal-same-by-duplicity
+;;                            (acl2::duplicity-hyp (lambda () t))
+;;                            (acl2::duplicity-lhs (lambda () (append x y)))
+;;                            (acl2::duplicity-rhs (lambda () (append y x)))))))))
 
 
+;;(defsection flatten
 
-(defsection repeat
+  ;; (local (in-theory (enable flatten)))
 
-  (local (in-theory (enable repeat)))
+  ;; (defthm true-listp-of-flatten
+  ;;   (true-listp (flatten x))
+  ;;   :rule-classes :type-prescription)
 
-  (defthm repeat-when-zp
-    (implies (zp n)
-             (equal (repeat a n)
-                    nil)))
+  ;; (defthm flatten-when-not-consp
+  ;;   (implies (not (consp x))
+  ;;            (equal (flatten x)
+  ;;                   nil)))
 
-  (defthm consp-of-repeat
-    (equal (consp (repeat a n))
-           (posp n)))
+  ;; (defthm flatten-of-cons
+  ;;   (equal (flatten (cons a x))
+  ;;          (append a (flatten x))))
 
-  (defthm repeat-1
-    (equal (repeat a 1)
-           (list a)))
+  ;; (defthm flatten-of-list-fix
+  ;;   (equal (flatten (list-fix x))
+  ;;          (flatten x)))
 
-  (defthm car-of-repeat-increment
-    ;; Goofy rule that helps when recurring when repeat is involved.
-    (implies (natp n)
-             (equal (car (repeat x (+ 1 n)))
-                    x)))
+  ;; (defthm flatten-of-append
+  ;;   (equal (flatten (append x y))
+  ;;          (append (flatten x) (flatten y))))
 
-  (defthm cdr-of-repeat-increment
-    ;; Goofy rule that helps when recurring when repeat is involved.
-    (implies (natp n)
-             (equal (cdr (repeat x (+ 1 n)))
-                    (repeat x n))))
+  ;; moved to std/lists/sets
+  ;; (local (defthm l1
+  ;;          (implies (and (subsetp-equal x y)
+  ;;                        (member-equal a (flatten x)))
+  ;;                   (member-equal a (flatten y)))))
 
-  (defthm member-equal-of-repeat
-    (equal (member-equal a (repeat b n))
-           (if (equal a b)
-               (repeat b n)
-             nil))))
+  ;; (local (defthm l2
+  ;;          (implies (subsetp-equal x y)
+  ;;                   (subsetp-equal (flatten x) (flatten y)))
+  ;;          :hints((acl2::witness
+  ;;                  :ruleset (acl2::subsetp-witnessing)))))
+
+  ;; (defcong set-equiv set-equiv (flatten x) 1
+  ;;   :hints(("Goal" :in-theory (enable set-equiv))))
+
+  ;; moved to std/lists/no-duplicatesp
+  ;; (defthm duplicity-of-flatten-of-rev
+  ;;   (equal (acl2::duplicity a (flatten (rev x)))
+  ;;          (acl2::duplicity a (flatten x)))
+  ;;   :hints(("Goal" :induct (len x))))
+
+  ;; (defthm no-duplicatesp-equal-of-flatten-of-rev
+  ;;   (equal (no-duplicatesp-equal (flatten (rev x)))
+  ;;          (no-duplicatesp-equal (flatten x)))
+  ;;   :hints(("Goal"
+  ;;           :use ((:functional-instance
+  ;;                  acl2::no-duplicatesp-equal-same-by-duplicity
+  ;;                  (acl2::duplicity-hyp (lambda () t))
+  ;;                  (acl2::duplicity-lhs (lambda () (flatten (rev x))))
+  ;;                  (acl2::duplicity-rhs (lambda () (flatten x)))))))))
 
 
 
+;;(defsection repeat
 
-(defsection take
+;;  (local (in-theory (enable repeat)))
 
-  (local (in-theory (enable acl2::take-redefinition)))
+  ;; (defthm repeat-when-zp
+  ;;   (implies (zp n)
+  ;;            (equal (repeat a n)
+  ;;                   nil)))
 
-  (defthm take-under-iff
-    (iff (take n x)
-         (posp n)))
+  ;; moved to std/lists/repeat
+  ;; (defthm consp-of-repeat
+  ;;   (equal (consp (repeat a n))
+  ;;          (posp n)))
 
-  (defthm take-of-len-free
-    (implies (equal len (len x))
-             (equal (take len x)
-                    (list-fix x))))
+  ;; moved to std/lists/repeat
+  ;; (defthm repeat-1
+  ;;   (equal (repeat a 1)
+  ;;          (list a)))
 
-  (defthm take-of-repeat
-    (equal (take n (repeat a k))
-           (if (<= (nfix n) (nfix k))
-               (repeat a n)
-             (append (repeat a k)
-                     (repeat nil (- (nfix n) (nfix k))))))
-    :hints(("Goal"
-            :induct (dec-dec-induct k n)
-            :in-theory (enable repeat))))
+  ;; (defthm car-of-repeat-increment
+  ;;   ;; Goofy rule that helps when recurring when repeat is involved.
+  ;;   (implies (natp n)
+  ;;            (equal (car (repeat x (+ 1 n)))
+  ;;                   x)))
 
-  (defthm subsetp-equal-of-take
-    (implies (<= (nfix n) (len x))
-             (subsetp-equal (take n x) x))))
+  ;; (defthm cdr-of-repeat-increment
+  ;;   ;; Goofy rule that helps when recurring when repeat is involved.
+  ;;   (implies (natp n)
+  ;;            (equal (cdr (repeat x (+ 1 n)))
+  ;;                   (repeat x n))))
+
+  ;; (defthm member-equal-of-repeat
+  ;;   (equal (member-equal a (repeat b n))
+  ;;          (if (equal a b)
+  ;;              (repeat b n)
+  ;;            nil))))
+
+
+
+
+;; (defsection take
+
+;;   (local (in-theory (enable acl2::take-redefinition)))
+
+;;   ;; (defthm take-under-iff
+;;   ;;   (iff (take n x)
+;;   ;;        (posp n)))
+
+;;   ;; (defthm take-of-len-free
+;;   ;;   (implies (equal len (len x))
+;;   ;;            (equal (take len x)
+;;   ;;                   (list-fix x))))
+
+;;   ;; (defthm take-of-repeat
+;;   ;;   (equal (take n (repeat a k))
+;;   ;;          (if (<= (nfix n) (nfix k))
+;;   ;;              (repeat a n)
+;;   ;;            (append (repeat a k)
+;;   ;;                    (repeat nil (- (nfix n) (nfix k))))))
+;;   ;;   :hints(("Goal"
+;;   ;;           :induct (dec-dec-induct k n)
+;;   ;;           :in-theory (enable repeat))))
+
+;;   ;; (defthm subsetp-equal-of-take
+;;   ;;   (implies (<= (nfix n) (len x))
+;;   ;;            (subsetp-equal (take n x) x)))
+;;   )
 
 
 
@@ -531,43 +534,51 @@
 
   (local (in-theory (enable nthcdr)))
 
-  (defthm nthcdr-when-atom
-    (implies (atom x)
-             (equal (nthcdr n x)
-                    (if (posp n)
-                        nil
-                      x))))
+  ;; moved to std/lists/nthcdr
+  ;; (defthm nthcdr-when-atom
+  ;;   (implies (atom x)
+  ;;            (equal (nthcdr n x)
+  ;;                   (if (posp n)
+  ;;                       nil
+  ;;                     x))))
 
-  (defthm nthcdr-of-cons
-    (equal (nthcdr n (cons a x))
-           (if (zp n)
-               (cons a x)
-             (nthcdr (- n 1) x))))
+  ;; moved to std/lists/nthcdr
+  ;; (defthm nthcdr-of-cons
+  ;;   (equal (nthcdr n (cons a x))
+  ;;          (if (zp n)
+  ;;              (cons a x)
+  ;;            (nthcdr (- n 1) x))))
 
-  (defthm car-of-nthcdr
-    (equal (car (nthcdr i x))
-           (nth i x)))
+  ;; moved to std/lists/nthcdr
+  ;; (defthm car-of-nthcdr
+  ;;   (equal (car (nthcdr i x))
+  ;;          (nth i x)))
 
-  (defthm nthcdr-of-cdr
-    (equal (nthcdr i (cdr x))
-           (cdr (nthcdr i x))))
+  ;; moved to std/lists/nthcdr
+  ;; (defthm nthcdr-of-cdr
+  ;;   (equal (nthcdr i (cdr x))
+  ;;          (cdr (nthcdr i x))))
 
-  (defthm append-of-take-and-nthcdr
-    (implies (force (<= n (len x)))
-             (equal (append (take n x)
-                            (nthcdr n x))
-                    x)))
+  ;; moved to std/lists/nthcdr
+  ;; (defthm append-of-take-and-nthcdr
+  ;;   (implies (force (<= n (len x)))
+  ;;            (equal (append (take n x)
+  ;;                           (nthcdr n x))
+  ;;                   x)))
 
-  (defthm true-listp-of-nthcdr
-    (equal (true-listp (nthcdr n x))
-           (or (< (len x) (nfix n))
-               (true-listp x))))
+  ;; moved to std/lists/nthcdr
+  ;; (defthm true-listp-of-nthcdr
+  ;;   (equal (true-listp (nthcdr n x))
+  ;;          (or (< (len x) (nfix n))
+  ;;              (true-listp x))))
 
-  (defthm nthcdr-when-less-than-len-under-iff
-    (implies (< (nfix n) (len x))
-             (iff (nthcdr n x)
-                  t)))
+  ;; moved to std/lists/nthcdr
+  ;; (defthm nthcdr-when-less-than-len-under-iff
+  ;;   (implies (< (nfix n) (len x))
+  ;;            (iff (nthcdr n x)
+  ;;                 t)))
 
+  ;; not sure we really want to move this one
   (defthm nthcdr-of-increment
     ;; Goofy rule which may be useful when nthcdr is used in recursive
     ;; definitions.
@@ -575,6 +586,7 @@
              (equal (nthcdr (+ 1 n) x)
                     (cdr (nthcdr n x)))))
 
+  ;; BOZO eventually move to std/lists?
   (defthm acl2-count-of-nthcdr
     (equal (acl2-count (nthcdr n x))
            (if (<= (nfix n) (len x))
@@ -582,54 +594,57 @@
                   (acl2-count (take n x)))
              0)))
 
-  (defthm nthcdr-of-repeat
-    (equal (nthcdr n (repeat a k))
-           (if (<= (nfix n) (nfix k))
-               (repeat a (- (nfix k) (nfix n)))
-             nil))
-    :hints(("Goal"
-            :induct (dec-dec-induct k n)
-            :in-theory (enable repeat)))))
+  ;; moved to std/lists/repeat
+  ;; (defthm nthcdr-of-repeat
+  ;;   (equal (nthcdr n (repeat a k))
+  ;;          (if (<= (nfix n) (nfix k))
+  ;;              (repeat a (- (nfix k) (nfix n)))
+  ;;            nil))
+  ;;   :hints(("Goal"
+  ;;           :induct (dec-dec-induct k n)
+  ;;           :in-theory (enable repeat))))
+  )
 
 
+;; moved to std/lists/repeat
+;; (defsection equal-of-append-repeat
 
-(defsection equal-of-append-repeat
+;;   (local (defthm l0
+;;            (implies (equal (append (repeat a n) x) y)
+;;                     (and (equal (repeat a n) (take n y))
+;;                          (equal (nthcdr n y) x)))
+;;            :hints(("Goal" :in-theory (enable repeat)))))
 
-  (local (defthm l0
-           (implies (equal (append (repeat a n) x) y)
-                    (and (equal (repeat a n) (take n y))
-                         (equal (nthcdr n y) x)))
-           :hints(("Goal" :in-theory (enable repeat)))))
+;;   (local (defthm l1
+;;            (implies (not (<= (nfix n) (len y)))
+;;                     (not (equal (append (repeat a n) x) y)))
+;;            :hints(("Goal" :in-theory (enable repeat)))))
 
-  (local (defthm l1
-           (implies (not (<= (nfix n) (len y)))
-                    (not (equal (append (repeat a n) x) y)))
-           :hints(("Goal" :in-theory (enable repeat)))))
+;;   (local (defthm l2
+;;            (implies (and (<= n (len y))
+;;                          (equal (repeat a n) (take n y))
+;;                          (equal x (nthcdr n y)))
+;;                     (equal (append (repeat a n) x) y))
+;;            :hints(("Goal"
+;;                    :in-theory (disable append-of-take-and-nthcdr)
+;;                    :use ((:instance append-of-take-and-nthcdr
+;;                                     (n n)
+;;                                     (x y)))))))
 
-  (local (defthm l2
-           (implies (and (<= n (len y))
-                         (equal (repeat a n) (take n y))
-                         (equal x (nthcdr n y)))
-                    (equal (append (repeat a n) x) y))
-           :hints(("Goal"
-                   :in-theory (disable append-of-take-and-nthcdr)
-                   :use ((:instance append-of-take-and-nthcdr
-                                    (n n)
-                                    (x y)))))))
+;;   (defthm equal-of-append-repeat
+;;     (implies (case-split (<= n (len y)))
+;;              (equal (equal (append (repeat a n) x) y)
+;;                     (and (equal (repeat a n) (take n y))
+;;                          (equal x (nthcdr n y)))))
+;;     :hints(("Goal"
+;;             :use ((:instance l0)
+;;                   (:instance l2))))))
 
-  (defthm equal-of-append-repeat
-    (implies (case-split (<= n (len y)))
-             (equal (equal (append (repeat a n) x) y)
-                    (and (equal (repeat a n) (take n y))
-                         (equal x (nthcdr n y)))))
-    :hints(("Goal"
-            :use ((:instance l0)
-                  (:instance l2))))))
-
-(defthm rev-of-repeat
-  (equal (rev (repeat a n))
-         (repeat a n))
-  :hints(("Goal" :in-theory (enable repeat))))
+;; moved to std/lists/repeat
+;; (defthm rev-of-repeat
+;;   (equal (rev (repeat a n))
+;;          (repeat a n))
+;;   :hints(("Goal" :in-theory (enable repeat))))
 
 
 
@@ -713,59 +728,64 @@
 
 (defsection prefixp
 
-  ;; BOZO these should really get merged into unicode
-
+  ;; moved to std/lists/prefixp
   (local (in-theory (enable prefixp)))
 
-  (defcong list-equiv equal (prefixp x y) 1)
-  (defcong list-equiv equal (prefixp x y) 2)
+  ;; (defcong list-equiv equal (prefixp x y) 1)
+  ;; (defcong list-equiv equal (prefixp x y) 2)
 
-  ;; not needed since unicode has prefixp-when-not-consp-left
+  ;; moved to std/lists/prefixp
   ;; (defthm prefixp-when-atom
   ;;   (implies (atom x)
   ;;            (prefixp x y)))
 
-  ;; not needed since unicode has prefixp-of-cons-left
+  ;; moved to std/lists/prefixp
   ;; (defthm prefixp-of-cons
   ;;   (equal (prefixp (cons a x) y)
   ;;          (and (consp y)
   ;;               (equal a (car y))
   ;;               (prefixp x (cdr y)))))
 
-  ;; not needed since unicode has prefixp-when-not-consp-right
+  ;; moved to std/lists/prefixp
   ;; (defthm prefixp-when-atom-right
   ;;   (implies (atom y)
   ;;            (equal (prefixp x y)
   ;;                   (atom x))))
 
-  (defthm prefixp-of-take
-    (equal (prefixp (take n x) x)
-           (<= (nfix n) (len x)))
-    :hints(("Goal" :in-theory (enable acl2::take-redefinition))))
+  ;; moved to std/lists/prefixp
+  ;; (defthm prefixp-of-take
+  ;;   (equal (prefixp (take n x) x)
+  ;;          (<= (nfix n) (len x)))
+  ;;   :hints(("Goal" :in-theory (enable acl2::take-redefinition))))
 
+  ;; not sure whether this is a good rule that should go into std/lists
+  ;; since we have len-when-prefixp...
   (defthm prefixp-impossible-by-len
     (implies (< (len x) (len p))
              (equal (prefixp p x)
                     nil)))
 
-  (defthm prefixp-of-append
-    (prefixp x (append x y)))
+  ;; moved to std/lists/prefixp
+  ;; (defthm prefixp-of-append
+  ;;   (prefixp x (append x y)))
 
-  (defthm prefixp-when-equal-lengths
-    (implies (equal (len x) (len y))
-             (equal (prefixp x y)
-                    (list-equiv x y)))
-    :hints(("Goal" :in-theory (enable list-equiv))))
+  ;; moved to std/lists/prefixp
+  ;; (defthm prefixp-when-equal-lengths
+  ;;   (implies (equal (len x) (len y))
+  ;;            (equal (prefixp x y)
+  ;;                   (list-equiv x y)))
+  ;;   :hints(("Goal" :in-theory (enable list-equiv))))
 
-  (defthm prefixp-of-append-when-same-length
-    (implies (equal (len x) (len y))
-             (equal (prefixp x (append y z))
-                    (prefixp x y)))
-    :hints(("Goal"
-            :induct (prefixp x y)
-            :in-theory (enable prefixp
-                               list-equiv)))))
-
+  ;; moved to std/lists/prefixp
+  ;; (defthm prefixp-of-append-when-same-length
+  ;;   (implies (equal (len x) (len y))
+  ;;            (equal (prefixp x (append y z))
+  ;;                   (prefixp x y)))
+  ;;   :hints(("Goal"
+  ;;           :induct (prefixp x y)
+  ;;           :in-theory (enable prefixp
+  ;;                              list-equiv))))
+  )
 
 
 (defsection alistp

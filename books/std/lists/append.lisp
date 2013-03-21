@@ -25,6 +25,15 @@
                   (< 0 (len x)))
          :rule-classes ((:linear) (:rewrite))))
 
+(defthm append-when-not-consp
+  (implies (not (consp x))
+           (equal (append x y)
+                  y)))
+
+(defthm append-of-cons
+  (equal (append (cons a x) y)
+         (cons a (append x y))))
+
 (defthm true-listp-of-append
   (equal (true-listp (append x y))
          (true-listp y)))
@@ -33,6 +42,11 @@
   (equal (consp (append x y))
          (or (consp x)
              (consp y))))
+
+(defthm append-under-iff
+  (iff (append x y)
+       (or (consp x)
+           y)))
 
 (defthm len-of-append
   (equal (len (append x y))
@@ -70,11 +84,23 @@
                   (equal x1 x2)))
   :hints(("Goal" :induct (cdr-cdr-induction x1 x2))))
 
+(defthm append-of-nil
+  (equal (append x nil)
+         (list-fix x)))
+
+(defthm car-of-append
+  (equal (car (append x y))
+         (if (consp x)
+             (car x)
+           (car y))))
+
+(defthm associativity-of-append
+  (equal (append (append a b) c)
+         (append a (append b c))))
+
+
+;; BOZO this rule should really not be here
 (defthm character-listp-of-append
   (implies (and (character-listp x)
                 (character-listp y))
            (character-listp (append x y))))
-
-(defthm append-of-nil
-  (equal (append x nil)
-         (list-fix x)))

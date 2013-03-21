@@ -28,6 +28,7 @@
 (local (include-book "centaur/misc/filter-alist" :dir :system))
 (local (include-book "data-structures/list-defthms" :dir :system))
 (local (include-book "arithmetic/top" :dir :system))
+(local (include-book "std/lists/no-duplicatesp" :dir :system))
 (set-inhibit-warnings "theory" "non-rec")
 
 
@@ -152,11 +153,6 @@ sexprs.</p>")
    (defthm cdr-of-repeat
      (equal (cdr (repeat a n))
             (repeat a (- n 1)))
-     :hints(("Goal" :in-theory (enable repeat))))
-
-   (defthm consp-of-repeat
-     (equal (consp (repeat a n))
-            (posp n))
      :hints(("Goal" :in-theory (enable repeat))))
 
    (defthm hons-assoc-equal-of-atom

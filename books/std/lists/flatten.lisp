@@ -16,7 +16,7 @@
 ;; Place - Suite 330, Boston, MA 02111-1307, USA.
 
 (in-package "ACL2")
-(include-book "list-fix")
+(include-book "equiv")
 
 (defun binary-append-without-guard (x y)
   (declare (xargs :guard t))
@@ -40,25 +40,37 @@
                             (flatten (cdr x)))
     nil))
 
+(local (in-theory (enable flatten)))
+
+;; The inferred type prescription isn't strong enough, it just says
+;; (TS-UNION *TS-CONS* *TS-NIL*), so add a proper replacement.
+
+(in-theory (disable (:type-prescription flatten)))
+
+(defthm true-listp-of-flatten
+    (true-listp (flatten x))
+    :rule-classes :type-prescription)
+
 (defthm flatten-when-not-consp
   (implies (not (consp x))
            (equal (flatten x)
-                  nil))
-  :hints(("Goal" :in-theory (enable flatten))))
+                  nil)))
 
 (defthm flatten-of-cons
   (equal (flatten (cons a x))
-         (append a (flatten x)))
-  :hints(("Goal" :in-theory (enable flatten))))
+         (append a (flatten x))))
 
 (defthm flatten-of-list-fix
   (equal (flatten (list-fix x))
-         (flatten x))
-  :hints(("Goal" :induct (len x))))
+         (flatten x)))
+
+(defcong list-equiv equal (flatten x) 1
+  :hints(("Goal"
+          :in-theory (disable flatten-of-list-fix)
+          :use ((:instance flatten-of-list-fix (x x))
+                (:instance flatten-of-list-fix (x x-equiv))))))
 
 (defthm flattenp-of-append
   (equal (flatten (append x y))
          (append (flatten x)
-                 (flatten y)))
-  :hints(("Goal" :induct (len x))))
-
+                 (flatten y))))

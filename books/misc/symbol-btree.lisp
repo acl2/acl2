@@ -581,7 +581,7 @@ ACL2 !>
                (take n x)))
      :hints (("goal" :induct (symbol-alist-to-btree-aux x n)
               :in-theory (e/d (cdr-nthcdr car-nthcdr)
-                              ((:definition symbol-alist-to-btree-aux) 
+                              ((:definition symbol-alist-to-btree-aux)
                                default-car default-cdr zp-open default-+-2
                                |x < y  =>  0 < -x+y|
                                |x < y  =>  0 < y-x|

@@ -206,7 +206,7 @@ optimized version of @(see sbitset-pair-members).</p>"
                            expt-is-increasing-for-base->-1
                            expt-2-monotonic)))
 
-(local (in-theory (disable assoc-append)))
+(local (in-theory (disable associativity-of-append)))
 
 (local (defthm integer-listp-of-append
          (implies (and (integer-listp x)

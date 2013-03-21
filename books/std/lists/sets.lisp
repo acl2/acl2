@@ -23,6 +23,7 @@
 (include-book "equiv")
 (include-book "mfc-utils")
 (include-book "rev")
+(include-book "flatten")
 
 (local (defthm equal-of-booleans-to-iff
          (implies (and (booleanp a) (booleanp b))
@@ -513,4 +514,31 @@
   :hints(("Goal"
           :in-theory (disable revappend-removal)
           :use ((:instance revappend-removal (x x) (y nil))))))
+
+(encapsulate ()
+
+  (local (in-theory (enable flatten)))
+
+  (local (defthm l1
+           (implies (and (member e X)
+                         (member a e))
+                    (member a (flatten X)))))
+
+  (local (defthm l3
+           (implies (member a x)
+                    (subsetp a (flatten x)))
+           :hints(("goal" :induct (len x)))))
+
+  (local (defthm l5
+           (implies (subsetp x y)
+                    (subsetp (flatten x) (flatten y)))
+           :hints(("goal" :induct (len x)))))
+
+  (local (defthm l6
+           (implies (subsetp x y)
+                    (subsetp (flatten x) (flatten y)))
+           :hints(("goal" :induct (len x)))))
+
+  (defcong set-equiv set-equiv (flatten x) 1
+    :hints(("Goal" :in-theory (enable set-equiv)))))
 

@@ -1205,7 +1205,8 @@
        (equal (nthcdr n (update-nth n v x))
               (cons v
                     (nthcdr (1+ (nfix n)) x)))
-       :hints(("Goal" :in-theory (e/d (update-nth)))))
+       :hints(("Goal" :in-theory (e/d (update-nth)
+                                      (acl2::nthcdr-of-cdr)))))
      (defthm nthcdr-empty
        (implies (and (true-listp lst)
                      (<= (len lst) (nfix n)))

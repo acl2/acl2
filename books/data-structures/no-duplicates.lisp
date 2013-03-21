@@ -24,7 +24,8 @@
 
 (in-package "ACL2")
 
-(defthm assoc-append
+(defthm associativity-of-append
+  ;; Renamed by Jared for compatibility with data-structures/list-defthms
   (equal (append (append a b) c)
          (append a (append b c))))
 

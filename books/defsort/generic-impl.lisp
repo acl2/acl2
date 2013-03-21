@@ -24,8 +24,8 @@
 (include-book "std/lists/nthcdr" :dir :system)
 (include-book "std/lists/list-fix" :dir :system)
 (include-book "std/lists/revappend" :dir :system)
-(include-book "std/lists/duplicity" :dir :system)
-
+(include-book "std/lists/equiv" :dir :system)
+(include-book "std/lists/no-duplicatesp" :dir :system)
 (local (include-book "ihs/ihs-lemmas" :dir :system))
 (local (in-theory (disable floor mod)))
 
@@ -287,26 +287,6 @@
 
 (encapsulate
  ()
- (defthm true-listp-of-nthcdr-weak
-   (implies (true-listp x)
-            (true-listp (nthcdr n x))))
-
- (defthm take-of-take
-   (implies (< (nfix a) (nfix b))
-            (equal (take a (take b x))
-                   (take a x)))
-   :hints(("Goal" :in-theory (enable take-redefinition))))
-
- (defthm take-of-take-same
-   (equal (take a (take a x))
-          (take a x))
-   :hints(("Goal" :in-theory (enable take-redefinition))))
-
- (defthm take-of-len
-   (equal (take (len x) x)
-          (list-fix x))
-   :hints(("Goal" :in-theory (enable take-redefinition))))
-
  (defund first-half-len (len)
    (declare (xargs :guard (natp len)))
    (floor (nfix len) 2))
@@ -356,6 +336,7 @@
                    len))
    :hints(("Goal" :in-theory (enable first-half-len second-half-len)))))
 
+
 (defund comparable-mergesort-spec2 (x)
   (declare (xargs :measure (len x)
                   :hints(("Goal"
@@ -382,6 +363,8 @@
   (true-listp (comparable-mergesort-spec2 x))
   :rule-classes :type-prescription
   :hints(("Goal" :in-theory (enable comparable-mergesort-spec2))))
+
+
 
 (defthm comparable-mergesort-spec-redefinition
   (equal (comparable-mergesort-spec x)
@@ -444,7 +427,7 @@
                         (<= len (len x)))
                    (equal (NTHCDR (FIRST-HALF-LEN LEN) (TAKE LEN X))
                           (TAKE (SECOND-HALF-LEN LEN)
-                                        (NTHCDR (FIRST-HALF-LEN LEN) X))))
+                                (NTHCDR (FIRST-HALF-LEN LEN) X))))
           :hints(("Goal"
                   :in-theory (disable crock)
                   :use ((:instance crock
@@ -850,21 +833,17 @@
   :rule-classes :type-prescription
   :hints(("Goal" :in-theory (enable comparable-mergesort))))
 
-
-(defthm nthcdr-of-list-fix
-  (equal (nthcdr n (list-fix x))
-         (list-fix (nthcdr n x))))
-
 (defthm comparable-mergesort-spec2-of-list-fix
   (equal (comparable-mergesort-spec2 (list-fix x))
          (comparable-mergesort-spec2 x))
-  :hints(("Goal"
-          :in-theory (enable comparable-mergesort-spec2))))
+   :hints(("Goal"
+           :in-theory (e/d (comparable-mergesort-spec2))
+           :expand ((comparable-mergesort-spec2 (list-fix x))))))
 
 (defthm comparable-mergesort-redefinition
   (equal (comparable-mergesort x)
          (comparable-mergesort-spec x))
-  :hints(("Goal" :in-theory (enable comparable-mergesort))))
+  :hints(("Goal" :in-theory (e/d (comparable-mergesort)))))
 
 (defthm comparable-listp-of-comparable-mergesort
   (implies (force (comparable-listp x))

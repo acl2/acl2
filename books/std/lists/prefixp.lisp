@@ -16,7 +16,7 @@
 ;; Place - Suite 330, Boston, MA 02111-1307, USA.
 
 (in-package "ACL2")
-(include-book "list-fix")
+(include-book "equiv")
 (local (include-book "take"))
 (local (include-book "arithmetic/top" :dir :system))
 
@@ -63,6 +63,18 @@
          (prefixp x y))
   :hints(("Goal" :in-theory (enable prefixp))))
 
+(defcong list-equiv equal (prefixp x y) 1
+  :hints(("Goal"
+          :in-theory (disable prefixp-of-list-fix-left)
+          :use ((:instance prefixp-of-list-fix-left)
+                (:instance prefixp-of-list-fix-left (x x-equiv))))))
+
+(defcong list-equiv equal (prefixp x y) 2
+  :hints(("Goal"
+          :in-theory (disable prefixp-of-list-fix-right)
+          :use ((:instance prefixp-of-list-fix-right)
+                (:instance prefixp-of-list-fix-right (y y-equiv))))))
+
 (defthm len-when-prefixp
   (implies (prefixp x y)
            (equal (< (len y) (len x))
@@ -76,6 +88,35 @@
   (implies (prefixp x y)
            (equal (take (len x) y)
                   (list-fix x)))
-  :hints(("Goal"
-          :in-theory (enable (:induction prefixp)))))
+  :hints(("Goal" :in-theory (enable (:induction prefixp)))))
 
+(defthm prefixp-of-take
+  (equal (prefixp (take n x) x)
+         (<= (nfix n) (len x)))
+  :hints(("Goal" :in-theory (enable acl2::take-redefinition))))
+
+(defthm prefixp-reflexive
+  (prefixp x x)
+  :hints(("Goal" :induct (len x))))
+
+(defthm prefixp-of-append
+  (prefixp x (append x y)))
+
+(local (defthm equal-len-0
+         (equal (equal (len x) 0)
+                (atom x))))
+
+(defthm prefixp-of-append-when-same-length
+  (implies (equal (len x) (len y))
+           (equal (prefixp x (append y z))
+                  (prefixp x y)))
+  :hints(("Goal"
+          :induct (prefixp x y)
+          :in-theory (enable prefixp
+                             list-equiv))))
+
+(defthm prefixp-when-equal-lengths
+  (implies (equal (len x) (len y))
+           (equal (prefixp x y)
+                  (list-equiv x y)))
+  :hints(("Goal" :in-theory (enable prefixp list-equiv))))

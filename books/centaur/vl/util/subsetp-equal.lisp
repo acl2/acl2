@@ -29,6 +29,7 @@
 (include-book "std/lists/list-fix" :dir :system)
 (include-book "std/lists/take" :dir :system)
 (include-book "defsort/duplicated-members" :dir :system)
+(include-book "std/lists/no-duplicatesp" :dir :system)
 
 (local (include-book "arithmetic/top" :dir :system))
 (local (include-book "data-structures/list-defthms" :dir :system))
@@ -188,14 +189,16 @@
 
 ;; BOZO why are these here?
 
-(defthm take-of-len
-  (equal (take (len x) x)
-         (list-fix x))
-  :hints(("Goal" :in-theory (enable acl2::take-redefinition))))
+;; moved to std/lists/take
+;; (defthm take-of-len
+;;   (equal (take (len x) x)
+;;          (list-fix x))
+;;   :hints(("Goal" :in-theory (enable acl2::take-redefinition))))
 
-(defthm no-duplicatesp-equal-of-list-fix
-  (equal (no-duplicatesp-equal (list-fix x))
-         (no-duplicatesp-equal x)))
+;; shouldn't need this, see std/lists/no-duplicatesp
+;; (defthm no-duplicatesp-equal-of-list-fix
+;;   (equal (no-duplicatesp-equal (list-fix x))
+;;          (no-duplicatesp-equal x)))
 
 
 

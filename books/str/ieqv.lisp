@@ -20,6 +20,7 @@
 
 (in-package "STR")
 (include-book "char-case")
+(include-book "std/lists/list-defuns" :dir :system)
 (local (include-book "std/lists/nthcdr" :dir :system))
 (local (include-book "arithmetic"))
 
@@ -80,6 +81,7 @@ another.</p>
   (defcong icharlisteqv icharlisteqv (nthcdr n x) 2)
   (defcong icharlisteqv icharlisteqv (append x y) 1)
   (defcong icharlisteqv icharlisteqv (append x y) 2)
+  (defcong icharlisteqv icharlisteqv (acl2::rev x) 1)
   (defcong icharlisteqv icharlisteqv (revappend x y) 2)
   (defcong icharlisteqv icharlisteqv (revappend x y) 1)
 

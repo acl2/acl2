@@ -792,8 +792,8 @@ one index.</p>"
                                default-<-1 default-<-2
                                default-+-1 default-+-2
                                acl2::open-small-nthcdr
-                               acl2::nthcdr-when-not-natp
-                               acl2::nthcdr-when-non-consp
+                               acl2::nthcdr-when-zp
+                               acl2::nthcdr-when-atom
                                ACL2::|x < y  =>  0 < -x+y|
                                nthcdr len nth not
                                strnat<-aux

@@ -345,39 +345,39 @@ vl-emodwire-p)s: @('(name[high] name[high-1] ... name[low])')"
   :long "<p>The range is inclusive on both sides, so if @('low') and @('high')
 are the same you still get one wire.</p>"
 
-;; Here's a stupid performance testing loop.  It's somewhat sensitive to
-;; how full the ACL2 package is.  The times below were gathered in a fresh
-;; session that had just loaded the book up until here.
+  ;; Here's a stupid performance testing loop.  It's somewhat sensitive to
+  ;; how full the ACL2 package is.  The times below were gathered in a fresh
+  ;; session that had just loaded the book up until here.
 
   #||
- (progn (gc$)
-       (time$
-        (loop for i from 1 to 1000000 do
-              (vl::vl-emodwires-from-high-to-low "aTypicalWireName" 7 0))))
+  (progn (gc$)
+  (time$
+  (loop for i from 1 to 1000000 do
+  (vl::vl-emodwires-from-high-to-low "aTypicalWireName" 7 0))))
   ||#
 
-;; On fv-1, after adding fast-cat:
-;;   - Original version: 5.223 seconds, 896 MB
-;;   - Tail-recursive version: 5.094 seconds, 896 MB
-;;   - Tail-recursive, pre-encode names: 4.601 seconds, 896 MB
-;;
-;; So we're only 1.13x faster than the simple implementation.
-;;
-;; Note that the above loop interns 8 million symbols, which seems to
-;; take 3.33 seconds all by itself:
+  ;; On fv-1, after adding fast-cat:
+  ;;   - Original version: 5.223 seconds, 896 MB
+  ;;   - Tail-recursive version: 5.094 seconds, 896 MB
+  ;;   - Tail-recursive, pre-encode names: 4.601 seconds, 896 MB
+  ;;
+  ;; So we're only 1.13x faster than the simple implementation.
+  ;;
+  ;; Note that the above loop interns 8 million symbols, which seems to
+  ;; take 3.33 seconds all by itself:
 
   #||
- (progn (gc$)
-       (time$
-        (loop for i from 1 to 8000000 do
-              (intern "aTypicalWireName" "ACL2"))))
+  (progn (gc$)
+  (time$
+  (loop for i from 1 to 8000000 do
+  (intern "aTypicalWireName" "ACL2"))))
   ||#
 
-;; I don't really see a good way to do any better.  I tried making it faster
-;; using raw-lisp code that would reuse a character array, but this caused
-;; problems in CCL.  Looking at the CLHS documentation for "intern", it looks
-;; like changing the contents of the string you've interned is undefined, so I
-;; guess it's just not a valid optimization.
+  ;; I don't really see a good way to do any better.  I tried making it faster
+  ;; using raw-lisp code that would reuse a character array, but this caused
+  ;; problems in CCL.  Looking at the CLHS documentation for "intern", it looks
+  ;; like changing the contents of the string you've interned is undefined, so I
+  ;; guess it's just not a valid optimization.
 
   (defund vl-emodwires-from-high-to-low-aux (name high low acc)
     ;; Name must be pre-encoded.
@@ -440,9 +440,9 @@ are the same you still get one wire.</p>"
                     :measure (nfix (- (nfix high) (nfix low)))))
     (mbe :logic
          (vl-emodwires-from-high-to-low-aux (vl-emodwire-encode (string-fix name))
-                                   (nfix high)
-                                   (nfix low)
-                                   nil)
+                                            (nfix high)
+                                            (nfix low)
+                                            nil)
          :exec
          (let ((name (vl-emodwire-encode name)))
            (if (< high (expt 2 30))
@@ -493,6 +493,11 @@ are the same you still get one wire.</p>"
                      (nfix (- (nfix high) (nfix low)))
                      (len acc)))))
 
+  (local (defthm cons-same-onto-repeat
+           (equal (cons a (repeat a n))
+                  (repeat a (+ 1 (nfix n))))
+           :hints(("Goal" :in-theory (enable repeat)))))
+
   (local (defthm vl-emodwirelist->basenames-of-simpler-aux-function
            (implies (and (stringp name)
                          (natp high)
@@ -501,6 +506,7 @@ are the same you still get one wire.</p>"
                            (append (repeat name (+ 1 (nfix (- (nfix high) (nfix low)))))
                                    (vl-emodwirelist->basenames acc))))
            :hints(("Goal" :do-not '(generalize fertilize)))))
+
 
   (local (defthm member-equal-of-indicies-of-simpler-aux-function
            (implies (and (stringp name)

@@ -2183,7 +2183,7 @@
                              alist-vals-when-atom
                              no-duplicatesp-equal-non-cons
                              no-duplicatesp-equal-when-high-duplicity
-                             no-duplicatesp-equal-when-duplicity-badguy1
+                             ;no-duplicatesp-equal-when-duplicity-badguy1
                              consp-append
                              default-car default-cdr hons-assoc-equal
                              ; good-esim-modulep-st-subset-not-intersecting-inputs

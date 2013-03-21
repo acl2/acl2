@@ -20,7 +20,7 @@
 
 (in-package "ACL2")
 (include-book "uniquep")
-
+(local (include-book "std/lists/no-duplicatesp" :dir :system))
 
 
 ; DUPLICATED-MEMBERS and HONS-DUPLICATED-MEMBERS

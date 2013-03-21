@@ -20,6 +20,7 @@
 
 (in-package "STR")
 (include-book "xdoc/top" :dir :system)
+(include-book "std/lists/list-defuns" :dir :system)
 (include-book "std/lists/list-fix" :dir :system)
 (include-book "misc/definline" :dir :system)
 (local (include-book "arithmetic"))
@@ -156,6 +157,7 @@ same length and their elements must be @(see chareqv) to one another.</p>
   (defcong charlisteqv charlisteqv (nthcdr n x) 2)
   (defcong charlisteqv charlisteqv (append x y) 1)
   (defcong charlisteqv charlisteqv (append x y) 2)
+  (defcong charlisteqv charlisteqv (acl2::rev x) 1)
   (defcong charlisteqv charlisteqv (revappend x y) 2)
   (defcong charlisteqv charlisteqv (revappend x y) 1)
 

@@ -35,7 +35,7 @@
                    (:type-prescription acl2-count)
                    double-containment
                    acl2::acl2-count-when-member
-                   consp-by-len
+                   acl2::consp-by-len
                    consp-when-member-equal-of-cons-listp
                    vl-tokenlist-p-when-member-equal-of-vl-tokenlistlist-p
                    member-equal-when-member-equal-of-cdr-under-iff
