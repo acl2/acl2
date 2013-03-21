@@ -199,6 +199,45 @@
 ;; right?
 (in-theory (disable do-regex-match do-regex-match-precomp))
 
+; examples
+(local (assert! (mv-let (error-msg whole substrs)
+                  (do-regex-match "cdeAbfdEfDeghIj"
+                                  "ab([def]*)\\1([gh])"
+                                  (parse-options 'ere ; type
+                                                 nil  ; not strict-paren
+                                                 nil  ; not strict-brace
+                                                 nil  ; not strict-repeat
+                                                 t    ; case-insensitive
+                                                 ))
+                  (and (not error-msg)
+                       (equal whole "AbfdEfDeg")
+                       (equal substrs '("fdE" "g"))))))
+
+(local (assert! (mv-let (error-msg whole substrs)
+                  (do-regex-match "cdeAbfdEfDeghIj"
+                                  "ab([def]*)\\1([gh])"
+                                  (parse-options 'fixed ; type
+                                                 nil  ; not strict-paren
+                                                 nil  ; not strict-brace
+                                                 nil  ; not strict-repeat
+                                                 t    ; case-insensitive
+                                                 ))
+                  (and (not error-msg)
+                       (not whole)
+                       (not substrs)))))
+
+(local (assert! (mv-let (error-msg whole substrs)
+                  (do-regex-match "cdeAbfdEfDeghIj"
+                                  "cdeabfdefdeghij"
+                                  (parse-options 'fixed ; type
+                                                 nil  ; not strict-paren
+                                                 nil  ; not strict-brace
+                                                 nil  ; not strict-repeat
+                                                 t    ; case-insensitive
+                                                 ))
+                  (and (not error-msg)
+                       (equal whole "cdeAbfdEfDeghIj")
+                       (not substrs)))))
 
 (def-b*-binder match
   (declare (xargs :guard (and (consp forms) (not (cdr forms))
