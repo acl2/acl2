@@ -35,12 +35,12 @@
     ((eq ts-decoded '*TS-TRUE-LIST-OR-STRING*)   '(true-list string)) 
     ((eq ts-decoded '*TS-SYMBOL*   )             '(symbol) )
     ((eq ts-decoded '*TS-INTEGER*   )            '(integer) )
-    ((eq ts-decoded '*TS-NON-POSITIVE-RATIONAL*) '(0 negative-rational))
-    ((eq ts-decoded '*TS-NON-NEGATIVE-RATIONAL*) '(0 positive-rational))
+    ((eq ts-decoded '*TS-NON-POSITIVE-RATIONAL*) '(negative-rational 0))
+    ((eq ts-decoded '*TS-NON-NEGATIVE-RATIONAL*) '(positive-rational 0))
     ((eq ts-decoded '*TS-NEGATIVE-RATIONAL* )    '(negative-rational) )
     ((eq ts-decoded '*TS-POSITIVE-RATIONAL* )    '(positive-rational) )
-    ((eq ts-decoded '*TS-NON-NEGATIVE-INTEGER*)  '(0 pos)) 
-    ((eq ts-decoded '*TS-NON-POSITIVE-INTEGER*)  '(0 neg)) 
+    ((eq ts-decoded '*TS-NON-NEGATIVE-INTEGER*)  '(nat));(0 pos)) 
+    ((eq ts-decoded '*TS-NON-POSITIVE-INTEGER*)  '(neg 0)) 
     ((eq ts-decoded '*TS-RATIO*)                 '(ratio) )
     ((eq ts-decoded '*TS-CONS*  )                '(cons) )
     ((eq ts-decoded '*TS-BOOLEAN*)               '(boolean) )
@@ -95,6 +95,7 @@
   (if (endp freevars)
       ans
     (b* ((var (car freevars))
+; CHECK: Can acl2-type-alist have duplicate keys?
          (ts-info (assoc-eq var acl2-type-alist))
          (ts (if (consp ts-info) (cadr ts-info) nil)))
      (if ts
@@ -152,6 +153,9 @@
    (if (< (nfix pos1) (nfix pos2)) 
        typ1 
      typ2)));type table is already in reverse chrono order
+
+  
+
 
 (set-verify-guards-eagerness 0)
 

@@ -77,6 +77,7 @@
 (def get-enum-info% (type ctx wrld)
   (decl :sig ((possible-defdata-type-p symbolp plist-worldp) 
               -> enum-info%-p)
+;TODO: union types
         :doc "to fill")
 ; returns a well-formed enum-info defrec object
 ; r is the free variable in the enum-expression which
@@ -84,6 +85,7 @@
   (if (possible-constant-valuep type)
       (acl2::make enum-info% :size 1 :category :singleton :expr type) 
 ;ALSO HANDLE SINGLETON TYPES DIRECTLY
+    
     (let ((entry (assoc-eq type 
                            (table-alist 'defdata::types-info-table wrld))))
      
@@ -579,18 +581,21 @@ processed, the annotation of edges is also returned"
   ((total-runs dups . vacs)
    (cts . wts) 
    (cts-to-reach . wts-to-reach)
-   (start-time . end-time) all-bets-off? id) ; id is prettyified form
+   (start-time . end-time) 
+   all-bets-off? 
+   . (top-term top-vt-alist))
   NIL) 
 
 
-(def initial-gcs% (nc nw start pform)
+(def initial-gcs% (nc nw start top-term top-vt-alist)
   (decl :sig ((fixnump fixnump rationalp allp) -> gcs%-p)
         :doc "reset/initialized global coverage stats record")
   (acl2::make gcs% :cts 0 :wts 0 :cts-to-reach nc :wts-to-reach nw
         :total-runs 0 :vacs 0 :dups 0 
         :start-time start :end-time start
         :all-bets-off? nil
-        :id pform))
+        :top-term top-term
+        :top-vt-alist top-vt-alist))
 
 (defun gcs%-p (v)
   (declare (xargs :guard T))
@@ -599,7 +604,7 @@ processed, the annotation of edges is also returned"
      ('gcs% (total-runs dups . vacs)
             (cts . wts) 
             (cts-to-reach . wts-to-reach)
-            (start-time . end-time) all-bets-off? &)
+            (start-time . end-time) all-bets-off? . (& vt-al))
      (and (unsigned-29bits-p cts)
           (unsigned-29bits-p wts)
           (unsigned-29bits-p cts-to-reach)
@@ -609,7 +614,9 @@ processed, the annotation of edges is also returned"
           (unsigned-29bits-p total-runs)
           (unsigned-29bits-p dups)
           (unsigned-29bits-p vacs)
-          (booleanp all-bets-off?)))))
+          (booleanp all-bets-off?)
+          (symbol-alistp vt-al)
+          ))))
 
 (defmacro gcs-1+ (fld-nm)
   `(change gcs% ,fld-nm
@@ -699,7 +706,6 @@ eg:n/a")
     `(change run-hist% ,fld-nm
              (acl2::|1+F| (access run-hist% ,fld-nm)))))
 
-;;;CHANGE:07/05/12:trivially true/false formulas recorded exceptionally.
 (def record-testrun. (test-assignment-was A run-hist% gcs%)
   (decl :sig ((keyword symbol-doublet-listp run-hist%-p gcs%-p)
               ->
@@ -720,7 +726,7 @@ eg:n/a")
                              (gcs% (gcs-1+ cts))
                              (m    (access run-hist% |#cts|))
                              (run-hist% ;TODO:per subgoal num-cts stored??
-                              (if (and A (< m num-cts))
+                              (if (< m num-cts)
                                   (change run-hist% cts (cons A A-cts) )
                                 run-hist%));dont store extra 
                              (run-hist%   (run-hist-1+ cts)))
@@ -734,7 +740,7 @@ eg:n/a")
                              (gcs% (gcs-1+ wts))
                              (m    (access run-hist% |#wts|))
                              (run-hist%   
-                              (if (and A (< m num-wts))
+                              (if (< m num-wts)
                                   (change run-hist% wts (cons A A-wts))
                                 run-hist%));dont store extra
                              (run-hist%   (run-hist-1+ wts)))
@@ -974,10 +980,10 @@ overridden by entries in override-alist"
   (declare (xargs :guard T))
   (case-match v
     (('cs% dt st eqc ac)   (and (possible-defdata-type-p dt) 
-                           (possible-defdata-type-list-p st)
-                           (or (pseudo-termp eqc)
-                               (null eqc))
-                           (pseudo-term-listp ac)))))
+                                (possible-defdata-type-list-p st)
+                                (or (pseudo-termp eqc)
+                                    (eq 'defdata::empty-eq-constraint eqc))
+                                (pseudo-term-listp ac)))))
     
 
 (defun |is (symbol . cs%)| (v)
@@ -1008,15 +1014,6 @@ overridden by entries in override-alist"
 ;; TODO: conclusion is not taken care of now. Only negated conclusion
 ;; is treated, but we would like to be symmetric with respect to
 ;; searching cts and wts. --harshrc 4th March 2012.
-
-;;;; collect-type-constraints : Hyps * Concl -> alistof var cs%
-
-;;; Preconditions: Hyps and Concl are if-normalized terms with
-;;; at the least no top-level lambda-applications.
-;;; Walk over each hypothesis (termp), take care of the cases where
-;;; hypothesis is 1. (defdata-type-predicate x) 2. (equal x quoted-constant)
-;;; 3. (implies t1 t2) 4. (if t1 t2 t3) 5. (not x) 6. (equal x (g y))
-;;; 7. (R . ts)  TODO: some cases have not been fully implemented
 
 (def put-additional-constraints. (vs term v-cs%-alst.)
   (decl :sig ((symbol-list pseudo-term symbol-cs%-alist) 
@@ -1124,19 +1121,28 @@ overridden by entries in override-alist"
 Put defdata symbol types into defdata-type field, but put constants
 into eq-constraint field")
 ; Aug 30 '12 -- This function fixes a bug in Pete's GE demo, where the
-; type=alist had 'NIL as the type, which is a singleton defdata type and I was
-; not taking it into consideration when trying to run MEET on it, which cannot
-; handle types which are not in the defdata graph, and certainly constants are
-; not part of the defdata graph.
+; type=alist had 'NIL as the type, which is a singleton defdata type
+; and I was not taking it into consideration when trying to run MEET
+; on it, which cannot handle types which are not in the defdata graph,
+; and certainly constants are not part of the defdata graph.
   (if (endp vs)
       ans.
     (b* ((x (car vs))
          (prior-t (assoc-eq x type-alist))
+;type-alist of of form (listof (cons var (listof defdata-type)))
+;where defdata-type is possible-defdata-type-p. listof represents unions.
          ((unless (and prior-t
                        (consp (cdr prior-t))
                        (null (cddr prior-t))))
 ; TODO: Union types are ignored. Implement them.
-          (assimilate-type-alist (cdr vs) type-alist vl wrld ans.))
+; But note that since we always get this through a meet-type-alist, we
+; throw away the union type information there itself.
+          (prog2$
+           (cw? (and (verbose-flag vl) 
+                     (consp (cdr prior-t)) 
+                     (not (null (cddr prior-t))))
+"~|CGEN WARNING: Ignoring union types ~x0 ~|" (cdr prior-t))
+           (assimilate-type-alist (cdr vs) type-alist vl wrld ans.)))
          (typ-given (cadr prior-t))
          ((when (possible-constant-valuep typ-given))
 ; is a singleton, then treat it as a eq-constraint
@@ -1153,7 +1159,7 @@ into eq-constraint field")
   (acl2::make cs%
         :defdata-type 'acl2::all 
         :spilled-types '()
-        :eq-constraint NIL
+        :eq-constraint 'defdata::empty-eq-constraint
         :additional-constraints '()))
 
 (def collect-constraints% (hyps ordered-vars type-alist vl wrld)
@@ -1285,9 +1291,11 @@ thought about how to implement it.
 ;;; spilled-types and additional-constraints
   (case-match cs%
 ;('cs% defdata-type spilled-types eq-constraint additional-constraints)
-    (('cs% defdata-type & 'NIL &) ;we expose cs% record in this function
+    (('cs% defdata-type & 'defdata::empty-eq-constraint &) 
+; ACHTUNG: cs% defrec exposed
      (b* ((enum-info% (get-enum-info% defdata-type ctx wrld)))
       (mv (access enum-info% size) (access enum-info% expr))))
+
 ; if we see a equality constraint, we give preference to it over a
 ; defdata type, but only if the variables in the eq-constraint are
 ; already computed i.e already have an enumcall in the final answer
@@ -2085,6 +2093,37 @@ last decision made in Assign. For more details refer to the FMCAD paper.")
                            N vl sm blimit programp
                            ctx wrld state)))))
 
+
+(def meet-type-alist (A1 A2 vl wrld)
+  (decl :sig ((symbol-alistp symbol-alistp fixnum plist-world)
+              -> symbol-alistp)
+        :doc "take intersection of types in the type alist")
+; no duplicate keys. A1's ordering is used, it has to contain all the
+; variables that the user wants in his final type-alist
+; A1 and A2 and the return value have type
+; (listof (cons symbolp (listof possible-defdata-type-p)))
+; TODO: if val has more than 1 type, then we treat it as (list 'ALL)
+  (f* ((get-type... (types) (if (and (consp types)
+                                     (null (cdr types)))
+                                (car types)
+                              (prog2$
+                               (cw? (verbose-flag vl)
+       "~|CGen WARNING: throwing type information ~x0 ~|" (cdr types))
+                               (car types)))))
+  (if (endp A1)
+      nil
+    (b* (((cons var types1) (car A1))
+         (typ1 (get-type... types1))
+
+         (types2-entry (assoc-eq var A2))
+         (types2 (if types2-entry (cdr types2-entry) '(ACL2::ALL)))
+         (typ2 (get-type... types2)))
+         
+      (acons var (list (acl2::meet typ1 typ2 wrld))
+             (meet-type-alist (cdr A1) A2 vl wrld))))))
+
+
+
 ;;; The Main counterexample/witness generation function           
 (def cts-wts-search (name H C vars type-alist 
                           programp defaults 
@@ -2098,6 +2137,7 @@ last decision made in Assign. For more details refer to the FMCAD paper.")
               -> (mv erp (list boolean s-hist gcs%) state))
         :mode :program
         :doc 
+;Note: It does not update the global values @gcs% and @s-hist.
 "
 * Synopsis       
   Local interface to subgoal-level counterexample and witness
@@ -2120,12 +2160,14 @@ last decision made in Assign. For more details refer to the FMCAD paper.")
     accumulated in the search for cts and wts in the current conjecture
 
 * What it does
-  1. retrieve the various search/testing parameters
+  0. retrieve the various search/testing parameters
+  1. take intersection of acl2 type-alist with top-level one from gcs%.
+  
   2a. if form has no free variables exit with appropriate return val
   2b. otherwise call simple or incremental search
      depending on the search-strategy set in defaults.
   
-  3. return error triple containing stop? (described in simple-search)
+  3. return error triple with value (list stop? run-hist% gcs%)
 ")
 
   
@@ -2139,7 +2181,9 @@ last decision made in Assign. For more details refer to the FMCAD paper.")
        (sm (get-acl2s-default 'sampling-method defaults :random))
        (ss (get-acl2s-default 'search-strategy defaults :simple))
        (blimit (get-acl2s-default 'backtrack-limit defaults 2))
-       
+       (top-vt-alist (access gcs% top-vt-alist))
+       (type-alist (meet-type-alist type-alist top-vt-alist vl (w state)))
+         
        (form  `(implies (and ,@H) ,C)))
 ;  in
    (if (endp (all-vars-lst (cons C H)));(constant-value-expressionp form wrld)
@@ -2148,7 +2192,7 @@ last decision made in Assign. For more details refer to the FMCAD paper.")
              (trans-eval-single-value form ctx state))
             ((mv run-hist% gcs%)
              (record-testrun. (if c :witness :counterexample)
-                              '() 
+                              '() ;CONSTANT
                               run-hist% gcs%)))
 ;       in
         (prog2$
@@ -2195,6 +2239,11 @@ last decision made in Assign. For more details refer to the FMCAD paper.")
                     (mv T NIL state)))))))
 
    
+
+           
+  
+
+
 (def csearch (name H C 
                    type-alist elide-map 
                    programp defaults 
@@ -2260,7 +2309,6 @@ last decision made in Assign. For more details refer to the FMCAD paper.")
                          type-alist elide-map start))
          (run-hist% (access s-hist-entry% run-hist))
          (gcs% (get-gcs%-global))
-
          ((mv erp (list stop? run-hist% gcs%) state)
           (cts-wts-search name H C vars type-alist programp 
                           defaults run-hist% gcs%
@@ -2558,7 +2606,7 @@ doesnt work on an make-event
 
 (set-verify-guards-eagerness 1)
 
-(defun get-top-level-assignment (A top-vars top-cl 
+(defun get-top-level-assignment (A top-vars top-term 
                                    elided-var-map counteregp state)
   (declare (xargs :stobjs (state)
                   :guard (and (symbol-alistp elided-var-map)
@@ -2591,7 +2639,7 @@ doesnt work on an make-event
          (trans-eval
           `(let* ,A
              (declare (ignorable ,@(strip-cars A)))
-             (list ,top-cl
+             (list ,top-term
 ; make list/let A (list `(var ,var) ...) 
                    ,(make-var-value-list-bindings top-vars nil)))
           'get-top-level-assignment state T))) ;defttach ok
@@ -2612,7 +2660,7 @@ doesnt work on an make-event
 ;; added a flag wether bindings are for a counter-example or not
 ;; Sep 5th 2011 - removed state, and use cw?
 ;; April 30 2012 - put back state!
-(defun print-assignment (A top-vars top-cl elided-var-map
+(defun print-assignment (A top-vars top-term elided-var-map
                            vl counteregp state)
   (declare (xargs :stobjs (state)
                   :guard (and (symbol-doublet-listp A)
@@ -2630,7 +2678,7 @@ doesnt work on an make-event
 ;show top goal, show counterexamples and witness in 
 ;terms of the original free variables(of the top clause)
        ((er (list consistent? top-A))
-        (get-top-level-assignment A top-vars top-cl 
+        (get-top-level-assignment A top-vars top-term 
                                   elided-var-map counteregp state))
 
        ((when consistent?)
@@ -2671,7 +2719,7 @@ doesnt work on an make-event
 
 
 ;added a flag indicating wether we are printing counterexamples or witnesses
-(defun print-assignments (A-lst top-vars top-cl 
+(defun print-assignments (A-lst top-vars top-term 
                                elided-var-map vl counteregp state)
 ;perfix-A is assignments made incrementally in dpll search
   (declare (xargs :stobjs (state)
@@ -2683,17 +2731,17 @@ doesnt work on an make-event
    (if (endp A-lst)
      (value nil)
      (er-progn
-      (print-assignment (car A-lst) top-vars top-cl
+      (print-assignment (car A-lst) top-vars top-term
                         elided-var-map vl counteregp state)
 ; (naive-print-bindings (convert-conspairs-to-listpairs (car bindings-lst))
 ;                       orig-vars vl)
-      (print-assignments (cdr A-lst) top-vars top-cl
+      (print-assignments (cdr A-lst) top-vars top-term
                           elided-var-map vl counteregp state))))
 (logic)
 
 
 ; 30th Aug '12 keep global track of num of wts/cts to print
-(def print-cts/wts (s-hist cts-p nc nw top-vars top-form vl state)
+(def print-cts/wts (s-hist cts-p nc nw top-vars top-term vl state)
   (decl :mode :program
         :sig ((s-hist-p booleanp symbol-listp all natp state) 
               -> (mv erp all state))
@@ -2705,22 +2753,24 @@ doesnt work on an make-event
          (run-hist% (access s-hist-entry% run-hist))
          (hyps      (access s-hist-entry% hyps))
          (concl     (access s-hist-entry% concl))
+         ((when (and cts-p (zp nc)))
+; number of cts yet to be printed is zero, skip 
+          (value nil))
+         ((when (and (not cts-p) (zp nw))) 
+; number of wts yet to be printed is zero, skip 
+          (value nil))
+         
          (A-lst (if cts-p 
                     (access run-hist% cts)
                   (access run-hist% wts)))
          (elide-map (access s-hist-entry% elide-map))
+         (- (cw? (debug-flag vl) 
+"~|DEBUG/print-cts/wts: A-lst:~x0 top-vars:~x1 elide-map:~x2~|" 
+A-lst top-vars elide-map))
          ((when (endp A-lst)) 
 ; none found, so move on to the next subgoal
           (print-cts/wts (cdr s-hist) cts-p 
-                         nc nw top-vars top-form vl state))
-         ((when (and cts-p (zp nc))) 
-; number of cts yet to be printed is zero, skip the current subgoals cts
-          (print-cts/wts (cdr s-hist) cts-p 
-                            nc nw top-vars top-form vl state))
-         ((when (and (not cts-p) (zp nw))) 
-; number of wts yet to be printed is zero, skip the current subgoals wts
-          (print-cts/wts (cdr s-hist) cts-p 
-                            nc nw top-vars top-form vl state))
+                         nc nw top-vars top-term vl state))
          (nc (- nc (if cts-p (len A-lst) 0)))
          (nw (- nw (if cts-p 0 (len A-lst))))
          (- (cw? (normal-output-flag vl) "~| [found in : ~x0]~%" name))
@@ -2729,37 +2779,33 @@ doesnt work on an make-event
          (- (cw? (and (not (equal "top" name))
                       cts-p
                       (normal-output-flag vl)) "~x0~%" pform))
-         (- (cw? (system-debug-flag vl) 
-"~| A-lst:~x0 top-vars:~x1 elide-map:~x2~|" A-lst top-vars elide-map)))
+         )
      (er-progn
-      (print-assignments A-lst top-vars top-form elide-map vl cts-p state)
-      (print-cts/wts (cdr s-hist) cts-p nc nw top-vars top-form vl state)))))
+      (print-assignments A-lst top-vars top-term elide-map vl cts-p state)
+      (print-cts/wts (cdr s-hist) cts-p nc nw top-vars top-term vl state)))))
 
 
-;; precondition: s-hist shud at least contain an entry of "top"
-(def print-s-hist (s-hist printc? printw? nc nw vl state)
+(def print-s-hist (s-hist printc? printw? nc nw 
+                          top-term top-vars vl state)
+;nc and nw are the number of cts/wts requested by user (acl2s defaults)
   (decl :mode :program
-        :sig ((s-hist-p bool bool natp natp fixnum state) -> (mv erp all state))
+        :sig ((s-hist-p bool bool natp natp 
+                        pseudo-termp symbol-list fixnum state) 
+              -> (mv erp all state))
         :doc "print counterexample and witnesses recorded in testing subgoal
 history s-hist.")
-  (b* (((cons & s-hist-entry%) (assoc-equal "top" s-hist))
-;replaceing & with "top" gives error. '"top" is fine
-       (top-vars (access s-hist-entry% vars))
-       (top-form `(implies (and ,@(access s-hist-entry% hyps)) 
-                          ,(access s-hist-entry% concl)))
-       
-       ((er &) (if printc?
+  (b* (((er &) (if printc?
                    (prog2$
                     (cw? (normal-output-flag vl)
 "~|~%We falsified the conjecture. Here are counterexamples:~|")
-                    (print-cts/wts s-hist T nc nw top-vars top-form vl state))
+                    (print-cts/wts s-hist T nc nw top-vars top-term vl state))
                  (value nil)))
 
        ((er &) (if printw?
                    (prog2$
                     (cw? (normal-output-flag vl)
 "~|~%Cases in which the conjecture is true include:~|")
-                    (print-cts/wts s-hist NIL nc nw top-vars top-form vl state))
+                    (print-cts/wts s-hist NIL nc nw top-vars top-term vl state))
                  (value nil))))
     (value nil)))
 (logic)
@@ -2791,9 +2837,9 @@ history s-hist.")
        (- (cw? (debug-flag vl) "~|testing summary - gcs% = ~x0~%" gcs%))
        (- (cw? (debug-flag vl) "~|testing summary - s-hist = ~x0~%" s-hist))
        ((unless (and (consp s-hist) (consp (car s-hist))
-                     (equal "top" (caar s-hist))
                      (> (access gcs% total-runs) 0)))
-        (value (cw? (normal-output-flag vl) "~|No testing summary to print~|")))
+        (value (cw? (normal-output-flag vl) 
+"~|No testing summary to print~|")))
                   
        (num-subgoals (len s-hist))
        
@@ -2802,7 +2848,7 @@ history s-hist.")
      (('gcs% (total dups . vacs) 
              (num-cts . num-wts) 
              (cts-to-reach . wts-to-reach) 
-             (start . end) & id)
+             (start . end) & . &)
 ;ACHTUNG: gcs% defrec exposed
       (b* ((uniq-runs  (my+ num-wts num-cts))
            (sat-runs (my- total (my+ vacs dups)))
@@ -2810,7 +2856,9 @@ history s-hist.")
            (delta-testing-t-total (total-time-spent-in-testing s-hist))
            (-  (cw? (normal-output-flag vl) 
                 "~%**Summary of testing**~%"))
-           (pform id)
+           (top-term (access gcs% top-term))
+           (pform (acl2::prettyify-clause 
+                   (list top-term) nil (w state)))
            (- (cw? (verbose-flag vl)
                    "~x0~%" pform))
            (- (cw? (normal-output-flag vl)
@@ -2839,11 +2887,13 @@ history s-hist.")
                            (newline (standard-co state) state)
                            (value :invisible))
                      (value nil)))
-               
+           (top-vars (all-vars top-term))
            ((er &)  (print-s-hist s-hist 
                                   (> num-cts 0);print cts if true
                                   (> num-wts 0);print wts if true
-                                  cts-to-reach wts-to-reach vl state)))
+                                  cts-to-reach wts-to-reach 
+                                  top-term top-vars
+                                  vl state)))
        (value nil)))
      (& (value (cw? (normal-output-flag vl) "~|BAD gcs% found in globals~|"))))))
 
@@ -2853,6 +2903,42 @@ history s-hist.")
 ;----------------------------------------------------------------
 ;                         PRINT end                             |
 ;----------------------------------------------------------------
+
+;The following 2 function only look at the outermost implies form
+;get hypothesis from acl2 term being proved.
+(defun get-hyp (form)
+  (declare (xargs :guard t))
+  (if (atom form)
+    t;no hyps is equivalent to true
+    (if (and (consp (cdr form))
+             (eq 'implies (first form)))
+      (second form)
+      t)));;no hyps is equivalent to true
+
+; use expand-assumptions-1 instead when you have a term
+(defun get-hyps (pform)
+  (declare (xargs :guard t))
+  (b* ((hyp (get-hyp pform))
+       ((when (eq hyp 't)) nil)
+       ((unless (and (consp hyp)
+                     (consp (cdr hyp))
+                     (eq (car hyp) 'and)))
+        (list hyp))
+       (rst (cdr hyp)))
+    rst))
+
+
+;get conclusion from acl2 term being proved
+(defun get-concl (form)
+  (declare (xargs :guard t))
+  (if (atom form)
+    form
+    (if (and (consp (cdr form))
+             (consp (cddr form))
+             (eq 'implies (first form)))
+      (third form)
+      form)))
+
 
 
 (defun get-acl2-type-alist (cl pspv vl wrld state)
@@ -2904,34 +2990,89 @@ history s-hist.")
                                         (debug-flag vl)))
        (defaults (acl2s-defaults-alist))
        )
-       
-   (csearch name hyps concl 
-            vt-acl2-alst ord-elide-map 
-            NIL defaults 
-            ctx wrld state)))
+;   in       
+    (csearch name hyps concl 
+             vt-acl2-alst ord-elide-map 
+             NIL defaults 
+             ctx wrld state)))
 
-(def dumb-type-alist-infer (H wrld ans.)
-  (decl :sig ((pseudo-term-listp fixnump plist-worldp 
+
+
+(def type-alist-infer-from-term (term vl wrld ans.)
+  (decl :sig ((pseudo-term-listp fixnum plist-worldp symbol-alistp) 
+              -> symbol-alistp)
+        :doc "main aux function to infer type-alist from term")
+; ans. is a type alist and has type
+; (symbol . (listof possible-defdata-type-p))
+  (f* ((add-eq-typ... (t1) (if (acl2::equivalence-relationp R wrld)
+                               (put-assoc x (list t1) ans.)
+                             ans.)))
+    
+; Copied from v-cs%-alist-from-term. Keep in sync!
+  (case-match term
+    
+;the following is a rare case (I found it when the conclusion is nil
+;and its negation is 'T
+    (('quote c) (declare (ignore c))  ans.) ;ignore quoted constant terms 
+
+;TODO possible field variable (i.e f is a getter/selector) Note that
+; term cannot have a lambda applicaton/let, so the car of the term is
+; always a function symbol if term is a consp.
+    ((P (f . &)) (declare (ignore P f))  ans.)
+
+;x has to be an atom below, otherwise, we would have caught that case above.
+    (('not x)      (put-assoc x (list ''nil) ans.))
+    
+    ((P x)   (b* ((tname (is-type-predicate P wrld))
+                  ((unless tname) ans.)
+                  (curr-typs-entry (assoc-eq x ans.))
+                  ((unless (and curr-typs-entry 
+                                (consp (cdr curr-typs-entry))))
+; no or invalid entry, though this is not possible, because we call it with
+; default type-alist of ((x . ('ALL)) ...)
+                   ans.)
+                  (curr-typs (cdr curr-typs-entry))
+                  (- (cw? (and (verbose-flag vl) 
+                               (consp (cdr curr-typs)))
+"~|CGen WARNING: Ignoring union types ~x0 ~|" curr-typs))
+                     
+                  (curr-typ (car curr-typs))
+                  ((when (possible-constant-valuep curr-typ)) ans.)
+                   
+                  (final-typ (acl2::meet tname curr-typ wrld)))
+               (put-assoc x (list final-typ) ans.)))
+
+    ((R (f . &) (g . &)) (declare (ignore R f g)) ans.) ;ignore
+
+;x has to be an atom below, otherwise, we would have caught that case
+;above.
+    ((R x ('quote c))    (add-eq-typ... (kwote c)))
+    ((R ('quote c) x)    (add-eq-typ... (kwote c)))
+    ;((R x (f . args))    (add-eq-constraint... (acl2::cons-term f args)))
+    ;((R (f . args) x)    (add-eq-constraint... (acl2::cons-term f args)))
+    
+    ;; has to be a (R t1 t2 ...) or atomic term
+    (&                   ans.))))
+
+(def type-alist-infer-from-terms (H vl wrld ans.)
+  (decl :sig ((pseudo-term-listp fixnum plist-worldp 
                                  symbol-alistp) -> symbol-alistp)
-        :doc "dumb extraction of defdata types from terms in H")
+        :doc "aux function for dumb extraction of defdata types from terms in H")
   (if (endp H)
       ans.
-    (let ((term (car H)))
-    (case-match term
-      ((P x)   
-       (b* ((tname (is-type-predicate P wrld))
-            ((cons & types) (assoc-eq x ans.))
-;ignore all other types TODO
-            (curr-typ (if (consp types) (car types) 'ACL2::ALL))
-            (final-typ (if tname 
-                           (acl2::meet tname curr-typ wrld)
-                         curr-typ)))
-        
-        (dumb-type-alist-infer (cdr H) wrld
-                               (put-assoc x final-typ ans.))))
+    (b* ((term (car H))
+         (ans. (type-alist-infer-from-term term vl wrld ans.)))
+      (type-alist-infer-from-terms (cdr H) vl wrld ans.))))
 
-      (&  (dumb-type-alist-infer (cdr H) wrld ans.))))))
-      
+(def dumb-type-alist-infer (H vars vl wrld)
+  (decl :sig ((pseudo-term-listp symbol-listp fixnum plist-worldp) 
+              -> symbol-alistp)
+        :doc "dumb infer defdata types from terms in H")
+  (type-alist-infer-from-terms 
+   H vl wrld (pairlis$ vars (make-list (len vars)
+                                       :initial-element 
+                                       (list 'ACL2::ALL)))))
+
       
 (mutual-recursion
 (defun all-functions-definedp (term wrld)
@@ -2956,6 +3097,38 @@ history s-hist.")
     (and (all-functions-definedp (car terms) wrld)
          (all-functions-definedp-lst (cdr terms) wrld)))))
               
+
+(defun update-gcs%-top-level-fields (term vl ctx state)
+  (declare (xargs :mode :program 
+                   :stobjs (state)))
+
+  (b* ((cse-stack (@ cgen-stats-event-stack))
+       ((when ;(acl2::function-symbolp 'inside-test? (w state))
+            (and (consp cse-stack)
+                 (consp (cdr cse-stack))
+; if the second item is an inside-test? entry, then the first one would
+; be a copy of it, and we better not initialize our own globals
+                 (assoc-keyword :inside-test? (cadr cse-stack))))
+        state);dont overwrite initial work by test? i.e "top" entry
+
+       ;; update 
+       (gcs% (get-gcs%-global))
+       (gcs% (change gcs% top-term term))
+; ACHTUNG - get-hyps only looks at outermost implies.
+       ((mv hyp concl) (mv (get-hyp term) (get-concl term)))
+       (hyps (if (eq hyp 't) '() (acl2::expand-assumptions-1 hyp)))
+       (vars (vars-in-dependency-order hyps concl vl (w state)))
+       (d-type-al (dumb-type-alist-infer
+                   (cons (dumb-negate-lit concl) hyps) vars vl (w state)))
+       (gcs% (change gcs% top-vt-alist d-type-al))
+       (- (cw? (debug-flag vl)
+               "~|INTERNAL: update-top : ~x0 dumb top vt-alist: ~x1 ~|"
+               term d-type-al))
+       (state (put-gcs%-global gcs%)) ;in top of cse-stack
+       
+       )
+       
+    state))
         
 ;; The following function implements a callback function (computed hint)
 ;; which calls the counterexample generation testing code. Thus the
@@ -3020,6 +3193,13 @@ id processor ctx (acl2::prettyify-clause cl nil (w state)) (len hist)))
        (name (acl2::string-for-tilde-@-clause-id-phrase id))
        (wrld (w state))
        (gcs% (get-gcs%-global))
+       (top-level-term (acl2::access acl2::prove-spec-var 
+                                     pspv :user-supplied-term))
+       (state (if (equal (ffn-symb (access gcs% top-term))
+                         'dummy-topform)
+                  (update-gcs%-top-level-fields top-level-term vl ctx state)
+                state))
+       
        (- (cw? (verbose-flag vl)
 "~|Cgen: At checkpoint ~x0 ~x1~|" name processor))
        ((mv & stop? state) 
@@ -3072,7 +3252,15 @@ id processor ctx (acl2::prettyify-clause cl nil (w state)) (len hist)))
        (er-progn
         (if (acl2::function-symbolp 'inside-test? (w state))
             (value nil)
-          (print-testing-summary-fn vl state))
+; Lets update the global end time before printing. 18th March 2013
+; Note: end-time is not updated in case of no abort. But
+; thats fine, since the user has no way of asking cgen
+; to print testing summary after returning from a thm/test?. 
+          (b* (((mv end state) (acl2::read-run-time state))
+               (gcs%  (get-gcs%-global))
+               (gcs%  (change gcs% end-time end))
+               (state (put-gcs%-global gcs%)))
+            (print-testing-summary-fn vl state)))
         (mv t nil state))
 
 ; Check for false generalizations. TODO also do the same for
@@ -3084,13 +3272,23 @@ id processor ctx (acl2::prettyify-clause cl nil (w state)) (len hist)))
               (type-alist (get-acl2-type-alist gen-cl pspv vl wrld state))
               ((mv H C) (clause-mv-hyps-concl gen-cl))
               (vars (vars-in-dependency-order H C vl wrld))
+;TODO.now- check the type of vt-alist.
+              (vt-alist (pairlis$ vars (make-list (len vars)
+                                                  :initial-element 
+                                                  (list 'ACL2::ALL))))
+              (term (if (null H)
+                        C
+                        `(implies (and ,@H) ,C)))
+; the above is not really a term, but almost, we can assume AND is a function.
+; hopefully it will not affect any computation based on it, certainly will
+; not affect all-vars. CHECK! 20th March 2013
               ((mv erp (list & run-hist% &) state)
                (cts-wts-search name H C vars
                            type-alist NIL
                            (acl2s-defaults-alist) 
                            *initial-run-hist%* 
 ; we dont care about witnesses and the start time and do no accumulation.
-                           (initial-gcs% 1 0 0 (cons H C))
+                           (initial-gcs% 1 0 0 term vt-alist)
                            ctx wrld state))
               (num-cts-found (access run-hist% |#cts|)))
           (value (if (and (not erp)
@@ -3114,80 +3312,6 @@ id processor ctx (acl2::prettyify-clause cl nil (w state)) (len hist)))
    ))
 
 
-;; Jan 9th 2013.
-;; At the very beginning (null hist) initializes gcs% and s-hist for the
-;; top entry in the cgen-stats-event-stack
- (defun initialize-cgen-globals-on-empty-history (id cl hist ctx state keyword-alist)
-   (declare (xargs :mode :program 
-                   :stobjs (state)))
-
-   (b* ((vl (acl2s-defaults :get verbosity-level)) 
-       ((mv hyps concl) (clause-mv-hyps-concl cl))
-       (pform (acl2::prettyify-clause cl nil (w state)))
-       (- (cw? (debug-flag vl)
-               "~|DEBUG: initialize-cgen-globals : id=~x0 ctx= ~x1 ~ formula=~x2 hist-len=~x3~|"                
-               id  ctx pform (len hist)))
-       
-       (cse-stack (@ cgen-stats-event-stack))
-       ((when (null hist)) ;thanks to Matt! (earlier code was buggy)
-;Top Goal (The beginning of waterfall)
-        (b* (((when ;(acl2::function-symbolp 'inside-test? (w state))
-                  (and (consp cse-stack)
-                       (consp (cdr cse-stack))
-; if the second item is an inside-test? entry, then the first one would
-; be a copy of it, and we better not initialize our own globals
-                       (assoc-keyword :inside-test? (cadr cse-stack))))
-              (value keyword-alist));dont overwrite initial work by test? i.e "top" entry
-            
-             (- (cw? (verbose-flag vl) "~| Initializing cgen globals for ~x0 ...~%" ctx))
-             ((mv start state) (acl2::read-run-time state))
-             (gcs% (initial-gcs% (acl2s-defaults :get num-counterexamples)
-                                 (acl2s-defaults :get num-witnesses)
-                                 start pform))
-             (state (put-gcs%-global gcs%)) ;put in top of cse-stack
-             (vars (vars-in-dependency-order hyps concl vl (w state)))
-             (?d-type-alist (dumb-type-alist-infer
-                            (cons (dumb-negate-lit concl) hyps) 
-                            (w state)
-                            (pairlis$ vars (make-list (len vars)
-                                                      :initial-element 
-;TODO - check if type-alist is symbol-alist or symbol-doublet-listp
-;30th Aug '12: it seems acl2 type-alist is (listof (cons sym (listof type)))
-                                                      (list 'ACL2::ALL)))))
-             (- (cw? (verbose-flag vl)
-                     "~|INTERNAL: initialize-cgen-globals : acl2 type-alist: ~x0 ~|" 
-                     d-type-alist))
-
-; Note on why "top" s-hist-entry is being inserted into s-hist.
-; "top" is the name of the top-level goal and might be slightly different that "goal".
-; To maintain compatibility with test?, I explicitly add an
-; an entry with "top" key, because I check the validity of a s-hist-entry
-; by searching for the above key. Moreover its important to keep around the
-; the top-level hyps concl if the "Goal" entry gets pre-processed and we lose
-; some (syntactic type) information. Note that we will never see s-hist-entry
-; of "top" being filled with run time testing history, since the first call
-; to csearch function would be from the first checkpoint, which might or might
-; not be "goal".
-          
-; TODO: Not recording top-level type information. But I probably dont
-; have to do it here, later on, we can walk the HIST and obtain it
-             ;; (assign print-summary-user-flag NIL) ;reset
-             (s-hist 
-              (acons "top" 
-                     (initial-s-hist-entry% "top" hyps concl vars 
-                                            '() '() start)
-                     '()))
-             (state (put-s-hist-global s-hist))) ;put in top of cse-stack
-          ;;in 
-          (value keyword-alist))))
-;    in
-; no-op wrt hints ; i.e an observer hint that resets some state variables.
-   (value keyword-alist)))
-
-; reset the globals at the top of cgen-stats-event-stack in the following computed hint
-; which will do the needful at (null hist) i.e at the very beginning of the proof attempt.
-(defmacro reset-cgen-globals-hint ()
-  `(initialize-cgen-globals-on-empty-history acl2::id acl2::clause acl2::hist acl2::ctx state acl2::keyword-alist))
 
 
 
@@ -3201,40 +3325,6 @@ id processor ctx (acl2::prettyify-clause cl nil (w state)) (len hist)))
             (t
              (append '(:no-thanks t) acl2::keyword-alist)))))))
        
-
-;The following 2 function only look at the outermost implies form
-;get hypothesis from acl2 term being proved.
-(defun get-hyp (form)
-  (declare (xargs :guard t))
-  (if (atom form)
-    t;no hyps is equivalent to true
-    (if (and (consp (cdr form))
-             (eq 'implies (first form)))
-      (second form)
-      t)));;no hyps is equivalent to true
-
-(defun get-hyps (pform)
-  (declare (xargs :guard t))
-  (b* ((hyp (get-hyp pform))
-       ((when (eq hyp 't)) nil)
-       ((unless (and (consp hyp)
-                     (consp (cdr hyp))
-                     (eq (car hyp) 'and)))
-        (list hyp))
-       (rst (cdr hyp)))
-    rst))
-
-
-;get conclusion from acl2 term being proved
-(defun get-concl (form)
-  (declare (xargs :guard t))
-  (if (atom form)
-    form
-    (if (and (consp (cdr form))
-             (consp (cddr form))
-             (eq 'implies (first form)))
-      (third form)
-      form)))
 
      
 ;Note on xdoc: <= or < cannot be used inside defxdoc!!
@@ -3299,14 +3389,22 @@ id processor ctx (acl2::prettyify-clause cl nil (w state)) (len hist)))
           (cse-stack (@ cgen-stats-event-stack))
           ((unless (cgen-stats-event-stackp cse-stack)) ;can be empty
            (er soft ctx "~|cgen-stats-event-stack is ill-formed~|"))
+          (vars (all-vars term))
+          (d-type-al (dumb-type-alist-infer 
+                      (cons (dumb-negate-lit concl) hyps)
+                      vars vl (w state)))
+          (- (cw? (debug-flag vl) 
+                 "~|INTERNAL: top-level type-alist = ~x0~|" d-type-al))
           (gcs%  (initial-gcs% 
                   (get-acl2s-default 'num-counterexamples defaults)
                   (get-acl2s-default 'num-witnesses defaults)
-                  start-top pform))
+                  start-top term d-type-al))
+; PUSH an entry March 7th 2013
+; I need to make sure, that I pop this at all exit points from now on.
           (state (f-put-global 'cgen-stats-event-stack 
                                (cons (list :gcs% gcs%
                                            :s-hist '()
-                                           :inside-test? t) ;distinguishes a test? entry March 7th 2013
+                                           :inside-test? t) ;distinguishes a test? entry 
                                      cse-stack)
                                state))
           
@@ -3320,7 +3418,7 @@ id processor ctx (acl2::prettyify-clause cl nil (w state)) (len hist)))
                                   (acl2::match-free-override wrld)
                                   state)))
           (vt-acl2-alst (acl2::get-var-types-from-type-alist 
-                         type-alist (all-vars term)))
+                         type-alist vars))
           
           (- (cw? (and (not programp)
                        (debug-flag vl))
@@ -3346,6 +3444,7 @@ id processor ctx (acl2::prettyify-clause cl nil (w state)) (len hist)))
 ; Else call ACL2 prover with a hint
 ; that does random testing on every checkpoint.
           (- (cw? (debug-flag vl) "~|DEBUG: thm+testing OFF: ~x0~%" no-thm-help?))
+          ;(- (cw "~% **HEY THM starting~| "))
           ((mv thm-erp & state)
            (if no-thm-help? 
                (mv T '? state) ;TODO: I am throwing information here!
@@ -3364,6 +3463,8 @@ id processor ctx (acl2::prettyify-clause cl nil (w state)) (len hist)))
 ;TODO: Matt's code doesnt work through induction and forcing rds
 ;Also the OTF flag is set to true, to test all initial subgoals. 
                             t nil))))
+               
+          ;(- (cw "~% **HEY THM returned erp = ~x0~| " thm-erp))
 
 ; TODO: errors in print functions will abort the whole form
           ((mv end state) (acl2::read-run-time state))
@@ -3520,10 +3621,13 @@ id processor ctx (acl2::prettyify-clause cl nil (w state)) (len hist)))
         state) ;ignore
        (cse-stack (@ cgen-stats-event-stack))
        (- (assert$ (cgen-stats-event-stackp cse-stack) t))
-       (default-initial-gcs% (defdata::initial-gcs% 
-                               (acl2s-defaults :get num-counterexamples)
-                               (acl2s-defaults :get num-witnesses)
-                               0 (cons nil t)))
+       ((mv start state) (acl2::read-run-time state))
+       (init-gcs% (initial-gcs% (acl2s-defaults :get num-counterexamples)
+                                (acl2s-defaults :get num-witnesses)
+;dummy topform will replaced by the actual top-level form in
+;test-checkpoint where this information is obtained from pspv
+                                start '(dummy-topform dummy) '()))
+       
        (vl (acl2s-defaults :get verbosity-level))
 
 ; if the top entry is by a test?, then copy its
@@ -3539,7 +3643,7 @@ but also copying the test? event stats into the new entry ~%")))
           (prog2$
            (cw? (debug-flag vl)
                 "~|DEBUG: Pushing entry into cgen-stats-event-stack ~%")
-           (mv default-initial-gcs% '())))))
+           (mv init-gcs% '())))))
        
 
        (f-put-global 'cgen-stats-event-stack 

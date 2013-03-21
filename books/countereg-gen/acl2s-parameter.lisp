@@ -549,10 +549,6 @@ For internal flags dont use a doc-string"
 ;; expansion result of the make-event in set-acl2s-random-testing-enabled
 `(make-event  
   '(progn 
-; March 7th 2013
-; The following computed hint resets the cgen globals at the top of cgen-stats-event-stack.
-; It will do the needful at (null hist) i.e at the very beginning of the proof attempt.
-     (acl2::add-override-hints '((defdata::reset-cgen-globals-hint)))
      (acl2::add-override-hints 
       '((list* :backtrack 
 ;take parent pspv and hist, not the ones returned by clause-processor
@@ -590,7 +586,6 @@ For internal flags dont use a doc-string"
 (defmacro disable-acl2s-random-testing ()
 `(make-event  
      '(progn
-        (acl2::remove-override-hints '((defdata::reset-cgen-globals-hint)))
         (acl2::remove-override-hints 
          '((list* :backtrack 
                 `(test-checkpoint acl2::id 
