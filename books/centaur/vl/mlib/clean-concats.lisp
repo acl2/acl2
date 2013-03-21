@@ -337,7 +337,8 @@ together.  For instance, @('foo[3:1], foo[0]') could generally be merged into
   :parents (expr-cleaning)
   :short "Consolidate concatenations of constants."
 
-  :long "<p>@(call vl-merge-consts-aux) returns @('(mv startwidth startval weirdval rest)').</p>
+  :long "<p>@(call vl-merge-consts-aux) returns @('(mv startwidth startval
+weirdval rest)').</p>
 
 <p>Startwidth is the width of the initial sequence of constants.  If this
 initial sequence involves any bits which are Z or X, then weirdval is a
@@ -347,7 +348,8 @@ initial sequence.  Rest is the remaining expressions, with constants
 consolidated.</p>
 
 <p>Example: Suppose we have @('{ 2'h3, 4'ha, foo[4:3], 6'h3a, 8'h10 }').
-Running vl-merge-consts-aux on this yields
+Running vl-merge-consts-aux on this yields</p>
+
 @({
   STARTWIDTH = 6      ;; sum of widths of initial constants
   STARTVAL = 53       ;; hex 3a, value of concatenated initial constants
@@ -356,15 +358,15 @@ Running vl-merge-consts-aux on this yields
                       ;; remaining exprs, constants consolidated
 })
 
-<p>If we have @('{ 2'b1x, 4'ha, foo[4:3], 6'h3a, 8'h10 }').
-Running vl-merge-consts-aux on this yields
+<p>If we have @('{ 2'b1x, 4'ha, foo[4:3], 6'h3a, 8'h10 }').  Running
+vl-merge-consts-aux on this yields</p>
+
 @({
   STARTWIDTH = 6      ;; sum of widths of initial constants
-  STARTVAL = nil      
+  STARTVAL = nil
   WEIRDVAL = bits 1x1010
   REST = { foo[4:3], 14'ha10 }
                       ;; remaining exprs, constants consolidated
-})
 })"
 
   (mutual-recursion
@@ -431,7 +433,7 @@ Running vl-merge-consts-aux on this yields
                 (all-bits (append bits rest-weird)))
              (mv (+ guts.origwidth rest-w)
                  nil all-bits rest-exprs)))
-          
+
           ;; otherwise expr1 is a weirdint.  append its bits to those from the
           ;; initial expr.
           ((vl-weirdint guts) guts)
@@ -852,7 +854,7 @@ Testing the constant consolidation....
 
 (include-book
  "../loader/lexer")
-(include-book 
+(include-book
  "../loader/parse-expressions")
 (include-book
  "fmt")
