@@ -37,7 +37,7 @@
   (num-outs    :type (integer 0 *) :initially 0)
   (num-regs    :type (integer 0 *) :initially 0)
   (num-gates   :type (integer 0 *) :initially 0)
-  (num-regins  :type (integer 0 *) :initially 0)
+  (num-nxsts  :type (integer 0 *) :initially 0)
   ;; num-nodes = the sum of the above + 1 (const)
   (num-nodes    :type (integer 0 *) :initially 1)
 
@@ -85,7 +85,7 @@
        (natp (num-regs aignet))
        (natp (num-outs aignet))
        (natp (num-gates aignet))
-       (natp (num-regins aignet))
+       (natp (num-nxsts aignet))
        (natp (num-nodes aignet))
        (<= (lnfix (num-ins aignet))
            (ins-length aignet))
@@ -211,7 +211,7 @@
                                 (< (id-val id) (num-nodes aignet)))))
     (snode->fanin1 (get-node-slot id 1 aignet)))
 
-  (definline reg-id->ri (id aignet)
+  (definline reg-id->nxst (id aignet)
     (declare (type (integer 0 *) id)
              (xargs :stobjs aignet
                     :guard (and (aignet-sizes-ok aignet)
@@ -219,7 +219,7 @@
                                 (< (id-val id) (num-nodes aignet)))))
     (snode->regid (get-node-slot id 0 aignet)))
 
-  (definline ri-id->reg (id aignet)
+  (definline nxst-id->reg (id aignet)
     (declare (type (integer 0 *) id)
              (xargs :stobjs aignet
                     :guard (and (aignet-sizes-ok aignet)
@@ -368,10 +368,10 @@
   ;;                               (< n (num-regs aignet)))))
   ;;   (b* ((id (id-fix (regsi n aignet))))
   ;;     (if (int= (id->type id aignet) (in-type))
-  ;;         (reg-id->ri id aignet)
+  ;;         (reg-id->nxst id aignet)
   ;;       id)))
 
-  (definline regnum->ro (n aignet)
+  (definline regnum->id (n aignet)
     (declare (type (integer 0 *) n)
              (xargs :stobjs aignet
                     :guard (and (aignet-sizes-ok aignet)
@@ -510,7 +510,7 @@
          (aignet (update-node-slot (to-id nodes) 1 slot1 aignet)))
       aignet))
 
-  (defund aignet-add-regin (f regid aignet)
+  (defund aignet-set-nxst (f regid aignet)
     (declare (xargs :stobjs aignet
                     :guard (and (aignet-sizes-ok aignet)
                                 (litp f)
@@ -528,7 +528,7 @@
                                          :in-theory (disable aignet-sizes-ok))))))
     (b* ((nodes  (num-nodes aignet))
          (aignet (add-node aignet))
-         (aignet (update-num-regins (+ 1 (lnfix (num-regins aignet))) aignet))
+         (aignet (update-num-nxsts (+ 1 (lnfix (num-nxsts aignet))) aignet))
          (slot0 (get-node-slot regid 0 aignet))
          (new-slot0 (set-snode->regid (to-id nodes) slot0))
          (aignet (update-node-slot regid 0 new-slot0 aignet))
@@ -549,7 +549,7 @@
     (b* ((aignet (update-num-ins 0 aignet))
          (aignet (update-num-regs 0 aignet))
          (aignet (update-num-gates 0 aignet))
-         (aignet (update-num-regins 0 aignet))
+         (aignet (update-num-nxsts 0 aignet))
          (aignet (update-num-outs 0 aignet))
          (aignet (update-num-nodes 1 aignet))
          (aignet (if (< 1 (nodes-length aignet))

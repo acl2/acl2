@@ -57,7 +57,7 @@
     (num-outs    :type (integer 0 *) :initially 0)
     (num-regs    :type (integer 0 *) :initially 0)
     (num-gates   :type (integer 0 *) :initially 0)
-    (num-regins  :type (integer 0 *) :initially 0)
+    (num-nxsts  :type (integer 0 *) :initially 0)
     ;; num-nodes = the sum of the above + 1 (const)
     (num-nodes    :type (integer 0 *) :initially 1)
 
@@ -177,7 +177,7 @@
          (natp (num-regs aignet))
          (natp (num-outs aignet))
          (natp (num-gates aignet))
-         (natp (num-regins aignet))
+         (natp (num-nxsts aignet))
          (natp (num-nodes aignet))
          (<= (lnfix (num-ins aignet))
              (ins-length aignet))
@@ -241,9 +241,9 @@
              (natp (nth *num-gates* aignet)))
     :rule-classes :type-prescription)
 
-  (defthm aignet-sizes-ok-natp-num-regins
+  (defthm aignet-sizes-ok-natp-num-nxsts
     (implies (aignet-sizes-ok aignet)
-             (natp (nth *num-regins* aignet)))
+             (natp (nth *num-nxsts* aignet)))
     :rule-classes :type-prescription)
 
   (defthm aignet-sizes-ok-natp-num-outs
@@ -374,9 +374,9 @@
              (natp (nth *num-regs* aignet)))
     :rule-classes :type-prescription)
 
-  (defthm aignetp-implies-num-regins
+  (defthm aignetp-implies-num-nxsts
     (implies (aignetp aignet)
-             (natp (nth *num-regins* aignet)))
+             (natp (nth *num-nxsts* aignet)))
     :rule-classes :type-prescription)
 
   (defthm aignetp-implies-num-gates
@@ -568,7 +568,7 @@
                                 (< (id-val id) (num-nodes aignet)))))
     (snode->fanin1 (get-node-slot id 1 aignet)))
 
-  (definline reg-id->ri (id aignet)
+  (definline reg-id->nxst (id aignet)
     (declare (type (integer 0 *) id)
              (xargs :stobjs aignet
                     :guard (and (aignet-sizes-ok aignet)
@@ -576,7 +576,7 @@
                                 (< (id-val id) (num-nodes aignet)))))
     (snode->regid (get-node-slot id 0 aignet)))
 
-  (definline ri-id->reg (id aignet)
+  (definline nxst-id->reg (id aignet)
     (declare (type (integer 0 *) id)
              (xargs :stobjs aignet
                     :guard (and (aignet-sizes-ok aignet)
@@ -950,7 +950,7 @@
     (id-fix (outsi n aignet)))
 
 
-  (definline regnum->ro (n aignet)
+  (definline regnum->id (n aignet)
     (declare (type (integer 0 *) n)
              (xargs :stobjs aignet
                     :guard (and (aignet-sizes-ok aignet)
@@ -1136,7 +1136,7 @@
                         (nth n (nth *nodesi* aignet)))))
 
   (defthm new-node-of-add-in-slot0
-    (implies (and (nat-equiv idx (* 2 (nth *num-nodes* aignet)))
+    (implies (and (case-split (nat-equiv idx (* 2 (nth *num-nodes* aignet)))) 
                   (aignet-sizes-ok aignet))
              (let ((slot0 (nth idx
                                (nth *nodesi* (aignet-add-in aignet)))))
@@ -1146,7 +1146,7 @@
                            0)))))
 
   (defthm new-node-of-add-in-slot1
-    (implies (and (nat-equiv idx (+ 1 (* 2 (nth *num-nodes* aignet))))
+    (implies (and (case-split (nat-equiv idx (+ 1 (* 2 (nth *num-nodes* aignet)))))
                   (aignet-sizes-ok aignet))
              (let ((slot1 (nth idx
                                (nth *nodesi* (aignet-add-in aignet)))))
@@ -1157,11 +1157,11 @@
                     (equal (snode->phase slot1)
                            0)))))
 
-  ;; (defthm regnum->ro-of-add-in
+  ;; (defthm regnum->id-of-add-in
   ;;   (implies (aignet-regs-in-bounds aignet)
-  ;;            (equal (regnum->ro n (aignet-add-in aignet))
-  ;;                   (regnum->ro n aignet)))
-  ;;   :hints(("Goal" :in-theory (enable regnum->ro))))
+  ;;            (equal (regnum->id n (aignet-add-in aignet))
+  ;;                   (regnum->id n aignet)))
+  ;;   :hints(("Goal" :in-theory (enable regnum->id))))
   
   
   ;; (defthm aignet-add-in-preserves-aignet-regs-in-bounds
@@ -1233,7 +1233,7 @@
                         (nth n (nth *nodesi* aignet)))))
 
   (defthm new-node-of-add-reg-slot0
-    (implies (and (nat-equiv idx (* 2 (nth *num-nodes* aignet)))
+    (implies (and (case-split (nat-equiv idx (* 2 (nth *num-nodes* aignet))))
                   (aignet-sizes-ok aignet))
              (let ((slot0 (nth idx
                                (nth *nodesi* (aignet-add-reg aignet)))))
@@ -1243,7 +1243,7 @@
                            0)))))
 
   (defthm new-node-of-add-reg-slot1
-    (implies (and (nat-equiv idx (+ 1 (* 2 (nth *num-nodes* aignet))))
+    (implies (and (case-split (nat-equiv idx (+ 1 (* 2 (nth *num-nodes* aignet)))))
                   (aignet-sizes-ok aignet))
              (let ((slot1 (nth idx
                                (nth *nodesi* (aignet-add-reg aignet)))))
@@ -1333,7 +1333,7 @@
                         (nth n (nth *nodesi* aignet)))))
 
   (defthm new-node-of-add-gate-slot0
-    (implies (and (nat-equiv idx (* 2 (nth *num-nodes* aignet)))
+    (implies (and (case-split (nat-equiv idx (* 2 (nth *num-nodes* aignet))))
                   (aignet-sizes-ok aignet))
              (let ((slot0 (nth idx
                                (nth *nodesi* (aignet-add-gate f0 f1 aignet)))))
@@ -1343,7 +1343,7 @@
                            (lit-fix f0))))))
 
   (defthm new-node-of-add-gate-slot1
-    (implies (and (nat-equiv idx (+ 1 (* 2 (nth *num-nodes* aignet))))
+    (implies (and (case-split (nat-equiv idx (+ 1 (* 2 (nth *num-nodes* aignet)))))
                   (aignet-sizes-ok aignet))
              (let ((slot1 (nth idx
                                (nth *nodesi* (aignet-add-gate f0 f1 aignet)))))
@@ -1431,7 +1431,7 @@
                         (nth n (nth *nodesi* aignet)))))
 
   (defthm new-node-of-add-out-slot0
-    (implies (and (nat-equiv idx (* 2 (nth *num-nodes* aignet)))
+    (implies (and (case-split (nat-equiv idx (* 2 (nth *num-nodes* aignet))))
                   (aignet-sizes-ok aignet))
              (let ((slot0 (nth idx
                                (nth *nodesi* (aignet-add-out f aignet)))))
@@ -1441,7 +1441,7 @@
                            (lit-fix f))))))
 
   (defthm new-node-of-add-out-slot1
-    (implies (and (nat-equiv idx (+ 1 (* 2 (nth *num-nodes* aignet))))
+    (implies (and (case-split (nat-equiv idx (+ 1 (* 2 (nth *num-nodes* aignet)))))
                   (aignet-sizes-ok aignet))
              (let ((slot1 (nth idx
                                (nth *nodesi* (aignet-add-out f aignet)))))
@@ -1460,7 +1460,7 @@
   ;;   :hints(("Goal" :in-theory (e/d (aignet-regs-in-bounds)
   ;;                                  (aignet-add-out)))))
 
-  (defund aignet-add-regin (f regid aignet)
+  (defund aignet-set-nxst (f regid aignet)
     (declare (xargs :stobjs aignet
                     :guard (and (aignet-sizes-ok aignet)
                                 (litp f)
@@ -1478,7 +1478,7 @@
                                          :in-theory (disable aignet-sizes-ok))))))
     (b* ((nodes  (num-nodes aignet))
          (aignet (add-node aignet))
-         (aignet (update-num-regins (+ 1 (lnfix (num-regins aignet))) aignet))
+         (aignet (update-num-nxsts (+ 1 (lnfix (num-nxsts aignet))) aignet))
          (slot0 (get-node-slot regid 0 aignet))
          (new-slot0 (set-snode->regid (to-id nodes) slot0))
          (aignet (update-node-slot regid 0 new-slot0 aignet))
@@ -1489,21 +1489,21 @@
          (aignet (update-node-slot (to-id nodes) 1 slot1 aignet)))
       aignet))
 
-  (local (in-theory (enable aignet-add-regin)))
-  (def-aignet-frame aignet-add-regin)
+  (local (in-theory (enable aignet-set-nxst)))
+  (def-aignet-frame aignet-set-nxst)
   (local (in-theory (enable* aignet-frame-thms)))
-  (defthm aignet-add-regin-preserves-sizes-ok
+  (defthm aignet-set-nxst-preserves-sizes-ok
     (implies (aignet-sizes-ok aignet)
              (aignet-sizes-ok
-              (aignet-add-regin f regid aignet)))
+              (aignet-set-nxst f regid aignet)))
     :hints(("Goal" :in-theory (enable aignet-sizes-ok
                                       add-node
                                       add-reg))))
 
-  ;; (defthm aignet-add-regin-preserves-regs-in-bounds
+  ;; (defthm aignet-set-nxst-preserves-regs-in-bounds
   ;;   (implies (regs-in-bounds n aignet)
   ;;            (regs-in-bounds n
-  ;;                            (aignet-add-regin f regid aignet)))
+  ;;                            (aignet-set-nxst f regid aignet)))
   ;;   :hints(("Goal" :in-theory (enable regs-in-bounds
   ;;                                     add-node
   ;;                                     add-reg)))
@@ -1512,58 +1512,58 @@
   ;;   ;;                                    acl2::len-update-nth1)))
   ;;   )
 
-  ;; (defthm num-regs-of-add-regin
+  ;; (defthm num-regs-of-set-nxst
   ;;   (implies (aignet-sizes-ok aignet)
-  ;;            (equal (nth *num-regs* (aignet-add-regin f regid aignet))
-  ;;                   (if (< (num-regins aignet)
+  ;;            (equal (nth *num-regs* (aignet-set-nxst f regid aignet))
+  ;;                   (if (< (num-nxsts aignet)
   ;;                          (num-regs aignet))
   ;;                       (num-regs aignet)
   ;;                     (+ 1 (num-regs aignet)))))
   ;;   :hints(("Goal" :in-theory (enable add-node add-reg))))
 
-  (defthm num-regins-of-add-regin
+  (defthm num-nxsts-of-set-nxst
     (implies (aignet-sizes-ok aignet)
-             (equal (nth *num-regins* (aignet-add-regin f regid aignet))
-                    (+ 1 (num-regins aignet))))
+             (equal (nth *num-nxsts* (aignet-set-nxst f regid aignet))
+                    (+ 1 (num-nxsts aignet))))
     :hints(("Goal" :in-theory (enable add-node add-reg))))
 
-  ;; (defthm num-regs-of-add-regin
+  ;; (defthm num-regs-of-set-nxst
   ;;   (implies (aignet-sizes-ok aignet)
-  ;;            (equal (nth *num-regs* (aignet-add-regin f regid aignet))
-  ;;                   (if (< (num-regins aignet)
+  ;;            (equal (nth *num-regs* (aignet-set-nxst f regid aignet))
+  ;;                   (if (< (num-nxsts aignet)
   ;;                          (num-regs aignet))
   ;;                       (num-regs aignet)
   ;;                     (+ 1 (num-regs aignet)))))
   ;;   :hints(("Goal" :in-theory (enable add-node add-reg))))
 
-  (defthm num-nodes-of-add-regin
-    (equal (nth *num-nodes* (aignet-add-regin f regid aignet))
+  (defthm num-nodes-of-set-nxst
+    (equal (nth *num-nodes* (aignet-set-nxst f regid aignet))
            (+ 1 (nfix (nth *num-nodes* aignet))))
     :hints(("Goal" :in-theory (enable add-node add-reg))))
 
-  ;; (defthm new-reg-of-add-regin
-  ;;   (implies (nat-equiv n (nth *num-regins* aignet))
+  ;; (defthm new-reg-of-set-nxst
+  ;;   (implies (nat-equiv n (nth *num-nxsts* aignet))
   ;;            (equal (nth n
   ;;                        (nth *regsi*
-  ;;                             (aignet-add-regin f regid aignet)))
-  ;;                   (if (< (num-regins aignet)
+  ;;                             (aignet-set-nxst f regid aignet)))
+  ;;                   (if (< (num-nxsts aignet)
   ;;                          (num-regs aignet))
   ;;                       (nth n (nth *regsi* aignet))
   ;;                     (to-id (num-nodes aignet))))))
 
-  ;; (defthm nth-reg-of-add-regin
-  ;;   (implies (case-split (not (equal (nfix n) (nfix (nth *num-regins* aignet)))))
-  ;;            (id-equiv (nth n (nth *regsi* (aignet-add-regin f regid aignet)))
+  ;; (defthm nth-reg-of-set-nxst
+  ;;   (implies (case-split (not (equal (nfix n) (nfix (nth *num-nxsts* aignet)))))
+  ;;            (id-equiv (nth n (nth *regsi* (aignet-set-nxst f regid aignet)))
   ;;                      (nth n (nth *regsi* aignet)))))
 
 
-  (defthm nth-node-of-add-regin
+  (defthm nth-node-of-set-nxst
     (implies (and (case-split (< (nfix n) (* 2 (nfix (nth *num-nodes* aignet)))))
                   (< (id-val regid) (num-nodes aignet))
                   (int= (id->type regid aignet)
                         (in-type))
                   (int= (id->regp regid aignet) 1))
-             (nat-equiv (nth n (nth *nodesi* (aignet-add-regin f regid aignet)))
+             (nat-equiv (nth n (nth *nodesi* (aignet-set-nxst f regid aignet)))
                         (if (nat-equiv
                              n (* 2 (id-val regid)))
                             (set-snode->regid
@@ -1571,11 +1571,11 @@
                              (get-node-slot regid 0 aignet))
                           (nth n (nth *nodesi* aignet))))))
 
-  (defthm new-node-of-add-regin-slot0
-    (implies (and (nat-equiv idx (* 2 (nth *num-nodes* aignet)))
+  (defthm new-node-of-set-nxst-slot0
+    (implies (and (case-split (nat-equiv idx (* 2 (nth *num-nodes* aignet))))
                   (aignet-sizes-ok aignet))
              (let ((slot0 (nth idx
-                               (nth *nodesi* (aignet-add-regin f regid aignet)))))
+                               (nth *nodesi* (aignet-set-nxst f regid aignet)))))
                (and (equal (snode->type slot0)
                            (out-type))
                     (equal (snode->fanin0 slot0)
@@ -1591,11 +1591,11 @@
   ;;                                  (not (equal (acl2::logcar (+ 1 (* 2 a)))
   ;;                                              (acl2::logcar (* 2 b)))))))))))
 
-  (defthm new-node-of-add-regin-slot1
-    (implies (and (nat-equiv idx (+ 1 (* 2 (nth *num-nodes* aignet))))
+  (defthm new-node-of-set-nxst-slot1
+    (implies (and (case-split (nat-equiv idx (+ 1 (* 2 (nth *num-nodes* aignet)))))
                   (aignet-sizes-ok aignet))
              (let ((slot1 (nth idx
-                               (nth *nodesi* (aignet-add-regin f regid aignet)))))
+                               (nth *nodesi* (aignet-set-nxst f regid aignet)))))
                (and (equal (snode->regp slot1)
                            1)
                     (equal (snode->regid slot1)
@@ -1604,18 +1604,18 @@
                            (lit->phase f aignet))))))
 
 
-  ;; (defthm aignet-add-regin-preserves-aignet-regs-in-bounds
+  ;; (defthm aignet-set-nxst-preserves-aignet-regs-in-bounds
   ;;   (implies (and (aignet-regs-in-bounds aignet)
   ;;                 (aignet-sizes-ok aignet))
-  ;;            (aignet-regs-in-bounds (aignet-add-regin f regid aignet)))
+  ;;            (aignet-regs-in-bounds (aignet-set-nxst f regid aignet)))
   ;;   :hints(("Goal" :in-theory (e/d (aignet-regs-in-bounds
   ;;                                   regs-in-bounds)
-  ;;                                  (aignet-add-regin
-  ;;                                   aignet-add-regin-preserves-regs-in-bounds))
-  ;;           :use ((:instance aignet-add-regin-preserves-regs-in-bounds
+  ;;                                  (aignet-set-nxst
+  ;;                                   aignet-set-nxst-preserves-regs-in-bounds))
+  ;;           :use ((:instance aignet-set-nxst-preserves-regs-in-bounds
   ;;                  (n (num-regs aignet)))))
   ;;          (and stable-under-simplificationp
-  ;;               '(:in-theory (enable aignet-add-regin
+  ;;               '(:in-theory (enable aignet-set-nxst
   ;;                                    add-node)))))
   )
 
@@ -1633,7 +1633,7 @@
     (b* ((aignet (update-num-ins 0 aignet))
          (aignet (update-num-regs 0 aignet))
          (aignet (update-num-gates 0 aignet))
-         (aignet (update-num-regins 0 aignet))
+         (aignet (update-num-nxsts 0 aignet))
          (aignet (update-num-outs 0 aignet))
          (aignet (update-num-nodes 1 aignet))
          (aignet (if (< 1 (nodes-length aignet))

@@ -44,8 +44,7 @@
                            make-list-ac)))
 
 (local (in-theory (disable true-listp-update-nth
-                           acl2::nth-with-large-index
-                           acl2::duplicity-when-non-member-equal)))
+                           acl2::nth-with-large-index)))
 
 
 (local
@@ -54,7 +53,7 @@
      (forall n
              (implies (< (nfix n) (aignet$a::num-ins aigneta))
                       (id-equiv (nth n (nth aignet$c::*insi* aignetc))
-                                (to-id (len (lookup-pi n aigneta))))))
+                                (to-id (len (lookup-stype n (pi-stype) aigneta))))))
      :rewrite :direct)
 
    (in-theory (disable innums-correct))
@@ -63,7 +62,7 @@
      (forall n
              (implies (< (nfix n) (aignet$a::num-outs aigneta))
                       (id-equiv (nth n (nth aignet$c::*outsi* aignetc))
-                                (to-id (len (lookup-po n aigneta))))))
+                                (to-id (len (lookup-stype n (po-stype) aigneta))))))
      :rewrite :direct)
 
    (in-theory (disable outnums-correct))
@@ -74,11 +73,11 @@
       (implies
        (< (nfix n) (aignet$a::num-regs aigneta))
        (id-equiv (nth n (nth aignet$c::*regsi* aignetc))
-                 (aignet$a::regnum->ro n aigneta))))
+                 (aignet$a::regnum->id n aigneta))))
      :rewrite :direct)
 
    (in-theory (disable regnums-correct))
-   (in-theory (enable aignet$c::regnum->ro))
+   (in-theory (enable aignet$c::regnum->id))
 
 
    (defsection nodes-correct
@@ -94,8 +93,8 @@
                            (nth aignet$c::*nodesi* aignetc)))
                (id (to-id nid)))
            (and (equal (aignet$c::snode->type slot0)
-                       (aignet$a::node->type
-                        (car (lookup-node id aigneta))))
+                       (node->type
+                        (car (lookup-id id aigneta))))
                 (equal (aignet$c::snode->phase slot1)
                        (aignet$a::id->phase id aigneta))
                 (implies (or (equal (aignet$a::id->type id aigneta)
@@ -121,13 +120,13 @@
                               (equal (aignet$a::io-id->regp id aigneta)
                                      1))
                          (equal (aignet$c::snode->regid slot0)
-                                (aignet$a::reg-id->ri id aigneta)))
+                                (aignet$a::reg-id->nxst id aigneta)))
                 (implies (and (equal (aignet$a::id->type id aigneta)
                                      (out-type))
                               (equal (aignet$a::io-id->regp id aigneta)
                                      1))
                          (equal (aignet$c::snode->regid slot1)
-                                (aignet$a::ri-id->reg id aigneta)))
+                                (aignet$a::nxst-id->reg id aigneta)))
                 (implies (equal (aignet$a::id->type id aigneta)
                                 (gate-type))
                          (and (equal (aignet$c::snode->fanin0 slot0)
@@ -165,8 +164,8 @@
      ;;                       (nth aignet$c::*nodesi* aignetc)))
      ;;          (id (to-id nid)))
      ;;      (and (equal (aignet$c::snode->type slot0)
-     ;;                  (aignet$a::node->type
-     ;;                   (car (lookup-node id aigneta))))
+     ;;                  (node->type
+     ;;                   (car (lookup-id id aigneta))))
      ;;           (implies (equal (aignet$a::id->type id aigneta)
      ;;                           (out-type))
      ;;                    (equal (aignet$c::snode->fanin0 slot0)
@@ -175,10 +174,10 @@
      ;;                                (in-type))
      ;;                         (equal (aignet$a::io-id->regp id aigneta)
      ;;                                1))
-     ;;                    (equal (aignet$c::snode->regin slot0)
-     ;;                           (aignet$a::regnum->ri
+     ;;                    (equal (aignet$c::snode->nxst slot0)
+     ;;                           (aignet$a::regnum->nxst
      ;;                            (reg-count
-     ;;                             (cdr (lookup-node id aigneta)))
+     ;;                             (cdr (lookup-id id aigneta)))
      ;;                            aigneta)))
      ;;           (implies (equal (aignet$a::id->type id aigneta)
      ;;                           (gate-type))
@@ -247,8 +246,8 @@
                    (aignet$a::num-ins aigneta))
             (equal (nth aignet$c::*num-regs* aignetc)
                    (aignet$a::num-regs aigneta))
-            (equal (nth aignet$c::*num-regins* aignetc)
-                   (aignet$a::num-regins aigneta))
+            (equal (nth aignet$c::*num-nxsts* aignetc)
+                   (aignet$a::num-nxsts aigneta))
             (equal (nth aignet$c::*num-outs* aignetc)
                    (aignet$a::num-outs aigneta))
             (equal (nth aignet$c::*num-gates* aignetc)
@@ -263,8 +262,8 @@
                             (aignet$a::num-ins aigneta))
                      (equal (nth aignet$c::*num-regs* aignetc)
                             (aignet$a::num-regs aigneta))
-                     (equal (nth aignet$c::*num-regins* aignetc)
-                            (aignet$a::num-regins aigneta))
+                     (equal (nth aignet$c::*num-nxsts* aignetc)
+                            (aignet$a::num-nxsts aigneta))
                      (equal (nth aignet$c::*num-outs* aignetc)
                             (aignet$a::num-outs aigneta))
                      (equal (nth aignet$c::*num-gates* aignetc)
@@ -278,8 +277,8 @@
                           (aignet$a::num-ins aigneta))
                    (equal (nth aignet$c::*num-regs* aignetc)
                           (aignet$a::num-regs aigneta))
-                   (equal (nth aignet$c::*num-regins* aignetc)
-                          (aignet$a::num-regins aigneta))
+                   (equal (nth aignet$c::*num-nxsts* aignetc)
+                          (aignet$a::num-nxsts aigneta))
                    (equal (nth aignet$c::*num-outs* aignetc)
                           (aignet$a::num-outs aigneta))
                    (equal (nth aignet$c::*num-gates* aignetc)
@@ -289,7 +288,7 @@
 
    (defsection aignet-corr
      (defun-nx aignet-corr (aignetc aigneta)
-       (and (aignet-well-formedp aigneta)
+       (and (aignet$a::aignet-well-formedp aigneta)
             (aignet$c::aignet-sizes-ok aignetc)
             ;; (aignet$c::aignet-regs-in-bounds aignetc)
             (aignet-count-equivs aignetc aigneta)
@@ -299,7 +298,7 @@
             (nodes-correct aignetc aigneta)))
      (defthm aignet-corr-in-hide
        (equal (hide (aignet-corr aignetc aigneta))
-              (and (aignet-well-formedp aigneta)
+              (and (aignet$a::aignet-well-formedp aigneta)
                    (aignet$c::aignet-sizes-ok aignetc)
                    ;; (aignet$c::aignet-regs-in-bounds aignetc)
                    (aignet-count-equivs aignetc aigneta)
@@ -312,7 +311,7 @@
 
    (local (in-theory (enable aignet$a::innum->id
                              aignet$a::outnum->id
-                             aignet$a::regnum->ro)))
+                             aignet$a::regnum->id)))
 
    (defthm nat-equiv-of-nth-in-empty-nodes
      (nat-equiv (nth n '(0 0))
@@ -330,22 +329,18 @@
                                        aignet-count-equivs))
                   `(:expand (,last)))))
       (and stable-under-simplificationp
-           '(:expand ((:free (a b c)
-                       (lookup-pi a (cons b c)))
+           '(:expand ((:free (a b c stype)
+                       (lookup-stype a stype (cons b c)))
                       (:free (a b c)
-                       (lookup-po a (cons b c)))
+                       (lookup-reg->nxst a (cons b c)))
                       (:free (a b c)
-                       (lookup-reg->ri a (cons b c)))
-                      (:free (a b c)
-                       (lookup-ro a (cons b c)))
-                      (:free (a b c)
-                       (lookup-node a (cons b c)))
+                       (lookup-id a (cons b c)))
                       (:free (a b)
                        (aignet$a::id->phase (to-id a) b))
                       (:free (a b)
                        (aignet$a::lit->phase a b))
                       (:free (a b)
-                       (aignet$a::aignet-litp a b)))))
+                       (aignet-litp a b)))))
       (and stable-under-simplificationp
            (let ((last (car (last clause))))
              (and (member (car last) '(;; aignet$c::aignet-regs-in-bounds
@@ -358,14 +353,14 @@
                            clause)))
              `(:clause-processor
                (acl2::simple-generalize-cp
-                clause '((,witness . nid))))))))
+                clause '((,witness . nid))))))
+      (and stable-under-simplificationp
+           '(:cases ((equal (nfix nid) (+ 1 (len aignet))))))))
 
    ;; (local (in-theory (disable aignet$c::aignet-regs-in-bounds)))
 
    (local (in-theory (e/d* (aignet$c::aignet-frame-thms
-                            aignet$a::id->type)
-                           (aignet$a::node->type
-                            aignet$a::io-node->regp))))
+                            aignet$a::id->type))))
 
    (defthm <-0-of-to-id
      (equal (< 0 (to-id x))
@@ -401,6 +396,13 @@
                                   (integerp b))
                              (not (equal (acl2::logcar (+ 1 (* 2 a)))
                                          (acl2::logcar (* 2 b))))))))))
+
+   (defthm even-is-not-odd-2
+     (implies (and (integerp a) (integerp b))
+              (not (equal (+ 1 (* 2 a)) (+ 2 (* 2 b)))))
+     :hints (("goal" :use ((:instance even-is-not-odd
+                            (b (+ 1 b)))))))
+
    (in-theory (disable (force)))))
 
 
@@ -408,8 +410,8 @@
   :concrete aignet$c::aignet
   :recognizer (aignetp :logic aignet$a::aignet-well-formedp
                        :exec aignet$c::aignetp)
-  :creator (create-aignet :logic aignet$a::create-aignet
-                          :exec aignet$c::create-aignet)
+  :creator (acl2::create-aignet :logic aignet$a::create-aignet
+                                :exec aignet$c::create-aignet)
   :corr-fn aignet-corr
   :exports ((num-nodes :logic aignet$a::num-nodes
                        :exec aignet$c::num-nodes)
@@ -419,8 +421,8 @@
                       :exec aignet$c::num-regs)
             (num-outs :logic aignet$a::num-outs
                       :exec aignet$c::num-outs)
-            (num-regins :logic aignet$a::num-regins
-                        :exec aignet$c::num-regins)
+            (num-nxsts :logic aignet$a::num-nxsts
+                        :exec aignet$c::num-nxsts)
             (num-gates :logic aignet$a::num-gates
                        :exec aignet$c::num-gates)
             
@@ -433,8 +435,8 @@
                        :exec aignet$c::innum->id$inline)
             (outnum->id :logic aignet$a::outnum->id
                         :exec aignet$c::outnum->id$inline)
-            (regnum->ro :logic aignet$a::regnum->ro
-                        :exec aignet$c::regnum->ro$inline)
+            (regnum->id :logic aignet$a::regnum->id
+                        :exec aignet$c::regnum->id$inline)
             (id->type :logic aignet$a::id->type
                       :exec aignet$c::id->type$inline)
             (io-id->regp :logic aignet$a::io-id->regp
@@ -447,10 +449,10 @@
                              :exec aignet$c::id->fanin0$inline)
             (gate-id->fanin1 :logic aignet$a::gate-id->fanin1
                              :exec aignet$c::id->fanin1$inline)
-            (reg-id->ri :logic aignet$a::reg-id->ri
-                        :exec aignet$c::reg-id->ri$inline)
-            (ri-id->reg :logic aignet$a::ri-id->reg
-                        :exec aignet$c::ri-id->reg$inline)
+            (reg-id->nxst :logic aignet$a::reg-id->nxst
+                        :exec aignet$c::reg-id->nxst$inline)
+            (nxst-id->reg :logic aignet$a::nxst-id->reg
+                        :exec aignet$c::nxst-id->reg$inline)
             (id->phase :logic aignet$a::id->phase
                        :exec aignet$c::id->phase$inline)
 
@@ -466,8 +468,8 @@
             (aignet-add-out :logic aignet$a::aignet-add-out
                             :exec aignet$c::aignet-add-out
                             :protect t)
-            (aignet-add-regin :logic aignet$a::aignet-add-regin
-                              :exec aignet$c::aignet-add-regin
+            (aignet-set-nxst :logic aignet$a::aignet-set-nxst
+                              :exec aignet$c::aignet-set-nxst
                               :protect t)
 
             (aignet-init :logic aignet$a::aignet-init

@@ -18,7 +18,7 @@
 ;
 ; Original author: Sol Swords <sswords@centtech.com>
 
-(in-package "AIGNET$A")
+(in-package "AIGNET")
 (include-book "idp")
 (include-book "litp")
 (include-book "cutil/defmvtypes" :dir :system)
@@ -43,8 +43,7 @@
                            acl2::make-list-ac-redef
                            sets::double-containment
                            sets::sets-are-true-lists
-                           make-list-ac
-                           acl2::duplicity-when-non-member-equal)))
+                           make-list-ac)))
 
 (local (in-theory (disable true-listp-update-nth
                            acl2::nth-with-large-index)))
@@ -72,7 +71,63 @@ stobj.</p>
 
 ")
 
+(make-event
+ `(defmacro pi-stype ()
+    ''(,(in-type) . 0)))
 
+(make-event
+ `(defmacro reg-stype ()
+    ''(,(in-type) . 1)))
+
+(make-event
+ `(defmacro po-stype ()
+    ''(,(out-type) . 0)))
+
+(make-event
+ `(defmacro nxst-stype ()
+    ''(,(out-type) . 1)))
+
+(make-event
+ `(defmacro gate-stype ()
+    ''(,(gate-type))))
+
+(make-event
+ `(defmacro const-stype ()
+    ''(,(const-type))))
+
+(define stypep (x)
+  (and (consp x)
+       (natp (car x))
+       (<= (car x) (out-type))
+       (if (<= (car x) (gate-type))
+           (not (cdr x))
+         (bitp (cdr x)))))
+
+(define stype-fix (x)
+  :returns (stype stypep)
+  (if (stypep x)
+      x
+    (const-stype))
+  ///
+  (defthm stypep-of-stype-fix
+    (stypep (stype-fix x)))
+  (defthm stype-fix-when-stypep
+    (implies (stypep x)
+             (equal (stype-fix x) x))))
+
+;; This is just (car x), but it fixes it to one of the above things.
+(define stype (x)
+  :returns (stype stypep)
+  (stype-fix (and (consp x) (car x))))
+
+(define stype-equiv (x y)
+  :enabled t
+  (equal (stype-fix x) (stype-fix y))
+  ///
+  (defequiv stype-equiv)
+  (defcong stype-equiv equal (stype-fix x) 1)
+  (defthm stype-fix-under-stype-equiv
+    (stype-equiv (stype-fix x) x)))
 
 ;; (defun const-node ()
 ;;   (declare (xargs :guard t))
@@ -81,67 +136,250 @@ stobj.</p>
 ;;   (declare (xargs :guard t))
 ;;   (equal node (const-node)))
 
-(defun pi-node ()
-  (declare (xargs :guard t))
-  '(:pi))
+
+(make-event
+ `(defun pi-node ()
+    (declare (xargs :guard t))
+    '(,(pi-stype))))
+
 (defun pi-node-p (node)
   (declare (xargs :guard t))
   (equal node (pi-node)))
 
-(defun ro-node ()
+(make-event
+ `(defun reg-node ()
+    (declare (xargs :guard t))
+    '(,(reg-stype))))
+(defun reg-node-p (node)
   (declare (xargs :guard t))
- '(:ro))
-(defun ro-node-p (node)
-  (declare (xargs :guard t))
-  (equal node (ro-node)))
+  (equal node (reg-node)))
 
-(cutil::defaggregate gate-node
-                     ((fanin0 litp)
-                      (fanin1 litp))
-                     :tag :gate)
-
-(cutil::defaggregate po-node
-                     ((fanin litp))
-                     :tag :po)
-
-(cutil::defaggregate ri-node
-                     ((fanin litp)
-                      (reg idp))
-                     :tag :ri)
-
-(define const-node-p (node)
-  (eq node nil)
+(define gate-node-p (node)
+  (and (true-listp node)
+       (equal (len node) 3)
+       (equal (first node) (gate-stype))
+       (litp (second node))
+       (litp (third node)))
   ///
-  (defthm tag-when-const-node-p
-    (implies (const-node-p node)
-             (equal (tag node) nil))))
+  (defthm stype-when-gate-node-p
+    (implies (gate-node-p node)
+             (equal (stype node)
+                    (gate-stype)))
+    :hints(("Goal" :in-theory (enable stype)))
+    :rule-classes ((:rewrite :backchain-limit-lst 0)
+                   :forward-chaining)))
+
+(define gate-node ((f0 litp) (f1 litp))
+  :returns (gate gate-node-p :hints(("Goal" :in-theory (enable gate-node-p))))
+  (list (gate-stype) (lit-fix f0) (lit-fix f1))
+  ///
+  (defthm stype-of-gate-node
+    (equal (stype (gate-node f0 f1))
+           (gate-stype))
+    :hints(("Goal" :in-theory (enable stype)))))
+
+(define gate-node->fanin0 ((gate gate-node-p))
+  :prepwork ((local (in-theory (enable gate-node-p))))
+  :returns (lit litp)
+  (lit-fix (second gate))
+  ///
+  (defthm gate-node->fanin0-of-gate-node
+    (equal (gate-node->fanin0 (gate-node f0 f1))
+           (lit-fix f0))
+    :hints(("Goal" :in-theory (enable gate-node)))))
+
+(define gate-node->fanin1 ((gate gate-node-p))
+  :prepwork ((local (in-theory (enable gate-node-p))))
+  :returns (lit litp)
+  (lit-fix (third gate))
+  ///
+  (defthm gate-node->fanin1-of-gate-node
+    (equal (gate-node->fanin1 (gate-node f0 f1))
+           (lit-fix f1))
+    :hints(("Goal" :in-theory (enable gate-node)))))
+
+(define po-node-p (node)
+  (and (true-listp node)
+       (equal (len node) 2)
+       (equal (first node) (po-stype))
+       (litp (second node)))
+  ///
+  (defthm stype-when-po-node-p
+    (implies (po-node-p node)
+             (equal (stype node)
+                    (po-stype)))
+    :hints(("Goal" :in-theory (enable stype)))
+    :rule-classes ((:rewrite :backchain-limit-lst 0)
+                   :forward-chaining)))
+
+(define po-node ((f litp))
+  :returns (po po-node-p :hints(("Goal" :in-theory (enable po-node-p))))
+  (list (po-stype) (lit-fix f))
+  ///
+  (defthm stype-of-po-node
+    (equal (stype (po-node f))
+           (po-stype))
+    :hints(("Goal" :in-theory (enable stype)))))
+
+(define po-node->fanin ((po po-node-p))
+  :prepwork ((local (in-theory (enable po-node-p))))
+  :returns (lit litp)
+  (lit-fix (second po))
+  ///
+  (defthm po-node->fanin-of-po-node
+    (equal (po-node->fanin (po-node f))
+           (lit-fix f))
+    :hints(("Goal" :in-theory (enable po-node)))))
+
+
+
+(define nxst-node-p (node)
+  (and (true-listp node)
+       (equal (len node) 3)
+       (equal (first node) (nxst-stype))
+       (litp (second node))
+       (idp (third node)))
+  ///
+  (defthm stype-when-nxst-node-p
+    (implies (nxst-node-p node)
+             (equal (stype node)
+                    (nxst-stype)))
+    :hints(("Goal" :in-theory (enable stype)))
+    :rule-classes ((:rewrite :backchain-limit-lst 0)
+                   :forward-chaining)))
+
+(define nxst-node ((f litp) (reg idp))
+  :returns (ri nxst-node-p :hints(("Goal" :in-theory (enable nxst-node-p))))
+  (list (nxst-stype) (lit-fix f) (id-fix reg))
+  ///
+  (defthm stype-of-nxst-node
+    (equal (stype (nxst-node f reg))
+           (nxst-stype))
+    :hints(("Goal" :in-theory (enable stype)))))
+
+(define nxst-node->fanin ((ri nxst-node-p))
+  :prepwork ((local (in-theory (enable nxst-node-p))))
+  :returns (lit litp)
+  (lit-fix (second ri))
+  ///
+  (defthm nxst-node->fanin-of-nxst-node
+    (equal (nxst-node->fanin (nxst-node f reg))
+           (lit-fix f))
+    :hints(("Goal" :in-theory (enable nxst-node)))))
+
+(define nxst-node->reg ((ri nxst-node-p))
+  :prepwork ((local (in-theory (enable nxst-node-p))))
+  :returns (id idp)
+  (id-fix (third ri))
+  ///
+  (defthm nxst-node->reg-of-nxst-node
+    (equal (nxst-node->reg (nxst-node f reg))
+           (id-fix reg))
+    :hints(("Goal" :in-theory (enable nxst-node)))))
+
+
+(defun const-node-p (node)
+  (declare (xargs :guard t))
+  (eq node nil))
+
 
 (define node-p (x)
   (or (pi-node-p x)
-      (ro-node-p x)
+      (reg-node-p x)
       (gate-node-p x)
       (po-node-p x)
-      (ri-node-p x)
+      (nxst-node-p x)
       (const-node-p x))
   ///
-  (defthm tags-when-node-p
+  (defthm stypes-when-node-p
     (implies (node-p node)
-             (and (equal (equal (tag node) :pi)
+             (and (equal (equal (stype node) (pi-stype))
                          (pi-node-p node))
-                  (equal (equal (tag node) :ro)
-                         (ro-node-p node))
-                  (equal (equal (tag node) :gate)
+                  (equal (equal (stype node) (reg-stype))
+                         (reg-node-p node))
+                  (equal (equal (stype node) (gate-stype))
                          (gate-node-p node))
-                  (equal (equal (tag node) :ri)
-                         (ri-node-p node))
-                  (equal (equal (tag node) :po)
+                  (equal (equal (stype node) (nxst-stype))
+                         (nxst-node-p node))
+                  (equal (equal (stype node) (po-stype))
                          (po-node-p node)))))
 
   (defthmd node-p-when-all-others-ruled-out
-    (implies (not (member (tag node)
-                          '(:pi :ro :gate :ri :po)))
+    (implies (not (member (stype node)
+                          (list (pi-stype) (po-stype) (nxst-stype) (reg-stype) (gate-stype))))
              (equal (node-p node)
-                    (const-node-p node)))))
+                    (const-node-p node))))
+
+  (defthm node-p-of-gate-node
+    (equal (node-p (gate-node f0 f1))
+           t))
+
+  (defthm node-p-of-po-node
+    (equal (node-p (po-node f))
+           t))
+
+  (defthm node-p-of-nxst-node
+    (equal (node-p (nxst-node f reg))
+           t)))
+
+
+(define stype->type (x)
+  :prepwork ((local (in-theory (enable stype-fix stypep))))
+  :returns (type natp)
+  (car (stype-fix x))
+  ///
+  (defthm stype->type-bound
+    (<= (stype->type x) 3))
+  (defcong stype-equiv equal (stype->type x) 1))
+
+
+(define stype->regp (x)
+  :prepwork ((local (in-theory (enable stype-fix stypep))))
+  :returns (regp bitp)
+  (bfix (cdr (stype-fix x)))
+  ///
+  (defcong stype-equiv equal (stype->regp x) 1))
+
+
+(define node->type ((node node-p))
+  :enabled t
+  (stype->type (stype node)))
+
+(define io-node->regp ((node node-p))
+  :enabled t
+  (stype->regp (stype node)))
+
+
+(defthm stype-not-const-implies-nonempty
+  (implies (not (equal (stype (car x)) (const-stype)))
+           (consp x))
+  :rule-classes ((:forward-chaining :trigger-terms
+                  ((stype (car x))))))
+
+(defthm stype->type-not-const-implies-nonempty
+  (implies (not (equal (stype->type (stype (car x))) (const-type)))
+           (consp x))
+  :rule-classes ((:forward-chaining :trigger-terms
+                  ((stype->type (stype (car x)))))))
+
+(defthm stype->regp-not-zero-implies-nonempty
+  (implies (not (equal (stype->regp (stype (car x))) 0))
+           (consp x))
+  :rule-classes ((:forward-chaining :trigger-terms
+                  ((stype->regp (stype (car x)))))))
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 (cutil::deflist node-listp (x)
                 (node-p x)
@@ -165,22 +403,9 @@ stobj.</p>
 
 
 
-;; (cutil::deflist id-listp (x)
-;;                 (idp x)
-;;                 :true-listp t)
 
-;; (cutil::defaggregate aigneta
-;;                      ((pis id-listp "PI ids")
-;;                       (ros id-listp "RO ids")
-;;                       (pos id-listp "PO ids")
-;;                       (ris id-listp "RI ids")
-;;                       (nodes node-listp))
-;;                      :tag :aignet)
-
-
-
-(defprojection tags (x)
-  (tag x))
+(defprojection stypes (x)
+  (stype x))
 
 (local
  (defthm induct-by-list-equiv
@@ -188,439 +413,390 @@ stobj.</p>
    :rule-classes ((:induction
                    :pattern (list-equiv x y)
                    :scheme (acl2::fast-list-equiv x y)))))
+
 (local (in-theory (enable (:induction acl2::fast-list-equiv))))
 
-
-(defcong list-equiv equal (tags x) 1
-  :hints(("Goal" :in-theory (enable tags))))
-
-(define suffixp (x y)
-  (or (list-equiv x y)
-      (and (consp y)
-           (suffixp x (cdr y))))
+(define stype-count (type x)
+  (cond ((atom x) 0)
+        ((equal (stype-fix type) (stype (car x)))
+         (+ 1 (stype-count type (cdr x))))
+        (t (stype-count type (cdr x))))
   ///
-  (defthm len-when-suffixp
-    (implies (suffixp x y)
-             (<= (len x) (len y)))
-    :rule-classes (:rewrite :forward-chaining))
-  (defthm duplicity-when-suffixp
-    (implies (suffixp x y)
-             (<= (duplicity k x)
-                 (duplicity k y)))
-    :rule-classes (:rewrite :linear))
-  ;; Leave just the rewrite rules enabled
-  (in-theory (disable (:forward-chaining len-when-suffixp)
-                      (:linear duplicity-when-suffixp)))
-  (defthm tags-suffixp-when-suffixp
-    (implies (suffixp x y)
-             (suffixp (tags x) (tags y))))
-  (defcong list-equiv equal (suffixp x y) 1)
-  (defcong list-equiv equal (suffixp x y) 2)
-  (defthm cdr-suffixp
-    (implies (suffixp x y)
-             (suffixp (cdr x) y)))
-  (defthm len-suffixp-of-cdr
-    (implies (and (suffixp x (cdr y))
-                  (consp y))
-             (< (len x) (len y)))
-    :hints (("goal" :induct (list-equiv x y))))
-  (defthm len-suffixp-of-cdr-not-equal
-    (implies (and (suffixp x (cdr y))
-                  (consp y))
-             (not (equal (len x) (len y))))
-    :hints (("goal" :use len-suffixp-of-cdr
-             :in-theory (disable len-suffixp-of-cdr))))
-  (defthm duplicity-suffixp-of-cdr
-    (implies (and (suffixp x (cdr y))
-                  (consp y)
-                  (equal (car y) k))
-             (< (duplicity k x) (duplicity k y)))
-    :hints (("goal" :induct (list-equiv x y))))
-  (defthm duplicity-suffixp-of-cdr-not-equal
-    (implies (and (suffixp x (cdr y))
-                  (consp y)
-                  (equal (car y) k))
-             (not (equal (duplicity k x) (duplicity k y))))
-    :hints (("goal" :use duplicity-suffixp-of-cdr
-             :in-theory (disable duplicity-suffixp-of-cdr))))
-  (defthm suffixp-self
-    (suffixp x x)))
+  (defcong stype-equiv equal (stype-count type x) 1)
+  (defcong list-equiv equal (stype-count type x) 2)
+  (defthm stype-count-of-cons
+    (equal (stype-count type (cons a b))
+           (if (equal (stype-fix type) (stype a))
+               (+ 1 (stype-count type b))
+             (stype-count type b))))
+  (defthm stype-count-of-atom
+    (implies (not (consp x))
+             (equal (stype-count type x)
+                    0))
+    :rule-classes ((:rewrite :backchain-limit-lst 1))))
 
-(defsection suffixp-binder
-  (defun suffixp-bind (x)
+(defcong list-equiv equal (stypes x) 1
+  :hints(("Goal" :in-theory (enable stypes))))
+
+
+
+(mutual-recursion
+ (defun subtermp (x y)
+   (declare (xargs :guard t))
+   (or (equal x y)
+       (and (consp y)
+            (not (eq (car y) 'quote))
+            (subtermp-list x (cdr y)))))
+ (defun subtermp-list (x y)
+   (declare (xargs :guard t))
+   (if (atom y)
+       nil
+     (or (subtermp x (car y))
+         (subtermp-list x (cdr y))))))
+
+;; (defcong list-equiv equal (duplicity k x) 2
+;;   :hints(("Goal" :in-theory (enable duplicity))))
+
+(defcong list-equiv equal (stypes x) 1
+  :hints(("Goal" :in-theory (enable stypes))))
+
+(define aignet-extension-p (y x)
+  (or (equal x y)
+      (and (consp y)
+           (aignet-extension-p (cdr y) x)))
+  ///
+  (defun aignet-extension-bind-inverse-fn (x var)
     (declare (xargs :mode :program))
     (case-match x
+      (('lookup-stype & & y)
+       `((,var . ,y)))
       ((lookup-fn & y)
        (if (member lookup-fn
-                   '(lookup-node
-                     lookup-pi
-                     lookup-po
-                     lookup-ro
-                     lookup-ri))
-           `((y . ,y))
-         '((try-again . try-again))))
-      (& '((try-again . try-again)))))
+                   '(lookup-id
+                     lookup-reg->nxst))
+           `((,var . ,y))
+         ;; '((try-again . try-again))
+         nil))
+      (('cdr y) `((,var . ,y)))
+      (& ;; '((try-again . try-again))
+       nil)))
 
-  (defthm len-when-suffixp-bind
-    (implies (and (bind-free (suffixp-bind x))
-                  (suffixp x y))
+  (defmacro aignet-extension-bind-inverse (&key (new 'new)
+                                                (orig 'orig))
+    `(and (bind-free (aignet-extension-bind-inverse-fn ,orig ',new)
+                     (,new))
+          (aignet-extension-p ,new ,orig)))
+                                                
+  (defthm len-when-aignet-extension
+    (implies (aignet-extension-p y x)
              (<= (len x) (len y)))
     :rule-classes ((:linear :trigger-terms ((len x)))))
 
-  (defthm duplicity-when-suffixp-bind
-    (implies (and (bind-free (suffixp-bind x))
-                  (suffixp x y))
-             (<= (duplicity k x) (duplicity k y)))
-    :rule-classes ((:linear :trigger-terms ((duplicity k x))))))
+  (defthm len-when-aignet-extension-bind-inverse
+    (implies (aignet-extension-bind-inverse :orig x :new y)
+             (<= (len x) (len y)))
+    :rule-classes ((:linear :trigger-terms ((len x)))))
+
+  (defthm stype-count-when-aignet-extension
+    (implies (aignet-extension-p y x)
+             (<= (stype-count k x) (stype-count k y)))
+    :rule-classes ((:linear :trigger-terms ((stype-count k x)))))
+
+  (defthm stype-count-when-aignet-extension-bind-inverse
+    (implies (aignet-extension-bind-inverse :orig x :new y)
+             (<= (stype-count k x) (stype-count k y)))
+    :rule-classes ((:linear :trigger-terms ((stype-count k x)))))
+
+  (defthm len-cdr-when-aignet-extension
+    (implies (and (aignet-extension-p y x)
+                  (consp x))
+             (< (len (cdr x)) (len y)))
+    :rule-classes ((:linear :trigger-terms
+                    ((len (cdr x))))))
+
+  (defthm len-cdr-when-aignet-extension-inverse
+    (implies (and (aignet-extension-bind-inverse :orig x :new y)
+                  (consp x))
+             (< (len (cdr x)) (len y)))
+    :rule-classes ((:linear :trigger-terms
+                    ((len (cdr x))))))
+
+  (defthm stype-count-cdr-when-aignet-extension-p
+    (implies (and (aignet-extension-p y x)
+                  (equal type (stype (car x)))
+                  (consp x))
+             (< (stype-count type (cdr x))
+                (stype-count type y)))
+    :rule-classes ((:linear :trigger-terms
+                    ((stype-count type (cdr x))))))
+
+  (defthm stype-count-cdr-when-aignet-extension-inverse
+    (implies (and (aignet-extension-bind-inverse :orig x :new y)
+                  (equal type (stype (car x)))
+                  (consp x))
+             (< (stype-count type (cdr x))
+                (stype-count type y)))
+    :rule-classes ((:linear :trigger-terms
+                    ((stype-count type (cdr x))))))
+
+  ;; (defcong list-equiv equal (aignet-extension-p y x) 1)
+  ;; (defcong list-equiv equal (aignet-extension-p y x) 2)
+
+  (defthmd aignet-extension-p-transitive
+    (implies (and (aignet-extension-p x y)
+                  (aignet-extension-p y z))
+             (aignet-extension-p x z))
+    :rule-classes ((:rewrite :match-free :all)))
+
+  ;; (defthm len-aignet-extension-p-of-cdr
+  ;;   (implies (and (aignet-extension-p (cdr y) x)
+  ;;                 (consp y))
+  ;;            (< (len x) (len y)))
+  ;;   :hints (("goal" :induct (list-equiv x y))))
+  ;; (defthm len-aignet-extension-p-of-cdr-not-equal
+  ;;   (implies (and (aignet-extension-p (cdr y) x)
+  ;;                 (consp y))
+  ;;            (not (equal (len x) (len y))))
+  ;;   :hints (("goal" :use len-aignet-extension-p-of-cdr
+  ;;            :in-theory (disable len-aignet-extension-p-of-cdr))))
+  ;; (defthm stype-count-aignet-extension-p-of-cdr
+  ;;   (implies (and (aignet-extension-p (cdr y) x)
+  ;;                 (consp y)
+  ;;                 (equal (car y) k))
+  ;;            (< (stype-count k x) (stype-count k y)))
+  ;;   :hints (("goal" :induct (list-equiv x y))))
+  ;; (defthm stype-count-aignet-extension-p-of-cdr-not-equal
+  ;;   (implies (and (aignet-extension-p (cdr y) x)
+  ;;                 (consp y)
+  ;;                 (equal (car y) k))
+  ;;            (not (equal (stype-count k x) (stype-count k y))))
+  ;;   :hints (("goal" :use stype-count-aignet-extension-p-of-cdr
+  ;;            :in-theory (disable stype-count-aignet-extension-p-of-cdr))))
+  (defthm aignet-extension-p-self
+    (aignet-extension-p x x))
+
+  (defthm aignet-extension-p-cons
+    (aignet-extension-p (cons x y) y))
+
+  (defthm aignet-extension-p-cons-more
+    (implies (aignet-extension-p y z)
+             (aignet-extension-p (cons x y) z)))
+
+  (defthm aignet-extension-p-cdr
+    (implies (and (aignet-extension-p y z)
+                  (consp z))
+             (aignet-extension-p y (cdr z)))))
 
 
 
 
 
-;; (define reg-count ((aignet node-listp))
-;;   :short "The number of registers in the aignet"
-;;   :long "
-;; <p>Surprise! this one is different. reg-count is not just the number of
-;; :ro nodes.  Here is how the number of registers develops over time:
-;; <ul>
-;; <li>An aignet starts out with 0 regs, unsurprisingly.</li>
-;; <li>Each RO that is added is an additional register.</li>
-;; <li>Each RI that is added when reg-count <= num-regins is an additional
-;; register.</li>
-;; </ul>
-;; </p>
-
-;; <p>Why? Registers are connected implicitly.  We generally expect a bunch of ROs
-;; to be added initially, and then an equal number of RIs to be added after some
-;; logic, so that the number of RIs is <= the number of ROs at any point.  When
-;; this is the case, the Nth RI added is just connected to the Nth RO; until the
-;; Nth RI is added, the Nth RO is unconnected.  Also, in this case reg-count is
-;; just the number of RO nodes.  (num-regins is always the number of RI nodes.)
-;; </p>
-
-;; <p>What if this pattern isn't followed?
-;; <ul>
-;; <li> Adding an RO is simple: it is initially unconnected, its RO index is the
-;; reg-count, and it increases the reg-count by 1.
-;; </li>
-;; <li> When reg-count > num-regins and an RI is added, that RI is connected to the
-;; RO whose index is num-regins, its RI index is num-regins, num-regins is
-;; incremented and reg-count remains the same.
-;; </li>
-;; <li>When reg-count <= num-regins and an RI is added, that RI is permanently
-;; unconnected to any RO.  Its RI index is num-regins; there is then no RO whose
-;; index is reg-count (we'll say the [reg-count]th RO is node 0), and reg-count and
-;; num-regins are both incremented.  (This maintains an invariant that reg-count >=
-;; num-regins, so this case actually occurs exactly when reg-count == num-regins.)
-;; </li>
-;; </ul>
-;; </p>"
-;;   (if (endp aignet)
-;;       0
-;;     (case (tag (car aignet))
-;;       (:ro (+ 1 (reg-count (cdr aignet))))
-;;       (:ri (let ((rest (reg-count (cdr aignet))))
-;;              (if (< (duplicity :ri (tags (cdr aignet))) rest)
-;;                  rest
-;;                (+ 1 rest))))
-;;       (t (reg-count (cdr aignet)))))
-;;   ///
-;;   (defthm reg-count-gte-num-regins
-;;     (<= (duplicity :ri (tags aignet)) (reg-count aignet))
-;;     :rule-classes :linear)
-;;   (defcong list-equiv equal (reg-count x) 1)
-;;   (defthm reg-count-when-suffixp
-;;     (implies (suffixp x y)
-;;              (<= (reg-count x) (reg-count y)))
-;;     :hints(("Goal" :in-theory (enable suffixp))))
-;;   (defthm reg-count-when-suffixp-bind
-;;     (implies (and (bind-free (suffixp-bind x))
-;;                   (suffixp x y))
-;;              (<= (reg-count x) (reg-count y)))
-;;     :rule-classes ((:linear :trigger-terms ((reg-count x)))))
-;;   ;; (defthm reg-count-when-suffixp-of-cdr
-;;   ;;   (implies (and (suffixp x (cdr y))
-;;   ;;                 (consp y)
-;;   ;;                 (equal (tag (car y)) :ro))
-;;   ;;            (and (< (reg-count x) (reg-count y))
-;;   ;;                 (not (equal (reg-count x) (reg-count y)))))
-;;   ;;   :hints (("goal" :use ((:instance reg-count-when-suffixp
-;;   ;;                          (y (cdr y))))
-;;   ;;            :in-theory (disable reg-count-when-suffixp))))
-;;   (defthm reg-count-cdr-of-suffixp
-;;     (implies (and (bind-free (suffixp-bind x))
-;;                   (suffixp x y)
-;;                   (equal (tag (car x)) :ro))
-;;              (< (reg-count (cdr x)) (reg-count y)))
-;;     :hints (("goal" :use ((:instance reg-count-when-suffixp
-;;                            (x x)))
-;;              :in-theory (disable reg-count-when-suffixp
-;;                                  duplicity-when-suffixp)))
-;;     :rule-classes ((:linear :trigger-terms ((reg-count (cdr x))))))
-;;   (defthm reg-count-not-equal-cdr-of-suffixp
-;;     (implies (and (bind-free (suffixp-bind x))
-;;                   (suffixp x y)
-;;                   (consp x)
-;;                   (equal (tag (car x)) :ro))
-;;              (< (reg-count (cdr x)) (reg-count y)))
-;;     :hints (("goal" :use ((:instance reg-count-when-suffixp
-;;                            (x x)))
-;;              :in-theory (disable reg-count-when-suffixp
-;;                                  duplicity-when-suffixp)))
-;;     :rule-classes ((:linear :trigger-terms ((reg-count (cdr x))))))
-;;   (defthm reg-count-cdr-linear
-;;     (implies (and (consp x)
-;;                   (equal (tag (car x)) :ro))
-;;              (< (reg-count (cdr x)) (reg-count x)))
-;;     :rule-classes ((:linear :trigger-terms ((reg-count (cdr x))))))
-;;   (defthm reg-count-of-cons-ro
-;;     (implies (eq (tag x) :ro)
-;;              (equal (reg-count (cons x y))
-;;                     (+ 1 (reg-count y)))))
-;;   (defthm reg-count-of-atom
-;;     (implies (not (consp x))
-;;              (equal (reg-count x) 0)))
-;;   (defthm reg-count-of-cons-non-ri/ro
-;;     (implies (and (not (eq (tag x) :ro))
-;;                   (not (eq (tag x) :ri)))
-;;              (equal (reg-count (cons x y))
-;;                     (reg-count y)))))
 
 
-
-
-
-(define lookup-node ((id idp)
+(define lookup-id ((id idp)
                      (aignet node-listp))
   :returns (suffix node-listp :hyp (node-listp aignet))
-  (cond ((endp aignet) nil)
+  (cond ((endp aignet) aignet)
         ((equal (len aignet) (id-val id))
          aignet)
-        (t (lookup-node id (cdr aignet))))
+        (t (lookup-id id (cdr aignet))))
   ///
-  (defcong id-equiv equal (lookup-node id aignet) 1)
-  (defthm len-of-lookup-node
+  (defcong id-equiv equal (lookup-id id aignet) 1)
+  (defthm len-of-lookup-id
     (implies (<= (id-val n) (len aignet))
-             (equal (len (lookup-node n aignet))
+             (equal (len (lookup-id n aignet))
                     (id-val n)))
-    :hints(("Goal" :in-theory (enable lookup-node))))
-  (defthm lookup-node-0
-    (equal (lookup-node 0 aignet) nil))
-  (defthm lookup-node-in-bounds
-    (iff (lookup-node n aignet)
+    :hints(("Goal" :in-theory (enable lookup-id))))
+  (defthm lookup-id-0
+    (list-equiv (lookup-id 0 aignet) nil))
+  (defthmd lookup-id-in-bounds
+    (iff (consp (lookup-id n aignet))
          (and (< 0 (id-val n))
               (<= (id-val n) (len aignet)))))
-  (defthm lookup-node-suffixp
-    (suffixp (lookup-node id aignet) aignet)
-    :hints(("Goal" :in-theory (enable suffixp))))
-  (defthm lookup-node-consp
-    (iff (consp (lookup-node id aignet))
-         (lookup-node id aignet)))
-  (defcong list-equiv list-equiv (lookup-node id aignet) 2)
-  (defthm lookup-node-in-suffix
-    (implies (and (suffixp aignet aignet2)
-                  (<= (id-val id) (len aignet)))
-             (list-equiv (lookup-node id aignet2)
-                         (lookup-node id aignet)))
-    :hints(("Goal" :in-theory (enable suffixp)))))
+  (defthm lookup-id-aignet-extension-p
+    (aignet-extension-p aignet (lookup-id id aignet))
+    :hints(("Goal" :in-theory (enable aignet-extension-p))))
+  (defcong list-equiv list-equiv (lookup-id id aignet) 2)
+  ;; (defcong list-equiv iff (lookup-id id aignet) 2)
+  (defthm lookup-id-in-extension
+    (implies (and (aignet-extension-p new orig)
+                  (<= (id-val id) (len orig)))
+             (equal (lookup-id id new)
+                    (lookup-id id orig)))
+    :hints(("Goal" :in-theory (enable aignet-extension-p))))
+  (defthm lookup-id-in-extension-inverse
+    (implies (and (aignet-extension-bind-inverse)
+                  (<= (id-val id) (len orig)))
+             (equal (lookup-id id orig)
+                    (lookup-id id new)))
+    :hints(("Goal" :in-theory (enable aignet-extension-p))))
+  (defthm len-of-cdr-lookup-bound-by-id
+    (implies (consp (lookup-id id aignet))
+             (< (len (cdr (lookup-id id aignet)))
+                (id-val id)))
+    :rule-classes :linear)
+  (defthm lookup-id-of-len-of-suffix
+    (implies (aignet-extension-p y x)
+             (equal (lookup-id (to-id (len x)) y)
+                    x))
+    :hints(("Goal" :in-theory (enable lookup-id))))
+  (defthm true-listp-lookup-id-of-node-listp
+    (implies (node-listp aignet)
+             (true-listp (lookup-id id aignet)))
+    :rule-classes :type-prescription)
+  (defthm lookup-id-of-nil
+    (equal (lookup-id x nil) nil)))
 
 
-(define lookup-pi ((n natp)
-                   (aignet node-listp))
+(define lookup-stype ((n natp)
+                      (stype stypep)
+                      (aignet node-listp))
   :returns (suffix node-listp :hyp (node-listp aignet))
-  (cond ((endp aignet) nil)
-        ((and (eq (tag (car aignet)) :pi)
-              (equal (duplicity :pi (tags (cdr aignet))) (lnfix n)))
+  (cond ((endp aignet) aignet)
+        ((and (equal (stype (car aignet)) (stype-fix stype))
+              (equal (stype-count stype (cdr aignet)) (lnfix n)))
          aignet)
-        (t (lookup-pi n (cdr aignet))))
+        (t (lookup-stype n stype (cdr aignet))))
   ///
-  (defcong nat-equiv equal (lookup-pi n aignet) 1)
-  (defthm num-ins-of-lookup-pi
-    (implies (< (nfix n) (duplicity :pi (tags aignet)))
-             (equal (duplicity :pi (tags (cdr (lookup-pi n aignet))))
+  (defcong nat-equiv equal (lookup-stype n stype aignet) 1)
+  (defcong stype-equiv equal (lookup-stype n stype aignet) 2
+    :hints(("Goal" :in-theory (disable stype-equiv))))
+  (defcong list-equiv list-equiv (lookup-stype n stype aignet) 3)
+  (defthm stype-count-of-lookup-stype
+    (implies (< (nfix n) (stype-count stype aignet))
+             (equal (stype-count stype (cdr (lookup-stype n stype aignet)))
                     (nfix n))))
-  (defthm car-of-lookup-pi
-    (implies (< (nfix n) (duplicity :pi (tags aignet)))
-             (equal (tag (car (lookup-pi n aignet)))
-                    :pi)))
-  (defthm lookup-pi-in-bounds
-    (iff (lookup-pi n aignet)
-         (< (nfix n) (duplicity :pi (tags aignet)))))
-  (defthm lookup-pi-suffixp
-    (suffixp (lookup-pi n aignet) aignet)
-    :hints(("Goal" :in-theory (enable suffixp))))
-  (defthm lookup-pi-consp
-    (iff (consp (lookup-pi id aignet))
-         (lookup-pi id aignet))))
+  (defthm car-of-lookup-stype
+    (implies (< (nfix n) (stype-count stype aignet))
+             (equal (stype (car (lookup-stype n stype aignet)))
+                    (stype-fix stype))))
+  (defthmd lookup-stype-in-bounds
+    (iff (consp (lookup-stype n stype aignet))
+         (< (nfix n) (stype-count stype aignet))))
+  (defthm lookup-stype-aignet-extension-p
+    (aignet-extension-p aignet (lookup-stype n stype aignet))
+    :hints(("Goal" :in-theory (enable aignet-extension-p))))
 
-(define lookup-ro ((n natp)
-                   (aignet node-listp))
-  :returns (suffix node-listp :hyp (node-listp aignet))
-  (cond ((endp aignet) nil)
-        ((and (eq (tag (car aignet)) :ro)
-              (equal (duplicity :ro (tags (cdr aignet)))
-                     (lnfix n)))
-         aignet)
-        (t (lookup-ro n (cdr aignet))))
-  ///
-  (defcong nat-equiv equal (lookup-ro n aignet) 1)
-  (defthm num-regs-of-lookup-ro
-    (implies (< (nfix n) (duplicity :ro (tags aignet)))
-             (equal (duplicity :ro (tags (cdr (lookup-ro n aignet))))
-                    (nfix n))))
-  (defthm car-of-lookup-ro
-    (implies (lookup-ro n aignet)
-             (equal (tag (car (lookup-ro n aignet)))
-                    :ro)))
-  ;; unlike the others, no guarantee that lookup-ro exists even if n < reg-count
-  (defthm lookup-ro-suffixp
-    (suffixp (lookup-ro n aignet) aignet)
-    :hints(("Goal" :in-theory (enable suffixp))))
-  (defthm lookup-ro-consp
-    (iff (consp (lookup-ro id aignet))
-         (lookup-ro id aignet))))
+  (defthm lookup-stype-of-stype-count
+    (implies (and (aignet-extension-p new orig)
+                  (equal (stype (car orig)) (stype-fix stype))
+                  (not (equal (stype-fix stype) (const-stype))))
+             (equal (lookup-stype (stype-count stype (cdr orig))
+                                  stype
+                                  new)
+                    orig))
+    :hints(("Goal" :in-theory (enable aignet-extension-p
+                                      lookup-stype
+                                      stype-count)
+            :induct t)
+           (and stable-under-simplificationp
+                '(:cases ((< (stype-count stype (cdr new))
+                             (stype-count stype orig)))))))
 
-(define lookup-po ((n natp)
-                   (aignet node-listp))
-  :returns (suffix node-listp :hyp (node-listp aignet))
-  (cond ((endp aignet) nil)
-        ((and (eq (tag (car aignet)) :po)
-              (equal (duplicity :po (tags (cdr aignet))) (lnfix n)))
-         aignet)
-        (t (lookup-po n (cdr aignet))))
-  ///
-  (defcong nat-equiv equal (lookup-po n aignet) 1)
-  (defthm num-outs-of-lookup-po
-    (implies (< (nfix n) (duplicity :po (tags aignet)))
-             (equal (duplicity :po (tags (cdr (lookup-po n aignet))))
-                    (nfix n))))
-  (defthm car-of-lookup-po
-    (implies (< (nfix n) (duplicity :po (tags aignet)))
-             (equal (tag (car (lookup-po n aignet)))
-                    :po)))
-  (defthm lookup-po-in-bounds
-    (iff (lookup-po n aignet)
-         (< (nfix n) (duplicity :po (tags aignet)))))
-  (defthm lookup-po-suffixp
-    (suffixp (lookup-po n aignet) aignet)
-    :hints(("Goal" :in-theory (enable suffixp))))
-  (defthm lookup-po-consp
-    (iff (consp (lookup-po id aignet))
-         (lookup-po id aignet))))
+  (defthm lookup-stype-in-extension
+    (implies (and (aignet-extension-p new orig)
+                  (consp (lookup-stype n stype orig)))
+             (equal (lookup-stype n stype new)
+                    (lookup-stype n stype orig)))
+    :hints(("Goal" :in-theory (enable aignet-extension-p
+                                      lookup-stype-in-bounds))))
+
+  (defthm lookup-stype-in-extension-inverse
+    (implies (and (aignet-extension-bind-inverse)
+                  (consp (lookup-stype n stype orig)))
+             (list-equiv (lookup-stype n stype orig)
+                         (lookup-stype n stype new)))
+    :hints(("Goal" :in-theory (enable aignet-extension-p))))
+
+  (defthm stype-of-lookup-stype
+    (implies (consp (lookup-stype n stype aignet))
+             (equal (stype (car (lookup-stype n stype aignet)))
+                    (stype-fix stype)))))
 
 
 ;; NOTE this is different from the other lookups: it's by ID of the
 ;; corresponding RO node, not IO number.  I think the asymmetry is worth it
 ;; though.
-(define lookup-reg->ri ((reg-id idp)
-                        (aignet node-listp))
+(define lookup-reg->nxst ((reg-id idp)
+                          (aignet node-listp))
   :returns (suffix node-listp :hyp (node-listp aignet))
-  (cond ((endp aignet) nil)
-        ((and (eq (tag (car aignet)) :ri)
-              (b* ((ro (ri-node->reg (car aignet))))
+  (cond ((endp aignet) aignet)
+        ((and (equal (stype (car aignet)) (nxst-stype))
+              (b* ((ro (nxst-node->reg (car aignet))))
                 (id-equiv reg-id ro)))
          aignet)
-        (t (lookup-reg->ri reg-id (cdr aignet))))
+        (t (lookup-reg->nxst reg-id (cdr aignet))))
   ///
-  (defcong id-equiv equal (lookup-reg->ri reg-id aignet) 1)
-  (defthm car-of-lookup-reg->ri
-    (implies (lookup-reg->ri reg-id aignet)
-             (and (equal (tag (car (lookup-reg->ri reg-id aignet))) :ri)
-                  (id-equiv (ri-node->reg (car (lookup-reg->ri reg-id aignet)))
-                            reg-id))))
-  (defthm suffixp-of-lookup-reg->ri
-    (suffixp (lookup-reg->ri reg-id aignet) aignet)
-    :hints(("Goal" :in-theory (enable suffixp)))))
+  (defcong id-equiv equal (lookup-reg->nxst reg-id aignet) 1)
+  (defcong list-equiv list-equiv (lookup-reg->nxst reg-id aignet) 2)
+  (defthm car-of-lookup-reg->nxst
+    (implies (consp (lookup-reg->nxst reg-id aignet))
+             (and (equal (stype (car (lookup-reg->nxst reg-id aignet))) (nxst-stype))
+                  (equal (nxst-node->reg (car (lookup-reg->nxst reg-id aignet)))
+                         (id-fix reg-id)))))
+  (defthm aignet-extension-p-of-lookup-reg->nxst
+    (aignet-extension-p aignet (lookup-reg->nxst reg-id aignet))
+    :hints(("Goal" :in-theory (enable aignet-extension-p))))
+
+  (defthm stype-of-lookup-reg->nxst
+    (implies (consp (lookup-reg->nxst n aignet))
+             (equal (stype (car (lookup-reg->nxst n aignet)))
+                    (nxst-stype)))))
 
 
-;; (define lookup-ri ((n natp)
-;;                    (aignet node-listp))
-;;   :returns (suffix node-listp :hyp (node-listp aignet))
-;;   (cond ((endp aignet) nil)
-;;         ((and (eq (tag (car aignet)) :ri)
-;;               (b* ((ro (ri-node->reg (car aignet)))
-;;                    ((cons ro-node ro-tail)
-;;                     (lookup-node ro aignet)))
-;;                 (and (eq (tag ro-node) :ro)
-;;                      (equal (lnfix n) (duplicity :ro (tags ro-tail))))))
-;;          aignet)
-;;         (t (lookup-ri n (cdr aignet))))
-;;   ///
-;;   (defcong nat-equiv equal (lookup-ri n aignet) 1)
-;;   (defthm car-of-lookup-ri
-;;     (implies (lookup-ri n aignet)
-;;              (and (equal (tag (car (lookup-ri n aignet)))
-;;                          :ri)
-;;                   (equal (ri-node->regnum (car (lookup-ri n aignet)))
-;;                          (nfix n)))))
-;;   (defthm lookup-ri-suffixp
-;;     (suffixp (lookup-ri n aignet) aignet)
-;;     :hints(("Goal" :in-theory (enable suffixp))))
-;;   (defthm lookup-ri-consp
-;;     (iff (consp (lookup-ri id aignet))
-;;          (lookup-ri id aignet))))
-
-
-         
-
-
-
-
-;; (defun num-nodes (aignet)
-;;   (declare (xargs :guard (aigneta-p aignet)))
-;;   (len (aigneta->nodes aignet)))
-
-;; (defun num-ins (aignet)
-;;   (declare (xargs :guard (aigneta-p aignet)))
-;;   (len (aigneta->pis aignet)))
-
-;; (defun num-outs (aignet)
-;;   (declare (xargs :guard (aigneta-p aignet)))
-;;   (len (aigneta->pos aignet)))
-
-;; (defun num-regins (aignet)
-;;   (declare (xargs :guard (aigneta-p aignet)))
-;;   (len (aigneta->ris aignet)))
-
-;; (defun reg-count (aignet)
-;;   (declare (xargs :guard (aigneta-p aignet)))
-;;   (len (aigneta->ros aignet)))
 
 (local (defthm equal-len-0
          (equal (equal (len x) 0)
                 (not (consp x)))))
 
 
+(defthm stype-by-stype->type
+  (and (equal (equal (stype->type (stype x)) (const-type))
+              (equal (stype x) (const-stype)))
+       (equal (equal (stype->type (stype x)) (gate-type))
+              (equal (stype x) (gate-stype)))
+       (implies (equal (stype->regp (stype x)) 1)
+                (and (equal (equal (stype->type (stype x)) (in-type))
+                            (equal (stype x) (reg-stype)))
+                     (equal (equal (stype->type (stype x)) (out-type))
+                            (equal (stype x) (nxst-stype)))))
+       (implies (not (equal (stype->regp (stype x)) 1))
+                (and (equal (equal (stype->type (stype x)) (in-type))
+                            (equal (stype x) (pi-stype)))
+                     (equal (equal (stype->type (stype x)) (out-type))
+                            (equal (stype x) (po-stype))))))
+  :hints(("Goal" :in-theory (enable stypep stype stype-fix stype->type
+                                    stype->regp bitp))))
+              
 
 
+;; (defthm node-by-stype-types
+;;   (implies (node-p node)
+;;            (and (equal (equal (stype->type (stype node)) (const-type))
+;;                        (const-node-p node))
+;;                 (equal (equal (stype->type (stype node)) (gate-type))
+;;                        (gate-node-p node))
+;;                 (implies (equal (stype->type (stype node)) (in-type))
+;;                          (equal (equal (stype->regp (stype node)) 1)
+;;                                 (reg-node-p node)))
+;;                 (implies (not (reg-node-p node))
+;;                          (equal (equal (stype->type (stype node)) (in-type))
+;;                                 (pi-node-p node)))
+;;                 (implies (equal (stype->type (stype node)) (out-type))
+;;                          (equal (equal (stype->regp (stype node)) 1)
+;;                                 (nxst-node-p node)))
+;;                 (implies (not (nxst-node-p node))
+;;                          (equal (equal (stype->type (stype node)) (out-type))
+;;                                 (po-node-p node)))))
+;;   :hints(("Goal" :in-theory (enable node-p))))
 
 
-
-
-
-
-
-(define node->type ((node node-p))
-  :enabled t
-  (case (tag node)
-    ((:pi :ro) (in-type))
-    ((:po :ri) (out-type))
-    (:gate     (gate-type))
-    (t         (const-type))))
-
-(define io-node->regp ((node node-p))
-  :guard (or (int= (node->type node) (in-type))
-             (int= (node->type node) (out-type)))
-  :enabled t
-  (case (tag node)
-    ((:ri :ro) 1)
-    (t 0)))
 
 (define co-node->fanin ((node node-p))
   :guard (equal (node->type node) (out-type))
   :returns (lit litp)
   (lit-fix (if (equal (io-node->regp node) 1)
-               (ri-node->fanin node)
+               (nxst-node->fanin node)
              (po-node->fanin node)))
   :prepwork ((local (in-theory (e/d (node->type
                                      io-node->regp)
@@ -629,18 +805,9 @@ stobj.</p>
   (defthm co-node->fanin-of-po-node
     (equal (co-node->fanin (po-node f))
            (lit-fix f)))
-  (defthm co-node->fanin-of-ri-node
-    (equal (co-node->fanin (ri-node f n))
+  (defthm co-node->fanin-of-nxst-node
+    (equal (co-node->fanin (nxst-node f n))
            (lit-fix f))))
-
-
-
-
-
-
-
-
-
 
 
 
@@ -648,7 +815,7 @@ stobj.</p>
                      (aignet node-listp))
   (and (<= (id-val (lit-id lit))
            (len aignet))
-       (not (equal (node->type (car (lookup-node (lit-id lit) aignet)))
+       (not (equal (node->type (car (lookup-id (lit-id lit) aignet)))
                    (out-type))))
   ///
   (defthm lit-id-bound-when-aignet-litp
@@ -659,10 +826,10 @@ stobj.</p>
            (implies (and (< x (+ 1 y))
                          (integerp x) (integerp y))
                     (<= x y))))
-  (defthm aignet-litp-in-suffix
-    (implies (and (aignet-litp lit aignet)
-                  (suffixp aignet aignet2))
-             (aignet-litp lit aignet2)))
+  (defthm aignet-litp-in-extension
+    (implies (and (aignet-extension-p new orig)
+                  (aignet-litp lit orig))
+             (aignet-litp lit new)))
   (defcong lit-equiv equal (aignet-litp lit aignet) 1)
   (defcong list-equiv equal (aignet-litp lit aignet) 2))
 
@@ -676,9 +843,9 @@ stobj.</p>
            (implies (and (< x (+ 1 y))
                          (integerp x) (integerp y))
                     (<= x y))))
-  (defthm aignet-idp-in-suffix
-    (implies (and (aignet-idp id aignet)
-                  (suffixp aignet aignet2))
+  (defthm aignet-idp-in-extension
+    (implies (and (aignet-extension-p aignet2 aignet)
+                  (aignet-idp id aignet))
              (aignet-idp id aignet2)))
   (defcong id-equiv equal (aignet-idp id aignet) 1)
   (defcong list-equiv equal (aignet-idp id aignet) 2)
@@ -698,32 +865,25 @@ stobj.</p>
 
   (defmacro aignet-seq-case (type regp &rest keys)
     ;; we can't use keyword args because "pi" can't be used as a formal
-    ;; const gate
-    ;; (pi 'nil pi-p)
-    ;; (ro 'nil ro-p)
-    ;; (ri 'nil ri-p)
-    ;; (po 'nil po-p)
-    ;; (ci 'nil ci-p)
-    ;; (co 'nil co-p))
     (declare (xargs :guard (and (keyword-value-listp keys)
                                 (not (and (assoc-keyword :ci keys)
                                           (or (assoc-keyword :pi keys)
-                                              (assoc-keyword :ro keys))))
+                                              (assoc-keyword :reg keys))))
                                 (not (and (assoc-keyword :co keys)
                                           (or (assoc-keyword :po keys)
-                                              (assoc-keyword :ri keys)))))))
+                                              (assoc-keyword :nxst keys)))))))
     `(case ,type
        (,(gate-type)    ,(cadr (assoc-keyword :gate keys)))
        (,(in-type)
                         ,(if (assoc-keyword :ci keys)
                              (cadr (assoc-keyword :ci keys))
                            `(if (int= 1 ,regp)
-                                ,(cadr (assoc-keyword :ro keys))
+                                ,(cadr (assoc-keyword :reg keys))
                               ,(cadr (assoc-keyword :pi keys)))))
        (,(out-type)     ,(if (assoc-keyword :co keys)
                              (cadr (assoc-keyword :co keys))
                            `(if (int= 1 ,regp)
-                                ,(cadr (assoc-keyword :ri keys))
+                                ,(cadr (assoc-keyword :nxst keys))
                               ,(cadr (assoc-keyword :po keys)))))
        (otherwise       ,(cadr (assoc-keyword :const keys))))))
 
@@ -736,9 +896,9 @@ stobj.</p>
           :ci   t
           :po   (aignet-litp (co-node->fanin (car aignet))
                              (cdr aignet))
-          :ri   (and (aignet-litp (co-node->fanin (car aignet))
+          :nxst   (and (aignet-litp (co-node->fanin (car aignet))
                                   (cdr aignet))
-                     (aignet-idp (ri-node->reg (car aignet))
+                     (aignet-idp (nxst-node->reg (car aignet))
                                  (cdr aignet)))
           :gate (let ((f0 (gate-node->fanin0 (car aignet)))
                       (f1 (gate-node->fanin1 (car aignet))))
@@ -752,288 +912,135 @@ stobj.</p>
              (proper-node-listp aignet)))
   (defthm co-fanin-ordered-when-aignet-nodes-ok
     (implies (and (aignet-nodes-ok aignet)
-                  (equal (node->type (car (lookup-node id aignet)))
+                  (equal (node->type (car (lookup-id id aignet)))
                          (out-type)))
              (< (id-val (lit-id (co-node->fanin
-                                 (car (lookup-node id aignet)))))
+                                 (car (lookup-id id aignet)))))
                 (id-val id)))
-    :hints (("goal" :induct (lookup-node id aignet)
-             :in-theory (enable lookup-node))))
-  (defthm ri-reg-ordered-when-aignet-nodes-ok
+    :hints (("goal" :induct (lookup-id id aignet)
+             :in-theory (enable lookup-id)))
+    :rule-classes (:rewrite
+                   (:linear :trigger-terms
+                    ((id-val (lit-id (co-node->fanin
+                                      (car (lookup-id id aignet)))))))))
+  (defthm nxst-reg-ordered-when-aignet-nodes-ok
     (implies (and (aignet-nodes-ok aignet)
-                  (equal (node->type (car (lookup-node id aignet)))
+                  (equal (node->type (car (lookup-id id aignet)))
                          (out-type))
-                  (equal (io-node->regp (car (lookup-node id aignet)))
+                  (equal (io-node->regp (car (lookup-id id aignet)))
                          1))
-             (<= (id-val (ri-node->reg (car (lookup-node id aignet))))
-                 (len aignet)))
-    :hints (("goal" :induct (lookup-node id aignet)
-             :in-theory (e/d (lookup-node aignet-idp)
-                             ((force))))))
-  (defthm ri-reg-aignet-idp-when-aignet-nodes-ok
+             (< (id-val (nxst-node->reg (car (lookup-id id aignet))))
+                (id-val id)))
+    :hints (("goal" :induct (lookup-id id aignet)
+             :in-theory (e/d (lookup-id aignet-idp)
+                             ((force)))))
+    :rule-classes (:rewrite
+                   (:linear :trigger-terms
+                    ((id-val (nxst-node->reg
+                              (car (lookup-id id aignet))))))))
+  (defthm nxst-reg-aignet-idp-when-aignet-nodes-ok
     (implies (and (aignet-nodes-ok aignet)
-                  (equal (node->type (car (lookup-node id aignet)))
+                  (equal (node->type (car (lookup-id id aignet)))
                          (out-type))
-                  (equal (io-node->regp (car (lookup-node id aignet)))
+                  (equal (io-node->regp (car (lookup-id id aignet)))
                          1))
-             (aignet-idp (ri-node->reg (car (lookup-node id aignet)))
-                         (cdr (lookup-node id aignet))))
-    :hints (("goal" :induct (lookup-node id aignet)
-             :in-theory (e/d (lookup-node aignet-idp)
+             (aignet-idp (nxst-node->reg (car (lookup-id id aignet)))
+                         (cdr (lookup-id id aignet))))
+    :hints (("goal" :induct (lookup-id id aignet)
+             :in-theory (e/d (lookup-id aignet-idp)
                              ((force))))))
   (defthm gate-fanin0-ordered-when-aignet-nodes-ok
     (implies (and (aignet-nodes-ok aignet)
-                  (equal (node->type (car (lookup-node id aignet)))
+                  (equal (node->type (car (lookup-id id aignet)))
                          (gate-type)))
              (< (id-val (lit-id (gate-node->fanin0
-                                 (car (lookup-node id aignet)))))
+                                 (car (lookup-id id aignet)))))
                 (id-val id)))
-    :hints (("goal" :induct (lookup-node id aignet)
-             :in-theory (enable lookup-node))))
+    :hints (("goal" :induct (lookup-id id aignet)
+             :in-theory (enable lookup-id)))
+    :rule-classes (:rewrite
+                   (:linear :trigger-terms
+                    ((id-val (lit-id (gate-node->fanin0
+                                      (car (lookup-id id aignet)))))))))
   (defthm gate-fanin1-ordered-when-aignet-nodes-ok
     (implies (and (aignet-nodes-ok aignet)
-                  (equal (node->type (car (lookup-node id aignet))) (gate-type)))
+                  (equal (node->type (car (lookup-id id aignet))) (gate-type)))
              (< (id-val (lit-id (gate-node->fanin1
-                                 (car (lookup-node id aignet)))))
+                                 (car (lookup-id id aignet)))))
                 (id-val id)))
-    :hints (("goal" :induct (lookup-node id aignet)
-             :in-theory (enable lookup-node))))
-
+    :hints (("goal" :induct (lookup-id id aignet)
+             :in-theory (enable lookup-id)))
+    :rule-classes (:rewrite
+                   (:linear :trigger-terms
+                    ((id-val (lit-id (gate-node->fanin1
+                                      (car (lookup-id id aignet)))))))))
+  (local (defthm aignet-litp-in-extension-bind
+           (implies (and (aignet-litp lit orig)
+                         (aignet-extension-p new orig))
+                    (aignet-litp lit new))))
   (defthm co-fanin-aignet-litp-when-aignet-nodes-ok
     (implies (and (aignet-nodes-ok aignet)
-                  (equal (node->type (car (lookup-node id aignet))) (out-type)))
+                  (equal (node->type (car (lookup-id id aignet))) (out-type))
+                  (aignet-extension-p aignet2 (cdr (lookup-id id aignet))))
              (aignet-litp (co-node->fanin
-                           (car (lookup-node id aignet)))
-                          aignet))
-    :hints (("goal" :induct (lookup-node id aignet)
-             :in-theory (enable lookup-node)
+                           (car (lookup-id id aignet)))
+                          aignet2))
+    :hints (("goal" :induct (lookup-id id aignet)
+             :in-theory (enable lookup-id)
              :expand ((aignet-nodes-ok aignet)))))
   (defthm gate-fanin0-aignet-litp-when-aignet-nodes-ok
     (implies (and (aignet-nodes-ok aignet)
-                  (equal (node->type (car (lookup-node id aignet))) (gate-type)))
+                  (equal (node->type (car (lookup-id id aignet))) (gate-type))
+                  (aignet-extension-p aignet2 (cdr (lookup-id id aignet))))
              (aignet-litp (gate-node->fanin0
-                           (car (lookup-node id aignet)))
-                          aignet))
-    :hints (("goal" :induct (lookup-node id aignet)
-             :in-theory (enable lookup-node)
+                           (car (lookup-id id aignet)))
+                          aignet2))
+    :hints (("goal" :induct (lookup-id id aignet)
+             :in-theory (enable lookup-id)
              :expand ((aignet-nodes-ok aignet)))))
   (defthm gate-fanin1-aignet-litp-when-aignet-nodes-ok
     (implies (and (aignet-nodes-ok aignet)
-                  (equal (node->type (car (lookup-node id aignet))) (gate-type)))
+                  (equal (node->type (car (lookup-id id aignet))) (gate-type))
+                  (aignet-extension-p aignet2 (cdr (lookup-id id aignet))))
              (aignet-litp (gate-node->fanin1
-                           (car (lookup-node id aignet)))
-                          aignet))
-    :hints (("goal" :induct (lookup-node id aignet)
-             :in-theory (enable lookup-node)
+                           (car (lookup-id id aignet)))
+                          aignet2))
+    :hints (("goal" :induct (lookup-id id aignet)
+             :in-theory (enable lookup-id)
              :expand ((aignet-nodes-ok aignet)))))
   (defcong list-equiv equal (aignet-nodes-ok x) 1
     :hints (("goal" :induct (list-equiv x acl2::x-equiv)
              :in-theory (disable (force)))))
-  (defthm aignet-nodes-ok-of-suffix
-    (implies (and (bind-free (suffixp-bind x))
-                  (suffixp x y)
+  (defthm aignet-nodes-ok-of-extension
+    (implies (and (aignet-extension-p y x)
                   (aignet-nodes-ok y))
              (aignet-nodes-ok x))
-    :hints(("Goal" :in-theory (enable suffixp aignet-nodes-ok)
+    :hints(("Goal" :in-theory (enable aignet-extension-p aignet-nodes-ok)
             :induct (aignet-nodes-ok y))))
 
-  (defthm lookup-reg->ri-out-of-bounds
+  (defthm aignet-nodes-ok-of-suffix-inverse
+    (implies (and (aignet-extension-bind-inverse :orig x :new y)
+                  (aignet-nodes-ok y))
+             (aignet-nodes-ok x))
+    :hints(("Goal" :in-theory (enable aignet-extension-p aignet-nodes-ok)
+            :induct (aignet-nodes-ok y))))
+
+  (defthm lookup-reg->nxst-out-of-bounds
     (implies (and (aignet-nodes-ok aignet)
                   (< (len aignet) (id-val id)))
-             (not (lookup-reg->ri id aignet)))
-    :hints(("Goal" :in-theory (e/d (lookup-reg->ri
+             (not (consp (lookup-reg->nxst id aignet))))
+    :hints(("Goal" :in-theory (e/d (lookup-reg->nxst
                                     node->type
                                     aignet-idp
                                     io-node->regp)
                                    (id-val-bound-when-aignet-idp
-                                    tags-when-node-p))))))
-
-(define io-node->ionum ((node node-p)
-                        (rest node-listp))
-  :guard (or (equal (node->type node) (in-type))
-             (and (equal (node->type node) (out-type))
-                  (equal (io-node->regp node) 0) ))
-  :guard-hints (("goal" :in-theory (enable node->type)))
-  (lnfix (case (tag node)
-           (:pi (duplicity :pi (tags rest)))
-           (:ro (duplicity :ro (tags rest)))
-           (:po (duplicity :po (tags rest)))))
-  ///
-  (defthm io-node->ionum-of-pi
-    (equal (io-node->ionum '(:pi) rest)
-           (duplicity :pi (tags rest))))
-
-  (defthm io-node->ionum-of-ro
-    (equal (io-node->ionum '(:ro) rest)
-           (duplicity :ro (tags rest))))
-
-  (defthm io-node->ionum-of-po-node
-    (equal (io-node->ionum (po-node f) rest)
-           (duplicity :po (tags rest)))
-    :hints(("Goal" :in-theory (enable io-node->ionum)))))
-
-
-  
-
-(define co-orderedp ((id idp)
-                     (aignet node-listp))
-  :guard (and (<= (id-val id) (len aignet))
-              (int= (node->type (car (lookup-node id aignet))) (out-type)))
-  (< (id-val (lit-id (co-node->fanin (car (lookup-node id aignet))))) (id-val id))
-  ///
-  (defthm co-orderedp-when-aignet-nodes-ok
-    (implies (and (aignet-nodes-ok aignet)
-                  (<= (id-val id) (len aignet))
-                  (int= (node->type (car (lookup-node id aignet))) (out-type)))
-             (co-orderedp id aignet))))
-
-(define gate-orderedp ((id idp)
-                       (aignet node-listp))
-  :guard (and (<= (id-val id) (len aignet))
-              (int= (node->type (car (lookup-node id aignet))) (gate-type)))
-  (and (< (id-val (lit-id (gate-node->fanin0 (car (lookup-node id aignet))))) (id-val id))
-       (< (id-val (lit-id (gate-node->fanin1 (car (lookup-node id aignet))))) (id-val id)))
-  ///
-  (defthm gate-orderedp-when-aignet-nodes-ok
-    (implies (and (aignet-nodes-ok aignet)
-                  (<= (id-val id) (len aignet))
-                  (int= (node->type (car (lookup-node id aignet))) (gate-type)))
-             (gate-orderedp id aignet))))
-
-  
-  
+                                    stypes-when-node-p))))))
 
 
 
-
-(define create-aignet ()
-  nil)
-
-                   
-
-(defthm lookup-node-of-len-of-suffix
-  (implies (suffixp x y)
-           (list-equiv (lookup-node (to-id (len x)) y)
-                       x))
-  :hints(("Goal" :in-theory (enable lookup-node))))
-
-
-;; (defsection lookup-ro-of-reg-count-suffix
-
-;;   (defthm lookup-ro-implies-linear
-;;     (implies (lookup-ro n x)
-;;              (< (nfix n) (reg-count x)))
-;;     :hints(("Goal" :in-theory (enable lookup-ro
-;;                                       reg-count)))
-;;     :rule-classes ((:linear :trigger-terms ((reg-count x)))))
-
-;;   (defcong list-equiv list-equiv (lookup-ro n x) 2
-;;     :hints(("Goal" :in-theory (enable lookup-ro))))
-
-;;   (defthm lookup-ro-equal-when-suffixp
-;;     (implies (and (suffixp x y)
-;;                   (lookup-ro n x)
-;;                   (lookup-ro n y))
-;;              (list-equiv (lookup-ro n x) (lookup-ro n y)))
-;;     :hints(("Goal" :in-theory (enable lookup-ro suffixp)
-;;             :induct t)
-;;            (and stable-under-simplificationp
-;;                 '(:cases ((<= (reg-count x) (reg-count (cdr y))))))))
-
-;;   (defthm suffixp-nil
-;;     (suffixp nil x)
-;;     :hints(("Goal" :in-theory (enable suffixp))))
-
-
-;;   (defthm lookup-ro-of-reg-count-suffix
-;;     (implies (and (suffixp x y)
-;;                   (equal (node->type (car x)) (in-type))
-;;                   (equal (io-node->regp (car x)) 1))
-;;              (list-equiv (lookup-ro (reg-count (cdr x)) y)
-;;                          x))
-;;     :hints(("Goal" :in-theory (enable lookup-ro
-;;                                       suffixp
-;;                                       node->type io-node->regp)
-;;             :induct t)
-;;            (and stable-under-simplificationp
-;;                 '(:use ((:instance lookup-ro-equal-when-suffixp
-;;                          (n (reg-count (cdr x))))))))))
-
-
-
-(defthm type-of-lookup-ro
-  (and (equal (node->type (car (lookup-ro n aignet)))
-              (if (lookup-ro n aignet)
-                  (in-type)
-                (const-type)))
-       (equal (io-node->regp (car (lookup-ro n aignet)))
-              (if (lookup-ro n aignet)
-                  1
-                0)))
-  :hints(("Goal" :in-theory (enable node->type io-node->regp)
-          :cases ((lookup-ro n aignet)))))
-
-(defthm type-of-lookup-ri
-  (and (equal (node->type (car (lookup-reg->ri n aignet)))
-              (if (lookup-reg->ri n aignet)
-                  (out-type)
-                (const-type)))
-       (equal (io-node->regp (car (lookup-reg->ri n aignet)))
-              (if (lookup-reg->ri n aignet)
-                  1 0)))
-  :hints(("Goal" :in-theory (enable node->type io-node->regp)
-          :cases ((lookup-reg->ri n aignet)))))
-
-
-
-
-(defsection gate-node-misc
-  (defthm node-p-of-gate-node
-    (implies (and (litp f0) (litp f1))
-             (node-p (gate-node f0 f1)))
-    :hints(("Goal" :in-theory (enable node-p))))
-
-  (defthm node->type-of-gate-node
-    (equal (node->type (gate-node f0 f1))
-           (gate-type))
-    :hints(("Goal" :in-theory (enable node->type)))))
-
-(defsection po-node-misc
-  (defthm node-p-of-po-node
-    (implies (litp f)
-             (node-p (po-node f)))
-    :hints(("Goal" :in-theory (enable node-p))))
-
-  (defthm node->type-of-po-node
-    (equal (node->type (po-node f))
-           (out-type))
-    :hints(("Goal" :in-theory (enable node->type))))
-
-  (defthm io-node->regp-of-po-node
-    (equal (io-node->regp (po-node f))
-           0)
-    :hints(("Goal" :in-theory (enable io-node->regp)))))
-
-(defsection ri-node-misc
-  (defthm node-p-of-ri-node
-    (implies (and (litp f) (idp r))
-             (node-p (ri-node f r)))
-    :hints(("Goal" :in-theory (enable node-p))))
-
-  (defthm node->type-of-ri-node
-    (equal (node->type (ri-node f n))
-           (out-type))
-    :hints(("Goal" :in-theory (enable node->type))))
-
-  (defthm io-node->regp-of-ri-node
-    (equal (io-node->regp (ri-node f n))
-           1)
-    :hints(("Goal" :in-theory (enable io-node->regp)))))
-
-
-;; (defthm reg-count-suffixp-by-node->type/regp
-;;   (implies (and (bind-free (suffixp-bind x))
-;;                 (suffixp x y)
+;; (defthm reg-count-aignet-extension-p-by-node->type/regp
+;;   (implies (and (aignet-extension-bind-inverse :orig x :new y)
+;;                 (aignet-extension-p y x)
 ;;                 (equal (node->type (car x)) (in-type))
 ;;                 (equal (io-node->regp (car x)) 1))
 ;;            (< (reg-count (cdr x)) (reg-count y)))
@@ -1047,14 +1054,15 @@ stobj.</p>
                   (< (len (cdr x)) (len x)))
          :rule-classes :linear))
 
+
 (define aignet-lit-fix ((x litp)
                         (aignet node-listp))
   :verify-guards nil
   :measure (len aignet)
   :returns (fix)
   (b* ((id (lit-id x))
-       (look (lookup-node id aignet))
-       ((unless look)
+       (look (lookup-id id aignet))
+       ((unless (consp look))
         (mk-lit 0 (lit-neg x)))
        ((cons node rest) look)
        ((when (eql (node->type node) (out-type)))
@@ -1067,27 +1075,54 @@ stobj.</p>
     (litp (aignet-lit-fix x aignet)))
   (verify-guards aignet-lit-fix)
   
-  (local (defthm lookup-node-in-suffix-bind
-           (implies (and (bind-free (suffixp-bind x))
-                         (suffixp x y)
+  (local (defthm lookup-id-in-extension-bind-inverse
+           (implies (and (aignet-extension-bind-inverse :orig x :new y)
                          (< (id-val id) (len x)))
-                    (list-equiv (lookup-node id (cdr x))
-                                (lookup-node id y)))
-           :hints(("Goal" :in-theory (enable suffixp lookup-node)))))
+                    (list-equiv (lookup-id id (cdr x))
+                                (lookup-id id y)))
+           :hints(("Goal" :in-theory (enable aignet-extension-p lookup-id)))))
 
   (defthm aignet-litp-of-aignet-lit-fix
     (aignet-litp (aignet-lit-fix x aignet) aignet)
     :hints(("Goal" 
             :induct (aignet-lit-fix x aignet))
            (and stable-under-simplificationp
-                '(:in-theory (enable aignet-litp)))))
+                '(:in-theory (enable aignet-litp
+                                     lookup-id-in-bounds)))))
+
+  (defthm aignet-litp-of-aignet-lit-fix-extension
+    (implies (aignet-extension-p new orig)
+             (aignet-litp (aignet-lit-fix x orig) new)))
 
   (defthm aignet-lit-fix-when-aignet-litp
     (implies (aignet-litp lit aignet)
              (equal (aignet-lit-fix lit aignet)
                     (lit-fix lit)))
     :hints(("Goal" :in-theory (enable aignet-litp
-                                      aignet::equal-of-mk-lit)))))
+                                      lookup-id-in-bounds
+                                      aignet::equal-of-mk-lit))))
+
+  (defcong lit-equiv equal (aignet-lit-fix lit aignet) 1)
+  (local (defun-nx aignet-lit-fix-ind2a (x aignet aignet2)
+           (declare (xargs :measure (len aignet)))
+           (b* ((id (lit-id x))
+                (look (lookup-id id aignet))
+                ((unless look)
+                 (mk-lit 0 (lit-neg x)))
+                ((cons node rest) look)
+                (rest2 (cdr (lookup-id id aignet2)))
+                ((when (eql (node->type node) (out-type)))
+                 (aignet-lit-fix-ind2a (co-node->fanin node) rest rest2)))
+             aignet2)))
+  (defcong list-equiv equal (aignet-lit-fix lit aignet) 2
+    :hints (("goal" :induct (aignet-lit-fix-ind2a lit aignet acl2::aignet-equiv)
+             :expand ((:free (aignet)
+                       (aignet-lit-fix lit aignet))))))
+
+  (defthm aignet-lit-fix-id-val-linear
+    (<= (id-val (lit-id (aignet-lit-fix lit aignet)))
+        (len aignet))
+    :rule-classes :linear))
 
 (define aignet-id-fix ((x idp) aignet)
   (if (<= (id-val x) (len aignet))
@@ -1103,5 +1138,10 @@ stobj.</p>
     (implies (aignet-idp id aignet)
              (equal (aignet-id-fix id aignet)
                     (id-fix id)))
-    :hints(("Goal" :in-theory (enable aignet-idp)))))
+    :hints(("Goal" :in-theory (enable aignet-idp))))
+
+  (defthm aignet-id-fix-id-val-linear
+    (<= (id-val (aignet-id-fix id aignet))
+        (len aignet))
+    :rule-classes :linear))
              

@@ -122,47 +122,61 @@
             *aignet-exports*
             *aignet-imports*))
 
-(defconst *aignet$a-exports*
-  #!AIGNET
-  '(const-type
-    gate-type
-    in-type
-    out-type
-    gate-node
-    gate-node-p
-    gate-node->fanin0
-    gate-node->fanin1
-    po-node
-    po-node-p
-    po-node->fanin
-    ri-node
-    ri-node-p
-    ri-node->fanin
-    ri-node->reg
-    node-p
-    node-listp
-    proper-node-listp
-    tags
-    suffixp
-    suffixp-bind
-    reg-count
-    lookup-node
-    lookup-pi
-    lookup-ro
-    lookup-po
-    lookup-reg->ri
-    pi->id
-    po->id
-    ro->id
-    ri->id
-    co-orderedp
-    gate-orderedp
-    aignet-litp
-    aignet-idp
-    aignet-nodes-ok
-    aignet-well-formedp))
+;; (defconst *aignet$a-exports*
+;;   #!AIGNET
+;;   '(const-type
+;;     gate-type
+;;     in-type
+;;     out-type
+;;     stype
+;;     stype-fix
+;;     stypep
+;;     const-stype
+;;     gate-stype
+;;     pi-stype
+;;     po-stype
+;;     ri-stype
+;;     ro-stype
+;;     stype->type
+;;     stype->regp
+;;     gate-node
+;;     gate-node-p
+;;     gate-node->fanin0
+;;     gate-node->fanin1
+;;     po-node
+;;     po-node-p
+;;     po-node->fanin
+;;     ri-node
+;;     ri-node-p
+;;     ri-node->fanin
+;;     ri-node->reg
+;;     io-node->ionum
+;;     io-node->regp
+;;     node->type
+;;     node-p
+;;     node-listp
+;;     proper-node-listp
+;;     tags
+;;     suffixp
+;;     suffixp-bind
+;;     reg-count
+;;     lookup-node
+;;     lookup-pi
+;;     lookup-ro
+;;     lookup-po
+;;     lookup-reg->ri
+;;     pi->id
+;;     po->id
+;;     ro->id
+;;     ri->id
+;;     co-orderedp
+;;     gate-orderedp
+;;     aignet-litp
+;;     aignet-idp
+;;     aignet-nodes-ok
+;;     aignet-well-formedp))
 
-(defconst *aignet$a/c-imports*
+(defconst *aignet$c-imports*
   #!AIGNET '(idp
              litp
              id-val
@@ -179,15 +193,16 @@
              id-equiv
              lit-equiv))
 
-(defpkg "AIGNET$A"
-  (union-eq *acl2-exports*
-            *common-lisp-symbols-from-main-lisp-package*
-            *aignet$a-exports*
-            *aignet-imports*
-            *aignet$a/c-imports*))
+(defpkg "AIGNET$A" nil)
+;; (defpkg "AIGNET$A"
+;;   (union-eq *acl2-exports*
+;;             *common-lisp-symbols-from-main-lisp-package*
+;;             *aignet$a-exports*
+;;             *aignet-imports*
+;;             *aignet$a/c-imports*))
 
 (defpkg "AIGNET$C"
   (union-eq *acl2-exports*
             *common-lisp-symbols-from-main-lisp-package*
             *aignet-imports*
-            *aignet$a/c-imports*))
+            *aignet$c-imports*))
