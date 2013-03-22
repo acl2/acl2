@@ -27810,6 +27810,7 @@
     mfc-rw-ttree ; under dependent clause-processor
     mfc-ts-fn ; under dependent clause-processor
     mfc-ts-ttree ; under dependent clause-processor
+    never-memoize-fn
   ))
 
 (defconst *primitive-macros-with-raw-code*

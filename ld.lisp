@@ -20530,6 +20530,9 @@
   only after all sub-computations (threads) have finished.  Thanks to David
   Rager for contributing this improvement.
 
+  For ACL2(h), ~ilc[never-memoize] specifies that a given function should never
+  be memoized.  Thanks to Jared Davis for this feature.
+
   ~/~/")
 
 (deflabel the-method

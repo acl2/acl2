@@ -9173,3 +9173,7 @@ next GC.~%"
 ;;    #\# #\= #'ns-=-reader            *hacked-acl2-readtable*)
 
 ;;   (setq *hons-readtable-init-done* t))
+
+(defun never-memoize-fn (fn)
+   (setf (gethash fn *profile-reject-ht*) t)
+   nil)

@@ -1115,3 +1115,33 @@
 #+(and (not hons) (not acl2-loop-only))
 (defparameter *never-profile-ht*
   (make-hash-table :test 'eq))
+
+#+(or acl2-loop-only (not hons))
+(defun never-memoize-fn (fn)
+   (declare (xargs :guard (symbolp fn))
+            (ignore fn))
+   nil)
+
+(defmacro never-memoize (fn)
+  ":Doc-Section Hons-and-Memoization
+  Mark a function as unsafe to memoize.~/
+
+  This ~il[documentation] topic relates to the experimental extension of ACL2
+  supporting hash cons, fast alists, and memoization;
+  ~pl[hons-and-memoization].
+
+  Logically, this function just returns ~c[nil].  But execution of
+  ~c[(never-memoize fn)] records that ~c[fn] must never be memoized, so that
+  any attempt to memoize ~c[fn] will fail.
+
+  Any function can be marked as unsafe to memoize; in fact, ~c[fn] need not
+  even be defined at the time it is marked.
+
+  This is useful for prohibiting the memoization of functions that are known to
+  involve destructive functions like ~c[nreverse].~/~/"
+
+  (declare (xargs :guard (symbolp fn)))
+  `(make-event
+    (prog2$ (never-memoize-fn ',fn)
+            '(value-triple :invisible))
+    :check-expansion t))
