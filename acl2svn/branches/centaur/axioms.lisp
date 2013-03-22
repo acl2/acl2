@@ -27877,6 +27877,7 @@
     set-absstobj-debug-fn
     sys-call-status ; *last-sys-call-status*
     sys-call ; system-call
+    never-memoize-fn
 
     canonical-pathname ; under dependent clause-processor
 

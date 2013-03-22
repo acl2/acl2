@@ -417,6 +417,34 @@
 
   nil)
 
+#+(or acl2-loop-only (not hons))
+(defun never-memoize-fn (fn)
+  (declare (xargs :guard (symbolp fn))
+           (ignorable fn))
+  nil)
+
+(defmacro never-memoize (fn)
+  ":Doc-Section Hons-and-Memoization
+  Mark a function as unsafe to memoize.~/
+
+  This ~il[documentation] topic relates to the experimental extension of ACL2
+  supporting hash cons, fast alists, and memoization;
+  ~pl[hons-and-memoization].
+
+  Logically, this function just returns ~c[nil].  In the execution, it records
+  that ~c[fn] must never be memoized, so that any attempt to memoize ~c[fn]
+  will fail.
+
+  Any function can be marked as unsafe to memoize, in fact ~c[fn] need not even
+  be defined at the time it is marked.
+
+  This is useful for prohibiting the memoization of aux functions that are
+  known to be called with ~c[nreverse].~/~/"
+  `(make-event
+    (b* ((- (never-memoize-fn ',fn)))
+      '(value-triple :invisible))
+    :check-expansion t))
+
 (defmacro memsum ()
   ":Doc-Section Hons-and-Memoization
 
@@ -1088,30 +1116,3 @@
   (declare (xargs :guard t))
   `(memoizedp-world ,fn (w state)))
 
-;;; hons-shrink-alist
-
-; HONS-SHRINK-ALIST, when called with an atomic second
-; argument, produces an alist that is alist-equivalent
-; to the first argument, but with all irrelevant entries in
-; the first argument deleted.  Informal remark: the alist
-; returned is a hons when the initial ANS is not an atom.
-
-; Comment about the last clause above.  Or really? 
-; Counterexamples?
-; 
-; mbu> stp
-; ? (honsp (hons-shrink-alist '((a . b) (a . b2)) (hons-acons 1 2 3)))
-; NIL
-; 
-; mbu> stp
-; ? (honsp (hons-shrink-alist '((a . b) (a . b2)) nil))
-; NIL
-; ? 
-
-; Some centaur/ books put entries in *never-profile-ht*.  In order to allow
-; those books to certify in vanilla ACL2, we define a default value for that
-; variable here.
-
-#+(and (not hons) (not acl2-loop-only))
-(defparameter *never-profile-ht*
-  (make-hash-table :test 'eq))
