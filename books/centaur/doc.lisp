@@ -138,6 +138,9 @@
 (include-book "vl/mlib/rvalues")
 (include-book "vl/util/prefixp")
 
+; Another useful book:
+(include-book "gl/bfr-satlink")
+
 ||#
 
 (make-event
