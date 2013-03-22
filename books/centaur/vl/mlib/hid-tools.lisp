@@ -700,10 +700,10 @@ with @('nreverse') under the hood.</p>"
                                       vl-exprlist-tophids-exec))))
 
   (defttag vl-optimize)
+  (never-memoize vl-expr-tophids-exec)
+  (never-memoize vl-exprlist-tophids-exec)
   (progn!
    (set-raw-mode t)
-   (setf (gethash 'vl-expr-tophids-exec ACL2::*never-profile-ht*) t)
-   (setf (gethash 'vl-exprlist-tophids-exec ACL2::*never-profile-ht*) t)
    (defun vl-expr-tophids (x)
      (nreverse (vl-expr-tophids-exec x nil)))
    (defun vl-exprlist-tophids (x)

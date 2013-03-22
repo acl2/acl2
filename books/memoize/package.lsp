@@ -32,8 +32,10 @@
               value
 
               ;; basic acl2 property stuff
-              formals
               current-acl2-world
+              formals
+              symbol-class
+              stobjs-in
               stobjs-out
 
               ;; raw hons stuff for ponsing

@@ -96,12 +96,11 @@ optimization.</p>")))
          (implies (force (,rec x))
                   (vl-exprlist-p (,collect x))))
 
+       (never-memoize ,collect-exec)
        (defttag vl-optimize)
-       (progn!
-        (set-raw-mode t)
-        (setf (gethash ',collect-exec ACL2::*never-profile-ht*) t)
-        (defun ,collect (x)
-          (nreverse (,collect-exec x nil))))
+       (progn! (set-raw-mode t)
+               (defun ,collect (x)
+                 (nreverse (,collect-exec x nil))))
        (defttag nil))))
 
 
@@ -550,15 +549,14 @@ the collection.  Under the hood, we also use @('nreverse') optimization.</p>"
                  :hints(("Goal" :in-theory (enable vl-stmt-allexprs
                                                    vl-stmtlist-allexprs))))
 
+  (never-memoize vl-stmt-allexprs-exec)
+  (never-memoize vl-stmtlist-allexprs-exec)
   (defttag vl-optimize)
-  (progn!
-   (set-raw-mode t)
-   (setf (gethash 'vl-stmt-allexprs-exec ACL2::*never-profile-ht*) t)
-   (setf (gethash 'vl-stmtlist-allexprs-exec ACL2::*never-profile-ht*) t)
-   (defun vl-stmt-allexprs (x)
-     (nreverse (vl-stmt-allexprs-exec x nil)))
-   (defun vl-stmtlist-allexprs (x)
-     (nreverse (vl-stmtlist-allexprs-exec x nil))))
+  (progn! (set-raw-mode t)
+          (defun vl-stmt-allexprs (x)
+            (nreverse (vl-stmt-allexprs-exec x nil)))
+          (defun vl-stmtlist-allexprs (x)
+            (nreverse (vl-stmtlist-allexprs-exec x nil))))
   (defttag nil)
 
   (defthm-vl-flag-stmt-p lemma

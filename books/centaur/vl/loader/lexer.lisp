@@ -2219,13 +2219,12 @@ case.</li>
              (vl-warninglist-p (mv-nth 2 (vl-lex echars warnings)))))
 
   (defttag vl-optimize)
-  (progn!
-   (set-raw-mode t)
-   (setf (gethash 'vl-lex-exec ACL2::*never-profile-ht*) t)
-   (defun vl-lex (echars warnings)
-     (mv-let (successp tokens warnings)
-             (vl-lex-exec echars nil warnings)
-             (mv successp (nreverse tokens) warnings))))
+  (never-memoize vl-lex-exec)
+  (progn! (set-raw-mode t)
+          (defun vl-lex (echars warnings)
+            (mv-let (successp tokens warnings)
+              (vl-lex-exec echars nil warnings)
+              (mv successp (nreverse tokens) warnings))))
   (defttag nil))
 
 
@@ -2292,14 +2291,13 @@ case.</li>
                      (reverse cmap-acc)))))
 
   (defttag vl-optimize)
-  (progn!
-   (set-raw-mode t)
-   (setf (gethash 'vl-kill-whitespace-and-comments-core acl2::*never-profile-ht*) t)
-   (defun vl-kill-whitespace-and-comments (tokens)
-     (mv-let (tokens-acc cmap-acc)
-             (vl-kill-whitespace-and-comments-core tokens nil nil)
-             (mv (nreverse tokens-acc)
-                 (nreverse cmap-acc)))))
+   (never-memoize vl-kill-whitespace-and-comments-core)
+  (progn! (set-raw-mode t)
+          (defun vl-kill-whitespace-and-comments (tokens)
+            (mv-let (tokens-acc cmap-acc)
+              (vl-kill-whitespace-and-comments-core tokens nil nil)
+              (mv (nreverse tokens-acc)
+                  (nreverse cmap-acc)))))
   (defttag nil)
 
   (local (in-theory (enable vl-kill-whitespace-and-comments-core

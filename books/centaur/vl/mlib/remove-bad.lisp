@@ -332,13 +332,12 @@ are to blame.</li>
   (verify-guards vl-apply-blame-alist)
 
   (defttag vl-optimize)
-  (progn!
-   (set-raw-mode t)
-   (setf (gethash 'vl-apply-blame-alist-exec acl2::*never-profile-ht*) t)
-   (defun vl-apply-blame-list (mods alist)
-     (mv-let (survivors victims)
-       (vl-apply-blame-alist-exec mods alist nil nil)
-       (mv (nreverse survivors) (nreverse victims)))))
+  (never-memoize vl-apply-blame-alist-exec)
+  (progn! (set-raw-mode t)
+          (defun vl-apply-blame-list (mods alist)
+            (mv-let (survivors victims)
+              (vl-apply-blame-alist-exec mods alist nil nil)
+              (mv (nreverse survivors) (nreverse victims)))))
   (defttag nil)
 
   (defthm vl-modulelist-p-of-vl-apply-blame-alist-0

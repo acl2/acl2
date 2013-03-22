@@ -175,16 +175,16 @@ filter-long
                   (reverse ans))))
 
        (defttag vl-optimize)
+       (never-memoize ,fast-keep-fn)
        (progn!
         (set-raw-mode t)
-        (setf (gethash ',fast-keep-fn ACL2::*never-profile-ht*) t)
         (defun ,keep-fn (names x)
           (b* ((len (length names))
                ((when (< len 10)) (,slow-keep-fn names x))
                (fal (make-lookup-alist names))
                (ans (,fast-keep-fn names fal x nil))
                (- (fast-alist-free fal)))
-              (nreverse ans))))
+            (nreverse ans))))
        (defttag nil)
 
 
@@ -230,9 +230,9 @@ filter-long
                   (reverse ans))))
 
        (defttag vl-optimize)
+       (never-memoize ,fast-del-fn)
        (progn!
         (set-raw-mode t)
-        (setf (gethash ',fast-del-fn ACL2::*never-profile-ht*) t)
         (defun ,del-fn (names x)
           (b* ((len (length names))
                ((when (< len 10)) (,slow-del-fn names x))
@@ -271,9 +271,9 @@ filter-long
                   (mv (reverse yes) (reverse no)))))
 
        (defttag vl-optimize)
+       (never-memoize ,fast-fn)
        (progn!
         (set-raw-mode t)
-        (setf (gethash ',fast-fn ACL2::*never-profile-ht*) t)
         (defun ,fn (names x)
           (b* ((fal (make-lookup-alist names))
                ((mv yes no)

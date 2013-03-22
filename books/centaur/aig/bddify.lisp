@@ -153,7 +153,7 @@
 (progn!
  (set-raw-mode t)
  (defparameter *count-branches-to-memo-table*
-   (mht))
+   (hl-mht))
 
  (defun count-branches-to (x n)
    (labels
@@ -198,7 +198,7 @@
         (lookup
          (x)
          (when (not *count-branches-to-memo-table*)
-           (setq *count-branches-to-memo-table* (mht)))
+           (setq *count-branches-to-memo-table* (hl-mht)))
          (b* (((mv ans present)
                (gethash x *count-branches-to-memo-table*)))
            (if present

@@ -116,13 +116,12 @@ we actually optimize this function even more, using @('nreverse').</p>"
                  (mv (reverse acc) state))))
 
   (defttag vl-optimize)
-  (progn!
-   (set-raw-mode t)
-   (setf (gethash 'vl-read-file-aux ACL2::*never-profile-ht*) t)
-   (defun vl-read-file-spec (channel state filename line col)
-     (mv-let (acc state)
-             (vl-read-file-aux channel state filename line col nil)
-             (mv (nreverse acc) state))))
+  (never-memoize vl-read-file-aux)
+  (progn! (set-raw-mode t)
+          (defun vl-read-file-spec (channel state filename line col)
+            (mv-let (acc state)
+              (vl-read-file-aux channel state filename line col nil)
+              (mv (nreverse acc) state))))
   (defttag nil)
 
   (local (in-theory (enable vl-read-file-spec

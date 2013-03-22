@@ -312,12 +312,11 @@
        (reverse (vl-module->modnamespace-exec x))))
 
 (defttag vl-optimize)
-(progn!
- (set-raw-mode t)
- (setf (gethash 'vl-module->modnamespace-exec ACL2::*never-profile-ht*) t)
- (defun vl-module->modnamespace (x)
-   (nreverse (vl-module->modnamespace-exec x)))
- (defttag nil))
+(never-memoize vl-module->modnamespace-exec)
+(progn! (set-raw-mode t)
+        (defun vl-module->modnamespace (x)
+          (nreverse (vl-module->modnamespace-exec x)))
+        (defttag nil))
 (defttag nil)
 
 

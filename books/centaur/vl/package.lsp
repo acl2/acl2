@@ -62,6 +62,7 @@
       lnfix
       lifix
       lbfix
+      never-memoize
 
       cutil::mksym
       cutil::mksym-package-symbol

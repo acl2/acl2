@@ -1880,10 +1880,10 @@ to enforce this restriction since it is somewhat awkward to do so.</p>"
                     (vl-echarlist-p (mv-nth 2 ret))))))
 
   (defttag vl-optimize)
+  (never-memoize vl-preprocess-loop)
   (progn!
    ;; Nreverse optimization for success case.
    (set-raw-mode t)
-   (setf (gethash 'vl-preprocess-loop ACL2::*never-profile-ht*) t)
    (defun vl-preprocess (echars defines include-dirs state)
      (b* (((mv successp defines acc remainder state)
            (vl-preprocess-loop echars defines

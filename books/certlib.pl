@@ -704,7 +704,7 @@ sub parallelism_stats {
     if ($curr_parallel != 0) {
 	print "Error: Ended with jobs still running??\n"
     }
-    my $avg_parallel = $running_total / $lasttime;
+    my $avg_parallel = ($lasttime != 0) ? $running_total / $lasttime : "???";
 
     return ($max_parallel, $max_start_time, $max_end_time, $avg_parallel, $running_total);
 }

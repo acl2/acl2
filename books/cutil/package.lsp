@@ -78,6 +78,7 @@
                legal-variablep
                set-equiv
                list-equiv
+               never-memoize
 
                ;; BOZO consider moving these to cutil?
                defconsts

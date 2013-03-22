@@ -508,14 +508,13 @@ expression list."
                                                    vl-exprlist-names-exec))))
 
   (defttag vl-optimize)
-  (progn!
-   (set-raw-mode t)
-   (setf (gethash 'vl-expr-names-exec ACL2::*never-profile-ht*) t)
-   (setf (gethash 'vl-exprlist-names-exec ACL2::*never-profile-ht*) t)
-   (defun vl-expr-names (x)
-     (nreverse (vl-expr-names-exec x nil)))
-   (defun vl-exprlist-names (x)
-     (nreverse (vl-exprlist-names-exec x nil))))
+  (never-memoize vl-expr-names-exec)
+  (never-memoize vl-exprlist-names-exec)
+  (progn! (set-raw-mode t)
+          (defun vl-expr-names (x)
+            (nreverse (vl-expr-names-exec x nil)))
+          (defun vl-exprlist-names (x)
+            (nreverse (vl-exprlist-names-exec x nil))))
   (defttag nil)
 
   (local (defthm lemma
@@ -636,14 +635,13 @@ may contain any @(see vl-op-p), including even odd such as @(':vl-syscall') or
           :exec (reverse (vl-fast-exprlist-ops x nil)))))
 
   (defttag vl-optimize)
-  (progn!
-   (set-raw-mode t)
-   (setf (gethash 'vl-fast-expr-ops ACL2::*never-profile-ht*) t)
-   (setf (gethash 'vl-fast-exprlist-ops ACL2::*never-profile-ht*) t)
-   (defun vl-expr-ops (x)
-     (nreverse (vl-fast-expr-ops x nil)))
-   (defun vl-exprlist-ops (x)
-     (nreverse (vl-fast-exprlist-ops x nil))))
+  (never-memoize vl-fast-expr-ops)
+  (never-memoize vl-fast-exprlist-ops)
+  (progn! (set-raw-mode t)
+          (defun vl-expr-ops (x)
+            (nreverse (vl-fast-expr-ops x nil)))
+          (defun vl-exprlist-ops (x)
+            (nreverse (vl-fast-exprlist-ops x nil))))
   (defttag nil)
 
   (defthm true-listp-of-vl-expr-ops
@@ -966,10 +964,10 @@ usually think of as atoms.</p>
           :exec (reverse (vl-fast-exprlist-atoms x nil)))))
 
   (defttag vl-optimize)
+  (never-memoize vl-fast-expr-atoms)
+  (never-memoize vl-fast-exprlist-atoms)
   (progn!
    (set-raw-mode t)
-   (setf (gethash 'vl-fast-expr-atoms ACL2::*never-profile-ht*) t)
-   (setf (gethash 'vl-fast-exprlist-atoms ACL2::*never-profile-ht*) t)
    (defun vl-expr-atoms (x)
      (nreverse (vl-fast-expr-atoms x nil)))
    (defun vl-exprlist-atoms (x)

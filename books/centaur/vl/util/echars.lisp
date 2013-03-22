@@ -569,10 +569,11 @@ performance.</p>"
 
   ///
 
+  (never-memoize vl-echarlist-from-chars-aux)
+
   (defttag vl-optimize)
   (progn!
    (set-raw-mode t)
-   (setf (gethash 'vl-echarlist-from-chars-aux ACL2::*never-profile-ht*) t)
    (defun vl-echarlist-from-chars-fn (x filename line col)
      (ACL2::nreverse (vl-echarlist-from-chars-aux x filename line col nil))))
   (defttag nil)
@@ -682,10 +683,11 @@ Also note that we actually use @('nreverse') here.</p>"
                            (if (eql char #\Newline) 0 (+ 1 col))))))
          :exec (reverse (vl-echarlist-from-str-aux x n xl filename line col nil))))
 
+  (never-memoize vl-echarlist-from-str-aux)
+
   (defttag vl-optimize)
   (progn!
    (set-raw-mode t)
-   (setf (gethash 'vl-echarlist-from-str-aux ACL2::*never-profile-ht*) t)
    (defun vl-echarlist-from-str-nice (x n xl filename line col)
      (ACL2::nreverse (vl-echarlist-from-str-aux x n xl filename line col nil))))
   (defttag nil)

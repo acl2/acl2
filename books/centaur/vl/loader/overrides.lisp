@@ -939,9 +939,9 @@ within @('tokens').</p>"
       (mv successp (reverse prefix-rev) rest)))
 
   (defttag vl-optimize)
+  (never-memoize vl-match-through-endmodule-aux)
   (progn!
    (set-raw-mode t)
-   (setf (gethash 'vl-match-through-endmodule-aux ACL2::*never-profile-ht*) t)
    (defun vl-match-through-endmodule (tokens)
      (b* (((mv successp prefix-rev rest)
            (vl-match-through-endmodule-aux tokens nil)))
@@ -1307,16 +1307,15 @@ eventually to check the \"requirements\" for each override.</li>
       (mv walist x-prime used modtokens)))
 
   (defttag vl-optimize)
-  (progn!
-   (set-raw-mode t)
-   (setf (gethash 'vl-apply-overrides-aux ACL2::*never-profile-ht*) t)
-   (defun vl-apply-overrides (x db walist)
-     (b* (((when (atom db))
-           (mv walist x nil nil))
-          ((mv walist x-prime-rev used modtokens)
-           (vl-apply-overrides-aux x db walist nil nil nil))
-          (x-prime (nreverse x-prime-rev)))
-       (mv walist x-prime used modtokens))))
+  (never-memoize vl-apply-overrides-aux)
+  (progn! (set-raw-mode t)
+          (defun vl-apply-overrides (x db walist)
+            (b* (((when (atom db))
+                  (mv walist x nil nil))
+                 ((mv walist x-prime-rev used modtokens)
+                  (vl-apply-overrides-aux x db walist nil nil nil))
+                 (x-prime (nreverse x-prime-rev)))
+              (mv walist x-prime used modtokens))))
   (defttag nil)
 
   (local (in-theory (enable vl-apply-overrides)))

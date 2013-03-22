@@ -298,11 +298,10 @@ optimization.</p>
                   (string-listp (,collect x))))
 
        (defttag vl-optimize)
-       (progn!
-        (set-raw-mode t)
-        (setf (gethash ',collect-exec ACL2::*never-profile-ht*) t)
-        (defun ,collect (x)
-          (nreverse (,collect-exec x nil))))
+       (never-memoize ,collect-exec)
+       (progn! (set-raw-mode t)
+               (defun ,collect (x)
+                 (nreverse (,collect-exec x nil))))
        (defttag nil))))
 
 

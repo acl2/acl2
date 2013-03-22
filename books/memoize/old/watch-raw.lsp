@@ -20,6 +20,21 @@
 
 (in-package "ACL2")
 
+(defmacro defn1 (f a &rest r)
+  (when (intersection a lambda-list-keywords)
+    (error "DEFN1: ** In the defintion of ~s, the argument list ~s ~
+            contains a member of lambda-list-keywords so do not ~
+            use defn1."
+           f a))
+  `(progn
+     (setf (gethash ',f *number-of-arguments-and-values-ht*)
+           (cons ,(length a) 1))
+     (declaim (ftype (function ,(make-list (len a) :initial-element t)
+                               (values t))
+                     ,f))
+     (defun ,f ,a (declare (xargs :guard t)) ,@r)))
+
+
 (defg *watch-file* nil
   "If *WATCH-FILE* is not NIL, it is a string that names the 'watch
   file', to which (WATCH-DUMP) prints.")

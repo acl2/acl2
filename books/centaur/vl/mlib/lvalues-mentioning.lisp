@@ -297,9 +297,9 @@ an lvalue.")
                   (vl-exprlist-p (,collect name x))))
 
        (defttag vl-optimize)
+       (never-memoize ,collect-exec)
        (progn!
         (set-raw-mode t)
-        (setf (gethash ',collect-exec ACL2::*never-profile-ht*) t)
         (defun ,collect (x)
           (nreverse (,collect-exec name x nil))))
        (defttag nil))))

@@ -82,11 +82,69 @@
 
 
 
+
+(defun looking-at (str1 str2 &key (start1 0) (start2 0))
+
+;  (LOOKING-AT str1 str2 :start1 s1 :start2 s2) is non-NIL if and only
+;  if string STR1, from location S1 to its end, is an initial segment
+;  of string STR2, from location S2 to its end.
+
+  (unless (typep str1 'simple-base-string)
+    (ofe "looking at:  ~a is not a string." str1))
+  (unless (typep str2 'simple-base-string)
+    (ofe "looking at:  ~a is not a string." str2))
+  (unless (typep start1 'fixnum)
+    (ofe "looking at:  ~a is not a fixnum." start1))
+  (unless (typep start2 'fixnum)
+    (ofe "looking at:  ~a is not a fixnum." start2))
+  (locally
+    (declare (simple-base-string str1 str2)
+             (fixnum start1 start2))
+    (let ((l1 (length str1)) (l2 (length str2)))
+      (declare (fixnum l1 l2))
+      (loop
+       (when (>= start1 l1) (return t))
+       (when (or (>= start2 l2)
+                 (not (eql (char str1 start1)
+                           (char str2 start2))))
+         (return nil))
+       (incf start1)
+       (incf start2)))))
+
+(defun meminfo (pat)
+
+;  General comment about PROBE-FILE.  PROBE-FILE, according to Gary
+;  Byers, may reasonably cause an error.  He is undoubtedly right.  In
+;  such cases, however, Boyer generally thinks and wishes that it
+;  returned NIL, and generally, therefore, ensconces a PROBE-FILE
+;  within an IGNORE-ERROR in his code.
+
+  (or
+   (and
+    (ignore-errors (probe-file "/proc/meminfo"))
+    (with-standard-io-syntax
+     (with-open-file (stream "/proc/meminfo")
+       (let (line)
+         (loop while (setq line (read-line stream nil nil)) do
+               (when (looking-at pat line)
+                 (return
+                  (values
+                   (read-from-string line nil nil
+                                     :start (length pat))))))))))
+   0))
+
+(let ((physical-memory-cached-answer nil))
+  (defun physical-memory ()
+    (or physical-memory-cached-answer
+        (setq physical-memory-cached-answer
+              (meminfo "MemTotal:")))))
+
+
 (defvar *sol-gc-installed* nil)
 
 
 #+Clozure
-(defn1 set-and-reset-gc-thresholds ()
+(defun set-and-reset-gc-thresholds ()
   (let ((n (max (- *max-mem-usage* (ccl::%usedbytes))
                 *gc-min-threshold*)))
     (cond ((not (eql n (ccl::lisp-heap-gc-threshold)))
@@ -105,7 +163,7 @@ next GC.~%"
 
 
 #+Clozure
-(defn1 start-sol-gc ()
+(defun start-sol-gc ()
 
 ; The following settings are highly heuristic.  We arrange that gc
 ; occurs at 1/8 of the physical memory size in bytes, in order to
@@ -187,46 +245,41 @@ next GC.~%"
       (force-output)))
   nil)
 
- (defun maybe-wash-memory-fn (n clear)
+(defun maybe-wash-memory-fn (n clear)
 
-   #+Clozure
-   (when (or (eq n t)
-             (< (ccl::%freebytes) (nfix n)))
-     (format t "********** maybe-wash-memory started ***********~%~%")
-     (format t "Pre-wash memory usage.~%")
-     (print-quick-memory-summary)
+  #+Clozure
+  (when (or (eq n t)
+            (< (ccl::%freebytes) (nfix n)))
+    (format t "********** maybe-wash-memory started ***********~%~%")
+    (format t "Pre-wash memory usage.~%")
+    (print-quick-memory-summary)
 
-     (if clear
-         (time$ (clear-hash-tables)
-                :msg "(clear-hash-tables) took ~st seconds, ~sa bytes.~%~%")
-       (time$ (wash-memory)
-              :msg "(wash-memory) took ~st seconds, ~sa bytes.~%~%"))
+    (if clear
+        (time$ (clear-hash-tables)
+               :msg "(clear-hash-tables) took ~st seconds, ~sa bytes.~%~%")
+      (time$ (wash-memory)
+             :msg "(wash-memory) took ~st seconds, ~sa bytes.~%~%"))
 
-     (format t "Post-wash memory usage:~%")
-     (print-quick-memory-summary)
+    (format t "Post-wash memory usage:~%")
+    (print-quick-memory-summary)
 
-     (format t "********** maybe-wash-memory finished **********~%"))
+    (format t "********** maybe-wash-memory finished **********~%"))
 
-   nil)
+  nil)
 
- (defun last-chance-wash-memory-fn ()
-   #+Clozure
-   (when (< (ccl::%freebytes) *last-chance-threshold*)
-     (format t "*********** last-chance-wash-memory ************~%")
-     (format t "~:D free bytes < ~:D last chance threshold~%"
-             (ccl::%freebytes)
-             *last-chance-threshold*)
-     (maybe-wash-memory-fn t nil))
+(defun last-chance-wash-memory-fn ()
+  #+Clozure
+  (when (< (ccl::%freebytes) *last-chance-threshold*)
+    (format t "*********** last-chance-wash-memory ************~%")
+    (format t "~:D free bytes < ~:D last chance threshold~%"
+            (ccl::%freebytes)
+            *last-chance-threshold*)
+    (maybe-wash-memory-fn t nil))
 
-   nil)
+  nil)
 
 (defun set-max-mem (max)
   (set-max-mem-usage max)
-  nil)
-
-(defun print-rwx-size ()
-  #+Clozure
-  (cw "~x0~%" (rwx-size))
   nil)
 
 

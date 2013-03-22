@@ -57,9 +57,9 @@ but not defined.")
 <p>The returned list typically will contain a lot of duplicates.</p>
 
 <p>This is fairly expensive, requiring a cons for every single module instance.
-We optimize the function by avoiding the construction of intermediate lists,
-and via nreverse in raw lisp.</p>"
-  :inline t
+We optimize the function by avoiding the construction of intermediate lists
+and with nreverse.</p>"
+
   :enabled t
 
   (mbe :logic (vl-modinstlist->modnames (vl-modulelist->modinsts x))
@@ -92,14 +92,15 @@ and via nreverse in raw lisp.</p>"
     :hints(("Goal" :in-theory (enable vl-modulelist-everinstanced-exec))))
 
   (verify-guards vl-modulelist-everinstanced-exec)
-  (verify-guards vl-modulelist-everinstanced$inline)
+  (verify-guards vl-modulelist-everinstanced)
+
+  (never-memoize vl-modulelist-everinstanced-exec)
+  (never-memoize vl-modinstlist->modnames-exec)
 
   (defttag vl-optimize)
   (progn!
    (set-raw-mode t)
-   (setf (gethash 'vl-modinstlist->modnames-exec ACL2::*never-profile-ht*) t)
-   (setf (gethash 'vl-modulelist-everinstanced-exec ACL2::*never-profile-ht*) t)
-   (defun vl-modulelist-everinstanced$inline (x)
+   (defun vl-modulelist-everinstanced (x)
      (nreverse (vl-modulelist-everinstanced-exec x nil))))
   (defttag nil))
 

@@ -320,12 +320,10 @@ the user wishes to parallelize the execution of the defined function.</p>")
                                     (cw "~|~%Optimizing definition of ~s0:~%  ~p1~%~%"
                                         ',list-fn ',ndef)))))
                         (defttag cutil-optimize)
+                        ;; To justify nreverse, exec-fn must never be memoized
+                        (never-memoize ,exec-fn)
                         (progn!
                          (set-raw-mode t)
-                         (when (boundp 'ACL2::*never-profile-ht*)
-                           ;; ACL2(h).  Never allow exec function to be
-                           ;; memoized, to justify nreverse
-                           (setf (gethash ',exec-fn ACL2::*never-profile-ht*) t))
                          ,ndef)
                         (defttag nil)))))
 
