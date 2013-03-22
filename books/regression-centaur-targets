@@ -58,6 +58,7 @@
 ./centaur/misc/tailrec.cert
 ./centaur/vl/mlib/sub-counts.cert
 ./centaur/vl/util/prefix-hash.cert
+./regex/regex-ui.cert
 ./centaur/bitops/congruences.cert
 ./centaur/defrstobj/basic-tests.cert
 ./cutil/deflist-tests.cert
@@ -77,3 +78,4 @@
 ./centaur/vl/mlib/lvalues-mentioning.cert
 ./centaur/vl/mlib/rvalues.cert
 ./centaur/vl/util/prefixp.cert
+./centaur/gl/bfr-satlink
