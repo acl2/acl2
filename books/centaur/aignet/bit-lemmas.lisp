@@ -69,3 +69,7 @@
   :hints(("Goal" :in-theory (enable b-xor b-not)))
   :rule-classes ((:rewrite :loop-stopper ((a b acl2::bfix$inline)))))
 
+(defthm b-xor-same-2
+  (equal (b-xor a (b-xor a b))
+         (bfix b))
+  :hints(("Goal" :in-theory (enable b-xor))))
