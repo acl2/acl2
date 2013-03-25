@@ -117,7 +117,41 @@
                        basic/extended/fixed, <tt>:i</tt> for case-insensitive,
                        <tt>:full</tt> for something, etc."))
   :short "Test whether a given string matches a given regular expression"
-  :long "Intended for use in the dynamically compiled case"
+  :long "<p>Intended for use in the dynamically compiled case.</p>
+
+
+
+<p>As examples:</p>
+
+@({
+ (do-regex-match \"cdeAbfdEfDeghIj\"
+                 \"cdeabfdefdeghij\"
+                (parse-options 'fixed ; type
+                                nil  ; not strict-paren
+                                nil  ; not strict-brace
+                                nil  ; not strict-repeat
+                                t    ; case-insensitive
+                                ))
+})
+
+<p>returns <tt>(mv nil \"cdeAbfdEfDeghIj\" nil)</tt>, </p>
+
+@({
+ (do-regex-match \"cdeAbfdEfDeghIj\"
+                 \"ab([def]*)\\1([gh])\"
+                 (parse-options 'fixed nil nil nil t))
+}) 
+
+<p>returns <tt>(mv nil nil nil)</tt>, and </p>
+
+@({
+ (do-regex-match \"cdeAbfdEfDeghIj\"
+                 \"ab([def]*)\\1([gh])\"
+                 (parse-options 'ere nil nil nil t))
+})
+
+<p>returns <tt>(mv nil \"AbfdEfDeg\" (\"fdE\" \"g\"))</tt>.</p>"
+
   :parents (regex)
   :returns (mv (error-msg (or (stringp error-msg)
                               (not error-msg))
