@@ -74,6 +74,32 @@
 
 (set-bogus-defun-hints-ok t)  ;; For non-recursive function ignore the (ACL2) hints.
 
+(defsection parse-options
+  :parents (regex)
+  :short "Generate options for using regular expressions to parse/match
+          strings"
+  :long "<p>General form:</p>
+
+@({
+ (parse-options parse-type
+                strict-paren
+                strict-brace
+                strict-repeat
+                case-insensitive)
+})
+
+<p><tt>Parse-type</tt> should be one of <tt>'ere</tt>, <tt>'bre</tt>, or
+<tt>'fixed</tt>.  Basic regular expressions (BRE's) do not support many of the
+features of traditional regular expressions (e.g., parentheses), so you may
+wish to consider using extended regular expressions (ERE's).  Fixed indicates
+that the pattern should be interpreted as a list of fixed strings, separated by
+newlines, any of which is to be matched.</p>
+
+<p><tt>Strict-paren</tt>, <tt>strict-brace</tt>, and <tt>strict-repeat</tt>,
+and <tt>case-insensitive</tt> are @('booleanp') values.</p>
+
+<p>BOZO: document strict-paren, strict-brace, and strict-repeat.</p>"
+
 (defsum parse-opts
 ;  :guard :fast
   (parse-options
@@ -81,7 +107,7 @@
    (booleanp strict-paren)
    (booleanp strict-brace)
    (booleanp strict-repeat)
-   (booleanp case-insensitive)))
+   (booleanp case-insensitive))))
 
 ; Makes parsing options (parse-opts) structure.
 

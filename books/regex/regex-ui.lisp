@@ -28,15 +28,26 @@
 
 (defxdoc regex
   :short "Regular expression library for ACL2"
-  :long "This library is modeled after the regular expression parsing
+  :long "<p>This library is modeled after the regular expression parsing
          functionality of GNU grep.  While the code is mostly considered to be
          complete enough for now, we invite those who wish to improve the
          documentation to go ahead and do so.  As of March 2013, this library
          is compliant with 579 of the 646 GNU grep regression suite tests (see
-         book regex/regex-tests for those tests).
+         book regex/regex-tests for those tests).</p>
 
-         To start using the regex library, include book
-         <tt>regex/regex-ui</tt>.")
+         <p>To start using the regex library, include book
+         <tt>regex/regex-ui</tt>.</p>
+
+         <p>This library supports \"Basic\", \"Extended\", and \"Fixed\"
+         regular expressions (see @(see parse-options)).  Although some
+         implementations of GNU Grep support \"Perl\" regular expressions, we
+         do not yet implement them.  If a user is motivated to provide such an
+         extension, they should feel free to do so.</p>
+
+         <p>See <a
+         href=\"http://www.gnu.org/software/grep/manual/grep.html#Regular-Expressions\">
+         GNU Grep Regular Expressions</a> for more information on these regular
+         expressions.</p>")
 
 (local (in-theory (enable length-equiv length)))
 
