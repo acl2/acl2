@@ -4716,10 +4716,9 @@
 
 ; Warning: With #+hons, there could be performance problems if this is put into
 ; :logic mode without verifying guards.  That is because worse-than-builtin is
-; memoized by running *hons-init-hook*, to make it efficient on
-; structure-shared objects; but memoization depends on the raw Lisp function
-; being executed, while :ideal mode functions are run without ever slipping
-; into raw Lisp.
+; memoized by running acl2h-init, to make it efficient on structure-shared
+; objects; but memoization depends on the raw Lisp function being executed,
+; while :ideal mode functions are run without ever slipping into raw Lisp.
 
   (declare (xargs :guard (and (pseudo-termp term1)
                               (pseudo-termp term2))

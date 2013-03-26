@@ -9405,8 +9405,8 @@
 
 ; Warning: With #+hons, there could be performance problems if this is put into
 ; :logic mode without verifying guards.  That is because fchecksum-obj is
-; memoized by running *hons-init-hook*, and for memoization, we expect the raw
-; Lisp function to be executed, but :ideal mode functions are run without ever
+; memoized by running acl2h-init, and for memoization, we expect the raw Lisp
+; function to be executed, but :ideal mode functions are run without ever
 ; slipping into raw Lisp.
 
 ; Note that we could make this partially tail-recursive by accumulating from

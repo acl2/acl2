@@ -431,10 +431,6 @@
               (function (lambda (x y)
                           (equal (symbol-name x) (symbol-name y))))))
 
-;; Jared's fix for CCL character encoding
-#+ccl
-(setf ccl:*default-file-character-encoding* :iso-8859-1)
-
 
 ; Turn off automatic declaration of special variables, in particular since we
 ; do not want state declared special; see the comment above
@@ -2374,10 +2370,6 @@ which is saved just in case it's needed later.")
 (defconstant *mf-2mmf-fnn* (make-symbol "MF-2MMF-FNN"))
 (defconstant *mf-count-loc* (make-symbol "MF-COUNT-LOC"))
 
-(defconstant *mf-cl-error-msg*
-  "~%; Redefining a function in the COMMON-LISP package ~
-   is forbidden.")
-
 (defconstant *attached-fn-temp* (make-symbol "ATTACHED-FN-TEMP"))
 )
 
@@ -2482,17 +2474,22 @@ which is saved just in case it's needed later.")
 ; Bob Boyer uses the following in the hons version.  For now, we restrict to
 ; that version.
 
-; We have observed about an 8% speedup in the #-hons version of ACL2 by not
-; saving definition bodies, as opposed to saving them (with the first two setq
-; forms below).
-#+(and ccl hons)
-(setq ccl:*save-definitions* t)
-#+(and ccl hons)
-(setq ccl:*fasl-save-definitions* t)
 
-; Allow control-d to exit:
-#+(and ccl hons)
-(setq ccl::*quit-on-eof* t)
+;; [Jared]: I'm removing the following #+(and ccl hons) forms because they're
+;; redundant with the acl2h-init code, so why have them here and there.
+
+
+    ;; ; We have observed about an 8% speedup in the #-hons version of ACL2 by not
+    ;; ; saving definition bodies, as opposed to saving them (with the first two setq
+    ;; ; forms below).
+    ;; #+(and ccl hons)
+    ;; (setq ccl:*save-definitions* t)
+    ;; #+(and ccl hons)
+    ;; (setq ccl:*fasl-save-definitions* t)
+
+    ;; ; Allow control-d to exit:
+    ;; #+(and ccl hons)
+    ;; (setq ccl::*quit-on-eof* t)
 
 ; Bob Boyer uses the following at times.
 

@@ -3017,7 +3017,6 @@
   '((time$1-raw . time$1)
     (memoize-on-raw . memoize-on)
     (memoize-off-raw . memoize-off)
-    (memoize-let-raw . memoize-let)
     (with-prover-time-limit1-raw . with-prover-time-limit1)
     (with-fast-alist-raw . with-fast-alist)
     (with-stolen-alist-raw . with-stolen-alist)
@@ -30301,6 +30300,11 @@
 ; The usual table guard mechanism provides crude error messages when there is a
 ; violation.  We avoid that problem by causing a hard error.  We rely on the
 ; fact that illegal and hard-error return nil.
+
+;; [Jared]: Careful: the comment below is a lie -- The values in the table are
+;; NOT just lists of the form (condition inline).  Instead they are alists with
+;; lots of information, e.g., :CONDITION, :INLINE, :TRACE, :COMMUTATIVE,
+;; :FORGET, etc.; see for instance MEMOIZE-FORM.
 
 ; The memoize-table maps :common-lisp-compliant function symbols (to be
 ; memoized or unmemoized) to nil (unmemoized) or a list (condition inline),

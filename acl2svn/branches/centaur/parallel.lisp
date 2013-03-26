@@ -655,9 +655,9 @@
               (pprogn #+(and hons (not acl2-loop-only))
                       (progn
                         (cond ((null val)
-                               (hons-init-hook-memoizations))
+                               (acl2h-init-memoizations))
                               (t 
-                               (hons-init-hook-unmemoizations)))
+                               (acl2h-init-unmemoizations)))
                         state)
                       (f-put-global 'waterfall-parallelism val state)
                       (progn$
@@ -949,8 +949,8 @@
 ; memoized/unmemoized inside set-waterfall-parallelism-fn.  We do it there,
 ; instead of as part of this macro, because those memoizations only occur in
 ; raw Lisp and have nothing to do with table events.  Since this macro is an
-; ACL2-loop macro, it does not have access to hons-init-hook-memoizations and
-; hons-init-hook-unmemoizations.
+; ACL2-loop macro, it does not have access to acl2h-init-memoizations and
+; acl2h-init-unmemoizations.
 
            (value '(save-and-clear-memoization-settings))))
          #+hons
