@@ -133,7 +133,7 @@
     (pat-flatten (gpl key (car occs))
                  (collect-signal-list key (cdr occs)))))
 
-(memoize 'collect-signal-list :inline nil)
+(memoize 'collect-signal-list :recursive nil)
 
 (defabbrev driven-signals (mod)
   (collect-signal-list :o (gpl :occs mod)))

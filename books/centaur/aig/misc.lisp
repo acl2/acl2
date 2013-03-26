@@ -341,4 +341,4 @@
 
 
 (memoize 'aig-extract-iterated-assigns-alist
-         :inline nil)
+         :recursive nil)

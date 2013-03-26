@@ -87,7 +87,7 @@ and @('hons-alphorder-merge') is nothing more than @(see sets::union).</p>"
 
   (memoize 'hons-alphorder-merge
            :condition '(or (consp a) (consp b))
-           :inline nil)
+           :recursive nil)
 
   (defthm atom-listp-hons-alphorder-merge
     (implies (and (atom-listp a)

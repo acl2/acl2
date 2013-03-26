@@ -83,7 +83,7 @@
 
   (case c ((#\, #\( #\) #\: #\;) t)))
 
-(defun newick-illegal (x) (ofe "Illegal:  ~s" x))
+(defun newick-illegal (x) (error "Illegal:  ~s" x))
 
 (defun newick-consume-comment ()
 
@@ -134,7 +134,7 @@
               (vector-push-extend (char-upcase c) s)
               (setq c (read-char nil t nil t)))
              (unless flg
-               (ofe "Newick-read-token: A Newick name ~
+               (error "Newick-read-token: A Newick name ~
                      may not consist entirely of whitespace and ~
                      punctuation, ~%as does: ~s." s))
              (or (find-symbol s a) (values (intern (copy-seq s) a)))))
@@ -246,7 +246,7 @@
     (cond
      ((and (consp x) (symbolp p))
       (when (assoc p *newick-interior-node-alist*)
-        (ofe "Newick-cleanup:  An interior node ~
+        (error "Newick-cleanup:  An interior node ~
               name, such as ~s, may not be twice given a value." p))
       (push (cons p x) *newick-interior-node-alist*)
       (newick-cleanup-help (newick-read-token) x))
@@ -311,8 +311,8 @@
        (loop for i below d do
              (write-char (read-char osi t nil t) e)))
      (if (characterp ch)
-         (ofe "Newick-read-file.")
-       (ofe "Newick-read-file:  Missing semicolon.")))))
+         (error "Newick-read-file.")
+       (error "Newick-read-file:  Missing semicolon.")))))
 
 ; NEWICK-READ-FILE reads a file of Newick expressions.  Unless an
 ; error occurs, a proper list is returned each of whose elements is a

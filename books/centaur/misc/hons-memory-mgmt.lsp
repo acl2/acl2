@@ -90,13 +90,13 @@
 ;  of string STR2, from location S2 to its end.
 
   (unless (typep str1 'simple-base-string)
-    (ofe "looking at:  ~a is not a string." str1))
+    (error "looking at:  ~a is not a string." str1))
   (unless (typep str2 'simple-base-string)
-    (ofe "looking at:  ~a is not a string." str2))
+    (error "looking at:  ~a is not a string." str2))
   (unless (typep start1 'fixnum)
-    (ofe "looking at:  ~a is not a fixnum." start1))
+    (error "looking at:  ~a is not a fixnum." start1))
   (unless (typep start2 'fixnum)
-    (ofe "looking at:  ~a is not a fixnum." start2))
+    (error "looking at:  ~a is not a fixnum." start2))
   (locally
     (declare (simple-base-string str1 str2)
              (fixnum start1 start2))
@@ -149,17 +149,19 @@
                 *gc-min-threshold*)))
     (cond ((not (eql n (ccl::lisp-heap-gc-threshold)))
            (ccl::set-lisp-heap-gc-threshold n)
-           (ofvv "~&; set-and-reset-gc-thresholds: Reserving ~:d additional bytes.~%"
-                 n))))
+           ;; (ofvv "~&; set-and-reset-gc-thresholds: Reserving ~:d additional bytes.~%"
+           ;;       n)
+           )))
   (ccl::use-lisp-heap-gc-threshold)
 ; (ofvv "~&; set-and-reset-gc-thresholds: Calling ~
 ;        ~%(use-lisp-heap-gc-threshold).")
   (cond ((not (eql *gc-min-threshold*
                    (ccl::lisp-heap-gc-threshold)))
          (ccl::set-lisp-heap-gc-threshold *gc-min-threshold*)
-         (ofvv "~&; set-and-reset-gc-thresholds: Will reserve ~:d bytes after
-next GC.~%"
-               *gc-min-threshold*))))
+;;          (ofvv "~&; set-and-reset-gc-thresholds: Will reserve ~:d bytes after
+;; next GC.~%"
+;;                *gc-min-threshold*)
+         )))
 
 
 #+Clozure

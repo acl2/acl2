@@ -30,5 +30,6 @@
 ; may stop working.
 
 (defttag :profile)
+(include-raw "output-raw.lsp")
 (include-raw "profile-raw.lsp")
 

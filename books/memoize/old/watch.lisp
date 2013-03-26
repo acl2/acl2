@@ -29,5 +29,6 @@
 ; is very likely that this code will not work correctly.
 
 (defttag :watch)
+(include-raw "output-raw.lsp")
 (include-raw "watch-raw.lsp")
 
