@@ -33,7 +33,8 @@
 #
 #   (2) In my-doc-dir, just run "make" to do the conversion.  By default all
 #       supported formats will be generated.  If you only want a particular
-#       format, you can do, e.g., "make html", or "make text", etc.
+#       format, you can do, e.g., "make html", or "make text", etc.  If you 
+#       encounter an error, consider using GNU Make's "-k" flag.
 
 
 
