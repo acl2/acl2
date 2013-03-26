@@ -191,7 +191,14 @@
              lit-fix
              lit-val
              id-equiv
-             lit-equiv))
+             lit-equiv
+             snode->type
+             snode->phase
+             snode->regp
+             snode->fanin
+             snode->ionum
+             snode->regid
+             mk-snode))
 
 (defpkg "AIGNET$A" nil)
 ;; (defpkg "AIGNET$A"
