@@ -4,13 +4,13 @@
 
   * Document what you have changed when you commit.
   * Avoid breaking the build, by CertifyingTheBooks, including the workshop books.
-  * Make sure all parens are balanced.  File emacs/emacs-acl2.el distributed with ACL2 defines a command meta-x find-unbalanced-parentheses for this purpose.
+  * Make sure all parens are balanced.  File acl2-sources/emacs/emacs-acl2.el distributed with ACL2 defines a command meta-x find-unbalanced-parentheses for this purpose (you'll probably want to load this file via your ~/.emacs file anyway).
   * Books should target the version of ACL2 corresponding to the branch or trunk to which they are being committed.
   * Either use the standard makefile approch (see :doc book-makefiles) or explain why this would be awkward.  Non-standard makefiles should still cause the string "**CERTIFICATION FAILED**" to be printed whenever a book's certification fails.
   * Be sure to keep Makefile dependencies up to date.
-  * Avoid non-local in-theory events except when there is a good reason for them.
   * If you add a new top-level directory, be sure to record any new directory-level dependencies in books/Makefile.
-  * When using include-book for any book that is not part of your submission, use :dir :system (see :doc include-book).  Do not use absolute pathnames.
+  * Avoid non-local in-theory events except when there is good reason for them (e.g., modifying the theory for events defined in that book).
+  * When using include-book for any book that is not part of your submission, use :dir :system (see :doc include-book).  Do not use absolute pathnames, and only use pathnames relative to the book when including books that are part of the library (e.g., it is good for arithmetic-5/top.lisp to include arithmetic/"lib/basic-ops/top.lisp" using a relative path).
   * Include a copyright and license for each book, either directly or by pointing to a license file.
   * Comment all non-trivial changes with your name.
 
