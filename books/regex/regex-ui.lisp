@@ -420,3 +420,104 @@
 (local (assert! (equal (f "abc_FOO_37_abc") (list "FOO_37" "FOO" "37"))))
 
 
+(define string-keyed-alist-p (x)
+  :short "Recognizer for alists whose keys are strings.  Used to implement and
+          extend @(see regex-get)."
+  :guard t
+  (cond ((atom x)
+         (null x))
+        (t 
+         (and (consp (car x))
+              (stringp (caar x))
+              (string-keyed-alist-p (cdr x))))))
+
+(local (in-theory (enable string-keyed-alist-p)))
+
+(define regex-get 
+  ((str stringp "String to lookup")
+   (alist string-keyed-alist-p "Alistp where keys are regular expressions in
+                                string form and the values are of an
+                                unspecified type"))
+  :parents (regex earley-parser)
+  :short "Lookup a string in the regular expression alist."
+  :long "<p>It is likely that the user will want to use regex-get to implement
+         a function that returns a value of a specific type.  Here, we show a
+         couple events that we needed to provide to prove that our wrapper for
+         <tt>regex-get</tt> returns a <tt>acl2-number-listp</tt>.  We expect
+         that users in similar situations will need comparable lemmas.
+
+         Such composability is similar to the approach available and documented
+         in the book <tt>defexec/other-apps/records/records</tt>.</p>
+
+         <p>First we setup an alist to serve as our regex dictionary:</p>
+
+@({
+ (include-book \"cutil/defalist\" :dir :system)
+
+ (cutil::defalist dictionary-p (x)
+   :key (stringp x)
+   :val (acl2-number-listp x)
+   :true-listp t)
+})
+
+        <p>Next we establish two lemmas that help us specify the return type
+        for what will be our use of regex-get:</p>
+
+@({
+ (include-book \"regex/regex-ui\" :dir :system)
+
+ (defthm dictionary-p-is-string-keyed-alist-p
+   (implies (dictionary-p x)
+            (string-keyed-alist-p x))
+   :hints ((\"Goal\" :in-theory (enable string-keyed-alist-p))))
+
+ (defthm regex-get-of-dictionary-p-returns-terminal-list-p
+   (implies (and (stringp x)
+                 (dictionary-p dict))
+            (acl2-number-listp (cdr (regex-get x dict))))
+   :hints ((\"Goal\" :in-theory (enable regex-get))))
+})
+
+        <p>Which enables ACL2 to admit our lookup function:</p>
+
+@({
+ (include-book \"cutil/define\" :dir :system)
+
+ (define dictionary-lookup ((key stringp)
+                            (dictionary dictionary-p))
+   :returns (ans (acl2-number-listp ans)
+                 \"The list of integers associated with the given key\"
+                 :hyp :fguard)
+   (let ((val (regex-get key dictionary)))
+     (if (consp val) 
+         (cdr val) 
+       nil))) ; return value in the atom case is chosen by user
+})
+"
+
+  (if (atom alist)
+      nil ; no answer
+    (mv-let (err whole substrs)
+      (do-regex-match str
+                      (caar alist)
+                      (parse-options 'ere
+                                     nil nil nil 
+                                     nil)) ; case sensitive
+      (declare (ignore substrs))
+      (cond (err (er hard? 'regex-get err))
+            (whole (car alist))
+            (t (regex-get str (cdr alist)))))))
+
+(local
+(defconst *regex-alist*
+  '(("abcd" . 1)
+    ("[ab]*" . 2))))
+
+(local
+ (assert!
+  (and (equal (cdr (regex-get "abcd" *regex-alist*))
+              1)
+       (equal (cdr (regex-get "ab" *regex-alist*))
+              2)
+       (equal (cdr (regex-get "abab" *regex-alist*))
+              2))))
