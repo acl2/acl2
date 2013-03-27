@@ -443,7 +443,7 @@
                            "Matching regular expression paired with its value.
                             Nil if no entry is found."
                            :hyp :fguard)
-  :parents (regex earley-parser)
+  :parents (regex)
   :short "Lookup a string in the regular expression alist."
   :long "<p>Warning: this is likely to be a pretty slow way of doing things --
          but we currently have no experimental evidence that indicates whether
