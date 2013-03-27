@@ -438,18 +438,30 @@
    (alist string-keyed-alist-p "Alistp where keys are regular expressions in
                                 string form and the values are of an
                                 unspecified type"))
+  :returns (key-value-pair (equal (consp key-value-pair)
+                                  (if key-value-pair t nil))
+                           "Matching regular expression paired with its value.
+                            Nil if no entry is found."
+                           :hyp :fguard)
   :parents (regex earley-parser)
   :short "Lookup a string in the regular expression alist."
-  :long "<p>It is likely that the user will want to use regex-get to implement
-         a function that returns a value of a specific type.  Here, we show a
-         couple events that we needed to provide to prove that our wrapper for
-         <tt>regex-get</tt> returns a <tt>acl2-number-listp</tt>.  We expect
-         that users in similar situations will need comparable lemmas.
+  :long "<p>Warning: this is likely to be a pretty slow way of doing things --
+         but we currently have no experimental evidence that indicates whether
+         this performance is unacceptable.  If you're looking for a place to
+         suspect of bad performance, this could be a good place to start.</p>
+
+         <p>It is likely that the user will want to use <tt>regex-get</tt> to
+         implement a function that returns a value of a specific type.  Here,
+         we show a couple events that we needed to provide to prove that our
+         wrapper for <tt>regex-get</tt> returns an <tt>acl2-number-listp</tt>.
+         We expect that users in similar situations will need comparable
+         lemmas.
 
          Such composability is similar to the approach available and documented
          in the book <tt>defexec/other-apps/records/records</tt>.</p>
 
-         <p>First we setup an alist to serve as our regex dictionary:</p>
+         <p>We now begin our approach.  First we setup an alist to serve as our
+         regex dictionary:</p>
 
 @({
  (include-book \"cutil/defalist\" :dir :system)
