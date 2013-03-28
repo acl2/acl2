@@ -13,7 +13,11 @@
   * When using include-book for any book that is not part of your submission, use :dir :system (see :doc include-book).  Do not use absolute pathnames, and only use pathnames relative to the book when including books that are part of the library (e.g., it is good for arithmetic-5/top.lisp to include arithmetic/"lib/basic-ops/top.lisp" using a relative path).
   * Include a copyright and license for each book, either directly or by pointing to a license file.
   * Comment all non-trivial changes with your name.
+  * Document your submission
 
+= Documenting the Submission =
+
+  * We highly recommend that you document your library using the XDOC system.  See XDOC topic "xdoc" at [http://fv.centtech.com/acl2/latest/doc/centaur/frames2.html] for more information.
 
 = Integration of Version Control and Issue-tracking =
 
