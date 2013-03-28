@@ -74,7 +74,15 @@ in the body.</li>
 function to be defined, as in @(see defun).  The other parts all have their own
 syntax and features to cover, and we address them in turn.</p>
 
-<p>The formal have many features; see @(see extended-formals).</p>
+<p>The formal have many features; see @(see extended-formals).  Besides the
+ordinary extended-formals utilities, they can also include @(':type')
+declarations; see @(see type-spec).  For instance:</p>
+
+@({
+  (x oddp :type integer)
+  (y evenp :type (integer 0 *))
+})
+
 
 <h3>The Main Stuff</h3>
 
@@ -203,40 +211,6 @@ needed for termination.</dd>
 
 <p>See @(see returns-specifiers)</p>
 
-<h4>@('Assert') Specification</h4>
-
-<p>It can be convenient when testing code to check that the arguments of a
-function meet certain criteria, and ACL2 implements that check with a @(see
-guard).  In order to take this idea one step further, @('define') provides a
-way to check the return value of the defined function at run-time, through the
-@(':assert') keyword argument.</p>
-
-<p>The @(':assert') keyword accepts either a symbol or a list of symbols.  In
-the event that a symbol or a list containing exactly one symbol is provided, a
-check will be added near the end of the defined function's body that checks
-that the return value passes the predicate associated with that symbol.
-Sometimes the defined function will return multiple-values.  In this case, the
-argument given to @(':assert') should be a list of symbols, of length equal to
-the number of return values.  @('Define') will then take each symbol and use
-its associated function to check that the <i>i</i>'th return value passes the
-<i>i</i>'th predicate symbol's test (where <i>i</i> ranges from 1 to the number
-of values returned by the defined function).</p>
-
-<p>In the long-term, we would like @('define') to only require a Boolean value
-as the argument to @(':assert') and to infer the requirements of the return
-values from the @(':returns') specifications.  If any user wishes to make this
-change to @('define'), they should feel free to do so.</p>
-
-<p>Another problem of the current implementation of @(':assert') is that if the
-same predicate is used twice, the @('define') will break.  A workaround for
-this is to define a second predicate that is simply a wrapper for the desired
-predicate.  The user can then use that second predicate in the second place it
-is needed.</p>
-
-<p>BOZO assert is probably orthogonal to define and should just be turned into
-some kind of tracing/advise mechanism.</p>
-
-
 <h3>The Other Events</h3>
 
 <p>The final part of a @('define') is an area for any arbitrary events to be
@@ -263,32 +237,6 @@ some kind of separator!</p>
 
 
 ")
-
-
-
-
-
-
-; -------------- Assertion Specifications -------------------------------------
-
-(defun parse-assert-tests (assertion ctx)
-  (declare (xargs :guard (symbol-listp assertion)))
-  (cond ((atom assertion)
-         nil)
-
-; Predicate's symbol is also the local variable name.  It would be good to call
-; gensym, along with a call of check-vars-not-free so that the same predicate
-; could be used twice.  I'm not fixing this for now, because really we should
-; be using the returns specifications, and doing so will obviate this issue.
-
-        (t (cons `(if (,(car assertion) ,(car assertion))
-                      t
-                    (er hard? ',ctx
-                        "Assertion failure.  The following was supposed to ~
-                           be of type ~x0: ~x1"
-                        ',(car assertion)
-                        ,(car assertion)))
-                 (parse-assert-tests (cdr assertion) ctx)))))
 
 
 ; -------------- Main Stuff Parsing -------------------------------------------
@@ -341,16 +289,6 @@ some kind of separator!</p>
        (kwd-alist (delete-assoc :prepwork kwd-alist)))
     (mv enabled-p inline-p prepwork kwd-alist)))
 
-(defun get-assertion (kwd-alist)
-  "Returns (mv assertion rest-of-kwd-alist)"
-  (declare (xargs :guard (alistp kwd-alist)))
-  (b* ((assertion (cdr (assoc :assert kwd-alist)))
-       (assertion (if (and (atom assertion) (not (null assertion)))
-                      (list assertion)
-                    assertion))
-       (kwd-alist (delete-assoc :assert kwd-alist)))
-    (mv assertion kwd-alist)))
-
 (defun get-returns (kwd-alist)
   "Returns (mv returns rest-of-kwd-alist)"
   (declare (xargs :guard (alistp kwd-alist)))
@@ -368,7 +306,6 @@ some kind of separator!</p>
             :inline
             :enabled
             :returns
-            :assert
             :prepwork
             )
           acl2::*xargs-keywords*))
@@ -637,7 +574,21 @@ some kind of separator!</p>
     (mv str state)))
 
 
+
 ; -------------- Top-Level Macro ----------------------------------------------
+
+(defun formallist->types (x)
+  (declare (xargs :guard (formallist-p x)))
+  (b* (((when (atom x))
+        nil)
+       ((formal f1) (car x))
+       (look (assoc :type f1.opts))
+       ((unless look)
+        (formallist->types (cdr x)))
+       (this-decl
+        `(type ,(cdr look) ,f1.name)))
+    (cons this-decl
+          (formallist->types (cdr x)))))
 
 (defun define-fn (fnname formals args world)
   (declare (xargs :guard (plist-worldp world)))
@@ -664,13 +615,6 @@ some kind of separator!</p>
        ((mv parents short long kwd-alist) (get-xdoc-stuff kwd-alist))
        ((mv enabled-p inline-p prepwork kwd-alist)
         (get-defun-params kwd-alist))
-       ((mv assertion kwd-alist)          (get-assertion kwd-alist))
-       ((unless (symbol-listp assertion))
-        (er hard? 'define-fn
-            "Error in ~x0: expected :assert to be either a symbol or a ~
-             symbol-listp, but found ~x1."
-            fnname assertion))
-       (ruler-extenders (if assertion :all nil))
 
        ((unless (true-listp prepwork))
         (er hard? 'define-fn
@@ -698,19 +642,37 @@ some kind of separator!</p>
        (macro         (and need-macrop
                            (make-wrapper-macro fnname fnname-fn formals)))
        (formals       (remove-macro-args fnname formals nil))
-       (formals       (parse-formals fnname formals nil))
+       (formals       (parse-formals fnname formals '(:type)))
        (formal-names  (formallist->names formals))
        (formal-guards (remove t (formallist->guards formals)))
+       (formal-types  (formallist->types formals))
        (stobj-names   (formallist->names (formallist-collect-stobjs formals world)))
-
-       (assert-mv-let-bindings assertion)
-       (assert-tests (parse-assert-tests assertion fnname-fn))
 
        (returnspecs   (parse-returnspecs fnname returns world))
        (defun-sym     (if enabled-p 'defun 'defund))
 
        (main-def
         `(,defun-sym ,fnname-fn ,formal-names
+
+; Subtle: this order isn't what we always used, but Sol ran into some problems
+; where, e.g., traditional type declarations weren't coming before the guards
+; from formals, and therefore the guards wouldn't verify.  We now try to use an
+; order that seems like it is most probably the one you want.
+
+; 1. Stobj names, since they give us stobj-p guards, which may be useful and
+; probably can't depend on anything else
+           ,@(and stobj-names
+                  `((declare (xargs :stobjs ,stobj-names))))
+
+; 2. Formal types, since they shouldn't have dependencies and may give us
+; useful guards.
+
+           ,@(and formal-types
+                  `((declare . ,formal-types)))
+
+; 3. Formal guards, since these should often be "simple types" that probably
+; don't have further dependencies, e.g., don't rely on the top-level :guard
+
            ,@(cond ((atom formal-guards)
                     ;; Design decision: I prefer to put in a declaration here
                     ;; instead of leaving it out.  This makes define trigger
@@ -722,21 +684,29 @@ some kind of separator!</p>
                     `((declare (xargs :guard ,(car formal-guards)))))
                    (t
                     `((declare (xargs :guard (and . ,formal-guards))))))
-           ,@(and stobj-names `((declare (xargs :stobjs ,stobj-names))))
-           ,@(and xargs       `((declare (xargs . ,xargs))))
 
-;; Bozo (that only applies in the :assert case), we should merge the
-;; ruler-extenders or figure out a way to do the assertions without them.
+; 4. This is kind of arbitrary.  We put the traditional decls before the top-level
+; xargs because it seems rather unlikely that someone would write
+;     :guard ...
+;     (declare (xargs :guard ...))
+;
+; But it seems more likely that they would write:
+;     :guard ...
+;     (declare (type integer x))
+; And so in this case, we'll get the type declarations before the "complex" guard,
+; which can't hurt.
 
-           ,@(and ruler-extenders `((declare (xargs :ruler-extenders
-                                                    ,ruler-extenders))))
            ,@traditional-decls/docs
-           ,(if assertion
-                `(mv?-let ,assert-mv-let-bindings
-                          ,extended-body
-                          (prog2$ (and ,@assert-tests)
-                                  (mv? ,@assert-mv-let-bindings)))
-                extended-body))))
+
+; 5. Finally the top-level :guards and other xargs, since they might be for
+; more dependent-typey kinds of things that may depend on type declarations and
+; formal guards and stobjs from above.
+
+           ,@(and xargs
+                  `((declare (xargs . ,xargs))))
+
+           ,extended-body
+           )))
 
     `(progn
        (defsection ,fnname

@@ -20,6 +20,7 @@
 
 (in-package "ACL2")
 (ld "package.lsp")
+(ld "~/acl2-customization.lsp")
 (include-book "portcullis")
 (set-deferred-ttag-notes t state)
 (set-gag-mode :goals)
