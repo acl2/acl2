@@ -44,10 +44,17 @@
          do not yet implement them.  If a user is motivated to provide such an
          extension, they should feel free to do so.</p>
 
+         <p>This library does not currently support features like [[:digit:]] and
+         [[:alpha:]].  A workaround for this is specifying the expansion of
+         these named classes, respectively, as in [0-9] and [a-zA-Z].</p>
+
          <p>See <a
          href=\"http://www.gnu.org/software/grep/manual/grep.html#Regular-Expressions\">
          GNU Grep Regular Expressions</a> for more information on these regular
          expressions.</p>")
+
+; Future implementor's note: An appropriate place to add named classes
+; (:digit:, :alpha:, etc.) might be in regex-parse-bracket.lisp.
 
 (local (in-theory (enable length-equiv length)))
 
@@ -441,7 +448,10 @@
   :returns (key-value-pair (equal (consp key-value-pair)
                                   (if key-value-pair t nil))
                            "Matching regular expression paired with its value.
-                            Nil if no entry is found."
+                            Nil if no entry is found.  Note that this is an
+                            exact match, which is different from the
+                            functionality of grep, which returns substrings
+                            that match."
                            :hyp :fguard)
   :parents (regex)
   :short "Lookup a string in the regular expression alist."
@@ -517,7 +527,7 @@
                                      nil)) ; case sensitive
       (declare (ignore substrs))
       (cond (err (er hard? 'regex-get err))
-            (whole (car alist))
+            ((equal str whole) (car alist))
             (t (regex-get str (cdr alist)))))))
 
 (local
