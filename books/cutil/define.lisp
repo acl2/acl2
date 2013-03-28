@@ -590,6 +590,23 @@ some kind of separator!</p>
     (cons this-decl
           (formallist->types (cdr x)))))
 
+(table define)
+
+(table define 'defines
+       ;; An alist binding NAME -> DEFINE-INFO alists, see EXTEND-DEFINE-TABLE
+       )
+
+(defun get-defines (world)
+  "Look up information about the current defines in the world."
+  (cdr (assoc 'defines (table-alist 'define world))))
+
+(defmacro extend-define-table (name &key fn formals returns)
+  `(table define 'defines
+          (cons (cons ',name (list (cons :fn ,fn)
+                                  (cons :formals ,formals)
+                                  (cons :returns ,returns)))
+                (get-defines world))))
+
 (defun define-fn (fnname formals args world)
   (declare (xargs :guard (plist-worldp world)))
   (b* (((unless (symbolp fnname))
@@ -738,6 +755,11 @@ some kind of separator!</p>
 
          . ,rest-events)
 
+       (extend-define-table ,fnname
+                            :fn ',fnname-fn
+                            :returns ',returnspecs
+                            :formals ',formals)
+
        ;; Now that the section has been submitted, its xdoc exists, so we can
        ;; do the doc generation and prepend it to the xdoc.
        ,(if (not (or parents long short))
@@ -752,6 +774,7 @@ some kind of separator!</p>
                                  base-pkg state))
                  (event (list 'xdoc::xdoc-prepend fnname str)))
               (value event))))
+
        )))
 
 (defmacro define (name formals &rest args)
