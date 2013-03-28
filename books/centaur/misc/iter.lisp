@@ -221,7 +221,9 @@
                                  :init-vals"))
        (hints (get-kw :hints nil kwlist))
        (iter-guard (get-kw :iter-guard t kwlist))
+       (iter-decls (get-kw :iter-decls nil kwlist))
        (top-guard (get-kw :top-guard t kwlist))
+       (top-returns (get-kw :top-returns nil kwlist))
        (guard-hints (get-kw :guard-hints nil kwlist))
        (package (get-kw :package name kwlist))
        (val-vars (if (symbolp returns)
@@ -259,7 +261,8 @@
                                           ,(if (integerp last) last '*))
                                  ,index)
                            (ignorable ,index ,@init-val-vars . ,formals)
-                           (xargs :guard-hints ,guard-hints))
+                           (xargs :guard-hints ,guard-hints)
+                           . ,iter-decls)
                   ,@decls
                   (declare (xargs :guard (and (<= ,first ,index)
                                               (< ,index ,last)
@@ -270,7 +273,8 @@
                                  ,(if (integerp last) last '*))
                         ,index)
                   (xargs :measure (nfix (- (ifix ,last)
-                                           (ifix ,index)))))
+                                           (ifix ,index))))
+                  . ,iter-decls)
          ,@decls
          (declare (xargs :guard (and (<= ,first ,index)
                                      (<= ,index ,last)
@@ -287,7 +291,8 @@
                                  ,(if (integerp last) last '*))
                         ,index)
                   (xargs :measure (nfix ,iter-meas)
-                         :verify-guards nil))
+                         :verify-guards nil)
+                  . ,iter-decls)
          ,@decls
          (declare (xargs :guard (and (<= ,first ,index)
                                      (<= ,index ,last)
@@ -360,14 +365,21 @@
                    ,@hints
                    (and stable-under-simplificationp
                         '(:in-theory (enable))))))
+       ,@(and top-returns '((set-ignore-ok t)))
        (defun-inline ,name ,formals
          ,@(if doc (list doc) nil)
          ,@decls
          ,@(and top-guard
                 `((declare (xargs :guard ,top-guard))))
-         (b* ,init-vals
-           (mbe :logic (,iter ,last . ,(cdr iter-formals))
-                :exec (,tailrec ,first . ,(cdr iter-formals)))))
+         ,(if top-returns
+              `(b* (,@init-vals
+                    (,returns
+                     (mbe :logic (,iter ,last . ,(cdr iter-formals))
+                          :exec (,tailrec ,first . ,(cdr iter-formals)))))
+                 ,top-returns)
+            `(b* ,init-vals
+               (mbe :logic (,iter ,last . ,(cdr iter-formals))
+                    :exec (,tailrec ,first . ,(cdr iter-formals))))))
 
        (in-theory (enable (:induction ,iter))))))
 
