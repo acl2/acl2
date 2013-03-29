@@ -20530,8 +20530,16 @@
   only after all sub-computations (threads) have finished.  Thanks to David
   Rager for contributing this improvement.
 
-  For ACL2(h), ~ilc[never-memoize] specifies that a given function should never
-  be memoized.  Thanks to Jared Davis for this feature.
+  Jared Davis contributed changes related to the ~ilc[memoize] utility of
+  ACL2(h), including some low-level changes as well as the following.
+
+  o ~ilc[Never-memoize] specifies that a given function should never
+  be memoized.
+
+  o Removed ~c[memoize-let], which may never have ever been used.
+
+  o Removed the ~c[:inline] keyword option to memoize, which was just an alias
+    for the ~c[:recursive] option.
 
   ~/~/")
 

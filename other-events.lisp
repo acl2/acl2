@@ -3017,7 +3017,6 @@
   '((time$1-raw . time$1)
     (memoize-on-raw . memoize-on)
     (memoize-off-raw . memoize-off)
-    (memoize-let-raw . memoize-let)
     (with-prover-time-limit1-raw . with-prover-time-limit1)
     (with-fast-alist-raw . with-fast-alist)
     (with-stolen-alist-raw . with-stolen-alist)
@@ -30303,9 +30302,8 @@
 ; fact that illegal and hard-error return nil.
 
 ; The memoize-table maps :common-lisp-compliant function symbols (to be
-; memoized or unmemoized) to nil (unmemoized) or a list (condition inline),
-; where condition is t, nil, or a :common-lisp-compliant function symbol whose
-; formals and guard are the same as those of fn and inline is t or nil.  The
+; memoized or unmemoized) to nil (unmemoized) or to a non-empty alist that
+; stores relevant information, such as the condition (see memoize-form).  The
 ; guard requirement then ensures that when we call the raw Lisp version of fn,
 ; then since the guard for fn must hold in that case, so does the guard for
 ; condition-fn.  The body of condition-fn can therefore be called in raw Lisp

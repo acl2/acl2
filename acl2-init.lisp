@@ -1044,7 +1044,7 @@ implementations.")
             (lisp-implementation-type)
             (lisp-implementation-version))
     (setq ccl::*inhibit-greeting* t))
-  #+hons (qfuncall hons-init)
+  #+hons (qfuncall acl2h-init)
   (format t *saved-string*
           *copy-of-acl2-version*
           (saved-build-dates :terminal)

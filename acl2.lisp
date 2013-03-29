@@ -837,8 +837,8 @@
     "parallel" ; but only get special under-the-hood treatment with #+acl2-par
     #+acl2-par "futures-raw"
     #+acl2-par "parallel-raw"
-    #+hons "memoize-raw"
     #+hons "hons-raw"
+    #+hons "memoize-raw"
     "translate"
     "type-set-a"
     "linear-a"
@@ -2369,10 +2369,6 @@ which is saved just in case it's needed later.")
 (defconstant *mf-2mmf-fnn* (make-symbol "MF-2MMF-FNN"))
 (defconstant *mf-count-loc* (make-symbol "MF-COUNT-LOC"))
 
-(defconstant *mf-cl-error-msg*
-  "~%; Redefining a function in the COMMON-LISP package ~
-   is forbidden.")
-
 (defconstant *attached-fn-temp* (make-symbol "ATTACHED-FN-TEMP"))
 )
 
@@ -2474,20 +2470,7 @@ which is saved just in case it's needed later.")
 ;                        Some hacks for CCL
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-; Bob Boyer uses the following in the hons version.  For now, we restrict to
-; that version.
-
-; We have observed about an 8% speedup in the #-hons version of ACL2 by not
-; saving definition bodies, as opposed to saving them (with the first two setq
-; forms below).
-#+(and ccl hons)
-(setq ccl:*save-definitions* t)
-#+(and ccl hons)
-(setq ccl:*fasl-save-definitions* t)
-
-; Allow control-d to exit:
-#+(and ccl hons)
-(setq ccl::*quit-on-eof* t)
+; Also see the acl2h-init code.
 
 ; Bob Boyer uses the following at times.
 

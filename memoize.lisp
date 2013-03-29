@@ -430,10 +430,9 @@
 
   '(memoize-summary))
 
-; The macros MEMOIZE-LET, MEMOIZE-ON, and MEMOIZE-OFF typically cause
-; "under the hood" effects that, though not changing the semantics of
-; what ACL2 returns, may affect the speed and/or space utilization of
-; the computation.
+; The macros MEMOIZE-ON and MEMOIZE-OFF typically cause "under the hood"
+; effects that, though not changing the semantics of what ACL2 returns, may
+; affect the speed and/or space utilization of the computation.
 
 ; The functions memoize and unmemoize have rather innocent looking
 ; semantics.  But under the hood, they enable and disable memoization.
@@ -472,7 +471,6 @@
   ;; hons-related macros and primitive fns
   (append '(hons-resize
             set-slow-alist-action
-            memoize-let
             memoize
             unmemoize
             memoize-on
@@ -482,9 +480,25 @@
 
 (defconst *mht-default-size* 60)
 
-(defun memoize-form (fn condition condition-p condition-fn hints otf-flg inline
-                        trace commutative forget memo-table-init-size aokp
-                        ideal-okp)
+(defun memoize-form (fn
+                     condition
+                     condition-p
+                     condition-fn
+                     hints
+                     otf-flg
+                     inline
+                     trace
+                     commutative
+                     forget
+                     memo-table-init-size
+                     aokp
+                     ideal-okp)
+
+; Jared Davis suggests that we consider bundling up these 13 parameters, for
+; example into an alist.  He says: "Various subsets of these arguments occur in
+; spaghetti fashion throughout the code for memoize, add-trip, the
+; memoize-table stuff, etc."
+
   (declare (xargs :guard t))
   (let ((condition (cond ((equal condition ''t) t)
                          ((equal condition ''nil) nil)
@@ -617,8 +631,7 @@
 (defmacro memoize (fn &key
                       (condition 't condition-p)
                       condition-fn hints otf-flg
-                      (inline 't inline-supplied-p)
-                      (recursive 't recursive-supplied-p)
+                      (recursive 't)
                       trace
                       commutative
                       forget
@@ -659,9 +672,7 @@
                                       ;   the given condition
   (memoize 'foo :condition-fn 'test)  ; memoize for args satisfying
                                       ;   a call of the given function
-  (memoize 'foo :inline nil)          ; do not inline the definition
-                                      ;   of foo
-  (memoize 'foo :recursive nil)       ; as above, i.e. :inline nil
+  (memoize 'foo :recursive nil)       ; don't memoize recursive calls
   (memoize 'foo :aokp t)              ; attachments OK for stored results
   (memoize 'foo :ideal-okp t)         ; memoize even if foo is in :logic mode
                                       ;   but has not been guard-verified~/
@@ -674,8 +685,7 @@
                                       ;   guards of condition-fn
            :otf-flg      otf-flg      ; optional, for verifying the
                                       ;   guards of condition-fn
-           :inline       inline       ; optional (default t)
-           :recursive    inline       ; optional (default t)
+           :recursive    t/nil        ; optional (default t)
            :commutative  t/lemma-name ; optional (default nil)
            :forget       t/nil        ; optional (default nil)
            :memo-table-init-size size ; optional (default *mht-default-size*)
@@ -750,9 +760,8 @@
   be a ~il[guard]-verified function.
 
   Calls of this macro generate events of the form
-  ~c[(table memoize-table fn ((:condition-fn fn) (:inline i) ...))].  When
-  successful, the returned value is of the form
-  ~c[(mv nil function-symbol state)].
+  ~c[(table memoize-table fn ((:condition-fn fn) ...))].  When successful, the
+  returned value is of the form ~c[(mv nil function-symbol state)].
 
   Suppose that a function is already memoized.  Then it is illegal to memoize
   that function.  Moreover, if the function was memoized with an associated
@@ -768,14 +777,12 @@
 
   We conclude with by documenting keyword parameters not discussed above.
 
-  Keyword parameter ~c[:recursive] is a synonym for ~c[:inline].  Each must be
-  given the same Boolean value, and both are ~c[t] by default.  When either is
-  supplied the value ~c[nil], then ~c[memoize] does not use the definitional
-  body of ~c[fn] in the body of the new, memoized definition of ~c[fn].
-  Instead, ~c[memoize] lays down a call to the ~c[symbol-function] for ~c[fn]
-  that was in effect prior to memoization.  Use value ~c[nil] for ~c[:inline]
-  or ~c[:recursive] to avoid memoizing recursive calls to ~c[fn] directly from
-  within ~c[fn].
+  Keyword parameter ~c[:recursive] is ~c[t] by default, which means that
+  recursive calls of ~c[fn] will be memoized just as ``top-level'' calls of
+  ~c[fn].  When ~c[:recursive] is instead set to ~c[nil], memoization is only
+  done at the top level.  Using ~c[:recursive nil] is similar to writing a
+  wrapper function that just calls ~c[fn], and memoizing the wrapper instead of
+  ~c[fn].
 
   If ~c[:trace] has a non-~c[nil] value, then ~c[memoize] also traces in a
   traditional Lisp style.  If ~c[:trace] has value ~c[notinline] or
@@ -853,11 +860,11 @@
   :cite hons-and-memoization
   :cited-by hons-and-memoization"
 
-  (declare (xargs :guard t)
-           (ignorable condition-p condition condition-fn hints otf-flg inline
-                      inline-supplied-p recursive recursive-supplied-p
-                      trace commutative forget memo-table-init-size aokp
-                      ideal-okp verbose))
+  (declare (xargs :guard (booleanp recursive))
+           (ignorable condition-p condition condition-fn hints otf-flg
+                      recursive trace commutative forget memo-table-init-size
+                      aokp ideal-okp verbose))
+
   #-acl2-loop-only
   `(progn (when (eql *ld-level* 0)
 
@@ -871,27 +878,9 @@
                          Lisp, use memoize-fn."
                         ',fn)))
           (value-triple nil))
+
   #+acl2-loop-only
-  (let* ((inline
-           (cond
-            ((or (not (booleanp inline))
-                 (not (booleanp recursive)))
-             (er hard 'memoize
-                 "For calls of memoize, the keyword parameter ~x0 must be ~
-                  Boolean, but it has been supplied the value: ~x1."
-                 (if (booleanp inline) :RECURSIVE :INLINE)
-                 (if (booleanp inline) recursive inline)))
-            (recursive-supplied-p
-             (cond
-              ((and inline-supplied-p
-                    (not (eq inline recursive)))
-               (er hard 'memoize
-                   "Contradictory values ~x0 and ~x1 have been supplied for ~
-                    keyword parameters :INLINE and :RECURSIVE (respectively) ~
-                    in a call to memoize.  See :DOC memoize."
-                   inline recursive))
-              (t recursive)))
-            (t inline)))
+  (let* ((inline recursive)
          (form
           (cond
            ((eq commutative t)
@@ -1012,10 +1001,10 @@
   form, ~pl[clear-memoize-statistics].
 
   ~c[Profile] is just a macro that calls ~ilc[memoize] to do its work.
-  ~c[Profile] gives the two keyword parameters ~c[:CONDITION] and ~c[:INLINE]
-  of ~ilc[memoize] the value ~c[nil].  Other keyword parameters for
-  ~c[memoize], which must not include ~c[:CONDITION], ~c[:CONDITION-FN], or
-  ~c[:INLINE], are passed through.  To eliminate profiling, use
+  ~c[Profile] gives the two keyword parameters ~c[:condition] and
+  ~c[:recursive] of ~ilc[memoize] the value ~c[nil].  Other keyword parameters
+  for ~c[memoize], which must not include ~c[:condition], ~c[:condition-fn], or
+  ~c[:recursive], are passed through.  To eliminate profiling, use
   ~ilc[unmemoize]; for example, to eliminate profiling for function ~c[fn],
   evaluate ~c[(unmemoize 'fn)].
 
@@ -1026,8 +1015,8 @@
   (declare (xargs :guard (and (keyword-value-listp r)
                               (not (assoc-keyword :condition r))
                               (not (assoc-keyword :condition-fn r))
-                              (not (assoc-keyword :inline r)))))
-  `(memoize ,fn :condition nil :inline nil ,@r))
+                              (not (assoc-keyword :recursive r)))))
+  `(memoize ,fn :condition nil :recursive nil ,@r))
 
 #-hons
 (defmacro memoize-on-raw (fn form)
@@ -1059,23 +1048,9 @@
 
   `(return-last 'memoize-off-raw ,fn ,form))
 
-#-hons
-(defmacro memoize-let-raw (fn form)
-  (declare (ignore fn))
-  form)
-
-(defmacro memoize-let (fn form)
-
-; MEMOIZE-LET evaluates form.  At the beginning of that evaluation, no
-; old values are remembered of calls of the symbol fn.  Afterwards,
-; those old values will be restored if no stobjs have been altered,
-; but all newer memoized values are forgotten.  The symbol fn must be
-; memoized before MEMOIZE-LET is called.
-
-  `(return-last 'memoize-let-raw ,fn ,form))
-
 (defmacro memoizedp-world (fn wrld)
-  `(let ((fn ,fn) (wrld ,wrld))
+  `(let ((fn ,fn)
+         (wrld ,wrld))
      (cond
       ((not (global-val 'hons-enabled wrld))
        (er hard 'memoizedp
