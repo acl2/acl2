@@ -7,11 +7,12 @@ list-theory.lisp
 modeling/cert.acl2
 modeling/Makefile
 modeling/memories.lisp
+modeling/nested-stobj-toy-isa.lisp
 modeling/network-state-basic.lisp
 modeling/network-state.lisp
 proofs")
  (:TITLE    "Simple demos for performing modeling and proofs in ACL2")
- (:AUTHOR/S "David Rager")
+ (:AUTHOR/S "David Rager" "Matt Kaufmann)
  (:KEYWORDS ; non-empty list of keywords, case-insensitive
    "modeling" "ACL2" "proofs" "examples" "demonstrations" "demos")
  (:ABSTRACT "Simple demos for performing modeling and proofs in ACL2")
