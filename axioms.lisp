@@ -1051,7 +1051,8 @@
         (if pair
             (car pair)
 
-; The following will be printed if we are looking at a local stobj value.
+; The following will be printed if we are looking at the value of a local stobj
+; or of a stobj bound by stobj-let.
 
           '|<Unknown value>|))
     x))
@@ -1925,7 +1926,8 @@
                       (get ',the-live-name
                            'redundant-raw-lisp-discriminator)))
 
-; d is expected to be of the form (DEFSTOBJ namep creator . field-templates)
+; d is expected to be of the form (DEFSTOBJ namep creator field-templates
+; . congruent-stobj-rep).
 
               (ok-p (and boundp
                          (consp d)
@@ -8595,6 +8597,14 @@
    (t ; (equal test 'equal)
     `(no-duplicatesp-equal ,x))))
 
+; The following is used in stobj-let.
+
+(defun chk-no-duplicatesp (lst)
+  (declare (xargs :guard (and (eqlable-listp lst)
+                              (no-duplicatesp lst)))
+           (ignore lst))
+  nil)
+
 ; Rassoc
 
 (defun r-eqlable-alistp (x)
@@ -12926,8 +12936,8 @@
   on a list of arguments that includes ~c[state] or user-defined ~ilc[stobj]s,
   these arguments will be shown as symbols such as ~c[|<state>|] in the error
   message.  In the case of a user-defined stobj bound by
-  ~ilc[with-local-stobj], the symbol printed will include the suffix
-  ~c[{local-stobj}], for example, ~c[|<st>{local-stobj}|].
+  ~ilc[with-local-stobj] or ~ilc[stobj-let], the symbol printed will include
+  the suffix ~c[{instance}], for example, ~c[|<st>{instance}|].
 
   It is harmless to include ~c[:non-executable t] in your own ~ilc[xargs]
   ~ilc[declare] form; ~c[defun-nx] will still lay down its own such
@@ -23044,12 +23054,12 @@
 ; UNTRANSLATED term about var, except that we return nil if x is seen not to be
 ; a valid type-spec for ACL2.
 
-; Wrld an ACL2 logical world or a symbol, the difference being that a symbol
-; indicates that we should do a weaker check.  This extra argument was added
-; after Version_3.0 when Dave Greve pointed out that Common Lisp only allows
-; the type-spec (satisfies pred) when pred is a unary function symbol, not a
-; macro.  Thus, a non-symbol wrld can only strengthen this function, i.e.,
-; causing it to return nil in more cases.
+; Wrld is an ACL2 logical world or a symbol (typically, nil), the difference
+; being that a symbol indicates that we should do a weaker check.  This extra
+; argument was added after Version_3.0 when Dave Greve pointed out that Common
+; Lisp only allows the type-spec (satisfies pred) when pred is a unary function
+; symbol, not a macro.  Thus, a non-symbol wrld can only strengthen this
+; function, i.e., causing it to return nil in more cases.
 
   (declare (xargs :guard (or (symbolp wrld)
                              (plist-worldp wrld))
@@ -27667,6 +27677,7 @@
     set-gc-threshold$-fn
     certify-book-finish-complete
     chk-absstobj-invariants
+    get-stobj-creator
     ))
 
 (defconst *primitive-logic-fns-with-raw-code*
@@ -27902,6 +27913,7 @@
     with-lock
     catch-throw-to-local-top-level
     with-fast-alist-raw with-stolen-alist-raw fast-alist-free-on-exit-raw
+    stobj-let
     ))
 
 (defmacro with-live-state (form)

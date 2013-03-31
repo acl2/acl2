@@ -72,6 +72,7 @@
                                      ((explode-atom x y))))))
 
 (verify-termination-boot-strap packn) ; and guards
+(verify-termination-boot-strap packn-pos) ; and guards
 )
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

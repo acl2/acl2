@@ -1485,6 +1485,8 @@
     ans))
 
 (defun packn-pos (lst witness)
+  (declare (xargs :guard (and (good-atom-listp lst)
+                              (symbolp witness))))
   (intern-in-package-of-symbol (coerce (packn1 lst) 'string)
                                witness))
 

@@ -20281,6 +20281,11 @@
   implementation and may have semantics that change with new ACL2 versions.  If
   you have reason to use this value, please contact the ACL2 implementors.
 
+  Even if the function ~c[f] is defined to take one or more ~il[stobj]
+  arguments, the form ~c[(ec-call (f ...))] is now legal if all arguments of
+  the call of ~c[f] are non-stobj objects, in any context where only ordinary
+  object return values are expected.
+
   ~st[NEW FEATURES]
 
   By default, the prover now gives information about case splits.
@@ -20294,6 +20299,10 @@
   ~il[events].  Thanks to Harsh Raju Chamarthi for requesting these
   capabilities.  Note that ~ilc[finalize-event-user] replaces
   ~c[print-summary-user].
+
+  We now provide support for ~il[stobj] fields of stobjs.  ~l[stobj-let].
+  Thanks to Warren Hunt and Sol Swords for requesting this feature and for
+  helpful discussions.
 
   ~st[HEURISTIC IMPROVEMENTS]
 
@@ -20490,6 +20499,11 @@
   Davis for asking for a way to avoid such errors.
 
   ~st[NEW FEATURES]
+
+  It is now permissible to specify a ~il[stobj] field that is itself either a
+  stobj or an array of stobjs.  A new primitive, ~ilc[stobj-let], is provided
+  in order to access or update such fields; ~pl[stobj-let].  Thanks to Warren
+  Hunt and Sol Swords for requesting the ability to specify nested stobjs.
 
   ~st[HEURISTIC IMPROVEMENTS]
 

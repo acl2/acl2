@@ -1090,6 +1090,11 @@
      fns
      w))
    ((eq (car x) 'return-last)
+
+; Warning: Keep this in sync with stobj-let-fn and the handling of stobj-let in
+; this function, in particular the case in which stobj-let-fn generates a call
+; of prog2$.
+
     (let* ((qfn (and (consp (cdr x))
                      (cadr x)))
            (fn (or (and (consp qfn)
@@ -1165,6 +1170,43 @@
             (parse-with-local-stobj (cdr x))
             (declare (ignore erp)) ; should be nil
             (mv-let-for-with-local-stobj mv-let-form st creator fns w)))
+   ((eq (car x) 'stobj-let)
+
+; Stobj-let is rather complicated, so we prefer to take advantage of the logic
+; code for that macro.  However, bindings of live stobjs vars may be necessary
+; so that when we call a traced function on a live stobj that was stobj-let
+; bound, then stobj-print-symbol can print the "{instance}" suffix, as it
+; should.  The easiest way to code that seems to be to go ahead and use the
+; logical macroexpansion of stobj-let, and then fix it up with suitable
+; bindings.
+
+    (let ((temp (oneify (stobj-let-fn x)
+                        fns w)))
+      (case-match temp
+
+; Warning: Keep these cases in sync with stobj-let-fn.
+
+        (('let bindings . rest)
+         `(let* ,(append bindings
+                         (the-maybe-live-var-bindings (strip-cars bindings)))
+            ,@rest))
+        (('progn conjoined-no-dups-exprs
+                 ('let bindings . rest))
+
+; Warning: Keep this case in sync with the definition of (prog2$ x y) as
+; (return-last 'progn x y), and in sync with the handling of such a return-last
+; form by oneify.
+
+         `(progn ,conjoined-no-dups-exprs
+                 (let* ,(append bindings
+                                (the-maybe-live-var-bindings
+                                 (strip-cars bindings)))
+                   ,@rest)))
+        (& (interface-er "Implementation error: unexpected form of stobj-let ~
+                          encountered by ~
+                          oneify!.~|~%Input:~|~y0~%Output:~|~y1~%Please ~
+                          contact the ACL2 implementors."
+                         x temp)))))
    ((member-eq (car x) '(let #+acl2-par plet))
     (let* (#+acl2-par (granularity-decl (and (eq (car x) 'plet)
                                              (eq (car (cadr x)) 'declare)
@@ -8433,7 +8475,7 @@ Missing functions:
                (intern-in-package-of-symbol
                 (cond ((eq x (cdr pair)) name)
                       (t (concatenate 'string name
-                                      "{local-stobj}")))
+                                      "{instance}")))
                 (car pair)))
            (stobj-print-symbol x (cdr user-stobj-alist-tail))))))
 
