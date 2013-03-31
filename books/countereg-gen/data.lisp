@@ -8,7 +8,7 @@
 ;;;;It can be used independently, but is primarily intended
 ;;;;to support the TESTING framework!!
 
-(acl2::begin-book t :ttags :all);$ACL2s-Preamble$|#
+(acl2::begin-book t);$ACL2s-Preamble$|#
 
 
 (in-package "DEFDATA")
