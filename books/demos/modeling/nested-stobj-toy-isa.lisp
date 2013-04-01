@@ -1,6 +1,6 @@
 ; Matt Kaufmann
 ; Copyright (C) 2013, Regents of the University of Texas
-; License: See the LICENSE file distributed with ACL2.
+; License: A 3-clause BSD license.  See the LICENSE file distributed with ACL2.
 
 ; This book illustrates the use of stobjs with stobj fields for modeling an
 ; instruction set architectures (ISA).  Also see :DOC stobj-let and for further

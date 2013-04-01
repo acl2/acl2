@@ -1,6 +1,6 @@
 ; Matt Kaufmann
 ; Copyright (C) 2013, Regents of the University of Texas
-; License: See the LICENSE file distributed with ACL2.
+; License: A 3-clause BSD license.  See the LICENSE file distributed with ACL2.
 
 ; This is a file I created to test nested stobjs, i.e., stobj fields of stobjs,
 ; and stobj-let.  I make no claim about its elegance: in particular, some of
@@ -20,6 +20,206 @@
 (in-package "ACL2")
 
 (include-book "eval") ; defines must-fail
+
+(defmacro local-test (&key defs run check)
+
+; This is a convenient macro for our testing: evaluate defs (using progn rather
+; than er-progn, so that we don't get a translate error in the make-event
+; form), run a form, and then check that the check is true.
+
+  `(make-event
+    (progn
+     ,@defs
+     (make-event
+      (er-progn (trans-eval ',run 'top state t)
+                (assert-event ,check :on-skip-proofs t)
+                (value '(value-triple '(value-triple :success))))))))
+
+; As promised in :doc stobj-let, we begin with an example from that :doc.
+
+; WARNING: Many of these events appear in :DOC STOBJ-LET.  If they are changed
+; below, then we should make corresponding changes to that :doc topic.
+
+(defstobj kid1 fld1)
+
+(defstobj kid2 fld2)
+
+(defstobj mom
+  (kid1-field :type kid1)
+  (kid2-ar-field :type (array kid2 (5)))
+  last-op)
+
+; We need some lemmas in order to admit mom-swap-fields.
+
+(defthm kid2-ar-fieldp-forward-to-true-list-listp
+  (implies (kid2-ar-fieldp x)
+           (true-list-listp x))
+  :rule-classes :forward-chaining)
+
+(defthm true-listp-nth
+  (implies (true-list-listp x)
+           (true-listp (nth n x)))
+  :rule-classes ((:forward-chaining :trigger-terms ((nth n x)))))
+
+(defthm update-mom-guard-lemma-1
+  (implies (kid2-ar-fieldp kid2-ar)
+           (equal (cdr (nth index kid2-ar))
+                  nil)))
+
+(defthm update-mom-guard-lemma-2
+  (implies (and (kid2-ar-fieldp kid2-ar)
+                (natp index)
+                (< index (len kid2-ar)))
+           (consp (nth index kid2-ar))))
+
+; The next function takes a given index and a mom stobj, and swaps the value
+; stored in the stobj in mom's kid2-ar-field array at that index with the value
+; stored in the stobj in mom's kid1-field field.
+
+(defun mom-swap-fields (index mom)
+  (declare (xargs :stobjs mom
+                  :guard (and (natp index)
+                              (< index (kid2-ar-field-length mom)))))
+  (stobj-let
+   ((kid1 (kid1-field mom))
+    (kid2 (kid2-ar-fieldi index mom)))
+   (kid1 kid2)
+   (let* ((val1 (fld1 kid1))
+          (val2 (fld2 kid2))
+          (kid1 (update-fld1 val2 kid1))
+          (kid2 (update-fld2 val1 kid2)))
+     (mv kid1 kid2))
+   (update-last-op 'swap mom)))
+
+; Function mom.kid1-fld1 stores a given value in the given mom's kid1-fld1
+; field.
+
+(defun mom.kid1-fld1 (val mom)
+  (declare (xargs :stobjs mom))
+  (stobj-let
+   ((kid1 (kid1-field mom)))
+   (kid1)
+   (update-fld1 val kid1)
+   (update-last-op val mom)))
+
+; (Update-mom op mom) calls mom-swap-fields or mom.kid1-fld1, according to op,
+; as is clear from the body of update-mom.
+
+(defun update-mom (op mom)
+  (declare (xargs :stobjs mom))
+  (cond ((and (consp op)
+              (eq (car op) 'swap)
+              (natp (cdr op))
+              (< (cdr op) (kid2-ar-field-length mom)))
+         (mom-swap-fields (cdr op) mom))
+        (t (mom.kid1-fld1 op mom))))
+
+; We define a function that checks kid1-field of stobj mom against expected
+; value val1, checks the value at the given index of kid1-ar-field of stobj mom
+; against expected value val2, and checks the value of the last-op field
+; against expected value last-op.
+
+(local-test
+ :defs
+ ((defun check-update-mom (index val1 val2 last-op mom)
+    (declare (xargs :stobjs mom
+                    :mode :program
+                    :guard
+                    (or (null index)
+                        (and (natp index)
+                             (< index (kid2-ar-field-length mom))))))
+    (and (equal (last-op mom) last-op)
+         (stobj-let
+          ((kid1 (kid1-field mom))
+           (kid2 (kid2-ar-fieldi index mom)))
+          (val)
+          (and (equal val1 (fld1 kid1))
+               (equal val2 (fld2 kid2)))
+          val))))
+ :run
+ (let* ((mom ; set mom to (3 (x0 x1 x2 x3 x4))
+         (update-mom 3 mom))
+        (mom ; set mom to (x1 (x0 3 x2 x3 x4))
+         (update-mom '(swap . 1) mom))
+        (mom ; set mom to (7 (x0 3 x2 x3 x4))
+         (update-mom 7 mom))
+        (mom ; set mom to (x0 (7 3 x2 x3 x4))
+         (update-mom '(swap . 0) mom))
+        (mom ; set mom to (5 (7 3 x2 x3 x4))
+         (update-mom 5 mom))
+        (mom ; set mom to (7 (5 3 x2 x3 x4))
+         (update-mom '(swap . 0) mom)))
+   mom)
+ :check
+ (and (check-update-mom 0 7 5 'swap mom)
+      (check-update-mom 1 7 3 'swap mom)))
+
+; This time let's define a function mom-swap-indices, to swap values at two
+; distinct indices of the kid2-ar-field array of stobj mom.  In order to do
+; that, we need to bind two variables both of "type" kid2; so we define a stobj
+; kid2a that is congruent to kid2, to use as a second such stobj-let-bound
+; variable in our stobj-let form.
+
+(defstobj kid2a fld2a :congruent-to kid2)
+
+(defun mom-swap-indices (i1 i2 mom)
+  (declare (xargs :stobjs mom
+                  :guard (and (natp i1)
+                              (< i1 (kid2-ar-field-length mom))
+                              (natp i2)
+                              (< i2 (kid2-ar-field-length mom))
+                              (not (equal i1 i2)))))
+  (stobj-let
+   ((kid2 (kid2-ar-fieldi i1 mom))
+    (kid2a (kid2-ar-fieldi i2 mom)))
+   (kid2 kid2a)
+   (let* ((val2 (fld2 kid2))
+          (val2a (fld2 kid2a))
+          (kid2 (update-fld2 val2a kid2))
+          (kid2a (update-fld2 val2 kid2a)))
+     (mv kid2 kid2a))
+   mom))
+
+; And finally, here is a checker much like our preceding local-test.  But this
+; time we don't want to bother with the effort of verifying guards.  One way to
+; avoid that effort is to put the checker in :program mode, and that's what we
+; do.
+
+(local-test
+ :defs
+ ((defun check-update-mom-2 (i j val-i val-j mom)
+    (declare (xargs :stobjs mom
+                    :mode :program
+                    :guard (and (natp j)
+                                (< j (kid2-ar-field-length mom))
+                                (natp j)
+                                (< j (kid2-ar-field-length mom))
+                                (not (equal i j)))))
+    (stobj-let
+     ((kid2 (kid2-ar-fieldi i mom))
+      (kid2a (kid2-ar-fieldi j mom)))
+     (val)
+     (and (equal (fld2 kid2) val-i)
+          (equal (fld2a kid2a) val-j))
+     val)))
+ :run
+ (let* ((mom ; set mom to (10 (x0 x1 x2 x3 x4))
+         (update-mom 10 mom))
+        (mom ; set mom to (x1 (x0 10 x2 x3 x4))
+         (update-mom '(swap . 1) mom))
+        (mom ; set mom to (20 (x0 10 x2 x3 x4))
+         (update-mom 20 mom))
+        (mom ; set mom to (x0 (20 10 x2 x3 x4))
+         (update-mom '(swap . 0) mom))
+        (mom ; set mom to (30 (20 10 x2 x3 x4))
+         (update-mom 30 mom))
+        (mom ; set mom to (20 (30 10 x2 x3 x4))
+         (update-mom '(swap . 0) mom)))
+   mom)
+ :check
+ (check-update-mom-2 0 1 30 10 mom))
+
+; Now we move on to a bunch of little tests.
 
 (defstobj sub1 sub1-fld1)
 
@@ -69,22 +269,7 @@ Or in short, without the "decorations":
    (update-sub1-fld1 x sub1)
    top1))
 
-(defmacro local-test (&key defs run check)
-
-; This is a convenient macro for our testing: evaluate defs (using progn rather
-; than er-progn, so that we don't get a translate error in the make-event
-; form), run a form, and then check that the check is true.
-
-  `(make-event
-    (progn
-     ,@defs
-     (make-event
-      (er-progn (trans-eval ',run 'top state t)
-                (assert-event ,check :on-skip-proofs t)
-                (value '(value-triple '(value-triple :success))))))))
-
 (local-test
-; Here we 
  :defs
  ((defun f1 (x top1)
     (declare (xargs :stobjs top1))
@@ -97,6 +282,26 @@ Or in short, without the "decorations":
  (top1-fld.update-fld1 17 top1)
  :check
  (f1 17 top1))
+
+; Test inlining and congruence together:
+
+(local-test
+ :defs
+ ((defun f1 (x top1)
+    (declare (xargs :stobjs top1))
+    (stobj-let
+     ((sub1 (top1-fld top1)))
+     (val)
+     (sub1-fld1 sub1)
+     (equal val x)))
+  (defstobj top1-inline
+    (top1-fld-inline :type sub1)
+    :inline t
+    :congruent-to top1))
+ :run
+ (top1-fld.update-fld1 18 top1-inline)
+ :check
+ (f1 18 top1-inline))
 
 ; Introduce a stobj sub1a that is congruent to sub1.
 (defstobj sub1a sub1a-fld1 :congruent-to sub1)
@@ -816,3 +1021,24 @@ ACL2 !>
  (super1-update 'abc super1)
  :check
  (eq (super1-access super1) 'abc))
+
+; Test :renaming.
+
+(defstobj top1c (top1c-fld :type sub1)
+  :renaming ((top1c-fld get-top1c-sub1)
+             (update-top1c-fld set-top1c-sub1))
+  :congruent-to top1)
+
+(local-test
+ :defs
+ ((defun f1 (x top1c)
+    (declare (xargs :stobjs top1c))
+    (stobj-let
+     ((sub1 (get-top1c-sub1 top1c) set-top1c-sub1))
+     (val)
+     (sub1-fld1 sub1)
+     (equal val x))))
+ :run
+ (top1-fld.update-fld1 17 top1c)
+ :check
+ (f1 17 top1c))
