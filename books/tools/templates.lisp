@@ -70,9 +70,9 @@ the #+ reader macro.</p>
 <p>A feature expression is:
 <ul>
 <li>a symbol</li>
-<li>(NOT <subexpression>)</li>
-<li>(AND [<subexpression>])</li>
-<li>(OR [<subexpression>])</li>
+<li>(NOT &lt;subexpression&gt;)</li>
+<li>(AND [&lt;subexpression&gt;])</li>
+<li>(OR [&lt;subexpression&gt;])</li>
 </ul></p>
 
 <p>Each symbol present in the features list becomes true, any not present
@@ -116,7 +116,7 @@ At each atom in the tree:
     is replaced with add-to-leaves-preserves-acl2-count</li>
 <li> each occurrence of _other-args_ is replaced by splicing in the list (n),
     effectively replacing _other-args_ with n.</li>
-
+</ul>
 <p>(Of course, the proof fails since our leaf transformation isn't actually
  acl2-count preserving.)</p>
 ")

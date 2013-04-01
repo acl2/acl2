@@ -21,7 +21,7 @@
 (in-package "AIGNET")
 
 
-(defun aig-to-aignet-fast-rec (x restore-arr varmap strash gatesimp aignet)
+(defun aig-to-aignet-fast-rec (x restore-arr varmap gatesimp strash aignet)
   (aig-cases
    x
    :true  (mv 1 restore-arr strash aignet)
@@ -34,7 +34,7 @@
                   1)
                 restore-arr strash aignet))
    :inv   (b* (((mv lit restore-arr strash aignet)
-                (aig-to-aignet-fast-rec (car x) restore-arr varmap strash gatesimp aignet)))
+                (aig-to-aignet-fast-rec (car x) restore-arr varmap gatesimp strash aignet)))
             (mv (lit-negate lit) restore-arr strash aignet))
    ;; Subtlety:  A cons that has been visited will be marked with a CDR that is
    ;; (list nil).  Since the :inv case above looks for a cons with cdr NIL,
@@ -44,38 +44,38 @@
               (mv (car x) restore-arr strash aignet))
              ((mv lit restore-arr strash aignet)
               (b* (((mv lit1 restore-arr strash aignet)
-                    (aig-to-aignet-fast-rec (car x) restore-arr varmap strash gatesimp aignet))
+                    (aig-to-aignet-fast-rec (car x) restore-arr varmap gatesimp strash aignet))
                    ((when (int= lit1 0))
                     (mv 0 restore-arr strash aignet))
                    ((mv lit2 restore-arr strash aignet)
-                    (aig-to-aignet-fast-rec (cdr x) restore-arr varmap strash gatesimp aignet))
+                    (aig-to-aignet-fast-rec (cdr x) restore-arr varmap gatesimp strash aignet))
                    ((mv lit strash aignet)
-                    (aignet-add-simp-gate lit1 lit2 strash gatesimp aignet)))
+                    (aignet-hash-and lit1 lit2 gatesimp strash aignet)))
                 (mv lit restore-arr strash aignet)))
              (restore-arr (acl2::mark-visited-cons x lit restore-arr)))
           (mv lit restore-arr strash aignet))))
 
-(defun aiglist-to-aignet-fast-rec (x restore-arr varmap strash gatesimp aignet)
+(defun aiglist-to-aignet-fast-rec (x restore-arr varmap gatesimp strash aignet)
   (let* (lit
          (lits (loop while (consp x) collect
                      (progn (multiple-value-setq
                                 (lit restore-arr strash aignet)
                               (aig-to-aignet-fast-rec
-                               (car x) restore-arr varmap strash gatesimp aignet))
+                               (car x) restore-arr varmap gatesimp strash aignet))
                             (setq x (cdr x))
                             lit))))
     (mv lits restore-arr strash aignet)))
 
-;; (defun aiglist-to-aignet-fast-rec (x restore-arr varmap strash gatesimp aignet)
+;; (defun aiglist-to-aignet-fast-rec (x restore-arr varmap gatesimp strash aignet)
 ;;   (b* (((when (atom x))
 ;;         (mv nil restore-arr strash aignet))
 ;;        ((mv lit restore-arr strash aignet)
-;;         (aig-to-aignet-fast-rec (car x) restore-arr varmap strash gatesimp aignet))
+;;         (aig-to-aignet-fast-rec (car x) restore-arr varmap gatesimp strash aignet))
 ;;        ((mv rest restore-arr strash aignet)
-;;         (aiglist-to-aignet-fast-rec (cdr x) restore-arr varmap strash gatesimp aignet)))
+;;         (aiglist-to-aignet-fast-rec (cdr x) restore-arr varmap gatesimp strash aignet)))
 ;;     (mv (cons lit rest) restore-arr strash aignet)))
 
-(defun aiglist-to-aignet-top (x varmap strash gatesimp aignet)
+(defun aiglist-to-aignet-top (x varmap gatesimp strash aignet)
   (acl2::with-fast-cons-memo
     :fnname aiglist-to-aignet-top
     :return-vals (lits strash aignet)
@@ -84,7 +84,8 @@
     :body (b* (((mv lits ?restore-arr strash aignet)
                 (cwtime
                  (aiglist-to-aignet-fast-rec
-                  x restore-arr varmap strash gatesimp aignet))))
+                  x restore-arr varmap gatesimp strash aignet))))
             (mv lits strash aignet))))
+
 
 

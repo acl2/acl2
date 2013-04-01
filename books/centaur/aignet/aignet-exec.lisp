@@ -23,8 +23,9 @@
 (local (include-book "aignet-exec-thms"))
 
 (set-enforce-redundancy t)
-(include-book "idp")
+; (include-book "centaur/aignet/idp" :dir :system)
 (include-book "litp")
+(include-book "snodes")
 (include-book "cutil/define" :dir :system)
 (defmacro const-type () 0)
 (defmacro gate-type () 1)
@@ -61,13 +62,13 @@
   (nodes       :type (array (unsigned-byte 32) (2))
                :initially 0
                :resizable t)
-  (ins        :type (array (and (unsigned-byte 32) (satisfies idp)) (0))
+  (ins        :type (array (unsigned-byte 32) (0))
               :initially 0
               :resizable t)
-  (outs       :type (array (and (unsigned-byte 32) (satisfies idp)) (0))
+  (outs       :type (array (unsigned-byte 32) (0))
               :initially 0
               :resizable t)
-  (regs       :type (array (and (unsigned-byte 32) (satisfies idp)) (0))
+  (regs       :type (array (unsigned-byte 32) (0))
               :initially 0
               :resizable t)
 
@@ -102,64 +103,18 @@
   ;; convenience.
 
   ;; get one of the two slots of an node by ID
-  (definline get-node-slot (id slot aignet)
+  (definline id->slot (id slot aignet)
     (declare (type (integer 0 *) id)
              (type bit slot)
              (xargs :stobjs aignet
                     :guard (and (aignet-sizes-ok aignet)
-                                (idp id)
-                                (< (id-val id) (num-nodes aignet)))))
-    (nodesi (+ slot (* 2 (id-val id))) aignet))
-
-  ;; get a single field from a particular slot. Some of these are not strictly
-  ;; guarded because the slot doesn't contain all the type information, but the
-  ;; corresponding rewrite rules won't fire unless it is established, so the
-  ;; error should show up fairly quickly.
-  (definlined snode->type (slot0)
-    (declare (type (integer 0 *) slot0))
-    (logand 3 (lnfix slot0)))
-
-  (definlined snode->phase (slot1)
-    (declare (type (integer 0 *) slot1))
-    (logand 1 (ash (lnfix slot1) -1)))
-
-  (definlined snode->regp (slot1)
-    (declare (type (integer 0 *) slot1))
-    (logand 1 (lnfix slot1)))
-
-  (definlined snode->fanin0 (slot0)
-    (declare (type (integer 0 *) slot0))
-    (to-lit (ash (lnfix slot0) -2)))
-
-  (definlined snode->fanin1 (slot1)
-    (declare (type (integer 0 *) slot1))
-    (to-lit (ash (lnfix slot1) -2)))
-
-  (definlined snode->ionum (slot1)
-    (declare (type (integer 0 *) slot1))
-    (ash (lnfix slot1) -2))
-
-  ;; Reg implementation:
-  ;; RO -> RI (slot 0, 0 when unconnected)
-  ;; RO -> regnum (slot 1)
-  ;; RI -> regnum (slot 1, 0 when unconnected)
-  ;; regnum -> RO normally, RI when RI unconnected
-
-  ;; Const-time lookups in all directions:
-  ;; unconnected RO:   RO <-> regnum
-  ;; unconnected RI:   RO <-> regnum
-  ;; connected RO/RI:   RO --> RI --> regnum
-  ;;                     \______________/
-
-  (definlined snode->regid (slot0)
-    (declare (type (integer 0 *) slot0))
-    (to-id (ash (lnfix slot0) -2)))
+                                (< id (num-nodes aignet)))))
+    (lnfix (nodesi (+ (acl2::lbfix slot) (* 2 (lnfix id))) aignet)))
 
   (definlined set-snode->regid (regin slot0)
     (declare (type (integer 0 *) slot0)
-             (type (integer 0 *) regin)
-             (xargs :guard (idp regin)))
-    (logior (ash (id-val regin) 2)
+             (type (integer 0 *) regin))
+    (logior (ash (lnfix regin) 2)
             (logand 3 (lnfix slot0))))
 
   ;; get a particular field by ID
@@ -167,65 +122,57 @@
     (declare (type (integer 0 *) id)
              (xargs :stobjs aignet
                     :guard (and (aignet-sizes-ok aignet)
-                                (idp id)
-                                (< (id-val id) (num-nodes aignet)))))
-    (snode->type (get-node-slot id 0 aignet)))
+                                (< id (num-nodes aignet)))))
+    (snode->type (id->slot id 0 aignet)))
 
   (definline id->phase (id aignet)
     (declare (type (integer 0 *) id)
              (xargs :stobjs aignet
                     :guard (and (aignet-sizes-ok aignet)
-                                (idp id)
-                                (< (id-val id) (num-nodes aignet)))))
-    (snode->phase (get-node-slot id 1 aignet)))
+                                (< id (num-nodes aignet)))))
+    (snode->phase (id->slot id 1 aignet)))
 
   (definline id->regp (id aignet)
     (declare (type (integer 0 *) id)
              (xargs :stobjs aignet
                     :guard (and (aignet-sizes-ok aignet)
-                                (idp id)
-                                (< (id-val id) (num-nodes aignet)))))
-    (snode->regp (get-node-slot id 1 aignet)))
+                                (< id (num-nodes aignet)))))
+    (snode->regp (id->slot id 1 aignet)))
 
   (definline id->ionum (id aignet)
     (declare (type (integer 0 *) id)
              (xargs :stobjs aignet
                     :guard (and (aignet-sizes-ok aignet)
-                                (idp id)
-                                (< (id-val id) (num-nodes aignet)))))
-    (snode->ionum (get-node-slot id 1 aignet)))
+                                (< id (num-nodes aignet)))))
+    (snode->ionum (id->slot id 1 aignet)))
 
   (definline id->fanin0 (id aignet)
     (declare (type (integer 0 *) id)
              (xargs :stobjs aignet
                     :guard (and (aignet-sizes-ok aignet)
-                                (idp id)
-                                (< (id-val id) (num-nodes aignet)))))
-    (snode->fanin0 (get-node-slot id 0 aignet)))
+                                (< id (num-nodes aignet)))))
+    (snode->fanin (id->slot id 0 aignet)))
 
   (definline id->fanin1 (id aignet)
     (declare (type (integer 0 *) id)
              (xargs :stobjs aignet
                     :guard (and (aignet-sizes-ok aignet)
-                                (idp id)
-                                (< (id-val id) (num-nodes aignet)))))
-    (snode->fanin1 (get-node-slot id 1 aignet)))
+                                (< id (num-nodes aignet)))))
+    (snode->fanin (id->slot id 1 aignet)))
 
   (definline reg-id->nxst (id aignet)
     (declare (type (integer 0 *) id)
              (xargs :stobjs aignet
                     :guard (and (aignet-sizes-ok aignet)
-                                (idp id)
-                                (< (id-val id) (num-nodes aignet)))))
-    (snode->regid (get-node-slot id 0 aignet)))
+                                (< id (num-nodes aignet)))))
+    (snode->regid (id->slot id 0 aignet)))
 
   (definline nxst-id->reg (id aignet)
     (declare (type (integer 0 *) id)
              (xargs :stobjs aignet
                     :guard (and (aignet-sizes-ok aignet)
-                                (idp id)
-                                (< (id-val id) (num-nodes aignet)))))
-    (snode->regid (get-node-slot id 1 aignet)))
+                                (< id (num-nodes aignet)))))
+    (snode->regid (id->slot id 1 aignet)))
 
   (definline update-node-slot (id slot val aignet)
     (declare (type (integer 0 *) id)
@@ -233,26 +180,15 @@
              (type bit slot)
              (xargs :stobjs aignet
                     :guard (and (aignet-sizes-ok aignet)
-                                (idp id)
-                                (< (id-val id) (num-nodes aignet)))))
-    (mbe :logic (update-nodesi (+ slot (* 2 (id-val id)))
+                                (< id (num-nodes aignet)))))
+    (mbe :logic (update-nodesi (+ (bfix slot) (* 2 (lnfix id)))
                               (nfix val) aignet)
          :exec (if (< val (expt 2 32))
-                   (update-nodesi (+ slot (* 2 (id-val id))) val aignet)
-                 (ec-call (update-nodesi (+ slot (* 2 (id-val id))) val
+                   (update-nodesi (+ slot (* 2 (lnfix id))) val aignet)
+                 (ec-call (update-nodesi (+ slot (* 2 (lnfix id))) val
                                          aignet))))))
 
-(definlined mk-node (type regp phase fanin0 fanin1)
-  (declare (type (integer 0 *) fanin0)
-           (type (integer 0 *) fanin1)
-           (type (integer 0 3) type)
-           (type bit regp)
-           (type bit phase))
-  (mv (logior (ash (lnfix fanin0) 2)
-              (logand 3 type))
-      (logior (acl2::lbfix regp)
-              (ash (acl2::lbfix phase) 1)
-              (ash (lnfix fanin1) 2))))
+
 
 
 (defsection maybe-grow-arrays
@@ -303,7 +239,6 @@
              (type (integer 0 *) id)
              (xargs :stobjs aignet
                     :guard (and (aignet-sizes-ok aignet)
-                                (idp id)
                                 (< n (num-ins aignet)))))
     (mbe :logic (non-exec
                  (update-nth *insi*
@@ -319,14 +254,13 @@
              (xargs :stobjs aignet
                     :guard (and (aignet-sizes-ok aignet)
                                 (< n (num-ins aignet)))))
-    (id-fix (insi n aignet)))
+    (lnfix (insi n aignet)))
 
   (definline set-regnum->id (n id aignet)
     (declare (type (integer 0 *) n)
              (type (integer 0 *) id)
              (xargs :stobjs aignet
                     :guard (and (aignet-sizes-ok aignet)
-                                (idp id)
                                 (< n (num-regs aignet)))))
     (mbe :logic (non-exec
                  (update-nth *regsi*
@@ -342,7 +276,6 @@
              (type (integer 0 *) id)
              (xargs :stobjs aignet
                     :guard (and (aignet-sizes-ok aignet)
-                                (idp id)
                                 (< n (num-outs aignet)))))
     (mbe :logic (non-exec
                  (update-nth *outsi*
@@ -357,7 +290,7 @@
              (xargs :stobjs aignet
                     :guard (and (aignet-sizes-ok aignet)
                                 (< n (num-outs aignet)))))
-    (id-fix (outsi n aignet)))
+    (lnfix (outsi n aignet)))
 
 
   ;; (definline regnum->ri (n aignet)
@@ -366,7 +299,7 @@
   ;;                   :guard (and (aignet-sizes-ok aignet)
   ;;                               (aignet-regs-in-bounds aignet)
   ;;                               (< n (num-regs aignet)))))
-  ;;   (b* ((id (id-fix (regsi n aignet))))
+  ;;   (b* ((id (lnfix (regsi n aignet))))
   ;;     (if (int= (id->type id aignet) (in-type))
   ;;         (reg-id->nxst id aignet)
   ;;       id)))
@@ -377,26 +310,26 @@
                     :guard (and (aignet-sizes-ok aignet)
                                 ;; (aignet-regs-in-bounds aignet)
                                 (< n (num-regs aignet)))))
-    (id-fix (regsi n aignet))))
+    (lnfix (regsi n aignet))))
 
 (definline lit->phase (lit aignet)
   (declare (type (integer 0 *) lit)
            (xargs :stobjs aignet
                   :guard (and (aignet-sizes-ok aignet)
                               (litp lit)
-                              (< (id-val (lit-id lit))
+                              (< (lit-id lit)
                                  (num-nodes aignet)))))
   (b-xor (id->phase (lit-id lit) aignet)
          (lit-neg lit)))
 
 
-(define fanout-litp ((lit litp) aignet)
+(define fanin-litp ((lit litp) aignet)
   :inline t
   :guard (aignet-sizes-ok aignet)
   :enabled t
   (declare (type (integer 0 *) lit))
   (let ((id (lit-id lit)))
-    (and (< (id-val id) (lnfix (num-nodes aignet)))
+    (and (< id (lnfix (num-nodes aignet)))
          (not (int= (id->type id aignet) (out-type))))))
 
 
@@ -442,11 +375,11 @@
          (nodes  (lnfix (num-nodes aignet)))
          (aignet (add-node aignet))
          (aignet (add-in aignet))
-         (aignet (set-innum->id pi-num (to-id nodes) aignet))
+         (aignet (set-innum->id pi-num nodes aignet))
          ((mv slot0 slot1)
-          (mk-node (in-type) 0 0 0 pi-num))
-         (aignet (update-node-slot (to-id nodes) 0 slot0 aignet))
-         (aignet (update-node-slot (to-id nodes) 1 slot1 aignet)))
+          (mk-snode (in-type) 0 0 0 pi-num))
+         (aignet (update-node-slot nodes 0 slot0 aignet))
+         (aignet (update-node-slot nodes 1 slot1 aignet)))
       aignet))
 
   (defund aignet-add-reg (aignet)
@@ -456,22 +389,22 @@
          (nodes  (num-nodes aignet))
          (aignet (add-reg aignet))
          (aignet (add-node aignet))
-         (aignet (set-regnum->id ro-num (to-id nodes) aignet))
+         (aignet (set-regnum->id ro-num nodes aignet))
          ((mv slot0 slot1)
-          (mk-node (in-type) 1 0 0 ro-num))
-         (aignet (update-node-slot (to-id nodes) 0 slot0 aignet))
-         (aignet (update-node-slot (to-id nodes) 1 slot1 aignet)))
+          (mk-snode (in-type) 1 0 0 ro-num))
+         (aignet (update-node-slot nodes 0 slot0 aignet))
+         (aignet (update-node-slot nodes 1 slot1 aignet)))
       aignet))
 
   (defund aignet-add-gate (f0 f1 aignet)
     (declare (xargs :stobjs aignet
                     :guard (and (aignet-sizes-ok aignet)
                                 (litp f0) (litp f1)
-                                (< (id-val (lit-id f0))
+                                (< (lit-id f0)
                                    (num-nodes aignet))
                                 (not (int= (id->type (lit-id f0) aignet)
                                            (out-type)))
-                                (< (id-val (lit-id f1))
+                                (< (lit-id f1)
                                    (num-nodes aignet))
                                 (not (int= (id->type (lit-id f1) aignet)
                                            (out-type))))
@@ -483,16 +416,16 @@
          (phase (b-and (lit->phase f0 aignet)
                        (lit->phase f1 aignet)))
          ((mv slot0 slot1)
-          (mk-node (gate-type) 0 phase (lit-val f0) (lit-val f1)))
-         (aignet (update-node-slot (to-id nodes) 0 slot0 aignet))
-         (aignet (update-node-slot (to-id nodes) 1 slot1 aignet)))
+          (mk-snode (gate-type) 0 phase (lit-val f0) (lit-val f1)))
+         (aignet (update-node-slot nodes 0 slot0 aignet))
+         (aignet (update-node-slot nodes 1 slot1 aignet)))
       aignet))
 
   (defund aignet-add-out (f aignet)
     (declare (xargs :stobjs aignet
                     :guard (and (aignet-sizes-ok aignet)
                                 (litp f)
-                                (< (id-val (lit-id f))
+                                (< (lit-id f)
                                    (num-nodes aignet))
                                 (not (int= (id->type (lit-id f) aignet)
                                            (out-type))))
@@ -503,23 +436,23 @@
          (aignet (add-node aignet))
          (aignet (add-out aignet))
          (phase  (lit->phase f aignet))
-         (aignet (set-outnum->id po-num (to-id nodes) aignet))
+         (aignet (set-outnum->id po-num nodes aignet))
          ((mv slot0 slot1)
-          (mk-node (out-type) 0 phase (lit-val f) po-num))
-         (aignet (update-node-slot (to-id nodes) 0 slot0 aignet))
-         (aignet (update-node-slot (to-id nodes) 1 slot1 aignet)))
+          (mk-snode (out-type) 0 phase (lit-val f) po-num))
+         (aignet (update-node-slot nodes 0 slot0 aignet))
+         (aignet (update-node-slot nodes 1 slot1 aignet)))
       aignet))
 
   (defund aignet-set-nxst (f regid aignet)
     (declare (xargs :stobjs aignet
                     :guard (and (aignet-sizes-ok aignet)
                                 (litp f)
-                                (< (id-val (lit-id f))
+                                (< (lit-id f)
                                    (num-nodes aignet))
                                 (not (int= (id->type (lit-id f) aignet)
                                            (out-type)))
-                                (idp regid)
-                                (< (id-val regid) (num-nodes aignet))
+                                (natp regid)
+                                (< regid (num-nodes aignet))
                                 (int= (id->type regid aignet)
                                       (in-type))
                                 (int= (id->regp regid aignet) 1))
@@ -529,14 +462,14 @@
     (b* ((nodes  (num-nodes aignet))
          (aignet (add-node aignet))
          (aignet (update-num-nxsts (+ 1 (lnfix (num-nxsts aignet))) aignet))
-         (slot0 (get-node-slot regid 0 aignet))
-         (new-slot0 (set-snode->regid (to-id nodes) slot0))
+         (slot0 (id->slot regid 0 aignet))
+         (new-slot0 (set-snode->regid nodes slot0))
          (aignet (update-node-slot regid 0 new-slot0 aignet))
          (phase  (lit->phase f aignet))
          ((mv slot0 slot1)
-          (mk-node (out-type) 1 phase (lit-val f) (id-val regid)))
-         (aignet (update-node-slot (to-id nodes) 0 slot0 aignet))
-         (aignet (update-node-slot (to-id nodes) 1 slot1 aignet)))
+          (mk-snode (out-type) 1 phase (lit-val f) (lnfix regid)))
+         (aignet (update-node-slot nodes 0 slot0 aignet))
+         (aignet (update-node-slot nodes 1 slot1 aignet)))
       aignet)))
 
 
@@ -579,5 +512,5 @@
 
 (definline id-existsp (id aignet)
   (declare (xargs :stobjs aignet
-                  :guard (idp id)))
-  (< (id-val id) (lnfix (num-nodes aignet))))
+                  :guard (natp id)))
+  (< (lnfix id) (lnfix (num-nodes aignet))))

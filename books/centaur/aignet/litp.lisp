@@ -20,8 +20,9 @@
 ;                   Jared Davis <jared@centtech.com>
 
 (in-package "AIGNET")
-(include-book "idp")
 (local (include-book "centaur/bitops/ihsext-basics" :dir :system))
+(include-book "cutil/define" :dir :system)
+(include-book "centaur/misc/arith-equivs" :dir :system)
 (set-tau-auto-mode nil)
 
 
@@ -34,7 +35,7 @@ represent a Boolean variable or its negation.  More concretely, you can think
 of a literal as an structure with two fields:</p>
 
 <ul>
-<li>@('id'), a variable, represented as an @(see idp), and</li>
+<li>@('id'), a variable, represented as a natural number, and</li>
 <li>@('neg'), a bit that says whether the variable is negated or not,
 represented as a @(see bitp).</li>
 </ul>
@@ -205,14 +206,11 @@ generally use @(see lit-id) and @(see lit-neg) instead.</p>"
 (define lit-id ((lit litp))
   :parents (litp)
   :short "Access the @('id') component of a literal."
-
   (declare (type (integer 0 *) lit))
-  (to-id (ash (lit-val lit) -1))
+  (ash (lit-val lit) -1)
 
   :inline t
-  ;; BOZO type-prescription doesn't make sense unless we strenghten
-  ;; the compound-recognizer rule for idp?
-  :returns (id idp :rule-classes (:rewrite :type-prescription))
+  :returns (id natp :rule-classes (:rewrite :type-prescription))
 
   ///
   (defcong lit-equiv equal (lit-id lit) 1))
@@ -251,14 +249,14 @@ generally use @(see lit-id) and @(see lit-neg) instead.</p>"
                      (neg . lit-neg))
 
 
-(define mk-lit ((id idp) (neg bitp))
+(define mk-lit ((id natp) (neg bitp))
   :parents (litp)
   :short "Construct a literal with the given @('id') and @('neg')."
 
   (declare (type (integer 0 *) id)
            (type bit neg))
 
-  (to-lit (logior (ash (id-val id) 1)
+  (to-lit (logior (ash (lnfix id) 1)
                   (acl2::lbfix neg)))
 
   :inline t
@@ -267,12 +265,12 @@ generally use @(see lit-id) and @(see lit-neg) instead.</p>"
   :returns (lit litp :rule-classes (:rewrite :type-prescription))
   :prepwork ((local (in-theory (enable lit-id lit-neg))))
   ///
-  (defcong id-equiv equal (mk-lit id neg) 1)
+  (defcong nat-equiv equal (mk-lit id neg) 1)
   (defcong acl2::bit-equiv equal (mk-lit id neg) 2)
 
   (defthm lit-id-of-mk-lit
     (equal (lit-id (mk-lit id neg))
-           (id-fix id)))
+           (nfix id)))
 
   (defthm lit-neg-of-mk-lit
     (equal (lit-neg (mk-lit id neg))
@@ -285,10 +283,10 @@ generally use @(see lit-id) and @(see lit-neg) instead.</p>"
     :hints(("Goal" :in-theory (disable acl2::logior$))))
 
   (local (defthm equal-of-mk-lit-lemma
-           (implies (and (idp id) (acl2::bitp neg))
+           (implies (and (natp id) (acl2::bitp neg))
                     (equal (equal a (mk-lit id neg))
                            (and (litp a)
-                                (equal (id-val (lit-id a)) (id-val id))
+                                (equal (lit-id a) id)
                                 (equal (lit-neg a) neg))))
            :hints(("Goal" :in-theory (disable mk-lit
                                               mk-lit-identity
@@ -299,10 +297,10 @@ generally use @(see lit-id) and @(see lit-neg) instead.</p>"
   (defthmd equal-of-mk-lit
     (equal (equal a (mk-lit id neg))
            (and (litp a)
-                (equal (id-val (lit-id a)) (id-val id))
+                (equal (lit-id a) (nfix id))
                 (equal (lit-neg a) (acl2::bfix neg))))
     :hints(("Goal" :use ((:instance equal-of-mk-lit-lemma
-                          (id (id-fix id)) (neg (acl2::bfix neg))))
+                          (id (nfix id)) (neg (acl2::bfix neg))))
             :in-theory (disable lit-id lit-neg)))))
 
 

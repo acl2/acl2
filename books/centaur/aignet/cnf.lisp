@@ -19,15 +19,18 @@
 ; Original author: Sol Swords <sswords@centtech.com>
 
 (in-package "AIGNET")
-(include-book "aignet-base")
-(include-book "aignet-refcounts")
+(include-book "eval")
+(include-book "refcounts")
 (include-book "centaur/satlink/cnf" :dir :system)
 (local (include-book "centaur/satlink/cnf-basics" :dir :system))
 (local (include-book "centaur/bitops/ihsext-basics" :dir :system))
 (local (include-book "arithmetic/top-with-meta" :dir :system))
 (local (include-book "clause-processors/find-subterms" :dir :system))
 (local (in-theory (enable* acl2::arith-equiv-forwarding)))
-(local (include-book "bit-lemmas"))
+(local (include-book "centaur/aignet/bit-lemmas" :dir :system))
+
+(local (include-book "tools/trivial-ancestors-check" :dir :system))
+(local (acl2::use-trivial-ancestors-check))
 
 (defxdoc aignet-cnf
   :parents (aignet)
@@ -84,11 +87,11 @@ values of those literals under the satisfying assignment.</blockquote></p>
 assignment to an aignet evaluation to determine whether all values agree as
 specified above,</li>
 <li>a function @('cnf->aignet-vals') that transforms a satisfying assignment into
-a aignet-vals object.  We'll show that the input and output satisfy
+a vals object.  We'll show that the input and output satisfy
 <tt>cnf/aignet-evals-agree</tt> if the assignment satisfies the generated
 CNF.</li>
 <li>a function @('aignet->cnf-vals') that creates a CNF variable assignment from a
-aignet-vals object.  We'll show that this satisfies
+vals object.  We'll show that this satisfies
 <tt>cnf/aignet-evals-agree</tt> and that the CNF assignment
 satisfies the generated CNF.</li>
 </ul>
@@ -104,12 +107,12 @@ correctness criterion we've described.
 </p>
 ")
 
-(local (defun trivial-worse-than-or-equal (term1 term2)
-         (declare (xargs :guard t)
-                  (ignorable term1 term2))
-         nil))
+;; (local (defun trivial-worse-than-or-equal (term1 term2)
+;;          (declare (xargs :guard t)
+;;                   (ignorable term1 term2))
+;;          nil))
 
-(local (defattach acl2::worse-than-or-equal trivial-worse-than-or-equal))
+;; (local (defattach acl2::worse-than-or-equal trivial-worse-than-or-equal))
 
 (local (in-theory (disable acl2::nth-with-large-index
                            nth update-nth
@@ -120,67 +123,53 @@ correctness criterion we've described.
                   (equal (equal x 1) (not (equal x 0))))
          :hints(("Goal" :in-theory (enable acl2::bitp)))))
 
-(local (in-theory (disable aignet-vals->invals
-                           aignet-vals->regvals)))
 
 ;; Utilities for recognizing muxes and XORs.
-(defsection id-is-mux
 
-  ;; bozo move to aignet-base
-  (defcong id-equiv equal (gate-orderedp id aignet) 1
-    :hints(("Goal" :in-theory (enable gate-orderedp))))
 
-  ;; Returns (mv is-mux cond-lit tb-lit fb-lit).
-  ;; A mux node is of the form
-  ;; (and (not (and c (not tb))) (not (and (not c) (not fb))))
-  ;; or a permutation.
-  (defund id-is-mux (id aignet)
-    (declare (xargs :stobjs aignet
-                    :guard (and (aignet-well-formedp aignet)
-                                (aignet-idp id aignet))))
-    (b* (((unless (int= (id->type id aignet) (gate-type)))
-          (mv nil 0 0 0))
-         (f0 (gate-id->fanin0 id aignet))
-         (f1 (gate-id->fanin1 id aignet))
-         ((unless (and (int= (lit-neg f0) 1)
-                       (int= (lit-neg f1) 1)
-                       (int= (id->type (lit-id f0) aignet) (gate-type))
-                       (int= (id->type (lit-id f1) aignet) (gate-type))
-                       (mbt (and (gate-orderedp id aignet)
-                                 (gate-orderedp (lit-id f0) aignet)
-                                 (gate-orderedp (lit-id f1) aignet)))))
-          (mv nil 0 0 0))
-         (f00 (gate-id->fanin0 (lit-id f0) aignet))
-         (f10 (gate-id->fanin1 (lit-id f0) aignet))
-         (f01 (gate-id->fanin0 (lit-id f1) aignet))
-         (f11 (gate-id->fanin1 (lit-id f1) aignet))
-         (nf01 (lit-negate f01))
-         (nf11 (lit-negate f11))
-         ((when (int= f00 nf01))
-          (mv t f00 (lit-negate f10) nf11))
-         ((when (int= f00 nf11))
-          (mv t f00 (lit-negate f10) nf01))
-         ((when (int= f10 nf01))
-          (mv t f10 (lit-negate f00) nf11))
-         ((when (int= f10 nf11))
-          (mv t f10 (lit-negate f00) nf01)))
-      (mv nil 0 0 0)))
+;; Returns (mv is-mux cond-lit tb-lit fb-lit).
+;; A mux node is of the form
+;; (and (not (and c (not tb))) (not (and (not c) (not fb))))
+;; or a permutation.
+(define id-is-mux ((id natp) aignet)
+  :guard (id-existsp id aignet)
+  :returns (mv is-mux
+               (cond-lit litp)
+               (true-branch litp)
+               (false-branch litp))
+  (b* (((unless (int= (id->type id aignet) (gate-type)))
+        (mv nil 0 0 0))
+       (f0 (gate-id->fanin0 id aignet))
+       (f1 (gate-id->fanin1 id aignet))
+       ((unless (and (int= (lit-neg f0) 1)
+                     (int= (lit-neg f1) 1)
+                     (int= (id->type (lit-id f0) aignet) (gate-type))
+                     (int= (id->type (lit-id f1) aignet) (gate-type))))
+        (mv nil 0 0 0))
+       (f00 (gate-id->fanin0 (lit-id f0) aignet))
+       (f10 (gate-id->fanin1 (lit-id f0) aignet))
+       (f01 (gate-id->fanin0 (lit-id f1) aignet))
+       (f11 (gate-id->fanin1 (lit-id f1) aignet))
+       (nf01 (lit-negate f01))
+       (nf11 (lit-negate f11))
+       ((when (int= f00 nf01))
+        (mv t f00 (lit-negate f10) nf11))
+       ((when (int= f00 nf11))
+        (mv t f00 (lit-negate f10) nf01))
+       ((when (int= f10 nf01))
+        (mv t f10 (lit-negate f00) nf11))
+       ((when (int= f10 nf11))
+        (mv t f10 (lit-negate f00) nf01)))
+    (mv nil 0 0 0))
+  ///
 
-  (local (in-theory (enable id-is-mux)))
-
-  (defcong id-equiv equal (id-is-mux id aignet) 1)
+  (defcong nat-equiv equal (id-is-mux id aignet) 1)
 
   (defthm id-is-mux-produces-aignet-lits
     (b* (((mv ?muxp c tb fb) (id-is-mux id aignet)))
-      (implies (and (aignet-well-formedp aignet)
-                    (aignet-idp (id-fix id) aignet))
-               (and (aignet-litp c aignet)
-                    (aignet-litp tb aignet)
-                    (aignet-litp fb aignet)))))
-
-  (defthm id-is-mux-produces-lits
-    (b* (((mv ?muxp c tb fb) (id-is-mux id aignet)))
-      (and (litp c) (litp tb) (litp fb))))
+      (and (aignet-litp c aignet)
+           (aignet-litp tb aignet)
+           (aignet-litp fb aignet))))
 
   (defthmd lit-eval-of-mk-lit-split-rw
     (implies (equal lit1 (mk-lit (lit-id lit) neg))
@@ -189,6 +178,25 @@ correctness criterion we've described.
                                  (lit-eval lit in-vals reg-vals aignet))))
     :hints(("Goal" :in-theory (enable lit-eval acl2::B-xor))))
 
+  (local (defthm bit-mux-rws
+           (and (equal (b-and (b-not (b-and a b)) (b-not (b-and (b-not a) d)))
+                       (b-ior (b-and a (b-not b)) (b-and (b-not a) (b-not d))))
+                (equal (b-and (b-not (b-and a b)) (b-not (b-and d (b-not a))))
+                       (b-ior (b-and a (b-not b)) (b-and (b-not a) (b-not d))))
+                (equal (b-and (b-not (b-and b a)) (b-not (b-and d (b-not a))))
+                       (b-ior (b-and a (b-not b)) (b-and (b-not a) (b-not d))))
+                (equal (b-and (b-not (b-and b a)) (b-not (b-and (b-not a) d)))
+                       (b-ior (b-and a (b-not b)) (b-and (b-not a) (b-not d))))
+                (equal (b-and (b-not (b-and (b-not a) d)) (b-not (b-and a b)))
+                       (b-ior (b-and a (b-not b)) (b-and (b-not a) (b-not d))))
+                (equal (b-and (b-not (b-and d (b-not a))) (b-not (b-and a b)))
+                       (b-ior (b-and a (b-not b)) (b-and (b-not a) (b-not d))))
+                (equal (b-and (b-not (b-and d (b-not a))) (b-not (b-and b a)))
+                       (b-ior (b-and a (b-not b)) (b-and (b-not a) (b-not d))))
+                (equal (b-and (b-not (b-and (b-not a) d)) (b-not (b-and b a)))
+                       (b-ior (b-and a (b-not b)) (b-and (b-not a) (b-not d)))))
+           :hints(("Goal" :in-theory (enable b-and b-ior)))))
+
   ;; This is a pretty awkward rewrite rule, but maybe not as bad as it
   ;; appears.  The first hyp will basically fail immediately if we don't know
   ;; that the ID is a mux.  Might need other tricks to prevent it from opening
@@ -196,8 +204,7 @@ correctness criterion we've described.
   (defthmd id-eval-when-id-is-mux
     (b* (((mv muxp c tb fb) (id-is-mux id aignet)))
       (implies (and muxp
-                    (aignet-well-formedp aignet)
-                    (aignet-idp (id-fix id) aignet))
+                    (aignet-idp id aignet))
                (equal (id-eval id in-vals reg-vals aignet)
                       (acl2::b-ior (acl2::b-and
                                     (lit-eval c in-vals reg-vals aignet)
@@ -205,23 +212,20 @@ correctness criterion we've described.
                                    (acl2::b-and
                                     (acl2::b-not (lit-eval c in-vals reg-vals aignet))
                                     (lit-eval fb in-vals reg-vals aignet))))))
-    :hints (("goal" :in-theory (e/d (lit-eval-of-mk-lit-split-rw
-                                     equal-1-by-bitp
-                                     eval-and-of-lits)
-                                    (lit-eval acl2::b-xor acl2::b-and
+    :hints (("goal" :in-theory (e/d ;; (lit-eval-of-mk-lit-split-rw
+                                    ;;  equal-1-by-bitp
+                                    ;;  eval-and-of-lits)
+                                (id-eval eval-and-of-lits
+                                         lit-eval-of-mk-lit-split-rw)
+                                ( acl2::b-xor acl2::b-and
                                               acl2::b-ior acl2::b-not))
-             :expand ((id-eval id in-vals reg-vals aignet)
-                      (lit-eval (gate-node->fanin0 (nth-node id (nth *nodesi* aignet)))
+             :expand ((lit-eval (aignet-lit-fix (gate-node->fanin0 (car (lookup-id id aignet)))
+                                                (cdr (lookup-id id aignet)))
                                 in-vals reg-vals aignet)
-                      (lit-eval (gate-node->fanin1 (nth-node id (nth *nodesi* aignet)))
-                                in-vals reg-vals aignet)
-                      (id-eval (lit-id (gate-node->fanin0 (nth-node id (nth *nodesi* aignet))))
-                               in-vals reg-vals aignet)
-                      (id-eval (lit-id (gate-node->fanin1 (nth-node id (nth *nodesi* aignet))))
-                               in-vals reg-vals aignet)))
-            (and stable-under-simplificationp
-                 '(:in-theory (enable  acl2::b-xor acl2::b-and
-                                       acl2::b-ior acl2::b-not))))))
+                      (lit-eval (aignet-lit-fix (gate-node->fanin1 (car (lookup-id id aignet)))
+                                                (cdr (lookup-id id aignet)))
+                                in-vals reg-vals aignet))))))
+
 
 
 
@@ -236,23 +240,21 @@ correctness criterion we've described.
              (aignet-lit-listp (append a b) aignet)))
 
 
-  (defun aignet-eval-conjunction (lits aignet-invals aignet-regvals aignet)
-    (declare (xargs :stobjs (aignet aignet-invals aignet-regvals)
-                    :guard (and (aignet-well-formedp aignet)
-                                (aignet-lit-listp lits aignet)
-                                (<= (num-ins aignet) (bits-length aignet-invals))
-                                (<= (num-regs aignet) (bits-length aignet-regvals)))))
+  (define aignet-eval-conjunction ((lits lit-listp)
+                                   aignet-invals aignet-regvals aignet)
+    :guard (and (aignet-lit-listp lits aignet)
+                (<= (num-ins aignet) (bits-length aignet-invals))
+                (<= (num-regs aignet) (bits-length aignet-regvals)))
+    :returns (res bitp)
     (if (atom lits)
         1
       (acl2::b-and (lit-eval (car lits) aignet-invals aignet-regvals aignet)
                    (aignet-eval-conjunction (cdr lits) aignet-invals aignet-regvals aignet))))
 
-
   (local
    (progn
 
-     (defthm bitp-of-aignet-eval-conjunction
-       (acl2::bitp (aignet-eval-conjunction lits aignet-invals aignet-regvals aignet)))
+     (in-theory (enable aignet-eval-conjunction))
 
      (defthm b-and-associative
        (equal (acl2::b-and (acl2::b-and a b) c)
@@ -287,11 +289,6 @@ correctness criterion we've described.
               (acl2::b-and x y))
        :hints(("Goal" :in-theory (enable acl2::b-and))))
 
-     (defthm lit-eval-0
-       (implies (aignet-well-formedp aignet)
-                (equal (lit-eval 0 aignet-invals aignet-regvals aignet) 0))
-       :hints(("Goal" :in-theory (enable lit-eval id-eval))))
-
      (defthm and-of-eval-list-when-member
        (implies (member lit lst)
                 (equal (acl2::b-and (lit-eval lit aignet-invals aignet-regvals aignet)
@@ -299,8 +296,7 @@ correctness criterion we've described.
                        (aignet-eval-conjunction lst aignet-invals aignet-regvals aignet))))))
 
   (defthm aignet-eval-conjunction-when-0
-    (implies (and (member 0 lst)
-                  (aignet-well-formedp aignet))
+    (implies (member 0 lst)
              (equal (aignet-eval-conjunction lst aignet-invals aignet-regvals aignet)
                     0)))
 
@@ -314,106 +310,89 @@ correctness criterion we've described.
                        '(:in-theory (enable acl2::b-and))))))
 
 
-  (defund lit-collect-supergate (lit top use-muxes supergate aignet-refcounts aignet)
-    (declare (xargs :stobjs (aignet-refcounts aignet)
-                    :guard (and (aignet-well-formedp aignet)
-                                (u32arr-sizedp aignet-refcounts aignet)
-                                (aignet-litp lit aignet)
-                                (true-listp supergate))
-                    :measure (id-val (lit-id lit))
-                    :hints(("Goal" :in-theory (enable gate-orderedp)))
-                    :verify-guards nil))
+  (define lit-collect-supergate ((lit litp)
+                                 top use-muxes
+                                 (supergate lit-listp)
+                                 aignet-refcounts aignet)
+    :guard (and (<= (num-nodes aignet) (u32-length aignet-refcounts))
+                (fanin-litp lit aignet)
+                (true-listp supergate))
+    :measure (lit-id lit)
+    :verify-guards nil
+    :returns (res lit-listp :hyp (and (lit-listp supergate) (litp lit)))
     (b* (((when (or (int= (lit-neg lit) 1)
                     (not (int= (id->type (lit-id lit) aignet) (gate-type)))
-                    (and (not top) (< 1 (get-id->nat (lit-id lit) aignet-refcounts)))
+                    (and (not top) (< 1 (get-u32 (lit-id lit) aignet-refcounts)))
                     (and use-muxes
                          (b* (((mv muxp & & &) (id-is-mux (lit-id lit) aignet)))
                            muxp))))
-          (if (member (lit-negate lit) supergate)
-              ;; Complementary literal is in the supergate, so add 0.
-              (list 0)
-            (if (member lit supergate)
-                supergate
-              (cons lit supergate))))
-         ((unless (mbt (gate-orderedp (lit-id lit) aignet)))
-          (list 0))
+          (cond ((or (member (lit-negate lit) supergate)
+                     (int= (lit-val lit) 0))
+                 ;; Complementary literal is in the supergate, so add 0.
+                 (list 0))
+                ((member lit supergate) supergate)
+                (t (cons lit supergate))))
          (supergate (lit-collect-supergate (gate-id->fanin0 (lit-id lit) aignet)
                                            nil use-muxes supergate aignet-refcounts aignet)))
       (lit-collect-supergate (gate-id->fanin1 (lit-id lit) aignet)
-                             nil use-muxes supergate aignet-refcounts aignet)))
+                             nil use-muxes supergate aignet-refcounts aignet))
+    ///
+  ;; (defthm true-listp-of-collect-supergate
+  ;;   (implies (true-listp supergate)
+  ;;            (true-listp (lit-collect-supergate lit top use-muxes supergate
+  ;;                                               aignet-refcounts aignet)))
+  ;;   :hints (("goal" :induct (lit-collect-supergate lit top use-muxes supergate
+  ;;                                                  aignet-refcounts aignet)
+  ;;            :do-not-induct t
+  ;;            :in-theory (enable (:induction lit-collect-supergate))
+  ;;            :expand ((:free (top use-muxes)
+  ;;                      (lit-collect-supergate lit top use-muxes supergate
+  ;;                                             aignet-refcounts aignet))))))
+    (local (defthm lit-listp-true-listp
+             (implies (lit-listp x) (true-listp x))
+             :rule-classes :forward-chaining))
+    (verify-guards lit-collect-supergate)
+    (defthm aignet-lit-listp-of-collect-supergate
+      (implies (and (aignet-litp lit aignet)
+                    (aignet-lit-listp supergate aignet))
+               (aignet-lit-listp
+                (lit-collect-supergate lit top use-muxes supergate
+                                       aignet-refcounts aignet)
+                aignet))
+      :hints (("goal" :induct (lit-collect-supergate lit top use-muxes supergate
+                                                     aignet-refcounts aignet)
+               :do-not-induct t
+               :in-theory (disable (:definition lit-collect-supergate))
+               :expand ((:free (top use-muxes)
+                         (lit-collect-supergate lit top use-muxes supergate
+                                                aignet-refcounts aignet))))))
 
-  (defthm true-listp-of-collect-supergate
-    (implies (true-listp supergate)
-             (true-listp (lit-collect-supergate lit top use-muxes supergate
-                                                aignet-refcounts aignet)))
-    :hints (("goal" :induct (lit-collect-supergate lit top use-muxes supergate
-                                                   aignet-refcounts aignet)
-             :do-not-induct t
-             :in-theory (enable (:induction lit-collect-supergate))
-             :expand ((:free (top use-muxes)
-                       (lit-collect-supergate lit top use-muxes supergate
-                                              aignet-refcounts aignet))))))
-
-  (defthm aignet-lit-listp-of-collect-supergate
-    (implies (and (aignet-well-formedp aignet)
-                  (aignet-litp lit aignet)
-                  (aignet-lit-listp supergate aignet))
-             (aignet-lit-listp
-              (lit-collect-supergate lit top use-muxes supergate
-                                     aignet-refcounts aignet)
-              aignet))
-    :hints (("goal" :induct (lit-collect-supergate lit top use-muxes supergate
-                                                   aignet-refcounts aignet)
-             :do-not-induct t
-             :in-theory (enable (:induction lit-collect-supergate))
-             :expand ((:free (top use-muxes)
-                       (lit-collect-supergate lit top use-muxes supergate
-                                              aignet-refcounts aignet))))))
-
-  (defthm lit-listp-of-collect-supergate
-    (implies (and (litp lit)
-                  (lit-listp supergate))
-             (lit-listp
-              (lit-collect-supergate lit top use-muxes supergate
-                                     aignet-refcounts aignet)))
-    :hints (("goal" :induct (lit-collect-supergate lit top use-muxes supergate
-                                                   aignet-refcounts aignet)
-             :do-not-induct t
-             :in-theory (enable (:induction lit-collect-supergate))
-             :expand ((:free (top use-muxes)
-                       (lit-collect-supergate lit top use-muxes supergate
-                                              aignet-refcounts aignet))))))
-
-  (verify-guards lit-collect-supergate)
-
-  (defthm collect-supergate-correct
-    (implies (and (aignet-well-formedp aignet)
-                  (aignet-litp lit aignet))
-             (equal (aignet-eval-conjunction
-                     (lit-collect-supergate
-                      lit top use-muxes supergate
-                      aignet-refcounts aignet)
-                     aignet-invals aignet-regvals aignet)
-                    (acl2::b-and (lit-eval lit aignet-invals aignet-regvals aignet)
-                                 (aignet-eval-conjunction supergate aignet-invals aignet-regvals aignet))))
-    :hints (("goal" :induct (lit-collect-supergate lit top use-muxes supergate
-                                                   aignet-refcounts aignet)
-             :do-not-induct t
-             :in-theory (enable (:induction lit-collect-supergate)
-                                eval-and-of-lits)
-             :expand ((:free (top use-muxes)
-                       (lit-collect-supergate lit top use-muxes supergate
-                                              aignet-refcounts aignet))))
-            (and stable-under-simplificationp
-                 '(:expand ((lit-eval lit aignet-invals aignet-regvals aignet)
-                            (id-eval (lit-id lit) aignet-invals aignet-regvals aignet)))))))
+    (defthm collect-supergate-correct
+      (equal (aignet-eval-conjunction
+              (lit-collect-supergate
+               lit top use-muxes supergate
+               aignet-refcounts aignet)
+              aignet-invals aignet-regvals aignet)
+             (acl2::b-and (lit-eval lit aignet-invals aignet-regvals aignet)
+                          (aignet-eval-conjunction supergate aignet-invals aignet-regvals aignet)))
+      :hints (("goal" :induct (lit-collect-supergate lit top use-muxes supergate
+                                                     aignet-refcounts aignet)
+               :do-not-induct t
+               :in-theory (e/d (eval-and-of-lits)
+                               ((:definition lit-collect-supergate)))
+               :expand ((:free (top use-muxes)
+                         (lit-collect-supergate lit top use-muxes supergate
+                                                aignet-refcounts aignet))))
+              (and stable-under-simplificationp
+                   '(:expand ((lit-eval lit aignet-invals aignet-regvals aignet)
+                              (id-eval (lit-id lit) aignet-invals aignet-regvals aignet))))))))
 
 
 
 (defsection sat-lits
   ;; Mapping from aignet IDs to sat vars and back.  Actually, each array maps IDs
   ;; to literals.  Identities:
-  ;; (lit-id (sat-id->aignet-lit (lit-id (aignet-id->sat-lit id)))) = (id-fix id)
+  ;; (lit-id (sat-id->aignet-lit (lit-id (aignet-sat-lit id)))) = (id-fix id)
   ;; (lit-id (aignet-id->sat-lit (lit-id (sat-id->aignet-lit id)))) = (id-fix id)
   ;; (lit-neg (sat-id->aignet-lit (lit-id (aignet-id->sat-lit id)))) = (aignet-id->sat-lit id)
   ;; (lit-neg (aignet-id->sat-lit (lit-id (sat-id->aignet-lit id)))) = (lit-neg (sat-id->aignet-lit id))
@@ -448,38 +427,38 @@ correctness criterion we've described.
 
   (definlined aignet-id->sat-lit (id sat-lits)
     (declare (xargs :stobjs (sat-lits)
-                    :guard (idp id)
+                    :guard (natp id)
                     :guard-hints ('(:in-theory (enable nth-lit)))))
     ;; Could use the phase here, won't for now
-    (mbe :logic (non-exec (satlink::lit-fix (nth (id-val id) (nth *aignet->sati* sat-lits))))
-         :exec (if (< (id-val id) (aignet->sat-length sat-lits))
-                   (aignet->sati (id-val id) sat-lits)
+    (mbe :logic (non-exec (satlink::lit-fix (nth id (nth *aignet->sati* sat-lits))))
+         :exec (if (< id (aignet->sat-length sat-lits))
+                   (aignet->sati id sat-lits)
                  0)))
 
   (local (in-theory (enable aignet-id->sat-lit)))
 
-  (defcong id-equiv equal (aignet-id->sat-lit id sat-lits) 1)
+  (defcong nat-equiv equal (aignet-id->sat-lit id sat-lits) 1)
 
   (defthm satlink-litp-of-aignet-id->sat-lit
     (satlink::litp (aignet-id->sat-lit id sat-lits)))
 
   (definlined set-aignet-id->sat-lit (id lit sat-lits)
     (declare (xargs :stobjs (sat-lits)
-                    :guard (and (idp id)
+                    :guard (and (natp id)
                                 (satlink::litp lit))
                     :guard-hints ('(:in-theory (enable update-nth-lit satlink::litp)))))
-    (b* ((sat-lits (if (< (id-val id) (aignet->sat-length sat-lits))
+    (b* ((sat-lits (if (< (lnfix id) (aignet->sat-length sat-lits))
                        sat-lits
                      (resize-aignet->sat
-                      (max (* 2 (id-val id)) 16)
+                      (max (* 2 (lnfix id)) 16)
                       sat-lits))))
       (mbe :logic (non-exec (update-nth *aignet->sati*
-                                        (update-nth (id-val id) (satlink::lit-fix lit)
+                                        (update-nth id (satlink::lit-fix lit)
                                                     (nth *aignet->sati* sat-lits))
                                         sat-lits))
            :exec (if (< (the (integer 0 *) lit) (expt 2 32))
-                     (update-aignet->sati (id-val id) lit sat-lits)
-                   (ec-call (update-aignet->sati (id-val id) lit sat-lits))))))
+                     (update-aignet->sati id lit sat-lits)
+                   (ec-call (update-aignet->sati id lit sat-lits))))))
 
   (defthm set-aignet-id->sat-lit-frame
     (implies (not (equal n *aignet->sati*))
@@ -489,7 +468,7 @@ correctness criterion we've described.
 
   (defthm aignet-id->sat-lit-of-set-aignet-id->sat-lit
     (satlink::lit-equiv (nth n (nth *aignet->sati* (set-aignet-id->sat-lit id lit sat-lits)))
-                        (if (equal (nfix n) (id-val id))
+                        (if (equal (nfix n) (nfix id))
                             lit
                           (nth n (nth *aignet->sati* sat-lits))))
     :hints(("Goal" :in-theory (enable set-aignet-id->sat-lit
@@ -548,13 +527,13 @@ correctness criterion we've described.
 
   (definlined aignet-id-has-sat-var (id sat-lits)
     (declare (xargs :stobjs (sat-lits)
-                    :guard (idp id)))
+                    :guard (natp id)))
     (b* ((lit (aignet-id->sat-lit id sat-lits)))
       (not (int= (satlink::var->index (satlink::lit->var lit)) 0))))
 
   (local (in-theory (enable aignet-id-has-sat-var)))
 
-  (defcong id-equiv equal (aignet-id-has-sat-var id sat-lits) 1)
+  (defcong nat-equiv equal (aignet-id-has-sat-var id sat-lits) 1)
 
   (defun aignet->sat-well-formedp (n sat-lits aignet)
     (declare (xargs :stobjs (sat-lits aignet)
@@ -563,10 +542,10 @@ correctness criterion we've described.
     (if (zp n)
         t
       (b* ((n (1- n))
-           (nid (to-id n)))
+           (nid n))
         (and (b* ((sat-lit (aignet-id->sat-lit nid sat-lits))
                   ((when (int= (satlink::var->index (satlink::lit->var sat-lit)) 0)) t)
-                  ((unless (aignet-idp nid aignet)) nil)
+                  ((unless (id-existsp nid aignet)) nil)
                   ((unless (sat-varp (satlink::lit->var sat-lit) sat-lits))
                    nil)
                   (aignet-lit (sat-var->aignet-lit (satlink::lit->var sat-lit) sat-lits)))
@@ -577,7 +556,7 @@ correctness criterion we've described.
 
   (defthm aignet->sat-well-formedp-implies
     (implies (and (aignet-id-has-sat-var m sat-lits)
-                  (< (id-val m) (nfix n))
+                  (< (nfix m) (nfix n))
                   (aignet->sat-well-formedp n sat-lits aignet))
              (and (equal (sat-var->aignet-lit
                           (satlink::lit->var (aignet-id->sat-lit m sat-lits))
@@ -589,24 +568,22 @@ correctness criterion we've described.
 
   (defthm aignet->sat-well-formedp-implies-when-not-aignet-idp
     (implies (and (aignet->sat-well-formedp n sat-lits aignet)
-                  (not (aignet-idp (id-fix m) aignet))
-                  (< (id-val m) (nfix n)))
+                  (not (aignet-idp m aignet))
+                  (< (nfix m) (nfix n)))
              (satlink::var-equiv (satlink::lit->var (aignet-id->sat-lit m sat-lits))
                                  0)))
 
   (local (defthm aignet->sat-well-formedp-of-extension
            (implies (and (aignet-extension-binding)
-                         (aignet-extension-p new-aignet orig-aignet)
-                         (aignet->sat-well-formedp n sat-lits orig-aignet))
-                    (aignet->sat-well-formedp n sat-lits new-aignet))))
+                         (aignet->sat-well-formedp n sat-lits orig))
+                    (aignet->sat-well-formedp n sat-lits new))))
 
 
   (defun sat->aignet-well-formedp (n sat-lits aignet)
     (declare (xargs :stobjs (sat-lits aignet)
                     :guard (and (posp n)
                                 (<= n (sat-next-var sat-lits))
-                                (sat-lits-sizedp sat-lits)
-                                (aignet-sizes-ok aignet))
+                                (sat-lits-sizedp sat-lits))
                     :guard-hints (("goal" :in-theory (enable sat-varp)))
                     :guard-debug t))
     (b* ((n (1- n))
@@ -614,7 +591,7 @@ correctness criterion we've described.
          (nvar (satlink::make-var n)))
       (and (b* ((aignet-lit (sat-var->aignet-lit nvar sat-lits))
                 (aignet-id (lit-id aignet-lit))
-                ((unless (and (aignet-litp aignet-lit aignet)
+                ((unless (and (fanin-litp aignet-lit aignet)
                               (aignet-id-has-sat-var aignet-id sat-lits)))
                  nil)
                 (sat-lit (aignet-id->sat-lit aignet-id sat-lits)))
@@ -639,14 +616,12 @@ correctness criterion we've described.
 
   (local (defthm sat->aignet-well-formedp-of-extension
            (implies (and (aignet-extension-binding)
-                         (aignet-extension-p new-aignet orig-aignet)
-                         (sat->aignet-well-formedp n sat-lits orig-aignet))
-                    (sat->aignet-well-formedp n sat-lits new-aignet))))
+                         (sat->aignet-well-formedp n sat-lits orig))
+                    (sat->aignet-well-formedp n sat-lits new))))
 
 
   (defund sat-lits-wfp (sat-lits aignet)
-    (declare (xargs :stobjs (sat-lits aignet)
-                    :guard (aignet-well-formedp aignet)))
+    (declare (xargs :stobjs (sat-lits aignet)))
     (and (sat-lits-sizedp sat-lits)
          (<= 1 (lnfix (sat-next-var sat-lits)))
          (aignet->sat-well-formedp (aignet->sat-length sat-lits) sat-lits aignet)
@@ -657,9 +632,8 @@ correctness criterion we've described.
 
   (defthm sat-lits-wfp-of-aignet-extension
     (implies (and (aignet-extension-binding)
-                  (aignet-extension-p new-aignet orig-aignet)
-                  (sat-lits-wfp sat-lits orig-aignet))
-             (sat-lits-wfp sat-lits new-aignet)))
+                  (sat-lits-wfp sat-lits orig))
+             (sat-lits-wfp sat-lits new)))
 
 
   (defthm sat-lits-wfp-sat-next-var-type
@@ -706,7 +680,7 @@ correctness criterion we've described.
 
   (defthm sat-lits-wfp-implies-when-not-aignet-idp
     (implies (and (sat-lits-wfp sat-lits aignet)
-                  (not (aignet-idp (id-fix m) aignet)))
+                  (not (aignet-idp m aignet)))
              (satlink::var-equiv (satlink::lit->var (aignet-id->sat-lit m sat-lits))
                                  0))
     :hints (("goal" :in-theory (e/d (aignet-idp nth-lit-when-out-of-bounds)
@@ -722,14 +696,25 @@ correctness criterion we've described.
                            (n (nfix (sat-next-var sat-lits))) (m n)))
              :do-not-induct t)))
 
+  (defthm sat-lits-wfp-implies-bound-of-lookup-sat-var-id
+    (implies (and (sat-lits-wfp sat-lits aignet)
+                  (sat-varp n sat-lits))
+             (<= (lit-id (sat-var->aignet-lit n sat-lits))
+                 (node-count aignet)))
+    :hints (("goal" :use ((:instance sat->aignet-well-formedp-implies
+                           (n (nfix (sat-next-var sat-lits))) (m n)))
+             :do-not-induct t))
+    :rule-classes ((:linear :trigger-terms
+                    ((lit-id (sat-var->aignet-lit n sat-lits))))))
+
   (defthm sat-lits-wfp-implies-lookup-sat-var
     (implies (and (sat-lits-wfp sat-lits aignet)
                   (bind-free
                    (match-equiv-or-refinement
-                    'id-equiv 'id '(lit-id (sat-var->aignet-lit n sat-lits))
+                    'nat-equiv 'id '(lit-id (sat-var->aignet-lit n sat-lits))
                     mfc state)
                    (n))
-                  (id-equiv id (lit-id (sat-var->aignet-lit n sat-lits)))
+                  (nat-equiv id (lit-id (sat-var->aignet-lit n sat-lits)))
                   (sat-varp n sat-lits))
              (and (equal (aignet-id->sat-lit id sat-lits)
                          (satlink::make-lit
@@ -773,8 +758,7 @@ correctness criterion we've described.
 
   (defthmd sat-lits-wfp-implies-no-sat-var-when-out-of-range
     (implies (and (sat-lits-wfp sat-lits aignet)
-                  (<= (nfix (nth *num-nodes* aignet)) (id-val id))
-                  (aignet-well-formedp aignet))
+                  (< (node-count aignet) (nfix id)))
              (not (aignet-id-has-sat-var id sat-lits)))
     :hints (("goal" :in-theory (e/d (aignet-idp
                                      aignet-id-has-sat-var)
@@ -784,8 +768,7 @@ correctness criterion we've described.
 
   (defthmd sat-lits-wfp-implies-no-sat-var-when-not-aignet-idp
     (implies (and (sat-lits-wfp sat-lits aignet)
-                  (not (aignet-idp (id-fix id) aignet))
-                  (aignet-well-formedp aignet))
+                  (not (aignet-idp id aignet)))
              (not (aignet-id-has-sat-var id sat-lits)))
     :hints (("goal" :in-theory (e/d (aignet-id-has-sat-var)
                                     (sat-lits-wfp-implies-when-not-aignet-idp))
@@ -872,7 +855,7 @@ correctness criterion we've described.
   (defthm aignet-id->sat-lit-of-extension
     (implies (and (sat-lit-extension-binding)
                   (sat-lit-extension-p sat-lits2 sat-lits1)
-                  (aignet-id-has-sat-var (id-fix id) sat-lits1))
+                  (aignet-id-has-sat-var id sat-lits1))
              (equal (aignet-id->sat-lit id sat-lits2)
                     (aignet-id->sat-lit id sat-lits1))))
 
@@ -987,11 +970,11 @@ correctness criterion we've described.
 
   (defund sat-add-aignet-lit (lit sat-lits aignet)
     (declare (xargs :stobjs (sat-lits aignet)
-                    :guard (and (aignet-well-formedp aignet)
-                                (sat-lits-wfp sat-lits aignet)
-                                (aignet-litp lit aignet))))
+                    :guard (and (sat-lits-wfp sat-lits aignet)
+                                (litp lit)
+                                (fanin-litp lit aignet))))
     (b* ((lit (lit-fix lit))
-         ((unless (mbt (aignet-litp lit aignet)))
+         ((unless (mbt (fanin-litp lit aignet)))
           sat-lits)
          (id (lit-id lit))
          ((when (aignet-id-has-sat-var id sat-lits))
@@ -1035,10 +1018,9 @@ correctness criterion we've described.
 
   (defthm sat-add-aignet-lit-of-aignet-extension
     (implies (and (aignet-extension-binding)
-                  (aignet-extension-p new-aignet orig-aignet)
-                  (aignet-litp lit orig-aignet))
-             (equal (sat-add-aignet-lit lit sat-lits new-aignet)
-                    (sat-add-aignet-lit lit sat-lits orig-aignet))))
+                  (aignet-litp lit orig))
+             (equal (sat-add-aignet-lit lit sat-lits new)
+                    (sat-add-aignet-lit lit sat-lits orig))))
 
 
   (defthm sat-add-aignet-lit-new-id-not-varp-in-previous
@@ -1051,14 +1033,14 @@ correctness criterion we've described.
   (defthm sat-add-aignet-lit-new-id-not-varp-in-previous-by-id
     (implies (and (not (aignet-id-has-sat-var (lit-id lit) sat-lits))
                   (aignet-litp (lit-fix lit) aignet)
-                  (equal (id-fix id) (lit-id lit)))
+                  (equal (nfix id) (lit-id lit)))
              (not (sat-varp (satlink::lit->var (aignet-id->sat-lit
                                                 id (sat-add-aignet-lit lit sat-lits aignet)))
                             sat-lits))))
 
 
   (defthm aignet-id-has-sat-var-preserved-when-not-same-id-of-sat-add-aignet-lit
-    (implies (not (equal (id-val id) (id-val (lit-id lit))))
+    (implies (not (equal (nfix id) (lit-id lit)))
              (equal
               (aignet-id-has-sat-var
                id (sat-add-aignet-lit lit sat-lits aignet))
@@ -1075,12 +1057,12 @@ correctness criterion we've described.
                   (aignet-litp (lit-fix lit) aignet))
              (equal (aignet-id-has-sat-var
                      id (sat-add-aignet-lit lit sat-lits aignet))
-                    (or (equal (id-val (lit-id lit)) (id-val id))
+                    (or (equal (lit-id lit) (nfix id))
                         (aignet-id-has-sat-var id sat-lits)))))
 
   (defthmd aignet-id->sat-lit-preserved-of-sat-add-aignet-lit-when-not-added
     (implies (and (sat-lits-wfp sat-lits aignet)
-                  (not (equal (id-val (lit-id lit)) (id-val id))))
+                  (not (equal (lit-id lit) (nfix id))))
              (equal (aignet-id->sat-lit
                      id (sat-add-aignet-lit lit sat-lits aignet))
                     (aignet-id->sat-lit id sat-lits))))
@@ -1137,8 +1119,7 @@ correctness criterion we've described.
   (local (in-theory (enable sat-lits-wfp)))
 
   (defthm sat-lits-wfp-of-create
-    (implies (and (aignet-well-formedp aignet)
-                  (<= (nfix (num-nodes aignet)) (nfix n)))
+    (implies (<= (nfix (num-nodes aignet)) (nfix n))
              (sat-lits-wfp (resize-aignet->sat n (create-sat-lits)) aignet))
     :hints(("Goal" :in-theory (e/d (nth-lit nth update-nth create-sat-lits)
                                    (aignet->sat-well-formedp-of-create))
@@ -1173,12 +1154,12 @@ correctness criterion we've described.
                                      sat-lits-wfp-implies-when-not-aignet-idp
                                      (:definition aignet->sat-well-formedp))))
                    '(:use ((:instance sat-lits-wfp-implies-sat-varp-of-lookup-aignet-id
-                                      (n (to-id (+ -1 n))))
+                                      (n (+ -1 n)))
                            (:instance sat-lits-wfp-implies-lookup-aignet-id
-                                      (n (to-id (+ -1 n)))
-                                      (id (satlink::lit->var (aignet-id->sat-lit (to-id (1- n)) sat-lits))))
+                                      (n (+ -1 n))
+                                      (id (satlink::lit->var (aignet-id->sat-lit (1- n) sat-lits))))
                            (:instance sat-lits-wfp-implies-when-not-aignet-idp
-                                      (m (to-id (+ -1 n)))))))))
+                                      (m (+ -1 n))))))))
 
   (local (defthm sat->aignet-well-formedp-of-sat-add-aignet-lit
            (implies (and (sat-lits-wfp sat-lits aignet)
@@ -1195,12 +1176,12 @@ correctness criterion we've described.
                     (aignet->sat-well-formedp n sat-lits aignet))
            :hints (("goal" :induct (aignet->sat-well-formedp n sat-lits aignet))
                    '(:use ((:instance sat-lits-wfp-implies-sat-varp-of-lookup-aignet-id
-                                      (n (to-id (+ -1 n))))
+                                      (n (+ -1 n)))
                            (:instance sat-lits-wfp-implies-lookup-aignet-id
-                                      (n (to-id (+ -1 n)))
-                                      (id (satlink::lit->var (aignet-id->sat-lit (to-id (1- n)) sat-lits))))
+                                      (n (+ -1 n))
+                                      (id (satlink::lit->var (aignet-id->sat-lit (1- n) sat-lits))))
                            (:instance sat-lits-wfp-implies-when-not-aignet-idp
-                                      (m (to-id (1- n)))))
+                                      (m (1- n))))
                           :in-theory (enable acl2::nth-with-large-index nth-lit
                                              aignet-id-has-sat-var
                                              aignet-id->sat-lit)))))
@@ -1323,16 +1304,15 @@ correctness criterion we've described.
 
 
 (defsection aignet->cnf-vals
-  (defiteration aignet->cnf-vals (aignet-vals cnf-vals sat-lits aignet)
-    (declare (xargs :stobjs (aignet-vals cnf-vals sat-lits aignet)
-                    :guard (and (aignet-well-formedp aignet)
-                                (sat-lits-wfp sat-lits aignet)
-                                (bitarr-sizedp aignet-vals aignet)
+  (defiteration aignet->cnf-vals (vals cnf-vals sat-lits aignet)
+    (declare (xargs :stobjs (vals cnf-vals sat-lits aignet)
+                    :guard (and (sat-lits-wfp sat-lits aignet)
+                                (<= (num-nodes aignet) (bits-length vals))
                                 (<= (sat-next-var sat-lits) (bits-length
                                                              cnf-vals)))))
     (b* ((var (satlink::make-var n))
          (lit (sat-var->aignet-lit var sat-lits))
-         (val (aignet-eval-lit lit aignet-vals)))
+         (val (aignet-eval-lit lit vals)))
       (set-bit n val cnf-vals))
     :iter-guard (posp n)
     :returns cnf-vals
@@ -1345,18 +1325,18 @@ correctness criterion we've described.
 
   (defthm aignet->cnf-vals-iter-normalize-aignet
     (implies (syntaxp (not (equal aignet ''nil)))
-             (equal (aignet->cnf-vals-iter n aignet-vals cnf-vals sat-lits aignet)
-                    (aignet->cnf-vals-iter n aignet-vals cnf-vals sat-lits nil)))
+             (equal (aignet->cnf-vals-iter n vals cnf-vals sat-lits aignet)
+                    (aignet->cnf-vals-iter n vals cnf-vals sat-lits nil)))
     :hints((acl2::just-induct-and-expand 
-            (aignet->cnf-vals-iter n aignet-vals cnf-vals sat-lits aignet)
+            (aignet->cnf-vals-iter n vals cnf-vals sat-lits aignet)
             :expand-others
             ((:free (aignet)
-              (aignet->cnf-vals-iter n aignet-vals cnf-vals sat-lits aignet))))))
+              (aignet->cnf-vals-iter n vals cnf-vals sat-lits aignet))))))
 
   (defthm aignet->cnf-vals-normalize-aignet
     (implies (syntaxp (not (equal aignet ''nil)))
-             (equal (aignet->cnf-vals aignet-vals cnf-vals sat-lits aignet)
-                    (aignet->cnf-vals aignet-vals cnf-vals sat-lits nil))))
+             (equal (aignet->cnf-vals vals cnf-vals sat-lits aignet)
+                    (aignet->cnf-vals vals cnf-vals sat-lits nil))))
 
   (local (defthm ifix-greater-than-n
            (implies (and (acl2::rewriting-negative-literal
@@ -1368,24 +1348,24 @@ correctness criterion we've described.
                                 (< n m))))))
 
   (defthm nth-of-aignet->cnf-vals-iter
-    (equal (nth n (aignet->cnf-vals-iter m aignet-vals cnf-vals sat-lits
+    (equal (nth n (aignet->cnf-vals-iter m vals cnf-vals sat-lits
                                          aignet))
            (if (and (posp n)
                     (< n (nfix m)))
                (aignet-eval-lit
                 (sat-var->aignet-lit (satlink::make-var n) sat-lits)
-                aignet-vals)
+                vals)
              (nth n cnf-vals)))
     :hints((acl2::just-induct-and-expand 
-            (aignet->cnf-vals-iter m aignet-vals cnf-vals sat-lits aignet))))
+            (aignet->cnf-vals-iter m vals cnf-vals sat-lits aignet))))
 
 
   (defthm nth-of-aignet->cnf-vals
-    (equal (nth n (aignet->cnf-vals aignet-vals cnf-vals sat-lits aignet))
+    (equal (nth n (aignet->cnf-vals vals cnf-vals sat-lits aignet))
            (if (sat-varp (satlink::make-var n) sat-lits)
                (aignet-eval-lit
                 (sat-var->aignet-lit (satlink::make-var n) sat-lits)
-                aignet-vals)
+                vals)
              (nth n cnf-vals)))
     :hints(("Goal" :in-theory (enable sat-varp))))
 
@@ -1393,16 +1373,16 @@ correctness criterion we've described.
     (implies (and (<= (nfix (sat-next-var sat-lits))
                       (bits-length cnf-vals))
                   (<= (nfix m) (bits-length cnf-vals)))
-             (equal (len (aignet->cnf-vals-iter m aignet-vals cnf-vals sat-lits
+             (equal (len (aignet->cnf-vals-iter m vals cnf-vals sat-lits
                                                 aignet))
                     (len cnf-vals)))
     :hints((acl2::just-induct-and-expand 
-            (aignet->cnf-vals-iter m aignet-vals cnf-vals sat-lits aignet))))
+            (aignet->cnf-vals-iter m vals cnf-vals sat-lits aignet))))
 
   (defthm len-of-aignet->cnf-vals
     (implies (and (<= (nfix (sat-next-var sat-lits))
                       (bits-length cnf-vals)))
-             (equal (len (aignet->cnf-vals aignet-vals cnf-vals sat-lits
+             (equal (len (aignet->cnf-vals vals cnf-vals sat-lits
                                            aignet))
                     (len cnf-vals))))
 
@@ -1412,10 +1392,10 @@ correctness criterion we've described.
                   (sat-varp (satlink::var-fix var) sat-lits1))
              (equal (satlink::eval-var 
                      var (aignet->cnf-vals
-                          aignet-vals cnf-vals sat-lits2 aignet))
+                          vals cnf-vals sat-lits2 aignet))
                     (satlink::eval-var 
                      var (aignet->cnf-vals
-                          aignet-vals cnf-vals sat-lits1 aignet))))
+                          vals cnf-vals sat-lits1 aignet))))
     :hints(("Goal" :in-theory (e/d (satlink::eval-var)
                                    (aignet->cnf-vals)))))
 
@@ -1425,10 +1405,10 @@ correctness criterion we've described.
                   (sat-litp lit sat-lits1))
              (equal (satlink::eval-lit
                      lit (aignet->cnf-vals
-                          aignet-vals cnf-vals sat-lits2 aignet))
+                          vals cnf-vals sat-lits2 aignet))
                     (satlink::eval-lit
                      lit (aignet->cnf-vals
-                          aignet-vals cnf-vals sat-lits1 aignet))))
+                          vals cnf-vals sat-lits1 aignet))))
     :hints(("Goal" :in-theory (e/d (satlink::eval-lit)
                                    (aignet->cnf-vals)))))
 
@@ -1438,10 +1418,10 @@ correctness criterion we've described.
                   (sat-lit-listp clause sat-lits1))
              (equal (satlink::eval-clause
                      clause (aignet->cnf-vals
-                          aignet-vals cnf-vals sat-lits2 aignet))
+                          vals cnf-vals sat-lits2 aignet))
                     (satlink::eval-clause
                      clause (aignet->cnf-vals
-                             aignet-vals cnf-vals sat-lits1 aignet))))
+                             vals cnf-vals sat-lits1 aignet))))
     :hints(("Goal" :in-theory (e/d (satlink::eval-clause)
                                    (aignet->cnf-vals)))))
 
@@ -1451,10 +1431,10 @@ correctness criterion we've described.
                   (sat-lit-listp conjunction sat-lits1))
              (equal (cnf-eval-conjunction
                      conjunction (aignet->cnf-vals
-                          aignet-vals cnf-vals sat-lits2 aignet))
+                          vals cnf-vals sat-lits2 aignet))
                     (cnf-eval-conjunction
                      conjunction (aignet->cnf-vals
-                             aignet-vals cnf-vals sat-lits1 aignet))))
+                             vals cnf-vals sat-lits1 aignet))))
     :hints(("Goal" :in-theory (e/d (cnf-eval-conjunction)
                                    (aignet->cnf-vals)))))
 
@@ -1464,10 +1444,10 @@ correctness criterion we've described.
                   (sat-lit-list-listp formula sat-lits1))
              (equal (satlink::eval-formula
                      formula (aignet->cnf-vals
-                          aignet-vals cnf-vals sat-lits2 aignet))
+                          vals cnf-vals sat-lits2 aignet))
                     (satlink::eval-formula
                      formula (aignet->cnf-vals
-                             aignet-vals cnf-vals sat-lits1 aignet))))
+                             vals cnf-vals sat-lits1 aignet))))
     :hints(("Goal" :in-theory (e/d (satlink::eval-formula)
                                    (aignet->cnf-vals)))))
 
@@ -1475,11 +1455,11 @@ correctness criterion we've described.
   (defthm eval-var-of-aignet->cnf-vals
     (implies (sat-varp (satlink::var-fix var) sat-lits)
              (equal (satlink::eval-var
-                     var (aignet->cnf-vals aignet-vals cnf-vals sat-lits
+                     var (aignet->cnf-vals vals cnf-vals sat-lits
                                            aignet))
                     (aignet-eval-lit
                      (sat-var->aignet-lit var sat-lits)
-                     aignet-vals)))
+                     vals)))
     :hints(("Goal" :in-theory (e/d (satlink::eval-var)
                                    (aignet->cnf-vals)))))
 
@@ -1504,32 +1484,32 @@ correctness criterion we've described.
   (defthm eval-lit-of-aignet->cnf-vals
     (implies (sat-litp lit sat-lits)
              (equal (satlink::eval-lit
-                     lit (aignet->cnf-vals aignet-vals cnf-vals sat-lits
+                     lit (aignet->cnf-vals vals cnf-vals sat-lits
                                            aignet))
                     (aignet-eval-lit
                      (sat-lit->aignet-lit lit sat-lits)
-                     aignet-vals)))
+                     vals)))
     :hints(("Goal" :in-theory (e/d (satlink::eval-lit
                                     satlink::eval-var)
                                    (aignet->cnf-vals)))))
 
-  (defun aignet-vals-conjunction (lits aignet-vals)
-    (declare (xargs :stobjs aignet-vals
+  (defun aignet-vals-conjunction (lits vals)
+    (declare (xargs :stobjs vals
                     :verify-guards nil))
     (if (atom lits)
         1
-      (b-and (aignet-eval-lit (car lits) aignet-vals)
-             (aignet-vals-conjunction (cdr lits) aignet-vals))))
+      (b-and (aignet-eval-lit (car lits) vals)
+             (aignet-vals-conjunction (cdr lits) vals))))
 
   (defthm cnf-eval-conjunction-of-aignet->cnf-vals
     (implies (sat-lit-listp lits sat-lits)
              (equal (cnf-eval-conjunction
                      lits
-                     (aignet->cnf-vals aignet-vals cnf-vals sat-lits
+                     (aignet->cnf-vals vals cnf-vals sat-lits
                                        aignet))
                     (aignet-vals-conjunction
                      (sat-lits->aignet-lits lits sat-lits)
-                     aignet-vals)))
+                     vals)))
     :hints(("Goal" :in-theory (disable aignet->cnf-vals))))
 
   (defthm aignet-lit-listp-of-sat-lits->aignet-lits
@@ -1559,58 +1539,51 @@ correctness criterion we've described.
 
   (defthm aignet->cnf-vals-iter-of-aignet-eval-of-extension
     (implies (and (aignet-extension-binding)
-                  (aignet-extension-p new-aignet orig-aignet)
-                  (aignet-well-formedp orig-aignet)
-                  (aignet-well-formedp new-aignet)
-                  (sat-lits-wfp sat-lits orig-aignet)
+                  (sat-lits-wfp sat-lits orig)
                   (<= n (sat-next-var sat-lits)))
              (equal (aignet->cnf-vals-iter
                      n
-                     (aignet-eval aignet-vals new-aignet)
+                     (aignet-eval vals new)
                      cnf-vals sat-lits aignet1)
                     (aignet->cnf-vals-iter
                      n
-                     (aignet-eval aignet-vals orig-aignet)
+                     (aignet-eval vals orig)
                      cnf-vals sat-lits aignet1)))
     :hints((acl2::just-induct-and-expand
             (aignet->cnf-vals-iter
              n
-             (aignet-eval aignet-vals new-aignet)
+             (aignet-eval vals new)
              cnf-vals sat-lits aignet1)
             :expand-others
-            ((:free (aignet-vals)
+            ((:free (vals)
               (aignet->cnf-vals-iter
-               n aignet-vals cnf-vals sat-lits aignet1))))))
+               n vals cnf-vals sat-lits aignet1))))))
 
   (defthm aignet->cnf-vals-of-aignet-eval-of-extension
     (implies (and (aignet-extension-binding)
-                  (aignet-extension-p new-aignet orig-aignet)
-                  (aignet-well-formedp orig-aignet)
-                  (aignet-well-formedp new-aignet)
-                  (sat-lits-wfp sat-lits orig-aignet))
+                  (sat-lits-wfp sat-lits orig))
              (equal (aignet->cnf-vals
-                     (aignet-eval aignet-vals new-aignet)
+                     (aignet-eval vals new)
                      cnf-vals sat-lits aignet1)
                     (aignet->cnf-vals
-                     (aignet-eval aignet-vals orig-aignet)
+                     (aignet-eval vals orig)
                      cnf-vals sat-lits aignet1)))))
 
 (defsection cnf->aignet-vals
   ;; BOZO this is probably a good logical definition for this but it might be
   ;; nice to have an exec that iterates over the sat-lits/cnf-vals instead of
-  ;; having to skip all the IDs with no sat-vars in aignet-vals
-  (defiteration cnf->aignet-vals (aignet-vals cnf-vals sat-lits aignet)
-    (declare (xargs :stobjs (aignet-vals cnf-vals sat-lits aignet)
-                    :guard (and (aignet-well-formedp aignet)
-                                (sat-lits-wfp sat-lits aignet)
-                                (bitarr-sizedp aignet-vals aignet))))
-    (b* ((id (to-id n))
+  ;; having to skip all the IDs with no sat-vars in vals
+  (defiteration cnf->aignet-vals (vals cnf-vals sat-lits aignet)
+    (declare (xargs :stobjs (vals cnf-vals sat-lits aignet)
+                    :guard (and (sat-lits-wfp sat-lits aignet)
+                                (<= (num-nodes aignet) (bits-length vals)))))
+    (b* ((id n)
          ((unless (aignet-id-has-sat-var id sat-lits))
-          aignet-vals)
+          vals)
          (lit (aignet-id->sat-lit id sat-lits))
          (val (satlink::eval-lit lit cnf-vals)))
-      (set-bit n val aignet-vals))
-    :returns aignet-vals
+      (set-bit n val vals))
+    :returns vals
     :last (num-nodes aignet))
 
   (in-theory (disable cnf->aignet-vals))
@@ -1619,63 +1592,60 @@ correctness criterion we've described.
 
   (defthm cnf->aignet-vals-iter-normalize-aignet
     (implies (syntaxp (not (equal aignet ''nil)))
-             (equal (cnf->aignet-vals-iter n aignet-vals cnf-vals sat-lits aignet)
-                    (cnf->aignet-vals-iter n aignet-vals cnf-vals sat-lits nil)))
+             (equal (cnf->aignet-vals-iter n vals cnf-vals sat-lits aignet)
+                    (cnf->aignet-vals-iter n vals cnf-vals sat-lits nil)))
     :hints((acl2::just-induct-and-expand 
-            (cnf->aignet-vals-iter n aignet-vals cnf-vals sat-lits aignet)
+            (cnf->aignet-vals-iter n vals cnf-vals sat-lits aignet)
             :expand-others
             ((:free (aignet)
-              (cnf->aignet-vals-iter n aignet-vals cnf-vals sat-lits aignet))))))
+              (cnf->aignet-vals-iter n vals cnf-vals sat-lits aignet))))))
 
   (defthm nth-of-cnf->aignet-vals-iter
-    (equal (nth n (cnf->aignet-vals-iter m aignet-vals cnf-vals sat-lits
+    (equal (nth n (cnf->aignet-vals-iter m vals cnf-vals sat-lits
                                          aignet))
            (if (and (< (nfix n) (nfix m))
-                    (aignet-id-has-sat-var (to-id n) sat-lits))
+                    (aignet-id-has-sat-var n sat-lits))
                (satlink::eval-lit
-                (aignet-id->sat-lit (to-id n) sat-lits)
+                (aignet-id->sat-lit n sat-lits)
                 cnf-vals)
-             (nth n aignet-vals)))
+             (nth n vals)))
     :hints((acl2::just-induct-and-expand 
-            (cnf->aignet-vals-iter m aignet-vals cnf-vals sat-lits aignet))))
+            (cnf->aignet-vals-iter m vals cnf-vals sat-lits aignet))))
 
   (defthm nth-of-cnf->aignet-vals
-    (equal (nth n (cnf->aignet-vals aignet-vals cnf-vals sat-lits aignet))
-           (if (and (aignet-idp (to-id n) aignet)
-                    (aignet-id-has-sat-var (to-id n) sat-lits))
+    (equal (nth n (cnf->aignet-vals vals cnf-vals sat-lits aignet))
+           (if (and (aignet-idp n aignet)
+                    (aignet-id-has-sat-var n sat-lits))
                (satlink::eval-lit
-                (aignet-id->sat-lit (to-id n) sat-lits)
+                (aignet-id->sat-lit n sat-lits)
                 cnf-vals)
-             (nth n aignet-vals)))
+             (nth n vals)))
     :hints(("Goal" :in-theory (enable aignet-idp))))
 
   (defthm len-of-cnf->aignet-vals-iter
     (implies (and (<= (nfix (num-nodes aignet))
-                      (bits-length aignet-vals))
-                  (<= (nfix m) (bits-length aignet-vals)))
-             (equal (len (cnf->aignet-vals-iter m aignet-vals cnf-vals sat-lits
+                      (bits-length vals))
+                  (<= (nfix m) (bits-length vals)))
+             (equal (len (cnf->aignet-vals-iter m vals cnf-vals sat-lits
                                                 aignet))
-                    (len aignet-vals)))
+                    (len vals)))
     :hints((acl2::just-induct-and-expand 
-            (cnf->aignet-vals-iter m aignet-vals cnf-vals sat-lits aignet))))
+            (cnf->aignet-vals-iter m vals cnf-vals sat-lits aignet))))
 
   (defthm len-of-cnf->aignet-vals
     (implies (and (<= (nfix (num-nodes aignet))
-                      (bits-length aignet-vals)))
-             (equal (len (cnf->aignet-vals aignet-vals cnf-vals sat-lits
+                      (bits-length vals)))
+             (equal (len (cnf->aignet-vals vals cnf-vals sat-lits
                                            aignet))
-                    (len aignet-vals))))
+                    (len vals))))
 
   (local (in-theory (disable cnf->aignet-vals)))
 
   (defthmd cnf->aignet-vals-of-aignet-extension-lemma
     (implies (and (aignet-extension-binding)
-                  (aignet-extension-p new-aignet orig-aignet)
-                  (aignet-well-formedp orig-aignet)
-                  (aignet-well-formedp new-aignet)
-                  (sat-lits-wfp sat-lits orig-aignet))
-             (bit-equiv (nth n (cnf->aignet-vals aignet-vals cnf-vals sat-lits new-aignet))
-                        (nth n (cnf->aignet-vals aignet-vals cnf-vals sat-lits orig-aignet))))
+                  (sat-lits-wfp sat-lits orig))
+             (bit-equiv (nth n (cnf->aignet-vals vals cnf-vals sat-lits new))
+                        (nth n (cnf->aignet-vals vals cnf-vals sat-lits orig))))
     :hints (("goal" :in-theory (enable
                                 sat-lits-wfp-implies-no-sat-var-when-not-aignet-idp))))
 
@@ -1683,22 +1653,18 @@ correctness criterion we've described.
 
   (defthm cnf->aignet-vals-of-aignet-extension
     (implies (and (aignet-extension-binding)
-                  (aignet-extension-p new-aignet orig-aignet)
-                  (aignet-well-formedp orig-aignet)
-                  (aignet-well-formedp new-aignet)
-                  (sat-lits-wfp sat-lits orig-aignet))
-             (bits-equiv (cnf->aignet-vals aignet-vals cnf-vals sat-lits new-aignet)
-                         (cnf->aignet-vals aignet-vals cnf-vals sat-lits orig-aignet)))
+                  (sat-lits-wfp sat-lits orig))
+             (bits-equiv (cnf->aignet-vals vals cnf-vals sat-lits new)
+                         (cnf->aignet-vals vals cnf-vals sat-lits orig)))
     :hints (("goal" :in-theory (enable bits-equiv))))
 
 
   (defthm cnf->aignet-vals-of-sat-lit-extension-idempotent
     (implies (and (sat-lit-extension-p sat-lits2 sat-lits1)
-                  (aignet-well-formedp aignet)
                   (sat-lits-wfp sat-lits1 aignet)
                   (sat-lits-wfp sat-lits2 aignet))
              (let ((aignet-vals1 (cnf->aignet-vals
-                                  aignet-vals cnf-vals sat-lits2 aignet)))
+                                  vals cnf-vals sat-lits2 aignet)))
                (bits-equiv (cnf->aignet-vals
                             aignet-vals1 cnf-vals sat-lits1 aignet)
                            aignet-vals1)))
@@ -1707,16 +1673,16 @@ correctness criterion we've described.
 (defsection aignet-vals-agree-with-cnf
 
   (defun-sk aignet-vals-agree-with-cnf (aignet sat-lits cnf-vals)
-    (forall (id aignet-vals aignet-invals aignet-regvals)
-            (implies (and (aignet-idp (id-fix id) aignet)
+    (forall (id vals aignet-invals aignet-regvals)
+            (implies (and (aignet-idp id aignet)
                           (aignet-id-has-sat-var id sat-lits))
-                     (let ((aignet-vals (cnf->aignet-vals aignet-vals cnf-vals
+                     (let ((vals (cnf->aignet-vals vals cnf-vals
                                                           sat-lits aignet)))
                        (equal (id-eval id
                                        (aignet-vals->invals
-                                        aignet-invals aignet-vals aignet)
+                                        aignet-invals vals aignet)
                                        (aignet-vals->regvals
-                                        aignet-regvals aignet-vals aignet)
+                                        aignet-regvals vals aignet)
                                        aignet)
                               (satlink::eval-lit
                                (aignet-id->sat-lit id sat-lits)
@@ -1740,27 +1706,24 @@ correctness criterion we've described.
   
   (defthmd aignet-vals-agree-with-cnf-of-aignet-extension-lemma
     (implies (and (aignet-extension-binding)
-                  (aignet-extension-p new-aignet orig-aignet)
-                  (aignet-well-formedp orig-aignet)
-                  (aignet-well-formedp new-aignet)
-                  (sat-lits-wfp sat-lits orig-aignet)
+                  (sat-lits-wfp sat-lits orig)
                   (aignet-vals-agree-with-cnf
-                   orig-aignet sat-lits cnf-vals))
-             (let ((aignet new-aignet))
-               (implies (and (aignet-idp (id-fix id) aignet)
+                   orig sat-lits cnf-vals))
+             (let ((aignet new))
+               (implies (and (aignet-idp id aignet)
                              (aignet-id-has-sat-var id sat-lits))
-                        (let ((aignet-vals (cnf->aignet-vals aignet-vals cnf-vals
+                        (let ((vals (cnf->aignet-vals vals cnf-vals
                                                              sat-lits aignet)))
                           (equal (id-eval id
                                           (aignet-vals->invals
-                                           aignet-invals aignet-vals aignet)
+                                           aignet-invals vals aignet)
                                           (aignet-vals->regvals
-                                           aignet-regvals aignet-vals aignet)
+                                           aignet-regvals vals aignet)
                                           aignet)
                                  (satlink::eval-lit
                                   (aignet-id->sat-lit id sat-lits)
                                   cnf-vals))))))
-    :hints (("goal" :cases ((aignet-idp (id-fix id) orig-aignet))
+    :hints (("goal" :cases ((aignet-idp id orig))
              :in-theory (e/d
                          (sat-lits-wfp-implies-no-sat-var-when-not-aignet-idp)
                          (aignet-vals->invals
@@ -1770,14 +1733,11 @@ correctness criterion we've described.
 
   (defthm aignet-vals-agree-with-cnf-of-aignet-extension
     (implies (and (aignet-extension-binding)
-                  (aignet-extension-p new-aignet orig-aignet)
-                  (aignet-well-formedp orig-aignet)
-                  (aignet-well-formedp new-aignet)
-                  (sat-lits-wfp sat-lits orig-aignet)
+                  (sat-lits-wfp sat-lits orig)
                   (aignet-vals-agree-with-cnf
-                   orig-aignet sat-lits cnf-vals))
+                   orig sat-lits cnf-vals))
              (aignet-vals-agree-with-cnf
-              new-aignet sat-lits cnf-vals))
+              new sat-lits cnf-vals))
     :hints(("Goal" :in-theory
             '(aignet-vals-agree-with-cnf
               aignet-vals-agree-with-cnf-of-aignet-extension-lemma))))
@@ -1785,27 +1745,26 @@ correctness criterion we've described.
   (defthm aignet-vals-agree-with-cnf-with-sat-lit-extension
     (implies (and (sat-lit-extension-binding)
                   (sat-lit-extension-p sat-lits2 sat-lits1)
-                  (aignet-well-formedp aignet)
                   (sat-lits-wfp sat-lits1 aignet)
                   (sat-lits-wfp sat-lits2 aignet)
-                  (aignet-idp (id-fix id) aignet)
+                  (aignet-idp id aignet)
                   (aignet-id-has-sat-var id sat-lits1)
                   (aignet-vals-agree-with-cnf aignet sat-lits1 cnf-vals))
-             (let ((aignet-vals (cnf->aignet-vals aignet-vals cnf-vals
+             (let ((vals (cnf->aignet-vals vals cnf-vals
                                                   sat-lits2 aignet)))
                (equal (id-eval id
                                (aignet-vals->invals
-                                aignet-invals aignet-vals aignet)
+                                aignet-invals vals aignet)
                                (aignet-vals->regvals
-                                aignet-regvals aignet-vals aignet)
+                                aignet-regvals vals aignet)
                                aignet)
                       (satlink::eval-lit
                        (aignet-id->sat-lit id sat-lits1)
                        cnf-vals))))
     :hints (("goal" :use ((:instance aignet-vals-agree-with-cnf-necc
                            (sat-lits sat-lits1)
-                           (aignet-vals
-                            (cnf->aignet-vals aignet-vals cnf-vals
+                           (vals
+                            (cnf->aignet-vals vals cnf-vals
                                               sat-lits2 aignet))))
              :in-theory (disable aignet-vals-agree-with-cnf-necc))))
 
@@ -1816,43 +1775,42 @@ correctness criterion we've described.
   (defthm aignet-eval-conjunction-when-aignet-vals-agree-with-cnf-with-sat-lit-extension
     (implies (and (sat-lit-extension-binding)
                   (sat-lit-extension-p sat-lits2 sat-lits1)
-                  (aignet-well-formedp aignet)
                   (sat-lits-wfp sat-lits1 aignet)
                   (sat-lits-wfp sat-lits2 aignet)
                   (aignet-lit-listp lits aignet)
                   (aignet-lits-have-sat-vars lits sat-lits1)
                   (aignet-vals-agree-with-cnf aignet sat-lits1 cnf-vals))
-             (let ((aignet-vals (cnf->aignet-vals aignet-vals cnf-vals
+             (let ((vals (cnf->aignet-vals vals cnf-vals
                                                   sat-lits2 aignet)))
                (equal (aignet-eval-conjunction
                        lits
                        (aignet-vals->invals
-                        aignet-invals aignet-vals aignet)
+                        aignet-invals vals aignet)
                        (aignet-vals->regvals
-                        aignet-regvals aignet-vals aignet)
+                        aignet-regvals vals aignet)
                        aignet)
                       (cnf-eval-conjunction
                        (aignet-lits->sat-lits lits sat-lits1)
                        cnf-vals))))
-    :hints(("Goal" :in-theory (enable lit-eval satlink::eval-lit))))
+    :hints(("Goal" :in-theory (enable lit-eval satlink::eval-lit
+                                      aignet-eval-conjunction))))
 
   (defthm lit-eval-when-aignet-vals-agree-with-cnf-with-sat-lit-extension
     (implies (and (sat-lit-extension-binding)
                   (sat-lit-extension-p sat-lits2 sat-lits1)
-                  (aignet-well-formedp aignet)
                   (sat-lits-wfp sat-lits1 aignet)
                   (sat-lits-wfp sat-lits2 aignet)
                   (aignet-litp lit aignet)
                   (aignet-id-has-sat-var (lit-id lit) sat-lits1)
                   (aignet-vals-agree-with-cnf aignet sat-lits1 cnf-vals))
-             (let ((aignet-vals (cnf->aignet-vals aignet-vals cnf-vals
+             (let ((vals (cnf->aignet-vals vals cnf-vals
                                                   sat-lits2 aignet)))
                (equal (lit-eval
                        lit
                        (aignet-vals->invals
-                        aignet-invals aignet-vals aignet)
+                        aignet-invals vals aignet)
                        (aignet-vals->regvals
-                        aignet-regvals aignet-vals aignet)
+                        aignet-regvals vals aignet)
                        aignet)
                       (satlink::eval-lit
                        (aignet-lit->sat-lit lit sat-lits1)
@@ -1871,7 +1829,7 @@ correctness criterion we've described.
 
   (defund mux-add-clauses (res-id c tb fb sat-lits cnf-acc)
     (declare (Xargs :stobjs (sat-lits)
-                    :guard (and (idp res-id) (litp c) (litp tb) (litp fb))))
+                    :guard (and (natp res-id) (litp c) (litp tb) (litp fb))))
     (b* ((rl (aignet-id->sat-lit res-id sat-lits))
          (cl (aignet-lit->sat-lit c sat-lits))
          (tl (aignet-lit->sat-lit tb sat-lits))
@@ -1959,17 +1917,17 @@ correctness criterion we've described.
   (defthm id-order-of-id-is-mux
     (b* (((mv is-mux c tb fb) (id-is-mux id aignet)))
       (implies is-mux
-               (and (< (id-val (lit-id c)) (id-val id))
-                    (< (id-val (lit-id tb)) (id-val id))
-                    (< (id-val (lit-id fb)) (id-val id)))))
-    :hints(("Goal" :in-theory (enable id-is-mux gate-orderedp)))
+               (and (< (lit-id c) (nfix id))
+                    (< (lit-id tb) (nfix id))
+                    (< (lit-id fb) (nfix id)))))
+    :hints(("Goal" :in-theory (enable id-is-mux)))
     :rule-classes (:rewrite :linear))
 
 
   (defthm id-type-when-is-mux
     (implies (mv-nth 0 (id-is-mux id aignet))
-             (equal (node->type (nth-node id (nth *nodesi* aignet)))
-                    (gate-type)))
+             (equal (stype (car (lookup-id id aignet)))
+                    (gate-stype)))
     :hints(("Goal" :in-theory (enable id-is-mux)))))
 
 
@@ -2119,28 +2077,26 @@ correctness criterion we've described.
     (declare (xargs :guard (lit-listp lits)))
     (if (atom lits)
         0
-      (max (id-val (lit-id (car lits)))
+      (max (lit-id (car lits))
            (lits-max-id-val (cdr lits)))))
 
 
   (defthmd lits-max-id-val-of-supergate
     (<= (lits-max-id-val (lit-collect-supergate
                           lit top use-muxes supergate aignet-refcounts aignet))
-        (max (id-val (lit-id lit))
+        (max (lit-id lit)
              (lits-max-id-val supergate)))
-    :hints(("Goal" :in-theory (enable lit-collect-supergate
-                                      gate-orderedp))))
+    :hints(("Goal" :in-theory (enable lit-collect-supergate))))
 
   ;; measure decreases on children of a supergate
   (defthm supergate-decr-top
-    (implies (and (gate-orderedp id aignet)
-                  (int= (id->type id aignet) (gate-type))
+    (implies (and (int= (id->type id aignet) (gate-type))
                   (not (and use-muxes
                             (mv-nth 0 (id-is-mux id aignet)))))
              (< (lits-max-id-val (lit-collect-supergate
                                   (mk-lit id 0)
                                   t use-muxes nil aignet-refcounts aignet))
-                (id-val id)))
+                (nfix id)))
     :hints (("goal" :expand ((:free (use-muxes)
                               (lit-collect-supergate
                                (mk-lit id 0)
@@ -2155,20 +2111,19 @@ correctness criterion we've described.
                     (supergate (lit-collect-supergate
                                 (gate-id->fanin0 id aignet)
                                 nil use-muxes nil aignet-refcounts aignet))))
-             :in-theory (e/d (gate-orderedp) (lits-max-id-val-of-supergate))))
+             :in-theory (e/d () (lits-max-id-val-of-supergate))))
     :rule-classes (:rewrite :linear))
 
 
   (mutual-recursion
    (defun aignet-lit->cnf (x use-muxes aignet-refcounts sat-lits aignet cnf)
      (declare (xargs :stobjs (aignet-refcounts sat-lits aignet)
-                     :guard (and (aignet-well-formedp aignet)
-                                 (u32arr-sizedp aignet-refcounts aignet)
-                                 (aignet-litp x aignet)
+                     :guard (and (<= (num-nodes aignet) (u32-length aignet-refcounts))
+                                 (litp x) (fanin-litp x aignet)
                                  (sat-lits-wfp sat-lits aignet))
                      :verify-guards nil
                      :measure (acl2::two-nats-measure
-                               (id-val (lit-id x)) 0)))
+                               (lit-id x) 0)))
      (b* ((id (lit-id x))
           ((when (aignet-id-has-sat-var id sat-lits))
            ;; already added, so done
@@ -2202,12 +2157,6 @@ correctness criterion we've described.
           (lit (mk-lit id 0))
           (supergate (lit-collect-supergate
                       lit t use-muxes nil aignet-refcounts aignet))
-          ((unless (mbt (gate-orderedp id aignet)))
-           ;; convention: a malformed gate evaluates to 0, so we add a clause
-           ;; making it so
-           (b* ((sat-lits (sat-add-aignet-lit lit sat-lits aignet))
-                (sat-lit (aignet-id->sat-lit id sat-lits)))
-             (mv sat-lits (cons (list (satlink::lit-negate sat-lit)) cnf))))
           ((when (member (to-lit 0) supergate))
            ;; one of the fanins is const 0, so the node is const 0
            (b* ((sat-lits (sat-add-aignet-lit lit sat-lits aignet))
@@ -2224,8 +2173,8 @@ correctness criterion we've described.
 
    (defun aignet-lit-list->cnf (x use-muxes aignet-refcounts sat-lits aignet cnf)
      (declare (xargs :stobjs (aignet-refcounts sat-lits aignet)
-                     :guard (and (aignet-well-formedp aignet)
-                                 (u32arr-sizedp aignet-refcounts aignet)
+                     :guard (and (<= (num-nodes aignet) (u32-length aignet-refcounts))
+                                 (lit-listp x)
                                  (aignet-lit-listp x aignet)
                                  (sat-lits-wfp sat-lits aignet))
                      :measure (acl2::two-nats-measure
@@ -2238,23 +2187,17 @@ correctness criterion we've described.
          (aignet-lit-list->cnf (cdr x) use-muxes aignet-refcounts sat-lits aignet
                             cnf)))))
 
-  (local (in-theory (disable aignet-lit->cnf aignet-lit-list->cnf)))
+  (in-theory (disable aignet-lit->cnf aignet-lit-list->cnf))
 
   (encapsulate nil
     ;; BOZO -- Defining the flag function by hand so that we can use
     ;; def-sat-lits-preservation-thms.  Kind of gross, but effective.
     (local (defund aignet-lit->cnf-flg (flg x use-muxes aignet-refcounts sat-lits aignet cnf)
              (declare (xargs :stobjs (aignet-refcounts sat-lits aignet)
-                             :guard (and (aignet-well-formedp aignet)
-                                         (u32arr-sizedp aignet-refcounts aignet)
-                                         (if (eq flg 'lit)
-                                             (aignet-litp x aignet)
-                                           (aignet-lit-listp x aignet))
-                                         (sat-lits-wfp sat-lits aignet))
                              :verify-guards nil
                              :measure (if (eq flg 'lit)
                                           (acl2::two-nats-measure
-                                           (id-val (lit-id x)) 0)
+                                           (lit-id x) 0)
                                         (acl2::two-nats-measure
                                          (lits-max-id-val x)
                                          (+ 1 (len x))))))
@@ -2287,12 +2230,6 @@ correctness criterion we've described.
                       (lit (mk-lit id 0))
                       (supergate (lit-collect-supergate
                                   lit t use-muxes nil aignet-refcounts aignet))
-                      ((unless (mbt (gate-orderedp id aignet)))
-                       ;; must be 0
-                       (b* ((sat-lits (sat-add-aignet-lit (mk-lit id 0) sat-lits
-                                                       aignet))
-                            (sat-lit (aignet-id->sat-lit id sat-lits)))
-                         (mv sat-lits (cons (list (satlink::lit-negate sat-lit)) cnf))))
                       ((when (member (to-lit 0) supergate))
                        ;; one of the fanins is const 0, so the node is const 0
                        (b* ((sat-lits (sat-add-aignet-lit lit sat-lits aignet))
@@ -2361,6 +2298,8 @@ correctness criterion we've described.
     (def-sat-lits-preservation-thms aignet-lit->cnf)
     (def-sat-lits-preservation-thms aignet-lit-list->cnf))
 
+  (local (defthm lit-listp-true-listp
+           (implies (lit-listp x) (true-listp x))))
   ;; that's all we need for verifying the guards...
   (verify-guards aignet-lit->cnf)
 
@@ -2394,7 +2333,7 @@ correctness criterion we've described.
   (local (DEFTHM SAT-LITS-WFP-IMPLIES-LOOKUP-AIGNET-ID-bind-free
            (IMPLIES (AND (bind-free '((aignet . aignet)))
                          (SAT-LITS-WFP SAT-LITS AIGNET)
-                         (AIGNET-IDP (id-fix N) AIGNET)
+                         (AIGNET-IDP N AIGNET)
                          (AIGNET-ID-HAS-SAT-VAR N SAT-LITS))
                     (AND
                      (EQUAL (SAT-VAR->AIGNET-LIT
@@ -2416,8 +2355,7 @@ correctness criterion we've described.
   ;; arguments get sat variables.
   (defthm-aignet-lit->cnf-flg
     (defthm good-cnf-of-aignet-lit->cnf
-      (implies (and (aignet-well-formedp aignet)
-                    (sat-lits-wfp sat-lits aignet)
+      (implies (and (sat-lits-wfp sat-lits aignet)
                     (aignet-litp x aignet))
                (b* (((mv sat-lits1 ?cnf1)
                      (aignet-lit->cnf x use-muxes
@@ -2427,8 +2365,7 @@ correctness criterion we've described.
                       (aignet-id-has-sat-var (lit-id x) sat-lits1))))
       :flag lit)
     (defthm good-cnf-of-aignet-lit-list->cnf
-      (implies (and (aignet-well-formedp aignet)
-                    (sat-lits-wfp sat-lits aignet)
+      (implies (and (sat-lits-wfp sat-lits aignet)
                     (aignet-lit-listp x aignet))
                (b* (((mv sat-lits1 ?cnf1)
                      (aignet-lit-list->cnf x use-muxes
@@ -2508,57 +2445,52 @@ correctness criterion we've described.
 
   (local (in-theory (enable equal-1-by-bitp)))
 
-  (encapsulate nil
-    (defthmd not-aignet-litp-when-node-type-3
-      (implies (and (equal (node->type (nth-node id (nth *nodesi* aignet)))
-                           (out-type))
-                    (id-equiv id (lit-id lit)))
-               (not (aignet-litp lit aignet)))
-      :hints(("Goal" :in-theory (enable aignet-litp))))
-    
-    (local (in-theory (enable not-aignet-litp-when-node-type-3)))
-    
-    (defthm lemma1
-      (implies (and (equal (id-val (lit-id x)) (id-val id))
-                    (aignet-litp x aignet)
-                    (not (equal (id->type id aignet) (gate-type)))
-                    (not (equal (id->type id aignet) (in-type))))
-               (equal (id-eval id invals regvals aignet) 0))
-      :hints(("Goal"
-              :expand ((id-eval id invals regvals aignet)
-                       (id-eval (lit-id x) invals regvals aignet)))))
+  (local (encapsulate nil
+           
+           (defthm lemma1
+             (implies (and (equal (lit-id x) (nfix id))
+                           (aignet-litp x aignet)
+                           (not (equal (id->type id aignet) (gate-type)))
+                           (not (equal (id->type id aignet) (in-type))))
+                      (equal (id-eval id invals regvals aignet) 0))
+             :hints(("Goal"
+                     :expand ((id-eval id invals regvals aignet)
+                              (id-eval (lit-id x) invals regvals aignet))
+                     :in-theory (enable aignet-litp))))
 
-    (defthm lemma2
-      (implies (and (aignet-litp x aignet)
-                    (not (equal (id->type (lit-id x) aignet) (gate-type)))
-                    (not (equal (id->type (lit-id x) aignet) (in-type))))
-               (equal (id-eval (lit-id x) invals regvals aignet) 0))
-      :hints(("Goal"
-              :expand ((id-eval id invals regvals aignet)
-                       (id-eval (lit-id x) invals regvals aignet))))))
+           (defthm lemma2
+             (implies (and (aignet-litp x aignet)
+                           (not (equal (id->type (lit-id x) aignet) (gate-type)))
+                           (not (equal (id->type (lit-id x) aignet) (in-type))))
+                      (equal (id-eval (lit-id x) invals regvals aignet) 0))
+             :hints(("Goal"
+                     :expand ((id-eval id invals regvals aignet)
+                              (id-eval (lit-id x) invals regvals aignet))
+                     :in-theory (enable aignet-litp))))))
 
 
   (defthmd cnf-eval-conjunction-when-aignet-vals-agree
     (implies (and (aignet-vals-agree-with-cnf
                    aignet sat-lits cnf-vals)
-                  (aignet-well-formedp aignet)
                   (sat-lits-wfp sat-lits aignet)
                   (aignet-lit-listp lits aignet)
                   (aignet-lits-have-sat-vars lits sat-lits))
-             (equal (let ((aignet-vals
+             (equal (let ((vals
                            (cnf->aignet-vals
-                            aignet-vals cnf-vals sat-lits aignet)))
+                            vals cnf-vals sat-lits aignet)))
                       (aignet-eval-conjunction
                        lits
                        (aignet-vals->invals
-                        invals aignet-vals aignet)
+                        invals vals aignet)
                        (aignet-vals->regvals
-                        regvals aignet-vals aignet)
+                        regvals vals aignet)
                        aignet))
                     (cnf-eval-conjunction
                      (aignet-lits->sat-lits lits sat-lits)
                      cnf-vals)))
-    :hints(("Goal" :in-theory (e/d (lit-eval satlink::eval-lit)
+    :hints(("Goal" :in-theory (e/d (lit-eval
+                                    aignet-eval-conjunction
+                                    satlink::eval-lit)
                                    (aignet-vals->invals
                                     aignet-vals->regvals)))))
 
@@ -2569,7 +2501,6 @@ correctness criterion we've described.
               (not (member-equal 0 (lit-collect-supergate
                                     (mk-lit id 0) top use-muxes nil
                                     aignet-refcounts aignet)))
-              (aignet-well-formedp aignet)
               (aignet-litp (mk-lit id 0) aignet))
              (equal (id-eval id aignet-invals aignet-regvals aignet)
                     (aignet-eval-conjunction
@@ -2577,43 +2508,41 @@ correctness criterion we've described.
                       (mk-lit id 0) top use-muxes nil
                       aignet-refcounts aignet)
                      aignet-invals aignet-regvals aignet)))
-    :hints (("goal" :in-theory (enable lit-eval collect-supergate-correct))))
+    :hints (("goal" :in-theory (enable lit-eval collect-supergate-correct
+                                       aignet-eval-conjunction))))
 
   (defthmd collect-supergate-correct-rw-when-0
     (implies (and (member-equal 0 (lit-collect-supergate
                                    (mk-lit id 0) top use-muxes nil
                                    aignet-refcounts aignet))
-                  (aignet-well-formedp aignet)
                   (aignet-litp (mk-lit id 0) aignet))
              (equal (id-eval id aignet-invals aignet-regvals aignet)
                     0))
     :hints (("goal" :use ((:instance collect-supergate-correct
                            (lit (mk-lit id 0))
                            (supergate nil)))
-             :in-theory (e/d (lit-eval)
+             :in-theory (e/d (lit-eval
+                              aignet-eval-conjunction)
                              (collect-supergate-correct)))))
 
   (local (in-theory (e/d ()
                          (collect-supergate-correct))))
 
 
-  (local (defthm aignet-litp-of-mk-lit-when-id-equiv
-           (implies (and (equal (id-val id) (id-val (lit-id x)))
+  (local (defthm aignet-litp-of-mk-lit-when-nat-equiv
+           (implies (and (equal (nfix id) (lit-id x))
                          (aignet-litp x aignet))
                     (aignet-litp (mk-lit id neg) aignet))
-           :hints(("Goal" :in-theory (e/d (aignet-litp id-fix)
-                                          (to-id-of-id-val))))))
+           :hints(("Goal" :in-theory (e/d (aignet-litp))))))
 
-  (local (defthm aignet-idp-of-when-id-equiv
-           (implies (and (equal (id-val id) (id-val (lit-id x)))
+  (local (defthm aignet-idp-of-when-nat-equiv
+           (implies (and (equal (nfix id) (lit-id x))
                          (aignet-litp x aignet))
-                    (aignet-idp (id-fix id) aignet))
-           :hints(("Goal" :in-theory (e/d (aignet-litp id-fix)
-                                          (to-id-of-id-val))))))
-
+                    (aignet-idp id aignet))
+           :hints(("Goal" :in-theory (e/d (aignet-litp
+                                           aignet-idp))))))
   (defthm aignet-vals-agree-with-cnf-of-add-input
     (implies (and (aignet-vals-agree-with-cnf aignet sat-lits cnf-vals)
-                  (aignet-well-formedp aignet)
                   (sat-lits-wfp sat-lits aignet)
                   (aignet-litp (mk-lit id neg) aignet)
                   (equal (id->type id aignet) (in-type)))
@@ -2653,8 +2582,7 @@ correctness criterion we've described.
     (defthm aignet-lit->cnf-preserves-aignet-vals-agree-with-cnf
       (b* (((mv ?sat-lits1 ?cnf1)
             (aignet-lit->cnf x use-muxes aignet-refcounts sat-lits aignet cnf)))
-        (implies (and (aignet-well-formedp aignet)
-                      (sat-lits-wfp sat-lits aignet)
+        (implies (and (sat-lits-wfp sat-lits aignet)
                       (aignet-litp x aignet)
                       (equal (satlink::eval-formula cnf1 cnf-vals) 1)
                       (aignet-vals-agree-with-cnf aignet sat-lits cnf-vals))
@@ -2664,8 +2592,7 @@ correctness criterion we've described.
     (defthm aignet-lit-list->cnf-preserves-aignet-vals-agree-with-cnf
       (b* (((mv ?sat-lits1 ?cnf1)
             (aignet-lit-list->cnf x use-muxes aignet-refcounts sat-lits aignet cnf)))
-        (implies (and (aignet-well-formedp aignet)
-                      (aignet-lit-listp x aignet)
+        (implies (and (aignet-lit-listp x aignet)
                       (sat-lits-wfp sat-lits aignet)
                       (equal (satlink::eval-formula cnf1 cnf-vals) 1)
                       (aignet-vals-agree-with-cnf aignet sat-lits cnf-vals))
@@ -2716,15 +2643,15 @@ correctness criterion we've described.
   (local (in-theory (enable sat-lit-listp-of-aignet-lits->sat-lits-rw)))
 
   (defthm aignet-vals-conjunction-of-aignet-eval
-    (implies (and (aignet-well-formedp aignet)
-                  (aignet-lit-listp lits aignet))
+    (implies (aignet-lit-listp lits aignet)
              (equal (aignet-vals-conjunction
-                     lits (aignet-eval aignet-vals aignet))
+                     lits (aignet-eval vals aignet))
                     (aignet-eval-conjunction
                      lits
-                     (aignet-vals->invals nil aignet-vals aignet)
-                     (aignet-vals->regvals nil aignet-vals aignet)
-                     aignet))))
+                     (aignet-vals->invals nil vals aignet)
+                     (aignet-vals->regvals nil vals aignet)
+                     aignet)))
+    :hints(("Goal" :in-theory (enable aignet-eval-conjunction))))
 
   (local (in-theory (disable
                      AIGNET-LIT->CNF-CNF-SATISFIED-IMPLIES-ORIG-CNF-SATISFIED
@@ -2754,16 +2681,16 @@ correctness criterion we've described.
                                                  cnf-vals))))))))
 
   (local (in-theory (disable mux-add-clauses-correct)))
-          
+  (local (in-theory (enable aignet-eval-conjunction)))
+
   (defthm-aignet-lit->cnf-flg
     (defthm aignet-lit->cnf-satisfiable
       (b* (((mv ?sat-lits1 ?cnf1)
             (aignet-lit->cnf x use-muxes aignet-refcounts sat-lits aignet cnf))
            (cnf-vals (aignet->cnf-vals
-                      (aignet-eval aignet-vals aignet)
+                      (aignet-eval vals aignet)
                       cnf-vals sat-lits1 aignet1)))
-        (implies (and (aignet-well-formedp aignet)
-                      (sat-lits-wfp sat-lits aignet)
+        (implies (and (sat-lits-wfp sat-lits aignet)
                       (aignet-litp x aignet)
                       (sat-lit-list-listp cnf sat-lits)                      
                       (equal (satlink::eval-formula cnf cnf-vals) 1))
@@ -2773,10 +2700,9 @@ correctness criterion we've described.
       (b* (((mv ?sat-lits1 ?cnf1)
             (aignet-lit-list->cnf x use-muxes aignet-refcounts sat-lits aignet cnf))
            (cnf-vals (aignet->cnf-vals
-                      (aignet-eval aignet-vals aignet)
+                      (aignet-eval vals aignet)
                       cnf-vals sat-lits1 aignet1)))
-        (implies (and (aignet-well-formedp aignet)
-                      (sat-lits-wfp sat-lits aignet)
+        (implies (and (sat-lits-wfp sat-lits aignet)
                       (aignet-lit-listp x aignet)
                       (sat-lit-list-listp cnf sat-lits)
                       (equal (satlink::eval-formula cnf cnf-vals) 1))
@@ -2802,14 +2728,14 @@ correctness criterion we've described.
   ;; sat-lits; sat-lits is well-formed; aignet is well-formed.
 
   (defun-sk cnf-for-aignet (aignet cnf sat-lits)
-    (forall (aignet-vals cnf-vals aignet1)
+    (forall (vals cnf-vals aignet1)
             (and (implies (equal (satlink::eval-formula cnf cnf-vals) 1)
                           (aignet-vals-agree-with-cnf
                            aignet sat-lits cnf-vals))
                  (equal (satlink::eval-formula
                          cnf
                          (aignet->cnf-vals
-                          (aignet-eval aignet-vals aignet)
+                          (aignet-eval vals aignet)
                           cnf-vals sat-lits aignet1))
                         1)))
     :rewrite :direct)
@@ -2825,8 +2751,7 @@ correctness criterion we've described.
   (defthm cnf-for-aignet-preserved-by-aignet-lit->cnf
     (b* (((mv sat-lits1 cnf1)
           (aignet-lit->cnf x use-muxes aignet-refcounts sat-lits aignet cnf)))
-      (implies (and (aignet-well-formedp aignet)
-                    (cnf-for-aignet aignet cnf sat-lits)
+      (implies (and (cnf-for-aignet aignet cnf sat-lits)
                     (sat-lits-wfp sat-lits aignet)
                     (aignet-litp x aignet)
                     (sat-lit-list-listp cnf sat-lits))
@@ -2837,12 +2762,9 @@ correctness criterion we've described.
 
   (defthm cnf-for-aignet-preserved-by-aignet-extension
     (implies (and (aignet-extension-binding)
-                  (aignet-extension-p new-aignet orig-aignet)
-                  (cnf-for-aignet orig-aignet cnf sat-lits)
-                  (aignet-well-formedp orig-aignet)
-                  (aignet-well-formedp new-aignet)
-                  (sat-lits-wfp sat-lits orig-aignet))
-             (cnf-for-aignet new-aignet cnf sat-lits))
+                  (cnf-for-aignet orig cnf sat-lits)
+                  (sat-lits-wfp sat-lits orig))
+             (cnf-for-aignet new cnf sat-lits))
     :hints (("goal" :do-not-induct t)
             (and stable-under-simplificationp
                  `(:expand (,(car (last clause))))))
@@ -2856,11 +2778,10 @@ correctness criterion we've described.
   ;; satisfying assignment of the CNF + cube literals gives a satisfying
   ;; evaluation of the cube.
   (defthm cnf-for-aignet-implies-cube-sat-when-cnf-sat
-    (b* ((aignet-vals (cnf->aignet-vals aignet-vals cnf-vals sat-lits aignet))
-         (aignet-invals (aignet-vals->invals aignet-invals aignet-vals aignet))
-         (aignet-regvals (aignet-vals->regvals aignet-regvals aignet-vals aignet)))
-      (implies (and (aignet-well-formedp aignet)
-                    (sat-lits-wfp sat-lits aignet)
+    (b* ((vals (cnf->aignet-vals vals cnf-vals sat-lits aignet))
+         (aignet-invals (aignet-vals->invals aignet-invals vals aignet))
+         (aignet-regvals (aignet-vals->regvals aignet-regvals vals aignet)))
+      (implies (and (sat-lits-wfp sat-lits aignet)
                     (cnf-for-aignet aignet cnf sat-lits)
                     (aignet-lit-listp cube aignet)
                     (aignet-lits-have-sat-vars cube sat-lits)
@@ -2871,40 +2792,40 @@ correctness criterion we've described.
                        (aignet-lits->sat-lits cube sat-lits)
                        cnf-vals))))
     :hints(("Goal" :in-theory (enable lit-eval
-                                      satlink::eval-lit))))
+                                      satlink::eval-lit
+                                      aignet-eval-conjunction))))
 
   ;; And vice versa.
   (defthm cnf-for-aignet-implies-cnf-sat-when-cube-sat
-    (b* ((aignet-vals (aignet-eval
-                       aignet-vals
+    (b* ((vals (aignet-eval
+                       vals
                        ;; (aignet-invals->vals
                        ;;  aignet-invals
                        ;;  (aignet-regvals->vals
-                       ;;   aignet-regvals aignet-vals aignet)
+                       ;;   aignet-regvals vals aignet)
                        ;;  aignet)
                        aignet))
          (cnf-vals (aignet->cnf-vals
-                    aignet-vals
+                    vals
                     cnf-vals sat-lits aignet1)))
-      (implies (and (aignet-well-formedp aignet)
-                    (sat-lits-wfp sat-lits aignet)
+      (implies (and (sat-lits-wfp sat-lits aignet)
                     (cnf-for-aignet aignet cnf sat-lits)
                     (aignet-lit-listp cube aignet)
                     (aignet-lits-have-sat-vars cube sat-lits))
                (equal (cnf-eval-conjunction
                        (aignet-lits->sat-lits cube sat-lits)
                        cnf-vals)
-                      (aignet-vals-conjunction cube aignet-vals))))
+                      (aignet-vals-conjunction cube vals))))
     :hints(("Goal" :in-theory (enable lit-eval
-                                      satlink::eval-lit))))
+                                      satlink::eval-lit
+                                      aignet-eval-conjunction))))
 
   ;; Same thing but for a single literal instead of a cube
   (defthm cnf-for-aignet-implies-lit-sat-when-cnf-sat
-    (b* ((aignet-vals (cnf->aignet-vals aignet-vals cnf-vals sat-lits aignet))
-         (aignet-invals (aignet-vals->invals aignet-invals aignet-vals aignet))
-         (aignet-regvals (aignet-vals->regvals aignet-regvals aignet-vals aignet)))
-      (implies (and (aignet-well-formedp aignet)
-                    (sat-lits-wfp sat-lits aignet)
+    (b* ((vals (cnf->aignet-vals vals cnf-vals sat-lits aignet))
+         (aignet-invals (aignet-vals->invals aignet-invals vals aignet))
+         (aignet-regvals (aignet-vals->regvals aignet-regvals vals aignet)))
+      (implies (and (sat-lits-wfp sat-lits aignet)
                     (cnf-for-aignet aignet cnf sat-lits)
                     (aignet-litp lit aignet)
                     (aignet-id-has-sat-var (lit-id lit) sat-lits)
@@ -2917,26 +2838,25 @@ correctness criterion we've described.
                                       satlink::eval-lit))))
 
   (defthm cnf-for-aignet-implies-cnf-sat-when-lit-sat
-    (b* ((aignet-vals (aignet-eval
-                       aignet-vals
+    (b* ((vals (aignet-eval
+                       vals
                        ;; (aignet-invals->vals
                        ;;  aignet-invals
                        ;;  (aignet-regvals->vals
-                       ;;   aignet-regvals aignet-vals aignet)
+                       ;;   aignet-regvals vals aignet)
                        ;;  aignet)
                        aignet))
          (cnf-vals (aignet->cnf-vals
-                    aignet-vals
+                    vals
                     cnf-vals sat-lits aignet1)))
-      (implies (and (aignet-well-formedp aignet)
-                    (sat-lits-wfp sat-lits aignet)
+      (implies (and (sat-lits-wfp sat-lits aignet)
                     (cnf-for-aignet aignet cnf sat-lits)
                     (aignet-litp lit aignet)
                     (aignet-id-has-sat-var (lit-id lit) sat-lits))
                (equal (satlink::eval-lit
                        (aignet-lit->sat-lit lit sat-lits)
                        cnf-vals)
-                      (aignet-eval-lit lit aignet-vals)
+                      (aignet-eval-lit lit vals)
                       ;; (lit-eval lit aignet-invals aignet-regvals aignet)
                       )))
     :hints(("Goal" :in-theory (enable lit-eval
