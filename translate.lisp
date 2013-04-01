@@ -5528,10 +5528,7 @@
                                ,updated-guarded-consumer)))))
                    (no-dups-exprs
                     (no-duplicatesp-checks-for-stobj-let-actuals actuals nil)))
-              (cond (no-dups-exprs
-                     `(prog2$ (and ,@no-dups-exprs)
-                              ,form))
-                    (t form)))))))
+              `(progn$ ,@no-dups-exprs ,form))))))
 
 (defun the-live-var (name)
 

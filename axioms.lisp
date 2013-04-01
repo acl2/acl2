@@ -18259,10 +18259,10 @@
   is either a ~ilc[type-spec] or ~c[(ARRAY] ~ilc[type-spec] ~c[(max))], each
   ~c[vali] is an object satisfying ~c[typei], and each ~c[bi] is ~c[t] or
   ~c[nil].  Each pair ~c[:initially vali] and ~c[:resizable bi] may be omitted;
-  more on this below.  The ~c[:renaming alist] argument is optional and allows the user
-  to override the default function names introduced by this event.  The
-  ~ilc[doc-string] is also optional.  The ~c[:inline flg] Boolean argument is
-  also optional and declares to ACL2 that the generated access and update
+  more on this below.  The ~c[:renaming alist] argument is optional and allows
+  the user to override the default function names introduced by this event.
+  The ~ilc[doc-string] is also optional.  The ~c[:inline flg] Boolean argument
+  is also optional and declares to ACL2 that the generated access and update
   functions for the stobj should be implemented as macros under the hood (which
   has the effect of inlining the function calls).  The optional
   ~c[:congruent-to old-stobj-name] argument specifies an existing stobj with
@@ -18282,15 +18282,25 @@
   ~c[name], which has as its initial logical value a list of ~c[k] elements,
   where ~c[k] is the number of ``field descriptors'' provided.  The elements
   are listed in the same order in which the field descriptors appear.  If the
-  ~c[:type] of a field is ~c[(ARRAY type-spec (max))] then ~c[max] is a
-  non-negative integer or a constant (~pl[defconst]) whose value is a
-  non-negative integer, and the corresponding element of the stobj is initially
-  of length specified by ~c[max] containing the value, ~c[val], specified by
-  ~c[:initially val].  Otherwise, the ~c[:type] of the field is a
-  ~ilc[type-spec] and the corresponding element of the stobj is the specified
-  initial value ~c[val].  (The actual representation of the stobj in the
-  underlying Lisp may be quite different; ~pl[stobj-example-2].  For the moment
-  we focus entirely on the logical aspects of the object.)
+  ~c[:type] of a field is ~c[(ARRAY type-indicator (max))] then ~c[max] is a
+  non-negative integer or a symbol introduced by ~ilc[defconst]) whose value is
+  a non-negative integer, and the corresponding element of the stobj is
+  initially of length specified by ~c[max].
+
+  Whether the value ~c[:type] is of the form ~c[(ARRAY type-indicator (max))]
+  or, otherwise, just ~c[type-indicator], then ~c[type-indicator] is typically
+  a type-spec; ~pl[type-spec].  However, ~c[type-indicator] can also be the
+  name of a stobj that was previously introduced (by ~c[defstobj] or
+  ~ilc[defabsstobj]).  We ignore this ``nested stobj'' case below;
+  ~pl[stobj-let] for a discussion of stobjs within stobjs.
+
+  The keyword value ~c[:initially val] specifies the initial value of a field,
+  except for the case of a ~c[:type] ~c[(ARRAY type-indicator (max))], in which
+  case ~c[val] is the initial value of the corresponding array.
+
+  Note that the actual representation of the stobj in the underlying Lisp may
+  be quite different; ~pl[stobj-example-2].  For the moment we focus entirely
+  on the logical aspects of the object.
 
   In addition, the ~c[defstobj] event introduces functions for recognizing and
   creating the stobj and for recognizing, accessing, and updating its fields.
@@ -18309,9 +18319,10 @@
   are not evaluated.  If omitted, the type defaults to ~c[t] (unrestricted) and
   the initial value defaults to ~c[nil].
 
-  Each ~c[typei] must be either a ~ilc[type-spec] or else a list of the form
-  ~c[(ARRAY type-spec (max))].  The latter forms are said to be ``array
-  types.''  Examples of legal ~c[typei] are:
+  Each ~c[typei] must be either a ~ilc[type-spec] (with the exception noted
+  above for nested stobjs, discussed elsewhere; ~pl[stobj-let]) or else a list
+  of the form ~c[(ARRAY type-spec (max))].  The latter forms are said to be
+  ``array types.''  Examples of legal ~c[typei] are:
   ~bv[]
   (INTEGER 0 31)
   (SIGNED-BYTE 31)

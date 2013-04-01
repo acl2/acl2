@@ -24704,8 +24704,10 @@
   ~c[(FOO (UPDATE-FIELD1 3 ST))] write
   ~c[(LET ((ST (UPDATE-FIELD1 3 ST))) (FOO ST))].
 
-  o The accessors and updaters have a formal parameter named ~c[OBJ], thus,
-  those functions can only be applied to the current object.
+  o The accessors and updaters have a formal parameter named ~c[OBJ], so by the
+  rule just above, those functions can only be applied to the current object.
+  The recognizer is the one exception to the rule: it may be applied either the
+  ~c[OBJ] or to an ordinary (non-stobj) object.
 
   o The ACL2 primitives, such as ~c[CONS], ~c[CAR] and ~c[CDR], may not be
   applied to the variable ~c[OBJ].  Thus, for example, obj may not be consed
@@ -26400,14 +26402,505 @@
 
 (defmacro stobj-let (&whole x &rest args)
 
+; WARNING: This documentation contains examples from community book
+; misc/nested-stobj-tests.lisp.  If you change those examples here, change them
+; also in that book.
+
   ":Doc-Section stobj
 
-  accessing and updating stobj fields of stobjs~/
+  using ~il[stobj]s that contain stobjs~/
 
-  To be written.  For now, see ACL2 community book
-  ~c[demos/modeling/nested-stobj-toy-isa.lisp] for an example.  Additional
-  examples may be found in ACL2 community book
-  ~c[misc/nested-stobj-tests.lisp].~/~/"
+  For this topic we assume that you already understand the basics of
+  single-threaded objects in ACL2.  ~l[stobj], and in particular,
+  ~pl[defstobj].  The latter topic defers discussion of the ability to specify
+  a stobj field that is itself a stobj or an array of stobjs.  That discussion
+  is the subject of the present ~il[documentation] topic.
+
+  Our presentation is in four sections.  First we augment the documentation for
+  ~ilc[defstobj] by explaining how stobjs may be specified for fields in a new
+  stobj definition.  Then we explain an aliasing problem, which accounts for a
+  prohibition against making direct calls to accessors and updaters involving
+  stobj fields of stobjs.  Next, we introduce an ACL2 primitive, ~c[stobj-let],
+  which provides the only way to read and write stobj components of stobjs.
+  The final section provides precise documentation for ~c[stobj-let].
+
+  See also ACL2 community book ~c[demos/modeling/nested-stobj-toy-isa.lisp] for
+  a worked example, which applies nested stobj structures to defining
+  interpreters.  A variety of small additional examples may be found in ACL2
+  community book ~c[misc/nested-stobj-tests.lisp].  For further discussion, you
+  are welcome to read the ``Essay on Nested Stobjs'', a long comment in ACL2
+  source file ~c[other-events.lisp].  However, this documentation topic is
+  intended to be self-contained for those familiar with stobjs.
+
+  SECTION: Extension of ~ilc[defstobj] to permit ~il[stobj]s within stobjs
+
+  Recall that the ~c[:type] keyword of a ~ilc[defstobj] field descriptor can
+  specify the type of the field as a type-spec (~pl[type-spec]).  For example,
+  the following specifies an integer field and a field that is an array of
+  bytes.
+  ~bv[]
+    (defstobj st
+      (int-field :type integer :initially 0)
+      (ar-field :type (array unsigned-byte (10)) :initially 0))
+  ~ev[]
+  But the ~c[:type] of a stobj field descriptor may instead be based on a
+  stobj.  For example, the following sequence of three ~il[events] is legal.
+  The first field descriptor of ~c[top], named ~c[sub1-field], illustrates one
+  new kind of value for ~c[:type]: the name of a previously-introduced stobj,
+  which here is ~c[sub1]. The second field descriptor of ~c[top], named
+  ~c[sub2-ar-field], illustrates the other new kind of value for ~c[:type]: an
+  array whose elements are specified by the name of a previously-introduced
+  stobj, in this case, the stobj ~c[sub2].
+  ~bv[]
+    (defstobj sub1 fld1)
+    (defstobj sub2 fld2)
+    (defstobj top
+      (sub1-field :type sub1)
+      (sub2-ar-field :type (array sub2 (10))))
+  ~ev[]
+  The ~c[:initially] keyword is illegal for fields whose ~c[:type] is a stobj
+  or an array of stobjs.  Each such initial value is provided by a
+  corresponding call of the stobj creator for that stobj.  In particular, in
+  the case of an array of stobjs, the stobj creator is called once for each
+  element of the array, so that the array elements are distinct.  For example,
+  each element of ~c[sub2-ar-field] in the example above is initially provided
+  by a separate call of ~c[create-sub2].  Each initial element is thus unique,
+  and in particular is distinct from the initial global value of the stobj.
+  Similarly, the initial global stobj for ~c[sub1] is distinct from the initial
+  ~c[sub1-field] field of the global stobj for ~c[top], as these result from
+  separate calls of ~c[create-sub1].
+
+  When a stobj is used in a field of another stobj, we may refer to the former
+  field as a ``child stobj'' and the latter stobj as a ``parent stobj''.  So in
+  the example above, ~c[sub1-field] is a child stobj of type ~c[sub1] for
+  parent stobj ~c[top], and ~c[sub2-ar-field] is an array of child stobjs of
+  type ~c[sub2] for parent stobj ~c[top].  A child stobj has the same
+  structural shape as the global stobj of its type, but as explained above,
+  these are distinct structures.  We follow standard terminology by saying
+  ``isomorphic'' to indicate the same structural shape.  So for example, (the
+  value of) ~c[sub1-field] is isomorphic to ~c[sub1], though these are distinct
+  structures.
+
+  SECTION: An aliasing problem
+
+  Before introducing ~c[stobj-let] below, we provide motivatation for this
+  ACL2 primitive.
+
+  Consider the following ~il[events].
+  ~bv[]
+    (defstobj child fld)
+    (defstobj parent
+      (fld2 :type child))
+  ~ev[]
+  Now suppose we could evaluate the following code, to be run immediately after
+  admitting the two ~ilc[defstobj] events above.
+  ~bv[]
+    (let* ((child (fld2 parent))
+           (child (update-fld 3 child)))
+      (mv child parent))
+  ~ev[]
+  Now logically there is no change to ~c[parent]: ~c[parent] is passed through
+  unchanged.  We can indeed prove that fact!
+  ~bv[]
+    (thm (equal (mv-nth 1
+                        (let* ((child (fld2 parent))
+                               (child (update-fld 3 child)))
+                          (mv child parent)))
+                parent))
+  ~ev[]
+  But recall that stobjs are updated with destructive assignments.  That is, we
+  really are updating ~c[(fld2 parent)] to be the new value of ~c[child],
+  whether this is explained logically or not.  Thus, evaluation of the above
+  ~ilc[let*] form does in fact change the actual global stobj, ~c[parent].
+
+  (Aside: Here is an explanation involving raw Lisp, for those who might find
+  this useful.  We escape to raw Lisp and execute the following; note that
+  ~c[*the-live-parent*] is the Lisp variable representing the global value of
+  ~c[parent].
+  ~bv[]
+  (let ((parent *the-live-parent*))
+    (let* ((child (fld2 parent))
+           (child (update-fld 4 child)))
+      (mv child parent)))
+  ~ev[]
+  Then, in raw Lisp, ~c[(fld (fld2 *the-live-parent*))] evaluates to ~c[4],
+  illustrating the destructive update.  End of Aside.)
+
+  Such aliasing can permit a change to a child stobj to cause a
+  logically-inexplicable change to the parent stobj.  Similarly, unfettered
+  accessing of stobj fields can result in logically inexplicable changes to the
+  child stobj when the parent stobj is changed.  Thus, ACL2 disallows direct
+  calls of stobj accessors and updaters for fields whose ~c[:type] is a stobj
+  or an array of stobjs.  Instead, ACL2 provides ~c[stobj-let] for reading and
+  writing such fields in a sound manner.
+
+  SECTION: Accessing and updating stobj fields of stobjs using ~c[stobj-let]
+
+  ACL2 provides a primitive, ~c[stobj-let], to access and update stobj fields
+  of stobjs, in a manner that avoids the aliasing problem discussed above.  In
+  this section we provide an informal introduction to ~c[stobj-let], using
+  examples, to be followed in the next section by precise documentation.
+
+  We begin by returning to a slight variant of the example above.
+  ~bv[]
+    (defstobj child fld)
+    (defstobj parent 
+      (fld2 :type child)
+      fld3)
+  ~ev[]
+  The following form returns the result of updating the ~c[fld2] field of
+  ~c[parent], which is a stobj isomorphic to ~c[child], to have a value of 3.
+  Below we explain the terms ``bindings'', ``producer variables'',
+  ``producer'', and ``consumer'', as well as how to understand the form above.
+  ~bv[]
+    (stobj-let
+     ((child (fld2 parent)))  ; bindings
+     (child)                  ; producer variable(s)
+     (update-fld 3 child)     ; producer
+     (update-fld3 'a parent)) ; consumer
+  ~ev[]
+  The four lines under ``~c[stobj-let]'' just above can be understood,
+  respectively, as follows.
+  ~bf[]
+  o Bindings:
+      Bind ~c[child] to ~c[(fld2 parent)].
+  o Producer variable(s) and producer:
+      Bind the producer variable, ~c[child], to
+      the value of the producer, ~c[(update-fld 3 child)].
+  o Implicit extra step:
+      Update ~c[fld2] of ~c[parent] with the producer variable, ~c[child].
+  o Consumer:
+      Finally, return ~c[(update-fld3 'a parent)].
+  ~ef[]
+  Thus, the logical expansion of the ~c[stobj-let] form above is the following
+  expression, though this is approximate (see below).
+  ~bv[]
+    (let ((child (fld2 parent))) ; bindings
+      (let ((child (update-fld 3 child))) ; bind producer vars to producer
+        (let ((parent (update-fld2 child parent))) ; update parent
+          (update-fld3 'a parent))))
+  ~ev[]
+  The bindings always bind distinct names to child stobjs of a unique parent
+  stobj, where the child stobj corresponds to the ~c[:type] associated with the
+  indicated accessor in the ~ilc[defstobj] form for the parent stobj.  Thus in
+  this case, for the unique binding, variable ~c[child] is bound to the stobj
+  of `type' ~c[child] for accessor ~c[fld2] of the parent stobj, ~c[parent].
+  We refer to ~c[child] from the bindings as a ``stobj-let-bound variable''.
+  Note also that the ``implicit extra step'' mentioned above is generated by
+  macroexpansion of ~c[stobj-let]; it logically updates the parent with new
+  child values, just before calling the consumer.  Implementation note:
+  Destructive updating in raw Lisp lets us omit this implicit extra step.
+
+  The form above is equivalent to the form displayed just below, which differs
+  only in specifying an explicit stobj updater corresponding to the stobj
+  accessor, ~c[fld2].  Here we show the default updater name, whose name has
+  ~c[\"UPDATE-\"] prepended to the name of the accessor.  But if the
+  ~c[:RENAMING] field of the ~c[defstobj] event specified a different updater
+  name corresponding to ~c[fld2], then that would need to be included where we
+  have added ~c[update-fld2] below.
+  ~bv[]
+    (stobj-let
+     ((child (fld2 parent) update-fld2)) ; bindings, including updater(s)
+     (child)                  ; producer variables
+     (update-fld 3 child)     ; producer
+     (update-fld3 'a parent)) ; consumer
+  ~ev[]
+
+  If you try to evaluate (either version of) the above ~c[stobj-let] form in
+  the top-level loop, you will get an error.  For technical reasons, ACL2
+  limits ~c[stobj-let] computation on ``live'' stobjs (as opposed to list
+  structures that happen to satisfy stobj recognizers) to be within function
+  bodies.  The following edited log illustrates how ~c[stobj-let] may be used
+  in function bodies.
+  ~bv[]
+    ACL2 !>(defstobj child fld)
+
+    Summary
+    Form:  ( DEFSTOBJ CHILD ...)
+    Rules: NIL
+    Time:  0.02 seconds (prove: 0.00, print: 0.00, other: 0.02)
+     CHILD
+    ACL2 !>(defstobj parent
+             (fld2 :type child)
+             fld3)
+
+    Summary
+    Form:  ( DEFSTOBJ PARENT ...)
+    Rules: NIL
+    Time:  0.02 seconds (prove: 0.00, print: 0.00, other: 0.02)
+     PARENT
+    ACL2 !>(defun f (parent)
+             (declare (xargs :stobjs parent))
+             (stobj-let
+              ((child (fld2 parent)))   ; bindings
+              (child)                   ; producer variables
+              (update-fld 3 child)      ; producer
+              (update-fld3 'a parent))) ; consumer
+    [[output omitted]]
+     F
+    ACL2 !>(f parent)
+    <parent>
+    ACL2 !>(defun check-f (parent)
+             ; returns the value of the field of the child stobj
+             (declare (xargs :stobjs parent))
+             (stobj-let
+              ((child (fld2 parent))) ; bindings
+              (val)                   ; producer variables
+              (fld child)             ; producer
+              val))                   ; consumer
+    [[output omitted]]
+     CHECK-F
+    ACL2 !>(check-f parent)
+    3
+    ACL2 !>
+  ~ev[]
+
+  Notice that the second function defined above, ~c[check-f], uses a
+  ~c[stobj-let] form that returns an ordinary value: it reads a value from a
+  child stobj, but does not write to the child stobj, as indicated by the lack
+  of a child stobj among the producer variables.  So for that ~c[stobj-let]
+  form, there is no implicit extra step.
+
+  For the ~c[stobj-let] expansion displayed earlier above, we said it was
+  ``approximate'' for two reasons, which we give here informally.  (You can
+  apply ~c[:]~ilc[trans1] to the ~c[stobj-let] call above to see the formal
+  expansion.)  First, ~c[stobj-let] declares the stobj-let-bound variables to
+  be ~c[ignorable] for the top ~c[let] bindings.  Second, and more importantly,
+  ~c[stobj-let] imposes the following restrictions on the producer and
+  consumer, to avoid the aliasing problem: it disallows references to the
+  parent stobj in the producer and it also disallows references to any bound
+  stobj (i.e., bound in the bindings) in the consumer.
+
+  We conclude this section with examples based on a slight variation of the
+  nested stobj example from the first section above.  These events can also be
+  found in ACL2 community book ~c[misc/nested-stobj-tests.lisp], immediately
+  under the following comment:
+  ~bv[]
+  ; As promised in :doc stobj-let, we begin with an example from that :doc.
+  ~ev[]
+  Note that some lemmas were needed in order to complete the ~il[guard] proof
+  for the function ~c[update-top], which may be found in the above file; they
+  are omitted below.
+
+  First we introduce three stobjs.
+  ~bv[]
+    (defstobj kid1 fld1)
+    (defstobj kid2 fld2)
+    (defstobj mom
+      (kid1-field :type kid1)
+      (kid2-ar-field :type (array kid2 (5)))
+      last-op)
+  ~ev[]
+  The next function takes a given index and a ~c[mom] stobj, and swaps the
+  value stored in the stobj in ~c[mom]'s ~c[kid2-ar-field] array at that index
+  with the value stored in the stobj in ~c[mom]'s ~c[kid1-field] field.
+  ~bv[]
+    (defun mom-swap-fields (index mom)
+      (declare (xargs :stobjs mom
+                      :guard (and (natp index)
+                                  (< index (kid2-ar-field-length mom)))))
+      (stobj-let
+       ((kid1 (kid1-field mom))
+        (kid2 (kid2-ar-fieldi index mom)))
+       (kid1 kid2)
+       (let* ((val1 (fld1 kid1))
+              (val2 (fld2 kid2))
+              (kid1 (update-fld1 val2 kid1))
+              (kid2 (update-fld2 val1 kid2)))
+         (mv kid1 kid2))
+       (update-last-op 'swap mom)))
+  ~ev[]
+  Function ~c[mom.kid1-fld1] stores a given value in the given ~c[mom]'s
+  ~c[kid1-fld1] field.
+  ~bv[]
+    (defun mom.kid1-fld1 (val mom)
+      (declare (xargs :stobjs mom))
+      (stobj-let
+       ((kid1 (kid1-field mom)))
+       (kid1)
+       (update-fld1 val kid1)
+       (update-last-op val mom)))
+  ~ev[]
+  We next combine the two functions above, according to an ~c[op] argument, as
+  indicated by the following definition.
+  ~bv[]
+    (defun update-mom (op mom)
+      (declare (xargs :stobjs mom))
+      (cond ((and (consp op)
+                  (eq (car op) 'swap)
+                  (natp (cdr op))
+                  (< (cdr op) (kid2-ar-field-length mom)))
+             (mom-swap-fields (cdr op) mom))
+            (t (mom.kid1-fld1 op mom))))
+  ~ev[]
+  The following checker function uses a ~c[stobj-let] form like the ones above,
+  a major difference being that the producer variable is not a stobj, since it
+  does not modify the input stobj, ~c[mom].
+  ~bv[]
+    (defun check-update-mom (index val1 val2 last-op mom)
+        (declare (xargs :stobjs mom
+                        :mode :program
+                        :guard
+                        (or (null index)
+                            (and (natp index)
+                                 (< index (kid2-ar-field-length mom))))))
+        (and (equal (last-op mom) last-op)
+             (stobj-let
+              ((kid1 (kid1-field mom))
+               (kid2 (kid2-ar-fieldi index mom)))
+              (val) ; producer variables
+              (and (equal val1 (fld1 kid1))
+                   (equal val2 (fld2 kid2)))
+              val)))
+  ~ev[]
+  Now let us run our update function to populate some fields within the ~c[mom]
+  stobj.
+  ~bv[]
+    (let* ((mom ; set mom to (3 (x0 x1 x2 x3 x4))
+             (update-mom 3 mom))
+            (mom ; set mom to (x1 (x0 3 x2 x3 x4))
+             (update-mom '(swap . 1) mom))
+            (mom ; set mom to (7 (x0 3 x2 x3 x4))
+             (update-mom 7 mom))
+            (mom ; set mom to (x0 (7 3 x2 x3 x4))
+             (update-mom '(swap . 0) mom))
+            (mom ; set mom to (5 (7 3 x2 x3 x4))
+             (update-mom 5 mom))
+            (mom ; set mom to (7 (5 3 x2 x3 x4))
+             (update-mom '(swap . 0) mom)))
+       mom)
+  ~ev[]
+  Are the above values of 7, 5, and 3 as expected, with a last operation being
+  a swap?  Yes!
+  ~bv[]
+    ACL2 !>(and (check-update-mom 0 7 5 'swap mom)
+                (check-update-mom 1 7 3 'swap mom))
+    T
+    ACL2 !>
+  ~ev[]
+  Notice that above, we never tried to access two different entries of the
+  array.  This can be done, but we need to bind two different stobjs to those
+  fields.  Fortunately, congruent stobjs make this possible; ~pl[defstobj], in
+  particular the discussion of congruent stobjs.  Since we want to bind two
+  stobjs to values in the array that are isomorphic to the stobj ~c[kid2], we
+  introduce a stobj congruent to ~c[kid2].
+  ~bv[]
+    (defstobj kid2a fld2a :congruent-to kid2)
+  ~ev[]
+  Then we can define our swapping function as follows.  The ~il[guard] proof
+  obligation includes the requirement that the two indices be distinct, again
+  to avoid an aliasing problem.
+  ~bv[]
+    (defun mom-swap-indices (i1 i2 mom)
+      (declare (xargs :stobjs mom
+                      :guard (and (natp i1)
+                                  (< i1 (kid2-ar-field-length mom))
+                                  (natp i2)
+                                  (< i2 (kid2-ar-field-length mom))
+                                  (not (equal i1 i2)))))
+      (stobj-let
+       ((kid2 (kid2-ar-fieldi i1 mom))
+        (kid2a (kid2-ar-fieldi i2 mom)))
+       (kid2 kid2a)
+       (let* ((val2 (fld2 kid2))
+              (val2a (fld2 kid2a))
+              (kid2 (update-fld2 val2a kid2))
+              (kid2a (update-fld2 val2 kid2a)))
+         (mv kid2 kid2a))
+       mom))
+  ~ev[]
+  The aforementioned community book, ~c[misc/nested-stobj-tests.lisp], contains
+  a corresponding checker immediately following this definition.
+
+  SECTION: Precise documentation for ~c[stobj-let]
+
+  ~bv[]
+  General Form:
+  (stobj-let
+   BINDINGS
+   PRODUCER-VARIABLES
+   PRODUCER
+   CONSUMER)
+  ~ev[]
+  where ~c[PRODUCER-VARIABLES] is a non-empty true list of legal variable names
+  without duplicates, ~c[PRODUCER] and ~c[CONSUMER] are expressions, and
+  ~c[BINDINGS] is a list subject to the following requirements.
+
+  ~c[BINDINGS] is a non-empty true list of tuples, each of which has the form
+  ~c[(VAR ACCESSOR)] or ~c[(VAR ACCESSOR UPDATER)].  There is a stobj name,
+  ~c[ST], previously introduced by ~ilc[defstobj] (not ~ilc[defabsstobj]), such
+  that each ~c[accessor] is of the form ~c[(ACC ST)] or ~c[(ACCi I ST)], with
+  the same stobj name (~c[ST]) for each binding.  In the case ~c[(ACC ST)],
+  ~c[ACC] is the accessor for a non-array field of ~c[ST].  In the case
+  ~c[(ACCi I ST)], ~c[ACCi] is the accessor for an array field of ~c[ST], and
+  ~c[I] is either a variable, a natural number, a list ~c[(quote N)] where
+  ~c[N] is a natural number, or a symbol introduced by ~ilc[defconst].  If
+  ~c[UPDATER] is supplied, then it is a symbol that is the name of the stobj
+  updater for the field of ~c[ST] accessed by ~c[ACCESSOR].  If ~c[UPDATER] is
+  not supplied, then for the discussion below we consider it to be, implicitly,
+  the symbol in the same package as the function symbol of ~c[ACCESSOR] (i.e.,
+  ~c[ACC] or ~c[ACCi]), obtained by prepending the string ~c[\"UPDATE-\"] to
+  the ~ilc[symbol-name] of that function symbol.  Finally, ~c[ACCESSOR] has a
+  ~il[signature] specifying a return value that is either ~c[ST] or is stobj
+  that is congruent to ~c[ST].
+
+  If the conditions above are met, then the General Form expands to the one of
+  the following expressions, depending on whether the list
+  ~c[PRODUCER-VARIABLES] has one member or more than one member, respectively.
+  (But see below for extra code that may be inserted if there are stobj array
+  accesses in ~c[BINDINGS].)  Here we write ~c[STOBJ-LET-BOUND-VARS] for the
+  list of variables ~c[VAR] discussed above, i.e., for
+  ~c[(strip-cars BINDINGS)].  And, we write ~c[UPDATES] for the result of
+  mapping through ~c[PRODUCER-VARIABLES] and, for each variable ~c[VAR] that
+  has a binding ~c[(VAR ACCESSOR UPDATER)] in ~c[BINDINGS] (where ~c[UPDATER]
+  may be implicit, as discussed above), collect into ~c[UPDATES] the tuple
+  ~c[(ST (UPDATER VAR ST))].
+
+  For ~c[PRODUCER-VARIABLES] = ~c[(PRODUCER-VAR)]:
+  ~bv[]
+    (let BINDINGS
+      (declare (ignorable . STOBJ-LET-BOUND-VARIABLES))
+      (let ((PRODUCER-VAR PRODUCER))
+        (let* UPDATES
+          CONSUMER)))
+  ~ev[]
+
+  Otherwise:
+  ~bv[]
+    (let BINDINGS
+      (declare (ignorable . STOBJ-LET-BOUND-VARIABLES))
+      (mv-let PRODUCER-VARS
+              PRODUCER
+              (let* UPDATES
+                CONSUMER)))
+  ~ev[]
+  Moreover, ACL2 places restrictions on the resulting expression: ~c[ST] must
+  not occur free in ~c[PRODUCER], and every variable in
+  ~c[STOBJ-LET-BOUND-VARIABLES] must not occur free in ~c[CONSUMER].
+
+  ~c[Stobj-let] forms can be evaluated using ordinary objects in theorem
+  contexts, much as any form.  They can also, of course, appear in function
+  bodis.  However, a ~c[stobj-let] form cannot be evaluated directly in the
+  top-level loop or other top-level contexts for execution (such as during
+  ~ilc[make-event] expansion).
+
+  Finally, let ~c[FORM] denote the form displayed above (either case).  We
+  explain how ~c[FORM] is actually replaced by an expression of the form
+  ~c[(PROGN$ ... FORM)].  This expression generates an extra ~il[guard] proof
+  obligation, which guarantees that no aliasing occurs from binding two
+  stobj-let-bound variables to the same array access.  So fix a stobj array
+  accessor ~c[ACCi] for which some stobj is bound to ~c[(ACCi I ST)] in
+  ~c[BINDINGS]; we define an expression ~c[ACCi-CHECK] as follows.  Collect up
+  all such index expressions ~c[I], where if ~c[I] is of the form ~c[(quote N)]
+  then replace ~c[I] by ~c[N].  If the resulting list of index expressions for
+  ~c[ACCi] consists solely of distinct numbers, or if it is of length 1, then
+  no extra check is generated for ~c[ACCi].  Otherwise, let ~c[ACCi-CHECK] be
+  the form ~c[(chk-no-duplicatesp (list I1 ... Ik))], where ~c[I1], ..., ~c[Ik]
+  are the index expressions for ~c[ACCi].  Note: ~c[chk-no-duplicatesp] is a
+  function that returns nil, but has a ~il[guard] that its argument is an
+  ~ilc[eqlable-listp] that satisfies ~ilc[no-duplicatesp].  Finally, ~c[FORM]
+  is replaced by ~c[(PROGN$ CHK1 ... CHKn FORM)], where the ~c[CHKm] range over
+  all of the above ~c[ACCi-CHECK].~/~/"
 
   (declare (ignore args))
   #+acl2-loop-only
