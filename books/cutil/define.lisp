@@ -626,6 +626,7 @@ some kind of separator!</p>
                          (declare (ignorable __function__))
                          ,body))
 
+       (non-exec (cdr (assoc :non-executable kwd-alist)))
        ((mv xargs kwd-alist)              (get-xargs-from-kwd-alist kwd-alist))
        ((mv returns kwd-alist)            (get-returns kwd-alist))
        ((mv before-events kwd-alist)      (get-before-events-from-kwd-alist kwd-alist))
@@ -664,6 +665,14 @@ some kind of separator!</p>
        (formal-guards (remove t (formallist->guards formals)))
        (formal-types  (formallist->types formals))
        (stobj-names   (formallist->names (formallist-collect-stobjs formals world)))
+
+       ;; support the :non-executable xarg by wrapping the body in the required
+       ;; throw form
+       (final-body (if non-exec
+                       `(prog2$ (acl2::throw-nonexec-error
+                                 ',fnname (list . ,formal-names))
+                                ,extended-body)
+                     extended-body))
 
        (returnspecs   (parse-returnspecs fnname returns world))
        (defun-sym     (if enabled-p 'defun 'defund))
@@ -722,7 +731,7 @@ some kind of separator!</p>
            ,@(and xargs
                   `((declare (xargs . ,xargs))))
 
-           ,extended-body
+           ,final-body
            )))
 
     `(progn
