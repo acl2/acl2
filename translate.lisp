@@ -5461,8 +5461,9 @@
 (defun no-duplicatesp-checks-for-stobj-let-actuals/alist (alist)
   (cond ((endp alist) nil)
         (t (let ((indices (cdar alist)))
-             (cond ((and (nat-listp indices)
-                         (no-duplicatesp indices))
+             (cond ((or (null (cdr indices))
+                        (and (nat-listp indices)
+                             (no-duplicatesp indices)))
                     (no-duplicatesp-checks-for-stobj-let-actuals/alist
                      (cdr alist)))
                    (t (cons `(chk-no-duplicatesp

@@ -24695,32 +24695,31 @@
   the discussion of congruent stobjs below for a slight relaxation).
 
   o ~c[OBJ] is a top-level global variable that contains the current object,
-    obj.
+  obj.
 
   o If a function uses the formal parameter ~c[OBJ], the only ``actual
-    expression'' that can be passed into that slot is the variable ~c[OBJ], not
-    merely a term that ``evaluates to an obj''; thus, such functions can only
-    operate on the current object.  So for example, instead of
-    ~c[(FOO (UPDATE-FIELD1 3 ST))] write
-    ~c[(LET ((ST (UPDATE-FIELD1 3 ST))) (FOO ST))].
+  expression'' that can be passed into that slot is the variable ~c[OBJ], not
+  merely a term that ``evaluates to an obj''; thus, such functions can only
+  operate on the current object.  So for example, instead of
+  ~c[(FOO (UPDATE-FIELD1 3 ST))] write
+  ~c[(LET ((ST (UPDATE-FIELD1 3 ST))) (FOO ST))].
 
   o The accessors and updaters have a formal parameter named ~c[OBJ], thus,
-    those functions can only be applied to the current object.
+  those functions can only be applied to the current object.
 
   o The ACL2 primitives, such as ~c[CONS], ~c[CAR] and ~c[CDR], may not be
-    applied to the variable ~c[OBJ].  Thus, for example, obj may not be consed
-    into a list (which would create another pointer to it) or accessed or
-    copied via ``unapproved'' means.
+  applied to the variable ~c[OBJ].  Thus, for example, obj may not be consed
+  into a list (which would create another pointer to it) or accessed or copied
+  via ``unapproved'' means.
 
-  o The updaters return a ``new ~c[OBJ] object'', i.e., obj'; thus, when
-    an updater is called, the only variable which can hold its result is
-    ~c[OBJ].
+  o The updaters return a ``new ~c[OBJ] object'', i.e., obj'; thus, when an
+  updater is called, the only variable which can hold its result is ~c[OBJ].
 
   o If a function calls an ~c[OBJ] updater, it must return an ~c[OBJ] object
-    (either as the sole value returned, or in ~c[(mv ... OBJ ...)]; ~pl[mv]).
+  (either as the sole value returned, or in ~c[(mv ... OBJ ...)]; ~pl[mv]).
 
   o When a top-level expression involving ~c[OBJ] returns an ~c[OBJ] object,
-    that object becomes the new current value of ~c[OBJ].
+  that object becomes the new current value of ~c[OBJ].
 
   What makes ACL2 different from other functional languages supporting such
   operations (e.g., Haskell's ``monads'' and Clean's ``uniqueness type
@@ -24747,7 +24746,8 @@
   But we are getting ahead of ourselves.  To start the stobj tour,
   ~pl[stobj-example-1].~/
 
-  :cite defstobj")
+  :cite defstobj
+  :cite defabsstobj")
 
 (deflabel stobj-example-1
   :doc
