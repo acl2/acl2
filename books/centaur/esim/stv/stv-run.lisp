@@ -157,6 +157,16 @@ values of its bits in @('bit-out-alist'), and then try to combine these bits
 into a single integer value.  If any bit is X, we just say the whole output is
 X.</p>"
 
+  (defund collect-bits-bound-to-x (keys alist)
+    (declare (xargs :guard t))
+    (if (atom keys)
+        nil
+      (let ((lookup (hons-get (car keys) alist)))
+        (if (eq (cdr lookup) 'x)
+            (cons (car keys)
+                  (collect-bits-bound-to-x (cdr keys) alist))
+          (collect-bits-bound-to-x (cdr keys) alist)))))
+
   (defund stv-assemble-output-alist (bit-out-alist out-usersyms)
     (declare (xargs :guard t))
     (b* (((when (atom out-usersyms))
@@ -167,7 +177,10 @@ X.</p>"
           rest)
          ((cons user-name bits) (car out-usersyms))
          (vals      (vl::look-up-each-fast bits bit-out-alist))
-         (true-val  (4v-to-nat vals)))
+         (true-val  (4v-to-nat vals))
+         (- (and (eq true-val 'x)
+                 (cw "Bits bound to X in ~x0: ~x1~%"
+                     user-name (collect-bits-bound-to-x bits bit-out-alist)))))
       (cons (cons user-name true-val) rest))))
 
 
