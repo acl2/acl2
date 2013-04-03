@@ -10505,7 +10505,7 @@
                                      (scan-past-newline str (+ 2 i) maximum)
                                      maximum de-indent prefix state)
                                     (mv ln state)))))
-                  ((eq c #\~)
+                  ((eql c #\~)
                    (pprogn (princ$ c channel state)
                            (print-doc-string-part1 str (+ 2 i) maximum
                                                    de-indent

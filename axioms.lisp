@@ -4280,34 +4280,33 @@
   order to cause evaluation to use alternate code to that provided for the
   logic.  An example is given below.  However, the use of ~c[mbe] can lead to
   non-terminating computations.  ~l[defexec], perhaps after reading the present
-  documentation, for a way to guarantee termination (at least theoretically).
+  documentation, for a way to prove termination.
 
   In the ACL2 logic, ~c[(mbe :exec exec-code :logic logic-code)] equals
   ~c[logic-code]; the value of ~c[exec-code] is ignored.  However, in raw Lisp
   it is the other way around: this form macroexpands simply to ~c[exec-code].
   ACL2's ~il[guard] verification mechanism ensures that the raw Lisp code is
   only evaluated when appropriate, since the guard proof obligations generated
-  for this call of ~c[mbe] include not only the guard proof obligations from
-  ~c[exec-code], but also, under suitable contextual assumptions, the term
-  ~c[(equal exec-code logic-code)].  ~l[verify-guards] (in particular, for
-  discussion of the contextual assumptions from the ~c[:guard] and
-  ~ilc[IF]-tests) and, for general discussion of guards, ~pl[guard].
+  for (the macroexpansion of) this call of ~c[mbe] include not only the guard
+  proof obligations from ~c[exec-code], but also, under suitable contextual
+  assumptions, the term ~c[(equal exec-code logic-code)].  ~l[verify-guards]
+  (in particular, for discussion of the contextual assumptions from the
+  ~c[:guard] and ~ilc[IF]-tests) and, for general discussion of guards,
+  ~pl[guard].
 
-  Warning for nested ~ilc[mbe] calls: The equality of ~c[:exec] and ~c[:logic]
-  code is not checked in the scope of superior ~c[:logic] code, as for the
-  equality of ~c[x] and ~c[y] in the following.
-  ~bv[]
-  (mbe :logic 
-       (mbe :logic x :exec y)
-       :exec
-       z)
-  ~ev[]
+  Normally, during evaluation of an ~c[mbe] call, only the ~c[:logic] code is
+  evaluated unless the call is in the body of a ~il[guard]-verified function,
+  in which case only the ~c[:exec] code is evaluated.  This implies that
+  equality of ~c[:exec] and ~c[:logic] code is never checked at runtime.
+  (Rather, such equality is proved when verifying guards.)  We started with
+  ``normally'' above because there is an exception: during a ``safe mode'',
+  which is used in macroexpansion and evaluation of ~ilc[defconst] forms, the
+  ~c[:logic] and ~c[:exec] code are both evaluated and their equality is
+  checked.
 
-  The form ~c[(mbe :exec exec-code :logic logic-code)] macroexpands in ACL2 to
-  a form that generates the guard proof obligation
-  ~c[(equal logic-code exec-code)].  The ~c[:exec] and the ~c[:logic] code in
-  an ~c[mbe] call must have the same return type; for example, one cannot
-  return ~c[(]~ilc[mv]~c[ * *)] while the other returns just a single value.
+  Note that the ~c[:exec] and the ~c[:logic] code in an ~c[mbe] call must have
+  the same return type.  For example, one cannot return ~c[(]~ilc[mv]~c[ * *)]
+  while the other returns just a single value.
 
   Also ~pl[mbt], which stands for ``must be true.''  You may find it more
   natural to use ~ilc[mbt] for certain applications, as described in its
@@ -18227,11 +18226,11 @@
   define a new single-threaded object ~/
 
   Note: Novices are advised to avoid ~c[defstobj], perhaps instead using
-  community book ~c[books/data-structures/structures.lisp].  At the least,
-  consider using ~c[(]~ilc[set-verify-guards-eagerness]~c[ 0)] to avoid
-  ~il[guard] verification.  On the other hand, after you learn to use
-  ~c[defstobj], ~pl[defabsstobj] for another way to introduce single-threaded
-  objects.
+  community books ~c[books/cutil/defaggregate.lisp] or
+  ~c[books/data-structures/structures.lisp].  At the least, consider using
+  ~c[(]~ilc[set-verify-guards-eagerness]~c[ 0)] to avoid ~il[guard]
+  verification.  On the other hand, after you learn to use ~c[defstobj],
+  ~pl[defabsstobj] for another way to introduce single-threaded objects.
 
   ~bv[]
   Example:

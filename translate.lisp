@@ -644,7 +644,8 @@
 ; we just pass that along.
 
                         '(nil))
-                       #+acl2-extra-checks
+; The next form was originally conditionalized with #+acl2-extra-checks, but we
+; want to do this unconditionally.
                        (latches ; optimization
                         (actual-stobjs-out fn args w user-stobj-alist))
                        (t (stobjs-out fn w))))
@@ -696,18 +697,16 @@
                                 (mv-refs (1- (length stobjs-out))))))))
                  (mv nil
                      val
-                     #-acl2-extra-checks
-                     latches
-                     #+acl2-extra-checks
+; The next form was originally conditionalized with #+acl2-extra-checks, with
+; value latches when #-acl2-extra-checks; but we want this unconditionally.
                      (latch-stobjs stobjs-out ; adjusted to actual-stobjs-out
                                    val
                                    latches)))
                #+acl2-mv-as-values ; val already adjusted for multiple value case
                (mv nil
                    val
-                   #-acl2-extra-checks
-                   latches
-                   #+acl2-extra-checks
+; The next form was originally conditionalized with #+acl2-extra-checks, with
+; value latches when #-acl2-extra-checks; but we want this unconditionally.
                    (latch-stobjs stobjs-out ; adjusted to actual-stobjs-out
                                  val
                                  latches))))))))
