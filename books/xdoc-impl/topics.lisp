@@ -448,7 +448,11 @@ future.</p>
 
 <p>After running @('make html'), you may wish to open @('frames2.html') and
 @('frames3.html'), which allow you to navigate the HTML manual much like
-@('preview.html') allows you to navigate the XML version.</p>
+@('preview.html') allows you to navigate the XML version.  These pages accept
+an optional argument named <tt>topic</tt> that tells the browser to
+automatically go to a particular topic.  For example, one can go to the
+<tt>XDOC::save</tt> topic by using the url
+<tt>frames3.html?topic=XDOC____SAVE.html</tt>.</p>
 
 <p>Converting to HTML is a good idea because it ensures that all of your tags
 are balanced on every page.  Without this sanity check, your manual might
