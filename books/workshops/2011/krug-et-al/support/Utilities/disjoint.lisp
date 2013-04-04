@@ -932,9 +932,9 @@
        (t (mv-let (not-flg lit-atm)
             (strip-not lit)
             (declare (ignore not-flg))
-            (mv-let (fn-cnt p-fn-cnt)
-              (fn-count lit-atm)
-              (ancestors-check1 lit-atm lit fn-cnt p-fn-cnt
+            (mv-let (var-cnt fn-cnt p-fn-cnt)
+              (var-fn-count lit-atm nil) ; Matt K. change from fn-count after v6-1
+              (ancestors-check1 lit-atm lit var-cnt fn-cnt p-fn-cnt
                                 ancestors tokens))))))
 
 (defthm ancestors-check-disjointp-hack-constraint
@@ -942,7 +942,7 @@
    (ancestors-check-disjointp-hack lit ancestors tokens)
    (implies (and on-ancestors
                  assumed-true)
-            (member-equal-mod-commuting lit (strip-cars ancestors) nil)))
+            (member-equal-mod-commuting lit (strip-ancestor-literals ancestors) nil)))
  :hints (("Goal" :use ancestors-check-builtin-property))
  :rule-classes nil)
 

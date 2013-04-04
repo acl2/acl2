@@ -36,7 +36,7 @@
  *
  * [P. 136] Page data- structure tables are always aligned on 4-Kbyte
  * boundaries, so only the address bits above bit 11 are stored in the
- * translation-table base-address field. Bits 11–0 are assumed to be
+ * translation-table base-address field. Bits 11?0 are assumed to be
  * 0.
  *
  * [RBK] I assume that the above means bits 5-11 in the CR3 should be
@@ -4027,9 +4027,9 @@ or
           (t (mv-let (not-flg lit-atm)
                      (strip-not lit)
                      (declare (ignore not-flg))
-                     (mv-let (fn-cnt p-fn-cnt)
-                             (fn-count lit-atm)
-                             (ancestors-check1 lit-atm lit fn-cnt p-fn-cnt
+                     (mv-let (var-cnt fn-cnt p-fn-cnt)
+                             (var-fn-count lit-atm nil) ; Matt K. change from fn-count after v6-1
+                             (ancestors-check1 lit-atm lit var-cnt fn-cnt p-fn-cnt
                                                ancestors tokens)))))))
 
  (local
@@ -4038,7 +4038,7 @@ or
             (ancestors-check-disjointp-hack-2 lit ancestors tokens)
             (implies (and on-ancestors
                           assumed-true)
-                     (member-equal-mod-commuting lit (strip-cars ancestors) nil)))
+                     (member-equal-mod-commuting lit (strip-ancestor-literals ancestors) nil)))
     :hints (("Goal" :use ancestors-check-builtin-property))
     :rule-classes nil))
 

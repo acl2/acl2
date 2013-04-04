@@ -20,6 +20,9 @@
 ;
 ; Original author: Sol Swords <sswords@centtech.com>
 
+; Very lightly modified April 2013 by Matt K. to accommodate introduction of
+; defrec for ancestors.
+
 (in-package "ACL2")
 
 ; Sometimes the ACL2 ancestors-check heuristic prevents rules from applying
@@ -38,7 +41,7 @@
 ;;                                   assumed-true)
 ;;                              (member-equal-mod-commuting
 ;;                               lit
-;;                               (strip-cars ancestors)
+;;                               (strip-ancestor-literals ancestors)
 ;;                               nil))))
 ;;    :hints (("Goal" :use ancestors-check-builtin-property)))
 
@@ -49,14 +52,14 @@
                               (pseudo-termp lit-atm)
                               (ancestor-listp ancestors))))
   (cond ((endp ancestors) (mv nil nil))
-        ((eq (caar ancestors) :binding-hyp)
+        ((ancestor-binding-hyp-p (car ancestors))
          (check-assumed-true-or-false lit lit-atm (cdr ancestors)))
         ((equal-mod-commuting lit
-                              (caar ancestors) ;; first lit
+                              (access ancestor (car ancestors) :lit) ;; first lit
                               nil)
          (mv t t))
         ((equal-mod-commuting lit-atm
-                              (cadar ancestors) ;; atom of first lit
+                              (access ancestor (car ancestors) :atm) ;; atom of first lit
                               nil)
          (mv t nil))
         (t (check-assumed-true-or-false lit lit-atm (cdr ancestors)))))
@@ -66,7 +69,7 @@
     (check-assumed-true-or-false lit lit-atm ancestors)
     (implies (and present true)
              (member-equal-mod-commuting
-              lit (strip-cars ancestors) nil))))
+              lit (strip-ancestor-literals ancestors) nil))))
 
 (in-theory (disable check-assumed-true-or-false))
 
@@ -87,7 +90,7 @@
     (trivial-ancestors-check lit ancestors tokens)
     (implies (and present true)
              (member-equal-mod-commuting
-              lit (strip-cars ancestors) nil)))
+              lit (strip-ancestor-literals ancestors) nil)))
   :hints(("Goal" :in-theory (enable check-assumed-true-or-false-ok))))
 
 (in-theory (disable trivial-ancestors-check))

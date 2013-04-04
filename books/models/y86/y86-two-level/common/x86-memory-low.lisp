@@ -1506,8 +1506,8 @@
                          (logior x2 y2))
                   (and (equal x1 x2)
                        (equal y1 y2))))
-  :hints (("Subgoal 1.1.1.1.1" :cases ((< k j)
-                                       (< j k))))
+  :hints (("Subgoal 1.1.1.1" :cases ((< k j)
+                                     (< j k))))
   :otf-flg t)
 
 (defthm logior-2
