@@ -37,7 +37,7 @@ is a simple specification for the semantics of nodes.</p>
 <p>To actually execute evaluations of nodes, use the functions
 @({(aignet-eval n vals aignet)})
 and
-@({(aignet-eval-frame n k vals aignet-frames aignet)})
+@({(aignet-eval-frame n k vals frames aignet)})
 both of which return <tt>aignet-vals</tt>.  Instead of giving the evaluation of
 one literal, these record the evaluations of every node (starting at
 <tt>n</tt>) in the <tt>aignet-vals</tt> table. Then,
@@ -55,7 +55,7 @@ by the following theorem:
 <p>The difference between @('aignet-eval') and @('aignet-eval-frame') is that
 aignet-eval-frame is designed to be used as part of a sequential simulation.
 Therefore, it looks up input nodes in a separate structure
-<tt>aignet-frames</tt> which gives a value for each input at each frame.  It
+<tt>frames</tt> which gives a value for each input at each frame.  It
 assigns values to register output nodes by checking the value stored for its
 corresponding register input in the <tt>aignet-vals</tt> structure.  For both
 of these node types, @('aignet-eval') assumes that they are already set to the

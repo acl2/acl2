@@ -488,13 +488,15 @@ effect.  We simply translate subgoal hints to computed hints:</p>
                (list `(otherwise ,new-body)))))
     (er hard 'make-flag-body-aux "Never get here.")))
 
-(defun make-flag-body (fn-name flag-var alist hints world)
+(defun make-flag-body (fn-name flag-var alist hints ruler-extenders world)
   (let ((formals (merge-formals alist world)))
   `(defun-nx ,fn-name (,flag-var . ,formals)
      (declare (xargs :verify-guards nil
                      :normalize nil
                      :measure ,(make-flag-measure flag-var alist world)
                      :hints ,hints
+                     ,@(and ruler-extenders
+                            `(:ruler-extenders ,ruler-extenders))
                      :well-founded-relation ,(get-wfr (caar alist)
                                                       world)
                      :mode :logic)
@@ -847,7 +849,7 @@ given.  The following theorem does not have a name: ~x0~%" entry)))))
           (flag-table-events (cdr alist) entry))))
 
 (defun make-flag-fn (flag-fn-name clique-member-name flag-var flag-mapping hints
-                                  defthm-macro-name local world)
+                                  defthm-macro-name local ruler-extenders world)
   (let* ((flag-var (or flag-var
                        (intern-in-package-of-symbol "FLAG" flag-fn-name)))
          (alist (or flag-mapping
@@ -867,7 +869,7 @@ given.  The following theorem does not have a name: ~x0~%" entry)))))
       ,@(and (not local) '((set-ignore-ok t))) ;; can't wrap this in local --- fubar!
 
       (,(if local 'local 'id)
-       ,(make-flag-body flag-fn-name flag-var alist hints world))
+       ,(make-flag-body flag-fn-name flag-var alist hints ruler-extenders world))
       ,(make-defthm-macro defthm-macro-name alist flag-var
                           `(,flag-fn-name ,flag-var . ,formals))
 
@@ -913,7 +915,8 @@ given.  The following theorem does not have a name: ~x0~%" entry)))))
                      flag-mapping
                      hints
                      defthm-macro-name
-                     local)
+                     local
+                     ruler-extenders)
   `(make-event (make-flag-fn ',flag-fn-name
                              ',clique-member-name
                              ',flag-var
@@ -921,6 +924,7 @@ given.  The following theorem does not have a name: ~x0~%" entry)))))
                              ',hints
                              ',defthm-macro-name
                              ',local
+                             ',ruler-extenders
                              (w state))))
 
 

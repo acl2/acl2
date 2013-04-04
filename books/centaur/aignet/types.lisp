@@ -315,23 +315,24 @@ symbols in its list."
              (nodetyp-ev (acl2::disjoin clause) a))
     :rule-classes :clause-processor))
 
+(local
+ (progn
+   (defund is-gate (x)
+     (equal (stype x) (gate-stype)))
 
-(defund is-gate (x)
-  (equal (stype x) (gate-stype)))
+   (defthm prove-is-gate
+     (implies (equal (stype x) (gate-stype))
+              (is-gate x))
+     :hints(("Goal" :in-theory (enable is-gate))))
 
-(defthm prove-is-gate
-  (implies (equal (stype x) (gate-stype))
-           (is-gate x))
-  :hints(("Goal" :in-theory (enable is-gate))))
-
-(defthm is-gate-by-elim
-  (implies (and (not (equal (ctype (stype x)) (const-ctype)))
-                (not (equal (ctype (stype x)) (in-ctype)))
-                (equal (regp (stype x)) 0)
-                (not (equal (stype x) (po-stype))))
-           (is-gate x))
-  :hints (("goal" :in-theory '(prove-is-gate))
-          (and stable-under-simplificationp
-               '(:clause-processor stype-cp))))
+   (defthm is-gate-by-elim
+     (implies (and (not (equal (ctype (stype x)) (const-ctype)))
+                   (not (equal (ctype (stype x)) (in-ctype)))
+                   (equal (regp (stype x)) 0)
+                   (not (equal (stype x) (po-stype))))
+              (is-gate x))
+     :hints (("goal" :in-theory '(prove-is-gate))
+             (and stable-under-simplificationp
+                  '(:clause-processor stype-cp))))))
 
 

@@ -57,6 +57,8 @@
                            sets::sets-are-true-lists
                            make-list-ac)))
 
+(local (include-book "centaur/misc/equal-by-nths" :dir :system))
+
 (set-waterfall-parallelism nil) ; currently unknown why we need to disable
                                 ; waterfall-parallelism; something to examine
 
@@ -387,7 +389,7 @@ the index in the register array.</p>")
                                 (+ 1 (node-count (cdr x))))
                               mfc state)
                              (x))
-                  (syntaxp (not (subtermp id x)))
+                  (syntaxp (not (subtermp `(lookup-id ,id ,y) x)))
                   (nat-equiv id (node-count x))
                   (aignet-extension-p y x))
              (equal (lookup-id id y)
@@ -1070,7 +1072,7 @@ binding for orig-aignet.</p>
                              acl2::nfix-when-not-natp)))
   (local (in-theory (enable acl2::make-list-ac-redef)))
 
-  (acl2::def2darr aignet-frames
+  (acl2::def2darr frames
                   :prefix frames
                   :elt-type bit
                   :elt-typep bitp
@@ -1078,48 +1080,48 @@ binding for orig-aignet.</p>
                   :elt-fix acl2::bfix
                   :elt-guard (bitp x))
 
-  (defstobj-clone aignet-initsts bitarr :strsubst (("BIT" . "AIGNET-INITSTS")))
+  (defstobj-clone initsts bitarr :strsubst (("BIT" . "INITSTS")))
 
   (local (in-theory (enable aignet-lit-fix-id-val-linear)))
 
   (mutual-recursion
-   (defun lit-eval-seq (k lit aignet-frames aignet-initsts aignet)
-     (declare (xargs :stobjs (aignet aignet-frames aignet-initsts)
+   (defun lit-eval-seq (k lit frames initsts aignet)
+     (declare (xargs :stobjs (aignet frames initsts)
                      :guard (and (litp lit) (fanin-litp lit aignet)
                                  (natp k)
-                                 (< k (frames-nrows aignet-frames))
-                                 (<= (num-ins aignet) (frames-ncols aignet-frames))
-                                 (<= (num-regs aignet) (bits-length aignet-initsts)))
+                                 (< k (frames-nrows frames))
+                                 (<= (num-ins aignet) (frames-ncols frames))
+                                 (<= (num-regs aignet) (bits-length initsts)))
                      :measure (acl2::nat-list-measure
                                (list k (lit-id lit) 1))
                      :verify-guards nil))
-     (b-xor (id-eval-seq k (lit-id lit) aignet-frames aignet-initsts aignet)
+     (b-xor (id-eval-seq k (lit-id lit) frames initsts aignet)
             (lit-neg lit)))
 
-   (defun eval-and-of-lits-seq (k lit1 lit2 aignet-frames aignet-initsts aignet)
-     (declare (xargs :stobjs (aignet aignet-frames aignet-initsts)
+   (defun eval-and-of-lits-seq (k lit1 lit2 frames initsts aignet)
+     (declare (xargs :stobjs (aignet frames initsts)
                      :guard (and (litp lit1) (fanin-litp lit1 aignet)
                                  (litp lit2) (fanin-litp lit2 aignet)
                                  (natp k)
-                                 (< k (frames-nrows aignet-frames))
-                                 (<= (num-ins aignet) (frames-ncols aignet-frames))
-                                 (<= (num-regs aignet) (bits-length aignet-initsts)))
+                                 (< k (frames-nrows frames))
+                                 (<= (num-ins aignet) (frames-ncols frames))
+                                 (<= (num-regs aignet) (bits-length initsts)))
                      :measure (acl2::nat-list-measure
                                (list k
                                      (max (lit-id lit1)
                                           (lit-id lit2))
                                      2))
                      :verify-guards nil))
-     (b-and (lit-eval-seq k lit1 aignet-frames aignet-initsts aignet)
-            (lit-eval-seq k lit2 aignet-frames aignet-initsts aignet)))
+     (b-and (lit-eval-seq k lit1 frames initsts aignet)
+            (lit-eval-seq k lit2 frames initsts aignet)))
 
-   (defun id-eval-seq (k id aignet-frames aignet-initsts aignet)
-     (declare (xargs :stobjs (aignet aignet-frames aignet-initsts)
+   (defun id-eval-seq (k id frames initsts aignet)
+     (declare (xargs :stobjs (aignet frames initsts)
                      :guard (and (natp id) (id-existsp id aignet)
                                  (natp k)
-                                 (< k (frames-nrows aignet-frames))
-                                 (<= (num-ins aignet) (frames-ncols aignet-frames))
-                                 (<= (num-regs aignet) (bits-length aignet-initsts)))
+                                 (< k (frames-nrows frames))
+                                 (<= (num-ins aignet) (frames-ncols frames))
+                                 (<= (num-regs aignet) (bits-length initsts)))
                      :measure (acl2::nat-list-measure
                                (list k id 0))))
      (b* (((unless (mbt (id-existsp id aignet)))
@@ -1131,26 +1133,26 @@ binding for orig-aignet.</p>
         :gate (b* ((f0 (gate-id->fanin0 id aignet))
                    (f1 (gate-id->fanin1 id aignet)))
                 (mbe :logic (eval-and-of-lits-seq
-                             k f0 f1 aignet-frames aignet-initsts aignet)
+                             k f0 f1 frames initsts aignet)
                      :exec (b-and (b-xor (id-eval-seq k (lit-id f0)
-                                                      aignet-frames
-                                                      aignet-initsts aignet)
+                                                      frames
+                                                      initsts aignet)
                                          (lit-neg f0))
                                   (b-xor (id-eval-seq k (lit-id f1)
-                                                      aignet-frames
-                                                      aignet-initsts aignet)
+                                                      frames
+                                                      initsts aignet)
                                          (lit-neg f1)))))
         :in    (let ((ionum (io-id->ionum id aignet)))
                  (if (int= (io-id->regp id aignet) 1)
                      (if (zp k)
-                         (get-bit ionum aignet-initsts)
+                         (get-bit ionum initsts)
                        (id-eval-seq (1- k)
                                     (reg-id->nxst id aignet)
-                                    aignet-frames aignet-initsts aignet))
-                   (frames-get2 k ionum aignet-frames)))
+                                    frames initsts aignet))
+                   (frames-get2 k ionum frames)))
         :out (b* ((f (co-id->fanin id aignet)))
                (lit-eval-seq
-                k f aignet-frames aignet-initsts aignet))
+                k f frames initsts aignet))
         :const 0))))
 
   (in-theory (disable id-eval-seq lit-eval-seq eval-and-of-lits-seq))
@@ -1164,24 +1166,24 @@ binding for orig-aignet.</p>
           0)
          (type (id->type id aignet)))
       (aignet-case
-        type
-        :gate (b* ((f0 (gate-id->fanin0 id aignet))
-                   (f1 (gate-id->fanin1 id aignet)))
-                (list
-                 (id-eval-seq-ind
-                  k (lit-id f0) aignet)
-                 (id-eval-seq-ind
-                  k (lit-id f1) aignet)))
-        :in     (if (int= (io-id->regp id aignet) 1)
-                    (if (zp k)
-                        0
-                      (id-eval-seq-ind
-                       (1- k) (reg-id->nxst id aignet) aignet))
-                  0)
-        :out  (b* ((f (co-id->fanin id aignet)))
+       type
+       :gate (b* ((f0 (gate-id->fanin0 id aignet))
+                  (f1 (gate-id->fanin1 id aignet)))
+               (list
                 (id-eval-seq-ind
-                 k (lit-id f) aignet))
-        :const 0)))
+                 k (lit-id f0) aignet)
+                (id-eval-seq-ind
+                 k (lit-id f1) aignet)))
+       :in     (if (int= (io-id->regp id aignet) 1)
+                   (if (zp k)
+                       0
+                     (id-eval-seq-ind
+                      (1- k) (reg-id->nxst id aignet) aignet))
+                 0)
+       :out  (b* ((f (co-id->fanin id aignet)))
+               (id-eval-seq-ind
+                k (lit-id f) aignet))
+       :const 0)))
 
   (defcong nat-equiv equal (id-eval-seq k id frames initvals aignet) 1
     :hints (("goal" :induct (id-eval-seq-ind k id aignet))))
@@ -1226,67 +1228,45 @@ binding for orig-aignet.</p>
                               (eval-and-of-lits-seq k lit1 lit2 frames initvals aignet))))))
 
 
-  ;; collect up the register input values for a frame
-  (defund-nx next-frame-regvals (n k aignet-frames aignet-initsts aignet)
-    (declare (xargs :measure (nfix (- (nfix (num-regs aignet))
-                                      (nfix n)))))
-    (if (zp (- (nfix (num-regs aignet))
-               (nfix n)))
-        nil
-      (update-nth n (id-eval-seq k (reg-id->nxst (regnum->id n aignet) aignet)
-                                 aignet-frames aignet-initsts
-                                 aignet)
-                  (next-frame-regvals (1+ (nfix n)) k aignet-frames
-                                      aignet-initsts aignet))))
+  (defthm bitp-of-lit-eval-seq
+    (bitp (lit-eval-seq k lit frames initsts aignet))
+    :hints (("goal" :expand (lit-eval-seq k lit frames initsts aignet))))
 
-  (local (in-theory (enable next-frame-regvals)))
-
-  (defcong nat-equiv equal (next-frame-regvals
-                            n k aignet-frames aignet-initst aignet) 1)
-  (defcong nat-equiv equal (next-frame-regvals
-                            n k aignet-frames aignet-initst aignet) 2)
-  (defcong bits-equiv equal (next-frame-regvals
-                             n k aignet-frames aignet-initst aignet) 4)
-
-  (defthm nth-of-next-frame-regvals
-    (implies (and (< (nfix m) (nfix (num-regs aignet)))
-                  (<= (nfix n) (nfix m)))
-             (equal (nth m (next-frame-regvals n k aignet-frames aignet-initsts aignet))
-                    (id-eval-seq k (reg-id->nxst (regnum->id m aignet) aignet)
-                                 aignet-frames aignet-initsts aignet)))
-    :hints (("goal" :induct (next-frame-regvals n k aignet-frames
-                                                aignet-initsts aignet))))
+  (defthm bitp-of-eval-and-of-lits-seq
+    (bitp (eval-and-of-lits-seq k lit1 lit2 frames initsts aignet))
+    :hints (("goal" :expand (eval-and-of-lits-seq k lit1 lit2 frames initsts aignet))))
 
   (defthm bitp-of-id-eval-seq
-    (bitp (id-eval-seq k id frames initvals aignet))
-    :hints (("goal" :induct (id-eval-seq-ind k id aignet))))
+    (bitp (id-eval-seq k id frames initsts aignet))
+    :hints (("goal" :expand ((id-eval-seq k id frames initsts aignet)
+                             (:free (id)
+                              (id-eval-seq (+ -1 k) id frames initsts aignet))))))
 
-  (defund frame-regvals (k frames initvals aignet)
+  (verify-guards id-eval-seq)
+
+  (def-list-constructor frame-regvals (k frames initsts aignet)
+    (declare (xargs :stobjs (frames initsts aignet)
+                    :guard (and (natp k)
+                                (<= k (frames-nrows frames))
+                                (<= (num-ins aignet)
+                                    (frames-ncols frames))
+                                (<= (num-regs aignet)
+                                    (bits-length initsts)))))
     (if (zp k)
-        initvals
-      (next-frame-regvals 0 (1- k) frames initvals aignet)))
-
-
-  (defthm nth-of-frame-regvals
-    (implies (< (nfix m) (num-regs aignet))
-             (equal (nth m (frame-regvals k frames initvals aignet))
-                    (if (zp k)
-                        (nth m initvals)
-                      (id-eval-seq
-                       (1- k) (reg-id->nxst (regnum->id m aignet) aignet)
-                       frames initvals aignet))))
-    :hints(("Goal" :in-theory (enable frame-regvals))))
-                  
-  (local (in-theory (enable id-eval-ind)))
+        (get-bit n initsts)
+      (id-eval-seq (1- k)
+                   (reg-id->nxst (regnum->id n aignet) aignet)
+                   frames initsts aignet))
+    :length (num-regs aignet))
 
   (defthmd id-eval-seq-in-terms-of-id-eval
-    (equal (id-eval-seq k id frames initvals aignet)
+    (equal (id-eval-seq k id frames initsts aignet)
            (id-eval id
                     (nth k (cdr frames))
-                    (frame-regvals k frames initvals aignet)
+                    (frame-regvals k frames initsts aignet)
                     aignet))
     :hints (("goal" :induct (id-eval-ind id aignet)
-             :expand ((:free (k) (id-eval-seq k id frames initvals aignet))
+             :expand ((:free (k) (id-eval-seq k id frames initsts aignet))
                       (:free (invals regvals)
                        (id-eval id invals regvals aignet))
                       (:free (k lit)
@@ -1294,7 +1274,74 @@ binding for orig-aignet.</p>
              :in-theory (e/d (lit-eval
                               eval-and-of-lits)
                              (id-eval-seq
-                              id-eval))))))
+                              id-eval)))))
+
+  (defthmd lit-eval-seq-in-terms-of-lit-eval
+    (equal (lit-eval-seq k lit frames initsts aignet)
+           (lit-eval lit (nth k (cdr frames))
+                     (frame-regvals k frames initsts aignet)
+                     aignet))
+    :hints(("Goal" :expand ((lit-eval-seq k lit frames initsts aignet))
+            :in-theory (enable id-eval-seq-in-terms-of-id-eval
+                               lit-eval))))
+
+
+  
+  (defthm lookup-reg->nxst-of-non-nxst-extension
+    (implies (and (aignet-extension-binding)
+                  (equal (stype-count :nxst new)
+                         (stype-count :nxst orig)))
+             (equal (lookup-reg->nxst id new)
+                    (lookup-reg->nxst id orig)))
+    :hints(("Goal" :in-theory (enable aignet-extension-p
+                                      lookup-reg->nxst))))
+
+  (defthm id-eval-seq-of-non-reg/nxst-extension
+    (implies (and (aignet-extension-binding)
+                  (equal (stype-count :reg new)
+                         (stype-count :reg orig))
+                  (equal (stype-count :nxst new)
+                         (stype-count :nxst orig))
+                  (aignet-idp id orig))
+             (equal (id-eval-seq k id frames initvals new)
+                    (id-eval-seq k id frames initvals orig)))
+    :hints (("goal" :induct (id-eval-seq-ind k id new)
+             :expand ((id-eval-seq k id frames initvals new)
+                      (id-eval-seq k id frames initvals orig)
+                      (id-eval-seq 0 id frames initvals new)
+                      (id-eval-seq 0 id frames initvals orig))
+             :in-theory (enable lit-eval-seq eval-and-of-lits-seq))))
+
+  (defthm lit-eval-seq-of-non-reg/nxst-extension
+    (implies (and (aignet-extension-binding)
+                  (equal (stype-count :reg new)
+                         (stype-count :reg orig))
+                  (equal (stype-count :nxst new)
+                         (stype-count :nxst orig))
+                  (aignet-litp lit orig))
+             (equal (lit-eval-seq k lit frames initvals new)
+                    (lit-eval-seq k lit frames initvals orig)))
+    :hints (("goal" :expand ((:free (aignet)
+                              (lit-eval-seq k lit frames initvals aignet))))))
+
+  (defthm frame-regvals-of-non-reg/nxst-extension
+    (implies (and (aignet-extension-binding)
+                  (equal (stype-count :reg new)
+                         (stype-count :reg orig))
+                  (equal (stype-count :nxst new)
+                         (stype-count :nxst orig))
+                  (< (nfix n) (num-regs orig)))
+             (equal (frame-regvals k frames initvals new)
+                    (frame-regvals k frames initvals orig)))
+    :hints ((and stable-under-simplificationp
+                 (acl2::equal-by-nths-hint))))
+
+  (defthm frame-regvals-when-zp
+  (implies (zp k)
+           (bits-equiv (frame-regvals k frames initvals aignet)
+                       (take (num-regs aignet) initvals)))
+  :hints(("Goal" :in-theory (enable bits-equiv
+                                    nth-of-frame-regvals-split)))))
 
 
 

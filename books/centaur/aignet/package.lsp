@@ -108,6 +108,7 @@
     def-array-set
     def-slot-set
     defiteration
+    def-list-constructor
     defstobj-clone
     x
     bitp bfix b-and b-xor b-ior b-not bit-equiv

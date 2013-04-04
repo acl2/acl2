@@ -466,3 +466,238 @@ Syntax:
      :last a
      :init-vals ((b 0))
      :iter-guard (acl2-numberp b))))
+
+
+
+(defstub listconstr-val (n formals) nil)
+(defstub listconstr-last (formals) nil)
+  
+(defiteration listconstr (formals)
+  (declare (xargs :verify-guards nil))
+  (let ((val (listconstr-val n formals)))
+    (update-nth n val lst))
+  :returns lst
+  :last (listconstr-last formals)
+  :init-vals ((lst nil))
+  :iter-guard (true-listp lst))
+
+(defthm nth-of-listconstr-iter
+  (equal (nth m (listconstr-iter n nil formals))
+         (and (< (nfix m) (nfix n))
+              (listconstr-val (nfix m) formals)))
+  :hints (("goal" :induct (listconstr-iter n nil formals)
+           :expand ((listconstr-iter n nil formals)))))
+
+(defthm len-of-listconstr-iter
+  (equal (len (listconstr-iter n nil formals))
+         (nfix n))
+  :hints (("goal" :induct (listconstr-iter n nil formals)
+           :expand ((listconstr-iter n nil formals)))))
+
+(defthm true-listp-of-listconstr-iter
+  (true-listp (listconstr-iter n nil formals))
+  :hints (("goal" :induct (listconstr-iter n nil formals)
+           :expand ((listconstr-iter n nil formals)))))
+
+(defthm nth-of-listconstr
+  (equal (nth n (listconstr formals))
+         (let ((n (nfix n)))
+           (and (< n (nfix (listconstr-last formals)))
+                (listconstr-val n formals)))))
+
+(defthm len-of-listconstr
+  (equal (len (listconstr formals))
+         (nfix (listconstr-last formals))))
+
+(defthm true-listp-of-listconstr
+  (true-listp (listconstr formals)))
+
+
+(defun def-list-constructor-fn (name formals args)
+  (b* (((mv decls doc body kwlist) (defiteration-sort-args args))
+       (index (get-kw :index (intern-in-package-of-symbol
+                              "N" name)
+                      kwlist))
+       ((when (member index formals))
+        (er hard? 'def-list-constructor "Index variable (~x0) must not be in formals" index))
+       (list-var (get-kw :list-var (intern-in-package-of-symbol
+                                    "LST" name)
+                         kwlist))
+       ((when (member list-var formals))
+        (er hard? 'def-list-constructor "List variable (~x0) must not be in formals" list-var))
+       (length (get-kw :length nil kwlist))
+       ((unless length) (er hard? 'def-list-constructor "Need :length argument"))
+       (iter-guard (get-kw :iter-guard t kwlist))
+       (package (get-kw :package name kwlist))
+       (iter (intern-in-package-of-symbol
+              (concatenate 'string (symbol-name name) "-ITER")
+              package))
+       (tailrec (intern-in-package-of-symbol
+                 (concatenate 'string (symbol-name name) "-TAILREC")
+                 package))
+       (iter-formals (cons index (cons list-var formals)))
+       (step-call (cons (intern-in-package-of-symbol
+                         (concatenate 'string (symbol-name name) "-STEP")
+                         package)
+                        iter-formals))
+       (step (intern-in-package-of-symbol
+              (concatenate 'string (symbol-name name) "-STEP")
+              package))
+       (?nth-thmname (intern-in-package-of-symbol
+                     (concatenate 'string "NTH-OF-" (symbol-name name))
+                     package))
+       (nth-split-thmname (intern-in-package-of-symbol
+                           (concatenate 'string "NTH-OF-" (symbol-name name) "-SPLIT")
+                           package))
+       (?true-listp-thmname (intern-in-package-of-symbol
+                            (concatenate 'string "TRUE-LISTP-OF-" (symbol-name
+                                                                   name))
+                            package))
+       (?len-thmname (intern-in-package-of-symbol
+                     (concatenate 'string "LEN-OF-" (symbol-name name))
+                     package))
+       (fsubst `((listconstr-val
+                  (lambda (n formals)
+                    (b* (((list . ,formals) formals)
+                         (,index n))
+                      ,body)))
+                 (listconstr-last
+                  (lambda (formals)
+                    (b* (((list . ,formals) formals))
+                      ,length)))
+                 (listconstr-step$inline
+                  (lambda (n lst formals)
+                    (b* (((list . ,formals) formals)
+                         (,index n)
+                         (,list-var lst))
+                      ,step-call)))
+                 (listconstr-iter
+                  (lambda (n lst formals)
+                    (b* (((list . ,formals) formals)
+                         (,index n)
+                         (,list-var lst))
+                      (,iter . ,iter-formals))))
+                 (listconstr-tailrec
+                  (lambda (n lst formals)
+                    (b* (((list . ,formals) formals)
+                         (,index n)
+                         (,list-var lst))
+                      (,tailrec . ,iter-formals))))
+                 (listconstr$inline
+                  (lambda (formals)
+                    (b* (((list . ,formals) formals))
+                      (,name . ,formals)))))))
+    `(encapsulate nil
+       (set-ignore-ok t)
+       (set-irrelevant-formals-ok t)
+       (defiteration ,name ,formals
+         ,@decls ,@(and doc (list doc))
+         (let ((val ,body))
+           (update-nth ,index val ,list-var))
+         :returns ,list-var
+         :first 0
+         :last ,length
+         :init-vals ((,list-var nil))
+         :iter-guard (and (true-listp ,list-var) ,iter-guard)
+         . ,kwlist)
+
+       (in-theory (disable ,name))
+       
+       (defthmd ,nth-split-thmname
+         (equal (nth ,index (,name . ,formals))
+                (let ((,index (nfix ,index)))
+                  (and (< ,index (nfix ,length))
+                       ,body)))
+         :hints (("goal" :use ((:instance
+                                (:functional-instance
+                                 nth-of-listconstr
+                                 . ,fsubst)
+                                (formals (list . ,formals))
+                                (n ,index)))
+                    :in-theory '(,iter
+                                 ,step
+                                 ,name
+                                 ,tailrec
+                                 car-cons
+                                 cdr-cons
+                                 zp-when-integerp
+                                 commutativity-of-+
+                                 (equal) (ifix) (unary--) (zp)
+                                 ifix-positive-to-non-zp
+                                 unicity-of-0
+                                 fix
+                                 (:type-prescription ifix))
+                    :do-not-induct t)))
+
+       (defthm ,nth-thmname
+         (implies (< (nfix ,index) (nfix ,length))
+                  (equal (nth ,index (,name . ,formals))
+                         (let ((,index (nfix ,index)))
+                           ,body)))
+         :hints(("Goal" :in-theory (enable ,nth-split-thmname))))
+
+       (defthm ,len-thmname
+         (equal (len (,name . ,formals))
+                (nfix ,length))
+         :hints (("goal" :use ((:instance
+                                (:functional-instance
+                                 len-of-listconstr
+                                 . ,fsubst)
+                                (formals (list . ,formals))))
+                  :in-theory '(car-cons cdr-cons))))
+
+       (defthm ,true-listp-thmname
+         (true-listp (,name . ,formals))
+         :hints (("goal" :use ((:instance
+                                (:functional-instance
+                                 true-listp-of-listconstr
+                                 . ,fsubst)
+                                (formals (list . ,formals))))
+                  :in-theory '(car-cons cdr-cons)))
+         :rule-classes (:rewrite :type-prescription)))))
+
+
+(defmacro def-list-constructor (name formals &rest args)
+  ":doc-section programming
+Define function that constructs a list, just by giving the length and how to
+compute the Nth element in terms of the formals and index.~/
+
+This takes many of the same arguments as defiteration, and in fact it uses
+defiteration.  But instead of giving the step function for the iteration, you
+give the value of the Nth element of the list.  You must also provide the
+keyword :last, giving the length of the list 
+
+What you end up with is your top-level function, definition disabled, and four
+rules:
+ - nth-of-fnname: tells what the Nth element is, for N in bounds
+ - nth-of-fnname-split: (disabled), tells what the Nth element is,
+                        causing a case-split on whether it's in bounds or not
+ - len-of-fnname: gives the length of the list
+ - true-listp-of-fnname: shows that the list is true-listp.
+
+See centaur/misc/equal-by-nths for a strategy that proves equivalences between
+lists based on length and Nth value.
+
+Syntax:
+~bv[]
+ (def-list-constructor foo (x y)
+     \"optional doc string\"
+     (declare (xargs :guard (and (natp x) (natp y)))) ;; optional declare forms
+     (+ idx-var x y)      ;; value of the IDX-VARth element
+     :length  (bar x y)     ;; final index
+     :index idx-var       ;; counter variable, default N
+    ... defiteration args ...)
+~/~/
+"
+  ;; args contains:
+  ;; (optional) declarations/doc string
+  ;; body
+  ;; keyword list
+  (def-list-constructor-fn name formals args))
+
+(local
+ (def-list-constructor foo (x y)
+   (declare (xargs :guard (and (natp x)
+                               (natp y))))
+   (+ n x y)
+   :length x))

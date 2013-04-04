@@ -20,6 +20,8 @@
 
 (in-package "ACL2")
 
+(include-book "tools/bstar" :dir :system)
+
 (encapsulate
  (((equal-by-nths-hyp) => *)
   ((equal-by-nths-lhs) => *)
@@ -81,4 +83,24 @@
                 (:instance equal-by-nths-constraint
                            (n (nth-badguy (equal-by-nths-lhs) (equal-by-nths-rhs))))))))
 
+
+;; Computed hint.  For now we'll assume that we're trying to prove an equality
+;; which is the conclusion of the goal, and that the rest of the goal is hyps
+;; that we might need.
+(defun equal-by-nths-hint-fn (clause)
+  (declare (xargs :mode :program))
+  (b* ((lit (car (last clause)))
+       ((unless (and (consp lit)
+                     (eq (car lit) 'equal)))
+        nil)
+       (hyps (dumb-negate-lit-lst (butlast clause 1)))
+       ((list x y) (cdr lit)))
+    `(:use ((:functional-instance
+             equal-by-nths
+             (equal-by-nths-lhs (lambda () ,x))
+             (equal-by-nths-rhs (lambda () ,y))
+             (equal-by-nths-hyp (lambda () (and . ,hyps))))))))
+
+(defmacro equal-by-nths-hint ()
+  '(equal-by-nths-hint-fn clause))
 
