@@ -1051,7 +1051,8 @@
         (if pair
             (car pair)
 
-; The following will be printed if we are looking at a local stobj value.
+; The following will be printed if we are looking at the value of a local stobj
+; or of a stobj bound by stobj-let.
 
           '|<Unknown value>|))
     x))
@@ -1928,7 +1929,8 @@
                       (get ',the-live-name
                            'redundant-raw-lisp-discriminator)))
 
-; d is expected to be of the form (DEFSTOBJ namep creator . field-templates)
+; d is expected to be of the form (DEFSTOBJ namep creator field-templates
+; . congruent-stobj-rep).
 
               (ok-p (and boundp
                          (consp d)
@@ -4337,9 +4339,9 @@
 
   The form ~c[(mbe :exec exec-code :logic logic-code)] macroexpands in ACL2 to
   a form that generates the guard proof obligation
-  ~c[(equal logic-code exec-code).  The ~c[:exec] and the ~c[:logic] code in an
-  ~c[mbe] call must have the same return type; for example, one cannot return
-  ~c[(]~ilc[mv]~c[ * *)] while the other returns just a single value.
+  ~c[(equal logic-code exec-code)].  The ~c[:exec] and the ~c[:logic] code in
+  an ~c[mbe] call must have the same return type; for example, one cannot
+  return ~c[(]~ilc[mv]~c[ * *)] while the other returns just a single value.
 
   Also ~pl[mbt], which stands for ``must be true.''  You may find it more
   natural to use ~ilc[mbt] for certain applications, as described in its
@@ -8643,6 +8645,14 @@
               :exec  (no-duplicatesp-eql-exec x)))
    (t ; (equal test 'equal)
     `(no-duplicatesp-equal ,x))))
+
+; The following is used in stobj-let.
+
+(defun chk-no-duplicatesp (lst)
+  (declare (xargs :guard (and (eqlable-listp lst)
+                              (no-duplicatesp lst)))
+           (ignore lst))
+  nil)
 
 ; Rassoc
 
@@ -12999,8 +13009,8 @@
   on a list of arguments that includes ~c[state] or user-defined ~ilc[stobj]s,
   these arguments will be shown as symbols such as ~c[|<state>|] in the error
   message.  In the case of a user-defined stobj bound by
-  ~ilc[with-local-stobj], the symbol printed will include the suffix
-  ~c[{local-stobj}], for example, ~c[|<st>{local-stobj}|].
+  ~ilc[with-local-stobj] or ~ilc[stobj-let], the symbol printed will include
+  the suffix ~c[{instance}], for example, ~c[|<st>{instance}|].
 
   It is harmless to include ~c[:non-executable t] in your own ~ilc[xargs]
   ~ilc[declare] form; ~c[defun-nx] will still lay down its own such
@@ -18336,10 +18346,10 @@
   is either a ~ilc[type-spec] or ~c[(ARRAY] ~ilc[type-spec] ~c[(max))], each
   ~c[vali] is an object satisfying ~c[typei], and each ~c[bi] is ~c[t] or
   ~c[nil].  Each pair ~c[:initially vali] and ~c[:resizable bi] may be omitted;
-  more on this below.  The ~c[:renaming alist] argument is optional and allows the user
-  to override the default function names introduced by this event.  The
-  ~ilc[doc-string] is also optional.  The ~c[:inline flg] Boolean argument is
-  also optional and declares to ACL2 that the generated access and update
+  more on this below.  The ~c[:renaming alist] argument is optional and allows
+  the user to override the default function names introduced by this event.
+  The ~ilc[doc-string] is also optional.  The ~c[:inline flg] Boolean argument
+  is also optional and declares to ACL2 that the generated access and update
   functions for the stobj should be implemented as macros under the hood (which
   has the effect of inlining the function calls).  The optional
   ~c[:congruent-to old-stobj-name] argument specifies an existing stobj with
@@ -18359,15 +18369,25 @@
   ~c[name], which has as its initial logical value a list of ~c[k] elements,
   where ~c[k] is the number of ``field descriptors'' provided.  The elements
   are listed in the same order in which the field descriptors appear.  If the
-  ~c[:type] of a field is ~c[(ARRAY type-spec (max))] then ~c[max] is a
-  non-negative integer or a constant (~pl[defconst]) whose value is a
-  non-negative integer, and the corresponding element of the stobj is initially
-  of length specified by ~c[max] containing the value, ~c[val], specified by
-  ~c[:initially val].  Otherwise, the ~c[:type] of the field is a
-  ~ilc[type-spec] and the corresponding element of the stobj is the specified
-  initial value ~c[val].  (The actual representation of the stobj in the
-  underlying Lisp may be quite different; ~pl[stobj-example-2].  For the moment
-  we focus entirely on the logical aspects of the object.)
+  ~c[:type] of a field is ~c[(ARRAY type-indicator (max))] then ~c[max] is a
+  non-negative integer or a symbol introduced by ~ilc[defconst]) whose value is
+  a non-negative integer, and the corresponding element of the stobj is
+  initially of length specified by ~c[max].
+
+  Whether the value ~c[:type] is of the form ~c[(ARRAY type-indicator (max))]
+  or, otherwise, just ~c[type-indicator], then ~c[type-indicator] is typically
+  a type-spec; ~pl[type-spec].  However, ~c[type-indicator] can also be the
+  name of a stobj that was previously introduced (by ~c[defstobj] or
+  ~ilc[defabsstobj]).  We ignore this ``nested stobj'' case below;
+  ~pl[stobj-let] for a discussion of stobjs within stobjs.
+
+  The keyword value ~c[:initially val] specifies the initial value of a field,
+  except for the case of a ~c[:type] ~c[(ARRAY type-indicator (max))], in which
+  case ~c[val] is the initial value of the corresponding array.
+
+  Note that the actual representation of the stobj in the underlying Lisp may
+  be quite different; ~pl[stobj-example-2].  For the moment we focus entirely
+  on the logical aspects of the object.
 
   In addition, the ~c[defstobj] event introduces functions for recognizing and
   creating the stobj and for recognizing, accessing, and updating its fields.
@@ -18386,9 +18406,10 @@
   are not evaluated.  If omitted, the type defaults to ~c[t] (unrestricted) and
   the initial value defaults to ~c[nil].
 
-  Each ~c[typei] must be either a ~ilc[type-spec] or else a list of the form
-  ~c[(ARRAY type-spec (max))].  The latter forms are said to be ``array
-  types.''  Examples of legal ~c[typei] are:
+  Each ~c[typei] must be either a ~ilc[type-spec] (with the exception noted
+  above for nested stobjs, discussed elsewhere; ~pl[stobj-let]) or else a list
+  of the form ~c[(ARRAY type-spec (max))].  The latter forms are said to be
+  ``array types.''  Examples of legal ~c[typei] are:
   ~bv[]
   (INTEGER 0 31)
   (SIGNED-BYTE 31)
@@ -23131,12 +23152,12 @@
 ; UNTRANSLATED term about var, except that we return nil if x is seen not to be
 ; a valid type-spec for ACL2.
 
-; Wrld an ACL2 logical world or a symbol, the difference being that a symbol
-; indicates that we should do a weaker check.  This extra argument was added
-; after Version_3.0 when Dave Greve pointed out that Common Lisp only allows
-; the type-spec (satisfies pred) when pred is a unary function symbol, not a
-; macro.  Thus, a non-symbol wrld can only strengthen this function, i.e.,
-; causing it to return nil in more cases.
+; Wrld is an ACL2 logical world or a symbol (typically, nil), the difference
+; being that a symbol indicates that we should do a weaker check.  This extra
+; argument was added after Version_3.0 when Dave Greve pointed out that Common
+; Lisp only allows the type-spec (satisfies pred) when pred is a unary function
+; symbol, not a macro.  Thus, a non-symbol wrld can only strengthen this
+; function, i.e., causing it to return nil in more cases.
 
   (declare (xargs :guard (or (symbolp wrld)
                              (plist-worldp wrld))
@@ -27754,6 +27775,7 @@
     set-gc-threshold$-fn
     certify-book-finish-complete
     chk-absstobj-invariants
+    get-stobj-creator
     ))
 
 (defconst *primitive-logic-fns-with-raw-code*
@@ -27989,6 +28011,7 @@
     with-lock
     catch-throw-to-local-top-level
     with-fast-alist-raw with-stolen-alist-raw fast-alist-free-on-exit-raw
+    stobj-let
     ))
 
 (defmacro with-live-state (form)
@@ -29599,9 +29622,12 @@
   #-(or acl2-loop-only (not acl2-par))
   `(our-multiple-value-prog1
     ,form
-    (loop while (futures-still-in-flight) do
-          (cw "Waiting for all proof threads to finish~%") ; for debug only
-          (sleep 0.1))))
+    (loop while (futures-still-in-flight)
+          as i from 1
+          do
+          (progn (when (eql (mod i 10) 5)
+                   (cw "Waiting for all proof threads to finish~%"))
+                 (sleep 0.1)))))
 
 (defmacro state-global-let* (bindings body)
 

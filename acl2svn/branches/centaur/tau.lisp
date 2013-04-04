@@ -9181,22 +9181,6 @@
         (t (cross-prod (cnf-dnf t (car lst) nil)
                        (split-on-conjoined-disjunctions (cdr lst))))))
 
-(defun pairlis-x1 (x1 lst)
-
-; Cons x1 onto the front of each element of lst.
-
-  (cond ((null lst) nil)
-        (t (cons (cons x1 (car lst))
-                 (pairlis-x1 x1 (cdr lst))))))
-
-(defun pairlis-x2 (lst x2)
-
-; Make an alist pairing each element of lst with x2.
-
-  (cond ((null lst) nil)
-        (t (cons (cons (car lst) x2)
-                 (pairlis-x2 (cdr lst) x2)))))
-
 (defun split-on-conjoined-disjunctions-in-hyps-of-pairs (pairs)
 
 ; Pairs is a list of (hyps . concl) pairs as produced by unprettify.  We split

@@ -4811,6 +4811,7 @@
             last-step-limit            ;;; propagate step-limit past expansion
             illegal-to-certify-message ;;; needs to persist past expansion
             splitter-output            ;;; allow user to modify this in a book
+            top-level-errorp           ;;; allow TOP-LEVEL errors to propagate
             ))))
     val))
 

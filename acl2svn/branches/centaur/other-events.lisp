@@ -18254,7 +18254,7 @@
   You can also specify just the directories you want, among those offered in
   ~c[Makefile].  For example:
   ~bv[]
-  make ACL2_JOBS=8 regression ACL2_BOOK_DIRS='symbolic paco'
+  make -j 8 regression ACL2_BOOK_DIRS='symbolic paco'
   ~ev[]
 
   By default, your acl2-customization file (~pl[acl2-customization]) is ignored
@@ -18378,7 +18378,7 @@
   but you can use ~c[make -i] to force make to continue past failures.  You can
   also use the ~c[-j] option to speed things up if you have a multi-core
   machine, e.g., ~c[make -j 8] in a book directory or, if in the ACL2 sources
-  directory, ~c[make ACL2_JOBS=8 regression].
+  directory, ~c[make -j 8 regression].
 
   This concludes the basic instructions for creating a ~c[Makefile] in a
   directory including books.  Here are some other capabilities offered by
@@ -20406,72 +20406,72 @@
 
 (defun chk-stobj-field-descriptor (name field-descriptor ctx wrld state)
 
-; See the comment just before chk-acceptable-defstobj1 for an
-; explanation of our handling of Common Lisp compliance.
+; See the comment just before chk-acceptable-defstobj1 for an explanation of
+; our handling of Common Lisp compliance.
 
-   (cond
-    ((symbolp field-descriptor) (value nil))
-    (t
-     (er-progn
-      (if (and (consp field-descriptor)
-               (symbolp (car field-descriptor))
-               (keyword-value-listp (cdr field-descriptor))
-               (member-equal (length field-descriptor) '(1 3 5 7))
-               (let ((keys (odds field-descriptor)))
-                 (and (no-duplicatesp keys)
-                      (subsetp-eq keys '(:type :initially :resizable)))))
-          (value nil)
-          (er soft ctx
-              "The field descriptors of a single-threaded object ~
-               definition must be a symbolic field-name or a list of ~
-               the form (field-name :type type :initially val), where ~
-               field-name is a symbol.  The :type and :initially ~
-               keyword assignments are optional and their order is ~
-               irrelevant.  The purported descriptor ~x0 for a field ~
-               in ~x1 is not of this form."
-              field-descriptor
-              name))
-      (let ((field (car field-descriptor))
+  (cond
+   ((symbolp field-descriptor) (value nil))
+   (t
+    (er-progn
+     (cond ((and (consp field-descriptor)
+                 (symbolp (car field-descriptor))
+                 (keyword-value-listp (cdr field-descriptor))
+                 (member-equal (length field-descriptor) '(1 3 5 7))
+                 (let ((keys (odds field-descriptor)))
+                   (and (no-duplicatesp keys)
+                        (subsetp-eq keys '(:type :initially :resizable)))))
+            (value nil))
+           (t (er soft ctx
+                  "The field descriptors of a single-threaded object ~
+                   definition must be a symbolic field-name or a list of the ~
+                   form (field-name :type type :initially val), where ~
+                   field-name is a symbol.  The :type and :initially keyword ~
+                   assignments are optional and their order is irrelevant.  ~
+                   The purported descriptor ~x0 for a field in ~x1 is not of ~
+                   this form."
+                  field-descriptor
+                  name)))
+     (let* ((field (car field-descriptor))
             (type (if (assoc-keyword :type (cdr field-descriptor))
                       (cadr (assoc-keyword :type (cdr field-descriptor)))
                     t))
-            (init (if (assoc-keyword :initially (cdr field-descriptor))
-                      (cadr (assoc-keyword :initially (cdr field-descriptor)))
-                    nil))
+            (initp (assoc-keyword :initially (cdr field-descriptor)))
+            (init (if initp (cadr initp) nil))
             (resizable (if (assoc-keyword :resizable (cdr field-descriptor))
-                           (cadr (assoc-keyword :resizable (cdr field-descriptor)))
+                           (cadr (assoc-keyword :resizable
+                                                (cdr field-descriptor)))
                          nil)))
-        (cond
-         ((and resizable (not (eq resizable t)))
-          (er soft ctx
-              "The :resizable value in the ~x0 field of ~x1 is ~
-               illegal:  ~x2.  The legal values are t and nil."
-              field name resizable))
-         ((and (consp type)
-               (eq (car type) 'array))
-          (cond
-           ((not (and (true-listp type)
-                      (equal (length type) 3)
-                      (true-listp (caddr type))
-                      (equal (length (caddr type)) 1)))
-            (er soft ctx
-                "When a field descriptor specifies an ARRAY :type, the type ~
-                 must be of the form (ARRAY etype (n)).  Note that we only ~
-                 support single-dimensional arrays.  The purported ARRAY ~
-                 :type ~x0 for the ~x1 field of ~x2 is not of this form."
-                type field name))
+       (cond
+        ((and resizable (not (eq resizable t)))
+         (er soft ctx
+             "The :resizable value in the ~x0 field of ~x1 is illegal:  ~x2.  ~
+              The legal values are t and nil."
+             field name resizable))
+        ((and (consp type)
+              (eq (car type) 'array))
+         (cond
+          ((not (and (true-listp type)
+                     (equal (length type) 3)
+                     (true-listp (caddr type))
+                     (equal (length (caddr type)) 1)))
+           (er soft ctx
+               "When a field descriptor specifies an ARRAY :type, the type ~
+                must be of the form (ARRAY etype (n)).  Note that we only ~
+                support single-dimensional arrays.  The purported ARRAY :type ~
+                ~x0 for the ~x1 field of ~x2 is not of this form."
+               type field name))
           (t (let* ((type0 (fix-stobj-array-type type wrld))
                     (etype (cadr type0))
-                    (etype-term (translate-declaration-to-guard
-                                 etype 'x wrld))
-                    (n (car (caddr type0))))
+                    (stobjp (stobjp etype t wrld))
+                    (etype-term ; used only when (not stobjp)
+                     (and (not stobjp) ; optimization
+                          (translate-declaration-to-guard etype 'x wrld)))
+                    (n (car (caddr type0)))
+                    (etype-error-string
+                     "The element type specified for the ~x0 field of ~x1, ~
+                      namely ~x2, is not recognized by ACL2 as a type-spec ~
+                      (see :DOC type-spec) or as a user-defined stobj name."))
                (cond
-                ((null etype-term)
-                 (er soft ctx
-                     "The element type specified for the ~x0 field of ~
-                      ~x1, namely ~x2, is not recognized by ACL2 as a ~
-                      type-spec.  See :DOC type-spec."
-                     field name type))
                 ((not (natp n))
                  (er soft ctx
                      "An array dimension must be a non-negative integer or a ~
@@ -20479,18 +20479,34 @@
                       ~ The :type ~x0 for the ~x1 field of ~x2 is thus ~
                       illegal."
                      type0 field name))
+                (stobjp ; Defstobj-raw-init-fields depends on this check.
+                 (cond ((eq etype 'state)
+                        (er soft ctx
+                            etype-error-string
+                            field name etype))
+                       ((null initp) (value nil))
+                       (t (er soft ctx
+                              "The :initially keyword must be omitted for a ~
+                               :type specified as an array of stobjs.  But ~
+                               for :type ~x0, :initially is specified as ~x1 ~
+                               for the ~x2 field of ~x3."
+                              type init field name))))
+                ((null etype-term)
+                 (er soft ctx
+                     etype-error-string
+                     field name etype))
                 (t
                  (er-let*
-                   ((pair (simple-translate-and-eval etype-term
-                                                     (list (cons 'x init))
-                                                     nil
-                                                     (msg
-                                                      "The type ~x0"
-                                                      etype-term)
-                                                     ctx
-                                                     wrld
-                                                     state
-                                                     nil)))
+                     ((pair (simple-translate-and-eval etype-term
+                                                       (list (cons 'x init))
+                                                       nil
+                                                       (msg
+                                                        "The type ~x0"
+                                                        etype-term)
+                                                       ctx
+                                                       wrld
+                                                       state
+                                                       nil)))
 
 ; pair is (tterm . val), where tterm is a term and val is its value
 ; under x<-init.
@@ -20511,51 +20527,66 @@
                            specification for the ~x2 field of ~x3."
                           init etype field name))
                      (t (value nil)))))))))))
-         ((assoc-keyword :resizable (cdr field-descriptor))
-          (er soft ctx
-              "The :resizable keyword is only legal for array types, hence is ~
-               illegal for the ~x0 field of ~x1."
-              field name))
-         (t (let ((type-term (translate-declaration-to-guard
-                              type 'x wrld)))
-              (cond
-               ((null type-term)
-                (er soft ctx
-                    "The :type specified for the ~x0 field of ~x1, ~
-                     namely ~x2, is not recognized by ACL2 as a ~
-                     type-spec.  See :DOC type-spec."
-                    field name type))
-               (t
-                (er-let*
-                  ((pair (simple-translate-and-eval type-term
-                                                    (list (cons 'x init))
-                                                    nil
-                                                    (msg
-                                                     "The type ~x0"
-                                                     type-term)
-                                                    ctx
-                                                    wrld
-                                                    state
-                                                    nil)))
+        ((assoc-keyword :resizable (cdr field-descriptor))
+         (er soft ctx
+             "The :resizable keyword is only legal for array types, hence is ~
+              illegal for the ~x0 field of ~x1."
+             field name))
+        (t (let* ((stobjp (stobjp type t wrld))
+                  (type-term ; used only when (not stobjp)
+                   (and (not stobjp) ; optimization
+                        (translate-declaration-to-guard type 'x wrld)))
+                  (type-error-string
+                   "The :type specified for the ~x0 field of ~x1, namely ~x2, ~
+                    is not recognized by ACL2 as a type-spec (see :DOC ~
+                    type-spec) or as a user-defined stobj name."))
+             (cond
+              (stobjp ; Defstobj-raw-init-fields depends on this check.
+               (cond ((eq type 'state)
+                      (er soft ctx
+                          type-error-string
+                          field name type))
+                     ((null initp) (value nil))
+                     (t (er soft ctx
+                            "The :initially keyword must be omitted for a ~
+                             :type specified as a stobj.  But for :type ~x0, ~
+                             :initially is specified as ~x1 for the ~x2 field ~
+                             of ~x3."
+                            type init field name))))
+              ((null type-term)
+               (er soft ctx
+                   type-error-string
+                   field name type))
+              (t
+               (er-let* ((pair (simple-translate-and-eval type-term
+                                                          (list (cons 'x init))
+                                                          nil
+                                                          (msg
+                                                           "The type ~x0"
+                                                           type-term)
+                                                          ctx
+                                                          wrld
+                                                          state
+                                                          nil)))
 
 ; pair is (tterm . val), where tterm is a term and val is its value
 ; under x<-init.
 
-                  (er-progn
-                   (chk-common-lisp-compliant-subfunctions
-                    nil (list field) (list (car pair))
-                    wrld "body" ctx state)
-                   (chk-unrestricted-guards-for-user-fns
-                     (all-fnnames (car pair))
-                     wrld ctx state)
-                   (cond
-                    ((not (cdr pair))
-                     (er soft ctx
-                         "The value specified by the :initially ~
-                          keyword, namely ~x0, fails to satisfy the ~
-                          declared :type ~x1 for the ~x2 field of ~x3."
-                         init type field name))
-                    (t (value nil)))))))))))))))
+                 (er-progn
+                  (chk-common-lisp-compliant-subfunctions
+                   nil (list field) (list (car pair))
+                   wrld "body" ctx state)
+                  (chk-unrestricted-guards-for-user-fns
+                   (all-fnnames (car pair))
+                   wrld ctx state)
+                  (cond
+                   ((not (cdr pair))
+                    (er soft ctx
+                        "The value specified by the :initially keyword, ~
+                         namely ~x0, fails to satisfy the declared :type ~x1 ~
+                         for the ~x2 field of ~x3."
+                        init type field name))
+                   (t (value nil)))))))))))))))
 
 (defun chk-acceptable-defstobj-renaming
   (name field-descriptors renaming ctx state default-names)
@@ -20697,7 +20728,7 @@
 
 ; We check whether it is legal to define name as a single-threaded
 ; object with the description given in field-descriptors.  We know
-; name is a legal (and new) stobj name and we know that renaming is an
+; name is a legal (and new) stobj name and we know that renaming is a
 ; symbol to symbol doublet-style alist.  But we know nothing else.  We
 ; either signal an error or return the world in which the event is to
 ; be processed (thus implementing redefinitions).  Names is, in
@@ -20732,16 +20763,16 @@
        (chk-just-new-names const-names 'const nil ctx wrld state))))
    (t
 
-; An element of field-descriptors (i.e., of ftemps) is either a
-; symbolic field name, field, or else of the form (field :type type
-; :initially val), where either or both of the keyword fields can be
-; omitted.  Val must be an evg, i.e., an unquoted constant like t,
-; nil, 0 or undef (the latter meaning the symbol 'undef).  :Type
-; defaults to the unrestricted type t and :initially defaults to nil.
-; Type is either a primitive type, as recognized by
-; translate-declaration-to-guard, or else is of the form (array ptype
-; (n)) where ptype is a primitive type and n is an positive integer
-; constant.
+; An element of field-descriptors (i.e., of ftemps) is either a symbolic field
+; name, field, or else of the form (field :type type :initially val), where
+; either or both of the keyword fields can be omitted.  Val must be an evg,
+; i.e., an unquoted constant like t, nil, 0 or undef (the latter meaning the
+; symbol 'undef).  :Type defaults to the unrestricted type t and :initially
+; defaults to nil.  Type is either a primitive type, as recognized by
+; translate-declaration-to-guard, or a stobj name, or else is of the form
+; (array ptype (n)), where ptype is a primitive type or stobj name and n is an
+; positive integer constant.  If type is a stobj name or an array of such, then
+; :initially must be omitted.
 
     (er-progn
      (chk-stobj-field-descriptor name (car ftemps) ctx wrld state)
@@ -20784,25 +20815,6 @@
                                            names))
                                   (cons accessor-const-name
                                         const-names))))))))
-
-(defun the-live-var (name)
-
-; If the user declares a single-threaded object named $S then we will
-; use *the-live-$s* as the Lisp parameter holding the live object
-; itself.  One might wonder why we don't choose to name this object
-; $s?  Perhaps we could, since starting with Version  2.6 we no longer
-; get the symbol-value of *the-live-$s* except at the top level,
-; because of local stobjs.  Below we explain our earlier thinking.
-
-; Historical Plaque for Why the Live Var for $S Is Not $S
-
-; [Otherwise] Consider how hard it would then be to define the raw defs
-; (below).  $S is the formal parameter, and naturally so since we want
-; translate to enforce the rules on single-threadedness.  The raw code
-; has to check whether the actual is the live object.  We could hardly
-; write (eq $S $S).
-
-  (packn-pos (list "*THE-LIVE-" name "*") name))
 
 (defconst *defstobj-keywords*
   '(:renaming :doc :inline :congruent-to))
@@ -21032,7 +21044,8 @@
 ; this became moot because of the following claim: the raw Lisp functions are
 ; only called on live stobjs (this change, and others involving :inline, were
 ; contributed by Rob Sumners).  We believe this claim because of the following
-; argument.
+; argument.  Note that there is an exception for the recognizer, which can be
+; applied to an ordinary object, but we do not consider this exception here.
 ;
 ;   a) The *1* function now has an additional requirement that not only does
 ;      guard checking pass, but also, all of the stobjs arguments passed in
@@ -21044,7 +21057,7 @@
 ;         in any evaluation.
 ;      -- The base case is covered by the binding of stobj parameters to
 ;         the global live stobj in the acl2-loop, or by the restrictions
-;         placed upon with-local-stobj.
+;         placed upon with-local-stobj and stobj-let.
 ;      -- The induction step is proven by the signature requirements of
 ;         functions that access and/or update stobjs.
 
@@ -21113,8 +21126,9 @@
 ; the name of the recognizer for the single-threaded object; create-name is the
 ; name of the constructor for the stobj; fields is a list corresponding to the
 ; field descriptors, but normalized with respect to the renaming, types, etc.;
-; doc is the doc string, or nil if no doc string is supplied; and inline is t
-; if :inline t was specified in the defstobj event, else nil.  A field in
+; doc is the doc string, or nil if no doc string is supplied; inline is t if
+; :inline t was specified in the defstobj event, else nil; and congruent-to is
+; the :congruent-to field of the defstobj event (default: nil).  A field in
 ; fields is of the form (recog-name type init accessor-name updater-name
 ; length-name resize-name resizable).  The last three fields are nil unless
 ; type has the form (ARRAY ptype (n)), in which case ptype is a primitive type
@@ -21232,10 +21246,10 @@
                                               :verify-guards t))
                               (if (atom x)
                                   (equal x nil)
-                                  (and ,(translate-declaration-to-guard
+                                  (and ,(translate-stobj-type-to-guard
                                          etype '(car x) wrld)
                                        (,recog-name (cdr x)))))))
-             (t (let ((type-term (translate-declaration-to-guard
+             (t (let ((type-term (translate-stobj-type-to-guard
                                   type 'x wrld)))
                   
 ; We may not use x in the type-term and so have to declare it ignorable.
@@ -21250,6 +21264,9 @@
 
 (defun defstobj-field-fns-axiomatic-defs (top-recog var n ftemps wrld)
 
+; Wrld is normally a logical world, but it can be nil when calling this
+; function from raw Lisp.
+
 ; Warning: Keep the formals in the definitions below in sync with corresponding
 ; formals defstobj-field-fns-raw-defs.  Otherwise trace$ may not work
 ; correctly; we saw such a problem in Version_5.0 for a resize function.
@@ -21260,6 +21277,13 @@
 ; updaters, and optionally, array resizing and length, of a single-threaded
 ; resource.
 
+; Warning: Each updater definition should immediately follow the corresponding
+; accessor definition, so that this is the case for the list of definitions
+; returned by defstobj-axiomatic-defs.  That list of definitions becomes the
+; 'stobj property laid down by defstobj-fn, and function
+; chk-stobj-let/updaters1 assumes that it will find each updater definition in
+; that property immediately after the corresponding accessor definition.
+
   (cond
    ((endp ftemps)
     nil)
@@ -21267,12 +21291,17 @@
              (type (nth 1 field-template))
              (init (nth 2 field-template))
              (arrayp (and (consp type) (eq (car type) 'array)))
-             (type-term (and (not arrayp)
-                             (translate-declaration-to-guard type 'v wrld)))
+             (type-term            ; used in guard
+              (and (not arrayp)    ; else type-term is not used
+                   (if (null wrld) ; called from raw Lisp, so guard is ignored
+                       t
+                     (translate-stobj-type-to-guard type 'v wrld))))
              (array-etype (and arrayp (cadr type)))
-             (array-etype-term
-              (and arrayp
-                   (translate-declaration-to-guard array-etype 'v wrld)))
+             (array-etype-term     ; used in guard
+              (and arrayp          ; else array-etype-term is not used
+                   (if (null wrld) ; called from raw Lisp, so guard is ignored
+                       t
+                     (translate-stobj-type-to-guard array-etype 'v wrld))))
              (array-length (and arrayp (car (caddr type))))
              (accessor-name (nth 3 field-template))
              (updater-name (nth 4 field-template))
@@ -21303,8 +21332,8 @@
                  `(prog2$ (hard-error
                            ',resize-name
                            "The array field corresponding to accessor ~x0 of ~
-                             stobj ~x1 was not declared :resizable t.  ~
-                             Therefore, it is illegal to resize this array."
+                            stobj ~x1 was not declared :resizable t.  ~
+                            Therefore, it is illegal to resize this array."
                            (list (cons #\0 ',accessor-name)
                                  (cons #\1 ',var)))
                           ,var)))
@@ -21322,8 +21351,8 @@
                                                   (integerp i)
                                                   (<= 0 i)
                                                   (< i (,length-name ,var))
-                                                  ,@(if (equal array-etype-term
-                                                               t)
+                                                  ,@(if (eq array-etype-term
+                                                            t)
                                                         nil
                                                       (list array-etype-term)))
                                              :verify-guards t))
@@ -21338,7 +21367,7 @@
                              (nth ,n ,var))
              (,updater-name (v ,var)
                             (declare (xargs :guard
-                                            ,(if (equal type-term t)
+                                            ,(if (eq type-term t)
                                                  `(,top-recog ,var)
                                                `(and ,type-term
                                                      (,top-recog ,var)))
@@ -21347,7 +21376,7 @@
            (defstobj-field-fns-axiomatic-defs
              top-recog var (+ n 1) (cdr ftemps) wrld))))))))
 
-(defun defstobj-axiomatic-init-fields (ftemps)
+(defun defstobj-axiomatic-init-fields (ftemps wrld)
 
 ; Keep this in sync with defstobj-raw-init-fields.
 
@@ -21357,16 +21386,21 @@
              (type (nth 1 field-template))
              (arrayp (and (consp type) (eq (car type) 'array)))
              (array-size (and arrayp (car (caddr type))))
-             (init (nth 2 field-template)))
+             (init0 (nth 2 field-template))
+             (creator (get-stobj-creator (if arrayp (cadr type) type)
+                                         wrld))
+             (init (if creator
+                       `(non-exec (,creator))
+                     (kwote init0))))
         (cond
          (arrayp
-          (cons `(make-list ,array-size :initial-element ',init)
-                (defstobj-axiomatic-init-fields (cdr ftemps))))
+          (cons `(make-list ,array-size :initial-element ,init)
+                (defstobj-axiomatic-init-fields (cdr ftemps) wrld)))
          (t ; whether the type is given or not is irrelevant
-          (cons (kwote init)
-                (defstobj-axiomatic-init-fields (cdr ftemps)))))))))
+          (cons init
+                (defstobj-axiomatic-init-fields (cdr ftemps) wrld))))))))
 
-(defun defstobj-creator-fn (creator-name field-templates)
+(defun defstobj-creator-fn (creator-name field-templates wrld)
 
 ; This function generates the logic initialization code for the given stobj
 ; name.
@@ -21374,7 +21408,7 @@
   `(,creator-name
     ()
     (declare (xargs :guard t :verify-guards t))
-    (list ,@(defstobj-axiomatic-init-fields field-templates))))
+    (list ,@(defstobj-axiomatic-init-fields field-templates wrld))))
 
 (defun defstobj-axiomatic-defs (name template wrld)
 
@@ -21383,8 +21417,8 @@
 ; Template is the defstobj-template for name and args and thus
 ; corresponds to some (defstobj name . args) event.  We generate the
 ; #+acl2-loop-only defs for that event and return a list of defs.  For
-; each def it is the case that (defun . def) is a legal defun, and
-; they can executed in the order returned.
+; each def it is the case that (defun . def) is a legal defun; and
+; these defs can be executed in the order returned.
 
 ; These defs are processed to axiomatize the recognizer, accessor and
 ; updater functions for the single-threaded resource.  They are also
@@ -21393,17 +21427,25 @@
 ; raw lisp code when the code is applied to an object other than the
 ; live one.
 
-; WARNING: If you change the formals of these generated axiomatic
-; defs, be sure to change the formals of the corresponding raw defs.
+; WARNING: If you change the formals of these generated axiomatic defs, be sure
+; to change the formals of the corresponding raw defs.
 
-; See the Essay on Defstobj Definitions
+; Warning: Each updater definition in the list returned should immediately
+; follow the corresponding accessor definition, as guaranteed by the call of
+; defstobj-field-fns-axiomatic-defs, below.  This is important because
+; defstobj-axiomatic-defs provides the 'stobj property laid down by
+; defstobj-fn, and the function chk-stobj-let/updaters1 assumes that it will
+; find each updater definition in that property immediately after the
+; corresponding accessor definition.
+
+; See the Essay on Defstobj Definitions.
 
   (let ((field-templates (caddr template)))
     (append
      (defstobj-component-recognizer-axiomatic-defs name template
        field-templates wrld)
      (cons
-      (defstobj-creator-fn (cadr template) field-templates)
+      (defstobj-creator-fn (cadr template) field-templates wrld)
       (defstobj-field-fns-axiomatic-defs (car template) name 0
         field-templates wrld)))))
 
@@ -21424,6 +21466,9 @@
 
 ; Copy the first n elements of array a1 into array a2, starting with index i,
 ; and then return a2.  See also copy-array-svref and stobj-copy-array-fix-aref.
+; Note that this copying does not copy substructures, so in the case that a1 is
+; an array of stobjs, if 0 <= i < n then the ith element of a1 will be EQ to
+; the ith element of a2 after the copy is complete.
 
   (cond
    ((>= i n) a2)
@@ -21470,9 +21515,10 @@
 
 ; Through Version_4.3, this macro was called the-live-stobj, and its body was
 ; `(eq ,name ,(the-live-var name)).  However, we need a more permissive
-; definition in support of congruent stobjs.  We use typep instead of arrayp
-; because in CCL, disassemble seems to suggest that typep may be faster,
-; perhaps comparable with an eq test.
+; definition in support of congruent stobjs (and perhaps local stobjs and stobj
+; fields of nested stobjs).  We use typep instead of arrayp because in CCL,
+; disassemble seems to suggest that typep may be faster, perhaps comparable
+; with an eq test.
 
   `(typep ,name 'array))
 
@@ -21529,7 +21575,22 @@
             (type (nth 1 field-template))
             (init (nth 2 field-template))
             (arrayp (and (consp type) (eq (car type) 'array)))
-            (array-etype (and arrayp (cadr type)))
+            (array-etype0 (and arrayp (cadr type)))
+            (stobj-creator (get-stobj-creator (if arrayp array-etype0 type)
+                                              nil))
+            (scalar-type
+             (if stobj-creator t type)) ; only used when (not arrayp)
+            (array-etype (and arrayp
+                              (if stobj-creator
+
+; Stobj-creator is non-nil when array-etype is a stobj.  The real element type,
+; then, is simple-array rather than a simple-array-type, so we might say that
+; the parent stobj array is not simple.  But we will assume that the advantage
+; of having a simple-vector for the parent stobj outweighs the advantage of
+; having a simple-vector element type declaration.
+
+                                  t
+                                array-etype0)))
             (simple-type (and arrayp
                               (simple-array-type array-etype (caddr type))))
             (array-length (and arrayp (car (caddr type))))
@@ -21561,13 +21622,13 @@
             ,@(if (not resizable)
                   `((declare (ignore i))
                     (prog2$
-                      (er hard ',resize-name
-                          "The array field corresponding to accessor ~x0 of ~
-                           stobj ~x1 was not declared :resizable t.  ~
-                           Therefore, it is illegal to resize this array."
-                          ',accessor-name
-                          ',var)
-                      ,var))
+                     (er hard ',resize-name
+                         "The array field corresponding to accessor ~x0 of ~
+                          stobj ~x1 was not declared :resizable t.  ~
+                          Therefore, it is illegal to resize this array."
+                         ',accessor-name
+                         ',var)
+                     ,var))
                 `((if (not (and (integerp i)
                                 (>= i 0)
                                 (< i array-dimension-limit)))
@@ -21582,9 +21643,7 @@
                              (cons #\1 array-dimension-limit)))
                     (let* ((var ,var)
                            (old (svref var ,n))
-                           (min-index (if (< i (length old))
-                                          i
-                                        (length old)))
+                           (min-index (min i (length old)))
                            (new (make-array$ i
 
 ; The :initial-element below is probably not necessary in the case
@@ -21606,14 +21665,19 @@
                       (setf (svref var ,n)
                             (,(pack2 'stobj-copy-array- fix-vref)
                              old new 0 min-index))
+                      ,@(and stobj-creator
+                             `((when (< (length old) i)
+                                 (loop for j from (length old) to (1- i)
+                                       do (setf (svref new j)
+                                                (,stobj-creator))))))
                       var)))))
            (,accessor-name
             (i ,var)
             (declare (type (and fixnum (integer 0 *)) i))
             ,@(and inline (list *stobj-inline-declare*))
             (the ,array-etype
-              (,vref (the ,simple-type (svref ,var ,n))
-                     (the (and fixnum (integer 0 *)) i))))
+                 (,vref (the ,simple-type (svref ,var ,n))
+                        (the (and fixnum (integer 0 *)) i))))
            (,updater-name
             (i v ,var)
             (declare (type (and fixnum (integer 0 *)) i)
@@ -21621,11 +21685,15 @@
             ,@(and inline (list *stobj-inline-declare*))
             (progn 
               #+hons (memoize-flush ,flush-var)
+
+; See the long comment below for the updater in the scalar case, about
+; supporting *1* functions.
+
               (setf (,vref (the ,simple-type (svref ,var ,n))
                            (the (and fixnum (integer 0 *)) i))
                     (the ,array-etype v))
               ,var))))
-        ((equal type t)
+        ((eq scalar-type t)
          `((,accessor-name (,var)
                            ,@(and inline (list *stobj-inline-declare*))
                            (svref ,var ,n))
@@ -21633,25 +21701,42 @@
                           ,@(and inline (list *stobj-inline-declare*))
                           (progn
                             #+hons (memoize-flush ,flush-var)
+
+; For the case of a stobj field, we considered causing an error here since the
+; raw Lisp code for stobj-let avoids calling updaters because there is no need:
+; updates for fields that are stobjs have already updated destructively.
+; However, a raw Lisp updater can be called by a *1* function, say *1*f,
+; applied to live stobjs, when guard checking does not pass control to the raw
+; Lisp function, f.  Perhaps we could optimize to avoid this, but there is no
+; need; this setf is fast and is only called on behalf of executing *1*
+; function calls.  See the comment referencing "defstobj-field-fns-raw-defs" in
+; community book misc/nested-stobj-tests.lisp.  To see this point in action,
+; evaluate the forms under that comment after modifying this definition by
+; uncommenting the following line of code.
+
+;                           ,@(when stobj-creator '((break$))) ; see just above
+
                             (setf (svref ,var ,n) v)
                             ,var))))
         (t
-         `((,accessor-name (,var)
+         (assert$
+          (not stobj-creator) ; scalar-type is t for stobj-creator
+          `((,accessor-name (,var)
+                            ,@(and inline (list *stobj-inline-declare*))
+                            (the ,scalar-type
+                                 (aref (the (simple-array ,scalar-type (1))
+                                            (svref ,var ,n))
+                                       0)))
+            (,updater-name (v ,var)
+                           (declare (type ,scalar-type v))
                            ,@(and inline (list *stobj-inline-declare*))
-                           (the ,type
-                                (aref (the (simple-array ,type (1))
-                                           (svref ,var ,n))
-                                      0)))
-           (,updater-name (v ,var)
-                          (declare (type ,type v))
-                          ,@(and inline (list *stobj-inline-declare*))
-                          (progn
-                            #+hons (memoize-flush ,flush-var)
-                            (setf (aref (the (simple-array ,type (1))
-                                          (svref ,var ,n))
-                                        0)
-                                  (the ,type v))
-                            ,var))))))
+                           (progn
+                             #+hons (memoize-flush ,flush-var)
+                             (setf (aref (the (simple-array ,scalar-type (1))
+                                              (svref ,var ,n))
+                                         0)
+                                   (the ,scalar-type v))
+                             ,var)))))))
      (defstobj-field-fns-raw-defs var flush-var inline (1+ n) (cdr ftemps))))))
 
 (defun defstobj-raw-init-fields (ftemps)
@@ -21665,15 +21750,40 @@
              (arrayp (and (consp type) (eq (car type) 'array)))
              (array-etype (and arrayp (cadr type)))
              (array-size (and arrayp (car (caddr type))))
+             (stobj-creator (get-stobj-creator (if arrayp array-etype type)
+                                               nil))
              (init (nth 2 field-template)))
         (cond
          (arrayp
-          (cons `(make-array$ ,array-size
-                              :element-type ',array-etype
-                              :initial-element ',init)
+          (cons (cond (stobj-creator
+                       (assert$
+                        (null init) ; checked by chk-stobj-field-descriptor
+                        (assert$
+
+; We expect array-size to be a natural number, as this is checked by
+; chk-stobj-field-descriptor (using fix-stobj-array-type).  It is important
+; that array-size not be a Lisp form that references the variable AR, even
+; after macroexpasion, in order to avoid capture by the binding of AR below.
+
+                         (natp array-size)
+                         `(let ((ar (make-array$ ,array-size
+
+; Do not be tempted to use :initial-element (,stobj-creator) here, because that
+; would presumably share structure among all the created stobjs.
+
+                                                 :element-type ',array-etype)))
+                            (loop for i from 0 to ,(1- array-size)
+                                  do
+                                  (setf (svref ar i) (,stobj-creator)))
+                            ar))))
+                      (t `(make-array$ ,array-size
+                                       :element-type ',array-etype
+                                       :initial-element ',init)))
                 (defstobj-raw-init-fields (cdr ftemps))))
-         ((equal type t)
+         ((eq type t)
           (cons (kwote init) (defstobj-raw-init-fields (cdr ftemps))))
+         (stobj-creator
+          (cons `(,stobj-creator) (defstobj-raw-init-fields (cdr ftemps))))
          (t (cons `(make-array$ 1
                                 :element-type ',type
                                 :initial-element ',init)
@@ -21751,26 +21861,35 @@
          (cond
           ((and (consp type)
                 (eq (car type) 'array))
-           (putprop
-            length-fn 'stobjs-in (list name) 
-            (putprop
-             resize-fn 'stobjs-in (list nil name)
+           (let* ((etype (cadr type))
+                  (stobj-flg (and (stobjp etype t wrld)
+                                  etype)))
              (putprop
-              resize-fn 'stobjs-out (list name)
+              length-fn 'stobjs-in (list name) 
               (putprop
-               acc-fn 'stobjs-in (list nil name)
+               resize-fn 'stobjs-in (list nil name)
                (putprop
-                upd-fn 'stobjs-in (list nil nil name)
+                resize-fn 'stobjs-out (list name)
                 (putprop
-                 upd-fn 'stobjs-out (list name) wrld)))))))
+                 acc-fn 'stobjs-in (list nil name)
+                 (putprop-unless
+                  acc-fn 'stobjs-out (list stobj-flg) '(nil)
+                  (putprop
+                   upd-fn 'stobjs-in (list nil stobj-flg name)
+                   (putprop
+                    upd-fn 'stobjs-out (list name) wrld)))))))))
           (t
-           (putprop
-            acc-fn 'stobjs-in (list name)
-            (putprop
-             upd-fn 'stobjs-in (list nil name)
+           (let ((stobj-flg (and (stobjp type t wrld)
+                                 type)))
              (putprop
-              upd-fn 'stobjs-out (list name) wrld))))))))))
-          
+              acc-fn 'stobjs-in (list name)
+              (putprop-unless
+               acc-fn 'stobjs-out (list stobj-flg) '(nil)
+               (putprop
+                upd-fn 'stobjs-in (list stobj-flg name)
+                (putprop
+                 upd-fn 'stobjs-out (list name) wrld))))))))))))
+
 (defun put-stobjs-in-and-outs (name template wrld)
 
 ; We are processing a (defstobj name . args) event for which template
@@ -21883,7 +22002,14 @@
                  (raw-def-lst (defstobj-raw-defs name template nil wrld1))
                  (recog-name (car template))
                  (creator-name (cadr template))
-                 (names (strip-cars ax-def-lst))
+                 (names
+
+; Warning: Each updater should immediately follow the corresponding accessor --
+; and, this is guaranteed by the call of defstobj-axiomatic-defs, above) -- so
+; that the 'stobj property laid down below puts each updater immediately after
+; the corresponding accessor, as assumed by function chk-stobj-let/updaters1.
+
+		  (strip-cars ax-def-lst))
                  (the-live-var (the-live-var name))
                  (doc (fourth template))
                  (congruent-to (sixth template)))
@@ -21996,6 +22122,9 @@
                                      (append (remove1-eq
                                               creator-name
                                               (remove1-eq recog-name
+
+; See the comment in the binding of names above.
+
                                                           names))
                                              field-const-names)))
                               (putprop-x-lst1
@@ -22212,8 +22341,9 @@
 ; Remark.  The subset restriction does not impair the relevance of this Claim.
 ; In an actual evaluation in the top-level loop, consider the latches as
 ; including a binding for every known stobj name that occurs in the term to be
-; evaluated.  Local stobjs don't present a problem, since each will add a
-; binding to the latches; but we ignore local stobjs for the proof.
+; evaluated.  Local stobjs and stobj-let-bound stobjs don't present a problem,
+; since each will add a binding to the latches; but we ignore these for the
+; proof.
 
 ; Proof.  We give only an outline of the proof, first dealing with (a) by
 ; itself, then using (a) in the proof sketch for (b).
@@ -24565,32 +24695,33 @@
   the discussion of congruent stobjs below for a slight relaxation).
 
   o ~c[OBJ] is a top-level global variable that contains the current object,
-    obj.
+  obj.
 
   o If a function uses the formal parameter ~c[OBJ], the only ``actual
-    expression'' that can be passed into that slot is the variable ~c[OBJ], not
-    merely a term that ``evaluates to an obj''; thus, such functions can only
-    operate on the current object.  So for example, instead of
-    ~c[(FOO (UPDATE-FIELD1 3 ST))] write
-    ~c[(LET ((ST (UPDATE-FIELD1 3 ST))) (FOO ST))].
+  expression'' that can be passed into that slot is the variable ~c[OBJ], not
+  merely a term that ``evaluates to an obj''; thus, such functions can only
+  operate on the current object.  So for example, instead of
+  ~c[(FOO (UPDATE-FIELD1 3 ST))] write
+  ~c[(LET ((ST (UPDATE-FIELD1 3 ST))) (FOO ST))].
 
-  o The accessors and updaters have a formal parameter named ~c[OBJ], thus,
-    those functions can only be applied to the current object.
+  o The accessors and updaters have a formal parameter named ~c[OBJ], so by the
+  rule just above, those functions can only be applied to the current object.
+  The recognizer is the one exception to the rule: it may be applied either the
+  ~c[OBJ] or to an ordinary (non-stobj) object.
 
   o The ACL2 primitives, such as ~c[CONS], ~c[CAR] and ~c[CDR], may not be
-    applied to the variable ~c[OBJ].  Thus, for example, obj may not be consed
-    into a list (which would create another pointer to it) or accessed or
-    copied via ``unapproved'' means.
+  applied to the variable ~c[OBJ].  Thus, for example, obj may not be consed
+  into a list (which would create another pointer to it) or accessed or copied
+  via ``unapproved'' means.
 
-  o The updaters return a ``new ~c[OBJ] object'', i.e., obj'; thus, when
-    an updater is called, the only variable which can hold its result is
-    ~c[OBJ].
+  o The updaters return a ``new ~c[OBJ] object'', i.e., obj'; thus, when an
+  updater is called, the only variable which can hold its result is ~c[OBJ].
 
   o If a function calls an ~c[OBJ] updater, it must return an ~c[OBJ] object
-    (either as the sole value returned, or in ~c[(mv ... OBJ ...)]; ~pl[mv]).
+  (either as the sole value returned, or in ~c[(mv ... OBJ ...)]; ~pl[mv]).
 
   o When a top-level expression involving ~c[OBJ] returns an ~c[OBJ] object,
-    that object becomes the new current value of ~c[OBJ].
+  that object becomes the new current value of ~c[OBJ].
 
   What makes ACL2 different from other functional languages supporting such
   operations (e.g., Haskell's ``monads'' and Clean's ``uniqueness type
@@ -24617,7 +24748,8 @@
   But we are getting ahead of ourselves.  To start the stobj tour,
   ~pl[stobj-example-1].~/
 
-  :cite defstobj")
+  :cite defstobj
+  :cite defabsstobj")
 
 (deflabel stobj-example-1
   :doc
@@ -26069,6 +26201,712 @@
   ~ev[]~/"
 
   `(with-local-stobj state ,mv-let-form))
+
+; Essay on Nested Stobjs
+
+; After Version_6.1 we introduced a new capability: allowing fields of stobjs
+; to themselves be stobjs or arrays of stobjs.  Initially we resisted this idea
+; because of an aliasing problem, which we review now, as it is fundamental to
+; understanding our implementation.
+
+; Consider the following events.
+
+;   (defstobj st fld)
+;   (defstobj st2 (fld2 :type st))
+
+; Now suppose we could evaluate the following code, to be run immediately after
+; admitting the two defstobj events above.
+
+;   (let* ((st (fld2 st2))
+;          (st (update-fld 3 st)))
+;     (mv st st2))
+
+; A reasonable raw-Lisp implementation of nested stobjs, using destructive
+; updates, could be expected to have the property that for the returned st and
+; st2, st = (fld2 st2) and thus (fld (fld2 st2)) = (fld st) = 3.  However,
+; under an applicative semantics, st2 has not changed and thus, logically, it
+; follows that (fld (fld2 st2)) has its original value of nil, not 3.
+
+; In summary, a change to st can cause a logically-inexplicable change to st2.
+; But this problem can also happen in reverse: a change to st2 can cause a
+; logically-inexplicable change to st.  Consider evaluation of the following
+; code, to be run immediately after admitting the two defstobj events above.
+
+;   (let ((st2 (let* ((st (fld2 st2))
+;                     (st (update-fld 3 st)))
+;                (update-fld2 st st2))))
+;     (mv st st2))
+
+; With destructive updates in raw Lisp, we expect that st = (fld2 st2) for the
+; returned st and st2, and thus (fld st) = (fld (fld2 st2)) = 3.  But
+; logically, the returned st is as initially created, and hence (fld st) =
+; nil.
+
+; One can imagine other kinds of aliasing problems; imagine putting a single
+; stobj into two different slots of a parent stobj.
+
+; Therefore, we carefully control access to stobj fields of stobjs by
+; introducing a new construct, stobj-let.  Consider for example the following
+; events.
+
+; (defstobj st1 ...)
+; (defstobj st2 ...)
+; (defstobj st3 ...)
+; (defstobj st+ 
+;           (fld1 :type st1)
+;           (fld2 :type st2)
+;           (fld3 :type (array st3 (8))))
+
+; If producer and consumer are functions, then we can write the following
+; form.  Note that stobj-let takes four "arguments": bindings, producer
+; variables, a producer form, and a consumer form.
+
+;   (stobj-let
+;    ((st1 (fld1 st+))
+;     (st2 (fld2 st+))
+;     (st3 (fld3i 4 st+)))
+;    (x st1 y st3 ...) ; producer variables
+;    (producer st1 st2 st3 ...)
+;    (consumer st+ x y ...))
+
+; Updater names need to be supplied if not the default.  Thus, the form above
+; is equivalent to the following.
+
+;   (stobj-let
+;    ((st1 (fld1 st+) update-fld1)
+;     (st2 (fld2 st+) update-fld2)
+;     (st3 (fld3i 4 st+) update-fld3i))
+;    (x st1 y st3 ...) ; producer variables
+;    (producer st1 st2 st3 ...)
+;    (consumer st+ x y ...))
+
+; The form above expands as follows in the logic (or at least, essentially so).
+; The point is that we avoid the aliasing problem: there is no direct access to
+; the parent stobj when running the producer, which is updated to stay in sync
+; with updates to the child stobjs; and there is no direct access to the child
+; stobjs when running the consumer.  Note that since st2 is not among the
+; producer variables, fld2 is not updated.
+
+;   (let ((st1 (fld1 st+))
+;         (st2 (fld2 st+))
+;         (st3 (fld3i 4 st+)))
+;     (declare (ignorable st1 st2 st3)) ; since user has no way to do this
+;     (mv-let (x st1 y st3 ...) ; producer variables
+;             (check-vars-not-free (st+)
+;                                  (producer st1 st2 st3 ...))
+;             (let* ((st+ (update-fld1 st1 st+))
+;                    (st+ (update-fld3i 4 st3 st+)))
+;               (check-vars-not-free (st1 st2 st3)
+;                                    (consumer st+ x y ...)))))
+
+; We consider next whether the use of check-vars-not-free truly prevents access
+; to a stobj named in its variable list (first argument).  For example, if
+; <form> is the stobj-let form displayed above, might we let-bind foo to st+
+; above <form> and then reference foo in the producer?  Such aliasing is
+; prevented (or had better be!) by our implementation; in general, we cannot
+; have two variables bound to the same stobj, or there would be logical
+; problems: changes to a stobj not explained logically (because they result
+; from destructive changes to a "copy" of the stobj that is really EQ to the
+; original stobj).  On first glance, one might wonder if support for congruent
+; stobjs could present a problem, for example as follows.  Suppose that
+; function h is the identity function that maps stobj st1 to itself, suppose
+; that st2 is a stobj congruent to st1, and consider the form (let ((st2 (h
+; st1))) <term>).  If such a form could be legal when translating for execution
+; (which is the only way live stobjs can be introduced), then the aliasing
+; problem discussed above could arise, because st2 is bound to st1 and <term>
+; could mention both st1 and st2.  But our handling of congruent stobjs allows
+; h to map st1 to st2 and also to map st2 to st2, but not to map st1 to st2.
+; There are comments about aliasing in the definitions of translate11-let and
+; translate11-mv-let.
+
+; In the bindings, an index in an array access must be a symbol or a (possibly
+; quoted) natural number -- after all, there would be a waste of computation
+; otherwise, since we do updates at the end.  For each index that is a
+; variable, it must not be among the producer variables, to prevent its capture
+; in the generated updater call.
+
+; Of course, we make other checks too: for example, all of the top-level
+; let-bound stobj fields must be distinct stobj variables that suitably
+; correspond to distinct field calls on the same concrete (not abstract) stobj.
+; (If we want to relax that restriction, we need to think very carefully about
+; capture issues.)
+
+; In raw Lisp, the expansion avoids the expense of binding st+ to the updates,
+; or even updating st+ at all, since the updates to its indicated stobj fields
+; are all destructive.  IGNORE declarations take the place of those updates.
+; And the update uses let* instead of let at the top level, since (at least in
+; CCL) that adds efficiency.
+
+;   (let* ((st1 (fld1 st+))
+;          (st2 (fld2 st+))
+;          (st3 (fld3i 4 st+)))
+;     (declare (ignorable st1 st2 st3))
+;     (mv-let (x st1 y st3 ...)
+;             (producer st1 st2 st3 ...)
+;             (declare (ignore st1 st3))
+;             (consumer st+ x y ...)))
+
+; Note that bound variables of a stobj-let form must be unique.  Thus, if the
+; parent stobj has two fields of the same stobj type, then they cannot be bound
+; by the same stobj-let form unless different variables are used.  This may be
+; possible, since stobj-let permits congruent stobjs in the bindings.  For
+; example, suppose that we started instead with these defstobj events.
+
+; (defstobj st1 ...)
+; (defstobj st2 ... :congruent-to st1)
+; (defstobj st3 ...)
+; (defstobj st+ 
+;           (fld1 :type st1)
+;           (fld2 :type st1)
+;           (fld3 :type (array st3 (8))))
+
+; Then we can write the same stobj-let form as before.  ACL2 will check that
+; st2 is congruent to the type of fld2, which is st1.
+
+; The discussion above assumes that there are at least two producer variables
+; for a stobj-let.  However, one producer variable is permitted, which
+; generates a LET in place of an MV-LET.  For example, consider the following.
+
+;   (stobj-let
+;    ((st1 (fld1 st+))
+;     (st2 (fld2 st+))
+;     (st3 (fld3i 4 st+)))
+;    (st1) ; producer variable
+;    (producer st1 st2 st3 ...)
+;    (consumer st+ x y ...))
+
+; Here is the translation in the logic.
+
+;   (let ((st1 (fld1 st+))
+;         (st2 (fld2 st+))
+;         (st3 (fld3 st+)))
+;     (declare (ignorable st1 st2 st3))
+;     (let ((st1 (check-vars-not-free (st+)
+;                                     (producer st1 st2 st3 ...))))
+;       (let* ((st+ (update-fld1 st1 st+)))
+;         (check-vars-not-free (st1 st2 st3)
+;                              (consumer st+ x y ...)))))
+
+; For simplicity, each binding (in the first argument of stobj-let) should be
+; for a stobj field.
+
+; We had the following concern about *1* code generated for updaters of stobjs
+; with stobj fields.  Oneify-cltl-code generates a check for *1* updater calls,
+; for whether a stobj argument is live.  But should we consider the possibility
+; that one stobj argument is live and another stobj argument is not?
+; Fortunately, that's not an issue: if one stobj argument is live, then we are
+; running code, in which case translate11 ensures that all stobj arguments are
+; live.
+
+; End of Essay on Nested Stobjs
+
+(defmacro stobj-let (&whole x &rest args)
+
+; WARNING: This documentation contains examples from community book
+; misc/nested-stobj-tests.lisp.  If you change those examples here, change them
+; also in that book.
+
+  ":Doc-Section stobj
+
+  using ~il[stobj]s that contain stobjs~/
+
+  For this topic we assume that you already understand the basics of
+  single-threaded objects in ACL2.  ~l[stobj], and in particular,
+  ~pl[defstobj].  The latter topic defers discussion of the ability to specify
+  a stobj field that is itself a stobj or an array of stobjs.  That discussion
+  is the subject of the present ~il[documentation] topic.
+
+  Our presentation is in four sections.  First we augment the documentation for
+  ~ilc[defstobj] by explaining how stobjs may be specified for fields in a new
+  stobj definition.  Then we explain an aliasing problem, which accounts for a
+  prohibition against making direct calls to accessors and updaters involving
+  stobj fields of stobjs.  Next, we introduce an ACL2 primitive, ~c[stobj-let],
+  which provides the only way to read and write stobj components of stobjs.
+  The final section provides precise documentation for ~c[stobj-let].
+
+  See also ACL2 community book ~c[demos/modeling/nested-stobj-toy-isa.lisp] for
+  a worked example, which applies nested stobj structures to defining
+  interpreters.  A variety of small additional examples may be found in ACL2
+  community book ~c[misc/nested-stobj-tests.lisp].  For further discussion, you
+  are welcome to read the ``Essay on Nested Stobjs'', a long comment in ACL2
+  source file ~c[other-events.lisp].  However, this documentation topic is
+  intended to be self-contained for those familiar with stobjs.
+
+  SECTION: Extension of ~ilc[defstobj] to permit ~il[stobj]s within stobjs
+
+  Recall that the ~c[:type] keyword of a ~ilc[defstobj] field descriptor can
+  specify the type of the field as a type-spec (~pl[type-spec]).  For example,
+  the following specifies an integer field and a field that is an array of
+  bytes.
+  ~bv[]
+    (defstobj st
+      (int-field :type integer :initially 0)
+      (ar-field :type (array unsigned-byte (10)) :initially 0))
+  ~ev[]
+  But the ~c[:type] of a stobj field descriptor may instead be based on a
+  stobj.  For example, the following sequence of three ~il[events] is legal.
+  The first field descriptor of ~c[top], named ~c[sub1-field], illustrates one
+  new kind of value for ~c[:type]: the name of a previously-introduced stobj,
+  which here is ~c[sub1]. The second field descriptor of ~c[top], named
+  ~c[sub2-ar-field], illustrates the other new kind of value for ~c[:type]: an
+  array whose elements are specified by the name of a previously-introduced
+  stobj, in this case, the stobj ~c[sub2].
+  ~bv[]
+    (defstobj sub1 fld1)
+    (defstobj sub2 fld2)
+    (defstobj top
+      (sub1-field :type sub1)
+      (sub2-ar-field :type (array sub2 (10))))
+  ~ev[]
+  The ~c[:initially] keyword is illegal for fields whose ~c[:type] is a stobj
+  or an array of stobjs.  Each such initial value is provided by a
+  corresponding call of the stobj creator for that stobj.  In particular, in
+  the case of an array of stobjs, the stobj creator is called once for each
+  element of the array, so that the array elements are distinct.  For example,
+  each element of ~c[sub2-ar-field] in the example above is initially provided
+  by a separate call of ~c[create-sub2].  Each initial element is thus unique,
+  and in particular is distinct from the initial global value of the stobj.
+  Similarly, the initial global stobj for ~c[sub1] is distinct from the initial
+  ~c[sub1-field] field of the global stobj for ~c[top], as these result from
+  separate calls of ~c[create-sub1].
+
+  When a stobj is used in a field of another stobj, we may refer to the former
+  field as a ``child stobj'' and the latter stobj as a ``parent stobj''.  So in
+  the example above, ~c[sub1-field] is a child stobj of type ~c[sub1] for
+  parent stobj ~c[top], and ~c[sub2-ar-field] is an array of child stobjs of
+  type ~c[sub2] for parent stobj ~c[top].  A child stobj has the same
+  structural shape as the global stobj of its type, but as explained above,
+  these are distinct structures.  We follow standard terminology by saying
+  ``isomorphic'' to indicate the same structural shape.  So for example, (the
+  value of) ~c[sub1-field] is isomorphic to ~c[sub1], though these are distinct
+  structures.
+
+  SECTION: An aliasing problem
+
+  Before introducing ~c[stobj-let] below, we provide motivatation for this
+  ACL2 primitive.
+
+  Consider the following ~il[events].
+  ~bv[]
+    (defstobj child fld)
+    (defstobj parent
+      (fld2 :type child))
+  ~ev[]
+  Now suppose we could evaluate the following code, to be run immediately after
+  admitting the two ~ilc[defstobj] events above.
+  ~bv[]
+    (let* ((child (fld2 parent))
+           (child (update-fld 3 child)))
+      (mv child parent))
+  ~ev[]
+  Now logically there is no change to ~c[parent]: ~c[parent] is passed through
+  unchanged.  We can indeed prove that fact!
+  ~bv[]
+    (thm (equal (mv-nth 1
+                        (let* ((child (fld2 parent))
+                               (child (update-fld 3 child)))
+                          (mv child parent)))
+                parent))
+  ~ev[]
+  But recall that stobjs are updated with destructive assignments.  That is, we
+  really are updating ~c[(fld2 parent)] to be the new value of ~c[child],
+  whether this is explained logically or not.  Thus, evaluation of the above
+  ~ilc[let*] form does in fact change the actual global stobj, ~c[parent].
+
+  (Aside: Here is an explanation involving raw Lisp, for those who might find
+  this useful.  We escape to raw Lisp and execute the following; note that
+  ~c[*the-live-parent*] is the Lisp variable representing the global value of
+  ~c[parent].
+  ~bv[]
+  (let ((parent *the-live-parent*))
+    (let* ((child (fld2 parent))
+           (child (update-fld 4 child)))
+      (mv child parent)))
+  ~ev[]
+  Then, in raw Lisp, ~c[(fld (fld2 *the-live-parent*))] evaluates to ~c[4],
+  illustrating the destructive update.  End of Aside.)
+
+  Such aliasing can permit a change to a child stobj to cause a
+  logically-inexplicable change to the parent stobj.  Similarly, unfettered
+  accessing of stobj fields can result in logically inexplicable changes to the
+  child stobj when the parent stobj is changed.  Thus, ACL2 disallows direct
+  calls of stobj accessors and updaters for fields whose ~c[:type] is a stobj
+  or an array of stobjs.  Instead, ACL2 provides ~c[stobj-let] for reading and
+  writing such fields in a sound manner.
+
+  SECTION: Accessing and updating stobj fields of stobjs using ~c[stobj-let]
+
+  ACL2 provides a primitive, ~c[stobj-let], to access and update stobj fields
+  of stobjs, in a manner that avoids the aliasing problem discussed above.  In
+  this section we provide an informal introduction to ~c[stobj-let], using
+  examples, to be followed in the next section by precise documentation.
+
+  We begin by returning to a slight variant of the example above.
+  ~bv[]
+    (defstobj child fld)
+    (defstobj parent 
+      (fld2 :type child)
+      fld3)
+  ~ev[]
+  The following form returns the result of updating the ~c[fld2] field of
+  ~c[parent], which is a stobj isomorphic to ~c[child], to have a value of 3.
+  Below we explain the terms ``bindings'', ``producer variables'',
+  ``producer'', and ``consumer'', as well as how to understand the form above.
+  ~bv[]
+    (stobj-let
+     ((child (fld2 parent)))  ; bindings
+     (child)                  ; producer variable(s)
+     (update-fld 3 child)     ; producer
+     (update-fld3 'a parent)) ; consumer
+  ~ev[]
+  The four lines under ``~c[stobj-let]'' just above can be understood,
+  respectively, as follows.
+  ~bf[]
+  o Bindings:
+      Bind ~c[child] to ~c[(fld2 parent)].
+  o Producer variable(s) and producer:
+      Bind the producer variable, ~c[child], to
+      the value of the producer, ~c[(update-fld 3 child)].
+  o Implicit extra step:
+      Update ~c[fld2] of ~c[parent] with the producer variable, ~c[child].
+  o Consumer:
+      Finally, return ~c[(update-fld3 'a parent)].
+  ~ef[]
+  Thus, the logical expansion of the ~c[stobj-let] form above is the following
+  expression, though this is approximate (see below).
+  ~bv[]
+    (let ((child (fld2 parent))) ; bindings
+      (let ((child (update-fld 3 child))) ; bind producer vars to producer
+        (let ((parent (update-fld2 child parent))) ; update parent
+          (update-fld3 'a parent))))
+  ~ev[]
+  The bindings always bind distinct names to child stobjs of a unique parent
+  stobj, where the child stobj corresponds to the ~c[:type] associated with the
+  indicated accessor in the ~ilc[defstobj] form for the parent stobj.  Thus in
+  this case, for the unique binding, variable ~c[child] is bound to the stobj
+  of `type' ~c[child] for accessor ~c[fld2] of the parent stobj, ~c[parent].
+  We refer to ~c[child] from the bindings as a ``stobj-let-bound variable''.
+  Note also that the ``implicit extra step'' mentioned above is generated by
+  macroexpansion of ~c[stobj-let]; it logically updates the parent with new
+  child values, just before calling the consumer.  Implementation note:
+  Destructive updating in raw Lisp lets us omit this implicit extra step.
+
+  The form above is equivalent to the form displayed just below, which differs
+  only in specifying an explicit stobj updater corresponding to the stobj
+  accessor, ~c[fld2].  Here we show the default updater name, whose name has
+  ~c[\"UPDATE-\"] prepended to the name of the accessor.  But if the
+  ~c[:RENAMING] field of the ~c[defstobj] event specified a different updater
+  name corresponding to ~c[fld2], then that would need to be included where we
+  have added ~c[update-fld2] below.
+  ~bv[]
+    (stobj-let
+     ((child (fld2 parent) update-fld2)) ; bindings, including updater(s)
+     (child)                  ; producer variables
+     (update-fld 3 child)     ; producer
+     (update-fld3 'a parent)) ; consumer
+  ~ev[]
+
+  If you try to evaluate (either version of) the above ~c[stobj-let] form in
+  the top-level loop, you will get an error.  For technical reasons, ACL2
+  limits ~c[stobj-let] computation on ``live'' stobjs (as opposed to list
+  structures that happen to satisfy stobj recognizers) to be within function
+  bodies.  The following edited log illustrates how ~c[stobj-let] may be used
+  in function bodies.
+  ~bv[]
+    ACL2 !>(defstobj child fld)
+
+    Summary
+    Form:  ( DEFSTOBJ CHILD ...)
+    Rules: NIL
+    Time:  0.02 seconds (prove: 0.00, print: 0.00, other: 0.02)
+     CHILD
+    ACL2 !>(defstobj parent
+             (fld2 :type child)
+             fld3)
+
+    Summary
+    Form:  ( DEFSTOBJ PARENT ...)
+    Rules: NIL
+    Time:  0.02 seconds (prove: 0.00, print: 0.00, other: 0.02)
+     PARENT
+    ACL2 !>(defun f (parent)
+             (declare (xargs :stobjs parent))
+             (stobj-let
+              ((child (fld2 parent)))   ; bindings
+              (child)                   ; producer variables
+              (update-fld 3 child)      ; producer
+              (update-fld3 'a parent))) ; consumer
+    [[output omitted]]
+     F
+    ACL2 !>(f parent)
+    <parent>
+    ACL2 !>(defun check-f (parent)
+             ; returns the value of the field of the child stobj
+             (declare (xargs :stobjs parent))
+             (stobj-let
+              ((child (fld2 parent))) ; bindings
+              (val)                   ; producer variables
+              (fld child)             ; producer
+              val))                   ; consumer
+    [[output omitted]]
+     CHECK-F
+    ACL2 !>(check-f parent)
+    3
+    ACL2 !>
+  ~ev[]
+
+  Notice that the second function defined above, ~c[check-f], uses a
+  ~c[stobj-let] form that returns an ordinary value: it reads a value from a
+  child stobj, but does not write to the child stobj, as indicated by the lack
+  of a child stobj among the producer variables.  So for that ~c[stobj-let]
+  form, there is no implicit extra step.
+
+  For the ~c[stobj-let] expansion displayed earlier above, we said it was
+  ``approximate'' for two reasons, which we give here informally.  (You can
+  apply ~c[:]~ilc[trans1] to the ~c[stobj-let] call above to see the formal
+  expansion.)  First, ~c[stobj-let] declares the stobj-let-bound variables to
+  be ~c[ignorable] for the top ~c[let] bindings.  Second, and more importantly,
+  ~c[stobj-let] imposes the following restrictions on the producer and
+  consumer, to avoid the aliasing problem: it disallows references to the
+  parent stobj in the producer and it also disallows references to any bound
+  stobj (i.e., bound in the bindings) in the consumer.
+
+  We conclude this section with examples based on a slight variation of the
+  nested stobj example from the first section above.  These events can also be
+  found in ACL2 community book ~c[misc/nested-stobj-tests.lisp], immediately
+  under the following comment:
+  ~bv[]
+  ; As promised in :doc stobj-let, we begin with an example from that :doc.
+  ~ev[]
+  Note that some lemmas were needed in order to complete the ~il[guard] proof
+  for the function ~c[update-top], which may be found in the above file; they
+  are omitted below.
+
+  First we introduce three stobjs.
+  ~bv[]
+    (defstobj kid1 fld1)
+    (defstobj kid2 fld2)
+    (defstobj mom
+      (kid1-field :type kid1)
+      (kid2-ar-field :type (array kid2 (5)))
+      last-op)
+  ~ev[]
+  The next function takes a given index and a ~c[mom] stobj, and swaps the
+  value stored in the stobj in ~c[mom]'s ~c[kid2-ar-field] array at that index
+  with the value stored in the stobj in ~c[mom]'s ~c[kid1-field] field.
+  ~bv[]
+    (defun mom-swap-fields (index mom)
+      (declare (xargs :stobjs mom
+                      :guard (and (natp index)
+                                  (< index (kid2-ar-field-length mom)))))
+      (stobj-let
+       ((kid1 (kid1-field mom))
+        (kid2 (kid2-ar-fieldi index mom)))
+       (kid1 kid2)
+       (let* ((val1 (fld1 kid1))
+              (val2 (fld2 kid2))
+              (kid1 (update-fld1 val2 kid1))
+              (kid2 (update-fld2 val1 kid2)))
+         (mv kid1 kid2))
+       (update-last-op 'swap mom)))
+  ~ev[]
+  Function ~c[mom.kid1-fld1] stores a given value in the given ~c[mom]'s
+  ~c[kid1-fld1] field.
+  ~bv[]
+    (defun mom.kid1-fld1 (val mom)
+      (declare (xargs :stobjs mom))
+      (stobj-let
+       ((kid1 (kid1-field mom)))
+       (kid1)
+       (update-fld1 val kid1)
+       (update-last-op val mom)))
+  ~ev[]
+  We next combine the two functions above, according to an ~c[op] argument, as
+  indicated by the following definition.
+  ~bv[]
+    (defun update-mom (op mom)
+      (declare (xargs :stobjs mom))
+      (cond ((and (consp op)
+                  (eq (car op) 'swap)
+                  (natp (cdr op))
+                  (< (cdr op) (kid2-ar-field-length mom)))
+             (mom-swap-fields (cdr op) mom))
+            (t (mom.kid1-fld1 op mom))))
+  ~ev[]
+  The following checker function uses a ~c[stobj-let] form like the ones above,
+  a major difference being that the producer variable is not a stobj, since it
+  does not modify the input stobj, ~c[mom].
+  ~bv[]
+    (defun check-update-mom (index val1 val2 last-op mom)
+        (declare (xargs :stobjs mom
+                        :mode :program
+                        :guard
+                        (or (null index)
+                            (and (natp index)
+                                 (< index (kid2-ar-field-length mom))))))
+        (and (equal (last-op mom) last-op)
+             (stobj-let
+              ((kid1 (kid1-field mom))
+               (kid2 (kid2-ar-fieldi index mom)))
+              (val) ; producer variables
+              (and (equal val1 (fld1 kid1))
+                   (equal val2 (fld2 kid2)))
+              val)))
+  ~ev[]
+  Now let us run our update function to populate some fields within the ~c[mom]
+  stobj.
+  ~bv[]
+    (let* ((mom ; set mom to (3 (x0 x1 x2 x3 x4))
+             (update-mom 3 mom))
+            (mom ; set mom to (x1 (x0 3 x2 x3 x4))
+             (update-mom '(swap . 1) mom))
+            (mom ; set mom to (7 (x0 3 x2 x3 x4))
+             (update-mom 7 mom))
+            (mom ; set mom to (x0 (7 3 x2 x3 x4))
+             (update-mom '(swap . 0) mom))
+            (mom ; set mom to (5 (7 3 x2 x3 x4))
+             (update-mom 5 mom))
+            (mom ; set mom to (7 (5 3 x2 x3 x4))
+             (update-mom '(swap . 0) mom)))
+       mom)
+  ~ev[]
+  Are the above values of 7, 5, and 3 as expected, with a last operation being
+  a swap?  Yes!
+  ~bv[]
+    ACL2 !>(and (check-update-mom 0 7 5 'swap mom)
+                (check-update-mom 1 7 3 'swap mom))
+    T
+    ACL2 !>
+  ~ev[]
+  Notice that above, we never tried to access two different entries of the
+  array.  This can be done, but we need to bind two different stobjs to those
+  fields.  Fortunately, congruent stobjs make this possible; ~pl[defstobj], in
+  particular the discussion of congruent stobjs.  Since we want to bind two
+  stobjs to values in the array that are isomorphic to the stobj ~c[kid2], we
+  introduce a stobj congruent to ~c[kid2].
+  ~bv[]
+    (defstobj kid2a fld2a :congruent-to kid2)
+  ~ev[]
+  Then we can define our swapping function as follows.  The ~il[guard] proof
+  obligation includes the requirement that the two indices be distinct, again
+  to avoid an aliasing problem.
+  ~bv[]
+    (defun mom-swap-indices (i1 i2 mom)
+      (declare (xargs :stobjs mom
+                      :guard (and (natp i1)
+                                  (< i1 (kid2-ar-field-length mom))
+                                  (natp i2)
+                                  (< i2 (kid2-ar-field-length mom))
+                                  (not (equal i1 i2)))))
+      (stobj-let
+       ((kid2 (kid2-ar-fieldi i1 mom))
+        (kid2a (kid2-ar-fieldi i2 mom)))
+       (kid2 kid2a)
+       (let* ((val2 (fld2 kid2))
+              (val2a (fld2 kid2a))
+              (kid2 (update-fld2 val2a kid2))
+              (kid2a (update-fld2 val2 kid2a)))
+         (mv kid2 kid2a))
+       mom))
+  ~ev[]
+  The aforementioned community book, ~c[misc/nested-stobj-tests.lisp], contains
+  a corresponding checker immediately following this definition.
+
+  SECTION: Precise documentation for ~c[stobj-let]
+
+  ~bv[]
+  General Form:
+  (stobj-let
+   BINDINGS
+   PRODUCER-VARIABLES
+   PRODUCER
+   CONSUMER)
+  ~ev[]
+  where ~c[PRODUCER-VARIABLES] is a non-empty true list of legal variable names
+  without duplicates, ~c[PRODUCER] and ~c[CONSUMER] are expressions, and
+  ~c[BINDINGS] is a list subject to the following requirements.
+
+  ~c[BINDINGS] is a non-empty true list of tuples, each of which has the form
+  ~c[(VAR ACCESSOR)] or ~c[(VAR ACCESSOR UPDATER)].  There is a stobj name,
+  ~c[ST], previously introduced by ~ilc[defstobj] (not ~ilc[defabsstobj]), such
+  that each ~c[accessor] is of the form ~c[(ACC ST)] or ~c[(ACCi I ST)], with
+  the same stobj name (~c[ST]) for each binding.  In the case ~c[(ACC ST)],
+  ~c[ACC] is the accessor for a non-array field of ~c[ST].  In the case
+  ~c[(ACCi I ST)], ~c[ACCi] is the accessor for an array field of ~c[ST], and
+  ~c[I] is either a variable, a natural number, a list ~c[(quote N)] where
+  ~c[N] is a natural number, or a symbol introduced by ~ilc[defconst].  If
+  ~c[UPDATER] is supplied, then it is a symbol that is the name of the stobj
+  updater for the field of ~c[ST] accessed by ~c[ACCESSOR].  If ~c[UPDATER] is
+  not supplied, then for the discussion below we consider it to be, implicitly,
+  the symbol in the same package as the function symbol of ~c[ACCESSOR] (i.e.,
+  ~c[ACC] or ~c[ACCi]), obtained by prepending the string ~c[\"UPDATE-\"] to
+  the ~ilc[symbol-name] of that function symbol.  Finally, ~c[ACCESSOR] has a
+  ~il[signature] specifying a return value that is either ~c[ST] or is stobj
+  that is congruent to ~c[ST].
+
+  If the conditions above are met, then the General Form expands to the one of
+  the following expressions, depending on whether the list
+  ~c[PRODUCER-VARIABLES] has one member or more than one member, respectively.
+  (But see below for extra code that may be inserted if there are stobj array
+  accesses in ~c[BINDINGS].)  Here we write ~c[STOBJ-LET-BOUND-VARS] for the
+  list of variables ~c[VAR] discussed above, i.e., for
+  ~c[(strip-cars BINDINGS)].  And, we write ~c[UPDATES] for the result of
+  mapping through ~c[PRODUCER-VARIABLES] and, for each variable ~c[VAR] that
+  has a binding ~c[(VAR ACCESSOR UPDATER)] in ~c[BINDINGS] (where ~c[UPDATER]
+  may be implicit, as discussed above), collect into ~c[UPDATES] the tuple
+  ~c[(ST (UPDATER VAR ST))].
+
+  For ~c[PRODUCER-VARIABLES] = ~c[(PRODUCER-VAR)]:
+  ~bv[]
+    (let BINDINGS
+      (declare (ignorable . STOBJ-LET-BOUND-VARIABLES))
+      (let ((PRODUCER-VAR PRODUCER))
+        (let* UPDATES
+          CONSUMER)))
+  ~ev[]
+
+  Otherwise:
+  ~bv[]
+    (let BINDINGS
+      (declare (ignorable . STOBJ-LET-BOUND-VARIABLES))
+      (mv-let PRODUCER-VARS
+              PRODUCER
+              (let* UPDATES
+                CONSUMER)))
+  ~ev[]
+  Moreover, ACL2 places restrictions on the resulting expression: ~c[ST] must
+  not occur free in ~c[PRODUCER], and every variable in
+  ~c[STOBJ-LET-BOUND-VARIABLES] must not occur free in ~c[CONSUMER].
+
+  ~c[Stobj-let] forms can be evaluated using ordinary objects in theorem
+  contexts, much as any form.  They can also, of course, appear in function
+  bodis.  However, a ~c[stobj-let] form cannot be evaluated directly in the
+  top-level loop or other top-level contexts for execution (such as during
+  ~ilc[make-event] expansion).
+
+  Finally, let ~c[FORM] denote the form displayed above (either case).  We
+  explain how ~c[FORM] is actually replaced by an expression of the form
+  ~c[(PROGN$ ... FORM)].  This expression generates an extra ~il[guard] proof
+  obligation, which guarantees that no aliasing occurs from binding two
+  stobj-let-bound variables to the same array access.  So fix a stobj array
+  accessor ~c[ACCi] for which some stobj is bound to ~c[(ACCi I ST)] in
+  ~c[BINDINGS]; we define an expression ~c[ACCi-CHECK] as follows.  Collect up
+  all such index expressions ~c[I], where if ~c[I] is of the form ~c[(quote N)]
+  then replace ~c[I] by ~c[N].  If the resulting list of index expressions for
+  ~c[ACCi] consists solely of distinct numbers, or if it is of length 1, then
+  no extra check is generated for ~c[ACCi].  Otherwise, let ~c[ACCi-CHECK] be
+  the form ~c[(chk-no-duplicatesp (list I1 ... Ik))], where ~c[I1], ..., ~c[Ik]
+  are the index expressions for ~c[ACCi].  Note: ~c[chk-no-duplicatesp] is a
+  function that returns nil, but has a ~il[guard] that its argument is an
+  ~ilc[eqlable-listp] that satisfies ~ilc[no-duplicatesp].  Finally, ~c[FORM]
+  is replaced by ~c[(PROGN$ CHK1 ... CHKn FORM)], where the ~c[CHKm] range over
+  all of the above ~c[ACCi-CHECK].~/~/"
+
+  (declare (ignore args))
+  #+acl2-loop-only
+  (stobj-let-fn x)
+  #-acl2-loop-only
+  (stobj-let-fn-raw x))
 
 (defun push-untouchable-fn (name fn-p state doc event-form)
 
@@ -27705,8 +28543,9 @@
   for how to do this globally, or similarly use the ~c[:evisc-tuple] option to
   ~c[trace$] to do this with a single trace spec.  Note however that with value
   ~c[nil] specified for ~c[:hide], such use of an evisc-tuple will not deal
-  properly with local stobjs (~pl[with-local-stobj]) or the aforementioned
-  large structures other than the logical ~il[world].
+  properly with local stobjs (~pl[with-local-stobj]) or stobjs bound by
+  ~ilc[stobj-let], or with the aforementioned large structures other than the
+  logical ~il[world].
 
   ~c[:NATIVE]
 
@@ -30655,9 +31494,9 @@
              state)
   ~ev[]
 
-  If you use local ~il[stobj]s (~pl[with-local-stobj]), you my need to edit the
-  output of ~c[print-gv] in order to evaluate it.  Consider the following
-  example.
+  If you use local ~il[stobj]s (~pl[with-local-stobj]) or stobj fields of
+  stobjs, you may need to edit the output of ~c[print-gv] in order to evaluate
+  it.  Consider the following example.
   ~bv[]
   (defstobj st fld)
 
@@ -30680,13 +31519,12 @@
   (FLET ((G{GUARD} (X ST)
                    (DECLARE (IGNORABLE X ST))
                    (AND (STP ST) (CONSP X))))
-        (G{GUARD} '3 |<some-local-stobj>|))
+        (G{GUARD} '3 |<some-stobj>|))
   ~ev[]
-  In this example you could replace ``~c[|<some-local-stobj>|]'' by ``~c[st]''
-  to obtain a result of ~c[nil].  But similar cases may require the use of a
-  local stobj that is no longer available, in which case you may need to be
-  creative in order to take advantage of ~c[:print-gv].  Here is such an
-  example.
+  In this example you could replace ``~c[|<some-stobj>|]'' by ``~c[st]'' to
+  obtain a result of ~c[nil].  But similar cases may require the use of a local
+  stobj that is no longer available, in which case you may need to be creative
+  in order to take advantage of ~c[:print-gv].  Here is such an example.
   ~bv[]
   (defstobj st2 fld2)
 
@@ -30709,11 +31547,11 @@
   (FLET ((G2{GUARD} (ST2)
                     (DECLARE (IGNORABLE ST2))
                     (AND (ST2P ST2) (NULL (FLD2 ST2)))))
-        (G2{GUARD} |<some-local-stobj>|))
+        (G2{GUARD} |<some-stobj>|))
   ~ev[]
-  But if you replace ``~c[|<some-local-stobj>|]'' by ``~c[st]'', the guard
-  holds; it is only the local stobj, which is no longer available, that
-  produced a guard violation (because its field had been updated to a cons).
+  But if you replace ``~c[|<some-stobj>|]'' by ``~c[st]'', the guard holds; it
+  is only the local stobj, which is no longer available, that produced a guard
+  violation (because its field had been updated to a cons).
   ~bv[]
   ACL2 !>(FLET ((G2{GUARD} (ST2)
                            (DECLARE (IGNORABLE ST2))

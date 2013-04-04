@@ -226,11 +226,11 @@
                            0))
                      )))
 
-; Uncomment the following form if you want extra checks to be done during the
-; use of ACL2, the only effect (other than performance) being to cause errors
-; when those checks fail.
+; Comment out the following form if you don't want extra checks to be done
+; during the use of ACL2.  These checks seem to have only trivial effect on
+; performance.
 
-; (push :acl2-extra-checks *features*)
+(push :acl2-extra-checks *features*)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;                               FILES
