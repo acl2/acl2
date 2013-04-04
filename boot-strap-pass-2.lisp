@@ -558,6 +558,91 @@
 
 (verify-guards fn-count-1)
 
+(verify-termination-boot-strap var-fn-count-1) ; but not guards
+
+(defthm symbol-listp-cdr-assoc-equal
+  (implies (symbol-list-listp x)
+           (symbol-listp (cdr (assoc-equal key x)))))
+
+; We state the following three rules in all forms that we think might be useful
+; to those who want to reason about var-fn-count-1, for example if they are
+; developing attachments to ancestors-check.
+
+(defthm integerp-nth-0-var-fn-count-1
+  (implies (integerp var-count-acc)
+           (integerp (nth 0 (var-fn-count-1
+                             flg x
+                             var-count-acc fn-count-acc p-fn-count-acc
+                             invisible-fns invisible-fns-table))))
+  :rule-classes
+  ((:forward-chaining
+    :trigger-terms
+    ((var-fn-count-1 flg x var-count-acc fn-count-acc
+                     p-fn-count-acc invisible-fns
+                     invisible-fns-table))
+    :corollary
+    (implies (integerp var-count-acc)
+             (and (integerp (nth 0 (var-fn-count-1
+                                    flg x
+                                    var-count-acc fn-count-acc p-fn-count-acc
+                                    invisible-fns invisible-fns-table)))
+                  (integerp (mv-nth 0 (var-fn-count-1
+                                       flg x
+                                       var-count-acc fn-count-acc p-fn-count-acc
+                                       invisible-fns invisible-fns-table)))
+                  (integerp (car (var-fn-count-1
+                                  flg x
+                                  var-count-acc fn-count-acc p-fn-count-acc
+                                  invisible-fns invisible-fns-table))))))))
+
+(defthm integerp-nth-1-var-fn-count-1
+  (implies (integerp fn-count-acc)
+           (integerp (nth 1 (var-fn-count-1
+                             flg x
+                             var-count-acc fn-count-acc p-fn-count-acc
+                             invisible-fns invisible-fns-table))))
+  :rule-classes
+  ((:forward-chaining
+    :trigger-terms
+    ((var-fn-count-1 flg x var-count-acc fn-count-acc
+                     p-fn-count-acc invisible-fns
+                     invisible-fns-table))
+    :corollary
+    (implies (integerp fn-count-acc)
+             (and (integerp (nth 1 (var-fn-count-1
+                                       flg x
+                                       var-count-acc fn-count-acc p-fn-count-acc
+                                       invisible-fns invisible-fns-table)))
+                  (integerp (mv-nth 1 (var-fn-count-1
+                                       flg x
+                                       var-count-acc fn-count-acc p-fn-count-acc
+                                       invisible-fns invisible-fns-table))))))))
+
+(defthm integerp-nth-2-var-fn-count-1
+  (implies (integerp p-fn-count-acc)
+           (integerp (nth 2 (var-fn-count-1
+                             flg x
+                             var-count-acc fn-count-acc p-fn-count-acc
+                             invisible-fns invisible-fns-table))))
+  :rule-classes
+  ((:forward-chaining
+    :trigger-terms
+    ((var-fn-count-1 flg x var-count-acc fn-count-acc
+                     p-fn-count-acc invisible-fns
+                     invisible-fns-table))
+    :corollary
+    (implies (integerp p-fn-count-acc)
+             (and (integerp (nth 2 (var-fn-count-1
+                                    flg x
+                                    var-count-acc fn-count-acc p-fn-count-acc
+                                    invisible-fns invisible-fns-table)))
+                  (integerp (mv-nth 2 (var-fn-count-1
+                                       flg x
+                                       var-count-acc fn-count-acc p-fn-count-acc
+                                       invisible-fns invisible-fns-table))))))))
+
+(verify-guards var-fn-count-1)
+
 (verify-termination-boot-strap equal-mod-commuting) ; and guards
 
 (verify-termination-boot-strap ancestors-check1)
@@ -577,18 +662,26 @@
 ; work.  It would be good at some point to explore why not, given that the
 ; original versions worked outside the build.
 
+(defun strip-ancestor-literals (ancestors)
+  (declare (xargs :guard (ancestor-listp ancestors)))
+  (cond ((endp ancestors) nil)
+        (t (cons (access ancestor (car ancestors) :lit)
+                 (strip-ancestor-literals (cdr ancestors))))))
+
 (encapsulate
  ()
 
  (local
   (defthm ancestors-check1-property
     (mv-let (on-ancestors assumed-true)
-            (ancestors-check1 lit-atm lit fn-cnt p-fn-cnt ancestors tokens)
+            (ancestors-check1 lit-atm lit var-cnt fn-cnt p-fn-cnt ancestors
+                              tokens)
             (implies (and on-ancestors
                           assumed-true)
-                     (member-equal-mod-commuting lit
-                                                 (strip-cars ancestors)
-                                                 nil)))
+                     (member-equal-mod-commuting
+                      lit
+                      (strip-ancestor-literals ancestors)
+                      nil)))
     :rule-classes nil))
 
  (defthmd ancestors-check-builtin-property
@@ -596,25 +689,32 @@
            (ancestors-check-builtin lit ancestors tokens)
            (implies (and on-ancestors
                          assumed-true)
-                    (member-equal-mod-commuting lit
-                                                (strip-cars ancestors)
-                                                nil)))
+                    (member-equal-mod-commuting
+                     lit
+                     (strip-ancestor-literals ancestors)
+                     nil)))
    :hints (("Goal"
             :use
-            ((:instance ancestors-check1-property
-                        (lit-atm lit)
-                        (fn-cnt 0)
-                        (p-fn-cnt 0))
-             (:instance ancestors-check1-property
-                        (lit-atm lit)
-                        (fn-cnt (nth 0 (fn-count-1 nil lit 0 0)))
-                        (p-fn-cnt (nth 1 (fn-count-1 nil lit 0 0))))
-             (:instance ancestors-check1-property
-                        (lit-atm (cadr lit))
-                        (fn-cnt (nth 0 (fn-count-1 nil (cadr lit) 0 0)))
-                        (p-fn-cnt (nth 1
-                                       (fn-count-1 nil (cadr lit) 0
-                                                   0)))))))))
+            ((:instance
+              ancestors-check1-property
+              (lit-atm lit)
+              (var-cnt 0)
+              (fn-cnt 0)
+              (p-fn-cnt 0))
+             (:instance
+              ancestors-check1-property
+              (lit-atm lit)
+              (var-cnt (nth 0 (var-fn-count-1 nil lit 0 0 0 nil nil)))
+              (fn-cnt (nth 1 (var-fn-count-1 nil lit 0 0 0 nil nil)))
+              (p-fn-cnt (nth 2 (var-fn-count-1 nil lit 0 0 0 nil nil))))
+             (:instance
+              ancestors-check1-property
+              (lit-atm (cadr lit))
+              (var-cnt (nth 0 (var-fn-count-1 nil (cadr lit) 0 0 0 nil nil)))
+              (fn-cnt (nth 1 (var-fn-count-1 nil (cadr lit) 0 0 0 nil nil)))
+              (p-fn-cnt (nth 2
+                             (var-fn-count-1 nil (cadr lit) 0 0 0
+                                             nil nil)))))))))
 
 #+acl2-loop-only
 ; The above readtime conditional avoids a CLISP warning, and lets the defproxy
@@ -638,7 +738,7 @@
                                   assumed-true)
                              (member-equal-mod-commuting
                               lit
-                              (strip-cars ancestors)
+                              (strip-ancestor-literals ancestors)
                               nil))))
    :hints (("Goal" :use ancestors-check-builtin-property))))
 

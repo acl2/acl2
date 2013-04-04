@@ -20469,6 +20469,13 @@
 ; the-check, a 3-place function that results in a macroexpansion of THE forms
 ; that differs from what we got previously.
 
+; In the process of modifying the ancestors-check heuristic to use var-counts,
+; as mentioned below and explained further in the definition of macro
+; var-or-fn-count-<, we changed var-fn-count to be a macro defined in terms of
+; (partly) tail-recursive "flag" function var-fn-count-1, in analogy to what we
+; already did for fn-count and fn-count-1.  Var-fn-count-1 is in :logic mode;
+; the old var-fn-count nest was not.
+
   :doc
   ":Doc-Section release-notes
 
@@ -20507,20 +20514,35 @@
 
   ~st[HEURISTIC IMPROVEMENTS]
 
-  It had been the case that an ``ancestors check'' heuristic (see source
-  function ~c[ancestors-check-builtin] if you want details) could prevent a
-  ~il[rewrite] rule's hypothesis from being rewritten to true, even when that
-  hypothesis is of the form ~c[(force <term>)].  Now, forcing will take place
-  as expected; ~pl[force].  Thanks to Robert Krug for bringing this issue to
-  our attention and sending an example, which we include as a comment in the
-  ACL2 source code (see ~c[(deflabel note-6-2 ...)]).
+  We made changes to the ``ancestors check'' heuristic (source function
+  ~c[ancestors-check-builtin]), as follows.~bq[]
 
-  We further changed the ``ancestors check'' heuristic (mentioned above) so
-  that it is delayed until after we check whether the hypothesis is already
-  known, by ~il[type-set] reasoning alone (in particular, not using rewriting),
-  to be true or to be false.  We believe that this is now the ``right'' order
-  for those two operations.  We saw a slight speed up in the regression tests
-  (about a percent) with this change, but that might be in the noise.
+  The heuristic could prevent a ~il[rewrite] rule's hypothesis from being
+  rewritten to true, even when that hypothesis is of the form
+  ~c[(force <term>)].  Now, forcing will take place as expected; ~pl[force].
+  Thanks to Robert Krug for bringing this issue to our attention and sending an
+  example, which we include as a comment in the ACL2 source code (see
+  ~c[(deflabel note-6-2 ...)]).
+
+  The heuristic is now delayed until after we check whether the hypothesis is
+  already known, using ~il[type-set] reasoning alone (in particular, not using
+  rewriting), to be true or to be false.  We believe that this is now the
+  ``right'' order for those two operations.  We saw a slight speed up in the
+  regression tests (about a percent) with this change, but that might be in the
+  noise.
+
+  A technical change makes the heuristic slightly less aggressive in preventing
+  backchaining.  Roughly speaking, ordering checks based on function symbol
+  counts could suffice to permit backchaining, where now variable counts also
+  suffice.  Thanks to Robert Krug for showing us an example where backchaining
+  led to a term with no free variables that was nevertheless subject to the
+  ancestors check, preventing it from being rewritten.
+
+  (For those who use ~ilc[defattach] to attach to ~c[ancestors-check])  We have
+  used ~c[defrec] to introduce an `~c[ancestor]' data structure.  A new function,
+  ~c[strip-ancestor-literals], should be used to obtain the literals from a
+  list of ancestors, although ~c[strip-cars] will still work at this time.
+  ~eq[]
 
   ~st[BUG FIXES]
 

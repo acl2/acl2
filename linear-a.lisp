@@ -1693,14 +1693,15 @@
 (defmacro fn-count-evg (evg)
   `(fn-count-evg-rec ,evg 0 0))
 
-(mutual-recursion
+(defun var-fn-count-1 (flg x var-count-acc fn-count-acc p-fn-count-acc
+                           invisible-fns invisible-fns-table)
 
-(defun var-fn-count (term invisible-fns-table)
+; Warning: Keep this in sync with fn-count-1.
 
 ; We return a triple --- the variable count, the function count, and the
-; pseudo-function count --- derived from term.  "Invisible" functions not
-; inside quoted objects are ignored, in the sense of the global
-; invisible-fns-table.
+; pseudo-function count --- derived from term (and the three input
+; accumulators).  "Invisible" functions not inside quoted objects are ignored,
+; in the sense of the global invisible-fns-table.
 
 ; The fn count of a term is the number of function symbols in the unabbreviated
 ; term.  Thus, the fn count of (+ (f x) y) is 2.  The primitives of ACL2,
@@ -1744,47 +1745,88 @@
 ; but
 ; (term-order (foo y '1/2) (a (b (c (d (e (f (g (h (i x)))))))))).
 
-  (declare (xargs :guard (pseudo-termp term)))
-  (cond ((variablep term)
-         (mv 1 0 0))
-        ((fquotep term)
-         (mv 0 
-             0
-             (fn-count-evg (cadr term))))
-        (t (mv-let (v f p-f)
-                   (var-fn-count-lst
-                    (fargs term)
-                    (and invisible-fns-table ; optimization
-                         (let ((fn (ffn-symb term)))
-                           (and (symbolp fn)
-                                (cdr (assoc-eq fn invisible-fns-table)))))
-                    invisible-fns-table)
-                   (mv v (+ 1 f) p-f)))))
+  (declare (xargs :guard (and (if flg
+                                  (pseudo-term-listp x)
+                                (pseudo-termp x))
+                              (integerp var-count-acc)
+                              (integerp fn-count-acc)
+                              (integerp p-fn-count-acc)
+                              (symbol-listp invisible-fns)
+                              (alistp invisible-fns-table)
+                              (symbol-list-listp invisible-fns-table))
+                  :verify-guards NIL))
+  (cond
+   (flg
+    (cond
+     ((atom x)
+      (mv var-count-acc fn-count-acc p-fn-count-acc))
+     (t
+      (mv-let
+       (var-cnt fn-cnt p-fn-cnt)
+       (let* ((term (car x))
+              (fn (and (nvariablep term)
+                       (not (fquotep term))
+                       (ffn-symb term)))
+              (invp (and fn
+                         (not (flambdap fn)) ; optimization
+                         (member-eq fn invisible-fns))))
+         (cond (invp (var-fn-count-1
+                      t
+                      (fargs term)
+                      var-count-acc fn-count-acc p-fn-count-acc
+                      (cdr (assoc-eq fn invisible-fns-table))
+                      invisible-fns-table))
+               (t (var-fn-count-1 nil term
+                                  var-count-acc fn-count-acc p-fn-count-acc
+                                  nil invisible-fns-table))))
+       (var-fn-count-1 t (cdr x) var-cnt fn-cnt p-fn-cnt
+                       invisible-fns invisible-fns-table)))))
+   ((variablep x)
+    (mv (1+ var-count-acc) fn-count-acc p-fn-count-acc))
+   ((fquotep x)
+    (mv var-count-acc
+        fn-count-acc
+        (+ p-fn-count-acc (fn-count-evg (cadr x)))))
+   (t (var-fn-count-1 t (fargs x)
+                      var-count-acc (1+ fn-count-acc) p-fn-count-acc
+                      (and invisible-fns-table ; optimization
+                           (let ((fn (ffn-symb x)))
+                             (and (symbolp fn)
+                                  (cdr (assoc-eq fn invisible-fns-table)))))
+                      invisible-fns-table))))
 
-(defun var-fn-count-lst (lst invisible-fns invisible-fns-table)
-  (declare (xargs :guard (pseudo-term-listp lst)))
-  (cond ((null lst)
-         (mv 0 0 0))
-        (t (mv-let (v1 f1 p-f1)
-                   (let* ((term (car lst))
-                          (fn (and (nvariablep term)
-                                   (not (fquotep term))
-                                   (ffn-symb term)))
-                          (invp (and fn
-                                     (not (flambdap fn))
-                                     (member-eq fn invisible-fns))))
-                     (cond (invp (var-fn-count-lst
-                                  (fargs term)
-                                  (cdr (assoc-eq fn invisible-fns-table))
-                                  invisible-fns-table))
-                           (t (var-fn-count (car lst) invisible-fns-table))))
-                   (mv-let (v2 f2 p-f2)
-                           (var-fn-count-lst (cdr lst)
-                                             invisible-fns
-                                             invisible-fns-table)
-                           (mv (+ v1 v2) (+ f1 f2) (+ p-f1 p-f2)))))))
+(defmacro var-fn-count (term invisible-fns-table)
 
-)
+; See the comments in var-fn-count-1.
+
+  `(var-fn-count-1 nil ,term 0 0 0 nil ,invisible-fns-table))
+
+(defmacro var-or-fn-count-< (var-count1 var-count2 fn-count1 fn-count2
+                                        p-fn-count1 p-fn-count2)
+
+; We use this utility when deciding if an ancestors check should inhibit
+; further backchaining.  It says that either the var-counts are in order, or
+; else the fn-counts are in (lexicographic) order.
+
+; We added the var-counts check after analyzing an example from Robert Krug, in
+; which the ancestors check was refusing to allow relieve-hyp on a ground term.
+; Originally we tried a lexicographic order based on the var-count first, then
+; (as before) the fn-count and p-fn-count.  But this led to at least two
+; regression failures that led us to reconsider.  The current solution meets
+; the goal of weakening the ancestors check (for example, to allow backchaining
+; on ground terms as in Robert's example).
+
+  (declare (xargs :guard ; avoid capture
+                  (and (symbolp var-count1)
+                       (symbolp var-count2)
+                       (symbolp fn-count1)
+                       (symbolp fn-count2)
+                       (symbolp p-fn-count1)
+                       (symbolp p-fn-count2))))
+  `(cond ((< ,var-count1 ,var-count2) t)
+         ((< ,fn-count1 ,fn-count2) t)
+         ((> ,fn-count1 ,fn-count2) nil)
+         (t (< ,p-fn-count1 ,p-fn-count2))))
 
 (defun term-order1 (term1 term2 invisible-fns-table)
 
@@ -1846,16 +1888,16 @@
 ; lexicographic scan of t1 and t2 will be all equals until x and y are hit.
 
   (mv-let (var-count1 fn-count1 p-fn-count1)
-    (var-fn-count term1 invisible-fns-table)
-    (mv-let (var-count2 fn-count2 p-fn-count2)
-      (var-fn-count term2 invisible-fns-table)
-      (cond ((< var-count1 var-count2) t)
-            ((> var-count1 var-count2) nil)
-            ((< fn-count1 fn-count2) t)
-            ((> fn-count1 fn-count2) nil)
-            ((< p-fn-count1 p-fn-count2) t)
-            ((> p-fn-count1 p-fn-count2) nil)
-            (t (lexorder term1 term2))))))
+          (var-fn-count term1 invisible-fns-table)
+          (mv-let (var-count2 fn-count2 p-fn-count2)
+                  (var-fn-count term2 invisible-fns-table)
+                  (cond ((< var-count1 var-count2) t)
+                        ((> var-count1 var-count2) nil)
+                        ((< fn-count1 fn-count2) t)
+                        ((> fn-count1 fn-count2) nil)
+                        ((< p-fn-count1 p-fn-count2) t)
+                        ((> p-fn-count1 p-fn-count2) nil)
+                        (t (lexorder term1 term2))))))
 
 (defun arith-term-order (term1 term2)
   (term-order1 term1 term2 '((BINARY-* UNARY-/))))

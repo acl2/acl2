@@ -8308,23 +8308,25 @@
 
 (defun tilde-*-ancestors-stack-msg1 (i ancestors wrld evisc-tuple)
   (cond ((endp ancestors) nil)
-        ((eq (car (car ancestors)) :binding-hyp)
+        ((ancestor-binding-hyp-p (car ancestors))
          (cons (msg "~c0. Binding Hyp: ~Q12~|~
                           Unify-subst:  ~Q32~%"
                     (cons i 2)
-                    (untranslate (dumb-negate-lit (cadr (car ancestors)))
+                    (untranslate (dumb-negate-lit
+                                  (ancestor-binding-hyp/hyp (car ancestors)))
                                  t wrld)
                     evisc-tuple
-                    (caddr (car ancestors)))
+                    (ancestor-binding-hyp/unify-subst (car ancestors)))
                (tilde-*-ancestors-stack-msg1 (+ 1 i) (cdr ancestors)
                                              wrld evisc-tuple)))
         (t (cons (msg "~c0. Hyp: ~Q12~|~
                             Runes:  ~x3~%"
                       (cons i 2)
-                      (untranslate (dumb-negate-lit (car (car ancestors)))
+                      (untranslate (dumb-negate-lit
+                                    (access ancestor (car ancestors) :lit))
                                    t wrld)
                       evisc-tuple
-                      (car (cddddr (car ancestors))))
+                      (access ancestor (car ancestors) :tokens))
                  (tilde-*-ancestors-stack-msg1 (+ 1 i) (cdr ancestors)
                                                wrld evisc-tuple)))))
 
@@ -14860,7 +14862,7 @@
                               nil))
                    :obj '?
                    :ancestors
-                   (cons (list :binding-hyp hyp unify-subst)
+                   (cons (make-ancestor-binding-hyp hyp unify-subst)
                          ancestors)
                    :geneqv (and (not (eq (ffn-symb hyp) 'equal))
                                 (cadr (geneqv-lst

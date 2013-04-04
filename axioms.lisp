@@ -8331,11 +8331,11 @@
   '(26 . MINUSP))
 (defconst *tau-booleanp-pair*
   #+(and (not non-standard-analysis) acl2-par)
-  '(102 . BOOLEANP)
+  '(103 . BOOLEANP)
   #+(and (not non-standard-analysis) (not acl2-par))
-  '(101 . BOOLEANP)
+  '(102 . BOOLEANP)
   #+non-standard-analysis
-  '(104 . BOOLEANP)           ; Ruben:  I just guessed at this, and
+  '(105 . BOOLEANP)           ; Ruben:  I just guessed at this, and
   )                           ; do you ever build ``ACL2(r)(p)''?
 
 
