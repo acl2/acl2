@@ -88,7 +88,7 @@
 ; for each var in freevars, look into the type-alist
 ; and build a no-dup vt-al(var-types-alist)
 ; Note: we can get a list of types which means TS-UNION
-(defun get-var-types-from-type-alist1 (acl2-type-alist freevars ans)
+(defun get-var-types-from-type-alist (acl2-type-alist freevars ans)
   (declare (xargs :mode :program
                   :guard (and (alistp acl2-type-alist)
                               (symbol-listp freevars))))
@@ -100,19 +100,19 @@
          (ts (if (consp ts-info) (cadr ts-info) nil)))
      (if ts
          (let ((types (get-type-list-from-type-set ts)))
-          (get-var-types-from-type-alist1 acl2-type-alist 
+          (get-var-types-from-type-alist acl2-type-alist 
                                           (cdr freevars) 
                                           (acons var types ans)))
-       (get-var-types-from-type-alist1 acl2-type-alist 
+       (get-var-types-from-type-alist acl2-type-alist 
                                        (cdr freevars) ans)))))
 
-(defun get-var-types-from-type-alist (acl2-type-alist freevars)
+(defun decode-acl2-type-alist (acl2-type-alist freevars)
   (declare (xargs :mode :program
                   :guard (and (alistp acl2-type-alist)
                               (symbol-listp freevars))))
   (if (endp acl2-type-alist)
       '()
-    (get-var-types-from-type-alist1 acl2-type-alist freevars '())))
+    (get-var-types-from-type-alist acl2-type-alist freevars '())))
 
 
 
@@ -132,6 +132,7 @@
 ;; defdata types")
   (b* (((when (or (eq 'acl2::empty typ1)
                   (eq 'acl2::empty typ2))) 'acl2::empty)
+       ((when (eq typ2 typ1)) typ2)
        ((unless (and (defdata::is-a-typeName typ1 wrld)
                      (defdata::is-a-typeName typ2 wrld)))
         (er hard 'meet "~x0 or ~x1 is not a defdata type.~|" typ1 typ2))
