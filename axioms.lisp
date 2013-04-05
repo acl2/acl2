@@ -19271,7 +19271,7 @@
 
   ":Doc-Section Events
 
-   hide some ~il[events] and/or constrain some functions~/
+  hide some ~il[events] and/or constrain some functions~/
 
   ~c[Encapsulate] provides a way to execute a sequence of ~il[events] and then
   hide some of the resulting effects.  There are two kinds of encapsulations:
