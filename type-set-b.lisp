@@ -327,101 +327,105 @@
 
   ACL2 property lists and the ACL2 logical database~/
 
+  The ACL2 logical world is a data structure that includes all logical content
+  resulting from the ~il[command]s evaluated, back through and including
+  initialization, but not including commands that have been undone (~pl[ubt]).
+  Thus in particular, the world includes a represention of the current logical
+  theory, as well as some extra-logical information such as the values of ACL2
+  ~il[table]s.  The rest of this topic focuses on the structure of the the ACL2
+  world and, more generally, the ``world'' data structure.
+
   A ``world'' is a list of triples, each of the form ~c[(sym prop . val)],
   implementing the ACL2 notion of property lists.  ACL2 permits the
-  simultaneous existence of many property list worlds.  ``The world''
-  is often used as a shorthand for ``the ACL2 logical world'' which is
-  the particular property list world used within the ACL2 system to
-  maintain the database of rules.~/
+  simultaneous existence of many property list worlds.  ``The world'' is often
+  used as a shorthand for ``the ACL2 logical world'' which is the particular
+  property list world used within the ACL2 system to maintain a database that
+  contiains rules, ~il[table]s, and so on.~/
 
-  Common Lisp provides the notion of ``property lists'' by which one
-  can attach ``properties'' and their corresponding ``values'' to
-  symbols.  For example, one can arrange for the ~c['color] property of
-  the symbol ~c['box-14] to be ~c['purple] and the ~c['color] property of the
-  symbol ~c['triangle-7] to be ~c['yellow].  Access to property lists is given
-  via the Common Lisp function ~c[get].  Thus, ~c[(get 'box-14 'color)] might
-  return ~c['purple].  Property lists can be changed via the special form
-  ~c[setf].  Thus, ~c[(setf (get 'box-14 'color) 'blue)] changes the Common
-  Lisp property list configuration so that ~c[(get 'box-14 'color)]
-  returns ~c['blue].  It should be obvious that ACL2 cannot provide this
-  facility, because Common Lisp's ~c[get] ``function'' is not a function
-  of its argument, but instead a function of some implicit state
-  object representing the property list settings for all symbols.
+  Common Lisp provides the notion of ``property lists'' by which one can attach
+  ``properties'' and their corresponding ``values'' to symbols.  For example,
+  one can arrange for the ~c['color] property of the symbol ~c['box-14] to be
+  ~c['purple] and the ~c['color] property of the symbol ~c['triangle-7] to be
+  ~c['yellow].  Access to property lists is given via the Common Lisp function
+  ~c[get].  Thus, ~c[(get 'box-14 'color)] might return ~c['purple].  Property
+  lists can be changed via the special form ~c[setf].  Thus,
+  ~c[(setf (get 'box-14 'color) 'blue)] changes the Common Lisp property list
+  configuration so that ~c[(get 'box-14 'color)] returns ~c['blue].  It should
+  be obvious that ACL2 cannot provide this facility, because Common Lisp's
+  ~c[get] ``function'' is not a function of its argument, but instead a
+  function of some implicit state object representing the property list
+  settings for all symbols.
 
   ACL2 provides the functions ~c[getprop] and ~c[putprop] which allow one to
-  mimic the Common Lisp property list facility.  However, ACL2's
-  ~c[getprop] takes as one of its arguments a list that is a direct
-  encoding of what was above called the ``state object representing
-  the property list settings for all symbols.''  Because ACL2 already
-  has a notion of ``~il[state]'' that is quite distinct from that used
-  here, we call this property list object a ``world.''  A world is
-  just a true list of triples.  Each triple is of the form
-  ~c[(sym prop . val)].  This world can be thought of as a slightly
-  elaborated form of association list and ~c[getprop] is a slightly
-  elaborated form of ~ilc[assoc] that takes two keys.  When ~c[getprop] is
-  called on a symbol, ~c[s], property ~c[p], and world, ~c[w], it
-  scans ~c[w] for the first triple whose ~c[sym] is ~c[s] and ~c[prop] is
-  ~c[p] and returns the corresponding ~c[val]. ~c[Getprop] has two
-  additional arguments, one of which that controls what it returns if
-  no such ~c[sym] and ~c[prop] exist in ~c[w], and other other of which
-  allows an extremely efficient implementation.  To set some
-  property's value for some symbol, ACL2 provides ~c[putprop].
-  ~c[(putprop sym prop val w)] merely returns a new world, ~c[w'], in
-  which ~c[(sym prop . val)] has been ~ilc[cons]ed onto the front of ~c[w],
-  thus ``overwriting'' the ~c[prop] value of ~c[sym] in ~c[w] to ~c[val]
-  and leaving all other properties in ~c[w] unchanged.
+  mimic the Common Lisp property list facility.  However, ACL2's ~c[getprop]
+  takes as one of its arguments a list that is a direct encoding of what was
+  above called the ``state object representing the property list settings for
+  all symbols.''  Because ACL2 already has a notion of ``~il[state]'' that is
+  quite distinct from that used here, we call this property list object a
+  ``world.''  A world is just a true list of triples.  Each triple is of the
+  form ~c[(sym prop . val)].  This world can be thought of as a slightly
+  elaborated form of association list and ~c[getprop] is a slightly elaborated
+  form of ~ilc[assoc] that takes two keys.  When ~c[getprop] is called on a
+  symbol, ~c[s], property ~c[p], and world, ~c[w], it scans ~c[w] for the first
+  triple whose ~c[sym] is ~c[s] and ~c[prop] is ~c[p] and returns the
+  corresponding ~c[val]. ~c[Getprop] has two additional arguments, one of which
+  that controls what it returns if no such ~c[sym] and ~c[prop] exist in ~c[w],
+  and other other of which allows an extremely efficient implementation.  To
+  set some property's value for some symbol, ACL2 provides ~c[putprop].
+  ~c[(putprop sym prop val w)] merely returns a new world, ~c[w'], in which
+  ~c[(sym prop . val)] has been ~ilc[cons]ed onto the front of ~c[w], thus
+  ``overwriting'' the ~c[prop] value of ~c[sym] in ~c[w] to ~c[val] and leaving
+  all other properties in ~c[w] unchanged.
 
-  One aspect of ACL2's property list arrangment is that it is possible
-  to have many different property list worlds.  For example, ~c['box-14]
-  can have ~c['color] ~c['purple] in one world and can have ~c['color] ~c['yes] in
-  another, and these two worlds can exist simultaneously because
-  ~c[getprop] is explicitly provided the world from which the property
-  value is to be extracted.
+  One aspect of ACL2's property list arrangment is that it is possible to have
+  many different property list worlds.  For example, ~c['box-14] can have
+  ~c['color] ~c['purple] in one world and can have ~c['color] ~c['yes] in
+  another, and these two worlds can exist simultaneously because ~c[getprop] is
+  explicitly provided the world from which the property value is to be
+  extracted.
 
-  The efficiency alluded to above stems from the fact that Common Lisp
-  provides property lists.  Using Common Lisp's provisions behind the
-  scenes, ACL2 can ``install'' the properties of a given world into
-  the Common Lisp property list state so as to make retrieval via
-  ~c[getprop] very fast in the special case that the world provided to
-  ~c[getprop] has been installed.  To permit more than one installed world,
-  each of which is permitted to be changed via ~c[putprop], ACL2 requires
-  that worlds be named and these names are used to distinquish
-  installed versions of the various worlds.  At the moment we do not
-  further document ~c[getprop] and ~c[putprop].
+  The efficiency alluded to above stems from the fact that Common Lisp provides
+  property lists.  Using Common Lisp's provisions behind the scenes, ACL2 can
+  ``install'' the properties of a given world into the Common Lisp property
+  list state so as to make retrieval via ~c[getprop] very fast in the special
+  case that the world provided to ~c[getprop] has been installed.  To permit
+  more than one installed world, each of which is permitted to be changed via
+  ~c[putprop], ACL2 requires that worlds be named and these names are used to
+  distinquish installed versions of the various worlds.  At the moment we do
+  not further document ~c[getprop] and ~c[putprop].
 
   However, the ACL2 system uses a property list world, named
   ~c['current-acl2-world], in which to store the succession of user
-  ~il[command]s and their effects on the logic.  This world is often
-  referred to in our ~il[documentation] as ``the world'' though it should
-  be stressed that the user is permitted to have worlds and ACL2's is
-  in no way distinguished except that the user is not permitted to
-  modify it except via event ~il[command]s.  The ACL2 world is part of the
-  ACL2 ~il[state] and may be obtained via ~c[(w state)].
+  ~il[command]s and their effects on the logic.  This world is often referred
+  to in our ~il[documentation] as ``the world'' though it should be stressed
+  that the user is permitted to have worlds and ACL2's is in no way
+  distinguished except that the user is not permitted to modify it except via
+  event ~il[command]s.  The ACL2 world is part of the ACL2 ~il[state] and may
+  be obtained via ~c[(w state)].
 
   ~st[Warning]: The ACL2 world is very large.  Its length as of this
-  writing (Version  2.5) is over ~c[40,000] and it grows with each release.
-  Furthermore, some of the values stored in it are pointers to old
-  versions of itself.  Printing ~c[(w state)] is something you should
-  avoid because you likely will not have the patience to await its
-  completion.  For these practical reasons, the only thing you should
-  do with ~c[(w state)] is provide it to ~c[getprop], as in the form
+  writing (Version 2.5) is over ~c[40,000] and it grows with each release.
+  Furthermore, some of the values stored in it are pointers to old versions of
+  itself.  Printing ~c[(w state)] is something you should avoid because you
+  likely will not have the patience to await its completion.  For these
+  practical reasons, the only thing you should do with ~c[(w state)] is provide
+  it to ~c[getprop], as in the form
   ~bv[]
     (getprop sym prop default 'current-acl2-world (w state))
   ~ev[]
-  to inspect properties within it, or to pass it to ACL2 primitives,
-  such as theory functions, where it is expected.
+  to inspect properties within it, or to pass it to ACL2 primitives, such as
+  theory functions, where it is expected.
 
   Some ACL2 ~il[command] forms, such as theory expressions
   (~pl[theories]) and the values to be stored in tables
-  (~pl[table]), are permitted to use the variable symbol ~c[world]
-  freely with the understanding that when these forms are evaluated
-  that variable is bound to ~c[(w state)].  Theoretically, this gives
-  those forms complete knowledge of the current logical configuration
-  of ACL2.  However, at the moment, few world scanning functions have
-  been documented for the ACL2 user.  Instead, supposedly convenient
-  macro forms have been created and documented.  For example,
-  ~c[(current-theory :here)], which is the theory expression which returns
-  the currently ~il[enable]d theory, actually macroexpands to
+  (~pl[table]), are permitted to use the variable symbol ~c[world] freely with
+  the understanding that when these forms are evaluated that variable is bound
+  to ~c[(w state)].  Theoretically, this gives those forms complete knowledge
+  of the current logical configuration of ACL2.  However, at the moment, few
+  world scanning functions have been documented for the ACL2 user.  Instead,
+  supposedly convenient macro forms have been created and documented.  For
+  example, ~c[(current-theory :here)], which is the theory expression which
+  returns the currently ~il[enable]d theory, actually macroexpands to
   ~c[(current-theory-fn :here world)].  When evaluated with ~c[world] bound to
   ~c[(w state)], ~c[current-theory-fn] scans the current ACL2 world and
   computes the set of ~il[rune]s currently ~il[enable]d in it.")
