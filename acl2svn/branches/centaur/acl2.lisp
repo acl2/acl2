@@ -226,12 +226,6 @@
                            0))
                      )))
 
-; Comment out the following form if you don't want extra checks to be done
-; during the use of ACL2.  These checks seem to have only trivial effect on
-; performance.
-
-(push :acl2-extra-checks *features*)
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;                               FILES
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

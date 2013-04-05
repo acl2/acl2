@@ -3097,20 +3097,21 @@
 
 (defun fn-count-1 (flg x fn-count-acc p-fn-count-acc)
 
-; Keep this in sync with the var-fn-count/var-fn-count-lst nest.
+; Warning: Keep this in sync with the var-fn-count-1.
 
-; This definition is derived from the var-fn-count nest, except that it counts
-; only fns and pseudo-fns, not vars, and it uses tail recursion.  It was
-; introduced when a check of fn-counts was added to ancestors-check1, in order
-; to improve efficiency a bit.  A 2.6% decrease in user time (using Allegro
-; 5.0.1) was observed when that check was added, yet that test was found to be
-; critical in certain cases (see the comment in ancestors-check1).  So, here we
-; attempt to improve the efficiency of computing the fn-count.
+; This definition is similar to var-fn-count-1, except that it counts only fns
+; and pseudo-fns, not vars.  It was introduced when a check of fn-counts was
+; added to ancestors-check1, in order to improve efficiency a bit.  (We now use
+; var-fn-count for that purpose.)  A 2.6% decrease in user time (using Allegro
+; 5.0.1) was observed when the fn-counts check was added, yet that test was
+; found to be critical in certain cases (see the comment in ancestors-check1).
 
 ; We discovered that the Allegro compiler does not do as good a job at tail
 ; recursion elimination for mutual recursion nests as for single recursion.  So
 ; we code this as a singly recursive function with a flag, flg:  When flg is
-; nil then x is a term, and otherwise x is a list of terms.
+; nil then x is a term, and otherwise x is a list of terms.  We have since also
+; taken advantage of the use of this single "flag" function when verifying
+; termination and guards.
 
   (declare (xargs :guard (and (if flg
                                   (pseudo-term-listp x)
@@ -4937,7 +4938,40 @@
 (defattach (worse-than-or-equal worse-than-or-equal-builtin)
   :skip-checks t)
 
-; Here is how we add a frame to the ancestors stack.  
+; Begin treatment of the ancestors stack.
+
+(defrec ancestor
+
+; Note: if lit is :binding-hyp, then lit-atm is hyp, fn-count is unify-subst
+; and tokens is nil (see relevant comment in earlier-ancestor-biggerp).  See
+; make-ancestor-binding-hyp, ancestor-binding-hyp-p, ancestor-binding-hyp/hyp,
+; and ancestor-binding-hyp/unify-subst.
+
+; To obtain the literals from a list of ancestors, call
+; strip-ancestor-literals.  (Strip-cars will still work at this time, but we do
+; not guarantee that in the future.)
+
+  (lit atm var-cnt fn-cnt p-fn-cnt tokens)
+  t)
+
+(defmacro make-ancestor-binding-hyp (hyp unify-subst)
+  `(make ancestor
+         :lit :binding-hyp
+         :atm ,hyp
+         :var-cnt ,unify-subst
+         :tokens nil))
+
+(defmacro ancestor-binding-hyp-p (anc)
+  `(eq (access ancestor ,anc :lit)
+       :binding-hyp))
+
+(defmacro ancestor-binding-hyp/hyp (anc)
+  `(access ancestor ,anc :atm))
+
+(defmacro ancestor-binding-hyp/unify-subst (anc)
+  `(access ancestor ,anc :var-cnt))
+
+; Here is how we add a frame to the ancestors stack.
 
 (defun push-ancestor (lit tokens ancestors)
 
@@ -4948,7 +4982,7 @@
 ; assumptions we use the ``runes'' from the assumnotes (see defrec
 ; assumnote) as the tokens.  These ``runes'' are not always runes but
 ; may be symbols.
- 
+
 ; Note:  It is important that the literal, lit, be in the car of the
 ; frame constructed below.
 
@@ -4957,63 +4991,74 @@
                            (strip-not alit)
                            (declare (ignore not-flg))
                            atm)))
-    (mv-let (fn-cnt-alit-atm p-fn-cnt-alit-atm)
-            (fn-count alit-atm)
-            (cons (list alit              ; the literal being assumed true
-                                          ; (negation of hyp!)
-                        alit-atm          ; the atom of that literal
-                        fn-cnt-alit-atm   ; the fn-count of that atom
-                        p-fn-cnt-alit-atm ; the pseudo-fn-count of that atom
-                        tokens)          ; the runes involved in this backchain
-                  ancestors))))
+    (mv-let
+     (var-cnt-alit-atm fn-cnt-alit-atm p-fn-cnt-alit-atm)
+     (var-fn-count alit-atm nil)
+     (cons (make ancestor
+                 :lit alit ; the literal being assumed true (negation of hyp!)
+                 :atm alit-atm               ; the atom of that literal
+                 :var-cnt var-cnt-alit-atm   ; the var-count of that atom
+                 :fn-cnt fn-cnt-alit-atm     ; the fn-count of that atom
+                 :p-fn-cnt p-fn-cnt-alit-atm ; the pseudo-fn-count of that atom
+                 :tokens tokens) ; the runes involved in this backchain
+           ancestors))))
 
 (defun ancestor-listp (x)
   (declare (xargs :guard t))
   (cond ((atom x) (null x))
-        ((not (true-listp (car x)))
+        ((not (weak-ancestor-p (car x)))
          nil)
-        ((eq (caar x) :binding-hyp)
-         (and (null (cdddr (car x)))
-              (ancestor-listp (cdr x))))
+        ((ancestor-binding-hyp-p (car x))
+         (and
+
+; See relevant comment in earlier-ancestor-bigger for why :tokens must be nil
+; in this case.
+
+          (null (access ancestor (car x) :tokens))
+          (ancestor-listp (cdr x))))
         (t (let* ((anc (car x))
-                  (alit (car anc))
-                  (alit-atm (cadr anc))
-                  (fn-cnt-alit-atm (caddr anc))
-                  (p-fn-cnt-alit-atm (cadddr anc))
-                  (atokens (car (cddddr anc))))
+                  (alit (access ancestor anc :lit))
+                  (alit-atm (access ancestor anc :atm))
+                  (var-cnt-alit-atm (access ancestor anc :var-cnt))
+                  (fn-cnt-alit-atm (access ancestor anc :fn-cnt))
+                  (p-fn-cnt-alit-atm (access ancestor anc :p-fn-cnt))
+                  (atokens (access ancestor anc :tokens)))
              (and (pseudo-termp alit)
                   (pseudo-termp alit-atm)
+                  (integerp var-cnt-alit-atm)
                   (integerp fn-cnt-alit-atm)
                   (integerp p-fn-cnt-alit-atm)
                   (true-listp atokens)
                   (ancestor-listp (cdr x)))))))
 
-(defun earlier-ancestor-biggerp (fn-cnt p-fn-cnt tokens ancestors)
+(defun earlier-ancestor-biggerp (var-cnt fn-cnt p-fn-cnt tokens ancestors)
 
 ; We return t if some ancestor on ancestors has a bigger fn-count than
 ; fn-cnt and intersects with tokens.
 
-  (declare (xargs :guard (and (integerp fn-cnt)
+  (declare (xargs :guard (and (integerp var-cnt)
+                              (integerp fn-cnt)
                               (integerp p-fn-cnt)
                               (true-listp tokens)
                               (ancestor-listp ancestors))))
   (cond ((endp ancestors) nil)
         (t (let* ((anc (car ancestors))
-                  (fn-cnt-alit-atm (caddr anc))
-                  (p-fn-cnt-alit-atm (cadddr anc))
-                  (atokens (car (cddddr anc))))
+                  (var-cnt-alit-atm (access ancestor anc :var-cnt))
+                  (fn-cnt-alit-atm (access ancestor anc :fn-cnt))
+                  (p-fn-cnt-alit-atm (access ancestor anc :p-fn-cnt))
+                  (atokens (access ancestor anc :tokens)))
              (cond ((and (intersectp-equal tokens atokens)
 
-; (Car ancestors) might be of the form (:binding-hyp hyp unify-subst).  In this
-; case some of the values compared below using < are nil.  However, those
-; comparisons do not take place because in this case atokens is also nil, so
-; the intersectp-equal test above returns nil.
+; (Car ancestors) might specify an ancestor-binding-hyp-p.  In this case some
+; of the values compared below using < are nil.  However, those comparisons do
+; not take place because in this case atokens is also nil, so the
+; intersectp-equal test above returns nil.
 
-                         (or (< fn-cnt fn-cnt-alit-atm)
-                             (and (eql fn-cnt fn-cnt-alit-atm)
-                                  (< p-fn-cnt p-fn-cnt-alit-atm))))
+                         (var-or-fn-count-< var-cnt var-cnt-alit-atm
+                                            fn-cnt fn-cnt-alit-atm
+                                            p-fn-cnt p-fn-cnt-alit-atm))
                     t)
-                   (t (earlier-ancestor-biggerp fn-cnt p-fn-cnt tokens
+                   (t (earlier-ancestor-biggerp var-cnt fn-cnt p-fn-cnt tokens
                                                 (cdr ancestors))))))))
 
 (defun equal-mod-commuting (x y wrld)
@@ -5044,15 +5089,16 @@
                 (equal (fargn x 1) (fargn y 2))
                 (equal (fargn x 2) (fargn y 1))))))
 
-(defun ancestors-check1 (lit-atm lit fn-cnt p-fn-cnt ancestors tokens)
-                                 
+(defun ancestors-check1 (lit-atm lit var-cnt fn-cnt p-fn-cnt ancestors tokens)
+
 ; Roughly speaking, ancestors is a list of all the things we can assume by
 ; virtue of our trying to prove their negations.  That is, when we backchain
 ; from B to A by applying (implies A B), we try to prove A and so we put (NOT
-; A) on ancestors and can legitimately assume it (i.e., (NOT A)) true.  Roughly
-; speaking, if lit is a member-equal of ancestors, we return (mv t t) and if
-; the complement of lit is a member-equal we return (mv t nil).  If neither
-; case obtains, we return (mv nil nil).
+; A) on ancestors and can legitimately assume it (i.e., (NOT A)) true.  We
+; return (mv t on-ancestors) if we determine heuristically that further
+; backchaining is inadvisable, where on-ancestors is t if roughly speaking, lit
+; is a member-equal of ancestors, and otherwise on-ancestors is nil.  Otherwise
+; we return (mv nil nil).
 
 ; We implement the complement check as follows.  lit-atm is the atom of the
 ; literal lit.  Consider a literal of ancestors, alit, and its atom, alit-atm.
@@ -5070,6 +5116,7 @@
 
   (declare (xargs :guard (and (pseudo-termp lit-atm)
                               (pseudo-termp lit)
+                              (integerp var-cnt)
                               (integerp fn-cnt)
                               (integerp p-fn-cnt)
                               (ancestor-listp ancestors)
@@ -5077,14 +5124,15 @@
   (cond
    ((endp ancestors)
     (mv nil nil))
-   ((eq (caar ancestors) :binding-hyp)
-    (ancestors-check1 lit-atm lit fn-cnt p-fn-cnt (cdr ancestors) tokens))
+   ((ancestor-binding-hyp-p (car ancestors))
+    (ancestors-check1 lit-atm lit var-cnt fn-cnt p-fn-cnt (cdr ancestors) tokens))
    (t
-    (let ((alit              (car (car ancestors)))
-          (alit-atm          (cadr (car ancestors)))
-          (fn-cnt-alit-atm   (caddr (car ancestors)))
-          (p-fn-cnt-alit-atm (cadddr (car ancestors)))
-          (atokens           (car (cddddr (car ancestors)))))
+    (let ((alit              (access ancestor (car ancestors) :lit))
+          (alit-atm          (access ancestor (car ancestors) :atm))
+          (var-cnt-alit-atm  (access ancestor (car ancestors) :var-cnt))
+          (fn-cnt-alit-atm   (access ancestor (car ancestors) :fn-cnt))
+          (p-fn-cnt-alit-atm (access ancestor (car ancestors) :p-fn-cnt))
+          (atokens           (access ancestor (car ancestors) :tokens)))
       (cond
        ((equal-mod-commuting alit lit nil)
 
@@ -5129,15 +5177,15 @@
                     (nvariablep lit-atm)
                     (not (fquotep lit-atm))
                     (equal (ffn-symb lit-atm) (ffn-symb alit-atm))
-                    (or (> fn-cnt fn-cnt-alit-atm)
-                        (and (eql fn-cnt fn-cnt-alit-atm)
-                             (>= p-fn-cnt p-fn-cnt-alit-atm))))
+                    (not (var-or-fn-count-< var-cnt var-cnt-alit-atm
+                                            fn-cnt fn-cnt-alit-atm
+                                            p-fn-cnt p-fn-cnt-alit-atm)))
                (mv t nil))
-              (t (ancestors-check1 lit-atm lit fn-cnt p-fn-cnt
+              (t (ancestors-check1 lit-atm lit var-cnt fn-cnt p-fn-cnt
                                    (cdr ancestors) tokens))))
-       ((and (or (> fn-cnt fn-cnt-alit-atm)
-                 (and (eql fn-cnt fn-cnt-alit-atm)
-                      (>= p-fn-cnt p-fn-cnt-alit-atm)))
+       ((and (not (var-or-fn-count-< var-cnt var-cnt-alit-atm
+                                     fn-cnt fn-cnt-alit-atm
+                                     p-fn-cnt p-fn-cnt-alit-atm))
              (worse-than-or-equal lit-atm alit-atm))
 
 ; The clause above is the old Version_2.5 test, but now it is tried only if the
@@ -5165,14 +5213,15 @@
 ; this is a pretty arbitrary decision heuristic mainly to make Carlos' example
 ; work.
 
-        (cond ((earlier-ancestor-biggerp fn-cnt
+        (cond ((earlier-ancestor-biggerp var-cnt
+                                         fn-cnt
                                          p-fn-cnt
                                          atokens
                                          (cdr ancestors))
-               (ancestors-check1 lit-atm lit fn-cnt p-fn-cnt
+               (ancestors-check1 lit-atm lit var-cnt fn-cnt p-fn-cnt
                                  (cdr ancestors) tokens))
               (t (mv t nil))))
-       (t (ancestors-check1 lit-atm lit fn-cnt p-fn-cnt
+       (t (ancestors-check1 lit-atm lit var-cnt fn-cnt p-fn-cnt
                             (cdr ancestors) tokens)))))))
 
 ; Note: In the type-set clique, and nowhere else, ancestors might be
@@ -5224,9 +5273,9 @@
         (t (mv-let (not-flg lit-atm)
                    (strip-not lit)
                    (declare (ignore not-flg))
-                   (mv-let (fn-cnt p-fn-cnt)
-                           (fn-count lit-atm)
-                           (ancestors-check1 lit-atm lit fn-cnt p-fn-cnt
+                   (mv-let (var-cnt fn-cnt p-fn-cnt)
+                           (var-fn-count lit-atm nil)
+                           (ancestors-check1 lit-atm lit var-cnt fn-cnt p-fn-cnt
                                              ancestors tokens))))))
 
 (defproxy ancestors-check (* * *) => (mv * *))
