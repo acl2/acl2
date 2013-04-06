@@ -3882,6 +3882,19 @@
                      (equal old (fargn term 2)))))
           (subst-type-alist1-check old equiv (cdr type-alist))))))
 
+(defun nil-fn ()
+
+; This trivial definition is used for making a sort of placeholder entry,
+; *nil-fn-ts-entry*, when simplifying type-alists.  See subst-type-alist1.
+
+  (declare (xargs :guard t :mode :logic))
+  nil)
+
+(defconst *nil-fn-ts-entry*
+  (list* (cons-term 'nil-fn nil)
+         *ts-nil*
+         (push-lemma '(:definition nil-fn) nil)))
+
 (defun subst-type-alist1 (new old equiv ttree type-alist acc)
 
 ; This subsidiary function of subst-type-alist is coded so that we do not do
@@ -3897,22 +3910,43 @@
    (t
     (subst-type-alist1
      new old equiv ttree (cdr type-alist)
-     (cons (let ((term (caar type-alist)))
-             (cond
-              ((and (nvariablep term)
-                    (eq (ffn-symb term) equiv)
-                    (or (equal old (fargn term 1))
-                        (equal old (fargn term 2))))
+     (let ((term (caar type-alist)))
+       (cond
+        ((and (nvariablep term)
+              (eq (ffn-symb term) equiv)
+              (or (equal old (fargn term 1))
+                  (equal old (fargn term 2))))
 
 ; Note that since subst-type-alist1 is only called by subst-type-alist, and
 ; subst-type-alist assumes that new and old are canonical in type-alist and
 ; distinct, we know that the third invariant on type-alists is being preserved:
 ; we are not creating an entry binding (equiv new new) to *ts-t*.
 
-               (list* (if (equal old (fargn term 1))
-                          (cons-term* equiv new (fargn term 2))
-                        (cons-term* equiv (fargn term 1) new))
-                      (cadar type-alist)
+         (let ((equiv-call (if (equal old (fargn term 1))
+                               (cons-term* equiv new (fargn term 2))
+                             (cons-term* equiv (fargn term 1) new))))
+           (cond
+            ((quotep equiv-call)
+
+; If we keep this entry, we will violate the first invariant on type-alists.
+; But our algorithm for infect-new-type-alist-entries depends on not dropping
+; entries!  So we add a silly entry instead.  We could have simply retained the
+; existing entry, but this way we can see nil-fn explicitly during debugging,
+; and we can contemplate cleaning up the type-alist to remove this specific
+; entry.  Why not simply drop the entry entirely?  The problem is that
+; subfunctions of assume-true-false make the assumption that they extend the
+; type-alist; see infect-new-type-alist-entries.
+
+; It seems worth checking that we're not losing a contradiction, so we check
+; that in an assertion.  We might drop this assertion in the future.
+
+             (assert$ (equal (ts= (cadar type-alist) *ts-nil*)
+                             (equal equiv-call *nil*))
+                      (cons *nil-fn-ts-entry*
+                            acc)))
+            (t
+             (cons (list* equiv-call
+                          (cadar type-alist)
 
 ; Note on Tracking Equivalence Runes: If we ever give runic names to the
 ; theorems establishing equivalence- relation-hood and track those names
@@ -3924,10 +3958,10 @@
 ; primitive type reasoning?  We added a function equivalence-rune to record
 ; commutativity in bdd processing, and this function may be of use here.
 
-                      (puffert
-                       (cons-tag-trees (cddar type-alist) ttree))))
-              (t (car type-alist))))
-           acc)))))
+                          (puffert
+                           (cons-tag-trees (cddar type-alist) ttree)))
+                   acc)))))
+        (t (cons (car type-alist) acc))))))))
 
 (defun subst-type-alist (new old equiv ttree type-alist)
 

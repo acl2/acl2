@@ -20476,6 +20476,10 @@
 ; already did for fn-count and fn-count-1.  Var-fn-count-1 is in :logic mode;
 ; the old var-fn-count nest was not.
 
+; It had been possible to violate the first invariant on type-alists: no quotep
+; is bound in a type-alist, but we fixed that.  See the long comment in
+; subst-type-alist1.
+
   :doc
   ":Doc-Section release-notes
 

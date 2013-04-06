@@ -9411,11 +9411,10 @@
 ; (including defaxioms, which never have ancestors with attachments, by the
 ; Defaxiom Restriction for Defattach; see the Essay on Defattach), h1 contains
 ; no attachments.  But h_e is conservative over h1 (a standard property of
-; histories), and h1 is contained in the current logical world, so h_e is
-; conservative over the current logical world.  It follows by definition of
-; conservativity that the formula displayed above is a theorem of the current
-; logical world.  So we justifiably ignore attachments for the remainder of
-; this discussion.
+; histories), so by definition of conservativity, the formula displayed above
+; is a theorem of h1.  Since h1 is contained in the current logical world, that
+; formula is also a theorem of the current logical world.  So we justifiably
+; ignore attachments for the remainder of this discussion.
 
 ; Now we functionally instantiate as before, this time after introducing an
 ; evaluator ev' that includes all currently known function symbols, thus
