@@ -17127,7 +17127,9 @@
   `make' approach supported by the ACL2 system; ~pl[book-makefiles].  We begin
   by describing a few ways to do that.  A simple way is to add the line
   `~c[ACL2_PCERT=t]' to a `~c[make]' command that you use for book
-  certification, for example as follows.
+  certification, for example as follows.  (But use ~c[ACL2_JOBS] instead of
+  ~c[-j] if you are doing a regression rather than working a specific
+  subdirectory of the books; ~pl[book-makefiles].)
   ~bv[]
   make -j 4 ACL2_PCERT=t
   ~ev[]
@@ -17142,7 +17144,8 @@
   to the ~c[Makefile] residing in a directory, placed above the line that
   specifies the `~c[include]' of file ~c[Makefile-generic].
 
-  A successful `make' will result in creati  See community books file
+  A successful `make' will result in create the desired
+  ~il[certificate] (~c[.cert]) files.  See community books file
   ~c[books/system/pcert/Makefile] for an example.
 
   Warning: If you put the line ``~c[ACL2_PCERT = t]'' below the include of

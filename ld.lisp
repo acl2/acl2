@@ -20548,6 +20548,18 @@
   list of ancestors, although ~c[strip-cars] will still work at this time.
   ~eq[]
 
+  When we rewrite the current literal of the current clause we assume the
+  falsity of the other literals and of the conclusions produced by forward
+  chaining.  We have changed the order in which those assumptions are made,
+  which affects the type-alist used during rewriting.  This has three effects:
+  the new type-alist, which is sometimes stronger than the old one, may allow
+  additional rules to fire, the choice of free vars may be different, and the
+  order of the literals in forced subgoals may be different.  Should ``legacy''
+  proofs fail under the new type-alist, we recommend looking for rules that are
+  fired in the new proof that were not fired (on that same subgoal) in the old
+  one.  Thanks to Dave Greve for sending us an example that led us to make this
+  change.
+
   ~st[BUG FIXES]
 
   Fixed a soundness bug that could be exploited by calling system functions

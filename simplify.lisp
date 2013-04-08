@@ -4282,39 +4282,104 @@
             (cons (cdr (car fc-pair-lst))
                   ttree-lst)))))
 
-(defun rewrite-clause-type-alist (tail new-clause fc-pair-lst rcnst wrld
-                                  pot-lst pt)
+; Essay on the Construction of the Type-alist to Rewrite the Current Literal
 
-; We construct a type alist in which we assume (a) the falsity of every literal
-; in tail except the first, (b) the falsity of every literal in new-clause, and
-; (c) the truth of every concl in fc-pair-lst that is not dependent upon
-; any literal noted in the parent tree (:pt) of rcnst.
-; We do this by constructing a clause containing the literals in question
-; (negating the concls in fc-pair-lst) and calling our general purpose
-; type-alist-clause.  As of v2-8, we also pass in the simplify-clause-pot-lst
-; to aid in the endeavor since type-set and assume-true-false can now
-; (weakly) use linear arithmetic.
+; Simplification sweeps across the literals of a clause, rewriting each in turn
+; while assuming the others false.  After rewriting a literal, we clausify the
+; result into n clause segments [extending other already-rewritten segments]
+; and rewrite the next literal under (the falsity of each literal in) each of
+; those segments together with the remaining literals and any available
+; conclusions produced by forward chaining.  Thus, to get the type-alist to be
+; used while rewriting ``the current literal'' we assume the falsity of three
+; lists of literals: new-clause [the clause segement obtained from one path
+; through the previously rewritten literals], (cdr tail) [the rest of the
+; unrewritten literals], and lits [the literals derived by forward chaining].
+; We use the ordinary type-alist-clause to create the new type-alist.  The
+; question is: in which order shall we combine these three lists to give to
+; type-alist-clause?
 
-; We return a four-tuple, (mv contradictionp type-alist ttree current-clause),
-; where contradictionp is t or nil and indicates whether we derived a
-; contradiction.  Type-alist is the constructed type-alist (or nil if we got a
-; contradiction).  Ttree is a ttree explaining the contradiction (or nil if got
-; no contradiction).  Current-clause is the clause used in the computation
-; described immediately above.
+; Warning: Note that rearranging the order in which we make these assumptions
+; reorders the type-alist!  But this can be a Very Big Deal.  Different rules
+; might fire because one type-alist is actually stronger than another,
+; different free variable choices may be available because we run into
+; different hypotheses (in different orders) suggesting bindings, and the order
+; of literals in forced subgoals may be different because we reconstruct forced
+; subgoals from converting the governing type-alist into a conjunction of
+; terms.  Experimenting with reordering is a costly experiment.
 
-; Note: The type-alist returned may contain 'assumption tags.  In addition, the
-; type-alist may contain some 'pt tags -- the conclusions derived by forward
-; chaining will have their respective ttrees attached to them and these will
-; have 'pt tags and could have 'assumptions.  We could throw out the 'pt tags
-; if we wanted -- we are allowed to use everything in this type-alist because
-; we only put accessible assumptions in it -- but we don't.  We must record the
-; ttrees because of the possible 'assumption tags.
+; We have tried three approaches: (append lits new-clause (cdr tail)), (append
+; new-clause (cdr tail) lits), and a ``smart'' approach in which we sort the
+; literals to put the smaller ones first, thereby allowing their type-sets to
+; improve, perhaps, the type-sets computed for larger literals (like disjuctive
+; ones (IF a a b)) involving the some of the smaller ones.  The code deleted
+; below was part of this ``smart'' approach.  All of these reordering
+; strategies must maintain the correspondence between the forward-chained
+; literals and the ttrees that produced them and some of the code below deals
+; with how to permute two lists so as to order one by size and keep the result
+; in 1:1 correspondence with the permuted other.
 
-  (mv-let
-   (lits ttree-lst)
-   (select-forward-chained-concls-and-ttrees fc-pair-lst
-                                             (access rewrite-constant rcnst :pt)
-                                             nil nil)
+; Start Experimental Code
+
+;  (mutual-recursion
+;   (defun term-size (term)
+;  
+;  ; This computes the number of conses in a term, down to (but not including) the
+;  ; quoted constants.  This is just an ``arbitrary'' measure with the following
+;  ; two properties: (a) it is fast to compute, though one might someday try to
+;  ; speed it up via memoization, and (b) it has the property that if a and b are
+;  ; two non-constant terms and term a occurs inside of term b, then the size of a
+;  ; is less than the size of b.  This is expoloited to reorder a clause so that
+;  ; the smaller literals come first during the process of sequentially assuming
+;  ; their falsity to construct a type-alist to use in the rewriting of some other
+;  ; literal.  See rewrite-clause-type-alist.
+;  
+;     (cond ((variablep term) 1)
+;           ((fquotep term) 1)
+;           (t (+ 1 (term-size-lst (fargs term))))))
+;   (defun term-size-lst (term-lst)
+;     (cond ((endp term-lst) 0)
+;           (t (+ (term-size (car term-lst))
+;                 (term-size-lst (cdr term-lst)))))))
+;  
+;  ; Suppose x is some clause and y is some list of ttrees in 1:1 correspondence
+;  ; with x.  We wish to reorder the literals of x according to term-size and to
+;  ; apply the same permutation to y, so that the correspondence of literals to
+;  ; ttrees is preserved.  We do this by constructing a list of elements (size xi
+;  ; . yi), where xi and yi are corresponding elements of x and y, sorting that
+;  ; list by its cars, and then stripping out the xi to get the new x' and the yi
+;  ; to get the new yi.
+;  
+;  (defun pairlis-with-rankings (x y ans)
+;  ; See comment above.  If y is too short, we extend it with nils to match x.
+;    (cond ((endp x) ans)
+;          (t (pairlis-with-rankings
+;              (cdr x) (cdr y)
+;              (cons (cons (term-size (car x)) (cons (car x) (car y)))
+;                    ans)))))
+;  
+;  (defun reorder-lits-and-ttrees-for-type-alist-clause
+;    (lits1 ttree-lst1 lits2 ttree-lst2 lits3 ttree-lst3)
+;    (let ((triples
+;           (merge-sort-car-<
+;            (pairlis-with-rankings
+;             lits1 ttree-lst1
+;             (pairlis-with-rankings
+;              lits2 ttree-lst2
+;              (pairlis-with-rankings lits3 ttree-lst3 nil))))))
+;      (mv (strip-cadrs triples)
+;          (strip-cddrs triples))))
+
+; End Experimental Code
+
+; We started (back in 1989) with the Nqthm idea of just concatenating
+; new-clause and (cdr tail); at that time, forward chaining lits didn't exist.
+; When forward-chaining was introduced, we experimented and ultimately decided
+; to try the order (append lits new-clause (cdr tail)).  We did not use (or
+; even have) the function reorder-lits-and-ttrees-for-type-alist-clause and
+; simply appended the ttree lists in the same order.  The following comment is
+; preserved from versions dating back to the mid-1990s through Version_6.1:
+
+; Historical Comment:
 
 ; Observe below that we put the forward-chained concls first.  The problem that
 ; led us to do this was the toy example shown below (extracted from a harder
@@ -4365,17 +4430,108 @@
 ; Feb 9, 1995.  We are trying a version of the third alternative, with
 ; reconsider-type-alist and the double whammy flag.
 
-   (let ((current-clause (append lits new-clause (cdr tail))))
-     (mv-let (contradictionp type-alist ttree)
-       (type-alist-clause
-        current-clause
-        ttree-lst ; we could extend this with |new-clause|+|(cdr tail)| nils
-        nil                             ; force-flg
-        nil                             ; initial type-alist
-        (access rewrite-constant rcnst :current-enabled-structure)
-        wrld
-        pot-lst pt)
-     (mv contradictionp type-alist ttree current-clause)))))
+; End of Historical Comment
+
+; In April, 2013, we experimented with the ``smart'' approach and temporarily
+; introduced reorder-lits-and-ttrees-for-type-alist-clause into what would
+; become Version_6.2.  In all the examples we looked at, the type-alists
+; produced by this method were at least as strong as those produced by the
+; earlier method.  Sometimes they are actually better, especially when the
+; conclusions produced by forward-chained are disjunctions, e.g., (IF a a b),
+; where earlier assumptions about a or b may give us stronger type-sets about b
+; or a.
+
+; The warning above about the effects of changing the order of the type-alist
+; came to the fore in this experiment.  We found that 500 of the 3100+ books
+; failed the regression.  (Of course, presumably many failed because they
+; merely depended on books that failed for type-alist reasons.)  In any case,
+; we abandoned the smart approach.
+
+; But then we moved back to the (append new-clause (cdr tail) lits) approach
+; dismissed earlier in the Historical Comment above.  The reasons for this
+; ordering are fairly compelling: if one is to forward-chain to disjunctions
+; they ought to be processed last so we can take advantage of known-false
+; disjuncts within them.  We tried the old example cited in the Historical
+; Comment above and it works under this approach -- presumably because in the
+; ~20 years since that example was recorded, the system has changed in other
+; ways (e.g., the sophistication now in assume-true-false-if and
+; reconsider-type-alist).  But, not withstanding the Warning above about the
+; dangers of reordering the type-alist, only three contemporary (April, 2013)
+; books failed due to reordering reasons:
+
+; books/centaur/bitops/congruences.lisp
+; books/models/y86/y86-basic/common/read-over-write-proofs.lisp
+; books/demos/modeling/network-state.lisp
+
+; We decided to ``patch'' these proof scripts and stay with the ``forward-chained
+; lits last'' reordering strategy.
+
+; Search those books for: "; Reordering the rewrite-clause-type-alist" to see
+; the three patched events.  Only one event in each book had to modified.  In
+; two of the books one rune had to be disabled in each event (because that rule
+; was able to fire in the new reordering but the proof had been designed when
+; that rule was not firing).  The runes are obscure (if trying to reconstruct
+; the proof via The Method) but were obtained simply by determining the runes
+; for the failed subgoal under reordering that were not fired by the successful
+; proof of that same subgoal.  Once the set of such runes was identified we
+; could experiment to determine a ``minimal'' sufficient set (in each case a
+; set of size 1).  In the third book (network-state.lisp) we proved a lemma
+; that drastically simplified the affected proof.
+
+(defun rewrite-clause-type-alist (tail new-clause fc-pair-lst rcnst wrld
+                                       pot-lst pt)
+
+; We construct a type alist in which we assume (a) the falsity of every literal
+; in tail except the first, (b) the falsity of every literal in new-clause, and
+; (c) the truth of every concl in fc-pair-lst that is not dependent upon
+; any literal noted in the parent tree (:pt) of rcnst.
+; We do this by constructing a clause containing the literals in question
+; (negating the concls in fc-pair-lst) and calling our general purpose
+; type-alist-clause.  As of v2-8, we also pass in the simplify-clause-pot-lst
+; to aid in the endeavor since type-set and assume-true-false can now
+; (weakly) use linear arithmetic.
+
+; We return a four-tuple, (mv contradictionp type-alist ttree current-clause),
+; where contradictionp is t or nil and indicates whether we derived a
+; contradiction.  Type-alist is the constructed type-alist (or nil if we got a
+; contradiction).  Ttree is a ttree explaining the contradiction (or nil if got
+; no contradiction).  Current-clause is the clause used in the computation
+; described immediately above.
+
+; Note: The type-alist returned may contain 'assumption tags.  In addition, the
+; type-alist may contain some 'pt tags -- the conclusions derived by forward
+; chaining will have their respective ttrees attached to them and these will
+; have 'pt tags and could have 'assumptions.  We could throw out the 'pt tags
+; if we wanted -- we are allowed to use everything in this type-alist because
+; we only put accessible assumptions in it -- but we don't.  We must record the
+; ttrees because of the possible 'assumption tags.
+
+  (mv-let
+   (lits ttree-lst)
+   (select-forward-chained-concls-and-ttrees fc-pair-lst
+                                             (access rewrite-constant rcnst :pt)
+                                             nil nil)
+   (mv-let (current-clause current-ttree-lst)
+; The ``smart'' approach was this: 
+;           (reorder-lits-and-ttrees-for-type-alist-clause new-clause nil
+;                                                          (cdr tail) nil
+;                                                          lits ttree-lst)
+; See the essay above for explanations.
+
+           (mv (append new-clause (cdr tail) lits)
+               (make-list-ac (+ (len new-clause) (len (cdr tail)))
+                             nil
+                             ttree-lst))
+           (mv-let (contradictionp type-alist ttree)
+                   (type-alist-clause
+                    current-clause
+                    current-ttree-lst
+                    nil ; force-flg
+                    nil ; initial type-alist
+                    (access rewrite-constant rcnst :current-enabled-structure)
+                    wrld
+                    pot-lst pt)
+                   (mv contradictionp type-alist ttree current-clause)))))
 
 ; Historical Plaque on Forward Chaining
 
