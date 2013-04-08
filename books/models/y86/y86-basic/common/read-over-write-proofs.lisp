@@ -714,6 +714,10 @@
   :g-bindings
   `((addr (:g-number ,(gl-int 0 1 33)))))
 
+; Reordering the rewrite-clause-type-alist: I added the uppercase text below to
+; make this work.  See the comment in rewrite-clause-type-alist.
+; JSM April 7, 2013.
+
 (defthm rm32-rm08
   (implies (and (force (x86-32p x86-32))
                 (force (n32p addr))
@@ -726,7 +730,10 @@
                           (ash (rm08 (+ 1 addr) x86-32)
                                8)
                           (rm08 addr x86-32))))
-  :hints (("Goal" :in-theory (enable rm32 rm08))))
+  :hints (("Goal"
+           :in-theory
+           (e/d (rm32 rm08)
+                ((:EXECUTABLE-COUNTERPART BINARY-LOGAND))))))
 
 ; In order to prove rules about the case of overlapping addresses for 32-bit
 ; read/write, our strategy is to reduce reads to 8-bit reads and to reason

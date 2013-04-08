@@ -358,6 +358,10 @@
                            (b-and (logcar a) (logcar c))
                            (b-and (logcar b) (logcar c))))))))
 
+; Reordering the rewrite-clause-type-alist: I added the uppercase text below to
+; make this work.  See the comment in rewrite-clause-type-alist.
+; JSM April 7, 2013.
+
    (defthm loghead-of-sum-lemma
      (implies (and (integerp a)
                    (integerp b)
@@ -371,7 +375,9 @@
               :expand ((:free (b) (loghead n b))
                        (:free (b) (loghead m b)))
               :in-theory (e/d (nfix logcdr-of-bit b-and b-ior)
-                              (loghead-identity))
+                              (loghead-identity
+                               (:FORWARD-CHAINING LOGCAR-POSSIBILITIES)
+                               ))
               :do-not-induct t))
      :rule-classes nil)))
 
