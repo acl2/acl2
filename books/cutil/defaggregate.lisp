@@ -159,10 +159,9 @@ tag-related reasoning.</p>
 
 <p>To describe the aggregate's fields, you can make use of @(see
 extended-formals) syntax.  This syntax means that fields can be optional and
-use keyword/value options.  When describing a particular field of an aggregate,
-one can make use of the @(see returns-specifiers) syntax to provide
-documentation and specify a predicate that the field must satisfy.  Here is an
-example:</p>
+use keyword/value options.  One can also use this syntax to describe a
+particular field of an aggregate -- by providing documentation or specifying a
+predicate that the field must satisfy.  Here is an example:</p>
 
 @({
  (defaggregate employee
