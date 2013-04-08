@@ -157,9 +157,12 @@ tag-related reasoning.</p>
 
 <h3>Syntax of Fields</h3>
 
-<p>To describe each field, you can make use of @(see extended-formals) syntax
-This syntax means each field can have a guard, some documentation, and some
-additional keyword/value options.  Here is an example:</p>
+<p>To describe the aggregate's fields, you can make use of @(see
+extended-formals) syntax.  This syntax means that fields can be optional and
+use keyword/value options.  When describing a particular field of an aggregate,
+one can make use of the @(see returns-specifiers) syntax to provide
+documentation and specify a predicate that the field must satisfy.  Here is an
+example:</p>
 
 @({
  (defaggregate employee
@@ -168,6 +171,9 @@ additional keyword/value options.  Here is an example:</p>
     (salary \"Annual salary in dollars, nil for hourly employees\"
             (or (not salary) (natp salary))
             :rule-classes :type-prescription)
+    (rank \"Employee rank.  Can be empty.\"
+          (implies rank (and (characterp rank)
+                             (alpha-char-p rank))))
     (position (and (position-p position)
                    (salary-in-range-for-position-p salary position))
               :default :peon))
