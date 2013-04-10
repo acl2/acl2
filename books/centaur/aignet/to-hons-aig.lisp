@@ -28,7 +28,6 @@
 
 (local (include-book "centaur/bitops/ihsext-basics" :dir :system))
 (include-book "ihs/logops-definitions" :dir :system)
-(include-book "types")
 (local (in-theory (enable* acl2::arith-equiv-forwarding)))
 
 (local (in-theory (disable ;acl2::update-nth-update-nth
@@ -186,8 +185,7 @@
                             (aignet-trans-invariant
                              n aigtrans aignet)))))
            (and stable-under-simplificationp
-                '(:clause-processor stype-cp
-                  :expand ((id-trans-logic (+ -1 n) aigtrans aignet)
+                '(:expand ((id-trans-logic (+ -1 n) aigtrans aignet)
                            (aignet-trans-invariant 0 aigtrans aignet))))))
 
   (defthm aignet-aigs-size-of-aignet-translate-iter

@@ -118,16 +118,16 @@
   (stype-fix (and (consp x) (car x))))
 
 
-;; (defthm stype-possibilities
-;;   (or (equal (stype x) (const-stype))
-;;       (equal (stype x) (gate-stype))
-;;       (equal (stype x) (pi-stype))
-;;       (equal (stype x) (po-stype))
-;;       (equal (stype x) (reg-stype))
-;;       (equal (stype x) (nxst-stype)))
-;;   :hints(("Goal" :in-theory (enable stype)))
-;;   :rule-classes ((:forward-chaining :trigger-terms
-;;                   ((stype x)))))
+(defthm stype-possibilities
+  (or (equal (stype x) (const-stype))
+      (equal (stype x) (gate-stype))
+      (equal (stype x) (pi-stype))
+      (equal (stype x) (po-stype))
+      (equal (stype x) (reg-stype))
+      (equal (stype x) (nxst-stype)))
+  :hints(("Goal" :in-theory (enable stype stype-fix stypep)))
+  :rule-classes ((:forward-chaining :trigger-terms
+                  ((stype x)))))
 
 
 (define stype-equiv (x y)
@@ -189,14 +189,14 @@
     (cdr (assoc x *stype-ctype-map*)))
   :prepwork ((local (in-theory (enable stype-fix stypep))))
   ///
-  ;; (defthm ctype-possibilities
-  ;;   (or (equal (ctype x) (const-ctype))
-  ;;       (equal (ctype x) (gate-ctype))
-  ;;       (equal (ctype x) (in-ctype))
-  ;;       (equal (ctype x) (out-ctype)))
-  ;;   :rule-classes ((:forward-chaining :trigger-terms
-  ;;                   ((ctype x))))
-  ;;   :hints(("Goal" :in-theory (enable ctype ctypep))))
+  (defthm ctype-possibilities
+    (or (equal (ctype x) (const-ctype))
+        (equal (ctype x) (gate-ctype))
+        (equal (ctype x) (in-ctype))
+        (equal (ctype x) (out-ctype)))
+    :rule-classes ((:forward-chaining :trigger-terms
+                    ((ctype x))))
+    :hints(("Goal" :in-theory (enable ctype ctypep))))
 
   (defcong stype-equiv equal (ctype x) 1))
 
@@ -949,8 +949,12 @@
   (cond ((endp aignet) aignet)
         ((and (equal (stype (car aignet)) (nxst-stype))
               (b* ((ro (nxst-node->reg (car aignet))))
-                (and (< ro (node-count aignet))
-                     (nat-equiv reg-id ro))))
+                (and (nat-equiv reg-id ro)
+                     (< ro (node-count aignet))
+                     ;; this check ensures that if we look for the nxst of a
+                     ;; nonexistent reg we won't find one
+                     (equal (stype (car (lookup-id ro aignet)))
+                            (reg-stype)))))
          aignet)
         (t (lookup-reg->nxst reg-id (cdr aignet))))
   ///

@@ -42,6 +42,33 @@
   :hints((and stable-under-simplificationp
               `(:expand (,(car (last clause)))))))
 
+(defcong bits-equiv bits-equiv (cdr a) 1
+    :hints (("goal" :in-theory (disable default-cdr nth))
+            (and stable-under-simplificationp
+                 `(:expand (,(car (last clause)))))
+            (and stable-under-simplificationp
+                 '(:use ((:instance bits-equiv-necc
+                          (i (+ 1 (nfix (bits-equiv-witness (cdr a) (cdr a-equiv)))))
+                          (x a)
+                          (y acl2::a-equiv)))
+                   :in-theory (e/d ()
+                                   (bits-equiv-necc
+                                    bits-equiv-implies-bit-equiv-nth-2))))))
+
+(defcong bits-equiv bit-equiv (car x) 1
+  :hints (("goal" :use ((:instance bits-equiv-implies-bit-equiv-nth-2
+                         (i 0)))
+           :in-theory (disable bits-equiv-implies-bit-equiv-nth-2))))
+
+(defcong bit-equiv bits-equiv (cons a b) 1
+  :hints(("Goal" :in-theory (enable bits-equiv)
+          :expand ((:free (a b c) (nth a (cons b c)))))))
+
+(defcong bits-equiv bits-equiv (cons a b) 2
+  :hints ((and stable-under-simplificationp
+               `(:expand (,(car (last clause))
+                          (:free (a b c) (nth a (cons b c))))
+                 :in-theory (disable bit-equiv)))))
 
 (def-1d-arr :arrname bitarr
   :slotname bit

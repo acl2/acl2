@@ -26,7 +26,7 @@
 (include-book "aignet-logic-interface")
 
 (include-book "centaur/misc/absstobjs" :dir :system)
-(include-book "tools/clone-stobj" ::dir :system)
+(include-book "tools/clone-stobj" :dir :system)
 
 (local (include-book "arithmetic/top-with-meta" :dir :system))
 (local (include-book "centaur/bitops/ihsext-basics" :dir :system))
@@ -142,81 +142,7 @@
                                 (aignet$a::gate-id->fanin1 id aigneta)))))))
        :rewrite :direct)
 
-     (in-theory (disable nodes-correct))
-
-
-     ;;                     nodes-correct-necc))
-     ;; (defun slot-bind-free (idx mfc state)
-     ;;   (declare (xargs :mode :program :stobjs state)
-     ;;            (ignore state))
-     ;;   (prog2$ (cw "bind-free idx: ~x0~%unify-subst: ~x1"
-     ;;               idx (acl2::mfc-unify-subst mfc))
-     ;;           (case-match idx
-     ;;             (('binary-* ''2 x) `((nid . ,x)))
-     ;;             (('binary-+ ''2 ('binary-* ''2 x)) `((nid . (binary-+ '1 ,x)))))))
-
-     ;; (defthm nodes-correct-rw-slot
-     ;;   (implies
-     ;;    (and (bind-free
-     ;;          (case-match idx
-     ;;             (('binary-* ''2 x) `((nid . ,x)))
-     ;;             (('binary-+ ''2 ('binary-* ''2 x)) `((nid . (binary-+ '1 ,x)))))
-     ;;          (nid))
-     ;;         (nodes-correct aignetc aigneta)
-     ;;         (equal idx (* 2 nid))
-     ;;         (natp nid)
-     ;;         (case-split (< nid (aignet$a::num-nodes aigneta))))
-     ;;    (let ((slot0 (nth idx
-     ;;                       (nth aignet$c::*nodesi* aignetc)))
-     ;;          (id (to-id nid)))
-     ;;      (and (equal (aignet$c::snode->type slot0)
-     ;;                  (node->type
-     ;;                   (car (lookup-id id aigneta))))
-     ;;           (implies (equal (aignet$a::id->type id aigneta)
-     ;;                           (out-type))
-     ;;                    (equal (aignet$c::snode->fanin slot0)
-     ;;                           (aignet$a::co-id->fanin id aigneta)))
-     ;;           (implies (and (equal (aignet$a::id->type id aigneta)
-     ;;                                (in-type))
-     ;;                         (equal (aignet$a::io-id->regp id aigneta)
-     ;;                                1))
-     ;;                    (equal (aignet$c::snode->nxst slot0)
-     ;;                           (aignet$a::regnum->nxst
-     ;;                            (reg-count
-     ;;                             (cdr (lookup-id id aigneta)))
-     ;;                            aigneta)))
-     ;;           (implies (equal (aignet$a::id->type id aigneta)
-     ;;                           (gate-type))
-     ;;                    (equal (aignet$c::snode->fanin slot0)
-     ;;                           (aignet$a::gate-id->fanin0 id aigneta)))
-     ;;           )))
-     ;;   :hints (("Goal" :use nodes-correct-necc)))
-
-     ;; (defthm nodes-correct-rw-slot2
-     ;;    (implies
-     ;;     (and (nodes-correct aignetc aigneta)
-     ;;          (natp nid)
-     ;;          (case-split (< nid (aignet$a::num-nodes aigneta))))
-     ;;     (let ((slot1 (nth (+ 1 (* 2 nid))
-     ;;                       (nth aignet$c::*nodesi* aignetc)))
-     ;;           (id (to-id nid)))
-     ;;       (and (equal (aignet$c::snode->phase slot1)
-     ;;                   (aignet$a::id->phase id aigneta))
-     ;;            (equal (aignet$c::snode->regp slot1)
-     ;;                   (aignet$a::io-id->regp id aigneta))
-     ;;            (implies (or (equal (aignet$a::id->type id aigneta)
-     ;;                                (in-type))
-     ;;                         (equal (aignet$a::id->type id aigneta)
-     ;;                                (out-type)))
-     ;;                     (equal (aignet$c::snode->ionum slot1)
-     ;;                            (aignet$a::io-id->ionum id aigneta)))
-     ;;            (implies (equal (aignet$a::id->type id aigneta)
-     ;;                            (gate-type))
-     ;;                     (equal (aignet$c::snode->fanin slot1)
-     ;;                            (aignet$a::gate-id->fanin1 id aigneta)))
-     ;;            )))
-     ;;   :hints (("Goal" :use nodes-correct-necc)))
-     )
+     (in-theory (disable nodes-correct)))
 
    (local (in-theory (enable aignet$a::io-id->regp
                              aignet$a::co-id->fanin
@@ -443,21 +369,15 @@
    (local (defthm node-count-lookup-reg->nxst-out-of-bounds
             (implies (< (node-count aignet) (nfix id))
                      (equal (node-count (lookup-reg->nxst id aignet))
-                            0))))
-
-   ;; (defthm id->slot-of-create
-   ;;   (equal (aignet$c::id->slot id slot '(0 0 0 0 0 1 (0 0) nil nil nil))
-   ;;          0)
-   ;;   :hints(("Goal" :in-theory (enable aignet$c::id->slot))))
-   ))
+                            0))))))
 
 (acl2::defabsstobj-events aignet
   :concrete aignet$c::aignet
+  :corr-fn aignet-corr
   :recognizer (aignetp :logic aignet$a::aignet-well-formedp
                        :exec aignet$c::aignetp)
   :creator (acl2::create-aignet :logic aignet$a::create-aignet
                                 :exec aignet$c::create-aignet)
-  :corr-fn aignet-corr
   :exports ((num-nodes :logic aignet$a::num-nodes
                        :exec aignet$c::num-nodes)
             (num-ins :logic aignet$a::num-ins

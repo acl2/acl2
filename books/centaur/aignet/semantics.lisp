@@ -19,27 +19,12 @@
 ; Original author: Sol Swords <sswords@centtech.com>
 
 (in-package "AIGNET")
-;; (include-book "idp")
-;; (include-book "litp")
-;; (include-book "cutil/defmvtypes" :dir :system)
-;; (include-book "data-structures/list-defthms" :dir :system)
-;; (include-book "str/natstr" :dir :system)
-;; (include-book "tools/defmacfun" :dir :system)
-;; (include-book "tools/stobj-frame" :dir :system)
-;; (include-book "tools/clone-stobj" :dir :system)
 (include-book "add-ons/hash-stobjs" :dir :system)
 (include-book "arrays")
 (include-book "centaur/misc/2d-arr" :dir :system)
-;; (include-book "std/ks/two-nats-measure" :dir :system)
-;; (include-book "centaur/misc/arith-equivs" :dir :system)
-;; (include-book "centaur/misc/hons-extra" :dir :system)
 (include-book "centaur/misc/iter" :dir :system)
 (include-book "centaur/misc/natarr" :dir :system)
 (include-book "centaur/misc/nth-equiv" :dir :system)
-;; (include-book "centaur/misc/numlist" :dir :system)
-;; (include-book "centaur/misc/stobj-swap" :dir :system)
-;; (include-book "centaur/vl/util/cwtime" :dir :system)
-;; (include-book "clause-processors/instantiate" :dir :system)
 (include-book "clause-processors/stobj-preservation" :dir :system)
 (include-book "clause-processors/generalize" :dir :system)
 (include-book "clause-processors/find-subterms" :dir :system)
@@ -504,15 +489,18 @@ the index in the register array.</p>")
 
 
 (defsection aignet-extension-p
+  :parents (aignet-logic)
   :short "Predicate that says that one aignet is the result of building some new
 nodes onto another aignet"
-  :long "<p>Pretty much every aignet-modifying function produces an extension of
-its input.  Net-extension-p is a transitive, reflexive relation that implies a
-whole slew of useful things.  The most basic is that any ID of the original
-aignet is an ID of the new aignet, and the node of that ID is the same in both aignets
--- this is just a reading of the definition.  But this implies, for example,
-that the evaluations of nodes existing in the first are the same as their
-evaluations in the second.</p>
+  :long "<p>Aignet A is an extension of B if B is a suffix of A.  That is, A
+consists of B along with maybe some additional nodes built on top of it; this
+is a transitive, reflexive relation. This is a useful concept because every
+aignet-modifying function that doesn't reinitialize the AIG produces an
+extension of its input, and this relation implies many useful things.  The most
+basic is that any ID of the original aignet is an ID of the new aignet, and the
+node of that ID (and its entire suffix) is the same in both aignets.  This
+implies, for example, that the evaluations of nodes existing in the first are
+the same as their evaluations in the second.</p>
 
 <p>Rewrite rules using aignet-extension-p are a little odd.  For example, suppose we
 want a rewrite rule just based on the definition, e.g.,
@@ -529,10 +517,6 @@ aignet-updating function.  Then, we'll use the aignet input of that function as 
 binding for orig-aignet.</p>
 "
 
-  ;; (defthmd aignet-extension-p-transitive
-  ;;   (implies (and (aignet-extension-p aignet2 aignet1)
-  ;;                 (aignet-extension-p aignet3 aignet2))
-  ;;            (aignet-extension-p aignet3 aignet1)))
 
   (defun simple-search-type-alist (term typ type-alist unify-subst)
     (declare (xargs :mode :program))
@@ -702,6 +686,12 @@ binding for orig-aignet.</p>
          :rule-classes ((:forward-chaining :trigger-terms ((car x))))))
 
 (defsection semantics
+  :parents (aignet-logic)
+  :short "Combinational semantics of aignets"
+  :long "<p>The combinational semantics of aignets is given by the function
+ID-EVAL.  This takes an aignet, a node ID, and assignments to the primary
+inputs and registers, and produces the value of that ID under those
+assignments.</p>"
   (defstobj-clone aignet-invals bitarr :strsubst (("BIT" . "AIGNET-INVAL")))
   (defstobj-clone aignet-regvals bitarr :strsubst (("BIT" . "AIGNET-REGVAL")))
 
@@ -1068,6 +1058,14 @@ binding for orig-aignet.</p>
          (equal (lit-eval 1 invals regvals aignet) 1))))
 
 (defsection semantics-seq
+  :parents (aignet-logic)
+  :short "Sequential semantics of aignets"
+  :long "<p>The sequential semantics of aignets is given by the function
+ID-EVAL-SEQ.  This takes an aignet, a time frame number, a node ID, a 2D bit
+array assigning values to the primary inputs on each frame, and an initial
+assignment to the registers.  It produces the value of that ID under those
+sequential assignments.</p>"
+
   (local (in-theory (disable acl2::bfix-when-not-1
                              acl2::nfix-when-not-natp)))
   (local (in-theory (enable acl2::make-list-ac-redef)))
@@ -1348,40 +1346,44 @@ binding for orig-aignet.</p>
 
 
 (defsection comb-equiv
+  :parents (aignet-logic)
+  :short "Combinational equivalence of aignets"
+  :long "<p>We consider two aignets to be combinationally equivalent if:
+<ul>
+<li>they have the same number of primary outputs</li>
+<li>they have the same number of registers</li>
+<li>corresponding outputs evaluate to the same value under the same input/register
+assignment</li>
+<li>next-states of corresponding registers evaluate to the same value under the
+same input/register assignment.</li></ul>
+</p>"
+
   (defun-sk comb-equiv (aignet aignet2)
     (forall (n invals regvals)
-            (and (equal (equal (stype-count (po-stype) aignet)
-                               (stype-count (po-stype) aignet2))
-                        t)
-                 (equal (equal (stype-count (reg-stype) aignet)
-                               (stype-count (reg-stype) aignet2))
-                        t)
-                 (implies (< (nfix n) (stype-count (po-stype) aignet))
-                          (equal (equal (id-eval (node-count (lookup-stype n
-                                                                           (po-stype)
-                                                                           aignet))
-                                                 invals regvals aignet)
-                                        (id-eval (node-count (lookup-stype n
-                                                                           (po-stype)
-                                                                           aignet2))
-                                                 invals regvals aignet2))
-                                 t))
-                 (implies (< (nfix n) (stype-count (reg-stype) aignet))
-                          (equal (equal (id-eval (node-count
-                                                  (lookup-reg->nxst
-                                                   (node-count
-                                                    (lookup-stype n (reg-stype)
+            (and (equal (equal (id-eval (node-count (lookup-stype n
+                                                                  (po-stype)
                                                                   aignet))
-                                                   aignet))
-                                                 invals regvals aignet)
-                                        (id-eval (node-count
-                                                  (lookup-reg->nxst
-                                                   (node-count
-                                                    (lookup-stype n (reg-stype)
+                                        invals regvals aignet)
+                               (id-eval (node-count (lookup-stype n
+                                                                  (po-stype)
                                                                   aignet2))
-                                                   aignet2))
-                                                 invals regvals aignet2))
-                                 t))))
+                                        invals regvals aignet2))
+                        t)
+                 (equal (equal (id-eval (node-count
+                                         (lookup-reg->nxst
+                                          (node-count
+                                           (lookup-stype n (reg-stype)
+                                                         aignet))
+                                          aignet))
+                                        invals regvals aignet)
+                               (id-eval (node-count
+                                         (lookup-reg->nxst
+                                          (node-count
+                                           (lookup-stype n (reg-stype)
+                                                         aignet2))
+                                          aignet2))
+                                        invals regvals aignet2))
+                        t)))
     :rewrite :direct)
 
   (in-theory (disable comb-equiv comb-equiv-necc))
@@ -1425,22 +1427,55 @@ binding for orig-aignet.</p>
 
 
 (defsection seq-equiv
+  :parents (aignet-logic)
+  :short "Sequential equivalence of aignets"
+  :long "<p>We consider two aignets to be sequentially equivalent if:
+<ul>
+<li>they have the same number of primary outputs</li>
+<li>corresponding outputs sequentially evaluate to the same value under the
+same series of primary input assignments and the all-0 initial register assignment.
+</li></ul>
+</p>
+
+<p>This is a weaker condition than combinational equivalence: combinational
+equivalence implies sequential equivalence, but not vice versa.</p>
+
+<p>This particular formulation of sequential equivalence assumes that
+evaluations of both networks start in the all-0 state.  Why?  Sequential
+equivalence should allow differences in the the state encoding of the two
+circuits, so we can't just universally quantify the initial register
+assignment.  We could take the initial register assignments as two additional
+inputs, but then this wouldn't truly be an equivalence relation.  We could
+existentially quantify over the initial register assignments, i.e.
+
+<blockquote> there exist initial states for aignets A and B such that for all
+input sequences, the outputs of A and B have the same values on each
+frame</blockquote>
+
+but this isn't really what we want either.  It might instead be something like:
+
+<blockquote> for each initial state of aignet A, there exists an initial state
+for aignet B such that for all input sequences, the outputs of A and B have the
+same values on each frame</blockquote>
+
+but this isn't even an equivalence relation!  Instead we're going to fix an
+initial state for each aignet, choosing the all-0 state as a simple
+convention.  One can fix an FSM with a different initial state to one
+with the all-0 initial state using @(see aignet-copy-init).</p>
+"
+
   ;; NOTE: This assumes the initial states of both aignets are all-zero.
   (defun-sk seq-equiv (aignet aignet2)
     (forall (k n inframes)
-            (and (equal (equal (stype-count (po-stype) aignet)
-                               (stype-count (po-stype) aignet2))
-                        t)
-                 (implies (< (nfix n) (stype-count (po-stype) aignet))
-                          (equal (equal (id-eval-seq k (node-count (lookup-stype n
-                                                                                 (po-stype)
-                                                                                 aignet))
-                                                     inframes nil aignet)
-                                        (id-eval-seq k (node-count (lookup-stype n
-                                                                                 (po-stype)
-                                                                                 aignet2))
-                                                     inframes nil aignet2))
-                                 t))))
+            (equal (equal (id-eval-seq k (node-count (lookup-stype n
+                                                                   (po-stype)
+                                                                   aignet))
+                                       inframes nil aignet)
+                          (id-eval-seq k (node-count (lookup-stype n
+                                                                   (po-stype)
+                                                                   aignet2))
+                                       inframes nil aignet2))
+                   t))
     :rewrite :direct)
 
   (in-theory (disable seq-equiv seq-equiv-necc))
@@ -1477,4 +1512,123 @@ binding for orig-aignet.</p>
                            (n (mv-nth 1 (seq-equiv-witness aignet aignet3)))
                            (inframes (mv-nth 2 (seq-equiv-witness aignet aignet3))))))))))
 
-  (defequiv seq-equiv))
+  (defequiv seq-equiv)
+
+  (local (defun count-down (k)
+           (if (zp k)
+               k
+             (count-down (1- k)))))
+
+  (defthm id-eval-of-take-num-regs
+    (equal (id-eval id invals
+                    (take (stype-count :reg aignet) regvals)
+                    aignet)
+           (id-eval id invals regvals aignet))
+    :hints (("goal" :induct (id-eval-ind id aignet)
+             :expand ((:free (invals regvals)
+                       (id-eval id invals regvals aignet)))
+             :in-theory (enable lit-eval eval-and-of-lits))
+            (and stable-under-simplificationp
+                 '(:in-theory (enable acl2::nth-with-large-index)))))
+
+  (defthmd comb-equiv-implies-same-frame-regvals
+    (implies (and (comb-equiv aignet aignet2)
+                  (<= (num-regs aignet)
+                      (num-regs aignet2)))
+             (bits-equiv (frame-regvals k frames initsts aignet)
+                         (take (num-regs aignet)
+                               (frame-regvals k frames initsts aignet2))))
+    :hints (("goal" :induct (count-down k))
+            (and stable-under-simplificationp
+                 `(:expand (,(car (last clause)))
+                   :in-theory (enable nth-of-frame-regvals-split
+                                      id-eval-seq-in-terms-of-id-eval
+                                      comb-equiv-necc)))))
+
+  (defthm comb-equiv-implies-seq-equiv
+    (implies (comb-equiv aignet aignet2)
+             (seq-equiv aignet aignet2))
+    :hints(("Goal" :in-theory (enable seq-equiv comb-equiv-necc
+                                      comb-equiv-implies-same-frame-regvals
+                                      id-eval-seq-in-terms-of-id-eval)
+            :cases ((<= (num-regs aignet)
+                        (num-regs aignet2)))))))
+
+
+(defsection seq-equiv-init
+  :parents (aignet-logic)
+  :short "Sequential equivalence of aignets on a particular initial state"
+  :long "<p>See @(see seq-equiv).  This variant additionally takes the initial
+state of each aignet as an argument, and requires that they always produce the
+same outputs when run starting at that initial state.</p>"
+
+  (defstobj-clone initsts2 bitarr :strsubst (("BIT" . "INITSTS2")))
+
+  (defun-sk seq-equiv-init (aignet initsts aignet2 initsts2)
+    (forall (k n inframes)
+            (equal (equal (id-eval-seq k (node-count (lookup-stype n
+                                                                   (po-stype)
+                                                                   aignet))
+                                       inframes initsts aignet)
+                          (id-eval-seq k (node-count (lookup-stype n
+                                                                   (po-stype)
+                                                                   aignet2))
+                                       inframes initsts2 aignet2))
+                   t))
+    :rewrite :direct)
+
+  (in-theory (disable seq-equiv-init seq-equiv-init-necc))
+
+  (local (defthm refl
+           (seq-equiv-init x initsts x initsts)
+           :hints(("Goal" :in-theory (enable seq-equiv-init)))))
+
+  (local
+   (defthm symm
+     (implies (seq-equiv-init aignet initsts aignet2 initsts2)
+              (seq-equiv-init aignet2 initsts2 aignet initsts))
+     :hints ((and stable-under-simplificationp
+                  `(:expand (,(car (last clause)))
+                    :use ((:instance seq-equiv-init-necc
+                           (k (mv-nth 0 (seq-equiv-init-witness
+                                         aignet2 initsts2 aignet initsts)))
+                           (n (mv-nth 1 (seq-equiv-init-witness
+                                         aignet2 initsts2 aignet initsts)))
+                           (inframes (mv-nth 2 (seq-equiv-init-witness
+                                                aignet2 initsts2 aignet initsts))))))))))
+
+  (local
+   (defthm trans-lemma
+     (implies (and (seq-equiv-init aignet initsts aignet2 initsts2)
+                   (seq-equiv-init aignet2 initsts2 aignet3 initsts3))
+              (seq-equiv-init aignet initsts aignet3 initsts3))
+     :hints ((and stable-under-simplificationp
+                  `(:expand (,(car (last clause)))
+                    :use ((:instance seq-equiv-init-necc
+                           (k (mv-nth 0 (seq-equiv-init-witness
+                                         aignet initsts aignet3 initsts3)))
+                           (n (mv-nth 1 (seq-equiv-init-witness
+                                         aignet initsts aignet3 initsts3)))
+                           (inframes (mv-nth 2 (seq-equiv-init-witness
+                                                aignet initsts aignet3 initsts3))))
+                          (:instance seq-equiv-init-necc
+                           (aignet aignet2) (aignet2 aignet3)
+                           (initsts initsts2) (initsts2 initsts3)
+                           (k (mv-nth 0 (seq-equiv-init-witness
+                                                aignet initsts aignet3 initsts3)))
+                           (n (mv-nth 1 (seq-equiv-init-witness
+                                                aignet initsts aignet3 initsts3)))
+                           (inframes (mv-nth 2 (seq-equiv-init-witness
+                                                aignet initsts aignet3
+                                                initsts3))))))))))
+
+  (defthm comb-equiv-implies-seq-equiv-init
+    (implies (comb-equiv aignet aignet2)
+             (seq-equiv-init aignet initvals aignet2 initvals))
+    :hints(("Goal" :in-theory (enable seq-equiv-init comb-equiv-necc
+                                      comb-equiv-implies-same-frame-regvals
+                                      id-eval-seq-in-terms-of-id-eval)
+            :cases ((<= (num-regs aignet) (num-regs aignet2)))))))
+
+
+

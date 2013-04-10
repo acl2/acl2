@@ -981,10 +981,11 @@
   (defthm lookup-nxst-of-aignet-copy-nxsts-iter
     (implies (and (aignet-copies-ok (+ 1 (node-count aignet)) copy aignet2)
                   (<= (nfix n) (num-regs aignet))
-                  (<= (num-regs aignet) (num-regs aignet2))
-                  (< (nfix m) (nfix n)))
+                  (<= (num-regs aignet) (num-regs aignet2-orig))
+                  (< (nfix m) (nfix n))
+                  (aignet-extension-p aignet2 aignet2-orig))
              (b* ((aignet21 (aignet-copy-nxsts-iter n aignet copy aignet2))
-                  (regid (node-count (lookup-stype m (reg-stype) aignet2)))
+                  (regid (node-count (lookup-stype m (reg-stype) aignet2-orig)))
                   (mth-nxst-look2 (lookup-reg->nxst regid aignet21))
                   (mth-nxst-look (lookup-reg->nxst
                                   (node-count (lookup-stype m (reg-stype) aignet))
@@ -1015,9 +1016,10 @@
   (defthm lookup-nxst-of-aignet-copy-nxsts
     (implies (and (aignet-copies-ok (+ 1 (node-count aignet)) copy aignet2)
                   (< (nfix m) (num-regs aignet))
-                  (<= (num-regs aignet) (num-regs aignet2)))
+                  (<= (num-regs aignet) (num-regs aignet2-orig))
+                  (aignet-extension-p aignet2 aignet2-orig))
              (b* ((aignet21 (aignet-copy-nxsts aignet copy aignet2))
-                  (regid (node-count (lookup-stype m (reg-stype) aignet2)))
+                  (regid (node-count (lookup-stype m (reg-stype) aignet2-orig)))
                   (mth-nxst-look2 (lookup-reg->nxst regid aignet21))
                   (mth-nxst-look (lookup-reg->nxst
                                   (node-count (lookup-stype m (reg-stype) aignet))
@@ -1031,6 +1033,22 @@
                     (aignet-idp regid (cdr mth-nxst-look2)))))))
 
 
+
+
+
+(defsection out-of-bounds-lookup-lemmas
+  (defthmd node-count-lookup-stype-when-out-of-bounds
+    (implies (<= (stype-count stype aignet) (nfix n))
+             (equal (node-count (lookup-stype n stype aignet))
+                    0))
+    :hints(("Goal" :in-theory (enable lookup-stype node-count stype-count))))
+  
+  (defthmd node-count-of-lookup-reg->nxst-0
+    (equal (node-count (lookup-reg->nxst 0 aignet))
+           0)
+    :hints(("Goal" :in-theory (enable lookup-reg->nxst)))))
+
+
 (defsection aignet-complete-copy
 
   (local (in-theory (enable lookup-stype-in-bounds)))
@@ -1041,6 +1059,12 @@
 
   (define aignet-complete-copy-aux (aignet copy (gatesimp natp) strash aignet2)
     :returns (mv copy strash aignet2)
+    :prepwork ((local (defthm strash-lemma
+                        (implies (and (true-listp strash)
+                                      (equal (len strash) 1))
+                                 (equal (update-nth 0 nil strash)
+                                        '(nil)))
+                        :hints (("goal" :in-theory (enable update-nth))))))
     (b* ((aignet2 (aignet-init
                    (num-outs aignet)
                    (num-regs aignet)
@@ -1048,7 +1072,8 @@
                    (num-nodes aignet)
                    aignet2))
          (copy (resize-lits 0 copy))
-         (strash (strashtab-clear strash))
+         (strash (mbe :logic (non-exec '(nil))
+                      :exec (strashtab-init (num-gates aignet) nil nil strash)))
          (copy (resize-lits (num-nodes aignet) copy))
          ((mv copy aignet2)
           (aignet-copy-ins aignet copy aignet2))
@@ -1060,6 +1085,15 @@
          (aignet2 (aignet-copy-nxsts aignet copy aignet2)))
       (mv copy strash aignet2))
     ///
+
+    (defthm normalize-aignet-complete-copy-aux
+      (implies (syntaxp (not (and (equal copy ''nil)
+                                  (equal strash ''(nil))
+                                  (equal aignet2 ''nil))))
+               (equal (aignet-complete-copy-aux aignet copy gatesimp strash
+                                                aignet2)
+                      (aignet-complete-copy-aux aignet nil gatesimp '(nil)
+                                                nil))))
 
     (local (defthm id-eval-of-co-node
              (implies (equal (id->type id aignet) (out-type))
@@ -1107,34 +1141,54 @@
                         (lit-eval lit invals regvals aignet))))))
 
     (defthm eval-output-of-aignet-complete-copy-aux
-      (implies (< (nfix n) (num-outs aignet))
-               (b* (((mv & & aignet2) (aignet-complete-copy-aux aignet copy gatesimp
-                                                                strash aignet2)))
-                 (equal (id-eval 
-                         (node-count (lookup-stype n (po-stype) aignet2))
-                         invals regvals aignet2)
-                        (id-eval
-                         (node-count (lookup-stype n (po-stype) aignet))
-                         invals regvals aignet)))))
+      (b* (((mv & & aignet2) (aignet-complete-copy-aux aignet copy gatesimp
+                                                       strash aignet2)))
+        (equal (id-eval 
+                (node-count (lookup-stype n (po-stype) aignet2))
+                invals regvals aignet2)
+               (id-eval
+                (node-count (lookup-stype n (po-stype) aignet))
+                invals regvals aignet)))
+      :hints (("goal" :cases ((< (nfix n) (num-outs aignet)))
+               :in-theory (enable node-count-lookup-stype-when-out-of-bounds))))
 
     (defthm eval-nxst-of-aignet-complete-copy-aux
-      (implies (< (nfix n) (num-regs aignet))
-               (b* (((mv & & aignet2)
-                     (aignet-complete-copy-aux aignet copy gatesimp strash aignet2)))
-                 (equal (id-eval 
-                         (node-count
-                          (reg-id->nxst
-                           (node-count (lookup-stype n (reg-stype)
-                                                     aignet2))
-                           aignet2))
-                         invals regvals aignet2)
-                        (id-eval
-                         (node-count
-                          (reg-id->nxst
-                           (node-count (lookup-stype n (po-stype)
-                                                     aignet))
-                           aignet))
-                         invals regvals aignet))))))
+      (b* (((mv & & aignet2)
+            (aignet-complete-copy-aux aignet copy gatesimp strash aignet2)))
+        (equal (id-eval 
+                (node-count
+                 (lookup-reg->nxst
+                  (node-count (lookup-stype n (reg-stype)
+                                            aignet2))
+                  aignet2))
+                invals regvals aignet2)
+               (id-eval
+                (node-count
+                 (lookup-reg->nxst
+                  (node-count (lookup-stype n (reg-stype)
+                                            aignet))
+                  aignet))
+                invals regvals aignet)))
+      :hints (("goal" :cases ((< (nfix n) (num-regs aignet)))
+               :in-theory (enable node-count-lookup-stype-when-out-of-bounds
+                                  node-count-of-lookup-reg->nxst-0))))
+
+    (defthm num-outs-of-aignet-complete-copy-aux
+      (equal (stype-count :po (mv-nth 2 (aignet-complete-copy-aux
+                                         aignet copy gatesimp strash aignet2)))
+             (stype-count :po aignet)))
+
+    (defthm num-regs-of-aignet-complete-copy-aux
+      (equal (stype-count :reg (mv-nth 2 (aignet-complete-copy-aux
+                                         aignet copy gatesimp strash aignet2)))
+             (stype-count :reg aignet)))
+
+    (defthm comb-equiv-of-aignet-complete-copy-aux
+      (comb-equiv (mv-nth 2 (aignet-complete-copy-aux
+                            aignet copy gatesimp strash aignet2))
+                  aignet)
+      :hints(("Goal" :in-theory (e/d (comb-equiv)
+                                     (aignet-complete-copy-aux))))))
 
   (define aignet-complete-copy (aignet &key
                                        ((gatesimp natp) '9)
@@ -1159,31 +1213,708 @@ nodes.</p>"
           (mv copy strash aignet2)))
       (aignet-complete-copy-aux aignet copy gatesimp strash aignet2))
     ///
+
+    (defthm normalize-aignet-complete-copy
+      (implies (syntaxp (equal aignet2 ''nil))
+               (equal (aignet-complete-copy aignet :gatesimp gatesimp
+                                            :aignet2 aignet2)
+                      (aignet-complete-copy aignet :gatesimp gatesimp
+                                            :aignet2 nil))))
+
     (defthm eval-output-of-aignet-complete-copy
+      (b* ((aignet2 (aignet-complete-copy aignet :gatesimp gatesimp)))
+        (equal (id-eval 
+                (node-count (lookup-stype n (po-stype) aignet2))
+                invals regvals aignet2)
+               (id-eval
+                (node-count (lookup-stype n (po-stype) aignet))
+                invals regvals aignet)))
+      :hints (("goal" :cases ((< (nfix n) (num-outs aignet)))
+               :in-theory (enable node-count-lookup-stype-when-out-of-bounds))))
+
+    (defthm eval-nxst-of-aignet-complete-copy
+      (b* ((aignet2 (aignet-complete-copy aignet :gatesimp gatesimp)))
+        (equal (id-eval 
+                (node-count
+                 (lookup-reg->nxst
+                  (node-count (lookup-stype n (reg-stype)
+                                            aignet2))
+                  aignet2))
+                invals regvals aignet2)
+               (id-eval
+                (node-count
+                 (lookup-reg->nxst
+                  (node-count (lookup-stype n (reg-stype)
+                                            aignet))
+                  aignet))
+                invals regvals aignet)))
+      :hints (("goal" :cases ((< (nfix n) (num-regs aignet)))
+               :in-theory (enable node-count-lookup-stype-when-out-of-bounds
+                                  node-count-of-lookup-reg->nxst-0))))
+
+    (defthm num-outs-of-aignet-complete-copy
+      (equal (stype-count :po (aignet-complete-copy aignet :gatesimp gatesimp))
+             (stype-count :po aignet)))
+
+    (defthm num-regs-of-aignet-complete-copy
+      (equal (stype-count :reg (aignet-complete-copy aignet :gatesimp gatesimp))
+             (stype-count :reg aignet)))
+
+    (defthm comb-equiv-of-aignet-complete-copy
+      (comb-equiv (aignet-complete-copy aignet :gatesimp gatesimp)
+                  aignet))))
+
+
+
+
+(defsection aignet-copy-regs-init
+
+  ;; Adds a aignet2 reg for every reg of aignet, and sets the copy
+  (defiteration aignet-copy-regs-init (aignet initsts copy aignet2)
+    (declare (xargs :stobjs (aignet copy initsts aignet2)
+                    :guard (and (<= (num-nodes aignet) (lits-length copy))
+                                (<= (num-regs aignet) (bits-length initsts)))))
+    (b* ((ro (regnum->id n aignet))
+         (inv (get-bit n initsts))
+         (reglit (mk-lit (num-nodes aignet2) inv))
+         (aignet2 (aignet-add-reg aignet2))
+         (copy (set-lit ro reglit copy)))
+      (mv copy aignet2))
+    :returns (mv copy aignet2)
+    :last (num-regs aignet)
+    :index n
+    :package aignet::bla)
+
+
+  (in-theory (disable aignet-copy-regs-init))
+  (local (in-theory (enable (:induction aignet-copy-regs-init-iter)
+                            aignet-copy-regs-init)))
+
+  (def-aignet-preservation-thms aignet-copy-regs-init-iter :stobjname aignet2)
+
+  (local (set-default-hints
+          '((acl2::just-induct-and-expand
+             (aignet-copy-regs-init-iter n aignet initsts copy aignet2)
+             :expand-others
+             ((:free (aignet) (aignet-copy-regs-init-iter n aignet initsts copy aignet2))
+              (:free (copy) (aignet-copy-regs-init-iter n aignet initsts copy aignet2))
+              (:free (aignet2) (aignet-copy-regs-init-iter n aignet initsts copy
+                                                      aignet2))))
+            '(:do-not-induct t))))
+
+  (defthm stype-counts-preserved-of-aignet-copy-regs-init-iter
+    (implies (not (equal (stype-fix stype) (reg-stype)))
+             (equal (stype-count stype (mv-nth 1 (aignet-copy-regs-init-iter
+                                                  n aignet initsts copy aignet2)))
+                    (stype-count stype aignet2))))
+
+  (defthm aignet-copy-size-of-aignet-copy-regs-init-iter
+    (implies (<= (num-nodes aignet) (lits-length copy))
+             (< (node-count aignet)
+                (len (mv-nth 0 (aignet-copy-regs-init-iter n aignet initsts copy
+                                                      aignet2)))))
+    :rule-classes :linear)
+
+  (defthm aignet-copies-ok-of-aignet-copy-regs-init-iter
+    (implies (aignet-copies-ok (num-nodes aignet) copy aignet2)
+             (mv-let (copy aignet2)
+               (aignet-copy-regs-init-iter n aignet initsts copy aignet2)
+               (aignet-copies-ok
+                (+ 1 (node-count aignet))
+                copy aignet2))))
+
+  (local (defthmd dumb-num-regs-lemma
+           (implies (<= n (stype-count (reg-stype) aignet))
+                    (< (+ -1 n) (stype-count (reg-stype) aignet)))))
+
+  (defthm num-regs-of-aignet-copy-regs-init-iter
+    (equal (stype-count (reg-stype) (mv-nth 1 (aignet-copy-regs-init-iter
+                                               n aignet initsts copy aignet2)))
+           (+ (nfix n)
+              (stype-count (reg-stype) aignet2))))
+
+  (defthm lookup-copy-of-aignet-copy-regs-init-iter
+    (implies (and (aignet-idp id aignet)
+                  (<= (nfix n) (num-regs aignet)))
+             (b* (((mv aignet-copy-new aignet2-new)
+                   (aignet-copy-regs-init-iter n aignet initsts copy aignet2)))
+               (equal (nth-lit id aignet-copy-new)
+                      (if (or (not (equal (id->type id aignet) (in-type)))
+                              (not (equal (io-id->regp id aignet) 1))
+                              (<= (nfix n) (io-id->ionum id aignet)))
+                          (get-lit id copy)
+                        (mk-lit
+                         (regnum->id (+ (nfix (io-id->ionum id aignet))
+                                        (num-regs aignet2))
+                                     aignet2-new)
+                         (get-bit (io-id->ionum id aignet) initsts))))))
+    :hints ((and stable-under-simplificationp
+                 '(:in-theory (enable equal-of-mk-lit
+                                      lookup-stype-in-bounds)
+                   :expand ((:free (n stype a b)
+                             (lookup-stype n stype (cons a b))))))))
+
+  (local (set-default-hints nil))
+
+  (def-aignet-preservation-thms aignet-copy-regs-init :stobjname aignet2)
+
+  (defthm stype-counts-preserved-of-aignet-copy-regs-init
+    (implies (not (equal (stype-fix stype) (reg-stype)))
+             (equal (stype-count stype (mv-nth 1 (aignet-copy-regs-init
+                                                  aignet initsts copy aignet2)))
+                    (stype-count stype aignet2))))
+
+  (defthm aignet-copy-size-of-aignet-copy-regs-init
+    (implies (<= (num-nodes aignet) (lits-length copy))
+             (< (node-count aignet)
+                (len (mv-nth 0 (aignet-copy-regs-init aignet initsts copy
+                                                 aignet2)))))
+    :rule-classes :linear)
+
+  (defthm aignet-copies-ok-of-aignet-copy-regs-init
+    (implies (aignet-copies-ok (num-nodes aignet) copy aignet2)
+             (mv-let (copy aignet2)
+               (aignet-copy-regs-init aignet initsts copy aignet2)
+               (aignet-copies-ok
+                (+ 1 (node-count aignet))
+                copy aignet2))))
+
+  (defthm num-regs-of-aignet-copy-regs-init
+    (equal (stype-count (reg-stype) (mv-nth 1 (aignet-copy-regs-init
+                                               aignet initsts copy aignet2)))
+           (+ (nfix (num-regs aignet))
+              (stype-count (reg-stype) aignet2))))
+
+  (defthm lookup-copy-of-aignet-copy-regs-init
+    (implies (and (aignet-idp id aignet))
+             (b* (((mv aignet-copy-new aignet2-new)
+                   (aignet-copy-regs-init aignet initsts copy aignet2)))
+               (equal (nth-lit id aignet-copy-new)
+                      (if (or (not (equal (id->type id aignet) (in-type)))
+                              (not (equal (io-id->regp id aignet) 1)))
+                          (get-lit id copy)
+                        (mk-lit
+                         (regnum->id (+ (nfix (io-id->ionum id aignet))
+                                        (num-regs aignet2))
+                                     aignet2-new)
+                         (get-bit (io-id->ionum id aignet) initsts)))))))
+
+  (defthm aignet-copy-comb-reg-vals-of-aignet-copy-regs-init-nth
+    (b* (((mv copy1 aignet21)
+          (aignet-copy-regs-init aignet initsts copy aignet2)))
+      (implies (equal (num-regs aignet2) 0)
+               (bit-equiv (nth n (aignet-copy-comb-reg-vals
+                                  invals regvals aignet21 copy1 aignet))
+                          (and (< (nfix n) (num-regs aignet))
+                               (b-xor (get-bit n initsts)
+                                      (nth n regvals))))))
+    :hints(("Goal" :in-theory (enable lit-eval id-eval))))
+
+  ;; BOZO move somewhere else
+  (defun b-xor-lst (a b)
+    (cond ((atom a) b)
+          ((atom b) a)
+          (t (cons (b-xor (car a) (car b))
+                   (b-xor-lst (cdr a) (cdr b))))))
+
+  (defthm nth-of-b-xor-lst
+    (bit-equiv (nth n (b-xor-lst a b))
+               (b-xor (nth n a) (nth n b)))
+    :hints(("Goal" :in-theory (e/d (nth) (bit-equiv)))
+           (and stable-under-simplificationp
+                '(:in-theory (enable b-xor)))))
+
+  (defthm len-of-b-xor-lst
+    (equal (len (b-xor-lst a b))
+           (max (len a) (len b))))
+
+  ;; (defthm len-of-b-xor-lst-1
+  ;;   (<= (len a) (len (b-xor-lst a b)))
+  ;;   :rule-classes :linear)
+  ;; (defthm len-of-b-xor-lst-2
+  ;;   (<= (len b) (len (b-xor-lst a b)))
+  ;;   :rule-classes :linear)
+
+  (defthm aignet-copy-comb-reg-vals-of-aignet-copy-regs-init
+    (b* (((mv copy1 aignet21)
+          (aignet-copy-regs-init aignet initsts copy aignet2)))
+      (implies (equal (num-regs aignet2) 0)
+               (bits-equiv (aignet-copy-comb-reg-vals
+                            invals regvals aignet21 copy1 aignet)
+                           (take (num-regs aignet)
+                                 (b-xor-lst initsts regvals)))))
+    :hints (("goal" :in-theory (disable aignet-copy-comb-reg-vals
+                                        aignet-copy-regs-init))
+            (and stable-under-simplificationp
+                 `(:expand (,(car (last clause)))))))
+
+  (defthm aignet-copy-comb-in-vals-of-aignet-copy-regs-init-nth
+    (b* (((mv copy1 aignet21)
+          (aignet-copy-regs-init aignet initsts copy aignet2)))
+      (implies (aignet-copies-ok (+ 1 (node-count aignet)) copy aignet2)
+               (bit-equiv (nth n (aignet-copy-comb-in-vals
+                                  invals regvals aignet21 copy1 aignet))
+                          (nth n (aignet-copy-comb-in-vals
+                                  invals regvals aignet2 copy aignet)))))
+    :hints(("Goal" :expand ((:free (n copy aignet)
+                             (lit-eval (nth-lit n copy)
+                                       invals regvals aignet))
+                            (:free (n copy aignet)
+                             (id-eval (lit-id (nth-lit n copy))
+                                      invals regvals aignet)))
+            :in-theory (enable nth-of-aignet-copy-comb-in-vals-split))))
+
+  (defthm aignet-copy-comb-in-vals-of-aignet-copy-regs-init
+    (b* (((mv copy1 aignet21)
+          (aignet-copy-regs-init aignet initsts copy aignet2)))
+      (implies (aignet-copies-ok (+ 1 (node-count aignet)) copy aignet2)
+               (bits-equiv (aignet-copy-comb-in-vals
+                            invals regvals aignet21 copy1 aignet)
+                           (aignet-copy-comb-in-vals
+                            invals regvals aignet2 copy aignet))))
+    :hints (("goal" :in-theory (disable aignet-copy-comb-in-vals
+                                        aignet-copy-regs-init))
+            (and stable-under-simplificationp
+                 `(:expand (,(car (last clause))))))))
+
+
+(defsection aignet-copy-nxsts-init
+
+
+  ;; Adds a aignet2 regin for every register of aignet.
+  ;; assumes the copy of each regin ID is set to the fanin lit,
+  ;; does not change this to the new node.
+  ;; Connects the regin to the corresponding reg in aignet2.  Therefore, we must
+  ;; assume there are at least as many regs in aignet2 as in aignet.
+  (defiteration aignet-copy-nxsts-init (aignet initsts copy aignet2)
+    (declare (xargs :stobjs (aignet initsts copy aignet2)
+                    :guard (and (<= (num-nodes aignet) (lits-length copy))
+                                (<= (num-regs aignet) (num-regs aignet2))
+                                (<= (num-regs aignet) (bits-length initsts))
+                                (aignet-copies-ok (num-nodes aignet)
+                                                  copy aignet2))))
+    (b* ((nxst (reg-id->nxst (regnum->id n aignet) aignet))
+         (inv (get-bit n initsts))
+         (fanin-copy (lit-negate-cond (get-lit nxst copy) inv))
+         (ro-copy (regnum->id n aignet2)))
+      (aignet-set-nxst fanin-copy ro-copy aignet2))
+    :returns aignet2
+    :last (num-regs aignet)
+    :index n
+    :package aignet::bla)
+
+  (in-theory (disable aignet-copy-nxsts-init))
+  (local (in-theory (enable (:induction aignet-copy-nxsts-init-iter)
+                            aignet-copy-nxsts-init)))
+
+  (def-aignet-preservation-thms aignet-copy-nxsts-init-iter :stobjname aignet2)
+
+  (local (set-default-hints
+          '((acl2::just-induct-and-expand
+             (aignet-copy-nxsts-init-iter n aignet initsts copy aignet2)
+             :expand-others
+             ((:free (aignet) (aignet-copy-nxsts-init-iter n aignet initsts copy aignet2))
+              (:free (copy) (aignet-copy-nxsts-init-iter n aignet initsts copy aignet2))
+              (:free (aignet2) (aignet-copy-nxsts-init-iter n aignet initsts copy
+                                                     aignet2))))
+            '(:do-not-induct t))))
+  
+  (defthm stype-counts-preserved-of-aignet-copy-nxsts-init-iter
+    (implies (not (equal (stype-fix stype) (nxst-stype)))
+             (equal (stype-count stype
+                                 (aignet-copy-nxsts-init-iter n aignet initsts copy aignet2))
+                    (stype-count stype aignet2))))
+
+  (local (in-theory (enable aignet-extension-implies-node-count-gte
+                            lookup-stype-in-bounds)))
+
+  (defthm lookup-nxst-of-aignet-copy-nxsts-init-iter
+    (implies (and (aignet-copies-ok (+ 1 (node-count aignet)) copy aignet2)
+                  (<= (nfix n) (num-regs aignet))
+                  (<= (num-regs aignet) (num-regs aignet2-orig))
+                  (< (nfix m) (nfix n))
+                  (aignet-extension-p aignet2 aignet2-orig))
+             (b* ((aignet21 (aignet-copy-nxsts-init-iter n aignet initsts copy aignet2))
+                  (regid (node-count (lookup-stype m (reg-stype) aignet2-orig)))
+                  (mth-nxst-look2 (lookup-reg->nxst regid aignet21))
+                  (mth-nxst-look (lookup-reg->nxst
+                                  (node-count (lookup-stype m (reg-stype) aignet))
+                                  aignet))
+                  (fanin (nth-lit (node-count mth-nxst-look)
+                                  copy)))
+               (and (consp mth-nxst-look2)
+                    (equal (car mth-nxst-look2)
+                           (nxst-node
+                            (lit-negate-cond fanin (get-bit m initsts))
+                            regid))
+                    (aignet-litp fanin (cdr mth-nxst-look2))
+                    (aignet-idp regid (cdr mth-nxst-look2)))))
+    :hints ((and stable-under-simplificationp
+                 '(:expand ((:free (n stype a b)
+                             (lookup-stype n stype (cons a b)))
+                            (:free (n a b)
+                             (lookup-reg->nxst n (cons a b))))))))
+
+  (local (set-default-hints nil))
+
+  (def-aignet-preservation-thms aignet-copy-nxsts-init :stobjname aignet2)
+
+  (defthm stype-counts-preserved-of-aignet-copy-nxsts-init
+    (implies (not (equal (stype-fix stype) (nxst-stype)))
+             (equal (stype-count stype
+                                 (aignet-copy-nxsts-init aignet initsts copy aignet2))
+                    (stype-count stype aignet2))))
+
+  (defthm lookup-nxst-of-aignet-copy-nxsts-init
+    (implies (and (aignet-copies-ok (+ 1 (node-count aignet)) copy aignet2)
+                  (< (nfix m) (num-regs aignet))
+                  (<= (num-regs aignet) (num-regs aignet2-orig))
+                  (aignet-extension-p aignet2 aignet2-orig))
+             (b* ((aignet21 (aignet-copy-nxsts-init aignet initsts copy aignet2))
+                  (regid (node-count (lookup-stype m (reg-stype) aignet2-orig)))
+                  (mth-nxst-look2 (lookup-reg->nxst regid aignet21))
+                  (mth-nxst-look (lookup-reg->nxst
+                                  (node-count (lookup-stype m (reg-stype) aignet))
+                                  aignet))
+                  (fanin (nth-lit (node-count mth-nxst-look)
+                                  copy)))
+               (and (consp mth-nxst-look2)
+                    (equal (car mth-nxst-look2)
+                           (nxst-node
+                            (lit-negate-cond fanin (get-bit m initsts))
+                            regid))
+                    (aignet-litp fanin (cdr mth-nxst-look2))
+                    (aignet-idp regid (cdr mth-nxst-look2)))))))
+
+(defsection aignet-copy-init
+  :parents (aignet-logic)
+  :short "Set the initial state of an FSM to the all-0 convention."
+  :long "<p>Some algorithms assume that an FSM's initial state is the one where
+all registers are 0.  This normalizes an FSM that does not follow this
+convention into one that does.  Given the aignet and an initial state vector,
+this produces a new aignet that has registers toggled so that when its initial
+value is 0, its sequential simulations produce the same values as the input
+aignet when its initial value is the specified vector:</p>
+
+@(def id-eval-seq-of-aignet-copy-init)"
+  (local (in-theory (enable lookup-stype-in-bounds)))
+  (local (defthm resize-list-0
+           (equal (resize-list lst 0 default)
+                  nil)
+           :hints(("Goal" :in-theory (enable resize-list)))))
+
+  (define aignet-copy-init-aux (aignet initsts copy (gatesimp natp) strash aignet2)
+    :guard (<= (num-regs aignet) (bits-length initsts))
+    :returns (mv copy strash aignet2)
+    :prepwork ((local (defthm strash-lemma
+                        (implies (and (true-listp strash)
+                                      (equal (len strash) 1))
+                                 (equal (update-nth 0 nil strash)
+                                        '(nil)))
+                        :hints (("goal" :in-theory (enable update-nth))))))
+    (b* ((aignet2 (aignet-init
+                   (num-outs aignet)
+                   (num-regs aignet)
+                   (num-ins aignet)
+                   (num-nodes aignet)
+                   aignet2))
+         (copy (resize-lits 0 copy))
+         (strash (mbe :logic (non-exec '(nil))
+                      :exec (strashtab-init (num-gates aignet) nil nil strash)))
+         (copy (resize-lits (num-nodes aignet) copy))
+         ((mv copy aignet2)
+          (aignet-copy-ins aignet copy aignet2))
+         ((mv copy aignet2)
+          (aignet-copy-regs-init aignet initsts copy aignet2))
+         ((mv copy strash aignet2)
+          (aignet-copy-comb aignet copy gatesimp strash aignet2))
+         (aignet2 (aignet-copy-outs aignet copy aignet2))
+         (aignet2 (aignet-copy-nxsts-init aignet initsts copy aignet2)))
+      (mv copy strash aignet2))
+    ///
+
+    (defthm normalize-aignet-copy-inits-aux
+      (implies (syntaxp (not (and (equal copy ''nil)
+                                  (equal strash ''(nil))
+                                  (equal aignet2 ''nil))))
+               (equal (aignet-copy-init-aux aignet initsts copy gatesimp strash
+                                            aignet2)
+                      (aignet-copy-init-aux aignet initsts nil gatesimp '(nil) nil))))
+
+    (defthm num-outs-of-aignet-copy-init-aux
+      (equal (stype-count :po (mv-nth 2 (aignet-copy-init-aux aignet initsts copy
+                                                              gatesimp strash aignet2)))
+             (stype-count :po aignet)))
+
+    (defthm num-regs-of-aignet-copy-init-aux
+      (equal (stype-count :reg (mv-nth 2 (aignet-copy-init-aux aignet initsts copy
+                                                               gatesimp strash aignet2)))
+             (stype-count :reg aignet)))
+
+    (local (defthm id-eval-of-co-node
+             (implies (equal (id->type id aignet) (out-type))
+                      (equal (id-eval id invals regvals aignet)
+                             (lit-eval (co-id->fanin id aignet)
+                                       invals regvals aignet)))
+             :hints(("Goal" :in-theory (enable id-eval)))))
+
+    (local (in-theory (enable co-node->fanin)))
+
+    (defthm id-eval-of-take-num-ins
+      (equal (id-eval id (take (stype-count :pi aignet) invals)
+                      regvals aignet)
+             (id-eval id invals regvals aignet))
+      :hints (("goal" :induct (id-eval-ind id aignet)
+               :expand ((:free (invals regvals)
+                         (id-eval id invals regvals aignet)))
+               :in-theory (enable lit-eval eval-and-of-lits))))
+
+    (defthm id-eval-of-take-num-regs
+      (equal (id-eval id invals
+                      (take (stype-count :reg aignet) regvals)
+                      aignet)
+             (id-eval id invals regvals aignet))
+      :hints (("goal" :induct (id-eval-ind id aignet)
+               :expand ((:free (invals regvals)
+                         (id-eval id invals regvals aignet)))
+               :in-theory (enable lit-eval eval-and-of-lits))))
+
+    (defthm lit-eval-of-take-num-ins
+      (equal (lit-eval lit (take (stype-count :pi aignet) invals)
+                       regvals aignet)
+             (lit-eval lit invals regvals aignet))
+      :hints(("Goal"
+              :expand ((:free (invals regvals)
+                        (lit-eval lit invals regvals aignet))))))
+
+    (defthm lit-eval-of-take-num-regs
+      (equal (lit-eval lit invals
+                       (take (stype-count :reg aignet) regvals)
+                       aignet)
+             (lit-eval lit invals regvals aignet))
+      :hints(("Goal"
+              :expand ((:free (invals regvals)
+                        (lit-eval lit invals regvals aignet))))))
+
+    (defthm eval-output-of-aignet-copy-init-aux
       (implies (< (nfix n) (num-outs aignet))
-               (b* ((aignet2 (aignet-complete-copy aignet :gatesimp gatesimp)))
+               (b* (((mv & & aignet2) (aignet-copy-init-aux aignet initsts copy gatesimp
+                                                                strash aignet2)))
                  (equal (id-eval 
                          (node-count (lookup-stype n (po-stype) aignet2))
                          invals regvals aignet2)
                         (id-eval
                          (node-count (lookup-stype n (po-stype) aignet))
-                         invals regvals aignet)))))
+                         invals
+                         (b-xor-lst initsts regvals) aignet)))))
 
-    (defthm eval-nxst-of-aignet-complete-copy
+    (defthm eval-nxst-of-aignet-copy-init-aux
       (implies (< (nfix n) (num-regs aignet))
-               (b* ((aignet2 (aignet-complete-copy aignet :gatesimp gatesimp)))
+               (b* (((mv & & aignet2)
+                     (aignet-copy-init-aux aignet initsts copy gatesimp strash aignet2)))
                  (equal (id-eval 
                          (node-count
-                          (reg-id->nxst
+                          (lookup-reg->nxst
                            (node-count (lookup-stype n (reg-stype)
                                                      aignet2))
                            aignet2))
                          invals regvals aignet2)
-                        (id-eval
-                         (node-count
-                          (reg-id->nxst
-                           (node-count (lookup-stype n (po-stype)
-                                                     aignet))
-                           aignet))
-                         invals regvals aignet)))))))
+                        (b-xor (get-bit n initsts)
+                               (id-eval
+                                (reg-id->nxst
+                                 (node-count (lookup-stype n (reg-stype)
+                                                           aignet))
+                                 aignet)
+                                invals
+                                (b-xor-lst initsts regvals) aignet)))))))
 
+  (define aignet-copy-init (aignet initsts &key
+                                       ((gatesimp natp) '9)
+                                       (aignet2 'aignet2))
+    :guard (<= (num-regs aignet) (bits-length initsts))
+    :returns aignet2
+    :parents (aignet)
+    :short "Copy an aignet, \"normalizing\" the order of nodes"
+    :long "<p>Copies aignet into aignet2, in the following order:</p>
+<ul><li>Primary inputs
+</li><li>Registers
+</li><li>Gates
+</li><li>Primary outputs
+</li><li>Next states
+</li>
+</ul>
+
+<p>Every node in the original aignet has a copy in aignet2, so no particular
+pruning is done.  However, if strashing or a higher level of simplification is
+used than was used when constructing the original aignet, there may be fewer
+nodes.</p>"
+    (b* (((local-stobjs copy strash)
+          (mv copy strash aignet2)))
+      (aignet-copy-init-aux aignet initsts copy gatesimp strash aignet2))
+    ///
+
+    (defthm normalize-aignet-copy-init
+      (implies (syntaxp (not (equal aignet2 ''nil)))
+               (equal (aignet-copy-init aignet initsts :gatesimp gatesimp
+                                        :aignet2 aignet2)
+                      (aignet-copy-init aignet initsts
+                                        :gatesimp gatesimp
+                                        :aignet2 nil))))
+    (defthm num-outs-of-aignet-copy-init
+      (equal (stype-count :po (aignet-copy-init aignet initsts :gatesimp
+                                                gatesimp))
+             (stype-count :po aignet)))
+
+    (defthm num-regs-of-aignet-copy-init
+      (equal (stype-count :reg (aignet-copy-init aignet initsts :gatesimp
+                                                gatesimp))
+             (stype-count :reg aignet)))
+
+    (defthm eval-output-of-aignet-copy-init
+      (implies (< (nfix n) (num-outs aignet))
+               (b* ((aignet2 (aignet-copy-init aignet initsts :gatesimp gatesimp)))
+                 (equal (id-eval 
+                         (node-count (lookup-stype n (po-stype) aignet2))
+                         invals regvals aignet2)
+                        (id-eval
+                         (node-count (lookup-stype n (po-stype) aignet))
+                         invals (b-xor-lst initsts regvals) aignet)))))
+
+    (defthm eval-nxst-of-aignet-copy-init
+      (implies (< (nfix n) (num-regs aignet))
+               (b* ((aignet2 (aignet-copy-init aignet initsts :gatesimp gatesimp)))
+                 (equal (id-eval
+                         (node-count
+                          (lookup-reg->nxst
+                           (node-count (lookup-stype n (reg-stype)
+                                                     aignet2))
+                           aignet2))
+                         invals regvals aignet2)
+                        (b-xor
+                         (get-bit n initsts)
+                         (id-eval
+                          (reg-id->nxst
+                           (node-count (lookup-stype n (reg-stype)
+                                                     aignet))
+                           aignet)
+                          invals
+                          (b-xor-lst initsts regvals)
+                          aignet)))))))
+
+  (local (defun count-down (k)
+           (if (zp k)
+               k
+             (count-down (1- k)))))
+
+  (local (defmacro generalize-bitsequiv ()
+           '(and stable-under-simplificationp
+                 (let ((witness (acl2::find-call-lst
+                                 'acl2::bits-equiv-witness
+                                 clause)))
+                   `(:clause-processor
+                     (acl2::simple-generalize-cp
+                      clause '((,witness . n))))))))
+
+
+
+  (defcong bits-equiv bits-equiv (b-xor-lst a b) 1
+    :hints ((and stable-under-simplificationp
+                 `(:expand (,(car (last clause)))))))
+  (defcong bits-equiv bits-equiv (b-xor-lst a b) 2
+    :hints ((and stable-under-simplificationp
+                 `(:expand (,(car (last clause)))))))
+
+  (defthm list-fix-under-nth-equiv
+    (nth-equiv (acl2::list-fix x) x)
+    :hints(("Goal" :in-theory (enable nth-equiv))))
+
+  (defthm b-xor-lst-twice
+    (bits-equiv (b-xor-lst x (b-xor-lst x y))
+                y)
+    :hints(("Goal" :in-theory (enable bits-equiv))))
+
+  (local (in-theory (disable acl2::take-when-atom)))
+
+  (defthm take-of-b-xor-lst
+    (bits-equiv (take n (b-xor-lst a (take n b)))
+                (take n (b-xor-lst a b)))
+    :hints(("Goal" :in-theory (enable bits-equiv))))
+
+  (defcong bits-equiv bits-equiv (take n x) 2)
+
+  (local (defthm id-eval-b-xor-lst-take-subst
+           (equal (id-eval id ins
+                           (b-xor-lst x (take (stype-count :reg aignet) y))
+                           aignet)
+                  (id-eval id ins
+                           (b-xor-lst x y) aignet))
+           :hints (("goal" :use ((:instance id-eval-of-take-num-regs
+                                  (invals ins)
+                                  (regvals
+                                   (b-xor-lst x (take (stype-count :reg aignet) y)))))))))
+
+
+  (defthm frame-regvals-of-aignet-copy-init
+    (bits-equiv
+     (frame-regvals k frames nil (aignet-copy-init
+                                  aignet initsts :gatesimp
+                                  gatesimp))
+     (take (num-regs aignet)
+           (b-xor-lst
+            initsts
+            (frame-regvals k frames initsts aignet))))
+    :hints(("Goal" :induct (count-down k))
+           (and stable-under-simplificationp
+                `(:expand (,(car (last clause)))
+                  :in-theory (enable id-eval-seq-in-terms-of-id-eval
+                                     nth-of-frame-regvals-split)
+                  :do-not-induct t))
+           (and stable-under-simplificationp
+                (let ((witness (acl2::find-call-lst
+                                'acl2::bits-equiv-witness
+                                clause)))
+                  `(:clause-processor
+                    (acl2::simple-generalize-cp
+                     clause '((,witness . n))))))))
+
+  (defthm id-eval-seq-of-aignet-copy-init
+    (b* ((aignet2 (aignet-copy-init aignet initsts :gatesimp gatesimp)))
+      (equal (id-eval-seq k (node-count (lookup-stype n :po aignet2))
+                          frames nil aignet2)
+             (id-eval-seq k (node-count (lookup-stype n :po aignet))
+                          frames initsts aignet)))
+    :hints(("Goal" :in-theory (enable id-eval-seq-in-terms-of-id-eval)
+            :cases ((< (nfix n) (num-outs aignet))))))
+
+  (defthm seq-equiv-init-of-aignet-copy-init
+    (seq-equiv-init (aignet-copy-init aignet initsts :gatesimp gatesimp)
+                    nil
+                    aignet initsts)
+    :hints(("Goal" :in-theory (e/d (seq-equiv-init) (aignet-copy-init)))))
+
+  (defthm seq-equiv-init-is-seq-equiv-of-aignet-copy-init
+    (equal (seq-equiv-init aignet initsts aignet2 initsts2)
+           (seq-equiv (aignet-copy-init aignet initsts :aignet2 nil)
+                      (aignet-copy-init aignet2 initsts2 :aignet2 nil)))
+    :hints (("goal" :cases ((seq-equiv-init aignet initsts aignet2 initsts2))
+             :in-theory (enable seq-equiv-necc seq-equiv-init-necc))
+            (and stable-under-simplificationp
+                 (if (eq (caar clause) 'not)
+                     `(:expand (,(car (last clause))))
+                   `(:expand (,(car clause)))))
+            (and stable-under-simplificationp
+                  (let ((witness (acl2::find-call-lst
+                                  'seq-equiv-init-witness
+                                  clause)))
+                    `(:clause-processor
+                      (acl2::simple-generalize-cp
+                       clause '(((mv-nth '0 ,witness) . k)
+                                ((mv-nth '1 ,witness) . n)
+                                ((mv-nth '2 ,witness) . inframes))))))
+            (and stable-under-simplificationp
+                 '(:use ((:instance seq-equiv-necc
+                          (aignet (aignet-copy-init-fn aignet initsts 9
+                                                       nil))
+                          (aignet2 (aignet-copy-init-fn aignet2 initsts2 9 nil))))
+                   :in-theory (disable seq-equiv-necc))))
+    :otf-flg t))
