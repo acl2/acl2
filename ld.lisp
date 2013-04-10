@@ -20571,6 +20571,11 @@
   drive, e.g., `~c[C:]' vs. `~c[c:]'.  This has been fixed.  Thanks to Sol
   Swords for reporting this issue.
 
+  Fixed a bug in the storing of rules for the tau system; ~pl[tau-system].
+  (The error message mentions
+  PARTITION-SIGNATURE-HYPS-INTO-TAU-ALIST-AND-OTHERS.)  Thanks to Sol Swords
+  for reporting this bug and sending a simple example to illustrate it.
+
   ~st[CHANGES AT THE SYSTEM LEVEL]
 
   ~st[EMACS SUPPORT]

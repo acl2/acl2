@@ -24726,20 +24726,21 @@
   o When a top-level expression involving ~c[OBJ] returns an ~c[OBJ] object,
   that object becomes the new current value of ~c[OBJ].
 
-  What makes ACL2 different from other functional languages supporting such
-  operations (e.g., Haskell's ``monads'' and Clean's ``uniqueness type
-  system'') is that ACL2 gives single-threaded objects an explicit first-order
-  semantics so that theorems can be proved about them.  In particular, the
-  syntactic restrictions noted above are enforced only when single-threaded
-  objects are encountered directly in the top-level loop or are used in
-  function definitions; the accessor and update functions for single-threaded
-  objects may be used without restriction in formulas to be proved.  Since
-  function evaluation is sometimes necessary during proofs, ACL2 must be able
-  to evaluate these functions on logical constants representing the object,
-  even when the constant is not ``the current object.''  Thus, ACL2 supports
-  both the efficient von Neumann semantics and the clean applicative semantics,
-  and uses the first in contexts where execution speed is paramount and the
-  second during proofs.
+  There are other functional languages supporting single-threadedness, for
+  example Haskell's ``monads'' and Clean's ``uniqueness type system''.  Of
+  course, ACL2 provides a theorem prover that can prove theorems that involve
+  such constructs.
+
+  Note that the syntactic restrictions noted above are enforced only when
+  single-threaded objects are encountered directly in the top-level loop or are
+  used in function definitions; the accessor and update functions for
+  single-threaded objects may be used without restriction in formulas to be
+  proved.  Since function evaluation is sometimes necessary during proofs, ACL2
+  must be able to evaluate these functions on logical constants representing
+  the object, even when the constant is not ``the current object.''  Thus, ACL2
+  supports both the efficient von Neumann semantics and the clean applicative
+  semantics, and uses the first in contexts where execution speed is paramount
+  and the second during proofs.
 
   ~ilc[Defstobj] and ~ilc[defabsstobj] ~il[events] introduce stobjs.
   ~l[defstobj] for more details about stobjs.  In particular, a relatively

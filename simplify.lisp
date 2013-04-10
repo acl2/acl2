@@ -165,12 +165,12 @@
 ; thought of as (IMPLIES (equal x 'const2) (OR p... q...)) and thus we are
 ; checking
 
-; (IMPLIES (AND (equal x 'const2) (OR (equal x 'const1) p...)) 
+; (IMPLIES (AND (equal x 'const2) (OR (equal x 'const1) p...))
 ;          (OR p... q...))
 
 ; which is the same as
 
-; (IMPLIES (AND (equal x 'const2) (OR p...)) 
+; (IMPLIES (AND (equal x 'const2) (OR p...))
 ;          (OR p... q...))
 
 ; and hence true.
@@ -883,7 +883,7 @@
                        (change fc-activation act
                                :inst-hyp inst-hyp))))
                (t
-; Case (b) -- 3 conses                
+; Case (b) -- 3 conses
                 (change fc-activation act
                         :inst-hyp inst-hyp
                         :hyps hyps
@@ -1201,11 +1201,11 @@
                                                              oncep
                                                              keys-seen)
                                      (mv (cons new-unify-subst other-unifies)
-                                         (cons (cons-tag-trees 
+                                         (cons (cons-tag-trees
                                                 (cddr (car type-alist)) ttree)
                                                other-ttrees)
                                          (cons (car (car type-alist)) other-instances)))))))
-                       
+
 ; We didn't find any new substitutions; try again.
 
                   (t (mult-search-type-alist rest-hyps concls term
@@ -1231,7 +1231,7 @@
 ; unify-subst that make hyp true under type-alist are listed in 1:1
 ; correspondence with extensions of ttree.  The function does not consider
 ; type-alist entries on the keys last-keys-seen and its third result is the
-; keys it used this time.  
+; keys it used this time.
 
 ; This function is basically a variant of lookup-hyp.
 
@@ -1255,7 +1255,7 @@
              (fquotep form))
          (mv-let (erp val latches)
            (ev form alist state latches t nil)
-           (mv erp val latches ttree))) 
+           (mv erp val latches ttree)))
         (t (let ((fn (ffn-symb form)))
              (cond
               ((or (flambdap fn)
@@ -1358,7 +1358,7 @@
 ;    .
 ;    ((inst-trigger . rune) . (fc-round . unify-subst)))
 ;   t)
-  
+
 ; Note: This is just an 8-tipped perfectly symmetric tree.  We
 ; contemplated optimizing it for access time to the pieces.  Informally,
 ; we suspect concl, fn-cnt, p-fn-cnt, and ttree, are the most critical
@@ -1415,7 +1415,7 @@
             (mv-let
              (fn-cnt p-fn-cnt)
              (fn-count concl)
-             (add-fc-derivations rune (cdr concls) unify-subst inst-trigger 
+             (add-fc-derivations rune (cdr concls) unify-subst inst-trigger
                                  fc-round ens wrld state ttree
                                  (cons
                                   (make fc-derivation
@@ -1447,7 +1447,7 @@
 ; 1:  (fc-round concl name)
 ; 2:  (fc-round concl name (:literals ...) . level-0-supporters)
 ; 3:  (fc-round concl name (:literals ...) . level-3-supporters)
-; 4:  (fc-round concl rune (:unify-subst ...) 
+; 4:  (fc-round concl rune (:unify-subst ...)
 ;                         (:literals ...) . level-4-supporters)
 
 ; Look at the code for level 4 to see how you read these things.
@@ -1478,7 +1478,7 @@
                         3)))
       (otherwise
        `(
-; Forward chaining round:          
+; Forward chaining round:
          ,fc-round
 ; produced the new fact:
          ,concl
@@ -1555,22 +1555,22 @@
 ;   (defstub trig (x) t)
 ;   (defstub assumptionp (x) t)
 ;   (defstub concl (x) t)
-; 
+;
 ;   (defaxiom fc-to-hyp1
 ;     (hyp1 (trig x))
 ;     :rule-classes ((:forward-chaining :trigger-terms ((trig X)))))
-; 
+;
 ;   (defaxiom then-fc-to-hyp2
 ;     (implies (and (hyp1 x) (force (assumptionp x)))
 ;              (hyp2 x))
 ;     :rule-classes :forward-chaining)
-; 
+;
 ;   (defaxiom in-rewrite-use-hyp2-thus-raising-the-assumption
 ;     (implies (hyp2 x) (concl x)))
-; 
+;
 ;   (defaxiom and-relieve-the-assumption-by-appeal-to-hyp1-sucking-in-the-fc-deriv
 ;     (implies (hyp1 x) (assumptionp x)))
-; 
+;
 ;   (thm (concl (trig a))))
 
   (let ((objects (tagged-objects 'fc-derivation ttree)))
@@ -1854,8 +1854,8 @@
   ~bv[]
   Activations: (~em[act1] ~em[act2] ...)
   ~ev[]
-  Each ~em[acti] is of the form:  
-  ~bv[]   
+  Each ~em[acti] is of the form:
+  ~bv[]
   (~em[rune]
    (:TRIGGER ~em[inst-trig])
    ((:UNIFY-SUBST ~em[subst])
@@ -1935,7 +1935,7 @@
 
   Thus, the criteria is interpreted as a disjunction of conjunctions, making
   it possible to track a specific set of runes, triggers, and conclusions.
- 
+
   For example, here is a triple that might appear in the criteria:
   ~bv[]
   ((:FORWARD-CHAINING ALISTP-FORWARD-TO-TRUE-LISTP)
@@ -1968,7 +1968,7 @@
 
   Note: The condition on how an activation satisfies an instantiated conclusion
   is a little subtle.  Consider the activation of the forward chaining rule
-  ~bv[] 
+  ~bv[]
   (implies (and (symbol-listp x)
                 (equal (len x) (len y)))
            (true-listp (make-bindings x y)))
@@ -1991,7 +1991,7 @@
   which activations are to be tracked.
   For example, if you execute:
   ~bv[]
-  (set-fc-criteria ((:FORWARD-CHAINING LEMMA1) 
+  (set-fc-criteria ((:FORWARD-CHAINING LEMMA1)
                     t t)
                    ((:FORWARD-CHAINING LEMMA2)
                     (ALISTP (BASIC-MAPPER A B))
@@ -2005,7 +2005,7 @@
 
   Because criteria generally mention variable symbols used in a specific
   conjecture, it is probably best to reconsider your criteria every time you
-  want to track forward chaining.  
+  want to track forward chaining.
 
   If the criteria is ~c[nil], then nothing is tracked.  Setting the criteria to
   ~c[nil] is the way you turn off tracking and reporting of forward chaining
@@ -2032,7 +2032,7 @@
   ~ilc[set-fc-report-on-the-fly].")
 
 (defun show-fc-criteria ()
-            
+
   ":Doc-Section Forward-Chaining-Reports
 
   print the forward-chaining tracking criteria~/
@@ -2156,7 +2156,7 @@
           (put-assoc-eq :CRITERIA criteria (wormhole-data whs))))
       nil)
      (value nil))))
-     
+
 (defmacro set-fc-criteria (&rest x)
 
   ":Doc-Section Forward-Chaining-Reports
@@ -2228,12 +2228,12 @@
 
 
   `(set-fc-criteria-fn ',x state))
-         
+
 (defun set-fc-report-on-the-fly (flg)
 
 ; This function allows the user to set the flag that determines whether we do
 ; on-the-fly reporting (flg = t) or not (flg = nil) during forward chaining.
- 
+
   ":Doc-Section Forward-Chaining-Reports
 
   to determine when forward-chaining reports are printed~/
@@ -2247,11 +2247,11 @@
   printed when forward chaining occurs.  If the flag is set to ~c[nil],
   very short reports (giving just the caller and the report number) are
   printed during forward chaining but you can use ~ilc[fc-report] to
-  see the full report afterwards.  
+  see the full report afterwards.
 
   Since nothing is tracked when the criteria is ~c[nil], this function
   also prints out the current criteria to remind you of what it is.
-  
+
   The flag manipulated by this function does not shut off tracking.  It
   only determines whether reports are printed on-the-fly or not.  To
   shut off tracking ~ilc[set-fc-criteria].~/
@@ -2380,7 +2380,7 @@
          (collect-satisfying-fc-activations criteria
                                             (cdr acts)
                                             (cons (car acts) ans)))
-        (t (collect-satisfying-fc-activations criteria (cdr acts) ans))))  
+        (t (collect-satisfying-fc-activations criteria (cdr acts) ans))))
 
 ; The notion of a satisfying fc-activation applies naturally to the ``virtual
 ; activations'' manipulated in advance-fc-activation1, 2, and 3, where we have
@@ -2565,7 +2565,7 @@
 ; are holding a list of all still-suspended fc-activations and this is the
 ; function that filters that list into site 4 of the current call of
 ; forward-chain-top.
-  
+
   (wormhole-eval
    'fc-wormhole
    '(lambda (whs)
@@ -2658,7 +2658,7 @@
 ;   ...
 ;   ((:UNIFY-SUBST <subst>)
 ;    (:DISPOSITION <outcome> <reason> <term>)))
-                 
+
 ; We prepare this report in its raw form and will just print it.  The user may
 ; want to process it further with some attachment.
 
@@ -2749,8 +2749,8 @@
 
 (defun collect-fc-status-sites-2-3-5 (rune inst-trigger all-fcds
                                            approved-fcds
-                                           redundant-approved-fc-derivations) 
-                          
+                                           redundant-approved-fc-derivations)
+
 ; All-fcds is site (2) all-satisfying-fc-derivations - every fc-derivation that
 ; satisfies the criteria, approved-fcds is site (3)
 ; approved-satisfying-fc-derivations - the fc-derivations that both satisfy the
@@ -2839,7 +2839,7 @@
     ,@(collect-fc-status-site-1 rune inst-trigger site1)
     ,@(collect-fc-status-sites-2-3-5 rune inst-trigger site2 site3 site5)
     ,@(collect-fc-status-site-4 rune inst-trigger site4)))
-  
+
 (defun make-fc-activity-report1 (rune-trigger-pairs site1 site2 site3 site4 site5)
 
 ; Given a list of (rune . inst-trigger) pairs and the four sites, we
@@ -2928,7 +2928,7 @@
 
   ~bv[]
   Example: (fc-report 15)
-  
+
   General Form: (fc-report k)
   ~ev[]
   where ~c[k] is the number of some forward chaining report printed
@@ -2953,12 +2953,12 @@
 
 (defun fc-exit (flg type-alist ttree-or-fc-pairs
                     caller rounds all-approved-fcds all-leftover-activations)
-  
+
 ; We exit forward-chain-top by calling this function.  Logically you can think
 ; of this function as just:
 
 ; (mv flg type-alist ttree-or-fc-pairs)
-    
+
 ; The other arguments are used to report on forward-chaining.
 
 ; At the time this is called we will have already fully loaded sites (1) and
@@ -3223,7 +3223,7 @@
 ; Finally!  We're past inst-hyp and begin to work our way down hyps.
 
        (advance-fc-activation2
-        act0 hyps unify-subst (cons-tag-trees ttree1 ttree) 
+        act0 hyps unify-subst (cons-tag-trees ttree1 ttree)
         fc-round type-alist ens force-flg wrld state oncep-override
         suspensions fcd-lst)))))))
 
@@ -3278,7 +3278,7 @@
          ttree
          fc-round type-alist ens force-flg wrld state oncep-override
          suspensions fcd-lst))
-       (t 
+       (t
 
 ; Hyp contains no free vars, so we instantiate it and then use any of
 ; three methods (depending on the instance) to decide if it is true:
@@ -3364,7 +3364,7 @@
                               act0 (cdr hyps) unify-subst ttree
                               fc-round type-alist ens force-flg wrld state oncep-override
                               suspensions fcd-lst))
-                            (t 
+                            (t
 
 ; Inst-hyp is ground but cannot be evaluated and is not supposed to be
 ; forced.  So we just suspend it.  Note that inst-hyp satisfies our
@@ -3400,13 +3400,13 @@
                             act0 inst-hyp hyps unify-subst ttree)
                            (mv suspensions
                                fcd-lst))))))
-                      (t 
-                             
+                      (t
+
 ; Inst-hyp contains variables and so we don't even try evaluation --
 ; even though there are expressions containing variables and IFs that
 ; evaluate to constants.  Instead, we just see whether we should force
 ; it.  We ignore type-set's ttree1.
-                             
+
                        (mv-let
                         (force-flg ttree)
                         (cond
@@ -3432,7 +3432,7 @@
                            act0 (cdr hyps) unify-subst ttree
                            fc-round type-alist ens force-flg wrld state oncep-override
                            suspensions fcd-lst))
-                         (t 
+                         (t
 
 ; Inst-hyp ``cannot'' be evaluated and is not supposed to be
 ; forced.  So we just suspend it.  Note that inst-hyp satisfies our
@@ -3578,54 +3578,54 @@
 ;  (defstub appeal-provisionally-okp (* * *) => *)
 ;  (defstub proofp (* * *) => *)
 ;  (defstub proof-listp (* * *) => *)
-; 
+;
 ;  (defaxiom appeal-structure-listp-forward-to-appeal-structurep-of-car
 ;     (implies (appeal-structure-listp x)
 ;              (equal (appeal-structurep (car x))
 ;                     (if x t nil)))
 ;     :rule-classes :forward-chaining)
-; 
+;
 ;  (defaxiom appealp-listp-forward-to-appealp-of-car
 ;     (implies (appeal-listp x arity-table)
 ;              (equal (appealp (car x) arity-table)
 ;                     (if x t nil)))
 ;     :rule-classes :forward-chaining)
-; 
+;
 ;  (defaxiom appealp-forward-to-appeal-structurep
 ;     (implies (appealp x arity-table)
 ;              (appeal-structurep x))
 ;     :rule-classes :forward-chaining)
-; 
+;
 ;  (defaxiom appeal-structure-listp-forward-to-appeal-structure-listp-of-cdr
 ;     (implies (appeal-structure-listp x)
 ;              (appeal-structure-listp (cdr x)))
 ;     :rule-classes :forward-chaining)
-; 
+;
 ;  (defaxiom appeal-listp-forward-to-appeal-listp-of-cdr
 ;     (implies (appeal-listp x arity-table)
 ;              (appeal-listp (cdr x) arity-table))
 ;     :rule-classes :forward-chaining)
-; 
+;
 ;  (defaxiom appeal-listp-forward-to-appeal-structure-listp
 ;     (implies (appeal-listp x arity-table)
 ;              (appeal-structure-listp x))
 ;     :rule-classes :forward-chaining)
-; 
+;
 ;  (defaxiom appeal-structure-listp-forward-to-true-listp
 ;     (implies (appeal-structure-listp x)
 ;              (true-listp x))
 ;     :rule-classes :forward-chaining)
-; 
+;
 ;  (defaxiom appeal-listp-when-proofp
 ;     (implies (proof-listp x database arity-table)
 ;              (appeal-listp x arity-table))
 ;     :rule-classes :forward-chaining)
-; 
+;
 ;  (defaxiom appealp-when-proofp
 ;     (implies (proofp x database arity-table)
 ;              (appealp x arity-table))
 ;     :rule-classes :forward-chaining)
-; 
+;
 ;  (defthm hard-error-in-fc-pair-lst-type-alist
 ;     (implies (and (proof-listp xs database arity-table)
 ;                   (not (consp xs)))
@@ -3724,7 +3724,7 @@
 
 ; Once upon a time we had heuristics for keeping concl if there was
 ; a lit of the current clause that was worse than it or if there was a
-; concl already kept that was worse than it.  We have 
+; concl already kept that was worse than it.  We have
 ; removed those heuristics and replaced them by the faster check that the
 ; triggering term occurs in the clause.  But we'll keep the
 ; definitions in case we want to reinstate the heuristics.
@@ -3808,33 +3808,33 @@
 
 ;   (defstub con (x y) nil)
 ;   (defstub des (x) nil)
-; 
+;
 ;   (defstub typec (x) nil)
 ;   (defstub typeg (x) nil)
 ;   (defstub typed (x) nil)
-; 
+;
 ;   (defaxiom typed-implies-typeg
 ;     (implies
 ;      (typed x)
 ;      (typeg x))
 ;     :rule-classes (:rewrite :forward-chaining))
-; 
+;
 ;   (defaxiom typeg-des
 ;     (implies
 ;      (typec x)
 ;      (typed (des x)))
-;     :rule-classes (:rewrite 
+;     :rule-classes (:rewrite
 ;                    (:forward-chaining :trigger-terms ((des x)))))
-; 
+;
 ;   (defaxiom typec-con
 ;     (implies
 ;      (and
 ;       (natp n)
 ;       (typeg x))
 ;      (typec (con x n)))
-;     :rule-classes (:rewrite 
+;     :rule-classes (:rewrite
 ;                    (:forward-chaining :trigger-terms ((con x n)))))
-; 
+;
 ;   (defun several (g)
 ;     (let* ((c (con g 1))
 ;            (g (des c))
@@ -3843,13 +3843,13 @@
 ;            (c (con g 3))
 ;            (g (des c)))
 ;       (con g 4)))
-; 
+;
 ;   (in-theory (disable
 ;               (:rewrite typec-con)
 ;               (:rewrite typeg-des)
 ;               (:rewrite typed-implies-typeg)
 ;               ))
-; 
+;
 ;   ; The following fails without the call below of
 ;   ; all-args-occur-after-strip-not below unless we remove the
 ;   ; in-theory event above.
@@ -3961,7 +3961,7 @@
 ; low function count and using variable occurrences to break ties.  No
 ; real consideration has been given this measure beyond that it puts
 ; the terms above before others!
-              
+
   (mv-let (fc vc)
           (sort-approved1-rating1 term wrld 0 0)
           (- (+ (* 10 fc) vc))))
@@ -3988,7 +3988,7 @@
                  (strip-fcd-concls (cdr fcd-lst))))))
 
 ; Upon obtaining the approved derived conclusions, we need to extend the
-; type-alist with them.  
+; type-alist with them.
 
 (defun type-alist-fcd-lst (fcd-lst type-alist
                                    do-not-reconsiderp force-flg ens wrld)
@@ -4043,7 +4043,7 @@
 (defun every-concl-member-equalp (fcd-lst trigger-terms)
 
 ; Fcd-lst is a list of fc-derivations.  We return t if the :concl of
-; every element of fcd-lst is a member-equal of trigger-terms. 
+; every element of fcd-lst is a member-equal of trigger-terms.
 
   (cond ((endp fcd-lst) t)
         ((member-equal (access fc-derivation (car fcd-lst) :concl)
@@ -4089,7 +4089,7 @@
 
   (mv-let (activations1 fcd-lst1)
           (advance-fc-activations
-           activations fc-round type-alist ens force-flg 
+           activations fc-round type-alist ens force-flg
            wrld state oncep-override
            nil ; initial new activations
            nil ; initial new derived concls
@@ -4184,7 +4184,7 @@
 ; Trigger-terms is the list of all subterms of cl whose top function
 ; symbols have fc rules and activations is the list of all (suspended)
 ; activations triggered by those subterms.
-            
+
          (mv-let
           (contradictionp ttree2 all-approved-fcds rounds activations1)
           (pstk
@@ -4215,7 +4215,7 @@
                      fc-pair-lst all-approved-fcds type-alist force-flg ens wrld)
                     (cond
                      (contradictionp
-                      (fc-exit t nil ttree3 
+                      (fc-exit t nil ttree3
 ;                         (mv t nil ttree3)
 ; ... and the stuff we need to do reporting ...
                                caller rounds all-approved-fcds activations1))
@@ -4322,7 +4322,7 @@
 
 ;  (mutual-recursion
 ;   (defun term-size (term)
-;  
+;
 ;  ; This computes the number of conses in a term, down to (but not including) the
 ;  ; quoted constants.  This is just an ``arbitrary'' measure with the following
 ;  ; two properties: (a) it is fast to compute, though one might someday try to
@@ -4332,7 +4332,7 @@
 ;  ; the smaller literals come first during the process of sequentially assuming
 ;  ; their falsity to construct a type-alist to use in the rewriting of some other
 ;  ; literal.  See rewrite-clause-type-alist.
-;  
+;
 ;     (cond ((variablep term) 1)
 ;           ((fquotep term) 1)
 ;           (t (+ 1 (term-size-lst (fargs term))))))
@@ -4340,7 +4340,7 @@
 ;     (cond ((endp term-lst) 0)
 ;           (t (+ (term-size (car term-lst))
 ;                 (term-size-lst (cdr term-lst)))))))
-;  
+;
 ;  ; Suppose x is some clause and y is some list of ttrees in 1:1 correspondence
 ;  ; with x.  We wish to reorder the literals of x according to term-size and to
 ;  ; apply the same permutation to y, so that the correspondence of literals to
@@ -4348,7 +4348,7 @@
 ;  ; . yi), where xi and yi are corresponding elements of x and y, sorting that
 ;  ; list by its cars, and then stripping out the xi to get the new x' and the yi
 ;  ; to get the new yi.
-;  
+;
 ;  (defun pairlis-with-rankings (x y ans)
 ;  ; See comment above.  If y is too short, we extend it with nils to match x.
 ;    (cond ((endp x) ans)
@@ -4356,7 +4356,7 @@
 ;              (cdr x) (cdr y)
 ;              (cons (cons (term-size (car x)) (cons (car x) (car y)))
 ;                    ans)))))
-;  
+;
 ;  (defun reorder-lits-and-ttrees-for-type-alist-clause
 ;    (lits1 ttree-lst1 lits2 ttree-lst2 lits3 ttree-lst3)
 ;    (let ((triples
@@ -4478,6 +4478,57 @@
 ; set of size 1).  In the third book (network-state.lisp) we proved a lemma
 ; that drastically simplified the affected proof.
 
+; Our decision to change after Version_6.1 to using (append new-clause (cdr
+; tail) lits) instead of the former (append lits new-clause (cdr tail)) was
+; motivated by the following example from Dave Greve.  In this example, Dave
+; expected the rewrite rule to suffice, but it did not.  It does now.
+
+;    (defstub a-p (x) nil)
+;    (defstub b-p (x) nil)
+;    (defstub c-p (x) nil)
+;    (defstub d-p (x) nil)
+;
+;    (defun x-p (x)
+;      (or (a-p x)
+;          (b-p x)
+;          (c-p x)
+;          (d-p x)))
+;
+;    (defthm forward
+;      (implies
+;       (x-p x)
+;       (or (a-p x)
+;           (b-p x)
+;           (c-p x)
+;           (d-p x)))
+;      :rule-classes (:forward-chaining))
+;
+;    (in-theory (disable x-p))
+;
+;    (defun z-p (x)
+;      (c-p x))
+;
+;    (defthm goo
+;      (implies
+;       (c-p x)
+;       (z-p x))
+;      :rule-classes (:rewrite :type-prescription))
+;
+;    (in-theory (disable z-p))
+;
+;    (in-theory (disable (:type-prescription goo)))
+;
+;    ; Fails, but Dave expected that (:rewrite goo) would suffice.
+;
+;    (defthm zoo
+;      (implies
+;       (and
+;        (x-p x)
+;        (not (a-p x))
+;        (not (b-p x))
+;        (not (d-p x)))
+;       (z-p x)))
+
 (defun rewrite-clause-type-alist (tail new-clause fc-pair-lst rcnst wrld
                                        pot-lst pt)
 
@@ -4512,7 +4563,7 @@
                                              (access rewrite-constant rcnst :pt)
                                              nil nil)
    (mv-let (current-clause current-ttree-lst)
-; The ``smart'' approach was this: 
+; The ``smart'' approach was this:
 ;           (reorder-lits-and-ttrees-for-type-alist-clause new-clause nil
 ;                                                          (cdr tail) nil
 ;                                                          lits ttree-lst)
@@ -4855,7 +4906,7 @@
                 (quotep (fargn b 2))
                 (not (equal (cadr (fargn a 2)) (cadr (fargn b 2))))
                 (equal (fargn a 1) (fargn b 1)))
-           
+
            (and (quotep (fargn a 1))
                 (quotep (fargn b 2))
                 (not (equal (cadr (fargn a 1)) (cadr (fargn b 2))))
@@ -5092,48 +5143,48 @@
 ;                    (integerp (+ 1/2 x)))
 ;           :hints (("Goal" :use ((:instance helper
 ;                                            (x (+ -1/2 x)))))))
-; 
-;  [Note:  A hint was supplied for our processing of the goal above. 
+;
+;  [Note:  A hint was supplied for our processing of the goal above.
 ;  Thanks!]
-; 
+;
 ;  ACL2 Warning [Use] in ( THM ...):  It is unusual to :USE an enabled
 ;  :REWRITE or :DEFINITION rule, so you may want to consider disabling
 ;  (:REWRITE HELPER).
-; 
-; 
+;
+;
 ;  We now augment the goal above by adding the hypothesis indicated by
 ;  the :USE hint.  The hypothesis can be derived from HELPER via instantiation.
 ;  The augmented goal is shown below.
-; 
+;
 ;  Goal'
 ;  (IMPLIES (IMPLIES (INTEGERP (+ -1/2 X))
 ;                    (INTEGERP (+ 1 -1/2 X)))
 ;           (IMPLIES (INTEGERP (+ -1/2 X))
 ;                    (INTEGERP (+ 1/2 X)))).
-; 
+;
 ;  By case analysis we reduce the conjecture to
-; 
+;
 ;  Goal''
 ;  (IMPLIES (AND (OR (NOT (INTEGERP (+ -1/2 X)))
 ;                    (INTEGERP (+ 1 -1/2 X)))
 ;                (INTEGERP (+ -1/2 X)))
 ;           (INTEGERP (+ 1/2 X))).
-; 
+;
 ;  This simplifies, using primitive type reasoning, to
-; 
+;
 ;  Goal'''
 ;  (IMPLIES (INTEGERP (+ -1/2 X))
 ;           (INTEGERP (+ 1/2 X))).
-; 
+;
 ;  Normally we would attempt to prove this formula by induction.  However,
 ;  we prefer in this instance to focus on the original input conjecture
 ;  rather than this simplified special case.  We therefore abandon our
 ;  previous work on this conjecture and reassign the name *1 to the original
 ;  conjecture.  (See :DOC otf-flg.)
-; 
+;
 ;  No induction schemes are suggested by *1.  Consequently, the proof
 ;  attempt has failed.
-; 
+;
 ;  Summary
 ;  Form:  ( THM ...)
 ;  Rules: ((:DEFINITION IMPLIES)
@@ -5141,7 +5192,7 @@
 ;          (:FAKE-RUNE-FOR-TYPE-SET NIL))
 ;  Warnings:  Use
 ;  Time:  0.03 seconds (prove: 0.02, print: 0.01, other: 0.00)
-; 
+;
 ;  ******** FAILED ********  See :DOC failure  ******** FAILED ********
 ;  ACL2 !>
 
@@ -5226,7 +5277,7 @@
 ;    (if (acl2-numberp x)
 ;        (+ x y)
 ;      0))
-; 
+;
 ;  ACL2 !>(defthm foo-thm
 ;    (implies (acl2-numberp x)
 ;             (equal (foo x y)
@@ -5237,25 +5288,25 @@
 ;                 (acl2-numberp y)
 ;                 (equal (foo x y) x))
 ;            (equal y 0)))
-; 
+;
 ;  This simplifies, using the :type-prescription rule FOO, to
-; 
+;
 ;  Goal'
 ;  (IMPLIES (AND (ACL2-NUMBERP Y)
 ;                (EQUAL (FOO X Y) X))
 ;           (EQUAL Y 0)).
-; 
+;
 ;  Name the formula above *1.
-; 
+;
 ;  No induction schemes are suggested by *1.  Consequently, the proof
 ;  attempt has failed.
-; 
+;
 ;  Summary
 ;  Form:  ( THM ...)
 ;  Rules: ((:TYPE-PRESCRIPTION FOO))
 ;  Warnings:  None
 ;  Time:  0.00 seconds (prove: 0.00, print: 0.00, other: 0.00)
-; 
+;
 ;  ******** FAILED ********  See :DOC failure  ******** FAILED ******** ; |
 
 ; Note that in the transition from Goal to Goal' we removed the critical fact
@@ -6205,7 +6256,7 @@
                   t))
          (access built-in-clause (car bic-lst) :rune))
         (t (built-in-clausep2 (cdr bic-lst) cl fns ens))))
-                         
+
 (defun built-in-clausep1 (bic-alist cl fns ens)
 
 ; Bic-alist is the alist of built-in clauses, organized via top fnname.  Cl is
@@ -6834,7 +6885,7 @@
                            :atm atm)
                      :pt
                      new-pts))
-            (case-split-limitations (access rewrite-constant rcnst 
+            (case-split-limitations (access rewrite-constant rcnst
                                             :case-split-limitations))
 
 ; Warning: Keep the following bindings in sync with the definitions of macros
@@ -7095,7 +7146,7 @@
 ; to cut off case splitting earlier, we would get more literals with
 ; IFs in them, and fewer overall clauses because the estimate would be
 ; too large and kick in even though some of the previous splitting was
-; tautologous.  
+; tautologous.
 
                                       (helpful-little-ecnt-msg
                                        case-limit
@@ -7242,22 +7293,22 @@
 ;    (and (integerp n)
 ;         (<= -128 n)
 ;         (< n 128)))
-; 
+;
 ;  (defthm bytep-thm
 ;    (implies (and (integerp n)
 ;                  (<= -128 n)
 ;                  (< n 128))
 ;             (bytep n)))
-; 
+;
 ;  (defthm bytep-fc-thm
 ;    (implies (bytep n)
 ;             (and (integerp n)
 ;                  (<= -128 n)
 ;                  (< n 128)))
 ;    :rule-classes :forward-chaining)
-; 
+;
 ;  (in-theory (disable bytep))
-; 
+;
 ;  (defthm tricky
 ;   (implies (and (bytep n)
 ;                 (bytep (+ 7 n)))
@@ -7273,19 +7324,19 @@
 ; And here is another example:
 
 ;  (defun bvecp (x n)
-;    (and (integerp x) 
-;         (<= 0 x) 
+;    (and (integerp x)
+;         (<= 0 x)
 ;         (< x (expt 2 n))))
-; 
+;
 ;  (defthm bvecp-2-<-4
 ;           (implies (bvecp x 2)
 ;                    (and (integerp x)
 ;                         (<= 0 x)
 ;                         (< x 4)))
 ;    :rule-classes :forward-chaining)
-; 
+;
 ;  (in-theory (disable bvecp))
-; 
+;
 ;  (thm (implies (and (bvecp x 2)
 ;                     (not (equal x 0))
 ;                     (not (equal x 1))
@@ -7298,7 +7349,7 @@
         (t
          (setup-simplify-clause-pot-lst (cons (dumb-negate-lit
                                                (caar fc-pair-lst)) cl)
-                                        (cons (cdar fc-pair-lst) ttrees) 
+                                        (cons (cdar fc-pair-lst) ttrees)
                                         (cdr fc-pair-lst)
                                         type-alist rcnst wrld state
                                         step-limit))))
@@ -7361,9 +7412,9 @@
 ; Here is an example that failed under Version_2.4 (which did not
 ; have the var-term-substs argument) but succeeded in Version_2.5
 ; (which introduced the argument to fix such problems).
- 
+
 ;   (defstub bar (x) t)
-; 
+;
 ;   (thm (implies (and (rationalp a)(rationalp b)(rationalp c)
 ;                      (<= a b) (<= b a)
 ;                      (<= b c) (<= c b))
@@ -7635,7 +7686,7 @@
                 (contradictionp simplify-clause-pot-lst)
                 (pstk
                  (setup-simplify-clause-pot-lst current-clause
-                                                (pts-to-ttree-lst 
+                                                (pts-to-ttree-lst
                                                  current-clause-pts)
                                                 fc-pair-lst
                                                 type-alist
@@ -7686,7 +7737,7 @@
                           (list newest-current-clause)
                           (push-lemma *fake-rune-for-linear*
                                       ttree1))))
-                    (t 
+                    (t
 
 ; When we call rewrite-clause, below, we pass in as the initial value
 ; of its ``did we change anything?'' accumulator the flg, hitp, that
@@ -8198,13 +8249,13 @@
 ;                                (CDR POS))))
 ;           (EQUAL (SUBST-FREE (FLIP-EQ F POS) X TM)
 ;                  (FLIP-EQ (SUBST-FREE F X TM) POS))).
-; 
+;
 ;  This simplifies, using the :definitions FLIP-EQ, LEN, LIST2P, LIST3P,
 ;  SUBST-FREE, TRUE-LISTP, WFBINARY, WFEQ and WFNOT, the :executable-
 ;  counterparts of BINARY-+, EQUAL, LEN and TRUE-LISTP, primitive type
 ;  reasoning and the :rewrite rules CAR-CONS and CDR-CONS, to the following
 ;  16 conjectures.
-; 
+;
 ;  Subgoal *1/2.16
 ;  (IMPLIES (AND (CONSP F)
 ;                (CONSP (CDR F))
@@ -8453,7 +8504,7 @@
     runes
     (pairlis$ (strict-merge-sort-symbol-< (strip-cars runes))
               nil))))
-                         
+
 (defun extract-and-classify-lemmas (ttree ignore-lst forced-runes)
 
 ; We essentially partition the set of runes tagged as 'lemmas in ttree into
@@ -8596,7 +8647,7 @@
       (cond
        (pair
         (mv-let (rest-msgs rest-pairs)
-                (tilde-*-simp-phrase1 (cdr alist) abbreviations-flg) 
+                (tilde-*-simp-phrase1 (cdr alist) abbreviations-flg)
                 (mv (cons (cdr pair) rest-msgs)
                     rest-pairs)))
        (t
@@ -8647,7 +8698,7 @@
               (mv (if pluralp
                       "the :built-in-clause rules ~*B"
                     "the :built-in-clause rule ~*B")
-                  (cons #\B names)))           
+                  (cons #\B names)))
              (:COMPOUND-RECOGNIZER
               (mv (if pluralp
                       "the :compound-recognizer rules ~*C"
@@ -8706,7 +8757,7 @@
               (mv (if pluralp
                       "the :type-set-inverter rules ~*t"
                     "the :type-set-inverter rule ~*t")
-                  (cons #\t names)))             
+                  (cons #\t names)))
              (otherwise
               (mv (er hard 'tilde-*-simp-phrase1
                       "We did not expect to see the simplifier report a rune ~
@@ -8714,7 +8765,7 @@
                       (caar alist))
                   nil)))
            (mv-let (rest-msgs rest-pairs)
-                   (tilde-*-simp-phrase1 (cdr alist) abbreviations-flg) 
+                   (tilde-*-simp-phrase1 (cdr alist) abbreviations-flg)
                    (mv (cons msg rest-msgs)
                        (cons pair rest-pairs)))))))))))
 
@@ -8905,7 +8956,7 @@
 ; associated parser, parse-clause-id.  Also change the clone of
 ; this function, string-for-tilde-@-clause-id-phrase.
 
-; For example, if id is 
+; For example, if id is
 ; (make clause-id
 ;       :forcing-round 3
 ;       :pool-lst '(2 1)
@@ -9049,7 +9100,7 @@
 
 (defun parse-dotted-naturals (dflg str i maximum ans)
 
-; For now, assume dflg is nil. 
+; For now, assume dflg is nil.
 ; Starting at the ith position of string str we parse a list of
 ; naturals separated by dots.  We return the list of naturals (which
 ; may be nil) and the position of the first character not parsed.
