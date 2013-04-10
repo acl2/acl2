@@ -24,7 +24,7 @@
 ; which is also released under the GPL.
 
 (in-package "ACL2")
-(include-book "cutil/defsection" :dir :system)
+(include-book "xdoc/top" :dir :system)
 (include-book "ihs/logops-definitions" :dir :system)
 (local (include-book "ihs/logops-lemmas" :dir :system))
 (local (include-book "arithmetic/top-with-meta" :dir :system))

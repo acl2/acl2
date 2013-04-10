@@ -4,6 +4,11 @@
 (include-book "../y86/y86-mem-init")
 (include-book "centaur/gl/gl" :dir :system)
 
+#||
+;; [Jared]: trick cert.pl into allocating more memory for this book on our cluster.
+(set-max-mem (* 4 (expt 2 30)))
+||#
+
 (defthm x86-32p-create-x86-32
   (x86-32p (create-x86-32))
   :hints (("Goal" :in-theory (e/d (x86-32p memp-aux)

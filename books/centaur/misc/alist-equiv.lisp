@@ -22,7 +22,7 @@
 
 (in-package "ACL2")
 (include-book "misc/hons-help2" :dir :system)
-(include-book "cutil/defsection" :dir :system)
+(include-book "xdoc/top" :dir :system)
 (include-book "alist-defs")
 (include-book "std/lists/sets" :dir :system)
 

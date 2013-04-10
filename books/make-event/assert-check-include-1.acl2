@@ -1,5 +1,5 @@
 (in-package "ACL2")
-(include-book "eval")
+(include-book "../misc/eval")
 
 ; Commented out because setenv$ causes an error in sbcl and besides,
 ; it's not clear why this is needed.

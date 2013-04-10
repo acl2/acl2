@@ -19,7 +19,7 @@
 ; Original author: Jared Davis <jared@centtech.com>
 
 (in-package "ACL2")
-(include-book "cutil/defsection" :dir :system)
+(include-book "xdoc/top" :dir :system)
 (include-book "tools/bstar" :dir :system)
 (include-book "finite-set-theory/osets/sets" :dir :system)
 (local (include-book "ihs-extensions"))

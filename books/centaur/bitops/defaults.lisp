@@ -19,7 +19,7 @@
 ; Original author: Jared Davis <jared@centtech.com>
 
 (in-package "ACL2")
-(include-book "cutil/defsection" :dir :system)
+(include-book "xdoc/top" :dir :system)
 (include-book "ihs/logops-definitions" :dir :system)
 ; (local (include-book "arithmetic-3/floor-mod/floor-mod" :dir :system))
 (local (include-book "ihsext-basics"))

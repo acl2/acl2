@@ -25,7 +25,6 @@
 (include-book "misc/definline" :dir :system)
 (include-book "misc/records" :dir :system)
 (include-book "tools/bstar" :dir :system)
-(include-book "cutil/defsection" :dir :system)
 
 #||
 ;; fool dependency scanner into including the array lemmas book, since our

@@ -19,6 +19,8 @@
 ; Original author: Jared Davis <jared@centtech.com>
 
 (in-package "CUTIL")
+
+;; cert_param: (reloc_stub)
 (include-book "xdoc/top" :dir :system)
 (include-book "tools/bstar" :dir :system)
 

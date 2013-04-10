@@ -19,7 +19,6 @@
 ; Original author: Jared Davis <jared@centtech.com>
 
 (in-package "ACL2")
-(include-book "cutil/defsection" :dir :system)
 (include-book "misc/definline" :dir :system)
 (include-book "misc/records" :dir :system)
 (local (include-book "local")) ;; just some nth/update-nth stuff.

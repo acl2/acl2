@@ -6,6 +6,12 @@
 (include-book "y86")
 (local (include-book "centaur/gl/gl" :dir :system))
 
+#||
+;; [Jared]: trick cert.pl into allocating more memory for this book on our cluster.
+(set-max-mem (* 4 (expt 2 30)))
+||#
+
+
 ; Functions to gather items from the registers and memory.
 ; Functions to initialize the memory.
 
