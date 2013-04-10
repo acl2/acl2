@@ -20476,6 +20476,10 @@
 ; already did for fn-count and fn-count-1.  Var-fn-count-1 is in :logic mode;
 ; the old var-fn-count nest was not.
 
+; It had been possible to violate the first invariant on type-alists: no quotep
+; is bound in a type-alist, but we fixed that.  See the long comment in
+; subst-type-alist1.
+
   :doc
   ":Doc-Section release-notes
 
@@ -20544,6 +20548,18 @@
   list of ancestors, although ~c[strip-cars] will still work at this time.
   ~eq[]
 
+  When we rewrite the current literal of the current clause we assume the
+  falsity of the other literals and of the conclusions produced by forward
+  chaining.  We have changed the order in which those assumptions are made,
+  which affects the type-alist used during rewriting.  This has three effects:
+  the new type-alist, which is sometimes stronger than the old one, may allow
+  additional rules to fire, the choice of free vars may be different, and the
+  order of the literals in forced subgoals may be different.  Should ``legacy''
+  proofs fail under the new type-alist, we recommend looking for rules that are
+  fired in the new proof that were not fired (on that same subgoal) in the old
+  one.  Thanks to Dave Greve for sending us an example that led us to make this
+  change.
+
   ~st[BUG FIXES]
 
   Fixed a soundness bug that could be exploited by calling system functions
@@ -20554,6 +20570,11 @@
   pathnames to name the same file when the only difference is the case of the
   drive, e.g., `~c[C:]' vs. `~c[c:]'.  This has been fixed.  Thanks to Sol
   Swords for reporting this issue.
+
+  Fixed a bug in the storing of rules for the tau system; ~pl[tau-system].
+  (The error message mentions
+  PARTITION-SIGNATURE-HYPS-INTO-TAU-ALIST-AND-OTHERS.)  Thanks to Sol Swords
+  for reporting this bug and sending a simple example to illustrate it.
 
   ~st[CHANGES AT THE SYSTEM LEVEL]
 

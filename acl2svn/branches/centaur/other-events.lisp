@@ -17127,7 +17127,9 @@
   `make' approach supported by the ACL2 system; ~pl[book-makefiles].  We begin
   by describing a few ways to do that.  A simple way is to add the line
   `~c[ACL2_PCERT=t]' to a `~c[make]' command that you use for book
-  certification, for example as follows.
+  certification, for example as follows.  (But use ~c[ACL2_JOBS] instead of
+  ~c[-j] if you are doing a regression rather than working a specific
+  subdirectory of the books; ~pl[book-makefiles].)
   ~bv[]
   make -j 4 ACL2_PCERT=t
   ~ev[]
@@ -17142,7 +17144,8 @@
   to the ~c[Makefile] residing in a directory, placed above the line that
   specifies the `~c[include]' of file ~c[Makefile-generic].
 
-  A successful `make' will result in creati  See community books file
+  A successful `make' will result in create the desired
+  ~il[certificate] (~c[.cert]) files.  See community books file
   ~c[books/system/pcert/Makefile] for an example.
 
   Warning: If you put the line ``~c[ACL2_PCERT = t]'' below the include of
@@ -24723,20 +24726,21 @@
   o When a top-level expression involving ~c[OBJ] returns an ~c[OBJ] object,
   that object becomes the new current value of ~c[OBJ].
 
-  What makes ACL2 different from other functional languages supporting such
-  operations (e.g., Haskell's ``monads'' and Clean's ``uniqueness type
-  system'') is that ACL2 gives single-threaded objects an explicit first-order
-  semantics so that theorems can be proved about them.  In particular, the
-  syntactic restrictions noted above are enforced only when single-threaded
-  objects are encountered directly in the top-level loop or are used in
-  function definitions; the accessor and update functions for single-threaded
-  objects may be used without restriction in formulas to be proved.  Since
-  function evaluation is sometimes necessary during proofs, ACL2 must be able
-  to evaluate these functions on logical constants representing the object,
-  even when the constant is not ``the current object.''  Thus, ACL2 supports
-  both the efficient von Neumann semantics and the clean applicative semantics,
-  and uses the first in contexts where execution speed is paramount and the
-  second during proofs.
+  There are other functional languages supporting single-threadedness, for
+  example Haskell's ``monads'' and Clean's ``uniqueness type system''.  Of
+  course, ACL2 provides a theorem prover that can prove theorems that involve
+  such constructs.
+
+  Note that the syntactic restrictions noted above are enforced only when
+  single-threaded objects are encountered directly in the top-level loop or are
+  used in function definitions; the accessor and update functions for
+  single-threaded objects may be used without restriction in formulas to be
+  proved.  Since function evaluation is sometimes necessary during proofs, ACL2
+  must be able to evaluate these functions on logical constants representing
+  the object, even when the constant is not ``the current object.''  Thus, ACL2
+  supports both the efficient von Neumann semantics and the clean applicative
+  semantics, and uses the first in contexts where execution speed is paramount
+  and the second during proofs.
 
   ~ilc[Defstobj] and ~ilc[defabsstobj] ~il[events] introduce stobjs.
   ~l[defstobj] for more details about stobjs.  In particular, a relatively

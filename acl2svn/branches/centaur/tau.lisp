@@ -8044,7 +8044,7 @@
 ; tau-term in ok-to-fire-signature-rulep.  Perhaps there is a smarter way?
 
 (defun partition-signature-hyps-into-tau-alist-and-others
-  (hyps alist others hyps0 concl0 ens wrld)
+  (hyps alist others ens wrld)
 
 ; We partition hyps into two lists: the tau-like terms about variables and the
 ; others.  To represent the first partition, we build an alist pairing each
@@ -8053,37 +8053,38 @@
 ; variable).  The other hyps are merely assembled into a list in the same order
 ; as they appear in hyps.  Hyps0 and concl0 are the components of the
 ; unprettyified theorem from which this rule is being constructed and are used
-; only for error reporting.
+; only for error reporting.  We return (mv contradictionp tau-alist others).
+; Contradictionp is t when we find a contradiction among the hyps.  For
+; example,
+; (implies (and (stringp x) (not (stringp x))) (true-listp (foo x y)))
+; is a theorem but tells us absolutely nothing about the type of foo.
+; If this function signals contradictionp, no signature rule should be
+; built.
 
   (cond
-   ((endp hyps) (mv alist others))
-   (t (mv-let (alist others)
+   ((endp hyps) (mv nil alist others))
+   (t (mv-let (contradictionp alist others)
               (partition-signature-hyps-into-tau-alist-and-others
-               (cdr hyps) alist others hyps0 concl0 ens wrld)
-              (mv-let (sign recog v criterion)
-                      (tau-like-term (car hyps) :various-var wrld)
-                      (declare (ignore criterion))
-                      (cond
-                       (recog
-                        (let ((old-tau
-                               (or (cdr (assoc-eq v alist)) *tau-empty*)))
-                          (let ((new-tau
-                                 (add-to-tau1 sign recog old-tau ens wrld)))
+               (cdr hyps) alist others ens wrld)
+              (cond
+               (contradictionp
+                (mv contradictionp nil nil))
+               (t
+                (mv-let (sign recog v criterion)
+                        (tau-like-term (car hyps) :various-var wrld)
+                        (declare (ignore criterion))
+                        (cond
+                         (recog
+                          (let ((old-tau
+                                 (or (cdr (assoc-eq v alist)) *tau-empty*)))
+                            (let ((new-tau
+                                   (add-to-tau1 sign recog old-tau ens wrld)))
 ; Note: We use add-to-tau1 because we are not interested in the implicants.
-                            (cond
-                             ((eq new-tau *tau-contradiction*)
-                              (mv (er hard
-                                      'partition-signature-hyps-into-tau-alist-and-others
-                                      "It was thought impossible for a tau ~
-                                      signature rule to yield a ~
-                                      contradiction, but it happened when we ~
-                                      tried to compute the recognizer sets ~
-                                      for the arguments while turning ~x0 ~
-                                      into a rule."
-                                      (reprettyify hyps0 concl0 wrld))
-                                  nil))
-                             (t (mv (put-assoc-eq v new-tau alist) others))))))
-                       (t (mv alist (cons (car hyps) others)))))))))
+                              (cond
+                               ((eq new-tau *tau-contradiction*)
+                                (mv t nil nil))
+                               (t (mv nil (put-assoc-eq v new-tau alist) others))))))
+                         (t (mv nil alist (cons (car hyps) others)))))))))))
 
 (defun tau-boolean-signature-formp (hyps concl)
 
@@ -8260,44 +8261,51 @@
        (let* ((fn (if (eql form 1) (ffn-symb e) (ffn-symb (fargn e 2))))
               (i (if (eql form 1) nil (cadr (fargn e 1))))
               (vars (fargs (if (eql form 1) e (fargn e 2)))))
-         (mv-let (alist others)
+         (mv-let (contradictionp alist others)
                  (partition-signature-hyps-into-tau-alist-and-others
-                  hyps nil nil hyps concl ens wrld)
-                 (let ((rule
-                        (make signature-rule
-                              :input-tau-list (replace-vars-by-bindings vars alist)
-                              :vars vars
-                              :dependent-hyps others
-                              :output-sign sign
-                              :output-recog recog)))
+                  hyps nil nil ens wrld)
+                 (cond
+                  (contradictionp
+
+; The hyps are contradictory, so there is no useful signature rule to store.
+
+                   wrld)
+                  (t
+                   (let ((rule
+                          (make signature-rule
+                                :input-tau-list (replace-vars-by-bindings vars alist)
+                                :vars vars
+                                :dependent-hyps others
+                                :output-sign sign
+                                :output-recog recog)))
 
 ; It is easy to imagine that the same signature gets stored in two different
 ; theorems, as happens in the Rockwell work where types are mechanically
 ; generated and there is some redundancy.  So we check.
 
-                   (cond
-                    ((eql form 1)
-                     (let ((sigs (getprop fn 'signature-rules-form-1 nil
-                                          'current-acl2-world wrld)))
-                       (if (member-equal rule sigs)
-                           wrld
-                           (set-tau-runes nil rune
-                                          (putprop fn
-                                                   'signature-rules-form-1
-                                                   (cons rule sigs)
-                                                   wrld)))))
-                    (t (let ((sigs (getprop fn 'signature-rules-form-2 nil
+                     (cond
+                      ((eql form 1)
+                       (let ((sigs (getprop fn 'signature-rules-form-1 nil
                                             'current-acl2-world wrld)))
-                         (if (member-equal rule (nth i sigs))
+                         (if (member-equal rule sigs)
                              wrld
-                             (set-tau-runes
-                              nil rune
-                              (putprop fn
-                                       'signature-rules-form-2
-                                       (update-nth i
-                                                   (cons rule (nth i sigs))
-                                                   sigs)
-                                       wrld)))))))))))))
+                             (set-tau-runes nil rune
+                                            (putprop fn
+                                                     'signature-rules-form-1
+                                                     (cons rule sigs)
+                                                     wrld)))))
+                      (t (let ((sigs (getprop fn 'signature-rules-form-2 nil
+                                              'current-acl2-world wrld)))
+                           (if (member-equal rule (nth i sigs))
+                               wrld
+                               (set-tau-runes
+                                nil rune
+                                (putprop fn
+                                         'signature-rules-form-2
+                                         (update-nth i
+                                                     (cons rule (nth i sigs))
+                                                     sigs)
+                                         wrld)))))))))))))))
 
 ; Now we turn our attention to recognizing big switch functions.
 
