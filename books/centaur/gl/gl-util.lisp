@@ -59,12 +59,12 @@
 
 
 (defun preferred-defs-table-guard (fn thm world)
-  (b* ((formals (wgetprop fn 'formals))
-       ((unless formals)
+  (b* ((formals (wgetprop fn 'formals :none))
+       ((when (eq formals :none))
         (cw "Error setting preferred-defs: ~x0 is not a function symbol (it
 does not have a FORMALS property.)~%" fn))
-       (rule (wgetprop thm 'theorem))
-       ((unless rule)
+       (rule (wgetprop thm 'theorem :none))
+       ((when (eq rule :none))
         (cw "Error setting preferred-defs: ~x0 is not the name of a theorem.~%"
             thm))
        ((unless (and (eql (len rule) 3)
@@ -94,12 +94,12 @@ theorem ~x0 contains the variables ~x1, which are not among the formals of
        (preferred-defs-table-guard acl2::key acl2::val world))
 
 (defun set-preferred-def-fn (fn thm world)
-  (b* ((formals (wgetprop fn 'formals))
-       ((unless formals)
+  (b* ((formals (wgetprop fn 'formals :none))
+       ((when (eq formals :none))
         (cw "Error in set-preferred-def: ~x0 is not a function symbol (it
 does not have a FORMALS property.)~%" fn))
-       (rule (wgetprop thm 'theorem))
-       ((unless rule)
+       (rule (wgetprop thm 'theorem :none))
+       ((when (eq rule :none))
         (cw "Error in set-preferred-def: ~x0 is not the name of a theorem.~%"
             thm))
        ((unless (and (eql (len rule) 3)
