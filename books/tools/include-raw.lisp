@@ -204,8 +204,8 @@ differences between ACL2's reader and what raw Lisp code is expecting.</p>")
                       (format t "Compiled file ~a did not load; loading uncompiled ~a.~%Message: ~a~%"
                               (namestring compiled-fname)
                               fname condition)
-                      (raw-load-uncompiled name error-on-fail on-fail state)))))
-           nil))))
+                      (raw-load-uncompiled name error-on-fail on-fail state))))))
+          nil)))
 
      (make-event
       (mv-let (erp val state)

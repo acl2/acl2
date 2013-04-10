@@ -928,7 +928,7 @@
             (values (gethash ,(if (eq hash-test 'hons-equal)
                                  `(hons-copy k)
                                'k)
-                            (the 'hash-table (svref ,var ,n)))))
+                            (the hash-table (svref ,var ,n)))))
            (,updater-name
             (k v ,var)
             ,@(and inline (list *stobj-inline-declare*))
@@ -937,7 +937,7 @@
               (setf (gethash ,(if (eq hash-test 'hons-equal)
                                   `(hons-copy k)
                                 'k)
-                             (the 'hash-table (svref ,var ,n)))
+                             (the hash-table (svref ,var ,n)))
                     v)
               ,var))
            (,boundp-name
@@ -947,7 +947,7 @@
                 (gethash ,(if (eq hash-test 'hons-equal)
                               `(hons-copy k)
                             'k)
-                         (the 'hash-table (svref ,var ,n)))
+                         (the hash-table (svref ,var ,n)))
               (declare (ignore val))
               (if boundp t nil)))
            (,accessor?-name
@@ -958,7 +958,7 @@
                 (gethash ,(if (eq hash-test 'hons-equal)
                               `(hons-copy k)
                             'k)
-                         (the 'hash-table (svref ,var ,n)))
+                         (the hash-table (svref ,var ,n)))
               (mv val (if boundp t nil))))
            (,remove-name
             (k ,var)
@@ -969,7 +969,7 @@
               (remhash ,(if (eq hash-test 'hons-equal)
                             `(hons-copy k)
                           'k)
-                       (the 'hash-table (svref ,var ,n)))
+                       (the hash-table (svref ,var ,n)))
               ,var))
            (,count-name
             (,var)

@@ -504,6 +504,8 @@
              (stack uni-state)
              stack))
 
+(comp t)
+
 ; And finally, here is our test.  We use top-level because with-local-stobj is
 ; not allowed at the top level of evaluation (during make-event expansion as
 ; below, or even directly in the top-level loop).
