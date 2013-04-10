@@ -496,9 +496,8 @@
 
   (defthm vl-modinstlist-p-of-vl-prepare-modinsts-for-multidrive
     (implies (force (vl-modinstlist-p modinsts))
-             (vl-modinstlist-p (mv-nth 0 (vl-prepare-modinsts-for-multidrive modname modinsts))))))
-
-
+             (vl-modinstlist-p
+              (mv-nth 0 (vl-prepare-modinsts-for-multidrive modname modinsts))))))
 
 
 

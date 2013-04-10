@@ -1,5 +1,5 @@
 ; VL Verilog Toolkit
-; Copyright (C) 2008-2011 Centaur Technology
+; Copyright (C) 2008-2013 Centaur Technology
 ;
 ; Contact:
 ;   Centaur Technology Formal Verification Group
@@ -20,13 +20,12 @@
 
 (in-package "VL")
 
-(defconst *vl-lint-version* "0.07")
-
 (include-book "bit-use-set")
 (include-book "check-case")
 (include-book "check-namespace")
 (include-book "disconnected")
 (include-book "xf-drop-missing-submodules")
+(include-book "xf-drop-user-submodules")
 (include-book "xf-lint-stmt-rewrite")
 (include-book "xf-remove-toohard")
 (include-book "xf-undefined-names")
@@ -65,6 +64,8 @@
 (include-book "../transforms/xf-unparameterize")
 (include-book "../transforms/xf-unused-reg")
 
+(include-book "../../misc/sneaky-load")
+
 (local (include-book "../mlib/modname-sets"))
 (local (include-book "../util/arithmetic"))
 (local (include-book "../util/osets"))
@@ -72,61 +73,72 @@
 (make-event
 
 ; Disabling waterfall parallelism because this book allegedly uses memoization
-; while performing its proofs.  
+; while performing its proofs.
 
- (if (and (ACL2::hons-enabledp state) 
-          (f-get-global 'ACL2::parallel-execution-enabled state)) 
+ (if (and (ACL2::hons-enabledp state)
+          (f-get-global 'ACL2::parallel-execution-enabled state))
      (er-progn (set-waterfall-parallelism nil)
                (value '(value-triple nil)))
    (value '(value-triple nil))))
 
 
-(defsection vl-filter-mods-with-good-paramdecls
-
-; VL-Lint Only.
-;
-; Unparameterization requires that the module list is complete and that all
-; modules have good parameters.  In our ordinary translation process, we throw
-; away any modules with bad parameters, any then transitively throw away any
-; modules with instances of missing modules.  But in VL-Lint, we'd like to try
-; to carry out unparameterization with as little damage as possible.
-;
-; As a pre-unparameterization step, in this transform we throw away any modules
-; with bad parameters and then throw away any instances of missing modules.
-; This is obviously unsound, so it should never be used in our ordinary
-; translation process.
-
-  (defund vl-filter-mods-with-good-paramdecls (x good bad)
-    (declare (xargs :guard (vl-modulelist-p x)))
-    (cond ((atom x)
-           (mv good bad))
-          ((vl-good-paramdecllist-p (vl-module->paramdecls (car x)))
-           (vl-filter-mods-with-good-paramdecls (cdr x)
-                                                (cons (car x) good)
-                                                bad))
-          (t
-           (vl-filter-mods-with-good-paramdecls (cdr x)
-                                                good
-                                                (cons (car x) bad)))))
-
-  (local (in-theory (enable vl-filter-mods-with-good-paramdecls)))
-
-  (defthm vl-filter-mods-with-good-paramdecls-basics
-    (let ((ret (vl-filter-mods-with-good-paramdecls x good bad)))
-      (and (implies (and (force (vl-modulelist-p x))
-                         (force (vl-modulelist-p good)))
-                    (vl-modulelist-p (mv-nth 0 ret)))
-           (implies (and (force (vl-modulelist-p x))
-                         (force (vl-modulelist-p bad)))
-                    (vl-modulelist-p (mv-nth 1 ret)))))))
+(defsection lint
+  :parents (vl)
+  :short "A linting tool for Verilog."
+  :long "<p>A <a
+href='http://en.wikipedia.org/wiki/Lint_%28software%29'>linter</a> is a tool
+that looks for possible bugs in a program.  We now implement such a linter for
+Verilog, reusing much of @(see vl).</p>")
 
 
+(define vl-filter-mods-with-good-paramdecls
+  ((x    vl-modulelist-p "List of modules to filter.")
+   (good vl-modulelist-p "Accumulator for good modules.")
+   (bad  vl-modulelist-p "Accumulator for bad modules."))
+  :returns (mv (good vl-modulelist-p :hyp :fguard)
+               (bad  vl-modulelist-p :hyp :fguard))
+  :parents (lint)
+  :short "(unsound transform) Throw away modules with too-complex parameter
+declarations. "
+
+  :long "<p>@(csee unparameterization) requires that the module list is
+complete and that all modules have good parameters.  In our ordinary
+translation process (e.g., @(see vl-simplify)), we throw away any modules with
+bad parameters, any then transitively throw away any modules with instances of
+missing modules.  But for linting, we'd like to try to carry out
+unparameterization with as little damage as possible.</p>
+
+<p>As a pre-unparameterization step, in this transform we throw away any
+modules with bad parameters and then throw away any instances of missing
+modules.  This is obviously unsound, so it should never be used in our ordinary
+translation process.</p>"
+
+  (cond ((atom x)
+         (mv good bad))
+        ((vl-good-paramdecllist-p (vl-module->paramdecls (car x)))
+         (vl-filter-mods-with-good-paramdecls (cdr x)
+                                              (cons (car x) good)
+                                              bad))
+        (t
+         (vl-filter-mods-with-good-paramdecls (cdr x)
+                                              good
+                                              (cons (car x) bad)))))
 
 
-(defund vl-print-certain-warnings (mods show hide)
-  (declare (xargs :guard (and (vl-modulelist-p mods)
-                              (symbol-listp show)
-                              (symbol-listp hide))))
+(define vl-print-certain-warnings
+  ((mods vl-modulelist-p "Modules to print warnings for.")
+   (show symbol-listp    "Types of warnings to show.")
+   (hide symbol-listp    "Types of warnings to hide."))
+  :parents (lint)
+  :short "Print warnings of interest to standard output, while hiding other
+warnings."
+
+  :long "<p>You can use this to print just a few warnings you are interested in
+while hiding other warnings you know you are not interested in.  If there are
+warnings of other types (that you haven't said to show or hide), they too will
+be hidden but you'll at least get a message saying that they aren't being
+shown.</p>"
+
   (b* ((warnings (vl-modulelist-flat-warnings-exec mods nil))
        (types    (mergesort (vl-warninglist->types-exec warnings nil)))
        (hide     (if hide
@@ -149,35 +161,83 @@
         (vl-println ""))))))
 
 
+(defaggregate vl-lintconfig
+  :parents (lint)
+  :short "Options for running the linter."
+  :tag :vl-lintconfig
+  ((loadconfig vl-loadconfig-p
+               "Configuration for @(see vl-load); says what files to load, what
+                search paths to use, etc.")
 
-(defun run-vl-lint (start-files search-path searchext top-mods ignore state)
-  (declare (xargs :guard (and (string-listp start-files)
-                              (string-listp search-path)
-                              (string-listp searchext)
-                              (string-listp top-mods)
-                              (string-listp ignore))
-                  :stobjs state))
-  (b* ((- (cw "Starting VL-Lint ~s0~%" *vl-lint-version*))
-       (- (cw "~%vl-lint: loading modules...~%"))
-       ((mv loadres state)
-        (cwtime (vl-load (make-vl-loadconfig
-                          :override-dirs nil
-                          :start-files   start-files
-                          :search-path   search-path
-                          :search-exts   searchext))))
+   (topmods    string-listp
+               "This is a way to filter the report to exclude modules you do
+                not care about.  If @('nil'), no filtering is done and we
+                include warnings for every module.  Otherwise, we throw out any
+                modules that aren't necessary for some module in
+                @('topmods').")
 
-       ;; Historically we dealt with top-mods here.  But it's no good
-       ;; to throw away modules that have hierarchical identifiers pointing
-       ;; into them, so now we do it later, after HID resolution.
+   (dropmods   string-listp
+               "This is a way to explicitly drop modules that are problematic
+                for whatever reason.  The dropped modules are removed from the
+                module list without destroying modules above them.  This is
+                obviously unsound, but can be useful.")
 
-       (mods (vl-loadresult->mods loadres))
-       ;; Mods0 is used for skip-detection.  If we have topmods, go ahead
-       ;; and remove them from mods0, to avoid skip-detect warnings about
-       ;; irrelevant mods.
-       (mods0 (if (not top-mods)
+   (ignore     string-listp
+               ;; BOZO xdoc for how this stuff works
+               "Ignore warnings of certain types, e.g., if this list includes
+                the string \"oddexpr\" then we will suppress warnings such as
+                @(':VL-WARN-ODDEXPR).  See @('xf-suppress-warnings.lisp') for
+                details.")))
+
+(defaggregate vl-lintresult
+  :parents (lint)
+  :short "Results from running the linter."
+  :tag :vl-lintresult
+  ((mods      vl-modulelist-p
+              "Final, transformed list of modules.  Typically this isn't very
+               interesting or relevant to anything.")
+
+   (mods0     vl-modulelist-p
+              "Almost: the initial, pre-transformed modules.  The only twist is
+               that we have already removed modules that are unnecessary or
+               that we wanted to drop; see, e.g., the @('topmods') and
+               @('ignore') options of @(see vl-lintconfig-p).  This is used for
+               @(see skip-detection), for instance.")
+
+   (mwalist   vl-modwarningalist-p
+              "The main result: binds \"original\" (pre-unparameterization)
+               module names to their warnings.")
+
+   (sd-probs  sd-problemlist-p
+              "Possible problems noticed by @(see skip-detection).  These are
+               in a different format than ordinary @(see warnings), so they
+               aren't included in the @('mwalist').")
+
+   (dalist    us-dbalist-p
+              "Use-set database alist, mapping module names to use-set databases.
+               Might actually not be used for anything.")))
+
+(define run-vl-lint-main ((mods     (and (vl-modulelist-p mods)
+                                         (uniquep (vl-modulelist->names mods))))
+                          (config   vl-lintconfig-p))
+  :returns (result vl-lintresult-p :hyp :fguard)
+
+  (b* (((vl-lintconfig config) config)
+
+       (mods (vl-modulelist-drop-user-submodules mods config.dropmods))
+
+       ;; You might expect that we'd immediately throw out modules that we
+       ;; don't need for topmods.  Historically we did that.  But then we found
+       ;; that we'd get a bunch of complaints in other modules about
+       ;; hierarchical identifiers that pointed into the modules we'd just
+       ;; thrown away!  So now we deal with this stuff after HID resolution.
+       ;; Except that for skip-detection, we also need to remove them from
+       ;; mods0, so do that now:
+       (mods0 (if (not config.topmods)
                   mods
-                (vl-remove-unnecessary-modules (mergesort top-mods)
+                (vl-remove-unnecessary-modules (mergesort config.topmods)
                                                (mergesort mods))))
+
 
        (- (cw "~%vl-lint: initial processing...~%"))
        (mods (cwtime (vl-modulelist-portcheck mods)))
@@ -187,7 +247,8 @@
        (mods (cwtime (vl-modulelist-condcheck mods)))
        (mods (cwtime (vl-modulelist-leftright-check mods)))
        (mods (cwtime (vl-modulelist-drop-missing-submodules mods)))
-;; BOZO reinstate this??       (mods (cwtime (vl-modulelist-add-undefined-names mods)))
+       ;; BOZO reinstate this??
+       ;; (mods (cwtime (vl-modulelist-add-undefined-names mods)))
        (mods (cwtime (vl-modulelist-portdecl-sign mods)))
        (mods (cwtime (vl-modulelist-make-array-indexing mods)))
        (mods (cwtime (vl-modulelist-origexprs mods)))
@@ -209,6 +270,7 @@
        (mods (cwtime (vl-modulelist-follow-hids mods)))
        (mods (cwtime (vl-modulelist-clean-params mods)))
        (mods (cwtime (vl-modulelist-check-good-paramdecls mods)))
+
        ((mv mods bad)
         (vl-filter-mods-with-good-paramdecls mods nil nil))
        (- (or (not bad)
@@ -237,6 +299,17 @@
        (mods (append mods failmods))
        (- (vl-gc))
 
+       (mods (if (uniquep (vl-modulelist->names mods))
+                 mods
+               (progn$
+                (sneaky-save :bad-names mods)
+                (er hard? 'vl-lint
+                    "Programming error.  Expected modules to have unique ~
+                      names after vl-unparameterize, but found duplicate ~
+                      modules named ~x0.  Please tell Jared."
+                    (duplicated-members (vl-modulelist->names mods))))))
+
+
        (- (cw "~%vl-lint: processing ranges, statements...~%"))
        (mods (cwtime (vl-modulelist-rangeresolve mods)))
        (mods (cwtime (vl-modulelist-selresolve mods)))
@@ -247,15 +320,19 @@
 
        (mods (if (uniquep (vl-modulelist->names mods))
                  mods
-               (er hard? 'vl-lint
-                   "Programming error.  Expected modules to have unique ~
-                    names after vl-modulelist-hid-elim.  Please tell Jared.")))
+               (progn$
+                (sneaky-save :bad-names mods)
+                (er hard? 'vl-lint
+                    "Programming error.  Expected modules to have unique ~
+                    names after vl-modulelist-hid-elim, but found duplicate ~
+                    modules named ~x0.  Please tell Jared."
+                    (duplicated-members (vl-modulelist->names mods))))))
 
        ;; Now that HIDs are gone, we can throw away any modules we don't care
-       ;; about, if we have been given any top-mods.
-       (mods (if (not top-mods)
+       ;; about, if we have been given any topmods.
+       (mods (if (not config.topmods)
                  mods
-               (vl-remove-unnecessary-modules (mergesort top-mods)
+               (vl-remove-unnecessary-modules (mergesort config.topmods)
                                               (mergesort mods))))
 
 
@@ -291,10 +368,43 @@
        (- (cw "~%vl-lint: cleaning up...~%"))
        (mods    (cwtime (vl-modulelist-clean-warnings mods)))
        (mods    (cwtime (vl-modulelist-suppress-lint-warnings mods)))
-       (mods    (cwtime (vl-modulelist-lint-ignoreall mods ignore)))
-       (mwalist (cwtime (vl-origname-modwarningalist mods)))
-       )
-    (mv mods mods0 mwalist sd-probs dalist state)))
+       (mods    (cwtime (vl-modulelist-lint-ignoreall mods config.ignore)))
+       (mwalist (cwtime (vl-origname-modwarningalist mods))))
+
+    (make-vl-lintresult :mods mods
+                        :mods0 mods0
+                        :mwalist mwalist
+                        :sd-probs sd-probs
+                        :dalist dalist)))
+
+
+(define run-vl-lint
+  (&key (start-files string-listp)
+        (search-path string-listp)
+        (search-exts string-listp)
+        (topmods     string-listp)
+        (dropmods    string-listp)
+        (ignore      string-listp)
+        (state       'state))
+  :returns (mv (res vl-lintresult-p :hyp :fguard)
+               (state state-p1 :hyp (state-p1 state)))
+  (b* ((- (cw "Starting VL-Lint~%"))
+       (loadconfig (make-vl-loadconfig
+                    :start-files   start-files
+                    :search-path   search-path
+                    :search-exts   search-exts))
+       (lintconfig (make-vl-lintconfig
+                    :loadconfig loadconfig
+                    :topmods    topmods
+                    :dropmods   dropmods
+                    :ignore     ignore))
+       (- (cw "~%vl-lint: loading modules...~%"))
+       ((mv loadres state) (cwtime (vl-load loadconfig)))
+
+       (lintres
+        (cwtime (run-vl-lint-main (vl-loadresult->mods loadres)
+                                  lintconfig))))
+    (mv lintres state)))
 
 
 (defund sd-problem-major-p (x)
@@ -523,13 +633,17 @@
 
    ))
 
-(defun vl-lint-report (walist sd-probs state)
-  (declare (xargs :guard (and (vl-modwarningalist-p walist)
-                              (sd-problemlist-p sd-probs))
+(defun vl-lint-report (lintresult state)
+  (declare (xargs :guard (vl-lintresult-p lintresult)
                   :mode :program
                   :stobjs state))
 
-  (b* (((mv major minor) (sd-filter-problems sd-probs nil nil))
+  (b* (((vl-lintresult lintresult) lintresult)
+       (walist   lintresult.mwalist)
+       (sd-probs lintresult.sd-probs)
+
+       ((mv major minor)
+        (cwtime (sd-filter-problems sd-probs nil nil)))
        (major (reverse major))
        (minor (reverse minor))
 
@@ -762,10 +876,15 @@ wide addition instead of a 10-bit wide addition.")))
   (defttag vl-lint)
   (remove-untouchable acl2::writes-okp nil))
 
-(defmacro vl-lint (&key start-files search-path
-                        (searchext ''("v"))
-                        top-mods
-                        ;; Ignore is the list of warnings to ignore
+(defun vl-lint-report-wrapper (result state)
+  (declare (xargs :mode :program :stobjs state))
+  (vl-lint-report result state))
+
+(defmacro vl-lint (&key start-files
+                        search-path
+                        (search-exts ''("v"))
+                        topmods
+                        dropmods
                         ignore
                         ;; gross yucky thing; acl2-suppress defaults to all
                         ;; ACL2 output, but for debugging use :acl2-suppress
@@ -780,18 +899,15 @@ wide addition instead of a 10-bit wide addition.")))
            ;; For some reason we have to assign to this here, inside the
            ;; make-event code, rather than ahead of time.
            (assign acl2::writes-okp t))
-          ((mv ?mods ?mods0 ?mwalist ?sd-probs ?dalist ?state)
-           (cwtime (run-vl-lint ,start-files ,search-path ,searchext ,top-mods ,ignore state)
+          ((mv result state)
+           (cwtime (run-vl-lint :start-files ,start-files
+                                :search-path ,search-path
+                                :search-exts ,search-exts
+                                :topmods ,topmods
+                                :dropmods ,dropmods
+                                :ignore ,ignore)
                    :name vl-lint))
-          (state (vl-lint-report mwalist sd-probs state)))
-       (value `(progn (defconst *mods* ',mods)
-                      (defconst *mods0* ',mods0)
-                      (defconst *mwalist* ',mwalist)
-                      (defconst *sd-probs* ',sd-probs)
-                      (defconst *dalist* ',dalist)
-                      ))))))
-
-
-
-
+          (state
+           (cwtime (vl-lint-report-wrapper result state))))
+       (value `(defconst *lint-result* ',result))))))
 

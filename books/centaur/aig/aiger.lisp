@@ -34,6 +34,7 @@
 (local (include-book "clause-processors/instantiate" :dir :system))
 (local (include-book "centaur/bitops/ihsext-basics" :dir :system))
 (local (include-book "arithmetic/top-with-meta" :dir :system))
+(local (include-book "std/alists/top" :dir :system))
 (include-book "cutil/defmvtypes" :dir :system)
 
 (local (in-theory (disable reverse-removal revappend-removal)))

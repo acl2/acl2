@@ -1767,7 +1767,7 @@ order."
   (defthm string-listp-of-vl-deporder
     (implies (force (vl-modulelist-p mods))
              (string-listp (vl-deporder mods)))
-    :hints(("Goal" :in-theory (disable strip-cdrs-of-pairlis$)))))
+    :hints(("Goal" :in-theory (disable acl2::strip-cdrs-of-pairlis$)))))
 
 
 (defsection vl-deporder-sort

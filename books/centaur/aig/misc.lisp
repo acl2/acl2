@@ -26,6 +26,7 @@
 (include-book "tools/mv-nth" :dir :system)
 (include-book "misc/gentle" :dir :system)
 (include-book "misc/hons-help" :dir :system)
+(local (include-book "std/alists/alistp" :dir :system))
 (local (include-book "eval-restrict"))
 
 (local (in-theory (disable append-of-nil)))
@@ -257,11 +258,16 @@
               (make-fal (assign-var-list falses nil)
                         nil))))
 
+(local (defthm true-listp-of-make-fal
+         (implies (true-listp name)
+                  (true-listp (make-fal al name)))))
+
+(local (defthm true-listp-of-aig-extract-assigns-alist
+         (true-listp (aig-extract-assigns-alist x))))
+
 (defthm make-fal-is-append
   (implies (alistp x)
            (equal (make-fal x y) (append x y))))
-
-
 
 (defthm alistp-aig-extract-assigns-alist
   (alistp (aig-extract-assigns-alist x)))
@@ -300,9 +306,8 @@
 
 (in-theory (disable aig-extract-assigns-alist))
 
-
-
-
+(local (defthm true-listp-of-aig-extract-iterated-assigns-alist
+         (true-listp (aig-extract-iterated-assigns-alist x clk))))
 
 (defthm alistp-aig-extract-iterated-assigns
   (alistp (aig-extract-iterated-assigns-alist x clk)))

@@ -1,5 +1,5 @@
 ; VL Verilog Toolkit
-; Copyright (C) 2008-2011 Centaur Technology
+; Copyright (C) 2008-2013 Centaur Technology
 ;
 ; Contact:
 ;   Centaur Technology Formal Verification Group
@@ -65,22 +65,6 @@ working with Verilog modules.")
 
   (defconst *nls*
     (coerce (list #\Newline) 'string)))
-
-
-(defsection set-equiv
-
-  (local (include-book "centaur/misc/equal-sets" :dir :system))
-  (set-enforce-redundancy t) ;; note: implicitly local
-
-  #!ACL2
-  (defun set-equiv (x y)
-    (declare (xargs :guard (and (true-listp x)
-                                (true-listp y))))
-    (and (subsetp-equal x y)
-         (subsetp-equal y x)))
-
-  (defequiv set-equiv))
-
 
 
 (define same-lengthp (x y)
@@ -155,7 +139,7 @@ value or nothing.</p>"
   (or (not x)
       (integerp x))
   ///
-  (defthm vl-maybe-integerp-compound-recognizer
+  (defrule vl-maybe-integerp-compound-recognizer
     (equal (vl-maybe-integerp x)
            (or (integerp x)
                (not x)))
@@ -171,7 +155,7 @@ number value or nothing.</p>"
   (or (not n)
       (natp n))
   ///
-  (defthm vl-maybe-natp-compound-recognizer
+  (defrule vl-maybe-natp-compound-recognizer
     (equal (vl-maybe-natp x)
            (or (not x)
                (natp x)))
@@ -187,7 +171,7 @@ natural number value or nothing.</p>"
   (or (not x)
       (posp x))
   ///
-  (defthm vl-maybe-posp-compound-recognizer
+  (defrule vl-maybe-posp-compound-recognizer
     (equal (vl-maybe-posp x)
            (or (and (integerp x)
                     (< 0 x))
@@ -205,7 +189,7 @@ value or nothing.</p>"
   (or (not x)
       (stringp x))
   ///
-  (defthm vl-maybe-string-p-compound-recognizer
+  (defrule vl-maybe-string-p-compound-recognizer
     (equal (vl-maybe-string-p x)
            (or (not x)
                (stringp x)))
@@ -223,7 +207,7 @@ value or nothing.</p>"
   :elementp-of-nil t
   :parents (utilities)
   :rest
-  ((defthm nat-listp-when-no-nils-in-vl-maybe-nat-listp
+  ((defrule nat-listp-when-no-nils-in-vl-maybe-nat-listp
      (implies (and (not (member-equal nil x))
                    (vl-maybe-nat-listp x))
               (nat-listp x)))))
@@ -234,7 +218,7 @@ value or nothing.</p>"
   :elementp-of-nil t
   :parents (utilities)
   :rest
-  ((defthm string-listp-when-no-nils-in-vl-maybe-string-listp
+  ((defrule string-listp-when-no-nils-in-vl-maybe-string-listp
      (implies (and (not (member-equal nil x))
                    (vl-maybe-string-listp x))
               (equal (string-listp x)
@@ -297,23 +281,23 @@ fast-alist-free).</p>"
   :returns (ans alistp)
 
   ///
-  (defthm hons-assoc-equal-of-make-lookup-alist
+  (defrule hons-assoc-equal-of-make-lookup-alist
     (iff (hons-assoc-equal a (make-lookup-alist x))
          (member-equal a (double-rewrite x))))
 
-  (defthm consp-of-make-lookup-alist
+  (defrule consp-of-make-lookup-alist
     (equal (consp (make-lookup-alist x))
            (consp x)))
 
-  (defthm make-lookup-alist-under-iff
+  (defrule make-lookup-alist-under-iff
     (iff (make-lookup-alist x)
          (consp x)))
 
-  (defthm strip-cars-of-make-lookup-alist
+  (defrule strip-cars-of-make-lookup-alist
     (equal (strip-cars (make-lookup-alist x))
            (list-fix x)))
 
-  (defthm alist-keys-of-make-lookup-alist
+  (defrule alist-keys-of-make-lookup-alist
     (equal (alist-keys (make-lookup-alist x))
            (list-fix x))))
 
@@ -366,63 +350,62 @@ consing.</p>"
   :guard-hints(("Goal" :in-theory (enable all-equalp repeat)))
 
   ///
-
-  (defthm all-equalp-when-atom
+  (defrule all-equalp-when-atom
     (implies (atom x)
              (all-equalp a x)))
 
-  (defthm all-equalp-of-cons
+  (defrule all-equalp-of-cons
     (equal (all-equalp a (cons b x))
            (and (equal a b)
                 (all-equalp a x)))
-    :hints(("Goal" :in-theory (enable repeat))))
+    :enable repeat)
 
   (local (in-theory (disable all-equalp)))
 
-  (defthm car-when-all-equalp
+  (defrule car-when-all-equalp
     (implies (all-equalp a x)
              (equal (car x)
                     (if (consp x) a nil))))
 
-  (defthm all-equalp-of-cdr-when-all-equalp
+  (defrule all-equalp-of-cdr-when-all-equalp
     (implies (all-equalp a x)
              (all-equalp a (cdr x))))
 
-  (defthm all-equalp-of-append
+  (defrule all-equalp-of-append
     (equal (all-equalp a (append x y))
            (and (all-equalp a x)
                 (all-equalp a y)))
-    :hints(("Goal" :induct (len x))))
+    :induct (len x))
 
-  (defthm all-equalp-of-rev
+  (defrule all-equalp-of-rev
     (equal (all-equalp a (rev x))
            (all-equalp a x))
-    :hints(("Goal" :induct (len x))))
+    :induct (len x))
 
-  (defthm all-equalp-of-repeat
+  (defrule all-equalp-of-repeat
     (equal (all-equalp a (repeat b n))
            (or (equal a b)
                (zp n)))
-    :hints(("Goal" :in-theory (enable repeat))))
+    :enable repeat)
 
-  (defthm all-equalp-of-take
+  (defrule all-equalp-of-take
     (implies (all-equalp a x)
              (equal (all-equalp a (take n x))
                     (or (not a)
                         (<= (nfix n) (len x)))))
-    :hints(("Goal" :in-theory (enable acl2::take-redefinition))))
+    :enable acl2::take-redefinition)
 
-  (defthm all-equalp-of-nthcdr
+  (defrule all-equalp-of-nthcdr
     (implies (all-equalp a x)
              (all-equalp a (nthcdr n x)))
-    :hints(("Goal" :in-theory (enable nthcdr))))
+    :enable nthcdr)
 
-  (defthm member-equal-when-all-equalp
+  (defrule member-equal-when-all-equalp
     (implies (all-equalp a x)
              (iff (member-equal b x)
                   (and (consp x)
                        (equal a b))))
-    :hints(("Goal" :induct (len x)))))
+    :induct (len x)))
 
 
 
@@ -454,23 +437,22 @@ leave it enabled.  You should never reason about it directly; reason about
     t)
 
   ///
-
-  (defthm all-have-len-when-not-consp
+  (defrule all-have-len-when-not-consp
     (implies (not (consp x))
              (all-have-len x n)))
 
-  (defthm all-have-len-of-cons
+  (defrule all-have-len-of-cons
     (equal (all-have-len (cons a x) n)
            (and (equal (len a) n)
                 (all-have-len x n))))
 
-  (defthm all-have-len-of-strip-cdrs
+  (defrule all-have-len-of-strip-cdrs
     (implies (and (not (zp n))
                   (all-have-len x n))
              (all-have-len (strip-cdrs x) (1- n)))
-    :hints(("Goal" :in-theory (enable len))))
+    :enable len)
 
-  (defthm alistp-when-all-have-len
+  (defrule alistp-when-all-have-len
     (implies (and (not (zp n))
                   (all-have-len x n))
              (equal (alistp x)
@@ -478,6 +460,7 @@ leave it enabled.  You should never reason about it directly; reason about
 
 
 (define remove-from-alist (key (alist alistp))
+  :returns (ans alistp :hyp :fguard)
   :parents (utilities)
   :short "@(call remove-from-alist) removes all bindings for @('key') from
 @('alist')."
@@ -489,17 +472,13 @@ leave it enabled.  You should never reason about it directly; reason about
         (t
          (cons (car alist)
                (remove-from-alist key (cdr alist)))))
-
-  :returns (ans alistp :hyp :fguard)
-
   ///
-
-  (defthm remove-from-alist-when-not-consp
+  (defrule remove-from-alist-when-not-consp
     (implies (not (consp alist))
              (equal (remove-from-alist key alist)
                     nil)))
 
-  (defthm remove-from-alist-of-cons
+  (defrule remove-from-alist-of-cons
     (equal (remove-from-alist key (cons a x))
            (if (equal key (car a))
                (remove-from-alist key x)
@@ -507,6 +486,7 @@ leave it enabled.  You should never reason about it directly; reason about
 
 
 (define vl-remove-keys ((keys true-listp) x)
+  :returns (ans alistp)
   :parents (utilities)
   :short "@(call vl-remove-keys) removes all bindings for the given @('keys')
 from @('alist')."
@@ -522,17 +502,13 @@ from @('alist')."
          (vl-remove-keys keys (cdr x)))
         (t
          (cons (car x) (vl-remove-keys keys (cdr x)))))
-
-  :returns (ans alistp)
-
   ///
-
-  (defthm vl-remove-keys-when-not-consp
+  (defrule vl-remove-keys-when-not-consp
     (implies (not (consp x))
              (equal (vl-remove-keys keys x)
                     nil)))
 
-  (defthm vl-remove-keys-of-cons
+  (defrule vl-remove-keys-of-cons
     (equal (vl-remove-keys keys (cons a x))
            (if (atom a)
                (vl-remove-keys keys x)
@@ -540,19 +516,19 @@ from @('alist')."
                  (vl-remove-keys keys x)
                (cons a (vl-remove-keys keys x))))))
 
-  (defthm true-listp-of-vl-remove-keys
+  (defrule true-listp-of-vl-remove-keys
     (true-listp (vl-remove-keys keys x))
     :rule-classes :type-prescription)
 
-  (defthm consp-of-car-of-vl-remove-keys
+  (defrule consp-of-car-of-vl-remove-keys
     (equal (consp (car (vl-remove-keys keys x)))
            (consp (vl-remove-keys keys x))))
 
-  (defthm acl2-count-of-vl-remove-keys
+  (defrule acl2-count-of-vl-remove-keys
     (<= (acl2-count (vl-remove-keys keys x))
         (acl2-count x))
     :rule-classes ((:rewrite) (:linear))
-    :hints(("Goal" :in-theory (enable acl2-count)))))
+    :enable acl2-count))
 
 
 (define redundant-list-fix (x)
@@ -584,15 +560,15 @@ checking @('true-listp') is much cheaper than re-consing the a list.</p>
 
 
 ;; BOZO er --- why are these not in arithmetic??
-(defthm prefixp-of-self
+(defrule prefixp-of-self
   (prefixp x x)
-  :hints(("Goal" :in-theory (enable prefixp))))
+  :enable prefixp)
 
-(defthm transitivity-of-prefixp
+(defrule transitivity-of-prefixp
   (implies (and (prefixp x y)
                 (prefixp y z))
            (prefixp x z))
-  :hints(("Goal" :in-theory (enable prefixp))))
+  :enable prefixp)
 
 
 
@@ -613,36 +589,34 @@ function to a list of lists.</p>"
                (longest-common-prefix (cdr x) (cdr y))))
         (t
          nil))
-
   ///
-
-  (defthm true-listp-of-longest-common-prefix
+  (defrule true-listp-of-longest-common-prefix
     (true-listp (longest-common-prefix x y))
     :rule-classes :type-prescription)
 
-  (defthm string-listp-of-longest-common-prefix
+  (defrule string-listp-of-longest-common-prefix
     (implies (and (string-listp x)
                   (string-listp y))
              (string-listp (longest-common-prefix x y))))
 
-  (defthm longest-common-prefix-of-list-fix-left
+  (defrule longest-common-prefix-of-list-fix-left
     (equal (longest-common-prefix (list-fix x) y)
            (longest-common-prefix x y)))
 
-  (defthm longest-common-prefix-of-list-fix-right
+  (defrule longest-common-prefix-of-list-fix-right
     (equal (longest-common-prefix x (list-fix y))
            (longest-common-prefix x y)))
 
-  (defthm prefixp-of-longest-common-prefix-left
+  (defrule prefixp-of-longest-common-prefix-left
     (prefixp (longest-common-prefix x y) x))
 
-  (defthm prefixp-of-longest-common-prefix-right
+  (defrule prefixp-of-longest-common-prefix-right
     (prefixp (longest-common-prefix x y) y))
 
-  (defthm longest-common-prefix-preserves-prefixp
+  (defrule longest-common-prefix-preserves-prefixp
     (implies (prefixp p a)
              (prefixp (longest-common-prefix p b) a))
-    :hints(("Goal" :in-theory (enable prefixp)))))
+    :enable prefixp))
 
 
 (deflist prefix-of-eachp (p x)
@@ -652,12 +626,12 @@ function to a list of lists.</p>"
   :short "@(call prefix-of-eachp) returns true exactly when @('p') is a
 prefix of every member of @('x')."
   :rest
-  ((defthm prefix-of-eachp-when-prefixp
+  ((defrule prefix-of-eachp-when-prefixp
      (implies (and (prefix-of-eachp a x)
                    (prefixp b a))
               (prefix-of-eachp b x)))
 
-   (defthm prefix-of-eachp-when-prefixp-alt
+   (defrule prefix-of-eachp-when-prefixp-alt
      (implies (and (prefixp b a)
                    (prefix-of-eachp a x))
               (prefix-of-eachp b x)))))
@@ -679,20 +653,19 @@ such that @('p') is a prefix of every list in @('x')."
                                 (longest-common-prefix-list (cdr x)))))
 
   ///
-
-  (defthm true-listp-of-longest-common-prefix-list
+  (defrule true-listp-of-longest-common-prefix-list
     (true-listp (longest-common-prefix-list x))
     :rule-classes :type-prescription)
 
-  (defthm string-listp-of-longest-common-prefix-list
+  (defrule string-listp-of-longest-common-prefix-list
     (implies (string-list-listp x)
              (string-listp (longest-common-prefix-list x))))
 
-  (defthm longest-common-prefix-list-of-list-fix
+  (defrule longest-common-prefix-list-of-list-fix
     (equal (longest-common-prefix-list (list-fix x))
            (longest-common-prefix-list x)))
 
-  (defthm prefix-of-eachp-of-longest-common-prefix-list
+  (defrule prefix-of-eachp-of-longest-common-prefix-list
     (prefix-of-eachp (longest-common-prefix-list x) x)))
 
 
@@ -707,8 +680,7 @@ such that @('p') is a prefix of every list in @('x')."
        :exec x)
 
   ///
-
-  (defthm stringp-of-string-fix
+  (defrule stringp-of-string-fix
     (stringp (string-fix x))
     :rule-classes :type-prescription))
 
@@ -756,54 +728,54 @@ such that @('p') is a prefix of every list in @('x')."
 
   (local (in-theory (enable look-up-each look-up-each-fast)))
 
-  (defthm look-up-each-fast-redefinition
+  (defrule look-up-each-fast-redefinition
     (equal (look-up-each-fast x alist)
            (look-up-each x alist)))
 
-  (local (defthm l0
+  (local (defrule l0
            (equal (hons-assoc-equal a (make-fal x y))
                   (or (hons-assoc-equal a x)
                       (hons-assoc-equal a y)))))
 
-  (local (defthm l1
+  (local (defrule l1
            (implies (atom tail)
                     (equal (look-up-each x (make-fal alist tail))
                            (look-up-each x alist)))))
 
   (verify-guards look-up-each)
 
-  (defthm look-up-each-of-atom
+  (defrule look-up-each-of-atom
     (implies (atom x)
              (equal (look-up-each x alist)
                     nil)))
 
-  (defthm look-up-each-of-cons
+  (defrule look-up-each-of-cons
     (equal (look-up-each (cons a x) alist)
            (cons (cdr (hons-assoc-equal a alist))
                  (look-up-each x alist))))
 
-  (defthm true-listp-of-look-up-each
+  (defrule true-listp-of-look-up-each
     (true-listp (look-up-each x alist))
     :rule-classes :type-prescription)
 
-  (defthm len-of-look-up-each
+  (defrule len-of-look-up-each
     (equal (len (look-up-each x alist))
            (len x)))
 
-  (defthm look-up-each-of-list-fix
+  (defrule look-up-each-of-list-fix
     (equal (look-up-each (list-fix x) alist)
            (look-up-each x alist)))
 
-  (defthm look-up-each-of-append
+  (defrule look-up-each-of-append
     (equal (look-up-each (append x y) alist)
            (append (look-up-each x alist)
                    (look-up-each y alist))))
 
-  (defthm look-up-each-of-rev
+  (defrule look-up-each-of-rev
     (equal (look-up-each (rev x) alist)
            (rev (look-up-each x alist))))
 
-  (defthm symbol-listp-of-look-up-each
+  (defrule symbol-listp-of-look-up-each
     (implies (symbol-listp (strip-cdrs alist))
              (symbol-listp (look-up-each x alist)))))
 
@@ -828,7 +800,7 @@ symbol in the ACL2 package, e.g., @('ACL2::*foo*')."
 
   ///
 
-  (defthm symbolp-of-vl-starname
+  (defrule symbolp-of-vl-starname
     (symbolp (vl-starname name))
     :rule-classes :type-prescription))
 
@@ -843,7 +815,7 @@ symbol in the ACL2 package, e.g., @('ACL2::*foo*')."
 and @('n') is small.  We leave this function enabled and reason about @('len')
 instead.</p>"
 
-  (local (defthm l0
+  (local (defrule l0
            (equal (len (cdr x))
                   (if (consp x)
                       (+ -1 (len x))
@@ -907,7 +879,7 @@ will include the values from any \"shadowed pairs\" in the list.</p>"
 
   (local (in-theory (enable append-domains-exec)))
 
-  (local (defthm true-listp-of-append-domains-exec
+  (local (defrule true-listp-of-append-domains-exec
            (implies (true-listp acc)
                     (equal (true-listp (append-domains-exec x acc))
                            t))
@@ -923,27 +895,27 @@ will include the values from any \"shadowed pairs\" in the list.</p>"
 
   (local (in-theory (enable append-domains)))
 
-  (defthm append-domains-exec-removal
+  (defrule append-domains-exec-removal
     (equal (append-domains-exec x acc)
            (revappend (append-domains x) acc))
-    :hints(("Goal" :induct (append-domains-exec x acc))))
+    :induct (append-domains-exec x acc))
 
   (verify-guards append-domains)
 
-  (defthm append-domains-when-atom
+  (defrule append-domains-when-atom
     (implies (atom x)
              (equal (append-domains x)
                     nil)))
 
-  (defthm append-domains-of-cons
+  (defrule append-domains-of-cons
     (equal (append-domains (cons a x))
            (append (cdr a) (append-domains x))))
 
-  (defthm true-listp-of-append-domains
+  (defrule true-listp-of-append-domains
     (true-listp (append-domains x))
     :rule-classes :type-prescription)
 
-  (defthm append-domains-of-append
+  (defrule append-domains-of-append
     (equal (append-domains (append x y))
            (append (append-domains x) (append-domains y)))))
 
@@ -1139,40 +1111,40 @@ the alist @('alist')."
                             keys-boundp-fal
                             keys-boundp-slow-alist)))
 
-  (defthm keys-boundp-fal-removal
+  (defrule keys-boundp-fal-removal
     (equal (keys-boundp-fal keys alist)
            (keys-boundp keys alist)))
 
-  (defthm keys-boundp-slow-alist-removal
+  (defrule keys-boundp-slow-alist-removal
     (equal (keys-boundp-slow-alist keys alist)
            (keys-boundp keys alist)))
 
   (verify-guards keys-boundp)
 
-  (defthm keys-boundp-when-atom
+  (defrule keys-boundp-when-atom
     (implies (atom keys)
              (equal (keys-boundp keys alist)
                     t)))
 
-  (defthm keys-boundp-of-cons
+  (defrule keys-boundp-of-cons
     (equal (keys-boundp (cons a keys) alist)
            (and (hons-get a alist)
                 (keys-boundp keys alist))))
 
-  (defthm keys-boundp-of-list-fix
+  (defrule keys-boundp-of-list-fix
     (equal (keys-boundp (list-fix x) alist)
            (keys-boundp x alist)))
 
-  (defthm keys-boundp-of-append
+  (defrule keys-boundp-of-append
     (equal (keys-boundp (append x y) alist)
            (and (keys-boundp x alist)
                 (keys-boundp y alist))))
 
-  (defthm keys-boundp-of-rev
+  (defrule keys-boundp-of-rev
     (equal (keys-boundp (rev x) alist)
            (keys-boundp x alist)))
 
-  (defthm keys-boundp-of-revappend
+  (defrule keys-boundp-of-revappend
     (equal (keys-boundp (revappend x y) alist)
            (and (keys-boundp x alist)
                 (keys-boundp y alist)))))

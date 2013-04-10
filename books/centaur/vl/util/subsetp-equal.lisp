@@ -1,5 +1,5 @@
 ; VL Verilog Toolkit
-; Copyright (C) 2008-2011 Centaur Technology
+; Copyright (C) 2008-2013 Centaur Technology
 ;
 ; Contact:
 ;   Centaur Technology Formal Verification Group
@@ -20,10 +20,11 @@
 
 (in-package "VL")
 
-; This book should be only locally included!  Define functions in util-defs
+; This book should be only locally included!  Define functions in util/defs
 ; redundantly if you need to.  Eventually this stuff should be put into a
 ; library.
 
+(include-book "cutil/defrule" :dir :system)
 (include-book "centaur/misc/equal-sets" :dir :system)
 (include-book "finite-set-theory/osets/sets" :dir :system)
 (include-book "std/lists/list-fix" :dir :system)
@@ -34,17 +35,15 @@
 (local (include-book "arithmetic/top" :dir :system))
 (local (include-book "data-structures/list-defthms" :dir :system))
 
-(in-theory (disable member member-eq member-equal
-                    subsetp subsetp-eq subsetp-equal))
+(in-theory (disable member subsetp))
 
 ;; These are disabled in equal-sets.lisp because they can sometimes be
 ;; expensive.  But I prefer to leave them enabled by default, and just disable
 ;; them when they become expensive.
-(in-theory (enable acl2::subsetp-member
-                   acl2::subsetp-trans2))
+(in-theory (enable acl2::subsetp-member acl2::subsetp-trans2))
 
 
-(defthm member-equal-when-member-equal-of-cdr-under-iff
+(defrule member-equal-when-member-equal-of-cdr-under-iff
   (implies (member-equal a (cdr x))
            (member-equal a x))
   :rule-classes ((:rewrite :backchain-limit-lst 1)))
@@ -52,86 +51,71 @@
 
 ;; BOZO some of this, especially the congruences, should be moved to equal-sets
 
-(defthm member-equal-of-list-fix
+(defrule member-equal-of-list-fix
+  ;; This is slightly different than LIST-EQUIV-IMPLIES-LIST-EQUIV-MEMBER-2,
+  ;; since it can fire in an equal context.
   (equal (member-equal a (list-fix x))
          (list-fix (member-equal a x)))
-  :hints(("Goal" :induct (len x))))
-
-(defthm subsetp-equal-of-list-fix-one
-  (equal (subsetp-equal (list-fix a) x)
-         (subsetp-equal a x))
-  :hints(("Goal" :induct (len a))))
-
-(defthm subsetp-equal-of-list-fix-two
-  (equal (subsetp-equal a (list-fix x))
-         (subsetp-equal a x))
-  :hints(("Goal" :induct (len a))))
-
-(defthm list-fix-under-set-equiv
-  (set-equiv (list-fix x) x)
-  :hints((set-reasoning)))
-
-
+  :induct (len x))
 
 
 (defsection set-equiv-by-duplicity
 
-  (local (defthmd l0
+  (local (defruled l0
            (iff (member-equal a x)
-                (< 0 (acl2::duplicity a x)))
-           :hints(("Goal" :in-theory (enable acl2::duplicity)))))
+                (< 0 (duplicity a x)))
+           :enable duplicity))
 
-  (local (defthm member-equal-same-by-duplicity
+  (local (defrule member-equal-same-by-duplicity
            (implies (acl2::duplicity-hyp)
                     (iff (member-equal a (acl2::duplicity-lhs))
                          (member-equal a (acl2::duplicity-rhs))))
-           :hints(("Goal"
-                   :in-theory (enable l0)
-                   :use ((:instance acl2::duplicity-constraint
-                                    (acl2::a a)))))))
+           :enable l0
+           :use ((:instance acl2::duplicity-constraint
+                            (acl2::a a)))))
 
-  (defthmd set-equiv-by-duplicity
+  (defruled set-equiv-by-duplicity
     (implies (acl2::duplicity-hyp)
              (set-equiv (acl2::duplicity-lhs)
-                         (acl2::duplicity-rhs)))
+                        (acl2::duplicity-rhs)))
     :hints((set-reasoning))))
 
-(defcong set-equiv set-equiv (acl2::<<-sort x) 1
+(defcong set-equiv set-equiv (<<-sort x) 1
   :hints(("Goal"
           :use ((:functional-instance
                  set-equiv-by-duplicity
                  (acl2::duplicity-hyp (lambda () t))
-                 (acl2::duplicity-rhs (lambda () (acl2::<<-sort x)))
+                 (acl2::duplicity-rhs (lambda () (<<-sort x)))
                  (acl2::duplicity-lhs (lambda () x)))
                 (:functional-instance
                  set-equiv-by-duplicity
                  (acl2::duplicity-hyp (lambda () t))
-                 (acl2::duplicity-rhs (lambda () (acl2::<<-sort acl2::x-equiv)))
+                 (acl2::duplicity-rhs (lambda () (<<-sort acl2::x-equiv)))
                  (acl2::duplicity-lhs (lambda () acl2::x-equiv)))))))
 
-(defthm <<-sort-under-set-equiv
-  (set-equiv (acl2::<<-sort x) x)
+(defrule <<-sort-under-set-equiv
+  (set-equiv (<<-sort x) x)
   :hints(("Goal"
           :use ((:functional-instance set-equiv-by-duplicity
                  (acl2::duplicity-hyp (lambda () t))
-                 (acl2::duplicity-rhs (lambda () (acl2::<<-sort x)))
+                 (acl2::duplicity-rhs (lambda () (<<-sort x)))
                  (acl2::duplicity-lhs (lambda () x)))))))
 
 
 
 (encapsulate
   ()
-  (local (defthm l0
+  (local (defrule l0
            (implies (and (string-listp y)
                          (member-equal a y))
                     (stringp a))))
 
-  (defthm string-listp-when-subsetp-equal-of-string-listp
+  (defrule string-listp-when-subsetp-equal-of-string-listp
     (implies (and (string-listp y)
                   (subsetp-equal x y))
              (equal (string-listp x)
                     (true-listp x)))
-    :hints(("Goal" :induct (len x)))
+    :induct (len x)
     :rule-classes ((:rewrite)
                    (:rewrite :corollary
                              (implies (and (subsetp-equal x y)
@@ -139,20 +123,19 @@
                                       (equal (string-listp x)
                                              (true-listp x)))))))
 
-
 (encapsulate
   ()
-  (local (defthm l0
+  (local (defrule l0
            (implies (and (symbol-listp y)
                          (member-equal a y))
                     (symbolp a))))
 
-  (defthm symbol-listp-when-subsetp-equal-of-symbol-listp
+  (defrule symbol-listp-when-subsetp-equal-of-symbol-listp
     (implies (and (symbol-listp y)
                   (subsetp-equal x y))
              (equal (symbol-listp x)
                     (true-listp x)))
-    :hints(("Goal" :induct (len x)))
+    :induct (len x)
     :rule-classes ((:rewrite)
                    (:rewrite :corollary
                              (implies (and (subsetp-equal x y)
@@ -161,45 +144,28 @@
                                              (true-listp x)))))))
 
 
-(defthm subsetp-equal-of-duplicated-members
+(defrule subsetp-equal-of-duplicated-members
   (subsetp-equal (duplicated-members x) x)
   :hints((set-reasoning)))
 
-(defthm subsetp-equal-of-hons-duplicated-members
+(defrule subsetp-equal-of-hons-duplicated-members
   (subsetp-equal (hons-duplicated-members x) x)
   :hints((set-reasoning)))
 
-(defthm string-listp-of-duplicated-members
+(defrule string-listp-of-duplicated-members
   (implies (string-listp x)
            (string-listp (duplicated-members x))))
 
-(defthm symbol-listp-of-duplicated-members
+(defrule symbol-listp-of-duplicated-members
   (implies (symbol-listp x)
            (symbol-listp (duplicated-members x))))
 
-(defthm string-listp-of-hons-duplicated-members
+(defrule string-listp-of-hons-duplicated-members
   (implies (string-listp x)
            (string-listp (hons-duplicated-members x))))
 
-(defthm symbol-listp-of-hons-duplicated-members
+(defrule symbol-listp-of-hons-duplicated-members
   (implies (symbol-listp x)
            (symbol-listp (hons-duplicated-members x))))
-
-
-
-;; BOZO why are these here?
-
-;; moved to std/lists/take
-;; (defthm take-of-len
-;;   (equal (take (len x) x)
-;;          (list-fix x))
-;;   :hints(("Goal" :in-theory (enable acl2::take-redefinition))))
-
-;; shouldn't need this, see std/lists/no-duplicatesp
-;; (defthm no-duplicatesp-equal-of-list-fix
-;;   (equal (no-duplicatesp-equal (list-fix x))
-;;          (no-duplicatesp-equal x)))
-
-
 
 

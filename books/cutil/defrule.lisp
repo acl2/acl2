@@ -104,6 +104,12 @@ these keywords are always translated into an @(see e/d*).</p>
                                  (defthm bar ...))
 })")
 
+(defxdoc defruled
+  :parents (defrule)
+  :short "Variant of @(see defrule) that disables the theorem afterwards."
+  :long "<p>This is identical to @('defrule') except that the theorem is
+generated using @(see defthmd) instead of @(see defthm).")
+
 (defconst *defrule-keywords*
   (union-equal '(:hints
                  :rule-classes
@@ -159,7 +165,7 @@ these keywords are always translated into an @(see e/d*).</p>
        (new-entry       (cons "Goal" new-goal)))
     (cons new-entry user-hints)))
 
-(defun defrule-fn (name args)
+(defun defrule-fn (name args disablep)
   (b* ((ctx `(defrule ,name))
        ((mv kwd-alist args)
         (extract-keywords ctx *defrule-keywords* args nil))
@@ -205,7 +211,7 @@ these keywords are always translated into an @(see e/d*).</p>
        (long      (cdr (assoc :long kwd-alist)))
        (want-xdoc (or parents short long))
 
-       (thm `(defthm ,name
+       (thm `(,(if disablep 'defthmd 'defthm) ,name
                ,formula
                :hints        ,hints
                ,@(let ((look (assoc :rule-classes kwd-alist)))
@@ -225,4 +231,7 @@ these keywords are always translated into an @(see e/d*).</p>
          ,thm))))
 
 (defmacro defrule (name &rest args)
-  (defrule-fn name args))
+  (defrule-fn name args nil))
+
+(defmacro defruled (name &rest args)
+  (defrule-fn name args t))

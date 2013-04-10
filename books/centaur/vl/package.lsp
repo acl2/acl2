@@ -112,7 +112,9 @@
       return-raw
 
       uniquep
+      duplicity
       duplicated-members
+      <<-sort
       hons-duplicated-members
 
       sneaky-load

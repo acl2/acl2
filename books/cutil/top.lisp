@@ -27,6 +27,7 @@
 (include-book "defmvtypes")
 (include-book "defprojection")
 (include-book "define")
+(include-book "defrule")
 
 (defxdoc cutil
   :short "Centaur Utility Library"

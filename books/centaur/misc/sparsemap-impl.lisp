@@ -27,6 +27,7 @@
 (include-book "tools/mv-nth" :dir :system)
 (include-book "misc/definline" :dir :system)
 (include-book "centaur/misc/absstobjs" :dir :system)
+(local (include-book "std/alists/strip-cars" :dir :system))
 (local (in-theory (enable* arith-equiv-forwarding)))
 
 

@@ -53,6 +53,7 @@
                defsection-progn
                defmvtypes
                defrule
+               defruled
                define
                xdoc
 ;               defaggregate
@@ -137,6 +138,8 @@
     defsection
     defsection-progn
     define
+    defrule
+    defruled
     raise
     __function__))
 

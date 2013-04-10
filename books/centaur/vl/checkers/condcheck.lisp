@@ -1,5 +1,5 @@
 ; VL Verilog Toolkit
-; Copyright (C) 2008-2011 Centaur Technology
+; Copyright (C) 2008-2013 Centaur Technology
 ;
 ; Contact:
 ;   Centaur Technology Formal Verification Group
@@ -22,7 +22,6 @@
 (include-book "../mlib/ctxexprs")
 (include-book "duplicate-detect")
 (local (include-book "../util/arithmetic"))
-
 
 (defxdoc condcheck
   :parents (checkers)
@@ -72,7 +71,8 @@ conditional expressions, and also before things like expression splitting which
 would get rid of the nested branches.</p>")
 
 
-(defsection vl-condcheck-fix
+(define vl-condcheck-fix ((x vl-expr-p))
+  :returns (new-x vl-expr-p :hyp :fguard)
   :parents (condcheck)
   :short "Canonicalize an test expression for condcheck."
 
@@ -99,82 +99,76 @@ that we only apply these rewrites at the top-level and not in any deep way,
 which also sort of makes sense since we only want to assume that the top-level
 expression is one-bit wide.</p>"
 
-  (defund vl-condcheck-fix (x)
-    (declare (xargs :guard (vl-expr-p x)))
-    (b* ((x (vl-expr-fix x))
+  (b* ((x (vl-expr-fix x))
 
-         ((when (vl-fast-atom-p x))
-          x)
+       ((when (vl-fast-atom-p x))
+        x)
 
-         (op   (vl-nonatom->op x))
-         (args (vl-nonatom->args x))
+       (op   (vl-nonatom->op x))
+       (args (vl-nonatom->args x))
 
-         ;; !A --> ~A
-         ((when (eq op :vl-unary-lognot))
-          (change-vl-nonatom x :op :vl-unary-bitnot))
+       ;; !A --> ~A
+       ((when (eq op :vl-unary-lognot))
+        (change-vl-nonatom x :op :vl-unary-bitnot))
 
-         ;; A != B --> ~(A == B)
-         ((when (eq op :vl-binary-neq))
-          (make-vl-nonatom :op :vl-unary-bitnot
-                           :args (list (change-vl-nonatom x
-                                                          :op :vl-binary-eq
-                                                          :args (if (<< (first args) (second args))
-                                                                    args
-                                                                  (rev args))))))
+       ;; A != B --> ~(A == B)
+       ((when (eq op :vl-binary-neq))
+        (make-vl-nonatom :op :vl-unary-bitnot
+                         :args (list (change-vl-nonatom x
+                                                        :op :vl-binary-eq
+                                                        :args (if (<< (first args) (second args))
+                                                                  args
+                                                                (rev args))))))
 
-         ;; A ~^ B --> A == B
-         ((when (eq op :vl-binary-xnor))
-          (change-vl-nonatom x
-                             :op :vl-binary-eq
-                             :args (if (<< (first args) (second args))
+       ;; A ~^ B --> A == B
+       ((when (eq op :vl-binary-xnor))
+        (change-vl-nonatom x
+                           :op :vl-binary-eq
+                           :args (if (<< (first args) (second args))
+                                     args
+                                   (rev args))))
+
+       ;; A ^ B --> ~(A == B)
+       ((when (eq op :vl-binary-xor))
+        (make-vl-nonatom :op :vl-unary-bitnot
+                         :args (list (change-vl-nonatom x
+                                                        :op :vl-binary-eq
+                                                        :args (if (<< (first args) (second args))
+                                                                  args
+                                                                (rev args))))))
+
+       ;; A < B  --> ~(A >= B)
+       ((when (eq op :vl-binary-lt))
+        (make-vl-nonatom :op :vl-unary-bitnot
+                         :args (list (change-vl-nonatom x :op :vl-binary-gte))))
+
+       ;; A > B  --> ~(B >= A)
+       ((when (eq op :vl-binary-gt))
+        (make-vl-nonatom :op :vl-unary-bitnot
+                         :args (list (change-vl-nonatom x
+                                                        :op :vl-binary-gte
+                                                        :args (rev args)))))
+
+       ;; A <= B --> B >= A
+       ((when (eq op :vl-binary-lte))
+        (change-vl-nonatom x
+                           :op :vl-binary-gte
+                           :args (rev args)))
+
+       ((when (member op '(:vl-binary-plus :vl-binary-times
+                                           :vl-binary-ceq :vl-binary-cne
+                                           :vl-binary-logand :vl-binary-logor
+                                           :vl-binary-bitand :vl-binary-bitor)))
+        (change-vl-nonatom x :args (if (<< (first args) (second args))
                                        args
-                                     (rev args))))
+                                     (rev args)))))
 
-         ;; A ^ B --> ~(A == B)
-         ((when (eq op :vl-binary-xor))
-          (make-vl-nonatom :op :vl-unary-bitnot
-                           :args (list (change-vl-nonatom x
-                                                          :op :vl-binary-eq
-                                                          :args (if (<< (first args) (second args))
-                                                                    args
-                                                                  (rev args))))))
-
-         ;; A < B  --> ~(A >= B)
-         ((when (eq op :vl-binary-lt))
-          (make-vl-nonatom :op :vl-unary-bitnot
-                           :args (list (change-vl-nonatom x :op :vl-binary-gte))))
-
-         ;; A > B  --> ~(B >= A)
-         ((when (eq op :vl-binary-gt))
-          (make-vl-nonatom :op :vl-unary-bitnot
-                           :args (list (change-vl-nonatom x
-                                                          :op :vl-binary-gte
-                                                          :args (rev args)))))
-
-         ;; A <= B --> B >= A
-         ((when (eq op :vl-binary-lte))
-          (change-vl-nonatom x
-                             :op :vl-binary-gte
-                             :args (rev args)))
-
-         ((when (member op '(:vl-binary-plus :vl-binary-times
-                                             :vl-binary-ceq :vl-binary-cne
-                                             :vl-binary-logand :vl-binary-logor
-                                             :vl-binary-bitand :vl-binary-bitor)))
-          (change-vl-nonatom x :args (if (<< (first args) (second args))
-                                         args
-                                       (rev args)))))
-
-      x))
-
-  (defthm vl-expr-p-of-vl-condcheck-fix
-    (implies (force (vl-expr-p x))
-             (vl-expr-p (vl-condcheck-fix x)))
-    :hints(("Goal" :in-theory (enable vl-condcheck-fix)))))
+    x))
 
 
 
-(defsection vl-condcheck-negate
+(define vl-condcheck-negate ((x vl-expr-p))
+  :returns (new-x vl-expr-p :hyp :fguard)
   :parents (condcheck)
   :short "Smartly negate a canonicalized expression."
 
@@ -182,20 +176,12 @@ expression is one-bit wide.</p>"
 vl-condcheck-fix).  We \"smartly\" negate it so that, e.g., @('A') becomes
 @('~A'), but @('~A') becomes @('A') instead of @('~~A').</p>"
 
-  (defund vl-condcheck-negate (x)
     (declare (xargs :guard (vl-expr-p x)))
     (if (and (not (vl-fast-atom-p x))
              (eq (vl-nonatom->op x) :vl-unary-bitnot))
         (first (vl-nonatom->args x))
       (make-vl-nonatom :op :vl-unary-bitnot
                        :args (list x))))
-
-  (defthm vl-expr-p-of-vl-condcheck-negate
-    (implies (force (vl-expr-p x))
-             (vl-expr-p (vl-condcheck-negate x)))
-    :hints(("Goal" :in-theory (enable vl-condcheck-negate)))))
-
-
 
 
 (defsection vl-expr-condcheck
@@ -213,10 +199,18 @@ through expressions of the form</p>
     test ? then : else
 })
 
-<p>Except:</p> <ul> <li>all of the @('tests-above') have been fixed with @(see
-vl-condcheck-fix), and</li> <li>when we descend into the else branch, we add
-@('~test') to @('tests-above'); more precisely, we use @(see
-vl-condcheck-negate) to form this term.</li> </ul>
+<p>Except:</p>
+
+<ul>
+
+<li>all of the @('tests-above') have been fixed with @(see vl-condcheck-fix),
+and</li>
+
+<li>when we descend into the else branch, we add @('~test') to
+@('tests-above'); more precisely, we use @(see vl-condcheck-negate) to form
+this term.</li>
+
+</ul>
 
 <p>The basic idea is that @('tests-above') acts as a list of things we can
 assume must be true as we are seeing @('X').</p>
@@ -323,42 +317,29 @@ occurs, and is used in any warning messages we produce.</p>"
 
 
 
-(defsection vl-exprctxalist-condcheck
+(define vl-exprctxalist-condcheck ((x vl-exprctxalist-p))
+  :returns (warnings vl-warninglist-p)
   :parents (condcheck)
   :short "@(call vl-exprctxalist-condcheck) extends @(see
 vl-expr-condcheck-check) across an @(see vl-exprctxalist-p)."
 
-  (defund vl-exprctxalist-condcheck (x)
-    (declare (xargs :guard (vl-exprctxalist-p x)))
-    (if (atom x)
-        nil
-      (append (vl-expr-condcheck (caar x) nil (cdar x))
-              (vl-exprctxalist-condcheck (cdr x)))))
-
-  (defthm vl-warninglist-p-of-vl-exprctxalist-condcheck
-    (vl-warninglist-p (vl-exprctxalist-condcheck x))
-    :hints(("Goal" :in-theory (enable vl-exprctxalist-condcheck)))))
+  (if (atom x)
+      nil
+    (append (vl-expr-condcheck (caar x) nil (cdar x))
+            (vl-exprctxalist-condcheck (cdr x)))))
 
 
-
-(defsection vl-module-condcheck
+(define vl-module-condcheck ((x vl-module-p))
+  :returns (new-x vl-module-p :hyp :fguard)
   :parents (condcheck)
   :short "@(call vl-module-condcheck) carries our our @(see condcheck) on all
 the expressions in a module, and adds any resulting warnings to the module."
 
-  (defund vl-module-condcheck (x)
-    (declare (xargs :guard (vl-module-p x)))
-    (b* ((ctxexprs     (vl-module-ctxexprs x))
-         (new-warnings (vl-exprctxalist-condcheck ctxexprs)))
-      (change-vl-module x
-                        :warnings (append new-warnings (vl-module->warnings x)))))
-
-  (local (in-theory (enable vl-module-condcheck)))
-
-  (defthm vl-module-p-of-vl-module-condcheck
-    (implies (force (vl-module-p x))
-             (vl-module-p (vl-module-condcheck x))))
-
+  (b* ((ctxexprs     (vl-module-ctxexprs x))
+       (new-warnings (vl-exprctxalist-condcheck ctxexprs)))
+    (change-vl-module x
+                      :warnings (append new-warnings (vl-module->warnings x))))
+  ///
   (defthm vl-module->name-of-vl-module-condcheck
     (equal (vl-module->name (vl-module-condcheck x))
            (vl-module->name x))))
@@ -368,11 +349,10 @@ the expressions in a module, and adds any resulting warnings to the module."
   (vl-module-condcheck x)
   :guard (vl-modulelist-p x)
   :result-type vl-modulelist-p
-  :parents (condcheck))
-
-(defthm vl-modulelist->names-of-vl-modulelist-condcheck
-  (equal (vl-modulelist->names (vl-modulelist-condcheck x))
-         (vl-modulelist->names x))
-  :hints(("Goal" :induct (len x))))
+  :parents (condcheck)
+  :rest
+  ((defthm vl-modulelist->names-of-vl-modulelist-condcheck
+     (equal (vl-modulelist->names (vl-modulelist-condcheck x))
+            (vl-modulelist->names x)))))
 
 

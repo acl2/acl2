@@ -50,6 +50,50 @@
                            state-p-implies-and-forward-to-state-p1)))
 
 
+;; [Jared] I localized these theorems since they're not really the point of
+;; this book, and it seems nicer not to "randomly" export stuff like this.
+
+(local (defthm alistp-append
+         (implies (and (alistp a) (alistp b))
+                  (alistp (append a b)))
+         :hints(("Goal" :in-theory (enable alistp)))))
+
+(local (defthm symbol-listp-of-append
+         (implies (and (symbol-listp x)
+                       (symbol-listp y))
+                  (symbol-listp (append x y)))))
+
+(local (defthm strip-cdrs-of-append
+         (equal (strip-cdrs (append a b))
+                (append (strip-cdrs a) (strip-cdrs b)))))
+
+(local (defthm member-equal-of-append
+         (iff (member-equal x (append a b))
+              (or (member-equal x a)
+                  (member-equal x b)))))
+
+(local (defthm len-append
+         (equal (len (append a b))
+                (+ (len a) (len b)))))
+
+(local (defthm strip-cdrs-pairlis$
+         (implies (and (equal (len a) (len b))
+                       (true-listp b))
+                  (equal (strip-cdrs (pairlis$ a b)) b))))
+
+(local (defthm len-strip-cars
+         (equal (len (strip-cars x)) (len x))))
+
+(local (defthm len-strip-cdrs
+         (equal (len (strip-cdrs x)) (len x))))
+
+(local (defthm strip-cdrs-pairlis
+         (implies (and (equal (len a) (len b))
+                       (true-listp b))
+                  (equal (strip-cdrs (pairlis$ a b)) b))))
+
+
+
 (defevaluator witness-ev witness-ev-lst
   ((if a b c) (not a) (equal a b) (use-these-hints x)
    (implies a b) (hide x)
@@ -287,24 +331,11 @@
                                     pseudo-term-listp
                                     pseudo-termp))))
 
-(defthm alistp-append
-  (implies (and (alistp a) (alistp b))
-           (alistp (append a b)))
-  :hints(("Goal" :in-theory (enable alistp))))
 
 (defthm alistp-match-lit-with-witnesses-1
   (alistp
    (mv-nth 1 (match-lit-with-witnesses lit witness-rules state))))
 
-(local (defthm symbol-listp-of-append
-         ;; Jared localizing this since it clashes with deflist theorem
-         (implies (and (symbol-listp x)
-                       (symbol-listp y))
-                  (symbol-listp (append x y)))))
-
-(defthm strip-cdrs-of-append
-  (equal (strip-cdrs (append a b))
-         (append (strip-cdrs a) (strip-cdrs b))))
 
 (defthm symbol-listp-cdrs-match-lit-with-witnesses-1
   (implies (good-witness-rulesp witness-rules)
@@ -1077,17 +1108,8 @@
 (defthm symbol-listp-make-non-dup-vars
   (symbol-listp (make-non-dup-vars x avoid)))
 
-(defthm member-equal-of-append
-  (iff (member-equal x (append a b))
-       (or (member-equal x a)
-           (member-equal x b))))
-
 (defthm make-non-dup-vars-not-nil
   (not (member-equal nil (make-non-dup-vars x avoid))))
-
-(defthm len-append
-  (equal (len (append a b))
-         (+ (len a) (len b))))
 
 (defthm len-make-non-dup-vars
   (equal (len (make-non-dup-vars x avoid))
@@ -1127,17 +1149,6 @@
   (pairlis$ (strip-cars alist)
             (make-non-dup-vars (strip-cdrs alist) used-vars)))
 
-(local
- (defthm strip-cdrs-pairlis$
-   (implies (and (equal (len a) (len b))
-                 (true-listp b))
-            (equal (strip-cdrs (pairlis$ a b)) b))))
-
-(defthm len-strip-cars
-  (equal (len (strip-cars x)) (len x)))
-
-(defthm len-strip-cdrs
-  (equal (len (strip-cdrs x)) (len x)))
 
 (defthm fix-generalize-alist-lemmas
   (let ((genalist (fix-generalize-alist alist used-vars)))
@@ -1183,10 +1194,6 @@
 (local (defthm true-listp-make-non-dup-vars
          (equal (true-listp (make-non-dup-vars x avoid)) t)))
 
-(local (defthm strip-cdrs-pairlis
-         (implies (and (equal (len a) (len b))
-                       (true-listp b))
-                  (equal (strip-cdrs (pairlis$ a b)) b))))
 
 (local (defthm pseudo-term-listp-when-symbol-listp
          (implies (symbol-listp x)
@@ -1251,12 +1258,12 @@
 ;; (local (defthm pseudo-term-bindingsp-implies-eqlable-alistp
 ;;          (implies (pseudo-term-bindingsp x)
 ;;                   (eqlable-alistp x))))
-           
+
 ;; (local (defthm consp-assoc
 ;;          (implies (and (alistp x)
 ;;                        (assoc k x))
 ;;                   (consp (assoc k x)))))
-                  
+
 ;; (defun missing-bindings (keys bindings)
 ;;   (declare (xargs :guard (pseudo-term-bindingsp bindings)))
 ;;   (if (atom keys)
@@ -1297,7 +1304,7 @@
          (other-examples (cdr (assoc rulename acc)))
          (acc (cons (cons rulename (cons termlist other-examples)) acc)))
       (user-examples-to-example-alist (cdr user-examples) acc))))
-  
+
 (defthm user-examples-to-example-alist-type
   (let ((res (user-examples-to-example-alist user-examples acc)))
     (and (implies (alistp acc)
@@ -1493,7 +1500,7 @@
        ;;       generalize-alist instanced-clause)
        ;;    instanced-clause))
        )
-    (mv nil 
+    (mv nil
         (cons instanced-clause
               (remove-duplicates-equal
                (append instance-obligs witness-obligs))))))
@@ -1861,7 +1868,7 @@
        ((list var expr) (car bindings)))
     (cons (cons expr var)
           (quantexpr-bindings-to-generalize (cdr bindings)))))
-    
+
 
 (defun defquantexpr-fn (name predicate quantifier expr witnesses
                              instance-restriction witness-restriction
@@ -2241,7 +2248,7 @@ witness-disable just as they are used in the ruleset argument of WITNESS.
         ((atom (cdr vars))
          `((,(car vars) ,witness-call)))
         (t (defquant-witnesses-mv 0 vars witness-call))))
-  
+
 
 (defun defquant-fn (name vars quant-expr define
                          witness-rulename
@@ -2438,7 +2445,7 @@ additional keywords:
 ~bv[]
  (witness-enable name1 name2 ...)
 ~ev[]
- 
+
  Sets the witness-cp rules name1, name2... to be enabled by default.
 When name1 is the name of a witness-ruleset rather than a rule, all rules in
 the ruleset are set enabled.
@@ -2456,7 +2463,7 @@ ignores the enabled/disabled status.~/~/"
 ~bv[]
  (witness-disable name1 name2 ...)
 ~ev[]
- 
+
  Sets the witness-cp rules name1, name2... to be disabled by default.
 When name1 is the name of a witness-ruleset rather than a rule, all rules in
 the ruleset are set disabled.
