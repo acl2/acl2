@@ -1443,306 +1443,18 @@
           (defun-*1* ,name ,formals
             (,name ,@formals))))
 
-(defun our-import (syms pkg)
-
-; We have seen a case in which Allegro CL 8.0 spent about 20% of the time in
-; IMPORT, on an include-book (with lots of nested include-books, and 20 defpkg
-; forms executed altogether).  That time was reduced to near 0 by using the
-; present function, OUR-IMPORT, in place of IMPORT, presumably because
-; (according to the profiler) calls to EXCL::INTERNAL-STRING= were avoided,
-; probably in favor of hashing.  We saw no significant change in time in GCL,
-; however, so we exclude GCL and any non-ANSI (hence maybe no LOOP) Common Lisp
-; from this enhancement.  It might be worthwhile to consider other Common Lisp
-; implementations besides Allegro CL and GCL.  Perhaps Allegro CL will speed up
-; its handling of IMPORT in future implementations (we have sent email to Franz
-; Inc. about this), in which case we might consider deleting this function.
-
-  #+(and (not gcl) cltl2)
-  (loop for sym in syms do (import (or sym (list sym)) pkg))
-  #-(and (not gcl) cltl2)
-  (import syms pkg))
-
-(defvar *defpkg-virgins* nil)
-
-(defun-one-output defpkg-raw1 (name imports event-form)
-  (let ((package-entry (find-package-entry name *ever-known-package-alist*))
-        (pkg (find-package name))
-        (global-name (concatenate 'string
-                                  acl2::*global-package-prefix*
-                                  name))
-        (*1*-name (concatenate 'string
-                               acl2::*1*-package-prefix*
-                               name))
-        (proposed-imports (sort-symbol-listp imports)))
-    (assert pkg) ; see defpkg-raw
-
-; We bind proposed-imports to the value of the imports argument.  We do not
-; want to evaluate it more than once below.  We DO reference, and hence
-; evaluate, name more than once below.  But name must be an explicit string
-; constant.
-
-    (cond
-     (package-entry
-      (cond
-       ((equal proposed-imports (package-entry-imports package-entry))
-
-; The package has already been built in Common Lisp and the imports are
-; identical.  There is nothing for us to do.
-
-        name)
-       (t
-
-; The package has already been built in Common Lisp but with the wrong imports.
-; There is nothing we can do.  We do not want to unintern any symbols in it
-; because we may thus render bad some saved logical worlds.  See :DOC
-; package-reincarnation-import-restrictions.  In addition, see the Lisp comment
-; that is part of that deflabel (but which is not actually part of the
-; ACL2 documentation).
-
-        (error
-         "~%We cannot reincarnate the package ~s with imports ~s~%because ~
-              it was previously defined with imports ~s.  See~%:DOC ~
-              package-reincarnation-import-restrictions."
-         name
-         proposed-imports
-         (package-entry-imports package-entry)))))
-     ((not (member-equal name *defpkg-virgins*))
-
-; The package has been built in this Common Lisp but not by defpkg-raw1.  It
-; may be new because of the defpackage form in defpkg-raw, in which case it is
-; an element of *defpkg-virgins*.  Otherwise, it was defined in Common Lisp
-; outside ACL2, and we should cause an error.
-
-      (error
-       "~%It is illegal to defpkg ~s because a package of that name ~
-            already exists in this lisp.~%"
-       name))
-     (t
-      (assert (not (assoc-equal name *package-alist*)))
-      (let ((incomplete-p t)
-            (saved-ever-known-package-alist *ever-known-package-alist*))
-        (setq *defpkg-virgins*
-              (remove1-equal name *defpkg-virgins*))
-        (unwind-protect
-            (progn
-              (setq *ever-known-package-alist*
-                    (cons (make-package-entry :name name
-                                              :imports proposed-imports
-                                              :defpkg-event-form event-form)
-                          *ever-known-package-alist*))
-              (when proposed-imports
-
-; Without the qualifier above, clisp imports nil if proposed-imports = nil.
-
-                (our-import proposed-imports (find-package name)))
-
-; So at this point we have set the package's imports appropriately.  We now
-; handle the dual packages in which the state globals and executable
-; counterparts of symbols from pkg will reside.  We do not reinitialize these
-; hidden variables if we are recovering from an error or booting.
-
-              (cond
-               ((and (not *in-recover-world-flg*)
-                     (not (getprop 'boot-strap-flg 'global-value nil
-                                   'current-acl2-world
-                                   (w *the-live-state*))))
-                (cond ((find-package global-name)
-                       (do-symbols (sym (find-package global-name))
-                                   (makunbound sym)))
-                      (t (make-package global-name :use nil)))
-                (cond ((find-package *1*-name)
-                       nil)
-                      (t (make-package *1*-name :use nil)))))
-              (setq incomplete-p nil)
-              name)
-          (when incomplete-p
-            (setq *ever-known-package-alist*
-                  saved-ever-known-package-alist)
-            (do-symbols (sym pkg)
-                        (unintern sym))
-            (delete-package (find-package name)))))))))
-
-(defun package-has-no-imports (name)
-  (let ((pkg (find-package name)))
-    (do-symbols (sym pkg)
-                (when (not (eq (symbol-package sym) pkg))
-                  (return-from package-has-no-imports nil))))
-  t)
-
-#-acl2-loop-only
-(defmacro maybe-make-package (name)
-
-; When we moved to Version_4.3, with LispWorks once again a supported host
-; Lisp, we modified the macro maybe-introduce-empty-pkg-1 to avoid the use of
-; defpackage; see the comment in that macro.  Unfortunately, the new approach
-; didn't work for CMUCL (at least, for version 19e).  The following example
-; shows why; even with an eval-when form specifying :compile-toplevel, the
-; compiled code seems to skip the underlying package-creation form, as shown
-; below.  Therefore we revert to the use of defpackage for CMUCL, which appears
-; not to cause problems.
-
-;   % cat pkg-bug-cmucl.lisp
-;   
-;   (in-package "CL-USER")
-;   
-;   (eval-when (:load-toplevel :execute :compile-toplevel)
-;              (cond ((not (find-package "MYPKG"))
-;                     (print "*** About to make package ***")
-;                     (terpri)
-;                     (make-package "MYPKG" :use nil))))
-;   
-;   (defparameter *foo* 'mypkg::x)
-;   % /projects/acl2/lisps/cmucl-19e-linux/bin/cmucl
-;   CMU Common Lisp 19e (19E), running on kindness
-;   With core: /v/filer4b/v11q001/acl2/lisps/cmucl-19e-linux/lib/cmucl/lib/lisp.core
-;   Dumped on: Thu, 2008-05-01 11:56:07-05:00 on usrtc3142
-;   See <http://www.cons.org/cmucl/> for support information.
-;   Loaded subsystems:
-;       Python 1.1, target Intel x86
-;       CLOS based on Gerd's PCL 2004/04/14 03:32:47
-;   * (load "pkg-bug-cmucl.lisp")
-;   
-;   ; Loading #P"/v/filer4b/v41q001/kaufmann/temp/pkg-bug-cmucl.lisp".
-;   
-;   "*** About to make package ***" 
-;   T
-;   * (compile-file "pkg-bug-cmucl.lisp")
-;   
-;   ; Python version 1.1, VM version Intel x86 on 04 JUL 11 09:57:13 am.
-;   ; Compiling: /v/filer4b/v41q001/kaufmann/temp/pkg-bug-cmucl.lisp 04 JUL 11 09:56:24 am
-;   
-;   ; Byte Compiling Top-Level Form: 
-;   
-;   ; pkg-bug-cmucl.x86f written.
-;   ; Compilation finished in 0:00:00.
-;   
-;   #P"/v/filer4b/v41q001/kaufmann/temp/pkg-bug-cmucl.x86f"
-;   NIL
-;   NIL
-;   * (quit)
-;   % /projects/acl2/lisps/cmucl-19e-linux/bin/cmucl
-;   CMU Common Lisp 19e (19E), running on kindness
-;   With core: /v/filer4b/v11q001/acl2/lisps/cmucl-19e-linux/lib/cmucl/lib/lisp.core
-;   Dumped on: Thu, 2008-05-01 11:56:07-05:00 on usrtc3142
-;   See <http://www.cons.org/cmucl/> for support information.
-;   Loaded subsystems:
-;       Python 1.1, target Intel x86
-;       CLOS based on Gerd's PCL 2004/04/14 03:32:47
-;   * (load "pkg-bug-cmucl.x86f")
-;   
-;   ; Loading #P"/v/filer4b/v41q001/kaufmann/temp/pkg-bug-cmucl.x86f".
-;   
-;   
-;   Error in function LISP::FOP-PACKAGE:  The package "MYPKG" does not exist.
-;      [Condition of type SIMPLE-ERROR]
-;   
-;   Restarts:
-;     0: [CONTINUE] Return NIL from load of "pkg-bug-cmucl.x86f".
-;     1: [ABORT   ] Return to Top-Level.
-;   
-;   Debug  (type H for help)
-;   
-;   (LISP::FOP-PACKAGE)
-;   Source: Error finding source: 
-;   Error in function DEBUG::GET-FILE-TOP-LEVEL-FORM:  Source file no longer exists:
-;     target:code/load.lisp.
-;   0] 
-
-  #-cmu
-  `(when (not (find-package ,name))
-     (make-package ,name :use nil))
-  #+cmu
-  `(defpackage ,name (:use)))
-
-(defmacro maybe-introduce-empty-pkg-1 (name)
-
-; It appears that GCL, at least non-ANSI GCL, requires a user::defpackage form
-; near the top of a file in order to read the corresponding compiled file.  For
-; example, an error occurred upon attempting to load the community books file
-; books/data-structures/defalist.o after certifying the corresponding book
-; using GCL, because the form (MAYBE-INTRODUCE-EMPTY-PKG-1 "U") near the top of
-; the file was insufficient to allow reading a symbol in the "U" package
-; occurring later in the corresponding source file.
-
-; On the other hand, the CL HyperSpec does not pin down the effect of
-; defpackage when a package already exists.  Indeed, the defpackage approach
-; that we use for GCL does not work for LispWorks 6.0.
-
-; So, we have quite different definitions of this macro for GCL and LispWorks,
-; or more accurately, depending on feature :cltl2.
-
-  #+cltl2
-  `(eval-when
-    (:load-toplevel :execute :compile-toplevel) ; (load eval compile) is OK too
-    (progn
-      (maybe-make-package ,name)
-      (maybe-make-package ,(concatenate 'string
-                                        acl2::*global-package-prefix*
-                                        name))
-      (maybe-make-package ,(concatenate 'string
-                                        acl2::*1*-package-prefix*
-                                        name))))
-  #-cltl2
-  (let ((defp #+cltl2 'defpackage #-cltl2 'user::defpackage))
-    `(progn
-       (,defp ,name
-         (:use))
-       (,defp ,(concatenate 'string
-                            acl2::*global-package-prefix*
-                            name)
-         (:use))
-       (,defp ,(concatenate 'string
-                            acl2::*1*-package-prefix*
-                            name)
-         (:use)))))
-
-(defmacro maybe-introduce-empty-pkg-2 (name)
-  `(when (and (not (member ,name *defpkg-virgins*
-                           :test 'equal))
-              (not (assoc ,name *ever-known-package-alist*
-                          :test 'equal))
-              (package-has-no-imports ,name))
-     (push ,name *defpkg-virgins*)))
-
-(defmacro defpkg-raw (name imports event-form)
-
-; Defpkg checks that name is a string.  Event-form is a cons.  So we don't need
-; to worry about capture below.
-
-  `(let ((package-entry (find-package-entry ,name *ever-known-package-alist*))
-         (*safe-mode-verified-p* t))
-     (cond
-      ((and package-entry
-            (let ((old-event-form
-                   (package-entry-defpkg-event-form package-entry)))
-              (and (equal (cadr old-event-form) (cadr ,event-form))
-                   (equal (caddr old-event-form) (caddr ,event-form)))))
-
-; This shorcut is potentially a big concern!  We are checking that the name and
-; term of the defpkg form agrees with an old defpkg form.  But these two forms
-; may have been evaluated in different worlds!  Nevertheless, for now we trust
-; that they really are equivalent, for efficiency's sake.  Defpkg-fn will call
-; chk-acceptable-defpkg, which will call
-; chk-package-reincarnation-import-restrictions, and if there is a discrepancy
-; between the current and old package, we'll find out then.
-
-       ,name)
-      (t
-       (maybe-introduce-empty-pkg-1 ,name)
-       (maybe-introduce-empty-pkg-2 ,name)
-       (defpkg-raw1 ,name ,imports ,event-form)))))
-
-(defmacro defpkg (&whole event-form name imports &optional doc book-path hidden-p)
+(defmacro defpkg (&whole event-form name imports
+                         &optional doc book-path hidden-p)
 
 ; Keep this in sync with get-cmds-from-portcullis1, make-hidden-defpkg,
 ; equal-modulo-hidden-defpkgs, and (of course) the #+acl2-loop-only definition
 ; of defpkg.
 
-  (declare (ignore doc book-path hidden-p))
+  (declare (ignore doc hidden-p))
   (or (stringp name)
       (interface-er "Attempt to call defpkg on a non-string, ~x0."
                     name))
-  `(defpkg-raw ,name ,imports ',event-form))
+  `(defpkg-raw ,name ,imports ',book-path ',event-form))
 
 (defmacro defuns (&rest lst)
   `(progn ,@(mapcar #'(lambda (x) `(defun ,@x))
@@ -23918,6 +23630,357 @@
         (t `(get-global ,x ,st)))
   #+acl2-loop-only
   (list 'get-global x st))
+
+#-acl2-loop-only
+(progn
+
+; With f-get-global and set-difference-eq defined, we are ready to define
+; raw Lisp support for defpkg-raw.
+
+(defun our-import (syms pkg)
+
+; We have seen a case in which Allegro CL 8.0 spent about 20% of the time in
+; IMPORT, on an include-book (with lots of nested include-books, and 20 defpkg
+; forms executed altogether).  That time was reduced to near 0 by using the
+; present function, OUR-IMPORT, in place of IMPORT, presumably because
+; (according to the profiler) calls to EXCL::INTERNAL-STRING= were avoided,
+; probably in favor of hashing.  We saw no significant change in time in GCL,
+; however, so we exclude GCL and any non-ANSI (hence maybe no LOOP) Common Lisp
+; from this enhancement.  It might be worthwhile to consider other Common Lisp
+; implementations besides Allegro CL and GCL.  Perhaps Allegro CL will speed up
+; its handling of IMPORT in future implementations (we have sent email to Franz
+; Inc. about this), in which case we might consider deleting this function.
+
+  #+(and (not gcl) cltl2)
+  (loop for sym in syms do (import (or sym (list sym)) pkg))
+  #-(and (not gcl) cltl2)
+  (import syms pkg))
+
+(defvar *defpkg-virgins* nil)
+
+(defun check-proposed-imports (name package-entry proposed-imports)
+  (cond
+   ((equal proposed-imports (package-entry-imports package-entry))
+
+; The package has already been built in Common Lisp and the imports are
+; identical.  There is nothing for us to do.
+
+    nil)
+   (t
+
+; The package has already been built in Common Lisp but with the wrong imports.
+; There is nothing we can do.  We do not want to unintern any symbols in it
+; because we may thus render bad some saved logical worlds.  See :DOC
+; package-reincarnation-import-restrictions.  In addition, see the Lisp comment
+; that is part of that deflabel (but which is not actually part of the
+; ACL2 documentation).
+
+    (let* ((old-book-path
+            (reverse (unrelativize-book-path
+                      (package-entry-book-path package-entry)
+                      (f-get-global 'system-books-dir *the-live-state*))))
+           (current-book-path
+            (reverse
+             (append (strip-cars (symbol-value 'acl2::*load-compiled-stack*))
+                     (global-val 'include-book-path (w *the-live-state*)))))
+           (old-imports (package-entry-imports package-entry))
+           (proposed-not-old (set-difference-eq proposed-imports old-imports))
+           (old-not-proposed (set-difference-eq old-imports proposed-imports))
+           (current-package (f-get-global 'current-package *the-live-state*)))
+      (interface-er
+       "~%We cannot reincarnate the package ~x0 because it was previously ~
+        defined with a different list of imported symbols.~|~%The previous ~
+        definition was made ~#1~[at the top level.~|~/in the portcullis of ~
+        the last of the book at the end of the following sequence of included ~
+        books, which starts with the top-most book at the front of the list ~
+        and works down to the book that defined the package.~|~%  ~
+        ~F2~|~]~%The proposed definition is being made ~#3~[at the top ~
+        level.~|~/in the portcullis of the last of the book at the end of the ~
+        following sequence of included books, which starts with the top-most ~
+        book at the front of the list and works down to the book that is ~
+        trying to define the package.~|~%  ~F4~|~]~%~#5~[The previous ~
+        definition imported the following list of symbols that are not ~
+        imports of the proposed definition, and is shown with respect to ~
+        current package ~x9:~|~%  ~x6.~|~%~/~]~#7~[The proposed definition ~
+        imports the following list of symbols not imported by the previous ~
+        definition, and is shown with respect to current package ~x9:~|~%  ~
+        ~x8.~|~%~/~]See :DOC package-reincarnation-import-restrictions."
+       name
+       (if old-book-path 1 0)
+       old-book-path
+       (if current-book-path 1 0)
+       current-book-path
+       (if old-not-proposed 0 1)
+       old-not-proposed
+       (if proposed-not-old 0 1)
+       proposed-not-old
+       current-package
+       )))))
+
+(defun-one-output defpkg-raw1 (name imports book-path event-form)
+  (let ((package-entry (find-package-entry name *ever-known-package-alist*))
+        (pkg (find-package name))
+        (global-name (concatenate 'string
+                                  acl2::*global-package-prefix*
+                                  name))
+        (*1*-name (concatenate 'string
+                               acl2::*1*-package-prefix*
+                               name))
+        (proposed-imports (sort-symbol-listp imports)))
+    (assert pkg) ; see defpkg-raw
+
+; We bind proposed-imports to the value of the imports argument.  We do not
+; want to evaluate it more than once below.  We DO reference, and hence
+; evaluate, name more than once below.  But name must be an explicit string
+; constant.
+
+    (cond
+     (package-entry
+
+; There is nothing for us to do other than to do a check.
+
+      (check-proposed-imports name package-entry proposed-imports)
+      name)
+     ((not (member-equal name *defpkg-virgins*))
+
+; The package has been built in this Common Lisp but not by defpkg-raw1.  It
+; may be new because of the defpackage form in defpkg-raw, in which case it is
+; an element of *defpkg-virgins*.  Otherwise, it was defined in Common Lisp
+; outside ACL2, and we should cause an error.
+
+      (error
+       "~%It is illegal to defpkg ~s because a package of that name ~
+        already exists in this lisp.~%"
+       name))
+     (t
+      (assert (not (assoc-equal name *package-alist*)))
+      (let* ((incomplete-p t)
+             (saved-ever-known-package-alist *ever-known-package-alist*)
+             (wrld (w *the-live-state*))
+             (not-boot-strap (not (getprop 'boot-strap-flg 'global-value nil
+                                           'current-acl2-world
+                                           wrld))))
+        (setq *defpkg-virgins*
+              (remove1-equal name *defpkg-virgins*))
+        (unwind-protect
+            (progn
+              (setq *ever-known-package-alist*
+                    (cons (make-package-entry
+                           :name name
+                           :imports proposed-imports
+                           :book-path
+
+; We store a suitable path for use by check-proposed-imports.
+
+                           (and not-boot-strap
+                                (append
+                                 book-path
+                                 (strip-cars
+                                  (symbol-value 'acl2::*load-compiled-stack*))
+                                 (getprop 'include-book-path 'global-value
+                                          nil 'current-acl2-world wrld)))
+                           :defpkg-event-form event-form)
+                          *ever-known-package-alist*))
+              (when proposed-imports
+
+; Without the qualifier above, clisp imports nil if proposed-imports = nil.
+
+                (our-import proposed-imports (find-package name)))
+
+; So at this point we have set the package's imports appropriately.  We now
+; handle the dual packages in which the state globals and executable
+; counterparts of symbols from pkg will reside.  We do not reinitialize these
+; hidden variables if we are recovering from an error or booting.
+
+              (cond
+               ((and (not *in-recover-world-flg*)
+                     not-boot-strap)
+                (cond ((find-package global-name)
+                       (do-symbols (sym (find-package global-name))
+                                   (makunbound sym)))
+                      (t (make-package global-name :use nil)))
+                (cond ((find-package *1*-name)
+                       nil)
+                      (t (make-package *1*-name :use nil)))))
+              (setq incomplete-p nil)
+              name)
+          (when incomplete-p
+            (setq *ever-known-package-alist*
+                  saved-ever-known-package-alist)
+            (do-symbols (sym pkg)
+                        (unintern sym))
+            (delete-package (find-package name)))))))))
+
+(defun package-has-no-imports (name)
+  (let ((pkg (find-package name)))
+    (do-symbols (sym pkg)
+                (when (not (eq (symbol-package sym) pkg))
+                  (return-from package-has-no-imports nil))))
+  t)
+
+#-acl2-loop-only
+(defmacro maybe-make-package (name)
+
+; When we moved to Version_4.3, with LispWorks once again a supported host
+; Lisp, we modified the macro maybe-introduce-empty-pkg-1 to avoid the use of
+; defpackage; see the comment in that macro.  Unfortunately, the new approach
+; didn't work for CMUCL (at least, for version 19e).  The following example
+; shows why; even with an eval-when form specifying :compile-toplevel, the
+; compiled code seems to skip the underlying package-creation form, as shown
+; below.  Therefore we revert to the use of defpackage for CMUCL, which appears
+; not to cause problems.
+
+;   % cat pkg-bug-cmucl.lisp
+;   
+;   (in-package "CL-USER")
+;   
+;   (eval-when (:load-toplevel :execute :compile-toplevel)
+;              (cond ((not (find-package "MYPKG"))
+;                     (print "*** About to make package ***")
+;                     (terpri)
+;                     (make-package "MYPKG" :use nil))))
+;   
+;   (defparameter *foo* 'mypkg::x)
+;   % /projects/acl2/lisps/cmucl-19e-linux/bin/cmucl
+;   CMU Common Lisp 19e (19E), running on kindness
+;   With core: /v/filer4b/v11q001/acl2/lisps/cmucl-19e-linux/lib/cmucl/lib/lisp.core
+;   Dumped on: Thu, 2008-05-01 11:56:07-05:00 on usrtc3142
+;   See <http://www.cons.org/cmucl/> for support information.
+;   Loaded subsystems:
+;       Python 1.1, target Intel x86
+;       CLOS based on Gerd's PCL 2004/04/14 03:32:47
+;   * (load "pkg-bug-cmucl.lisp")
+;   
+;   ; Loading #P"/v/filer4b/v41q001/kaufmann/temp/pkg-bug-cmucl.lisp".
+;   
+;   "*** About to make package ***" 
+;   T
+;   * (compile-file "pkg-bug-cmucl.lisp")
+;   
+;   ; Python version 1.1, VM version Intel x86 on 04 JUL 11 09:57:13 am.
+;   ; Compiling: /v/filer4b/v41q001/kaufmann/temp/pkg-bug-cmucl.lisp 04 JUL 11 09:56:24 am
+;   
+;   ; Byte Compiling Top-Level Form: 
+;   
+;   ; pkg-bug-cmucl.x86f written.
+;   ; Compilation finished in 0:00:00.
+;   
+;   #P"/v/filer4b/v41q001/kaufmann/temp/pkg-bug-cmucl.x86f"
+;   NIL
+;   NIL
+;   * (quit)
+;   % /projects/acl2/lisps/cmucl-19e-linux/bin/cmucl
+;   CMU Common Lisp 19e (19E), running on kindness
+;   With core: /v/filer4b/v11q001/acl2/lisps/cmucl-19e-linux/lib/cmucl/lib/lisp.core
+;   Dumped on: Thu, 2008-05-01 11:56:07-05:00 on usrtc3142
+;   See <http://www.cons.org/cmucl/> for support information.
+;   Loaded subsystems:
+;       Python 1.1, target Intel x86
+;       CLOS based on Gerd's PCL 2004/04/14 03:32:47
+;   * (load "pkg-bug-cmucl.x86f")
+;   
+;   ; Loading #P"/v/filer4b/v41q001/kaufmann/temp/pkg-bug-cmucl.x86f".
+;   
+;   
+;   Error in function LISP::FOP-PACKAGE:  The package "MYPKG" does not exist.
+;      [Condition of type SIMPLE-ERROR]
+;   
+;   Restarts:
+;     0: [CONTINUE] Return NIL from load of "pkg-bug-cmucl.x86f".
+;     1: [ABORT   ] Return to Top-Level.
+;   
+;   Debug  (type H for help)
+;   
+;   (LISP::FOP-PACKAGE)
+;   Source: Error finding source: 
+;   Error in function DEBUG::GET-FILE-TOP-LEVEL-FORM:  Source file no longer exists:
+;     target:code/load.lisp.
+;   0] 
+
+  #-cmu
+  `(when (not (find-package ,name))
+     (make-package ,name :use nil))
+  #+cmu
+  `(defpackage ,name (:use)))
+
+(defmacro maybe-introduce-empty-pkg-1 (name)
+
+; It appears that GCL, at least non-ANSI GCL, requires a user::defpackage form
+; near the top of a file in order to read the corresponding compiled file.  For
+; example, an error occurred upon attempting to load the community books file
+; books/data-structures/defalist.o after certifying the corresponding book
+; using GCL, because the form (MAYBE-INTRODUCE-EMPTY-PKG-1 "U") near the top of
+; the file was insufficient to allow reading a symbol in the "U" package
+; occurring later in the corresponding source file.
+
+; On the other hand, the CL HyperSpec does not pin down the effect of
+; defpackage when a package already exists.  Indeed, the defpackage approach
+; that we use for GCL does not work for LispWorks 6.0.
+
+; So, we have quite different definitions of this macro for GCL and LispWorks,
+; or more accurately, depending on feature :cltl2.
+
+  #+cltl2
+  `(eval-when
+    (:load-toplevel :execute :compile-toplevel) ; (load eval compile) is OK too
+    (progn
+      (maybe-make-package ,name)
+      (maybe-make-package ,(concatenate 'string
+                                        acl2::*global-package-prefix*
+                                        name))
+      (maybe-make-package ,(concatenate 'string
+                                        acl2::*1*-package-prefix*
+                                        name))))
+  #-cltl2
+  (let ((defp #+cltl2 'defpackage #-cltl2 'user::defpackage))
+    `(progn
+       (,defp ,name
+         (:use))
+       (,defp ,(concatenate 'string
+                            acl2::*global-package-prefix*
+                            name)
+         (:use))
+       (,defp ,(concatenate 'string
+                            acl2::*1*-package-prefix*
+                            name)
+         (:use)))))
+
+(defmacro maybe-introduce-empty-pkg-2 (name)
+  `(when (and (not (member ,name *defpkg-virgins*
+                           :test 'equal))
+              (not (assoc ,name *ever-known-package-alist*
+                          :test 'equal))
+              (package-has-no-imports ,name))
+     (push ,name *defpkg-virgins*)))
+
+(defmacro defpkg-raw (name imports book-path event-form)
+
+; Defpkg checks that name is a string.  Event-form is a cons.  So we don't need
+; to worry about capture below.
+
+  `(let ((package-entry (find-package-entry ,name *ever-known-package-alist*))
+         (*safe-mode-verified-p* t))
+     (cond
+      ((and package-entry
+            (let ((old-event-form
+                   (package-entry-defpkg-event-form package-entry)))
+              (and (equal (cadr old-event-form) (cadr ,event-form))
+                   (equal (caddr old-event-form) (caddr ,event-form)))))
+
+; This shorcut is potentially a big concern!  We are checking that the name and
+; term of the defpkg form agrees with an old defpkg form.  But these two forms
+; may have been evaluated in different worlds!  Nevertheless, for now we trust
+; that they really are equivalent, for efficiency's sake.  Defpkg-fn will call
+; chk-acceptable-defpkg, which will call
+; chk-package-reincarnation-import-restrictions, and if there is a discrepancy
+; between the current and old package, we'll find out then.
+
+       ,name)
+      (t
+       (maybe-introduce-empty-pkg-1 ,name)
+       (maybe-introduce-empty-pkg-2 ,name)
+       (defpkg-raw1 ,name ,imports ,book-path ,event-form)))))
+)
 
 #-acl2-loop-only
 (defun-one-output slow-array-warning (fn nm)

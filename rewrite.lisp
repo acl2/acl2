@@ -9499,14 +9499,18 @@
 ; ranges over all values of *mfc* encountered during any ACL2 run!
 
 ; Finally we sketch how to modify the arguments above in the case of
-; clause-processors.  As of this writing, meta-extract-hyps is required to be
-; empty in this case.  Assume that the following has been proved in the current
-; logical world, where CL and A are variables, B is a term, and <CL-LIST>
-; represents the application of a clause-processor, as described in :doc
-; clause-processor.
+; clause-processors.  The terms in meta-extract-hyps are then all calls of
+; meta-extract-global-fact, not meta-extract-contextual-fact.  As before, we
+; can weaken the theorem by including a single universally-quantified
+; hypothesis for meta-extract-global-fact.  Now assume that the following has
+; been proved in the current logical world, where CL and A are variables, B is
+; a term, and <CL-LIST> represents the application of a clause-processor, as
+; described in :doc clause-processor.
 
 ;   (implies (and (pseudo-term-listp CL)
 ;                 (alistp A)
+;                 (forall (obj2 aa)
+;                         (ev (meta-extract-global-fact obj2 state) aa))
 ;                 (EVL (conjoin-clauses <CL-LIST>)
 ;                      B))
 ;            (EVL (disjoin CL) A))
@@ -9521,22 +9525,27 @@
 
 ;   (implies (and (pseudo-term-listp 'cl0)
 ;                 (alistp A)
+;                 (forall (obj2 aa)
+;                         (ev (meta-extract-global-fact obj2 state) aa))
 ;                 (forall a2 (EVL (conjoin-clauses 'cl-list0)
 ;                             a2))
 ;            (EVL (disjoin 'cl0) A))
 
 ; We are assuming that cl-list0 is provable, which discharges the third
-; hypothesis.  The first two discharge trivially, and we conclude that (EVL
+; hypothesis.  The first two discharge trivially, while the third discharges
+; exactly as we showed in the case of meta rules.  We conclude that (EVL
 ; (disjoin 'cl0) A) is a theorem, which implies that clause cl0 holds as per
 ; the Lemma proved above for the metafunction case.
 
 ; But as for metafunctions, we have only shown that (EVL (disjoin 'cl0) A) is
 ; provable in the evaluation history.  We now follow (but in brief) the same
 ; argument as we gave in the metafunctions case.  First, by the assumption that
-; no common ancestor of ev and the clause-processor has an attachment, we may
+; no common ancestor of ev or extra-fns (which here is empty or just
+; meta-extract-global-fact) and the clause-processor has an attachment, we may
 ; restrict to attachments to functions ancestral in the clause-processor.  Then
-; we appeal to a conservativity argument to conclude that (EVL (disjoin 'cl0)
-; A) holds in the current session history, and therefore so does cl0.
+; we appeal to a conservativity argument as before to conclude that (EVL
+; (disjoin 'cl0) A) holds in the current session history, and therefore so does
+; cl0.
 
 ; We remark briefly on the relation between guards and ancestors in our
 ; criterion for using attachments in meta-level reasoning.  Above, we argue

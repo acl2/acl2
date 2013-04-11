@@ -20509,12 +20509,25 @@
   executing command ~c[:]~ilc[set-guard-checking]~c[ :NONE].  Thanks to Jared
   Davis for asking for a way to avoid such errors.
 
+  The error printed when attempting to ``reincarnate'' a package ~-[] that is,
+  to define a package that is not part of the ACL2 logical ~il[world] but
+  exists in raw Lisp because it was once part of the world ~-[] is now much
+  more instructive.  In particular, it shows pathnames for the previous and
+  proposed ~ilc[defpkg] events, and it shows the symbols that are imported by
+  one but not the other.  Thanks to Jared Davis for requesting this
+  improvement.
+
   ~st[NEW FEATURES]
 
   It is now permissible to specify a ~il[stobj] field that is itself either a
   stobj or an array of stobjs.  A new primitive, ~ilc[stobj-let], is provided
   in order to access or update such fields; ~pl[stobj-let].  Thanks to Warren
   Hunt and Sol Swords for requesting the ability to specify nested stobjs.
+
+  It is now permissible to use calls of ~c[meta-extract-global-fact] in
+  hypotheses of ~ilc[clause-processor] rules, much as they are used in
+  hypotheses of ~ilc[meta] rules.  ~l[meta-extract].  Thanks to Sol Swords for
+  requesting this feature.
 
   ~st[HEURISTIC IMPROVEMENTS]
 

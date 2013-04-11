@@ -5137,43 +5137,49 @@
 
   meta reasoning using valid terms extracted from context or ~il[world]~/
 
-  For this topic, we assume familiarity not only with metatheorems and
-  metafunctions (~pl[meta]) but also with extended metafunctions
-  (~pl[extended-metafunctions]).  The capability described here ~-[] so-called
-  ``meta-extract hypotheses'' for a ~c[:meta] rule ~-[] provides an advanced
-  form of meta-level reasoning that was largely designed by Sol Swords, who
-  also provided a preliminary implementation.
+  For this topic, we assume familiarity with metatheorems and
+  metafunctions (~pl[meta]).  The capability described here ~-[] so-called
+  ``meta-extract hypotheses'' for a ~c[:]~ilc[meta] or a
+  ~c[:]~ilc[clause-processor] rule ~-[] provides an advanced form of meta-level
+  reasoning that was largely designed by Sol Swords, who also provided a
+  preliminary implementation.
 
   A ~c[:meta] rule may now have hypotheses, known as ``meta-extract
   hypotheses'', that take either of the following two forms.  Here ~c[evl] is
   the evaluator, ~c[obj] is an arbitrary term, ~c[mfc] is the variable used as
-  the metafunction context, ~c[state] is literally the symbol ~c[STATE], ~c[a]
-  is the second argument of ~c[evl] in both arguments of the conclusion of the
-  rule, and ~c[aa] is an arbitrary term.
+  the metafunction context (~pl[extended-metafunctions]), ~c[state] is
+  literally the symbol ~c[STATE], ~c[a] is the second argument of ~c[evl] in
+  both arguments of the conclusion of the rule, and ~c[aa] is an arbitrary
+  term.
   ~bv[]
   (evl (meta-extract-contextual-fact obj mfc state) a)
   (evl (meta-extract-global-fact obj state) aa))
   ~ev[]
-  Note that the first form, involving ~c[meta-extract-contextual-fact], is only
-  allowed if the metafunction is an extended metafunction.~/
+  The second form is legal for rules of class ~c[:meta] and also for rules of
+  class ~c[:clause-processor].  However, the first form is not legal for
+  ~c[:clause-processor] rules, and for ~c[:meta] rules it is only allowed if
+  the metafunction is an extended metafunction.~/
 
   These additional hypotheses may be necessary in order to prove a proposed
-  metatheorem, in particular when the correctness of the metafunction depends
-  on the correctness of utilities extracting formulas from the logical
-  ~il[world] or facts from the metafunction context (mfc).  After the
-  ~c[:]~ilc[meta] rule is proved, however, the meta-extract hypotheses have no
-  effect on how the rule is applied during a proof.  An argument for
-  correctness of using meta-extract hypotheses is given in the ACL2 source code
-  within a comment entitled ``Essay on Correctness of Meta Reasoning''.  In the
-  documentation below, we focus not only the application of ~c[:]~ilc[meta]
-  rules but, rather, on how the use of meta-extract hypotheses allow you to
-  prove correctness of metafunctions that use facts from the logical ~il[world]
-  or the metafunction context (mfc).
+  metatheorem or (for the second type of hypothesis above) clause-processor
+  rule, in particular when the correctness of the metafunction depends on the
+  correctness of utilities extracting formulas from the logical ~il[world] or
+  (for the first type) facts from the metafunction context (mfc).  After the
+  rule is proved, however, the meta-extract hypotheses have no effect on how
+  the rule is applied during a proof.  An argument for correctness of using
+  meta-extract hypotheses is given in the ACL2 source code within a comment
+  entitled ``Essay on Correctness of Meta Reasoning''.  In the documentation
+  below, we focus only on ~c[:]~ilc[meta] rules, since the use of
+  ~c[meta-extract-global-fact] hypotheses in ~c[:]~ilc[clause-processor] rules
+  is entirely analogous.  And for ~c[:meta] rules we focus not on the
+  application of rules but, rather, on how the use of meta-extract hypotheses
+  allow you to prove correctness of metafunctions that use facts from the
+  logical ~il[world] or the metafunction context (mfc).
 
   Below we describe properties of ~c[meta-extract-contextual-fact] and
-  ~c[meta-extract-global-fact], but after we illustrate their utility with an
-  example.  But even before we present that example, we first give a sense of
-  how to think about these functions by showing a theorem that one can prove
+  ~c[meta-extract-global-fact], but only after we illustrate their utility with
+  an example.  But even before we present that example, we first give a sense
+  of how to think about these functions by showing a theorem that one can prove
   about the first of them.  If this snippet doesn't help your intuition, then
   just skip over it and start with the example.
   ~bv[]
@@ -5243,7 +5249,7 @@
             *ts-character*)
   ~ev[]
   So suppose that term is ~c[(list 'binary-+ (list 'bar x) y)].  We show how
-  the meta-extract hypotheses allow together with (1) and (2) imply that the
+  the meta-extract hypotheses together with (1) and (2) imply that the
   conclusion of the above ~c[:meta] rule holds.  Here is that conclusion after
   a bit of simplification.
   ~bv[]
@@ -5257,7 +5263,8 @@
                    (nthmeta-ev y a))
          (bar (nthmeta-ev x a)))
   ~ev[]
-  Clearly it suffices to show:
+  Since a positive number plus a character is that number, it clearly suffices
+  to show:
   ~bv[]
   (A)  (posp (bar (nthmeta-ev x a)))
 
@@ -10063,7 +10070,10 @@
   of syntax (which we will describe), for example, ~c[CL].
 
   If a ~c[:]~ilc[rule-classes] specification includes ~c[:clause-processor],
-  then the corresponding term must have the form
+  then the corresponding term must have the following form.  (Additional
+  ``meta-extract'' hypotheses'', not shown or discussed below, may be included
+  as desired in order to use facts from the logical ~ilc[world] to help prove
+  the rule; ~pl[meta-extract] for explanation of this advanced feature.)
   ~bv[]
   (implies (and (pseudo-term-listp CL)
                 (alistp A)
@@ -10071,8 +10081,7 @@
                       B))
            (EVL (disjoin CL) A))
   ~ev[]
-
-  where: ~c[EVL] is a known evaluator; ~c[CL] and ~C[A] are distinct non-stobj
+  Here ~c[EVL] is a known evaluator; ~c[CL] and ~C[A] are distinct non-stobj
   variables; and ~c[<CL-LIST>] is an expression representing the clauses
   returned by the clause-processor function ~c[CL-PROC], whose form depends on
   the ~il[signature] of that function, as follows.  Typically ~c[B] is ~c[A],
@@ -10180,11 +10189,14 @@
   (cond
    ((null (cdr stobjs-out)) ; first two signatures
     (cond ((car stobjs-out)
-           "~x0 returns a single argument but it is a stobj")
+           (msg "~x0 returns a single argument but it is a stobj"
+                cl-proc))
           ((or (equal stobjs-in '(nil))
                (equal stobjs-in '(nil nil)))
            nil)
-          (t "~x0 expects at least three arguments")))
+          (t (msg "~x0 returns a single argument, but doesn't take exactly one ~
+                   or two arguments, both not stobjs"
+                  cl-proc))))
    ((and ; the final (third) class of signatures above
      (null (car stobjs-in))
      (cdr stobjs-in)
@@ -10200,6 +10212,31 @@
           contain stobjs in exactly all positions other than the first two"
          cl-proc))))
 
+(defun destructure-clause-processor-rule (term)
+  (case-match term
+    (('implies hyp
+               (ev ('disjoin clause) alist))
+     (mv-let
+      (hyps meta-extract-flg)
+      (remove-meta-extract-global-hyps
+       (remove1-equal (fcons-term* 'pseudo-term-listp clause)
+                      (remove1-equal (fcons-term* 'alistp alist)
+                                     (flatten-ands-in-lit hyp)))
+       ev)
+      (case-match hyps
+        (((ev ('conjoin-clauses cl-result)
+              &))
+         (case-match cl-result
+           (('clauses-result (cl-proc !clause . rest-args))
+            (mv t cl-proc clause alist rest-args ev (cadr cl-result)
+                meta-extract-flg))
+           ((cl-proc !clause . rest-args)
+            (mv nil cl-proc clause alist rest-args ev cl-result
+                meta-extract-flg))
+           (& (mv :error nil nil nil nil nil nil nil))))
+        (& (mv :error nil nil nil nil nil nil nil)))))
+    (& (mv :error nil nil nil nil nil nil nil))))
+
 (defun chk-acceptable-clause-processor-rule (name term ctx wrld state)
 
 ; Note that term has been translated (as it comes from a translated rule
@@ -10209,22 +10246,9 @@
               because~|~%~p1~|~%does not have the necessary form:  ~@2.  See ~
               :DOC clause-processor."))
     (mv-let
-     (clauses-result-call-p cl-proc clause alist rest-args ev cl-proc-call)
-     (case-match term
-       (('implies ('if ('pseudo-term-listp clause)
-                      ('if ('alistp alist)
-                          (ev ('conjoin-clauses cl-result)
-                              &)
-                        ('quote nil))
-                    ('quote nil))
-                  (ev ('disjoin clause) alist))
-        (case-match cl-result
-          (('clauses-result (cl-proc !clause . rest-args))
-           (mv t cl-proc clause alist rest-args ev (cadr cl-result)))
-          ((cl-proc !clause . rest-args)
-           (mv nil cl-proc clause alist rest-args ev cl-result))
-          (& (mv :error nil nil nil nil nil nil))))
-       (& (mv :error nil nil nil nil nil nil)))
+     (clauses-result-call-p cl-proc clause alist rest-args ev cl-proc-call
+                            meta-extract-flg)
+     (destructure-clause-processor-rule term)
      (cond
       ((eq clauses-result-call-p :error)
        (er soft ctx str name (untranslate term t wrld)
@@ -10312,13 +10336,18 @@
                                         list ~x0 contains duplicates"
                                        non-alist-vars)))))
                       (t (value nil))))
-              (chk-evaluator-use-in-rule name cl-proc nil nil :clause-processor
+              (chk-evaluator-use-in-rule name cl-proc nil
+                                         (and meta-extract-flg
+                                              '(meta-extract-global-fact))
+                                         :clause-processor
                                          ev ctx wrld state)
               (chk-rule-fn-guard "clause-processor" :clause-processor cl-proc
                                  ctx wrld state)
               (chk-evaluator ev wrld ctx state))))))))))))
 
 (defun add-clause-processor-rule (name term wrld)
+
+; Warning: Keep this in sync with chk-acceptable-clause-processor-rule.
 
 ; This function is non-standard, as the other add-x-rule functions traffic in
 ; runes and numes.  If we ever decide to support automatic application of
@@ -10327,52 +10356,35 @@
 ; deal with runes, since these rules cannot be enabled or disabled or applied
 ; automatically.
 
-  (let ((er-string
-         "Add-clause-processor-rule broke on args ~x0!  It seems to be out of ~
-          sync with chk-acceptable-clause-processor-rule."))
-    (mv-let
-     (cl-proc ev)
-     (case-match term
-       (('implies ('if &
-                      ('if &
-                          (ev ('conjoin-clauses cl-proc-result)
-                              &)
-                        ('quote nil))
-                    ('quote nil))
-                  &)
-        (mv (case-match cl-proc-result
-              (('clauses-result (cl-proc . &))
-               cl-proc)
-              ((cl-proc . &)
-               cl-proc)
-              (& (er hard 'add-clause-processor-rule
-                     er-string
-                     (list name term))))
-            ev))
-       (& (mv (er hard 'add-clause-processor-rule
-                  er-string
-                  (list name term))
-              nil)))
-     (putprop
-      cl-proc 'clause-processor
-      t
+  (mv-let
+   (clauses-result-call-p cl-proc clause alist rest-args ev cl-proc-call
+                          meta-extract-flg)
+   (destructure-clause-processor-rule term)
+   (declare (ignore clause alist rest-args cl-proc-call meta-extract-flg))
+   (assert$
+    (and (not (eq clauses-result-call-p :error))
+         (symbolp cl-proc)
+         (function-symbolp cl-proc wrld))
+    (putprop
+     cl-proc 'clause-processor
+     t
 
 ; We keep a global list of clause-processor-rules, simply in order to be
 ; able to print them.  But someone may find other uses for this list, in
 ; particular in order to code computed hints that look for applicable
 ; clause-processor rules.
 
-      (global-set 'clause-processor-rules
-                  (acons name
-                         term
-                         (global-val 'clause-processor-rules wrld))
-                  (mark-attachment-disallowed
-                   (list cl-proc)
-                   ev
-                   (msg "it supports both the evaluator and clause-processor ~
-                         function used in :CLAUSE-PROCESSOR rule ~x0"
-                        name)
-                   wrld))))))
+     (global-set 'clause-processor-rules
+                 (acons name
+                        term
+                        (global-val 'clause-processor-rules wrld))
+                 (mark-attachment-disallowed
+                  (list cl-proc)
+                  ev
+                  (msg "it supports both the evaluator and clause-processor ~
+                        function used in :CLAUSE-PROCESSOR rule ~x0"
+                       name)
+                  wrld))))))
 
 ; Finally, we develop code for trusted clause-processors.  This has nothing to
 ; do with defthm, but it seems reasonable to place it immediately below code
