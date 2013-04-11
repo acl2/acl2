@@ -20,6 +20,7 @@
 
 (in-package "ACL2")
 (include-book "tools/include-raw" :dir :system)
+; cert_param: (hons-only)
 
 ; [Jared]: I pulled the WATCH related functionality out of ACL2(h) and into
 ; this ttag-based book.  In the process I ripped out the previous if-profiling
