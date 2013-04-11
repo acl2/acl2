@@ -279,6 +279,7 @@
            :rule-classes ((:rewrite) (:linear))
            :hints(("Goal"
                    :in-theory (disable exponents-add)
+                   :nonlinearp t
                    :use ((:instance step1b)
                          (:instance step2)
                          (:instance step3))))))
@@ -347,6 +348,7 @@
            :rule-classes ((:rewrite) (:linear))
            :hints(("Goal"
                    :in-theory (disable exponents-add)
+                   :nonlinearp t
                    :use ((:instance step1c)
                          (:instance step2)
                          (:instance step3))))))
