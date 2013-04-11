@@ -33,7 +33,38 @@
    (posp x)
    (bar x)))
 
-; The first example is based on one in
+; Here is a trivial test of the use of meta-extract-global-fact in
+; clause-processor rules.
+
+(defun bar-posp-cl-proc (cl hint state)
+  (declare (xargs :guard t
+                  :stobjs state)
+           (ignore hint))
+  (if (equal (meta-extract-formula 'bar-posp state)
+             '(POSP (BAR U)))
+      (value (list (cons '(not (posp (bar u))) cl)))
+    (value (list cl))))
+
+(defthm correctness-of-bar-posp-cl-proc
+  (implies (and (pseudo-term-listp cl)
+                (alistp a)
+                (nthmeta-ev (meta-extract-global-fact '(:formula bar-posp)
+                                                      state)
+                            a)
+                (nthmeta-ev (conjoin-clauses
+                             (clauses-result
+                              (bar-posp-cl-proc cl hint state)))
+                            a))
+           (nthmeta-ev (disjoin cl) a))
+  :rule-classes :clause-processor)
+
+(defthm bar-posp-cl-proc-test
+  (integerp (bar u))
+  :hints (("Goal"
+           :clause-processor
+           (bar-posp-cl-proc clause nil state))))
+
+; Our first example for :meta rules is based on one in
 ; books/clause-processors/meta-extract-user.lisp.
 
 ; First we develop a meta rule that implements the following fact.  (We do not
