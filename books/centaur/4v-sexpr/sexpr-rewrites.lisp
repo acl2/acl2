@@ -1368,7 +1368,8 @@ which rewrites to
   (defthm rewrite-with-shannon-expansion-alist-main-conservative
     (4v-sexpr-alist-<= (rewrite-with-shannon-expansion-alist-main vars x mode) x)
     :hints(("Goal"
-            :in-theory (disable rewrite-with-shannon-expansion)
+            :in-theory (e/d (hons-assoc-equal)
+                            (rewrite-with-shannon-expansion))
             :induct (rewrite-with-shannon-expansion-alist-main vars x mode))
            (witness :ruleset 4v-sexpr-alist-<=-witnessing)))
 
@@ -2054,7 +2055,9 @@ simplifying using the known signals."
   (defthm max-acl2-count-vals-gte-acl2-count-of-lookup
     (implies (hons-assoc-equal k x)
              (<= (acl2-count (cdr (hons-assoc-equal k x)))
-                 (max-acl2-count (alist-vals x)))))
+                 (max-acl2-count (alist-vals x))))
+    :hints(("Goal" :in-theory (enable hons-assoc-equal))))
+
 
   (defthm max-acl2-count-of-collect-bound-key-vals
     (<= (max-acl2-count (collect-bound-key-vals x alist))

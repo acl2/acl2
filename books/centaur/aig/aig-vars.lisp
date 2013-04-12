@@ -33,7 +33,8 @@
 
 (defthm member-aig-vars-alist-vals
   (implies (not (sets::in v (aig-vars (alist-vals al))))
-           (not (sets::in v (aig-vars (cdr (hons-assoc-equal x al)))))))
+           (not (sets::in v (aig-vars (cdr (hons-assoc-equal x al))))))
+  :hints(("Goal" :in-theory (enable hons-assoc-equal))))
 
 (defthm member-aig-vars-aig-and
   (implies (and (not (sets::in v (aig-vars x)))

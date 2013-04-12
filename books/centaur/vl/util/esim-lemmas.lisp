@@ -61,12 +61,14 @@
   (local (defthm l0
            (implies (not (member-equal nil (alist-vals al)))
                     (iff (cdr (hons-assoc-equal pat al))
-                         (hons-assoc-equal pat al)))))
+                         (hons-assoc-equal pat al)))
+           :hints(("Goal" :in-theory (enable hons-assoc-equal)))))
 
   (local (defthm l1
            (implies (atom-listp (alist-vals al))
                     (equal (consp (cdr (hons-assoc-equal pat al)))
-                           nil))))
+                           nil))
+           :hints(("Goal" :in-theory (enable hons-assoc-equal)))))
 
   (defthm similar-patternsp-of-al->pat
     (implies (and (subsetp-equal (pat-flatten1 pat) (alist-keys al))

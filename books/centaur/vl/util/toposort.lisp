@@ -27,7 +27,8 @@
 
 (local (defthm hons-assoc-equal-under-iff
          (iff (hons-assoc-equal a x)
-              (member-equal a (alist-keys x)))))
+              (member-equal a (alist-keys x)))
+         :hints(("Goal" :in-theory (enable hons-assoc-equal)))))
 
 
 

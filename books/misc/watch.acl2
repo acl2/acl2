@@ -1,0 +1,2 @@
+; cert-flags: ? t :ttags :all
+(certify-book "watch" ? t :ttags :all)

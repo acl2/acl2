@@ -256,6 +256,8 @@
 ; ahead and include the names with links.
 
   :guard (vl-useset-report-entry-p entry)
+  ;; Tau goes crazy here for some reason
+  :guard-hints(("Goal" :in-theory (disable (:executable-counterpart tau-system))))
   :body (b* ((htmlp        (vl-ps->htmlp))
              (name         (vl-useset-report-entry->name entry))
              ((when (equal name "mp_verror"))

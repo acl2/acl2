@@ -31,6 +31,7 @@
 (local (include-book "arithmetic/top-with-meta" :dir :system))
 
 
+
 (defun num-varmap (keys n)
   (declare (xargs :guard (acl2-numberp n)))
   (let* ((keys     (hons-remove-duplicates keys))
@@ -70,7 +71,9 @@
                                                    (len (member-equal key0 keys)))))
                                       (+ 1 n (* 2 (- (len keys)
                                                      (len (member-equal key0 keys))))))))))
-     :hints(("Goal" :in-theory (enable member-equal)
+     :hints(("Goal" :in-theory (enable member-equal
+                                       hons-assoc-equal
+                                       pairlis$)
              :induct (vvnv-ind n keys))))
 
    (defun num-varmap-key-idx (key keys n)
@@ -95,7 +98,8 @@
      (implies (equal (len a) (len b))
               (iff (hons-assoc-equal k (pairlis$ a b))
                    (member-equal k a)))
-     :hints(("Goal" :in-theory (enable hons-assoc-equal))))
+     :hints(("Goal" :in-theory (enable hons-assoc-equal
+                                       pairlis$))))
 
 
    (defthm svarmap-vals-num-varmap
@@ -340,13 +344,22 @@
               (iff (< 1 (* 2 n))
                    (not (equal n 0)))))
 
+
+   (local (defthm l0
+            (equal (consp (member a x))
+                   (if (member a x)
+                       t
+                     nil))))
+
    (defthm svar-assoc-numvarmap-key-idx
      (implies (acl2-numberp n)
               (equal (svar-assoc (num-varmap-key-idx key keys n)
                                  (num-varmap keys n))
                      (and (member-equal key keys)
                           (cons key t))))
-     :hints(("Goal" :in-theory (enable num-varmap-key-idx natp)
+     :hints(("Goal" :in-theory (e/d (num-varmap-key-idx
+                                     natp)
+                                    ())
              :do-not-induct t)))
 
    (defthm svar-assoc-numvarmap-key-idx-1
@@ -468,7 +481,8 @@
    (defthm 4v-sexpr-eval-list-of-append
      (equal (4v-sexpr-eval-list (append a b) env)
             (append (4v-sexpr-eval-list a env)
-                    (4v-sexpr-eval-list b env))))
+                    (4v-sexpr-eval-list b env)))
+     :hints(("Goal" :in-theory (enable append))))
 
    (defthm 4v-sexpr-eval-list-of-append-lists
      (equal (4v-sexpr-eval-list (append-lists x) env)

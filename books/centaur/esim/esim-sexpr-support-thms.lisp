@@ -293,3 +293,31 @@
 (defthm true-listp-pat->al
   (equal (true-listp (pat->al a b c))
          (true-listp c)))
+
+
+
+(defthm occs-state-of-list-fix
+  (equal (occs-state (list-fix occs))
+         (occs-state occs))
+  :hints(("Goal"
+          :induct (len occs)
+          :in-theory (enable occs-state))))
+
+(defcong list-equiv equal (occs-state occs) 1
+  :hints(("Goal"
+          :in-theory (e/d (list-equiv)
+                          (occs-state-of-list-fix))
+          :use ((:instance occs-state-of-list-fix (occs occs))
+                (:instance occs-state-of-list-fix (occs occs-equiv))))))
+
+(defthm collect-signal-list-of-list-fix
+  (equal (collect-signal-list key (list-fix occs))
+         (collect-signal-list key occs))
+  :hints(("Goal" :in-theory (enable collect-signal-list))))
+
+(defcong list-equiv equal (collect-signal-list key occs) 2
+  :hints(("Goal"
+          :in-theory (e/d (list-equiv)
+                          (collect-signal-list-of-list-fix))
+          :use ((:instance collect-signal-list-of-list-fix (occs occs))
+                (:instance collect-signal-list-of-list-fix (occs occs-equiv))))))

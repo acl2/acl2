@@ -98,9 +98,3 @@
   (equal (append (append a b) c)
          (append a (append b c))))
 
-
-;; BOZO this rule should really not be here
-(defthm character-listp-of-append
-  (implies (and (character-listp x)
-                (character-listp y))
-           (character-listp (append x y))))

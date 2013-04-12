@@ -218,9 +218,11 @@
                   (mv-let
                     (names maxvar outs1 gates)
                     (aig-list-to-aiger aigs names maxvar gates)
-                    (mv names maxvar (revappend outs outs1) gates)))))
+                    (mv names maxvar (revappend outs outs1) gates))))
+  :hints(("Goal" :in-theory (enable revappend))))
 
-(verify-guards aig-list-to-aiger)
+(verify-guards aig-list-to-aiger
+  :hints(("Goal" :in-theory (enable revappend))))
 
 (defthm names-max-entry-of-aig-list-to-aiger
   (implies (and (natp maxvar)
@@ -380,7 +382,8 @@ OUTS, and GATES.
 (defthm aiger-gate-listp-revappend
   (implies (and (aiger-gate-listp x)
                 (aiger-gate-listp y))
-           (aiger-gate-listp (revappend x y))))
+           (aiger-gate-listp (revappend x y)))
+  :hints(("Goal" :in-theory (enable revappend))))
 
 (defthm aiger-gate-listp-append
   (implies (and (aiger-gate-listp x)
@@ -547,9 +550,11 @@ OUTS, and GATES.
 (defthm aiger-get-lits-tr-rw
   (implies (not (stringp acc))
            (equal (aiger-get-lits-tr list map acc)
-                  (revappend acc (aiger-get-lits list map)))))
+                  (revappend acc (aiger-get-lits list map))))
+  :hints(("Goal" :in-theory (enable revappend))))
 
-(verify-guards aiger-get-lits)
+(verify-guards aiger-get-lits
+  :hints(("Goal" :in-theory (enable revappend))))
 
 
 
@@ -1461,7 +1466,8 @@ CNSTR-AIGS - list of constraint AIGs. "
 
 (defthm nat-listp-revappend
   (implies (and (nat-listp a) (nat-listp b))
-           (nat-listp (revappend a b))))
+           (nat-listp (revappend a b)))
+  :hints(("Goal" :in-theory (enable revappend))))
 
 (defthm nat-listp-of-read-n-str-separated-nats-tr
   (implies (nat-listp acc)

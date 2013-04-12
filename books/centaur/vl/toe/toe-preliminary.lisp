@@ -430,7 +430,7 @@ versa.  We extend @('X') with a fatal warning if this doesn't hold.</p>"
                              difference
                              intersectp-equal
                              hons-assoc-equal
-                             consp-under-iff-when-true-listp
+                             acl2::consp-under-iff-when-true-listp
                              subsetp-equal-when-first-two-same-yada-yada
                              sets::double-containment)))
 

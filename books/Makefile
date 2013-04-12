@@ -65,7 +65,7 @@ DIRS2_EXCEPT_WK_COI = ordinals data-structures bdd ihs arithmetic-2 arithmetic-3
 	quadratic-reciprocity tools paco hacking security regex \
 	defsort serialize wp-gen xdoc-impl system tutorial-problems \
 	cutil countereg-gen demos leftist-trees taspi std std/ks std/lists std/io \
-       std/alists \
+       std/alists std/typed-lists \
 	oslib tau add-ons
 # Add directories other than centaur that depend on hons, say, for performance:
 HONS_ONLY_DIRS = models/y86 security/des
@@ -177,7 +177,8 @@ wp-gen: ordinals
 xdoc-impl: xdoc str tools finite-set-theory/osets
 system: tools arithmetic arithmetic-5 misc
 std/lists: arithmetic
-std/alists: std/lists
+std/alists: std/lists tools
+std/typed-lists: std/lists cutil arithmetic
 std/ks: std/lists ihs arithmetic xdoc
 std/io: tools xdoc system std/lists std/ks arithmetic ihs arithmetic-3
 cutil: xdoc xdoc-impl tools str misc finite-set-theory/osets \

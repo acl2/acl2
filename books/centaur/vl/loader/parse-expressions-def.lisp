@@ -25,7 +25,7 @@
 
 
 
-(local (in-theory (disable consp-under-iff-when-true-listp
+(local (in-theory (disable acl2::consp-under-iff-when-true-listp
                            member-equal-when-member-equal-of-cdr-under-iff
                            default-car
                            default-cdr)))

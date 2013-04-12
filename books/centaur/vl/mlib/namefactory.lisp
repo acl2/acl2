@@ -377,7 +377,9 @@ fresh-name factory-prime)')."
 
   (local (defthm lemma2
            (implies (hons-assoc-equal prefix pmap)
-                    (member-equal prefix (strip-cars pmap)))))
+                    (member-equal prefix (strip-cars pmap)))
+           :hints(("Goal" :in-theory (enable hons-assoc-equal
+                                             strip-cars)))))
 
   (verify-guards vl-namefactory-indexed-name)
 

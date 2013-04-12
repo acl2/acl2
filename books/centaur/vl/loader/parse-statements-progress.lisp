@@ -29,7 +29,7 @@
                    acl2-count-positive-when-consp
                    acl2::acl2-count-when-member
                    (:type-prescription acl2-count)
-                   consp-under-iff-when-true-listp
+                   acl2::consp-under-iff-when-true-listp
                    VL-IS-TOKEN?-FN-WHEN-NOT-CONSP-OF-TOKENS
                    double-containment
                    acl2::consp-by-len

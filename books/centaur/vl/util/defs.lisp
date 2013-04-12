@@ -777,7 +777,8 @@ such that @('p') is a prefix of every list in @('x')."
 
   (defrule symbol-listp-of-look-up-each
     (implies (symbol-listp (strip-cdrs alist))
-             (symbol-listp (look-up-each x alist)))))
+             (symbol-listp (look-up-each x alist)))
+    :hints(("Goal" :in-theory (enable hons-assoc-equal)))))
 
 
 (deflist symbol-list-listp (x)

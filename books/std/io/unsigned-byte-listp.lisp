@@ -19,7 +19,7 @@
 (set-verify-guards-eagerness 2)
 
 (include-book "std/lists/take" :dir :system)
-(include-book "std/lists/nat-listp" :dir :system)
+(include-book "arithmetic/nat-listp" :dir :system)
 (local (include-book "std/lists/repeat" :dir :system))
 
 (in-theory (disable unsigned-byte-p))

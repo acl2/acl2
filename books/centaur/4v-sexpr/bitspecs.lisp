@@ -19,7 +19,6 @@
 ; Original authors: Sol Swords <sswords@centtech.com>
 ;                   Jared Davis <jared@centtech.com>
 
-
 (in-package "ACL2")
 (include-book "4v-logic")
 (include-book "sexpr-equivs")
@@ -31,10 +30,10 @@
 (local (include-book "ihs/logops-lemmas" :dir :system))
 (local (include-book "data-structures/no-duplicates" :dir :system))
 
-(local
- ;; [Jared] BOZO added after cutil updates are bringing in list-fix.. this
- ;; book is just not ready for list-fix stuff... probably easy to update
- (in-theory (disable append-of-nil)))
+;; (local
+;;  ;; [Jared] BOZO added after cutil updates are bringing in list-fix.. this
+;;  ;; book is just not ready for list-fix stuff... probably easy to update
+;;  (in-theory (disable append-of-nil)))
 
 (defun 4v-val-alistp (x)
   (declare (xargs :guard t))
@@ -278,7 +277,7 @@
                 (equal (len lst) (len vals)))
            (equal (4v-lookup-list lst (pairlis$ lst vals))
                   (4v-list-fix vals)))
-  :hints(("Goal" :in-theory (e/d () (4v-fix)))))
+  :hints(("Goal" :in-theory (e/d (pairlis$) (4v-fix)))))
 
 (defthm len-4v-from-bool-list
   (equal (len (4v-from-bool-list x))
@@ -955,7 +954,9 @@
                 (equal (len v2) (len k)))
            (not (alists-compatible (pairlis$ k v1)
                                    (pairlis$ k v2))))
-  :hints (("goal" :induct t)
+  :hints (("goal"
+           :in-theory (enable pairlis$ alists-compatible)
+           :induct t)
           (and stable-under-simplificationp
                '(:cases ((equal (car v1) (car v2)))))))
 
@@ -964,7 +965,9 @@
                 (boolean-listp b))
            (iff (equal (4v-from-bool-list a) (4v-from-bool-list b))
                 (equal a b)))
-  :hints (("goal" :induct (pairlis$ a b))))
+  :hints (("goal"
+           :in-theory (enable pairlis$)
+           :induct (pairlis$ a b))))
 
 
 (defthm not-equal-int-to-v

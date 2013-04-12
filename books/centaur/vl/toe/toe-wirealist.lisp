@@ -1157,7 +1157,9 @@ theorem:</p>
   (local (defthm hons-assoc-equal-under-iff
            (implies (cons-listp x)
                     (iff (hons-assoc-equal a x)
-                         (member-equal a (strip-cars x))))))
+                         (member-equal a (strip-cars x))))
+           :hints(("Goal" :in-theory (enable hons-assoc-equal
+                                             strip-cars)))))
 
   (local (defthm unique-hons-shrink-alist-is-revappend
            ;; Forcing this in general would be terrible, but for this proof
@@ -1424,6 +1426,8 @@ return the list of wires that correspond to this part select, in MSB order.  We
 are careful to ensure that the range is resolved, the indices are in bounds,
 and so on.</p>"
 
+  (local (in-theory (enable hons-assoc-equal)))
+
   (defund vl-msb-partselect-bitlist (x walist warnings)
     (declare (xargs :guard (and (vl-expr-p x)
                                 (not (vl-atom-p x))
@@ -1555,6 +1559,8 @@ and an @(see warnings) accumulator, @('warnings').  accumulator.  We attempt to
 return the list of wires that correspond to this bit select.  In practice this
 will be a singleton wire, or nil on failure.  We are careful to ensure that the
 selected bit is in bounds, etc.</p>"
+
+  (local (in-theory (enable hons-assoc-equal)))
 
   (defund vl-msb-bitselect-bitlist (x walist warnings)
     (declare (xargs :guard (and (vl-expr-p x)

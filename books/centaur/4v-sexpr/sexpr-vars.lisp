@@ -145,7 +145,8 @@ a single set containing all the variables in these sexprs.</p>")
 
   (defthm not-member-4v-sexpr-vars-lookup-when-not-member-vars-alist-vals
     (implies (not (member-equal k (4v-sexpr-vars-list (alist-vals al))))
-             (not (member-equal k (4v-sexpr-vars (cdr (hons-assoc-equal x al)))))))
+             (not (member-equal k (4v-sexpr-vars (cdr (hons-assoc-equal x al))))))
+    :hints(("Goal" :in-theory (enable hons-assoc-equal))))
 
   (defthm-4v-sexpr-flag
     (defthm 4v-sexpr-vars-4v-sexpr-compose

@@ -38,7 +38,6 @@
 (include-book "list-fix")
 (include-book "make-character-list")
 (include-book "mfc-utils")
-(include-book "nat-listp")
 (include-book "no-duplicatesp")
 (include-book "nthcdr")
 (include-book "prefixp")

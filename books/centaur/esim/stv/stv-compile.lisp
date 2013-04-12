@@ -58,10 +58,10 @@
          :hints(("Goal" :in-theory (e/d (pat-flatten1)
                                         ((force)))))))
 
-(local (defthm alist-keys-of-pairlis$
-         (equal (alist-keys (pairlis$ x y))
-                (list-fix x))
-         :hints(("Goal" :in-theory (enable pairlis$)))))
+;; (local (defthm alist-keys-of-pairlis$
+;;          (equal (alist-keys (pairlis$ x y))
+;;                 (list-fix x))
+;;          :hints(("Goal" :in-theory (enable pairlis$)))))
 
 (local (defthm consp-when-member-of-atom-listp
          (implies (and (atom-listp x)

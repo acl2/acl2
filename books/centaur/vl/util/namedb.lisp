@@ -220,7 +220,8 @@ number."
 
   (local (defthm lemma3
            (implies (not (member-equal key (strip-cars alist)))
-                    (not (hons-assoc-equal key alist)))))
+                    (not (hons-assoc-equal key alist)))
+           :hints(("Goal" :in-theory (enable hons-assoc-equal)))))
 
   (defthm hons-assoc-equal-when-vl-prefix-map-correct-p-aux
     (implies (and (vl-prefix-map-correct-p-aux domain pmap names)
@@ -566,7 +567,8 @@ fresh-name db-prime)')."
 
   (local (defthm lemma2
            (implies (hons-assoc-equal prefix pmap)
-                    (member-equal prefix (strip-cars pmap)))))
+                    (member-equal prefix (strip-cars pmap)))
+           :hints(("Goal" :in-theory (enable hons-assoc-equal)))))
 
   (local (defthm lemma3
            (implies (and (vl-prefix-map-correct-p pmap names)
@@ -674,7 +676,8 @@ matches a current prefix.</p>"
             (implies (and (hons-assoc-equal key pset)
                           (vl-unlike-any-prefix-p name (strip-cars pset)))
                      (equal (vl-pgenstr-highest key (cons name names))
-                            (vl-pgenstr-highest key names)))))
+                            (vl-pgenstr-highest key names)))
+            :hints(("Goal" :in-theory (enable hons-assoc-equal)))))
 
    (local (defthm lemma3
             ;; This might not be a terrible rule to have in general.
@@ -809,7 +812,8 @@ note is printed and @('fresh-name') looks like @('name_n') instead."
    (local (defthm crock
             (implies (alistp alist)
                      (iff (member-equal prefix (strip-cars alist))
-                          (hons-assoc-equal prefix alist)))))
+                          (hons-assoc-equal prefix alist)))
+            :hints(("Goal" :in-theory (enable hons-assoc-equal)))))
 
    (local (defthm lemma
             (IMPLIES

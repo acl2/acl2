@@ -41,7 +41,7 @@
 (defthm nat-listp-when-not-consp
   (implies (not (consp x))
            (equal (nat-listp x)
-                  (eq x nil)))
+                  (not x)))
   :hints(("Goal" :in-theory (enable nat-listp))))
 
 (defthm nat-listp-of-cons
@@ -50,7 +50,8 @@
               (nat-listp x)))
   :hints(("Goal" :in-theory (enable nat-listp))))
 
-(defthm nat-listp-of-append
+(defthm nat-listp-of-append-weak
+  ;; [Jared] added "weak" in support of std/typed-lists/nat-listp
   (implies (true-listp x)
            (equal (nat-listp (append x y))
                   (and (nat-listp x)
@@ -63,5 +64,7 @@
   :rule-classes :forward-chaining)
 
 (defthm nat-listp-of-cdr-when-nat-listp
-  (implies (nat-listp x)
-           (nat-listp (cdr x))))
+  ;; [Jared] added double-rewrite in support of std/typed-lists/nat-listp
+  (implies (nat-listp (double-rewrite x))
+           (equal (nat-listp (cdr x))
+                  t)))

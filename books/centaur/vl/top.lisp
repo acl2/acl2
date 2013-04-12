@@ -81,7 +81,7 @@
 
 ;; These seemed to be slowing us down.  This reduced the certification
 ;; time from 324 to 101 seconds on 2010-01-19.
-(local (in-theory (disable consp-under-iff-when-true-listp
+(local (in-theory (disable acl2::consp-under-iff-when-true-listp
                            mergesort
                            setp-of-vl-modulelist->names-when-no-duplicates)))
 

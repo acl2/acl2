@@ -154,21 +154,21 @@
 
 (defund alist-keys (x)
   (declare (xargs :guard t))
-  (if (atom x)
-      nil
-    (if (consp (car x))
-        (cons (caar x) (alist-keys (cdr x)))
-      (alist-keys (cdr x)))))
+  (cond ((atom x)
+         nil)
+        ((atom (car x))
+         (alist-keys (cdr x)))
+        (t
+         (cons (caar x) (alist-keys (cdr x))))))
 
 (defund alist-vals (x)
   (declare (xargs :guard t))
   (cond ((atom x)
          nil)
-        ((not (consp (car x)))
+        ((atom (car x))
          (alist-vals (cdr x)))
         (t
-         (cons (cdar x)
-               (alist-vals (cdr x))))))
+         (cons (cdar x) (alist-vals (cdr x))))))
 
 
 

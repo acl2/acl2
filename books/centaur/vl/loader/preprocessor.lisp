@@ -1739,7 +1739,7 @@ to enforce this restriction since it is somewhat awkward to do so.</p>"
 
   ;; Speed hint
   (local (in-theory (disable ACL2::OPEN-SMALL-NTHCDR
-                             CONSP-UNDER-IFF-WHEN-TRUE-LISTP
+                             acl2::CONSP-UNDER-IFF-WHEN-TRUE-LISTP
                              ACL2::NTHCDR-WITH-LARGE-INDEX
                              VL-MATCHES-STRING-P-WHEN-ACL2-COUNT-ZERO
                              acl2::nthcdr-append

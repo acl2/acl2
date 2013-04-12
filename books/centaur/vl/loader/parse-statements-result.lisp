@@ -51,14 +51,13 @@
                            acl2-count-positive-when-consp
                            vl-is-token?-fn-when-not-consp-of-tokens
                            vl-stmt-p-when-neither-atomic-nor-compound
-                           consp-under-iff-when-true-listp
+                           acl2::consp-under-iff-when-true-listp
                            double-containment
                            member-equal-when-member-equal-of-cdr-under-iff
                            acl2::consp-by-len
                            acl2::acl2-count-when-member
                            consp-when-member-equal-of-cons-listp
                            consp-when-member-equal-of-cons-listp
-                           true-listp-when-character-listp
                            (:type-prescription vl-is-token?-fn)
                            (:type-prescription acl2-count)
                            (:type-prescription vl-tokenlist-p)
@@ -70,8 +69,9 @@
                            default-<-1
                            natp-when-posp
                            not
-                           true-listp-when-symbol-listp
-                           true-listp-when-string-listp
+                           acl2::true-listp-when-character-listp-rewrite
+                           acl2::true-listp-when-symbol-listp-rewrite
+                           acl2::true-listp-when-string-listp-rewrite
                            sets::sets-are-true-lists
                            )))
 

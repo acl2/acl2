@@ -28,7 +28,7 @@
                    vl-tokenlist-p-when-subsetp-equal
                    acl2-count-positive-when-consp
                    vl-is-token?-fn-when-not-consp-of-tokens
-                   consp-under-iff-when-true-listp
+                   acl2::consp-under-iff-when-true-listp
                    (:type-prescription vl-tokenlist-p)
                    (:type-prescription vl-is-token?-fn)
                    (:type-prescription vl-is-some-token?-fn)

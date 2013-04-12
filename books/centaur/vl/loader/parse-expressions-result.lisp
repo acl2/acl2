@@ -27,10 +27,10 @@
 (make-event
 
 ; Disabling waterfall parallelism because this book allegedly uses memoization
-; while performing its proofs.  
+; while performing its proofs.
 
- (if (and (ACL2::hons-enabledp state) 
-          (f-get-global 'ACL2::parallel-execution-enabled state)) 
+ (if (and (ACL2::hons-enabledp state)
+          (f-get-global 'ACL2::parallel-execution-enabled state))
      (er-progn (set-waterfall-parallelism nil)
                (value '(value-triple nil)))
    (value '(value-triple nil))))
@@ -56,14 +56,14 @@
 (defmacro vl-expression-claim (name type &key extra-args)
   (vl-expression-claim-fn name extra-args type))
 
-(local (in-theory (disable consp-under-iff-when-true-listp
+(local (in-theory (disable acl2::consp-under-iff-when-true-listp
                            member-equal-when-member-equal-of-cdr-under-iff
                            default-car
                            default-cdr
                            vl-atom-p-by-tag-when-vl-expr-p
                            acl2-count-positive-when-consp
                            (:type-prescription acl2-count)
-                           
+
                            ;consp-when-vl-atomguts-p
                            ;tag-when-vl-ifstmt-p
                            ;tag-when-vl-seqblockstmt-p

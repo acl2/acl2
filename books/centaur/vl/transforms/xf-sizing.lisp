@@ -4039,7 +4039,7 @@ context-determined expressions."
                             acl2::consp-member-equal
                             default-car
                             default-cdr
-                            consp-under-iff-when-true-listp
+                            acl2::consp-under-iff-when-true-listp
                             ;args-exist-when-unary-op
                             ;args-exist-when-binary-op
                             ;args-exist-when-ternary-op
@@ -4167,7 +4167,7 @@ context-determined expressions."
                              vl-exprlist-p-when-subsetp-equal
                              vl-module-p-when-member-equal-of-vl-modulelist-p
                              vl-maybe-module-p-when-vl-module-p
-                             consp-under-iff-when-true-listp
+                             acl2::consp-under-iff-when-true-listp
                              acl2::consp-by-len
                              acl2::consp-of-cdr-by-len
                              acl2::consp-of-cddr-by-len

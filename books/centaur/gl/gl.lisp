@@ -61,7 +61,7 @@
 ;; (and hence is included in the list of primitives), but is provably
 ;; equivalent to (not (equal (imagpart x) 0)).
 (def-g-simple complex-rationalp
-  `(glr equal 
+  `(glr equal
         nil
         (glr equal 0 (glr imagpart x hyp clk) hyp clk)
         hyp clk))
@@ -324,6 +324,7 @@
                    (concrete-key-alistp al))
               (gobjectp (hons-assoc-equal key al)))
      :hints(("Goal" :in-theory (enable
+                                hons-assoc-equal
                                 gobjectp-def g-concrete-p
                                 g-keyword-symbolp-def
                                 g-boolean-p
@@ -383,7 +384,7 @@
                     canonical-general-concretep-impl-gobjectp
                     gl-thm::canonical-eval-canonical-general-concretep-for-gl-basis-ev
                     not-keyword-symbolp-car-impl
-                 
+
                     hons-assoc-equal)
                    (canonical-general-concretep
                     general-concretep-def
@@ -397,7 +398,7 @@
                     ;;                  :in-theory
                     ;;                  (enable tag g-concrete-p g-concrete->obj)
                     ))))))
-  
+
 
 
 ;; Jared: changed variable names to match new hons
@@ -494,7 +495,7 @@
 
 
 
-(def-gl-clause-processor glcp 
+(def-gl-clause-processor glcp
   '(string-append expt))
 
 (defmacro gl-bdd-mode ()

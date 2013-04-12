@@ -28,7 +28,7 @@
 
 
 (local (in-theory (disable ;consp-when-vl-expr-p
-                           consp-under-iff-when-true-listp
+                           acl2::consp-under-iff-when-true-listp
                            ;consp-when-vl-atom-p
                            ;consp-when-vl-atomguts-p
                            default-car

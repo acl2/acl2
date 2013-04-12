@@ -2158,7 +2158,8 @@
                          (not (equal k (caar x)))
                          (consp x) (consp (car x)))
                     (not (alist-equiv x y)))
-           :hints(("Goal" :in-theory (enable assoc-when-alistp)))))
+           :hints(("Goal" :in-theory (enable assoc-when-alistp
+                                             hons-assoc-equal)))))
 
   (local (defthm alist-equiv-nil-when-alistp
            (implies (alistp y)
@@ -2173,18 +2174,43 @@
                                  alist-equiv-implies-equal-hons-assoc-equal-2
                                  (x (caar y))
                                  (a nil) (a-equiv y)))
-                          :in-theory
-                          (disable alist-equiv-implies-equal-hons-assoc-equal-2))))))
+                               :in-theory
+                               (e/d (alist-equiv)
+                                    (alist-equiv-implies-equal-hons-assoc-equal-2)))))))
 
-  (local (defthmd len-remove-dups-strip-cars-when-alist-equiv
-           (implies (and (alist-equiv x y)
-                         (alistp x)
-                         (alistp y))
-                    (equal (len (remove-duplicates-equal (strip-cars x)))
-                           (len (remove-duplicates-equal (strip-cars y)))))
-           :hints (("goal" :induct (ind x y)
-                    :in-theory (enable assoc-when-alistp)
-                    :do-not-induct t))))
+  (local (encapsulate
+           ()
+           (local (defthm l0
+                    (implies (alistp x)
+                             (equal (assoc-equal key x)
+                                    (hons-assoc-equal key x)))))
+
+           (local (defthm l1
+                    (implies (and (alistp x)
+                                  (alistp y)
+                                  (assoc-equal key x)
+                                  (not (assoc-equal key y)))
+                             (not (alist-equiv x y)))))
+
+           (defthm helper
+             (implies (and (consp x)
+                           (alistp x)
+                           (alistp y)
+                           (NOT (ASSOC-EQUAL (FIRST (FIRST X)) Y)))
+                      (not (alist-equiv x y)))
+             :hints(("Goal"
+                     :in-theory (disable l1 l0)
+                     :use ((:instance l1 (key (caar x)))))))))
+
+  (defthmd len-remove-dups-strip-cars-when-alist-equiv
+    (implies (and (alist-equiv x y)
+                  (alistp x)
+                  (alistp y))
+             (equal (len (remove-duplicates-equal (strip-cars x)))
+                    (len (remove-duplicates-equal (strip-cars y)))))
+    :hints (("goal"
+             :induct (ind x y)
+             :do-not-induct t)))
 
   (defthm len-remove-dups-lemma-for-eltcount
     (implies (and (alist-equiv x (sm-alist sm))
@@ -2192,7 +2218,7 @@
              (equal (len (remove-duplicates-equal (strip-cars x)))
                     (len (strip-cars (sm-alist sm)))))
     :hints (("goal" :use ((:instance len-remove-dups-strip-cars-when-alist-equiv
-                           (y (sm-alist sm))))))))
+                                     (y (sm-alist sm))))))))
 
 
 (encapsulate

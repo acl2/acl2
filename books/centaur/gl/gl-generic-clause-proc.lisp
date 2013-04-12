@@ -539,7 +539,8 @@
 (defthm gobject-vals-alistp-pairlis$
   (implies (gobject-listp vals)
            (gobject-vals-alistp (pairlis$ keys vals)))
-  :hints(("Goal" :in-theory (enable gobject-listp))))
+  :hints(("Goal" :in-theory (enable gobject-listp
+                                    pairlis$))))
 
 
 (cutil::defaggregate glcp-config
@@ -608,7 +609,7 @@
              env)
             (pairlis$ formals
                       (glcp-generic-geval-lst actuals env)))
-     :hints(("Goal" :in-theory (enable default-cdr)
+     :hints(("Goal" :in-theory (enable default-cdr pairlis$)
              :induct (pairlis$ formals actuals))))
 
            
@@ -2103,7 +2104,8 @@ The definition body, ~x1, is not a pseudo-term."
 
    (defthm glcp-generic-ev-list*-macro
      (equal (glcp-generic-ev (list*-macro (append x (list ''nil))) al)
-            (glcp-generic-ev-lst x al)))
+            (glcp-generic-ev-lst x al))
+     :hints(("Goal" :in-theory (enable append))))
 
 
    (defthm pairlis-eval-alist-is-norm-alist
@@ -2111,7 +2113,8 @@ The definition body, ~x1, is not a pseudo-term."
               (equal (pairlis$ vars
                                (glcp-generic-ev-lst vars alist))
                      (norm-alist vars alist)))
-     :hints(("Goal" :in-theory (enable nonnil-symbol-listp))))
+     :hints(("Goal" :in-theory (enable nonnil-symbol-listp
+                                       pairlis$))))
 
 
 

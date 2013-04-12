@@ -2440,6 +2440,7 @@
              (equal (4v-env-equiv a b)
                     (equal a b)))
     :hints (("goal"
+             :in-theory (enable pairlis$)
              :induct (pairlis$ a b)
              :expand ((:free (k) (hons-assoc-equal k a))
                       (:free (k) (hons-assoc-equal k b))
@@ -2533,7 +2534,7 @@
            :in-theory (disable* 4v-fix similar-patternsp-commutes
                                 4v-alists-agree-commute
                                 4v-alists-agree default-car default-cdr
-                                consp-hons-assoc-equal
+                                consp-of-hons-assoc-equal
                                 hons-assoc-equal
                                 member-equal not
                                 (:definition 4v-pat-alist-translate)

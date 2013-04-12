@@ -2094,6 +2094,9 @@ eventually extend the printer to allow them.</p>")
     :rule-classes ((:rewrite) (:linear))))
 
 
+(local (defthm true-listp-when-character-listp-rewrite-expensive
+         (implies (character-listp x)
+                  (true-listp x))))
 
 (defpp vl-fmt-tilde-x (x)
   :guard t

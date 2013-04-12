@@ -27,10 +27,10 @@
 (define clean-alist (x)
   :parents (utilities)
 
-  (b* ((fal    (acl2::make-fal x nil))
+  (b* ((fal    (make-fal x nil))
        (shrink (hons-shrink-alist fal nil))
-       (-      (flush-hons-get-hash-table-link fal))
-       (-      (flush-hons-get-hash-table-link shrink)))
+       (-      (fast-alist-free fal))
+       (-      (fast-alist-free shrink)))
       shrink)
 
   :returns (ans alistp)

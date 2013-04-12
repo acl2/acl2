@@ -22,6 +22,13 @@
 (include-book "defrstobj")
 (include-book "typed-record-tests")  ;; for various typed-record types
 
+#||
+
+;; Fool dependency scanner into allowing more memory for this book on our cluster
+(set-max-mem (* 4 (expt 2 30)))
+
+||#
+
 
 ; basic-tests.lisp
 ;

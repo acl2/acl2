@@ -329,10 +329,10 @@ initially kept in a big, mixed list.</p>"
                      ;; just a speed hint
                      double-containment
                      sets::nonempty-means-set
-                     consp-under-iff-when-true-listp
+                     acl2::consp-under-iff-when-true-listp
                      acl2::consp-by-len
-                     true-listp-when-character-listp
-                     true-listp-when-not-consp
+                     acl2::true-listp-when-character-listp
+                     acl2::true-listp-when-atom
                      sets::sets-are-true-lists
                      consp-when-member-equal-of-cons-listp
                      consp-when-member-equal-of-cons-listp

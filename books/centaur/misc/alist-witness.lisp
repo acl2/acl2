@@ -1,4 +1,3 @@
-
 ; Centaur Miscellaneous Books
 ; Copyright (C) 2008-2011 Centaur Technology
 ;
@@ -23,7 +22,10 @@
 
 (in-package "ACL2")
 
-(include-book "alist-equiv")
+(include-book "misc/hons-help2" :dir :system)
+(include-book "alist-defs")
+(include-book "std/lists/sets" :dir :system)
+(include-book "std/alists/top" :dir :system)
 (include-book "witness-cp")
 
 

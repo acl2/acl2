@@ -505,7 +505,8 @@
            (member a z))))
 
 ;; Jared added this after fixing up std/lists/sets stuff
-(local (in-theory (disable revappend-removal)))
+(local (in-theory (e/d (revappend)
+                       (revappend-removal))))
 
 (defthm no-duplicatesp-sorted-revappend-2
   (implies (not (no-duplicatesp-sorted y))

@@ -83,6 +83,8 @@
 
 (include-book "std/lists/top" :dir :system)
 (include-book "std/alists/top" :dir :system)
+(include-book "std/typed-lists/top" :dir :system)
+
 (include-book "std/ks/explode-atom" :dir :system)
 
 
@@ -118,47 +120,11 @@
             no-duplicatesp-equal
             set-difference-equal
 
-            ;; now disabled due to std/alists/top
-            ;; pairlis$
-            ;; alistp
-            ;; strip-cars
-            ;; strip-cdrs
-
-            ;; Now disabled due to std/lists/top
-            ;append
-            ;make-character-list
-            ;acl2::take-redefinition
-            ;nthcdr
-
-            true-listp
-            string-listp
-            symbol-listp
-            character-listp
-
             assoc-equal
 
             hons-shrink-alist
             make-fal))
 
-
-(defsection true-listp
-
-  (local (in-theory (enable true-listp)))
-
-  (defrule true-listp-when-not-consp
-    (implies (not (consp x))
-             (equal (true-listp x)
-                    (not x))))
-
-  (defrule true-listp-of-cons
-    (equal (true-listp (cons a x))
-           (true-listp x)))
-
-  (defrule consp-under-iff-when-true-listp
-    (implies (true-listp x)
-             (iff (consp x)
-                  x))
-    :rule-classes ((:rewrite :backchain-limit-lst 0))))
 
 
 (defsection acl2-count
@@ -355,47 +321,11 @@
 
 
 
-(defsection hons-assoc-equal
-
-  (local (in-theory (enable hons-assoc-equal)))
-
-  (defrule hons-assoc-equal-when-atom
-    (implies (atom alist)
-             (equal (hons-assoc-equal a alist)
-                    nil)))
-
-  (defrule hons-assoc-equal-of-cons
-    (equal (hons-assoc-equal key (cons entry map))
-           (if (and (consp entry)
-                    (equal key (car entry)))
-               entry
-             (hons-assoc-equal key map))))
-
-  (defrule hons-assoc-equal-of-hons-acons
-    (equal (hons-assoc-equal key (hons-acons key2 val map))
-           (if (equal key key2)
-               (cons key val)
-             (hons-assoc-equal key map))))
-
-  (defrule consp-of-hons-assoc-equal
-    (equal (consp (hons-assoc-equal x alist))
-           (if (hons-assoc-equal x alist)
-               t
-             nil)))
-
-  (defrule car-of-hons-assoc-equal
-    (equal (car (hons-assoc-equal key alist))
-           (if (hons-assoc-equal key alist)
-               key
-             nil)))
-
-  (defrule assoc-equal-elim
-    (implies (force (alistp alist))
-             (equal (assoc-equal key alist)
-                    (hons-assoc-equal key alist)))
-    :enable assoc-equal))
-
-
+(defrule assoc-equal-elim
+  (implies (force (alistp alist))
+           (equal (assoc-equal key alist)
+                  (hons-assoc-equal key alist)))
+  :enable assoc-equal)
 
 (defrule hons-assoc-equal-of-make-fal
   (equal (hons-assoc-equal a (make-fal x y))
@@ -427,17 +357,14 @@
     (implies (alistp ans)
              (alistp (hons-shrink-alist x ans))))
 
-  (defrule assoc-equal-of-hons-shrink-alist
-    (equal (hons-assoc-equal a (hons-shrink-alist x ans))
-           (or (hons-assoc-equal a ans)
-               (hons-assoc-equal a x))))
 
   ;; BOZO probably want to redo this stuff with alist-keys instead of strip-cars
 
   (local (defrule l0
            (implies (alistp x)
                     (iff (hons-assoc-equal a x)
-                         (member-equal a (strip-cars x))))))
+                         (member-equal a (strip-cars x))))
+           :enable strip-cars))
 
   (local (defrule l1
            (implies (and (alistp x)
@@ -450,7 +377,7 @@
     (implies (and (alistp x)
                   (alistp y))
              (set-equiv (strip-cars (hons-shrink-alist x y))
-                         (strip-cars (append x y))))
+                        (strip-cars (append x y))))
     :hints((set-reasoning)))
 
   (local (defrule l2
@@ -566,129 +493,20 @@
 
 
 
-(defsection character-listp
-
-  (local (in-theory (enable character-listp)))
-
-  (defrule character-listp-when-not-consp
-    (implies (not (consp x))
-             (equal (character-listp x)
-                    (not x))))
-
-  (defrule character-listp-of-cons
-    (equal (character-listp (cons a x))
-           (and (characterp a)
-                (character-listp x))))
-
-  (defrule true-listp-when-character-listp
-    (implies (character-listp x)
-             (true-listp x)))
-
-  (defrule characterp-of-car-when-character-listp
-    (implies (character-listp x)
-             (equal (characterp (car x))
-                    (consp x))))
-
-  (defrule character-listp-of-cdr-when-character-listp
-    (implies (character-listp x)
-             (character-listp (cdr x))))
-
-  (defrule character-listp-of-make-list-ac
-    (implies (and (force (character-listp ac))
-                  (force (characterp x)))
-             (character-listp (make-list-ac n x ac))))
-
-  (defrule character-listp-of-repeat
-    (equal (character-listp (repeat a n))
-           (or (zp n)
-               (characterp a)))
-    :enable repeat)
-
-  (defrule character-listp-of-take
-    (implies (and (character-listp x)
-                  (force (<= (nfix n) (len x))))
-             (character-listp (take n x)))
-    :enable acl2::take-redefinition)
-
-  (defrule character-listp-of-butlast
-    (implies (and (character-listp x)
-                  (force (natp n))
-                  (force (<= n (len x))))
-             (character-listp (butlast x n)))
-    :enable butlast)
-
-  (defrule character-listp-of-last
-    (implies (character-listp x)
-             (character-listp (last x))))
-
-  (defrule character-listp-of-nthcdr
-    (implies (character-listp x)
-             (character-listp (nthcdr n x)))))
 
 
 
-#!ACL2
-(cutil::deflist string-listp (x)
-  (stringp x)
-  :true-listp t
-  :elementp-of-nil nil
-  :already-definedp t)
 
-#!ACL2
-(cutil::deflist symbol-listp (x)
-  (symbolp x)
-  :true-listp t
-  :elementp-of-nil t
-  :already-definedp t)
+(defrule string-listp-of-strip-cdrs-of-pairlis$
+  ;; BOZO what nonsense is this?
+  (implies (and (string-listp cdrs)
+                (force (equal (len cars) (len cdrs))))
+           (string-listp (strip-cdrs (pairlis$ cars cdrs)))))
 
-
-(defsection string-listp
-
-  ;;(local (in-theory (enable string-listp)))
-
-  (defrule true-listp-when-string-listp
-    ;; Having the rewrite rule seems nice; otherwise type prescriptions
-    ;; sometimes don't go through, etc.
-    (implies (string-listp x)
-             (true-listp x))
-    :rule-classes ( ;;(:compound-recognizer)
-                   (:rewrite :backchain-limit-lst 1)))
-
-  (defrule string-listp-of-intersection-equal
-    (implies (and (force (string-listp x))
-                  (force (string-listp y)))
-             (string-listp (intersection-equal x y))))
-
-  (defrule string-listp-of-remove-equal
-    ;; BOZO probably add to deflist
-    (implies (string-listp x)
-             (string-listp (remove-equal a x))))
-
-  (defrule string-listp-of-strip-cdrs-of-pairlis$
-    ;; BOZO what nonsense is this?
-    (implies (and (string-listp cdrs)
-                  (force (equal (len cars) (len cdrs))))
-             (string-listp (strip-cdrs (pairlis$ cars cdrs))))))
-
-
-
-(defsection symbol-listp
-
-  (defrule true-listp-when-symbol-listp
-    ;; Having the rewrite rule seems nice; otherwise type prescriptions
-    ;; sometimes don't go through, etc.
-    (implies (symbol-listp x)
-             (true-listp x))
-    :rule-classes ( ;;(:compound-recognizer)
-                   (:rewrite :backchain-limit-lst 1)))
-
-  (defrule eqlable-listp-when-symbol-listp
-    (implies (symbol-listp x)
-             (eqlable-listp x)))
-
-  (defrule symbolp-of-cdr-hons-assoc-equal-when-symbol-listp-of-strip-cdrs
-    (implies (symbol-listp (strip-cdrs alist))
-             (symbolp (cdr (hons-assoc-equal a alist))))))
+(defrule symbolp-of-cdr-hons-assoc-equal-when-symbol-listp-of-strip-cdrs
+  (implies (symbol-listp (strip-cdrs alist))
+           (symbolp (cdr (hons-assoc-equal a alist))))
+  :hints(("Goal" :in-theory (enable hons-assoc-equal))))
 
 
 
@@ -721,17 +539,6 @@
   (equal (string-append-lst (cons a x))
          (string-append a (string-append-lst x)))
   :enable string-append-lst)
-
-
-(defrule true-listp-of-explode-nonnegative-integer
-  (implies (true-listp acc)
-           (true-listp (explode-nonnegative-integer x n acc)))
-  :rule-classes :type-prescription)
-
-(defrule true-listp-of-explode-atom
-  (true-listp (explode-atom x n))
-  :rule-classes :type-prescription
-  :hints(("Goal" :in-theory (e/d (explode-atom)))))
 
 
 (defrule plist-worldp-of-w

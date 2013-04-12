@@ -177,7 +177,8 @@
 (defthm pseudo-term-listp-pairlis-term-alistp
   (implies (and (symbol-listp a)
                 (pseudo-term-listp x))
-           (term-alistp (pairlis$ a x))))
+           (term-alistp (pairlis$ a x)))
+  :hints(("Goal" :in-theory (enable pairlis$))))
 
 (defthm-beta-reduce-flag pseudo-termp-beta-reduce
   (beta-reduce-term
@@ -219,7 +220,6 @@
            (equal (strip-cdrs (pairlis$ a b))
                   b)))
 
-
 (defthm beta-reduce-correct-lemma
   (if flg
       (implies (and (pseudo-termp x)
@@ -230,14 +230,15 @@
                   (alistp a))
              (equal (dumb-ev-lst (beta-reduce-list x) a)
                     (dumb-ev-lst x a))))
-  :hints (("goal" :in-theory (disable (:definition beta-reduce-term)
-                                      (:definition beta-reduce-list)
-                                      term-subst)
+  :hints (("goal" :in-theory (e/d (pairlis$)
+                                  ((:definition beta-reduce-term)
+                                   (:definition beta-reduce-list)
+                                   term-subst))
            :induct (dumb-ev-ind flg x a)
            :expand ((beta-reduce-term x)
                     (beta-reduce-list x)))
           ("Subgoal *1/6" :in-theory (enable dumb-ev-constraint-0))
-          ("Subgoal *1/5.1" :in-theory (enable dumb-ev-al)))
+          ("Subgoal *1/5" :in-theory (enable dumb-ev-al)))
   :rule-classes nil)
 
 (defthm beta-reduce-correct-rw

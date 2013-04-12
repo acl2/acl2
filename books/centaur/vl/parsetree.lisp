@@ -1243,7 +1243,9 @@ high or low.</dd>
                     (if (cdr (hons-assoc-equal key atts))
                         t
                       nil)))
-    :hints(("Goal" :induct (hons-assoc-equal key atts))))
+    :hints(("Goal"
+            :in-theory (enable hons-assoc-equal)
+            :induct (hons-assoc-equal key atts))))
 
   (defthm vl-atts-p-of-vl-remove-keys
     (implies (force (vl-atts-p x))

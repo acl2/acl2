@@ -1031,7 +1031,8 @@
 
 (local (defthm lit-listp-of-nthcdr
          (implies (lit-listp x)
-                  (lit-listp (nthcdr n x)))))
+                  (lit-listp (nthcdr n x)))
+         :hints(("Goal" :in-theory (enable nthcdr)))))
 
 (local (defthm len-alist-vals
          (equal (len (alist-vals x))
@@ -1050,7 +1051,7 @@
 (local (defthm aignet-lit-listp-of-nthcdr
          (implies (aignet-lit-listp x aignet)
                   (aignet-lit-listp (nthcdr n x) aignet))
-         :hints(("Goal" :in-theory (enable aignet-lit-listp)))))
+         :hints(("Goal" :in-theory (enable aignet-lit-listp nthcdr)))))
 
 ;; (defthm set-outs-logic-preserves-aignet-lit-listp
 ;;   (equal (aignet-lit-listp lits (set-outs-logic nouts aignet))
@@ -1078,7 +1079,8 @@
 
 (defthm lit-eval-list-of-nthcdr
   (equal (lit-eval-list (nthcdr n x) in-vals reg-vals aignet)
-         (nthcdr n (lit-eval-list x in-vals reg-vals aignet))))
+         (nthcdr n (lit-eval-list x in-vals reg-vals aignet)))
+  :hints(("Goal" :in-theory (enable nthcdr))))
 
 (defthm nthcdr-of-append
   (implies (equal (nfix n) (len a))

@@ -1182,7 +1182,7 @@ index of @('|reset|') is @('nil').</p>"
                                 string-append
                                 len
                                 nth)
-                               (consp-under-iff-when-true-listp
+                               (acl2::consp-under-iff-when-true-listp
                                 acl2::coerce-list-under-iff)))))))
 
 ; Reduction 3.  Because of the restrictions made in vl-emodwire-p on the name,

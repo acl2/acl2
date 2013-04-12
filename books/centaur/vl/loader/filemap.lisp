@@ -80,7 +80,8 @@ either more control or flexibility in the underlying representation.</p>"
              (equal (stringp (cdr (hons-assoc-equal a x)))
                     (if (hons-assoc-equal a x)
                         t
-                      nil))))
+                      nil)))
+    :hints(("Goal" :in-theory (enable hons-assoc-equal))))
 
   (defthm vl-filemap-p-of-append
     (implies (and (force (vl-filemap-p x))

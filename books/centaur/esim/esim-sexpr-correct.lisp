@@ -28,15 +28,15 @@
 (local (include-book "esim-sexpr-support-thms"))
 (local (include-book "centaur/4v-sexpr/sexpr-advanced" :dir :system))
 (local (in-theory (disable sets::double-containment)))
-(local (in-theory (disable occmap append-of-nil)))
+(local (in-theory (disable occmap)))
 
 (make-event
 
 ; Disabling waterfall parallelism because this book allegedly uses memoization
-; while performing its proofs.  
+; while performing its proofs.
 
- (if (and (hons-enabledp state) 
-          (f-get-global 'parallel-execution-enabled state)) 
+ (if (and (hons-enabledp state)
+          (f-get-global 'parallel-execution-enabled state))
      (er-progn (set-waterfall-parallelism nil)
                (value '(value-triple nil)))
    (value '(value-triple nil))))
@@ -100,7 +100,7 @@
                                       4v-sexpr-eval-list
                                       4v-sexpr-alist-extract
                                       4v-alist-extract
-                                      len nth-with-large-index 
+                                      len nth-with-large-index
                                       (:rules-of-class :type-prescription :here))
           :do-not-induct t
           :expand ((:free (a b) (4v-sexpr-eval (cons a b) env))
@@ -266,7 +266,7 @@
 
 
 
-           
+
 
 
 (defthmd append-4v-alist-extract
@@ -336,7 +336,7 @@
   :hints(("Goal" :in-theory (e/d () (esim-fixpoint good-esim-modulep
                                                    eapply-spec))
           :expand ((:free (st-al) (esim-out mod sig-al st-al))))))
-  
+
 
 (defthm 4v-sexpr-eval-of-esim-sexpr-out-when-esim-correct-modp1
   (implies (and (esim-sexpr-correct-modp mod)
@@ -412,7 +412,7 @@
 
 (defthm 4v-alistp-eapply-spec
   (4v-alistp (mv-nth 1 (eapply-spec al x)))
-  :hints(("Goal" :in-theory '(eapply-spec 4v-alistp-4v-sexpr-eval-alist 
+  :hints(("Goal" :in-theory '(eapply-spec 4v-alistp-4v-sexpr-eval-alist
                                           make-fast-alist))))
 
 (defthm 4v-alistp-esim-out
@@ -456,7 +456,7 @@
                                       4v-sexpr-eval-alist
                                       4v-env-equiv-to-key-and-env-equiv
                                       4v-lookup))))
-  
+
 
 
 
@@ -510,7 +510,7 @@
                (sexpr-pat-alist-translate
                 (cdr op) (cdr np) al acc))))
     acc))
-              
+
 
 
 
@@ -531,7 +531,7 @@
 
 
 
-              
+
 
 
 (defthm esim-occ-to-esim-occ-single
@@ -600,7 +600,7 @@
 
 (encapsulate
   nil
-  (local 
+  (local
    (progn
      (defthm hons-assoc-equal-4v-and-sexpr-pat-alist-translate1
        (implies (hons-assoc-equal key (4v-pat-alist-translate a b al2 acc))
@@ -700,7 +700,7 @@
   (implies (member-equal occ occs)
            (hons-assoc-equal (gpl :u occ) (occmap1 occs))))
 
-(local (in-theory (enable consp-hons-assoc-equal)))
+(local (in-theory (enable consp-of-hons-assoc-equal)))
 
 (encapsulate nil
   (local
@@ -815,7 +815,7 @@
            :in-theory (enable fal-extract))
           (and stable-under-simplificationp
                '(:cases ((hons-assoc-equal occ (occmap mod)))))))
-          
+
 
 (defthm fixpointp-for-occs-impl-fixpointp-for-single-occ
   (implies (and (4v-sexpr-fixpointp (esim-sexpr-occs-out mod occs)
@@ -977,7 +977,7 @@
                 (not (member-equal v (pat-flatten1 (occ-state occ))))
                 (good-esim-occp occ))
            (not (member-equal
-                 v 
+                 v
                  (4v-sexpr-vars-list
                   (alist-vals (esim-sexpr-occ-out occ))))))
   :hints(("Goal" :in-theory (disable esim-sexpr-out))))
@@ -989,7 +989,7 @@
                 (good-esim-modulep mod)
                 (not (gpl :x mod)))
            (not (member-equal
-                 v 
+                 v
                  (4v-sexpr-vars-list
                   (alist-vals (esim-sexpr-occs-out mod occs))))))
   :hints(("Goal" :in-theory (e/d (fal-extract) (esim-sexpr-occ-out)))))
@@ -1388,7 +1388,7 @@
                   (4v-alists-agree
                    (pat-flatten1 (gpl :i mod))
                    fixpoint0 env))
-             (equal 
+             (equal
               (4v-pat-alist-translate
                (gpl :i (esim-get-occ occ mod))
                ins
@@ -1506,7 +1506,7 @@
 ; alist-keys-member-hons-assoc-equal
 ; subsetp-car-member
                                     default-car default-cdr
-                                    consp-hons-assoc-equal
+                                    consp-of-hons-assoc-equal
                                     subsetp-trans
                                     subsetp-when-atom-left
                                     hons-assoc-equal
@@ -1623,7 +1623,7 @@
                     (4v-sexpr-eval-list x (append al1 al2))))
     :flag sexpr-list)
   :hints (("goal" :in-theory (e/d* (subsetp-equal)
-                                   (sexpr-eval-list-norm-env-when-ground-args-p 
+                                   (sexpr-eval-list-norm-env-when-ground-args-p
                                     nth-with-large-index
                                     member-of-cons
                                     4v-sexpr-eval
@@ -1744,7 +1744,7 @@
                   (and (good-esim-modulep mod) (not (gpl :x mod)))
                   (esim-sexpr-correct-occsp (gpl :occs mod)))
              (all-fixpoints-greater
-              mod 
+              mod
               (append (4v-sexpr-eval-alist fixpoint env)
                       (4v-alist-extract
                        (pat-flatten1 (gpl :i mod))
@@ -1759,7 +1759,7 @@
                                    (lb fixpoint)
                                    (env env)
                                    (fp (4v-alist-extract
-                                        (alist-keys (esim-sexpr-occs-out 
+                                        (alist-keys (esim-sexpr-occs-out
                                                      mod (alist-keys (occmap mod))))
                                         fixpoint0))))))
            (and stable-under-simplificationp
@@ -1941,7 +1941,7 @@
                 (good-esim-modulep mod) (not (gpl :x mod))
                 (esim-sexpr-correct-occsp (gpl :occs mod)))
            (all-fixpoints-greater
-            mod 
+            mod
             (append (4v-sexpr-eval-alist fixpoint env)
                     (4v-alist-extract
                      (pat-flatten1 (gpl :i mod))
@@ -2262,7 +2262,7 @@
                             4v-env-equiv-to-key-and-env-equiv)))
           (witness :ruleset (4v-alists-agree-witnessing
                              4v-alists-agree-lookup-ex))))
-                                   
+
 
 (defthm 4v-sexpr-eval-fixpoint-lemma3
   (implies
@@ -2703,7 +2703,7 @@
                        no-duplicatesp-equal-append-iff
                        member-equal-append))
          (witness :ruleset set-reasoning-no-consp)))
-                
+
 
 (defthmd esim-nst-norm-appended-extracted-sts
   (implies (good-esim-modulep mod)
@@ -2894,7 +2894,7 @@
   (implies (and (good-esim-modulep mod)
                 (esim-sexpr-correct-nst-modp mod))
            (b* ((sexpr-nst (esim-sexpr-nst mod in st))
-                (spec-nst (esim-nst mod 
+                (spec-nst (esim-nst mod
                                     (4v-sexpr-eval-alist in env)
                                     (4v-sexpr-eval-alist st env))))
              (equal (4v-sexpr-eval-alist sexpr-nst env)
@@ -3137,7 +3137,7 @@
                                   ENV)
                                  st)))
   :hints (("goal" :use ((:instance esim-occs-nst-using-driven-signals-of-mod
-                                   (fixpoint 
+                                   (fixpoint
                                     (append (4v-sexpr-eval-alist
                                              (esim-sexpr-fixpoint-out mod)
                                              env)
@@ -3165,10 +3165,10 @@
                                   (4v-alist-extract
                                    (pat-flatten1 (gpl :i mod)) env)
                                   env)
-                                  
+
                                  st)))
   :hints (("goal" :use ((:instance esim-occs-nst-using-driven-signals-of-mod
-                                   (fixpoint 
+                                   (fixpoint
                                     (esim-fixpoint
                                      mod
                                      (4v-alist-extract
@@ -3339,6 +3339,9 @@
                     spec-nst)))
   :hints(("Goal" :in-theory (e/d (esim-occs-nst-lemma2)
                                  (esim-sexpr-occs-nst
+                                  ;; blah, need to disable append-of-nil, presumably
+                                  ;; due to something above expecting it
+                                  append-of-nil
                                   good-esim-modulep
                                   esim-occs-nst
                                   ; extract-of-esim-fixpoint-equiv-esim-least-fixpoint
@@ -3425,14 +3428,14 @@
 (defthm 4v-sexpr-eval-of-esim-sexpr-nst
   (implies (good-esim-modulep mod)
            (b* ((sexpr-nst (esim-sexpr-nst mod in st))
-                (spec-nst (esim-nst mod 
+                (spec-nst (esim-nst mod
                                     (4v-sexpr-eval-alist in env)
                                     (4v-sexpr-eval-alist st env))))
              (equal (4v-sexpr-eval-alist sexpr-nst env)
                     spec-nst)))
   :hints (("goal" :in-theory (disable esim-sexpr-nst esim-nst
                                       good-esim-modulep))))
-  
+
 
 
 

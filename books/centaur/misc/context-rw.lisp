@@ -742,20 +742,22 @@ when it becomes available.
 
 
 
-(defthm alists-compatible-nil
-  (alists-compatible nil x)
-  :hints(("Goal" :in-theory (enable alists-compatible-in-terms-of-alists-agree
-                                    intersection-equal
-                                    alists-agree))))
+;; (defthm alists-compatible-nil
+;;   (alists-compatible nil x)
+;;   :hints(("Goal" :in-theory (enable alists-compatible-in-terms-of-alists-agree
+;;                                     intersection-equal
+;;                                     alists-agree))))
 
-(defthm alists-compatible-self
-  (alists-compatible x x)
-  :hints(("Goal" :in-theory (enable alists-compatible-iff-agree-on-bad-guy))))
+;; (defthm alists-compatible-self
+;;   (alists-compatible x x)
+;;   :hints(("Goal" :in-theory (enable alists-compatible-iff-agree-on-bad-guy))))
 
-(defthm alists-compatible-commute
-  (iff (alists-compatible b a)
-       (alists-compatible a b))
-  :hints ((alist-reasoning)))
+(local (in-theory (enable alists-compatible-sym)))
+
+;; (defthm alists-compatible-commute
+;;   (iff (alists-compatible b a)
+;;        (alists-compatible a b))
+;;   :hints ((alist-reasoning)))
 
 (defthm alists-compatible-when-sub-alistp
   (implies (sub-alistp a b)

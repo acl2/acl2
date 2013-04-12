@@ -420,7 +420,8 @@
 
   (defthm 4v-sexpr-vars-list-append
     (set-equiv (4v-sexpr-vars-list (append a b))
-                (append (4v-sexpr-vars-list a) (4v-sexpr-vars-list b))))
+               (append (4v-sexpr-vars-list a) (4v-sexpr-vars-list b)))
+    :hints(("Goal" :in-theory (enable append))))
 
   (defthm not-member-4v-sexpr-vars-of-hons-assoc-equal
     (implies (not (member-equal v (4v-sexpr-vars-list (alist-vals al))))

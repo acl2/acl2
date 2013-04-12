@@ -37,7 +37,7 @@
 (include-book "alist-witness")
 (include-book "equal-sets")
 (include-book "universal-equiv")
-
+(include-book "std/alists/top" :dir :system)
 
 
 
@@ -71,12 +71,6 @@
 
 
 
-(defthm alist-equiv-append-atom
-  (implies (atom b)
-           (alist-equiv (append a b) a))
-  :hints(("Goal" :in-theory (enable alist-equiv-iff-agree-on-bad-guy)))
-  :rule-classes ((:rewrite :backchain-limit-lst 0)))
-
 (defthm hshrink-alist-alist-equiv-append
   (alist-equiv (hons-shrink-alist a b)
                (append b a))
@@ -93,41 +87,17 @@
                (append a b))
   :hints(("Goal" :in-theory (enable alist-equiv-iff-agree-on-bad-guy))))
 
-(defcong alist-equiv alist-equiv (append a b) 1
-  :hints(("Goal" :in-theory (enable alist-equiv-when-agree-on-bad-guy))))
-
-(defcong alist-equiv alist-equiv (append a b) 2
-  :hints(("Goal" :in-theory (enable alist-equiv-when-agree-on-bad-guy))))
 
 
-(defcong alist-equiv set-equiv (alist-keys a) 1
-  :hints((set-reasoning)))
+(in-theory (disable car-hons-assoc-equal-split))
 
 
 
 
-(defthmd car-hons-assoc-equal-split
-  (equal (car (hons-assoc-equal x a))
-         (and (hons-assoc-equal x a) x))
-  :hints(("Goal" :in-theory (disable hons-assoc-equal-iff-member-alist-keys))))
-
-
-
-(defsection fal-extract
-  (local (in-theory (enable fal-extract)))
-  (defthm hons-assoc-equal-fal-extract
-    (equal (hons-assoc-equal x (fal-extract keys al))
-           (and (member-equal x keys)
-                (hons-assoc-equal x al)))
-    :hints(("Goal" :in-theory (enable hons-assoc-equal)
-            :induct (fal-extract keys al))))
-
-  (defcong alist-equiv alist-equiv (fal-extract keys al) 2
-    :hints(("Goal" :in-theory (enable alist-equiv-when-agree-on-bad-guy))))
-
-  (defcong set-equiv alist-equiv (fal-extract keys al) 1
-    :hints(("Goal" :in-theory (enable alist-equiv-iff-agree-on-bad-guy))
-           (set-reasoning))))
+(defcong set-equiv alist-equiv (fal-extract keys al) 1
+  :hints(("Goal" :in-theory (enable fal-extract
+                                    alist-equiv-iff-agree-on-bad-guy))
+         (set-reasoning)))
 
 
 
@@ -135,7 +105,7 @@
 
 (defthm alist-keys-hons-put-list
   (set-equiv (alist-keys (hons-put-list vars vals rest))
-                   (union-equal vars (alist-keys rest)))
+             (union-equal vars (alist-keys rest)))
   :hints (("goal" :in-theory (enable alist-keys))
           (set-reasoning)))
 
@@ -213,112 +183,6 @@
 
 
 
-
-
-
-
-
-
-;; (defun alists-compatible-on-keys (keys a b)
-;;   (declare (xargs :guard t))
-;;   (or (atom keys)
-;;       (and (let ((alook (hons-get (car keys) a))
-;;                  (blook (hons-get (car keys) b)))
-;;              (or (not alook) (not blook) (equal alook blook)))
-;;            (alists-compatible-on-keys (cdr keys) a b))))
-
-(local (in-theory (enable alists-compatible-on-keys)))
-
-(defthm alists-compatible-on-keys-refl
-  (alists-compatible-on-keys keys a a))
-
-(defthmd alists-compatible-on-keys-sym
-  (implies (alists-compatible-on-keys keys b a)
-           (alists-compatible-on-keys keys a b)))
-
-
-(defthmd alists-compatible-on-keys-hons-assoc-equal
-  (implies (and (alists-compatible-on-keys keys a b)
-                (member-equal x keys)
-                (hons-assoc-equal x a)
-                (hons-assoc-equal x b))
-           (equal (cdr (hons-assoc-equal x a))
-                  (cdr (hons-assoc-equal x b)))))
-
-(defun alists-incompatible-on-keys-witness (keys a b)
-  (if (atom keys)
-      nil
-    (if (let ((alook (hons-get (car keys) a))
-              (blook (hons-get (car keys) b)))
-          (and alook blook (not (equal alook blook))))
-        (car keys)
-      (alists-incompatible-on-keys-witness (cdr keys) a b))))
-
-(defthmd alists-incompatible-on-keys-witness-correct
-  (equal (alists-compatible-on-keys keys a b)
-         (let ((witness (alists-incompatible-on-keys-witness keys a
-                                                             b)))
-           (not (and (member-equal witness keys)
-                     (hons-assoc-equal witness a)
-                     (hons-assoc-equal witness b)
-                     (not (equal (cdr (hons-assoc-equal witness a))
-                                 (cdr (hons-assoc-equal witness b))))))))
-  :hints(("Goal" :in-theory (enable car-hons-assoc-equal))))
-
-(defthmd alists-compatible-on-keys-alist-keys
-  (implies (alists-compatible-on-keys (alist-keys a) a b)
-           (alists-compatible-on-keys (alist-keys b) a b))
-  :hints(("Goal"
-          :use ((:instance alists-incompatible-on-keys-witness-correct
-                           (keys (alist-keys b)))
-                (:instance alists-compatible-on-keys-hons-assoc-equal
-                           (keys (alist-keys a))
-                           (x (alists-incompatible-on-keys-witness
-                               (alist-keys b) a b))))
-          :do-not-induct t)))
-
-
-;; (defun alists-compatible (a b)
-;;   (declare (xargs :guard t))
-;;   (alists-compatible-on-keys (alist-keys a) a b))
-
-(local (in-theory (enable alists-compatible)))
-
-(defthm alists-compatible-refl
-  (alists-compatible a a))
-
-
-(defthmd alists-compatible-sym
-  (implies (alists-compatible a b)
-           (alists-compatible b a))
-  :hints (("goal"
-           :in-theory (enable alists-compatible-on-keys-alist-keys
-                              alists-compatible-on-keys-sym))))
-
-;; (defthmd alists-compatible-hons-assoc-equal
-;;   (implies (and (alists-compatible a b)
-;;                 (hons-assoc-equal x a)
-;;                 (hons-assoc-equal x b))
-;;            (equal (cdr (hons-assoc-equal x a))
-;;                   (cdr (hons-assoc-equal x b))))
-;;   :hints (("goal" :in-theory
-;;            (enable alists-compatible-on-keys-hons-assoc-equal)
-;;            :do-not-induct t)))
-
-
-(defthm alists-compatible-on-keys-nil
-  (alists-compatible-on-keys keys a nil))
-
-(defthm alists-compatible-nil
-  (and (alists-compatible a nil)
-       (alists-compatible nil a)))
-
-(in-theory (disable alists-compatible))
-
-
-
-
-
 (defsection hons-acons-each
   (local (in-theory (enable hons-acons-each)))
 
@@ -328,11 +192,9 @@
                (cons x val)
              (hons-assoc-equal x rest))))
 
-
   (defthm alist-keys-hons-acons-each
     (equal (alist-keys (hons-acons-each keys val rest))
            (append keys (alist-keys rest)))))
-
 
 
 
@@ -372,7 +234,6 @@
 
 
 (defsection sub-alistp-witness
-
 
   (defwitness sub-alistp-witnessing
     :predicate (not (sub-alistp a b))

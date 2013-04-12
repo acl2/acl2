@@ -39,7 +39,8 @@
 (defthm keys-equiv-cdr-when-not-consp-car
   (implies (not (consp (car a)))
            (keys-equiv (cdr a) a))
-  :hints ((witness))
+  :hints (("Goal" :in-theory (enable hons-assoc-equal))
+          (witness))
   :rule-classes ((:rewrite :backchain-limit-lst 0)))
 
 (defthmd keys-equiv-iff-set-equiv-alist-keys
@@ -226,7 +227,7 @@
     (implies (and (4v-sexpr-fixpointp updatefns vals)
                   (no-duplicatesp-equal (alist-keys updatefns)))
              (4v-sexpr-fixpointp (cdr updatefns) vals))
-    :hints (("goal" :in-theory (enable alist-keys no-duplicatesp-equal))
+    :hints (("goal" :in-theory (enable hons-assoc-equal alist-keys no-duplicatesp-equal))
             (witness))))
 
 (defun 4v-sexpr-fixpoint-spec (ups)
@@ -286,7 +287,8 @@
   (implies (not (consp (car ups)))
            (iff (4v-sexpr-fixpointp (cdr ups) x)
                 (4v-sexpr-fixpointp ups x)))
-  :hints ((witness :ruleset (4v-sexpr-fixpointp-witnessing
+  :hints (("Goal" :in-theory (enable hons-assoc-equal))
+          (witness :ruleset (4v-sexpr-fixpointp-witnessing
                              4v-sexpr-fixpointp-hons-assoc-equal-ex))))
 
 
@@ -342,7 +344,8 @@
   (implies (no-duplicatesp-equal (alist-keys ups))
            (4v-sexpr-fixpointp ups (4v-sexpr-fixpoint-spec ups)))
   :hints (("goal" :induct (4v-sexpr-fixpoint-spec ups)
-           :in-theory (e/d (no-duplicatesp-equal alist-keys)
+           :in-theory (e/d (no-duplicatesp-equal alist-keys
+                                                 hons-assoc-equal)
                            (;sexpr-eval-4v-sexpr-restrict
                             ;4v-sexpr-restrict-4v-sexpr-restrict
                             4v-sexpr-restrict-alist

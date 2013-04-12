@@ -278,7 +278,9 @@
                     (4v-sexpr-alist-equiv
                      (sexpr-update-fixpoints deps (cdr al) restr-al)
                      (sexpr-update-fixpoints deps al restr-al)))
-           :hints (("goal" :induct t)
+           :hints (("goal"
+                    :in-theory (enable hons-assoc-equal)
+                    :induct t)
                    (witness :ruleset 4v-sexpr-alist-equiv-witnessing))))
 
   (local (defthm hons-assoc-equal-sexpr-update-fixpoints-iff
@@ -298,7 +300,9 @@
                      (cons (cons (caar al)
                                  (4v-sexpr-restrict (cdar al) restr-al))
                            (sexpr-update-fixpoints deps (cdr al) restr-al))))
-           :hints ((witness :ruleset 4v-sexpr-alist-equiv-witnessing))))
+           :hints (("Goal"
+                    :in-theory (enable hons-assoc-equal))
+                   (witness :ruleset 4v-sexpr-alist-equiv-witnessing))))
 
    
 
@@ -659,7 +663,10 @@
 (defthm 4v-sexpr-restrict-alist-atom
   (implies (atom a)
            (4v-sexpr-alist-equiv (4v-sexpr-restrict-alist x a) x))
-  :hints (("goal" :induct t  :do-not-induct t)
+  :hints (("goal"
+           :in-theory (enable hons-assoc-equal)
+           :induct t
+           :do-not-induct t)
           (witness :ruleset 4v-sexpr-alist-equiv-witnessing)))
 
 (defthm 4v-sexpr-fixpoint-spec-equiv-least-fixpoint-top
@@ -1299,7 +1306,8 @@
 (defthm sexpr-alist-equiv-atom-car
   (implies (not (consp (car x)))
            (equal (4v-sexpr-alist-equiv (cdr x) x) t))
-  :hints ((witness :ruleset 4v-sexpr-alist-equiv-witnessing)))
+  :hints (("Goal" :in-theory (enable hons-assoc-equal))
+          (witness :ruleset 4v-sexpr-alist-equiv-witnessing)))
 
 (defthm 4v-sexpr-compose-alist-reverse-unique-map
   (implies (and (sexpr-var-val-alistp map)
@@ -1372,7 +1380,8 @@
                 (hons-assoc-equal j map))
            (equal (equal (cdr (hons-assoc-equal k map))
                          (cdr (hons-assoc-equal j map)))
-                  (equal k j))))
+                  (equal k j)))
+  :hints(("Goal" :in-theory (enable hons-assoc-equal))))
 
 ;; (defthm lookup-from-translated-domain-when-key-with-unique-map
 ;;   (implies (and (equal (cdr (hons-assoc-equal k map)) x)

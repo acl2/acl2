@@ -26,7 +26,7 @@
                            (:type-prescription acl2-count-positive-when-consp)
                            (:linear acl2-count-positive-when-consp)
                            vl-is-token?-fn-when-not-consp-of-tokens
-                           consp-under-iff-when-true-listp
+                           acl2::consp-under-iff-when-true-listp
                            (:rewrite acl2::consp-by-len)
                            consp-when-member-equal-of-cons-listp
                            double-containment

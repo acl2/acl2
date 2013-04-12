@@ -468,14 +468,16 @@
    (implies (and (alistp v1)
                  (member-equal key (strip-cars v1)))
             (equal (hons-assoc-equal key (append v1 v2))
-                   (hons-assoc-equal key v1)))))
+                   (hons-assoc-equal key v1)))
+   :hints(("Goal" :in-theory (enable hons-assoc-equal)))))
 
 (local
  (defthm hons-assoc-equal-append-2
    (implies (and (alistp v1)
                  (not (member-equal key (strip-cars v1))))
             (equal (hons-assoc-equal key (append v1 v2))
-                   (hons-assoc-equal key v2)))))
+                   (hons-assoc-equal key v2)))
+   :hints(("Goal" :in-theory (enable hons-assoc-equal)))))
 
 (local
  (defthm member-strip-cars-nth-slice-1
@@ -494,7 +496,7 @@
                  (not (member-equal n (strip-cars bsl1))))
             (equal (bfr-lookup n (slice-to-bdd-env (append bsl1 bsl2) env))
                    (bfr-lookup n (slice-to-bdd-env bsl2 env))))
-   :hints(("Goal" :in-theory (enable slice-to-bdd-env nat-listp)))))
+   :hints(("Goal" :in-theory (enable strip-cars slice-to-bdd-env nat-listp)))))
 
 
 
@@ -634,6 +636,8 @@
                                    number-specp
                                    subsetp-equal
                                    wf-g-numberp-simpler-def
+                                   hons-assoc-equal
+                                   strip-cars
                                    (:induction shape-spec-to-gobj))
                                   (member-equal
                                    boolean-listp
