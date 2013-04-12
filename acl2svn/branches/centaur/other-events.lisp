@@ -21751,10 +21751,17 @@
    (t (let* ((field-template (car ftemps))
              (type (nth 1 field-template))
              (arrayp (and (consp type) (eq (car type) 'array)))
-             (array-etype (and arrayp (cadr type)))
+             (array-etype0 (and arrayp (cadr type)))
              (array-size (and arrayp (car (caddr type))))
-             (stobj-creator (get-stobj-creator (if arrayp array-etype type)
+             (stobj-creator (get-stobj-creator (if arrayp array-etype0 type)
                                                nil))
+             (array-etype (and arrayp
+
+; See comment for this binding in defstobj-field-fns-raw-defs.
+
+                               (if stobj-creator
+                                   t
+                                 array-etype0)))
              (init (nth 2 field-template)))
         (cond
          (arrayp

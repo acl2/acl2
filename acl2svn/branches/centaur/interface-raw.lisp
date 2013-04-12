@@ -6297,25 +6297,8 @@
      (pkg
       (cond
        (temp
-        (cond
-         ((equal proposed-imports (package-entry-imports temp))
-
-; The package has already been built in Common Lisp and the imports are
-; identical.  This is ok.
-
-          nil)
-         (t
-
-; The package has already been built in Common Lisp but with the wrong imports.
-; There is nothing we can do.
-
-          (interface-er
-           "We cannot reincarnate the package ~x0 with imports ~x1 because it ~
-            was previously defined with imports ~x2.  See :DOC ~
-            package-reincarnation-import-restrictions."
-           name
-           proposed-imports
-           (package-entry-imports temp)))))
+        (check-proposed-imports name temp proposed-imports)
+        nil)
        ((member-equal name *defpkg-virgins*)
         nil)
        (t
