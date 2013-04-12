@@ -38,7 +38,7 @@
 (include-book "tools/mv-nth" :dir :system)
 (include-book "clause-processors/use-by-hint" :dir :system)
 (include-book "tools/rulesets" :dir :system)
-
+(include-book "clause-processors/ev-theoremp" :dir :system)
 
 
 
@@ -64,12 +64,17 @@
    (return-last fn x y)
    (hide a)
    (mv-nth n x)
-   (mv-list n x)))
+   (mv-list n x)
+
+   (typespec-check ts x)
+   (iff a b)
+   (binary-+ a b)
+   (unary-- a)
+   (len x)))
 
 
 
 
-(include-book "clause-processors/ev-theoremp" :dir :system)
 
 (def-ev-theoremp evmeta-ev)
 

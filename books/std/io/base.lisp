@@ -616,13 +616,6 @@ foo
 
  (local (in-theory (disable open-channel1)))
 
- (local (defthm add-pair-same
-          (implies (and (ordered-symbol-alistp x)
-                        (assoc-equal k x))
-                   (equal (add-pair k (cdr (assoc-equal k x)) x)
-                          x))
-          :hints(("Goal" :in-theory (enable ordered-symbol-alistp)))))
-
  (local (defthm update-nth-of-nth-same
           (implies (< (nfix n) (len x))
                    (equal (update-nth n (nth n x) x)

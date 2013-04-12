@@ -30,6 +30,9 @@
 (include-book "misc/untranslate-patterns" :dir :system)
 (include-book "tools/defevaluator-fast" :dir :system)
 (include-book "tools/mv-nth" :dir :system)
+(include-book "evaluator-metatheorems")
+(include-book "interp-function-lookup")
+(include-book "tools/def-functional-instance" :dir :system)
 
 (set-waterfall-parallelism nil) ; for apply-for-ev-cp
 
@@ -141,8 +144,8 @@ The function ~x0 is missing its ~x1 property; perhaps it is not defined.~%"
 ;; for an evaluator which recognizes a superset of the functions
 ;; recognized by the apply function.
 
-(include-book "evaluator-metatheorems")
 
+(acl2::def-meta-extract evmeta-ev evmeta-ev-lst)
 
 (defun term-list-of-nths (n start term)
   (if (zp n)
@@ -446,25 +449,27 @@ The function ~x0 is missing its ~x1 property; perhaps it is not defined.~%"
                                     (fn (cdr (assoc-equal 'fn a))))))))))
 
 
-(include-book "interp-function-lookup")
-(include-book "tools/def-functional-instance" :dir :system)
 (def-functional-instance
   interp-function-lookup-correct-for-evmeta-ev
   interp-function-lookup-correct
   ((ifl-ev evmeta-ev)
    (ifl-ev-lst evmeta-ev-lst)
-   (ifl-ev-falsify evmeta-ev-falsify))
-  :hints (("Subgoal 2" :use evmeta-ev-constraint-0)
-          ("Subgoal 1" :use evmeta-ev-falsify)))
+   (ifl-ev-falsify evmeta-ev-falsify)
+   (ifl-ev-meta-extract-global-badguy
+    evmeta-ev-meta-extract-global-badguy))
+  :hints ((and stable-under-simplificationp
+               '(:use (evmeta-ev-constraint-0
+                       evmeta-ev-falsify
+                       evmeta-ev-meta-extract-global-badguy)))))
 
 (def-functional-instance
   interp-function-lookup-correct-1-for-evmeta-ev
   interp-function-lookup-correct-1
   ((ifl-ev evmeta-ev)
    (ifl-ev-lst evmeta-ev-lst)
-   (ifl-ev-falsify evmeta-ev-falsify))
-  :hints (("Subgoal 2" :use evmeta-ev-constraint-0)
-          ("Subgoal 1" :use evmeta-ev-falsify)))
+   (ifl-ev-falsify evmeta-ev-falsify)
+   (ifl-ev-meta-extract-global-badguy
+    evmeta-ev-meta-extract-global-badguy)))
 
 (defun apply-for-ev-cp (clause hints state)
   (declare (ignore hints)
@@ -513,6 +518,7 @@ The function ~x0 is missing its ~x1 property; perhaps it is not defined.~%"
 (defthm apply-for-ev-cp-correct
   (implies (and (pseudo-term-listp clause)
                 (alistp a)
+                (evmeta-ev-meta-extract-global-facts)
                 (evmeta-ev-theoremp
                  (conjoin-clauses
                   (clauses-result

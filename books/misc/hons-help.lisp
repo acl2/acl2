@@ -325,6 +325,33 @@
          (not (no-duplicatesp x)))))
 
 
+(local (in-theory (disable hons-dups-p)))
+
+(defun fast-no-duplicatesp (x)
+  (declare (xargs :guard (eqlable-listp x)))
+  (mbe :logic (no-duplicatesp-equal x)
+       :exec (if (< (length x) 400)
+                 (no-duplicatesp x)
+               (not (hons-dups-p x)))))
+
+(defun fast-no-duplicatesp-equal (x)
+  (declare (xargs :guard (true-listp x)))
+  (mbe :logic (no-duplicatesp-equal x)
+       :exec (if (< (length x) 400)
+                 (no-duplicatesp-equal x)
+               (not (hons-dups-p x)))))
+
+(defun fast-no-duplicatesp-eq (x)
+  (declare (xargs :guard (symbol-listp x)))
+  (mbe :logic (no-duplicatesp-equal x)
+       :exec (if (< (length x) 400)
+                 (no-duplicatesp-eq x)
+               (not (hons-dups-p x)))))
+
+
+
+
+
 (defn hons-duplicates1 (l tab)
   (cond ((atom l) (ansfl nil tab))
         ((hons-get (car l) tab)

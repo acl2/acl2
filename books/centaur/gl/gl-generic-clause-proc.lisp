@@ -144,20 +144,25 @@
                     (xargs :stobjs state))
            (mv nil nil state)))
 
-  (local (defevaluator glcp-generic-ev glcp-generic-ev-lst
-           ((if a b c)
-            (gl-cp-hint x)
-            (shape-spec-obj-in-range a b)
-            (return-last fn arg1 arg2)
-            (use-by-hint x)
-            (equal a b)
-            (not x)
-            (cons a b)
-            (gl-aside x)
-            (gl-ignore x)
-            (gl-error x)
-            ;; (glcp-generic-geval x env)
-            )))
+  (local (acl2::defevaluator-fast
+          glcp-generic-ev glcp-generic-ev-lst
+          ((if a b c)
+           (gl-cp-hint x)
+           (shape-spec-obj-in-range a b)
+           (return-last fn arg1 arg2)
+           (use-by-hint x)
+           (equal a b)
+           (acl2::typespec-check ts x)
+           (implies a b)
+           (iff a b)
+           (not x)
+           (cons a b)
+           (gl-aside x)
+           (gl-ignore x)
+           (gl-error x)
+           ;; (glcp-generic-geval x env)
+           )
+          :namedp t))
 
   (local (defun glcp-generic-clause-proc-name () 'glcp-generic))
 
@@ -193,6 +198,11 @@
              (state-p1 (mv-nth 2 (glcp-generic-run-gified
                                   fn actuals hyp clk state)))))
 
+  (defthm w-state-of-glcp-generic-run-gified
+    (equal (w (mv-nth 2 (glcp-generic-run-gified
+                         fn actuals hyp clk state)))
+           (w state)))
+
   (defthm true-listp-glcp-generic-apply-concrete
     (true-listp (glcp-generic-apply-concrete fn actuals state)))
 
@@ -201,23 +211,28 @@
              (state-p1 (mv-nth 2 (glcp-generic-apply-concrete fn actuals
                                                               state)))))
 
+  (defthm w-state-of-glcp-generic-apply-concrete
+    (equal (w (mv-nth 2 (glcp-generic-apply-concrete fn actuals state)))
+           (w state)))
+
   (make-event
    `(progn
-      . ,(acl2::defevaluator-form/defthms
-          'glcp-generic-ev "GLCP-GENERIC-EV-CONSTRAINT-"
-          0 (acl2::evaluator-clauses
-             'glcp-generic-ev 'glcp-generic-ev-lst
-             '((if a b c)
-               (gl-cp-hint x)
-               (shape-spec-obj-in-range a b)
-               (return-last fn arg1 arg2)
-               (use-by-hint x)
-               (equal a b)
-               (not x)
-               (cons a b)
-               (gl-aside x)
-               (gl-ignore x)
-               (gl-error x))))))
+      . ,(acl2::defevaluator-fast-form/defthms-named
+          'glcp-generic-ev 'glcp-generic-ev-lst
+          '((if a b c)
+            (gl-cp-hint x)
+            (shape-spec-obj-in-range a b)
+            (return-last fn arg1 arg2)
+            (use-by-hint x)
+            (equal a b)
+            (acl2::typespec-check ts x)
+            (implies a b)
+            (iff a b)
+            (not x)
+            (cons a b)
+            (gl-aside x)
+            (gl-ignore x)
+            (gl-error x)))))
 
   (defthm glcp-generic-geval-atom
     (implies (atom x)
@@ -587,10 +602,10 @@
   :hints(("Goal" :in-theory (enable gobject-listp)))
   :rule-classes (:rewrite :forward-chaining))
 
+(acl2::def-meta-extract glcp-generic-ev glcp-generic-ev-lst)
+
 (local
  (progn
-   (acl2::def-ev-theoremp glcp-generic-ev)
-
 
 
    (defun glcp-generic-geval-alist (al env)
@@ -892,9 +907,13 @@
     acl2::interp-function-lookup-correct
     ((acl2::ifl-ev glcp-generic-ev)
      (acl2::ifl-ev-lst glcp-generic-ev-lst)
-     (acl2::ifl-ev-falsify glcp-generic-ev-falsify))
-    :hints (("Subgoal 2" :use glcp-generic-ev-constraint-0)
-            ("Subgoal 1" :use glcp-generic-ev-falsify)))
+     (acl2::ifl-ev-falsify glcp-generic-ev-falsify)
+     (acl2::ifl-ev-meta-extract-global-badguy
+      glcp-generic-ev-meta-extract-global-badguy))
+    :hints ((and stable-under-simplificationp
+                 '(:use (glcp-generic-ev-of-fncall-args
+                         glcp-generic-ev-falsify
+                         glcp-generic-ev-meta-extract-global-badguy)))))
 
    (acl2::def-functional-instance
     glcp-generic-interp-function-lookup-theoremp-defs-history
@@ -1018,6 +1037,33 @@
    (defthm glcp-generic-ev-nil
      (equal (glcp-generic-ev nil a) nil))
 
+   (defthm w-of-put-global
+     (implies (not (eq var 'current-acl2-world))
+              (equal (w (put-global var val state))
+                     (w state))))
+
+   (local (in-theory (disable w)))
+
+   (defthm-glcp-generic-interp-flg
+     (defthm glcp-generic-interp-term-w-state-preserved
+       (equal (w (mv-nth 3 (glcp-generic-interp-term
+                            x alist hyp clk obligs config state)))
+              (w state))
+       :hints ('(:expand ((glcp-generic-interp-term
+                           x alist hyp clk obligs config state)
+                          (glcp-generic-interp-term
+                           nil alist hyp clk obligs config state))))
+       :flag glcp-generic-interp-term)
+     (defthm glcp-generic-interp-list-w-state-preserved
+       (equal (w (mv-nth 3 (glcp-generic-interp-list
+                            x alist hyp clk obligs config state)))
+              (w state))
+       :hints ('(:expand ((glcp-generic-interp-list
+                           x alist hyp clk obligs config state))))
+       :flag glcp-generic-interp-list))
+
+   
+
 
    (defun glcp-generic-ev-constraint-hint (clause)
      (declare (xargs :guard (true-listp clause)))
@@ -1027,27 +1073,27 @@
         ((member-equal '(not (consp x)) clause)
          (cond
           ((member-equal '(not (equal (car x) 'if)) clause)
-           '(:in-theory (enable glcp-generic-ev-constraint-6)))
+           '(:in-theory (enable glcp-generic-ev-of-if-call)))
           ((member-equal '(not (equal (car x) 'return-last)) clause)
-           '(:in-theory (enable glcp-generic-ev-constraint-9)))
+           '(:in-theory (enable glcp-generic-ev-of-return-last-call)))
           ((member-equal '(not (equal (car x) 'gl-aside)) clause)
-           '(:in-theory (enable glcp-generic-ev-constraint-14)))
+           '(:in-theory (enable glcp-generic-ev-of-gl-aside-call)))
           ((member-equal '(not (equal (car x) 'gl-ignore)) clause)
-           '(:in-theory (enable glcp-generic-ev-constraint-15)))
+           '(:in-theory (enable glcp-generic-ev-of-gl-ignore-call)))
           ((member-equal '(not (equal (car x) 'gl-error)) clause)
-           '(:in-theory (enable glcp-generic-ev-constraint-16)))
+           '(:in-theory (enable glcp-generic-ev-of-gl-error-call)))
           ((member-equal '(not (equal (car x) 'quote)) clause)
-           '(:in-theory (enable glcp-generic-ev-constraint-2)))
+           '(:in-theory (enable glcp-generic-ev-of-quote)))
           ((member-equal '(not (consp (car x))) clause)
-           '(:in-theory (enable glcp-generic-ev-constraint-3)))))
+           '(:in-theory (enable glcp-generic-ev-of-lambda)))))
         ((member-equal '(not (symbolp x)) clause)
-         '(:in-theory (enable glcp-generic-ev-constraint-1)))))
+         '(:in-theory (enable glcp-generic-ev-of-variable)))))
       ((member-equal '(equal flag 'glcp-generic-interp-term) clause)
        (cond
         ((member-equal '(consp x) clause)
-         '(:in-theory (enable glcp-generic-ev-constraint-4)))
+         '(:in-theory (enable glcp-generic-ev-lst-of-atom)))
         ((member-equal '(not (consp x)) clause)
-         '(:in-theory (enable glcp-generic-ev-constraint-5)))))))
+         '(:in-theory (enable glcp-generic-ev-lst-of-cons)))))))
 
    (encapsulate nil
      (local 
@@ -1082,6 +1128,10 @@
                          acl2::hons-assoc-equal-interp-defs-alistp
                          obligs-okp-glcp-generic-interp-list
                          assoc-eq-glcp-generic-geval-alist
+                         glcp-generic-interp-term-w-state-preserved
+                         glcp-generic-interp-list-w-state-preserved
+                         w-state-of-glcp-generic-apply-concrete
+                         w-state-of-glcp-generic-run-gified
                          ;; glcp-generic-ev-constraint-9
                          ;;                       glcp-generic-ev-constraint-3
                          ;;                       glcp-generic-ev-constraint-6
@@ -1141,6 +1191,19 @@
                          gobjectp-of-atomic-constants)
                         ())))
 
+     ;;   (local (add-bfr-fn-pat hyp-fix))
+     ;;   (local (add-bfr-fn-pat bfr-and))
+     ;;   (local (add-bfr-fn-pat bfr-or))
+     ;;   (local (add-bfr-fn-pat bfr-not))
+     ;;   (local (add-bfr-fn-pat gtests-unknown))
+     ;;   (local (add-bfr-fn-pat gtests-nonnil))
+     ;;   (local (bfr-reasoning-mode t))
+     
+;;      (local (defthm hyp-fix-iff-bfr-and
+;;               (iff (hyp-fix x hyp)
+;;                    (bfr-and x hyp))
+;;               :hints(("Goal" :in-theory (enable hyp-fix acl2::bfr-and-of-nil
+;;                                                 bfr-and)))))
 
      (local
       (encapsulate nil
@@ -1190,19 +1253,24 @@
              (bfr-not (gtests-nonnil (gtests test hyp))))
             hyp)))))
 
-     ;;   (local (add-bfr-fn-pat hyp-fix))
-     ;;   (local (add-bfr-fn-pat bfr-and))
-     ;;   (local (add-bfr-fn-pat bfr-or))
-     ;;   (local (add-bfr-fn-pat bfr-not))
-     ;;   (local (add-bfr-fn-pat gtests-unknown))
-     ;;   (local (add-bfr-fn-pat gtests-nonnil))
-     ;;   (local (bfr-reasoning-mode t))
-     
-;;      (local (defthm hyp-fix-iff-bfr-and
-;;               (iff (hyp-fix x hyp)
-;;                    (bfr-and x hyp))
-;;               :hints(("Goal" :in-theory (enable hyp-fix acl2::bfr-and-of-nil
-;;                                                 bfr-and)))))
+
+     (defthm glcp-generic-interp-function-lookup-correct-special
+       (mv-let (erp body formals out-defs)
+         (acl2::interp-function-lookup fn in-defs overrides (w state))
+         (implies (and (not erp)
+                       (glcp-generic-ev-theoremp
+                        (conjoin-clauses
+                         (acl2::interp-defs-alist-clauses out-defs)))
+                       (acl2::interp-defs-alistp in-defs)
+                       (acl2::interp-defs-alistp overrides)
+                       (equal (len formals) (len actuals))
+                       (not (eq fn 'quote))
+                       (glcp-generic-ev-meta-extract-global-facts :state state1)
+                       (equal (w state) (w state1)))
+                  (equal (glcp-generic-ev body (pairlis$ formals
+                                                (glcp-generic-ev-lst actuals a)))
+                         (glcp-generic-ev (cons fn actuals) a)))))
+
 
      (defthm-glcp-generic-interp-flg
        (defthm glcp-generic-interp-term-correct
@@ -1218,7 +1286,10 @@
                         (conjoin-clauses
                          (acl2::interp-defs-alist-clauses
                           (mv-nth 1 (glcp-generic-interp-term
-                                     x alist hyp clk obligs config state))))))
+                                     x alist hyp clk obligs config state)))))
+                       ;; (glcp-generic-ev-meta-extract-global-facts)
+                       (glcp-generic-ev-meta-extract-global-facts :state state1)
+                       (equal (w state1) (w state)))
                   (equal (glcp-generic-geval
                           (mv-nth 2 (glcp-generic-interp-term
                                      x alist hyp clk obligs config state))
@@ -1239,7 +1310,9 @@
                         (conjoin-clauses
                          (acl2::interp-defs-alist-clauses
                           (mv-nth 1 (glcp-generic-interp-list
-                                     x alist hyp clk obligs config state))))))
+                                     x alist hyp clk obligs config state)))))
+                       (glcp-generic-ev-meta-extract-global-facts :state state1)
+                       (equal (w state1) (w state)))
                   (equal (glcp-generic-geval-lst
                           (mv-nth 2 (glcp-generic-interp-list
                                      x alist hyp clk obligs config state))
@@ -1262,7 +1335,7 @@
                       ((('0 '1) (n . &) . &)
                        '(:in-theory
                          (enable
-                          glcp-generic-ev-constraint-0
+                          glcp-generic-ev-of-fncall-args
                           glcp-generic-geval-of-gobject-list)))))
 ;;                (if stable-under-simplificationp
 ;;                    (let ((state (acl2::f-put-global
@@ -1386,7 +1459,7 @@
      :hints (("goal" :induct (collect-vars-flg flag x)
               :in-theory (enable subsetp-equal))
              ("Subgoal *1/3"
-              :in-theory (enable glcp-generic-ev-constraint-0))))
+              :in-theory (enable glcp-generic-ev-of-fncall-args))))
 
 
         
@@ -1928,6 +2001,40 @@ class:~%~%" (len ctrexes)))))
            (bfr-reasoning))
    :otf-flg t))
 
+(defthm w-of-read-acl2-oracle
+  (equal (w (mv-nth 2 (read-acl2-oracle state)))
+         (w state))
+  :hints(("Goal" :in-theory (enable w read-acl2-oracle
+                                    get-global
+                                    update-acl2-oracle))))
+
+(local
+ (defthm w-state-of-n-satisfying-assigns-and-specs
+   (equal (w (mv-nth 2 (n-satisfying-assigns-and-specs
+                        n  hyp-bdd ctrex-info max-index state)))
+          (w state))
+   :hints(("Goal" :in-theory (enable random$)))))
+
+(local
+ (defthm w-state-of-glcp-gen-assignments
+   (equal (w (mv-nth 2 (glcp-gen-assignments ctrex-info alist hyp-bdd n
+                                             state)))
+          (w state))))
+
+(local
+ (defthm w-state-of-glcp-gen-ctrexes
+   (equal (w (mv-nth 2 (glcp-gen-ctrexes ctrex-info alist hyp-bdd n
+                                             state)))
+          (w state))
+   :hints(("Goal" :in-theory (enable glcp-gen-ctrexes)))))
+
+(local
+ (defthm w-state-of-glcp-analyze-interp-result
+   (equal (w (mv-nth 2 (glcp-analyze-interp-result
+                        val al hyp-bdd id concl config state)))
+          (w state))
+   :hints(("Goal" :in-theory (enable glcp-analyze-interp-result)))))
+
 (local
  (defthm glcp-analyze-interp-result-pseudo-term-listp
    (pseudo-term-listp
@@ -2042,7 +2149,7 @@ found is ~x2." (car alist) defname rule)))
          (formals (cdadr rule))
          (body (caddr rule))
          ((unless (and (nonnil-symbol-listp formals)
-                       (acl2::no-dupsp formals)))
+                       (acl2::no-duplicatesp formals)))
           (glcp-error
            (acl2::msg "~
 The preferred-defs table contains an invalid entry ~x0.
@@ -2169,6 +2276,7 @@ The definition body, ~x1, is not a pseudo-term."
                    pseudo-termp pairlis$
                    shape-spec-bindingsp
                    dumb-negate-lit
+                   gtests-nonnil-correct
                    no-duplicatesp-equal
                    gobj-alist-to-param-space
                    list*-macro binary-append strip-cadrs strip-cars member-equal))))
@@ -2187,7 +2295,9 @@ The definition body, ~x1, is not a pseudo-term."
                        (acl2::interp-defs-alistp (glcp-config->overrides config))
                        (pseudo-termp concl)
                        (pseudo-termp hyp)
-                       (equal vars (collect-vars concl)))
+                       (equal vars (collect-vars concl))
+                       (glcp-generic-ev-meta-extract-global-facts :state state1)
+                       (equal (w state) (w state1)))
                   (not (glcp-generic-ev-theoremp (conjoin-clauses clauses)))))
        :hints (("goal" :do-not-induct
                 t
@@ -2201,7 +2311,9 @@ The definition body, ~x1, is not a pseudo-term."
                        (:rules-of-class :type-prescription :here))
                       (gl-cp-hint acl2::clauses-result assoc-equal
                                   glcp-generic-run-parametrized not
-                                  glcp-error))
+                                  glcp-error
+                                  acl2::fast-no-duplicatesp
+                                  acl2::fast-no-duplicatesp-equal))
                 :restrict ((glcp-generic-ev-disjoin-append ((a alist)))))
                (and stable-under-simplificationp
                     (acl2::bind-as-in-definition
@@ -2225,8 +2337,7 @@ The definition body, ~x1, is not a pseudo-term."
                                      (x ,hyp-val)
                                      (hyp t)
                                      (env ,binding-env)))))))
-               (bfr-reasoning))
-       :otf-flg t))
+               (bfr-reasoning))))
 
    (defthm glcp-generic-run-parametrized-bad-obligs
      (b* (((mv erp (cons & out-obligs) &)
@@ -2260,7 +2371,12 @@ The definition body, ~x1, is not a pseudo-term."
                      (acl2::interp-defs-alistp (glcp-config->overrides config))
                      (pseudo-termp concl)
                      (not erp))
-                (acl2::interp-defs-alistp out-obligs))))))
+                (acl2::interp-defs-alistp out-obligs))))
+
+   (defthm glcp-generic-run-paremetrized-w-state
+     (equal (w (mv-nth 2 (glcp-generic-run-parametrized
+                          hyp concl untrans-concl vars bindings id obligs config state)))
+            (w state)))))
 
 
 (in-theory (disable glcp-generic-run-parametrized))
@@ -2297,6 +2413,13 @@ The definition body, ~x1, is not a pseudo-term."
                      (not erp))
                 (acl2::interp-defs-alistp out-obligs))))
 
+
+   (defthm glcp-generic-run-cases-ok-w-state
+     (equal (w (mv-nth 2 (glcp-generic-run-cases
+                          param-alist concl untrans-concl vars obligs config
+                          state)))
+            (w state)))
+
    (defthm glcp-generic-run-cases-correct
      (b* (((mv erp (cons clauses out-obligs) &)
            (glcp-generic-run-cases
@@ -2312,7 +2435,9 @@ The definition body, ~x1, is not a pseudo-term."
                      (acl2::interp-defs-alistp (glcp-config->overrides config))
                      (pseudo-termp concl)
                      (pseudo-term-listp (strip-cars param-alist))
-                     (equal vars (collect-vars concl)))
+                     (equal vars (collect-vars concl))
+                     (glcp-generic-ev-meta-extract-global-facts :state state1)
+                     (equal (w state) (w state1)))
                 (not (glcp-generic-ev-theoremp (conjoin-clauses clauses))))))
 
 
@@ -2412,6 +2537,7 @@ The definition body, ~x1, is not a pseudo-term."
 
 (local
  (progn
+   ;; What am I doing here?
    (defund glcp-generic-run-parametrized-placeholder (clauses)
      (glcp-generic-ev-theoremp (conjoin-clauses clauses)))
 
@@ -2437,7 +2563,9 @@ The definition body, ~x1, is not a pseudo-term."
                      (acl2::interp-defs-alistp (glcp-config->overrides config))
                      (pseudo-termp concl)
                      (pseudo-termp hyp)
-                     (equal vars (collect-vars concl)))
+                     (equal vars (collect-vars concl))
+                     (glcp-generic-ev-meta-extract-global-facts :state state1)
+                     (equal (w st) (w state1)))
                 (iff (glcp-generic-ev-theoremp (conjoin-clauses clauses))
                      (and (glcp-generic-run-parametrized-placeholder
                            clauses)
@@ -2464,15 +2592,24 @@ The definition body, ~x1, is not a pseudo-term."
                      (acl2::interp-defs-alistp (glcp-config->overrides config))
                      (pseudo-termp concl)
                      (pseudo-term-listp (strip-cars param-alist))
-                     (equal vars (collect-vars concl)))
+                     (equal vars (collect-vars concl))
+                     (glcp-generic-ev-meta-extract-global-facts :state state1)
+                     (equal (w st) (w state1)))
                 (iff (glcp-generic-ev-theoremp (conjoin-clauses clauses))
                      (and (glcp-generic-run-cases-placeholder clauses)
                           (glcp-generic-ev concl a)))))
      :hints(("Goal" :in-theory (enable glcp-generic-run-cases-placeholder))))))
 
+(local
+ (defthm w-state-of-preferred-defs-to-overrides
+   (equal (w (mv-nth 2 (preferred-defs-to-overrides table state)))
+          (w state))
+   :hints(("Goal" :in-theory (enable preferred-defs-to-overrides)))))
+
 (defthm glcp-generic-correct
   (implies (and (pseudo-term-listp clause)
                 (alistp alist)
+                (glcp-generic-ev-meta-extract-global-facts)
                 (glcp-generic-ev
                  (conjoin-clauses
                   (acl2::clauses-result
@@ -2528,7 +2665,7 @@ The definition body, ~x1, is not a pseudo-term."
                                (CONS (CONS 'NOT (CONS ,HYP 'NIL))
                                      (CONS ,PARAMS-COV-TERM 'NIL)))))
                   (a alist)))))))
-  :otf-flg t
+;  :otf-flg t
   :rule-classes nil)
 
 

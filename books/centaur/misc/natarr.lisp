@@ -25,6 +25,7 @@
 (local (include-book "arithmetic/top" :dir :system))
 (local (include-book "std/lists/equiv" :dir :system))
 (local (in-theory (enable* arith-equiv-forwarding)))
+(local (include-book "std/typed-lists/nat-listp" :dir :system))
 
 (include-book "1d-arr")
 
@@ -37,25 +38,25 @@
                          (iff x y)))
          :rule-classes ((:rewrite :backchain-limit-lst 1))))
 
-(defthm natp-of-nth-when-nat-listp
-  (implies (nat-listp x)
-           (equal (natp (nth n x))
-                  (< (nfix n) (len x))))
-  :rule-classes ((:rewrite)
-                 (:linear :corollary
-                          (implies (nat-listp x)
-                                   (<= 0 (nth n x))))))
+;; (defthm natp-of-nth-when-nat-listp
+;;   (implies (nat-listp x)
+;;            (equal (natp (nth n x))
+;;                   (< (nfix n) (len x))))
+;;   :rule-classes ((:rewrite)
+;;                  (:linear :corollary
+;;                           (implies (nat-listp x)
+;;                                    (<= 0 (nth n x))))))
 
-(defthm nat-listp-of-update-nth
-  (implies (nat-listp x)
-           (equal (nat-listp (update-nth n v x))
-                  (and (<= (nfix n) (len (double-rewrite x)))
-                       (natp v)))))
+;; (defthm nat-listp-of-update-nth
+;;   (implies (nat-listp x)
+;;            (equal (nat-listp (update-nth n v x))
+;;                   (and (<= (nfix n) (len (double-rewrite x)))
+;;                        (natp v)))))
 
-(defthm nat-listp-of-resize-list
-  (implies (and (nat-listp x)
-                (natp default))
-           (nat-listp (resize-list x n default))))
+;; (defthm nat-listp-of-resize-list
+;;   (implies (and (nat-listp x)
+;;                 (natp default))
+;;            (nat-listp (resize-list x n default))))
 
 
 

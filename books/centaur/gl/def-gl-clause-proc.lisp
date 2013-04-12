@@ -263,8 +263,8 @@
                "-APPLY-INNER-CORRECT"))
        (apply-concrete-lemma
         (incat clause-proc (symbol-name clause-proc) "-APPLY-CORRECT"))
-       (apply-concrete-state-p1
-        (incat clause-proc (symbol-name clause-proc) "-STATE-P1"))
+       (apply-concrete-state
+        (incat clause-proc (symbol-name clause-proc) "-STATE"))
        (g-fns (strip-cars (table-alist 'gl-function-info world)))
        ((mv done collected-apply-fns)
         (collect-fns-list apply-fns nil nil world))
@@ -286,6 +286,10 @@
        (ev (incat clause-proc (symbol-name clause-proc) "-EV"))
        (ev-lst (incat clause-proc (symbol-name clause-proc) "-EV-LST"))
        (falsify (incat clause-proc (symbol-name clause-proc) "-EV-FALSIFY"))
+       (badguy (incat clause-proc (symbol-name clause-proc)
+                      "-EV-META-EXTRACT-GLOBAL-BADGUY"))
+       (meta-facts
+        (incat clause-proc (symbol-name clause-proc) "-EV-META-EXTRACT-GLOBAL-FACTS"))
        (ctrex-thm (incat clause-proc (symbol-name clause-proc)
                          "-EV-FALSIFY-COUNTEREXAMPLE"))
        (constraints (incat ev (symbol-name ev) "-CONSTRAINTS"))
@@ -299,8 +303,8 @@
         (incat run-gified (symbol-name run-gified) "-INNER-GOBJECTP"))
        (run-gified-gobjectp
         (incat run-gified (symbol-name run-gified) "-GOBJECTP"))
-       (run-gified-state-p1
-        (incat run-gified (symbol-name run-gified) "-STATE-P1"))
+       (run-gified-state
+        (incat run-gified (symbol-name run-gified) "-STATE"))
        (interp-term (interp-term-fnname clause-proc))
        (interp-list (incat clause-proc (symbol-name clause-proc)
                            "-INTERP-LIST"))
@@ -370,9 +374,8 @@
          ,ev ,ev-lst
          ,(fns-to-calls
            (append `(if gl-cp-hint shape-spec-obj-in-range
-                      return-last use-by-hint equal not cons gl-aside
-                      gl-ignore
-                      gl-error)
+                      return-last use-by-hint equal acl2::typespec-check implies iff
+                      not cons gl-aside gl-ignore gl-error)
                    (set-difference-eq
                     (union-eq g-fns final-apply-fns)
                     `(if gl-cp-hint shape-spec-obj-in-range
@@ -384,8 +387,9 @@
                  (set-difference-theories
                   (current-theory :here)
                   (current-theory 'dummy-label-for-make-evaluator-fn))))
-        (defchoose ,falsify (a) (x)
-          (not (,ev x a)))
+        (acl2::def-meta-extract ,ev ,ev-lst)
+        ;; (defchoose ,falsify (a) (x)
+        ;;   (not (,ev x a)))
         (local (defthm ,ctrex-thm
                  (implies (not (,ev x a))
                           (not (,ev x (,falsify x))))
@@ -425,12 +429,12 @@
                                               ,apply-concrete-inner-lemma
                                               car-cons cdr-cons)))))
 
-          (defthm ,apply-concrete-state-p1
-            (implies (state-p1 state)
-                     (state-p1 (mv-nth 2 (,apply-concrete acl2::fn args
-                                                       state))))
+          (defthm ,apply-concrete-state
+            (equal (mv-nth 2 (,apply-concrete acl2::fn args
+                                              state))
+                   state)
             :hints(("Goal" :in-theory (e/d** (,apply-concrete)
-                                             (state-p1 ,apply-concrete-inner))))))
+                                             (,apply-concrete-inner))))))
 
         (in-theory (disable ,apply-concrete))
 
@@ -509,10 +513,10 @@
                               ,run-gified-inner-gobjectp)
                              (,run-gified-inner)))))
 
-           (defthm ,run-gified-state-p1
-             (implies (state-p1 state)
-                      (state-p1 (mv-nth 2 (,run-gified
-                                           fn actuals hyp clk state))))
+           (defthm ,run-gified-state
+             (equal (mv-nth 2 (,run-gified
+                               fn actuals hyp clk state))
+                    state)
              :hints (("goal" :in-theory (e/d** (,run-gified)
                                                (,run-gified-inner)))))
              
@@ -536,14 +540,14 @@
 
            (def-ruleset! ,f-i-lemmas
              (append '(car-cons cdr-cons)
-                     (let ((constr (acl2::ruleset ',constraints)))
-                       (nthcdr (- (len constr) 18) constr))
+                     ;; (let ((constr (acl2::ruleset ',constraints)))
+                     ;;   (nthcdr (- (len constr) 18) constr))
                      '(,ctrex-thm
                        ,run-gified-correct
-                       ,run-gified-state-p1
+                       ,run-gified-state
                        ,run-gified-gobjectp
                        ,apply-concrete-lemma
-                       ,apply-concrete-state-p1
+                       ,apply-concrete-state
                        ,(f-i-thmname 'gl-eval-car-gobjectp geval)
                        (:type-prescription ,run-gified)
                        (:type-prescription ,apply-concrete)
@@ -583,6 +587,11 @@
                   :do-not-induct t)
                  (and stable-under-simplificationp
                       '(:in-theory (e/d** ((:ruleset ,f-i-lemmas)
+                                           (:ruleset ,constraints)))))
+                 (and stable-under-simplificationp
+                      '(:in-theory (e/d** ((:ruleset ,f-i-lemmas)
+                                           (:ruleset ,constraints)
+                                           ,apply-concrete
                                            ,(incat ev (symbol-name ev)
                                                    "-CONSTRAINT-0")))))))
 
@@ -590,6 +599,7 @@
         (defthm ,correct-thm
           (implies (and (pseudo-term-listp clause)
                         (alistp alist)
+                        (,meta-facts)
                         (,ev (conjoin-clauses
                               (acl2::clauses-result
                                (,clause-proc clause hints state)))
@@ -612,6 +622,8 @@
                         (glcp-generic-apply-concrete ,apply-concrete)
                         (glcp-generic-apply-concrete-guard-wrapper ,apply-concrete)
                         (glcp-generic-ev-falsify ,falsify)
+                        (glcp-generic-ev-meta-extract-global-badguy
+                         ,badguy)
                         (glcp-generic-run-parametrized
                          ,run-parametrized)
                         (glcp-generic-run-cases ,run-cases)
@@ -623,7 +635,12 @@
                      (and (member fn '(,clause-proc
                                       ,run-parametrized
                                       ,run-cases))
-                          `(:expand ((,fn . ,args)))))))
+                          `(:expand ((,fn . ,args)))))
+                    (((ev ('acl2::meta-extract-global-fact . &)
+                          . &)
+                      ('not (ev ('acl2::meta-extract-global-fact . &)
+                                . &)))
+                     '(:use ,badguy))))
           :otf-flg t
           :rule-classes :clause-processor)
 

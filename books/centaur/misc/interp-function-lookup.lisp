@@ -174,10 +174,10 @@
 (include-book "hons-sets")
 (include-book "tools/bstar" :dir :system)
 (include-book "tools/mv-nth" :dir :system)
-(include-book "clause-processors/use-by-hint" :dir :system)
 (include-book "tools/rulesets" :dir :system)
 (include-book "misc/untranslate-patterns" :dir :system)
 (include-book "clause-processors/ev-theoremp" :dir :system)
+(include-book "clause-processors/meta-extract-user" :dir :system)
 
 (set-inhibit-warnings "theory")
 
@@ -194,15 +194,10 @@
          (car x)
          (nonnil-symbol-listp (cdr x)))))
 
-(defun no-dupsp (lst)
-  (declare (xargs :guard t))
-  (not (hons-dups-p lst)))
-
-(defthm no-dupsp-is-no-duplicatesp-equal
-  (equal (no-dupsp lst)
-         (no-duplicatesp-equal lst)))
-
-(in-theory (disable no-dupsp))
+(defthm eqlable-listp-when-nonnil-symbol-listp
+  (implies (nonnil-symbol-listp x)
+           (eqlable-listp x))
+  :rule-classes :forward-chaining)
 
 (defun interp-defs-alistp (defs)
   (declare (xargs :guard t))
@@ -215,7 +210,7 @@
                 (and (symbolp fn)
                      (pseudo-termp body)
                      (nonnil-symbol-listp formals)
-                     (no-dupsp formals)))))
+                     (no-duplicatesp formals)))))
            (interp-defs-alistp (cdr defs)))))
 
 
@@ -266,6 +261,66 @@
 ;; (in-theory (disable interp-function-from-world))
 
 
+
+(defevaluator ifl-ev ifl-ev-lst
+  ((if a b c)
+   (equal a b)
+   (not x)
+   (iff a b)
+   (implies a b)
+   (typespec-check ts x)
+   (use-by-hint x)))
+
+(def-meta-extract ifl-ev ifl-ev-lst)
+
+(local (in-theory (disable w)))
+
+(defund meta-extract-function-formals/body (fn world)
+  (declare (xargs :guard (and (symbolp fn)
+                              (plist-worldp world))))
+  (b* ((formula (meta-extract-formula-w fn world)))
+    (case-match formula
+      (('equal (!fn . formals) body . &)
+       (b* (((unless (and (nonnil-symbol-listp formals)
+                          (no-duplicatesp formals)))
+             (mv (msg "Function ~x0 has ill-formed formals in definitional formula ~x1"
+                      fn formula)
+                 nil nil))
+            ((unless (pseudo-termp body))
+             (mv (msg "Function ~x0 has non-pseudo-term body in formula: ~x1"
+                      fn formula) nil nil)))
+         (mv nil formals body)))
+      (& (mv (if (equal formula *t*)
+                 (msg "Function ~x0 has no associated formula" fn)
+               (msg "The formula of function ~x0 is not a simple EQUAL-based ~
+                     definition: ~x1" fn formula))
+             nil nil)))))
+
+(defthm ifl-ev-meta-extract-function-formals/body
+  (b* (((mv err formals body)
+        (meta-extract-function-formals/body fn (w state))))
+    (implies (and (ifl-ev-meta-extract-global-facts)
+                  (not err))
+             (equal (ifl-ev (cons fn formals) a)
+                    (ifl-ev body a))))
+  :hints(("Goal" :in-theory (e/d (meta-extract-function-formals/body
+                                  ifl-ev-constraint-0)
+                                 (ifl-ev-meta-extract-formula))
+          :use ((:instance ifl-ev-meta-extract-formula
+                 (name fn)))
+          :cases ((eq fn 'quote))))
+  :otf-flg t)
+
+(defthm meta-extract-function-formals/body-well-formed
+  (b* (((mv err formals body)
+        (meta-extract-function-formals/body fn world)))
+    (implies (not err)
+             (and (nonnil-symbol-listp formals)
+                  (no-duplicatesp formals)
+                  (pseudo-termp body))))
+  :hints(("Goal" :in-theory (enable meta-extract-function-formals/body))))
+
+
 (defun interp-function-lookup (fn defs overrides world)
   (declare (xargs :guard (and (symbolp fn)
                               (interp-defs-alistp defs)
@@ -287,30 +342,10 @@
             (caddr ov-look)
             (cadr ov-look)
             (hons-acons fn (cdr ov-look) defs)))
-       (formals (fgetprop fn 'formals :none world))
-       (body (fgetprop fn 'unnormalized-body nil world))
-       ((when (not body))
-        (mv (msg
-             "Function definition not found: ~x0"
-             fn) nil nil nil))
-       ((when (not (pseudo-termp body)))
-        (mv (msg
-             "Body of ~x0 found, but not a pseudo-term: ~x1"
-             fn body) nil nil nil))
-       ((when (eq formals :none))
-        (mv (msg
-             "Function formals not found: ~x0"
-             fn) nil nil nil))
-       ((when (not (and (nonnil-symbol-listp formals)
-                        (no-dupsp formals))))
-        (mv (msg
-             "Formals of ~x0 found, but not well-formed: ~x1"
-             fn formals) nil nil nil))
-       (defs (hons-acons fn (list* formals body fn) defs)))
+       ((mv err formals body)
+        (meta-extract-function-formals/body fn world))
+       ((when err) (mv err nil nil nil)))
     (mv nil body formals defs)))
-
-
-
 
 
 (defthm interp-function-lookup-defs-alistp
@@ -347,8 +382,6 @@
            hons-assoc-equal-interp-defs-alistp))))
 
 
-
-
 (defun interp-defs-alist-clauses (defs)
   (declare (xargs
             :guard (interp-defs-alistp defs)
@@ -361,29 +394,6 @@
                    ,(caddar defs))) ;; body
           (interp-defs-alist-clauses (cdr defs)))))
 
-
-
-
-(defevaluator ifl-ev ifl-ev-lst
-  ((if a b c)
-   (equal a b)
-   (not x)
-   (use-by-hint x)))
-
-(local (def-ruleset! ifl-ev-constraints
-         '(ifl-ev-constraint-0
-           ifl-ev-constraint-1
-           ifl-ev-constraint-2
-           ifl-ev-constraint-3
-           ifl-ev-constraint-4
-           ifl-ev-constraint-5
-           ifl-ev-constraint-6
-           ifl-ev-constraint-7
-           ifl-ev-constraint-8
-           ifl-ev-constraint-9)))
-
-
-(def-ev-theoremp ifl-ev)
 
 (defthm ifl-ev-theoremp-conjuncts
   (iff (ifl-ev-theoremp (conjoin (cons a b)))
@@ -485,13 +495,14 @@
 
 (defthm interp-function-lookup-correct-1
   (mv-let (erp body formals out-defs)
-    (interp-function-lookup fn in-defs overrides world)
+    (interp-function-lookup fn in-defs overrides (w state))
     (implies (and (not erp)
                   (ifl-ev-theoremp
                    (conjoin-clauses
                     (interp-defs-alist-clauses out-defs)))
                   (interp-defs-alistp in-defs)
-                  (interp-defs-alistp overrides))
+                  (interp-defs-alistp overrides)
+                  (ifl-ev-meta-extract-global-facts))
              (equal (ifl-ev body a)
                     (ifl-ev (cons fn formals) a))))
   :hints(("goal" :in-theory
@@ -560,7 +571,7 @@
 
 (defthm interp-function-lookup-correct-2
   (mv-let (erp body formals out-defs)
-    (interp-function-lookup fn in-defs overrides world)
+    (interp-function-lookup fn in-defs overrides (w state))
     (implies (and (not erp)
                   (ifl-ev-theoremp
                    (conjoin-clauses
@@ -568,7 +579,8 @@
                   (interp-defs-alistp in-defs)
                   (interp-defs-alistp overrides)
                   (equal (len formals) (len actuals))
-                  (not (eq fn 'quote)))
+                  (not (eq fn 'quote))
+                  (ifl-ev-meta-extract-global-facts))
              (equal (ifl-ev body (pairlis$ formals actuals))
                     (ifl-ev (cons fn (kwote-lst actuals)) nil)))))
 
@@ -580,7 +592,7 @@
 
 (defthm interp-function-lookup-correct
   (mv-let (erp body formals out-defs)
-    (interp-function-lookup fn in-defs overrides world)
+    (interp-function-lookup fn in-defs overrides (w state))
     (implies (and (not erp)
                   (ifl-ev-theoremp
                    (conjoin-clauses
@@ -588,7 +600,8 @@
                   (interp-defs-alistp in-defs)
                   (interp-defs-alistp overrides)
                   (equal (len formals) (len actuals))
-                  (not (eq fn 'quote)))
+                  (not (eq fn 'quote))
+                  (ifl-ev-meta-extract-global-facts))
              (equal (ifl-ev body (pairlis$ formals
                                            (ifl-ev-lst actuals a)))
                     (ifl-ev (cons fn actuals) a))))
@@ -606,6 +619,9 @@
       (equal a b)
       (not a)
       (use-by-hint x)
+      (typespec-check ts x)
+      (implies a b)
+      (iff a b)
       (cons a b)
       (car a)
       (cdr b)
@@ -614,42 +630,54 @@
       (unary-- a)
       (len x)))
 
-   (defchoose foo-ev-falsify (a) (x)
-     (not (foo-ev x a)))
+   (def-meta-extract foo-ev foo-ev-lst)
 
    (def-functional-instance
      interp-function-lookup-correct-for-foo-ev
      interp-function-lookup-correct
      ((ifl-ev foo-ev)
       (ifl-ev-lst foo-ev-lst)
-      (ifl-ev-falsify foo-ev-falsify))
-     :hints (("Subgoal 2" :use foo-ev-constraint-0)
-             ("Subgoal 1" :use foo-ev-falsify)))
+      (ifl-ev-falsify foo-ev-falsify)
+      (ifl-ev-meta-extract-global-badguy
+       foo-ev-meta-extract-global-badguy))
+     :hints ((and stable-under-simplificationp
+                  '(:use (foo-ev-constraint-0
+                          foo-ev-falsify
+                          foo-ev-meta-extract-global-badguy)))))
 
    (def-functional-instance
      interp-function-lookup-correct-2-for-foo-ev
      interp-function-lookup-correct-2
      ((ifl-ev foo-ev)
       (ifl-ev-lst foo-ev-lst)
-      (ifl-ev-falsify foo-ev-falsify)))
+      (ifl-ev-falsify foo-ev-falsify)
+      (ifl-ev-meta-extract-global-badguy
+       foo-ev-meta-extract-global-badguy)))
 
    (def-functional-instance
      interp-function-lookup-theoremp-defs-history-for-foo-ev
      interp-function-lookup-theoremp-defs-history
      ((ifl-ev foo-ev)
       (ifl-ev-lst foo-ev-lst)
-      (ifl-ev-falsify foo-ev-falsify)))
+      (ifl-ev-falsify foo-ev-falsify)
+      (ifl-ev-meta-extract-global-badguy
+       foo-ev-meta-extract-global-badguy)))
 
    (def-functional-instance
      foo-ev-theoremp-of-conjoin-clauses-cons
      ifl-ev-theoremp-of-conjoin-clauses-cons
      ((ifl-ev foo-ev)
       (ifl-ev-lst foo-ev-lst)
-      (ifl-ev-falsify foo-ev-falsify)))
+      (ifl-ev-falsify foo-ev-falsify)
+      (ifl-ev-meta-extract-global-badguy
+       foo-ev-meta-extract-global-badguy)))
 
    (def-functional-instance
      foo-ev-theoremp-of-conjoin-clauses-append
      ifl-ev-theoremp-of-conjoin-clauses-append
      ((ifl-ev foo-ev)
       (ifl-ev-lst foo-ev-lst)
-      (ifl-ev-falsify foo-ev-falsify)))))
+      (ifl-ev-falsify foo-ev-falsify)
+      (ifl-ev-meta-extract-global-badguy
+       foo-ev-meta-extract-global-badguy)))))
+

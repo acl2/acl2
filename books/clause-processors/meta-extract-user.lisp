@@ -1,6 +1,6 @@
 (in-package "ACL2")
 
-;; This book builds on meta-extract-ttag and defines theorems and tools to enable
+;; This book defines theorems and tools to enable
 ;; the user to more easily use the supported system functions in their meta
 ;; rules (and, not yet implemented, clause processors).
 
@@ -40,10 +40,10 @@
 ;; (mextract-ev-contextual-facts a) can be used as a hyp in a :meta rule, and
 ;; allows us to assume the correctness of any result (correctly) derived from
 ;; the supported contextual prover facilities with respect to mextract-ev.
-(defmacro mextract-ev-contextual-facts (a)
+(defmacro mextract-ev-contextual-facts (a &key (mfc 'mfc) (state 'state))
   `(mextract-ev
     (meta-extract-contextual-fact
-     (mextract-contextual-badguy a mfc state) mfc state)
+     (mextract-contextual-badguy ,a ,mfc ,state) ,mfc ,state)
     ,a))
 
 
@@ -60,13 +60,13 @@
 ;; (mextract-ev-global-facts) can be used as a hyp in a :meta rule, and
 ;; allows us to assume the correctness of any result (correctly) derived from
 ;; the supported global prover facilities with respect to mextract-ev.
-(defmacro mextract-ev-global-facts ()
-  '(mextract-ev
+(defmacro mextract-ev-global-facts (&key (state 'state))
+  `(mextract-ev
     (meta-extract-global-fact
-     (mextract-global-badguy state) state)
+     (mextract-global-badguy ,state) ,state)
     (mextract-ev-falsify
      (meta-extract-global-fact
-      (mextract-global-badguy state) state))))
+      (mextract-global-badguy ,state) ,state))))
 
 (defthmd mextract-global-badguy-sufficient
   (implies (mextract-ev-global-facts)
@@ -266,10 +266,10 @@
                 (evfn x a))
        :hints (("goal" :use evfn-falsify)))
 
-     (defmacro evfn-meta-extract-contextual-facts (a)
+     (defmacro evfn-meta-extract-contextual-facts (a &key (mfc 'mfc) (state 'state))
        `(evfn
          (meta-extract-contextual-fact
-          (evfn-meta-extract-contextual-badguy a mfc state) mfc state)
+          (evfn-meta-extract-contextual-badguy ,a ,mfc state) ,mfc ,state)
          ,a))
 
      (defthmd evfn-meta-extract-contextual-badguy-sufficient
@@ -278,13 +278,13 @@
        :hints (("goal" :use evfn-meta-extract-contextual-badguy
                 :in-theory (disable meta-extract-contextual-fact))))
 
-     (defmacro evfn-meta-extract-global-facts ()
-       '(evfn
+     (defmacro evfn-meta-extract-global-facts (&key (state 'state))
+       `(evfn
          (meta-extract-global-fact
-          (evfn-meta-extract-global-badguy state) state)
+          (evfn-meta-extract-global-badguy ,state) ,state)
          (evfn-falsify
           (meta-extract-global-fact
-           (evfn-meta-extract-global-badguy state) state))))
+           (evfn-meta-extract-global-badguy ,state) ,state))))
 
      (defthmd evfn-meta-extract-global-badguy-sufficient
        (implies (evfn-meta-extract-global-facts)
@@ -721,3 +721,27 @@
   (defthm bar-of-baz
     (equal (bar (baz x))
            (bar x)))))
+
+
+
+;; Allows use of meta-extract-formula with just the world.  You still need
+;; state in the theorems (and to know that wrld = (w state)).
+(defund meta-extract-formula-w (name wrld)
+  (declare (xargs :guard (and (symbolp name)
+                              (plist-worldp wrld))))
+  (or (getprop name 'theorem nil 'current-acl2-world wrld)
+      (mv-let (flg prop)
+        (constraint-info name wrld)
+        (cond ((eq prop *unknown-constraints*)
+               *t*)
+              (flg (ec-call (conjoin prop)))
+              (t prop)))))
+
+(defthm meta-extract-formula-w-rewrite
+  (equal (meta-extract-formula-w name (w state))
+         (meta-extract-formula name state))
+  :hints(("Goal" :in-theory (enable meta-extract-formula-w
+                                    meta-extract-formula))))
+
+
+

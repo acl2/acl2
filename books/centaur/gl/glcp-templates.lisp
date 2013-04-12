@@ -62,7 +62,7 @@
                   (body (car (cdr (cdar x)))))
                (if (and (equal (len actuals) (len formals))
                         (nonnil-symbol-listp formals)
-                        (acl2::no-dupsp formals))
+                        (acl2::fast-no-duplicatesp formals))
                    (interp-term
                     body (pairlis$ formals actuals)
                     hyp clk obligs config state)
@@ -210,8 +210,8 @@ In ~@0: The hyp contains the following unbound variables: ~x1~%"
 In ~@0: the bindings don't satisfy shape-spec-bindingsp: ~x1"
                        id bindings)))
           (obj (strip-cadrs bindings))
-          ((unless (and (acl2::no-dupsp (shape-spec-indices obj))
-                        (acl2::no-dupsp (shape-spec-vars obj))))
+          ((unless (and (acl2::fast-no-duplicatesp (shape-spec-indices obj))
+                        (acl2::fast-no-duplicatesp-equal (shape-spec-vars obj))))
            (flush-hons-get-hash-table-link obligs)
            (glcp-error
             (acl2::msg "~
