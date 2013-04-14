@@ -9469,9 +9469,9 @@
 ;         hyp)
 ;    (equal lhs rhs))
 
-; Since that the introduction of ev' makes w' a conservative extension of w, it
-; suffices to show the the formula just above is a theorem of w'.  Since (*)
-; has been shown to be a theorem of w', tnen it suffices to show that the
+; Since the introduction of ev' makes w' a conservative extension of w, it
+; suffices to show that the formula just above is a theorem of w'.  Since (*)
+; has been shown to be a theorem of w', then it suffices to show that the
 ; following is a theorem of w'.
 
 ;   (implies
