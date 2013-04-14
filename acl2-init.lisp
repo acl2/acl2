@@ -1720,7 +1720,7 @@ implementations.")
     (when outfilename
       (if (probe-file outfilename)
           (delete-file outfilename))
-      (or (setq str (open outfilename :direction :output))
+      (or (setq str (safe-open outfilename :direction :output))
           (error "Unable to open file ~s for output." outfilename))
       (format str "(in-package \"ACL2\")~%"))
     (dolist (fl *acl2-files*)

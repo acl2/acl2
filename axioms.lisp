@@ -32320,7 +32320,7 @@
    ((null (f-get-global 'infixp *the-live-state*))
     t)
    (t
-    (let ((stream (open file :direction :input :if-does-not-exist nil)))
+    (let ((stream (safe-open file :direction :input :if-does-not-exist nil)))
       (if stream
           (unwind-protect (lisp-book-syntaxp1 0 stream)
             (close stream))
@@ -32376,6 +32376,11 @@
 
 ; Here, file-name is an ACL2 file name (i.e., with Unix-style syntax).
 
+; It is possible to get an error when opening an output file.  We
+; consider that a resource error for purposes of the story.  Note that starting
+; after Version_6.1, an error is unlikely except for GCL because of our use of
+; safe-open.
+
   (declare (xargs :guard (and (stringp file-name)
                               (member-eq typ *file-types*)
                               (state-p1 state-state))))
@@ -32409,11 +32414,11 @@
                      (case
                        typ
                        ((:character :object)
-                        (open os-file-name :direction :input
-                              :if-does-not-exist nil))
-                       (:byte (open os-file-name :direction :input
-                                    :element-type '(unsigned-byte 8)
-                                    :if-does-not-exist nil))
+                        (safe-open os-file-name :direction :input
+                                   :if-does-not-exist nil))
+                       (:byte (safe-open os-file-name :direction :input
+                                         :element-type '(unsigned-byte 8)
+                                         :if-does-not-exist nil))
                        (otherwise
                         (interface-er "Illegal input-type ~x0." typ)))))
                 (cond
@@ -32555,8 +32560,12 @@
 
 ; Wart: We use state-state instead of state because of a bootstrap problem.
 
+; Here, file-name is an ACL2 file name (i.e., with Unix-style syntax).
+
 ; It is possible to get an error when opening an output file.  We
-; consider that a resource error for purposes of the story.
+; consider that a resource error for purposes of the story.  Note that starting
+; after Version_6.1, an error is unlikely except for GCL because of our use of
+; safe-open.
 
   (declare (xargs :guard (and (or (stringp file-name)
                                   (eq file-name :string))
@@ -32599,33 +32608,35 @@
                       ((:character :object)
                        (cond ((eq file-name :string)
                               (make-string-output-stream))
-                             (t (open os-file-name :direction :output
-                                      :if-exists :supersede
+                             (t (safe-open os-file-name :direction :output
+                                           :if-exists :supersede
 
 ; In ACL2(p) using CCL, we have seen an error caused when standard-co was
 ; connected to a file.  Specifically, waterfall-print-clause-id@par was
 ; printing to standard-co -- i.e., to that file -- and CCL complained because
 ; the default is for a file stream to be private to the thread that created it.
 
-                                      #+(and acl2-par ccl) :sharing
-                                      #+(and acl2-par ccl) :lock))))
+                                           #+(and acl2-par ccl) :sharing
+                                           #+(and acl2-par ccl) :lock))))
                       (:byte
                        (cond ((eq file-name :string)
                               (make-string-output-stream
                                :element-type '(unsigned-byte 8)))
-                             (t (open os-file-name :direction :output
-                                      :if-exists :supersede
-                                      :element-type '(unsigned-byte 8)
-                                      #+(and acl2-par ccl) :sharing
-                                      #+(and acl2-par ccl) :lock))))
+                             (t (safe-open os-file-name :direction :output
+                                           :if-exists :supersede
+                                           :element-type '(unsigned-byte 8)
+                                           #+(and acl2-par ccl) :sharing
+                                           #+(and acl2-par ccl) :lock))))
                       (otherwise
-                       (interface-er "Illegal output-type ~x0." typ))))
-                   (channel (make-output-channel file-name *file-clock*)))
-              (symbol-name channel)
-              (setf (get channel *open-output-channel-type-key*)
-                    typ)
-              (setf (get channel *open-output-channel-key*) stream)
-              (mv channel *the-live-state*))))))
+                       (interface-er "Illegal output-type ~x0." typ)))))
+              (cond
+               ((null stream) (mv nil *the-live-state*))
+               (t (let ((channel (make-output-channel file-name *file-clock*)))
+                    (symbol-name channel)
+                    (setf (get channel *open-output-channel-type-key*)
+                          typ)
+                    (setf (get channel *open-output-channel-key*) stream)
+                    (mv channel *the-live-state*)))))))))
   (let ((state-state
          (update-file-clock (1+ (file-clock state-state)) state-state)))
     (cond ((member-equal (list file-name typ (file-clock state-state))
@@ -47888,14 +47899,10 @@ Lisp definition."
                   :stobjs state))
   #+acl2-loop-only
   (declare (ignore file))
-  #+(and (not acl2-loop-only) cltl2)
+  #+(not acl2-loop-only)
   (when (live-state-p state)
     (return-from file-write-date$
-                 (mv (ignore-errors (file-write-date file)) state)))
-  #+(and (not acl2-loop-only) (not cltl2))
-  (when (live-state-p state)
-    (return-from file-write-date$
-                 (mv (file-write-date file) state)))
+                 (mv (our-ignore-errors (file-write-date file)) state)))
   (mv-let (erp val state)
           (read-acl2-oracle state)
           (mv (and (null erp)

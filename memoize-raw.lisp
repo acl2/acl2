@@ -3923,7 +3923,7 @@ the calls took.")
 
    (or
     (and
-     (ignore-errors (probe-file "/proc/meminfo"))
+     (our-ignore-errors (probe-file "/proc/meminfo"))
      (with-standard-io-syntax
       (with-open-file (stream "/proc/meminfo")
         (let (line)

@@ -7443,7 +7443,7 @@ Missing functions:
 ; since when two interrupts are required, the summary does not print the
 ; ACL2(p) checkpoints.
 
-                  (ignore-errors ; might not be in scope of catch
+                  (our-ignore-errors ; might not be in scope of catch
                     (throw 'local-top-level :our-abort))))))))
 
 ; We formerly set *debugger-hook* here, but now we set it in lp; see the
