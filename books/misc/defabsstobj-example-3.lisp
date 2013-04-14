@@ -1,6 +1,7 @@
 ; Defabsstobj Example 3
-; Copyright (C) 2012 Matt Kaufmann
-; Dec., 2012
+; Copyright (C) 2012, Regents of the University of Texas
+; Written by Matt Kaufmann, Dec., 2012
+; License: A 3-clause BSD license.  See the LICENSE file distributed with ACL2.
 
 ; This is based on defabsstobj-example-1.lisp, with comments dropped in this
 ; file; see comments in the above file for details.  Here, we modify that

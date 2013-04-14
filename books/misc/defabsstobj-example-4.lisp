@@ -1,5 +1,7 @@
-; Matt Kaufmann
-; Dec., 2012
+; Defabsstobj Example 4
+; Copyright (C) 2012, Regents of the University of Texas
+; Written by Matt Kaufmann, Dec., 2012
+; License: A 3-clause BSD license.  See the LICENSE file distributed with ACL2.
 
 ; This example is closely based on an example from Sol Swords that showed the
 ; unsoundness of abstract stobjs in ACL2 Version 5.0, and led to the

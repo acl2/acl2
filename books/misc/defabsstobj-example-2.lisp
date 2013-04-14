@@ -1,6 +1,7 @@
 ; Defabsstobj Example 2
-; Copyright (C) 2012 Matt Kaufmann
-; July, 2012 (updated Dec., 2012)
+; Copyright (C) 2012, Regents of the University of Texas
+; Written by Matt Kaufmann, July, 2012 (updated Dec., 2012)
+; License: A 3-clause BSD license.  See the LICENSE file distributed with ACL2.
 
 ; This example uses abstract stobjs to save values in a memo table.  It
 ; illustrates how to avoid guard checks using abstract stobjs.  It also
