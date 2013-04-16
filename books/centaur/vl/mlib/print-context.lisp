@@ -23,10 +23,9 @@
 (include-book "writer")
 (local (include-book "../util/arithmetic"))
 
-
-(defpp vl-pp-modelement-summary (x)
-  :guard (vl-modelement-p x)
-  :body
+(define vl-pp-modelement-summary ((x vl-modelement-p) &key (ps 'ps))
+  :parents (vl-modelement-p)
+  :short "Print a short, human-friendly description of a @(see vl-modelement-p)."
   (case (tag x)
     (:vl-port
      (let* ((name (vl-port->name x)))
@@ -116,59 +115,32 @@
                 (vl-print-loc (vl-initial->loc x))))
 
     (otherwise
-     (prog2$ (er hard 'vl-pp-modelement-summary "Impossible")
-             ps))))
+     (prog2$ (impossible) ps))))
 
-
-(defsection vl-modelement-summary
+(define vl-modelement-summary ((x vl-modelement-p))
+  :returns (str stringp :rule-classes :type-prescription)
   :parents (vl-modelement-p)
-  :short "Produce a short, human-friendly description of a @(see vl-modelement-p)."
-  :long "@(thm stringp-of-vl-modelement-summary)
-@(def vl-modelement-summary)"
+  :short "Get a short, human-friendly string describing a @(see vl-modelement-p)."
+  (with-local-ps (vl-pp-modelement-summary x)))
 
-  (defund vl-modelement-summary (x)
-    (declare (xargs :guard (vl-modelement-p x)))
-    (with-local-ps (vl-pp-modelement-summary x)))
-
-  (local (in-theory (enable vl-modelement-summary)))
-
-  (defthm stringp-of-vl-modelement-summary
-    (stringp (vl-modelement-summary x))
-    :rule-classes :type-prescription))
-
-
-
-(defpp vl-pp-context-summary (x)
-  :guard (vl-context-p x)
-  :body
+(define vl-pp-context-summary ((x vl-context-p) &key (ps 'ps))
   (b* (((vl-context x) x))
     (vl-ps-seq (vl-print "In ")
                (vl-print-modname x.mod)
                (vl-println? ", ")
                (vl-pp-modelement-summary x.elem))))
 
-(defsection vl-context-summary
+(define vl-context-summary ((x vl-context-p))
+  :returns (str stringp :rule-classes :type-prescription)
   :parents (vl-context-p)
-  :short "Produce a short, human-friendly description of a @(see vl-context-p)."
+  :short "Get a short, human-friendly string describing a @(see vl-context-p)."
   :long "<p>See also @(see vl-modelement-summary) and @(see
 vl-pp-context-full).</p>"
+  (with-local-ps (vl-pp-context-summary x)))
 
-  (defund vl-context-summary (x)
-    (declare (xargs :guard (vl-context-p x)))
-    (with-local-ps (vl-pp-context-summary x)))
-
-  (local (in-theory (enable vl-context-summary)))
-
-  (defthm stringp-of-vl-context-summary
-    (stringp (vl-context-summary x))
-    :rule-classes :type-prescription))
-
-
-(defpp vl-pp-modelement-full (x)
+(define vl-pp-modelement-full ((x vl-modelement-p) &key (ps 'ps))
   :parents (vl-modelement-p)
-  :short "Pretty-print a full @(see vl-modelement-p)"
-  :guard (vl-modelement-p x)
-  :body
+  :short "Pretty-print a full @(see vl-modelement-p)."
   (case (tag x)
     (:vl-port      (vl-pp-port x))
     (:vl-portdecl  (vl-pp-portdecl x))
@@ -184,19 +156,14 @@ vl-pp-context-full).</p>"
     (:vl-gateinst  (vl-pp-gateinst x))
     (:vl-always    (vl-pp-always x))
     (:vl-initial   (vl-pp-initial x))
-    (otherwise
-     (prog2$ (er hard 'vl-pp-modelement "Impossible")
-             ps))))
+    (otherwise (prog2$ (impossible) ps))))
 
-(defpp vl-pp-context-full (x)
+(define vl-pp-context-full ((x vl-context-p) &key (ps 'ps))
   :parents (vl-context-p)
-  :short "Pretty-print a longer description of where a @(see vl-context-p) occurs."
-  :guard (vl-context-p x)
-  :body
+  :short "Pretty-print a full @(see vl-context-p)."
   (b* (((vl-context x) x))
-      (vl-ps-seq
-       (vl-print "In module ")
-       (vl-print-modname x.mod)
-       (vl-println ",")
-       (vl-pp-modelement-full x.elem)
-       (vl-println ""))))
+      (vl-ps-seq (vl-print "In module ")
+                 (vl-print-modname x.mod)
+                 (vl-println ",")
+                 (vl-pp-modelement-full x.elem)
+                 (vl-println ""))))

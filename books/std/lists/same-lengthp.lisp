@@ -1,5 +1,5 @@
-; VL Verilog Toolkit
-; Copyright (C) 2008-2011 Centaur Technology
+; Same-lengthp -- Determine if two lists have the same length
+; Copyright (C) 2008 Centaur Technology
 ;
 ; Contact:
 ;   Centaur Technology Formal Verification Group
@@ -18,29 +18,22 @@
 ;
 ; Original author: Jared Davis <jared@centtech.com>
 
-(in-package "VL")
-
-; This is an empty book which is included in cert.acl2 in order to consolidate
-; all of our portcullis commands into a single, usually-redundant include-book
-; command.  This simply improves the efficiency of our build process.
-
-(include-book "tools/safe-case" :dir :system)
+(in-package "ACL2")
 (include-book "xdoc/top" :dir :system)
-(include-book "clause-processors/autohide" :dir :system)
-(include-book "tools/rulesets" :dir :system)
 
-(defmacro VL::case (&rest args)
-  `(ACL2::safe-case . ,args))
+(defsection same-lengthp
+  :parents (len)
+  :short "Efficiently checks if two lists have the same length."
 
-(defmacro VL::concatenate (&rest args)
-  `(STR::fast-concatenate . ,args))
+  :long "<p>In the logic this is just @('(equal (len x) (len y))').  For faster
+execution, we walk down both lists together so that we can terminate early.</p>
 
-(defmacro VL::enable (&rest args)
-  `(ACL2::enable* . ,args))
+<p>We leave @('same-lengthp') enabled, and reason about @('len') instead.</p>"
 
-(defmacro VL::disable (&rest args)
-  `(ACL2::disable* . ,args))
-
-(defmacro VL::e/d (&rest args)
-  `(ACL2::e/d* . ,args))
-
+  (defun same-lengthp (x y)
+    (declare (xargs :guard t))
+    (mbe :logic (equal (len x) (len y))
+         :exec (if (consp x)
+                   (and (consp y)
+                        (same-lengthp (cdr x) (cdr y)))
+                 (not (consp y))))))

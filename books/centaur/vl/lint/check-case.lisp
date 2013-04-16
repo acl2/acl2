@@ -102,13 +102,12 @@
 
 
 
-(defpp vl-equiv-strings-to-lines (x)
-  :guard (string-list-listp x)
-  :body (if (atom x)
-            ps
-          (vl-ps-seq
-           (vl-basic-cw "      - ~&0~%" (car x))
-           (vl-equiv-strings-to-lines (cdr x)))))
+(define vl-equiv-strings-to-lines ((x string-list-listp) &key (ps 'ps))
+  (if (atom x)
+      ps
+    (vl-ps-seq
+     (vl-basic-cw "      - ~&0~%" (car x))
+     (vl-equiv-strings-to-lines (cdr x)))))
 
 (defsection vl-module-check-case
 

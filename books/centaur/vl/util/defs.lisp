@@ -67,24 +67,6 @@ working with Verilog modules.")
     (coerce (list #\Newline) 'string)))
 
 
-(define same-lengthp (x y)
-  :parents (utilities)
-  :short "Efficiently checks if two lists have the same length."
-
-  :long "<p>In the logic this is just @('(equal (len x) (len y))').  But for
-faster execution we walk down both lists together so that we can terminate
-early.</p>
-
-<p>We leave @('same-lengthp') enabled, and reason about @('len') instead.</p>"
-
-  :enabled t
-
-  (mbe :logic (equal (len x) (len y))
-       :exec (if (consp x)
-                 (and (consp y)
-                      (same-lengthp (cdr x) (cdr y)))
-               (not (consp y)))))
-
 
 (define redundant-mergesort
   (x &key
@@ -1149,3 +1131,36 @@ the alist @('alist')."
     (equal (keys-boundp (revappend x y) alist)
            (and (keys-boundp x alist)
                 (keys-boundp y alist)))))
+
+
+(defsection impossible
+  :parents (utilities)
+  :short "Prove that some case is unreachable using @(see guard)s."
+
+  :long "<p>Logically, @('(impossible)') just returns @('nil').</p>
+
+<p>But @('impossible') has a guard of @('nil'), so whenever you use it in a
+function, you will be obliged to prove that it cannot be executed when the
+guard holds.</p>
+
+<p>What good is this?  One use is to make sure that every possible case in a
+sum type has been covered.  For instance, you can write:</p>
+
+@({
+ (define f ((x whatever-p))
+   (case (type-of x)
+     (:foo (handle-foo ...))
+     (:bar (handle-bar ...))
+     (otherwise (impossible))))
+})
+
+<p>This is a nice style in that, if we later extend @('x') so that its type can
+also be @(':baz'), then the guard verification will fail and remind us that we
+need to extend @('f') to handle @(':baz') types as well.</p>
+
+<p>If somehow @('(impossible)') is ever executed (e.g., due to program mode
+code that is violating guards), it just causes a hard error.</p>"
+
+  (defun impossible ()
+    (declare (xargs :guard nil))
+    (er hard 'impossible "Provably impossible")))

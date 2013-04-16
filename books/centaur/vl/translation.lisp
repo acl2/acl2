@@ -23,103 +23,80 @@
 (include-book "loader/filemap")
 (include-book "loader/defines")
 (include-book "checkers/use-set-report")
-(include-book "transforms/xf-designregs") ;; ugh
 (local (include-book "util/arithmetic"))
 (local (include-book "util/osets"))
 
 
 (defaggregate vl-translation
-  (mods
-   failmods
-   filemap
-   defines
-   loadwarnings
-   useset-report
-   ;; dregs  awful, trying to deprecate this
-   )
-  :tag :vl-translation
-  :require ((vl-modulelist-p-of-vl-translation->mods
-             (vl-modulelist-p mods))
-            (vl-modulelist-p-of-vl-translation->failmods
-             (vl-modulelist-p failmods))
-            (vl-filemap-p-of-vl-translation->filemap
-             (vl-filemap-p filemap))
-            (vl-defines-p-of-vl-translation->defines
-             (vl-defines-p defines))
-            (vl-warninglist-p-of-vl-translation->loadwarnings
-             (vl-warninglist-p loadwarnings))
-            (vl-useset-report-p-of-vl-translation->useset-report
-             (vl-useset-report-p useset-report))
-            ;; (vl-dregalist-p-of-vl-translation->dregs
-            ;;  (vl-dregalist-p dregs))
-            )
   :parents (defmodules)
   :short "The result of translating Verilog modules."
 
-  :long "<p>The @(see defmodules) command produces a @('vl-translation-p')
-object as its result.</p>
+  ((mods          vl-modulelist-p
+                  "A list of fully simplified, successfully translated
+                   modules.")
 
-<p>See @(see translation-interface) for high-level functions for extracting E
-modules.</p>
+   (failmods      vl-modulelist-p
+                  "A list of partially simplified modules that, for some reason,
+                   could not be fully simplified.  Typically each module here
+                   will have fatal @(see warnings).")
 
-<p>Each @('vl-translation-p') object bundles together:</p>
+   (filemap       vl-filemap-p
+                  "Contains the actual Verilog source code that was
+                   read. Occasionally this is useful for understanding warnings
+                   that refer to particular file locations.")
 
-<ul>
+   (defines       vl-defines-p
+                  "Records all of the @('`define') directives that were
+                   encountered during parsing, and their final values. This is
+                   sometimes useful for extracting definitions like opcodes,
+                   etc.")
 
-<li>@('mods'), a list of fully simplified, successfully translated modules,
-represented as @(see vl-module-p)s,</li>
+   (loadwarnings  vl-warninglist-p
+                  "A list of \"floating\" warnings that were encountered during
+                   the load process.  This usually does not have anything
+                   interesting in it, because most warnings get associated with
+                   modules in @('mods') or @('failmods') instead.  It may,
+                   however, contain miscellaneous warnings from <i>between</i>
+                   modules, or that cannot be attributed to particular
+                   modules.")
 
-<li>@('failmods'), a list of partially simplified modules which could not be
-fully simplified, represented as @(see vl-module-p)s,</li>
+   (useset-report vl-useset-report-p
+                  "A report that contains the results of running the @(see
+                   use-set) analysis; this may help you identify wires that are
+                   undriven or unused."))
 
-<li>@('filemap'), a @(see vl-filemap-p) structure that records the actual
-Verilog source code that was read,</li>
+  :tag :vl-translation
 
-<li>@('defines'), a @(see vl-defines-p) structure that records all of the
-@('`define') directives encountered</li>
-
-<li>@('loadwarnings'), a @(see vl-warninglist-p) that records any warnings
-encountered by the @(see loader).  Note that this list does not include any
-warnings produced by the simplifier: such warning are found in the modules of
-@('mods') and @('failmods').</li>
-
-<li>@('useset-report'), a @(see vl-useset-report-p) that records the results of
-the @(see use-set) tool.</li>
-
-</ul>")
-
-;; <li>@('dregs'), the @(see design-regs) alist for this translation.</li>
-
-(defxdoc translation-interface
-  :parents (defmodules)
-  :short "Functions for interacting with @(see vl-translation-p) objects."
-
-  :long "<p>The @(see defmodules) command produces a @(see vl-translation-p)
-object as its result.  The following functions allow you to conveniently access
-parts of this translation.</p>")
+  :long "<p>Translation objects are most commonly produced by the @(see
+defmodules) command.</p>")
 
 
-(defsection vl-translation-has-module
-  :parents (translation-interface)
+(define vl-translation-has-module ((modname stringp)
+                                   (x       vl-translation-p))
+  :parents (translation-p)
   :short "Check whether a module was successfully translated."
 
-  :long "<p><b>Signature:</b> @(call vl-translation-has-module) returns a
-@('t') or @('nil').</p>
-
-<p>The @('modname') should be the desired module's name as a string, e.g.,
-@('\"fadd\"').  If the module's name includes parameters, you will need to say
-which version you want, e.g., @('\"adder$width=4\"').</p>
+  :long "<p>The @('modname') should be the desired module's name as a string,
+e.g., @('\"fadd\"').  If the module's name includes parameters, you will need
+to say which version you want, e.g., @('\"adder$width=4\"').</p>
 
 <p>We return @('t') only when the module was successfully translated with no
 \"fatal\" warnings.  (See @(see vl-translation-p); failed modules are found in
 the translation's @('failmods') field, whereas successful modules are kept in
 the @('mods') field.)</p>"
 
-  (defund vl-translation-has-module (modname x)
-    (declare (xargs :guard (and (stringp modname)
-                                (vl-translation-p x))))
-    (if (vl-find-module modname (vl-translation->mods x))
-        t
-      nil)))
+  (vl-has-module modname (vl-translation->mods x)))
 
+(define vl-translation-get-esim ((modname stringp)
+                                 (x vl-translation-p))
+  :returns (e-mod)
+  :guard (vl-translation-has-module modname x)
+  :parents (vl-translation-p)
+  :short "Get an E Module for a successfully translated module."
+  :prepwork ((local (in-theory (enable vl-translation-has-module))))
 
+  (b* ((mod  (vl-find-module modname (vl-translation->mods x)))
+       (esim (vl-module->esim mod))
+       ((unless esim)
+        (raise "Module ~x0 has no esim?" modname)))
+    esim))

@@ -615,8 +615,7 @@ we see if we think the sequence @('A op (B op2 C)') seems reasonable.</p>"
 (defsection vl-oddexpr-check
   :parents (oddexpr-check)
 
-  (defpp vl-pp-oddexpr-details (x)
-    :body
+  (define vl-pp-oddexpr-details (x &key (ps 'ps))
     (cond ((atom x)
            ps)
           ((atom (car x))

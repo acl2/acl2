@@ -35,7 +35,6 @@
 (include-book "transforms/xf-assign-trunc")
 (include-book "transforms/xf-blankargs")
 (include-book "transforms/xf-clean-params")
-(include-book "transforms/xf-designregs")
 (include-book "transforms/xf-designwires")
 (include-book "transforms/xf-delayredux")
 (include-book "transforms/xf-drop-blankports")
@@ -948,17 +947,12 @@ a suitable order to simplify Verilog modules and to produce E modules.</p>"
            (vl-println "")))
        (- (fast-alist-free walist))
 
-       ;; DREGS are awful, want to deprecate them...
-       ;; (dregs (xf-cwtime (vl-modulelist-collect-dregs mods)
-       ;;                   :name :collect-dregs))
-
        (result (make-vl-translation :mods          mods
                                     :failmods      failmods
                                     :filemap       loadresult.filemap
                                     :defines       loadresult.defines
                                     :loadwarnings  loadresult.warnings
                                     :useset-report use-set-report
-                                    ;;:dregs         dregs
                                     )))
     (mv result state)))
 

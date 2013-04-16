@@ -1164,9 +1164,7 @@
 ; their codes have been assigned.  We just say everything is a wire and the
 ; width is just the length of :syms.
 
-(defpp vcd-print-var-decl (x)
-  :guard (vcd-net-p x)
-  :body
+(define vcd-print-var-decl ((x vcd-net-p) &key (ps 'ps))
   (b* (((vcd-net x) x)
        ((unless (stringp x.idcode))
         (er hard? 'vcd-net-to-declaration "no code for ~x0." x)
@@ -1180,12 +1178,11 @@
                (vl-print x.target)
                (vl-println " $end"))))
 
-(defpp vcd-print-varlist-decls (x)
-  :guard (vcd-netlist-p x)
-  :body  (if (atom x)
-             ps
-           (vl-ps-seq (vcd-print-var-decl (car x))
-                      (vcd-print-varlist-decls (cdr x)))))
+(define vcd-print-varlist-decls ((x vcd-netlist-p) &key (ps 'ps))
+  (if (atom x)
+      ps
+    (vl-ps-seq (vcd-print-var-decl (car x))
+               (vcd-print-varlist-decls (cdr x)))))
 
 ; Now we come to the tricky part: dealing with the hierarchy.  We basically
 ; need to organize the nets paths.  We basically have to write out something
@@ -1408,9 +1405,7 @@
                            (CAR NETS)))
            :hints(("Goal" :in-theory (enable vcd-netlist-filter-path1)))))
 
-  (defpp vcd-print-scopes-aux (nets)
-    :guard (vcd-netlist-p nets)
-    :body
+  (define vcd-print-scopes-aux ((nets vcd-netlist-p) &key (ps 'ps))
     (b* (((unless (mbt (vcd-netlist-p nets)))
           ;; Stupid termination hack
           ps)
@@ -1435,31 +1430,25 @@
       ;; Finally we still need to print all the other stuff.
       (vcd-print-scopes-aux other-nets)))
 
-  (defpp vcd-print-scopes (nets)
-    :guard (vcd-netlist-p nets)
-    :body (vl-ps-seq
-           (vl-println "$scope module esim_top $end")
-           (vcd-print-scopes-aux nets)
-           (vl-println "$upscope $end")
-           )))
+  (define vcd-print-scopes ((nets vcd-netlist-p) &key (ps 'ps))
+    (vl-ps-seq (vl-println "$scope module esim_top $end")
+               (vcd-print-scopes-aux nets)
+               (vl-println "$upscope $end"))))
 
-(defpp vcd-print-header (date nets)
-  :guard (and (stringp date)
-              (vcd-netlist-p nets))
-  :body (vl-ps-seq
-         (vl-print "$date ")
-         (vl-println date)
-         (vl-println "$end")
-         (vl-println "$version ESIM Simulation")
-         (vl-println "$end")
-         ;; Timescale doesn't really make any sense, so we put in a totally
-         ;; nonsensical timescale of 1 second.
-         (vl-println "$timescale 1 s")
-         (vl-println "$end")
-         (vl-println "")
-         (vcd-print-scopes nets)
-         (vl-println "")
-         (vl-println "$enddefinitions $end")))
+(define vcd-print-header ((date stringp) (nets vcd-netlist-p) &key (ps 'ps))
+  (vl-ps-seq (vl-print "$date ")
+             (vl-println date)
+             (vl-println "$end")
+             (vl-println "$version ESIM Simulation")
+             (vl-println "$end")
+             ;; Timescale doesn't really make any sense, so we put in a totally
+             ;; nonsensical timescale of 1 second.
+             (vl-println "$timescale 1 s")
+             (vl-println "$end")
+             (vl-println "")
+             (vcd-print-scopes nets)
+             (vl-println "")
+             (vl-println "$enddefinitions $end")))
 
 
 
@@ -1512,22 +1501,21 @@
 ; current values, and prints a litany of VCD value_change elements to reflect
 ; these changes.
 
-  (defpp vcd-print-net-update (net snap)
-    :guard (and (vcd-net-p net)
-                (vcd-snapshot-p snap))
-    :body
+  (define vcd-print-net-update ((net vcd-net-p)
+                                (snap vcd-snapshot-p)
+                                &key (ps 'ps))
     (b* (((vcd-net net) net)
          ((when (atom net.syms))
-          (er hard? 'vcd-print-net-update "Net has no symbols: ~x0." net)
+          (raise "Net has no symbols: ~x0." net)
           ps)
          ((unless net.idcode)
-          (er hard? 'vcd-print-net-update "Net has no idcode: ~x0." net)
+          (raise "Net has no idcode: ~x0." net)
           ps)
          ((when (atom (cdr net.syms)))
           ;; Scalar net.
           (b* ((lookup (hons-get (car net.syms) snap))
                ((unless lookup)
-                (er hard? 'vcd-print-net-update "No binding for ~x0." net)
+                (raise "No binding for ~x0." net)
                 ps))
             (vl-ps-seq (vl-print (vcd-value->char (cdr lookup)))
                        (vl-println net.idcode))))
@@ -1544,10 +1532,9 @@
          (ps        (vl-ps-update-col 0)))
       ps))
 
-  (defpp vcd-print-netlist-updates (nets snap)
-    :guard (and (vcd-netlist-p nets)
-                (vcd-snapshot-p snap))
-    :body
+  (define vcd-print-netlist-updates ((nets vcd-netlist-p)
+                                     (snap vcd-snapshot-p)
+                                     &key (ps 'ps))
     (if (atom nets)
         ps
       (vl-ps-seq (vcd-print-net-update (car nets) snap)
@@ -1713,13 +1700,13 @@
              (vcd-netlist-p (vcd-look-up-nets signals signal-map)))))
 
 
-(defpp vcd-dump-aux (prev-snapshot snapshots signal-map time)
+(define vcd-dump-aux (prev-snapshot snapshots signal-map time
+                                    &key (ps 'ps))
   ;; All snapshots should be sorted, fast alists.
   :guard (and (vcd-snapshot-p prev-snapshot)
               (vcd-snapshotlist-p snapshots)
               (vcd-signal-map-p signal-map)
               (natp time))
-  :body
   (b* (((when (atom snapshots))
         ps)
        (new-snapshot (car snapshots))
@@ -1745,10 +1732,9 @@
     (vcd-dump-aux new-snapshot (cdr snapshots) signal-map
                   (+ 1 time))))
 
-(defpp vcd-dump-main (snapshots nets)
-  :guard (and (vcd-snapshotlist-p snapshots)
-              (vcd-netlist-p nets))
-  :body
+(define vcd-dump-main ((snapshots vcd-snapshotlist-p)
+                       (nets      vcd-netlist-p)
+                       &key (ps 'ps))
   (b* (((when (atom snapshots))
         (er hard? 'vcd-dump-main "No snapshots to dump?")
         ps)

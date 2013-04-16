@@ -24,7 +24,6 @@
 (include-book "print-context")
 (local (include-book "../util/arithmetic"))
 
-
 (defxdoc vl-fmt
   :parents (verilog-printing)
   :short "Print format strings with support for Verilog constructs."
@@ -93,9 +92,7 @@ a link to this module element will be printed.</dd>
 <p>The <b>~l</b> directive is deprecated and is now a synonym for ~a.  It was
 formerly the \"location directive\" and printed a location.</p>")
 
-(defpp vl-fmt-tilde-m (x)
-  :guard t
-  :body
+(define vl-fmt-tilde-m (x &key (ps 'ps))
   (cond ((stringp x)
          (vl-print-modname x))
         ((vl-module-p x)
@@ -104,9 +101,7 @@ formerly the \"location directive\" and printed a location.</p>")
         (t
          (vl-fmt-tilde-x x))))
 
-(defpp vl-fmt-tilde-w (x)
-  :guard t
-  :body
+(define vl-fmt-tilde-w (x &key (ps 'ps))
   (cond ((stringp x)
          (vl-print-wirename x))
         ((vl-id-p x)
@@ -114,9 +109,7 @@ formerly the \"location directive\" and printed a location.</p>")
         (t
          (vl-fmt-tilde-x x))))
 
-(defpp vl-fmt-tilde-a (x)
-  :guard t
-  :body
+(define vl-fmt-tilde-a (x &key (ps 'ps))
   (case (tag x)
     (:vl-location
      (if (vl-location-p x)
@@ -161,12 +154,10 @@ formerly the \"location directive\" and printed a location.</p>")
     (otherwise
      (vl-fmt-tilde-x x))))
 
-
-
 (defsection vl-fmt-aux-fn
 
-  (defmacro vl-fmt-aux (x n xl alist)
-    `(vl-fmt-aux-fn ,x ,n ,xl ,alist ps))
+  (defmacro vl-fmt-aux (x n xl alist &key (ps 'ps))
+    `(vl-fmt-aux-fn ,x ,n ,xl ,alist ,ps))
 
   (defund vl-fmt-aux-fn (x n xl alist ps)
     (declare (xargs :guard (and (stringp x)
@@ -178,7 +169,7 @@ formerly the \"location directive\" and printed a location.</p>")
                     :stobjs ps
                     :measure (nfix (- (nfix xl) (nfix n)))))
     (if (mbe :logic (zp (- (nfix xl) (nfix n)))
-             :exec (= xl n))
+             :exec (int= xl n))
         ps
       (b* (((mv type val n)
             (vl-basic-fmt-parse-tilde x n xl))
@@ -186,7 +177,7 @@ formerly the \"location directive\" and printed a location.</p>")
                  (:skip   ps)
                  (:normal (vl-fmt-print-normal val))
                  (:hard-space (vl-print #\Space))
-                 (:cbreak (if (= (vl-ps->col) 0) ps (vl-println "")))
+                 (:cbreak (if (zp (vl-ps->col)) ps (vl-println "")))
                  (otherwise
                   (b* ((lookup (assoc val alist))
                        ((unless lookup)
@@ -206,39 +197,23 @@ formerly the \"location directive\" and printed a location.</p>")
                          (prog2$ (er hard? 'vl-fmt-aux-fn
                                      "Unsupported directive: ~~~x0.~%" type)
                                  ps))))))))
-          (vl-fmt-aux x n xl alist))))
+          (vl-fmt-aux x n xl alist)))))
 
-  (local (in-theory (enable vl-fmt-aux-fn)))
-
-  (defthm vl-pstate-p-of-vl-fmt-aux
-    (implies (and (force (stringp x))
-                  (force (natp n))
-                  (force (natp xl))
-                  (force (<= n xl))
-                  (force (= xl (length x)))
-                  (force (alistp alist))
-                  (force (vl-pstate-p ps)))
-             (vl-pstate-p (vl-fmt-aux x n xl alist)))))
-
-(defpp vl-fmt (x alist)
-  :guard (and (stringp x)
-              (alistp alist))
-  :body (vl-fmt-aux x 0 (length x) alist))
-
+(define vl-fmt ((x stringp) (alist alistp) &key (ps 'ps))
+  :inline t
+  (vl-fmt-aux x 0 (length x) alist))
 
 (defmacro vl-cw (x &rest args)
   `(vl-fmt ,x (pairlis$
                '(#\0 #\1 #\2 #\3 #\4 #\5 #\6 #\7 #\8 #\9)
                (list ,@args))))
 
-(defpp vl-cw-obj (msg args)
-  :guard (stringp msg)
-  :body (cond ((<= (len args) 10)
-               (vl-fmt msg (pairlis$
-                            '(#\0 #\1 #\2 #\3 #\4 #\5 #\6 #\7 #\8 #\9)
-                            (redundant-list-fix args))))
-              (t
-               (prog2$ (er hard? 'vl-cw-obj
-                           "vl-cw-obj is limited to 10 arguments.")
-                       ps))))
+(define vl-cw-obj ((msg stringp) args &key (ps 'ps))
+  (cond ((<= (len args) 10)
+         (vl-fmt msg (pairlis$
+                      '(#\0 #\1 #\2 #\3 #\4 #\5 #\6 #\7 #\8 #\9)
+                      (redundant-list-fix args))))
+        (t
+         (prog2$ (raise "vl-cw-obj is limited to 10 arguments.")
+                 ps))))
 

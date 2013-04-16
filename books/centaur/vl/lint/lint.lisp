@@ -470,25 +470,24 @@ shown.</p>"
   :hints(("Goal" :in-theory (enable vl-keep-from-modwarningalist))))
 
 
-(defpp vl-lint-print-warnings (filename label types walist)
-  :guard (and (stringp filename)
-              (stringp label)
-              (symbol-listp types)
-              (vl-modwarningalist-p walist))
-  :body
+(define vl-lint-print-warnings ((filename stringp)
+                                (label    stringp)
+                                (types    symbol-listp)
+                                (walist   vl-modwarningalist-p)
+                                &key (ps 'ps))
   (b* ((walist (vl-keep-from-modwarningalist types walist))
        (walist (vl-clean-modwarningalist walist))
        (count  (length (append-domains walist)))
-       (-      (cond ((= count 0)
+       (-      (cond ((int= count 0)
                       (cw "~s0: No ~s1 Warnings.~%" filename label))
-                     ((= count 1)
+                     ((int= count 1)
                       (cw "~s0: One ~s1 Warning.~%" filename label))
                      (t
                       (cw "~s0: ~x1 ~s2 Warnings.~%" filename count label)))))
     (vl-ps-seq
-     (cond ((= count 0)
+     (cond ((int= count 0)
             (vl-cw "No ~s0 Warnings.~%~%" label))
-           ((= count 1)
+           ((int= count 1)
             (vl-cw "One ~s0 Warning:~%~%" label))
            (t
             (vl-cw "~x0 ~s1 Warnings:~%~%" count label)))

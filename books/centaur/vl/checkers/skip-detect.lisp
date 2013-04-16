@@ -722,57 +722,50 @@ sd-problem-p)s, sorted in priority order.</p>"
 
 ; Pretty-printing results
 
-(defpp sd-pp-problem-header (x)
-  :guard (sd-problem-p x)
-  :body
+(define sd-pp-problem-header ((x sd-problem-p) &key (ps 'ps))
   (b* (((sd-problem x) x)
        ((sd-key x.key) x.key)
        (modname (vl-context->mod x.ctx))
        (htmlp (vl-ps->htmlp)))
-      (vl-ps-seq
-       (if htmlp
-           (vl-print-markup "<dt>")
-         (vl-print "  "))
-       (vl-print "Is ")
-       (vl-print-ext-wirename modname x.key.orig)
-       (vl-print " accidentally skipped? ")
-       (vl-ps-span "sd_detail"
-                   (vl-print "(score ")
-                   (vl-print (sd-problem-score x))
-                   (vl-print ", pat ")
-                   (vl-print x.key.pat)
-                   (vl-print ", priority ")
-                   (vl-print x.priority)
-                   (vl-print ", groupsize ")
-                   (vl-print x.groupsize)
-                   (vl-print ")"))
-       (if htmlp
-           (vl-println-markup "</dt>")
-         (vl-println "")))))
+    (vl-ps-seq
+     (if htmlp
+         (vl-print-markup "<dt>")
+       (vl-print "  "))
+     (vl-print "Is ")
+     (vl-print-ext-wirename modname x.key.orig)
+     (vl-print " accidentally skipped? ")
+     (vl-ps-span "sd_detail"
+                 (vl-print "(score ")
+                 (vl-print (sd-problem-score x))
+                 (vl-print ", pat ")
+                 (vl-print x.key.pat)
+                 (vl-print ", priority ")
+                 (vl-print x.priority)
+                 (vl-print ", groupsize ")
+                 (vl-print x.groupsize)
+                 (vl-print ")"))
+     (if htmlp
+         (vl-println-markup "</dt>")
+       (vl-println "")))))
 
-(defpp sd-pp-problem-brief (x)
-  :guard (sd-problem-p x)
-  :body
+(define sd-pp-problem-brief ((x sd-problem-p) &key (ps 'ps))
   (b* (((sd-problem x) x)
        (htmlp (vl-ps->htmlp)))
-      (vl-ps-seq
-       (sd-pp-problem-header x)
-       (if htmlp
-           (vl-print-markup "<dd class=\"sd_context\">")
-         (vl-indent 2))
-       (vl-println (vl-context-summary x.ctx))
-       (if htmlp
-           (vl-println-markup "</dd>")
-         (vl-println "")))))
+    (vl-ps-seq
+     (sd-pp-problem-header x)
+     (if htmlp
+         (vl-print-markup "<dd class=\"sd_context\">")
+       (vl-indent 2))
+     (vl-println (vl-context-summary x.ctx))
+     (if htmlp
+         (vl-println-markup "</dd>")
+       (vl-println "")))))
 
-(defpp sd-pp-problemlist-brief (x)
-  :guard (sd-problemlist-p x)
-  :body
+(define sd-pp-problemlist-brief ((x sd-problemlist-p) &key (ps 'ps))
   (if (atom x)
       ps
-    (vl-ps-seq
-     (sd-pp-problem-brief (car x))
-     (sd-pp-problemlist-brief (cdr x)))))
+    (vl-ps-seq (sd-pp-problem-brief (car x))
+               (sd-pp-problemlist-brief (cdr x)))))
 
 (defun vl-pp-context-modest (x)
   (declare (xargs :guard (vl-context-p x)))
@@ -782,50 +775,45 @@ sd-problem-p)s, sorted in priority order.</p>"
       (cat (subseq full 0 230) "..." *nls*))))
 
 
-(defpp sd-pp-problem-long (x)
-  :guard (sd-problem-p x)
-  :body
+(define sd-pp-problem-long ((x sd-problem-p) &key (ps 'ps))
   (b* (((sd-problem x) x)
        (modname (vl-context->mod x.ctx))
        (loc (vl-modelement-loc (vl-context->elem x.ctx))))
-      (if (not (vl-ps->htmlp))
-          ;; Plain text
-          (vl-ps-seq
-           (vl-print "In ")
-           (vl-print-modname modname)
-           (vl-print " (")
-           (vl-print-loc loc)
-           (vl-println ")")
-           (sd-pp-problem-header x)
-           (vl-indent 2)
-           (vl-println "")
-           (vl-print (vl-pp-context-modest x.ctx))
-           (vl-println "")
-           (vl-println ""))
-        ;; HTML mode
+    (if (not (vl-ps->htmlp))
+        ;; Plain text
         (vl-ps-seq
-         (vl-println-markup "<dl class=\"sd_prob\">")
-         (sd-pp-problem-header x)
-         (vl-print-markup "<dt class=\"sd_loc\">")
          (vl-print "In ")
          (vl-print-modname modname)
-         (vl-print " at ")
+         (vl-print " (")
          (vl-print-loc loc)
-         (vl-println-markup "</dt>")
-         (vl-print-markup "<dd class=\"sd_context\">")
+         (vl-println ")")
+         (sd-pp-problem-header x)
+         (vl-indent 2)
+         (vl-println "")
          (vl-print (vl-pp-context-modest x.ctx))
-         (vl-println-markup "</dd>")
-         (vl-println-markup "</dl>")
+         (vl-println "")
+         (vl-println ""))
+      ;; HTML mode
+      (vl-ps-seq
+       (vl-println-markup "<dl class=\"sd_prob\">")
+       (sd-pp-problem-header x)
+       (vl-print-markup "<dt class=\"sd_loc\">")
+       (vl-print "In ")
+       (vl-print-modname modname)
+       (vl-print " at ")
+       (vl-print-loc loc)
+       (vl-println-markup "</dt>")
+       (vl-print-markup "<dd class=\"sd_context\">")
+       (vl-print (vl-pp-context-modest x.ctx))
+       (vl-println-markup "</dd>")
+       (vl-println-markup "</dl>")
        ))))
 
-(defpp sd-pp-problemlist-long (x)
-  :guard (sd-problemlist-p x)
-  :body
+(define sd-pp-problemlist-long ((x sd-problemlist-p) &key (ps 'ps))
   (if (atom x)
       ps
-    (vl-ps-seq
-     (sd-pp-problem-long (car x))
-     (sd-pp-problemlist-long (cdr x)))))
+    (vl-ps-seq (sd-pp-problem-long (car x))
+               (sd-pp-problemlist-long (cdr x)))))
 
 
 

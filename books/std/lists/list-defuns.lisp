@@ -28,6 +28,7 @@
 (local (include-book "rev"))
 (local (include-book "equiv"))
 (local (include-book "sets"))
+(local (include-book "same-lengthp"))
 (set-enforce-redundancy t)
 
 (defund list-fix (x)
@@ -150,3 +151,11 @@
              (t
               (cons (car x)
                     (first-n (- n 1) (cdr x)))))))
+
+(defun same-lengthp (x y)
+  (declare (xargs :guard t))
+  (mbe :logic (equal (len x) (len y))
+       :exec (if (consp x)
+                 (and (consp y)
+                      (same-lengthp (cdr x) (cdr y)))
+               (not (consp y)))))

@@ -52,6 +52,7 @@
       repeat
       list-fix
       list-equiv
+      same-lengthp
       rev
       revappend-without-guard
       unexplode-nonnegative-integer

@@ -431,37 +431,31 @@
 
 
 
-(defpp vl-pp-subcounts-aux (x)
-  :guard (vl-subcountalist-p x)
-  :body
+(define vl-pp-subcounts-aux ((x vl-subcountalist-p) &key (ps 'ps))
   (b* (((when (atom x))
         ps)
        (name (caar x))
        (info (cdar x))
        ((vl-subcount info) info))
-    (vl-ps-seq
-     (vl-when-html (vl-print-markup "<li>"))
-     (vl-print-modname name)
-     (vl-print ": ")
-     (vl-print info.count)
-     (if (consp info.warnings)
-         (vl-ps-seq
-          (vl-when-html (vl-print-markup "<sup>"))
-          (vl-print "*")
-          (vl-when-html (vl-print-markup "</sup>")))
-       ps)
-     (if (vl-ps->htmlp)
-         (vl-println-markup "</li>")
-       (vl-println ""))
-     (vl-pp-subcounts-aux (cdr x)))))
+    (vl-ps-seq (vl-when-html (vl-print-markup "<li>"))
+               (vl-print-modname name)
+               (vl-print ": ")
+               (vl-print info.count)
+               (if (consp info.warnings)
+                   (vl-ps-seq
+                    (vl-when-html (vl-print-markup "<sup>"))
+                    (vl-print "*")
+                    (vl-when-html (vl-print-markup "</sup>")))
+                 ps)
+               (if (vl-ps->htmlp)
+                   (vl-println-markup "</li>")
+                 (vl-println ""))
+               (vl-pp-subcounts-aux (cdr x)))))
 
-(defpp vl-pp-subcounts (x)
-  :guard (vl-subcountalist-p x)
-  :body
-  (vl-ps-seq
-   (vl-when-html (vl-println-markup "<ul>"))
-   (vl-pp-subcounts-aux x)
-   (vl-when-html (vl-println-markup "</ul>"))))
+(define vl-pp-subcounts ((x vl-subcountalist-p) &key (ps 'ps))
+  (vl-ps-seq (vl-when-html (vl-println-markup "<ul>"))
+             (vl-pp-subcounts-aux x)
+             (vl-when-html (vl-println-markup "</ul>"))))
 
 
 

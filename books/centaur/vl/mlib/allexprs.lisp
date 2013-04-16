@@ -366,16 +366,14 @@ list-rec-s "), as described in @(see allexprs).</p>")))
   :type vl-delayoreventcontrol
   :exec-body
   (case (tag x)
-    (:vl-delaycontrol (vl-delaycontrol-allexprs-exec x acc))
-    (:vl-eventcontrol (vl-eventcontrol-allexprs-exec x acc))
+    (:vl-delaycontrol        (vl-delaycontrol-allexprs-exec x acc))
+    (:vl-eventcontrol        (vl-eventcontrol-allexprs-exec x acc))
     (:vl-repeat-eventcontrol (vl-repeateventcontrol-allexprs-exec x acc))
-    (otherwise
-     (prog2$ (er hard 'vl-delayoreventcontrol-allexprs-exec "Provably impossible.")
-             acc)))
+    (otherwise               (or (impossible) acc)))
   :body
   (case (tag x)
-    (:vl-delaycontrol (vl-delaycontrol-allexprs x))
-    (:vl-eventcontrol (vl-eventcontrol-allexprs x))
+    (:vl-delaycontrol        (vl-delaycontrol-allexprs x))
+    (:vl-eventcontrol        (vl-eventcontrol-allexprs x))
     (:vl-repeat-eventcontrol (vl-repeateventcontrol-allexprs x))))
 
 (def-vl-allexprs
@@ -429,9 +427,7 @@ list-rec-s "), as described in @(see allexprs).</p>")))
     (:vl-enablestmt       (vl-enablestmt-allexprs-exec x acc))
     (:vl-disablestmt      (vl-disablestmt-allexprs-exec x acc))
     (:vl-eventtriggerstmt (vl-eventtriggerstmt-allexprs-exec x acc))
-    (otherwise
-     (prog2$ (er hard 'vl-atomicstmt-allexprs-exec "Provably impossible.")
-             acc)))
+    (otherwise            (or (impossible) acc)))
   :body
   (case (tag x)
     (:vl-nullstmt         nil)
@@ -449,9 +445,7 @@ list-rec-s "), as described in @(see allexprs).</p>")))
     (:vl-vardecl   (vl-vardecl-allexprs-exec x acc))
     (:vl-eventdecl (vl-eventdecl-allexprs-exec x acc))
     (:vl-paramdecl (vl-paramdecl-allexprs-exec x acc))
-    (otherwise
-     (prog2$ (er hard 'vl-blockitem-allexprs-exec "Provably impossible.")
-             acc)))
+    (otherwise     (or (impossible) acc)))
   :body
   (case (tag x)
     (:vl-regdecl   (vl-regdecl-allexprs x))

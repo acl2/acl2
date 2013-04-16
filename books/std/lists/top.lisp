@@ -34,7 +34,6 @@
 (include-book "final-cdr")
 (include-book "flatten")
 (include-book "len")
-(include-book "list-defuns")
 (include-book "list-fix")
 (include-book "make-character-list")
 (include-book "mfc-utils")
@@ -47,6 +46,7 @@
 (include-book "rev")
 (include-book "sets")
 (include-book "take")
+(include-book "list-defuns")
 
 (in-theory (disable ;; I often use len as a way to induct, so I only disable
                     ;; its definition.

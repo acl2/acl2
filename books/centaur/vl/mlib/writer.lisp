@@ -27,7 +27,6 @@
 (include-book "str/strrpos" :dir :system)
 (local (include-book "../util/arithmetic"))
 
-
 (defxdoc verilog-printing
   :parents (printer)
   :short "Printing routines for displaying Verilog constructs."
@@ -37,102 +36,69 @@ to display our @(see modules) and other parse-tree structures.  These functions
 produce either plain text or html output, depending upon the @('htmlp') setting
 in the printer state, @(see ps).</p>")
 
-
-
-
-(defsection vl-ps->show-atts-p
+(define vl-ps->show-atts-p (&key (ps 'ps))
   :parents (verilog-printing)
-  :short "Controls whether Verilog-2005 @('(* key = val *)')-style attributes
-should be displayed."
+  :short "Should Verilog-2005 @('(* key = val *)')-style attributes be shown?"
+  :long "<p>See also @(see vl-ps-update-show-atts).</p>"
+  (let ((hidep (cdr (assoc-equal :vl-hide-atts (vl-ps->misc)))))
+    (not hidep)))
 
-  (defun vl-ps->show-atts-p-fn (ps)
-    (declare (xargs :stobjs ps))
-    ;; We want the default to be T, so we check whether hide-atts is present
-    ;; rather than whether show-atts is present.
-    (let ((hidep (cdr (assoc-equal :vl-hide-atts (vl-ps->misc)))))
-      (not hidep)))
-
-  (defmacro vl-ps->show-atts-p ()
-    `(vl-ps->show-atts-p-fn ps))
-
-  (add-macro-alias vl-ps->show-atts-p vl-ps->show-atts-p-fn)
-
-
-  (defund vl-ps-update-show-atts-fn (showp ps)
-    (declare (xargs :guard (booleanp showp)
-                    :stobjs ps))
-    (let ((hidep (not showp))
-          (misc  (vl-ps->misc)))
-      (vl-ps-update-misc (acons :vl-hide-atts hidep misc))))
-
-  (defmacro vl-ps-update-show-atts (showp)
-    `(vl-ps-update-show-atts-fn ,showp ps))
-
-  (add-macro-alias vl-ps-update-show-atts vl-ps-update-show-atts-fn))
-
-
-
-
-(defsection vl-maybe-escape-identifier
+(define vl-ps-update-show-atts ((showp booleanp) &key (ps 'ps))
   :parents (verilog-printing)
-  :short "Add escape characters to an identifier name, but only if they are
-necessary."
+  :short "Set whether Verilog-2005 @('(* key = val *)')-style attributes should
+be displayed."
+  :long "<p>We want the default to be @('t'), so we look for @('hide-atts')
+instead of @('show-atts').</p>"
+  (let ((hidep (not showp))
+        (misc  (vl-ps->misc)))
+    (vl-ps-update-misc (acons :vl-hide-atts hidep misc))))
 
-  :long "<p>@(call vl-maybe-escape-identifier) is given @('x'), the name of an
-identifier as a string.  Usually @('x') contains only ordinary characters and
-does not need to be escaped, and in such cases we return @('x') unchanged.
-Otherwise, we add the leading @('\\') character and trailing space.</p>
+(define vl-simple-id-tail-string-p ((x stringp)
+                                    (i natp)
+                                    (len (and (natp len)
+                                              (= len (length x)))))
+  :guard (<= i len)
+  :measure (nfix (- (nfix len) (nfix i)))
+  :parents (vl-maybe-escape-identifier)
+  (if (mbe :logic (zp (- (nfix len) (nfix i)))
+           :exec (= i len))
+      t
+    (and (vl-simple-id-tail-p (char x i))
+         (vl-simple-id-tail-string-p x (+ 1 (lnfix i)) len))))
 
-<p>This function assumes that the name has no embedded spaces and at least one
-character, and will cause a run-time error if these conditions are
-violated.</p>"
+(define vl-maybe-escape-identifier ((x stringp "Name of some identifier."))
+  :returns (x-escaped stringp :rule-classes :type-prescription)
+  :parents (verilog-printing)
+  :short "Add escape characters to an identifier name, if necessary."
 
-  (defund vl-simple-id-tail-string-p (x i len)
-    (declare (xargs :guard (and (stringp x)
-                                (natp i)
-                                (natp len)
-                                (= len (length x))
-                                (<= i len))
-                    :measure (nfix (- (nfix len) (nfix i)))))
-    (if (mbe :logic (zp (- (nfix len) (nfix i)))
-             :exec (= i len))
-        t
-      (and (vl-simple-id-tail-p (char x i))
-           (vl-simple-id-tail-string-p x (+ 1 (lnfix i)) len))))
+  :long "<p>Usually @('x') contains only ordinary characters and does not need
+to be escaped, and in such cases we return @('x') unchanged.  Otherwise, we add
+the leading @('\\') character and trailing space.</p>
 
-  (defund vl-maybe-escape-identifier (x)
-    (declare (xargs :guard (stringp x)))
-    (let ((len (length x)))
-      (cond ((= len 0)
-             (prog2$
-              (er hard? 'vl-maybe-escape-identifier "Empty identifier")
-              ""))
-            ((and (vl-simple-id-head-p (char x 0))
-                  (vl-simple-id-tail-string-p x 1 len)
-                  (not (member #\$ (coerce x 'list))))
-             ;; A simple identifier, nothing to add.
-             (mbe :logic (string-fix x)
-                  :exec x))
-            (t
-             ;; Escaped identifier.  This isn't efficient but this should be
-             ;; pretty unusual.
-             (let ((chars (coerce x 'list)))
-               (if (member #\Space chars)
-                   (prog2$ (er hard? 'vl-maybe-escape-identifier
-                               "Identifier name has spaces?  ~x0" x)
-                           "")
-                 (coerce (cons #\\ (append chars (list #\Space)))
-                         'string)))))))
+<p>Note: we assume that @('x') has no embedded spaces and at least one
+character.  These requirements aren't explicit about the names used in
+structures like @(see vl-id-p), @(see vl-modinst-p), and so forth.  But they
+should hold for any valid Verilog that we parse or generate.</p>"
 
-  (defthm stringp-of-vl-maybe-escape-identifier
-    (stringp (vl-maybe-escape-identifier x))
-    :rule-classes :type-prescription))
+  (b* ((len (length x))
+       ((when (zp len))
+        (raise "Empty identifier")
+        "")
+       ((when (and (vl-simple-id-head-p (char x 0))
+                   (vl-simple-id-tail-string-p x 1 len)
+                   (not (member #\$ (coerce x 'list)))))
+        ;; A simple identifier, nothing to add.
+        (string-fix x))
+       ;; Escaped identifier.  This isn't efficient but this should be pretty
+       ;; unusual.
+       (chars (coerce x 'list))
+       ((when (member #\Space chars))
+        (raise "Identifier name has spaces?  ~x0" x)
+        ""))
+    (coerce (cons #\\ (append chars (list #\Space)))
+            'string)))
 
-
-
-
-(defpp vl-print-modname (x)
-  :guard (stringp x)
+(define vl-print-modname ((x stringp) &key (ps 'ps))
   :parents (verilog-printing)
   :short "@(call vl-print-modname) prints a module's name."
 
@@ -150,7 +116,6 @@ same as @(see vl-print) except that we may escape @('x') if necessary; see
 displays.  The module browser's web pages are responsible for defining the
 @('showModule') function to carry out some sensible behavior.</p>"
 
-  :body
   (vl-ps-span
    "vl_id"
    (vl-when-html
@@ -160,11 +125,7 @@ displays.  The module browser's web pages are responsible for defining the
    (vl-print-str (vl-maybe-escape-identifier x))
    (vl-when-html (vl-print-markup "</a>"))))
 
-
-
-
-(defpp vl-print-wirename (x)
-  :guard (stringp x)
+(define vl-print-wirename ((x stringp) &key (ps 'ps))
   :parents (verilog-printing)
   :short "@(call vl-print-wirename) prints a wire's name."
 
@@ -183,7 +144,6 @@ we print something like:</p>
 displays.  The module browser's web pages are responsible for defining the
 @('showWire') function to carry out some sensible behavior.</p>"
 
-  :body
   (vl-ps-span
    "vl_id"
    (vl-when-html (vl-print-markup "<a class=\"")
@@ -198,16 +158,14 @@ displays.  The module browser's web pages are responsible for defining the
    (vl-print-str (vl-maybe-escape-identifier x))
    (vl-when-html (vl-print-markup "</a>"))))
 
-(defpp vl-pp-set-portnames (portdecls)
-  :guard (vl-portdecllist-p portdecls)
-  :body (b* ((names (vl-portdecllist->names portdecls))
-             (misc  (vl-ps->misc)))
-          (vl-ps-update-misc (acons :portnames names misc))))
+(define vl-pp-set-portnames ((portdecls vl-portdecllist-p) &key (ps 'ps))
+  (b* ((names (vl-portdecllist->names portdecls))
+       (misc  (vl-ps->misc)))
+    (vl-ps-update-misc (acons :portnames names misc))))
 
-
-(defpp vl-print-ext-wirename (modname wirename)
-  :guard (and (stringp modname)
-              (stringp wirename))
+(define vl-print-ext-wirename ((modname stringp)
+                               (wirename stringp)
+                               &key (ps 'ps))
   :parents (verilog-printing)
   :short "@(call vl-print-ext-wirename) prints a wire's name."
 
@@ -224,7 +182,6 @@ we print something like:</p>
 <p>The module browser's web pages are responsible for defining the
 @('showWireExt') function to carry out some sensible behavior.</p>"
 
-  :body
   (vl-ps-span
    "vl_id"
    (vl-when-html
@@ -236,10 +193,7 @@ we print something like:</p>
    (vl-print-str (vl-maybe-escape-identifier wirename))
    (vl-when-html (vl-print-markup "</a>"))))
 
-
-
-(defpp vl-print-loc (x)
-  :guard (vl-location-p x)
+(define vl-print-loc ((x vl-location-p) &key (ps 'ps))
   :parents (verilog-printing)
   :short "@(call vl-print-loc) prints a @(see vl-location-p)."
 
@@ -259,7 +213,6 @@ something along the lines of:</p>
 displays.  The module browser's web pages are responsible for defining the
 @('showLoc') function to carry out some sensible behavior.</p>"
 
-  :body
   (if (not (vl-ps->htmlp))
       (let* ((str (vl-location-string x))
              (len (length str))
@@ -297,15 +250,10 @@ displays.  The module browser's web pages are responsible for defining the
        (vl-print-nat col)
        (vl-print-markup "</a>")))))
 
-
-
-(defpp vl-pp-constint (x)
-  :guard (vl-constint-p x)
-  :body
+(define vl-pp-constint ((x vl-constint-p) &key (ps 'ps))
   ;; BOZO origwidth/origtype okay here???
   ;; BOZO maybe add origbase or something for printing in the same radix
   ;; as the number was read in?
-
   (b* (((vl-constint x) x)
 
        ((when (and (eq x.origtype :vl-signed)
@@ -324,31 +272,27 @@ displays.  The module browser's web pages are responsible for defining the
                   (vl-print-str "'d"))
                 (vl-print-nat x.value))))
 
-(defpp vl-pp-weirdint (x)
-  :guard (vl-weirdint-p x)
-
+(define vl-pp-weirdint ((x vl-weirdint-p) &key (ps 'ps))
   ;; BOZO origwidth/origtype okay here??
   ;; BOZO maybe add origbase
+  (b* (((vl-weirdint x) x))
+    (vl-ps-span "vl_int"
+                (vl-print-nat x.origwidth)
+                (if (eq x.origtype :vl-signed)
+                    (vl-print-str "'sb")
+                  (vl-print-str "'b"))
+                (vl-print (vl-bitlist->charlist x.bits)))))
 
-  :body (b* (((vl-weirdint x) x))
-            (vl-ps-span "vl_int"
-                        (vl-print-nat x.origwidth)
-                        (if (eq x.origtype :vl-signed)
-                            (vl-print-str "'sb")
-                          (vl-print-str "'b"))
-                        (vl-print (vl-bitlist->charlist x.bits)))))
-
-
-(defund vl-maybe-escape-string (x i len acc)
-  (declare (xargs :guard (and (stringp x)
-                              (natp i)
-                              (natp len)
-                              (= len (length x))
-                              (<= i len)
-                              (character-listp acc))
-                  :measure (nfix (- (nfix len) (nfix i)))))
+(define vl-maybe-escape-string ((x stringp)
+                                (i natp)
+                                (len (and (natp len)
+                                          (eql len (length x))))
+                                (acc character-listp))
+  :guard (<= i len)
+  :returns (new-acc character-listp :hyp :fguard)
+  :measure (nfix (- (nfix len) (nfix i)))
   (if (mbe :logic (zp (- (nfix len) (nfix i)))
-           :exec (= i len))
+           :exec (int= i len))
       (reverse acc)
     (let ((car (char x i)))
       (vl-maybe-escape-string x (+ 1 (lnfix i)) len
@@ -362,78 +306,59 @@ displays.  The module browser's web pages are responsible for defining the
                                 ;; \039 format, etc?
                                 (t         (cons car acc)))))))
 
-(defthm character-listp-of-vl-maybe-escape-string
-  (implies (and (force (stringp x))
-                (force (natp i))
-                (force (natp len))
-                (force (= len (length x)))
-                (force (<= i len))
-                (force (character-listp acc)))
-           (character-listp (vl-maybe-escape-string x i len acc)))
-  :hints(("Goal" :in-theory (enable vl-maybe-escape-string))))
-
-(defpp vl-pp-string (x)
-  :guard (vl-string-p x)
-  :body
+(define vl-pp-string ((x vl-string-p) &key (ps 'ps))
   (b* (((vl-string x) x)
        (length        (length x.value)))
-      (vl-ps-span "vl_str"
-                  (vl-print (vl-maybe-escape-string x.value 0 length (list #\")))
-                  (vl-println? #\"))))
+    (vl-ps-span "vl_str"
+                (vl-print (vl-maybe-escape-string x.value 0 length (list #\")))
+                (vl-println? #\"))))
 
+(define vl-pp-real ((x vl-real-p) &key (ps 'ps))
+  (vl-ps-span "vl_real"
+              (vl-println? (vl-real->value x))))
 
-(defpp vl-pp-real (x)
-  :guard (vl-real-p x)
-  :body (vl-ps-span "vl_real"
-                    (vl-println? (vl-real->value x))))
+(define vl-pp-id ((x vl-id-p) &key (ps 'ps))
+  :inline t
+  (vl-print-wirename (vl-id->name x)))
 
+(define vl-pp-hidpiece ((x vl-hidpiece-p) &key (ps 'ps))
+  (vl-ps-span "vl_id"
+              (vl-print-str (vl-maybe-escape-identifier (vl-hidpiece->name x)))))
 
+(define vl-pp-sysfunname ((x vl-sysfunname-p) &key (ps 'ps))
+  (vl-ps-span "vl_sys"
+              (vl-print-str (vl-sysfunname->name x))))
 
-(defpp vl-pp-id (x)
-  :guard (vl-id-p x)
-  :inlinep t
-  :body  (vl-print-wirename (vl-id->name x)))
+(define vl-pp-funname ((x vl-funname-p) &key (ps 'ps))
+  (vl-ps-span "vl_id"
+              (vl-print-str (vl-maybe-escape-identifier (vl-funname->name x)))))
 
-(defpp vl-pp-hidpiece (x)
-  :guard (vl-hidpiece-p x)
-  :body  (vl-ps-span "vl_id"
-                     (vl-print-str (vl-maybe-escape-identifier (vl-hidpiece->name x)))))
-
-(defpp vl-pp-sysfunname (x)
-  :guard (vl-sysfunname-p x)
-  :body  (vl-ps-span "vl_sys"
-                     (vl-print-str (vl-sysfunname->name x))))
-
-(defpp vl-pp-funname (x)
-  :guard (vl-funname-p x)
-  :body  (vl-ps-span "vl_id"
-                     (vl-print-str (vl-maybe-escape-identifier (vl-funname->name x)))))
-
-(defpp vl-pp-atomguts (x)
-  :guard (vl-atomguts-p x)
+(define vl-pp-atomguts ((x vl-atomguts-p) &key (ps 'ps))
   :guard-hints (("Goal" :in-theory (enable vl-atomguts-p)))
-  :body (case (tag x)
-          (:vl-constint   (vl-pp-constint x))
-          (:vl-weirdint   (vl-pp-weirdint x))
-          (:vl-string     (vl-pp-string x))
-          (:vl-real       (vl-pp-real x))
-          (:vl-id         (vl-pp-id x))
-          (:vl-hidpiece   (vl-pp-hidpiece x))
-          (:vl-funname    (vl-pp-funname x))
-          (otherwise      (vl-pp-sysfunname x))))
+  (case (tag x)
+    (:vl-id         (vl-pp-id x))
+    (:vl-constint   (vl-pp-constint x))
+    (:vl-weirdint   (vl-pp-weirdint x))
+    (:vl-string     (vl-pp-string x))
+    (:vl-real       (vl-pp-real x))
+    (:vl-hidpiece   (vl-pp-hidpiece x))
+    (:vl-funname    (vl-pp-funname x))
+    (otherwise      (vl-pp-sysfunname x))))
 
-(defpp vl-pp-atom (x)
-  :guard (vl-atom-p x)
-  :inlinep t
-  :body  (vl-pp-atomguts (vl-atom->guts x)))
+(define vl-pp-atom ((x vl-atom-p) &key (ps 'ps))
+  :inline t
+  (vl-pp-atomguts (vl-atom->guts x)))
 
-(defund vl-op-string (x)
-  (declare (xargs :guard (vl-op-p x)))
+(define vl-op-string ((x vl-op-p))
+  :returns (str stringp :rule-classes :type-prescription)
   (case x
+    (:vl-unary-bitnot "~")
+    (:vl-binary-bitand "&")
+    (:vl-binary-bitor "|")
+
     (:vl-unary-plus "+")
     (:vl-unary-minus "-")
     (:vl-unary-lognot "!")
-    (:vl-unary-bitnot "~")
     (:vl-unary-bitand "&")
     (:vl-unary-nand "~&")
     (:vl-unary-bitor "|")
@@ -457,8 +382,6 @@ displays.  The module browser's web pages are responsible for defining the
     (:vl-binary-lte "<=")
     (:vl-binary-gt ">")
     (:vl-binary-gte ">=")
-    (:vl-binary-bitand "&")
-    (:vl-binary-bitor "|")
     (:vl-binary-xor "^")
     (:vl-binary-xnor "~^")
     (:vl-binary-shr ">>")
@@ -471,106 +394,100 @@ displays.  The module browser's web pages are responsible for defining the
     (:vl-partselect-minuscolon "-:")
 
     (t
-     (prog2$ (er hard? 'vl-op-string "Bad operator: ~x0.~%" x)
-             ""))))
+     (or (raise "Bad operator: ~x0.~%" x) ""))))
 
-(defthm stringp-of-vl-op-string
-  (stringp (vl-op-string x))
-  :hints(("Goal" :in-theory (enable vl-op-string))))
+(defmacro vl-ops-precedence-table ()
+  ''( ;; These aren't real operators as far as the precedence rules are
+     ;; concerned, but they need to bind even more tightly than +, -, etc.
+     (:VL-BITSELECT             . 20)
+     (:VL-ARRAY-INDEX           . 20)
+     (:VL-PARTSELECT-COLON      . 20)
+     (:VL-PARTSELECT-PLUSCOLON  . 20)
+     (:VL-PARTSELECT-MINUSCOLON . 20)
+     (:VL-FUNCALL               . 20)
+     (:VL-SYSCALL               . 20)
+     (:VL-HID-DOT               . 20)
+     (:VL-HID-ARRAYDOT          . 20)
 
-(defmacro vl-pp-expr (x &optional (ps$ 'ps))
-  `(vl-pp-expr-fn ,x ,ps$))
+     ;; In Table 5-4, concats are said to have minimal precedence.  But that
+     ;; doesn't really make sense.  For instance, in: a + {b + c} the {b + c}
+     ;; term acts more like an operand than another operator.  So, here I say
+     ;; that concats and multiconcats also have precedence 20, so they will be
+     ;; treated just like operands.  That is, we want to write &{foo,bar} rather
+     ;; than &({foo,bar}).  For similar reasons, I put the mintypmax operand
+     ;; here with precedence 20.
+     (:VL-CONCAT        . 20)
+     (:VL-MULTICONCAT   . 20)
+     (:VL-MINTYPMAX     . 20)
 
-(defmacro vl-pp-atts (x &optional (ps$ 'ps))
-  `(vl-pp-atts-fn ,x ,ps$))
+     ;; This part is from Table 5-4 verbatim:
+     (:VL-UNARY-PLUS    . 14)
+     (:VL-UNARY-MINUS   . 14)
+     (:VL-UNARY-LOGNOT  . 14)
+     (:VL-UNARY-BITNOT  . 14)
+     (:VL-UNARY-BITAND  . 14)
+     (:VL-UNARY-NAND    . 14)
+     (:VL-UNARY-BITOR   . 14)
+     (:VL-UNARY-NOR     . 14)
+     (:VL-UNARY-XOR     . 14)
+     (:VL-UNARY-XNOR    . 14)
+     (:VL-BINARY-POWER  . 13)
+     (:VL-BINARY-TIMES  . 12)
+     (:VL-BINARY-DIV    . 12)
+     (:VL-BINARY-REM    . 12)
+     (:VL-BINARY-PLUS   . 11)
+     (:VL-BINARY-MINUS  . 11)
+     (:VL-BINARY-SHR    . 10)
+     (:VL-BINARY-SHL    . 10)
+     (:VL-BINARY-ASHR   . 10)
+     (:VL-BINARY-ASHL   . 10)
+     (:VL-BINARY-LT     . 9)
+     (:VL-BINARY-LTE    . 9)
+     (:VL-BINARY-GT     . 9)
+     (:VL-BINARY-GTE    . 9)
+     (:VL-BINARY-EQ     . 8)
+     (:VL-BINARY-NEQ    . 8)
+     (:VL-BINARY-CEQ    . 8)
+     (:VL-BINARY-CNE    . 8)
+     (:VL-BINARY-BITAND . 7)
+     (:VL-BINARY-XOR    . 6)
+     (:VL-BINARY-XNOR   . 6)
+     (:VL-BINARY-BITOR  . 5)
+     (:VL-BINARY-LOGAND . 4)
+     (:VL-BINARY-LOGOR  . 3)
+     (:VL-QMARK         . 2)
+     ))
 
-(defmacro vl-pp-atts-aux (x &optional (ps$ 'ps))
-  `(vl-pp-atts-aux-fn ,x ,ps$))
+(define vl-op-precedence-< ((x vl-op-p) (y vl-op-p))
+  :inline t
+  :guard-hints(("Goal" :in-theory (enable vl-op-p)))
+  (let ((table (vl-ops-precedence-table)))
+    (< (the (unsigned-byte 8) (cdr (assoc x table)))
+       (the (unsigned-byte 8) (cdr (assoc y table))))))
 
-(defmacro vl-pp-exprlist (x &optional (ps$ 'ps))
-  `(vl-pp-exprlist-fn ,x ,ps$))
+(define vl-op-precedence-<= ((x vl-op-p) (y vl-op-p))
+  :inline t
+  :guard-hints(("Goal" :in-theory (enable vl-op-p)))
+  (let ((table (vl-ops-precedence-table)))
+    (<= (the (unsigned-byte 8) (cdr (assoc x table)))
+        (the (unsigned-byte 8) (cdr (assoc y table))))))
 
+(defmacro vl-pp-expr-special-atts ()
+  ''("VL_ORIG_EXPR"
+     "VL_EXPLICIT_PARENS"))
 
+(defmacro vl-pp-expr (x &key (ps 'ps))
+  `(vl-pp-expr-fn ,x ,ps))
 
-(defconst *vl-ops-precedence-table*
-  '(;; These aren't real operators as far as the precedence rules are
-    ;; concerned, but they need to bind even more tightly than +, -, etc.
-    (:VL-BITSELECT             . 20)
-    (:VL-ARRAY-INDEX           . 20)
-    (:VL-PARTSELECT-COLON      . 20)
-    (:VL-PARTSELECT-PLUSCOLON  . 20)
-    (:VL-PARTSELECT-MINUSCOLON . 20)
-    (:VL-FUNCALL               . 20)
-    (:VL-SYSCALL               . 20)
-    (:VL-HID-DOT               . 20)
-    (:VL-HID-ARRAYDOT          . 20)
+(defmacro vl-pp-atts (x &key (ps 'ps))
+  `(vl-pp-atts-fn ,x ,ps))
 
-    ;; In Table 5-4, concats are said to have minimal precedence.  But that
-    ;; doesn't really make sense.  For instance, in: a + {b + c} the {b + c}
-    ;; term acts more like an operand than another operator.  So, here I say
-    ;; that concats and multiconcats also have precedence 20, so they will be
-    ;; treated just like operands.  That is, we want to write &{foo,bar} rather
-    ;; than &({foo,bar}).  For similar reasons, I put the mintypmax operand
-    ;; here with precedence 20.
-    (:VL-CONCAT        . 20)
-    (:VL-MULTICONCAT   . 20)
-    (:VL-MINTYPMAX     . 20)
+(defmacro vl-pp-atts-aux (x &key (ps 'ps))
+  `(vl-pp-atts-aux-fn ,x ,ps))
 
-    ;; This part is from Table 5-4 verbatim:
-    (:VL-UNARY-PLUS    . 14)
-    (:VL-UNARY-MINUS   . 14)
-    (:VL-UNARY-LOGNOT  . 14)
-    (:VL-UNARY-BITNOT  . 14)
-    (:VL-UNARY-BITAND  . 14)
-    (:VL-UNARY-NAND    . 14)
-    (:VL-UNARY-BITOR   . 14)
-    (:VL-UNARY-NOR     . 14)
-    (:VL-UNARY-XOR     . 14)
-    (:VL-UNARY-XNOR    . 14)
-    (:VL-BINARY-POWER  . 13)
-    (:VL-BINARY-TIMES  . 12)
-    (:VL-BINARY-DIV    . 12)
-    (:VL-BINARY-REM    . 12)
-    (:VL-BINARY-PLUS   . 11)
-    (:VL-BINARY-MINUS  . 11)
-    (:VL-BINARY-SHR    . 10)
-    (:VL-BINARY-SHL    . 10)
-    (:VL-BINARY-ASHR   . 10)
-    (:VL-BINARY-ASHL   . 10)
-    (:VL-BINARY-LT     . 9)
-    (:VL-BINARY-LTE    . 9)
-    (:VL-BINARY-GT     . 9)
-    (:VL-BINARY-GTE    . 9)
-    (:VL-BINARY-EQ     . 8)
-    (:VL-BINARY-NEQ    . 8)
-    (:VL-BINARY-CEQ    . 8)
-    (:VL-BINARY-CNE    . 8)
-    (:VL-BINARY-BITAND . 7)
-    (:VL-BINARY-XOR    . 6)
-    (:VL-BINARY-XNOR   . 6)
-    (:VL-BINARY-BITOR  . 5)
-    (:VL-BINARY-LOGAND . 4)
-    (:VL-BINARY-LOGOR  . 3)
-    (:VL-QMARK         . 2)
-    ))
+(defmacro vl-pp-exprlist (x &key (ps 'ps))
+  `(vl-pp-exprlist-fn ,x ,ps))
 
-(definlined vl-op-precedence-< (x y)
-  (declare (xargs :guard (and (vl-op-p x)
-                              (vl-op-p y))
-                  :guard-hints(("Goal" :in-theory (enable vl-op-p)))))
-  (< (cdr (assoc x *vl-ops-precedence-table*))
-     (cdr (assoc y *vl-ops-precedence-table*))))
-
-(definlined vl-op-precedence-<= (x y)
-  (declare (xargs :guard (and (vl-op-p x)
-                              (vl-op-p y))
-                  :guard-hints(("Goal" :in-theory (enable vl-op-p)))))
-  (<= (cdr (assoc x *vl-ops-precedence-table*))
-      (cdr (assoc y *vl-ops-precedence-table*))))
-
-(defconst *vl-pp-expr-special-atts*
-  (list "VL_ORIG_EXPR"
-        "VL_EXPLICIT_PARENS"))
 
 (mutual-recursion
  (defund vl-pp-expr-fn (x ps)
@@ -579,8 +496,7 @@ displays.  The module browser's web pages are responsible for defining the
 ; was kind of ugly.  Now each operator is responsible for putting parens around
 ; its arguments, if necessary.
 
-   (declare (xargs :guard (and (vl-expr-p x)
-                               (vl-pstate-p ps))
+   (declare (xargs :guard (vl-expr-p x)
                    :stobjs ps
                    :hints(("Goal" :in-theory (disable (force))))
                    :verify-guards nil
@@ -589,14 +505,14 @@ displays.  The module browser's web pages are responsible for defining the
        (vl-pp-atom x)
      (let ((op   (vl-nonatom->op x))
            (args (vl-nonatom->args x))
-           (atts (vl-remove-keys *vl-pp-expr-special-atts* (vl-nonatom->atts x))))
+           (atts (vl-remove-keys (vl-pp-expr-special-atts) (vl-nonatom->atts x))))
        (case op
          ((:vl-unary-plus
            :vl-unary-minus :vl-unary-lognot :vl-unary-bitnot :vl-unary-bitand
            :vl-unary-nand :vl-unary-bitor :vl-unary-nor :vl-unary-xor
            :vl-unary-xnor)
           (b* (((unless (consp args))
-                (er hard 'vl-pp-expr "Impossible")
+                (impossible)
                 ps)
                (arg (first args))
                (want-parens-p (if (vl-fast-atom-p arg)
@@ -621,7 +537,7 @@ displays.  The module browser's web pages are responsible for defining the
            :vl-binary-xor :vl-binary-xnor
            :vl-binary-shr :vl-binary-shl :vl-binary-ashr :vl-binary-ashl)
           (b* (((unless (consp args))
-                (er hard 'vl-pp-expr "Impossible")
+                (impossible)
                 ps)
                (arg1 (first args))
                (arg2 (second args))
@@ -670,7 +586,7 @@ displays.  The module browser's web pages are responsible for defining the
 
          ((:vl-qmark)
           (b* (((unless (consp args))
-                (er hard 'vl-pp-expr "Impossible")
+                (impossible)
                 ps)
                (arg1 (first args))
                (arg2 (second args))
@@ -709,8 +625,7 @@ displays.  The module browser's web pages are responsible for defining the
           ;; parens so that I'm basically justified in treating them as having
           ;; operand-level precedence.
           (if (not (consp args))
-              (prog2$ (er hard 'vl-pp-expr "Impossible")
-                      ps)
+              (prog2$ (impossible) ps)
             (vl-ps-seq (vl-print "(")
                        (vl-pp-expr (first args))
                        (vl-println? " : ")
@@ -722,8 +637,7 @@ displays.  The module browser's web pages are responsible for defining the
          ((:vl-bitselect :vl-array-index)
           ;; These don't need parens because they have maximal precedence
           (cond ((not (consp args))
-                 (prog2$ (er hard 'vl-pp-expr "Impossible")
-                         ps))
+                 (prog2$ (impossible) ps))
                 (t
                  (vl-ps-seq (vl-pp-expr (first args))
                             (vl-print "[")
@@ -733,8 +647,7 @@ displays.  The module browser's web pages are responsible for defining the
          ((:vl-partselect-colon :vl-partselect-pluscolon :vl-partselect-minuscolon)
           ;; These don't need parens because they have maximal precedence
           (cond ((not (consp args))
-                 (prog2$ (er hard 'vl-pp-expr "Impossible")
-                         ps))
+                 (prog2$ (impossible) ps))
                 (t
                  (vl-ps-seq (vl-pp-expr (first args))
                             (vl-print "[")
@@ -746,8 +659,7 @@ displays.  The module browser's web pages are responsible for defining the
          ((:vl-hid-dot)
           ;; These don't need parens because they have maximal precedence
           (if (not (consp args))
-              (prog2$ (er hard 'vl-pp-expr "Impossible")
-                      ps)
+              (prog2$ (impossible) ps)
             (vl-ps-seq (vl-pp-expr (first args))
                        (vl-print ".")
                        (vl-pp-expr (second args)))))
@@ -755,8 +667,7 @@ displays.  The module browser's web pages are responsible for defining the
          ((:vl-hid-arraydot)
           ;; These don't need parens because they have maximal precedence
           (if (not (consp args))
-              (prog2$ (er hard 'vl-pp-expr "Impossible")
-                      ps)
+              (prog2$ (impossible) ps)
             (vl-ps-seq (vl-pp-expr (first args))
                        (vl-print "[")
                        (vl-pp-expr (second args))
@@ -766,8 +677,7 @@ displays.  The module browser's web pages are responsible for defining the
          ((:vl-multiconcat)
           ;; These don't need parens because they have maximal precedence
           (cond ((not (consp args))
-                 (prog2$ (er hard 'vl-pp-expr "Impossible")
-                         ps))
+                 (prog2$ (impossible) ps))
 
                 ((and (vl-nonatom-p (second args))
                       (eq (vl-nonatom->op (second args)) :vl-concat))
@@ -825,8 +735,7 @@ displays.  The module browser's web pages are responsible for defining the
                   ps))))))
 
  (defund vl-pp-atts-aux-fn (x ps)
-   (declare (xargs :guard (and (vl-atts-p x)
-                               (vl-pstate-p ps))
+   (declare (xargs :guard (vl-atts-p x)
                    :stobjs ps
                    :measure (two-nats-measure (acl2-count x) 0)))
    (cond ((atom x)
@@ -848,8 +757,7 @@ displays.  The module browser's web pages are responsible for defining the
            (vl-pp-atts-aux (cdr x))))))
 
  (defund vl-pp-atts-fn (x ps)
-   (declare (xargs :guard (and (vl-atts-p x)
-                               (vl-pstate-p ps))
+   (declare (xargs :guard (vl-atts-p x)
                    :stobjs ps
                    :measure (two-nats-measure (acl2-count x) 1)))
    (if (and x (vl-ps->show-atts-p))
@@ -860,8 +768,7 @@ displays.  The module browser's web pages are responsible for defining the
      ps))
 
  (defund vl-pp-exprlist-fn (x ps)
-   (declare (xargs :guard (and (vl-exprlist-p x)
-                               (vl-pstate-p ps))
+   (declare (xargs :guard (vl-exprlist-p x)
                    :stobjs ps
                    :measure (two-nats-measure (acl2-count x) 0)))
    (cond ((atom x)
@@ -891,31 +798,6 @@ displays.  The module browser's web pages are responsible for defining the
                              ACL2::SUBSETP-MEMBER
                              (:ruleset tag-reasoning)
                              )))
-
-  (defthm-flag-vl-pp-expr vl-pstate-p-of-flag-vl-pp-expr
-    (expr (implies (and (force (vl-pstate-p ps))
-                        (force (vl-expr-p x)))
-                   (vl-pstate-p (vl-pp-expr x))))
-    (atts (implies (and (force (vl-pstate-p ps))
-                        (force (vl-atts-p x)))
-                   (vl-pstate-p (vl-pp-atts x))))
-    (atts-aux (implies (and (force (vl-pstate-p ps))
-                            (force (vl-atts-p x)))
-                       (vl-pstate-p (vl-pp-atts-aux x))))
-    (list (implies (and (force (vl-pstate-p ps))
-                        (force (vl-exprlist-p x)))
-                   (vl-pstate-p (vl-pp-exprlist x))))
-    :hints(("Goal"
-            :do-not '(generalize fertilize)
-            :induct (flag-vl-pp-expr flag x ps)
-            :expand ((vl-pp-expr-fn x ps)
-                     (:free (ps) (vl-pp-expr-fn nil ps))
-                     (vl-pp-atts-fn x ps)
-                     (vl-pp-atts-fn nil ps)
-                     (vl-pp-atts-aux-fn nil ps)
-                     (vl-pp-atts-aux-fn x ps)
-                     (vl-pp-exprlist-fn x ps)
-                     ))))
 
   (local (defthm crock0
            (implies (and (vl-exprlist-p x)
@@ -990,95 +872,88 @@ displays.  The module browser's web pages are responsible for defining the
             :expand (vl-expr-p x)
             :in-theory (e/d () ((force)))))))
 
-(defund vl-pps-expr (x)
-  (declare (xargs :guard (vl-expr-p x)))
+(define vl-pps-expr ((x vl-expr-p))
+  :returns (pretty-x stringp :rule-classes :type-prescription)
+  :parents (expr-tools verilog-printing)
+  :short "Pretty-print an expression into a string."
+  :long "<p>This pretty-prints an expression \"as is,\" i.e., in its current,
+possibly transformed state.  Depending on what you're trying to do, it may be
+better to use @(see vl-pps-origexpr) instead, which tries to print the
+\"original,\" pre-transformed version of the expression, as it occurred in the
+real Verilog file.</p>"
   (with-local-ps (vl-pp-expr x)))
 
-(defthm stringp-of-vl-pps-expr
-  (stringp (vl-pps-expr x))
-  :rule-classes :type-prescription
-  :hints(("Goal" :in-theory (enable vl-pps-expr))))
-
-
-
-(defsection vl-pps-origexpr
-  :parents (origexprs)
-  :short "Pretty-print an expression, preferably in its original form."
-  :long "<p><b>Signature:</b> @(call vl-pps-origexpr) returns a string.</p>
-
-<p>This function is similar to @(see vl-pps-expr), in that it pretty-prints
-@('x') and returns the result as a string.  However, if @('x') has a
+(define vl-pp-origexpr ((x vl-expr-p) &key (ps 'ps))
+  :parents (origexprs verilog-printing)
+  :short "Pretty-print the \"original,\" un-transformed version of an
+expression."
+  :long "<p>This is like @(see vl-pp-expr) but, if @('x') has a
 @('VL_ORIG_EXPR') attribute (see @(see origexprs)), we actually pretty-print
 the original version of @('x') rather than the current version (which may be
 simplified, and hence not correspond as closely to the original source
-code.)</p>"
+code.)</p>
 
-  (defpp vl-pp-origexpr (x)
-    :guard (vl-expr-p x)
-    :body
-    (if (vl-fast-atom-p x)
-        (vl-pp-expr x)
-      (let* ((atts   (vl-nonatom->atts x))
-             (lookup (cdr (hons-assoc-equal "VL_ORIG_EXPR" atts))))
-        (if lookup
-            (vl-pp-expr lookup)
-          (vl-pp-expr x)))))
+<p>This only works if the @(see origexprs) transform is run early in the
+transformation sequence.  When there's no @('VL_ORIG_EXPR') attribute, we just
+print @('x') as is.</p>"
+  (b* (((when (vl-fast-atom-p x))
+        (vl-pp-expr x))
+       (atts   (vl-nonatom->atts x))
+       (lookup (cdr (hons-assoc-equal "VL_ORIG_EXPR" atts)))
+       ((when lookup)
+        (vl-pp-expr lookup)))
+    (vl-pp-expr x)))
 
-  (defund vl-pps-origexpr (x)
-    (declare (xargs :guard (vl-expr-p x)))
-    (with-local-ps (vl-pp-origexpr x)))
+(define vl-pps-origexpr ((x vl-expr-p))
+  :returns (pretty-x stringp :rule-classes :type-prescription)
+  :parents (expr-tools verilog-printing)
+  :short "Pretty-print the \"original,\" un-transformed version of an
+expression into a string."
+  (with-local-ps (vl-pp-origexpr x)))
 
-  (defthm stringp-of-vl-pps-origexpr
-    (stringp (vl-pps-origexpr x))
-    :hints(("Goal" :in-theory (enable vl-pps-origexpr)))))
+(define vl-pp-port ((x vl-port-p) &key (ps 'ps))
+  (b* (((vl-port x) x)
+       ((when (and (not x.name)
+                   (not x.expr)))
+        ;; A truly blank port... we'll put in a comment.
+        (vl-ps-span "vl_cmt" (vl-println? "/* blank port */")))
+
+       ((unless x.name)
+        ;; Just a complex expression like foo[3:0] with no name.
+        (vl-pp-expr x.expr))
+
+       ((when (and x.expr
+                   (vl-fast-atom-p x.expr)
+                   (vl-fast-id-p (vl-atom->guts x.expr))
+                   (equal (vl-id->name (vl-atom->guts x.expr)) x.name)))
+        ;; Ordinary case, internal expression is just the same as the
+        ;; externally visible name.
+        (vl-print-wirename x.name)))
+
+    ;; .name(expr) or .name()
+    (vl-ps-seq (vl-print ".")
+               (vl-ps-span "vl_id"
+                           (vl-print-str (vl-maybe-escape-identifier x.name)))
+               (vl-print "(")
+               (if x.expr
+                   (vl-pp-expr x.expr)
+                 ps)
+               (vl-print ")"))))
+
+(define vl-pp-portlist ((x vl-portlist-p) &key (ps 'ps))
+  (cond ((atom x)
+         ps)
+        ((atom (cdr x))
+         (vl-pp-port (car x)))
+        (t
+         (vl-ps-seq (vl-pp-port (car x))
+                    (vl-println? ", ")
+                    (vl-pp-portlist (cdr x))))))
 
 
-(defpp vl-pp-port (x)
-  :guard (vl-port-p x)
-  :body (let ((name (vl-port->name x))
-              (expr (vl-port->expr x)))
-          (cond ((and (not name)
-                      (not expr))
-                 ;; A truly blank port... we'll put in a comment.
-                 (vl-ps-span "vl_cmt" (vl-println? "/* blank port */")))
-
-                ((not name)
-                 ;; Just a complex expression like foo[3:0] with no name.
-                 (vl-pp-expr expr))
-
-                ((and expr
-                      (vl-fast-atom-p expr)
-                      (vl-fast-id-p (vl-atom->guts expr))
-                      (equal (vl-id->name (vl-atom->guts expr)) name))
-                 ;; Ordinary case, internal expression is just the same as the
-                 ;; externally visible name.
-                 (vl-print-wirename name))
-
-                (t
-                 ;; .name(expr) or .name()
-                 (vl-ps-seq (vl-print ".")
-                            (vl-ps-span "vl_id"
-                                        (vl-print-str (vl-maybe-escape-identifier name)))
-                            (vl-print "(")
-                            (if expr
-                                (vl-pp-expr expr)
-                              ps)
-                            (vl-print ")"))))))
-
-(defpp vl-pp-portlist (x)
-  :guard (vl-portlist-p x)
-  :body (cond ((atom x)
-               ps)
-              ((atom (cdr x))
-               (vl-pp-port (car x)))
-              (t
-               (vl-ps-seq (vl-pp-port (car x))
-                          (vl-println? ", ")
-                          (vl-pp-portlist (cdr x))))))
-
-(defund vl-netdecltype-string (x)
-  (declare (xargs :guard (vl-netdecltype-p x)
-                  :guard-hints (("Goal" :in-theory (enable vl-netdecltype-p)))))
+(define vl-netdecltype-string ((x vl-netdecltype-p))
+  :returns (str stringp :rule-classes :type-prescription)
+  :guard-hints (("Goal" :in-theory (enable vl-netdecltype-p)))
   (case x
     (:vl-wire    "wire")
     (:vl-supply0 "supply0")
@@ -1092,546 +967,480 @@ code.)</p>"
     (:vl-uwire   "uwire")
     (:vl-wand    "wand")
     (:vl-wor     "wor")
-    (otherwise   (prog2$ (er hard 'vl-netdecltype-string "Provably impossible")
-                         ""))))
+    (otherwise   (or (impossible) ""))))
 
-(defthm stringp-of-vl-netdecltype-string
-  (stringp (vl-netdecltype-string x))
-  :rule-classes :type-prescription
-  :hints(("Goal" :in-theory (enable vl-netdecltype-string))))
-
-(defund vl-direction-string (x)
-  (declare (xargs :guard (vl-direction-p x)
-                  :guard-hints (("Goal" :in-theory (enable vl-direction-p)))))
+(define vl-direction-string ((x vl-direction-p))
+  :returns (str stringp :rule-classes :type-prescription)
+  :guard-hints (("Goal" :in-theory (enable vl-direction-p)))
   (case x
     (:vl-input  "input")
     (:vl-output "output")
     (:vl-inout  "inout")
-    (otherwise  (prog2$ (er hard? 'vl-direction-string "Provably impossible")
-                        ""))))
+    (otherwise  (or (impossible) ""))))
 
-(defthm stringp-of-vl-direction-string
-  (stringp (vl-direction-string x))
-  :rule-classes :type-prescription
-  :hints(("Goal" :in-theory (enable vl-direction-string))))
-
-(defpp vl-pp-range (x)
-  :guard (vl-range-p x)
-  :body
+(define vl-pp-range ((x vl-range-p) &key (ps 'ps))
   (b* (((vl-range x) x))
-      (vl-ps-seq
-       (vl-print "[")
-       (vl-pp-expr x.msb)
-       (vl-println? ":")
-       (vl-pp-expr x.lsb)
-       (vl-print "]"))))
+    (vl-ps-seq (vl-print "[")
+               (vl-pp-expr x.msb)
+               (vl-println? ":")
+               (vl-pp-expr x.lsb)
+               (vl-print "]"))))
 
-(defund vl-pps-range (x)
-  (declare (xargs :guard (vl-range-p x)))
+(define vl-pps-range ((x vl-range-p))
+  :returns (str stringp :rule-classes :type-prescription)
   (with-local-ps (vl-pp-range x)))
 
-(defpp vl-pp-rangelist (x)
-  :guard (vl-rangelist-p x)
-  :body (if (consp x)
-            (vl-ps-seq (vl-pp-range (car x))
-                       (vl-pp-rangelist (cdr x)))
-          ps))
+(define vl-pp-rangelist ((x vl-rangelist-p) &key (ps 'ps))
+  (if (atom x)
+      ps
+    (vl-ps-seq (vl-pp-range (car x))
+               (vl-pp-rangelist (cdr x)))))
 
-(defpp vl-pp-portdecl (x)
-  :guard (vl-portdecl-p x)
-  :body
+(define vl-pp-portdecl ((x vl-portdecl-p) &key (ps 'ps))
   (b* (((vl-portdecl x) x))
-      (vl-ps-seq (vl-print "  ")
-                 (if x.atts (vl-pp-atts x.atts) ps)
-                 (vl-ps-span "vl_key"
-                             (vl-println? (vl-direction-string x.dir))
-                             (if (not x.signedp)
-                                 ps
-                               (vl-println? " signed")))
-                 (if (not x.range)
-                     ps
-                   (vl-ps-seq (vl-print " ")
-                              (vl-pp-range x.range)))
-                 (vl-println? " ")
-                 (vl-print-wirename x.name)
-                 (vl-println " ;"))))
+    (vl-ps-seq (vl-print "  ")
+               (if x.atts (vl-pp-atts x.atts) ps)
+               (vl-ps-span "vl_key"
+                           (vl-println? (vl-direction-string x.dir))
+                           (if (not x.signedp)
+                               ps
+                             (vl-println? " signed")))
+               (if (not x.range)
+                   ps
+                 (vl-ps-seq (vl-print " ")
+                            (vl-pp-range x.range)))
+               (vl-println? " ")
+               (vl-print-wirename x.name)
+               (vl-println " ;"))))
 
-(defpp vl-pp-portdecllist (x)
-  :guard (vl-portdecllist-p x)
-  :body (if (consp x)
-            (vl-ps-seq (vl-pp-portdecl (car x))
-                       (vl-pp-portdecllist (cdr x)))
-          ps))
+(define vl-pp-portdecllist ((x vl-portdecllist-p) &key (ps 'ps))
+  (if (atom x)
+      ps
+    (vl-ps-seq (vl-pp-portdecl (car x))
+               (vl-pp-portdecllist (cdr x)))))
 
-(defpp vl-pp-regdecl (x)
-  :guard (vl-regdecl-p x)
-  :body
+(define vl-pp-regdecl ((x vl-regdecl-p) &key (ps 'ps))
   (b* (((vl-regdecl x) x)
        ((when (and x.initval x.arrdims))
-        (prog2$
-         (er hard? 'vl-pp-regdecl "Unreasonable regdecl: ~x0.~%" x)
-         ps)))
-      (vl-ps-seq
-       (if x.atts (vl-pp-atts x.atts) ps)
-       (vl-ps-span "vl_key"
-                   (vl-print "  reg")
-                   (if (not x.signedp)
-                       ps
-                     (vl-println? " signed")))
-       (if (not x.range)
-           ps
-         (vl-ps-seq (vl-print " ")
-                    (vl-pp-range x.range)))
-       (vl-print " ")
-       (vl-print-wirename x.name)
-       (if x.initval
-           (vl-ps-seq (vl-print " = ")
-                      (vl-pp-expr x.initval))
-         (vl-pp-rangelist x.arrdims))
-       (vl-println " ;"))))
+        (raise "Unreasonable regdecl: ~x0.~%" x)
+        ps))
+    (vl-ps-seq
+     (if x.atts (vl-pp-atts x.atts) ps)
+     (vl-ps-span "vl_key"
+                 (vl-print "  reg")
+                 (if (not x.signedp)
+                     ps
+                   (vl-println? " signed")))
+     (if (not x.range)
+         ps
+       (vl-ps-seq (vl-print " ")
+                  (vl-pp-range x.range)))
+     (vl-print " ")
+     (vl-print-wirename x.name)
+     (if x.initval
+         (vl-ps-seq (vl-print " = ")
+                    (vl-pp-expr x.initval))
+       (vl-pp-rangelist x.arrdims))
+     (vl-println " ;"))))
 
-(defpp vl-pp-regdecllist (x)
-  :guard (vl-regdecllist-p x)
-  :body (if (consp x)
-            (vl-ps-seq (vl-pp-regdecl (car x))
-                       (vl-pp-regdecllist (cdr x)))
-          ps))
+(define vl-pp-regdecllist ((x vl-regdecllist-p) &key (ps 'ps))
+  (if (atom x)
+      ps
+    (vl-ps-seq (vl-pp-regdecl (car x))
+               (vl-pp-regdecllist (cdr x)))))
 
-
-(defund vl-vardecltype-string (x)
-  (declare (xargs :guard (vl-vardecltype-p x)
-                  :guard-hints(("Goal" :in-theory (enable vl-vardecltype-p)))))
+(define vl-vardecltype-string ((x vl-vardecltype-p))
+  :returns (str stringp :rule-classes :type-prescription)
+  :guard-hints(("Goal" :in-theory (enable vl-vardecltype-p)))
   (case x
     (:vl-integer  "integer")
     (:vl-real     "real")
     (:vl-time     "time")
     (:vl-realtime "realtime")
-    (otherwise
-     (prog2$ (er hard 'vl-vardecltype-string "Impossible")
-             ""))))
+    (otherwise (or (impossible) ""))))
 
-(defpp vl-pp-vardecl (x)
-  :guard (vl-vardecl-p x)
-  :body
+(define vl-pp-vardecl ((x vl-vardecl-p) &key (ps 'ps))
   (b* (((vl-vardecl x) x)
        ((when (and x.initval x.arrdims))
-        (prog2$
-         (er hard? 'vl-pp-vardecl "Unreasonable vardecl: ~x0.~%" x)
-         ps)))
-      (vl-ps-seq
-       (if x.atts (vl-pp-atts x.atts) ps)
-       (vl-ps-span "vl_key"
-                   (vl-print "  ")
-                   (vl-print-str (vl-vardecltype-string x.type))
-                   (vl-print " "))
-       (vl-print-wirename x.name)
-       (if x.arrdims
-           (vl-pp-rangelist x.arrdims)
-         ps)
-       (if x.initval
-           (vl-ps-seq (vl-print " = ")
-                      (vl-pp-expr x.initval))
-         ps)
-       (vl-println " ;"))))
+        (raise "Unreasonable vardecl: ~x0.~%" x)
+        ps))
+    (vl-ps-seq
+     (if x.atts (vl-pp-atts x.atts) ps)
+     (vl-ps-span "vl_key"
+                 (vl-print "  ")
+                 (vl-print-str (vl-vardecltype-string x.type))
+                 (vl-print " "))
+     (vl-print-wirename x.name)
+     (if x.arrdims
+         (vl-pp-rangelist x.arrdims)
+       ps)
+     (if x.initval
+         (vl-ps-seq (vl-print " = ")
+                    (vl-pp-expr x.initval))
+       ps)
+     (vl-println " ;"))))
 
-(defpp vl-pp-vardecllist (x)
-  :guard (vl-vardecllist-p x)
-  :body (if (consp x)
-            (vl-ps-seq (vl-pp-vardecl (car x))
-                       (vl-pp-vardecllist (cdr x)))
-          ps))
+(define vl-pp-vardecllist ((x vl-vardecllist-p) &key (ps 'ps))
+  (if (atom x)
+      ps
+    (vl-ps-seq (vl-pp-vardecl (car x))
+               (vl-pp-vardecllist (cdr x)))))
 
-
-(defpp vl-pp-gatedelay (x)
-  :guard (vl-gatedelay-p x)
-  :body
+(define vl-pp-gatedelay ((x vl-gatedelay-p) &key (ps 'ps))
   (b* (((vl-gatedelay x) x))
-      (cond
-       ((and (hide (equal x.rise x.fall))
-             (hide (equal x.fall x.high))
-             (vl-fast-atom-p x.rise)
-             (vl-constint-p (vl-atom->guts x.rise)))
-        ;; Almost always the delays should just be #3, etc.
-        (vl-ps-seq (vl-print "#")
-                   (vl-ps-span "vl_int"
-                               (vl-print-nat (vl-constint->value (vl-atom->guts x.rise))))))
+    (cond
+     ((and (hide (equal x.rise x.fall))
+           (hide (equal x.fall x.high))
+           (vl-fast-atom-p x.rise)
+           (vl-constint-p (vl-atom->guts x.rise)))
+      ;; Almost always the delays should just be #3, etc.
+      (vl-ps-seq
+       (vl-print "#")
+       (vl-ps-span "vl_int"
+                   (vl-print-nat (vl-constint->value (vl-atom->guts x.rise))))))
 
-       (x.high
-        ;; All three specified
-        (vl-ps-seq (vl-print "#(")
-                   (vl-pp-expr x.rise)
-                   (vl-println? ", ")
-                   (vl-pp-expr x.fall)
-                   (vl-println? ", ")
-                   (vl-pp-expr x.high)
-                   (vl-println? ")")))
+     (x.high
+      ;; All three specified
+      (vl-ps-seq (vl-print "#(")
+                 (vl-pp-expr x.rise)
+                 (vl-println? ", ")
+                 (vl-pp-expr x.fall)
+                 (vl-println? ", ")
+                 (vl-pp-expr x.high)
+                 (vl-println? ")")))
 
-       (t
-        (vl-ps-seq (vl-print "#(")
-                   (vl-pp-expr x.rise)
-                   (vl-println? ", ")
-                   (vl-pp-expr x.fall)
-                   (vl-println? ")"))))))
+     (t
+      (vl-ps-seq (vl-print "#(")
+                 (vl-pp-expr x.rise)
+                 (vl-println? ", ")
+                 (vl-pp-expr x.fall)
+                 (vl-println? ")"))))))
 
-(defpp vl-pp-gatestrength (x)
-  :guard (vl-gatestrength-p x)
+(define vl-pp-gatestrength ((x vl-gatestrength-p) &key (ps 'ps))
   :guard-hints (("Goal" :in-theory (enable vl-gatestrength-p
                                            vl-dstrength-p
                                            vl-gatestrength->zero
                                            vl-gatestrength->one)))
-  :body
   (b* (((vl-gatestrength x) x))
-      (vl-ps-seq
-       (vl-print "(")
-       (vl-ps-span "vl_key"
-                   (vl-print-str (case x.zero
-                                   (:vl-supply "supply0")
-                                   (:vl-strong "strong0")
-                                   (:vl-pull   "pull0")
-                                   (:vl-weak   "weak0")
-                                   (:vl-highz  "highz0"))))
-       (vl-print ", ")
-       (vl-ps-span "vl_key"
-                   (vl-print-str (case x.one
-                                   (:vl-supply "supply1")
-                                   (:vl-strong "strong1")
-                                   (:vl-pull   "pull1")
-                                   (:vl-weak   "weak1")
-                                   (:vl-highz  "highz1"))))
-       (vl-println? ")"))))
+    (vl-ps-seq
+     (vl-print "(")
+     (vl-ps-span "vl_key"
+                 (vl-print-str (case x.zero
+                                 (:vl-supply "supply0")
+                                 (:vl-strong "strong0")
+                                 (:vl-pull   "pull0")
+                                 (:vl-weak   "weak0")
+                                 (:vl-highz  "highz0"))))
+     (vl-print ", ")
+     (vl-ps-span "vl_key"
+                 (vl-print-str (case x.one
+                                 (:vl-supply "supply1")
+                                 (:vl-strong "strong1")
+                                 (:vl-pull   "pull1")
+                                 (:vl-weak   "weak1")
+                                 (:vl-highz  "highz1"))))
+     (vl-println? ")"))))
 
-(defpp vl-pp-assign (x)
-  :guard (vl-assign-p x)
-  :body
+(define vl-pp-assign ((x vl-assign-p) &key (ps 'ps))
   (b* (((vl-assign x) x))
-      (vl-ps-seq
-       (if x.atts
-           (vl-ps-seq (vl-println "")
-                      (vl-pp-atts x.atts)
-                      (vl-println ""))
-         ps)
-       (vl-ps-span "vl_key" (vl-print "  assign "))
-       (if (not x.strength)
-           ps
-         (vl-ps-seq (vl-pp-gatestrength x.strength)
-                    (vl-print " ")))
-       (if (not x.delay)
-           ps
-         (vl-ps-seq (vl-pp-gatedelay x.delay)
-                    (vl-print " ")))
-       (vl-pp-expr x.lvalue)
-       (vl-println? " = ")
-       (vl-pp-expr x.expr)
-       (vl-println " ;"))))
+    (vl-ps-seq
+     (if x.atts
+         (vl-ps-seq (vl-println "")
+                    (vl-pp-atts x.atts)
+                    (vl-println ""))
+       ps)
+     (vl-ps-span "vl_key" (vl-print "  assign "))
+     (if (not x.strength)
+         ps
+       (vl-ps-seq (vl-pp-gatestrength x.strength)
+                  (vl-print " ")))
+     (if (not x.delay)
+         ps
+       (vl-ps-seq (vl-pp-gatedelay x.delay)
+                  (vl-print " ")))
+     (vl-pp-expr x.lvalue)
+     (vl-println? " = ")
+     (vl-pp-expr x.expr)
+     (vl-println " ;"))))
 
-(defpp vl-pp-assignlist (x)
-  :guard (vl-assignlist-p x)
-  :body (if (consp x)
-            (vl-ps-seq (vl-pp-assign (car x))
-                       (vl-pp-assignlist (cdr x)))
-          ps))
+(define vl-pp-assignlist ((x vl-assignlist-p) &key (ps 'ps))
+  (if (atom x)
+      ps
+    (vl-ps-seq (vl-pp-assign (car x))
+               (vl-pp-assignlist (cdr x)))))
 
-(defund vl-cstrength-string (x)
-  (declare (xargs :guard (vl-cstrength-p x)
-                  :guard-hints (("Goal" :in-theory (enable vl-cstrength-p)))))
+(define vl-cstrength-string ((x vl-cstrength-p))
+  :returns (str stringp :rule-classes :type-prescription)
+  :guard-hints (("Goal" :in-theory (enable vl-cstrength-p)))
   (case x
     (:vl-large  "large")
     (:vl-medium "medium")
     (:vl-small  "small")
-    (otherwise  (prog2$ (er hard 'vl-cstrength-string "Provably impossible")
-                        ""))))
+    (otherwise  (or (impossible) ""))))
 
-(defthm stringp-of-vl-cstrength-string
-  (stringp (vl-cstrength-string x))
-  :rule-classes :type-prescription
-  :hints(("Goal" :in-theory (enable vl-cstrength-string))))
+(defmacro vl-pp-netdecl-special-atts ()
+  ''("VL_IMPLICIT"
+     "VL_PORT_IMPLICIT"
+     "VL_UNUSED"
+     "VL_MAYBE_UNUSED"
+     "VL_UNSET"
+     "VL_MAYBE_UNSET"
+     "VL_DESIGN_WIRE"))
 
-
-
-(defconst *vl-pp-netdecl-special-atts*
-  (list "VL_IMPLICIT"
-        "VL_PORT_IMPLICIT"
-        "VL_UNUSED"
-        "VL_MAYBE_UNUSED"
-        "VL_UNSET"
-        "VL_MAYBE_UNSET"
-        "VL_DESIGN_WIRE"))
-
-(defpp vl-pp-netdecl-atts-begin (x)
-  :guard (vl-atts-p x)
-  :body (if (not x)
-            ps
-          (let ((x (vl-remove-keys *vl-pp-netdecl-special-atts* x)))
-            (cond ((not x)
-                   ps)
-
-                  ((and (tuplep 1 x)
-                        (equal (caar x) "VL_FOR"))
-                   (if (not (and (vl-atom-p (cdar x))
-                                 (vl-string-p (vl-atom->guts (cdar x)))))
-                       (prog2$
-                        (er hard? 'vl-pp-netdecl "Expected FROM to contain a string.")
-                        ps)
-                     (vl-ps-seq (vl-println "")
-                                (vl-ps-span "vl_cmt"
-                                            (vl-print "/* For ")
-                                            (vl-print-str (vl-string->value (vl-atom->guts (cdar x))))
-                                            (vl-println " */")))))
-
-                  (t
-                   (vl-ps-seq (vl-println "")
-                              (vl-pp-atts x)
-                              (vl-println "")))))))
-
-(defpp vl-pp-strings-separated-by-commas (x)
-  :guard (string-listp x)
-  :body  (cond ((atom x)
-                ps)
-               ((atom (cdr x))
-                (vl-print-str (car x)))
-               (t
-                (vl-ps-seq
-                 (vl-print-str (car x))
-                 (vl-print ", ")
-                 (vl-pp-strings-separated-by-commas (cdr x))))))
-
-(defpp vl-pp-netdecl-atts-end (x)
-  :guard (vl-atts-p x)
-  :body (if (not x)
-            (vl-println "")
-          (let* ((cars    (strip-cars x))
-                 (notes   nil)
-                 (notes   (if (member-equal "VL_IMPLICIT" cars)
-                              (cons "Implicit" notes)
-                            notes))
-                 (notes   (if (member-equal "VL_PORT_IMPLICIT" cars)
-                              (cons "Port implicit" notes)
-                            notes))
-                 (notes   (cond ((member-equal "VL_UNUSED" cars)
-                                 (cons "Unused" notes))
-                                ((member-equal "VL_MAYBE_UNUSED" cars)
-                                 (cons "Unused?" notes))
-                                (t notes)))
-                 (notes   (cond ((member-equal "VL_UNSET" cars)
-                                 (cons "Unset" notes))
-                                ((member-equal "VL_MAYBE_UNSET" cars)
-                                 (cons "Unset?" notes))
-                                (t notes))))
-            (if (not notes)
+(define vl-pp-netdecl-atts-begin ((x vl-atts-p) &key (ps 'ps))
+  (if (not x)
+      ps
+    (let ((x (vl-remove-keys (vl-pp-netdecl-special-atts) x)))
+      (cond ((not x)
+             ps)
+            ((and (tuplep 1 x)
+                  (equal (caar x) "VL_FOR"))
+             (if (not (and (vl-atom-p (cdar x))
+                           (vl-string-p (vl-atom->guts (cdar x)))))
+                 (prog2$
+                  (raise "Expected FROM to contain a string.")
+                  ps)
+               (vl-ps-seq
                 (vl-println "")
-              (vl-ps-span "vl_cmt"
-                          (vl-indent 30)
-                          (vl-print "// ")
-                          (vl-pp-strings-separated-by-commas notes)
-                          (vl-println ""))))))
+                (vl-ps-span "vl_cmt"
+                            (vl-print "/* For ")
+                            (vl-print-str (vl-string->value (vl-atom->guts (cdar x))))
+                            (vl-println " */")))))
+            (t
+             (vl-ps-seq (vl-println "")
+                        (vl-pp-atts x)
+                        (vl-println "")))))))
 
-(defpp vl-pp-netdecl (x)
-  :guard (vl-netdecl-p x)
-  :body
+(define vl-pp-strings-separated-by-commas ((x string-listp) &key (ps 'ps))
+  (cond ((atom x)
+         ps)
+        ((atom (cdr x))
+         (vl-print-str (car x)))
+        (t
+         (vl-ps-seq
+          (vl-print-str (car x))
+          (vl-print ", ")
+          (vl-pp-strings-separated-by-commas (cdr x))))))
+
+(define vl-pp-netdecl-atts-end ((x vl-atts-p) &key (ps 'ps))
+  (if (not x)
+      (vl-println "")
+    (let* ((cars    (strip-cars x))
+           (notes   nil)
+           (notes   (if (member-equal "VL_IMPLICIT" cars)
+                        (cons "Implicit" notes)
+                      notes))
+           (notes   (if (member-equal "VL_PORT_IMPLICIT" cars)
+                        (cons "Port implicit" notes)
+                      notes))
+           (notes   (cond ((member-equal "VL_UNUSED" cars)
+                           (cons "Unused" notes))
+                          ((member-equal "VL_MAYBE_UNUSED" cars)
+                           (cons "Unused?" notes))
+                          (t notes)))
+           (notes   (cond ((member-equal "VL_UNSET" cars)
+                           (cons "Unset" notes))
+                          ((member-equal "VL_MAYBE_UNSET" cars)
+                           (cons "Unset?" notes))
+                          (t notes))))
+      (if (not notes)
+          (vl-println "")
+        (vl-ps-span "vl_cmt"
+                    (vl-indent 30)
+                    (vl-print "// ")
+                    (vl-pp-strings-separated-by-commas notes)
+                    (vl-println ""))))))
+
+(define vl-pp-netdecl ((x vl-netdecl-p) &key (ps 'ps))
   (b* (((vl-netdecl x) x))
-      (vl-ps-seq
-       (if (not x.atts)
-           ps
-         (vl-pp-netdecl-atts-begin x.atts))
-       (vl-print "  ")
-       (vl-ps-span "vl_key"
-                   (vl-print-str (vl-netdecltype-string x.type))
-                   (if (not x.cstrength)
-                       ps
-                     (vl-ps-seq (vl-print " ")
-                                (vl-println? (vl-cstrength-string x.cstrength))))
-                   (if (not x.vectoredp)
-                       ps
-                     (vl-println? " vectored"))
-                   (if (not x.scalaredp)
-                       ps
-                     (vl-println? " scalared"))
-                   (if (not x.signedp)
-                       ps
-                     (vl-println? " signed")))
-       (if (not x.range)
-           ps
-         (vl-ps-seq (vl-print " ")
-                    (vl-pp-range x.range)))
-       (if (not x.delay)
-           ps
-         (vl-ps-seq (vl-print " ")
-                    (vl-pp-gatedelay x.delay)))
-       (vl-print " ")
-       (vl-print-wirename x.name)
-       (if (not x.arrdims)
-           ps
-         (vl-ps-seq (vl-print " ")
-                    (vl-pp-rangelist x.arrdims)))
-       (vl-print " ;")
-       (vl-pp-netdecl-atts-end x.atts)
-       )))
+    (vl-ps-seq
+     (if (not x.atts)
+         ps
+       (vl-pp-netdecl-atts-begin x.atts))
+     (vl-print "  ")
+     (vl-ps-span "vl_key"
+                 (vl-print-str (vl-netdecltype-string x.type))
+                 (if (not x.cstrength)
+                     ps
+                   (vl-ps-seq (vl-print " ")
+                              (vl-println? (vl-cstrength-string x.cstrength))))
+                 (if (not x.vectoredp)
+                     ps
+                   (vl-println? " vectored"))
+                 (if (not x.scalaredp)
+                     ps
+                   (vl-println? " scalared"))
+                 (if (not x.signedp)
+                     ps
+                   (vl-println? " signed")))
+     (if (not x.range)
+         ps
+       (vl-ps-seq (vl-print " ")
+                  (vl-pp-range x.range)))
+     (if (not x.delay)
+         ps
+       (vl-ps-seq (vl-print " ")
+                  (vl-pp-gatedelay x.delay)))
+     (vl-print " ")
+     (vl-print-wirename x.name)
+     (if (not x.arrdims)
+         ps
+       (vl-ps-seq (vl-print " ")
+                  (vl-pp-rangelist x.arrdims)))
+     (vl-print " ;")
+     (vl-pp-netdecl-atts-end x.atts)
+     )))
 
-(defpp vl-pp-netdecllist (x)
-  :guard (vl-netdecllist-p x)
-  :body (if (consp x)
-            (vl-ps-seq (vl-pp-netdecl (car x))
-                       (vl-pp-netdecllist (cdr x)))
-          ps))
+(define vl-pp-netdecllist ((x vl-netdecllist-p) &key (ps 'ps))
+  (if (atom x)
+      ps
+    (vl-ps-seq (vl-pp-netdecl (car x))
+               (vl-pp-netdecllist (cdr x)))))
 
-(defpp vl-pp-plainarg (x)
-  :guard (vl-plainarg-p x)
-  :body
+(define vl-pp-plainarg ((x vl-plainarg-p) &key (ps 'ps))
   (b* (((vl-plainarg x) x)
        (htmlp (vl-ps->htmlp))
        (name-hack-p (if (and htmlp x.portname) t nil))
-        ;; ;; Do we want to print a goofy name
-        ;; (and htmlp
-        ;;      x.portname
-        ;;      ;; Exclude .foo(foo)
-        ;;      (not (and x.expr
-        ;;                (vl-idexpr-p x.expr)
-        ;;                (equal (vl-idexpr->name x.expr) x.portname)))
-        ;;      ;; Exclude .foo(foo[a:b])
-        ;;      (not (and x.expr
-        ;;                (not (vl-fast-atom-p x.expr))
-        ;;                (eq (vl-nonatom->op x.expr) :vl-partselect-colon)
-        ;;                (vl-idexpr-p (first (vl-nonatom->args x.expr)))
-        ;;                (equal (vl-idexpr->name (first (vl-nonatom->args x.expr)))
-        ;;                       x.portname)))))
+       ;; ;; Do we want to print a goofy name
+       ;; (and htmlp
+       ;;      x.portname
+       ;;      ;; Exclude .foo(foo)
+       ;;      (not (and x.expr
+       ;;                (vl-idexpr-p x.expr)
+       ;;                (equal (vl-idexpr->name x.expr) x.portname)))
+       ;;      ;; Exclude .foo(foo[a:b])
+       ;;      (not (and x.expr
+       ;;                (not (vl-fast-atom-p x.expr))
+       ;;                (eq (vl-nonatom->op x.expr) :vl-partselect-colon)
+       ;;                (vl-idexpr-p (first (vl-nonatom->args x.expr)))
+       ;;                (equal (vl-idexpr->name (first (vl-nonatom->args x.expr)))
+       ;;                       x.portname)))))
        )
-      (vl-ps-seq
-       (if htmlp
-           (vl-print-markup (case x.dir
-                              (:vl-input  "<span class=\"vl_input_arg\">")
-                              (:vl-output "<span class=\"vl_output_arg\">")
-                              (:vl-inout  "<span class=\"vl_inout_arg\">")
-                              (otherwise  "<span class=\"vl_unknown_arg\">")))
+    (vl-ps-seq
+     (if htmlp
+         (vl-print-markup (case x.dir
+                            (:vl-input  "<span class=\"vl_input_arg\">")
+                            (:vl-output "<span class=\"vl_output_arg\">")
+                            (:vl-inout  "<span class=\"vl_inout_arg\">")
+                            (otherwise  "<span class=\"vl_unknown_arg\">")))
+       ps)
+     (if x.atts
+         (vl-pp-atts x.atts)
+       ps)
+     (if name-hack-p
+         (vl-ps-seq (vl-print ".")
+                    ;; BOZO shouldn't we be calling maybe-escape-identifier?
+                    (vl-print-str x.portname)
+                    (vl-print "("))
+       ps)
+     (if x.expr
+         (vl-pp-expr x.expr)
+       ps)
+     (if name-hack-p
+         (vl-print ")")
+       ps)
+     (if htmlp (vl-print-markup "</span>") ps))))
+
+(define vl-pp-plainarglist ((x vl-plainarglist-p) force-newlinesp &key (ps 'ps))
+  (cond ((atom x)
          ps)
-       (if x.atts
-           (vl-pp-atts x.atts)
+        ((atom (cdr x))
+         (vl-pp-plainarg (car x)))
+        (t
+         (vl-ps-seq (vl-pp-plainarg (car x))
+                    (if force-newlinesp
+                        (vl-ps-seq (vl-println ",")
+                                   (vl-indent (vl-ps->autowrap-ind)))
+                      (vl-println? ", "))
+                    (vl-pp-plainarglist (cdr x) force-newlinesp)))))
+
+(define vl-pp-namedarg ((x vl-namedarg-p) &key (ps 'ps))
+  (let ((name (vl-namedarg->name x))
+        (expr (vl-namedarg->expr x))
+        (atts (vl-namedarg->atts x)))
+    (vl-ps-seq (if atts (vl-pp-atts atts) ps)
+               (vl-print ".")
+               (vl-ps-span "vl_id"
+                           (vl-print (vl-maybe-escape-identifier name)))
+               (vl-print "(")
+               (if expr
+                   (vl-pp-expr expr)
+                 ps)
+               (vl-print ")"))))
+
+(define vl-pp-namedarglist ((x vl-namedarglist-p) force-newlinesp &key (ps 'ps))
+  (cond ((atom x)
          ps)
-       (if name-hack-p
-           (vl-ps-seq (vl-print ".")
-                      ;; BOZO shouldn't we be calling maybe-escape-identifier?
-                      (vl-print-str x.portname)
-                      (vl-print "("))
+        ((atom (cdr x))
+         (vl-pp-namedarg (car x)))
+        (t
+         (vl-ps-seq (vl-pp-namedarg (car x))
+                    (if force-newlinesp
+                        (vl-ps-seq (vl-println ",")
+                                   (vl-indent (vl-ps->autowrap-ind)))
+                      (vl-println? ", "))
+                    (vl-pp-namedarglist (cdr x) force-newlinesp)))))
+
+(define vl-pp-arguments ((x vl-arguments-p) &key (ps 'ps))
+  (b* ((namedp         (vl-arguments->namedp x))
+       (args           (vl-arguments->args x))
+       (force-newlinep (longer-than-p 5 args))
+       ((when namedp)
+        (vl-pp-namedarglist args force-newlinep))
+       ((when (and (consp args)
+                   (not (consp (cdr args)))
+                   (not (vl-plainarg->expr (car args)))))
+        ;; Horrible corner case!  Positional arg list with just one
+        ;; argument and a blank actual.  No way to print this.  If
+        ;; possible we'll trust the portname and try to turn it into a
+        ;; named argument list.
+        (if (vl-plainarg->portname (car args))
+            (b* ((namedarg (make-vl-namedarg :name (vl-plainarg->portname (car args))
+                                             :expr nil
+                                             :atts (vl-plainarg->atts (car args)))))
+              (cw "; Warning: horrible corner case in vl-pp-arguments, ~
+                   printing named.~%")
+              (vl-pp-namedarglist (list namedarg) force-newlinep))
+          ;; We don't even have a name.  How did this happen?
+          (progn$
+           (raise "Congrats!  You have reached a remarkably obscure corner ~
+                   case.  You are trying to print a plain argument list, of ~
+                   length 1, which contains a \"blank\" entry.  But there is ~
+                   actually no way to express this in Verilog.  See ~
+                   cbooks/vl/blank.v for a basic summary of the problem. ~
+                   There are some ways we can work around this: (1) convert ~
+                   into a named argument list, or (2) eliminating the blank ~
+                   by, for outputs, adding a wire name of the appropriate ~
+                   width; for inputs, convert into n'bz where n is the ~
+                   appropriate width.  But there isn't enough information in ~
+                   vl-pp-arguments to carry out this transformation.  At any ~
+                   rate, we give up.  Well done!")
+           ps))))
+    (vl-pp-plainarglist args force-newlinep)))
+
+(define vl-pp-modinst-atts-begin ((x vl-atts-p) &key (ps 'ps))
+  (cond ((not x)
          ps)
-       (if x.expr
-           (vl-pp-expr x.expr)
-         ps)
-       (if name-hack-p
-           (vl-print ")")
-         ps)
-       (if htmlp (vl-print-markup "</span>") ps))))
 
-(defpp vl-pp-plainarglist (x force-newlinesp)
-  :guard (vl-plainarglist-p x)
-  :body (cond ((atom x)
-               ps)
-              ((atom (cdr x))
-               (vl-pp-plainarg (car x)))
-              (t
-               (vl-ps-seq (vl-pp-plainarg (car x))
-                          (if force-newlinesp
-                              (vl-ps-seq (vl-println ",")
-                                         (vl-indent (vl-ps->autowrap-ind)))
-                            (vl-println? ", "))
-                          (vl-pp-plainarglist (cdr x) force-newlinesp)))))
+        ((and (tuplep 1 x)
+              (equal (caar x) "VL_FOR"))
+         (if (not (and (vl-atom-p (cdar x))
+                       (vl-string-p (vl-atom->guts (cdar x)))))
+             (prog2$
+              (raise "Expected VL_FOR to contain a string.")
+              ps)
+           (vl-ps-span "vl_cmt"
+                       (vl-println "")
+                       (vl-print "/* For ")
+                       (vl-print-str (vl-string->value (vl-atom->guts (cdar x))))
+                       (vl-println " */"))))
 
-(defpp vl-pp-namedarg (x)
-  :guard (vl-namedarg-p x)
-  :body (let ((name (vl-namedarg->name x))
-              (expr (vl-namedarg->expr x))
-              (atts (vl-namedarg->atts x)))
-          (vl-ps-seq (if atts (vl-pp-atts atts) ps)
-                     (vl-print ".")
-                     (vl-ps-span "vl_id"
-                                 (vl-print (vl-maybe-escape-identifier name)))
-                     (vl-print "(")
-                     (if expr
-                         (vl-pp-expr expr)
-                       ps)
-                     (vl-print ")"))))
+        (t
+         (vl-ps-seq (vl-println "")
+                    (vl-pp-atts x)
+                    (vl-println "")))))
 
-(defpp vl-pp-namedarglist (x force-newlinesp)
-  :guard (vl-namedarglist-p x)
-  :body (cond ((atom x)
-               ps)
-              ((atom (cdr x))
-               (vl-pp-namedarg (car x)))
-              (t
-               (vl-ps-seq (vl-pp-namedarg (car x))
-                          (if force-newlinesp
-                              (vl-ps-seq (vl-println ",")
-                                         (vl-indent (vl-ps->autowrap-ind)))
-                            (vl-println? ", "))
-                          (vl-pp-namedarglist (cdr x) force-newlinesp)))))
-
-(defpp vl-pp-arguments (x)
-  :guard (vl-arguments-p x)
-  :body (b* ((namedp         (vl-arguments->namedp x))
-             (args           (vl-arguments->args x))
-             (force-newlinep (longer-than-p 5 args))
-             ((when namedp)
-              (vl-pp-namedarglist args force-newlinep))
-             ((when (and (consp args)
-                         (not (consp (cdr args)))
-                         (not (vl-plainarg->expr (car args)))))
-              ;; Horrible corner case!  Positional arg list with just one
-              ;; argument and a blank actual.  No way to print this.  If
-              ;; possible we'll trust the portname and try to turn it into a
-              ;; named argument list.
-              (if (vl-plainarg->portname (car args))
-                  (b* ((namedarg (make-vl-namedarg :name (vl-plainarg->portname (car args))
-                                                   :expr nil
-                                                   :atts (vl-plainarg->atts (car args)))))
-                    (cw "; Warning: horrible corner case in vl-pp-arguments, printing named.~%")
-                    (vl-pp-namedarglist (list namedarg) force-newlinep))
-                ;; We don't even have a name.  How did this happen?
-                (progn$
-                 (er hard? 'vl-pp-arguments
-                     "Congrats!  You have reached a remarkably obscure corner ~
-                      case.  You are trying to print a plain argument list, ~
-                      of length 1, which contains a \"blank\" entry.  But ~
-                      there is actually no way to express this in Verilog.  ~
-                      See cbooks/vl/blank.v for a basic summary of the ~
-                      problem. There are some ways we can work around this: ~
-                      (1) convert into a named argument list, or (2) ~
-                      eliminating the blank by, for outputs, adding a wire ~
-                      name of the appropriate width; for inputs, convert into ~
-                      n'bz where n is the appropriate width.  But there isn't ~
-                      enough information in vl-pp-arguments to carry out this ~
-                      transformation.  At any rate, we give up.  Well done!")
-                 ps))))
-          (vl-pp-plainarglist args force-newlinep)))
-
-(defpp vl-pp-modinst-atts-begin (x)
-  :guard (vl-atts-p x)
-  :body (cond ((not x)
-               ps)
-
-              ((and (tuplep 1 x)
-                    (equal (caar x) "VL_FOR"))
-               (if (not (and (vl-atom-p (cdar x))
-                             (vl-string-p (vl-atom->guts (cdar x)))))
-                   (prog2$
-                    (er hard? 'vl-pp-modinst-atts-begin
-                        "Expected VL_FOR to contain a string.")
-                    ps)
-                 (vl-ps-span "vl_cmt"
-                             (vl-println "")
-                             (vl-print "/* For ")
-                             (vl-print-str (vl-string->value (vl-atom->guts (cdar x))))
-                             (vl-println " */"))))
-
-              (t
-               (vl-ps-seq (vl-println "")
-                          (vl-pp-atts x)
-                          (vl-println "")))))
-
-
-
-(defpp vl-pp-modulename-link-aux (name origname)
-  ;; Assumes HTML mode.
-  :guard (and (stringp name)
-              (stringp origname))
-  :body
+(define vl-pp-modulename-link-aux ((name stringp) (origname stringp) &key (ps 'ps))
   (vl-ps-seq
    (vl-print-modname origname)
    (vl-print-markup "<a class=\"vl_trans\" href=\"javascript:showTranslatedModule('")
@@ -1656,77 +1465,70 @@ code.)</p>"
                     ps))))
    (vl-print-markup "</a>")))
 
-(defpp vl-pp-modulename-link (name mods modalist)
+(define vl-pp-modulename-link ((name stringp)
+                               (mods vl-modulelist-p)
+                               (modalist (equal modalist (vl-modalist mods)))
+                               &key (ps 'ps))
   ;; Assumes HTML mode.
-  :guard (and (stringp name)
-              (vl-modulelist-p mods)
-              (equal modalist (vl-modalist mods)))
-  :body (let ((target-mod (vl-fast-find-module name mods modalist)))
-          (if (not target-mod)
-              ;; I sometimes hit this case when pretty-printing the source for modules
-              ;; that were thrown away.
-              (prog2$ (cw "Warning: linking to module ~s0, which isn't in the modalist.~%"
-                          name)
-                      (vl-print-modname name))
-            (let ((origname (vl-module->origname target-mod)))
-              (vl-pp-modulename-link-aux name origname)))))
+  (let ((target-mod (vl-fast-find-module name mods modalist)))
+    (if (not target-mod)
+        ;; I sometimes hit this case when pretty-printing the source for modules
+        ;; that were thrown away.
+        (prog2$ (cw "Warning: linking to module ~s0, which isn't in the modalist.~%"
+                    name)
+                (vl-print-modname name))
+      (let ((origname (vl-module->origname target-mod)))
+        (vl-pp-modulename-link-aux name origname)))))
 
-(defpp vl-pp-modinst (x mods modalist)
-  :guard (and (vl-modinst-p x)
-              (vl-modulelist-p mods)
-              (equal modalist (vl-modalist mods)))
-  :body (let ((instname  (vl-modinst->instname x))
-              (modname   (vl-modinst->modname x))
-              (range     (vl-modinst->range x))
-              (paramargs (vl-modinst->paramargs x))
-              (portargs  (vl-modinst->portargs x))
-              (str       (vl-modinst->str x))
-              (delay     (vl-modinst->delay x))
-              (atts      (vl-modinst->atts x)))
-          (if (or str delay)
-              (prog2$ (cw "; Note: in vl-pp-modinst, dropping str/delay from ~x0 instance.~%"
-                          modname)
-                      ps)
-            (vl-ps-seq (vl-println "")
-                       (if atts
-                           (vl-pp-modinst-atts-begin atts)
-                         ps)
-                       (vl-print "  ")
-                       (if (vl-ps->htmlp)
-                           (vl-pp-modulename-link modname mods modalist)
-                         (vl-print-modname modname))
-                       (if (not (vl-arguments->args paramargs))
-                           ps
-                         (vl-ps-seq (vl-print " #(")
-                                    (vl-pp-arguments paramargs)
-                                    (vl-println? ")")))
-                       (vl-print " ")
-                       (if instname
-                           ;; BOZO maybe a different function for instance/gate names?
-                           (vl-print-wirename instname)
-                         (prog2$ (cw "Warning: instance of ~x0 has no instname.~%"
-                                     modname)
-                                 ps))
-                       (if (not range)
-                           ps
-                         (vl-ps-seq (vl-print " ")
-                                    (vl-pp-range range)))
-                       (vl-print " (")
-                       (vl-pp-arguments portargs)
-                       (vl-println ") ;")))))
+(define vl-pp-modinst ((x        vl-modinst-p)
+                       (mods     vl-modulelist-p)
+                       (modalist (equal modalist (vl-modalist mods)))
+                       &key (ps 'ps))
+  (b* (((vl-modinst x) x))
+    (if (or x.str x.delay)
+        (prog2$ (cw "; Note: in vl-pp-modinst, dropping str/delay from ~x0 instance.~%"
+                    x.modname)
+                ps)
+      (vl-ps-seq (vl-println "")
+                 (if x.atts
+                     (vl-pp-modinst-atts-begin x.atts)
+                   ps)
+                 (vl-print "  ")
+                 (if (vl-ps->htmlp)
+                     (vl-pp-modulename-link x.modname mods modalist)
+                   (vl-print-modname x.modname))
+                 (if (not (vl-arguments->args x.paramargs))
+                     ps
+                   (vl-ps-seq (vl-print " #(")
+                              (vl-pp-arguments x.paramargs)
+                              (vl-println? ")")))
+                 (vl-print " ")
+                 (if x.instname
+                     ;; BOZO maybe a different function for instance/gate names?
+                     (vl-print-wirename x.instname)
+                   (prog2$ (cw "Warning: instance of ~x0 has no instname.~%"
+                               x.modname)
+                           ps))
+                 (if (not x.range)
+                     ps
+                   (vl-ps-seq (vl-print " ")
+                              (vl-pp-range x.range)))
+                 (vl-print " (")
+                 (vl-pp-arguments x.portargs)
+                 (vl-println ") ;")))))
 
-(defpp vl-pp-modinstlist (x mods modalist)
-  :guard (and (vl-modinstlist-p x)
-              (vl-modulelist-p mods)
-              (equal modalist (vl-modalist mods)))
-  :body (if (consp x)
-            (vl-ps-seq (vl-pp-modinst (car x) mods modalist)
-                       (vl-pp-modinstlist (cdr x) mods modalist))
-          ps))
+(define vl-pp-modinstlist ((x        vl-modinstlist-p)
+                           (mods     vl-modulelist-p)
+                           (modalist (equal modalist (vl-modalist mods)))
+                           &key (ps 'ps))
+  (if (atom x)
+      ps
+    (vl-ps-seq (vl-pp-modinst (car x) mods modalist)
+               (vl-pp-modinstlist (cdr x) mods modalist))))
 
-(defund vl-gatetype-string (x)
-  (declare (xargs :guard (vl-gatetype-p x)
-                  :guard-hints (("Goal" :in-theory (enable vl-gatetype-p)))))
+(define vl-gatetype-string ((x vl-gatetype-p))
+  :returns (str stringp :rule-classes :type-prescription)
+  :guard-hints (("Goal" :in-theory (enable vl-gatetype-p)))
   (case x
     (:vl-cmos     "cmos")
     (:vl-rcmos    "rcmos")
@@ -1754,150 +1556,119 @@ code.)</p>"
     (:vl-rtran    "rtran")
     (:vl-pulldown "pulldown")
     (:vl-pullup   "pullup")
-    (otherwise    (prog2$ (er hard 'vl-gatetype-string "Provably impossible")
-                          ""))))
+    (otherwise    (or (impossible) ""))))
 
-(defthm stringp-of-vl-gatetype-string
-  (stringp (vl-gatetype-string x))
-  :rule-classes :type-prescription
-  :hints(("Goal" :in-theory (enable vl-gatetype-string))))
+(define vl-pp-gateinst-atts-begin ((x vl-atts-p) &key (ps 'ps))
+  (cond ((not x)
+         ps)
+        ((and (tuplep 1 x)
+              (equal (caar x) "VL_FOR"))
+         (if (not (and (vl-atom-p (cdar x))
+                       (vl-string-p (vl-atom->guts (cdar x)))))
+             (prog2$
+              (raise "Expected VL_FOR to contain a string.")
+              ps)
+           (vl-ps-span "vl_cmt"
+                       (vl-println "")
+                       (vl-print "/* For ")
+                       (vl-print-str (vl-string->value (vl-atom->guts (cdar x))))
+                       (vl-println " */"))))
+        (t
+         (vl-ps-seq (vl-println "")
+                    (vl-pp-atts x)
+                    (vl-println "")))))
 
+(define vl-pp-gateinst ((x vl-gateinst-p) &key (ps 'ps))
+  (b* (((vl-gateinst x) x))
+    (vl-ps-seq (if x.atts
+                   (vl-pp-gateinst-atts-begin x.atts)
+                 ps)
+               (vl-print "  ")
+               (vl-ps-span "vl_key" (vl-print-str (vl-gatetype-string x.type)))
+               (if (not x.strength)
+                   ps
+                 (vl-ps-seq (vl-print " ")
+                            (vl-pp-gatestrength x.strength)))
+               (if (not x.delay)
+                   ps
+                 (vl-ps-seq (vl-print " ")
+                            (vl-pp-gatedelay x.delay)))
+               (if (not x.name)
+                   ps
+                 (vl-ps-seq (vl-print " ")
+                            ;; BOZO maybe a different function than wirename?
+                            (vl-print-wirename x.name)
+                            (vl-println? "")))
+               (if (not x.range)
+                   ps
+                 (vl-pp-range x.range))
+               (vl-print " (")
+               (vl-pp-plainarglist x.args nil)
+               (vl-println ") ;"))))
 
-(defpp vl-pp-gateinst-atts-begin (x)
-  :guard (vl-atts-p x)
-  :body (cond ((not x)
-               ps)
+(define vl-pp-gateinstlist ((x vl-gateinstlist-p) &key (ps 'ps))
+  (if (atom x)
+      ps
+    (vl-ps-seq (vl-pp-gateinst (car x))
+               (vl-pp-gateinstlist (cdr x)))))
 
-              ((and (tuplep 1 x)
-                    (equal (caar x) "VL_FOR"))
-               (if (not (and (vl-atom-p (cdar x))
-                             (vl-string-p (vl-atom->guts (cdar x)))))
-                   (prog2$
-                    (er hard? 'vl-pp-gateinst-atts-begin
-                        "Expected VL_FOR to contain a string.")
-                    ps)
-                 (vl-ps-span "vl_cmt"
-                             (vl-println "")
-                             (vl-print "/* For ")
-                             (vl-print-str (vl-string->value (vl-atom->guts (cdar x))))
-                             (vl-println " */"))))
+(define vl-pp-delaycontrol ((x vl-delaycontrol-p) &key (ps 'ps))
+  (let ((value (vl-delaycontrol->value x)))
+    (if (and (vl-fast-atom-p value)
+             (vl-fast-constint-p (vl-atom->guts value)))
+        (vl-ps-seq
+         (vl-print "#")
+         (vl-ps-span "vl_int"
+                     (vl-println? (vl-constint->value (vl-atom->guts value)))))
+      (vl-ps-seq
+       (vl-print "#(")
+       (vl-pp-expr value)
+       (vl-println? ")")))))
 
-              (t
-               (vl-ps-seq (vl-println "")
-                          (vl-pp-atts x)
-                          (vl-println "")))))
+(define vl-pp-evatom ((x vl-evatom-p) &key (ps 'ps))
+  (let ((type (vl-evatom->type x))
+        (expr (vl-evatom->expr x)))
+    (if (eq type :vl-noedge)
+        (vl-pp-expr expr)
+      (vl-ps-seq (vl-ps-span "vl_key"
+                             (if (eq type :vl-posedge)
+                                 (vl-print "posedge ")
+                               (vl-print "negedge ")))
+                 (vl-pp-expr expr)))))
 
-(defpp vl-pp-gateinst (x)
-  :guard (vl-gateinst-p x)
-  :body (let ((type     (vl-gateinst->type x))
-              (name     (vl-gateinst->name x))
-              (range    (vl-gateinst->range x))
-              (strength (vl-gateinst->strength x))
-              (delay    (vl-gateinst->delay x))
-              (args     (vl-gateinst->args x))
-              (atts     (vl-gateinst->atts x)))
-          (declare (ignorable strength delay))
-          (vl-ps-seq (if atts
-                         (vl-pp-gateinst-atts-begin atts)
-                       ps)
-                     (vl-print "  ")
-                     (vl-ps-span "vl_key" (vl-print-str (vl-gatetype-string type)))
-                     (if (not strength)
-                         ps
-                       (vl-ps-seq (vl-print " ")
-                                  (vl-pp-gatestrength strength)))
-                     (if (not delay)
-                         ps
-                       (vl-ps-seq (vl-print " ")
-                                  (vl-pp-gatedelay delay)))
-                     (if (not name)
-                         ps
-                       (vl-ps-seq (vl-print " ")
-                                  ;; BOZO maybe a different function than wirename?
-                                  (vl-print-wirename name)
-                                  (vl-println? "")))
-                     (if (not range)
-                         ps
-                       (vl-pp-range range))
-                     (vl-print " (")
-                     (vl-pp-plainarglist args nil)
-                     (vl-println ") ;"))))
+(define vl-pp-evatomlist ((x vl-evatomlist-p) &key (ps 'ps))
+  (cond ((atom x)
+         ps)
+        ((atom (cdr x))
+         (vl-pp-evatom (car x)))
+        (t
+         (vl-ps-seq (vl-pp-evatom (car x))
+                    (vl-ps-span "vl_key" (vl-print " or "))
+                    (vl-pp-evatomlist (cdr x))))))
 
-(defpp vl-pp-gateinstlist (x)
-  :guard (vl-gateinstlist-p x)
-  :body (if (consp x)
-            (vl-ps-seq (vl-pp-gateinst (car x))
-                       (vl-pp-gateinstlist (cdr x)))
-          ps))
+(define vl-pp-eventcontrol ((x vl-eventcontrol-p) &key (ps 'ps))
+  (let ((starp (vl-eventcontrol->starp x))
+        (atoms (vl-eventcontrol->atoms x)))
+    (if starp
+        (vl-print "@*")
+      (vl-ps-seq (vl-print "@(")
+                 (vl-pp-evatomlist atoms)
+                 (vl-println? ")")))))
 
+(define vl-pp-repeateventcontrol ((x vl-repeateventcontrol-p) &key (ps 'ps))
+  (let ((expr (vl-repeateventcontrol->expr x))
+        (ctrl (vl-repeateventcontrol->ctrl x)))
+    (vl-ps-seq (vl-ps-span "vl_key" (vl-print "repeat "))
+               (vl-print "(")
+               (vl-pp-expr expr)
+               (vl-print ")")
+               (vl-pp-eventcontrol ctrl))))
 
-
-(defpp vl-pp-delaycontrol (x)
-  :guard (vl-delaycontrol-p x)
-  :body (let ((value (vl-delaycontrol->value x)))
-          (if (and (vl-fast-atom-p value)
-                   (vl-fast-constint-p (vl-atom->guts value)))
-              (vl-ps-seq
-               (vl-print "#")
-               (vl-ps-span "vl_int"
-                           (vl-println? (vl-constint->value (vl-atom->guts value)))))
-            (vl-ps-seq
-             (vl-print "#(")
-             (vl-pp-expr value)
-             (vl-println? ")")))))
-
-
-(defpp vl-pp-evatom (x)
-  :guard (vl-evatom-p x)
-  :body (let ((type (vl-evatom->type x))
-              (expr (vl-evatom->expr x)))
-          (if (eq type :vl-noedge)
-              (vl-pp-expr expr)
-            (vl-ps-seq (vl-ps-span "vl_key"
-                                   (if (eq type :vl-posedge)
-                                       (vl-print "posedge ")
-                                     (vl-print "negedge ")))
-                       (vl-pp-expr expr)))))
-
-(defpp vl-pp-evatomlist (x)
-  :guard (vl-evatomlist-p x)
-  :body (cond ((atom x)
-               ps)
-              ((atom (cdr x))
-               (vl-pp-evatom (car x)))
-              (t
-               (vl-ps-seq (vl-pp-evatom (car x))
-                          (vl-ps-span "vl_key" (vl-print " or "))
-                          (vl-pp-evatomlist (cdr x))))))
-
-(defpp vl-pp-eventcontrol (x)
-  :guard (vl-eventcontrol-p x)
-  :body (let ((starp (vl-eventcontrol->starp x))
-              (atoms (vl-eventcontrol->atoms x)))
-          (if starp
-              (vl-print "@*")
-            (vl-ps-seq (vl-print "@(")
-                       (vl-pp-evatomlist atoms)
-                       (vl-println? ")")))))
-
-(defpp vl-pp-repeateventcontrol (x)
-  :guard (vl-repeateventcontrol-p x)
-  :body (let ((expr (vl-repeateventcontrol->expr x))
-              (ctrl (vl-repeateventcontrol->ctrl x)))
-          (vl-ps-seq (vl-ps-span "vl_key" (vl-print "repeat "))
-                     (vl-print "(")
-                     (vl-pp-expr expr)
-                     (vl-print ")")
-                     (vl-pp-eventcontrol ctrl))))
-
-(defpp vl-pp-delayoreventcontrol (x)
-  :guard (vl-delayoreventcontrol-p x)
+(define vl-pp-delayoreventcontrol ((x vl-delayoreventcontrol-p) &key (ps 'ps))
   :guard-hints (("Goal" :in-theory (enable vl-delayoreventcontrol-p)))
-  :body (cond ((vl-delaycontrol-p x) (vl-pp-delaycontrol x))
-              ((vl-eventcontrol-p x) (vl-pp-eventcontrol x))
-              (t (vl-pp-repeateventcontrol x))))
-
-
+  (cond ((vl-delaycontrol-p x) (vl-pp-delaycontrol x))
+        ((vl-eventcontrol-p x) (vl-pp-eventcontrol x))
+        (t (vl-pp-repeateventcontrol x))))
 
 
 
@@ -1913,8 +1684,8 @@ code.)</p>"
 ; Convention: every statement starts by automatically indenting itself, and
 ; every statement prints a newline at the end!
 
-(defpp vl-pp-stmt-autoindent ()
-  :body (vl-indent (nfix (- (vl-ps->autowrap-ind) 2))))
+(define vl-pp-stmt-autoindent (&key (ps 'ps))
+  (vl-indent (nfix (- (vl-ps->autowrap-ind) 2))))
 
 (defmacro vl-pp-stmt-indented (&rest args)
   `(let* ((_pp_stmt_autowrap_ind_ (vl-ps->autowrap-ind))
@@ -1926,82 +1697,69 @@ code.)</p>"
           (ps (vl-ps-update-autowrap-ind _pp_stmt_autowrap_ind_)))
      ps))
 
-(defpp vl-pp-assignstmt (x)
-  :guard (vl-assignstmt-p x)
-  :body (b* (((vl-assignstmt x) x))
-          (vl-ps-seq (vl-pp-stmt-autoindent)
-                     (if x.atts (vl-pp-atts x.atts) ps)
-                     (vl-ps-span "vl_key"
-                                 (case x.type
-                                   (:vl-assign (vl-println? "assign "))
-                                   (:vl-force  (vl-println? "force "))
-                                   (otherwise  ps)))
-                     (vl-pp-expr x.lvalue)
-                     (case x.type
-                       (:vl-nonblocking (vl-println? " <= "))
-                       (otherwise       (vl-println? " = ")))
-                     (if x.ctrl
-                         (vl-ps-seq
-                          (vl-pp-delayoreventcontrol x.ctrl)
-                          (vl-println? " "))
-                       ps)
-                     (vl-pp-expr x.expr)
-                     (vl-println " ;"))))
+(define vl-pp-assignstmt ((x vl-assignstmt-p) &key (ps 'ps))
+  (b* (((vl-assignstmt x) x))
+    (vl-ps-seq (vl-pp-stmt-autoindent)
+               (if x.atts (vl-pp-atts x.atts) ps)
+               (vl-ps-span "vl_key"
+                           (case x.type
+                             (:vl-assign (vl-println? "assign "))
+                             (:vl-force  (vl-println? "force "))
+                             (otherwise  ps)))
+               (vl-pp-expr x.lvalue)
+               (case x.type
+                 (:vl-nonblocking (vl-println? " <= "))
+                 (otherwise       (vl-println? " = ")))
+               (if x.ctrl
+                   (vl-ps-seq
+                    (vl-pp-delayoreventcontrol x.ctrl)
+                    (vl-println? " "))
+                 ps)
+               (vl-pp-expr x.expr)
+               (vl-println " ;"))))
 
-(defpp vl-pp-nullstmt (x)
-  :guard (vl-nullstmt-p x)
-  :body (b* (((vl-nullstmt x) x))
-          (vl-ps-seq (vl-pp-stmt-autoindent)
-                     (if x.atts (vl-pp-atts x.atts) ps)
-                     (vl-println " ;"))))
+(define vl-pp-nullstmt ((x vl-nullstmt-p) &key (ps 'ps))
+  (b* (((vl-nullstmt x) x))
+    (vl-ps-seq (vl-pp-stmt-autoindent)
+               (if x.atts (vl-pp-atts x.atts) ps)
+               (vl-println " ;"))))
 
-(defpp vl-pp-enablestmt (x)
-  :guard (vl-enablestmt-p x)
-  :body (b* (((vl-enablestmt x) x))
-          (vl-ps-seq (vl-pp-stmt-autoindent)
-                     (if x.atts (vl-pp-atts x.atts) ps)
-                     (vl-pp-expr x.id)
-                     ;; Bug fixed 2012-10-22: if there are no arguments, we
-                     ;; must not print even the parens.  (Doing so isn't
-                     ;; syntactically legal.)
-                     (if (consp x.args)
-                         (vl-ps-seq
-                          (vl-println? "(")
-                          (vl-pp-exprlist x.args)
-                          (vl-print ")"))
-                       ps)
-                     (vl-println " ;"))))
+(define vl-pp-enablestmt ((x vl-enablestmt-p) &key (ps 'ps))
+  (b* (((vl-enablestmt x) x))
+    (vl-ps-seq (vl-pp-stmt-autoindent)
+               (if x.atts (vl-pp-atts x.atts) ps)
+               (vl-pp-expr x.id)
+               ;; Bug fixed 2012-10-22: if there are no arguments, we must not
+               ;; print even the parens.  (Doing so isn't syntactically legal.)
+               (if (consp x.args)
+                   (vl-ps-seq
+                    (vl-println? "(")
+                    (vl-pp-exprlist x.args)
+                    (vl-print ")"))
+                 ps)
+               (vl-println " ;"))))
 
-(defpp vl-pp-atomicstmt (x)
-  :guard (vl-atomicstmt-p x)
-  :body (cond ((vl-fast-nullstmt-p x)
-               (vl-pp-nullstmt x))
-              ((vl-fast-assignstmt-p x)
-               (vl-pp-assignstmt x))
-              ((vl-fast-enablestmt-p x)
-               (vl-pp-enablestmt x))
-              (t
-               (vl-ps-seq
-                (vl-print "// OOPS, IMPLEMENT ")
-                (vl-println (symbol-name (tag x)))
-                ps))))
+(define vl-pp-atomicstmt ((x vl-atomicstmt-p) &key (ps 'ps))
+  (cond ((vl-fast-nullstmt-p x)
+         (vl-pp-nullstmt x))
+        ((vl-fast-assignstmt-p x)
+         (vl-pp-assignstmt x))
+        ((vl-fast-enablestmt-p x)
+         (vl-pp-enablestmt x))
+        (t
+         (vl-ps-seq
+          (vl-print "// OOPS, IMPLEMENT ")
+          (vl-println (symbol-name (tag x)))
+          ps))))
 
-
-(defund vl-casetype-string (x)
-  (declare (xargs :guard (vl-casetype-p x)
-                  :guard-hints (("Goal" :in-theory (enable vl-casetype-p)))))
+(define vl-casetype-string ((x vl-casetype-p))
+  :returns (str stringp :rule-classes :type-prescription)
+  :guard-hints (("Goal" :in-theory (enable vl-casetype-p)))
   (case x
     ('nil         "case")
     (:vl-casex    "casex")
     (:vl-casez    "casez")
-    (otherwise    (prog2$ (er hard 'vl-casetype-string "Provably impossible")
-                          ""))))
-
-(defthm stringp-of-vl-casetype-string
-  (stringp (vl-casetype-string x))
-  :rule-classes :type-prescription
-  :hints(("Goal" :in-theory (enable vl-casetype-string))))
-
+    (otherwise    (or (impossible) ""))))
 
 (defmacro vl-pp-stmt (x)
   `(vl-pp-stmt-fn ,x ps))
@@ -2015,8 +1773,7 @@ code.)</p>"
 (mutual-recursion
 
  (defund vl-pp-stmt-fn (x ps)
-   (declare (xargs :guard (and (vl-stmt-p x)
-                               (vl-pstate-p ps))
+   (declare (xargs :guard (vl-stmt-p x)
                    :stobjs ps
                    :verify-guards nil
                    :hints(("Goal" :in-theory (disable (force))))
@@ -2025,11 +1782,9 @@ code.)</p>"
     ((vl-fast-atomicstmt-p x)
      (vl-pp-atomicstmt x))
 
-    ((mbe :logic (not (consp x))
+    ((mbe :logic (atom x)
           :exec nil)
-     (prog2$
-      (er hard 'vl-pp-stmt-fn "Impossible case for termination")
-      ps))
+     (prog2$ (impossible) ps))
 
     (t
      (let ((type  (vl-compoundstmt->type x))
@@ -2123,8 +1878,7 @@ code.)</p>"
                       (vl-println (symbol-name type)))))))))
 
  (defund vl-pp-stmtlist-fn (x ps)
-   (declare (xargs :guard (and (vl-stmtlist-p x)
-                               (vl-pstate-p ps))
+   (declare (xargs :guard (vl-stmtlist-p x)
                    :stobjs ps
                    :measure (two-nats-measure (acl2-count x) 0)))
    (if (atom x)
@@ -2134,8 +1888,7 @@ code.)</p>"
 
  (defund vl-pp-cases-fn (exprs bodies ps)
    (declare (xargs :guard (and (vl-exprlist-p exprs)
-                               (vl-stmtlist-p bodies)
-                               (vl-pstate-p ps))
+                               (vl-stmtlist-p bodies))
                    :stobjs ps
                    :measure (two-nats-measure (acl2-count bodies) 0)))
    (cond ((and (atom exprs)
@@ -2144,7 +1897,8 @@ code.)</p>"
          ((or (atom exprs)
               (atom bodies))
           (progn$ (er hard? 'vl-pp-cases-fn
-                      "Case statement with different number of match expressions and bodies???")
+                      "Case statement with different number of match ~
+                       expressions and bodies???")
                   ps))
          (t
           (vl-ps-seq (vl-pp-stmt-autoindent)
@@ -2159,357 +1913,262 @@ code.)</p>"
                                 (vl-pp-stmtlist-fn . list)
                                 (vl-pp-cases-fn . case)))
 
-(defthm-flag-vl-pp-stmt-fn vl-pstate-p-of-flag-vl-pp-stmt-fn
-  (defthm vl-pstate-p-of-vl-pp-stmt
-    (implies (and (force (vl-stmt-p x))
-                  (force (vl-pstate-p ps)))
-             (vl-pstate-p (vl-pp-stmt x)))
-    :flag stmt)
-  (defthm vl-pstate-p-of-vl-pp-stmtlist
-    (implies (and (force (vl-stmtlist-p x))
-                  (force (vl-pstate-p ps)))
-             (vl-pstate-p (vl-pp-stmtlist x)))
-    :flag list)
-  (defthm vl-pstate-p-of-vl-pp-cases
-    (implies (and (force (vl-exprlist-p exprs))
-                  (force (vl-stmtlist-p bodies))
-                  (force (vl-pstate-p ps)))
-             (vl-pstate-p (vl-pp-cases exprs bodies)))
-    :flag case)
-  :hints(("Goal"
-          :expand ((vl-pp-stmt-fn x ps)
-                   (vl-pp-stmtlist-fn x ps)
-                   (vl-pp-cases-fn exprs bodies ps)))))
-
 (verify-guards vl-pp-stmt-fn)
 
+(define vl-pp-always ((x vl-always-p) &key (ps 'ps))
+  (b* (((vl-always x) x))
+    (vl-ps-seq (vl-print "  ")
+               (if x.atts (vl-pp-atts x.atts) ps)
+               (vl-ps-span "vl_key" (vl-print "always "))
+               (vl-pp-stmt x.stmt))))
 
+(define vl-pp-alwayslist ((x vl-alwayslist-p) &key (ps 'ps))
+  (if (atom x)
+      ps
+    (vl-ps-seq (vl-pp-always (car x))
+               (vl-println "")
+               (vl-pp-alwayslist (cdr x)))))
 
-(defpp vl-pp-always (x)
-  :guard (vl-always-p x)
-  :body (b* (((vl-always x) x))
-          (vl-ps-seq (vl-print "  ")
-                     (if x.atts (vl-pp-atts x.atts) ps)
-                     (vl-ps-span "vl_key" (vl-print "always "))
-                     (vl-pp-stmt x.stmt))))
+(define vl-pp-initial ((x vl-initial-p) &key (ps 'ps))
+  (b* (((vl-initial x) x))
+    (vl-ps-seq (vl-print "  ")
+               (if x.atts (vl-pp-atts x.atts) ps)
+               (vl-ps-span "vl_key" (vl-print "initial "))
+               (vl-pp-stmt x.stmt)
+               (vl-println ""))))
 
-(defpp vl-pp-alwayslist (x)
-  :guard (vl-alwayslist-p x)
-  :body (if (consp x)
-            (vl-ps-seq (vl-pp-always (car x))
-                       (vl-println "")
-                       (vl-pp-alwayslist (cdr x)))
-          ps))
+(define vl-pp-initiallist ((x vl-initiallist-p) &key (ps 'ps))
+  (if (atom x)
+      ps
+    (vl-ps-seq (vl-pp-initial (car x))
+               (vl-println "")
+               (vl-pp-initiallist (cdr x)))))
 
-(defpp vl-pp-initial (x)
-  :guard (vl-initial-p x)
-  :body (b* (((vl-initial x) x))
-          (vl-ps-seq (vl-print "  ")
-                     (if x.atts (vl-pp-atts x.atts) ps)
-                     (vl-ps-span "vl_key" (vl-print "initial "))
-                     (vl-pp-stmt x.stmt)
-                     (vl-println ""))))
+(define vl-pp-paramdecl ((x vl-paramdecl-p) &key (ps 'ps))
+  (b* (((vl-paramdecl x) x))
+    (vl-ps-seq (vl-print "  ")
+               (if x.atts
+                   (vl-ps-seq (vl-pp-atts x.atts)
+                              (vl-print " "))
+                 ps)
+               (vl-ps-span "vl_key"
+                           (if x.localp
+                               (vl-print "localparam ")
+                             (vl-print "parameter "))
+                           (case x.type
+                             (:vl-signed (vl-print "signed "))
+                             (:vl-integer (vl-print "integer "))
+                             (:vl-real (vl-print "real "))
+                             (:vl-time (vl-print "time "))
+                             (:vl-realtime (vl-print "realtime "))
+                             (otherwise ps)))
+               (if x.range
+                   (vl-ps-seq (vl-pp-range x.range)
+                              (vl-print " "))
+                 ps)
+               (vl-print-wirename x.name)
+               (vl-print " = ")
+               (vl-pp-expr x.expr)
+               (vl-println ";"))))
 
-(defpp vl-pp-initiallist (x)
-  :guard (vl-initiallist-p x)
-  :body (if (consp x)
-            (vl-ps-seq (vl-pp-initial (car x))
-                       (vl-println "")
-                       (vl-pp-initiallist (cdr x)))
-          ps))
+(define vl-pp-paramdecllist ((x vl-paramdecllist-p) &key (ps 'ps))
+  (if (atom x)
+      ps
+    (vl-ps-seq (vl-pp-paramdecl (car x))
+               (vl-pp-paramdecllist (cdr x)))))
 
-(defpp vl-pp-paramdecl (x)
-  :guard (vl-paramdecl-p x)
-  :body (b* (((vl-paramdecl x) x))
-          (vl-ps-seq
-           (vl-print "  ")
-           (if x.atts
-               (vl-ps-seq (vl-pp-atts x.atts)
-                          (vl-print " "))
-             ps)
-           (vl-ps-span
-            "vl_key"
-            (if x.localp
-                (vl-print "localparam ")
-              (vl-print "parameter "))
-            (case x.type
-              (:vl-signed (vl-print "signed "))
-              (:vl-integer (vl-print "integer "))
-              (:vl-real (vl-print "real "))
-              (:vl-time (vl-print "time "))
-              (:vl-realtime (vl-print "realtime "))
-              (otherwise ps)))
-           (if x.range
-               (vl-ps-seq (vl-pp-range x.range)
-                          (vl-print " "))
-             ps)
-           (vl-print-wirename x.name)
-           (vl-print " = ")
-           (vl-pp-expr x.expr)
-           (vl-println ";"))))
-
-(defpp vl-pp-paramdecllist (x)
-  :guard (vl-paramdecllist-p x)
-  :body (if (consp x)
-            (vl-ps-seq (vl-pp-paramdecl (car x))
-                       (vl-pp-paramdecllist (cdr x)))
-          ps))
-
-
-
-(defpp vl-pp-blockitem (x)
-  :guard (vl-blockitem-p x)
-  :body
+(define vl-pp-blockitem ((x vl-blockitem-p) &key (ps 'ps))
   (case (tag x)
     (:vl-regdecl   (vl-pp-regdecl x))
     (:vl-vardecl   (vl-pp-vardecl x))
     (:vl-eventdecl (vl-println "// BOZO implement eventdecl printing"))
     (:vl-paramdecl (vl-pp-paramdecl x))
-    (otherwise
-     (prog2$ (er hard 'vl-pp-blockitem "Impossible")
-             ps))))
+    (otherwise     (progn$ (impossible) ps))))
 
-(defpp vl-pp-blockitemlist (x)
-  :guard (vl-blockitemlist-p x)
-  :body (if (consp x)
-            (vl-ps-seq (vl-pp-blockitem (car x))
-                       (vl-pp-blockitemlist (cdr x)))
-          ps))
+(define vl-pp-blockitemlist ((x vl-blockitemlist-p) &key (ps 'ps))
+  (if (atom x)
+      ps
+    (vl-ps-seq (vl-pp-blockitem (car x))
+               (vl-pp-blockitemlist (cdr x)))))
 
-
-(defsection vl-taskporttype-string
+(define vl-taskporttype-string ((x vl-taskporttype-p))
+  :returns (str stringp :rule-classes :type-prescription)
   :parents (vl-taskporttype-p)
   :short "@(call vl-taskporttype-string) returns a string describing this
 function type, for pretty-printing."
+  :long "<p>We just return the empty string for @(':vl-unsigned'), but it seems
+like it would be valid to print @('reg').</p>"
+  :guard-hints (("Goal" :in-theory (enable vl-taskporttype-p)))
+  (case x
+    (:vl-unsigned "")
+    (:vl-signed   "signed")
+    (:vl-integer  "integer")
+    (:vl-real     "real")
+    (:vl-realtime "realtime")
+    (:vl-time     "time")
+    (otherwise    (progn$ (impossible) ""))))
 
-  :long "<p>We just return the empty don't print anything for
-@(':vl-unsigned'), but it seems like it would be valid to print @('reg').</p>"
+(define vl-pp-taskport ((x vl-taskport-p) &key (ps 'ps))
+  (b* (((vl-taskport x) x)
+       (typestr (vl-taskporttype-string x.type))
+       (dirstr  (vl-direction-string x.dir)))
+    (vl-ps-seq (vl-print "  ")
+               (if x.atts
+                   (vl-ps-seq (vl-pp-atts x.atts)
+                              (vl-print " "))
+                 ps)
+               (vl-ps-span "vl_key"
+                           (vl-print-str dirstr)
+                           (vl-print " ")
+                           (vl-print-str typestr)
+                           (if (equal typestr "")
+                               ps
+                             (vl-print " ")))
+               (if x.range
+                   (vl-ps-seq (vl-pp-range x.range)
+                              (vl-print " "))
+                 ps)
+               (vl-print-wirename x.name))))
 
-  (local (in-theory (enable vl-taskporttype-p)))
+(define vl-pp-taskportlist ((x vl-taskportlist-p) &key (ps 'ps))
+  (if (atom x)
+      ps
+    (vl-ps-seq (vl-pp-taskport (car x))
+               (vl-println " ;")
+               (vl-pp-taskportlist (cdr x)))))
 
-  (defund vl-taskporttype-string (x)
-    (declare (xargs :guard (vl-taskporttype-p x)))
-    (case x
-      (:vl-unsigned "")
-      (:vl-signed   "signed")
-      (:vl-integer  "integer")
-      (:vl-real     "real")
-      (:vl-realtime "realtime")
-      (:vl-time     "time")
-      (otherwise
-       (prog2$ (er hard 'vl-taskporttype-string "Provably impossible")
-               ""))))
-
-  (local (in-theory (enable vl-taskporttype-string)))
-
-  (defthm stringp-of-vl-taskporttype-string
-    (stringp (vl-taskporttype-string x))
-    :rule-classes :type-prescription))
-
-
-(defpp vl-pp-taskport (x)
-  :guard (vl-taskport-p x)
-  :body (b* (((vl-taskport x) x)
-             (typestr (vl-taskporttype-string x.type))
-             (dirstr  (vl-direction-string x.dir)))
-          (vl-ps-seq
-           (vl-print "  ")
-           (if x.atts
-               (vl-ps-seq (vl-pp-atts x.atts)
-                          (vl-print " "))
-             ps)
-           (vl-ps-span "vl_key"
-                       (vl-print-str dirstr)
-                       (vl-print " ")
-                       (vl-print-str typestr)
-                       (if (equal typestr "")
-                           ps
-                         (vl-print " ")))
-           (if x.range
-               (vl-ps-seq (vl-pp-range x.range)
-                          (vl-print " "))
-             ps)
-           (vl-print-wirename x.name))))
-
-(defpp vl-pp-taskportlist (x)
-  :guard (vl-taskportlist-p x)
-  :body (if (atom x)
-            ps
-          (vl-ps-seq (vl-pp-taskport (car x))
-                     (vl-println " ;")
-                     (vl-pp-taskportlist (cdr x)))))
-
-(defpp vl-pp-fundecl (x)
-  :guard (vl-fundecl-p x)
+(define vl-pp-fundecl ((x vl-fundecl-p) &key (ps 'ps))
   ;; We print these off using "variant 1" style (see parse-functions)
-  :body (b* (((vl-fundecl x) x)
-             (typestr (vl-taskporttype-string x.rtype)))
-          (vl-ps-seq
-           (vl-print "  ")
-           (if x.atts
-               (vl-ps-seq (vl-pp-atts x.atts)
-                          (vl-print " "))
-             ps)
-           (vl-ps-span "vl_key"
-                       (vl-print "function ")
-                       (if x.automaticp
-                           (vl-print "automatic ")
-                         ps)
-                       (vl-print-str typestr)
-                       (if (equal typestr "")
-                           ps
-                         (vl-print " ")))
-           (if x.rrange
-               (vl-ps-seq (vl-pp-range x.rrange)
-                          (vl-print " "))
-             ps)
-           (vl-print-wirename x.name)
-           (vl-println ";")
-           (vl-pp-taskportlist x.inputs)
-           (vl-pp-blockitemlist x.decls)
-           (vl-print "  ")
-           (vl-pp-stmt x.body)
-           (vl-basic-cw "~|")  ;; newline only if necessary
-           (vl-print "  ")
-           (vl-ps-span "vl_key" (vl-print "endfunction"))
-           (vl-println ""))))
+  (b* (((vl-fundecl x) x)
+       (typestr (vl-taskporttype-string x.rtype)))
+    (vl-ps-seq (vl-print "  ")
+               (if x.atts
+                   (vl-ps-seq (vl-pp-atts x.atts)
+                              (vl-print " "))
+                 ps)
+               (vl-ps-span "vl_key"
+                           (vl-print "function ")
+                           (if x.automaticp
+                               (vl-print "automatic ")
+                             ps)
+                           (vl-print-str typestr)
+                           (if (equal typestr "")
+                               ps
+                             (vl-print " ")))
+               (if x.rrange
+                   (vl-ps-seq (vl-pp-range x.rrange)
+                              (vl-print " "))
+                 ps)
+               (vl-print-wirename x.name)
+               (vl-println ";")
+               (vl-pp-taskportlist x.inputs)
+               (vl-pp-blockitemlist x.decls)
+               (vl-print "  ")
+               (vl-pp-stmt x.body)
+               (vl-basic-cw "~|") ;; newline only if necessary
+               (vl-print "  ")
+               (vl-ps-span "vl_key" (vl-print "endfunction"))
+               (vl-println ""))))
 
-(defpp vl-pp-fundecllist (x)
-  :guard (vl-fundecllist-p x)
-  :body (if (atom x)
-            ps
-          (vl-ps-seq (vl-pp-fundecl (car x))
-                     (vl-println "")
-                     (vl-pp-fundecllist (cdr x)))))
+(define vl-pp-fundecllist ((x vl-fundecllist-p) &key (ps 'ps))
+  (if (atom x)
+      ps
+    (vl-ps-seq (vl-pp-fundecl (car x))
+               (vl-println "")
+               (vl-pp-fundecllist (cdr x)))))
 
+(define vl-pp-taskdecl ((x vl-taskdecl-p) &key (ps 'ps))
+  (b* (((vl-taskdecl x) x))
+    (vl-ps-seq (vl-print "  ")
+               (if x.atts
+                   (vl-ps-seq (vl-pp-atts x.atts)
+                              (vl-print " "))
+                 ps)
+               (vl-ps-span "vl_key"
+                           (vl-print "task ")
+                           (if x.automaticp
+                               (vl-print "automatic ")
+                             ps))
+               (vl-print-wirename x.name)
+               (vl-println ";")
+               (vl-pp-taskportlist x.ports)
+               (vl-pp-blockitemlist x.decls)
+               (vl-print "  ")
+               (vl-pp-stmt x.body)
+               (vl-basic-cw "~|") ;; newline only if necessary
+               (vl-print "  ")
+               (vl-ps-span "vl_key" (vl-print "endtask"))
+               (vl-println ""))))
 
-(defpp vl-pp-taskdecl (x)
-  :guard (vl-taskdecl-p x)
-  :body (b* (((vl-taskdecl x) x))
-          (vl-ps-seq
-           (vl-print "  ")
-           (if x.atts
-               (vl-ps-seq (vl-pp-atts x.atts)
-                          (vl-print " "))
-             ps)
-           (vl-ps-span "vl_key"
-                       (vl-print "task ")
-                       (if x.automaticp
-                           (vl-print "automatic ")
-                         ps))
-           (vl-print-wirename x.name)
-           (vl-println ";")
-           (vl-pp-taskportlist x.ports)
-           (vl-pp-blockitemlist x.decls)
-           (vl-print "  ")
-           (vl-pp-stmt x.body)
-           (vl-basic-cw "~|")  ;; newline only if necessary
-           (vl-print "  ")
-           (vl-ps-span "vl_key" (vl-print "endtask"))
-           (vl-println ""))))
+(define vl-pp-taskdecllist ((x vl-taskdecllist-p) &key (ps 'ps))
+  (if (atom x)
+      ps
+    (vl-ps-seq (vl-pp-taskdecl (car x))
+               (vl-println "")
+               (vl-pp-taskdecllist (cdr x)))))
 
-(defpp vl-pp-taskdecllist (x)
-  :guard (vl-taskdecllist-p x)
-  :body (if (atom x)
-            ps
-          (vl-ps-seq (vl-pp-taskdecl (car x))
-                     (vl-println "")
-                     (vl-pp-taskdecllist (cdr x)))))
-
-
-(defpp vl-pp-module (x mods modalist)
+(define vl-pp-module
+  ((x    vl-module-p     "Module to pretty-print.")
+   (mods vl-modulelist-p "A list of all modules; only used for hyperlinking in
+                          HTML mode.")
+   (modalist (equal modalist (vl-modalist mods)))
+   &key (ps 'ps))
   :parents (verilog-printing)
   :short "Pretty-print a module to @(see ps)."
+  :long "<p>You might instead want to use @(see vl-ppc-module), which preserves
+the order of module elements and its comments.  For interactive use, you may
+want @(see vl-pps-module) or @(see vl-ppcs-module), which write to a string
+instead of @(see ps).</p>"
+  (b* (((vl-module x) x))
+    (vl-ps-seq (vl-pp-set-portnames x.portdecls)
+               (if x.atts (vl-pp-atts x.atts) ps)
+               (vl-ps-span "vl_key" (vl-print "module "))
+               (if (vl-ps->htmlp)
+                   (vl-pp-modulename-link x.name mods modalist)
+                 (vl-print-modname x.name))
+               (vl-print " (")
+               (vl-pp-portlist x.ports)
+               (vl-println ");")
+               (vl-pp-paramdecllist x.paramdecls)
+               (vl-pp-portdecllist x.portdecls)
+               (vl-pp-regdecllist x.regdecls)
+               (vl-pp-netdecllist x.netdecls)
+               (vl-pp-vardecllist x.vardecls)
+               (if (not x.eventdecls)
+                   ps
+                 (vl-println "// BOZO implement eventdecl printing"))
+               (vl-pp-fundecllist x.fundecls) ;; put them here, so they can refer to declared wires
+               (vl-pp-taskdecllist x.taskdecls)
+               (vl-pp-assignlist x.assigns)
+               (vl-pp-modinstlist x.modinsts mods modalist)
+               (vl-pp-gateinstlist x.gateinsts)
+               (vl-pp-alwayslist x.alwayses)
+               (vl-pp-initiallist x.initials)
+               (vl-ps-span "vl_key" (vl-println "endmodule"))
+               (vl-println ""))))
 
-  :long "<p>@(call vl-pp-module) extends @(see ps) with a pretty-printed
-representation of the module @('x').</p>
-
-<p>You may prefer @(see vl-ppc-module), which preserves the order of module
-elements and its comments.  For interactive use, you may prefer @(see
-vl-pps-module) or @(see vl-ppcs-module), which write to a string instead of
-@(see ps).</p>
-
-<p>The @('mods') here should be the list of all modules and @('modalist') is
-its @(see vl-modalist); these arguments are only needed for hyperlinking to
-submodules in HTML mode.</p>"
-
-  :guard (and (vl-module-p x)
-              (vl-modulelist-p mods)
-              (equal modalist (vl-modalist mods)))
-  :body (b* (((vl-module x) x))
-          (vl-ps-seq
-           (vl-pp-set-portnames x.portdecls)
-           (if x.atts (vl-pp-atts x.atts) ps)
-           (vl-ps-span "vl_key" (vl-print "module "))
-           (if (vl-ps->htmlp)
-               (vl-pp-modulename-link x.name mods modalist)
-             (vl-print-modname x.name))
-           (vl-print " (")
-           (vl-pp-portlist x.ports)
-           (vl-println ");")
-           (vl-pp-paramdecllist x.paramdecls)
-           (vl-pp-portdecllist x.portdecls)
-           (vl-pp-regdecllist x.regdecls)
-           (vl-pp-netdecllist x.netdecls)
-           (vl-pp-vardecllist x.vardecls)
-           (if (not x.eventdecls)
-               ps
-             (vl-println "// BOZO implement eventdecl printing"))
-           (vl-pp-fundecllist x.fundecls) ;; put them here, so they can refer to declared wires
-           (vl-pp-taskdecllist x.taskdecls)
-           (vl-pp-assignlist x.assigns)
-           (vl-pp-modinstlist x.modinsts mods modalist)
-           (vl-pp-gateinstlist x.gateinsts)
-           (vl-pp-alwayslist x.alwayses)
-           (vl-pp-initiallist x.initials)
-           (vl-ps-span "vl_key" (vl-println "endmodule"))
-           (vl-println ""))))
-
-
-(defsection vl-pps-module
+(define vl-pps-module ((x vl-module-p))
+  :returns (str stringp :rule-classes :type-prescription)
   :parents (verilog-printing)
   :short "Pretty-print a module to a plain-text string."
-
   :long "<p>@(call vl-pps-module) pretty-prints the @(see vl-module-p) @('x')
 into a plain-text string.  You may prefer @(see vl-ppcs-module) which preserves
 the order of module elements and its comments.</p>"
+  ;; We exploit the fact that the mods/modalist are only needed in HTML mode to
+  ;; avoid generating it or requiring it as an argument.
+  (with-local-ps (vl-pp-module x nil nil)))
 
-  (defund vl-pps-module (x)
-    (declare (xargs :guard (vl-module-p x)))
-    ;; We exploit the fact that the modalist is only needed in HTML mode
-    ;; to avoid generating it or requiring it as an argument.
-    (with-local-ps (vl-pp-module x nil nil)))
+(define vl-pp-modulelist ((x vl-modulelist-p) &key (ps 'ps))
+  (if (atom x)
+      ps
+    (vl-ps-seq (vl-pp-module (car x) nil nil)
+               (vl-pp-modulelist (cdr x)))))
 
-  (defthm stringp-of-vl-pps-module
-    (stringp (vl-pps-module x))
-    :rule-classes :type-prescription
-    :hints(("Goal" :in-theory (enable vl-pps-module)))))
-
-
-
-(defpp vl-pp-modulelist (x)
-  :guard (vl-modulelist-p x)
-  :body (if (consp x)
-            (vl-ps-seq (vl-pp-module (car x) nil nil)
-                       (vl-pp-modulelist (cdr x)))
-          ps))
-
-
-(defsection vl-pps-modulelist
+(define vl-pps-modulelist ((x vl-modulelist-p))
+  :returns (str stringp :rule-classes :type-prescription)
   :parents (verilog-printing)
   :short "Pretty-print a list of modules to a plain-text string."
-
   :long "<p>See also @(see vl-ppcs-modulelist), which preserves the order of
 module elements and its comments.</p>"
-
-  (defund vl-pps-modulelist (x)
-    (declare (xargs :guard (vl-modulelist-p x)))
-    (with-local-ps (vl-pp-modulelist x)))
-
-  (defthm stringp-of-vl-pps-modulelist
-    (stringp (vl-pps-modulelist x))
-    :rule-classes :type-prescription
-    :hints(("Goal" :in-theory (enable vl-pps-modulelist)))))
-
-
+  (with-local-ps (vl-pp-modulelist x)))
 
