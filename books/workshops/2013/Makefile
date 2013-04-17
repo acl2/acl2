@@ -7,10 +7,10 @@
 # Shilpi Goel, Warren Hunt and Matt Kaufmann
 # Abstract Stobjs and Their Application to ISA Modeling
 
-########## Waiting for possible supporting materials: ##########
-
 # Bernard van Gastel and Julien Schmaltz
 # A formalisation of xMAS
+
+########## Waiting for possible supporting materials: ##########
 
 # Freek Verbeek and Julien Schmaltz
 # Verification of Building Blocks for Asynchronous Circuits
@@ -45,6 +45,7 @@
 ##############################
 
 DIRS =  goel-hunt-kaufmann/support \
+	van-gastel-schmaltz/books
 
 include ../../Makefile-psubdirs
 
