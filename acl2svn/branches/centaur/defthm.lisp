@@ -4789,13 +4789,13 @@
                   (ev (fn x mfc state) a)))
   ~ev[]
   where the restrictions are as described in the ~il[documentation] for
-  ~ilc[meta] and, in addition, ~c[mfc] and ~c[state] are distinct variable
-  symbols (different also from ~c[x] and ~c[a]) and ~c[state] is literally the
-  symbol ~c[STATE].  A ~c[:meta] theorem of the above form installs ~c[fn] as a
-  metatheoretic simplifier with hypothesis function ~c[hyp-fn], exactly as for
-  vanilla metafunctions.  The only difference is that when the metafunctions
-  are applied, some contextual information is passed in via the ~c[mfc]
-  argument and the ACL2 ~ilc[state] is made available.
+  ~ilc[meta] where ~c[state] is literally the symbol ~c[STATE], and ~c[x],
+  ~c[a], ~c[mfc], and ~c[state] are distinct variable symbols.  A ~c[:meta]
+  theorem of the above form installs ~c[fn] as a metatheoretic simplifier with
+  hypothesis function ~c[hyp-fn], exactly as for vanilla metafunctions.  The
+  only difference is that when the metafunctions are applied, some contextual
+  information is passed in via the ~c[mfc] argument and the ACL2 ~ilc[state] is
+  made available.
 
   ~l[meta] for a discussion of vanilla flavored metafunctions.  This
   documentation assumes you are familiar with the simpler situation, in
@@ -4808,7 +4808,7 @@
 
   Additional hypotheses are supported, called ``meta-extract hypotheses'', that
   allow metafunctions to depend on the validity of certain terms extracted from
-  the context or the logical ~il[world].  These hypotheses provide a relatively
+  the context or the logical ~il[world].  These hypotheses provide an even more
   advanced form of metatheorem so we explain them elsewhere;
   ~pl[meta-extract].~/
 
@@ -4857,10 +4857,10 @@
   forward chaining from the (negations of the) other literals in the clause
   returned by ~c[mfc-clause].
 
-  ~c[(w state)]: returns the ACL2 logical ~ilc[world].
-
   ~c[(mfc-unify-subst mfc)]: returns the unifying substitution when evaluating
   a ~ilc[syntaxp] or ~ilc[bind-free] hypothesis, else returns ~c[nil].
+
+  ~c[(mfc-world mfc)]: returns the ACL2 logical ~ilc[world].
 
   ~c[(mfc-ts term mfc state :forcep forcep :ttreep ttreep)]: returns the
   ~c[type-set] of ~c[term] in the current context; ~pl[type-set].
@@ -5137,28 +5137,35 @@
 
   meta reasoning using valid terms extracted from context or ~il[world]~/
 
-  For this topic, we assume familiarity with metatheorems and
-  metafunctions (~pl[meta]).  The capability described here ~-[] so-called
-  ``meta-extract hypotheses'' for a ~c[:]~ilc[meta] or a
+  For this advanced topic, we assume familiarity with metatheorems and
+  metafunctions (~pl[meta]), as well as extended
+  metafunctions (~pl[extended-metafunctions]).  The capability described here
+  ~-[] so-called ``meta-extract hypotheses'' for a ~c[:]~ilc[meta] or a
   ~c[:]~ilc[clause-processor] rule ~-[] provides an advanced form of meta-level
-  reasoning that was largely designed by Sol Swords, who also provided a
-  preliminary implementation.
+  reasoning that was initially designed largely by Sol Swords, who also
+  provided a preliminary implementation.
 
-  A ~c[:meta] rule may now have hypotheses, known as ``meta-extract
-  hypotheses'', that take either of the following two forms.  Here ~c[evl] is
-  the evaluator, ~c[obj] is an arbitrary term, ~c[mfc] is the variable used as
-  the metafunction context (~pl[extended-metafunctions]), ~c[state] is
-  literally the symbol ~c[STATE], ~c[a] is the second argument of ~c[evl] in
-  both arguments of the conclusion of the rule, and ~c[aa] is an arbitrary
-  term.
+  A meta rule or clause-processor rule may have so-called ``meta-extract''
+  hypotheses that take forms displayed below.  Here ~c[evl] is the evaluator,
+  ~c[obj] is an arbitrary term, ~c[mfc] is the metafunction context (which is a
+  variable other than the symbol ~c[STATE] that represents the metafunction
+  context; ~pl[extended-metafunctions]), ~c[state] is literally the symbol
+  ~c[STATE], ~c[a] is the second argument of ~c[evl] in both arguments of the
+  conclusion of the rule, and ~c[aa] is an arbitrary term.
   ~bv[]
   (evl (meta-extract-contextual-fact obj mfc state) a)
-  (evl (meta-extract-global-fact obj state) aa))
+  (evl (meta-extract-global-fact obj state) aa)) ; equivalent to the next form
+  (evl (meta-extract-global-fact+ obj state state) aa)
+  (evl (meta-extract-global-fact+ obj st state) aa)
   ~ev[]
-  The second form is legal for rules of class ~c[:meta] and also for rules of
-  class ~c[:clause-processor].  However, the first form is not legal for
-  ~c[:clause-processor] rules, and for ~c[:meta] rules it is only allowed if
-  the metafunction is an extended metafunction.~/
+  The first form is only legal for ~c[:meta] rules for which the metafunction
+  is an extended metafunction.  The remaining forms are legal for both
+  ~c[:meta] rules and ~c[:clause-processor] rules.
+
+  Sol Swords has contributed a community book,
+  ~c[clause-processors/meta-extract-user.lisp], that uses a Skolemization trick
+  to allow one to use at most one ~c[meta-extract-global-fact+] hypothesis and
+  at most one ~c[meta-extract-contextual-fact] hypothesis.~/
 
   These additional hypotheses may be necessary in order to prove a proposed
   metatheorem or (for the second type of hypothesis above) clause-processor
@@ -5169,9 +5176,10 @@
   the rule is applied during a proof.  An argument for correctness of using
   meta-extract hypotheses is given in the ACL2 source code within a comment
   entitled ``Essay on Correctness of Meta Reasoning''.  In the documentation
-  below, we focus only on ~c[:]~ilc[meta] rules, since the use of
+  below, we focus primarily on ~c[:]~ilc[meta] rules, since the use of
   ~c[meta-extract-global-fact] hypotheses in ~c[:]~ilc[clause-processor] rules
-  is entirely analogous.  And for ~c[:meta] rules we focus not on the
+  is entirely analogous.  (At the end, though, we discuss the last of the four
+  forms displayed above.)  And for ~c[:meta] rules we focus not on the
   application of rules but, rather, on how the use of meta-extract hypotheses
   allow you to prove correctness of metafunctions that use facts from the
   logical ~il[world] or the metafunction context (mfc).
@@ -5199,9 +5207,9 @@
   ~ev[]
 
   The following example comes from the community book,
-  ~c[books/clause-processors/meta-extract-simple-test.lisp], which presents
-  very basic (and contrived) examples that nevertheless illustrate meta-extract
-  hypotheses.
+  ~c[books/clause-processors/meta-extract-simple-test.lisp] (after it defines
+  the evaluator), which presents very basic (and contrived) examples that
+  nevertheless illustrate meta-extract hypotheses.
   ~bv[]
   (defthm plus-identity-2-meta
     (implies (and (nthmeta-ev (meta-extract-global-fact '(:formula bar-posp)
@@ -5328,24 +5336,26 @@
   a keyword argument ~c[:forcep].  Calls of ~c[mfc-xx] functions made on behalf
   of ~c[meta-extract-contextual-fact] always use ~c[:forcep nil], so in order
   to reason about these calls in your own metafunctions, you will want to use
-  ~c[:forcep nil].  We are contemplating adding a utility like
+  ~c[:forcep nil].  We have contemplated adding a utility like
   ~c[meta-extract-contextual-fact] that allows forcing but returns a tag-tree
-  (~pl[ttree]).
+  (~pl[ttree]), and may do so if there is demand for it.
 
   Finally, we document what is provided logically by calls of
   ~c[meta-extract-global-fact] and ~c[meta-extract-contextual-fact].  Of
   course, you are invited to look at the definitions of these function in the
   ACL2 source code, or by using ~c[:]~ilc[pe].  Note that both of these
-  functions are non-executable (their bodies are inside a call of
-  ~ilc[non-exec]); their function is purely logical, not for execution.  The
+  functions are non-executable (each of their bodies is inside a call of
+  ~ilc[non-exec]); their purpose is purely logical, not for execution.  The
   functions return ~c[*t*], i.e., ~c[(quote t)], in cases that they provide no
   information.
 
   First we consider the value of ~c[(meta-extract-global-fact obj state)] for
-  various values of ~c[obj].
+  various values of ~c[obj].  When we refer below to concepts like ``body'' and
+  ``evaluation'', we refer to these with respect to the logical world of the
+  input ~c[state].
 
   ~bq[]
-  Case ~c[obj] = (list :formula FN):~nl[]
+  Case ~c[obj] = ~c[(list :formula FN)]:~nl[]
   The value reduces to the value of ~c[(meta-extract-formula FN state)], which
   returns the ``formula'' of ~c[FN] in the following sense.  If ~c[FN] is a
   function symbol with formals ~c[(X1 ... Xk)], then the formula is the
@@ -5355,7 +5365,7 @@
   if ~c[FN] is the name of a theorem, the formula is just what is stored for
   that theorem.  Otherwise, the formula is ~c[*t*].
 
-  Case ~c[obj] = (list :lemma FN N):~nl[]
+  Case ~c[obj] = ~c[(list :lemma FN N)]:~nl[]
   Assume ~c[N] is a natural number; otherwise, treat ~c[N] as 0.  If ~c[FN] is
   a function symbol with more than ~c[N] associated lemmas ~-[] ``associated''
   in the sense of being either a ~c[:]~ilc[definition] rule for ~c[FN] or a
@@ -5363,10 +5373,22 @@
   symbol of ~c[FN] ~-[] then the value is the ~c[N]th such lemma (with
   zero-based indexing).  Otherwise the value is ~c[*t*].
 
+  Case ~c[obj] = ~c[(list :fncall FN ARGLIST)]:~nl[]
+  Assume that ~c[FN] is a ~c[:]~ilc[logic]-mode function symbol and that
+  ~c[ARGLIST] is a true list of values of the same length as list of formal
+  parameters for ~c[FN] (i.e., as the input arity of ~c[FN]).  Also assume that
+  the application of ~c[FN] to actual parameter list ~c[ARGLIST] returns a
+  result ~c[(mv nil x)].  Let ~c[(QARG1 ... QARGk)] be the result of quoting
+  each element of ~c[ARGLIST], i.e., replacing each ~c[y] in ~c[ARGLIST] by the
+  two-element list ~c[(quote y)].  Then the value is the term
+  ~c[(equal (FN QARG1 ... QARGk) (quote x))].
+
   For any other values of ~c[obj], the value is ~c[*t*].~eq[]
 
-  Finally, the value of ~c[(meta-extract-contextual-fact obj mfc state)] 
-  is as follows for various values of ~c[obj].
+  Finally, the value of ~c[(meta-extract-contextual-fact obj mfc state)] is as
+  follows for various values of ~c[obj].  Note a difference from the semantics
+  of ~c[meta-extract-global-fact]: below, the relevant logical world is the one
+  stored in the metafunction context, ~c[mfc], not in the input ~c[state].
 
   ~bq[]
   Case ~c[obj] = (list :typeset TERM ...):~nl[]
@@ -5405,7 +5427,29 @@
   ~ev[]
   Otherwise the value is ~c[*t*].
 
-  If no case above applies, then the value is ~c[*t*].~eq[]~/")
+  If no case above applies, then the value is ~c[*t*].~eq[]
+
+  We conclude by considering the fourth of the four forms above (and
+  implicitly, its special case represented by the third form above):
+  ~bv[]
+  (evl (meta-extract-global-fact+ obj st state) aa)
+  ~ev[]
+  The discussion above is for the function ~c[meta-extract-global-fact+], but
+  assumes that the logical ~il[world]s of ~c[st] and ~c[state] are equal;
+  otherwise the value returned is ~c[*t*].  Of course, since a call of
+  ~c[meta-extract-global-fact] expands to a corresponding call of
+  ~c[meta-extract-global-fact+] in which the last two arguments are both
+  ~c[state], that condition holds automatically for that case.  But the
+  ~c[state] mentioned in the meta-extract hypotheses of a ~il[meta] rule or
+  ~il[clause-processor] rule is in essence an initial state.  In the case of a
+  clause-processor rule, the clause-processor function may modify that initial
+  state (say, by printing or modifying some state globals) without changing its
+  world, and then pass that modified state to ~c[fncall-term].  While
+  ~c[fncall-term] may produce a different result for this modified state than
+  for the initial state, both are valid: the state used for heuristic purposes,
+  such as determining whether guard-checking may cause an error.  A useful
+  instance of the hypothesis displayed above will be one in which ~c[st] is
+  that modified state.~/")
 
 (defun evaluator-clause/arglist (evfn formals x)
 
@@ -6190,14 +6234,25 @@
          (hs flg)
          (remove-meta-extract-contextual-hyps (cdr hyps) ev mfc-symbol a)
          (case-match hyp
-           ((!ev ('meta-extract-contextual-fact & !mfc-symbol 'state) !a)
+           ((!ev ('meta-extract-contextual-fact & !mfc-symbol
+
+; Note that meta-extract-contextual-fact calls mfc- functions, which get their
+; world from the mfc, not the state (at least as of this writing, on
+; 4/17/2013).  Thus, we believe that meta-extract-contextual-fact is correct
+; regardless of the state argument.  This belief allows us to loosen the
+; restriction that the state is 'state, and instead allow an arbitrary state
+; here.  But we keep the restriction that state is 'state; we may more
+; carefullly consider relaxing it upon request.
+
+                                                'state)
+                 !a)
             (mv hs t))
            (& (mv (cons hyp hs) flg))))))))
 
 (defun remove-meta-extract-global-hyps (hyps ev)
 
 ; Return (mv hyps' flg), where hyps' is the result of removing suitable
-; meta-extract-global-fact hypotheses from hyps and flg is true if and only if
+; meta-extract-global-fact+ hypotheses from hyps and flg is true if and only if
 ; at least one such hypothesis was removed.  Ev is the evaluator function
 ; symbol.  See also remove-meta-extract-contextual-hyps for an analogous
 ; function.
@@ -6210,7 +6265,7 @@
          (hs flg)
          (remove-meta-extract-global-hyps (cdr hyps) ev)
          (case-match hyp
-           ((!ev ('meta-extract-global-fact & 'state) &)
+           ((!ev ('meta-extract-global-fact+ & & 'state) &)
             (mv hs t))
            (& (mv (cons hyp hs) flg))))))))
 
@@ -6254,7 +6309,7 @@
                         fn)
                        (& nil)))))
             (append (and flg1 '(meta-extract-contextual-fact))
-                    (and flg2 '(meta-extract-global-fact)))))))))
+                    (and flg2 '(meta-extract-global-fact+)))))))))
 
 (defun meta-fn-args (term extendedp ens state)
   (cond
@@ -6563,7 +6618,7 @@
               (if (getprop ev 'predefined nil 'current-acl2-world wrld)
                   ev
                 ev-lst)
-              '(meta-extract-contextual-fact meta-extract-global-fact)))
+              '(meta-extract-contextual-fact meta-extract-global-fact+)))
          ((or ev-prop ev-lst-prop)
           (er soft ctx ; see comment in defaxiom-supporters
               "The proposed ~x0 rule, ~x1, is illegal because its evaluator ~
@@ -6605,8 +6660,8 @@
 
 ; Although we need bad-attached-fns-2 to be empty (see the Essay on Correctness
 ; of Meta Reasoning), we could at the very least store extra-anc in the world,
-; based on both meta-extract-contextual-fact and meta-extract-global-fact,
-; so that we don't have to compute extra-anc every time.  But that check is
+; based on both meta-extract-contextual-fact and meta-extract-global-fact+, so
+; that we don't have to compute extra-anc every time.  But that check is
 ; probably cheap, so we opt for simplicity.
 
                  (attached-fns (intersection-eq extra-anc meta-anc) wrld)))
@@ -10071,9 +10126,9 @@
 
   If a ~c[:]~ilc[rule-classes] specification includes ~c[:clause-processor],
   then the corresponding term must have the following form.  (Additional
-  ``meta-extract'' hypotheses'', not shown or discussed below, may be included
-  as desired in order to use facts from the logical ~ilc[world] to help prove
-  the rule; ~pl[meta-extract] for explanation of this advanced feature.)
+  ``meta-extract'' hypotheses, not shown or discussed below, may be included as
+  desired in order to use facts from the logical ~ilc[world] to help prove the
+  rule; ~pl[meta-extract] for explanation of this advanced feature.)
   ~bv[]
   (implies (and (pseudo-term-listp CL)
                 (alistp A)
@@ -10338,7 +10393,7 @@
                       (t (value nil))))
               (chk-evaluator-use-in-rule name cl-proc nil
                                          (and meta-extract-flg
-                                              '(meta-extract-global-fact))
+                                              '(meta-extract-global-fact+))
                                          :clause-processor
                                          ev ctx wrld state)
               (chk-rule-fn-guard "clause-processor" :clause-processor cl-proc
@@ -14295,7 +14350,7 @@
 ; ACL2 insists (in function chk-evaluator-use-in-rule) that the evaluator of a
 ; proposed :meta or :clause-processor rule is not ancestral in any defaxiom or
 ; in the definition of, or constraint on, the rule's metafunctions, nor is the
-; evaluator ancestral in meta-extract-global-fact and
+; evaluator ancestral in meta-extract-global-fact+ and
 ; meta-extract-contextual-fact if they are used in the rule.  Thus, when we
 ; imagine functionally instantiating the rule as discussed above, at the point
 ; of its application, the only relevant theorems for (i) above are the

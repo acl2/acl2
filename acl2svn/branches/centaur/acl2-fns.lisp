@@ -1219,6 +1219,13 @@ notation causes an error and (b) the use of ,. is not permitted."
   #+apple (return-from get-os :apple)
   #-(or unix apple mswindows) nil)
 
+(defmacro our-ignore-errors (x)
+  #+cltl2 `(ignore-errors ,x)
+  #-cltl2 x)
+
+(defmacro safe-open (&rest args)
+  `(our-ignore-errors (open ,@args)))
+
 (defun our-truename (filename &optional namestringp)
 
 ; For now, assume that namestringp is nil (or not supplied).
@@ -1367,7 +1374,7 @@ notation causes an error and (b) the use of ,. is not permitted."
            (pathname (concatenate 'string home "/")))))
    (t (pathname (user-homedir-pathname))))
   #-gcl ; presumably CLtL2
-  (ignore-errors (user-homedir-pathname)))
+  (our-ignore-errors (user-homedir-pathname)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;             SUPPORT FOR SERIALIZE INTEGRATION INTO ACL2
