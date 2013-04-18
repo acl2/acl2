@@ -9781,19 +9781,19 @@
 ; the user not to think about these classes per se.  It encourages a certain
 ; confusion, we think, because users want everything to be
 ; common-lisp-compliant and start thinking of it as a mode, sort of like "super
-; :logic" or something.  So we are keeping these names to ourselves by not using
-; them in error messages and documentation.  Typically used English phrases are
-; such and such is "compliant with Common Lisp" or "is not known to be
-; compliant with Common Lisp."
+; :logic" or something.  So we are keeping these names to ourselves by not
+; using them in error messages and documentation.  Typically used English
+; phrases are such and such is "compliant with Common Lisp" or "is not known to
+; be compliant with Common Lisp."
 
 ; Historical Note: :Program function symbols were once called "red", :ideal
 ; symbols were once called "blue", and :common-lisp-compliant symbols were once
 ; called "gold."
 
 ; Before we describe the storage scheme, let us make a few observations.
-; First, most function symbols have the :program symbol-class, because until ACL2
-; is admitted into the logic, the overwhelming majority of the function symbols
-; will be system functions.  Second, all :logic function symbols have
+; First, most function symbols have the :program symbol-class, because until
+; ACL2 is admitted into the logic, the overwhelming majority of the function
+; symbols will be system functions.  Second, all :logic function symbols have
 ; symbol-class :ideal or :common-lisp-compliant.  Third, this function,
 ; symbol-class, is most often applied to :logic function symbols, because most
 ; often we use it to sweep through the function symbols in a term before
@@ -9802,18 +9802,20 @@
 
 ; Therefore, our storage scheme is that every :logic function will have a
 ; symbol-class property that is either :ideal or :common-lisp-compliant.  We
-; will not store a symbol-class property for :program but just rely on the absence
-; of the property (and the fact that the symbol is recognized as a function
-; symbol) to default its symbol-class to :program.  Thus, system functions take no
-; space but are slow to answer.  Finally, theorems will generally have no
-; stored symbol-class (so it will default to :ideal for them) but when it is
-; stored it will be :common-lisp-compliant.
+; will not store a symbol-class property for :program but just rely on the
+; absence of the property (and the fact that the symbol is recognized as a
+; function symbol) to default its symbol-class to :program.  Thus, system
+; functions take no space but are slow to answer.  Finally, theorems will
+; generally have no stored symbol-class (so it will default to :ideal for them)
+; but when it is stored it will be :common-lisp-compliant.
 
 ; Note that the defun-mode of a symbol is actually determined by looking at its
 ; symbol-class.  We only store the symbol-class.  That is more often the
 ; property we need to look at.  But we believe it is simpler for the user to
 ; think in terms of :mode and :verify-guards.
 
+  (declare (xargs :guard (and (symbolp sym)
+                              (plist-worldp wrld))))
   (or (getprop sym 'symbol-class nil 'current-acl2-world wrld)
       (if (getprop sym 'theorem nil 'current-acl2-world wrld)
           :ideal

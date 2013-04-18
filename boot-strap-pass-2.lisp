@@ -47,6 +47,14 @@
 ;;; Miscellaneous verify-termination and guard verification
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+; cons-term and symbol-class -- at one point during development, used in
+; fncall-term, but anyhow, generally useful to have in logic mode
+
+(verify-termination-boot-strap quote-listp) ; and guards
+(verify-termination-boot-strap cons-term1) ; and guards
+(verify-termination-boot-strap cons-term) ; and guards
+(verify-termination-boot-strap symbol-class) ; and guards
+
 ; observation1-cw
 
 (verify-termination-boot-strap observation1-cw)
@@ -1067,7 +1075,7 @@
 
 (defund meta-extract-formula (name state)
 
-; This function supports meta-extract-global-fact.  It needs to be executable
+; This function supports meta-extract-global-fact+.  It needs to be executable
 ; and in :logic mode (hence, as required by the ACL2 build process,
 ; guard-verified), since it may be called by meta functions.
 
@@ -1139,12 +1147,15 @@
 
 ; This function is not intended to be executed.
 
-; This function may be evaled in the hypothesis of a meta rule, because we know
+; This function may be called in the hypothesis of a meta rule, because we know
 ; it always produces a term that evaluates to non-nil under the mfc where the
 ; metafunction is called, using the specific alist A for which we're proving
 ; (evl x a) = (evl (metafn x) a).  The terms it produces reflect the
 ; correctness of certain prover operations -- currently, accessing type-alist
-; and typeset information, rewriting, and linear arithmetic.
+; and typeset information, rewriting, and linear arithmetic.  See the Essay on
+; Correctness of Meta Reasoning.  Note that these operations use the state for
+; heuristic purposes, and get their logical information from the world stored
+; in mfc (not in state).
 
 ; This function avoids forcing and does not return a tag-tree.
 
@@ -1156,7 +1167,7 @@
       `(typespec-check
         ',(mfc-ts term mfc state :forcep nil :ttreep nil)
         ,term))
-     ((':rw+ term alist obj equiv . &) ; MFC-RW+ result is equiv to term/alist.
+     ((':rw+ term alist obj equiv . &) ; result is equiv to term/alist.
       (meta-extract-rw+-term term alist equiv
                              (mfc-rw+ term alist obj equiv mfc state
                                       :forcep nil :ttreep nil)
@@ -1192,29 +1203,64 @@
                 ,(access rewrite-rule x :lhs)
                 ,(access rewrite-rule x :rhs))))))
 
-(defun meta-extract-global-fact (obj state)
+(defmacro meta-extract-global-fact (obj state)
+; See meta-extract-global-fact+.
+   `(meta-extract-global-fact+ ,obj ,state ,state))
+
+(defun fncall-term (fn arglist state)
+  (declare (xargs :stobjs state))
+  (mv-let (erp val)
+          (magic-ev-fncall fn arglist state
+                           t   ; hard-error-returns-nilp
+                           nil ; aok
+                           )
+          (cond (erp *t*)
+                (t (fcons-term* 'equal
+
+; As suggested by Sol Swords, we use fcons-term below in order to avoid having
+; to reason about the application of an evaluator to (cons-term fn ...).
+
+                                (fcons-term fn (kwote-lst arglist))
+                                (kwote val))))))
+
+(defun logically-equivalent-states (st1 st2)
+   (declare (xargs :guard t))
+   (non-exec (equal (w st1) (w st2))))
+
+(defun meta-extract-global-fact+ (obj st state)
 
 ; This function is not intended to be executed.
 
-; This function may be evaled in the hypothesis of a meta rule, because we know
+; This function may be called in the hypothesis of a meta rule, because we know
 ; it always produces a term that evaluates to non-nil for any alist.  The terms
 ; it produces reflect the correctness of certain facts stored in the world.
+; See the Essay on Correctness of Meta Reasoning.
 
   (declare (xargs :mode :program ; becomes :logic with system-verify-guards
                   :stobjs state))
   (non-exec
-   (case-match obj
-     ((':formula name)
-      (meta-extract-formula name state))
-     ((':lemma fn n)
-      (let* ((lemmas (getprop fn 'lemmas nil 'current-acl2-world (w state)))
-             (rule (nth n lemmas)))
-        ;; This assumes that the LEMMAS property of any symbol in the ACL2 world
-        ;; is a list of rewrite-rule records which reflect known facts.
-        (if (< (nfix n) (len lemmas))
-            (rewrite-rule-term rule)
-          *t*))) ;; fn doesn't exist or n too big
-     (& *t*))))
+   (cond
+    ((logically-equivalent-states st state)
+     (case-match obj
+       ((':formula name)
+        (meta-extract-formula name st))
+       ((':lemma fn n)
+        (let* ((lemmas (getprop fn 'lemmas nil 'current-acl2-world (w st)))
+               (rule (nth n lemmas)))
+
+; The use of rewrite-rule-term below relies on the fact that the 'LEMMAS
+; property of a symbol in the ACL2 world is a list of rewrite-rule records that
+; reflect known facts.
+
+          (if (< (nfix n) (len lemmas))
+              (rewrite-rule-term rule)
+            *t*))) ; Fn doesn't exist or n is too big.
+       ((':fncall fn arglist)
+        (fncall-term fn arglist st))
+       (& *t*)))
+    (t *t*))))
+
+(add-macro-alias meta-extract-global-fact meta-extract-global-fact+)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;; Support for system-verify-guards
@@ -1305,8 +1351,6 @@
   '(("system/top"
      (ARGLISTP)
      (ARGLISTP1 LST)
-     (CONS-TERM)
-     (CONS-TERM1)
      (CONS-TERM1-MV2)
      (DUMB-NEGATE-LIT)
      (FETCH-DCL-FIELD)
@@ -1319,13 +1363,12 @@
      (LEGAL-VARIABLE-OR-CONSTANT-NAMEP)
      (LEGAL-VARIABLEP)
      (META-EXTRACT-CONTEXTUAL-FACT)
-     (META-EXTRACT-GLOBAL-FACT)
+     (META-EXTRACT-GLOBAL-FACT+)
      (META-EXTRACT-RW+-TERM)
      (MISSING-FMT-ALIST-CHARS)
      (MISSING-FMT-ALIST-CHARS1 CHAR-TO-TILDE-S-STRING-ALIST)
      (PLAUSIBLE-DCLSP LST)
      (PLAUSIBLE-DCLSP1 LST)
-     (QUOTE-LISTP L)
      (STRIP-DCLS LST)
      (STRIP-DCLS1 LST)
      (STRIP-KEYWORD-LIST LST)

@@ -1435,6 +1435,12 @@
 (defparameter *defun-overrides* nil)
 
 (defmacro defun-overrides (name formals &rest rest)
+
+; This is basically defun, for a function that takes the live state and has a
+; guard of t.  We push name onto *defun-overrides* so that add-trip knows to
+; leave the *1* definition in place.
+
+  (assert (member 'state formals :test 'eq))
   `(progn (push ',name *defun-overrides*) ; see add-trip
           (defun ,name ,formals
             ,@(butlast rest 1)
@@ -27945,6 +27951,7 @@
     mfc-rdepth ; *metafunction-context*
     mfc-type-alist ; *metafunction-context*
     mfc-unify-subst ; *metafunction-context*
+    mfc-world ; *metafunction-context*
     mfc-ap-fn ; under dependent clause-processor
     mfc-ap-ttree ; under dependent clause-processor
     mfc-relieve-hyp-fn ; under dependent clause-processor
@@ -27955,6 +27962,7 @@
     mfc-rw-ttree ; under dependent clause-processor
     mfc-ts-fn ; under dependent clause-processor
     mfc-ts-ttree ; under dependent clause-processor
+    magic-ev-fncall ; under dependent clause-processor
     never-memoize-fn
   ))
 
@@ -44930,33 +44938,29 @@
 
 ; (The second part of this essay is in ld.lisp.)
 
-; Historical Note: Metafunctions have traditionally taken just one
-; argument: the term to be simplified.  In 1999, Robert Krug, working
-; on arithmetic metafunctions, wished to call type-set from within a
-; metafunction.  This inspired the creation of what were called
-; ``extended metafunctions'' in contrast to the ``vanilla
-; metafunctions'' that had gone before.  (Originally, we used the name
-; ``tutti-frutti metafunctions'' but that seemed too silly.)  In June,
-; 1999, a patch supporting extended metafunctions in Version_2.4 was
-; given to Robert for experimental purposes.  He extended it and gave
-; it back in July, 2000.  It was integrated into Version_2.6 in July,
-; 2000.
+; Historical Note: Metafunctions have traditionally taken just one argument:
+; the term to be simplified.  In 1999, Robert Krug, working on arithmetic
+; metafunctions, wished to call type-set from within a metafunction.  This
+; inspired the creation of what were called ``extended metafunctions'' in
+; contrast to the ``vanilla metafunctions'' that had gone before.  (Originally,
+; we used the name ``tutti-frutti metafunctions'' but that seemed too silly.)
+; In June, 1999, a patch supporting extended metafunctions in Version_2.4 was
+; given to Robert for experimental purposes.  He extended it and gave it back
+; in July, 2000.  It was integrated into Version_2.6 in July, 2000.
 
-; Historical Note 2: Previous to Version_2.7 the functions below could
-; only be used in the context of a metafunction.  As per a suggestion
-; by Eric Smith, and incorporating an implementation provided by
-; Robert Krug, they can now be called from within a syntaxp or
-; bind-free hypothesis.  We refer to a function that appears in one
-; of these three contexts as a meta-level function.  However, we still
-; continue to use the term metafunction context, even though this is
-; somewhat inconsistent.
+; Historical Note 2: Previous to Version_2.7 the functions below could only be
+; used in the context of a metafunction.  As per a suggestion by Eric Smith,
+; and incorporating an implementation provided by Robert Krug, they can now be
+; called from within a syntaxp or bind-free hypothesis.  We refer to a function
+; that appears in one of these three contexts as a meta-level function.
+; However, we still continue to use the term metafunction context, even though
+; this is somewhat inconsistent.
 
-; We wish to allow the user to call certain theorem proving functions,
-; like type-set and rewrite, from within meta-level functions, without
-; defining those functions logically.  We provide uninterpreted
-; function symbols, e.g., mfc-ts and mfc-rw+, for this purpose and
-; arrange for them to be type-set and rewrite within the context of a
-; meta-level function's execution.
+; We wish to allow the user to call certain theorem proving functions, like
+; type-set and rewrite, from within meta-level functions, without defining
+; those functions logically.  We provide uninterpreted function symbols, e.g.,
+; mfc-ts and mfc-rw+, for this purpose and arrange for them to be type-set and
+; rewrite within the context of a meta-level function's execution.
 
 ; Notes:
 ; 1. There are two kinds of functions with the prefix ``mfc-''.
@@ -44966,84 +44970,84 @@
 ;    * uninterpreted functions with execution-only-in-meta-level-functions
 ;      semantics.  Example: mfc-ts.
 
-;    The user may be unaware that these are two different classes of
-;    symbols.  But the first is axiomatized and the second is not.
+;    The user may be unaware that these are two different classes of symbols.
+;    But the first is given explicit axioms and the second is not.
 
-; 2. If a new function is added, functions of the first type are
-;    preferred because they are what they seem.  Such functions are
-;    defined here in axioms.lisp.
+; 2. If a new function is added, functions of the first type are preferred
+;    because they are what they seem.  Such functions are defined here in
+;    axioms.lisp.
 
-; 3. Functions of the second type are defstub'd and defined in raw
-;    Lisp at the end of ld.lisp.
+; 3. Functions of the second type are introduced with unknown constraints from
+;    a define-trusted-clause-processor event, and are defined in raw
+;    Lisp using the defun-overrides mechanism.
 
-; In the next four paragraphs, we typically refer only to
-; metafunctions, but most of the below applies to meta-level functions
-; generally.
+; In the next four paragraphs, we typically refer only to metafunctions, but
+; most of the below applies to meta-level functions generally.
 
-; Because these uninterpreted functions have no axiomatic constraints
-; on them, they can only be used to make heuristic choices between
-; correct alternative transformations within the metafunction.
-; Practically speaking, the metatheorem stating the correctness of a
-; metafunction is proved in the absence of any axioms about mfc-tc and
-; mfc-rw+.
+; Originally, these uninterpreted functions were essentially defstubs,
+; logically, and were only to be used to make heuristic choices between correct
+; alternative transformations within the metafunction.  That is, practically
+; speaking, the metatheorem stating the correctness of a metafunction was
+; proved in the absence of any axioms about mfc-tc and mfc-rw+.  Now we have
+; meta-extract-contextual-fact available for reasoning about these functions;
+; see :DOC meta-extract.
 
-; Metafunctions providing this additional capability are called
-; extended metafunctions and can be recognized by having more than
-; one argument.  We still support vanilla flavored, one argument,
-; metafunctions.
+; Metafunctions providing this additional capability are called extended
+; metafunctions and can be recognized by having more than one argument.  We
+; still support vanilla flavored, one argument, metafunctions.
 
-; It is necessary to pass ``type-set'' and ``rewrite'' (really, mfc-ts
-; and mfc-rw+) additional arguments, arguments not available to vanilla
-; metafunctions, like the type-alist, the simplify-clause-pot-lst,
-; etc.  To make this convenient, we will bundle these arguments up
-; into a record structure called the metafunction-context (``mfc'').
-; When an extended metafunction is called from within the rewriter,
-; we will construct a suitable record and pass it into the
-; metafunction in the appropriate argument position.  We give the user
-; functions, e.g., mfc-clause, to access parts of this structure; we
-; could provide functions for every component but in fact only provide
-; the ones Robert Krug has needed so far.  But in general the user
-; could access the context arbitrarily with cars and cdrs from within
-; the metafunction and there is nothing we can do to hide its actual
-; structure.  Indeed, there is no reason to do so.  The required
-; metatheorem does not constrain that argument at all, so nothing but
-; heuristic decisions can be made on the basis of what we actually
-; pass in.
+; It is necessary to pass ``type-set'' and ``rewrite'' (really, mfc-ts and
+; mfc-rw+) additional arguments, arguments not available to vanilla
+; metafunctions, like the type-alist, the simplify-clause-pot-lst, etc.  To
+; make this convenient, we will bundle these arguments up into a record
+; structure called the metafunction-context (``mfc'').  When an extended
+; metafunction is called from within the rewriter, we will construct a suitable
+; record and pass it into the metafunction in the appropriate argument
+; position.  We give the user functions, e.g., mfc-clause, to access parts of
+; this structure; we could provide functions for every component but in fact
+; only provide the ones Robert Krug has needed so far.  But in general the user
+; could access the context arbitrarily with cars and cdrs from within the
+; metafunction and there is nothing we can do to hide its actual structure.
+; Indeed, there is no reason to do so.  The required metatheorem does not
+; constrain that argument at all, so nothing but heuristic decisions can be
+; made on the basis of what we actually pass in.
 
-; The main use of the metafunction-context is to pass into mfc-ts and
-; mfc-rw+ (and mfc-rw).  By having them be uninterpreted we ensure
-; that the metatheorem's validity ensures the soundness of the
-; extended system.  But if they are uninterpreted, how do we execute
-; them?  We give them each a STATE argument.  Their executable
-; counterparts run only on the live state.  The live state cannot be a
-; value in a theorem.  So these functions are uninterpreted there.
-; When a metafunction is called in the theorem prover, the live state
-; is passed in, to be used to authorize the functions to execute.
-; Thus, these uninterpreted functions must be provided a STATE
-; argument even if they would not otherwise need it.  Mfc-ts is an
-; example of a function that has an otherwise unneeded STATE argument:
-; type-set does not need state.
+; The main use of the metafunction-context is to pass into mfc-ts and mfc-rw+
+; (and mfc-rw).  We execute them only on a live STATE argument, so that
+; execution results are explained by the implicit axioms on these functions;
+; see the discussion of meta-extract-contextual-fact in the Essay on
+; Correctness of Meta Reasoning.  Before the introduction of
+; meta-extract-contextual-fact, it was necessary to insist on a live state
+; argument, for correctness.  Now it may well be sufficient to insist only that
+; the mfc argument is the raw-Lisp *metafunction-context*, which holds a
+; suitable logical world used by these mfc-xx functions.  But here is our
+; thinking prior to the addition of meta-extract-contextual-fact.
 
-; This arrangment allows for these functions to be called by the user
-; in top-level calls.  This is ok; it even allows the meta-level function to
-; be tested, with some tedium.
+;   The live state cannot be a value in a theorem.  So these functions are
+;   uninterpreted there.  When a metafunction is called in the theorem prover,
+;   the live state is passed in, to be used to authorize the functions to
+;   execute.  Thus, these uninterpreted functions must be provided a STATE
+;   argument even if they would not otherwise need it.  Mfc-ts is an example of
+;   a function that has an otherwise unneeded STATE argument: type-set does not
+;   need state.
 
-; But that raises a new question: How do we know that the context
-; passed into the meta-level function will permit type-set and rewrite to
-; execute without error?  How do we know that such complicated
-; components as the world, the type-alist, and simplify-clause-pot-lst
-; are well-formed?  One way would be to formalize guards on all the
-; theorem prover's functions and require guard proofs on
-; metafunctions.  But the system is not ready for that yet.  (We
-; believe we know the guards for our functions, but we have never
-; written them down formally.)
+; How do we know that the context passed into the meta-level function will
+; permit type-set and rewrite to execute without error?  How do we know that
+; such complicated components as the world, the type-alist, and
+; simplify-clause-pot-lst are well-formed?  One way would be to formalize
+; guards on all the theorem prover's functions and require guard proofs on
+; metafunctions.  But the system is not ready for that yet.  (We believe we
+; know the guards for our functions, but we have never written them down
+; formally.)
 
-; To ensure that the metafunction context is well-formed we refuse to
-; execute unless the context is EQ to the one created by rewrite when
-; it calls the meta-level function.  Sensible errors are generated otherwise.
-; When rewrite generates a context, it binds the Lisp special
-; *metafunction-context* to the context, to permit this check.  That
-; special has value NIL outside meta-level functions.
+; To ensure that the metafunction context is well-formed (and also for the
+; logical reason mentioned above, where we using implicit axioms on mfc-xx
+; functions to justify meta-extract-contextual-fact hypotheses in meta rules),
+; we refuse to execute unless the context is EQ to the one created by rewrite
+; when it calls the meta-level function.  Sensible errors are generated
+; otherwise.  When rewrite generates a context, it binds the Lisp special
+; *metafunction-context* to the context, to permit this check.  That special
+; has value NIL outside meta-level functions.
 
 #-acl2-loop-only
 (defparameter *metafunction-context* nil)
@@ -45317,6 +45321,16 @@
                       (access metafunction-context mfc :unify-subst))))
   (if (true-listp mfc)
       (access metafunction-context mfc :unify-subst)
+    nil))
+
+(defun mfc-world (mfc)
+  (declare (xargs :guard t))
+  #-acl2-loop-only
+  (cond ((eq mfc *metafunction-context*)
+         (return-from mfc-world
+                      (access metafunction-context mfc :wrld))))
+  (if (true-listp mfc)
+      (access metafunction-context mfc :wrld)
     nil))
 
 ; When verifying guards on meta-functions, the following two events are

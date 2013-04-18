@@ -20486,6 +20486,9 @@
 ; for open-input-channel open-output-channel: "no longer cause an error when
 ; failing to open a channel".
 
+; The Essay on Correctness of Meta Reasoning has been greatly improved, in
+; particular with respect to its handling of meta-extract hypotheses.
+
   :doc
   ":Doc-Section release-notes
 
@@ -20529,6 +20532,28 @@
   requesting this change.  (Note: this change does not apply if the host Lisp
   is non-ANSI, i.e., if the host Lisp is GCL.)
 
+  The advanced ~il[meta-extract] mechanisms, provided for using facts from the
+  ~il[world] or metafunction context, have been enhanced in the following
+  ways, in collaboration with Sol Swords.  ~l[meta-extract] for more
+  details.~bq[]
+
+  It is now permissible to use calls of ~c[meta-extract-global-fact] in
+  hypotheses of ~ilc[clause-processor] rules, much as they are used in
+  hypotheses of ~ilc[meta] rules.  ~l[meta-extract].  Thanks to Sol Swords for
+  requesting this feature.
+
+  The utility ~c[meta-extract-global-fact] is now a macro, which expands to a
+  corresponding call of the new function, ~c[meta-extract-global-fact+].  This
+  new function takes an alternate, extra ~il[state] as an argument; it is not
+  to be executed, and it operates on the alternate state, whose logical
+  ~il[world] is intended to be the same as that of the ``live'' (usual) state.
+
+  A new sort of value for the ~c[obj] argument is supported for
+  ~c[meta-extract-global-fact] (and ~c[meta-extract-global-fact+]), which
+  results in a term equating a function application to its result.
+  ~l[meta-extract], in particular the discussion of ~c[:fncall].
+  ~eq[]
+
   ~st[NEW FEATURES]
 
   It is now permissible to specify a ~il[stobj] field that is itself either a
@@ -20536,10 +20561,8 @@
   in order to access or update such fields; ~pl[stobj-let].  Thanks to Warren
   Hunt and Sol Swords for requesting the ability to specify nested stobjs.
 
-  It is now permissible to use calls of ~c[meta-extract-global-fact] in
-  hypotheses of ~ilc[clause-processor] rules, much as they are used in
-  hypotheses of ~ilc[meta] rules.  ~l[meta-extract].  Thanks to Sol Swords for
-  requesting this feature.
+  New accessor function ~c[(mfc-world mfc)] returns the world component of a
+  metafunction context.  ~l[extended-metafunctions].
 
   ~st[HEURISTIC IMPROVEMENTS]
 
@@ -25949,8 +25972,6 @@ tail recursion.
 
 #-acl2-loop-only
 (progn
-
-; See *built-in-defun-overrides*.
 
 (defun-one-output mfc-ts-raw (term mfc state forcep)
   (declare (xargs :guard (state-p state)))
