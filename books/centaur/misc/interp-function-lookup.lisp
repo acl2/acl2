@@ -307,7 +307,7 @@
                                   ifl-ev-constraint-0)
                                  (ifl-ev-meta-extract-formula))
           :use ((:instance ifl-ev-meta-extract-formula
-                 (name fn)))
+                 (name fn) (st state)))
           :cases ((eq fn 'quote))))
   :otf-flg t)
 

@@ -6,4 +6,4 @@
 
 (verify-termination meta-extract-contextual-fact)
 
-(verify-termination meta-extract-global-fact)
+(verify-termination meta-extract-global-fact+)

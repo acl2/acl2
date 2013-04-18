@@ -479,7 +479,9 @@ when it becomes available.
                      (pseudo-termp rhs)
                      (not (eq class 'meta))))
         (mv nil term))
-       ;; this should be all identities except VAR.
+       ;; this should be all identities except VAR.  Unify the RHS (base term)
+       ;; with the LHS (term with context inserted) so that we can find whcih
+       ;; variable has context inserted.
        ((mv ok lhs-subst) (simple-one-way-unify rhs lhs nil))
        ;; '((x . (foo y x)) (y . y))
        ((unless ok) (mv nil term))
@@ -488,15 +490,22 @@ when it becomes available.
                      (all-identities-except-x var lhs-subst)))
         (mv nil term))
        (ctx-term (cdr (assoc var lhs-subst))) ;; (foo y x)
+       ;; Now var is the variable and ctx-term is the context for that
+       ;; variable.
+       ;; Unify the term we're rewriting with the RHS to find the subterm
+       ;; corresponding to the varible.
        ((mv ok term-subst) (simple-one-way-unify rhs term nil))
        ;; '((x . (baz z)) (y . w))
        ((unless ok) (mv nil term))
        ((unless (and
+                 ;; We don't yet bind free variables -- maybe soon
                  (ec-call (all-keys-bound (ec-call (simple-term-vars ctx-term)) term-subst))
                  (ec-call (all-keys-bound (ec-call (simple-term-vars-lst hyps)) term-subst))))
         (mv nil term))
+       ;; Relieve the hyps...
        ((unless (mfc-relieve-hyps hyps term-subst rune term 0 mfc state))
         (mv nil term))
+       ;; Now rewrite the context term under the substitution alist.
        (ctx-rw (mfc-rw+ ctx-term term-subst '? nil mfc state :forcep nil))
        ((unless (pseudo-termp ctx-rw))
         (mv nil term))
@@ -1296,7 +1305,8 @@ when it becomes available.
                             (rewrite-rule-term
                              (lookup-rewrite-in-lemmas
                               (car runes)
-                              (fgetprop fn 'lemmas nil (w state))))))))))))
+                              (fgetprop fn 'lemmas nil (w state))))))
+                        (st state)))))))
                          
 
 (in-theory (disable try-context-rws))

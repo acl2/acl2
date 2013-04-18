@@ -14,6 +14,8 @@
 (include-book "system/sublis-var" :dir :system)
 (include-book "system/meta-extract" :dir :system)
 
+(in-theory (disable mv-nth))
+
 ;; The functions listed in this evaluator are the ones necessary to use all
 ;; meta-extract facilities, i.e. to prove the theorems that follow.  We provide a
 ;; macro def-meta-extract below which proves these theorems for an extension of
@@ -34,7 +36,7 @@
 (def-ev-theoremp mextract-ev)
 
 ;; Badguy for contextual terms.
-(defchoose mextract-contextual-badguy obj (a mfc state)
+(defchoose mextract-contextual-badguy (obj) (a mfc state)
   (not (mextract-ev (meta-extract-contextual-fact obj mfc state) a)))
 
 ;; (mextract-ev-contextual-facts a) can be used as a hyp in a :meta rule, and
@@ -43,7 +45,8 @@
 (defmacro mextract-ev-contextual-facts (a &key (mfc 'mfc) (state 'state))
   `(mextract-ev
     (meta-extract-contextual-fact
-     (mextract-contextual-badguy ,a ,mfc ,state) ,mfc ,state)
+     (mextract-contextual-badguy ,a ,mfc ,state)
+     ,mfc ,state)
     ,a))
 
 
@@ -54,27 +57,34 @@
            :in-theory (disable meta-extract-contextual-fact))))
 
 ;; Badguy for global terms.
-(defchoose mextract-global-badguy obj (state)
-  (not (mextract-ev-theoremp (meta-extract-global-fact obj state))))
+(defchoose mextract-global-badguy (obj st) (state)
+  (not (mextract-ev-theoremp (meta-extract-global-fact+ obj st state))))
 
 ;; (mextract-ev-global-facts) can be used as a hyp in a :meta rule, and
 ;; allows us to assume the correctness of any result (correctly) derived from
 ;; the supported global prover facilities with respect to mextract-ev.
 (defmacro mextract-ev-global-facts (&key (state 'state))
   `(mextract-ev
-    (meta-extract-global-fact
-     (mextract-global-badguy ,state) ,state)
+    (meta-extract-global-fact+
+     (mv-nth 0 (mextract-global-badguy ,state))
+     (mv-nth 1 (mextract-global-badguy ,state))
+     ,state)
     (mextract-ev-falsify
-     (meta-extract-global-fact
-      (mextract-global-badguy ,state) ,state))))
+     (meta-extract-global-fact+
+      (mv-nth 0 (mextract-global-badguy ,state))
+      (mv-nth 1 (mextract-global-badguy ,state))
+      ,state))))
 
 (defthmd mextract-global-badguy-sufficient
   (implies (mextract-ev-global-facts)
-           (mextract-ev (meta-extract-global-fact obj state) a))
+           (mextract-ev (meta-extract-global-fact+ obj st state) a))
   :hints (("goal" :use ((:instance mextract-global-badguy)
                         (:instance mextract-ev-falsify
-                         (x (meta-extract-global-fact obj state))))
-           :in-theory (disable meta-extract-global-fact))))
+                         (x (meta-extract-global-fact+ obj st state))))
+           :in-theory (disable meta-extract-global-fact+))))
+
+
+(local (in-theory (disable w sublis-var)))
 
 ;; Assuming (mextract-ev-contextual-facts a), we know mfc-ts works as expected.
 (defthm mextract-typeset
@@ -159,25 +169,26 @@
 
 ;; Assuming (mextract-ev-contextual-facts a), mfc-ap works as expected.
 (defthm mextract-mfc-ap
-  (implies (and (mfc-ap term mfc state :forcep nil)
-                (mextract-ev-contextual-facts a))
-           (not (mextract-ev term a)))
+  (implies (and (mextract-ev-contextual-facts a)
+                (mextract-ev term a))
+           (not (mfc-ap term mfc state :forcep nil)))
   :hints(("Goal" :use ((:instance mextract-contextual-badguy
                         (obj (list :ap term)))))))
 
 ;; Assuming (mextract-ev-contextual-facts a), mfc-relieve-hyp works as expected.
 (defthm mextract-relieve-hyp
-  (implies (and (mfc-relieve-hyp hyp alist rune target bkptr mfc state
-                                 :forcep nil)
-                (mextract-ev-contextual-facts a))
-           (mextract-ev (sublis-var alist hyp) a))
+  (implies (and (mextract-ev-contextual-facts a)
+                (not (mextract-ev (sublis-var alist hyp) a)))
+           (not (mfc-relieve-hyp hyp alist rune target bkptr mfc state
+                                 :forcep nil)))
   :hints(("Goal" :use ((:instance mextract-contextual-badguy
                         (obj (list :relieve-hyp hyp alist rune target bkptr)))))))
                 
 ;; Assuming (mextract-ev-global-facts), meta-extract-formula produces a theorem
 (defthm mextract-formula
-  (implies (mextract-ev-global-facts)
-           (mextract-ev (meta-extract-formula name state) a))
+  (implies (and (mextract-ev-global-facts)
+                (equal (w st) (w state)))
+           (mextract-ev (meta-extract-formula name st) a))
   :hints(("Goal" :use ((:instance mextract-global-badguy-sufficient
                         (obj (list :formula name)))))))
 
@@ -212,8 +223,9 @@
                      x)))))
 
 (defthm mextract-lemma-term
-  (implies (and (member rule (getprop fn 'lemmas nil 'current-acl2-world (w state)))
-                (mextract-ev-global-facts))
+  (implies (and (mextract-ev-global-facts)
+                (member rule (getprop fn 'lemmas nil 'current-acl2-world (w st)))
+                (equal (w st) (w state)))
            (mextract-ev (rewrite-rule-term rule)
                       a))
   :hints(("Goal"
@@ -228,10 +240,11 @@
 ;; Assuming (mextract-ev-global-facts), each element of the lemmas property of a
 ;; symbol in the world is a correct rewrite rule.
 (defthm mextract-lemma
-  (implies (and (member rule (getprop fn 'lemmas nil 'current-acl2-world (w state)))
+  (implies (and (mextract-ev-global-facts)
+                (member rule (getprop fn 'lemmas nil 'current-acl2-world (w st)))
                 (not (eq (access rewrite-rule rule :subclass) 'meta))
                 (mextract-ev (conjoin (access rewrite-rule rule :hyps)) a)
-                (mextract-ev-global-facts))
+                (equal (w st) (w state)))
            (mextract-ev `(,(access rewrite-rule rule :equiv)
                         ,(access rewrite-rule rule :lhs)
                         ,(access rewrite-rule rule :rhs))
@@ -245,7 +258,17 @@
                               (- (len lemmas)
                                  (len (member rule lemmas)))))))))))
 
-
+(defthm mextract-fncall
+  (mv-let (erp val)
+    (magic-ev-fncall fn arglist st t nil)
+    (implies (and (mextract-ev-global-facts)
+                  (equal (w st) (w state))
+                  (not erp))
+             (equal (mextract-ev (cons fn (kwote-lst arglist)) a)
+                    val)))
+  :hints(("Goal"
+          :use ((:instance mextract-global-badguy-sufficient
+                 (obj (list :fncall fn arglist)))))))
 
 ;; Macro def-meta-extract proves the above theorems for any evaluator that
 ;; extends mextract-ev.
@@ -254,12 +277,12 @@
      
      (def-ev-theoremp evfn)
 
-     (defchoose evfn-meta-extract-contextual-badguy obj (a mfc state)
+     (defchoose evfn-meta-extract-contextual-badguy (obj) (a mfc state)
        (not (evfn (meta-extract-contextual-fact obj mfc state) a)))
 
-     (defchoose evfn-meta-extract-global-badguy obj (state)
-       (not (evfn (meta-extract-global-fact obj state)
-                  (evfn-falsify (meta-extract-global-fact obj state)))))
+     (defchoose evfn-meta-extract-global-badguy (obj st) (state)
+       (not (evfn (meta-extract-global-fact+ obj st state)
+                  (evfn-falsify (meta-extract-global-fact+ obj st state)))))
 
      (defthmd evfn-falsify-sufficient
        (implies (evfn x (evfn-falsify x))
@@ -269,7 +292,8 @@
      (defmacro evfn-meta-extract-contextual-facts (a &key (mfc 'mfc) (state 'state))
        `(evfn
          (meta-extract-contextual-fact
-          (evfn-meta-extract-contextual-badguy ,a ,mfc state) ,mfc ,state)
+          (evfn-meta-extract-contextual-badguy ,a ,mfc ,state)
+          ,mfc ,state)
          ,a))
 
      (defthmd evfn-meta-extract-contextual-badguy-sufficient
@@ -280,19 +304,28 @@
 
      (defmacro evfn-meta-extract-global-facts (&key (state 'state))
        `(evfn
-         (meta-extract-global-fact
-          (evfn-meta-extract-global-badguy ,state) ,state)
+         (meta-extract-global-fact+
+          (mv-nth 0 (evfn-meta-extract-global-badguy ,state))
+          (mv-nth 1 (evfn-meta-extract-global-badguy ,state))
+          ,state)
          (evfn-falsify
-          (meta-extract-global-fact
-           (evfn-meta-extract-global-badguy ,state) ,state))))
+          (meta-extract-global-fact+
+           (mv-nth 0 (evfn-meta-extract-global-badguy ,state))
+           (mv-nth 1 (evfn-meta-extract-global-badguy ,state))
+           ,state))))
 
      (defthmd evfn-meta-extract-global-badguy-sufficient
        (implies (evfn-meta-extract-global-facts)
-                (evfn (meta-extract-global-fact obj state) a))
+                (evfn (meta-extract-global-fact+ obj st state) a))
        :hints (("goal" :use ((:instance evfn-meta-extract-global-badguy)
                              (:instance evfn-falsify
-                              (x (meta-extract-global-fact obj state))))
+                              (x (meta-extract-global-fact+ obj st state))))
                 :in-theory (disable meta-extract-global-fact))))
+
+     (defthm evfn-meta-extract-global-badguy-true-listp
+       (true-listp (evfn-meta-extract-global-badguy state))
+       :hints (("goal" :use evfn-meta-extract-global-badguy))
+       :rule-classes (:rewrite :type-prescription))
 
      (local (in-theory (enable evfn-meta-extract-global-badguy-sufficient
                                evfn-meta-extract-contextual-badguy-sufficient)))
@@ -400,6 +433,14 @@
      (def-functional-instance
        evfn-meta-extract-lemma
        mextract-lemma
+       ((mextract-ev evfn)
+        (mextract-ev-lst evlst-fn)
+        (mextract-ev-falsify evfn-falsify)
+        (mextract-global-badguy evfn-meta-extract-global-badguy)))
+
+     (def-functional-instance
+       evfn-meta-extract-fncall
+       mextract-fncall
        ((mextract-ev evfn)
         (mextract-ev-lst evlst-fn)
         (mextract-ev-falsify evfn-falsify)
@@ -714,8 +755,9 @@
                                                (('foo xxx . &) xxx)
                                                (& xx)))
                                            a))))
-               :in-theory (disable foobar-ev-meta-extract-rw+-equal
-                                   bar-of-foo)))
+               :in-theory (e/d (sublis-var)
+                               (foobar-ev-meta-extract-rw+-equal
+                                bar-of-foo))))
       :rule-classes ((:meta :trigger-fns (bar)))))
 
   (defthm bar-of-baz
@@ -744,4 +786,97 @@
                                     meta-extract-formula))))
 
 
+
+
+
+(local
+ (localize-example
+  using-fncall
+
+  (defevaluator fnc-ev fnc-ev-lst
+    ((typespec-check ts x)
+     (if a b c)
+     (equal a b)
+     (not a)
+     (iff a b)
+     (implies a b)))
+
+  (defun unquote-lst (x)
+    (declare (xargs :guard (and (pseudo-term-listp x)
+                                (quote-listp x))))
+    (if (atom x)
+        nil
+      (cons (unquote (car x))
+            (unquote-lst (cdr x)))))
+
+  (defthm kwote-lst-of-unquote-lst-when-quote-listp
+    (implies (and (quote-listp x)
+                  (pseudo-term-listp x))
+             (equal (kwote-lst (unquote-lst x))
+                    x)))
+
+  ;; Dumb metafunction that evaluates a function call.
+  (defun ev-call-metafn (x mfc state)
+    (declare (xargs :guard (pseudo-termp x)
+                    :stobjs state)
+             (ignorable mfc))
+    (if (and (consp x)
+             (symbolp (car x))
+             (not (eq (car x) 'quote))
+             (quote-listp (cdr x))
+             (mbt (pseudo-term-listp (cdr x))))
+        (mv-let (erp val)
+          (magic-ev-fncall (car x) (unquote-lst (cdr x))
+                           state t nil)
+          (if erp
+              x
+            (kwote val)))
+      x))
+
+  (def-meta-extract fnc-ev fnc-ev-lst)
+
+  (defthm ev-call-metafn-correct
+    (implies (fnc-ev-meta-extract-global-facts)
+             (equal (fnc-ev (ev-call-metafn x mfc state) a)
+                    (fnc-ev x a)))
+    :hints(("Goal"
+            :use ((:instance fnc-ev-meta-extract-fncall
+                   (fn (car x))
+                   (arglist (unquote-lst (cdr x)))
+                   (st state))))))
+
+
+  (defun fib (x)
+    (if (or (zp x) (eql x 1))
+        1
+      (+ (fib (- x 1))
+         (fib (- x 2)))))
+
+  (in-theory (disable fib (fib)))
+
+  (defun fib-hyp-metafn (x mfc state)
+    (declare (xargs :guard (pseudo-termp x)
+                    :stobjs state)
+             (ignorable mfc state))
+    (if (and (consp x)
+             (eq (car x) 'fib)
+             (quotep (cadr x))
+             (< (nfix (cadr (cadr x))) 10))
+        *t*
+      *nil*))
+
+  (defthm ev-call-metafn-for-fib
+    (implies (and (fnc-ev-meta-extract-global-facts)
+                  (fnc-ev (fib-hyp-metafn x mfc state) a))
+             (equal (fnc-ev x a)
+                    (fnc-ev (ev-call-metafn x mfc state) a)))
+    :hints(("Goal" :in-theory (disable ev-call-metafn)))
+    :rule-classes ((:meta :trigger-fns (fib))))
+
+  ;; this fails:
+  ;; (defthm fib-20
+  ;;   (equal (fib 20) 10946))
+
+  (defthm fib-9
+    (equal (fib 9) 55))))
 

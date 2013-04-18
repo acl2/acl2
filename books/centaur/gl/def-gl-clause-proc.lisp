@@ -636,10 +636,12 @@
                                       ,run-parametrized
                                       ,run-cases))
                           `(:expand ((,fn . ,args)))))
-                    (((ev ('acl2::meta-extract-global-fact . &)
+                    (((ev ('acl2::meta-extract-global-fact+ . &)
                           . &)
-                      ('not (ev ('acl2::meta-extract-global-fact . &)
+                      ('not (ev ('acl2::meta-extract-global-fact+ . &)
                                 . &)))
+                     '(:use ,badguy))
+                    ((('true-listp . &) . &)
                      '(:use ,badguy))))
           :otf-flg t
           :rule-classes :clause-processor)
