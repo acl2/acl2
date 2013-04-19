@@ -410,7 +410,7 @@ if ($DEBUG)
 my $full_file = File::Spec->rel2abs($TARGET);
 (my $vol, my $dir, my $file) = File::Spec->splitpath($full_file);
 my $goal = "$file.$TARGETEXT";
-my $printgoal = path_export($full_file);
+my $printgoal = path_export("$full_file.$TARGETEXT");
 
 print "Making $printgoal on " . strftime('%d-%b-%Y %H:%M:%S',localtime) . "\n";
 
@@ -430,77 +430,68 @@ remove_file_if_exists($outfile);
 
 write_whole_file($outfile, $HEADER);
 
-## Consider just using "mv"/"touch" for the complete step.
-if ($STEP eq "complete") {
-    ## BOZO this is horrible and only works for CCL/linux and probably the file time thing
-    ## is also wrong.
-    my $cmd = "(time ((cp $file.pcert1 $file.cert; if [[ $file.lx64fsl -nt $file.pcert1 ]]; then touch $file.lx64fsl; fi) >> $outfile)) 2> $timefile";
-    if (system($cmd) != 0) {
-	die("Failed to move $file.pcert1 to $file.cert\n");
-    }
-    $status = 43;
-} else {
+
 
 # Override ACL2 per the image file, as appropriate.
-    my $acl2 = read_whole_file_if_exists("$file.image");
-    $acl2 = read_whole_file_if_exists("cert.image") if !$acl2;
-    $acl2 = $default_acl2 if !$acl2;
-    $acl2 = trim($acl2);
-    $ENV{"ACL2"} = $acl2;
-    print "-- Image to use = $acl2\n" if $DEBUG;
-    die("Can't determine which ACL2 to use.") if !$acl2;
+my $acl2 = read_whole_file_if_exists("$file.image");
+$acl2 = read_whole_file_if_exists("cert.image") if !$acl2;
+$acl2 = $default_acl2 if !$acl2;
+$acl2 = trim($acl2);
+$ENV{"ACL2"} = $acl2;
+print "-- Image to use = $acl2\n" if $DEBUG;
+die("Can't determine which ACL2 to use.") if !$acl2;
 
 # ------------ TEMPORARY LISP FILE FOR ACL2 INSTRUCTIONS ----------------------
 
-    my $rnd = int(rand(2**30));
-    my $tmpbase = "workxxx.$goal.$rnd";
+my $rnd = int(rand(2**30));
+my $tmpbase = "workxxx.$goal.$rnd";
 # upper-case .LISP so if it doesn't get deleted, we won't try to certify it
-    my $lisptmp = "$tmpbase.LISP";
-    print "-- Temporary lisp file: $lisptmp\n" if $DEBUG;
+my $lisptmp = "$tmpbase.LISP";
+print "-- Temporary lisp file: $lisptmp\n" if $DEBUG;
 
-    my $instrs = "";
+my $instrs = "";
 
 # I think this strange :q/lp dance is needed for lispworks or something?
-    $instrs .= "(acl2::value :q)\n";
-    $instrs .= "(in-package \"ACL2\")\n";
-    $instrs .= "#+acl2-hons (profile-fn 'prove)\n";
-    $instrs .= "#+acl2-hons (profile-fn 'certify-book-fn)\n";
-    $instrs .= "(acl2::lp)\n\n";
+$instrs .= "(acl2::value :q)\n";
+$instrs .= "(in-package \"ACL2\")\n";
+$instrs .= "#+acl2-hons (profile-fn 'prove)\n";
+$instrs .= "#+acl2-hons (profile-fn 'certify-book-fn)\n";
+$instrs .= "(acl2::lp)\n\n";
 #    $instrs .= "(set-debugger-enable :bt)\n";
-    $instrs .= "(set-write-acl2x t state)\n" if ($STEP eq "acl2x");
-    $instrs .= "(set-write-acl2x '(t) state)\n" if ($STEP eq "acl2xskip");
-    $instrs .= "$INHIBIT\n" if ($INHIBIT);
-    $instrs .= "\n";
+$instrs .= "(set-write-acl2x t state)\n" if ($STEP eq "acl2x");
+$instrs .= "(set-write-acl2x '(t) state)\n" if ($STEP eq "acl2xskip");
+$instrs .= "$INHIBIT\n" if ($INHIBIT);
+$instrs .= "\n";
 
 
 # Get the certification instructions from foo.acl2 or cert.acl2, if either
 # exists, or make a generic certify-book command.
-    my $acl2file = (-f "$file.acl2") ? "$file.acl2"
-                 : (-f "cert.acl2")  ? "cert.acl2"
-		 : "";
+my $acl2file = (-f "$file.acl2") ? "$file.acl2"
+    : (-f "cert.acl2")  ? "cert.acl2"
+    : "";
 
-    my $usercmds = $acl2file ? read_file_except_certify($acl2file) : "";
+my $usercmds = $acl2file ? read_file_except_certify($acl2file) : "";
 
-    $instrs .= "; instructions from .acl2 file $acl2file:\n";
-    $instrs .= "$usercmds\n";
+$instrs .= "; instructions from .acl2 file $acl2file:\n";
+$instrs .= "$usercmds\n";
 
-    my $cert_flags = parse_certify_flags($acl2file, $usercmds);
-    $instrs .= "; certify-book command flags: $cert_flags\n";
+my $cert_flags = parse_certify_flags($acl2file, $usercmds);
+$instrs .= "; certify-book command flags: $cert_flags\n";
 
-    my $cert_cmd = "#!ACL2 (er-progn (time\$ (certify-book \"$file\" $cert_flags $PCERT $ACL2X))
+my $cert_cmd = "#!ACL2 (er-progn (time\$ (certify-book \"$file\" $cert_flags $PCERT $ACL2X))
                                  (value (prog2\$ #+acl2-hons (memsum)
                                                  #-acl2-hons nil
                                                  (exit 43))))\n";
 
-    $instrs .= $cert_cmd;
+$instrs .= $cert_cmd;
 
-    if ($DEBUG) {
-	print "-- ACL2 Instructions: $lisptmp --\n";
-	print "$instrs\n";
-	print "-------------------------------------------------------\n\n";
-    }
+if ($DEBUG) {
+    print "-- ACL2 Instructions: $lisptmp --\n";
+    print "$instrs\n";
+    print "-------------------------------------------------------\n\n";
+}
 
-    write_whole_file($lisptmp, $instrs);
+write_whole_file($lisptmp, $instrs);
 
 
 
@@ -575,7 +566,7 @@ if ($STEP eq "complete") {
     unlink($lisptmp) if !$DEBUG;
     unlink($shtmp) if !$DEBUG;
 
-}
+
 
 # Success or Failure Detection -------------------------------
 

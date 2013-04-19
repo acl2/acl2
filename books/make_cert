@@ -93,7 +93,7 @@ ifneq ($(ACL2_PCERT),)
 	@echo "Done $*.cert"
 
 %.pcert1 :
-	@$(MAKE_CERT_PL) "$*" $(if $(findstring 1,$(no_pcert)),"pcertifyplus","convert") \
+	@$(MAKE_CERT_PL) "$*" $(if $(findstring 1,$(pcert)),"convert","pcertifyplus") \
                           $(if $(findstring 1,$(acl2x)),"yes","no") $^
 	@echo "Done $*.pcert1"
 

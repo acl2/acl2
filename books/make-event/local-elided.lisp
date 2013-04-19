@@ -1,5 +1,13 @@
 (in-package "ACL2")
 
+;; [Jared and Sol]: we want to make sure this book gets provisionally certified
+;; if we're doing any provisional certification, because
+;; local-elided-include.lisp is going to test whether its .pcert0 file exists
+;; as a proxy for checking whether it was provisionally or regularly certified,
+;; and that's just sort of wrong...
+
+; cert_param: (pcert)
+
 (local (make-event '(defun foo (x) x)))
 
 (make-event '(local (defun foo (x) x)))

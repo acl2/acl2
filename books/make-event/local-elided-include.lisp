@@ -226,11 +226,11 @@
 ; certificate of the "local-elided" book.
 (must-succeed
  (mv-let (erp val state)
-         (read-list "local-elided.pcert0" 'top state)
-         (declare (ignore val))
-         (er-let* ((forms (read-list "local-elided.cert" 'top state)))
-           (let ((erp (not (equal (cadr (member-eq :expansion-alist forms))
-                                  (if erp ; no .pcert0 file
-                                      *local-elided-expansion-alist*
-                                    *local-elided-expansion-alist-pcert*)))))
-             (mv erp nil state)))))
+   (read-list "local-elided.pcert0" 'top state)
+   (declare (ignore val))
+   (er-let* ((forms (read-list "local-elided.cert" 'top state)))
+            (let ((erp (not (equal (cadr (member-eq :expansion-alist forms))
+                                   (if erp ; no .pcert0 file
+                                       *local-elided-expansion-alist*
+                                     *local-elided-expansion-alist-pcert*)))))
+              (mv erp nil state)))))

@@ -823,7 +823,7 @@ unless ($no_makefile) {
 	    }
 	}
 	print $mf "\n";
-	# If we're doing prov cert, pcert1 depends on pcert0
+	# If we're doing prov cert, pcert1 depends on pcert0 and cert depends on pcert1
 	if ($pcert_ok) {
 	    # Pcert1 files depend only on the corresp. pcert0.
 	    print $mf "$base.pcert1 : acl2x = $useacl2x\n";
@@ -833,9 +833,8 @@ unless ($no_makefile) {
 	    # pcert1 depends on .acl2x
 	    print $mf "$base.pcert1 : $base.acl2x\n";
 	}
-	# Cert files depend on their certificate dependencies (above), and
-	# (order-only) on the corresponding .pcert1.
-	print $mf "$cert : | $base.pcert1\n\n";
+	print $mf "$cert : $base.pcert1\n";
+	print $mf "\n";
     }
 
     print $mf "\nendif\n\n";
