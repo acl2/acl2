@@ -20554,6 +20554,11 @@
   ~l[meta-extract], in particular the discussion of ~c[:fncall].
   ~eq[]
 
+  It is now possible for ~c[trace$] to avoid printing prefixes of the form
+  ~c[\"n> \"] and ~c[\"<n \"], while also (optionally) avoiding indentation.
+  ~l[trace$], in particular the discussion of ~c[:fmt!].  Thanks to Shilpi Goel
+  for requesting this feature.
+
   ~st[NEW FEATURES]
 
   It is now permissible to specify a ~il[stobj] field that is itself either a

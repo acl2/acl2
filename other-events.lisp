@@ -27218,7 +27218,9 @@
 (defun trace-ppr (x trace-evisc-tuple msgp state)
   (fmt1 (if msgp "~@0~|" "~y0~|")
         (list (cons #\0 x))
-        (first-trace-printing-column state)
+        (if (eq msgp :fmt!)
+            0
+          (first-trace-printing-column state))
         (f-get-global 'trace-co state)
         state
         trace-evisc-tuple))
@@ -27247,36 +27249,38 @@
     (when (eq direction :in)
       (increment-trace-level))
     (let ((trace-level (f-get-global 'trace-level *the-live-state*)))
-      (cond ((eq direction :in)
+      (when (not (eq msgp :fmt!))
+        (cond
+         ((eq direction :in)
 
 ; Originally we incremented the trace level here.  But instead we wait until
 ; calling trace-ppr, in order to get the spacing to work out.
 
-             (case trace-level
-               (1 (princ "1> " *trace-output*))
-               (2 (princ "  2> " *trace-output*))
-               (3 (princ "    3> " *trace-output*))
-               (4 (princ "      4> " *trace-output*))
-               (5 (princ "        5> " *trace-output*))
-               (6 (princ "          6> " *trace-output*))
-               (7 (princ "            7> " *trace-output*))
-               (8 (princ "              8> " *trace-output*))
-               (9 (princ "                9> " *trace-output*))
-               (t (princ (format nil "                  ~s> " trace-level)
-                         *trace-output*))))
-            (t
-             (case trace-level
-               (1 (princ "<1 " *trace-output*))
-               (2 (princ "  <2 " *trace-output*))
-               (3 (princ "    <3 " *trace-output*))
-               (4 (princ "      <4 " *trace-output*))
-               (5 (princ "        <5 " *trace-output*))
-               (6 (princ "          <6 " *trace-output*))
-               (7 (princ "            <7 " *trace-output*))
-               (8 (princ "              <8 " *trace-output*))
-               (9 (princ "                <9 " *trace-output*))
-               (t (princ (format nil "                  <~s " trace-level)
-                         *trace-output*)))))
+          (case trace-level
+            (1 (princ "1> " *trace-output*))
+            (2 (princ "  2> " *trace-output*))
+            (3 (princ "    3> " *trace-output*))
+            (4 (princ "      4> " *trace-output*))
+            (5 (princ "        5> " *trace-output*))
+            (6 (princ "          6> " *trace-output*))
+            (7 (princ "            7> " *trace-output*))
+            (8 (princ "              8> " *trace-output*))
+            (9 (princ "                9> " *trace-output*))
+            (t (princ (format nil "                  ~s> " trace-level)
+                      *trace-output*))))
+         (t
+          (case trace-level
+            (1 (princ "<1 " *trace-output*))
+            (2 (princ "  <2 " *trace-output*))
+            (3 (princ "    <3 " *trace-output*))
+            (4 (princ "      <4 " *trace-output*))
+            (5 (princ "        <5 " *trace-output*))
+            (6 (princ "          <6 " *trace-output*))
+            (7 (princ "            <7 " *trace-output*))
+            (8 (princ "              <8 " *trace-output*))
+            (9 (princ "                <9 " *trace-output*))
+            (t (princ (format nil "                  <~s " trace-level)
+                      *trace-output*))))))
       (cond ((eq evisc-tuple :print)
              (format *trace-output* "~s~%" x))
             (t (trace-ppr x evisc-tuple msgp *the-live-state*)))
@@ -27428,14 +27432,15 @@
 (defun trace$-value-msgp (x)
   (and (consp x)
        (keywordp (car x))
-       (or (and (eq (car x) :fmt)
+       (or (and (member-eq (car x) '(:fmt :fmt!))
                 (consp (cdr x))
                 (null (cddr x)))
            (er hard 'trace$
                "Illegal :ENTRY value.  A legal :ENTRY value starting with a ~
                 keyword must be of the form (:FMT x).  The :ENTRY value ~x0 ~
                 is therefore illegal."
-               x))))
+               x))
+       (car x)))
 
 (defun chk-trace-options (fn predefined trace-options formals ctx wrld state)
   (let ((notinline-tail (assoc-keyword :notinline trace-options))
@@ -28356,18 +28361,18 @@
 
   ~st[Introduction].  For each of these three options, the value is a
   (user-level) term, except that for ~c[:entry] and ~c[:exit] the value can be
-  of the form ~c[(:fmt u)], where ~c[u] is a user-level term.  We skip this
-  latter case for now and return to it later.  Then the indicated term is
-  evaluated as indicated in the next paragraph, and if the ~c[:cond] term is
-  omitted or evaluates to non-~c[nil], then the value of the ~c[:entry] term is
-  printed on entry and the value of the ~c[:exit] term is printed on exit.  By
-  default, where ~c[:entry] is omitted or is specified as ~c[nil], the value
-  printed for ~c[:entry] is the list obtained by consing the calling function
-  symbol onto the list of actual parameters: in the notation described below,
-  this is ~c[(cons TRACED-FN ARGLIST)].  Similarly, the default for printing at
-  the exit of the function call, i.e. where ~c[:exit] is omitted or is
-  specified as ~c[nil], is ~c[(cons TRACED-FN VALUES)] where ~c[VALUES] is the
-  list of values returned as described below.
+  of the form ~c[(:fmt u)] or ~c[(:fmt! u)], where ~c[u] is a user-level term.
+  We skip these two latter cases for now and return to them later.  Then the
+  indicated term is evaluated as indicated in the next paragraph, and if the
+  ~c[:cond] term is omitted or evaluates to non-~c[nil], then the value of the
+  ~c[:entry] term is printed on entry and the value of the ~c[:exit] term is
+  printed on exit.  By default, where ~c[:entry] is omitted or is specified as
+  ~c[nil], the value printed for ~c[:entry] is the list obtained by consing the
+  calling function symbol onto the list of actual parameters: in the notation
+  described below, this is ~c[(cons TRACED-FN ARGLIST)].  Similarly, the
+  default for printing at the exit of the function call, i.e. where ~c[:exit]
+  is omitted or is specified as ~c[nil], is ~c[(cons TRACED-FN VALUES)] where
+  ~c[VALUES] is the list of values returned as described below.
 
   In the evaluations of the term described below upon a call of ~c[fn], each
   formal parameter of the definition of ~c[fn] will be bound to the
@@ -28405,13 +28410,13 @@
   not evaluate the ~c[:entry] or ~c[:exit] forms.
 
   Finally we discuss the case that the ~c[:entry] or ~c[:exit] term is of the
-  form ~c[(:fmt u)].  In these cases, the term ~c[u] is evaluated as described
-  above to produce a value, say ~c[msg], but instead of printing ~c[msg]
-  directly, ACL2 calls ~c[fmt1] using the string ~c[\"~~@0\"] and the alist
-  that binds just character ~c[#\\0] to ~c[msg].  The following example
-  illustrates this point, where ~c[fact] is defined as above.  Also ~pl[fmt].
-  Note that ~c[(msg string . vals)] produces a value suitable for a ~c[\"~~@\"]
-  directive to the ~c[fmt] family of print functions.
+  form ~c[(:fmt u)] or ~c[(:fmt! u)].  In these cases, the term ~c[u] is
+  evaluated as described above to produce a value, say ~c[msg], but instead of
+  printing ~c[msg] directly, ACL2 calls ~c[fmt1] using the string ~c[\"~~@0\"]
+  and the alist that binds just character ~c[#\\0] to ~c[msg].  The following
+  example illustrates this point, where ~c[fact] is defined as above.  Also
+  ~pl[fmt].  Note that ~c[(msg string . vals)] produces a value suitable for a
+  ~c[\"~~@\"] directive to the ~c[fmt] family of print functions.
   ~bv[]
   ACL2 !>(trace$
           (fact
@@ -28430,6 +28435,63 @@
       <3 2
     <2 6
   <1 6
+  6
+  ACL2 !>
+  ~ev[]
+  If ~c[:fmt!] is used instead of ~c[:fmt], then indentation as is the prefix
+  string, ~c[\"n> \"] or ~c[\"<n \"].  The following example illustrates the
+  use of ~c[:fmt!].
+  ~bv[]
+  ACL2 !>(trace$
+          (fact
+           :entry (:fmt! (msg \"Tracing ~~x0 on ~~x1\" traced-fn arglist))
+           :exit (:fmt! (msg \"From input ~~x0: ~~x1\"
+                             (car arglist) (car values)))))
+   ((FACT :ENTRY (:FMT! (MSG \"Tracing ~~x0 on ~~x1\" TRACED-FN ARGLIST))
+          :EXIT (:FMT! (MSG \"From input ~~x0: ~~x1\" (CAR ARGLIST)
+                            (CAR VALUES)))))
+  ACL2 !>(fact 3)
+  Tracing ACL2_*1*_ACL2::FACT on (3)
+  Tracing FACT on (3)
+  Tracing FACT on (2)
+  Tracing FACT on (1)
+  Tracing FACT on (0)
+  From input 0: 1
+  From input 1: 1
+  From input 2: 2
+  From input 3: 6
+  From input 3: 6
+  6
+  ACL2 !>
+  ~ev[]
+  Here is the same example, with user-managed indentation.
+  ~bv[]
+  ACL2 !>(trace$
+          (fact
+           :entry (:fmt! (msg \"~~t0Tracing ~~x1 on ~~x2\"
+                              (+ 3 (* 2 (@ trace-level)))
+                              traced-fn arglist))
+           :exit (:fmt! (msg \"~~t0From input ~~x1: ~~x2\"
+                             (1+ (* 2 (@ trace-level)))
+                             (car arglist) (car values)))))
+   ((FACT :ENTRY (:FMT! (MSG \"~~t0Tracing ~~x1 on ~~x2\"
+                             (+ 3 (* 2 (@ TRACE-LEVEL)))
+                             TRACED-FN ARGLIST))
+          :EXIT (:FMT! (MSG \"~~t0From input ~~x1: ~~x2\"
+                            (1+ (* 2 (@ TRACE-LEVEL)))
+                            (CAR ARGLIST)
+                            (CAR VALUES)))))
+  ACL2 !>(fact 3)
+     Tracing ACL2_*1*_ACL2::FACT on (3)
+       Tracing FACT on (3)
+         Tracing FACT on (2)
+           Tracing FACT on (1)
+             Tracing FACT on (0)
+             From input 0: 1
+           From input 1: 1
+         From input 2: 2
+       From input 3: 6
+     From input 3: 6
   6
   ACL2 !>
   ~ev[]
