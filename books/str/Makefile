@@ -1,5 +1,8 @@
 include ../Makefile-generic
 
+# Avoid circular dependency with cutil introduced by base64.lisp.
+BOOKS = $(filter-out base64,$(patsubst %.lisp, %, $(wildcard *.lisp)))
+
 .PHONY: doc
 
 -include Makefile-deps
