@@ -6,8 +6,12 @@
 
 
 (defun mem-do-run-gc-hook ()
-  (mem-gc-hook *the-live-state*)
-  nil)
+  ;; Note: This PROG2$ allows the function attached to mem-gc-hook to run even
+  ;; when attachments aren't allowed.  This is important because GC can happen
+  ;; any time.  The important thing is, don't remove the PROG2$.
+  (prog2$
+   (mem-gc-hook *the-live-state*)
+   nil))
 
 #+Clozure
 (ccl::add-gc-hook
