@@ -11,6 +11,7 @@
 ; The following is only needed for developer builds (using ACL2_DEVEL), which
 ; put some meta-extract functions in :program mode.
 (include-book "system/meta-extract" :dir :system)
+(include-book "parallel/without-waterfall-parallelism" :dir :system)
 
 (encapsulate
  ((bar (x) t))
@@ -58,11 +59,12 @@
            (nthmeta-ev (disjoin cl) a))
   :rule-classes :clause-processor)
 
+(without-waterfall-parallelism
 (defthm bar-posp-cl-proc-test
   (integerp (bar u))
   :hints (("Goal"
            :clause-processor
-           (bar-posp-cl-proc clause nil state))))
+           (bar-posp-cl-proc clause nil state)))))
 
 ; Our first example for :meta rules is based on one in
 ; books/clause-processors/meta-extract-user.lisp.

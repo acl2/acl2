@@ -151,7 +151,7 @@ concurrent-programs/german-protocol: misc
 deduction/passmore: 
 serialize: tools
 clause-processors: top-with-meta-cert arithmetic-3 textbook arithmetic \
-	misc tools data-structures arithmetic-5 system
+	misc tools data-structures arithmetic-5 system parallel
 quadratic-reciprocity: rtl
 misc/misc2: rtl coi top-with-meta-cert
 hints: misc
