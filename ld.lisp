@@ -20489,6 +20489,30 @@
 ; The Essay on Correctness of Meta Reasoning has been greatly improved, in
 ; particular with respect to its handling of meta-extract hypotheses.
 
+; Here is an example that formerly broke into raw lisp, but no longer after the
+; fix for "A hard Lisp error was possible for certain illegal functional
+; substitutions", mentioned in the :doc below.
+;
+;   (encapsulate
+;    ((f (x) t))
+;    (local (defun f (x) (cons x x)))
+;    (defthm f-prop
+;      (consp (f x))))
+;
+;   (defthm main
+;     (let ((y x))
+;       (listp (f y))))
+;
+;   (defun g (x y)
+;     (cons x y))
+;
+;   (defthm g-prop
+;     (listp (g x y))
+;     :hints (("Goal"
+;              :use
+;              (:functional-instance main
+;                                    (f (lambda (v) (g v y)))))))
+
   :doc
   ":Doc-Section release-notes
 
@@ -20628,6 +20652,23 @@
   (The error message mentions
   PARTITION-SIGNATURE-HYPS-INTO-TAU-ALIST-AND-OTHERS.)  Thanks to Sol Swords
   for reporting this bug and sending a simple example to illustrate it.
+
+  It had been possible to admit the missing ~ilc[defthm] events printed by
+  ~ilc[defabsstobj], and yet get an error when subsequently submitting the same
+  ~c[defabsstobj] event, stating: ``Note discrepancy with existing formula''.
+  The problem could occur when an expression of the form ~c[(or X Y)] occurred
+  in one of those missing events, because ACL2 created it from the term
+  ~c[(if X 't Y)] but then translated ~c[(or X Y)] to ~c[(if X X Y)], resulting
+  in a mismatch.  This has been fixed.  Thanks to Jared Davis for reporting
+  this bug using a simple example.
+
+  A hard Lisp error was possible for certain illegal functional
+  substitutions (~pl[lemma-instance]).  Thanks to Sol Swords for reporting this
+  bug.
+
+  We fixed a bug in the case that an exported function of a ~ilc[defabsstobj]
+  event had a ~il[guard] of ~c[t].  Thanks to Jared Davis for sending a simple
+  example when reporting this bug.
 
   ~st[CHANGES AT THE SYSTEM LEVEL]
 

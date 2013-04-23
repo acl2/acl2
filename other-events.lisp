@@ -23905,6 +23905,51 @@
               (declare (ignore unify-subst))
               ans)))
 
+(defun obviously-iff-equiv-terms (x y)
+
+; Warning: It would be best to keep this in sync with untranslate1,
+; specifically, giving similar attention in both to functions like implies,
+; iff, and not, which depend only on the propositional equivalence class of
+; each argument.
+
+; Here we code a weak version of Boolean equivalence of x and y, for use in
+; chk-defabsstobj-method-lemmas or other places where we expect this to be
+; sufficient.  For example, in the lambda case we could weaken the requirement
+; that the args are equal by beta-reducing x and y, but that would be less
+; efficient so we don't bother.
+
+  (or (equal x y) ; common case
+      (cond ((or (variablep x)
+                 (fquotep x)
+                 (variablep y)
+                 (fquotep y))
+             nil)
+            ((flambda-applicationp x)
+             (and (flambda-applicationp y)
+                  (equal (lambda-formals x) (lambda-formals y))
+                  (obviously-iff-equiv-terms (lambda-body x) (lambda-body y))
+                  (equal (fargs x) (fargs y))))
+            ((not (eq (ffn-symb x) (ffn-symb y)))
+             nil)
+            ((member-eq (ffn-symb x) '(implies iff))
+             (and (obviously-iff-equiv-terms (fargn x 1) (fargn y 1))
+                  (obviously-iff-equiv-terms (fargn x 2) (fargn y 2))))
+            ((eq (ffn-symb x) 'not)
+             (obviously-iff-equiv-terms (fargn x 1) (fargn y 1)))
+            ((eq (ffn-symb x) 'if)
+             (and (obviously-iff-equiv-terms (fargn x 1) (fargn y 1))
+                  (obviously-iff-equiv-terms (fargn x 3) (fargn y 3))
+                  (or (obviously-iff-equiv-terms (fargn x 2) (fargn y 2))
+
+; Handle case that a term is of the form (or u v).
+
+                      (cond ((equal (fargn x 2) *t*)
+                             (equal (fargn y 2) (fargn y 1)))
+                            ((equal (fargn y 2) *t*)
+                             (equal (fargn x 2) (fargn x 1)))
+                            (t nil)))))
+            (t nil))))
+
 (defun chk-defabsstobj-method-lemmas (method st st$c st$ap corr-fn
                                              missing wrld state)
   (let ((correspondence (access absstobj-method method :CORRESPONDENCE))
@@ -23926,6 +23971,25 @@
                      ((null old-corr-formula)
                       `(,correspondence
                         ,expected-corr-formula))
+                     ((obviously-iff-equiv-terms expected-corr-formula
+                                                 old-corr-formula)
+
+; We will be printing formulas with untranslate using t for its iff-flg, for
+; readability.  But imagine what happens if the printed, untranslated formula
+; has a call (or x y) that came from translated formula (if x 't y).
+; When the user submits a version with (or x y), it will translate to (if x x
+; y), and we will have a mismatch!  Thus, we allow obviously-iff-equiv-terms
+; rather than requiring equality.
+
+; Why not consider it sufficient for the two formulas to untranslate, using
+; iff-flg = t, to the same user-level formula?  The problem is that utilities
+; like untranslate, untranslate*, and even untranslate1 depend on inputs that
+; can destroy any meaningful semantics for these functions.  In particular,
+; (untrans-table wrld) is important for getting pretty results from
+; untranslate, but we cannot trust it to produce meaningful results because the
+; user gets to decide what goes into this table.
+
+                      nil)
                      ((one-way-unify-p old-corr-formula
                                        expected-corr-formula)
                       nil)
@@ -23958,6 +24022,10 @@
                    (taut-p nil)
                    ((null old-guard-thm-formula)
                     `(,guard-thm ,expected-guard-thm-formula))
+                   ((obviously-iff-equiv-terms expected-guard-thm-formula
+                                               old-guard-thm-formula)
+; See the comment at the first call of obviously-iff-equiv-terms above.
+                    nil)
                    ((one-way-unify-p old-guard-thm-formula
                                      expected-guard-thm-formula)
                     nil)
@@ -23980,6 +24048,10 @@
                   (cond
                    ((null old-preserved-formula)
                     `(,preserved ,expected-preserved-formula))
+                   ((obviously-iff-equiv-terms expected-preserved-formula
+                                               old-preserved-formula)
+; See the comment at the first call of obviously-iff-equiv-terms above.
+                    nil)
                    ((one-way-unify-p old-preserved-formula
                                      expected-preserved-formula)
                     nil)

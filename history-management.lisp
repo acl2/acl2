@@ -15787,16 +15787,17 @@
 
 ; This function carries out the functional substitution into term specified by
 ; the translated functional substitution alist.  It checks that alist does not
-; allow capturing of its free variables by lambda expressions in term and that
-; the alist does not have free variables in lambda expressions when
-; allow-freevars-p is nil, either returning (mv vars term) for vars a non-empty
-; list of variables having captured occurrences (or when allow-freevars-p is
-; nil), or else returning (mv nil new-term) if there are no such captures or
-; invalid free variables, in which case new-term is the result of the
-; functional substitution.  Note that the caller can tell whether an error is
-; caused by capturing or by having disallowed free variables, since in the case
-; that allow-freevars-p is nil, it is impossible for free variables to be
-; captured (since no free variables are allowed).
+; allow capturing of its free variables by lambda expressions in term.  If
+; allow-freevars-p is nil, it also checks that the alist does not have free
+; variables in lambda expressions.  The return value is either (mv vars term),
+; for vars a non-empty list of variables -- those having captured occurrences
+; when allow-freevars-p is true, else all free variables of lambda expressions
+; in alist when allow-freevars-p is nil -- or else is (mv nil new-term) when
+; there are no such captures or invalid free variables, in which case new-term
+; is the result of the functional substitution.  Note that the caller can tell
+; whether an error is caused by capturing or by having disallowed free
+; variables, since in the case that allow-freevars-p is nil, it is impossible
+; for free variables to be captured (since no free variables are allowed).
 
 ; Let us say that an occurrence of fn in term is problematic if fn is bound to
 ; lambda-expr in alist and for every variable v that occurs free in
@@ -15806,9 +15807,9 @@
 ; first replacing v in lambda-app by a fresh variable v', then carrying out the
 ; functional substitution, and finally doing an ordinary substitution of v for
 ; v'.  This Key Observation explains why it suffices to check that there is no
-; such problematic occurrence.  We maintain bound-vars as we recur to be a list
-; that includes all variables bound in the original term at the present
-; occurrence of term.
+; such problematic occurrence.  As we recur, we maintain bound-vars to be a
+; list that includes all variables lambda-bound in the original term at the
+; present occurrence of term.
 
 ; Every element of alist is either of the form (fn . sym) or of the form (fn
 ; . (LAMBDA (v1...vn) body)) where the vi are distinct variables and body is a
@@ -15871,10 +15872,11 @@
                                (cons-term (cdr temp) args))))))
                 (t
                  (let ((bad (if allow-freevars-p
-                                (intersectp-eq (set-difference-eq
-                                                (all-vars (lambda-body (cdr temp)))
-                                                (lambda-formals (cdr temp)))
-                                               bound-vars)
+                                (intersection-eq
+                                 (set-difference-eq
+                                  (all-vars (lambda-body (cdr temp)))
+                                  (lambda-formals (cdr temp)))
+                                 bound-vars)
                               (set-difference-eq
                                (all-vars (lambda-body (cdr temp)))
                                (lambda-formals (cdr temp))))))

@@ -2533,6 +2533,11 @@
 
 (defun untranslate1 (term iff-flg untrans-tbl preprocess-fn wrld)
 
+; Warning: It would be best to keep this in sync with
+; obviously-iff-equiv-terms, specifically, giving similar attention in both to
+; functions like implies, iff, and not, which depend only on the propositional
+; equivalence class of each argument.
+
 ; We return a Lisp form that translates to term if iff-flg is nil and
 ; that translates to a term iff-equivalent to term if iff-flg is t.
 ; Wrld is an ACL2 logical world, which may be used to improve the
