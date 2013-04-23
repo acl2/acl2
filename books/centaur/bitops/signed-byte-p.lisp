@@ -46,19 +46,32 @@
 
 
 (defthm basic-unsigned-byte-p-of-+
-  ;; ACL2's fancy unification stuff means this works fine in the
-  ;; common case that you're dealing with quoted constants.
+  ;; ACL2's fancy unification stuff means this works fine in the common case
+  ;; that you're dealing with quoted constants.
   (implies (and (unsigned-byte-p n a)
                 (unsigned-byte-p n b))
            (unsigned-byte-p (+ 1 n) (+ a b)))
   :hints(("Goal" :in-theory (enable unsigned-byte-p))))
 
 (defthm basic-signed-byte-p-of-+
-  ;; ACL2's fancy unification stuff means this works fine in the
-  ;; common case that you're dealing with quoted constants.
+  ;; ACL2's fancy unification stuff means this works fine in the common case
+  ;; that you're dealing with quoted constants.
   (implies (and (signed-byte-p n a)
                 (signed-byte-p n b))
            (signed-byte-p (+ 1 n) (+ a b)))
+  :hints(("Goal" :in-theory (enable signed-byte-p))))
+
+(defthm basic-signed-byte-p-of--
+  ;; ACL2's fancy unification stuff means this works fine in the common case
+  ;; that you're dealing with quoted constants.
+  ;;
+  ;; You might ask, why have this rule when we have the rule about PLUS, since
+  ;; (- A B) is just the same as (+ a (unary-- b)).  The answer is: there isn't
+  ;; a very nice rule about (signed-byte-p (unary-- x)), so there isn't a very
+  ;; good way to indirectly get this rule:
+  (implies (and (signed-byte-p n a)
+                (signed-byte-p n b))
+           (signed-byte-p (+ 1 n) (- a b)))
   :hints(("Goal" :in-theory (enable signed-byte-p))))
 
 
@@ -723,3 +736,83 @@
             :do-not-induct t
             :use ((:instance main (n (nfix n))))))))
 
+
+
+(defsection unsigned-byte-p-of-minus-when-signed-byte-p
+
+  (local (defthmd l1
+           (implies (and (< x 0)
+                         (<= (- (expt 2 (+ -1 n))) x)
+                         (integerp x)
+                         (natp n))
+                    (<= (- x) (expt 2 (+ -1 n))))))
+
+  (local (defthmd l2
+           (implies (natp n)
+                    (< (expt 2 (+ -1 n))
+                       (expt 2 n)))))
+
+  (local (defthmd l3
+           (implies (and (< x 0)
+                         (<= (- (expt 2 (+ -1 n))) x)
+                         (integerp x)
+                         (natp n))
+                    (< (- x) (expt 2 n)))
+           :hints(("Goal"
+                   :in-theory (disable expt-is-increasing-for-base>1)
+                   :use ((:instance l1)
+                         (:instance l2))))))
+
+  (local (in-theory (enable signed-byte-p unsigned-byte-p)))
+
+  (local (defthmd l4
+           (implies (and (signed-byte-p n x)
+                         (< x 0))
+                    (unsigned-byte-p n (- x)))
+           :hints(("Goal" :in-theory (enable l3)))))
+
+  (defthm unsigned-byte-p-of-minus-when-signed-byte-p
+    (implies (signed-byte-p n x)
+             (equal (unsigned-byte-p n (- x))
+                    (<= x 0)))
+    :hints(("Goal" :in-theory (enable l4)
+            :cases ((< x 0) (= x 0))))))
+
+
+
+(defsection unsigned-byte-p-of-abs-when-signed-byte-p
+
+  (local (defthmd l0
+           (implies (and (signed-byte-p n x)
+                         (< x 0))
+                    (unsigned-byte-p n (abs x)))))
+
+  (local (defthmd l1
+           (implies (natp n)
+                    (< (expt 2 (+ -1 n))
+                       (expt 2 n)))
+           :rule-classes ((:rewrite) (:linear))))
+
+  (local (defthmd l2
+           (implies (and (signed-byte-p n x)
+                         (<= 0 x))
+                    (unsigned-byte-p n (abs x)))
+           :hints(("Goal"
+                   :in-theory (enable unsigned-byte-p
+                                      signed-byte-p
+                                      l1)))))
+
+  (defthm unsigned-byte-p-of-abs-when-signed-byte-p
+    (implies (signed-byte-p n x)
+             (unsigned-byte-p n (abs x)))
+    :hints(("Goal"
+            :use ((:instance l0)
+                  (:instance l2))))))
+
+
+(defthm basic-signed-byte-p-of-lognot
+  (implies (unsigned-byte-p n x)
+           (signed-byte-p (+ 1 n) (lognot x)))
+  :hints(("Goal" :in-theory (enable lognot
+                                    unsigned-byte-p
+                                    signed-byte-p))))
