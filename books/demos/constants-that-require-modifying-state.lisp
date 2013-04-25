@@ -7,7 +7,7 @@
                   :verify-guards nil))
   (progn$ (cw "==========================================================~%")
           (cw "Running foo.~%")
-          (cw "This should only print during first pass of certification.~%")
+          (cw "This should only print during certification.~%")
           (cw "==========================================================~%")
           (mv (f-get-global 'waterfall-parallelism state) state)))
 
