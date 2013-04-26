@@ -45,6 +45,8 @@
 (include-book "reverse")
 (include-book "rev")
 (include-book "sets")
+(include-book "sublistp")
+(include-book "subseq")
 (include-book "take")
 (include-book "list-defuns")
 
@@ -58,6 +60,7 @@
                     make-character-list
                     take-redefinition
                     nthcdr
+                    subseq-list
                     ))
 
 ; For now we don't disable set functions like member-equal.  But I intend

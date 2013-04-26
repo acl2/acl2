@@ -23,3 +23,8 @@
 (define foo6 ((x oddp :type (integer 0 *)))
   :returns (ans natp :hyp :guard)
   (- x 1))
+
+(define foo7
+  :parents (|look ma, parents before formals, even!|)
+  (x)
+  (consp x))

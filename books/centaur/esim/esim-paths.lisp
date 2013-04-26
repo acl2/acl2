@@ -446,8 +446,8 @@ list-fix the path or similar.</p>"
     (declare (xargs :guard t))
     (b* (((when (atom instnames))
           mod)
-         (name1 (car instnames))
-         (occ   (cdr (hons-get name1 (occmap mod)))))
+         (name1  (car instnames))
+         (occ    (cdr (hons-get name1 (make-fast-alist (occmap mod))))))
       (and occ
            (follow-esim-path (cdr instnames) (gpl :op occ)))))
 

@@ -21,6 +21,7 @@
 (in-package "STR")
 (include-book "misc/definline" :dir :system)
 (include-book "strprefixp")
+(include-book "std/lists/sublistp" :dir :system)
 (local (include-book "arithmetic"))
 
 (defsection strpos-fast
@@ -63,30 +64,28 @@
 
   (local (in-theory (enable strpos-fast)))
 
-  (defthm strpos-fast-type
-    (or (and (integerp (strpos-fast x y n xl yl))
-             (<= 0 (strpos-fast x y n xl yl)))
-        (not (strpos-fast x y n xl yl)))
-    :rule-classes :type-prescription)
+  (local (defthm l0
+           (implies (sublistp x (cdr y))
+                    (sublistp x y))
+           :hints(("Goal" :in-theory (enable sublistp)))))
 
-  (defthm strpos-fast-upper-bound-weak
-    (implies (and (<= n (length y))
-                  (= yl (length y)))
-             (<= (strpos-fast x y n xl yl)
-                 yl))
-    :rule-classes ((:rewrite) (:linear))
-    :hints(("Goal" :induct (strpos-fast x y n xl yl))))
-
-  (defthm strpos-fast-upper-bound-strong
-    (implies (and (stringp x)
-                  (posp yl)
-                  (posp xl)
-                  (= xl (length x))
-                  (= yl (length y)))
-             (< (strpos-fast x y n xl yl)
-                yl))
-    :rule-classes ((:rewrite) (:linear))
-    :hints(("Goal" :induct (strpos-fast x y n xl yl)))))
+  (defthm strpos-fast-removal
+    (implies (and (force (stringp x))
+                  (force (stringp y))
+                  (force (natp n))
+                  (force (<= n (length y)))
+                  (force (equal xl (length x)))
+                  (force (equal yl (length y))))
+             (equal (strpos-fast x y n xl yl)
+                    (let ((idx (listpos (coerce x 'list)
+                                        (nthcdr n (coerce y 'list)))))
+                      (and idx
+                           (+ n idx)))))
+    :hints(("Goal"
+            :induct (strpos-fast x y n xl yl)
+            :do-not '(generalize fertilize eliminate-destructors)
+            :do-not-induct t
+            :in-theory (enable strpos-fast listpos)))))
 
 
 (defsection strpos
@@ -106,105 +105,17 @@ calling @(see strprefixp), rather than some better algorithm.</p>
 <p>Corner case: we say that the empty string <b>is</b> a prefix of any other
 string.  That is, @('(strpos \"\" x)') is 0 for all @('x').</p>"
 
-  (definlined strpos (x y)
+  (definline strpos (x y)
     (declare (type string x)
              (type string y))
-    (strpos-fast (the string x)
-                 (the string y)
-                 (the integer 0)
-                 (the integer (length (the string x)))
-                 (the integer (length (the string y)))))
+    (mbe :logic
+         (listpos (coerce x 'list)
+                  (coerce y 'list))
+         :exec
+         (strpos-fast (the string x)
+                      (the string y)
+                      (the integer 0)
+                      (the integer (length (the string x)))
+                      (the integer (length (the string y)))))))
 
-  (local (in-theory (enable strpos-fast strpos)))
-
-  (defthm strpos-type
-    (or (and (integerp (strpos x y))
-             (<= 0 (strpos x y)))
-        (not (strpos x y)))
-    :rule-classes :type-prescription)
-
-  (encapsulate
-    ()
-    (local (defthm lemma
-             (implies (and (stringp x)
-                           (stringp y)
-                           (natp xl)
-                           (natp yl)
-                           (natp n)
-                           (<= n (length y))
-                           (= xl (length x))
-                           (= yl (length y))
-                           (strpos-fast x y n xl yl))
-                      (prefixp (coerce x 'list)
-                               (nthcdr (strpos-fast x y n xl yl)
-                                       (coerce y 'list))))
-             :hints(("Goal" :induct (strpos-fast x y n xl yl)))))
-
-    (defthm prefixp-of-strpos
-      (implies (and (strpos x y)
-                    (force (stringp x))
-                    (force (stringp y)))
-               (prefixp (coerce x 'list)
-                        (nthcdr (strpos x y) (coerce y 'list))))))
-
-  (encapsulate
-    ()
-    (local (defun my-induction (x y n m xl yl)
-             (declare (xargs :measure (nfix (- (nfix yl) (nfix n)))))
-             (cond ((prefixp (coerce x 'list)
-                             (nthcdr n (coerce y 'list)))
-                    nil)
-                   ((zp (- (nfix yl) (nfix n)))
-                    (list x y n m xl yl))
-                   (t
-                    (my-induction x y
-                                  (+ (nfix n) 1)
-                                  (if (= (nfix n) (nfix m))
-                                      (+ (nfix m) 1)
-                                    m)
-                                  xl yl)))))
-
-    (local (defthm lemma
-             (implies (and (stringp x)
-                           (stringp y)
-                           (natp xl)
-                           (natp yl)
-                           (natp n)
-                           (natp m)
-                           (<= n m)
-                           (<= n (length y))
-                           (= xl (length x))
-                           (= yl (length y))
-                           (prefixp (coerce x 'list)
-                                    (nthcdr m (coerce y 'list))))
-                      (and (natp (strpos-fast x y n xl yl))
-                           (<= (strpos-fast x y n xl yl) m)))
-             :hints(("Goal"
-                     :induct (my-induction x y n m xl yl)
-                     :do-not '(generalize fertilize)))))
-
-    (defthm completeness-of-strpos
-      (implies (and (prefixp (coerce x 'list)
-                             (nthcdr m (coerce y 'list)))
-                    (force (natp m))
-                    (force (stringp x))
-                    (force (stringp y)))
-               (and (natp (strpos x y))
-                    (<= (strpos x y) m)))))
-
-  (defthm strpos-upper-bound-weak
-    (implies (and (force (stringp x))
-                  (force (stringp y)))
-             (<= (strpos x y)
-                 (len (coerce y 'list))))
-    :rule-classes ((:rewrite) (:linear)))
-
-  (defthm strpos-upper-bound-strong
-    (implies (and (force (stringp x))
-                  (force (stringp y))
-                  (not (equal x ""))
-                  (not (equal y "")))
-             (< (strpos x y)
-                (len (coerce y 'list))))
-    :rule-classes ((:rewrite) (:linear))))
 

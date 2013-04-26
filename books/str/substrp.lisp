@@ -32,29 +32,11 @@ The test is case-sensitive.</p>
 <p>See also @(see isubstrp) for a case-insensitive version, and @(see strpos)
 or @(see strrpos) for alternatives that say where a match occurs.</p>"
 
-  (definlined substrp (x y)
+  (definline substrp (x y)
     (declare (type string x)
              (type string y))
-    (if (strpos x y)
-        t
-      nil))
-
-  (local (in-theory (enable substrp)))
-
-  (defthm prefixp-when-substrp
-    (implies (and (substrp x y)
-                  (force (stringp x))
-                  (force (stringp y)))
-             (prefixp (coerce x 'list)
-                      (nthcdr (strpos x y) (coerce y 'list)))))
-
-  (defthm completeness-of-substrp
-    (implies (and (prefixp (coerce x 'list)
-                           (nthcdr m (coerce y 'list)))
-                  (force (natp m))
-                  (force (stringp x))
-                  (force (stringp y)))
-             (substrp x y))
-    :hints(("Goal"
-            :in-theory (disable completeness-of-strpos)
-            :use ((:instance completeness-of-strpos))))))
+    (mbe :logic (sublistp (coerce x 'list)
+                          (coerce y 'list))
+         :exec (if (strpos x y)
+                   t
+                 nil))))

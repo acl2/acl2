@@ -607,7 +607,7 @@ some kind of separator!</p>
                                   (cons :returns ,returns)))
                 (get-defines world))))
 
-(defun define-fn (fnname formals args world)
+(defun define-fn (fnname args world)
   (declare (xargs :guard (plist-worldp world)))
   (b* (((unless (symbolp fnname))
         (er hard? 'define-fn
@@ -617,8 +617,9 @@ some kind of separator!</p>
        ((mv main-stuff rest-events) (split-/// fnname args))
        ((mv kwd-alist normal-defun-stuff)
         (extract-keywords fnname *define-keywords* main-stuff nil))
-       (traditional-decls/docs (butlast normal-defun-stuff 1))
-       (body          (car (last normal-defun-stuff)))
+       (formals                (car normal-defun-stuff))
+       (traditional-decls/docs (butlast (cdr normal-defun-stuff) 1))
+       (body                   (car (last normal-defun-stuff)))
        (extended-body `(let ((__function__ ',fnname))
                          ;; CCL's compiler seems to be smart enough to not
                          ;; generate code for this binding when it's not
@@ -755,6 +756,13 @@ some kind of separator!</p>
          ,@(and need-macrop `((add-macro-alias ,fnname ,fnname-fn)
                               (table define-macro-fns ',fnname-fn ',fnname)))
 
+         ;; Extend the define table right away, in case anything during
+         ;; the rest-events needs to make use of it.
+         (extend-define-table ,fnname
+                              :fn ',fnname-fn
+                              :returns ',returnspecs
+                              :formals ',formals)
+
          (local (in-theory (enable ,fnname)))
 
          (make-event
@@ -763,11 +771,6 @@ some kind of separator!</p>
             (value `(progn . ,events))))
 
          . ,rest-events)
-
-       (extend-define-table ,fnname
-                            :fn ',fnname-fn
-                            :returns ',returnspecs
-                            :formals ',formals)
 
        ;; Now that the section has been submitted, its xdoc exists, so we can
        ;; do the doc generation and prepend it to the xdoc.
@@ -786,9 +789,9 @@ some kind of separator!</p>
 
        )))
 
-(defmacro define (name formals &rest args)
+(defmacro define (name &rest args)
   `(make-event (b* ((world (w state))
-                    (event (define-fn ',name ',formals ',args world)))
+                    (event (define-fn ',name ',args world)))
                  (value event))))
 
 #!ACL2

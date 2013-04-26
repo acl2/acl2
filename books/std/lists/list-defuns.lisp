@@ -29,6 +29,7 @@
 (local (include-book "equiv"))
 (local (include-book "sets"))
 (local (include-book "same-lengthp"))
+(local (include-book "sublistp"))
 (set-enforce-redundancy t)
 
 (defund list-fix (x)
@@ -159,3 +160,20 @@
                  (and (consp y)
                       (same-lengthp (cdr x) (cdr y)))
                (not (consp y)))))
+
+(defund sublistp (x y)
+  (declare (xargs :guard t))
+  (cond ((prefixp x y) t)
+        ((atom y)      nil)
+        (t             (sublistp x (cdr y)))))
+
+(defund listpos (x y)
+  (declare (xargs :guard t))
+  (cond ((prefixp x y)
+         0)
+        ((atom y)
+         nil)
+        (t
+         (let ((pos-in-cdr (listpos x (cdr y))))
+           (and pos-in-cdr
+                (+ 1 pos-in-cdr))))))

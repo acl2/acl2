@@ -1,5 +1,5 @@
-; ACL2 String Library
-; Copyright (C) 2009-2010 Centaur Technology
+; Centaur Lexer Library
+; Copyright (C) 2013 Centaur Technology
 ;
 ; Contact:
 ;   Centaur Technology Formal Verification Group
@@ -18,25 +18,26 @@
 ;
 ; Original author: Jared Davis <jared@centtech.com>
 
-(ld "xdoc/package.lsp" :dir :system)
+(in-package "CLEX")
+(include-book "cutil/defprojection" :dir :system)
+(include-book "str/eqv" :dir :system)
 
-(defpkg "STR"
-  (set-difference-eq
-   (union-eq *acl2-exports*
-             *common-lisp-symbols-from-main-lisp-package*
-             '(quit exit simpler-take list-fix prefixp str b* assert!
-                    listpos sublistp
-                    a b c d e f g h i j k l m n o p q r s t u v w x y z)
-             '(defxdoc defsection lnfix definlined definline
-                define defaggregate unsigned-byte-p signed-byte-p))
+(defprojection charlist-fix (x)
+  (str::char-fix x)
+  :guard t
+  :parents (str::char-fix))
 
-   ;; Remove some "bad" acl2 string functions to try to prevent users from
-   ;; accidentally using them.
-   '(upper-case-p
-     lower-case-p
-     char-upcase
-     char-downcase
-     string-upcase1
-     string-downcase1
-     string-upcase
-     string-downcase)))
+(defthm character-listp-of-charlist-fix
+  (character-listp (charlist-fix x))
+  :hints(("Goal" :induct (len x))))
+
+(defthm charlist-fix-when-character-listp
+  (implies (character-listp x)
+           (equal (charlist-fix x)
+                  x))
+  :hints(("Goal" :induct (len x))))
+
+(defthm charlist-fix-under-charlisteqv
+  (str::charlisteqv (charlist-fix x)
+                    x)
+  :hints(("Goal" :induct (len x))))

@@ -108,7 +108,7 @@ these keywords are always translated into an @(see e/d*).</p>
   :parents (defrule)
   :short "Variant of @(see defrule) that disables the theorem afterwards."
   :long "<p>This is identical to @('defrule') except that the theorem is
-generated using @(see defthmd) instead of @(see defthm).")
+generated using @(see defthmd) instead of @(see defthm).</p>")
 
 (defconst *defrule-keywords*
   (union-equal '(:hints

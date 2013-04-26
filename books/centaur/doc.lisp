@@ -63,6 +63,8 @@
 
 (include-book "bitops/top")
 
+(include-book "clex/example")
+
 (include-book "gl/gl")
 (include-book "gl/bfr-aig-bddify")
 

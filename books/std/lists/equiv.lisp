@@ -52,6 +52,18 @@
 
 (defequiv list-equiv)
 
+(defthm list-equiv-when-atom-left
+  (implies (atom x)
+           (equal (list-equiv x y)
+                  (atom y)))
+  :hints(("Goal" :in-theory (enable list-equiv))))
+
+(defthm list-equiv-when-atom-right
+  (implies (atom y)
+           (equal (list-equiv x y)
+                  (atom x)))
+  :hints(("Goal" :in-theory (enable list-equiv))))
+
 (defthm list-equiv-of-nil-left
   (equal (list-equiv nil y)
          (not (consp y))))
