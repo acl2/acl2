@@ -829,7 +829,8 @@
                    (edcls (if (stringp (car edcls)) (cdr edcls) edcls)))
                (er-let*
                    ((tguard (translate
-                             (conjoin-untranslated-terms (get-guards1 edcls wrld1))
+                             (conjoin-untranslated-terms
+                              (get-guards1 edcls '(guards) wrld1))
                              '(nil) nil nil ctx wrld1 state)))
                  (mv-let
                   (ctx1 tbody)
@@ -885,8 +886,11 @@
                           (doc-pair (translate-doc name doc ctx state)))
                        (er-progn
                         (chk-xargs-keywords1 edcls '(:guard) ctx state)
-                        (chk-free-and-ignored-vars name (macro-vars args) tguard
-                                                   *no-measure* ignored ignorables
+                        (chk-free-and-ignored-vars name (macro-vars args)
+                                                   tguard
+                                                   *nil* ; split-types-term
+                                                   *no-measure*
+                                                   ignored ignorables
                                                    tbody ctx state)
                         (er-let*
                             ((wrld3 (defmacro-fn1 name args doc doc-pair

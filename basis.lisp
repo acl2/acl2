@@ -10381,9 +10381,9 @@
   However, guards can be useful as a specification device or for increasing
   execution efficiency.  To make such a restriction, use the ~c[:guard]
   keyword (~pl[xargs]) or, especially if you want the host Lisp compiler to use
-  this information, use ~c[type] declarations (~pl[declare]).  The general
-  issue of guards and guard verification is discussed in the topics listed
-  below.~/
+  this information, use ~c[type] declarations (~pl[declare]; also ~pl[xargs]
+  for a discussion of the ~c[split-types] keyword).  The general issue of
+  guards and guard verification is discussed in the topics listed below.~/
 
   To begin further discussion of guards, ~pl[guard-introduction].  That section
   directs the reader to further sections for more details.  To see just a
@@ -11009,7 +11009,9 @@
   efficiency when the functions make use of type declarations.  For
   example, at this writing, the GCL implementation of Common Lisp can
   often take great advantage of ~ilc[declare] forms that assign small
-  integer types to formal parameters.
+  integer types to formal parameters.  Note that while type declarations
+  contributed to the guard by default, they can be proved from the guard
+  instead; ~pl[xargs] for a discussion of the ~c[:SPLIT-TYPES] keyword.
 
   To continue the discussion of guards,
   ~pl[guards-for-specification] to read about the use of guards as
@@ -11079,12 +11081,12 @@
   miscellaneous remarks about guards~/
 
   The discussion of guards concludes here with a few miscellaneous
-  remarks.  (Presumably you found this documentation by following a
-  link; ~pl[guards-for-specification].)  For further information
-  related to guards other than what you find under ``~il[guard],'' see
-  any of the following documentation topics:  ~il[guard-example],
-  ~ilc[set-verify-guards-eagerness], ~ilc[set-guard-checking], and
-  ~ilc[verify-guards].~/
+  remarks.  (Presumably you found this documentation by following a link;
+  ~pl[guards-for-specification].)  For further information related to guards
+  other than what you find under ``~il[guard],'' see any of the following
+  documentation topics: ~il[guard-example], ~ilc[set-verify-guards-eagerness],
+  ~ilc[set-guard-checking], ~ilc[verify-guards], and (for a discussion of
+  keyword ~c[:SPLIT-TYPES]) ~ilc[xargs].~/
 
   ~ilc[Defun] can be made to try to verify the guards on a function.  This is
   controlled by the ``~il[defun-mode]'' of the ~ilc[defun]; ~pl[defun-mode].
@@ -11096,47 +11098,43 @@
   attempt to verify the guards of the function.  Otherwise we do not.
   (But ~pl[set-verify-guards-eagerness] for how to modify this behavior.)
 
-  It is sometimes impossible for the system to verify the guards of a
-  recursive function at definition time.  For example, the guard
-  conjectures might require the invention and proof of some
-  inductively derived property of the function (as often happens when
-  the value of a recursive call is fed to a guarded subroutine).  So
-  sometimes it is necessary to define the function using
-  ~c[:verify-guards nil] then to state and prove key theorems about the
+  It is sometimes impossible for the system to verify the guards of a recursive
+  function at definition time.  For example, the guard conjectures might
+  require the invention and proof of some inductively derived property of the
+  function (as often happens when the value of a recursive call is fed to a
+  guarded subroutine).  So sometimes it is necessary to define the function
+  using ~c[:verify-guards nil] then to state and prove key theorems about the
   function, and only then have the system attempt guard verification.
   Post-~ilc[defun] guard verification is achieved via the event
   ~ilc[verify-guards].  ~l[verify-guards].
 
-  It should be emphasized that guard verification affects only two
-  things: how fast ACL2 can evaluate the function and whether the
-  function is executed correctly by raw Common Lisp, without guard
-  violations.  Since ACL2 does not use the raw Common Lisp definition
-  of a function to evaluate its calls unless that function's guards
-  have been verified, the latter effect is felt only if you run
-  functions in raw Common Lisp rather than via ACL2's command loop.
+  It should be emphasized that guard verification affects only two things: how
+  fast ACL2 can evaluate the function and whether the function is executed
+  correctly by raw Common Lisp, without guard violations.  Since ACL2 does not
+  use the raw Common Lisp definition of a function to evaluate its calls unless
+  that function's guards have been verified, the latter effect is felt only if
+  you run functions in raw Common Lisp rather than via ACL2's command loop.
 
-  Guard verification does not otherwise affect the theorem prover or
-  the semantics of a definition.  If you are not planning on running
-  your function on ``big'' inputs and you don't care if your function
-  runs correctly in raw Common Lisp (e.g., you have formalized some
-  abstract mathematical property and just happened to use ACL2 as your
-  language), there is no need to suffer through guard verification.
-  Often users start by not doing guard verification and address that
-  problem later.  Sometimes you are driven to it, even in mathematical
-  projects, because you find that you want to run your functions
-  particularly fast or in raw Common Lisp.
+  Guard verification does not otherwise affect the theorem prover or the
+  semantics of a definition.  If you are not planning on running your function
+  on ``big'' inputs and you don't care if your function runs correctly in raw
+  Common Lisp (e.g., you have formalized some abstract mathematical property
+  and just happened to use ACL2 as your language), there is no need to suffer
+  through guard verification.  Often users start by not doing guard
+  verification and address that problem later.  Sometimes you are driven to it,
+  even in mathematical projects, because you find that you want to run your
+  functions particularly fast or in raw Common Lisp.
 
   If ~ilc[certify-book] is used to compile a file, and the file contains
-  functions with unverified guard conjectures, then you will be warned
-  that the compiled file cannot be loaded into raw Common Lisp with
-  the expectation that the functions will run correctly.  This is just
-  the same point we have been making:  ACL2 and Common Lisp agree only
-  on the restricted domains specified by our guards.  When guards are
-  violated, Common Lisp can do anything.  When you call a compiled
-  function on arguments violating its guards, the chances are only
-  increased that Common Lisp will go berserk, because compiled
-  functions generally check fewer things at runtime and tend to be
-  more fragile than interpreted ones.
+  functions with unverified guard conjectures, then you will be warned that the
+  compiled file cannot be loaded into raw Common Lisp with the expectation that
+  the functions will run correctly.  This is just the same point we have been
+  making: ACL2 and Common Lisp agree only on the restricted domains specified
+  by our guards.  When guards are violated, Common Lisp can do anything.  When
+  you call a compiled function on arguments violating its guards, the chances
+  are only increased that Common Lisp will go berserk, because compiled
+  functions generally check fewer things at runtime and tend to be more fragile
+  than interpreted ones.
 
   Finally, we note that ACL2 collects up ~il[guard]s from ~ilc[declare] forms
   in order of appearance.  So for example, the ~ilc[declare] form

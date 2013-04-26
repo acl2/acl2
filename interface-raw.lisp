@@ -1411,7 +1411,26 @@
 
   (let* ((dcls
           (append-lst (strip-cdrs (remove-strings (butlast (cddr def) 1)))))
-         (guards (get-guards1 dcls wrld))
+         (split-types (get-unambiguous-xargs-flg1/edcls1
+                       :split-types
+                       *unspecified-xarg-value*
+                       dcls
+                       "irrelevant-error-string"))
+         (guards (get-guards1
+                  dcls
+                  (cond ((or (equal split-types
+                                    *unspecified-xarg-value*) ; default
+                             (eq split-types nil))
+                         '(guards types))
+                        (t (assert$ (eq split-types t)
+
+; By the time we get here, we have already done our checks for the defun,
+; including the check that split-types above is not an error message, and is
+; Boolean.  So if the assertion just above fails, then something has gone
+; terribly wrong!
+
+                                    '(guards))))
+                  wrld))
          (guard (cond ((null guards) t)
                       ((null (cdr guards)) (car guards))
                       (t (cons 'and guards))))

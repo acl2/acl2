@@ -2609,6 +2609,7 @@
                  RECURSIVEP
                  TYPE-PRESCRIPTIONS
                  GUARD
+                 SPLIT-TYPES-TERM
                  ABSOLUTE-EVENT-NUMBER
 
 ; It is tempting to add CONGRUENT-STOBJ-REP to this list.  But it is a property
@@ -13323,19 +13324,14 @@
         (t (cons (third (car lst))
                  (get-docs (cdr lst))))))
 
-(defun rev-union-equal (x y)
-  (declare (xargs :guard (and (true-listp x)
-                              (true-listp y))))
-  (cond ((endp x) y)
-        ((member-equal (car x) y)
-         (rev-union-equal (cdr x) y))
-        (t
-         (rev-union-equal (cdr x) (cons (car x) y)))))
-
 ; Rockwell Addition:  Now when you declare a fn to traffic in the stobj st
 ; the guard is automatically extended with a (stp st).
 
-(defun get-guards2 (edcls wrld acc)
+(defun get-guards2 (edcls targets wrld acc)
+
+; Targets is a subset of (GUARDS TYPES), where we pick up expressions from
+; :GUARD and :STOBJS XARGS declarations if GUARDS is in the list and we pick up
+; expressions corresponding to TYPE declaraions if TYPES is in the list.
 
 ; See get-guards for an example of what edcls looks like.  We require that
 ; edcls contains only valid type declarations, as explained in the comment
@@ -13359,7 +13355,8 @@
 ;   t)
 
   (cond ((null edcls) (reverse acc))
-        ((eq (caar edcls) 'xargs)
+        ((and (eq (caar edcls) 'xargs)
+              (member-eq 'guards targets))
 
 ; We know (from chk-dcl-lst) that (cdar edcls) is a "keyword list"
 ; and so we can assoc-keyword up it looking for :GUARD.  We also know
@@ -13389,13 +13386,16 @@
                       wrld)
                    nil)))
            (get-guards2 (cdr edcls)
+                        targets
                         wrld
                         (rev-union-equal
                          guard-conjuncts
                          (rev-union-equal stobj-conjuncts
                                           acc)))))
-        ((eq (caar edcls) 'type)
+        ((and (eq (caar edcls) 'type)
+              (member-eq 'types targets))
          (get-guards2 (cdr edcls)
+                      targets
                       wrld
 
 ; The call of translate-declaration-to-guard-var-lst below assumes that
@@ -13409,12 +13409,12 @@
                                         (cddr (car edcls))
                                         wrld)
                                        acc)))
-        (t (get-guards2 (cdr edcls) wrld acc))))
+        (t (get-guards2 (cdr edcls) targets wrld acc))))
 
-(defun get-guards1 (edcls wrld)
-  (get-guards2 edcls wrld nil))
+(defun get-guards1 (edcls targets wrld)
+  (get-guards2 edcls targets wrld nil))
 
-(defun get-guards (lst wrld)
+(defun get-guards (lst split-types-lst split-types-p wrld)
 
 ; Warning: see :DOC guard-miscellany for a specification of how conjuncts are
 ; ordered when forming the guard from :xargs and type declarations.
@@ -13422,8 +13422,8 @@
 ; Each element of lst is a 5-tuple (name args doc edcls body), where every TYPE
 ; declaration in edcls is valid (see get-guards2 for an explanation of why that
 ; is important).  We return a list in 1:1 correspondence with lst.  Each
-; element is the untranslated guard expression extracted from the edcls of the
-; corresponding element of lst.  A typical value of edcls might be
+; element is the untranslated guard or type expressions extracted from the
+; edcls of the corresponding element of lst.  A typical value of edcls might be
 
 ; '((IGNORE X Y)
 ;   (XARGS :GUARD g1 :MEASURE m1 :HINTS ((id :USE ... :IN-THEORY ...)))
@@ -13431,25 +13431,50 @@
 ;   (XARGS :GUARD g2 :MEASURE m2))
 
 ; The guard extracted from such an edcls is the conjunction of all the guards
-; mentioned, where we also translate TYPE declarations to guard terms.
+; mentioned.
+
+; We extract only the split-types expressions if split-types-p is true.
+; Otherwise, we extract the guard expressions.  In both of these cases, the
+; result depends on whether or not :split-types was assigned value t in the
+; definition for the corresponding member of lst.
 
   (cond ((null lst) nil)
-        (t (cons (conjoin-untranslated-terms (get-guards1 (fourth (car lst))
-                                                          wrld))
-                 (get-guards (cdr lst) wrld)))))
+        (t (cons (let ((targets
+                        (cond (split-types-p
+
+; We are collecting type declarations for 'split-types-term properties.  Thus,
+; we only collect these when the user has specified :split-types for a
+; definition.
+
+                               (and (car split-types-lst) '(types)))
+
+; Otherwise, we are collecting terms for 'guard properties.  We skip type
+; declarations when the user has specified :split-types for a definition.
+
+                              ((car split-types-lst) '(guards))
+                              (t '(guards types)))))
+                   (conjoin-untranslated-terms
+                    (and targets ; optimization
+                         (get-guards2 (fourth (car lst)) targets wrld nil))))
+                 (get-guards (cdr lst) (cdr split-types-lst) split-types-p
+                             wrld)))))
 
 (defun get-guardsp (lst wrld)
 
 ; Note that get-guards, above, always returns a list of untranslated terms as
-; long as lst and that if a guard is not specified (via either a :GUARD xarg or
-; TYPE declaration) then *t* is used by virtue of the empty conjoin.  But in
+; long as lst and that if a guard is not specified (via either a :GUARD or
+; :STOBJS XARG declaration or a TYPE declaration) then *t* is used.  But in
 ; order to default the verify-guards flag in defuns we must be able to decide
-; whether no guards were specified.  That is the role of this function.  It
-; returns t or nil according to whether at least one of the 5-tuples in lst
-; specifies a guard.
+; whether no such declaration was specified.  That is the role of this
+; function.  It returns t or nil according to whether at least one of the
+; 5-tuples in lst specifies a guard (or stobj) or a type.
+
+; Thus, specification of a type is sufficient for this function to return t,
+; even if :split-types t was specified.  If that changes, adjust :doc
+; set-verify-guards-eagerness accordingly.
 
   (cond ((null lst) nil)
-        ((get-guards1 (fourth (car lst)) wrld) t)
+        ((get-guards1 (fourth (car lst)) '(guards types) wrld) t)
         (t (get-guardsp (cdr lst) wrld))))
 
 (defconst *no-measure*
@@ -13778,54 +13803,73 @@
                                                  ctx state)))
              (get-normalizeps (cdr lst) (cons normalizep acc) ctx state)))))
 
-(defun get-unambiguous-xargs-flg1/edcls (key v edcls ctx state)
+(defconst *unspecified-xarg-value*
 
-; V is the value specified so far for key in the XARSGs of this or previous
-; edcls, or else the consp '(unspecified) if no value has been specified yet.
-; We cause an error if any non-symbol is used for the value of key or if a
-; value different from that specified so far is specified.  We return either
-; the consp '(unspecified) or the uniformly agreed upon value.
+; Warning: This must be a consp.  See comments in functions that use this
+; constant.
+
+  '(unspecified))
+
+(defun get-unambiguous-xargs-flg1/edcls1 (key v edcls event-msg)
+
+; V is the value specified so far for key in the XARGSs of this or previous
+; edcls, or else the consp *unspecified-xarg-value* if no value has been
+; specified yet.  We return an error message if any non-symbol is used for the
+; value of key or if a value different from that specified so far is specified.
+; Otherwise, we return either *unspecified-xarg-value* or the uniformly agreed
+; upon value.  Event-msg is a string or message for fmt's tilde-atsign and is
+; used only to indicate the event in an error message; for example, it may be
+; "DEFUN" to indicate a check for a single definition, or "DEFUN event" or
+; "MUTUAL-RECURSION" to indicate a check that is made for an entire clique.
 
   (cond
-   ((null edcls) (value v))
+   ((null edcls) v)
    ((eq (caar edcls) 'xargs)
     (let ((temp (assoc-keyword key (cdar edcls))))
       (cond ((null temp)
-             (get-unambiguous-xargs-flg1/edcls key v (cdr edcls) ctx state))
+             (get-unambiguous-xargs-flg1/edcls1 key v (cdr edcls) event-msg))
             ((not (symbolp (cadr temp)))
-             (er soft ctx
-                 "It is illegal to specify ~x0 to be ~x1.  The value must be a ~
-                  symbol."
-                 key
-                 (cadr temp)))
+             (msg "It is illegal to specify ~x0 to be ~x1.  The value must be ~
+                   a symbol."
+                  key (cadr temp)))
             ((or (consp v)
                  (eq v (cadr temp)))
-             (get-unambiguous-xargs-flg1/edcls key (cadr temp) (cdr edcls)
-                                              ctx state))
+             (get-unambiguous-xargs-flg1/edcls1 key (cadr temp) (cdr edcls)
+                                                event-msg))
             (t
-             (er soft ctx
-                 "It is illegal to specify ~x0 ~x1 in one place and ~
-                  ~x2 in another within the same definition.  The ~
-                  functionality controlled by that flag operates on ~
-                  the entire event or not at all."
-                 key v (cadr temp))))))
-   (t (get-unambiguous-xargs-flg1/edcls key v (cdr edcls) ctx state))))
+             (msg "It is illegal to specify ~x0 ~x1 in one place and ~x2 in ~
+                   another within the same ~@3.  The functionality controlled ~
+                   by that flag operates on the entire ~@3."
+                  key v (cadr temp) event-msg)))))
+   (t (get-unambiguous-xargs-flg1/edcls1 key v (cdr edcls) event-msg))))
 
-(defun get-unambiguous-xargs-flg1 (key lst ctx state)
+(defun get-unambiguous-xargs-flg1/edcls (key v edcls event-msg ctx state)
 
-; We scan the edcls of lst and either extract a single uniformly agreed
-; upon value for key among the XARGS and return that value, or else no
-; value is specified and we return the consp '(unspecified) or else two or
-; more values are specified and we cause an error.  We also cause an error
-; if any edcls specifies a non-symbol for the value of key.  Thus, if we
-; return a symbol it is the uniformly agreed upon value and if we return
-; a consp there was no value specified.
+; This is just a version of get-unambiguous-xargs-flg1/edcls1 that returns an
+; error triple.
 
-  (cond ((null lst) (value '(unspecified)))
+  (let ((ans (get-unambiguous-xargs-flg1/edcls1 key v edcls event-msg)))
+    (cond ((or (equal ans *unspecified-xarg-value*)
+               (atom ans))
+           (value ans))
+          (t (er soft ctx "~@0" ans)))))
+
+(defun get-unambiguous-xargs-flg1 (key lst event-msg ctx state)
+
+; We scan the edcls of lst and either extract a single uniformly agreed upon
+; value for key among the XARGS and return that value, or else no value is
+; specified and we return the consp *unspecified-xarg-value*, or else two or
+; more values are specified and we cause an error.  We also cause an error if
+; any edcls specifies a non-symbol for the value of key.  Thus, if we return a
+; symbol it is the uniformly agreed upon value and if we return a consp there
+; was no value specified.
+
+  (cond ((null lst) (value *unspecified-xarg-value*))
         (t (er-let*
-            ((v (get-unambiguous-xargs-flg1 key (cdr lst) ctx state))
+               ((v (get-unambiguous-xargs-flg1 key (cdr lst) event-msg ctx
+                                               state))
              (ans (get-unambiguous-xargs-flg1/edcls key v (fourth (car lst))
-                                                    ctx state)))
+                                                    event-msg ctx state)))
             (value ans)))))
 
 (defun get-unambiguous-xargs-flg (key lst default ctx state)
@@ -13836,6 +13880,10 @@
 ; setting specify x, we return x.  If no entry specifies a setting, we return
 ; default.  If two or more entries specify different settings, we cause an
 ; error.
+
+; See also get-unambiguous-xargs-flg-lst for a similar function that instead
+; allows a different value for each defun tuple, and returns the list of these
+; values instead of a single value.
 
 ; We assume every legal value of key is a symbol.  If you supply a consp
 ; default and the default is returned, then no value was specified for key.
@@ -13848,9 +13896,31 @@
 ; up with a setting for the DEFUNS event.  This function explores lst and
 ; either comes up with an unambiguous :mode or else causes an error.
 
-  (er-let* ((x (get-unambiguous-xargs-flg1 key lst ctx state)))
-           (cond ((consp x) (value default))
-                 (t (value x)))))
+  (let ((event-msg (if (cdr lst) "MUTUAL-RECURSION" "DEFUN event")))
+    (er-let* ((x (get-unambiguous-xargs-flg1 key lst event-msg ctx state)))
+      (cond ((consp x) (value default))
+            (t (value x))))))
+
+(defun get-unambiguous-xargs-flg-lst (key lst default ctx state)
+
+; See get-unambiguous-xargs-flg.  Unlike that function, this function allows a
+; different value for each defun tuple, and returns the list of these values
+; instead of a single value.
+
+  (cond ((null lst) (value nil))
+        (t (er-let*
+               ((ans (get-unambiguous-xargs-flg1/edcls key
+                                                       *unspecified-xarg-value*
+                                                       (fourth (car lst))
+                                                       "DEFUN"
+                                                       ctx
+                                                       state))
+                (rst (get-unambiguous-xargs-flg-lst key (cdr lst) default ctx
+                                                    state)))
+             (value (cons (if (consp ans) ; ans = *unspecified-xarg-value*
+                              default
+                            ans)
+                          rst))))))
 
 (defun chk-xargs-keywords1 (edcls keywords ctx state)
   (cond ((null edcls) (value nil))
@@ -13994,10 +14064,12 @@
              (intersection-eq (all-vars term) ignores)))
         (t (value nil))))
 
-(defun chk-free-and-ignored-vars
-  (name formals guard measure ignores ignorables body ctx state)
+(defun chk-free-and-ignored-vars (name formals guard split-types-term measure
+                                       ignores ignorables body ctx state)
   (er-progn
    (chk-free-vars name formals guard "guard for" ctx state)
+   (chk-free-vars name formals split-types-term "split-types expression for"
+                  ctx state)
    (chk-free-vars name formals measure "measure supplied with" ctx state)
    (chk-free-vars name formals (cons 'list ignores)
                   "list of variables declared IGNOREd in" ctx state)
@@ -14049,8 +14121,9 @@
              (value nil)))
            (t (value nil))))))
 
-(defun chk-free-and-ignored-vars-lsts
-  (names arglists guards measures ignores ignorables bodies ctx state)
+(defun chk-free-and-ignored-vars-lsts (names arglists guards split-types-terms
+                                             measures ignores ignorables bodies
+                                             ctx state)
 
 ; This function does all of the defun checking related to the use of free vars
 ; and ignored/ignorable vars.  We package it all up here to simplify the
@@ -14060,6 +14133,7 @@
   (declare (xargs :guard (and (symbol-listp names)
                               (symbol-list-listp arglists)
                               (pseudo-term-listp guards)
+                              (pseudo-term-listp split-types-terms)
                               (pseudo-term-listp measures)
                               (pseudo-term-listp bodies)
                               (symbol-list-listp ignores)
@@ -14068,6 +14142,7 @@
         (t (er-progn (chk-free-and-ignored-vars (car names)
                                                 (car arglists)
                                                 (car guards)
+                                                (car split-types-terms)
                                                 (car measures)
                                                 (car ignores)
                                                 (car ignorables)
@@ -14076,6 +14151,7 @@
                      (chk-free-and-ignored-vars-lsts (cdr names)
                                                      (cdr arglists)
                                                      (cdr guards)
+                                                     (cdr split-types-terms)
                                                      (cdr measures)
                                                      (cdr ignores)
                                                      (cdr ignorables)

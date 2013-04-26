@@ -20583,6 +20583,10 @@
   ~l[trace$], in particular the discussion of ~c[:fmt!].  Thanks to Shilpi Goel
   for requesting this feature.
 
+  It was possible for the ~il[guard-debug] feature to generate duplicate calls
+  of ~c[extra-info] in hypotheses generated for guard verification.  We have
+  eliminated duplicates of this sort.
+
   ~st[NEW FEATURES]
 
   It is now permissible to specify a ~il[stobj] field that is itself either a
@@ -20592,6 +20596,16 @@
 
   New accessor function ~c[(mfc-world mfc)] returns the world component of a
   metafunction context.  ~l[extended-metafunctions].
+
+  A new ~ilc[xargs] keyword, ~c[:SPLIT-TYPES], can be used to ``split'' the
+  ~il[type] declarations from the ~il[guard] in the following sense.  By
+  default, or when ~c[:SPLIT-TYPES] has value ~c[nil], one gets the existing
+  behavior: the terms corresponding to type declarations are conjoined into the
+  guard.  However, if ~c[:SPLIT-TYPES t] is specified, then that is not the
+  case; instead, guard verification will require that these terms are proved
+  under the hypothesis that the guard holds.  In this way, one can add type
+  declarations to assist the host Lisp compiler without cluttering the
+  function's guard.  Thanks to Jared Davis for requesting this feature.
 
   ~st[HEURISTIC IMPROVEMENTS]
 

@@ -676,12 +676,6 @@
 ; prove the justification theorems for each termination machine and
 ; the measures supplied/guessed.
 
-(defun add-literal-to-clause-segments (lit segments at-end-flg)
-  (cond ((null segments) nil)
-        (t (conjoin-clause-to-clause-set
-            (add-literal lit (car segments) at-end-flg)
-            (add-literal-to-clause-segments lit (cdr segments) at-end-flg)))))
-
 (defun remove-built-in-clauses (cl-set ens oncep-override wrld state ttree)
 
 ; We return two results.  The first is a subset of cl-set obtained by deleting
@@ -4384,7 +4378,7 @@
    (mv-let
     (normal-guard ttree)
     (normalize (guard name nil wrld)
-               t ; iff-flg
+               t   ; iff-flg
                nil ; type-alist
                ens wrld ttree)
     (mv-let
@@ -4395,25 +4389,41 @@
                'current-acl2-world wrld)
       ens wrld state ttree)
      (declare (ignore changedp))
-     (mv-let
-      (cl-set2 ttree)
+     (let ((hyp-segments
 
 ; Should we expand lambdas here?  I say ``yes,'' but only to be
 ; conservative with old code.  Perhaps we should change the t to nil?
 
-      (guard-clauses-for-body (clausify (dumb-negate-lit normal-guard)
-                                        nil t (sr-limit wrld))
-                              body
-                              (and debug-p `(:guard (:body ,name)))
+            (clausify (dumb-negate-lit normal-guard)
+                      nil t (sr-limit wrld)))) 
+       (mv-let
+        (cl-set2 ttree)
+        (guard-clauses-for-body hyp-segments
+                                body
+                                (and debug-p `(:guard (:body ,name)))
 
 ; Observe that when we generate the guard clauses for the body we optimize
 ; the stobj recognizers away, provided the named function is executable.
 
-                              (not (eq (getprop name 'non-executablep nil
-                                                'current-acl2-world wrld)
-                                       t))
-                              ens wrld state ttree)
-      (mv (conjoin-clause-sets+ debug-p cl-set1 cl-set2) ttree))))))
+                                (not (eq (getprop name 'non-executablep nil
+                                                  'current-acl2-world wrld)
+                                         t))
+                                ens wrld state ttree)
+        (mv-let (type-clauses ttree)
+                (guard-clauses-for-body
+                 hyp-segments
+                 (fcons-term* 'insist
+                              (getprop name 'split-types-term *t*
+                                       'current-acl2-world wrld))
+                 (and debug-p `(:guard (:type ,name)))
+                 nil ; stobj-optp: no clear reason for setting this to t
+                 ens wrld state ttree)
+                (let ((cl-set2
+                       (if type-clauses ; optimization
+                           (conjoin-clause-sets+ debug-p type-clauses cl-set2)
+                         cl-set2)))
+                  (mv (conjoin-clause-sets+ debug-p cl-set1 cl-set2)
+                      ttree)))))))))
 
 (defun guard-clauses-for-clique (names debug-p ens wrld state ttree)
 
@@ -4519,11 +4529,11 @@
 ; (1:1 correspondence).  We wish to make the definitions
 ; :common-lisp-compliant.  Then we insist that every function used in terms
 ; other than names0 be :common-lisp-compliant.  Str is a string used in our
-; error message and is "guard", "body" or "auxiliary function".  Note that this
-; function is used by chk-acceptable-defuns and by chk-acceptable-verify-guards
-; and chk-stobj-field-descriptor.  In the first usage, names have not been
-; defined yet; in the other two they have.  So be careful about using wrld to
-; get properties of names.
+; error message and is "guard", "split-types expression", "body" or "auxiliary
+; function".  Note that this function is used by chk-acceptable-defuns and by
+; chk-acceptable-verify-guards and chk-stobj-field-descriptor.  In the first
+; usage, names have not been defined yet; in the other two they have.  So be
+; careful about using wrld to get properties of names.
 
   (cond ((null names) (value nil))
         (t (let ((bad (collect-non-common-lisp-compliants
@@ -5421,8 +5431,8 @@
          (collect-old-nameps (cdr names) wrld))
         (t (cons (car names) (collect-old-nameps (cdr names) wrld)))))
 
-(defun defuns-fn-short-cut (names docs pairs guards bodies non-executablep
-                                  wrld state)
+(defun defuns-fn-short-cut (names docs pairs guards split-types-terms bodies
+                                  non-executablep wrld state)
 
 ; This function is called by defuns-fn when the functions to be defined are
 ; :program.  It short cuts the normal put-induction-info and other such
@@ -5450,8 +5460,10 @@
                  names docs pairs
                  (putprop-x-lst2-unless
                   names 'guard guards *t*
-                  (putprop-x-lst1
-                   names 'symbol-class :program wrld1)))))
+                  (putprop-x-lst2-unless
+                   names 'split-types-term split-types-terms *t*
+                   (putprop-x-lst1
+                    names 'symbol-class :program wrld1))))))
     (value (cons wrld2 nil))))
 
 ; Now we develop the output for the defun event.
@@ -5833,7 +5845,8 @@
   '(:guard :guard-hints :guard-debug
            :hints :measure :ruler-extenders :mode :non-executable :normalize
            :otf-flg #+:non-standard-analysis :std-hints
-           :stobjs :verify-guards :well-founded-relation))
+           :stobjs :verify-guards :well-founded-relation
+           :split-types))
 
 (defun plausible-dclsp1 (lst)
 
@@ -5984,10 +5997,10 @@
 (defun fetch-dcl-field (field-name lst)
 
 ; Lst satisfies plausible-dclsp, i.e., is the sort of thing you would find
-; between the formals and the body of a DEFUN.  Field-name is 'comment or one of the
-; symbols in the list *xargs-keywords*.  We return the list of the contents of
-; all fields with that name.  We assume we will find at most one specification
-; per XARGS entry for a given keyword.
+; between the formals and the body of a DEFUN.  Field-name is 'comment or one
+; of the symbols in the list *xargs-keywords*.  We return the list of the
+; contents of all fields with that name.  We assume we will find at most one
+; specification per XARGS entry for a given keyword.
 
 ; For example, if field-name is :GUARD and there are two XARGS among the
 ; DECLAREs in lst, one with :GUARD g1 and the other with :GUARD g2 we return
@@ -6223,6 +6236,18 @@
                          ~x0 agree on the their type and :guard declarations, ~
                          they disagree on the combined orders of those ~
                          declarations.")))))
+         ((let ((split-types1 (fetch-dcl-field :split-types all-but-body1))
+                (split-types2 (fetch-dcl-field :split-types all-but-body2)))
+            (or (not (eq (all-nils split-types1) (all-nils split-types2)))
+
+; Catch the case of illegal values in the proposed definition.
+
+                (not (boolean-listp split-types1))
+                (and (member-eq nil split-types1)
+                     (member-eq t split-types1))))
+          (msg "the proposed and existing definitions for ~x0 differ on their ~
+                :split-types declarations."
+               (car def1)))
          ((not chk-measure-p)
           nil)
          (t
@@ -7002,8 +7027,8 @@
           (t (relevant-posns-clique-recur fns arglists bodies
                                           clique-alist1)))))
 
-(defun relevant-posns-clique-init (fns arglists guards measures ignores
-                                       ignorables ans)
+(defun relevant-posns-clique-init (fns arglists guards split-types-terms
+                                       measures ignores ignorables ans)
 
 ; We associate each function in fns, reversing the order in fns, with
 ; obviously-relevant formal positions.
@@ -7014,12 +7039,15 @@
        (cdr fns)
        (cdr arglists)
        (cdr guards)
+       (cdr split-types-terms)
        (cdr measures)
        (cdr ignores)
        (cdr ignorables)
        (acons (car fns)
-              (make-posns (car arglists)
-                          (all-vars1 (car guards)
+              (make-posns
+               (car arglists)
+               (all-vars1 (car guards)
+                          (all-vars1 (car split-types-terms)
                                      (all-vars1 (car measures)
 
 ; Ignored formals are considered not to be irrelevant.  Should we do similarly
@@ -7039,7 +7067,7 @@
 ; dwarfed by the chance that irrelevance is due to being an ignorable var.
 
                                                 (union-eq (car ignorables)
-                                                          (car ignores)))))
+                                                          (car ignores))))))
               ans)))))
 
 ; We now develop the code to generate the clique-alist for lambda expressions.
@@ -7081,8 +7109,8 @@
   (let ((alist (merge-sort-lexorder (relevant-posns-lambdas-lst bodies nil))))
     (relevant-posns-merge alist nil)))
 
-(defun relevant-posns-clique (fns arglists guards measures ignores ignorables
-                                  bodies)
+(defun relevant-posns-clique (fns arglists guards split-types-terms measures
+                                  ignores ignorables bodies)
 
 ; We compute the relevant posns in an expanded clique alist (one in which the
 ; lambda expressions have been elevated to clique membership).  The list of
@@ -7090,8 +7118,8 @@
 ; enlarging an iniital clique-alist until it is closed.
 
   (let* ((clique-alist1 (relevant-posns-clique-init fns arglists guards
-                                                    measures ignores ignorables
-                                                    nil))
+                                                    split-types-terms measures
+                                                    ignores ignorables nil))
          (clique-alist2 (relevant-posns-lambdas-top bodies)))
     (relevant-posns-clique-recur (append fns (strip-cars clique-alist2))
                                  arglists
@@ -7118,8 +7146,9 @@
                       (car fns) (car arglists) 0 (cdar clique-alist)
                       acc))))))
 
-(defun irrelevant-non-lambda-slots-clique (fns arglists guards measures ignores
-                                               ignorables bodies)
+(defun irrelevant-non-lambda-slots-clique (fns arglists guards
+                                               split-types-terms measures
+                                               ignores ignorables bodies)
 
 ; Let clique-alist be an expanded clique alist (one in which lambda expressions
 ; have been elevated to clique membership).  Return all the irrelevant slots
@@ -7130,7 +7159,8 @@
 ; formal of fn.  If (fn n . var) is in the list returned by this function, then
 ; the nth formal of fn, namely var, is irrelevant to the value computed by fn.
 
-  (let ((clique-alist (relevant-posns-clique fns arglists guards measures
+  (let ((clique-alist (relevant-posns-clique fns arglists guards
+                                             split-types-terms measures
                                              ignores ignorables bodies)))
     (irrelevant-non-lambda-slots-clique1 fns arglists clique-alist nil)))
 
@@ -7145,8 +7175,8 @@
 (defun tilde-*-irrelevant-formals-msg (slots)
   (list "" "~@*" "~@* and the " "~@* the " (tilde-*-irrelevant-formals-msg1 slots)))
 
-(defun chk-irrelevant-formals
-  (fns arglists guards measures ignores ignorables bodies ctx state)
+(defun chk-irrelevant-formals (fns arglists guards split-types-terms measures
+                                   ignores ignorables bodies ctx state)
   (let ((irrelevant-formals-ok
          (cdr (assoc-eq :irrelevant-formals-ok
                         (table-alist 'acl2-defaults-table (w state))))))
@@ -7158,7 +7188,8 @@
      (t
       (let ((irrelevant-slots
              (irrelevant-non-lambda-slots-clique
-              fns arglists guards measures ignores ignorables bodies)))
+              fns arglists guards split-types-terms measures ignores ignorables
+              bodies)))
         (cond
          ((null irrelevant-slots) (value nil))
          ((eq irrelevant-formals-ok :warn)
@@ -7253,7 +7284,7 @@
 ; Assume we are defining names in terms of terms (1:1 correspondence).  Assume
 ; also that the definitions are to be :logic.  Then we insist that every
 ; function used in terms be :logic.  Str is a string used in our error
-; message and is either "guard" or "body".
+; message and is either "guard", "split-types expression", or "body".
 
   (cond ((null names) (value nil))
         (t (let ((bad (collect-programs
@@ -7648,6 +7679,14 @@
                                (t :ideal))))
       (value (list* stobjs-in-lst defun-mode non-executablep symbol-class))))))
 
+(defun get-boolean-unambiguous-xargs-flg-lst (key lst default ctx state)
+  (er-let* ((lst (get-unambiguous-xargs-flg-lst key lst default ctx state)))
+    (cond ((boolean-listp lst) (value lst))
+          (t (er soft ctx
+                 "The value~#0~[ ~&0 is~/s ~&0 are~] illegal for XARGS key ~x1,
+                  as ~x2 and ~x3 are the only legal values for this key."
+                 lst key t nil)))))
+
 (defun chk-acceptable-defuns1 (names fives stobjs-in-lst defun-mode
                                      symbol-class rc non-executablep ctx wrld
                                      state
@@ -7743,7 +7782,10 @@
 
                                               nil ; guard-debug default
                                               ctx state))
-      (normalizeps (get-normalizeps fives nil ctx state)))
+      (split-types-lst (get-boolean-unambiguous-xargs-flg-lst
+                        :SPLIT-TYPES fives nil ctx state))
+      (normalizeps (get-boolean-unambiguous-xargs-flg-lst
+                    :NORMALIZE fives t ctx state)))
      (er-progn
       (cond
        ((not (and (symbolp rel)
@@ -7753,8 +7795,8 @@
                                wrld2))))
         (er soft ctx
             "The :WELL-FOUNDED-RELATION specified by XARGS must be a symbol ~
-           which has previously been shown to be a well-founded relation.  ~
-           ~x0 has not been. See :DOC well-founded-relation."
+             which has previously been shown to be a well-founded relation.  ~
+             ~x0 has not been. See :DOC well-founded-relation."
             rel))
        (t (value nil)))
       (let ((mp (cadr (assoc-eq
@@ -7796,7 +7838,8 @@
                                             nil wrld31))
                           #-:non-standard-analysis 
                           wrld31))
-              (er-let* ((guards (translate-term-lst (get-guards fives wrld2)
+              (er-let* ((guards (translate-term-lst
+                                 (get-guards fives split-types-lst nil wrld2)
 
 ; Warning: Keep this call of translate-term-lst in sync with translation of a
 ; guard in chk-defabsstobj-guard.
@@ -7851,7 +7894,15 @@
 ;    :rule-classes nil)
 
                                                     wrld3
-                                                    state)))
+                                                    state))
+                        (split-types-terms
+                         (translate-term-lst
+                          (get-guards fives split-types-lst t wrld2)
+
+; The arguments below are the same as those for the preceding call of
+; translate-term-lst.
+
+                          '(nil) nil stobjs-in-lst ctx wrld3 state)))
                 (er-progn
                  (if (eq defun-mode :logic)
 
@@ -7862,6 +7913,10 @@
                       (chk-logic-subfunctions names names
                                               guards wrld3 "guard"
                                               ctx state)
+                      (chk-logic-subfunctions names names
+                                              split-types-terms wrld3
+                                              "split-types expression"
+                                              ctx state)
                       (chk-logic-subfunctions names names bodies
                                               wrld3 "body"
                                               ctx state))
@@ -7870,6 +7925,9 @@
                      (er-progn
                       (chk-common-lisp-compliant-subfunctions
                        names names guards wrld3 "guard" ctx state)
+                      (chk-common-lisp-compliant-subfunctions
+                       names names split-types-terms wrld3
+                       "split-types expression" ctx state)
                       (chk-common-lisp-compliant-subfunctions
                        names names bodies wrld3 "body" ctx state))
                    (value nil))
@@ -7886,6 +7944,7 @@
                        (chk-free-and-ignored-vars-lsts names
                                                        arglists
                                                        guards
+                                                       split-types-terms
                                                        measures
                                                        ignores
                                                        ignorables
@@ -7893,6 +7952,7 @@
                                                        ctx state)
                        (chk-irrelevant-formals names arglists
                                                guards
+                                               split-types-terms
                                                measures
                                                ignores
                                                ignorables
@@ -7922,6 +7982,7 @@
                                    wrld3
                                    non-executablep
                                    guard-debug
+                                   split-types-terms
                                    ))))))))))))))))
 
 (defun conditionally-memoized-fns (fns memoize-table)
@@ -7992,6 +8053,10 @@
 ;                  violate the translate conventions on stobjs.
 ;    guard-debug
 ;              - t or nil, used to add calls of EXTRA-INFO to guard conjectures
+;    split-types-terms
+;              - list of translated terms, each corresponding to type
+;                declarations made for a definition with XARGS keyword
+;                :SPLIT-TYPES T
 
   (er-let*
    ((fives (chk-defuns-tuples lst nil ctx wrld state))
@@ -8085,6 +8150,7 @@
                   :otf-flg t
                   :stobjs ($s)
                   :verify-guards t
+                  :split-types t
                   :well-founded-relation my-wfr))~/
 
   General Form:
@@ -8173,6 +8239,26 @@
   be verified upon completion of the termination proof.  This flag should only
   be ~c[t] if the ~c[:mode] is unspecified but the default ~ilc[defun] mode is
   ~c[:]~ilc[logic], or else the ~c[:mode] is ~c[:]~ilc[logic].
+
+  ~c[:]~c[SPLIT-TYPES]~nl[]
+  ~c[Value] is ~c[t] or ~c[nil], indicating whether or not ~il[type]s are to
+  be proved from the ~il[guard]s.  The default is ~c[nil], indicating that
+  type declarations (~pl[declare]) contribute to the ~il[guard]s.  If the value
+  is ~c[t], then instead, the expressions corresponding to the type
+  declarations (~pl[type-spec]) are conjoined into a ``split-type expression,''
+  and guard verification insists that this term is implied by the specified
+  ~c[:guard].  Suppose for example that a definition has the following
+  ~ilc[declare] form.
+  ~bv[]
+    (declare (xargs :guard (p x y) :split-types t)
+             (type integer x)
+             (type (satisfies good-bar-p) y))
+  ~ev[]
+  Then for guard verification, ~c[(p x y)] is assumed, and in addition to the
+  usual proof obligations derived from the body of the definition, guard
+  verification requires a proof that ~c[(p x y)] implies both ~c[(integerp x)]
+  and ~c[(good-bar-p y)].  See community book
+  ~c[demos/split-types-examples.lisp] for small examples.
 
   ~c[:]~ilc[WELL-FOUNDED-RELATION]~nl[]
   ~c[Value] is a function symbol that is known to be a well-founded relation in
@@ -8507,7 +8593,8 @@
 
 (defun defuns-fn1 (tuple ens big-mutrec names arglists docs pairs guards
                          guard-hints std-hints otf-flg guard-debug bodies
-                         symbol-class normalizeps non-executablep
+                         symbol-class normalizeps split-types-terms
+                         non-executablep
                          #+:non-standard-analysis std-p
                          ctx state)
 
@@ -8528,8 +8615,9 @@
       (wrld3 (update-w big-mutrec
                        (putprop-x-lst2-unless names 'guard guards *t*
                                               wrld2)))
-
-; There is no wrld4.
+      (wrld4 (update-w big-mutrec
+                       (putprop-x-lst2-unless names 'split-types-term
+                                              split-types-terms *t* wrld3)))
 
 ; Rockwell Addition:  To save time, the nu-rewriter doesn't look at
 ; functions unless they contain nu-rewrite targets, as defined in 
@@ -8540,17 +8628,17 @@
               big-mutrec
               (cond ((eq (car names) 'NTH)
                      (putprop 'nth 'nth-update-rewriter-targetp
-                              t wrld3))
+                              t wrld4))
                     ((getprop (car names) 'recursivep nil
-                              'current-acl2-world wrld3)
+                              'current-acl2-world wrld4)
 
 ; Nth-update-rewriter does not go into recursive functions.  We could consider
 ; redoing this computation when installing a new definition rule, as well as
 ; the putprop below, but that's a heuristic decision that doesn't seem to be so
 ; important.
 
-                     wrld3)
-                    ((nth-update-rewriter-targetp (car bodies) wrld3)
+                     wrld4)
+                    ((nth-update-rewriter-targetp (car bodies) wrld4)
 
 ; This precomputation of whether the body of the function is a
 ; potential target for nth-update-rewriter is insensitive to whether
@@ -8565,8 +8653,8 @@
 
                      (putprop (car names)
                               'nth-update-rewriter-targetp
-                              t wrld3))
-                    (t wrld3))))
+                              t wrld4))
+                    (t wrld4))))
       #+:non-standard-analysis
       (assumep
        (value (or (eq (ld-skip-proofsp state) 'include-book)
@@ -8669,8 +8757,9 @@
 (defun defuns-fn0 (names arglists docs pairs guards measures
                          ruler-extenders-lst mp rel hints guard-hints std-hints
                          otf-flg guard-debug bodies symbol-class normalizeps
-                         non-executablep #+:non-standard-analysis std-p ctx
-                         wrld state)
+                         split-types-terms non-executablep
+                         #+:non-standard-analysis std-p
+                         ctx wrld state)
 
 ; WARNING: This function installs a world.  That is safe at the time of this
 ; writing because this function is only called by defuns-fn, where that call is
@@ -8678,7 +8767,8 @@
 
   (cond
    ((eq symbol-class :program)
-    (defuns-fn-short-cut names docs pairs guards bodies non-executablep wrld
+    (defuns-fn-short-cut names docs pairs guards split-types-terms bodies
+      non-executablep wrld
       state))
    (t
     (let ((ens (ens state))
@@ -8709,6 +8799,7 @@
          bodies
          symbol-class
          normalizeps
+         split-types-terms
          non-executablep
          #+:non-standard-analysis std-p
          ctx
@@ -9142,7 +9233,8 @@
                 (reclassifyingp (nth 17 tuple))
                 (wrld (nth 18 tuple))
                 (non-executablep (nth 19 tuple))
-                (guard-debug (nth 20 tuple)))
+                (guard-debug (nth 20 tuple))
+                (split-types-terms (nth 21 tuple)))
             (er-let*
              ((pair (defuns-fn0
                       names
@@ -9162,6 +9254,7 @@
                       bodies
                       symbol-class
                       normalizeps
+                      split-types-terms
                       non-executablep
                       #+:non-standard-analysis std-p
                       ctx

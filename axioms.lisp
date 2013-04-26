@@ -1960,6 +1960,15 @@
 
   "T, a symbol, represents the true truth value in Common Lisp.")
 
+(defun insist (x)
+
+; This function is used in guard-clauses-for-fn, so in order to be sure that
+; it's in place early, we define it now.
+
+  (declare (xargs :guard x :mode :logic :verify-guards t)
+           (ignore x))
+  nil)
+
 (defun iff (p q)
 
   ":Doc-Section ACL2::ACL2-built-ins
@@ -6162,7 +6171,7 @@
 ;; RAG - After adding the non-standard predicates, this number grew to 110.
 
 (defconst *force-xnume*
-  (let ((x 126))
+  (let ((x 129))
     #+:non-standard-analysis
     (+ x 12)
     #-:non-standard-analysis
@@ -37844,7 +37853,7 @@
   ~bv[]
   Example Forms:                        try guard verification?
   (set-verify-guards-eagerness 0) ; no, unless :verify-guards t
-  (set-verify-guards-eagerness 1) ; yes if a :guard is supplied
+  (set-verify-guards-eagerness 1) ; yes if a guard or type is supplied
   (set-verify-guards-eagerness 2) ; yes, unless :verify-guards nil
   ~ev[]
   Note: This is an event!  It does not print the usual event summary
@@ -37863,22 +37872,23 @@
   simple call of the ~ilc[table] event function (~pl[table]), no output results
   from a ~c[set-verify-guards-eagerness] event.
 
-  ~c[Set-verify-guards-eagerness] may be thought of as an event that
-  merely sets a flag to ~c[0], ~c[1], or ~c[2].  The flag is used by
-  certain ~ilc[defun] ~il[events] to determine whether ~il[guard] verification is
+  ~c[Set-verify-guards-eagerness] may be thought of as an event that merely
+  sets a flag to ~c[0], ~c[1], or ~c[2].  The flag is used by certain
+  ~ilc[defun] ~il[events] to determine whether ~il[guard] verification is
   tried.  The flag is irrelevant to those ~ilc[defun] ~il[events] in
-  ~c[:]~ilc[program] mode and to those ~ilc[defun] ~il[events] in which an explicit
-  ~c[:]~ilc[verify-guards] setting is provided among the ~ilc[xargs].  In the
-  former case, ~il[guard] verification is not done because it can only be
-  done when logical functions are being defined.  In the latter case,
-  the explicit ~c[:]~ilc[verify-guards] setting determines whether ~il[guard]
+  ~c[:]~ilc[program] mode and to those ~ilc[defun] ~il[events] in which an
+  explicit ~c[:]~ilc[verify-guards] setting is provided among the ~ilc[xargs].
+  In the former case, ~il[guard] verification is not done because it can only
+  be done when logical functions are being defined.  In the latter case, the
+  explicit ~c[:]~ilc[verify-guards] setting determines whether ~il[guard]
   verification is tried.  So consider a ~c[:]~ilc[logic] mode ~ilc[defun] in
   which no ~c[:]~ilc[verify-guards] setting is provided.  Is ~il[guard]
-  verification tried?  The answer depends on the eagerness setting as
-  follows.  If the eagerness is ~c[0], ~il[guard] verification is not tried.
-  If the eagerness is ~c[1], it is tried iff a ~c[:]~ilc[guard] is explicitly
-  provided in the ~ilc[defun].  If the eagerness is ~c[2], ~il[guard]
-  verification is tried.
+  verification tried?  The answer depends on the eagerness setting as follows.
+  If the eagerness is ~c[0], ~il[guard] verification is not tried.  If the
+  eagerness is ~c[1], it is tried if and only if a guard is explicitly
+  specified in the ~ilc[defun], in the following sense: there is an ~c[xargs]
+  keyword ~c[:guard] or ~c[:stobjs] or a ~ilc[type] declaration.  If the
+  eagerness is ~c[2], ~il[guard] verification is tried.
 
   The default behavior of the system is as though the
   ~c[:verify-guards-eagerness] is ~c[1].  The current behavior can be
