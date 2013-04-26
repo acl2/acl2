@@ -20489,6 +20489,30 @@
 ; The Essay on Correctness of Meta Reasoning has been greatly improved, in
 ; particular with respect to its handling of meta-extract hypotheses.
 
+; Here is an example that formerly broke into raw lisp, but no longer after the
+; fix for "A hard Lisp error was possible for certain illegal functional
+; substitutions", mentioned in the :doc below.
+;
+;   (encapsulate
+;    ((f (x) t))
+;    (local (defun f (x) (cons x x)))
+;    (defthm f-prop
+;      (consp (f x))))
+;
+;   (defthm main
+;     (let ((y x))
+;       (listp (f y))))
+;
+;   (defun g (x y)
+;     (cons x y))
+;
+;   (defthm g-prop
+;     (listp (g x y))
+;     :hints (("Goal"
+;              :use
+;              (:functional-instance main
+;                                    (f (lambda (v) (g v y)))))))
+
   :doc
   ":Doc-Section release-notes
 
@@ -20554,6 +20578,15 @@
   ~l[meta-extract], in particular the discussion of ~c[:fncall].
   ~eq[]
 
+  It is now possible for ~c[trace$] to avoid printing prefixes of the form
+  ~c[\"n> \"] and ~c[\"<n \"], while also (optionally) avoiding indentation.
+  ~l[trace$], in particular the discussion of ~c[:fmt!].  Thanks to Shilpi Goel
+  for requesting this feature.
+
+  It was possible for the ~il[guard-debug] feature to generate duplicate calls
+  of ~c[extra-info] in hypotheses generated for guard verification.  We have
+  eliminated duplicates of this sort.
+
   ~st[NEW FEATURES]
 
   It is now permissible to specify a ~il[stobj] field that is itself either a
@@ -20563,6 +20596,16 @@
 
   New accessor function ~c[(mfc-world mfc)] returns the world component of a
   metafunction context.  ~l[extended-metafunctions].
+
+  A new ~ilc[xargs] keyword, ~c[:SPLIT-TYPES], can be used to ``split'' the
+  ~il[type] declarations from the ~il[guard] in the following sense.  By
+  default, or when ~c[:SPLIT-TYPES] has value ~c[nil], one gets the existing
+  behavior: the terms corresponding to type declarations are conjoined into the
+  guard.  However, if ~c[:SPLIT-TYPES t] is specified, then that is not the
+  case; instead, guard verification will require that these terms are proved
+  under the hypothesis that the guard holds.  In this way, one can add type
+  declarations to assist the host Lisp compiler without cluttering the
+  function's guard.  Thanks to Jared Davis for requesting this feature.
 
   ~st[HEURISTIC IMPROVEMENTS]
 
@@ -20623,6 +20666,23 @@
   (The error message mentions
   PARTITION-SIGNATURE-HYPS-INTO-TAU-ALIST-AND-OTHERS.)  Thanks to Sol Swords
   for reporting this bug and sending a simple example to illustrate it.
+
+  It had been possible to admit the missing ~ilc[defthm] events printed by
+  ~ilc[defabsstobj], and yet get an error when subsequently submitting the same
+  ~c[defabsstobj] event, stating: ``Note discrepancy with existing formula''.
+  The problem could occur when an expression of the form ~c[(or X Y)] occurred
+  in one of those missing events, because ACL2 created it from the term
+  ~c[(if X 't Y)] but then translated ~c[(or X Y)] to ~c[(if X X Y)], resulting
+  in a mismatch.  This has been fixed.  Thanks to Jared Davis for reporting
+  this bug using a simple example.
+
+  A hard Lisp error was possible for certain illegal functional
+  substitutions (~pl[lemma-instance]).  Thanks to Sol Swords for reporting this
+  bug.
+
+  We fixed a bug in the case that an exported function of a ~ilc[defabsstobj]
+  event had a ~il[guard] of ~c[t].  Thanks to Jared Davis for sending a simple
+  example when reporting this bug.
 
   ~st[CHANGES AT THE SYSTEM LEVEL]
 

@@ -1411,12 +1411,40 @@
 
   (let* ((dcls
           (append-lst (strip-cdrs (remove-strings (butlast (cddr def) 1)))))
-         (guards (get-guards1 dcls wrld))
+         (split-types (get-unambiguous-xargs-flg1/edcls1
+                       :split-types
+                       *unspecified-xarg-value*
+                       dcls
+                       "irrelevant-error-string"))
+         (guards (get-guards1
+                  dcls
+                  (cond ((or (equal split-types
+                                    *unspecified-xarg-value*) ; default
+                             (eq split-types nil))
+                         '(guards types))
+                        (t (assert$ (eq split-types t)
+
+; By the time we get here, we have already done our checks for the defun,
+; including the check that split-types above is not an error message, and is
+; Boolean.  So if the assertion just above fails, then something has gone
+; terribly wrong!
+
+                                    '(guards))))
+                  wrld))
          (guard (cond ((null guards) t)
                       ((null (cdr guards)) (car guards))
                       (t (cons 'and guards))))
-         (guard-is-t (or (eq guard t)
-                         (equal guard *t*)))
+         (guard-is-t (and (or (eq guard t)
+                              (equal guard *t*))
+
+; If stobj-flag is true, normally the guard will not be t because it will
+; include a corresponding stobj recognizer call.  But the guard could be t in
+; the case of a function exported by a defabsstobj, where the guard is derived
+; from the :logic function specified for that export.  We want to avoid the
+; optimization of defining the *1* function to call the raw Lisp function in
+; this case, so that appropriate live stobj checks can be made.
+
+                          (not stobj-flag)))
          (fn (car def))
          (*1*fn (*1*-symbol fn))
          (cl-compliant-p-optimization

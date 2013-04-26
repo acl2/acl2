@@ -1208,7 +1208,8 @@
    `(meta-extract-global-fact+ ,obj ,state ,state))
 
 (defun fncall-term (fn arglist state)
-  (declare (xargs :stobjs state))
+  (declare (xargs :stobjs state
+                  :guard (true-listp arglist)))
   (mv-let (erp val)
           (magic-ev-fncall fn arglist state
                            t   ; hard-error-returns-nilp
@@ -1256,7 +1257,8 @@
               (rewrite-rule-term rule)
             *t*))) ; Fn doesn't exist or n is too big.
        ((':fncall fn arglist)
-        (fncall-term fn arglist st))
+        (non-exec ; avoid guard check
+         (fncall-term fn arglist st)))
        (& *t*)))
     (t *t*))))
 
