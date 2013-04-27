@@ -2316,6 +2316,13 @@
   (pseudo-signaturep-listp-listp val))
 
 ;-----------------------------------------------------------------
+; SPLIT-TYPES-TERM
+
+(defun pseudo-split-types-termp (sym val)
+  (declare (ignore sym))
+  (pseudo-termp val))
+
+;-----------------------------------------------------------------
 ; STOBJ
 
 (defun pseudo-stobjp (sym val)
@@ -2700,6 +2707,9 @@
            (pseudo-signature-rules-form-1p sym val))
           (SIGNATURE-RULES-FORM-2
            (pseudo-signature-rules-form-2p sym val))
+          (SPLIT-TYPES-TERM
+           (or (eq val *acl2-property-unbound*)
+               (pseudo-split-types-termp sym val)))
           (STOBJ (pseudo-stobjp sym val))
           (STOBJ-CONSTANT (pseudo-stobj-constantp sym val))
           (STOBJ-FUNCTION (pseudo-stobj-functionp sym val))
