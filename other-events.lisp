@@ -21523,11 +21523,10 @@
 ; Through Version_4.3, this macro was called the-live-stobj, and its body was
 ; `(eq ,name ,(the-live-var name)).  However, we need a more permissive
 ; definition in support of congruent stobjs (and perhaps local stobjs and stobj
-; fields of nested stobjs).  We use typep instead of arrayp because in CCL,
-; disassemble seems to suggest that typep may be faster, perhaps comparable
-; with an eq test.
+; fields of nested stobjs).  Note that no ACL2 object is a simple-vector; in
+; particular, a string is a vector but not a simple-vector.
 
-  `(typep ,name 'array))
+  `(typep ,name 'simple-vector))
 
 (defun array-etype-is-fixnum-type (array-etype)
   (declare (xargs :guard 

@@ -1444,7 +1444,10 @@
 ; optimization of defining the *1* function to call the raw Lisp function in
 ; this case, so that appropriate live stobj checks can be made.
 
-                          (not stobj-flag)))
+                          (not (and stobj-flag
+; But is it an abstract concrete stobj?
+                                    (getprop stobj-flag 'absstobj-info nil
+                                             'current-acl2-world wrld)))))
          (fn (car def))
          (*1*fn (*1*-symbol fn))
          (cl-compliant-p-optimization

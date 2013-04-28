@@ -20653,9 +20653,22 @@
 
   ~st[BUG FIXES]
 
-  Fixed a soundness bug that could be exploited by calling system functions
+  We fixed a soundness bug that could be exploited by calling system functions
   ~c[acl2-magic-mfc] or ~c[acl2-magic-canonical-pathname].  Thanks to Sol
   Swords for bringing this bug to our attention.
+
+  We fixed a soundness bug in the handling of ~il[stobj]s, in which strings
+  were recognized as stobjs in raw Lisp.  Thanks to Jared Davis for sending us
+  a proof of ~c[nil] that exploited this bug.  We now have a much simpler
+  example of this bug, as follows.
+  ~bv[]
+  (defstobj st fld)
+  (defthm bad (stp \"abc\") :rule-classes nil)
+  (defthm contradiction
+    nil
+    :hints ((\"Goal\" :in-theory (disable (stp)) :use bad))
+    :rule-classes nil)
+  ~ev[]
 
   (Windows only) On Windows, it had been possible for ACL2 not to consider two
   pathnames to name the same file when the only difference is the case of the
