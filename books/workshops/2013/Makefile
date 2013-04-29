@@ -10,10 +10,10 @@
 # Bernard van Gastel and Julien Schmaltz
 # A formalisation of xMAS
 
-########## Waiting for possible supporting materials: ##########
-
 # Freek Verbeek and Julien Schmaltz
 # Verification of Building Blocks for Asynchronous Circuits
+
+########## Waiting for possible supporting materials: ##########
 
 # Sebastiaan Joosten, Bernard van Gastel and Julien Schmaltz
 # A Macro for Reusing Abstract Functions and Theorems
@@ -34,17 +34,20 @@
 # Jared Davis
 # Embedding ACL2 Models in End-User Applications
 
-# Caleb Eggensperger
-# Proof Pad: A Modern Development Environment for ACL2
-
 ########## Not contributing supporting materials: ##########
 
 # Matt Kaufmann and J Moore
 # Enhancements to ACL2 in Versions 5.0, 6.0, and 6.1
 
+# (The following may change later, but at this point nothing is being
+#  contributed for the following.)
+# Caleb Eggensperger
+# Proof Pad: A Modern Development Environment for ACL2
+
 ##############################
 
 DIRS =  goel-hunt-kaufmann/support \
+	verbeek-schmaltz/books \
 	van-gastel-schmaltz/books
 
 include ../../Makefile-psubdirs
