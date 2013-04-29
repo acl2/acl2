@@ -29,108 +29,122 @@
 ; But this omits things like arith-equivs, list-defthms, and rewrite rules to
 ; rewrite various functions.
 
-(defund fast-list-equiv (x y)
-  (declare (xargs :guard t))
-  (if (consp x)
-      (and (consp y)
-           (equal (car x) (car y))
-           (fast-list-equiv (cdr x) (cdr y)))
-    (atom y)))
+(defsection list-equiv
+  :parents (std/lists)
+  :short "@(call list-equiv) is an @(see equivalence) relation that determines
+whether @('x') and @('y') are identical except perhaps in their @(see
+final-cdr)s."
 
-(local (defthm fast-list-equiv-removal
-         (equal (fast-list-equiv x y)
-                (equal (list-fix x) (list-fix y)))
-         :hints(("Goal" :in-theory (enable fast-list-equiv)))))
+  :long "<p>This is a very common equivalence relation for functions that
+process lists.  See also @(see list-fix) for more discussion.</p>"
 
-(defund list-equiv (x y)
-  (mbe :logic (equal (list-fix x) (list-fix y))
-       :exec (fast-list-equiv x y)))
+  (defund fast-list-equiv (x y)
+    (declare (xargs :guard t))
+    (if (consp x)
+        (and (consp y)
+             (equal (car x) (car y))
+             (fast-list-equiv (cdr x) (cdr y)))
+      (atom y)))
 
-(verify-guards list-equiv)
+  (local (defthm fast-list-equiv-removal
+           (equal (fast-list-equiv x y)
+                  (equal (list-fix x) (list-fix y)))
+           :hints(("Goal" :in-theory (enable fast-list-equiv)))))
+
+  (defund list-equiv (x y)
+    (mbe :logic (equal (list-fix x) (list-fix y))
+         :exec (fast-list-equiv x y)))
+
+  (verify-guards list-equiv)
+
+  (local (in-theory (enable list-equiv)))
+
+  (defequiv list-equiv)
+
+  (defthm list-equiv-when-atom-left
+    (implies (atom x)
+             (equal (list-equiv x y)
+                    (atom y)))
+    :hints(("Goal" :in-theory (enable list-equiv))))
+
+  (defthm list-equiv-when-atom-right
+    (implies (atom y)
+             (equal (list-equiv x y)
+                    (atom x)))
+    :hints(("Goal" :in-theory (enable list-equiv))))
+
+  (defthm list-equiv-of-nil-left
+    (equal (list-equiv nil y)
+           (not (consp y))))
+
+  (defthm list-equiv-of-nil-right
+    (equal (list-equiv x nil)
+           (not (consp x))))
+
+  (defthm list-fix-under-list-equiv
+    (list-equiv (list-fix x) x))
+
+  (defthm list-fix-equal-forward-to-list-equiv
+    (implies (equal (list-fix x) (list-fix y))
+             (list-equiv x y))
+    :rule-classes :forward-chaining)
+
+  (defthm append-nil-under-list-equiv
+    (list-equiv (append x nil) x)))
+
 
 (local (in-theory (enable list-equiv)))
 
-(defequiv list-equiv)
 
-(defthm list-equiv-when-atom-left
-  (implies (atom x)
-           (equal (list-equiv x y)
-                  (atom y)))
-  :hints(("Goal" :in-theory (enable list-equiv))))
+(defsection basic-list-equiv-congruences
+  :parents (list-equiv)
+  :short "Basic @(see list-equiv) @(see congruence) theorems for built-in
+functions."
 
-(defthm list-equiv-when-atom-right
-  (implies (atom y)
-           (equal (list-equiv x y)
-                  (atom x)))
-  :hints(("Goal" :in-theory (enable list-equiv))))
+  (defcong list-equiv equal (list-fix x) 1)
+  (defcong list-equiv equal      (car x) 1)
+  (defcong list-equiv list-equiv (cdr x) 1)
+  (defcong list-equiv list-equiv (cons x y) 2)
 
-(defthm list-equiv-of-nil-left
-  (equal (list-equiv nil y)
-         (not (consp y))))
+  (defcong list-equiv equal      (nth n x) 2)
+  (defcong list-equiv list-equiv (nthcdr n x) 2)
+  (defcong list-equiv list-equiv (update-nth n v x) 3)
 
-(defthm list-equiv-of-nil-right
-  (equal (list-equiv x nil)
-         (not (consp x))))
+  (local (defun cdr-cdr-ind (x y)
+           (declare (xargs :measure (+ (len x) (len y))))
+           (if (and (atom x) (atom y))
+               nil
+             (cdr-cdr-ind (cdr x) (cdr y)))))
 
-(defthm list-fix-under-list-equiv
-  (list-equiv (list-fix x) x))
+  (defcong list-equiv equal      (consp x)     1 :hints (("Goal" :induct (cdr-cdr-ind x x-equiv))))
+  (defcong list-equiv equal      (len x)       1 :hints (("Goal" :induct (cdr-cdr-ind x x-equiv))))
+  (defcong list-equiv equal      (append x y)  1 :hints (("Goal" :induct (cdr-cdr-ind x x-equiv))))
+  (defcong list-equiv list-equiv (append x y)  2)
+  (defcong list-equiv list-equiv (member k x)  2 :hints(("Goal" :induct (cdr-cdr-ind x x-equiv))))
+  (defcong list-equiv iff        (member k x)  2 :hints(("Goal" :induct (cdr-cdr-ind x x-equiv))))
+  (defcong list-equiv equal      (subsetp x y) 1 :hints(("Goal" :induct (cdr-cdr-ind x x-equiv))))
+  (defcong list-equiv equal      (subsetp x y) 2 :hints(("Goal" :induct (cdr-cdr-ind x x-equiv))))
+  (defcong list-equiv equal      (remove k x)  2 :hints (("Goal" :induct (cdr-cdr-ind x x-equiv))))
+  (defcong list-equiv equal      (resize-list lst n default) 1)
 
-(defthm list-fix-equal-forward-to-list-equiv
-  (implies (equal (list-fix x) (list-fix y))
-           (list-equiv x y))
-  :rule-classes :forward-chaining)
+  (defcong list-equiv equal (revappend x y) 1
+    :hints (("Goal" :induct (and (cdr-cdr-ind x x-equiv)
+                                 (revappend x y)))))
 
-(defcong list-equiv equal      (list-fix x) 1)
-(defcong list-equiv equal      (car x) 1)
-(defcong list-equiv list-equiv (cdr x) 1)
-(defcong list-equiv list-equiv (cons x y) 2)
+  (defcong list-equiv list-equiv (revappend x y) 2)
 
-(defcong list-equiv equal      (nth n x) 2)
-(defcong list-equiv list-equiv (nthcdr n x) 2)
-(defcong list-equiv list-equiv (update-nth n v x) 3)
+  (defcong list-equiv equal (butlast lst n) 1
+    :hints(("Goal" :induct (cdr-cdr-ind lst lst-equiv))))
 
-(local (defun cdr-cdr-ind (x y)
-         (declare (xargs :measure (+ (len x) (len y))))
-         (if (and (atom x) (atom y))
-             nil
-           (cdr-cdr-ind (cdr x) (cdr y)))))
+  (defcong list-equiv list-equiv (make-list-ac n val ac) 3)
 
-(defcong list-equiv equal      (consp x)     1 :hints (("Goal" :induct (cdr-cdr-ind x x-equiv))))
-(defcong list-equiv equal      (len x)       1 :hints (("Goal" :induct (cdr-cdr-ind x x-equiv))))
-(defcong list-equiv equal      (append x y)  1 :hints (("Goal" :induct (cdr-cdr-ind x x-equiv))))
-(defcong list-equiv list-equiv (append x y)  2)
-(defcong list-equiv list-equiv (member k x)  2 :hints(("Goal" :induct (cdr-cdr-ind x x-equiv))))
-(defcong list-equiv iff        (member k x)  2 :hints(("Goal" :induct (cdr-cdr-ind x x-equiv))))
-(defcong list-equiv equal      (subsetp x y) 1 :hints(("Goal" :induct (cdr-cdr-ind x x-equiv))))
-(defcong list-equiv equal      (subsetp x y) 2 :hints(("Goal" :induct (cdr-cdr-ind x x-equiv))))
-(defcong list-equiv equal      (remove k x)  2 :hints (("Goal" :induct (cdr-cdr-ind x x-equiv))))
-(defcong list-equiv equal      (resize-list lst n default) 1)
+  (defcong list-equiv equal (take n x) 2
+    :hints(("Goal"
+            :induct (and (take n x)
+                         (cdr-cdr-ind x x-equiv)))))
 
+  (defcong list-equiv equal (take n x) 2)
 
-(defcong list-equiv equal (revappend x y) 1
-  :hints (("Goal" :induct (and (cdr-cdr-ind x x-equiv)
-                               (revappend x y)))))
+  (defcong list-equiv equal (no-duplicatesp-equal x) 1
+    :hints(("Goal" :induct (cdr-cdr-ind x x-equiv)))))
 
-(defcong list-equiv list-equiv (revappend x y) 2)
-
-(defcong list-equiv equal (butlast lst n) 1
-  :hints(("Goal" :induct (cdr-cdr-ind lst lst-equiv))))
-
-(defcong list-equiv list-equiv (make-list-ac n val ac) 3)
-
-
-
-(defcong list-equiv equal (take n x) 2
-  :hints(("Goal"
-          :induct (and (take n x)
-                       (cdr-cdr-ind x x-equiv)))))
-
-(defcong list-equiv equal (take n x) 2)
-
-(defthm append-nil-under-list-equiv
-  (list-equiv (append x nil) x))
-
-
-
-(defcong list-equiv equal (no-duplicatesp-equal x) 1
-  :hints(("Goal" :induct (cdr-cdr-ind x x-equiv))))

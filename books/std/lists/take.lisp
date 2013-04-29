@@ -1,29 +1,22 @@
-;; Processing Unicode Files with ACL2
-;; Copyright (C) 2005-2006 by Jared Davis <jared@cs.utexas.edu>
-;;
-;; This program is free software; you can redistribute it and/or modify it
-;; under the terms of the GNU General Public License as published by the Free
-;; Software Foundation; either version 2 of the License, or (at your option)
-;; any later version.
-;;
-;; This program is distributed in the hope that it will be useful but WITHOUT
-;; ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-;; FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
-;; more details.
-;;
-;; You should have received a copy of the GNU General Public License along with
-;; this program; if not, write to the Free Software Foundation, Inc., 59 Temple
-;; Place - Suite 330, Boston, MA 02111-1307, USA.
-
-; NOTE: This file was originally in books/unicode/, but has been moved here to
-; solve a circular dependency issue introduced when this book was locally
-; included in symbol-btree.lisp.
+; Take lemmas
+; Copyright (C) 2005-2013 by Jared Davis <jared@cs.utexas.edu>
+;
+; This program is free software; you can redistribute it and/or modify it under
+; the terms of the GNU General Public License as published by the Free Software
+; Foundation; either version 2 of the License, or (at your option) any later
+; version.  This program is distributed in the hope that it will be useful but
+; WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+; FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
+; more details.  You should have received a copy of the GNU General Public
+; License along with this program; if not, write to the Free Software
+; Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
+;
+; take.lisp
+; This file was originally part of the Unicode library.
 
 (in-package "ACL2")
 (include-book "list-fix")
 (local (include-book "arithmetic/top" :dir :system))
-
-(in-theory (disable (:definition take)))
 
 (defun simpler-take-induction (n xs)
   ;; Not generally meant to be used; only meant for take-induction
@@ -33,119 +26,139 @@
     (cons (car xs)
           (simpler-take-induction (1- n) (cdr xs)))))
 
-(encapsulate
-  ()
-  (local (in-theory (enable take)))
 
-  (local (defthm equivalence-lemma
-           (implies (true-listp acc)
-                    (equal (first-n-ac n xs acc)
-                           (revappend acc (simpler-take-induction n xs))))))
+(in-theory (disable (:definition take)))
 
-  (defthm take-redefinition
-    (equal (take n x)
-           (if (zp n)
-               nil
-             (cons (car x)
-                   (take (1- n) (cdr x)))))
-    :rule-classes ((:definition :controller-alist ((TAKE T NIL))))))
+(defsection std/lists/take
+  :parents (std/lists take)
+  :short "Lemmas about @(see take) available in the @(see std/lists) library."
 
-(defthm take-induction t
-  :rule-classes ((:induction
-                  :pattern (take n x)
-                  :scheme (simpler-take-induction n x))))
+  :long "<p>ACL2's built-in definition of @('take') is not especially good for
+reasoning since it is written in terms of the tail-recursive function
+@('first-n-ac').  We provide a much nicer @(see definition) rule:</p>
 
-;; The built-in type-prescription for take is awful:
-;;
-;; (OR (CONSP (TAKE N L))
-;;            (EQUAL (TAKE N L) NIL)
-;;            (STRINGP (TAKE N L)))
-;;
-;; So fix it...
+  @(def take-redefinition)
 
-(in-theory (disable (:type-prescription take)))
+<p>And we also set up an analogous @(see induction) rule.  We generally
+recommend using @('take-redefinition') instead of @('(:definition take)').</p>"
 
-(defthm true-listp-of-take
-  (true-listp (take n xs))
-  :rule-classes :type-prescription)
+  (encapsulate
+    ()
+    (local (in-theory (enable take)))
 
-(defthm consp-of-take
-  (equal (consp (take n xs))
+    (local (defthm equivalence-lemma
+             (implies (true-listp acc)
+                      (equal (first-n-ac n xs acc)
+                             (revappend acc (simpler-take-induction n xs))))))
+
+    (defthm take-redefinition
+      (equal (take n x)
+             (if (zp n)
+                 nil
+               (cons (car x)
+                     (take (1- n) (cdr x)))))
+      :rule-classes ((:definition :controller-alist ((TAKE T NIL))))))
+
+  (defthm take-induction t
+    :rule-classes ((:induction
+                    :pattern (take n x)
+                    :scheme (simpler-take-induction n x))))
+
+  ;; The built-in type-prescription for take is awful:
+  ;;
+  ;; (OR (CONSP (TAKE N L))
+  ;;            (EQUAL (TAKE N L) NIL)
+  ;;            (STRINGP (TAKE N L)))
+  ;;
+  ;; So fix it...
+
+  (in-theory (disable (:type-prescription take)))
+
+  (defthm true-listp-of-take
+    (true-listp (take n xs))
+    :rule-classes :type-prescription)
+
+  (defthm consp-of-take
+    (equal (consp (take n xs))
+           (not (zp n))))
+
+  (defthm take-under-iff
+    (iff (take n xs)
          (not (zp n))))
 
-(defthm take-under-iff
-  (iff (take n xs)
-       (not (zp n))))
+  (defthm len-of-take
+    (equal (len (take n xs))
+           (nfix n)))
 
-(defthm len-of-take
-  (equal (len (take n xs))
-         (nfix n)))
+  (defthm take-of-cons
+    (equal (take n (cons a x))
+           (if (zp n)
+               nil
+             (cons a (take (1- n) x)))))
 
-(defthm take-of-cons
-  (equal (take n (cons a x))
-         (if (zp n)
-             nil
-           (cons a (take (1- n) x)))))
+  (defthm take-of-append
+    (equal (take n (append x y))
+           (if (< (nfix n) (len x))
+               (take n x)
+             (append x (take (- n (len x)) y))))
+    :hints(("Goal" :induct (take n x))))
 
-(defthm take-of-append
-  (equal (take n (append x y))
-         (if (< (nfix n) (len x))
-             (take n x)
-           (append x (take (- n (len x)) y))))
-  :hints(("Goal" :induct (take n x))))
+  (defthm take-of-zero
+    (equal (take 0 x)
+           nil))
 
-(defthm take-of-zero
-  (equal (take 0 x)
-         nil))
+  (defthm take-of-1
+    (equal (take 1 x)
+           (list (car x))))
 
-(defthm take-of-1
-  (equal (take 1 x)
-         (list (car x))))
+  (defthm car-of-take
+    (implies (<= 1 (nfix n))
+             (equal (car (take n x))
+                    (car x))))
 
-(defthm car-of-take
-  (implies (<= 1 (nfix n))
-           (equal (car (take n x))
-                  (car x))))
+  (defthm second-of-take
+    (implies (<= 2 (nfix n))
+             (equal (second (take n x))
+                    (second x))))
 
-(defthm second-of-take
-  (implies (<= 2 (nfix n))
-           (equal (second (take n x))
-                  (second x))))
+  (defthm third-of-take
+    (implies (<= 3 (nfix n))
+             (equal (third (take n x))
+                    (third x))))
 
-(defthm third-of-take
-  (implies (<= 3 (nfix n))
-           (equal (third (take n x))
-                  (third x))))
+  (defthm fourth-of-take
+    (implies (<= 4 (nfix n))
+             (equal (fourth (take n x))
+                    (fourth x))))
 
-(defthm fourth-of-take
-  (implies (<= 4 (nfix n))
-           (equal (fourth (take n x))
-                  (fourth x))))
+  (defthm take-of-len-free
+    (implies (equal len (len x))
+             (equal (take len x)
+                    (list-fix x))))
 
-(defthm take-of-len-free
-  (implies (equal len (len x))
-           (equal (take len x)
-                  (list-fix x))))
+  (defthm take-of-len
+    (equal (take (len x) x)
+           (list-fix x)))
 
-(defthm take-of-len
-  (equal (take (len x) x)
-         (list-fix x)))
+  (defthm subsetp-of-take
+    (implies (<= (nfix n) (len x))
+             (subsetp (take n x) x)))
 
-(defthm subsetp-of-take
-  (implies (<= (nfix n) (len x))
-           (subsetp (take n x) x)))
+  (defthm take-of-take
+    (implies (< (nfix a) (nfix b))
+             (equal (take a (take b x))
+                    (take a x))))
 
-(defthm take-of-take
-  (implies (< (nfix a) (nfix b))
-           (equal (take a (take b x))
-                  (take a x))))
+  (defthm take-of-take-same
+    (equal (take a (take a x))
+           (take a x))))
 
-(defthm take-of-take-same
-  (equal (take a (take a x))
-         (take a x)))
 
-(encapsulate
-  ()
+(defsection first-n
+  :parents (std/lists take)
+  :short "@(call first-n) is logically identical to @('(take n x)'), but its
+guard does not require @('(true-listp x)')."
+
   (local (defun repeat (x n)
            (if (zp n)
                nil

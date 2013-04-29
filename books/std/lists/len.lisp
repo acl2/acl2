@@ -1,4 +1,4 @@
-; len.lisp
+; Len lemmas
 ; Copyright (C) 2008-2013 Centaur Technology
 ;
 ; Contact:
@@ -19,57 +19,60 @@
 ; Original author: Jared Davis <jared@centtech.com>
 
 (in-package "ACL2")
+(include-book "xdoc/top" :dir :system)
 (local (include-book "arithmetic/top" :dir :system))
 
-(local (in-theory (enable len)))
+(defsection std/lists/append
+  :parents (std/lists append)
+  :short "Lemmas about @(see len) available in the @(see std/lists) library."
 
-(defthm len-when-atom
-  (implies (atom x)
-           (equal (len x)
-                  0)))
+  (defthm len-when-atom
+    (implies (atom x)
+             (equal (len x)
+                    0)))
 
-(defthm len-of-cons
-  (equal (len (cons a x))
-         (+ 1 (len x))))
+  (defthm len-of-cons
+    (equal (len (cons a x))
+           (+ 1 (len x))))
 
-(defthm |(equal 0 (len x))|
-  (equal (equal 0 (len x))
-         (atom x)))
+  (defthm |(equal 0 (len x))|
+    (equal (equal 0 (len x))
+           (atom x)))
 
-(defthm |(< 0 (len x))|
-  (equal (< 0 (len x))
-         (consp x)))
+  (defthm |(< 0 (len x))|
+    (equal (< 0 (len x))
+           (consp x)))
 
-(defthm consp-by-len
-  (implies (and (equal (len x) n)
-                (syntaxp (quotep n)))
-           (equal (consp x)
-                  (< 0 n))))
+  (defthm consp-by-len
+    (implies (and (equal (len x) n)
+                  (syntaxp (quotep n)))
+             (equal (consp x)
+                    (< 0 n))))
 
-(defthm consp-of-cdr-by-len
-  (implies (and (equal (len x) n)
-                (syntaxp (quotep n)))
-           (equal (consp (cdr x))
-                  (< 1 n)))
-  :hints(("Goal" :expand ((len x)
-                          (len (cdr x))))))
+  (defthm consp-of-cdr-by-len
+    (implies (and (equal (len x) n)
+                  (syntaxp (quotep n)))
+             (equal (consp (cdr x))
+                    (< 1 n)))
+    :hints(("Goal" :expand ((len x)
+                            (len (cdr x))))))
 
-(defthm consp-of-cddr-by-len
-  (implies (and (equal (len x) n)
-                (syntaxp (quotep n)))
-           (equal (consp (cddr x))
-                  (< 2 n)))
-  :hints(("Goal" :expand ((len x)
-                          (len (cdr x))
-                          (len (cddr x))))))
+  (defthm consp-of-cddr-by-len
+    (implies (and (equal (len x) n)
+                  (syntaxp (quotep n)))
+             (equal (consp (cddr x))
+                    (< 2 n)))
+    :hints(("Goal" :expand ((len x)
+                            (len (cdr x))
+                            (len (cddr x))))))
 
-(defthm consp-of-cdddr-by-len
-  (implies (and (equal (len x) n)
-                (syntaxp (quotep n)))
-           (equal (consp (cdddr x))
-                  (< 3 n)))
-  :hints(("Goal" :expand ((len x)
-                          (len (cdr x))
-                          (len (cddr x))
-                          (len (cdddr x))))))
+  (defthm consp-of-cdddr-by-len
+    (implies (and (equal (len x) n)
+                  (syntaxp (quotep n)))
+             (equal (consp (cdddr x))
+                    (< 3 n)))
+    :hints(("Goal" :expand ((len x)
+                            (len (cdr x))
+                            (len (cddr x))
+                            (len (cdddr x)))))))
 

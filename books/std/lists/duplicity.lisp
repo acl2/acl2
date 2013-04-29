@@ -25,7 +25,7 @@
 (include-book "flatten")
 
 (defsection duplicity
-  :parents (defsort count no-duplicatesp)
+  :parents (std/lists defsort count no-duplicatesp)
   :short "@(call duplicity) counts how many times the element @('a') occurs
 within the list @('x')."
 
@@ -34,15 +34,16 @@ but is more limited:</p>
 
 <ul>
 
-<li>@('count') can either scan for occurrences of a character in a string or
-an element in a list, and can only search within some particular sub-range,
+<li>@('count') can either scan for occurrences of a character in a string or an
+element in a list, and can only search within some particular sub-range,
 whereas</li>
 
-<li>@('duplicity') only works on lists and always searches the entire list.</li>
+<li>@('duplicity') only works on lists and always searches the entire
+list.</li>
 
 </ul>
 
-<p>In practice, these limitations make @9'duplicity') a much nicer function to
+<p>In practice, these limitations make @('duplicity') a much nicer function to
 work with and reason about.</p>
 
 <p>Reasoning about duplicity is very useful when trying to show that two lists
