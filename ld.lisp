@@ -20610,7 +20610,8 @@
   case; instead, guard verification will require that these terms are proved
   under the hypothesis that the guard holds.  In this way, one can add type
   declarations to assist the host Lisp compiler without cluttering the
-  function's guard.  Thanks to Jared Davis for requesting this feature.
+  function's guard.  ~l[xargs].  Thanks to Jared Davis for requesting this
+  feature.
 
   ~st[HEURISTIC IMPROVEMENTS]
 
