@@ -10,13 +10,13 @@
 # Bernard van Gastel and Julien Schmaltz
 # A formalisation of xMAS
 
+# Sebastiaan Joosten, Bernard van Gastel and Julien Schmaltz
+# A Macro for Reusing Abstract Functions and Theorems
+
 # Freek Verbeek and Julien Schmaltz
 # Verification of Building Blocks for Asynchronous Circuits
 
 ########## Waiting for possible supporting materials: ##########
-
-# Sebastiaan Joosten, Bernard van Gastel and Julien Schmaltz
-# A Macro for Reusing Abstract Functions and Theorems
 
 # Konrad Slind and David Greve
 # A Step-Indexing Approach to Partial Functions
@@ -28,11 +28,15 @@
 # ACL2 Meets the GPU: Formalizing a CUDA-based Parallelizable
 # All-Pairs Shortest Path Algorithm in ACL2
 
-# Jared Davis and Sol Swords
-# Verified AIG Algorithms in ACL2
+########## Supporting materials provided elsewhere: ##########
 
 # Jared Davis
 # Embedding ACL2 Models in End-User Applications
+# See centaur/bridge/.
+
+# Jared Davis and Sol Swords
+# Verified AIG Algorithms in ACL2
+# See centaur/aig/ and centaur/aignet/.
 
 ########## Not contributing supporting materials: ##########
 
@@ -47,6 +51,7 @@
 ##############################
 
 DIRS =  goel-hunt-kaufmann/support \
+	joosten-van-gastel-schmaltz/books \
 	verbeek-schmaltz/books \
 	van-gastel-schmaltz/books
 
