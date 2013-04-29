@@ -5376,7 +5376,8 @@
 ; However, for non-ANSI GCL we want to take advantage of the fact that all
 ; functions in the rewrite nest return a first argument (the new step-limit)
 ; that is a fixnum, but the compiler doesn't use that information when a prog1
-; call is used.  So we manage the GCL case ourselves.
+; call is used.  So we manage the non-ANSI case (including non-ANSI GCL)
+; ourselves.
 
                 #+cltl2
                 (multiple-value-prog1
@@ -6785,52 +6786,19 @@
   ``~c[#]'' and ``~c[...]''.
 
   Stack overflows may occur, perhaps caused by looping rewrite rules.  In some
-  Lisps, especially GCL, stack overflows often manifest themselves as
-  segmentation faults, causing the entire ACL2 image to crash.  Finding looping
-  rewrite rules can be tricky, especially if you are using books supplied by
-  other people.  (However, ~pl[set-rewrite-stack-limit] for a way to avoid
-  stack overflows caused by rewriter loops.)
+  Lisps, stack overflows may manifest themselves as segmentation faults,
+  causing the entire ACL2 image to crash.  Finding looping rewrite rules can be
+  tricky, especially if you are using books supplied by other
+  people.  (However, ~pl[set-rewrite-stack-limit] for a way to avoid stack
+  overflows caused by rewriter loops.)
 
-  A wonderful trick is the following.  When there is a stack overflow during a
-  proof, abort and then try it again after turning on rewrite stack monitoring
-  with ~c[:]~ilc[brr]~c[ t].  When the stack overflows again, exit to raw Lisp.
-  How you exit to raw Lisp depends on which Lisp you are using.  In Allegro
-  Common Lisp, for example, the stack overflow will leave you in an interactive
-  break.  It is often a good idea to exit the break immediately (e.g., using
-  ~c[:pop] if you use Allegro Common Lisp, or ~c[:q] using GCL), which will
-  leave you in the top-level ACL2 command loop, after which it is recommended
-  to leave that loop using ~c[:]~ilc[q].  That will leave you in raw Lisp.
-  Then, execute
-  ~bv[]
-  (cw-gstack)
-  ~ev[]
-  If the loop is in the rewriter, it will probably be evident!  You can
-  re-enter the ACL2 loop now with ~c[(]~ilc[lp]~c[)].
-
-  If you are in GCL the stack overflow may cause a segmentation fault and abort
-  the Lisp job.  This makes it harder to debug but here is what you do.  First,
-  re-create the situation just prior to submitting the form that will cause the
-  stack overflow.  You can do this without suffering through all the proofs by
-  using the ~c[:]~ilc[ld-skip-proofsp] option of ~ilc[ld] to reload your
-  scripts.  Before you submit the form that causes the stack overflow, exit the
-  ACL2 command loop with ~c[:]~ilc[q].  In raw GCL type:
-  ~bv[]
-  (si::use-fast-links nil)
-  ~ev[]
-  This will slow GCL down but make it detect and signal stack overflows rather
-  than overwrite the system memory.  Now reenter the ACL2 command loop with
-  ~c[(]~ilc[lp]~c[)].
-
-  Now carry on as described above, turning on rewrite stack monitoring with
-  ~c[:]~ilc[brr]~c[ t] and provoking the stack overflow.  When it occurs, you
-  will be in an interactive break.  Exit to raw Lisp with two successive
-  ~c[:]~c[q]'s, one to get out of the error break and the next to get out of
-  the top-level ACL2 command loop.  Then in raw GCL execute ~c[(cw-gstack)].
+  Normally, a stack overflow will cause the printing of an error message that
+  suggests how to proceed.  Just follow those instructions, and you will
+  generally be able to see what is causing the loop.
 
   Suggestion: Once you have found the loop and fixed it, you should execute the
   ACL2 command ~c[:]~ilc[brr]~c[ nil], so that you don't slow down subsequent
-  proof attempts.  If you are in GCL, you should also get into raw Lisp and
-  execute ~c[(si::use-fast-links t)].~/"
+  proof attempts.~/"
 
   `(cw-gstack-fn ,(if evisc-tuplep
                       evisc-tuple

@@ -23,15 +23,15 @@
 (defmacro qfuncall (fn &rest args)
 
 ; Avoid noise in CCL about undefined functions, not avoided by funcall alone.
-; But this doesn't help in CMU CL 19e on Linux and even breaks CMU CL 18d on
-; Solaris, so we just punt on this trick for CUCL.
+; But this doesn't help in ANSI GCL or CMU CL 19e on Linux, and even has broken
+; onCMU CL 18d on Solaris, so we just punt on this trick for those Lisps.
 
   (if (not (symbolp fn))
       (error "~s requires a symbol, not ~s" 'qfuncall fn)
-    #-(and cltl2 (not cmu))
-    `(funcall ',fn ,@args)
-    #+(and cltl2 (not cmu))
-    `(let () (declare (ftype function ,fn)) (,fn ,@args))))
+    #+(and cltl2 (not cmu) (not gcl))
+    `(let () (declare (ftype function ,fn)) (,fn ,@args))
+    #-(and cltl2 (not cmu) (not gcl))
+    `(funcall ',fn ,@args)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;                            SUPPORT FOR NON-STANDARD ANALYSIS
@@ -98,7 +98,7 @@
 ; (defun foo () (my-mac ("Guards")))
 ; (compile 'foo)
 
-#+(and gcl (not ansi-cl))
+#+(and gcl (not cltl2))
 (when (and (fboundp 'compiler::wrap-literals)
            (not (gcl-version-> 2 6 7)))
   (setf (symbol-function 'compiler::wrap-literals)
@@ -206,28 +206,6 @@
     (t (error
         "Unexpected type for convert-to-integer-type ~s"
         typ))))
-
-(defparameter *lisp-fns-with-mv-output-type*
-
-; We have used the following form in an ANSI version of GCL to compute the list
-; of functions that return multiple values.  Presumably this is the correct
-; list for the main Lisp package in other Common Lisp implementations as well.
-
-;  (let (ans)
-;     (do-symbols (sym (find-package "LISP"))
-;                 (let ((tp (get sym 'compiler::return-type)))
-;                   (when (and (consp tp)
-;                              (member (car tp)
-;                                      '(values system::returns-exactly)))
-;                     (setq ans (cons sym ans)))))
-;     ans)
-
-  '(INTERN DECODE-FLOAT
-           GET-MACRO-CHARACTER ; ansi only
-           READ-LINE MACROEXPAND ROUND GETHASH
-           GET-PROPERTIES PARSE-INTEGER PARSE-NAMESTRING ; these 3 ansi only
-           CEILING MACROEXPAND-1 INTEGER-DECODE-FLOAT TRUNCATE FIND-SYMBOL
-           FLOOR))
 
 (defvar *acl2-output-type-abort* nil)
 
@@ -451,10 +429,7 @@
                     ((and (consp (car form))
                           (eq (caar form) 'lambda))
                      (output-type-for-declare-form-rec (caddr (car form)) flet-alist))
-                    ((or (not (symbolp (car form))) ; should always be false
-                         (member (car form)
-                                 *lisp-fns-with-mv-output-type*
-                                 :test 'eq))
+                    ((not (symbolp (car form))) ; should always be false
                      '*)
                     #-acl2-mv-as-values
                     (t t)
@@ -470,7 +445,7 @@
                                                  t)))
                                (t t))))))
              (t (output-type-for-declare-form-rec new-form flet-alist)))))))
-       
+
 (defun output-type-for-declare-form-rec-list (forms flet-alist)
   (cond ((atom forms)
          nil)
@@ -610,9 +585,10 @@
                     raw-defs)))))
 
 (defmacro eval-or-print (form stream)
-  `(let ((form ,form))
+  `(let ((form ,form)
+         (stream ,stream))
      (when form
-       (if ,stream
+       (if stream
            (format stream "~s~%" form)
          (eval form)))))
 
@@ -1146,9 +1122,9 @@ notation causes an error and (b) the use of ,. is not permitted."
            (cond ((eq p *main-lisp-package*)
 
 ; We could just return *main-lisp-package-name-raw* in this case (but do not
-; skip this case, since in GCL, (package-name *main-lisp-package*) is "LISP",
-; not "COMMON-LISP" (which is what we need here).  But we go ahead and set
-; *initial-lisp-symbol-mark* in order to bypass this code next time.
+; skip this case, since in non-ANSI GCL, (package-name *main-lisp-package*) is
+; "LISP", not "COMMON-LISP" (which is what we need here).  But we go ahead and
+; set *initial-lisp-symbol-mark* in order to bypass this code next time.
 
                   (setf (get x *initial-lisp-symbol-mark*)
                         *main-lisp-package-name-raw*))
@@ -1372,7 +1348,7 @@ notation causes an error and (b) the use of ,. is not permitted."
     (let ((home (si::getenv "HOME")))
       (and home
            (pathname (concatenate 'string home "/")))))
-   (t (pathname (user-homedir-pathname))))
+   (t (our-ignore-errors (pathname (user-homedir-pathname)))))
   #-gcl ; presumably CLtL2
   (our-ignore-errors (user-homedir-pathname)))
 

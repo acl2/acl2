@@ -2164,7 +2164,9 @@
          (setq *saved-raw-prompt* nil) ; no longer needed; free storage
          t))))
 
-#+gcl
+#+(and gcl (not cltl2))
+; We are a bit sorry that we messed around at this low a level, and choose not
+; to do so for ANSI GCL.
 (progn
 
 (defun-one-output install-new-raw-prompt ()
@@ -2199,7 +2201,7 @@
          (setq *saved-raw-prompt* nil) ; no longer needed; free storage
          t))))
 
-#-(or allegro clisp cmu ccl gcl)
+#-(or allegro clisp cmu ccl (and gcl (not cltl2)))
 (progn
 
 (defun-one-output install-new-raw-prompt ()
@@ -2311,8 +2313,8 @@
 ; SBCL and non-ANSI GCL complain about setting the fill-pointer if we use
 ; 'base-char.
 
-              #+(or sbcl (and gcl (not ansi-cl))) 'character
-              #-(or sbcl (and gcl (not ansi-cl))) 'base-char
+              #+(or sbcl (and gcl (not cltl2))) 'character
+              #-(or sbcl (and gcl (not cltl2))) 'base-char
               :fill-pointer 0
               :adjustable t))
 
@@ -7387,7 +7389,7 @@ Missing functions:
 
 ; Before defining lp, we provide support for inhibiting breaks.
 
-#-(and gcl (not ansi-cl))
+#-(and gcl (not cltl2))
 (defun our-abort (condition y
                             &aux
                             (state *the-live-state*)
@@ -7638,7 +7640,7 @@ Missing functions:
    #+acl2-par
    (f-put-global 'parallel-execution-enabled t *the-live-state*)
    (let ((state *the-live-state*)
-         #+(and gcl (not ansi-cl))
+         #+(and gcl (not cltl2))
          (lisp::*break-enable* (debugger-enabledp *the-live-state*))
          (raw-p
           (cond
@@ -7675,7 +7677,7 @@ Missing functions:
 ; globally to nil when input comes from a file, which is how ACL2 is built,
 ; rather than standard-input,
 
-         #-(and gcl (not ansi-cl))
+         #-(and gcl (not cltl2))
          (setq *debugger-hook* 'our-abort)
 
 ; Even with the setting of *stack-overflow-behaviour* to nil or :warn in

@@ -141,9 +141,9 @@
   Alternatively, put ~c[(si::sgc-on nil)] in your ~c[~~/acl2-init.lsp] file.
 
   A full regression test and found that this decreased performance by about
-  10%.  But even with that, GCL may be the fastest Common Lisp for ACL2 on
-  Linux (performance figures may often be found by following the ``Recent
-  changes'' link on the ACL2 home page).
+  10%.  But even with that, GCL is probably one of the faster Common Lisp
+  implementations for ACL2 on Linux.  Performance figures may often be found by
+  following the ``Recent changes'' link on the ACL2 home page.
 
   6. GCL operations on numbers can sometimes be sped up, perhaps by up to two
   orders of magnitude, by suitable ~ilc[declare] forms (also ~pl[type-spec]).
@@ -9034,8 +9034,8 @@
 ; out that bit, we have [mod M31] 2^16*L = 2^16(2^15 + L#) = 2^31 + 2^16 * L#.
 ; = 1 + 2^16 * L#.
 
-; We can test this function in CCL, in raw Lisp, as follows.  (It is probably
-; too slow to do this in GCL since some intermediate results are not fixnums.)
+; We can test this function in CCL, in raw Lisp, as follows.  (It may be too
+; slow to do this in GCL since some intermediate results might not be fixnums.)
 ; It took us about 3.5 minutes (late 2008).
 
 ;  (defun test ()
@@ -14645,16 +14645,16 @@
   set aside fixnums in GCL~/
 
   ~c[(Allocate-fixnum-range fixnum-lo fixnum-hi)] causes Gnu Common Lisp
-  (GCL) to create a persistent table for the integers between
-  ~c[fixnum-lo] and ~c[fixnum-hi] (both bounds inclusive). This table is
-  referenced first when any integer is boxed and the existing box in
-  the table is used if the integer is in bounds.  This can speed up
-  GCL considerably by avoiding wasteful fixnum boxing.  Here,
-  ~c[fixnum-lo] and ~c[fixnum-hi] should be fixnums, more specifically of
-  type ~c[(signed-byte 30)], with ~c[fixnum-lo <= fixnum-hi].~/
+  (GCL) to create a persistent table for the integers between ~c[fixnum-lo] and
+  ~c[fixnum-hi] (both bounds inclusive). This table is referenced first when
+  any integer is boxed and the existing box in the table is used if the integer
+  is in bounds.  This can speed up GCL considerably by avoiding wasteful fixnum
+  boxing.  Here, ~c[fixnum-lo] and ~c[fixnum-hi] should be fixnums.  On 32-bit
+  machines it would be good for them to be of type ~c[(signed-byte 30)], with
+  ~c[fixnum-lo <= fixnum-hi].~/
 
-  When this function is executed in a Lisp implementation other than
-  GCL, it has no side effect.  This function always returns ~c[nil]."
+  When this function is executed in a Lisp implementation other than GCL, it
+  has no side effect.  This function always returns ~c[nil]."
 
   (declare (xargs :guard (and (integerp fixnum-lo)
                               (integerp fixnum-hi)

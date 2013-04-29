@@ -301,13 +301,6 @@ implementations.")
 
   'acl2_invisible::*CURRENT-ACL2-WORLD-KEY*)
 
-#+(and gcl hons)
-(when (not (gcl-version->= 2 7 0))
-  (format t
-          "ERROR: We do not support building a HONS version of ACL2 in~%~
-           versions of GCL prior to 2.7.0.~%")
-  (lisp::bye))
-
 ; It is a mystery why the following proclamation is necessary, but it
 ; SEEMS to be necessary in order to permit the interaction of tracing
 ; with the redefinition of si::break-level.
@@ -725,14 +718,15 @@ implementations.")
 ; Prefix is generally nil, but can be (string . fmt-args).  String is the
 ; actual command invocation, with the indicated format args, args.
 
-  `(#+cltl2 with-standard-io-syntax #-cltl2 progn
-            (format ,stream "#!/bin/sh~%~%")
-            (format ,stream
-                    "# Saved ~a~%~%"
-                    (saved-build-dates "#  then "))
-            ,@(and prefix
-                   `((format ,stream ,(car prefix) ,@(cdr prefix))))
-            (format ,stream
+  `(#+(and cltl2 (not gcl)) with-standard-io-syntax
+      #-(and cltl2 (not gcl)) progn
+      (format ,stream "#!/bin/sh~%~%")
+      (format ,stream
+              "# Saved ~a~%~%"
+              (saved-build-dates "#  then "))
+      ,@(and prefix
+             `((format ,stream ,(car prefix) ,@(cdr prefix))))
+      (format ,stream
 
 ; We generally take Noah Friedman's suggestion of using "exec" since there is
 ; no reason to keep the saved_acl2 shell script in the process table.  However,
@@ -742,11 +736,11 @@ implementations.")
 ; eliminate the "exec" in Windows; we have found that this works fine, at least
 ; for GCL and SBCL.
 
-                    #-mswindows
-                    (concatenate 'string "exec " ,string)
-                    #+mswindows
-                    ,string
-                    ,@args)))
+              #-mswindows
+              (concatenate 'string "exec " ,string)
+              #+mswindows
+              ,string
+              ,@args)))
 
 #+akcl
 (defun save-acl2-in-akcl-aux (sysout-name gcl-exec-name
@@ -970,7 +964,7 @@ implementations.")
 
   (cond ((fboundp 'si::sgc-on)
          (print "Executing (si::sgc-on t)") ;debugging GC
-         (si::sgc-on t)))
+         (funcall 'si::sgc-on t)))
 
 ; Set the hole to be sufficiently large so that ACL2 can do all the allocations
 ; quickly when it starts up, without any GC, leaving the desired size hole when

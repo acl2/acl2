@@ -3437,12 +3437,12 @@
   done, which should leave you in an appropriate state.
 
   However, you may be able to quit from the break in the normal Lisp manner (as
-  with ~c[:q] in GCL, ~c[:reset] in Allegro CL, and ~c[q] in CMU CL).  If this
-  attempt to quit is successful, it will return you to the innermost ACL2
-  read-eval-print loop, with appropriate cleanup performed first.  Note that if
-  you are within a ~ilc[brr] environment when the break occurs, quitting from
-  the break will only return you to that environment, not to the top of ACL2's
-  read-eval-print loop.~/")
+  with ~c[:q] in GCL or CCL, ~c[:reset] in Allegro CL, and ~c[q] in CMU CL).
+  If this attempt to quit is successful, it will return you to the innermost
+  ACL2 read-eval-print loop, with appropriate cleanup performed first.  Note
+  that if you are within a ~ilc[brr] environment when the break occurs,
+  quitting from the break will only return you to that environment, not to the
+  top of ACL2's read-eval-print loop.~/")
 
 (deflabel saving-and-restoring
   :doc
@@ -15668,7 +15668,7 @@
 
 ; Fixed a bug in "make copy-distribution" in GCL builds, where the presence of
 ; a filename that extends the designated directory string caused an error,
-; errouneously stating that the directory already exists.
+; erroneously stating that the directory already exists.
 
 ; Regarding "Fixed a bug that could make ~c[:]~ilc[oops] cause an error.": The
 ; fix is to use equal instead of eq in retract-world1; see the comment there.
@@ -20481,10 +20481,10 @@
 ; subst-type-alist1.
 
 ; Added macro our-ignore-errors in raw Lisp, to ignore errors except for CLtL1
-; (i.e., GCL).  Used it to define safe-open, which is open wrapped with
-; our-ignore-errors.  Used safe-open to implement the change mentioned below
-; for open-input-channel open-output-channel: "no longer cause an error when
-; failing to open a channel".
+; (i.e., non-ANSI GCL).  Used it to define safe-open, which is open wrapped
+; with our-ignore-errors.  Used safe-open to implement the change mentioned
+; below for open-input-channel open-output-channel: "no longer cause an error
+; when failing to open a channel".
 
 ; The Essay on Correctness of Meta Reasoning has been greatly improved, in
 ; particular with respect to its handling of meta-extract hypotheses.
@@ -20512,6 +20512,11 @@
 ;              :use
 ;              (:functional-instance main
 ;                                    (f (lambda (v) (g v y)))))))
+
+; In the course of modifying ACL2 to run on top of ANSI GCL, we did
+; miscellaneous clean-up of various comments and documentation topics, and in a
+; few cases, code.  In particular, ANSI GCL exposed a flaw in
+; intern-in-package-of-symbol, which we slightly reworked as a result.
 
   :doc
   ":Doc-Section release-notes
@@ -20554,7 +20559,7 @@
   cause an error when failing to open a channel because of a permissions
   problem, but instead return ~c[(mv nil state)].  Thanks to Jared Davis for
   requesting this change.  (Note: this change does not apply if the host Lisp
-  is non-ANSI, i.e., if the host Lisp is GCL.)
+  is non-ANSI, i.e., if the host Lisp is non-ANSI GCL.)
 
   The advanced ~il[meta-extract] mechanisms, provided for using facts from the
   ~il[world] or metafunction context, have been enhanced in the following
@@ -20698,6 +20703,11 @@
   example when reporting this bug.
 
   ~st[CHANGES AT THE SYSTEM LEVEL]
+
+  ACL2 may now be built on recent versions of a new host Lisp, ANSI Gnu Common
+  Lisp (GCL).  Traditional (non-ANSI) GCL is the original host Lisp underlying
+  ACL2, and we grateful to GCL support that we received from the late Bill
+  Schelter and, more recently and particular for ANSI GCL, from Camm Maguire.
 
   ~st[EMACS SUPPORT]
 

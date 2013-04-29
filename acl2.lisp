@@ -401,10 +401,13 @@
 ; See acl2-fns.lisp for a fix to user-homedir-pathname for some versions of
 ; GCL.
 
-; We do not yet support GCL ANSI.
-#+(and gcl ansi-cl)
-(error
- "FATAL ERROR: ACL2 does not yet support GCL ANSI.  Please use a non-ANSI GCL.")
+#+(and gcl cltl2)
+; Some older versions of ANSI GCL aren't sufficiently developed to support
+; ACL2.  We try to disallow some of those here.  Note all 2.6.8pre are created
+; equal!
+(when (not (fboundp 'with-standard-io-syntax))
+  (error
+   "FATAL ERROR: ACL2 does not support this older version ANSI GCL."))
 
 ; To use ACL2 under LispWorks 3.2.0, execute the following to work around a
 ; bug.
@@ -572,26 +575,28 @@
 ; Then all is well.
 
           )
-         #+cmu
+         #+(or cmu (and gcl cltl2))
 
 ; Starting with CMUCL 19a, lisp-pkg and cl-pkg are no longer the same.  We view
 ; CMUCL as CLTL2; see (push :CLTL2 *features*) above, noting that :ANSI-CL is
 ; in *features*.  So in this case, we simply ignore lisp-pkg.  Probably we can
-; do the same for most other lisps, except for GCL where LISP is populated but
-; COMMON-LISP might not be to any significant extent.
+; do the same for most other lisps, and in fact we do so for ANSI GCL as well.
+; However, non-ANSI GCL is handled differently, since the "LISP" package is
+; populated there but the "COMMON-LISP" appears to be largely irrelevant.
 
          (t nil)
-         #-cmu
+         #-(or cmu (and gcl cltl2))
          (t
           (when cl-pkg ; but by the test above, cl-pkg is not lisp-pkg
-            #-gcl
+            #-gcl ; not non-ANSI GCL
 
-; Perhaps we can just add the present lisp to the #+cmu above.
+; Perhaps we can just add the present lisp to the case for #+(or cmu (and gcl
+; cltl2)), above.
 
             (error "This Lisp is unsuitable for ACL2, because the ~
                     COMMON-LISP~% package is defined but is not the LISP ~
                     package.")
-            #+gcl
+            #+gcl ; non-ANSI GCL
 
 ; Early versions of GCL 2.4.3/2.5.0 had a "COMMON-LISP" package that was
 ; initially populated only with LISP::T and LISP::NIL.  It seems safe to move
@@ -1404,7 +1409,7 @@ which is saved just in case it's needed later.")
     (cond ((or (null old)
                (eql fn old))
            (set-dispatch-macro-character char subchar fn))
-          (t (error "ACL2(h) cannot be built in this host Lisp, because ~%~
+          (t (error "ACL2 cannot be built in this host Lisp, because ~%~
                      ~s is already defined, to be: ~s"
                     `(get-dispatch-macro-character ,char ,subchar)
                     old)))))
@@ -1422,21 +1427,38 @@ which is saved just in case it's needed later.")
    #'sharp-comma-read))
 
 (defun define-sharp-atsign ()
-  (set-new-dispatch-macro-character
+
+; For GCL, Camm Maguire has told us (email, 4/22/2013) that he believes that
+; it's safe for us to redefine #@.
+
+  (#-gcl
+   set-new-dispatch-macro-character
+   #+gcl
+   set-dispatch-macro-character
    #\#
    #\@
    #'sharp-atsign-read))
 
 (defun define-sharp-bang ()
-  (set-new-dispatch-macro-character
+
+; For GCL, Camm Maguire has told us (email, 4/22/2013) that he believes that
+; it's safe for us to redefine #!.
+
+  (#-gcl
+   set-new-dispatch-macro-character
+   #+gcl
+   set-dispatch-macro-character
    #\#
    #\!
    #'sharp-bang-read))
 
 (defun define-sharp-u ()
-  (#-allegro
+  (#-(or gcl allegro)
    set-new-dispatch-macro-character
-   #+allegro
+   #+(or gcl allegro)
+
+; For GCL, Camm Maguire has told us (email, 4/26/2013) that he believes that
+; it's OK for us to redefine #u.
 
 ; The #u reader has been defined in Allegro CL to invoke parse-uri.  It seems
 ; harmless to overwrite it (especially since we only smash #u in
@@ -2384,9 +2406,11 @@ which is saved just in case it's needed later.")
 ; requires a package change, so we put that patch in a file that is not
 ; compiled; the present file serves nicely.
 
-#+gcl
+; However, we abandon this prompts mess for ANSI GCL.
+
+#+(and gcl (not cltl2)) ; Let's avoid this mess for the more recent ANSI GCL
 (in-package "SYSTEM")
-#+gcl
+#+(and gcl (not cltl2))
 (progn
 (defvar *debug-prompt-suffix* "")
 ; See comment about ACL2 for how the following is patched from si::break-level.

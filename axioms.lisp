@@ -10625,25 +10625,15 @@
 
   (declare (type string str)
            (type symbol sym))
-  (let ((pkg (symbol-package sym)))
+  (let* ((mark (get sym *initial-lisp-symbol-mark*))
+         (pkg (if mark *main-lisp-package* (symbol-package sym))))
     (multiple-value-bind
      (ans status)
-     (intern str
-
-; At one time we said here that we do not use symbol-package-name below because
-; for the main Lisp package, it may return the name of a non-existent package,
-; in particular for GCL: we have (symbol-package-name 'car) = "COMMON-LISP",
-; which is not the name of a package, while (symbol-name (symbol-package 'car))
-; = "LISP", which is.  However, for quite some time now (it is 2010 as we write
-; this) a call of rename-package in acl2.lisp has made that comment obsolete.
-; Nevertheless, we intern in the symbol-package, since that seems slightly more
-; efficient.
-
-             pkg)
+     (intern str pkg)
      (declare (ignore status))
 
 ; We next guarantee that if sym is an ACL2 object then so is ans.  We assume
-; that every import of a symbols into a package known to ACL2 is via defpkg,
+; that every import of a symbol into a package known to ACL2 is via defpkg,
 ; except perhaps for imports into the "COMMON-LISP" package.  So unless sym
 ; resides in the "COMMON-LISP" package (whether natively or not), the
 ; symbol-package of sym is one of those known to ACL2.  Thus, the only case of
@@ -10654,8 +10644,7 @@
 ; *initial-lisp-symbol-mark* for ans in each of these sub-cases, which
 ; preserves the above invariant.
 
-     (when (and (or (get sym *initial-lisp-symbol-mark*)
-                    (eq pkg *main-lisp-package*))
+     (when (and (eq pkg *main-lisp-package*)
                 (not (get ans *initial-lisp-symbol-mark*)))
        (setf (get ans *initial-lisp-symbol-mark*)
              *main-lisp-package-name-raw*))
@@ -23920,8 +23909,9 @@
 
 (defmacro maybe-introduce-empty-pkg-1 (name)
 
-; It appears that GCL, at least non-ANSI GCL, requires a user::defpackage form
-; near the top of a file in order to read the corresponding compiled file.  For
+; It appears that GCL, requires a user::defpackage (non-ANSI case) or
+; defpackage (ANSI case; this may be the same as user::defpackage) form near
+; the top of a file in order to read the corresponding compiled file.  For
 ; example, an error occurred upon attempting to load the community books file
 ; books/data-structures/defalist.o after certifying the corresponding book
 ; using GCL, because the form (MAYBE-INTRODUCE-EMPTY-PKG-1 "U") near the top of
@@ -23932,12 +23922,14 @@
 ; defpackage when a package already exists.  Indeed, the defpackage approach
 ; that we use for GCL does not work for LispWorks 6.0.
 
-; So, we have quite different definitions of this macro for GCL and LispWorks,
-; or more accurately, depending on feature :cltl2.
+; So, we have quite different definitions of this macro for GCL and LispWorks.
+; All other Lisps we have encountered seem happy with the approach we have
+; adopted for Lispworks, so we adopt that approach for them, too.
 
-  #+cltl2
+  #-gcl
   `(eval-when
-    (:load-toplevel :execute :compile-toplevel) ; (load eval compile) is OK too
+    #+cltl2 (:load-toplevel :execute :compile-toplevel)
+    #-cltl2 (load eval compile) ; though probably #-gcl implies #+cltl2
     (progn
       (maybe-make-package ,name)
       (maybe-make-package ,(concatenate 'string
@@ -23946,7 +23938,7 @@
       (maybe-make-package ,(concatenate 'string
                                         acl2::*1*-package-prefix*
                                         name))))
-  #-cltl2
+  #+gcl
   (let ((defp #+cltl2 'defpackage #-cltl2 'user::defpackage))
     `(progn
        (,defp ,name
@@ -31765,12 +31757,12 @@
 
 ; We get a potentially significant efficiency boost by using write-string when
 ; x is a string.  A few experiments suggest that write-string may be slightly
-; more efficient than write-sequence (which isn't available in GCL anyhow),
-; which in turn may be much more efficient than princ.  It appears that the
-; various print-controls don't affect the printing of strings, except for
-; *print-escape* and *print-readably*; and the binding of *print-escape* to nil
-; by princ seems to give the behavior of write-string, which is specified
-; simply to print the characteres of the string.
+; more efficient than write-sequence (which isn't available in non-ANSI GCL
+; anyhow), which in turn may be much more efficient than princ.  It appears
+; that the various print-controls don't affect the printing of strings, except
+; for *print-escape* and *print-readably*; and the binding of *print-escape* to
+; nil by princ seems to give the behavior of write-string, which is specified
+; simply to print the characters of the string.
 
              (write-string x stream))
             (t
@@ -32393,10 +32385,10 @@
 
 ; Here, file-name is an ACL2 file name (i.e., with Unix-style syntax).
 
-; It is possible to get an error when opening an output file.  We
-; consider that a resource error for purposes of the story.  Note that starting
-; after Version_6.1, an error is unlikely except for GCL because of our use of
-; safe-open.
+; It is possible to get an error when opening an output file.  We consider that
+; a resource error for purposes of the story.  Note that starting after
+; Version_6.1, an error is unlikely except for non-ANSI GCL because of our use
+; of safe-open.
 
   (declare (xargs :guard (and (stringp file-name)
                               (member-eq typ *file-types*)
@@ -32579,10 +32571,10 @@
 
 ; Here, file-name is an ACL2 file name (i.e., with Unix-style syntax).
 
-; It is possible to get an error when opening an output file.  We
-; consider that a resource error for purposes of the story.  Note that starting
-; after Version_6.1, an error is unlikely except for GCL because of our use of
-; safe-open.
+; It is possible to get an error when opening an output file.  We consider that
+; a resource error for purposes of the story.  Note that starting after
+; Version_6.1, an error is unlikely except for non-ANSI GCL because of our use
+; of safe-open.
 
   (declare (xargs :guard (and (or (stringp file-name)
                                   (eq file-name :string))
@@ -33186,11 +33178,11 @@
       (when *wormholep*
         (wormhole-er 'get-output-stream-string$-fn
                      (list channel)))
-      (return-from get-output-stream-string$-fn 
-                   (cond #-(and gcl (not cltl2))
+      (return-from get-output-stream-string$-fn
+                   (cond #-gcl
                          ((not (typep stream 'string-stream))
                           (mv t nil state-state))
-                         #+(and gcl (not cltl2))
+                         #+gcl
                          ((or (not (typep stream 'stream))
                               (si::stream-name stream)) ; stream to a file
 
@@ -44137,12 +44129,11 @@
   ~bv[]
   (symbolp x)
   ~ev[]
-  Note:  If the ACL2 image is built on GCL, then ~c[symbol-package-name]
-  diverges from the name of the symbol's package in raw Lisp, in the
-  case that this package is the main Lisp package.  For example,
-  ~c[(symbol-package-name 'car)] evaluates to \"COMMON-LISP\" regardless of
-  of the underlying Lisp implementation, even though the name of the
-  main Lisp package in GCL is \"LISP\".~/")
+  Note: ~c[Symbol-package-name] may diverge from the name of the symbol's
+  package in raw Lisp, in the case that this package is the main Lisp package.
+  For example, in GCL ~c[(symbol-package-name 'car)] evaluates to
+  \"COMMON-LISP\" even though the actual package name for the symbol, ~c[car],
+  is \"LISP\".~/")
 
 (defdoc symbolp
   ":Doc-Section ACL2::ACL2-built-ins
@@ -47965,9 +47956,9 @@ Lisp definition."
   (declare (xargs :guard t))
   #-acl2-loop-only
   (and (not (eq (debugger-enable *the-live-state*) :never))
-       #+(and gcl (not ansi-cl))
+       #+(and gcl (not cltl2))
        (break)
-       #-(and gcl (not ansi-cl))
+       #-(and gcl (not cltl2))
        (let ((*debugger-hook* nil)
              #+ccl ; useful for CCL revision 12090 and beyond
              (ccl::*break-hook* nil))
@@ -48082,8 +48073,8 @@ Lisp definition."
   ~em[Introduction.]  Suppose we define ~c[foo] in ~c[:]~ilc[program] mode to
   take the ~ilc[car] of its argument.  This can cause a raw Lisp error.  ACL2
   will then return control to its top-level loop unless you enable the Lisp
-  debugger, as shown below (except:  the error message can be a little
-  different in GCL).
+  debugger, as shown below (except: the error message can take quite a
+  different form in non-ANSI GCL).
 
   ~bv[]
     ACL2 !>(defun foo (x) (declare (xargs :mode :program)) (car x))
@@ -48167,26 +48158,27 @@ Lisp definition."
 
   It remains to discuss options ~c[:break], ~c[:bt], ~c[:break-bt], and
   ~c[:bt-break].  Option ~c[:break] is synonymous with option ~c[t], while
-  option ~c[:bt] prints a backtrace (except in GCL, where a backtrace is
-  already printed for ~c[:break]).  Options ~c[:break-bt] and ~c[:bt-break] are
-  equivalent, and each has the combined effect of ~c[:bt] and ~c[:break]: a
+  option ~c[:bt] prints a backtrace.  Options ~c[:break-bt] and ~c[:bt-break]
+  are equivalent, and each has the combined effect of ~c[:bt] and ~c[:break]: a
   backtrace is printed and then the debugger is entered.
 
   Note that ~c[set-debugger-enable] applies not only to raw Lisp errors, but
   also to ACL2 errors: those affected by ~ilc[break-on-error].  However, for
   ACL2 errors, entering the debugger is controlled only by ~c[break-on-error],
-  not by ~c[set-debugger-enable]; so for ACL2 errors, ~c[set-debugger-enable]
-  values of ~c[:bt], ~c[:break-bt], and ~c[:bt-break] have the same effect
-  (namely, of causing a backtrace to be printed, other than for GCL).
+  not by ~c[set-debugger-enable].  For ACL2 errors encountered after evaluating
+  ~c[(break-on-error t)], the ~c[set-debugger-enable] values of ~c[:bt],
+  ~c[:break-bt], and ~c[:bt-break] will result in the same effect: in many host
+  LIsps, this effect will be to cause a backtrace to be printed.
 
-  Remark for Common Lisp hackers (except for GCL).  You can customize the form
-  of the backtrace printed by entering raw Lisp (with ~c[:q]) and then
-  redefining function ~c[print-call-history], whose definition immediately
-  precedes that of ~c[break-on-error] in ACL2 source file ~c[ld.lisp].  Of
-  course, all bets are off when defining any function in raw Lisp, but as a
-  practical matter you are probably fine as long as your books are ultimately
-  certified with an unmodified copy of ACL2.  If you come up with improvements
-  to ~c[print-call-history], please pass them along to the ACL2 implementors."
+  Remark for Common Lisp hackers (except for the case that the host Lisp is
+  non-ANSI GCL).  You can customize the form of the backtrace printed by
+  entering raw Lisp (with ~c[:q]) and then redefining function
+  ~c[print-call-history], whose definition immediately precedes that of
+  ~c[break-on-error] in ACL2 source file ~c[ld.lisp].  Of course, all bets are
+  off when defining any function in raw Lisp, but as a practical matter you are
+  probably fine as long as your books are ultimately certified with an
+  unmodified copy of ACL2.  If you come up with improvements to
+  ~c[print-call-history], please pass them along to the ACL2 implementors."
 
   `(set-debugger-enable-fn ,val state))
 
@@ -48196,7 +48188,7 @@ Lisp definition."
                                                  :break-bt :bt-break)))))
   (f-put-global 'debugger-enable val state)
   #+(and (not acl2-loop-only)
-         (and gcl (not ansi-cl)))
+         (and gcl (not cltl2)))
   (when (live-state-p state)
     (setq lisp::*break-enable* (debugger-enabledp state))
     state))
