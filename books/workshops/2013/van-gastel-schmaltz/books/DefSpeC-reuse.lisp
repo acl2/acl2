@@ -395,6 +395,16 @@
       ((ev (car wrld)))
       (if (and (eq (car ev) 'EVENT-LANDMARK)
                (eq (cadr ev) 'GLOBAL-VALUE)
+
+; The next three conjuncts (added by Matt K.) avoid a hard Lisp error in at
+; least one host Lisp (ANSI GCL), when this function is called by a :program
+; mode function (hence, without checking this function's guard), when ev
+; corresponds to a DEFLABEL form,
+; (EVENT-LANDMARK GLOBAL-VALUE <n> DEFLABEL ...).
+
+               (consp (cddr ev))
+               (consp (cdddr ev))
+               (consp (car (cdddr ev)))
                (eq (caar (cdddr ev)) 'ENCAPSULATE))
         (cadar (cdddr ev))
         (find-encapsulate (cdr wrld))
