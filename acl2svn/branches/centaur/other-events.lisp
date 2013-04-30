@@ -1891,8 +1891,8 @@
         ((equal name "")
 
 ; In Allegro CL, "" is prohibited because it is already a nickname for the
-; KEYWORD package.  But in GCL we could prove nil up through v2-7 by certifying
-; the following book with the indicated portcullis:
+; KEYWORD package.  But in (non-ANSI, at least) GCL we could prove nil up
+; through v2-7 by certifying the following book with the indicated portcullis:
 
 ; (in-package "ACL2")
 ;
@@ -16543,10 +16543,10 @@
                                   (progn
                                     (cond
                                      ((and (fboundp 'si::sgc-on)
-                                           (si::sgc-on))
-                                      (si::sgc-on nil)
+                                           (funcall 'si::sgc-on))
+                                      (funcall 'si::sgc-on nil)
                                       (si::gbc t)
-                                      (si::sgc-on t))
+                                      (funcall 'si::sgc-on t))
                                      (t (si::gbc t)))
                                     state)
                                   (with-hcomp-bindings
@@ -21258,8 +21258,8 @@
                                        (,recog-name (cdr x)))))))
              (t (let ((type-term (translate-stobj-type-to-guard
                                   type 'x wrld)))
-                  
-; We may not use x in the type-term and so have to declare it ignorable.
+
+; We might not use x in the type-term and so have to declare it ignorable.
 
                   `(,recog-name (x)
                                 (declare (xargs :guard t
@@ -21523,11 +21523,10 @@
 ; Through Version_4.3, this macro was called the-live-stobj, and its body was
 ; `(eq ,name ,(the-live-var name)).  However, we need a more permissive
 ; definition in support of congruent stobjs (and perhaps local stobjs and stobj
-; fields of nested stobjs).  We use typep instead of arrayp because in CCL,
-; disassemble seems to suggest that typep may be faster, perhaps comparable
-; with an eq test.
+; fields of nested stobjs).  Note that no ACL2 object is a simple-vector; in
+; particular, a string is a vector but not a simple-vector.
 
-  `(typep ,name 'array))
+  `(typep ,name 'simple-vector))
 
 (defun array-etype-is-fixnum-type (array-etype)
   (declare (xargs :guard 
@@ -29187,7 +29186,7 @@
   ~c[:bt-break], or ~c[:break-bt].  Note that for ACL2 errors (as opposed to
   raw Lisp errors), i.e. errors affected by ~c[break-on-error], all three of
   those keyword values are treated equivalently (and, all are ignored for
-  GCL; ~pl[set-debugger-enable]).~/~/"
+  non-ANSI GCL; ~pl[set-debugger-enable]).~/~/"
 
   (let* ((error1-trace-form
           '(error1 :entry (:fmt (msg "[Breaking on error:]"))

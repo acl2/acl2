@@ -2714,12 +2714,12 @@
                                                               input-vars)))))))
               #+(and (not acl2-loop-only) akcl)
               (cond ((and (fboundp 'si::sgc-on)
-                          (si::sgc-on))
+                          (funcall 'si::sgc-on))
                      (fms "NOTE: Turning off SGC.  If you wish to turn SGC ~
                            back on again, execute (SI::SGC-ON T) in raw Lisp.~|"
                           nil (standard-co *the-live-state*)
                           *the-live-state* nil)
-                     (si::sgc-on nil)))
+                     (funcall 'si::sgc-on nil)))
               #+(and gcl (not acl2-loop-only))
               (cond (*request-bigger-fixnum-table*
                      (allocate-fixnum-range 0 (hash-size))
