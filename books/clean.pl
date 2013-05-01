@@ -31,15 +31,16 @@ use Getopt::Long qw(:config bundling_override);
 
 my $dryrun = 0;
 
-my $helpstr = '
-\nclean.pl: clean up generated files from running cert.pl
+my $helpstr = 'clean.pl: clean up generated files from running cert.pl
 
-This script removes temporary files like foo.cert, foo.cert.out, foo.time, etc.
-Ordinarily there would be no reason to call this file by hand, instead it would
-usually be run by invoking "make clean" or similar.
+This script removes temporary files like foo.cert, foo.cert.out, foo.time,
+etc., which arise from certifying ACL2 books with cert.pl or similar.
 
-Usage:
-clean.pl [OPTIONS]
+The cleaning is done in:
+  - your current directory, and
+  - all subdirectories of the current directory, recursively.
+
+Usage: clean.pl [OPTIONS]
 
 Options:
 
