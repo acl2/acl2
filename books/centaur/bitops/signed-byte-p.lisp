@@ -61,14 +61,21 @@
            (signed-byte-p (+ 1 n) (+ a b)))
   :hints(("Goal" :in-theory (enable signed-byte-p))))
 
-(defthm basic-signed-byte-p-of--
+(defthm basic-signed-byte-p-of-unary-minus
+  ;; ACL2's fancy unification stuff means this works fine in the common case
+  ;; that you're dealing with quoted constants.
+  (implies (signed-byte-p n x)
+           (signed-byte-p (+ 1 n) (- x)))
+  :hints(("Goal" :in-theory (enable signed-byte-p))))
+
+(defthm basic-signed-byte-p-of-binary-minus
   ;; ACL2's fancy unification stuff means this works fine in the common case
   ;; that you're dealing with quoted constants.
   ;;
   ;; You might ask, why have this rule when we have the rule about PLUS, since
-  ;; (- A B) is just the same as (+ a (unary-- b)).  The answer is: there isn't
-  ;; a very nice rule about (signed-byte-p (unary-- x)), so there isn't a very
-  ;; good way to indirectly get this rule:
+  ;; (- A B) is just the same as (+ a (unary-- b)).  The answer is: the rule
+  ;; about (signed-byte-p (unary-- x)) isn't very nice, and doesn't really give
+  ;; us an indirect way to get here.
   (implies (and (signed-byte-p n a)
                 (signed-byte-p n b))
            (signed-byte-p (+ 1 n) (- a b)))

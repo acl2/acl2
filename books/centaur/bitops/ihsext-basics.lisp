@@ -2781,9 +2781,9 @@
                  (t (logcons (logcar i)
                              (logext (1- size) (logcdr i))))))
     :hints(("Goal" :in-theory (disable logext)
-             :use ((:instance logext*
-                    (size (if (posp size) size 1))
-                    (i (ifix i))))))
+            :use ((:instance logext*
+                             (size (if (posp size) size 1))
+                             (i (ifix i))))))
     :rule-classes ((:definition
                     :clique (logext)
                     :controller-alist ((logext t nil)))))
@@ -2829,7 +2829,24 @@
                   (>= size1 (if (posp size) size 1)))
              (signed-byte-p size1 (logext size i))))
 
-  (add-to-ruleset ihsext-basic-thms signed-byte-p-of-logext))
+  (add-to-ruleset ihsext-basic-thms signed-byte-p-of-logext)
+
+  (local
+   (defun my-induct (m n x)
+     (cond ((zp m) (list m n x))
+           ((equal n 1) t)
+           (t (my-induct (1- m) (1- n) (logcdr x))))))
+
+  (defthm cancel-logext-under-loghead
+    (implies (<= (nfix m) (nfix n))
+             (equal (loghead m (logext n x))
+                    (loghead m x)))
+    :hints(("Goal"
+            :induct (my-induct m n x)
+            :in-theory (e/d (loghead** logext**)
+                            (logextu-as-loghead))
+            :do-not '(eliminate-destructors generalize fertilize)
+            :do-not-induct t))))
 
 
 
