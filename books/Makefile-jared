@@ -168,7 +168,7 @@ REBUILD_MAKEFILE_BOOKS := $(shell \
 
 $(info Scanning for dependencies...)
 REBUILD_MAKEFILE_DEPS := $(shell \
-  rm -f Makefile-deps Makefile-deps.log; \
+  rm -f Makefile-deps Makefile-deps.out; \
   time (./cert.pl \
           --quiet \
           --static-makefile Makefile-deps \
@@ -190,7 +190,8 @@ include Makefile-deps
 $(info Determining ACL2 features (for ACL2 = $(ACL2)))
 ACL2_FEATURES := $(shell \
   rm -f Makefile-features ; \
-  $(STARTJOB) -c "$(ACL2) < cert_features.lsp &> Makefile-features.log" ;\
+  ACL2_CUSTOMIZATION=NONE $(STARTJOB) -c \
+     "$(ACL2) < cert_features.lsp &> Makefile-features.out" ;\
   ls -l Makefile-features)
 
 # Only conditionally include Makefile-features, so that make clean works even
@@ -261,10 +262,9 @@ workshop2011 : $(filter workshops/2011/%, $(OK_CERTS))
 
 # CLEANING -------------------------------------------------------------------
 
-# There are so many files to delete that we can run into shell limitations.  To
-# avoid this sort of thing, we delegate most of the cleaning process to
-# clean.pl, a very simple script.  But there are certain files that we also
-# want to remove, even beyond what clean.pl takes care of for us
+# We delegate most of the cleaning process to clean.pl, a simple perl script
+# that lets us take care not to delete certain kinds of files.  The clean.pl
+# script will remove things like .cert and .fasl files.  But 
 
 CLEAN_FILES_EXPLICIT := \
    xdoc-impl/bookdoc.dat \
@@ -272,31 +272,23 @@ CLEAN_FILES_EXPLICIT := \
    Makefile-books \
    Makefile-features
 
-CLEAN_FILES_SEARCH := \
-   workxxx* \
-   *@expansion.lsp \
-   TMP*.* \
-   temp-emacs-file.lsp
-
-CLEAN_FIND_ARGS := \
-   $(patsubst %,-name "%" -o, $(CLEAN_FILES_SEARCH))
+MORECLEAN_FILES_EXPLICIT := \
+   xdoc-impl/manual \
+   centaur/manual
 
 .PHONY: clean_books clean
 
 clean_books:
 	@echo "Using clean.pl to remove certificates, etc."
-	./clean.pl --targets Makefile-books
+	./clean.pl
 
 clean: clean_books
 	@echo "Removing extra, explicitly temporary files."
-	rm -f $(CLEAN_FILES_EXPLICIT)
-	@echo "Removing extra, implicitly temporary files by searching..."
-	find . -type f \
-               \( $(CLEAN_FIND_ARGS) -false \) \
-               \( -not -name "*svn-base" \) \
-               -print0 \
-          | xargs -0 rm -f
+	rm -rf $(CLEAN_FILES_EXPLICIT)
 
+moreclean: clean
+	@echo "Removing even more generated files (documentation, etc)."
+	rm -rf $(MORECLEAN_FILES_EXPLICIT)
 
 
 

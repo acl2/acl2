@@ -25,100 +25,186 @@
 
 use strict;
 use warnings;
-
+use File::Find;
+use File::Spec;
 use Getopt::Long qw(:config bundling_override);
+
+my $dryrun = 0;
 
 my $helpstr = '
 \nclean.pl: clean up generated files from running cert.pl
 
-Usage:
-perl clean.pl --targets targets
+This script removes temporary files like foo.cert, foo.cert.out, foo.time, etc.
+Ordinarily there would be no reason to call this file by hand, instead it would
+usually be run by invoking "make clean" or similar.
 
-Where targets is a file that contains a list of Lisp files, one per line.  This
-file just removes temporary files like foo.cert, foo.cert.out, etc.  Ordinarily
-there would be no reason to call this file by hand, instead it would usually be
-run by invoking "make clean" or similar.
+Usage:
+clean.pl [OPTIONS]
+
+Options:
+
+    -h          Show this help message and exit immediately
+    --help
+
+    --dryrun    Print what will be deleted, but do NOT actually delete
+                any files.
+
 ';
 
-my $targets = "";
+GetOptions ("help|h" => sub { print $helpstr; exit 0 ; },
+	    "dryrun" => \$dryrun
+    );
 
-GetOptions ("help|h" => sub { print $helpstr;
-			      exit 0 ; },
-            "targets=s" => \$targets);
-
-if (! $targets) {
-    print "clean.pl: targets file is required!\n";
-    exit(1);
-}
-
-if (! -f $targets) {
-    print "clean.pl: not a file: $targets\n";
-    exit(1);
-}
-
-print "TARGETS is $targets\n";
+# General idea: @rm is an accumulator for files we are going to remove.  We're
+# going to put a bunch of stuff into @rm, then remove them all at once with
+# unlink.
 
 my @rm;
-open(FD, "<$targets") or die("can't open $targets: $!");
-while (my $line = <FD>) {
-    chomp($line);
-    if (! ($line =~ m/^(.*).lisp$/)) {
-	print "Invalid target line: $line\n";
-	next;
+
+
+# We will unconditionally delete every file that ends with one of the following
+# extensions.  We think this is safe because these extensions shouldn't be used
+# for anything other than generated ACL2/Lisp stuff.  It's nicer to delete ANY
+# files of these extensions, rather than just files corresponding to books, so
+# that if you delete books after certifying them, etc., the generated files
+# still get cleaned up.
+
+my %delete_extensions = (
+    ".out"     => 1, # Output log from certification
+    ".cert"    => 1, # ACL2 certificate
+    ".pcert1"  => 1, # ACL2 provisional certificate
+    ".pcert0"  => 1, # ACL2 provisional certificate
+    ".acl2x"   => 1, # ACL2 expansion file (for two-pass certification)
+    ".port"    => 1, # ACL2 portcullis file (for two-pass certification)?
+    ".time"    => 1, # Time stamp file from certification
+    ".o"       => 1, # Compiled files from GCL
+    ".bin"     => 1, # ???
+    ".sbin"    => 1, # ???
+    ".lbin"    => 1, # ???
+    ".fasl"    => 1, # Compiled Lisp files for ???
+    ".ufsl"    => 1, # ???
+    ".64ufasl" => 1, # ???
+    ".pfsl"    => 1, # ???
+    ".dfsl"    => 1, # ???
+    ".d64fsl"  => 1, # Compiled Lisp file for CCL/Darwin_64
+    ".dx32fsl" => 1, # Compiled Lisp file for CCL/Darwin_x86_32
+    ".dx64fsl" => 1, # Compiled Lisp file for CCL/Darwin_x86_64
+    ".lx32fsl" => 1, # Compiled Lisp file for CCL/Linux_x86_32
+    ".lx64fsl" => 1, # Compiled Lisp file for CCL/Linux_x86_64
+    ".wx32fsl" => 1, # Compiled Lisp file for CCL/Windows_x86_32
+    ".wx64fsl" => 1, # Compiled Lisp file for CCL/Windows_x86_64
+    ".sparcf"  => 1, # ???
+    ".axpf"    => 1, # ???
+    ".x86f"    => 1, # ???
+    ".ppcf"    => 1, # ???
+    ".fas"     => 1, # ???
+    ".lib"     => 1, # ???
+    ".sse2f"   => 1  # ???
+    );
+
+my %keep_extensions = (
+    ".lisp" => 1,
+    ".acl2" => 1,
+    # Not .lsp because sometimes there are temp-emacs-file.lsp or
+    # @expansion.lsp files to remove
+);
+
+
+# Main scan for files with the above extensions:
+
+sub consider_file
+{
+    my $what = $_;
+    my $lastdot = rindex($what, '.');
+    my $ext = substr($what, $lastdot);
+
+    if ($keep_extensions{$ext})
+    {
+	# Obviously we want to keep it, just stop now.
+	return;
     }
-    my $book = $1;
-    push(@rm, "$book.cert");
-    push(@rm, "$book.pcert1");
-    push(@rm, "$book.pcert0");
-    push(@rm, "$book.acl2x");
-    push(@rm, "$book.cert.out");
-    push(@rm, "$book.cert.time");
-    push(@rm, "$book.pcert1.out");
-    push(@rm, "$book.pcert0.out");
-    push(@rm, "$book.acl2x.out");
-    push(@rm, "$book.cert.time");
-    push(@rm, "$book.pcert1.time");
-    push(@rm, "$book.pcert0.time");
-    push(@rm, "$book.acl2x.time");
-    push(@rm, "$book.o");
-    push(@rm, "$book.h");
-    push(@rm, "$book.c");
-    push(@rm, "$book.acl2x");
-    push(@rm, "$book.port");
-    push(@rm, "$book.bin");
-    push(@rm, "$book.sbin");
-    push(@rm, "$book.lbin");
-    push(@rm, "$book.fasl");
-    push(@rm, "$book.ufsl");
-    push(@rm, "$book.64ufasl");
-    push(@rm, "$book.ufasl");
-    push(@rm, "$book.pfsl");
-    push(@rm, "$book.dfsl");
-    push(@rm, "$book.d64fsl");
-    push(@rm, "$book.dx32fsl");
-    push(@rm, "$book.dx64fsl");
-    push(@rm, "$book.lx32fsl");
-    push(@rm, "$book.lx64fsl");
-    push(@rm, "$book.wx32fsl");
-    push(@rm, "$book.wx64fsl");
-    push(@rm, "$book.sparcf");
-    push(@rm, "$book.axpf");
-    push(@rm, "$book.x86f");
-    push(@rm, "$book.ppcf");
-    push(@rm, "$book.fas");
-    push(@rm, "$book.lib");
-    push(@rm, "$book.sse2f");
+
+    if (! -f $what)
+    {
+	# Not even a regular file, don't do anything.
+	return;
+    }
+
+    if ($delete_extensions{$ext})
+    {
+	# Definitely want to get rid of it
+	push(@rm, $what);
+	return;
+    }
+
+    if ($ext eq ".c" || $ext eq ".h")
+    {
+	# Hack.  GCL ends up generating .h and .c files that sometimes get left
+	# behind.  We definitely don't want to delete all .c and .h files, so
+	# try to only delete these if they seem safe to delete.
+
+	# BOZO is this a good solution?  Are GCL temp files always named
+	# gazonk somethingorother?
+
+	if ($what =~ /gazonk/) {
+	    push(@rm, $what);
+	}
+	return;
+    }
+
+    # There are a few more files we may want to remove.
+    my ($vol,$dirs,$file) = File::Spec->splitpath($what);
+
+    if ($ext eq ".lsp")
+    {
+	if ($file eq "temp-emacs-file.lsp") {
+	    push(@rm, $what);
+	}
+	elsif ($file =~ /^(.*)\@expansion.lsp/) {
+	    push(@rm, $what);
+	}
+	return;
+    }
+
+    if ($file eq "Makefile-tmp") {
+	push(@rm, $what);
+	return;
+    }
+
+    if ($file =~ /^workxxx.*$/) {
+	push(@rm, $what);
+	return;
+    }
+
+    if ($file =~ /^TMP/) {
+	push(@rm, $what);
+	return;
+    }
 }
 
-close(FD);
-
-my $num_to_remove = @rm;
-print "clean.pl: about to try removing as many as $num_to_remove files.\n";
+print "clean.pl: scanning for generated files\n";
 my $start = time();
-my $num_removed = unlink(@rm);
+find({ wanted => \&consider_file, no_chdir => 1 }, ".");
 my $end = time();
 my $elapsed = $end - $start;
-print "clean.pl: removed $num_removed files in $elapsed seconds.\n";
+my $numfiles = @rm;
+print "clean.pl: found $numfiles targets ($elapsed seconds)\n";
+
+if ($dryrun) {
+    print "clean.pl: not deleting anything due to --dryrun\n";
+    print "clean.pl: would have deleted:\n";
+    foreach(@rm) { print "  $_\n"; }
+    print "\n";
+    exit(0);
+}
+else {
+    $start = time();
+    my $numremoved = unlink(@rm);
+    $end = time();
+    $elapsed = $end - $start;
+    print "clean.pl: deleted $numremoved files ($elapsed seconds)\n";
+}
+
 exit(0);
 
 
