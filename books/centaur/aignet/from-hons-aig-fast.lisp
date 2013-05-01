@@ -20,7 +20,7 @@
 
 
 (in-package "AIGNET")
-
+; cert_param: (hons-only)
 (include-book "centaur/misc/fast-cons-memo" :dir :system)
 (include-book "from-hons-aig")
 
@@ -91,7 +91,7 @@
          (c4 (acl2::aig-ite c3 (acl2::aig-or 'a4 'b4)
                             (acl2::aig-and 'a4 'b4)))
          ((mv random-probs state)
-          (generate-random-problems 100000 state))
+          (generate-random-problems 10000 state))
          (probs (append 
                  '((5 8) (31 31) (18 23) (31 22) (1 31) (12 14))
                  random-probs))
