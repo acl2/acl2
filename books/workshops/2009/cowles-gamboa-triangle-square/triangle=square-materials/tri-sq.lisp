@@ -8,22 +8,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ; Make temporary use of an ACL2 Arithmetic Book to help certify this book,
 
-#| 
-(local
-(include-book "arithmetic-3/top" :dir :system 
-              :uncertified-okp nil     
-              :defaxioms-okp nil 
-              :skip-proofs-okp nil))
-|#
-
-(add-include-book-dir :books 
-		      "../../../../")
-
-(local
- (include-book "arithmetic-3/top" :dir :books
-	       :uncertified-okp nil
-	       :defaxioms-okp nil
-	       :skip-proofs-okp nil)) 
+(local (include-book "arithmetic-3/top" :dir :system))
 
 (defun
  triangle (n)
