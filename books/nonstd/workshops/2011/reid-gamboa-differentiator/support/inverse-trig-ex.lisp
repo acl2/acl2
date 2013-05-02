@@ -511,6 +511,7 @@
    (implies (and (inside-interval-p x (interval -1 1))
                  (inside-interval-p y (interval -1 1))
                  (i-close x y)
+                 (syntaxp (not (equal x y))) ; avoid loop (Matt K., 5/2013)
                  )
             (equal (acl2-sine (standard-part (acl2-asin x)))
                    (acl2-sine (standard-part (acl2-asin y)))))
@@ -522,6 +523,7 @@
    (implies (and (inside-interval-p x (interval -1 1))
                  (inside-interval-p y (interval -1 1))
                  (i-close x y)
+                 (syntaxp (not (equal x y))) ; avoid loop (Matt K., 5/2013)
                  )
             (equal (acl2-cosine (standard-part (acl2-acos x)))
                    (acl2-cosine (standard-part (acl2-acos y)))))
@@ -531,7 +533,14 @@
 (defthm acl2-asin-continuous
    (implies (and (inside-interval-p x (interval -1 1))
                  (inside-interval-p y (interval -1 1))
-                 (i-close x y))
+                 (i-close x y)
+
+; Matt K., 5/2013:
+; The following is reasonable based on the two uses of syntaxp just above to
+; avoid a loop, though it isn't actually necessary in this case.
+
+                (syntaxp (not (equal x y))) ; avoid potential loop
+                )
             (i-close (acl2-asin x)
                      (acl2-asin y)))
    :hints (("Goal" 
@@ -545,7 +554,14 @@
 (defthm acl2-acos-continuous
    (implies (and (inside-interval-p x (interval -1 1))
                  (inside-interval-p y (interval -1 1))
-                 (i-close x y))
+                 (i-close x y)
+
+; Matt K., 5/2013:
+; The following is reasonable based on the two uses of syntaxp just above to
+; avoid a loop, though it isn't actually necessary in this case.
+
+                 (syntaxp (not (equal x y))) ; avoid potential loop
+                 )
             (i-close (acl2-acos x)
                      (acl2-acos y)))
    :hints (("Goal" 
