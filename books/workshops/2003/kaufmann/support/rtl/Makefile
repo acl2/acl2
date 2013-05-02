@@ -43,8 +43,8 @@ model-defs.lisp: tool/simplify-defuns.cert tool/wrapper.cert bvecp-raw.cert
 	$(ACL2) < workxxx > model.lisp.out
 	rm -f workxxx
 
-model.lisp: model-defs.lisp model-macro-aliases.lisp
-	cat model-defs.lisp model-macro-aliases.lisp > model.lisp
+model.lisp: model-defs.lisp model-macro-aliases.lsp
+	cat model-defs.lisp model-macro-aliases.lsp > model.lisp
 
 clean-extra:
 	-rm -f model.lisp model-defs.lisp model-eq.lisp model.lisp bvecp.lisp
@@ -56,7 +56,7 @@ bvecp-raw.cert: model-raw.cert
 bvecp-raw.cert: ../../../../../rtl/rel4/lib/top.cert
 bvecp-raw.cert: ../../../../../rtl/rel4/support/bvecp-helpers.cert
 bvecp-raw.cert: cert.acl2
-bvecp-raw.cert: pkgs.lisp
+bvecp-raw.cert: pkgs.lsp
 
 bvecp.cert: bvecp.lisp
 bvecp.cert: model.cert
@@ -64,7 +64,7 @@ bvecp.cert: model-eq.cert
 bvecp.cert: bvecp-raw.cert
 bvecp.cert: ../../../../../rtl/rel4/support/bvecp-helpers.cert
 bvecp.cert: cert.acl2
-bvecp.cert: pkgs.lisp
+bvecp.cert: pkgs.lsp
 
 common.cert: common.lisp
 common.cert: ../../../../../rtl/rel4/lib/rtl.cert
@@ -73,14 +73,14 @@ common.cert: ../../../../../rtl/rel4/lib/util.cert
 common.cert: ../../../../../misc/symbol-btree.cert
 common.cert: ../../../../../misc/rtl-untranslate.cert
 common.cert: cert.acl2
-common.cert: pkgs.lisp
+common.cert: pkgs.lsp
 
 model-defs.cert: model-defs.lisp
 model-defs.cert: ../../../../../ordinals/e0-ordinal.cert
 model-defs.cert: common.cert
 model-defs.cert: model-macros.cert
 model-defs.cert: cert.acl2
-model-defs.cert: pkgs.lisp
+model-defs.cert: pkgs.lsp
 
 model-eq.cert: model-eq.lisp
 model-eq.cert: bvecp-raw.cert
@@ -89,29 +89,29 @@ model-eq.cert: ../../../../../rtl/rel4/lib/simplify-model-helpers.cert
 model-eq.cert: model-raw.cert
 model-eq.cert: model.cert
 model-eq.cert: cert.acl2
-model-eq.cert: pkgs.lisp
+model-eq.cert: pkgs.lsp
 
 model-macros.cert: model-macros.lisp
 model-macros.cert: cert.acl2
-model-macros.cert: pkgs.lisp
+model-macros.cert: pkgs.lsp
 
 model-raw.cert: model-raw.lisp
 model-raw.cert: ../../../../../ordinals/e0-ordinal.cert
 model-raw.cert: common.cert
 model-raw.cert: cert.acl2
-model-raw.cert: pkgs.lisp
+model-raw.cert: pkgs.lsp
 
 model.cert: model.lisp
 model.cert: ../../../../../ordinals/e0-ordinal.cert
 model.cert: common.cert
 model.cert: model-macros.cert
 model.cert: cert.acl2
-model.cert: pkgs.lisp
+model.cert: pkgs.lsp
 
 package-defs.cert: package-defs.lisp
 package-defs.cert: package-defs.acl2
 
-# Added manually, since cert.acl2 contains (ld "pkgs.lisp"), which contains
+# Added manually, since cert.acl2 contains (ld "pkgs.lsp"), which contains
 # (include-book "package-defs"):
 
 bvecp-raw.cert: package-defs.cert
