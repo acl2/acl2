@@ -196,7 +196,8 @@
 (encapsulate
   ()
 
-  (local (include-book "rtl/rel8/arithmetic/top" :dir :system))
+  (local (include-book ; keep this linebreak!
+          "rtl/rel8/arithmetic/top" :dir :system))
 
   (defthm x*/y=1->x=y-ext
     (implies (and (rationalp x)
@@ -712,7 +713,8 @@
                   (integerp x))
              (integerp (mod x (/ y)))))
 
-  (local (include-book "rtl/rel8/arithmetic/extra-rules" :dir :system)) ; for exp-invert
+  (local (include-book ; keep this linebreak!
+          "rtl/rel8/arithmetic/extra-rules" :dir :system)) ; for exp-invert
   ; rule-classes nil
   (defthm exp-invert-ext
     (implies (and (integerp n)

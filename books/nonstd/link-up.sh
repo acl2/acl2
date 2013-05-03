@@ -9,6 +9,7 @@ srcdir="$2/$tgtdir"
 
 files="`ls -1 $srcdir | grep '[.]lisp$'`"
 files="`ls -1 $srcdir | grep '[.]lsp$'` $files"
+files="`ls -1 $srcdir | grep '[.]pl$'` $files"
 files="`ls -1 $srcdir | grep '[.]defpkg$'` $files"
 files="`ls -1 $srcdir | grep '[.]acl2$'` $files"
 files="`ls -1 $srcdir | grep '[.]acl2x-source$'` $files"

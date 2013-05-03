@@ -3,7 +3,10 @@
 # Add proof-outline to the target.
 all: proof-outline
 
+BOOKS := $(patsubst %.lisp, %, $(filter-out tree.lisp,$(wildcard *.lisp)))
+
 tree.lisp:
+	@rm -f tree.lisp
 	@echo ';; This file was created via "make tree.lisp"' > tree.lisp
 	@echo '(in-package "ACL2")' >> tree.lisp
 	@echo '(defconst *dep-tree* (quote (' >> tree.lisp
@@ -31,6 +34,7 @@ tree.lisp:
 
 proof-outline.cert: tree.cert
 
+.PHONY: proof-outline
 proof-outline: tree.cert proof-outline.cert
 	echo '(value :q) (lp) (include-book "proof-outline")' > workxxx
 	echo '(display-proof-outline-all "outline/outline" "fundamental-theorem-of-calculus")' >> workxxx
@@ -41,6 +45,7 @@ proof-outline: tree.cert proof-outline.cert
 
 clean: clean-more
 
+.PHONY: clean-more
 clean-more:
 	rm -f tree.lisp
 #	rm -rf outline/outline.*

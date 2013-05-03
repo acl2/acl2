@@ -33,7 +33,7 @@
 #           Makefile-jared" part won't be needed.)
 #
 # Makefile-jared starts by automatically scanning for books and their
-# depenedencies.  This scanning can be slightly expensive, especially on slow
+# dependencies.  This scanning can be slightly expensive, especially on slow
 # NFS systems.  When you know that you haven't added or changed any books, you
 # might prefer to avoid rescanning by adding NO_RESCAN=1 to the command line.
 #
@@ -42,7 +42,7 @@
 # very similar to the previous behavior of cert.pl and Makefile-generic.
 #
 #   - We scan for lines like (include-book "foo") and (ld "foo.lisp"); for
-#     dependency scannign to work, these commands must be on a single line and
+#     dependency scanning to work, these commands must be on a single line and
 #     can't be wrapped up in macros.  Occasionally it is useful to fool the
 #     dependency scanner, e.g., in a multi-line comments you might do:
 #
@@ -114,7 +114,7 @@
 #  [BOZO] Add multi-lisp compilation stuff for Matt (might be easy)
 #
 #  [BOZO] Add support for ACL2(r).  Possibly the right way to do that would be
-#         to use soething like the $(info Scanning for books...)  sections
+#         to use something like the $(info Scanning for books...)  sections
 #         below, to set up the symlinks, and then just let everything else fall
 #         out automatically.
 #
@@ -143,9 +143,6 @@ BROKEN_WK2003_KAUFMANN := workshops/2003/kaufmann/support/output
 # This apparently takes too long for mere mortals to build
 BROKEN_WK2004_MANOLIOS := manolios-srinivasan/support/Benchmark-Problems
 
-# This appears to depend on the nonstd books
-NONSTD_WK2006_COWLES := workshops/2006/cowles-gamboa-euclid
-
 # This wasn't getting built, it has a really slow book
 BROKEN_WK2011_KRUG := workshops/2011/krug-et-al/support/MinVisor
 
@@ -154,13 +151,12 @@ ifndef NO_RESCAN
 $(info Scanning for books...)
 REBUILD_MAKEFILE_BOOKS := $(shell \
   rm -f Makefile-books; \
-  time find . -type f -name "*.lisp" \
+  time find . -name "*.lisp" \
     | egrep -v '^(\./)?(interface|nonstd|centaur/quicklisp|clause-processors/SULFA)/' \
     | fgrep -v $(BROKEN_WK2000_COWLES) \
     | fgrep -v $(BROKEN_WK2002_TOTAL) \
     | fgrep -v $(BROKEN_WK2003_KAUFMANN) \
     | fgrep -v $(BROKEN_WK2004_MANOLIOS) \
-    | fgrep -v $(NONSTD_WK2006_COWLES) \
     | fgrep -v $(BROKEN_WK2011_KRUG) \
   > Makefile-books; \
   ls -l Makefile-books)
@@ -214,7 +210,7 @@ endif
 # BOZO probably do something similar for ACL2(r)?
 
 
-# BOZO this book is bad...
+# We filter out a book that depends on provisional certification:
 OK_CERTS := $(filter-out system/pcert/acl2x-pcert-test-2-include.cert, $(OK_CERTS))
 
 
@@ -257,14 +253,22 @@ workshop2007 : $(filter workshops/2007/%, $(OK_CERTS))
 workshop2009 : $(filter workshops/2009/%, $(OK_CERTS))
 workshop2011 : $(filter workshops/2011/%, $(OK_CERTS))
 
-
+# The `user' target allows one to specify the roots of the forest of
+# books to be certified.
+# Example (just remove "# " at the beginning of each line):
+# make -f Makefile-jared -j 4 NO_RESCAN=1 ACL2=acl2h \
+# ACL2_BOOK_CERTS=" \
+# workshops/2006/cowles-gamboa-euclid/Euclid/ed6a.cert \
+# workshops/2006/cowles-gamboa-euclid/Euclid/ed4bb.cert \
+# " user
+user : $(ACL2_BOOK_CERTS)
 
 
 # CLEANING -------------------------------------------------------------------
 
 # We delegate most of the cleaning process to clean.pl, a simple perl script
 # that lets us take care not to delete certain kinds of files.  The clean.pl
-# script will remove things like .cert and .fasl files.  But 
+# script will remove things like .cert and .fasl files.  But
 
 CLEAN_FILES_EXPLICIT := \
    xdoc-impl/bookdoc.dat \
@@ -337,6 +341,15 @@ xdoc-impl/bookdoc.dat: \
 	@cd xdoc-impl; \
           $(STARTJOB) -c "$(ACL2) < bookdoc.lsp &> bookdoc.out"
 	@ls -l xdoc-impl/bookdoc.dat
+
+ifndef ACL2_HAS_REALS
+
+# The following dependency is to be ignored in ACL2(r), where the
+# relevant include-book in arithmetic-3/extra/ext.lisp is guarded by
+# #-:non-standard-analysis.
+arithmetic-3/extra/ext.cert: rtl/rel8/arithmetic/top.cert
+
+endif
 
 # BOZO.   make-event/local-elided stuff is tricky because it thinks it can tell whether
 # local-elided.lisp was provisionally certified or not, which doesn't

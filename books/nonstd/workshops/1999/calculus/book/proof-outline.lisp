@@ -13,8 +13,11 @@
 
 (set-state-ok t)
 
-; Define constant *dep-tree*:
-(include-book "tree")
+; Next we include a book to define constant *dep-tree*.
+(include-book
+; This linebreak eliminates a generated dependency on tree.lisp, which is a
+; generated file.  Instead, we add that dependency explicitly where needed.
+ "tree")
 
 (defconst *top-lemma* "main")
 (defconst *separator* "==============================")
