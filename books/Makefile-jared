@@ -201,7 +201,7 @@ SLOW_BOOKS := \
   workshops/2011/krug-et-al/support/MinVisor/setup-nested-page-tables.lisp
 
 
-OK_CERTS := $(filter_out $(SLOW_BOOKS), $(OK_CERTS))
+OK_CERTS := $(filter-out $(SLOW_BOOKS), $(OK_CERTS))
 
 all: $(OK_CERTS)
 
