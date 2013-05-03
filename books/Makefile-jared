@@ -128,8 +128,18 @@ STARTJOB ?= $(SHELL)
 .SUFFIXES:
 .SUFFIXES: .cert .lisp
 
-.PHONY: all
+# Major top-level targets:
+#   - ALL is the default
+#   - EVERYTHING includes everything in ALL and also some slow books
+#   - LITE is most of ALL, but with a few things excluded
+
+.PHONY: all lite everything
 all:
+
+everything: all
+
+all: lite
+
 
 ifndef NO_RESCAN
 
@@ -199,16 +209,11 @@ OK_CERTS := $(filter-out system/pcert/acl2x-pcert-test-2-include.cert, $(OK_CERT
 
 SLOW_BOOKS := \
   workshops/2011/krug-et-al/support/MinVisor/va-to-pa-thm.cert \
-  workshops/2011/krug-et-al/support/MinVisor/setup-nested-page-tables.cert \
-  workshops/2011/verbeek-schmaltz/sources/correctness2.cert \
-  workshops/2011/verbeek-schmaltz/sources/correctness.cert \
-  workshops/2011/verbeek-schmaltz/sources/invariants3.cert \
-  workshops/2011/verbeek-schmaltz/sources/invariants2.cert \
-  workshops/2011/verbeek-schmaltz/sources/invariants.cert
+  workshops/2011/krug-et-al/support/MinVisor/setup-nested-page-tables.cert
 
 OK_CERTS := $(filter-out $(SLOW_BOOKS), $(OK_CERTS))
 
-all: $(OK_CERTS)
+lite: $(OK_CERTS)
 
 everything : all $(SLOW_BOOKS)
 
@@ -296,6 +301,25 @@ moreclean: clean
 
 .PHONY: dummy
 dummy:
+
+
+# workshops/2011/verbeek-schmaltz is slow, but we can make it reasonably fast
+# using provisional certification.  For now, as a gross hack, use the old ACL2
+# Makefile-generic system to do this.
+#   - we tell cert.pl not to look at verbeek-schmaltz/sources, via a
+#     cert_pl_exclude file
+#   - we add a verbeek-schmaltz/deps.lisp file with the prerequisites that
+#     we need before going into the verbeek-schmaltz directory
+#   - we use the following top-level target to certify the actual verbeek-schmaltz
+#     books after certifying the deps
+
+workshops/2011/verbeek-schmaltz/sources/correctness2.cert : \
+  workshops/2011/verbeek-schmaltz/deps.cert
+	cd workshops/2011/verbeek-schmaltz/sources; $(MAKE) ACL2_PCERT=1
+
+all : workshops/2011/verbeek-schmaltz/sources/correctness2.cert
+
+
 
 # Workshops/1999/multiplier is tricky because there are generated .lisp files
 # involved.  Cert.pl can't scan these, so we have to add them manually.
