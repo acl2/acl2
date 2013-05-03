@@ -20773,6 +20773,11 @@
   ACL2, and we grateful to GCL support that we received from the late Bill
   Schelter and, more recently and particular for ANSI GCL, from Camm Maguire.
 
+  The `~c[make]' process for book certification now uses ~c[-k] by default,
+  which keeps going after errors, rather than ~c[-i], which ignores errors.  If
+  you encounter problems because of this change, use ~c[ACL2_IGNORE=-i] with
+  your `~c[make]' command.
+
   ~st[EMACS SUPPORT]
 
   ~st[EXPERIMENTAL/ALTERNATE VERSIONS]

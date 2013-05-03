@@ -252,11 +252,15 @@ ACL2_COMPILER_DISABLED =
 # version of ACL2 built on CCL on a 64-bit machine.
 ACL2_SIZE =
 
-# The following causes the calls of make that use it to continue past errors.
-# Delete -i if you want to stop at first error and return non-zero exit status
-# in that case; or, instead of editing the line below, supply ACL2_IGNORE=''
-# on the make command line.
-ACL2_IGNORE = -i
+# The following causes the calls of make that use it to continue past
+# errors.  Delete -k if you want to stop at first error and return
+# non-zero exit status in that case; or, instead of editing the line
+# below, supply ACL2_IGNORE='' on the make command line.  Formerly we
+# used -i; if you prefer that, use ACL2_IGNORE=-i on the command line.
+# Note however that the GNU make manual
+# (http://www.gnu.org/software/make/manual/make.html, May 2013) says
+# that -i is "obsolete".
+ACL2_IGNORE ?= -k
 
 # Here we provide support for a convenient way to pass -j down to the
 # community books Makefile, for both `make' and cert.pl.  It seems
@@ -481,7 +485,7 @@ copy:
 .PHONY: copy-distribution
 copy-distribution:
 # WARNING: Execute this from an ACL2 source directory.
-# Keep this in sync with copy-books, copy-workshops, and copy-nonstd.
+# Keep this in sync with copy-books.
 # You must manually rm -r ${DIR} before this or it will fail without doing
 # any damage.
 # Note that below, /projects/acl2/ is not used, because this directory must
@@ -806,6 +810,17 @@ regression:
 	uname -a
 	cd books ; $(MAKE) $(ACL2_IGNORE) $(ACL2_JOBS_OPT) all-plus
 
+# At some point we will probably replace regression by regression-jared.
+.PHONY: regression-jared
+regression-jared:
+	uname -a
+ifndef ACL2
+	export ACL2=$(shell pwd)/saved_acl2 ; \
+	cd books ; $(MAKE) -f Makefile-jared $(ACL2_IGNORE) ACL2=$(ACL2)
+else
+	cd books ; $(MAKE) -f Makefile-jared $(ACL2_IGNORE) ACL2=$(ACL2)
+endif
+
 .PHONY: regression-hons-only
 regression-hons-only:
 	uname -a
@@ -832,6 +847,20 @@ regression-nonstd:
 	uname -a
 	cd books/nonstd ; $(MAKE) $(ACL2_IGNORE) $(ACL2_JOBS_OPT) all-nonstd
 
+# At some point we will probably replace regression-nonstd by
+# regression-nonstd-jared.
+.PHONY: regression-nonstd-jared
+regression-nonstd-jared:
+	uname -a
+ifndef ACL2
+	export ACL2=$(shell pwd)/saved_acl2 ; \
+	cd books/nonstd ; \
+	$(MAKE) -f Makefile-jared-nonstd $(ACL2_IGNORE) ACL2=$(ACL2)
+else
+	cd books/nonstd ; \
+	$(MAKE) -f Makefile-jared-nonstd $(ACL2_IGNORE) ACL2=$(ACL2)
+endif
+
 # Certify main books from scratch.
 .PHONY: certify-books-fresh
 certify-books-fresh: clean-books
@@ -850,6 +879,28 @@ regression-fast-fresh: clean-books
 	$(MAKE) $(ACL2_IGNORE) regression-fast
 regression-nonstd-fresh: clean-books-nonstd
 	$(MAKE) $(ACL2_IGNORE) regression-nonstd
+
+# At some point we will probably replace regression-fresh by
+# regression-fresh-jared.
+.PHONY: regression-fresh-jared
+regression-fresh-jared: clean-books-jared
+ifndef ACL2
+	export ACL2=$(shell pwd)/saved_acl2 ; \
+	$(MAKE) $(ACL2_IGNORE) ACL2=$(ACL2) regression-jared
+else
+	$(MAKE) $(ACL2_IGNORE) ACL2=$(ACL2) regression-jared
+endif
+
+# At some point we will probably replace regression-nonstd-fresh by
+# regression-nonstd-fresh-jared.
+.PHONY: regression-nonstd-fresh-jared
+regression-nonstd-fresh-jared: clean-books-nonstd-jared
+ifndef ACL2
+	export ACL2=$(shell pwd)/saved_acl2 ; \
+	$(MAKE) $(ACL2_IGNORE) ACL2=$(ACL2) regression-nonstd-jared
+else
+	$(MAKE) $(ACL2_IGNORE) ACL2=$(ACL2) regression-nonstd-jared
+endif
 
 # The following allows for a relatively short test, in response to a request
 # from GCL maintainer Camm Maguire.
@@ -900,9 +951,33 @@ clean-doc:
 clean-books:
 	cd books ; $(MAKE) $(ACL2_IGNORE) clean
 
+# At some point we will probably replace clean-books by
+# clean-books-jared.
+.PHONY: clean-books-jared
+clean-books-jared:
+ifndef ACL2
+	export ACL2=$(shell pwd)/saved_acl2 ; \
+	cd books ; $(MAKE) -f Makefile-jared $(ACL2_IGNORE) ACL2=$(ACL2) clean
+else
+	cd books ; $(MAKE) -f Makefile-jared $(ACL2_IGNORE) ACL2=$(ACL2) clean
+endif
+
 .PHONY: clean-books-nonstd
 clean-books-nonstd:
 	cd books/nonstd ; $(MAKE) $(ACL2_IGNORE) clean-nonstd
+
+# At some point we will probably replace clean-books-nonstd by
+# clean-books-nonstd-jared.
+.PHONY: clean-books-nonstd-jared
+clean-books-nonstd-jared:
+ifndef ACL2
+	export ACL2=$(shell pwd)/saved_acl2 ; \
+	cd books/nonstd ; \
+	$(MAKE) -f Makefile-jared-nonstd $(ACL2_IGNORE) ACL2=$(ACL2) clean
+else
+	cd books/nonstd ; \
+	$(MAKE) -f Makefile-jared-nonstd $(ACL2_IGNORE) ACL2=$(ACL2) clean
+endif
 
 # This following should be executed inside the acl2-sources directory.
 # You probably need to be the owner of all files in order for the chmod
