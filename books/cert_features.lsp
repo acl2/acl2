@@ -43,6 +43,9 @@
                           #-non-standard-analysis "ACL2_HAS_REALS := "
                           channel state))
            (state (newline channel state))
+           (state (princ$ "COMP_EXT := " channel state))
+           (state (princ$ (@ compiled-file-extension) channel state))
+           (state (newline channel state))
            (state (close-output-channel channel state)))
       state)))
 
