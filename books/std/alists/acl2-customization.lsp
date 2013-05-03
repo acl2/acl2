@@ -1,5 +1,7 @@
-; ACL2 String Library
-; Copyright (C) 2009-2010 Centaur Technology
+; Standard Lists Library
+;
+; Portions are Copyright (C) 2008-2013 Centaur Technology
+; Portions are Copyright (C) 2004-2006 by Jared Davis
 ;
 ; Contact:
 ;   Centaur Technology Formal Verification Group
@@ -21,5 +23,5 @@
 (in-package "ACL2")
 (assign :suppress-preload-xdoc t)
 (ld "~/acl2-customization.lsp")
-(ld "package.lsp")
-(in-package "STR")
+
+
