@@ -5414,9 +5414,8 @@
   case that ~c[obj] is ~c[(list :rw+ TERM nil OBJ EQUIV ...)].
 
   Case ~c[obj] = (list :ap TERM ...):~nl[]
-  The value is ~c[(list 'not TERM)] if
-  ~c[(mfc-ap TERM mfc state :forcep nil :ttreep nil)] is true, else is
-  ~c[*t*].
+  The value is ~c[(list 'not TERM)] if ~c[(mfc-ap TERM mfc state :forcep nil)]
+  is true, else is ~c[*t*].
 
   Case ~c[obj] = (list :relieve-hyp HYP ALIST RUNE TARGET BKPTR ...):~nl[]
   The value is ~c[(sublis-var alist hyp)] ~-[] see above for a discussion of
@@ -11918,7 +11917,7 @@
     (cond
      ((null x)
       (er hard 'reason-for-non-keyword-value-listp
-          "Uh oh, it was a keyword-value-listp after all!!"))
+          "Uh oh, it was a keyword-value-listp after all!"))
      (t
       (msg "there is a non-nil final cdr of ~x0"
            x))))

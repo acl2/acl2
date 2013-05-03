@@ -4967,9 +4967,9 @@
 
 (defun install-defs-for-add-trip (defs reclassifying-p wrld declaim-p evalp)
 
-; Defs is a list of definitions, each of which is a call of defun or defabbrev,
-; or else of the form (ONEIFY-CLTL-CODE defun-mode def stobj-name), where def
-; is the cdr of a call of defun.
+; Defs is a list of definitions, each of which is a call of defun, defabbrev,
+; or defmacro, or else of the form (ONEIFY-CLTL-CODE defun-mode def
+; stobj-name), where def is the cdr of a call of defun.
 
 ; This function, which may destructively modify defs, is responsible for
 ; declaiming and submitting every definition in defs, while avoiding such
@@ -5053,11 +5053,21 @@
                                                               (cdddr def)
                                                               wrld))))
                          (setf (car tail) *1*-def)
-                         (when declaim-p
-                           (setq form
-                                 (make-defun-declare-form (car def0)
-                                                          *1*-def)))))
-                      (declaim-p
+
+; While it is tempting to do a declaim for a *1* function,
+; make-defun-declare-form isn't up to the task as of the development sources on
+; 5/2/2013.  Perhaps this would be easy to fix, but since we only declaim for
+; GCL, and it is not an important goal to make *1* functions efficient, we skip
+; this step.
+
+;                        (when declaim-p
+;                          (setq form
+;                                (make-defun-declare-form (car def0)
+;                                                         *1*-def)))
+                         ))
+                      ((and declaim-p
+                            (not (member-eq (car def)
+                                            '(defmacro defabbrev))))
                        (setq form (make-defun-declare-form (cadr def) def))))
                      (when (and form (hcomp-build-p))
                        (push form *declaim-list*))
@@ -6535,12 +6545,7 @@
             ans))
 
   (defun-overrides mfc-ap-fn (term mfc state forcep)
-    (mfc-ap-raw term mfc state forcep))
-  (defun-overrides mfc-ap-ttree (term mfc state forcep)
-    (mv-let (ans ttree)
-            (mfc-ap-raw term mfc state forcep)
-            (declare (ignore ttree))
-            ans)))
+    (mfc-ap-raw term mfc state forcep)))
 
 (defun-one-output exit-boot-strap-mode ()
 

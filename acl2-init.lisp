@@ -301,6 +301,37 @@ implementations.")
 
   'acl2_invisible::*CURRENT-ACL2-WORLD-KEY*)
 
+#+(and gcl hons never-mind)
+; For now (5/2/2013) we will skip this error for ANSI GCL (see "never-mind"
+; just above).  If ANSI GCL ever defined *PRINT-PPRINT-DISPATCH*, we should
+; tags-search the sources for this variable and make appropriate changes.
+(when (not (boundp 'COMMON-LISP::*PRINT-PPRINT-DISPATCH*))
+
+; With-standard-io-syntax is called in memoize-raw.lisp, which has caused an
+; error in ANSI GCL when COMMON-LISP::*PRINT-PPRINT-DISPATCH* is not bound.
+; Even if that is somehow fixed, we probably should still disallow the
+; combination #+(and gcl hons (not cltl2)).
+
+   (format t
+           "ERROR: We do not support building a HONS version of ACL2 in~%~
+            a host Common Lisp when variable ~s is unbound.  This~%~
+            restriction might be lifted if you request that of the ACL2~%~
+            implementors."
+           'COMMON-LISP::*PRINT-PPRINT-DISPATCH*)
+   (lisp::bye))
+
+#+(and gcl cltl2)
+; Deal with undefined cltl2 symbols in ANSI GCL, using values that would be
+; assigned by with-standard-io-syntax.
+(loop for pair in '((COMMON-LISP::*PRINT-LINES* . nil)
+                    (COMMON-LISP::*PRINT-MISER-WIDTH* . nil)
+                    (COMMON-LISP::*PRINT-RIGHT-MARGIN* . nil)
+                    (COMMON-LISP::*READ-EVAL* . t))
+      when (not (boundp (car pair)))
+      do (progn (proclaim `(special ,(car pair)))
+                (setf (symbol-value (car pair))
+                      (cdr pair))))
+
 ; It is a mystery why the following proclamation is necessary, but it
 ; SEEMS to be necessary in order to permit the interaction of tracing
 ; with the redefinition of si::break-level.
@@ -713,20 +744,26 @@ implementations.")
       (setq result (concatenate 'string result sep s)))
     result))
 
+(defmacro our-with-standard-io-syntax (&rest args)
+
+; Use this macro when you can live with progn instead in the case of GCL.
+
+  (cons #+gcl 'progn #-gcl 'with-standard-io-syntax
+        args))
+
 (defmacro write-exec-file (stream prefix string &rest args)
 
 ; Prefix is generally nil, but can be (string . fmt-args).  String is the
 ; actual command invocation, with the indicated format args, args.
 
-  `(#+(and cltl2 (not gcl)) with-standard-io-syntax
-      #-(and cltl2 (not gcl)) progn
-      (format ,stream "#!/bin/sh~%~%")
-      (format ,stream
-              "# Saved ~a~%~%"
-              (saved-build-dates "#  then "))
-      ,@(and prefix
-             `((format ,stream ,(car prefix) ,@(cdr prefix))))
-      (format ,stream
+  `(our-with-standard-io-syntax ; Thus, we hope that progn is OK for GCL!
+    (format ,stream "#!/bin/sh~%~%")
+    (format ,stream
+            "# Saved ~a~%~%"
+            (saved-build-dates "#  then "))
+    ,@(and prefix
+           `((format ,stream ,(car prefix) ,@(cdr prefix))))
+    (format ,stream
 
 ; We generally take Noah Friedman's suggestion of using "exec" since there is
 ; no reason to keep the saved_acl2 shell script in the process table.  However,
@@ -736,11 +773,11 @@ implementations.")
 ; eliminate the "exec" in Windows; we have found that this works fine, at least
 ; for GCL and SBCL.
 
-              #-mswindows
-              (concatenate 'string "exec " ,string)
-              #+mswindows
-              ,string
-              ,@args)))
+            #-mswindows
+            (concatenate 'string "exec " ,string)
+            #+mswindows
+            ,string
+            ,@args)))
 
 #+akcl
 (defun save-acl2-in-akcl-aux (sysout-name gcl-exec-name
@@ -787,6 +824,7 @@ implementations.")
 #+akcl
 (defun save-acl2-in-akcl (sysout-name gcl-exec-name
                                       &optional mode do-not-save-gcl)
+  (setq *saved-mode* mode)
   (setq *acl2-allocation-alist*
 
 ; If *acl2-allocation-alist* is rebound before allocation is done in
@@ -893,15 +931,7 @@ implementations.")
                                   (round (* multiplier n)))))))))
   (setq si::*top-level-hook*
         #'(lambda ()
-            (format t *saved-string*
-                    *copy-of-acl2-version*
-                    (saved-build-dates :terminal)
-                    (cond (mode
-                           (format nil "~% Initialized with ~a." mode))
-                          (t ""))
-                    (eval '(latest-release-note-string)) ; avoid possible warning
-                    )
-            (maybe-load-acl2-init)
+            (acl2-default-restart)
             (cond
              (*acl2-allocation-alist*
 ;              (format
@@ -919,7 +949,6 @@ implementations.")
                        ((equal x "RELOCATABLE")
                         (si::allocate-relocatable-pages n))
                        (t (si::allocate type n t)))))))
-            (eval `(in-package ,*startup-package-name*))
             (lp)))
   (load "akcl-acl2-trace.lisp")
 
@@ -1517,7 +1546,7 @@ implementations.")
 ; http://clisp.cons.org/clisp.html#opt-memsize says that it is "common to
 ; specify 10 MB" for the value of -m; since that suffices to eliminate the
 ; stack overflow mentioned above, we use that value.  Note that we use ~dMB
-; instead of ~sMB because the with-standard-io-syntax wrapper in
+; instead of ~sMB because the (our-)with-standard-io-syntax wrapper in
 ; write-exec-file seems to put a decimal point after the number when using ~s,
 ; and CLISP complains about that when starting up.
 

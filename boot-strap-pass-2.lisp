@@ -1178,8 +1178,7 @@
                                      :forcep nil :ttreep nil)
                              state))
      ((':ap term . &) ; Can linear arithmetic can falsify term?
-      (if (mfc-ap term mfc state
-                  :forcep nil :ttreep nil)
+      (if (mfc-ap term mfc state :forcep nil)
           `(not ,term)
         *t*))
      ((':relieve-hyp hyp alist rune target bkptr . &) ; hyp/alist proved?

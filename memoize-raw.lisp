@@ -85,6 +85,11 @@
 
 (defmacro our-syntax (&rest args)
 
+; Warning: We use our-with-standard-io-syntax below, which might not be ideal
+; for GCL.  If we decide to stand behind ACL2(h) built on ANSI GCL, we might
+; want to think harder about whether progn really is sufficient where we call
+; our-with-standard-io-syntax below.
+
   "OUR-SYNTAX is similar to Common Lisp's WITH-STANDARD-IO-SYNTAX.
   The settings in OUR-SYNTAX are oriented towards reliable, standard,
   vanilla, mechanical reading and printing, and less towards human
@@ -98,10 +103,10 @@
 ; We use the *ACL2-PACKAGE* and the *ACL2-READTABLE* because we use
 ; them almost all the time in our code.
 
-  `(with-standard-io-syntax
-    (setq *package*   *acl2-package*)
-    (setq *readtable* *acl2-readtable*)
-    ,@args))
+  `(our-with-standard-io-syntax
+    (let ((*package* *acl2-package*)
+          (*readtable* *acl2-readtable*))
+      ,@args)))
 
 (defmacro our-syntax-nice (&rest args)
   ;; OUR-SYNTAX-NICE offers slightly more pleasant human readabilty.
@@ -258,7 +263,7 @@
 
 (defg *float-ticks/second* 1.0)
 
-(defg *float-internal-units-per-second*
+(defg *float-internal-time-units-per-second*
   (float internal-time-units-per-second))
 
 (declaim (float *float-ticks/second*
@@ -1959,7 +1964,8 @@ the calls took.")
 
    (when (or (macro-function fn)
              (special-operator-p fn)
-             (compiler-macro-function fn))
+             (and (fboundp 'compiler-macro-function) ; for GCL as of 5/2013
+                  (compiler-macro-function fn)))
      (error "Memoize-fn: ~s is a macro or a special operator or has a ~
              compiler macro." fn))
 
@@ -2094,7 +2100,9 @@ the calls took.")
 
           (body (if (or inline (null old-fn))
                     (car (last cl-defun))
-                  `(funcall ,old-fn ,@formals)))
+                  `(funcall #-gcl ,old-fn
+                            #+gcl ',old-fn ; old-fn could be (lisp:lambda-block ...)
+                            ,@formals)))
 
 
           (body-name (make-symbol "BODY-NAME"))
@@ -3915,25 +3923,30 @@ the calls took.")
 
 (defun meminfo (pat)
 
+; Warning: We use our-with-standard-io-syntax below, which might not be ideal
+; for GCL.  If we decide to stand behind ACL2(h) built on ANSI GCL, we might
+; want to think harder about whether progn really is sufficient where we call
+; our-with-standard-io-syntax below.
+
 ;  General comment about PROBE-FILE.  PROBE-FILE, according to Gary
 ;  Byers, may reasonably cause an error.  He is undoubtedly right.  In
 ;  such cases, however, Boyer generally thinks and wishes that it
 ;  returned NIL, and generally, therefore, ensconces a PROBE-FILE
 ;  within an IGNORE-ERROR in his code.
 
-   (or
-    (and
-     (our-ignore-errors (probe-file "/proc/meminfo"))
-     (with-standard-io-syntax
-      (with-open-file (stream "/proc/meminfo")
-        (let (line)
-          (loop while (setq line (read-line stream nil nil)) do
-                (when (looking-at pat line)
-                  (return
-                   (values
-                    (read-from-string line nil nil
-                                      :start (length pat))))))))))
-    0))
+  (or
+   (and
+    (our-ignore-errors (probe-file "/proc/meminfo"))
+    (with-standard-io-syntax
+     (with-open-file (stream "/proc/meminfo")
+                     (let (line)
+                       (loop while (setq line (read-line stream nil nil)) do
+                             (when (looking-at pat line)
+                               (return
+                                (values
+                                 (read-from-string line nil nil
+                                                   :start (length pat))))))))))
+   0))
 
 (let ((physical-memory-cached-answer nil))
    (defun physical-memory ()
@@ -4039,6 +4052,7 @@ the calls took.")
 
   ;; The following is restored after including mods from Jared Davis,
   ;; 3/29/2013.  See comment "Start memory management code (start-sol-gc)".
+  #+Clozure
   (start-sol-gc)
 
   (acl2h-init-memoizations)

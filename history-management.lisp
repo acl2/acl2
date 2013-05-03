@@ -5312,7 +5312,7 @@
             ((trans-ans
               (state-global-let*
                ((guard-checking-on t) ; see the Essay on Guard Checking
-;               ;;; (safe-mode t) ; !! experimental deletion
+;               ;;; (safe-mode t) ; !! long-standing "experimental" deletion
                 )
                (simple-translate-and-eval
                 expr

@@ -31632,17 +31632,24 @@
            (*print-escape* print-escape . (f-get-global 'print-escape state))
            (*print-length* print-length . (f-get-global 'print-length state))
            (*print-level* print-level . (f-get-global 'print-level state))
-           #+DRAFT-ANSI-CL-2
+           #+cltl2
            (*print-lines* print-lines . (f-get-global 'print-lines state))
-           #+DRAFT-ANSI-CL-2
+           #+cltl2
            (*print-miser-width* nil . nil)
            (*print-pretty* print-pretty . (f-get-global 'print-pretty state))
            (*print-radix* print-radix . (f-get-global 'print-radix state))
            (*print-readably* print-readably . (f-get-global 'print-readably
                                                             state))
-           #+DRAFT-ANSI-CL-2
-           (*print-pprint-dispatch* nil . nil)
-           #+DRAFT-ANSI-CL-2
+
+; At one time we did something with *print-pprint-dispatch* for #+cltl2.  But
+; as of May 2013, ANSI GCL does not comprehend this variable.  So we skip it
+; here.  In fact we skip it for all host Lisps, assuming that users who mess
+; with *print-pprint-dispatch* in raw Lisp take responsibility for knowing what
+; they're doing!
+
+;          #+cltl2
+;          (*print-pprint-dispatch* nil . nil)
+           #+cltl2
            (*print-right-margin*
             print-right-margin . (f-get-global 'print-right-margin state)))))
     (when (not (and (alistp bindings)
@@ -31654,7 +31661,7 @@
     `(let ((state *the-live-state*))
        (let ((*read-base* 10) ; just to be safe
              (*readtable* *acl2-readtable*)
-             #+DRAFT-ANSI-CL-2 (*read-eval* nil) ; to print without using #.
+             #+cltl2 (*read-eval* nil) ; to print without using #.
              (*package* (find-package-fast (current-package state)))
              ,@bindings)
          (let ,(loop for triple in raw-print-vars-alist
@@ -33491,7 +33498,7 @@
                  (*package* (find-package
                              (current-package *the-live-state*)))
                  (*readtable* *acl2-readtable*)
-                 #+DRAFT-ANSI-CL-2 (*read-eval* t)
+                 #+cltl2 (*read-eval* t)
                  (*read-suppress* *acl2-read-suppress*)
                  (*read-base* 10)
                  #+gcl (si:*notify-gbc* ; no gbc messages while typing

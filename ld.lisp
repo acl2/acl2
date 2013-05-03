@@ -20518,6 +20518,56 @@
 ; few cases, code.  In particular, ANSI GCL exposed a flaw in
 ; intern-in-package-of-symbol, which we slightly reworked as a result.
 
+; In support of mfc-xx fixes documented below, mfc-relieve-hyp-raw now
+; returns two values, as expected by call from mfc-relieve-hyp macro.
+
+; We made the following changes during the process of adding support for
+; building ACL2(h) on ANSI GCL.  While we have run a significant portion of the
+; ACL2(h) regression suite on ACL2(h) built on a version of ANSI GCL, which was
+; gracefully built for us by Camm Maguire, it stalled out with
+; books/models/y86/y86-basic/common/x86-state.lisp.  Here is a summary of those
+; changes, some of which might benefit other Lisps, although currently we only
+; do automatic proclaiming for defuns for ANSI GCL.
+;
+; - We improved output-type-for-declare-form-rec and
+;   output-type-for-declare-form for gcl, but as a result, no longer
+;   attempt to do such declaims for *1* functions (see
+;   install-defs-for-add-trip).
+;
+; - We now avoid function declaims for an abstract stobj export, which
+;   is defined as a macro.
+;
+; - We now avoid using defun-one-output for functions like mfc-ts-raw
+;   that return two values (the second of which is a ttree).
+;
+; - We rationalized saving the system in GCL (function
+;   save-acl2-in-akcl), in particular to use the function
+;   acl2-default-restart.
+;
+; - With-print-controls no longer messes with *print-pprint-dispatch*.
+;
+; - We did miscellaneous cleanup, including changing #+DRAFT-ANSI-CL-2
+;   to #+cltl2.
+;
+; - The definition of global *float-internal-units-per-second* was
+;   clearly intended to be the definition of global
+;   *float-internal-time-units-per-second*.  This has been fixed.
+;
+; - For ANSI GCL, we added a workaround for undefinedness of
+;   compiler-macro-function.
+;
+; - For ANSI GCL, we fixed memoize-fn to quote the symbol-function
+;   passed to funcall.  Perhaps that could be done in other Lisps too,
+;   but it seemed unwise to risk it.
+;
+; - We guarded an occurrence of (start-sol-gc) with #+Clozure, since
+;   start-sol-gc is undefined otherwise.
+;
+; - We moved a type declaration on formals in the definition of
+;   ser-decode-nat-large to be just after the formals (which avoids a
+;   complaint by ANSI GCL, but is probably a good thing to do
+;   regardless).
+
   :doc
   ":Doc-Section release-notes
 
@@ -20675,6 +20725,19 @@
     :hints ((\"Goal\" :in-theory (disable (stp)) :use bad))
     :rule-classes nil)
   ~ev[]
+
+  We fixed bugs in extended metafunctions (~pl[extended-metafunctions]).  The
+  macro ~c[mfc-ap] no longer takes a ~c[:TTREEP] keyword argument, because this
+  argument could allow returning a tag tree that does not properly account for
+  forcing.  The remaining ~c[mfc-xx] macros ~-[] ~c[mfc-relieve-hyp],
+  ~c[mfc-rw+], ~c[mfc-rw], and ~c[mfc-ts] ~-[] still take a ~c[:TTREEP] keyword
+  argument, but the corresponding functions when ~c[:TTREEP] is ~c[t] ~-[]
+  ~c[mfc-relieve-hyp-ttree], ~c[mfc-rw+-ttree], ~c[mfc-rw-ttree], and
+  ~c[mfc-ts-ttree] ~-[] were introduced with incorrect output signatures.  A
+  complication is that ~c[mfc-relieve-hyp-ttree] was improperly defined in raw
+  Lisp in a way that actually matched the incorrect signature!  All of these
+  bugs have been fixed.  Perhaps any of them could have made it possible to
+  prove ~c[nil], though we have not tried to do so.
 
   (Windows only) On Windows, it had been possible for ACL2 not to consider two
   pathnames to name the same file when the only difference is the case of the
@@ -26024,40 +26087,46 @@ tail recursion.
  (define-trusted-clause-processor
    acl2-magic-mfc
    (mfc-ts-fn mfc-ts-ttree mfc-rw-fn mfc-rw-ttree mfc-rw+-fn mfc-rw+-ttree
-              mfc-relieve-hyp-fn mfc-relieve-hyp-ttree mfc-ap-fn mfc-ap-ttree)
+              mfc-relieve-hyp-fn mfc-relieve-hyp-ttree mfc-ap-fn)
    :partial-theory
    (encapsulate
     (((mfc-ap-fn * * state *) => *)
-     ((mfc-ap-ttree * * state *) => *)
      ((mfc-relieve-hyp-fn * * * * * * state *) => *)
-     ((mfc-relieve-hyp-ttree * * * * * * state *) => *)
+     ((mfc-relieve-hyp-ttree * * * * * * state *) => (mv * *))
      ((mfc-rw+-fn * * * * * state *) => *)
-     ((mfc-rw+-ttree * * * * * state *) => *)
+     ((mfc-rw+-ttree * * * * * state *) => (mv * *))
      ((mfc-rw-fn * * * * state *) => *)
-     ((mfc-rw-ttree * * * * state *) => *)
+     ((mfc-rw-ttree * * * * state *) => (mv * *))
      ((mfc-ts-fn * * state *) => *)
-     ((mfc-ts-ttree * * state *) => *))
+     ((mfc-ts-ttree * * state *) => (mv * *)))
     (logic)
     (set-ignore-ok t)
     (set-irrelevant-formals-ok t)
-    (local (defun mfc-ts-fn (term mfc state forcep) t))
-    (local (defun mfc-ts-ttree (term mfc state forcep) t))
-    (local (defun mfc-rw-fn (term obj equiv-info mfc state forcep) t))
-    (local (defun mfc-rw-ttree (term obj equiv-info mfc state forcep) t))
-    (local (defun mfc-rw+-fn (term alist obj equiv-info mfc state forcep) t))
-    (local (defun mfc-rw+-ttree (term alist obj equiv-info mfc state forcep) t))
-    (local
-     (defun mfc-relieve-hyp-fn (hyp alist rune target bkptr mfc state forcep) t))
-    (local
-     (defun mfc-relieve-hyp-ttree (hyp alist rune target bkptr mfc state
-                                       forcep) t))
-    (local (defun mfc-ap-fn (term mfc state forcep) t))
-    (local (defun mfc-ap-ttree (term mfc state forcep) t)))))
+    (local (defun mfc-ts-fn (term mfc state forcep)
+             t))
+    (local (defun mfc-ts-ttree (term mfc state forcep)
+             (mv t t)))
+    (local (defun mfc-rw-fn (term obj equiv-info mfc state forcep)
+             t))
+    (local (defun mfc-rw-ttree (term obj equiv-info mfc state forcep)
+             (mv t t)))
+    (local (defun mfc-rw+-fn (term alist obj equiv-info mfc state forcep)
+             t))
+    (local (defun mfc-rw+-ttree (term alist obj equiv-info mfc state forcep)
+             (mv t t)))
+    (local (defun mfc-relieve-hyp-fn (hyp alist rune target bkptr mfc state
+                                          forcep)
+             t))
+    (local (defun mfc-relieve-hyp-ttree (hyp alist rune target bkptr mfc state
+                                             forcep)
+             (mv t t)))
+    (local (defun mfc-ap-fn (term mfc state forcep)
+             t)))))
 
 #-acl2-loop-only
 (progn
 
-(defun-one-output mfc-ts-raw (term mfc state forcep)
+(defun mfc-ts-raw (term mfc state forcep)
   (declare (xargs :guard (state-p state)))
 
 ; Type-set doesn't really use state.  We originally used the presence of the
@@ -26139,7 +26208,7 @@ tail recursion.
       (cw *meta-level-function-problem-3* 'mfc-ts)
       (throw-raw-ev-fncall ev-fncall-val)))))
 
-(defun-one-output mfc-rw-raw (term alist obj equiv-info mfc fn state forcep)
+(defun mfc-rw-raw (term alist obj equiv-info mfc fn state forcep)
   (declare (xargs :guard (state-p state)))
   (let ((ev-fncall-val `(ev-fncall-null-body-er nil mfc-rw-raw ,term ,alist
                                                 ',obj ,equiv-info mfc ,fn
@@ -26221,8 +26290,8 @@ tail recursion.
       (cw *meta-level-function-problem-3* fn)
       (throw-raw-ev-fncall ev-fncall-val)))))
 
-(defun-one-output mfc-relieve-hyp-raw (hyp alist rune target bkptr mfc state
-                                           forcep)
+(defun mfc-relieve-hyp-raw (hyp alist rune target bkptr mfc state
+                                forcep)
 
 ; We ignore issues concerning memoization and free variables below.
 ; As we gain experience with the use of this function, we may want
@@ -26289,7 +26358,7 @@ tail recursion.
                 :rdepth (access metafunction-context mfc :rdepth)
                 :step-limit (initial-step-limit wrld state)
                 :type-alist (access metafunction-context mfc :type-alist)
-                :obj nil ; ignored by relieve-hyp
+                :obj nil    ; ignored by relieve-hyp
                 :geneqv nil ; ignored by relieve-hyp
                 :wrld wrld
                 :fnstack (access metafunction-context mfc :fnstack)
@@ -26315,17 +26384,17 @@ tail recursion.
                 :rcnst (update-rncst-for-forcep forcep rcnst)
                 :gstack (access metafunction-context mfc :gstack)
                 :ttree nil)
-               (declare (ignore step-limit failure-reason new-unify-subst ttree
+               (declare (ignore step-limit failure-reason new-unify-subst
                                 memo))
                (if (eq wonp t)
-                   t
-                 nil)))))))
+                   (mv t ttree)
+                 (mv nil nil))))))))
        (t (cw *meta-level-function-problem-2* 'mfc-relieve-hyp mfc
               (abbrev-evisc-tuple *the-live-state*))
           (throw-raw-ev-fncall ev-fncall-val))))
      (*hard-error-returns-nilp*
       (throw-raw-ev-fncall ev-fncall-val))
-     (t 
+     (t
       (cw *meta-level-function-problem-3* 'mfc-relieve-hyp)
       (throw-raw-ev-fncall ev-fncall-val)))))
 
@@ -26430,7 +26499,7 @@ tail recursion.
           (throw-raw-ev-fncall ev-fncall-val))))
      (*hard-error-returns-nilp*
       (throw-raw-ev-fncall ev-fncall-val))
-     (t 
+     (t
       (cw *meta-level-function-problem-3* 'mfc-ap)
       (throw-raw-ev-fncall ev-fncall-val)))))
 )
@@ -26483,13 +26552,9 @@ tail recursion.
                          ,forcep)))
 
 (defmacro mfc-ap (term mfc st &key
-                       (forcep ':same)
-                       ttreep)
-  (declare (xargs :guard (and (member-eq forcep '(t nil :same))
-                              (booleanp ttreep))))
-  (if ttreep
-      `(mfc-ap-ttree ,term ,mfc ,st ,forcep)
-    `(mfc-ap-fn ,term ,mfc ,st ,forcep)))
+                       (forcep ':same))
+  (declare (xargs :guard (member-eq forcep '(t nil :same))))
+  `(mfc-ap-fn ,term ,mfc ,st ,forcep))
 
 (defun congruence-rule-listp (x wrld)
   (if (atom x)

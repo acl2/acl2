@@ -401,14 +401,6 @@
 ; See acl2-fns.lisp for a fix to user-homedir-pathname for some versions of
 ; GCL.
 
-#+(and gcl cltl2)
-; Some older versions of ANSI GCL aren't sufficiently developed to support
-; ACL2.  We try to disallow some of those here.  Note all 2.6.8pre are created
-; equal!
-(when (not (fboundp 'with-standard-io-syntax))
-  (error
-   "FATAL ERROR: ACL2 does not support this older version ANSI GCL."))
-
 ; To use ACL2 under LispWorks 3.2.0, execute the following to work around a
 ; bug.
 
@@ -1407,7 +1399,27 @@ which is saved just in case it's needed later.")
 (defun set-new-dispatch-macro-character (char subchar fn)
   (let ((old (get-dispatch-macro-character char subchar)))
     (cond ((or (null old)
-               (eql fn old))
+               (eql fn old)
+               #+gcl
+
+; For GCL, Camm Maguire has told us that he believes that it's safe for us to
+; make this redefinition for these characters.
+
+               (and (eql char #\#)
+                    (member subchar '(#\@ #\! #\u #\Y #\Z)))
+               #+allegro
+
+; The #u reader has been defined in Allegro CL to invoke parse-uri.  It seems
+; harmless to overwrite it (especially since we only smash #u in
+; *acl2-readtable*).  David Margolies of Franz Inc. has kindly pointed us to
+; the web page
+; http://www.franz.com/support/documentation/8.1/doc/uri.htm#acl-implementation-1
+; where we find this:
+
+;   4. #u"..." is shorthand for (parse-uri "...") but if an existing #u
+;   dispatch macro definition exists, it will not be overridden.
+
+               (member char '(#\u)))
            (set-dispatch-macro-character char subchar fn))
           (t (error "ACL2 cannot be built in this host Lisp, because ~%~
                      ~s is already defined, to be: ~s"
@@ -1427,50 +1439,19 @@ which is saved just in case it's needed later.")
    #'sharp-comma-read))
 
 (defun define-sharp-atsign ()
-
-; For GCL, Camm Maguire has told us (email, 4/22/2013) that he believes that
-; it's safe for us to redefine #@.
-
-  (#-gcl
-   set-new-dispatch-macro-character
-   #+gcl
-   set-dispatch-macro-character
+  (set-new-dispatch-macro-character
    #\#
    #\@
    #'sharp-atsign-read))
 
 (defun define-sharp-bang ()
-
-; For GCL, Camm Maguire has told us (email, 4/22/2013) that he believes that
-; it's safe for us to redefine #!.
-
-  (#-gcl
-   set-new-dispatch-macro-character
-   #+gcl
-   set-dispatch-macro-character
+  (set-new-dispatch-macro-character
    #\#
    #\!
    #'sharp-bang-read))
 
 (defun define-sharp-u ()
-  (#-(or gcl allegro)
-   set-new-dispatch-macro-character
-   #+(or gcl allegro)
-
-; For GCL, Camm Maguire has told us (email, 4/26/2013) that he believes that
-; it's OK for us to redefine #u.
-
-; The #u reader has been defined in Allegro CL to invoke parse-uri.  It seems
-; harmless to overwrite it (especially since we only smash #u in
-; *acl2-readtable*).  David Margolies of Franz Inc. has kindly pointed us to
-; the web page
-; http://www.franz.com/support/documentation/8.1/doc/uri.htm#acl-implementation-1
-; where we find this:
-
-;   4. #u"..." is shorthand for (parse-uri "...") but if an existing #u
-;   dispatch macro definition exists, it will not be overridden.
-
-   set-dispatch-macro-character
+  (set-new-dispatch-macro-character
    #\#
    #\u
    #'sharp-u-read))

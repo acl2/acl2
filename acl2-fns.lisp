@@ -346,10 +346,44 @@
     'character)
    ((atom form)
     t)
-   ((eq (car form) 'return-last)
-    (output-type-for-declare-form-rec (cadr (last form)) flet-alist))
+   ((member (car form) '(return-last return-from when)
+            :test 'eq)
+    (output-type-for-declare-form-rec (car (last form)) flet-alist))
    ((assoc (car form) flet-alist :test 'eq)
     (cdr (assoc (car form) flet-alist :test 'eq)))
+   #+acl2-mv-as-values
+   ((member (car form) '(mv values)
+            :test 'eq)
+    (cond ((null (cdr form))
+           (setq *acl2-output-type-abort* '*))
+          ((null (cddr form)) ; form is (values &)
+           (let* ((*acl2-output-type-abort* nil)
+                  (tmp (output-type-for-declare-form-rec (cadr form)
+                                                         flet-alist)))
+             (cond ((and (symbolp tmp)
+                         (not (eq tmp '*))
+                         (not *acl2-output-type-abort*))
+                    tmp)
+                   (t t))))
+          (t
+           (cons 'values
+                 (loop for x in (cdr form)
+                       collect
+                       (let* ((*acl2-output-type-abort* nil)
+                              (tmp
+                               (output-type-for-declare-form-rec x
+                                                                 flet-alist)))
+                         (cond ((and (symbolp tmp)
+                                     (not (eq tmp '*))
+                                     (not *acl2-output-type-abort*))
+                                tmp)
+                               (t t))))))))
+   #-acl2-mv-as-values
+   ((eq (car form) 'mv)
+    (output-type-for-declare-form-rec (cadr form) flet-alist))
+   #-acl2-mv-as-values
+   ((eq (car form) 'values)
+    (setq *acl2-output-type-abort* '*))
    ((member (car form) '(flet labels)
             :test 'eq) ; (flet bindings val)
     (let ((temp flet-alist))
@@ -388,14 +422,6 @@
             (max-output-type-for-declare-form
              type1
              (output-type-for-declare-form-rec (cadddr form) flet-alist)))))))
-   ((eq (car form) 'values)
-    (cond ((null (cdr form))
-           (setq *acl2-output-type-abort* '*))
-          ((null (cddr form)) ; e.g., from (cond (a))
-           (output-type-for-declare-form-rec (cadr form) flet-alist))
-          (t
-           (cons 'values (output-type-for-declare-form-rec-list (cdr form)
-                                                                flet-alist)))))
    ((member (car form) '(let let*) :test 'eq)
     (cond ((cddr form)
            (output-type-for-declare-form-rec (car (last form)) flet-alist))
@@ -412,6 +438,8 @@
    ((member (car form)
             '(tagbody ; e.g., ld-fn
               throw-raw-ev-fncall ; e.g., from defchoose
+              eval
+              error
               )
             :test 'eq)
     (setq *acl2-output-type-abort* '*))
@@ -434,16 +462,18 @@
                     #-acl2-mv-as-values
                     (t t)
                     #+acl2-mv-as-values
-                    (t (let ((x (and (eval '(f-get-global 'current-acl2-world
-                                                          *the-live-state*))
-                                     (qfuncall get-stobjs-out-for-declare-form
-                                               (car form)))))
+                    (t (let ((x (and ; check that (w *the-live-state*) is bound
+                                 (boundp 'ACL2_GLOBAL_ACL2::CURRENT-ACL2-WORLD)
+                                 (fboundp 'get-stobjs-out-for-declare-form)
+                                 (qfuncall get-stobjs-out-for-declare-form
+                                           (car form)))))
                          (cond ((consp (cdr x))
                                 (cons 'values
                                       (make-list (length x)
                                                  :initial-element
                                                  t)))
-                               (t t))))))
+                               (x t)
+                               (t (setq *acl2-output-type-abort* '*)))))))
              (t (output-type-for-declare-form-rec new-form flet-alist)))))))
 
 (defun output-type-for-declare-form-rec-list (forms flet-alist)
@@ -475,9 +505,10 @@
   #+acl2-mv-as-values
   (let* ((*acl2-output-type-abort* nil) ; protect for call on next line
          (result (output-type-for-declare-form-rec form nil))
-         (stobjs-out (and (eval '(f-get-global 'current-acl2-world
-                                               *the-live-state*))
-                          (qfuncall get-stobjs-out-for-declare-form fn))))
+         (stobjs-out (and ; check that (w *the-live-state*) is bound
+                      (boundp 'ACL2_GLOBAL_ACL2::CURRENT-ACL2-WORLD)
+                      (fboundp 'get-stobjs-out-for-declare-form)
+                      (qfuncall get-stobjs-out-for-declare-form fn))))
     (when (and stobjs-out
                (not (eq (and (consp result)
                              (eq (car result) 'values))
@@ -663,6 +694,7 @@
 ; column.
 
   (when *do-proclaims*
+    (format t "Note: Proclaiming file ~s.~%" name)
     (with-open-file
      (file name :direction :input)
      (let ((eof (cons nil nil))

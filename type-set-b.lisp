@@ -10324,8 +10324,8 @@
                       (temp-temp
                        (cond ((ts= (cadr temp-temp) *ts-t*)
 
-; Arg1-canon and arg2-canon are both supposed to be canonical, so 
-; this case can't happen!!  It would be sound to return:
+; Arg1-canon and arg2-canon are both supposed to be canonical, so this case
+; can't happen!  It would be sound to return:
 
 ;                                 (mv-atf xnot-flg t nil type-alist nil
 ;                                         nil

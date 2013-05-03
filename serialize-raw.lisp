@@ -421,9 +421,9 @@
 ; represents how much we need to shift over the next 7 bits we read.  Value is
 ; the already-summed value of the previous blocks we have read.
 
+  (declare (type integer value shift))
   (let ((x1 (ser-read-byte stream)))
-    (declare (type fixnum x1)
-             (type integer value shift))
+    (declare (type fixnum x1))
     (loop while (>= x1 128)
           do
           (incf value (ash (- x1 128) shift))
