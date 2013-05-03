@@ -198,8 +198,8 @@ OK_CERTS := $(filter-out system/pcert/acl2x-pcert-test-2-include.cert, $(OK_CERT
 # regression.
 
 SLOW_BOOKS := \
-  workshops/2011/krug-et-al/support/MinVisor/setup-nested-page-tables.lisp
-
+  workshops/2011/krug-et-al/support/MinVisor/va-to-pa-thm.cert \
+  workshops/2011/krug-et-al/support/MinVisor/setup-nested-page-tables.cert
 
 OK_CERTS := $(filter-out $(SLOW_BOOKS), $(OK_CERTS))
 
