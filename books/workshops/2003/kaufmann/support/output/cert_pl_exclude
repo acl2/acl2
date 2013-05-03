@@ -1,0 +1,5 @@
+cert_pl_exclude
+
+The presence of this file tells cert.pl not to try to build any of the books in
+this directory.
+

@@ -131,21 +131,6 @@ STARTJOB ?= $(SHELL)
 .PHONY: all
 all:
 
-# This was excluded from workshops/2000/Makefile.
-BROKEN_WK2000_COWLES := workshops/2000/cowles
-
-# This was excluded from workshops/2002/manolios-kaufmann/support/Makefile.
-BROKEN_WK2002_TOTAL := workshops/2002/manolios-kaufmann/support/total-order
-
-# This was excluded from workshops/2003/kaufmann/support/Makefile
-BROKEN_WK2003_KAUFMANN := workshops/2003/kaufmann/support/output
-
-# This apparently takes too long for mere mortals to build
-BROKEN_WK2004_MANOLIOS := manolios-srinivasan/support/Benchmark-Problems
-
-# This wasn't getting built, it has a really slow book
-BROKEN_WK2011_KRUG := workshops/2011/krug-et-al/support/MinVisor
-
 ifndef NO_RESCAN
 
 $(info Scanning for books...)
@@ -153,11 +138,6 @@ REBUILD_MAKEFILE_BOOKS := $(shell \
   rm -f Makefile-books; \
   time find . -name "*.lisp" \
     | egrep -v '^(\./)?(interface|nonstd|centaur/quicklisp|clause-processors/SULFA)/' \
-    | fgrep -v $(BROKEN_WK2000_COWLES) \
-    | fgrep -v $(BROKEN_WK2002_TOTAL) \
-    | fgrep -v $(BROKEN_WK2003_KAUFMANN) \
-    | fgrep -v $(BROKEN_WK2004_MANOLIOS) \
-    | fgrep -v $(BROKEN_WK2011_KRUG) \
   > Makefile-books; \
   ls -l Makefile-books)
 #$(info $(REBUILD_MAKEFILE_BOOKS))
@@ -199,9 +179,9 @@ $(info ACL2_HAS_REALS    := $(ACL2_HAS_REALS))
 $(info Done with features.)
 
 
+
 OK_CERTS := $(CERT_PL_CERTS)
 
-# BOZO fix this to actually do the right thing with new cert.pl stuff
 ifeq ($(ACL2_HAS_HONS), )
 $(info Excluding books that depend on ACL2(h))
 OK_CERTS := $(filter-out $(CERT_PL_HONS_ONLY), $(OK_CERTS))
@@ -214,7 +194,18 @@ endif
 OK_CERTS := $(filter-out system/pcert/acl2x-pcert-test-2-include.cert, $(OK_CERTS))
 
 
+# SLOW_BOOKS are books that are too slow to include as part of an ordinary
+# regression.
+
+SLOW_BOOKS := \
+  workshops/2011/krug-et-al/support/MinVisor/setup-nested-page-tables.lisp
+
+
+OK_CERTS := $(filter_out $(SLOW_BOOKS), $(OK_CERTS))
+
 all: $(OK_CERTS)
+
+everything : all $(SLOW_BOOKS)
 
 
 # The critical path report will work only if you have set up certificate timing
@@ -274,7 +265,8 @@ CLEAN_FILES_EXPLICIT := \
    xdoc-impl/bookdoc.dat \
    Makefile-deps \
    Makefile-books \
-   Makefile-features
+   Makefile-features \
+   Makefile-cache
 
 MORECLEAN_FILES_EXPLICIT := \
    xdoc-impl/manual \
@@ -289,6 +281,7 @@ clean_books:
 clean: clean_books
 	@echo "Removing extra, explicitly temporary files."
 	rm -rf $(CLEAN_FILES_EXPLICIT)
+	cd centaur/quicklisp; $(MAKE) clean
 
 moreclean: clean
 	@echo "Removing even more generated files (documentation, etc)."

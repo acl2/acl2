@@ -181,6 +181,12 @@ sub consider_file
 	push(@rm, $what);
 	return;
     }
+
+    if ($ext eq ".wrap" && $file =~ /^startjob./) {
+	# Centaur specific thing, delete startjob*.wrap
+	push(@rm, $what);
+	return;
+    }
 }
 
 print "clean.pl: scanning for generated files\n";
