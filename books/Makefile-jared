@@ -199,7 +199,12 @@ OK_CERTS := $(filter-out system/pcert/acl2x-pcert-test-2-include.cert, $(OK_CERT
 
 SLOW_BOOKS := \
   workshops/2011/krug-et-al/support/MinVisor/va-to-pa-thm.cert \
-  workshops/2011/krug-et-al/support/MinVisor/setup-nested-page-tables.cert
+  workshops/2011/krug-et-al/support/MinVisor/setup-nested-page-tables.cert \
+  workshops/2011/verbeek-schmaltz/sources/correctness2.cert \
+  workshops/2011/verbeek-schmaltz/sources/correctness.cert \
+  workshops/2011/verbeek-schmaltz/sources/invariants3.cert \
+  workshops/2011/verbeek-schmaltz/sources/invariants2.cert \
+  workshops/2011/verbeek-schmaltz/sources/invariants.cert
 
 OK_CERTS := $(filter-out $(SLOW_BOOKS), $(OK_CERTS))
 
@@ -214,7 +219,7 @@ everything : all $(SLOW_BOOKS)
 # BOZO I probably broke this, we shouldn't use --targets, we should use ok_certs...
 critpath.txt : $(OK_CERTS)
 	echo "Building critpath.txt..."
-	time ./critpath.pl --targets Makefile-books > critpath.txt
+	time ./critpath.pl -m 2 --targets Makefile-books > critpath.txt
 
 
 # Handy targets for building subsets of the books... others are easy to add.
