@@ -197,12 +197,6 @@ $(info Excluding books that depend on ACL2(h))
 OK_CERTS := $(filter-out $(CERT_PL_HONS_ONLY), $(OK_CERTS))
 endif
 
-# BOZO probably do something similar for ACL2(r)?
-
-
-# We filter out a book that depends on provisional certification:
-OK_CERTS := $(filter-out system/pcert/acl2x-pcert-test-2-include.cert, $(OK_CERTS))
-
 
 # SLOW_BOOKS are books that are too slow to include as part of an ordinary
 # regression.
@@ -313,13 +307,32 @@ dummy:
 #   - we use the following top-level target to certify the actual verbeek-schmaltz
 #     books after certifying the deps
 
+# We assume that ACL2_HAS_REALS indicates a regression being done in
+# nonstd/.
+ifndef ACL2_HAS_REALS
+
 workshops/2011/verbeek-schmaltz/sources/correctness2.cert : \
   workshops/2011/verbeek-schmaltz/deps.cert
 	cd workshops/2011/verbeek-schmaltz/sources; $(MAKE) ACL2_PCERT=1
 
 all : workshops/2011/verbeek-schmaltz/sources/correctness2.cert
 
+endif
 
+# We also want to test provisional certification using system/pcert/,
+# so we use the same sort of trickery as we do just above
+# workshops/2011/verbeek-schmaltz/sources, slightly modified however
+# since there is no single top-level file in this case.
+
+SYSTEM_PCERT_CERTS := $(patsubst %.lisp, %.cert, $(wildcard system/pcert/*.lisp))
+
+$(SYSTEM_PCERT_CERTS) : make_system_pcert_certs
+
+.PHONY: make_system_pcert_certs
+make_system_pcert_certs : system/pcert-deps.cert
+	cd system/pcert; $(MAKE) ACL2_PCERT=1
+
+all : $(SYSTEM_PCERT_CERTS)
 
 # Workshops/1999/multiplier is tricky because there are generated .lisp files
 # involved.  Cert.pl can't scan these, so we have to add them manually.
@@ -364,6 +377,8 @@ xdoc-impl/bookdoc.dat: \
           $(STARTJOB) -c "$(ACL2) < bookdoc.lsp &> bookdoc.out"
 	@ls -l xdoc-impl/bookdoc.dat
 
+# We assume that ACL2_HAS_REALS indicates a regression being done in
+# nonstd/.
 ifndef ACL2_HAS_REALS
 
 # The following dependency is to be ignored in ACL2(r), where the
@@ -385,10 +400,14 @@ make-event/macros-include.pcert1: make-event/macros.cert
 make-event/local-requires-skip-check-include.pcert1: \
   make-event/local-requires-skip-check.cert
 
-# BOZO.  Similar bozo.
+# Deal with generated file bdd/benchmarks.lisp:
 
-#system/pcert/acl2x-pcert-test-2-include.pcert1: \
-#    system/pcert/acl2x-pcert-test-2.cert
+all: bdd/benchmarks.cert
+
+bdd/benchmarks.cert: bdd/benchmarks.lisp
+
+bdd/benchmarks.lisp: bdd/cbf.cert bdd/create-benchmarks.lsp
+	cd bdd ; (echo '(ld "create-benchmarks.lsp")' | $(ACL2))
 
 # Multi-lisp compilation stuff for Matt.
 
@@ -402,3 +421,39 @@ make-event/local-requires-skip-check-include.pcert1: \
 
 .PHONY: fasl
 fasl : $(patsubst %.cert,%.fasl,$(OK_CERTS))
+
+# We now provide a way (adapted from the old Makefile-generic) for
+# developers to be able to check well-formedness of the ACL2 world
+# after including each book.  Note that the two problematic
+# directories for world-checking, hacking/ and
+# workshops/2007/dillinger-et-al/code/ override the
+# chk-include-book-worlds target by setting environment variable
+# ACL2_SKIP_CHK_INCLUDE_BOOK_WORLDS in order to skip this check.  The
+# problem seems likely to be that in many of the books in these two
+# directories, the first bad triple is a GLOBAL-VALUE for either the
+# unknown property EXTEND-PROGN! or RETRACT-PROGN!, or else is an
+# unbinding of the PREDEFINED property for PROGN! (indicating a use of
+# :REDEF); presumably these books mess with raw mode.
+
+BOOKS_BKCHK_OUT := $(patsubst %.cert,%.bkchk.out,$(OK_CERTS))
+BOOKS_BKCHK_OUT := $(filter-out hacking/%, $(BOOKS_BKCHK_OUT))
+BOOKS_BKCHK_OUT := $(filter-out workshops/2007/dillinger-et-al/code/%, $(BOOKS_BKCHK_OUT))
+
+.PHONY: chk-include-book-worlds
+chk-include-book-worlds: $(BOOKS_BKCHK_OUT)
+
+%.bkchk.out: %.cert
+	@echo "Including `pwd`/$* on `date`"
+	@echo '(acl2::value :q)' > workxxx.bkchk.$(*F)
+	@echo '(in-package "ACL2")' >> workxxx.bkchk.$(*F)
+	@echo '(acl2::lp)' >> workxxx.bkchk.$(*F)
+	@echo '(acl2::in-package "ACL2")' >> workxxx.bkchk.$(*F)
+	@echo '(include-book "$*")' >> workxxx.bkchk.$(*F)
+	@echo '(include-book "system/pseudo-good-worldp" :dir :system)' >> workxxx.bkchk.$(*F)
+	@echo "Checking world created by including `pwd`/$* on `date`"
+	@echo '(chk-pseudo-good-worldp "$*")' >> workxxx.bkchk.$(*F)
+	@($(ACL2) < workxxx.bkchk.$(*F) 2>&1) > $*.bkchk.out
+	@(fgrep 'Pseudo-good-worldp check for including "$*" passed.' $@) || \
+            (echo '** Pseudo-good-worldp check FAILED for including $*;' "see `pwd`/$@" '**' ;\
+             exit 1)
+	@rm -f workxxx.bkchk.$(*F)
