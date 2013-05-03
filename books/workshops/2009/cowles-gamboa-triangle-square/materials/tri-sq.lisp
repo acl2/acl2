@@ -1590,12 +1590,7 @@ sqrt-posp-<=
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ; Include the log base 2 book.
 
-(include-book "log2"
-; Matt K.: Commenting out use of :uncertified-okp after v4-3 in order to
-; support provisional certification:
-;	      :uncertified-okp nil
-	      :defaxioms-okp nil
-	      :skip-proofs-okp nil) 
+(include-book "log2")
 
 (defthm
  pair-pow-log-is-logarithmic

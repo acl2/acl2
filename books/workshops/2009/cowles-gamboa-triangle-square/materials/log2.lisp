@@ -7,24 +7,8 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ; Make temporary use of an ACL2 Arithmetic Book to help certify this book,
 
-(local
- (include-book "arithmetic-3/top" :dir :system 
-	       :uncertified-okp nil     
-	       :defaxioms-okp nil 
-	       :skip-proofs-okp nil))
+(local (include-book "arithmetic-3/top" :dir :system))
 
-#|
-(add-include-book-dir :books 
-		      "/home/acl2/acl2-3.4/acl2-compile/books/"))
-
-(local
- (include-book
-  "arithmetic-3/top"
-  :dir :books
-  :uncertified-okp nil
-  :defaxioms-okp nil
-  :skip-proofs-okp nil)) 
-|#
 
 (defun
  flog2 (n)

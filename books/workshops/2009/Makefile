@@ -86,7 +86,7 @@
 
 ##############################
 
-DIRS =  cowles-gamboa-triangle-square/triangle=square-materials \
+DIRS =  cowles-gamboa-triangle-square/materials \
 	fraij-roach/support \
 	hardin/deque-stobj \
 	kaufmann-kornerup-reitblatt/support \
