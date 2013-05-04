@@ -10,10 +10,10 @@
 # Mike Dahlin, Ryan Johnson, Robert Krug, Michael Mccoyd and Bill
 # Young.
 # Toward the Verification of a Simple Hypervisor
-# NOTE!  This is not included in an ordinary make, because
-# certification of MinVisor/setup-nested-page-tables.lisp took over an
-# hour and 38 minutes on an "Intel(R) Xeon(R) CPU E31280 @ 3.50GHz", a
-# very fast machine as of November, 2011.
+# NOTE that `make' will skip certification of
+# MinVisor/setup-nested-page-tables.lisp, which took over an hour and 38
+# minutes on an "Intel(R) Xeon(R) CPU E31280 @ 3.50GHz", a very fast
+# machine as of November, 2011.
 
 # Peter Reid and Ruben Gamboa
 # Implementing an Automatic Differentiator in ACL2
@@ -42,6 +42,7 @@
 ##############################
 
 DIRS =  cowles-gamboa-sierpinski/support \
+	krug-et-al/support \
 	verbeek-schmaltz/sources
 
 include ../../Makefile-psubdirs

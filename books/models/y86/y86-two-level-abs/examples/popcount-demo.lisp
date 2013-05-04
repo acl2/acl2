@@ -9,6 +9,14 @@
 (set-max-mem (* 4 (expt 2 30)))
 ||#
 
+; If popcount-demo.lisp (which, incidentally, is more or less subsumed by
+; popcount.lisp) is certified in parallel with popcount.lisp, that could result
+; in memory usage that stresses a machine with 8GB of RAM.  So we add an
+; artificial dependency here:
+#||
+(include-book "popcount")
+||#
+
 (defthm x86-32p-create-x86-32
   (x86-32p (create-x86-32))
   :hints (("Goal" :in-theory (e/d (x86-32p memp-aux)

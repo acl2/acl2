@@ -36,7 +36,7 @@
 
 # Jared Davis and Sol Swords
 # Verified AIG Algorithms in ACL2
-# See centaur/aig/ and centaur/aignet/.
+# See davis-swords/README.
 
 ########## Not contributing supporting materials: ##########
 
