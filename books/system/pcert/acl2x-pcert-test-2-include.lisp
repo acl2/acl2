@@ -3,6 +3,13 @@
 ; Define must-succeed (used below).
 (include-book "misc/eval" :dir :system)
 
+; We add this for the dependency scanner, though perhaps the dependency of
+; acl2x-pcert-test-2-include.pcert0 on acl2x-pcert-test-2.cert in Makefile is
+; sufficient.
+#||
+(include-book "acl2x-pcert-test-2")
+||#
+
 (must-eval-to-t
  (er-let*
   ((acl2-pcert (getenv$ "ACL2_PCERT" state)))

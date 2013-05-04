@@ -313,7 +313,7 @@ ifndef ACL2_HAS_REALS
 
 workshops/2011/verbeek-schmaltz/sources/correctness2.cert : \
   workshops/2011/verbeek-schmaltz/deps.cert
-	cd workshops/2011/verbeek-schmaltz/sources; $(MAKE) ACL2_PCERT=1
+	cd workshops/2011/verbeek-schmaltz/sources; $(MAKE) ACL2_PCERT=t
 
 all : workshops/2011/verbeek-schmaltz/sources/correctness2.cert
 
@@ -321,18 +321,15 @@ endif
 
 # We also want to test provisional certification using system/pcert/,
 # so we use the same sort of trickery as we do just above
-# workshops/2011/verbeek-schmaltz/sources, slightly modified however
-# since there is no single top-level file in this case.
+# workshops/2011/verbeek-schmaltz/sources.  We created
+# system/pcert/all.lisp so that there would be a single top-level
+# file; other approaches didn't work out.
 
-SYSTEM_PCERT_CERTS := $(patsubst %.lisp, %.cert, $(wildcard system/pcert/*.lisp))
+system/pcert/all.cert : \
+  system/pcert-deps.cert
+	cd system/pcert/; $(MAKE) ACL2_PCERT=t
 
-$(SYSTEM_PCERT_CERTS) : make_system_pcert_certs
-
-.PHONY: make_system_pcert_certs
-make_system_pcert_certs : system/pcert-deps.cert
-	cd system/pcert; $(MAKE) ACL2_PCERT=1
-
-all : $(SYSTEM_PCERT_CERTS)
+all : system/pcert/all.cert
 
 # Workshops/1999/multiplier is tricky because there are generated .lisp files
 # involved.  Cert.pl can't scan these, so we have to add them manually.
@@ -407,7 +404,9 @@ all: bdd/benchmarks.cert
 bdd/benchmarks.cert: bdd/benchmarks.lisp
 
 bdd/benchmarks.lisp: bdd/cbf.cert bdd/create-benchmarks.lsp
-	cd bdd ; (echo '(ld "create-benchmarks.lsp")' | $(ACL2))
+	rm -f bdd/benchmarks.lisp
+	echo "Creating bdd/benchmarks.lisp..."
+	cd bdd ; echo '(ld "create-benchmarks.lsp")' | $(ACL2)
 
 # Multi-lisp compilation stuff for Matt.
 
