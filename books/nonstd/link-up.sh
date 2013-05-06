@@ -8,7 +8,7 @@ srcdir="$2/$tgtdir"
 # better way.  We expect $files to be free of directory names.
 
 files="`ls -1 $srcdir | grep '[.]lisp$'`"
-files="`ls -1 $srcdir | grep '[.]lsp$'` $files"
+files="`ls -1 $srcdir | grep '[.]lsp$' | grep -v '@expansion.lsp$'` $files"
 files="`ls -1 $srcdir | grep '[.]pl$'` $files"
 
 # For bdd/:

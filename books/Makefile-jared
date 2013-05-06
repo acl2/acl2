@@ -65,6 +65,20 @@
 #       foo.acl2, if it exists, or else
 #       cert.acl2, if it exists, or else
 #       default to simply (certify-book "foo" ? t)
+#     These instructions specify argument to certify-book, for example:
+#       ; cert-flags: ? t :ttags :all
+#   - Books that depend on ACL2(h), such as centaur/tutorial/alu16-book.lisp,
+#     contain this line:
+#       ; cert_param: (hons-only)
+#   - Two-pass certification is handled as follows, for example in
+#     books/make-event/stobj-test.acl2:
+#       ; cert_param: (acl2x)
+#   - It's not clear that provisional certification is fully
+#     supported.  For now, we implement it for two specific
+#     directories; search below for "provisional certification" to see
+#     how that's done.
+#   - The "user" target allows one to restrict to specific
+#     directories.  Search for "user" below to see an example.
 #
 # CHANGE/BOZO: In Makefile-jared (as in cert.pl), any certify-book lines given
 # in the .acl2 file are ignored.  Instead, we generate the certify-book command
@@ -108,16 +122,6 @@
 #    We now implement the CERT_PL_CERTS-based approach, but using clean.pl,
 #    which nicely deals with the whole too-many-arguments issue.  It seems to
 #    perform well.  I think this is probably as good as we can do.
-#
-#  [BOZO] Does provisional certification work?
-#
-#  [BOZO] Add multi-lisp compilation stuff for Matt (might be easy)
-#
-#  [BOZO] Add support for ACL2(r).  Possibly the right way to do that would be
-#         to use something like the $(info Scanning for books...)  sections
-#         below, to set up the symlinks, and then just let everything else fall
-#         out automatically.
-#
 
 
 ACL2 ?= acl2
@@ -169,7 +173,7 @@ REBUILD_MAKEFILE_DEPS := $(shell \
 #$(info $(REBUILD_MAKEFILE_DEPS))
 $(info Done scanning.)
 
-endif
+endif # ifndef NO_RESCAN
 
 include Makefile-deps
 
@@ -186,17 +190,15 @@ ACL2_FEATURES := $(shell \
 $(info ACL2_HAS_HONS     := $(ACL2_HAS_HONS))
 $(info ACL2_HAS_PARALLEL := $(ACL2_HAS_PARALLEL))
 $(info ACL2_HAS_REALS    := $(ACL2_HAS_REALS))
+$(info ACL2_COMP_EXT     := $(ACL2_COMP_EXT))
 $(info Done with features.)
-
-
 
 OK_CERTS := $(CERT_PL_CERTS)
 
 ifeq ($(ACL2_HAS_HONS), )
 $(info Excluding books that depend on ACL2(h))
 OK_CERTS := $(filter-out $(CERT_PL_HONS_ONLY), $(OK_CERTS))
-endif
-
+endif # ifeq ($(ACL2_HAS_HONS), )
 
 # SLOW_BOOKS are books that are too slow to include as part of an ordinary
 # regression.
@@ -206,6 +208,102 @@ SLOW_BOOKS := \
   workshops/2011/krug-et-al/support/MinVisor/setup-nested-page-tables.cert
 
 OK_CERTS := $(filter-out $(SLOW_BOOKS), $(OK_CERTS))
+
+ifdef ACL2_COMP
+
+ifndef NO_RESCAN
+
+$(info Scanning for "make comp" dependencies...)
+# Below, we use a different --var-prefix from the default used for the
+# cert.pl call above, since we don't want to redefine the CERT_PL_xxx
+# variables.  But note that we don't use the ACL2_COMP_xxx variables.
+REBUILD_MAKEFILE_COMP := $(shell \
+  rm -f Makefile-comp Makefile-comp.out; \
+  time ((./cert.pl \
+          --quiet \
+          --static-makefile Makefile-comp-pre \
+          --cache Makefile-cache \
+          --acl2-books `pwd` \
+          --targets Makefile-books \
+          --no-boilerplate \
+          --var-prefix ACL2_COMP) \
+          1>&2) ;\
+          (cat Makefile-comp-pre | sed "s/[.]cert/.$(ACL2_COMP_EXT)/g" > \
+           Makefile-comp) 1>&2 ;\
+  echo 'MFDEPS_DEBUG := $$(shell echo Reading book comp ' \
+       'Makefile-comp created on' `date` '1>&2)' \
+    >> Makefile-comp; \
+  ls -l Makefile-comp)
+$(info Done scanning.)
+
+endif # ifndef NO_RESCAN
+
+# Define books to be skipped for multi-lisp compilation.
+
+OK_CERTS   := $(patsubst %.cert, %.$(ACL2_COMP_EXT), $(OK_CERTS))
+
+# Start a sequence of assignments to BOOKS_SKIP_COMP:
+BOOKS_SKIP_COMP :=
+
+# Unusual directory:
+BOOKS_SKIP_COMP += $(patsubst %.cert, %.$(ACL2_COMP_EXT), $(wildcard fix-cert/*.cert))
+
+# Contains Lisp-specific readtime conditionals:
+BOOKS_SKIP_COMP += hacking/evalable-ld-printing.$(ACL2_COMP_EXT)
+
+# dft-ex.acl2 specifies no compilation; getprop.lisp can give stack
+# overflow in during the load of the expansion file -- perhaps not
+# surprising, given that (comp t) occurs in the .lisp file:
+BOOKS_SKIP_COMP += misc/dft-ex.$(ACL2_COMP_EXT) misc/getprop.$(ACL2_COMP_EXT)
+
+# aof.acl2 specifies no compilation; knuth-arch.lisp depends on aof:
+BOOKS_SKIP_COMP += workshops/1999/knuth-91/aof.$(ACL2_COMP_EXT) \
+                   workshops/1999/knuth-91/knuth-arch.$(ACL2_COMP_EXT)
+
+# The .acl2 files specify no compilation:
+BOOKS_SKIP_COMP += $(patsubst %.cert, %.$(ACL2_COMP_EXT), $(wildcard workshops/2002/cowles-flat/support/*.cert))
+
+# The .acl2 files specify no compilation:
+BOOKS_SKIP_COMP += $(patsubst %.cert, %.$(ACL2_COMP_EXT), $(wildcard workshops/2006/cowles-gamboa-euclid/Euclid/fld-u-poly/*.cert))
+
+# Some .acl2 files specify no compilation, including ed3.acl2, and
+# many books depend on ed3:
+BOOKS_SKIP_COMP += $(patsubst %.cert, %.$(ACL2_COMP_EXT), $(wildcard workshops/2006/cowles-gamboa-euclid/Euclid/*.cert))
+
+# The .acl2 files specify no compilation:
+BOOKS_SKIP_COMP += workshops/2006/kaufmann-moore/support/rhs1-iff.$(ACL2_COMP_EXT) \
+		   workshops/2006/kaufmann-moore/support/rhs1.$(ACL2_COMP_EXT) \
+		   workshops/2006/kaufmann-moore/support/rhs2.$(ACL2_COMP_EXT) \
+		   workshops/2006/kaufmann-moore/support/warnings.$(ACL2_COMP_EXT)
+
+# There seems to be a problem with files that use include-raw.  We
+# skip those.
+# Has (include-raw "timer.lsp"):
+BOOKS_SKIP_COMP += memoize/top.$(ACL2_COMP_EXT)
+BOOKS_SKIP_COMP += $(patsubst %-raw.lsp, %.$(ACL2_COMP_EXT), $(shell find . -name '*-raw.lsp' -print))
+
+# Has readtime conditionals #+ccl and #-ccl ("not supported for this
+# host Lisp").
+BOOKS_SKIP_COMP += centaur/bridge/top.$(ACL2_COMP_EXT)
+
+# CLISP says: "Lisp stack overflow":
+BOOKS_SKIP_COMP += workshops/2006/rager/support/ptest-mergesort.$(ACL2_COMP_EXT)
+
+# In Makefile-comp, bdd/benchmarks.$(ACL2_COMP_EXT) may depend on
+# bdd/benchmarks.lisp, but we don't want to make either, so we do this
+# explicitly:
+BOOKS_SKIP_COMP += bdd/benchmarks.$(ACL2_COMP_EXT)
+
+OK_CERTS   := $(filter-out $(BOOKS_SKIP_COMP), $(OK_CERTS))
+
+# Avoid trying to make compiled files; target %.$(ACL2_COMP_EXT) still
+# "executes", but only once, and doesn't cause other compiled files to
+# be out of date.
+.INTERMEDIATE: $(BOOKS_SKIP_COMP)
+
+include Makefile-comp
+
+endif # ifdef ACL2_COMP
 
 lite: $(OK_CERTS)
 
@@ -267,6 +365,8 @@ user : $(ACL2_BOOK_CERTS)
 
 CLEAN_FILES_EXPLICIT := \
    xdoc-impl/bookdoc.dat \
+   Makefile-comp \
+   Makefile-comp-pre \
    Makefile-deps \
    Makefile-books \
    Makefile-features \
@@ -282,10 +382,15 @@ clean_books:
 	@echo "Using clean.pl to remove certificates, etc."
 	./clean.pl
 
+# We test that directory centaur/quicklisp exists because it probably
+# doesn't for nonstd/, and we include this makefile from that
+# directory.
 clean: clean_books
 	@echo "Removing extra, explicitly temporary files."
 	rm -rf $(CLEAN_FILES_EXPLICIT)
-	cd centaur/quicklisp; $(MAKE) clean
+	if [ -d centaur/quicklisp ] ; then \
+	cd centaur/quicklisp; $(MAKE) clean ; \
+	fi
 
 moreclean: clean
 	@echo "Removing even more generated files (documentation, etc)."
@@ -296,43 +401,11 @@ moreclean: clean
 .PHONY: dummy
 dummy:
 
-
-# workshops/2011/verbeek-schmaltz is slow, but we can make it reasonably fast
-# using provisional certification.  For now, as a gross hack, use the old ACL2
-# Makefile-generic system to do this.
-#   - we tell cert.pl not to look at verbeek-schmaltz/sources, via a
-#     cert_pl_exclude file
-#   - we add a verbeek-schmaltz/deps.lisp file with the prerequisites that
-#     we need before going into the verbeek-schmaltz directory
-#   - we use the following top-level target to certify the actual verbeek-schmaltz
-#     books after certifying the deps
-
-# We assume that ACL2_HAS_REALS indicates a regression being done in
-# nonstd/.
-ifndef ACL2_HAS_REALS
-
-workshops/2011/verbeek-schmaltz/sources/correctness2.cert : \
-  workshops/2011/verbeek-schmaltz/deps.cert
-	cd workshops/2011/verbeek-schmaltz/sources; $(MAKE) ACL2_PCERT=t
-
-all : workshops/2011/verbeek-schmaltz/sources/correctness2.cert
-
-endif
-
-# We also want to test provisional certification using system/pcert/,
-# so we use the same sort of trickery as we do just above
-# workshops/2011/verbeek-schmaltz/sources.  We created
-# system/pcert/all.lisp so that there would be a single top-level
-# file; other approaches didn't work out.
-
-system/pcert/all.cert : \
-  system/pcert-deps.cert
-	cd system/pcert/; $(MAKE) ACL2_PCERT=t
-
-all : system/pcert/all.cert
+# Next, we deal with books that need special handling.
 
 # Workshops/1999/multiplier is tricky because there are generated .lisp files
 # involved.  Cert.pl can't scan these, so we have to add them manually.
+# We'll just skip these for ACL2_COMP.
 
 workshops/1999/multiplier/fmul.cert: \
   workshops/1999/multiplier/fmul.lisp \
@@ -383,7 +456,7 @@ ifndef ACL2_HAS_REALS
 # #-:non-standard-analysis.
 arithmetic-3/extra/ext.cert: rtl/rel8/arithmetic/top.cert
 
-endif
+endif # ifndef ACL2_HAS_REALS
 
 # BOZO.   make-event/local-elided stuff is tricky because it thinks it can tell whether
 # local-elided.lisp was provisionally certified or not, which doesn't
@@ -397,29 +470,162 @@ make-event/macros-include.pcert1: make-event/macros.cert
 make-event/local-requires-skip-check-include.pcert1: \
   make-event/local-requires-skip-check.cert
 
-# Deal with generated file bdd/benchmarks.lisp:
+# Deal with generated file bdd/benchmarks.lisp (but no need to bother
+# compiling it for different lisps):
+
+ifndef ACL2_COMP
 
 all: bdd/benchmarks.cert
+
+endif # ifndef ACL2_COMP
 
 bdd/benchmarks.cert: bdd/benchmarks.lisp
 
 bdd/benchmarks.lisp: bdd/cbf.cert bdd/create-benchmarks.lsp
-	rm -f bdd/benchmarks.lisp
-	echo "Creating bdd/benchmarks.lisp..."
-	cd bdd ; echo '(ld "create-benchmarks.lsp")' | $(ACL2)
+	cd bdd ; (echo '(ld "create-benchmarks.lsp")' | $(ACL2))
 
-# Multi-lisp compilation stuff for Matt.
+# We next handle the two directories that test provisional
+# certification.  One is system/pcert, which was constructed
+# explicitly to test provisional certification.  The other is
+# workshops/2011/verbeek-schmaltz, which is slow without provisional
+# certification but is reasonably fast using provisional
+# certification.  For now, as a gross hack, use the old ACL2
+# Makefile-generic system to do provisional certification, for example
+# as follows for verbeek-schmaltz.
 
-# Note: these targets won't work unless you've already done a build using a
-# "compatible" ACL2 (i.e., the same feature set) after first setting
-# ACL2_SAVE_EXPANSION=t.
+#   - we tell cert.pl not to look at verbeek-schmaltz/sources, via a
+#     cert_pl_exclude file
+#   - we add a verbeek-schmaltz/deps.lisp file with the prerequisites that
+#     we need before going into the verbeek-schmaltz directory
+#   - we use the following top-level target to certify the actual verbeek-schmaltz
+#     books after certifying the deps
 
-%.fasl: %.cert
-	@echo "Making $$PWD/$@"
-	echo '(ld `((include-book "$(patsubst %.fasl,%,$(@))" :load-compiled-file :comp :ttags :all))) (acl2::value :q) (acl2::exit-lisp)' | $(ACL2)
+# We handle the verbeek-schmaltz directory first, but we skip it when
+# ACL2_HAS_REALS indicates a regression being done by ACL2(r) in
+# nonstd/.
 
-.PHONY: fasl
-fasl : $(patsubst %.cert,%.fasl,$(OK_CERTS))
+ifndef ACL2_HAS_REALS
+
+ifdef ACL2_COMP
+
+# Keep the following code in sync with that for
+# system/pcert/all.$(ACL2_COMP_EXT)
+# below.  We use -j 1 because the old Makefile-generic doesn't
+# establish dependencies between the compiled files, which can cause
+# an error when attempting to load another book's partially-built
+# compiled file.
+workshops/2011/verbeek-schmaltz/sources/correctness2.$(ACL2_COMP_EXT) : \
+  workshops/2011/verbeek-schmaltz/deps.$(ACL2_COMP_EXT)
+	@echo "Making $@"
+	@cd workshops/2011/verbeek-schmaltz/sources; \
+	$(MAKE) -j 1 $(ACL2_COMP_EXT) ACL2_PCERT= >& make-$(ACL2_COMP_EXT).out ; \
+	(cd ../../../.. ; ls -al $(@D)/*.$(ACL2_COMP_EXT)) ; \
+	if [ `ls -1 *.fasl | wc -l` != `ls -1 *.cert | wc -l` ] ; then \
+	echo "**COMPILATION FAILED** for $(@D);" ; \
+	echo "  search for '**' in `pwd`/make-$(ACL2_COMP_EXT).out to see failures." ; \
+	exit 1 ; \
+	fi
+
+all: workshops/2011/verbeek-schmaltz/sources/correctness2.$(ACL2_COMP_EXT)
+
+else # normal case, where ACL2_COMP is not defined
+
+workshops/2011/verbeek-schmaltz/sources/correctness2.cert : \
+  workshops/2011/verbeek-schmaltz/deps.cert
+	cd workshops/2011/verbeek-schmaltz/sources; $(MAKE) ACL2_PCERT=t
+
+all: workshops/2011/verbeek-schmaltz/sources/correctness2.cert
+
+endif # ifdef ACL2_COMP ... else ...
+
+endif # ifndef ACL2_HAS_REALS
+
+# We also want to test provisional certification using system/pcert/,
+# so we use the same sort of trickery as we do just above
+# workshops/2011/verbeek-schmaltz/sources (but this time, also
+# suitable when ACL2_HAS_REALS is true).  We created
+# system/pcert/all.lisp so that there would be a single top-level
+# file; other approaches didn't work out.
+
+ifdef ACL2_COMP
+
+# Keep the following code in sync with that for
+# workshops/2011/verbeek-schmaltz/sources/correctness2.$(ACL2_COMP_EXT)
+# above.  We use -j 1 because the old Makefile-generic doesn't
+# establish dependencies between the compiled files, which can cause
+# an error when attempting to load another book's partially-built
+# compiled file.
+system/pcert/all.$(ACL2_COMP_EXT) : \
+  system/pcert-deps.$(ACL2_COMP_EXT)
+	@echo "Making $@"
+	@cd system/pcert/ ; \
+	$(MAKE) -j 1 $(ACL2_COMP_EXT) ACL2_PCERT= >& make-$(ACL2_COMP_EXT).out ; \
+	(cd ../.. ; ls -al $(@D)/*.$(ACL2_COMP_EXT)) ; \
+	if [ `ls -1 *.fasl | wc -l` != `ls -1 *.cert | wc -l` ] ; then \
+	echo "**COMPILATION FAILED** for $(@D);" ; \
+	echo "  search for '**' in `pwd`/make-$(ACL2_COMP_EXT).out to see failures." ; \
+	exit 1 ; \
+	fi
+
+all: system/pcert/all.$(ACL2_COMP_EXT)
+
+else # normal case, where ACL2_COMP is not defined
+
+system/pcert/all.cert : \
+  system/pcert-deps.cert
+	cd system/pcert/; $(MAKE) ACL2_PCERT=t
+
+all: system/pcert/all.cert
+
+endif # ifdef ACL2_COMP ... else ...
+
+
+# Multi-lisp compilation stuff for developers.
+
+# NOTE: This build might fail for compiled files that involve
+# include-raw, that have readtime conditionals, that can cause stack
+# overflows when loading uncompiled code, etc.  We don't consider it
+# critical, however, that every compiled file get built.  See "Define
+# books to be skipped for multi-lisp compilation", above, for the
+# compiled files we do not attempt to build.
+
+# Typical making of compiled files in books/ could be done as follows.
+# First, in ACL2 sources directory:
+#   make -j 4 regression-fresh-jared ACL2_SAVE_EXPANSION=t ACL2=acl2-ccl
+# Then, in books/ directory (where ACL2_SAVE_EXPANSION=t is optional,
+# but a good idea in case some .cert file is unexpectedly remade):
+#   make -j 4 -f Makefile-jared ACL2_COMP=t ACL2_SAVE_EXPANSION=t ACL2=acl2-sbcl
+
+# Typical making of compiled files in books/nonstd/ could be done as follows.
+# First, in ACL2 sources directory:
+#   make -j 4 regression-nonstd-fresh-jared ACL2_SAVE_EXPANSION=t ACL2=acl2r-ccl
+# Then, in books/nonstd/ directory (where ACL2_SAVE_EXPANSION=t is optional,
+# but a good idea in case some .cert file is unexpectedly remade):
+#   make -j 4 -f Makefile-jared-nonstd ACL2_COMP=t ACL2_SAVE_EXPANSION=t ACL2=acl2r-sbcl
+
+# Note: these targets won't work unless you've already done a build
+# using a "compatible" ACL2 (both ACL2, both ACL2(hp), etc.) after
+# first setting ACL2_SAVE_EXPANSION=t, and then you define ACL2_COMP
+# (e.g., ACL2_COMP=1) with a subsequent call of make.
+
+ifdef ACL2_COMP
+
+# Note that because of the .INTERMEDIATE target above, then for the
+# next targets, "Skipping" will only be printed for skipped targets
+# that are dependencies of not-skipped targets.
+%.$(ACL2_COMP_EXT): %.cert
+	@if [ "$(findstring $@, $(BOOKS_SKIP_COMP))" != "" ] ; then \
+	echo "Skipping $$PWD/$@" ; \
+	else \
+	echo "Making $$PWD/$@" ; \
+	(echo '(ld `((include-book "$(patsubst \
+	%.$(ACL2_COMP_EXT),%,$(@))" :load-compiled-file :comp :ttags \
+	:all))) (acl2::value :q) (acl2::exit-lisp)' | $(ACL2) >& $@.out) ; \
+	(ls -al $@ || (echo "**COMPILATION FAILED** for `pwd`/$@" ; \
+	 exit 1)) ; \
+	fi
+
+endif # ifdef ACL2_COMP
 
 # We now provide a way (adapted from the old Makefile-generic) for
 # developers to be able to check well-formedness of the ACL2 world

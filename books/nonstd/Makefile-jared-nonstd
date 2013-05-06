@@ -1,3 +1,5 @@
+# -*- mode: makefile -*-
+
 #; Support for Community Books to Go with ACL2 Version 6.1
 #; Copyright (C) 2013, Regents of the University of Texas
 
@@ -19,11 +21,6 @@
 #; Department of Computer Sciences
 #; University of Texas at Austin
 #; Austin, TX 78712-1188 U.S.A.
-
-# See ../Makefile (included via "include" below) for details.  The main
-# differences here are in the directories that we descend into, together with
-# new targets for setting up symbolic links in those directories to files in
-# their corresponding "standard" directories, under ../.
 
 # WARNING:  This mechanism isn't currently set up to use ACL2(r) automatically.
 # When you execute make, be sure to use a command of the form

@@ -137,7 +137,7 @@ than file-based) debugging and unit testing throughout the whole process.</p>")
   ;; We optimize the recognition of whitespace by basically using a bitset.
   ;; This is probably silly and not worth the effort.
 
-  (defmacro vertical-tab-char () (code-char 11))
+  (defun-inline vertical-tab-char () (code-char 11))
   (defmacro carriage-return-char () (code-char 13))
 
   (defmacro whitespace-mask ()
