@@ -815,8 +815,7 @@ regression:
 regression-jared:
 	uname -a
 ifndef ACL2
-	export ACL2=$(shell pwd)/saved_acl2 ; \
-	cd books ; $(MAKE) -f Makefile-jared $(ACL2_IGNORE) ACL2=$(ACL2)
+	cd books ; $(MAKE) -f Makefile-jared $(ACL2_IGNORE) ACL2=$(shell pwd)/saved_acl2
 else
 	cd books ; $(MAKE) -f Makefile-jared $(ACL2_IGNORE) ACL2=$(ACL2)
 endif
@@ -853,9 +852,8 @@ regression-nonstd:
 regression-nonstd-jared:
 	uname -a
 ifndef ACL2
-	export ACL2=$(shell pwd)/saved_acl2 ; \
 	cd books/nonstd ; \
-	$(MAKE) -f Makefile-jared-nonstd $(ACL2_IGNORE) ACL2=$(ACL2)
+	$(MAKE) -f Makefile-jared-nonstd $(ACL2_IGNORE) ACL2=$(shell pwd)/saved_acl2
 else
 	cd books/nonstd ; \
 	$(MAKE) -f Makefile-jared-nonstd $(ACL2_IGNORE) ACL2=$(ACL2)
@@ -885,8 +883,7 @@ regression-nonstd-fresh: clean-books-nonstd
 .PHONY: regression-fresh-jared
 regression-fresh-jared: clean-books-jared
 ifndef ACL2
-	export ACL2=$(shell pwd)/saved_acl2 ; \
-	$(MAKE) $(ACL2_IGNORE) ACL2=$(ACL2) regression-jared
+	$(MAKE) $(ACL2_IGNORE) ACL2=$(shell pwd)/saved_acl2 regression-jared
 else
 	$(MAKE) $(ACL2_IGNORE) ACL2=$(ACL2) regression-jared
 endif
@@ -896,8 +893,7 @@ endif
 .PHONY: regression-nonstd-fresh-jared
 regression-nonstd-fresh-jared: clean-books-nonstd-jared
 ifndef ACL2
-	export ACL2=$(shell pwd)/saved_acl2 ; \
-	$(MAKE) $(ACL2_IGNORE) ACL2=$(ACL2) regression-nonstd-jared
+	$(MAKE) $(ACL2_IGNORE) ACL2=$(shell pwd)/saved_acl2 regression-nonstd-jared
 else
 	$(MAKE) $(ACL2_IGNORE) ACL2=$(ACL2) regression-nonstd-jared
 endif
@@ -956,8 +952,7 @@ clean-books:
 .PHONY: clean-books-jared
 clean-books-jared:
 ifndef ACL2
-	export ACL2=$(shell pwd)/saved_acl2 ; \
-	cd books ; $(MAKE) -f Makefile-jared $(ACL2_IGNORE) ACL2=$(ACL2) clean
+	cd books ; $(MAKE) -f Makefile-jared $(ACL2_IGNORE) ACL2=$(shell pwd)/saved_acl2 clean
 else
 	cd books ; $(MAKE) -f Makefile-jared $(ACL2_IGNORE) ACL2=$(ACL2) clean
 endif
@@ -971,9 +966,8 @@ clean-books-nonstd:
 .PHONY: clean-books-nonstd-jared
 clean-books-nonstd-jared:
 ifndef ACL2
-	export ACL2=$(shell pwd)/saved_acl2 ; \
 	cd books/nonstd ; \
-	$(MAKE) -f Makefile-jared-nonstd $(ACL2_IGNORE) ACL2=$(ACL2) clean
+	$(MAKE) -f Makefile-jared-nonstd $(ACL2_IGNORE) ACL2=$(shell pwd)/saved_acl2 clean
 else
 	cd books/nonstd ; \
 	$(MAKE) -f Makefile-jared-nonstd $(ACL2_IGNORE) ACL2=$(ACL2) clean
