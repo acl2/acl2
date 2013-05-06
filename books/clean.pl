@@ -172,6 +172,11 @@ sub consider_file
 	return;
     }
 
+    if ($file eq "Makefile-deps") {
+	push(@rm, $what);
+	return;
+    }
+
     if ($file =~ /^workxxx.*$/) {
 	push(@rm, $what);
 	return;

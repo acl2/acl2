@@ -370,7 +370,8 @@ CLEAN_FILES_EXPLICIT := \
    Makefile-deps \
    Makefile-books \
    Makefile-features \
-   Makefile-cache
+   Makefile-cache \
+   serialize/test.sao
 
 MORECLEAN_FILES_EXPLICIT := \
    xdoc-impl/manual \
