@@ -53,8 +53,7 @@
   (if (probe-file "acl2r.lisp") (load "acl2r.lisp"))
   #+sbcl ; keep this in sync with with-warnings-suppressed
   (handler-bind
-   (#+cltl2
-    (style-warning (lambda (c)
+   ((style-warning (lambda (c)
                      (declare (ignore c))
                      (invoke-restart 'muffle-warning))))
    (load "acl2-init.lisp"))

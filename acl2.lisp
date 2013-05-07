@@ -1419,7 +1419,8 @@ which is saved just in case it's needed later.")
 ;   4. #u"..." is shorthand for (parse-uri "...") but if an existing #u
 ;   dispatch macro definition exists, it will not be overridden.
 
-               (member char '(#\u)))
+               (and (eql char #\#)
+                    (member subchar '(#\u))))
            (set-dispatch-macro-character char subchar fn))
           (t (error "ACL2 cannot be built in this host Lisp, because ~%~
                      ~s is already defined, to be: ~s"
@@ -1563,30 +1564,6 @@ which is saved just in case it's needed later.")
      #\#
      #\\
      *old-character-reader*)
-
-; Thanks to Jared Davis for contributing the code for #\Z and #\z (see
-; serialize-raw.lisp).  But is this readtable even necessary now that
-; compact-printing has been replaced by the serialize reader?  Quite possibly
-; it is indeed needed for #-hons, for (as of Version_4.3) the binding of
-; *readtable* to *reckless-acl2-readtable* in a call of compile-file in
-; acl2-compile-file, and for the calls of with-reckless-read in
-; load-compiled-book and include-book-raw.  But we could quite possibly omit
-; the #+hons code below.  At any rate, it seems harmless enough to continue to
-; use this function and to include the #+hons below.  Keep these two settings
-; in sync with modify-acl2-readtable.
-
-    #+hons ; SBCL requires #+hons (same restriction as ser-hons-reader-macro)
-    (set-new-dispatch-macro-character
-     #\#
-     #\Z
-     'ser-hons-reader-macro)
-
-    #+hons ; SBCL requires #+hons (same restriction as ser-cons-reader-macro)
-    (set-new-dispatch-macro-character
-     #\#
-     #\Y
-     'ser-cons-reader-macro)
-
     *readtable*))
 
 (defvar *load-compiled-verbose* nil)

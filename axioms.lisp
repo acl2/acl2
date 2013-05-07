@@ -8061,10 +8061,11 @@
   '(103 . BOOLEANP)
   #+(and (not non-standard-analysis) (not acl2-par))
   '(102 . BOOLEANP)
-  #+non-standard-analysis
-  '(105 . BOOLEANP)           ; Ruben:  I just guessed at this, and
-  )                           ; do you ever build ``ACL2(r)(p)''?
-
+  #+(and non-standard-analysis (not acl2-par))
+  '(105 . BOOLEANP)
+  #+(and non-standard-analysis acl2-par)
+  '(106 . BOOLEANP)
+  )
 
 ; Note: The constants declared above are checked for accuracy after bootstrap
 ; by check-built-in-constants in interface-raw.lisp.

@@ -15807,7 +15807,7 @@
                                            fn2 (arity fn2 wrld)
                                            ctx state)
                     #+:non-standard-analysis
-                    (chk-equiv-classicalp fn1 fn2 nil ctx wrld state)
+                    (chk-equiv-classicalp@par fn1 fn2 nil ctx wrld state)
                     (value@par (cons fn1 fn2))))
                   (t (er@par soft ctx str (car substn) fn2)))))
               ((and (true-listp fn2)
