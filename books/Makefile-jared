@@ -387,6 +387,7 @@ workshop2011 : $(filter workshops/2011/%, $(OK_CERTS))
 # that make up this approach, but we leave it for now, because our
 # main motivation in having such a target is to provide a quick target
 # that certifies at least the books that fconsititute this approach.
+# Regardless, this target should always include the "std" directory.
 
 .PHONY: std
 
