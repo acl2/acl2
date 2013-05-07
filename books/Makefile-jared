@@ -356,14 +356,15 @@ critpath.txt : $(OK_CERTS)
 # and "everything" targets unchanged unless there is a strong reason
 # to change those.)
 
-.PHONY: basic centaur coi workshops \
+.PHONY: std centaur coi workshops \
         workshop1999 workshop2000 workshop2001 workshop2002 \
         workshop2003 workshop2004 workshop2006 workshop2007 \
         workshop2009 workshop2011
 
-basic : $(filter-out centaur/%, \
-           $(filter-out coi/%, \
-              $(filter-out workshops/%, $(OK_CERTS))))
+std : $(filter-out centaur/%, \
+          $(filter-out coi/%, \
+            $(filter-out models/%, \
+              $(filter-out workshops/%, $(OK_CERTS)))))
 
 centaur : $(filter centaur/%, $(OK_CERTS))
 
@@ -380,6 +381,11 @@ workshop2006 : $(filter workshops/2006/%, $(OK_CERTS))
 workshop2007 : $(filter workshops/2007/%, $(OK_CERTS))
 workshop2009 : $(filter workshops/2009/%, $(OK_CERTS))
 workshop2011 : $(filter workshops/2011/%, $(OK_CERTS))
+
+# Aliases for the "standard" libraries for prototyping and reasoning
+.PHONY: libs basic
+libs    : std
+basic   : std
 
 # The `user' target allows one to specify the roots of the forest of
 # books to be certified.
