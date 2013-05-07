@@ -349,7 +349,12 @@ critpath.txt : $(OK_CERTS)
 	time ./critpath.pl -m 2 --targets Makefile-books > critpath.txt
 
 
-# Handy targets for building subsets of the books... others are easy to add.
+# The following are handy targets for building subsets of the books,
+# and they show how others are easy to add.  It's OK for the community
+# to make updates to this set of targets through addition, deletion,
+# or modification.  (But it's probably best to leave the "all", "lite"
+# and "everything" targets unchanged unless there is a strong reason
+# to change those.)
 
 .PHONY: basic centaur coi workshops \
         workshop1999 workshop2000 workshop2001 workshop2002 \
