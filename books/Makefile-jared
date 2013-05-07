@@ -144,6 +144,16 @@ everything: all
 
 all: lite
 
+# It seems that info is defined starting in GNU make version 3.81.
+# But version 3.80 seems to tolerate calls of info, simply ignoring
+# them.  We could use a variable, as follows, so that you can set
+# INFO=warning on the command line if you want to see the messages
+# even with GNU make version 3.80.  But maybe this is too ugly, so we
+# just leave the idea as a comment.
+INFO := info
+# Example: Prints "Makefile-jared:156: just a test" when invoked with
+# INFO=warning; otherwise, same as $(info just a test).
+$(eval $$($(INFO) just a test))
 
 ifndef NO_RESCAN
 
@@ -196,9 +206,29 @@ $(info Done with features.)
 OK_CERTS := $(CERT_PL_CERTS)
 
 ifeq ($(ACL2_HAS_HONS), )
-$(info Excluding books that depend on ACL2(h))
+
+# $(info Excluding books that depend on ACL2(h))
 OK_CERTS := $(filter-out $(CERT_PL_HONS_ONLY), $(OK_CERTS))
-endif # ifeq ($(ACL2_HAS_HONS), )
+
+else
+
+ifdef ACL2_COMP
+# We skip multi-lisp compilation for the centaur books, because these
+# may be more likely to have code conditional on the combination of
+# both features :CCL and :HONS.  That can affect checksums, thus
+# making it appear that a book certified in CCL is not certified in
+# another Lisp.  We also skip multi-lisp compilation for books that
+# depend on centaur/ books when we see a multi-lisp compilation
+# failure for books in their directories.  (Thus, even though
+# security/des/ depends on GL and hence centaur/, we don't exclude
+# its books.)
+$(info For building compiled (.$(ACL2_COMP_EXT)) files, excluding centaur books)
+OK_CERTS := $(filter-out centaur/%, \
+              $(filter-out models/y86/%, \
+                $(OK_CERTS)))
+
+endif # ifdef ACL2_COMP
+endif # ifeq ($(ACL2_HAS_HONS), ) ... else ...
 
 # SLOW_BOOKS are books that are too slow to include as part of an ordinary
 # regression.
@@ -349,7 +379,7 @@ workshop2011 : $(filter workshops/2011/%, $(OK_CERTS))
 # The `user' target allows one to specify the roots of the forest of
 # books to be certified.
 # Example (just remove "# " at the beginning of each line):
-# make -f Makefile-jared -j 4 NO_RESCAN=1 ACL2=acl2h \
+# make -f Makefile-jared -k -j 4 NO_RESCAN=1 ACL2=acl2h \
 # ACL2_BOOK_CERTS=" \
 # workshops/2006/cowles-gamboa-euclid/Euclid/ed6a.cert \
 # workshops/2006/cowles-gamboa-euclid/Euclid/ed4bb.cert \
@@ -361,7 +391,7 @@ user : $(ACL2_BOOK_CERTS)
 
 # We delegate most of the cleaning process to clean.pl, a simple perl script
 # that lets us take care not to delete certain kinds of files.  The clean.pl
-# script will remove things like .cert and .fasl files.  But
+# script will remove things like .cert and .fasl files.
 
 CLEAN_FILES_EXPLICIT := \
    xdoc-impl/bookdoc.dat \
@@ -521,7 +551,7 @@ workshops/2011/verbeek-schmaltz/sources/correctness2.$(ACL2_COMP_EXT) : \
 	@cd workshops/2011/verbeek-schmaltz/sources; \
 	$(MAKE) -j 1 $(ACL2_COMP_EXT) ACL2_PCERT= >& make-$(ACL2_COMP_EXT).out ; \
 	(cd ../../../.. ; ls -al $(@D)/*.$(ACL2_COMP_EXT)) ; \
-	if [ `ls -1 *.fasl | wc -l` != `ls -1 *.cert | wc -l` ] ; then \
+	if [ `ls -1 *.$(ACL2_COMP_EXT) | wc -l` != `ls -1 *.cert | wc -l` ] ; then \
 	echo "**COMPILATION FAILED** for $(@D);" ; \
 	echo "  search for '**' in `pwd`/make-$(ACL2_COMP_EXT).out to see failures." ; \
 	exit 1 ; \
@@ -562,7 +592,7 @@ system/pcert/all.$(ACL2_COMP_EXT) : \
 	@cd system/pcert/ ; \
 	$(MAKE) -j 1 $(ACL2_COMP_EXT) ACL2_PCERT= >& make-$(ACL2_COMP_EXT).out ; \
 	(cd ../.. ; ls -al $(@D)/*.$(ACL2_COMP_EXT)) ; \
-	if [ `ls -1 *.fasl | wc -l` != `ls -1 *.cert | wc -l` ] ; then \
+	if [ `ls -1 *.$(ACL2_COMP_EXT) | wc -l` != `ls -1 *.cert | wc -l` ] ; then \
 	echo "**COMPILATION FAILED** for $(@D);" ; \
 	echo "  search for '**' in `pwd`/make-$(ACL2_COMP_EXT).out to see failures." ; \
 	exit 1 ; \
@@ -592,17 +622,17 @@ endif # ifdef ACL2_COMP ... else ...
 
 # Typical making of compiled files in books/ could be done as follows.
 # First, in ACL2 sources directory:
-#   make -j 4 regression-fresh-jared ACL2_SAVE_EXPANSION=t ACL2=acl2-ccl
+#   make -j 4 -k regression-fresh-jared ACL2_SAVE_EXPANSION=t ACL2=acl2-ccl
 # Then, in books/ directory (where ACL2_SAVE_EXPANSION=t is optional,
 # but a good idea in case some .cert file is unexpectedly remade):
-#   make -j 4 -f Makefile-jared ACL2_COMP=t ACL2_SAVE_EXPANSION=t ACL2=acl2-sbcl
+#   make -j 4 -k -f Makefile-jared ACL2_COMP=t ACL2_SAVE_EXPANSION=t ACL2=acl2-sbcl
 
 # Typical making of compiled files in books/nonstd/ could be done as follows.
 # First, in ACL2 sources directory:
-#   make -j 4 regression-nonstd-fresh-jared ACL2_SAVE_EXPANSION=t ACL2=acl2r-ccl
+#   make -j 4 -k regression-nonstd-fresh-jared ACL2_SAVE_EXPANSION=t ACL2=acl2r-ccl
 # Then, in books/nonstd/ directory (where ACL2_SAVE_EXPANSION=t is optional,
 # but a good idea in case some .cert file is unexpectedly remade):
-#   make -j 4 -f Makefile-jared-nonstd ACL2_COMP=t ACL2_SAVE_EXPANSION=t ACL2=acl2r-sbcl
+#   make -j 4 -k -f Makefile-jared-nonstd ACL2_COMP=t ACL2_SAVE_EXPANSION=t ACL2=acl2r-sbcl
 
 # Note: these targets won't work unless you've already done a build
 # using a "compatible" ACL2 (both ACL2, both ACL2(hp), etc.) after
@@ -613,18 +643,15 @@ ifdef ACL2_COMP
 
 # Note that because of the .INTERMEDIATE target above, then for the
 # next targets, "Skipping" will only be printed for skipped targets
-# that are dependencies of not-skipped targets.
+# that are dependencies of not-skipped targets.  Apologies for the
+# very long line.  With it broken into lines using `\', a syntax error
+# was reported on Linux using make version 3.80.  Sigh.
 %.$(ACL2_COMP_EXT): %.cert
 	@if [ "$(findstring $@, $(BOOKS_SKIP_COMP))" != "" ] ; then \
 	echo "Skipping $$PWD/$@" ; \
 	else \
 	echo "Making $$PWD/$@" ; \
-	(echo '(ld `((include-book "$(patsubst \
-	%.$(ACL2_COMP_EXT),%,$(@))" :load-compiled-file :comp :ttags \
-	:all))) (acl2::value :q) (acl2::exit-lisp)' | $(ACL2) >& $@.out) ; \
-	(ls -al $@ || (echo "**COMPILATION FAILED** for `pwd`/$@" ; \
-	 exit 1)) ; \
-	fi
+	(echo '(ld `((include-book "$(patsubst %.$(ACL2_COMP_EXT),%,$(@))" :load-compiled-file :comp :ttags :all))) (acl2::value :q) (acl2::exit-lisp)' | $(ACL2) >& $@.out) ; (ls -al $@ || (echo "**COMPILATION FAILED** for `pwd`/$@" ; exit 1)) ; fi
 
 endif # ifdef ACL2_COMP
 
