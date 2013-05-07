@@ -358,15 +358,10 @@ critpath.txt : $(OK_CERTS)
 # and "everything" targets unchanged unless there is a strong reason
 # to change those.)
 
-.PHONY: std centaur coi workshops \
+.PHONY: centaur coi workshops \
         workshop1999 workshop2000 workshop2001 workshop2002 \
         workshop2003 workshop2004 workshop2006 workshop2007 \
         workshop2009 workshop2011
-
-std : $(filter-out centaur/%, \
-          $(filter-out coi/%, \
-            $(filter-out models/%, \
-              $(filter-out workshops/%, $(OK_CERTS)))))
 
 centaur : $(filter centaur/%, $(OK_CERTS))
 
@@ -384,7 +379,23 @@ workshop2007 : $(filter workshops/2007/%, $(OK_CERTS))
 workshop2009 : $(filter workshops/2009/%, $(OK_CERTS))
 workshop2011 : $(filter workshops/2011/%, $(OK_CERTS))
 
-# Aliases for the "standard" libraries for prototyping and reasoning
+
+# We define a set of books that support rapid prototyping and
+# reasoning about such prototypes in ACL2.  We consider these books to
+# constitute a "standard" approach to using ACL2 to model real
+# problems.  The below target includes many more books than just those
+# that make up this approach, but we leave it for now, because our
+# main motivation in having such a target is to provide a quick target
+# that certifies at least the books that fconsititute this approach.
+
+.PHONY: std
+
+std : $(filter-out centaur/%, \
+          $(filter-out coi/%, \
+            $(filter-out models/%, \
+              $(filter-out workshops/%, $(OK_CERTS)))))
+
+# Aliases for the "standard" approach
 .PHONY: libs basic
 libs    : std
 basic   : std
