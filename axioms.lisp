@@ -18416,7 +18416,13 @@
   Also ~pl[hints] for a discussion of the ~c[:in-theory] hint, including some
   explanation of the important point that an ~c[:in-theory] hint will always be
   evaluated relative to the current ACL2 logical ~il[world], not relative to
-  the theory of a previous goal.~/
+  the theory of a previous goal.
+
+  ~ilc[In-theory] returns an error triple (~pl[error-triples]).  When the
+  return is without error, the value is of the form
+  ~c[(mv nil (:NUMBER-OF-ENABLED-RUNES k) state)] where ~c[k] is the length of
+  the new current theory.  This value of ~c[k] is what is printed when an
+  ~c[in-theory] event evaluates without error at the top level.~/
 
   :cited-by Theories"
 

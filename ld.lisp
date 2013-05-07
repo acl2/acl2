@@ -20642,6 +20642,12 @@
   of ~c[extra-info] in hypotheses generated for guard verification.  We have
   eliminated duplicates of this sort.
 
+  When ~ilc[in-theory] returns without error, it returns a value
+  ~c[(:NUMBER-OF-ENABLED-RUNES k)], where ~c[k] is the length of the new
+  current theory.  (Formerly, ~c[k] was returned.)  This value is thus printed
+  when an ~c[in-theory] event is submitted at the top level.  Thanks to Gisela
+  Rossi for feedback that led us to make this change.
+
   ~st[NEW FEATURES]
 
   It is now permissible to specify a ~il[stobj] field that is itself either a
@@ -20769,9 +20775,9 @@
   ~st[CHANGES AT THE SYSTEM LEVEL]
 
   ACL2 may now be built on recent versions of a new host Lisp, ANSI Gnu Common
-  Lisp (GCL).  Traditional (non-ANSI) GCL is the original host Lisp underlying
-  ACL2, and we grateful to GCL support that we received from the late Bill
-  Schelter and, more recently and particular for ANSI GCL, from Camm Maguire.
+  Lisp (GCL).  Traditional (non-ANSI) GCL was the original host Lisp underlying
+  ACL2, and we are grateful for GCL support that we received from the late Bill
+  Schelter and, more recently and particularly for ANSI GCL, from Camm Maguire.
 
   The `~c[make]' process for book certification now uses ~c[-k] by default,
   which keeps going after errors, rather than ~c[-i], which ignores errors.  If

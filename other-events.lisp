@@ -3326,7 +3326,7 @@
                     (maybe-warn-about-theory
                      ens1 force-xnume-en1 imm-xnume-en1
                      (ens state) ctx wrld state))
-                  (value val)))))))))
+                  (value (list :NUMBER-OF-ENABLED-RUNES val))))))))))
 
 (defun in-arithmetic-theory-fn (expr state doc event-form)
 
