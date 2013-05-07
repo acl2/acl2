@@ -68,10 +68,12 @@
 #     These instructions specify argument to certify-book, for example:
 #       ; cert-flags: ? t :ttags :all
 #   - Books that depend on ACL2(h), such as centaur/tutorial/alu16-book.lisp,
-#     contain this line:
+#     contain this line (or, a cert_param directive can be in the
+#     .acl2 file that is consulted, as discussed above):
 #       ; cert_param: (hons-only)
 #   - Two-pass certification is handled as follows, for example in
-#     books/make-event/stobj-test.acl2:
+#     books/make-event/stobj-test.acl2 (as indicated above, this can
+#     also go into the book instead of the relevant .acl2 file):
 #       ; cert_param: (acl2x)
 #   - It's not clear that provisional certification is fully
 #     supported.  For now, we implement it for two specific
@@ -150,10 +152,10 @@ all: lite
 # INFO=warning on the command line if you want to see the messages
 # even with GNU make version 3.80.  But maybe this is too ugly, so we
 # just leave the idea as a comment.
-INFO := info
-# Example: Prints "Makefile-jared:156: just a test" when invoked with
-# INFO=warning; otherwise, same as $(info just a test).
-$(eval $$($(INFO) just a test))
+## INFO := info
+### Example: Prints "Makefile-jared:156: just a test" when invoked with
+### INFO=warning; otherwise, same as $(info just a test).
+## $(eval $$($(INFO) just a test))
 
 ifndef NO_RESCAN
 
@@ -439,7 +441,8 @@ moreclean: clean
 	rm -rf $(MORECLEAN_FILES_EXPLICIT)
 
 
-
+# The following dummy target does nothing, e.g., so that you can test
+# the dependency scanning stuff without actually building anything.
 .PHONY: dummy
 dummy:
 
