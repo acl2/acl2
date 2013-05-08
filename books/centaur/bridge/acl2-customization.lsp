@@ -19,7 +19,7 @@
 ; Original author: Jared Davis <jared@centtech.com>
 
 (in-package "ACL2")
-(ld "~/acl2-customization.lsp")
+(ld "~/acl2-customization.lsp" :ld-missing-input-ok t)
 (ld "package.lsp")
 (ld "tools/flag-package.lsp" :dir :system)
 (include-book "str/portcullis" :dir :system)

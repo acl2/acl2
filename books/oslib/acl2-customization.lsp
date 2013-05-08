@@ -19,7 +19,7 @@
 ; Original author: Jared Davis <jared@centtech.com>
 
 (in-package "ACL2")
-(ld "~/acl2-customization.lsp")
+(ld "~/acl2-customization.lsp" :ld-missing-input-ok t)
 (in-package "ACL2")
 (ld "package.lsp")
 (include-book "portcullis")

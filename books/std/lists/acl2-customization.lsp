@@ -1,4 +1,4 @@
-; Standard Lists ACL2-Customization File
+ !; Standard Lists ACL2-Customization File
 ; Copyright (C) 2008-2013 Centaur Technology
 ;
 ; Contact:
@@ -20,4 +20,4 @@
 
 (in-package "ACL2")
 (assign :suppress-preload-xdoc t)
-(ld "~/acl2-customization.lsp")
+(ld "~/acl2-customization.lsp" :ld-missing-input-ok t)

@@ -18,6 +18,6 @@
 ;
 ; Original author: Jared Davis <jared@centtech.com>
 
-(ld "~/acl2-customization.lsp")
+(ld "~/acl2-customization.lsp" :ld-missing-input-ok t)
 (include-book "portcullis")
 (in-package "CLEX")
