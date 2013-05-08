@@ -28,7 +28,7 @@
 (include-book "g-coerce")
 (include-book "g-code-char")
 (include-book "g-intern")
-(include-book "centaur/aig/g-aig-eval" :dir :system)
+;(include-book "centaur/aig/g-aig-eval" :dir :system)
 ;(include-book "g-make-fast-alist")
 ;(include-book "g-gl-mbe")
 
