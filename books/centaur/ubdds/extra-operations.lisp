@@ -1416,6 +1416,49 @@ list of values instead of a UBDD.</p>"
                                       eval-bdd)))))
 
 
+(defsection bdd-sat-dfs
+  :parents (ubdds)
+  :short "@(call bdd-sat-dfs) finds a satisfying assignment for the UBDD @('x'), if
+one exists.  It works even if @('x') is not a well-formed UBDD, but it might be
+slow in that case."
+
+  (defund bdd-sat-dfs (x)
+    (declare (xargs :guard t))
+    (if (atom x)
+        nil
+      (let* ((a (car x))
+             (d (cdr x)))
+        (cond ((and (atom a) a) '(t))
+              ((and (atom d) d) '(nil))
+              (t (let ((rec1 (bdd-sat-dfs a)))
+                   (if rec1 (cons t rec1)
+                     (let ((rec2 (bdd-sat-dfs d)))
+                       (and rec2 (cons nil rec2))))))))))
+
+  (local (in-theory (enable bdd-sat-dfs)))
+
+  (defthmd bdd-sat-dfs-produces-satisfying-assign
+    (implies (bdd-sat-dfs x)
+             (eval-bdd x (bdd-sat-dfs x)))
+    :hints(("Goal" :in-theory (enable eval-bdd))))
+
+  (local (in-theory (enable bdd-sat-dfs-produces-satisfying-assign)))
+
+  (defthmd bdd-sat-dfs-not-satisfying-when-nil
+    (implies (and (consp x)
+                  (not (bdd-sat-dfs x)))
+             (not (eval-bdd x vars)))
+    :hints(("Goal" :in-theory (enable eval-bdd))))
+
+  (local (in-theory (enable bdd-sat-dfs-not-satisfying-when-nil)))
+
+  (defthm bdd-sat-dfs-correct
+    (implies (eval-bdd x vars)
+             (eval-bdd x (bdd-sat-dfs x)))
+    :hints(("Goal" :in-theory (enable eval-bdd)))))
+
+
+
 (defsection q-sat-any
   :parents (ubdds)
   :short "@(call q-sat-any) finds an assignment that satisfies at least one

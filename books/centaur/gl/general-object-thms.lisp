@@ -8,29 +8,25 @@
 
 
 (defthmd generic-geval-g-boolean
-  (implies (and (g-boolean-p x)
-                (gobjectp x))
+  (implies (g-boolean-p x)
            (equal (generic-geval x env)
                   (bfr-eval (g-boolean->bool x) (car env))))
   :hints(("Goal" :expand ((generic-geval x env))))
-  :rule-classes ((:rewrite :backchain-limit-lst (0 nil))))
+  :rule-classes ((:rewrite :backchain-limit-lst 0)))
 
 
 
 (defthm general-booleanp-booleanp
-  (implies (and (gobjectp x)
-                (general-booleanp x))
+  (implies (general-booleanp x)
            (booleanp (generic-geval x env)))
   :hints(("Goal" :in-theory (enable generic-geval
                                     (:type-prescription bfr-eval)))))
 
-(defthm general-booleanp-of-atomic-constant
-  (implies (and (syntaxp (quotep x))
-                (atom x))
+(defthm general-booleanp-of-atom
+  (implies (not (consp x))
            (equal (general-booleanp x)
-                  (booleanp x))))
-
-
+                  (booleanp x)))
+  :rule-classes ((:rewrite :backchain-limit-lst 0)))
 
 
 (defthm general-boolean-value-cases
@@ -46,18 +42,12 @@
                                      general-boolean-value))))
 
 
-(defthm bfr-p-general-boolean-value
-  (implies (and (gobjectp x) (general-booleanp x))
-           (bfr-p (general-boolean-value x)))
-  :hints (("goal" :in-theory (enable gobjectp gobject-hierarchy
-                                     bfr-p-of-boolean))))
-
 (defthm general-boolean-value-correct
-  (implies (and (general-booleanp x) (gobjectp x))
+  (implies (general-booleanp x)
            (equal (generic-geval x env)
                   (bfr-eval (general-boolean-value x) (car env))))
   :hints (("goal" :in-theory (enable generic-geval)))
-  :rule-classes ((:rewrite :backchain-limit-lst (0 nil))))
+  :rule-classes ((:rewrite :backchain-limit-lst 0)))
 
 
 (in-theory (disable general-booleanp general-boolean-value))
@@ -70,7 +60,7 @@
 
 
 (defthm general-numberp-eval-to-numberp
-  (implies (and (general-numberp x) (gobjectp x))
+  (implies (general-numberp x)
            (acl2-numberp (generic-geval x env)))
   :hints (("goal" :expand (generic-geval x env))))
 
@@ -133,19 +123,18 @@
 
 
 
-(defthm general-number-components-bfr-listps
-  (implies (and (gobjectp n) (general-numberp n))
-           (and (bfr-listp (mv-nth 0 (general-number-components n)))
-                (bfr-listp (mv-nth 1 (general-number-components n)))
-                (bfr-listp (mv-nth 2 (general-number-components n)))
-                (bfr-listp (mv-nth 3 (general-number-components n)))))
-  :hints (("goal" :in-theory (e/d (wf-g-numberp-simpler-def gobjectp gobject-hierarchy)
-                                  ((force))))))
+;; (defthm general-number-components-bfr-listps
+;;   (implies (and (gobjectp n) (general-numberp n))
+;;            (and (bfr-listp (mv-nth 0 (general-number-components n)))
+;;                 (bfr-listp (mv-nth 1 (general-number-components n)))
+;;                 (bfr-listp (mv-nth 2 (general-number-components n)))
+;;                 (bfr-listp (mv-nth 3 (general-number-components n)))))
+;;   :hints (("goal" :in-theory (e/d (wf-g-numberp-simpler-def gobjectp gobject-hierarchy)
+;;                                   ((force))))))
 
 
 (defthm general-number-components-ev
-  (implies (and (gobjectp a)
-                (general-numberp a))
+  (implies (general-numberp a)
            (mv-let (rn rd in id)
              (general-number-components a)
              (flet ((uval (n env)
@@ -173,16 +162,21 @@
                            (nth (1- n) (cdr x)))))))
                        
 
+(defthm general-numberp-of-atom
+  (implies (not (consp x))
+           (equal (general-numberp x)
+                  (acl2-numberp x)))
+  :hints(("Goal" :in-theory (enable general-numberp)))
+  :rule-classes ((:rewrite :backchain-limit-lst 0)))
 
-(defthm gobjectp-bfr-listp-break-g-number
-  (implies (and (gobjectp x)
-                (g-number-p x))
-           (and (bfr-listp (mv-nth 0 (break-g-number (g-number->num x))))
-                (bfr-listp (mv-nth 1 (break-g-number (g-number->num x))))
-                (bfr-listp (mv-nth 2 (break-g-number (g-number->num x))))
-                (bfr-listp (mv-nth 3 (break-g-number (g-number->num x))))))
-  :hints (("goal" :in-theory (enable gobjectp wf-g-numberp gobject-hierarchy)
-           :do-not-induct t)))
+
+;; (defthm gobjectp-bfr-listp-break-g-number
+;;   (implies (g-number-p x)
+;;            (and (bfr-listp (mv-nth 0 (break-g-number (g-number->num x))))
+;;                 (bfr-listp (mv-nth 1 (break-g-number (g-number->num x))))
+;;                 (bfr-listp (mv-nth 2 (break-g-number (g-number->num x))))
+;;                 (bfr-listp (mv-nth 3 (break-g-number (g-number->num x))))))
+;;   :hints (("goal" :do-not-induct t)))
 
 (in-theory (disable break-g-number))
 
@@ -198,38 +192,37 @@
 (defthm consp-general-consp
   (implies (general-consp x)
            (consp (generic-geval x env)))
-  :hints (("goal" :expand ((generic-geval x env)
-                           (gobj-fix x)))))
+  :hints (("goal" :expand ((generic-geval x env)))))
 
-(defthm general-consp-car-gobjectp
-  (implies (and (gobjectp x) (general-consp x))
-           (gobjectp (general-consp-car x))))
+;; (defthm general-consp-car-gobjectp
+;;   (implies (general-consp x)
+;;            (gobjectp (general-consp-car x))))
 
 (defthm general-consp-car-correct
-  (implies (and (gobjectp x) (general-consp x))
+  (implies (general-consp x)
            (equal (generic-geval (general-consp-car x) env)
                   (car (generic-geval x env))))
   :hints (("goal" :in-theory (enable generic-geval))))
 
 (defthm general-consp-car-acl2-count
-  (implies (and (gobjectp x) (general-consp x))
+  (implies (general-consp x)
            (< (acl2-count (general-consp-car x)) (acl2-count x)))
   :hints (("goal" :in-theory (enable mk-g-concrete g-concrete
                                      g-concrete->obj)))
   :rule-classes (:rewrite :linear))
 
-(defthm general-consp-cdr-gobjectp
-  (implies (and (gobjectp x) (general-consp x))
-           (gobjectp (general-consp-cdr x))))
+;; (defthm general-consp-cdr-gobjectp
+;;   (implies ( (gobjectp x) (general-consp x))
+;;            (gobjectp (general-consp-cdr x))))
 
 (defthm general-consp-cdr-correct
-  (implies (and (gobjectp x) (general-consp x))
+  (implies (general-consp x)
            (equal (generic-geval (general-consp-cdr x) env)
                   (cdr (generic-geval x env))))
   :hints (("goal" :in-theory (enable generic-geval))))
 
 (defthm general-consp-cdr-acl2-count
-  (implies (and (gobjectp x) (general-consp x))
+  (implies (general-consp x)
            (< (acl2-count (general-consp-cdr x)) (acl2-count x)))
   :hints (("goal" :in-theory (enable mk-g-concrete g-concrete g-concrete->obj)))
   :rule-classes (:rewrite :linear))
@@ -244,11 +237,11 @@
 
 
 
-(defthm general-concrete-atom-gobjectp
-  (implies (general-concrete-atom x)
-           (gobjectp x))
-  :hints(("Goal" :in-theory (enable gobjectp g-concrete-p
-                                    gobject-hierarchy tag))))
+;; (defthm general-concrete-atom-gobjectp
+;;   (implies (general-concrete-atom x)
+;;            (gobjectp x))
+;;   :hints(("Goal" :in-theory (enable gobjectp g-concrete-p
+;;                                     gobject-hierarchy tag))))
 
 (defthm atom-general-concrete-atom
   (implies (general-concrete-atom x)
@@ -256,28 +249,27 @@
   :hints (("goal" :in-theory (enable generic-geval))))
 
 
-(defthm general-concrete-atom-val-gobjectp
-  (implies (general-concrete-atom x)
-           (gobjectp (general-concrete-atom-val x)))
-  :hints (("goal" :in-theory (enable gobjectp))))
+;; (defthm general-concrete-atom-val-gobjectp
+;;   (implies (general-concrete-atom x)
+;;            (gobjectp (general-concrete-atom-val x)))
+;;   :hints (("goal" :in-theory (enable gobjectp))))
 
 
 
 (defthm general-concrete-atom-val-correct
-  (implies (and (gobjectp x) (general-concrete-atom x))
+  (implies (general-concrete-atom x)
            (equal (generic-geval (general-concrete-atom-val x) env)
                   (generic-geval x env)))
   :hints (("goal" :in-theory (enable generic-geval))))
 
-(in-theory (disable general-concrete-atom general-concrete-atom-val
-                    general-concrete-atom-gobjectp))
+(in-theory (disable general-concrete-atom general-concrete-atom-val))
 
 
 
 
 (defun general-concretep-ind (x)
   (if (atom x)
-      (not (g-keyword-symbolp x))
+      x
     (if (or (g-concrete-p x)
             (g-boolean-p x)
             (g-number-p x)
@@ -292,7 +284,7 @@
 (defthm general-concretep-def
   (equal (general-concretep x)
          (if (atom x)
-             (not (g-keyword-symbolp x))
+             t
            (if (g-concrete-p x)
                t
              (and (not (g-boolean-p x))
@@ -302,69 +294,50 @@
                   (not (g-var-p x))
                   (general-concretep (car x))
                   (general-concretep (cdr x))))))
-  :hints (("goal" :induct (general-concretep-ind x)
-           :in-theory
-           (e/d** (gobjectp-boolean-case
-                   gobjectp-number-case
-                   gobjectp-apply-case
-                   (:induction general-concretep-ind)))
-           :expand ((gobject-hierarchy x)
-                    (general-concretep x)
-                    (general-concretep (car x))
-                    (general-concretep (cdr x))))
-          '(:use ((:instance gobject-hierarchy-possibilities)
-                  (:instance gobject-hierarchy-possibilities
-                             (x (car x)))
-                  (:instance gobject-hierarchy-possibilities
-                             (x (cdr x))))))
+  :hints(("Goal" :in-theory (enable gobject-hierarchy-lite)))
   :rule-classes :definition)
 
 
-(defthmd general-concretep-gobjectp
-  (implies (general-concretep x)
-           (gobjectp x))
-  :hints(("Goal" :in-theory (enable gobjectp general-concretep))))
+;; (defthmd general-concretep-gobjectp
+;;   (implies (general-concretep x)
+;;            (gobjectp x))
+;;   :hints(("Goal" :in-theory (enable gobjectp general-concretep))))
 
 (defthm general-concretep-of-atomic-constants
   (implies (and (syntaxp (quotep x))
                 (atom x))
-           (equal (general-concretep x)
-                  (not (g-keyword-symbolp x))))
+           (equal (general-concretep x) t))
   :hints(("Goal" :in-theory (e/d () (general-concretep)))))
 
 (in-theory (disable general-concretep (general-concretep)))
 
-(defthmd general-concrete-gobject-car-and-cdr
-  (implies (and (general-concretep x)
-                (consp x)
-                (not (g-concrete-p x)))
-           (and (gobjectp (car x))
-                (gobjectp (cdr x))))
-  :hints(("Goal" :in-theory (e/d (g-concrete-p
-                                  tag
-                                  general-concretep-gobjectp)
-                                 (general-concretep))
-          :expand ((:with general-concretep-def (general-concretep x))
-                   (:with gobjectp-def (gobjectp x))))))
+;; (defthmd general-concrete-gobject-car-and-cdr
+;;   (implies (and (general-concretep x)
+;;                 (consp x)
+;;                 (not (g-concrete-p x)))
+;;            (and (gobjectp (car x))
+;;                 (gobjectp (cdr x))))
+;;   :hints(("Goal" :in-theory (e/d (g-concrete-p
+;;                                   tag
+;;                                   general-concretep-gobjectp)
+;;                                  (general-concretep))
+;;           :expand ((:with general-concretep-def (general-concretep x))
+;;                    (:with gobjectp-def (gobjectp x))))))
 
 
-(verify-guards general-concrete-obj-aig
-  :hints (("goal" :in-theory (e/d (general-concrete-gobject-car-and-cdr
-                                   gobject-hierarchy-lite->aig)
-                                  (gobject-hierarchy-lite-redef)))))
+;; (verify-guards general-concrete-obj-aig
+;;   :hints (("goal" :in-theory (e/d (general-concrete-gobject-car-and-cdr
+;;                                    gobject-hierarchy-lite->aig)
+;;                                   (gobject-hierarchy-lite-redef)))))
 
 
-(verify-guards general-concrete-obj-bdd
-  :hints (("goal" :in-theory (e/d (general-concrete-gobject-car-and-cdr
-                                   gobject-hierarchy-lite->bdd)
-                                  (gobject-hierarchy-lite-redef)))))
+;; (verify-guards general-concrete-obj-bdd
+;;   :hints (("goal" :in-theory (e/d (general-concrete-gobject-car-and-cdr
+;;                                    gobject-hierarchy-lite->bdd)
+;;                                   (gobject-hierarchy-lite-redef)))))
 
 (verify-guards
- general-concrete-obj
- :hints
- (("goal" :in-theory (enable general-concrete-gobject-car-and-cdr))))
-
-
+ general-concrete-obj)
     
 
 ;; (defun general-concretep (x)
@@ -381,27 +354,34 @@
 
 
 
+(defthm generic-geval-when-concrete-gobjectp
+  (implies (concrete-gobjectp x)
+           (equal (generic-geval x env)
+                  x))
+  :hints(("Goal" :in-theory (enable concrete-gobjectp-def)))
+  :rule-classes ((:rewrite :backchain-limit-lst 0)))
+
 (defthmd general-concrete-obj-correct
   (implies (general-concretep x)
            (equal (generic-geval x env)
                   (general-concrete-obj x)))
-  :hints(("Goal" :in-theory (enable general-concretep-gobjectp
-                                    eval-concrete-gobjectp
-                                    g-concrete-p)
+  :hints(("Goal" 
           :induct (general-concrete-obj x)
+
           :expand ((general-concretep x)
                    (generic-geval x env)
+                   (concrete-gobjectp x)
                    (general-concrete-obj x)))))
 
-(defthmd general-concrete-obj-correct-gobj-fix
-  (implies (general-concretep (gobj-fix x))
-           (equal (general-concrete-obj (gobj-fix x))
-                  (generic-geval x env)))
-  :hints(("Goal" :use ((:instance general-concrete-obj-correct
-                                  (x (gobj-fix x))))
-          :in-theory (disable general-concretep general-concrete-obj gobj-fix
-                              general-concrete-obj-correct)))
-  :rule-classes ((:rewrite :backchain-limit-lst 0)))
+;; (defthmd general-concrete-obj-correct-gobj-fix
+;;   (implies (general-concretep (gobj-fix x))
+;;            (equal (general-concrete-obj (gobj-fix x))
+;;                   (generic-geval x env)))
+;;   :hints(("Goal" :use ((:instance general-concrete-obj-correct
+;;                                   (x (gobj-fix x))))
+;;           :in-theory (disable general-concretep general-concrete-obj gobj-fix
+;;                               general-concrete-obj-correct)))
+;;   :rule-classes ((:rewrite :backchain-limit-lst 0)))
 
 (defthm general-concrete-obj-of-atomic-constants
   (implies (and (syntaxp (quotep x))
@@ -431,49 +411,47 @@
 
 
 (defthmd general-concretep-atom
-  (implies (and (not (consp x)) (gobjectp x))
+  (implies (not (consp x))
            (general-concretep x))
-  :hints(("Goal" :in-theory (enable general-concretep-def gobjectp-def)))
-  :rule-classes ((:rewrite :backchain-limit-lst (0 nil))))
+  :hints(("Goal" :in-theory (enable general-concretep-def)))
+  :rule-classes ((:rewrite :backchain-limit-lst 0)))
 
 
 
 
 
-(defthm bfr-p-bool-cond-itep-cond
-  (implies (and (gobjectp x)
-                (bool-cond-itep x))
-           (bfr-p (bool-cond-itep-cond x))))
+;; (defthm bfr-p-bool-cond-itep-cond
+;;   (implies (bool-cond-itep x)
+;;            (bfr-p (bool-cond-itep-cond x))))
 
 
-(defthm gobjectp-bool-cond-itep-truebr
-  (implies (and (gobjectp x)
-                (bool-cond-itep x))
-           (gobjectp (bool-cond-itep-truebr x))))
+;; (defthm gobjectp-bool-cond-itep-truebr
+;;   (implies (and (gobjectp x)
+;;                 (bool-cond-itep x))
+;;            (gobjectp (bool-cond-itep-truebr x))))
 
-(defthm gobjectp-bool-cond-itep-falsebr
-  (implies (and (gobjectp x)
-                (bool-cond-itep x))
-           (gobjectp (bool-cond-itep-falsebr x))))
+;; (defthm gobjectp-bool-cond-itep-falsebr
+;;   (implies (and (gobjectp x)
+;;                 (bool-cond-itep x))
+;;            (gobjectp (bool-cond-itep-falsebr x))))
 
 (defthm bool-cond-itep-eval
-  (implies (and (bool-cond-itep x)
-                (gobjectp x))
+  (implies (bool-cond-itep x)
            (equal (generic-geval x env)
                   (if (bfr-eval (bool-cond-itep-cond x) (car env))
                       (generic-geval (bool-cond-itep-truebr x) env)
                     (generic-geval (bool-cond-itep-falsebr x) env))))
   :hints (("goal" :in-theory (enable generic-geval)))
-  :rule-classes ((:rewrite :backchain-limit-lst (0 nil))))
+  :rule-classes ((:rewrite :backchain-limit-lst 0)))
 
 (defthm acl2-count-bool-cond-itep-truebr
-  (implies (and (gobjectp x) (bool-cond-itep x))
+  (implies (bool-cond-itep x)
            (< (acl2-count (bool-cond-itep-truebr x))
               (acl2-count x)))
   :rule-classes :linear)
 
 (defthm acl2-count-bool-cond-itep-falsebr
-  (implies (and (gobjectp x) (bool-cond-itep x))
+  (implies (bool-cond-itep x)
            (< (acl2-count (bool-cond-itep-falsebr x))
               (acl2-count x)))
   :rule-classes :linear)
@@ -489,74 +467,73 @@
 
 
 
-(local 
- (defthm g-concrete-p-impl-not-general-concretep-car
-   (implies (g-concrete-p x)
-            (not (general-concretep (car x))))
-   :hints(("Goal" :in-theory (enable g-concrete-p tag)))))
+;; (local 
+;;  (defthm g-concrete-p-impl-not-general-concretep-car
+;;    (implies (g-concrete-p x)
+;;             (not (general-concretep (car x))))
+;;    :hints(("Goal" :in-theory (enable g-concrete-p tag)))))
 
 
-(local (defthm general-concrete-obj-cons
-         (implies (and (general-concretep (car x))
-                       (general-concretep (cdr x))
-                       (consp x))
-                  (equal (general-concrete-obj x)
-                         (cons (general-concrete-obj (car x))
-                               (general-concrete-obj (cdr x)))))
-         :hints(("Goal" :in-theory (enable general-concretep-def
-                                           concrete-gobjectp-def
-                                           general-concrete-obj)))
-         :rule-classes ((:rewrite :backchain-limit-lst 0))))
+;; (defthmd general-concrete-obj-cons
+;;   (implies (and (general-concretep (car x))
+;;                 (general-concretep (cdr x))
+;;                 (consp x))
+;;            (equal (general-concrete-obj x)
+;;                   (cons (general-concrete-obj (car x))
+;;                         (general-concrete-obj (cdr x)))))
+;;   :hints(("Goal" :in-theory (enable general-concretep-def
+;;                                     concrete-gobjectp-def
+;;                                     general-concrete-obj)))
+;;   :rule-classes ((:rewrite :backchain-limit-lst 0)))
 
-(local (defthm general-boolean-value-alt
-         (equal (general-boolean-value x)
-                (cond ((atom x) x)
-                      ((g-concrete-p x) (g-concrete->obj x))
-                      (t (g-boolean->bool x))))
-         :hints(("Goal" :in-theory (enable g-boolean->bool g-concrete->obj
-                                           general-boolean-value)))
-         :rule-classes :definition))
+(defthmd general-boolean-value-alt
+  (equal (general-boolean-value x)
+         (cond ((atom x) x)
+               ((g-concrete-p x) (g-concrete->obj x))
+               (t (g-boolean->bool x))))
+  :hints(("Goal" :in-theory (enable g-boolean->bool g-concrete->obj
+                                    general-boolean-value)))
+  :rule-classes :definition)
 
 (defthm generic-geval-alt-def
-  (implies (gobjectp x)
-           (equal (generic-geval x env)
-                  (cond
-                   ((general-concretep x)
-                    (general-concrete-obj x))
-                   ((general-booleanp x)
-                    (bfr-eval (general-boolean-value x) (car env)))
-                   ((general-numberp x)
-                    (b* (((mv rn rd in id)
-                          (general-number-components x)))
-                      (flet ((uval (n env)
-                                   (v2n (bfr-eval-list n (car env))))
-                             (sval (n env)
-                                   (v2i (bfr-eval-list n (car env)))))
-                        (components-to-number (sval rn env)
-                                              (uval rd env)
-                                              (sval in env)
-                                              (uval id env)))))
-                   ((general-consp x)
-                    (cons (generic-geval (general-consp-car x) env)
-                          (generic-geval (general-consp-cdr x) env)))
-                   ((g-ite-p x)
-                    (if (generic-geval (g-ite->test x) env)
-                        (generic-geval (g-ite->then x) env)
-                      (generic-geval (g-ite->else x) env)))
-                   ((g-apply-p x)
-                    (apply-stub (g-apply->fn x)
-                                (generic-geval (g-apply->args x) env)))
-                   (t
-                    (cdr (hons-assoc-equal (g-var->name x) (cdr env)))))))
+  (equal (generic-geval x env)
+         (cond
+          ((general-concretep x)
+           (general-concrete-obj x))
+          ((general-booleanp x)
+           (bfr-eval (general-boolean-value x) (car env)))
+          ((general-numberp x)
+           (b* (((mv rn rd in id)
+                 (general-number-components x)))
+             (flet ((uval (n env)
+                          (v2n (bfr-eval-list n (car env))))
+                    (sval (n env)
+                          (v2i (bfr-eval-list n (car env)))))
+               (components-to-number (sval rn env)
+                                     (uval rd env)
+                                     (sval in env)
+                                     (uval id env)))))
+          ((general-consp x)
+           (cons (generic-geval (general-consp-car x) env)
+                 (generic-geval (general-consp-cdr x) env)))
+          ((g-ite-p x)
+           (if (generic-geval (g-ite->test x) env)
+               (generic-geval (g-ite->then x) env)
+             (generic-geval (g-ite->else x) env)))
+          ((g-apply-p x)
+           (generic-geval-apply
+            (g-apply->fn x)
+            (generic-geval (g-apply->args x) env)))
+          (t
+           (cdr (hons-assoc-equal (g-var->name x) (cdr env))))))
   :hints (("goal" ;; :induct (generic-geval x env)
            :in-theory (e/d** (general-concretep-def
                               (:induction generic-geval)
                               general-numberp general-booleanp
-                              general-consp eq gobjectp-tag-rw-to-types
-                              gobj-fix-when-gobjectp gobjectp-def
-                              general-concrete-obj-cons
+                              general-consp eq 
                               atom
                               acl2::cons-car-cdr
+                              concrete-gobjectp-def
 ; not-g-keyword-symbolp-tag
                               g-keyword-symbolp-def member-equal
                               general-boolean-value-alt
@@ -583,153 +560,137 @@
 
 
 (defthm possibilities-for-x
-  (implies (gobjectp x)
-           (and (implies (general-concretep x)
-                         (and (not (g-ite-p x))
-                              (not (g-apply-p x))
-                              (not (g-var-p x))))
-                (implies (not (consp x))
-                         (and (general-concretep x)
-                              (not (general-consp x))))
-                (implies (general-booleanp x)
-                         (and (not (general-numberp x))
-                              (not (general-consp x))
-                              (not (g-ite-p x))
-                              (not (g-apply-p x))
-                              (not (g-var-p x))))
-                (implies (general-numberp x)
-                         (and (not (general-booleanp x))
-                              (not (general-consp x))
-                              (not (g-ite-p x))
-                              (not (g-apply-p x))
-                              (not (g-var-p x))))
-                (implies (general-consp x)
-                         (and (not (general-booleanp x))
-                              (not (general-numberp x))
-                              (not (g-ite-p x))
-                              (not (g-apply-p x))
-                              (not (g-var-p x))))
-                (implies (g-ite-p x)
-                         (and (not (general-concretep x))
-                              (not (general-consp x))
-                              (not (general-booleanp x))
-                              (not (general-numberp x))
-                              (not (g-apply-p x))
-                              (not (g-var-p x))))
-                (implies (g-apply-p x)
-                         (and (not (general-concretep x))
-                              (not (general-consp x))
-                              (not (general-booleanp x))
-                              (not (general-numberp x))
-                              (not (g-ite-p x))
-                              (not (g-var-p x))))
-                (implies (g-var-p x)
-                         (and (not (general-concretep x))
-                              (not (general-consp x))
-                              (not (general-booleanp x))
-                              (not (general-numberp x))
-                              (not (g-ite-p x))
-                              (not (g-apply-p x))))
-                (implies (and (not (general-concretep x))
-                              (not (general-consp x))
-                              (not (general-booleanp x))
-                              (not (general-numberp x))
-                              (not (g-ite-p x))
-                              (not (g-apply-p x)))
-                         (g-var-p x))))
-  :hints(("Goal" :in-theory (enable gobjectp-def general-concretep-def
+  (and (implies (general-concretep x)
+                (and (not (g-ite-p x))
+                     (not (g-apply-p x))
+                     (not (g-var-p x))))
+       (implies (not (consp x))
+                (and (general-concretep x)
+                     (not (general-consp x))))
+       (implies (general-booleanp x)
+                (and (not (general-numberp x))
+                     (not (general-consp x))
+                     (not (g-ite-p x))
+                     (not (g-apply-p x))
+                     (not (g-var-p x))))
+       (implies (general-numberp x)
+                (and (not (general-booleanp x))
+                     (not (general-consp x))
+                     (not (g-ite-p x))
+                     (not (g-apply-p x))
+                     (not (g-var-p x))))
+       (implies (general-consp x)
+                (and (not (general-booleanp x))
+                     (not (general-numberp x))
+                     (not (g-ite-p x))
+                     (not (g-apply-p x))
+                     (not (g-var-p x))))
+       (implies (g-ite-p x)
+                (and (not (general-concretep x))
+                     (not (general-consp x))
+                     (not (general-booleanp x))
+                     (not (general-numberp x))
+                     (not (g-apply-p x))
+                     (not (g-var-p x))))
+       (implies (g-apply-p x)
+                (and (not (general-concretep x))
+                     (not (general-consp x))
+                     (not (general-booleanp x))
+                     (not (general-numberp x))
+                     (not (g-ite-p x))
+                     (not (g-var-p x))))
+       (implies (g-var-p x)
+                (and (not (general-concretep x))
+                     (not (general-consp x))
+                     (not (general-booleanp x))
+                     (not (general-numberp x))
+                     (not (g-ite-p x))
+                     (not (g-apply-p x))))
+       (implies (and (not (general-concretep x))
+                     (not (general-consp x))
+                     (not (general-booleanp x))
+                     (not (general-numberp x))
+                     (not (g-ite-p x))
+                     (not (g-apply-p x)))
+                (g-var-p x)))
+  :hints(("Goal" :in-theory (enable general-concretep-def
                                     general-booleanp general-numberp
                                     general-consp g-keyword-symbolp-def
-                                    member-equal
-                                    gobjectp-tag-rw-to-types)
+                                    member-equal)
           :do-not-induct t))
   :rule-classes nil)
 
 
 (defthm possibilities-for-x-1
-  (implies (and (general-concretep x)
-                (gobjectp x))
+  (implies (general-concretep x)
            (and (not (g-ite-p x))
                 (not (g-apply-p x))
                 (not (g-var-p x))))
   :hints (("Goal" :by possibilities-for-x))
-  :rule-classes ((:rewrite :backchain-limit-lst 0)))
+  :rule-classes :forward-chaining)
 
 
 (defthm possibilities-for-x-2
-  (implies (and (not (consp x))
-                (gobjectp x))
+  (implies (not (consp x))
            (and (general-concretep x)
                 (not (general-consp x))))
   :hints (("Goal" :by possibilities-for-x))
   :rule-classes ((:rewrite :backchain-limit-lst 0)))
 
 (defthm possibilities-for-x-3
-  (implies (and (general-booleanp x)
-                (gobjectp x))
+  (implies (general-booleanp x)
            (and (not (general-numberp x))
                 (not (general-consp x))
                 (not (g-ite-p x))
                 (not (g-apply-p x))
                 (not (g-var-p x))))
   :hints (("Goal" :by possibilities-for-x))
-  :rule-classes ((:rewrite :backchain-limit-lst 0)))
+  :rule-classes :forward-chaining)
 
 (defthm possibilities-for-x-4
-  (implies (and (general-numberp x)
-                (gobjectp x))
+  (implies (general-numberp x)
            (and (not (general-booleanp x))
                 (not (general-consp x))
                 (not (g-ite-p x))
                 (not (g-apply-p x))
                 (not (g-var-p x))))
   :hints (("Goal" :by possibilities-for-x))
-  :rule-classes ((:rewrite :backchain-limit-lst 0)))
+  :rule-classes :forward-chaining)
 
 (defthm possibilities-for-x-5
-  (implies (and (general-consp x)
-                (gobjectp x))
+  (implies (general-consp x)
            (and (not (general-booleanp x))
                 (not (general-numberp x))
                 (not (g-ite-p x))
                 (not (g-apply-p x))
                 (not (g-var-p x))))
   :hints (("Goal" :by possibilities-for-x))
-  :rule-classes ((:rewrite :backchain-limit-lst 0)))
+  :rule-classes :forward-chaining)
 
 (defthm possibilities-for-x-6
-  (implies (and (g-ite-p x)
-                (gobjectp x))
+  (implies (g-ite-p x)
            (and (not (general-concretep x))
                 (not (general-consp x))
                 (not (general-booleanp x))
-                (not (general-numberp x))
-                (not (g-apply-p x))
-                (not (g-var-p x))))
+                (not (general-numberp x))))
   :hints (("Goal" :by possibilities-for-x))
   :rule-classes ((:rewrite :backchain-limit-lst 0)))
 
 (defthm possibilities-for-x-7
-  (implies (and (g-apply-p x)
-                (gobjectp x))
+  (implies (g-apply-p x)
            (and (not (general-concretep x))
                 (not (general-consp x))
                 (not (general-booleanp x))
-                (not (general-numberp x))
-                (not (g-ite-p x))
-                (not (g-var-p x))))
+                (not (general-numberp x))))
   :hints (("Goal" :by possibilities-for-x))
   :rule-classes ((:rewrite :backchain-limit-lst 0)))
 
 (defthm possibilities-for-x-8
-  (implies (and (g-var-p x)
-                (gobjectp x))
+  (implies (g-var-p x)
            (and (not (general-concretep x))
                 (not (general-consp x))
                 (not (general-booleanp x))
-                (not (general-numberp x))
-                (not (g-ite-p x))
-                (not (g-apply-p x))))
+                (not (general-numberp x))))
   :hints (("Goal" :by possibilities-for-x))
   :rule-classes ((:rewrite :backchain-limit-lst 0)))
 
@@ -739,8 +700,7 @@
                 (not (general-booleanp x))
                 (not (general-numberp x))
                 (not (g-ite-p x))
-                (not (g-apply-p x))
-                (gobjectp x))
+                (not (g-apply-p x)))
            (g-var-p x))
   :hints (("Goal" :by possibilities-for-x))
   :rule-classes ((:rewrite :backchain-limit-lst 0)))
@@ -763,18 +723,11 @@
 
 
 
-
-
-
-
-
 (defthm general-concretep-not-general-numberp
   (implies (and (general-concretep x)
                 (not (general-numberp x)))
            (not (acl2-numberp (general-concrete-obj x))))
   :hints(("Goal" :in-theory (enable general-concretep-def general-numberp
-                                    gobjectp-tag-rw-to-types
-                                    general-concretep-gobjectp
                                     general-concrete-obj)
           :expand ((general-concrete-obj x))
           :do-not-induct t))
@@ -785,8 +738,6 @@
                 (not (general-booleanp x)))
            (not (booleanp (general-concrete-obj x))))
   :hints(("Goal" :in-theory (enable general-concretep-def general-booleanp
-                                    gobjectp-tag-rw-to-types
-                                    general-concretep-gobjectp
                                     general-concrete-obj)
           :expand ((general-concrete-obj x))
           :do-not-induct t))
@@ -797,8 +748,6 @@
                 (not (general-consp x)))
            (not (consp (general-concrete-obj x))))
   :hints(("Goal" :in-theory (enable general-concretep-def general-consp
-                                    gobjectp-tag-rw-to-types
-                                    general-concretep-gobjectp
                                     concrete-gobjectp
                                     g-keyword-symbolp-def
                                     member-equal
@@ -811,7 +760,6 @@
 
 (defthm general-concrete-obj-when-consp
   (implies (and (bind-free '((env . env)) (env))
-                (gobjectp x)
                 (general-consp x)
                 (general-concretep x))
            (equal (general-concrete-obj x)
@@ -831,8 +779,7 @@
 (defthm general-concrete-obj-when-numberp
   (implies (and (bind-free '((env . env)) (env))
                 (general-concretep x)
-                (general-numberp x)
-                (gobjectp x))
+                (general-numberp x))
            (mv-let (rn rd in id)
              (general-number-components x)
              (equal (general-concrete-obj x)
@@ -843,7 +790,6 @@
                      (v2n (bfr-eval-list id (car env)))))))
   :hints(("Goal" :in-theory (enable ;general-concretep-def
                              general-numberp
-                             gobjectp-def
                              general-concrete-obj
                              general-number-components
                              break-g-number)
@@ -854,12 +800,10 @@
 (defthm general-concrete-obj-when-booleanp
   (implies (and (bind-free '((env . env)) (env))
                 (general-concretep x)
-                (general-booleanp x)
-                (gobjectp x))
+                (general-booleanp x))
            (equal (general-concrete-obj x)
                   (bfr-eval (general-boolean-value x) (car env))))
   :hints(("Goal" :in-theory (enable general-booleanp
-                                    gobjectp-def
                                     general-concrete-obj
                                     general-boolean-value)
           :expand ((general-concretep x))
@@ -868,8 +812,7 @@
 
 
 (defthmd not-general-numberp-not-acl2-numberp
-  (implies (and (gobjectp x)
-                (not (general-numberp x))
+  (implies (and (not (general-numberp x))
                 (not (g-ite-p x))
                 (not (g-apply-p x))
                 (not (g-var-p x)))
@@ -879,3 +822,9 @@
            :in-theory (disable general-consp-car-correct
                                general-consp-cdr-correct)
            :do-not-induct t)))
+
+(defthm general-concrete-obj-when-atom
+  (implies (not (consp x))
+           (equal (general-concrete-obj x) x))
+  :hints(("Goal" :in-theory (enable general-concrete-obj)))
+  :rule-classes ((:rewrite :backchain-limit-lst 0)))

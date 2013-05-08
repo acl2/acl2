@@ -6,7 +6,7 @@
 (include-book "generic-geval")
 
 
-(defapply apply-base
+(def-eval-g eval-g-base
   (BINARY-*
    BINARY-+
    PKG-WITNESS
@@ -58,12 +58,6 @@
    ;; DOUBLE-REWRITE
    ))
 
-
-
-
-
-
-(def-eval-g eval-g-base apply-base)
 
 (in-theory (disable eval-g-base))
 

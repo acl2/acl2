@@ -20,7 +20,7 @@
            (equal (mk-g-concrete x) x))
   :hints(("Goal" :in-theory (enable mk-g-concrete
                                     concrete-gobjectp
-                                    gobject-hierarchy))))
+                                    gobject-hierarchy-lite))))
 
 (program)
 (defun def-g-unary-concrete-fn (fn number-case boolean-case cons-case
@@ -37,22 +37,22 @@
                  (mk-g-concrete (ec-call (,fn obj))))
                 ((g-ite test then else)
                  (if (zp clk)
-                     (g-apply ',fn (list ,x))
+                     (g-apply ',fn (gl-list ,x))
                    (g-if test
                          (,gfn then hyp clk)
                          (,gfn else hyp clk))))
-                ((g-apply & &) (g-apply ',fn (list ,x)))
-                ((g-var &) (g-apply ',fn (list ,x)))
+                ((g-apply & &) (g-apply ',fn (gl-list ,x)))
+                ((g-var &) (g-apply ',fn (gl-list ,x)))
                 ((g-number &) ,',number-case)
                 ((g-boolean &) ,',boolean-case)
                 (& ,',cons-case)))))
-       (def-gobjectp-thm ,fn
-         :hints `(("goal" :in-theory
-                   (e/d ()
-                        ((force)
-                         (:definition ,gfn)))
-                   :induct (,gfn ,',x hyp clk)
-                   :expand ((,gfn ,',x hyp clk)))))
+       ;; (def-gobjectp-thm ,fn
+       ;;   :hints `(("goal" :in-theory
+       ;;             (e/d ()
+       ;;                  ((force)
+       ;;                   (:definition ,gfn)))
+       ;;             :induct (,gfn ,',x hyp clk)
+       ;;             :expand ((,gfn ,',x hyp clk)))))
        (verify-g-guards
         ,fn
         :hints `(("Goal" :in-theory (Disable ,gfn))))
@@ -112,15 +112,6 @@
   :cons-case (mk-g-concrete (pkg-witness "ACL2")))
 
 
-(local
- (defthm not-integerp-break-g-number
-   (implies (wf-g-numberp x)
-            (and (not (integerp (mv-nth 0 (break-g-number x))))
-                 (not (integerp (mv-nth 1 (break-g-number x))))
-                 (not (integerp (mv-nth 2 (break-g-number x))))
-                 (not (integerp (mv-nth 3 (break-g-number x))))))
-   :hints(("Goal" :in-theory (enable wf-g-numberp-simpler-def
-                                     break-g-number bfr-listp)))))
 
 (def-g-unary-concrete realpart
   :number-case

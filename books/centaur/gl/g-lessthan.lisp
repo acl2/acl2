@@ -13,9 +13,7 @@
 
 
 (defun g-<-of-numbers (a b)
-  (declare (xargs :guard (and (gobjectp a)
-                              (general-numberp a)
-                              (gobjectp b)
+  (declare (xargs :guard (and (general-numberp a)
                               (general-numberp b))))
   (b* (((mv arn ard ain aid)
         (general-number-components a))
@@ -33,25 +31,23 @@
                         (bfr-and r=
                                (bfr-not (=-uu aid nil))
                                (<-ss ain bin))))))
-      (g-apply '< (list a b)))))
+      (g-apply '< (gl-list a b)))))
 
 (in-theory (disable (g-<-of-numbers)))
 
 (local
  (progn
-   (defthm gobjectp-g-<-of-numbers
-     (implies (and (gobjectp a)
-                   (general-numberp a)
-                   (gobjectp b)
-                   (general-numberp b))
-              (gobjectp (g-<-of-numbers a b))))
+   ;; (defthm gobjectp-g-<-of-numbers
+   ;;   (implies (and (gobjectp a)
+   ;;                 (general-numberp a)
+   ;;                 (gobjectp b)
+   ;;                 (general-numberp b))
+   ;;            (gobjectp (g-<-of-numbers a b))))
 
    (local (include-book "arithmetic/top-with-meta" :dir :system))
 
    (defthm g-<-of-numbers-correct
-     (implies (and (gobjectp a)
-                   (general-numberp a)
-                   (gobjectp b)
+     (implies (and (general-numberp a)
                    (general-numberp b))
               (equal (eval-g-base (g-<-of-numbers a b) env)
                      (< (eval-g-base a env)
@@ -66,31 +62,29 @@
        (y-num (if (general-numberp y) y 0)))
     (g-<-of-numbers x-num y-num)))
 
-(def-gobjectp-thm <
-:hints `(("Goal" :in-theory (e/d* (booleanp-gobjectp
-                                   boolean-listp-bfr-listp
-                                   gobjectp-of-atomic-constants)
-                                  ((:definition ,gfn)
-                                   number-to-components
-                                   general-concretep-def
-                                   gobj-fix-when-not-gobjectp
-                                   gobj-fix-when-gobjectp
-                                   booleanp-gobjectp
-                                   (:ruleset gl-wrong-tag-rewrites)
-                                   (:rules-of-class :type-prescription :here)))
-          :induct (,gfn x y hyp clk)
-          :expand ((,gfn x y hyp clk)))))
+;; (def-gobjectp-thm <
+;; :hints `(("Goal" :in-theory (e/d* (booleanp-gobjectp
+;;                                    boolean-listp-bfr-listp
+;;                                    gobjectp-of-atomic-constants)
+;;                                   ((:definition ,gfn)
+;;                                    number-to-components
+;;                                    general-concretep-def
+;;                                    gobj-fix-when-not-gobjectp
+;;                                    gobj-fix-when-gobjectp
+;;                                    booleanp-gobjectp
+;;                                    (:ruleset gl-wrong-tag-rewrites)
+;;                                    (:rules-of-class :type-prescription :here)))
+;;           :induct (,gfn x y hyp clk)
+;;           :expand ((,gfn x y hyp clk)))))
 
 (verify-g-guards
- < :hints `(("Goal" :in-theory (disable* ,gfn general-concretep-def
-                                         (:ruleset gl-wrong-tag-rewrites)))))
+ < :hints `(("Goal" :in-theory (disable* ,gfn general-concretep-def))))
 
 
 (def-g-correct-thm < eval-g-base
   :hints `(("Goal" :in-theory (e/d* ((:ruleset general-object-possibilities)
                                      not-general-numberp-not-acl2-numberp)
                                     ((:definition ,gfn)
-                                     (:ruleset gl-wrong-tag-rewrites)
                                      (:rules-of-class :type-prescription :here)
                                      number-to-components
                                      general-concretep-def

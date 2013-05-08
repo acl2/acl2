@@ -64,15 +64,12 @@
   (if (atom x)
       (not (g-keyword-symbolp x))
     (case (tag x)
-      (:g-number (and (g-number-p x)
-                      (number-specp (g-number->num x))))
-      (:g-boolean (and (g-boolean-p x)
-                       (natp (g-boolean->bool x))))
-      (:g-concrete (g-concrete-p x))
-      (:g-var (g-var-p x))
+      (:g-number (number-specp (g-number->num x)))
+      (:g-boolean (natp (g-boolean->bool x)))
+      (:g-concrete t)
+      (:g-var t)
       (:g-ite
-       (and (g-ite-p x)
-            (shape-specp (g-ite->test x))
+       (and (shape-specp (g-ite->test x))
             (shape-specp (g-ite->then x))
             (shape-specp (g-ite->else x))))
       (:g-apply nil)
@@ -112,11 +109,10 @@
    (implies (true-listp b)
             (true-listp (append a b)))))
 
-(local
- (defthm nat-listp-number-spec-indices
-   (implies (number-specp nspec)
-            (nat-listp (number-spec-indices nspec)))
-   :hints(("Goal" :in-theory (enable number-specp number-spec-indices)))))
+(defthm nat-listp-number-spec-indices
+  (implies (number-specp nspec)
+           (nat-listp (number-spec-indices nspec)))
+  :hints(("Goal" :in-theory (enable number-specp number-spec-indices))))
 
 (defund shape-spec-indices (x)
   (declare (xargs :guard (shape-specp x)
@@ -136,11 +132,11 @@
       (& (append (shape-spec-indices (car x))
                  (shape-spec-indices (cdr x)))))))
 
-(local
- (defthm nat-listp-shape-spec-indices
-   (implies (shape-specp x)
-            (nat-listp (shape-spec-indices x)))
-   :hints(("Goal" :in-theory (enable shape-specp shape-spec-indices nat-listp)))))
+(defthm nat-listp-shape-spec-indices
+  (implies (shape-specp x)
+           (nat-listp (shape-spec-indices x)))
+  :hints(("Goal" :in-theory (enable shape-specp shape-spec-indices
+                                    nat-listp))))
 
 (verify-guards shape-spec-indices
                :hints (("goal" :in-theory (enable shape-specp))))
@@ -427,33 +423,33 @@
               (shape-spec-to-gobj then)
               (shape-spec-to-gobj else)))
       ((g-concrete &) x)
-      (& (cons (shape-spec-to-gobj (car x))
-               (shape-spec-to-gobj (cdr x)))))))
+      (& (gl-cons (shape-spec-to-gobj (car x))
+                  (shape-spec-to-gobj (cdr x)))))))
 
 
 
 
 
 
-(local
- (defthm bfr-listp-numlist-to-vars
-   (implies (nat-listp x)
-            (bfr-listp (numlist-to-vars x)))
-   :hints(("Goal" :in-theory (enable numlist-to-vars nat-listp)))))
+;; (local
+;;  (defthm bfr-listp-numlist-to-vars
+;;    (implies (nat-listp x)
+;;             (bfr-listp (numlist-to-vars x)))
+;;    :hints(("Goal" :in-theory (enable numlist-to-vars nat-listp)))))
 
-(local
- (defthm wf-g-numberp-num-spec-to-num-gobj
-   (implies (number-specp x)
-            (wf-g-numberp (num-spec-to-num-gobj x)))
-   :hints(("Goal" :in-theory (enable wf-g-numberp num-spec-to-num-gobj
-                                     number-specp)))))
+;; (local
+;;  (defthm wf-g-numberp-num-spec-to-num-gobj
+;;    (implies (number-specp x)
+;;             (wf-g-numberp (num-spec-to-num-gobj x)))
+;;    :hints(("Goal" :in-theory (enable wf-g-numberp num-spec-to-num-gobj
+;;                                      number-specp)))))
 
-(defthm gobjectp-shape-spec-to-gobj
-  (implies (shape-specp x)
-           (gobjectp (shape-spec-to-gobj x)))
-  :hints(("Goal" :in-theory
-          (enable gobjectp-def shape-specp shape-spec-to-gobj g-var-p
-                  g-concrete-p tag))))
+;; (defthm gobjectp-shape-spec-to-gobj
+;;   (implies (shape-specp x)
+;;            (gobjectp (shape-spec-to-gobj x)))
+;;   :hints(("Goal" :in-theory
+;;           (enable gobjectp-def shape-specp shape-spec-to-gobj g-var-p
+;;                   g-concrete-p tag))))
 
 
 (local
@@ -535,47 +531,47 @@
                                      nat-listp)
            :induct (numlist-to-vars lst)))))
 
-(local
- (defthm g-boolean-p-gobj-fix
-   (equal (g-boolean-p (gobj-fix x))
-          (and (gobjectp x)
-               (g-boolean-p x)))
-   :hints(("Goal" :in-theory (enable gobj-fix)))))
+;; (local
+;;  (defthm g-boolean-p-gobj-fix
+;;    (equal (g-boolean-p (gobj-fix x))
+;;           (and (gobjectp x)
+;;                (g-boolean-p x)))
+;;    :hints(("Goal" :in-theory (enable gobj-fix)))))
 
-(local
- (defthm g-number-p-gobj-fix
-   (equal (g-number-p (gobj-fix x))
-          (and (gobjectp x)
-               (g-number-p x)))
-   :hints(("Goal" :in-theory (enable gobj-fix)))))
+;; (local
+;;  (defthm g-number-p-gobj-fix
+;;    (equal (g-number-p (gobj-fix x))
+;;           (and (gobjectp x)
+;;                (g-number-p x)))
+;;    :hints(("Goal" :in-theory (enable gobj-fix)))))
 
-(local
- (defthm g-ite-p-gobj-fix
-   (equal (g-ite-p (gobj-fix x))
-          (and (gobjectp x)
-               (g-ite-p x)))
-   :hints(("Goal" :in-theory (enable gobj-fix)))))
+;; (local
+;;  (defthm g-ite-p-gobj-fix
+;;    (equal (g-ite-p (gobj-fix x))
+;;           (and (gobjectp x)
+;;                (g-ite-p x)))
+;;    :hints(("Goal" :in-theory (enable gobj-fix)))))
 
-(local
- (defthm g-var-p-gobj-fix
-   (equal (g-var-p (gobj-fix x))
-          (and (gobjectp x)
-               (g-var-p x)))
-   :hints(("Goal" :in-theory (enable gobj-fix)))))
+;; (local
+;;  (defthm g-var-p-gobj-fix
+;;    (equal (g-var-p (gobj-fix x))
+;;           (and (gobjectp x)
+;;                (g-var-p x)))
+;;    :hints(("Goal" :in-theory (enable gobj-fix)))))
 
-(local
- (defthm g-apply-p-gobj-fix
-   (equal (g-apply-p (gobj-fix x))
-          (and (gobjectp x)
-               (g-apply-p x)))
-   :hints(("Goal" :in-theory (enable gobj-fix)))))
+;; (local
+;;  (defthm g-apply-p-gobj-fix
+;;    (equal (g-apply-p (gobj-fix x))
+;;           (and (gobjectp x)
+;;                (g-apply-p x)))
+;;    :hints(("Goal" :in-theory (enable gobj-fix)))))
 
-(local
- (defthm g-concrete-p-gobj-fix
-   (equal (g-concrete-p (gobj-fix x))
-          (or (not (gobjectp x))
-              (g-concrete-p x)))
-   :hints(("Goal" :in-theory (enable gobj-fix)))))
+;; (local
+;;  (defthm g-concrete-p-gobj-fix
+;;    (equal (g-concrete-p (gobj-fix x))
+;;           (or (not (gobjectp x))
+;;               (g-concrete-p x)))
+;;    :hints(("Goal" :in-theory (enable gobj-fix)))))
 
 
 (local
@@ -599,9 +595,11 @@
                                    number-spec-indices
                                    number-specp
                                    subsetp-equal
-                                   wf-g-numberp-simpler-def
                                    (:induction shape-spec-to-gobj))
                                   (member-equal
+                                   acl2::list-fix-when-true-listp
+                                   acl2::list-fix-when-len-zero
+                                   acl2::consp-by-len
                                    boolean-listp
                                    binary-append))
            :induct (shape-spec-to-gobj x)
@@ -611,7 +609,11 @@
                     (shape-specp x)))
           (and stable-under-simplificationp
                (flag::expand-calls-computed-hint
-                acl2::clause '(generic-geval))))))
+                acl2::clause '(generic-geval)))
+          (and stable-under-simplificationp
+               '(:in-theory (enable g-boolean->bool
+                                    g-apply->fn
+                                    g-apply->args))))))
 
 
 (local
@@ -635,11 +637,13 @@
                                    number-spec-indices
                                    number-specp
                                    subsetp-equal
-                                   wf-g-numberp-simpler-def
                                    hons-assoc-equal
                                    strip-cars
                                    (:induction shape-spec-to-gobj))
                                   (member-equal
+                                   acl2::list-fix-when-true-listp
+                                   acl2::list-fix-when-len-zero
+                                   acl2::consp-by-len
                                    boolean-listp
                                    binary-append))
            :induct (shape-spec-to-gobj x)
@@ -675,9 +679,11 @@
                                    num-spec-to-num-gobj
                                    number-spec-indices
                                    number-specp
-                                   wf-g-numberp-simpler-def
                                    (:induction shape-spec-to-gobj))
                                   (member-equal
+                                   acl2::list-fix-when-true-listp
+                                   acl2::list-fix-when-len-zero
+                                   acl2::consp-by-len
                                    boolean-listp
                                    binary-append))
            :induct (shape-spec-to-gobj x)
@@ -711,9 +717,11 @@
                                    number-spec-indices
                                    number-specp
                                    subsetp-equal
-                                   wf-g-numberp-simpler-def
                                    (:induction shape-spec-to-gobj))
                                   (member-equal
+                                   acl2::list-fix-when-true-listp
+                                   acl2::list-fix-when-len-zero
+                                   acl2::consp-by-len
                                    acl2::hons-assoc-equal-append
                                    boolean-listp
                                    binary-append))
@@ -886,63 +894,45 @@
 
 (local
  (defthm generic-geval-of-g-ite
-   (implies (and (gobjectp if) (gobjectp then) (gobjectp else))
-            (equal (generic-geval (g-ite if then else) env)
-                   (if (generic-geval if env)
-                       (generic-geval then env)
-                     (generic-geval else env))))
+   (equal (generic-geval (g-ite if then else) env)
+          (if (generic-geval if env)
+              (generic-geval then env)
+            (generic-geval else env)))
    :hints(("Goal" :in-theory (enable generic-geval)))))
 
 
 (local
  (encapsulate nil
-   (local
-    (defthm g-concrete-tag-gobjectp
-      (implies (equal (car x) :g-concrete)
-               (gobjectp x))
-      :hints(("Goal" :in-theory (enable gobjectp-def g-concrete-p tag)))
-      :rule-classes ((:rewrite :backchain-limit-lst 0))))
 
    (defthm generic-geval-when-g-concrete-tag
      (implies (equal (tag x) :g-concrete)
               (equal (generic-geval x env)
                      (g-concrete->obj x)))
-     :hints(("Goal" :in-theory (enable tag g-concrete-p generic-geval)))
+     :hints(("Goal" :in-theory (enable tag generic-geval)))
      :rule-classes ((:rewrite :backchain-limit-lst 0)))))
 
 
 (local
  (encapsulate nil
-   (local
-    (defthm g-var-tag-gobjectp
-      (implies (equal (car x) :g-var)
-               (gobjectp x))
-      :hints(("Goal" :in-theory (enable gobjectp-def g-var-p tag)))))
    (defthm generic-geval-when-g-var-tag
      (implies (equal (tag x) :g-var)
               (equal (generic-geval x env)
                      (cdr (hons-assoc-equal (g-var->name x) (cdr env)))))
-     :hints(("Goal" :in-theory (enable tag g-var-p generic-geval))))))
+     :hints(("Goal" :in-theory (enable tag generic-geval))))))
 
 (local (in-theory (disable member-equal equal-of-booleans-rewrite binary-append
-                           intersectp-equal subsetp-equal
-                           tag-when-g-var-p
-                           tag-when-g-ite-p
-                           tag-when-g-apply-p
-                           tag-when-g-number-p
-                           tag-when-g-boolean-p
-                           tag-when-g-concrete-p)))
+                           intersectp-equal subsetp-equal)))
 
 ;; (in-theory (disable no-duplicates-append-implies-no-intersect))
 
 (local
  (encapsulate nil
-   (local (in-theory (disable gobjectp-cons-case
-                              sets::double-containment
-                              generic-geval-non-gobjectp
+   (local (in-theory (disable sets::double-containment
                               acl2::no-duplicatesp-equal-non-cons
+                              acl2::no-duplicatesp-equal-when-atom
                               acl2::subsetp-car-member
-                              g-ite-p-gobj-fix
+                              acl2::append-when-not-consp
+                              tag-when-atom
                               generic-geval)))
    (defthm shape-spec-to-gobj-eval-iff-slice
      (implies (and (shape-specp x)
@@ -1046,36 +1036,36 @@
                      (integerp x))))))
 
 
-(local
- (defthmd g-var-p-implies-gobjectp
-   (implies (g-var-p x)
-            (gobjectp x))
-   :hints (("goal" :in-theory (enable gobjectp-def g-var-p tag)))
-   :rule-classes ((:rewrite :backchain-limit-lst 0))))
+;; (local
+;;  (defthmd g-var-p-implies-gobjectp
+;;    (implies (g-var-p x)
+;;             (gobjectp x))
+;;    :hints (("goal" :in-theory (enable gobjectp-def g-var-p tag)))
+;;    :rule-classes ((:rewrite :backchain-limit-lst 0))))
 
-(local
- (defthm gobjectp-g-number
-   (implies (wf-g-numberp x)
-            (gobjectp (g-number x)))
-   :hints(("Goal" :in-theory (enable gobjectp-def g-number-p tag)))))
+;; (local
+;;  (defthm gobjectp-g-number
+;;    (implies (wf-g-numberp x)
+;;             (gobjectp (g-number x)))
+;;    :hints(("Goal" :in-theory (enable gobjectp-def g-number-p tag)))))
 
-(local
- (defthmd g-concrete-p-gobjectp1
-   (implies (g-concrete-p x)
-            (gobjectp x))
-   :hints(("Goal" :in-theory (enable gobjectp-def g-concrete-p tag)))
-   :rule-classes ((:rewrite :backchain-limit-lst 0))))
+;; (local
+;;  (defthmd g-concrete-p-gobjectp1
+;;    (implies (g-concrete-p x)
+;;             (gobjectp x))
+;;    :hints(("Goal" :in-theory (enable gobjectp-def g-concrete-p tag)))
+;;    :rule-classes ((:rewrite :backchain-limit-lst 0))))
 
 
 
 (local
  (encapsulate nil
    (local (in-theory
-           (e/d () (gobjectp-tag-rw-to-types
-                    gobjectp-ite-case
-                    generic-geval-non-gobjectp
+           (e/d () (;; gobjectp-tag-rw-to-types
+                    ;; gobjectp-ite-case
+                    ;; generic-geval-non-gobjectp
                     break-g-number
-                    gobj-fix-when-not-gobjectp))))
+                    sets::double-containment))))
    (defthm shape-spec-to-gobj-eval-slice
      (implies (and (shape-specp x)
                    (no-duplicatesp (shape-spec-indices x))
@@ -1088,22 +1078,27 @@
                              env)
                             (mv-nth 2 (shape-spec-env-slice x obj))))
                      obj))
-     :hints(("Goal" :in-theory (enable shape-spec-to-gobj
-                                       shape-spec-indices
-                                       shape-spec-vars
-                                       shape-spec-env-slice
-                                       shape-specp)
+     :hints(("Goal" ;; :in-theory (enable shape-spec-to-gobj
+                    ;;                    shape-spec-indices
+                    ;;                    shape-spec-vars
+                    ;;                    shape-spec-env-slice
+                    ;;                    shape-specp)
+             :in-theory (enable (:i shape-spec-env-slice))
+             :expand ((shape-spec-to-gobj x)
+                      (shape-spec-to-gobj obj)
+                      (shape-spec-indices x)
+                      (shape-spec-vars x)
+                      (shape-specp x)
+                      (shape-spec-env-slice x obj))
              :induct (shape-spec-env-slice x obj))
             (and stable-under-simplificationp
                  '(:in-theory (enable generic-geval break-g-number
                                       number-spec-env-slice
                                       number-specp
                                       number-spec-indices
-                                      wf-g-numberp-simpler-def
                                       num-spec-to-num-gobj)))
             (and stable-under-simplificationp
-                 '(:in-theory (enable slice-to-bdd-env generic-geval
-                                      gobj-fix gobjectp)))))))
+                 '(:in-theory (enable slice-to-bdd-env generic-geval)))))))
   
 (local
  (defthm alistp-shape-spec-arbitrary-slice-0
@@ -1235,7 +1230,6 @@
    :hints(("Goal" :in-theory (enable number-spec-env-slice
                                      number-spec-in-range)))))
 
-
 (defund shape-spec-obj-in-range (x obj)
   (declare (xargs :guard (shape-specp x)
                   :guard-hints(("Goal" :in-theory (enable shape-specp)))))
@@ -1291,13 +1285,13 @@
     (and (shape-specp (car x))
          (shape-spec-listp (cdr x)))))
 
-(defthm shape-spec-listp-impl-shape-spec-to-gobj-list
-  (implies (shape-spec-listp x)
-           (equal (shape-spec-to-gobj x)
-                  (shape-spec-to-gobj-list x)))
-  :hints(("Goal" :induct (shape-spec-to-gobj-list x)
-          :expand ((shape-spec-to-gobj x))
-          :in-theory (enable tag))))
+;; (defthm shape-spec-listp-impl-shape-spec-to-gobj-list
+;;   (implies (shape-spec-listp x)
+;;            (equal (shape-spec-to-gobj x)
+;;                   (shape-spec-to-gobj-list x)))
+;;   :hints(("Goal" :induct (shape-spec-to-gobj-list x)
+;;           :expand ((shape-spec-to-gobj x))
+;;           :in-theory (enable tag))))
 
 
 
@@ -1328,49 +1322,49 @@
 
 
 
-(defthm shape-spec-alt-definition
-  (equal (shape-spec-obj-in-range x obj)
-         (if (atom x)
-             (equal obj x)
-           (case (car x)
-             (:g-number (number-spec-in-range (cdr x) obj))
-             (:g-boolean (booleanp obj))
-             (:g-var t)
-             (:g-concrete (equal obj (cdr x)))
-             (:g-ite (let ((test (cadr x)) (then (caddr x)) (else (cdddr x)))
-                       (or (and (shape-spec-obj-in-range-iff test t)
-                                (shape-spec-obj-in-range then obj))
-                           (and (shape-spec-obj-in-range-iff test nil)
-                                (shape-spec-obj-in-range else obj)))))
-             (t (and (consp obj)
-                     (shape-spec-obj-in-range (car x) (car obj))
-                     (shape-spec-obj-in-range (cdr x) (cdr obj)))))))
-  :hints(("Goal" :in-theory (enable tag g-number->num g-concrete->obj
-                                    g-ite->test g-ite->then g-ite->else)
-          :expand ((shape-spec-obj-in-range x obj))))
-  :rule-classes ((:definition :controller-alist ((shape-spec-obj-in-range t
-                                                                          nil)))))
+;; (defthm shape-spec-alt-definition
+;;   (equal (shape-spec-obj-in-range x obj)
+;;          (if (atom x)
+;;              (equal obj x)
+;;            (case (car x)
+;;              (:g-number (number-spec-in-range (cdr x) obj))
+;;              (:g-boolean (booleanp obj))
+;;              (:g-var t)
+;;              (:g-concrete (equal obj (cdr x)))
+;;              (:g-ite (let ((test (cadr x)) (then (caddr x)) (else (cdddr x)))
+;;                        (or (and (shape-spec-obj-in-range-iff test t)
+;;                                 (shape-spec-obj-in-range then obj))
+;;                            (and (shape-spec-obj-in-range-iff test nil)
+;;                                 (shape-spec-obj-in-range else obj)))))
+;;              (t (and (consp obj)
+;;                      (shape-spec-obj-in-range (car x) (car obj))
+;;                      (shape-spec-obj-in-range (cdr x) (cdr obj)))))))
+;;   :hints(("Goal" :in-theory (enable tag g-number->num g-concrete->obj
+;;                                     g-ite->test g-ite->then g-ite->else)
+;;           :expand ((shape-spec-obj-in-range x obj))))
+;;   :rule-classes ((:definition :controller-alist ((shape-spec-obj-in-range t
+;;                                                                           nil)))))
 
-(local
- (defun shape-spec-alt-induction (x obj)
-   (if (atom x)
-       (equal obj x)
-     (case (car x)
-       (:g-number (number-spec-in-range (cdr x) obj))
-       (:g-boolean (booleanp obj))
-       (:g-var t)
-       (:g-concrete (equal obj (cdr x)))
-       (:g-ite (let ((then (caddr x)) (else (cdddr x)))
-                 (list (shape-spec-alt-induction then obj)
-                       (shape-spec-alt-induction else obj))))
-       (t (list (shape-spec-alt-induction (car x) (car obj))
-                (shape-spec-alt-induction (cdr x) (cdr obj))))))))
+;; (local
+;;  (defun shape-spec-alt-induction (x obj)
+;;    (if (atom x)
+;;        (equal obj x)
+;;      (case (car x)
+;;        (:g-number (number-spec-in-range (cdr x) obj))
+;;        (:g-boolean (booleanp obj))
+;;        (:g-var t)
+;;        (:g-concrete (equal obj (cdr x)))
+;;        (:g-ite (let ((then (caddr x)) (else (cdddr x)))
+;;                  (list (shape-spec-alt-induction then obj)
+;;                        (shape-spec-alt-induction else obj))))
+;;        (t (list (shape-spec-alt-induction (car x) (car obj))
+;;                 (shape-spec-alt-induction (cdr x) (cdr obj))))))))
 
 
 
 (in-theory (disable shape-spec-obj-in-range))
 
-(local (in-theory (disable shape-spec-alt-definition)))
+;; (local (in-theory (disable shape-spec-alt-definition)))
 
 
 (defthm shape-spec-obj-in-range-open-cons
@@ -1379,7 +1373,7 @@
            (equal (shape-spec-obj-in-range obj (cons carx cdrx))
                   (and (shape-spec-obj-in-range (car obj) carx)
                        (shape-spec-obj-in-range (cdr obj) cdrx))))
-  :hints(("Goal" :in-theory (enable shape-spec-alt-definition
+  :hints(("Goal" :in-theory (enable shape-spec-obj-in-range
                                     g-keyword-symbolp-def
                                     member-equal)))
   :rule-classes ((:rewrite :backchain-limit-lst (1 0))))
@@ -1439,7 +1433,7 @@
                    (<= (- (expt 2 (1- (len bits)))) x)
                    (< x (expt 2 (1- (len bits)))))
            (equal x 0)))
-  :hints(("Goal" :in-theory (enable shape-spec-alt-definition
+  :hints(("Goal" :in-theory (enable shape-spec-obj-in-range 
                                     number-spec-in-range
                                     integer-in-range
                                     g-number->num
@@ -1449,7 +1443,7 @@
 (defthm shape-spec-obj-in-range-open-boolean
   (equal (shape-spec-obj-in-range `(:g-boolean . ,bit) x)
          (booleanp x))
-  :hints(("Goal" :in-theory (enable shape-spec-alt-definition))))
+  :hints(("Goal" :in-theory (enable shape-spec-obj-in-range))))
 
 
 
@@ -1457,7 +1451,7 @@
   (implies (atom a)
            (equal (shape-spec-obj-in-range a x)
                   (equal x a)))
-  :hints(("Goal" :in-theory (enable shape-spec-alt-definition
+  :hints(("Goal" :in-theory (enable shape-spec-obj-in-range
                                     g-concrete->obj)))
   :rule-classes ((:rewrite :backchain-limit-lst 1)))
 
@@ -1465,7 +1459,7 @@
   (implies (and (atom a)
                 (equal x a))
            (equal (shape-spec-obj-in-range a x) t))
-  :hints(("Goal" :in-theory (enable shape-spec-alt-definition
+  :hints(("Goal" :in-theory (enable shape-spec-obj-in-range
                                     g-concrete->obj)))
   :rule-classes ((:rewrite :backchain-limit-lst 1)))
 
@@ -1482,8 +1476,8 @@
                   (and* (boolean-listp obj)
                         (equal (len obj) (len lst)))))
   :hints(("Goal" ; :induct (shape-spec-obj-in-range lst obj)
-          :induct (shape-spec-alt-induction lst obj)
-          :in-theory (enable shape-spec-alt-definition tag
+          :induct (shape-spec-obj-in-range lst obj)
+          :in-theory (enable shape-spec-obj-in-range tag
                              list-of-g-booleansp
                              boolean-listp))))
 
@@ -1562,7 +1556,7 @@
     car-cons cdr-cons natp-compound-recognizer
     (shape-spec-obj-in-range) (g-keyword-symbolp) (ash)
     (expt) (unary--) (binary-+) (consp) (integerp) (len)
-    (car) (cdr) (booleanp) (list-of-g-booleansp)
+    (car) (cdr) (booleanp) (list-of-g-booleansp) (tag)
     eql len-plus-one len-zero (zp) (boolean-listp) (true-listp)))
 
 (def-ruleset! shape-spec-obj-in-range-open
@@ -1579,7 +1573,7 @@
     car-cons cdr-cons natp-compound-recognizer
     (shape-spec-obj-in-range) (g-keyword-symbolp) (ash)
     (expt) (unary--) (binary-+) (consp) (integerp) (len)
-    (car) (cdr) (booleanp) (list-of-g-booleansp) eql
+    (car) (cdr) (booleanp) (list-of-g-booleansp) (tag) eql
     len-plus-one len-zero (zp) (boolean-listp) (true-listp)))
     
 

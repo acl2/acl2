@@ -4,10 +4,9 @@
 
 (include-book "gtypes")
 
-(local (include-book "gobjectp-thms"))
 
 (defun general-booleanp (x)
-  (declare (xargs :guard (gobjectp x)))
+  (declare (xargs :guard t))
   (or (booleanp x)
       (and (consp x)
            (or (eq (tag x) :g-boolean)
@@ -17,31 +16,25 @@
 (in-theory (disable (general-booleanp)))
 
 (defund general-boolean-value (x)
-  (declare (xargs :guard (and (gobjectp x)
-                              (general-booleanp x))))
+  (declare (xargs :guard (general-booleanp x)))
   (if (atom x)
       x
     (cdr x)))
 
-(in-theory (disable (general-boolean-value)))
 
 
 
 
 
 (defun general-concrete-atom (x)
-  (declare (xargs :guard (gobjectp x)
-                  :guard-hints (("goal" :in-theory (enable gobjectp
-                                                           gobject-hierarchy)))))
+  (declare (xargs :guard t))
   (if (atom x)
-      (mbt (not (g-keyword-symbolp x)))
+      t
     (and (eq (tag x) :g-concrete)
-         (atom (g-concrete->obj x))
-         (not (g-keyword-symbolp (g-concrete->obj x))))))
+         (atom (g-concrete->obj x)))))
 
 (defun general-concrete-atom-val (x)
-  (declare (xargs :guard (and (gobjectp x)
-                              (general-concrete-atom x))))
+  (declare (xargs :guard (general-concrete-atom x)))
   (if (atom x) x (g-concrete->obj x)))
 
 (in-theory (disable (general-concrete-atom)
@@ -50,62 +43,17 @@
 
 
 (defn general-concretep (x)
-  (mbe :logic
-       (let ((res (gobject-hierarchy x)))
-         (or (eq res 'general)
-             (eq res 'concrete)))
-       :exec
-       (if (gobject-hierarchy-lite x) t nil)))
-
-(defun general-concrete-obj-bdd (x)
-  (declare (xargs :guard (and (gobjectp x)
-                              (general-concretep x))
-                  :verify-guards nil))
-  (cond ((atom x) x)
-        ((g-concrete-p x) (g-concrete->obj x))
-        ((mbe :logic (eq (gobject-hierarchy-bdd x) 'concrete)
-              :exec (eq (gobject-hierarchy-lite x) 'concrete))
-         x)
-        (t (cons (general-concrete-obj-bdd (car x))
-                 (general-concrete-obj-bdd (cdr x))))))
-
-(defun general-concrete-obj-aig (x)
-  (declare (xargs :guard (and (gobjectp x)
-                              (general-concretep x))
-                  :verify-guards nil))
-  (cond ((atom x) x)
-        ((g-concrete-p x) (g-concrete->obj x))
-        ((mbe :logic (eq (gobject-hierarchy-aig x) 'concrete)
-              :exec (eq (gobject-hierarchy-lite x) 'concrete))
-         x)
-        (t (cons (general-concrete-obj-aig (car x))
-                 (general-concrete-obj-aig (cdr x))))))
+  (if (gobject-hierarchy-lite x) t nil))
 
 
 (defun general-concrete-obj (x)
-  (declare (xargs :guard (and (gobjectp x)
-                              (general-concretep x))
+  (declare (xargs :guard (general-concretep x)
                   :verify-guards nil))
-  (mbe :logic (cond ((atom x) x)
-                    ((g-concrete-p x) (g-concrete->obj x))
-                    ((concrete-gobjectp x) x)
-                    (t (cons (general-concrete-obj (car x))
-                             (general-concrete-obj (cdr x)))))
-       :exec (bfr-case :bdd (general-concrete-obj-bdd x)
-                       :aig (general-concrete-obj-aig x))))
-
-(defthm general-concrete-obj-bdd-is-general-concrete-obj
-  (implies (not (bfr-mode))
-           (equal (general-concrete-obj-bdd x)
-                  (general-concrete-obj x)))
-  :hints(("Goal" :in-theory (enable concrete-gobjectp))))
-
-(defthm general-concrete-obj-aig-is-general-concrete-obj
-  (implies (bfr-mode)
-           (equal (general-concrete-obj-aig x)
-                  (general-concrete-obj x)))
-  :hints(("Goal" :in-theory (enable concrete-gobjectp))))
-
+  (cond ((atom x) x)
+        ((g-concrete-p x) (g-concrete->obj x))
+        ((concrete-gobjectp x) x)
+        (t (cons (general-concrete-obj (car x))
+                 (general-concrete-obj (cdr x))))))
 
 
 (in-theory (disable (general-concrete-obj)))
@@ -114,7 +62,7 @@
 
 
 (defn general-numberp (x)
-  (declare (xargs :guard (gobjectp x)))
+  (declare (xargs :guard t))
   (or (acl2-numberp x)
       (and (consp x)
            (or (eq (tag x) :g-number)
@@ -142,8 +90,7 @@
 
 
 (defn general-number-components (x)
-  (declare (xargs :guard (and (gobjectp x)
-                              (general-numberp x))
+  (declare (xargs :guard (general-numberp x)
                   :guard-hints (("goal" :in-theory (enable general-numberp)))))
   (if (atom x)
       (number-to-components x)
@@ -158,7 +105,7 @@
 ;; still be the case that x always represents a cons even if x is not a
 ;; general-consp.
 (defun general-consp (x)
-  (declare (xargs :guard (gobjectp x)))
+  (declare (xargs :guard t))
   (and (consp x)
        (if (eq (tag x) :g-concrete)
            (consp (g-concrete->obj x))
@@ -169,14 +116,14 @@
 
 
 (defun general-consp-car (x)
-  (declare (xargs :guard (and (gobjectp x) (general-consp x))))
+  (declare (xargs :guard (general-consp x)))
   (if (eq (tag x) :g-concrete)
       (mk-g-concrete (car (g-concrete->obj x)))
     (car x)))
 
 
 (defun general-consp-cdr (x)
-  (declare (xargs :guard (and (gobjectp x) (general-consp x))))
+  (declare (xargs :guard (general-consp x)))
   (if (eq (tag x) :g-concrete)
       (mk-g-concrete (cdr (g-concrete->obj x)))
     (cdr x)))
@@ -186,25 +133,40 @@
 
 
 (defun bool-cond-itep (x)
-  (declare (xargs :guard (gobjectp x)))
+  (declare (xargs :guard t))
   (and (consp x)
        (eq (tag x) :g-ite)
        (general-booleanp (g-ite->test x))))
 
 (defun bool-cond-itep-cond (x)
-  (declare (xargs :guard (and (gobjectp x) (bool-cond-itep x))))
+  (declare (xargs :guard (bool-cond-itep x)))
   (general-boolean-value (g-ite->test x)))
 
 
 (defun bool-cond-itep-truebr (x)
-  (declare (xargs :guard (and (gobjectp x) (bool-cond-itep x))))
+  (declare (xargs :guard (bool-cond-itep x)))
   (g-ite->then x))
 
 
 
 (defun bool-cond-itep-falsebr (x)
-  (declare (xargs :guard (and (gobjectp x) (bool-cond-itep x))))
+  (declare (xargs :guard (bool-cond-itep x)))
   (g-ite->else x))
+
+(local (defthm acl2-count-cdr-weak
+         (<= (acl2-count (cdr x))
+             (acl2-count x))
+         :rule-classes :linear))
+
+(defthm bool-cond-itep-cond-measure
+  (implies (bool-cond-itep x)
+           (< (acl2-count (bool-cond-itep-cond x))
+              (acl2-count x)))
+  :hints(("Goal" :in-theory (enable bool-cond-itep
+                                    bool-cond-itep-cond
+                                    general-boolean-value
+                                    general-booleanp)))
+  :rule-classes :linear)
 
 (in-theory (disable (bool-cond-itep)
                     (bool-cond-itep-cond)

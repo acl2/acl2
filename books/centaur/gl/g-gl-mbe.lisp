@@ -24,7 +24,7 @@
          (bfr-sat false))
         ((when (and false-sat false-succ))
          ;; (acl2::sneaky-save 'gl-mbe-ctrex false-ctrex)
-         (er hard? 'gl-mbe "GL-MBE assertion failed.")
+         (er hard? 'gl-mbe "GL-MBE assertion failed. Ctrex: ~x0" false-ctrex)
          spec)
         ((when (not false-succ))
          (er hard? 'gl-mbe "GL-MBE assertion failed to prove.")
@@ -41,7 +41,7 @@
          spec))
      impl))
 
-(def-gobjectp-thm gl-mbe)
+;; (def-gobjectp-thm gl-mbe)
 
 (verify-g-guards gl-mbe)
 

@@ -13,24 +13,22 @@
 ;; which both (implies hyp x) and (implies hyp (not x)) hold.
 
 
-(defthm bfr-and-t
-  (and (equal (bfr-and t x) (bfr-fix x))
-       (equal (bfr-and x t) (bfr-fix x)))
-  :hints (("goal" :in-theory (enable bfr-binary-and
-                                     acl2::aig-and
-                                     bfr-fix))))
+;; (defthm bfr-and-t
+;;   (and (equal (bfr-and t x) x)
+;;        (equal (bfr-and x t) x))
+;;   :hints (("goal" :in-theory (enable bfr-binary-and
+;;                                      acl2::aig-and))))
 
-(defthm hyp-fix-bfr-p
-  (bfr-p (hyp-fix x hyp)))
+;; (defthm hyp-fix-bfr-p
+;;   (bfr-p (hyp-fix x hyp)))
 
-(defthm hyp-fix-hyp-fix
-  (equal (hyp-fix (hyp-fix x hyp) hyp)
-         (hyp-fix x hyp)))
+;; (defthm hyp-fix-hyp-fix
+;;   (equal (hyp-fix (hyp-fix x hyp) hyp)
+;;          (hyp-fix x hyp)))
 
 
 (encapsulate nil
   (local (bfr-reasoning-mode t))
-  (add-bfr-pat (bfr-fix . &))
   (defthm hyp-fix-correct
     (implies (bfr-eval hyp env)
              (equal (bfr-eval (hyp-fix x hyp) env)
@@ -49,12 +47,13 @@
 
 
 (defthm hyp-fixedp-hyp-fix
-  (hyp-fixedp (hyp-fix x hyp) hyp))
+  (hyp-fixedp (hyp-fix x hyp) hyp)
+  :hints(("Goal" :in-theory (enable bfr-binary-and))))
 
 (defthm hyp-fix-of-hyp-fixedp
   (implies (hyp-fixedp x hyp)
            (equal (hyp-fix x hyp)
-                  (bfr-fix x))))
+                  x)))
 
 
 

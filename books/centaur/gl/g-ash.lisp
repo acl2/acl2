@@ -14,9 +14,7 @@
 
 
 (defun g-ash-of-numbers (i c)
-  (declare (xargs :guard (and (gobjectp i)
-                              (general-numberp i)
-                              (gobjectp c)
+  (declare (xargs :guard (and (general-numberp i)
                               (general-numberp c))))
   (b* (((mv irn ird iin iid)
         (general-number-components i))
@@ -32,9 +30,10 @@
           (mv nil nil))))
     (if (and cintp-known iintp-known)
         (mk-g-number
-         (ash-ss 1 (bfr-ite-bss-fn iintp irn nil)
-                 (bfr-ite-bss-fn cintp crn nil)))
-      (g-apply 'ash (list i c)))))
+         (rlist-fix
+          (ash-ss 1 (bfr-ite-bss-fn iintp irn nil)
+                  (bfr-ite-bss-fn cintp crn nil))))
+      (g-apply 'ash (gl-list i c)))))
 
 (in-theory (disable (g-ash-of-numbers)))
 
@@ -42,17 +41,15 @@
 
 (local
  (progn
-   (defthmd not-integerp-bfr-listp
-     (implies (bfr-listp x)
-              (not (integerp x)))
-     :hints(("Goal" :in-theory (enable bfr-listp))))
+   ;; (defthmd not-integerp-bfr-listp
+   ;;   (implies (bfr-listp x)
+   ;;            (not (integerp x)))
+   ;;   :hints(("Goal" :in-theory (enable bfr-listp))))
 
 
-   (defthm not-integerp-ash-ss
-     (implies (and (bfr-listp shamt)
-                   (bfr-listp n))
-              (not (integerp (ash-ss place n shamt))))
-     :hints(("Goal" :in-theory (enable not-integerp-bfr-listp))))
+   ;; (defthm not-integerp-ash-ss
+   ;;   (not (integerp (ash-ss place n shamt)))
+   ;;   :hints(("Goal" :in-theory (enable ash-ss))))
 
 
    (defthm ash-complex-1
@@ -65,21 +62,19 @@
               (equal (ash n shamt) (ash n 0)))
      :hints(("Goal" :in-theory (enable ash))))
 
-   (defthm gobjectp-g-ash-of-numbers
-     (implies (and (gobjectp x)
-                   (general-numberp x)
-                   (gobjectp y)
-                   (general-numberp y))
-              (gobjectp (g-ash-of-numbers x y)))
-     :hints(("Goal" :in-theory (disable general-numberp
-                                        general-number-components))))
+   ;; (defthm gobjectp-g-ash-of-numbers
+   ;;   (implies (and (gobjectp x)
+   ;;                 (general-numberp x)
+   ;;                 (gobjectp y)
+   ;;                 (general-numberp y))
+   ;;            (gobjectp (g-ash-of-numbers x y)))
+   ;;   :hints(("Goal" :in-theory (disable general-numberp
+   ;;                                      general-number-components))))
 
    (include-book "arithmetic/top-with-meta" :dir :system)
 
    (defthm g-ash-of-numbers-correct
-     (implies (and (gobjectp x)
-                   (general-numberp x)
-                   (gobjectp y)
+     (implies (and (general-numberp x)
                    (general-numberp y))
               (equal (eval-g-base (g-ash-of-numbers x y) env)
                      (ash (eval-g-base x env)
@@ -98,24 +93,23 @@
     (g-ash-of-numbers i-num c-num)))
 
 
-(def-gobjectp-thm ash
-  :hints `(("goal" :in-theory (e/d* (general-concretep-atom)
-                                    ((:definition ,gfn)
-                                     (force)
-                                     general-concretep-def
-                                     hyp-fix
-                                     gobj-fix-when-not-gobjectp
-                                     gobj-fix-when-gobjectp
-                                     (:rules-of-class :type-prescription :here)
-                                     (:ruleset gl-wrong-tag-rewrites)))
-            :induct (,gfn i c hyp clk)
-            :do-not-induct t
-            :expand ((,gfn i c hyp clk)))))
+;; (def-gobjectp-thm ash
+;;   :hints `(("goal" :in-theory (e/d* (general-concretep-atom)
+;;                                     ((:definition ,gfn)
+;;                                      (force)
+;;                                      general-concretep-def
+;;                                      hyp-fix
+;;                                      gobj-fix-when-not-gobjectp
+;;                                      gobj-fix-when-gobjectp
+;;                                      (:rules-of-class :type-prescription :here)
+;;                                      (:ruleset gl-wrong-tag-rewrites)))
+;;             :induct (,gfn i c hyp clk)
+;;             :do-not-induct t
+;;             :expand ((,gfn i c hyp clk)))))
 
 (verify-g-guards
  ash
- :hints `(("Goal" :in-theory (disable ,gfn
-                                      bfr-p-of-boolean))))
+ :hints `(("Goal" :in-theory (disable ,gfn))))
 
 
 
@@ -132,10 +126,6 @@
   `(("goal" :in-theory (e/d* (general-concretep-atom
                               (:ruleset general-object-possibilities))
                              ((:definition ,gfn)
-                              tag-when-g-boolean-p
-                              tag-when-g-apply-p
-                              tag-when-g-concrete-p
-                              tag-when-g-var-p
                               general-numberp-eval-to-numberp
                               general-boolean-value-correct
                               bool-cond-itep-eval
@@ -143,7 +133,7 @@
                               general-consp-cdr-correct-for-eval-g-base
                               boolean-listp
                               components-to-number-alt-def
-                              member-equal bfr-p-of-boolean
+                              member-equal
                               general-number-components-ev
                               general-concretep-def
                               v2n-is-v2i-when-sign-nil

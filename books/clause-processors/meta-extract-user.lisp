@@ -8,6 +8,9 @@
 (include-book "tools/defevaluator-fast" :dir :system)
 (include-book "ev-theoremp")
 (include-book "tools/def-functional-instance" :dir :system)           
+(include-book "tools/match-tree" :dir :system)
+(include-book "tools/flag" :dir :system)
+(include-book "magic-ev")
 
 ; The following are necessary for developer builds, in which sublis-var and
 ; other supporting functions for meta-extract are not in :logic mode.
@@ -264,11 +267,247 @@
     (implies (and (mextract-ev-global-facts)
                   (equal (w st) (w state))
                   (not erp))
-             (equal (mextract-ev (cons fn (kwote-lst arglist)) a)
-                    val)))
+             (equal val
+                    (mextract-ev (cons fn (kwote-lst arglist)) nil))))
   :hints(("Goal"
           :use ((:instance mextract-global-badguy-sufficient
-                 (obj (list :fncall fn arglist)))))))
+                 (obj (list :fncall fn arglist))
+                 (a nil))))))
+
+(set-state-ok t)
+(flag::make-flag magic-ev-flg magic-ev)
+
+(defthm-magic-ev-flg
+  (defthm mextract-ev-magic-ev
+    (mv-let (erp val)
+      (magic-ev x alist state hard-errp aokp)
+      (implies (and (mextract-ev-global-facts :state state1)
+                    (equal (w state1) (w state))
+                    (not erp)
+                    (equal hard-errp t)
+                    (equal aokp nil)
+                    ;; need pseudo-termp so that we know we don't look up
+                    ;; non-symbol atoms
+                    (pseudo-termp x))
+               (equal val
+                      (mextract-ev x alist))))
+    :flag magic-ev)
+  (defthm mextract-ev-magic-ev-lst
+    (mv-let (erp val)
+      (magic-ev-lst x alist state hard-errp aokp)
+      (implies (and (mextract-ev-global-facts :state state1)
+                    (equal (w state1) (w state))
+                    (not erp)
+                    (equal hard-errp t)
+                    (equal aokp nil)
+                    (pseudo-term-listp x))
+               (equal val
+                      (mextract-ev-lst x alist))))
+    :flag magic-ev-lst)
+  
+    :hints(("goal" :in-theory (e/d (mextract-ev-of-fncall-args)
+                                   (meta-extract-global-fact+)))))
+
+
+
+
+;; Get a function's definition via meta-extract-formula.
+(defun fn-get-def (fn state)
+  (declare (xargs :guard (symbolp fn)
+                  :stobjs state))
+  (b* (((when (eq fn 'quote))
+        (mv nil nil nil))
+       (formula (meta-extract-formula fn state))
+       ((unless-match formula (equal ((:! fn) . (:? formals)) (:? body)))
+        (mv nil nil nil))
+       ((unless (and (symbol-listp formals)
+                     (not (member-eq nil formals))
+                     (no-duplicatesp-eq formals)))
+        (mv nil nil nil)))
+    (mv t formals body)))
+
+(defthm fn-get-def-formals
+  (b* (((mv ok formals ?body) (fn-get-def fn st)))
+    (implies ok
+             (and (symbol-listp formals)
+                  (not (member nil formals))
+                  (no-duplicatesp formals)))))
+
+
+(encapsulate nil
+  (local (defun ev-pair-ind (head keys vals)
+           (if (atom keys)
+               head
+             (ev-pair-ind (append head (list (cons (car keys) (car vals))))
+                          (cdr keys) (cdr vals)))))
+  (local (defthm intersectp-commutes
+           (equal (intersectp x y)
+                  (intersectp y x))))
+
+  (local (defthm intersectp-of-append
+           (equal (intersectp (append y z) x)
+                  (or (intersectp y x)
+                      (intersectp z x)))
+           :hints (("goal" :induct (append y z)
+                    :in-theory (disable intersectp-commutes)))))
+
+  (local (defthm intersectp-of-append2
+           (equal (intersectp x (append y z))
+                  (or (intersectp x y)
+                      (intersectp x z)))
+           :hints (("goal" :use intersectp-of-append
+                    :in-theory (disable intersectp-of-append)
+                    :do-not-induct t))))
+
+  (local (defthm intersectp-list
+           (iff (intersectp x (list y))
+                (member y x))))
+
+  (local (defthm append-append
+           (equal (append (append a b) c)
+                  (append a b c))))
+
+  (local (defthm alistp-append
+           (implies (and (alistp a)
+                         (alistp b))
+                    (alistp (append a b)))))
+  (local (include-book "std/lists/take" :dir :system))
+  (local (include-book "arithmetic/top-with-meta" :dir :system))
+  (local (defthm assoc-when-not-member-strip-cars
+           (implies (and (not (member k (strip-cars x)))
+                         (alistp x))
+                    (not (assoc k x)))))
+  (local (defthm assoc-of-append-alist
+           (implies (alistp head)
+                    (equal (assoc k (append head rest))
+                           (or (assoc k head) (assoc k rest))))))
+  (local (defthm strip-cars-append
+           (equal (strip-cars (Append a b))
+                  (append (Strip-cars a) (strip-cars b)))))
+
+  (defthm ev-lst-of-pairlis-append-head-rest
+    (implies (and (no-duplicatesp keys)
+                  (alistp head)
+                  (not (intersectp keys (strip-cars head)))
+; (true-listp vals)
+; (equal (len keys) (len vals))
+                  (symbol-listp keys)
+                  (not (member nil keys)))
+             (equal (mextract-ev-lst keys
+                                     (append head
+                                             (pairlis$ keys vals)
+                                             rest))
+                    (take (len keys) vals)))
+    :hints (("goal" :induct (ev-pair-ind head keys vals)
+             :do-not-induct t)))
+
+  (defthm ev-lst-of-pairlis-append-rest
+    (implies (and (no-duplicatesp keys)
+; (true-listp vals)
+; (equal (len keys) (len vals))
+                  (symbol-listp keys)
+                  (not (member nil keys)))
+             (equal (mextract-ev-lst keys
+                                     (append (pairlis$ keys vals)
+                                             rest))
+                    (take (len keys) vals)))
+    :hints (("goal" :use ((:instance ev-lst-of-pairlis-append-head-rest
+                           (head nil))))))
+
+  
+  (defthm ev-lst-of-pairlis
+    (implies (and (no-duplicatesp keys)
+; (true-listp vals)
+; (equal (len keys) (len vals))
+                  (symbol-listp keys)
+                  (not (member nil keys)))
+             (equal (mextract-ev-lst keys (pairlis$ keys vals))
+                    (take (len keys) vals)))
+    :hints (("goal" :use ((:instance ev-lst-of-pairlis-append-head-rest
+                           (head nil) (rest nil))))))
+
+  (defthm kwote-lst-of-take
+    (implies (equal n (len args))
+             (equal (kwote-lst (take n args))
+                    (kwote-lst args)))))
+
+(defthm len-of-mextract-ev-lst
+  (equal (len (mextract-ev-lst x a))
+         (len x)))
+
+(local (defthm mextract-ev-match-tree
+         (b* (((mv ok alist)
+               (match-tree pat x alist)))
+           (implies ok
+                    (equal (mextract-ev x a)
+                           (mextract-ev (subst-tree pat alist) a))))
+         :hints(("Goal" :in-theory (enable match-tree-is-subst-tree)))))
+
+(defthm mextract-ev-fn-get-def
+  (b* (((mv ok formals body) (fn-get-def fn st)))
+    (implies (and ok
+                  (mextract-ev-global-facts)
+                  (equal (w st) (w state))
+                  (equal (len args) (len formals)))
+             (equal (mextract-ev (cons fn args) a)
+                    (mextract-ev body (pairlis$ formals
+                                           (mextract-ev-lst args a))))))
+  :hints(("Goal" :in-theory (e/d (mextract-ev-of-fncall-args)
+                                 (mextract-formula
+                                  meta-extract-global-fact+
+                                  meta-extract-formula
+                                  take))
+          :use ((:instance mextract-formula
+                 (name fn)
+                 (acl2::st st)
+                 (a (pairlis$ (mv-nth 1 (fn-get-def fn st))
+                              (mextract-ev-lst args a))))))))
+
+(in-theory (disable fn-get-def))
+
+;; Checks that the function has the specified formals and body according to
+;; fn-get-def.
+(defun fn-check-def (fn state formals body)
+  (declare (xargs :guard (symbolp fn)
+                  :stobjs state))
+  (b* (((mv ok fformals fbody) (fn-get-def fn state)))
+    (and ok
+         (equal fformals formals)
+         (equal fbody body))))
+
+
+(defthm fn-check-def-formals
+  (implies (fn-check-def fn st formals body)
+           (and (symbol-listp formals)
+                (not (member nil formals))
+                (no-duplicatesp formals))))
+
+(defthm fn-check-def-not-quote
+  (implies (fn-check-def fn st formals body)
+           (not (equal fn 'quote)))
+  :hints(("Goal" :in-theory (enable fn-get-def))))
+
+(defthm mextract-ev-fn-check-def
+  (implies (and (fn-check-def fn st formals body)
+                (mextract-ev-global-facts)
+                (equal (w st) (w state))
+                (equal (len args) (len formals)))
+           (equal (mextract-ev (cons fn args) a)
+                  (mextract-ev body (pairlis$ formals
+                                              (mextract-ev-lst args a)))))
+  :hints(("Goal" :in-theory (disable meta-extract-global-fact+))))
+
+(defthm fn-check-def-is-fn-get-def
+  (b* (((mv ok formals body) (fn-get-def fn state)))
+    (equal ok
+           (fn-check-def fn state formals body)))
+  :hints(("Goal" :in-theory (enable fn-get-def))))
+
+
+(in-theory (disable fn-check-def))
+
+
+
 
 ;; Macro def-meta-extract proves the above theorems for any evaluator that
 ;; extends mextract-ev.
@@ -441,6 +680,64 @@
      (def-functional-instance
        evfn-meta-extract-fncall
        mextract-fncall
+       ((mextract-ev evfn)
+        (mextract-ev-lst evlst-fn)
+        (mextract-ev-falsify evfn-falsify)
+        (mextract-global-badguy evfn-meta-extract-global-badguy)))
+
+     (def-functional-instance
+       evfn-meta-extract-magic-ev
+       mextract-ev-magic-ev
+       ((mextract-ev evfn)
+        (mextract-ev-lst evlst-fn)
+        (mextract-ev-falsify evfn-falsify)
+        (mextract-global-badguy evfn-meta-extract-global-badguy)))
+
+     (def-functional-instance
+       evfn-meta-extract-magic-ev-lst
+       mextract-ev-magic-ev-lst
+       ((mextract-ev evfn)
+        (mextract-ev-lst evlst-fn)
+        (mextract-ev-falsify evfn-falsify)
+        (mextract-global-badguy evfn-meta-extract-global-badguy)))
+
+     ;; rewrite to fn-check-def now
+     ;; (def-functional-instance
+     ;;   evfn-fn-get-def
+     ;;   mextract-ev-fn-get-def
+     ;;   ((mextract-ev evfn)
+     ;;    (mextract-ev-lst evlst-fn)
+     ;;    (mextract-ev-falsify evfn-falsify)
+     ;;    (mextract-global-badguy evfn-meta-extract-global-badguy)))
+
+     (def-functional-instance
+       evfn-fn-check-def
+       mextract-ev-fn-check-def
+       ((mextract-ev evfn)
+        (mextract-ev-lst evlst-fn)
+        (mextract-ev-falsify evfn-falsify)
+        (mextract-global-badguy evfn-meta-extract-global-badguy)))
+
+     ;; why not...
+     (def-functional-instance
+       evfn-lst-of-pairlis
+       ev-lst-of-pairlis
+       ((mextract-ev evfn)
+        (mextract-ev-lst evlst-fn)
+        (mextract-ev-falsify evfn-falsify)
+        (mextract-global-badguy evfn-meta-extract-global-badguy)))
+
+     (def-functional-instance
+       evfn-lst-of-pairlis-append-rest
+       ev-lst-of-pairlis-append-rest
+       ((mextract-ev evfn)
+        (mextract-ev-lst evlst-fn)
+        (mextract-ev-falsify evfn-falsify)
+        (mextract-global-badguy evfn-meta-extract-global-badguy)))
+
+     (def-functional-instance
+       evfn-lst-of-pairlis-append-head-rest
+       ev-lst-of-pairlis-append-head-rest
        ((mextract-ev evfn)
         (mextract-ev-lst evlst-fn)
         (mextract-ev-falsify evfn-falsify)
@@ -785,7 +1082,37 @@
   :hints(("Goal" :in-theory (enable meta-extract-formula-w
                                     meta-extract-formula))))
 
+(defund fn-get-def-w (fn wrld)
+  (declare (xargs :guard (and (symbolp fn)
+                              (plist-worldp wrld))))
+  (b* (((when (eq fn 'quote))
+        (mv nil nil nil))
+       (formula (meta-extract-formula-w fn wrld))
+       ((unless-match formula (equal ((:! fn) . (:? formals)) (:? body)))
+        (mv nil nil nil))
+       ((unless (and (symbol-listp formals)
+                     (not (member-eq nil formals))
+                     (no-duplicatesp-eq formals)))
+        (mv nil nil nil)))
+    (mv t formals body)))
 
+(defthm fn-get-def-w-rewrite
+  (equal (fn-get-def-w name (w state))
+         (fn-get-def name state))
+  :hints(("Goal" :in-theory (enable fn-get-def fn-get-def-w))))
+
+(defund fn-check-def-w (fn wrld formals body)
+  (declare (xargs :guard (and (symbolp fn)
+                              (plist-worldp wrld))))
+  (b* (((mv ok fformals fbody) (fn-get-def-w fn wrld)))
+    (and ok
+         (equal fformals formals)
+         (equal fbody body))))
+
+(defthm fn-check-def-w-rewrite
+  (equal (fn-check-def-w name (w state) formals body)
+         (fn-check-def name state formals body))
+  :hints(("Goal" :in-theory (enable fn-check-def fn-check-def-w))))
 
 
 
@@ -815,6 +1142,11 @@
              (equal (kwote-lst (unquote-lst x))
                     x)))
 
+  (defthm fnc-ev-list-when-quote-listp
+    (implies (quote-listp x)
+             (equal (fnc-ev-lst x a)
+                    (unquote-lst x))))
+
   ;; Dumb metafunction that evaluates a function call.
   (defun ev-call-metafn (x mfc state)
     (declare (xargs :guard (pseudo-termp x)
@@ -843,7 +1175,8 @@
             :use ((:instance fnc-ev-meta-extract-fncall
                    (fn (car x))
                    (arglist (unquote-lst (cdr x)))
-                   (st state))))))
+                   (st state)))
+            :in-theory (enable fnc-ev-constraint-0))))
 
 
   (defun fib (x)

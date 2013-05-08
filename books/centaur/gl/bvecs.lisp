@@ -15,42 +15,42 @@
 
 
 
-(defun bfr-listp1 (x)
-  (declare (Xargs :guard t))
-  (if (atom x)
-      (eq x nil)
-    (and (bfr-p (car x))
-         (bfr-listp1 (cdr x)))))
+;; (defun bfr-listp1 (x)
+;;   (declare (Xargs :guard t))
+;;   (if (atom x)
+;;       (eq x nil)
+;;     (and (bfr-p (car x))
+;;          (bfr-listp1 (cdr x)))))
 
-(defun bfr-listp (x)
-  (declare (xargs :guard t))
-  (mbe :logic (if (atom x)
-                  (eq x nil)
-                (and (bfr-p (car x))
-                     (bfr-listp (cdr x))))
-       :exec (or (boolean-listp x)
-                 (bfr-listp1 x))))
+;; (defun bfr-listp (x)
+;;   (declare (xargs :guard t))
+;;   (mbe :logic (if (atom x)
+;;                   (eq x nil)
+;;                 (and (bfr-p (car x))
+;;                      (bfr-listp (cdr x))))
+;;        :exec (or (boolean-listp x)
+;;                  (bfr-listp1 x))))
 
-(defthm bfr-p-car-when-bfr-listp
-  (implies (bfr-listp x)
-           (bfr-p (car x))))
+;; (defthm bfr-p-car-when-bfr-listp
+;;   (implies (bfr-listp x)
+;;            (bfr-p (car x))))
 
-(defthm bfr-listp-cdr-when-bfr-listp
-  (implies (bfr-listp x)
-           (bfr-listp (cdr x))))
+;; (defthm bfr-listp-cdr-when-bfr-listp
+;;   (implies (bfr-listp x)
+;;            (bfr-listp (cdr x))))
 
-(defthm bfr-listp-cons
-  (implies (and (bfr-p x) (bfr-listp y))
-           (bfr-listp (cons x y))))
+;; (defthm bfr-listp-cons
+;;   (implies (and (bfr-p x) (bfr-listp y))
+;;            (bfr-listp (cons x y))))
 
-(defthm boolean-list-bfr-listp
-  (implies (and (syntaxp (quotep x))
-                (boolean-listp x))
-           (bfr-listp x)))
+;; (defthm boolean-list-bfr-listp
+;;   (implies (and (syntaxp (quotep x))
+;;                 (boolean-listp x))
+;;            (bfr-listp x)))
 
 
 (defun bfr-eval-list (x env)
-  (declare (xargs :guard (bfr-listp x)))
+  (declare (xargs :guard t))
   (if (atom x)
       nil
     (cons (bfr-eval (car x) env)
@@ -67,87 +67,62 @@
            (equal (bfr-eval-list x env) x))
   :hints (("goal" :in-theory (enable bfr-eval-list boolean-listp))))
 
-(in-theory (disable (bfr-listp)))
+(defthm bfr-eval-list-of-list-fix
+  (equal (bfr-eval-list (acl2::list-fix x) env)
+         (bfr-eval-list x env)))
+
+;; (in-theory (disable (bfr-listp)))
 
 (add-bfr-eval-pat (bfr-eval-list & env))
 
-(defun bfr-list-fix (x)
-  (declare (xargs :guard t))
-  (if (atom x)
-      nil
-    (cons (bfr-fix (car x))
-          (bfr-list-fix (cdr x)))))
+;; (defun bfr-list-fix (x)
+;;   (declare (xargs :guard t))
+;;   (if (atom x)
+;;       nil
+;;     (cons (bfr-fix (car x))
+;;           (bfr-list-fix (cdr x)))))
 
-(defthm bfr-listp-bfr-list-fix
-  (bfr-listp (bfr-list-fix x)))
+;; (defthm bfr-listp-bfr-list-fix
+;;   (bfr-listp (bfr-list-fix x)))
 
-(defthm bfr-list-fix-when-bfr-listp
-  (implies (bfr-listp x)
-           (equal (bfr-list-fix x) x)))
+;; (defthm bfr-list-fix-when-bfr-listp
+;;   (implies (bfr-listp x)
+;;            (equal (bfr-list-fix x) x)))
 
-(defthm bfr-eval-list-bfr-list-fix
-  (equal (bfr-eval-list (bfr-list-fix x) env)
-         (bfr-eval-list x env))
-  :rule-classes nil)
+;; (defthm bfr-eval-list-bfr-list-fix
+;;   (equal (bfr-eval-list (bfr-list-fix x) env)
+;;          (bfr-eval-list x env))
+;;   :rule-classes nil)
 
-(defthm consp-bfr-list-fix
-  (equal (consp (bfr-list-fix x))
-         (consp x)))
+;; (defthm consp-bfr-list-fix
+;;   (equal (consp (bfr-list-fix x))
+;;          (consp x)))
 
-(defthm car-bfr-list-fix
-  (equal (car (bfr-list-fix x))
-         (bfr-fix (car x))))
+;; (defthm car-bfr-list-fix
+;;   (equal (car (bfr-list-fix x))
+;;          (bfr-fix (car x))))
 
-(defthm cdr-bfr-list-fix
-  (equal (cdr (bfr-list-fix x))
-         (bfr-list-fix (cdr x))))
+;; (defthm cdr-bfr-list-fix
+;;   (equal (cdr (bfr-list-fix x))
+;;          (bfr-list-fix (cdr x))))
 
-(defthm len-bfr-list-fix
-  (equal (len (bfr-list-fix x)) (len x)))
+;; (defthm len-bfr-list-fix
+;;   (equal (len (bfr-list-fix x)) (len x)))
 
-(in-theory (disable bfr-list-fix bfr-listp))
+;; (in-theory (disable bfr-list-fix bfr-listp))
 
-(defun bfr-list-equiv (x y)
-  (equal (bfr-list-fix x) (bfr-list-fix y)))
+;; (acl2::def-universal-equiv
+;;  bfr-list-equiv
+;;  :qvars (env)
+;;  :equiv-terms ((equal (bfr-eval-list acl2::x env))))
 
-(defequiv bfr-list-equiv)
-
-(defthm bfr-list-equiv-bfr-list-fix
-  (bfr-list-equiv (bfr-list-fix x) x))
-
-(defcong bfr-list-equiv equal (bfr-eval-list x env) 1
-  :hints (("goal" :use ((:instance bfr-eval-list-bfr-list-fix)
-                        (:instance bfr-eval-list-bfr-list-fix
-                         (x x-equiv))))))
-
-(table prove-congruence-theory-table
-       'bfr-list-equiv 
-       '(bfr-list-fix-when-bfr-listp
-         bfr-listp-bfr-list-fix))
-
-(defun bfr-list-fix-vars-bindings (vars)
-  (if (atom vars)
-      nil
-    (let ((x (car vars)))
-      (cons `(,x (mbe :logic (bfr-list-fix ,x) :exec ,x))
-            (bfr-list-fix-vars-bindings (cdr vars))))))
-
-(defmacro bfr-list-fix-vars (vars body)
-  `(let ,(bfr-list-fix-vars-bindings vars)
-     (declare (ignorable . ,vars))
-     ,body))
+;; (defcong bfr-list-equiv equal (bfr-eval-list x env) 1
+;;   :hints (("goal" :in-theory (enable bfr-list-equiv-necc))))
 
 
-
-(defun bfr-alistp (x)
-  (declare (xargs :guard t))
-  (or (atom x)
-      (and (or (atom (car x))
-               (bfr-p (cdar x)))
-           (bfr-alistp (cdr x)))))
 
 (defun bfr-eval-alist (al vals)
-  (declare (xargs :guard (gl::bfr-alistp al)))
+  (declare (xargs :guard t))
   (if (atom al)
       nil
     (if (consp (car al))
@@ -272,15 +247,6 @@
 (in-theory (disable v2n n2v v2i i2v ash logbitp))
 
 
-
-
-(defthm bfr-listp-n2v
-  (bfr-listp (n2v n))
-  :hints(("Goal" :in-theory (enable n2v logbitp))))
-
-(defthm bfr-listp-i2v
-  (bfr-listp (i2v i))
-  :hints(("Goal" :in-theory (enable i2v logbitp))))
 
 (defthm us-to-num
   (implies (natp n)

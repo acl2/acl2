@@ -30,7 +30,7 @@
 (include-book "ev-theoremp")
 (include-book "tools/def-functional-instance" :dir :system)
 (include-book "data-structures/no-duplicates" :dir :system)
-
+(include-book "magic-ev")
 (set-inhibit-warnings "theory")
 
 
@@ -201,9 +201,12 @@
            (mv nil t))))
 
 (defun witness-eval-restriction-default (term alist state)
-  (declare (xargs :stobjs state)
-           (ignore term alist state))
-  (mv nil t))
+  (declare (xargs :stobjs state))
+  (if (and (pseudo-termp term)
+           (symbol-alistp alist))
+      (magic-ev term (cons (cons 'world (w state)) alist)
+                state t t)
+    (mv "guards violated" nil)))
 
 (defattach witness-eval-restriction witness-eval-restriction-default)
 
@@ -592,7 +595,7 @@
         (cw "Not true-listp: ~x0~%" rule))
        ((when (not (equal (len rule) 7)))
         (cw "Wrong length: ~x0~%" rule))
-       ((nths rulename ?enabledp pred vars expr ?restriction ?hint) rule)
+       ((nths rulename ?enabledp pred vars expr restriction ?hint) rule)
        ((when (not (pseudo-termp pred)))
         (cw "Not pseudo-termp: ~x0~%" pred))
        ((when (not (pseudo-termp expr)))
@@ -601,6 +604,8 @@
         (cw "Not symbol-listp: ~x0~%" vars))
        ((when (not (symbolp rulename)))
         (cw "Not symbolp: ~x0~%" rulename))
+       ((when (not (pseudo-termp restriction)))
+        (cw "Not pseudo-termp: ~x0~%" restriction))
        ((when (not ;; could be intersectp
                (not (intersectp-equal vars (simple-term-vars pred)))))
         (cw "Intersecting vars: ~x0 ~x1~%" vars pred))
@@ -1714,14 +1719,20 @@
           (prove-loop clauses pspv hint (ens state) (w state) ctx state)))
       (chk-assumption-free-ttree ttree ctx state))))
 
+(defun wcp-translate (term ctx state)
+  (declare (xargs :mode :program))
+  (b* (((er term)
+        (translate term t t nil ctx (w state) state))
+       (term (remove-guard-holders term)))
+    (value term)))
 
-(defun wcp-translate-lst (lst state)
+(defun wcp-translate-lst (lst ctx state)
   (declare (xargs :mode :program))
   (if (atom lst)
       (value nil)
-    (b* (((er rest) (wcp-translate-lst (cdr lst) state))
+    (b* (((er rest) (wcp-translate-lst (cdr lst) ctx state))
          ((er first)
-          (translate (car lst) t t nil 'defexample (w state) state)))
+          (wcp-translate (car lst) ctx state)))
       (value (cons first rest)))))
 
 (defun defwitness-fn (name predicate expr restriction generalize hints
@@ -1732,11 +1743,13 @@
        ((when (not expr))
         (mv "DEFWITNESS: Must supply an :EXPR.~%" nil state))
        ((er predicate)
-        (translate predicate t t nil 'defwitness (w state) state))
+        (wcp-translate predicate 'defwitness state))
        ((er expr)
-        (translate expr t t nil 'defwitness (w state) state))
+        (wcp-translate expr 'defwitness state))
+       ((er restriction)
+        (wcp-translate restriction 'defwitness state))
        ((er generalize-terms)
-        (wcp-translate-lst (strip-cars generalize) state))
+        (wcp-translate-lst (strip-cars generalize) 'defwitness state))
        (generalize (pairlis$ generalize-terms (strip-cdrs generalize)))
        ((er &) (run-test-with-hint-replacement
                 `(implies ,predicate ,expr)
@@ -1770,7 +1783,8 @@
 
  Additional arguments:
    :restriction term
- where term may have free variables that occur also in the :predicate term.
+ where term may have free variables that occur also in the :predicate term, and
+ may also use the variable WORLD to stand for the ACL2 world.
 
  The above example tells WITNESS-CP how to expand a hypothesis of the form
  (not (subsetp-equal a b)) or, equivalently, a conclusion of the form
@@ -1788,8 +1802,7 @@
  replacement is sound (which is also done when the defwitness form is run).
 
  If a RESTRICTION is given, then this replacement will only take place when
- it evaluates to a non-nil value.    This requires oracle-eval to be allowed;
- ~l[oracle-eval].~/"
+ it evaluates to a non-nil value.~/"
   `(make-event (defwitness-fn ',name ',predicate ',expr ',restriction
                  ',generalize ',hints state)))
 
@@ -1806,9 +1819,11 @@
        ((when (not expr))
         (mv "DEFINSTANTIATE: Must supply an :EXPR.~%" nil state))
        ((er predicate)
-        (translate predicate t t nil 'definstantiate (w state) state))
+        (wcp-translate predicate 'definstantiate state))
        ((er expr)
-        (translate expr t t nil 'definstantiate (w state) state))
+        (wcp-translate expr 'definstantiate state))
+       ((er restriction)
+        (wcp-translate restriction 'definstantiate state))
        ((er &) (run-test-with-hint-replacement
                 `(implies ,predicate ,expr)
                 hints (cons 'definstantiate name) state)))
@@ -1837,7 +1852,7 @@
  Additional arguments:
    :restriction term
  where term may have free variables that occur also in the :predicate term or
- the list :vars.
+ the list :vars, as well as WORLD, standing for the ACL2 world.
 
  The above example tells WITNESS-CP how to expand a hypothesis of the form
  (subsetp-equal a b) or, equivalently, a conclusion of the form
@@ -1855,9 +1870,7 @@
  sound (which is also done when the definstantiate form is run).
 
  If a RESTRICTION is given, then this replacement will only take place when
- it evaluates to a non-nil value.  This requires  oracle-eval to be allowed;
- ~l[oracle-eval].
- ~/"
+ it evaluates to a non-nil value.~/"
   `(make-event (definstantiate-fn
                  ',name ',predicate ',vars ',expr ',restriction
                  ',hints state)))
@@ -2062,9 +2075,11 @@ right number of free variables (~x0): ~x1~%"
                  nvars bad-rules)
             nil state))
        ((er pattern)
-        (translate pattern t t nil 'defexample (w state) state))
+        (wcp-translate pattern 'defexample state))
+       ((er restriction)
+        (wcp-translate restriction 'defexample state))
        ((er templates)
-        (wcp-translate-lst templates state)))
+        (wcp-translate-lst templates 'defexample state)))
     (value
      `(table witness-cp-example-templates
              ',name ',(list t pattern templates instance-rules restriction)))))
@@ -2090,7 +2105,7 @@ Example:
 
 Additional arguments:
   :restriction term
- where term may have free variables present in pattern,
+ where term may have free variables present in pattern as well as WORLD,
   :instance-rulename rule
  may be used instead of :instance-rules when there is only one rule.
 
@@ -2112,8 +2127,7 @@ subsetp-equal-instancing rule will cause the following hyps to be added:
 ~ev[]
 
 If a :restriction is present, then the rule only applies to occurrences of
-pattern for which the restriction evaluates to non-nil.  This requires
-oracle-eval to be allowed; ~l[oracle-eval].~/~/"
+pattern for which the restriction evaluates to non-nil.~/~/"
   `(make-event
     (defexample-fn ',name ',pattern ',templates
       ',(if instance-rulename (list instance-rulename) instance-rules)

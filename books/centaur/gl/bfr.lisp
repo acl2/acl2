@@ -1,6 +1,7 @@
 
 
 (in-package "GL")
+(include-book "centaur/misc/universal-equiv" :dir :system)
 
 (defstub bfr-mode () t)
 (defun bfr-aig () (declare (xargs :guard t)) t)
@@ -21,65 +22,65 @@
 
 (local (in-theory (enable booleanp)))
 
-(defun bfr-p (x)
-  (declare (xargs :guard t)
-           (ignorable x))
-  (mbe :logic 
-       (bfr-case :bdd (acl2::ubddp x) :aig t)
-       :exec (or (booleanp x)
-                 (bfr-case :bdd (acl2::ubddp x) :aig t))))
+;; (defun bfr-p (x)
+;;   (declare (xargs :guard t)
+;;            (ignorable x))
+;;   (mbe :logic 
+;;        (bfr-case :bdd (acl2::ubddp x) :aig t)
+;;        :exec (or (booleanp x)
+;;                  (bfr-case :bdd (acl2::ubddp x) :aig t))))
 
-(defthm bfr-p-booleanp
-  (booleanp (bfr-p x))
-  :rule-classes :type-prescription)
-
-
-(defthmd bfr-p-of-boolean
-  (implies (booleanp x) (bfr-p x))
-  :hints (("goal" :in-theory (enable bfr-p acl2::ubddp))))
-
-(defun bfr-fix (x)
-  (declare (xargs :guard t))
-  (mbe :logic
-       (bfr-case :bdd (acl2::ubdd-fix x) :aig x)
-       :exec
-       (if (booleanp x)
-           x
-         (bfr-case :bdd (acl2::ubdd-fix x) :aig x))))
-
-(defthm bfr-p-bfr-fix
-  (bfr-p (bfr-fix x)))
-
-(defthm bfr-fix-when-bfr-p
-  (implies (bfr-p x)
-           (equal (bfr-fix x) x)))
+;; (defthm bfr-p-booleanp
+;;   (booleanp (bfr-p x))
+;;   :rule-classes :type-prescription)
 
 
-(defun bfr-equiv (a b)
-  (equal (bfr-fix a) (bfr-fix b)))
+;; (defthmd bfr-p-of-boolean
+;;   (implies (booleanp x) (bfr-p x))
+;;   :hints (("goal" :in-theory (enable bfr-p acl2::ubddp))))
 
-(defequiv bfr-equiv)
+;; (defun bfr-fix (x)
+;;   (declare (xargs :guard t))
+;;   (mbe :logic
+;;        (bfr-case :bdd (acl2::ubdd-fix x) :aig x)
+;;        :exec
+;;        (if (booleanp x)
+;;            x
+;;          (bfr-case :bdd (acl2::ubdd-fix x) :aig x))))
 
-(defthm bfr-fix-bfr-equiv
-  (bfr-equiv (bfr-fix x) x))
+;; (defthm bfr-p-bfr-fix
+;;   (bfr-p (bfr-fix x)))
 
-(defmacro bfrfix (x)
-  `(mbe :logic (bfr-fix ,x) :exec ,x))
+;; (defthm bfr-fix-when-bfr-p
+;;   (implies (bfr-p x)
+;;            (equal (bfr-fix x) x)))
 
-(defun bfr-fix-bindings (vars)
-  (if (atom vars)
-      nil
-    (cons `(,(car vars) (bfrfix ,(car vars)))
-          (bfr-fix-bindings (cdr vars)))))
 
-(defmacro bfr-fix-vars (vars body)
-  `(let ,(bfr-fix-bindings vars)
-     (declare (ignorable . ,vars))
-     ,body))
+;; (defun bfr-equiv (a b)
+;;   (equal (bfr-fix a) (bfr-fix b)))
+
+;; (defequiv bfr-equiv)
+
+;; (defthm bfr-fix-bfr-equiv
+;;   (bfr-equiv (bfr-fix x) x))
+
+;; (defmacro bfrfix (x)
+;;   `(mbe :logic (bfr-fix ,x) :exec ,x))
+
+;; (defun bfr-fix-bindings (vars)
+;;   (if (atom vars)
+;;       nil
+;;     (cons `(,(car vars) (bfrfix ,(car vars)))
+;;           (bfr-fix-bindings (cdr vars)))))
+
+;; (defmacro bfr-fix-vars (vars body)
+;;   `(let ,(bfr-fix-bindings vars)
+;;      (declare (ignorable . ,vars))
+;;      ,body))
      
 
 (defun bfr-eval (x env)
-  (declare (xargs :guard (bfr-p x)))
+  (declare (xargs :guard t))
   (mbe :logic
        (bfr-case :bdd (acl2::eval-bdd x env)
                  :aig (acl2::aig-eval x env))
@@ -89,69 +90,64 @@
          (bfr-case :bdd (acl2::eval-bdd x env)
                    :aig (acl2::aig-eval x env)))))
 
-(defthmd bfr-eval-of-bfr-fix
-  (equal (bfr-eval (bfr-fix x) env)
-         (bfr-eval x env))
-  :hints (("goal" :use acl2::eval-bdd-ubdd-fix
-           :in-theory (disable acl2::eval-bdd-ubdd-fix))))
+;; (defthmd bfr-eval-of-bfr-fix
+;;   (equal (bfr-eval (bfr-fix x) env)
+;;          (bfr-eval x env))
+;;   :hints (("goal" :use acl2::eval-bdd-ubdd-fix
+;;            :in-theory (disable acl2::eval-bdd-ubdd-fix))))
 
-(defcong bfr-equiv equal (bfr-eval x env) 1
-  :hints (("goal" :use ((:instance bfr-eval-of-bfr-fix)
-                        (:instance bfr-eval-of-bfr-fix
-                                   (x x-equiv)))
-           :in-theory (disable bfr-eval bfr-fix))))
+;; (defcong bfr-equiv equal (bfr-eval x env) 1
+;;   :hints (("goal" :use ((:instance bfr-eval-of-bfr-fix)
+;;                         (:instance bfr-eval-of-bfr-fix
+;;                                    (x x-equiv)))
+;;            :in-theory (disable bfr-eval bfr-fix))))
 
 (defun bfr-not (x)
-  (declare (xargs :guard (bfr-p x)))
+  (declare (xargs :guard t))
   (mbe :logic
-       (bfr-case :bdd (acl2::q-not (bfrfix x))
-                 :aig (acl2::aig-not (bfrfix x)))
+       (bfr-case :bdd (acl2::q-not x)
+                 :aig (acl2::aig-not x))
        :exec
        (if (booleanp x)
            (not x)
-         (bfr-case :bdd (acl2::q-not (bfrfix x))
-                   :aig (acl2::aig-not (bfrfix x))))))
+         (bfr-case :bdd (acl2::q-not x)
+                   :aig (acl2::aig-not x)))))
 
-(defthm bfr-p-bfr-not
-  (bfr-p (bfr-not x)))
+;; (defthm bfr-p-bfr-not
+;;   (bfr-p (bfr-not x)))
 
-(local (acl2::add-bdd-fn-pat acl2::ubdd-fix))
+;; (local (acl2::add-bdd-fn-pat acl2::ubdd-fix))
 
 (defthm bfr-eval-bfr-not
   (equal (bfr-eval (bfr-not x) env)
          (not (bfr-eval x env)))
-  :hints (("goal" :in-theory (enable booleanp))
-          (acl2::bdd-reasoning)
-          (acl2::aig-reasoning)))
+  :hints (("goal" :in-theory (enable booleanp))))
 
-
-(defcong bfr-equiv equal (bfr-not x) 1)
+;;(defcong bfr-equiv bfr-equiv (bfr-not x) 1)
 
 (in-theory (disable bfr-not))
 
 
 (defun bfr-binary-and (x y)
-  (declare (xargs :guard (and (bfr-p x) (bfr-p y))))
+  (declare (xargs :guard t))
   (mbe :logic 
-       (bfr-case :bdd (acl2::q-binary-and (bfrfix x) (bfrfix y))
-                 :aig (acl2::aig-and (bfrfix x) (bfrfix y)))
+       (bfr-case :bdd (acl2::q-binary-and x y)
+                 :aig (acl2::aig-and x y))
        :exec
-       (if (and (booleanp x) (booleanp y))
-           (and x y)
-         (bfr-case :bdd (acl2::q-binary-and (bfrfix x) (bfrfix y))
-                   :aig (acl2::aig-and (bfrfix x) (bfrfix y))))))
+       (cond ((not x) nil)
+             ((not y) nil)
+             ((and (eq x t) (eq y t)) t)
+             (t (bfr-case :bdd (acl2::q-binary-and x y)
+                          :aig (acl2::aig-and x y))))))
 
-(defthm bfr-p-bfr-binary-and
-  (bfr-p (bfr-binary-and x y)))
+;; (defthm bfr-p-bfr-binary-and
+;;   (bfr-p (bfr-binary-and x y)))
 
 (defthm bfr-eval-bfr-binary-and
   (equal (bfr-eval (bfr-binary-and x y) env)
          (and (bfr-eval x env)
               (bfr-eval y env)))
-  :hints (("goal" :in-theory (enable booleanp))
-          (acl2::bdd-reasoning)
-          (acl2::aig-reasoning)))
-
+  :hints (("goal" :in-theory (e/d (booleanp) ((force))))))
 
 (defthm bfr-and-of-nil
   (and (equal (bfr-binary-and nil y) nil)
@@ -160,9 +156,9 @@
 
 
 
-(defcong bfr-equiv equal (bfr-binary-and a b) 1)
+;; (defcong bfr-equiv equal (bfr-binary-and a b) 1)
 
-(defcong bfr-equiv equal (bfr-binary-and a b) 2)
+;; (defcong bfr-equiv equal (bfr-binary-and a b) 2)
 
 (in-theory (disable bfr-binary-and))
 
@@ -202,42 +198,38 @@
 
 
 (defun bfr-ite-fn (x y z)
-  (declare (xargs :guard (and (bfr-p x) (bfr-p y) (bfr-p z))))
-  (bfr-fix-vars
-   (x y z)
-   (mbe :logic
-        (bfr-case :bdd (acl2::q-ite x y z)
-                  :aig (cond ((eq x t) y)
-                             ((eq x nil) z)
-                             (t (acl2::aig-ite x y z))))
-        :exec
-        (if (and (booleanp x) (booleanp y) (booleanp z))
-            (if x y z)
-          (bfr-case :bdd (acl2::q-ite x y z)
-                    :aig (cond ((eq x t) y)
-                               ((eq x nil) z)
-                               (t (acl2::aig-ite x y z))))))))
+  (declare (xargs :guard t))
+  (mbe :logic
+       (bfr-case :bdd (acl2::q-ite x y z)
+                 :aig (cond ((eq x t) y)
+                            ((eq x nil) z)
+                            (t (acl2::aig-ite x y z))))
+       :exec
+       (if (booleanp x)
+           (if x y z)
+         (bfr-case :bdd (acl2::q-ite x y z)
+                   :aig (cond ((eq x t) y)
+                              ((eq x nil) z)
+                              (t (acl2::aig-ite x y z)))))))
 
-(defthm bfr-p-bfr-ite-fn
-  (bfr-p (bfr-ite-fn x y z)))
+;; (defthm bfr-p-bfr-ite-fn
+;;   (bfr-p (bfr-ite-fn x y z)))
 
 (defthm bfr-eval-bfr-ite-fn
   (equal (bfr-eval (bfr-ite-fn x y z) env)
          (if (bfr-eval x env)
              (bfr-eval y env)
            (bfr-eval z env)))
-  :hints (("goal" :in-theory (enable booleanp))
-          (acl2::bdd-reasoning)
-          (acl2::aig-reasoning)))
+  :hints (("goal" :in-theory (enable booleanp))))
 
 (defthm bfr-ite-fn-bools
-  (and (equal (bfr-ite-fn t y z) (bfr-fix y))
-       (equal (bfr-ite-fn nil y z) (bfr-fix z))))
+  (and (equal (bfr-ite-fn t y z) y)
+       (equal (bfr-ite-fn nil y z) z)))
 
 
-(defcong bfr-equiv equal (bfr-ite-fn x y z) 1)
-(defcong bfr-equiv equal (bfr-ite-fn x y z) 2)
-(defcong bfr-equiv equal (bfr-ite-fn x y z) 3)
+;; (defcong bfr-equiv equal (bfr-ite-fn x y z) 1)
+;; (defcong bfr-equiv equal (bfr-ite-fn x y z) 2)
+;; (defcong bfr-equiv equal (bfr-ite-fn x y z) 3)
 
 (in-theory (disable bfr-ite-fn))
 
@@ -250,34 +242,32 @@
          `(mbe :logic (bfr-ite-fn ,x ,y ,z)
                :exec (let ((bfr-ite-x-do-not-use-elsewhere ,x))
                        (cond
-                        ((eq bfr-ite-x-do-not-use-elsewhere nil) (bfrfix ,z))
-                        ((eq bfr-ite-x-do-not-use-elsewhere t) (bfrfix ,y))
+                        ((eq bfr-ite-x-do-not-use-elsewhere nil) ,z)
+                        ((eq bfr-ite-x-do-not-use-elsewhere t) ,y)
                         (t
                          (bfr-ite-fn bfr-ite-x-do-not-use-elsewhere
                                      ,y ,z))))))))
 
 
 (defun bfr-binary-or (x y)
-  (declare (xargs :guard (and (bfr-p x) (bfr-p y))))
+  (declare (xargs :guard t))
   (mbe :logic
-       (bfr-case :bdd (acl2::q-or (bfrfix x) (bfrfix y))
-                 :aig (acl2::aig-or (bfrfix x) (bfrfix y)))
+       (bfr-case :bdd (acl2::q-or x y)
+                 :aig (acl2::aig-or x y))
        :exec
        (if (and (booleanp x) (booleanp y))
            (or x y)
-         (bfr-case :bdd (acl2::q-or (bfrfix x) (bfrfix y))
-                   :aig (acl2::aig-or (bfrfix x) (bfrfix y))))))
+         (bfr-case :bdd (acl2::q-or x y)
+                   :aig (acl2::aig-or x y)))))
 
-(defthm bfr-p-bfr-binary-or
-  (bfr-p (bfr-binary-or x y)))
+;; (defthm bfr-p-bfr-binary-or
+;;   (bfr-p (bfr-binary-or x y)))
 
 (defthm bfr-eval-bfr-binary-or
   (equal (bfr-eval (bfr-binary-or x y) env)
          (or (bfr-eval x env)
              (bfr-eval y env)))
-  :hints (("goal" :in-theory (enable booleanp))
-          (acl2::bdd-reasoning)
-          (acl2::aig-reasoning)))
+  :hints (("goal" :in-theory (e/d (booleanp) ((force))))))
 
 (defthm bfr-or-of-t
   (and (equal (bfr-binary-or t y) t)
@@ -286,8 +276,8 @@
                                     acl2::aig-and
                                     acl2::aig-not))))
 
-(defcong bfr-equiv equal (bfr-binary-or x y) 1)
-(defcong bfr-equiv equal (bfr-binary-or x y) 2)
+;; (defcong bfr-equiv equal (bfr-binary-or x y) 1)
+;; (defcong bfr-equiv equal (bfr-binary-or x y) 2)
 
 (in-theory (disable bfr-binary-or))
 
@@ -330,63 +320,59 @@
 
 
 (defun bfr-xor (x y)
-  (declare (xargs :guard (and (bfr-p x) (bfr-p y))))
+  (declare (xargs :guard t))
   (mbe :logic
-       (bfr-case :bdd (acl2::q-xor (bfrfix x) (bfrfix y))
-                 :aig (acl2::aig-xor (bfrfix x) (bfrfix y)))
+       (bfr-case :bdd (acl2::q-xor x y)
+                 :aig (acl2::aig-xor x y))
        :exec
        (if (and (booleanp x) (booleanp y))
            (xor x y)
-         (bfr-case :bdd (acl2::q-xor (bfrfix x) (bfrfix y))
-                   :aig (acl2::aig-xor (bfrfix x) (bfrfix y))))))
+         (bfr-case :bdd (acl2::q-xor x y)
+                   :aig (acl2::aig-xor x y)))))
 
-(defthm bfr-p-bfr-xor
-  (bfr-p (bfr-xor x y)))
+;; (defthm bfr-p-bfr-xor
+;;   (bfr-p (bfr-xor x y)))
 
 (defthm bfr-eval-bfr-xor
   (equal (bfr-eval (bfr-xor x y) env)
          (xor (bfr-eval x env)
               (bfr-eval y env)))
-  :hints (("goal" :in-theory (enable booleanp))
-          (acl2::bdd-reasoning)
-          (acl2::aig-reasoning)))
+  :hints (("goal" :in-theory (e/d (booleanp) ((force))))))
 
-(defcong bfr-equiv equal (bfr-xor x y) 1
-  :hints(("Goal" :in-theory (enable booleanp))))
-(defcong bfr-equiv equal (bfr-xor x y) 2
-  :hints(("Goal" :in-theory (enable booleanp))))
+;; (defcong bfr-equiv equal (bfr-xor x y) 1
+;;   :hints(("Goal" :in-theory (enable booleanp))))
+;; (defcong bfr-equiv equal (bfr-xor x y) 2
+;;   :hints(("Goal" :in-theory (enable booleanp))))
 
 (in-theory (disable bfr-xor))
 
 
 
 (defun bfr-iff (x y)
-  (declare (xargs :guard (and (bfr-p x) (bfr-p y))))
+  (declare (xargs :guard t))
   (mbe :logic
-       (bfr-case :bdd (acl2::q-iff (bfrfix x) (bfrfix y))
-                 :aig (acl2::aig-iff (bfrfix x) (bfrfix y)))
+       (bfr-case :bdd (acl2::q-iff x y)
+                 :aig (acl2::aig-iff x y))
        :exec
        (if (and (booleanp x) (booleanp y))
            (iff x y)
-         (bfr-case :bdd (acl2::q-iff (bfrfix x) (bfrfix y))
-                   :aig (acl2::aig-iff (bfrfix x) (bfrfix y))))))
+         (bfr-case :bdd (acl2::q-iff x y)
+                   :aig (acl2::aig-iff x y)))))
 
-(defthm bfr-p-bfr-iff
-  (bfr-p (bfr-iff x y)))
+;; (defthm bfr-p-bfr-iff
+;;   (bfr-p (bfr-iff x y)))
 
 (defthm bfr-eval-bfr-iff
   (equal (bfr-eval (bfr-iff x y) env)
          (iff (bfr-eval x env)
               (bfr-eval y env)))
-  :hints (("goal" :in-theory (enable booleanp))
-          (acl2::bdd-reasoning)
-          (acl2::aig-reasoning)))
+  :hints (("goal" :in-theory (e/d (booleanp) ((force))))))
 
 
-(defcong bfr-equiv equal (bfr-iff x y) 1
-  :hints(("Goal" :in-theory (enable booleanp))))
-(defcong bfr-equiv equal (bfr-iff x y) 2
-  :hints(("Goal" :in-theory (enable booleanp))))
+;; (defcong bfr-equiv equal (bfr-iff x y) 1
+;;   :hints(("Goal" :in-theory (enable booleanp))))
+;; (defcong bfr-equiv equal (bfr-iff x y) 2
+;;   :hints(("Goal" :in-theory (enable booleanp))))
 
 (in-theory (disable bfr-iff))
 
@@ -397,8 +383,8 @@
 
 
 
-(in-theory (disable bfr-eval bfr-fix bfr-p
-                    (:type-prescription bfr-p)))
+;; (in-theory (disable bfr-eval bfr-fix bfr-p
+;;                     (:type-prescription bfr-p)))
 
 
 (defun bfr-var (n)
@@ -407,9 +393,9 @@
     (bfr-case :bdd (acl2::qv n)
               :aig n)))
 
-(defthm bfr-p-bfr-var
-  (bfr-p (bfr-var n))
-  :hints(("Goal" :in-theory (enable bfr-p))))
+;; (defthm bfr-p-bfr-var
+;;   (bfr-p (bfr-var n))
+;;   :hints(("Goal" :in-theory (enable bfr-p))))
 
 (in-theory (disable bfr-var (bfr-var)))
 
@@ -448,7 +434,7 @@
   :hints(("Goal" :in-theory (e/d (bfr-lookup bfr-set-var)
                                  (update-nth nth)))))
 
-(in-theory (disable bfr-set-var (bfr-set-var)))
+(in-theory (disable bfr-set-var (bfr-set-var) bfr-eval))
 
 
 
@@ -691,61 +677,119 @@
 
 
 
+(acl2::def-universal-equiv
+ bfr-equiv
+ :qvars (env)
+ :equiv-terms ((equal (bfr-eval acl2::x env))))
+
+(defcong bfr-equiv equal (bfr-eval x env) 1
+  :hints(("Goal" :in-theory (e/d (bfr-equiv-necc)))))
+
+(defcong bfr-equiv bfr-equiv (bfr-not x) 1
+  :hints ((and stable-under-simplificationp
+               `(:expand (,(car (last clause)))))))
+
+(defcong bfr-equiv bfr-equiv (bfr-and x y) 1
+  :hints ((and stable-under-simplificationp
+               `(:expand (,(car (last clause)))))))
+
+(defcong bfr-equiv bfr-equiv (bfr-and x y) 2
+  :hints ((and stable-under-simplificationp
+               `(:expand (,(car (last clause)))))))
+
+(defcong bfr-equiv bfr-equiv (bfr-or x y) 1
+  :hints ((and stable-under-simplificationp
+               `(:expand (,(car (last clause)))))))
+
+(defcong bfr-equiv bfr-equiv (bfr-or x y) 2
+  :hints ((and stable-under-simplificationp
+               `(:expand (,(car (last clause)))))))
+
+(defcong bfr-equiv bfr-equiv (bfr-xor x y) 1
+  :hints ((and stable-under-simplificationp
+               `(:expand (,(car (last clause)))))))
+
+(defcong bfr-equiv bfr-equiv (bfr-xor x y) 2
+  :hints ((and stable-under-simplificationp
+               `(:expand (,(car (last clause)))))))
+
+(defcong bfr-equiv bfr-equiv (bfr-iff x y) 1
+  :hints ((and stable-under-simplificationp
+               `(:expand (,(car (last clause)))))))
+
+(defcong bfr-equiv bfr-equiv (bfr-iff x y) 2
+  :hints ((and stable-under-simplificationp
+               `(:expand (,(car (last clause)))))))
+
+(defcong bfr-equiv bfr-equiv (bfr-ite x y z) 1
+  :hints ((and stable-under-simplificationp
+               `(:expand (,(car (last clause)))))))
+
+(defcong bfr-equiv bfr-equiv (bfr-ite x y z) 2
+  :hints ((and stable-under-simplificationp
+               `(:expand (,(car (last clause)))))))
+
+(defcong bfr-equiv bfr-equiv (bfr-ite x y z) 3
+  :hints ((and stable-under-simplificationp
+               `(:expand (,(car (last clause)))))))
 
 
 
 
-(table prove-congruence-theory-table
-       nil '((bfr-equiv bfr-fix-when-bfr-p
-                        bfr-p-bfr-fix)) :clear)
 
-(defmacro prove-congruence (equiv1 equiv2 fncall argnum
-                                   &key fix theory)
-  (let* ((var (nth argnum fncall))
-         (var-equiv (intern-in-package-of-symbol
-                     (coerce (acl2::packn1 (list var '-equiv))
-                             'string)
-                     (if (equal (symbol-package-name equiv1)
-                                *main-lisp-package-name*)
-                         (pkg-witness "ACL2")
-                       equiv1)))
-         (fncall2 (update-nth argnum
-                              (list fix var)
-                              fncall)))
-    `(encapsulate nil
-       (local (defthm local-lemma-for-prove-congruence
-                (equal ,fncall2
-                       ,fncall)
-                :hints (("goal" :in-theory ,theory
-                         :expand (,fncall ,fncall2)))
-                :rule-classes nil))
-       (defcong ,equiv1 ,equiv2 ,fncall ,argnum
-         :hints (("goal" :use ((:instance local-lemma-for-prove-congruence)
-                               (:instance local-lemma-for-prove-congruence
-                                          (,var ,var-equiv)))))))))
 
-(defun prove-congruences-fn (n equivs fncall world)
-  (declare (xargs :mode :program))
-  (if (atom equivs)
-      nil
-    (if (car equivs)
-        (let ((fix (caadr (body (car equivs) nil world)))
-              (theory (cdr (assoc (car equivs)
-                                  (table-alist 'prove-congruence-theory-table world)))))
-          ;; pull out FOO from (equal (foo x) (foo y))
-          (cons `(prove-congruence ,(car equivs) equal
-                                   ,fncall ,n
-                                   :fix ,fix
-                                   :theory ',theory)
-                (prove-congruences-fn (1+ n) (cdr equivs) fncall world)))
-      (prove-congruences-fn (1+ n) (cdr equivs) fncall world))))
 
-(defmacro prove-congruences (equivs fn)
-  `(make-event
-    (cons 'progn
-          (prove-congruences-fn 1 ',equivs
-                                (cons ',fn
-                                      (fgetprop ',fn 'formals nil (w state)))
-                                (w state)))))
+;; (table prove-congruence-theory-table
+;;        nil '((bfr-equiv bfr-fix-when-bfr-p
+;;                         bfr-p-bfr-fix)) :clear)
+
+;; (defmacro prove-congruence (equiv1 equiv2 fncall argnum
+;;                                    &key fix theory)
+;;   (let* ((var (nth argnum fncall))
+;;          (var-equiv (intern-in-package-of-symbol
+;;                      (coerce (acl2::packn1 (list var '-equiv))
+;;                              'string)
+;;                      (if (equal (symbol-package-name equiv1)
+;;                                 *main-lisp-package-name*)
+;;                          (pkg-witness "ACL2")
+;;                        equiv1)))
+;;          (fncall2 (update-nth argnum
+;;                               (list fix var)
+;;                               fncall)))
+;;     `(encapsulate nil
+;;        (local (defthm local-lemma-for-prove-congruence
+;;                 (equal ,fncall2
+;;                        ,fncall)
+;;                 :hints (("goal" :in-theory ,theory
+;;                          :expand (,fncall ,fncall2)))
+;;                 :rule-classes nil))
+;;        (defcong ,equiv1 ,equiv2 ,fncall ,argnum
+;;          :hints (("goal" :use ((:instance local-lemma-for-prove-congruence)
+;;                                (:instance local-lemma-for-prove-congruence
+;;                                           (,var ,var-equiv)))))))))
+
+;; (defun prove-congruences-fn (n equivs fncall world)
+;;   (declare (xargs :mode :program))
+;;   (if (atom equivs)
+;;       nil
+;;     (if (car equivs)
+;;         (let ((fix (caadr (body (car equivs) nil world)))
+;;               (theory (cdr (assoc (car equivs)
+;;                                   (table-alist 'prove-congruence-theory-table world)))))
+;;           ;; pull out FOO from (equal (foo x) (foo y))
+;;           (cons `(prove-congruence ,(car equivs) equal
+;;                                    ,fncall ,n
+;;                                    :fix ,fix
+;;                                    :theory ',theory)
+;;                 (prove-congruences-fn (1+ n) (cdr equivs) fncall world)))
+;;       (prove-congruences-fn (1+ n) (cdr equivs) fncall world))))
+
+;; (defmacro prove-congruences (equivs fn)
+;;   `(make-event
+;;     (cons 'progn
+;;           (prove-congruences-fn 1 ',equivs
+;;                                 (cons ',fn
+;;                                       (fgetprop ',fn 'formals nil (w state)))
+;;                                 (w state)))))
 
 

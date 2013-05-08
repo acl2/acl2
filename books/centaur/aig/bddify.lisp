@@ -457,24 +457,23 @@
                      (and count1 count2 (* count1 count2))
                      (and exact1 exact2)))))
        ((mv bdd count bdd-al nxtbdd exact)
-        (if (and count (<= count max-count))
-            (mv bdd count bdd-al nxtbdd exact)
-          (let* ((c (count-branches-to bdd max-count))
-                 (count (and c (1+ c))))
+        (b* (((when (and count (<= count max-count)))
+              (mv bdd count bdd-al nxtbdd exact))
+             (c (count-branches-to bdd max-count))
+             (count (and c (1+ c)))
             ;; Concept!!! Checking to see whether the result BDD is
             ;; too big and must be replaced by a variable.
-            (if (and count (<= count max-count))
-                (mv bdd count bdd-al nxtbdd exact)
-              (let ((b (hons-get bdd bdd-al)))
-                (if b
-                    (mv (cadr b) (cddr b) bdd-al nxtbdd
-                        nil)
-                  (let* ((n (count-branches-to nxtbdd max-count))
-                         (n (and n (1+ n))))
-                    (mv nxtbdd n
-                        (hut bdd (cons nxtbdd n) bdd-al)
-                        (hons nxtbdd nxtbdd)
-                        nil)))))))))
+             ((when (and count (<= count max-count)))
+              (mv bdd count bdd-al nxtbdd exact))
+             (b (hons-get bdd bdd-al))
+             ((when b)
+              (mv (cadr b) (cddr b) bdd-al nxtbdd nil))
+             (n (count-branches-to nxtbdd max-count))
+             (n (and n (1+ n))))
+          (mv nxtbdd n
+              (hut bdd (cons nxtbdd n) bdd-al)
+              (hons nxtbdd nxtbdd)
+              nil))))
     (mv bdd aig count bdd-al nxtbdd exact)))
   
 

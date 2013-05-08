@@ -22,16 +22,16 @@
        (pattern-match x
          ((g-ite test then else)
           (if (zp clk)
-              (g-apply 'lognot (list x))
+              (g-apply 'lognot (gl-list x))
             (g-if test
                   (,gfn then hyp clk)
                   (,gfn else hyp clk))))
          ((g-apply & &)
-          (g-apply 'lognot (list x)))
+          (g-apply 'lognot (gl-list x)))
          ((g-concrete obj)
           (lognot (ifix obj)))
          ((g-var &)
-          (g-apply 'lognot (list x)))
+          (g-apply 'lognot (gl-list x)))
          ((g-boolean &) -1)
          ((g-number num)
           (b* (((mv rn rd in id)
@@ -42,21 +42,21 @@
                   (mv nil nil))))
             (if intp-known
                 (mk-g-number (lognot-s (bfr-ite-bss-fn intp rn nil)))
-              (g-apply 'lognot (list x)))))
+              (g-apply 'lognot (gl-list x)))))
          (& -1)))))
 
 
 
-(local (defthm gobjectp-lognot
-         (gobjectp (lognot x))
-         :hints(("Goal" :in-theory (enable gobjectp-def)))))
+;; (local (defthm gobjectp-lognot
+;;          (gobjectp (lognot x))
+;;          :hints(("Goal" :in-theory (enable gobjectp-def)))))
 
-(def-gobjectp-thm lognot
-  :hints `(("Goal" :in-theory (e/d ()
-                                   ((:definition ,gfn) lognot))
-            :induct (,gfn i hyp clk)
-            :expand ((,gfn i hyp clk)
-                     (:free (x) (gobjectp (- x)))))))
+;; (def-gobjectp-thm lognot
+;;   :hints `(("Goal" :in-theory (e/d ()
+;;                                    ((:definition ,gfn) lognot))
+;;             :induct (,gfn i hyp clk)
+;;             :expand ((,gfn i hyp clk)
+;;                      (:free (x) (gobjectp (- x)))))))
 
 (verify-g-guards
  lognot
@@ -78,7 +78,6 @@
    :hints `(("Goal" :in-theory (e/d* (components-to-number-alt-def
                                       general-concrete-obj)
                                     ((:definition ,gfn) (force)
-                                     bfr-p-of-boolean
                                      general-number-components-ev
                                      general-numberp-eval-to-numberp
                                      lognot))

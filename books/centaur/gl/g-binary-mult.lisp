@@ -13,9 +13,7 @@
 ;(local (allow-arith5-help))
 
 (defun g-binary-*-of-numbers (x y)
-  (declare (xargs :guard (and (gobjectp x)
-                              (general-numberp x)
-                              (gobjectp y)
+  (declare (xargs :guard (and (general-numberp x)
                               (general-numberp y))))
   (b* (((mv xrn xrd xin xid)
         (general-number-components x))
@@ -34,20 +32,20 @@
            (if (boolean-listp rprod) (v2i rprod) rprod)
            1
            (if (boolean-listp iprod) (v2i iprod) iprod)))
-      (g-apply 'binary-* (list x y)))))
+      (g-apply 'binary-* (gl-list x y)))))
 
 (in-theory (disable (g-binary-*-of-numbers)))
 
 (local
  (progn
-   (defthm gobjectp-g-binary-*-of-numbers
-     (implies (and (gobjectp x)
-                   (general-numberp x)
-                   (gobjectp y)
-                   (general-numberp y))
-              (gobjectp (g-binary-*-of-numbers x y)))
-     :hints(("Goal" :in-theory (disable general-numberp
-                                        general-number-components))))
+   ;; (defthm gobjectp-g-binary-*-of-numbers
+   ;;   (implies (and (gobjectp x)
+   ;;                 (general-numberp x)
+   ;;                 (gobjectp y)
+   ;;                 (general-numberp y))
+   ;;            (gobjectp (g-binary-*-of-numbers x y)))
+   ;;   :hints(("Goal" :in-theory (disable general-numberp
+   ;;                                      general-number-components))))
 
    (include-book "arithmetic/top-with-meta" :dir :system)
 
@@ -64,9 +62,7 @@
               :in-theory (disable equal-complexes-rw))))
 
    (defthm g-binary-*-of-numbers-correct
-     (implies (and (gobjectp x)
-                   (general-numberp x)
-                   (gobjectp y)
+     (implies (and (general-numberp x)
                    (general-numberp y))
               (equal (eval-g-base (g-binary-*-of-numbers x y) env)
                      (* (eval-g-base x env)
@@ -84,35 +80,33 @@
     (g-binary-*-of-numbers x-num y-num)))
 
 (local (defthmd general-concretep-atom
-         (implies (and (not (consp x)) (gobjectp x))
+         (implies (and (not (consp x)))
                   (general-concretep x))
          :hints(("Goal" :in-theory (enable general-concretep-def
                                            gobjectp-def)))
-         :rule-classes ((:rewrite :backchain-limit-lst (0 nil)))))
+         :rule-classes ((:rewrite :backchain-limit-lst (0)))))
 
-(def-gobjectp-thm binary-*
-  :hints `(("goal" :in-theory (e/d* (general-concretep-atom)
-                                    ((:definition ,gfn)
-                                     (force)
-                                     general-concretep-def
-                                     hyp-fix
-                                     gobj-fix-when-not-gobjectp
-                                     gobj-fix-when-gobjectp
-                                     (:rules-of-class :type-prescription :here)
-                                     (:ruleset gl-wrong-tag-rewrites)))
-            :induct (,gfn x y hyp clk)
-            :do-not-induct t
-            :expand ((,gfn x y hyp clk)
-                     (gobjectp (+ (gobj-fix x) (gobj-fix y)))))))
+;; (def-gobjectp-thm binary-*
+;;   :hints `(("goal" :in-theory (e/d* (general-concretep-atom)
+;;                                     ((:definition ,gfn)
+;;                                      (force)
+;;                                      general-concretep-def
+;;                                      hyp-fix
+;;                                      gobj-fix-when-not-gobjectp
+;;                                      gobj-fix-when-gobjectp
+;;                                      (:rules-of-class :type-prescription :here)
+;;                                      (:ruleset gl-wrong-tag-rewrites)))
+;;             :induct (,gfn x y hyp clk)
+;;             :do-not-induct t
+;;             :expand ((,gfn x y hyp clk)
+;;                      (gobjectp (+ (gobj-fix x) (gobj-fix y)))))))
 
 
 (verify-g-guards
  binary-*
  :hints `(("goal" :in-theory
            (disable* ,gfn
-                     bfr-p-of-boolean
-                     (:rules-of-class :type-prescription :here)
-                     (:ruleset gl-wrong-tag-rewrites)))))
+                     (:rules-of-class :type-prescription :here)))))
 
 
 
@@ -133,10 +127,6 @@
                               not-general-numberp-not-acl2-numberp
                               (:ruleset general-object-possibilities))
                              ((:definition ,gfn)
-                              tag-when-g-boolean-p
-                              tag-when-g-apply-p
-                              tag-when-g-concrete-p
-                              tag-when-g-var-p
                               general-numberp-eval-to-numberp
                               general-boolean-value-correct
                               bool-cond-itep-eval
@@ -144,7 +134,7 @@
                               general-consp-cdr-correct-for-eval-g-base
                               boolean-listp
                               components-to-number-alt-def
-                              member-equal bfr-p-of-boolean
+                              member-equal
                               general-number-components-ev
                               general-concretep-def
                               v2n-is-v2i-when-sign-nil

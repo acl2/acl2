@@ -27,8 +27,9 @@
         ((mv bdd & exact)
          (ec-call
           (acl2::aig-bddify acl2::*bddify-default-tries*
-                            prop bindings nil))))
-     (mv (not (not bdd)) exact bdd))))
+                            prop bindings nil)))
+        (sat? (acl2::eval-bdd bdd (acl2::bdd-sat-dfs bdd))))
+     (mv sat? exact bdd))))
 
 
 
@@ -102,10 +103,19 @@
     (implies (and succeeded (not sat))
              (not (bfr-eval prop env))))
   :hints(("Goal" :in-theory (e/d (bfr-eval)
-                                 (aig-q-compose-vars-to-bdd-env))
+                                 (aig-q-compose-vars-to-bdd-env
+                                  acl2::bdd-sat-dfs-correct))
           :use ((:instance aig-q-compose-vars-to-bdd-env
                            (x prop) (n 0) (vars (acl2::aig-vars prop))
-                           (aig-env env))))))
+                           (aig-env env))
+                (:instance acl2::bdd-sat-dfs-correct
+                 (x (MV-NTH 0
+                            (ACL2::AIG-BDDIFY acl2::*bddify-default-tries*
+                                              PROP
+                                              (VARS-TO-BDD-BINDINGS (ACL2::AIG-VARS PROP)
+                                                                    0)
+                                              NIL)))
+                 (acl2::vars (vars-to-bdd-env (acl2::aig-vars prop) env)))))))
 
 
 (defmacro gl-aig-bddify-mode ()
@@ -120,4 +130,6 @@ This is a new, experimental feature under development.~/~/"
            :hints (("goal" :in-theory '(bfr-sat-bddify-unsat))
                    (and stable-under-simplificationp
                         '(:in-theory (enable bfr-sat-bddify)))))))
+
+(local (gl-aig-bddify-mode))
 

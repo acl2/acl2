@@ -52,10 +52,9 @@
 ; the object's guts for most of the general cases.  However, it still has to
 ; recursively process large cons trees, which can be expensive.
 
-  (declare (xargs :guard t :verify-guards nil))
+  (declare (xargs :guard t))
   (if (atom x)
-      (and (not (g-keyword-symbolp x))
-           'concrete)
+      'concrete
     (mbe :logic
          (cond
           ((g-concrete-p x) 'general)
@@ -74,8 +73,8 @@
                              'general
                            'concrete)))))))
          :exec
-         (if (symbolp (car x))
-             (case (car x)
+         (if (symbolp (tag x))
+             (case (tag x)
                (:g-concrete 'general)
                (:g-boolean  nil)
                (:g-number   nil)
@@ -101,15 +100,6 @@
                          (not (equal (gobject-hierarchy-lite x) 'general)))
                     (equal (gobject-hierarchy-lite x) 'concrete))))
 
-  (verify-guards gobject-hierarchy-lite
-    :hints(("Goal" :in-theory (enable g-concrete-p
-                                      g-boolean-p
-                                      g-number-p
-                                      g-ite-p
-                                      g-apply-p
-                                      g-var-p
-                                      g-keyword-symbolp))))
-
   (memoize 'gobject-hierarchy-lite
            :condition '(and (consp x)
                             ;; Any object with a g-keyword in its car will be so
@@ -117,80 +107,80 @@
                             (not (g-keyword-symbolp (car x))))))
 
 
-(encapsulate
-  ()
-  (local (defthm crock
-           (implies (and (not (equal (gobject-hierarchy x) 'gobject))
-                         (not (equal (gobject-hierarchy x) 'general))
-                         (gobject-hierarchy x))
-                    (equal (gobject-hierarchy x) 'concrete))
-           :hints(("Goal" :in-theory (enable gobject-hierarchy)))))
+;; (encapsulate
+;;   ()
+;;   (local (defthm crock
+;;            (implies (and (not (equal (gobject-hierarchy x) 'gobject))
+;;                          (not (equal (gobject-hierarchy x) 'general))
+;;                          (gobject-hierarchy x))
+;;                     (equal (gobject-hierarchy x) 'concrete))
+;;            :hints(("Goal" :in-theory (enable gobject-hierarchy)))))
 
-  (defthm gobject-hierarchy-lite-redef
-    (equal (gobject-hierarchy-lite x)
-           (let ((result (gobject-hierarchy x)))
-             (if (or (equal result 'general)
-                     (equal result 'concrete))
-                 result
-               nil)))
-    :hints(("Goal"
-            :induct (gobject-hierarchy x)
-            :in-theory (enable gobject-hierarchy
-                               gobject-hierarchy-lite)))))
+;;   (defthm gobject-hierarchy-lite-redef
+;;     (equal (gobject-hierarchy-lite x)
+;;            (let ((result (gobject-hierarchy x)))
+;;              (if (or (equal result 'general)
+;;                      (equal result 'concrete))
+;;                  result
+;;                nil)))
+;;     :hints(("Goal"
+;;             :induct (gobject-hierarchy x)
+;;             :in-theory (enable gobject-hierarchy
+;;                                gobject-hierarchy-lite)))))
 
-(encapsulate
-  ()
-  (local (in-theory (disable gobject-hierarchy-lite-redef)))
+;; (encapsulate
+;;   ()
+;;   (local (in-theory (disable gobject-hierarchy-lite-redef)))
 
-  (local (defthm crock
-           (implies (and (not (equal (gobject-hierarchy-aig x) 'gobject))
-                         (not (equal (gobject-hierarchy-aig x) 'general))
-                         (gobject-hierarchy-aig x))
-                    (equal (gobject-hierarchy-aig x) 'concrete))
-           :hints(("Goal" :in-theory (enable gobject-hierarchy-aig)))))
+;;   (local (defthm crock
+;;            (implies (and (not (equal (gobject-hierarchy-aig x) 'gobject))
+;;                          (not (equal (gobject-hierarchy-aig x) 'general))
+;;                          (gobject-hierarchy-aig x))
+;;                     (equal (gobject-hierarchy-aig x) 'concrete))
+;;            :hints(("Goal" :in-theory (enable gobject-hierarchy-aig)))))
 
-  (defthmd gobject-hierarchy-lite->aig
-           (equal (gobject-hierarchy-lite x)
-                  (let ((result (gobject-hierarchy-aig x)))
-                    (if (or (equal result 'general)
-                            (equal result 'concrete))
-                        result
-                      nil)))
-           :hints(("Goal"
-                   :induct (gobject-hierarchy-aig x)
-                   :in-theory (enable gobject-hierarchy-aig
-                                      gobject-hierarchy-lite))))
+;;   (defthmd gobject-hierarchy-lite->aig
+;;            (equal (gobject-hierarchy-lite x)
+;;                   (let ((result (gobject-hierarchy-aig x)))
+;;                     (if (or (equal result 'general)
+;;                             (equal result 'concrete))
+;;                         result
+;;                       nil)))
+;;            :hints(("Goal"
+;;                    :induct (gobject-hierarchy-aig x)
+;;                    :in-theory (enable gobject-hierarchy-aig
+;;                                       gobject-hierarchy-lite))))
 
-  (theory-invariant
-   (incompatible (:rewrite gobject-hierarchy-lite-redef)
-                 (:rewrite gobject-hierarchy-lite->aig))))
+;;   (theory-invariant
+;;    (incompatible (:rewrite gobject-hierarchy-lite-redef)
+;;                  (:rewrite gobject-hierarchy-lite->aig))))
 
-(encapsulate
-  ()
-  (local (in-theory (disable gobject-hierarchy-lite-redef)))
+;; (encapsulate
+;;   ()
+;;   (local (in-theory (disable gobject-hierarchy-lite-redef)))
 
-  (local (defthm crock
-           (implies (and (not (equal (gobject-hierarchy-bdd x) 'gobject))
-                         (not (equal (gobject-hierarchy-bdd x) 'general))
-                         (gobject-hierarchy-bdd x))
-                    (equal (gobject-hierarchy-bdd x) 'concrete))
-           :hints(("Goal" :in-theory (enable gobject-hierarchy-bdd)))))
+;;   (local (defthm crock
+;;            (implies (and (not (equal (gobject-hierarchy-bdd x) 'gobject))
+;;                          (not (equal (gobject-hierarchy-bdd x) 'general))
+;;                          (gobject-hierarchy-bdd x))
+;;                     (equal (gobject-hierarchy-bdd x) 'concrete))
+;;            :hints(("Goal" :in-theory (enable gobject-hierarchy-bdd)))))
 
-  (defthmd gobject-hierarchy-lite->bdd
-    (equal (gobject-hierarchy-lite x)
-           (let ((result (gobject-hierarchy-bdd x)))
-             (if (or (equal result 'general)
-                     (equal result 'concrete))
-                 result
-               nil)))
-    :hints(("Goal"
-            :induct (gobject-hierarchy-bdd x)
-            :in-theory (enable gobject-hierarchy-bdd
-                               gobject-hierarchy-lite))))
+;;   (defthmd gobject-hierarchy-lite->bdd
+;;     (equal (gobject-hierarchy-lite x)
+;;            (let ((result (gobject-hierarchy-bdd x)))
+;;              (if (or (equal result 'general)
+;;                      (equal result 'concrete))
+;;                  result
+;;                nil)))
+;;     :hints(("Goal"
+;;             :induct (gobject-hierarchy-bdd x)
+;;             :in-theory (enable gobject-hierarchy-bdd
+;;                                gobject-hierarchy-lite))))
 
-  (theory-invariant
-   (incompatible (:rewrite gobject-hierarchy-lite-redef)
-                 (:rewrite gobject-hierarchy-lite->bdd))))
+;;   (theory-invariant
+;;    (incompatible (:rewrite gobject-hierarchy-lite-redef)
+;;                  (:rewrite gobject-hierarchy-lite->bdd))))
 
 
 
@@ -218,8 +208,7 @@
 ;; (in-theory (disable concretep))
 
 (defn concrete-gobjectp (x)
-  (mbe :logic (eq (gobject-hierarchy x) 'concrete)
-       :exec (eq (gobject-hierarchy-lite x) 'concrete)))
+  (eq (gobject-hierarchy-lite x) 'concrete))
 
 
 (in-theory (disable concrete-gobjectp))
@@ -248,25 +237,16 @@
 ;; -------------------------
 
 (defun mk-g-ite (c x y)
-  (declare (xargs :guard (and (gobjectp c)
-                              (gobjectp x)
-                              (gobjectp y))
-                  :guard-hints
-                  (("goal" :in-theory (enable gobj-fix
-                                              g-concrete-p
-                                              tag)))))
-  (let ((c (mbe-gobj-fix c))
-        (x (mbe-gobj-fix x))
-        (y (mbe-gobj-fix y)))
-    (cond ((atom c) (if c x y))
-          ((hqual x y) x)
-          ((not (g-keyword-symbolp (tag c)))
-           ;; c is just a cons
-           x)
-          ((eq (tag c) :g-number) x)
-          ((eq (tag c) :g-concrete)
-           (if (g-concrete->obj c) x y))
-          (t (g-ite c x y)))))
+  (declare (xargs :guard t))
+  (cond ((atom c) (if c x y))
+        ((hqual x y) x)
+        ((not (g-keyword-symbolp (tag c)))
+         ;; c is just a cons
+         x)
+        ((eq (tag c) :g-number) x)
+        ((eq (tag c) :g-concrete)
+         (if (g-concrete->obj c) x y))
+        (t (g-ite c x y))))
 ;;      (list* :g-ite c x y))))
 
 (in-theory (disable mk-g-ite))
@@ -279,11 +259,10 @@
 ;; -------------------------
 
 (defun mk-g-boolean (bdd)
-  (declare (xargs :guard (bfr-p bdd)))
+  (declare (xargs :guard t))
   (if (booleanp bdd)
       bdd
-    (let ((bdd (bfrfix bdd)))
-      (g-boolean bdd))))
+    (g-boolean bdd)))
 
 (in-theory (disable mk-g-boolean))
 
@@ -329,15 +308,17 @@
 ;; Cons
 ;; -------------------------
 
-;; A cons of two gobjects is itself a gobject which evaluates to the cons of
-;; the evaluations of the two inputs.  We define a wrapper that fixes the
-;; inputs to gobjects so that this can be stated hyp-free.
+;; A cons of two gobjects is, most often, itself a gobject which evaluates to
+;; the cons of the evaluations of the two inputs.  Gl-cons ensures that this is
+;; the case, that is, if the first is a g-keyword-symbol it wraps it in a g-concrete.
+
 
 (defun gl-cons (x y)
-  (declare (xargs :guard (and (gobjectp x) (gobjectp y))
-                  :guard-hints
-                  (("Goal" :in-theory (enable gobj-fix)))))
-  (cons (mbe-gobj-fix x) (mbe-gobj-fix y)))
+  (declare (xargs :guard t))
+  (cons (if (g-keyword-symbolp x)
+            (g-concrete x)
+          x)
+        y))
 
 (defun gl-list-macro (lst)
   (if (atom lst)
@@ -347,3 +328,20 @@
 
 (defmacro gl-list (&rest args)
   (gl-list-macro args))
+
+
+
+(defsection gobj-listp
+  (defund gobj-listp (x)
+    (declare (xargs :guard t))
+    (if (atom x)
+        (eq x nil)
+      (and (not (g-keyword-symbolp (car x)))
+           (gobj-listp (cdr x)))))
+
+  (local (in-theory (enable gobj-listp)))
+
+  (defthm gobj-listp-of-gl-cons
+    (implies (gobj-listp x)
+             (gobj-listp (gl-cons k x)))
+    :hints(("Goal" :in-theory (enable gl-cons tag)))))

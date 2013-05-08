@@ -970,7 +970,8 @@ like @(see bitset-intersect) and @(see bitset-difference).</p>"
              (implies (and (natp a) (natp b))
                       (not (iff (sets::in k (bitset-members a))
                                 (sets::in k (bitset-members b))))))
-     :restriction (let ((bitset-fns (table-alist 'bitset-fns (w state))))
+     :restriction 
+     (let ((bitset-fns (table-alist 'bitset-fns world)))
                     (or (and (consp a)
                              (assoc (car a) bitset-fns))
                         (and (consp b)
@@ -983,7 +984,8 @@ like @(see bitset-intersect) and @(see bitset-difference).</p>"
      :expr (iff (sets::in k (bitset-members a))
                 (sets::in k (bitset-members b)))
      :vars (k)
-     :restriction (let ((bitset-fns (table-alist 'bitset-fns (w state))))
+     :restriction 
+     (let ((bitset-fns (table-alist 'bitset-fns world)))
                     (or (and (consp a)
                              (assoc (car a) bitset-fns))
                         (and (consp b)

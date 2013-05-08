@@ -24,6 +24,9 @@
 (include-book "centaur/ubdds/param" :dir :system)
 (include-book "centaur/ubdds/lite" :dir :system)
 (include-book "centaur/misc/suffixp" :dir :system)
+(include-book "clause-processors/witness-cp" :dir :system)
+(include-book "clause-processors/just-expand" :dir :system)
+(include-book "centaur/misc/universal-equiv" :dir :system)
 (in-theory (disable equal-by-eval-bdds
                     aig-q-compose-correct))
 
@@ -55,14 +58,14 @@
            (ubddp (aig-q-compose x al))))
 
 
-(local (q-witness-mode t))
+;; (local (q-witness-mode t))
 
-(local 
- (defthm qs-subset-to-equal-form
-   (implies (and (ubddp a) (ubddp b))
-            (equal (qs-subset a b)
-                   (equal (q-implies a b) t)))
-   :hints (("goal" :in-theory (enable qs-subset)))))
+;; (local 
+;;  (defthm qs-subset-to-equal-form
+;;    (implies (and (ubddp a) (ubddp b))
+;;             (equal (qs-subset a b)
+;;                    (equal (q-implies a b) t)))
+;;    :hints (("goal" :in-theory (enable qs-subset)))))
 
 (local
  (in-theory (disable qs-subset-when-booleans
@@ -72,7 +75,9 @@
                      equal-of-booleans-rewrite
                      eval-bdd-when-non-consp-values
                      eval-bdd-when-not-consp
-                     number-subtrees)))
+                     number-subtrees
+                     (force)
+                     )))
 
 
 
@@ -83,6 +88,145 @@
              (equal (car sub)
                     (hons-assoc-equal (caar sub) al)))
          (subalistp (cdr sub) al))))
+
+
+
+
+(def-universal-equiv bdd-equiv
+  :qvars (env)
+  :equiv-terms ((equal (eval-bdd x env))))
+
+(defcong bdd-equiv equal (eval-bdd x env) 1
+  :hints(("Goal" :in-theory (enable bdd-equiv-necc))))
+
+(defun-sk bdd-impl (x y)
+  (forall env
+          (implies (eval-bdd x env)
+                   (eval-bdd y env))))
+
+(in-theory (disable bdd-impl))
+
+
+(definstantiate bdds-equal
+  :predicate (equal x y)
+  :vars (env)
+  :expr (equal (eval-bdd x env) (eval-bdd y env))
+  :hints ('(:in-theory nil))
+  :restriction 
+  (if (match-term-pattern x (cdr (assoc-equal 'bdd (table-alist 'term-patterns
+                                                                world))))
+      (match-term-pattern y (cdr (assoc-equal 'bdd (table-alist 'term-patterns
+                                                                world))))
+    'nil))
+
+(definstantiate bdds-bdd-equiv
+  :predicate (bdd-equiv x y)
+  :vars (env)
+  :expr (equal (eval-bdd x env) (eval-bdd y env))
+  :hints ('(:in-theory '(bdd-equiv-necc))))
+
+(definstantiate not-bdd
+  :predicate (not x)
+  :vars (env)
+  :expr (not (eval-bdd x env))
+  :hints ('(:in-theory '(eval-bdd-of-nil)))
+  :restriction 
+  (match-term-pattern x (cdr (assoc-equal 'bdd (table-alist 'term-patterns
+                                                            world)))))
+
+(definstantiate bdds-subset
+  :predicate (bdd-impl x y)
+  :vars (env)
+  :expr (implies (eval-bdd x env) (eval-bdd y env))
+  :hints ('(:by bdd-impl-necc)))
+
+(defexample bdd-example-template
+  :pattern (eval-bdd x env)
+  :templates (env)
+  :instance-rules (bdds-equal bdds-bdd-equiv not-bdd bdds-subset))
+
+(defexample bdd-eval-alst-example-template
+  :pattern (bdd-eval-alst x env)
+  :templates (env)
+  :instance-rules (bdds-equal bdds-bdd-equiv not-bdd bdds-subset))
+
+(defwitness bdd-equiv-witnessing
+  :predicate (not (bdd-equiv x y))
+  :expr (let ((env (bdd-equiv-witness x y)))
+          (not (equal (eval-bdd x env) (eval-bdd y env))))
+  :hints ('(:in-theory (enable bdd-equiv)))
+  :generalize (((bdd-equiv-witness x y) . env)))
+
+(defwitness bdd-impl-witnessing
+  :predicate (not (bdd-impl x y))
+  :expr (let ((env (bdd-impl-witness x y)))
+          (not (implies (eval-bdd x env) (eval-bdd y env))))
+  :hints ('(:in-theory (enable bdd-impl)))
+  :generalize (((bdd-impl-witness x y) . env)))
+
+
+
+(def-witness-ruleset bdd-equality-rules
+  '(bdd-example-template
+    bdd-eval-alst-example-template
+    not-bdd bdds-equal bdds-bdd-equiv bdd-equiv-witnessing
+    bdds-subset bdd-impl-witnessing))
+
+
+
+(defmacro simple-bdd-reasoning ()
+  '(witness :ruleset bdd-equality-rules))
+
+
+(defcong bdd-equiv equal (bdd-impl a b) 1
+  :hints (("goal" :cases ((bdd-impl a b)))
+          (simple-bdd-reasoning)))
+
+(defcong bdd-equiv equal (bdd-impl a b) 2
+  :hints (("goal" :cases ((bdd-impl a b)))
+          (simple-bdd-reasoning)))
+
+(defcong bdd-equiv bdd-equiv (q-and a b) 1
+  :hints ((simple-bdd-reasoning)))
+
+(defcong bdd-equiv bdd-equiv (q-and a b) 2
+  :hints ((simple-bdd-reasoning)))
+
+(defcong bdd-equiv bdd-equiv (q-not x) 1
+  :hints ((simple-bdd-reasoning)))
+
+
+(defthm bdd-impl-self
+  (bdd-impl x x)
+  :hints ((simple-bdd-reasoning)))
+
+(defthm bdd-impl-nil-is-bdd-equiv-nil
+  (equal (bdd-impl x nil)
+         (bdd-equiv x nil))
+  :hints (("goal" :cases ((bdd-impl x nil)))
+          (simple-bdd-reasoning)))
+
+(defthm bdd-impl-t-is-bdd-equiv-t
+  (equal (bdd-impl t x)
+         (bdd-equiv x t))
+  :hints (("goal" :cases ((bdd-impl t x)))
+          (simple-bdd-reasoning)))
+
+(defthm aig-q-compose-nil
+  (equal (aig-q-compose nil a)
+         nil))
+
+
+(defthm bdd-impl-transitive-1
+  (implies (and (bdd-impl a b)
+                (bdd-impl b c))
+           (bdd-impl a c))
+  :hints ((simple-bdd-reasoning)))
+
+(defthm bdd-impl-transitive-2
+  (implies (and (bdd-impl b c)
+                (bdd-impl a b))
+           (bdd-impl a c)))
 
 (local
  (progn
@@ -118,19 +262,18 @@
    (add-bdd-fn-pat aig-q-compose)
 
 
-   (defthm aig-q-compose-aig-and
-     (implies (ubddp-val-alistp al)
-              (equal (aig-q-compose (aig-and a b) al)
-                     (q-and (aig-q-compose a al)
-                            (aig-q-compose b al))))
-     :hints (("goal" :in-theory (enable aig-and))))
+   ;; (defthm aig-q-compose-aig-and
+   ;;   (implies (ubddp-val-alistp al)
+   ;;            (equal (aig-q-compose (aig-and a b) al)
+   ;;                   (q-and (aig-q-compose a al)
+   ;;                          (aig-q-compose b al))))
+   ;;   :hints (("goal" :in-theory (enable aig-and))))
 
-   (defthm aig-q-compose-aig-not
-     (implies (ubddp-val-alistp al)
-              (equal (aig-q-compose (aig-not x) al)
-                     (q-not (aig-q-compose x al))))
-     :hints (("goal" :in-theory (enable aig-not))))
-
+   ;; (defthm aig-q-compose-aig-not
+   ;;   (implies (ubddp-val-alistp al)
+   ;;            (equal (aig-q-compose (aig-not x) al)
+   ;;                   (q-not (aig-q-compose x al))))
+   ;;   :hints (("goal" :in-theory (enable aig-not))))
 
 
 
@@ -138,9 +281,9 @@
 
 
    (defthm merge-hi-lo-bounds-0-b
-     (implies (and (ubddp-val-alistp al)
-                   (ubddp hi1) (ubddp hi2)
-                   (ubddp lo1) (ubddp lo2)
+     (implies (and ;; (ubddp-val-alistp al)
+                   ;; (ubddp hi1) (ubddp hi2)
+                   ;; (ubddp lo1) (ubddp lo2)
                    (implies (eval-bdd lo1 v)
                             (eval-bdd hi1 v))
                    (implies (eval-bdd lo2 v)
@@ -150,9 +293,9 @@
                        (eval-bdd (q-and hi1 hi2) v)))))
 
    (defthm merge-hi-lo-bounds-1-b
-     (implies (and (ubddp-val-alistp al)
-                   (ubddp hi1) (ubddp hi2)
-                   (ubddp lo1) (ubddp lo2)
+     (implies (and ;; (ubddp-val-alistp al)
+                   ;; (ubddp hi1) (ubddp hi2)
+                   ;; (ubddp lo1) (ubddp lo2)
                    (implies (eval-bdd lo1 v)
                             (eval-bdd hi1 v))
                    (implies (eval-bdd lo2 v)
@@ -161,11 +304,12 @@
                 (equal (eval-bdd (mv-nth 1 ans) v)
                        (eval-bdd (q-and lo1 lo2) v)))))
 
+   (in-theory (enable aig-q-compose-correct))
 
    (defthm merge-hi-lo-aig-q-compose
-     (implies (and (ubddp-val-alistp al)
-                   (ubddp hi1) (ubddp hi2)
-                   (ubddp lo1) (ubddp lo2)
+     (implies (and ;; (ubddp-val-alistp al)
+                   ;; (ubddp hi1) (ubddp hi2)
+                   ;; (ubddp lo1) (ubddp lo2)
                    (implies (eval-bdd lo1 v)
                             (eval-bdd (aig-q-compose a1 al) v))
                    (implies (eval-bdd (aig-q-compose a1 al) v)
@@ -175,7 +319,7 @@
                    (implies (eval-bdd (aig-q-compose a2 al) v)
                             (eval-bdd hi2 v)))
               (let ((ans (merge-hi-lo hi1 hi2 lo1 lo2 a1 a2 hc1 hc2 lc1 lc2)))
-                (equal (eval-bdd (aig-q-compose (mv-nth 2 ans) al) v)
+                (equal (aig-eval (mv-nth 2 ans) (bdd-eval-alst al v))
                        (eval-bdd (q-and (aig-q-compose a1 al)
                                         (aig-q-compose a2 al)) v))))
      :hints (("goal" :in-theory (e/d (merge-hi-lo)))))
@@ -192,12 +336,12 @@
    (add-bdd-pat (mv-nth 1 (merge-hi-lo . &)))
 
    (defthm prune-by-count-nil-impl
-     (implies (and (ubddp b)
+     (implies (and ;; (ubddp b)
                    (not (eval-bdd b v)))
               (not (eval-bdd (mv-nth 0 (prune-by-count b cnt max nil)) v))))
 
    (defthm prune-by-count-t-impl
-     (implies (and (ubddp b)
+     (implies (and ;; (ubddp b)
                    (eval-bdd b v))
               (equal (eval-bdd (mv-nth 0 (prune-by-count b cnt max t)) v) t)))
 
@@ -221,9 +365,9 @@
      :hints (("goal" :in-theory (enable and-bddify-x-weakening))))
 
    (defthm and-bddify-x-weakening-bounds
-     (implies (and (ubddp-val-alistp al)
-                   (ubddp hi1) (ubddp hi2)
-                   (ubddp lo1) (ubddp lo2)
+     (implies (and ;; (ubddp-val-alistp al)
+                   ;; (ubddp hi1) (ubddp hi2)
+                   ;; (ubddp lo1) (ubddp lo2)
                    (implies (eval-bdd lo1 v)
                             (eval-bdd (aig-q-compose a1 al) v))
                    (implies (eval-bdd (aig-q-compose a1 al) v)
@@ -243,15 +387,39 @@
      :hints (("goal" :in-theory (e/d (and-bddify-x-weakening) nil)
               :do-not-induct t)
              (and stable-under-simplificationp
-                  '(:in-theory (enable (:type-prescription eval-bdd))))))
+                  '(:in-theory (enable (:type-prescription eval-bdd))))
+             (simple-bdd-reasoning)))
 
+   
+
+
+
+   (defthm and-bddify-x-weakening-impl
+     (implies (and (bdd-impl lo1 (aig-q-compose a1 al))
+                   (bdd-impl (aig-q-compose a1 al) hi1)
+                   (bdd-impl lo2 (aig-q-compose a2 al))
+                   (bdd-impl (aig-q-compose a2 al) hi2))
+              (and (bdd-impl (q-and (aig-q-compose a1 al)
+                                    (aig-q-compose a2 al))
+                             (mv-nth 0 (and-bddify-x-weakening
+                                        hi1 hi2 lo1 lo2 a1 a2 hc1 hc2 lc1 lc2
+                                        max)))
+                   (bdd-impl (mv-nth 1 (and-bddify-x-weakening
+                                        hi1 hi2 lo1 lo2 a1 a2 hc1 hc2 lc1 lc2
+                                        max))
+                             (q-and (aig-q-compose a1 al)
+                                    (aig-q-compose a2 al)))))
+     :hints ((simple-bdd-reasoning)
+             (and stable-under-simplificationp
+                  '(:use ((:instance and-bddify-x-weakening-bounds
+                           (a11 a1) (a22 a2) (al al) (v env0)))))))
 
                 
 
    (defthm and-bddify-x-weakening-q-compose
-     (implies (and (ubddp-val-alistp al)
-                   (ubddp hi1) (ubddp hi2)
-                   (ubddp lo1) (ubddp lo2)
+     (implies (and ;; (ubddp-val-alistp al)
+                   ;; (ubddp hi1) (ubddp hi2)
+                   ;; (ubddp lo1) (ubddp lo2)
                    (implies (eval-bdd lo1 v)
                             (eval-bdd (aig-q-compose a1 al) v))
                    (implies (eval-bdd (aig-q-compose a1 al) v)
@@ -260,90 +428,102 @@
                             (eval-bdd (aig-q-compose a2 al) v))
                    (implies (eval-bdd (aig-q-compose a2 al) v)
                             (eval-bdd hi2 v)))
-              (equal (eval-bdd  (aig-q-compose
-                                 (mv-nth 2 (and-bddify-x-weakening
-                                            hi1 hi2 lo1 lo2 a1 a2 hc1 hc2 lc1 lc2 max))
-                                 al) v)
+              (equal (aig-eval (mv-nth 2 (and-bddify-x-weakening
+                                          hi1 hi2 lo1 lo2 a1 a2 hc1 hc2 lc1 lc2 max))
+                               (bdd-eval-alst al v))
                      (eval-bdd (q-and (aig-q-compose a1 al)
                                       (aig-q-compose a2 al)) v)))
-     :hints (("goal" :in-theory (e/d (and-bddify-x-weakening
-                                      aig-q-compose))
-              :do-not-induct t)))))
+     :hints (("goal" :in-theory (e/d (and-bddify-x-weakening))
+              :do-not-induct t)
+             (simple-bdd-reasoning)))
+
+   (defthm and-bddify-x-weakening-equiv
+     (implies (and (bdd-impl lo1 (aig-q-compose a1 al))
+                   (bdd-impl (aig-q-compose a1 al) hi1)
+                   (bdd-impl lo2 (aig-q-compose a2 al))
+                   (bdd-impl (aig-q-compose a2 al) hi2))
+              (bdd-equiv (aig-q-compose
+                          (mv-nth 2 (and-bddify-x-weakening
+                                     hi1 hi2 lo1 lo2 a1 a2 hc1 hc2 lc1 lc2
+                                     max))
+                          al)
+                         (q-and (aig-q-compose a1 al)
+                                (aig-q-compose a2 al))))
+     :hints (("goal" :in-theory (disable and-bddify-x-weakening))
+             (simple-bdd-reasoning)))))
+
+
 
 
 (defun abs-fmemo-okp (fmemo al)
   (or (atom fmemo)
       (and (consp (car fmemo))
            (consp (cdar fmemo))
-           (ubddp (cadar fmemo))
-           (equal (cadar fmemo)
-                  (aig-q-compose (caar fmemo) al))
+           (bdd-equiv (cadar fmemo)
+                      (aig-q-compose (caar fmemo) al))
            (consp (cddar fmemo))
-           (equal (aig-q-compose (caddar fmemo) al)
-                  (aig-q-compose (caar fmemo) al))
+           (bdd-equiv (aig-q-compose (caddar fmemo) al)
+                      (aig-q-compose (caar fmemo) al))
            (abs-fmemo-okp (cdr fmemo) al))))
+
+(defun abs-fmemo-wfp (fmemo)
+  (or (atom fmemo)
+      (and (consp (car fmemo))
+           (consp (cdar fmemo))
+           (ubddp (cadar fmemo))
+           (abs-fmemo-wfp (cdr fmemo)))))
 
 (local
  (progn
-   (defthmd abs-fmemo-okp-hons-assoc-equal-rw1
-     (implies (and (bind-free '((al . al)) (al))
-                   (abs-fmemo-okp fmemo al)
-                   (hons-assoc-equal x fmemo))
-              (equal (cadr (hons-assoc-equal x fmemo))
-                     (aig-q-compose x al))))
-
-
-   (defthmd abs-fmemo-okp-hons-assoc-equal-rw2
+   (defthm abs-fmemo-okp-hons-assoc-equal-rw1
      (implies (and (abs-fmemo-okp fmemo al)
                    (hons-assoc-equal x fmemo))
-              (and (equal (aig-q-compose (caddr (hons-assoc-equal x fmemo)) al)
-                          (aig-q-compose x al))
-                   ;;                 (simplifiedp (caddr (hons-assoc-equal x fmemo)) al)
-                   )))
+              (bdd-equiv (cadr (hons-assoc-equal x fmemo))
+                         (aig-q-compose x al))))
+
+
+   (defthm abs-fmemo-okp-hons-assoc-equal-rw2
+     (implies (and (abs-fmemo-okp fmemo al)
+                   (hons-assoc-equal x fmemo))
+              (and (bdd-equiv (aig-q-compose (caddr (hons-assoc-equal x fmemo)) al)
+                              (aig-q-compose x al)))))
 
    (defthm abs-fmemo-okp-hons-assoc-equal-ubddp
-     (implies (and (bind-free '((al . al)) (al))
-                   (abs-fmemo-okp fmemo al)
+     (implies (and (abs-fmemo-wfp fmemo)
                    (hons-assoc-equal x fmemo))
               (ubddp (cadr (hons-assoc-equal x fmemo))))
      :hints (("goal" :in-theory (enable hons-assoc-equal))))
 
-   (defun abs-fmemo-okp-point (fmemo al v)
-     (or (atom fmemo)
-         (and (consp (car fmemo))
-              (consp (cdar fmemo))
-              (ubddp (cadar fmemo))
-              (equal (eval-bdd (cadar fmemo) v)
-                     (eval-bdd (aig-q-compose (caar fmemo) al) v))
-              (consp (cddar fmemo))
-              (equal (eval-bdd (aig-q-compose (caddar fmemo) al) v)
-                     (eval-bdd (aig-q-compose (caar fmemo) al) v))
-              (abs-fmemo-okp-point (cdr fmemo) al v))))
+   ;; (defun abs-fmemo-okp-point (fmemo al v)
+   ;;   (or (atom fmemo)
+   ;;       (and (consp (car fmemo))
+   ;;            (consp (cdar fmemo))
+   ;;            (equal (eval-bdd (cadar fmemo) v)
+   ;;                   (eval-bdd (aig-q-compose (caar fmemo) al) v))
+   ;;            (consp (cddar fmemo))
+   ;;            (equal (eval-bdd (aig-q-compose (caddar fmemo) al) v)
+   ;;                   (eval-bdd (aig-q-compose (caar fmemo) al) v))
+   ;;            (abs-fmemo-okp-point (cdr fmemo) al v))))
 
 
-   (defthm abs-fmemo-okp-point-hons-assoc-equal-rw1
-     (implies (and (bind-free '((al . al)) (al))
-                   (abs-fmemo-okp-point fmemo al v)
-                   (hons-assoc-equal x fmemo))
-              (equal (eval-bdd (cadr (hons-assoc-equal x fmemo)) v)
-                     (eval-bdd (aig-q-compose x al) v))))
+   ;; (defthm abs-fmemo-okp-point-hons-assoc-equal-rw1
+   ;;   (implies (and (bind-free '((al . al)) (al))
+   ;;                 (abs-fmemo-okp-point fmemo al v)
+   ;;                 (hons-assoc-equal x fmemo))
+   ;;            (equal (eval-bdd (cadr (hons-assoc-equal x fmemo)) v)
+   ;;                   (eval-bdd (aig-q-compose x al) v))))
 
 
-   (defthm abs-fmemo-okp-point-hons-assoc-equal-rw2
-     (implies (and (abs-fmemo-okp-point fmemo al v)
-                   (hons-assoc-equal x fmemo))
-              (and (equal (eval-bdd (aig-q-compose
-                                     (caddr (hons-assoc-equal x fmemo)) al) v)
-                          (eval-bdd (aig-q-compose x al) v))
-                   ;;                 (simplifiedp (caddr (hons-assoc-equal x fmemo)) al)
-                   )))
+   ;; (defthm abs-fmemo-okp-point-hons-assoc-equal-rw2
+   ;;   (implies (and (abs-fmemo-okp-point fmemo al v)
+   ;;                 (hons-assoc-equal x fmemo))
+   ;;            (and (equal (eval-bdd (aig-q-compose
+   ;;                                   (caddr (hons-assoc-equal x fmemo)) al) v)
+   ;;                        (eval-bdd (aig-q-compose x al) v))
+   ;;                 ;;                 (simplifiedp (caddr (hons-assoc-equal x fmemo)) al)
+   ;;                 )))
 
-   (defthm abs-fmemo-okp-point-hons-assoc-equal-ubddp
-     (implies (and (bind-free '((al . al)) (al))
-                   (abs-fmemo-okp-point fmemo al v)
-                   (hons-assoc-equal x fmemo))
-              (ubddp (cadr (hons-assoc-equal x fmemo))))
-     :hints (("goal" :in-theory (enable hons-assoc-equal))))))
+   ))
 
 
 
@@ -351,36 +531,56 @@
   (or (atom memo)
       (and (consp (car memo))
            (consp (cdar memo))
+           (not (hqual (cadar memo) (caddar memo))) ;; ??
+           (bdd-impl (aig-q-compose (caar memo) al) (cadar memo))
+           (consp (cddar memo))
+           (bdd-impl (caddar memo) (aig-q-compose (caar memo) al))
+           (consp (cdddar memo))
+           (bdd-equiv (aig-q-compose (car (cdddar memo)) al)
+                      (aig-q-compose (caar memo) al))
+           (apqs-memo-okp (cdr memo) al))))
+
+(defun apqs-memo-wfp (memo)
+  (or (atom memo)
+      (and (consp (car memo))
+           (consp (cdar memo))
            (ubddp (cadar memo))
            (ubddp (caddar memo))
-           (not (hqual (cadar memo) (caddar memo)))
-           (qs-subset (aig-q-compose (caar memo) al) (cadar memo))
-           (consp (cddar memo))
-           (qs-subset (caddar memo) (aig-q-compose (caar memo) al))
-           (consp (cdddar memo))
-           (equal (aig-q-compose (car (cdddar memo)) al)
-                  (aig-q-compose (caar memo) al))
-           (apqs-memo-okp (cdr memo) al))))
+           (apqs-memo-wfp (cdr memo)))))
+
+
 
 (local
  (progn
-   (defthm apqs-memo-okp-hons-assoc-equal-qs-subset
+   (defthm apqs-memo-okp-hons-assoc-equal-bdd-impl
      (implies (and (apqs-memo-okp memo al)
                    (hons-assoc-equal x memo))
-              (and (qs-subset (aig-q-compose x al) (cadr (hons-assoc-equal x memo)))
-                   (qs-subset (caddr (hons-assoc-equal x memo)) (aig-q-compose x
-                                                                               al)))))
+              (and (bdd-impl (aig-q-compose x al) (cadr (hons-assoc-equal x memo)))
+                   (bdd-impl (caddr (hons-assoc-equal x memo)) (aig-q-compose x
+                                                                              al)))))
+
+   (defthm apqs-memo-okp-hons-assoc-equal-bdd-impl-trans-1
+     (implies (and (apqs-memo-okp memo al)
+                   (hons-assoc-equal x memo)
+                   (bdd-impl y (aig-q-compose x al)))
+              (bdd-impl y (cadr (hons-assoc-equal x memo))))
+     :hints(("Goal" :in-theory (disable apqs-memo-okp hons-assoc-equal))))
+
+   (defthm apqs-memo-okp-hons-assoc-equal-bdd-impl-trans-2
+     (implies (and (apqs-memo-okp memo al)
+                   (hons-assoc-equal x memo)
+                   (bdd-impl (aig-q-compose x al) y))
+              (bdd-impl (caddr (hons-assoc-equal x memo)) y)))
 
    (defthm apqs-memo-okp-hons-assoc-equal-aig-q-compose-equal
      (implies (and (apqs-memo-okp memo al)
                    (hons-assoc-equal x memo))
-              (equal (aig-q-compose (car (cdddr (hons-assoc-equal x memo))) al)
-                     (aig-q-compose x al))))
+              (bdd-equiv (aig-q-compose (car (cdddr (hons-assoc-equal x memo))) al)
+                         (aig-q-compose x al))))
 
 
    (defthm apqs-memo-okp-hons-assoc-equal-ubddp
-     (implies (and (bind-free '((al . al)) (al))
-                   (apqs-memo-okp memo al)
+     (implies (and (apqs-memo-wfp memo)
                    (hons-assoc-equal x memo))
               (and (ubddp (cadr (hons-assoc-equal x memo)))
                    (ubddp (caddr (hons-assoc-equal x memo))))))
@@ -395,19 +595,22 @@
                     (consp (cdddr (hons-assoc-equal x memo)))))))
 
 
-   (defthm apqs-memo-okp-hons-assoc-equal-pick-a-point
-     (implies (and (apqs-memo-okp memo al)
-                   (ubddp-val-alistp al)
-                   (hons-assoc-equal x memo))
-              (and (implies (eval-bdd (aig-q-compose x al) v)
-                            (eval-bdd (cadr (hons-assoc-equal x memo)) v))
-                   (implies (not (eval-bdd (aig-q-compose x al) v))
-                            (not (eval-bdd (caddr (hons-assoc-equal x memo))
-                                           v)))
-                   (implies (eval-bdd (caddr (hons-assoc-equal x memo)) v)
-                            (eval-bdd (cadr (hons-assoc-equal x memo)) v))
-                   (implies (not (eval-bdd (cadr (hons-assoc-equal x memo)) v))
-                            (not (eval-bdd (caddr (hons-assoc-equal x memo)) v))))))
+   ;; (defthm apqs-memo-okp-hons-assoc-equal-pick-a-point
+   ;;   (implies (and (apqs-memo-okp memo al)
+   ;;                 (hons-assoc-equal x memo))
+   ;;            (and (implies (eval-bdd (aig-q-compose x al) v)
+   ;;                          (eval-bdd (cadr (hons-assoc-equal x memo)) v))
+   ;;                 (implies (not (eval-bdd (aig-q-compose x al) v))
+   ;;                          (not (eval-bdd (caddr (hons-assoc-equal x memo))
+   ;;                                         v)))
+   ;;                 (implies (eval-bdd (caddr (hons-assoc-equal x memo)) v)
+   ;;                          (eval-bdd (cadr (hons-assoc-equal x memo)) v))
+   ;;                 (implies (not (eval-bdd (cadr (hons-assoc-equal x memo)) v))
+   ;;                          (not (eval-bdd (caddr (hons-assoc-equal x memo))
+   ;;                                         v)))))
+   ;;   :hints (("goal" :induct (hons-assoc-equal x memo)
+   ;;            :expand ((apqs-memo-okp memo al)))
+   ;;           (simple-bdd-reasoning)))
 
 
    (in-theory (disable and-bddify-x-weakening
@@ -422,64 +625,62 @@
    (add-bdd-pat (car (cdr (cdr (hons-assoc-equal x memo)))))
 
 
-   (defun apqs-memo-okp-point (memo al vals)
-     (or (atom memo)
-         (and (consp (car memo))
-              (consp (cdar memo))
-              (ubddp (cadar memo))
-              (ubddp (caddar memo))
-              (not (hqual (cadar memo) (caddar memo)))
-              (implies (eval-bdd (aig-q-compose (caar memo) al) vals)
-                       (eval-bdd (cadar memo) vals))
-              (consp (cddar memo))
-              (implies (eval-bdd (caddar memo) vals)
-                       (eval-bdd (aig-q-compose (caar memo) al) vals))
-              (consp (cdddar memo))
-              (equal (eval-bdd (aig-q-compose (car (cdddar memo)) al) vals)
-                     (eval-bdd (aig-q-compose (caar memo) al) vals))
-              (apqs-memo-okp-point (cdr memo) al vals))))
+   ;; (defun apqs-memo-okp-point (memo al vals)
+   ;;   (or (atom memo)
+   ;;       (and (consp (car memo))
+   ;;            (consp (cdar memo))
+   ;;            (not (hqual (cadar memo) (caddar memo)))
+   ;;            (implies (eval-bdd (aig-q-compose (caar memo) al) vals)
+   ;;                     (eval-bdd (cadar memo) vals))
+   ;;            (consp (cddar memo))
+   ;;            (implies (eval-bdd (caddar memo) vals)
+   ;;                     (eval-bdd (aig-q-compose (caar memo) al) vals))
+   ;;            (consp (cdddar memo))
+   ;;            (equal (eval-bdd (aig-q-compose (car (cdddar memo)) al) vals)
+   ;;                   (eval-bdd (aig-q-compose (caar memo) al) vals))
+   ;;            (apqs-memo-okp-point (cdr memo) al vals))))
 
 
-   (defthm apqs-memo-okp-point-hons-assoc-equal-impl
-     (implies (and (apqs-memo-okp-point memo al v)
-                   (hons-assoc-equal x memo))
-              (and (implies (eval-bdd (aig-q-compose x al) v)
-                            (eval-bdd (cadr (hons-assoc-equal x memo)) v))
-                   (implies (not (eval-bdd (aig-q-compose x al) v))
-                            (not (eval-bdd (caddr (hons-assoc-equal x memo)) v)))
-                   (implies (eval-bdd (caddr (hons-assoc-equal x memo)) v)
-                            (eval-bdd (cadr (hons-assoc-equal x memo)) v))
-                   (implies (not (eval-bdd (cadr (hons-assoc-equal x memo)) v))
-                            (not (eval-bdd (caddr (hons-assoc-equal x memo))
-                                           v)))))
-     :hints (("goal" :in-theory (e/d (hons-assoc-equal) (aig-q-compose)))))
+   ;; (defthm apqs-memo-okp-point-hons-assoc-equal-impl
+   ;;   (implies (and (apqs-memo-okp-point memo al v)
+   ;;                 (hons-assoc-equal x memo))
+   ;;            (and (implies (eval-bdd (aig-q-compose x al) v)
+   ;;                          (eval-bdd (cadr (hons-assoc-equal x memo)) v))
+   ;;                 (implies (not (eval-bdd (aig-q-compose x al) v))
+   ;;                          (not (eval-bdd (caddr (hons-assoc-equal x memo)) v)))
+   ;;                 (implies (eval-bdd (caddr (hons-assoc-equal x memo)) v)
+   ;;                          (eval-bdd (cadr (hons-assoc-equal x memo)) v))
+   ;;                 (implies (not (eval-bdd (cadr (hons-assoc-equal x memo)) v))
+   ;;                          (not (eval-bdd (caddr (hons-assoc-equal x memo))
+   ;;                                         v)))))
+   ;;   :hints (("goal" :in-theory (e/d (hons-assoc-equal) (aig-q-compose)))))
 
-   (defthm apqs-memo-okp-point-hons-assoc-equal-aig-q-compose-equal
-     (implies (and (apqs-memo-okp-point memo al v)
-                   (hons-assoc-equal x memo))
-              (equal (eval-bdd (aig-q-compose
-                                (car (cdddr (hons-assoc-equal x memo))) al) v)
-                     (eval-bdd (aig-q-compose x al) v)))
-     :hints (("goal" :in-theory (e/d (hons-assoc-equal) (aig-q-compose)))))
+   ;; (defthm apqs-memo-okp-point-hons-assoc-equal-aig-q-compose-equal
+   ;;   (implies (and (apqs-memo-okp-point memo al v)
+   ;;                 (hons-assoc-equal x memo))
+   ;;            (equal (aig-eval (car (cdddr (hons-assoc-equal x memo)))
+   ;;                             (bdd-eval-alst al v))
+   ;;                   (eval-bdd (aig-q-compose x al) v)))
+   ;;   :hints (("goal" :in-theory (e/d (hons-assoc-equal) (aig-q-compose)))))
 
 
-   (defthm apqs-memo-okp-point-hons-assoc-equal-ubddp
-     (implies (and (bind-free '((al . al) (v . v)) (al v))
-                   (apqs-memo-okp-point memo al v)
-                   (hons-assoc-equal x memo))
-              (and (ubddp (cadr (hons-assoc-equal x memo)))
-                   (ubddp (caddr (hons-assoc-equal x memo)))))
-     :hints (("goal" :in-theory (e/d (hons-assoc-equal) (aig-q-compose)))))
+   ;; ;; (defthm apqs-memo-okp-point-hons-assoc-equal-ubddp
+   ;; ;;   (implies (and (bind-free '((al . al) (v . v)) (al v))
+   ;; ;;                 (apqs-memo-okp-point memo al v)
+   ;; ;;                 (hons-assoc-equal x memo))
+   ;; ;;            (and (ubddp (cadr (hons-assoc-equal x memo)))
+   ;; ;;                 (ubddp (caddr (hons-assoc-equal x memo)))))
+   ;; ;;   :hints (("goal" :in-theory (e/d (hons-assoc-equal) (aig-q-compose)))))
 
-   (local
-    (defthm apqs-memo-okp-point-consp-cdr-hons-assoc-equal
-      (implies (and (bind-free '((al . al) (v . v)) (al v))
-                    (apqs-memo-okp-point memo al v)
-                    (hons-assoc-equal x memo))
-               (and (consp (cdr (hons-assoc-equal x memo)))
-                    (consp (cddr (hons-assoc-equal x memo)))
-                    (consp (cdddr (hons-assoc-equal x memo)))))
-      :hints (("goal" :in-theory (e/d (hons-assoc-equal) (aig-q-compose))))))
+   ;; (local
+   ;;  (defthm apqs-memo-okp-point-consp-cdr-hons-assoc-equal
+   ;;    (implies (and (bind-free '((al . al) (v . v)) (al v))
+   ;;                  (apqs-memo-okp-point memo al v)
+   ;;                  (hons-assoc-equal x memo))
+   ;;             (and (consp (cdr (hons-assoc-equal x memo)))
+   ;;                  (consp (cddr (hons-assoc-equal x memo)))
+   ;;                  (consp (cdddr (hons-assoc-equal x memo)))))
+   ;;    :hints (("goal" :in-theory (e/d (hons-assoc-equal) (aig-q-compose))))))
 
 
    (add-bdd-pat (mv-nth 0 (and-bddify-x-weakening . &)))
@@ -489,72 +690,97 @@
 
    (in-theory (disable hons-assoc-equal))
 
-   (defthm apqs-memo-lookup-ok-point
-     (implies (and (ubddp-val-alistp al)
-                   (abs-fmemo-okp-point fmemo al v)
-                   (apqs-memo-okp-point memo al v))
-              (b* (((mv ok hi lo a & &)
-                    (apqs-memo-lookup x fmemo memo)))
-                (implies ok
-                         (and (ubddp hi)
-                              (ubddp lo)
-                              (equal (eval-bdd (aig-q-compose a al) v)
-                                     (eval-bdd (aig-q-compose x al) v))
-                              (implies (eval-bdd (aig-q-compose x al) v)
-                                       (eval-bdd hi v))
-                              (implies (not (eval-bdd (aig-q-compose x al) v))
-                                       (not (eval-bdd lo v)))
-                              (implies (eval-bdd lo v)
-                                       (eval-bdd hi v))
-                              (implies (not (eval-bdd hi v))
-                                       (not (eval-bdd lo v))))))))
+   ;; (defthm apqs-memo-lookup-ok-point
+   ;;   (implies (and (abs-fmemo-okp-point fmemo al v)
+   ;;                 (apqs-memo-okp-point memo al v))
+   ;;            (b* (((mv ok hi lo a & &)
+   ;;                  (apqs-memo-lookup x fmemo memo)))
+   ;;              (implies ok
+   ;;                       (and (equal (aig-eval a (bdd-eval-alst al v))
+   ;;                                   (eval-bdd (aig-q-compose x al) v))
+   ;;                            (implies (eval-bdd (aig-q-compose x al) v)
+   ;;                                     (eval-bdd hi v))
+   ;;                            (implies (not (eval-bdd (aig-q-compose x al) v))
+   ;;                                     (not (eval-bdd lo v)))
+   ;;                            (implies (eval-bdd lo v)
+   ;;                                     (eval-bdd hi v))
+   ;;                            (implies (not (eval-bdd hi v))
+   ;;                                     (not (eval-bdd lo v)))))))
+   ;;   :hints(("Goal" :induct (abs-fmemo-okp-point fmemo al v)
+   ;;           :expand ((abs-fmemo-okp-point fmemo al v)
+   ;;                    (hons-assoc-equal x fmemo)))))
 
    (defthm apqs-memo-lookup-ok
-     (implies (and (ubddp-val-alistp al)
-                   (abs-fmemo-okp fmemo al)
+     (implies (and (abs-fmemo-okp fmemo al)
                    (apqs-memo-okp memo al))
               (b* (((mv ok hi lo a & &)
                     (apqs-memo-lookup x fmemo memo)))
                 (implies ok
-                         (and (ubddp hi)
-                              (ubddp lo)
-                              (equal (aig-q-compose a al)
-                                     (aig-q-compose x al))
-                              (implies (eval-bdd (aig-q-compose x al) v)
-                                       (eval-bdd hi v))
-                              (implies (not (eval-bdd (aig-q-compose x al) v))
-                                       (not (eval-bdd lo v)))
-                              (implies (eval-bdd lo v)
-                                       (eval-bdd hi v))
-                              (implies (not (eval-bdd hi v))
-                                       (not (eval-bdd lo v)))))))
-     :hints(("Goal" :in-theory (enable abs-fmemo-okp-hons-assoc-equal-rw1
-                                       abs-fmemo-okp-hons-assoc-equal-rw2))))
+                         (and (bdd-equiv (aig-q-compose a al)
+                                         (aig-q-compose x al))
+                              (bdd-impl (aig-q-compose x al)
+                                        hi)
+                              (bdd-impl lo (aig-q-compose x al))
+                              (bdd-impl lo hi)))))
+     :hints (("goal" 
+              :in-theory (e/d (abs-fmemo-okp-hons-assoc-equal-rw1
+                               abs-fmemo-okp-hons-assoc-equal-rw2)
+                              (abs-fmemo-okp
+                               apqs-memo-okp
+                               hons-assoc-equal)))))
+
+   (defthm apqs-memo-lookup-ubddp
+     (b* (((mv ok hi lo ?a & &)
+           (apqs-memo-lookup x fmemo memo)))
+       (implies (and ok
+                     (abs-fmemo-wfp fmemo)
+                     (apqs-memo-wfp memo))
+                (and (ubddp hi)
+                     (ubddp lo)))))
 
    (add-bdd-pat (mv-nth 1 (apqs-memo-lookup . &)))
    (add-bdd-pat (mv-nth 2 (apqs-memo-lookup . &)))
 
    (in-theory (disable apqs-memo-lookup))
 
-   (defthm apqs-memo-cache-ok-point
-     (implies (and (ubddp hi)
-                   (ubddp lo)
-                   (equal (eval-bdd (aig-q-compose a al) v)
-                          (eval-bdd (aig-q-compose x al) v))
-                   (implies (eval-bdd lo v)
-                            (eval-bdd (aig-q-compose x al) v))
-                   (implies (eval-bdd (aig-q-compose x al) v)
-                            (eval-bdd hi v))
-                   (abs-fmemo-okp-point fmemo al v)
-                   (apqs-memo-okp-point memo al v))
+   ;; (defthm apqs-memo-cache-ok-point
+   ;;   (implies (and (equal (aig-eval a (bdd-eval-alst al v))
+   ;;                        (eval-bdd (aig-q-compose x al) v))
+   ;;                 (implies (eval-bdd lo v)
+   ;;                          (aig-eval x (bdd-eval-alst al v)))
+   ;;                 (implies (eval-bdd (aig-q-compose x al) v)
+   ;;                          (eval-bdd hi v))
+   ;;                 (abs-fmemo-okp-point fmemo al v)
+   ;;                 (apqs-memo-okp-point memo al v))
+   ;;            (mv-let (fmemo memo)
+   ;;              (apqs-memo-cache x hi lo a hc lc fmemo memo)
+   ;;              (and (abs-fmemo-okp-point fmemo al v)
+   ;;                   (apqs-memo-okp-point memo al v)))))
+
+   (defthm apqs-memo-cache-ok
+     (implies (and (double-rewrite (bdd-equiv (aig-q-compose a al)
+                                              (aig-q-compose x al)))
+                   (double-rewrite (bdd-impl lo (aig-q-compose x al)))
+                   (double-rewrite (bdd-impl (aig-q-compose x al) hi))
+                   (abs-fmemo-okp fmemo al)
+                   (apqs-memo-okp memo al))
               (mv-let (fmemo memo)
                 (apqs-memo-cache x hi lo a hc lc fmemo memo)
-                (and (abs-fmemo-okp-point fmemo al v)
-                     (apqs-memo-okp-point memo al v)))))
+                (and (abs-fmemo-okp fmemo al)
+                     (apqs-memo-okp memo al))))
+     :hints ((simple-bdd-reasoning)))
 
-   (in-theory (disable apqs-memo-cache
-                       apqs-memo-okp-point
-                       abs-fmemo-okp-point))
+   (defthm apqs-memo-cache-wfp
+     (implies (and (ubddp hi)
+                   (ubddp lo)
+                   (abs-fmemo-wfp fmemo)
+                   (apqs-memo-wfp memo))
+              (b* (((mv fmemo memo)
+                    (apqs-memo-cache x hi lo a hc lc fmemo memo)))
+                (and (abs-fmemo-wfp fmemo)
+                     (apqs-memo-wfp memo)))))
+
+   (in-theory (disable apqs-memo-cache))
 
 
 
@@ -562,248 +788,393 @@
    (include-book "tools/with-quoted-forms" :dir :system)
 
 
-   (defthm aig-bddify-x-weakening-ok-point
+   ;; (defthm aig-bddify-x-weakening-ok-point
+   ;;   (implies (and (abs-fmemo-okp-point fmemo al v)
+   ;;                 (apqs-memo-okp-point memo al v))
+   ;;            (b* (((mv hi lo a & & fmemo memo)
+   ;;                  (aig-bddify-x-weakening x al max fmemo memo))
+   ;;                 (exact-bdd (aig-q-compose x al)))
+   ;;              (and (abs-fmemo-okp-point fmemo al v)
+   ;;                   (apqs-memo-okp-point memo al v)
+   ;;                   ;; Concept!!! This theorem shows that the upper and
+   ;;                   ;; lower bounds returned really are upper and lower
+   ;;                   ;; bounds of the exact result.  (Therefore, if the
+   ;;                   ;; bounds are equal, they equal the exact result.)
+   ;;                   (implies (eval-bdd exact-bdd v)
+   ;;                            (eval-bdd hi v))
+   ;;                   (implies (not (eval-bdd exact-bdd v))
+   ;;                            (not (eval-bdd lo v)))
+   ;;                   (equal (aig-eval a (bdd-eval-alst al v))
+   ;;                          (eval-bdd exact-bdd v)))))
+   ;;   :hints (("goal" :induct (aig-bddify-x-weakening x al max fmemo memo)
+   ;;            :do-not '(generalize fertilize)
+   ;;            :do-not-induct t)
+   ;;           (and (consp id)
+   ;;                (equal (car id) '(0 1))
+   ;;                '(:restrict ((aig-bddify-x-weakening
+   ;;                              ((x x)) ((x nil)) ((x t)))
+   ;;                             (aig-q-compose ((x x)) ((x nil)) ((x t))
+   ;;                                            ((x (cdr (hons-assoc-equal x
+   ;;                                                                       al))))))))
+
+   ;;           (if (subsetp-equal '((NOT (CDR X)) (NOT (CONSP X))) clause)
+   ;;               (with-quoted-forms
+   ;;                (b* (((mv hi1 lo1 a11 hc1 lc1 fmemo memo)
+   ;;                      (aig-bddify-x-weakening (car x) al max fmemo memo))
+   ;;                     ((mv hi2 lo2 a22 hc2 lc2 & &)
+   ;;                      (aig-bddify-x-weakening
+   ;;                       (cdr x) al max fmemo memo)))
+   ;;                  `(:use ((:instance and-bddify-x-weakening-bounds
+   ;;                                     (a1 (car x)) (a2 (cdr x))
+   ;;                                     . ,(var-fq-bindings
+   ;;                                         (hi1 lo1 a11 hc1 lc1 hi2 lo2 a22 hc2
+   ;;                                              lc2))))
+   ;;                         :in-theory (disable and-bddify-x-weakening-bounds))))
+   ;;             (value nil))
+   ;;           (simple-bdd-reasoning)))
+
+
+   (defthm aig-bddify-x-weakening-ok-ubddp
      (implies (and (ubddp-val-alistp al)
-                   (abs-fmemo-okp-point fmemo al v)
-                   (apqs-memo-okp-point memo al v))
-              (b* (((mv hi lo a & & fmemo memo)
-                    (aig-bddify-x-weakening x al max fmemo memo))
-                   (exact-bdd (aig-q-compose x al)))
-                (and (ubddp hi) (ubddp lo)
-                     (abs-fmemo-okp-point fmemo al v)
-                     (apqs-memo-okp-point memo al v)
-                     ;; Concept!!! This theorem shows that the upper and
-                     ;; lower bounds returned really are upper and lower
-                     ;; bounds of the exact result.  (Therefore, if the
-                     ;; bounds are equal, they equal the exact result.)
-                     (implies (eval-bdd exact-bdd v)
-                              (eval-bdd hi v))
-                     (implies (not (eval-bdd exact-bdd v))
-                              (not (eval-bdd lo v)))
-                     (equal (eval-bdd (aig-q-compose a al) v)
-                            (eval-bdd exact-bdd v)))))
-     :hints (("goal" :induct (aig-bddify-x-weakening x al max fmemo memo)
-              :do-not '(generalize fertilize)
-              :do-not-induct t)
-             (and (consp id)
-                  (equal (car id) '(0 1))
-                  '(:restrict ((aig-bddify-x-weakening
-                                ((x x)) ((x nil)) ((x t)))
-                               (aig-q-compose ((x x)) ((x nil)) ((x t))
-                                              ((x (cdr (hons-assoc-equal x
-                                                                         al))))))))
-
-             (if (subsetp-equal '((NOT (CDR X)) (NOT (CONSP X))) clause)
-                 (with-quoted-forms
-                  (b* (((mv hi1 lo1 a11 hc1 lc1 fmemo memo)
-                        (aig-bddify-x-weakening (car x) al max fmemo memo))
-                       ((mv hi2 lo2 a22 hc2 lc2 & &)
-                        (aig-bddify-x-weakening
-                         (cdr x) al max fmemo memo)))
-                    `(:use ((:instance and-bddify-x-weakening-bounds
-                                       (a1 (car x)) (a2 (cdr x))
-                                       . ,(var-fq-bindings
-                                           (hi1 lo1 a11 hc1 lc1 hi2 lo2 a22 hc2
-                                                lc2))))
-                           :in-theory (disable and-bddify-x-weakening-bounds))))
-               (value nil))))
-
-
-   (defthm aig-bddify-x-weakening-ok-point-free
-     (implies (and (bind-free '((v . v)) (v))
-                   (ubddp-val-alistp al)
-                   (abs-fmemo-okp-point fmemo al v)
-                   (apqs-memo-okp-point memo al v))
-              (b* (((mv hi lo & & & & &)
+                   (abs-fmemo-wfp fmemo)
+                   (apqs-memo-wfp memo))
+              (b* (((mv hi lo ?a & & fmemo memo)
                     (aig-bddify-x-weakening x al max fmemo memo)))
-                (and (ubddp hi) (ubddp lo))))
-     :hints (("goal" :use (aig-bddify-x-weakening-ok-point)
-              :in-theory (disable aig-bddify-x-weakening-ok-point))))
+                (and (ubddp hi) (ubddp lo)
+                     (abs-fmemo-wfp fmemo)
+                     (apqs-memo-wfp memo))))
+     :hints ((just-induct-and-expand
+              (aig-bddify-x-weakening x al max fmemo memo))
+             '(:in-theory (disable aig-bddify-x-weakening))))
+
+   ;; (defthm abs-fmemo-okp-implies-abs-fmemo-okp-point
+   ;;   (implies (abs-fmemo-okp fmemo al)
+   ;;            (abs-fmemo-okp-point fmemo al v))
+   ;;   :hints (("goal" :in-theory (enable abs-fmemo-okp abs-fmemo-okp-point)
+   ;;            :induct t)
+   ;;           (simple-bdd-reasoning)))
+
+
+   ;; (defthm apqs-memo-okp-implies-apqs-memo-okp-point
+   ;;   (implies (apqs-memo-okp memo al)
+   ;;            (apqs-memo-okp-point memo al v))
+   ;;   :hints (("goal" :in-theory (enable apqs-memo-okp apqs-memo-okp-point)
+   ;;            :induct t)
+   ;;           (simple-bdd-reasoning)))
 
 
 
+   ;; (defun abs-fmemo-not-okp-witness (fmemo al)
+   ;;   (cond ((atom fmemo) nil)
+   ;;         ((not (bdd-equiv (cadar fmemo)
+   ;;                          (aig-q-compose (caar fmemo) al)))
+   ;;          (bdd-equiv-witness (cadar fmemo)
+   ;;                             (aig-q-compose (caar fmemo) al)))
+   ;;         ((not (bdd-equiv (aig-q-compose (caddar fmemo) al)
+   ;;                          (aig-q-compose (caar fmemo) al)))
+   ;;          (bdd-equiv-witness (aig-q-compose (caddar fmemo) al)
+   ;;                             (aig-q-compose (caar fmemo) al)))
+   ;;         (t (abs-fmemo-not-okp-witness (cdr fmemo) al))))
+
+   ;; (defthm abs-fmemo-not-okp-witness-correct
+   ;;   (implies (not (abs-fmemo-okp fmemo al))
+   ;;            (not (abs-fmemo-okp-point
+   ;;                  fmemo al
+   ;;                  (abs-fmemo-not-okp-witness fmemo al))))
+   ;;   :hints (("goal" :in-theory (enable abs-fmemo-okp abs-fmemo-okp-point
+   ;;                                      ubddp-val-alistp
+   ;;                                      bdd-equiv)
+   ;;            :induct t)))
+
+   ;; (defthmd abs-fmemo-not-okp-witness-rw
+   ;;   (iff (abs-fmemo-okp fmemo al)
+   ;;        (abs-fmemo-okp-point
+   ;;         fmemo al
+   ;;         (abs-fmemo-not-okp-witness fmemo al))))
+
+   ;; (defthm abs-fmemo-okp-point-with-witness
+   ;;   (implies (abs-fmemo-okp-point
+   ;;             fmemo al
+   ;;             (abs-fmemo-not-okp-witness fmemo al))
+   ;;            (abs-fmemo-okp-point fmemo al v)))
+
+   ;; (in-theory (disable abs-fmemo-not-okp-witness))
+
+
+   ;; ;; (defthm find-diff-theorem
+   ;; ;;   (implies (and (ubddp a)
+   ;; ;;                 (ubddp b)
+   ;; ;;                 (not (equal a b)))
+   ;; ;;            (equal (eval-bdd b (find-diff a b))
+   ;; ;;                   (not (eval-bdd a (find-diff a b)))))
+   ;; ;;   :hints(("Goal" :in-theory (enable ubddp eval-bdd find-diff)
+   ;; ;;           :induct (find-diff a b)))
+   ;; ;;   :rule-classes nil)
+
+
+   ;; ;; (mutual-recursion
+   ;; ;;  (defun find-find-diff (x)
+   ;; ;;    (cond ((or (atom x)
+   ;; ;;               (eq (car x) 'quote))
+   ;; ;;           nil)
+   ;; ;;          ((eq (car x) 'find-diff)
+   ;; ;;           (list (cdr x)))
+   ;; ;;          (t (find-find-diff-list (cdr x)))))
+   ;; ;;  (defun find-find-diff-list (x)
+   ;; ;;    (if (atom x)
+   ;; ;;        nil
+   ;; ;;      (append (find-find-diff (car x))
+   ;; ;;              (find-find-diff-list (cdr x))))))
+
+   ;; ;; (defun find-diff-insts (lst)
+   ;; ;;   (if (atom lst)
+   ;; ;;       nil
+   ;; ;;     (let ((a (caar lst))
+   ;; ;;           (b (cadar lst)))
+   ;; ;;       (cons `(:instance find-diff-theorem (a ,a) (b ,b))
+   ;; ;;             (find-diff-insts (cdr lst))))))
+
+   ;; ;; (defun find-diff-hint (clause)
+   ;; ;;   (let ((insts (find-find-diff-list clause)))
+   ;; ;;     (and insts
+   ;; ;;          `(:use ,(find-diff-insts insts)))))
 
 
 
-   (defthm abs-fmemo-okp-implies-abs-fmemo-okp-point
-     (implies (abs-fmemo-okp fmemo al)
-              (abs-fmemo-okp-point fmemo al v))
-     :hints (("goal" :in-theory (enable abs-fmemo-okp abs-fmemo-okp-point))))
+   ;; (defun apqs-memo-not-okp-witness (memo al)
+   ;;   (cond ((atom memo) nil)
+   ;;         ((not (bdd-impl (aig-q-compose (caar memo) al) (cadar memo)))
+   ;;          (bdd-impl-witness (aig-q-compose (caar memo) al) (cadar memo)))
+   ;;         ((not (bdd-impl (caddar memo) (aig-q-compose (caar memo) al)))
+   ;;          (bdd-impl-witness (caddar memo) (aig-q-compose (caar memo) al)))
+   ;;         ((not (bdd-equiv (aig-q-compose (car (cdddar memo)) al)
+   ;;                          (aig-q-compose (caar memo) al)))
+   ;;          (bdd-equiv-witness (aig-q-compose (car (cdddar memo)) al)
+   ;;                             (aig-q-compose (caar memo) al)))
+   ;;         (t (apqs-memo-not-okp-witness (cdr memo) al))))
 
-
-   (defthm apqs-memo-okp-implies-apqs-memo-okp-point
-     (implies (and (apqs-memo-okp memo al)
-                   (ubddp-val-alistp al))
-              (apqs-memo-okp-point memo al v))
-     :hints (("goal" :in-theory (enable apqs-memo-okp apqs-memo-okp-point))))
-
-
-
-   (defun abs-fmemo-not-okp-witness (fmemo al)
-     (cond ((atom fmemo) nil)
-           ((not (equal (cadar fmemo)
-                        (aig-q-compose (caar fmemo) al)))
-            (find-diff (cadar fmemo)
-                       (aig-q-compose (caar fmemo) al)))
-           ((not (equal (aig-q-compose (caddar fmemo) al)
-                        (aig-q-compose (caar fmemo) al)))
-            (find-diff (aig-q-compose (caddar fmemo) al)
-                       (aig-q-compose (caar fmemo) al)))
-           (t (abs-fmemo-not-okp-witness (cdr fmemo) al))))
-
-   (defthm abs-fmemo-not-okp-witness-correct
-     (implies (and (ubddp-val-alistp al)
-                   (not (abs-fmemo-okp fmemo al)))
-              (not (abs-fmemo-okp-point
-                    fmemo al
-                    (abs-fmemo-not-okp-witness fmemo al))))
-     :hints (("goal" :in-theory (enable abs-fmemo-okp abs-fmemo-okp-point
-                                        ubddp-val-alistp))))
-
-   (defthm abs-fmemo-not-okp-witness-rw
-     (implies (ubddp-val-alistp al)
-              (iff (abs-fmemo-okp fmemo al)
-                   (abs-fmemo-okp-point
-                    fmemo al
-                    (abs-fmemo-not-okp-witness fmemo al)))))
-
-   (defthm abs-fmemo-okp-point-with-witness
-     (implies (and (ubddp-val-alistp al)
-                   (abs-fmemo-okp-point
-                    fmemo al
-                    (abs-fmemo-not-okp-witness fmemo al)))
-              (abs-fmemo-okp-point fmemo al v)))
-
-   (in-theory (disable abs-fmemo-not-okp-witness))
-
-
-   (defthm find-diff-theorem
-     (implies (and (ubddp a)
-                   (ubddp b)
-                   (not (equal a b)))
-              (equal (eval-bdd b (find-diff a b))
-                     (not (eval-bdd a (find-diff a b)))))
-     :hints(("Goal" :in-theory (enable ubddp eval-bdd find-diff)
-             :induct (find-diff a b)))
-     :rule-classes nil)
-
-
-   (mutual-recursion
-    (defun find-find-diff (x)
-      (cond ((or (atom x)
-                 (eq (car x) 'quote))
-             nil)
-            ((eq (car x) 'find-diff)
-             (list (cdr x)))
-            (t (find-find-diff-list (cdr x)))))
-    (defun find-find-diff-list (x)
-      (if (atom x)
-          nil
-        (append (find-find-diff (car x))
-                (find-find-diff-list (cdr x))))))
-
-   (defun find-diff-insts (lst)
-     (if (atom lst)
-         nil
-       (let ((a (caar lst))
-             (b (cadar lst)))
-         (cons `(:instance find-diff-theorem (a ,a) (b ,b))
-               (find-diff-insts (cdr lst))))))
-
-   (defun find-diff-hint (clause)
-     (let ((insts (find-find-diff-list clause)))
-       (and insts
-            `(:use ,(find-diff-insts insts)))))
+   ;; (defthm apqs-memo-not-okp-witness-correct
+   ;;   (implies (not (apqs-memo-okp memo al))
+   ;;            (not (apqs-memo-okp-point
+   ;;                  memo al
+   ;;                  (apqs-memo-not-okp-witness memo al))))
+   ;;   :hints (("goal"
+   ;;            :induct (apqs-memo-not-okp-witness memo al)
+   ;;            :expand ((apqs-memo-not-okp-witness memo al)
+   ;;                     (apqs-memo-okp memo al)
+   ;;                     (:free (x) (apqs-memo-okp-point memo al x)))
+   ;;            :in-theory (e/d (bdd-equiv bdd-impl)
+   ;;                            (aig-eval)))))
 
 
 
-   (defun apqs-memo-not-okp-witness (memo al)
-     (cond ((atom memo) nil)
-           ((not (qs-subset (aig-q-compose (caar memo) al) (cadar memo)))
-            (find-diff (q-implies (aig-q-compose (caar memo) al) (cadar memo)) t))
-           ((not (qs-subset (caddar memo) (aig-q-compose (caar memo) al)))
-            (find-diff (q-implies (caddar memo) (aig-q-compose (caar memo) al))
-                       t))
-           ((not (equal (aig-q-compose (car (cdddar memo)) al)
-                        (aig-q-compose (caar memo) al)))
-            (find-diff (aig-q-compose (car (cdddar memo)) al)
-                       (aig-q-compose (caar memo) al)))
-           (t (apqs-memo-not-okp-witness (cdr memo) al))))
+   ;; (defthmd apqs-memo-not-okp-witness-rw
+   ;;   (iff (apqs-memo-okp memo al)
+   ;;        (apqs-memo-okp-point
+   ;;         memo al
+   ;;         (apqs-memo-not-okp-witness memo al))))
 
-   (defthm apqs-memo-not-okp-witness-correct
-     (implies (and (ubddp-val-alistp al)
-                   (not (apqs-memo-okp memo al)))
-              (not (apqs-memo-okp-point
-                    memo al
-                    (apqs-memo-not-okp-witness memo al))))
-     :hints (("goal"
-              :induct (apqs-memo-not-okp-witness memo al)
-              :expand ((apqs-memo-not-okp-witness memo al)
-                       (apqs-memo-okp memo al)
-                       (:free (x) (apqs-memo-okp-point memo al x))))
-             (and stable-under-simplificationp
-                  (find-diff-hint clause))))
+   ;; (defthm apqs-memo-point-with-witness
+   ;;   (implies (apqs-memo-okp-point
+   ;;             memo al
+   ;;             (apqs-memo-not-okp-witness memo al))
+   ;;            (apqs-memo-okp-point memo al v)))
+   ))
 
 
+;; (defexample abs-fmemo-okp-point-template
+;;   :pattern (abs-fmemo-okp-point x al env)
+;;   :templates (env)
+;;   :instance-rules (bdds-equal bdds-bdd-equiv not-bdd bdds-subset))
 
-   (defthm apqs-memo-not-okp-witness-rw
-     (implies (ubddp-val-alistp al)
-              (iff (apqs-memo-okp memo al)
-                   (apqs-memo-okp-point
-                    memo al
-                    (apqs-memo-not-okp-witness memo al)))))
-
-   (defthm apqs-memo-point-with-witness
-     (implies (and (ubddp-val-alistp al)
-                   (apqs-memo-okp-point
-                    memo al
-                    (apqs-memo-not-okp-witness memo al)))
-              (apqs-memo-okp-point memo al v)))))
+;; (defexample apqs-memo-okp-point-template
+;;   :pattern (apqs-memo-okp-point x al env)
+;;   :templates (env)
+;;   :instance-rules (bdds-equal bdds-bdd-equiv not-bdd bdds-subset))
 
 
+;; (table witness-cp-rulesets
+;;        'bdd-equality-rules
+;;        (append '(abs-fmemo-okp-point-template
+;;                  apqs-memo-okp-point-template)
+;;                (cdr (assoc 'bdd-equality-rules
+;;                            (table-alist 'witness-cp-rulesets world)))))
+
+(defthm aig-q-compose-of-and-under-bdd-equiv
+  (implies (and (consp x)
+                (cdr x))
+           (bdd-equiv (aig-q-compose x al)
+                      (q-and (aig-q-compose (car x) al)
+                             (aig-q-compose (cdr x) al))))
+  :hints ((simple-bdd-reasoning)))
+
+(defthm aig-q-compose-of-not-under-bdd-equiv
+  (implies (and (consp x)
+                (not (cdr x)))
+           (bdd-equiv (aig-q-compose x al)
+                      (q-not (aig-q-compose (car x) al))))
+  :hints ((simple-bdd-reasoning)))
+
+(defthm aig-q-compose-of-aig-not
+  (bdd-equiv (aig-q-compose (aig-not x) al)
+             (q-not (aig-q-compose x al)))
+  :hints((simple-bdd-reasoning)))
+
+(defthm aig-q-compose-of-var
+  (implies (and (not (consp x))
+                (not (equal x t))
+                x)
+           (equal (aig-q-compose x al)
+                  (aig-env-lookup x al))))
+
+(defthm aig-q-compose-of-const
+  (implies (booleanp x)
+           (equal (aig-q-compose x al) x)))
+
+(defthm bdd-impl-of-q-not
+  (equal (bdd-impl (q-not a) (q-not b))
+         (bdd-impl b a))
+  :hints (("goal" :cases ((bdd-impl b a)))
+          (simple-bdd-reasoning)))
+
+(defthm bdd-equiv-of-q-not
+  (equal (bdd-equiv (q-not a) (q-not b))
+         (bdd-equiv a b))
+  :hints (("goal" :cases ((bdd-equiv a b)))
+          (simple-bdd-reasoning)))
+
+(defthm bdd-impl-t
+  (equal (bdd-impl x t) t)
+  :hints((simple-bdd-reasoning)))
+
+(defthm bdd-impl-nil
+  (equal (bdd-impl nil x) t)
+  :hints((simple-bdd-reasoning)))
+
+
+(defthm bdd-impl-of-and-bddify-x-weakening-1
+  (implies (and (bind-free '((al . al)) (al))
+                (bdd-impl (q-and (aig-q-compose a1 al)
+                                 (aig-q-compose a2 al))
+                          x)
+                (bdd-impl lo1 (aig-q-compose a1 al))
+                (bdd-impl (aig-q-compose a1 al) hi1)
+                (bdd-impl lo2 (aig-q-compose a2 al))
+                (bdd-impl (aig-q-compose a2 al) hi2))
+           (bdd-impl (mv-nth 1 (and-bddify-x-weakening
+                                hi1 hi2 lo1 lo2 a1 a2 hc1 hc2 lc1 lc2
+                                max))
+                     x)))
+
+(defthm bdd-equiv-nil-of-and-bddify-x-weakening-1
+  (implies (and (bind-free '((al . al)) (al))
+                (bdd-equiv (q-and (aig-q-compose a1 al)
+                                 (aig-q-compose a2 al))
+                           nil)
+                (bdd-impl lo1 (aig-q-compose a1 al))
+                (bdd-impl (aig-q-compose a1 al) hi1)
+                (bdd-impl lo2 (aig-q-compose a2 al))
+                (bdd-impl (aig-q-compose a2 al) hi2))
+           (bdd-equiv (mv-nth 1 (and-bddify-x-weakening
+                                 hi1 hi2 lo1 lo2 a1 a2 hc1 hc2 lc1 lc2
+                                 max))
+                      nil))
+  :hints (("goal" :use ((:instance bdd-impl-of-and-bddify-x-weakening-1
+                         (x nil))))))
+
+(defthm bdd-impl-of-and-bddify-x-weakening-0
+  (implies (and (bind-free '((al . al)) (al))
+                (bdd-impl x
+                          (q-and (aig-q-compose a1 al)
+                                 (aig-q-compose a2 al)))
+                (bdd-impl lo1 (aig-q-compose a1 al))
+                (bdd-impl (aig-q-compose a1 al) hi1)
+                (bdd-impl lo2 (aig-q-compose a2 al))
+                (bdd-impl (aig-q-compose a2 al) hi2))
+           (bdd-impl x
+                     (mv-nth 0 (and-bddify-x-weakening
+                                hi1 hi2 lo1 lo2 a1 a2 hc1 hc2 lc1 lc2
+                                max)))))
+
+(defthm bdd-equiv-t-of-and-bddify-x-weakening-1
+  (implies (and (bind-free '((al . al)) (al))
+                (bdd-equiv (q-and (aig-q-compose a1 al)
+                                  (aig-q-compose a2 al))
+                           t)
+                (bdd-impl lo1 (aig-q-compose a1 al))
+                (bdd-impl (aig-q-compose a1 al) hi1)
+                (bdd-impl lo2 (aig-q-compose a2 al))
+                (bdd-impl (aig-q-compose a2 al) hi2))
+           (bdd-equiv (mv-nth 0 (and-bddify-x-weakening
+                                hi1 hi2 lo1 lo2 a1 a2 hc1 hc2 lc1 lc2
+                                max))
+                      t))
+  :hints (("goal" :use ((:instance bdd-impl-of-and-bddify-x-weakening-0
+                         (x t))))))
 
 (defthm aig-bddify-x-weakening-ok
-  (implies (and (ubddp-val-alistp al)
-                (abs-fmemo-okp fmemo al)
+  (implies (and (abs-fmemo-okp fmemo al)
                 (apqs-memo-okp memo al))
            (b* (((mv hi lo a & & fmemo memo)
                  (aig-bddify-x-weakening x al max fmemo memo))
                 (exact-bdd (aig-q-compose x al)))
-             (and (ubddp hi) (ubddp lo)
-                  (abs-fmemo-okp fmemo al)
+             (and (abs-fmemo-okp fmemo al)
                   (apqs-memo-okp memo al)
                   ;; Concept!!! This theorem shows that the upper and
                   ;; lower bounds returned really are upper and lower
                   ;; bounds of the exact result.  (Therefore, if the
                   ;; bounds are equal, they equal the exact result.)
-                  (qs-subset exact-bdd hi)
-                  (qs-subset lo exact-bdd)
-                  (equal (aig-q-compose a al)
-                         exact-bdd)))))
+                  (bdd-impl exact-bdd hi)
+                  (bdd-impl lo exact-bdd)
+                  (bdd-equiv (aig-q-compose a al)
+                             exact-bdd))))
+  :hints ((just-induct-and-expand
+           (aig-bddify-x-weakening x al max fmemo memo))
+          '(:in-theory (disable aig-bddify-x-weakening
+                                aig-q-compose))))
 
+(defun bdd-equiv-list (x y)
+  (declare (xargs :measure (+ (len x) (len y))))
+  (if (and (atom x) (atom y))
+      t
+    (and (consp x) (consp y)
+         (bdd-equiv (car x) (car y))
+         (bdd-equiv-list (cdr x) (cdr y)))))
+
+(defthm bdd-equiv-when-both-implications
+  (implies (and (bdd-impl a b)
+                (bdd-impl b a))
+           (equal (bdd-equiv a b) t))
+  :hints ((simple-bdd-reasoning)))
+
+
+(defthm bdd-equiv-list-refl
+  (bdd-equiv-list x x)
+  :hints(("Goal" :induct (len x))))
+
+(defequiv bdd-equiv-list :otf-flg t
+  :hints(("Goal" :in-theory (enable default-car default-cdr))))
 
 (defthm aig-bddify-list-x-weakening-ok
-  (implies (and (ubddp-val-alistp al)
-                (abs-fmemo-okp fmemo al)
+  (implies (and (abs-fmemo-okp fmemo al)
                 (apqs-memo-okp memo al))
            (b* ((ans (aig-bddify-list-x-weakening x al max fmemo memo))
                 ((mv bdds aigs fmemo memo exact) ans)
                 (exact-bdds (aig-q-compose-list x al)))
              (and (abs-fmemo-okp fmemo al)
                   (apqs-memo-okp memo al)
-                  (ubdd-listp bdds)
                   (implies exact
-                           (equal bdds exact-bdds))
-                  (equal (aig-q-compose-list aigs al)
-                         exact-bdds))))
+                           (bdd-equiv-list bdds exact-bdds))
+                  (bdd-equiv-list (aig-q-compose-list aigs al)
+                                  exact-bdds))))
   :hints (("goal" :induct (aig-bddify-list-x-weakening x al max fmemo memo)
            :expand ((aig-bddify-list-x-weakening x al max fmemo memo))
-           :in-theory (disable (:definition aig-bddify-list-x-weakening)
-                               aig-bddify-x-weakening-ok
-                               apqs-memo-not-okp-witness-rw))
+           :in-theory (disable (:definition aig-bddify-list-x-weakening)))
           (and (member-equal '(NOT (CONSP X)) clause)
               `(:use ((:instance aig-bddify-x-weakening-ok
-                                 (x (car x))))))))
+                                 (x (car x))))
+                :in-theory (disable aig-bddify-x-weakening-ok
+                                    aig-bddify-x-weakening)))))
 
 
 
@@ -812,6 +1183,118 @@
 ;; Done with X-WEAKENING, on to VAR-WEAKENING...
 
 (set-inhibit-warnings "theory")
+
+(defund bdd-max-depth (x)
+  (declare (xargs :hints (("goal" :in-theory (enable ubdd-fix)))))
+  (if (atom (ubdd-fix x))
+      0
+    (+ 1 (max (bdd-max-depth (qcar x))
+              (bdd-max-depth (qcdr x))))))
+
+(defund bdd-al-max-depth (al)
+  (if (atom al)
+      0
+    (max (bdd-max-depth (ec-call (cdr (car al))))
+         (bdd-al-max-depth (cdr al)))))
+
+(defthm bdd-al-max-depth-hons-assoc-equal
+  (implies (<= (bdd-al-max-depth al) n)
+           (<= (bdd-max-depth (cdr (hons-assoc-equal x al))) n))
+  :hints(("Goal" :in-theory (enable bdd-al-max-depth hons-assoc-equal)))
+  :rule-classes (:rewrite :linear))
+
+
+(local (include-book "std/lists/take" :dir :system))
+
+(defthm bdd-equiv-of-ubdd-fix
+  (bdd-equiv (ubdd-fix x) x)
+  :hints(("Goal" :in-theory (enable bdd-equiv))))
+
+(defcong bdd-equiv equal (ubdd-fix x) 1
+  :hints (("Goal" :use ((:instance eval-bdd-diff-witness-corr
+                         (a (ubdd-fix x)) (b (ubdd-fix x-equiv)))))))
+
+(add-bdd-pat (ubdd-fix . &))
+
+(defthmd not-consp-ubdd-fix
+  (equal (consp (ubdd-fix x))
+         (and (not (bdd-equiv x t))
+              (not (bdd-equiv x nil))))
+  :hints(("Goal" :use ((:instance (:type-prescription ubdd-fix)))
+          :in-theory (disable (:type-prescription ubdd-fix)))
+         (simple-bdd-reasoning)))
+
+(local (defun eval-bdd-take-ind (x n vals)
+         (declare (xargs :measure (acl2-count x)))
+         (cond ((atom x) (list n vals))
+               ((atom vals) (eval-bdd-take-ind (cdr x) (1- n) nil))
+               ((zp n) x)
+               (t (eval-bdd-take-ind (if (car vals) (car x) (cdr x))
+                                     (1- n) (cdr vals))))))
+
+(defthm eval-bdd-of-take
+  (implies (<= (bdd-max-depth x) (nfix n))
+           (equal (eval-bdd x (take n vals))
+                  (eval-bdd x vals)))
+  :hints(("Goal" :induct (eval-bdd-take-ind x n vals)
+          :expand ((:free (vals) (eval-bdd x vals))
+                   (bdd-max-depth x)
+                   (take n vals))
+          :in-theory (enable default-cdr not-consp-ubdd-fix))))
+
+(defcong bdd-equiv bdd-equiv (qcar x) 1
+  :hints (("goal" :in-theory (disable bdd-equiv-is-an-equivalence))
+          (and stable-under-simplificationp
+               '(:use ((:instance bdd-equiv-necc
+                        (y x-equiv)
+                        (env (cons t (bdd-equiv-witness
+                                      (qcar x) (qcar x-equiv))))))
+                 :expand ((:free (vars) (eval-bdd x vars))
+                          (:free (vars) (eval-bdd x-equiv vars))
+                          (:free (vars) (eval-bdd nil vars)))
+                 :in-theory (disable bdd-equiv-implies-equal-eval-bdd-1
+                                     bdd-equiv-is-an-equivalence
+                                     bdd-equiv-when-both-implications)))
+          (and stable-under-simplificationp
+               `(:expand (,(car (last clause))))))
+  :otf-flg t)
+
+(defcong bdd-equiv bdd-equiv (qcdr x) 1
+  :hints (("goal" :in-theory (disable bdd-equiv-is-an-equivalence))
+          (and stable-under-simplificationp
+               '(:use ((:instance bdd-equiv-necc
+                        (y x-equiv)
+                        (env (cons nil (bdd-equiv-witness
+                                        (qcdr x) (qcdr x-equiv))))))
+                 :expand ((:free (vars) (eval-bdd x vars))
+                          (:free (vars) (eval-bdd x-equiv vars))
+                          (:free (vars) (eval-bdd nil vars)))
+                 :in-theory (disable bdd-equiv-implies-equal-eval-bdd-1
+                                     bdd-equiv-is-an-equivalence
+                                     bdd-equiv-when-both-implications)))
+          (and stable-under-simplificationp
+               `(:expand (,(car (last clause))))))
+  :otf-flg t)
+
+
+(defun two-bdd-ind (x y)
+  (declare (xargs :measure (+ (acl2-count x) (acl2-count y))))
+  (if (and (atom x) (atom y))
+      (list x y)
+    (list (two-bdd-ind (qcar x) (qcar y))
+          (two-bdd-ind (qcdr x) (qcdr y)))))
+
+(defcong bdd-equiv equal (bdd-max-depth x) 1
+  :hints(("Goal" :induct (two-bdd-ind x x-equiv)
+          :expand ((bdd-max-depth x)
+                   (bdd-max-depth x-equiv))
+          :in-theory (disable qcar qcdr))
+         (and stable-under-simplificationp
+              '(:in-theory (e/d (ubdd-fix)
+                                (qcar qcdr))))))
+
+
+(local (in-theory (enable not-consp-ubdd-fix)))
 
 (local
  (progn
@@ -850,10 +1333,19 @@
                 (nth (- n (len a)) b)))))
 
    (defthm eval-bdd-depth-append
-     (implies (<= (max-depth x) (len l))
+     (implies (<= (bdd-max-depth x) (len l))
               (equal (eval-bdd x (append l l2))
                      (eval-bdd x l)))
-     :hints (("goal" :in-theory (enable max))))
+     :hints (("goal" :in-theory (enable max (:i eval-bdd))
+              :induct (eval-bdd x l)
+              :expand ((bdd-max-depth x)
+                       (:free (vals) (eval-bdd x vals))))
+             (and stable-under-simplificationp
+                  '(:use ((:instance eval-bdd-ubdd-fix
+                           (env (append l l2)))
+                          (:instance eval-bdd-ubdd-fix
+                           (env l)))
+                    :in-theory (disable eval-bdd-ubdd-fix)))))
 
    (encapsulate
      nil
@@ -884,26 +1376,26 @@
      :hints(("Goal" :in-theory (enable eval-bdd))))
 
 
-   (defthm not-equal-x-t-implies-q-not
-     (implies (and (ubddp x) (not (equal x t)))
-              (q-not x))
-     :hints (("goal" :in-theory (enable q-not ubddp))))
+   ;; (defthm not-equal-x-t-implies-q-not
+   ;;   (implies (and (ubddp x) (not (equal x t)))
+   ;;            (q-not x))
+   ;;   :hints (("goal" :in-theory (enable q-not ubddp))))
 
 
-   (defthm len-find-diff
-     (<= (len (find-diff x y))
-         (max (max-depth x)
-              (max-depth y)))
-     :hints (("goal" :in-theory (enable max max-depth find-diff)
-              :induct (find-diff x y)))
-     :rule-classes nil)
+   ;; (defthm len-find-diff
+   ;;   (<= (len (find-diff x y))
+   ;;       (max (max-depth x)
+   ;;            (max-depth y)))
+   ;;   :hints (("goal" :in-theory (enable max max-depth find-diff)
+   ;;            :induct (find-diff x y)))
+   ;;   :rule-classes nil)
 
-   (defthm len-find-diff-bounds
-     (implies (and (<= (max-depth x) n)
-                   (<= (max-depth y) n))
-              (<= (len (find-diff x y)) n))
-     :hints (("goal" :use len-find-diff
-              :in-theory (enable max))))
+   ;; (defthm len-find-diff-bounds
+   ;;   (implies (and (<= (max-depth x) n)
+   ;;                 (<= (max-depth y) n))
+   ;;            (<= (len (find-diff x y)) n))
+   ;;   :hints (("goal" :use len-find-diff
+   ;;            :in-theory (enable max))))
 
 
 
@@ -916,41 +1408,41 @@
 
 
 
-   (local (q-witness-mode t))
-   (defthm not-q-and-q-not
-     (implies (ubddp x)
-              (equal (q-and x (q-not x)) nil)))
+   ;; (local (q-witness-mode t))
+   ;; (defthm not-q-and-q-not
+   ;;   (implies (ubddp x)
+   ;;            (equal (q-and x (q-not x)) nil)))
 
-   (defthm not-q-not-q-and
-     (implies (ubddp x)
-              (equal (q-and (q-not x) x) nil)))
-
-
-
-   (defthm q-not-equal-t
-     (implies (ubddp x)
-              (equal (equal (q-not x) t)
-                     (equal x nil)))
-     :hints (("goal" :in-theory (enable q-not))))
-
-   (defthm q-not-equal-nil
-     (implies (ubddp x)
-              (equal (equal (q-not x) nil)
-                     (equal x t)))
-     :hints (("goal" :in-theory (enable q-not))))
-
-   (defthm q-not-iff-nonnil
-     (implies (ubddp x)
-              (iff (q-not x)
-                   (not (equal x t))))
-     :hints (("goal" :in-theory (enable q-not))))
+   ;; (defthm not-q-not-q-and
+   ;;   (implies (ubddp x)
+   ;;            (equal (q-and (q-not x) x) nil)))
 
 
-   (defthm q-and-not-equal-t
-     (implies (and (ubddp x) (ubddp y)
-                   (not (equal x t))
-                   (not (equal y t)))
-              (not (equal (q-and x y) t))))
+
+   ;; (defthm q-not-equal-t
+   ;;   (implies (ubddp x)
+   ;;            (equal (equal (q-not x) t)
+   ;;                   (equal x nil)))
+   ;;   :hints (("goal" :in-theory (enable q-not))))
+
+   ;; (defthm q-not-equal-nil
+   ;;   (implies (ubddp x)
+   ;;            (equal (equal (q-not x) nil)
+   ;;                   (equal x t)))
+   ;;   :hints (("goal" :in-theory (enable q-not))))
+
+   ;; (defthm q-not-iff-nonnil
+   ;;   (implies (ubddp x)
+   ;;            (iff (q-not x)
+   ;;                 (not (equal x t))))
+   ;;   :hints (("goal" :in-theory (enable q-not))))
+
+
+   ;; (defthm q-and-not-equal-t
+   ;;   (implies (and (ubddp x) (ubddp y)
+   ;;                 (not (equal x t))
+   ;;                 (not (equal y t)))
+   ;;            (not (equal (q-and x y) t))))
 
    (defthm nth-len-lst
      (implies (<= (len lst) (nfix n))
@@ -1013,12 +1505,12 @@
                    (suffixp c e)))
      :hints (("Goal" :use (suffixp-transitive-3
                            (:instance suffixp-transitive-3
-                                      (a b)
-                                      (b c)
-                                      (c d)
-                                      (d e))
+                            (a b)
+                            (b c)
+                            (c d)
+                            (d e))
                            (:instance suffixp-transitive
-                                      (c e)))
+                            (c e)))
               :in-theory (disable suffixp-transitive)))
      :rule-classes nil)
 
@@ -1051,12 +1543,12 @@
    ;; BDD of the function expressed by the AIG, with the BDDs of the alist
    ;; substituted for the variables.
 
-   (defthm aig-q-compose-aig-and-eval
-     (implies (ubddp-val-alistp al)
-              (equal (eval-bdd (aig-q-compose (aig-and a b) al) vl)
-                     (eval-bdd (q-and (aig-q-compose a al)
-                                      (aig-q-compose b al)) vl)))
-     :hints (("goal" :in-theory (enable aig-and))))
+   ;; (defthm aig-q-compose-aig-and-eval
+   ;;   (implies (ubddp-val-alistp al)
+   ;;            (equal (eval-bdd (aig-q-compose (aig-and a b) al) vl)
+   ;;                   (eval-bdd (q-and (aig-q-compose a al)
+   ;;                                    (aig-q-compose b al)) vl)))
+   ;;   :hints (("goal" :in-theory (enable aig-and))))
    ;;           ("Subgoal *1/2" :use ((:instance ubddp-implies-eval-bdd-blp
    ;;                                            (x (cdr (hons-assoc-equal a al)))
    ;;                                            (vals vl))))))
@@ -1064,49 +1556,49 @@
 
 
    (defthm aig-q-compose-aig-and
-     (implies (ubddp-val-alistp al)
-              (equal (aig-q-compose (aig-and a b) al)
-                     (q-and (aig-q-compose a al)
-                            (aig-q-compose b al))))
-     :hints(("Goal" :in-theory (enable aig-and))))
+     (bdd-equiv (aig-q-compose (aig-and a b) al)
+                (q-and (aig-q-compose a al)
+                       (aig-q-compose b al)))
+     :hints(("goal" :in-theory (enable aig-q-compose-correct))
+            (simple-bdd-reasoning)))
 
 
-   (defthm aig-q-compose-aig-not-eval
-     (implies (ubddp-val-alistp al)
-              (equal (eval-bdd (aig-q-compose (aig-not x) al) vl)
-                     (eval-bdd (q-not (aig-q-compose x al)) vl)))
-     :hints (("goal" :in-theory (enable aig-not))))
+   ;; (defthm aig-q-compose-aig-not-eval
+   ;;   (implies (ubddp-val-alistp al)
+   ;;            (equal (eval-bdd (aig-q-compose (aig-not x) al) vl)
+   ;;                   (eval-bdd (q-not (aig-q-compose x al)) vl)))
+   ;;   :hints (("goal" :in-theory (enable aig-not))))
 
-   (encapsulate nil
-     (local (q-witness-mode t))
-     (add-bdd-fn-pat aig-q-compose)
-     (defthm aig-q-compose-aig-not
-       (implies (ubddp-val-alistp al)
-                (equal (aig-q-compose (aig-not x) al)
-                       (q-not (aig-q-compose x al))))
-       :hints(("Goal" :in-theory (enable aig-not)))))
+   ;; (encapsulate nil
+   ;;   (local (q-witness-mode t))
+   ;;   (add-bdd-fn-pat aig-q-compose)
+   ;;   (defthm aig-q-compose-aig-not
+   ;;     (implies (ubddp-val-alistp al)
+   ;;              (equal (aig-q-compose (aig-not x) al)
+   ;;                     (q-not (aig-q-compose x al))))
+   ;;     :hints(("Goal" :in-theory (enable aig-not)))))
 
 
 
-   (defthm aig-q-compose-t-or-nil
-     (and (equal (aig-q-compose t al) t)
-          (equal (aig-q-compose nil al) nil))
-     :hints (("Goal" :in-theory (enable aig-q-compose))))
+   ;; (defthm aig-q-compose-t-or-nil
+   ;;   (and (equal (aig-q-compose t al) t)
+   ;;        (equal (aig-q-compose nil al) nil))
+   ;;   :hints (("Goal" :in-theory (enable aig-q-compose))))
 
-   (defthmd aig-q-compose-and-decomp-x
-     (implies (and (syntaxp (equal x 'x))
-                   (consp x) (cdr x)
-                   (ubddp-val-alistp al))
-              (equal (aig-q-compose x al)
-                     (q-and (aig-q-compose (car x) al)
-                            (aig-q-compose (cdr x) al)))))
+   ;; (defthmd aig-q-compose-and-decomp-x
+   ;;   (implies (and (syntaxp (equal x 'x))
+   ;;                 (consp x) (cdr x)
+   ;;                 (ubddp-val-alistp al))
+   ;;            (equal (aig-q-compose x al)
+   ;;                   (q-and (aig-q-compose (car x) al)
+   ;;                          (aig-q-compose (cdr x) al)))))
 
-   (defthmd aig-q-compose-not-decomp-x
-     (implies (and (syntaxp (equal x 'x))
-                   (consp x) (not (cdr x))
-                   (ubddp-val-alistp al))
-              (equal (aig-q-compose x al)
-                     (q-not (aig-q-compose (car x) al)))))
+   ;; (defthmd aig-q-compose-not-decomp-x
+   ;;   (implies (and (syntaxp (equal x 'x))
+   ;;                 (consp x) (not (cdr x))
+   ;;                 (ubddp-val-alistp al))
+   ;;            (equal (aig-q-compose x al)
+   ;;                   (q-not (aig-q-compose (car x) al)))))
 
    ;; -------- MAX-DEPTH
 
@@ -1117,33 +1609,58 @@
 
    (encapsulate nil
      (local (include-book "arithmetic/top-with-meta" :dir :system))
-     (defthm max-depth-q-and
-       (<= (max-depth (q-and a b))
-           (max (max-depth a)
-                (max-depth b)))
-       :hints (("goal" :in-theory (e/d* (q-and max-depth)
-                                        ((force)))))
+     (local (defthm bdd-max-depth-q-and-ubddp
+              (implies (and (ubddp a) (ubddp b))
+                       (<= (bdd-max-depth (q-and a b))
+                           (max (bdd-max-depth a)
+                                (bdd-max-depth b))))
+              :hints (("goal" :in-theory (e/d* (q-and bdd-max-depth)
+                                               ((force) ;; qcar qcdr
+                                                ))
+                       :induct (q-and a b)))))
+
+     (defthm bdd-max-depth-q-and
+       (<= (bdd-max-depth (q-and a b))
+           (max (bdd-max-depth a)
+                (bdd-max-depth b)))
+       :hints (("goal" :use ((:instance bdd-max-depth-q-and-ubddp
+                              (a (ubdd-fix a)) (b (ubdd-fix b))))
+                :in-theory (disable bdd-max-depth-q-and-ubddp)))
        :rule-classes :linear))
 
-   (defthm max-depth-q-and-bound
-     (implies (and (<= (max-depth a) n)
-                   (<= (max-depth b) n))
-              (<= (max-depth (q-and a b)) n))
-     :hints (("goal" :in-theory (e/d (max) (max-depth-q-and))
-              :use max-depth-q-and))
+   (defthm bdd-max-depth-q-and-bound
+     (implies (and (<= (bdd-max-depth a) n)
+                   (<= (bdd-max-depth b) n))
+              (<= (bdd-max-depth (q-and a b)) n))
+     :hints (("goal" :in-theory (e/d (max) (bdd-max-depth-q-and))
+              :use bdd-max-depth-q-and))
      :rule-classes (:rewrite :linear))
 
-   (defthm max-depth-q-not
-     (implies (ubddp x)
-              (equal (max-depth (q-not x))
-                     (max-depth x)))
-     :hints (("goal" :in-theory (Enable q-not ubddp max max-depth))))
+   (encapsulate nil
+     (local (defthm bdd-max-depth-q-not-ubddp
+              (implies (ubddp x)
+                       (equal (bdd-max-depth (q-not x))
+                              (bdd-max-depth x)))
+              :hints (("goal" :in-theory (e/d ((:i q-not) ubddp max
+                                               bdd-max-depth)
+                                              ((:d q-not)))
+                       :induct (q-not x)
+                       :expand ((bdd-max-depth (q-not x))
+                                (bdd-max-depth x)))
+                      (and stable-under-simplificationp
+                           '(:expand ((:with q-not (q-not x))))))))
+     
+     (defthm bdd-max-depth-q-not
+       (equal (bdd-max-depth (q-not x))
+              (bdd-max-depth x))
+       :hints (("goal" :use ((:instance bdd-max-depth-q-not-ubddp
+                              (x (ubdd-fix x))))
+                :in-theory (disable bdd-max-depth-q-not-ubddp)))))
 
 
-   (defthm max-depth-aig-q-compose
-     (implies (and (ubddp-val-alistp al)
-                   (<= (al-max-depth al) n))
-              (<= (max-depth (aig-q-compose x al)) n))
+   (defthm bdd-max-depth-aig-q-compose
+     (implies (and (<= (bdd-al-max-depth al) n))
+              (<= (bdd-max-depth (aig-q-compose x al)) n))
      :rule-classes (:rewrite :linear))
 
    ;; -------- Q-SAT
@@ -1157,55 +1674,56 @@
    ;;   :hints (("goal" :induct (q-sat x)
    ;;            :in-theory (enable ubddp eval-bdd q-sat))))
 
-   (defthm q-sat-correct-append
-     (implies (and (case-split x) (ubddp x))
-              (equal (eval-bdd x (append (q-sat x) y)) t))
-     :hints (("goal" :induct (q-sat x)
-              :in-theory (enable ubddp eval-bdd q-sat))))
+   ;; (defthm q-sat-correct-append
+   ;;   (implies (and (case-split x) (ubddp x))
+   ;;            (equal (eval-bdd x (append (q-sat x) y)) t))
+   ;;   :hints (("goal" :induct (q-sat x)
+   ;;            :in-theory (enable ubddp eval-bdd q-sat))))
 
 
-   (defthm eval-bdd-q-sat-not
-     (implies (and (ubddp x) (not (equal x t)))
-              (not (eval-bdd x (q-sat (q-not x)))))
-     :hints (("goal" :use ((:instance eval-bdd-of-q-not
-                                      (values (q-sat (q-not x)))))
-              :in-theory (e/d (q-sat) (eval-bdd-of-q-not))
-              :cases ((q-not x)))))
+   ;; (defthm eval-bdd-q-sat-not
+   ;;   (implies (and (ubddp x) (not (equal x t)))
+   ;;            (not (eval-bdd x (q-sat (q-not x)))))
+   ;;   :hints (("goal" :use ((:instance eval-bdd-of-q-not
+   ;;                                    (values (q-sat (q-not x)))))
+   ;;            :in-theory (e/d (q-sat) (eval-bdd-of-q-not))
+   ;;            :cases ((q-not x)))))
 
 
-   (defthm eval-bdd-q-sat-not-ap
-     (implies (and (ubddp x) (case-split (not (equal x t))))
-              (not (eval-bdd x (append (q-sat (q-not x)) y))))
-     :hints (("goal" :use ((:instance eval-bdd-of-q-not
-                                      (values (append (q-sat (q-not x)) y))))
-              :in-theory (e/d (q-sat) (eval-bdd-of-q-not)))))
+   ;; (defthm eval-bdd-q-sat-not-ap
+   ;;   (implies (and (ubddp x) (case-split (not (equal x t))))
+   ;;            (not (eval-bdd x (append (q-sat (q-not x)) y))))
+   ;;   :hints (("goal" :use ((:instance eval-bdd-of-q-not
+   ;;                                    (values (append (q-sat (q-not x)) y))))
+   ;;            :in-theory (e/d (q-sat) (eval-bdd-of-q-not)))))
 
-   (defthm q-sat-len
-     (<= (len (q-sat x)) (max-depth x))
-     :rule-classes (:rewrite :linear)
-     :hints (("goal" :in-theory (enable max-depth max q-sat))))
-
-
-   (defthm q-sat-not-len
-     (implies (ubddp x)
-              (<= (len (q-sat (q-not x))) (max-depth x)))
-     :hints (("goal" :in-theory (enable q-not ubddp q-sat)))
-     :rule-classes (:rewrite :linear))
+   ;; (defthm q-sat-len
+   ;;   (<= (len (q-sat x)) (bdd-max-depth x))
+   ;;   :rule-classes (:rewrite :linear)
+   ;;   :hints (("goal" :in-theory (enable bdd-max-depth max q-sat))))
 
 
+   ;; (defthm q-sat-not-len
+   ;;   (implies (ubddp x)
+   ;;            (<= (len (q-sat (q-not x))) (bdd-max-depth x)))
+   ;;   :hints (("goal" :in-theory (enable q-not ubddp q-sat)))
+   ;;   :rule-classes (:rewrite :linear))
 
-   (defthm q-and-not-t-boolean
-     (implies (and (not (booleanp a))
-                   (not (booleanp b))
-                   (ubddp a)
-                   (ubddp b)
-                   (q-and a b))
-              (not (booleanp (q-and a b))))
-     :hints (("goal" :in-theory (e/d (booleanp) (eval-bdd-of-q-and))
-              :use ((:instance eval-bdd-of-q-and
-                               (x a) (y b)
-                               (values (q-sat (q-not a)))))
-              :do-not-induct t)))))
+
+
+   ;; (defthm q-and-not-t-boolean
+   ;;   (implies (and (not (booleanp a))
+   ;;                 (not (booleanp b))
+   ;;                 (ubddp a)
+   ;;                 (ubddp b)
+   ;;                 (q-and a b))
+   ;;            (not (booleanp (q-and a b))))
+   ;;   :hints (("goal" :in-theory (e/d (booleanp) (eval-bdd-of-q-and))
+   ;;            :use ((:instance eval-bdd-of-q-and
+   ;;                             (x a) (y b)
+   ;;                             (values (q-sat (q-not a)))))
+   ;;            :do-not-induct t)))
+   ))
 
 ;; -------- ASSIGN-FOR-BDD-AL.
 
@@ -1240,13 +1758,13 @@
                      (+ (len bdd-al) (nfix n)))))
 
    (defthm eval-assign-for-bdd-al-rec-at-less-depth
-     (implies (<= (max-depth x) (len vars))
+     (implies (<= (bdd-max-depth x) (len vars))
               (equal (eval-bdd x (assign-for-bdd-al-rec bdd-al vars))
                      (eval-bdd x vars)))
      :rule-classes ((:rewrite :backchain-limit-lst 2)))
 
    (defthm assign-for-bdd-al-depth
-     (implies (and (<= (max-depth x) (nfix n))
+     (implies (and (<= (bdd-max-depth x) (nfix n))
                    (<= (len vars) (nfix n)))
               (equal (eval-bdd x (assign-for-bdd-al bdd-al vars n))
                      (eval-bdd x vars)))
@@ -1256,20 +1774,20 @@
 
    (defthm assign-for-bdd-al-depth-hons-assoc-equal
      (implies (and (<= (len vars) (nfix n))
-                   (<= (al-max-depth al) (nfix n)))
+                   (<= (bdd-al-max-depth al) (nfix n)))
               (equal (eval-bdd (cdr (hons-assoc-equal x al))
                                (assign-for-bdd-al bdd-al vars n))
                      (eval-bdd (cdr (hons-assoc-equal x al)) vars))))
 
    (defthm assign-for-bdd-al-rec-extend
-     (implies (<= (max-depth x) (+ (len vars) (len bdd-al)))
+     (implies (<= (bdd-max-depth x) (+ (len vars) (len bdd-al)))
               (equal (eval-bdd x (assign-for-bdd-al-rec (cons z bdd-al) vars))
                      (eval-bdd x (assign-for-bdd-al-rec bdd-al vars))))
      :hints (("Goal" :do-not-induct t
               :in-theory (enable assign-for-bdd-al-rec))))
 
    (defthm assign-for-bdd-al-extend
-     (implies (and (<= (max-depth x) (+ n (len bdd-al)))
+     (implies (and (<= (bdd-max-depth x) (+ n (len bdd-al)))
                    (integerp n)
                    (<= (len vars) n))
               (equal (eval-bdd x (assign-for-bdd-al (cons z bdd-al) vars n))
@@ -1279,14 +1797,14 @@
 
 
    (defthm assign-for-bdd-al-rec-shrink
-     (implies (and (<= (max-depth x) (+ (len vars) (len bdd-al) (- k)))
+     (implies (and (<= (bdd-max-depth x) (+ (len vars) (len bdd-al) (- k)))
                    (< k (len bdd-al)))
               (equal (eval-bdd x (assign-for-bdd-al-rec (nthcdr k bdd-al) vars))
                      (eval-bdd x (assign-for-bdd-al-rec bdd-al vars))))
      :hints (("goal" :induct (nthcdr k bdd-al))))
 
    (defthm assign-for-bdd-al-shrink
-     (implies (and (<= (max-depth x) (+ n (len bdd-al) (- k)))
+     (implies (and (<= (bdd-max-depth x) (+ n (len bdd-al) (- k)))
                    (integerp n)
                    (<= (len vars) n)
                    (< k (len bdd-al)))
@@ -1295,7 +1813,7 @@
      :hints (("goal" :induct (nthcdr k bdd-al))))
 
    (defthm assign-for-bdd-al-suffix
-     (implies (and (<= (max-depth x) (+ n (len bdd-al)))
+     (implies (and (<= (bdd-max-depth x) (+ n (len bdd-al)))
                    (integerp n)
                    (<= (len vars) n)
                    (suffixp bdd-al bdd-al2))
@@ -1335,28 +1853,92 @@
                    (equal (eval-bdd bddf vars)
                           (eval-bdd bdd (assign-for-bdd-al bdd-al vars n))))))
 
+(in-theory (disable bdds-compatible-for-al))
+(defcong bdd-equiv equal (bdds-compatible-for-al bddf bdd bdd-al n) 1
+  :hints (("goal" :cases ((bdds-compatible-for-al bddf bdd bdd-al n)))
+          (and stable-under-simplificationp
+               (let ((exp (if (eq (caar clause) 'not)
+                              (car (last clause))
+                            (car clause))))
+                 `(:expand (,exp)
+                   :use ((:instance bdds-compatible-for-al-necc
+                          (bddf ,(if (eq (cadr exp) 'bddf)
+                                     'bddf-equiv
+                                   'bddf))
+                          (vars (bdds-compatible-for-al-witness
+                                 . ,(cdr exp))))))))))
+
+(defcong bdd-equiv equal (bdds-compatible-for-al bddf bdd bdd-al n) 2
+  :hints (("goal" :cases ((bdds-compatible-for-al bddf bdd bdd-al n)))
+          (and stable-under-simplificationp
+               (let ((exp (if (eq (caar clause) 'not)
+                              (car (last clause))
+                            (car clause))))
+                 `(:expand (,exp)
+                   :use ((:instance bdds-compatible-for-al-necc
+                          (bdd ,(if (eq (caddr exp) 'bdd)
+                                     'bdd-equiv
+                                   'bdd))
+                          (vars (bdds-compatible-for-al-witness
+                                 . ,(cdr exp))))))))))
+
+
+
+
+;; (defun shorten-bdd-assign (bdd vals)
+;;   (cond ((atom bdd) nil)
+;;         ((atom vals) vals)
+;;         (t
+;;          (cons (car vals)
+;;                (shorten-bdd-assign (if (car vals)
+;;                                        (car bdd)
+;;                                      (cdr bdd))
+;;                                    (cdr vals))))))
+
+;; (defthm eval-bdd-of-shorten-bdd-assign
+;;   (equal (eval-bdd x (shorten-bdd-assign x vals))
+;;          (eval-bdd x vals))
+;;   :hints(("Goal" :induct (shorten-bdd-assign x vals)
+;;           :expand ((:free (vals) (eval-bdd x vals))))))
+
+;; (defthm bdd-max-depth-shorten-bdd-assign
+;;   (<= (len (shorten-bdd-assign bdd vals))
+;;       (bdd-max-depth bdd))
+;;   :hints(("Goal" :in-theory (enable bdd-max-depth)))
+;;   :rule-classes :linear)
+
+;; (in-theory (disable shorten-bdd-assign
+;;                     bdds-compatible-for-al-necc))
+
+
 (local
  (progn
    (defthm bdds-compatible-for-al-self
-     (implies (<= (max-depth bdd) (nfix n))
-              (bdds-compatible-for-al bdd bdd bdd-al n)))
+     (implies (<= (bdd-max-depth bdd) (nfix n))
+              (bdds-compatible-for-al bdd bdd bdd-al n))
+     :hints(("Goal" :in-theory (enable bdds-compatible-for-al))))
 
 
 
    (defthm bdds-compatible-with-boolean
      (implies (and (syntaxp (or (equal bdd ''nil) (equal bdd ''t)))
-                   (booleanp bdd) (ubddp bddf)
-                   (<= (max-depth bddf) (nfix n)))
+                   (booleanp bdd) ; (ubddp bddf)
+                   (<= (bdd-max-depth bddf) (nfix n)))
               (equal (bdds-compatible-for-al bddf bdd bdd-al n)
-                     (equal bddf bdd)))
-     :hints (("goal" :in-theory (e/d (booleanp) (bdds-compatible-for-al))
-              :use ((:instance bdds-compatible-for-al-necc
-                               (bdd t)
-                               (vars (q-sat (q-not bddf))))
-                    (:instance bdds-compatible-for-al-necc
-                               (bdd nil)
-                               (vars (q-sat bddf))))
-              :do-not-induct t)))
+                     (bdd-equiv bddf bdd)))
+     :hints (("goal" :in-theory (e/d (booleanp)
+                                     (nfix))
+              :cases ((bdd-equiv bddf bdd)))
+             (and stable-under-simplificationp
+                  '(:use ((:instance bdds-compatible-for-al-necc
+                           (bdd t)
+                           (vars (take n (bdd-equiv-witness bddf t))))
+                          (:instance bdds-compatible-for-al-necc
+                           (bdd nil)
+                           (vars (take n (bdd-equiv-witness bddf nil)))))
+                    :in-theory (e/d (booleanp bdd-equiv)
+                                    (nfix)))))
+     :otf-flg t)
 
    (defthm bdds-compatible-rw
      (implies (and (bdds-compatible-for-al bddf bdd bdd-al n)
@@ -1366,20 +1948,18 @@
      :hints (("goal" :use bdds-compatible-for-al-necc)))
          
    (defthm bdds-compatible-q-nots-compatible
-     (implies (and (bdds-compatible-for-al bddf bdd bdd-al n)
-                   (ubddp bddf) (ubddp bdd))
+     (implies (bdds-compatible-for-al bddf bdd bdd-al n)
               (bdds-compatible-for-al (q-not bddf) (q-not bdd) bdd-al n))
      :hints (("goal"
               :in-theory (enable bdds-compatible-for-al)
               :restrict ((bdds-compatible-rw ((bddf (q-not bddf)))))
               :use ((:instance bdds-compatible-for-al-necc
-                               (vars (bdds-compatible-for-al-witness
-                                      (q-not bddf) (q-not bdd) bdd-al n)))))))
+                     (vars (bdds-compatible-for-al-witness
+                            (q-not bddf) (q-not bdd) bdd-al n)))))))
        
    (defthm bdds-compatible-q-ands-compatible
      (implies (and (bdds-compatible-for-al bdd1f bdd1 bdd-al n)
-                   (bdds-compatible-for-al bdd2f bdd2 bdd-al n)
-                   (ubddp bdd1) (ubddp bdd2) (ubddp bdd1f) (ubddp bdd2f))
+                   (bdds-compatible-for-al bdd2f bdd2 bdd-al n))
               (bdds-compatible-for-al (q-and bdd1f bdd2f)
                                       (q-and bdd1 bdd2) bdd-al n))
      :hints (("goal"
@@ -1393,68 +1973,87 @@
                                (bddf bdd2f) (bdd bdd2)
                                (vars (bdds-compatible-for-al-witness
                                       (q-and bdd1f bdd2f)
-                                      (q-and bdd1 bdd2) bdd-al n)))))))
+                                      (q-and bdd1 bdd2) bdd-al n)))))
+             (and stable-under-simplificationp
+                  `(:expand (,(car (last clause)))))))
 
 
 
    (defthmd bdds-compatible-degenerate-and
      (implies (and (bdds-compatible-for-al bdd1f bdd1 bdd-al n)
                    (bdds-compatible-for-al bdd2f bdd2 bdd-al n)
-                   (ubddp bdd1f) (ubddp bdd2f)
-                   (ubddp bdd1) (ubddp bdd2)
-                   (<= (max-depth bdd1f) (nfix n))
-                   (<= (max-depth bdd2f) (nfix n))
-                   (equal (q-and bdd1 bdd2) bdd1))
-              (equal (q-and bdd1f bdd2f) bdd1f))
+                   (<= (bdd-max-depth bdd1f) (nfix n))
+                   (<= (bdd-max-depth bdd2f) (nfix n))
+                   (bdd-impl bdd1 bdd2))
+              (bdd-impl bdd1f bdd2f))
+     :hints (("goal" :do-not-induct t
+              :in-theory (e/d ()
+                              (bdds-compatible-for-al nfix
+                                                      bdds-compatible-for-al-necc
+                                                      ;; eval-bdd-when-bdd-impl
+                                                      bdds-compatible-rw)))
+             (and stable-under-simplificationp
+                  '(:use ((:instance bdds-compatible-for-al-necc
+                           (bddf bdd1f) (bdd bdd1)
+                           (vars (take n (bdd-impl-witness bdd1f bdd2f))))
+                          (:instance bdds-compatible-for-al-necc
+                           (bddf bdd2f) (bdd bdd2)
+                           (vars (take n (bdd-impl-witness bdd1f bdd2f)))))))
+             (simple-bdd-reasoning)))
+
+   (defthmd bdds-compatible-degenerate-and1
+     (implies (and (bdds-compatible-for-al bdd2f bdd2 bdd-al n)
+                   (bdds-compatible-for-al bdd1f bdd1 bdd-al n)
+                   (<= (bdd-max-depth bdd2f) (nfix n))
+                   (<= (bdd-max-depth bdd1f) (nfix n))
+                   (bdd-equiv (q-and bdd1 bdd2) bdd1))
+              (bdd-equiv (q-and bdd1f bdd2f) bdd1f))
      :hints (("goal" :do-not-induct t
               :in-theory (disable bdds-compatible-for-al nfix
                                   bdds-compatible-for-al-necc
-                                  ;; eval-bdd-when-qs-subset
+                                  ;; eval-bdd-when-bdd-impl
                                   bdds-compatible-rw)
               :use ((:instance bdds-compatible-for-al-necc
-                               (bddf bdd1f) (bdd bdd1)
-                               (vars (find-diff (q-and bdd1f bdd2f) bdd1f)))
+                     (bddf bdd1f) (bdd bdd1)
+                     (vars (take n (bdd-equiv-witness (q-and bdd1f bdd2f) bdd1f))))
                     (:instance bdds-compatible-for-al-necc
-                               (bddf bdd2f) (bdd bdd2)
-                               (vars (find-diff (q-and bdd1f bdd2f) bdd1f)))))
-             (and stable-under-simplificationp
-                  (find-diff-hint clause))))
+                     (bddf bdd2f) (bdd bdd2)
+                     (vars (take n (bdd-equiv-witness (q-and bdd1f bdd2f)
+                                                      bdd1f))))))
+             (simple-bdd-reasoning)))
 
    (defthmd bdds-compatible-degenerate-and2
      (implies (and (bdds-compatible-for-al bdd2f bdd2 bdd-al n)
                    (bdds-compatible-for-al bdd1f bdd1 bdd-al n)
-                   (ubddp bdd2f) (ubddp bdd1f)
-                   (ubddp bdd2) (ubddp bdd1)
-                   (<= (max-depth bdd2f) (nfix n))
-                   (<= (max-depth bdd1f) (nfix n))
-                   (equal (q-and bdd1 bdd2) bdd2))
-              (equal (q-and bdd1f bdd2f) bdd2f))
+                   (<= (bdd-max-depth bdd2f) (nfix n))
+                   (<= (bdd-max-depth bdd1f) (nfix n))
+                   (bdd-equiv (q-and bdd1 bdd2) bdd2))
+              (bdd-equiv (q-and bdd1f bdd2f) bdd2f))
      :hints (("goal" :do-not-induct t
               :in-theory (disable bdds-compatible-for-al nfix
                                   bdds-compatible-for-al-necc
-                                  ;; eval-bdd-when-qs-subset
+                                  ;; eval-bdd-when-bdd-impl
                                   bdds-compatible-rw)
               :use ((:instance bdds-compatible-for-al-necc
                                (bddf bdd1f) (bdd bdd1)
-                               (vars (find-diff (q-and bdd1f bdd2f) bdd2f)))
+                               (vars (take n (bdd-equiv-witness (q-and bdd1f bdd2f) bdd2f))))
                     (:instance bdds-compatible-for-al-necc
-                               (bddf bdd2f) (bdd bdd2)
-                               (vars (find-diff (q-and bdd1f bdd2f) bdd2f)))))
-             (and stable-under-simplificationp
-                  (find-diff-hint clause))))
-
+                     (bddf bdd2f) (bdd bdd2)
+                     (vars (take n (bdd-equiv-witness (q-and bdd1f bdd2f) bdd2f))))))
+             (simple-bdd-reasoning)))
 
 
    (defthm bdds-compatible-for-al-extend
-     (implies (and (<= (max-depth x) (+ n (len bdd-al)))
+     (implies (and (<= (bdd-max-depth x) (+ n (len bdd-al)))
                    (natp n)
                    (bdds-compatible-for-al y x bdd-al n))
               (bdds-compatible-for-al y x (cons z bdd-al) n))
      :hints (("Goal" :do-not-induct t
+              :in-theory (enable bdds-compatible-for-al)
               :restrict ((bdds-compatible-for-al ((bdd-al (cons z bdd-al))))))))
 
    (defthm bdds-compatible-for-al-suffix
-     (implies (and (<= (max-depth x) (+ n (len bdd-al)))
+     (implies (and (<= (bdd-max-depth x) (+ n (len bdd-al)))
                    (natp n)
                    (suffixp bdd-al bdd-al2)
                    (bdds-compatible-for-al y x bdd-al n))
@@ -1467,7 +2066,7 @@
                                       y x bdd-al2 n)))))))
 
    (defthm bdds-compatible-for-al-cons
-     (implies (and (<= (max-depth x) (+ n (len bdd-al)))
+     (implies (and (<= (bdd-max-depth x) (+ n (len bdd-al)))
                    (natp n)
                    (bdds-compatible-for-al y x bdd-al n))
               (bdds-compatible-for-al y x (cons z bdd-al) n))
@@ -1490,21 +2089,30 @@
 (defun abs-bdd-al-okp (bdd-al n)
   (or (atom bdd-al)
       (and (consp (car bdd-al))
-           (ubddp (caar bdd-al))
            (consp (cdar bdd-al))
            (equal (cadar bdd-al)
                   (qv (+ n (len (cdr bdd-al)))))
-           (<= (max-depth (caar bdd-al))
+           (<= (bdd-max-depth (caar bdd-al))
                (+ n (len (cdr bdd-al))))
            (abs-bdd-al-okp (cdr bdd-al) n))))
+
+(defthmd bdd-max-depth-qv
+  (equal (bdd-max-depth (qv n))
+         (+ 1 (nfix n)))
+  :hints(("Goal" :in-theory (e/d (bdd-max-depth (:i qv))
+                                 (not-consp-ubdd-fix))
+          :induct (qv n)
+          :expand ((bdd-max-depth (qv n))))
+         (and stable-under-simplificationp
+              '(:expand ((qv n))))))
 
 (local
  (progn
    (defthm abs-bdd-al-okp-cons
      (implies (and (abs-bdd-al-okp bdd-al n)
-                   (ubddp bdd) (natp n)
+                   (natp n)
                    (equal var (qv (+ n (len bdd-al))))
-                   (<= (max-depth bdd) (+ n (len bdd-al))))
+                   (<= (bdd-max-depth bdd) (+ n (len bdd-al))))
               (abs-bdd-al-okp (cons (cons bdd (cons var cnt)) bdd-al) n)))
 
    (defthm abs-bdd-al-okp-hons-assoc-equal-ubddp
@@ -1526,9 +2134,9 @@
      (implies (and (bind-free '((n . n)) (n))
                    (abs-bdd-al-okp bdd-al n)
                    (hons-assoc-equal x bdd-al))
-              (<= (max-depth (cadr (hons-assoc-equal x bdd-al)))
+              (<= (bdd-max-depth (cadr (hons-assoc-equal x bdd-al)))
                   (+ n (len bdd-al))))
-     :hints (("Goal" :in-theory (e/d (max-depth max-depth-qv
+     :hints (("Goal" :in-theory (e/d (bdd-max-depth bdd-max-depth-qv
                                                 hons-assoc-equal)
                                      (equal-by-eval-bdds))))
      :rule-classes :linear)
@@ -1538,7 +2146,7 @@
    (defthm abs-bdd-al-okp-hons-assoc-equal-depth-rw
      (implies (and (abs-bdd-al-okp bdd-al n)
                    (hons-assoc-equal x bdd-al))
-              (<= (max-depth (cadr (hons-assoc-equal x bdd-al)))
+              (<= (bdd-max-depth (cadr (hons-assoc-equal x bdd-al)))
                   (+ n (len bdd-al))))
      :hints(("Goal" :in-theory (enable hons-assoc-equal))))
 
@@ -1547,19 +2155,14 @@
      (local (defthm abs-bdd-al-okp-hons-assoc-equal-depth-x
               (implies (and (abs-bdd-al-okp bdd-al n)
                             (hons-assoc-equal x bdd-al))
-                       (<= (max-depth x)
+                       (<= (bdd-max-depth x)
                            (+ n (len bdd-al))))
               :hints(("Goal" :in-theory (enable hons-assoc-equal)))
               :rule-classes (:rewrite :linear)))
-     (local (defthm abs-bdd-al-okp-hons-assoc-equal-ubddp-x
-              (implies (and (abs-bdd-al-okp bdd-al n)
-                            (hons-assoc-equal x bdd-al))
-                       (ubddp x))
-              :hints(("Goal" :in-theory (enable hons-assoc-equal)))))
+
      (defthm eval-bdd-assign-for-bdd-al
        (implies (and (bind-free '((al . al)) (al))
                      (abs-bdd-al-okp bdd-al n)
-                     ;; (ubddp x)
                      (integerp n)
                      (<= (len vars) n)
                      (hons-assoc-equal x bdd-al))
@@ -1570,12 +2173,12 @@
                 :in-theory (enable hons-assoc-equal))
                ("subgoal *1/2" :expand (assign-for-bdd-al bdd-al vars n))
                ("subgoal *1/3" :use ((:instance assign-for-bdd-al-extend
-                                                (x (cadr (hons-assoc-equal x bdd-al)))
-                                                (bdd-al (cdr bdd-al))
-                                                (z (car bdd-al)))
+                                      (x (cadr (hons-assoc-equal x bdd-al)))
+                                      (bdd-al (cdr bdd-al))
+                                      (z (car bdd-al)))
                                      (:instance assign-for-bdd-al-extend
-                                                (bdd-al (cdr bdd-al))
-                                                (z (car bdd-al))))
+                                      (bdd-al (cdr bdd-al))
+                                      (z (car bdd-al))))
                 :in-theory (e/d (hons-assoc-equal)
                                 (assign-for-bdd-al-extend))))))
 
@@ -1635,7 +2238,7 @@
      (implies (and (natp k)
                    (< k (len bdd-al))
                    (abs-bdd-al-okp bdd-al n))
-              (< (max-depth (car (nth k bdd-al)))
+              (< (bdd-max-depth (car (nth k bdd-al)))
                  (+ n (len bdd-al) (- k))))
      :rule-classes (:rewrite :linear))
 
@@ -1674,10 +2277,10 @@
    (encapsulate nil
      (local (include-book "arithmetic/top-with-meta" :dir :system))
      (defthm bdds-compatible-for-al-extend-for-x
-       (implies (and (natp n) (ubddp x) (ubddp bdd)
+       (implies (and (natp n)
                      (abs-bdd-al-okp bdd-al n)
                      (bdds-compatible-for-al x bdd bdd-al n)
-                     (<= (max-depth bdd) (+ n (len bdd-al))))
+                     (<= (bdd-max-depth bdd) (+ n (len bdd-al))))
                 (bdds-compatible-for-al 
                  x (qv (+ n (len bdd-al)))
                  (cons (list* bdd (qv (+ n (len bdd-al))) cnt) bdd-al)
@@ -1711,15 +2314,14 @@
   (or (atom memo)
       (and (consp (car memo))
            (consp (cdar memo))
-           (ubddp (cadar memo))
-           (not (booleanp (cadar memo)))
+           ; (not (booleanp (cadar memo)))
            (bdds-compatible-for-al
             (aig-q-compose (caar memo) al)
             (cadar memo) bdd-al n)
-           (<= (max-depth (cadar memo)) (+ n (len bdd-al)))
+           (<= (bdd-max-depth (cadar memo)) (+ n (len bdd-al)))
            (consp (cddar memo))
-           (equal (aig-q-compose (caddar memo) al)
-                  (aig-q-compose (caar memo) al))
+           (bdd-equiv (aig-q-compose (caddar memo) al)
+                      (aig-q-compose (caar memo) al))
            (abs-memo-okp (cdr memo) n al bdd-al))))
 
 (local
@@ -1728,7 +2330,7 @@
      (implies (and (bind-free '((al . al) (n . n)) (al n))
                    (abs-memo-okp memo n al bdd-al)
                    (hons-assoc-equal x memo))
-              (<= (max-depth (cadr (hons-assoc-equal x memo)))
+              (<= (bdd-max-depth (cadr (hons-assoc-equal x memo)))
                   (+ n (len bdd-al))))
      :hints(("Goal" :in-theory (enable hons-assoc-equal)))
      :rule-classes :linear)
@@ -1745,7 +2347,7 @@
      (implies (and (bind-free '((al . al)) (al))
                    (abs-memo-okp memo n al bdd-al)
                    (hons-assoc-equal x memo))
-              (<= (max-depth (cadr (hons-assoc-equal x memo)))
+              (<= (bdd-max-depth (cadr (hons-assoc-equal x memo)))
                   (+ n (len bdd-al))))
      :hints(("Goal" :in-theory (enable hons-assoc-equal))))
 
@@ -1753,17 +2355,16 @@
      (implies (and ;; (bind-free '((n . n)) (n))
                (abs-memo-okp memo n al bdd-al)
                (hons-assoc-equal x memo))
-              (equal (aig-q-compose (caddr (hons-assoc-equal x memo)) al)
-                     (aig-q-compose x al)))
+              (bdd-equiv (aig-q-compose (caddr (hons-assoc-equal x memo)) al)
+                         (aig-q-compose x al)))
      :hints(("Goal" :in-theory (enable hons-assoc-equal))))
 
-   (defthm abs-memo-okp-hons-assoc-equal-ubddp
-     (implies (and (bind-free '((al . al)) (al))
-                   (abs-memo-okp memo n al bdd-al)
-                   (hons-assoc-equal x memo))
-              (and (ubddp (cadr (hons-assoc-equal x memo)))
-                   (not (booleanp (cadr (hons-assoc-equal x memo))))))
-     :hints(("Goal" :in-theory (enable hons-assoc-equal))))
+   ;; (defthm abs-memo-okp-hons-assoc-equal-ubddp
+   ;;   (implies (and (bind-free '((al . al)) (al))
+   ;;                 (abs-memo-okp memo n al bdd-al)
+   ;;                 (hons-assoc-equal x memo))
+   ;;            (not (booleanp (cadr (hons-assoc-equal x memo)))))
+   ;;   :hints(("Goal" :in-theory (enable hons-assoc-equal))))
 
    (defthm abs-memo-okp-extend-bdd-al
      (implies (and (abs-memo-okp memo n al bdd-al)
@@ -1778,41 +2379,38 @@
                    (consp (cddr (hons-assoc-equal x memo)))))
      :hints(("Goal" :in-theory (enable hons-assoc-equal))))
 
-   (defthm bdds-compatible-max-depth-implies-equal
-     (implies (and (ubddp bddf) (ubddp bdd)
-                   (<= (max-depth bddf) (nfix n))
-                   (<= (max-depth bdd) (nfix n)))
+   (defthm bdds-compatible-bdd-max-depth-implies-equiv
+     (implies (and ;;(ubddp bddf) (ubddp bdd)
+                   (<= (bdd-max-depth bddf) (nfix n))
+                   (<= (bdd-max-depth bdd) (nfix n)))
               (equal (bdds-compatible-for-al bddf bdd bdd-al n)
-                     (equal bddf bdd)))
+                     (bdd-equiv bddf bdd)))
      :hints (("Goal" :in-theory (disable
                                  nfix equal-by-eval-bdds
                                  bdds-compatible-rw)
-              :do-not-induct t)
-             (if (equal (parse-clause-id "Subgoal 1") id)
-                 (equal-by-eval-bdds-inst :lhs 'bddf :rhs 'bdd)
-               (value nil))
-             ("Subgoal 1.1"
+              :cases ((bdd-equiv bddf bdd))
               :use ((:instance bdds-compatible-for-al-necc
-                               (vars arbitrary-values)))))
+                     (vars (take n (bdd-equiv-witness bddf bdd)))))
+              :do-not-induct t) 
+             (simple-bdd-reasoning))
      :rule-classes nil)
 
 
-   (defthm abs-memo-okp-max-depth-implies-equal-q-compose
-     (implies (and (ubddp-val-alistp al)
-                   (hons-assoc-equal x memo)
-                   (<= (max-depth (cadr (hons-assoc-equal x memo)))
-                       (al-max-depth al))
-                   (abs-memo-okp memo (al-max-depth al)
+   (defthm abs-memo-okp-bdd-max-depth-implies-equal-q-compose
+     (implies (and (hons-assoc-equal x memo)
+                   (<= (bdd-max-depth (cadr (hons-assoc-equal x memo)))
+                       (bdd-al-max-depth al))
+                   (abs-memo-okp memo (bdd-al-max-depth al)
                                  al bdd-al))
-              (equal (equal (cadr (hons-assoc-equal x memo))
-                            (aig-q-compose x al))
+              (equal (bdd-equiv (cadr (hons-assoc-equal x memo))
+                                (aig-q-compose x al))
                      t))
      :hints (("Goal" :use ((:instance abs-memo-okp-hons-assoc-equal-rw1
-                                      (n (al-max-depth al)))
-                           (:instance bdds-compatible-max-depth-implies-equal
+                                      (n (bdd-al-max-depth al)))
+                           (:instance bdds-compatible-bdd-max-depth-implies-equiv
                                       (bddf (aig-q-compose x al))
                                       (bdd (cadr (hons-assoc-equal x memo)))
-                                      (n (al-max-depth al))))
+                                      (n (bdd-al-max-depth al))))
               :in-theory (disable abs-memo-okp-hons-assoc-equal-rw1)
               :do-not-induct t)))))
 
@@ -1863,6 +2461,38 @@
  (progn
    (in-theory (enable qv-plus-one))
 
+   (defthm max-depth-when-bdd-equiv-aig-q-compose
+     (implies (and (bdd-equiv bdd (aig-q-compose aig al))
+                   (<= (bdd-al-max-depth al) n))
+              (<= (bdd-max-depth bdd) n))
+     :rule-classes :linear)
+
+   (defthm q-and-self
+     (bdd-equiv (q-and x x) x)
+     :hints ((simple-bdd-reasoning)))
+
+   ;; (defthm bdds-compatible-with-boolean-equiv
+   ;;   (implies (and (syntaxp (or (equal bdd ''nil) (equal bdd ''t)))
+   ;;                 (booleanp bdd) ; (ubddp bddf)
+   ;;                 (bdd-equiv x bddf)
+   ;;                 (<= (bdd-max-depth x) (nfix n)))
+   ;;            (equal (bdds-compatible-for-al bddf bdd bdd-al n)
+   ;;                   (bdd-equiv bddf bdd)))
+   ;;   :hints(("Goal" :in-theory (enable booleanp))))
+
+   ;; (defthm bdds-compatible-with-boolean-equiv-and
+   ;;   (implies (and (syntaxp (or (equal bdd ''nil) (equal bdd ''t)))
+   ;;                 (booleanp bdd) ; (ubddp bddf)
+   ;;                 (bdd-equiv x a)
+   ;;                 (<= (bdd-max-depth x) (nfix n))
+   ;;                 (<= (bdd-max-depth b) (nfix n)))
+   ;;            (equal (bdds-compatible-for-al (q-and a b) bdd bdd-al n)
+   ;;                   (bdd-equiv (q-and a b) bdd)))
+   ;;   :hints(("Goal" :in-theory (enable booleanp)
+   ;;           :use ((:instance bdds-compatible-with-boolean
+   ;;                  (bddf (q-and x b)))))))
+
+
    ;; Lemma: the various invariants are preserved under the AND case.
    (encapsulate
      nil
@@ -1871,17 +2501,26 @@
                         ()
                         ((:rules-of-class :type-prescription :here)
                          aig-q-compose
+                         bdds-compatible-for-al-self
+                         aig-q-compose-of-var
+                         aig-q-compose-of-not-under-bdd-equiv
+                         aig-q-compose-of-and-under-bdd-equiv
+                         sets::double-containment
+                         bdd-impl-transitive-2
+                         bdd-impl-transitive-1
                          qv ;;qv-+1
-                         max-depth abs-memo-okp abs-fmemo-okp
-                         hons-assoc-equal al-max-depth
+                         bdd-max-depth abs-memo-okp abs-fmemo-okp
+                         hons-assoc-equal bdd-al-max-depth
                          max ;;blp-implies-t
                          ;;qvar-of-non-natp
                          bdds-compatible-q-ands-compatible
+                         ;; bdds-compatible-with-boolean-equiv
                          bdds-compatible-degenerate-and
                          bdds-compatible-degenerate-and2
+                         bdd-equiv-when-both-implications
                          ;; bdds-compatible-with-boolean
-                         aig-q-compose-not-decomp-x
                          mv-nth-cons-meta
+                         q-and-of-self-slow
                          booleanp not
                          ;; booleanp-compound-recognizer 
                          ubddp ;;simplifiedp
@@ -1899,88 +2538,120 @@
 ;                         (:REWRITE FOLD-CONSTANTS-IN-PLUS)
                          (:DEFINITION UBDDP-VAL-ALISTP))
                         ((:type-prescription len)
-                         (:type-prescription max-depth)
-                         (:type-prescription al-max-depth)
+                         (:type-prescription bdd-max-depth)
+                         (:type-prescription bdd-al-max-depth)
                          (:type-prescription count-branches-to)
                          (:type-prescription hons-assoc-equal)
                          (:type-prescription abs-bdd-al-okp-hons-assoc-equal-consp)
-                         (:type-prescription qv)))))
+                         (:type-prescription qv)
+                         bdd-max-depth-qv))))
      (local (in-theory (enable and-bddify-var-weakening)))
      (defthm and-bddify-var-weakening-ok
-       (implies (and (ubddp-val-alistp al)
-                     (ubddp bdd1)
-                     (ubddp bdd2)
-                     (<= (max-depth bdd1) (+ n (len bdd-al)))
-                     (<= (max-depth bdd2) (+ n (len bdd-al)))
+       (implies (and (<= (bdd-max-depth bdd1) (+ n (len bdd-al)))
+                     (<= (bdd-max-depth bdd2) (+ n (len bdd-al)))
                      (abs-bdd-al-okp bdd-al n)
-                     (integerp n)
-                     (<= (al-max-depth al) n)
+                     (natp n)
+                     (<= (bdd-al-max-depth al) n)
                      (bdds-compatible-for-al
                       (aig-q-compose aig1 al) bdd1 bdd-al n)
                      (bdds-compatible-for-al
                       (aig-q-compose aig2 al) bdd2 bdd-al n)
                  
                      (case-split
-                      (and (implies (booleanp bdd1) exact1)
+                      ;;(and (implies (booleanp bdd1) exact1)
                            (implies exact1
-                                    (and (equal (aig-q-compose aig1 al) bdd1)
-                                         ;;                                      (simplifiedp aig1 al)
-                                         ))))
+                                    (bdd-equiv (aig-q-compose aig1 al) bdd1)))
                      (case-split
-                      (and (implies (booleanp bdd2) exact2)
+                      ;; (and (implies (booleanp bdd2) exact2)
                            (implies exact2
-                                    (and (equal (aig-q-compose aig2 al) bdd2)
-                                         ;; (simplifiedp aig2 al)
-                                         ))))
+                                    (bdd-equiv (aig-q-compose aig2 al) bdd2)))
                      (<= 1 max-count)
                      (abs-memo-okp memo n al bdd-al)
                      (equal nxtbdd (qv (+ n (len bdd-al)))))
-                (b* ((ans
+                (b* (((mv bdd aig & new-bdd-al new-nxtbdd exact)
                       (and-bddify-var-weakening bdd1 aig1 count1 exact1
                                                 bdd2 aig2 count2 exact2
                                                 max-count bdd-al nxtbdd))
-                     ((mv bdd aig & new-bdd-al new-nxtbdd exact) ans)
                      (exact-bdd (q-and (aig-q-compose aig1 al)
                                        (aig-q-compose aig2 al))))
-                  (and (ubddp bdd)
-                       (<= (len bdd-al) (len new-bdd-al))
+                  (and (<= (len bdd-al) (len new-bdd-al))
                        (suffixp bdd-al new-bdd-al)
-                       (<= (max-depth bdd) (+ n (len new-bdd-al)))
+                       (<= (bdd-max-depth bdd) (+ n (len new-bdd-al)))
                        (abs-bdd-al-okp new-bdd-al n)
                        (bdds-compatible-for-al
                         exact-bdd bdd new-bdd-al n)
-                       (equal (aig-q-compose aig al)
-                              exact-bdd)
-                       (implies (booleanp bdd) exact)
+                       (bdd-equiv (aig-q-compose aig al)
+                                  exact-bdd)
+                       ;; (implies (booleanp bdd) exact)
                        (implies exact
-                                (and (equal bdd exact-bdd)
-                                     ;; (simplifiedp aig al)
-                                     ))
+                                (bdd-equiv bdd exact-bdd))
                        (abs-memo-okp memo n al new-bdd-al)
                        (equal new-nxtbdd (qv (+ n (len new-bdd-al)))))))
        :hints (("Goal"
+                :expand ((and-bddify-var-weakening bdd1 aig1 count1 exact1
+                                                   bdd2 aig2 count2 exact2
+                                                   max-count bdd-al nxtbdd))
                 :do-not-induct t)
-               (case-match id
-                 (((0) (&) . 0)
-                  '(:use ((:instance bdds-compatible-q-ands-compatible
-                                     (bdd1f (aig-q-compose aig1 al))
-                                     (bdd2f (aig-q-compose aig2 al)))
-                          (:instance bdds-compatible-degenerate-and
-                                     (bdd1f (aig-q-compose aig1 al))
-                                     (bdd2f (aig-q-compose aig2 al)))
-                          (:instance bdds-compatible-degenerate-and2
-                                     (bdd1f (aig-q-compose aig1 al))
-                                     (bdd2f (aig-q-compose aig2 al)))))))
                (and stable-under-simplificationp
-                    '(:in-theory (enable not booleanp mv-nth))))))
+                    (cond ((member-equal '(not (equal (q-binary-and bdd1 bdd2) bdd1)) clause)
+                           '(:use ((:instance bdds-compatible-degenerate-and1
+                                    (bdd1f (aig-q-compose aig1 al))
+                                    (bdd2f (aig-q-compose aig2 al))))))
+                          ((member-equal '(not (equal (q-binary-and bdd1 bdd2) bdd2)) clause)
+                            '(:use ((:instance bdds-compatible-degenerate-and2
+                                    (bdd1f (aig-q-compose aig1 al))
+                                    (bdd2f (aig-q-compose aig2 al))))))
+                          (t 
+                           '(:use ((:instance bdds-compatible-q-ands-compatible
+                                    (bdd1f (aig-q-compose aig1 al))
+                                    (bdd2f (aig-q-compose aig2 al))))))))
+               (and stable-under-simplificationp
+                    (cond ((member-equal '(q-binary-and bdd1 bdd2) clause)
+                           '(:use ((:instance bdds-compatible-with-boolean
+                                    (bddf (q-and (aig-q-compose aig1 al)
+                                                 (aig-q-compose aig2 al)))
+                                    (bdd nil)))))))
 
+               ;;              (:instance bdds-compatible-degenerate-and2
+               ;;               (bdd1f (aig-q-compose aig1 al))
+               ;;               (bdd2f (aig-q-compose aig2 al))))))
+               ;; (and stable-under-simplificationp
+               ;;      '(:in-theory (enable not booleanp mv-nth)))
+               )))
+
+   (defthm and-bddify-var-weakening-suffixp-rw
+       (implies (and (suffixp x bdd-al)
+                     (case-split (<= (bdd-max-depth bdd1) (+ n (len bdd-al))))
+                     (case-split (<= (bdd-max-depth bdd2) (+ n (len bdd-al))))
+                     (abs-bdd-al-okp bdd-al n)
+                     (natp n)
+                     (<= (bdd-al-max-depth al) n)
+                     (bdds-compatible-for-al
+                      (aig-q-compose aig1 al) bdd1 bdd-al n)
+                     (bdds-compatible-for-al
+                      (aig-q-compose aig2 al) bdd2 bdd-al n)
+                 
+                     (case-split
+                      ;;(and (implies (booleanp bdd1) exact1)
+                           (implies exact1
+                                    (bdd-equiv (aig-q-compose aig1 al) bdd1)))
+                     (case-split
+                      ;; (and (implies (booleanp bdd2) exact2)
+                           (implies exact2
+                                    (bdd-equiv (aig-q-compose aig2 al) bdd2)))
+                     (<= 1 max-count)
+                     (abs-memo-okp memo n al bdd-al)
+                     (equal nxtbdd (qv (+ n (len bdd-al)))))
+                (b* (((mv ?bdd ?aig & new-bdd-al ?new-nxtbdd ?exact)
+                      (and-bddify-var-weakening bdd1 aig1 count1 exact1
+                                                bdd2 aig2 count2 exact2
+                                                max-count bdd-al nxtbdd)))
+                  (suffixp x new-bdd-al)))
+       :hints (("goal" :use and-bddify-var-weakening-ok
+                :in-theory '(suffixp-transitive))))
+   
    (local (add-bdd-pat (mv-nth 0 (and-bddify-var-weakening . &))))
-   (local (add-bdd-pat (mv-nth 4 (and-bddify-var-weakening . &))))
-
-
-   (in-theory (disable abs-fmemo-okp-point-with-witness
-                       abs-fmemo-okp-implies-abs-fmemo-okp-point
-                       abs-fmemo-not-okp-witness-rw))))
+   (local (add-bdd-pat (mv-nth 4 (and-bddify-var-weakening . &))))))
 
 (encapsulate
   nil
@@ -2004,67 +2675,112 @@
     
      (in-theory (e/d* (abs-fmemo-okp-hons-assoc-equal-rw1
                        abs-fmemo-okp-hons-assoc-equal-rw2)
-                      (len not apqs-memo-not-okp-witness
-                           apqs-memo-not-okp-witness-rw
-                           apqs-memo-point-with-witness
-                           apqs-memo-okp-implies-apqs-memo-okp-point)))
+                      (len not
+                           aig-bddify-var-weakening)))
 
      (add-bdd-pat (mv-nth 0 (aig-bddify-var-weakening . &)))
      (add-bdd-pat (mv-nth 6 (aig-bddify-var-weakening . &)))))
 
+  (local (defthm bdd-max-depth-when-booleanp
+           (implies (booleanp x)
+                    (equal (bdd-max-depth x) 0))
+           :hints(("Goal" :in-theory (enable booleanp)))
+           :rule-classes ((:rewrite :backchain-limit-lst 0))))
+
+  (local (in-theory (disable and-bddify-var-weakening
+                             aig-q-compose
+                             ;and-bddify-var-weakening-ok
+                             ;and-bddify-var-weakening-suffixp-rw
+                             suffixp
+                             aig-bddify-var-weakening
+                             sets::double-containment
+                             aig-bddify-var-weakening-cache-insert
+                             abs-fmemo-okp abs-memo-okp
+                             ;; aig-bddify-var-weakening-cache-lookup
+                             )))
+
+  (defthm fmemo-ok-of-aig-bddify-var-weakening-cache-insert
+    (implies (and (implies exact
+                           (bdd-equiv (aig-q-compose x al)
+                                      bdd))
+                  (bdd-equiv (aig-q-compose x al)
+                             (aig-q-compose aig al))
+                  (abs-fmemo-okp fmemo al))
+             (abs-fmemo-okp
+              (mv-nth 0
+                      (aig-bddify-var-weakening-cache-insert
+                       exact x aig (list* bdd aig count) fmemo memo))
+              al))
+    :hints(("Goal" :in-theory (enable aig-bddify-var-weakening-cache-insert
+                                      abs-fmemo-okp))))
+
+  (defthm memo-ok-of-aig-bddify-var-weakening-cache-insert
+    (implies (and (bdds-compatible-for-al 
+                   (aig-q-compose x al) bdd bdd-al n)
+                  (bdd-equiv (aig-q-compose x al)
+                             (aig-q-compose aig al))
+                  (<= (bdd-max-depth bdd) (+ n (len bdd-al)))
+                  (abs-memo-okp memo n al bdd-al))
+             (abs-memo-okp
+              (mv-nth 1
+                      (aig-bddify-var-weakening-cache-insert
+                       exact x aig (list* bdd aig count) fmemo memo))
+              n al bdd-al))
+    :hints(("Goal" :in-theory (enable aig-bddify-var-weakening-cache-insert
+                                      abs-memo-okp))))
+
+
   (defthm aig-bddify-var-weakening-ok
-    (implies (and (ubddp-val-alistp al)
-                  (abs-bdd-al-okp bdd-al n)
+    (implies (and (abs-bdd-al-okp bdd-al n)
                   (integerp n)
-                  (<= (al-max-depth al) n)
+                  (<= (bdd-al-max-depth al) n)
                   (abs-fmemo-okp fmemo al)
                   (abs-memo-okp memo n al bdd-al)
                   (<= 1 max-count)
                   (equal nxtbdd (qv (+ n (len bdd-al)))))
-             (b* ((ans
+             (b* (((mv bdd aig & new-fmemo new-memo new-bdd-al new-nxtbdd exact)
                    (aig-bddify-var-weakening
                     x al max-count fmemo memo bdd-al nxtbdd))
-                  ((mv bdd aig & new-fmemo new-memo new-bdd-al new-nxtbdd exact)
-                   ans)
                   (exact-bdd (aig-q-compose x al)))
-               (and (ubddp bdd)
-                    (suffixp bdd-al new-bdd-al)
+               (and (suffixp bdd-al new-bdd-al)
                     (<= (len bdd-al) (len new-bdd-al))
-                    (<= (max-depth bdd) (+ n (len new-bdd-al)))
+                    (<= (bdd-max-depth bdd) (+ n (len new-bdd-al)))
                     (abs-bdd-al-okp new-bdd-al n)
                     (bdds-compatible-for-al
                      exact-bdd bdd new-bdd-al n)
-                    (equal (aig-q-compose aig al) exact-bdd)
+                    (bdd-equiv (aig-q-compose aig al) exact-bdd)
                     (implies exact
-                             (and (equal bdd exact-bdd)
-                                  ;; (simplifiedp aig al)
-                                  ))
-                    (implies (booleanp bdd) exact)
+                             (bdd-equiv bdd exact-bdd))
                     (abs-memo-okp new-memo n al new-bdd-al)
                     (abs-fmemo-okp new-fmemo al)
                     (equal new-nxtbdd (qv (+ n (len new-bdd-al)))))))
     :hints (("goal" :induct (aig-bddify-var-weakening-induct
                              x al max-count fmemo memo bdd-al nxtbdd)
+             :expand ((:free (nxtbdd)
+                       (aig-bddify-var-weakening
+                        x al max-count fmemo memo bdd-al nxtbdd)))
              :do-not-induct t)
-            ("Subgoal *1/4" :in-theory (enable aig-q-compose max-depth booleanp))
-            ("Subgoal *1/3" :in-theory (enable aig-q-compose-not-decomp-x booleanp))
-            ("Subgoal *1/2" :in-theory (disable qv)) ;;aig-q-compose-and-decomp-x))
-            ("Subgoal *1/1" :in-theory (e/d (aig-q-compose-and-decomp-x)
-                                            (and-bddify-var-weakening 
-                                             qv len
-                                             mv-nth-cons-meta
-                                             hons-assoc-equal
-                                             equal-of-booleans-rewrite
-                                             ;; normalize-terms-such-as-a/a+b-+-b/a+b
-                                             ;;                                             normalize-addends
-                                             and-bddify-var-weakening-ok)))
-            (and (equal (car id) '(0 1))
-                 '(:restrict 
-                   ((aig-bddify-var-weakening ((x x)) ((x t)) ((x nil))))
-                   :expand
-                   ((:free (nxtbdd)
-                           (aig-bddify-var-weakening
-                            x al max-count fmemo memo bdd-al nxtbdd)))))
+            ;; ("Subgoal *1/4" :in-theory (enable aig-q-compose bdd-max-depth booleanp))
+            ;; ("Subgoal *1/3" :in-theory (enable aig-q-compose-not-decomp-x booleanp))
+            ;; ("Subgoal *1/2" :in-theory (disable qv)) ;;aig-q-compose-and-decomp-x))
+            ;; ("Subgoal *1/1" :in-theory (e/d (aig-q-compose-and-decomp-x)
+            ;;                                 (and-bddify-var-weakening 
+            ;;                                  qv len
+            ;;                                  mv-nth-cons-meta
+            ;;                                  hons-assoc-equal
+            ;;                                  equal-of-booleans-rewrite
+            ;;                                  ;; normalize-terms-such-as-a/a+b-+-b/a+b
+            ;;                                  ;;                                             normalize-addends
+            ;;                                  and-bddify-var-weakening-ok)))
+            ;; (and (equal (car id) '(0 1))
+            ;;      '(:restrict 
+            ;;        ((aig-bddify-var-weakening ((x x)) ((x t)) ((x nil))))
+            ;;        :expand
+            ;;        ((:free (nxtbdd)
+            ;;                (aig-bddify-var-weakening
+            ;;                 x al max-count fmemo memo bdd-al nxtbdd)))))
+
+
             (if (case-match id (((0 1) (1 &) . 0) t))
                 (with-quoted-forms
                  (b* (((mv bdd1 aig1 count1 fmemo memo bdd-al nxtbdd exact1)
@@ -2078,16 +2794,19 @@
                             and-bddify-var-weakening-ok
                             . ,(var-fq-bindings
                                 (bdd1 aig1 count1 exact1 bdd2 aig2 count2 exact2
-                                      bdd-al nxtbdd memo)))))))
-              (value nil)))))
+                                      bdd-al nxtbdd memo))))
+                     :in-theory (disable and-bddify-var-weakening-ok
+                                         and-bddify-var-weakening-suffixp-rw))))
+              (value nil))
+            )))
 
 (in-theory (disable aig-bddify-var-weakening))
 
 
 ;; Inductive invariant on some of the inputs/outputs of AIG-BDDIFY-VAR-WEAKENING.
 (defun abs-args-okp (fmemo memo bdd-al nxtbdd al n)
-  (and (ubddp-val-alistp al)
-       (equal (al-max-depth al) n)
+  (and (integerp n)
+       (<= (bdd-al-max-depth al) n)
        (abs-bdd-al-okp bdd-al n)
        (abs-fmemo-okp fmemo al)
        (abs-memo-okp memo n al bdd-al)
@@ -2115,23 +2834,19 @@
        (and
         (abs-args-okp new-fmemo new-memo new-bdd-al new-nxtbdd al n)
 
-        (ubddp bdd)
-
         (suffixp bdd-al new-bdd-al)
         (<= (len bdd-al) (len new-bdd-al))
 
-        (<= (max-depth bdd) (+ n (len new-bdd-al)))
+        (<= (bdd-max-depth bdd) (+ n (len new-bdd-al)))
         ;; 1.
         (bdds-compatible-for-al exact-bdd bdd new-bdd-al n)
 
-        (equal (aig-q-compose aig al) exact-bdd)
+        (bdd-equiv (aig-q-compose aig al) exact-bdd)
         ;; 2.
         (implies exact
-                 (and (equal bdd exact-bdd)
+                 (and (bdd-equiv bdd exact-bdd)
                       ;; (simplifiedp aig al)
-                      ))
-
-        (implies (booleanp bdd) exact)))))
+                      ))))))
 
 (defthm aig-bddify-var-weakening-ok-if-args-ok-2
   (implies (and (abs-args-okp fmemo memo bdd-al nxtbdd al n)
@@ -2142,14 +2857,13 @@
                 (exact-bdd (aig-q-compose x al)))
              (and
               (abs-args-okp new-fmemo new-memo new-bdd-al new-nxtbdd al n)
-              (equal (aig-q-compose aig al) exact-bdd)))))
+              (bdd-equiv (aig-q-compose aig al) exact-bdd)))))
 
 
 (defthm abs-args-okp-start
-  (implies (ubddp-val-alistp al)
-           (abs-args-okp 'fmemo 'memo 'bdd-al
-                         (qv (al-max-depth al))
-                         al (al-max-depth al))))
+  (abs-args-okp 'fmemo 'memo 'bdd-al
+                (qv (bdd-al-max-depth al))
+                al (bdd-al-max-depth al)))
 
 (in-theory (disable abs-args-okp))
 
@@ -2165,34 +2879,51 @@
    (in-theory (disable suffixp-len))))
 
 
+(local (defthm max-depth-gte-bdd-max-depth
+         (<= (bdd-max-depth x) (max-depth x))
+         :hints(("Goal" :in-theory (enable bdd-max-depth max-depth ubdd-fix
+                                           qcar qcdr)))
+         :rule-classes ((:linear :trigger-terms ((max-depth x))))))
+  
+
 (defthm abs-recheck-exactness-ok
   (implies (and (bind-free '((bdd-al . bdd-al)) (bdd-al))
-                (ubddp-val-alistp al)
-                (equal n (al-max-depth al))
                 (abs-fmemo-okp fmemo al)
-                (abs-memo-okp memo n al bdd-al))
+                (integerp n)
+                (abs-memo-okp memo n al bdd-al)
+                (<= (bdd-al-max-depth al) n))
            (abs-fmemo-okp
             (mv-nth 0 (abs-recheck-exactness x fmemo memo done n))
             al))
-  :hints (("goal" :induct (abs-recheck-exactness x fmemo memo done n))))
+  :hints (("goal" :induct (abs-recheck-exactness x fmemo memo done n)
+           :in-theory (disable aig-q-compose
+                               aig-q-compose-of-and-under-bdd-equiv))
+          (and stable-under-simplificationp
+               '(:use ((:instance bdds-compatible-bdd-max-depth-implies-equiv
+                        (bddf (aig-q-compose x al))
+                        (bdd (cadr (hons-assoc-equal x memo)))
+                        (bdd-al bdd-al) (n n)))))))
 
 (defthm abs-recheck-exactness-top-fmemo-ok
   (implies (and (bind-free '((bdd-al . bdd-al)) (bdd-al))
-                (ubddp-val-alistp al)
-                (equal n (al-max-depth al))
+                (abs-memo-okp memo n al bdd-al)
                 (abs-fmemo-okp fmemo al)
-                (abs-memo-okp memo n al bdd-al))
+                (integerp n)
+                (<= (bdd-al-max-depth al) n))
            (and (abs-fmemo-okp
-                 (mv-nth 0 (abs-recheck-exactness-top x fmemo memo n)) al)
-                (implies (mv-nth 1 (abs-recheck-exactness-top x fmemo memo n))
-                         (equal (mv-nth 2 (abs-recheck-exactness-top
-                                           x fmemo memo n))
-                                (aig-q-compose x al)))
-                (ubddp (mv-nth 2 (abs-recheck-exactness-top
-                                  x fmemo memo n)))))
-  :hints (("goal" :in-theory (e/d (abs-fmemo-okp-hons-assoc-equal-rw1
-                                   abs-fmemo-okp-hons-assoc-equal-rw1)
-                                  (abs-recheck-exactness))
+                 (mv-nth 0 (abs-recheck-exactness-top x fmemo memo n))
+                 al)
+                (implies
+                 (mv-nth 1 (abs-recheck-exactness-top x fmemo memo n))
+                 (bdd-equiv (mv-nth 2 (abs-recheck-exactness-top
+                                       x fmemo memo n))
+                            (aig-q-compose x al)))))
+  :hints (("goal" :in-theory (e/d ()
+                                  (abs-recheck-exactness
+                                   abs-fmemo-okp-hons-assoc-equal-rw1))
+           :use ((:instance abs-fmemo-okp-hons-assoc-equal-rw1
+                  (fmemo (mv-nth 0 (abs-recheck-exactness
+                                    x fmemo memo 'done n)))))
            :do-not-induct t)))
 
 (in-theory (disable abs-recheck-exactness-top))
@@ -2206,8 +2937,7 @@
                  (abs-recheck-exactness-top x fmemo2 memo2 n)))
              (and (abs-args-okp new-fmemo memo2 bdd-al2 nxtbdd2 al n)
                   (implies exact
-                           (equal bdd (aig-q-compose x al)))
-                  (ubddp bdd))))
+                           (bdd-equiv bdd (aig-q-compose x al))))))
   :hints (("goal" :in-theory (disable abs-recheck-exactness-top-fmemo-ok)
            :use ((:instance abs-recheck-exactness-top-fmemo-ok
                             (fmemo fmemo2) (bdd-al bdd-al2) (memo memo2))))))
@@ -2226,12 +2956,12 @@
 
 (encapsulate
  nil
- (local (defthm abs-args-okp-implies-ubddp-val-alistp
-          (implies (abs-args-okp fmemo memo bdd-al nxtbdd al n)
-                   (ubddp-val-alistp al))
-          :hints (("goal" :in-theory (enable abs-args-okp)))))
- (local (in-theory (disable aig-bddify-var-weakening-ok-if-args-ok
-                            aig-bddify-var-weakening-ok max-depth
+ ;; (local (defthm abs-args-okp-implies-ubddp-val-alistp
+ ;;          (implies (abs-args-okp fmemo memo bdd-al nxtbdd al n)
+ ;;                   (ubddp-val-alistp al))
+ ;;          :hints (("goal" :in-theory (enable abs-args-okp)))))
+ (local (in-theory (disable ; aig-bddify-var-weakening-ok-if-args-ok
+                            aig-bddify-var-weakening-ok bdd-max-depth
                             hons-assoc-equal ;; blp-implies-t
                             mv-nth-cons-meta
                             bdds-compatible-for-al-self)))
@@ -2248,12 +2978,10 @@
               (and
                (abs-args-okp new-fmemo memo bdd-al nxtbdd al n)
 
-               (ubdd-listp bdds)
-
-               (equal (aig-q-compose-list aigs al) exact-bdds)
-
+               (bdd-equiv-list (aig-q-compose-list aigs al) exact-bdds)
+               
                (implies exact
-                        (and (equal bdds exact-bdds)
+                        (and (bdd-equiv-list bdds exact-bdds)
 ;;                              (fv-simplifiedp-list aigs al)
                              )))))
    :hints (("Goal" :induct (aig-bddify-list-var-weakening
@@ -2299,24 +3027,23 @@
            (abs-fmemo-okp a al)))
 
 (defthm aig-bddify-list-iter1-ok
-  (implies (and (ubddp-val-alistp al)
-                (equal (al-max-depth al) var-depth)
+  (implies (and (<= (bdd-al-max-depth al) var-depth)
+                (integerp var-depth)
                 (abs-fmemo-okp fmemo al)
                 (equal nxtbdd (qv var-depth)))
            (b* ((ans (aig-bddify-list-iter1 tries x al fmemo nxtbdd var-depth
                                             maybe-wash-args))
                 ((mv bdds new-aigs exact) ans)
                 (exact-bdds (aig-q-compose-list x al)))
-             (and (implies exact (equal bdds exact-bdds))
-                  (ubdd-listp bdds)
-                  (equal (aig-q-compose-list new-aigs al)
-                         exact-bdds))))
+             (and (implies exact (bdd-equiv-list bdds exact-bdds))
+                  (bdd-equiv-list (aig-q-compose-list new-aigs al)
+                                  exact-bdds))))
   :hints(("Goal" :in-theory (e/d* (abs-args-okp)
                                   ((:definition aig-bddify-list-iter1)
                                    abs-fmemo-okp
                                    aig-q-compose
                                    ubddp-val-alistp
-                                   apqs-memo-not-okp-witness-rw
+                                   ; apqs-memo-not-okp-witness-rw
                                    aig-bddify-list-var-weakening
                                    aig-bddify-list-var-weakening-ok
                                    aig-bddify-list-x-weakening-ok
@@ -2324,25 +3051,25 @@
                                    apqs-memo-okp
                                    aig-q-compose-list
                                    ubdd-listp
-                                   qs-subset-to-equal-form
+                                   ; bdd-impl-to-equal-form
                                    nth len nth-len-lst
                                    (:rules-of-class
                                     :type-prescription :here))
-                                  ((:type-prescription al-max-depth)
+                                  ((:type-prescription bdd-al-max-depth)
                                    (:type-prescription posfix-type)))
           :induct (aig-bddify-list-iter1 tries x al fmemo nxtbdd var-depth
                                          maybe-wash-args)
-          :expand ((aig-bddify-list-iter1 tries x al fmemo (qv (al-max-depth al))
-                                          (al-max-depth al) maybe-wash-args)))
+          :expand ((aig-bddify-list-iter1 tries x al fmemo (qv var-depth)
+                                          var-depth maybe-wash-args)))
          '(:use ((:instance aig-bddify-list-x-weakening-ok
                             (max (posfix (cadr (car tries))))
                             (memo 'memo))
                  (:instance aig-bddify-list-var-weakening-ok
-                            (memo 'memo)
-                            (bdd-al 'bdd-al)
-                            (max-count (posfix (cadr (car tries))))
-                            (nxtbdd (qv (al-max-depth al)))
-                            (n (al-max-depth al)))))))
+                  (memo 'memo)
+                  (bdd-al 'bdd-al)
+                  (max-count (posfix (cadr (car tries))))
+                  (nxtbdd (qv var-depth))
+                  (n var-depth))))))
 
 (in-theory (disable aig-bddify-list-iter1))
 
@@ -2379,32 +3106,37 @@
     :hints(("Goal" :in-theory (e/d (hons-assoc-equal))))))
 
 (defthm aig-q-compose-of-aig-restrict-of-bddify-extract
-  (implies (and (atom last) (ubddp-val-alistp al))
-           (equal (aig-q-compose
-                   (aig-restrict x (bddify-extract-bool-alist keyal al last))
-                   al)
-                  (aig-q-compose x al)))
+  (implies (atom last)
+           (bdd-equiv (aig-q-compose
+                       (aig-restrict x (bddify-extract-bool-alist keyal al last))
+                       al)
+                      (aig-q-compose x al)))
   :hints(("Goal" :induct t)
          (and stable-under-simplificationp
               '(:in-theory (enable hons-assoc-equal)))))
 
 (defthm aig-q-compose-list-of-aig-restrict-list-of-bddify-extract
-  (implies (and (atom last) (ubddp-val-alistp al))
-           (equal (aig-q-compose-list
-                   (aig-restrict-list x (bddify-extract-bool-alist keyal al last))
-                   al)
-                  (aig-q-compose-list x al)))
+  (implies (atom last)
+           (bdd-equiv-list
+            (aig-q-compose-list
+             (aig-restrict-list x (bddify-extract-bool-alist keyal al last))
+             al)
+            (aig-q-compose-list x al)))
   :hints (("goal" :induct t)))
 
+(local (defthm bdd-al-max-depth-<=-al-max-depth
+         (<= (bdd-al-max-depth x) (al-max-depth x))
+         :hints(("Goal" :in-theory (enable bdd-al-max-depth al-max-depth)))
+         :rule-classes ((:linear :trigger-terms ((al-max-depth x)))
+                        :rewrite)))
+
 (defthm aig-bddify-list-ok
-  (implies (ubddp-val-alistp al)
-           (b* ((ans (aig-bddify-list tries x al maybe-wash-args))
-                ((mv bdds new-aigs exact) ans)
-                (exact-bdds (aig-q-compose-list x al)))
-             (and (implies exact (equal bdds exact-bdds))
-                  (ubdd-listp bdds)
-                  (equal (aig-q-compose-list new-aigs al)
-                         exact-bdds))))
+  (b* ((ans (aig-bddify-list tries x al maybe-wash-args))
+       ((mv bdds new-aigs exact) ans)
+       (exact-bdds (aig-q-compose-list x al)))
+    (and (implies exact (bdd-equiv-list bdds exact-bdds))
+         (bdd-equiv-list (aig-q-compose-list new-aigs al)
+                         exact-bdds)))
   :hints(("Goal" :in-theory (e/d () (eval-bdd-cp-hint))
           :do-not-induct t)))
 
@@ -2451,10 +3183,19 @@
         (ec-call (aig-bddify *bddify-default-tries*
                              x bindings nil))))
     (if exact
-        (if bdd
+        (if (eval-bdd bdd (bdd-sat-dfs bdd))
             '(sat)
           '(unsat))
       '(failed))))
+
+(defcong bdd-equiv-list bdd-equiv (car x) 1
+  :hints(("Goal" :in-theory (enable default-car))))
+
+(defcong bdd-equiv-list bdd-equiv-list (cdr x) 1
+  :hints(("Goal" :in-theory (enable default-cdr))))
+
+(defcong bdd-equiv bdd-equiv-list (cons a b) 1)
+(defcong bdd-equiv-list bdd-equiv-list (cons a b) 2)
 
 (encapsulate nil
   (local
@@ -2520,5 +3261,13 @@
     (implies (not (equal (aig-eval x env) nil))
              (not (equal (car (aig-bddify-sat x)) 'unsat)))
     :hints (("goal" :use ((:instance aig-q-compose-vars-to-bdd-env
-                                     (n 0) (vars (aig-vars x))
-                                     (aig-env env)))))))
+                           (n 0) (vars (aig-vars x))
+                           (aig-env env))
+                          (:instance bdd-sat-dfs-correct
+                           (x (mv-nth 0 (aig-bddify *bddify-default-tries*
+                                                    x (vars-to-bdd-bindings
+                                                       (aig-vars x) 0) nil)))
+                           (vars (vars-to-bdd-env (aig-vars x) env))))
+             :in-theory (disable aig-q-compose-vars-to-bdd-env
+                                 bdd-sat-dfs-correct)
+             :do-not-induct t))))

@@ -10,11 +10,11 @@
 
 
 (acl2::defevaluator-fast g-if-ev g-if-ev-lst
-  ((g-if-marker x)
-   (g-or-marker x)
-   (g-test-marker x)
-   (g-branch-marker x)
-   (g-hyp-marker x)
+  ((g-if-marker$inline x)
+   (g-or-marker$inline x)
+   (g-test-marker$inline x)
+   (g-branch-marker$inline x)
+   (g-hyp-marker$inline x)
    (if a b c)
    (not x)
    (gtests test hyp)
@@ -23,7 +23,6 @@
    (acl2::return-last x y z)
    (bfr-binary-and x y)
    (bfr-binary-or x y)
-   (bfr-p x)
    (bfr-not x)
    (hyp-fix x hyp)
    (gtests-obj gtests)
@@ -35,11 +34,23 @@
    (binary-+ a b)
 ;   (generic-geval x env)
    (hide x)
-   (gobjectp x)
-   (bfr-p x)
    (bfr-eval x env)
    (car x)
-   (equal x y)))
+   (equal x y))
+  :namedp t)
+
+(local (encapsulate nil
+         (local (acl2::def-join-thms g-if-ev))
+         (local (defun test-clause-proc (clause)
+                  (list clause)))
+         (local (defthm test-clause-proc-correct
+                  (implies (and (pseudo-term-listp clause)
+                                (alistp a)
+                                (g-if-ev (conjoin-clauses (test-clause-proc
+                                                           clause))
+                                         a))
+                           (g-if-ev (disjoin clause) a))
+                  :rule-classes :clause-processor))))
 
 (local
  (progn
@@ -135,7 +146,7 @@
      :hints (("goal" :induct (g-if-ev-term-alist-ind-flg flag x a)
               :in-theory (enable g-if-ev-alist-pairlis$))
              (and stable-under-simplificationp
-                  '(:in-theory (enable g-if-ev-constraint-0)))))))
+                  '(:in-theory (enable g-if-ev-of-fncall-args)))))))
 
 
 (mutual-recursion
@@ -173,7 +184,7 @@
      :hints (("goal" :induct (g-if-ev-term-alist-ind-flg flag x a)
               :expand ((remove-return-lasts x)))
              (and stable-under-simplificationp
-                  '(:in-theory (enable g-if-ev-constraint-0)))))
+                  '(:in-theory (enable g-if-ev-of-fncall-args)))))
 
    (defthm len-remove-return-lasts-lst
      (equal (len (remove-return-lasts-lst x))
@@ -195,7 +206,7 @@
  (b* (((er trans)
        (acl2::translate '(g-or test-term else-term) :stobjs-out nil nil
                  'g-or-pattern (w state) state))
-      (term (beta-reduce-to-fns trans '(g-branch-marker g-test-marker)))
+      (term (beta-reduce-to-fns trans '(g-branch-marker$inline g-test-marker$inline)))
       (term (remove-return-lasts term)))
    (value
     `(defconst *g-or-pattern*
@@ -205,7 +216,7 @@
  (b* (((er trans)
        (acl2::translate '(g-if test-term then-term else-term) :stobjs-out nil nil
                         'g-if-pattern (w state) state))
-      (term (beta-reduce-to-fns trans '(g-branch-marker g-test-marker)))
+      (term (beta-reduce-to-fns trans '(g-branch-marker$inline g-test-marker$inline)))
       (term (remove-return-lasts term)))
    (value
     `(defconst *g-if-pattern*
@@ -258,11 +269,7 @@
     (equal (geval-for-meta (mk-g-ite c x y) b)
            (if (geval-for-meta c b)
                (geval-for-meta x b)
-             (geval-for-meta y b))))
-
-  (defthm geval-for-meta-gobj-fix
-    (equal (geval-for-meta (gobj-fix x) b)
-           (geval-for-meta x b))))
+             (geval-for-meta y b)))))
 
          
 
@@ -270,8 +277,8 @@
 
 (local
  (progn
-   (table acl2::evisc-table `',*g-or-pattern* "*g-or-pattern*")
-   (table acl2::evisc-table `',*g-if-pattern* "*g-if-pattern*")
+   ;; (table acl2::evisc-table `',*g-or-pattern* "*g-or-pattern*")
+   ;; (table acl2::evisc-table `',*g-if-pattern* "*g-if-pattern*")
 
 
 
@@ -281,7 +288,6 @@
      (local (add-bfr-pat (gtests-unknown . &)))
      (local (add-bfr-pat (bfr-fix . &)))
      (local (in-theory (disable bfr-eval-booleanp
-                                gobjectp-cons-case
                                 equal-of-booleans-rewrite)))
  
 
@@ -307,8 +313,7 @@
                 :expand ((:free (x) (hide x)))
                 :in-theory (e/d* ( g-test-marker g-branch-marker
                                           g-or-marker g-hyp-marker)
-                                 (gobjectp-def
-                                  default-car default-cdr assoc-equal
+                                 (default-car default-cdr assoc-equal
                                   (:rules-of-class :type-prescription :here))))))
 
      (defthm geval-for-meta-of-g-if-pattern
@@ -321,29 +326,26 @@
                 :expand ((:free (x) (hide x)))
                 :in-theory (e/d* ( g-test-marker g-branch-marker
                                           g-if-marker g-hyp-marker)
-                                 (gobjectp-def
-                                  default-car default-cdr assoc-equal
+                                 (default-car default-cdr assoc-equal
                                   (:rules-of-class :type-prescription :here)))))))
 
-   (defthm gobjectp-of-g-or-pattern
-     (gobjectp (g-if-ev *g-or-pattern* alist))
-     :hints (("goal" :do-not-induct t
-                :expand ((:free (x) (hide x)))
-              :in-theory (e/d* ( g-test-marker g-branch-marker
-                                        g-or-marker g-hyp-marker)
-                               (gobjectp-def
-                                default-car default-cdr assoc-equal
-                                (:rules-of-class :type-prescription :here))))))
+   ;; (defthm gobjectp-of-g-or-pattern
+   ;;   (gobjectp (g-if-ev *g-or-pattern* alist))
+   ;;   :hints (("goal" :do-not-induct t
+   ;;              :expand ((:free (x) (hide x)))
+   ;;            :in-theory (e/d* ( g-test-marker g-branch-marker
+   ;;                                      g-or-marker g-hyp-marker)
+   ;;                             (default-car default-cdr assoc-equal
+   ;;                              (:rules-of-class :type-prescription :here))))))
 
-   (defthm gobjectp-of-g-if-pattern
-     (gobjectp (g-if-ev *g-if-pattern* alist))
-     :hints (("goal" :do-not-induct t
-              :expand ((:free (x) (hide x)))
-              :in-theory (e/d* ( g-test-marker g-branch-marker
-                                        g-if-marker g-hyp-marker)
-                               (gobjectp-def
-                                default-car default-cdr assoc-equal
-                                (:rules-of-class :type-prescription :here))))))
+   ;; (defthm gobjectp-of-g-if-pattern
+   ;;   (gobjectp (g-if-ev *g-if-pattern* alist))
+   ;;   :hints (("goal" :do-not-induct t
+   ;;            :expand ((:free (x) (hide x)))
+   ;;            :in-theory (e/d* ( g-test-marker g-branch-marker
+   ;;                                      g-if-marker g-hyp-marker)
+   ;;                             (default-car default-cdr assoc-equal
+   ;;                              (:rules-of-class :type-prescription :here))))))
 
 
 
@@ -354,28 +356,29 @@
 
 
 
-   (defthm gobjectp-of-g-if-term-subst
-     (b* (((mv ok &)
-           (acl2::simple-one-way-unify *g-if-pattern* term nil)))
-       (implies (and (pseudo-termp term)
-                     ok)
-                (gobjectp (g-if-ev term al))))
-     :hints (("goal" :in-theory
-              (disable* (:ruleset g-if-ev-constraints)
-                        gobjectp-def))))
+   ;; (defthm gobjectp-of-g-if-term-subst
+   ;;   (b* (((mv ok &)
+   ;;         (acl2::simple-one-way-unify *g-if-pattern* term nil)))
+   ;;     (implies (and (pseudo-termp term)
+   ;;                   ok)
+   ;;              (gobjectp (g-if-ev term al))))
+   ;;   :hints (("goal" :in-theory
+   ;;            (disable* (:ruleset g-if-ev-constraints)
+   ;;                      gobjectp-def))))
 
 
 
 
-   (defthm gobjectp-of-g-or-term-subst
-     (b* (((mv ok &)
-           (acl2::simple-one-way-unify *g-or-pattern* term nil)))
-       (implies (and (pseudo-termp term)
-                     ok)
-                (gobjectp (g-if-ev term al))))
-     :hints (("goal" :in-theory
-              (disable* (:ruleset g-if-ev-constraints)
-                        gobjectp-def))))))
+   ;; (defthm gobjectp-of-g-or-term-subst
+   ;;   (b* (((mv ok &)
+   ;;         (acl2::simple-one-way-unify *g-or-pattern* term nil)))
+   ;;     (implies (and (pseudo-termp term)
+   ;;                   ok)
+   ;;              (gobjectp (g-if-ev term al))))
+   ;;   :hints (("goal" :in-theory
+   ;;            (disable* (:ruleset g-if-ev-constraints)
+   ;;                      gobjectp-def))))
+   ))
 
 
 
@@ -394,8 +397,7 @@
                         (geval-for-meta then-res env)
                       (geval-for-meta else-res env)))))
   :hints (("goal" :in-theory
-           (disable* (:ruleset g-if-ev-constraints)
-                     gobjectp-def))))
+           (disable* (:ruleset g-if-ev-constraints)))))
 
 
 (defthm geval-for-meta-of-g-or-term-subst
@@ -411,8 +413,7 @@
                     (or (geval-for-meta test-res env)
                         (geval-for-meta else-res env)))))
   :hints (("goal" :in-theory
-           (disable* (:ruleset g-if-ev-constraints)
-                     gobjectp-def))))
+           (disable* (:ruleset g-if-ev-constraints)))))
 
 
 
@@ -420,7 +421,7 @@
   (declare (ignore dummy))
   (mv t (beta-reduce-to-fns
          (remove-return-lasts x)
-         '(g-test-marker g-branch-marker g-hyp-marker))))
+         '(g-test-marker$inline g-branch-marker$inline g-hyp-marker$inline))))
 
 ;; Trick: When the rewriter attempts to apply this rule, the extra
 ;; dummy arg to g-if-simp forces it to match it as a free variable, so
@@ -458,68 +459,66 @@
 
 
 
-(defun g-or-gobjectp-extract (x dummy)
-  (declare (ignore dummy))
-  (case-match x
-    (('g-or-marker ('gobjectp ('hide term . &) . &) . &)
-     (mv t term))
-    (& (mv nil nil))))
+;; (defun g-or-gobjectp-extract (x dummy)
+;;   (declare (ignore dummy))
+;;   (case-match x
+;;     (('g-or-marker ('gobjectp ('hide term . &) . &) . &)
+;;      (mv t term))
+;;     (& (mv nil nil))))
 
-(local
- (progn
-   (defthm g-or-gobjectp-extract-correct
-     (mv-let (ok term)
-       (g-or-gobjectp-extract x dummy)
-       (implies ok
-                (equal (g-if-ev x a)
-                       (gobjectp (g-if-ev term a)))))
-     :hints(("Goal" :in-theory (enable g-or-marker)
-             :expand ((:free (x) (hide x))))))
+;; (local
+;;  (progn
+;;    (defthm g-or-gobjectp-extract-correct
+;;      (mv-let (ok term)
+;;        (g-or-gobjectp-extract x dummy)
+;;        (implies ok
+;;                 (equal (g-if-ev x a)
+;;                        (gobjectp (g-if-ev term a)))))
+;;      :hints(("Goal" :in-theory (enable g-or-marker)
+;;              :expand ((:free (x) (hide x))))))
 
-   (defthm pseudo-termps-g-or-gobjectp-extract-correct
-     (mv-let (ok term)
-       (g-or-gobjectp-extract x dummy)
-       (declare (ignore ok))
-       (implies (pseudo-termp x)
-                (pseudo-termp term)))
-     :hints(("Goal" :in-theory (enable pseudo-termp pseudo-term-listp)
-             :do-not-induct t)))))
+;;    (defthm pseudo-termps-g-or-gobjectp-extract-correct
+;;      (mv-let (ok term)
+;;        (g-or-gobjectp-extract x dummy)
+;;        (declare (ignore ok))
+;;        (implies (pseudo-termp x)
+;;                 (pseudo-termp term)))
+;;      :hints(("Goal" :in-theory (enable pseudo-termp pseudo-term-listp)
+;;              :do-not-induct t)))))
 
-(in-theory (disable g-or-gobjectp-extract))
+;; (in-theory (disable g-or-gobjectp-extract))
   
 
-(defun g-or-gobjectp-meta-hyp (x)
-  (b* (((mv ok term) (g-or-gobjectp-extract x 'extract))
-       ((unless ok) ''nil)
-       ((mv ok term) (g-if-simp term 'simp))
-       ((unless ok) ''nil)
-       ((mv ok &)
-        (acl2::simple-one-way-unify *g-or-pattern* term nil))
-       ((unless ok) ''nil))
-    ''t))
+;; (defun g-or-gobjectp-meta-hyp (x)
+;;   (b* (((mv ok term) (g-or-gobjectp-extract x 'extract))
+;;        ((unless ok) ''nil)
+;;        ((mv ok term) (g-if-simp term 'simp))
+;;        ((unless ok) ''nil)
+;;        ((mv ok &)
+;;         (acl2::simple-one-way-unify *g-or-pattern* term nil))
+;;        ((unless ok) ''nil))
+;;     ''t))
 
-;;        (test-term (cdr (assoc-equal 'test-term subst)))
-;;        (else-term (cdr (assoc-equal 'else-term subst)))
-;;        (hyp-term  (cdr (assoc-equal 'hyp subst))))
-;;     (acl2::conjoin2 `(gobjectp ,test-term)
-;;               (acl2::conjoin2 `(gobjectp ,else-term)
-;;                         `(bfr-p ,hyp-term)))))
-
-
-(defun g-or-gobjectp-meta (x)
-  (declare (ignore x))''t)
+;; ;;        (test-term (cdr (assoc-equal 'test-term subst)))
+;; ;;        (else-term (cdr (assoc-equal 'else-term subst)))
+;; ;;        (hyp-term  (cdr (assoc-equal 'hyp subst))))
+;; ;;     (acl2::conjoin2 `(gobjectp ,test-term)
+;; ;;               (acl2::conjoin2 `(gobjectp ,else-term)
+;; ;;                         `(bfr-p ,hyp-term)))))
 
 
-(defthm g-or-gobjectp-meta-correct
-  (implies (and (pseudo-termp x)
-                (g-if-ev (g-or-gobjectp-meta-hyp x) a))
-           (equal (g-if-ev x a)
-                  (g-if-ev (g-or-gobjectp-meta x) a)))
-  :hints(("Goal" :expand ((:free (x) (hide x)))
-          :in-theory (disable gobjectp-def)))
-  :rule-classes ((:meta :trigger-fns (g-or-marker))))
+;; (defun g-or-gobjectp-meta (x)
+;;   (declare (ignore x))''t)
 
 
+;; (defthm g-or-gobjectp-meta-correct
+;;   (implies (and (pseudo-termp x)
+;;                 (g-if-ev (g-or-gobjectp-meta-hyp x) a))
+;;            (equal (g-if-ev x a)
+;;                   (g-if-ev (g-or-gobjectp-meta x) a)))
+;;   :hints(("Goal" :expand ((:free (x) (hide x)))
+;;           :in-theory (disable gobjectp-def)))
+;;   :rule-classes ((:meta :trigger-fns (g-or-marker))))
 
 
 
@@ -527,59 +526,61 @@
 
 
 
-(defun g-if-gobjectp-extract (x dummy)
-  (declare (ignore dummy))
-  (case-match x
-    (('g-if-marker ('gobjectp ('hide term . &) . &) . &)
-     (mv t term))
-    (& (mv nil nil))))
 
-(local
- (progn
-   (defthm g-if-gobjectp-extract-correct
-     (mv-let (ok term)
-       (g-if-gobjectp-extract x dummy)
-       (implies ok
-                (equal (g-if-ev x a)
-                       (gobjectp (g-if-ev term a)))))
-     :hints(("Goal" :in-theory (enable g-if-marker)
-             :expand ((:free (x) (hide x))))))
 
-   (defthm pseudo-termps-g-if-gobjectp-extract-correct
-     (mv-let (ok term)
-       (g-if-gobjectp-extract x dummy)
-       (declare (ignore ok))
-       (implies (pseudo-termp x)
-                (pseudo-termp term)))
-     :hints(("Goal" :in-theory (enable pseudo-termp pseudo-term-listp)
-             :do-not-induct t)))))
+;; (defun g-if-gobjectp-extract (x dummy)
+;;   (declare (ignore dummy))
+;;   (case-match x
+;;     (('g-if-marker ('gobjectp ('hide term . &) . &) . &)
+;;      (mv t term))
+;;     (& (mv nil nil))))
 
-(in-theory (disable g-if-gobjectp-extract))
+;; (local
+;;  (progn
+;;    (defthm g-if-gobjectp-extract-correct
+;;      (mv-let (ok term)
+;;        (g-if-gobjectp-extract x dummy)
+;;        (implies ok
+;;                 (equal (g-if-ev x a)
+;;                        (gobjectp (g-if-ev term a)))))
+;;      :hints(("Goal" :in-theory (enable g-if-marker)
+;;              :expand ((:free (x) (hide x))))))
+
+;;    (defthm pseudo-termps-g-if-gobjectp-extract-correct
+;;      (mv-let (ok term)
+;;        (g-if-gobjectp-extract x dummy)
+;;        (declare (ignore ok))
+;;        (implies (pseudo-termp x)
+;;                 (pseudo-termp term)))
+;;      :hints(("Goal" :in-theory (enable pseudo-termp pseudo-term-listp)
+;;              :do-not-induct t)))))
+
+;; (in-theory (disable g-if-gobjectp-extract))
   
 
-(defun g-if-gobjectp-meta-hyp (x)
-  (b* (((mv ok term) (g-if-gobjectp-extract x 'extract))
-       ((unless ok) ''nil)
-       ((mv ok term) (g-if-simp term 'simp))
-       ((unless ok) ''nil)
-       ((mv ok &)
-        (acl2::simple-one-way-unify *g-if-pattern* term nil))
-       ((unless ok) ''nil))
-    ''t))
+;; (defun g-if-gobjectp-meta-hyp (x)
+;;   (b* (((mv ok term) (g-if-gobjectp-extract x 'extract))
+;;        ((unless ok) ''nil)
+;;        ((mv ok term) (g-if-simp term 'simp))
+;;        ((unless ok) ''nil)
+;;        ((mv ok &)
+;;         (acl2::simple-one-way-unify *g-if-pattern* term nil))
+;;        ((unless ok) ''nil))
+;;     ''t))
 
-(defun g-if-gobjectp-meta (x)
-  (declare (ignore x))
-  ''t)
+;; (defun g-if-gobjectp-meta (x)
+;;   (declare (ignore x))
+;;   ''t)
 
 
-(defthm g-if-gobjectp-meta-correct
-  (implies (and (pseudo-termp x)
-                (g-if-ev (g-if-gobjectp-meta-hyp x) a))
-           (equal (g-if-ev x a)
-                  (g-if-ev (g-if-gobjectp-meta x) a)))
-  :hints(("Goal" :expand ((:free (x) (hide x)))
-          :in-theory (disable gobjectp-def)))
-  :rule-classes ((:meta :trigger-fns (g-if-marker))))
+;; (defthm g-if-gobjectp-meta-correct
+;;   (implies (and (pseudo-termp x)
+;;                 (g-if-ev (g-if-gobjectp-meta-hyp x) a))
+;;            (equal (g-if-ev x a)
+;;                   (g-if-ev (g-if-gobjectp-meta x) a)))
+;;   :hints(("Goal" :expand ((:free (x) (hide x)))
+;;           :in-theory (disable gobjectp-def)))
+;;   :rule-classes ((:meta :trigger-fns (g-if-marker))))
 
 
 
@@ -590,11 +591,11 @@
      (local (defun before-g-if-or-meta-template-evaluator () nil))
      (acl2::defevaluator-fast
       eval eval-lst
-      ((g-if-marker x)
-       (g-or-marker x)
-       (g-test-marker x)
-       (g-branch-marker x)
-       (g-hyp-marker x)
+      ((g-if-marker$inline x)
+       (g-or-marker$inline x)
+       (g-test-marker$inline x)
+       (g-branch-marker$inline x)
+       (g-hyp-marker$inline x)
        (if a b c)
        (not x)
        (gtests test hyp)
@@ -603,7 +604,6 @@
        (acl2::return-last x y z)
        (bfr-binary-and x y)
        (bfr-binary-or x y)
-       (bfr-p x)
        (bfr-not x)
        (hyp-fix x hyp)
        (gtests-obj gtests)
@@ -614,12 +614,11 @@
        (hide x)
        (cons a b)
        (binary-+ a b)
-       (gobjectp x)
-       (bfr-p x)
        (bfr-eval x env)
        (car x)
        (equal x y)
-       (geval x env)))
+       (geval x env))
+      :namedp t)
 
      (local (def-ruleset! g-if-or-meta-evaluator-constraints
               (set-difference-theories
@@ -651,7 +650,7 @@
                       (g-if-ev-lst eval-lst)))
                 (and stable-under-simplificationp
                      '(:in-theory
-                       (enable eval-constraint-0))))))
+                       (enable eval-of-fncall-args))))))
 
      (local
       (defthm geval-of-g-if-term-subst
@@ -703,7 +702,7 @@
      (defun g-or-geval-extract (x dummy)
        (declare (ignore dummy))
        (case-match x
-         (('g-or-marker ('geval ('hide term . &) env . &) . &)
+         (('g-or-marker$inline ('geval ('hide term . &) env . &) . &)
           (mv t term env))
          (& (mv nil nil nil))))
 
@@ -817,7 +816,7 @@
      (defun g-if-geval-extract (x dummy)
        (declare (ignore dummy))
        (case-match x
-         (('g-if-marker ('geval ('hide term . &) env . &) . &)
+         (('g-if-marker$inline ('geval ('hide term . &) env . &) . &)
           (mv t term env))
          (& (mv nil nil nil))))
 
@@ -969,10 +968,10 @@
   (b* ((subst `((geval . ,geval)
                 (eval . ,eval)
                 (eval-lst . ,eval-lst)
-                (eval-constraint-0
+                (eval-of-fncall-args
                  . ,(intern-in-package-of-symbol
                      (concatenate
-                      'string (symbol-name eval) "-CONSTRAINT-0")
+                      'string (symbol-name eval) "-OF-FNCALL-ARGS")
                      eval))
                 . ,(def-geval-name-bindings
                      '(g-or-geval-extract

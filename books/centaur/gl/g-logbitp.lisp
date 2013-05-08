@@ -15,9 +15,7 @@
  
 
 (defun g-logbitp-of-numbers (a b)
-  (declare (xargs :guard (and (gobjectp a)
-                              (general-numberp a)
-                              (gobjectp b)
+  (declare (xargs :guard (and (general-numberp a)
                               (general-numberp b))))
   (b* (((mv arn ard ain aid)
         (general-number-components a))
@@ -38,17 +36,17 @@
                                      aintp (bfr-not (s-sign arn)))
                                     arn nil)
                       (bfr-ite-bss-fn bintp brn nil)))
-      (g-apply 'logbitp (list a b)))))
+      (g-apply 'logbitp (gl-list a b)))))
 
 (in-theory (disable (g-logbitp-of-numbers)))
 
-(local
- (defthm gobjectp-g-logbitp-of-numbers
-   (implies (and (gobjectp a)
-                 (general-numberp a)
-                 (gobjectp b)
-                 (general-numberp b))
-            (gobjectp (g-logbitp-of-numbers a b)))))
+;; (local
+;;  (defthm gobjectp-g-logbitp-of-numbers
+;;    (implies (and (gobjectp a)
+;;                  (general-numberp a)
+;;                  (gobjectp b)
+;;                  (general-numberp b))
+;;             (gobjectp (g-logbitp-of-numbers a b)))))
 
 (local (include-book "arithmetic/top-with-meta" :dir :system))
 
@@ -61,9 +59,7 @@
 
 (local
  (defthm g-logbitp-of-numbers-correct
-   (implies (and (gobjectp a)
-                 (general-numberp a)
-                 (gobjectp b)
+   (implies (and (general-numberp a)
                  (general-numberp b))
             (equal (eval-g-base (g-logbitp-of-numbers a b) env)
                    (logbitp (eval-g-base a env)
@@ -80,28 +76,27 @@
        (j-num (if (general-numberp j) j 0)))
     (g-logbitp-of-numbers i-num j-num)))
 
-(def-gobjectp-thm logbitp
-  :hints `(("Goal" :in-theory
-            (e/d* (general-concretep-atom)
-                  ((:definition ,gfn) (force)
-                   (:rules-of-class :type-prescription :here)
-                   (:ruleset gl-wrong-tag-rewrites)
-                   general-concretep-def
-                   gobj-fix-when-not-gobjectp
-                   gobj-fix-when-gobjectp
-                   equal-of-booleans-rewrite
-                   (:ruleset gl-tag-rewrites)
-                   mv-nth-cons-meta
-                   bfr-ite-bss-fn))
-            :induct (,gfn i j hyp clk)
-            :expand ((,gfn i j hyp clk)))))
+;; (def-gobjectp-thm logbitp
+;;   :hints `(("Goal" :in-theory
+;;             (e/d* (general-concretep-atom)
+;;                   ((:definition ,gfn) (force)
+;;                    (:rules-of-class :type-prescription :here)
+;;                    (:ruleset gl-wrong-tag-rewrites)
+;;                    general-concretep-def
+;;                    gobj-fix-when-not-gobjectp
+;;                    gobj-fix-when-gobjectp
+;;                    equal-of-booleans-rewrite
+;;                    (:ruleset gl-tag-rewrites)
+;;                    mv-nth-cons-meta
+;;                    bfr-ite-bss-fn))
+;;             :induct (,gfn i j hyp clk)
+;;             :expand ((,gfn i j hyp clk)))))
 
 (verify-g-guards
  logbitp
  :hints `(("Goal" :in-theory
-           (disable* ,gfn bfr-p-of-boolean
-                     (:rules-of-class :type-prescription :here)
-                     (:ruleset gl-wrong-tag-rewrites)))))
+           (disable* ,gfn
+                     (:rules-of-class :type-prescription :here)))))
 
 
 (local (defthm logbitp-when-not-numbers
@@ -115,16 +110,12 @@
    :hints `(("Goal" :in-theory (e/d* (general-concretep-atom
                                       (:ruleset general-object-possibilities))
                                      ((:definition ,gfn)
-                                      tag-when-g-boolean-p
-                                      tag-when-g-apply-p
-                                      tag-when-g-concrete-p
-                                      tag-when-g-var-p
                                       general-numberp-eval-to-numberp
                                       general-boolean-value-correct
                                       bool-cond-itep-eval
                                       boolean-listp
                                       components-to-number-alt-def
-                                      member-equal bfr-p-of-boolean
+                                      member-equal
                                       general-number-components-ev
                                       general-concretep-def
                                       v2n-is-v2i-when-sign-nil
@@ -137,7 +128,6 @@
                                       possibilities-for-x-5
                                       possibilities-for-x-3
                                       general-boolean-value-cases
-                                      (:ruleset gl-wrong-tag-rewrites)
                                       (:rules-of-class :type-prescription :here))
                                      ((:type-prescription bfr-eval)))
              :induct (,gfn i j hyp clk)

@@ -4,27 +4,21 @@
 (include-book "bfr")
 
 (defun hyp-fix (x hyp)
-  (declare (xargs :guard (and (bfr-p x)
-                              (bfr-p hyp))))
-  (bfr-fix-vars
-   (x hyp)
-   (let ((and (bfr-and x hyp)))
-     (if and
-         (if (hqual and hyp)
-             t
-           x)
-       nil))))
+  (declare (xargs :guard t))
+  (let ((and (bfr-and x hyp)))
+    (if and
+        (if (hqual and hyp)
+            t
+          x)
+      nil)))
 
-(prove-congruences (bfr-equiv bfr-equiv) hyp-fix)
+;; (prove-congruences (bfr-equiv bfr-equiv) hyp-fix)
 
 (defn hyp-fixedp (x hyp)
-  (declare (xargs :guard (and (bfr-p x)
-                              (bfr-p hyp))))
-  (bfr-fix-vars
-   (x hyp)
-   (hqual (hyp-fix x hyp) x)))
+  (declare (xargs :guard t))
+  (hqual (hyp-fix x hyp) x))
 
-(prove-congruences (bfr-equiv bfr-equiv) hyp-fixedp)
+;; (prove-congruences (bfr-equiv bfr-equiv) hyp-fixedp)
 
 (defn true-under-hyp (x hyp)
   (declare (ignorable hyp))

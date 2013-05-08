@@ -9,98 +9,102 @@
 
 (include-book "bvecs")
 
-(in-theory (disable cutil::tag-forward-to-consp))
+;;(in-theory (disable cutil::tag-forward-to-consp))
 
 (include-book "gobject-types")
-(local (include-book "gobject-type-thms"))
+
+;; Mostly obsolete.  Some general utility stuff at the bottom.
 
 
-;; Recognizer for a well-formed cdr of a g-number.
-(defun wf-g-numberp (x)
-  (declare (xargs :guard t))
-  (and (consp x)
-       (bfr-listp (car x))
-       (or (eq (cdr x) nil)
-           (and (consp (cdr x))
-                (bfr-listp (cadr x))
-                (or (eq (cddr x) nil)
-                    (and (consp (cddr x))
-                         (bfr-listp (caddr x))
-                         (or (eq (cdr (cddr x)) nil)
-                             (and (consp (cdr (cddr x)))
-                                  (bfr-listp (cadr (cddr x)))
-                                  (eq (cddr (cddr x))
-                                      nil)))))))))
+;; ;; Recognizer for a well-formed cdr of a g-number.
+;; (defun wf-g-numberp (x)
+;;   (declare (xargs :guard t))
+;;   (and (consp x)
+;;        (bfr-listp (car x))
+;;        (or (eq (cdr x) nil)
+;;            (and (consp (cdr x))
+;;                 (bfr-listp (cadr x))
+;;                 (or (eq (cddr x) nil)
+;;                     (and (consp (cddr x))
+;;                          (bfr-listp (caddr x))
+;;                          (or (eq (cdr (cddr x)) nil)
+;;                              (and (consp (cdr (cddr x)))
+;;                                   (bfr-listp (cadr (cddr x)))
+;;                                   (eq (cddr (cddr x))
+;;                                       nil)))))))))
 
 
-(in-theory (disable wf-g-numberp))
+;; (in-theory (disable wf-g-numberp))
 
 
 
-(defun wf-g-numberp-bdd (x)
-  (declare (xargs :guard t))
-  (and (consp x)
-       (acl2::ubdd-listp (car x))
-       (or (eq (cdr x) nil)
-           (and (consp (cdr x))
-                (acl2::ubdd-listp (cadr x))
-                (or (eq (cddr x) nil)
-                    (and (consp (cddr x))
-                         (acl2::ubdd-listp (caddr x))
-                         (or (eq (cdr (cddr x)) nil)
-                             (and (consp (cdr (cddr x)))
-                                  (acl2::ubdd-listp (cadr (cddr x)))
-                                  (eq (cddr (cddr x))
-                                      nil)))))))))
+;; (defun wf-g-numberp-bdd (x)
+;;   (declare (xargs :guard t))
+;;   (and (consp x)
+;;        (acl2::ubdd-listp (car x))
+;;        (or (eq (cdr x) nil)
+;;            (and (consp (cdr x))
+;;                 (acl2::ubdd-listp (cadr x))
+;;                 (or (eq (cddr x) nil)
+;;                     (and (consp (cddr x))
+;;                          (acl2::ubdd-listp (caddr x))
+;;                          (or (eq (cdr (cddr x)) nil)
+;;                              (and (consp (cdr (cddr x)))
+;;                                   (acl2::ubdd-listp (cadr (cddr x)))
+;;                                   (eq (cddr (cddr x))
+;;                                       nil)))))))))
 
-(defun wf-g-numberp-aig (x)
-  (declare (xargs :guard t))
-  (and (consp x)
-       (true-listp (car x))
-       (or (eq (cdr x) nil)
-           (and (consp (cdr x))
-                (true-listp (cadr x))
-                (or (eq (cddr x) nil)
-                    (and (consp (cddr x))
-                         (true-listp (caddr x))
-                         (or (eq (cdr (cddr x)) nil)
-                             (and (consp (cdr (cddr x)))
-                                  (true-listp (cadr (cddr x)))
-                                  (eq (cddr (cddr x))
-                                      nil)))))))))
+;; (defun wf-g-numberp-aig (x)
+;;   (declare (xargs :guard t))
+;;   (and (consp x)
+;;        (true-listp (car x))
+;;        (or (eq (cdr x) nil)
+;;            (and (consp (cdr x))
+;;                 (true-listp (cadr x))
+;;                 (or (eq (cddr x) nil)
+;;                     (and (consp (cddr x))
+;;                          (true-listp (caddr x))
+;;                          (or (eq (cdr (cddr x)) nil)
+;;                              (and (consp (cdr (cddr x)))
+;;                                   (true-listp (cadr (cddr x)))
+;;                                   (eq (cddr (cddr x))
+;;                                       nil)))))))))
 
-(local
- (progn
-   (defthm norm-listp-is-bfr-listp
-     (implies (not (bfr-mode))
-              (iff (acl2::ubdd-listp x)
-                   (bfr-listp x)))
-     :hints(("Goal" :in-theory (enable bfr-listp bfr-p))))
+;; (local
+;;  (progn
+;;    (defthm norm-listp-is-bfr-listp
+;;      (implies (not (bfr-mode))
+;;               (iff (acl2::ubdd-listp x)
+;;                    (bfr-listp x)))
+;;      :hints(("Goal" :in-theory (enable bfr-listp bfr-p))))
 
-   (in-theory (disable acl2::ubdd-listp))
+;;    (in-theory (disable acl2::ubdd-listp))
 
-   (defthm wf-g-numberp-bdd-is-wf-g-numberp
-     (implies (not (bfr-mode))
-              (equal (wf-g-numberp-bdd x)
-                     (wf-g-numberp x)))
-     :hints(("Goal" :in-theory (enable wf-g-numberp))))
+;;    (defthm wf-g-numberp-bdd-is-wf-g-numberp
+;;      (implies (not (bfr-mode))
+;;               (equal (wf-g-numberp-bdd x)
+;;                      (wf-g-numberp x)))
+;;      :hints(("Goal" :in-theory (enable wf-g-numberp))))
 
-   (in-theory (disable wf-g-numberp-bdd))
+;;    (in-theory (disable wf-g-numberp-bdd))
 
-   (local (defthmd true-listp-is-bfr-listp
-            (implies (bfr-mode)
-                     (equal (true-listp x)
-                            (bfr-listp x)))
-            :hints(("Goal" :in-theory (enable bfr-listp bfr-p)))))
+;;    (local (defthmd true-listp-is-bfr-listp
+;;             (implies (bfr-mode)
+;;                      (equal (true-listp x)
+;;                             (bfr-listp x)))
+;;             :hints(("Goal" :in-theory (enable bfr-listp bfr-p)))))
 
-   (defthm wf-g-numberp-aig-is-wf-g-numberp
-     (implies (bfr-mode)
-              (equal (wf-g-numberp-aig x)
-                     (wf-g-numberp x)))
-     :hints(("Goal" :in-theory (enable wf-g-numberp
-                                       true-listp-is-bfr-listp))))
+;;    (defthm wf-g-numberp-aig-is-wf-g-numberp
+;;      (implies (bfr-mode)
+;;               (equal (wf-g-numberp-aig x)
+;;                      (wf-g-numberp x)))
+;;      :hints(("Goal" :in-theory (enable wf-g-numberp
+;;                                        true-listp-is-bfr-listp))))
 
-   (in-theory (disable wf-g-numberp-aig))))
+;;    (in-theory (disable wf-g-numberp-aig))))
+
+
+
 
 ;; ;; Recognizer for valid g-objects.
 ;; (defn gobjectp (x)
@@ -158,181 +162,181 @@
 ;; This function returns NIL for ACL2 objects, 'GOBJECT for gobjects
 ;; which are not general-concretes, 'GENERAL for general-concretes
 ;; which are not concrete, and 'CONCRETE for concretes.
-(defn gobject-hierarchy-bdd (x)
-  (if (atom x)
-      (and (not (g-keyword-symbolp x)) 'concrete)
-    (cond
-     ((g-concrete-p x)       'general)
-     ((g-boolean-p x)   (and (acl2::ubddp (g-boolean->bool x))
-                             'gobject))
-     ((g-number-p x)    (and (wf-g-numberp-bdd (g-number->num x))
-                             'gobject))
-     ((g-ite-p x)       (and (gobject-hierarchy-bdd (g-ite->test x))
-                             (gobject-hierarchy-bdd (g-ite->then x))
-                             (gobject-hierarchy-bdd (g-ite->else x))
-                             'gobject))
-     ((g-apply-p x)     (and (symbolp (g-apply->fn x))
-                             (gobject-hierarchy-bdd (g-apply->args x))
-                             'gobject))
-     ((g-var-p x)            'gobject)
-     (t (let ((car (gobject-hierarchy-bdd (car x))))
-          (and car
-               (let ((cdr (gobject-hierarchy-bdd (cdr x))))
-                 (and cdr
-                      (cond ((or (eq car 'gobject) (eq cdr 'gobject))
-                             'gobject)
-                            ((or (eq car 'general) (eq cdr 'general))
-                             'general)
-                            (t 'concrete))))))))))
+;; (defn gobject-hierarchy-bdd (x)
+;;   (if (atom x)
+;;       (and (not (g-keyword-symbolp x)) 'concrete)
+;;     (cond
+;;      ((g-concrete-p x)       'general)
+;;      ((g-boolean-p x)   (and (acl2::ubddp (g-boolean->bool x))
+;;                              'gobject))
+;;      ((g-number-p x)    (and (wf-g-numberp-bdd (g-number->num x))
+;;                              'gobject))
+;;      ((g-ite-p x)       (and (gobject-hierarchy-bdd (g-ite->test x))
+;;                              (gobject-hierarchy-bdd (g-ite->then x))
+;;                              (gobject-hierarchy-bdd (g-ite->else x))
+;;                              'gobject))
+;;      ((g-apply-p x)     (and (symbolp (g-apply->fn x))
+;;                              (gobject-hierarchy-bdd (g-apply->args x))
+;;                              'gobject))
+;;      ((g-var-p x)            'gobject)
+;;      (t (let ((car (gobject-hierarchy-bdd (car x))))
+;;           (and car
+;;                (let ((cdr (gobject-hierarchy-bdd (cdr x))))
+;;                  (and cdr
+;;                       (cond ((or (eq car 'gobject) (eq cdr 'gobject))
+;;                              'gobject)
+;;                             ((or (eq car 'general) (eq cdr 'general))
+;;                              'general)
+;;                             (t 'concrete))))))))))
 
-(defn gobject-hierarchy-aig (x)
-  (if (atom x)
-      (and (not (g-keyword-symbolp x)) 'concrete)
-    (cond
-     ((g-concrete-p x)       'general)
-     ((g-boolean-p x)   'gobject)
-     ((g-number-p x)    (and (wf-g-numberp-aig (g-number->num x))
-                             'gobject))
-     ((g-ite-p x)       (and (gobject-hierarchy-aig (g-ite->test x))
-                             (gobject-hierarchy-aig (g-ite->then x))
-                             (gobject-hierarchy-aig (g-ite->else x))
-                             'gobject))
-     ((g-apply-p x)     (and (symbolp (g-apply->fn x))
-                             (gobject-hierarchy-aig (g-apply->args x))
-                             'gobject))
-     ((g-var-p x)            'gobject)
-     (t (let ((car (gobject-hierarchy-aig (car x))))
-          (and car
-               (let ((cdr (gobject-hierarchy-aig (cdr x))))
-                 (and cdr
-                      (cond ((or (eq car 'gobject) (eq cdr 'gobject))
-                             'gobject)
-                            ((or (eq car 'general) (eq cdr 'general))
-                             'general)
-                            (t 'concrete))))))))))
-
-
-(defun gobject-hierarchy (x)
-  (declare (xargs :guard t
-                  :verify-guards nil))
-  (mbe :logic
-       ;; We can't use memoization with this function body because it calls
-       ;; bfr-mode, which is constrained/attached.  So in the :exec version we
-       ;; instead call one version or the other, neither of which uses an
-       ;; attached function.
-       (if (atom x)
-           (and (not (g-keyword-symbolp x)) 'concrete)
-         (cond
-          ((g-concrete-p x)       'general)
-          ((g-boolean-p x)   (and (bfr-p (g-boolean->bool x))
-                                  'gobject))
-          ((g-number-p x)    (and (wf-g-numberp (g-number->num x))
-                                  'gobject))
-          ((g-ite-p x)       (and (gobject-hierarchy (g-ite->test x))
-                                  (gobject-hierarchy (g-ite->then x))
-                                  (gobject-hierarchy (g-ite->else x))
-                                  'gobject))
-          ((g-apply-p x)     (and (symbolp (g-apply->fn x))
-                                  (gobject-hierarchy (g-apply->args x))
-                                  'gobject))
-          ((g-var-p x)            'gobject)
-          (t (let ((car (gobject-hierarchy (car x))))
-               (and car
-                    (let ((cdr (gobject-hierarchy (cdr x))))
-                      (and cdr
-                           (cond ((or (eq car 'gobject) (eq cdr 'gobject))
-                                  'gobject)
-                                 ((or (eq car 'general) (eq cdr 'general))
-                                  'general)
-                                 (t 'concrete)))))))))
-       :exec (bfr-case :bdd (gobject-hierarchy-bdd x)
-                       :aig (gobject-hierarchy-aig x))))
-
-(local
- (progn
-   (defthmd ubddp-is-bfr-p
-     (implies (not (bfr-mode))
-              (iff (acl2::ubddp x)
-                   (bfr-p x)))
-     :hints(("Goal" :in-theory (enable bfr-p))))
+;; (defn gobject-hierarchy-aig (x)
+;;   (if (atom x)
+;;       (and (not (g-keyword-symbolp x)) 'concrete)
+;;     (cond
+;;      ((g-concrete-p x)       'general)
+;;      ((g-boolean-p x)   'gobject)
+;;      ((g-number-p x)    (and (wf-g-numberp-aig (g-number->num x))
+;;                              'gobject))
+;;      ((g-ite-p x)       (and (gobject-hierarchy-aig (g-ite->test x))
+;;                              (gobject-hierarchy-aig (g-ite->then x))
+;;                              (gobject-hierarchy-aig (g-ite->else x))
+;;                              'gobject))
+;;      ((g-apply-p x)     (and (symbolp (g-apply->fn x))
+;;                              (gobject-hierarchy-aig (g-apply->args x))
+;;                              'gobject))
+;;      ((g-var-p x)            'gobject)
+;;      (t (let ((car (gobject-hierarchy-aig (car x))))
+;;           (and car
+;;                (let ((cdr (gobject-hierarchy-aig (cdr x))))
+;;                  (and cdr
+;;                       (cond ((or (eq car 'gobject) (eq cdr 'gobject))
+;;                              'gobject)
+;;                             ((or (eq car 'general) (eq cdr 'general))
+;;                              'general)
+;;                             (t 'concrete))))))))))
 
 
-   (defthmd aig-mode-bfr-p
-     (implies (bfr-mode)
-              (bfr-p x))
-     :hints(("Goal" :in-theory (enable bfr-p))))))
+;; (defun gobject-hierarchy (x)
+;;   (declare (xargs :guard t
+;;                   :verify-guards nil))
+;;   (mbe :logic
+;;        ;; We can't use memoization with this function body because it calls
+;;        ;; bfr-mode, which is constrained/attached.  So in the :exec version we
+;;        ;; instead call one version or the other, neither of which uses an
+;;        ;; attached function.
+;;        (if (atom x)
+;;            (and (not (g-keyword-symbolp x)) 'concrete)
+;;          (cond
+;;           ((g-concrete-p x)       'general)
+;;           ((g-boolean-p x)   (and (bfr-p (g-boolean->bool x))
+;;                                   'gobject))
+;;           ((g-number-p x)    (and (wf-g-numberp (g-number->num x))
+;;                                   'gobject))
+;;           ((g-ite-p x)       (and (gobject-hierarchy (g-ite->test x))
+;;                                   (gobject-hierarchy (g-ite->then x))
+;;                                   (gobject-hierarchy (g-ite->else x))
+;;                                   'gobject))
+;;           ((g-apply-p x)     (and (symbolp (g-apply->fn x))
+;;                                   (gobject-hierarchy (g-apply->args x))
+;;                                   'gobject))
+;;           ((g-var-p x)            'gobject)
+;;           (t (let ((car (gobject-hierarchy (car x))))
+;;                (and car
+;;                     (let ((cdr (gobject-hierarchy (cdr x))))
+;;                       (and cdr
+;;                            (cond ((or (eq car 'gobject) (eq cdr 'gobject))
+;;                                   'gobject)
+;;                                  ((or (eq car 'general) (eq cdr 'general))
+;;                                   'general)
+;;                                  (t 'concrete)))))))))
+;;        :exec (bfr-case :bdd (gobject-hierarchy-bdd x)
+;;                        :aig (gobject-hierarchy-aig x))))
+
+;; (local
+;;  (progn
+;;    (defthmd ubddp-is-bfr-p
+;;      (implies (not (bfr-mode))
+;;               (iff (acl2::ubddp x)
+;;                    (bfr-p x)))
+;;      :hints(("Goal" :in-theory (enable bfr-p))))
 
 
-(defthm gobject-hierarchy-bdd-is-gobject-hierarchy
-  (implies (not (bfr-mode))
-           (equal (gobject-hierarchy-bdd x)
-                  (gobject-hierarchy x)))
-  :hints(("Goal" :in-theory (enable ubddp-is-bfr-p))))
-
-(defthm gobject-hierarchy-aig-is-gobject-hierarchy
-  (implies (bfr-mode)
-           (equal (gobject-hierarchy-aig x)
-                  (gobject-hierarchy x)))
-  :hints(("Goal" :in-theory (enable aig-mode-bfr-p))))
+;;    (defthmd aig-mode-bfr-p
+;;      (implies (bfr-mode)
+;;               (bfr-p x))
+;;      :hints(("Goal" :in-theory (enable bfr-p))))))
 
 
-(in-theory (disable gobject-hierarchy-bdd
-                    gobject-hierarchy-aig))
+;; (defthm gobject-hierarchy-bdd-is-gobject-hierarchy
+;;   (implies (not (bfr-mode))
+;;            (equal (gobject-hierarchy-bdd x)
+;;                   (gobject-hierarchy x)))
+;;   :hints(("Goal" :in-theory (enable ubddp-is-bfr-p))))
 
-(verify-guards gobject-hierarchy)
-
-(in-theory (disable gobject-hierarchy (gobject-hierarchy)))
-
-(defthm gobject-hierarchy-of-atomic-constants
-  (implies (and (syntaxp (quotep x))
-                (atom x))
-           (equal (gobject-hierarchy x)
-                  (and (not (g-keyword-symbolp x))
-                       'concrete)))
-  :hints(("Goal" :in-theory (enable gobject-hierarchy))))
-
-(memoize 'gobject-hierarchy-bdd :condition '(consp x))
-(memoize 'gobject-hierarchy-aig :condition '(consp x))
-
-(defn gobjectp (x)
-  (if (gobject-hierarchy x) t nil))
-
-(in-theory (disable gobjectp (gobjectp)))
-
-(defthm gobjectp-of-atomic-constants
-  (implies (and (syntaxp (quotep x))
-                (atom x))
-           (equal (gobjectp x)
-                  (not (g-keyword-symbolp x))))
-  :hints(("Goal" :in-theory (enable gobjectp gobject-hierarchy))))
-
-;; GOBJ-FIX: Fix argument into a GOBJECTP
-(defun gobj-fix (x)
-  (declare (xargs :guard t))
-  (if (gobjectp x)
-      x
-    (g-concrete x)))
-
-(in-theory (disable gobj-fix))
-
-(defmacro mbe-gobj-fix (x)
-  `(mbe :logic (gobj-fix ,x) :exec ,x))
+;; (defthm gobject-hierarchy-aig-is-gobject-hierarchy
+;;   (implies (bfr-mode)
+;;            (equal (gobject-hierarchy-aig x)
+;;                   (gobject-hierarchy x)))
+;;   :hints(("Goal" :in-theory (enable aig-mode-bfr-p))))
 
 
-(defun gobj-equiv (x y)
-  (equal (gobj-fix x) (gobj-fix y)))
+;; (in-theory (disable gobject-hierarchy-bdd
+;;                     gobject-hierarchy-aig))
 
-(defequiv gobj-equiv)
+;; (verify-guards gobject-hierarchy)
+
+;; (in-theory (disable gobject-hierarchy (gobject-hierarchy)))
+
+;; (defthm gobject-hierarchy-of-atomic-constants
+;;   (implies (and (syntaxp (quotep x))
+;;                 (atom x))
+;;            (equal (gobject-hierarchy x)
+;;                   (and (not (g-keyword-symbolp x))
+;;                        'concrete)))
+;;   :hints(("Goal" :in-theory (enable gobject-hierarchy))))
+
+;; (memoize 'gobject-hierarchy-bdd :condition '(consp x))
+;; (memoize 'gobject-hierarchy-aig :condition '(consp x))
+
+;; (defn gobjectp (x)
+;;   (if (gobject-hierarchy x) t nil))
+
+;; (in-theory (disable gobjectp (gobjectp)))
+
+;; (defthm gobjectp-of-atomic-constants
+;;   (implies (and (syntaxp (quotep x))
+;;                 (atom x))
+;;            (equal (gobjectp x)
+;;                   (not (g-keyword-symbolp x))))
+;;   :hints(("Goal" :in-theory (enable gobjectp gobject-hierarchy))))
+
+;; ;; GOBJ-FIX: Fix argument into a GOBJECTP
+;; (defun gobj-fix (x)
+;;   (declare (xargs :guard t))
+;;   (if (gobjectp x)
+;;       x
+;;     (g-concrete x)))
+
+;; (in-theory (disable gobj-fix))
+
+;; (defmacro mbe-gobj-fix (x)
+;;   `(mbe :logic (gobj-fix ,x) :exec ,x))
 
 
-(defun gobject-listp (x)
-  (declare (xargs :guard t))
-  (if (atom x)
-      (eq x nil)
-    (and (gobjectp (car x))
-         (gobject-listp (cdr x)))))
+;; (defun gobj-equiv (x y)
+;;   (equal (gobj-fix x) (gobj-fix y)))
 
-(in-theory (disable gobject-listp))
+;; (defequiv gobj-equiv)
+
+
+;; (defun gobject-listp (x)
+;;   (declare (xargs :guard t))
+;;   (if (atom x)
+;;       (eq x nil)
+;;     (and (gobjectp (car x))
+;;          (gobject-listp (cdr x)))))
+
+;; (in-theory (disable gobject-listp))
 
 ;; #||
 ;; ;; Example G objects.
@@ -399,17 +403,17 @@
   (equal (gl-error x) nil)
   :hints(("Goal" :in-theory (enable gl-error))))
 
-(defun gl-lazy-and-fn (terms)
-  (if (atom terms)
-      t
-    (if (atom (cdr terms))
-        (car terms)
-      `(let ((gl-lazy-and-term ,(car terms)))
-         (if gl-lazy-and-term
-             ,(gl-lazy-and-fn (cdr terms))
-           (prog2$ (cw "GL-LAZY-AND failed on term: ~x0~%"
-                       ',(car terms))
-                   (gl-error gl-lazy-and-term)))))))
+;; (defun gl-lazy-and-fn (terms)
+;;   (if (atom terms)
+;;       t
+;;     (if (atom (cdr terms))
+;;         (car terms)
+;;       `(let ((gl-lazy-and-term ,(car terms)))
+;;          (if gl-lazy-and-term
+;;              ,(gl-lazy-and-fn (cdr terms))
+;;            (prog2$ (cw "GL-LAZY-AND failed on term: ~x0~%"
+;;                        ',(car terms))
+;;                    (gl-error gl-lazy-and-term)))))))
 
-(defmacro gl-lazy-and (&rest terms)
-  (gl-lazy-and-fn terms))
+;; (defmacro gl-lazy-and (&rest terms)
+;;   (gl-lazy-and-fn terms))

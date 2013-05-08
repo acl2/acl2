@@ -22,33 +22,32 @@
 ;;   :rule-classes nil)
 
 (defun g-code-char-concrete (x)
-  (declare (xargs :guard (and (gobjectp x)
-                              (not (g-number-p x))
-                              (not (g-ite-p x)))))
-  (let ((x (mbe-gobj-fix x)))
-    (cond ((atom x)
-           (ec-call (code-char x)))
-          ((g-boolean-p x)
-           (code-char 0))
-          ((g-concrete-p x)
-           (ec-call (code-char (g-concrete->obj x))))
-          ((g-apply-p x)
-           (g-apply 'code-char (list x)))
-          ((g-var-p x)
-           (g-apply 'code-char (list x)))
-          (t ;; cons
-           (code-char 0)))))
+  (declare (xargs :guard (or (atom x)
+                             (and (not (g-number-p x))
+                                  (not (g-ite-p x))))))
+  (cond ((atom x)
+         (ec-call (code-char x)))
+        ((g-boolean-p x)
+         (code-char 0))
+        ((g-concrete-p x)
+         (ec-call (code-char (g-concrete->obj x))))
+        ((g-apply-p x)
+         (g-apply 'code-char (list x)))
+        ((g-var-p x)
+         (g-apply 'code-char (list x)))
+        (t ;; cons
+         (code-char 0))))
 
 (local
  (progn
-   (defthm gobjectp-characterp
-     (implies (characterp x)
-              (gobjectp x))
-     :hints(("Goal" :in-theory
-             (enable gobjectp gobject-hierarchy))))
+   ;; (defthm gobjectp-characterp
+   ;;   (implies (characterp x)
+   ;;            (gobjectp x))
+   ;;   :hints(("Goal" :in-theory
+   ;;           (enable gobjectp gobject-hierarchy))))
 
-   (defthm gobjectp-g-code-char-concrete
-     (gobjectp (g-code-char-concrete x)))
+   ;; (defthm gobjectp-g-code-char-concrete
+   ;;   (gobjectp (g-code-char-concrete x)))
 
    (defthm code-char-booleanp
      (implies (booleanp x)
@@ -62,11 +61,11 @@
               (equal (general-concrete-obj x) x))
      :hints(("Goal" :in-theory (enable general-concrete-obj))))
 
-   (defthm gobjectp-not-g-keyword-symbolp
-     (implies (gobjectp x)
-              (not (g-keyword-symbolp x)))
-     :hints(("Goal" :in-theory (enable gobjectp gobject-hierarchy
-                                       g-keyword-symbolp))))
+   ;; (defthm gobjectp-not-g-keyword-symbolp
+   ;;   (implies (gobjectp x)
+   ;;            (not (g-keyword-symbolp x)))
+   ;;   :hints(("Goal" :in-theory (enable gobjectp gobject-hierarchy
+   ;;                                     g-keyword-symbolp))))
 
    (defthm general-concerete-obj-of-g-concrete-p
      (implies (g-concrete-p x)
@@ -86,15 +85,15 @@
               (equal (code-char x) (code-char 0)))
      :hints (("goal" :use completion-of-code-char)))
 
-   (defthm g-number-p-gobj-fix
-     (implies (not (g-number-p x))
-              (not (g-number-p (gobj-fix x))))
-     :hints(("Goal" :in-theory (enable gobj-fix))))
+   ;; (defthm g-number-p-gobj-fix
+   ;;   (implies (not (g-number-p x))
+   ;;            (not (g-number-p (gobj-fix x))))
+   ;;   :hints(("Goal" :in-theory (enable gobj-fix))))
 
-   (defthm g-ite-p-gobj-fix
-     (implies (not (g-ite-p x))
-              (not (g-ite-p (gobj-fix x))))
-     :hints(("Goal" :in-theory (enable gobj-fix))))
+   ;; (defthm g-ite-p-gobj-fix
+   ;;   (implies (not (g-ite-p x))
+   ;;            (not (g-ite-p (gobj-fix x))))
+   ;;   :hints(("Goal" :in-theory (enable gobj-fix))))
 
    (defthm g-code-char-concrete-correct
      (implies (and (not (g-number-p x))
@@ -114,23 +113,23 @@
 
 
 
-   (defthm bfr-p-nth
-     (implies (bfr-listp x)
-              (bfr-p (nth n x))))
+   ;; (defthm bfr-p-nth
+   ;;   (implies (bfr-listp x)
+   ;;            (bfr-p (nth n x))))
 
-   (defthm true-listp-when-bfr-listp
-     (implies (bfr-listp x)
-              (True-listp x))
-     :hints(("Goal" :in-theory (enable bfr-listp))))))
+   ;; (defthm true-listp-when-bfr-listp
+   ;;   (implies (bfr-listp x)
+   ;;            (True-listp x))
+   ;;   :hints(("Goal" :in-theory (enable bfr-listp))))
+   ))
 
 
 (defun code-char-s (n x acc hyp)
   (declare (xargs :guard (and (natp n)
+                              (true-listp x)
                               (< n 9)
-                              (bfr-listp x)
                               (natp acc)
-                              (<= acc (- 256 (ash 1 n)))
-                              (bfr-p hyp))
+                              (<= acc (- 256 (ash 1 n))))
                   :guard-hints ((and stable-under-simplificationp
                                      '(:in-theory (enable ash))))))
   (if (zp n)
@@ -240,10 +239,7 @@
               (equal (eval-g-base (code-char-s 8 x 0 hyp) env)
                      (code-char (v2i (bfr-eval-list x (car env))))))
      :hints(("Goal" :in-theory (disable v2n-is-v2i-when-sign-nil
-                                        code-char-s))))
-
-   (defthm gobjectp-code-char-s
-     (gobjectp (code-char-s n x acc hyp)))))
+                                        code-char-s))))))
                 
 
 ;; (defun g-code-char-of-integer (x hyp clk)
@@ -254,10 +250,9 @@
 ;;         (glr < x 256 hyp clk))
   
 (defun g-code-char-of-number (x hyp clk)
-  (declare (xargs :guard (and (gobjectp x)
+  (declare (xargs :guard (and (consp x)
                               (g-number-p x)
-                              (natp clk)
-                              (bfr-p hyp))
+                              (natp clk))
                   :guard-hints(("Goal" :in-theory
                                 (disable code-char-s)))))
   (mv-let (xrn xrd xin xid)
@@ -325,7 +320,6 @@
                                      (mv-nth 3 (break-g-number (g-number->num x)))
                                      (car env)))
                                0))
-                   (gobjectp x)
                    (g-number-p x))
               (not (integerp (eval-g-base x env))))
      :hints(("Goal" :in-theory
@@ -342,8 +336,7 @@
      (set-ignore-ok t)
      (defthm g-code-char-of-number-correct
        (implies (and (bfr-eval hyp (car env))
-                     (g-number-p x)
-                     (gobjectp x))
+                     (g-number-p x))
                 (equal (eval-g-base (g-code-char-of-number x hyp clk) env)
                        (code-char (eval-g-base x env))))
        :hints(("Goal" :in-theory (e/d (eval-g-base)
@@ -354,7 +347,6 @@
                                        s-sign-correct
                                        code-char-s-correct1
                                        code-char-s-correct
-                                       gobjectp-tag-rw-to-types
                                        bfr-eval-list
                                        eval-g-base-alt-def))
                :do-not-induct t
@@ -374,16 +366,17 @@
 
 
 (def-g-fn code-char
-  `(cond ((g-number-p x) (g-code-char-of-number x hyp clk))
+  `(cond ((atom x) (g-code-char-concrete x))
+         ((g-number-p x) (g-code-char-of-number x hyp clk))
          ((g-ite-p x)
           (if (zp clk)
-              (g-apply 'code-char (list x))
+              (g-apply 'code-char (gl-list x))
             (g-if (g-ite->test x)
                   (,gfn (g-ite->then x) hyp clk)
                   (,gfn (g-ite->else x) hyp clk))))
          (t (g-code-char-concrete x))))
 
-(def-gobjectp-thm code-char)
+;;(def-gobjectp-thm code-char)
 
 (verify-g-guards code-char
                  :hints `(("goal" :in-theory (Disable ,gfn))))

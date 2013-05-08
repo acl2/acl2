@@ -10,9 +10,6 @@
 
 (program)
 
-; what is the reason for this switch over to program mode?
-; who did it?  ????? -- Boyer
-
 (mutual-recursion
  ;; Collect the functions called within a term.
  (defun collect-fns (term clique acc)
@@ -83,7 +80,7 @@
 (mutual-recursion
  (defun gify-term (x fn)
    (cond ((atom x) (if (constant-syntax-p x) `(mk-g-concrete ,x) x))
-         ((eq (car x) 'quote) `(mk-g-concrete ,x))
+         ((eq (car x) 'quote) `(g-concrete-quote ,x))
          ((eq (car x) 'return-last)
           (cond ((eq (cadr x) ''time$1-raw)
                  `(time$ ,(gify-term (car (last x)) fn)))
@@ -125,17 +122,17 @@ be gified.  If not, implement this case.  Culprit (in function ~x0): ~x1~%"
 
 
 
-(defun gobjectp-guards (formals)
-  (if (atom formals)
-      nil
-    (cons `(gobjectp ,(car formals))
-          (gobjectp-guards (cdr formals)))))
+;; (defun gobjectp-guards (formals)
+;;   (if (atom formals)
+;;       nil
+;;     (cons `(gobjectp ,(car formals))
+;;           (gobjectp-guards (cdr formals)))))
 
-(defun gobjectp-hyps (formals)
-  (if (atom formals)
-      nil
-    (cons `(gobjectp ,(car formals))
-          (gobjectp-hyps (cdr formals)))))
+;; (defun gobjectp-hyps (formals)
+;;   (if (atom formals)
+;;       nil
+;;     (cons `(gobjectp ,(car formals))
+;;           (gobjectp-hyps (cdr formals)))))
 
 (defun eval-thm-bindings (vars ev)
   (if (atom vars)
@@ -171,8 +168,7 @@ be gified.  If not, implement this case.  Culprit (in function ~x0): ~x1~%"
          (gbody (gify-body body (car fns)))
          (formals (wgetprop fn 'formals))
          (recursivep (wgetprop top-fn 'recursivep))
-         (guards `(and ,@(gobjectp-guards formals)
-                       (bfr-p hyp) (natp clk)))
+         (guards `(natp clk))
          (name (gl-fnsym (if endp top-fn fn)))
          (defun
            `(defun ,name ,(append formals '(hyp clk))
@@ -187,10 +183,7 @@ be gified.  If not, implement this case.  Culprit (in function ~x0): ~x1~%"
                                   `(:hints (("goal" :in-theory
                                              (e/d** ((:ruleset
                                                       clk-measure-rules))))))))))
-               (ignorable hyp clk))
-              (let ((hyp (bfrfix hyp))
-                    . ,(mbe-gobj-fix-formals-list formals))
-                (declare (ignorable . ,formals))
+               (ignorable hyp clk . ,formals))
                 ,(if endp
                      (let ((clkbody `(if (zp clk)
                                          (prog2$
@@ -210,7 +203,7 @@ Warning: Clock ran out in ~x0~%" ',(gl-fnsym top-fn))
                                ,(make-mv-call top-fn (formals-general-concrete-obj
                                                       formals) world))
                             ,clkbody)))
-                   gbody)))))
+                   gbody))))
       (if endp
           (cons defun defuns)
         (gify-factored-fns top-fn (cdr fns) (1+ idx) world
@@ -247,20 +240,17 @@ Warning: Clock ran out in ~x0~%" ',(gl-fnsym top-fn))
          (nonexec (or (wgetprop fn 'constrainedp)
                       (wgetprop fn 'non-executablep)
                       (assoc-eq fn (table-alist 'do-not-execute
-                                                    world)))))
+                                                world)))))
     `(defun ,name (,@formals hyp clk)
-       (declare (xargs :guard (and ,@(gobjectp-guards formals)
-                                   (bfr-p hyp) (natp clk))
+       (declare (xargs :guard (natp clk)
                        :verify-guards nil))
-       (let ((hyp (bfrfix hyp))
-             . ,(mbe-gobj-fix-formals-list formals))
-         ,(if nonexec
-              `(g-apply ',fn (gl-list . ,formals))
-            `(if (and . ,(formals-general-concretep formals))
-                 (mk-g-concrete
-                  ,(make-mv-call fn (formals-general-concrete-obj formals)
-                                 world))
-               (g-apply ',fn (gl-list . ,formals))))))))
+       ,(if nonexec
+            `(g-apply ',fn (gl-list . ,formals))
+          `(if (and . ,(formals-general-concretep formals))
+               (mk-g-concrete
+                ,(make-mv-call fn (formals-general-concrete-obj formals)
+                               world))
+             (g-apply ',fn (gl-list . ,formals)))))))
 
 (defconst *no-factor-fns* '(acl2::return-last))
 
@@ -294,45 +284,45 @@ Warning: Clock ran out in ~x0~%" ',(gl-fnsym top-fn))
 
             
 
-(defun gobjectp-thmname (fn)
-  (incat 'gl-thm::foo "GOBJECTP-" (symbol-name fn)))
+;; (defun gobjectp-thmname (fn)
+;;   (incat 'gl-thm::foo "GOBJECTP-" (symbol-name fn)))
 
 
-(defun gobjectp-factored-thm-bodies-rec (top-fn fns world entries)
-  (if (endp fns)
-      (prog2$ (acl2::break$)
-              (er hard 'gobjectp-factored-thm-bodies-rec "Empty list of functions; top: ~x0~%"
-                  top-fn))
-    (b* ((fn (car fns))
-         (formals (wgetprop fn 'formals))
-         (endp (endp (cdr fns)))
-         (name (gl-fnsym (if endp top-fn fn)))
-         (gobjectp-thm `(,name
-                         (gobjectp (,name ,@formals hyp clk))
-                         :name ,(gobjectp-thmname name))))
-      (if endp
-          (cons gobjectp-thm entries)
-        (gobjectp-factored-thm-bodies-rec top-fn (cdr fns) world
-                                          (cons gobjectp-thm entries))))))
+;; (defun gobjectp-factored-thm-bodies-rec (top-fn fns world entries)
+;;   (if (endp fns)
+;;       (prog2$ (acl2::break$)
+;;               (er hard 'gobjectp-factored-thm-bodies-rec "Empty list of functions; top: ~x0~%"
+;;                   top-fn))
+;;     (b* ((fn (car fns))
+;;          (formals (wgetprop fn 'formals))
+;;          (endp (endp (cdr fns)))
+;;          (name (gl-fnsym (if endp top-fn fn)))
+;;          (gobjectp-thm `(,name
+;;                          (gobjectp (,name ,@formals hyp clk))
+;;                          :name ,(gobjectp-thmname name))))
+;;       (if endp
+;;           (cons gobjectp-thm entries)
+;;         (gobjectp-factored-thm-bodies-rec top-fn (cdr fns) world
+;;                                           (cons gobjectp-thm entries))))))
 
-(defun gobjectp-clique-thm-bodies (clique world entries)
-  (if (endp clique)
-      entries
-    (b* ((fn (car clique))
-         (fns (factored-fns fn))
-         (entries (gobjectp-factored-thm-bodies-rec fn fns world entries)))
-      (gobjectp-clique-thm-bodies (cdr clique) world entries))))
+;; (defun gobjectp-clique-thm-bodies (clique world entries)
+;;   (if (endp clique)
+;;       entries
+;;     (b* ((fn (car clique))
+;;          (fns (factored-fns fn))
+;;          (entries (gobjectp-factored-thm-bodies-rec fn fns world entries)))
+;;       (gobjectp-clique-thm-bodies (cdr clique) world entries))))
 
-(defun gobjectp-redundant-top-thms (clique world)
-  (if (endp clique)
-      nil
-    (b* ((fn (car clique))
-         (name (gl-fnsym fn))
-         (thmname (gobjectp-thmname name))
-         (formals (wgetprop fn 'formals)))
-      (cons `(defthm ,thmname
-               (gobjectp (,name ,@formals hyp clk)))
-            (gobjectp-redundant-top-thms (cdr clique) world)))))
+;; (defun gobjectp-redundant-top-thms (clique world)
+;;   (if (endp clique)
+;;       nil
+;;     (b* ((fn (car clique))
+;;          (name (gl-fnsym fn))
+;;          (thmname (gobjectp-thmname name))
+;;          (formals (wgetprop fn 'formals)))
+;;       (cons `(defthm ,thmname
+;;                (gobjectp (,name ,@formals hyp clk)))
+;;             (gobjectp-redundant-top-thms (cdr clique) world)))))
          
          
 
@@ -341,27 +331,27 @@ Warning: Clock ran out in ~x0~%" ',(gl-fnsym top-fn))
   `(or (cdr (assoc-eq ,name (table-alist 'preferred-defs world)))
        ,name))
 
-(defun gobjectp-factored-thms (top-fn fns world thms)
-  (if (endp fns)
-      (er hard 'gobjectp-factored-thms "Empty list of functions; top: ~x0~%"
-          top-fn)
-    (b* ((fn (car fns))
-         (formals (wgetprop fn 'formals))
-         (endp (endp (cdr fns)))
-         (name (gl-fnsym (if endp top-fn fn)))
-         (gobjectp-name (gobjectp-thmname name))
-         (defname (defname name))
-         (gobjectp-thm
-          `(defthm ,gobjectp-name
-             (gobjectp (,name ,@formals hyp clk))
-             :hints (("goal" :expand ((:with (:definition ,defname)
-                                             (,name ,@formals hyp clk)))
-                      :do-not '(preprocess)))))
-         (gobjectp-thm (if endp gobjectp-thm `(local ,gobjectp-thm))))
-      (if endp
-          (cons gobjectp-thm thms)
-        (gobjectp-factored-thms
-         top-fn (cdr fns) world (cons gobjectp-thm thms))))))
+;; (defun gobjectp-factored-thms (top-fn fns world thms)
+;;   (if (endp fns)
+;;       (er hard 'gobjectp-factored-thms "Empty list of functions; top: ~x0~%"
+;;           top-fn)
+;;     (b* ((fn (car fns))
+;;          (formals (wgetprop fn 'formals))
+;;          (endp (endp (cdr fns)))
+;;          (name (gl-fnsym (if endp top-fn fn)))
+;;          (gobjectp-name (gobjectp-thmname name))
+;;          (defname (defname name))
+;;          (gobjectp-thm
+;;           `(defthm ,gobjectp-name
+;;              (gobjectp (,name ,@formals hyp clk))
+;;              :hints (("goal" :expand ((:with (:definition ,defname)
+;;                                              (,name ,@formals hyp clk)))
+;;                       :do-not '(preprocess)))))
+;;          (gobjectp-thm (if endp gobjectp-thm `(local ,gobjectp-thm))))
+;;       (if endp
+;;           (cons gobjectp-thm thms)
+;;         (gobjectp-factored-thms
+;;          top-fn (cdr fns) world (cons gobjectp-thm thms))))))
 
 (defun g-factored-fn-names (top-fn fns acc)
   (if (endp fns)
@@ -384,14 +374,14 @@ Warning: Clock ran out in ~x0~%" ',(gl-fnsym top-fn))
             (clique-fn-names (cdr clique) world))))
 
 
-(defun gobjectp-flag-lemma (fn)
-  (incat 'gl-thm::foo "GOBJECTP-" (symbol-name fn) "-LEMMA"))
+;; (defun gobjectp-flag-lemma (fn)
+;;   (incat 'gl-thm::foo "GOBJECTP-" (symbol-name fn) "-LEMMA"))
 
-(defun gobjectp-thmnames (fns)
-  (if (endp fns)
-      nil
-    (cons (gobjectp-thmname (car fns))
-          (gobjectp-thmnames (cdr fns)))))
+;; (defun gobjectp-thmnames (fns)
+;;   (if (endp fns)
+;;       nil
+;;     (cons (gobjectp-thmname (car fns))
+;;           (gobjectp-thmnames (cdr fns)))))
 
 (defun make-expand-list (terms world)
   (if (atom terms)
@@ -417,59 +407,59 @@ Warning: Clock ran out in ~x0~%" ',(gl-fnsym top-fn))
     (cons `(acl2::make-redundant ,(car names))
           (make-redundant-list (cdr names)))))
 
-(defun gobjectp-thms (top-fn world)
-  (b* ((recp (wgetprop top-fn 'recursivep)))
-    (if recp
-        (b* ((entries (gobjectp-clique-thm-bodies recp world nil))
-             (gfn1 (gl-fnsym (car recp)))
-             (gfns (wgetprop gfn1 'recursivep))
-             (gfn (car gfns))
-             (flag-fn (flag-fn-name gfn world))
-             (flag-formals (wgetprop flag-fn 'formals))
-             (thmnames (gobjectp-thmnames gfns)))
-          `(progn
-             (local (in-theory
-                     (e/d** (minimal-theory
-                             ;; (:executable-counterpart-theory :here)
-                             (:ruleset g-gobjectp-lemmas)
-                             (:induction ,flag-fn)
-                             ,(flag-equivs-name gfn world))
-                            ((immediate-force-modep) not))))
-             ;; Submit the flag defthm locally, then redundantly
-             ;; resubmit the top-level lemmas nonlocally; the
-             ;; lower-level lemmas will remain local to the
-             ;; make-g-world.
-             (local
-              (,(flag-defthm-macro gfn world)
-               ,(gobjectp-flag-lemma gfn)
-               ,@entries
-               :hints (("goal" :induct (,flag-fn . ,flag-formals)
-                        :do-not '(preprocess))
-                       (and stable-under-simplificationp
-                            (expand-calls-computed-hint
-                             acl2::clause ',gfns world)))))
-             ,@(gobjectp-redundant-top-thms recp world)
-             (local (add-to-ruleset g-gobjectp-lemmas ',thmnames))
-             (add-to-ruleset g-gobjectp-lemmas
-                             ',(gobjectp-thmnames (gl-fnsym-list
-                                                   recp)))))
-      (b* ((fns (or (factored-fns top-fn) (list top-fn)))
-           (thms (gobjectp-factored-thms top-fn fns world nil)))
-        `(progn
-           (local (in-theory
-                   (e/d** (minimal-theory
-                           ;; (:executable-counterpart-theory :here)
-                           (:ruleset g-gobjectp-lemmas))
-                          ((immediate-force-modep)
-                           (force) not))))
-           ,@(reverse thms)
-           (local (add-to-ruleset
-                   g-gobjectp-lemmas
-                   ',(gobjectp-thmnames
-                      (g-factored-fn-names top-fn fns nil))))
-           (add-to-ruleset
-            g-gobjectp-lemmas
-            '(,(gobjectp-thmname (gl-fnsym top-fn)))))))))
+;; (defun gobjectp-thms (top-fn world)
+;;   (b* ((recp (wgetprop top-fn 'recursivep)))
+;;     (if recp
+;;         (b* ((entries (gobjectp-clique-thm-bodies recp world nil))
+;;              (gfn1 (gl-fnsym (car recp)))
+;;              (gfns (wgetprop gfn1 'recursivep))
+;;              (gfn (car gfns))
+;;              (flag-fn (flag-fn-name gfn world))
+;;              (flag-formals (wgetprop flag-fn 'formals))
+;;              (thmnames (gobjectp-thmnames gfns)))
+;;           `(progn
+;;              (local (in-theory
+;;                      (e/d** (minimal-theory
+;;                              ;; (:executable-counterpart-theory :here)
+;;                              (:ruleset g-gobjectp-lemmas)
+;;                              (:induction ,flag-fn)
+;;                              ,(flag-equivs-name gfn world))
+;;                             ((immediate-force-modep) not))))
+;;              ;; Submit the flag defthm locally, then redundantly
+;;              ;; resubmit the top-level lemmas nonlocally; the
+;;              ;; lower-level lemmas will remain local to the
+;;              ;; make-g-world.
+;;              (local
+;;               (,(flag-defthm-macro gfn world)
+;;                ,(gobjectp-flag-lemma gfn)
+;;                ,@entries
+;;                :hints (("goal" :induct (,flag-fn . ,flag-formals)
+;;                         :do-not '(preprocess))
+;;                        (and stable-under-simplificationp
+;;                             (expand-calls-computed-hint
+;;                              acl2::clause ',gfns world)))))
+;;              ,@(gobjectp-redundant-top-thms recp world)
+;;              (local (add-to-ruleset g-gobjectp-lemmas ',thmnames))
+;;              (add-to-ruleset g-gobjectp-lemmas
+;;                              ',(gobjectp-thmnames (gl-fnsym-list
+;;                                                    recp)))))
+;;       (b* ((fns (or (factored-fns top-fn) (list top-fn)))
+;;            (thms (gobjectp-factored-thms top-fn fns world nil)))
+;;         `(progn
+;;            (local (in-theory
+;;                    (e/d** (minimal-theory
+;;                            ;; (:executable-counterpart-theory :here)
+;;                            (:ruleset g-gobjectp-lemmas))
+;;                           ((immediate-force-modep)
+;;                            (force) not))))
+;;            ,@(reverse thms)
+;;            (local (add-to-ruleset
+;;                    g-gobjectp-lemmas
+;;                    ',(gobjectp-thmnames
+;;                       (g-factored-fn-names top-fn fns nil))))
+;;            (add-to-ruleset
+;;             g-gobjectp-lemmas
+;;             '(,(gobjectp-thmname (gl-fnsym top-fn)))))))))
 
 
 (defun flag-fn (top-fn)
@@ -521,15 +511,15 @@ Warning: Clock ran out in ~x0~%" ',(gl-fnsym top-fn))
 
 
 
-(defun gobjectp-fns-and-deps1 (deps)
-  (if (endp deps)
-      nil
-    `((make-event (gobjectp-thms ',(car deps) (w state)))
-      . ,(gobjectp-fns-and-deps1 (cdr deps)))))
+;; (defun gobjectp-fns-and-deps1 (deps)
+;;   (if (endp deps)
+;;       nil
+;;     `((make-event (gobjectp-thms ',(car deps) (w state)))
+;;       . ,(gobjectp-fns-and-deps1 (cdr deps)))))
 
-(defun gobjectp-fns-and-deps (fns world)
-  (let ((deps (collect-fn-deps fns world)))
-    `(progn . ,(gobjectp-fns-and-deps1 deps))))
+;; (defun gobjectp-fns-and-deps (fns world)
+;;   (let ((deps (collect-fn-deps fns world)))
+;;     `(progn . ,(gobjectp-fns-and-deps1 deps))))
 
 
 
@@ -593,7 +583,7 @@ Warning: Clock ran out in ~x0~%" ',(gl-fnsym top-fn))
        (logic)
        (local (in-theory (e/d** (minimal-theory
                                  ;; (:executable-counterpart-theory :here)
-                                 (:ruleset g-gobjectp-lemmas)
+                                 ;; (:ruleset g-gobjectp-lemmas)
                                  (:ruleset g-guard-lemmas)
                                  zp natp)
                                 ((immediate-force-modep) not))))
@@ -753,8 +743,8 @@ Warning: Clock ran out in ~x0~%" ',(gl-fnsym top-fn))
                      (e/d** (minimal-theory
                              car-cons cdr-cons
                              ;; (:executable-counterpart-theory :here)
-                             (cons) (gobjectp) (not) (equal)
-                             (:ruleset g-gobjectp-lemmas)
+                             (cons) (not) (equal)
+                             ;; (:ruleset g-gobjectp-lemmas)
                              (:ruleset g-correct-lemmas)
                              (:ruleset ,(ruleset-for-eval ev))
                              (:ruleset apply-rewrites)
@@ -814,8 +804,7 @@ Warning: Clock ran out in ~x0~%" ',(gl-fnsym top-fn))
                    (e/d** (minimal-theory
                            car-cons cdr-cons
                            ;; (:executable-counterpart-theory :here)
-                           (cons) (gobjectp) (not) (equal)
-                           (:ruleset g-gobjectp-lemmas)
+                           (cons) (not) (equal)
                            (:ruleset g-correct-lemmas)
                            (:ruleset ,(ruleset-for-eval ev))
                            ,@(and (member-eq
@@ -900,8 +889,8 @@ Warning: Clock ran out in ~x0~%" ',(gl-fnsym top-fn))
 
 
 (defun eval-g-fi (eval oldeval thmname world)
-  (let* ((apply (cdr (assoc eval (table-alist 'eval-g-table world))))
-         (oldapply (cdr (assoc oldeval (table-alist 'eval-g-table world))))
+  (let* ((apply (caddr (assoc eval (table-alist 'eval-g-table world))))
+         (oldapply (caddr (assoc oldeval (table-alist 'eval-g-table world))))
          (applyfns
           (cdr (assoc apply (table-alist 'g-apply-table world))))
          (oldapplyfns
@@ -916,7 +905,7 @@ Warning: Clock ran out in ~x0~%" ',(gl-fnsym top-fn))
     (,oldeval ,eval))))
 
 (defun eval-g-prove-f-i-fn (eval oldeval thmname world)
-  (let* ((apply (cdr (assoc eval (table-alist 'eval-g-table world))))
+  (let* ((apply (caddr (assoc eval (table-alist 'eval-g-table world))))
 ;;          (applyfns
 ;;           (cdr (assoc apply (table-alist 'g-apply-table world))))
          )
@@ -962,8 +951,8 @@ Warning: Clock ran out in ~x0~%" ',(gl-fnsym top-fn))
   (incat 'gl-thm::foo (symbol-name thm) "-FOR-" (symbol-name eval)))
 
 (defun eval-g-functional-instance-fn (eval oldeval thmname world)
-  (let* ((apply (cdr (assoc eval (table-alist 'eval-g-table world))))
-         (oldapply (cdr (assoc oldeval (table-alist 'eval-g-table world))))
+  (let* ((apply (caddr (assoc eval (table-alist 'eval-g-table world))))
+         (oldapply (caddr (assoc oldeval (table-alist 'eval-g-table world))))
          (thmbody (wgetprop thmname 'theorem))
          (subst-body (subst-fns-term thmbody (list (cons oldeval eval)
                                                    (cons oldapply apply))))
@@ -1170,7 +1159,7 @@ Warning: Clock ran out in ~x0~%" ',(gl-fnsym top-fn))
 (defun make-g-world-fn (fns ev state)
   (declare (xargs :stobjs state :mode :program))
   (b* ((world (w state))
-       (ap (incat ev (symbol-name ev) "-AP"))
+       (ap (incat ev (symbol-name ev) "-APPLY"))
        (new-fns (set-difference-eq
                  (collect-fn-deps fns world)
                  '(acl2::return-last)))
@@ -1185,17 +1174,16 @@ Warning: Clock ran out in ~x0~%" ',(gl-fnsym top-fn))
        (set-ignore-ok t)
        (set-irrelevant-formals-ok t)
        (local (make-event (make-unnorm-preferred-defs ',new-fns (w state))))
-       (defapply ,ap ,apply-fns)
+       (def-eval-g ,ev ,apply-fns)
 
        (make-event (gify-fns-and-deps ',new-fns (w state)))
        (make-event (flagify-g-fns-and-deps ',new-fns (w state)))
 
        
        
-       (make-event (gobjectp-fns-and-deps ',new-fns (w state)))
+       ;; (make-event (gobjectp-fns-and-deps ',new-fns (w state)))
        (make-event (g-guards-fns-and-deps ',new-fns (w state)))
 
-       (def-eval-g ,ev ,ap)
        (local (def-ruleset! apply-rewrites
                 ',(apply-rw-names ap apply-fns (w state))))
        (correctness-lemmas ,ev)
@@ -1218,7 +1206,7 @@ Warning: Clock ran out in ~x0~%" ',(gl-fnsym top-fn))
   (b* ((world (w state))
        (new-fns (collect-fn-deps new-fns world))
        (fns (union-eq new-fns (prev-apply-fns world)))
-       (ap (incat geval (symbol-name geval) "-AP")))
+       (ap (incat geval (symbol-name geval) "-APPLY")))
     `(encapsulate nil
        (logic)
        (local (table acl2::theory-invariant-table nil nil :clear))
@@ -1228,8 +1216,7 @@ Warning: Clock ran out in ~x0~%" ',(gl-fnsym top-fn))
        (set-bogus-defun-hints-ok t)
        (set-ignore-ok t)
        (set-irrelevant-formals-ok t)
-       (defapply ,ap ,fns)
-       (def-eval-g ,geval ,ap)
+       (def-eval-g ,geval ,fns)
        (local (def-ruleset! apply-rewrites
                 ',(apply-rw-names ap fns world)))
        (correctness-lemmas ,geval))))

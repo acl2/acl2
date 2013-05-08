@@ -5,16 +5,12 @@
 (include-book "tools/pattern-match" :dir :system)
 (include-book "misc/untranslate-patterns" :dir :system)
 
-(set-verify-guards-eagerness 2)
-
-(defagg-fns g-concrete (obj) :tag :g-concrete :legiblep nil)
-(defagg-fns g-boolean (bool) :tag :g-boolean :legiblep nil)
-(defagg-fns g-number (num) :tag :g-number :legiblep nil)
-(defagg-fns g-ite (test then else) :tag :g-ite :legiblep nil)
-(defagg-fns g-apply (fn args) :tag :g-apply :legiblep nil)
-(defagg-fns g-var (name) :tag :g-var :legiblep nil)
-
-(set-verify-guards-eagerness 1)
+(defagg g-concrete (obj))
+(defagg g-boolean (bool))
+(defagg g-number (num))
+(defagg g-ite (test then else))
+(defagg g-apply (fn args))
+(defagg g-var (name))
 
 (defconst *g-keywords*
   '(:g-boolean :g-number :g-concrete :g-ite :g-apply :g-var))
@@ -85,3 +81,20 @@
                 (eq x :g-var)))))
 
 (in-theory (disable g-keyword-symbolp))
+
+
+
+(defthmd g-keyword-symbolp-def
+  (equal (g-keyword-symbolp x)
+         (if (member-equal x *g-keywords*)
+             t
+           nil))
+  :hints(("Goal" :in-theory (enable g-keyword-symbolp))))
+
+(defthm not-g-keyword-symbol-when-not-symbol
+  (implies (not (symbolp x))
+           (not (g-keyword-symbolp x)))
+  :hints(("Goal" :in-theory (enable g-keyword-symbolp)))
+  :rule-classes ((:rewrite :backchain-limit-lst 0)
+                 :type-prescription))
+

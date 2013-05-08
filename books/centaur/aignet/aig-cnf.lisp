@@ -239,9 +239,10 @@
             (len vars)))
   :hints(("Goal" :in-theory (enable make-varmap))))
 
-(defthm num-regs-of-make-varmap
-  (equal (stype-count (reg-stype) (mv-nth 1 (make-varmap vars nil acc aignet)))
-         (stype-count (reg-stype) aignet))
+(defthm stype-count-of-make-varmap
+  (implies (not (equal (stype-fix stype) :pi))
+           (equal (stype-count stype (mv-nth 1 (make-varmap vars nil acc aignet)))
+                  (stype-count stype aignet)))
   :hints(("Goal" :in-theory (enable make-varmap))))
 
 (local (in-theory (enable (:i aig-to-aignet))))
@@ -255,6 +256,19 @@
                   (stype-count stype aignet)))
   :hints((acl2::just-induct-and-expand
           (aig-to-aignet x xmemo varmap gatesimp strash aignet))))
+
+(defthm stype-count-of-aiglist-to-aignet
+  (implies (not (equal (stype-fix stype) (gate-stype)))  
+           (equal (stype-count
+                   stype
+                   (mv-nth 3 (aiglist-to-aignet
+                              x xmemo varmap gatesimp strash aignet)))
+                  (stype-count stype aignet)))
+  :hints(("goal" :in-theory (enable (:i aiglist-to-aignet))
+          :induct 
+          (aiglist-to-aignet x xmemo varmap gatesimp strash aignet)
+          :expand
+          ((aiglist-to-aignet x xmemo varmap gatesimp strash aignet)))))
 
 
 

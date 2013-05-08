@@ -78,7 +78,7 @@ BFR-COUNTEREX-ALIST.
   (((bfr-sat *) => (mv * * *)))
 
   (local (defun bfr-sat (prop)
-           (declare (xargs :guard (bfr-p prop)))
+           (declare (xargs :guard t))
            (mv nil nil prop)))
 
   (defthm bfr-sat-nvals
@@ -98,14 +98,19 @@ BFR-COUNTEREX-ALIST.
   (declare (xargs :guard t))
   (if (bfr-mode)
       (mv nil nil nil) ;; AIG-mode, fail.
-    (mv (not (not prop)) t prop)))
+    (let ((sat? (acl2::eval-bdd prop (acl2::bdd-sat-dfs prop))))
+      (mv sat? t prop))))
 
 (defthm bfr-sat-bdd-unsat
   (mv-let (sat succeeded ctrex)
     (bfr-sat-bdd prop)
     (declare (ignore ctrex))
     (implies (and succeeded (not sat))
-             (not (bfr-eval prop env)))))
+             (not (bfr-eval prop env))))
+  ::hints(("Goal" :in-theory (e/d (bfr-eval)
+                                  (acl2::eval-bdd-ubdd-fix))
+           :use ((:instance acl2::eval-bdd-ubdd-fix
+                  (x prop))))))
 
 (acl2::defattach
  (bfr-sat bfr-sat-bdd

@@ -7,9 +7,11 @@
 (local (include-book "eval-g-base-help"))
 (include-book "g-if")
 
+(local (in-theory (enable general-concretep-atom)))
 
 (def-g-binary-op intern-in-package-of-symbol
-  (cond ((and (g-boolean-p acl2::sym)
+  (cond ((and (consp acl2::sym)
+              (g-boolean-p acl2::sym)
               (general-concretep acl2::str))
          (mk-g-ite
           acl2::sym
@@ -23,21 +25,20 @@
                      nil)))))
         (t nil)))
 
-(def-gobjectp-thm intern-in-package-of-symbol)
+;; (def-gobjectp-thm intern-in-package-of-symbol)
 
 (verify-g-guards intern-in-package-of-symbol
                  :hints `(("Goal" :in-theory (disable ,gfn))))
 
 (local
  (progn
-   (defthm gobjectp-not-g-keyword-symbolp
-     (implies (gobjectp x)
-              (not (g-keyword-symbolp x)))
-     :hints(("Goal" :in-theory (enable g-keyword-symbolp))))
+   ;; (defthm gobjectp-not-g-keyword-symbolp
+   ;;   (implies (gobjectp x)
+   ;;            (not (g-keyword-symbolp x)))
+   ;;   :hints(("Goal" :in-theory (enable g-keyword-symbolp))))
 
    (defthm not-stringp-eval-g-base-when-not-ite-var-apply-or-concrete
-     (implies (and (gobjectp x)
-                   (not (general-concretep x))
+     (implies (and (not (general-concretep x))
                    (not (g-ite-p x))
                    (not (g-var-p x))
                    (not (g-apply-p x)))
@@ -46,8 +47,7 @@
      :rule-classes ((:rewrite :backchain-limit-lst 0)))
 
    (defthm not-symbolp-eval-g-base-when-not-ite-var-apply-or-concrete
-     (implies (and (gobjectp x)
-                   (not (general-concretep x))
+     (implies (and (not (general-concretep x))
                    (not (g-ite-p x))
                    (not (g-var-p x))
                    (not (g-apply-p x))
@@ -63,11 +63,13 @@
                                       (x str) (y sym))))))
 
 
+   (local (in-theory (disable eval-g-base-alt-def)))
 
    (acl2::def-functional-instance
     mk-g-ite-correct-for-eval-g-base
     mk-g-ite-correct
-    ((apply-stub apply-base)
+    ((apply-stub eval-g-base-apply)
+     (generic-geval-apply eval-g-base-apply)
      (generic-geval eval-g-base))
     :hints((and stable-under-simplificationp
                 '(:expand ((:with eval-g-base (eval-g-base x env)))))))))

@@ -28,6 +28,7 @@
 (include-book "g-coerce")
 (include-book "g-code-char")
 (include-book "g-intern")
+(include-book "centaur/aig/g-aig-eval" :dir :system)
 ;(include-book "g-make-fast-alist")
 ;(include-book "g-gl-mbe")
 
@@ -53,7 +54,6 @@
 (local (bfr-reasoning-mode t))
 (defmacro def-g-simple (name body)
   `(progn (def-g-fn ,name ,body)
-          (def-gobjectp-thm ,name)
           (verify-g-guards ,name)
           (def-g-correct-thm ,name eval-g-base)))
 
@@ -116,52 +116,20 @@
 
 (make-g-world (hons-assoc-equal) gl-basis-ev)
 
-(defun canonical-general-concretep-bdd (x)
-  (declare (xargs :guard t
-                  :guard-hints(("Goal" :in-theory (e/d (gobject-hierarchy-lite->bdd)
-                                                       (gobject-hierarchy-lite-redef))))))
-  (or (mbe :logic (eq (gobject-hierarchy-bdd x) 'concrete)
-           :exec (eq (gobject-hierarchy-lite x) 'concrete))
-      (and (g-concrete-p x)
-           (not (mbe :logic
-                     (eq (gobject-hierarchy-bdd (g-concrete->obj x)) 'concrete)
-                     :exec
-                     (eq (gobject-hierarchy-lite (g-concrete->obj x)) 'concrete))))))
-
-(defun canonical-general-concretep-aig (x)
-  (declare (xargs :guard t
-                  :guard-hints(("Goal" :in-theory (e/d (gobject-hierarchy-lite->aig)
-                                                       (gobject-hierarchy-lite-redef))))))
-  (or (mbe :logic (eq (gobject-hierarchy-aig x) 'concrete)
-           :exec (eq (gobject-hierarchy-lite x) 'concrete))
-      (and (g-concrete-p x)
-           (not (mbe :logic
-                     (eq (gobject-hierarchy-aig (g-concrete->obj x)) 'concrete)
-                     :exec
-                     (eq (gobject-hierarchy-lite (g-concrete->obj x)) 'concrete))))))
-
 (defun canonical-general-concretep (x)
   (declare (xargs :guard t
                   :verify-guards nil))
-  (mbe :logic (or (concrete-gobjectp x)
-                  (and (g-concrete-p x)
-                       (not (concrete-gobjectp (g-concrete->obj x)))))
-       :exec (bfr-case :bdd (canonical-general-concretep-bdd x)
-                       :aig (canonical-general-concretep-aig x))))
+  (or (and (concrete-gobjectp x)
+           (not (g-keyword-symbolp x)))
+      (and (consp x)
+           (g-concrete-p x)
+           (not (and (concrete-gobjectp (g-concrete->obj x))
+                     (not (g-keyword-symbolp (g-concrete->obj x))))))))
 
-(defthm canonical-general-concretep-bdd-is-canonical-general-concretep
-  (implies (not (bfr-mode))
-           (equal (canonical-general-concretep-bdd x)
-                  (canonical-general-concretep x)))
-  :hints(("Goal" :in-theory (enable concrete-gobjectp))))
 
-(defthm canonical-general-concretep-aig-is-canonical-general-concretep
-  (implies (bfr-mode)
-           (equal (canonical-general-concretep-aig x)
-                  (canonical-general-concretep x)))
-  :hints(("Goal" :in-theory (enable concrete-gobjectp))))
-
-(verify-guards canonical-general-concretep)
+(verify-guards canonical-general-concretep
+  :hints(("Goal" :in-theory (enable concrete-gobjectp
+                                    gobject-hierarchy-lite))))
 
 (local
  (progn
@@ -171,14 +139,13 @@
               (equal (equal (g-concrete->obj x)
                             (g-concrete->obj y))
                      (equal x y)))
-     :hints(("Goal" :in-theory (enable g-concrete-p g-concrete->obj))))
+     :hints(("Goal" :in-theory (enable g-concrete->obj))))
 
    (defthm generic-geval-of-g-concrete-p
      (implies (g-concrete-p x)
               (equal (generic-geval x env)
                      (g-concrete->obj x)))
-     :hints(("Goal" :in-theory (enable gobj-fix gobjectp-def
-                                       generic-geval))))
+     :hints(("Goal" :in-theory (enable generic-geval))))
 
    (defthmd canonical-eval-canonical-general-concretep
      (implies (and (canonical-general-concretep a)
@@ -203,24 +170,19 @@
 
 (in-theory (disable hons-g-concrete))
 
-(local
- (defthmd general-concretep-gobjectp
-   (implies (general-concretep x)
-            (gobjectp x))
-   :hints(("Goal" :in-theory (enable general-concretep
-                                     gobjectp)))))
 
 (defun canonicalize-general-concrete (x)
-  (declare (xargs :guard (general-concretep x)
-                  :guard-hints
-                  (("Goal" :in-theory
-                    (enable general-concretep-gobjectp)))))
+  (declare (xargs :guard (general-concretep x)))
   (if (concrete-gobjectp x)
-      x
+      (if (g-keyword-symbolp x)
+          (hons-g-concrete x)
+        x)
     (let ((obj (general-concrete-obj x)))
       (if (concrete-gobjectp obj)
-          obj
-        (hons-g-concrete (general-concrete-obj x))))))
+          (if (g-keyword-symbolp obj)
+              (hons-g-concrete obj)
+            obj)
+        (hons-g-concrete obj)))))
 
 (local
  (progn
@@ -230,6 +192,8 @@
                                     env)
                      (general-concrete-obj x)))
      :hints(("Goal" :in-theory (enable general-concrete-obj-correct
+                                       concrete-gobjectp
+                                       general-concrete-obj
                                        ;; eval-concrete-gobjectp
                                        )
              :use ((:instance eval-concrete-gobjectp
@@ -253,48 +217,18 @@
 ;;            (
 
 
-(defun concrete-key-alistp-bdd (al)
-  (declare (xargs :guard t))
-  (or (atom al)
-      (and (if (atom (car al))
-               (not (g-keyword-symbolp (car al)))
-             (canonical-general-concretep-bdd (caar al)))
-           (concrete-key-alistp-bdd (cdr al)))))
-
-(defun concrete-key-alistp-aig (al)
-  (declare (xargs :guard t))
-  (or (atom al)
-      (and (if (atom (car al))
-               (not (g-keyword-symbolp (car al)))
-             (canonical-general-concretep-aig (caar al)))
-           (concrete-key-alistp-aig (cdr al)))))
-
 
 (defun concrete-key-alistp (al)
   (declare (xargs :guard t :verify-guards nil))
-  (mbe :logic
-       (or (atom al)
-           (and (if (atom (car al))
-                    (not (g-keyword-symbolp (car al)))
-                  (canonical-general-concretep (caar al)))
-                (concrete-key-alistp (cdr al))))
-       :exec (bfr-case :bdd (concrete-key-alistp-bdd al)
-                       :aig (concrete-key-alistp-aig al))))
-
-(defthm concrete-key-alistp-bdd-is-concrete-key-alistp
-  (implies (not (bfr-mode))
-           (equal (concrete-key-alistp-bdd al)
-                  (concrete-key-alistp al))))
-
-(defthm concrete-key-alistp-aig-is-concrete-key-alistp
-  (implies (bfr-mode)
-           (equal (concrete-key-alistp-aig al)
-                  (concrete-key-alistp al))))
+  (or (atom al)
+      (and (if (atom (car al))
+               (not (g-keyword-symbolp (car al)))
+             (canonical-general-concretep (caar al)))
+           (concrete-key-alistp (cdr al)))))
 
 (verify-guards concrete-key-alistp)
 
-(memoize 'concrete-key-alistp-bdd :condition '(consp al))
-(memoize 'concrete-key-alistp-aig :condition '(consp al))
+(memoize 'concrete-key-alistp :condition '(consp al))
 
 (local
  (progn
@@ -318,61 +252,22 @@
     general-concrete-obj-correct
     gl-basis-ev generic-geval)
 
-
-   (defthm gobjectp-hons-assoc-equal-when-concrete-key-alistp
-     (implies (and (gobjectp al)
-                   (concrete-key-alistp al))
-              (gobjectp (hons-assoc-equal key al)))
-     :hints(("Goal" :in-theory (enable
-                                hons-assoc-equal
-                                gobjectp-def g-concrete-p
-                                g-keyword-symbolp-def
-                                g-boolean-p
-                                g-number-p
-                                g-ite-p
-                                g-apply-p
-                                g-var-p)
-             :induct (hons-assoc-equal key al))))
-
-   (defthmd concrete-gobjectp-gobjectp-cheap
-     (implies (concrete-gobjectp x)
-              (gobjectp x))
-     :hints (("goal" :in-theory (enable concrete-gobjectp-gobjectp)))
-     :rule-classes ((:rewrite :backchain-limit-lst 0)))
-
-   (defthmd g-concrete-p-gobjectp-cheap
-     (implies (g-concrete-p x)
-              (gobjectp x))
-     :hints (("goal" :in-theory (enable gobjectp-def)))
-     :rule-classes ((:rewrite :backchain-limit-lst 0)))
-
-
-
-   (defthmd canonical-general-concretep-impl-gobjectp
-     (implies (canonical-general-concretep x)
-              (gobjectp x))
-     :hints(("Goal" :in-theory (enable canonical-general-concretep
-                                       concrete-gobjectp-gobjectp
-                                       g-concrete-p-gobjectp-cheap))))
-
-   (defthmd not-keyword-symbolp-car-impl
-     (implies (not (g-keyword-symbolp (car x)))
-              (and (not (g-concrete-p x))
-                   (not (g-boolean-p x))
-                   (not (g-number-p x))
-                   (not (g-ite-p x))
-                   (not (g-apply-p x))
-                   (not (g-var-p x))))
-     :hints(("Goal" :in-theory
-             (enable* g-concrete-p g-boolean-p g-number-p
-                      g-ite-p g-apply-p g-var-p
-                      g-keyword-symbolp-def)))
-     :rule-classes ((:rewrite :backchain-limit-lst 0)))
+   ;; (defthmd not-keyword-symbolp-car-impl
+   ;;   (implies (not (g-keyword-symbolp (car x)))
+   ;;            (and (not (g-concrete-p x))
+   ;;                 (not (g-boolean-p x))
+   ;;                 (not (g-number-p x))
+   ;;                 (not (g-ite-p x))
+   ;;                 (not (g-apply-p x))
+   ;;                 (not (g-var-p x))))
+   ;;   :hints(("Goal" :in-theory
+   ;;           (enable* g-concrete-p g-boolean-p g-number-p
+   ;;                    g-ite-p g-apply-p g-var-p
+   ;;                    g-keyword-symbolp-def)))
+   ;;   :rule-classes ((:rewrite :backchain-limit-lst 0)))
 
    (defthm ev-hons-assoc-equal-when-concrete-key-alistp
-     (implies (and (gobjectp key)
-                   (gobjectp al)
-                   (concrete-key-alistp al)
+     (implies (and (concrete-key-alistp al)
                    (canonical-general-concretep key))
               (equal (gl-basis-ev
                       (hons-assoc-equal key al)
@@ -380,17 +275,22 @@
                      (hons-assoc-equal (gl-basis-ev key env)
                                        (gl-basis-ev al env))))
      :hints (("goal" :in-theory
-              (e/d (gobjectp-car-impl-not-g-types
-                    canonical-general-concretep-impl-gobjectp
+              (e/d (; gobjectp-car-impl-not-g-types
+                    ; canonical-general-concretep-impl-gobjectp
                     gl-thm::canonical-eval-canonical-general-concretep-for-gl-basis-ev
-                    not-keyword-symbolp-car-impl
+                    ; not-keyword-symbolp-car-impl
 
                     hons-assoc-equal)
                    (canonical-general-concretep
                     general-concretep-def
                     concrete-gobjectp-def
-                    gl-thm::general-concrete-obj-correct-gobj-fix-for-gl-basis-ev))
-              :induct (hons-assoc-equal key al))
+                    gl-basis-ev
+                    bfr-sat-bdd-unsat
+                    (:d hons-assoc-equal)
+                    ;; gl-thm::general-concrete-obj-correct-gobj-fix-for-gl-basis-ev
+                    ))
+              :induct (hons-assoc-equal key al)
+              :expand ((:free (key) (hons-assoc-equal key al))))
              (and stable-under-simplificationp
                   '(:expand
                     ((gl-basis-ev al env)
@@ -409,11 +309,16 @@
                    acl2::val acl2::alist)
      (glc cons (glc cons acl2::key acl2::val) acl2::alist)))
 
-
-(def-gobjectp-thm hons-acons
-  :hints `(("goal" :in-theory
-            (enable canonical-general-concretep-impl-gobjectp))))
 (verify-g-guards hons-acons)
+
+
+;; (def-gobjectp-thm hons-acons
+;;   :hints `(("goal" :in-theory
+;;             (enable canonical-general-concretep-impl-gobjectp))))
+(local (defthm cons-of-canonicalize-general-concrete
+         (equal (cons (canonicalize-general-concrete x) y)
+                (gl-cons (canonicalize-general-concrete x) y))
+         :hints(("Goal" :in-theory (enable gl-cons canonicalize-general-concrete)))))
 
 
 ;; (local (in-theory (enable generic-geval-g-concrete
@@ -423,7 +328,7 @@
 ;;          (equal (general-concrete-obj (g-concrete x)) x)
 ;;          :hints(("Goal" :in-theory (enable general-concrete-obj)))))
 
-(local (in-theory (enable canonical-general-concretep-impl-gobjectp)))
+;;(local (in-theory (enable canonical-general-concretep-impl-gobjectp)))
 
 (def-g-correct-thm hons-acons gl-basis-ev)
 
@@ -435,7 +340,6 @@
        (hons-get (canonicalize-general-concrete acl2::key) acl2::alist)
      (glc hons-assoc-equal acl2::key acl2::alist)))
 
-(def-gobjectp-thm hons-get)
 (verify-g-guards hons-get)
 
 (local
@@ -478,7 +382,6 @@
 (def-g-fn fast-alist-free
   `(fast-alist-free acl2::alist))
 
-(def-gobjectp-thm fast-alist-free)
 (verify-g-guards fast-alist-free)
 (def-g-correct-thm fast-alist-free gl-basis-ev)
 
@@ -487,7 +390,6 @@
 (def-g-fn flush-hons-get-hash-table-link
   `(flush-hons-get-hash-table-link acl2::alist))
 
-(def-gobjectp-thm flush-hons-get-hash-table-link)
 (verify-g-guards flush-hons-get-hash-table-link)
 (def-g-correct-thm flush-hons-get-hash-table-link gl-basis-ev)
 

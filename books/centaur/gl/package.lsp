@@ -11,8 +11,6 @@
      hons-assoc-equal make-fal
      definline definlined
 
-     tag
-
      qv bfr-and bfr-not bfr-and
      bfr-p bfr-or bfr-xor bfr-iff bfr-ite bfr-eval bfr-eval-list
      q-implies add-bfr-fn add-bfr-pat add-bfr-fn-pat max-depth

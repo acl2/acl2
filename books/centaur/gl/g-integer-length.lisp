@@ -21,14 +21,14 @@
        (pattern-match x
          ((g-ite test then else)
           (if (zp clk)
-              (g-apply 'integer-length (list x))
+              (g-apply 'integer-length (gl-list x))
             (g-if test
                   (,gfn then hyp clk)
                   (,gfn else hyp clk))))
          ((g-apply & &)
-          (g-apply 'integer-length (list x)))
+          (g-apply 'integer-length (gl-list x)))
          ((g-var &)
-          (g-apply 'integer-length (list x)))
+          (g-apply 'integer-length (gl-list x)))
          ((g-boolean &) 0)
          ((g-concrete obj) (ec-call (integer-length obj)))
          ((g-number num)
@@ -39,28 +39,28 @@
                   (g-if (equal ard '(t))
                         (let ((res (integer-length-s arn)))
                           (mk-g-number res 1 0 1))
-                        (g-apply 'integer-length (list x)))
+                        (g-apply 'integer-length (gl-list x)))
                   0)))
          (& 0)))))
 
-(local (defthm gobjectp-integer-length
-         (gobjectp (integer-length a))
-         :hints(("Goal" :in-theory (enable gobjectp-def)))))
+;; (local (defthm gobjectp-integer-length
+;;          (gobjectp (integer-length a))
+;;          :hints(("Goal" :in-theory (enable gobjectp-def)))))
 
-(local (defthm gobjectp-equal
-         (gobjectp (equal a b))
-         :hints(("Goal" :in-theory (enable gobjectp-def
-                                           g-keyword-symbolp-def)))))
+;; (local (defthm gobjectp-equal
+;;          (gobjectp (equal a b))
+;;          :hints(("Goal" :in-theory (enable gobjectp-def
+;;                                            g-keyword-symbolp-def)))))
 
-(def-gobjectp-thm integer-length
-  :hints `(("Goal" :in-theory (e/d ()
-                                 ((:definition ,gfn)))
-          :induct (,gfn i hyp clk)
-          :expand ((,gfn i hyp clk)))))
+;; (def-gobjectp-thm integer-length
+;;   :hints `(("Goal" :in-theory (e/d ()
+;;                                  ((:definition ,gfn)))
+;;           :induct (,gfn i hyp clk)
+;;           :expand ((,gfn i hyp clk)))))
 
 (verify-g-guards
  integer-length
- :hints `(("Goal" :in-theory (disable booleanp-gobjectp ,gfn))))
+ :hints `(("Goal" :in-theory (disable ,gfn))))
 
 
 
@@ -84,7 +84,7 @@
 (local (defthm eval-g-base-integer
          (implies (integerp x)
                   (equal (eval-g-base x env) x))
-         :hints(("Goal" :in-theory (enable eval-g-base gobj-fix)))))
+         :hints(("Goal" :in-theory (enable eval-g-base)))))
 
 (def-g-correct-thm integer-length eval-g-base
   :hints `(("Goal" :in-theory (e/d (components-to-number-alt-def)

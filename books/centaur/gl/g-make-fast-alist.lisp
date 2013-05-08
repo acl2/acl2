@@ -26,13 +26,13 @@
          ((g-number &) x)
          (& (acl2::make-fast-alist x))))))
 
-(def-gobjectp-thm acl2::make-fast-alist)
+;; (def-gobjectp-thm acl2::make-fast-alist)
 
-(defthm gobjectp-impl-not-g-keyword-symbolp
-  (implies (gobjectp x)
-           (not (g-keyword-symbolp x)))
-  :hints(("Goal" :in-theory (enable gobject-hierarchy-impl-not-g-keyword-symbolp
-                                    gobjectp))))
+;; (defthm gobjectp-impl-not-g-keyword-symbolp
+;;   (implies (gobjectp x)
+;;            (not (g-keyword-symbolp x)))
+;;   :hints(("Goal" :in-theory (enable gobject-hierarchy-impl-not-g-keyword-symbolp
+;;                                     gobjectp))))
 
 (verify-g-guards acl2::make-fast-alist)
 

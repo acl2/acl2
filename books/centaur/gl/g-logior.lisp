@@ -13,9 +13,7 @@
 
 
 (defun g-binary-logior-of-numbers (x y)
-  (declare (xargs :guard (and (gobjectp x)
-                              (general-numberp x)
-                              (gobjectp y)
+  (declare (xargs :guard (and (general-numberp x)
                               (general-numberp y))))
   (b* (((mv xrn xrd xin xid)
         (general-number-components x))
@@ -35,7 +33,7 @@
         (mk-g-number
          (logior-ss (bfr-ite-bss-fn xintp xrn nil)
                     (bfr-ite-bss-fn yintp yrn nil)))
-      (g-apply 'binary-logior (list x y)))))
+      (g-apply 'binary-logior (gl-list x y)))))
 
 (in-theory (disable (g-binary-logior-of-numbers)))
 
@@ -50,19 +48,17 @@
 
 (local
  (progn
-   (defthm gobjectp-g-binary-logior-of-numbers
-     (implies (and (gobjectp x)
-                   (general-numberp x)
-                   (gobjectp y)
-                   (general-numberp y))
-              (gobjectp (g-binary-logior-of-numbers x y)))
-     :hints(("Goal" :in-theory (disable general-numberp
-                                        general-number-components))))
+   ;; (defthm gobjectp-g-binary-logior-of-numbers
+   ;;   (implies (and (gobjectp x)
+   ;;                 (general-numberp x)
+   ;;                 (gobjectp y)
+   ;;                 (general-numberp y))
+   ;;            (gobjectp (g-binary-logior-of-numbers x y)))
+   ;;   :hints(("Goal" :in-theory (disable general-numberp
+   ;;                                      general-number-components))))
 
    (defthm g-binary-logior-of-numbers-correct
-     (implies (and (gobjectp x)
-                   (general-numberp x)
-                   (gobjectp y)
+     (implies (and (general-numberp x)
                    (general-numberp y))
               (equal (eval-g-base (g-binary-logior-of-numbers x y) env)
                      (logior (eval-g-base x env)
@@ -80,23 +76,11 @@
        (j-num (if (general-numberp j) j 0)))
     (g-binary-logior-of-numbers i-num j-num)))
 
-(def-gobjectp-thm binary-logior
-  :hints `(("Goal" :in-theory (e/d* ()
-                                    ((:definition ,gfn)
-                                     general-concretep-def
-                                     gobj-fix-when-not-gobjectp
-                                     gobj-fix-when-gobjectp
-                                     (:ruleset gl-wrong-tag-rewrites)
-                                     (:rules-of-class :type-prescription :here)))
-            :induct (,gfn i j hyp clk)
-            :expand ((,gfn i j hyp clk)
-                     (gobjectp (logior (gobj-fix i)
-                                       (gobj-fix j)))))))
+
 
 (verify-g-guards
  binary-logior
- :hints `(("Goal" :in-theory (disable* ,gfn bfr-p-of-boolean
-                                       (:ruleset gl-wrong-tag-rewrites)
+ :hints `(("Goal" :in-theory (disable* ,gfn
                                        general-concretep-def))))
 
 (local (defthm logior-non-acl2-numbers

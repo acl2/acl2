@@ -23,11 +23,10 @@
                       :verify-guards nil
                       :guard (and (natp clk)
                                   (pseudo-termp x)
-                                  (bfr-p hyp)
                                   (acl2::interp-defs-alistp obligs)
                                   (glcp-config-p config)
-                                  (acl2::interp-defs-alistp (glcp-config->overrides config))
-                                  (gobject-vals-alistp alist))
+                                  (acl2::interp-defs-alistp
+                                   (glcp-config->overrides config)))
                       :stobjs state))
       (cond ((zp clk)
              (glcp-interp-error "The clock ran out.~%"))
@@ -37,8 +36,7 @@
             ;; X is a variable; look it up in the alist; the result must be a
             ;; g-object because of the gobject-vals-alistp guard.
             ((symbolp x)
-             (glcp-value (mbe :logic (gobj-fix (cdr (hons-assoc-equal x alist)))
-                              :exec (cdr (hons-assoc-equal x alist)))))
+             (glcp-value (cdr (hons-assoc-equal x alist))))
                  
             ((atom x)
              (glcp-interp-error
@@ -144,16 +142,17 @@
 
                     ;; This function returns the correct result if the function has
                     ;; a symbolic counterpart which is known to it.
-                    ((mv ok ans state)
+                    ((mv ok ans)
                      (run-gified fn actuals hyp clk state))
                     ((when ok) (glcp-value ans))
 
-                    ((mv ok ans state)
+                    ((mv fncall-failed ans)
                      (if (general-concrete-listp actuals)
-                         (apply-concrete
-                          fn (general-concrete-obj-list actuals) state)
-                       (mv nil nil state)))
-                    ((when ok) (glcp-value (mk-g-concrete ans)))
+                         (acl2::magic-ev-fncall
+                          fn (general-concrete-obj-list actuals)
+                          state t nil)
+                       (mv t nil)))
+                    ((unless fncall-failed) (glcp-value (mk-g-concrete ans)))
                  
                     ((mv erp body formals obligs)
                      (acl2::interp-function-lookup
@@ -171,12 +170,10 @@ but its arity is ~x3.  Its formal parameters are ~x4."
     (defun interp-list (x alist hyp clk obligs config state)
       (declare (xargs :measure (make-ord 1 (1+ (nfix clk)) (acl2-count x))
                       :guard (and (natp clk)
-                                  (bfr-p hyp)
                                   (pseudo-term-listp x)
                                   (acl2::interp-defs-alistp obligs)
                                   (glcp-config-p config)
-                                  (acl2::interp-defs-alistp (glcp-config->overrides config))
-                                  (gobject-vals-alistp alist))
+                                  (acl2::interp-defs-alistp (glcp-config->overrides config)))
                       :stobjs state))
       (if (atom x)
           (glcp-value nil)
@@ -184,7 +181,7 @@ but its arity is ~x3.  Its formal parameters are ~x4."
               (interp-term (car x) alist hyp clk obligs config state))
              ((glcp-er cdr)
               (interp-list (cdr x) alist hyp clk obligs config state)))
-          (glcp-value (cons car cdr)))))))
+          (glcp-value (gl-cons car cdr)))))))
 
 (defconst *glcp-run-parametrized-template*
   '(defun run-parametrized
@@ -285,7 +282,9 @@ In ~@0: The conclusion countains the following unbound variables: ~x1~%"
 
 (defconst *glcp-clause-proc-template*
   '(defun clause-proc (clause hints state)
-     (b* (((list bindings param-bindings hyp param-hyp concl untrans-concl config) hints)
+     (b* (;; ((unless (sym-counterparts-ok (w state)))
+          ;;  (glcp-error "The installed symbolic counterparts didn't satisfy all our checks"))
+          ((list bindings param-bindings hyp param-hyp concl untrans-concl config) hints)
           ((er overrides)
            (preferred-defs-to-overrides
             (table-alist 'preferred-defs (w state)) state))

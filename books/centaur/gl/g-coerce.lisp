@@ -40,28 +40,67 @@
   (if (endp a)
       b
     (revappend-concrete (cdr a)
-                        (cons (mk-g-concrete (car a)) b))))
+                        (gl-cons (mk-g-concrete (car a)) b))))
 
 (local
  (progn
-   (defthm gobjectp-revappend-concrete
-     (implies (gobjectp b)
-              (gobjectp (revappend-concrete a b))))
+   ;; (defthm gobjectp-revappend-concrete
+   ;;   (implies (gobjectp b)
+   ;;            (gobjectp (revappend-concrete a b))))
 
    (defthm revappend-concrete-correct
-     (implies (gobjectp b)
-              (equal (eval-g-base (revappend-concrete a b) env)
-                     (revappend a (eval-g-base b env))))
+     (equal (eval-g-base (revappend-concrete a b) env)
+            (revappend a (eval-g-base b env)))
      :hints(("Goal" :induct (revappend-concrete a b)
              :in-theory (enable revappend)
              :expand ((eval-g-base (cons (mk-g-concrete (car a)) b) env)))))))
 
 
+;; (local (defthm len-of-gl-cons
+;;          (equal (len (gl-cons a b))
+;;                 (+ 1 (len b)))
+;;          :hints(("Goal" :in-theory (enable gl-cons)))))
+
+;; (defund g-ite-depth (x)
+;;   (cond ((or (atom x) (not (eq (tag x) :g-ite))) 0)
+;;         (t (+ 1 (max (g-ite-depth (g-ite->then x))
+;;                      (g-ite-depth (g-ite->else x)))))))
+    
+;; (defthm g-ite-depth-of-g-ite->then
+;;   (implies (eq (tag x) :g-ite)
+;;            (< (g-ite-depth (g-ite->then x)) (g-ite-depth x)))
+;;   :hints (("goal" :expand ((g-ite-depth x))))
+;;   :rule-classes :linear)
+
+;; (defthm g-ite-depth-of-g-ite->else
+;;   (implies (eq (tag x) :g-ite)
+;;            (< (g-ite-depth (g-ite->else x)) (g-ite-depth x)))
+;;   :hints (("goal" :expand ((g-ite-depth x))))
+;;   :rule-classes :linear)
+
+;; (defthm g-ite-depth-of-car-of-gl-cons
+;;   (equal (g-ite-depth (car (gl-cons a b)))
+;;          (g-ite-depth a))
+;;   :hints(("Goal" :in-theory (enable g-ite-depth gl-cons))))
+
+(defthm acl2-count-of-gl-cons-ite-then
+  (implies (equal (tag a) :g-ite)
+           (< (acl2-count (gl-cons (g-ite->then a) b))
+              (+ 1 (acl2-count a) (acl2-count b))))
+  :hints(("Goal" :in-theory (enable gl-cons tag g-ite->then g-concrete)))
+  :rule-classes :linear)
+
+(defthm acl2-count-of-gl-cons-ite-else
+  (implies (equal (tag a) :g-ite)
+           (< (acl2-count (gl-cons (g-ite->else a) b))
+              (+ 1 (acl2-count a) (acl2-count b))))
+  :hints(("Goal" :in-theory (enable gl-cons tag g-ite->else g-concrete)))
+  :rule-classes :linear)
+
+
 ;; Collect concrete characters onto "pre".
 (defun coerce-string (x pre hyp)
-  (declare (xargs :guard (and (gobjectp x)
-                              (bfr-p hyp)
-                              (true-listp pre))
+  (declare (xargs :guard (and (true-listp pre))
                   :verify-guards nil))
   (if (or (general-concretep x) (atom x))
       (mk-g-concrete
@@ -71,8 +110,8 @@
        (g-if test
              (coerce-string then pre hyp)
              (coerce-string else pre hyp)))
-      ((g-apply & &) (g-apply 'coerce (list (revappend-concrete pre x) 'string)))
-      ((g-var &) (g-apply 'coerce (list (revappend-concrete pre x) 'string)))
+      ((g-apply & &) (g-apply 'coerce (gl-list (revappend-concrete pre x) 'string)))
+      ((g-var &) (g-apply 'coerce (gl-list (revappend-concrete pre x) 'string)))
       ((g-number &)
        (mk-g-concrete
         (ec-call (coerce (revappend pre nil) 'string))))
@@ -90,11 +129,11 @@
            (pattern-match (car x)
              ((g-ite test then else)
               (g-if test
-                    (coerce-string (cons then (cdr x)) pre hyp)
-                    (coerce-string (cons else (cdr x)) pre hyp)))
-             ((g-apply & &) (g-apply 'coerce (list (revappend-concrete pre x)
+                    (coerce-string (gl-cons then (cdr x)) pre hyp)
+                    (coerce-string (gl-cons else (cdr x)) pre hyp)))
+             ((g-apply & &) (g-apply 'coerce (gl-list (revappend-concrete pre x)
                                                    'string)))
-             ((g-var &) (g-apply 'coerce (list (revappend-concrete pre x)
+             ((g-var &) (g-apply 'coerce (gl-list (revappend-concrete pre x)
                                                'string)))
              (&
               (coerce-string (cdr x) (cons (code-char 0) pre) hyp))))))))
@@ -102,38 +141,37 @@
 
 (local
  (progn
-   (defthm gobjectp-coerce-string
-     (implies (and (gobjectp x)
-                   (bfr-p hyp))
-              (gobjectp (coerce-string x pre hyp)))
-     :hints(("Goal" :in-theory (e/d () ((:definition coerce-string)))
-             :induct (coerce-string x pre hyp)
-             :expand ((coerce-string x pre hyp)))))
+   ;; (defthm gobjectp-coerce-string
+   ;;   (implies (and (gobjectp x)
+   ;;                 (bfr-p hyp))
+   ;;            (gobjectp (coerce-string x pre hyp)))
+   ;;   :hints(("Goal" :in-theory (e/d () ((:definition coerce-string)))
+   ;;           :induct (coerce-string x pre hyp)
+   ;;           :expand ((coerce-string x pre hyp)))))
 
    (defthmd atom-impl-general-concretep-1
-     (implies (and (gobjectp x)
-                   (not (consp x)))
+     (implies (not (consp x))
               (general-concretep x))
-     :hints(("Goal" :in-theory (enable general-concretep-def gobjectp-def)))
+     :hints(("Goal" :in-theory (enable general-concretep-def)))
      :rule-classes ((:rewrite :backchain-limit-lst 1)))
 
-   (defthm gobjectp-car-cdr-when-cons
-     (implies (and (gobjectp x)
-                   (consp x)
-                   (not (g-ite-p x))
-                   (not (g-apply-p x))
-                   (not (g-var-p x))
-                   (not (g-number-p x))
-                   (not (g-boolean-p x))
-                   (not (g-concrete-p x)))
-              (and (gobjectp (car x))
-                   (gobjectp (cdr x)))))))
+   ;; (defthm gobjectp-car-cdr-when-cons
+   ;;   (implies (and (gobjectp x)
+   ;;                 (consp x)
+   ;;                 (not (g-ite-p x))
+   ;;                 (not (g-apply-p x))
+   ;;                 (not (g-var-p x))
+   ;;                 (not (g-number-p x))
+   ;;                 (not (g-boolean-p x))
+   ;;                 (not (g-concrete-p x)))
+   ;;            (and (gobjectp (car x))
+   ;;                 (gobjectp (cdr x)))))
+   ))
 
 (verify-guards
  coerce-string
  :hints(("Goal" :in-theory (e/d (atom-impl-general-concretep-1)
                                 (coerce-string
-                                 gobjectp-cons-case
                                  )))))
 
 
@@ -176,12 +214,9 @@
          (implies (general-concretep x)
                   (equal (eval-g-base x env)
                          (general-concrete-obj x)))
-         :hints (("goal" :expand ((eval-g-base x env))
-                  :use ((:theorem (implies (general-concretep x)
-                                           (gobjectp x)))))
+         :hints (("goal" :expand ((eval-g-base x env)))
                  (and stable-under-simplificationp
-                      '(:in-theory (enable general-concretep
-                                           gobjectp))))
+                      '(:in-theory (enable general-concretep))))
          :rule-classes ((:rewrite :backchain-limit-lst 0))))
 
 (local
@@ -226,14 +261,12 @@
                             ""))))
 
    (local (defthm consp-eval-g-base-boolean
-            (implies (and (gobjectp x)
-                          (g-boolean-p x))
+            (implies (g-boolean-p x)
                      (not (consp (eval-g-base x env))))
             :hints(("Goal" :in-theory (enable eval-g-base)))))
 
    (local (defthm consp-eval-g-base-number
-            (implies (and (gobjectp x)
-                          (g-number-p x))
+            (implies (g-number-p x)
                      (not (consp (eval-g-base x env))))
             :hints(("Goal" :in-theory (enable eval-g-base)))))
 
@@ -256,17 +289,15 @@
 
 
    (local (defthm eval-g-base-atom
-            (implies (and (not (consp x)) (gobjectp x))
+            (implies (not (consp x))
                      (equal (eval-g-base x env) x))
             :hints(("Goal" :in-theory (enable eval-g-base)))
-            :rule-classes ((:rewrite :backchain-limit-lst (0 nil)))))
+            :rule-classes ((:rewrite :backchain-limit-lst (0)))))
 
 
 
    (defthm coerce-string-correct
-     (implies (and (bfr-eval hyp (car env))
-                   (bfr-p hyp)
-                   (gobjectp x))
+     (implies (bfr-eval hyp (car env))
               (equal (eval-g-base (coerce-string x pre hyp) env)
                      (coerce (revappend pre (eval-g-base x env)) 'string)))
      :hints(("Goal" :in-theory (e/d* ( general-concrete-obj
@@ -302,8 +333,7 @@
                    :expand ((:with eval-g-base (eval-g-base (car x) env)))))))))
 
 (defun coerce-list (x hyp)
-  (declare (xargs :guard (and (gobjectp x)
-                              (bfr-p hyp))
+  (declare (xargs :guard t
                   :verify-guards nil))
   (if (or (general-concretep x) (atom x))
       (mk-g-concrete
@@ -313,19 +343,19 @@
        (g-if test
              (coerce-list then hyp)
              (coerce-list else hyp)))
-      ((g-apply & &) (g-apply 'coerce (list x 'list)))
-      ((g-var &) (g-apply 'coerce (list x 'list)))
+      ((g-apply & &) (g-apply 'coerce (gl-list x 'list)))
+      ((g-var &) (g-apply 'coerce (gl-list x 'list)))
       (& nil))))
 
 
-(local
- (defthm gobjectp-coerce-list
-   (implies (and (gobjectp x)
-                 (bfr-p hyp))
-            (gobjectp (coerce-list x hyp)))
-   :hints (("goal" :in-theory (e/d () ((:definition coerce-list)))
-            :induct (coerce-list x hyp)
-            :expand ((coerce-list x hyp))))))
+;; (local
+;;  (defthm gobjectp-coerce-list
+;;    (implies (and (gobjectp x)
+;;                  (bfr-p hyp))
+;;             (gobjectp (coerce-list x hyp)))
+;;    :hints (("goal" :in-theory (e/d () ((:definition coerce-list)))
+;;             :induct (coerce-list x hyp)
+;;             :expand ((coerce-list x hyp))))))
 
 (verify-guards
  coerce-list
@@ -337,24 +367,20 @@
   (local (in-theory (disable member-equal)))
 
   (local (defthm stringp-eval-g-base
-           (implies (and (gobjectp x)
-                         (not (general-concretep x))
+           (implies (and (not (general-concretep x))
                          (not (g-ite-p x))
                          (not (g-apply-p x))
                          (not (g-var-p x)))
                     (not (stringp (eval-g-base x env))))
            :hints(("Goal" :in-theory (e/d ((:induction eval-g-base)
-                                           general-concretep-def)
-                                          (gobjectp-cons-case))
+                                           general-concretep-def))
                    :induct (eval-g-base x env)
                    :expand ((:with eval-g-base (eval-g-base x env)))))))
 
 
 
   (defthm coerce-list-correct
-    (implies (and (bfr-eval hyp (car env))
-                  (bfr-p hyp)
-                  (gobjectp x))
+    (implies (and (bfr-eval hyp (car env)))
              (equal (eval-g-base (coerce-list x hyp) env)
                     (coerce (eval-g-base x env) 'list)))
     :hints(("Goal" :in-theory (e/d* (; (:ruleset g-correct-lemmas)
@@ -377,23 +403,23 @@
      (pattern-match y
        ((g-ite ytest ythen yelse)
         (if (zp clk)
-            (g-apply 'coerce (list x y))
+            (g-apply 'coerce (gl-list x y))
           (g-if ytest
                 (,gfn x ythen hyp clk)
                 (,gfn x yelse hyp clk))))
        ((g-apply & &)
-        (g-apply 'coerce (list x y)))
+        (g-apply 'coerce (gl-list x y)))
        ((g-var &)
-        (g-apply 'coerce (list x y)))
+        (g-apply 'coerce (gl-list x y)))
        (& (coerce-string x nil hyp)))))
 
 
-(def-gobjectp-thm coerce
-  :hints `(("Goal" :in-theory (disable gobj-fix-when-not-gobjectp
-                                       hyp-fix-of-hyp-fixedp
-                                       (:definition ,gfn))
-            :induct (,gfn x y hyp clk)
-            :expand ((,gfn x y hyp clk)))))
+;; (def-gobjectp-thm coerce
+;;   :hints `(("Goal" :in-theory (disable gobj-fix-when-not-gobjectp
+;;                                        hyp-fix-of-hyp-fixedp
+;;                                        (:definition ,gfn))
+;;             :induct (,gfn x y hyp clk)
+;;             :expand ((,gfn x y hyp clk)))))
 
 (verify-g-guards
  coerce
@@ -401,16 +427,14 @@
 
 (local
  (defthm eval-g-base-not-equal-list
-   (implies (and (gobjectp y)
-                 (not (general-concretep y))
+   (implies (and (not (general-concretep y))
                  (not (g-ite-p y))
                  (not (g-apply-p y))
                  (not (g-var-p y)))
             (not (equal (eval-g-base y env) 'list)))
    :hints(("Goal" :in-theory (e/d ((:induction eval-g-base)
                                    general-concretep-def)
-                                  (gobjectp-cons-case
-                                   eval-g-base-alt-def))
+                                  (eval-g-base-alt-def))
            :induct (eval-g-base y env)
            :expand ((:with eval-g-base (eval-g-base y env)))))))
 
@@ -420,7 +444,6 @@
   :hints `(("Goal" :in-theory (e/d* (atom-impl-general-concretep-1
                                      eval-g-base)
                                     ((:definition ,gfn)
-                                     eval-concrete-gobjectp
                                      ; eval-g-base-non-gobjectp
 
                                      ; eval-g-base-g-concrete
@@ -431,7 +454,6 @@
                                      equal-of-booleans-rewrite
                                      ; g-eval-non-consp
                                      general-number-components-ev
-                                     gobj-fix-when-not-gobjectp
                                      hyp-fix-of-hyp-fixedp
                                      ; hyp-and-not-false-test-is-and
                                      default-car default-cdr

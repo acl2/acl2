@@ -254,7 +254,7 @@ At each atom in the tree:
                                 splice-alist
                                 atom-alist
                                 str-alist
-                                (pkg-sym 'acl2::foo))
+                                (pkg-sym ''acl2::foo))
   (b* ((preproc-tree (template-preproc features tree))
        ((mv & new-tree) (template-subst-rec
                          subtree-alist splice-alist atom-alist str-alist

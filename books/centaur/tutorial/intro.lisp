@@ -74,7 +74,7 @@
 ; execute at least the functions from the above books that get marked with
 ; add-clause-proc-exec-fns:
 
-(def-gl-clause-processor my-glcp nil)
+(def-gl-clause-processor my-glcp)
 
 
 (defxdoc esim-tutorial

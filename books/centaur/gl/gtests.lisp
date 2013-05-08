@@ -12,21 +12,14 @@
 (include-book "tools/mv-nth" :dir :system)
 
 (defun mk-g-bdd-ite (bdd then else hyp)
-  (declare (xargs :guard (and (bfr-p bdd)
-                              (bfr-p hyp)
-                              (gobjectp then)
-                              (gobjectp else))))
-  (let ((bdd (bfrfix bdd))
-        (then (mbe :logic (gobj-fix then) :exec then))
-        (else (mbe :logic (gobj-fix else) :exec else))
-        (hyp (bfrfix hyp)))
-    (let ((test (hf bdd)))
-      (cond ((th test) then)
-            ((fh test) else)
-            (t (mk-g-ite (mk-g-boolean bdd) then else))))))
+  (declare (xargs :guard t))
+  (let ((test (hf bdd)))
+    (cond ((th test) then)
+          ((fh test) else)
+          (t (mk-g-ite (mk-g-boolean bdd) then else)))))
 
-(defthm mk-g-bdd-ite-gobjectp
-  (gobjectp (mk-g-bdd-ite bdd then else hyp)))
+;; (defthm mk-g-bdd-ite-gobjectp
+;;   (gobjectp (mk-g-bdd-ite bdd then else hyp)))
 
 (defthm mk-g-bdd-ite-correct
   (implies (bfr-eval hyp (car env))
@@ -49,8 +42,7 @@
 ;; it is not a G-APPLY.
 ;; All of the return values are <= hyp.
 (defun gobj-nonnil-unknown-obj (x hyp)
-  (declare (xargs :guard (and (gobjectp x) (bfr-p hyp))
-                  :verify-guards nil))
+  (declare (xargs :guard t))
   (if (atom x)
       (mv (hf (if x t nil))
           (hf nil) nil)
@@ -163,30 +155,9 @@
 
    (local 
     (in-theory (disable (:definition generic-geval)
-                        bfr-eval bfr-p bfr-eval-list
+                        bfr-eval bfr-eval-list
                         components-to-number-alt-def
-                        gobjectp gobjectp-def
-                        bfr-eval-booleanp)))
-
-
-
-   (defthm bfr-p-gobj-nonnil-unknown-obj
-     (implies (and (gobjectp x) (bfr-p hyp))
-              (and (bfr-p (mv-nth 0 (gobj-nonnil-unknown-obj x hyp)))
-                   (bfr-p (mv-nth 1 (gobj-nonnil-unknown-obj x hyp)))))
-     :hints ((and (subgoal-of "Subgoal *1/" id)
-                  '(:expand ((gobj-nonnil-unknown-obj x hyp))))))
-
-   (defthm gobjectp-gobj-nonnil-unknown-obj
-     (implies (and (gobjectp x) (bfr-p hyp))
-              (gobjectp (mv-nth 2 (gobj-nonnil-unknown-obj x hyp))))
-     :hints ((and (subgoal-of "Subgoal *1/" id)
-                  '(:expand ((gobj-nonnil-unknown-obj x hyp))))))))
-
-
-
-(verify-guards gobj-nonnil-unknown-obj
-               :hints (("goal" :do-not-induct t)))
+                        bfr-eval-booleanp)))))
 
 (local
  (progn
@@ -195,9 +166,8 @@
    (add-bfr-fn-pat hyp-fix)
 
    (defthm gobj-nonnil-unknown-obj-hyp-fixedp
-     (implies (and (gobjectp x) (bfr-p hyp))
-              (and (hyp-fixedp (mv-nth 0 (gobj-nonnil-unknown-obj x hyp)) hyp)
-                   (hyp-fixedp (mv-nth 1 (gobj-nonnil-unknown-obj x hyp)) hyp)))
+     (and (hyp-fixedp (mv-nth 0 (gobj-nonnil-unknown-obj x hyp)) hyp)
+          (hyp-fixedp (mv-nth 1 (gobj-nonnil-unknown-obj x hyp)) hyp))
      :hints ((and (subgoal-of "Subgoal *1/" id)
                   '(:expand ((gobj-nonnil-unknown-obj x hyp))))))
 
@@ -215,29 +185,15 @@
                                (:type-prescription bfr-eval)
                                (:type-prescription true-under-hyp)
                                (:type-prescription false-under-hyp)
-                               (:type-prescription bfr-p)
-                               (:type-prescription gobjectp)
                                (:type-prescription q-implies-fn)
-                               (:type-prescription g-ite-p)
-                               (:type-prescription g-var-p)
-                               (:type-prescription g-apply-p)
                                (:type-prescription bfr-ite-fn)
                                (:type-prescription booleanp)
                                equal-of-booleans-rewrite
-                               tag-when-g-var-p
-                               g-ite-p-when-wrong-tag
-                               g-var-p-when-wrong-tag
-                               tag-when-g-number-p
-                               tag-when-g-boolean-p
-                               tag-when-g-concrete-p
                                default-car default-cdr
                                bfr-eval-nonnil-forward
-                               generic-geval-non-gobjectp
-                               gobj-fix-when-not-gobjectp
                                hons-assoc-equal
                                break-g-number
-                               not
-                               (:ruleset gl-tag-forward))))
+                               not)))
    (local (in-theory (enable true-under-hyp-point
                              false-under-hyp-point)))
    (defun expand-hyps1 (fns clause)
@@ -256,29 +212,29 @@
      (let ((lst (expand-hyps1 fns clause)))
        (and lst (list :computed-hint-replacement t :expand lst))))
 
+   (local (in-theory (disable gobj-nonnil-unknown-obj
+                              generic-geval
+                              sets::double-containment
+                              tag-when-atom
+                              generic-geval-non-cons)))
 
    (defthm gobj-nonnil-unknown-obj-correct
      (mv-let (cc uc uo)
        (gobj-nonnil-unknown-obj x hyp)
-       (implies (and (gobjectp x)
-                     (bfr-p hyp)
-                     (bfr-eval hyp (car env)))
+       (implies (bfr-eval hyp (car env))
                 (iff (generic-geval x env)
                      (if (bfr-eval uc (car env))
                          (generic-geval uo env)
                        (bfr-eval cc (car env))))))
      :hints (("Goal" :induct (gnuo-ind x hyp)
-              :in-theory (e/d* ((:ruleset gl-wrong-tag-rewrites))
-                               (gobj-nonnil-unknown-obj
-                                generic-geval
-                                generic-geval-non-cons))
+              ;; :in-theory (e/d* ())
               :do-not-induct t)
              (and stable-under-simplificationp
                   '(:expand
                     ((gobj-nonnil-unknown-obj x hyp)
-                     (gobj-nonnil-unknown-obj nil hyp)
                      (generic-geval x env)
-                     (generic-geval nil env))
+                     (generic-geval nil env)
+                     (gobj-nonnil-unknown-obj nil hyp))
                     :do-not '(generalize
                               fertilize
                               eliminate-destructors))))
@@ -287,26 +243,19 @@
 
 
 
-
-
 ;; BOZO The conses produced by this function are unnecessary except that we
 ;; need to figure out how to deal with mv-lets that get translated to a form
 ;; where they can't then be submitted.
 (defun gtests (test hyp)
-  (declare (xargs :guard (and (gobjectp test) (bfr-p hyp))))
-  (let ((test (mbe :logic (gobj-fix test) :exec test))
-        (hyp (bfrfix hyp)))
-    (mv-let (nonnil unknown obj)
-      (gobj-nonnil-unknown-obj test hyp)
-      (list* nonnil unknown obj))))
+  (declare (xargs :guard t))
+  (mv-let (nonnil unknown obj)
+    (gobj-nonnil-unknown-obj test hyp)
+    (list* nonnil unknown obj)))
 
 (defun gtestsp (tests)
   (declare (xargs :guard t))
   (and (consp tests)
-       (consp (cdr tests))
-       (bfr-p (car tests))
-       (bfr-p (cadr tests))
-       (gobjectp (cddr tests))))
+       (consp (cdr tests))))
 
 
 (defun gtests-nonnil (tests)
@@ -326,26 +275,13 @@
 (defthm gtestsp-gtests
   (gtestsp (gtests test hyp)))
 
-(defthm gtests-wfp
-  (let ((tests (gtests test hyp)))
-    (and (gobjectp (gtests-obj tests))
-         (bfr-p (gtests-nonnil tests))
-         (bfr-p (gtests-unknown tests))
-         (bfr-p (gtests-nonnil tests))
-         (bfr-p (gtests-unknown tests))
-;;          (hyp-fixedp (gtests-nonnil tests) hyp)
-;;          (hyp-fixedp (gtests-unknown tests) hyp)
-         )))
-
-
 (defthm gtests-nonnil-correct
   (implies (and (not (bfr-eval (gtests-unknown (gtests x hyp)) (car env)))
                 (bfr-eval hyp (car env)))
            (equal (bfr-eval (gtests-nonnil (gtests x hyp)) (car env))
                   (if (generic-geval x env) t nil)))
   :hints (("goal" :use
-           ((:instance gobj-nonnil-unknown-obj-correct
-                       (x (gobj-fix x)) (hyp (bfr-fix hyp))))
+           ((:instance gobj-nonnil-unknown-obj-correct))
            :in-theory (enable (:type-prescription bfr-eval)))))
 
 (defthm gtests-obj-correct
@@ -354,8 +290,7 @@
            (iff (generic-geval (gtests-obj (gtests x hyp)) env)
                 (generic-geval x env)))
   :hints (("goal" :use
-           ((:instance gobj-nonnil-unknown-obj-correct
-                       (x (gobj-fix x)) (hyp (bfr-fix hyp)))))))
+           ((:instance gobj-nonnil-unknown-obj-correct)))))
 
 (in-theory (disable gtests gtestsp gtests-unknown gtests-obj gtests-nonnil))
 

@@ -21,18 +21,18 @@
 
 
 
-(def-gobjectp-thm acl2::always-equal
-  :hints `(("Goal" :in-theory (e/d (booleanp-gobjectp)
-                                   ((:definition ,gfn)
-                                    g-always-equal-core
-                                    general-boolean-value
-                                    general-boolean-value-cases
-                                    gobj-fix-when-not-gobjectp
-                                    gobj-fix-when-gobjectp
-                                    (:type-prescription booleanp)
-                                    (:type-prescription gobj-fix)
-                                    equal-of-booleans-rewrite))
-            :expand ((,gfn x y hyp clk)))))
+;; (def-gobjectp-thm acl2::always-equal
+;;   :hints `(("Goal" :in-theory (e/d (booleanp-gobjectp)
+;;                                    ((:definition ,gfn)
+;;                                     g-always-equal-core
+;;                                     general-boolean-value
+;;                                     general-boolean-value-cases
+;;                                     gobj-fix-when-not-gobjectp
+;;                                     gobj-fix-when-gobjectp
+;;                                     (:type-prescription booleanp)
+;;                                     (:type-prescription gobj-fix)
+;;                                     equal-of-booleans-rewrite))
+;;             :expand ((,gfn x y hyp clk)))))
 
 (verify-g-guards
    acl2::always-equal

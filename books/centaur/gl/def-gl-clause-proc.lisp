@@ -4,7 +4,7 @@
 
 
 (include-book "parallel/without-waterfall-parallelism" :dir :system)
-(include-book "centaur/misc/defapply" :dir :system)
+;; (include-book "centaur/misc/defapply" :dir :system)
 (include-book "gify")
 (local (include-book "gify-thms"))
 (include-book "run-gified-cp")
@@ -17,10 +17,10 @@
 ;; pre-Gified functions.
 
 
-(defthm gobjectp-nth-gobject-listp
-  (implies (gobject-listp lst)
-           (gobjectp (nth n lst)))
-  :hints(("Goal" :in-theory (enable gobject-listp))))
+;; (defthm gobjectp-nth-gobject-listp
+;;   (implies (gobject-listp lst)
+;;            (gobjectp (nth n lst)))
+;;   :hints(("Goal" :in-theory (enable gobject-listp))))
 
 (defun glcp-predef-cases-fn (names world)
   (declare (Xargs :mode :program))
@@ -55,43 +55,37 @@
 
 
 
-(defthmd gl-eval-car-cdr-of-gobject-listp
-  (implies (gobject-listp x)
+(defthmd gl-eval-car-cdr-of-gobj-listp
+  (implies (gobj-listp x)
            (and (equal (car (generic-geval x env))
                        (generic-geval (car x) env))
                 (equal (cdr (generic-geval x env))
                        (generic-geval (cdr x) env))))
   :hints (("goal" :expand ((:with generic-geval (generic-geval x env)))
-           :in-theory (e/d* (gobjectp-car-impl-not-g-types
-                             gobject-listp-impl-gobjectp
-                             gobject-listp)
+           :in-theory (e/d* (gobj-listp)
                             (general-consp-car-correct
                              general-consp-cdr-correct)))))
 
-(defthmd gl-eval-car-gobjectp
-  (implies (and (gobjectp x)
-                (consp x)
-                (gobjectp (car x)))
-           (equal (generic-geval x env)
-                  (cons (generic-geval (car x) env)
-                        (generic-geval (cdr x) env))))
-  :hints (("goal" :expand ((generic-geval x env))
-           :in-theory (enable gobjectp-car-impl-not-g-types))))
+;; (defthmd gl-eval-car-gobjectp
+;;   (implies (consp x)
+;;            (equal (generic-geval x env)
+;;                   (cons (generic-geval (car x) env)
+;;                         (generic-geval (cdr x) env))))
+;;   :hints (("goal" :expand ((generic-geval x env))
+;;            :in-theory (enable gobjectp-car-impl-not-g-types))))
 
 (defthmd gl-eval-of-nil
   (equal (generic-geval nil env) nil))
 
 
 
-(defthm gl-eval-consp-when-gobject-listp
-  (implies (gobject-listp x)
+(defthm gl-eval-consp-when-gobj-listp
+  (implies (gobj-listp x)
            (equal (consp (generic-geval x env))
                   (consp x)))
   :hints (("goal" :expand ((:with generic-geval (generic-geval x env))
-                           (gobject-listp x))
-           :in-theory (e/d (gobjectp-car-impl-not-g-types
-                            gobject-listp-impl-gobjectp
-                            gobject-listp)
+                           (gobj-listp x))
+           :in-theory (e/d (gobj-listp)
                            (general-consp-car-correct
                             general-consp-cdr-correct)))))
 
@@ -112,10 +106,10 @@
 ;;   (equal (cdr (acl2::kwote-lst lst))
 ;;          (acl2::kwote-lst (cdr lst))))
  
-;; (defthm gobject-listp-cdr
-;;   (implies (gobject-listp x)
-;;            (gobject-listp (cdr x)))
-;;   :hints(("Goal" :in-theory (enable gobject-listp))))
+;; (defthm gobj-listp-cdr
+;;   (implies (gobj-listp x)
+;;            (gobj-listp (cdr x)))
+;;   :hints(("Goal" :in-theory (enable gobj-listp))))
 
 
 
@@ -239,50 +233,22 @@
         (cons (car fns)
               (collect-non-fns (cdr fns) world))
       (collect-non-fns (cdr fns) world))))
+
+(defthm gobj-listp-true-listp
+  (implies (gobj-listp x)
+           (true-listp x))
+  :hints(("Goal" :in-theory (enable gobj-listp)))
+  :rule-classes :forward-chaining)
       
 (defun def-gl-clause-processor-fn
-  (clause-proc apply-fns include-nonrec top-apply-fns output state)
+  (clause-proc output state)
   (declare (xargs :mode :program :stobjs state))
   (b* ((world (w state))
-       (non-fns (append (collect-non-fns apply-fns world)
-                        (collect-non-fns top-apply-fns world)))
-       ((when non-fns)
-        (er hard? 'def-gl-clause-processor
-            "The following symbols are not functions: ~x0~%" non-fns))
        (current-geval (find-current-geval world))
        (geval (or current-geval
                   (incat clause-proc (symbol-name clause-proc) "-GEVAL")))
        (run-gified (incat clause-proc (symbol-name clause-proc) "-RUN-GIFIED"))
-       (run-gified-inner (incat clause-proc (symbol-name clause-proc) "-RUN-GIFIED-INNER"))
-       (apply-concrete-inner (incat clause-proc (symbol-name clause-proc)
-                                    "-APPLY-INNER"))
-       (apply-concrete (incat clause-proc (symbol-name clause-proc)
-                              "-APPLY"))
-       (apply-concrete-inner-lemma
-        (incat clause-proc (symbol-name clause-proc)
-               "-APPLY-INNER-CORRECT"))
-       (apply-concrete-lemma
-        (incat clause-proc (symbol-name clause-proc) "-APPLY-CORRECT"))
-       (apply-concrete-state
-        (incat clause-proc (symbol-name clause-proc) "-STATE"))
        (g-fns (strip-cars (table-alist 'gl-function-info world)))
-       ((mv done collected-apply-fns)
-        (collect-fns-list apply-fns nil nil world))
-       (- (flush-hons-get-hash-table-link done))
-       (recursive-apply-fns
-        (if include-nonrec
-            collected-apply-fns
-          (filter-recursive-fns collected-apply-fns world)))
-       (auto-apply-fns (gl-clause-proc-auto-exec-fns))
-       (forbid-apply-fns (gl-clause-proc-forbidden-exec-fns))
-       (final-apply-fns
-        (acl2::hons-remove-duplicates
-         (acl2::hons-set-diff
-          (append top-apply-fns apply-fns recursive-apply-fns auto-apply-fns)
-          ;; no need to have g-fns in the apply
-          (append g-fns forbid-apply-fns))))
-       (- (cw "number of applyable functions: ~x0~%"
-              (len final-apply-fns)))
        (ev (incat clause-proc (symbol-name clause-proc) "-EV"))
        (ev-lst (incat clause-proc (symbol-name clause-proc) "-EV-LST"))
        (falsify (incat clause-proc (symbol-name clause-proc) "-EV-FALSIFY"))
@@ -295,16 +261,8 @@
        (constraints (incat ev (symbol-name ev) "-CONSTRAINTS"))
        (f-i-thm (incat geval (symbol-name geval)
                        "-IS-FUNCTIONAL-INST-OF-GENERIC-GEVAL-FOR-GL-CLAUSE-PROC"))
-       (run-gified-inner-correct
-        (incat run-gified (symbol-name run-gified) "-INNER-CORRECT"))
        (run-gified-correct
         (incat run-gified (symbol-name run-gified) "-CORRECT"))
-       (run-gified-inner-gobjectp
-        (incat run-gified (symbol-name run-gified) "-INNER-GOBJECTP"))
-       (run-gified-gobjectp
-        (incat run-gified (symbol-name run-gified) "-GOBJECTP"))
-       (run-gified-state
-        (incat run-gified (symbol-name run-gified) "-STATE"))
        (interp-term (interp-term-fnname clause-proc))
        (interp-list (incat clause-proc (symbol-name clause-proc)
                            "-INTERP-LIST"))
@@ -319,7 +277,8 @@
                 (clause-proc-name . ',clause-proc)
                 (clause-proc . ,clause-proc)
                 (run-gified . ,run-gified)
-                (apply-concrete . ,apply-concrete)))
+                ;; (apply-concrete . ,apply-concrete)
+                ))
        (f-i-lemmas (incat clause-proc (symbol-name clause-proc)
                           "-FUNCTIONAL-INSTANCE-LEMMAS"))
        (correct-thm (incat clause-proc (symbol-name clause-proc) "-CORRECT")))
@@ -336,35 +295,20 @@
                           :output nil)))
         (encapsulate nil
           (set-case-split-limitations '(1 1))
-          (defun ,run-gified-inner
-            (fn actuals hyp clk)
-            (declare (xargs :guard (and (symbolp fn)
-                                        (gobject-listp actuals)
-                                        (bfr-p hyp)
-                                        (natp clk))
-                            :guard-hints
-                            (("goal" :in-theory
-                              (e/d** (gobjectp-nth-gobject-listp
-                                      (:forward-chaining gobject-listp-true-listp)))
-                              :do-not '(preprocess)))))
-            (case fn
-              . ,(glcp-predef-cases-fn
-                  (remove 'if g-fns) world)))
           (defun ,run-gified
             (fn actuals hyp clk state)
             (declare (xargs :guard (and (symbolp fn)
-                                        (gobject-listp actuals)
-                                        (bfr-p hyp)
+                                        (gobj-listp actuals)
                                         (natp clk))
                             :guard-hints
                             (("goal" :in-theory
-                              (e/d** (gobjectp-nth-gobject-listp
-                                      (:forward-chaining gobject-listp-true-listp)))
+                              (e/d** ((:forward-chaining gobj-listp-true-listp)))
                               :do-not '(preprocess)))
-                            :stobjs state))
-            (mv-let (ok ans)
-              (,run-gified-inner fn actuals hyp clk)
-              (mv ok ans state))))
+                            :stobjs state)
+                     (ignorable state))
+            (case fn
+              . ,(glcp-predef-cases-fn
+                  (remove 'if g-fns) world))))
 
        
 
@@ -377,12 +321,12 @@
                       return-last use-by-hint equal acl2::typespec-check implies iff
                       not cons gl-aside gl-ignore gl-error)
                    (set-difference-eq
-                    (union-eq g-fns final-apply-fns)
+                    g-fns
                     `(if gl-cp-hint shape-spec-obj-in-range
                        return-last use-by-hint equal not cons
-                       ,@*forbidden-apply-functions*
                        ,geval gl-aside gl-ignore gl-error)))
-           world))
+           world)
+         :namedp t)
         (local (def-ruleset! ,constraints
                  (set-difference-theories
                   (current-theory :here)
@@ -395,48 +339,6 @@
                           (not (,ev x (,falsify x))))
                  :hints (("goal" :use ,falsify))))
 
-        (encapsulate
-          nil
-          (local (in-theory nil))
-          ;; Define the apply-concrete function
-          (acl2::defapply ,apply-concrete-inner ,final-apply-fns
-                          :theoremsp nil)
-          (defun ,apply-concrete (acl2::fn args state)
-            (declare (xargs :guard (true-listp args)
-                            :stobjs state))
-            (mv-let (ok ans)
-              (,apply-concrete-inner acl2::fn args)
-              (mv ok ans state)))
-                            
-
-          (local (defthm ,apply-concrete-inner-lemma
-                   (implies (mv-nth 0 (,apply-concrete-inner acl2::fn args))
-                            (equal (mv-nth 1 (,apply-concrete-inner acl2::fn args))
-                                   (,ev (cons acl2::fn (acl2::kwote-lst args))
-                                        nil)))
-                   :hints (("goal" :clause-processor
-                            (acl2::apply-for-ev-cp clause nil state))
-                           (acl2::use-by-computed-hint clause)
-                           (acl2::use-these-hints-hint clause))))
-          (defthm ,apply-concrete-lemma
-            (implies (mv-nth 0 (,apply-concrete acl2::fn args state))
-                     (equal (mv-nth 1 (,apply-concrete acl2::fn args
-                                                       state))
-                            (,ev (cons acl2::fn (acl2::kwote-lst
-                                                 args))
-                                 nil)))
-            :hints(("Goal" :in-theory (e/d** (,apply-concrete
-                                              ,apply-concrete-inner-lemma
-                                              car-cons cdr-cons)))))
-
-          (defthm ,apply-concrete-state
-            (equal (mv-nth 2 (,apply-concrete acl2::fn args
-                                              state))
-                   state)
-            :hints(("Goal" :in-theory (e/d** (,apply-concrete)
-                                             (,apply-concrete-inner))))))
-
-        (in-theory (disable ,apply-concrete))
 
         ;; Define the interpreter mutual-recursion, the
         ;; run-parametrized and run-cases functions, and the clause proc.
@@ -450,39 +352,18 @@
          (progn
            (eval-g-prove-f-i ,f-i-thm ,geval generic-geval)
            (eval-g-functional-instance
-            gl-eval-car-cdr-of-gobject-listp ,geval generic-geval)
+            gl-eval-car-cdr-of-gobj-listp ,geval generic-geval)
            (eval-g-functional-instance
-            gl-eval-consp-when-gobject-listp ,geval generic-geval)
+            gl-eval-consp-when-gobj-listp ,geval generic-geval)
            (eval-g-functional-instance
             gl-eval-of-nil ,geval generic-geval)
            (eval-g-functional-instance
             general-concrete-obj-correct ,geval generic-geval)
            
            ;; Prove correctness of run-gified
-           (defthm ,run-gified-inner-correct
-             (implies (and (bfr-eval hyp (car env))
-                           (gobject-listp actuals)
-                           (mv-nth 0 (,run-gified-inner
-                                      fn actuals hyp clk)))
-                      (equal (,geval (mv-nth 1 (,run-gified-inner
-                                                fn actuals hyp clk))
-                                     env)
-                             (,ev (cons fn (acl2::kwote-lst
-                                            (,geval actuals env))) nil)))
-             :hints (("goal" :clause-processor
-                      (run-gified-clause-proc
-                       clause
-                       '(,(f-i-thmname
-                           'gl-eval-consp-when-gobject-listp geval)
-                         ,(f-i-thmname
-                           'gl-eval-car-cdr-of-gobject-listp geval)
-                         ,(f-i-thmname 'gl-eval-of-nil geval))
-                       state))
-                     (use-by-computed-hint clause)))
-
            (defthm ,run-gified-correct
              (implies (and (bfr-eval hyp (car env))
-                           (gobject-listp actuals)
+                           (gobj-listp actuals)
                            (mv-nth 0 (,run-gified
                                       fn actuals hyp clk state)))
                       (equal (,geval (mv-nth 1 (,run-gified
@@ -490,36 +371,16 @@
                                      env)
                              (,ev (cons fn (acl2::kwote-lst
                                             (,geval actuals env))) nil)))
-             :hints (("goal" :in-theory (e/d** (,run-gified-inner-correct
-                                                ,run-gified
-                                                mv-nth-cons-meta)
-                                               (,run-gified-inner)))))
-
-           ;; Prove GOBJECTP of run-gified
-           (defthm ,run-gified-inner-gobjectp
-             (gobjectp (mv-nth 1 (,run-gified-inner
-                                  fn actuals hyp clk)))
-             :hints (("goal" :in-theory
-                      (e/d** ((:ruleset g-gobjectp-lemmas)
-                              ,run-gified-inner
-                              (:compound-recognizer
-                               booleanp-compound-recognizer))))))
-
-           (defthm ,run-gified-gobjectp
-             (gobjectp (mv-nth 1 (,run-gified
-                                  fn actuals hyp clk state)))
-             :hints (("goal" :in-theory
-                      (e/d** (,run-gified
-                              ,run-gified-inner-gobjectp)
-                             (,run-gified-inner)))))
-
-           (defthm ,run-gified-state
-             (equal (mv-nth 2 (,run-gified
-                               fn actuals hyp clk state))
-                    state)
-             :hints (("goal" :in-theory (e/d** (,run-gified)
-                                               (,run-gified-inner)))))
-             
+             :hints (("goal" :clause-processor
+                      (run-gified-clause-proc
+                       clause
+                       '(,(f-i-thmname
+                           'gl-eval-consp-when-gobj-listp geval)
+                         ,(f-i-thmname
+                           'gl-eval-car-cdr-of-gobj-listp geval)
+                         ,(f-i-thmname 'gl-eval-of-nil geval))
+                       state))
+                     (use-by-computed-hint clause)))
 
            (in-theory (disable ,run-gified))
 
@@ -530,7 +391,7 @@
            (eval-g-functional-instance mk-g-boolean-correct
                                        ,geval generic-geval)
            (eval-g-functional-instance
-            gl-eval-car-gobjectp ,geval generic-geval)
+            generic-geval-gl-cons ,geval generic-geval)
 
            (eval-g-functional-instance
             gobj-to-param-space-correct ,geval generic-geval)
@@ -544,13 +405,11 @@
                      ;;   (nthcdr (- (len constr) 18) constr))
                      '(,ctrex-thm
                        ,run-gified-correct
-                       ,run-gified-state
-                       ,run-gified-gobjectp
-                       ,apply-concrete-lemma
-                       ,apply-concrete-state
-                       ,(f-i-thmname 'gl-eval-car-gobjectp geval)
+                       ;; ,apply-concrete-lemma
+                       ;; ,apply-concrete-state
+                       ,(f-i-thmname 'generic-geval-gl-cons geval)
                        (:type-prescription ,run-gified)
-                       (:type-prescription ,apply-concrete)
+                       ;; (:type-prescription ,apply-concrete)
                        ,(f-i-thmname 'gobj-ite-merge-correct geval)
                        ,(f-i-thmname 'gtests-nonnil-correct geval)
                        ,(f-i-thmname 'gtests-obj-correct geval)
@@ -560,7 +419,6 @@
                        ,(f-i-thmname 'g-concrete-quote-correct geval)
                        ,(f-i-thmname 'mk-g-ite-correct geval)
                        ,(f-i-thmname 'generic-geval-non-cons geval)
-                       ,(f-i-thmname 'generic-geval-gobj-fix geval)
                        ,(f-i-thmname 'gobj-to-param-space-correct geval)
                        ,(f-i-thmname 'general-concrete-obj-correct geval))))))
 
@@ -577,10 +435,10 @@
                    (glcp-generic-ev-lst ,ev-lst)
                    (glcp-generic-geval ,geval)
                    (glcp-generic-run-gified ,run-gified)
-                   (glcp-generic-run-gified-guard-wrapper ,run-gified)
                    (glcp-generic-ev-falsify ,falsify)
-                   (glcp-generic-apply-concrete ,apply-concrete)
-                   (glcp-generic-apply-concrete-guard-wrapper ,apply-concrete))
+                   ;; (glcp-generic-apply-concrete ,apply-concrete)
+                   ;; (glcp-generic-apply-concrete-guard-wrapper ,apply-concrete)
+                   )
                   :in-theory (e/d** ((:ruleset ,f-i-lemmas)))
                   :expand ((,interp-list x alist hyp clk obligs config state)
                            (,interp-term x alist hyp clk obligs config state))
@@ -591,9 +449,9 @@
                  (and stable-under-simplificationp
                       '(:in-theory (e/d** ((:ruleset ,f-i-lemmas)
                                            (:ruleset ,constraints)
-                                           ,apply-concrete
+                                           ;; ,apply-concrete
                                            ,(incat ev (symbol-name ev)
-                                                   "-CONSTRAINT-0")))))))
+                                                   "-OF-FNCALL-ARGS")))))))
 
         ;; Prove correctness of the clause processor.
         (defthm ,correct-thm
@@ -618,18 +476,15 @@
                         (glcp-generic-ev-lst ,ev-lst)
                         (glcp-generic-geval ,geval)
                         (glcp-generic-run-gified ,run-gified)
-                        (glcp-generic-run-gified-guard-wrapper ,run-gified)
-                        (glcp-generic-apply-concrete ,apply-concrete)
-                        (glcp-generic-apply-concrete-guard-wrapper ,apply-concrete)
+                        ;; (glcp-generic-apply-concrete ,apply-concrete)
+                        ;; (glcp-generic-apply-concrete-guard-wrapper ,apply-concrete)
                         (glcp-generic-ev-falsify ,falsify)
                         (glcp-generic-ev-meta-extract-global-badguy
                          ,badguy)
                         (glcp-generic-run-parametrized
                          ,run-parametrized)
                         (glcp-generic-run-cases ,run-cases)
-                        (glcp-generic ,clause-proc)
-                        (glcp-generic-clause-proc-name
-                         (lambda () ',clause-proc))))
+                        (glcp-generic ,clause-proc)))
                   (case-match clause
                     ((('equal (fn . args) . &))
                      (and (member fn '(,clause-proc
@@ -653,58 +508,63 @@
 
 
 (defmacro def-gl-clause-processor
-  (name apply-fns &key (output
-                        '(:off (warning warning! observation prove
-                                        event summary proof-tree
-                                        acl2::expansion)
-                               :gag-mode nil))
-        top-apply-fns
-        include-nonrec)
+  (name &rest rest-args
+        ;; apply-fns &key (output
+        ;;                 '(:off (warning warning! observation prove
+        ;;                                 event summary proof-tree
+        ;;                                 acl2::expansion)
+        ;;                        :gag-mode nil))
+        ;; top-apply-fns
+        ;; include-nonrec
+        )
   ":Doc-section ACL2::GL
-Define a GL clause processor with a given set of built-in functions.~/
+Define a GL clause processor with a given set of built-in symbolic counterparts.~/
 
 Usage:
 ~bv[]
  (def-gl-clause-processor my-gl-clause-processor
-   functions
-   ;; optional
-   :output with-output-settings
-   :top-apply-fns some-more-functions
-   :include-nonrec include-nonrecp)
+   :output with-output-settings)
 ~ev[]
-where ~c[some-functions] is a form whose value is a list of function
-symbols and with-output-settings is a list such as ~c[(:off :all)] of
-arguments approprate for ~il[with-output].  The other two arguments are
-discussed below.
-
 The above form defines a GL clause processor function named
-my-gl-clause-processor.  The list of function symbols provided and
-their descendants compose the set of ACL2 functions that the clause
-processor can execute directly on concrete values instead of
-interpreting.~/
+my-gl-clause-processor.  This clause processor is defined so that it can
+execute all existing symbolic counterpart functions.
 
-Each GL clause processor has two associated sets of functions: those
-it can directly execute symbolically, and those it can directly
-execute concretely.  DEF-GL-CLAUSE-PROCESSOR always uses the full set
-of functions with defined symbolic counterparts as the first set, but
-allows the user to provide the second set.  (Symbolic counterparts may
-be defined by hand or using ~c[MAKE-G-WORLD].)
+There is rarely a necessity for a user to define a new GL clause processor now,
+unless they have added symbolic counterpart functions either by hand-coding
+them or using ~c[MAKE-G-WORLD].~/
 
-The set of functions the clause processor will be able to execute
-concretely is determined by the non-optional ~c[functions] argument
-and the ~c[top-apply-fns] and ~c[include-nonrec] keyword arguments.
-By default, the new clause processor will be able to concretely
-execute the functions listed in the ~c[functions] argument and all of
-their recursive ancestors, in addition to the functions listed in the
-~c[top-apply-fns] argument and some functions that are always
-included.  However, if ~c[include-nonrec] is set to T, then all of
-these functions' ancestors are included, whether recursive or not.
+Each GL clause processor has an associated sets of functions that it can
+directly execute symbolically.  DEF-GL-CLAUSE-PROCESSOR makes a new processor
+that can execute the full set of existing symbolic counterparts.
+ (Symbolic counterparts may be defined by hand or using ~c[MAKE-G-WORLD].)
+
+It used to be the case that the clause processor also had a fixed set of
+functions it could execute concretely.  That is no longer the case.  We still
+accept the old form of def-gl-clause-processor, which takes an additional
+argument after the name of the clause processor and before the :output keyword
+ (if any).  However, this is deprecated and a message will be printed saying so.
 
 ~l[DEF-GL-THM] and ~il[GL-HINT] for information on using the GL
 clause processor to prove theorems.~/"
+  (b* (((mv oldp keys)
+        (if (keywordp (car rest-args))
+            (mv nil rest-args)
+          (mv t (cdr rest-args))))
+       (- (and oldp
+               (cw "DEPRECATED (def-gl-clause-proc): Def-gl-clause-proc now ~
+                    takes fewer arguments than it used to; in particular, the ~
+                    old APPLY-FNS argument is now ignored.  See :doc ~
+                    def-gl-clause-proc for the new syntax.~%")))
+       (output-look (assoc-keyword :output keys))
+       (output (if output-look
+                   (cadr output-look)
+                 '(:off (warning warning! observation prove
+                                 event summary proof-tree
+                                 acl2::expansion)
+                   :gag-mode nil))))
   `(make-event
     (def-gl-clause-processor-fn
-      ',name ,apply-fns ,include-nonrec ,top-apply-fns ',output state)))
+      ',name ',output state))))
 
 
 

@@ -212,7 +212,7 @@
 
 
 (defthm s-nthcdr-0
-  (equal (s-nthcdr 0 n) (bfr-list-fix n)))
+  (equal (s-nthcdr 0 n) n))
 
 (local (in-theory (disable s-nthcdr)))
 
@@ -400,10 +400,10 @@
             (acl2::logapp (nfix n) 0 (v2i (bfr-eval-list m env))))
      :hints(("Goal" :in-theory (enable bfr-eval-list v2i acl2::logapp-0))))
 
-   (defthm mk-bfr-list-ac-nil-v2i-eval
-     (equal (v2i (bfr-eval-list (mk-bfr-list-ac n nil m) env))
+   (defthm make-list-ac-nil-v2i-eval
+     (equal (v2i (bfr-eval-list (make-list-ac n nil m) env))
             (acl2::logapp (nfix n) 0 (v2i (bfr-eval-list m env))))
-     :hints(("Goal" :in-theory (enable mk-bfr-list-ac))))))
+     :hints(("Goal" :in-theory (enable make-list-ac))))))
 
 
 (local
@@ -807,8 +807,7 @@
                 (mod (v2i (bfr-eval-list a env))
                      (v2i (bfr-eval-list b env))))))
    :hints (("goal" :induct (floor-mod-ss a b (unary-minus-s b))
-            :in-theory (disable floor mod bfr-listp
-                                bfr-fix-when-bfr-p
+            :in-theory (disable floor mod
                                 equal-of-booleans-rewrite
                                 (:definition floor-mod-ss)
                                 (:type-prescription acl2::floor-type-3 . 2))
@@ -843,11 +842,9 @@
 
 
 (defthm mod-ss-correct
-  (implies (and (bfr-listp a)
-                (bfr-listp b))
-           (equal (v2i (bfr-eval-list (mod-ss a b) env))
-                  (mod (v2i (bfr-eval-list a env))
-                       (v2i (bfr-eval-list b env)))))
+  (equal (v2i (bfr-eval-list (mod-ss a b) env))
+         (mod (v2i (bfr-eval-list a env))
+              (v2i (bfr-eval-list b env))))
   :hints (("goal" :do-not-induct t)))
 
 (local (in-theory (disable floor-ss mod-ss)))
@@ -877,11 +874,9 @@
          :hints(("Goal" :in-theory (enable truncate)))))
 
 (defthm truncate-ss-correct
-  (implies (and (bfr-listp a)
-                (bfr-listp b))
-           (equal (v2i (bfr-eval-list (truncate-ss a b) env))
-                  (truncate (v2i (bfr-eval-list a env))
-                            (v2i (bfr-eval-list b env)))))
+  (equal (v2i (bfr-eval-list (truncate-ss a b) env))
+         (truncate (v2i (bfr-eval-list a env))
+                   (v2i (bfr-eval-list b env))))
   :hints (("goal" :do-not-induct t
            :in-theory (disable floor truncate bfr-eval-list))))
 
@@ -907,11 +902,9 @@
          :hints(("Goal" :in-theory (enable rem)))))
 
 (defthm rem-ss-correct
-  (implies (and (bfr-listp a)
-                (bfr-listp b))
-           (equal (v2i (bfr-eval-list (rem-ss a b) env))
-                  (rem (v2i (bfr-eval-list a env))
-                       (v2i (bfr-eval-list b env)))))
+  (equal (v2i (bfr-eval-list (rem-ss a b) env))
+         (rem (v2i (bfr-eval-list a env))
+              (v2i (bfr-eval-list b env))))
   :hints (("goal" :do-not-induct t
            :in-theory (disable mod rem))))
 

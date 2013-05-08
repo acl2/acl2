@@ -22,11 +22,9 @@
                       a
                     (nth (1- n) b)))))
 
+(defstub apply-stub (f args) t)
+
 (program)
-
-; what is the reason for this switch over to program mode?
-; who did it?  ????? -- Boyer
-
 
 (defun make-list-of-nths (sym start n)
   (declare (xargs :guard (and (natp start)
@@ -121,13 +119,23 @@
 (def-ruleset! defapply-guards '((:executable-counterpart eqlablep)
                                 (:executable-counterpart equal)))
 
+(defun mk-arity-table (lst w)
+  (if (atom lst)
+      nil
+    (cons (cons (car lst)
+                (len (getprop (car lst) 'formals nil 'current-acl2-world w)))
+          (mk-arity-table (cdr lst) w))))
+
+
 (defun make-apply (name fns world)
-
-; What is the reason for this switch over to program mode?  Who did
-; it?????  Asks Boyer.
-
   (declare (xargs :mode :program))
   `(progn
+     (defun ,(intern-in-package-of-symbol
+              (concatenate 'string (symbol-name name) "-ARITIES")
+              name)
+       ()
+       (declare (xargs :guard t))
+       ',(mk-arity-table fns world))
      (encapsulate nil
        (local (in-theory (e/d** ((:ruleset defapply-guards)
                                  (:rules-of-class :type-prescription :here)))))
