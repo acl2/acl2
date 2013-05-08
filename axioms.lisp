@@ -29412,6 +29412,7 @@
     (ld-redefinition-action . nil)
     (ld-prompt . t)
     (ld-keyword-aliases . nil)
+    (ld-missing-input-ok . nil)
     (ld-pre-eval-filter . :all)
     (ld-pre-eval-print . nil)
     (ld-post-eval-print . :command-conventions)
@@ -32856,11 +32857,13 @@
   to print it.
 
   Function ~c[fmt-to-comment-window] is identical to ~c[fmt1] (~pl[fmt]),
-  except that the channel is in essence ~ilc[*standard-co*] and the ACL2
+  except that the channel is ~ilc[*standard-co*] and the ACL2
   ~ilc[state] is neither an input nor an output.  An analogous function,
   ~c[fmt-to-comment-window!], prints with ~ilc[fmt!] instead of ~ilc[fmt],
   in order to avoid insertion of backslash (\\) characters for margins;
-  also ~pl[cw!].~/
+  also ~pl[cw!].  Note that even if you change the value of ~ilc[ld] special
+  ~c[standard-co] (~pl[standard-co]), ~c[fmt-to-comment-window] will print to
+  ~ilc[*standard-co*], which is the original value of ~ilc[standard-co].~/
   ~bv[]
   General Form:
   (fmt-to-comment-window fmt-string alist col evisc-tuple)
@@ -36128,6 +36131,7 @@
     proofs-co
     ld-prompt
     ld-keyword-aliases
+    ld-missing-input-ok
     ld-pre-eval-filter
     ld-pre-eval-print
     ld-post-eval-print

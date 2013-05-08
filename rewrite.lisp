@@ -7064,6 +7064,7 @@
                                 (t (exit-brr-wormhole state))))))
              :ld-prompt  nil
              :ld-keyword-aliases ,aliases
+             :ld-missing-input-ok nil
              :ld-pre-eval-filter :all
              :ld-pre-eval-print  nil
              :ld-post-eval-print :command-conventions

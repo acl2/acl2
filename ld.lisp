@@ -232,31 +232,42 @@
         ((atom (cdr x)) (cons (car x) val))
         (t (cons (car x) (replace-last-cdr (cdr x) val)))))
 
-(defun chk-acceptable-ld-fn1-pair (pair ctx state co-string co-channel)
+(defun ld-standard-oi-missing (val file-name ld-missing-input-ok ctx state)
+  (cond ((eq ld-missing-input-ok t)
+         (value nil))
+        (t (let ((msg (msg "~@0  It is likely that the file you requested, ~
+                            ~x1, does not exist."
+                           (msg *ld-special-error*
+                                'standard-oi val)
+                           file-name)))
+             (cond (ld-missing-input-ok ; not t, so :warn
+                    (pprogn (warning$ ctx "ld-missing-input" "~@0" msg)
+                            (value nil)))
+                   (t (er soft ctx "~@0" msg)))))))
 
-; We check that pair, which is of the form (var . val) where var is a
-; symbolp, specifies a legitimate "binding" for the LD special var.
-; This means that we check that var is one of the state globals that
-; LD appears to bind (i.e., push and pop in an unwind-protected way)
-; and that val is a reasonable value of that global.  For example,
-; 'standard-oi is an LD special but must be bound to a true-list of
-; objects or an open object input channel.
+(defun chk-acceptable-ld-fn1-pair (pair ld-missing-input-ok ctx state
+                                        co-string co-channel)
 
-; Co-string and co-channel are here to provide a very subtle feature
-; of LD.  If the same string is specified for both standard-co and
-; proofs-co then we open one channel and use it in both places.  Our
-; caller, chk-acceptable-ld-fn1, is responsible for maintaining these
-; two accumulators as we map down the list of pairs.  It puts into
-; co-string and co-channel the string and returned channel for the
-; first of standard-co or proofs-co encountered.
+; We check that pair, which is of the form (var . val) where var is a symbolp,
+; specifies a legitimate "binding" for the LD special var.  This means that we
+; check that var is one of the state globals that LD appears to bind (i.e.,
+; push and pop in an unwind-protected way) and that val is a reasonable value
+; of that global.  For example, 'standard-oi is an LD special but must be bound
+; to a true-list of objects or an open object input channel.
+
+; Co-string and co-channel are here to provide a very subtle feature of LD.  If
+; the same string is specified for both standard-co and proofs-co then we open
+; one channel and use it in both places.  Our caller, chk-acceptable-ld-fn1, is
+; responsible for maintaining these two accumulators as we map down the list of
+; pairs.  It puts into co-string and co-channel the string and returned channel
+; for the first of standard-co or proofs-co encountered.
 
   (let ((var (car pair))
         (val (cdr pair)))
 
-; The first three LD specials, namely the three channels, are special
-; because we may have to open a channel and create a new pair.  Once
-; we get past those three, we can just use the standard checkers
-; and return the existing pair.
+; The first three LD specials, namely the three channels, are special because
+; we may have to open a channel and create a new pair.  Once we get past those
+; three, we can just use the standard checkers and return the existing pair.
 
     (case var
           (standard-oi
@@ -267,19 +278,16 @@
             ((true-listp val)
              (value pair))
             ((stringp val)
-             (let ((val (extend-pathname
-                         (f-get-global 'connected-book-directory state)
-                         val
-                         state)))
+             (let ((file-name (extend-pathname
+                               (f-get-global 'connected-book-directory state)
+                               val
+                               state)))
                (mv-let (ch state)
-                       (open-input-channel val :object state)
+                       (open-input-channel file-name :object state)
                        (cond (ch (value (cons 'standard-oi ch)))
-                             (t (er soft ctx
-                                    "~@0  It is likely that the file you ~
-                                     requested, ~x1, does not exist."
-                                    (msg *ld-special-error*
-                                         'standard-oi val)
-                                    val))))))
+                             (t (ld-standard-oi-missing
+                                 val file-name ld-missing-input-ok ctx
+                                 state))))))
             ((consp val)
              (let ((last-cons (last val)))
                (cond
@@ -288,7 +296,8 @@
                  (value pair))
                 ((stringp (cdr last-cons))
                  (let ((file-name (extend-pathname
-                                   (f-get-global 'connected-book-directory state)
+                                   (f-get-global 'connected-book-directory
+                                                 state)
                                    (cdr last-cons)
                                    state)))
                    (mv-let (ch state)
@@ -296,12 +305,9 @@
                            (cond
                             (ch (value (cons 'standard-oi
                                              (replace-last-cdr val ch))))
-                            (t (er soft ctx
-                                   "~@0  It is likely that the file you ~
-                                    requested, ~x1, does not exist."
-                                   (msg *ld-special-error*
-                                        'standard-oi val)
-                                   file-name))))))
+                            (t (ld-standard-oi-missing
+                                val file-name ld-missing-input-ok ctx
+                                state))))))
                 (t (er soft ctx *ld-special-error* 'standard-oi val)))))
             (t (er soft ctx *ld-special-error* 'standard-oi val))))
           (standard-co
@@ -357,6 +363,9 @@
                      (value pair)))
           (ld-keyword-aliases
            (er-progn (chk-ld-keyword-aliases val ctx state)
+                     (value pair)))
+          (ld-missing-input-ok
+           (er-progn (chk-ld-missing-input-ok val ctx state)
                      (value pair)))
           (ld-pre-eval-filter
            (er-progn (chk-ld-pre-eval-filter val ctx state)
@@ -423,8 +432,8 @@
              state)))
        (close-channels (cdr channel-closing-alist) state)))))
 
-(defun chk-acceptable-ld-fn1 (alist ctx state co-string co-channel
-                                    new-alist channel-closing-alist)
+(defun chk-acceptable-ld-fn1 (alist ld-missing-input-ok ctx state co-string
+                                    co-channel new-alist channel-closing-alist)
 
 ; We copy alist (reversing it) onto new-alist, checking that each pair in it
 ; binds an LD special to a legitimate value.  We open the requested files as we
@@ -488,45 +497,60 @@
 ; outside of the window of vulnerability discussed.
 
   (cond
-   ((null alist) (value (cons new-alist channel-closing-alist)))
+   ((null alist)
+    (let ((new-alist
+           (cond ((eq ld-missing-input-ok :missing)
+                  (put-assoc-eq 'ld-verbose nil
+                                (put-assoc-eq 'ld-prompt nil new-alist)))
+                 (t new-alist))))
+      (value (cons new-alist channel-closing-alist))))
    (t (mv-let
        (erp pair state)
-       (chk-acceptable-ld-fn1-pair (car alist) ctx state co-string co-channel)
+       (chk-acceptable-ld-fn1-pair (car alist) ld-missing-input-ok ctx state
+                                   co-string co-channel)
        (cond
         (erp (pprogn
               (close-channels channel-closing-alist state)
               (mv t nil state)))
-        (t (chk-acceptable-ld-fn1
-            (cdr alist) ctx state
-            (cond ((and (null co-string)
-                        (or (eq (car pair) 'standard-co)
-                            (eq (car pair) 'proofs-co))
-                        (stringp (cdr (car alist))))
-                   (extend-pathname
-                    (f-get-global 'connected-book-directory state)
-                    (cdr (car alist))
-                    state))
-                  (t co-string))
-            (cond ((and (null co-channel)
-                        (or (eq (car pair) 'standard-co)
-                            (eq (car pair) 'proofs-co))
-                        (stringp (cdr (car alist))))
-                   (cdr pair))
-                  (t co-channel))
-            (cons pair new-alist)
-            (cond
-             ((eq (car pair) 'standard-oi)
-              (cond ((stringp (cdr (car alist)))
-                     (cons (cons (cdr pair) 'oi) channel-closing-alist))
-                    ((and (consp (cdr (car alist)))
-                          (stringp (cdr (last (cdr (car alist))))))
-                     (cons (cons (cdr (last (cdr pair))) 'oi) channel-closing-alist))
-                    (t channel-closing-alist)))
-             ((and (or (eq (car pair) 'standard-co)
-                       (eq (car pair) 'proofs-co))
-                   (stringp (cdr (car alist))))
-              (cons (cons (cdr pair) 'co) channel-closing-alist))
-             (t channel-closing-alist)))))))))
+        (t
+         (mv-let
+          (pair ld-missing-input-ok)
+          (cond ((null pair)
+                 (assert$ (eq  (caar alist) 'standard-oi)
+                          (mv (cons 'standard-oi nil) :missing)))
+                (t (mv pair ld-missing-input-ok)))
+          (chk-acceptable-ld-fn1
+           (cdr alist) ld-missing-input-ok ctx state
+           (cond ((and (null co-string)
+                       (or (eq (car pair) 'standard-co)
+                           (eq (car pair) 'proofs-co))
+                       (stringp (cdr (car alist))))
+                  (extend-pathname
+                   (f-get-global 'connected-book-directory state)
+                   (cdr (car alist))
+                   state))
+                 (t co-string))
+           (cond ((and (null co-channel)
+                       (or (eq (car pair) 'standard-co)
+                           (eq (car pair) 'proofs-co))
+                       (stringp (cdr (car alist))))
+                  (cdr pair))
+                 (t co-channel))
+           (cons pair new-alist)
+           (cond
+            ((eq (car pair) 'standard-oi)
+             (cond ((stringp (cdr (car alist)))
+                    (cons (cons (cdr pair) 'oi) channel-closing-alist))
+                   ((and (consp (cdr (car alist)))
+                         (stringp (cdr (last (cdr (car alist))))))
+                    (cons (cons (cdr (last (cdr pair))) 'oi)
+                          channel-closing-alist))
+                   (t channel-closing-alist)))
+            ((and (or (eq (car pair) 'standard-co)
+                      (eq (car pair) 'proofs-co))
+                  (stringp (cdr (car alist))))
+             (cons (cons (cdr pair) 'co) channel-closing-alist))
+            (t channel-closing-alist))))))))))
 
 (defun chk-acceptable-ld-fn (alist state)
 
@@ -559,13 +583,15 @@
                   "The alist argument to ld-fn must specify a value ~
                    for 'standard-oi and ~x0 does not."
                   alist)))
-     (cond ((no-duplicatesp-equal (strip-cars alist)) (value nil))
+     (cond ((not (duplicate-keysp-eq alist)) (value nil))
            (t (er soft ctx
                   "The alist argument to ld-fn must contain no duplications ~
                    among the LD specials to be bound.  Your alist contains ~
                    duplicate values for ~&0."
                   (duplicates (strip-cars alist)))))
-     (chk-acceptable-ld-fn1 alist ctx state nil nil nil nil))))
+     (chk-acceptable-ld-fn1 alist
+                            (cdr (assoc-eq 'ld-missing-input-ok alist))
+                            ctx state nil nil nil nil))))
 
 (defun f-put-ld-specials (alist state)
 
@@ -601,6 +627,8 @@
          (f-put-global 'ld-prompt (cdar alist) state))
         (ld-keyword-aliases
          (f-put-global 'ld-keyword-aliases (cdar alist) state))
+        (ld-missing-input-ok
+         (f-put-global 'ld-missing-input-ok (cdar alist) state))
         (ld-pre-eval-filter
          (f-put-global 'ld-pre-eval-filter (cdar alist) state))
         (ld-pre-eval-print
@@ -648,6 +676,8 @@
               (f-get-global 'ld-prompt state))
         (cons 'ld-keyword-aliases
               (f-get-global 'ld-keyword-aliases state))
+        (cons 'ld-missing-input-ok
+              (f-get-global 'ld-missing-input-ok state))
         (cons 'ld-pre-eval-filter
               (f-get-global 'ld-pre-eval-filter state))
         (cons 'ld-pre-eval-print
@@ -1822,6 +1852,7 @@
               (ld-redefinition-action 'same ld-redefinition-actionp)
               (ld-prompt 'same ld-promptp)
               (ld-keyword-aliases 'same ld-keyword-aliasesp)
+              (ld-missing-input-ok 'same ld-missing-input-okp)
               (ld-pre-eval-filter 'same ld-pre-eval-filterp)
               (ld-pre-eval-print 'same ld-pre-eval-printp)
               (ld-post-eval-print 'same ld-post-eval-printp)
@@ -1844,7 +1875,7 @@
 
   General Form:
   (LD standard-oi                  ; open obj in channel, stringp file name
-                                   ; to open and close, or list of forms~/
+                                   ; to open and close, or list of forms
                                    ; Optional keyword arguments:
       :dir                ...      ; use this add-include-book-dir directory
       :standard-co        ...      ; open char out or file to open and close
@@ -1855,6 +1886,7 @@
       :ld-redefinition-action ...  ; nil or '(:a . :b)
       :ld-prompt          ...      ; nil, t, or some prompt printer fn
       :ld-keyword-aliases ...      ; an alist pairing keywords to parse info
+      :ld-missing-input-ok ...     ; nil, t, :warn, or warning message
       :ld-pre-eval-filter ...      ; :all, :query, or some new name
       :ld-pre-eval-print  ...      ; nil, t, or :never
       :ld-post-eval-print ...      ; nil, t, or :command-conventions
@@ -1862,7 +1894,7 @@
       :ld-error-triples   ...      ; nil or t
       :ld-error-action    ...      ; :return!, :return, :continue or :error
       :ld-query-control-alist ...  ; alist supplying default responses
-      :ld-verbose         ...)     ; nil or t
+      :ld-verbose         ...)     ; nil or t~/
   ~ev[]
 
   ~c[Ld] is the top-level ACL2 read-eval-print loop.  (When you call ~ilc[lp],
@@ -1954,9 +1986,22 @@
   processed.  If ~ilc[standard-oi] is a list ending in an open channel, then
   ~c[ld] processes the forms in the list and then reads and processes the forms
   from the channel.  Analogously, if ~ilc[standard-oi] is a list ending a
-  string, an object channel from the named file is opened and ~c[ld] processes
-  the forms in the list followed by the forms in the file.  That channel is
-  closed upon termination of ~c[ld].
+  string, an object input channel from the named file is opened and ~c[ld]
+  processes the forms in the list followed by the forms in the file.  That
+  channel is closed upon termination of ~c[ld].
+
+  In the cases that a string is to be converted to an object input channel ~-[]
+  that is, when ~ilc[standard-oi] is a string or is a list ending in a string
+  ~-[] an error occurs by default if the conversion fails, presumably because
+  the file named by the string does not exist.  However, if keyword argument
+  ~c[:ld-missing-input-ok] is ~c[t], then ~c[ld] immediately returns without
+  error in this case, but without reading or executing any forms, as though
+  ~c[standard-oi] is ~c[nil] and keyword arguments ~c[:ld-verbose] and
+  ~c[ld-prompt] both have value ~c[nil].  The other legal values for
+  ~c[:ld-missing-input-ok] are ~c[nil], which gives the default behavior, and
+  ~c[:warn], which behaves the same as ~c[t] except that a warning is printed,
+  which contains the same information as would be printed for the default error
+  described above.
 
   The remaining ~c[ld] specials are handled more simply and generally have to
   be bound to one of a finite number of tokens described in the ~c[:]~ilc[doc]
@@ -2090,6 +2135,9 @@
                  (list `(cons 'ld-keyword-aliases
                               ,ld-keyword-aliases))
                  nil)
+             (if ld-missing-input-okp
+                 (list `(cons 'ld-missing-input-ok ,ld-missing-input-ok))
+               nil)
              (if ld-pre-eval-filterp
                  (list `(cons 'ld-pre-eval-filter ,ld-pre-eval-filter))
                  nil)
@@ -2724,6 +2772,7 @@
           :ld-skip-proofsp t
           :ld-prompt nil
           :ld-keyword-aliases nil
+          :ld-missing-input-ok nil
           :ld-pre-eval-filter filter
           :ld-pre-eval-print nil
           :ld-post-eval-print :command-conventions
@@ -20648,6 +20697,11 @@
   when an ~c[in-theory] event is submitted at the top level.  Thanks to Gisela
   Rossi for feedback that led us to make this change.
 
+  A new keyword parameter for ~ilc[ld] is ~c[:ld-missing-input-ok].  Its
+  default value is ~c[nil], which causes an error, as before, upon failure to
+  open a specified file.  Other legal values are ~c[t] and ~c[:WARN];
+  ~pl[ld-missing-input-ok] and ~pl[ld].
+
   ~st[NEW FEATURES]
 
   It is now permissible to specify a ~il[stobj] field that is itself either a
@@ -20783,6 +20837,11 @@
   which keeps going after errors, rather than ~c[-i], which ignores errors.  If
   you encounter problems because of this change, use ~c[ACL2_IGNORE=-i] with
   your `~c[make]' command.
+
+  ACL2(pr), which includes ~il[parallelism] (as for ACL2(p)) and non-standard
+  analysis support for the ~il[real]s (as for ACL2(r)), now builds and can
+  certify the community ~c[nonstd/] books.  Thanks to David Rager for his
+  contribution to this capability.
 
   ~st[EMACS SUPPORT]
 
@@ -21675,6 +21734,7 @@
                            :ld-keyword-aliases nil
                            :ld-verbose nil
                            :ld-prompt nil
+                           :ld-missing-input-ok nil
                            :ld-pre-eval-filter :all
                            :ld-pre-eval-print :never
                            :ld-post-eval-print nil

@@ -7397,8 +7397,9 @@
                          state nil))
                (value :q))
              :ld-prompt  nil
+             :ld-missing-input-ok nil
              :ld-pre-eval-filter :all
-             :ld-pre-eval-print  nil
+             :ld-pre-eval-print nil
              :ld-post-eval-print :command-conventions
              :ld-evisc-tuple nil
              :ld-error-triples  t

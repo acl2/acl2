@@ -31537,6 +31537,7 @@
                              nil (standard-co state) state nil))))
                (value :q))
              :ld-prompt  nil
+             :ld-missing-input-ok nil
              :ld-pre-eval-filter :all
              :ld-pre-eval-print  nil
              :ld-post-eval-print :command-conventions
@@ -35929,12 +35930,6 @@
 
 ; Next comes support for time-tracker (but see axioms.lisp for
 ; time-tracker-fn).
-
-(defun msgp (x)
-  (declare (xargs :guard t))
-  (or (stringp x)
-      (and (true-listp x)
-           (stringp (car x)))))
 
 (defun rational-to-decimal-string (x state)
   (declare (xargs :mode :program

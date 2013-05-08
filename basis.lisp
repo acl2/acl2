@@ -648,6 +648,7 @@
                          (ld-redefinition-action 'save ld-redefinition-actionp)
                          (ld-prompt ''wormhole-prompt)
                          (ld-keyword-aliases 'same ld-keyword-aliasesp)
+                         (ld-missing-input-ok 'same ld-missing-input-okp)
                          (ld-pre-eval-filter 'same ld-pre-eval-filterp)
                          (ld-pre-eval-print 'same ld-pre-eval-printp)
                          (ld-post-eval-print 'same ld-post-eval-printp)
@@ -679,10 +680,11 @@
   General Form:
   (wormhole name entry-lambda input form
     :current-package    ...  ; known package name
-    :ld-skip-proofsp    ...  ; t, nil or 'include-book
+    :ld-skip-proofsp    ...  ; nil, t or 'include-book
     :ld-redefinition-action  ; nil or '(:a . :b)
     :ld-prompt          ...  ; nil, t, or some prompt printer fn
     :ld-keyword-aliases ...  ; an alist pairing keywords to parse info
+    :ld-missing-input-ok ... ; nil, t, :warn, or warning message
     :ld-pre-eval-filter ...  ; :all, :query, or some new name
     :ld-pre-eval-print  ...  ; nil, t, or :never
     :ld-post-eval-print ...  ; nil, t, or :command-conventions
@@ -1125,6 +1127,9 @@
           (if ld-keyword-aliasesp
               (list `(cons 'ld-keyword-aliases
                            ,ld-keyword-aliases))
+            nil)
+          (if ld-missing-input-okp
+              (list `(cons 'ld-missing-input-ok ,ld-missing-input-ok))
             nil)
           (if ld-pre-eval-filterp
               (list `(cons 'ld-pre-eval-filter ,ld-pre-eval-filter))
@@ -13586,6 +13591,48 @@
    (chk-ld-keyword-aliases val 'set-ld-keyword-aliases state)
    (pprogn
     (f-put-global 'ld-keyword-aliases val state)
+    (value val))))
+
+(defun ld-missing-input-ok (state)
+
+  ":Doc-Section Miscellaneous
+
+  determines which forms ~ilc[ld] evaluates~/
+
+  ~c[ld-missing-input-ok] is an ~ilc[ld] special (~pl[ld]).  The accessor is
+  ~c[(ld-missing-input-ok state)] and the updater is
+  ~c[(set-ld-missing-input-ok val state)].  ~c[ld-missing-input-ok] must be
+  either ~c[nil], ~c[t], or ~c[:warn].  The initial value of
+  ~c[ld-missing-input-ok] is ~c[nil].
+
+  The general-purpose ACL2 read-eval-print loop, ~ilc[ld], is controlled by
+  various flags that control its behavior, and ~c[ld-missing-input-ok] is one
+  of them.  In brief, the first argument of ~c[ld] can indicate a file from
+  which to read input.  If the file does not exist, it is an error by default,
+  but ~c[ld] becomes essentially a no-op if ~c[t] or ~c[:warn] is supplied for
+  ~c[:ld-missing-input-ok], where ~c[:warn] prints a warning.  Also
+  ~pl[ld].~/~/"
+
+  (f-get-global 'ld-missing-input-ok state))
+
+(defun msgp (x)
+  (declare (xargs :guard t))
+  (or (stringp x)
+      (and (true-listp x)
+           (stringp (car x)))))
+
+(defun chk-ld-missing-input-ok (val ctx state)
+  (cond ((or (member-eq val '(t nil :warn))
+             (msgp val) ; admittedly, a weak check
+             )
+         (value nil))
+        (t (er soft ctx *ld-special-error* 'ld-missing-input-ok val))))
+
+(defun set-ld-missing-input-ok (val state)
+  (er-progn
+   (chk-ld-missing-input-ok val 'set-ld-missing-input-ok state)
+   (pprogn
+    (f-put-global 'ld-missing-input-ok val state)
     (value val))))
 
 (defun ld-pre-eval-filter (state)
