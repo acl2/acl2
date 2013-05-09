@@ -20826,6 +20826,11 @@
   event had a ~il[guard] of ~c[t].  Thanks to Jared Davis for sending a simple
   example when reporting this bug.
 
+  We now avoid an infinite loop that could occur when attempting to close the
+  standard character output channel (~pl[standard-co]).  Instead, an error
+  message explains how to accomplish what was probably intended.  Thanks to
+  Shilpi Goel for bringing this issue to our attention.
+
   ~st[CHANGES AT THE SYSTEM LEVEL]
 
   ACL2 may now be built on recent versions of a new host Lisp, ANSI Gnu Common

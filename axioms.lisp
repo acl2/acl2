@@ -33263,6 +33263,43 @@
                        (open-output-channel-any-p1 channel state-state))))
   #-acl2-loop-only
   (cond ((live-state-p state-state)
+         (when (eq channel (f-get-global 'standard-co state-state))
+
+; First, we cause a hard error if the channel is the value of state global
+; 'standard-co.  Comments below say more about this, but for now we point out
+; that even though we cause an error, we won't get the error from term
+; evaluation during proofs, because state-state will not be the live state.
+
+           (mv (cond
+                ((eq channel *standard-co*)
+
+; This case might seem impossible because it would be a guard violation.  But
+; if a :program mode function call leads to the present call of
+; close-output-channel, then the guard need not hold, so we make sure to cause
+; an error here.
+
+                 (mv (er hard! 'close-output-channel
+                         "It is illegal to call close-output-channel on ~
+                          *standard-co*.")))
+                (t
+
+; In Version_6.1 and probably before, we have seen an infinite loop occur
+; when attempting to close standard-co.
+
+                 (state-free-global-let*
+                  ((standard-co *standard-co*))
+                  (er hard! 'close-output-channel
+                      "It is illegal to call close-output-channel on ~
+                       standard-co.  Consider instead evaluating the ~
+                       following form:~|~%~X01."
+                      '(let ((ch (standard-co state)))
+                         (er-progn
+                          (set-standard-co *standard-co* state)
+                          (pprogn
+                           (close-output-channel ch state)
+                           (value t))))
+                      nil))))
+               state-state))
          (cond (*wormholep*
                 (wormhole-er 'close-output-channel (list channel))))
 
