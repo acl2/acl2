@@ -16,4 +16,4 @@
 (set-waterfall-parallelism nil)
 
 (include-book "portcullis")
-; cert-flags: ? t :ttags :all
+; cert-flags: ? t

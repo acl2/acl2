@@ -131,21 +131,30 @@ passed to ~x2 in that theorem.~%"
 (defmacro gl-clause-proc-exec-fns-table ()
   '(table-alist 'gl-clause-proc-exec-fns world))
 
-(defmacro gl-clause-proc-auto-exec-fns ()
-  '(cdr (assoc 'auto (gl-clause-proc-exec-fns-table))))
-
 (defmacro gl-clause-proc-forbidden-exec-fns ()
   '(cdr (assoc 'forbid (gl-clause-proc-exec-fns-table))))
 
-(defmacro add-clause-proc-exec-fns (fns)
-  `(table gl-clause-proc-exec-fns
-          'auto
-          (append ,fns (gl-clause-proc-auto-exec-fns))))
-
 (defmacro forbid-clause-proc-exec-fns (fns)
-  `(table gl-clause-proc-exec-fns
-          'forbid
-          (append ,fns (gl-clause-proc-forbidden-exec-fns))))
+  `(progn
+     (value-triple
+      (not (cw "NOTE: Forbid-clause-proc-exec-fns currently doesn't do ~
+                anything useful; it is conceivable that it may again in the ~
+                future.~%")))
+     (table gl-clause-proc-exec-fns
+            'forbid
+            (append ,fns (gl-clause-proc-forbidden-exec-fns)))))
+
+;; (defmacro gl-clause-proc-auto-exec-fns ()
+;;   '(cdr (assoc 'auto (gl-clause-proc-exec-fns-table))))
+
+(defmacro add-clause-proc-exec-fns (fns)
+  (declare (ignore fns))
+  `(value-triple
+    (not (cw "DEPRECATED: Add-clause-proc-exec-fns is no longer necessary; GL ~
+              clause processors no longer have a fixed set of functions they ~
+              can concretely execute.~%"))))
+
+
 
 (defun norm-function-body (fn world)
   (declare (xargs :guard (and (symbolp fn) (plist-worldp world))))
