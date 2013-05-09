@@ -1,5 +1,69 @@
 # -*- mode: makefile -*-
 
+# ACL2 Community Books Makefile
+# Copyright (C) 2013 Centaur Technology
+#
+# Contact:
+#   Centaur Technology Formal Verification Group
+#   7600-C N. Capital of Texas Highway, Suite 300, Austin, TX 78731, USA.
+#   http://www.centtech.com/
+#
+# This program is free software; you can redistribute it and/or modify it under
+# the terms of the GNU General Public License as published by the Free Software
+# Foundation; either version 2 of the License, or (at your option) any later
+# version.  This program is distributed in the hope that it will be useful but
+# WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+# FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
+# more details.  You should have received a copy of the GNU General Public
+# License along with this program; if not, write to the Free Software
+# Foundation, Inc., 51 Franklin Street, Suite 500, Boston, MA 02110-1335, USA.
+
+
+# Credits and History
+#
+# For many years, the ACL2 books were built using the "Makefile-generic"
+# system.  This make system was written by
+#
+#      Matt Kaufmann <kaufmann@cs.utexas.edu> and
+#      J Strother Moore <moore@cs.utexas.edu>
+#
+# and was actually an adaptation of Makefiles used by Bishop Brock for his IHS
+# and data-structures libraries.
+#
+# In 2008, Sol Swords <sswords@centtech.com> developed cert.pl, a perl-based
+# alternative to ACL2's make system.  This build system was largely compatible
+# with the previous Makefile-generic system, but featured enhanced,
+# cross-directory dependency tracking.  Centaur Technology used cert.pl for
+# many years, both internally and for their publicly released "centaur/"
+# community books.
+#
+# In 2013, Jared Davis <jared@centtech.com> developed an initial version of
+# this current Makefile, which is substantially based on cert.pl, and made
+# minor adjustments to several Community Books to ensure that they could all be
+# certified with the new system.
+#
+# Subsequently, significant contributions to this Makefile have been made by
+# many people, notably:
+#
+#   - Matt Kaufmann <kaufmann@cs.utexas.edu> has extended the Makefile in
+#     support of certifying ACL2(r) books, multi-lisp compilation, provisional
+#     certification, chk-include-book-worlds target, among numerous other
+#     improvements and contributions such as testing the Makefile on many
+#     systems.
+#
+#   - Sol Swords <sswords@cs.utexas.edu> has provided significant support for
+#     cert.pl, notably extending it to operate on Windows, and adding features
+#     such as automatically tracking books that rely on ACL2(h).
+#
+#   - David Rager <ragerdl@cs.utexas.edu> provided significant early beta
+#     testing and worked to ensure the Makefile works with ACL2(p) and in
+#     different configurations of ACL2_CUSTOMIZATION; he has also provided
+#     useful make targets.
+#
+#   - Jared Davis <jared@centtech.com> has made other miscellaneous
+#     improvements, e.g., a more comprehensive implementation of book cleaning.
+
+
 # Makefile-jared
 #
 # This is Jared's proposed replacement for books/Makefile using cert.pl.
