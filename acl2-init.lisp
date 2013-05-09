@@ -404,7 +404,8 @@ implementations.")
   (sb-ext:process-exit-code
    (sb-ext:run-program string arguments :output t :search t))
   #+clisp
-  (ext:run-program string :arguments arguments)
+  (let ((result (ext:run-program string :arguments arguments)))
+    (or result 0))
   #+ccl
   (let* ((proc (ccl::run-program string arguments :output t))
          (status (multiple-value-list (ccl::external-process-status proc))))

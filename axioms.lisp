@@ -35090,7 +35090,7 @@
   (declare (xargs :guard t))
   #+acl2-loop-only
   (declare (ignore command-string args))
-  #-acl2-loop-only 
+  #-acl2-loop-only
   (let ((rslt (system-call command-string args)))
     (progn (setq *last-sys-call-status* rslt)
            nil))
@@ -48064,8 +48064,9 @@ Lisp definition."
   (when (fboundp 'debug::backtrace)
     (eval '(debug::backtrace)))
   #+(and clisp (not acl2-loop-only))
-  (when (fboundp 'system::debug-backtrace)
-    (eval '(catch 'system::debug (system::debug-backtrace))))
+  (when (fboundp 'system::print-backtrace)
+    (eval '(catch 'system::debug
+             (system::print-backtrace))))
   #+(and lispworks (not acl2-loop-only))
   (when (fboundp 'dbg::output-backtrace)
     (eval '(dbg::output-backtrace :verbose)))
