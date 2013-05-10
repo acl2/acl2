@@ -982,7 +982,7 @@ endif
 
 .PHONY: clean-books-legacy
 clean-books-legacy:
-	cd books ; $(MAKE) -f Makefile $(ACL2_IGNORE) clean
+	cd books ; $(MAKE) -f Makefile.legacy $(ACL2_IGNORE) clean
 
 .PHONY: regression-legacy
 regression-legacy:
@@ -997,8 +997,7 @@ regression-legacy:
 .PHONY: regression-legacy-hons-only
 regression-legacy-hons-only:
 	uname -a
-	cd books ; \
-	  $(MAKE) -f Makefile.legacy $(ACL2_IGNORE) hons
+	cd books ; $(MAKE) -f Makefile.legacy $(ACL2_IGNORE) hons
 
 .PHONY: regression-legacy-hons
 # For a HONS regression-legacy, we do regression-legacy-hons-only first to get the
@@ -1022,16 +1021,16 @@ clean-books-legacy-nonstd:
 .PHONY: regression-legacy-nonstd
 regression-legacy-nonstd:
 	uname -a
-	cd books/nonstd ; $(MAKE) -f Makefile-nonstd.legacy $(ACL2_IGNORE) $(ACL2_JOBS_OPT) all-nonstd
+	cd books/nonstd ; $(MAKE) -f Makefile.legacy $(ACL2_IGNORE) $(ACL2_JOBS_OPT) all-nonstd
 
 .PHONY: regression-legacy-fresh regression-legacy-fast-fresh regression-legacy-nonstd-fresh
-regression-legacy-fresh: clean-books
+regression-legacy-fresh: clean-books-legacy
 	$(MAKE) $(ACL2_IGNORE) regression-legacy
-regression-legacy-hons-fresh: clean-books
+regression-legacy-hons-fresh: clean-books-legacy
 	$(MAKE) $(ACL2_IGNORE) regression-legacy-hons
-regression-legacy-fast-fresh: clean-books
+regression-legacy-fast-fresh: clean-books-legacy
 	$(MAKE) $(ACL2_IGNORE) regression-legacy-fast
-regression-legacy-nonstd-fresh: clean-books-nonstd
+regression-legacy-nonstd-fresh: clean-books-legacy-nonstd
 	$(MAKE) $(ACL2_IGNORE) regression-legacy-nonstd
 
 .PHONY: certify-books-legacy
@@ -1041,7 +1040,7 @@ certify-books-legacy:
 # Certify main books from scratch.
 .PHONY: certify-books-legacy-fresh
 certify-books-legacy-fresh: clean-books-legacy
-	$(MAKE) $(ACL2_IGNORE) $(ACL2_JOBS_OPT) certify-books
+	$(MAKE) $(ACL2_IGNORE) $(ACL2_JOBS_OPT) certify-books-legacy
 
 # The following allows for a relatively short test, in response to a request
 # from GCL maintainer Camm Maguire.
