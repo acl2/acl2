@@ -443,12 +443,18 @@ ifndef ACL2_COMP
 
 ifndef ACL2_HAS_REALS
 
+# Warning!  For each file below, the directory should either have a
+# cert_pl_exclude file or else be explicitly excluded in the egrep
+# command that is used to define REBUILD_MAKEFILE_BOOKS, above.
+# Otherwise we might make the same file twice, would could cause
+# conflicts if -j is other than 1.
 ACL2_CUSTOM_TARGETS := \
   clause-processors/SULFA/target.cert \
   fix-cert/fix-cert.cert \
   workshops/1999/multiplier/proof.cert \
   workshops/2003/greve-wilding-vanfleet/support/firewallworks.cert \
   workshops/2003/kaufmann/support/input/defs-in.cert \
+  workshops/2004/sumners-ray/support/success.txt \
   workshops/2011/verbeek-schmaltz/sources/correctness2.cert
 
 # We only make the books under SULFA if a documented test for an
@@ -479,6 +485,10 @@ workshops/2003/greve-wilding-vanfleet/support/firewallworks.cert: \
 workshops/2003/kaufmann/support/input/defs-in.cert: \
   workshops/2003/kaufmann/deps.cert
 	cd $(@D)/.. ; $(MAKE)
+
+# The following has no dependencies, so doesn't need a "deps" file.
+workshops/2004/sumners-ray/support/success.txt:
+	cd $(@D) ; $(MAKE)
 
 workshops/2011/verbeek-schmaltz/sources/correctness2.cert: \
   workshops/2011/verbeek-schmaltz/deps.cert
