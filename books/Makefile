@@ -206,12 +206,12 @@ STARTJOB ?= $(SHELL)
 .SUFFIXES:
 .SUFFIXES: .cert .lisp
 
+# Keep this .PHONY target here, even though the main target
+# definitions come much later in the file, because we start defining
+# the "all" target (at least) well before then.  Also, keep "all:"
+# here so that "all" is the top target.
 .PHONY: all lite everything
 all:
-
-everything: all
-
-all: lite
 
 ##############################
 ### Section: Create auxiliary files (Makefile-xxx) and initial OK_CERTS
@@ -321,7 +321,8 @@ CLEAN_FILES_EXPLICIT := \
    Makefile-features \
    Makefile-cache \
    serialize/test.sao \
-   bdd/benchmarks.lisp
+   bdd/benchmarks.lisp \
+   nonstd/workshops/1999/calculus/book/tree.lisp
 
 MORECLEAN_FILES_EXPLICIT := \
    xdoc-impl/manual \
@@ -677,9 +678,16 @@ endif # ifdef ACL2_COMP
 # Keep this section at the end, so that all variable definitions have
 # been completed (in particular, for OK_CERTS).
 
+everything: $(OK_CERTS) $(SLOW_BOOKS)
+
+# We want cert.pl to scan within rtl/rel7/, because the "everything"
+# target certifies books under that directory.  But normally we prefer
+# to exclude that directory, so we do so now.
+OK_CERTS := $(filter-out rtl/rel7/%, $(OK_CERTS))
+
 lite: $(OK_CERTS)
 
-everything: all $(SLOW_BOOKS)
+all: lite
 
 # The critical path report will work only if you have set up certificate timing
 # BEFORE you build the books.  See ./critpath.pl --help for details.
@@ -741,7 +749,7 @@ short-test: $(filter cowles/% arithmetic/% meta/% xdoc/% ordinals/% \
                      $(OK_CERTS))
 
 # Here are aliases for the "standard" approach.  Warning: ACL2's
-# GNUmakefile uses the present file's basic target to implement its
+# GNUmakefile uses the present file's "basic" target to implement its
 # own target certify-books, which some might use to build all
 # "appropriate" books when installing ACL2.
 .PHONY: libs basic
@@ -784,17 +792,17 @@ BOOKS_BKCHK_OUT := $(filter-out workshops/2007/dillinger-et-al/code/%, $(BOOKS_B
 chk-include-book-worlds: $(BOOKS_BKCHK_OUT)
 
 %.bkchk.out: %.cert
-	@echo "Including `pwd`/$* on `date`"
-	@echo '(acl2::value :q)' > workxxx.bkchk.$(*F)
-	@echo '(in-package "ACL2")' >> workxxx.bkchk.$(*F)
-	@echo '(acl2::lp)' >> workxxx.bkchk.$(*F)
-	@echo '(acl2::in-package "ACL2")' >> workxxx.bkchk.$(*F)
-	@echo '(include-book "$*")' >> workxxx.bkchk.$(*F)
-	@echo '(include-book "system/pseudo-good-worldp" :dir :system)' >> workxxx.bkchk.$(*F)
+	@echo "Including $(@D)/$* on `date`"
+	@echo '(acl2::value :q)' > $(@D)/workxxx.bkchk.$(*F)
+	@echo '(in-package "ACL2")' >> $(@D)/workxxx.bkchk.$(*F)
+	@echo '(acl2::lp)' >> $(@D)/workxxx.bkchk.$(*F)
+	@echo '(acl2::in-package "ACL2")' >> $(@D)/workxxx.bkchk.$(*F)
+	@echo '(include-book "$*")' >> $(@D)/workxxx.bkchk.$(*F)
+	@echo '(include-book "system/pseudo-good-worldp" :dir :system)' >> $(@D)/workxxx.bkchk.$(*F)
 	@echo "Checking world created by including `pwd`/$* on `date`"
-	@echo '(chk-pseudo-good-worldp "$*")' >> workxxx.bkchk.$(*F)
-	@($(ACL2) < workxxx.bkchk.$(*F) 2>&1) > $*.bkchk.out
+	@echo '(chk-pseudo-good-worldp "$*")' >> $(@D)/workxxx.bkchk.$(*F)
+	@($(ACL2) < $(@D)/workxxx.bkchk.$(*F) 2>&1) > $*.bkchk.out
 	@(fgrep 'Pseudo-good-worldp check for including "$*" passed.' $@) || \
             (echo '** Pseudo-good-worldp check FAILED for including $*;' "see `pwd`/$@" '**' ;\
              exit 1)
-	@rm -f workxxx.bkchk.$(*F)
+	@rm -f $(@D)/workxxx.bkchk.$(*F)
