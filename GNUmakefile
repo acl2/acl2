@@ -745,7 +745,11 @@ move-large:
 # log.
 .PHONY: certify-books
 certify-books:
-	cd books ; $(MAKE) $(ACL2_IGNORE)
+ifndef ACL2
+	cd books ; $(MAKE) $(ACL2_IGNORE) basic ACL2=$(shell pwd)/saved_acl2
+else
+	cd books ; $(MAKE) $(ACL2_IGNORE) basic ACL2=$(ACL2)
+endif
 
 # Certify books that are not up-to-date, even those less likely to be included
 # in other books.  This does *not* certify the nonstd/ books.  It would be
@@ -951,7 +955,11 @@ our-develenv.cl:
 .PHONY: chk-include-book-worlds
 chk-include-book-worlds:
 	uname -a
-	cd books ; $(MAKE) $(ACL2_IGNORE) chk-include-book-worlds-top
+ifndef ACL2
+	cd books ; $(MAKE) $(ACL2_IGNORE) chk-include-book-worlds ACL2=$(shell pwd)/saved_acl2
+else
+	cd books ; $(MAKE) $(ACL2_IGNORE) chk-include-book-worlds ACL2=$(ACL2)
+endif
 
 ##########
 ### Legacy targets
@@ -1000,7 +1008,7 @@ regression-legacy-hons-only:
 # providing a value for ACL2.
 regression-legacy-hons:
 	$(MAKE) regression-legacy-hons-only
-	$(MAKE) regression-legacy ACL2_CENTAUR=skip ACL2_HONS_REGRESSION_LEGACY=t
+	$(MAKE) regression-legacy ACL2_CENTAUR=skip ACL2_HONS_REGRESSION=t
 
 .PHONY: regression-legacy-fast
 regression-legacy-fast:
