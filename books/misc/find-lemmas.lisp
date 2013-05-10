@@ -62,7 +62,7 @@
                 ((symbolp fns) (list fns))
                 ((symbol-listp fns) fns)
                 (t (er hard 'find-lemmas
-                       "The first argument to find-lemmas must be a symbol or a ~
-                      list of symbols, but ~x0 is not"
+                       "The first argument to find-lemmas must be a symbol or ~
+                        a list of symbols, but ~x0 is not."
                        fns)))))
       `(find-lemmas-fn ',fns ',omit-boot-strap nil (w state) (w state)))))
