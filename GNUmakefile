@@ -52,7 +52,8 @@
 #   make TAGS        ; Create tags table, handy for viewing sources with emacs.
 #   make TAGS!       ; Same as TAGS, except forces a rebuild of TAGS.
 #   make certify-books
-#                    ; Certify all the distributed books.
+#                    ; Certify the community books that might reasonably
+#                    ; be useful to include in proof developments.
 #   make regression
 #                    ; Certify all the distributed books and, if present, the
 #                    ; workshops/ books as well.
@@ -68,7 +69,7 @@
 #                    ; waterfall parallelism (requires the
 #                    ; experimental extension ACL2(p) of ACL2); see
 #                    ; file acl2-customization-files/README.
-#   make regression-fast
+#   make regression-fast [DEPRECATED as is books/regression-targets (legacy)]
 #                    ; (WARNING: This target uses variable ACL2, with default value
 #                    ;      "acl2", so it is probably a good idea to run after
 #                    ;      explicitly setting ACL2=<path_to_ACL2>.
@@ -89,6 +90,11 @@
 #                    ; debris, ..., created by `make certify-books',
 #                    ; `make regression', or `make regression-fast'.
 
+# Also included are various legacy versions of these targets, which
+# correspond to targets through ACL2 Version 6.1.  For example, target
+# regression-legacy in this file corresponds to target regression in
+# older versions of htis file.
+
 ###############################################################################
 
 #  NOTE:  Users need not read below this line.  Neither should installers of
@@ -103,22 +109,6 @@
 #   NOTE:  Make large completely recompiles, initializes and
 #   saves.  Consider some of the "fast" and "very-fast" options below if only
 #   part of the system needs to be rebuilt.
-
-#   make big-test
-#                  ; Build the image from scratch, make the DOC files in
-#                  ; EMACS, HTML, and TEX,
-#                  ; certify all the books, prove through axioms.lisp.
-#                  ; Typical invocations:
-
-#   make big-test >& make-big-test.log&
-#   make big-test LISP=cl PREFIX=cl- >& make-cl-big-test.log&
-
-#   make test
-
-#                  ; Build the system from scratch, certify all books, and
-#                  ; prove through axioms.lisp.  Consider "make test DOC" if
-#                  ; running late at night (so that you don't smash someone's
-#                  ; documentation).
 
 #   make very-fast init 
 #                  ; Build the system, recompiling as little as possible
@@ -151,20 +141,6 @@
 #                  ; (2) acl2-book must be gzipped, i.e., if necessary first do
 #                         gzip /projects/acl2/v2-9/doc/TEX/acl2-book.ps
 #                         gzip /projects/acl2/v2-9/doc/TEX/acl2-book.dvi
-#
-#   make arch      ; full init move-large certify-books
-#                  ; Do this while logged onto the appropriate host.  For
-#                  ; example:
-#                  ;  tantallon% rm -r ../v2-8-aix
-#                  ;  tantallon% make copy-distribution DIR=/projects/acl2/v2-8-aix
-#                  ;  tantallon% xrsh bigbird emacs
-#                  ;  bigbird%  cd /projects/acl2/v2-8-aix
-#                  ;  bigbird%  make arch >& make.log &
-#                  ; =======================================================
-#                  ; Machine         DIR            Architecture
-#                  ; beechbone       v2-8           Solaris 2.8 Sparc
-#                  ; bigbird         v2-8-aix       AIX
-#                  ; =======================================================
 #   make DOC       ; Build html and emacs info files
 #   make clean-doc ; Remove files created by make DOC
 #   make red       ; Just build full-size saved_acl2, but do so without pass 2
@@ -262,20 +238,6 @@ ACL2_SIZE =
 # that -i is "obsolete".
 ACL2_IGNORE ?= -k
 
-# Here we provide support for a convenient way to pass -j down to the
-# community books Makefile, for both `make' and cert.pl.  It seems
-# cleanest and perhaps critical that below, when we call in the books
-# directory we do so with an explicit -j, rather than leaving this to
-# the Makefile in the books/ directory.
-export ACL2_HONS_OPT
-ifdef ACL2_JOBS
-# Note: Because of recursive call of make, ACL2_HONS_OPT could
-# ultimately include many -j options.  This anomaly seems harmless, so
-# we leave it for now but may revisit it later.
-ACL2_HONS_OPT += -j$(ACL2_JOBS)
-ACL2_JOBS_OPT := -j $(ACL2_JOBS)
-endif
-
 # The order of the files below is unimportant.
 
 sources := axioms.lisp memoize.lisp hons.lisp boot-strap-pass-2.lisp\
@@ -340,18 +302,6 @@ acl2r.lisp:
 	if [ "$(ACL2_COMPILER_DISABLED)" != "" ] ; then \
 	echo '(DEFPARAMETER *ACL2-COMPILER-ENABLED* NIL)' >> acl2r.lisp ;\
 	fi
-
-.PHONY: protections
-# Note: Removed line "chmod g+s saved" before the second chmod below, as it was
-# causing errors in at least one environment.
-protections:
-	find . -type d | xargs chmod 775 
-	# find . -type d | xargs chmod g+s
-	find . -type f | xargs chmod 664 
-	-chmod 775 *saved_acl2*
-	chmod 775 doc/create-acl2-html 
-	chmod 775 doc/create-acl2-texinfo
-	chmod 775 doc/create-acl2-tex
 
 .PHONY: chmod_image
 chmod_image:
@@ -786,126 +736,72 @@ move-large:
 	mv ${PREFIXsaved_acl2}.`cat worklispext ` large-${PREFIXsaved_acl2}.`cat worklispext` ;\
 	fi
 
-# Certify books that are not up-to-date, but only those likely to be included
-# in other books.
-# NOTE:  None of the certify-books* targets use PREFIX.  They use saved_acl2
-# (or for nonstd, saved_acl2r) in this directory by default, or one can
-# provide an absolute pathname or a command on one's path that invokes ACL2.
+# Certify books that are not up-to-date, but only those that might reasonably
+# be useful to include in proof developments.
+# NOTE:  None of the book certification targets use PREFIX.  They use
+# "acl2" by default, but the ACL2 executable can be specified on the command
+# line with ACL2=<some_acl2_executable>.
 # Success can generally be determined by checking for the absence of ** in the
 # log.
 .PHONY: certify-books
 certify-books:
-	cd books ; $(MAKE) $(ACL2_JOBS_OPT) $(ACL2_IGNORE)
+	cd books ; $(MAKE) $(ACL2_IGNORE)
 
 # Certify books that are not up-to-date, even those less likely to be included
 # in other books.  This does *not* certify the nonstd/ books.  It would be
 # awkward to arrange for that here, because the ACL2 images are different;
 # they might not even have the same prefix.  See target regression-nonstd.
-# NOTE:  This target is for the developers, since not all books in the
-# regression suite are necessarily distributed.
 # Success can generally be determined by checking for the absence of ** in the
-# log.
+# log, or by looking at the Unix exit status.
 .PHONY: regression
 regression:
 	uname -a
-	cd books ; $(MAKE) $(ACL2_IGNORE) $(ACL2_JOBS_OPT) all-plus
-
-# At some point we will probably replace regression by regression-jared.
-.PHONY: regression-jared
-regression-jared:
-	uname -a
 ifndef ACL2
-	cd books ; $(MAKE) -f Makefile-jared $(ACL2_IGNORE) ACL2=$(shell pwd)/saved_acl2
+	cd books ; $(MAKE) $(ACL2_IGNORE) ACL2=$(shell pwd)/saved_acl2
 else
-	cd books ; $(MAKE) -f Makefile-jared $(ACL2_IGNORE) ACL2=$(ACL2)
+	cd books ; $(MAKE) $(ACL2_IGNORE) ACL2=$(ACL2)
 endif
-
-.PHONY: regression-hons-only
-regression-hons-only:
-	uname -a
-	cd books ; \
-	  $(MAKE) $(ACL2_IGNORE) hons
-
-.PHONY: regression-hons
-# For a HONS regression, we do regression-hons-only first to get the
-# extra parallelism provided by cert.pl.  For regression-hons-only the
-# default for ACL2 is saved_acl2h in the development directory; for
-# regression, saved_acl2.  So the user might be happiest simply
-# providing a value for ACL2.
-regression-hons:
-	$(MAKE) regression-hons-only
-	$(MAKE) regression ACL2_CENTAUR=skip ACL2_HONS_REGRESSION=t
-
-.PHONY: regression-fast
-regression-fast:
-	uname -a
-	cd books ; pwd ; $(MAKE) $(ACL2_IGNORE) $(ACL2_JOBS_OPT) -f Makefile-fast
 
 .PHONY: regression-nonstd
 regression-nonstd:
 	uname -a
-	cd books/nonstd ; $(MAKE) $(ACL2_IGNORE) $(ACL2_JOBS_OPT) all-nonstd
-
-# At some point we will probably replace regression-nonstd by
-# regression-nonstd-jared.
-.PHONY: regression-nonstd-jared
-regression-nonstd-jared:
-	uname -a
 ifndef ACL2
 	cd books/nonstd ; \
-	$(MAKE) -f Makefile-jared-nonstd $(ACL2_IGNORE) ACL2=$(shell pwd)/saved_acl2
+	$(MAKE) $(ACL2_IGNORE) ACL2=$(shell pwd)/saved_acl2
 else
 	cd books/nonstd ; \
-	$(MAKE) -f Makefile-jared-nonstd $(ACL2_IGNORE) ACL2=$(ACL2)
+	$(MAKE) $(ACL2_IGNORE) ACL2=$(ACL2)
 endif
 
 # Certify main books from scratch.
 .PHONY: certify-books-fresh
 certify-books-fresh: clean-books
-	$(MAKE) $(ACL2_IGNORE) $(ACL2_JOBS_OPT) certify-books
+	$(MAKE) $(ACL2_IGNORE) certify-books
 
 # Do regression tests from scratch.
-# These targets are for developers (see comment for target regression).
 # Success can generally be determined by checking for the absence of ** in the
 # log.
-.PHONY: regression-fresh regression-fast-fresh regression-nonstd-fresh
+.PHONY: regression-fresh
 regression-fresh: clean-books
-	$(MAKE) $(ACL2_IGNORE) regression
-regression-hons-fresh: clean-books
-	$(MAKE) $(ACL2_IGNORE) regression-hons
-regression-fast-fresh: clean-books
-	$(MAKE) $(ACL2_IGNORE) regression-fast
-regression-nonstd-fresh: clean-books-nonstd
-	$(MAKE) $(ACL2_IGNORE) regression-nonstd
-
-# At some point we will probably replace regression-fresh by
-# regression-fresh-jared.
-.PHONY: regression-fresh-jared
-regression-fresh-jared: clean-books-jared
 ifndef ACL2
-	$(MAKE) $(ACL2_IGNORE) ACL2=$(shell pwd)/saved_acl2 regression-jared
+	$(MAKE) $(ACL2_IGNORE) ACL2=$(shell pwd)/saved_acl2 regression
 else
-	$(MAKE) $(ACL2_IGNORE) ACL2=$(ACL2) regression-jared
+	$(MAKE) $(ACL2_IGNORE) ACL2=$(ACL2) regression
 endif
 
-# At some point we will probably replace regression-nonstd-fresh by
-# regression-nonstd-fresh-jared.
-.PHONY: regression-nonstd-fresh-jared
-regression-nonstd-fresh-jared: clean-books-nonstd-jared
+.PHONY: regression-nonstd-fresh
+regression-nonstd-fresh: clean-books-nonstd
 ifndef ACL2
-	$(MAKE) $(ACL2_IGNORE) ACL2=$(shell pwd)/saved_acl2 regression-nonstd-jared
+	$(MAKE) $(ACL2_IGNORE) ACL2=$(shell pwd)/saved_acl2 regression-nonstd
 else
-	$(MAKE) $(ACL2_IGNORE) ACL2=$(ACL2) regression-nonstd-jared
+	$(MAKE) $(ACL2_IGNORE) ACL2=$(ACL2) regression-nonstd
 endif
 
 # The following allows for a relatively short test, in response to a request
 # from GCL maintainer Camm Maguire.
 .PHONY: certify-books-short
 certify-books-short:
-	cd books ; $(MAKE) $(ACL2_JOBS_OPT) short-test
-
-.PHONY: certify-books-test
-certify-books-test: certify-books-fresh
+	cd books ; $(MAKE) short-test
 
 # The following target assumes that we are using an image built with
 # ACL2_DEVEL set.
@@ -945,32 +841,20 @@ clean-doc:
 
 .PHONY: clean-books
 clean-books:
-	cd books ; $(MAKE) $(ACL2_IGNORE) clean
-
-# At some point we will probably replace clean-books by
-# clean-books-jared.
-.PHONY: clean-books-jared
-clean-books-jared:
 ifndef ACL2
-	cd books ; $(MAKE) -f Makefile-jared $(ACL2_IGNORE) ACL2=$(shell pwd)/saved_acl2 clean
+	cd books ; $(MAKE) $(ACL2_IGNORE) ACL2=$(shell pwd)/saved_acl2 clean
 else
-	cd books ; $(MAKE) -f Makefile-jared $(ACL2_IGNORE) ACL2=$(ACL2) clean
+	cd books ; $(MAKE) $(ACL2_IGNORE) ACL2=$(ACL2) clean
 endif
 
 .PHONY: clean-books-nonstd
 clean-books-nonstd:
-	cd books/nonstd ; $(MAKE) $(ACL2_IGNORE) clean-nonstd
-
-# At some point we will probably replace clean-books-nonstd by
-# clean-books-nonstd-jared.
-.PHONY: clean-books-nonstd-jared
-clean-books-nonstd-jared:
 ifndef ACL2
 	cd books/nonstd ; \
-	$(MAKE) -f Makefile-jared-nonstd $(ACL2_IGNORE) ACL2=$(shell pwd)/saved_acl2 clean
+	$(MAKE) $(ACL2_IGNORE) ACL2=$(shell pwd)/saved_acl2 clean
 else
 	cd books/nonstd ; \
-	$(MAKE) -f Makefile-jared-nonstd $(ACL2_IGNORE) ACL2=$(ACL2) clean
+	$(MAKE) $(ACL2_IGNORE) ACL2=$(ACL2) clean
 endif
 
 # This following should be executed inside the acl2-sources directory.
@@ -1013,21 +897,6 @@ tar-nonstd:
 	cd books ; gzip nonstd.tar
 	cd books ; (md5sum nonstd.tar.gz > nonstd-tar-gz-md5sum)
 
-# Consider "make test DOC" if running late at night.
-.PHONY: test
-test: full init certify-books-test proofs
-
-# See comment for move-large:  i.e., avoid using Allegro for this
-# target, since move-large will not move the .dxl file (similarly
-# for cmulisp, SBCL, and CLISP).
-.PHONY: big-test
-big-test: full init DOC move-large certify-books-test proofs
-
-# See comment for move-large:  i.e., avoid using Allegro for this
-# target, since move-large will not move the .dxl file (similarly
-# for cmulisp, SBCL, and CLISP).
-arch: full init move-large regression-fresh proofs
-
 .PHONY: mini-proveall
 mini-proveall:
 	@rm -rf mini-proveall.out
@@ -1035,11 +904,6 @@ mini-proveall:
 	@(grep '^ "Mini-proveall completed successfully."' mini-proveall.out > /dev/null) || \
 	(echo 'Mini-proveall failed!' ; ls -l ./${PREFIXsaved_acl2}; cat mini-proveall.out ; exit 1)
 	@echo 'Mini-proveall passed.'
-
-.PHONY: small
-small:
-	@echo 'Target "small" is no longer supported.  Use "make large" or simply "make".'
-	exit 1
 
 # Target for making an Allegro CL application acl2.exe in a new "bin/" subdirectory.
 # NOTE: An Allegro CL dynamic runtime license is needed in order for this to work.
@@ -1079,11 +943,6 @@ our-develenv.cl:
 	@echo "  images, as suggested in the that file."
 	exit 1
 
-# Developer target only:
-.PHONY: update-books
-update-books:
-	@update-books.csh
-
 # Developer target only.  WARNING: Be sure to run "make regression"
 # first!  We could add a dependency on regression, but maybe there
 # will be some case in which we know part of the regression fails but
@@ -1093,3 +952,97 @@ update-books:
 chk-include-book-worlds:
 	uname -a
 	cd books ; $(MAKE) $(ACL2_IGNORE) chk-include-book-worlds-top
+
+##########
+### Legacy targets
+### (renamed using "-legacy" and deprecated after ACL2 Version 6.1):
+##########
+
+# Here we provide support for a convenient way to pass -j down to the
+# community books Makefile, for both `make' and cert.pl.  It seems
+# cleanest and perhaps critical that below, when we call in the books
+# directory we do so with an explicit -j, rather than leaving this to
+# the Makefile in the books/ directory.
+export ACL2_HONS_OPT
+ifdef ACL2_JOBS
+# Note: Because of recursive call of make, ACL2_HONS_OPT could
+# ultimately include many -j options.  This anomaly seems harmless, so
+# we leave it for now but may revisit it later.
+ACL2_HONS_OPT += -j$(ACL2_JOBS)
+ACL2_JOBS_OPT := -j $(ACL2_JOBS)
+endif
+
+.PHONY: clean-books-legacy
+clean-books-legacy:
+	cd books ; $(MAKE) -f Makefile $(ACL2_IGNORE) clean
+
+.PHONY: regression-legacy
+regression-legacy:
+	uname -a
+	cd books ; $(MAKE) -f Makefile.legacy $(ACL2_IGNORE) $(ACL2_JOBS_OPT) all-plus
+
+# For a HONS regression, we do regression-legacy-hons-only first to get the
+# extra parallelism provided by cert.pl.  For regression-legacy-hons-only the
+# default for ACL2 is saved_acl2h in the development directory; for
+# regression-legacy, saved_acl2.  So the user might be happiest simply
+# providing a value for ACL2.
+.PHONY: regression-legacy-hons-only
+regression-legacy-hons-only:
+	uname -a
+	cd books ; \
+	  $(MAKE) -f Makefile.legacy $(ACL2_IGNORE) hons
+
+.PHONY: regression-legacy-hons
+# For a HONS regression-legacy, we do regression-legacy-hons-only first to get the
+# extra parallelism provided by cert.pl.  For regression-legacy-hons-only the
+# default for ACL2 is saved_acl2h in the development directory; for
+# regression-legacy, saved_acl2.  So the user might be happiest simply
+# providing a value for ACL2.
+regression-legacy-hons:
+	$(MAKE) regression-legacy-hons-only
+	$(MAKE) regression-legacy ACL2_CENTAUR=skip ACL2_HONS_REGRESSION_LEGACY=t
+
+.PHONY: regression-legacy-fast
+regression-legacy-fast:
+	uname -a
+	cd books ; pwd ; $(MAKE) -f Makefile.legacy $(ACL2_IGNORE) $(ACL2_JOBS_OPT) -f Makefile-fast
+
+.PHONY: clean-books-nonstd-legacy
+clean-books-legacy-nonstd:
+	cd books/nonstd ; $(MAKE) -f Makefile.legacy $(ACL2_IGNORE) clean-nonstd
+
+.PHONY: regression-legacy-nonstd
+regression-legacy-nonstd:
+	uname -a
+	cd books/nonstd ; $(MAKE) -f Makefile-nonstd.legacy $(ACL2_IGNORE) $(ACL2_JOBS_OPT) all-nonstd
+
+.PHONY: regression-legacy-fresh regression-legacy-fast-fresh regression-legacy-nonstd-fresh
+regression-legacy-fresh: clean-books
+	$(MAKE) $(ACL2_IGNORE) regression-legacy
+regression-legacy-hons-fresh: clean-books
+	$(MAKE) $(ACL2_IGNORE) regression-legacy-hons
+regression-legacy-fast-fresh: clean-books
+	$(MAKE) $(ACL2_IGNORE) regression-legacy-fast
+regression-legacy-nonstd-fresh: clean-books-nonstd
+	$(MAKE) $(ACL2_IGNORE) regression-legacy-nonstd
+
+.PHONY: certify-books-legacy
+certify-books-legacy:
+	cd books ; $(MAKE) -f Makefile.legacy $(ACL2_JOBS_OPT) $(ACL2_IGNORE)
+
+# Certify main books from scratch.
+.PHONY: certify-books-legacy-fresh
+certify-books-legacy-fresh: clean-books-legacy
+	$(MAKE) $(ACL2_IGNORE) $(ACL2_JOBS_OPT) certify-books
+
+# The following allows for a relatively short test, in response to a request
+# from GCL maintainer Camm Maguire.
+.PHONY: certify-books-legacy-short
+certify-books-legacy-short:
+	cd books ; $(MAKE) -f Makefile.legacy $(ACL2_JOBS_OPT) short-test
+
+# Next is a legacy version of a developer target.
+.PHONY: chk-include-book-worlds
+chk-include-book-worlds-legacy:
+	uname -a
+	cd books ; $(MAKE) -f Makefile.legacy $(ACL2_IGNORE) chk-include-book-worlds-top
