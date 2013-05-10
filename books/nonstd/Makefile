@@ -1,3 +1,5 @@
+# -*- mode: makefile -*-
+
 #; Support for Community Books to Go with ACL2 Version 6.1
 #; Copyright (C) 2013, Regents of the University of Texas
 
@@ -20,19 +22,42 @@
 #; University of Texas at Austin
 #; Austin, TX 78712-1188 U.S.A.
 
-# See ../Makefile (included via "include" below) for details.  The main
-# differences here are in the directories that we descend into, together with
-# new targets for setting up symbolic links in those directories to files in
-# their corresponding "standard" directories, under ../.
-
 # WARNING:  This mechanism isn't currently set up to use ACL2(r) automatically.
 # When you execute make, be sure to use a command of the form
 # make ACL2=your_saved_acl2r
 
-# Put this target at the top so that it is the default target, rather
-# than the default target from the Makefile included below.
-.PHONY: all-nonstd
-top-nonstd: all-nonstd
+SHELL := $(shell which bash)
+
+# Directories that have their own contents, and do not need links, or only
+# need some links:
+FULLDIRS := nsa fft
+
+# All directories:
+ALLDIRS := $(shell find . -type d | fgrep -v .svn)
+
+# Directories that need links:
+LINKDIRS := $(filter-out $(FULLDIRS),$(ALLDIRS))
+
+# We run links, even before including ../Makefile, so that
+# Makefiles are present.  Use clean-links explicitly to remove links.
+# Note that at the end of the following command, we remove any
+# symbolic links that should not have been put there.
+
+SAVED_DIR := $(shell pwd)
+STD_DIR := $(shell cd .. ; pwd)
+
+$(info Making links...)
+LINKS := $(shell \
+	(cd $(SAVED_DIR) ;\
+	for book_dir in $(LINKDIRS) ; \
+	do \
+	if [ -d $(STD_DIR)/$$book_dir ] ; then \
+	$(SAVED_DIR)/link-up.sh $$book_dir $(STD_DIR) ; \
+	fi ; \
+	done ; \
+	if [ -h workshops/1999/calculus/book/tree.lisp ] ; then \
+	rm workshops/1999/calculus/book/tree.lisp ; \
+	fi) >& links.log)
 
 # Note that the following assumes that we execute make in this directory.
 # Also note that the parent directory provides some directory dependencies
@@ -40,88 +65,26 @@ top-nonstd: all-nonstd
 # long as things are working, we leave well enough alone.
 include ../Makefile
 
-# Now we make analogues of directories (and targets based on them)
-# from ../Makefile.  We'll use our own all-nonstd target instead of
-# all-plus.
+.PHONY: $(EXTRA_TARGETS)
+EXTRA_TARGETS := workshops/1999/calculus/book/tree/proof-outline
 
-NDIRS1 = nsa
-.PHONY: $(NDIRS1)
-$(NDIRS1): $(DIRS1)
-	@if [ -f $@/Makefile ]; then cd $@ ; $(MAKE) ; fi
-DIRS1 += $(NDIRS1)
-
-NDIRS2_EXCEPT_WK = fft sqrt
-.PHONY: $(NDIRS2_EXCEPT_WK)
-# A subset of the value of DIRS2_EXCEPT_WK in ../Makefile:
-DIRS2_EXCEPT_WK = ordinals data-structures bdd ihs arithmetic-2 \
-        arithmetic-3 arithmetic-3/extra tools system system/pcert \
-	std std/io std/ks std/lists misc rtl \
-        finite-set-theory powerlists arithmetic-5
-$(NDIRS2_EXCEPT_WK): $(DIRS2_EXCEPT_WK) top-with-meta-cert
-	@if [ -f $@/Makefile ]; then cd $@ ; $(MAKE) ; fi
-DIRS2_EXCEPT_WK += $(NDIRS2_EXCEPT_WK)
-DIRS2 = $(DIRS2_EXCEPT_WK) workshops
-
-# Other directory dependencies maybe not covered above:
-misc: data-structures top-with-meta-cert ordinals arithmetic ihs arithmetic-2 arithmetic-3
-fft: arithmetic powerlists nsa
-sqrt: arithmetic
-nsa: arithmetic data-structures
-workshops: $(DIRS1) $(DIRS2_EXCEPT_WK)
-
-$(DIRS1) $(DIRS2): links
-.PHONY: all-nonstd
-all-nonstd: $(DIRS1) $(DIRS2)
+all: $(EXTRA_TARGETS)
 
 # Warning: targets like all-fasl have not been updated to work for
-# nonstd.  We plan to take care of that in a later release.
+# nonstd.
 
-# Directories that have their own contents, and do not need links, or only
-# need some links.
-FULLDIRS = nsa fft
+clean: clean-more
 
-# Subdirectories of books/nonstd/*/, not including workshops.  We deliberately
-# delete misc/misc2 here, since it depends on books/rtl/rel7 in the main
-# directory and there is no books/nonstd/rtl/rel7.
-SUBDIRS = arithmetic-2/floor-mod arithmetic-2/meta arithmetic-2/pass1 \
-	  arithmetic-3/bind-free arithmetic-3/floor-mod arithmetic-3/pass1 \
-	  arithmetic-5/lib arithmetic-5/support \
-	  arithmetic-5/lib/basic-ops arithmetic-5/lib/floor-mod \
-	  rtl/rel1 rtl/rel1/lib1 rtl/rel1/lib3 rtl/rel1/support rtl/rel1/support/fadd
-
-WORKSHOPS = workshops/1999 \
-	    workshops/1999/calculus workshops/1999/analysis \
-	    workshops/1999/calculus/book workshops/1999/calculus/solutions
-
-# Directories that need links:
-LINKDIRS = . $(filter-out $(FULLDIRS), $(DIRS1) $(DIRS2) $(SUBDIRS))
-
-# All directories:
-ALLDIRS = $(LINKDIRS) $(FULLDIRS)
-
-hons clean-hons centaur clean-centaur:
-	@echo "Ignoring hons and centaur for now"
-
-.PHONY: links
-links:
-	@old_dir=`pwd` ; cd .. ; std_dir=`pwd` ; \
-	cd $$old_dir ;\
-	for book_dir in $(LINKDIRS) ; \
-	do \
-	if [ -d $$std_dir/$$book_dir ] ; then \
-	./link-up.sh $$book_dir $$std_dir ; \
-	fi ; \
-	done
-# Remove any symbolic links that should not have been put there:
-	@if [ -h workshops/1999/calculus/book/tree.lisp ] ; then \
-	rm workshops/1999/calculus/book/tree.lisp ; \
-	fi
+clean-more:
+	rm -f workshops/1999/calculus/book/tree.lisp
 
 clean-links:
+	@echo "Cleaning links from directories:"
 	@for book_dir in $(LINKDIRS) ; \
 	do \
 	if [ -d $$book_dir ] ; then \
 	cd $$book_dir ; \
+	echo "Cleaning links from $$book_dir" ; \
 	for file in `\ls` ; \
 	do \
 	if [ -h $$file ] ; then \
@@ -132,15 +95,16 @@ clean-links:
 	fi ; \
 	done
 
-# We run links so that Makefiles are present, and then remove all links at the end.
-clean-nonstd: links
-	$(MAKE) clean-alldirs
-	$(MAKE) clean-links
+workshops/1999/calculus/book/proof-outline.cert: workshops/1999/calculus/book/tree.cert
 
-clean-alldirs:
-	@for dir in $(ALLDIRS) ; \
-	do \
-	if [ -f $$dir/Makefile ]; then \
-	(cd $$dir ; $(MAKE) FAST_DEPS_FOR_CLEAN=1 clean) ; \
-	fi \
-	done
+workshops/1999/calculus/book/tree.cert: workshops/1999/calculus/book/tree.lisp
+	cd workshops/1999/calculus/book/ ; \
+	$(MAKE) tree.cert
+
+workshops/1999/calculus/book/tree.lisp:
+	cd workshops/1999/calculus/book ; $(MAKE) -f Makefile-essence tree.lisp
+
+workshops/1999/calculus/book/tree/proof-outline: \
+	workshops/1999/calculus/book/tree.cert \
+	workshops/1999/calculus/book/proof-outline.cert
+	cd workshops/1999/calculus/book/ ; $(MAKE) proof-outline

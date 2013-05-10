@@ -1,1008 +1,794 @@
-#; Support for Community Books to Go with ACL2 Version 6.1
-#; Copyright (C) 2013, Regents of the University of Texas
+# -*- mode: makefile -*-
 
-#; This program is free software; you can redistribute it and/or
-#; modify it under the terms of Version 2 of the GNU General Public
-#; License as published by the Free Software Foundation.
+# ACL2 Community Books Makefile
+# Copyright (C) 2013 Centaur Technology
+#
+# Contact:
+#   Centaur Technology Formal Verification Group
+#   7600-C N. Capital of Texas Highway, Suite 300, Austin, TX 78731, USA.
+#   http://www.centtech.com/
+#
+# This program is free software; you can redistribute it and/or modify it under
+# the terms of the GNU General Public License as published by the Free Software
+# Foundation; either version 2 of the License, or (at your option) any later
+# version.  This program is distributed in the hope that it will be useful but
+# WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+# FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
+# more details.  You should have received a copy of the GNU General Public
+# License along with this program; if not, write to the Free Software
+# Foundation, Inc., 51 Franklin Street, Suite 500, Boston, MA 02110-1335, USA.
 
-#; This program is distributed in the hope that it will be useful,
-#; but WITHOUT ANY WARRANTY; without even the implied warranty of
-#; MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-#; GNU General Public License for more details.
+##############################
+### Section: Credits and History
+##############################
 
-#; You should have received a copy of the GNU General Public License
-#; along with this program; if not, write to the Free Software
-#; Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
+# For many years, the ACL2 books were built using the "Makefile-generic"
+# system.  This make system was written by
+#
+#      Matt Kaufmann <kaufmann@cs.utexas.edu> and
+#      J Strother Moore <moore@cs.utexas.edu>
+#
+# and was actually an adaptation of Makefiles used by Bishop Brock for his IHS
+# and data-structures libraries.
+#
+# In 2008, Sol Swords <sswords@centtech.com> developed cert.pl, a perl-based
+# alternative to ACL2's make system.  This build system was largely compatible
+# with the previous Makefile-generic system, but featured enhanced,
+# cross-directory dependency tracking.  Centaur Technology used cert.pl for
+# many years, both internally and for their publicly released "centaur/"
+# community books.
+#
+# In 2013, Jared Davis <jared@centtech.com> developed an initial version of
+# this current Makefile, which is substantially based on cert.pl, and made
+# minor adjustments to several Community Books to ensure that they could all be
+# certified with the new system.
+#
+# Subsequently, significant contributions to this Makefile have been made by
+# many people, notably:
+#
+#   - Matt Kaufmann <kaufmann@cs.utexas.edu> has extended the Makefile in
+#     support of certifying ACL2(r) books, multi-lisp compilation, provisional
+#     certification, chk-include-book-worlds target, among numerous other
+#     improvements and contributions such as testing the Makefile on many
+#     systems and further tweaking some Community Books.
+#
+#   - Sol Swords <sswords@cs.utexas.edu> has provided significant support for
+#     cert.pl, notably extending it to operate on Windows, and adding features
+#     such as automatically tracking books that rely on ACL2(h).
+#
+#   - David Rager <ragerdl@cs.utexas.edu> provided significant early beta
+#     testing and worked to ensure the Makefile works with ACL2(p) and in
+#     different configurations of ACL2_CUSTOMIZATION; he has also provided
+#     useful make targets.
+#
+#   - Jared Davis <jared@centtech.com> has made other miscellaneous
+#     improvements, e.g., a more comprehensive implementation of book cleaning.
 
-#; Written by:  Matt Kaufmann               and J Strother Moore
-#; email:       Kaufmann@cs.utexas.edu      and Moore@cs.utexas.edu
-#; Department of Computer Sciences
-#; University of Texas at Austin
-#; Austin, TX 78712-1188 U.S.A.
+##############################
+### Section: Documentation
+##############################
 
-# This file certifies books by directing appropriate subdirectories to
-# certify their books.  The subsidiary Makefiles take advantage of a
-# makefile, Makefile-generic, in this directory, which is derived from
-# one written by Bishop Brock.
+# Basic usage:
+#    make -j <jobs> [<target>]
+#
+# Where:
+#    - <jobs> is how many books you want to certify in parallel,
+#        typically the number of cores on your machine
+#    - <target> is optional and defaults to "all" when omitted,
+#        or names the target you want to build (see below).
 
-# For example, to clean and time book certification (including workshops):
-# make clean all-plus
+# Major top-level targets:
+#   - `all' is the default
+#   - `everything' includes everything in `all' and also some slow books
+#   - `lite' is most of `all', but with a few things excluded
 
-# To see how one can certify the books in the regression suite using
-# waterfall parallelism (requires the experimental extension ACL2(p)
-# of ACL2), see file acl2-sources/acl2-customization-files/README.
+# Jared Davis has summarized the improvements over the earlier
+# Makefile as follows.
 
-# We do not set variable ACL2 here, because the value here would be
-# overriden anyhow by the values in the subsidiary Makefiles, which get their
-# value from file Makefile-generic.  However, ACL2 can be set on the command
-# line, e.g.:
-# make ACL2=acl2
-# make ACL2=/usr/local/bin/acl2 TIME=/usr/bin/time
-# make ACL2=/u/acl2/v2-9/acl2-sources/saved_acl2
+#  - It simplifies the build system, doing away with hundreds of Makefiles in
+#    individual directories, and replacing them with this single file.  This is
+#    possible because I've gone through and fixed up many books so that they
+#    follow certain conventions, explained below.
+#
+#  - It increases (significantly) opportunities for parallelism, by doing away
+#    with directory-level dependencies.  Essentially, any books that do not
+#    have an include-book dependency can be built in parallel.  At the same
+#    time, this means that books can be reorganized based on their logical
+#    content, without regards to directory build order.
+#
+#  - It generally increases build-system automation.  We use "find" commands to
+#    find Lisp files instead of maintaining (by hand) lists of directories.  We
+#    also do not need to manually keep track of dependencies between
+#    directories, etc.
+#
+# This Makefile starts by automatically scanning for books and their
+# dependencies.  This scanning can be slightly expensive, especially on slow
+# NFS systems.  When you know that you haven't added or changed any books, you
+# might prefer to avoid rescanning by adding NO_RESCAN=1 to the command line.
+#
+# In order to make the book- and dependency-scanning simple and reliable, books
+# are expected to follow certain conventions.  These conventions are generally
+# very similar to the previous behavior of cert.pl and Makefile-generic.
+#
+#   - We scan for lines like (include-book "foo") and (ld "foo.lisp"); for
+#     dependency scanning to work, these commands must be on a single line and
+#     can't be wrapped up in macros.  Occasionally it is useful to fool the
+#     dependency scanner, e.g., in a multi-line comments you might do:
+#
+#        #| Here's an example of how to use this stuff:
+#
+#           (include-book ;; newline to fool dependency scanner
+#             "foo")
+#
+#           (demo-of-how-to-use-foo)
+#        |#
+#
+#   - Additional dependencies (e.g., on raw-lisp files or other kinds of data
+#     files) can be added using depends-on comments, e.g.,
+#
+#        ; (depends-on "foo-raw.lsp")
+#
+#   - Certifiable books should be named foo.lisp
+#   - Non-certifiable Lisp files should be named foo.lsp
+#   - The instructions for certifying foo.lisp are found in:
+#       foo.acl2, if it exists, or else
+#       cert.acl2, if it exists, or else
+#       default to simply (certify-book "foo" ? t)
+#     These instructions specify argument to certify-book, for example:
+#       ; cert-flags: ? t :ttags :all
+#   - Books that depend on ACL2(h), such as centaur/tutorial/alu16-book.lisp,
+#     contain this line (or, a cert_param directive can be in the
+#     .acl2 file that is consulted, as discussed above):
+#       ; cert_param: (hons-only)
+#   - Two-pass certification is handled as follows, for example in
+#     books/make-event/stobj-test.acl2 (as indicated above, this can
+#     also go into the book instead of the relevant .acl2 file):
+#       ; cert_param: (acl2x)
+#   - It's not clear that provisional certification is fully
+#     supported.  For now, we implement it for two specific
+#     directories; search below for "provisional certification" to see
+#     how that's done.
+#   - The "user" target allows one to restrict to specific
+#     directories.  Search for "user" below to see an example.
+#
+# CHANGE/BOZO: In this Makefile (as in cert.pl), any certify-book lines given
+# in the .acl2 file are ignored.  Instead, we generate the certify-book command
+# to use by looking for comments like:
+#
+#         ; cert-flags: ? t :ttags :all
+#
+# These comments can be put in the individual foo.acl2 or (for directory-level
+# defaults) in cert.acl2.  The default cert-flags are "? t".  Using special
+# comments instead of certify-book forms means that the certification flags
+# can't be hidden inside macros, possibly easing the job of an "evaluator."
+#
+# BOZO (from Jared) I have gone through the ACL2 regression suite and replaced
+# certify-book lines throughout .acl2 files with cert-flags comments.  However,
+# for now I've left the certify-book commands intact, for compatiblity with
+# Makefile-generic.  Eventually, we should not have both things in .acl2 files.
+# Before we can do that, we'll need to change Makefile-generic to look for
+# cert-flags instead of certify-book commands.  Alternately, maybe the scheme
+# should be something like: if you give a certify-book command, we use it;
+# otherwise we generate one using the cert-flags.
 
-TIME = time
 
-# Avoid loading customization file unless environment variable is already set.
-# (This is also done in Makefile-generic, but we do it here in support of the
-# hons target.)
-export ACL2_CUSTOMIZATION ?= NONE
+# STATUS / TODO LIST / MISSING FEATURES / BOZOS:
+#
+#  [DONE] Requires perl on the client machine (I think we've agreed this is
+#         okay)
+#
+#  [DONE] Two-pass certification seems to work, using the cert.pl directive
+#         cert_param(acl2x).  See for instance
+#         books/make-event/stobj-test.acl2.
+#
+#  [DONE] How should cleaning work?
+#
+#    Using a find command has the advantage that it will get rid of old files
+#    even after the .lisp files have been deleted.  It has the disadvantage
+#    that it seems tricky to properly delete .h and .c files using a find
+#    command.  An alternative would be to use CERT_PL_CERTS to generate a huge
+#    list of files to remove.  This will require using xargs, etc., which is
+#    gross, but so does the find command.  Blah.
+#
+#    We now implement the CERT_PL_CERTS-based approach, but using clean.pl,
+#    which nicely deals with the whole too-many-arguments issue.  It seems to
+#    perform well.  I think this is probably as good as we can do.
 
-# Directories go here; first those before certifying arithmetic/top-with-meta,
-# then those afterwards.
+##############################
+### Section: Introduce main targets and some variables
+##############################
 
-# NOTE!  This does *not* touch directory nonstd.
+ACL2 ?= acl2
 
-# Note: arithmetic-4 could be added in analogy to arithmetic-5.
+SHELL := $(shell which bash)
+STARTJOB ?= $(SHELL)
 
-DIRS1 = cowles arithmetic meta xdoc
-DIRS2_EXCEPT_WK_COI = ordinals data-structures bdd ihs arithmetic-2 arithmetic-3 arithmetic-5 \
-	misc models/jvm/m1-original models/jvm/m1 models/jvm/m5 \
-	proofstyles rtl arithmetic-3/extra sorting make-event parallel hints \
-	fix-cert finite-set-theory finite-set-theory/osets powerlists textbook \
-	defexec symbolic \
-	data-structures/memories unicode str concurrent-programs/bakery \
-	concurrent-programs/german-protocol deduction/passmore clause-processors \
-	quadratic-reciprocity tools paco hacking security regex \
-	defsort serialize wp-gen xdoc-impl system tutorial-problems \
-	cutil countereg-gen demos leftist-trees taspi std std/ks std/lists std/io \
-       std/alists std/typed-lists \
-	oslib tau add-ons
-# Add directories other than centaur that depend on hons, say, for performance:
-HONS_ONLY_DIRS = models/y86 security/des
-ifdef ACL2_HONS_REGRESSION
-DIRS2_EXCEPT_WK_COI += $(HONS_ONLY_DIRS)
-endif
-DIRS2_EXCEPT_WK = $(DIRS2_EXCEPT_WK_COI) coi misc/misc2
-DIRS2 = $(DIRS2_EXCEPT_WK) workshops
-SHORTDIRS2 = ordinals data-structures bdd
+.SUFFIXES:
+.SUFFIXES: .cert .lisp
 
-# If ACL2_CENTAUR is already set then we leave it alone.  Otherwise
-# we set ACL2_CENTAUR to `before' to obtain extra parallelism via the
-# centaur/ books unless specific directories are specified, in which
-# case we set ACL2_CENTAUR to `skip' to avoid certifying the centaur
-# books needlessly.  (If a books directory depends on the centaur
-# books, then its dependency should be recorded among the long list of
-# dependencies below.)
-ifdef ACL2_BOOK_DIRS
-ifndef ACL2_CENTAUR
-ACL2_CENTAUR ?= skip
-endif
-else
-ACL2_CENTAUR ?= before
-# The following can be any subset of DIRS2, and can be set by the user
-# on the command line, e.g., from the ACL2 sources directory:
-#   make -j 8 regression ACL2_BOOK_DIRS='symbolic paco'
-# The directory dependencies (below) should guarantee that all
-# necessary supporting directories are made before the ones specified
-# explicitly in ACL2_BOOK_DIRS.
-ACL2_BOOK_DIRS := $(DIRS2)
-endif
-
-ALL_PLUS_DIRS = $(DIRS1) $(ACL2_BOOK_DIRS)
-
-ifdef ACL2
-	ACL2_FOR_HONS ?= $(ACL2)
-	ACL2_FOR_CENTAUR ?= $(ACL2)
-else
-	ACL2_FOR_HONS ?= $(shell cd .. ; pwd)/saved_acl2h
-	ACL2_FOR_CENTAUR ?= $(shell cd .. ; pwd)/saved_acl2
-ifdef ACL2_HONS_REGRESSION
-# and ACL2 not defined
-	export ACL2 = $(shell cd .. ; pwd)/saved_acl2h
-endif
-endif
-
-# Since we have specified that ACL2_BOOK_DIRS is to be a subset of
-# DIRS2, we don't need to add it explicitly on the next line.
-.PHONY: $(DIRS1) $(DIRS2)
-
-# Same as all-plus below, using DIRS2_EXCEPT_WK instead of DIRS2.  Much faster!  Omits
-# books less likely to be needed, in particular, under workshops/.
+.PHONY: all lite everything
 all:
-	@date ; $(TIME) $(MAKE) all-aux
-
-
-# Next, specify all of the directory dependencies.  At this point we do this
-# manually by inspecting the Makefiles.
-
-arithmetic: cowles
-data-structures: arithmetic
-meta: arithmetic
-ordinals: top-with-meta-cert
-ihs: arithmetic data-structures
-misc: data-structures top-with-meta-cert ordinals arithmetic ihs arithmetic-2 arithmetic-3 std/lists
-make-event: misc arithmetic-3 arithmetic rtl
-arithmetic-2: ihs
-rtl: arithmetic meta top-with-meta-cert ordinals ihs misc arithmetic-2
-# arithmetic-3 has no dependencies (but see arithmetic-3/extra)
-arithmetic-3/extra: arithmetic-3 ihs rtl arithmetic-2 arithmetic-3
-# arithmetic-5 has no dependencies
-finite-set-theory: arithmetic ordinals
-finite-set-theory/osets: unicode tools
-powerlists: arithmetic ordinals data-structures
-textbook: arithmetic top-with-meta-cert ordinals ihs
-defexec: arithmetic misc ordinals
-symbolic: arithmetic arithmetic-2 data-structures ihs misc ordinals models/jvm/m5
-data-structures/memories: arithmetic-3 misc
-unicode: arithmetic arithmetic-3 ihs ordinals tools misc system std/io std/lists std/ks
-proofstyles: arithmetic-2 ordinals misc top-with-meta-cert
-concurrent-programs/bakery: misc ordinals
-concurrent-programs/german-protocol: misc
-deduction/passmore: 
-serialize: tools
-clause-processors: top-with-meta-cert arithmetic-3 textbook arithmetic \
-	misc tools data-structures arithmetic-5 system parallel
-quadratic-reciprocity: rtl
-misc/misc2: rtl coi top-with-meta-cert
-hints: misc
-models/jvm/m1-original: arithmetic-3/extra
-models/jvm/m1: arithmetic-5
-models/jvm/m5: top-with-meta-cert ordinals misc ihs
-# models/jvm/m5 is needed for paco/books, not paco
-models/X86: tools arithmetic-5 arithmetic misc rtl defexec
-paco: ihs ordinals top-with-meta-cert
-hacking: misc
-parallel: make-event tools
-security: misc arithmetic-3 arithmetic-5
-security/des: security misc centaur
-sorting: arithmetic-3/extra
-tools: arithmetic-5 misc xdoc
-regex: tools cutil str misc
-defsort: misc tools std/lists
-str: arithmetic defsort tools xdoc misc std/ks
-coi: arithmetic arithmetic-2 arithmetic-3 data-structures ihs make-event \
-	misc ordinals rtl
-wp-gen: ordinals
-# xdoc has no dependencies
-xdoc-impl: xdoc str tools finite-set-theory/osets
-system: tools arithmetic arithmetic-5 misc
-std/lists: arithmetic
-std/alists: std/lists tools
-std/typed-lists: std/lists cutil arithmetic
-std/ks: std/lists ihs arithmetic xdoc
-std/io: tools xdoc system std/lists std/ks arithmetic ihs arithmetic-3
-cutil: xdoc xdoc-impl tools str misc finite-set-theory/osets \
-       defsort unicode clause-processors system top-with-meta-cert
-countereg-gen: xdoc arithmetic-5 tools defexec finite-set-theory/osets \
-	arithmetic-3 arithmetic ordinals
-leftist-trees: arithmetic-5 sorting
-demos: make-event cutil misc tools arithmetic
-taspi: misc arithmetic-3
-models/y86: tools centaur misc arithmetic-5 rtl arithmetic defexec
-oslib: cutil str tools misc
-tau: arithmetic-5
-add-ons: arithmetic misc hacking
-
-# Let us wait for everything else before workshops.  Starting after
-# Version_4.3 we include the coi books, because of
-# workshops/2006/pike-shields-matthews/.
-workshops: $(DIRS1) $(DIRS2_EXCEPT_WK)
-
-$(DIRS1):
-	@if [ -f $@/Makefile ]; then cd $@ ; $(MAKE) ; fi
-
-$(DIRS2): top-with-meta-cert
-	@if [ -f $@/Makefile ]; then cd $@ ; $(MAKE) ; fi
-
-.PHONY: all-aux
-all-aux: $(DIRS1) $(DIRS2_EXCEPT_WK)
-
-# Certify all books that need certification.  If you want to get a
-# total time for certifying all books, then first do "make clean".  By
-# default we do the centaur books first, because one of them might
-# support a non-centaur book.  This is quite a commitment: henceforth,
-# the regression could in theory fail if we remove the centaur books
-# (say, because someone has a problem with Perl).  We'll face that
-# problem if it occurs; for example, we could remove the "offending"
-# directory from DIRS2_EXCEPT_WK_COI, or we could use
-# ACL2_CENTAUR=skip on the command line.
-
-.PHONY: all-plus centaur
-
-ifeq ($(ACL2_CENTAUR),before)
-all-plus: $(ALL_PLUS_DIRS)
-$(ALL_PLUS_DIRS): centaur
-else
-ifeq ($(ACL2_CENTAUR),after)
-all-plus: centaur
-centaur: $(ALL_PLUS_DIRS)
-else
-all-plus: $(ALL_PLUS_DIRS)
-endif
-endif
-
-.PHONY: hons clean-hons
-# For a parallel "make hons", use e.g.:
-#   make hons ACL2_HONS_OPT="-j4"
-# In general, ACL2_HONS_OPT is passed to the cert.pl command in centaur/.
-# Note that this variable is set automatically in ../GNUmakefile using
-# ACL2_JOBS.
-hons:
-	./cert.pl --targets regression-hons-targets \
-	  $(ACL2_HONS_OPT) \
-	  --acl2-books "`pwd`" \
-	  --acl2 $(ACL2_FOR_HONS)
-
-# WARNING: clean-hons will clean everywhere relevant to books/centaur/ under
-# the books/ directory, not merely under books/centaur/.
-clean-hons:
-	rm -rf centaur/manual
-	./cert.pl -c centaur/doc.lisp \
-	  $(ACL2_HONS_OPT) \
-	  --acl2-books "`pwd`" \
-	  -q
-	cd taspi/ ; make clean
-
-# Clean all books, not only the "basic" ones.
-.PHONY: clean
-clean:
-	@for dir in $(DIRS1) $(DIRS2) $(HONS_ONLY_DIRS) ; \
-	do \
-	if [ -f $$dir/Makefile ]; then \
-	(cd $$dir ; \
-	$(MAKE) FAST_DEPS_FOR_CLEAN=1 clean ; \
-	cd ..) ; \
-	fi \
-	done
-
-# See instructions for hons above -- except we expect to use the
-# centaur target with vanilla ACL2, as opposed to ACL2(h).
-centaur:
-	./cert.pl --targets regression-centaur-targets \
-	  $(ACL2_HONS_OPT) \
-	  --acl2-books "`pwd`" \
-	  --acl2 $(ACL2_FOR_CENTAUR)
-
-# WARNING: clean-centaur will clean everywhere relevant to books/centaur/ under
-# the books/ directory, not merely under books/centaur/.
-.PHONY: clean-centaur
-ifeq ($(ACL2_CENTAUR),skip)
-clean-centaur:
-	@echo "Skipping actions for clean-centaur."
-else
-clean-centaur:
-	rm -rf centaur/manual
-	./cert.pl -c centaur/doc.lisp \
-	  $(ACL2_HONS_OPT) \
-	  --acl2-books "`pwd`" \
-	  -q
-endif
-
-.PHONY: clean
-clean: clean-centaur
-
-# Tar up books and support, not including workshops or nonstd stuff.
-.PHONY: tar
-tar:
-	tar cvf books.tar Makefile Makefile-generic Makefile-subdirs README README.html certify-numbers.lsp $(DIRS1) $(DIRS2_EXCEPT_WK)
-
-# The following "short" targets allow for a relatively short test, in response
-# to a request from GCL maintainer Camm Maguire.
-
-.PHONY: short-clean
-short-clean:
-	@rm -f short-test.log
-	@for dir in $(DIRS1) $(SHORTDIRS2) ; \
-	do \
-	if [ -f $$dir/Makefile ]; then \
-	(cd $$dir ; \
-	$(MAKE) clean ; \
-	cd ..) ; \
-	fi \
-	done
-
-.PHONY: short-test-aux
-short-test-aux:
-	@for dir in $(DIRS1) ; \
-	do \
-	if [ -f $$dir/Makefile ]; then \
-	(cd $$dir ; \
-	$(MAKE) all ; \
-	cd ..) ; \
-	fi \
-	done
-	@$(MAKE) top-with-meta-cert
-	@for dir in $(SHORTDIRS2) ; \
-	do \
-	if [ -f $$dir/Makefile ]; then \
-	(cd $$dir ; \
-	$(MAKE) all ; \
-	cd ..) ; \
-	fi \
-	done
-
-.PHONY: short-test
-short-test:
-	@rm -f short-test.log
-	$(MAKE) short-clean
-	$(MAKE) short-test-aux > short-test.log 2> short-test.log
-	@if [ ! -f short-test.log ] || (fgrep '**' short-test.log > /dev/null) ; then \
-	(echo 'Short test failed!' ; exit 1) ; else \
-	echo 'Short test passed.' ; fi
-
-# The following target is primarily for developers to be able to check
-# well-formedness of the ACL2 world after including each book.
-# WARNING: Be sure to run "make regression" first!
-# The explicit make of top-with-meta.cert is there in order to avoid
-# removing that file after the .bkchk.out file is made (which
-# otherwise happens, somehow!).
-
-.PHONY: chk-include-book-worlds-top
-chk-include-book-worlds-top:
-	@(cd system ; $(MAKE) ; cd ..)
-	@for dir in $(DIRS1) ; \
-	do \
-	if [ -f $$dir/Makefile ]; then \
-	(cd $$dir ; \
-	$(MAKE) chk-include-book-worlds ; \
-	cd ..) ; \
-	fi \
-	done
-	@(cd arithmetic/ ; $(MAKE) -f ../Makefile-generic top-with-meta.cert ; cd ..)
-	@(cd arithmetic/ ; $(MAKE) -f ../Makefile-generic top-with-meta.bkchk.out ; cd ..)
-	@for dir in $(DIRS2) ; \
-	do \
-	if [ -f $$dir/Makefile ]; then \
-	(cd $$dir ; \
-	$(MAKE) chk-include-book-worlds ; \
-	cd ..) ; \
-	fi \
-	done
-
-# The targets below create compiled files for books that may have
-# already been certified in another lisp (.fasl files for all-fasl,
-# etc.).  Of course, the underlying lisp of the ACL2 that is run
-# should agree with the desired compiled file extension.
-# IMPORTANT: In order to use the targets below, you will first need to
-# have certified saving expansion files, e.g. with the following 'make'
-# argument.
-#   ACL2_SAVE_EXPANSION=t
-
-.PHONY: fasl
-fasl:
-	@date ; $(TIME) $(MAKE) fasl-aux ; date
-
-.PHONY: fasl-aux
-fasl-aux:
-	@for dir in $(DIRS1) ; \
-	do \
-	if [ -f $$dir/Makefile ]; then \
-	(cd $$dir ; \
-	$(MAKE) fasl ; \
-	cd ..) ; \
-	fi \
-	done
-	@$(MAKE) top-with-meta-fasl
-	@for dir in $(DIRS2_EXCEPT_WK) ; \
-	do \
-	if [ -f $$dir/Makefile ]; then \
-	(cd $$dir ; \
-	$(MAKE) fasl ; \
-	cd ..) ; \
-	fi \
-	done
-
-.PHONY: fas
-fas:
-	@date ; $(TIME) $(MAKE) fas-aux ; date
-
-.PHONY: fas-aux
-fas-aux:
-	@for dir in $(DIRS1) ; \
-	do \
-	if [ -f $$dir/Makefile ]; then \
-	(cd $$dir ; \
-	$(MAKE) fas ; \
-	cd ..) ; \
-	fi \
-	done
-	@$(MAKE) top-with-meta-fas
-	@for dir in $(DIRS2_EXCEPT_WK) ; \
-	do \
-	if [ -f $$dir/Makefile ]; then \
-	(cd $$dir ; \
-	$(MAKE) fas ; \
-	cd ..) ; \
-	fi \
-	done
-
-.PHONY: sparcf
-sparcf:
-	@date ; $(TIME) $(MAKE) sparcf-aux ; date
-
-.PHONY: sparcf-aux
-sparcf-aux:
-	@for dir in $(DIRS1) ; \
-	do \
-	if [ -f $$dir/Makefile ]; then \
-	(cd $$dir ; \
-	$(MAKE) sparcf ; \
-	cd ..) ; \
-	fi \
-	done
-	@$(MAKE) top-with-meta-sparcf
-	@for dir in $(DIRS2_EXCEPT_WK) ; \
-	do \
-	if [ -f $$dir/Makefile ]; then \
-	(cd $$dir ; \
-	$(MAKE) sparcf ; \
-	cd ..) ; \
-	fi \
-	done
-
-.PHONY: ufsl
-ufsl:
-	@date ; $(TIME) $(MAKE) ufsl-aux ; date
-
-.PHONY: ufsl-aux
-ufsl-aux:
-	@for dir in $(DIRS1) ; \
-	do \
-	if [ -f $$dir/Makefile ]; then \
-	(cd $$dir ; \
-	$(MAKE) ufsl ; \
-	cd ..) ; \
-	fi \
-	done
-	@$(MAKE) top-with-meta-ufsl
-	@for dir in $(DIRS2_EXCEPT_WK) ; \
-	do \
-	if [ -f $$dir/Makefile ]; then \
-	(cd $$dir ; \
-	$(MAKE) ufsl ; \
-	cd ..) ; \
-	fi \
-	done
-
-.PHONY: 64ufasl
-64ufasl:
-	@date ; $(TIME) $(MAKE) 64ufasl-aux ; date
-
-.PHONY: 64ufasl-aux
-64ufasl-aux:
-	@for dir in $(DIRS1) ; \
-	do \
-	if [ -f $$dir/Makefile ]; then \
-	(cd $$dir ; \
-	$(MAKE) 64ufasl ; \
-	cd ..) ; \
-	fi \
-	done
-	@$(MAKE) top-with-meta-64ufasl
-	@for dir in $(DIRS2_EXCEPT_WK) ; \
-	do \
-	if [ -f $$dir/Makefile ]; then \
-	(cd $$dir ; \
-	$(MAKE) 64ufasl ; \
-	cd ..) ; \
-	fi \
-	done
-
-.PHONY: x86f
-x86f:
-	@date ; $(TIME) $(MAKE) x86f-aux ; date
-
-.PHONY: x86f-aux
-x86f-aux:
-	@for dir in $(DIRS1) ; \
-	do \
-	if [ -f $$dir/Makefile ]; then \
-	(cd $$dir ; \
-	$(MAKE) x86f ; \
-	cd ..) ; \
-	fi \
-	done
-	@$(MAKE) top-with-meta-x86f
-	@for dir in $(DIRS2_EXCEPT_WK) ; \
-	do \
-	if [ -f $$dir/Makefile ]; then \
-	(cd $$dir ; \
-	$(MAKE) x86f ; \
-	cd ..) ; \
-	fi \
-	done
-
-.PHONY: o
-o:
-	@date ; $(TIME) $(MAKE) o-aux ; date
-
-.PHONY: o-aux
-o-aux:
-	@for dir in $(DIRS1) ; \
-	do \
-	if [ -f $$dir/Makefile ]; then \
-	(cd $$dir ; \
-	$(MAKE) o ; \
-	cd ..) ; \
-	fi \
-	done
-	@$(MAKE) top-with-meta-o
-	@for dir in $(DIRS2_EXCEPT_WK) ; \
-	do \
-	if [ -f $$dir/Makefile ]; then \
-	(cd $$dir ; \
-	$(MAKE) o ; \
-	cd ..) ; \
-	fi \
-	done
-
-.PHONY: dfsl
-dfsl:
-	@date ; $(TIME) $(MAKE) dfsl-aux ; date
-
-.PHONY: dfsl-aux
-dfsl-aux:
-	@for dir in $(DIRS1) ; \
-	do \
-	if [ -f $$dir/Makefile ]; then \
-	(cd $$dir ; \
-	$(MAKE) dfsl ; \
-	cd ..) ; \
-	fi \
-	done
-	@$(MAKE) top-with-meta-dfsl
-	@for dir in $(DIRS2_EXCEPT_WK) ; \
-	do \
-	if [ -f $$dir/Makefile ]; then \
-	(cd $$dir ; \
-	$(MAKE) dfsl ; \
-	cd ..) ; \
-	fi \
-	done
-
-.PHONY: d64fsl
-d64fsl:
-	@date ; $(TIME) $(MAKE) d64fsl-aux ; date
-
-.PHONY: d64fsl-aux
-d64fsl-aux:
-	@for dir in $(DIRS1) ; \
-	do \
-	if [ -f $$dir/Makefile ]; then \
-	(cd $$dir ; \
-	$(MAKE) d64fsl ; \
-	cd ..) ; \
-	fi \
-	done
-	@$(MAKE) top-with-meta-d64fsl
-	@for dir in $(DIRS2_EXCEPT_WK) ; \
-	do \
-	if [ -f $$dir/Makefile ]; then \
-	(cd $$dir ; \
-	$(MAKE) d64fsl ; \
-	cd ..) ; \
-	fi \
-	done
-
-.PHONY: dx64fsl
-dx64fsl:
-	@date ; $(TIME) $(MAKE) dx64fsl-aux ; date
-
-.PHONY: dx64fsl-aux
-dx64fsl-aux:
-	@for dir in $(DIRS1) ; \
-	do \
-	if [ -f $$dir/Makefile ]; then \
-	(cd $$dir ; \
-	$(MAKE) dx64fsl ; \
-	cd ..) ; \
-	fi \
-	done
-	@$(MAKE) top-with-meta-dx64fsl
-	@for dir in $(DIRS2_EXCEPT_WK) ; \
-	do \
-	if [ -f $$dir/Makefile ]; then \
-	(cd $$dir ; \
-	$(MAKE) dx64fsl ; \
-	cd ..) ; \
-	fi \
-	done
-
-.PHONY: lx64fsl
-lx64fsl:
-	@date ; $(TIME) $(MAKE) lx64fsl-aux ; date
-
-.PHONY: lx64fsl-aux
-lx64fsl-aux:
-	@for dir in $(DIRS1) ; \
-	do \
-	if [ -f $$dir/Makefile ]; then \
-	(cd $$dir ; \
-	$(MAKE) lx64fsl ; \
-	cd ..) ; \
-	fi \
-	done
-	@$(MAKE) top-with-meta-lx64fsl
-	@for dir in $(DIRS2_EXCEPT_WK) ; \
-	do \
-	if [ -f $$dir/Makefile ]; then \
-	(cd $$dir ; \
-	$(MAKE) lx64fsl ; \
-	cd ..) ; \
-	fi \
-	done
-
-.PHONY: lx32fsl
-lx32fsl:
-	@date ; $(TIME) $(MAKE) lx32fsl-aux ; date
-
-.PHONY: lx32fsl-aux
-lx32fsl-aux:
-	@for dir in $(DIRS1) ; \
-	do \
-	if [ -f $$dir/Makefile ]; then \
-	(cd $$dir ; \
-	$(MAKE) lx32fsl ; \
-	cd ..) ; \
-	fi \
-	done
-	@$(MAKE) top-with-meta-lx32fsl
-	@for dir in $(DIRS2_EXCEPT_WK) ; \
-	do \
-	if [ -f $$dir/Makefile ]; then \
-	(cd $$dir ; \
-	$(MAKE) lx32fsl ; \
-	cd ..) ; \
-	fi \
-	done
-
-.PHONY: all-fasl
-all-fasl:
-	@date ; $(TIME) $(MAKE) all-fasl-aux ; date
-
-.PHONY: all-fasl-aux
-all-fasl-aux:
-	@for dir in $(DIRS1) ; \
-	do \
-	if [ -f $$dir/Makefile ]; then \
-	(cd $$dir ; \
-	$(MAKE) fasl ; \
-	cd ..) ; \
-	fi \
-	done
-	@$(MAKE) top-with-meta-fasl
-	@for dir in $(DIRS2) ; \
-	do \
-	if [ -f $$dir/Makefile ]; then \
-	(cd $$dir ; \
-	$(MAKE) fasl ; \
-	cd ..) ; \
-	fi \
-	done
-
-.PHONY: all-fas
-all-fas:
-	@date ; $(TIME) $(MAKE) all-fas-aux ; date
-
-.PHONY: all-fas-aux
-all-fas-aux:
-	@for dir in $(DIRS1) ; \
-	do \
-	if [ -f $$dir/Makefile ]; then \
-	(cd $$dir ; \
-	$(MAKE) fas ; \
-	cd ..) ; \
-	fi \
-	done
-	@$(MAKE) top-with-meta-fas
-	@for dir in $(DIRS2) ; \
-	do \
-	if [ -f $$dir/Makefile ]; then \
-	(cd $$dir ; \
-	$(MAKE) fas ; \
-	cd ..) ; \
-	fi \
-	done
-
-.PHONY: all-sparcf
-all-sparcf:
-	@date ; $(TIME) $(MAKE) all-sparcf-aux ; date
-
-.PHONY: all-sparcf-aux
-all-sparcf-aux:
-	@for dir in $(DIRS1) ; \
-	do \
-	if [ -f $$dir/Makefile ]; then \
-	(cd $$dir ; \
-	$(MAKE) sparcf ; \
-	cd ..) ; \
-	fi \
-	done
-	@$(MAKE) top-with-meta-sparcf
-	@for dir in $(DIRS2) ; \
-	do \
-	if [ -f $$dir/Makefile ]; then \
-	(cd $$dir ; \
-	$(MAKE) sparcf ; \
-	cd ..) ; \
-	fi \
-	done
-
-.PHONY: all-ufsl
-all-ufsl:
-	@date ; $(TIME) $(MAKE) all-ufsl-aux ; date
-
-.PHONY: all-ufsl-aux
-all-ufsl-aux:
-	@for dir in $(DIRS1) ; \
-	do \
-	if [ -f $$dir/Makefile ]; then \
-	(cd $$dir ; \
-	$(MAKE) ufsl ; \
-	cd ..) ; \
-	fi \
-	done
-	@$(MAKE) top-with-meta-ufsl
-	@for dir in $(DIRS2) ; \
-	do \
-	if [ -f $$dir/Makefile ]; then \
-	(cd $$dir ; \
-	$(MAKE) ufsl ; \
-	cd ..) ; \
-	fi \
-	done
-
-.PHONY: all-64ufasl
-all-64ufasl:
-	@date ; $(TIME) $(MAKE) all-64ufasl-aux ; date
-
-.PHONY: all-64ufasl-aux
-all-64ufasl-aux:
-	@for dir in $(DIRS1) ; \
-	do \
-	if [ -f $$dir/Makefile ]; then \
-	(cd $$dir ; \
-	$(MAKE) 64ufasl ; \
-	cd ..) ; \
-	fi \
-	done
-	@$(MAKE) top-with-meta-64ufasl
-	@for dir in $(DIRS2) ; \
-	do \
-	if [ -f $$dir/Makefile ]; then \
-	(cd $$dir ; \
-	$(MAKE) 64ufasl ; \
-	cd ..) ; \
-	fi \
-	done
-
-.PHONY: all-x86f
-all-x86f:
-	@date ; $(TIME) $(MAKE) all-x86f-aux ; date
-
-.PHONY: all-x86f-aux
-all-x86f-aux:
-	@for dir in $(DIRS1) ; \
-	do \
-	if [ -f $$dir/Makefile ]; then \
-	(cd $$dir ; \
-	$(MAKE) x86f ; \
-	cd ..) ; \
-	fi \
-	done
-	@$(MAKE) top-with-meta-x86f
-	@for dir in $(DIRS2) ; \
-	do \
-	if [ -f $$dir/Makefile ]; then \
-	(cd $$dir ; \
-	$(MAKE) x86f ; \
-	cd ..) ; \
-	fi \
-	done
-
-.PHONY: all-dfsl
-all-dfsl:
-	@date ; $(TIME) $(MAKE) all-dfsl-aux ; date
-
-.PHONY: all-dfsl-aux
-all-dfsl-aux:
-	@for dir in $(DIRS1) ; \
-	do \
-	if [ -f $$dir/Makefile ]; then \
-	(cd $$dir ; \
-	$(MAKE) dfsl ; \
-	cd ..) ; \
-	fi \
-	done
-	@$(MAKE) top-with-meta-dfsl
-	@for dir in $(DIRS2) ; \
-	do \
-	if [ -f $$dir/Makefile ]; then \
-	(cd $$dir ; \
-	$(MAKE) dfsl ; \
-	cd ..) ; \
-	fi \
-	done
-
-.PHONY: all-d64fsl
-all-d64fsl:
-	@date ; $(TIME) $(MAKE) all-d64fsl-aux ; date
-
-.PHONY: all-d64fsl-aux
-all-d64fsl-aux:
-	@for dir in $(DIRS1) ; \
-	do \
-	if [ -f $$dir/Makefile ]; then \
-	(cd $$dir ; \
-	$(MAKE) d64fsl ; \
-	cd ..) ; \
-	fi \
-	done
-	@$(MAKE) top-with-meta-d64fsl
-	@for dir in $(DIRS2) ; \
-	do \
-	if [ -f $$dir/Makefile ]; then \
-	(cd $$dir ; \
-	$(MAKE) d64fsl ; \
-	cd ..) ; \
-	fi \
-	done
-
-.PHONY: all-dx64fsl
-all-dx64fsl:
-	@date ; $(TIME) $(MAKE) all-dx64fsl-aux ; date
-
-.PHONY: all-dx64fsl-aux
-all-dx64fsl-aux:
-	@for dir in $(DIRS1) ; \
-	do \
-	if [ -f $$dir/Makefile ]; then \
-	(cd $$dir ; \
-	$(MAKE) dx64fsl ; \
-	cd ..) ; \
-	fi \
-	done
-	@$(MAKE) top-with-meta-dx64fsl
-	@for dir in $(DIRS2) ; \
-	do \
-	if [ -f $$dir/Makefile ]; then \
-	(cd $$dir ; \
-	$(MAKE) dx64fsl ; \
-	cd ..) ; \
-	fi \
-	done
-
-.PHONY: all-lx64fsl
-all-lx64fsl:
-	@date ; $(TIME) $(MAKE) all-lx64fsl-aux ; date
-
-.PHONY: all-lx64fsl-aux
-all-lx64fsl-aux:
-	@for dir in $(DIRS1) ; \
-	do \
-	if [ -f $$dir/Makefile ]; then \
-	(cd $$dir ; \
-	$(MAKE) lx64fsl ; \
-	cd ..) ; \
-	fi \
-	done
-	@$(MAKE) top-with-meta-lx64fsl
-	@for dir in $(DIRS2) ; \
-	do \
-	if [ -f $$dir/Makefile ]; then \
-	(cd $$dir ; \
-	$(MAKE) lx64fsl ; \
-	cd ..) ; \
-	fi \
-	done
-
-.PHONY: all-lx32fsl
-all-lx32fsl:
-	@date ; $(TIME) $(MAKE) all-lx32fsl-aux ; date
-
-.PHONY: all-lx32fsl-aux
-all-lx32fsl-aux:
-	@for dir in $(DIRS1) ; \
-	do \
-	if [ -f $$dir/Makefile ]; then \
-	(cd $$dir ; \
-	$(MAKE) lx32fsl ; \
-	cd ..) ; \
-	fi \
-	done
-	@$(MAKE) top-with-meta-lx32fsl
-	@for dir in $(DIRS2) ; \
-	do \
-	if [ -f $$dir/Makefile ]; then \
-	(cd $$dir ; \
-	$(MAKE) lx32fsl ; \
-	cd ..) ; \
-	fi \
-	done
-
-.PHONY: all-o
-all-o:
-	@date ; $(TIME) $(MAKE) all-o-aux ; date
-
-.PHONY: all-o-aux
-all-o-aux:
-	@for dir in $(DIRS1) ; \
-	do \
-	if [ -f $$dir/Makefile ]; then \
-	(cd $$dir ; \
-	$(MAKE) o ; \
-	cd ..) ; \
-	fi \
-	done
-	@$(MAKE) top-with-meta-o
-	@for dir in $(DIRS2) ; \
-	do \
-	if [ -f $$dir/Makefile ]; then \
-	(cd $$dir ; \
-	$(MAKE) o ; \
-	cd ..) ; \
-	fi \
-	done
-
-.PHONY: top-with-meta-cert
-top-with-meta-cert: $(DIRS1)
-	@echo "Using ACL2=$(ACL2)"
-	cd arithmetic ; $(MAKE) top-with-meta.cert
-
-.PHONY: top-with-meta-o
-top-with-meta-o:
-	cd arithmetic ; $(MAKE) top-with-meta.o
-
-.PHONY: top-with-meta-fasl
-top-with-meta-fasl:
-	cd arithmetic ; $(MAKE) top-with-meta.fasl
-
-.PHONY: top-with-meta-fas
-top-with-meta-fas:
-	cd arithmetic ; $(MAKE) top-with-meta.fas
-
-.PHONY: top-with-meta-sparcf
-top-with-meta-sparcf:
-	cd arithmetic ; $(MAKE) top-with-meta.sparcf
-
-.PHONY: top-with-meta-ufsl
-top-with-meta-ufsl:
-	cd arithmetic ; $(MAKE) top-with-meta.ufsl
-
-.PHONY: top-with-meta-64ufasl
-top-with-meta-64ufasl:
-	cd arithmetic ; $(MAKE) top-with-meta.64ufasl
-
-.PHONY: top-with-meta-x86f
-top-with-meta-x86f:
-	cd arithmetic ; $(MAKE) top-with-meta.x86f
-
-.PHONY: top-with-meta-dfsl
-top-with-meta-dfsl:
-	cd arithmetic ; $(MAKE) top-with-meta.dfsl
-
-.PHONY: top-with-meta-d64fsl
-top-with-meta-d64fsl:
-	cd arithmetic ; $(MAKE) top-with-meta.d64fsl
-
-.PHONY: top-with-meta-dx64fsl
-top-with-meta-dx64fsl:
-	cd arithmetic ; $(MAKE) top-with-meta.dx64fsl
-
-.PHONY: top-with-meta-lx64fsl
-top-with-meta-lx64fsl:
-	cd arithmetic ; $(MAKE) top-with-meta.lx64fsl
-
-.PHONY: top-with-meta-lx32fsl
-top-with-meta-lx32fsl:
-	cd arithmetic ; $(MAKE) top-with-meta.lx32fsl
+
+everything: all
+
+all: lite
+
+##############################
+### Section: Create auxiliary files (Makefile-xxx) and initial OK_CERTS
+##############################
+
+# It seems that info is defined starting in GNU make version 3.81.
+# But version 3.80 seems to tolerate calls of info, simply ignoring
+# them.  We could use a variable, as follows, so that you can set
+# INFO=warning on the command line if you want to see the messages
+# even with GNU make version 3.80.  But maybe this is too ugly, so we
+# just leave the idea as a comment.
+## INFO := info
+### Example: Prints something like "Makefile:227: just a test" when
+### invoked with INFO=warning; otherwise, same as $(info just a test).
+## $(eval $$($(INFO) just a test))
+
+ifndef NO_RESCAN
+
+# In the following, we exclude centaur/quicklisp explicitly rather
+# than using the usual cert_pl_exclude file, because centaur/quicklisp
+# uses cert.pl to certify books.  We exclude centaur/quicklisp
+# explicitly since when we do want to make it, it will use cert.pl and
+# hence we can't put a cert_pl_exclude file in that directory.  Some
+# others we exclude because there are subdirectories and it's simply
+# easiest to stop at the root.
+$(info Scanning for books...)
+REBUILD_MAKEFILE_BOOKS := $(shell \
+  rm -f Makefile-books; \
+  time find . -name "*.lisp" \
+    | egrep -v '^(\./)?(interface|nonstd|centaur/quicklisp|clause-processors/SULFA|workshops/2003/kaufmann/support)' \
+  > Makefile-books; \
+  ls -l Makefile-books)
+#$(info $(REBUILD_MAKEFILE_BOOKS))
+
+$(info Scanning for dependencies...)
+REBUILD_MAKEFILE_DEPS := $(shell \
+  rm -f Makefile-deps Makefile-deps.out; \
+  time (./cert.pl \
+          --quiet \
+          --static-makefile Makefile-deps \
+          --cache Makefile-cache \
+          --acl2-books `pwd` \
+          --targets Makefile-books \
+          1>&2) ;\
+  echo 'MFDEPS_DEBUG := $$(shell echo Reading book deps ' \
+       'Makefile-deps created on' `date` '1>&2)' \
+    >> Makefile-deps; \
+  ls -l Makefile-deps)
+#$(info $(REBUILD_MAKEFILE_DEPS))
+$(info Done scanning.)
+
+endif # ifndef NO_RESCAN
+
+include Makefile-deps
+
+$(info Determining ACL2 features (for ACL2 = $(ACL2)))
+ACL2_FEATURES := $(shell \
+  rm -f Makefile-features ; \
+  ACL2_CUSTOMIZATION=NONE $(STARTJOB) -c \
+     "$(ACL2) < cert_features.lsp &> Makefile-features.out" ;\
+  ls -l Makefile-features)
+
+# Only conditionally include Makefile-features, so that make clean works even
+# if ACL2 isn't built.
+-include Makefile-features
+$(info ACL2_HAS_HONS     := $(ACL2_HAS_HONS))
+$(info ACL2_HAS_PARALLEL := $(ACL2_HAS_PARALLEL))
+$(info ACL2_HAS_REALS    := $(ACL2_HAS_REALS))
+$(info ACL2_COMP_EXT     := $(ACL2_COMP_EXT))
+$(info Done with features.)
+
+OK_CERTS := $(CERT_PL_CERTS)
+
+ifeq ($(ACL2_HAS_HONS), )
+
+# $(info Excluding books that depend on ACL2(h))
+OK_CERTS := $(filter-out $(CERT_PL_HONS_ONLY), $(OK_CERTS))
+
+endif # ifeq ($(ACL2_HAS_HONS), )
+
+# SLOW_BOOKS are books that are too slow to include as part of an ordinary
+# regression.
+
+SLOW_BOOKS := \
+  coi/termination/assuming/complex.cert \
+  models/jvm/m5/apprentice.cert \
+  workshops/2009/sumners/support/examples.cert \
+  workshops/2011/krug-et-al/support/MinVisor/va-to-pa-thm.cert \
+  workshops/2011/krug-et-al/support/MinVisor/setup-nested-page-tables.cert
+
+OK_CERTS := $(filter-out $(SLOW_BOOKS), $(OK_CERTS))
+
+##############################
+### Section: Cleaning
+##############################
+
+# We delegate most of the cleaning process to clean.pl, a simple perl script
+# that lets us take care not to delete certain kinds of files.  The clean.pl
+# script will remove things like .cert and .fasl files.
+
+CLEAN_FILES_EXPLICIT := \
+   xdoc-impl/bookdoc.dat \
+   Makefile-comp \
+   Makefile-comp-pre \
+   Makefile-deps \
+   Makefile-books \
+   Makefile-features \
+   Makefile-cache \
+   serialize/test.sao
+
+MORECLEAN_FILES_EXPLICIT := \
+   xdoc-impl/manual \
+   centaur/manual
+
+.PHONY: clean_books clean
+
+clean_books:
+	@echo "Using clean.pl to remove certificates, etc."
+	./clean.pl
+
+# We test that directory centaur/quicklisp exists because it probably
+# doesn't for nonstd/, and we include this makefile from that
+# directory.
+clean: clean_books
+	@echo "Removing extra, explicitly temporary files."
+	rm -rf $(CLEAN_FILES_EXPLICIT)
+	if [ -d centaur/quicklisp ] ; then \
+	cd centaur/quicklisp; $(MAKE) clean ; \
+	fi
+
+moreclean: clean
+	@echo "Removing even more generated files (documentation, etc)."
+	rm -rf $(MORECLEAN_FILES_EXPLICIT)
+
+##############################
+### Section: Miscellaneous custom support
+##############################
+
+# Next, we deal with books that need special handling.
+
+# xdoc-impl is tricky because we have to generate bookdoc.dat.
+
+xdoc-impl/bookdoc.dat: \
+  xdoc-impl/acl2-customization.lsp \
+  xdoc-impl/bookdoc.lsp \
+  xdoc/package.lsp \
+  $(wildcard xdoc/*.lisp) \
+  $(wildcard xdoc-impl/*.lisp) \
+  xdoc-impl/extra-packages.cert
+	@echo "Making xdoc-impl/bookdoc.dat"
+	@cd xdoc-impl; \
+          $(STARTJOB) -c "$(ACL2) < bookdoc.lsp &> bookdoc.out"
+	@ls -l xdoc-impl/bookdoc.dat
+
+# We assume that ACL2_HAS_REALS indicates a regression being done in
+# nonstd/.
+ifndef ACL2_HAS_REALS
+
+# The following dependency is to be ignored in ACL2(r), where the
+# relevant include-book in arithmetic-3/extra/ext.lisp is guarded by
+# #-:non-standard-analysis.
+arithmetic-3/extra/ext.cert: rtl/rel8/arithmetic/top.cert
+
+endif # ifndef ACL2_HAS_REALS
+
+# BOZO.   make-event/local-elided stuff is tricky because it thinks it can tell whether
+# local-elided.lisp was provisionally certified or not, which doesn't
+# necessarily make any sense... this is the easiest way to fix it so that it
+# works with provisional certification:
+
+make-event/local-elided-include.pcert1: make-event/local-elided.cert
+
+make-event/macros-include.pcert1: make-event/macros.cert
+
+make-event/local-requires-skip-check-include.pcert1: \
+  make-event/local-requires-skip-check.cert
+
+# Deal with generated file bdd/benchmarks.lisp.
+
+all: bdd/benchmarks.cert
+
+bdd/benchmarks.cert: bdd/benchmarks.lisp
+
+bdd/benchmarks.lisp: bdd/cbf.cert bdd/create-benchmarks.lsp
+	cd bdd ; (echo '(ld "create-benchmarks.lsp")' | $(ACL2))
+
+# Use custom Makefiles:
+
+# There are several directories that we can't easily work directly
+# into our general framework because they each have a custom Makefile.
+# We handle those next.  For example, two directories test provisional
+# certification: system/pcert, which was constructed explicitly to
+# test provisional certification; and workshops/2011/verbeek-schmaltz,
+# which is slow without provisional certification but is reasonably
+# fast using provisional certification.
+
+# Our perhaps gross hack is to use the old ACL2 Makefile-generic
+# system to invoke the custom makefiles, for example as follows for
+# verbeek-schmaltz.
+
+#   - we tell cert.pl not to look at verbeek-schmaltz/sources, via a
+#     cert_pl_exclude file;
+#   - we add a verbeek-schmaltz/deps.lisp file with the prerequisites that
+#     we need before going into the verbeek-schmaltz directory;
+#   - we use an arbitrary top-level target to certify the actual
+#     verbeek-schmaltz books after certifying the deps, which need not
+#     be in any sense "the top-level book" for the directory -- but if
+#     not, then if a book B in any other directory comes to depend on
+#     a book other than the target that we picked, we will need to
+#     make it depend on that target.
+
+# In order to create a deps file, we connect to the directory (e.g., 
+# cd clause-processors/SULFA), and then use shell commands:
+#   fgrep ':dir :system' `find . -name "*.lisp"`
+#   fgrep ':dir :system' `find . -name "*.acl2"`
+
+# We skip those that do not have counterparts under nonstd/ when
+# ACL2_HAS_REALS indicates a regression being done by ACL2(r) in
+# nonstd/.  Also, for simplicity, we only handle ACL2_COMP for
+# system/pcert/, and we do that in the section below, "Support for
+# ACL2_COMP".
+
+ifndef ACL2_COMP
+
+ifndef ACL2_HAS_REALS
+
+all: \
+  clause-processors/SULFA/target.cert \
+  fix-cert/fix-cert.cert \
+  workshops/1999/multiplier/proof.cert \
+  workshops/2003/greve-wilding-vanfleet/support/firewallworks.cert \
+  workshops/2003/kaufmann/support/input/defs-in.cert \
+  workshops/2011/verbeek-schmaltz/sources/correctness2.cert
+
+# We only make the books under SULFA if a documented test for an
+# installed SAT solver succeeds.
+clause-processors/SULFA/target.cert: \
+  clause-processors/deps-SULFA.cert
+	@if [ -f ${PWD}/../aux/minisat2/${HOSTTYPE}/minisat/core/minisat ] ; \
+	then \
+	(cd $(@D) ; $(MAKE)) ; \
+	else \
+	echo "*NOTE*: Skipping SULFA subdirectory (no SAT solver installed; see SULFA/README)." ; \
+	fi
+
+# The following has no dependencies, so doesn't need a "deps" file.
+fix-cert/fix-cert.cert:
+	cd $(@D) ; $(MAKE)
+
+workshops/1999/multiplier/proof.cert: \
+  workshops/1999/deps-multiplier.cert
+	cd $(@D) ; $(MAKE)
+
+workshops/2003/greve-wilding-vanfleet/support/firewallworks.cert: \
+  workshops/2003/greve-wilding-vanfleet/deps.cert
+	cd $(@D) ; $(MAKE)
+
+# The following has no dependencies, so doesn't need a "deps" file.
+# Note that we change to the parent directory in order to pick up all
+# of support/.
+workshops/2003/kaufmann/support/input/defs-in.cert:
+	cd $(@D)/.. ; $(MAKE)
+
+workshops/2011/verbeek-schmaltz/sources/correctness2.cert: \
+  workshops/2011/verbeek-schmaltz/deps.cert
+	cd $(@D) ; $(MAKE)
+
+endif # ifndef ACL2_HAS_REALS
+
+all: system/pcert/sub.cert
+
+system/pcert/sub.cert: \
+  system/deps-pcert.cert
+	cd $(@D) ; $(MAKE)
+
+endif # ifndef ACL2_COMP
+
+##############################
+### Section: Support for ACL2_COMP
+##############################
+
+ifdef ACL2_COMP
+
+# Multi-lisp compilation stuff for developers.
+
+# NOTE: This build might fail for compiled files that involve
+# include-raw, that have readtime conditionals, that can cause stack
+# overflows when loading uncompiled code, etc.  We don't consider it
+# critical, however, that every compiled file get built.  See "Define
+# books to be skipped for multi-lisp compilation", above, for the
+# compiled files we do not attempt to build.
+
+# Typical making of compiled files in books/ could be done as follows.
+# First, in ACL2 sources directory:
+#   make -j 4 regression-fresh ACL2_SAVE_EXPANSION=t ACL2=acl2-ccl
+# Then, in books/ directory (where ACL2_SAVE_EXPANSION=t is optional,
+# but a good idea in case some .cert file is unexpectedly remade):
+#   make -j 4 -k ACL2_COMP=t ACL2_SAVE_EXPANSION=t ACL2=acl2-sbcl
+
+# Typical making of compiled files in books/nonstd/ could be done as follows.
+# First, in ACL2 sources directory:
+#   make -j 4 regression-nonstd-fresh ACL2_SAVE_EXPANSION=t ACL2=acl2r-ccl
+# Then, in books/nonstd/ directory (where ACL2_SAVE_EXPANSION=t is optional,
+# but a good idea in case some .cert file is unexpectedly remade):
+#   make -j 4 -k ACL2_COMP=t ACL2_SAVE_EXPANSION=t ACL2=acl2r-sbcl
+
+# Note: these targets won't work unless you've already done a build
+# using a "compatible" ACL2 (both ACL2, both ACL2(hp), etc.) after
+# first setting ACL2_SAVE_EXPANSION=t, and then you define ACL2_COMP
+# (e.g., ACL2_COMP=1) with a subsequent call of make.
+
+# We skip multi-lisp compilation for the centaur books, because these
+# may be more likely to have code conditional on the combination of
+# both features :CCL and :HONS.  That can affect checksums, thus
+# making it appear that a book certified in CCL is not certified in
+# another Lisp.  We also skip multi-lisp compilation for books that
+# depend on centaur/ books when we see a multi-lisp compilation
+# failure for books in their directories.  (Thus, even though
+# security/des/ depends on GL and hence centaur/, we don't exclude
+# its books.)
+$(info For building compiled (.$(ACL2_COMP_EXT)) files, excluding centaur books)
+OK_CERTS := $(filter-out centaur/%, \
+              $(filter-out models/y86/%, \
+                $(OK_CERTS)))
+
+ifndef NO_RESCAN
+
+$(info Scanning for "make comp" dependencies...)
+# Below, we use a different --var-prefix from the default used for the
+# cert.pl call above, since we don't want to redefine the CERT_PL_xxx
+# variables.  But note that we don't use the ACL2_COMP_xxx variables.
+REBUILD_MAKEFILE_COMP := $(shell \
+  rm -f Makefile-comp Makefile-comp.out; \
+  time ((./cert.pl \
+          --quiet \
+          --static-makefile Makefile-comp-pre \
+          --cache Makefile-cache \
+          --acl2-books `pwd` \
+          --targets Makefile-books \
+          --no-boilerplate \
+          --var-prefix ACL2_COMP) \
+          1>&2) ;\
+          (cat Makefile-comp-pre | sed "s/[.]cert/.$(ACL2_COMP_EXT)/g" > \
+           Makefile-comp) 1>&2 ;\
+  echo 'MFDEPS_DEBUG := $$(shell echo Reading book comp ' \
+       'Makefile-comp created on' `date` '1>&2)' \
+    >> Makefile-comp; \
+  ls -l Makefile-comp)
+$(info Done scanning.)
+
+endif # ifndef NO_RESCAN
+
+include Makefile-comp
+
+# Define books to be skipped for multi-lisp compilation.
+
+OK_CERTS := $(patsubst %.cert, %.$(ACL2_COMP_EXT), $(OK_CERTS))
+
+# Start a sequence of assignments to BOOKS_SKIP_COMP:
+BOOKS_SKIP_COMP :=
+
+# Unusual directory:
+BOOKS_SKIP_COMP += $(patsubst %.cert, %.$(ACL2_COMP_EXT), $(wildcard fix-cert/*.cert))
+
+# Contains Lisp-specific readtime conditionals:
+BOOKS_SKIP_COMP += hacking/evalable-ld-printing.$(ACL2_COMP_EXT)
+
+# dft-ex.acl2 specifies no compilation; getprop.lisp can give stack
+# overflow in during the load of the expansion file -- perhaps not
+# surprising, given that (comp t) occurs in the .lisp file:
+BOOKS_SKIP_COMP += misc/dft-ex.$(ACL2_COMP_EXT) misc/getprop.$(ACL2_COMP_EXT)
+
+# aof.acl2 specifies no compilation; knuth-arch.lisp depends on aof:
+BOOKS_SKIP_COMP += workshops/1999/knuth-91/aof.$(ACL2_COMP_EXT) \
+                   workshops/1999/knuth-91/knuth-arch.$(ACL2_COMP_EXT)
+
+# The .acl2 files specify no compilation:
+BOOKS_SKIP_COMP += $(patsubst %.cert, %.$(ACL2_COMP_EXT), $(wildcard workshops/2002/cowles-flat/support/*.cert))
+
+# The .acl2 files specify no compilation:
+BOOKS_SKIP_COMP += $(patsubst %.cert, %.$(ACL2_COMP_EXT), $(wildcard workshops/2006/cowles-gamboa-euclid/Euclid/fld-u-poly/*.cert))
+
+# Some .acl2 files specify no compilation, including ed3.acl2, and
+# many books depend on ed3:
+BOOKS_SKIP_COMP += $(patsubst %.cert, %.$(ACL2_COMP_EXT), $(wildcard workshops/2006/cowles-gamboa-euclid/Euclid/*.cert))
+
+# The .acl2 files specify no compilation:
+BOOKS_SKIP_COMP += workshops/2006/kaufmann-moore/support/rhs1-iff.$(ACL2_COMP_EXT) \
+		   workshops/2006/kaufmann-moore/support/rhs1.$(ACL2_COMP_EXT) \
+		   workshops/2006/kaufmann-moore/support/rhs2.$(ACL2_COMP_EXT) \
+		   workshops/2006/kaufmann-moore/support/warnings.$(ACL2_COMP_EXT)
+
+# There seems to be a problem with files that use include-raw.  We
+# skip those.
+# Has (include-raw "timer.lsp"):
+BOOKS_SKIP_COMP += memoize/top.$(ACL2_COMP_EXT)
+BOOKS_SKIP_COMP += $(patsubst %-raw.lsp, %.$(ACL2_COMP_EXT), $(shell find . -name '*-raw.lsp' -print))
+
+# Has readtime conditionals #+ccl and #-ccl ("not supported for this
+# host Lisp").
+BOOKS_SKIP_COMP += centaur/bridge/top.$(ACL2_COMP_EXT)
+
+# CLISP says: "Lisp stack overflow":
+BOOKS_SKIP_COMP += workshops/2006/rager/support/ptest-mergesort.$(ACL2_COMP_EXT)
+
+# In Makefile-comp, bdd/benchmarks.$(ACL2_COMP_EXT) may depend on
+# bdd/benchmarks.lisp, but we don't want to make either, so we do this
+# explicitly:
+BOOKS_SKIP_COMP += bdd/benchmarks.$(ACL2_COMP_EXT)
+
+OK_CERTS := $(filter-out $(BOOKS_SKIP_COMP), $(OK_CERTS))
+
+# Avoid trying to make compiled files; target %.$(ACL2_COMP_EXT) still
+# "executes", but only once, and doesn't cause other compiled files to
+# be out of date.
+.INTERMEDIATE: $(BOOKS_SKIP_COMP)
+
+# Note that because of the .INTERMEDIATE target above, then for the
+# next targets, "Skipping" will only be printed for skipped targets
+# that are dependencies of not-skipped targets.  Apologies for the
+# very long line.  With it broken into lines using `\', a syntax error
+# was reported on Linux using make version 3.80.  Sigh.
+%.$(ACL2_COMP_EXT): %.cert
+	@if [ "$(findstring $@, $(BOOKS_SKIP_COMP))" != "" ] ; then \
+	echo "Skipping $$PWD/$@" ; \
+	else \
+	echo "Making $$PWD/$@" ; \
+	(echo '(ld `((include-book "$(patsubst %.$(ACL2_COMP_EXT),%,$(@))" :load-compiled-file :comp :ttags :all))) (acl2::value :q) (acl2::exit-lisp)' | $(ACL2) >& $@.out) ; (ls -al $@ || (echo "**COMPILATION FAILED** for `pwd`/$@" ; exit 1)) ; fi
+
+# Finally, we handle system/pcert/, which is a special case and thus
+# would otherwise be ignored because of its cert_pl_exclude file.  We
+# use -j 1 because the old Makefile-generic, included by the
+# directory's Makefile, doesn't establish dependencies between the
+# compiled files, and this can cause an error when attempting to load
+# another book's partially-built compiled file.  Note that this rule
+# overrides the pattern rule just above (a feature of GNU make).
+system/pcert/sub.$(ACL2_COMP_EXT): \
+  system/deps-pcert.$(ACL2_COMP_EXT)
+	@echo "Making $@"
+	@cd system/pcert/ ; \
+	$(MAKE) -j 1 $(ACL2_COMP_EXT) ACL2_PCERT= >& make-$(ACL2_COMP_EXT).out ; \
+	(cd ../.. ; ls -al $(@D)/*.$(ACL2_COMP_EXT)) ; \
+	if [ `ls -1 *.$(ACL2_COMP_EXT) | wc -l` != `ls -1 *.cert | wc -l` ] ; then \
+	echo "**COMPILATION FAILED** for $(@D);" ; \
+	echo "  search for '**' in `pwd`/make-$(ACL2_COMP_EXT).out to see failures." ; \
+	exit 1 ; \
+	fi
+
+all: system/pcert/sub.$(ACL2_COMP_EXT)
+
+endif # ifdef ACL2_COMP
+
+##############################
+### Section: Define targets
+##############################
+
+# Keep this section at the end, so that all variable definitions have
+# been completed (in particular, for OK_CERTS).
+
+lite: $(OK_CERTS)
+
+everything: all $(SLOW_BOOKS)
+
+# The critical path report will work only if you have set up certificate timing
+# BEFORE you build the books.  See ./critpath.pl --help for details.
+
+# BOZO I probably broke this, we shouldn't use --targets, we should use ok_certs...
+critpath.txt: $(OK_CERTS)
+	echo "Building critpath.txt..."
+	time ./critpath.pl -m 2 --targets Makefile-books > critpath.txt
+
+
+# The following are handy targets for building subsets of the books,
+# and they show how others are easy to add.  It's OK for the community
+# to make updates to this set of targets through addition, deletion,
+# or modification.  (But it's probably best to leave the "all", "lite"
+# and "everything" targets unchanged unless there is a strong reason
+# to change those.)
+
+.PHONY: centaur coi workshops \
+        workshop1999 workshop2000 workshop2001 workshop2002 \
+        workshop2003 workshop2004 workshop2006 workshop2007 \
+        workshop2009 workshop2011
+
+centaur: $(filter centaur/%, $(OK_CERTS))
+
+coi: $(filter coi/%, $(OK_CERTS))
+
+workshops: $(filter workshops/%, $(OK_CERTS))
+workshop1999: $(filter workshops/1999/%, $(OK_CERTS))
+workshop2000: $(filter workshops/2000/%, $(OK_CERTS))
+workshop2001: $(filter workshops/2001/%, $(OK_CERTS))
+workshop2002: $(filter workshops/2002/%, $(OK_CERTS))
+workshop2003: $(filter workshops/2003/%, $(OK_CERTS))
+workshop2004: $(filter workshops/2004/%, $(OK_CERTS))
+workshop2006: $(filter workshops/2006/%, $(OK_CERTS))
+workshop2007: $(filter workshops/2007/%, $(OK_CERTS))
+workshop2009: $(filter workshops/2009/%, $(OK_CERTS))
+workshop2011: $(filter workshops/2011/%, $(OK_CERTS))
+workshop2013: $(filter workshops/2013/%, $(OK_CERTS))
+
+
+# We define a set of books that support rapid prototyping and
+# reasoning about such prototypes in ACL2.  We consider these books to
+# constitute a "standard" approach to using ACL2 to model real
+# problems.  The below target includes many more books than just those
+# that make up this approach, but we leave it for now, because our
+# main motivation in having such a target is to provide a quick target
+# that certifies at least the books that consititute this approach.
+# Regardless, this target should always include the "std" directory.
+
+.PHONY: std
+
+std: $(filter-out centaur/%, \
+       $(filter-out coi/%, \
+         $(filter-out models/%, \
+           $(filter-out workshops/%, $(OK_CERTS)))))
+
+short-test: $(filter cowles/% arithmetic/% meta/% xdoc/% ordinals/% \
+                     data-structures/% bdd/%, \
+                     $(OK_CERTS))
+
+# Here are aliases for the "standard" approach.  Warning: ACL2's
+# GNUmakefile uses the present file's basic target to implement its
+# own target certify-books, which some might use to build all
+# "appropriate" books when installing ACL2.
+.PHONY: libs basic
+libs: std
+basic: std
+
+# The `user' target allows one to specify the roots of the forest of
+# books to be certified.
+# Example (just remove "# " at the beginning of each line):
+# make -k -j 4 NO_RESCAN=1 ACL2=acl2h \
+# ACL2_BOOK_CERTS=" \
+# workshops/2006/cowles-gamboa-euclid/Euclid/ed6a.cert \
+# workshops/2006/cowles-gamboa-euclid/Euclid/ed4bb.cert \
+# " user
+user: $(ACL2_BOOK_CERTS)
+
+# The following dummy target does nothing, e.g., so that you can test
+# the dependency scanning stuff without actually building anything.
+.PHONY: dummy
+dummy:
+
+# We now provide a way (adapted from the old Makefile-generic) for
+# developers to be able to check well-formedness of the ACL2 world
+# after including each book.  Note that the two problematic
+# directories for world-checking, hacking/ and
+# workshops/2007/dillinger-et-al/code/ override the
+# chk-include-book-worlds target by setting environment variable
+# ACL2_SKIP_CHK_INCLUDE_BOOK_WORLDS in order to skip this check.  The
+# problem seems likely to be that in many of the books in these two
+# directories, the first bad triple is a GLOBAL-VALUE for either the
+# unknown property EXTEND-PROGN! or RETRACT-PROGN!, or else is an
+# unbinding of the PREDEFINED property for PROGN! (indicating a use of
+# :REDEF); presumably these books mess with raw mode.
+
+BOOKS_BKCHK_OUT := $(patsubst %.cert,%.bkchk.out,$(OK_CERTS))
+BOOKS_BKCHK_OUT := $(filter-out hacking/%, $(BOOKS_BKCHK_OUT))
+BOOKS_BKCHK_OUT := $(filter-out workshops/2007/dillinger-et-al/code/%, $(BOOKS_BKCHK_OUT))
+
+.PHONY: chk-include-book-worlds
+chk-include-book-worlds: $(BOOKS_BKCHK_OUT)
+
+%.bkchk.out: %.cert
+	@echo "Including `pwd`/$* on `date`"
+	@echo '(acl2::value :q)' > workxxx.bkchk.$(*F)
+	@echo '(in-package "ACL2")' >> workxxx.bkchk.$(*F)
+	@echo '(acl2::lp)' >> workxxx.bkchk.$(*F)
+	@echo '(acl2::in-package "ACL2")' >> workxxx.bkchk.$(*F)
+	@echo '(include-book "$*")' >> workxxx.bkchk.$(*F)
+	@echo '(include-book "system/pseudo-good-worldp" :dir :system)' >> workxxx.bkchk.$(*F)
+	@echo "Checking world created by including `pwd`/$* on `date`"
+	@echo '(chk-pseudo-good-worldp "$*")' >> workxxx.bkchk.$(*F)
+	@($(ACL2) < workxxx.bkchk.$(*F) 2>&1) > $*.bkchk.out
+	@(fgrep 'Pseudo-good-worldp check for including "$*" passed.' $@) || \
+            (echo '** Pseudo-good-worldp check FAILED for including $*;' "see `pwd`/$@" '**' ;\
+             exit 1)
+	@rm -f workxxx.bkchk.$(*F)
