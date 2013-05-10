@@ -320,7 +320,8 @@ CLEAN_FILES_EXPLICIT := \
    Makefile-books \
    Makefile-features \
    Makefile-cache \
-   serialize/test.sao
+   serialize/test.sao \
+   bdd/benchmarks.lisp
 
 MORECLEAN_FILES_EXPLICIT := \
    xdoc-impl/manual \
@@ -338,9 +339,12 @@ clean_books:
 clean: clean_books
 	@echo "Removing extra, explicitly temporary files."
 	rm -rf $(CLEAN_FILES_EXPLICIT)
-	if [ -d centaur/quicklisp ] ; then \
-	cd centaur/quicklisp; $(MAKE) clean ; \
-	fi
+	for dir in centaur/quicklisp ($dir $(ACL2_CUSTOM_TARGETS)) ; \
+	do \
+	if [ -d $$dir ] ; then \
+	(cd $$dir ; $(MAKE) clean) ; \
+	fi ; \
+	done
 
 moreclean: clean
 	@echo "Removing even more generated files (documentation, etc)."
@@ -438,7 +442,7 @@ ifndef ACL2_COMP
 
 ifndef ACL2_HAS_REALS
 
-all: \
+ACL2_CUSTOM_TARGETS := \
   clause-processors/SULFA/target.cert \
   fix-cert/fix-cert.cert \
   workshops/1999/multiplier/proof.cert \
@@ -469,10 +473,10 @@ workshops/2003/greve-wilding-vanfleet/support/firewallworks.cert: \
   workshops/2003/greve-wilding-vanfleet/deps.cert
 	cd $(@D) ; $(MAKE)
 
-# The following has no dependencies, so doesn't need a "deps" file.
 # Note that we change to the parent directory in order to pick up all
 # of support/.
-workshops/2003/kaufmann/support/input/defs-in.cert:
+workshops/2003/kaufmann/support/input/defs-in.cert: \
+  workshops/2003/kaufmann/deps.cert
 	cd $(@D)/.. ; $(MAKE)
 
 workshops/2011/verbeek-schmaltz/sources/correctness2.cert: \
@@ -481,13 +485,15 @@ workshops/2011/verbeek-schmaltz/sources/correctness2.cert: \
 
 endif # ifndef ACL2_HAS_REALS
 
-all: system/pcert/sub.cert
+ACL2_CUSTOM_TARGETS += system/pcert/sub.cert
 
 system/pcert/sub.cert: \
   system/deps-pcert.cert
 	cd $(@D) ; $(MAKE)
 
 endif # ifndef ACL2_COMP
+
+all: $(ACL2_CUSTOM_TARGETS)
 
 ##############################
 ### Section: Support for ACL2_COMP
