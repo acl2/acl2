@@ -196,7 +196,9 @@
 (encapsulate
   ()
 
-  (local (include-book ; keep this linebreak!
+  (local (include-book
+; Warning: Keep this linebreak.  This dependency is dealt with directly in
+; makefiles.
           "rtl/rel8/arithmetic/top" :dir :system))
 
   (defthm x*/y=1->x=y-ext

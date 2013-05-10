@@ -28,6 +28,8 @@ INHIBIT = (assign inhibit-output-lst (list (quote prove) (quote proof-tree) (quo
 
 model-eq.lisp bvecp.lisp: model-defs.lisp
 
+# The following target writes out not only file model-defs.lisp, but
+# also files model-eq.lisp and bvecp.lisp.
 model-defs.lisp: tool/simplify-defuns.cert tool/wrapper.cert bvecp-raw.cert
 	echo "Running transform-defuns."
 	echo '(acl2::value :q)' > workxxx
