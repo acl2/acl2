@@ -339,7 +339,7 @@ clean_books:
 clean: clean_books
 	@echo "Removing extra, explicitly temporary files."
 	rm -rf $(CLEAN_FILES_EXPLICIT)
-	for dir in centaur/quicklisp ($dir $(ACL2_CUSTOM_TARGETS)) ; \
+	for dir in centaur/quicklisp $(dir $(ACL2_CUSTOM_TARGETS)) ; \
 	do \
 	if [ -d $$dir ] ; then \
 	(cd $$dir ; $(MAKE) clean) ; \
