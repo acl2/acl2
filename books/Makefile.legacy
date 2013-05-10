@@ -119,7 +119,7 @@ endif
 # Same as all-plus below, using DIRS2_EXCEPT_WK instead of DIRS2.  Much faster!  Omits
 # books less likely to be needed, in particular, under workshops/.
 all:
-	@date ; $(TIME) $(MAKE) all-aux
+	@date ; $(TIME) $(MAKE) -f Makefile.legacy all-aux
 
 
 # Next, specify all of the directory dependencies.  At this point we do this
@@ -321,7 +321,7 @@ short-test-aux:
 	cd ..) ; \
 	fi \
 	done
-	@$(MAKE) top-with-meta-cert
+	@$(MAKE) -f Makefile.legacy top-with-meta-cert
 	@for dir in $(SHORTDIRS2) ; \
 	do \
 	if [ -f $$dir/Makefile ]; then \
@@ -334,8 +334,8 @@ short-test-aux:
 .PHONY: short-test
 short-test:
 	@rm -f short-test.log
-	$(MAKE) short-clean
-	$(MAKE) short-test-aux > short-test.log 2> short-test.log
+	$(MAKE) -f Makefile.legacy short-clean
+	$(MAKE) -f Makefile.legacy short-test-aux > short-test.log 2> short-test.log
 	@if [ ! -f short-test.log ] || (fgrep '**' short-test.log > /dev/null) ; then \
 	(echo 'Short test failed!' ; exit 1) ; else \
 	echo 'Short test passed.' ; fi
@@ -380,7 +380,7 @@ chk-include-book-worlds-top:
 
 .PHONY: fasl
 fasl:
-	@date ; $(TIME) $(MAKE) fasl-aux ; date
+	@date ; $(TIME) $(MAKE) -f Makefile.legacy fasl-aux ; date
 
 .PHONY: fasl-aux
 fasl-aux:
@@ -392,7 +392,7 @@ fasl-aux:
 	cd ..) ; \
 	fi \
 	done
-	@$(MAKE) top-with-meta-fasl
+	@$(MAKE) -f Makefile.legacy top-with-meta-fasl
 	@for dir in $(DIRS2_EXCEPT_WK) ; \
 	do \
 	if [ -f $$dir/Makefile ]; then \
@@ -404,7 +404,7 @@ fasl-aux:
 
 .PHONY: fas
 fas:
-	@date ; $(TIME) $(MAKE) fas-aux ; date
+	@date ; $(TIME) $(MAKE) -f Makefile.legacy fas-aux ; date
 
 .PHONY: fas-aux
 fas-aux:
@@ -416,7 +416,7 @@ fas-aux:
 	cd ..) ; \
 	fi \
 	done
-	@$(MAKE) top-with-meta-fas
+	@$(MAKE) -f Makefile.legacy top-with-meta-fas
 	@for dir in $(DIRS2_EXCEPT_WK) ; \
 	do \
 	if [ -f $$dir/Makefile ]; then \
@@ -428,7 +428,7 @@ fas-aux:
 
 .PHONY: sparcf
 sparcf:
-	@date ; $(TIME) $(MAKE) sparcf-aux ; date
+	@date ; $(TIME) $(MAKE) -f Makefile.legacy sparcf-aux ; date
 
 .PHONY: sparcf-aux
 sparcf-aux:
@@ -440,7 +440,7 @@ sparcf-aux:
 	cd ..) ; \
 	fi \
 	done
-	@$(MAKE) top-with-meta-sparcf
+	@$(MAKE) -f Makefile.legacy top-with-meta-sparcf
 	@for dir in $(DIRS2_EXCEPT_WK) ; \
 	do \
 	if [ -f $$dir/Makefile ]; then \
@@ -452,7 +452,7 @@ sparcf-aux:
 
 .PHONY: ufsl
 ufsl:
-	@date ; $(TIME) $(MAKE) ufsl-aux ; date
+	@date ; $(TIME) $(MAKE) -f Makefile.legacy ufsl-aux ; date
 
 .PHONY: ufsl-aux
 ufsl-aux:
@@ -464,7 +464,7 @@ ufsl-aux:
 	cd ..) ; \
 	fi \
 	done
-	@$(MAKE) top-with-meta-ufsl
+	@$(MAKE) -f Makefile.legacy top-with-meta-ufsl
 	@for dir in $(DIRS2_EXCEPT_WK) ; \
 	do \
 	if [ -f $$dir/Makefile ]; then \
@@ -476,7 +476,7 @@ ufsl-aux:
 
 .PHONY: 64ufasl
 64ufasl:
-	@date ; $(TIME) $(MAKE) 64ufasl-aux ; date
+	@date ; $(TIME) $(MAKE) -f Makefile.legacy 64ufasl-aux ; date
 
 .PHONY: 64ufasl-aux
 64ufasl-aux:
@@ -488,7 +488,7 @@ ufsl-aux:
 	cd ..) ; \
 	fi \
 	done
-	@$(MAKE) top-with-meta-64ufasl
+	@$(MAKE) -f Makefile.legacy top-with-meta-64ufasl
 	@for dir in $(DIRS2_EXCEPT_WK) ; \
 	do \
 	if [ -f $$dir/Makefile ]; then \
@@ -500,7 +500,7 @@ ufsl-aux:
 
 .PHONY: x86f
 x86f:
-	@date ; $(TIME) $(MAKE) x86f-aux ; date
+	@date ; $(TIME) $(MAKE) -f Makefile.legacy x86f-aux ; date
 
 .PHONY: x86f-aux
 x86f-aux:
@@ -512,7 +512,7 @@ x86f-aux:
 	cd ..) ; \
 	fi \
 	done
-	@$(MAKE) top-with-meta-x86f
+	@$(MAKE) -f Makefile.legacy top-with-meta-x86f
 	@for dir in $(DIRS2_EXCEPT_WK) ; \
 	do \
 	if [ -f $$dir/Makefile ]; then \
@@ -524,7 +524,7 @@ x86f-aux:
 
 .PHONY: o
 o:
-	@date ; $(TIME) $(MAKE) o-aux ; date
+	@date ; $(TIME) $(MAKE) -f Makefile.legacy o-aux ; date
 
 .PHONY: o-aux
 o-aux:
@@ -536,7 +536,7 @@ o-aux:
 	cd ..) ; \
 	fi \
 	done
-	@$(MAKE) top-with-meta-o
+	@$(MAKE) -f Makefile.legacy top-with-meta-o
 	@for dir in $(DIRS2_EXCEPT_WK) ; \
 	do \
 	if [ -f $$dir/Makefile ]; then \
@@ -548,7 +548,7 @@ o-aux:
 
 .PHONY: dfsl
 dfsl:
-	@date ; $(TIME) $(MAKE) dfsl-aux ; date
+	@date ; $(TIME) $(MAKE) -f Makefile.legacy dfsl-aux ; date
 
 .PHONY: dfsl-aux
 dfsl-aux:
@@ -560,7 +560,7 @@ dfsl-aux:
 	cd ..) ; \
 	fi \
 	done
-	@$(MAKE) top-with-meta-dfsl
+	@$(MAKE) -f Makefile.legacy top-with-meta-dfsl
 	@for dir in $(DIRS2_EXCEPT_WK) ; \
 	do \
 	if [ -f $$dir/Makefile ]; then \
@@ -572,7 +572,7 @@ dfsl-aux:
 
 .PHONY: d64fsl
 d64fsl:
-	@date ; $(TIME) $(MAKE) d64fsl-aux ; date
+	@date ; $(TIME) $(MAKE) -f Makefile.legacy d64fsl-aux ; date
 
 .PHONY: d64fsl-aux
 d64fsl-aux:
@@ -584,7 +584,7 @@ d64fsl-aux:
 	cd ..) ; \
 	fi \
 	done
-	@$(MAKE) top-with-meta-d64fsl
+	@$(MAKE) -f Makefile.legacy top-with-meta-d64fsl
 	@for dir in $(DIRS2_EXCEPT_WK) ; \
 	do \
 	if [ -f $$dir/Makefile ]; then \
@@ -596,7 +596,7 @@ d64fsl-aux:
 
 .PHONY: dx64fsl
 dx64fsl:
-	@date ; $(TIME) $(MAKE) dx64fsl-aux ; date
+	@date ; $(TIME) $(MAKE) -f Makefile.legacy dx64fsl-aux ; date
 
 .PHONY: dx64fsl-aux
 dx64fsl-aux:
@@ -608,7 +608,7 @@ dx64fsl-aux:
 	cd ..) ; \
 	fi \
 	done
-	@$(MAKE) top-with-meta-dx64fsl
+	@$(MAKE) -f Makefile.legacy top-with-meta-dx64fsl
 	@for dir in $(DIRS2_EXCEPT_WK) ; \
 	do \
 	if [ -f $$dir/Makefile ]; then \
@@ -620,7 +620,7 @@ dx64fsl-aux:
 
 .PHONY: lx64fsl
 lx64fsl:
-	@date ; $(TIME) $(MAKE) lx64fsl-aux ; date
+	@date ; $(TIME) $(MAKE) -f Makefile.legacy lx64fsl-aux ; date
 
 .PHONY: lx64fsl-aux
 lx64fsl-aux:
@@ -632,7 +632,7 @@ lx64fsl-aux:
 	cd ..) ; \
 	fi \
 	done
-	@$(MAKE) top-with-meta-lx64fsl
+	@$(MAKE) -f Makefile.legacy top-with-meta-lx64fsl
 	@for dir in $(DIRS2_EXCEPT_WK) ; \
 	do \
 	if [ -f $$dir/Makefile ]; then \
@@ -644,7 +644,7 @@ lx64fsl-aux:
 
 .PHONY: lx32fsl
 lx32fsl:
-	@date ; $(TIME) $(MAKE) lx32fsl-aux ; date
+	@date ; $(TIME) $(MAKE) -f Makefile.legacy lx32fsl-aux ; date
 
 .PHONY: lx32fsl-aux
 lx32fsl-aux:
@@ -656,7 +656,7 @@ lx32fsl-aux:
 	cd ..) ; \
 	fi \
 	done
-	@$(MAKE) top-with-meta-lx32fsl
+	@$(MAKE) -f Makefile.legacy top-with-meta-lx32fsl
 	@for dir in $(DIRS2_EXCEPT_WK) ; \
 	do \
 	if [ -f $$dir/Makefile ]; then \
@@ -668,7 +668,7 @@ lx32fsl-aux:
 
 .PHONY: all-fasl
 all-fasl:
-	@date ; $(TIME) $(MAKE) all-fasl-aux ; date
+	@date ; $(TIME) $(MAKE) -f Makefile.legacy all-fasl-aux ; date
 
 .PHONY: all-fasl-aux
 all-fasl-aux:
@@ -680,7 +680,7 @@ all-fasl-aux:
 	cd ..) ; \
 	fi \
 	done
-	@$(MAKE) top-with-meta-fasl
+	@$(MAKE) -f Makefile.legacy top-with-meta-fasl
 	@for dir in $(DIRS2) ; \
 	do \
 	if [ -f $$dir/Makefile ]; then \
@@ -692,7 +692,7 @@ all-fasl-aux:
 
 .PHONY: all-fas
 all-fas:
-	@date ; $(TIME) $(MAKE) all-fas-aux ; date
+	@date ; $(TIME) $(MAKE) -f Makefile.legacy all-fas-aux ; date
 
 .PHONY: all-fas-aux
 all-fas-aux:
@@ -704,7 +704,7 @@ all-fas-aux:
 	cd ..) ; \
 	fi \
 	done
-	@$(MAKE) top-with-meta-fas
+	@$(MAKE) -f Makefile.legacy top-with-meta-fas
 	@for dir in $(DIRS2) ; \
 	do \
 	if [ -f $$dir/Makefile ]; then \
@@ -716,7 +716,7 @@ all-fas-aux:
 
 .PHONY: all-sparcf
 all-sparcf:
-	@date ; $(TIME) $(MAKE) all-sparcf-aux ; date
+	@date ; $(TIME) $(MAKE) -f Makefile.legacy all-sparcf-aux ; date
 
 .PHONY: all-sparcf-aux
 all-sparcf-aux:
@@ -728,7 +728,7 @@ all-sparcf-aux:
 	cd ..) ; \
 	fi \
 	done
-	@$(MAKE) top-with-meta-sparcf
+	@$(MAKE) -f Makefile.legacy top-with-meta-sparcf
 	@for dir in $(DIRS2) ; \
 	do \
 	if [ -f $$dir/Makefile ]; then \
@@ -740,7 +740,7 @@ all-sparcf-aux:
 
 .PHONY: all-ufsl
 all-ufsl:
-	@date ; $(TIME) $(MAKE) all-ufsl-aux ; date
+	@date ; $(TIME) $(MAKE) -f Makefile.legacy all-ufsl-aux ; date
 
 .PHONY: all-ufsl-aux
 all-ufsl-aux:
@@ -752,7 +752,7 @@ all-ufsl-aux:
 	cd ..) ; \
 	fi \
 	done
-	@$(MAKE) top-with-meta-ufsl
+	@$(MAKE) -f Makefile.legacy top-with-meta-ufsl
 	@for dir in $(DIRS2) ; \
 	do \
 	if [ -f $$dir/Makefile ]; then \
@@ -764,7 +764,7 @@ all-ufsl-aux:
 
 .PHONY: all-64ufasl
 all-64ufasl:
-	@date ; $(TIME) $(MAKE) all-64ufasl-aux ; date
+	@date ; $(TIME) $(MAKE) -f Makefile.legacy all-64ufasl-aux ; date
 
 .PHONY: all-64ufasl-aux
 all-64ufasl-aux:
@@ -776,7 +776,7 @@ all-64ufasl-aux:
 	cd ..) ; \
 	fi \
 	done
-	@$(MAKE) top-with-meta-64ufasl
+	@$(MAKE) -f Makefile.legacy top-with-meta-64ufasl
 	@for dir in $(DIRS2) ; \
 	do \
 	if [ -f $$dir/Makefile ]; then \
@@ -788,7 +788,7 @@ all-64ufasl-aux:
 
 .PHONY: all-x86f
 all-x86f:
-	@date ; $(TIME) $(MAKE) all-x86f-aux ; date
+	@date ; $(TIME) $(MAKE) -f Makefile.legacy all-x86f-aux ; date
 
 .PHONY: all-x86f-aux
 all-x86f-aux:
@@ -800,7 +800,7 @@ all-x86f-aux:
 	cd ..) ; \
 	fi \
 	done
-	@$(MAKE) top-with-meta-x86f
+	@$(MAKE) -f Makefile.legacy top-with-meta-x86f
 	@for dir in $(DIRS2) ; \
 	do \
 	if [ -f $$dir/Makefile ]; then \
@@ -812,7 +812,7 @@ all-x86f-aux:
 
 .PHONY: all-dfsl
 all-dfsl:
-	@date ; $(TIME) $(MAKE) all-dfsl-aux ; date
+	@date ; $(TIME) $(MAKE) -f Makefile.legacy all-dfsl-aux ; date
 
 .PHONY: all-dfsl-aux
 all-dfsl-aux:
@@ -824,7 +824,7 @@ all-dfsl-aux:
 	cd ..) ; \
 	fi \
 	done
-	@$(MAKE) top-with-meta-dfsl
+	@$(MAKE) -f Makefile.legacy top-with-meta-dfsl
 	@for dir in $(DIRS2) ; \
 	do \
 	if [ -f $$dir/Makefile ]; then \
@@ -836,7 +836,7 @@ all-dfsl-aux:
 
 .PHONY: all-d64fsl
 all-d64fsl:
-	@date ; $(TIME) $(MAKE) all-d64fsl-aux ; date
+	@date ; $(TIME) $(MAKE) -f Makefile.legacy all-d64fsl-aux ; date
 
 .PHONY: all-d64fsl-aux
 all-d64fsl-aux:
@@ -848,7 +848,7 @@ all-d64fsl-aux:
 	cd ..) ; \
 	fi \
 	done
-	@$(MAKE) top-with-meta-d64fsl
+	@$(MAKE) -f Makefile.legacy top-with-meta-d64fsl
 	@for dir in $(DIRS2) ; \
 	do \
 	if [ -f $$dir/Makefile ]; then \
@@ -860,7 +860,7 @@ all-d64fsl-aux:
 
 .PHONY: all-dx64fsl
 all-dx64fsl:
-	@date ; $(TIME) $(MAKE) all-dx64fsl-aux ; date
+	@date ; $(TIME) $(MAKE) -f Makefile.legacy all-dx64fsl-aux ; date
 
 .PHONY: all-dx64fsl-aux
 all-dx64fsl-aux:
@@ -872,7 +872,7 @@ all-dx64fsl-aux:
 	cd ..) ; \
 	fi \
 	done
-	@$(MAKE) top-with-meta-dx64fsl
+	@$(MAKE) -f Makefile.legacy top-with-meta-dx64fsl
 	@for dir in $(DIRS2) ; \
 	do \
 	if [ -f $$dir/Makefile ]; then \
@@ -884,7 +884,7 @@ all-dx64fsl-aux:
 
 .PHONY: all-lx64fsl
 all-lx64fsl:
-	@date ; $(TIME) $(MAKE) all-lx64fsl-aux ; date
+	@date ; $(TIME) $(MAKE) -f Makefile.legacy all-lx64fsl-aux ; date
 
 .PHONY: all-lx64fsl-aux
 all-lx64fsl-aux:
@@ -896,7 +896,7 @@ all-lx64fsl-aux:
 	cd ..) ; \
 	fi \
 	done
-	@$(MAKE) top-with-meta-lx64fsl
+	@$(MAKE) -f Makefile.legacy top-with-meta-lx64fsl
 	@for dir in $(DIRS2) ; \
 	do \
 	if [ -f $$dir/Makefile ]; then \
@@ -908,7 +908,7 @@ all-lx64fsl-aux:
 
 .PHONY: all-lx32fsl
 all-lx32fsl:
-	@date ; $(TIME) $(MAKE) all-lx32fsl-aux ; date
+	@date ; $(TIME) $(MAKE) -f Makefile.legacy all-lx32fsl-aux ; date
 
 .PHONY: all-lx32fsl-aux
 all-lx32fsl-aux:
@@ -920,7 +920,7 @@ all-lx32fsl-aux:
 	cd ..) ; \
 	fi \
 	done
-	@$(MAKE) top-with-meta-lx32fsl
+	@$(MAKE) -f Makefile.legacy top-with-meta-lx32fsl
 	@for dir in $(DIRS2) ; \
 	do \
 	if [ -f $$dir/Makefile ]; then \
@@ -932,7 +932,7 @@ all-lx32fsl-aux:
 
 .PHONY: all-o
 all-o:
-	@date ; $(TIME) $(MAKE) all-o-aux ; date
+	@date ; $(TIME) $(MAKE) -f Makefile.legacy all-o-aux ; date
 
 .PHONY: all-o-aux
 all-o-aux:
@@ -944,7 +944,7 @@ all-o-aux:
 	cd ..) ; \
 	fi \
 	done
-	@$(MAKE) top-with-meta-o
+	@$(MAKE) -f Makefile.legacy top-with-meta-o
 	@for dir in $(DIRS2) ; \
 	do \
 	if [ -f $$dir/Makefile ]; then \

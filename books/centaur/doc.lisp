@@ -143,6 +143,52 @@
 ; Another useful book:
 (include-book "gl/bfr-satlink")
 
+; Let's just put down the rest of the books that were discovered missing on
+; 5/10/2013, when we certified with the legacy makefile (books/Makefile.legacy)
+; instead of the new makefile (books/Makefile).
+
+(include-book "aig/best-aig")
+(include-book "aignet/aig-sim")
+(include-book "aignet/copying")
+(include-book "aignet/from-hons-aig-fast")
+(include-book "aignet/prune")
+(include-book "aignet/to-hons-aig")
+(include-book "aignet/types")
+(include-book "aignet/vecsim")
+(include-book "aig/random-sim")
+(include-book "bitops/ash-bounds")
+(include-book "bitops/defaults")
+(include-book "bitops/saturate")
+(include-book "bitops/signed-byte-p")
+(include-book "gl/gl-ttags")
+(include-book "gl/gobject-type-thms")
+(include-book "misc/count-up")
+(include-book "misc/mem")
+(include-book "misc/mem-logic")
+(include-book "misc/memory-mgmt-raw")
+(include-book "misc/remove-assoc")
+(include-book "misc/resize-list")
+(include-book "misc/sparsemap")
+(include-book "misc/sparsemap-impl")
+(include-book "misc/stobj-swap")
+(include-book "vcd/esim-snapshot")
+(include-book "vcd/vcd")
+(include-book "vcd/vcd-impl")
+(include-book "vcd/vcd-stub")
+(include-book "vl/mlib/ram-tools")
+(include-book "../coi/records/fast/log2")
+(include-book "../coi/records/fast/memory")
+(include-book "../coi/records/fast/memory-impl")
+(include-book "../coi/records/fast/memtree")
+(include-book "../coi/records/fast/private")
+(include-book "../cutil/tools/assert-return-thms")
+(include-book "../memoize/old/case")
+(include-book "../memoize/old/profile")
+(include-book "../memoize/old/watch")
+(include-book "../memoize/portcullis")
+(include-book "../memoize/tests")
+(include-book "../memoize/top")
+
 ||#
 
 (make-event

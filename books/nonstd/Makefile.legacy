@@ -134,8 +134,8 @@ clean-links:
 
 # We run links so that Makefiles are present, and then remove all links at the end.
 clean-nonstd: links
-	$(MAKE) clean-alldirs
-	$(MAKE) clean-links
+	$(MAKE) -f Makefile.legacy clean-alldirs
+	$(MAKE) -f Makefile.legacy clean-links
 
 clean-alldirs:
 	@for dir in $(ALLDIRS) ; \
