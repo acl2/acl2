@@ -10,7 +10,7 @@
 ; (:pkg pkg-name . form), and write-list-using-pkgs, which prints form as an
 ; equal form using pkg-name::form'.
 
-(include-book "../../../../../../misc/file-io")
+(include-book "misc/file-io" :dir :system)
 
 (set-state-ok t)
 (program)

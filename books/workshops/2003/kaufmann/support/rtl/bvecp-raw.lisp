@@ -4,10 +4,10 @@
 
 (include-book "model-raw")
 
-(local (include-book "../../../../../rtl/rel4/lib/top"))
+(local (include-book "rtl/rel4/lib/top" :dir :system))
 
 (local
-    (include-book "../../../../../rtl/rel4/support/bvecp-helpers"))
+    (include-book "rtl/rel4/support/bvecp-helpers" :dir :system))
 
 (local
  (in-theory

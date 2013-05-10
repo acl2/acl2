@@ -1,6 +1,6 @@
 (in-package "ACL2")
 
-(include-book "../../../../../ordinals/e0-ordinal")
+(include-book "ordinals/e0-ordinal" :dir :system)
 (set-well-founded-relation e0-ord-<)
 
 (set-inhibit-warnings "THEORY" "DISABLE" "NON-REC")

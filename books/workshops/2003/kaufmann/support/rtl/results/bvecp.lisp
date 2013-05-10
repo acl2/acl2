@@ -6,7 +6,8 @@
 
 (local (include-book "bvecp-raw"))
 
-(local (include-book "../../../../../rtl/rel4/support/bvecp-helpers"))
+(local (include-book "rtl/rel4/support/bvecp-helpers"
+                     :dir :system))
 
 (defbvecp out1 (n)
           1

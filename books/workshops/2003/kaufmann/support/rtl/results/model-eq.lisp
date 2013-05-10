@@ -19,9 +19,11 @@
 
 (local (include-book "bvecp-raw"))
 
-(local (include-book "../../../../../rtl/rel4/lib/top"))
+(local (include-book "rtl/rel4/lib/top"
+                     :dir :system))
 
-(local (include-book "../../../../../rtl/rel4/lib/simplify-model-helpers"))
+(local (include-book "rtl/rel4/lib/simplify-model-helpers"
+                     :dir :system))
 
 (include-book "model-raw")
 

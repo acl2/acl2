@@ -2,15 +2,15 @@
 
 (set-inhibit-warnings "THEORY" "DISABLE" "NON-REC")
 
-(include-book "../../../../../rtl/rel4/lib/rtl")
+(include-book "rtl/rel4/lib/rtl" :dir :system)
 
-(include-book "../../../../../rtl/rel4/lib/rtlarr")
+(include-book "rtl/rel4/lib/rtlarr" :dir :system)
 
-(include-book "../../../../../rtl/rel4/lib/util")
+(include-book "rtl/rel4/lib/util" :dir :system)
 
-(include-book "../../../../../misc/symbol-btree")
+(include-book "misc/symbol-btree" :dir :system)
 
-(include-book "../../../../../misc/rtl-untranslate")
+(include-book "misc/rtl-untranslate" :dir :system)
 
 (deftheory rtl-operators-after-macro-expansion
            *rtl-operators-after-macro-expansion*)
