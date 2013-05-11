@@ -292,12 +292,14 @@ OK_CERTS := $(filter-out $(CERT_PL_HONS_ONLY), $(OK_CERTS))
 
 endif # ifeq ($(ACL2_HAS_HONS), )
 
-# SLOW_BOOKS are books that are too slow to include as part of an ordinary
-# regression.
+# SLOW_BOOKS are books that are too slow to include as part of an
+# ordinary regression.  There are currently comments in some of the
+# corresponding Makefiles that explain something about these books.
 
 SLOW_BOOKS := \
   coi/termination/assuming/complex.cert \
   models/jvm/m5/apprentice.cert \
+  parallel/proofs/ideal-speedup.cert \
   workshops/2009/sumners/support/examples.cert \
   workshops/2011/krug-et-al/support/MinVisor/va-to-pa-thm.cert \
   workshops/2011/krug-et-al/support/MinVisor/setup-nested-page-tables.cert
@@ -690,10 +692,21 @@ endif # ifdef ACL2_COMP
 
 everything: $(OK_CERTS) $(SLOW_BOOKS)
 
-# We want cert.pl to scan within rtl/rel7/, because the "everything"
-# target certifies books under that directory.  But normally we prefer
-# to exclude that directory, so we do so now.
-OK_CERTS := $(filter-out rtl/rel7/%, $(OK_CERTS))
+# We prefer not to certify books under the directories filtered out
+# just below, for the following reasons.
+# - rtl/rel7/: This directory isn't used anywhere else and it doesn't
+#   add much from a regression perspective, given the other rtl/
+#   subdirectories that are included in the regression.
+# - memoize/: We don't want to add the necessary .acl2 files or worry
+#   about how Lisps other than CCL will deal with this directory, let
+#   alone ACL2 as opposed to ACL2(h).
+
+# However, we want cert.pl to scan within these directories, to
+# support the "everything" target, so we avoid putting cert_pl_exclude
+# files in those directories or excluding them from the egrep command
+# that is used to define REBUILD_MAKEFILE_BOOKS, above.  Instead, we
+# exclude them from the "all" and "lite" targets now.
+OK_CERTS := $(filter-out rtl/rel7/% memoize/%, $(OK_CERTS))
 
 lite: $(OK_CERTS)
 

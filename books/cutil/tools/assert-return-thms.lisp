@@ -66,7 +66,8 @@
      (advise$ real-fn advice :when :after)))
 
 #|
-(local (include-book "str/top" :dir :system))
+(local (include-book
+        "str/top" :dir :system))
 
 (program)
 

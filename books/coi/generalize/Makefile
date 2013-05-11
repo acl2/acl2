@@ -1,4 +1,4 @@
 include ../../Makefile-generic
-BOOKS = generalize
+# BOOKS = generalize
 
 -include Makefile-deps

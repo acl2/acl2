@@ -1,3 +1,3 @@
 include ../../Makefile-generic
-BOOKS = aliases maps typed-maps 
+# BOOKS = aliases maps typed-maps 
 -include Makefile-deps

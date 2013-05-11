@@ -1,5 +1,5 @@
 include ../../Makefile-generic
-BOOKS = adviser adviser-pkg test
+# BOOKS = adviser adviser-pkg test
 -include Makefile-deps
 
 clean: clean-coi-extras

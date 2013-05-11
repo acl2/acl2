@@ -18,14 +18,6 @@ override ACL2_PCERT =
 include ../Makefile-generic
 -include Makefile-deps
 
-matrix-multiplication-parallel.cert: matrix-multiplication-serial.cert
-fibonacci.cert: matrix-multiplication-parallel.cert
-
 # This is really gross and taken from the xdoc directory for lack of knowing of
 # something better.
 ACL2_COMPILE_FLG := t :ttags :all
-
-# Additional dependencies to force serialization when set-compile-fns is set
-# (causes a problem for GCL 2.6.*).
-
-

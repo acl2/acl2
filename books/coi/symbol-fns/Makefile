@@ -1,5 +1,5 @@
 include ../../Makefile-generic
-BOOKS = symbol-fns symbol-fns-exports
+# BOOKS = symbol-fns symbol-fns-exports
 -include Makefile-deps
 
 clean: clean-coi-extras

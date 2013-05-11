@@ -8,6 +8,7 @@ DIRS =	symbol-fns \
 	bags \
 	alists \
 	records \
+	records/fast \
 	paths \
 	maps \
 	dtrees \

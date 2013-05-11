@@ -1,5 +1,11 @@
 (in-package "ACL2")
 
+; Here we fool the dependency tracker (thus removing a dependency from
+; Makefile).
+#||
+(include-book "matrix-multiplication-serial")
+||#
+
 (include-book "misc/assert" :dir :system)
 (include-book "make-event/embeddable-event-forms" :dir :system)
 (include-book "matrix-multiplication-setup")
