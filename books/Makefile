@@ -771,13 +771,16 @@ short-test: $(filter cowles/% arithmetic/% meta/% xdoc/% ordinals/% \
                      data-structures/% bdd/%, \
                      $(OK_CERTS))
 
-# Here are aliases for the "standard" approach.  Warning: ACL2's
-# GNUmakefile uses the present file's "basic" target to implement its
-# own target certify-books, which some might use to build all
-# "appropriate" books when installing ACL2.
+# Here are aliases for the "standard" approach.
 .PHONY: libs basic
 libs: std
 basic: std
+
+# Warning: ACL2's GNUmakefile uses the following target to implement
+# its own target certify-books, which some might use to build all
+# "appropriate" books when installing ACL2.
+.PHONY: certify-books
+certify-books: $(filter-out workshops/%, $(OK_CERTS))
 
 # The `user' target allows one to specify the roots of the forest of
 # books to be certified.
