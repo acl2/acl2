@@ -796,6 +796,7 @@ user: $(ACL2_BOOK_CERTS)
 # the dependency scanning stuff without actually building anything.
 .PHONY: dummy
 dummy:
+	@echo "Making dummy -- nothing to do."
 
 # We now provide a way (adapted from the old Makefile-generic) for
 # developers to be able to check well-formedness of the ACL2 world
@@ -832,3 +833,49 @@ chk-include-book-worlds: $(BOOKS_BKCHK_OUT)
             (echo '** Pseudo-good-worldp check FAILED for including $*;' "see `pwd`/$@" '**' ;\
              exit 1)
 	@rm -f $(@D)/workxxx.bkchk.$(*F)
+
+##############################
+### Section: Some notes
+##############################
+
+# Comparable runs using this Makefile vs. the older Makefile.legacy
+# can be done from the ACL2 sources directory as follows.
+
+# ; uses Makefile
+# (time nice make -j 8 regression ACL2=acl2ch)
+
+# ; uses Makefile.legacy
+# (time nice make ACL2_JOBS=8 regression-legacy-hons ACL2=acl2ch)
+
+# The resulting of .cert files can be obtained by running the command
+
+#   find . -name '*.cert' -print | sort
+
+# in the directory of this Makefile immediately after each run.
+# Here is what can be expected to find (based on having done this
+# experiment on 5/10/2013).
+
+# There were two .cert files from the legacy run that were not from
+# the new run, as follows, and both are 0-length files that were
+# written by their directories' Makefiles in order to avoid
+# certification of these slow books.  That avoidance is handled
+# differently by the new books/Makefile, without creating a .cert
+# file.
+
+# coi/termination/assuming/complex.cert
+# models/jvm/m5/apprentice.cert
+
+# There were six .cert files in the new run that were not in the
+# legacy run.  The first two are explicitly avoided by the legacy run
+# because they would introduce circular directory dependencies.
+
+# str/base64.cert (certification took about 10 seconds)
+# system/io.cert (certification took under 1 second)
+
+# The other four have only the form (in-package "ACL2"), the rest
+# being comments to assist the dependency scanner.
+
+# workshops/1999/deps-multiplier.cert
+# workshops/2003/greve-wilding-vanfleet/deps.cert
+# workshops/2003/kaufmann/deps.cert
+# workshops/2011/verbeek-schmaltz/deps.cert
