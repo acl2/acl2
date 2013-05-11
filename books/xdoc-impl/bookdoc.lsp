@@ -327,6 +327,8 @@ topics share this name.  We have arbitrarily chosen one of them.</h4>" long))
          (warn-about-collisions1 dupes topics))
       topics)))
 
+(comp t) ; can be needed when host Lisp doesn't automatically compile, e.g., Allegro CL
+
 (defconsts *book-documentation*
   (xdoc::remove-topics-by-name (warn-about-collisions (xdoc::get-xdoc-table (w state)))
                                xdoc::*acl2-ground-zero-names*))

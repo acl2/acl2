@@ -428,7 +428,7 @@
          (cons (cons (caar x) (aig-vecsim (cdar x) sig-alist))
                (aig-alist-vecsim (cdr x) sig-alist)))))
 
-
+(comp t) ; can be needed when host Lisp doesn't automatically compile, e.g., Allegro CL
 
 
 
