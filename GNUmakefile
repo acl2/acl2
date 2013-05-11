@@ -805,7 +805,14 @@ endif
 # from GCL maintainer Camm Maguire.
 .PHONY: certify-books-short
 certify-books-short:
-	cd books ; $(MAKE) short-test
+	uname -a
+ifndef ACL2
+	cd books ; \
+	$(MAKE) $(ACL2_IGNORE) ACL2=$(shell pwd)/saved_acl2 short-test
+else
+	cd books ; \
+	$(MAKE) $(ACL2_IGNORE) ACL2=$(ACL2) short-test
+endif
 
 # The following target assumes that we are using an image built with
 # ACL2_DEVEL set.
