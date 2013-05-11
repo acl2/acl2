@@ -690,7 +690,39 @@ endif # ifdef ACL2_COMP
 # Keep this section at the end, so that all variable definitions have
 # been completed (in particular, for OK_CERTS).
 
-everything: $(OK_CERTS) $(SLOW_BOOKS)
+# First, we let the user filter the books by specifying the roots of
+# the forest of books to be certified.  Our implementation reduces
+# $(OK_CERTS), which normally is probably closed under dependencies.
+# But for most purposes it is probably not important that $(OK_CERTS)
+# be closed under dependencies.
+#
+# Example (just remove "# " at the beginning of each line):
+#
+# make -k -j 4 NO_RESCAN=1 ACL2=acl2h \
+# ACL2_BOOK_CERTS=" \
+# workshops/2006/cowles-gamboa-euclid/Euclid/ed6a.cert \
+# workshops/2006/cowles-gamboa-euclid/Euclid/ed4bb.cert \
+# " 
+#
+# If variable ACL2_BOOK_DIRS is set, then ACL2_BOOK_CERTS is extended
+# accordingly.  Note that the pathnames in ACL2_BOOK_DIRS should be
+# relative to the top-level books directory, not absolute pathnames.
+
+# So  that ACL2_BOOK_CERTS is not recursive:
+ACL2_BOOK_CERTS := $(ACL2_BOOK_CERTS)
+ifneq ($(ACL2_BOOK_DIRS), )
+$(info ACL2_BOOK_DIRS = $(ACL2_BOOK_DIRS))
+ACL2_BOOK_DIRS_PATTERNS := $(addsuffix /%, $(ACL2_BOOK_DIRS))
+ACL2_BOOK_CERTS += $(ACL2_BOOK_CERTS) \
+                   $(filter $(ACL2_BOOK_DIRS_PATTERNS), $(OK_CERTS))
+endif # ifneq ($(ACL2_BOOK_DIRS), )
+
+ifneq ($(ACL2_BOOK_CERTS), )
+$(info ACL2_BOOK_CERTS = $(ACL2_BOOK_CERTS))
+OK_CERTS := $(ACL2_BOOK_CERTS)
+else
+
+# Normal case, where ACL2_BOOK_DIRS or ACL2_BOOK_CERTS is defined:
 
 # We prefer not to certify books under the directories filtered out
 # just below, for the following reasons.
@@ -706,11 +738,18 @@ everything: $(OK_CERTS) $(SLOW_BOOKS)
 # files in those directories or excluding them from the egrep command
 # that is used to define REBUILD_MAKEFILE_BOOKS, above.  Instead, we
 # exclude them from the "all" and "lite" targets now.
-OK_CERTS := $(filter-out rtl/rel7/% memoize/%, $(OK_CERTS))
+
+OK_CERTS_EXCLUSIONS := $(filter rtl/rel7/% memoize/%, $(OK_CERTS))
+OK_CERTS := $(filter-out $(OK_CERTS_EXCLUSIONS), $(OK_CERTS))
+
+endif # ifneq ($(ACL2_BOOK_CERTS), )
 
 lite: $(OK_CERTS)
-
 all: lite
+# OK_CERTS_EXCLUSIONS is undefined if ACL2_BOOK_CERTS is defined, but
+# that's not a problem; after all, in that case OK_CERTS wasn't
+# filtered by OK_CERTS_EXCLUSIONS.
+everything: all $(OK_CERTS_EXCLUSIONS)
 
 # The critical path report will work only if you have set up certificate timing
 # BEFORE you build the books.  See ./critpath.pl --help for details.
@@ -781,16 +820,6 @@ basic: std
 # "appropriate" books when installing ACL2.
 .PHONY: certify-books
 certify-books: $(filter-out workshops/%, $(OK_CERTS))
-
-# The `user' target allows one to specify the roots of the forest of
-# books to be certified.
-# Example (just remove "# " at the beginning of each line):
-# make -k -j 4 NO_RESCAN=1 ACL2=acl2h \
-# ACL2_BOOK_CERTS=" \
-# workshops/2006/cowles-gamboa-euclid/Euclid/ed6a.cert \
-# workshops/2006/cowles-gamboa-euclid/Euclid/ed4bb.cert \
-# " user
-user: $(ACL2_BOOK_CERTS)
 
 # The following dummy target does nothing, e.g., so that you can test
 # the dependency scanning stuff without actually building anything.
