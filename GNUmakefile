@@ -746,9 +746,9 @@ move-large:
 .PHONY: certify-books
 certify-books:
 ifndef ACL2
-	cd books ; $(MAKE) $(ACL2_IGNORE) basic ACL2=$(shell pwd)/saved_acl2
+	cd books ; $(MAKE) $(ACL2_IGNORE) certify-books ACL2=$(shell pwd)/saved_acl2
 else
-	cd books ; $(MAKE) $(ACL2_IGNORE) basic ACL2=$(ACL2)
+	cd books ; $(MAKE) $(ACL2_IGNORE) certify-books ACL2=$(ACL2)
 endif
 
 # Certify books that are not up-to-date, even those less likely to be included
