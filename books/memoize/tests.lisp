@@ -33,6 +33,10 @@
 
 (defttag :memoize-tests)
 
+; For GCL, Allegro CL,and probably other host Lisps besides CCL, the "magic"
+; nature of numargs for CCL seems to make more tests fail in tests-raw.lsp than
+; just those marked there with #+Clozure.
+#+Clozure
 (progn!
  (set-raw-mode t)
  (load "tests-raw.lsp"))

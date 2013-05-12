@@ -75,6 +75,8 @@
           ((mv rest state) (generate-random-problems (1- n) state)))
        (mv (cons (list a b) rest) state)))
 
+   (comp t) ; can be needed when host Lisp doesn't automatically compile, e.g., GCL
+
    (make-event
     (b* ((s0 (acl2::aig-xor 'a0 'b0))
          (c0 (acl2::aig-and 'a0 'b0))

@@ -281,6 +281,7 @@ $(info ACL2_HAS_HONS     := $(ACL2_HAS_HONS))
 $(info ACL2_HAS_PARALLEL := $(ACL2_HAS_PARALLEL))
 $(info ACL2_HAS_REALS    := $(ACL2_HAS_REALS))
 $(info ACL2_COMP_EXT     := $(ACL2_COMP_EXT))
+$(info ACL2_HOST_LISP    := $(ACL2_HOST_LISP))
 $(info Done with features.)
 
 OK_CERTS := $(CERT_PL_CERTS)
@@ -398,7 +399,7 @@ make-event/local-requires-skip-check-include.pcert1: \
 
 # Deal with generated file bdd/benchmarks.lisp.
 
-all: bdd/benchmarks.cert
+OK_CERTS += bdd/benchmarks.cert
 
 bdd/benchmarks.cert: bdd/benchmarks.lisp
 
@@ -506,7 +507,7 @@ system/pcert/sub.cert: \
 
 endif # ifndef ACL2_COMP
 
-all: $(ACL2_CUSTOM_TARGETS)
+OK_CERTS += $(ACL2_CUSTOM_TARGETS)
 
 ##############################
 ### Section: Support for ACL2_COMP
@@ -679,7 +680,7 @@ system/pcert/sub.$(ACL2_COMP_EXT): \
 	exit 1 ; \
 	fi
 
-all: system/pcert/sub.$(ACL2_COMP_EXT)
+OK_CERTS += system/pcert/sub.$(ACL2_COMP_EXT)
 
 endif # ifdef ACL2_COMP
 
@@ -729,17 +730,34 @@ else
 # - rtl/rel7/: This directory isn't used anywhere else and it doesn't
 #   add much from a regression perspective, given the other rtl/
 #   subdirectories that are included in the regression.
-# - memoize/: We don't want to add the necessary .acl2 files or worry
-#   about how Lisps other than CCL will deal with this directory, let
-#   alone ACL2 as opposed to ACL2(h).
 
-# However, we want cert.pl to scan within these directories, to
+# However, we want cert.pl to scan within any such directory, to
 # support the "everything" target, so we avoid putting cert_pl_exclude
-# files in those directories or excluding them from the egrep command
+# files in such a directory or excluding them from the egrep command
 # that is used to define REBUILD_MAKEFILE_BOOKS, above.  Instead, we
 # exclude them from the "all" and "lite" targets now.
 
-OK_CERTS_EXCLUSIONS := $(filter rtl/rel7/% memoize/%, $(OK_CERTS))
+OK_CERTS_EXCLUSIONS := $(filter rtl/rel7/%, $(OK_CERTS))
+
+ifneq ($(ACL2_HAS_HONS), )
+ifeq ($(filter CCL ALLEGRO SBCL, $(ACL2_HOST_LISP)), )
+
+# We exclude models/y86/ for ACL2(h) except for CCL, which has
+# significant optimizations for ACL2(h), and except for other Lisps
+# that we have observed to perform acceptably on certifying these
+# books.  In an ANSI GCL ACL2(h) regression, certification runs were
+# still proceeding after more than 10 hours for each of four books
+# under models/y86/ (y86-basic/common/x86-state,
+# y86-two-level/common/x86-state,
+# y86-two-level-abs/common/x86-state-concrete, and
+# y86-basic/py86/popcount), probably because of the demands of
+# def-gl-thm.  Moreover, LispWorks has too small a value for
+# array-dimension-limit to support these certifications.
+
+OK_CERTS_EXCLUSIONS += $(filter models/y86/%, $(OK_CERTS))
+endif # ifeq ($(ACL2_HOST_LISP), GCL)
+endif # ifneq ($(ACL2_HAS_HONS), )
+
 OK_CERTS := $(filter-out $(OK_CERTS_EXCLUSIONS), $(OK_CERTS))
 
 endif # ifneq ($(ACL2_BOOK_CERTS), )

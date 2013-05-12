@@ -180,7 +180,8 @@
 (progn
 
   (defabbrev ticks ()
-    (the mfixnum (logand (get-internal-real-time) most-positive-mfixnum)))
+    (the mfixnum (logand (get-internal-real-time)
+                         acl2::most-positive-mfixnum)))
 
   (defun ticks-per-second ()
     internal-time-units-per-second))

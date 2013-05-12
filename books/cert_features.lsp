@@ -46,6 +46,9 @@
            (state (princ$ "ACL2_COMP_EXT := " channel state))
            (state (princ$ (@ compiled-file-extension) channel state))
            (state (newline channel state))
+           (state (princ$ "ACL2_HOST_LISP := " channel state))
+           (state (princ$ (symbol-name (@ host-lisp)) channel state))
+           (state (newline channel state))
            (state (close-output-channel channel state)))
       state)))
 

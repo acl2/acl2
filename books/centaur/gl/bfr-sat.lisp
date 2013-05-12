@@ -107,10 +107,10 @@ BFR-COUNTEREX-ALIST.
     (declare (ignore ctrex))
     (implies (and succeeded (not sat))
              (not (bfr-eval prop env))))
-  ::hints(("Goal" :in-theory (e/d (bfr-eval)
-                                  (acl2::eval-bdd-ubdd-fix))
-           :use ((:instance acl2::eval-bdd-ubdd-fix
-                  (x prop))))))
+  :hints(("Goal" :in-theory (e/d (bfr-eval)
+                                 (acl2::eval-bdd-ubdd-fix))
+          :use ((:instance acl2::eval-bdd-ubdd-fix
+                           (x prop))))))
 
 (acl2::defattach
  (bfr-sat bfr-sat-bdd
