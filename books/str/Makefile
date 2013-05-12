@@ -1,6 +1,9 @@
 include ../Makefile-generic
 
-# Avoid circular dependency with cutil introduced by base64.lisp.
+# By default, we support ../Makefile.legacy here by avoiding a
+# circular dependency with cutil introduced by base64.lisp.  If and
+# when ../Makefile.legacy is deleted, then we can delete the next
+# line.
 BOOKS = $(filter-out base64,$(patsubst %.lisp, %, $(wildcard *.lisp)))
 
 .PHONY: doc

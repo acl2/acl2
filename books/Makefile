@@ -195,8 +195,12 @@
 #    perform well.  I think this is probably as good as we can do.
 
 ##############################
-### Section: Introduce main targets and some variables
+### Section: Preliminaries
 ##############################
+
+ifneq ($(ACL2_JOBS), )
+$(error Error: variable ACL2_JOBS is obsolete (use -j instead); see :DOC book-makefiles)
+endif # ifneq ($(ACL2_JOBS), )
 
 ACL2 ?= acl2
 
@@ -761,6 +765,10 @@ endif # ifneq ($(ACL2_HAS_HONS), )
 OK_CERTS := $(filter-out $(OK_CERTS_EXCLUSIONS), $(OK_CERTS))
 
 endif # ifneq ($(ACL2_BOOK_CERTS), )
+
+ifeq ($(realpath workshops), )
+OK_CERTS := $(filter-out workshops/%, $(OK_CERTS))
+endif # ifeq ($(realpath workshops), )
 
 lite: $(OK_CERTS)
 all: lite
