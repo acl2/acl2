@@ -35,6 +35,7 @@ Makefile-tmp
 *.ppcf
 *.fas
 *.lib
+*.sse2f
 *.log
 TMP*.*
 temp-emacs-file.lsp
