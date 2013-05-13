@@ -12,6 +12,28 @@
 ;; move to util ?
 ;;
 
+(defun add-to-implication (xhyps stmt)
+  (declare (type (satisfies true-listp) xhyps))
+  (if (null xhyps) stmt
+    (if (and (consp stmt)
+	     (equal (car stmt) 'implies)
+	     (consp (cdr stmt))
+	     (consp (cddr stmt)))
+	(let ((hyps (cadr stmt))
+	      (body (caddr stmt)))
+	  (if (and (consp hyps)
+		   (equal (car hyps) 'and)
+		   (true-listp (cdr hyps)))
+	      `(implies (and ,@xhyps ,@(cdr hyps)) ,body)
+	    `(implies (and ,@xhyps ,hyps) ,body)))
+      `(implies (and ,@xhyps) ,stmt))))
+
+(def::un add-to-implication-list (xhyps list)
+  (declare (xargs :signature ((true-listp t) true-listp)))
+  (if (atom list) nil
+    (cons (add-to-implication xhyps (car list))
+	  (add-to-implication-list xhyps (cdr list)))))
+
 (defund defun::function-declaration-to-type-thm-hyps (name args hyps decl sig-hints)
   (declare (type symbol name)
 	   (type (satisfies defun::function-declaration-p) decl)
@@ -23,8 +45,7 @@
 	  (let ((type-statement (defun::function-declaration-to-type-statement name args decl)))
 	    (and type-statement
 		 `((defthm ,thmname
-		     (implies (and ,@hyps) 
-			      ,@type-statement)
+		     ,@(add-to-implication-list hyps type-statement)
 		     ,@(and sig-hints `(:hints ,sig-hints))
 		     :rule-classes (:rewrite
 				    (:forward-chaining
