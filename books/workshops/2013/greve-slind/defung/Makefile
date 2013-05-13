@@ -2,6 +2,6 @@
 
 include $(ACL2_SYSTEM_BOOKS)/Makefile-generic
 
-BOOKS = map-ec-call split phony-induction defung defung-test defung-stress rev3 ack-variants monadic defung2
+BOOKS = map-ec-call split phony-induction defung defung-test defung-stress rev3 ack-variants monadic
 
 include Makefile.deps
