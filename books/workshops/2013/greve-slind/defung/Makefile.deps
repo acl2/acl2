@@ -1,0 +1,57 @@
+# Deps for BOOKS and any corresponding .acl2 files go here:
+
+map-ec-call.cert: map-ec-call.lisp
+map-ec-call.cert: cert.acl2
+
+split.cert: split.lisp
+split.cert: $(ACL2_SYSTEM_BOOKS)/coi/syntax/syntax.cert
+split.cert: $(ACL2_SYSTEM_BOOKS)/ordinals/lexicographic-ordering.cert
+split.cert: cert.acl2
+
+defung.cert: defung.lisp
+defung.cert: $(ACL2_SYSTEM_BOOKS)/coi/symbol-fns/symbol-fns.cert
+defung.cert: $(ACL2_SYSTEM_BOOKS)/coi/util/defun.cert
+defung.cert: $(ACL2_SYSTEM_BOOKS)/coi/util/pseudo-translate.cert
+defung.cert: $(ACL2_SYSTEM_BOOKS)/coi/gensym/gensym.cert
+defung.cert: $(ACL2_SYSTEM_BOOKS)/coi/generalize/generalize.cert
+defung.cert: $(ACL2_SYSTEM_BOOKS)/ordinals/lexicographic-ordering.cert
+defung.cert: map-ec-call.cert
+defung.cert: split.cert
+defung.cert: phony-induction.cert
+defung.cert: cert.acl2
+
+defung-test.cert: defung-test.lisp
+defung-test.cert: defung.cert
+defung-test.cert: cert.acl2
+
+defung-stress.cert: defung-stress.lisp
+defung-stress.cert: defung.cert
+defung-stress.cert: cert.acl2
+
+phony-induction.cert: phony-induction.lisp
+phony-induction.cert: $(ACL2_SYSTEM_BOOKS)/coi/generalize/generalize.cert
+phony-induction.cert: cert.acl2
+
+rev3.cert: defung.cert
+
+ack-variants.cert: ack-variants.lisp
+ack-variants.cert: defung.cert
+
+monadic.cert: monadic.lisp
+monadic.cert: defung.cert
+
+# Deps for cert.acl2 (if any) go here:
+
+cert.acl2: $(ACL2_SYSTEM_BOOKS)/coi/syntax/syn-defpkg.lsp
+cert.acl2: $(ACL2_SYSTEM_BOOKS)/coi/util/defun-defpkg.lsp
+cert.acl2: $(ACL2_SYSTEM_BOOKS)/coi/symbol-fns/symbol-fns-defpkg.lsp
+cert.acl2: $(ACL2_SYSTEM_BOOKS)/coi/util/def-defpkg.lsp
+cert.acl2: $(ACL2_SYSTEM_BOOKS)/coi/util/gensym-defpkg.lsp
+cert.acl2: defung-defpkg.lsp
+cert.acl2: ; touch cert.acl2
+
+# Deps for LDFILES (if any) go here:
+
+all: 
+
+# Deps from the MOREDEPS file (if any) go here:

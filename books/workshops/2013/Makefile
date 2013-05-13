@@ -16,10 +16,10 @@
 # Freek Verbeek and Julien Schmaltz
 # Verification of Building Blocks for Asynchronous Circuits
 
-########## Waiting for possible supporting materials: ##########
-
 # Konrad Slind and David Greve
 # A Step-Indexing Approach to Partial Functions
+
+########## Waiting for possible supporting materials: ##########
 
 # Lucas Helms and Ruben Gamboa
 # An Interpreter for Quantum Circuits
@@ -53,7 +53,8 @@
 DIRS =  goel-hunt-kaufmann/support \
 	joosten-van-gastel-schmaltz/books \
 	verbeek-schmaltz/books \
-	van-gastel-schmaltz/books
+	van-gastel-schmaltz/books \
+	greve-slind/defung
 
 include ../../Makefile-psubdirs
 
