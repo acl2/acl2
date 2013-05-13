@@ -830,7 +830,8 @@ workshop2013: $(filter workshops/2013/%, $(OK_CERTS))
 std: $(filter-out centaur/%, \
        $(filter-out coi/%, \
          $(filter-out models/%, \
-           $(filter-out workshops/%, $(OK_CERTS)))))
+           $(filter-out tau/%, \
+             $(filter-out workshops/%, $(OK_CERTS))))))
 
 short-test: $(filter cowles/% arithmetic/% meta/% xdoc/% ordinals/% \
                      data-structures/% bdd/%, \
