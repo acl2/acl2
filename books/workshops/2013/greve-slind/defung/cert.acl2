@@ -1,4 +1,3 @@
-;;(ld "Makefile.acl2")
 (ld "coi/syntax/syn-defpkg.lsp" :dir :system)
 (ld "coi/util/defun-defpkg.lsp" :dir :system)
 (ld "coi/symbol-fns/symbol-fns-defpkg.lsp" :dir :system)

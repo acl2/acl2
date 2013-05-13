@@ -204,7 +204,7 @@
 (deftheory defung-theory
   (append '(unhide
 	    return-last ; originally must-be-equal
-	    the-error
+	    the-check
 	    true-fn-from-x
 	    not-true-fn-from-not-x
 	    true-fn-id
