@@ -85,7 +85,7 @@
 (include-book "std/alists/top" :dir :system)
 (include-book "std/typed-lists/top" :dir :system)
 
-(include-book "std/ks/explode-atom" :dir :system)
+(include-book "std/misc/explode-atom" :dir :system)
 
 
 (defun dec-dec-induct (k n)

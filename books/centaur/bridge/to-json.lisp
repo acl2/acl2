@@ -22,8 +22,8 @@
 (include-book "misc/definline" :dir :system)
 (include-book "str/cat" :dir :system)
 (include-book "str/natstr" :dir :system)
-(include-book "std/ks/two-nats-measure" :dir :system)
-(local (include-book "std/ks/explode-atom" :dir :system))
+(include-book "std/misc/two-nats-measure" :dir :system)
+(local (include-book "std/misc/explode-atom" :dir :system))
 (local (include-book "centaur/bitops/ihsext-basics" :dir :system))
 (local (include-book "misc/assert" :dir :system))
 

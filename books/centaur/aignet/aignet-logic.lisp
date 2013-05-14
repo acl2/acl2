@@ -31,7 +31,7 @@
 (include-book "cutil/defaggregate" :dir :system)
 (include-book "cutil/define" :dir :system)
 (include-book "tools/flag" :dir :system)
-(include-book "std/ks/two-nats-measure" :dir :system)
+(include-book "std/misc/two-nats-measure" :dir :system)
 (include-book "clause-processors/unify-subst" :dir :system)
 (local (include-book "arithmetic/top-with-meta" :dir :system))
 (local (include-book "centaur/bitops/ihsext-basics" :dir :system))

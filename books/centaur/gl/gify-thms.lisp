@@ -8,7 +8,7 @@
 (local (include-book "gobjectp-thms"))
 (local (include-book "general-object-thms"))
 (local (include-book "hyp-fix-logic"))
-(include-book "std/ks/two-nats-measure" :dir :system)
+(include-book "std/misc/two-nats-measure" :dir :system)
 
 ;; These events are included here redundantly to avoid having to include all
 ;; the above (locally-included) books everywhere we want a GL clause processor.

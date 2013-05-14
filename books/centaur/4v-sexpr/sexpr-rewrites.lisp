@@ -23,7 +23,7 @@
 (include-book "sexpr-advanced")
 (include-book "centaur/misc/hons-extra" :dir :system)
 (include-book "sexpr-vars-1pass")
-(include-book "std/ks/two-nats-measure" :dir :system)
+(include-book "std/misc/two-nats-measure" :dir :system)
 (local (in-theory (disable sets::double-containment)))
 
 (make-event
