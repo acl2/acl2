@@ -226,9 +226,13 @@ when it becomes available.
          (term (unquote (third args)))
          ((unless (pseudo-termp term))
           (mv nil alist))
-         ((mv eval-ok val)
+         ((mv eval-err val)
           (magic-ev term alist state t t))
-         ((unless (and eval-ok val
+         ((when eval-err)
+          (cw "synp error in mx-relieve-hyp: ~@0~%" (if (eq eval-err t) "error"
+                                                      eval-err))
+          (mv nil alist))
+         ((unless (and val
                        (implies (eq syntaxp-fn 'syntaxp)
                                 (eq val t))
                        (implies (eq syntaxp-fn 'bind-free)

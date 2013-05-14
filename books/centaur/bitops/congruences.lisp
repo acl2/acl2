@@ -536,9 +536,67 @@
           :induct (and (logsquash n i)
                        (loghead m i)))))
 
+(local (defthm logbitp-when-gte-integer-length
+         (implies (<= (integer-length n) (nfix i))
+                  (equal (logbitp i n)
+                         (< (ifix n) 0)))
+         :hints (("goal" :in-theory (enable* ihsext-inductions
+                                             ihsext-recursive-redefs)
+                  :induct (logbitp i n)
+                  :expand ((integer-length n))))))
 
+;; logand can create a loghead context, but for the most part we don't want it
+;; to:
+(defthmd logand-of-loghead-context-lemma
+  (implies (<= 0 (ifix n))
+           (equal (logand n (loghead (integer-length n) b))
+                  (logand n b)))
+  :hints ((equal-by-logbitp-hammer)))
 
+;; Logand can create a loghead context for +/-
+;; Context rules for plus/minus
+(def-context-rule logand-of-minus-context
+  (implies (and (syntaxp (quotep n))
+                (<= 0 (ifix n))
+                (integerp b))
+           (equal (logand n (- (loghead (integer-length n) b)))
+                  (logand n (- b))))
+  :hints(("Goal" :use ((:instance logand-of-loghead-context-lemma
+                        (b (- b)))
+                       (:instance logand-of-loghead-context-lemma
+                        (b (- (loghead (integer-length n) b)))))
+          :in-theory (enable loghead-of-minus-of-loghead)))
+  :fnname binary-logand)
 
+(def-context-rule logand-of-plus-context-first
+  (implies (and (syntaxp (quotep n))
+                (<= 0 (ifix n))
+                (integerp a)
+                (integerp b))
+           (equal (logand n (+ (loghead (integer-length n) a) b))
+                  (logand n (+ a b))))
+  :hints(("Goal" :use ((:instance logand-of-loghead-context-lemma
+                        (b (+ a b)))
+                       (:instance logand-of-loghead-context-lemma
+                        (b (+ (loghead (integer-length n) a) b))))
+          :in-theory (enable loghead-of-plus-loghead-first
+                             loghead-of-plus-loghead-second)))
+  :fnname binary-logand)
+
+(def-context-rule logand-of-plus-context-second
+  (implies (and (syntaxp (quotep n))
+                (<= 0 (ifix n))
+                (integerp a)
+                (integerp b))
+           (equal (logand n (+ a (loghead (integer-length n) b)))
+                  (logand n (+ a b))))
+  :hints(("Goal" :use ((:instance logand-of-loghead-context-lemma
+                        (b (+ a b)))
+                       (:instance logand-of-loghead-context-lemma
+                        (b (+ a (loghead (integer-length n) b)))))
+          :in-theory (enable loghead-of-plus-loghead-first
+                             loghead-of-plus-loghead-second)))
+  :fnname binary-logand)
 
 (def-ruleset! bitops-congruences
   '(apply-context-for-loghead$inline
@@ -605,7 +663,10 @@
     logand-logsquash-combine-contexts
     logsquash-logand-combine-contexts
     ash-propagate-logand-context
-    logsquash-of-loghead-to-logand))
+    logsquash-of-loghead-to-logand
+    logand-of-minus-context
+    logand-of-plus-context-first
+    logand-of-plus-context-second))
 
 (def-ruleset! bitops-congruence-incompatible
   '(;; loghead-of-logior
