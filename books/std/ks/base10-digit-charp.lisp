@@ -17,64 +17,7 @@
 
 (in-package "ACL2")
 
-(defund base10-digit-charp (x)
-  (declare (xargs :guard t))
-  (if (member x '(#\0 #\1 #\2 #\3 #\4 #\5 #\6 #\7 #\8 #\9))
-      t
-    nil))
+;; The following line marks this book as a relocation stub:
+;; cert_param: (reloc_stub)
 
-(defthm characterp-when-base10-digit-charp
-  (implies (base10-digit-charp x)
-           (characterp x))
-  :hints(("Goal" :in-theory (enable base10-digit-charp))))
-
-
-(defund base10-digit-char-listp (x)
-  (declare (xargs :guard t))
-  (if (consp x)
-      (and (base10-digit-charp (car x))
-           (base10-digit-char-listp (cdr x)))
-    (eq x nil)))
-
-(defthm base10-digit-char-listp-when-not-consp
-  (implies (not (consp x))
-           (equal (base10-digit-char-listp x)
-                  (not x)))
-  :hints(("Goal" :in-theory (enable base10-digit-char-listp))))
-
-(defthm base10-digit-char-listp-of-cons
-  (equal (base10-digit-char-listp (cons a x))
-         (and (base10-digit-charp a)
-              (base10-digit-char-listp x)))
-  :hints(("Goal" :in-theory (enable base10-digit-char-listp))))
-
-(defthm character-listp-when-base10-digit-char-listp
-  (implies (base10-digit-char-listp x)
-           (character-listp x))
-  :hints(("Goal" :induct (len x))))
-
-(defthm base10-digit-char-listp-of-revappend
-  (implies (and (base10-digit-char-listp x)
-                (base10-digit-char-listp acc))
-           (base10-digit-char-listp (revappend x acc))))
-
-
-
-(in-theory (disable digit-to-char))
-
-(defthm base10-digit-charp-of-digit-to-char
-  (implies (and (natp n)
-                (< n 10))
-           (base10-digit-charp (digit-to-char n)))
-  :hints(("Goal" :in-theory (enable digit-to-char
-                                    base10-digit-charp))))
-
-(defthm equal-of-digit-to-chars
-  (implies (and (natp i) (< i 16)
-                (natp j) (< j 16))
-           (equal (equal (digit-to-char i)
-                         (digit-to-char j))
-                  (equal i j)))
-  :hints(("Goal" :in-theory (enable digit-to-char))))
-
-
+(include-book "std/misc/base10-digit-charp" :dir :system)

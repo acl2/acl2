@@ -17,21 +17,7 @@
 
 (in-package "ACL2")
 
-(local (include-book "std/lists/append" :dir :system))
-(local (include-book "std/lists/coerce" :dir :system))
+;; The following line marks this book as a relocation stub:
+;; cert_param: (reloc_stub)
 
-(defthm equal-of-string-appends-one
-  (implies (and (stringp x)
-                (stringp y1)
-                (stringp y2))
-           (equal (equal (string-append x y1)
-                         (string-append x y2))
-                  (equal y1 y2))))
-
-(defthm equal-of-string-appends-two
-  (implies (and (stringp x1)
-                (stringp x2)
-                (stringp y))
-           (equal (equal (string-append x1 y)
-                         (string-append x2 y))
-                  (equal x1 x2))))
+(include-book "std/misc/string-append" :dir :system)

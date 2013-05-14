@@ -16,45 +16,8 @@
 ;; Place - Suite 330, Boston, MA 02111-1307, USA.
 
 (in-package "ACL2")
-(include-book "base10-digit-charp")
-(local (include-book "std/lists/append" :dir :system))
-(local (include-book "explode-nonnegative-integer"))
 
-(defthm true-listp-of-explode-atom
-  (true-listp (explode-atom x base))
-  :rule-classes :type-prescription)
+;; The following line marks this book as a relocation stub:
+;; cert_param: (reloc_stub)
 
-(defthm consp-of-explode-atom-when-integerp
-  (implies (integerp n)
-           (consp (explode-atom n base)))
-  :rule-classes :type-prescription)
-
-(defthm equal-of-explode-atoms-when-natps
-  (implies (and (natp n)
-                (natp m)
-                (force (print-base-p base)))
-           (equal (equal (explode-atom n base)
-                         (explode-atom m base))
-                  (equal n m))))
-
-(defthm nonzeroness-of-explode-atom-when-not-zp
-  (implies (and (not (zp n))
-                (force (print-base-p base)))
-           (not (equal (explode-atom n base) '(#\0)))))
-
-(defthm base10-digit-char-listp-of-explode-atom
-  (implies (natp n)
-           (base10-digit-char-listp (explode-atom n 10))))
-
-(defthm character-listp-of-explode-atom
-  (implies (force (print-base-p base))
-           (character-listp (explode-atom x base)))
-  :rule-classes ((:rewrite)
-                 (:rewrite :corollary (character-listp (explode-atom x 2)))
-                 (:rewrite :corollary (character-listp (explode-atom x 8)))
-                 (:rewrite :corollary (character-listp (explode-atom x 10)))
-                 (:rewrite :corollary (character-listp (explode-atom x 16))))
-  :hints(("Goal" :in-theory (disable explode-nonnegative-integer))))
-
-
-
+(include-book "std/misc/explode-atom" :dir :system)

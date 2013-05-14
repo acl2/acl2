@@ -17,23 +17,7 @@
 
 (in-package "ACL2")
 
-(local (defthm intern-in-package-of-symbol-lemma
-         (implies (and (stringp a)
-                       (stringp b)
-                       (symbolp in-pkg)
-                       (not (equal a b)))
-                  (not (equal (intern-in-package-of-symbol a in-pkg)
-                              (intern-in-package-of-symbol b in-pkg))))
-         :hints(("Goal"
-                 :use ((:instance symbol-name-intern-in-package-of-symbol
-                                  (s a) (any-symbol in-pkg))
-                       (:instance symbol-name-intern-in-package-of-symbol
-                                  (s b) (any-symbol in-pkg)))))))
+;; The following line marks this book as a relocation stub:
+;; cert_param: (reloc_stub)
 
-(defthm equal-of-intern-in-package-of-symbols
-  (implies (and (stringp a)
-                (stringp b)
-                (symbolp in-pkg))
-           (equal (equal (intern-in-package-of-symbol a in-pkg)
-                         (intern-in-package-of-symbol b in-pkg))
-                  (equal a b))))
+(include-book "std/misc/intern-in-package-of-symbol" :dir :system)
