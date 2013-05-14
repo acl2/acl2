@@ -267,6 +267,7 @@
 
 ;; BOZO this is also defined in clause-processors/unify-subst.lisp
 (defun all-keys-bound (keys alist)
+  (declare (xargs :guard (alistp alist)))
   (if (atom keys)
       t
     (and (assoc-equal (car keys) alist)
@@ -356,6 +357,12 @@
   (treematch-fn (car args) (cadr args)
                 `(progn$ . ,forms)
                 rest-expr))
+
+(def-b*-binder when-match
+  (declare (xargs :guard (equal (len args) 2)))
+  (treematch-fn (car args) (cadr args)
+                rest-expr
+                `(progn$ . ,forms)))
 
 (defun treematch*-fn (x pats)
   (cond ((atom pats) nil)
@@ -564,3 +571,30 @@
   (def-match-tree-rewrites-fn pat))
 
 (local (def-match-tree-rewrites (if (:! foo) (:? bar) (:?s baz))))
+
+
+(in-theory (disable mv-nth))
+
+(defthm match-tree-measure-weak
+  (implies (not (assoc k alist0))
+           (<= (acl2-count (cdr (assoc k (mv-nth 1 (match-tree pat x alist0)))))
+               (acl2-count x)))
+  :hints(("Goal" :in-theory (e/d (match-tree) (acl2-count))
+          :induct t)
+         (and stable-under-simplificationp
+              '(:in-theory (enable acl2-count))))
+  :rule-classes :linear)
+
+(defthm match-tree-measure-strong
+  (mv-let (ok alist)
+    (match-tree pat x alist0)
+    (implies (and (not (assoc k alist0))
+                  (not (match-tree-binder-p pat))
+                  (consp pat)
+                  ok)
+             (< (acl2-count (cdr (assoc k alist)))
+                (acl2-count x))))
+  :hints(("Goal" :in-theory (e/d (match-tree))
+          :induct t))
+  :rule-classes :linear)
+

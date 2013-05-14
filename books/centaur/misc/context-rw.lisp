@@ -29,6 +29,9 @@
 (include-book "xdoc/top" :dir :system)
 
 (local (in-theory (disable append-of-nil)))
+(local (in-theory (disable all-boundp
+                           sets::double-containment
+                           all-keys-bound)))
 
 (defxdoc contextual-rewriting
   :short "A meta-rule system that lets the ACL2 rewriter pass around contextual
@@ -179,23 +182,447 @@ when it becomes available.
       (access rewrite-rule lemma :lhs)
       (access rewrite-rule lemma :rhs)))
 
+(local (in-theory (disable symbol-alistp)))
 
-(defun mfc-relieve-hyps (hyps alist rune target n mfc state)
-  (declare (xargs :stobjs state
-                  :guard (natp n)))
-  (if (atom hyps)
-      t
-    (and (mfc-relieve-hyp (car hyps) alist rune target (1+ n) mfc state :forcep
-                          nil)
-         (mfc-relieve-hyps (cdr hyps) alist rune target (1+ n) mfc state))))
+(defthm symbol-listp-strip-cars-of-symbol-alist
+  (implies (symbol-alistp x)
+           (symbol-listp (strip-cars x)))
+  :hints(("Goal" :in-theory (enable symbol-alistp))))
+
+(defsection mx-relieve-hyp
+  (local (defthm symbol-alistp-impl-true-listp
+           (implies (symbol-alistp x)
+                    (true-listp x))))
+  (defund mx-relieve-hyp (hyp alist rune target n mfc state)
+    (declare (xargs :stobjs state
+                    :guard (and (pseudo-termp hyp)
+                                (symbol-alistp alist)
+                                (natp n))))
+    (b* (((unless (mbe :logic (eq (ffn-symb hyp) 'synp)
+                       :exec (and (nvariablep hyp)
+                                  (not (fquotep hyp))
+                                  (eq (ffn-symb hyp) 'synp))))
+          (b* (((unless (all-keys-bound (simple-term-vars hyp) alist))
+                ;; Can't allow free variables in the hyps if we're going to
+                ;; extend the substitution later.
+                ;; Deal later with binding-hyps and free-variable hyps, maybe.
+                (cw "mx-relieve-hyp: hyp has free variables: ~x0~%" hyp)
+                (mv nil alist))
+               (res (mfc-relieve-hyp hyp alist rune target (1+ n) mfc state
+                                     :forcep nil)))
+            (mv res alist)))
+         (args (fargs hyp))
+         ((unless (and 
+                   ;; check that synp is defined as expected
+                   (fn-check-def 'synp state '(vars form term) ''t)
+                   ;; check that all three args are quoted
+                   (equal (len args) 3)
+                   (quote-listp args)))
+          (mv nil alist))
+         (syntaxp-form (unquote (second args)))
+         (syntaxp-fn (and (consp syntaxp-form) (car syntaxp-form)))
+         ((unless (member syntaxp-fn '(bind-free syntaxp)))
+          (mv nil alist))
+         (term (unquote (third args)))
+         ((unless (pseudo-termp term))
+          (mv nil alist))
+         ((mv eval-ok val)
+          (magic-ev term alist state t t))
+         ((unless (and eval-ok val
+                       (implies (eq syntaxp-fn 'syntaxp)
+                                (eq val t))
+                       (implies (eq syntaxp-fn 'bind-free)
+                                (and (symbol-alistp val)
+                                     (not (assoc-eq nil val))
+                                     (not (intersectp-eq (strip-cars val)
+                                                         (strip-cars alist)))
+                                     (pseudo-term-val-alistp val)))))
+          (mv nil alist)))
+      (mv t (if (eq syntaxp-fn 'bind-free)
+                (append val alist)
+              alist))))
+  (local (in-theory (enable mx-relieve-hyp)))
+
+  (encapsulate nil
+    (local (defthm alistp-member-strip-cars
+             (implies (not (member x (strip-cars y)))
+                      (not (hons-assoc-equal x y)))
+             :hints(("Goal" :in-theory (enable strip-cars hons-assoc-equal)))))
+    (local (defthm sub-alistp-append-when-not-intersecting-1
+             (implies (and (alistp a)
+                           (not (intersectp (strip-cars a) (strip-cars b)))
+                           (hons-assoc-equal x b))
+                      (equal (hons-assoc-equal x a) nil))
+             :hints(("Goal" :in-theory (enable strip-cars hons-assoc-equal append)
+                     :induct (append a b)))))
+
+    (defthm sub-alistp-append-when-not-intersecting
+      (implies (and (alistp a)
+                    (not (intersectp (strip-cars a) (strip-cars b))))
+               (sub-alistp b (append a b)))
+      :hints(("Goal" :in-theory (enable sub-alistp-iff-witness)))))
+
+  (defthm alistp-when-symbol-alistp
+    (implies (symbol-alistp x)
+             (alistp x)))
+
+  (defthm mx-relieve-hyp-extends-alist
+    (sub-alistp alist (mv-nth 1 (mx-relieve-hyp
+                                 hyp alist rune target n mfc state)))
+    :hints(("Goal" :in-theory (enable sub-alistp-when-witness))))
+
+  (encapsulate nil
+    (local (defthm equal-len
+             (implies (syntaxp (quotep n))
+                      (equal (equal (len x) n)
+                             (and (natp n)
+                                  (if (= n 0)
+                                      (atom x)
+                                    (and (consp x)
+                                         (equal (len (cdr x)) (1- n)))))))))
+    
+    (defthm mx-relieve-hyp-all-vars-bound
+      (mv-let (ok new-alist)
+        (mx-relieve-hyp hyp alist rune target n mfc state)
+        (implies ok
+                 (all-keys-bound (simple-term-vars hyp) new-alist)))
+      :hints(("Goal" :in-theory (enable all-keys-bound)))))
+
+
+  (defthm hons-assoc-equal-in-ctx-ev-alist
+    (implies x
+             (equal (hons-assoc-equal x (ctx-ev-alist subst a))
+                    (and (hons-assoc-equal x subst)
+                         (cons x (ctx-ev (cdr (hons-assoc-equal x subst)) a))))))
+
+
+  (defthm-substitute-into-term-flag
+    (defthm ctx-ev-alist-equiv
+      (implies (and (alist-equiv a b)
+                    (pseudo-termp x))
+               (equal (ctx-ev x a)
+                      (ctx-ev x b)))
+      :hints ((and stable-under-simplificationp
+                   '(:in-theory (enable ctx-ev-of-fncall-args))))
+      :rule-classes nil
+      :flag substitute-into-term)
+    (defthm ctx-ev-lst-alist-equiv
+      (implies (and (alist-equiv a b)
+                    (pseudo-term-listp x))
+               (equal (ctx-ev-lst x a)
+                      (ctx-ev-lst x b)))
+      :rule-classes nil
+      :flag substitute-into-list))
+
+  (defthm alist-equiv-append-sub-alist
+    (implies (sub-alistp a b)
+             (alist-equiv (append a b)
+                          b))
+    :hints((alist-reasoning)))
+
+  (defthm-substitute-into-term-flag
+    (defthm ctx-ev-alist-extension-when-vars-bound
+      (implies (and (all-keys-bound (simple-term-vars x) a)
+                    (sub-alistp a b)
+                    (pseudo-termp x))
+               (equal (equal (ctx-ev x b)
+                             (ctx-ev x a))
+                      t))
+      :hints ((and stable-under-simplificationp
+                   '(:in-theory (enable ctx-ev-of-fncall-args
+                                        sub-alistp-hons-assoc-equal
+                                        all-keys-bound))))
+      :flag substitute-into-term)
+    (defthm ctx-ev-lst-extension-when-vars-bound
+      (implies (and (all-keys-bound (simple-term-vars-lst x) a)
+                    (sub-alistp a b)
+                    (pseudo-term-listp x))
+               (equal (equal (ctx-ev-lst x b)
+                             (ctx-ev-lst x a))
+                      t))
+      :flag substitute-into-list))
+
+  (defthm-substitute-into-term-flag
+    (defthm ctx-ev-alist-extension-append-when-vars-bound
+      (implies (and (all-keys-bound (simple-term-vars x) a)
+                    (pseudo-termp x))
+               (equal (ctx-ev x (append a b))
+                      (ctx-ev x a)))
+      :hints ((and stable-under-simplificationp
+                   '(:in-theory (enable ctx-ev-of-fncall-args
+                                        all-keys-bound))))
+      :flag substitute-into-term)
+    (defthm ctx-ev-lst-extension-append-when-vars-bound
+      (implies (and (all-keys-bound (simple-term-vars-lst x) a)
+                    (pseudo-term-listp x))
+               (equal (ctx-ev-lst x (append a b))
+                      (ctx-ev-lst x a)))
+      :flag substitute-into-list))
+
+  (local (in-theory (disable symbol-alistp magic-ev
+                             pseudo-term-val-alistp)))
+
+  (defthm ctx-ev-mx-relieve-hyp-correct
+    (mv-let (ok new-alist)
+      (mx-relieve-hyp hyp alist rune target n mfc state)
+      (implies (and (ctx-ev-meta-extract-contextual-facts a)
+                    (ctx-ev-meta-extract-global-facts)
+                    (not (assoc nil alist))
+                    (pseudo-termp hyp)
+                    ok)
+               (ctx-ev hyp (append (ctx-ev-alist new-alist a) a))))
+    :hints (("goal" :do-not-induct t
+             :use ((:instance ctx-ev-meta-extract-relieve-hyp
+                    (bkptr (1+ n))))
+             :in-theory (disable ctx-ev-meta-extract-relieve-hyp))))
+
+  (defthm symbol-alistp-append
+    (implies (and (symbol-alistp a)
+                  (symbol-alistp b))
+             (symbol-alistp (append a b)))
+    :hints(("Goal" :in-theory (enable symbol-alistp))))
+
+  (defthm symbol-alistp-mx-relieve-hyp
+    (implies (symbol-alistp alist)
+             (symbol-alistp (mv-nth 1 (mx-relieve-hyp
+                                       hyp alist rune target n mfc state)))))
+
+  (defthm alistp-mx-relieve-hyp
+    (implies (alistp alist)
+             (alistp (mv-nth 1 (mx-relieve-hyp
+                                       hyp alist rune target n mfc state)))))
+
+  (defthm assoc-nil-of-mx-relieve-hyp
+    (implies (not (assoc nil alist))
+             (not (assoc nil (mv-nth 1 (mx-relieve-hyp
+                                        hyp alist rune target n mfc state))))))
+
+  (defthm pseudo-term-val-alistp-mx-relieve-hyp
+    (implies (pseudo-term-val-alistp alist)
+             (pseudo-term-val-alistp (mv-nth 1 (mx-relieve-hyp
+                                                hyp alist rune target n mfc
+                                                state))))))
+
+
+(defsection mx-relieve-hyps
+  (defund mx-relieve-hyps (hyps alist rune target n mfc state)
+    (declare (xargs :stobjs state
+                    :guard (and (pseudo-term-listp hyps)
+                                (symbol-alistp alist)
+                                (natp n))))
+    (b* (((when (atom hyps))
+          (mv t alist))
+         ((mv ok alist)
+          (mx-relieve-hyp (car hyps) alist rune target n mfc state))
+         ((unless ok) (mv nil alist)))
+      (mx-relieve-hyps (cdr hyps) alist rune target (1+ n) mfc state)))
+
+  (local (in-theory (enable mx-relieve-hyps)))
+
+  (defthm alists-agree-of-cons
+    (implies (and (alists-agree keys a b)
+                  (not (member-equal x keys)))
+             (alists-agree keys a (cons (cons x y) b)))
+    :hints(("Goal" :in-theory (enable alists-agree))))
+
+  (defthm sub-alistp-of-cons
+    (implies (and (sub-alistp a b)
+                  (not (hons-assoc-equal x a)))
+             (sub-alistp a (cons (cons x y) b)))
+    :hints(("Goal" :in-theory (enable sub-alistp))))
+
+  (defthm alists-agree-transitive
+    (implies (and (alists-agree keys1 a b)
+                  (alists-agree keys2 b c)
+                  (subsetp-equal keys1 keys2))
+             (alists-agree keys1 a c))
+    :hints(("Goal" :in-theory (enable alists-agree subsetp-equal
+                                      alists-agree-hons-assoc-equal)
+            :induct t)))
+  (defthm alists-agree-implies-subsetp-keys
+    (implies (and (alists-agree keys a b)
+                  (subsetp-equal keys (alist-keys a)))
+             (subsetp-equal keys (alist-keys b)))
+    :hints(("Goal" :in-theory (enable alists-agree subsetp-equal alist-keys))))
+
+  (defthm sub-alistp-transitive-1
+    (implies (and (sub-alistp a b)
+                  (sub-alistp b c))
+             (sub-alistp a c))
+    :hints(("Goal" :in-theory (e/d (sub-alistp)))))
+
+  (defthm sub-alistp-transitive-2
+    (implies (and (sub-alistp b c)
+                  (sub-alistp a b))
+             (sub-alistp a c))
+    :hints(("Goal" :in-theory (e/d (sub-alistp)))))
+
+  (defthm mx-relieve-hyps-alist-extension
+    (sub-alistp alist
+                (mv-nth 1 (mx-relieve-hyps
+                           hyps alist rune target n mfc state))))
+
+  (defthm symbol-alistp-mx-relieve-hyps
+    (implies (symbol-alistp alist)
+             (symbol-alistp (mv-nth 1 (mx-relieve-hyps
+                                       hyps alist rune target n mfc state)))))
+
+  (defthm alistp-mx-relieve-hyps
+    (implies (alistp alist)
+             (alistp (mv-nth 1 (mx-relieve-hyps
+                                       hyps alist rune target n mfc state)))))
+
+  (defthm pseudo-term-val-alistp-mx-relieve-hyps
+    (implies (pseudo-term-val-alistp alist)
+             (pseudo-term-val-alistp (mv-nth 1 (mx-relieve-hyps
+                                                hyps alist rune target n mfc
+                                                state)))))
+
+  (defthm all-vars-bound-when-sub-alistp
+    (implies (and (all-keys-bound keys sub)
+                  (not (member nil keys))
+                  (sub-alistp sub sup))
+             (all-keys-bound keys sup))
+    :hints (("goal" :induct t
+             :in-theory (enable all-keys-bound))
+            (alist-reasoning)))
+
+  (defthm-substitute-into-term-flag
+    (defthm nil-not-member-simple-term-vars
+      (not (member nil (simple-term-vars x)))
+      :flag substitute-into-term)
+    (defthm nil-not-member-simple-term-vars-lst
+      (not (member nil (simple-term-vars-lst x)))
+      :flag substitute-into-list))
+
+  (defthm all-vars-bound-when-sub-alistp-mx-relieve-hyps
+    (implies (and (all-keys-bound keys alist)
+                  (not (member nil keys)))
+             (all-keys-bound keys
+                             (mv-nth 1 (mx-relieve-hyps
+                                        hyps alist rune target n mfc state))))
+    :hints (("goal" :use ((:instance mx-relieve-hyps-alist-extension))
+             :in-theory (disable mx-relieve-hyps-alist-extension))))
+
+  (defthm mx-relieve-hyps-all-vars-bound
+    (mv-let (ok new-alist)
+      (mx-relieve-hyps hyps alist rune target n mfc state)
+      (implies ok
+               (all-keys-bound (simple-term-vars-lst hyps) new-alist)))
+    :hints(("Goal" :in-theory (enable all-keys-bound))))
+
+  (defthm hons-assoc-equal-ctx-ev-alist
+    (implies (alistp x)
+             (equal (hons-assoc-equal k (ctx-ev-alist x a))
+                    (and (hons-assoc-equal k x)
+                         (cons k (ctx-ev (cdr (hons-assoc-equal k x)) a)))))
+    :hints(("Goal" :in-theory (enable ctx-ev-alist))))
+
+  (defthm sub-alistp-ctx-ev-alist
+    (implies (and (sub-alistp x y)
+                  (alistp y) (alistp x))
+             (sub-alistp (ctx-ev-alist x a) (ctx-ev-alist y a)))
+    :hints ((alist-reasoning)))
+
+
+  (defthm all-keys-bound-of-ctx-ev-alist
+    (implies (all-keys-bound keys subst)
+             (all-keys-bound keys (ctx-ev-alist subst a)))
+    :hints(("Goal" :in-theory (enable all-keys-bound))))
+
+  (defthm all-keys-bound-append-1
+    (implies (all-keys-bound k a)
+             (all-keys-bound k (append a b)))
+    :hints(("Goal" :in-theory (enable all-keys-bound))))
+
+  ;; (defthm sub-alistp-append-sub-alists
+  ;;   (implies (sub-alistp a b)
+  ;;            (sub-alistp (append a c)
+  ;;                        (append b c)))
+  ;;   :hints ((alist-reasoning)))
+
+  (defthm ctx-ev-alist-extension-mx-relieve-hyps
+    (implies (and (all-keys-bound (simple-term-vars x) alist)
+                  (pseudo-termp x)
+                  (alistp alist))
+             (equal (ctx-ev x (append (ctx-ev-alist
+                                       (mv-nth 1 (mx-relieve-hyps
+                                                  hyps alist rune target n mfc
+                                                  state))
+                                       a)
+                                      a))
+                    (ctx-ev x (append (ctx-ev-alist alist a) a))))
+    :hints(("Goal" :in-theory (disable mx-relieve-hyps
+                                       ctx-ev-alist-extension-when-vars-bound)
+            :use ((:instance ctx-ev-alist-extension-when-vars-bound
+                   (b (ctx-ev-alist
+                               (mv-nth 1 (mx-relieve-hyps
+                                          hyps alist rune target n mfc
+                                          state))
+                               a))
+                   (a (ctx-ev-alist alist a)))))))
+
+  (defthm ctx-ev-alist-extension-mx-relieve-hyps1
+    (implies (and (all-keys-bound (simple-term-vars x) alist)
+                  (pseudo-termp x)
+                  (alistp alist))
+             (equal (ctx-ev x (ctx-ev-alist
+                               (mv-nth 1 (mx-relieve-hyps
+                                          hyps alist rune target n mfc
+                                          state))
+                               a))
+                    (ctx-ev x (ctx-ev-alist alist a))))
+    :hints(("Goal" :in-theory (disable mx-relieve-hyps
+                                       ctx-ev-alist-extension-when-vars-bound)
+            :use ((:instance ctx-ev-alist-extension-when-vars-bound
+                   (b (ctx-ev-alist
+                       (mv-nth 1 (mx-relieve-hyps
+                                  hyps alist rune target n mfc
+                                  state))
+                       a))
+                   (a (ctx-ev-alist alist a)))))))
+             
+  (defthm assoc-nil-of-mx-relieve-hyps
+    (implies (not (assoc nil alist))
+             (not (assoc nil (mv-nth 1 (mx-relieve-hyps
+                                        hyps alist rune target n mfc state))))))
+
+  (defthm ctx-ev-mx-relieve-hyps-correct
+    (mv-let (ok new-alist)
+      (mx-relieve-hyps hyps alist rune target n mfc state)
+      (implies (and (ctx-ev-meta-extract-contextual-facts a)
+                    (ctx-ev-meta-extract-global-facts)
+                    (not (assoc nil alist))
+                    (alistp alist)
+                    (pseudo-term-listp hyps)
+                    ok)
+               (ctx-ev (conjoin hyps) (append (ctx-ev-alist new-alist a) a))))
+    :hints (("goal" :induct (mx-relieve-hyps hyps alist rune target n mfc
+                                             state))
+            (and stable-under-simplificationp
+                 '(:in-theory (enable ctx-ev-conjoin-when-consp)))))
+
+  (defthm all-keys-bound-of-conjoin
+    (implies (all-keys-bound (simple-term-vars-lst hyps) a)
+             (all-keys-bound (simple-term-vars (conjoin hyps)) a))
+    :hints(("Goal" :in-theory (enable conjoin all-keys-bound))))
+
+  (defthm ctx-ev-mx-relieve-hyps-correct1
+    (mv-let (ok new-alist)
+      (mx-relieve-hyps hyps alist rune target n mfc state)
+      (implies (and (ctx-ev-meta-extract-contextual-facts a)
+                    (ctx-ev-meta-extract-global-facts)
+                    (not (assoc nil alist))
+                    (alistp alist)
+                    (pseudo-term-listp hyps)
+                    ok)
+               (ctx-ev (conjoin hyps) (ctx-ev-alist new-alist a))))
+    :hints (("goal" :use ((:instance ctx-ev-mx-relieve-hyps-correct))
+             :in-theory (disable ctx-ev-mx-relieve-hyps-correct)))))
 
 
 
-(defthm hons-assoc-equal-in-ctx-ev-alist
-  (implies x
-           (equal (hons-assoc-equal x (ctx-ev-alist subst a))
-                  (and (hons-assoc-equal x subst)
-                       (cons x (ctx-ev (cdr (hons-assoc-equal x subst)) a))))))
+
 
 
 
@@ -230,43 +657,43 @@ when it becomes available.
 
 
 
-(defthm conjoin-of-termlist-subst
-  (implies (and (pseudo-term-listp x)
-                (not (assoc nil subst)))
-           (iff (ctx-ev (conjoin (termlist-subst x subst)) a)
-                (ctx-ev (sublis-var subst (conjoin x)) a)))
-  :hints(("Goal" :in-theory (enable termlist-subst term-subst)
-          :expand ((termlist-subst x subst)
-                   (conjoin x))
-          :induct (len x))))
+;; (defthm conjoin-of-termlist-subst
+;;   (implies (and (pseudo-term-listp x)
+;;                 (not (assoc nil subst)))
+;;            (iff (ctx-ev (conjoin (termlist-subst x subst)) a)
+;;                 (ctx-ev (sublis-var subst (conjoin x)) a)))
+;;   :hints(("Goal" :in-theory (enable termlist-subst term-subst)
+;;           :expand ((termlist-subst x subst)
+;;                    (conjoin x))
+;;           :induct (len x))))
 
 
 
-(defthm ctx-ev-mfc-relieve-hyps-correct-lemma
-  (implies (and (ctx-ev-meta-extract-contextual-facts a)
-                (not (assoc nil alist))
-                (pseudo-term-listp hyps)
-                (mfc-relieve-hyps hyps alist rune target n mfc state))
-           (ctx-ev (sublis-var alist (conjoin hyps)) a))
-  :hints (("goal" :induct t :do-not-induct t)
-          (and stable-under-simplificationp
-               '(:in-theory (e/d (ctx-ev-conjoin-when-consp)
-                                 (ctx-ev-meta-extract-relieve-hyp))
-                 :use ((:instance ctx-ev-meta-extract-relieve-hyp
-                        (hyp (car hyps)) (bkptr (+ 1 n))))))))
+;; (defthm ctx-ev-mfc-relieve-hyps-correct-lemma
+;;   (implies (and (ctx-ev-meta-extract-contextual-facts a)
+;;                 (not (assoc nil alist))
+;;                 (pseudo-term-listp hyps)
+;;                 (mfc-relieve-hyps hyps alist rune target n mfc state))
+;;            (ctx-ev (sublis-var alist (conjoin hyps)) a))
+;;   :hints (("goal" :induct t :do-not-induct t)
+;;           (and stable-under-simplificationp
+;;                '(:in-theory (e/d (ctx-ev-conjoin-when-consp)
+;;                                  (ctx-ev-meta-extract-relieve-hyp))
+;;                  :use ((:instance ctx-ev-meta-extract-relieve-hyp
+;;                         (hyp (car hyps)) (bkptr (+ 1 n))))))))
 
-(defthm ctx-ev-mfc-relieve-hyps-correct
-  (implies (and (ctx-ev-meta-extract-contextual-facts a)
-                (not (assoc nil alist))
-                (pseudo-term-listp hyps)
-                (mfc-relieve-hyps hyps alist rune target n mfc state))
-           (ctx-ev (conjoin hyps) (append (ctx-ev-alist alist a) a)))
-  :hints (("goal" :induct t :do-not-induct t)
-          (and stable-under-simplificationp
-               '(:in-theory (e/d (ctx-ev-conjoin-when-consp)
-                                 (ctx-ev-meta-extract-relieve-hyp))
-                 :use ((:instance ctx-ev-meta-extract-relieve-hyp
-                        (hyp (car hyps)) (bkptr (+ 1 n))))))))
+;; (defthm ctx-ev-mfc-relieve-hyps-correct
+;;   (implies (and (ctx-ev-meta-extract-contextual-facts a)
+;;                 (not (assoc nil alist))
+;;                 (pseudo-term-listp hyps)
+;;                 (mfc-relieve-hyps hyps alist rune target n mfc state))
+;;            (ctx-ev (conjoin hyps) (append (ctx-ev-alist alist a) a)))
+;;   :hints (("goal" :induct t :do-not-induct t)
+;;           (and stable-under-simplificationp
+;;                '(:in-theory (e/d (ctx-ev-conjoin-when-consp)
+;;                                  (ctx-ev-meta-extract-relieve-hyp))
+;;                  :use ((:instance ctx-ev-meta-extract-relieve-hyp
+;;                         (hyp (car hyps)) (bkptr (+ 1 n))))))))
 
 ;; (defthm mfc-relieve-hyps-correct
 ;;   (implies (and (pseudo-term-listp hyps)
@@ -311,32 +738,29 @@ when it becomes available.
   (implies (and (subsetp-equal a b)
                 (all-keys-bound b alist))
            (all-keys-bound a alist))
-  :hints(("Goal" :in-theory (enable subsetp-equal))))
-
-
-(defthm all-keys-bound-of-ctx-ev-alist
-  (implies (all-keys-bound keys subst)
-           (all-keys-bound keys (ctx-ev-alist subst a))))
+  :hints(("Goal" :in-theory (enable subsetp-equal all-keys-bound))))
 
 
 
-(defthm ctx-ev-mfc-relieve-hyps-correct-all-keys
-  (implies (and (pseudo-term-listp hyps)
-                (not (assoc nil alist))
-                (ctx-ev-meta-extract-contextual-facts a)
-                (mfc-relieve-hyps hyps alist rune target n mfc state)
-                (all-keys-bound (simple-term-vars-lst hyps) alist))
-           (ctx-ev (conjoin hyps)
-                   (ctx-ev-alist alist a)))
-  :hints (("goal" :use (ctx-ev-mfc-relieve-hyps-correct-lemma
-                        (:instance simple-term-vars-of-conjoin
-                         (x hyps)))
-           :in-theory (e/d ()
-                           (ctx-ev-mfc-relieve-hyps-correct-lemma
-                            ctx-ev-mfc-relieve-hyps-correct
-                            simple-term-vars-of-conjoin)))))
 
-(in-theory (disable mfc-relieve-hyps))
+
+;; (defthm ctx-ev-mfc-relieve-hyps-correct-all-keys
+;;   (implies (and (pseudo-term-listp hyps)
+;;                 (not (assoc nil alist))
+;;                 (ctx-ev-meta-extract-contextual-facts a)
+;;                 (mfc-relieve-hyps hyps alist rune target n mfc state)
+;;                 (all-keys-bound (simple-term-vars-lst hyps) alist))
+;;            (ctx-ev (conjoin hyps)
+;;                    (ctx-ev-alist alist a)))
+;;   :hints (("goal" :use (ctx-ev-mfc-relieve-hyps-correct-lemma
+;;                         (:instance simple-term-vars-of-conjoin
+;;                          (x hyps)))
+;;            :in-theory (e/d ()
+;;                            (ctx-ev-mfc-relieve-hyps-correct-lemma
+;;                             ctx-ev-mfc-relieve-hyps-correct
+;;                             simple-term-vars-of-conjoin)))))
+
+;; (in-theory (disable mfc-relieve-hyps))
 
 
 (defthm unify-const-nil-not-bound
@@ -366,6 +790,39 @@ when it becomes available.
     :hints ('(:expand ((simple-one-way-unify-lst pat term alist))))
     :flag simple-one-way-unify-lst))
 
+(defthm symbol-alistp-unify-const
+  (mv-let (unified subst)
+    (unify-const pat const alist)
+    (implies (and (symbol-alistp alist)
+                  (pseudo-termp pat)
+                  unified)
+             (symbol-alistp subst)))
+  :hints(("Goal" :in-theory (enable unify-const symbol-alistp))))
+
+(defthm-simple-one-way-unify-flag
+  (defthm simple-one-way-unify-symbol-alistp
+    (mv-let (unified subst)
+      (simple-one-way-unify pat term alist)
+      (implies (and (symbol-alistp alist)
+                    (pseudo-termp pat)
+                    unified)
+               (symbol-alistp subst)))
+    :hints ('(:expand ((:free (term) (simple-one-way-unify pat term alist))
+                       (:free (term) (simple-one-way-unify nil term alist)))
+              :in-theory (enable symbol-alistp)))
+    :flag simple-one-way-unify)
+  (defthm simple-one-way-unify-lst-symbol-alistp
+    (mv-let (unified subst)
+      (simple-one-way-unify-lst pat term alist)
+      (implies (and (symbol-alistp alist)
+                    (pseudo-term-listp pat)
+                    unified)
+               (symbol-alistp subst)))
+    :hints ('(:expand ((simple-one-way-unify-lst pat term alist))))
+    :flag simple-one-way-unify-lst))
+
+
+
 (defun mfc-apply-rewrite-rule (rule rune term mfc state)
   (declare (xargs :guard (pseudo-termp term)
                   :stobjs state))
@@ -381,13 +838,12 @@ when it becomes available.
         (simple-one-way-unify lhs term nil))
        ((unless unify-ok)
         (mv nil term))
-       (hyp-vars (simple-term-vars-lst hyps))
        (rhs-vars (simple-term-vars rhs))
-       ;; don't allow free variables
-       ((unless (and (ec-call (all-keys-bound hyp-vars subst))
-                     (ec-call (all-keys-bound rhs-vars subst))))
+       ((mv ok subst) (mx-relieve-hyps hyps subst rune term 0 mfc state))
+       ;; don't allow free variables in rhs after hyps
+       ((unless (ec-call (all-keys-bound rhs-vars subst)))
         (mv nil term))
-       ((unless (mfc-relieve-hyps hyps subst rune term 0 mfc state))
+       ((unless ok)
         (mv nil term)))
     (mv t (substitute-into-term rhs subst))))
 
@@ -395,6 +851,7 @@ when it becomes available.
 
 (defthm mfc-apply-rewrite-rule-correct
   (implies (and (ctx-ev-meta-extract-contextual-facts a)
+                (ctx-ev-meta-extract-global-facts)
                 (ctx-ev-theoremp (rewrite-rule-term rule))
                 (equal (access rewrite-rule rule :equiv) 'equal)
                 (pseudo-termp term))
@@ -403,11 +860,21 @@ when it becomes available.
   :hints (("goal" :use ((:instance ctx-ev-falsify
                          (x (rewrite-rule-term rule))
                          (a (append (ctx-ev-alist
-                                     (mv-nth 1 (simple-one-way-unify
+                                     (mv-nth 1
+                                             (mx-relieve-hyps
+                                              (mv-nth 1 (rewrite-rule-parts rule))
+                                              (mv-nth 1 (simple-one-way-unify
                                                 (mv-nth 3 (rewrite-rule-parts rule))
                                                 term nil))
+                                              rune
+                                              term 0 mfc state))
                                      a)
-                                    a)))))))
+                                    a))))
+           :in-theory (disable symbol-alistp alistp-of-cdr))))
+
+
+
+
 
 (in-theory (disable mfc-apply-rewrite-rule))
        
@@ -497,13 +964,13 @@ when it becomes available.
        ((mv ok term-subst) (simple-one-way-unify rhs term nil))
        ;; '((x . (baz z)) (y . w))
        ((unless ok) (mv nil term))
-       ((unless (and
-                 ;; We don't yet bind free variables -- maybe soon
-                 (ec-call (all-keys-bound (ec-call (simple-term-vars ctx-term)) term-subst))
-                 (ec-call (all-keys-bound (ec-call (simple-term-vars-lst hyps)) term-subst))))
-        (mv nil term))
+       ((mv ok term-subst)
+        (mx-relieve-hyps hyps term-subst rune term 0 mfc state))
+
+       ((unless ok) (mv nil term))
        ;; Relieve the hyps...
-       ((unless (mfc-relieve-hyps hyps term-subst rune term 0 mfc state))
+       ((unless ;; We don't yet bind free variables -- maybe soon
+            (all-keys-bound (simple-term-vars ctx-term) term-subst))
         (mv nil term))
        ;; Now rewrite the context term under the substitution alist.
        (ctx-rw (mfc-rw+ ctx-term term-subst '? nil mfc state :forcep nil))
@@ -563,7 +1030,8 @@ when it becomes available.
                                     (ctx-ev-alist subst a)))
                     (ctx-ev x (cons (cons var x1) a))))
     :hints ((and stable-under-simplificationp
-                 '(:in-theory (enable ctx-ev-of-fncall-args))))
+                 '(:in-theory (enable ctx-ev-of-fncall-args
+                                      all-keys-bound))))
     :flag substitute-into-term)
   (defthm ctx-ev-lst-when-all-identities-except-x
     (implies (and (pseudo-term-listp x)
@@ -601,7 +1069,7 @@ when it becomes available.
     (implies (and ok
                   (all-keys-bound (simple-term-vars pat) alist))
              (equal subst alist)))
-  :hints(("Goal" :in-theory (enable unify-const))))
+  :hints(("Goal" :in-theory (enable unify-const all-keys-bound))))
 
 
 (defthm-simple-one-way-unify-flag
@@ -613,7 +1081,8 @@ when it becomes available.
                (equal subst alist)))
     :hints ((and stable-under-simplificationp
                  '(:expand ((:free (x) (simple-one-way-unify pat x alist))
-                            (:free (x) (simple-one-way-unify nil x alist))))))
+                            (:free (x) (simple-one-way-unify nil x alist)))
+                   :in-theory (enable all-keys-bound))))
     :flag simple-one-way-unify)
   (defthm one-way-unify-lst-reduce-when-all-keys-bound
     (mv-let (ok subst)
@@ -627,45 +1096,10 @@ when it becomes available.
   :hints (("goal" :induct (simple-one-way-unify-flag flag pat x alist))))
 
 
-(defthm alists-agree-of-cons
-  (implies (and (alists-agree keys a b)
-                (not (member-equal x keys)))
-           (alists-agree keys a (cons (cons x y) b)))
-  :hints(("Goal" :in-theory (enable alists-agree))))
 
-(defthm sub-alistp-of-cons
-  (implies (and (sub-alistp a b)
-                (not (hons-assoc-equal x a)))
-           (sub-alistp a (cons (cons x y) b)))
-  :hints(("Goal" :in-theory (enable sub-alistp))))
 
-(defthm alists-agree-transitive
-  (implies (and (alists-agree keys1 a b)
-                (alists-agree keys2 b c)
-                (subsetp-equal keys1 keys2))
-           (alists-agree keys1 a c))
-  :hints(("Goal" :in-theory (enable alists-agree subsetp-equal
-                                    alists-agree-hons-assoc-equal)
-          :induct t)))
-
-(defthm alists-agree-implies-subsetp-keys
-  (implies (and (alists-agree keys a b)
-                (subsetp-equal keys (alist-keys a)))
-           (subsetp-equal keys (alist-keys b)))
-  :hints(("Goal" :in-theory (enable alists-agree subsetp-equal alist-keys))))
                 
 
-(defthm sub-alistp-transitive-1
-  (implies (and (sub-alistp a b)
-                (sub-alistp b c))
-           (sub-alistp a c))
-  :hints(("Goal" :in-theory (e/d (sub-alistp)))))
-
-(defthm sub-alistp-transitive-2
-  (implies (and (sub-alistp b c)
-                (sub-alistp a b))
-           (sub-alistp a c))
-  :hints(("Goal" :in-theory (e/d (sub-alistp)))))
 
 (defthm sub-alistp-of-unify-const
   (mv-let (ok subst)
@@ -682,7 +1116,8 @@ when it becomes available.
                (sub-alistp subst0 subst)))
     :hints ((and stable-under-simplificationp
                  '(:expand ((:free (x subst)
-                             (simple-one-way-unify pat x subst))))))
+                             (simple-one-way-unify pat x subst)))
+                   :in-theory (enable all-keys-bound))))
     :flag simple-one-way-unify)
   (defthm sub-alistp-of-one-way-unify-lst
     (mv-let (ok subst)
@@ -724,7 +1159,8 @@ when it becomes available.
                                    (alist-keys subst0)))))
     :hints ((and stable-under-simplificationp
                  '(:expand ((:free (x subst)
-                             (simple-one-way-unify pat x subst))))))
+                             (simple-one-way-unify pat x subst)))
+                   :in-theory (enable all-keys-bound))))
     :flag simple-one-way-unify)
   (defthm alist-keys-of-simple-one-way-unify-lst
     (mv-let (ok subst)
@@ -1021,7 +1457,7 @@ when it becomes available.
                                         (ctx-ev-alist subst a)))
                              (ctx-ev-alist subst a)))
                       const))
-      :hints(("Goal" :in-theory (enable unify-const)))))
+      :hints(("Goal" :in-theory (enable unify-const all-keys-bound)))))
 
 
   (defthm-simple-one-way-unify-flag
@@ -1041,7 +1477,7 @@ when it becomes available.
       :hints ('(:do-not-induct t
                 :expand ((:free (term) (simple-one-way-unify pat term alist))))
               (and stable-under-simplificationp
-                   '(:in-theory (enable ctx-ev-of-fncall-args))))
+                   '(:in-theory (enable ctx-ev-of-fncall-args all-keys-bound))))
       :flag simple-one-way-unify)
     (defthm substitute-into-single-var-unify-list-lemma
       (implies (and (all-keys-bound (simple-term-vars-lst pat) alist)
@@ -1241,17 +1677,23 @@ when it becomes available.
 (defthm try-context-rw-correct
   (implies (and (ctx-ev-theoremp (rewrite-rule-term rule))
                 (ctx-ev-meta-extract-contextual-facts a)
+                (ctx-ev-meta-extract-global-facts)
                 (pseudo-termp term))
            (equal (ctx-ev (mv-nth 1 (try-context-rw term rule rune mfc state)) a)
                   (ctx-ev term a)))
   :hints (("goal" :use ((:instance ctx-ev-falsify
                          (x (rewrite-rule-term rule))
                          (a (ctx-ev-alist
-                             (mv-nth 1 (simple-one-way-unify
-                                        (access rewrite-rule rule :rhs)
-                                        term nil))
+                             (mv-nth 1
+                                     (mx-relieve-hyps
+                                      (mv-nth 1 (rewrite-rule-parts rule))
+                                      (mv-nth 1 (simple-one-way-unify
+                                                 (access rewrite-rule rule :rhs)
+                                                 term nil))
+                                      rune term 0 mfc state))
                              a))))
-           :in-theory (enable rewrite-rule-term))))
+           :in-theory (e/d (rewrite-rule-term)
+                           (alistp-of-cdr symbol-alistp)))))
 
 (in-theory (disable try-context-rw))
 

@@ -26,9 +26,8 @@
 ;; (logand (lognot (logmask n)) x), i.e. it squashes the first N bits of X to
 ;; 0 (whereas loghead squashes all but the first N bits of X.)
 
-;; We could go even further with this and use logand as a fixing function.
-;; However, this is a bit awkward since logand is commutative (we'd want one
-;; argument to be the mask and the other the operand to be fixed).
+;; We also go even further with this and use logand as a fixing function when
+;; its left argument is a constant.
 
 ;; principle: rewrite rules should propagate fixing functions outward,
 ;; and our context-rw meta rules will propagate them inward.  For example,
@@ -45,6 +44,9 @@
 ;; ash.  This way, generally, contextual information is normalized to the
 ;; outside but is still available for simplifications deep inside nestings of
 ;; bit operations.
+;; --------------------------------------------------------------------
+;; Context-rw.lisp (like coi/nary) allows us to do congruence-like reasoning
+;; with parameters, i.e. 
 
 
 (in-package "ACL2")
@@ -63,81 +65,38 @@
     `(progn (defthmd ,name ,body . ,rest-args)
             (add-context-rule ,fnname (:rewrite ,name)))))
 
-(defun logsquash (n i)
-  (declare (xargs :guard (and (natp n)
-                              (integerp i))))
-  (ash (ash i (- (lnfix n))) (lnfix n)))
 
-(defthmd logsquash**
-  (equal (logsquash n i)
-         (if (zp n)
-             (ifix i)
-           (logcons 0 (logsquash (1- n) (logcdr i)))))
-  :hints(("Goal" :in-theory (enable logtail** ash**)))
-  :rule-classes ((:definition :clique (logsquash)
-                  :controller-alist ((logsquash t nil)))))
-
-(defcong nat-equiv equal (logsquash n i) 1)
-(defcong int-equiv equal (logsquash n i) 2
-  :hints(("Goal" :in-theory (disable int-equiv))))
-
-(defthm loghead-of-logsquash-commute
-  (equal (loghead m (logsquash n i))
-         (logsquash n (loghead m i)))
-  :hints(("Goal" :in-theory (enable loghead-of-ash nfix ifix))))
-
-(defthm logsquash-of-loghead-zero
-  (implies (<= (nfix n) (nfix m))
-           (equal (logsquash m (loghead n i)) 0))
-  :hints(("Goal" :in-theory (enable loghead-of-ash nfix ifix loghead**))))
-
-(defthm logsquash-idempotent
-  (equal (logsquash n (logsquash n i))
-         (logsquash n i)))
-
-(defthm logsquash-combine-1
-  (implies (<= (nfix n) (nfix m))
-           (equal (logsquash n (logsquash m i))
-                  (logsquash m i))))
-
-(defthm logsquash-combine-2
-  (implies (<= (nfix m) (nfix n))
-           (equal (logsquash n (logsquash m i))
-                  (logsquash n i))))
-
-(defthmd logsquash-combine-split
-  (equal (logsquash n (logsquash m i))
-         (logsquash (max (nfix n) (nfix m)) i))
-  :hints(("Goal" :in-theory (disable logsquash))))
 
 ;; Since we're normalizing to logsquash of loghead, propagate a logsquash
 ;; context inside loghead:
 (def-context-rule logsquash-of-loghead-context
   (equal (logsquash n (loghead m (logsquash n x)))
          (logsquash n (loghead m x)))
-  :fnname logsquash)
+  :fnname logsquash$inline)
 
-;; Logbitp induces both a logsquash and loghead context.
-(defthm logbitp-remove-logsquash
-  (implies (<= (nfix m) (nfix n))
-           (equal (logbitp n (logsquash m i))
-                  (logbitp n i))))
+;; ;; Logbitp induces both a logsquash and loghead context.
+;; (defthm logbitp-remove-logsquash
+;;   (implies (<= (nfix m) (nfix n))
+;;            (equal (logbitp n (logsquash m i))
+;;                   (logbitp n i))))
 
-(defthm logbitp-remove-loghead
-  (implies (< (nfix n) (nfix m))
-           (equal (logbitp n (loghead m i))
-                  (logbitp n i))))
+;; (defthm logbitp-remove-loghead
+;;   (implies (< (nfix n) (nfix m))
+;;            (equal (logbitp n (loghead m i))
+;;                   (logbitp n i))))
 
 (def-context-rule logbitp-induces-logsquash/loghead-context
-  (equal (logbitp n (logsquash n (loghead (+ 1 (nfix n)) i)))
-         (logbitp n i))
+  (implies (syntaxp (not (quotep n)))
+           ;; if n is quotep we'll prefer a logand context instead
+           (equal (logbitp n (logsquash n (loghead (+ 1 (nfix n)) i)))
+                  (logbitp n i)))
   :fnname logbitp)
 
-;; Logtail induces a logsquash context.
-(defthm logtail-remove-logsquash
-  (implies (<= (nfix m) (nfix n))
-           (equal (logtail n (logsquash m i))
-                  (logtail n i))))
+;; ;; Logtail induces a logsquash context.
+;; (defthm logtail-remove-logsquash
+;;   (implies (<= (nfix m) (nfix n))
+;;            (equal (logtail n (logsquash m i))
+;;                   (logtail n i))))
 
 (def-context-rule logtail-induces-logsquash-context
   (equal (logtail n (logsquash n i))
@@ -179,22 +138,26 @@
 (defthm logior-remove-logsquash-1
   (implies (<= (nfix m) (nfix n))
            (equal (logsquash n (logior (logsquash m a) b))
-                  (logsquash n (logior a b)))))
+                  (logsquash n (logior a b))))
+  :hints(("Goal" :in-theory (enable* ihsext-inductions
+                                     ihsext-recursive-redefs))))
 
 (defthm logior-remove-logsquash-2
   (implies (<= (nfix m) (nfix n))
            (equal (logsquash n (logior a (logsquash m b)))
-                  (logsquash n (logior a b)))))
+                  (logsquash n (logior a b))))
+  :hints(("Goal" :in-theory (enable* ihsext-inductions
+                                     ihsext-recursive-redefs))))
 
 (def-context-rule logior-pass-logsquash-context-1
   (equal (logsquash n (logior (logsquash n a) b))
          (logsquash n (logior a b)))
-  :fnname logsquash)
+  :fnname logsquash$inline)
 
 (def-context-rule logior-pass-logsquash-context-2
   (equal (logsquash n (logior a (logsquash n b)))
          (logsquash n (logior a b)))
-  :fnname logsquash)
+  :fnname logsquash$inline)
 
 ;; Logand:
 (defthm logand-remove-loghead-1
@@ -220,22 +183,26 @@
 (defthm logand-remove-logsquash-1
   (implies (<= (nfix m) (nfix n))
            (equal (logsquash n (logand (logsquash m a) b))
-                  (logsquash n (logand a b)))))
+                  (logsquash n (logand a b))))
+  :hints(("Goal" :in-theory (enable* ihsext-inductions
+                                     ihsext-recursive-redefs))))
 
 (defthm logand-remove-logsquash-2
   (implies (<= (nfix m) (nfix n))
            (equal (logsquash n (logand a (logsquash m b)))
-                  (logsquash n (logand a b)))))
+                  (logsquash n (logand a b))))
+  :hints(("Goal" :in-theory (enable* ihsext-inductions
+                                     ihsext-recursive-redefs))))
 
 (def-context-rule logand-pass-logsquash-context-1
   (equal (logsquash n (logand (logsquash n a) b))
          (logsquash n (logand a b)))
-  :fnname logsquash)
+  :fnname logsquash$inline)
 
 (def-context-rule logand-pass-logsquash-context-2
   (equal (logsquash n (logand a (logsquash n b)))
          (logsquash n (logand a b)))
-  :fnname logsquash)
+  :fnname logsquash$inline)
 
 ;; Logxor:
 (defthm logxor-remove-loghead-1
@@ -261,43 +228,47 @@
 (defthm logxor-remove-logsquash-1
   (implies (<= (nfix m) (nfix n))
            (equal (logsquash n (logxor (logsquash m a) b))
-                  (logsquash n (logxor a b)))))
+                  (logsquash n (logxor a b))))
+  :hints(("Goal" :in-theory (enable* ihsext-inductions
+                                     ihsext-recursive-redefs))))
 
 (defthm logxor-remove-logsquash-2
   (implies (<= (nfix m) (nfix n))
            (equal (logsquash n (logxor a (logsquash m b)))
-                  (logsquash n (logxor a b)))))
+                  (logsquash n (logxor a b))))
+  :hints(("Goal" :in-theory (enable* ihsext-inductions
+                                     ihsext-recursive-redefs))))
 
 (def-context-rule logxor-pass-logsquash-context-1
   (equal (logsquash n (logxor (logsquash n a) b))
          (logsquash n (logxor a b)))
-  :fnname logsquash)
+  :fnname logsquash$inline)
 
 (def-context-rule logxor-pass-logsquash-context-2
   (equal (logsquash n (logxor a (logsquash n b)))
          (logsquash n (logxor a b)))
-  :fnname logsquash)
+  :fnname logsquash$inline)
 
 ;; Lognot:
-(defthm lognot-remove-loghead
-  (implies (<= (nfix n) (nfix m))
-           (equal (loghead n (lognot (loghead m a)))
-                  (loghead n (lognot a)))))
+;; (defthm lognot-remove-loghead
+;;   (implies (<= (nfix n) (nfix m))
+;;            (equal (loghead n (lognot (loghead m a)))
+;;                   (loghead n (lognot a)))))
 
 (def-context-rule lognot-pass-loghead-context
   (equal (loghead n (lognot (loghead n a)))
          (loghead n (lognot a)))
   :fnname loghead$inline)
 
-(defthm lognot-remove-logsquash
-  (implies (<= (nfix m) (nfix n))
-           (equal (logsquash n (lognot (logsquash m a)))
-                  (logsquash n (lognot a)))))
+;; (defthm lognot-remove-logsquash
+;;   (implies (<= (nfix m) (nfix n))
+;;            (equal (logsquash n (lognot (logsquash m a)))
+;;                   (logsquash n (lognot a)))))
 
 (def-context-rule lognot-pass-logsquash-context
   (equal (logsquash n (lognot (logsquash n a)))
          (logsquash n (lognot a)))
-  :fnname logsquash)
+  :fnname logsquash$inline)
 
 
 
@@ -325,19 +296,23 @@
 (defthmd ash-of-logsquash
   (equal (ash (logsquash m i) n)
          (logsquash (+ (nfix m) (ifix n)) (ash i n)))
-  :hints(("Goal" :in-theory (enable ifix nfix))))
+  :hints(("Goal" :in-theory (e/d (logsquash-of-ash ifix nfix
+                                  logsquash**)))))
 
 (def-context-rule ash-propagate-logsquash-context
   (equal (logsquash n (ash (logsquash (- (nfix n) (ifix m)) i) m))
          (logsquash n (ash i m)))
-  :hints(("Goal" :in-theory (enable ifix nfix)))
-  :fnname logsquash)
+  :hints(("Goal" :in-theory (enable logsquash-of-ash)))
+  :fnname logsquash$inline)
 
 (def-context-rule right-shift-induces-logsquash-context
   (implies (<= (ifix m) 0)
            (equal (ash (logsquash (- (ifix m)) i) m)
                   (ash i m)))
-  :hints(("Goal" :in-theory (enable ifix)))
+  :hints(("Goal" :in-theory (e/d ()
+                                 (right-shift-to-logtail))
+          :use ((:instance logsquash-of-ash
+                 (x i) (n 0)))))
   :fnname ash)
   
 
@@ -433,19 +408,153 @@
   :fnname loghead$inline)
 
 
+
+
+
+;; Logand.  This is the most general, but only works with a constant as the
+;; mask.  Doesn't work with add/subtract.
+
+(def-context-rule logbitp-induces-logand-context
+  (implies (syntaxp (quotep n))
+           (equal (logbitp n (logand (ash 1 (nfix n)) m))
+                  (logbitp n m)))
+  :fnname logbitp)
+
+(def-context-rule logior-induces-logand-context
+  (implies (syntaxp (quotep n))
+           (equal (logior n (logand (lognot n) m))
+                  (logior n m)))
+  :hints ((equal-by-logbitp-hammer))
+  :fnname binary-logior)
+
+(def-context-rule lognot-pass-logand-context
+  (implies (syntaxp (quotep n))
+           (equal (logand n (lognot (logand n m)))
+                  (logand n (lognot m))))
+  :hints ((equal-by-logbitp-hammer))
+  :fnname binary-logand)
+
+(def-context-rule logior-pass-logand-context-1
+  (implies (syntaxp (quotep n))
+           (equal (logand n (logior (logand n m1) m2))
+                  (logand n (logior m1 m2))))
+  :hints ((equal-by-logbitp-hammer))
+  :fnname binary-logand)
+
+(def-context-rule logior-pass-logand-context-2
+  (implies (syntaxp (quotep n))
+           (equal (logand n (logior m2 (logand n m1)))
+                  (logand n (logior m2 m1))))
+  :hints ((equal-by-logbitp-hammer))
+  :fnname binary-logand)
+
+(def-context-rule logand-pass-logand-context-1
+  (implies (syntaxp (quotep n))
+           (equal (logand n (logand (logand n m1) m2))
+                  (logand n (logand m1 m2))))
+  :hints ((equal-by-logbitp-hammer))
+  :fnname binary-logand)
+
+(def-context-rule logand-pass-logand-context-2
+  (implies (syntaxp (quotep n))
+           (equal (logand n (logand m2 (logand n m1)))
+                  (logand n (logand m2 m1))))
+  :hints ((equal-by-logbitp-hammer))
+  :fnname binary-logand)
+
+(def-context-rule logxor-pass-logand-context-1
+  (implies (syntaxp (quotep n))
+           (equal (logand n (logxor (logand n m1) m2))
+                  (logand n (logxor m1 m2))))
+  :hints ((equal-by-logbitp-hammer))
+  :fnname binary-logand)
+
+(def-context-rule logxor-pass-logand-context-2
+  (implies (syntaxp (quotep n))
+           (equal (logand n (logxor m2 (logand n m1)))
+                  (logand n (logxor m2 m1))))
+  :hints ((equal-by-logbitp-hammer))
+  :fnname binary-logand)
+
+
+(defthm logand-loghead-combine-contexts
+  (implies (syntaxp (and (quotep n1)
+                         (quotep n2)))
+           (equal (logand n1 (loghead n2 m))
+                  (logand (logand n1 (1- (ash 1 (nfix n2)))) m)))
+  :hints (("goal" :use ((:instance logand-with-bitmask
+                         (mask (1- (ash 1 (nfix n2))))
+                         (i m)))
+           :in-theory (e/d ()
+                           (ash-1-removal)))))
+
+(defthm loghead-logand-combine-contexts
+  (implies (syntaxp (and (quotep n1)
+                         (quotep n2)))
+           (equal (loghead n1 (logand n2 m))
+                  (logand (logand n2 (1- (ash 1 (nfix n1)))) m)))
+  :hints (("goal" :use ((:instance logand-with-bitmask
+                         (mask (1- (ash 1 (nfix n1))))
+                         (i (logand n2 m))))
+           :in-theory (disable ash-1-removal))
+          (equal-by-logbitp-hammer)))
+
+(defthm logand-logsquash-combine-contexts
+  (implies (syntaxp (and (quotep n1)
+                         (quotep n2)))
+           (equal (logand n1 (logsquash n2 m))
+                  (logand (logand n1 (lognot (1- (ash 1 (nfix n2))))) m)))
+  :hints (("goal" :in-theory (disable ash-1-removal))
+          (equal-by-logbitp-hammer)))
+
+(defthm logsquash-logand-combine-contexts
+  (implies (syntaxp (and (quotep n1)
+                         (quotep n2)))
+           (equal (logsquash n1 (logand n2 m))
+                  (logand (logand n2 (lognot (1- (ash 1 (nfix n1))))) m)))
+  :hints (("goal" :use ((:instance logand-with-negated-bitmask
+                         (mask (lognot (1- (ash 1 (nfix n1)))))
+                         (i (logand n2 m))))
+           :in-theory (e/d () (ash-1-removal
+                               logand-with-negated-bitmask)))))
+
+
+(def-context-rule ash-propagate-logand-context
+  (implies (syntaxp (quotep n))
+           (equal (logand n (ash (logand (ash n (- (ifix m))) i) m))
+                  (logand n (ash i m))))
+  :hints ((equal-by-logbitp-hammer))
+  :fnname binary-logand)
+
+;; Rewrite a logsquash of loghead to a logand when sizes are constant:
+(defthm logsquash-of-loghead-to-logand
+  (implies (syntaxp (and (quotep n) (quotep m)))
+           (equal (logsquash n (loghead m i))
+                  (logand (logsquash n (loghead m -1)) i)))
+  :hints(("Goal" :in-theory (enable* ihsext-inductions
+                                     ihsext-recursive-redefs)
+          :induct (and (logsquash n i)
+                       (loghead m i)))))
+
+
+
+
+
 (def-ruleset! bitops-congruences
   '(apply-context-for-loghead$inline
-    apply-context-for-logsquash
+    apply-context-for-logsquash$inline
+    apply-context-for-binary-logior
+    apply-context-for-binary-logand
     common-lisp::apply-context-for-logbitp
     common-lisp::apply-context-for-ash
     apply-context-for-logtail$inline
     loghead-of-logsquash-commute
     logsquash-of-loghead-zero
     logsquash-idempotent
-    logsquash-combine-split
+    logsquash-of-logsquash-split
     loghead-of-loghead-split
-    logbitp-remove-logsquash
-    logbitp-remove-loghead
+    logbitp-of-logsquash-in-bounds
+    logbitp-of-loghead-out-of-bounds
     logior-remove-loghead-1
     logior-remove-loghead-2
     logior-pass-loghead-context-1
@@ -470,9 +579,9 @@
     logxor-remove-logsquash-2
     logxor-pass-logsquash-context-1
     logxor-pass-logsquash-context-2
-    lognot-remove-loghead
+    loghead-cancel-in-lognot
+    logsquash-cancel-in-lognot
     lognot-pass-loghead-context
-    lognot-remove-logsquash
     lognot-pass-logsquash-context
     ash-of-loghead
     ash-of-logsquash
@@ -481,16 +590,36 @@
     loghead-of-plus-loghead-second
     loghead-of-minus-context
     loghead-of-plus-context-1
-    loghead-of-plus-context-2))
+    loghead-of-plus-context-2
+    logbitp-induces-logand-context
+    logior-induces-logand-context
+    lognot-pass-logand-context
+    logior-pass-logand-context-1
+    logior-pass-logand-context-2
+    logand-pass-logand-context-1
+    logand-pass-logand-context-2
+    logxor-pass-logand-context-1
+    logxor-pass-logand-context-2
+    logand-loghead-combine-contexts
+    loghead-logand-combine-contexts
+    logand-logsquash-combine-contexts
+    logsquash-logand-combine-contexts
+    ash-propagate-logand-context
+    logsquash-of-loghead-to-logand))
 
 (def-ruleset! bitops-congruence-incompatible
-  '(loghead-of-logior
+  '(;; loghead-of-logior
     loghead-of-ash
-    loghead-of-logxor
-    loghead-of-logand))
+    logsquash-of-ash
+    ;; loghead-of-logxor
+    ;; loghead-of-logand
+    ))
+;; logand-with-bitmask?
 
 (in-theory (disable* apply-context-for-loghead$inline
-                     apply-context-for-logsquash
+                     apply-context-for-logsquash$inline
+                     apply-context-for-binary-logior
+                     apply-context-for-binary-logand
                      common-lisp::apply-context-for-logbitp
                      common-lisp::apply-context-for-ash
                      apply-context-for-logtail$inline))

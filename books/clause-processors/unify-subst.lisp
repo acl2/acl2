@@ -85,6 +85,7 @@
 
 
 (defun all-keys-bound (keys alist)
+  (declare (xargs :guard (alistp alist)))
   (if (atom keys)
       t
     (and (assoc-equal (car keys) alist)

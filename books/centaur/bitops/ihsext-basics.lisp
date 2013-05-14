@@ -800,6 +800,7 @@
   (add-to-ruleset ihsext-advanced-thms loghead-of-loghead-split))
 
 
+
 (defsection logtail**
 
   ;; (local (defthm logtail-when-not-integerp
@@ -1809,6 +1810,9 @@
                     (logxor (logxor a b) c)))))
 
 
+
+
+
 (defsection ash**
 
   ;; This is the same as the existing ash*, renamed for consistency.
@@ -2145,6 +2149,241 @@
     :hints(("Goal" :in-theory (enable* ihsext-recursive-redefs
                                        ihsext-inductions nfix ifix)))))
 
+(defsection logsquash**
+
+  ;; Squashes to 0 the lowest N bits of I.
+  (defund-inline logsquash (n i)
+    (declare (xargs :guard (and (natp n)
+                                (integerp i))))
+    (logand i (ash -1 (nfix n))))
+
+  (defthmd logsquash**
+    (equal (logsquash size i)
+           (if (zp size)
+               (ifix i)
+             (logcons 0
+                      (logsquash (1- size) (logcdr i)))))
+    :hints(("Goal" :in-theory (enable logsquash)))
+    :rule-classes ((:definition
+                    :clique (logsquash$inline)
+                    :controller-alist ((logsquash$inline t nil)))))
+
+  (add-to-ruleset ihsext-recursive-redefs '(logsquash**))
+  (add-to-ruleset ihsext-redefs '(logsquash**))
+
+  (local (in-theory (enable logsquash**)))
+
+  ;; (defthmd logsquash-when-zp
+  ;;   (implies (zp size)
+  ;;            (equal (logsquash size i) 0)))
+
+  ;; (defthmd logsquash-when-zip
+  ;;   (implies (zip i)
+  ;;            (equal (logsquash size i) 0)))
+
+  ;; (add-to-ruleset ihsext-bad-type-thms '(logsquash-when-zp
+  ;;                                        logsquash-when-zip))
+
+  (defthm logsquash-of-0-i
+    (equal (logsquash 0 i) (ifix i)))
+
+  (defthmd logsquash-induct
+    t
+    :rule-classes ((:induction
+                    :pattern (logsquash size i)
+                    :scheme (logbitp-ind size i))))
+
+
+
+  (add-to-ruleset ihsext-inductions '(logsquash-induct))
+
+  (defthm logsquash-of-n-0
+    (equal (logsquash n 0) 0)
+    :hints(("Goal" :in-theory (enable logsquash-induct))))
+
+
+  (defthm logcar-of-logsquash
+    (implies (not (zp size))
+             (equal (logcar (logsquash size i))
+                    0))
+    :hints(("Goal" :expand ((logsquash size i)))))
+
+  (add-to-ruleset ihsext-basic-thms logcar-of-logsquash)
+
+  (defthmd logcdr-of-logsquash
+    (implies (not (zp size))
+             (equal (logcdr (logsquash size i))
+                    (logsquash (1- size) (logcdr i))))
+    :hints (("goal" :expand ((logsquash size i)))))
+
+  (add-to-ruleset ihsext-basic-thms logcdr-of-logsquash)
+
+  (local (in-theory (enable* ihsext-recursive-redefs
+                             ihsext-inductions)))
+
+  (defthm logbitp-of-logsquash-in-bounds
+    (implies (<= (nfix size) (nfix pos))
+             (equal (logbitp pos (logsquash size i))
+                    (logbitp pos i))))
+
+  (defthm logbitp-of-logsquash-out-of-bounds
+    (implies (< (nfix pos) (nfix size))
+             (equal (logbitp pos (logsquash size i))
+                    nil))
+    :hints(("Goal"
+            :induct (and (logbitp pos i)
+                         (logbitp size i))
+            :expand ((:free (x) (logbitp pos x))))))
+
+  (add-to-ruleset ihsext-basic-thms '(logbitp-of-logsquash-in-bounds
+                                      logbitp-of-logsquash-out-of-bounds))
+
+  (defthmd logbitp-of-logsquash-split
+    (equal (logbitp pos (logsquash size i))
+           (and (<= (nfix size) (nfix pos))
+                (logbitp pos i))))
+
+  (add-to-ruleset ihsext-advanced-thms logbitp-of-logsquash-split)
+
+  (defthmd logsquash-<=-i
+    (implies (<= 0 (ifix i))
+             (<= (logsquash size i) (ifix i)))
+    :rule-classes ((:linear :trigger-terms ((logsquash size i)))))
+
+  (add-to-ruleset ihsext-bounds-thms logsquash-<=-i)
+
+  (defthm logsquash-of-logsquash-1
+    (implies (<= (nfix m) (nfix n))
+             (equal (logsquash m (logsquash n x))
+                    (logsquash n x)))
+    :hints (("goal" :in-theory (e/d* (ihsext-recursive-redefs
+                                      ihsext-inductions)
+                                     (logcdr-<-const
+                                      mod-x-y-=-x+y))
+             :induct (and (logsquash m x)
+                          (logsquash n x))
+             :expand ((:free (b) (logsquash n b))
+                      (:free (a b) (logsquash m (logcons a b)))
+                      (:free (a b) (lognot (logcons a b)))))))
+
+  (defthm logsquash-of-logsquash-2
+    (implies (<= (nfix m) (nfix n))
+             (equal (logsquash m (logsquash n x))
+                    (logsquash n x)))
+    :hints (("goal" :in-theory (e/d* (ihsext-recursive-redefs
+                                      ihsext-inductions)
+                                     (logcdr-<-const
+                                      MOD-X-Y-=-X+Y))
+             :induct (and (logsquash m x)
+                          (logsquash n x))
+             :expand ((:free (b) (logsquash n b))
+                      (:free (a b) (logsquash m (logcons a b)))
+                      (:free (a b) (lognot (logcons a b)))))))
+
+  (add-to-ruleset ihsext-basic-thms '(logsquash-of-logsquash-1
+                                      logsquash-of-logsquash-2))
+
+
+  (defcong nat-equiv equal (logsquash n i) 1)
+  (defcong int-equiv equal (logsquash n i) 2
+    :hints(("Goal" :in-theory (disable int-equiv))))
+
+  (defthm loghead-of-logsquash-commute
+    (equal (loghead m (logsquash n i))
+           (logsquash n (loghead m i))))
+
+  (defthm logsquash-of-loghead-zero
+    (implies (<= (nfix n) (nfix m))
+             (equal (logsquash m (loghead n i)) 0))
+    :hints (("goal" :induct (and (loghead m i)
+                                 (loghead n i)))))
+
+  (defthm logsquash-idempotent
+    (equal (logsquash n (logsquash n i))
+           (logsquash n i)))
+
+  (add-to-ruleset ihsext-basic-thms '(loghead-of-logsquash-commute
+                                      logsquash-of-loghead-zero
+                                      logsquash-idempotent))
+
+  (defthmd logsquash-of-logsquash-split
+    (equal (logsquash n (logsquash m i))
+           (logsquash (max (nfix n) (nfix m)) i)))
+
+  (add-to-ruleset ihsext-advanced-thms logsquash-of-logsquash-split)
+
+  (defthm logtail-of-logsquash
+    (equal (logtail n (logsquash m x))
+           (logsquash (- (nfix m) (nfix n))
+                      (logtail n x)))
+    :hints (("goal" :induct (and (logsquash m x)
+                                 (logtail n x)))))
+
+  (add-to-ruleset ihsext-basic-thms logtail-of-logsquash)
+
+  (defthm logsquash-cancel-in-lognot
+    (implies (<= (nfix m) (nfix n))
+             (equal (logsquash n (lognot (logsquash m x)))
+                    (logsquash n (lognot x))))
+    :hints (("goal" :induct (and (loghead n x)
+                                 (loghead m x)))))
+
+  (add-to-ruleset ihsext-basic-thms logsquash-cancel-in-lognot)
+
+  (defthm logsquash-of-logand
+    (equal (logsquash a (logand x y))
+           (logand (logsquash a x)
+                   (logsquash a y))))
+
+  (add-to-ruleset ihsext-basic-thms logsquash-of-logand)
+
+  (defthm logsquash-of-logior
+    (equal (logsquash a (logior x y))
+           (logior (logsquash a x)
+                   (logsquash a y))))
+
+  (add-to-ruleset ihsext-basic-thms logsquash-of-logior)
+
+  (defthm logsquash-of-logxor
+    (equal (logsquash a (logxor x y))
+           (logxor (logsquash a x)
+                   (logsquash a y))))
+
+  (add-to-ruleset ihsext-basic-thms logsquash-of-logxor)
+
+  (defthm logsquash-of-ash-same
+    (implies (natp n)
+             (equal (logsquash n (ash x n))
+                    (ash x n)))
+    :hints(("Goal" :in-theory (e/d* (ihsext-inductions
+                                     ihsext-recursive-redefs)))))
+
+  (local (defun ind (n m x)
+           (cond ((zip m) (list n x))
+                 ((< m 0) (ind (1+ n) (1+ m) x))
+                 (t (ind (1- n) (1- m) x)))))
+
+  (defthmd logsquash-of-ash
+    (equal (logsquash n (ash x m))
+           (ash (logsquash (nfix (- (nfix n) (ifix m))) x) m))
+    :hints(("Goal" :in-theory (e/d* (ihsext-recursive-redefs
+                                    ihsext-inductions
+                                    nfix ifix zip
+                                    ash**)
+                                   (bitp
+                                     logcdr-of-ash))
+            :induct (ind n m x)
+            :do-not-induct t)))
+
+  (add-to-ruleset ihsext-advanced-thms logsquash-of-ash)
+
+  (defthm logsquash-<-0
+    (equal (< (logsquash n x) 0)
+           (< (ifix x) 0))))
+
+
+
+
 (defsection expt
 
   (defthmd expt-2-is-ash
@@ -2268,6 +2507,11 @@
     (implies (and (integerp size1)
                   (<= (nfix size) size1))
              (unsigned-byte-p size1 (loghead size i))))
+
+  (defthm unsigned-byte-p-of-logsquash
+    (implies (and (unsigned-byte-p size1 i)
+                  (<= (nfix size) (nfix size1)))
+             (unsigned-byte-p size1 (logsquash size i))))
 
   (defthm unsigned-byte-p-of-logtail
     (implies (natp size1)
@@ -2943,8 +3187,7 @@
   (defthm logand-with-negated-bitmask
     (implies (bitmaskp (lognot mask))
              (equal (logand mask i)
-                    (logapp (integer-length mask)
-                            0 (logtail (integer-length mask) i))))
+                    (logsquash (integer-length mask) i)))
     :hints (("goal"
              :in-theory (enable* ihsext-inductions
                                  ihsext-recursive-redefs)
