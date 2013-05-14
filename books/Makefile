@@ -511,7 +511,10 @@ system/pcert/sub.cert: \
 
 endif # ifndef ACL2_COMP
 
-OK_CERTS += $(ACL2_CUSTOM_TARGETS)
+# We avoid += because we want the custom targets to start first, in
+# order to maximize parallelism.  If they go at the end, maybe we'll
+# have an expensive sequential tail in the regression.
+OK_CERTS := $(ACL2_CUSTOM_TARGETS) $(OK_CERTS)
 
 ##############################
 ### Section: Support for ACL2_COMP
@@ -727,7 +730,8 @@ $(info ACL2_BOOK_CERTS = $(ACL2_BOOK_CERTS))
 OK_CERTS := $(ACL2_BOOK_CERTS)
 else
 
-# Normal case, where ACL2_BOOK_DIRS or ACL2_BOOK_CERTS is defined:
+# Normal case, where neither ACL2_BOOK_DIRS nor ACL2_BOOK_CERTS is
+# defined:
 
 # We prefer not to certify books under the directories filtered out
 # just below, for the following reasons.
@@ -766,7 +770,8 @@ OK_CERTS := $(filter-out $(OK_CERTS_EXCLUSIONS), $(OK_CERTS))
 
 endif # ifneq ($(ACL2_BOOK_CERTS), )
 
-ifeq ($(realpath workshops), )
+# Avoid realpath below (isn't implemented in make 3.80).
+ifeq ($(shell ls workshops 2> /dev/null), )
 OK_CERTS := $(filter-out workshops/%, $(OK_CERTS))
 endif # ifeq ($(realpath workshops), )
 

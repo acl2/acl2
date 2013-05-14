@@ -19,7 +19,9 @@
 ; Boyer and Hunt.
 
 (in-package "ACL2")
+
 (include-book "tools/include-raw" :dir :system)
+
 ; cert_param: (hons-only)
 
 ; [Jared]: I pulled the WATCH related functionality out of ACL2(h) and into
@@ -30,6 +32,17 @@
 ; is very likely that this code will not work correctly.
 
 (defttag :watch)
-(include-raw "output-raw.lsp")
+
+; Originally we had this:
+
+; (include-raw "output-raw.lsp")
+
+; But profile.lisp has that form, too, and we have see compilation fail (using
+; ANSI GCL) when parallel `make' was causing the file to be compiled twice in
+; parallel.  So we avoid this double-compilation by including profile.lisp
+; instead.
+
+(include-book "profile")
+
 (include-raw "watch-raw.lsp")
 
