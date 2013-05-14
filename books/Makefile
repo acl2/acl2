@@ -832,20 +832,19 @@ workshop2013: $(filter workshops/2013/%, $(OK_CERTS))
 
 .PHONY: std
 
-std: $(filter-out centaur/%, \
-       $(filter-out coi/%, \
-         $(filter-out models/%, \
-           $(filter-out tau/%, \
-             $(filter-out workshops/%, $(OK_CERTS))))))
+std: $(filter std/% cutil/%, $(OK_CERTS))
+
+# We provide a basic target to show maintainers how they can filter
+# out particular directories from the build.
+.PHONY: basic
+
+basic: $(filter-out centaur/%, \
+         $(filter-out coi/%, \
+           $(filter-out workshops/%, $(OK_CERTS))))
 
 short-test: $(filter cowles/% arithmetic/% meta/% xdoc/% ordinals/% \
                      data-structures/% bdd/%, \
                      $(OK_CERTS))
-
-# Here are aliases for the "standard" approach.
-.PHONY: libs basic
-libs: std
-basic: std
 
 # Warning: ACL2's GNUmakefile uses the following target to implement
 # its own target certify-books, which some might use to build all
