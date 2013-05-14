@@ -97,22 +97,22 @@ well-formed record hypothesis.
            (or (null (cdr x))
                (<< (caar x) (caadr x))))))
 
-(defun ifrp (x) ;; ill-formed well-formed-map 
+(defun ifmp (x) ;; ill-formed well-formed-map 
   (declare (xargs :guard t))
   (or (not (well-formed-map x))
       (and (consp x)
            (null (cdr x))
            (consp (car x))
            (equal (caar x) (ill-formed-key))
-           (ifrp (cdar x)))))
+           (ifmp (cdar x)))))
 
 (defun acl2->map (x)  ;; function mapping acl2 objects to well-formed records.
   (declare (xargs :guard t))
-  (if (ifrp x) (list (cons (ill-formed-key) x)) x))
+  (if (ifmp x) (list (cons (ill-formed-key) x)) x))
 
 (defun map->acl2 (x)  ;; inverse of acl2->map.
   (declare (xargs :guard (well-formed-map x)))
-  (if (ifrp x) (cdar x) x))
+  (if (ifmp x) (cdar x) x))
 
 (defun mget-wf (a x) ;; record g(et) when x is a well-formed record.
   (declare (xargs :guard (well-formed-map x)))
@@ -141,9 +141,9 @@ well-formed record hypothesis.
 (local (in-theory (enable good-map-implies-well-formed-map)))
 
 (local
-(defthm good-map-implies-not-ifrp
+(defthm good-map-implies-not-ifmp
   (implies (good-map x)
-           (not (ifrp x)))))
+           (not (ifmp x)))))
 
 (defun mget-fast (a x)
   (declare (xargs :guard (good-map x)))

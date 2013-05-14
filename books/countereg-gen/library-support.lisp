@@ -14,14 +14,14 @@
 ;;RECORDS THMS proven
 
 #|
-(thm (implies (and (not (ifrp v))
+(thm (implies (and (not (ifmp v))
                    (consp v))
               (o< (acl2-count (mget x v))
                   (acl2-count v)))
      :hints (("goal" :induct (mget-wf x v))))
 |#
 (defthm records-lemma-acl2-count
-  (implies (and (ifrp v)
+  (implies (and (ifmp v)
                 (acl2::well-formed-map v))
            (< (acl2-count (acl2::mget-wf x v))
               (acl2-count v)))
@@ -70,7 +70,7 @@
  
 (defthm field-not-empty-implies-record-not-empty2
   (implies (and (mget a x)
-                ;(not (ifrp x))
+                ;(not (ifmp x))
                 (good-map x))
            (consp x))
   :hints (("goal" :in-theory (enable mset mget mset-wf mget-wf acl2->map)))
