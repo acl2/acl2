@@ -3766,7 +3766,7 @@ id processor ctx (acl2::prettyify-clause cl nil (w state)) (len hist)))
   that there is a specification error.
   
   If no counterexample is found, there are three possibilities. First,
-  it possible that the conjecture is false, in which case increasing
+  it is possible that the conjecture is false, in which case increasing
   the amount of testing we do may lead to the discovery of a
   counterexample.  Second, it is also possible that ACL2 proves that
   the conjecture is true, in which case we print a message reporting
