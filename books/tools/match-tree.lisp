@@ -461,119 +461,7 @@
 (in-theory (disable match-tree))
 
 
-
-(defun replace-equalities-thm-fnsym (thmname w)
-  (declare (xargs :guard (and (symbolp thmname)
-                              (plist-worldp w))))
-  (b* (((unless-match (getprop thmname 'theorem nil 'current-acl2-world w)
-                      (implies ((:?f hyp-sym) . (:? hyp-args))
-                               (equal (:? lhs)
-                                      (:? rhs))))
-        (er hard? 'add-replace-equalities-rule
-            "Theorem ~x0 not of the right form") thmname))
-    hyp-sym))
-
-(defmacro add-replace-equalities-rule (thmname)
-  `(table replace-equalities-rules
-          (replace-equalities-thm-fnsym ',thmname world)
-          (cons ',thmname 
-                (cdr (assoc (replace-equalities-thm-fnsym ',thmname world)
-                            (table-alist 'replace-equalities-rules world))))))
-                           
-
-
-
-
-(defun match-tree-rewrites-var-fn (var vars! pat)
-  `(defund ,var (x . ,vars!)
-     (declare (xargs :guard t))
-     (mv-let (ok alist)
-       (match-tree ',pat x ,(match-tree-initial-alist-term vars!))
-       (and ok (cdr (assoc ',var alist))))))
-
-(defun match-tree-rewrites-fns (vars vars! pat)
-  (if (atom vars)
-      nil
-    (cons (match-tree-rewrites-var-fn (car vars) vars! pat)
-          (match-tree-rewrites-fns (cdr vars) vars! pat))))
-
-(defun match-tree-block-substs-var-fn (var vars! pat)
-  (let ((thmname (intern-in-package-of-symbol
-                  (concatenate 'string (symbol-name var) "-BLOCK-EQUALITY-SUBST")
-                  var)))
-  `((defthm ,thmname
-      (implies (mv-nth 0 (match-tree ',pat x ,(match-tree-initial-alist-term vars!)))
-               (equal (,var x . ,vars!)
-                      (,var x . ,vars!)))
-      :rule-classes nil)
-    (add-replace-equalities-rule ,thmname))))
-
-(defun match-tree-block-substs-fns (vars vars! pat)
-  (if (atom vars)
-      nil
-    (append (match-tree-block-substs-var-fn (car vars) vars! pat)
-            (match-tree-block-substs-fns (cdr vars) vars! pat))))
-
-(defun match-tree-rewrites-var-rw (var vars! pat)
-  `(defthm ,(intern-in-package-of-symbol
-             (concatenate 'string (symbol-name var) "-RW")
-             var)
-     (mv-let (ok alist)
-       (match-tree ',pat x ,(match-tree-initial-alist-term vars!))
-       (implies ok
-                (equal (cdr (assoc ',var alist))
-                       (,var x . ,vars!))))
-     :hints(("Goal" :in-theory (enable ,var)))))
-
-(defun match-tree-rewrites-rws (vars vars! pat)
-  (if (atom vars)
-      nil
-    (cons (match-tree-rewrites-var-rw (car vars) vars! pat)
-          (match-tree-rewrites-rws (cdr vars) vars! pat))))
-
-
-(defun match-tree-restr-events (restr vars! pat)
-  (b* (((list kw var) restr))
-    (and (member kw '(:?s :?v :?f :?l))
-         `((defthm ,(intern-in-package-of-symbol
-                     (concatenate 'string (symbol-name var) "-TYPE")
-                     var)
-             (implies (mv-nth 0 (match-tree
-                                 ',pat x
-                                 ,(match-tree-initial-alist-term vars!)))
-                      ,(case kw
-                         (:?s `(symbolp (,var x . ,vars!)))
-                         (:?v `(and (symbolp (,var x . ,vars!))
-                                    (,var x . ,vars!)))
-                         (:?f `(and (symbolp (,var x . ,vars!))
-                                    (not (equal (,var x . ,vars!) 'quote))))
-                         (:?l `(not (equal (,var x . ,vars!) 'quote)))))
-             :hints(("Goal" :in-theory (enable ,var))))))))
-
-(defun match-tree-restrs-events (restrs vars! pat)
-  (if (atom restrs)
-      nil
-    (append (match-tree-restr-events (car restrs) vars! pat)
-            (match-tree-restrs-events (cdr restrs) vars! pat))))
-
-(defun def-match-tree-rewrites-fn (pat)
-  (b* ((allvars (remove-duplicates-eq (match-tree-binders pat)))
-       (vars! (remove-duplicates-eq (match-tree-!vars pat nil)))
-       (vars? (set-difference-eq allvars vars!))
-       (fn-events (match-tree-rewrites-fns vars? vars! pat))
-       (rw-events (match-tree-rewrites-rws vars? vars! pat))
-       (bs-events (match-tree-block-substs-fns vars? vars! pat))
-       (restrs (match-tree-restrictions pat))
-       (type-events (match-tree-restrs-events restrs vars! pat)))
-    `(progn ,@fn-events ,@bs-events ,@type-events . ,rw-events)))
-  
-(defmacro def-match-tree-rewrites (pat)
-  (def-match-tree-rewrites-fn pat))
-
-(local (def-match-tree-rewrites (if (:! foo) (:? bar) (:?s baz))))
-
-
-(in-theory (disable mv-nth))
+(local (in-theory (disable mv-nth)))
 
 (defthm match-tree-measure-weak
   (implies (not (assoc k alist0))
@@ -598,3 +486,160 @@
           :induct t))
   :rule-classes :linear)
 
+
+
+(defun replace-equalities-thm-fnsym (thmname w)
+  (declare (xargs :guard (and (symbolp thmname)
+                              (plist-worldp w))))
+  (b* (((unless-match (getprop thmname 'theorem nil 'current-acl2-world w)
+                      (implies ((:?f hyp-sym) . (:? hyp-args))
+                               (equal (:? lhs)
+                                      (:? rhs))))
+        (er hard? 'add-replace-equalities-rule
+            "Theorem ~x0 not of the right form") thmname))
+    hyp-sym))
+
+(defmacro add-replace-equalities-rule (thmname)
+  `(table replace-equalities-rules
+          (replace-equalities-thm-fnsym ',thmname world)
+          (cons ',thmname 
+                (cdr (assoc (replace-equalities-thm-fnsym ',thmname world)
+                            (table-alist 'replace-equalities-rules world))))))
+                           
+
+
+(defun match-tree-rw-fname (prefix var)
+  (declare (xargs :guard (and (symbolp prefix) (symbolp var))))
+  (if prefix
+      (intern-in-package-of-symbol (concatenate 'string (symbol-name prefix)
+                                                (symbol-name var))
+                                   prefix)
+    var))
+
+(defun match-tree-rewrites-var-fn (var vars! pat prefix)
+  `(defund ,(match-tree-rw-fname prefix var) (x . ,vars!)
+     (declare (xargs :guard t))
+     (mv-let (ok alist)
+       (match-tree ',pat x ,(match-tree-initial-alist-term vars!))
+       (and ok (cdr (assoc ',var alist))))))
+
+(defun match-tree-rewrites-fns (vars vars! pat prefix)
+  (if (atom vars)
+      nil
+    (cons (match-tree-rewrites-var-fn (car vars) vars! pat prefix)
+          (match-tree-rewrites-fns (cdr vars) vars! pat prefix))))
+
+(defun match-tree-rw-measure-thm (var vars! pat prefix)
+  (b* ((fnname (match-tree-rw-fname prefix var))
+       (thmname-weak (intern-in-package-of-symbol
+                      (concatenate 'string (symbol-name fnname) "-ACL2-COUNT-WEAK")
+                      fnname))
+       (thmname-strong (intern-in-package-of-symbol
+                        (concatenate 'string (symbol-name fnname) "-ACL2-COUNT-STRONG")
+                        fnname)))
+    `((defthm ,thmname-weak
+        (<= (acl2-count (,fnname x . ,vars!))
+            (acl2-count x))
+        :hints(("Goal" :in-theory (enable ,fnname)))
+        :rule-classes :linear)
+      . ,(and (not (atom pat))
+              (not (match-tree-binder-p pat))
+              `((defthm ,thmname-strong
+                  (implies (mv-nth 0 (match-tree ',pat x ,(match-tree-initial-alist-term vars!)))
+                           (< (acl2-count (,fnname x . ,vars!))
+                              (acl2-count x)))
+                  :hints(("Goal" :in-theory (enable ,fnname)))
+                  :rule-classes :linear))))))
+
+(defun match-tree-rw-measure-thms (vars vars! pat prefix)
+  (if (atom vars)
+      nil
+    (append (match-tree-rw-measure-thm (car vars) vars! pat prefix)
+            (match-tree-rw-measure-thms (cdr vars) vars! pat prefix))))
+
+
+(defun match-tree-block-substs-var-fn (var vars! pat prefix)
+  (let* ((fnname (match-tree-rw-fname prefix var))
+         (thmname (intern-in-package-of-symbol
+                   (concatenate 'string 
+                                (symbol-name fnname) "-BLOCK-EQUALITY-SUBST")
+                   fnname)))
+  `((defthm ,thmname
+      (implies (mv-nth 0 (match-tree ',pat x ,(match-tree-initial-alist-term vars!)))
+               (equal (,fnname x . ,vars!)
+                      (,fnname x . ,vars!)))
+      :rule-classes nil)
+    (add-replace-equalities-rule ,thmname))))
+
+(defun match-tree-block-substs-fns (vars vars! pat prefix)
+  (if (atom vars)
+      nil
+    (append (match-tree-block-substs-var-fn (car vars) vars! pat prefix)
+            (match-tree-block-substs-fns (cdr vars) vars! pat prefix))))
+
+(defun match-tree-rewrites-var-rw (var vars! pat prefix)
+  (let* ((fnname (match-tree-rw-fname prefix var)))
+    `(defthm ,(intern-in-package-of-symbol
+               (concatenate 'string (symbol-name fnname) "-RW")
+               var)
+       (mv-let (ok alist)
+         (match-tree ',pat x ,(match-tree-initial-alist-term vars!))
+         (implies ok
+                  (equal (cdr (assoc ',var alist))
+                         (,fnname x . ,vars!))))
+       :hints(("Goal" :in-theory (enable ,fnname))))))
+
+(defun match-tree-rewrites-rws (vars vars! pat prefix)
+  (if (atom vars)
+      nil
+    (cons (match-tree-rewrites-var-rw (car vars) vars! pat prefix)
+          (match-tree-rewrites-rws (cdr vars) vars! pat prefix))))
+
+
+(defun match-tree-restr-events (restr vars! pat prefix)
+  (b* (((list kw var) restr)
+       (fnname (match-tree-rw-fname prefix var)))
+    (and (member kw '(:?s :?v :?f :?l))
+         `((defthm ,(intern-in-package-of-symbol
+                     (concatenate 'string (symbol-name fnname) "-TYPE")
+                     fnname)
+             (implies (mv-nth 0 (match-tree
+                                 ',pat x
+                                 ,(match-tree-initial-alist-term vars!)))
+                      ,(case kw
+                         (:?s `(symbolp (,fnname x . ,vars!)))
+                         (:?v `(and (symbolp (,fnname x . ,vars!))
+                                    (,fnname x . ,vars!)))
+                         (:?f `(and (symbolp (,fnname x . ,vars!))
+                                    (not (equal (,fnname x . ,vars!) 'quote))))
+                         (:?l `(not (equal (,fnname x . ,vars!) 'quote)))))
+             :hints(("Goal" :in-theory (enable ,fnname))))))))
+
+(defun match-tree-restrs-events (restrs vars! pat prefix)
+  (if (atom restrs)
+      nil
+    (append (match-tree-restr-events (car restrs) vars! pat prefix)
+            (match-tree-restrs-events (cdr restrs) vars! pat prefix))))
+
+
+
+
+(defun def-match-tree-rewrites-fn (pat prefix)
+  (b* ((allvars (remove-duplicates-eq (match-tree-binders pat)))
+       (vars! (remove-duplicates-eq (match-tree-!vars pat nil)))
+       (vars? (set-difference-eq allvars vars!))
+       (fn-events (match-tree-rewrites-fns vars? vars! pat prefix))
+       (meas-events (match-tree-rw-measure-thms vars? vars! pat prefix))
+       (rw-events (match-tree-rewrites-rws vars? vars! pat prefix))
+       (bs-events (match-tree-block-substs-fns vars? vars! pat prefix))
+       (restrs (match-tree-restrictions pat))
+       (type-events (match-tree-restrs-events restrs vars! pat prefix)))
+    `(progn ,@fn-events ,@meas-events ,@bs-events ,@type-events . ,rw-events)))
+  
+(defmacro def-match-tree-rewrites (pat &key prefix)
+  (def-match-tree-rewrites-fn pat prefix))
+
+(local (def-match-tree-rewrites (if (:! foo) (:? bar) (:?s baz))))
+
+(local (def-match-tree-rewrites (if (:! foo) (:? bar) (:?s baz))
+         :prefix fooif->))
