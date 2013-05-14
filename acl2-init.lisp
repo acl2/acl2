@@ -281,6 +281,21 @@ implementations.")
      (values))
    ))
 
+; Fix a bug in CMUCL 20D.  It seems sad to test (reverse "") twice, but
+; attempts to avoid that produced warnings about variable *our-old-reverse*
+; being undefined, even when using with-compilation-unit.
+#+cmucl
+(progn
+  (when (null (ignore-errors (reverse "")))
+    (defconstant *our-old-reverse* (symbol-function 'reverse)))
+  (without-package-locks
+   (when (null (ignore-errors (reverse "")))
+     (defun reverse (x)
+       (if (equal x "")
+           ""
+         (funcall *our-old-reverse* x)))
+     (compile 'reverse))))
+
 ; WARNING: The next form should be an in-package (see in-package form for sbcl
 ; just above).
 
@@ -632,7 +647,7 @@ implementations.")
 ; result of the system-call is a process, (typep <result> 'external-process) in
 ; ccl and (typep <result> 'sb-impl::process) in sbcl, which can probably be
 ; made to yield the status.  But the status is 0 even for commands not found,
-; so why bother?  Since cmucl seems to fall victim in the same way as cmucl, we
+; so why bother?  Since cmucl seems to fall victim in the same way as sbcl, we
 ; treat these two the same here.
   (when (not (eql (system-call "which" '("etags")) 0))
     (format t "SKIPPING etags: No such program is in the path.")

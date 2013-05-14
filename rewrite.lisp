@@ -2367,6 +2367,15 @@
                 (cons (car lst) ans))
                (t (cons cl3 ans))))))))))
 
+(defstub quick-and-dirty-srs (cl1 ac) t)
+
+(defun quick-and-dirty-srs-builtin (cl1 ac)
+  (declare (ignore cl1 ac)
+           (xargs :mode :logic :guard t))
+  t)
+
+(defattach quick-and-dirty-srs quick-and-dirty-srs-builtin)
+
 (defun if-interp-add-clause (assumptions cl ac pflg)
 
 ; This is how we add a new clause to if-interp's accumulator, ac.  The clause
@@ -2377,10 +2386,14 @@
 
   (cond
    (pflg t)
-   (t (let* ((cl1 (convert-assumptions-to-clause-segment assumptions cl nil))
-             (ans (quick-and-dirty-subsumption-replacement-step cl1 ac)))
-        (cond ((eq ans 'subsumed1) ac)
-              (t (cons cl1 ans)))))))
+   (t
+    (let ((cl1 (convert-assumptions-to-clause-segment assumptions cl nil)))
+      (cond
+       ((quick-and-dirty-srs cl1 ac)
+        (let ((ans (quick-and-dirty-subsumption-replacement-step cl1 ac)))
+          (cond ((eq ans 'subsumed1) ac)
+                (t (cons cl1 ans)))))
+       (t (cons cl1 ac)))))))
 
 (defun if-interp (instrs stack frame-ptr-stack assumptions ac pflg)
 

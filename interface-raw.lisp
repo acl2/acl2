@@ -5613,14 +5613,18 @@
                                               unexpected form in add-trip, ~x0"
                                              def)))))
 
-; CMUCL 18e cannot seem to compile macros at the top level.  Email from Raymond
-; Toy on June 9, 2004 suggests that this appears to be a bug that exists in
-; CMUCL 18e sources.
+; CMUCL versions 18e and 19e cannot seem to compile macros at the top level.
+; Email from Raymond Toy on June 9, 2004 suggests that this appears to be a bug
+; that exists in CMUCL 18e sources.  We'll thus give special treatment to any
+; version 18 or 19 of CMUCL, but we'll avod that for CMUCL version 20, since
+; 20D at least can compile macros.
 
-                   #+cmu (cond ((and (not (eq (car def) 'defabbrev))
-                                     (not (eq (car def) 'defmacro)))
-                                (eval `(compile ',name))))
-                   #-cmu (eval `(compile ',name))))))))
+                   #+(and cmu (or cmu18 cmu19))
+                   (cond ((and (not (eq (car def) 'defabbrev))
+                               (not (eq (car def) 'defmacro)))
+                          (eval `(compile ',name))))
+                   #-(and cmu (or cmu18 cmu19))
+                   (eval `(compile ',name))))))))
         (defpkg
           (maybe-push-undo-stack 'defpkg (cadr (cddr trip)))
           (eval (cons 'defpkg (cdr (cddr trip)))))

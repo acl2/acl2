@@ -916,7 +916,9 @@
                         (value '(value-triple nil)))
               :check-expansion t)
   ~ev[]
-  ~/
+
+  To enable waterfall parallelism for book certification using ACL2(p),
+  ~pl[waterfall-parallelism-for-book-certification].~/
 
   :cited-by parallel-proof"
 
@@ -964,6 +966,35 @@
              unsupported-waterfall-parallelism-features).~%")
            (value'(restore-memoization-settings))))
          (t (value '(value-triple nil)))))))))
+
+(defdoc waterfall-parallelism-for-book-certification
+
+  ":Doc-Section Parallelism
+
+  for ACL2(p): using waterfall parallelism during book certification~/
+
+  This ~il[documentation] topic relates to the experimental extension of ACL2
+  supporting parallel execution and proof; ~pl[parallelism].
+
+  There are books whose certification can be sped up significantly by using
+  waterfall parallelism.  (~l[parallelism], including the caveat in its
+  \"IMPORTANT NOTE\".)  One such example in the ACL2 community books is
+  ~c[models/jvm/m5/apprentice.lisp], which is typically excluded from
+  regressions because of how long it takes to certify.  In order to use
+  waterfall parallelism during certification of a book ~c[<book-name>.lisp]
+  using the ACL2 certification methodology (~pl[book-makefiles]), we recommend
+  creating a file ~c[<book-name>.acl2] that includes the following forms.
+
+  ~bv[]
+  #+acl2-par
+  (set-waterfall-parallelism t)
+
+  (certify-book <book-name> ? t) ; other arguments may be preferable
+  ~ev[]
+
+  Note that there are books that will not certify when waterfall-parallelism is
+  enabled.  See file ~c[acl2-customization-files/README] for further
+  details.~/~/")
 
 (defun set-waterfall-printing-fn (val ctx state)
   (cond ((member-eq val *waterfall-printing-values*)

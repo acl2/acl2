@@ -14919,7 +14919,7 @@
 
   ":Doc-Section Other
 
-  seeing what is the prover up to~/
+  seeing what the prover is up to~/
   ~bv[]
   General Forms:
   (pstack)      ; inspect break
@@ -14988,7 +14988,7 @@
 
   ":Doc-Section Pstack
 
-  seeing what is the prover up to (for advanced users)~/
+  seeing what the prover is up to (for advanced users)~/
   ~bv[]
   General Forms:
   (verbose-pstack t)   ; get trace-like information on prover during proofs

@@ -832,6 +832,14 @@
 ;;; Attachments: oncep-tp
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+; We could avoid the forms below by replacing the earlier forms
+;   (defproxy oncep-tp (* *) => *)
+;   (defun oncep-tp-builtin ...) ; :guard t
+;   (defattach (oncep-tp oncep-tp-builtin) :skip-checks t)
+; in place, by changing defproxy to defstub and removing :skip-checks t.
+; However, the guard on once-tp would then be left with a guard of t, which
+; might be stronger than we'd like.
+
 #+acl2-loop-only
 ; The above readtime conditional avoids a CLISP warning, and lets the defproxy
 ; for print-clause-id-okp provide the raw Lisp definition.

@@ -1400,6 +1400,13 @@ which is saved just in case it's needed later.")
   (let ((old (get-dispatch-macro-character char subchar)))
     (cond ((or (null old)
                (eql fn old)
+               #+cmu
+
+; This is really just a guess, but it's a pretty good one, as several values of
+; subchar (for char equal to #\#) give this function, at least in our copies of
+; CMU CL 19e and CMU CL 20D.
+
+               (eq old (symbol-function 'LISP::DISPATCH-CHAR-ERROR))
                #+gcl
 
 ; For GCL, Camm Maguire has told us that he believes that it's safe for us to
