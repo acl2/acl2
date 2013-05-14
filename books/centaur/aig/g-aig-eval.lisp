@@ -31,6 +31,7 @@
 (include-book "../gl/gify-clause-proc")
 (local (include-book "../gl/general-object-thms"))
 (local (include-book "eval-restrict"))
+(include-book "parallel/without-waterfall-parallelism" :dir :system)
 
 (local (in-theory (disable gl::generic-geval gl::generic-geval-alt-def
                            gl::geval-for-meta-gtests-nonnil-correct)))
@@ -434,7 +435,6 @@
 ;;                                         gl::gobjectp-cons-case
 ;;                                         aig-bddify-list)))))
 
-
 (make-event
  `(defun ,(gl-fnsym 'aig-eval-list-with-bddify)
     (x al tries maybe-wash-args hyp clk)
@@ -459,7 +459,9 @@
 
 (local
  (progn
-   (gl::correctness-lemmas aig-eval-ev)
+
+   (acl2::without-waterfall-parallelism 
+    (gl::correctness-lemmas aig-eval-ev))
 
    (gl::eval-g-prove-f-i aig-eval-ev-f-i-generic-geval aig-eval-ev
                          gl::generic-geval)
@@ -520,7 +522,6 @@
                                               gl-thm::generic-geval-g-boolean-for-aig-eval-ev
                                               aig-bddify-list))
             :do-not-induct t))))
-
 
 (gl::def-g-correct-thm ;;  g-aig-eval-list-with-bddify-correct
   aig-eval-list-with-bddify aig-eval-ev
