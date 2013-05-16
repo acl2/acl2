@@ -1198,6 +1198,7 @@ expression, and return them as a flat list of expressions."
 (define vl-bitlist-from-nat ((x natp)
                              (width natp))
   :returns (bits vl-bitlist-p)
+  :parents (expr-tools)
   :short "Turn a natural number into a vl-bitlist-p of the given width."
   (b* (((when (zp width)) nil)
        (width (1- width))

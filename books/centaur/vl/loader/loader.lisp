@@ -504,6 +504,7 @@ our internal representation of Verilog.</li>
                        state)
   :returns (mv (st       vl-loadstate-p :hyp :fguard)
                (state    state-p1       :hyp (force (state-p1 state))))
+  :parents (vl-load)
   :short "Load a list of files."
   (b* (((when (atom filenames))
         (mv st state))
