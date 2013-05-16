@@ -832,7 +832,7 @@ workshop2013: $(filter workshops/2013/%, $(OK_CERTS))
 
 .PHONY: std
 
-std: $(filter std/% cutil/%, str/%, $(OK_CERTS))
+std: $(filter std/% cutil/% str/%, $(OK_CERTS))
 
 # We provide a basic target to show maintainers how they can filter
 # out particular directories from the build.
