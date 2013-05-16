@@ -58,7 +58,7 @@
 ;;    :?S matches any symbol
 ;;    :?V matches a variable symbol, by which we mean any other than NIL, which
 ;;        is treated differently from other symbols by evaluators
-;;    :?F matches a function symbol, by which we meany any symbol other than
+;;    :?F matches a function symbol, by which we mean any symbol other than
 ;;        QUOTE, which is not a function according to evalautors
 ;;    :?L matches anything but the symbol QUOTE, making it appropriate for
 ;;        cases where we might not care whether the result is a function or
