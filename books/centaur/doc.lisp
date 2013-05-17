@@ -165,8 +165,6 @@
 (include-book "gl/gl-ttags")
 (include-book "gl/gobject-type-thms")
 (include-book "misc/count-up")
-(include-book "misc/mem")
-(include-book "misc/mem-logic")
 (include-book "misc/memory-mgmt")
 (include-book "misc/remove-assoc")
 (include-book "misc/resize-list")
