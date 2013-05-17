@@ -2347,6 +2347,50 @@
 ; that ans is bound to ac rather than to the call of
 ; quick-and-dirty-subsumption-replacement-step.)
 
+  ":Doc-Section Other
+
+  (advanced topic) controlling a heuristic in the prover's clausifier~/
+
+  This topic is probably only of interest to those who are undertaking
+  particularly complex proof developments.
+
+  The ACL2 prover's handling of propositional logic uses a heuristic that we
+  believe might cause the prover to slow down significantly or even to trigger
+  a stack overflow.  However, we believe these negative effects are only felt
+  on very large formulas ~-[] formulas that are likely to cause similar
+  degradation of many other parts of ACL2.
+
+
+  The following two events turn off that heuristic (by eliminating calls to
+  source function ~c[quick-and-dirty-subsumption-replacement-step], after which
+  this ~il[documentation] topic is named).
+
+  ~bv[]
+  (defun quick-and-dirty-srs-off (cl1 ac)
+    (declare (ignore cl1 ac)
+             (xargs :mode :logic :guard t))
+    nil)
+
+  (defattach quick-and-dirty-srs quick-and-dirty-srs-off)
+  ~ev[]
+
+  However, if you feel the need to try this out, please remember that the proof
+  is likely to fail anyway since other parts of ACL2 will probably be stressed.
+  A more basic problem with your proof strategy may exist: the formulas are
+  getting extraordinarily large.  A common approach for avoiding such problem
+  include disabling functions (~pl[in-theory]).  Other less common approaches
+  might help if you are sufficiently desperate, such as defining your own
+  ~c[IF] function to use in place of the built-in ~c[IF].
+
+  If you do find an example for which the above two events provide significant
+  benefit, we (the ACL2 implementors) would be interested in hearing about
+  it.
+
+  To turn the heuristic back on:
+  ~bv[]
+  (defattach quick-and-dirty-srs quick-and-dirty-srs-builtin)
+  ~ev[]~/~/"
+
   (cond
    ((null lst) nil)
    ((time-limit5-reached-p ; nil, or throws

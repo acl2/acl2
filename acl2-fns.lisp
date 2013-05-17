@@ -1202,7 +1202,7 @@ notation causes an error and (b) the use of ,. is not permitted."
 
 ; WARNING: Keep this in sync with the #-acl2-loop-only definition of setenv$.
 
-  #+cmu
+  #+cmu ; We might consider using unix:unix-getenv for newer CMUCL versions
   (and (boundp 'ext::*environment-list*)
        (cdr (assoc (intern string :keyword)
                    ext::*environment-list*

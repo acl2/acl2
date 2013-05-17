@@ -709,10 +709,10 @@
 
 (defun match-free-fc-value (match-free hyps concls triggers wrld)
 
-; This function, based on match-free-value, uses free-vars-in-fc-hyps to 
+; This function, based on match-free-value, uses free-vars-in-fc-hyps to
 ; determine whether free-vars are present in a forward-chaining rule (if so it
 ; returns nil).  If free-vars are not present then it uses the match-free value
-; of the rule (given by the match-free arg) or the match-free default value of 
+; of the rule (given by the match-free arg) or the match-free default value of
 ; the world to determine the correct match-free value for this particular rule.
 
   (or match-free
@@ -757,7 +757,7 @@
                            'abbreviation)
                           (t 'backchain))
           :heuristic-info loop-stopper
-          
+
 ; If backchain-limit-lst is given, then it is a keyword-alist whose second
 ; element is a list of values of length (length hyps), and we use this value.
 ; Otherwise we use the default.  This will be either nil -- used directly -- or
@@ -1327,7 +1327,7 @@
                      wrld))
          (inst-hyps (hyps-that-instantiate-free-vars free-vars hyps))
          (non-rec-fns-inst-hyps
-          (non-recursive-fnnames-lst 
+          (non-recursive-fnnames-lst
            (strip-top-level-nots-and-forces inst-hyps) ens wrld))
          (subsume-check-enabled (not (warning-disabled-p "Subsume")))
          (subsumed-rule-names
@@ -1421,7 +1421,7 @@
 ; Usually the above will be nil.  If not, the recomputation below is no big
 ; deal.
 
-         (cond 
+         (cond
           ((set-difference-eq rhs-vars
                               (all-vars1-lst hyps lhs-vars))
            (warning$ ctx "Free"
@@ -2142,11 +2142,11 @@
                 ((null max-terms)
                  (cond
                   ((null all-vars-in-poly-lst)
-                   (er soft ctx 
+                   (er soft ctx
                        "No :LINEAR rule can be generated from ~x0 because ~
                         there are no ``maximal terms'' in the inequality ~
                         produced from its conclusion.  In fact, the inequality ~
-                        has simplified to one that has no variables." 
+                        has simplified to one that has no variables."
                        name))
                   (t
                    (er soft ctx
@@ -2304,7 +2304,7 @@
                             (put-match-free-value match-free-value rune
                                                   wrld1)))))))
 
-(defun add-linear-rule2 (rune nume trigger-terms hyps concl 
+(defun add-linear-rule2 (rune nume trigger-terms hyps concl
                               backchain-limit-lst match-free ens wrld state)
   (let* ((concl (remove-guard-holders concl))
          (xconcl (expand-inequality-fncall concl))
@@ -2624,7 +2624,7 @@
                                              wrld)))
                  t)
              "."
-             (msg " on objects satisfying ~x0." 
+             (msg " on objects satisfying ~x0."
                   (cadr (assoc-eq rel
                                   (global-val 'well-founded-relation-alist
                                               wrld)))))))
@@ -3057,7 +3057,7 @@
   ~c[:]~ilc[corollary] formula from which a ~c[:compound-recognizer] rule might be
   built is:
   ~bv[]
-  Example: 
+  Example:
   (implies (alistp x)         When (alistp x) is assumed true,
            (true-listp x))    add the additional hypothesis that x
                               is of primitive type true-listp.~/
@@ -3196,7 +3196,7 @@
   ~bv[]
   (and (implies (exprp x) (not (characterp x)))
        (implies (not (exprp x)) (or (consp x) (characterp x)))).
-  (if (exprp x) 
+  (if (exprp x)
       (not (characterp x))
     (or (consp x) (characterp x)))
   ~ev[]
@@ -3617,7 +3617,7 @@
   Forward chaining is performed as part of the simplification process: before
   the goal is rewritten a ~em[context] is established.  The context tells the
   theorem prover what may be assumed during the rewriting, e.g., to establish
-  hypotheses of rewrite rules.  For example, if the goal is 
+  hypotheses of rewrite rules.  For example, if the goal is
   ~c[(implies (and (p A) (q A)) (r A))], then when ~c[(r A)] is being
   rewritten, the context tells us we may assume ~c[(p A)] and ~c[(q A)].
   Forward chaining is used to extend the context before rewriting begins.  For
@@ -3628,7 +3628,7 @@
   ~c[(p1 A)] be established and ~c[(p A)] is known, it could be done either by
   making ~c[(implies (p x) (p1 x))] a ~c[:forward-chaining] rule or a
   ~c[:rewrite] rule.  Which should you choose?
-  
+
   As a rule of thumb, if a conclusion like ~c[(p1 A)] is expected to be
   widely needed, it is better to derive it via forward chaining because then
   it is available ``for free'' during the rewriting after paying the one-time
@@ -3650,6 +3650,18 @@
   ~c[hyp] created for each conjunct.  In the other case, where the corollary
   term is not an ~ilc[implies], we process it as we process the conclusion in
   the first case.
+
+  Note that unlike rewrite rules, a nested implication is not folded into a
+  single implication.  Consider for example the following term.
+  ~bv[]
+  (implies (p1 x)
+           (implies (p2 x)
+                    (p3 x)))
+  ~ev[]
+  Although this term is parsed for a rewrite rule as
+  ~c[(implies (and (p1 x) (p2 x)) (p3 x))], that is not the case when this term
+  is parsed for a forward-chaining rule, in which case ~c[(p1 x)] is treated as
+  the hypothesis and ~c[(implies (p2 x) (p3 x))] is treated as the conclusion.
 
   The ~c[:trigger-terms] field of a ~c[:forward-chaining] rule class object
   should be a non-empty list of terms, if provided, and should have certain
@@ -4304,9 +4316,9 @@
 ; Here is Erik Reeber's modification of his proof of nil below, but for the
 ; development Version of ACL2 as of early March 2007, before the fix to ACL2 for
 ; this problem.  [It contains a truly trivial edit we've made, not important.]
-; 
+;
 ;  (in-package "ACL2")
-; 
+;
 ;  (defun my-cancel (term)
 ;     (case-match term
 ;       (('f ('g))
@@ -4314,33 +4326,33 @@
 ;       (('f2 ('g2))
 ;        *t*)
 ;       (& term)))
-; 
+;
 ;  (defun f2 (x)
 ;     (not x))
-; 
+;
 ;  (defun g2 ()
 ;     nil)
-; 
+;
 ;  (encapsulate
 ;    ((f (x) t))
-; 
+;
 ;    (local (defun f (x) (declare (ignore x)) t))
-; 
+;
 ;    (defevaluator evl evl-list
 ;      ((f x)
 ;       (f2 x)
 ;       (g2)))
-; 
+;
 ;    (defthm correctness-of-my-cancel
 ;      (equal (evl x a)
 ;             (evl (my-cancel x) a))
 ;      :rule-classes ((:meta :trigger-fns (f)))))
-; 
+;
 ;  (encapsulate
 ;    ()
-; 
+;
 ;    (local (defstub c () t))
-; 
+;
 ;    (local (encapsulate
 ;            ()
 ;            (local (defun g () (c)))
@@ -4353,21 +4365,21 @@
 ;              :hints (("Goal" :use f-g
 ;                       :in-theory (e/d (g) (correctness-of-my-cancel))))
 ;              :rule-classes nil)))
-; 
+;
 ;    (defthm f-t
 ;      (equal (f x) t)
 ;      :hints (("Goal" :by (:functional-instance
 ;                           f-c
 ;                           (c (lambda () x)))))
 ;      :rule-classes nil))
-; 
+;
 ;  (defun g ()
 ;     nil)
-; 
+;
 ;  ; Below is the expansion of the following defevaluator, changed slightly as
 ;  ; indicated by comments.
 ;  ; (defevaluator evl2 evl2-list ((f x) (f2 x) (g) (g2)))
-; 
+;
 ;  (ENCAPSULATE
 ;    (((EVL2 * *) => *)
 ;     ((EVL2-LIST * *) => *))
@@ -4399,7 +4411,7 @@
 ;                         (COND ((ENDP X-LST) NIL)
 ;                               (T (CONS (EVL2 (CAR X-LST) A)
 ;                                        (EVL2-LIST (CDR X-LST) A)))))))
-; 
+;
 ;    (DEFTHM EVL2-CONSTRAINT-1
 ;      (IMPLIES (SYMBOLP X)
 ;               (EQUAL (EVL2 X A)
@@ -4435,7 +4447,7 @@
 ;    (DEFTHM EVL2-CONSTRAINT-9
 ;      (IMPLIES (AND (CONSP X) (EQUAL (CAR X) 'G2))
 ;               (EQUAL (EVL2 X A) (G2)))))
-; 
+;
 ;  (defthm f2-t
 ;     (equal (f2 x) t)
 ;     :hints (("Goal" :by (:functional-instance
@@ -4443,7 +4455,7 @@
 ;                          (f f2)
 ;                          (evl evl2)
 ;                          (evl-list evl2-list)))))
-; 
+;
 ;  (defthm bug-implies-nil
 ;     nil
 ;     :hints (("Goal" :use ((:instance f2-t (x t)))))
@@ -4975,10 +4987,10 @@
 
   (defevaluator eva eva-lst ((foo i j)
                              (unary-- i)
-  
+
   ; I won't need these two cases until the last example below, but I
   ; include them now.
-  
+
                              (if x y z)
                              (integerp x)))
 
@@ -4995,7 +5007,7 @@
 
       (cond ((and (ts-subsetp (mfc-ts (cadr x) mfc state)
                               *ts-integer*)
-                  (member-equal `(NOT (< '10 ,(cadr x))) 
+                  (member-equal `(NOT (< '10 ,(cadr x)))
                                 (mfc-clause mfc)))
              (quote (quote 0)))
             (t x)))
@@ -5023,16 +5035,16 @@
 
   ; This won't, because the metafunction looks for (< 10 i) literally,
   ; not just something that implies it.
-  
+
   (thm (implies (and (integerp i) (< 11 i))
                 (equal (foo i (- i)) 0)))
 
   ; Now I will undo the defun of metafn and repeat the exercise, but
   ; this time check the weaker condition that (< 10 i) is provable
-  ; (by rewriting it) rather than explicitly present.  
+  ; (by rewriting it) rather than explicitly present.
 
   (ubt 'metafn)
-  
+
   (defun metafn (x mfc state)
     (cond
      ((and (consp x)
@@ -5042,7 +5054,7 @@
                               *ts-integer*)
                   (equal (mfc-rw `(< '10 ,(cadr x)) t t mfc state)
                          *t*))
-  
+
   ; The mfc-rw above rewrites (< 10 i) with objective t and iffp t.  The
   ; objective means the theorem prover will try to establish it.  The
   ; iffp means the theorem prover can rewrite maintaining propositional
@@ -5072,14 +5084,14 @@
   ; internally, but have to generate a hyp-fn to make it official.
 
   (ubt 'metafn)
-  
+
   (defun metafn (x mfc state)
     (cond
      ((and (consp x)
            (equal (car x) 'integerp)
            (consp (cadr x))
            (equal (car (cadr x)) 'foo))
-  
+
   ; So x is (integerp (foo i j)).  Now check that i and j are
   ; ``probably'' integers.
 
@@ -5105,11 +5117,11 @@
   ; cannot use the macro AND and must quote constants!  Sometimes you
   ; must do tests in the hyp-fn to figure out which case the metafn
   ; produced, but not in this example.
-  
+
              `(if (integerp ,(cadr (cadr x)))
                   (integerp ,(caddr (cadr x)))
                   'nil))
-    
+
   (defthm metafn-correct
     (implies (eva (hyp-fn x mfc state) a)
              (equal (eva x a) (eva (metafn x mfc state) a)))
@@ -6315,7 +6327,7 @@
    (extendedp
     (let ((wrld (w state)))
       (list term
-            (make metafunction-context 
+            (make metafunction-context
                   :rdepth (rewrite-stack-limit wrld)
                   :type-alist nil
                   :obj '?
@@ -7829,7 +7841,7 @@
    (erp hyps concl ts vars ttree)
    (destructure-type-prescription (base-symbol rune)
                                   typed-term term ens wrld)
-   (declare (ignore concl ttree))  
+   (declare (ignore concl ttree))
    (cond
     (erp
      (cond (quietp
@@ -7844,17 +7856,17 @@
 
 ;  (defun my-equal (x y)
 ;    (equal x y))
-; 
+;
 ;  (in-theory (disable
 ;              (:type-prescription my-equal)
 ;              (:COMPOUND-RECOGNIZER BOOLEANP-COMPOUND-RECOGNIZER)))
-; 
+;
 ;  (defequiv my-equal
 ;    :hints (("Goal" :in-theory (enable booleanp))))
-; 
+;
 ; ; In v2-7 and presumably earlier, the above leads us to a type-prescription
 ; ; rule with a NIL :basic-ts field:
-; 
+;
 ;   ACL2 !>(car (getprop 'my-equal 'type-prescriptions t 'current-acl2-world (w state)))
 ;   (NIL (1685 MY-EQUAL X Y)
 ;        NIL
@@ -7974,7 +7986,7 @@
     (t (let* ((weakp
 
 ; We avoid calling weak-type-prescription-rulep if we are going to ignore the
-; warning anyhow.  Otherwise, we construct a temporary world using 
+; warning anyhow.  Otherwise, we construct a temporary world using
 
                (and (not (warning-disabled-p "Type prescription"))
                     (let* ((nume (get-next-nume wrld))
@@ -8196,7 +8208,7 @@
 
   Among the theorems proved below is
   ~bv[]
-  (defthm insert-sort-is-id 
+  (defthm insert-sort-is-id
     (perm (insert-sort x) x))
   ~ev[]
   Here ~c[perm] is defined as usual with ~c[delete] and is proved to be an
@@ -8316,7 +8328,7 @@
   (defthm insert-is-cons
     (perm (insert a x) (cons a x)))
 
-  (defthm insert-sort-is-id 
+  (defthm insert-sort-is-id
     (perm (insert-sort x) x))
 
   (defun app (x y) (if (consp x) (cons (car x) (app (cdr x) y)) y))
@@ -8429,7 +8441,7 @@
 
 (defun find-candidate-equivalence-relation (clauses)
 
-; Clauses is a list of clauses.  We look for one of the form 
+; Clauses is a list of clauses.  We look for one of the form
 ; ((fn x x)) and if we find it, we return fn; else nil.  See
 ; chk-acceptable-equivalence-rule.
 
@@ -8631,10 +8643,10 @@
 ;  (defthm fn-boolean (booleanp (fn x y))
 ;   :rule-classes :type-prescription
 ;   :hints (("Goal" :use fn-is-an-equivalence)))
-; 
+;
 ;  (defthm fn-symm (implies (fn x y) (equal (fn y x) t))
 ;   :hints (("Goal" :use fn-is-an-equivalence)))
-; 
+;
 ;  (defthm fn-trans (implies (and (fn x y) (fn y z)) (equal (fn x z) t))
 ;   :hints (("Goal" :use fn-is-an-equivalence)))
 
@@ -9812,7 +9824,7 @@
   how they are used to build rules from formulas.
   ~bv[]
   Example Rule Class:
-  (:type-set-inverter 
+  (:type-set-inverter
     :corollary (equal (and (counting-number x) (not (equal x 0)))
                       (and (integerp x) (< x 0)))
     :type-set 2)~/
@@ -9968,7 +9980,7 @@
   Both utilities designate functions ``clause-processors''.  Such functions
   must be executable ~-[] hence not constrained by virtue of being introduced
   in the ~il[signature] of an ~ilc[encapsulate] ~-[] and must respect
-  ~il[stobj] and output arity restrictions.  For example, something like 
+  ~il[stobj] and output arity restrictions.  For example, something like
   ~c[(car (mv ...))] is illegal; also ~pl[signature].
 
   We begin this documentation with an introduction, focusing on an example, and
@@ -10066,7 +10078,7 @@
                 :clause-processor
                 (note-fact-clause-processor clause '(equal a a)))))
 
-  [Note:  A hint was supplied for our processing of the goal above. 
+  [Note:  A hint was supplied for our processing of the goal above.
   Thanks!]
 
   We now apply the verified :CLAUSE-PROCESSOR function NOTE-FACT-CLAUSE-
@@ -10152,7 +10164,7 @@
   where the ~c[st_i] are the specific stobj names mentioned in [3].  Logically,
   ~c[clauses-result] returns the ~ilc[cadr] if the ~ilc[car] is ~c[NIL], and
   otherwise (for the error case) returns a list containing the empty (false)
-  clause.  So in the non-error case, ~c[clauses-result] picks out the second 
+  clause.  So in the non-error case, ~c[clauses-result] picks out the second
   result, denoted ~c[cl-list] in [3] above, and in the error case the
   implication above trivially holds.
 
@@ -10591,7 +10603,7 @@
                 :clause-processor
                 (note-fact-clause-processor clause '(equal a a)))))
 
-  [Note:  A hint was supplied for our processing of the goal above. 
+  [Note:  A hint was supplied for our processing of the goal above.
   Thanks!]
 
   We now apply the trusted :CLAUSE-PROCESSOR function NOTE-FACT-CLAUSE-
@@ -10865,47 +10877,47 @@
 ; dead code in place.
 
 ; (defun char-subsequencep (x y)
-; 
+;
 ; ; Determine whether x is a subsequence of y, e.g., '(#\B #\D) is a
 ; ; char-subsequencep of '(#\A #\B #\C #\D) but not of '(#\A #\D #\B).
 ; ; X and y must be true lists of characters.
-; 
+;
 ;   (cond ((null x) t)
 ;         ((null y) nil)
 ;         ((eql (car x) (car y))
 ;          (char-subsequencep (cdr x) (cdr y)))
 ;         (t (char-subsequencep x (cdr y)))))
-; 
+;
 ; (defun disambiguate1 (x alist)
-; 
+;
 ; ; Alist should pair character lists with arbitrary values.  We select those
 ; ; pairs whose key have x as a subsequence.
-; 
+;
 ;   (cond ((null alist) nil)
 ;         ((char-subsequencep x (caar alist))
 ;          (cons (car alist) (disambiguate1 x (cdr alist))))
 ;         (t (disambiguate1 x (cdr alist)))))
-; 
+;
 ; (defun make-disambiguation-alist (lst)
-; 
+;
 ; ; This function is used to preprocess a true list of symbols into an
 ; ; alist suitable for disambiguate.  For example, '(FOO BAR) is
 ; ; transformed into '(((#\F #\O #\O) . FOO) ((#\B #\A #\R) . BAR)).
-; 
+;
 ;   (cond ((null lst) nil)
 ;         (t (cons (cons (coerce (symbol-name (car lst)) 'list) (car lst))
 ;                  (make-disambiguation-alist (cdr lst))))))
-; 
+;
 ; (defun assoc-cdr (x alist)
-; 
+;
 ; ; Like assoc-equal but uses the cdr of each pair in alist as the key.
-; 
+;
 ;   (cond ((null alist) nil)
 ;         ((equal x (cdar alist)) (car alist))
 ;         (t (assoc-cdr x (cdr alist)))))
-; 
+;
 ; (defun disambiguate (token alist ctx phrase state)
-; 
+;
 ; ; This function disambiguates token wrt alist or else causes an error.
 ; ; Token must be a symbol and alist must be a ``disambiguation alist,''
 ; ; an alist pairing lists of characters to symbols.  For example, if
@@ -10916,13 +10928,13 @@
 ; ; Phrase is a tilde-@ phrase that fills in the sentence: "The
 ; ; acceptable ~@1 are ..." so, for example, phrase might be "rule
 ; ; classes".
-; 
+;
 ; ; We adopt the convention, for sanity, that if token is eq to the
 ; ; value component of some pair in alist, then its meaning is itself.
 ; ; This guarantees that if you spell a token out completely you get that
 ; ; token and no other; in particular, you don't get an ambiguity error
 ; ; just one key in the alist is a subsequence of another.
-; 
+;
 ;   (cond
 ;    ((assoc-cdr token alist) (value token))
 ;    (t
@@ -10938,20 +10950,20 @@
 ;                    token
 ;                    phrase
 ;                    (strip-cdrs winners))))))))
-; 
+;
 ; (defun tilde-@-abbreviates-but-phrase (x y)
-; 
+;
 ; ; We produce a tilde-@ phrase that prints as "x abbreviates y, but y"
 ; ; if x is different from y and that is just "y" otherwise.  Both x and
 ; ; y are symbols.  This is used to print such messages as ":RWT
 ; ; abbreviates :REWRITE, but :REWRITE cannot be used as a structured
 ; ; rule class."
-; 
+;
 ;   (cond ((eq x y) (msg "~x0" y))
 ;         (t (msg "~x0 abbreviates ~x1, but ~x1" x y))))
-; 
+;
 ; ; Thus ends the dead code devoted to disambiguation.
-; 
+;
 
 ; Now we stub out the proof checker's sense of "instructions."
 
@@ -11686,7 +11698,7 @@
                        See :DOC ~@1."
                          x
                          (symbol-name token)))
-                    (t 
+                    (t
 
 ; Actually, the rules on a controller alist involve the clique in question.
 ; We don't necessarily know the clique yet.  We wait until the end, when
@@ -11711,7 +11723,7 @@
                          '(t nil :NORMALIZE)
                          (cadr alist)
                          (symbol-name token)))
-                    (t 
+                    (t
                      (value (cadr alist)))))
                   (:LOOP-STOPPER
                    (cond
@@ -11875,12 +11887,12 @@
                        :WELL-FOUNDED-RELATION
                        :BUILT-IN-CLAUSE
                        :COMPOUND-RECOGNIZER
-                       :ELIM               
-                       :GENERALIZE         
+                       :ELIM
+                       :GENERALIZE
                        :META              ; :TRIGGER-FNS
                        :FORWARD-CHAINING  ; :TRIGGER-TERMS (optional)
-                       :EQUIVALENCE        
-                       :REFINEMENT         
+                       :EQUIVALENCE
+                       :REFINEMENT
                        :CONGRUENCE
                        :TYPE-PRESCRIPTION ; :TYPED-TERM (optional)
                        :DEFINITION        ; :CLIQUE and :CONTROLLER-ALIST
@@ -12007,7 +12019,7 @@
 
 ; We adopt the convention that if a non-nil atomic classes is provided
 ; it is understood as the singleton list containing that atom.  Thus,
-; one is permitted to write 
+; one is permitted to write
 ;   :rule-classes :elim
 ; and have it understood as
 ;   :rule-classes (:elim).
@@ -12088,7 +12100,7 @@
           (:FORWARD-CHAINING
            (chk-acceptable-forward-chaining-rule
             name
-            (cadr (assoc-keyword :MATCH-FREE (cdr class)))    
+            (cadr (assoc-keyword :MATCH-FREE (cdr class)))
             (cadr (assoc-keyword :TRIGGER-TERMS (cdr class)))
             term ctx ens wrld state))
           (:TYPE-PRESCRIPTION
@@ -12172,30 +12184,30 @@
 ;             (equal (car term) 'foo))
 ;        *nil*
 ;      term))
-; 
+;
 ;  (encapsulate
 ;   (((evx * *) => *)
 ;    ((evx-list * *) => *)
 ;    ((foo *) => *))
-; 
+;
 ;   (local
-;    (defun foo (x) 
+;    (defun foo (x)
 ;      (declare (ignore x))
 ;      nil))
-; 
+;
 ;   (local
 ;    (defevaluator evx evx-list
 ;      ((foo x))))
-; 
+;
 ;   (defthm meta-foo-rule
 ;     (equal (evx term a)
 ;            (evx (meta-foo term) a))
 ;     :rule-classes ((:meta :trigger-fns (foo)))))
-; 
-;  (defun goo (x) 
+;
+;  (defun goo (x)
 ;    (declare (ignore x))
 ;    t)
-; 
+;
 ;  (defthm qed
 ;    (not (goo x))
 ;    :hints (("goal" :use (:functional-instance (:theorem (not (foo x)))
@@ -12205,7 +12217,7 @@
 ;                         (:type-prescription goo)
 ;                         (goo))))
 ;    :rule-classes nil)
-; 
+;
 ;  (defthm contradiction
 ;    nil
 ;    :hints (("goal" :use qed :in-theory (enable goo)))
@@ -12327,11 +12339,11 @@
           (:TAU-SYSTEM
 
 ; One might think that :tau-system rules are added here, since every other rule
-; class is handled here.  But one would be wrong!  Because of the automatic mode in 
+; class is handled here.  But one would be wrong!  Because of the automatic mode in
 ; the tau system and because of the facility for regenerating the tau database,
 ; :tau-system rules are added by the tau-visit code invoked most often from
-; install-event. 
-           
+; install-event.
+
            wrld)
 
 ; WARNING: If this function is changed, change info-for-x-rules (and/or
@@ -12764,7 +12776,7 @@
       (if (or (eq numes t)
               (member nume numes))
           (cons (list (list :rune    rune
-                            :generalize nume) 
+                            :generalize nume)
                       (list :enabled (and (enabled-runep rune ens wrld) t))
                       (list :formula (untranslate formula t wrld)
                             formula))
@@ -12978,7 +12990,7 @@
       (well-founded-relation-alist
 
 ; Avoid printing the built-in anonymous rule if that is all we have here.
-       
+
        (if (consp (cdr val))
            (info-for-well-founded-relation-rules val)
          nil))
@@ -13024,7 +13036,7 @@
 (defun print-info-for-rules-entry (keys vals chan state)
   (if (not (consp keys))
       state
-    (mv-let (col state) 
+    (mv-let (col state)
             (fmt1 "~s0:"
                   (list (cons #\0 (let* ((name (symbol-name (car keys)))
                                          (lst (coerce name 'list)))
@@ -13914,7 +13926,7 @@
                       of successfully applying the rule is always a
                       translated (!) term and is never nil.
 
-  :failure-reason     some non-nil lisp object indicating why the rule 
+  :failure-reason     some non-nil lisp object indicating why the rule
                       was not applied or else nil.  Before the rule is
                       :EVALed, (brr@ :failure-reason) is nil.  After
                       :EVALing the rule, (brr@ :failure-reason) is nil
@@ -13990,7 +14002,7 @@
         (:wonp '(get-brr-local 'wonp state))
         (:rewritten-rhs '(get-brr-local 'rewritten-rhs state))
         (:failure-reason '(get-brr-local 'failure-reason state))
-        (:lemma '(get-brr-local 'lemma state)) 
+        (:lemma '(get-brr-local 'lemma state))
         (:type-alist '(get-brr-local 'type-alist state))
         (:ancestors '(get-brr-local 'ancestors state))
         (otherwise '(get-brr-global 'brr-gstack state))))
@@ -14073,7 +14085,7 @@
 
   For example,
   ~bv[]
-  ACL2 !>:monitor (:rewrite assoc-of-app) 
+  ACL2 !>:monitor (:rewrite assoc-of-app)
                   (equal (brr@ :target) '(app a (app b c)))
   ~ev[]
   will monitor ~c[(:rewrite assoc-of-app)] but will cause an interactive
@@ -14114,7 +14126,7 @@
   where the effective break condition is tested ~st[after] the lemma has
   been tried.  For example:
   ~bv[]
-  ACL2 !>:monitor (:rewrite lemma12) 
+  ACL2 !>:monitor (:rewrite lemma12)
                   '(:unify-subst
                     :eval$ nil
                     :ok-if (or (not (brr@ :wonp))
@@ -14210,7 +14222,7 @@
 
 (defun proceed-from-brkpt1 (action runes ctx state)
 
-; Action may be 
+; Action may be
 ; silent - exit brr with no output except the closing parenthesis
 ; print -  exit brr after printing results of attempted application
 ; break -  do not exit brr
@@ -14437,7 +14449,7 @@
                      (ttree3
                       (cond ((ld-skip-proofsp state)
                              (value nil))
-                            (t 
+                            (t
                              (prove-corollaries name tterm classes ens wrld1 ctx
                                                 state)))))
                   (let* ((wrld2
@@ -14517,10 +14529,10 @@
                  (declare (ignore subterm))
                  (cons 'and (add-hyp-standardp-var-lst vars)))
                 (('implies hyps concls)
-                 (list 'implies 
+                 (list 'implies
                        (strengthen-hyps-using-transfer-principle hyps vars)
                        concls))
-                (& 
+                (&
                  (list 'implies
                        (cons 'and (add-hyp-standardp-var-lst vars))
                        term)))))
@@ -14537,7 +14549,7 @@
 (defun remove-standardp-hyps (tterm)
   (if (and (consp tterm)
            (eq (car tterm) 'if)
-           (equal (car (cdr (cdr (cdr tterm)))) 
+           (equal (car (cdr (cdr (cdr tterm))))
                   (list 'quote nil)))
       (list 'if
             (remove-standardp-hyp (car (cdr tterm)))
@@ -14571,7 +14583,7 @@
            the formula ~x0 using DEFTHM-STD, even though it ~
            contains the non-classical function ~*1."
           term
-          `("<MissingFunction>" "~x*" "~x* and " "~x*," 
+          `("<MissingFunction>" "~x*" "~x* and " "~x*,"
             ,non-classical-fns)))))
 
 #+(and acl2-par (not acl2-loop-only))
@@ -14631,7 +14643,7 @@
         (er-let*
          ((tterm0 (translate term t t t ctx wrld state))
 ; known-stobjs = t (stobjs-out = t)
-          (tterm 
+          (tterm
            #+:non-standard-analysis
            (if std-p
                (er-progn
@@ -14680,7 +14692,7 @@
                           (value nil)
                         (translate-hints+ name
                                           hints
-  
+
 ; If there are :instructions, then default hints are to be ignored; otherwise
 ; the error just below will prevent :instructions in the presence of default
 ; hints.

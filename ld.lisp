@@ -20723,6 +20723,10 @@
   function's guard.  ~l[xargs].  Thanks to Jared Davis for requesting this
   feature.
 
+  Advanced users may want to ~pl[quick-and-dirty-subsumption-replacement-step]
+  for a way to turn off a prover heuristic.  Thanks to those who have mentioned
+  to us potential issues with this heuristic, most recently Dave Greve.
+
   ~st[HEURISTIC IMPROVEMENTS]
 
   We made changes to the ``ancestors check'' heuristic (source function
@@ -20847,6 +20851,12 @@
   analysis support for the ~il[real]s (as for ACL2(r)), now builds and can
   certify the community ~c[nonstd/] books.  Thanks to David Rager for his
   contribution to this capability.
+
+  Although ACL2 users don't typically modify raw Lisp variables, we have
+  arranged to reset Lisp variable ~c[*default-pathname-defaults*] if necessary
+  at startup so that it will not interfere with ACL2, in particular by messing
+  up the initial connected book directory (~pl[cbd]).  Thanks to Jared Davis,
+  Sol Swords, and Raymond Toy for helping us to identify this issue.
 
   ~st[EMACS SUPPORT]
 

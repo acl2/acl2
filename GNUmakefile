@@ -69,7 +69,7 @@
 #                    ; waterfall parallelism (requires the
 #                    ; experimental extension ACL2(p) of ACL2); see
 #                    ; file acl2-customization-files/README.
-#   make regression-fast [DEPRECATED as is books/regression-targets (legacy)]
+#   make regression-legacy-fast [DEPRECATED as is books/regression-targets (legacy)]
 #                    ; (WARNING: This target uses variable ACL2, with default value
 #                    ;      "acl2", so it is probably a good idea to run after
 #                    ;      explicitly setting ACL2=<path_to_ACL2>.
@@ -88,7 +88,7 @@
 #                    ;   ./cert.pl -s Makefile-fast --targets regression-targets -b .
 #   make clean-books ; Remove certificate files, object files, log files,
 #                    ; debris, ..., created by `make certify-books',
-#                    ; `make regression', or `make regression-fast'.
+#                    ; `make regression', etc.
 
 # Also included are various legacy versions of these targets, which
 # correspond to targets through ACL2 Version 6.1.  For example, target
@@ -1007,19 +1007,14 @@ regression-legacy-hons-only:
 	cd books ; $(MAKE) -f Makefile.legacy $(ACL2_IGNORE) hons
 
 .PHONY: regression-legacy-hons
-# For a HONS regression-legacy, we do regression-legacy-hons-only first to get the
-# extra parallelism provided by cert.pl.  For regression-legacy-hons-only the
-# default for ACL2 is saved_acl2h in the development directory; for
-# regression-legacy, saved_acl2.  So the user might be happiest simply
-# providing a value for ACL2.
+# For a legacy HONS regression, we do regression-legacy-hons-only
+# first to get the extra parallelism provided by cert.pl.  For
+# regression-legacy-hons-only the default for ACL2 is saved_acl2h in
+# the development directory; for regression-legacy, saved_acl2.  So
+# the user might be happiest simply providing a value for ACL2.
 regression-legacy-hons:
 	$(MAKE) regression-legacy-hons-only
 	$(MAKE) regression-legacy ACL2_CENTAUR=skip ACL2_HONS_REGRESSION=t
-
-.PHONY: regression-legacy-fast
-regression-legacy-fast:
-	uname -a
-	cd books ; pwd ; $(MAKE) -f Makefile.legacy $(ACL2_IGNORE) $(ACL2_JOBS_OPT) -f Makefile-fast
 
 .PHONY: clean-books-nonstd-legacy
 clean-books-legacy-nonstd:
@@ -1029,6 +1024,12 @@ clean-books-legacy-nonstd:
 regression-legacy-nonstd:
 	uname -a
 	cd books/nonstd ; $(MAKE) -f Makefile.legacy $(ACL2_IGNORE) $(ACL2_JOBS_OPT) all-nonstd
+
+# Warning: We are no longer actively maintaining books/Makefile-fast.
+.PHONY: regression-legacy-fast
+regression-legacy-fast:
+	uname -a
+	cd books ; pwd ; $(MAKE) $(ACL2_IGNORE) $(ACL2_JOBS_OPT) -f Makefile-fast
 
 .PHONY: regression-legacy-fresh regression-legacy-fast-fresh regression-legacy-nonstd-fresh
 regression-legacy-fresh: clean-books-legacy
@@ -1060,3 +1061,4 @@ certify-books-legacy-short:
 chk-include-book-worlds-legacy:
 	uname -a
 	cd books ; $(MAKE) -f Makefile.legacy $(ACL2_IGNORE) chk-include-book-worlds-top
+

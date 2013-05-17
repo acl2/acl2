@@ -289,7 +289,7 @@ implementations.")
   (when (null (ignore-errors (reverse "")))
     (defconstant *our-old-reverse* (symbol-function 'reverse)))
   (without-package-locks
-   (when (null (ignore-errors (reverse "")))
+   (when (boundp '*our-old-reverse*)
      (defun reverse (x)
        (if (equal x "")
            ""
@@ -1065,6 +1065,30 @@ implementations.")
 
 (defvar *acl2-default-restart-complete* nil)
 
+(defun fix-default-pathname-defaults ()
+
+; Some Lisps save *default-pathname-defaults* and do not reset it at startup.
+; According to our experiments:
+
+; - CCL, CMUCL, LispWorks, and GCL retain *default-pathname-defaults*.
+
+; - SBCL and Allegro CL apparently do not retain *default-pathname-defaults*,
+;   but instead setting it at startup according to the current working
+;   directory.
+
+; - CLISP sets *default-pathname-defaults* to #P"" at startup.
+
+; But since *default-pathname-defaults* can affect truename, we want it to
+; reflect the current working directory.
+
+  #+(or ccl cmu gcl lispworks)
+  (when (pathname-directory *default-pathname-defaults*)
+    (let ((p (make-pathname)))
+      (format t "~%Note: Resetting *default-pathname-defaults* to ~s.~%"
+              p)
+      (setq *default-pathname-defaults* p)))
+  nil)
+
 (defun acl2-default-restart ()
   (if *acl2-default-restart-complete*
       (return-from acl2-default-restart nil))
@@ -1073,6 +1097,8 @@ implementations.")
    common-lisp-user::acl2-set-character-encoding
    #-cltl2
    user::acl2-set-character-encoding)
+
+  (fix-default-pathname-defaults)
 
   #+ccl
   (progn
