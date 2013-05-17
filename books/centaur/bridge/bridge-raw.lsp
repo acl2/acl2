@@ -602,30 +602,42 @@ This is a trace-co test"))
        (debug "Got good values from the main thread.~%")
        (values-list ,retvals))))
 
+
+(defvar *no-main-thread*
+  ;; Gross hack to be able to turn off the main thread for interactive
+  ;; scripting modes.  If this is set to T, the main-thread stuff is all just
+  ;; turned into progns.
+  nil)
+
 (defmacro run-in-main-thread-raw (irrelevant-variable-for-return-last form)
   (declare (ignore irrelevant-variable-for-return-last))
   ;; BOZO this probably isn't quite right w.r.t. values-list, our-multiple-values-bind, etc. nonsense
   ;; But it seems to work on CCL, at least.
-  `(ccl::with-lock-grabbed
-    (*main-thread-lock*)
-    (debug "Got the lock, now in main thread.~%")
-    (in-main-thread-aux ,form)))
+  `(if *no-main-thread*
+       ,form
+     (ccl::with-lock-grabbed
+      (*main-thread-lock*)
+      (debug "Got the lock, now in main thread.~%")
+      (in-main-thread-aux ,form))))
 
 (defmacro try-to-run-in-main-thread-raw (irrelevant-variable-for-return-last form)
   (declare (ignore irrelevant-variable-for-return-last))
   ;; BOZO this probably isn't quite right w.r.t. values-list, our-multiple-values-bind, etc. nonsense
   ;; But it seems to work on CCL, at least.
-  `(if (not (ccl::try-lock *main-thread-lock*))
-       (progn
-         (debug "The main thread is busy, giving up.~%")
-         (error "The main thread is busy."))
-     (unwind-protect
-         ;; For the lock we just grabbed.
-         (progn
-           (debug "Main thread wasn't busy, so it's my turn.~%")
-           (in-main-thread-aux ,form))
-       (debug "Releasing lock on main thread.~%")
-       (ccl::release-lock *main-thread-lock*))))
+  `(cond (*no-main-thread*
+          ,form)
+         ((not (ccl::try-lock *main-thread-lock*))
+          (progn
+            (debug "The main thread is busy, giving up.~%")
+            (error "The main thread is busy.")))
+         (t
+          (unwind-protect
+              ;; For the lock we just grabbed.
+              (progn
+                (debug "Main thread wasn't busy, so it's my turn.~%")
+                (in-main-thread-aux ,form))
+            (debug "Releasing lock on main thread.~%")
+            (ccl::release-lock *main-thread-lock*)))))
 
 
 (defun start-fn (socket-name-or-port-number
