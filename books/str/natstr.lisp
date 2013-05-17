@@ -238,7 +238,7 @@
 
 (defsection revappend-natchars
   :parents (numbers)
-  :short "More efficient version of @('(revappend (@(see natchars) n) acc).')"
+  :short "More efficient version of @('(revappend (natchars n) acc).')"
 
   :long "<p>This can be useful when building strings by consing together
 characters in reverse order.</p>"

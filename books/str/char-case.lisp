@@ -24,12 +24,13 @@
 
 (in-package "STR")
 (include-book "eqv")
+(include-book "tools/bstar" :dir :system)
 (local (include-book "arithmetic"))
 
-(defmacro little-a () (char-code #\a))
-(defmacro little-z () (char-code #\z))
-(defmacro big-a () (char-code #\A))
-(defmacro big-z () (char-code #\Z))
+(defmacro little-a ()   (char-code #\a))
+(defmacro little-z ()   (char-code #\z))
+(defmacro big-a ()      (char-code #\A))
+(defmacro big-z ()      (char-code #\Z))
 (defmacro case-delta () (- (little-a) (big-a)))
 
 
@@ -47,8 +48,7 @@ contrast, @('up-alpha-p') works on arbitrary characters.</p>"
 
   (definlined up-alpha-p (x)
     (declare (type character x))
-    (let ((code (char-code x)))
-      (declare (type (unsigned-byte 8) code))
+    (b* (((the (unsigned-byte 8) code) (char-code x)))
       (and (<= (big-a) code)
            (<= code (big-z)))))
 
@@ -128,8 +128,7 @@ contrast, @('down-alpha-p') works on arbitrary characters.</p>"
 
   (definlined down-alpha-p (x)
     (declare (type character x))
-    (let ((code (char-code x)))
-      (declare (type (unsigned-byte 8) code))
+    (b* (((the (unsigned-byte 8) code) (char-code x)))
       (and (<= (little-a) code)
            (<= code (little-z)))))
 
@@ -209,8 +208,7 @@ contrast, @('upcase-char') works on arbitrary characters.</p>"
 
   (definlined upcase-char (x)
     (declare (type character x))
-    (let ((code (char-code x)))
-      (declare (type (unsigned-byte 8) code))
+    (b* (((the (unsigned-byte 8) code) (char-code x)))
       (if (and (<= (little-a) code)
                (<= code (little-z)))
           (code-char (the (unsigned-byte 8) (- code (case-delta))))
@@ -309,8 +307,7 @@ characters.</p>"
 
   (definlined downcase-char (x)
     (declare (type character x))
-    (let ((code (char-code x)))
-      (declare (type (unsigned-byte 8) code))
+    (b* (((the (unsigned-byte 8) code) (char-code x)))
       (if (and (<= (big-a) code)
                (<= code (big-z)))
           (code-char (the (unsigned-byte 8) (+ code (case-delta))))

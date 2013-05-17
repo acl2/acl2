@@ -29,7 +29,7 @@
 
 (defsection octal-digitp
   :parents (numbers)
-  :short "Recognizer for characters #\0 through #\7."
+  :short "Recognizer for characters #\\0 through #\\7."
   :long "<p>@(call octal-digitp) is the octal alternative to @(see digitp).</p>"
 
   (definlined octal-digitp (x)
@@ -251,7 +251,7 @@ can tolerate non-hex digits after the number.</p>"
 
 (defsection bit-digitp
   :parents (numbers)
-  :short "Recognizer for characters #\0 and #\1."
+  :short "Recognizer for characters #\\0 and #\\1."
   :long "<p>@(call bit-digitp) is the binary alternative to @(see digitp).</p>"
 
   (definlined bit-digitp (x)
@@ -284,7 +284,7 @@ can tolerate non-hex digits after the number.</p>"
   :parents (numbers)
   :short "Parse a binary number from the beginning of a character list."
   :long "<p>This is like @(call parse-nat-from-charlist), but deals with binary
-digits (#\0 and #\1) and returns their binary value.</p>"
+digits (#\\0 and #\\1) and returns their binary value.</p>"
 
   (defund parse-bits-from-charlist (x val len)
     (declare (type integer val)

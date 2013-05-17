@@ -1,4 +1,4 @@
- !; Standard Lists ACL2-Customization File
+; Standard Lists ACL2-Customization File
 ; Copyright (C) 2008-2013 Centaur Technology
 ;
 ; Contact:

@@ -146,6 +146,8 @@ same length and their elements must be @(see chareqv) to one another.</p>
   (local (in-theory (enable charlisteqv)))
 
   (defequiv charlisteqv)
+  (defrefinement list-equiv charlisteqv
+    :hints(("Goal" :in-theory (enable list-equiv))))
 
   (defcong charlisteqv chareqv     (car x)      1)
   (defcong charlisteqv charlisteqv (cdr x)      1)
@@ -186,6 +188,4 @@ same length and their elements must be @(see chareqv) to one another.</p>
   (defthm charlisteqv-when-not-same-lens
     (implies (not (equal (len x) (len y)))
              (not (charlisteqv x y)))))
-
-
 

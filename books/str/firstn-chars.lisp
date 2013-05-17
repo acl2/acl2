@@ -22,6 +22,7 @@
 (include-book "eqv")
 (local (include-book "arithmetic"))
 (local (include-book "std/lists/take" :dir :system))
+(local (include-book "std/lists/equiv" :dir :system))
 (local (in-theory (disable acl2::take-redefinition)))
 
 (defsection firstn-chars
@@ -100,7 +101,9 @@
   (defthm character-listp-of-append-firstn-chars
     (implies (and (force (stringp x))
                   (force (character-listp y)))
-             (character-listp (append-firstn-chars n x y)))))
+             (character-listp (append-firstn-chars n x y))))
+
+  (defcong list-equiv list-equiv (append-firstn-chars n x y) 3))
 
 
 #||

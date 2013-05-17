@@ -42,7 +42,9 @@ irritating to use because it has @(see standard-char-p) guards.  In contrast,
 
   (local (in-theory (enable ichareqv)))
 
-  (defequiv ichareqv))
+  (defequiv ichareqv)
+
+  (defrefinement chareqv ichareqv))
 
 
 
@@ -70,6 +72,9 @@ another.</p>
   (local (in-theory (enable icharlisteqv)))
 
   (defequiv icharlisteqv)
+
+  (defrefinement charlisteqv icharlisteqv
+    :hints(("Goal" :in-theory (enable chareqv))))
 
   (defcong icharlisteqv ichareqv     (car x)      1)
   (defcong icharlisteqv icharlisteqv (cdr x)      1)
@@ -136,8 +141,8 @@ strings into lists.</p>
   (defund istreqv-aux (x y n l)
     (declare (type string x)
              (type string y)
-             (type integer n)
-             (type integer l)
+             (type (integer 0 *) n)
+             (type (integer 0 *) l)
              (xargs :guard (and (natp n)
                                 (natp l)
                                 (equal (length x) l)
@@ -151,14 +156,13 @@ strings into lists.</p>
            (and (ichareqv (char x n) (char y n))
                 (istreqv-aux x y (+ (nfix n) 1) l)))
          :exec
-         (if (eql (the integer n) (the integer l))
+         (if (eql n l)
              t
-           (and (ichareqv (the character (char (the string x) (the integer n)))
-                          (the character (char (the string y) (the integer n))))
-                (istreqv-aux (the string x)
-                             (the string y)
-                             (the integer (+ (the integer n) 1))
-                             (the integer l))))))
+           (and (ichareqv (the character (char x n))
+                          (the character (char y n)))
+                (istreqv-aux x y
+                             (the (integer 0 *) (+ 1 n))
+                             l)))))
 
   (definline istreqv (x y)
     (declare (type string x)
@@ -167,14 +171,10 @@ strings into lists.</p>
     (mbe :logic
          (icharlisteqv (coerce x 'list) (coerce y 'list))
          :exec
-         (let ((xl (the integer (length (the string x))))
-               (yl (the integer (length (the string y)))))
-           (and (eql (the integer xl) (the integer yl))
-                (istreqv-aux (the string x)
-                             (the string y)
-                             (the integer 0)
-                             (the integer xl))))))
-
+         (b* (((the (integer 0 *) xl) (length x))
+              ((the (integer 0 *) yl) (length y)))
+           (and (eql xl yl)
+                (istreqv-aux x y 0 xl)))))
 
   (local (defthm lemma
            (implies (and (< n (len x))

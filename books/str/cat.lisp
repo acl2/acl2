@@ -21,8 +21,12 @@
 (in-package "STR")
 (include-book "xdoc/top" :dir :system)
 (include-book "misc/definline" :dir :system)
+(include-book "tools/bstar" :dir :system)
+(include-book "std/lists/list-defuns" :dir :system)
 (local (include-book "arithmetic"))
 (local (include-book "std/lists/take" :dir :system))
+(local (include-book "std/lists/equiv" :dir :system))
+(local (include-book "std/lists/rev" :dir :system))
 
 (defsection cat
   :parents (concatenation)
@@ -115,14 +119,14 @@ conses, where @('n') is the length of @('x').</p>"
 
   (defund append-chars-aux (x n y)
     "Appends the characters from x[0:n] onto y"
-    (declare (xargs :guard (and (stringp x)
-                                (natp n)
-                                (< n (length x))))
-             (type string x)
-             (type integer n))
+    (declare (type string x)
+             (type (integer 0 *) n)
+             (xargs :guard (< n (length x))))
     (if (zp n)
         (cons (char x 0) y)
-      (append-chars-aux x (- n 1) (cons (char x n) y))))
+      (append-chars-aux x
+                        (the (integer 0 *) (- n 1))
+                        (cons (char x n) y))))
 
   (local (defthm lemma
            (implies (and (not (zp n))
@@ -154,18 +158,21 @@ conses, where @('n') is the length of @('x').</p>"
            :hints(("Goal" :use ((:instance append-chars-aux-correct))))))
 
   (definlined append-chars (x y)
-    (declare (xargs :guard (stringp x))
-             (type string x))
+    (declare (type string x))
     (mbe :logic (append (coerce x 'list) y)
-         :exec (if (equal x "")
-                   y
-                 (append-chars-aux x (1- (length x)) y))))
+         :exec (b* (((the (integer 0 *) xl) (length x))
+                    ((when (eql xl 0))
+                     y)
+                    ((the (integer 0 *) n) (- xl 1)))
+                 (append-chars-aux x n y))))
 
   (local (in-theory (enable append-chars)))
 
   (defthm character-listp-of-append-chars
     (equal (character-listp (append-chars x y))
-           (character-listp y))))
+           (character-listp y)))
+
+  (defcong list-equiv list-equiv (append-chars x y) 2))
 
 
 (defsection revappend-chars
@@ -211,16 +218,18 @@ for more details.  Also see @(see rchars-to-string), which is a potentially
 more efficient way to do the final @(see reverse)/@(see coerce) steps.</p>"
 
   (defund revappend-chars-aux (x n xl y)
-    (declare (xargs :guard (and (stringp x)
-                                (natp n)
-                                (natp xl)
-                                (<= n xl)
+    (declare (type string x)
+             (type (integer 0 *) n xl)
+             (xargs :guard (and (<= n xl)
                                 (equal xl (length x)))
                     :measure (nfix (- (nfix xl) (nfix n)))))
     (if (mbe :logic (zp (- (nfix xl) (nfix n)))
-             :exec (int= n xl))
+             :exec (eql n xl))
         y
-      (revappend-chars-aux x (+ 1 (lnfix n)) xl (cons (char x n) y))))
+      (revappend-chars-aux x
+                           (the (integer 0 *) (+ 1 (lnfix n)))
+                           xl
+                           (cons (char x n) y))))
 
   (defthm revappend-chars-aux-correct
     (implies (and (stringp x)
@@ -245,7 +254,9 @@ more efficient way to do the final @(see reverse)/@(see coerce) steps.</p>"
 
   (defthm character-listp-of-revappend-chars
     (equal (character-listp (revappend-chars x y))
-           (character-listp y))))
+           (character-listp y)))
+
+  (defcong list-equiv list-equiv (revappend-chars x y) 2))
 
 
 
@@ -290,7 +301,6 @@ more efficient way to do the final @(see reverse)/@(see coerce) steps.</p>"
 ||#
 
 
-
 (defsection prefix-strings
   :parents (concatenation)
   :short "Concatenates a prefix onto every string in a list of strings."
@@ -299,8 +309,8 @@ more efficient way to do the final @(see reverse)/@(see coerce) steps.</p>"
 @('prefix') onto every member of @('x').</p>"
 
   (defund prefix-strings (prefix x)
-    (declare (xargs :guard (and (stringp prefix)
-                                (string-listp x))))
+    (declare (type string prefix)
+             (xargs :guard (string-listp x)))
     (if (atom x)
         nil
       (cons (cat prefix (car x))
@@ -323,9 +333,16 @@ more efficient way to do the final @(see reverse)/@(see coerce) steps.</p>"
 
   (defthm len-of-prefix-strings
     (equal (len (prefix-strings prefix x))
-           (len x))))
+           (len x)))
 
+  (local (defthmd l0
+           (equal (prefix-strings prefix (list-fix x))
+                  (prefix-strings prefix x))))
 
+  (defcong list-equiv equal (prefix-strings prefix x) 2
+    :hints(("Goal" :in-theory (enable list-equiv)
+            :use ((:instance l0 (x x))
+                  (:instance l0 (x acl2::x-equiv)))))))
 
 
 (defsection rchars-to-string
@@ -372,8 +389,6 @@ to any other part of the program.</p>"
        (the string (coerce (the list rchars) 'string))))))
 
 
-
-
 (defsection join
   :parents (concatenation)
   :short "Concatenate a list of strings with some separator between."
@@ -396,8 +411,8 @@ without any use of @(see coerce), then uses @(see rchars-to-string) to build
 and reverse the result string.</p>"
 
   (defund join-aux (x separator acc)
-    (declare (xargs :guard (and (string-listp x)
-                                (stringp separator))))
+    (declare (xargs :guard (string-listp x))
+             (type string separator))
     (cond ((atom x)
            acc)
           ((atom (cdr x))
@@ -408,8 +423,8 @@ and reverse the result string.</p>"
              (join-aux (cdr x) separator acc)))))
 
   (defund join (x separator)
-    (declare (xargs :guard (and (string-listp x)
-                                (stringp separator))
+    (declare (type string separator))
+    (declare (xargs :guard (string-listp x)
                     :verify-guards nil))
     (mbe :logic
          (cond ((atom x)
@@ -425,12 +440,6 @@ and reverse the result string.</p>"
 
   (local (in-theory (enable join join-aux)))
 
-  (local (include-book "std/lists/rev" :dir :system))
-
-  (local (defthm l1
-           (equal (append (append x y) z)
-                  (append x (append y z)))))
-
   (defthm join-aux-removal
     (implies (and (string-listp x)
                   (stringp separator))
@@ -445,5 +454,14 @@ and reverse the result string.</p>"
 
   (defthm stringp-of-join
     (stringp (join x separator))
-    :rule-classes :type-prescription))
+    :rule-classes :type-prescription)
+
+  (local (defthmd l0
+           (equal (join (list-fix x) separator)
+                  (join x separator))))
+
+  (defcong list-equiv equal (join x separator) 1
+    :hints(("Goal" :in-theory (enable list-equiv)
+            :use ((:instance l0 (x x))
+                  (:instance l0 (x acl2::x-equiv)))))))
 

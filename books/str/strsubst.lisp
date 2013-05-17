@@ -77,14 +77,14 @@
 
 
 (defsection strsubst
-  :parents (str)
+  :parents (substitution substitute)
   :short "Replace substrings throughout a string."
 
-  :long "<p>@(call strsubst) replaces each occurrence @('old') with @('new')
+  :long "<p>@(call strsubst) replaces each occurrence of @('old') with @('new')
 throughout @('x').  Each argument is a string, and a new string is returned.
 The replacement is done globally and non-recursively.</p>
 
-Examples:
+<p>Examples:</p>
 @({
  (strsubst \"World\" \"Star\" \"Hello, World!\")
    --&gt;
@@ -93,7 +93,10 @@ Examples:
  (strsubst \"oo\" \"aa\" \"xoooyoo\")
    --&gt;
  \"xaaoyaa\"
-})"
+})
+
+<p>ACL2 has a built in @(see substitute) function, but it only works on
+individual characters, whereas @('strsubst') works on substrings.</p>"
 
 ;; BOZO probably worthwhile to check if old occurs, and if not don't bother to
 ;; do any coercion, etc.
@@ -124,3 +127,70 @@ Examples:
 
 
 
+
+(defsection strsubst-list
+  :parents (substitution)
+  :short "Carry out a @(see strsubst) replacement throughout a list of strings."
+
+  :long "<p>@(call strsubst-list) replaces every occurrence of @('old') with
+@('new') throughout @('x').  Here, @('old') and @('new') are strings, but
+@('x') is a list of strings.  A new list of strings is returned.</p>
+
+<p>Example:</p>
+@({
+ (strsubst-list \"Sun\"
+                \"Moon\"
+                '(\"Sun Roof\" \"Hello Sun\" \"Sunny Sunshades\"))
+   --&gt;
+ (\"Moon Roof\" \"Hello Moon\" \"Moonny Moonshades\")
+})"
+
+  ;; BOZO consider using defprojection
+
+  (defund strsubst-list (old new x)
+    (declare (xargs :guard (and (stringp old)
+                                (stringp new)
+                                (string-listp x))))
+    (if (atom x)
+        nil
+      (cons (strsubst old new (car x))
+            (strsubst-list old new (cdr x)))))
+
+  (local (in-theory (enable strsubst-list)))
+
+  (defthm strsubst-list-when-atom
+    (implies (atom x)
+             (equal (strsubst-list old new x)
+                    nil)))
+
+  (defthm strsubst-list-of-cons
+    (equal (strsubst-list old new (cons a x))
+           (cons (strsubst old new a)
+                 (strsubst-list old new x))))
+
+  (defthm string-listp-of-strsubst-list
+    (string-listp (strsubst-list old new x)))
+
+  (local (defthm l0
+           (equal (strsubst-list old new (list-fix x))
+                  (strsubst-list old new x))))
+
+  (defcong list-equiv equal (strsubst-list old new x) 3
+    :hints(("Goal"
+            :in-theory (disable l0)
+            :use ((:instance l0 (x x))
+                  (:instance l0 (x acl2::x-equiv))))))
+
+  (defthm strsubst-list-of-append
+    (equal (strsubst-list old new (append x y))
+           (append (strsubst-list old new x)
+                   (strsubst-list old new y))))
+
+  (defthm strsubst-list-of-revappend
+    (equal (strsubst-list old new (revappend x y))
+           (revappend (strsubst-list old new x)
+                      (strsubst-list old new y))))
+
+  (defthm strsubst-list-of-rev
+    (equal (strsubst-list old new (rev x))
+           (rev (strsubst-list old new x)))))

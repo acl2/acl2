@@ -146,5 +146,9 @@ functions."
   (defcong list-equiv equal (take n x) 2)
 
   (defcong list-equiv equal (no-duplicatesp-equal x) 1
+    :hints(("Goal" :induct (cdr-cdr-ind x x-equiv))))
+
+  (defcong list-equiv equal (string-append-lst x) 1
     :hints(("Goal" :induct (cdr-cdr-ind x x-equiv)))))
+
 

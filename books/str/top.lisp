@@ -47,6 +47,7 @@
 (include-book "substrp")
 (include-book "subseq")
 (include-book "suffixp")
+(include-book "symbols")
 
 (defxdoc str
   :short "ACL2 String Library"
@@ -126,3 +127,11 @@ in alphanumeric ways.</p>")
   :parents (str)
   :short "Functions for recognizing upper- and lower-case characters,
 converting between cases, etc.")
+
+(defsection symbols
+  :parents (str)
+  :short "Functions for working with symbols.")
+
+(defsection substitution
+  :parents (str)
+  :short "Functions for doing string replacement.")

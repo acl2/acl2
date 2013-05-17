@@ -24,8 +24,6 @@
 (local (include-book "std/lists/rev" :dir :system))
 (local (include-book "arithmetic"))
 
-
-
 (defsection digitp
   :parents (numbers)
   :short "Recognizer for numeric characters (0-9)."
@@ -54,10 +52,13 @@ on the machine Lisp2.</p>
     (mbe :logic (let ((code (char-code (char-fix x))))
                   (and (<= (char-code #\0) code)
                        (<= code (char-code #\9))))
-         :exec (let ((code (the (unsigned-byte 8) (char-code (the character x)))))
+         :exec (let ((code (the (unsigned-byte 8)
+                             (char-code (the character x)))))
                  (declare (type (unsigned-byte 8) code))
-                 (and (<= (the (unsigned-byte 8) 48) (the (unsigned-byte 8) code))
-                      (<= (the (unsigned-byte 8) code) (the (unsigned-byte 8) 57))))))
+                 (and (<= (the (unsigned-byte 8) 48)
+                          (the (unsigned-byte 8) code))
+                      (<= (the (unsigned-byte 8) code)
+                          (the (unsigned-byte 8) 57))))))
 
   (local (in-theory (enable digitp)))
 
@@ -74,10 +75,13 @@ on the machine Lisp2.</p>
     (mbe :logic (let ((code (char-code (char-fix x))))
                   (and (<= (char-code #\1) code)
                        (<= code (char-code #\9))))
-         :exec (let ((code (the (unsigned-byte 8) (char-code (the character x)))))
+         :exec (let ((code (the (unsigned-byte 8)
+                             (char-code (the character x)))))
                  (declare (type (unsigned-byte 8) code))
-                 (and (<= (the (unsigned-byte 8) 49) (the (unsigned-byte 8) code))
-                      (<= (the (unsigned-byte 8) code) (the (unsigned-byte 8) 57))))))
+                 (and (<= (the (unsigned-byte 8) 49)
+                          (the (unsigned-byte 8) code))
+                      (<= (the (unsigned-byte 8) code)
+                          (the (unsigned-byte 8) 57))))))
 
   (local (in-theory (enable nonzero-digitp)))
 
@@ -196,10 +200,9 @@ on the machine Lisp2.</p>
 can tolerate non-numeric characters after the number.</p>"
 
   (defund digit-list-value1 (x val)
-    (declare (type integer val)
+    (declare (type (integer 0 *) val)
              (xargs :guard (and (character-listp x)
-                                (digit-listp x)
-                                (natp val))
+                                (digit-listp x))
                     :guard-hints (("Goal" :in-theory (enable digit-val digitp)))))
     (mbe :logic (if (consp x)
                     (digit-list-value1 (cdr x)
@@ -207,14 +210,16 @@ can tolerate non-numeric characters after the number.</p>"
                                           (* 10 (nfix val))))
                   (nfix val))
          :exec (if (consp x)
-                   (digit-list-value1 (cdr x)
-                                      (the integer
-                                        (+ (the (unsigned-byte 8)
-                                             (- (the (unsigned-byte 8) (char-code (the character (car x))))
-                                                (the (unsigned-byte 8) 48)))
-                                           (* (the integer 10)
-                                              (the integer val)))))
-                 (the integer val))))
+                   (digit-list-value1
+                    (cdr x)
+                    (the (integer 0 *)
+                      (+ (the (unsigned-byte 8)
+                           (- (the (unsigned-byte 8)
+                                (char-code (the character (car x))))
+                              (the (unsigned-byte 8) 48)))
+                         (* (the (integer 0 *) 10)
+                            (the (integer 0 *) val)))))
+                 (the (integer 0 *) val))))
 
   (definlined digit-list-value (x)
     (declare (xargs :guard (and (character-listp x)
@@ -225,7 +230,7 @@ can tolerate non-numeric characters after the number.</p>"
                           (digit-val (car x)))
                        (digit-list-value (cdr x)))
                   0)
-         :exec (digit-list-value1 x (the integer 0))))
+         :exec (digit-list-value1 x 0)))
 
   (local (in-theory (enable digit-list-value)))
 
@@ -331,19 +336,20 @@ can tolerate non-numeric characters after the number.</p>"
 
   (defund digit-string-p-aux (x n xl)
     (declare (type string x)
-             (type integer n)
-             (type integer xl)
-             (xargs :guard (and (stringp x)
-                                (natp n)
-                                (natp xl)
-                                (<= n xl)
+             (type (integer 0 *) n)
+             (type (integer 0 *) xl)
+             (xargs :guard (and (<= n xl)
                                 (= xl (length x)))
                     :measure (nfix (- (nfix xl) (nfix n)))))
     (if (mbe :logic (zp (- (nfix xl) (nfix n)))
-             :exec (int= n xl))
+             :exec (eql n xl))
         t
       (and (digitp (char x n))
-           (digit-string-p-aux x (+ 1 (lnfix n)) xl))))
+           (digit-string-p-aux x
+                               (mbe :logic (+ 1 (nfix n))
+                                    :exec
+                                    (the (integer 0 *) (+ 1 n)))
+                               xl))))
 
   (defthm digit-string-p-aux-removal
     (implies (and (stringp x)

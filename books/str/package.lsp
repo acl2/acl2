@@ -24,7 +24,8 @@
   (set-difference-eq
    (union-eq *acl2-exports*
              *common-lisp-symbols-from-main-lisp-package*
-             '(quit exit simpler-take list-fix prefixp str b* assert!
+             '(quit exit simpler-take list-fix list-equiv rev
+                    prefixp str b* assert!
                     listpos sublistp
                     a b c d e f g h i j k l m n o p q r s t u v w x y z)
              '(defxdoc defsection lnfix definlined definline

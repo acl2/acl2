@@ -408,7 +408,7 @@ OK_CERTS += bdd/benchmarks.cert
 bdd/benchmarks.cert: bdd/benchmarks.lisp
 
 bdd/benchmarks.lisp: bdd/cbf.cert bdd/create-benchmarks.lsp
-	cd bdd ; (echo '(ld "create-benchmarks.lsp")' | $(ACL2))
+	cd bdd ; $(STARTJOB) -c "(echo '(ld \"create-benchmarks.lsp\")' | $(ACL2))"
 
 # Use custom Makefiles:
 
@@ -477,29 +477,29 @@ clause-processors/SULFA/target.cert: \
 
 # The following has no dependencies, so doesn't need a "deps" file.
 fix-cert/fix-cert.cert:
-	cd $(@D) ; $(MAKE)
+	cd $(@D) ; $(STARTJOB) -c "$(MAKE)"
 
 workshops/1999/multiplier/proof.cert: \
   workshops/1999/deps-multiplier.cert
-	cd $(@D) ; $(MAKE)
+	cd $(@D) ; $(STARTJOB) -c "$(MAKE)"
 
 workshops/2003/greve-wilding-vanfleet/support/firewallworks.cert: \
   workshops/2003/greve-wilding-vanfleet/deps.cert
-	cd $(@D) ; $(MAKE)
+	cd $(@D) ; $(STARTJOB) -c "$(MAKE)"
 
 # Note that we change to the parent directory in order to pick up all
 # of support/.
 workshops/2003/kaufmann/support/input/defs-in.cert: \
   workshops/2003/kaufmann/deps.cert
-	cd $(@D)/.. ; $(MAKE)
+	cd $(@D)/.. ; $(STARTJOB) -c "$(MAKE)"
 
 # The following has no dependencies, so doesn't need a "deps" file.
 workshops/2004/sumners-ray/support/success.txt:
-	cd $(@D) ; $(MAKE)
+	cd $(@D) ; $(STARTJOB) -c "$(MAKE)"
 
 workshops/2011/verbeek-schmaltz/sources/correctness2.cert: \
   workshops/2011/verbeek-schmaltz/deps.cert
-	cd $(@D) ; $(MAKE)
+	cd $(@D) ; $(STARTJOB) -c "$(MAKE)"
 
 endif # ifndef ACL2_HAS_REALS
 
@@ -507,7 +507,7 @@ ACL2_CUSTOM_TARGETS += system/pcert/sub.cert
 
 system/pcert/sub.cert: \
   system/deps-pcert.cert
-	cd $(@D) ; $(MAKE)
+	cd $(@D) ; $(STARTJOB) -c "$(MAKE)"
 
 endif # ifndef ACL2_COMP
 
@@ -781,6 +781,8 @@ all: lite
 # that's not a problem; after all, in that case OK_CERTS wasn't
 # filtered by OK_CERTS_EXCLUSIONS.
 everything: all $(OK_CERTS_EXCLUSIONS)
+
+
 
 # The critical path report will work only if you have set up certificate timing
 # BEFORE you build the books.  See ./critpath.pl --help for details.
