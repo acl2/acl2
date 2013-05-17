@@ -1496,7 +1496,7 @@
 ; target devel-check, for example as follows, where <acl2d> denotes a full
 ; pathname for a build of ACL2 using feature :acl2-devel (see comments above
 ; for how to make such a build):
-;   (time nice make ACL2_JOBS=8 regression-fresh devel-check ACL2=<acl2d>)
+;   (time nice make -j 8 regression-fresh devel-check ACL2=<acl2d>)
 #+(and acl2-loop-only ; Note that make-event can't be called here in raw Lisp.
        (not acl2-devel))
 (system-verify-guards)

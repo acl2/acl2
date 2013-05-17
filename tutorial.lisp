@@ -10344,8 +10344,8 @@
 
   o ~l[REBUILD] for a fast way to load a file without waiting for proofs.
 
-  o For parallel certification, ~pl[BOOK-MAKEFILES] (~c[-j] option of
-  `~c[make]') and ~pl[PROVISIONAL-CERTIFICATION].
+  o For parallel certification, ~pl[BOOKS-CERTIFICATION] for use of the ~c[-j]
+  option of `make'; also ~pl[PROVISIONAL-CERTIFICATION].
   ~eq[]~bv[]
   ========================================
   Some relatively less common events:

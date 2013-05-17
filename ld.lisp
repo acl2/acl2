@@ -3215,10 +3215,10 @@
   One can thus, for example, compile books for several different host Lisps
   ~-[] useful when installing ACL2 executables at the same site that are built
   on different host Lisps.  A convenient way to do this in an environment that
-  provides Gnu ~c[make] is to certify the community books using the shell
+  provides Gnu `make' is to certify the community books using the shell
   command ``~c[make regression]'' in the ~c[acl2-sources/] directory, after
   setting environment variable ~c[ACL2_SAVE_EXPANSION] to ~c[t], and then
-  moving to the ~c[books] directory and executing the appropriate ~c[make]
+  moving to the ~c[books] directory and executing the appropriate `make'
   commands to compile the books (targets ~c[fasl], ~c[o], and so on, according
   to the compiled file extension for the host Lisp).
 
@@ -6335,7 +6335,7 @@
   longer supported.
 
   We fixed a problem with some of the makefiles, so that recursive invocations
-  of ~c[make] now use the version of ~c[make] specified on the command line.
+  of `make' now use the version of `make' specified on the command line.
 
   Files were fixed to help non-Unix/Linux users with book
   certification.  Thanks to John Cowles for finding some problems
@@ -6809,12 +6809,12 @@
   compiled file has a strictly earlier write date, which probably should never
   happen.
 
-  Fixed an infinite loop when executing ~c[make clean-books] (and hence
-  ~c[make] with targets that call ~c[clean-books], namely,
-  ~c[certify-books-fresh], ~c[regression-fresh], and
-  ~c[regression-nonstd-fresh]), which could occur when any subdirectories of
-  ~c[books/] are missing ~-[] even ~c[workshops/], which is intended to be
-  optional.  Thanks to Pete Manolios for pointing out this bug.
+  Fixed an infinite loop when executing ~c[make clean-books] (and hence `make'
+  with targets that call ~c[clean-books], namely, ~c[certify-books-fresh],
+  ~c[regression-fresh], and ~c[regression-nonstd-fresh]), which could occur
+  when any subdirectories of ~c[books/] are missing ~-[] even ~c[workshops/],
+  which is intended to be optional.  Thanks to Pete Manolios for pointing out
+  this bug.
 
   The ~ilc[include-book] command now works properly even when filenames, or
   their directories or parent directories (etc.) are links.  Thanks to Matt
@@ -7216,8 +7216,8 @@
   ~eq[]
 
   File ~c[books/Makefile-generic] has been improved so that failed attempts to
-  certify a book will cause the ~c[make] to fail.  Previously, an existing
-  ~c[.cert] file was left in place, and that sufficed for the ~c[make] to be
+  certify a book will cause the `make' to fail.  Previously, an existing
+  ~c[.cert] file was left in place, and that sufficed for the `make' to be
   considered a success.  Now, the old ~c[.cert] file is first removed when
   recertification is found to be necessary.
 
@@ -7558,7 +7558,7 @@
   + The printing of results in raw mode (~pl[set-raw-mode]) may now be
   partially controlled by the user:  ~pl[add-raw-arity].
 
-  + For those using Unix/Linux ~c[make]:  A ~c[cert.acl2] file can contain
+  + For those using Unix/Linux `make':  A ~c[cert.acl2] file can contain
   forms to be evaluated before an appropriate ~ilc[certify-book] command is
   invoked automatically (not included in ~c[cert.acl2]).~eq[]
 
@@ -8202,7 +8202,7 @@
   controlled by the user:  ~pl[add-raw-arity].  Also, newlines are printed when
   necessary before the value is printed.
 
-  For those using Unix/Linux ~c[make]: A ~c[cert.acl2] file can contain forms
+  For those using Unix/Linux `make': A ~c[cert.acl2] file can contain forms
   to be evaluated before an appropriate ~ilc[certify-book] command is invoked
   automatically (not included in ~c[cert.acl2]).
 
@@ -8755,8 +8755,8 @@
   When the macro ~ilc[open-trace-file] is opened twice in succession, it now
   automatically closes the first trace output channel before opening another.
 
-  It is now possible to use ~c[make] to build ACL2 on Windows systems that
-  support ~c[make].  Thanks to Pete Manolios and Mike Thomas for pointing out
+  It is now possible to use `make' to build ACL2 on Windows systems that
+  support `make'.  Thanks to Pete Manolios and Mike Thomas for pointing out
   the problem, to Jared Davis and Mike for helping us to analyze the problem,
   and to Jared for testing the fix.
 
@@ -8985,7 +8985,7 @@
   running out of memory for large ACL2 sessions.
 
   The main ~c[Makefile] has been replaced by ~c[GNUmakefile], in order to
-  enforce the use of GNU ~c[make].  If you use another ~c[make] program, you'll
+  enforce the use of GNU `make'.  If you use another `make' program, you'll
   get an error message that may help you proceed.
 
   (GCL only) SGC is no longer turned on for GCL 2.6 sub-versions through 2.6.3
@@ -9015,7 +9015,7 @@
 
   Failures during ~c[make certify-books] or ~c[make regression] now show up
   in the log as ``~c[**CERTIFICATION FAILED**]'', regardless of the operating
-  system (as long as it supports ~c[make]).  Formerly, one searched for
+  system (as long as it supports `make').  Formerly, one searched for
   ``~c[**]'' but this did not appear in openMCL runs.
 
   We have eliminated ``Undefined function'' warnings that could occur in
@@ -9452,7 +9452,7 @@
 
   (GCL only) There is now a way to speed up GCL builds of ACL2, at the cost of
   perhaps a percent or so in performance of the resulting image.  Using
-  ~c[make] one supplies the following.
+  `make' one supplies the following.
   ~bv[]
   LISP='gcl -eval \"(defparameter user::*fast-acl2-gcl-build* t)\"
   ~ev[]
@@ -9465,7 +9465,7 @@
   or ~c[books/Makefile-generic] is used, and returns non-zero exit status.
   However, the various make targets in the ACL2 source directory
   (~c[regression], ~c[certify-books], etc.) still continue past failures unless
-  you provide ~c[ACL2_IGNORE=' '] on the ~c[make] command line.
+  you provide ~c[ACL2_IGNORE=' '] on the `make' command line.
 
   (3) The build process has been modified (file ~c[GNUmakefile]) so that it
   stops upon a failed compile or a failed initialization.
@@ -9487,7 +9487,7 @@
   proof attempts when output is inhibited.
 
   Documentation has been added for using ACL2's makefile support to automate
-  the certification of collections of books.  ~l[book-makefiles].
+  the certification of collections of books.  ~l[books-certification-classic].
 
   Fixed a bug in ~ilc[sys-call-status] that was causing hard Lisp errors.
 
@@ -9683,7 +9683,7 @@
   we also found useful.
 
   The method of speeding up GCL-based builds (~pl[note-2-9-2]) has changed
-  slightly from Version_2.9.2.  Now, in the ~c[make] command:
+  slightly from Version_2.9.2.  Now, in the `make' command:
   ~bv[]
     LISP='gcl -eval \"(defparameter user::*fast-acl2-gcl-build* t)\"
   ~ev[]
@@ -10283,8 +10283,8 @@
   ACL2 now automatically deletes files ~c[TMP*.lisp] created during the build
   process and created by ~c[:]~ilc[comp].  If you want these to be saved,
   evaluate ~c[(assign keep-tmp-files t)] in the ACL2 loop or in raw Lisp.  The
-  ~c[clean] target for the standard ~c[make] process for certifying books
-  (~pl[book-makefiles]) will however delete all files ~c[TMP*.*].
+  ~c[clean] target for the standard `make' process for certifying books
+  (~pl[books-certification-classic]) will however delete all files ~c[TMP*.*].
 
   The ~c[TMP] files discussed just above now generally include the current process
   ID in their names, e.g., ~c[TMP@16388@1.lisp] instead of ~c[TMP1.lisp].
@@ -10592,7 +10592,7 @@
 
   (For those who do numerous builds using feature ~c[:acl2-mv-as-values],
   currently only OpenMCL and multi-threaded SBCL by default:) You can speed up
-  builds by adding the following parameter to ~c[make], under conditions
+  builds by adding the following parameter to `make', under conditions
   described in ~c[GNUmakefile]: ~c[USE_ACL2_PROCLAIMS=:REUSE].
 
   Arranged that traced functions (~pl[trace$]) are automatically untraced when
@@ -10758,8 +10758,8 @@
   (Sandip Ray and J Moore).
 
   Made some improvements to ~c[books/Makefile-generic] (a file discussed
-  elsewhere; ~pl[book-makefiles]).  In particular, improved handling of
-  ~c[.acl2] files for ~c[dependencies] target.
+  elsewhere; ~pl[books-certification-classic]).  In particular, improved
+  handling of ~c[.acl2] files for ~c[dependencies] target.
 
   (Only OpenMCL and, with feature ~c[:acl2-mv-as-values], GCL) Fixed a bug that
   was causing proclaiming to fail when definitions are submitted interactively.
@@ -11049,7 +11049,7 @@
   attention.
 
   The file ~c[books/Makefile-generic] has been improved so that when book
-  certification fails with ~c[make], the failure message contains the book
+  certification fails with `make', the failure message contains the book
   filename.
 
   Documentation has been written to explain how to avoid an expensive immediate
@@ -11160,7 +11160,7 @@
   ~il[proof-checker]'s ~c[rewrite] command has been correspondingly modified to
   accept these ~c[:definition] rules.
 
-  Fixed ~c[make] targets ~c[copy-distribution], ~c[copy-workshops], and
+  Fixed `make' targets ~c[copy-distribution], ~c[copy-workshops], and
   ~c[copy-nonstd] so that they should also work for non-developers.
 
   Fixed a bug that was causing ~c[:]~ilc[pr] to display ~ilc[syntaxp]
@@ -12053,7 +12053,7 @@
   Fixed a bug in raw-mode (~pl[set-raw-mode]) that was causing hard errors when
   evaluating calls of ~ilc[er-progn], or of macros expanding to such calls.
 
-  Fixed a few Makefile dependencies, necessary only for parallel ~c[make].
+  Fixed a few Makefile dependencies, necessary only for parallel `make'.
 
   A new book, ~c[misc/defpun-exec-domain-example.lisp], provides an example
   showing how partial functions which return a unique value for arguments in a
@@ -12090,7 +12090,7 @@
 
   Modified ~c[books/Makefile-subdirs] and ~c[books/Makefile-psubdirs] so that
   they can be used with ~c[books/Makefile-generic].  Thus, one can set things
-  up so that ~c[make] can be used to certify books both in the current
+  up so that `make' can be used to certify books both in the current
   directory and subdirectories, for example as follows.
   ~bv[]
     ACL2 = ../../saved_acl2
@@ -13977,7 +13977,7 @@
 
   The name of the temporary file used by some Emacs utilities defined in file
   ~c[emacs/emacs-acl2.el] has been changed to have extension ~c[.lsp] instead
-  of ~c[.lisp]; thus it is now ~c[temp-emacs-file.lsp].  Also, `~c[make]'
+  of ~c[.lisp]; thus it is now ~c[temp-emacs-file.lsp].  Also, `make'
   commands to `clean' books will delete such files (specifically,
   ~c[books/Makefile-generic] has been changed to delete
   ~c[temp-emacs-file.lsp]).
@@ -14292,7 +14292,7 @@
   ~l[acl2-customization].  Thanks to Jared Davis for suggesting this change,
   which supports the methodology that files with a ~c[.lisp] extension are
   certifiable books (thus avoiding the need to set the ~c[BOOKS] variable in
-  makefiles; ~pl[book-makefiles]).
+  makefiles; ~pl[books-certification-classic]).
 
   Improved the error message for illegal ~ilc[declare] forms of the form
   ~c[(type (satisfies ...))].  Thanks to Dave Greve for sending an example
@@ -14897,8 +14897,9 @@
   Here are just a few highlights.
 
   Thanks largely to Jared Davis, many ~c[Makefile]s have been improved to do
-  automatic dependency analysis.  ~l[book-makefiles] for how to get your own
-  ~c[Makefile]s to do this by adding a line: ~c[-include Makefile-deps].
+  automatic dependency analysis.  ~l[books-certification-classic] for how to
+  get your own ~c[Makefile]s to do this by adding a line:
+  ~c[-include Makefile-deps].
 
   Libraries ~c[books/arithmetic-4/] and ~c[books/rtl/rel7/] have been
   eliminated from the default book certification (~c[make regression]), in
@@ -15416,8 +15417,8 @@
   ~url[http://code.google.com/p/acl2-books/source/list] starting with revision
   r286 up through revision r329.
 
-  It is no longer required to specify a value for environment (or `~c[make]')
-  variable ~c[ACL2_SYSTEM_BOOKS] when running ~c[make] in the distributed book
+  It is no longer required to specify a value for environment (or `make')
+  variable ~c[ACL2_SYSTEM_BOOKS] when running `make' in the distributed book
   directory, even when that directory is not under the directory containing the
   ACL2 executable.  Thanks to Peter Dillinger for providing this improvement,
   by modifying ~c[books/Makefile-generic] and, as needed, distributed book
@@ -16446,7 +16447,7 @@
         ; the executable counterpart (sometimes called *1*f) was restored! 
   ~ev[]
 
-  Made a fix so that when building ACL2 with ~c[make] option ~c[ACL2_SAFETY=3],
+  Made a fix so that when building ACL2 with `make' option ~c[ACL2_SAFETY=3],
   there will no longer be any safety-0 compiled code generated.  Thanks to Gary
   Byers for bringing this bug to our attention.
 
@@ -16574,7 +16575,7 @@
   implementors.
 
   New utilities have been provided for certifying most of the distributed books
-  with more ~c[make]-level parallelism.  For example, we have obtained close to
+  with more `make'-level parallelism.  For example, we have obtained close to
   a 12x reduction in time by using `~c[make -j 24 regression-fast]' on a
   24-processor machine.  For more information see ~c[books/make-targets], or to
   include the ~c[books/workshops] in the regression run, see
@@ -16583,8 +16584,8 @@
 
   The top-level makefile, ~c[GNUmakefile], has been fixed so that the build
   processes (which are inherently sequential) will ignore the ~c[-j] option of
-  ~c[make].  Note that regressions can still, however, be done in parallel, as
-  the ~c[-j] option will be passed automatically to the appropriate ~c[make]
+  `make'.  Note that regressions can still, however, be done in parallel, as
+  the ~c[-j] option will be passed automatically to the appropriate `make'
   command.
 
   ~st[EMACS SUPPORT]
@@ -17395,8 +17396,9 @@
   ~url[http://acl2-books.googlecode.com/].
 
   There is new ~c[Makefile] support for certifying just some of the distributed
-  books.  ~l[book-makefiles], in particular discussion of the variable
-  ~c[ACL2_BOOK_DIRS].  Thanks to Sandip Ray for requesting this enhancement.
+  books.  ~l[books-certification-classic], in particular discussion of the
+  variable ~c[ACL2_BOOK_DIRS].  Thanks to Sandip Ray for requesting this
+  enhancement.
 
   The ~il[documentation] for ~ilc[make-event] now points to a new book,
   ~c[books/make-event/defrule.lisp], that shows how ~c[make-event] can be used to
@@ -18190,7 +18192,7 @@
 
   Fixed the build process to pay attention to environment variable
   ~c[ACL2_SYSTEM_BOOKS] (which may be supplied as a command-line argument to
-  `~c[make]').  An ACL2 executable can thus now be built even when there is no
+  `make').  An ACL2 executable can thus now be built even when there is no
   ~c[books/] subdirectory if a suitable replacement directory is supplied.
 
   Some warnings from the host Lisp are now suppressed that could formerly
@@ -18899,7 +18901,7 @@
 
   A new ``provisional certification'' process is supported that can allow
   ~il[books] to be certified before their included sub-books have been
-  certified, thus allowing for potentially much greater `~c[make]'-level
+  certified, thus allowing for potentially much greater `make'-level
   parallelism.  ~l[provisional-certification].  Thanks to Jared Davis for
   requesting this feature and for helpful discussions, based in part on
   rudimentary provisional certification schemes that he developed first at
@@ -19371,14 +19373,15 @@
   it's not particularly relevant whether or not the new release is incremental.
 
   The `make' variable ~c[BOOKS] can now be defined above the line that includes
-  Makefile-generic.  (For relevant background, ~pl[book-makefiles].)
+  Makefile-generic.  (For relevant background,
+  ~pl[books-certification-classic].)
 
   (SBCL only) ACL2 images built on SBCL now have an option,
   ~c[--dynamic-space-size 2000], that can avoid space problems that could
   previously have caused the session to die.
 
   The default value for variable ~c[LISP] in file ~c[GNUmakefile] is now
-  ~c[ccl].  Thus, if you use `~c[make]' in the standard way to build an ACL2
+  ~c[ccl].  Thus, if you use `make' in the standard way to build an ACL2
   executable, the default host Lisp is ~c[ccl] rather than ~c[gcl].
 
   ~st[EMACS SUPPORT]
@@ -19976,16 +19979,17 @@
   community books are certified.  (1) The standard regression now includes
   community books directory ~c[books/centaur].  To skip these (for example, a
   Windows system has encountered difficulty with them even after installing
-  Perl), include ~c[ACL2_CENTAUR=skip] with your `~c[make]' command.  (2) A new
+  Perl), include ~c[ACL2_CENTAUR=skip] with your `make' command.  (2) A new
   `make' (or environment) variable, ~c[ACL2_JOBS], specifies the number of
   parallel jobs to run, serving as a replacement for the ~c[-j] argument of
   `make' that works for all community books, including those under directory
-  ~c[centaur]; ~pl[book-makefiles].  (3) It is no longer necessary to do an
-  ACL2(h) regression in order to build a copy of the documentation generated by
-  Jared Davis's xdoc utility at ~c[books/xdoc-impl/manual/preview.html]; a
-  vanilla ACL2 regression will build this manual.  (4) It is no longer
-  necessary to set the ~c[ACL2] environment variable for ACL2(h) regressions if
-  you want to use the executable ~c[saved_acl2h] in the ACL2 sources directory.
+  ~c[centaur]; ~pl[books-certification-classic].  (3) It is no longer necessary
+  to do an ACL2(h) regression in order to build a copy of the documentation
+  generated by Jared Davis's xdoc utility at
+  ~c[books/xdoc-impl/manual/preview.html]; a vanilla ACL2 regression will build
+  this manual.  (4) It is no longer necessary to set the ~c[ACL2] environment
+  variable for ACL2(h) regressions if you want to use the executable
+  ~c[saved_acl2h] in the ACL2 sources directory.
 
   The ACL2 home page now has a search utility for documentation and books.
   Thanks to Shilpi Goel and David Rager for feedback on a preliminary version
@@ -20842,10 +20846,25 @@
   ACL2, and we are grateful for GCL support that we received from the late Bill
   Schelter and, more recently and particularly for ANSI GCL, from Camm Maguire.
 
-  The `~c[make]' process for book certification now uses ~c[-k] by default,
-  which keeps going after errors, rather than ~c[-i], which ignores errors.  If
-  you encounter problems because of this change, use ~c[ACL2_IGNORE=-i] with
-  your `~c[make]' command.
+  The `make' process suggested for book certification has changed
+  substantially, thanks in large part to contributions from Jared Davis and Sol
+  Swords.  The ``classic'' process, which was based on community books file
+  ~c[books/Makefile-generic], is still supported
+  (~pl[books-certification-classic]) but may disappear in a future release of
+  ACL2.  ~l[books-certification].  Most changes should be invisible to the
+  user, with the exception of the following.
+  ~bq[]
+  o Variable ~c[ACL2_JOBS] is no longer supported, nor is it necessary; simply
+  use `make' option `-j'.
+
+  o Regressions now use `make' option ~c[-k] by default, which causes the
+  regression to keep going after errors, rather than ~c[-i], which ignores
+  errors.  If you encounter problems because of this change, use
+  ~c[ACL2_IGNORE=-i] with your `make' command.
+
+  o The `regression' target works for experimental extension ACL2(h)
+  (~pl[hons-and-memoization]); target `regression-hons' no longer exists.
+  ~eq[]
 
   ACL2(pr), which includes ~il[parallelism] (as for ACL2(p)) and non-standard
   analysis support for the ~il[real]s (as for ACL2(r)), now builds and can

@@ -9627,7 +9627,9 @@
   suggest installing these books in the ~c[books/] subdirectory of your local
   ACL2 installation.  You can contribute books to the ACL2 community and obtain
   updates inbetween ACL2 releases by visiting the ~c[acl2-books] project web
-  page, ~url[http://acl2-books.googlecode.com/].~/~/")
+  page, ~url[http://acl2-books.googlecode.com/].
+
+  To certify the community books, ~pl[regression].~/~/")
 
 (defun chk-book-name (book-name full-book-name ctx state)
 
@@ -17127,13 +17129,20 @@
   `Milawa' project.  Our design has also benefited from conversations with Sol
   Swords.
 
-  Perhaps the easiest way to invoke provisional certification is with the
-  `make' approach supported by the ACL2 system; ~pl[book-makefiles].  We begin
-  by describing a few ways to do that.  A simple way is to add the line
-  `~c[ACL2_PCERT=t]' to a `~c[make]' command that you use for book
-  certification, for example as follows.  (But use ~c[ACL2_JOBS] instead of
-  ~c[-j] if you are doing a regression rather than working a specific
-  subdirectory of the books; ~pl[book-makefiles].)
+  To invoke provisional certification, ~pl[books-certification].  For example,
+  you could issue the following command.
+  ~bv[]
+  ACL2_PCERT=t cert.pl -j 4 `find . -name '*.lisp'`
+  ~ev[]
+
+  Alternatively, ~pl[books-certification-classic] for a discussion of classic
+  ACL2 `make'-based certification (which may disappear in a future ACL2
+  release); here we extend those instructions to show how to use provisional
+  certification.  (Also, you may wish to look at community books file
+  ~c[books/system/pcert/Makefile] for an example.)  We begin by describing a
+  few ways to do that.  A simple way is to add the line `~c[ACL2_PCERT=t]' to a
+  `make' command that you use for book certification, for example as follows.
+
   ~bv[]
   make -j 4 ACL2_PCERT=t
   ~ev[]
@@ -17143,19 +17152,17 @@
   ~ev[]
   Alternatively, add the line
   ~bv[]
-  ACL2_PCERT = t
+  ACL2_PCERT ?= t
   ~ev[]
-  to the ~c[Makefile] residing in a directory, placed above the line that
-  specifies the `~c[include]' of file ~c[Makefile-generic].
+  to the ~c[Makefile] residing in the directory, placed above the line that
+  specifies the `~c[include]' of file ~c[Makefile-generic].  A successful
+  `make' will result in creating the desired ~il[certificate] (~c[.cert])
+  files.
 
-  A successful `make' will result in create the desired
-  ~il[certificate] (~c[.cert]) files.  See community books file
-  ~c[books/system/pcert/Makefile] for an example.
-
-  Warning: If you put the line ``~c[ACL2_PCERT = t]'' below the include of
+  Warning: If you put the line ``~c[ACL2_PCERT ?= t]'' below the include of
   ~c[Makefile-generic], it might have no effect.  For example, try editing
   community books file ~c[books/system/pcert/Makefile] by moving the line
-  ``~c[ACL2_PCERT = t]'' to the bottom of the file, and watch
+  ``~c[ACL2_PCERT ?= t]'' to the bottom of the file, and watch
   ``~c[make top.cert]'' fail to invoke provisional certification.
 
   The description above may be sufficient for you to use provisional
@@ -17285,10 +17292,10 @@
   dates to ensure that each sub-book's ~c[.cert] file is no older than the
   corresponding ~c[.lisp] file, but it does not look inside ~c[.cert] files of
   sub-books; in particular it does not look at their checksum information.  Of
-  course, the automatic dependency analysis provided by `make' avoids
-  accidental problems of this sort.  And, checksum information will indeed be
-  applied at ~ilc[include-book] time, at least for sub-books included
-  non-~il[local]ly.
+  course, the automatic dependency analysis provided by classic ACL2
+  `make'-based certification avoids accidental problems of this sort.  And,
+  checksum information will indeed be applied at ~ilc[include-book] time, at
+  least for sub-books included non-~il[local]ly.
 
   In short: while we believe that the provisional certification process can be
   trusted, we suggest that for maximum trust, it is best for all books in a
@@ -17299,8 +17306,8 @@
 
   You can combine the Pcertify and Convert procedure into a single procedure,
   Pcertify+, which may be useful for books that contain expensive
-  ~ilc[include-book] ~il[events] but do few proofs.  If you are using the ACL2
-  `make' approach to do provisional certification, just set `make' variable
+  ~ilc[include-book] ~il[events] but do few proofs.  If you are using `make' to
+  do provisional certification as described above, just set `make' variable
   ~c[ACL2_BOOKS_PCERT_ARG_T] to the list of books for which you want the
   Pcertify+ procedure performed instead of separate Pcertify and Convert
   procedures.  Either of two common methods may be used to set this variable,
@@ -17332,14 +17339,14 @@
 
   Some errors during provisional certification cannot be readily solved.  For
   example, if there are circular directory dependencies (for example, some book
-  in directory D1 includes some book in directory D2 and vice-versa), then the
-  standard ACL2 `make'-based provisional certification will quite possibly
-  fail.  For another example, perhaps your directory's Makefile is awkward to
-  convert to one with suitable dependencies.  When no fix is at hand, it might
-  be best simply to avoid provisional certification.  If you are using the
-  standard ACL2 `make'-based approach, you can simply add the following line to
-  your directory's ~c[Makefile], or use ``~c[ACL2_PCERT= ]'' on the `make'
-  command line, to avoid provisional certification.
+  in directory D1 includes some book in directory D2 and vice-versa), then
+  classic ACL2 `make'-based certification will quite possibly fail.  For
+  another example, perhaps your directory's Makefile is awkward to convert to
+  one with suitable dependencies.  When no fix is at hand, it might be best
+  simply to avoid provisional certification.  If you are using classic ACL2
+  `make'-based certification, you can simply add the following line to your
+  directory's ~c[Makefile], or use ``~c[ACL2_PCERT= ]'' on the `make' command
+  line, to avoid provisional certification.
   ~bv[]
   override ACL2_PCERT =
   ~ev[]
@@ -18203,129 +18210,106 @@
   obtained by assuming the admissibility and validity of the definitions and
   conjectures in the book.")
 
-(deflabel book-makefiles
+(deflabel books-certification-classic
   :Doc
   ":Doc-Section Books
 
-  makefile support provided with the ACL2 community books~/
+  classic ACL2 `make'-based certification of ~il[books]~/
 
-  This topic describes the ACL2 methodology for using makefiles to assist in
-  the automation of the certification of collections of ACL2 ~il[books].  We
-  assume here a familiarity with Unix/Linux ~c[make].  We also assume that you
-  are using GNU ~c[make] rather than some other flavor of ~c[make].  And
-  finally, we generally assume, as is typically the case by following the
-  standard installation instructions, that you install the ACL2 community books
-  in the ~c[books/] subdirectory of your ACL2 distribution.
+  This ~il[documentation] topic explains an approach to certifying directories
+  of books, which we call ``classic ACL2 `make'-based certification''.
 
-  See the end of this topic for a list of troubleshooting notes.  Please feel
-  free to suggest additions to that list!
+  Warning: The capability described in this section might be replaced at any
+  time by a capability based on corresponding support for community books
+  (~pl[books-certification]).  If you think that would be a hardship, please
+  contact the ACL2 implementors.
 
-  The basic idea is to stand in the ACL2 sources directory and submit the
-  following command, in order to certify all the ~il[books].
+  This topic discusses a way to certify a directory of books other than the
+  ACL2 community books.  ~l[books-certification] for how to certify the set of
+  ACL2 community ~il[books].  There is also a section in that
+  ~il[documentation] topic, ``Restricting to Specific Directories and Books'',
+  that provides an alternative to classic ACL2 `make'-based certification (as
+  discussed in the present topic) for certifying specified sets of books.
+
+  We assume here a familiarity with Unix/Linux `make'.  We also assume that
+  you are using GNU `make' rather than some other flavor of `make'.  And
+  finally, we assume, as is typically the case by following the standard
+  installation instructions, that you install the ACL2 community books in the
+  ~c[books/] subdirectory of your ACL2 distribution.  We will refer below to
+  that directory as ~c[BOOKS].
+
+  In summary: to use `make' to certify ~il[books] under a given directory, you
+  may create a simple Makefile in that directory (as explained below) so that
+  when you stand in that directory, you can submit the command, `make', to
+  certify those books.  If you have a multi-processor machine or the like, then
+  you can use the `~c[-j] flag `make'-level parallelism by specifying the
+  number of concurrent processes.  For example:
   ~bv[]
-  make regression
+  make -j 4
   ~ev[]
-  For each book ~c[foo.lisp], a file ~c[foo.out] in the same directory will
-  contain the output from the corresponding certification attempt.  If you have
-  previous executed such a command, then you will first want to delete
-  ~il[certificate] files and other generated files, either by first executing
-  ~c[make clean-books] or simply by submitting the following command.
+  For each book ~c[foo.lisp], a file ~c[foo.out] in the same directory as
+  ~c[foo.lisp] will contain the output from the corresponding certification
+  attempt.  If you have previously executed such a command, then you might
+  first want to delete ~il[certificate] files and other generated files by
+  executing the following command.
   ~bv[]
-  make regression-fresh
+  make clean
   ~ev[]
 
-  By default, the ACL2 executable used is the file ~c[saved_acl2] in the ACL2
-  sources directory.  But you can specify another instead; indeed, you must do
-  so if you are using an experimental extension (~pl[real],
-  ~pl[hons-and-memoization], and ~pl[parallelism]):
-  ~bv[]
-  make regression ACL2=<your_favorite_acl2_executable>
-  ~ev[]
-
-  If you have a multi-processor machine or the like, then you can use the
-  `~c[-j] flag to obtain ~c[make]-level parallelism by specifying the
-  number of concurrent processes.  The following example shows how to specify 8
-  concurrent processes.
-  ~bv[]
-  make -j 8 regression
-  ~ev[]
-  Note that while other environment and `make' variables discussed here are
-  also appropriate for use by suitable calls of `make' in the community books
-  directory, ~c[ACL2_JOBS] is only suitable for use with the ~c[regression]
-  target (and similar targets, such as ~c[regression-fresh]) in the ACL2
-  sources directory).
-
-  You can also specify just the directories you want, among those offered in
-  ~c[Makefile].  For example:
-  ~bv[]
-  make -j 8 regression ACL2_BOOK_DIRS='symbolic paco'
-  ~ev[]
+  Note that when you run `make', then by default, the first error will cause
+  the process to stop.  You can use ~c[make -i] to force `make' to ignore
+  errors, thus continuing past them.  Or, use ~c[make -k] to keep going, but
+  skipping certification for any book that includes another whose certification
+  has failed.
 
   By default, your acl2-customization file (~pl[acl2-customization]) is ignored
-  by all such flavors of ``~c[make regression]''.  However, you can specify the
-  use of an acl2-customization file by setting the value of environment
-  variable ~c[ACL2_CUSTOMIZATION] to the empty string, indicating a default
-  such file, or to the desired absolute pathname.  For example:
+  by such `make' commands.  However, you can specify the use of an
+  acl2-customization file by setting the value of environment variable
+  ~c[ACL2_CUSTOMIZATION] to the empty string, indicating a default such file,
+  or to the desired absolute pathname.  For example:
   ~bv[]
-  make regression ACL2_CUSTOMIZATION=''
-  make regression ACL2_CUSTOMIZATION='~~/acl2-customization.lisp'
+  make ACL2_CUSTOMIZATION=''
+  make ACL2_CUSTOMIZATION='~~/acl2-customization.lisp'
   ~ev[]
 
-  The `make' commands displayed above all use the makefile, ~c[GNUmakefile],
-  that resides in the ACL2 sources directory.
+  We now discuss how to create makefiles to support `make' commands as
+  discussed above.~/
 
-  We now discuss how to create suitable makefiles in individual directories
-  that contain certifiable ~il[books].~/
-
-  ACL2's regression suite is typically run on the community books, using
-  ~c[Makefile]s that include community books file ~c[books/Makefile-generic].
-  You can look at existing ~c[Makefile]s to understand how to create your own
-  ~c[Makefile]s.  Here are the six steps to follow to create a ~c[Makefile] for
-  a directory that contains books to be certified, and certify them using that
-  ~c[Makefile].  Below these steps we conclude with discussion of other
-  capabilties provided by ~c[books/Makefile-generic].
-
-  1. It is most common to use an ACL2 executable named ~c[saved_acl2] that
-  resides in the parent directory of the ~c[books/] directory.  In
-  this case, unless you are using a very old version of GNU ~c[make] (version
-  3.80, at least, works fine), you should be able to skip the following sentence,
-  because the ~c[ACL2] `~c[make]' variable will be set automatically.
-  Otherwise, define the ~c[ACL2] variable using ~c[?=] to point to your ACL2 executable
-  (though this may be omitted for directories directly under the ~c[books/]
-  directory), for example:
+  First we give five steps for creating a ~c[Makefile] to support certification
+  of a directory of books, without subdirectories.  For examples of such
+  Makefiles you can look in community book directories (which, however, might
+  disappear in future versions of ACL2).
+  ~bq[]
+  1. Include the file ~c[Makefile-generic] from the ~c[books/] subdirectory of
+  your ACL2 sources directory, but first perhaps define the variable
+  `~c[ACL2]'.  Consider the following example.
   ~bv[]
-  ACL2 ?= ../../../saved_acl2
+  ACL2 ?= /Users/john_doe/acl2/acl2-sources/saved_acl2
+  include /Users/john_doe/acl2/acl2-sources/books/Makefile-generic
   ~ev[]
-  (For Makefile experts: we use ~c[?=] instead of ~c[=] or ~c[:=] because of
-  the protocol used by the ACL2 ~c[make] system: command-line values are passed
-  explicitly with recursive calls of ~c[make] to override the Makefile values
-  of ~c[ACL2], which in turn need to be able to override the environment value
-  of ~c[ACL2] from ~c[books/Makefile-generic]).
-
-  Also include the file ~c[Makefile-generic] in the ~c[books/] directory.  For
-  example, community books file ~c[books/arithmetic-3/pass1/Makefile] starts as
-  follows.
-  ~bv[]
-  include ../../Makefile-generic
-  ~ev[]
-  If you also have a line defining ~c[ACL2] as explained above, put that line
-  just above this ~c[include] line.
+  In this example, you can omit the first line, because the default ACL2
+  executable is file ~c[saved_acl2] in the directory immediately above the
+  directory of the specified ~c[Makefile-generic] file.  Indeed, that is the
+  common case.  Note the use of ~c[?=] instead of ~c[=] or ~c[:=], so that
+  ~c[ACL2] can instead be defined by the environment or provided on the command
+  line as part of the `make' command.
 
   2. (Optional; usually skipped.)  Set the ~c[INHIBIT] variable if you want to
   see more than the summary output.  For example, if you want to see the same
   output as you would normally see at the terminal, put this line in your
-  Makefile after the `~c[ACL2 ?=]' and ~~c[include]' lines.
+  Makefile after the `~c[include]' lines.
   ~bv[]
   INHIBIT = (assign inhibit-output-lst (list (quote proof-tree)))
   ~ev[]
   For other values to use for ~c[INHIBIT], ~pl[set-inhibit-output-lst] and see
   the original setting of ~c[INHIBIT] in ~c[books/Makefile-generic].
 
-  3. Specify the books to be certified.  If every file with extension ~c[.lisp]
-  is a book that you want to certify, you can skip this step.  Otherwise, put a
-  line in your ~c[Makefile] after the ones above that specifies the books to be
-  certified.  The following example, from an old version of community books file
-  ~c[books/finite-set-theory/osets/Makefile], should make this clear.
+  3. Specify the books to be certified.  Normally, every file with extension
+  ~c[.lisp] will be a book that you want to certify, in which case you can skip
+  this step.  Otherwise, put a line in your ~c[Makefile] after the ones above
+  that specifies the books to be certified.  The following example, from an old
+  version of community books file ~c[books/finite-set-theory/osets/Makefile],
+  should make this clear.
   ~bv[]
   BOOKS = computed-hints fast instance map membership outer primitives \\
           quantify set-order sets sort
@@ -18341,16 +18325,14 @@
   in order to certify the ~c[equalities] book.  In general, for each
   ~c[<book-name>.lisp] whose certification requires a non-initial certification
   world, you will need a corresponding ~c[<book-name>.acl2] file that ends with
-  the appropriate ~ilc[certify-book] command.  Of course, you can also use
-  ~c[.acl2] files with initial certification worlds, for example if you want to
-  pass optional arguments to ~ilc[certify-book].
+  the appropriate ~ilc[certify-book] command.
 
   You also have the option of creating a file ~c[cert.acl2] that has a special
   role.  When file ~c[<book-name>.lisp] is certified, if there is no file
   ~c[<book-name>.acl2] but there is a file ~c[cert.acl2], then ~c[cert.acl2]
   will be used as ~c[<book-name>.acl2] would have been used, as described in
   the preceding paragraph, except that the appropriate ~ilc[certify-book]
-  command will be generated automatically ~-[] no ~c[certify-book] command
+  command will be generated automatically.  Thus, no ~c[certify-book] command
   should occur in ~c[cert.acl2].
 
   It is actually allowed to put raw lisp forms in a ~c[.acl2] file (presumably
@@ -18363,26 +18345,19 @@
   ~bv[]
   -include Makefile-deps
   ~ev[]
-  This will cause `~c[make]' to create and then include a file
-  ~c[Makefile-deps] that contains ``dependency'' lines needed by ~c[make].
+  This will cause `make' to create and then include a file
+  ~c[Makefile-deps] that contains ``dependency'' lines needed by `make'.
   If those dependencies are somehow flawed, it may be because you have
   ~ilc[include-book] forms that are not truly including books, for example in
   multi-line comments (~c[#|..|#]).  These will be ignored if preceded by a
   semicolon (~c[;]), or if you add a line break after ``~c[include-book].''
-  But instead, you can create dependency lines yourself by running the command
+  But instead of adding the `~c[-include]' line above, you can create
+  dependency lines yourself by running the command
   ~bv[]
   make dependencies
   ~ev[]
   and pasting the result into the end of your ~c[Makefile], and editing as you
-  see fit.
-
-  6. Run ~c[make].  This will generate a ~c[<book-name>.out] file for each
-  ~c[<book-name>.lisp] file being certified, which is the result of redirecting
-  ACL2's standard output.  Note that ~c[make] will stop at the first failure,
-  but you can use ~c[make -i] to force make to continue past failures.  You can
-  also use the ~c[-j] option to speed things up if you have a multi-core
-  machine, e.g., ~c[make -j 8] in a book directory or, if in the ACL2 sources
-  directory, ~c[make -j 8 regression].
+  see fit.~eq[]
 
   This concludes the basic instructions for creating a ~c[Makefile] in a
   directory including books.  Here are some other capabilities offered by
@@ -18391,20 +18366,21 @@
   included books before certifying a given book;
   ~pl[provisional-certification].
 
-  ~st[Subdirectory support.]  There is support for subdirectories.  For
-  example, community books file ~c[books/arithmetic-3/Makefile] formerly had
-  the following contents.
+  ~st[Subdirectory Support]
+
+  There is support for using `make' to certify books in subdirectories.
+  Consider the following example.
   ~bv[]
   DIRS = pass1 bind-free floor-mod
   include ../Makefile-subdirs
   ~ev[]
-  This indicated that we are to run ~c[make] in subdirectories ~c[pass1/],
-  ~c[bind-free/], and ~c[floor-mod] of the current directory (namely, community
-  books directory ~c[books/arithmetic-3/]).
+  This indicates that we are to run `make' in subdirectories ~c[pass1/],
+  ~c[bind-free/], and ~c[floor-mod/] of the current directory.
 
-  However, there is also subdirectory support when the current directory has
-  books as well.  Community books file ~c[books/arithmetic-3/Makefile] contains
-  the following lines (at least as of ACL2 Version_3.6).
+  You can combine this subdirectory support with the support already discussed
+  for certifying books in the top-level directory.  Here is an example, which
+  as of this writing is in community books file ~c[books/arithmetic-3/Makefile]
+  contains the following lines.
   ~bv[]
   arith-top: top all
   all: top
@@ -18415,61 +18391,57 @@
 
   -include Makefile-deps
   ~ev[]
-  The first line is optional because ~c[../../saved_acl2] is the default and
-  the directory is a sub-sub-directory of the distribution directory; but it is
-  harmless to include this line.  The other additional lines support certifying
-  books in the subdirectories before certifying the books in the present
-  directory, in the customary ~c[make] style.
+  The `~c[top]' target is defined in ~c[../Makefile-subdirs] to call `make' in
+  each subdirectory specified in ~c[DIRS].  We have set the default target in
+  the example above to a new name, ~c[arith-top], that makes that ~c[top]
+  target before making the `~c[all]' target which, in turn, is the default
+  target in any ~c[Makefile-generic], and is responsible for certifying books
+  in the current directory as discussed in the five steps displayed above.
 
-  Specifically, the ~c[top] target is defined in ~c[../Makefile-subdirs] to
-  call ~c[make] in each subdirectory in ~c[DIRS].  We have set the default
-  target in the example above to a new name, ~c[arith-top], that makes that
-  ~c[top] target before making the ~c[all] target.  The ~c[all] target, in
-  turn, is the top (default) target in ~c[../Makefile-generic], and is
-  responsible for certifying books in the current directory.
-
-  Use ~c[Makefile-psubdirs] instead of ~c[Makefile-subdirs] if certification
-  of a book in a subdirectory never depends on certification of a book in a
-  different subdirectory, because then ~c[make]'s ~c[-j] option can allow
+  Use ~c[Makefile-psubdirs] instead of ~c[Makefile-subdirs] if certification of
+  a book in a subdirectory never depends on certification of a book in a
+  different subdirectory, because then the ~c[-j] option of `make' can allow
   subdirectories to be processed in parallel.
 
-  ~st[Cleaning up.]  We note that there is a ~c[clean] target.  Thus,
+  ~st[Cleaning Up]
+
+  We note that there is a ~c[clean] target.  Thus,
   ~bv[]
   make clean
   ~ev[]
-  will remove generated files including ~c[.cert] files, ~c[.port files]
-  (~pl[uncertified-books]), ~c[.acl2x] files (if any), files resulting from
-  compilation, and other ``junk''; see the full list under ``~c[clean:]'' in
-  ~c[books/Makefile-generic].
+  will remove generated files including ~c[.cert], ~c[.out] files, and compiled
+  files.
 
-  ~st[System books.] An environment variable ~c[ACL2_SYSTEM_BOOKS] is generally
-  set automatically (at least in GNU make versions 3.80 and 3.81), so you can
-  probably skip reading the following paragraph unless your attempt to certify
-  books fails to locate those books properly.
+  ~st[System Books]
 
-  The environment variable ~c[ACL2_SYSTEM_BOOKS] can be set to the ~c[books/]
-  directory under which the books reside, typically the ACL2 community books.  A
-  Unix-style pathname, typically ending in ~c[books/] or ~c[books], is
-  permissible.  In most cases, your ACL2 executable is a small script in which
-  you can set this environment variable just above the line on which the actual
-  ACL2 image is invoked, for example:
+  An environment variable ~c[ACL2_SYSTEM_BOOKS] is generally set automatically,
+  so you can probably skip reading the following paragraph unless your attempt
+  to certify books fails to locate those books properly.
+
+  The environment variable ~c[ACL2_SYSTEM_BOOKS] can be set to the top-level
+  directory of the ACL2 community books.  A Unix-style pathname, typically
+  ending in ~c[books/] or ~c[books], is permissible.  In most cases, your ACL2
+  executable is a small script in which you can set this environment variable
+  just above the line on which the actual ACL2 image is invoked, for example:
   ~bv[]
   export ACL2_SYSTEM_BOOKS
   ACL2_SYSTEM_BOOKS=/home/acl2/v3-2/acl2-sources/books
   ~ev[]
-  However, you can also set ~c[ACL2_SYSTEM_BOOKS] as a ~c[make] variable, by
+  However, you can also set ~c[ACL2_SYSTEM_BOOKS] as a `make' variable, by
   setting it in your ~c[Makefile] before the first target definition, e.g.:
   ~bv[]
-  ACL2_SYSTEM_BOOKS = /home/acl2/v3-2/acl2-sources/books
+  ACL2_SYSTEM_BOOKS ?= /home/acl2/v3-2/acl2-sources/books
   ~ev[]
 
-  ~st[Compilation support.]  The file ~c[books/Makefile-generic] provides
-  support for compiling books that are already certified (but ~pl[compilation]
-  for an exception).  For example, suppose that you have certified books in
-  GCL, resulting in compiled files with the ~c[.o] extension.  Now suppose you
-  would like to compile the books for Allegro Common Lisp, whose compiled files
-  have the ~c[.fasl] extension.  The following command will work if you have
-  included ~c[books/Makefile-generic] in your ~c[Makefile].
+  ~st[Compilation Support]
+
+  The file ~c[books/Makefile-generic] provides support for compiling books that
+  are already certified (but ~pl[compilation] for an exception).  For example,
+  suppose that you have certified books using GCL as the host Lisp, resulting
+  in compiled files with the ~c[.o] extension.  Now suppose you would like to
+  compile the books for Allegro Common Lisp, whose compiled files have the
+  ~c[.fasl] extension.  The following command will work if you have included
+  ~c[books/Makefile-generic] in your ~c[Makefile].
   ~bv[]
   make fasl
   ~ev[]
@@ -18477,131 +18449,271 @@
   a target name for building compiled files for all your books (after
   certifying the books, if not already up-to-date on certification).
 
-  ~st[Troubleshooting notes.]  Please feel free to suggest additions and
-  changes!
+  If you run into problems, you can get help by joining the ~c[acl2-help] email
+  list (follow the link from the ACL2 home page) and sending a message to that
+  list.  Also consider trying another version of GNU `make'; for example, we
+  have found that versions 3.81 and 3.82 sometimes cause errors on Linux where
+  version 3.80 does not.")
 
-  (1) PROBLEM: Regression fails early for community books, perhaps because of
-  Perl.  (For example, a Windows system has encountered such difficulty even
-  after installing Perl.)
-  ~bq[]
-  Solution: Skip certification of the ~c[centaur/] books by including
-  ~c[ACL2_CENTAUR=skip] with your `~c[make]' command.  For example:
-  ~bv[]
-  make regression-fresh ACL2_CENTAUR=skip
-  ~ev[]
-  ~eq[]
-
-  (2) PROBLEM: The first part of the regression doesn't seem to be going in
-  parallel, even though I supplied a ~c[-j] option in my `~c[make]' command.
-  ~bq[]
-  Solution: Set ~c[ACL2_JOBS] to the number of jobs instead of using ~c[-j].
-  For example:
-  ~bv[]
-  make ACL2_JOBS=8 regression-fresh
-  ~ev[]
-  ~eq[]")
-
-(link-doc-to makefiles books book-makefiles)
-
-(defdoc regression
+(defdoc books-certification
 
   ":Doc-Section Books
 
-  running regressions using the ACL2 community books~/
+  certifying ACL2 community ~il[books]~/
 
-  Here we provide a concise summary of how to certify the ACL2 community books
-  when you install ACL2.  For more information about installing ACL2, see the
-  installation instructions, either by following a link from the ACL2 home page
-  or by going directly to the page
+  For background on the ACL2 community books, ~pl[community-books].  Here we
+  explain how to certify those books, or some of those books, with ACL2.  We
+  thank Bishop Brock, Jared Davis, and Sol Swords for their substantial
+  contributions to this methodology.  See ~c[books/Makefile], in the community
+  books, for more about ``Credits and History''.
+
+  For more information about installing ACL2, see the installation
+  instructions, either by following a link from the ACL2 home page or by going
+  directly to the page
   ~url[http://www.cs.utexas.edu/users/moore/acl2/current/installation/installation.html].
-  For more information about the ACL2 community books and how to certify them,
-  ~pl[community-books] and ~pl[book-makefiles].
+  For information about so-called ``classic ACL2 `make'-based certification'',
+  which provides support for certifying directories of books but may disappear
+  in a future ACL2 release, ~pl[books-certification-classic].
 
   ~st[The Basics]
 
-  We assume that you have built or obtained an ACL2 executable, that the ACL2
-  community books are in subdirectory ~c[books/], and that you are standing in
-  the ACL2 sources directory.  If you built that executable, then by default
-  its name is ~c[saved_acl2], and you can issue the following command to the
-  shell.
+  We make the following assumptions.
+  ~bq[]
+  o Gnu `make' is available on your system via the `make' command (rather
+  than some other flavor of `make').  (Execute `~c[make --version] to verify
+  this.)
+
+  o You have built or obtained an ACL2 executable.
+
+  o The ACL2 community books are installed in the ~c[books/] subdirectory of
+  your ACL2 distribution, as is the case when you have followed the standard
+  installation instructions.
+
+  o All commands shown below are issued in the top-level (ACL2 sources)
+  directory of your ACL2 distribution.~eq[]
+
+  By default the ACL2 executable is file ~c[saved_acl2] in your ACL2 sources
+  directory, and you can issue the following command to the shell in order to
+  do a ``regression run'' that certifies all of the community books using that
+  executable.
   ~bv[]
-    make regression
+  make regression
   ~ev[]
-  Better yet, save a log file in case there are problems, for example
+  Better yet, save a log file in case there are problems, for example as
+  follows.
   ~bv[]
-    (make regression) >& make-regression.log
+  (make regression) >& make-regression.log
   ~ev[]
   or perhaps better yet:
   ~bv[]
-    (time nice make regression) >& make-regression.log
+  (time nice make regression) >& make-regression.log
   ~ev[]
   For the sake of brevity, below we'll skip mentioning any of `~c[time]',
-  `~c[nice]', or `~c[>& make-regression.log]'; but we do generally recommend
-  using these as shown above.
+  `~c[nice]', or `~c[>& make-regression.log]'.  But saving a log file, in
+  particular, is useful in case you encounter problems to report.
 
-  Such a certification run may take a few hours, but if you have a
-  multiprocessing computer, you can speed it up by specifying a value for
-  ~c[ACL2_JOBS].  For example, if you have 8 hardware threads then you might
-  want to issue the following command.
+  If you fetched the community books using svn, then you will have a directory
+  ~c[books/workshops/] that is not necessary for certifying the other books.
+  If you want to skip certification of the books under ~c[books/workshops/],
+  use target `~c[certify-books]' instead of target `~c[regression]', for
+  example as follows.
   ~bv[]
-    make regression ACL2_JOBS=8
+  (time nice make certify-books) >& make-certify-books.log
   ~ev[]
-  Warning: if instead you use `~c[make -j 8 regression]', you will not see
-  parallel certification for books in the ~c[centaur/] directory.~/
+
+  Whether you use target `~c[regression]' or target `~c[certify-books]', then
+  for each book ~c[foo.lisp] whose certification is attempted, a file
+  ~c[foo.cert.out] in the same directory will contain the output from the
+  book's certification attempt.
+
+  A regression run may take a few hours, but if you have a multiprocessing
+  computer, you can speed it up by certifying some books in parallel, by
+  providing a value for `make' option ~c[-j].  For example, if you have 8
+  hardware threads then you might want to issue the following command.
+  ~bv[]
+  make regression -j 8
+  ~ev[]~/
 
   ~st[Specifying the ACL2 Executable]
 
   If your ACL2 executable is not file ~c[saved_acl2] in the ACL2 sources
   directory, then you will need to specify that executable.  You can do that by
   setting variable ~c[ACL2], either as an environment variable or, as displayed
-  below, as a `~c[make]' variable.  Either way, you will need to avoid relative
+  below, as a `make' variable.  Either way, you will need to avoid relative
   pathnames.  For example, the first two forms below are legal, but the third
   is not, assuming that ~c[my-acl2] is on your ~c[PATH] in a Unix-like
   environment (e.g., linux or MacOS) and that ~c[my-saved_acl2] is just a
   pathname relative to your ACL2 sources directory, which is not on your path.
   ~bv[]
-    make regression ACL2_JOBS=8 ACL2=my-acl2
-    make regression ACL2_JOBS=8 ACL2=/u/smith/bin/acl2
-    # The following is unlikely to work (see above).
-    make regression ACL2_JOBS=8 ACL2=my-saved_acl2
+  make regression -j 8 ACL2=my-acl2
+  make regression -j 8 ACL2=/u/smith/bin/acl2
+  # The following only works if my-saved_acl2 is on your path (see above).
+  make regression -j 8 ACL2=my-saved_acl2
+  ~ev[]
+
+  ~st[Cleaning]
+
+  You can delete files generated by book certification (including ~c[.cert]
+  files, ~c[.out] files, compiled files, and more) by issuing the following
+  command (again, in your ACL2 sources directory).
+  ~bv[]
+  make clean-books
+  ~ev[]
+  If you want to cause such deletion and then do a regression, simply replace
+  the `~c[regression]' or `~c[certify-books]' target by `~c[regression-fresh]'
+  or `~c[certify-books-fresh]', respectively, for example as follows.
+  follows.
+  ~bv[]
+  make -j 4 regression-fresh
+  make -j 4 certify-books-fresh
+  ~ev[]
+
+  If however you only want to clean up generated files residing under a given
+  directory (or its subdirectories, and recursively), you can issue the
+  following command while standing in that directory, where ~c[DIR] is a
+  pathname of your ~c[books] directory.
+  ~bv[]
+  DIR/clean.pl
+  ~ev[]
+  For example, to clean up generated files under ~c[books/arithmetic], you
+  could do the following.
+  ~bv[]
+  cd books/arithmetic
+  ../clean.pl
+  cd - # to return to the ACL2 sources directory, if you wish to do so
+  ~ev[]
+
+  ~st[Restricting to Specific Directories and Books]
+
+  You can specify which books you want certified by using the variable
+  ~c[ACL2_BOOK_CERTS], the variable ~c[ACL2_BOOK_DIRS], or both.  Consider the
+  following example.
+  ~bv[]
+  make -j 8 regression-fresh \\
+   ACL2_BOOK_DIRS=\"symbolic paco\" \\
+   ACL2_BOOK_CERTS=\" \\
+    workshops/2006/cowles-gamboa-euclid/Euclid/ed6a.cert \\
+    workshops/2006/cowles-gamboa-euclid/Euclid/ed4bb.cert \\
+    \"
+  ~ev[]
+  Then all book in directories ~c[symbolic] and ~c[paco] will be certified, as
+  will the books ~c[workshops/2006/cowles-gamboa-euclid/Euclid/ed6a.lisp] and
+  ~c[workshops/2006/cowles-gamboa-euclid/Euclid/ed4bb.lisp].  Note that all
+  pathnames should be relative to your community books directory; in
+  particular, they should not be absolute pathnames.  Also notice the ~c[.cert]
+  extension used in files supplied for ~c[ACL2_BOOK_CERTS].
+
+  Alternatively, you may wish to invoke ~c[books/cert.pl] while standing in a
+  directory under which you want to certify books.  This will certify not only
+  those books, but all supporting books ~-[] even those not under the current
+  directory ~-[] that do not have up-to-date ~c[.cert] files.  The following is
+  a simple command to invoke that will certify all books in the current
+  directory, where if the ~c[books/] directory is not on your path, you will
+  need to provide a suitable filename, e.g. ~c[../../cert.pl] or
+  ~c[~~/acl2/books/cert.pl].
+  ~bv[]
+  cert.pl -j 4 *.lisp
+  ~ev[]
+  Here is a more complex command, which illustrates a way to certify books in
+  subdirectories (as well as the current directory), the use of provisional
+  certification (~pl[provisional-certification]), and `make'-level parallelism
+  (in this case specifying four parallel processes).
+  ~bv[]
+  ACL2_PCERT=t cert.pl -j 4 `find . -name '*.lisp'`
+  ~ev[]
+  Note that with this approach, unlike classic ACL2 `make'-based certification
+  (~pl[books-certification-classic], out-of-date ~c[.cert] files that are not
+  under the current directory will also be built.  For documentation of
+  ~c[cert.pl] invoke:
+  ~bv[]
+  cert.pl -h
+  ~ev[]
+  See the top of ~c[cert.pl] for authorship and copyright information.
+
+  Finally, we give a brief summary of how to use so-called ``classic ACL2
+  `make'-based certification'' for community books;
+  ~pl[books-certification-classic] for details.  Note that support for this
+  approach might be eliminated in a future ACL2 release.  We welcome comments
+  from the ACL2 community about whether or not that would be a good thing to
+  do.  See the discussion above about ~c[ACL2_BOOK_DIRS] for the ``modern'' way
+  to accomplish the same thing.
+
+  Many community book directories have a ~c[Makefile].  If you modify books
+  only in such a directory, you can recertify by standing in that directory and
+  issuing a `make' command.  This command can optionally specify an ACL2
+  executable as well as parallelism, for example as follows, where the first
+  line (~c[make clean]) is optional.
+  ~bv[]
+  make clean
+  (time nice make -j 8 ACL2=my-acl2)
+  ~ev[]
+
+  ~st[ACL2 Customization Files]
+
+  By default, your acl2-customization file (~pl[acl2-customization]) is ignored
+  by all flavors of ``~c[make regression]''.  However, you can specify the use
+  of an acl2-customization file by setting the value of environment variable
+  ~c[ACL2_CUSTOMIZATION] to the empty string, indicating a default such file,
+  or to the desired absolute pathname.  For example:
+  ~bv[]
+  make regression ACL2_CUSTOMIZATION=''
+  make regression ACL2_CUSTOMIZATION='~~/acl2-customization.lisp'
   ~ev[]
 
   ~st[Regressions for Experimental Extensions of ACL2]
 
-  The instructions are similar if you are using ACL2(h), the experimental
-  extension supporting hash-cons, function memoization, and fast alists
-  (~pl[hons-and-memoization]).  However, in that case you should use target
-  ~c[regression-hons] in place of target ~c[regression], which will include
-  directories that depend on ACL2(h) features not present in ACL2, and which
-  will use ~c[saved_acl2h] instead of ~c[saved_acl2] as the default executable
-  name.  So for example:
+  The instructions are unchanged if you are using ACL2(h)
+  (~pl[hons-and-memoization]).  However, note that the default executable (when
+  ~c[ACL2] is not specified) remains ~c[saved_acl2] in your ACL2 sources
+  directory, not ~c[saved_acl2h] as one might expect for ACL2(h)(p),
+  respectively.  So probably you'll want to supply ``~c[ACL2=<your_acl2>]''
+  explicitly with your `make' command.
+
+  The comments above also pertain pertain to using ACL2(p) (~pl[parallel]); the
+  default is ~c[saved_acl2] rather than ~c[saved_acl2p].  However, we recommend
+  that you use ACL2, not ACL2(p), for your regression.  Then you can use
+  ACL2(p) for your own proof developments.  (The analogous comment applies to
+  ACL2(hp), which combines capabilities of ACL2(h) and ACL2(p), i.e., we
+  recommend that you use ACl2(h) for your regression in that case.)  However,
+  if you want to use ACL2(p) or ACL2(hp) for your regression,
+  ~pl[waterfall-parallelism-for-book-certification].
+
+  If you intend to certify books in the ~c[nonstd] subdirectory of the
+  community books, you will want to use ACL2(r) (~pl[real]).  In that case,
+  substitute target ~c[regression-nonstd] for target ~c[regression].  The
+  default executable (when ~c[ACL2] is not specified) will be file
+  ~c[saved_acl2r] in your ACL2 sources directory, rather than ~c[saved_acl2].
+
+  ~st[Provisional Certification]
+
+  To use provisional certification (~pl[provisional-certification]), supply
+  ~c[ACL2_PCERT=t] with your `make' command.  Here is an example.
   ~bv[]
-    make ACL2_JOBS=8 regression-hons
+  time nice make regression -j 4 ACL2_BOOK_DIRS=deduction ACL2_PCERT=t
   ~ev[]
 
-  If you wish to use ACL2(p), the extension of ACL2 that supports parallel
-  proof and execution (~pl[parallelism]), then we recommend that you use ACL2
-  for your regression as discussed above.  Then you can use ACL2(p) for your
-  own proof developments.  (The analogous comment applies to ACL2(hp) and
-  ACL2(h), i.e., to the use of parallelism on top of ACL2(h).)
+  ~st[Miscellany]
 
-  ~l[real] for a discussion of how to certify books in subdirectory
-  ~c[books/nonstd] using ACL2(r).
+  Other control of the certification process may be found by perusing community
+  books file ~c[books/make_cert].  In particular, the ~c[INHIBIT] variable
+  may be set to a call of ~ilc[set-inhibit-output-lst], for example as
+  follows to obtain the output one would get by default in an (interactive)
+  ACL2 session.
+  ~bv[]
+  time nice make regression -j 4 ACL2_BOOK_DIRS=arithmetic \\
+    INHIBIT='(set-inhibit-output-lst proof-tree)'
+  ~ev[]
 
   ~st[Troubleshooting]
 
-  If your system has difficulty certifying the books in the ~c[centaur/]
-  directory, say because of issues with Perl, you can skip them by
-  specifying ~c[ACL2_CENTAUR=skip], for example as follows.
-  ~bv[]
-    make regression ACL2_CENTAUR=skip
-  ~ev[]
-  (But this should't be necessary, so please email the ACL2 implementors if
-  that happens!)
+  If you run into problems, you can get help by joining the ~c[acl2-help] email
+  list (follow the link from the ACL2 home page) and sending a message to that
+  list.  Also consider trying another version of GNU `make'; for example, we
+  have found that versions 3.81 and 3.82 sometimes cause errors on Linux where
+  version 3.80 does not.  Note however that Version 3.80 does not print certain
+  informational messages that are printed by later versions.~/")
 
-  If you run into other problems, you can get help by joining the ~c[acl2-help]
-  email list (follow the link from the ACL2 home page) and sending a message to
-  that list.~/")
+(link-doc-to regression books books-certification)
 
 ; Next we implement defchoose and defun-sk.
 

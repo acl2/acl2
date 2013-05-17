@@ -8570,8 +8570,8 @@
   ~bv[]
     (certify-book[^;]*:acl2x t
   ~ev[]
-  ~l[book-makefiles], and for an example ~c[.acl2] file with a ~c[certify-book]
-  call matching the above pattern, see community books file
+  For an example ~c[.acl2] file with a ~c[certify-book] call matching the above
+  pattern, see community books file
   ~c[books/make-event/double-cert-test-1.acl2].
 
   Note that ~ilc[include-book] is generally not affected by
@@ -8603,9 +8603,9 @@
   ~bv[]
   (certify-book \"double-cert-test-1\" ? t :ttagsx :all :ttags nil)
   ~ev[]
-  Thus, a call of ~c[make] first creates file ~c[double-cert-test-1.acl2x],
+  Thus, a call of `make' first creates file ~c[double-cert-test-1.acl2x],
   which uses the above ~c[:ttagsx] argument in order to support the use of
-  ~ilc[defttag] during ~ilc[make-event] expansion.  Then, ~c[make] goes on to
+  ~ilc[defttag] during ~ilc[make-event] expansion.  Then, `make' goes on to
   cause a second certification in which no trust tags are involved.  As a
   result, the parent book ~c[double-cert-test.lisp] is ultimately certified
   without requiring any trust tags.

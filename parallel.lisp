@@ -376,19 +376,19 @@
 
   GNU Make versions 3.81 and 3.82 formerly caused a lot of problems (version
   3.80 somewhat less so), at least on Linux, when certifying books with ACL2
-  built on a host Lisp of CCL using ~c[make] (~pl[book-makefiles]).  CCL was
-  updated around March 23, 2011 to fix this problem, so if you get
-  segfaults (for example) with CCL, try updating your CCL installation.
+  built on a host Lisp of CCL using `make'.  CCL was updated around March 23,
+  2011 to fix this problem, so if you get segfaults (for example) with CCL, try
+  updating your CCL installation.
 
   Book certification should generally work but may present some issues,
   including the following.
   ~bq[]
-  o The standard ~c[make]-based process for book certification will not use
+  o The standard `make'-based process for book certification will not use
   ~il[waterfall-parallelism], which is disabled by default (even when
-  ~il[compiling-acl2p] by using the ~c[ACL2_PAR] flag).  ~l[book-makefiles],
-  which explains that ~il[acl2-customization] files are ignored during that
-  process unless specified explicitly on the command line or in the
-  environment.
+  ~il[compiling-acl2p] by using the ~c[ACL2_PAR] flag).
+  ~l[books-certification] and ~pl[books-certification-classic], which explain
+  that ~il[acl2-customization] files are ignored during that process unless
+  specified explicitly on the command line or in the environment.
 
   o A book certified with ACL2(p) might subsequently cause an error when
   included with ACL2.  As of this writing, however, we have only seen this for
@@ -982,8 +982,9 @@
   ~c[models/jvm/m5/apprentice.lisp], which is typically excluded from
   regressions because of how long it takes to certify.  In order to use
   waterfall parallelism during certification of a book ~c[<book-name>.lisp]
-  using the ACL2 certification methodology (~pl[book-makefiles]), we recommend
-  creating a file ~c[<book-name>.acl2] that includes the following forms.
+  using `make' (~pl[books-certification] and ~pl[books-certification-classic]),
+  we recommend creating a file ~c[<book-name>.acl2] that includes the following
+  forms.
 
   ~bv[]
   #+acl2-par
@@ -993,8 +994,9 @@
   ~ev[]
 
   Note that there are books that will not certify when waterfall-parallelism is
-  enabled.  See file ~c[acl2-customization-files/README] for further
-  details.~/~/")
+  enabled.  See file ~c[acl2-customization-files/README] for more information,
+  including how to certify essentially all books using waterfall
+  parallelism.~/~/")
 
 (defun set-waterfall-printing-fn (val ctx state)
   (cond ((member-eq val *waterfall-printing-values*)

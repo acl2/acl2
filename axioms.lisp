@@ -3742,15 +3742,7 @@
   ? [RAW LISP] 
   ~ev[]
   To understand the macro ~c[with-profiling-raw] you could look at the
-  community book loaded above: ~c[books/misc/profiling-raw.lsp].  If you wish
-  to automate certification of such a book with makefiles (~pl[book-makefiles]),
-  perhaps contributing such a book to the ACL2 community books repository (see
-  ~url[http://acl2-books.googlecode.com/]), you may also wish to look at
-  community books file ~c[books/misc/Makefile], where you'll notice the following
-  extra `~c[make]' dependency:
-  ~bv[]
-  profiling.cert: profiling-raw.lsp
-  ~ev[]
+  community book loaded above: ~c[books/misc/profiling-raw.lsp].
 
   We mentioned above that ACL2 tends to print calls of ~ilc[prog2$] or
   ~ilc[time$] (or other such utilities) instead of calls of ~c[return-last].

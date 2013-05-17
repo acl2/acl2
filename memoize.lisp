@@ -65,7 +65,7 @@
   Common Lisp (CCL), but other ANSI-compliant host Lisp implementations may
   also work, provided there are sufficient machine resources.
 
-  An easy way is to build ACL2(h) is to include the following with a ~c[make]
+  An easy way is to build ACL2(h) is to include the following with a `make'
   command:
   ~bv[]
   ACL2_HONS=h

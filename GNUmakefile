@@ -771,7 +771,7 @@ regression-nonstd:
 	uname -a
 ifndef ACL2
 	cd books/nonstd ; \
-	$(MAKE) $(ACL2_IGNORE) ACL2=$(shell pwd)/saved_acl2
+	$(MAKE) $(ACL2_IGNORE) ACL2=$(shell pwd)/saved_acl2r
 else
 	cd books/nonstd ; \
 	$(MAKE) $(ACL2_IGNORE) ACL2=$(ACL2)
@@ -796,7 +796,7 @@ endif
 .PHONY: regression-nonstd-fresh
 regression-nonstd-fresh: clean-books-nonstd
 ifndef ACL2
-	$(MAKE) $(ACL2_IGNORE) ACL2=$(shell pwd)/saved_acl2 regression-nonstd
+	$(MAKE) $(ACL2_IGNORE) ACL2=$(shell pwd)/saved_acl2r regression-nonstd
 else
 	$(MAKE) $(ACL2_IGNORE) ACL2=$(ACL2) regression-nonstd
 endif
