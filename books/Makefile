@@ -698,6 +698,10 @@ endif # ifdef ACL2_COMP
 # Keep this section at the end, so that all variable definitions have
 # been completed (in particular, for OK_CERTS).
 
+# Warning: ACL2's GNUmakefile uses the "all" target of this Makefile
+# to implement its target, "regression".  So please be careful about
+# making major changes to "all" in this Makefile.
+
 # First, we let the user filter the books by specifying the roots of
 # the forest of books to be certified.  Our implementation reduces
 # $(OK_CERTS), which normally is probably closed under dependencies.
@@ -776,7 +780,9 @@ OK_CERTS := $(filter-out workshops/%, $(OK_CERTS))
 endif # ifeq ($(realpath workshops), )
 
 lite: $(OK_CERTS)
+
 all: lite
+
 # OK_CERTS_EXCLUSIONS is undefined if ACL2_BOOK_CERTS is defined, but
 # that's not a problem; after all, in that case OK_CERTS wasn't
 # filtered by OK_CERTS_EXCLUSIONS.
@@ -844,13 +850,18 @@ basic: $(filter-out centaur/%, \
          $(filter-out coi/%, \
            $(filter-out workshops/%, $(OK_CERTS))))
 
+# Warning: ACL2's GNUmakefile uses the following "short-test" target
+# to implement its own target, "certify-books-short".  So please be
+# careful about making major changes to "short-test" in this Makefile.
 short-test: $(filter cowles/% arithmetic/% meta/% xdoc/% ordinals/% \
                      data-structures/% bdd/%, \
                      $(OK_CERTS))
 
-# Warning: ACL2's GNUmakefile uses the following target to implement
-# its own target certify-books, which some might use to build all
-# "appropriate" books when installing ACL2.
+# Warning: ACL2's GNUmakefile uses the following "certify-books"
+# target to implement its own target, "certify-books", which some
+# might use to build all "appropriate" books when installing ACL2.  So
+# please be careful about making major changes to "certify-books" in
+# this Makefile.
 .PHONY: certify-books
 certify-books: $(filter-out workshops/%, $(OK_CERTS))
 
