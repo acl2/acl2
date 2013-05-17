@@ -1082,10 +1082,11 @@
   (6) The tau system is ``greedy'' in its efforts to augment its database.  Its
   database is potentially augmented when rules of ~i[any] ~c[:rule-class] (see
   ~c[:]~ilc[rule-classes]) are proved.  For example, if you make a
-  ~c[:]~ilc[rewrite] or ~c[:]~ilc[type-prescription] rule which expresses
-  relationship between tau, ACL2 will build it into the tau database.  The
-  rule-class ~c[:]~ilc[tau-system] can be used to add a rule to the tau
-  database without adding any other kind of rule.
+  ~c[:]~ilc[rewrite] or ~c[:]~ilc[type-prescription] rule which expresses a
+  relationship between one tau and another (e.g., that ~c[(P x)] implies
+  ~c[(Q x)]), ACL2 will build it into the tau database.  The rule-class
+  ~c[:]~ilc[tau-system] can be used to add a rule to the tau database without
+  adding any other kind of rule.
 
   (7) Greediness is forced into the design by benignity: the tau system may
   ``know'' some fact that the rewriter does not, and because tau reasoning is

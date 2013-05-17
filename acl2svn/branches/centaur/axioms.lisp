@@ -8109,10 +8109,11 @@
   '(103 . BOOLEANP)
   #+(and (not non-standard-analysis) (not acl2-par))
   '(102 . BOOLEANP)
-  #+non-standard-analysis
-  '(105 . BOOLEANP)           ; Ruben:  I just guessed at this, and
-  )                           ; do you ever build ``ACL2(r)(p)''?
-
+  #+(and non-standard-analysis (not acl2-par))
+  '(105 . BOOLEANP)
+  #+(and non-standard-analysis acl2-par)
+  '(106 . BOOLEANP)
+  )
 
 ; Note: The constants declared above are checked for accuracy after bootstrap
 ; by check-built-in-constants in interface-raw.lisp.
@@ -18501,7 +18502,13 @@
   Also ~pl[hints] for a discussion of the ~c[:in-theory] hint, including some
   explanation of the important point that an ~c[:in-theory] hint will always be
   evaluated relative to the current ACL2 logical ~il[world], not relative to
-  the theory of a previous goal.~/
+  the theory of a previous goal.
+
+  ~ilc[In-theory] returns an error triple (~pl[error-triples]).  When the
+  return is without error, the value is of the form
+  ~c[(mv nil (:NUMBER-OF-ENABLED-RUNES k) state)] where ~c[k] is the length of
+  the new current theory.  This value of ~c[k] is what is printed when an
+  ~c[in-theory] event evaluates without error at the top level.~/
 
   :cited-by Theories"
 
@@ -29492,6 +29499,7 @@
     (ld-redefinition-action . nil)
     (ld-prompt . t)
     (ld-keyword-aliases . nil)
+    (ld-missing-input-ok . nil)
     (ld-pre-eval-filter . :all)
     (ld-pre-eval-print . nil)
     (ld-post-eval-print . :command-conventions)
@@ -31734,17 +31742,24 @@
            (*print-escape* print-escape . (f-get-global 'print-escape state))
            (*print-length* print-length . (f-get-global 'print-length state))
            (*print-level* print-level . (f-get-global 'print-level state))
-           #+DRAFT-ANSI-CL-2
+           #+cltl2
            (*print-lines* print-lines . (f-get-global 'print-lines state))
-           #+DRAFT-ANSI-CL-2
+           #+cltl2
            (*print-miser-width* nil . nil)
            (*print-pretty* print-pretty . (f-get-global 'print-pretty state))
            (*print-radix* print-radix . (f-get-global 'print-radix state))
            (*print-readably* print-readably . (f-get-global 'print-readably
                                                             state))
-           #+DRAFT-ANSI-CL-2
-           (*print-pprint-dispatch* nil . nil)
-           #+DRAFT-ANSI-CL-2
+
+; At one time we did something with *print-pprint-dispatch* for #+cltl2.  But
+; as of May 2013, ANSI GCL does not comprehend this variable.  So we skip it
+; here.  In fact we skip it for all host Lisps, assuming that users who mess
+; with *print-pprint-dispatch* in raw Lisp take responsibility for knowing what
+; they're doing!
+
+;          #+cltl2
+;          (*print-pprint-dispatch* nil . nil)
+           #+cltl2
            (*print-right-margin*
             print-right-margin . (f-get-global 'print-right-margin state)))))
     (when (not (and (alistp bindings)
@@ -31756,7 +31771,7 @@
     `(let ((state *the-live-state*))
        (let ((*read-base* 10) ; just to be safe
              (*readtable* *acl2-readtable*)
-             #+DRAFT-ANSI-CL-2 (*read-eval* nil) ; to print without using #.
+             #+cltl2 (*read-eval* nil) ; to print without using #.
              (*package* (find-package-fast (current-package state)))
              ,@bindings)
          (let ,(loop for triple in raw-print-vars-alist
@@ -32944,11 +32959,13 @@
   to print it.
 
   Function ~c[fmt-to-comment-window] is identical to ~c[fmt1] (~pl[fmt]),
-  except that the channel is in essence ~ilc[*standard-co*] and the ACL2
+  except that the channel is ~ilc[*standard-co*] and the ACL2
   ~ilc[state] is neither an input nor an output.  An analogous function,
   ~c[fmt-to-comment-window!], prints with ~ilc[fmt!] instead of ~ilc[fmt],
   in order to avoid insertion of backslash (\\) characters for margins;
-  also ~pl[cw!].~/
+  also ~pl[cw!].  Note that even if you change the value of ~ilc[ld] special
+  ~c[standard-co] (~pl[standard-co]), ~c[fmt-to-comment-window] will print to
+  ~ilc[*standard-co*], which is the original value of ~ilc[standard-co].~/
   ~bv[]
   General Form:
   (fmt-to-comment-window fmt-string alist col evisc-tuple)
@@ -33348,6 +33365,43 @@
                        (open-output-channel-any-p1 channel state-state))))
   #-acl2-loop-only
   (cond ((live-state-p state-state)
+         (when (eq channel (f-get-global 'standard-co state-state))
+
+; First, we cause a hard error if the channel is the value of state global
+; 'standard-co.  Comments below say more about this, but for now we point out
+; that even though we cause an error, we won't get the error from term
+; evaluation during proofs, because state-state will not be the live state.
+
+           (mv (cond
+                ((eq channel *standard-co*)
+
+; This case might seem impossible because it would be a guard violation.  But
+; if a :program mode function call leads to the present call of
+; close-output-channel, then the guard need not hold, so we make sure to cause
+; an error here.
+
+                 (mv (er hard! 'close-output-channel
+                         "It is illegal to call close-output-channel on ~
+                          *standard-co*.")))
+                (t
+
+; In Version_6.1 and probably before, we have seen an infinite loop occur
+; when attempting to close standard-co.
+
+                 (state-free-global-let*
+                  ((standard-co *standard-co*))
+                  (er hard! 'close-output-channel
+                      "It is illegal to call close-output-channel on ~
+                       standard-co.  Consider instead evaluating the ~
+                       following form:~|~%~X01."
+                      '(let ((ch (standard-co state)))
+                         (er-progn
+                          (set-standard-co *standard-co* state)
+                          (pprogn
+                           (close-output-channel ch state)
+                           (value t))))
+                      nil))))
+               state-state))
          (cond (*wormholep*
                 (wormhole-er 'close-output-channel (list channel))))
 
@@ -33602,7 +33656,7 @@
                  (*package* (find-package
                              (current-package *the-live-state*)))
                  (*readtable* *acl2-readtable*)
-                 #+DRAFT-ANSI-CL-2 (*read-eval* t)
+                 #+cltl2 (*read-eval* t)
                  (*read-suppress* *acl2-read-suppress*)
                  (*read-base* 10)
                  #+gcl (si:*notify-gbc* ; no gbc messages while typing
@@ -35150,7 +35204,7 @@
   (declare (xargs :guard t))
   #+acl2-loop-only
   (declare (ignore command-string args))
-  #-acl2-loop-only 
+  #-acl2-loop-only
   (let ((rslt (system-call command-string args)))
     (progn (setq *last-sys-call-status* rslt)
            nil))
@@ -36228,6 +36282,7 @@
     proofs-co
     ld-prompt
     ld-keyword-aliases
+    ld-missing-input-ok
     ld-pre-eval-filter
     ld-pre-eval-print
     ld-post-eval-print
@@ -48123,8 +48178,9 @@ Lisp definition."
   (when (fboundp 'debug::backtrace)
     (eval '(debug::backtrace)))
   #+(and clisp (not acl2-loop-only))
-  (when (fboundp 'system::debug-backtrace)
-    (eval '(catch 'system::debug (system::debug-backtrace))))
+  (when (fboundp 'system::print-backtrace)
+    (eval '(catch 'system::debug
+             (system::print-backtrace))))
   #+(and lispworks (not acl2-loop-only))
   (when (fboundp 'dbg::output-backtrace)
     (eval '(dbg::output-backtrace :verbose)))

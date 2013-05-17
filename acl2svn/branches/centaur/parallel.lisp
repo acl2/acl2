@@ -916,7 +916,9 @@
                         (value '(value-triple nil)))
               :check-expansion t)
   ~ev[]
-  ~/
+
+  To enable waterfall parallelism for book certification using ACL2(p),
+  ~pl[waterfall-parallelism-for-book-certification].~/
 
   :cited-by parallel-proof"
 
@@ -964,6 +966,35 @@
              unsupported-waterfall-parallelism-features).~%")
            (value'(restore-memoization-settings))))
          (t (value '(value-triple nil)))))))))
+
+(defdoc waterfall-parallelism-for-book-certification
+
+  ":Doc-Section Parallelism
+
+  for ACL2(p): using waterfall parallelism during book certification~/
+
+  This ~il[documentation] topic relates to the experimental extension of ACL2
+  supporting parallel execution and proof; ~pl[parallelism].
+
+  There are books whose certification can be sped up significantly by using
+  waterfall parallelism.  (~l[parallelism], including the caveat in its
+  \"IMPORTANT NOTE\".)  One such example in the ACL2 community books is
+  ~c[models/jvm/m5/apprentice.lisp], which is typically excluded from
+  regressions because of how long it takes to certify.  In order to use
+  waterfall parallelism during certification of a book ~c[<book-name>.lisp]
+  using the ACL2 certification methodology (~pl[book-makefiles]), we recommend
+  creating a file ~c[<book-name>.acl2] that includes the following forms.
+
+  ~bv[]
+  #+acl2-par
+  (set-waterfall-parallelism t)
+
+  (certify-book <book-name> ? t) ; other arguments may be preferable
+  ~ev[]
+
+  Note that there are books that will not certify when waterfall-parallelism is
+  enabled.  See file ~c[acl2-customization-files/README] for further
+  details.~/~/")
 
 (defun set-waterfall-printing-fn (val ctx state)
   (cond ((member-eq val *waterfall-printing-values*)
@@ -2232,6 +2263,60 @@
 ;                    (ttree2 (cdr pair2)))
 ;               (cons (cons term rewritten-args)
 ;                     (cons-tag-trees ttree1 ttree2)))))))
+
+; Preliminary code for parallelizing the rewriter for ACL2 version 6.2.
+
+; Note that the following code treats step-limits a little differently from how
+; they are treated in the sequential version.  If we keep this treatment, we
+; should add a comment here and in decrement-step-limit suggesting that if we
+; change either, then we should consider changing the other.  Also note the
+; commented out declare forms, which would be good to include (especially
+; important for GCL) once spec-mv-let accepts them.  And finally, note that as
+; of v6-2, it is necessary to unmemoize the rewriter functions when running the
+; rewriter in parallel in ACL2(hp) because memoization is not thread-safe.
+; This unmemoization can perhaps be done by issuing a call of (unmemoize-all)
+; in raw Lisp).
+
+; (defun rewrite-args (args alist bkptr; &extra formals
+;                           rdepth step-limit
+;                           type-alist obj geneqv wrld state fnstack ancestors
+;                           backchain-limit
+;                           simplify-clause-pot-lst rcnst gstack ttree)
+;
+; ; Note: In this function, the extra formal geneqv is actually a list of geneqvs
+; ; or nil denoting a list of nil geneqvs.
+;
+;   (declare (type (unsigned-byte 29) rdepth)
+;            (type (signed-byte 30) step-limit))
+;   (the-mv
+;    3
+;    (signed-byte 30)
+;    (cond ((null args)
+;           (mv step-limit nil ttree))
+;          (t (spec-mv-let
+;              (step-limit1 rewritten-arg ttree1)
+; ;            (declare (type (signed-byte 30) step-limit1))
+;              (rewrite-entry (rewrite (car args) alist bkptr)
+;                             :geneqv (car geneqv))
+;              (mv-let
+;                (step-limit2 rewritten-args ttree2)
+;                (rewrite-entry (rewrite-args (cdr args) alist (1+ bkptr))
+;                               :geneqv (cdr geneqv))
+; ;              (declare (type (signed-byte 30) step-limit2))
+;                (if t
+;                    (mv (let* ((steps1 (- step-limit step-limit1))
+;                               (step-limit (- step-limit2 steps1)))
+;                          (declare (type (signed-byte 30) steps1 step-limit))
+;                          (cond ((>= step-limit 0)
+;                                 step-limit)
+;                                ((step-limit-strictp state)
+;                                 (step-limit-error nil))
+;                                (t -1)))
+;                        (cons rewritten-arg rewritten-args)
+;                        (cons-tag-trees ttree1 ttree2))
+;                  (mv 0
+;                      nil
+;                      nil))))))))
 
 #+(or acl2-loop-only (not acl2-par))
 (defmacro spec-mv-let (bindings computation body)

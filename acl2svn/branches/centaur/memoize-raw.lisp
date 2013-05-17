@@ -85,6 +85,11 @@
 
 (defmacro our-syntax (&rest args)
 
+; Warning: We use our-with-standard-io-syntax below, which might not be ideal
+; for GCL.  If we decide to stand behind ACL2(h) built on ANSI GCL, we might
+; want to think harder about whether progn really is sufficient where we call
+; our-with-standard-io-syntax below.
+
   "OUR-SYNTAX is similar to Common Lisp's WITH-STANDARD-IO-SYNTAX.
   The settings in OUR-SYNTAX are oriented towards reliable, standard,
   vanilla, mechanical reading and printing, and less towards human
@@ -98,10 +103,10 @@
 ; We use the *ACL2-PACKAGE* and the *ACL2-READTABLE* because we use
 ; them almost all the time in our code.
 
-  `(with-standard-io-syntax
-    (setq *package*   *acl2-package*)
-    (setq *readtable* *acl2-readtable*)
-    ,@args))
+  `(our-with-standard-io-syntax
+    (let ((*package* *acl2-package*)
+          (*readtable* *acl2-readtable*))
+      ,@args)))
 
 (defmacro our-syntax-nice (&rest args)
   ;; OUR-SYNTAX-NICE offers slightly more pleasant human readabilty.
@@ -258,7 +263,7 @@
 
 (defg *float-ticks/second* 1.0)
 
-(defg *float-internal-units-per-second*
+(defg *float-internal-time-units-per-second*
   (float internal-time-units-per-second))
 
 (declaim (float *float-ticks/second*
@@ -1099,7 +1104,7 @@ the calls took.")
 
 (defrec memoize-info-ht-entry
   ;; vaguely ordered by most frequently referenced first
-  (ext-anc-attachments ;; ???
+  (ext-anc-attachments ;; see the Essay on Memoization with Attachments
 
    ;; start-time is a symbol whose val is the start time of the current,
    ;; outermost call of fn, or -1 if no call of fn is in progress.
@@ -1959,7 +1964,8 @@ the calls took.")
 
    (when (or (macro-function fn)
              (special-operator-p fn)
-             (compiler-macro-function fn))
+             (and (fboundp 'compiler-macro-function) ; for GCL as of 5/2013
+                  (compiler-macro-function fn)))
      (error "Memoize-fn: ~s is a macro or a special operator or has a ~
              compiler macro." fn))
 
@@ -2094,7 +2100,9 @@ the calls took.")
 
           (body (if (or inline (null old-fn))
                     (car (last cl-defun))
-                  `(funcall ,old-fn ,@formals)))
+                  `(funcall #-gcl ,old-fn
+                            #+gcl ',old-fn ; old-fn could be (lisp:lambda-block ...)
+                            ,@formals)))
 
 
           (body-name (make-symbol "BODY-NAME"))
@@ -3869,6 +3877,146 @@ the calls took.")
   (when (memoizedp-raw 'expansion-alist-pkg-names-memoize)
     (unmemoize-fn 'expansion-alist-pkg-names-memoize)))
 
+;;;;;;;;;;
+;;; Start memory management code (start-sol-gc)
+;;;;;;;;;;
+
+; This section of code was suggested by Jared Davis as a way to regain
+; performance of ACL2(h) on regressions at UT CS.  Initially, these regressions
+; shows significant slowdown upon including new memoization code from Centaur
+; on 3/28/2013:
+; ; old:
+; 24338.570u 1357.200s 1:19:02.75 541.7%	0+0k 0+1918864io 0pf+0w
+; ; new:
+; 33931.460u 1017.070s 1:43:24.28 563.2%	0+0k 392+1931656io 0pf+0w
+; After restoring (start-sol-gc) in function acl2h-init, we regained the old
+; level of performance for a UT CS ACL2(h) regression, with the new memoizaion
+; code.
+
+(defun looking-at (str1 str2 &key (start1 0) (start2 0))
+
+;  (LOOKING-AT str1 str2 :start1 s1 :start2 s2) is non-NIL if and only
+;  if string STR1, from location S1 to its end, is an initial segment
+;  of string STR2, from location S2 to its end.
+
+   (unless (typep str1 'simple-base-string)
+     (error "looking at:  ~a is not a string." str1))
+   (unless (typep str2 'simple-base-string)
+     (error "looking at:  ~a is not a string." str2))
+   (unless (typep start1 'fixnum)
+     (error "looking at:  ~a is not a fixnum." start1))
+   (unless (typep start2 'fixnum)
+     (error "looking at:  ~a is not a fixnum." start2))
+   (locally
+     (declare (simple-base-string str1 str2)
+              (fixnum start1 start2))
+     (let ((l1 (length str1)) (l2 (length str2)))
+       (declare (fixnum l1 l2))
+       (loop
+        (when (>= start1 l1) (return t))
+        (when (or (>= start2 l2)
+                  (not (eql (char str1 start1)
+                            (char str2 start2))))
+          (return nil))
+        (incf start1)
+        (incf start2)))))
+
+(defun meminfo (pat)
+
+; Warning: We use our-with-standard-io-syntax below, which might not be ideal
+; for GCL.  If we decide to stand behind ACL2(h) built on ANSI GCL, we might
+; want to think harder about whether progn really is sufficient where we call
+; our-with-standard-io-syntax below.
+
+;  General comment about PROBE-FILE.  PROBE-FILE, according to Gary
+;  Byers, may reasonably cause an error.  He is undoubtedly right.  In
+;  such cases, however, Boyer generally thinks and wishes that it
+;  returned NIL, and generally, therefore, ensconces a PROBE-FILE
+;  within an IGNORE-ERROR in his code.
+
+  (or
+   (and
+    (our-ignore-errors (probe-file "/proc/meminfo"))
+    (with-standard-io-syntax
+     (with-open-file (stream "/proc/meminfo")
+                     (let (line)
+                       (loop while (setq line (read-line stream nil nil)) do
+                             (when (looking-at pat line)
+                               (return
+                                (values
+                                 (read-from-string line nil nil
+                                                   :start (length pat))))))))))
+   0))
+
+(let ((physical-memory-cached-answer nil))
+   (defun physical-memory ()
+     (or physical-memory-cached-answer
+         (setq physical-memory-cached-answer
+               (meminfo "MemTotal:")))))
+
+
+(defvar *sol-gc-installed* nil)
+
+
+#+Clozure
+(defun set-and-reset-gc-thresholds ()
+   (let ((n (max (- *max-mem-usage* (ccl::%usedbytes))
+                 *gc-min-threshold*)))
+     (cond ((not (eql n (ccl::lisp-heap-gc-threshold)))
+            (ccl::set-lisp-heap-gc-threshold n)
+;; Commented out since ofvv no longer is defined:
+;            (ofvv "~&; set-and-reset-gc-thresholds: Reserving ~:d additional bytes.~%"
+;                  n)
+            )))
+   (ccl::use-lisp-heap-gc-threshold)
+; (ofvv "~&; set-and-reset-gc-thresholds: Calling ~
+;        ~%(use-lisp-heap-gc-threshold).")
+   (cond ((not (eql *gc-min-threshold*
+                    (ccl::lisp-heap-gc-threshold)))
+          (ccl::set-lisp-heap-gc-threshold *gc-min-threshold*)
+;; Commented out since ofvv no longer is defined:
+;          (ofvv "~&; set-and-reset-gc-thresholds: Will reserve ~:d bytes after
+;next GC.~%"
+;                *gc-min-threshold*)
+          )))
+
+
+#+Clozure
+(defun start-sol-gc ()
+
+; The following settings are highly heuristic.  We arrange that gc
+; occurs at 1/8 of the physical memory size in bytes, in order to
+; leave room for the gc point to grow (as per
+; set-and-reset-gc-thresholds).  If we can determine the physical
+; memory; great; otherwise we assume that it it contains at least 4GB,
+; a reasonable assumption we think for anyone using the HONS version
+; of ACL2.
+
+   (let* ((phys (physical-memory))
+          (memsize (cond ((> phys 0) (* phys 1024)) ; to bytes
+                         (t (expt 2 32)))))
+     (setq *max-mem-usage* (min (floor memsize 8)
+                                (expt 2 31)))
+     (setq *gc-min-threshold* (floor *max-mem-usage* 4)))
+
+; OLD COMMENT:
+; Trigger GC after we've used all but (1/8, but not more than 1 GB) of
+; the physical memory.
+
+   (unless *sol-gc-installed*
+     (ccl::add-gc-hook
+      #'(lambda ()
+          (ccl::process-interrupt
+           (slot-value ccl:*application* 'ccl::initial-listener-process)
+           #'set-and-reset-gc-thresholds))
+      :post-gc)
+     (setq *sol-gc-installed* t))
+
+   (set-and-reset-gc-thresholds))
+
+;;;;;;;;;;
+;;; End of memory management code (start-sol-gc)
+;;;;;;;;;;
 
 (defun-one-output acl2h-init ()
 
@@ -3901,6 +4049,11 @@ the calls took.")
   ;; [Jared]: why do we do this?  presumably it affects raw lisp.  should this
   ;; be anything we care about?  Maybe ACL2 should set this instead of ACL2(h).
   (setq *print-pretty* t)
+
+  ;; The following is restored after including mods from Jared Davis,
+  ;; 3/29/2013.  See comment "Start memory management code (start-sol-gc)".
+  #+Clozure
+  (start-sol-gc)
 
   (acl2h-init-memoizations)
 

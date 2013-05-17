@@ -7397,8 +7397,9 @@
                          state nil))
                (value :q))
              :ld-prompt  nil
+             :ld-missing-input-ok nil
              :ld-pre-eval-filter :all
-             :ld-pre-eval-print  nil
+             :ld-pre-eval-print nil
              :ld-post-eval-print :command-conventions
              :ld-evisc-tuple nil
              :ld-error-triples  t
@@ -10324,8 +10325,8 @@
                       (temp-temp
                        (cond ((ts= (cadr temp-temp) *ts-t*)
 
-; Arg1-canon and arg2-canon are both supposed to be canonical, so 
-; this case can't happen!!  It would be sound to return:
+; Arg1-canon and arg2-canon are both supposed to be canonical, so this case
+; can't happen!  It would be sound to return:
 
 ;                                 (mv-atf xnot-flg t nil type-alist nil
 ;                                         nil

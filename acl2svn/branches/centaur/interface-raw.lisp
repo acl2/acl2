@@ -4967,9 +4967,9 @@
 
 (defun install-defs-for-add-trip (defs reclassifying-p wrld declaim-p evalp)
 
-; Defs is a list of definitions, each of which is a call of defun or defabbrev,
-; or else of the form (ONEIFY-CLTL-CODE defun-mode def stobj-name), where def
-; is the cdr of a call of defun.
+; Defs is a list of definitions, each of which is a call of defun, defabbrev,
+; or defmacro, or else of the form (ONEIFY-CLTL-CODE defun-mode def
+; stobj-name), where def is the cdr of a call of defun.
 
 ; This function, which may destructively modify defs, is responsible for
 ; declaiming and submitting every definition in defs, while avoiding such
@@ -5053,11 +5053,21 @@
                                                               (cdddr def)
                                                               wrld))))
                          (setf (car tail) *1*-def)
-                         (when declaim-p
-                           (setq form
-                                 (make-defun-declare-form (car def0)
-                                                          *1*-def)))))
-                      (declaim-p
+
+; While it is tempting to do a declaim for a *1* function,
+; make-defun-declare-form isn't up to the task as of the development sources on
+; 5/2/2013.  Perhaps this would be easy to fix, but since we only declaim for
+; GCL, and it is not an important goal to make *1* functions efficient, we skip
+; this step.
+
+;                        (when declaim-p
+;                          (setq form
+;                                (make-defun-declare-form (car def0)
+;                                                         *1*-def)))
+                         ))
+                      ((and declaim-p
+                            (not (member-eq (car def)
+                                            '(defmacro defabbrev))))
                        (setq form (make-defun-declare-form (cadr def) def))))
                      (when (and form (hcomp-build-p))
                        (push form *declaim-list*))
@@ -5603,14 +5613,18 @@
                                               unexpected form in add-trip, ~x0"
                                              def)))))
 
-; CMUCL 18e cannot seem to compile macros at the top level.  Email from Raymond
-; Toy on June 9, 2004 suggests that this appears to be a bug that exists in
-; CMUCL 18e sources.
+; CMUCL versions 18e and 19e cannot seem to compile macros at the top level.
+; Email from Raymond Toy on June 9, 2004 suggests that this appears to be a bug
+; that exists in CMUCL 18e sources.  We'll thus give special treatment to any
+; version 18 or 19 of CMUCL, but we'll avod that for CMUCL version 20, since
+; 20D at least can compile macros.
 
-                   #+cmu (cond ((and (not (eq (car def) 'defabbrev))
-                                     (not (eq (car def) 'defmacro)))
-                                (eval `(compile ',name))))
-                   #-cmu (eval `(compile ',name))))))))
+                   #+(and cmu (or cmu18 cmu19))
+                   (cond ((and (not (eq (car def) 'defabbrev))
+                               (not (eq (car def) 'defmacro)))
+                          (eval `(compile ',name))))
+                   #-(and cmu (or cmu18 cmu19))
+                   (eval `(compile ',name))))))))
         (defpkg
           (maybe-push-undo-stack 'defpkg (cadr (cddr trip)))
           (eval (cons 'defpkg (cdr (cddr trip)))))
@@ -6535,12 +6549,7 @@
             ans))
 
   (defun-overrides mfc-ap-fn (term mfc state forcep)
-    (mfc-ap-raw term mfc state forcep))
-  (defun-overrides mfc-ap-ttree (term mfc state forcep)
-    (mv-let (ans ttree)
-            (mfc-ap-raw term mfc state forcep)
-            (declare (ignore ttree))
-            ans)))
+    (mfc-ap-raw term mfc state forcep)))
 
 (defun-one-output exit-boot-strap-mode ()
 
@@ -6574,6 +6583,7 @@
     (ld-redefinition-action . nil)
     (ld-prompt . ,(if ld-skip-proofsp nil t))
     (ld-keyword-aliases . nil)
+    (ld-missing-input-ok . nil)
     (ld-pre-eval-filter . :all)
     (ld-pre-eval-print . ,(if ld-skip-proofsp nil t))
     (ld-post-eval-print . :command-conventions)

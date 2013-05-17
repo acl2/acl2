@@ -3326,7 +3326,7 @@
                     (maybe-warn-about-theory
                      ens1 force-xnume-en1 imm-xnume-en1
                      (ens state) ctx wrld state))
-                  (value val)))))))))
+                  (value (list :NUMBER-OF-ENABLED-RUNES val))))))))))
 
 (defun in-arithmetic-theory-fn (expr state doc event-form)
 
@@ -18243,14 +18243,11 @@
   ~ev[]
 
   If you have a multi-processor machine or the like, then you can use the
-  ~c[ACL2_JOBS] variable to obtain ~c[make]-level parallelism by specifying the
+  `~c[-j] flag to obtain ~c[make]-level parallelism by specifying the
   number of concurrent processes.  The following example shows how to specify 8
-  concurrent processes.  Note that we avoid using the customary `make' option
-  for concurrent processes, in this case `-j 8', because part of the regression
-  (under the ~c[centaur/] community books directory) would fail to take
-  advantage of that directive.
+  concurrent processes.
   ~bv[]
-  make ACL2_JOBS=8 regression
+  make -j 8 regression
   ~ev[]
   Note that while other environment and `make' variables discussed here are
   also appropriate for use by suitable calls of `make' in the community books
@@ -31543,6 +31540,7 @@
                              nil (standard-co state) state nil))))
                (value :q))
              :ld-prompt  nil
+             :ld-missing-input-ok nil
              :ld-pre-eval-filter :all
              :ld-pre-eval-print  nil
              :ld-post-eval-print :command-conventions
@@ -35935,12 +35933,6 @@
 
 ; Next comes support for time-tracker (but see axioms.lisp for
 ; time-tracker-fn).
-
-(defun msgp (x)
-  (declare (xargs :guard t))
-  (or (stringp x)
-      (and (true-listp x)
-           (stringp (car x)))))
 
 (defun rational-to-decimal-string (x state)
   (declare (xargs :mode :program
