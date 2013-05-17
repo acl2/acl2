@@ -11,6 +11,9 @@
 ; ense along with this program; if not, write to the Free Soft- ware
 ; Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
 
+#!ACL2
+(in-package "ACL2")
+
 (ld "~/acl2-customization.lsp" :ld-missing-input-ok t)
 (ld "sets.defpkg")
 (include-book "portcullis")

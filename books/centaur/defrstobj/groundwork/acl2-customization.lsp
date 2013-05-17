@@ -18,4 +18,5 @@
 ;
 ; Original author: Jared Davis <jared@centtech.com>
 
+#!ACL2
 (ld "../package.lsp")

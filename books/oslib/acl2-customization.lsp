@@ -18,13 +18,10 @@
 ;
 ; Original author: Jared Davis <jared@centtech.com>
 
+#!ACL2
 (in-package "ACL2")
+
 (ld "~/acl2-customization.lsp" :ld-missing-input-ok t)
-(in-package "ACL2")
 (ld "package.lsp")
-(include-book "portcullis")
-(set-deferred-ttag-notes t state)
-(set-gag-mode :goals)
-(set-inhibit-output-lst '(proof-tree))
 (in-package "OSLIB")
 

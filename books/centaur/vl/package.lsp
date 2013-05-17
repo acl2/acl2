@@ -177,6 +177,11 @@
       ;; make the XDOC index prettier.
       vl
 
+
+      ;; acl2-customization file stuff
+      why
+      with-redef
+
       ))
 
    ;; Things to remove:

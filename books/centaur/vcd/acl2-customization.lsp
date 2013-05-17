@@ -18,5 +18,9 @@
 ;
 ; Original author: Jared Davis <jared@centtech.com>
 
+#!ACL2
+(in-package "ACL2")
+
 (ld "../vl/acl2-customization.lsp")
+
 (in-package "VL")
