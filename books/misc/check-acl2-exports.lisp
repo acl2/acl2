@@ -1,3 +1,7 @@
+; Copyright (C) 2013, Regents of the University of Texas
+; Written by Matt Kaufmann and J Strother Moore
+; License: A 3-clause BSD license.  See the LICENSE file distributed with ACL2.
+
 ; This book does a check to see if any obvious symbols are missing from
 ; *acl2-exports*.  The idea is that a documented symbol in the "ACL2"
 ; package, even if imported into the "ACL2" package, should be in
