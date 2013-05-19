@@ -82,6 +82,26 @@
 #   - `everything' includes everything in `all' and also some slow books
 #   - `lite' is most of `all', but with a few things excluded
 
+# Major user-definable variables (whose effects occur in this order):
+#   - ACL2
+#     ACL2 executable, which is "acl2" by default.
+#   - STARTJOB
+#     The shell, which is the path to "bash" by default.
+#   - NO_RESCAN
+#     When defined, avoids rebuilding auxiliary files of targets and
+#     dependencies.
+#   - ACL2_COMP
+#     When defined, causes multi-lisp compilation (most users won't
+#     care about this one)
+#   - EXCLUDED_PREFIXES
+#     Reduces the default targets by eliminating all that start with
+#     any prefix in this list of strings.
+#   - ACL2_BOOK_CERTS
+#     Augments the targets with this list of strings, e.g., foo.cert.
+#   - ACL2_BOOK_DIRS
+#     Augments the targets with all targets that have a prefix among
+#     this list of strings.
+
 # Jared Davis has summarized the improvements over the earlier
 # Makefile as follows.
 
@@ -690,6 +710,12 @@ system/pcert/sub.$(ACL2_COMP_EXT): \
 OK_CERTS += system/pcert/sub.$(ACL2_COMP_EXT)
 
 endif # ifdef ACL2_COMP
+
+##############################
+### Section: Exclude EXCLUDED_PREFIXES
+##############################
+
+OK_CERTS := $(filter-out $(addsuffix %, $(EXCLUDED_PREFIXES)), $(OK_CERTS))
 
 ##############################
 ### Section: Define targets
