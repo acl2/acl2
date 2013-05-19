@@ -18585,8 +18585,12 @@
 
   ~st[Restricting to Specific Directories and Books]
 
-  You can specify which books you want certified by using the variable
-  ~c[ACL2_BOOK_CERTS], the variable ~c[ACL2_BOOK_DIRS], or both.  Consider the
+  You can specify which books you want certified by using any or all of the
+  variables ~c[EXCLUDED_PREFIXES], ~c[ACL2_BOOK_CERTS], or ~c[ACL2_BOOK_DIRS].
+  First, the set of desired ~c[.cert] files is restricted to those that do not
+  start with any string that is one of the words in the value of
+  c[EXCLUDED_PREFIXES].  Then ~c[ACL2_BOOK_CERTS] and ~c[ACL2_BOOK_DIRS], if
+  supplied, specify which books should be certified, as illustrated by the
   following example.
   ~bv[]
   make -j 8 regression-fresh \\
