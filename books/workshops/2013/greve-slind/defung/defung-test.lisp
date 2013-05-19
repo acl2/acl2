@@ -45,6 +45,10 @@
 ;; <1 (ACL2_*1*_ACL2::INC-DEC 536870913)
 ;; 536870913
 
+; Added by Matt K. to support Lisps like Allegro CL that do not compile on the
+; fly:
+(comp t)
+
 ;;
 ;; Proof by execution. Odd that it seems to execute inc-dec 3 times ?
 ;;
