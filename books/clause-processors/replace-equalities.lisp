@@ -25,11 +25,10 @@
 (include-book "meta-extract-user")
 (include-book "unify-subst")
 
-; Added by Matt K.: at a minimum, we need
-; books/system/convert-normalized-term-to-pairs.lisp in order that
-; dumb-negate-lit is in :logic mode (as required by the present book) when
-; using an ACL2 image built with ACL2_DEVEL=d.
-(include-book "system/top" :dir :system)
+; Added by Matt K.: at a minimum, we need that dumb-negate-lit is in :logic
+; mode (as required by the present book) when using an ACL2 image built with
+; ACL2_DEVEL=d.
+(verify-termination dumb-negate-lit) ; and guards
 
 (local (in-theory (disable w)))
 
