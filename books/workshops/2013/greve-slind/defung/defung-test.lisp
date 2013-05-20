@@ -288,11 +288,11 @@
 ;; ==================================================================
 
 (def::ung tarai (x y z)
-  (type (xargs :signature ((integer integer integer) integer)))
+  (declare (xargs :signature ((integer integer integer) integer)))
   (if (<= x y) y
     (tarai (tarai (1- x) y z)
-	   (tarai (1- y) z x)
-	   (tarai (1- z) x y))))
+           (tarai (1- y) z x)
+           (tarai (1- z) x y))))
 
 (defthm natp-tarai
   (implies
