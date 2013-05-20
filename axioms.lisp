@@ -27964,6 +27964,20 @@
     mfc-ts-ttree ; under dependent clause-processor
     magic-ev-fncall ; under dependent clause-processor
     never-memoize-fn
+
+; The following are introduced into the logic by an encapsulate, but have raw
+; Lisp definitions.
+
+    big-n zp-big-n decrement-big-n
+
+; The following are introduced into the logic with encapsulates, but have their
+; raw Lisp definitions provided by defproxy.
+
+    ancestors-check
+    oncep-tp
+    print-clause-id-okp
+    too-many-ifs-post-rewrite
+    too-many-ifs-pre-rewrite
   ))
 
 (defconst *primitive-macros-with-raw-code*
@@ -28554,7 +28568,8 @@
     (saved-output-p . nil)
     (saved-output-reversed . nil)
     (saved-output-token-lst . nil)
-    (serialize-character . nil) ; set for #+hons in LP
+    (serialize-character . nil)
+    (serialize-character-system . nil) ; set for #+hons in LP
     (show-custom-keyword-hint-expansion . nil)
     (skip-notify-on-defttag . nil)
     (skip-proofs-by-system . nil)
@@ -30689,6 +30704,70 @@
   By default, numbers are printed in radix 10 (base 10).  ~l[set-print-base]
   for how to get ACL2 to print numbers in radix 2, 8, or 16.
 
+  To see the ~il[guard] of an IO function, or indeed any function, ~il[args] or
+  call the function ~c[guard]; but some built-in functions (including some IO
+  functions) will print the result using the variable ~c[STATE-STATE].  While
+  that is logically correct, if you want to execute the guard then you should
+  replace that variable by ~c[STATE] and also replace each built-in function
+  symbol of the form ~c[xxx-p1] by corresponding function symbol ~c[xxx-p].
+  Consider the following example.
+  ~bv[]
+  ACL2 !>:args princ$
+
+  Function         PRINC$
+  Formals:         (X CHANNEL STATE-STATE)
+  Signature:       (PRINC$ * * STATE)
+                   => STATE
+  Guard:           (AND (OR (ACL2-NUMBERP X)
+                            (CHARACTERP X)
+                            (STRINGP X)
+                            (SYMBOLP X))
+                        (STATE-P1 STATE-STATE)
+                        (SYMBOLP CHANNEL)
+                        (OPEN-OUTPUT-CHANNEL-P1 CHANNEL
+                                                :CHARACTER STATE-STATE))
+  Guards Verified: T
+  Defun-Mode:      :logic
+  Type:            (CONSP (PRINC$ X CHANNEL STATE-STATE))
+  Documentation available via :DOC
+   PRINC$
+  ACL2 !>(untranslate (guard 'princ$ nil (w state)) t (w state))
+  (AND (OR (ACL2-NUMBERP X)
+           (CHARACTERP X)
+           (STRINGP X)
+           (SYMBOLP X))
+       (STATE-P1 STATE-STATE)
+       (SYMBOLP CHANNEL)
+       (OPEN-OUTPUT-CHANNEL-P1 CHANNEL
+                               :CHARACTER STATE-STATE))
+  ACL2 !>
+  ~ev[]
+  If you want to execute the guard for ~ilc[princ$], then according to the
+  suggestion above, you should consider the guard for
+  ~c[(princ$ x channel state)] to be as follows.
+  ~bv[]
+  (AND (OR (ACL2-NUMBERP X)
+           (CHARACTERP X)
+           (STRINGP X)
+           (SYMBOLP X))
+       (STATE-P STATE)
+       (SYMBOLP CHANNEL)
+       (OPEN-OUTPUT-CHANNEL-P CHANNEL :CHARACTER STATE))
+  ~ev[]
+  For example, we can check the guard for a given value and channel as follows.
+  ~bv[]
+  ACL2 !>(let ((x 3) (channel *standard-co*))
+           (AND (OR (ACL2-NUMBERP X)
+                    (CHARACTERP X)
+                    (STRINGP X)
+                    (SYMBOLP X))
+                (STATE-P STATE)
+                (SYMBOLP CHANNEL)
+                (OPEN-OUTPUT-CHANNEL-P CHANNEL :CHARACTER STATE)))
+  T
+  ACL2 !>
+  ~ev[]
+
   Comment for advanced users: Function ~ilc[open-output-channel!] is identical
   as a function to ~c[open-output-channel], except that the former may be
   called even during ~ilc[make-event] expansion and ~ilc[clause-processor]
@@ -31023,8 +31102,11 @@
 
 (defmacro with-print-defaults (bindings form)
   `(state-global-let* ,(append bindings
-                               (alist-difference-eq *print-control-defaults*
-                                                    bindings))
+                               (cons '(serialize-character
+                                       (f-get-global 'serialize-character-system
+                                                     state))
+                                     (alist-difference-eq *print-control-defaults*
+                                                          bindings)))
                       ,form))
 
 (defmacro reset-print-control ()
@@ -31721,6 +31803,19 @@
   xyz<state>
   ACL2 !>
   ~ev[]~/
+
+  The ~il[guard] for ~c[(princ$ x channel state)] is essentially as follows; ~pl[io]
+  for an explanation of guards of certain built-in functions that take
+  ~il[state], such as ~c[princ$].
+  ~bv[]
+  (and (or (acl2-numberp x)
+           (characterp x)
+           (stringp x)
+           (symbolp x))
+       (state-p1 state-state)
+       (symbolp channel)
+       (open-output-channel-p1 channel :character state-state))
+  ~ev[]
 
   ~l[fmt] for more sophisticated printing routines, and ~pl[IO] for general
   information about input and output.~/
@@ -36206,6 +36301,7 @@
     abbrev-evisc-tuple
     gag-mode-evisc-tuple
     serialize-character
+    serialize-character-system
 
 ; others
 

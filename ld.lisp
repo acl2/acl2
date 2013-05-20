@@ -20621,6 +20621,18 @@
 ;   complaint by ANSI GCL, but is probably a good thing to do
 ;   regardless).
 
+; Fixed bug in rare error message in check-certificate-file-exists, for the
+; case: "argument k is t for certify-book".
+
+; Arranged that character encoding for files in LispWorks is always as expected
+; (latin-1 with linefeed for :EOL-STYLE).
+
+; Strengthened the identification of built-ins with raw Lisp definitions (see
+; constant *primitive-logic-fns-with-raw-code*, as well as source function
+; fns-different-wrt-acl2-loop-only and related functions).
+
+; Added documentation about guards in :doc princ$ and :doc io.
+
   :doc
   ":Doc-Section release-notes
 
@@ -20705,6 +20717,9 @@
   default value is ~c[nil], which causes an error, as before, upon failure to
   open a specified file.  Other legal values are ~c[t] and ~c[:WARN];
   ~pl[ld-missing-input-ok] and ~pl[ld].
+
+  Extended ~c[*acl2-exports*], in particular adding ~c[UNSIGNED-BYTE-P] and
+  ~c[SIGNED-BYTE-P] (thanks to a suggestion by Jared Davis)
 
   ~st[NEW FEATURES]
 
@@ -20888,6 +20903,10 @@
   ~st[EMACS SUPPORT]
 
   ~st[EXPERIMENTAL/ALTERNATE VERSIONS]
+
+  In ACL2(h), ~ilc[print-object$] no longer uses the serialize printer except
+  in system applications as before (e.g., write out ~c[.cert] files).  Thanks
+  to Dave Greve for bringing this issue to our attention.
 
   For ACL2(p), some anomalous behavior may no longer occur because prover
   calls (more specifically, trips through the ACL2 ``waterfall'') will return

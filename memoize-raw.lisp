@@ -3937,7 +3937,7 @@ the calls took.")
   (or
    (and
     (our-ignore-errors (probe-file "/proc/meminfo"))
-    (with-standard-io-syntax
+    (our-with-standard-io-syntax
      (with-open-file (stream "/proc/meminfo")
                      (let (line)
                        (loop while (setq line (read-line stream nil nil)) do

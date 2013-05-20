@@ -12575,7 +12575,8 @@
                  old certificate.  You will have to construct the ~
                  certi~-fication world by hand (by executing the desired ~
                  commands in the current logical world) and then call ~
-                 certify-book again.")))))
+                 certify-book again."
+                full-book-name)))))
 
 (defun chk-acceptable-certify-book (book-name full-book-name dir
                                               suspect-book-action-alist
