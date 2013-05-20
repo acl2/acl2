@@ -6691,6 +6691,7 @@
            defdoc
            defg
            define-@par-macros
+           define-atomically-modifiable-counter
            define-trusted-clause-processor ; should handle :partial-theory
            deflabel
            deflock
@@ -6710,13 +6711,14 @@
            in-package
            in-theory
            initialize-state-globals
-           let
+           let ; could be arbitrarily complex, but we can only do so much!
            link-doc-to
-           link-doc-to-keyword 
+           link-doc-to-keyword
            logic
            make-waterfall-parallelism-constants
            make-waterfall-printing-constants
            push
+           reset-future-parallelism-variables
            set-invisible-fns-table
            set-tau-auto-mode
            set-waterfall-parallelism
