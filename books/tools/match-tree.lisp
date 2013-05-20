@@ -176,6 +176,48 @@
 ;; used.
 
 
+;; Rager notes in May 2013 that it can be helpful to use variable names that
+;; are the same.  For example, when submitting the following two forms, the use
+;; of "id" in the first but "id-name" in the second is enough to keep the
+;; prover from verifying the guards for the second define (Rager did not try
+;; any hints).  This example had two accompanying uses of
+;; def-match-tree-rewrites (not shown here).
+
+;;; (define identifier-tree-p
+;;;   ((tree t "Tree to check"))
+;;;   :returns (ans booleanp)
+;;;   (b* (((when-match tree
+;;;                     ("IdentifierRag" 
+;;;                      ("Identifier" ("IDENTIFIER" (:? id)))))
+;;;         (stringp id))
+;;;        ((when-match tree 
+;;;                     ("IdentifierRag"
+;;;                      ("Identifier" ("IDENTIFIER" (:? id)))
+;;;                      ("PERIOD" ".")
+;;;                      (:? nextrag)))
+;;;         (and (stringp id)
+;;;              (identifier-tree-p nextrag))))
+;;;     nil))
+
+;;; (define gather-identifiers
+;;;   ((tree identifier-tree-p "parse tree"))
+;;;   (b* (((when-match tree
+;;;                     ("IdentifierRag"
+;;;                      ("Identifier" ("IDENTIFIER" (:? id-name)))))
+;;;         (list id-name))
+;;;        ((when-match tree
+;;;                     ("IdentifierRag"
+;;;                      ("Identifier" ("IDENTIFIER" (:? id)))
+;;;                      ("PERIOD" ".")
+;;;                      (:? nextrag)))
+;;;         (cons id
+;;;               (gather-identifiers nextrag))))
+;;;     (er hard? 'gather-identifiers
+;;;         "Gather-identifiers given input that it doesn't know how to parse: ~x0"
+;;;         tree))
+;;;   :guard-hints (("Goal" :in-theory (enable identifier-tree-p))))
+
+
 (defun match-tree-binder-p (pat)
   (declare (xargs :guard (consp pat)))
   (and (symbolp (car pat))
