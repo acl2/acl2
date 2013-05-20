@@ -22719,7 +22719,12 @@
 
   We begin below with an introduction to abstract ~il[stobj]s.  We then explain
   the ~ilc[defabsstobj] event by way of an example.  We conclude by giving
-  summary documentation for the ~c[defabsstobj] event.~/
+  summary documentation for the ~c[defabsstobj] event.
+
+  For another introduction to abstract stobjs, see the paper ``Abstract Stobjs
+  and Their Application to ISA Modeling'' by Shilpi Goel, Warren A. Hunt, Jr.,
+  and Matt Kaufmann, in the proceedings of ACL2 Workshop 2013,
+  ~url[http://www.cs.uwyo.edu/~~ruben/acl2-13].~/
 
   ~st[INTRODUCTION]
 

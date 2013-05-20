@@ -5850,7 +5850,7 @@
   ~il[world] yet not be considered to be redundant.  Here is an example of such
   a form.
   ~bv[]
-  (value-triple (cw \"Hello world.~%\"))
+  (value-triple (cw \"Hello world.~~%\"))
   ~ev[]~/
 
   When are two ~il[logical-name] definitions considered ``the same''?  It
