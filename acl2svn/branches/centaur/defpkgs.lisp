@@ -31,105 +31,16 @@
 
 (in-package "ACL2")
 
-; Someday we may choose to give a more careful treatment to the issue of
-; providing handy lists of symbols to export from the ACL2 package.  The
-; constant *acl2-exports* below is a rough, but perhaps adequate, first cut.
-; The following forms allow us to create some other lists, based on what is
-; currently documentated.  Our thought is that the set of currently documented
-; topics has some correspondence with what one may want to export from ACL2,
-; but for now we provide this utility only as a comment.
+(defconst *acl2-exports*
 
-; (verify-termination symbol-class)
-; 
-; (defun member-eq-t (a lst)
-;   (or (eq lst t)
-;       (member-eq a lst)))
-; 
-; (defun filter-topics
-;   (in-sections out-sections mode doc-alist wrld acc)
-;   (declare (xargs :guard (and (member-eq mode '(:logic :program
-;                                                        ;; nil for non-functions
-;                                                        nil))
-;                               (or (eq in-sections t)
-;                                   (symbol-listp in-sections))
-;                               (symbol-listp out-sections))
-;                   :verify-guards nil))
-; 
-; ; Need to compile this.
-; 
-;   (cond
-;    ((endp doc-alist) acc)
-;    ((and (symbolp (caar doc-alist))
-;          (not (equal (symbol-package-name (caar doc-alist)) "ACL2-PC"))
-;          (member-eq-t (cadr (car doc-alist)) in-sections)
-;          (not (member-eq (cadr (car doc-alist)) out-sections))
-;          (let ((fn-symb-p (function-symbolp (caar doc-alist) wrld)))
-;            (cond ((eq mode :logic)
-;                   (if fn-symb-p
-;                       (eq (fdefun-mode (caar doc-alist) wrld) :logic)
-;                     (or (getprop (caar doc-alist) 'macro-body nil 'current-acl2-world wrld)
-;                         (getprop (caar doc-alist) 'const nil 'current-acl2-world wrld))))
-;                  ((eq mode :program)
-;                   ;; really means "all but logic"
-;                   (and fn-symb-p
-;                        (eq (fdefun-mode (caar doc-alist) wrld) :program)))
-;                  (t
-;                   ;; topics other than functions, macros, and constants
-;                   (not (or (getprop (caar doc-alist) 'macro-body nil 'current-acl2-world wrld)
-;                            (getprop (caar doc-alist) 'const nil 'current-acl2-world wrld)
-;                            fn-symb-p))))))
-;     (filter-topics in-sections out-sections mode (cdr doc-alist) wrld
-;                    (cons (caar doc-alist) acc)))
-;    (t
-;     (filter-topics in-sections out-sections mode (cdr doc-alist) wrld acc))))
-; 
-; (comp 'filter-topics)
-; 
-; ; Now consider the following table (`P' is "Programming", `A' is "Arrays").
-; ; "In" lists doc sections that we may want included, while "Out" lists those
-; ; to be excluded.  Mode :logic is what we may want to export if we choose to
-; ; stay in defun-mode :logic; :program is what is left.
-; 
-; ; In    Out  Mode
-; ; P,A   ()   :logic
-; ; P,A   ()   :program
-; ; P,A   ()   nil
-; ; T     P,A  :logic
-; ; T     P,A  :program
-; ; T     P,A  nil
-; 
-; Thus we have:
-; 
-; In    Out  Mode
-; P,A   ()   :logic
-; (filter-topics '(programming arrays) nil :logic
-;                (global-val 'documentation-alist (w state)) (w state) nil)
-; 
-; In    Out  Mode
-; P,A   ()   :program
-; (filter-topics '(programming arrays) nil :program
-;                (global-val 'documentation-alist (w state)) (w state) nil)
-; 
-; In    Out  Mode
-; P,A   ()   :logic
-; (filter-topics '(programming arrays) nil nil
-;                (global-val 'documentation-alist (w state)) (w state) nil)
-; 
-; In    Out  Mode
-; T     P,A  :logic
-; 
-; (filter-topics t '(programming arrays) :logic
-;                (global-val 'documentation-alist (w state)) (w state) nil)
-; 
-; In    Out  Mode
-; T     P,A  :program
-; (filter-topics t '(programming arrays) :program
-;                (global-val 'documentation-alist (w state)) (w state) nil)
-; 
-; In    Out  Mode
-; T     P,A  nil
-; (filter-topics t '(programming arrays) nil
-;                (global-val 'documentation-alist (w state)) (w state) nil)
+; This constant provides a handy list of symbols to export from the ACL2
+; package.  It includes all documented constants, functions, and macros, except
+; for those that we explicitly exclude, as checked by certifying community book
+; books/misc/check-acl2-exports.lisp.  See that book for the list of symbols,
+; *acl2-exports-exclusions*, that we explicitly exclude from this list.
+
+; We keep this list sorted, since that makes defpkg more efficient when users
+; choose to import these symbols; it avoids having to sort them then.
 
 ; The following ``policy'' was used to determine this setting of *acl2-exports*.
 ; First, if the user wishes to program in ACL2, he or she will import
@@ -138,8 +49,7 @@
 
 ; Prior to ACL2 Version_2.4, the list was short.  It contained 55 symbols.
 ; Before the release of ACL2 Version_2.5 we added symbols to the list.  The
-; symbols added were, in some cases dependent on the :DOC topics as of
-; 2.5.
+; symbols added were, in some cases, dependent on the :DOC topics as of 2.5.
 
 ; (a) all :logic mode functions
 ; (b) most of the symbols users had imported into packages in books/,
@@ -150,17 +60,9 @@
 ; (g) symbols used to write defuns and theorems, gathered by looking
 ;     at the documentation for DECLARE, HINTS, RULE-CLASSES, MACROS
 
-; This is still not very systematic, because there is a fundamental
-; tension: if we make it conveniently large we import symbols the user
-; might wish to define.
-
-(defconst *acl2-exports*
-
-; See community book books/misc/check-acl2-exports.lisp for a list of symbols,
-; *acl2-exports-exclusions*, deliberately excluded from this list.
-
-; Let's keep this list sorted (more efficient for defpkg when users choose to
-; import these symbols, to avoid having to sort it then).
+; This is still not very systematic, because there is a fundamental tension: if
+; we make it conveniently large we import symbols the user might wish to
+; define.
 
   (sort-symbol-listp
    (append
@@ -355,7 +257,7 @@
         FMS FMS! FMT FMT! FMT-TO-COMMENT-WINDOW FMT1 FMT1!
         FMS-TO-STRING FMS!-TO-STRING FMT-TO-STRING FMT!-TO-STRING
         FMT1-TO-STRING FMT1!-TO-STRING
-        FORCE FOURTH FUNCTION-SYMBOLP
+        FNCALL-TERM FORCE FOURTH FUNCTION-SYMBOLP
         FUNCTION-THEORY GAG-MODE GC$ GC-VERBOSE GENERALIZE GET-COMMAND-SEQUENCE
         GET-GLOBAL GET-OUTPUT-STREAM-STRING$ GET-TIMER GET-WORMHOLE-STATUS
         GCS GETENV$ GETPROP GETPROP-DEFAULT GETPROPS
@@ -423,8 +325,10 @@
         MAKE-WORMHOLE-STATUS MAKUNBOUND-GLOBAL
         MAX MAXIMUM-LENGTH MAY-NEED-SLASHES
         MBE MBT
-        MEMBER MEMBER-EQ MEMBER-EQUAL
-        MEMBER-SYMBOL-NAME MFC MIN MINIMAL-THEORY MINUSP
+        MEMBER MEMBER-EQ MEMBER-EQUAL MEMBER-SYMBOL-NAME
+        META-EXTRACT-CONTEXTUAL-FACT META-EXTRACT-FORMULA
+        META-EXTRACT-GLOBAL-FACT META-EXTRACT-GLOBAL-FACT+ META-EXTRACT-RW+-TERM
+        MFC MIN MINIMAL-THEORY MINUSP
         MOD MOD-EXPT MONITOR MONITORED-RUNES
         MORE MORE! MORE-DOC MUST-BE-EQUAL
         MUTUAL-RECURSION MUTUAL-RECURSION-GUARDP
@@ -600,7 +504,7 @@
         SHOW-BDD SHOW-BODIES SHOW-CUSTOM-KEYWORD-HINT-EXPANSION
         SHOW-FC-CRITERIA SHRINK-32-BIT-INTEGER-STACK
         SHRINK-T-STACK
-        SIGNED-BYTE SIGNUM SIMPLIFY
+        SIGNED-BYTE SIGNED-BYTE-P SIGNUM SIMPLIFY
         SIXTH SKIP-PROOFS SOME-SLASHABLE SPEC-MV-LET
         SPLITTER-OUTPUT STABLE-UNDER-SIMPLIFICATIONP
         STANDARD-CHAR STANDARD-CHAR-LISTP
@@ -664,14 +568,16 @@
         TRUE-LISTP
         TRUE-LISTP-CADR-ASSOC-EQ-FOR-OPEN-CHANNELS-P
         TRUE-LISTP-UPDATE-NTH
-        TRUNCATE TTAGS-SEEN TYPE TYPED-IO-LISTP
-        TYPED-IO-LISTP-FORWARD-TO-TRUE-LISTP
+        TRUNCATE TTAGS-SEEN TYPE
+        TYPED-IO-LISTP TYPED-IO-LISTP-FORWARD-TO-TRUE-LISTP
+        TYPESPEC-CHECK
         U UBT UBT!
         UBT-PREHISTORY UBU UBU! UNARY-- UNARY-/
         UNARY-FUNCTION-SYMBOL-LISTP UNICITY-OF-0
         UNICITY-OF-1 UNION$ UNION-EQ UNION-EQUAL
         UNION-THEORIES UNIVERSAL-THEORY
-        UNMONITOR UNSAVE UNSIGNED-BYTE UNTRACE$ UNTRANS-TABLE
+        UNMONITOR UNSAVE UNSIGNED-BYTE UNSIGNED-BYTE-P
+        UNTRACE$ UNTRANS-TABLE
         UNTRANSLATE UPDATE-32-BIT-INTEGER-STACK
         UPDATE-ACL2-ORACLE
         UPDATE-ACL2-ORACLE-PRESERVES-STATE-P1

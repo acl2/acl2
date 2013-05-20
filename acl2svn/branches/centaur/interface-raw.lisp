@@ -6635,6 +6635,15 @@
 ; check-built-in-constants.  We base our code loosely on
 ; functions-defined-in-file in hons-raw.lisp.
 
+(defun our-update-ht (key val ht)
+  (let ((old (gethash key ht)))
+    (setf (gethash key ht)
+          (cond ((and (consp old)
+                      (eq (car old) :multiple))
+                 (list* (car old) val (cdr old)))
+                (old (list :multiple val))
+                (t val)))))
+
 (defun note-fns-in-form (form ht)
 
 ; For every macro and every function defined by form, associate its definition
@@ -6644,41 +6653,35 @@
        (case (car form)
          ((defun defund defn defproxy defun-nx defun-one-output defstub
             defmacro defabbrev defun@par defmacro-last defun-overrides)
-          (setf (gethash (cadr form) ht)
-                form))
+          (our-update-ht (cadr form) form ht))
          (save-def
           (note-fns-in-form (cadr form) ht))
          (defun-for-state
-           (setf (gethash (defun-for-state-name (cadr form)) ht)
-                 form))
+           (our-update-ht (defun-for-state-name (cadr form)) form ht))
          (define-global
-           (setf (gethash (define-global-name (cadr form)) ht)
-                 form)
-           (setf (gethash (cadr form) ht)
-                 form))
+           (our-update-ht (define-global-name (cadr form)) form ht)
+           (our-update-ht (cadr form) form ht))
          ((define-pc-atomic-macro define-pc-bind define-pc-help define-pc-macro
             define-pc-meta define-pc-primitive)
           (let ((name (make-official-pc-command
                        (if (eq (car form) 'define-pc-meta-or-macro-fn)
                            (nth 2 form)
                          (nth 1 form)))))
-            (setf (gethash name ht)
-                  form)))
+            (our-update-ht name form ht)))
          ((mutual-recursion mutual-recursion@par progn)
           (loop for x in (cdr form)
                 do (note-fns-in-form x ht)))
-         (encapsulate
-          (and (null (cadr form))
-               (loop for x in (cddr form)
-                     do (note-fns-in-form x ht))))
+         ((encapsulate when)
+          (loop for x in (cddr form)
+                do (note-fns-in-form x ht)))
          ((skip-proofs local)
           (note-fns-in-form (cadr form) ht))
          (defrec ; pick just one function introduced
-           (setf (gethash (record-changer-function-name (cadr form)) ht)
-                 form))
+           (our-update-ht (record-changer-function-name (cadr form)) form ht))
          ((add-custom-keyword-hint
            add-macro-alias
            add-macro-fn
+           #+ccl ccl:defstatic
            declaim
            def-basic-type-sets
            defattach
@@ -6697,6 +6700,9 @@
            deftheory
            defthm
            defthmd
+           deftype
+           defun-*1*
+           defv
            defvar
            eval ; presumably no ACL2 fn or macro underneath
            eval-when ; presumably no ACL2 fn or macro underneath
@@ -6704,14 +6710,17 @@
            in-package
            in-theory
            initialize-state-globals
+           let
            link-doc-to
            link-doc-to-keyword 
            logic
            make-waterfall-parallelism-constants
            make-waterfall-printing-constants
+           push
            set-invisible-fns-table
            set-tau-auto-mode
            set-waterfall-parallelism
+           setq
            system-verify-guards
            table
            value
@@ -6756,6 +6765,9 @@
          (equal (subseq filename-without-extension (- len 4) len)
                 "-raw"))))
 
+; Set the following to t for a more informative error report.
+(defvar *check-built-in-constants-debug* nil)
+
 (defun fns-different-wrt-acl2-loop-only (acl2-files)
 
 ; For each file in acl2-files we collect up all definitions of functions and
@@ -6770,29 +6782,58 @@
 ; the build directory.  See the comment about redundant definitions in
 ; chk-acceptable-defuns-redundancy for a pertinent explanation.
 
-  (let ((filenames (loop for x in acl2-files
-                         when (not (raw-source-name-p x))
-                         collect (concatenate 'string x ".lisp")))
+  (let ((logic-filenames (loop for x in acl2-files
+                               when (not (raw-source-name-p x))
+                               collect (concatenate 'string x ".lisp")))
+        (raw-filenames (loop for x in acl2-files
+                             collect (concatenate 'string x ".lisp")))
         (ht-raw (make-hash-table :test 'eq))
         (ht-logic (make-hash-table :test 'eq))
         (macro-result nil)
         (program-mode-result nil)
         (logic-mode-result nil)
         (wrld (w *the-live-state*)))
-    (note-fns-in-files filenames ht-raw nil)
-    (note-fns-in-files filenames ht-logic t)
+    (note-fns-in-files raw-filenames ht-raw nil)
+    (note-fns-in-files logic-filenames ht-logic t)
     (maphash (lambda (key logic-val)
-               (let ((raw-val (gethash key ht-raw)))
-                 (or (equal logic-val raw-val)
-                     (cond ((getprop key 'macro-body nil
-                                     'current-acl2-world wrld)
-                            (push key macro-result))
-                           ((eq (symbol-class key wrld)
-                                :program)
-                            (push key program-mode-result))
-                           (t
-                            (push key logic-mode-result))))))
+               (progn
+                 (assert (symbolp key))
+                 (let ((raw-val (gethash key ht-raw)))
+                   (or (equal logic-val raw-val)
+                       (let ((x
+                              (if *check-built-in-constants-debug*
+                                  (list key :logic logic-val :raw raw-val)
+                                key)))
+                         (cond ((getprop key 'macro-body nil
+                                         'current-acl2-world wrld)
+                                (push x macro-result))
+                               ((eq (symbol-class key wrld)
+                                    :program)
+                                (push x program-mode-result))
+                               (t
+                                (push x logic-mode-result))))))))
              ht-logic)
+    (maphash (lambda (key raw-val)
+               (progn
+                 (assert (symbolp key))
+                 (when (not (or (gethash key ht-logic)
+                                (assoc key *primitive-formals-and-guards* :test
+                                       'eq)))
+                   (cond ((getprop key 'macro-body nil
+                                   'current-acl2-world wrld)
+                          (push key macro-result))
+                         (t (let ((c ; avoid symbol-class (defaults to :program)
+                                   (getprop key 'symbol-class nil
+                                            'current-acl2-world wrld)))
+                              (when c
+                                (let ((x
+                                       (if *check-built-in-constants-debug*
+                                           (list key :raw raw-val)
+                                         key)))
+                                  (if (eq c :program)
+                                      (push x program-mode-result)
+                                    (push x logic-mode-result))))))))))
+             ht-raw)
     (mv macro-result program-mode-result logic-mode-result)))
 
 (defun collect-monadic-booleans (fns ens wrld)
@@ -6841,163 +6882,166 @@
               indicated and rebuild the system.  To understand why the code ~
               is written this way, see the comment in ~
               check-built-in-constants."))
-  (cond
-   ((not (equal *force-xnume* (fn-rune-nume 'force t t (w *the-live-state*))))
-    (interface-er str
-                  '*force-xnume*
-                  *force-xnume*
-                  (fn-rune-nume 'force t t (w *the-live-state*)))))
-  (cond
-   ((not
-     (equal *immediate-force-modep-xnume*
-            (fn-rune-nume 'immediate-force-modep t t (w *the-live-state*))))
-    (interface-er str
-                  '*immediate-force-modep-xnume*
-                  *immediate-force-modep-xnume*
-                  (fn-rune-nume 'immediate-force-modep t t (w *the-live-state*)))))
-  (cond
-   ((not
-     (equal *tau-system-xnume*
-            (fn-rune-nume 'tau-system t t (w *the-live-state*))))
-    (interface-er str
-                  '*tau-system-xnume*
-                  *tau-system-xnume*
-                  (fn-rune-nume 'tau-system t t (w *the-live-state*)))))
-  (cond
-   ((not
-     (equal *tau-acl2-numberp-pair*
-            (getprop 'acl2-numberp 'tau-pair nil
-                     'current-acl2-world (w *the-live-state*))))
-    (interface-er str
-                  '*tau-acl2-numberp-pair*
-                  *tau-acl2-numberp-pair*
-                  (getprop 'acl2-numberp 'tau-pair nil
-                           'current-acl2-world (w *the-live-state*)))))
-  (cond
-   ((not
-     (equal *tau-integerp-pair*
-            (getprop 'integerp 'tau-pair nil
-                     'current-acl2-world (w *the-live-state*))))
-    (interface-er str
-                  '*tau-integerp-pair*
-                  *tau-integerp-pair*
-                  (getprop 'integerp 'tau-pair nil
-                           'current-acl2-world (w *the-live-state*)))))
-  (cond
-   ((not
-     (equal *tau-rationalp-pair*
-            (getprop 'rationalp 'tau-pair nil
-                     'current-acl2-world (w *the-live-state*))))
-    (interface-er str
-                  '*tau-rationalp-pair*
-                  *tau-rationalp-pair*
-                  (getprop 'rationalp 'tau-pair nil
-                           'current-acl2-world (w *the-live-state*)))))
-  (cond
-   ((not
-     (equal *tau-natp-pair*
-            (getprop 'natp 'tau-pair nil
-                     'current-acl2-world (w *the-live-state*))))
-    (interface-er str
-                  '*tau-natp-pair*
-                  *tau-natp-pair*
-                  (getprop 'natp 'tau-pair nil
-                           'current-acl2-world (w *the-live-state*)))))
-  (cond
-   ((not
-     (equal *tau-posp-pair*
-            (getprop 'posp 'tau-pair nil
-                     'current-acl2-world (w *the-live-state*))))
-    (interface-er str
-                  '*tau-posp-pair*
-                  *tau-posp-pair*
-                  (getprop 'posp 'tau-pair nil
-                           'current-acl2-world (w *the-live-state*)))))
-  (cond
-   ((not
-     (equal *tau-minusp-pair*
-            (getprop 'minusp 'tau-pair nil
-                     'current-acl2-world (w *the-live-state*))))
-    (interface-er str
-                  '*tau-minusp-pair*
-                  *tau-minusp-pair*
-                  (getprop 'minusp 'tau-pair nil
-                           'current-acl2-world (w *the-live-state*)))))
-  (cond
-   ((not
-     (equal *tau-booleanp-pair*
-            (getprop 'booleanp 'tau-pair nil
-                     'current-acl2-world (w *the-live-state*))))
-    (interface-er str
-                  '*tau-booleanp-pair*
-                  *tau-booleanp-pair*
-                  (getprop 'booleanp 'tau-pair nil
-                           'current-acl2-world (w *the-live-state*)))))
-  (cond
-   ((not
-     (and (equal
-           *min-type-set*
-           #-:non-standard-analysis -8192 #+:non-standard-analysis -65536)
-          (equal
-           *max-type-set*
-           #-:non-standard-analysis 8191 #+:non-standard-analysis 65535)))
-    (interface-er
-     "The minimal and maximal type-sets are incorrectly built into ~
-      the definition of type-alist-entryp.  These type-sets get ~
-      generated by the call of def-basic-type-sets in type-set-a.lisp ~
-      are must be mentioned, as above, in axioms.lisp.  Evidently, a ~
-      new type-set bit was added.  Update type-alist-entryp.")))
-  (cond
-   ((not
-     (equal *primitive-monadic-booleans*
-            (collect-monadic-booleans
-             (strip-cars *primitive-formals-and-guards*)
-             (ens *the-live-state*)
-             (w *the-live-state*))))
-    (interface-er str
-                  '*primitive-monadic-booleans*
-                  *primitive-monadic-booleans*
-                  (collect-monadic-booleans
-                   (strip-cars *primitive-formals-and-guards*)
-                   (ens *the-live-state*)
-                   (w *the-live-state*)))))
-  (cond
-   ((not (getprop 'booleanp 'tau-pair nil 'current-acl2-world (w *the-live-state*)))
-    (interface-er
-     "Our code for tau-term assumes that BOOLEANP is a tau predicate.  But it ~
-      has no tau-pair property!")))
-  (let ((good-lst (chk-initial-built-in-clauses *initial-built-in-clauses*
-                                                (w *the-live-state*) nil nil)))
     (cond
-     (good-lst
+     ((not (equal *force-xnume* (fn-rune-nume 'force t t (w *the-live-state*))))
+      (interface-er str
+                    '*force-xnume*
+                    *force-xnume*
+                    (fn-rune-nume 'force t t (w *the-live-state*)))))
+    (cond
+     ((not
+       (equal *immediate-force-modep-xnume*
+              (fn-rune-nume 'immediate-force-modep t t (w *the-live-state*))))
+      (interface-er str
+                    '*immediate-force-modep-xnume*
+                    *immediate-force-modep-xnume*
+                    (fn-rune-nume 'immediate-force-modep t t (w *the-live-state*)))))
+    (cond
+     ((not
+       (equal *tau-system-xnume*
+              (fn-rune-nume 'tau-system t t (w *the-live-state*))))
+      (interface-er str
+                    '*tau-system-xnume*
+                    *tau-system-xnume*
+                    (fn-rune-nume 'tau-system t t (w *the-live-state*)))))
+    (cond
+     ((not
+       (equal *tau-acl2-numberp-pair*
+              (getprop 'acl2-numberp 'tau-pair nil
+                       'current-acl2-world (w *the-live-state*))))
+      (interface-er str
+                    '*tau-acl2-numberp-pair*
+                    *tau-acl2-numberp-pair*
+                    (getprop 'acl2-numberp 'tau-pair nil
+                             'current-acl2-world (w *the-live-state*)))))
+    (cond
+     ((not
+       (equal *tau-integerp-pair*
+              (getprop 'integerp 'tau-pair nil
+                       'current-acl2-world (w *the-live-state*))))
+      (interface-er str
+                    '*tau-integerp-pair*
+                    *tau-integerp-pair*
+                    (getprop 'integerp 'tau-pair nil
+                             'current-acl2-world (w *the-live-state*)))))
+    (cond
+     ((not
+       (equal *tau-rationalp-pair*
+              (getprop 'rationalp 'tau-pair nil
+                       'current-acl2-world (w *the-live-state*))))
+      (interface-er str
+                    '*tau-rationalp-pair*
+                    *tau-rationalp-pair*
+                    (getprop 'rationalp 'tau-pair nil
+                             'current-acl2-world (w *the-live-state*)))))
+    (cond
+     ((not
+       (equal *tau-natp-pair*
+              (getprop 'natp 'tau-pair nil
+                       'current-acl2-world (w *the-live-state*))))
+      (interface-er str
+                    '*tau-natp-pair*
+                    *tau-natp-pair*
+                    (getprop 'natp 'tau-pair nil
+                             'current-acl2-world (w *the-live-state*)))))
+    (cond
+     ((not
+       (equal *tau-posp-pair*
+              (getprop 'posp 'tau-pair nil
+                       'current-acl2-world (w *the-live-state*))))
+      (interface-er str
+                    '*tau-posp-pair*
+                    *tau-posp-pair*
+                    (getprop 'posp 'tau-pair nil
+                             'current-acl2-world (w *the-live-state*)))))
+    (cond
+     ((not
+       (equal *tau-minusp-pair*
+              (getprop 'minusp 'tau-pair nil
+                       'current-acl2-world (w *the-live-state*))))
+      (interface-er str
+                    '*tau-minusp-pair*
+                    *tau-minusp-pair*
+                    (getprop 'minusp 'tau-pair nil
+                             'current-acl2-world (w *the-live-state*)))))
+    (cond
+     ((not
+       (equal *tau-booleanp-pair*
+              (getprop 'booleanp 'tau-pair nil
+                       'current-acl2-world (w *the-live-state*))))
+      (interface-er str
+                    '*tau-booleanp-pair*
+                    *tau-booleanp-pair*
+                    (getprop 'booleanp 'tau-pair nil
+                             'current-acl2-world (w *the-live-state*)))))
+    (cond
+     ((not
+       (and (equal
+             *min-type-set*
+             #-:non-standard-analysis -8192 #+:non-standard-analysis -65536)
+            (equal
+             *max-type-set*
+             #-:non-standard-analysis 8191 #+:non-standard-analysis 65535)))
       (interface-er
-       "The defconst of *initial-built-in-clauses* is bad because at least one ~
-        of the records supplies an :all-fnnames that is different from that ~
-        computed by all-fnnames-subsumer.  The correct setting is shown below. ~
-        To preserve the comments in the source file it might be best to ~
-        compare -- with EQUAL -- the elements below with the corresponding ~
-        elements in the current source file and just replace the ones that ~
-        have changed.  Here is a correct setting in 1:1 correspondence with ~
-        the current setting: ~X01."
-       `(defconst *initial-built-in-clauses*
-          (list ,@good-lst))
-       nil))))
-  (mv-let
-   (macros-found program-found logic-found)
-   (fns-different-wrt-acl2-loop-only *acl2-files*)
-   (let ((bad-macros
-          (set-difference-eq macros-found
-                             *primitive-macros-with-raw-code*))
-         (bad-program
-          (set-difference-eq program-found
-                             *primitive-program-fns-with-raw-code*))
-         (bad-logic (set-difference-eq
-                     logic-found
-                     *primitive-logic-fns-with-raw-code*)))
-     (when (or bad-macros bad-program bad-logic)
-       (format t "Failed check for coverage of functions with acl2-loop-only code
+       "The minimal and maximal type-sets are incorrectly built into the ~
+        definition of type-alist-entryp.  These type-sets get generated by ~
+        the call of def-basic-type-sets in type-set-a.lisp are must be ~
+        mentioned, as above, in axioms.lisp.  Evidently, a new type-set bit ~
+        was added.  Update type-alist-entryp.")))
+    (cond
+     ((not
+       (equal *primitive-monadic-booleans*
+              (collect-monadic-booleans
+               (strip-cars *primitive-formals-and-guards*)
+               (ens *the-live-state*)
+               (w *the-live-state*))))
+      (interface-er str
+                    '*primitive-monadic-booleans*
+                    *primitive-monadic-booleans*
+                    (collect-monadic-booleans
+                     (strip-cars *primitive-formals-and-guards*)
+                     (ens *the-live-state*)
+                     (w *the-live-state*)))))
+    (cond
+     ((not (getprop 'booleanp 'tau-pair nil 'current-acl2-world (w *the-live-state*)))
+      (interface-er
+       "Our code for tau-term assumes that BOOLEANP is a tau predicate.  But ~
+        it has no tau-pair property!")))
+    (let ((good-lst (chk-initial-built-in-clauses *initial-built-in-clauses*
+                                                  (w *the-live-state*) nil nil)))
+      (cond
+       (good-lst
+        (interface-er
+         "The defconst of *initial-built-in-clauses* is bad because at least ~
+          one of the records supplies an :all-fnnames that is different from ~
+          that computed by all-fnnames-subsumer.  The correct setting is ~
+          shown below. To preserve the comments in the source file it might ~
+          be best to compare -- with EQUAL -- the elements below with the ~
+          corresponding elements in the current source file and just replace ~
+          the ones that have changed.  Here is a correct setting in 1:1 ~
+          correspondence with the current setting: ~X01."
+         `(defconst *initial-built-in-clauses*
+            (list ,@good-lst))
+         nil))))
+    (mv-let
+     (macros-found program-found logic-found)
+     (fns-different-wrt-acl2-loop-only *acl2-files*)
+     (flet ((my-diff (x y)
+                     (if *check-built-in-constants-debug*
+                         (loop for tuple in x
+                               when (not (member (car tuple) y :test 'eq))
+                               collect tuple)
+                       (set-difference-eq x y))))
+       (let ((bad-macros (my-diff macros-found
+                                  *primitive-macros-with-raw-code*))
+             (bad-program (my-diff program-found
+                                   *primitive-program-fns-with-raw-code*))
+             (bad-logic (my-diff logic-found
+                                 *primitive-logic-fns-with-raw-code*)))
+         (when (or bad-macros bad-program bad-logic)
+           (format t "Failed check for coverage of functions with acl2-loop-only code
 differences!  Please send this error message to the ACL2 implementors.
-Missing functions:
+Missing functions (use *check-built-in-constants-debug* = t for verbose report):
   ~s
 ~s;
   ~a
@@ -7009,14 +7053,17 @@ Missing functions:
 ; *primitive-logic-fns-with-raw-code*, respectively according to the non-nil
 ; fields in the error message.
 
-               (list (list '*primitive-macros-with-raw-code* bad-macros)
-                     (list '*primitive-program-fns-with-raw-code* bad-program)
-                     (list '*primitive-logic-fns-with-raw-code* bad-logic))
-               '(lisp-implementation-type)
-               (lisp-implementation-type)
-               '(lisp-implementation-version)
-               (lisp-implementation-version))
-       (error "Check failed!"))))))
+                   (list (list '*primitive-macros-with-raw-code*
+                               bad-macros)
+                         (list '*primitive-program-fns-with-raw-code*
+                               bad-program)
+                         (list '*primitive-logic-fns-with-raw-code*
+                               bad-logic))
+                   '(lisp-implementation-type)
+                   (lisp-implementation-type)
+                   '(lisp-implementation-version)
+                   (lisp-implementation-version))
+           (error "Check failed!")))))))
 
 (defun-one-output check-none-ideal (trips acc)
   (cond
@@ -7753,7 +7800,7 @@ Missing functions:
 ; "[RAW LISP]" prompt.
          (install-new-raw-prompt)
          (setq *lp-ever-entered-p* t)
-         #+hons (f-put-global 'serialize-character #\Z state)
+         #+hons (f-put-global 'serialize-character-system #\Z state)
          #+(and (not acl2-loop-only) acl2-rewrite-meter)
          (setq *rewrite-depth-alist* nil)
 
@@ -7972,7 +8019,8 @@ Missing functions:
     (return-from compile-uncompiled-defuns file)))
   (let ((os-file (pathname-unix-to-os file state)))
     (state-global-let*
-     ((print-circle (f-get-global 'print-circle-files state)))
+     ((print-circle (f-get-global 'print-circle-files state))
+      (serialize-character (f-get-global 'serialize-character-system state)))
      (with-print-controls
       :defaults
       ((*print-circle* (f-get-global 'print-circle state)))
@@ -8000,7 +8048,7 @@ Missing functions:
            (format str0
                    "; This file is automatically generated, to be ~
                     compiled.~%; Feel free to delete it after compilation.~%")
-          
+
 ; We print (in-package "...") but we do it this way to guarantee that the
 ; symbol 'in-package is printed correctly.
 
@@ -8150,7 +8198,8 @@ Missing functions:
     (return-from compile-uncompiled-*1*-defuns file)))
   (let ((os-file (pathname-unix-to-os file state)))
     (state-global-let*
-     ((print-circle (f-get-global 'print-circle-files state)))
+     ((print-circle (f-get-global 'print-circle-files state))
+      (serialize-character (f-get-global 'serialize-character-system state)))
      (with-print-controls
       :defaults
       ((*print-circle* (f-get-global 'print-circle state)))

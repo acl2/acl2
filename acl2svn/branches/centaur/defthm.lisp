@@ -5462,6 +5462,14 @@
   instance of the hypothesis displayed above will be one in which ~c[st] is
   that modified state.~/")
 
+(link-doc-to meta-extract-contextual-fact miscellaneous meta-extract)
+(link-doc-to meta-extract-global-fact miscellaneous meta-extract)
+(link-doc-to meta-extract-global-fact+ miscellaneous meta-extract)
+(link-doc-to meta-extract-formula miscellaneous meta-extract)
+(link-doc-to meta-extract-rw+-term miscellaneous meta-extract)
+(link-doc-to fncall-term miscellaneous meta-extract)
+(link-doc-to typespec-check miscellaneous meta-extract)
+
 (defun evaluator-clause/arglist (evfn formals x)
 
 ; See evaluator-clause.  We return a list of the form

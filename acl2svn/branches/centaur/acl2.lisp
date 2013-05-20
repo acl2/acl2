@@ -331,7 +331,8 @@
 
   #+lispworks
 ; This the default on our linux system, at least on both 32- and 64-bit,
-; version 6.1.0.
+; version 6.1.0.  But it doesn't seem to suffice; see
+; our-lispworks-file-encoding below.
   (setq stream::*default-external-format* '(:LATIN-1 :EOL-STYLE :LF))
 
   #+sbcl
@@ -389,10 +390,41 @@
 #+clisp
 (setq custom:*default-file-encoding*
       (ext:make-encoding :charset 'charset:iso-8859-1
-; The following is a bit of a guess, but seems consistent with what we used to
-; do in acl2-init.lisp; see the commented-out call there that sets
-; custom:*default-file-encoding*.
+
+; The following is consistent with what we used to do in acl2-init.lisp; see
+; the commented-out call there that sets custom:*default-file-encoding*.
+; Unfortunately, according to http://www.clisp.org/impnotes/clhs-newline.html,
+; this doesn't treat CR/LF as two characters when reading files -- for example,
+; the file "foo.lisp" defined in a comment below for dealing with LispWorks
+; provides (len *c*) = 3, not 4.
+
                          :line-terminator :unix))
+
+; We seem to need to do more for LispWorks.  To see why, create a book
+; "foo.lisp" as follows.
+;
+;   (in-package "ACL2")
+;  (defconst *c*
+;    "x
+;  y")
+;
+; Next, if you have arranged in emacs to set save-buffer-coding-system
+; 'iso-8859-1, as in emacs/emacs-acl2.el, turn that off and bring foo.lisp into
+; a buffer; then add control-M at the end of every line; and finally, save the
+; buffer, which will save the control-M at the end of every line and, in
+; particular, in the middle of the string.  (And now restore your handling of
+; save-buffer-coding-system.)  In a Lispworks image of ACL2, execute (ld
+; "foo.lisp"), and you can evaluate (length *c*) to get 3, where 4 is expected
+; because of the control-M.  We adopt here a solution found on the web at:
+; http://www.lispworks.com/documentation/lw60/LW/html/lw-470.htm
+
+#+lispworks
+(defun our-file-encoding (pathname ef-spec buffer length)
+  (system:merge-ef-specs ef-spec '(:LATIN-1 :EOL-STYLE :LF)))
+
+#+lispworks
+(setq system::*file-encoding-detection-algorithm*
+      '(our-file-encoding))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;                          LISP BUGS AND QUIRKS

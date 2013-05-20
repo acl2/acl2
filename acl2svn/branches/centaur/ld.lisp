@@ -20617,6 +20617,18 @@
 ;   complaint by ANSI GCL, but is probably a good thing to do
 ;   regardless).
 
+; Fixed bug in rare error message in check-certificate-file-exists, for the
+; case: "argument k is t for certify-book".
+
+; Arranged that character encoding for files in LispWorks is always as expected
+; (latin-1 with linefeed for :EOL-STYLE).
+
+; Strengthened the identification of built-ins with raw Lisp definitions (see
+; constant *primitive-logic-fns-with-raw-code*, as well as source function
+; fns-different-wrt-acl2-loop-only and related functions).
+
+; Added documentation about guards in :doc princ$ and :doc io.
+
   :doc
   ":Doc-Section release-notes
 
@@ -20701,6 +20713,9 @@
   default value is ~c[nil], which causes an error, as before, upon failure to
   open a specified file.  Other legal values are ~c[t] and ~c[:WARN];
   ~pl[ld-missing-input-ok] and ~pl[ld].
+
+  Extended ~c[*acl2-exports*], in particular adding ~c[UNSIGNED-BYTE-P] and
+  ~c[SIGNED-BYTE-P] (thanks to a suggestion by Jared Davis)
 
   ~st[NEW FEATURES]
 
@@ -20842,10 +20857,33 @@
   ACL2, and we are grateful for GCL support that we received from the late Bill
   Schelter and, more recently and particularly for ANSI GCL, from Camm Maguire.
 
-  The `~c[make]' process for book certification now uses ~c[-k] by default,
-  which keeps going after errors, rather than ~c[-i], which ignores errors.  If
-  you encounter problems because of this change, use ~c[ACL2_IGNORE=-i] with
-  your `~c[make]' command.
+  The `make' process suggested for book certification has changed
+  substantially, thanks in large part to contributions from Jared Davis and Sol
+  Swords.  We have seen the new process provide better performance on machines
+  with many cores, and we expect maintenance advantages such as eliminating the
+  need for Makefiles in individual book directories.  The ``classic'' process,
+  which was based on community books file ~c[books/Makefile-generic], is still
+  supported (~pl[books-certification-classic]) but may disappear in a future
+  release of ACL2.  ~l[books-certification].  Most changes should be invisible
+  to the user, other than improved `make'-level parallelism, with the exception
+  of the following.
+  ~bq[]
+  o Variable ~c[ACL2_JOBS] is no longer supported, nor is it necessary; simply
+  use `make' option `-j' instead. 
+
+  o Regressions now use `make' option ~c[-k] by default, which causes the
+  regression to keep going after errors, rather than ~c[-i], which ignores
+  errors.  If you encounter problems because of this change, use
+  ~c[ACL2_IGNORE=-i] with your `make' command.
+
+  o The `regression' target works for the experimental extension, ACL2(h)
+  (~pl[hons-and-memoization]); target `regression-hons' no longer exists.
+  ~eq[]
+  Please let us know if you run into problems with the new infrastructure, as
+  we consider the legacy infrastructure to be deprecated and we will probably
+  eliminate much of it in the future.  In particular, circular dependencies
+  were formerly prohibited at the directory level, but that is no longer the
+  case, and we expect such cycles to occur in the future.
 
   ACL2(pr), which includes ~il[parallelism] (as for ACL2(p)) and non-standard
   analysis support for the ~il[real]s (as for ACL2(r)), now builds and can
@@ -20861,6 +20899,10 @@
   ~st[EMACS SUPPORT]
 
   ~st[EXPERIMENTAL/ALTERNATE VERSIONS]
+
+  In ACL2(h), ~ilc[print-object$] no longer uses the serialize printer except
+  in system applications as before (e.g., write out ~c[.cert] files).  Thanks
+  to Dave Greve for bringing this issue to our attention.
 
   For ACL2(p), some anomalous behavior may no longer occur because prover
   calls (more specifically, trips through the ACL2 ``waterfall'') will return
