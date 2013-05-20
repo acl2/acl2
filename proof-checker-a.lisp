@@ -274,7 +274,7 @@
             (value t)))))))
 
 (defun make-let-pairs-from-formals (formals arg)
-  ;; e.g. (make-let-pairs-from-formals '(a b c) 'x) = 
+  ;; e.g. (make-let-pairs-from-formals '(a b c) 'x) =
   ;; ((a (car x)) (b (car (cdr x))) (c (car (cdr (cdr x)))))
   (if (consp formals)
       (if (eq (car formals) '&optional)
@@ -686,7 +686,7 @@
                                 (cons #\2 (access goal (car goals)
                                                   :goal-name)))
                           0 nil)
-                  (if goals 
+                  (if goals
                       (fms0 "~|~%The proof of the current goal, ~x0, has been ~
                              completed, as have all of its subgoals.~%Now proving ~x1.~%"
                             (list (cons #\0 name)
@@ -1077,7 +1077,7 @@
                                                      (list 'quote (cdr instr))
                                                      'state)
                                                'pc-single-step
-                                               state t)                            
+                                               state t)
                                    (assert$
                                     (equal (car stobjs-out/vals)
                                            *error-triple-sig*)
@@ -1450,7 +1450,7 @@
                 Hyps:  ~q1~|~
                 Addr:  ~Y2n~|~
                 Deps:  ~Y4n~|"
-               (list 
+               (list
                 (cons #\0 (untranslate (access goal goal :conc) t (w state)))
                 (cons #\1 (let ((hyps (access goal goal :hyps)))
                             (cond ((null hyps) t)
@@ -1475,7 +1475,7 @@
                 Abbrs:       ~y2~|~
                 Local ttree: ~y3~|~
                 Ttree:       ~y4~|"
-               (list 
+               (list
                 (cons #\0 (access pc-state pc-state :instruction))
                 (cons #\1 (access pc-state pc-state :goals))
                 (cons #\2 (access pc-state pc-state :abbreviations))
@@ -1722,7 +1722,7 @@
   Perhaps we can prove *1 by induction.  Three induction schemes are
   suggested by this conjecture.  Subsumption reduces that number to two.
   However, one of these is flawed and so we are left with one viable
-  candidate.  
+  candidate.
 
   We will induct according to a scheme suggested by (BINARY-APPEND X Y).
   This suggestion was produced using the :induction rule BINARY-APPEND.
@@ -1735,7 +1735,7 @@
   When applied to the goal at hand the above induction scheme produces
   two nontautological subgoals.
 
-  [Note:  A hint was supplied for our processing of the goal below. 
+  [Note:  A hint was supplied for our processing of the goal below.
   Thanks!]
 
   Subgoal *1/2
@@ -1815,7 +1815,7 @@
   stack, therefore proving the goal, as reported in the output, which we
   repeat here.
   ~bv[]
-  [Note:  A hint was supplied for our processing of the goal below. 
+  [Note:  A hint was supplied for our processing of the goal below.
   Thanks!]
 
   Subgoal *1/2
@@ -1984,7 +1984,7 @@
   ->: bash
   ***** Now entering the theorem prover *****
 
-  [Note:  A hint was supplied for our processing of the goal above. 
+  [Note:  A hint was supplied for our processing of the goal above.
   Thanks!]
 
   This simplifies, using the :definition REVERSE and the :type-prescription
@@ -2038,7 +2038,7 @@
   ->: bash
   ***** Now entering the theorem prover *****
 
-  [Note:  A hint was supplied for our processing of the goal above. 
+  [Note:  A hint was supplied for our processing of the goal above.
   Thanks!]
 
   This simplifies, using the :definition REVERSE and the :type-prescription
@@ -2111,7 +2111,7 @@
                                (:REWRITE REVAPPEND-REVAPPEND)
                                :TOP :PROVE))
 
-  ACL2 Query (ACL2-PC::EXIT):  
+  ACL2 Query (ACL2-PC::EXIT):
   Do you want to submit this event?  Possible replies are:
   Y (Yes), R (yes and Replay commands), N (No, but exit), A (Abort exiting).
      (Y, R, N or A):  n
@@ -2125,7 +2125,7 @@
                           (:REWRITE REVAPPEND-REVAPPEND)
                           :TOP :PROVE))))
 
-  [Note:  A hint was supplied for our processing of the goal above. 
+  [Note:  A hint was supplied for our processing of the goal above.
   Thanks!]
 
   But the trusted :CLAUSE-PROCESSOR function PROOF-CHECKER-CL-PROC replaces
@@ -2166,7 +2166,7 @@
   Here is an edited version of the resulting log.
   ~bv[]
 
-  [Note:  A hint was supplied for our processing of the goal above. 
+  [Note:  A hint was supplied for our processing of the goal above.
   Thanks!]
 
   [[1> Executing proof-checker instructions]]
@@ -2182,7 +2182,7 @@
 
   [[ ... output omitted ... ]]
 
-  [Note:  A hint was supplied for our processing of the goal below. 
+  [Note:  A hint was supplied for our processing of the goal below.
   Thanks!]
 
   Subgoal *1/3''
@@ -2200,7 +2200,7 @@
   ->: :BASH
   ***** Now entering the theorem prover *****
 
-  [Note:  A hint was supplied for our processing of the goal above. 
+  [Note:  A hint was supplied for our processing of the goal above.
   Thanks!]
 
   But we have been asked to pretend that this goal is subsumed by the

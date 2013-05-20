@@ -191,7 +191,7 @@
 
 ; Example 1.  In our first example below, the defun of bar should fail.  It
 ; does indeed fail starting with Version_2.6, but not in Version_2.5 or (we
-; believe) several versions before that.  We discuss below how this can lead 
+; believe) several versions before that.  We discuss below how this can lead
 ; to unsoundness.
 
 ; (defmacro foo (x) (car x))
@@ -217,7 +217,7 @@
 ; ACL2 >(bar 3)
 ;   1> (ACL2_*1*_ACL2::BAR 3)>
 ;     2> (BAR 3)>
-; 
+;
 ; Error: Y is not of type LIST.
 ; Fast links are on: do (si::use-fast-links nil) for debugging
 ; Error signalled by CAR.
@@ -228,25 +228,25 @@
 ; above, with guard-checking off.
 
 ; ACL2 >(defun bar (y) (foo y))
-; 
-; 
+;
+;
 ; ACL2 Error in ( DEFUN BAR ...):  The guard for the function symbol
 ; CAR, which is (OR (CONSP X) (EQUAL X NIL)), is violated by the arguments
 ; in the call (CAR 'Y).  The guard is being checked because this function
 ; is a primitive and a "safe" mode is being used, perhaps for macroexpansion.
-; 
-; 
-; 
+;
+;
+;
 ; ACL2 Error in ( DEFUN BAR ...):  In the attempt to macroexpand the
 ; form (FOO Y), evaluation of the macro body caused an error.
-; 
-; 
+;
+;
 ; Summary
 ; Form:  ( DEFUN BAR ...)
 ; Rules: NIL
 ; Warnings:  None
 ; Time:  0.00 seconds (prove: 0.00, print: 0.00, other: 0.00)
-; 
+;
 ; ******** FAILED ********  See :DOC failure  ******** FAILED ********
 ; ACL2 >
 
@@ -264,11 +264,11 @@
 ; (lp)
 ; (thm (equal (bad-macro) 1))
 
-; Now look at the following Version_2.5 trace.  It highlights a behavior of 
-; Version_2.5: when a :program mode function (here, my-endp-0) is 
+; Now look at the following Version_2.5 trace.  It highlights a behavior of
+; Version_2.5: when a :program mode function (here, my-endp-0) is
 ; called on arguments satisfying its guard (here, implicitly t), the
 ; corresponding raw Lisp function is invoked.  Thus guards are not checked on
-; its subroutines (here, endp).  In this example, endp is being called on an 
+; its subroutines (here, endp).  In this example, endp is being called on an
 ; argument not satisfying its guard.  In the abstract, this is problematic
 ; because we use guards to restrict primitives to arguments for which the
 ; result is implementation independent.  If the result of (endp 0) can depend
@@ -279,7 +279,7 @@
 ;   1> (ACL2_*1*_ACL2::MY-ENDP-0)>
 ;     2> (MY-ENDP-0)>
 ;       3> (ENDP 0)>
-; 
+;
 ; Error: 0 is not of type LIST.
 ; Fast links are on: do (si::use-fast-links nil) for debugging
 ; Error signalled by SYSTEM::TRACE-CALL.
@@ -304,22 +304,22 @@
 ; First book, call it "ex":
 
 ;   (in-package "ACL2")
-; 
+;
 ;   (defun my-eq (x y)
 ;     (declare (xargs :guard t ; "bad" guard
 ;                     :mode :program))
 ;     (eq x y))
-; 
+;
 ;   (defmacro bad-macro ()
 ;     (my-eq '(a b) '(a b)))
-; 
+;
 ;   (set-verify-guards-eagerness 0)
-; 
+;
 ;   (local (verify-termination my-eq))
-; 
+;
 ;   (defun bad-fn ()
 ;     (bad-macro))
-; 
+;
 ;   (defthm bad-thm
 ;     (bad-fn)
 ;     :rule-classes nil)
@@ -327,9 +327,9 @@
 ; Second book, which includes the one above::
 
 ;   (in-package "ACL2")
-; 
+;
 ;   (local (include-book "ex"))
-; 
+;
 ;   (defthm very-bad
 ;     nil
 ;     :hints (("Goal" :use bad-thm))
@@ -343,9 +343,9 @@
 ;   in the call (EQ '(A B) '(A B)).  The guard is being checked because
 ;   this function is a primitive and a "safe" mode is being used, perhaps
 ;   for macroexpansion.
-;   
-;   
-;   
+;
+;
+;
 ;   ACL2 Error in ( DEFUN BAD-FN ...):  In the attempt to macroexpand the
 ;   form (BAD-MACRO), evaluation of the macro body caused an error.
 
@@ -355,9 +355,9 @@
 
 ; Finally, note that we do not attempt to fix the following "problem."  That
 ; is, the behavior for the example below is unchanged from Version_2.5 to
-; Version_2.6.  The point is that for macroexpansion to behave properly, we 
+; Version_2.6.  The point is that for macroexpansion to behave properly, we
 ; really need only guarantee consistency between the logic and Common Lisp; it
-; is acceptable if in some modes we get errors even when errors are not 
+; is acceptable if in some modes we get errors even when errors are not
 ; necessary.
 
 ; (defun mac-fn (x) (declare (xargs :guard (consp x))) x)
@@ -462,7 +462,7 @@
 ; (defun foo (x)
 ;   (declare (xargs :guard t :mode :program))
 ;   (if (natp x) (if (zp x) 0 (* x (foo (1- x)))) 0))
-; 
+;
 ; (defun foo (x)
 ;   (declare (xargs :guard (natp x)))
 ;   (if (zp x) 0 (* x (foo (1- x)))))
@@ -472,13 +472,13 @@
 ; (defun foo (x)
 ;   (declare (xargs :guard (natp x) :verify-guards nil))
 ;   (if (zp x) 0 (* x (foo (1- x)))))
-; 
+;
 ; ; This one reports a guard violation with guard-checking set to :all but not
 ; ; when it is set to t.
 ; (defun foo (x)
 ;   (declare (xargs :guard (evenp x) :verify-guards nil))
 ;   (if (zp x) 0 (* x (foo (1- x)))))
-; 
+;
 ; (defun foo (x)
 ;   (if (zp x) 0 (* x (foo (1- x)))))
 
@@ -495,15 +495,15 @@
 ;                     (cond (<live-stobjp-test> ; test can often be omitted
 ;                            (return-from <*1*fn> (<fn> . <formals>)))))
 ;                    (<guard-checking-on> <fail_guard>))
-; 
+;
 ; ; Otherwise fall through to final call of *1* function.
-; 
+;
 ;            )
-; 
+;
 ; ; The next case is not needed for our guarantees.  Rather, it ensures that
 ; ; evaluation with guard checking on really does check guards at each function
 ; ; call.
-; 
+;
 ;           ((and <guard-checking-on>
 ;                 (not <*1*guard>))
 ;            <fail_guard>)
@@ -513,18 +513,18 @@
 ;            (return-from <*1*fn> *1*body))
 ;           ((eq <class> :program)
 ;            (return-from <*1*fn> (<fn> . <formals>)))
-; 
+;
 ; ; If we fall through to here, then we compute in the logic, avoiding further
 ; ; guard checks in recursive calls (where a "special" declaration will take
 ; ; care of this if we are in a mutual-recursion nest).
-; 
+;
 ;           (maybe-warn-for-guard <fn>)))
-; 
+;
 ; ; In the case (eq <class> :program), we conclude by laying down the call (<fn>
 ; ; . <formals>).  Otherwise, we lay down the following code.
-; 
+;
 ;   (labels
-; 
+;
 ; ; The following local definition of <*1*fn> executes calls of <fn> in the
 ; ; logic, without guard-checking (except for primitives under safe-mode; see
 ; ; below).  Note that it is always legitimate for this local function to cause
@@ -532,10 +532,10 @@
 ; ; :program mode functions encountered during the boot-strap, at least outside
 ; ; (say) axioms.lisp -- although that would presumably eliminate the ability to
 ; ; call those functions in macro definitions.
-; 
+;
 ;    ((<*1*fn>
 ;      <formals>
-; 
+;
 ; ; Certain functions can take the live state as an argument, and yet do
 ; ; not ``properly'' handle it in their logic code.  Consider for
 ; ; example (princ$ '(a b) *standard-co* state).  With guard-checking
@@ -549,66 +549,66 @@
 ; ; *super-defun-wart-stobjs-in-alist*, since these are the ones that
 ; ; pass the state on as though it were a legitimate state object, i.e.,
 ; ; to functions that take non-state values as arguments.
-; 
+;
 ; ; Other functions, such as those defined under defstobj, may have a stobj
 ; ; name as an argument but do not have an appropriate 'stobjs-in
 ; ; setting in the world, because we have not yet declared that the
 ; ; stobj name is a stobj.  These latter functions are characterized by
 ; ; having a non-nil stobj-flag, said flag being the stobj name.  We
 ; ; compute here the appropriate stobjs-in.
-; 
+;
 ;      <fail_if_live_stobj> ; laid down only in cases as described above
 ;      *1*body))
 ;    (*1*fn . formals)))))
-; 
+;
 ; WHERE:
-; 
+;
 ; <*1*guard>
 ;  =
 ; oneification of guard
-; 
+;
 ; <formals>
 ;  =
 ; list of formals, e.g., (x1 ... xn)
-; 
+;
 ; <guard-checking-on>
 ;  =
 ; (f-get-global 'guard-checking-on *the-live-state*)
-; 
+;
 ; <guard>
 ;  =
 ; [guard of the function being defined]
-; 
+;
 ; <fail_guard>
 ;  =
 ; (throw-raw-ev-fncall
 ;  (list 'ev-fncall-guard-er '<fn> (list x) '<guard> '(nil) nil))
-; 
+;
 ; <fail_safe>
 ;  =
 ; (throw-raw-ev-fncall
 ;  (list 'ev-fncall-guard-er '<fn> (list x) '<guard> '(nil) t))
-; 
+;
 ; <class>
 ;  =
 ; <*1*fn>
-; 
+;
 ; <*1*fn>
 ;  =
 ; (*1*-symbol <fn>)
-; 
+;
 ; <fn>
 ;  =
 ; [function symbol being defined]
-; 
+;
 ; <safe>
 ;  =
 ; (f-get-global 'safe-mode *the-live-state*)
-; 
+;
 ; <fail_if_live_stobj>
-;  = 
+;  =
 ; code for protecting against executing <*1*body> on live stobjs
-; 
+;
 ; <live-stobjp-test>
 ;  =
 ; test that all of the stobj parameters to the function are indeed the "live"
@@ -616,7 +616,7 @@
 ; update functions assumes, starting in v2-8, that user-defined stobj parameters
 ; are live, a restriction enforced by the corresponding *1* functions before
 ; passing to Common Lisp.
-; 
+;
 ; <wormhole-test-for-functions-with-user-stobjs>
 ;   =
 ; a test that is generated to check if one is evaluating a function with
@@ -699,7 +699,7 @@
 ;    [[... output omitted ...]]
 ;    F1
 ;   ACL2 !>(defn f2 (x) x)
-;    [[... output omitted ...]];   
+;    [[... output omitted ...]];
 ;    F2
 ;   ACL2 !>(defun f (x) (mbe :logic (f1 x) :exec (f2 x)))
 ;    [[... output omitted ...]]
@@ -811,7 +811,7 @@
           (or (< (realpart x1) (realpart y1))
               (and (= (realpart x1) (realpart y1))
                    (< (imagpart x1) (imagpart y1))))))))
-              
+
 
 (defun-*1* apply (x y)
   (error "We have called apply on ~s and ~s, but we thought we were rid of apply."
@@ -857,7 +857,7 @@
            (< x 256))
       (code-char x)
     (gv code-char (x) (code-char 0))))
-                   
+
 (defun-*1* complex (x y)
   (complex (the rational (if (rationalp x) x (gv complex (x y) 0)))
            (the rational (if (rationalp y) y (gv complex (x y) 0)))))
@@ -1403,7 +1403,7 @@
                         ('throw-without-attach 'nil fn formals))
                     (prog2$ formals ; avoid compiler warning
                             `(,(*1*-symbol fn) ,@(cdr def))))
-                   (& (interface-er 
+                   (& (interface-er
                        "Implementation error: Oneify-cltl-code encountered ~
                         non-executable definition, ~x0, that was not what we ~
                         would expect to be generated by intro-udf-lst2."
@@ -2050,7 +2050,7 @@
 ; revisit this approach.
 
 ;           (*1*body-call-shared-p
-; 
+;
 ; ; We want to keep code size down by using macrolet to share the *1*body ;
 ; ; expression, but preferably not otherwise, to avoid overhead that we seem to ;
 ; ; have observed, at least in Allegro CL, for expanding (uncompiled) macrolet ;
@@ -2058,17 +2058,17 @@
 ; ; for the occurrences of *1*body-call outside the labels function that will ;
 ; ; also occur in a corresponding labels function.  The latter rules out the case ;
 ; ; (eq defun-mode :program). ;
-; 
+;
 ;            (ffnnamep fn (body fn nil wrld)))
 ;           (*1*body-macro (and *1*body-call-shared-p
 ;                               (acl2-gentemp "*1*BODY-MACRO")))
 ;           (*1*body-call (if *1*body-call-shared-p
 ;                             `(,*1*body-macro)
 ;                           *1*body))
-; 
+;
 ; ;;; end of let* bindings .... and here is the replacement for ,@*1*-body-forms
 ; ;;; below:
-; 
+;
 ;           ,@(if *1*body-call-shared-p
 ;                 `((macrolet ((,*1*body-macro () ',*1*body))
 ;                     ,@*1*-body-forms))
@@ -2287,8 +2287,8 @@
         (open *dmr-file-name*
               :if-exists
               :supersede ; :overwrite doesn't open non-existent file in CCL
-              :direction :output 
-              #+acl2-par :sharing 
+              :direction :output
+              #+acl2-par :sharing
               #+acl2-par :lock ; the default of :private is single-threaded
               ))
   state)
@@ -3073,7 +3073,7 @@
 ; analyze-fgetprop-stats were as follows.
 
 ; books/certify-numbers.lisp:
-; 
+;
 ; GLOBAL-VALUE                                        2474980
 ; COARSENINGS                                         2332094
 ; TYPE-PRESCRIPTIONS                                  1162730
@@ -3098,9 +3098,9 @@
 ; THEOREM                                                9234
 ; LINEAR-LEMMAS                                          9102
 ; ...
-; 
+;
 ; books/rtl/rel2/support/cert.lsp (aborted as explained above):
-; 
+;
 ; COARSENINGS                                        30087445
 ; GLOBAL-VALUE                                       28366962
 ; CONGRUENCES                                        27187188
@@ -3131,14 +3131,14 @@
 ; properties:
 
 ; books/certify-numbers.lisp:
-; 
+;
 ; RECOGNIZER-ALIST                               2056058
 ;  GLOBAL-VALUE                                       2056058
 ; UNTOUCHABLES                                    261297
 ;  GLOBAL-VALUE                                        261297
-; 
+;
 ; books/rtl/rel2/support/cert.lsp (aborted as explained above):
-; 
+;
 ; RECOGNIZER-ALIST                              26193957
 ;  GLOBAL-VALUE                                      26193957
 ; UNTOUCHABLES                                   1359647
@@ -3159,9 +3159,9 @@
 ; outpu inhibited.
 
 ; ============================================================
-; 
+;
 ; stats0 (books/certify-numbers.lisp):
-; 
+;
 ; COARSENINGS                                         2527582
 ; GLOBAL-VALUE                                        2224181
 ; RUNIC-MAPPING-PAIRS                                 1188675
@@ -3171,11 +3171,11 @@
 ; TABLE-ALIST                                          642459
 ; SYMBOL-CLASS                                         400157
 ; LEMMAS                                               362209
-; 
+;
 ; ============================================================
-; 
+;
 ; stats1 (books/workshops/1999/compiler/proof1):
-; 
+;
 ; COARSENINGS                                         1137397
 ; DEF-BODIES                                           705063
 ; GLOBAL-VALUE                                         587267
@@ -3187,11 +3187,11 @@
 ; RUNIC-MAPPING-PAIRS                                   75828
 ; STOBJS-OUT                                            13381
 ; MACRO-BODY                                            10245
-; 
+;
 ; ============================================================
-; 
+;
 ; stats2 (:mini-proveall):
-; 
+;
 ; COARSENINGS                                           87020
 ; GLOBAL-VALUE                                          58987
 ; RUNIC-MAPPING-PAIRS                                   54106
@@ -3206,11 +3206,11 @@
 ; MACRO-BODY                                             1216
 ; STOBJS-OUT                                             1199
 ; ELIMINATE-DESTRUCTORS-RULE                              962
-; 
+;
 ; ============================================================
-; 
+;
 ; stats3 (osets/map):
-; 
+;
 ; DEF-BODIES                                           288073
 ; RUNIC-MAPPING-PAIRS                                  262004
 ; COARSENINGS                                          235573
@@ -3226,11 +3226,11 @@
 ; MACRO-BODY                                            30206
 ; STOBJS-OUT                                            27727
 ; THEOREM                                               15714
-; 
+;
 ; ============================================================
-; 
+;
 ; stats4 (rtl/rel5/support/drnd):
-; 
+;
 ; COARSENINGS                                        20881212
 ; GLOBAL-VALUE                                       10230404
 ; RUNIC-MAPPING-PAIRS                                 7726914
@@ -3242,11 +3242,11 @@
 ; CONGRUENCES                                          497120
 ; LEMMAS                                               376371
 ; MACRO-BODY                                           294016
-; 
+;
 ; ============================================================
-; 
+;
 ; stats5 (rtl/rel2/support/cert.lsp):
-; 
+;
 ; COARSENINGS                                        21792912
 ; GLOBAL-VALUE                                       15497700
 ; RUNIC-MAPPING-PAIRS                                 8088313
@@ -3260,7 +3260,7 @@
 ; MACRO-BODY                                           364583
 ; FORMALS                                              248019
 ; FORWARD-CHAINING-RULES                               245442
-; 
+;
 ; ============================================================
 
 ; End of Experimental Results.
@@ -5273,7 +5273,7 @@
 ; Recall that ignorep is non-nil if we are to AVOID storing the
 ; symbol-functions for names.  If ignorep is non-nil, then it is either
 ; reclassifying  -- meaning we are reclassifying a symbol from :program
-;                   to :logic mode.  We don't want to overwrite its 
+;                   to :logic mode.  We don't want to overwrite its
 ;                   symbol-function since that might be ACL2 source code.
 ;                   We still write a *1* definition in this case.
 ; (defstobj . stobj)
@@ -5585,7 +5585,7 @@
               (setq new-defs (cons (list* 'oneify-cltl-code :logic def name)
                                    new-defs)))
             (setq new-defs
-                  
+
 ; We reverse new-defs because we want to be sure to define the *1*
 ; defs after the raw Lisp defs (which may be macros, because of :inline).
 
@@ -5761,7 +5761,7 @@
                         :condition  (nth 2 tuple)
                         :inline     (nth 3 tuple)
                         :trace      (nth 4 tuple)
-                        :cl-defun   cl-defun 
+                        :cl-defun   cl-defun
                         :formals    (nth 6 tuple)
                         :stobjs-in  (nth 7 tuple)
                         :stobjs-out (nth 8 tuple)
@@ -5776,7 +5776,7 @@
 
 ; Finally, we make sure always to leave the *current-acl2-world-key* as the
 ; first property on the symbol-plist of the symbol.
-                                                
+
   (let ((temp (get (car trip) *current-acl2-world-key*))
         (plist (symbol-plist (car trip))))
     (cond ((and temp (not (eq (car plist) *current-acl2-world-key*)))
@@ -6191,7 +6191,7 @@
             (and (eq name 'current-acl2-world)
                  *checkpoint-world-len-and-alist-stack*
                  (let ((chkpt-wrld (car checkpoint-world-len-and-alist))
-                       (chkpt-len (cadr checkpoint-world-len-and-alist)) 
+                       (chkpt-len (cadr checkpoint-world-len-and-alist))
                        (old-wrld-len (length old-wrld)))
                    (and (<= chkpt-len old-wrld-len)
                         (eq (nthcdr (- old-wrld-len chkpt-len) old-wrld)
@@ -6600,7 +6600,7 @@
 
 (defun enter-boot-strap-pass-2 ()
 ; We must provide set-w a frame on which to push its undo forms.
-  (push nil *acl2-unwind-protect-stack*)  
+  (push nil *acl2-unwind-protect-stack*)
   (set-w 'extension
          (global-set 'boot-strap-pass-2 t (w *the-live-state*))
          *the-live-state*)
@@ -7417,7 +7417,7 @@ Missing functions (use *check-built-in-constants-debug* = t for verbose report):
 ; If you want the final image to have infixp = t, then put the following
 ; form here:
 ;    (f-put-global 'infixp t *the-live-state*)
-    
+
      t)))
 
 
@@ -7620,7 +7620,7 @@ Missing functions (use *check-built-in-constants-debug* = t for verbose report):
                              (t nil))))))))))))
 
 #+(and acl2-par lispworks)
-(setq system:*sg-default-size* 
+(setq system:*sg-default-size*
 
 ; Keep the below number in sync with the call to hcl:extend-current-stack in
 ; lp.
@@ -7632,7 +7632,7 @@ Missing functions (use *check-built-in-constants-debug* = t for verbose report):
 
 ; In Lispworks, we spawn a thread for the listener before we exit lp for the
 ; first time, so that when we exit lp, multiprocessing does not stop.  This
-; strategy is derived from the following quote, from Martin Simmons, of 
+; strategy is derived from the following quote, from Martin Simmons, of
 ; Lispworks.
 ;
 ; "If you want it to run a normal REPL, then you could call
@@ -7662,7 +7662,7 @@ Missing functions (use *check-built-in-constants-debug* = t for verbose report):
 ; Common Lisps when the given file or directory does not exist, in which case
 ; our-truename will generally return nil.  Hence, we sometimes call
 ; our-truename on "" rather than on a file name.
-  
+
   (with-more-warnings-suppressed
 
 ; Parallelism wart: we currently reset the parallelism variables twice on
@@ -8104,7 +8104,7 @@ Missing functions (use *check-built-in-constants-debug* = t for verbose report):
                          (eq (caddr trip) 'defstobj))
                     (dolist (x (car (cddddr (cddr trip))))
 
-; (cddr trip) is of the form 
+; (cddr trip) is of the form
 ; (DEFSTOBJ name the-live-name init raw-defs template)
 ; and x here is one of the raw-defs.  Note that since raw Lisp definitions for
 ; defabsstobj are defmacros, we do not deal with defabsstobj, just as we skip
@@ -8310,7 +8310,7 @@ Missing functions (use *check-built-in-constants-debug* = t for verbose report):
 ;
 ; During the build, compile :program mode functions on the fly (as usual):
 ; 9763.160u 146.760s 2:51:33.10 96.2%   0+0k 0+0io 13673004pf+0w
-; 
+;
 ; During the build, do not compile :program mode functions at all:
 ; 9827.570u 149.730s 2:52:29.27 96.4%   0+0k 0+0io 14549410pf+0w
 ;

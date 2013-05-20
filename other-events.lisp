@@ -48,7 +48,7 @@
        (true-listp x)
        (equal 2 (length x))
        (eq (car x) 'quote)))
-         
+
 ; The following function is just the negation of chk-macro-arglist-keysp, when
 ; applied to a true-listp args.  The reason it must be applied to a true-listp
 ; is that macro-arglist-keysp terminates on an endp test and its counterpart
@@ -776,7 +776,7 @@
 
 ; We determine whether there is already a defmacro of name with the
 ; given args, guard, and body.  We know that body is a term.  Hence,
-; it is not nil.  Hence, if name is not a macro and there is no 
+; it is not nil.  Hence, if name is not a macro and there is no
 ; 'macro-body, the first equal below will fail.
 
   (and (getprop name 'absolute-event-number nil 'current-acl2-world w)
@@ -1113,7 +1113,7 @@
       (list 'if
             '(equal (ld-skip-proofsp state) 'include-book)
             '(mv nil nil state)
-            (list 'if 
+            (list 'if
                   '(equal (ld-skip-proofsp state) 'initialize-acl2)
                   '(mv nil nil state)
                   (list 'state-global-let*
@@ -1492,7 +1492,7 @@
                      (if iff implies not
                          in-package
                          defpkg defun defuns mutual-recursion defmacro defconst
-                         defstobj defthm defaxiom progn encapsulate include-book 
+                         defstobj defthm defaxiom progn encapsulate include-book
                          deflabel defdoc deftheory
                          in-theory in-arithmetic-theory regenerate-tau-database
                          push-untouchable remove-untouchable set-body table
@@ -1581,7 +1581,7 @@
       'enter-boot-strap-mode
       (append (strip-cars *primitive-formals-and-guards*)
               (strip-non-hidden-package-names *initial-known-package-alist*))
-      (initialize-tau-preds 
+      (initialize-tau-preds
        *primitive-monadic-booleans*
        (putprop
         'equal
@@ -2916,7 +2916,7 @@
   ~l[theories] and ~pl[logical-name] for a discussion of
   theories in general and why the commonly used ``theory functions''
   such as ~c[current-theory] are really macros that expand into terms
-  involving the variable ~c[world].  
+  involving the variable ~c[world].
 
   The theory returned by ~c[current-theory] is in fact the theory selected by
   the ~ilc[in-theory] event most recently preceding logical name, extended by
@@ -4607,7 +4607,7 @@
 ;                                 and those names, along with any others
 ;                                 introduced by the embedded events, are
 ;                                 returned.]
-; include-book-fn            (CERTIFICATION-TUPLE GLOBAL-VALUE 
+; include-book-fn            (CERTIFICATION-TUPLE GLOBAL-VALUE
 ;                              ("name" "user name" "short name"
 ;                               cert-annotations . chk-sum))
 
@@ -4799,7 +4799,7 @@
                 A local context is not useful when setting this table, since ~
                 the acl2-defaults-table is restored upon completion of ~
                 encapsulate, include-book, and certify-book forms; that is, ~
-                no changes to the acl2-defaults-table are exported" 
+                no changes to the acl2-defaults-table are exported"
                (chk-embedded-event-form-orig-form-msg orig-form state)
                ""))
           ((and (eq in-local-flg t)
@@ -5157,14 +5157,14 @@
   ~bv[]
   ACL2 P>(find-package \"ACL2\")
   [Note:  Printing non-ACL2 result.]
-  #<The ACL2 package> 
+  #<The ACL2 package>
   ACL2 P>(mv nil (find-package \"ACL2\") state)
    [Note:  Printing non-ACL2 result.]
-  #<The ACL2 package> 
+  #<The ACL2 package>
   ACL2 P>(mv t (find-package \"ACL2\") state)
   ACL2 P>(mv 3 (find-package \"ACL2\"))
   [Note:  Printing non-ACL2 result.]
-  (3 #<The ACL2 package>) 
+  (3 #<The ACL2 package>)
   ACL2 P>
   ~ev[]
   If you have trouble with large structures being printed out, you might want
@@ -5694,7 +5694,7 @@
                        (acl2-raw-eval form state)
                      (trans-eval form ctx state t)))
 
-; If erp is nil, trans-ans is 
+; If erp is nil, trans-ans is
 ; ((nil nil state) . (erp' val' replaced-state))
 ; because ev-lst contains nothing but embedded event forms.
 
@@ -6163,7 +6163,7 @@
 ;     (f2 (x) t))
 ;    (local (defun f1 (x) x))
 ;    (local (defun f2 (x) x)))
-;   
+;
 ;   (skip-proofs
 ;    (encapsulate
 ;     ((g (x) t))
@@ -6177,7 +6177,7 @@
 ;   (defthm f1-is-f2
 ;     (equal (f1 x) (f2 x))
 ;     :hints (("Goal" :use g-prop)))
-;   
+;
 ;   (defthm contradiction
 ;     nil
 ;     :hints (("Goal" :use ((:functional-instance
@@ -6632,7 +6632,7 @@
 ; embedded-event-lst is
 
 ;   ((defstobj ...)
-;    (encapsulate nil) 
+;    (encapsulate nil)
 ;    (include-book ...)
 ;    (encapsulate ((p (x y) (nil nil) (nil)) ...)))
 
@@ -6875,7 +6875,7 @@
                                 caller)
                               (if (eq caller 'encapsulate-pass-1) 0 1))
                     (mv t nil state)))))
-                (t 
+                (t
 
 ; The evaluation caused no error.  The world inside state is the current one
 ; (because nothing but events were evaluated and they each install the world).
@@ -7003,7 +7003,7 @@
 
   (assert$
    sig-fns
-   (let* ((fns 
+   (let* ((fns
 
 ; Here we implement the [Front] rule mentioned in the Structured Theory paper,
 ; i.e. where we (virtually) move every axiomatic event that we can to be in
@@ -7376,80 +7376,80 @@
 ; of the forms in this comment.  You should never get an error.
 
 ; (set-state-ok t)
-; 
+;
 ; (defun test (val)
 ;   (declare (xargs :mode :program))
 ;   (if val
 ;       'ok
 ;     (er hard 'test "This example failed!")))
-;                                             
+;
 ; ; I start with a collection of simple encapsulates, primarily to test the
-; ; handling of signatures in their three forms.  I need a stobj.  
-; 
+; ; handling of signatures in their three forms.  I need a stobj.
+;
 ; (defstobj $s x y)
-; 
+;
 ; ; Here is a simple, typical encapsulate.
 ; (encapsulate ((p (x) t))
 ;   (local (defun p (x) (declare (ignore x)) t))
 ;   (defthm booleanp-p (booleanp (p x))))
-; 
+;
 ; (test
 ;  (equal
 ;   (getprop 'p 'constraint-lst nil 'current-acl2-world (w state))
 ;   '((booleanp (P X)))))
-; 
+;
 ; (u)
-; 
+;
 ; ; The next set just look for errors that should never happen.
-; 
+;
 ;   The following all cause errors.
-; 
+;
 ;   (encapsulate (((p x) => x))
 ;                (local (defun p (x) x)))
-; 
+;
 ;   (encapsulate ((p x) => x)
 ;                (local (defun p (x) x)))
-; 
+;
 ;   (encapsulate (((p x $s) => (mv x $s)))
 ;                (local (defun p (x $s) (declare (xargs :stobjs ($s))) (mv x $s))))
-; 
+;
 ;   (encapsulate (((p * state $s) => state))
 ;                (local (defun p (x state $s)
 ;                         (declare (xargs :stobjs nil) (ignore x $s))
 ;                         state)))
-; 
+;
 ;   (encapsulate (((p * state *) => $s))
 ;                (local (defun p (x state $s)
 ;                         (declare (xargs :stobjs $s) (ignore x state))
 ;                         $s)))
-; 
+;
 ;   ; Here are some of the "same" errors provoked in the old notation.
-; 
+;
 ;   (encapsulate ((p (x $s) (mv * $s) :stobjs *))
 ;                (local (defun p (x $s) (declare (xargs :stobjs ($s))) (mv x $s))))
-; 
+;
 ;   (encapsulate ((p (* state $s) state))
 ;                (local (defun p (x state $s)
 ;                         (declare (xargs :stobjs nil) (ignore x $s))
 ;                         state)))
-; 
+;
 ;   (encapsulate ((p (y state $s) $s))
 ;                (local (defun p (x state $s)
 ;                         (declare (xargs :stobjs $s) (ignore x state))
 ;                         $s)))
-; 
+;
 ;   (encapsulate ((p (x state y) $s))
 ;                (local (defun p (x state $s)
 ;                         (declare (xargs :stobjs $s) (ignore x state))
 ;                         $s)))
-; 
+;
 ; ; The rest of my tests are concerned with the constraints produced.
-; 
+;
 ; ; Here is one that contains a function that can be moved forward out
 ; ; of encapsulate, even though it is used in the constraint.  Note that
 ; ; not every theorem proved becomes a constraint.  The theorem evp-+ is
 ; ; moved forward too.
-; 
+;
 ; (encapsulate ((p (x) t))
 ;   (local (defun p (x) (declare (ignore x)) 2))
 ;   (defun evp (n) (if (zp n) t (if (zp (- n 1)) nil (evp (- n 2)))))
@@ -7461,25 +7461,25 @@
 ;                               (evp j))
 ;                          (evp (+ i j))))
 ;   (defthm evp-p (evp (p x))))
-; 
+;
 ; (test
 ;  (equal
 ;   (getprop 'p 'constraint-lst nil 'current-acl2-world (w state))
 ;   '((EVP (P X)))))
-; 
+;
 ; (u)
-; 
+;
 ; ; This illustrates a function which uses the signature function p but
 ; ; which can be moved back out of the encapsulate.  The only constraint
 ; ; on p is (EVP (P X)).
-; 
+;
 ; ; But if the function involves the constrained function, it cannot
 ; ; be moved forward.  It may be moved back, or it may become part of the
 ; ; constraint, depending on several things.
-; 
+;
 ; ; Case 1.  The function uses p in a benign way and nothing is proved
 ; ; about the function.
-; 
+;
 ; (encapsulate ((p (x) t))
 ;   (local (defun p (x) (ifix x)))
 ;   (defun mapp (x)
@@ -7487,20 +7487,20 @@
 ;         (cons (p (car x)) (mapp (cdr x)))
 ;       nil))
 ;   (defthm integerp-p (integerp (p x))))
-; 
+;
 ; (test
 ;  (and (equal (getprop 'p 'constraint-lst nil 'current-acl2-world (w state))
 ;              '((integerp (p x))))
 ;       (equal (getprop 'mapp 'constraint-lst nil 'current-acl2-world (w state))
 ;              nil)))
-; 
+;
 ; (u)
-; 
+;
 ; ; The constraint, above, on p is (INTEGERP (P X)).
-; 
+;
 ; ; Case 2.  The function is subversive, i.e., uses p in a way critical to
 ; ; its termination.
-; 
+;
 ; (encapsulate ((p (x) t))
 ;   (local (defun p (x) (cdr x)))
 ;   (defthm len-p (implies (consp x) (< (len (p x)) (len x))))
@@ -7508,7 +7508,7 @@
 ;     (if (consp x)
 ;         (not (bad (p x)))
 ;       t)))
-; 
+;
 ; (test
 ;  (and (equal (getprop 'p 'constraint-lst nil 'current-acl2-world (w state))
 ; ; Modified for v3-5:
@@ -7523,41 +7523,41 @@
 ;                                  (< (LEN (P X)) (LEN X))))))
 ;       (equal (getprop 'bad 'constraint-lst nil 'current-acl2-world (w state))
 ;              'p)))
-; 
+;
 ; (u)
-; 
+;
 ; ; The constraint above is associated both with p and bad.  That is, if you
 ; ; functionally instantiate p, the new function must satisfy the axiom for bad
 ; ; too, which means you must instantiate bad.  Similarly, if you instantiate
 ; ; bad, you must instantiate p.
-; 
+;
 ; ; It would be better if you did this:
-; 
+;
 ; (encapsulate ((p (x) t))
 ;   (local (defun p (x) (cdr x)))
 ;   (defthm len-p (implies (consp x) (< (len (p x)) (len x)))))
-; 
+;
 ; (test
 ;  (equal (getprop 'p 'constraint-lst nil 'current-acl2-world (w state))
 ;         '((IMPLIES (CONSP X)
 ;                    (< (LEN (P X)) (LEN X))))))
-; 
-; ; The only constraint on p is 
+;
+; ; The only constraint on p is
 ; ; (IMPLIES (CONSP X) (< (LEN (P X)) (LEN X))).
 ; ; Now you can define bad outside:
-; 
+;
 ; (defun bad (x)
 ;   (declare (xargs :measure (len x)))
 ;   (if (consp x)
 ;       (not (bad (p x)))
 ;     t))
-; 
+;
 ; (u)
 ; (u)
-; 
+;
 ; ; Case 3.  The function uses p in a benign way but something is proved
 ; ; about the function, thus constraining p.
-; 
+;
 ; (encapsulate ((p (x) t))
 ;   (local (defun p (x) (ifix x)))
 ;   (defun mapp (x)
@@ -7566,7 +7566,7 @@
 ;       nil))
 ;   (defthm mapp-is-a-list-of-ints
 ;     (integer-listp (mapp x))))
-; 
+;
 ; (test
 ;  (and (equal (getprop 'p 'constraint-lst nil 'current-acl2-world (w state))
 ;              '((EQUAL (MAPP X)
@@ -7578,20 +7578,20 @@
 ;                (INTEGER-LISTP (MAPP X))))
 ;       (equal (getprop 'mapp 'constraint-lst nil 'current-acl2-world (w state))
 ;              'p)))
-; 
+;
 ; (u)
-; 
+;
 ; ; The constraint above, on both p and mapp, is
 ; ; (AND (EQUAL (MAPP X)
 ; ;             (AND (CONSP X)
 ; ;                  (CONS (P (CAR X)) (MAPP (CDR X)))))
 ; ;      (TRUE-LISTP (MAPP X))
 ; ;      (INTEGER-LISTP (MAPP X)))
-; 
+;
 ; ; Here is another case of a subversive definition, illustrating that
 ; ; we do not just check whether the function uses p but whether it uses
 ; ; p ancestrally.
-; 
+;
 ; (encapsulate ((p (x) t))
 ;   (local (defun p (x) (cdr x)))
 ;   (defun bad1 (x) (p x))
@@ -7599,7 +7599,7 @@
 ;     (if (consp x)
 ;         (not (bad2 (bad1 x)))
 ;       t)))
-; 
+;
 ; (test
 ;  (and (equal (getprop 'p 'constraint-lst nil 'current-acl2-world (w state))
 ;              '((EQUAL (BAD1 X) (P X))
@@ -7619,10 +7619,10 @@
 ;       (equal (getprop 'bad2 'induction-machine nil
 ;                       'current-acl2-world (w state))
 ;              nil)))
-; 
-; 
+;
+;
 ; (u)
-; 
+;
 ; (encapsulate ((p (x) t))
 ;   (local (defun p (x) (cdr x)))
 ;   (defun bad1 (x)
@@ -7631,7 +7631,7 @@
 ;     (if (consp x)
 ;         (not (bad2 (bad1 x)))
 ;       t)))
-; 
+;
 ; (test
 ;  (and (equal (getprop 'p 'constraint-lst nil 'current-acl2-world (w state))
 ;              '((EQUAL (BAD1 X)
@@ -7657,14 +7657,14 @@
 ;       (equal (getprop 'bad2 'induction-machine nil
 ;                       'current-acl2-world (w state))
 ;              nil)))
-; 
+;
 ; (u)
-; 
+;
 ; ; Once up a time we had a bug in encapsulate, because subversiveness was
 ; ; based on the induction machine rather than the termination machine
 ; ; and no induction machine is constructed for mutually recursive definitions.
 ; ; Here is an example that once led to unsoundness:
-; 
+;
 ; (encapsulate
 ;  ((fn1 (x) t))
 ;  (local (defun fn1 (x)
@@ -7678,7 +7678,7 @@
 ;     (if (consp x)
 ;         (not (fn3 (fn1 x)))
 ;       t))))
-; 
+;
 ; (test
 ;  (and (equal (getprop 'fn1 'constraint-lst nil 'current-acl2-world (w state))
 ; ; Reversed as shown starting with v3-5:
@@ -7709,42 +7709,42 @@
 ;       (equal (getprop 'fn3 'induction-machine nil
 ;                       'current-acl2-world (w state))
 ;              nil)))
-; 
+;
 ; ; Now, fn1, fn2, and fn3 share both definitional constraints.
-; 
+;
 ; ; It is possible to prove the following lemma
-; 
+;
 ; (defthm lemma
 ;   (not (equal (fn1 '(a)) '(a)))
 ;   :rule-classes nil
 ;   :hints (("Goal" :use (:instance fn3 (x '(a))))))
-; 
+;
 ; ; But in the unsound version it was then possible to functionally
 ; ; instantiate it, choosing the identity function for fn1, to derive
 ; ; a contradiction.  Here is the old killer:
-; 
+;
 ; ; (defthm bad
 ; ;   nil
 ; ;   :rule-classes nil
 ; ;   :hints (("Goal" :use (:functional-instance lemma (fn1 identity)))))
-; 
+;
 ; (u)
 ; (u)
-; 
+;
 ; ; Now when you do that you have to prove an impossible theorem about
 ; ; fn3, namely
-; 
+;
 ; ; (equal (fn3 x) (if (consp x) (not (fn3 x)) t))
-; 
+;
 ; ; The only way to prove this is to show that nothing is a cons.
-; 
+;
 ; ; This examples shows that a function can call a subversive one and
 ; ; not be subversive.
-; 
+;
 ; (encapsulate ((p (x) t))
 ;   (local (defun p (x) (cdr x)))
 ;   (defun bad1 (x) (p x))            ; tight: non-recursive
-; 
+;
 ;   (defun bad2 (x)                   ; not tight: recursive call involves
 ;     (if (consp x)                   ; a fn (bad1) defined inside the encap
 ;         (not (bad2 (bad1 x)))
@@ -7753,11 +7753,11 @@
 ;     (if (consp x)
 ;         (bad2 (bad3 (cdr x)))
 ;       nil)))                        ; tight: even though it calls bad2
-; 
+;
 ; ; Bad2 is swept into the constraint because it is not tight (subversive).  Bad1
 ; ; is swept into it because it introduces a function (bad1) used in the enlarged
 ; ; constraint.  Bad3 is not swept in.  Indeed, bad3 is moved [Back].
-; 
+;
 ; (test
 ;  (and (equal (getprop 'p 'constraint-lst nil 'current-acl2-world (w state))
 ;              '((EQUAL (BAD1 X) (P X))
@@ -7782,32 +7782,32 @@
 ;       (not (equal (getprop 'bad3 'induction-machine nil
 ;                            'current-acl2-world (w state))
 ;                   nil))))
-; 
+;
 ; (u)
-; 
+;
 ; ; Now what about nested encapsulates?
-; 
+;
 ; ; Let us first consider the two simplest cases:
-; 
+;
 ; (encapsulate ((p (x) t))
 ;   (local (defun p (x) (declare (ignore x)) 23))
 ;   (encapsulate nil
 ;      (defthm lemma1 (equal x x) :rule-classes nil)
 ;      (defthm main (equal x x) :rule-classes nil))
 ;   (defthm integerp-p (integerp (p x))))
-; 
+;
 ; ; We are permitted to rearrange this, because the inner encap has a nil
 ; ; signature.  So we get what we expect:
-; 
+;
 ; (test
 ;  (equal
 ;   (getprop 'p 'constraint-lst nil 'current-acl2-world (w state))
 ;   '((integerp (P X)))))
-; 
+;
 ; (u)
-; 
+;
 ; ; The other simple case is
-; 
+;
 ; (encapsulate nil
 ;    (defthm lemma1 (equal x x) :rule-classes nil)
 ;    (defthm main (equal x x) :rule-classes nil)
@@ -7816,31 +7816,31 @@
 ;                 (defun benign (x)
 ;                   (if (consp x) (benign (cdr x)) x))
 ;                 (defthm integerp-p (integerp (p x)))))
-; 
+;
 ; ; Note that benign doesn't constrain p, because the containing encap
 ; ; contains no sig fns.
-; 
+;
 ; (test
 ;  (equal
 ;   (getprop 'p 'constraint-lst nil 'current-acl2-world (w state))
 ;   '((integerp (P X)))))
-; 
+;
 ; (u)
-; 
+;
 ; ; If we have a pair of encaps, each of which introduces a sig fn,
 ; ; we lost the ability to rearrange things in v3-6-1 but not v4-0:
-; 
+;
 ; (encapsulate ((p1 (x) t))
-;              (local (defun p1 (x) x))             
+;              (local (defun p1 (x) x))
 ;              (defun benign1 (x)
 ;                (if (consp x) (benign1 (cdr x)) t))
 ;              (defthm p1-constraint (benign1 (p1 x)))
 ;              (encapsulate  ((p2 (x) t))
-;                            (local (defun p2 (x) x))             
+;                            (local (defun p2 (x) x))
 ;                            (defun benign2 (x)
 ;                              (if (consp x) (benign2 (cdr x)) t))
 ;                            (defthm p2-constraint (benign2 (p2 x)))))
-; 
+;
 ; (test
 ;  (and (equal (getprop 'p1 'constraint-lst nil 'current-acl2-world (w state))
 ;              '((BENIGN1 (P1 X))))
@@ -7850,9 +7850,9 @@
 ;              nil)
 ;       (equal (getprop 'benign1 'constraint-lst nil 'current-acl2-world (w state))
 ;              nil)))
-; 
+;
 ; (u)
-; 
+;
 ; (encapsulate ((f1 (x) t))
 ;              (local (defun f1 (x) (declare (ignore x)) 0))
 ;              (defun bad (x)
@@ -7863,7 +7863,7 @@
 ;                        (bad (bad (cdr x)))
 ;                      (f1 x))
 ;                  0)))
-; 
+;
 ; (test
 ;  (and (equal (getprop 'f1 'constraint-lst nil 'current-acl2-world (w state))
 ; ; No longer generates this constraint starting with v3-5:
@@ -7889,13 +7889,13 @@
 ;        (getprop 'bad 'induction-machine nil 'current-acl2-world (w state))
 ; ;       nil)
 ;        ))
-; 
+;
 ; (u)
-; 
-; 
+;
+;
 ; ; Here is a sample involving defchoose.  In this example, the signature
 ; ; function is ancestral in the defchoose axiom.
-; 
+;
 ; (encapsulate ((p (y x) t))
 ;              (local (defun p (y x) (member-equal y x)))
 ;              (defchoose witless x (y) (p y x))
@@ -7903,7 +7903,7 @@
 ;                (consp (witless y))
 ;                :rule-classes :type-prescription
 ;                :hints (("Goal" :use (:instance witless (x (cons y nil)))))))
-; 
+;
 ; (test
 ;  (and (equal (getprop 'p 'constraint-lst nil 'current-acl2-world (w state))
 ;              '((IMPLIES (P Y X)
@@ -7916,18 +7916,18 @@
 ;        (getprop 'witless 'defchoose-axiom nil 'current-acl2-world (w state))
 ;        '(IMPLIES (P Y X)
 ;                  ((LAMBDA (X Y) (P Y X)) (WITLESS Y) Y)))))
-; 
+;
 ; (u)
-; 
+;
 ; ; and in this one it is not, indeed, the defchoose function can be
 ; ; moved to the [Front] even though it is used in the constraint of p.
-; 
+;
 ; (encapsulate ((p (y x) t))
 ;              (local (defun p (y x) (member-equal y x)))
 ;              (defchoose witless x (y) (member-equal y x))
 ;              (defthm p-constraint (p y (witless y))
 ;                :hints (("Goal" :use (:instance witless (x (cons y nil)))))))
-; 
+;
 ; (test
 ;  (and (equal (getprop 'p 'constraint-lst nil 'current-acl2-world (w state))
 ;              '((p y (witless y))))
@@ -7938,9 +7938,9 @@
 ;        (getprop 'witless 'defchoose-axiom nil 'current-acl2-world (w state))
 ;        '(IMPLIES (member-equal Y X)
 ;                  ((LAMBDA (X Y) (member-equal Y X)) (WITLESS Y) Y)))))
-; 
+;
 ; (u)
-; 
+;
 ; (quote (the end of my encapsulate tests -- there follow two undo commands))
 ; (u)
 ; (u)
@@ -8330,7 +8330,7 @@
                                                         event-form))))
                 (and equal?
                      (let ((adt (table-alist 'acl2-defaults-table wrld)))
-                       (and 
+                       (and
                         (eq (default-defun-mode-from-table adt) mode)
                         (equal (default-ruler-extenders-from-table adt)
                                ruler-extenders)
@@ -8509,7 +8509,7 @@
 
 ; Alist associates index-based positions in lst with values.  We
 ; return the result of replacing each element of lst with its corresponding
-; value from alist.  Alist should have indices in increasing order and should 
+; value from alist.  Alist should have indices in increasing order and should
 ; only have indices i for which index+i is less than the length of lst.
 
   (cond (alist
@@ -9426,14 +9426,14 @@
 ;                  (list 'length
 ;                        (list 'symbol-name
 ;                              (list 'quote ',(@ bad)))))))))
-; 
+;
 
 ; where "foo2" is as follows, with the indicated portullis command:
 
 ; (in-package "ACL2")
-; 
+;
 ; ; (defpkg "MY-PKG" nil)
-; 
+;
 ; (defun foo (x)
 ;   x)
 
@@ -9655,10 +9655,10 @@
    ((and (stringp full-book-name)
          (let ((n (length full-book-name)))
            (and (> n 5)
-                (eql (char full-book-name (- n 5)) #\.) 
-                (eql (char full-book-name (- n 4)) #\l) 
-                (eql (char full-book-name (- n 3)) #\i) 
-                (eql (char full-book-name (- n 2)) #\s) 
+                (eql (char full-book-name (- n 5)) #\.)
+                (eql (char full-book-name (- n 4)) #\l)
+                (eql (char full-book-name (- n 3)) #\i)
+                (eql (char full-book-name (- n 2)) #\s)
                 (eql (char full-book-name (- n 1)) #\p))))
     (value nil))
    ((null full-book-name)
@@ -10521,9 +10521,9 @@
 
 ; (include-book "bar")
 
-; You'll see this error, because 
+; You'll see this error, because
 
-; ACL2 Error in ( INCLUDE-BOOK "foo" ...):  There is no file named 
+; ACL2 Error in ( INCLUDE-BOOK "foo" ...):  There is no file named
 ; "D/SUB/foo.lisp" that can be opened for input.
 
 
@@ -10824,7 +10824,7 @@
 
                earlier-kpa
                earlier-kpa added-defpkgs))))))))
-                
+
 (defun new-defpkg-list (defpkg-items base-kpa earlier-kpa)
 
 ; For background on the discussion below, see the Essay on Hidden Packages.
@@ -11581,7 +11581,7 @@
                                (cdr entry)
                                *initial-acl2-defaults-table*))
           (t *initial-acl2-defaults-table*))))
-                
+
 
 (defun chk-raise-portcullis1 (file1 file2 ch port-file-p ctx state)
 
@@ -11729,7 +11729,7 @@
                            (subseq version (1+ pos1) pos2)
                            (1- (- pos2 pos1)) 0)))
          (incrl (if (and pos2 (< pos2 end0))
-                    (decimal-string-to-number 
+                    (decimal-string-to-number
                      (subseq version (1+ pos2) end0)
                      (1- (- end0 pos2))
                      0)
@@ -13134,7 +13134,7 @@
                            (convert-book-name-to-cert-name
                             full-book-name
                             cert-op))))))))
-                           
+
 ; We now develop a general-purpose read-object-file, which expects
 ; the given file to start with an IN-PACKAGE and then reads into that
 ; package all of the remaining forms of the file, returning the list
@@ -13193,7 +13193,7 @@
 
 (defun chk-cert-annotations
   (cert-annotations portcullis-skipped-proofsp portcullis-cmds full-book-name
-                    suspect-book-action-alist 
+                    suspect-book-action-alist
                     ctx state)
 
 ; Warning: Chk-cert-annotations and chk-cert-annotations-post-alist are nearly
@@ -13274,7 +13274,7 @@
 
   (cond
    ((endp post-alist) (value nil))
-   (t 
+   (t
 
 ; An entry in the post-alist is (full user familiar cert-annotations . chk).
 ; It may optionally be embedded in a (LOCAL &) form.
@@ -13405,7 +13405,7 @@
   (cond ((endp trips)
          acc)
         ((and (eq (caar trips) 'include-book-path)
-              (eq (cadar trips) 'global-value)) 
+              (eq (cadar trips) 'global-value))
          (newly-defined-top-level-fns-rec (cdr trips)
                                           (equal (car (cddar trips))
                                                  full-book-name)
@@ -13426,7 +13426,7 @@
                                           acc))))
 
 (defun newly-defined-top-level-fns (old-wrld new-wrld full-book-name)
-  
+
 ; New-wrld is the installed world, an extension of old-wrld.
 
   (let ((old-len (length old-wrld))
@@ -13478,7 +13478,7 @@
 (defun skipped-proofsp-in-post-alist (post-alist)
   (cond
    ((endp post-alist) nil)
-   (t 
+   (t
 
 ; An entry in the post-alist is (full user familiar cert-annotations . chk).
 ; It may optionally be embedded in a (LOCAL &) form.
@@ -13845,7 +13845,7 @@
         (let* ((wrld1 (global-set
                        'include-book-path
                        (cons full-book-name old-include-book-path)
-                       wrld0))) 
+                       wrld0)))
           (pprogn
            (set-w 'extension wrld1 state)
            (er-let*
@@ -14271,7 +14271,7 @@
 ;;;   % cat temp2/c.lisp
 ;;;   (in-package "ACL2")
 ;;;   (defun hoo (x) x)
-;;;   % 
+;;;   %
 ;;;
 ;;; Below, two absolute pathnames are abbreviated as <path1> and <path2>.
 ;;;
@@ -14351,7 +14351,7 @@
                                             familiar-name
                                             cert-annotations
                                             ev-lst-chk-sum))
-                                    (t 
+                                    (t
 
 ; The certification tuple below is marked as uncertified because the
 ; ev-lst-chk-sum is nil.  What about cert-annotations?  It may or may
@@ -14560,7 +14560,7 @@
                        (eq load-compiled-file0
                            load-compiled-file))
                   (cddr event-form)
-                (append 
+                (append
                  (if (not (eq load-compiled-file
                               :default))
                      (list :load-compiled-file
@@ -15290,7 +15290,7 @@
 ; certify-book command is used in both certifications, with :ttagsx specifying
 ; the ttags used in the first certification and :ttags specifying the ttags
 ; used in the second certification (perhaps nil).
-; 
+;
 ; First certification: (set-write-acl2x t state) and certify, writing out
 ; foo.acl2x.  Second certification: Replace forms as per foo.acl2x; write out
 ; foo.cert.
@@ -15540,12 +15540,12 @@
   #-acl2-par
   form
   #+acl2-par
-  `(state-global-let* 
+  `(state-global-let*
     ((waterfall-parallelism (f-get-global 'waterfall-parallelism state))
      (waterfall-printing (f-get-global 'waterfall-printing state))
      (total-parallelism-work-limit
       (f-get-global 'total-parallelism-work-limit state))
-     (total-parallelism-work-limit-error 
+     (total-parallelism-work-limit-error
       (f-get-global 'total-parallelism-work-limit-error state)))
     ,form))
 
@@ -16486,8 +16486,8 @@
                                      expansion-alist-to-check
                                      wrld1-known-package-alist))
                                    (cert-annotations
-                                    (list 
-                                
+                                    (list
+
 ; We set :skipped-proofsp in the certification annotations to t or nil
 ; according to whether there were any skipped proofs in either the
 ; portcullis or the body of this book (not subbooks).
@@ -16731,7 +16731,7 @@
                                                     (compile-flg
                                                      (pprogn
                                                       (print-certify-book-step-5
-                                                       full-book-name state) 
+                                                       full-book-name state)
                                                       (er-progn
                                                        (write-expansion-file
                                                         portcullis-cmds
@@ -17044,7 +17044,7 @@
                                         (compile-flg 't compile-flg-supplied-p)
                                         &rest args)
   (declare (xargs :guard (and (integerp k) (<= 0 k))))
-  
+
   ":Doc-Section Other
 
   a variant of ~ilc[certify-book]~/
@@ -17480,7 +17480,7 @@
        (if (consp x) (app (rev (cdr x)) (list (car x))) nil))
      (defthm rev-app-hack
        (equal (rev (app a (list x))) (cons x (rev a))))
-     (defthm rev-rev 
+     (defthm rev-rev
        (implies (acl2::true-listp x) (equal (rev (rev x)) x)))
   ~ev[]
   Observe that the first form above defines a package (which imports
@@ -17522,7 +17522,7 @@
      (local (defthm rev-app-hack
        (equal (rev (app a (list x))) (cons x (rev a)))))
 
-     (defthm rev-rev 
+     (defthm rev-rev
        (implies (acl2::true-listp x) (equal (rev (rev x)) x)))
   ~ev[]
   The file shown above ~st[is] the book.  By the time this note is
@@ -19026,7 +19026,7 @@
                               (wrld
                                #+:non-standard-analysis
                                (putprop
-                                fn 'classicalp 
+                                fn 'classicalp
                                 (classical-fn-list-p (all-fnnames tbody) wrld)
                                 wrld)
                                #-:non-standard-analysis
@@ -19244,7 +19244,7 @@
   ~c[forall-x-y-p0-and-q0] holds of ~c[z].  Conversely, the (contrapositive
   of) the second axiom guarantees that if the new predicate holds of
   ~c[z], then the given term holds for all choices of ~c[x] and ~c[y] (and that
-  same ~c[z]). 
+  same ~c[z]).
   ~bv[]
   (defun-nx forall-x-y-p0-and-q0 (z)
     (mv-let (x y)
@@ -19594,7 +19594,7 @@
   ;   (DEFUN FORALL-EXPR1 (X)
   ;     (LET ((Y (FORALL-EXPR1-WITNESS X)))
   ;          (IMPLIES (P X) (EXPR Y))))
-  ; 
+  ;
   ;   (DEFTHM FORALL-EXPR1-NECC
   ;     (IMPLIES (NOT (IMPLIES (P X) (EXPR Y)))
   ;              (NOT (FORALL-EXPR1 X)))
@@ -19614,9 +19614,9 @@
   ;     (implies (and (p x) (forall-expr1 x))
   ;              (forall-expr2 x))
   ;     :hints ((\"Goal\" :in-theory (disable forall-expr1))))
-  ; 
+  ;
   ;   ; which yields this unproved subgoal:
-  ; 
+  ;
   ;   (IMPLIES (AND (P X) (FORALL-EXPR1 X))
   ;            (EXPR (FORALL-EXPR2-WITNESS X)))
 
@@ -19778,7 +19778,7 @@
   We first model these things using ~ilc[defun-sk].  Below, ~c[r] is simply
   some function for which ~c[(r x)] is a theorem.
   ~bv[]
-  (encapsulate 
+  (encapsulate
    (((r *) => *))
    (local (defun r (x) (declare (ignore x)) t))
    (defthm r-holds (r x)))
@@ -19972,16 +19972,16 @@
     :rule-classes nil
     :hints ((\"Goal\"
               :use ((:instance (:definition all-M))
-                    (:instance all-MN-necc 
+                    (:instance all-MN-necc
                                (x (all-M-witness)))))))
 
   (defthm lf3
     (implies (all-MN)
              (all-N))
-    :rule-classes nil      
+    :rule-classes nil
     :hints ((\"Goal\"
               :use ((:instance (:definition all-N))
-                    (:instance all-MN-necc 
+                    (:instance all-MN-necc
                                (x (all-N-witness)))))))
 
   (defthmd |all conjunction|
@@ -20072,7 +20072,7 @@
   We now talk about what it means to say that ~c[x] is the least number
   satisfying ~c[M].
   ~bv[]
-  (defun-sk none-below (y) 
+  (defun-sk none-below (y)
     (forall r (implies (and (natp r) (< r y)) (not (M r))))))
   (in-theory (disable none-below none-below-necc))
 
@@ -20128,7 +20128,7 @@
                   (M j))
               (<= (least-M-aux i bound) j)))
 
-  (defthm least-aux-produces-natp 
+  (defthm least-aux-produces-natp
     (natp (least-M-aux i bound)))
 
   (defthmd least-is-minimal-satisfying-m
@@ -20144,12 +20144,12 @@
                                (i 0)
                                (j i))))))
 
-  (defthm least-has-m 
-    (implies (and (natp bound) 
-                  (m bound)) 
+  (defthm least-has-m
+    (implies (and (natp bound)
+                  (m bound))
              (M (least-M bound))))
 
-  (defthm least-is-natp 
+  (defthm least-is-natp
     (natp (least-M bound)))
   ~ev[]
   So we have done that, and hopefully this is all that we need about
@@ -20366,7 +20366,7 @@
   ~ev[]
 
   Also ~pl[quantifiers-using-defun-sk-extended] for an
-  elaboration on this example.") 
+  elaboration on this example.")
 
 (deflabel quantifiers-using-defun-sk-extended
   :doc
@@ -20395,7 +20395,7 @@
   ;   (DEFUN FORALL-P (X)
   ;     (LET ((A (FORALL-P-WITNESS X)))
   ;          (IMPLIES (MEMBER A X) (P A))))
-  ; 
+  ;
   ;   (DEFTHM FORALL-P-NECC
   ;     (IMPLIES (NOT (IMPLIES (MEMBER A X) (P A)))
   ;              (NOT (FORALL-P X)))
@@ -20445,9 +20445,9 @@
 ; Here is the defstobj event.
 
 ; We start with the problem of finding the arguments to the defstobj event.
-; The form looks likes 
+; The form looks likes
 
-; (defstobj name ... field-descri ... 
+; (defstobj name ... field-descri ...
 ;           :renaming alist
 ;           :doc string)
 ;           :inline flag)
@@ -20963,12 +20963,12 @@
 ; following.
 
 ;   (defstobj st1 fld1)
-;   
+;
 ;   (encapsulate
 ;    ()
 ;    (local (defstobj st2 fld2 fld3))
 ;    (defstobj st2 fld2 fld3 :congruent-to st1))
-;   
+;
 ;   ; Raw lisp error!
 ;   (fld3 st1)
 
@@ -21006,8 +21006,8 @@
 ; been executed, the bad one was recognized as redundant.
 ; Unfortunately, if one were to execute the bad one first, an error
 ; would result.
-       
-; So we have changed this function to be extremely simple.  
+
+; So we have changed this function to be extremely simple.
 
   (and (getprop name 'stobj nil 'current-acl2-world wrld)
        (equal (old-defstobj-redundancy-bundle name wrld)
@@ -21380,7 +21380,7 @@
                                                 :verify-guards t)
                                          (ignorable x))
                                 ,type-term))))
-            (defstobj-component-recognizer-axiomatic-defs 
+            (defstobj-component-recognizer-axiomatic-defs
               name template (cdr ftemps) wrld))))))
 
 (defun defstobj-field-fns-axiomatic-defs (top-recog var n ftemps wrld)
@@ -21481,7 +21481,7 @@
            (defstobj-field-fns-axiomatic-defs
              top-recog var (+ n 1) (cdr ftemps) wrld)))
          (t
-          (append 
+          (append
            `((,accessor-name (,var)
                              (declare (xargs :guard (,top-recog ,var)
                                              :verify-guards t))
@@ -21643,7 +21643,7 @@
   `(typep ,name 'simple-vector))
 
 (defun array-etype-is-fixnum-type (array-etype)
-  (declare (xargs :guard 
+  (declare (xargs :guard
                   (implies (consp array-etype)
                            (true-listp array-etype))))
   (and (consp array-etype)
@@ -21667,15 +21667,15 @@
                      (< int2 *expt2-28*))))
              (mod
               (and (integerp (cadr array-etype))
-                   (< (cadr array-etype) 
+                   (< (cadr array-etype)
                       *expt2-28*)))
              (unsigned-byte
               (and (integerp (cadr array-etype))
-                   (<= (cadr array-etype) 
+                   (<= (cadr array-etype)
                        29)))
              (signed-byte
               (and (integerp (cadr array-etype))
-                   (<= (cadr array-etype) 
+                   (<= (cadr array-etype)
                        30))))))
 
 (defun defstobj-field-fns-raw-defs (var flush-var inline n ftemps)
@@ -21803,7 +21803,7 @@
             (declare (type (and fixnum (integer 0 *)) i)
                      (type ,array-etype v))
             ,@(and inline (list *stobj-inline-declare*))
-            (progn 
+            (progn
               #+hons (memoize-flush ,flush-var)
 
 ; See the long comment below for the updater in the scalar case, about
@@ -21992,7 +21992,7 @@
                   (stobj-flg (and (stobjp etype t wrld)
                                   etype)))
              (putprop
-              length-fn 'stobjs-in (list name) 
+              length-fn 'stobjs-in (list name)
               (putprop
                resize-fn 'stobjs-in (list nil name)
                (putprop
@@ -22032,7 +22032,7 @@
 ;      fn                  stobjs-in         stobjs-out
 ; topmost recognizer       (name)            (nil)
 ; creator                  ()                (name)
-; field recogs             (nil ...)         (nil)  
+; field recogs             (nil ...)         (nil)
 ; simple accessor          (name)            (nil)
 ; array accessor           (nil name)        (nil)
 ; simple updater           (nil name)        (name)
@@ -22281,7 +22281,7 @@
 ; 'stobj-function, whose value is the object name.  The live var name
 ; is marked with 'stobj-live-var, whose value is the object name.
 
-; CHEAT:  I ought, at this point, 
+; CHEAT:  I ought, at this point,
 ;                 (pprogn
 ;                  (update-user-stobj-alist
 ;                   (cons (cons name (create-stobj name template))
@@ -25009,7 +25009,7 @@
   ~bv[]
   ACL2 !>(NodeCnt counters)
   0
-  ACL2 !>(IntTipsSeen counters)  
+  ACL2 !>(IntTipsSeen counters)
   NIL
   ~ev[]
   and we can set the fields of ~c[counters] as with:
@@ -25017,11 +25017,11 @@
   ACL2 !>(update-NodeCnt 3 counters)
   <counters>
   ACL2 !>(NodeCnt counters)
-  3  
+  3
   ~ev[]
   Observe that when we evaluate an expression that returns a
   counter object, that object becomes the ``current value'' of
-  ~c[counters].  
+  ~c[counters].
 
   Here is a function that ``converts'' the ~c[counters] object to its
   ``ordinary'' representation:
@@ -25051,7 +25051,7 @@
 
   (SHOW-COUNTERS COUNTERS) => *.
 
-  The guard conjecture for SHOW-COUNTERS is trivial to prove.  
+  The guard conjecture for SHOW-COUNTERS is trivial to prove.
   SHOW-COUNTERS is compliant with Common Lisp.
   ~ev[]
   The line above containing the ``=>'' is called the ``signature'' of
@@ -25062,7 +25062,7 @@
   (PROCESSOR * * COUNTERS) => (MV * COUNTERS)
   ~ev[]
   which indicates that the function ~c[PROCESSOR] (which we haven't
-  shown you) takes three arguments, the third of which is the 
+  shown you) takes three arguments, the third of which is the
   ~c[COUNTERS] stobj, and returns two results, the second of which
   is the modified ~c[COUNTERS].
 
@@ -25099,7 +25099,7 @@
   However, the nest of ~c[let] expressions is tedious and we use this
   definition instead.  This definition exploits a macro, here named
   ``~c[seq]'' (for ``sequentially'') which evaluates each of the forms
-  given, binding their results successively to the stobj name given.  
+  given, binding their results successively to the stobj name given.
   ~bv[]
   (defun reset-counters (counters)
     (declare (xargs :stobjs (counters)))
@@ -25131,7 +25131,7 @@
   ACL2 !>(reset-counters counters)
   <counters>
   ACL2 !>(show-counters counters)
-  (0 0 NIL) 
+  (0 0 NIL)
   ~ev[]
 
   Here finally is a function that uses ~c[counters] as a single-threaded
@@ -25240,7 +25240,7 @@
   ":Doc-Section stobj
 
   the defuns created by the ~c[counters] stobj~/
-  
+
   Consider the event shown in ~il[stobj-example-1]:
   ~bv[]
   (defstobj counters
@@ -25360,7 +25360,7 @@
 
   the implementation of the ~c[counters] stobj~/
 
-  the event  
+  the event
   ~bv[]
   (defstobj counters
     (NodeCnt     :type integer :initially 0)
@@ -25416,7 +25416,7 @@
                  0)
            (the integer v))
      counters))
-  ~ev[]  
+  ~ev[]
   Note that when this function is called, it does not create a new
   vector of length three, but ``smashes'' the existing one.
 
@@ -25435,7 +25435,7 @@
 
   some proofs involving the ~c[counters] stobj~/
 
-  Consider again the event  
+  Consider again the event
   ~bv[]
   (defstobj counters
     (NodeCnt     :type integer :initially 0)
@@ -25497,7 +25497,7 @@
   ~c[reset-counters] shows that ~c[(reset-counters x)] is equal to
   ~bv[]
   (update-IntTipsSeen nil
-    (update-TipCnt 0 
+    (update-TipCnt 0
       (update-NodeCnt 0 x)))
   ~ev[]
   which in turn is
@@ -25584,7 +25584,7 @@
   ":Doc-Section stobj
 
   an example of the use of arrays in single-threaded objects~/
-  
+
   The following event
   ~bv[]
   (defstobj ms
@@ -25596,7 +25596,7 @@
   ``machine state'').  The object has three fields, a ~c[pcn] or program
   counter, a ~c[mem] or memory, and a ~c[code] field.
 
-  The ~c[mem] field is occupied by an object initially of type 
+  The ~c[mem] field is occupied by an object initially of type
   ~c[(array integer (100000))].  Logically speaking, this is a list of
   length ~c[100000], each element of which is an integer.  But in the
   underlying implementation of the ~c[ms] object, this field is occupied
@@ -25803,7 +25803,7 @@
              (integerp (nth i x)))).
   ~ev[]
 
-  Similarly, 
+  Similarly,
   ~bv[]
   (implies (and (integerp i)
                 (<= 0 i)
@@ -25996,19 +25996,19 @@
 ; Below are some tests of local stobjs.
 
 ;  (defstobj foo bar xxx)
-; 
+;
 ;  (thm (equal (create-foo) '(nil nil))) ; succeeds
-; 
+;
 ;  (defun up1 (x foo)
 ;    (declare (xargs :stobjs foo))
 ;    (update-bar x foo))
-; 
+;
 ;  (bar foo) ; nil
-; 
+;
 ;  (up1 3 foo) ; <foo>
-; 
+;
 ;  (bar foo) ; 3
-; 
+;
 ;  (defun test (x) ; should fail; must use with-local-stobj explicitly
 ;    (mv-let (a b foo)
 ;            (let ((foo (create-foo)))
@@ -26016,7 +26016,7 @@
 ;                (mv (bar foo) (xxx foo) foo)))
 ;            (declare (ignore foo))
 ;            (mv a b x)))
-; 
+;
 ;  (defun test (x)
 ;    (declare (xargs :guard (acl2-numberp x) :verify-guards nil))
 ;    (with-local-stobj
@@ -26025,19 +26025,19 @@
 ;             (let ((foo (up1 (1+ x) foo)))
 ;               (mv (bar foo) (xxx foo) foo))
 ;             (mv a b x))))
-; 
+;
 ;  (test 17) ; (18 NIL 17)
-; 
+;
 ;  (bar foo) ; 3
-; 
+;
 ;  (thm (equal (test x) (list (1+ x) nil x))) ; succeeds
-; 
+;
 ;  (thm (equal (test x) (list (1+ x) nil x)) ; succeeds
 ;       :hints (("Goal"
 ;                :in-theory
 ;                (enable
 ;                 (:executable-counterpart create-foo)))))
-; 
+;
 ;  (thm (equal (test x) (list (1+ x) nil x)) ; fails, creating (NOT (NTH 1 (HIDE (CREATE-FOO))))
 ;       :hints (("Goal"
 ;                :in-theory
@@ -26045,39 +26045,39 @@
 ;                 (enable
 ;                  (:executable-counterpart create-foo))
 ;                 '(create-foo)))))
-; 
+;
 ;  (verify-guards test)
-; 
+;
 ;  (test 17) ; (18 nil 17)
-; 
+;
 ;  (bar foo) ; 3
-; 
+;
 ;  (defun test2 (x)
 ;    (with-local-stobj
 ;     foo
 ;     (mv-let (a foo)
 ;             (let ((foo (up1 (1+ x) foo))) (mv (bar foo) foo))
 ;             (mv a x))))
-; 
+;
 ;  (test2 12) ; (13 12)
-; 
+;
 ;  (bar foo) ; 3
-; 
+;
 ;  (thm (equal (test x) (mv-let (x y) (test2 x) (mv x nil y)))) ; succeeds
-; 
+;
 ;  (create-foo) ; should get graceful error
-; 
+;
 ;  (defun test3 (x) ; Should be OK.
 ;    (with-local-stobj
 ;     foo
 ;     (mv-let (a foo)
 ;             (let ((foo (up1 (1+ x) foo))) (mv (bar foo) foo))
 ;             a)))
-; 
+;
 ;  (test3 11) ; 12
-; 
+;
 ;  (bar foo) ; 3
-; 
+;
 ;  (defun test4 (x foo) ; Should be OK.
 ;    (declare (xargs :stobjs foo
 ;                    :verify-guards nil))
@@ -26089,11 +26089,11 @@
 ;                    a)))
 ;           (foo (up1 92 foo)))
 ;      (mv x+1 foo)))
-; 
+;
 ;  (test4 19 foo) ; (20 <foo>)
-; 
+;
 ;  (bar foo) ; 92
-; 
+;
 ;  (defun test5 (x foo) ; Should be OK.
 ;    (declare (xargs :stobjs foo
 ;                    :verify-guards nil))
@@ -26105,15 +26105,15 @@
 ;                     (let ((foo (up1 (1+ x) foo))) (mv (bar foo) foo))
 ;                     a))))
 ;      (mv x+1 foo)))
-; 
+;
 ;  (test5 35 foo) ; (36 <foo>)
-; 
+;
 ;  (bar foo) ; 23
-; 
+;
 ;  (with-local-stobj ; should get macroexpansion error or the equivalent
 ;   foo
 ;   (mv foo 3))
-; 
+;
 ;  (defun trans-eval-test (x foo state) ; this part is ok
 ;    (declare (xargs :stobjs (foo state)
 ;                    :mode :program))
@@ -26121,13 +26121,13 @@
 ;            (trans-eval '(update-bar (cons 3 (bar foo)) foo) 'top state t)
 ;            (declare (ignore erp val))
 ;            (mv x foo state)))
-; 
+;
 ;  (with-local-stobj ; should fail; cannot use with-local-stobj in top level loop
 ;   foo
 ;   (mv-let (x foo state)
 ;           (trans-eval-test 3 foo state t)
 ;           (mv x state)))
-; 
+;
 ;  (pprogn
 ;   (with-local-stobj ; should fail with create-foo error
 ;    foo
@@ -26136,7 +26136,7 @@
 ;            (declare (ignore x))
 ;            state))
 ;   (mv 3 state))
-; 
+;
 ;  (defun test6 (a state)
 ;    (declare (xargs :mode :program :stobjs state))
 ;    (with-local-stobj
@@ -26144,16 +26144,16 @@
 ;     (mv-let (x foo state)
 ;             (trans-eval-test a foo state t)
 ;             (mv x state))))
-; 
+;
 ;  (test6 100 state) ; should get trans-eval error:  user-stobj-alist mismatch
-; 
+;
 ;  (bar foo) ; 23, still -- trans-eval did not affect global state
 
 ; Below are some more tests, contributed by Rob Sumners.
 
 ;  (defstobj foo foo-fld)
 ;  (defstobj bar bar-fld)
-; 
+;
 ;  (defun test-wls1 (x)
 ;    (with-local-stobj
 ;     foo
@@ -26167,15 +26167,15 @@
 ;                            result))
 ;                   foo))
 ;             result)))
-; 
+;
 ;  (test-wls1 129) ; 129
-; 
+;
 ;  :comp t
-; 
+;
 ;  (test-wls1 '(adjka 202)) ; '(ADJKA 202)
-; 
+;
 ;  (thm (equal (test-wls1 x) x))
-; 
+;
 ;  (defun test-wls2 (x)
 ;    (with-local-stobj
 ;     foo
@@ -26189,15 +26189,15 @@
 ;                            result))
 ;                   foo))
 ;             result)))
-; 
+;
 ;  (test-wls2 129) ; 129
-; 
+;
 ;  :comp t
-; 
+;
 ;  (test-wls2 '(adjka 202)) ; (ADJKA 202)
-; 
+;
 ;  (thm (equal (test-wls2 x) x))
-; 
+;
 ;  (defun test-wls3 (x)
 ;    (if (atom x) x
 ;      (with-local-stobj
@@ -26208,13 +26208,13 @@
 ;                   foo)
 ;               (let ((x result))
 ;                 (if (atom x) x (cons (car x) (cdr x))))))))
-; 
+;
 ;  (test-wls3 129) ; 129
-; 
+;
 ;  :comp t
-; 
+;
 ;  (test-wls3 '(adjka 202)) ; (ADJKA 202)
-; 
+;
 ;  (thm (equal (test-wls3 x) x))
 
   (mv-let (erp st mv-let-form creator)
@@ -26452,7 +26452,7 @@
 ; (defstobj st1 ...)
 ; (defstobj st2 ...)
 ; (defstobj st3 ...)
-; (defstobj st+ 
+; (defstobj st+
 ;           (fld1 :type st1)
 ;           (fld2 :type st2)
 ;           (fld3 :type (array st3 (8))))
@@ -26555,7 +26555,7 @@
 ; (defstobj st1 ...)
 ; (defstobj st2 ... :congruent-to st1)
 ; (defstobj st3 ...)
-; (defstobj st+ 
+; (defstobj st+
 ;           (fld1 :type st1)
 ;           (fld2 :type st1)
 ;           (fld3 :type (array st3 (8))))
@@ -26744,7 +26744,7 @@
   We begin by returning to a slight variant of the example above.
   ~bv[]
     (defstobj child fld)
-    (defstobj parent 
+    (defstobj parent
       (fld2 :type child)
       fld3)
   ~ev[]
@@ -28465,7 +28465,7 @@
     <2 (ACL2_*1*_ACL2::F (7 . 7))
   <1 (ACL2_*1*_ACL2::G ((7 . 7) 3))
   ((7 . 7) 3)
-  ACL2 !>  
+  ACL2 !>
   ~ev[]
 
   The following example introduces trace specs other than function symbols.
@@ -28971,7 +28971,7 @@
            (assign foo (cons (cons n value) (@ foo))))
 
   Since UPDATE-FOO is non-recursive, its admission is trivial.  We observe
-  that the type of UPDATE-FOO is described by the theorem 
+  that the type of UPDATE-FOO is described by the theorem
   (AND (CONSP (UPDATE-FOO N VALUE STATE))
        (TRUE-LISTP (UPDATE-FOO N VALUE STATE))).
   We used primitive type reasoning.
@@ -29607,7 +29607,7 @@
   ":Doc-Section Events
 
   attach a terminating executable function to a definition~/
-  
+
   Suppose you define a function ~c[(fn x)] with a ~il[guard] of
   ~c[(good-input-p x)], and you know that when the guard holds, the measure
   decreases on each recursive call.  Unfortunately, the definitional principle
@@ -29623,7 +29623,7 @@
   formula asserting that ~c[(destr x)] is ``smaller than'' ~c[x] under the
   assumption ~c[(not-done-yet x)] but without the assumption
   ~c[(good-input-p x)], even if ~c[(not-done-yet x)] is true.  In essence, it
-  may be necessary to submit instead the following definition. 
+  may be necessary to submit instead the following definition.
   ~bv[]
   (defun fn (x)
     (declare (xargs :guard (good-input-p x)))
@@ -29799,7 +29799,7 @@
   be viewed as calls using ~c[local=def].~/~/
 
   :cited-by mbe"
- 
+
   (let ((dcls-and-strings (butlast rest 1))
         (body (car (last rest))))
     (mv-let (erp exec-body)
@@ -30339,7 +30339,7 @@
       caller (cdr app-rules) col abbreviations term-id-iff ens type-alist
       enabled-only-flg pl-p w state)))))
 
-(defun expand-assumptions-1 (term) 
+(defun expand-assumptions-1 (term)
   (case-match term
     (('if a b ''nil)
      (append (expand-assumptions-1 a) (expand-assumptions-1 b)))
@@ -31201,7 +31201,7 @@
 
 (defmacro checkpoint-world-len-and-alist ()
   '(car *checkpoint-world-len-and-alist-stack*))
- 
+
 (defun checkpoint-world1 (flushp wrld state)
 
 ; When flushp is true, we are promising never to undo back past wrld.  For
@@ -32272,7 +32272,7 @@
 (defun set-evisc-tuple-fn (evisc-tuple
                            iprint iprint-p
                            sites sites-p
-                           state) 
+                           state)
 
 ; This function checks standard-evisc-tuplep, so it need not be untouchable.
 
@@ -33675,7 +33675,7 @@
                    (mv-let (attachment-alist-exec helper-alist-lst-exec)
                            (filter-for-attachment attachment-alist
                                                   helper-alist-lst
-                                                  attach-by-default         
+                                                  attach-by-default
                                                   nil nil)
                            (value (list constraint-helpers
                                         erasures
@@ -33805,7 +33805,7 @@
            (t
             (let ((key (or name (caar alist))))
               (cond
-               ((member-eq key seen) 
+               ((member-eq key seen)
                 (defattach-constraint-rec
                   (cdr alist) full-alist proved-fnl-insts-alist constraint
                   event-names new-entries seen wrld))
@@ -35893,7 +35893,7 @@
 ; the visit of each triple.  It is presumably T, since that is how the system
 ; boots.  However, when we pass the EXIT-BOOT-STRAP-MODE triple, we switch the
 ; auto-modep to user-auto-modep.
-  
+
   (cond ((endp trips) (value wrld))
         ((eq (cadr (car trips)) 'formals)
          (regenerate-tau-database-fn0
@@ -35946,7 +35946,7 @@
    ens
    (collect-tau-relevant-triples wrld nil)
    ctx
-   (initialize-tau-preds 
+   (initialize-tau-preds
     *primitive-monadic-booleans*
     (initialize-tau-globals wrld))
    state))

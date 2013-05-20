@@ -309,7 +309,7 @@
 ; In nqthm this record was called TEST-AND-CASE and the second component was
 ; the arglist of a recursive call of the function being analyzed.  Because of
 ; the presence of mutual recursion, we have renamed it tests-and-call and the
-; second component is a "recursive" call (possibly mutually recursive). 
+; second component is a "recursive" call (possibly mutually recursive).
 
 (mutual-recursion
 
@@ -600,7 +600,7 @@
 ; just a heuristic guess intended to save the user the burden of typing
 ; (acl2-count x) a lot, it doesn't matter.
 
-; If we fail to find a measure we cause an error.  
+; If we fail to find a measure we cause an error.
 
 ; Pos is initially 0 and is the position in the formals list of the first
 ; variable listed in args.  Defun-flg is t if we are guessing a measure on
@@ -751,7 +751,7 @@
 ; bn + (nr)^2 = cost of doing built-in clauses first         = bic-first
 
 ; Observe that when r=1 the two costs are the same, as they should be.  But
-; generally, r can be expected to be slightly less than 1.  
+; generally, r can be expected to be slightly less than 1.
 
 ; Here is an example.  Let n = 10, b = 100 and r = 99/100.  In this example we
 ; have only a few clauses to consider but lots of built in clauses, and we have
@@ -769,7 +769,7 @@
 
 ; Solving we get:
 
-; n > b/(1+r).  
+; n > b/(1+r).
 
 ; Indeed, if n=50 and b=100 and r=99/100 we see the costs of the two equal
 ; at 7450.
@@ -1536,7 +1536,7 @@
                                     t)
          (let ((inst-test (sublis-var alist test))
                (merge-p (or merge-p
-  
+
 ; If the test contains a recursive call then we prefer to merge when computing
 ; the induction machines for the true and false branches, to avoid possible
 ; explosion in cases.
@@ -1962,7 +1962,7 @@
     (not (equal (f '(a . b)) '(a . b)))
     :rule-classes nil
     :hints ((\"Goal\" :use (:instance g (x '(a . b))))))
-  ~ev[]  
+  ~ev[]
   simply by observing that if ~c[(f '(a . b))] were ~c['(a . b)], then
   ~c[(g '(a . b))] would be ~c[(not (g '(a . b)))], which is impossible.
 
@@ -1975,7 +1975,7 @@
     :hints
     ((\"Goal\" :use (:functional-instance f-not-identity (f identity)))))
   ~ev[]
-  
+
   This sequence of events was legal in versions of ACL2 prior to Version 1.5.
   When we realized the problem we took steps to make it illegal.  However, our
   steps were insufficient and it was possible to sneak in a subversive function
@@ -2228,7 +2228,7 @@
 
     (value (list (car pair)
                  wrld1
-                 (cdr pair))))))  
+                 (cdr pair))))))
 
 (defun prove-termination-recursive (names arglists measures t-machines
                                           mp rel hints otf-flg bodies ctx ens
@@ -2238,7 +2238,7 @@
 
 ; First we get the measures for each function.  That may cause an error if we
 ; couldn't guess one for some function.
-  
+
   (er-let*
    ((measure-alist
      (guess-measure-alist names arglists
@@ -2529,7 +2529,7 @@
 
 ; Rockwell Addition:  We have changed the notion of when a rule is an
 ; abbreviation.  Our new concern is with stobjs and lambdas.
- 
+
 ; If fn returns a stobj, we don't consider it an abbreviation unless
 ; it contains no lambdas.  Thus, the updaters are abbreviations but
 ; lambda-nests built out of them are not.  We once tried the idea of
@@ -2919,7 +2919,7 @@
                       (fargn term 1)
                       (type-set-implied-by-term1 (fargn term 2) tvar fvar)
                       (type-set-implied-by-term1 (fargn term 3) tvar fvar)))
-        (t 
+        (t
 
 ; We handle all non-IF applications here, even lambda applications.
 ; Once upon a time we considered driving into the body of a lambda.
@@ -3110,7 +3110,7 @@
                    (add-to-set-eq (cdar alist) vars)
                    vars)
                ttree))))
-   (t 
+   (t
     (type-set-and-returned-formals-with-rule1
      (cdr alist) rule-vars
      type-alist ens wrld
@@ -3160,7 +3160,7 @@
                                   nil ens wrld nil ttree
                                   nil nil backchain-limit 1)
            (cond
-            (relieve-hyps-ans 
+            (relieve-hyps-ans
 
 ; Subject to the conditions in ttree, we now know that the type set of term is
 ; either in :basic-ts or else that term is equal to the image under unify-subst
@@ -3189,12 +3189,12 @@
 ; nothing about term.
 
              (mv *ts-unknown* *ts-empty* nil type-alist ttree)))))))
-      (t 
+      (t
 
 ; The :term of the rule does not unify with our term.
 
        (mv *ts-unknown* *ts-empty* nil type-alist ttree)))))
-   (t 
+   (t
 
 ; The rule is disabled.
 
@@ -3218,13 +3218,13 @@
 ; tell us (or basic-ts1 var-equations1) and (or basic-ts2
 ; var-equations2).  Both of these propositions are true.  From them we
 ; deduce the truth
-; (or (and basic-ts1 basic-ts2) 
+; (or (and basic-ts1 basic-ts2)
 ;     (or var-equations1 var-equations2)).
 ; Note that we conjoin the basic type-sets but we disjoin the vars.  The
 ; validity of this conclusion follows from the tautology
 ; (implies (and (or basic-ts1 var-equations1)
 ;               (or basic-ts2 var-equations2))
-;          (or (and basic-ts1 basic-ts2) 
+;          (or (and basic-ts1 basic-ts2)
 ;              (or var-equations1 var-equations2))).
 ; It would be nice if we could conjoin both sides, but that's not valid.
 
@@ -3332,7 +3332,7 @@
 ; process:
 
 
-;   ************************************************************* 
+;   *************************************************************
 ;   THIS FUNCTION WILL BE COMPLETELY UNSOUND IF TYPE-SET IS EVER
 ;   REACHABLE FROM WITHIN IT.  IN PARTICULAR, BOTH THE TYPE-ALIST AND
 ;   THE TYPE-PRESCRIPTION FOR THE FN BEING PROCESSED ARE SET TO ONLY
@@ -3615,7 +3615,7 @@
             (t
              (mv (putprop name
                           'type-prescriptions
-                          (cons (change type-prescription tp 
+                          (cons (change type-prescription tp
                                         :basic-ts new-basic-type-set
                                         :vars new-returned-vars)
                                 (cdr old-type-prescriptions))
@@ -3881,23 +3881,23 @@
 
 ;   (encapsulate
 ;    ()
-; 
+;
 ;    (defun h (x) (declare (ignore x)) t)
-; 
+;
 ;    (in-theory (disable (:type-prescription h)))
-; 
+;
 ;    (local (in-theory (enable (:type-prescription h))))
-; 
+;
 ;    (encapsulate (((f *) => *))
 ;                 (local (defun f (x) (cdr x)))
 ;                 (defun g (x)
 ;                   (if (consp x) (g (f x)) (h x))))
-; 
+;
 ;    (defthm atom-g
 ;      (atom (g x))
 ;      :rule-classes nil)
 ;    )
-; 
+;
 ;  (defthm contradiction nil
 ;    :hints (("Goal" :use ((:instance
 ;                           (:functional-instance
@@ -3918,31 +3918,31 @@
 
 ;  (encapsulate
 ;   ()
-; 
+;
 ;   (defun h (x) (declare (ignore x)) t)
-; 
+;
 ;   (in-theory (disable (:type-prescription h)))
-; 
+;
 ;   (local (in-theory (enable (:type-prescription h))))
-; 
+;
 ;   (encapsulate (((f *) => *))
 ;                (local (defun f (x) (cdr x)))
 ;                (defun g (x)
 ;                  (if (consp x) (g (f x)) (h x)))
 ;                (defun k (x)
 ;                  (g x)))
-; 
+;
 ;  ; The following in-theory event is optional; it emphasizes that the problem is
 ;  ; with the use of the bogus type-prescription for g in normalizing the body of
 ;  ; k, not with the direct use of a type-prescription rule in subsequent
 ;  ; proofs.
 ;   (in-theory (disable (:type-prescription k) (:type-prescription g)))
-; 
+;
 ;   (defthm atom-k
 ;     (atom (k x))
 ;     :rule-classes nil)
 ;   )
-; 
+;
 ;  (defthm contradiction nil
 ;    :hints (("Goal" :use ((:instance
 ;                           (:functional-instance
@@ -4251,7 +4251,7 @@
 ; * Get-next-nume implicitly exploits the fact that the numes are
 ;   consecutive integers -- it adds the length of the list to
 ;   the first nume to get the next available nume.
-; * Cleanse-type-prescriptions knows that the same number of numes are 
+; * Cleanse-type-prescriptions knows that the same number of numes are
 ;   consumed by each function in a DEFUNS.  We have consistently used
 ;   the formal parameter def-nume when we were enumerating numes for
 ;   definitions.
@@ -4395,7 +4395,7 @@
 ; conservative with old code.  Perhaps we should change the t to nil?
 
             (clausify (dumb-negate-lit normal-guard)
-                      nil t (sr-limit wrld)))) 
+                      nil t (sr-limit wrld))))
        (mv-let
         (cl-set2 ttree)
         (guard-clauses-for-body hyp-segments
@@ -5046,12 +5046,12 @@
 ; this that leads us to write this note.  Just in case...
 
 ; ++++++++++++++++++++++++++++++
-; 
+;
 ; Date: Sun, 2 Oct 94 17:31:10 CDT
 ; From: kaufmann (Matt Kaufmann)
 ; To: moore
 ; Subject: proposal for handling generalized booleans
-; 
+;
 ; Here's a pretty simple idea, I think, for handling generalized Booleans.  For
 ; the rest of this message I'll assume that we are going to implement the
 ; about-to-be-proposed handling of guards.  This proposal doesn't address
@@ -5061,173 +5061,173 @@
 ; and RATIONALP, only specify the propositional equivalence class of the value
 ; returned, and no more.  I'll call these "problematic functions" for the rest of
 ; this note.
-; 
+;
 ; The fundamental ideas of this proposal are  as follows.
-; 
+;
 ; ====================
-; 
+;
 ;  (A) Problematic functions are completely a non-issue except for guard
 ; verification.  The ACL2 logic specifies Boolean values for functions that are
 ; specified in dpANS to return generalized Booleans.
-; 
+;
 ;  (B) Guard verification will generate not only the current proof obligations,
 ; but also appropriate proof obligations to show that for all values returned by
 ; relevant problematic functions, only their propositional equivalence class
 ; matters.  More on this later.
-; 
+;
 ;  (C) If a function is problematic, it had better only be used in propositional
 ; contexts when used in functions or theorems that are intended to be
 ; :common-lisp-compliant.  For example, consider the following.
-; 
+;
 ;  (defun foo (x y z)
 ;   (if x
 ;       (equal y z)
 ;     (cons y z)))
-; 
+;
 ; This is problematic, and we will never be able to use it in a
 ; :common-lisp-compliant function or formula for other than its propositional
 ; value (unfortunately).
-; 
+;
 ; ====================
-; 
+;
 ; Elaborating on (B) above:
-; 
+;
 ; So for example, if we're verifying guards on
-; 
+;
 ;  (... (foo (rationalp x) ...) ...)
-; 
+;
 ; then there will be a proof obligation to show that under the appropriate
 ; hypotheses (from governing IF tests),
-; 
+;
 ;  (implies (and a b)
 ;          (equal (foo a ...) (foo b ...)))
-; 
+;
 ; Notice that I've assumed that a and b are non-NIL.  The other case, where a and
 ; b are both NIL, is trivial since in that case a and b are equal.
-; 
+;
 ; Finally, most of the time no such proof obligation will be generated, because
 ; the context will make it clear that only the propositional equivalence class
 ; matters.  In fact, for each function we'll store information that gives
 ; ``propositional arguments'' of the function:  arguments for which we can be
 ; sure that only their propositional value matters.  More on this below.
-; 
+;
 ; ====================
-; 
+;
 ; Here are details.
-; 
+;
 ; ====================
-; 
+;
 ; 1. Every function will have a ``propositional signature,'' which is a list of
 ; T's and NIL's.  The CAR of this list is T when the function is problematic.
 ; The CDR of the list is in 1-1 correspondence with the function's formals (in
 ; the same order, of course), and indicates whether the formal's value only
 ; matters propositionally for the value of the function.
-; 
+;
 ; For example, the function
-; 
+;
 ;  (defun bar (x y z)
 ;   (if x
 ;       (equal y z)
 ;     (equal y nil)))
-; 
+;
 ; has a propositional signature of (T T NIL NIL).  The first T represents the
 ; fact that this function is problematic.  The second T represents the fact that
 ; only the propositional equivalence class of X is used to compute the value of
 ; this function.  The two NILs say that Y and Z may have their values used other
 ; than propositionally.
-; 
+;
 ; An argument that corresponds to a value of T will be called a ``propositional
 ; argument'' henceforth.  An OBSERVATION will be made any time a function is
 ; given a propositional signature that isn't composed entirely of NILs.
-; 
+;
 ;  (2) Propositional signatures will be assigned as follows, presumably hung on
 ; the 'propositional-signature property of the function.  We intend to ensure
 ; that if a function is problematic, then the CAR of its propositional signature
 ; is T.  The converse could fail, but it won't in practice.
-; 
+;
 ; a. The primitives will have their values set using a fixed alist kept in sync
 ; with *primitive-formals-and-guards*, e.g.:
-; 
+;
 ;  (defconst *primitive-propositional-signatures*
 ;   '((equal (t nil nil))
 ;     (cons (nil nil nil))
 ;     (rationalp (t nil))
 ;     ...))
-; 
+;
 ; In particular, IF has propositional signature (NIL T NIL NIL):  although IF is
 ; not problematic, it is interesting to note that its first argument is a
 ; propositional argument.
-; 
+;
 ; b. Defined functions will have their propositional signatures computed as
 ; follows.
-; 
+;
 ; b1. The CAR is T if and only if some leaf of the IF-tree of the body is the
 ; call of a problematic function.  For recursive functions, the function itself
 ; is considered not to be problematic for the purposes of this algorithm.
-; 
+;
 ; b2. An argument, arg, corresponds to T (i.e., is a propositional argument in
 ; the sense defined above) if and only if for every subterm for which arg is an
 ; argument of a function call, arg is a propositional argument of that function.
-; 
+;
 ; Actually, for recursive functions this algorithm is iterative, like the type
 ; prescription algorithm, in the sense that we start by assuming that every
 ; argument is propositional and iterate, continuing to cut down the set of
 ; propositional arguments until it stabilizes.
-; 
+;
 ; Consider for example:
-; 
+;
 ;  (defun atom-listp (lst)
 ;   (cond ((atom lst) (eq lst nil))
 ;         (t (and (atom (car lst))
 ;                 (atom-listp (cdr lst))))))
-; 
+;
 ; Since EQ returns a generalized Boolean, ATOM-LISTP is problematic.  Since
 ; the first argument of EQ is not propositional, ATOM-LISTP has propositional
 ; signature (T NIL).
-; 
+;
 ; Note however that we may want to replace many such calls of EQ as follows,
 ; since dpANS says that NULL really does return a Boolean [I guess because it's
 ; sort of synonymous with NOT]:
-; 
+;
 ;  (defun atom-listp (lst)
 ;   (cond ((atom lst) (null lst))
 ;         (t (and (atom (car lst))
 ;                 (atom-listp (cdr lst))))))
-; 
+;
 ; Now this function is not problematic, even though one might be nervous because
 ; ATOM is, in fact, problematic.  However, ATOM is in the test of an IF (because
 ; of how AND is defined).  Nevertheless, the use of ATOM here is of issue, and
 ; this leads us to the next item.
-; 
+;
 ;  (3) Certain functions are worse than merely problematic, in that their value
 ; may not even be determined up to propositional equivalence class.  Consider for
 ; example our old favorite:
-; 
+;
 ;  (defun bad (x)
 ;   (equal (equal x x) (equal x x)))
-; 
+;
 ; In this case, we can't really say anything at all about the value of BAD, ever.
-; 
+;
 ; So, every function is checked that calls of problematic functions in its body
 ; only occur either at the top-level of its IF structure or in propositional
 ; argument positions.  This check is done after the computation described in (2)b
 ; above.
-; 
+;
 ; So, the second version of the definition of ATOM-LISTP above,
-; 
+;
 ;  (defun atom-listp (lst)
 ;   (cond ((atom lst) (null lst))
 ;         (t (and (atom (car lst))
 ;                 (atom-listp (cdr lst))))))
-; 
+;
 ; is OK in this sense, because both calls of ATOM occur in the first argument of
 ; an IF call, and the first argument of IF is propositional.
-; 
+;
 ; Functions that fail this check are perfectly OK as :ideal functions; they just
 ; can't be :common-lisp-compliant.  So perhaps they should generate a warning
 ; when submitted as :ideal, pointing out that they can never be
 ; :common-lisp-compliant.
-; 
+;
 ; -- Matt
 
   (let ((wrld (w state))
@@ -5242,7 +5242,7 @@
             (ttree1 (cdr pair))
             (wrld1 (putprop-x-lst1 names 'symbol-class
                                    :common-lisp-compliant wrld)))
-       (pprogn 
+       (pprogn
         (print-verify-guards-msg names col state)
         (value (cons wrld1 ttree1)))))))
 
@@ -5345,44 +5345,44 @@
     (COERCE-OBJECT-TO-STATE      (NIL)           (STATE))
     (USER-STOBJ-ALIST            (STATE)         (NIL))
     (UPDATE-USER-STOBJ-ALIST     (NIL STATE)     (STATE))
-    (BIG-CLOCK-NEGATIVE-P        (STATE)         (NIL)) 
-    (DECREMENT-BIG-CLOCK         (STATE)         (STATE)) 
-    (STATE-P                     (STATE)         (NIL)) 
-    (OPEN-INPUT-CHANNEL-P        (NIL NIL STATE) (NIL)) 
-    (OPEN-OUTPUT-CHANNEL-P       (NIL NIL STATE) (NIL)) 
-    (OPEN-INPUT-CHANNEL-ANY-P    (NIL STATE)     (NIL)) 
-    (OPEN-OUTPUT-CHANNEL-ANY-P   (NIL STATE)     (NIL)) 
-    (READ-CHAR$                  (NIL STATE)     (NIL STATE)) 
-    (PEEK-CHAR$                  (NIL STATE)     (NIL)) 
-    (READ-BYTE$                  (NIL STATE)     (NIL STATE)) 
-    (READ-OBJECT                 (NIL STATE)     (NIL NIL STATE)) 
-    (READ-ACL2-ORACLE            (STATE)         (NIL NIL STATE)) 
-    (READ-ACL2-ORACLE@PAR        (STATE)         (NIL NIL)) 
-    (READ-RUN-TIME               (STATE)         (NIL STATE)) 
-    (READ-IDATE                  (STATE)         (NIL STATE)) 
-    (LIST-ALL-PACKAGE-NAMES      (STATE)         (NIL STATE)) 
-    (PRINC$                      (NIL NIL STATE) (STATE)) 
-    (WRITE-BYTE$                 (NIL NIL STATE) (STATE)) 
-    (PRINT-OBJECT$-SER           (NIL NIL NIL STATE) (STATE)) 
-    (GET-GLOBAL                  (NIL STATE)     (NIL)) 
-    (BOUNDP-GLOBAL               (NIL STATE)     (NIL)) 
-    (MAKUNBOUND-GLOBAL           (NIL STATE)     (STATE)) 
-    (PUT-GLOBAL                  (NIL NIL STATE) (STATE)) 
-    (GLOBAL-TABLE-CARS           (STATE)         (NIL)) 
-    (T-STACK-LENGTH              (STATE)         (NIL)) 
-    (EXTEND-T-STACK              (NIL NIL STATE) (STATE)) 
-    (SHRINK-T-STACK              (NIL STATE)     (STATE)) 
-    (AREF-T-STACK                (NIL STATE)     (NIL)) 
-    (ASET-T-STACK                (NIL NIL STATE) (STATE)) 
-    (32-BIT-INTEGER-STACK-LENGTH (STATE)         (NIL)) 
-    (EXTEND-32-BIT-INTEGER-STACK (NIL NIL STATE) (STATE)) 
-    (SHRINK-32-BIT-INTEGER-STACK (NIL STATE)     (STATE)) 
-    (AREF-32-BIT-INTEGER-STACK   (NIL STATE)     (NIL)) 
-    (ASET-32-BIT-INTEGER-STACK   (NIL NIL STATE) (STATE)) 
-    (OPEN-INPUT-CHANNEL          (NIL NIL STATE) (NIL STATE)) 
-    (OPEN-OUTPUT-CHANNEL         (NIL NIL STATE) (NIL STATE)) 
-    (GET-OUTPUT-STREAM-STRING$-FN (NIL STATE)    (NIL NIL STATE)) 
-    (CLOSE-INPUT-CHANNEL         (NIL STATE)     (STATE)) 
+    (BIG-CLOCK-NEGATIVE-P        (STATE)         (NIL))
+    (DECREMENT-BIG-CLOCK         (STATE)         (STATE))
+    (STATE-P                     (STATE)         (NIL))
+    (OPEN-INPUT-CHANNEL-P        (NIL NIL STATE) (NIL))
+    (OPEN-OUTPUT-CHANNEL-P       (NIL NIL STATE) (NIL))
+    (OPEN-INPUT-CHANNEL-ANY-P    (NIL STATE)     (NIL))
+    (OPEN-OUTPUT-CHANNEL-ANY-P   (NIL STATE)     (NIL))
+    (READ-CHAR$                  (NIL STATE)     (NIL STATE))
+    (PEEK-CHAR$                  (NIL STATE)     (NIL))
+    (READ-BYTE$                  (NIL STATE)     (NIL STATE))
+    (READ-OBJECT                 (NIL STATE)     (NIL NIL STATE))
+    (READ-ACL2-ORACLE            (STATE)         (NIL NIL STATE))
+    (READ-ACL2-ORACLE@PAR        (STATE)         (NIL NIL))
+    (READ-RUN-TIME               (STATE)         (NIL STATE))
+    (READ-IDATE                  (STATE)         (NIL STATE))
+    (LIST-ALL-PACKAGE-NAMES      (STATE)         (NIL STATE))
+    (PRINC$                      (NIL NIL STATE) (STATE))
+    (WRITE-BYTE$                 (NIL NIL STATE) (STATE))
+    (PRINT-OBJECT$-SER           (NIL NIL NIL STATE) (STATE))
+    (GET-GLOBAL                  (NIL STATE)     (NIL))
+    (BOUNDP-GLOBAL               (NIL STATE)     (NIL))
+    (MAKUNBOUND-GLOBAL           (NIL STATE)     (STATE))
+    (PUT-GLOBAL                  (NIL NIL STATE) (STATE))
+    (GLOBAL-TABLE-CARS           (STATE)         (NIL))
+    (T-STACK-LENGTH              (STATE)         (NIL))
+    (EXTEND-T-STACK              (NIL NIL STATE) (STATE))
+    (SHRINK-T-STACK              (NIL STATE)     (STATE))
+    (AREF-T-STACK                (NIL STATE)     (NIL))
+    (ASET-T-STACK                (NIL NIL STATE) (STATE))
+    (32-BIT-INTEGER-STACK-LENGTH (STATE)         (NIL))
+    (EXTEND-32-BIT-INTEGER-STACK (NIL NIL STATE) (STATE))
+    (SHRINK-32-BIT-INTEGER-STACK (NIL STATE)     (STATE))
+    (AREF-32-BIT-INTEGER-STACK   (NIL STATE)     (NIL))
+    (ASET-32-BIT-INTEGER-STACK   (NIL NIL STATE) (STATE))
+    (OPEN-INPUT-CHANNEL          (NIL NIL STATE) (NIL STATE))
+    (OPEN-OUTPUT-CHANNEL         (NIL NIL STATE) (NIL STATE))
+    (GET-OUTPUT-STREAM-STRING$-FN (NIL STATE)    (NIL NIL STATE))
+    (CLOSE-INPUT-CHANNEL         (NIL STATE)     (STATE))
     (CLOSE-OUTPUT-CHANNEL        (NIL STATE)     (STATE))
     (SYS-CALL-STATUS             (STATE)         (NIL STATE))))
 
@@ -5630,7 +5630,7 @@
         (t (pprogn
             (print-defun-msg/signatures1 names wrld state)
             (newline (proofs-co state) state)))))
-               
+
 
 (defun print-defun-msg (names ttree wrld col state)
 
@@ -5756,7 +5756,7 @@
                                 (chk-state-ok ctx wrld state)
                                 (value (cons 'state dcl-stobj-names))))
                               (t (value dcl-stobj-names)))))
-                             
+
                  (cond
                   ((not (subsetp-eq dcl-stobj-namesx formals))
                    (er soft ctx
@@ -6302,26 +6302,26 @@
 
 ;  (encapsulate
 ;   ()
-; 
+;
 ;   (local (defun foo (x y)
 ;            (declare (xargs :measure (acl2-count y) :mode :program))
 ;            (if (and (consp x) (consp y))
 ;                (foo (cons x x) (cdr y))
 ;              y)))
-; 
+;
 ;   (defun foo (x y)
 ;     (declare (xargs :mode :program))
 ;     (if (and (consp x) (consp y))
 ;         (foo (cons x x) (cdr y))
 ;       y))
-; 
+;
 ;   (verify-termination foo))
-; 
+;
 ;  (defthm bad
 ;    (atom x)
 ;    :rule-classes nil
 ;    :hints (("Goal" :induct (foo x '(3)))))
-; 
+;
 ;  (defthm contradiction
 ;    nil
 ;    :rule-classes nil
@@ -6332,12 +6332,12 @@
 ; measures in that case:
 
 ;  (set-bogus-mutual-recursion-ok t) ; ease construction of example
-; 
+;
 ;  (encapsulate
 ;   ()
 ;   (local (encapsulate
 ;           ()
-; 
+;
 ;           (local (mutual-recursion
 ;                   (defun bar (x) x)
 ;                   (defun foo (x y)
@@ -6345,7 +6345,7 @@
 ;                     (if (and (consp x) (consp y))
 ;                         (foo (cons x x) (cdr y))
 ;                       y))))
-; 
+;
 ;           (mutual-recursion
 ;            (defun bar (x) x)
 ;            (defun foo (x y)
@@ -6356,12 +6356,12 @@
 ;     (if (and (consp x) (consp y))
 ;         (foo (cons x x) (cdr y))
 ;       y)))
-; 
+;
 ;  (defthm bad
 ;    (atom x)
 ;    :rule-classes nil
 ;    :hints (("Goal" :induct (foo x '(3)))))
-; 
+;
 ;  (defthm contradiction
 ;    nil
 ;    :rule-classes nil
@@ -6432,7 +6432,7 @@
                    ((and (eq (cadr val) :program)
                          (eq defun-mode :logic))
                     'reclassifying)
-                   (t 
+                   (t
 
 ; We allow "redefinition" from :logic to :program mode by treating the latter
 ; as redundant.  At one time we thought it should be disallowed because of an
@@ -6721,7 +6721,7 @@
 ;       (if (consp y)
 ;           (f x (cdr y))
 ;         (list x y)))))
-;  
+;
 ;  (defun f (x y)
 ;  ;;; possible IMPLICIT (bad) measure of (acl2-count x)
 ;    (if (and (consp x) (consp y))
@@ -7228,7 +7228,7 @@
   An example of an irrelevant formal is ~c[x] in the definition of ~c[fact]
   below.
   ~bv[]
-  (defun fact (i x) 
+  (defun fact (i x)
     (declare (xargs :guard (and (integerp i) (<= 0 i))))
     (if (zerop i) 0 (* i (fact (1- i) (cons i x))))).
   ~ev[]
@@ -7271,7 +7271,7 @@
   formal in an irrelevant way in the ~il[guard].  For example, to admit
   fact, above, with its irrelevant ~c[x] one might use
   ~bv[]
-  (defun fact (i x) 
+  (defun fact (i x)
     (declare (xargs :guard (and (integerp i) (<= 0 i) (equal x x))))
     (if (zerop i) 0 (* i (fact (1- i) (cons i x)))))
   ~ev[]
@@ -7346,7 +7346,7 @@
 
 #+:non-standard-analysis
 (defun chk-classical-measures (measures names ctx wrld state)
-  (let ((non-classical-fns (get-non-classical-fns 
+  (let ((non-classical-fns (get-non-classical-fns
                             (strip-missing-measures measures nil)
                             wrld)))
     (cond ((null non-classical-fns)
@@ -7358,7 +7358,7 @@
                 attempt to recursively define ~*0 using the ~
                 non-classical functions ~*1 in the measure."
                `("<MissingFunction>" "~x*," "~x* and " "~x*, " ,names)
-               `("<MissingFunction>" "~x*," "~x* and " "~x*, " 
+               `("<MissingFunction>" "~x*," "~x* and " "~x*, "
                  ,non-classical-fns))))))
 
 ;; RAG - This function checks that non-classical functions only appear
@@ -7386,7 +7386,7 @@
               attempt to recursively define ~*0 using the ~
               non-classical function ~*1."
              `("<MissingFunction>" "~x*," "~x* and " "~x*, " ,names)
-             `("<MissingFunction>" "~x*," "~x* and " "~x*, " 
+             `("<MissingFunction>" "~x*," "~x* and " "~x*, "
                ,non-classical-fns)))
         ((not (and (classicalp mp wrld)
                    (classicalp rel wrld)))
@@ -7401,7 +7401,7 @@
              rel))
         (t
          (chk-classical-measures measures names ctx wrld state))))
-    
+
 (defun union-collect-non-x (x lst)
   (cond ((endp lst) nil)
         (t (union-equal (collect-non-x x (car lst))
@@ -7824,7 +7824,7 @@
               (er-progn
                (chk-stobjs-out-bound names bindings ctx state)
                #+:non-standard-analysis
-               (chk-no-recursive-non-classical 
+               (chk-no-recursive-non-classical
                 non-classical-fns
                 names mp rel measures bodies ctx wrld2 state)))
             (let* ((wrld30 (store-super-defun-warts-stobjs-in
@@ -7836,7 +7836,7 @@
                               wrld31
                             (putprop-x-lst1 names 'classicalp
                                             nil wrld31))
-                          #-:non-standard-analysis 
+                          #-:non-standard-analysis
                           wrld31))
               (er-let* ((guards (translate-term-lst
                                  (get-guards fives split-types-lst nil wrld2)
@@ -7887,7 +7887,7 @@
 ;    (mv (car x)
 ;        (mbe :logic (consp x)
 ;             :exec t)))
-; 
+;
 ; (defthm bad
 ;    nil
 ;    :hints (("goal" :use ((:instance foo (x nil)))))
@@ -8001,7 +8001,7 @@
             (t (conditionally-memoized-fns (cdr fns) memoize-table)))))))
 
 ;; RAG - I modified the function below to check for recursive
-;; definitions using non-classical predicates. 
+;; definitions using non-classical predicates.
 
 (defun chk-acceptable-defuns (lst ctx wrld state #+:non-standard-analysis std-p)
 
@@ -8517,7 +8517,7 @@
                               (pprogn
                                (increment-timer 'print-time state)
                                (value (cons col
-                                            (cons-tag-trees 
+                                            (cons-tag-trees
                                              cl-set-ttree
                                              ttree)))))))))))))))))
    (t (er soft ctx
@@ -8620,7 +8620,7 @@
                                               split-types-terms *t* wrld3)))
 
 ; Rockwell Addition:  To save time, the nu-rewriter doesn't look at
-; functions unless they contain nu-rewrite targets, as defined in 
+; functions unless they contain nu-rewrite targets, as defined in
 ; rewrite.lisp.  Here is where I store the property that says whether a
 ; function is a target.
 
@@ -9117,7 +9117,7 @@
 
                                      (defstobj-functionsp names
                                        (global-val
-                                        'embedded-event-lst 
+                                        'embedded-event-lst
                                         (car pair))))
                              nil))
                         ,@def-lst0)))
@@ -9136,7 +9136,7 @@
 ; When a function symbol fn is defund the user supplies a guard, g, and a
 ; body b.  Logically speaking, the axiom introduced for fn is
 
-;    (fn x1...xn) = b.  
+;    (fn x1...xn) = b.
 
 ; After admitting fn, the guard-related properties are set as follows:
 
@@ -9190,7 +9190,7 @@
 
   (with-ctx-summarized
    (defun-ctx def-lst state event-form #+:non-standard-analysis std-p)
-   (let ((wrld (w state)) 
+   (let ((wrld (w state))
          (def-lst0
            #+:non-standard-analysis
            (if std-p
@@ -9385,7 +9385,7 @@
   function or macro, and prints out the formal parameters, the ~il[guard]
   expression, the output ~il[signature], the deduced type, the ~il[constraint]
   (if any), and whether ~il[documentation] about the symbol is available
-  via ~c[:]~ilc[doc].~/"  
+  via ~c[:]~ilc[doc].~/"
 
   (list 'args-fn name 'state))
 
@@ -9669,7 +9669,7 @@
               (eq (cadar lst) 'global-value)
               (eq (access-event-tuple-type (cddar lst)) 'defaxiom))
 
-; In this case, (car lst) is a tuple of the form 
+; In this case, (car lst) is a tuple of the form
 
 ; (event-landmark global-value . tuple)
 

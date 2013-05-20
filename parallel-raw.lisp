@@ -1237,8 +1237,8 @@
 
 (defmacro spec-mv-let (bindings computation body)
   (assert
-   (and (true-listp body) 
-        (equal (length body) 4) 
+   (and (true-listp body)
+        (equal (length body) 4)
 
 ; We could easily also allow "mv?-let," but we don't for now, because we don't
 ; have a need.  With work, we could also allow "let." We don't do so for now,
@@ -1248,13 +1248,13 @@
         (or (equal (car body) 'mv-let@par)
             (equal (car body) 'mv-let)
             (equal (car body) 'mv?-let))))
-   
+
   (let* ((inner-let (car body))
          (inner-bindings (cadr body))
          (inner-body (caddr body))
          (ite (cadddr body)))
-    (assert (and (true-listp ite) 
-                 (equal (length ite) 4) 
+    (assert (and (true-listp ite)
+                 (equal (length ite) 4)
                  (equal (car ite) 'if)))
     (let* ((test (cadr ite))
            (true-branch (caddr ite))
@@ -1264,7 +1264,7 @@
 ; check-vars-not-free in logical definition.
 
       `(let ((the-very-obscure-feature (future ,computation)))
-         (,inner-let 
+         (,inner-let
           ,inner-bindings
           ,inner-body
           (if ,test
@@ -1336,7 +1336,7 @@
         ((fboundp var)
          `(format nil " Stat     ~s is ~s~% " ,(symbol-name var) (,var)))
         ((boundp-global var *the-live-state*)
-         `(format nil " Stat     ~s is ~s~% " ,(symbol-name var) 
+         `(format nil " Stat     ~s is ~s~% " ,(symbol-name var)
                   ,(f-get-global var *the-live-state*)))
         (t
          `(format nil " Variable ~s is ~s~% " ,(symbol-name var) ,var))))
@@ -1360,7 +1360,7 @@
 
 (defun print-interesting-parallelism-variables-str ()
   (incf *refresh-rate-indicator*)
-  (setf *future-queue-length-history* 
+  (setf *future-queue-length-history*
 
 ; Note that this setf isn't thread safe, but if we lose one entry in the
 ; history, we don't really care -- it's just a debugging tool anyway.
@@ -1368,7 +1368,7 @@
         (cons (future-queue-length)
               *future-queue-length-history*))
 
-  (concatenate 
+  (concatenate
    'string
    (format nil "  Printing stats related to executing proofs in parallel.~% ")
    (value-of-symbol *idle-future-core-count*)

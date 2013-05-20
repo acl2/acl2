@@ -742,7 +742,7 @@
 ; as a command and the corresponding symbol in the "ACL2" package,
 ; ACL2::key is a function or macro of arity n, we read n more
 ; objects, quote them, and apply the ACL2 function or macro.
-; Thus, 
+; Thus,
 
 ; MY-PKG !>:ubt foo
 
@@ -752,7 +752,7 @@
 
 ; We require that the macro not have any lambda keyword arguments, since
 ; that makes it hard or impossible to determine how many things we should
-; read.  
+; read.
 
 ; We also support the convention that if :key is bound on 'ld-keyword-aliases
 ; in state, say in the entry (:key n fn), we manufacture (fn 'x1 ...  'xn)
@@ -963,7 +963,7 @@
   ACL2 !>:set-iprint t
 
   ACL2 Query (:SET-IPRINT):  Action  (T, NIL, RESET, RESET-ENABLE, SAME,
-  Q or ?):  
+  Q or ?):
   ACL2 Observation in SET-IPRINT:  Iprinting has been enabled.
   ACL2 !>
   ~ev[]
@@ -1736,7 +1736,7 @@
                                        (PRINC "Abort to ACL2 top-level"
                                               *STANDARD-OUTPUT*)
                                        (TERPRI *STANDARD-OUTPUT*))
-                                      (T 
+                                      (T
                                        (THROW 'LOCAL-TOP-LEVEL :ABORT))))
                                ((EQ THROWN-VAL :POP)
                                 (COND ((= *LD-LEVEL* 1)
@@ -1799,12 +1799,12 @@
 ;     (foo (1- n)
 ;          (cons `(equal (nth ,n x) x)
 ;                acc))))
-; 
+;
 ; (defmacro mac (n)
 ;   (cons 'and (foo n nil)))
-; 
+;
 ; (set-rewrite-stack-limit 10000)
-; 
+;
 ; (thm
 ;  (mac 1000)
 ;  :otf-flg t
@@ -2619,7 +2619,7 @@
   ~il[world]:
   ~bv[]
                *
-             w0 
+             w0
            /    \\
          w3      w1
            \\    /
@@ -2632,7 +2632,7 @@
   ~il[world] in the ring is replaced by the result, say ~c[w0'], of the ~c[:]~ilc[ubt] or
   ~c[:u].
   ~bv[]
-             w0 
+             w0
            /    \\
         *w0'     w1
            \\    /
@@ -2645,7 +2645,7 @@
   Thus the kill ring becomes
   ~bv[]
                *
-             w0 
+             w0
            /    \\
          w0'     w1
            \\    /
@@ -2722,7 +2722,7 @@
   after the ~c[(i-am-here)] need not be machine readable."
 
   '(mv-let (col state)
-           (fmt1 "~ I-AM-HERE~|" nil 0 (standard-co state) state nil) 
+           (fmt1 "~ I-AM-HERE~|" nil 0 (standard-co state) state nil)
            (declare (ignore col))
            (mv t nil state)))
 
@@ -3547,7 +3547,7 @@
   subtraction, multiplication, and exponentiation).  The algorithms and their
   complexity are described in the following paper.
   ~bf[]
-  Manolios, Panagiotis & Vroon, Daron. 
+  Manolios, Panagiotis & Vroon, Daron.
   Algorithms for ordinal arithmetic.
   Baader, Franz (ed),
   19th International Conference on Automated Deduction--CADE-19.
@@ -3559,7 +3559,7 @@
   ~bf[]
   Manolios, Panagiotis & Vroon, Daron.
   Ordinal arithmetic in ACL2.
-  Kaufmann, Matt, & Moore, J Strother (eds). 
+  Kaufmann, Matt, & Moore, J Strother (eds).
   Fourth International Workshop on the ACL2 Theorem
   Prover and Its Applications (ACL2-2003),
   July, 2003.
@@ -3599,7 +3599,7 @@
 
   For any ordinal, ~c[a < epsilon-0], there exist natural numbers ~c[p]
   and ~c[n], positive integers ~c[x1, x2, ..., xn] and ordinals
-  ~c[a1 > a2 > ... > an > 0] such that ~c[a > a1] and 
+  ~c[a1 > a2 > ... > an > 0] such that ~c[a > a1] and
   ~c[a = w^(a1)x1 + w^(a2)x2 + ... + w^(an)xn + p].
 
   Instead of representing an ordinal as a list of non-increasing ordinals, we
@@ -3702,7 +3702,7 @@
 
 
   ACL2 Error in WET:  The guard for the function call (FOO X), which
-  is (CONSP X), is violated by the arguments in the call (FOO NIL). 
+  is (CONSP X), is violated by the arguments in the call (FOO NIL).
   To debug see :DOC print-gv, see :DOC trace, and see :DOC wet.  See
   :DOC set-guard-checking for information about suppressing this check
   with (set-guard-checking :none), as recommended for new users.
@@ -3728,7 +3728,7 @@
 
 
   ACL2 Error in WET:  The guard for the function call (FOO X), which
-  is (CONSP X), is violated by the arguments in the call (FOO NIL). 
+  is (CONSP X), is violated by the arguments in the call (FOO NIL).
   To debug see :DOC print-gv, see :DOC trace, and see :DOC wet.  See
   :DOC set-guard-checking for information about suppressing this check
   with (set-guard-checking :none), as recommended for new users.
@@ -4436,7 +4436,7 @@
   the ~ilc[encapsulate].  ~l[subversive-recursions].  (Note added in
   Version  2.3:  Subversive recursions were first recognized by us here
   in Version 1.5, but our code for recognizing them was faulty and the
-  bug was not fixed until Version  2.3.) 
+  bug was not fixed until Version  2.3.)
 
   The ~il[events] ~ilc[defequiv], ~ilc[defcong], ~ilc[defrefinement], and ~ilc[defevaluator] have
   been reimplemented so that they are just macros that expand into
@@ -5300,7 +5300,7 @@
   ~/
   Less important notes:
 
-  The implementation of ~c[PRINC$] was changed so that it was no longer 
+  The implementation of ~c[PRINC$] was changed so that it was no longer
   sensitive to the external setting of ~c[*print-base*] and other Common Lisp
   special variables.
 
@@ -5319,7 +5319,7 @@
   The identity function ~ilc[case-split] has been added.  It is similar
   to ~ilc[force] but causes an immediate split of the top-level goal on
   whether the indicated hypothesis is true.
-  
+
   ~/
   Less important notes:
 
@@ -5334,7 +5334,7 @@
 
   ACL2 Version  2.2 (August, 1998) Notes~/
 
-  Important changes:  
+  Important changes:
 
   A bug was fixed in the compile command, ~c[:comp].  The compiled code
   produced by ~c[:comp] in previous versions could be wildly incorrect
@@ -5348,14 +5348,14 @@
   code would call functions that did not exist.
 
   There have been no other important changes to the code.
-  
+
   However, this release contains some useful new books, notably those on
   the ~c[books] subdirectories ~c[cli-misc] and ~c[ihs].  Both have
   ~c[README] files.  The ~c[ihs] books provide support for integer
   hardware specifications.  These books were crucial to Bishop Brock's
   successful modeling of the Motorola CAP.  We thank Bishop for producing
   them and we thank all those who worked so hard to get these books released.
-  We highly recommend the ~c[ihs] books to those modeling ALUs and other 
+  We highly recommend the ~c[ihs] books to those modeling ALUs and other
   arithmetic components of microprocessors or programming languages.
 
   In previous versions of ACL2, the arithmetic books, found on
@@ -5371,7 +5371,7 @@
   but contains ~c[defthm]s where the former contains ~c[defaxiom]s.
   The top-most books have been rebuilt using ``~c[-axioms-proved]'' book.
   Thanks John.
-  
+
   ~/
   Less important notes:
 
@@ -5396,7 +5396,7 @@
 
   ACL2 Version  2.3 (October, 1998) Notes~/
 
-  Important changes:  
+  Important changes:
 
   Versions of ACL2 preceding this one contain a subtle soundness bug!
   We found a flaw in our detection of ~il[subversive-recursions].  The
@@ -5430,7 +5430,7 @@
   the crucial properties.
   ~nl[]~nl[]
   See ~il[subversive-recursions] for details.
-  
+
   ~/
 
   Less important notes:
@@ -5438,7 +5438,7 @@
   We have begun to write some introductory tutorial material for those
   who wish to learn to program in ACL2.  Most of this material is
   HTML-based.  See the Hyper-Card on the ACL2 home page.
-  
+
   The documentation of ~ilc[verify-guards] was improved to explain why
   one might wish to verify the ``guards'' of a ~c[defthm] event.  The
   missing documentation was noticed by John Cowles.
@@ -5456,7 +5456,7 @@
 
   ACL2 Version  2.4 (August, 1999) Notes~/
 
-  Important changes:  
+  Important changes:
 
   We corrected a soundness bug in Version 2.3 related to the handling of
   ~ilc[immediate-force-modep].  The bad behavior was noticed by Robert
@@ -5479,7 +5479,7 @@
   an error.  The old handling of the function prevented some guard proofs
   involving ~ilc[THE] or ~ilc[LET]s with internal declarations.
 
-  We corrected a bug that permitted some ~c[LOCAL] ~c[DEFAXIOM] events to slip 
+  We corrected a bug that permitted some ~c[LOCAL] ~c[DEFAXIOM] events to slip
   into certified books.
 
   We corrected a bug that prevented the correct undoing of certain ~c[DEFPKG]
@@ -5502,11 +5502,11 @@
 
   ACL2 Version  2.5 (June, 2000) Notes~/
 
-  Important Changes:  
+  Important Changes:
 
   Concurrent with the release of ACL2 Version  2.5 is the publication
   of two books about ACL2.  See the ``Books and Papers about ACL2 and Its
-  Applications'' on the ACL2 Home Page.  
+  Applications'' on the ACL2 Home Page.
 
   The ~c[books] subdirectory now contains many new certifiable books,
   including solutions to the exercises in the two published books and
@@ -5561,7 +5561,7 @@
   and ACL2 have different underlying theories, and books certified in
   one system may not be included in the other.  For backward
   compatibility and to ensure a smooth transition, ACL2 is built by
-  default, not ACL2(r).  This is a compile-time switch; see the 
+  default, not ACL2(r).  This is a compile-time switch; see the
   makefile for instructions.  There should be no changes to ACL2
   resulting from the capability of building ACL2(r) from the same
   sources.  Also ~pl[acknowledgments] for more on the history of
@@ -5591,7 +5591,7 @@
 
   ~c[:]~ilc[Puff] no longer tries to expand ~ilc[defstobj] events.
   Previously, the attempt would cause a hard error.
-  
+
   A soundness bug was fixed.  The bug might have been exercised if you
   had an alternative definition (implies hyps (equiv (fn ...) body)) in
   which equiv is an equivalence relation other than EQUAL.  In this case,
@@ -5848,7 +5848,7 @@
 
   ACL2 Version  2.6 (November, 2001) Notes~/
 
-  Because of the large number of modifications, we have divided up 
+  Because of the large number of modifications, we have divided up
   the Version  2.6 notes into the following subtopics.~bq[]
 
   o New functionality (~pl[note-2-6-new-functionality]):~nl[]
@@ -6051,10 +6051,10 @@
   ACL2 Version  2.6 Notes on Changes in Proof Engine~/
 
   Certain optimizations are performed when converting terms to clausal
-  form.  For example, ~c[(< 0 1)] is known to be ~c[t], 
+  form.  For example, ~c[(< 0 1)] is known to be ~c[t],
   ~c[(HARD-ERROR ctx str alist)] is known to be ~c[nil], and
   ~c[(INTEGERP n)] is known to imply ~c[(RATIONALP n)].
-  
+
   In earlier versions of ACL2, the conversion of a term to clausal
   form expanded ~c[LAMBDA] applications.  That may no longer occur.
   Some proofs may slow down (or fail) because your
@@ -6114,7 +6114,7 @@
 
   We eliminated the rule-class ~c[linear-alias].  This rule class was seldom
   used and complicated the linear arithmetic decision procedure in ways that
-  made it difficult to extend to handle some non-linear special cases.  
+  made it difficult to extend to handle some non-linear special cases.
   The only use of the rule-class that we know of was in our own ~c[nqthm]
   books, which were an attempt to provide an embedding of the Nqthm logic
   and theorem prover into ACL2.  But that facility was also practically
@@ -6263,7 +6263,7 @@
 
   The guard conjectures for functions using ~c[stobj]s have been simplified
   somewhat by taking advantage of the syntactic restrictions checked for
-  single-threaded objects.  
+  single-threaded objects.
 
   The following functions have been modified so that character and
   string arguments are restricted to standard characters.
@@ -6362,7 +6362,7 @@
   Another change to eliminate such unsoundness is that built-in
   symbols now have a ~ilc[symbol-package-name] of ~c[\"COMMON-LISP\"]; formerly,
   this string was ~c[\"LISP\"] for ACL2 images built on GCL.
-  ~l[symbol-package-name].  At a low level, the (undocumented) constant 
+  ~l[symbol-package-name].  At a low level, the (undocumented) constant
   ~c[*main-lisp-package-name*] is now ~c[\"COMMON-LISP\"]; before, it was
   ~c[\"LISP\"] for GCL.
 
@@ -6731,7 +6731,7 @@
   The command ~ilc[add-binop] failed to work.  This has been fixed.  Thanks to
   Rob Sumners for pointing out this problem.  Also ~pl[note-2-7-other] for a
   discussion of how this and another ~il[table] are no longer part of the
-  ~ilc[acl2-defaults-table]. 
+  ~ilc[acl2-defaults-table].
 
   Book certification could cause a segmentation fault in cases where the
   certification world (~pl[certify-book]) has a very large number of events.
@@ -7351,7 +7351,7 @@
   if the event form is changed.  The solution is to be sure that redundant
   ~ilc[defconst] forms are syntactically identical.
   ~bv[]
-  ACL2 !>(defconst *a* (compress1 'demo 
+  ACL2 !>(defconst *a* (compress1 'demo
                                   '((:header :dimensions (5)
                                              :maximum-length 15
                                              :default uninitialized
@@ -7367,7 +7367,7 @@
    *A*
   ACL2 !>(aref1 'demo *a* 0)
   ZERO
-  ACL2 !>(defconst *a* (compress1 'demo 
+  ACL2 !>(defconst *a* (compress1 'demo
                                   '((:header :dimensions (5)
                                              :maximum-length 15
                                              :default uninitialized
@@ -7385,7 +7385,7 @@
    :REDUNDANT
   ACL2 !>(aref1 'demo *a* 0)
   ZERO
-  ACL2 !>(defconst *a* (compress1 'demo 
+  ACL2 !>(defconst *a* (compress1 'demo
                                   '((:header :dimensions (5)
                                              :maximum-length 15
                                              :default uninitialized
@@ -7652,27 +7652,27 @@
 ; paragraph of the documentation below:
 
 ;  (in-package "ACL2")
-; 
+;
 ;  (encapsulate
 ;   (((foo *) => *)
 ;    ((bar *) => *))
-; 
+;
 ;   (local (defun foo (x) x))
 ;   (local (defun bar (x) (not x)))
-; 
+;
 ;   (defthm foo-open
 ;     (equal (foo x) x)
 ;     :rule-classes :definition)
-; 
+;
 ;   (defthm bar-not-foo
 ;     (equal (bar x) (not (foo x)))
 ;     :rule-classes :definition))
-; 
+;
 ;  (defthm bad (equal (foo x) (bar x))
 ;    :rule-classes nil
 ;    :instructions
 ;    ((:dv 1) :expand :nx :expand :top :s))
-; 
+;
 ;  (defthm contradiction
 ;    nil
 ;    :rule-classes nil
@@ -7712,17 +7712,17 @@
 ; ignored the erp return value from destructure-type-prescription.
 
 ;   (in-package "ACL2")
-; 
+;
 ;   (defun my-natp (x)
 ;     (declare (xargs :guard t))
 ;     (and (integerp x)
 ;          (<= 0 x)))
-; 
+;
 ;   (defun foo (x)
 ;     (nfix x))
-; 
+;
 ;   (in-theory (disable foo (:type-prescription foo)))
-; 
+;
 ;   (encapsulate
 ;    ()
 ;    (local (defthm my-natp-cr
@@ -7734,16 +7734,16 @@
 ;      (my-natp (foo x))
 ;      :hints (("Goal" :in-theory (enable foo)))
 ;      :rule-classes ((:type-prescription :typed-term (foo x)))))
-; 
+;
 ;   (defthm rationalp-foo
 ;     (rationalp (foo x))
 ;     :hints (("Goal" :in-theory (enable foo)))
 ;     :rule-classes :type-prescription)
-; 
+;
 ;   (defthm bad-lemma
 ;     (equal (foo x) 1)
 ;     :rule-classes nil)
-; 
+;
 ;   (defthm bad
 ;     nil
 ;     :rule-classes nil
@@ -7992,8 +7992,8 @@
               (equal (foo1 a) (list 0 (+ a i))))
      :rule-classes ((:rewrite :match-free :all))))
   (thm
-   (implies (and (integerp i) 
-                 (integerp a) 
+   (implies (and (integerp i)
+                 (integerp a)
                  (equal (foo1 0) (list 0 i)))
             (equal (foo1 a) (list 0 (+ a i)))))
   ~ev[]
@@ -8314,7 +8314,7 @@
   warn if the definition of ~c[mv-nth] is disabled, even though calls of
   ~c[mv-nth] can be expanded by special-purpose code in the rewriter.  Thanks
   to Serita Van Groningen for pointing out this problem with the theory warning
-  mechanism. 
+  mechanism.
 
   The ~ilc[defevaluator] event has been modified so that in the body of the
   evaluator function, to add a new case ~c[(ATOM X)] (returning ~c[nil]) has
@@ -8523,39 +8523,39 @@
 ; Example for the soundness bug involving *1* package names:
 
 ; ============================== sub.lisp ==============================
-; 
+;
 ; #|
 ; (defpkg "ACL2_*1*_MYPKG" ())
 ; (certify-book "sub" 1)
 ; |#
-; 
+;
 ; (in-package "ACL2_*1*_MYPKG")
-; 
+;
 ; (acl2::defun foo (x)
 ;              (acl2::declare (acl2::xargs :verify-guards acl2::t))
 ;              x)
-; 
+;
 ; ============================== top.lisp ==============================
-; 
+;
 ; #|
 ; (include-book "sub")
 ; (defpkg "MYPKG" ())
 ; (certify-book "top" 2)
 ; |#
-; 
+;
 ; (in-package "ACL2")
-; 
+;
 ; (defthm lemma1
 ;   (equal (acl2_*1*_mypkg::foo 3) 3)
 ;   :rule-classes nil)
-; 
+;
 ; (defun mypkg::foo (x)
 ;   (cons x x))
-; 
+;
 ; (defthm lemma2
 ;   (equal (acl2_*1*_mypkg::foo 3) '(3 . 3))
 ;   :rule-classes nil)
-; 
+;
 ; (defthm ouch
 ;   nil
 ;   :rule-classes nil
@@ -8576,11 +8576,11 @@
 ;  (defthm thm-1
 ;    (bar -1)
 ;    :rule-classes nil))
-; 
+;
 ; (defthm thm-2
 ;   (not (bar -1))
 ;   :rule-classes nil)
-; 
+;
 ; (defthm bad
 ;   nil
 ;   :rule-classes nil
@@ -8590,23 +8590,23 @@
 ; :common-lisp-compliant function, bar, calls an :ideal function, foo.
 
 ; ============================== abc.lisp ==============================
-; 
+;
 ; (in-package "ACL2")
-; 
+;
 ; (defun foo (x)
 ;   (declare (xargs :guard (consp x)))
 ;   (car x))
-; 
+;
 ; ============================== abc-top.lisp ==============================
-; 
+;
 ; (in-package "ACL2")
-; 
+;
 ; (local (include-book "abc"))
-; 
+;
 ; (defun foo (x)
 ;   (declare (xargs :guard (consp x) :verify-guards nil))
 ;   (car x))
-; 
+;
 ; (defun bar (x)
 ;   (declare (xargs :guard (consp x)))
 ;   (foo x))
@@ -8616,50 +8616,50 @@
 ; Example related to soundness bug pertaining to safe-mode.
 
 ; ============================== bad1.lisp ==============================
-; 
+;
 ; (in-package "ACL2")
-; 
+;
 ; (defconst *c* '(((a b))))
-; 
+;
 ; (defconst *d* *c*)
-; 
+;
 ; (defmacro bad-macro ()
 ;   (list 'quote (union-eq-cars (list *c* *d*))))
-; 
+;
 ; (defthm thm1
 ;   (equal (bad-macro)
 ;          '((a b)))
 ;   :rule-classes nil)
-; 
+;
 ; ============================== bad2.lisp ==============================
-; 
+;
 ; (in-package "ACL2")
-; 
+;
 ; (defconst *c* '(((a b))))
-; 
+;
 ; (defconst *d* '(((a b))))
-; 
+;
 ; (defmacro bad-macro ()
 ;   (list 'quote (union-eq-cars (list *c* *d*))))
-; 
+;
 ; (defthm thm2
 ;   (equal (bad-macro)
 ;          '((a b) (a b)))
 ;   :rule-classes nil)
-; 
+;
 ; ============================== bad.lisp ==============================
-; 
+;
 ; (in-package "ACL2")
-; 
+;
 ; (include-book "bad1" :load-compiled-file nil)
-; 
+;
 ; (include-book "bad2" :load-compiled-file nil)
-; 
+;
 ; (defthm ouch
 ;   nil
 ;   :hints (("Goal" :use (thm1 thm2)))
 ;   :rule-classes nil)
-; 
+;
 ; ======================================================================
 
 ; End of example related to soundness bug pertaining to safe-mode.
@@ -9136,36 +9136,36 @@
 ; symbol-package-name.
 ;
 ; ++++++++++++++++++++++++++++++ bad-1.lisp ++++++++++++++++++++++++++++++
-; 
+;
 ; (in-package "ACL2")
-; 
+;
 ; (defthm lemma-1
 ;   (equal (symbol-package-name (intern (car (cons "X-EQUIV" xxx)) "COMMON-LISP"))
 ;          "LISP")
 ;   :rule-classes nil)
-; 
+;
 ; ++++++++++++++++++++++++++++++ bad-2.lisp ++++++++++++++++++++++++++++++
-; 
+;
 ; (in-package "ACL2")
-; 
+;
 ; (defthm lemma-2
 ;   (equal (symbol-package-name 'COMMON-LISP::X-EQUIV)
 ;          "COMMON-LISP")
 ;   :rule-classes nil)
-; 
+;
 ; ++++++++++++++++++++++++++++++ bad.lisp ++++++++++++++++++++++++++++++
-; 
+;
 ; (in-package "ACL2")
-; 
+;
 ; (include-book "bad-1")
-; 
+;
 ; (include-book "bad-2")
-; 
+;
 ; (defthm bad
 ;   nil
 ;   :hints (("Goal" :use lemma-1))
 ;   :rule-classes nil)
-; 
+;
 ; ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
   :doc
@@ -9377,7 +9377,7 @@
                    104))
    :hints ((\"Goal\" :in-theory (enable bvecp))))
 
-  [Note:  A hint was supplied for our processing of the goal above. 
+  [Note:  A hint was supplied for our processing of the goal above.
   Thanks!]
 
   By the simple :definition BVECP, the :executable-counterparts of EXPT
@@ -10231,7 +10231,7 @@
   ~bq[]
   o ~c[Control-t q] continues to compare windows ignoring whitespace, but now,
      a prefix argument can be given to control case is also ignored (ignore case if
-     positive, else use case). 
+     positive, else use case).
 
   o ~c[Control-t Control-l] has been defined to be similar to ~c[Control-t l],
      except that proofs are skipped and output is suppressed.
@@ -10502,10 +10502,10 @@
 ; appropriate special handling for 'if.
 
 ; Fixed obscure bug in maybe-push-undo-stack, which could happen with:
-; 
+;
 ; :redef!
 ; (defun exit-boot-strap-mode () t)
-; 
+;
 ; The problem was that we assumed that a *1* function is defined when its raw
 ; Lisp counterpart is defined.
 
@@ -10540,7 +10540,7 @@
 ; more compact code for large numbers of bindings as in
 ; protect-system-state-globals.  Without that change, lispworks
 ; reported:
-; **++++ Error in ACL2::PROTECTED-EVAL-WITH-PROOFS: 
+; **++++ Error in ACL2::PROTECTED-EVAL-WITH-PROOFS:
 ;   Function size 87365 is too large.
 
 ; Eliminated compiler note "Ignoring free ignore declaration" for mbe, for
@@ -10986,7 +10986,7 @@
   following example supplied by Erik Reeber, whom we thank for bringing this
   bug to our attention:
   ~bv[]
-    (defstobj $test 
+    (defstobj $test
       (test-x :type (array t (5)) :initially (0) :resizable t))
   ~ev[]
 
@@ -11199,21 +11199,21 @@
 ; from Robert that proves nil in ACL2 Version_3.0.1 but fails after the patch.
 
 ;  (defun id (x) x)
-; 
+;
 ;  (defthm id-rationalp
 ;    (implies (force (rationalp x))
 ;             (rationalp (id x)))
 ;    :rule-classes :type-prescription)
-; 
+;
 ;  (in-theory (disable id))
-; 
+;
 ;  (defun id2 (x y)
 ;    (if (zp x)
 ;        y
 ;      (id2 (+ -1 x) y)))
-; 
+;
 ;  (in-theory (disable (:type-prescription id2)))
-; 
+;
 ;  (defthm bad
 ;    (implies (and (not (equal (id x) (id2 y z)))
 ;                  (acl2-numberp y)
@@ -11223,9 +11223,9 @@
 ;                 (< (id2 y z) (id x))))
 ;    :hints (("[1]Goal" :in-theory (enable (:type-prescription id2))))
 ;    :rule-classes nil)
-; 
+;
 ;  (set-guard-checking :none)
-; 
+;
 ;  (let ((x "foo")
 ;        (y 0)
 ;        (z 0))
@@ -11235,7 +11235,7 @@
 ;                  (<= 0 z))
 ;             (or (< (id x) (id2 y z))
 ;                 (< (id2 y z) (id x)))))
-; 
+;
 ;  (thm
 ;   nil
 ;   :hints (("Goal" :use (:instance bad (x "foo") (y 0) (z 0))))) ; |
@@ -11267,11 +11267,11 @@
 ; follows.
 
 ;     (in-package "ACL2")
-;     
+;
 ;     ; Portcullis commands:
 ;     #|
 ;     (set-ld-redefinition-action '(:warn! . :overwrite) state)
-;     
+;
 ;     (encapsulate
 ;      ()
 ;      (defun foo () t)
@@ -11280,16 +11280,16 @@
 ;        (equal (foo) nil)
 ;        :rule-classes nil))
 ;     |# ; |
-;     
+;
 ;     ; NOTE: After the above commands:
 ;     ; ACL2 !>(redefined-names state)
 ;     ; NIL
 ;     ; ACL2 !>
-;     
+;
 ;     ; Now execute:
-;     
+;
 ;     ; (certify-book "bad" 1)
-;     
+;
 ;     (defthm contradiction
 ;       nil
 ;       :hints (("Goal" :use foo-prop))
@@ -11748,11 +11748,11 @@
 ; ----------------
 ; ; Portcullis command:
 ; ; (make-event (er-progn (defpkg "FOO" nil) (value '(value-triple nil))))
-; 
+;
 ; (in-package "ACL2")
-; 
+;
 ; (defconst *c* 'foo::a)
-; 
+;
 ; (defthm thm1
 ;   (equal (symbol-package-name *c*) "FOO")
 ;   :rule-classes nil)
@@ -11762,11 +11762,11 @@
 ; ----------------
 ; ; Portcullis command:
 ; ; (defpkg "FOO" '(a))
-; 
+;
 ; (in-package "ACL2")
-; 
+;
 ; (include-book "sub")
-; 
+;
 ; (defthm contradiction
 ;   nil
 ;   :hints (("Goal" :use thm1))
@@ -11918,17 +11918,17 @@
 ;    (if (zp n)
 ;        nil
 ;      (cons v (repeat (1- n) v))))
-; 
+;
 ;  (defthmd len-of-cons
 ;    (equal (len (cons a x))
 ;           (+ 1 (len x))))
-; 
+;
 ;  (in-theory (disable len))
-; 
+;
 ;  (set-rewrite-stack-limit nil)
-; 
+;
 ;  (set-nu-rewriter-mode t) ; slows things down by a factor of almost 20
-; 
+;
 ;  (thm (equal (len (repeat 7000 a)) 7000)
 ;       :hints (("goal'" :in-theory (enable len-of-cons))
 ;               ("Goal"
@@ -12436,22 +12436,22 @@
 ;  (defun foo (a b)
 ;    (mbe :logic (mv a b)
 ;         :exec (mv a b)))
-; 
+;
 ;  ;; (foo 'a 'b) returns (A NIL);
 ;  ;; should return (A B)
-; 
+;
 ;  (defthm foo-1-nil
 ;    (equal (mv-nth 1 (foo 'a 'b)) nil)
 ;    :rule-classes nil)
-; 
+;
 ;  (verify-guards foo)
 ;  ;; now the correct behavior returns:
 ;  ;; (foo 'a 'b) returns (A B).
-; 
+;
 ;  (defthm foo-1-b
 ;    (equal (mv-nth 1 (foo 'a 'b)) 'b)
 ;    :rule-classes nil)
-; 
+;
 ;  (thm
 ;   nil
 ;   :hints (("Goal" :use (foo-1-nil foo-1-b))))
@@ -12492,7 +12492,7 @@
 ; computed hints related to the stable-under-simplificationp parameter".
 ; Consider a computed hint like the following (taken from an actual example).
 ;
-; `(:computed-hint-replacement 
+; `(:computed-hint-replacement
 ;   ((adviser-default-hint id clause world stable-under-simplificationp))
 ;   :use ,(build-hints literals rules hyps nil)
 ;   :expand ,(build-expand-hint literals))
@@ -12504,7 +12504,7 @@
 ; waterfall, the :use hint was applied.  With the new version just below, that
 ; behavior is encoded explicitly.
 ;
-; `(:computed-hint-replacement 
+; `(:computed-hint-replacement
 ;   ('(:computed-hint-replacement
 ;      ((adviser-default-hint id clause world stable-under-simplificationp))
 ;      :use ,(build-hints literals rules hyps nil)))
@@ -13051,7 +13051,7 @@
   for providing useful feedback.
   ~bq[]
 
-  o It can provide more complete information when aborting a proof.  
+  o It can provide more complete information when aborting a proof.
 
   o The ~c[:frames] reported for a rule are categorized as ``useful'' and
   ``useless'' according to whether they support ``useful'' or ``useless''
@@ -13241,30 +13241,30 @@
 
 ;  (encapsulate
 ;   ((f (x) t))
-; 
+;
 ;   (local (defun f (x)
 ;            (declare (xargs :guard t))
 ;            x))
-; 
+;
 ;   (defun g (x)
 ;     (declare (xargs :guard t))
 ;     (mbe :logic (f x)
 ;          :exec  x)))
-; 
+;
 ;  (defthm g-3-is-3
 ;    (equal (g 3) 3)
 ;    :rule-classes nil)
-; 
+;
 ;  (defthm f-3-is-3
 ;    (equal (f 3) 3)
 ;    :hints (("Goal"
 ;             :in-theory (disable (g))
 ;             :use g-3-is-3)))
-; 
+;
 ;  (defun foo (x)
 ;    (declare (ignore x))
 ;    4)
-; 
+;
 ;  (defthm contradiction
 ;    nil
 ;    :hints (("Goal" :use ((:functional-instance f-3-is-3
@@ -13313,7 +13313,7 @@
 ; the definition of increment-proof-tree.
 
 ;  (start-proof-tree)
-; 
+;
 ;  (defun limit-induction-hint-fn (i)
 ;    `(or (and (length-exceedsp (car id) ,i)
 ;              (endp (cdadr id))
@@ -13327,10 +13327,10 @@
 ;                :do-not (eliminate-destructors eliminate-irrelevance
 ;                                               generalize fertilize)
 ;                :in-theory nil))))
-; 
+;
 ;  (add-default-hints
 ;   `(,(limit-induction-hint-fn 1)))
-; 
+;
 ;  (defun sum-from (i lst)
 ;    (if (and (natp i)
 ;             (< i (len lst)))
@@ -13342,10 +13342,10 @@
 ; for pointing out this problem and sending the following example:
 
 ;  (in-theory (disable mv-nth eq))
-; 
+;
 ;  (thm
 ;   (equal (* x y) (+ x y))
-;   :hints ((if stable-under-simplificationp 
+;   :hints ((if stable-under-simplificationp
 ;               '(:in-theory (enable eq))
 ;             nil)))
 
@@ -14093,7 +14093,7 @@
 ;                 (AND (TRUE-LISTP X)
 ;                      (TRUE-LISTP Y)
 ;                      (< (CAR X) (CAR Y))))))
-; 
+;
 ;  (let ((x '(1 7 3)) (y '(4 5 6)))
 ;    (IMPLIES (AND (< (CAR Y) (CADR X))
 ;                  (TRUE-LISTP X)
@@ -15023,7 +15023,7 @@
     (implies (standardp x)
              (standardp (+ x y)))
     :hints ((\"Goal\"
-             :use ((:functional-instance f-x-standard 
+             :use ((:functional-instance f-x-standard
                                          (f (lambda (x) (+ x y))))))))
   (defthm plus-x-eps-not-standard
     (implies (standardp x)
@@ -15071,12 +15071,12 @@
 ; the soundness bug related to redundancy", as a certifiable book.
 ;;;;; start proof of nil ;;;;;
 ; (in-package "ACL2")
-; 
+;
 ; (encapsulate
 ;  ()
-; 
+;
 ;  (set-ruler-extenders :all)
-; 
+;
 ;  (local
 ;   (encapsulate
 ;    ()
@@ -15085,9 +15085,9 @@
 ;          x
 ;        (cons (if (consp x) (f (cdr x)) x)
 ;              10)))))
-; 
+;
 ;  (set-ruler-extenders :basic)
-; 
+;
 ;  (encapsulate
 ;   ()
 ;   (defun f (x)
@@ -15095,12 +15095,12 @@
 ;         x
 ;       (cons (if (consp x) (f (cdr x)) x)
 ;             10)))))
-; 
+;
 ; (defthm bad
 ;   (implies (true-listp x)
 ;            (consp x))
 ;   :hints (("Goal" :induct (f x))))
-; 
+;
 ; (defthm contradiction
 ;   nil
 ;   :hints (("Goal" :use ((:instance bad (x nil)))))
@@ -15148,7 +15148,7 @@
 ; Version  3.5.
 ;;;;; start proof of nil ;;;;;
 ; (in-package "ACL2")
-; 
+;
 ; (encapsulate
 ;  ((my-test (x) t))
 ;  (local (defun my-test (x)
@@ -15161,12 +15161,12 @@
 ;      (if (my-test x)
 ;          (not (g x))
 ;        x))))
-; 
+;
 ; (defthm my-test-is-nil
 ;   (null (my-test x))
 ;   :hints (("Goal" :use g))
 ;   :rule-classes nil)
-; 
+;
 ; (defthm contradiction
 ;   nil
 ;   :hints (("Goal" :use ((:instance (:functional-instance my-test-is-nil
@@ -15459,7 +15459,7 @@
   ~bq[]
   The CCL CASE macro now does better than a dumb linear
   search in some CASEes.
-  
+
   SH and CSH are functions to talk to the underlying
   Gnu-Linux from CCL.  Good for repeated calling when
   you simply cannot afford the copying cost of a FORK
@@ -15647,43 +15647,43 @@
 
 ;;; % cat sub1.lisp
 ;;; (in-package "ACL2")
-;;; 
+;;;
 ;;; ; Possible portcullis command:
 ;;; ; (defun f () 1)
-;;; 
+;;;
 ;;; (defun g () 0)
-;;; 
+;;;
 ;;; % cat sub2.lisp
 ;;; (in-package "ACL2")
-;;; 
+;;;
 ;;; ; Possible portcullis command:
 ;;; ; (defun f () 2)
-;;; 
+;;;
 ;;; (defun h () 0)
 ;;; % cat top1.lisp
 ;;; (in-package "ACL2")
-;;; 
+;;;
 ;;; (include-book "sub1")
 ;;; (include-book "sub2")
-;;; 
+;;;
 ;;; ; Certify with sub1's portcullis command.
 ;;; (defthm f-val-1
 ;;;   (equal (f) 1))
 ;;; % cat top2.lisp
 ;;; (in-package "ACL2")
-;;; 
+;;;
 ;;; (include-book "sub1")
 ;;; (include-book "sub2")
-;;; 
+;;;
 ;;; ; Certify with sub2's portcullis command.
 ;;; (defthm f-val-2
 ;;;   (equal (f) 2))
 ;;; % cat top.lisp
 ;;; (in-package "ACL2")
-;;; 
+;;;
 ;;; (include-book "top1")
 ;;; (include-book "top2")
-;;; 
+;;;
 ;;; (defthm contradiction
 ;;;   nil
 ;;;   :rule-classes nil
@@ -15691,7 +15691,7 @@
 ;;;            :in-theory (theory 'ground-zero))))
 ;;; % cat script.lsp
 ;;; ; (ld "script.lsp")
-;;; 
+;;;
 ;;; (defun f () 1)
 ;;; (certify-book "sub1" 1)
 ;;; (u)
@@ -15700,7 +15700,7 @@
 ;;; (u)
 ;;; (certify-book "top1")
 ;;; (u)
-;;; 
+;;;
 ;;; (defun f () 2)
 ;;; (certify-book "sub2" 1)
 ;;; (u)
@@ -15709,9 +15709,9 @@
 ;;; (u)
 ;;; (certify-book "top2")
 ;;; (u)
-;;; 
+;;;
 ;;; (certify-book "top")
-;;; % 
+;;; %
 
 ; Added .NOTPARALLEL to the dependencies of GNUmakefile target, large.  We hope
 ; this eliminates some build errors when using the -j option.
@@ -15751,7 +15751,7 @@
 ;    (local (defun f2 (x) x))
 ;    (defthm f1-f2
 ;      (equal (f1 x) (f2 x))))
-;   
+;
 ;   (encapsulate
 ;    ((g1 (x) t)
 ;     (g2 (x) t))
@@ -15759,19 +15759,19 @@
 ;    (local (defun g2 (x) x))
 ;    (defthm g1-g2
 ;      (equal (g1 x) (g2 x))))
-;   
+;
 ;   (defthm f-thm1
 ;     (equal (f1 (cons x x))
 ;            (f2 (cons x x))))
-;   
+;
 ;   (defun k1 (x)
 ;     (declare (xargs :guard (equal (g1 (cons x x))
 ;                                   (g2 (cons x x)))))
 ;     x)
-;   
+;
 ;   (defun k2 (x)
 ;     (k1 x))
-;   
+;
 ;   (verify-guards k2
 ;                  :hints (("Goal" :by (:functional-instance f-thm1
 ;                                                            (f1 g1)
@@ -15870,8 +15870,8 @@
     [[initial output omitted]
     * Step 5:  Compile the functions defined in \"/v/joe/foo.lisp\".
     Compiling /v/joe/foo.lisp.
-    End of Pass 1.  
-    End of Pass 2.  
+    End of Pass 1.
+    End of Pass 2.
     OPTIMIZE levels: Safety=0 (No runtime error checking), Space=0, Speed=3
     Finished compiling /vjoe/foo.lisp.
     Loading /v/joe/foo.lisp
@@ -16444,7 +16444,7 @@
   (trace$) ; uh oh - f is shown as traced
   (untrace$ f)
   (f 3) ; OUCH: hard Lisp error because old :program mode definition of
-        ; the executable counterpart (sometimes called *1*f) was restored! 
+        ; the executable counterpart (sometimes called *1*f) was restored!
   ~ev[]
 
   Made a fix so that when building ACL2 with `make' option ~c[ACL2_SAFETY=3],
@@ -16660,7 +16660,7 @@
   However, remember that the old data stored in ~c[wormhole-output] is now
   in the ~c[wormhole-data] component of the ~c[wormhole-status].  Thus, for
   example, an old use of ~c[(@ wormhole-output)] will typically be replaced
-  by ~c[(wormhole-data (@ wormhole-status))] and an old use of 
+  by ~c[(wormhole-data (@ wormhole-status))] and an old use of
   ~c[(assign wormhole-output ...)] will typically be replaced by
   ~bv[]
   (assign wormhole-status (set-wormhole-data (@ wormhole-status) ...))
@@ -16672,7 +16672,7 @@
             input
             '(...1 (@ wormhole-output) ...2
               ...3 (assign wormhole-output ...4) ...5)
-            ...6) 
+            ...6)
   ~ev[]
   can become
   ~bv[]
@@ -16683,7 +16683,7 @@
               ...3 (assign wormhole-status
                           (set-wormhole-data (@ wormhole-status)
                                              ...4) ...5)
-            ...6) 
+            ...6)
   ~ev[]
 
   In any case, and especially if your ~c[wormhole] call had a ~c[pseudo-flag]
@@ -17453,11 +17453,11 @@
 ; Book sub.lisp
 ;;;;;;;;;;;;;;;
 ;   (in-package "ACL2")
-;   
+;
 ;   (defmacro mac ()
 ;     (mbe :logic ''logic
 ;          :exec ''exec))
-;   
+;
 ;   (defconst *a*
 ;     (mac))
 
@@ -17465,16 +17465,16 @@
 ; Book mid.lisp
 ;;;;;;;;;;;;;;;
 ;   (in-package "ACL2")
-;   
+;
 ;   (local (include-book "sub"))
-;   
+;
 ;   (defmacro mac ()
 ;     (mbe :logic ''logic
 ;          :exec ''exec))
-;   
+;
 ;   (defconst *a*
 ;     (mac))
-;   
+;
 ;   (defthm got-exec
 ;     (equal *a* 'exec)
 ;     :rule-classes nil)
@@ -17483,20 +17483,20 @@
 ; Book top.lisp
 ;;;;;;;;;;;;;;;
 ;   (in-package "ACL2")
-;   
+;
 ;   (defmacro mac ()
 ;     (mbe :logic ''logic
 ;          :exec ''exec))
-;   
+;
 ;   (defconst *a*
 ;     (mac))
-;   
+;
 ;   (defthm got-logic
 ;     (equal *a* 'logic)
 ;     :rule-classes nil)
-;   
+;
 ;   (include-book "mid")
-;   
+;
 ;   (defthm contradiction
 ;     nil
 ;     :hints (("Goal" :use (got-exec got-logic)))
@@ -17526,7 +17526,7 @@
 ;       (f2 (x) t))
 ;      (local (defun f1 (x) x))
 ;      (local (defun f2 (x) x)))
-; 
+;
 ;     (encapsulate
 ;      ((g1 (x) t)
 ;       (g2 (x) t))
@@ -17535,15 +17535,15 @@
 ;      (defthm g1-f1
 ;        (equal (g1 (f1 x))
 ;               (f1 x))))
-; 
+;
 ;     (encapsulate
 ;      ((h1 (x) t)
 ;       (h2 (x) t))
 ;      (local (defun h1 (x) x))
 ;      (local (defun h2 (x) x))))
-; 
+;
 ;   (defattach f2 h1)
-; 
+;
 ;   ; The following should cause the following loop to be reported, but didn't:
 ;       G1 is an extended ancestor of H1.
 ;       H1 is an extended ancestor of F1.
@@ -17604,26 +17604,26 @@
 ;   ; First execute these two commands in the certification world:
 ;   ; (defpkg "FOO" '(a))
 ;   ; (defpkg "BAR" '(foo::b))
-;   
+;
 ;   ; Then:
 ;   ; (certify-book "sub" 2)
-;   
+;
 ;   (in-package "ACL2")
-;   
+;
 ;   (defun g (x) x)
 ;   sloth:~/temp> cat top.lisp
 ;   ; Just do this:
 ;   ; (certify-book "top")
-;   
+;
 ;   (in-package "ACL2")
-;   
+;
 ;   (local (include-book "sub"))
-;   
+;
 ;   (defun h (x) x)
-;   sloth:~/temp> 
-;   
+;   sloth:~/temp>
+;
 ;   ACL2 !>(include-book "top")
-;   
+;
 ;   ***********************************************
 ;   ************ ABORTING from raw Lisp ***********
 ;   Error:  There is no package named "FOO" .
@@ -17882,7 +17882,7 @@
   ~bv[]
   (encapsulate
    ()
-   (with-prover-time-limit 
+   (with-prover-time-limit
     2
     (defthm append-assoc
       (equal (append (append x y) z)
@@ -18166,7 +18166,7 @@
   ~c[books/misc/defattach-bang.lisp].
 
   o Distributed book ~c[books/misc/trace1.lisp] has been deleted.  It had
-  provided slightly more friendly ~il[trace] output for new users, but 
+  provided slightly more friendly ~il[trace] output for new users, but
   distributed book ~c[books/misc/trace-star.lisp] may be better suited for that
   purpose.~eq[]
 
@@ -18360,35 +18360,35 @@
 
 ;   ;;;;; File foo.lisp ;;;;;
 ;   (in-package "ACL2")
-;   
+;
 ;   (defun foo (x)
 ;     x)
-;   
+;
 ;   ;;;;; File foo.acl2x ;;;;;
 ;   ((1 . (defun foo (x) (cons x x))))
-;   
+;
 ;   ;;;;; File top.lisp ;;;;;
 ;   (in-package "ACL2")
-;   
+;
 ;   (include-book "foo")
-;   
+;
 ;   (defthm foo-cons
 ;     (equal (foo x)
 ;            (cons x x)))
-;   
+;
 ;   ;;;;; File top2.lisp ;;;;;
 ;   (in-package "ACL2")
-;   
+;
 ;   (include-book "top")
-;   
+;
 ;   (defthm ouch
 ;     nil
 ;     :hints (("Goal" :in-theory (disable foo-cons)
 ;              :use foo-cons))
 ;     :rule-classes nil)
-;   
+;
 ;   ;;;;; File cert.lsp ;;;;;
-;   
+;
 ;   (certify-book "foo" 0 t :acl2x t)
 ;   (u)
 ;   (certify-book "top")
@@ -18396,7 +18396,7 @@
 ;   (certify-book "foo" 0 t)
 ;   (u)
 ;   (certify-book "top2")
-;   
+;
 ;   ;;;;; Now evaluate (ld "cert.lsp") ;;;;;
 
 ; We improved the function chk-ld-skip-proofsp to cause a soft error instead of
@@ -18491,11 +18491,11 @@
 ;   (defstub g (x) t)
 ;   (defstub h (x) t)
 ;   (defstub k (x) t)
-;  
+;
 ;   (defaxiom prop
 ;     (implies (and (f x) (g x))
 ;              (h x)))
-;  
+;
 ;   (defaxiom prop-ts
 ;     (implies (force (k x)) (f x))
 ;     :rule-classes :type-prescription)
@@ -18508,18 +18508,18 @@
 ;   --NOTE-- Using the following runes in addition to the indicated rule:
 ;     ((:TYPE-PRESCRIPTION PROP-TS)).
 ;   NOTE (forcing):  Creating one new goal due to forcing assumptions.
-;   
+;
 ;   Creating two new goals:  (MAIN . 1) and (MAIN . 1).
-;   
+;
 ;   The proof of the current goal, MAIN, has been completed.  However,
 ;   the following subgoals remain to be proved:
 ;     (MAIN . 1) and (MAIN . 1).
 ;   Now proving (MAIN . 1).
 ;   ->: goals
-;   
+;
 ;   (MAIN . 1)
 ;   (MAIN . 1)
-;   ->: 
+;   ->:
 
 ; Made a small change to newline printing in ubt-ubu-query and ubt-ubu-fn1 in
 ; support of the change to top-level (to avoid a bogus newline).
@@ -19518,12 +19518,12 @@
 ; Fixed an error message that was complaining about redefinition of a function
 ; previously defined at the top level, or at the top level of a book, when the
 ; function was actually built into ACL2.  For example:
-; 
+;
 ; ; old:
 ; ACL2 !>(defun rewrite (x) x)
 ; ....
 ; Note: REWRITE was previously defined at the top level.
-; 
+;
 ; ; new:
 ; ACL2 !>(defun rewrite (x) x)
 ; ....
@@ -19573,48 +19573,48 @@
 ; soundness bug in defabsstobj based on guards.
 
 ;   (defstobj my-stobj-impl (my-fld :type (integer 0 *) :initially 0))
-;   
+;
 ;   (trace$ len)
-;   
+;
 ;   (defun bad-accessor-logic (my-stobj-logic)
 ;      (declare (xargs :guard (equal (len my-stobj-logic) 0)))
 ;      (mbe :logic 0
 ;           :exec (len my-stobj-logic)))
-;   
+;
 ;   (defun bad-accessor-exec (my-stobj-impl)
 ;      (declare (xargs :stobjs my-stobj-impl)
 ;               (ignorable my-stobj-impl))
 ;      1)
-;   
+;
 ;   (defun create-my-stobj-logic ()
 ;      (declare (xargs :guard t))
 ;      (list 0))
-;   
+;
 ;   (defun my-stobj-logicp (x)
 ;      (declare (xargs :guard t))
 ;      (AND (TRUE-LISTP X)
 ;           (= (LENGTH X) 1)
 ;           (MY-FLDP (NTH 0 X))))
-;   
+;
 ;   (defun-nx my-stobj-corr (my-stobj-i my-stobj-l)
 ;      (and (my-stobj-implp my-stobj-i)
 ;           (equal my-stobj-i my-stobj-l)))
-;   
+;
 ;   (DEFTHM CREATE-MY-STOBJ-ABS{CORRESPONDENCE}
 ;            (MY-STOBJ-CORR (CREATE-MY-STOBJ-IMPL)
 ;                           (CREATE-MY-STOBJ-LOGIC))
 ;            ;; added by Matt K.:
 ;            :hints (("Goal" :in-theory (disable (my-stobj-corr)))))
-;   
+;
 ;   (DEFTHM CREATE-MY-STOBJ-ABS{PRESERVED}
 ;            (MY-STOBJ-LOGICP (CREATE-MY-STOBJ-LOGIC)))
-;   
+;
 ;   (DEFTHM BAD-ACCESSOR{CORRESPONDENCE}
 ;            (IMPLIES (AND (MY-STOBJ-CORR MY-STOBJ-IMPL MY-STOBJ-ABS)
 ;                          (EQUAL (LEN MY-STOBJ-ABS) 0))
 ;                     (EQUAL (BAD-ACCESSOR-EXEC MY-STOBJ-IMPL)
 ;                            (BAD-ACCESSOR-LOGIC MY-STOBJ-ABS))))
-;   
+;
 ;   (defabsstobj my-stobj-abs
 ;      :concrete my-stobj-impl
 ;      :recognizer (my-stobj-absp :logic my-stobj-logicp :exec my-stobj-implp)
@@ -19622,10 +19622,10 @@
 ;                                    create-my-stobj-impl)
 ;      :corr-fn my-stobj-corr
 ;      :exports ((bad-accessor :logic bad-accessor-logic :exec bad-accessor-exec)))
-;   
+;
 ;   ; Test added by Matt K.:
 ;   (bad-accessor my-stobj-abs) ; note trace of len here: (LEN |<my-stobj-abs>|)
-;   
+;
 ;   (defun length-of-my-stobj-abs ()
 ;      (declare (xargs :guard t))
 ;      (with-local-stobj my-stobj-abs
@@ -19634,12 +19634,12 @@
 ;            (mv len my-stobj-abs))
 ;          len)
 ;        create-my-stobj-abs))
-;   
+;
 ;   (defthm length-of-my-stobj-abs-by-def
 ;      (equal (length-of-my-stobj-abs) 0)
 ;      :hints(("Goal" :in-theory (disable (length-of-my-stobj-abs))))
 ;      :rule-classes nil)
-;   
+;
 ;   (defthm length-of-my-stobj-abs-by-exec
 ;      (equal (length-of-my-stobj-abs) 1))
 
@@ -20082,15 +20082,15 @@
 ;   ;   nil
 ;   ;   :hints (("Goal" :use obvious))
 ;   ;   :rule-classes nil)
-;   
+;
 ;   (in-package "ACL2")
-;   
+;
 ;   (defun my-natp (x)
 ;     (declare (xargs :guard t))
 ;     (natp x))
-;   
+;
 ;   (defstobj st1 (fld1 :type (satisfies my-natp) :initially 0))
-;   
+;
 ;   (defthm obvious
 ;     (fld1p 3)
 ;     :rule-classes nil)
@@ -20111,13 +20111,13 @@
 ;   ;   nil
 ;   ;   :hints (("Goal" :use foo-is-17))
 ;   ;   :rule-classes nil)
-;   
+;
 ;   (in-package "ACL2")
-;   
+;
 ;   (defstobj st1 fld1)
 ;   (defstobj st2 fld2 :congruent-to st1)
 ;   (defstobj st3 fld3 :congruent-to st2)
-;   
+;
 ;   (defun foo ()
 ;     (with-local-stobj
 ;      st3
@@ -20126,7 +20126,7 @@
 ;                      (let ((st3 (update-fld3 17 st3)))
 ;                        (mv (fld3 st3) st3)))
 ;              result)))
-;   
+;
 ;   (defthm foo-is-17
 ;     (equal (foo) 17)
 ;     :rule-classes nil)
@@ -20136,15 +20136,15 @@
 ; simpler) of the example sent by Jared Davis and Sol Swords.
 
 ;   (in-package "ACL2")
-;   
+;
 ;   (defchoose state-for-canonical-pathname (st) ()
 ;      (not (canonical-pathname nil nil st)))
-;   
+;
 ;   (defevaluator ncp-ev ncp-ev-lst ((state-for-canonical-pathname)
 ;                                     (canonical-pathname a b c)
 ;                                     (if a b c)
 ;                                     (equal a b)))
-;   
+;
 ;   (defun run-canonical-pathname-cp (clause hints state)
 ;      (declare (xargs :guard (pseudo-term-listp clause)
 ;                      :stobjs state)
@@ -20159,7 +20159,7 @@
 ;                nil)
 ;            (list clause))
 ;          state))
-;   
+;
 ;   (defthm run-canonical-pathname-cp-correct
 ;      (implies (and (pseudo-term-listp clause)
 ;                    (alistp a)
@@ -20171,7 +20171,7 @@
 ;      :hints (("goal" :use ((:instance state-for-canonical-pathname
 ;                                       (st state)))))
 ;      :rule-classes :clause-processor)
-;   
+;
 ;   (defthm canonical-pathname-is-nil
 ;      (equal (canonical-pathname
 ;              'nil 'nil
@@ -20179,18 +20179,18 @@
 ;             'nil)
 ;      :hints (("goal" :clause-processor
 ;               (run-canonical-pathname-cp clause nil state))))
-;   
+;
 ;   (defun foo (x dir-p st)
 ;      ;; Matches the constraints of canonical-pathname but never returns NIL.
 ;      (declare (ignore x dir-p st))
 ;      "hello")
-;   
+;
 ;   (defthm foo-never-returns-nil
 ;      (foo x dir-p st))
-;   
+;
 ;   (defchoose state-for-foo (st) ()
 ;      (not (foo nil nil st)))
-;   
+;
 ;   (defthm foo-sometimes-returns-nil
 ;      (not (foo nil nil (state-for-foo)))
 ;      :hints (("goal" :use ((:functional-instance
@@ -20198,7 +20198,7 @@
 ;                             (canonical-pathname foo)
 ;                             (state-for-canonical-pathname
 ;                              state-for-foo))))))
-;   
+;
 ;   (defthm contradiction
 ;      nil
 ;      :rule-classes nil
@@ -20230,12 +20230,12 @@
 ; new one tries tau more aggressively: before the first three simplifications.
 ; We found proofs where the more aggressive use of tau -- try after a little
 ; rewriting got rid of functions the users means to expand -- helped.
-; 
+;
 ; Some tests showed that the more aggressive use of tau slows down the
 ; regression a little compared to the less aggressive use of tau.  But because
 ; as more tau-based scripts are developed, we expect the more aggressive use of
 ; tau will pay for itself.
-; 
+;
 ; Perhaps more important is the comparison between these two alternatives and
 ; Version_6.0.  They don't have identical regression suites (of course).  But
 ; they have 3,075 books in common as of Feb. 2013.  The new .out comparison
@@ -20633,6 +20633,13 @@
 
 ; Added documentation about guards in :doc princ$ and :doc io.
 
+; Removed trailing whitespace from the ACL2 sources.  Thanks to Warren Hunt for
+; suggesting this change.
+
+; We improved :doc redundant-events, especially to clarify that progn and
+; make-event forms are never redundant.  Thanks to Harsh Raju Chamarthi for an
+; email exchange that led us to make this improvement.
+
   :doc
   ":Doc-Section release-notes
 
@@ -20873,7 +20880,7 @@
   of the following.
   ~bq[]
   o Variable ~c[ACL2_JOBS] is no longer supported, nor is it necessary; simply
-  use `make' option `-j' instead. 
+  use `make' option `-j' instead.
 
   o Regressions now use `make' option ~c[-k] by default, which causes the
   regression to keep going after errors, rather than ~c[-i], which ignores
@@ -21065,7 +21072,7 @@
   as described in the documentation for ~ilc[state] and for ~ilc[stobj]s in general.
   If the form returns a new ~il[state] object as one of its
   values, then that is considered the new ``current'' ~il[state] for
-  the evaluation of the subsequent form.  ~l[state].  
+  the evaluation of the subsequent form.  ~l[state].
 
   ACL2 provides some support for the functionality usually provided by
   global variables in a read-eval-print loop, namely the saving of the
@@ -21435,7 +21442,7 @@
   (state-global-let*
    ((temp-touchable-vars t set-temp-touchable-vars))
    (progn! (f-put-global 'logic-fns-with-raw-code
-                         (cons 'my-fn (@ logic-fns-with-raw-code)) 
+                         (cons 'my-fn (@ logic-fns-with-raw-code))
                          state)))
   ~ev[]~/
 
@@ -21746,7 +21753,7 @@
      t))
    (let ((wrld (w state))
          (ctx 'puff))
-     (er-let* ((cmd-wrld (er-decode-cd cd wrld :puff state))) 
+     (er-let* ((cmd-wrld (er-decode-cd cd wrld :puff state)))
        (cond ((<= (access-command-tuple-number (cddar cmd-wrld))
                   (access command-number-baseline-info
                           (global-val 'command-number-baseline-info wrld)
@@ -21926,7 +21933,7 @@
 
 ; 12   cmd1a
 ; 13   cmd1b
-; ...  
+; ...
 ; 19   cmd1h
 ; 20   cmd2
 ; 21   cmd3
@@ -22287,7 +22294,7 @@
       (defthm insert-is-cons
         (perm (insert a x) (cons a x)))
 
-      (defthm insert-sort-is-id 
+      (defthm insert-sort-is-id
         (perm (insert-sort x) x))
 
       (defcong perm perm (app x y) 2)
@@ -22599,7 +22606,7 @@
   Lisp, which leads to a raw Lisp call of c[(car 3)].
   ~bv[]
   ACL2 !>(defun foo (x)
-           (declare (xargs :mode :program)) 
+           (declare (xargs :mode :program))
            (car x))
 
   Summary
@@ -22635,7 +22642,7 @@
   is (OR (CONSP X) (EQUAL X NIL)), is violated by the arguments in the
   call (CAR 3).  See :DOC trace for a useful debugging utility.  See :DOC
   set-guard-checking for information about suppressing this check with
-  (set-guard-checking :none), as recommended for new users. 
+  (set-guard-checking :none), as recommended for new users.
 
   ACL2 !>
   ~ev[]~/
@@ -22783,7 +22790,7 @@ Start Here: <A HREF=\"~sj\">Applications</A>, <A HREF=\"~sa\">Tours</A>, and <A 
 <TD>
 <A HREF=\"http://www.cs.utexas.edu/users/moore/acl2/workshops.html\">ACL2
 Workshops and UT ACL2 Seminar</A>
-</TD> 
+</TD>
 <!--
 
 The Workshops entry was added in place of the FAQ entry.
@@ -22962,7 +22969,7 @@ href=\"ACKNOWLEDGMENTS.html\">acknowledgments page</A>.)
       CCF-0945316, and CNS-0910913.</LI>
   <LI>Any opinions, findings and conclusions or recomendations expressed in
       this material are those of the authors and do not necessarily reflect the
-      views of the National Science Foundation.</LI> 
+      views of the National Science Foundation.</LI>
   </UL></LI>
 <LI>Advanced Micro Devices, Inc.</LI>
 <LI>ForrestHunt, Inc.</LI>
@@ -23203,7 +23210,7 @@ tail recursion.
   ":Doc-Section |Pages Written Especially for the Tours|
 
   Common Lisp~/~/
-  
+
   ~walk[|An Example Common Lisp Function Definition|]
 
   ~gif[common-lisp.gif]
@@ -23334,7 +23341,7 @@ tail recursion.
   ":Doc-Section |Pages Written Especially for the Tours|
 
   A Flying Tour of ACL2~/~/
-  
+
   ~large-fly[|About the ACL2 Home Page|]
 
   On this tour you will learn a little about what ACL2 is for rather than how
@@ -23360,9 +23367,9 @@ tail recursion.
        ~il[|Proving Theorems about Models| Proving Theorems about Models]
   * Requirements of ACL2
        ~il[|What is Required of the User(Q)| The User's Skills]
-       ~il[|How Long Does It Take to Become an Effective User(Q)| Training]   
+       ~il[|How Long Does It Take to Become an Effective User(Q)| Training]
        ~il[|Other Requirements| Host System]
-  ~ef[] 
+  ~ef[]
 
   On your first reading, don't explore other links you see in the tour.  Some
   of them lead to the Walking Tour, which you can take coherently when you
@@ -23407,7 +23414,7 @@ tail recursion.
   ":Doc-Section |Pages Written Especially for the Tours|
 
   A Walking Tour of ACL2~/~/
-  
+
   ~large-walk[|Common Lisp|]
 
   On this tour you will learn a little more about the ACL2 logic, the theorem
@@ -23505,7 +23512,7 @@ tail recursion.
   cheaper and faster than fabricating and refabricating the product.
 
   ~gif[bridge-analysis.gif]
- 
+
   ")
 
 (deflabel |The Falling Body Model|
@@ -23523,7 +23530,7 @@ tail recursion.
   ~bv[]
          2
   d = 16t
-  ~ev[]  
+  ~ev[]
 
   This equation is a ~b[model] of falling objects.  It can be used to predict
   how long it takes a cannonball to fall from the top of a 200 foot tower (3.5
@@ -23624,7 +23631,7 @@ tail recursion.
   ~gif[state-object.gif]
 
   Observe that the states in typical models talk about
-  
+
   ~bf[]
   ~b[booleans]    ~b[integers]   ~b[vectors]     ~b[records]   ~b[caches]
   ~b[bits]        ~b[symbols]    ~b[arrays]      ~b[stacks]    ~b[files]
@@ -23955,10 +23962,10 @@ tail recursion.
 
   ~fly[|Proving Theorems about Models|]
 
-  But ACL2 is more than a programming language.  
+  But ACL2 is more than a programming language.
 
   Initialize ~b[x] to 5 and let ~b[y] be ~b[any legal value].~par[]
-  
+
   ~gif[computing-machine-5xy.gif]~par[]
 
   Because ACL2 is a mathematical language, we can simplify the expression
@@ -24069,7 +24076,7 @@ tail recursion.
   Other Requirements~/~/
 
   ~fly[|The End of the Flying Tour|]
-  
+
   ACL2 is distributed on the Web without fee.
 
   There is a ~b[license] agreement based on the 3-clause BSD license.  See the
@@ -24089,14 +24096,14 @@ tail recursion.
     * ~b[SBCL] (Steel Bank Common Lisp)
   ~ef[]
 
-  ~fly[|The End of the Flying Tour|]") 
+  ~fly[|The End of the Flying Tour|]")
 
 (deflabel |The End of the Flying Tour|
   :doc
   ":Doc-Section |Pages Written Especially for the Tours|
 
   The End of the Flying Tour~/~/
-  
+
   ~gif[landing.gif]~par[]
 
   This completes the Flying Tour.
@@ -24139,7 +24146,7 @@ tail recursion.
           ~b[(t (cons (car x) ]
                    ~b[(app (cdr x) y)))))]
   ~ev[]~/
-  
+
   ~par[]
 
   The next few stops along the Walking Tour will show you
@@ -24147,7 +24154,7 @@ tail recursion.
     * how to use the ACL2 documentation,
     * what happens when the above definition is submitted to ACL2,
     * what happens when you evaluate calls of ~c[app],
-    * what one simple theorem about ~c[app] looks like, 
+    * what one simple theorem about ~c[app] looks like,
     * how ACL2 proves the theorem, and
     * how that theorem can be used in another proof.
   ~ef[]
@@ -24164,7 +24171,7 @@ tail recursion.
   ":Doc-Section |Pages Written Especially for the Tours|
 
   How To Find Out about ACL2 Functions~/~/
-  
+
   ~walk[|How To Find Out about ACL2 Functions (cont)|]
 
   Most ACL2 primitives are documented.  Here is the definition of ~c[app]
@@ -24270,7 +24277,7 @@ tail recursion.
 (deflabel |A Tiny Warning Sign|
   :doc
   ":Doc-Section |Pages Written Especially for the Tours|
-   
+
   A Tiny Warning Sign~/
 
   ~/
@@ -24363,7 +24370,7 @@ tail recursion.
   ~gif[green-line.gif]
 
   As we can see from these examples, ACL2 functions can be executed more or
-  less as Common Lisp.  
+  less as Common Lisp.
 
   The last three examples suggest an interesting property of ~c[app].
 
@@ -24388,15 +24395,15 @@ tail recursion.
 
 ;   ACL2 !>~b[(app '(a b c) 27)]  ; ~pclick-here[|ACL2 is an Untyped Language|] for an explanation.
 ;   (A B C . 27)
-; 
+;
 ;   ACL2 !>~b[(app 7 27)]   ; ~pclick-here[|Hey Wait!  Is ACL2 Typed or Untyped(Q)|] for an explanation.
-; 
+;
 ;   ACL2 Error in TOP-LEVEL:  The guard for the function symbol ENDP, which
 ;   is (OR (CONSP X) (EQUAL X NIL)), is violated by the arguments in the
 ;   call (ENDP 7).
-; 
+;
 ;   ACL2 !>~b[:set-guard-checking nil]  ; ~pclick-here[|Undocumented Topic|] for an explanation.
-; 
+;
 ;   ACL2 >~b[(app 7 27)]  ; ~pclick-here[|Undocumented Topic|] for an explanation.
 ;   27
 
@@ -24430,7 +24437,7 @@ tail recursion.
   ~bv[]
   ACL2!>~b[(equal (app (app a b) c)]
                ~b[(app a (app b c)))]
-  
+
   ~ev[]
   and have ACL2 compute the value ~c[T]?  Well, ~b[you can't!]  If you try it,
   you'll get an error message!  The message says we can't evaluate that form
@@ -24483,8 +24490,8 @@ tail recursion.
   ~bv[]
   ACL2 !>~b[(equal (app (app a b) c)]
                 ~b[(app a (app b c))))]
-  
-  ACL2 Error in TOP-LEVEL:  Global variables, such as C, B, and A, are 
+
+  ACL2 Error in TOP-LEVEL:  Global variables, such as C, B, and A, are
   not allowed. See :DOC ASSIGN and :DOC @.
 
   ~ev[]
@@ -24555,7 +24562,7 @@ tail recursion.
   ~il[|Perhaps| Perhaps] we can prove *1 by induction.  Three induction schemes are
   ~il[|Suggested Inductions in the Associativity of App Example| suggested] by this conjecture.  ~il[|Subsumption of Induction Candidates in App Example| Subsumption] reduces that number to two.
   However, one of these is ~il[|Flawed Induction Candidates in App Example| flawed] and so we are left with one viable
-  candidate.  
+  candidate.
 
   We will induct according to a scheme suggested by (APP A B).  If we
   let  (:P A B C) denote *1 above then the induction scheme we'll use
@@ -24670,10 +24677,10 @@ tail recursion.
 
   ~bv[]
   (AND
-     (IMPLIES (AND (NOT (ENDP A))         ; Induction Step: test 
+     (IMPLIES (AND (NOT (ENDP A))         ; Induction Step: test
                    (:P (CDR A) B C))      ;  and induction hypothesis
               (:P A B C))                 ;  implies induction conclusion.
-     (IMPLIES (ENDP A) (:P A B C)))       ; Base Case 
+     (IMPLIES (ENDP A) (:P A B C)))       ; Base Case
   ~ev[]
 
   The formula beginning with this parenthesis is the induction scheme suggested
@@ -24698,7 +24705,7 @@ tail recursion.
                 (:P (CDR A) B C))   ~b[; Induction Hypothesis]
            (:P A B C))              ~b[; Induction Conclusion]
   ~ev[]
-  
+
   When we prove this we can assume
 
   ~bf[]
@@ -24725,7 +24732,7 @@ tail recursion.
   (IMPLIES (ENDP A)                 ~b[; Test]
            (:P A B C))              ~b[; Conjecture]
   ~ev[]
-  
+
   When we prove this we can assume
 
   ~bf[]
@@ -24798,7 +24805,7 @@ tail recursion.
   ~ev[]
 
   ~walk[|Overview of the Simplification of the Base Case to T|]")
-  
+
 (deflabel |On the Naming of Subgoals|
   :doc
   ":Doc-Section |Pages Written Especially for the Tours|
@@ -24912,7 +24919,7 @@ tail recursion.
   ~gif[green-line.gif]
 
   Click on the link above to replace ~c[(APP A B)] by its definition.")
-  
+
 (deflabel |The Simplification of the Induction Conclusion (Step 1)|
   :doc
   ":Doc-Section |Pages Written Especially for the Tours|
@@ -25108,7 +25115,7 @@ tail recursion.
 
   ~gif[green-line.gif]
 
-  Click on the link above to apply the Axiom that 
+  Click on the link above to apply the Axiom that
   ~c[(EQUAL (CONS x y) (CONS u v))] is equal to the conjunction of
   ~c[(EQUAL x u)] and ~c[(EQUAL y v)].  In this case, ~c[(EQUAL x u)]
   is trivial, ~c[(EQUAL (CAR A) (CAR A))].")
@@ -25423,7 +25430,7 @@ tail recursion.
   ~bv[]
   (app (app ~b[x] ~b[y]) ~b[z])
   ~ev[]
-  it will replace it with 
+  it will replace it with
   ~bv[]
   (app ~b[x] (app ~b[y] ~b[z]))!
   ~ev[]
@@ -25625,7 +25632,7 @@ tail recursion.
 
   ~gif[sitting.gif]
 
-  This completes the Walking Tour.  
+  This completes the Walking Tour.
 
   We intend to document many other parts of the system this way, but we just
   haven't gotten around to it.
@@ -25639,7 +25646,7 @@ tail recursion.
   devote the time necessary to work your way through the extended introduction
   to how to use the prover.
 
-  ~l[introduction-to-the-theorem-prover]. 
+  ~l[introduction-to-the-theorem-prover].
 
   This will explain how to interact with ACL2 and has some sample problems for
   you to solve including some challenge proofs to make ACL2 find.
@@ -25728,7 +25735,7 @@ tail recursion.
   defining axiom added to the logic defines the function on ~b[all] arguments,
   not just on the guarded domain.
 
-  So what is the purpose of guards?  
+  So what is the purpose of guards?
 
   The key to the utility of guards is that we provide a mechanism, called
   ``guard verification,'' for checking that all the guards in a formula are
@@ -25742,7 +25749,7 @@ tail recursion.
 (deflabel |About the Prompt|
   :doc
   ":Doc-Section |Pages Written Especially for the Tours|
-  
+
   About the Prompt~/
 
   The string ``~c[ACL2 !>]'' is the ACL2 prompt.~/
@@ -26780,7 +26787,7 @@ tail recursion.
 ;                 (w state) state)
 ;     (declare (ignore erp bindings))
 ;     (value (remove1-eq 'state (all-vars val)))))
-; 
+;
 ; (defmacro av (form)
 ;   `(all-vars-untrans ',form state))
 

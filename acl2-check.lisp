@@ -225,7 +225,7 @@ most-negative-fixnum = ~s."
 ; T
 ; ACL2 [RAW LISP]> (format nil "~a" (code-char 13))
 ; "
-; ACL2 [RAW LISP]> 
+; ACL2 [RAW LISP]>
 
 ; So our check for CLISP is incomplete, but as explained in the comment just
 ; above this check, we can live with that.

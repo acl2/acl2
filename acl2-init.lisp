@@ -217,7 +217,7 @@ implementations.")
       nil)
 
 #+(and lispworks acl2-par)
-(setq system:*stack-overflow-behaviour* 
+(setq system:*stack-overflow-behaviour*
 
 ; Since a setting of nil is at least sometimes (if not always) ignored when
 ; safety is set to 0 (according to an email communication between David Rager
@@ -878,7 +878,7 @@ implementations.")
 ; When built with GCL 2.6.1-38 and *acl2-allocation-alist* = nil, we have:
 
 ;   ACL2>(room)
-; 
+;
 ;     4972/4972   61.7%         CONS RATIO LONG-FLOAT COMPLEX STRUCTURE
 ;      133/274    14.0%         FIXNUM SHORT-FLOAT CHARACTER RANDOM-STATE READTABLE NIL
 ;      210/462    97.5%         SYMBOL STREAM
@@ -887,17 +887,17 @@ implementations.")
 ;     1290/1884    7.4%         STRING
 ;      711/779     0.9%         CFUN BIGNUM
 ;       29/115    82.8%         SFUN GFUN CFDATA SPICE NIL
-; 
+;
 ;     1302/1400                 contiguous (176 blocks)
 ;          13107                hole
 ;          5242    0.0%         relocatable
-; 
+;
 ;         7415 pages for cells
 ;        27066 total pages
 ;        93462 pages available
 ;        10544 pages in heap but not gc'd + pages needed for gc marking
 ;       131072 maximum pages
-; 
+;
 ;   ACL2>
 
 ; So as an experiment we used some really large numbers below (but not for hole or
@@ -1441,7 +1441,7 @@ implementations.")
     ;; some core file bloat, and slightly slower startup.
     (sb-ext:gc)
     (sb-ext:save-lisp-and-die sysout-core
-                              :purify 
+                              :purify
                               #+(or x86 x86-64 ppc) nil
                               #-(or x86 x86-64 ppc) t)))
 
@@ -1708,7 +1708,7 @@ implementations.")
 ; (which is not applicable to MCL sessions anyhow).
 #-(and mcl (not ccl))
 (defun save-acl2 (&optional mode other-info
-                            
+
 ; Currently do-not-save-gcl is ignored for other than GCL.  It was added in
 ; order to assist in the building of Debian packages for ACL2 based on GCL, in
 ; case Camm Maguire uses compiler::link.

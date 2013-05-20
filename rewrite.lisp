@@ -188,7 +188,7 @@
 ; We call such a lemma a ``congruence lemma'' and say that it
 ; establishes that ``equiv2 is maintained by equiv1 in the kth
 ; argument of fn.''  The rule-class :CONGRUENCE indicates when a lemma
-; is to be so used.  
+; is to be so used.
 
 ; An example :CONGRUENCE lemma is
 
@@ -223,7 +223,7 @@
 ; the kth and jth arguments, respectively.
 
 ; Proof.  By the :CONGRUENCE lemma for equiv and e1 we know that
-; (fn ...a...b...) is equiv (fn ...a'...b...).  By the :CONGRUENCE 
+; (fn ...a...b...) is equiv (fn ...a'...b...).  By the :CONGRUENCE
 ; lemma for equiv and e2 we know that (fn ...a'...b...) is equiv to
 ; (fn ...a'...b'...).  The desired result is then obtained via the
 ; transitivity of equiv.  Q.E.D.
@@ -386,7 +386,7 @@
 ; so is {e1 e2}, for any relation e2.
 
 ; Proof.  We have that (e a b) implies (e1 (f ...a...) (f ...b...)).
-; Let s be {e1 e2}.  We wish to prove that (e a b) implies 
+; Let s be {e1 e2}.  We wish to prove that (e a b) implies
 ; (s (f ...a...) (f ...b...)).  But by Congruence Theorem 3 above,
 ; e1 is a refinement of s.  Hence, (e1 (f ...a...) (f ...b...))
 ; implies (s (f ...a...) (f ...b...)).  Q.E.D.
@@ -680,7 +680,7 @@
     old-crs-and-coarsenings)
    ((refinementp1
      (cadr (car (car old-crs-and-coarsenings)))     ; first old-equiv
-     (cdr (car old-crs-and-coarsenings))            ; first old-equiv's 
+     (cdr (car old-crs-and-coarsenings))            ; first old-equiv's
                                                     ; non-id coarsenings
      (car new-cr-coarsenings))                      ; new-equiv
 
@@ -864,7 +864,7 @@
 ; stack during one run, the stack was reversed, and the answers were popped off
 ; during the second run.  The code for geneqv-lst was simply (pop
 ; geneqv-stack).  We cannot imagine a faster implementation.  The second
-; run took 1685 seconds.  
+; run took 1685 seconds.
 
 ; The conclusion of these experiments is that geneqv-lst is not likely to be
 ; optimized!
@@ -914,7 +914,7 @@
 ; Observe that if some equivj in geneqv is not mentioned in the
 ; known congruences then we have, implicitly, the entry
 
-; (equivj {} ... {}) and so its contribution to the union is 
+; (equivj {} ... {}) and so its contribution to the union is
 ; justifiably ignored.
 
 ; Observe that if we throw away a disabled rule from a geneqvi,j we
@@ -1299,7 +1299,7 @@
 
 (defun comm-equal (fn lhs rhs term)
 
-; This function is equivalent to 
+; This function is equivalent to
 ; (or (equal `(,fn ,lhs ,rhs) term)
 ;     (equal `(,fn ,rhs ,lhs) term))
 
@@ -1314,7 +1314,7 @@
 (defun member-term2 (fn lhs rhs cl)
 
 ; We determine whether either `(,fn ,lhs ,rhs) or `(,fn ,rhs ,lhs) is
-; a member of cl.  
+; a member of cl.
 
 ; Note on Nomenclature: This is a subroutine of member-term.  It ought
 ; to be named member-term1, but in symmetry with
@@ -2059,7 +2059,7 @@
 
 (defun simplifiable-mv-nthp (term alist)
 
-; Here is a predicate version of the above.  
+; Here is a predicate version of the above.
 
   (mv-let (term alist)
           (simplifiable-mv-nth term alist)
@@ -2219,7 +2219,7 @@
          (quick-and-dirty-subsumption-replacement-step1 cl1 (cdr cl2)))
         ((equal (car cl1) (car cl2))
          (let ((ans (quick-and-dirty-subsumption-replacement-step1 (cdr cl1) (cdr cl2))))
-           (cond ((symbolp ans) 
+           (cond ((symbolp ans)
 
 ; Experiments show that (symbolp ans) is marginally faster than (or (null ans)
 ; (eq ans 'subsumed2) (eq ans 'subsumed1)).
@@ -3175,7 +3175,7 @@
                                               ttree))))))
          (t (mv term ttree)))))))
 
-(defun rewrite-solidify-rec (bound term type-alist obj geneqv ens wrld ttree 
+(defun rewrite-solidify-rec (bound term type-alist obj geneqv ens wrld ttree
                                    pot-lst pt)
   (declare (type (unsigned-byte 29) bound))
   (cond
@@ -3218,7 +3218,7 @@
 
 ;     (DEFEVALUATOR UNHIDE-EVAL UNHIDE-EVAL-LIST
 ;       ((IF X Y Z) (HIDE X)))
-;   
+;
 ;     (DEFUN BETA-REDUCE-HIDE-WRAPPER (X)
 ;       (IF (EQUAL X '(HIDE ((LAMBDA (RES X)
 ;                                    (REWRITE-EQUIV (EQUAL RES (GOO X))))
@@ -3226,7 +3226,7 @@
 ;                            X)))
 ;           '(HIDE (REWRITE-EQUIV (EQUAL (GOO X) (GOO X))))
 ;           X))
-;   
+;
 ;     (DEFTHM
 ;       *META*-BETA-REDUCE-HIDE
 ;       (IMPLIES (PSEUDO-TERMP TERM)
@@ -3236,17 +3236,17 @@
 ;       :HINTS (("Goal" :EXPAND (:FREE (X) (HIDE X))
 ;                :IN-THEORY (ENABLE UNHIDE-EVAL-CONSTRAINT-0)))
 ;       :RULE-CLASSES ((:META :TRIGGER-FNS (HIDE))))
-;   
+;
 ;     (DEFUN GOO (X) X)
 ;     (DEFUN FOO (X) (GOO X))
 ;     (IN-THEORY (DISABLE FOO GOO))
-;   
+;
 ;     (DEFUN CONCLUSION (X)
 ;       (LET ((RES (FOO X)))
 ;            (AND
 ;             (HIDE (REWRITE-EQUIV (EQUAL RES (GOO X))))
 ;             (INTEGERP RES))))
-;   
+;
 ;     (DEFTHM TEST
 ;       (IMPLIES
 ;        (HIDE (REWRITE-EQUIV (EQUAL (FOO X) (GOO X))))
@@ -3313,55 +3313,55 @@
 
   100)
 
-(defun rewrite-solidify (term type-alist obj geneqv ens wrld ttree 
+(defun rewrite-solidify (term type-alist obj geneqv ens wrld ttree
                                pot-lst pt)
   (rewrite-solidify-rec *rewrite-equiv-solidify-iteration-bound* term
                         type-alist obj geneqv ens wrld ttree pot-lst pt))
 
 ; Comment on Historical Waffling over Calling Type-Set in Rewrite-Solidify
-; 
+;
 ; Back in v1-7 we called
 ; (type-set term nil force-flg type-alist nil ens wrld nil)
 ; here, where force-flg was passed into rewrite-solidify.
-; 
+;
 ; We abandoned that in v1-8 and most of v1-9 and replaced it with a simple
 ; lookup of term in the type-alist,
-; 
+;
 ; (assoc-type-alist term type-alist wrld)
-; 
+;
 ; and marked the occasion by writing the following comment:
-; 
+;
 ; ; At one time we called type-set here.  As a result, the prover could simplify
-; ; 
+; ;
 ; ; (thm (implies (and (not (< y 0))
 ; ;                    (rationalp y)
 ; ;                    (not (equal 0 y)))
 ; ;               (equal aaa (< 0 y))))
-; ; 
+; ;
 ; ; to
-; ; 
+; ;
 ; ; (implies (and (not (< y 0))
 ; ;               (rationalp y)
 ; ;               (not (equal 0 y)))
 ; ;          (equal aaa t))
-; ; 
+; ;
 ; ; However, in the interest of performance we have decided to avoid a full-blown
 ; ; call of type-set here.  You get what you pay for, perhaps.
-; 
+;
 ; However, then Rich Cohen observed that if we are trying to relieve a hypothesis
 ; in a lemma and the hyp rewrites to an explicit cons expression we fail to
 ; recognize that it is non-nil!  Here is a thm that fails for that reason:
-; 
+;
 ;  (defstub foo (x a) t)
 ;  (defaxiom lemma
 ;   (implies (member x a) (equal (foo x a) x)))
 ;  (thm (equal (foo x (cons x y)) x))
-;  
+;
 ; We have decided to revert to the use of type-set in rewrite-solidify, but
 ; only when we have an objective of t or nil.  Under this condition we use
 ; force-flg nil and dwp t.  We tried the div proofs with force-flg t here
 ; and found premature forcing killed us.
-; 
+;
 
 (defun rewrite-if11 (term type-alist geneqv wrld ttree)
   (mv-let (ts ts-ttree)
@@ -3425,7 +3425,7 @@
 
 ; We determine whether (sublis-var alist1 term1) is equal to term2.
 ; We just chase vars in term1 and use equal at the tips.  There is
-; one subtlety.  Consider 
+; one subtlety.  Consider
 
 ; (equal-mod-alist '(foo x z (cons x y))
 ;                  '((x . '1) (y . '2))
@@ -3630,7 +3630,7 @@
 ;                    (xterm-order x y)
 ;                    (xterm-order y x))
 ;               (equal x y))
-;   
+;
 ;      :rule-classes
 ;      ((:rewrite :corollary
 ;                 (implies (and (xtermp x)
@@ -3638,7 +3638,7 @@
 ;                               (xterm-order x y)
 ;                               (xterm-order y x))
 ;                          (equal (equal x y) t)))))
-;   
+;
 ;    (defthm transitivity-of-xterm-order
 ;      (implies (and (xtermp x)
 ;                    (xtermp y)
@@ -3646,7 +3646,7 @@
 ;                    (xterm-order x y)
 ;                    (xterm-order y z))
 ;               (xterm-order x z))
-;   
+;
 ;      :rule-classes
 ;      ((:rewrite :corollary
 ;                 (implies (and (xtermp x)
@@ -3655,12 +3655,12 @@
 ;                               (xtermp z)
 ;                               (xterm-order y z))
 ;                          (xterm-order x z)))))
-;   
+;
 ;    (defthm trichotomy-of-xterm-order
 ;      (implies (and (xtermp x)
 ;                    (xtermp y))
 ;               (or (xterm-order x y) (xterm-order y x)))
-;   
+;
 ;      :rule-classes
 ;      ((:rewrite :corollary
 ;                 (implies (and (xtermp x)
@@ -3690,7 +3690,7 @@
 ;                   (xterm-order+ y x invisible-fns))
 ;              (equal x y))
 ;     :rule-classes nil)
-;   
+;
 ;    (defthm transitivity-of-xterm-order+
 ;     (implies (and (xtermp x)
 ;                   (xtermp y)
@@ -3698,7 +3698,7 @@
 ;                   (xterm-order+ x y invisible-fns)
 ;                   (xterm-order+ y z invisible-fns))
 ;              (xterm-order+ x z invisible-fns)))
-;   
+;
 ;    (defthm trichotomy-of-xterm-order+
 ;     (implies (and (xtermp x)
 ;                   (xtermp y))
@@ -3888,7 +3888,7 @@
                                  (cdr lemmas)
                                  type-alist ens force-flg wrld ttree))))
 
-(defun search-ground-units 
+(defun search-ground-units
   (hyp unify-subst type-alist ens force-flg wrld ttree)
 
 ; This function is like lookup-hyp except we search through the ground unit
@@ -4086,7 +4086,7 @@
 ; (defun bar (x) (declare (ignore x)) 7)
 ; (in-theory (disable bar))
 ; (defun foo (x)
-;  (if (consp x) (bar (foo (cdr x))) t)) 
+;  (if (consp x) (bar (foo (cdr x))) t))
 ; :brr t
 ; :monitor (:definition foo) t
 ; (thm (implies (and (consp x) (equal (foo x) (foo uuu))) (not (equal (foo (cdr x)) (foo x)))))
@@ -4128,7 +4128,7 @@
 ; as introduced in 2.8).
 
 ;  (include-book "arithmetic/top-with-meta" :dir :system)
-; 
+;
 ;  (defun a (x)
 ;    (cond
 ;     ((not (integerp x)) nil)
@@ -4136,26 +4136,26 @@
 ;     ((= x 1) 1)
 ;     ((= x 2) 2)
 ;     ((= x 3) 24)
-;     (t (/ (- (* 6 (expt (a (1- x)) 2) (a (- x 3))) 
+;     (t (/ (- (* 6 (expt (a (1- x)) 2) (a (- x 3)))
 ;              (* 8 (a (1- x)) (expt (a (- x 2)) 2)))
 ;           (* (a (- x 2)) (a (- x 3)))))))
-; 
-;  (defun e (x) ; product from i=1 to x-1 of 2^i - 1  
+;
+;  (defun e (x) ; product from i=1 to x-1 of 2^i - 1
 ;    (if (not (integerp x))
 ;        0
 ;      (if (< x 2)
 ;          1
 ;        (* (+ (expt 2 x) (- 1)) (e (1- x))))))
-; 
-;  (defun d (x) 
+;
+;  (defun d (x)
 ;    (cond
 ;     ((not (integerp x)) nil)
 ;     ((< x 1) nil)
 ;     (t (* (expt 2 (/ (* x (1- x)) 2)) (e (1- x))))))
-; 
+;
 ;  ; Added to Andrew's script:
 ;  (in-theory (disable exponents-add))
-; 
+;
 ;  (defthm lemma-a-is-d ; doesn't prove, but at least it avoids the loop
 ;    (= (a x) (d x)))
 
@@ -4170,7 +4170,7 @@
 ;  (trace (rewrite
 ;          :entry (list (car si::arglist) (nth 8 si::arglist))
 ;          :exit (car si::values)))
-; 
+;
 ;                     114> (REWRITE-FNCALL (EXPT '2 (BINARY-+ '-2 X))
 ;                                     (E))>
 ;                     115> (REWRITE
@@ -4325,7 +4325,7 @@
   (cond ((equal arg rhs)
          (1+ acc))
         ((variablep rhs)
-         acc) 
+         acc)
         ((fquotep rhs)
          acc)
         ((eq (ffn-symb rhs) 'if)
@@ -4493,24 +4493,24 @@
 ; occur-cnt-bounded.
 
 ; (mutual-recursion
-; 
+;
 ; (defun occur-cnt-rec (term1 term2 acc)
-; 
+;
 ; ; Return a lower bound on the number of times term1 occurs in term2.
 ; ; We do not go inside of quotes.
-; 
+;
 ;   (cond ((equal term1 term2) (1+ acc))
 ;         ((variablep term2) acc)
 ;         ((fquotep term2) acc)
 ;         (t (occur-cnt-lst term1 (fargs term2) acc))))
-; 
+;
 ; (defun occur-cnt-lst (term1 lst acc)
 ;   (cond ((null lst) acc)
 ;         (t (occur-cnt-rec term1
 ;                           (car lst)
 ;                           (occur-cnt-lst term1 (cdr lst) acc)))))
 ; )
-; 
+;
 ; (defun occur-cnt (term1 term2)
 ;   (occur-cnt-rec term1 term2 0))
 
@@ -4656,17 +4656,17 @@
 ;      (cond ((posp n) (let ((x (big (1- n))))
 ;                        (cons x x)))
 ;            (t nil)))
-;   
+;
 ;    (defun foo (x) (if (consp x) (foo (cdr x)) x))
-;   
+;
 ;    (set-gag-mode nil)
 ;    (set-inhibit-output-lst '(prove proof-tree summary))
-;   
+;
 ;    (thm (consp (foo (big 50)))
 ;         :hints (("Goal"
 ;                  :in-theory
 ;                  (disable (foo) (:type-prescription foo)))))
-;   
+;
 
 ; Our solution is to bound the computation of size of explicit values, unlike
 ; the unbounded computation done through ACL2 Version_3.4.  There, we used a
@@ -5365,7 +5365,7 @@
           (1-f ,step-limit))
          ((eql -1 (the-fixnum ,step-limit))
           -1)
-         (t (assert$ (eql 0 (the-fixnum ,step-limit)) 
+         (t (assert$ (eql 0 (the-fixnum ,step-limit))
                      (cond ((step-limit-strictp state)
                             (step-limit-error nil))
                            (t -1)))))))
@@ -5781,39 +5781,39 @@
 ;      (local (defun p3 (x) x))
 ;      (local (defun a () 0))
 ;      (local (defun b () 0)))
-;   
+;
 ;     ; Allow default of :match-free :all (form may be omitted).
 ;     (set-match-free-error nil)
-;   
+;
 ;     (defaxiom ax1
 ;       (implies (and (p1 x)
 ;                     (p2 x y))
 ;                (p3 y)))
-;   
+;
 ;     (defaxiom p1-a-equals-p2-a-y
 ;       (equal (p1 (a)) (p2 (a) y)))
-;   
+;
 ;     (defaxiom p1-u-equals-p2-a-y
 ;       (equal (p1 (b)) (p2 (a) y)))
-;   
+;
 ;     ; Succeeds.
 ;     (thm (implies (p2 (a) y)
 ;                   (p3 y)))
-;   
+;
 ;     (add-match-free-override :once t)
-;   
+;
 ;     ; Fails.
 ;     (thm (implies (p2 (a) y)
 ;                   (p3 y)))
-;   
+;
 ;     (add-match-free-override :clear)
-;   
+;
 ;     ; Succeeds.
 ;     (thm (implies (p2 (a) y)
 ;                   (p3 y)))
-;   
+;
 ;     (add-match-free-override :once (:rewrite string<-l-trichotomy))
-;   
+;
 ;     ; Succeeds.
 ;     (thm (implies (p2 (a) y)
 ;                   (p3 y)))
@@ -6449,7 +6449,7 @@
             t))
    (defthm op1-op3-property
      (implies (and (op1 x0) (op1 x1) (op1 x2))
-              (op3 x0 x1 x2)) 
+              (op3 x0 x1 x2))
      :rule-classes ((:forward-chaining :match-free :all))))
 
   ; The following succeeds, but takes a little time (about a second in one run).
@@ -6521,7 +6521,7 @@
 
 ; We now develop the code used in path maintenance and monitor.
 
-; The goal stack is a list of frames, each of the form 
+; The goal stack is a list of frames, each of the form
 
 (defrec gframe (sys-fn bkptr . args) t)
 
@@ -7055,7 +7055,7 @@
                (brr-monitored-runes
                 (f-get-global 'brr-monitored-runes state))
                (brr-stack
-                (f-get-global 'brr-stack state))                  
+                (f-get-global 'brr-stack state))
                (brr-gstack
                 (f-get-global 'brr-gstack state))
                (brr-alist
@@ -7146,7 +7146,7 @@
                      nil)))
 
 ; This completes the implementation of brr-wormholes (except that we must be sure to
-; exit via exit-brr-wormhole always).  
+; exit via exit-brr-wormhole always).
 
 ; We now move on to the implementation of brr-locals.
 
@@ -7285,7 +7285,7 @@
                     (cons (cons gstack (get-brr-global 'brr-alist state))
                           brr-stack)
                     state))
-     (t 
+     (t
       (prog2$
        (cw "~%~%Cryptic BRR Message 2:  Discarding dead brr-stack.  ~
             If this occurs in a reproducible way without your having ~
@@ -7672,7 +7672,7 @@
   Also ~pl[dmr] (Dynamically Monitor Rewrites) for a related utility, which
   allows you to watch progress of the rewriter in real time.
 
-  To abort from inside break-rewrite at any time, execute 
+  To abort from inside break-rewrite at any time, execute
 
   For further information, see the related ~c[:]~ilc[doc] topics listed below.
   ~terminal[For broad information on the behavior of break-rewrite, type :more.]~/
@@ -8587,7 +8587,7 @@
                 (prog2$
                  (cw-gframe n
                             (if (= n 1)
-                                nil 
+                                nil
                               (access gframe (nth (- n 2) rgstack) :sys-fn))
                             (nth (- n 1) rgstack)
                             nil)
@@ -8645,14 +8645,14 @@
         (pprogn
          (put-brr-local-lst (f-get-global 'brr-alist state) state)
          (prog2$ (if (get-brr-local 'wonp state)
-                     (cw "~%~F0 ~F1 produced ~X23.~|~F0)~%" 
+                     (cw "~%~F0 ~F1 produced ~X23.~|~F0)~%"
                          (get-brr-local 'depth state)
                          (access rewrite-rule
                                  (get-brr-local 'lemma state)
                                  :rune)
                          (get-brr-local 'rewritten-rhs state)
                          (term-evisc-tuple t state))
-                   (cw "~%~F0x ~F1 failed because ~@2~|~F0)~%" 
+                   (cw "~%~F0x ~F1 failed because ~@2~|~F0)~%"
                        (get-brr-local 'depth state)
                        (access rewrite-rule
                                (get-brr-local 'lemma state)
@@ -8704,8 +8704,8 @@
                             (free-vars-display-limit state))))
                      (value t)))))))
      '(
-; If you add commands, change the deflabel brr-commands.     
-       (:ok 0 (lambda nil 
+; If you add commands, change the deflabel brr-commands.
+       (:ok 0 (lambda nil
 
 ; Note:  Exit-brr is not yet defined because it calls proceed-from-brkpt1.
 ; See the note above about that function.
@@ -8720,7 +8720,7 @@
        (:eval$  0 (lambda nil
                     (prog2$ (cw "You already have run some flavor of :eval.~%")
                             (value :invisible))))
-       (:go  0 (lambda nil 
+       (:go  0 (lambda nil
 
 ; Like :ok, :man.
 
@@ -8851,7 +8851,7 @@
                 (prog2$
                  (cw-gframe n
                             (if (= n 1)
-                                nil 
+                                nil
                               (access gframe (nth (- n 2) rgstack) :sys-fn))
                             (nth (- n 1) rgstack)
                             nil)
@@ -9014,19 +9014,19 @@
 ;       ((endp (cdr lst)) (list (car lst)))
 ;       ((> (car lst) (cadr lst)) (list (car lst)))
 ;       (t (cons (car lst) (first-nondecrease (cdr lst))))))
-;   
+;
 ;   (defun removeN (lst n)
-;     (cond ((endp lst) nil)            
-;       ((zp n) lst)    
+;     (cond ((endp lst) nil)
+;       ((zp n) lst)
 ;       (t (removeN (cdr lst) (1- n)))))
-;   
+;
 ;   (defthm len-removen  ; Needed to admint next fn.  If you disable this
 ;     (implies (natp n)  ; lemma, the overflow no longer occurs.
 ;              (equal (len (removen lst n))
 ;                     (if (>= n (len lst))
 ;                         0
 ;                         (- (len lst) n)))))
-;   
+;
 ;   (defun longest-nondecrease (lst)
 ;     (declare (xargs :measure (len lst)))
 ;     (if (or (endp lst) (not (true-listp lst))) nil
@@ -9034,14 +9034,14 @@
 ;            (n (len first)))
 ;       (let ((remain (longest-nondecrease (removeN lst n))))
 ;         (if (>= n (len remain)) first remain)))))
-;   
+;
 ;   ; This is an arithmetic lemma that may seem benign.
 ;   (defthm equality-difference-hack
 ;     (implies (and (acl2-numberp x)
 ;                   (acl2-numberp y))
 ;              (equal (equal (+ x (- y)) x)
 ;                     (equal y 0))))
-;   
+;
 ;   ; Loops:
 ;   (thm (implies (true-listp lst)
 ;                 (equal (equal (len (longest-nondecrease lst)) (len lst))
@@ -9261,7 +9261,7 @@
     "it is not an alist"))
 
 (defun evgs-or-t (lst alist)
-  
+
 ; Consider the result, lst', of substituting alist into the list of
 ; terms, lst.  Is every term in lst' a quoted constant?  (For example,
 ; lst might be (x '23) and alist might be '((x . '7) (y . a)), in
@@ -9666,7 +9666,7 @@
                                       s))).
   ~ev[]
   This expansion of the ~c[let] expression can be very expensive in space
-  and time.  In particular, the ~c[(new-a x s)] expression might be 
+  and time.  In particular, the ~c[(new-a x s)] expression might be
   rewritten many times.
 
   Now imagine asking what 2nd component of the structure is.  That is,
@@ -9689,7 +9689,7 @@
                val (nth m l))))
   ~ev[]
   would reduce the expression to ~c[(new-b x (update-nth 1 (new-a x s) s))].
-  
+
   The purpose of the nu-rewriter is to allow simplifications like this
   without first expanding the ~c[let]s.  The ``nu'' in the name is an
   acronym for ``~c[nth/update-nth]''.  The nu-rewriter knows how to
@@ -9700,7 +9700,7 @@
   ~c[nth], the presence of ~c[update-nth], the use of ~c[let] to
   provide ``sequential'' updates, and the use of constant indices.
   ~c[Nth] and ~c[update-nth] need not occur explicitly; they may be
-  used inside of definitions of ``wrapper'' functions.  
+  used inside of definitions of ``wrapper'' functions.
 
   Because the nu-rewriter changes the order in which things are rewritten,
   its routine use can make ACL2 unable to reproduce old proofs.  It is
@@ -9714,7 +9714,7 @@
 
 ; We first present all of the raw Lisp definitions we will need.
 ; All of this is concerned with memoization, but some of the memoization
-; code is not raw.  
+; code is not raw.
 
 ; Rockwell Addition:  A major problem with the nu-rewriter implementation
 ; is that I do not express it 100% in ACL2 but use a lot of raw Lisp in the
@@ -9771,13 +9771,13 @@
                       (the (integer 0 65534) i))
                (cons 0 nil))
          (initialize-nu-memos (- i 1)))))
-      
+
 #-acl2-loop-only ; Rockwell Addition
 (defun-one-output clear-nu-memos1 (i)
 ; Call this with i = 65534.
   (declare (type (integer -1 65534) i))
   (cond ((= i -1) nil)
-        (t 
+        (t
          (let ((pair (svref (the (simple-vector 65535) *nu-memos*)
                             (the (integer 0 65534) i))))
            (setf (car pair) 0)
@@ -9869,7 +9869,7 @@
    ((and (eq    d1 (car (this-item ptr2)))
          (equal d2 (cadr (this-item ptr2)))
          (equal d3 (caddr (this-item ptr2))))
-    
+
     (link-em ptr1 (next-ptr ptr2))
     (link-em (prev-ptr ptr0) ptr2)
     (link-em ptr2 ptr0)
@@ -9903,7 +9903,7 @@
 ; and means that nth-update-rewrite1 returned (mv flg term2 stack2 ttree2)
 ; as the answer for
 
-; (nth-update-rewrite1 recursivelyp term stack 
+; (nth-update-rewrite1 recursivelyp term stack
 ;                      *nu-memos-ens* *nu-memos-wrld* state memo-alist)
 
 ; In that case, we return (mv t flg term2 stack2 ttree2).  Otherwise we return
@@ -10063,7 +10063,7 @@
 
   (the (unsigned-byte 29)
        (* (the (unsigned-byte 14)
-               (mod 
+               (mod
                 (the (unsigned-byte 28)
                      (* (the (unsigned-byte 14) (memo-key1 term))
                         (the (unsigned-byte 14)
@@ -10089,7 +10089,7 @@
   (cond ((null r) nil)
         ((eq (next-ptr r) r) (list (this-item r)))
         (t (cons (this-item r) (show-rbuff1 r (next-ptr r))))))
-  
+
 ; As noted, this implementation of memoization is in raw lisp.  But we
 ; act as though the memo hash array is an ACL2 object and generally
 ; pass it around in the variable memo-alist.  Think of memo-alist as
@@ -10319,7 +10319,7 @@
 ; different than the faster version used below.
 
 ; (mutual-recursion
-; 
+;
 ;  (defun equal-derefs (term1 stack1 term2 stack2 ens wrld)
 ;   (mv-let
 ;    (term1 stack1)
@@ -10332,12 +10332,12 @@
 ;            (equal stack1 stack2))
 ;       t)
 ;      ((variablep term1)
-; 
+;
 ; ; When deref returns a var, it is unbound.  If both are vars, they are
 ; ; denote equal terms precisely if they are the same (unbound) var.  If
 ; ; one is a var and the other isn't, we don't know if they denote equal
 ; ; terms.
-; 
+;
 ;       (if (equal term1 term2)
 ;           t
 ;         '?))
@@ -10352,7 +10352,7 @@
 ;                         (fargs term2) stack2
 ;                         ens wrld))
 ;      (t '?)))))
-; 
+;
 ;  (defun equal-derefs-lst (term-lst1 stack1 term-lst2 stack2 ens wrld)
 ;   (cond ((endp term-lst1) t)
 ;         (t (let ((flg (equal-derefs (car term-lst1) stack1
@@ -10473,7 +10473,7 @@
            body)
           ((every-var-at-most-oncep body-vars body)
 
-; ((lambda (v1 ... vk) vi) a1 ... ak) => ai 
+; ((lambda (v1 ... vk) vi) a1 ... ak) => ai
 ; ((lambda (v1 ... vk) (f vi vj)) a1 ... ak) => (f ai aj).
 
 ; We could, in general, always return the following, it is just an
@@ -10489,7 +10489,7 @@
                  (subcor-var minimal-formals minimal-args body))
                 ((subsetp minimal-formals body-vars)
                  (fcons-term (make-lambda minimal-formals body) minimal-args))
-                (t 
+                (t
                  (fcons-term (make-lambda minimal-formals
                                           body)
                              minimal-args))))))))
@@ -10677,7 +10677,7 @@
 ;         (recon (list i j v s) (list is js vs ss))
 ;         (let ((i (car temp))
 ;               (j (cadr temp))
-;               (v (caddr temp)) 
+;               (v (caddr temp))
 ;               (s (cadddr temp)))
 ;           <body>))
 
@@ -10790,7 +10790,7 @@
                    common-stack
                    ttree))))
     (t (mv nil nil nil ttree)))))
-             
+
 ; Here is how we apply certain rewrite rules to term/stack.
 
 (defun apply-abbrevs-to-lambda-stack1 (term stack ens wrld lemmas ttree)
@@ -10895,7 +10895,7 @@
          (hitp1
           (apply-abbrevs-to-lambda-stack t term1 stack1 ens wrld state ttree))
          (t (mv hitp term stack ttree)))))
-      (t #-acl2-loop-only ; Rockwell Addition         
+      (t #-acl2-loop-only ; Rockwell Addition
          (cond (*nth-update-tracingp*
                 (cw "Eval: ~x0~%" term)))
          (mv t (kwote val) nil
@@ -10967,7 +10967,7 @@
         (declare (ignore flg3))
         (memo-exit recursivelyp term stack
                    t term3 stack3 (cons-tag-trees ttree2 ttree3) memo-alist)))
-      (t 
+      (t
 
 ; If we were told to try abbrevs and none fired, then we are done.  We
 ; assume that the input has already had nth-update-rewriter1 applied
@@ -11372,7 +11372,7 @@
                    (i s) (is ss) common-stack
                    (nth-update-rewriter1-continue
                     recursivelyp term stack
-                    t `(NTH ,i ,s) common-stack 
+                    t `(NTH ,i ,s) common-stack
                     irjttree
                     nil ens wrld state memo-alist)))))))
             ((eq (ffn-symb r) 'UPDATE-NTH-ARRAY)
@@ -11682,7 +11682,7 @@
 
     #-acl2-loop-only ; Rockwell Addition
     (clear-nu-memos nil ens wrld)
-           
+
     (mv-let (flg term1 stack1 ttree1 memo-alist)
 
 ; Rockwell Addition:  Non-equivalent read conditionals!  Well, they
@@ -11712,7 +11712,7 @@
              (*nth-update-tracingp*
               (cw "...)~%")
               (nu-memo-stats)))
-            
+
             (cond
              ((null flg)
               #-acl2-loop-only ; Rockwell Addition
@@ -12140,7 +12140,7 @@
   (let* ((synp-fn (car (get-evg (fargn hyp0 2) 'relieve-hyp)))
          (mfc (if (member-eq 'state (all-vars (get-evg (fargn hyp0 3)
                                                        'relieve-hyp)))
-                  (make metafunction-context 
+                  (make metafunction-context
                         :rdepth rdepth
                         :type-alist type-alist
 
@@ -12181,7 +12181,7 @@
                                 synp-fn))))
                 (mv nil
                     (list sym erp val)
-                    unify-subst 
+                    unify-subst
                     ttree)))
              ((eq synp-fn 'syntaxp)
               (cond
@@ -12225,7 +12225,7 @@
                       (bad-synp-alist val unify-subst (fargn hyp0 1) wrld))
                   nil unify-subst ttree))
              (t
-              (mv t nil 
+              (mv t nil
 
 ; We attempt to keep all terms in quote-normal form, which explains the
 ; modification of val just below.
@@ -13616,7 +13616,7 @@
            (equal (append x nil) x)) (true-listp a) rewrites to t
 
   (implies                           replace (member a (append b c)) by
-      (and (eqlablep e)              (member a (append c b)) in contexts  
+      (and (eqlablep e)              (member a (append c b)) in contexts
            (true-listp x)            in which propositional equivalence
            (true-listp y))           is sufficient, provided (eqlablep a)
       (iff (member e (append x y))   (true-listp b) and (true-listp c)
@@ -13762,26 +13762,26 @@
 ; following example supplied by Robert Krug.
 
 ;    (defstub quux (x) t)
-;   
+;
 ;    (defaxiom quux-thm-1
 ;      (<= x (quux x))
 ;      :rule-classes :linear)
-;   
+;
 ;    (defaxiom quux-thm-2
 ;      (integerp (quux x)))
-;   
+;
 ;    ; Good
-;   
+;
 ;    (defstub foo-1 (x) t)
-;   
+;
 ;    (defun bar-1 (x)
 ;      (or (not (integerp x))
 ;          (< 4 x)))
-;   
+;
 ;    (defaxiom foo-1-thm
 ;      (implies (bar-1 (quux x))
 ;               (foo-1 x)))
-;   
+;
 ;    (thm  ; good
 ;     (implies (and (integerp x)
 ;                   (integerp y)
@@ -13795,15 +13795,15 @@
 ; false branches.
 
 ;    (defstub foo-2 (x) t)
-;   
+;
 ;    (defun bar-2 (x)
 ;      (or (< 4 x)
 ;          (not (integerp x))))
-;   
+;
 ;    (defaxiom foo-2-thm
 ;      (implies (bar-2 (quux x))
 ;               (foo-2 x)))
-;   
+;
 ;    (thm  ; bad
 ;     (implies (and (integerp x)
 ;                   (integerp y)
@@ -13817,20 +13817,20 @@
 ; (if u t v).
 
 ;    (defstub foo-3 (x) t)
-;   
+;
 ;    (defstub bar-3 (x) t)
-;   
+;
 ;    (defaxiom bar-3-open
 ;      (equal (bar-3 x)
 ;             (or (< 4 x)
 ;                 (foo-3 (append x x)) ; optional extra challenge, since this
 ;                                      ; doesn't rewrite to a consant
 ;                 (not (integerp x)))))
-;   
+;
 ;    (defaxiom foo-3-thm
 ;      (implies (bar-3 (quux x))
 ;               (foo-3 x)))
-;   
+;
 ;    (thm  ; bad
 ;     (implies (and (integerp x)
 ;                   (integerp y)
@@ -13883,7 +13883,7 @@
                      (fn-rune-nume 'return-last nil nil wrld)
                      ttree)))
            ((eq (ffn-symb term) 'hide)
-           
+
 ; We are rewriting (HIDE x).  Recall the substitution alist.  We must
 ; stuff it into x.  That is, if the term is (HIDE (fn u v)) and alist
 ; is ((u . a) (v . b)), then we must return something equal to (HIDE
@@ -13903,7 +13903,7 @@
 ; former may be prohibitive to compute.  The fact that HIDEs are
 ; changed a little may make it awkward for the user to formulate
 ; :EXPAND or HIDE-rewrite hints without waiting to see what comes out.
-           
+
 
             (let* ((stack (make-stack-from-alist (fargn term 1) alist))
                    (inst-term (if alist
@@ -14243,7 +14243,7 @@
            (rewrite-solidify term type-alist obj geneqv
                              (access rewrite-constant rcnst
                                      :current-enabled-structure)
-                             wrld ttree 
+                             wrld ttree
                              simplify-clause-pot-lst
                              (access rewrite-constant rcnst :pt))
            (cond ((or (eq obj '?)
@@ -15224,7 +15224,7 @@
        relieve-hyp-ans
        (rewrite-entry (relieve-hyp rune target (car hyps)
                                    unify-subst bkptr allp)
-                      :backchain-limit 
+                      :backchain-limit
                       (new-backchain-limit (car backchain-limit-lst)
                                            backchain-limit
                                            ancestors)
@@ -15694,7 +15694,7 @@
 ; sure that that is what we are using.
 
                     :rcnst
-                    (if (eq (access rewrite-constant rcnst 
+                    (if (eq (access rewrite-constant rcnst
                                     :active-theory)
                             :standard)
                         rcnst
@@ -15802,7 +15802,7 @@
                       ((eq (access rewrite-rule lemma :rhs)
                            'extended)
                        (list term
-                             (make metafunction-context 
+                             (make metafunction-context
                                    :rdepth rdepth
                                    :type-alist type-alist
                                    :obj obj
@@ -15857,7 +15857,7 @@
 
                                        (sublis-var nil evaled-hyp)))
                                 (rule-backchain-limit
-                                 (access rewrite-rule lemma 
+                                 (access rewrite-rule lemma
                                          :backchain-limit-lst))
                                 (bad-synp-hyp-msg
                                  (bad-synp-hyp-msg hyps vars nil wrld)))
@@ -15945,7 +15945,7 @@
                                   :conc
                                   hyps)
                                  (mv step-limit t rewritten-rhs
-                                     
+
 ; Should we be pushing executable counterparts into ttrees when we applying
 ; metafunctions on behalf of meta rules?  NO:  We should only do that if the
 ; meta-rule's use is sensitive to whether or not they're enabled, and it's not
@@ -16040,7 +16040,7 @@
                                             rune
                                             term
                                             (access rewrite-rule lemma :hyps)
-                                            (access rewrite-rule lemma 
+                                            (access rewrite-rule lemma
                                                     :backchain-limit-lst)
                                             unify-subst
                                             (not (oncep (access rewrite-constant
@@ -16125,11 +16125,11 @@
 
          ((if (eq (access rewrite-constant rcnst :active-theory)
                   :standard)
-              (not (enabled-numep 
+              (not (enabled-numep
                     (access rewrite-rule (car lemmas) :nume)
                     (access rewrite-constant rcnst
                             :current-enabled-structure)))
-            (not (enabled-arith-numep 
+            (not (enabled-arith-numep
                   (access rewrite-rule (car lemmas) :nume)
                   (global-val 'global-arithmetic-enabled-structure wrld))))
           (rewrite-entry (rewrite-with-lemmas1 term (cdr lemmas))))
@@ -16379,7 +16379,7 @@
                               (access rewrite-constant rcnst
                                       :current-clause)
                               (cdr (access rewrite-rule rule :heuristic-info)))
-                             (cond 
+                             (cond
 
 ; Once upon a time, before we were heavily involved with ACL2 proofs, we had
 ; the following code here.  Roughly speaking this code forced recursive
@@ -16422,10 +16422,10 @@
 ; still a problem.  In particular,
 
 ;    (defun ascii-code-lst (lst)
-;   
+;
 ;   ; This function converts a standard char list into the list of their
 ;   ; ascii codes, terminated by a 0.
-;   
+;
 ;      (declare (xargs :guard (standard-char-listp lst)
 ;                      :hints (("Goal" :in-theory (disable member)))
 ;                      :guard-hints (("Goal" :in-theory (disable member)))))
@@ -16741,7 +16741,7 @@
                              (rewrite-entry (rewrite (fargn atm 2) alist 2)
                                             :obj '?
                                             :geneqv nil ; geneqv equal
-                              
+
 ; We change theories here also.
 
                                             :rcnst rcnst1)
@@ -16762,7 +16762,7 @@
                                          type-alist obj geneqv wrld state
                                          fnstack ancestors
                                          backchain-limit
-                                         simplify-clause-pot-lst 
+                                         simplify-clause-pot-lst
                                          rcnst gstack ttree)
 
 ; We wish to be able to have a different normal form when doing
@@ -16910,34 +16910,34 @@
 ; wrong.
 
 ;    (defstub bitn (x n) t)   ; extract bit n of x
-;   
+;
 ;    (skip-proofs
 ;     (defthm bitn-non-negative-integer
 ;      (and (integerp (bitn x n))
 ;           (<= 0 (bitn x n)))
 ;      :rule-classes (:rewrite :type-prescription)))
-;   
+;
 ;    (skip-proofs
 ;     (defthm bits-upper-bound-linear
 ;       (< (bits x i j) (expt 2 (+ i 1 (- j))))
 ;       :rule-classes ((:linear :trigger-terms ((bits x i j))))))
-;   
+;
 ;    ;goes through (using the two :linear rules above)
-;    (thm 
+;    (thm
 ;     (< (+ (BITN x 32)
 ;           (BITN x 58))
 ;        2))
-;   
+;
 ;    ;the problem rule.
 ;    (skip-proofs
 ;     (defthm bitn-known-not-0-replace-with-1
 ;      (implies (not (equal (bitn x n) 0))
 ;               (equal (bitn x n)
 ;                      1))))
-;   
+;
 ;    ;same thm; now fails --- the rule above causes linear arithmetic to fail.
-;   
-;    (thm 
+;
+;    (thm
 ;     (< (+ (BITN x 32)
 ;           (BITN x 58))
 ;        2))
@@ -16960,7 +16960,7 @@
 ;                          (list 'type-alist (show-type-alist (nth 3 arglist))))
 ;             :exit (list (list 'contradictionp (nth 0 values))
 ;                         (list 'new-pot-lst (show-pot-lst (nth 1 values)))))
-;           (add-linear-lemma 
+;           (add-linear-lemma
 ;             :entry (list (list 'term (nth 0 arglist))
 ;                          (list 'lemma (nth 1 arglist)))
 ;             :exit (list (list 'contradictionp (nth 0 values))
@@ -17000,7 +17000,7 @@
                                          state))
                     (lst (or temp-lst
                              (linearize (sublis-var
-                                         unify-subst 
+                                         unify-subst
                                          (access linear-lemma lemma :concl))
                                         t
                                         type-alist
@@ -17017,7 +17017,7 @@
                       (not (new-and-ugly-linear-varsp
                             (car lst)
                             (<= *max-linear-pot-loop-stopper-value*
-                                (loop-stopper-value-of-var 
+                                (loop-stopper-value-of-var
                                  term
                                  simplify-clause-pot-lst))
                             term)))
@@ -17036,7 +17036,7 @@
                    (contradictionp (mv step-limit contradictionp nil))
                    (t (mv step-limit
                           nil
-                          (set-loop-stopper-values 
+                          (set-loop-stopper-values
                            (new-vars-in-pot-lst new-pot-lst
                                                 simplify-clause-pot-lst
                                                 nil)
@@ -17221,7 +17221,7 @@
 
 ; If one thinks of the initial polys as
 
-; 0 < const1 + alist1 and 0 < const2 + alist2, 
+; 0 < const1 + alist1 and 0 < const2 + alist2,
 
 ; poly initially contains
 ; 0 < const1*const2 + const1*alist2 + const2*alist1 + ()
@@ -17263,7 +17263,7 @@
                      :geneqv nil
                      :ttree nil))))))
 
-(defun multiply-polys1 (alist1 const1 rel1 alist2 const2 rel2 
+(defun multiply-polys1 (alist1 const1 rel1 alist2 const2 rel2
                                poly ; &extra formals
                                rdepth step-limit
                                type-alist obj geneqv wrld state fnstack
@@ -17279,7 +17279,7 @@
 
 ; If one thinks of the initial polys as
 
-; 0 < const1 + alist1 and 0 < const2 + alist2, 
+; 0 < const1 + alist1 and 0 < const2 + alist2,
 
 ; poly initially contains 0 < const1*const2 + () and our job is to successively
 ; add things to the ().  We wish to form const1*alist2 + const2*alist1 +
@@ -17341,7 +17341,7 @@
 ;                               (or (eq rel1 '<)
 ;                                   (eq rel2 '<)))
 ;                          (change poly poly
-;                                  :constant 
+;                                  :constant
 ;                                  (- (access poly poly :constant))
 ;                                  :relation
 ;                                  '<)
@@ -17833,7 +17833,7 @@
 ;                   (<= 2 (f y)))
 ;              (< (+ (f r) (* (f i) (f y))) (f i))))
 
-      (let ((poly-list2 (polys-with-pots poly-list1 
+      (let ((poly-list2 (polys-with-pots poly-list1
                                          simplify-clause-pot-lst
                                          nil)))
         (mv-let (contradictionp new-pot-lst)
@@ -17892,7 +17892,7 @@
 
      (sl-let
       (poly-list)
-      (rewrite-entry 
+      (rewrite-entry
        (multiply-pots-super-filter var-list
                                    pot-lst-to-look-in)
        :obj nil
@@ -17914,7 +17914,7 @@
     (t
      (sl-let
       (poly-list)
-      (rewrite-entry 
+      (rewrite-entry
        (multiply-pots var-list
                       pot-lst-to-look-in)
        :obj nil
@@ -18105,7 +18105,7 @@
                                  rdepth step-limit
                                  type-alist obj geneqv wrld state fnstack
                                  ancestors backchain-limit
-                                 simplify-clause-pot-lst 
+                                 simplify-clause-pot-lst
                                  rcnst gstack ttree)
 
 ; Pot-lst-to-look-in is the pot-lst we keep around to extract polys for
@@ -18143,7 +18143,7 @@
     ((null pot-lst-to-step-down)
      (mv step-limit nil simplify-clause-pot-lst products-already-tried))
     (t
-     (let ((part-of-pot-var (part-of new-var 
+     (let ((part-of-pot-var (part-of new-var
                                      (access linear-pot
                                              (car pot-lst-to-step-down)
                                              :var))))
@@ -18187,14 +18187,14 @@
                :geneqv nil
                :ttree nil))))))))
 
-(defun deal-with-division (new-var inverse-var 
+(defun deal-with-division (new-var inverse-var
                                    pot-lst-to-look-in
                                    pot-lst-to-step-down
                                    products-already-tried ; &extra formals
                                    rdepth step-limit
                                    type-alist obj geneqv wrld state fnstack
                                    ancestors backchain-limit
-                                   simplify-clause-pot-lst 
+                                   simplify-clause-pot-lst
                                    rcnst gstack ttree)
 
 ; Inverse-var is the multiplicative inverse of new-var,
@@ -18274,7 +18274,7 @@
                     (contradictionp new-pot-lst products-already-tried)
                     (rewrite-entry
                      (add-multiplied-polys-filter
-                      (list new-var 
+                      (list new-var
                             (access linear-pot
                                     (car pot-lst-to-step-down)
                                     :var))
@@ -18402,7 +18402,7 @@
                                        rdepth step-limit
                                        type-alist obj geneqv wrld state fnstack
                                        ancestors backchain-limit
-                                       simplify-clause-pot-lst 
+                                       simplify-clause-pot-lst
                                        rcnst gstack ttree)
 
 ; New-vars is a list of pot labels or factors thereof.  We think of it
@@ -18419,7 +18419,7 @@
 ; We ``deal with'' new vars of the form a*b, a/b.  Analogously, if we
 ; have a new var of the form a we look to see whether we have an old
 ; pot about a*b and if so, look for a pot about b, etc.  That is, we try
-; not to be sensitive to the order in which the pots a, b, and a*b are 
+; not to be sensitive to the order in which the pots a, b, and a*b are
 ; added.
 
 ; We do not handle terms like (* a (* a (* a a))) very well.  We
@@ -18691,7 +18691,7 @@
                                           type-alist obj geneqv wrld state
                                           fnstack
                                           ancestors backchain-limit
-                                          simplify-clause-pot-lst 
+                                          simplify-clause-pot-lst
                                           rcnst gstack ttree)
 
 ; In add-polys-and-lemmas1, it is said that:
@@ -18731,7 +18731,7 @@
                  :obj nil
                  :geneqv nil
                  :ttree nil)))))
-    (t 
+    (t
      (mv-let
       (contradictionp new-pot-lst)
       (add-polys-from-type-set (car new-vars)
@@ -18739,7 +18739,7 @@
                                type-alist
                                (access rewrite-constant rcnst :pt)
                                (ok-to-force rcnst)
-                               (access rewrite-constant rcnst 
+                               (access rewrite-constant rcnst
                                        :current-enabled-structure)
                                wrld)
       (cond
@@ -18848,7 +18848,7 @@
 ; it was true.  See also the comment following the call to new-vars-in-pot-lst
 ; below.
 
-         (t 
+         (t
 
 ; This call to add-polys-and-lemmas2-nl is stronger than a corresponding call
 ; to add-polys-and-lemmas1, in the sense that it may add additional facts to
@@ -18859,7 +18859,7 @@
            :obj nil
            :geneqv nil
            :ttree nil)))
-        (cond 
+        (cond
          (contradictionp (mv step-limit contradictionp nil))
          (t
           (let ((new-vars (new-vars-in-pot-lst new-pot-lst1 old-pot-lst t)))
@@ -18885,7 +18885,7 @@
             (cond
              ((null new-vars)
               (mv step-limit nil new-pot-lst1))
-             (t 
+             (t
               (sl-let (contradictionp new-pot-lst2)
                       (rewrite-entry
                        (non-linear-arithmetic new-vars new-pot-lst1 nil)
@@ -18893,7 +18893,7 @@
                        :geneqv nil
                        :ttree nil
                        :simplify-clause-pot-lst new-pot-lst1)
-                      (cond 
+                      (cond
                        (contradictionp (mv step-limit contradictionp nil))
                        (t
                         (rewrite-entry
@@ -19023,7 +19023,7 @@
 ; this modification.)
 
 ;    ; This example was supplied by Julien Schmaltz.
-;   
+;
 ;    (include-book "arithmetic-3/bind-free/top" :dir :system)
 ;    (include-book "arithmetic-3/floor-mod/floor-mod" :dir :system)
 ;    (set-non-linearp t)
@@ -19143,7 +19143,7 @@
        (add-polys-and-lemmas (infect-polys lst2
                                            (access poly contradictionp
                                                    :ttree)
-                                           (collect-parents 
+                                           (collect-parents
                                             (access poly contradictionp
                                                     :ttree)))
                              t)
@@ -19504,7 +19504,7 @@
    4
    (signed-byte 30)
    (let ((positivep (eq obj nil)))
-     (cond 
+     (cond
       ((and (not (eq obj '?))
             (mv-let (not-flg atm)
                     (strip-not term)

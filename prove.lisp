@@ -178,7 +178,7 @@
 ;  one and by opening it now we make our context clearer.  See the note
 ;  below for the reason we expand other
 ;  *expandable-boot-strap-non-rec-fns*.
-  
+
 ; This is no longer true.  We now expand the IMPLIES from the original
 ; theorem in preprocess-clause before expand-abbreviations is called,
 ; and do not expand any others here.  These changes in the handling of
@@ -222,7 +222,7 @@
         (mv step-limit
             (sublis-var alist term)
             ttree))
-       (t 
+       (t
         (sl-let
          (expanded-args ttree)
          (expand-abbreviations-lst (fargs term)
@@ -332,7 +332,7 @@
 ; expand-abbreviations and this time the expansion is allowed.  We do
 ; not imagine that this change will adversely affect proofs, but if
 ; so, well, the old code is shown on the first line of this comment.
-                 
+
                     (sl-let (body ttree)
                             (expand-abbreviations
                              (lambda-body fn)
@@ -342,7 +342,7 @@
                              (adjust-rdepth rdepth) step-limit ens wrld state
                              ttree)
 
-; Rockwell Addition: 
+; Rockwell Addition:
 
 ; Once upon another time (through v2-5) we returned the fcons-term
 ; shown in the t clause below.  But Rockwell proofs indicate that it
@@ -408,10 +408,10 @@
 ; of IF, which didn't used to receive any special notice.
 
             ((eq fn 'if)
-         
+
 ; There are no abbreviation (or rewrite) rules hung on IF, so coming out
 ; here is ok.
-         
+
              (let ((a (car expanded-args))
                    (b (cadr expanded-args))
                    (c (caddr expanded-args)))
@@ -827,7 +827,7 @@
 ; Note also that we do not use expand-some-non-rec-fns here.  We want
 ; to preserve the meaning of 'HIDE and expand an 'IMPLIES inside of
 ; a lambda.
-  
+
   (cond ((null cl)  ; This should not happen.
          nil)
         ((null (cdr cl))
@@ -1055,7 +1055,7 @@
 ;;;                                 '(iff implies)
 ;;;                                 clauses
 ;;;                                 wrld)))
-                         
+
 ; Previous to Version_2.6 we had written:
 
 ; ; Note: Once upon a time (in Version 1.5) we called "clausify-clause-set" here.
@@ -1080,8 +1080,8 @@
 
 ; But the comment above is now irrelevant to the current situation.
 ; Before commenting on the current situation, however, we point out that
-; in (admittedly light) testing the original call to 
-; expand-some-non-rec-fns-in-clauses in its original context acted as 
+; in (admittedly light) testing the original call to
+; expand-some-non-rec-fns-in-clauses in its original context acted as
 ; the identity.  This seems reasonable because 'iff and 'implies were
 ; expanded in expand-abbreviations.
 
@@ -1295,7 +1295,7 @@
 (defun more-than-simplifiedp (hist)
 
 ; Return t if hist contains a process besides simplify-clause (and its
-; mates settled-down-clause and preprocess-clause), where we don't count 
+; mates settled-down-clause and preprocess-clause), where we don't count
 ; certain top-level hints: :OR, or top-level hints that create hidden clauses.
 
   (cond ((null hist) nil)
@@ -1345,7 +1345,7 @@
                          (t (mv nil recs)))))))
 
 (defun delete-assumptions (ttree only-immediatep)
-  
+
 ; We delete the assumptions in ttree.  We give the same interpretation to
 ; only-immediatep as in collect-assumptions.
 
@@ -1450,12 +1450,12 @@
 ;        ((or (and (consp (access history-entry (cadr h) :processor))
 ;                  (equal (access history-entry (cadr h) :processor)
 ;                         'specious))
-        
+
         (t (find-the-first-checkpoint (cdr h) checkpoint-processors))))
 
 #+acl2-par
 (defun acl2p-push-clause-printing (cl hist pspv wrld state)
-  (cond 
+  (cond
    ((null cl)
 
 ; The following non-theorem illustrates the case where we generate the clause
@@ -1468,12 +1468,12 @@
          has failed.~%"
         cl))
    (t
-    (let* ((hist-entry 
+    (let* ((hist-entry
             (find-the-first-checkpoint
-             (reverse hist) 
+             (reverse hist)
              (f-get-global 'checkpoint-processors state)))
 
-           (checkpoint-clause 
+           (checkpoint-clause
             (or (access history-entry hist-entry :clause)
 
 ; We should be able to add an assertion that, if the hist-entry is nil (and
@@ -1488,8 +1488,8 @@
            (forcing-round (access clause-id cl-id :forcing-round))
            (old-pspv-pool-lst
             (pool-lst (cdr (access prove-spec-var pspv :pool))))
-           (prettyified-clause (prettyify-clause checkpoint-clause 
-                                                 (let*-abstractionp state) 
+           (prettyified-clause (prettyify-clause checkpoint-clause
+                                                 (let*-abstractionp state)
                                                  wrld)))
       (save-and-print-acl2p-checkpoint cl-id prettyified-clause
                                        old-pspv-pool-lst forcing-round
@@ -1718,19 +1718,19 @@
 ; convert a maybe-to-be-proved-by-induction to a to-be-proved-by-induction.
 
                    :tag-tree nil
-                   :pool 
-                   (append 
-                    (list 
+                   :pool
+                   (append
+                    (list
                      (list 'maybe-to-be-proved-by-induction
                            (make pool-element
                                  :tag 'TO-BE-PROVED-BY-INDUCTION
                                  :clause-set (list cl)
                                  :hint-settings (access prove-spec-var pspv
-                                                        :hint-settings))     
+                                                        :hint-settings))
                            (make pool-element
                                  :tag 'TO-BE-PROVED-BY-INDUCTION
                                  :clause-set
-                                     
+
 ; See above comment that starts with "At one time we clausified here."
 
                                  (list (list
@@ -1767,7 +1767,7 @@
 ; Below is the soundness bug example reported by Francisco J. Martin-Mateos.
 
 ; ;;;============================================================================
-; 
+;
 ; ;;;
 ; ;;; A bug in ACL2 (2.5 and 2.6). Proving "0=1".
 ; ;;; Francisco J. Martin-Mateos
@@ -1776,62 +1776,62 @@
 ; ;;; University of SEVILLE
 ; ;;;
 ; ;;;============================================================================
-; 
+;
 ; ;;;   I've found a bug in ACL2 (2.5 and 2.6). The following events prove that
 ; ;;; "0=1".
-; 
+;
 ; (in-package "ACL2")
-; 
+;
 ; (encapsulate
 ;  (((g1) => *))
-; 
+;
 ;  (local
 ;   (defun g1 ()
 ;     0))
-; 
+;
 ;  (defthm 0=g1
 ;    (equal 0 (g1))
 ;    :rule-classes nil))
-; 
+;
 ; (defun g1-lst (lst)
 ;   (cond ((endp lst) (g1))
 ;  (t (g1-lst (cdr lst)))))
-; 
+;
 ; (defthm g1-lst=g1
 ;   (equal (g1-lst lst) (g1)))
-; 
+;
 ; (encapsulate
 ;  (((f1) => *))
-; 
+;
 ;  (local
 ;   (defun f1 ()
 ;     1)))
-; 
+;
 ; (defun f1-lst (lst)
 ;   (cond ((endp lst) (f1))
 ;  (t (f1-lst (cdr lst)))))
-; 
+;
 ; (defthm f1-lst=f1
 ;   (equal (f1-lst lst) (f1))
 ;   :hints (("Goal"
 ;     :use (:functional-instance g1-lst=g1
 ;           (g1 f1)
 ;           (g1-lst f1-lst)))))
-; 
+;
 ; (defthm 0=f1
 ;   (equal 0 (f1))
 ;   :rule-classes nil
 ;   :hints (("Goal"
 ;     :use (:functional-instance 0=g1
 ;           (g1 f1)))))
-; 
+;
 ; (defthm 0=1
 ;   (equal 0 1)
 ;   :rule-classes nil
 ;   :hints (("Goal"
 ;     :use (:functional-instance 0=f1
 ;           (f1 (lambda () 1))))))
-; 
+;
 ; ;;;   The theorem F1-LST=F1 is not proved via functional instantiation but it
 ; ;;; can be proved via induction. So, the constraints generated by the
 ; ;;; functional instantiation hint has not been proved. But when the theorem
@@ -1839,7 +1839,7 @@
 ; ;;; instantiation hint are bypassed because they ".. have been proved when
 ; ;;; processing the event F1-LST=F1", and the theorem is proved !!!. Finally,
 ; ;;; an instance of 0=F1 can be used to prove 0=1.
-; 
+;
 ; ;;;============================================================================
 
 ; We now develop the functions for reporting what push-clause did.  Except,
@@ -2036,7 +2036,7 @@
 
     (cond
      ((null clauses)
-      
+
 ; In this case, there is no point in generating the constraints!  We
 ; anticipate this happening if the user provides both a :use and a
 ; :cases hint and the :cases hint (which is applied first) proves the
@@ -2104,7 +2104,7 @@
 
 ; We return (mv 'hit new-clauses ttree new-pspv).
 
-  (let ((new-clauses 
+  (let ((new-clauses
          (remove-trivial-clauses
           (conjoin-clause-to-clause-set
            (disjoin-clauses
@@ -2213,7 +2213,7 @@
                     (mv (msg "Error in clause-processor hint:~|~%  ~Y01"
                              term
                              nil)
-                        nil 
+                        nil
                         state))
                    (t (pprogn (set-w! original-wrld state)
                               (cond ((not (term-list-listp val
@@ -2236,7 +2236,7 @@
 
 ; Keep in sync with eval-clause-processor.
 
-  (cond 
+  (cond
    ((and
 
 ; Note that potential conjunct (f-get-global 'waterfall-parallelism state) is
@@ -2249,7 +2249,7 @@
      (not (or (equal stobjs-out '(nil))
               (equal stobjs-out '(nil nil))))
      (not (cdr (assoc-eq 'hacks-enabled
-                         (table-alist 'waterfall-parallelism-table 
+                         (table-alist 'waterfall-parallelism-table
                                       (w state))))))
     (mv (msg
          "Clause-processors that do not return exactly one or two values are ~
@@ -2353,7 +2353,7 @@
                (cons-tag-trees use-ttree cases-ttree)
                use-pspv)))))))
     (:by
-      
+
 
 ; If there is a :by hint then it is of one of the two forms (:by .  name) or
 ; (:by lmi-lst thm constraint-cl k event-names new-entries).  The first form
@@ -2547,7 +2547,7 @@
                          set of clauses and then printed as a formula).  This ~
                          formula was not found to subsume the goal clause, ~
                          ~p3.~|~%Consider a :use hint instead ; see :DOC ~
-                         hints." 
+                         hints."
                         (car lmi-lst)
 
 ; The following is not possible, because we are not putting a limit on the
@@ -2657,7 +2657,7 @@
                                   (access clause-processor-hint (cdr temp) :stobjs-out)
                                   ctx state)
        (cond (erp (mv@par step-limit 'error erp nil nil state))
-             (t (mv@par step-limit 
+             (t (mv@par step-limit
                         'hit
                         new-clauses
                         (cond ((and new-clauses
@@ -2890,7 +2890,7 @@
 ;               (splitting-terms (car cases-obj))
 ;               (case-clauses (cdr cases-obj))
                 )
-           
+
            (fms
             "~#0~[But we~/We~] ~#x~[split the goal into the cases specified ~
              by the :CASES hint and augment each case~/augment the goal~] ~
@@ -2903,7 +2903,7 @@
              (cons #\x (if cases-obj 0 1))
              (cons #\0 (if (> len-G 0) 1 0))               ;;; |G|>0
              (cons #\1 hyps)
-             (cons #\2 (tilde-@-lmi-phrase lmi-lst k event-names))           
+             (cons #\2 (tilde-@-lmi-phrase lmi-lst k event-names))
              (cons #\3 (if (> len-C 0) 1 0))               ;;; |C|>0
              (cons #\4 (if (> len-C 1) 1 0))               ;;; |C|>1
              (cons #\5 (tilde-*-preprocess-phrase preprocess-ttree))
@@ -3125,7 +3125,7 @@
 
 ; For debug only:
 ; (progn
-; 
+;
 ; (defun show-gag-info-pushed (pushed state)
 ;   (if (endp pushed)
 ;       state
@@ -3137,7 +3137,7 @@
 ;                          (cons #\1 (tilde-@-clause-id-phrase cl-id)))
 ;                    *standard-co* state nil))
 ;             (show-gag-info-pushed (cdr pushed) state))))
-; 
+;
 ; (defun show-gag-info (info state)
 ;   (pprogn (fms "~@0:~%~Q12~|~%"
 ;                (list (cons #\0 (tilde-@-clause-id-phrase
@@ -3147,13 +3147,13 @@
 ;                *standard-co* state nil)
 ;           (show-gag-info-pushed (access gag-info info :pushed)
 ;                                 state)))
-; 
+;
 ; (defun show-gag-stack (stack state)
 ;   (if (endp stack)
 ;       state
 ;     (pprogn (show-gag-info (car stack) state)
 ;             (show-gag-stack (cdr stack) state))))
-; 
+;
 ; (defun show-gag-state (cl-id gag-state state)
 ;   (let* ((top-stack (access gag-state gag-state :top-stack))
 ;          (sub-stack (access gag-state gag-state :sub-stack))
@@ -3181,7 +3181,7 @@
 ;                  *standard-co* state nil)
 ;             (fms "******************************~|" nil *standard-co* state
 ;                  nil))))
-; 
+;
 ; (defun maybe-show-gag-state (cl-id pspv state)
 ;   (if (and (f-boundp-global 'gag-debug state)
 ;            (f-get-global 'gag-debug state))
@@ -3542,7 +3542,7 @@
     (cond (stack
            (let* ((pushed (access gag-info (car stack) :pushed))
                   (pool-lst (and pushed (cdar pushed))))
-  
+
 ; Notice that pool-lst is nil if pushed is nil, as can happen when we abort due
 ; to encountering an empty clause.
 
@@ -4120,7 +4120,7 @@
 ; * nil         -- collect ALL assumptions
 
   (collect-assumptions1 (tagged-objects 'assumption ttree) only-immediatep
-                        nil))  
+                        nil))
 
 ; We are now concerned with trying to shorten the type-alists used to
 ; govern assumptions.  We have two mechanisms.  One is
@@ -4638,7 +4638,7 @@
 ; Part of disvaring a type-alist to is keep type-alist entries about
 ; constrained constants.  This goes to a problem that Eric Smith noted.
 ; He had constrained (thebit) to be 0 or 1 and had a type-alist entry
-; stating that (thebit) was not 0.  In a forcing round he needed that 
+; stating that (thebit) was not 0.  In a forcing round he needed that
 ; (thebit) was 1.  But disvaring had thrown out of the type-alist the
 ; entry for (thebit) because it did not mention any of the relevant
 ; variables.  So, in a change for Version_2.7 we now keep entries that
@@ -4767,41 +4767,41 @@
 ;  (defstub p2 (x) t)
 ;  (defstub p3 (x) t)
 ;  (defstub p4 (x) t)
-; 
+;
 ;  (defaxiom p1->p2
 ;    (implies (p1 x)
 ;             (p2 x)))
-; 
+;
 ;  (defun foo (x y)
 ;    (implies x y))
-; 
+;
 ;  (defaxiom p3->p4{forced}
 ;    (implies (force (p3 x))
 ;             (p4 x)))
-; 
+;
 ;  ; When we unencumber the type-alist upon forcing, the following THM fails with
 ;  ; the following forcing round.  The problem is that the hypothesis about x is
 ;  ; dropped because it is deemed (by unencumber-type-alist) to be irrelevant to
 ;  ; the sole variable y of the forced hypothesis.
-; 
+;
 ;  ; We now undertake Forcing Round 1.
-;  ; 
+;  ;
 ;  ; [1]Goal
 ;  ; (P3 Y).
-; 
+;
 ;  (thm (if (not (foo (p1 x) (p2 x)))
 ;           (p4 y)
 ;         t)
 ;       :hints (("Goal" :do-not '(preprocess)
 ;                :in-theory (disable foo))))
-; 
+;
 ;  ; But with unencumber-assumption defined to return its first argument, the THM
 ;  ; produces a forced goal that includes the contradictory hypotheses:
-; 
+;
 ;  ; [1]Goal
 ;  ; (IMPLIES (NOT (FOO (P1 X) (P2 X)))
 ;  ;          (P3 Y)).
-; 
+;
 ;  (thm (if (not (foo (p1 x) (p2 x)))
 ;           (p4 y)
 ;         t)
@@ -4861,7 +4861,7 @@
 
 ; First we develop the idea that one type-alist implies another.
 
-(defun dumb-type-alist-implicationp1 (type-alist1 type-alist2 seen)  
+(defun dumb-type-alist-implicationp1 (type-alist1 type-alist2 seen)
   (cond ((null type-alist1) t)
         ((member-equal (caar type-alist1) seen)
          (dumb-type-alist-implicationp1 (cdr type-alist1) type-alist2 seen))
@@ -4873,7 +4873,7 @@
                                             type-alist2
                                             (cons (caar type-alist1) seen)))))))
 
-(defun dumb-type-alist-implicationp2 (type-alist1 type-alist2)  
+(defun dumb-type-alist-implicationp2 (type-alist1 type-alist2)
   (cond ((null type-alist2) t)
         (t (and (assoc-equal (caar type-alist2) type-alist1)
                 (dumb-type-alist-implicationp2 type-alist1
@@ -5473,7 +5473,7 @@
 ; (2) accumulate the modified ttree into state
 ; (3) extract the assumptions we are to handle immediately
 ; (4) compute the resulting case splits and modify clauses appropriately
-; (5) make a new history entry 
+; (5) make a new history entry
 ; (6) adjust signal to account for a specious application
 
 ; The result is (mv signal' clauses' ttree' hist' pspv' state) where
@@ -5491,7 +5491,7 @@
                                                     'splitter-if-intro
                                                     ttree)))
                                           cl-id)))
-  
+
 ; We extract the assumptions we are to handle immediately.
 
    (mv-let
@@ -5540,14 +5540,14 @@
              (cons (make history-entry
                          :signal signal ; indicating the type of "hit"
                          :processor
-                        
+
 ; We here detect specious behavior.  The basic idea is that a hit
 ; is specious if the input clause is among the output clauses.  But
 ; there are two exceptions: when the process is settled-down-clause or
 ; apply-top-hints-clause, such apparently specious output is ok.
 ; We mark a specious hit by setting the :processor of the history-entry
 ; to the cons (SPECIOUS . processor).
-                        
+
                          (if (and (not (member-eq
                                         processor
                                         '(settled-down-clause
@@ -5565,7 +5565,7 @@
 ;  As indicated by the hint, this goal is subsumed by (EQUAL (F1 X) (F0 X)),
 ;  which can be derived from LEMMA1 via functional instantiation, provided
 ;  we can establish the constraint generated.
-; 
+;
 ;  As indicated by the hint, this goal is subsumed by (EQUAL (F1 X) (F0 X)),
 ;  which can be derived from LEMMA1 via functional instantiation, provided
 ;  we can establish the constraint generated.
@@ -5717,10 +5717,10 @@
                   (member-eq signal '(error miss))
                   ttree) ; a bddnote; see bdd-clause
              (error-in-parallelism-mode@par
-              
+
 ; Parallelism blemish: we disable the following addition of BDD notes to the
 ; state.  Until a user requests it, we don't see a need to implement this.
-              
+
               (state-mac@par)
               (f-put-global 'bddnotes
                             (cons ttree
@@ -5730,7 +5730,7 @@
       (mv-let@par
        (signal clauses new-hist new-pspv jppl-flg state)
        (cond ((eq signal 'error)
-              
+
 ; As of this writing, the only processor which might cause an error is
 ; apply-top-hints-clause.  But processors can't actually cause errors in the
 ; error/value/state sense because they don't return state and so can't print
@@ -5738,7 +5738,7 @@
 ; signal error then the "clauses" value they return is in fact a pair
 ; (fmt-string . alist) suitable for giving error1.  Moreover, in this case
 ; ttree is an alist assigning state global variables to values.
-              
+
               (mv-let@par (erp val state)
                           (error1@par ctx (car clauses) (cdr clauses) state)
                           (declare (ignore erp val))
@@ -5776,7 +5776,7 @@
                   (mv-let@par
                    (jppl-flg new-pspv state)
                    (waterfall-msg@par processor cl-id clause signal clauses
-                                      new-hist ttree new-pspv state)  
+                                      new-hist ttree new-pspv state)
                    (mv@par signal clauses new-hist new-pspv jppl-flg
                            state))))))))
        (mv@par step-limit signal clauses new-hist new-pspv jppl-flg
@@ -5992,7 +5992,7 @@
 ; above or below us.  We return state.  Goal-already-printed-p is either t,
 ; nil, or a pair (cons :backtrack processor) where processor is a member of
 ; *preprocess-clause-ledge*.
-  
+
   (declare (ignorable state))
   (cond ((cdr (assoc-eq :no-thanks hint-settings))
          (mv@par (delete-assoc-eq :no-thanks hint-settings) state))
@@ -6001,7 +6001,7 @@
         (t
          (pprogn@par
           (cond
-           ((serial-first-form-parallel-second-form@par 
+           ((serial-first-form-parallel-second-form@par
              nil
              (member-equal (f-get-global 'waterfall-printing state)
                            '(:limited :very-limited)))
@@ -6379,7 +6379,7 @@
    (t (let* ((temp (assoc-equal cl-id summary))
              (n (cadr temp))
              (d (caddr temp)))
-      
+
         (fms "---~%After simplifying every branch of the disjunctive ~
               split for ~@0 we choose to pursue the branch named ~@1, ~
               which gave rise to ~x2 *-named formula~#3~[s~/~/s~] ~
@@ -6561,10 +6561,10 @@
    ))
 
 (defun change-or-hit-history-entry (i hist cl-id)
-  
+
 ; The first entry in hist is a history-entry of the form
 
-; (make history-entry 
+; (make history-entry
 ;       :signal 'OR-HIT
 ;       :processor 'APPLY-TOP-HINTS-CLAUSE
 ;       :clause clause
@@ -6626,7 +6626,7 @@
 ; assume the user saw the subgoal with the "Dk" id of interest and
 ; entered it into his form.  But we generate some computed hint forms
 ; -- namely custom keyword hints.  And we're responsible for tracking
-; the new clause ids to which they apply.  
+; the new clause ids to which they apply.
 
 ; Hint-settings is a translated hint-settings.  That is, it is either
 ; a dotted alist pairing common hint keywords to their translated
@@ -6757,7 +6757,7 @@
 
 #+acl2-par
 (defun combine-pspv-pools (base x y debug-pspv)
-  (prog2$ 
+  (prog2$
    (if debug-pspv
        (with-output-lock
         (cw "Combining base: ~x0 with x: ~%~x1 and with y: ~%~x2~%" base x y))
@@ -6792,7 +6792,7 @@
 ; returns a result that means something different.  The order with which we
 ; combine pspv's matters.
 
-  (assert$ 
+  (assert$
 
 ; We check that the signals aren't abort.  This way we know that we are in case
 ; (1), as described in "Essay on prove-spec-var pool modifications".  We also
@@ -6801,19 +6801,19 @@
    (and (not (equal signal1 'abort))
         (not (equal signal2 'abort)))
    (cond
-   
+
 ; We first test to make sure that the pspv's were only changed in the two
 ; fields that we know how to combine.
-   
+
     ((not (pspv-equal-except-for-tag-tree-and-pool x y))
-     (prog2$ 
+     (prog2$
       (print-pspvs base x y debug-pspv)
       (er hard ctx
           "Implementation error: waterfall1 returns the pspv changed in a way ~
            other than the :tag-tree and :pool fields.")))
     (t
      (change prove-spec-var x
-             :tag-tree 
+             :tag-tree
              (combine-pspv-tag-trees
               (access prove-spec-var x :tag-tree)
               (access prove-spec-var y :tag-tree))
@@ -6829,7 +6829,7 @@
 
 ; (trace$
 ;  (waterfall1-lst
-;   :entry (list 'waterfall1-lst 
+;   :entry (list 'waterfall1-lst
 ;                'clauses=
 ;                clauses
 ;                'pspv-pool=
@@ -6852,9 +6852,9 @@
 ; immediately return nil, because we don't know how to handle the combining of
 ; such pspv's.
 
-  (assert$ (pspv-equal-except-for-tag-tree-and-pool x y) 
+  (assert$ (pspv-equal-except-for-tag-tree-and-pool x y)
            t))
-   
+
 #+acl2-par
 (defun abort-will-occur-in-pool (pool)
 
@@ -6866,11 +6866,11 @@
 ; If you change this function, evaluate the following form.  If the result is
 ; an error, then either modify the form below or fix the change.
 
-; (assert$ 
+; (assert$
 ;  (and
 ;   (not (abort-will-occur-in-pool '((maybe-to-be-proved-by-induction sub orig))))
 ;   (abort-will-occur-in-pool '((maybe-to-be-proved-by-induction sub orig)
-;                               (to-be-proved-by-induction) 
+;                               (to-be-proved-by-induction)
 ;                               (to-be-proved-by-induction)))
 ;   (not (abort-will-occur-in-pool '((to-be-proved-by-induction))))
 ;   (not (abort-will-occur-in-pool '((to-be-proved-by-induction)
@@ -6880,12 +6880,12 @@
 ;                                    (to-be-proved-by-induction)
 ;                                    (to-be-proved-by-induction))))
 ;   (abort-will-occur-in-pool '((maybe-to-be-proved-by-induction sub orig)
-;                               (to-be-proved-by-induction) 
+;                               (to-be-proved-by-induction)
 ;                               (to-be-proved-by-induction)
 ;                               (maybe-to-be-proved-by-induction sub2 orig2)))
 ;   (abort-will-occur-in-pool '((to-be-proved-by-induction a)
 ;                               (maybe-to-be-proved-by-induction sub orig)
-;                               (to-be-proved-by-induction b) 
+;                               (to-be-proved-by-induction b)
 ;                               (to-be-proved-by-induction c)
 ;                               (maybe-to-be-proved-by-induction sub2 orig2))))
 ;  "abort-will-occur-in-pool tests passed")
@@ -6935,13 +6935,13 @@
 ; If you change this function, evaluate the following form.  If the result is
 ; an error, then either modify the form below or fix the change.
 
-; (assert$ 
+; (assert$
 ;  (and
 ;   (equal (convert-maybes-to-tobes '((maybe-to-be-proved-by-induction sub orig)))
 ;          '(sub))
 ;   (equal
 ;    (convert-maybes-to-tobes '((maybe-to-be-proved-by-induction sub orig)
-;                               (to-be-proved-by-induction) 
+;                               (to-be-proved-by-induction)
 ;                               (to-be-proved-by-induction)))
 ;    '(orig))
 ;   (equal
@@ -6954,13 +6954,13 @@
 ;   (equal (convert-maybes-to-tobes '((maybe-to-be-proved-by-induction sub orig)))
 ;          '(sub))
 ;   (equal (convert-maybes-to-tobes '((maybe-to-be-proved-by-induction sub orig)
-;                                     (to-be-proved-by-induction) 
+;                                     (to-be-proved-by-induction)
 ;                                     (to-be-proved-by-induction)
 ;                                     (maybe-to-be-proved-by-induction sub2 orig2)))
 ;          '(orig))
 ;   (equal (convert-maybes-to-tobes '((to-be-proved-by-induction a)
 ;                                     (maybe-to-be-proved-by-induction sub orig)
-;                                     (to-be-proved-by-induction b) 
+;                                     (to-be-proved-by-induction b)
 ;                                     (to-be-proved-by-induction c)
 ;                                     (maybe-to-be-proved-by-induction sub2
 ;                                                                      orig2)))
@@ -6969,7 +6969,7 @@
 ;           '((maybe-to-be-proved-by-induction sub1 orig)
 ;             (to-be-proved-by-induction a)
 ;             (maybe-to-be-proved-by-induction sub2 orig)
-;             (to-be-proved-by-induction b) 
+;             (to-be-proved-by-induction b)
 ;             (to-be-proved-by-induction c)
 ;             (maybe-to-be-proved-by-induction sub3 orig)))
 ;          '(orig))
@@ -7003,7 +7003,7 @@
 (defun erase-rw-cache-any-tag-from-pspv (pspv)
 
 ; We maintain the invariant that the "nil" cache is contained in the "any"
-; cache. 
+; cache.
 
   (let ((ttree (access prove-spec-var pspv :tag-tree)))
     (cond ((tagged-objectsp 'rw-cache-any-tag ttree)
@@ -7146,9 +7146,9 @@
 (defun waterfall1-wrapper@par-after (cl-id start-time state)
   #+acl2-loop-only
   (declare (ignore start-time cl-id))
-  #-acl2-loop-only 
-  (save-waterfall-timings-for-cl-id 
-   cl-id 
+  #-acl2-loop-only
+  (save-waterfall-timings-for-cl-id
+   cl-id
    (- (get-internal-real-time) ; end time
       start-time))
   (cond ((f-get-global 'waterfall-printing-when-finished state)
@@ -7169,7 +7169,7 @@
 
 #+acl2-par
 (defmacro waterfall1-wrapper@par (&rest form)
-  `(let ((start-time 
+  `(let ((start-time
           #+acl2-loop-only 'ignored-value
           #-acl2-loop-only (get-internal-real-time)))
      (prog2$
@@ -7266,13 +7266,13 @@
 ; element removed.
 
    (cond
-    (erp 
+    (erp
 
-; This only happens if some hint function caused an error, e.g., by 
+; This only happens if some hint function caused an error, e.g., by
 ; generating a hint that would not translate.  The error message has been
 ; printed and pspv is irrelevant.  We pass the error up.
-         
-     (mv@par step-limit 'error nil nil state))  
+
+     (mv@par step-limit 'error nil nil state))
     (t (sl-let@par
         (signal new-pspv jppl-flg state)
         (cond
@@ -7282,7 +7282,7 @@
 ; In the #+acl2-par version of the waterfall, with global waterfall-printing
 ; set to :limited, the need to print the clause on a checkpoint is taken care
 ; of inside waterfall-msg@par.
-           
+
            (waterfall-print-clause@par suppress-print cl-id clause
                                        state)
            (waterfall0@par ledge cl-id clause hist pspv hints ens wrld ctx
@@ -7302,7 +7302,7 @@
                  (t (gag-state-exiting-cl-id@par signal cl-id pspv state)))
            (mv@par step-limit signal pspv jppl-flg state))))))))
 
-(defun@par waterfall0-with-hint-settings 
+(defun@par waterfall0-with-hint-settings
   (hint-settings ledge cl-id clause hist pspv hints goal-already-printedp
                  ens wrld ctx state step-limit)
 
@@ -7383,7 +7383,7 @@
                  (find-applicable-hint-settings@par ; stable-under-simplificationp=t
                   cl-id clause hist pspv ctx hints wrld t state)
                  (cond
-                  (erp 
+                  (erp
 
 ; A hint generated an error.  The error message has been printed and
 ; we pass the error up.  The other values are all irrelevant.
@@ -7407,7 +7407,7 @@
 ; mv-let binding signal, etc., above.  We generate a fake ``signal''
 ; to get out of here and handle it below.
 
-                   (mv@par step-limit 
+                   (mv@par step-limit
                            'top-of-waterfall-hint
                            (car pair) hist (cdr pair) nil state))
 
@@ -7415,7 +7415,7 @@
 ; done had (car ledge) not been 'eliminate-destructors-clause, after checking
 ; whether we should make a desperate final attempt to simplify, with caching
 ; turned off.  Keep these two calls of waterfall-step in sync!
-               
+
                   ((eq (access rewrite-constant
                                (access prove-spec-var pspv
                                        :rewrite-constant)
@@ -7444,7 +7444,7 @@
                 (assoc-eq :do-not (access prove-spec-var pspv :hint-settings)))
      (mv@par step-limit 'miss nil hist pspv nil state))
     (t (waterfall-step@par (car ledge) cl-id clause hist pspv wrld ctx state
-                           step-limit))) 
+                           step-limit)))
    (cond
     ((eq signal 'OR-HIT)
 
@@ -7453,7 +7453,7 @@
 ; apply all of the hints.  The hints themselves are recorded in the
 ; first entry of the new-hist, which necessarily has the form
 
-; (make history-entry 
+; (make history-entry
 ;       :signal 'OR-HIT
 ;       :processor 'APPLY-TOP-HINTS-CLAUSE
 ;       :clause clause
@@ -7506,11 +7506,11 @@
      (let ((new-pspv
             (if (and (null ledge)
                      (not (eq signal 'error)))
-                 
+
 ; If signal is 'error, then new-pspv is nil (e.g., see the error
 ; behavior of waterfall step) and we wish to avoid manipulating a
 ; bogus pspv.
-                 
+
                 (restore-hint-settings-in-pspv new-pspv pspv)
               new-pspv)))
        (cond
@@ -7579,7 +7579,7 @@
                          step-limit))
         ((eq signal 'error)
          (mv@par step-limit 'error nil nil state))
-        ((eq signal 'abort) 
+        ((eq signal 'abort)
          (mv@par step-limit 'abort new-pspv new-jppl-flg state))
         ((eq signal 'miss)
          (if ledge
@@ -7594,16 +7594,16 @@
                              ctx
                              state
                              step-limit)
-           (mv@par step-limit 
+           (mv@par step-limit
                    (er hard 'waterfall0
                        "The empty ledge signalled 'MISS!  This can only ~
                         happen if we changed APPLY-TOP-HINTS-CLAUSE so that ~
                         when given a single :BY name hint it fails to hit.")
                    nil nil state)))
-        (t 
+        (t
 
 ; Signal is one of the flavors of 'hit, 'hit-rewrite, or 'hit-rewrite2.
-           
+
          (mv-let@par
           (erp hint-setting clauses state)
           (apply-reorder-hint@par pspv clauses ctx state)
@@ -7678,7 +7678,7 @@
   (declare (ignorable branch-cnt)) ; irrelevant in @par definition
   (cond
    ((endp uhs-lst)
-    
+
 ; Results is the result of doing all the elements of uhs-lst.  If it is empty,
 ; all branches aborted.  Otherwise, we have to choose between the results.
 
@@ -7794,7 +7794,7 @@
                          ens
                          wrld ctx state step-limit))
         (declare (ignore d-new-jppl-flg))
-                     
+
 ; Here, d-signal is one of 'error, 'abort or 'continue.  We pass 'error up
 ; immediately and we filter 'abort out.
 
@@ -7852,7 +7852,7 @@
                    d-new-pspv
                    nil ; could probably use jppl-flg, but nil is always OK
                    state)))
-         (t 
+         (t
 
 ; Otherwise, we collect the result into results and continue with the others.
 
@@ -8043,10 +8043,10 @@
           (cond ((assert$ (consp clauses)
                           (null (cdr clauses))) ; just one clause, call waterfall1
                  (waterfall1-wrapper@par
-                  (waterfall1@par *preprocess-clause-ledge* 
+                  (waterfall1@par *preprocess-clause-ledge*
                                   cl-id
-                                  (car clauses) 
-                                  hist 
+                                  (car clauses)
+                                  hist
                                   pspv
                                   hints
                                   suppress-print
@@ -8061,8 +8061,8 @@
                                            (t n)) ;(1- n)))
                                      parent-cl-id
                                      first-half-clauses
-                                     hist 
-                                     pspv 
+                                     hist
+                                     pspv
                                      jppl-flg
                                      hints
                                      nil
@@ -8078,7 +8078,7 @@
               (and (not (eq signal1 'error))
                    (not (eq signal1 'abort))
                    (speculative-execution-valid pspv pspv1))
-              (mv-let 
+              (mv-let
 
 ; Here, we perform the speculative call of waterfall1-lst@par, which is the
 ; recursion on the cdr of clauses.  As such, this code matches the code at the
@@ -8090,8 +8090,8 @@
                                          (t (- n len-first-half)))
                                    parent-cl-id
                                    second-half-clauses
-                                   hist 
-                                   pspv 
+                                   hist
+                                   pspv
                                    jppl-flg
                                    hints
                                    nil
@@ -8110,15 +8110,15 @@
                       (let ((combined-step-limit (- (- step-limit
                                                        (- step-limit step-limit1))
                                                     (- step-limit step-limit2)))
-                            (combined-prove-spec-vars 
-                             (combine-prove-spec-vars 
+                            (combined-prove-spec-vars
+                             (combine-prove-spec-vars
                               pspv pspv1 pspv2 ctx
                               (f-get-global 'debug-pspv state)
                               signal1 signal2)))
 
                         (if (abort-will-occur-in-pool
                              (access prove-spec-var combined-prove-spec-vars :pool))
-                            (prog2$ 
+                            (prog2$
                              (with-output-lock
                               (cw "Normally we would attempt to prove two or ~
                                    more of the previously printed subgoals by ~
@@ -8129,12 +8129,12 @@
                                    previous work on these conjectures and ~
                                    reassign the name *1 to the original ~
                                    conjecture."))
-                             (mv@par combined-step-limit 
+                             (mv@par combined-step-limit
                                      'abort
                                      combined-prove-spec-vars
                                      jppl-flg2
                                      state))
-                          (mv@par combined-step-limit 
+                          (mv@par combined-step-limit
                                   signal2
                                   combined-prove-spec-vars
                                   jppl-flg2 state))))))
@@ -8151,7 +8151,7 @@
                          (cw "Invalid speculation for children of subgoal ~
                               ~x0~%"
                              (string-for-tilde-@-clause-id-phrase cl-id)))))
-               (waterfall1-lst@par (cond ((eq n 'settled-down-clause) n) 
+               (waterfall1-lst@par (cond ((eq n 'settled-down-clause) n)
                                          ((null n) nil)
                                          (t (- n len-first-half)))
                                    parent-cl-id
@@ -8212,7 +8212,7 @@
                                                :case-lst)
                                        (list n))
                                :primes 0)))))
-        (mv-let 
+        (mv-let
          (first-half-clauses second-half-clauses len-first-half)
          (halves-with-length clauses)
          (spec-mv-let
@@ -8247,10 +8247,10 @@
            (cond ((assert$ (consp clauses)
                            (null (cdr clauses))) ; just one clause, call waterfall1
                   (waterfall1-wrapper@par
-                   (waterfall1@par *preprocess-clause-ledge* 
+                   (waterfall1@par *preprocess-clause-ledge*
                                    cl-id
-                                   (car clauses) 
-                                   hist 
+                                   (car clauses)
+                                   hist
                                    pspv
                                    hints
                                    suppress-print
@@ -8259,14 +8259,14 @@
                                    ctx
                                    state
                                    step-limit)))
-                 (t 
+                 (t
                   (waterfall1-lst@par (cond ((eq n 'settled-down-clause) n)
                                             ((null n) nil)
                                             (t n))
                                       parent-cl-id
                                       first-half-clauses
-                                      hist 
-                                      pspv 
+                                      hist
+                                      pspv
                                       jppl-flg
                                       hints
                                       nil
@@ -8295,26 +8295,26 @@
                       (let ((combined-step-limit (- (- step-limit
                                                        (- step-limit step-limit1))
                                                     (- step-limit step-limit2)))
-                            (combined-prove-spec-vars 
-                             (combine-prove-spec-vars 
+                            (combined-prove-spec-vars
+                             (combine-prove-spec-vars
                               pspv pspv1 pspv2 ctx
                               (f-get-global 'debug-pspv state)
                               signal1 signal2)))
                         (if (abort-will-occur-in-pool
                              (access prove-spec-var combined-prove-spec-vars :pool))
-                            (prog2$ 
+                            (prog2$
 
 ; Parallelism wart: maybe this call to cw should be inside waterfall instead of
 ; here.  The potential problem with printing the message here is that printing
 ; can still occur after we say that we are "focus[sing] on the original
-; conjecture".  
+; conjecture".
 
 ; For example, suppose we are Subgoal 3.2.4, and we know we need to abort.
 ; Subgoal 3.3.4 could still be proving and print a checkpoint, even though this
 ; call of Subgoal 3.2.4 knows we need to abort.  It is not until control
 ; returns to the waterfall1-lst@par call on Subgoal 3.3 that the 'abort from
-; Subgoal 3.2.4 will be seen, and that we will then know that all such calls 
-; that might print have already returned (because Subgoal 3.3.4 must be 
+; Subgoal 3.2.4 will be seen, and that we will then know that all such calls
+; that might print have already returned (because Subgoal 3.3.4 must be
 ; finished before the call of waterfall1 on Subgoal 3.3 returns).
 
                              (with-output-lock
@@ -8327,7 +8327,7 @@
                                    previous work on these conjectures and ~
                                    reassign the name *1 to the original ~
                                    conjecture."))
-                             (mv@par combined-step-limit 
+                             (mv@par combined-step-limit
                                      'abort
 
 ; We do not adjust the pspv's pool here.  Instead, we rely upon waterfall to
@@ -8337,7 +8337,7 @@
                                      combined-prove-spec-vars
                                      jppl-flg2
                                      state))
-                          (mv@par combined-step-limit 
+                          (mv@par combined-step-limit
                                   signal2
                                   combined-prove-spec-vars
                                   jppl-flg2 state)))))
@@ -8366,9 +8366,9 @@
                           (cw "Invalid speculation for children of subgoal ~
                                ~x0~%"
                               (string-for-tilde-@-clause-id-phrase cl-id)))))
-                (waterfall1-lst@par (cond ((eq n 'settled-down-clause) n) 
+                (waterfall1-lst@par (cond ((eq n 'settled-down-clause) n)
                                           ((null n) nil)
-                                          (t (- n len-first-half))) 
+                                          (t (- n len-first-half)))
                                     parent-cl-id
                                     second-half-clauses
                                     hist
@@ -8420,7 +8420,7 @@
                      :primes 0)))))
     (declare (ignorable primes-subproof cl-id))
     (let ((call-type
-           (cond 
+           (cond
             (primes-subproof
              'serial)
             (t
@@ -8446,22 +8446,22 @@
 ; the acl2-oracle, which seems unjustified for this #+acl2-par code.
 
                 (cond #-acl2-loop-only
-                      ((and 
-                        
+                      ((and
+
 ; We could test to see whether doing the lookup or testing for resource
 ; availability is faster.  It probably doesn't matter since they're both
 ; supposed to be "lock free."  Since we control the lock-freeness for the
 ; resource availability test in the definition of futures-resources-available
 ; (as opposed to relying upon the underlying CCL implementation), we call that
 ; first.
-                        
+
                         (futures-resources-available)
                         (> (or (lookup-waterfall-timings-for-cl-id cl-id) 0)
                            (f-get-global 'waterfall-parallelism-timing-threshold
                                          state)))
-                       (increment-waterfall-parallelism-counter 
+                       (increment-waterfall-parallelism-counter
                         'resource-and-timing-parallel))
-                      (t 
+                      (t
                        (increment-waterfall-parallelism-counter
                         'resource-and-timing-serial))))
                ((:resource-based)
@@ -8469,14 +8469,14 @@
 ; See comment above about discrepancy between #+acl2-loop-only and
 ; #-acl2-loop-only code.
 
-                (cond #-acl2-loop-only 
-                      ((futures-resources-available)                     
+                (cond #-acl2-loop-only
+                      ((futures-resources-available)
                        (increment-waterfall-parallelism-counter
                         'resource-parallel))
                       (t (increment-waterfall-parallelism-counter
                           'resource-serial))))
                (otherwise
-                (er hard 'waterfall1-lst@par 
+                (er hard 'waterfall1-lst@par
                     "Waterfall-parallelism type is not what it's supposed to ~
                      be.  Please contact the ACL2 authors.")))))))
       (case call-type
@@ -8512,7 +8512,7 @@
          (waterfall1-tree@par-pseudo-parallel n parent-cl-id clauses hist pspv
                                               jppl-flg hints suppress-print ens
                                               wrld ctx state step-limit))
-        (otherwise 
+        (otherwise
          (prog2$ (er hard 'waterfall1-lst@par
                      "Implementation error in waterfall1-lst@par.  Please ~
                       contact the ACL2 authors.")
@@ -8574,7 +8574,7 @@
                                                     (null pool-lst)) ; suppress-print
                                                ens wrld ctx state step-limit)
                            (mv step-limit
-                               signal 
+                               signal
                                (convert-maybes-to-tobes-in-pspv new-pspv)
                                new-jppl-flg
                                state))))
@@ -9733,7 +9733,7 @@
                   state)
                  (assert$
                   (null erp)
-                  (cond ((null pairs) 
+                  (cond ((null pairs)
                          (mv step-limit nil ttree state))
                         (t (prove-loop2 (1+ forcing-round)
                                         nil
@@ -9820,7 +9820,7 @@
 ; gag-state under these conditions.  However, this is effectively a no-op,
 ; because the parallel waterfall does not save anything to gag-state anyway.
 
-  (cond 
+  (cond
    #+acl2-par
    ((and (f-get-global 'waterfall-parallelism state)
          (not (eql (f-get-global 'waterfall-printing state) :full)))
@@ -10122,7 +10122,7 @@
                                    (list ""
                                          "~|~     ~q*."
                                          "~|~     ~q*,~|and~|"
-                                         "~|~     ~q*,~|~%" 
+                                         "~|~     ~q*,~|~%"
                                          (make-defthm-forms-for-byes
                                           byes wrld))))
                        (proofs-co state)

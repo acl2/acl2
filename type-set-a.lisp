@@ -148,7 +148,7 @@
 ;; non-rationals.
 
 #+:non-standard-analysis
-(defconst *ts-complex* (ts-union0 *ts-complex-rational* 
+(defconst *ts-complex* (ts-union0 *ts-complex-rational*
                                   *ts-complex-non-rational*))
 
 ;; RAG - I changed the type *ts-acl2-number* to include the new reals
@@ -273,7 +273,7 @@
 ;; *ts-real*, *ts-non-positive-real*, *ts-non-negative-real*,
 ;; *ts-negative-real*, *ts-positive-real*, *ts-non-ratio*,
 ;; *ts-complex*, *ts-positive-non-ratio*, *ts-negative-non-ratio*, and
-;; *ts-complex-non-rational*. 
+;; *ts-complex-non-rational*.
 
 (defconst *code-type-set-alist*
 
@@ -455,7 +455,7 @@
         '(ts= (ts-intersection ts1 ts2) ts1)))
 
 ;; RAG - I modified this to include cases for the irrationals and
-;; complex numbers. 
+;; complex numbers.
 
 (defun type-set-binary-+-alist-entry (ts1 ts2)
   (ts-builder ts1
@@ -604,7 +604,7 @@
                              (type-set-binary-+-alist1 i j lst)))))
 
 ;; RAG - I modified this to include cases for the irrationals and
-;; complex numbers. 
+;; complex numbers.
 
 (defun type-set-binary-*-alist-entry (ts1 ts2)
   (ts-builder ts1
@@ -735,7 +735,7 @@
                            (*ts-positive-non-ratio* *ts-complex*)
                            (*ts-negative-non-ratio* *ts-complex*)
                            (*ts-complex-rational* *ts-non-rational-acl2-number*)
-                           (*ts-complex-non-rational* 
+                           (*ts-complex-non-rational*
                             (ts-intersection0 *ts-acl2-number*
                                               (ts-complement0 *ts-zero*)))))))
 
@@ -755,7 +755,7 @@
                              (type-set-binary-*-alist1 i j lst)))))
 
 ;; RAG - I modified this to include cases for the irrationals and
-;; complex numbers. 
+;; complex numbers.
 
 (defun type-set-<-alist-entry (ts1 ts2)
   (ts-builder ts1

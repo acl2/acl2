@@ -62,7 +62,7 @@
 
 ; Warning:  If you change this code, search for other instances of
 ; ``1. (/ x) or (expt (/ x) n)'' and adjust those comments
-; appropriately.  
+; appropriately.
 
 ; Warning: Keep this function in sync with invert-var.
 
@@ -153,7 +153,7 @@
                        (quotep (fargn exponent 1))
                        (integerp (unquote (fargn exponent 1)))
                        (< (unquote (fargn exponent 1)) 0))
-                  (fcons-term* 'EXPT 
+                  (fcons-term* 'EXPT
                                base
                                (cons-term
                                 'BINARY-*
@@ -240,12 +240,12 @@
 ; Note: This function has a magic number, 20, which probably should be
 ; settable.
 
-  (cond 
+  (cond
    ((null var-lst)
     (< 20 counter))
    (t
     (too-many-polysp (cdr var-lst)
-                      pot-lst 
+                      pot-lst
                       (* counter
                          (length (polys-with-var1 (car var-lst) pot-lst)))))))
 
@@ -306,18 +306,18 @@
 
                (new-vars-to-skip (if (member-equal inverse-var vars-to-skip)
                                      (cons new-var vars-to-skip)
-                                   (cons new-var (cons inverse-var 
+                                   (cons new-var (cons inverse-var
                                                        vars-to-skip))))
                (new-vars-to-return (if (member-equal inverse-var vars-to-skip)
                                        (cons new-var vars-to-return)
-                                     (cons new-var (cons inverse-var 
+                                     (cons new-var (cons inverse-var
                                                          vars-to-return)))))
            (expanded-new-vars-in-pot-lst1 (cdr new-pot-lst)
                                           new-vars-to-skip
                                           new-vars-to-return)))
        ((eq (fn-symb new-var) 'BINARY-*)
         (mv-let (new-vars-to-skip new-vars-to-return)
-          (expanded-new-vars-in-pot-lst2 new-var 
+          (expanded-new-vars-in-pot-lst2 new-var
                                          vars-to-skip
                                          vars-to-return)
           (expanded-new-vars-in-pot-lst1 (cdr new-pot-lst)
@@ -333,7 +333,7 @@
 ; This is a variant of new-vars-in-pot-lst.  See the comments there.
 ; Here, if a new var is a product, we recursively add all its individual
 ; factors to the list of new vars as well as the product itself.
-; E. g., if a new var is (* x (foo y) (bar z)), we add 
+; E. g., if a new var is (* x (foo y) (bar z)), we add
 ; x, (foo y), (bar z), and (* x (foo y) (bar z)) to the new var list.
 ; In addition, if a var or one of its factors is of the form
 ; 1. (/ x) or (expt (/ x) n) or
@@ -437,7 +437,7 @@
 ; A couple of simple examples will help to understand what we are doing:
 ; 1. If we can determine that (< 4 x), we can add both (< 0 (/ x)) and
 ; (< (/ x) 1/4).
-; 2. If we can determine that (< 0 x) and (< x 4), we can add 
+; 2. If we can determine that (< 0 x) and (< x 4), we can add
 ; (< 0 (/ x)) and (< (/ x) 1/4).
 ; 3. If we can only determine that (< -2 x), we cannot add anything about
 ; (/ x) to the pot-lst.
@@ -470,7 +470,7 @@
 ; polys we want, including these.  Note that at least two of the four
 ; polys we are about to add are already in the pot-lst.
 
-              (list 
+              (list
                ;; 0 <= var
                (add-linear-terms :rhs var
                                  (base-poly (cons-tag-trees
@@ -507,7 +507,7 @@
                                             '<=
                                             t
                                             nil))))
-         
+
              ((or (and var-lbd
                        (< 0 var-lbd))
                   (and inv-var-lbd
@@ -520,7 +520,7 @@
               (let* ((ttree1 (cons-tag-trees ttree
                                              (cons-tag-trees var-lbd-ttree
                                                              inv-var-lbd-ttree)))
-                                          
+
                      (bounds-polys1
                       (cond ((and var-ubd
                                   (not (eql var-ubd 0))
@@ -708,7 +708,7 @@
              ((and (eql var-lbd 0)
                    (eq var-lbd-rel '<))
               ;; 0 < inv-var
-              (list 
+              (list
                (add-linear-terms :rhs inv-var
                                  (base-poly (cons-tag-trees
                                              ttree
@@ -719,7 +719,7 @@
              ((and (eql inv-var-lbd 0)
                    (eq inv-var-lbd-rel '<))
               ;; 0 < var
-              (list 
+              (list
                (add-linear-terms :rhs var
                                  (base-poly (cons-tag-trees
                                              ttree
@@ -730,7 +730,7 @@
              ((and (eql var-ubd 0)
                    (eq var-ubd-rel '<))
               ;; inv-var < 0
-              (list 
+              (list
                (add-linear-terms :lhs inv-var
                                  (base-poly (cons-tag-trees
                                              ttree
@@ -741,7 +741,7 @@
              ((and (eql inv-var-ubd 0)
                    (eq inv-var-ubd-rel '<))
               ;; var < 0
-              (list 
+              (list
                (add-linear-terms :lhs var
                                  (base-poly (cons-tag-trees
                                              ttree
@@ -761,7 +761,7 @@
 
 (defun add-inverse-polys (var
                           type-alist wrld
-                          simplify-clause-pot-lst 
+                          simplify-clause-pot-lst
                           force-flg ens pt)
 
 ; If var is of the form
@@ -785,13 +785,13 @@
                           nil ; pot-lst
                           nil) ; pt
                 (if (ts-real/rationalp base-ts)
-                    (let ((inverse-polys 
+                    (let ((inverse-polys
                            (inverse-polys var
                                           inverted-var
                                           simplify-clause-pot-lst
                                           base-ttree
                                           pt)))
-                      (add-polys inverse-polys 
+                      (add-polys inverse-polys
                                  simplify-clause-pot-lst
                                  pt
                                  t ; nonlinearp hint
@@ -852,7 +852,7 @@
                   (< (length (access poly (car poly-lst) :alist)) n))
               (not (ignore-polyp (access poly (car poly-lst) :parents) pt)))
          (length-of-shortest-polys-with-var (cdr poly-lst) pt
-                                            (length (access poly 
+                                            (length (access poly
                                                             (car poly-lst)
                                                             :alist))))
         (t
@@ -886,10 +886,10 @@
 ; with alists of that length, and return a list of those polys.
 
          (let ((n (length-of-shortest-polys-with-var
-                   (append (access linear-pot 
-                                   (car pot-lst) 
+                   (append (access linear-pot
+                                   (car pot-lst)
                                    :negatives)
-                           (access linear-pot 
+                           (access linear-pot
                                    (car pot-lst)
                                    :positives))
                    pt
@@ -925,7 +925,7 @@
                     (list
                      (car leaves)
                      (binary-*-tree (cdr leaves)))))))
-         
+
 (defun merge-arith-term-order (l1 l2)
   (cond ((null l1) l2)
         ((null l2) l1)

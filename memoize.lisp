@@ -150,7 +150,7 @@
   (defun fib (x)
     (declare (xargs :guard (natp x)))
     (mbe
-     :logic 
+     :logic
      (cond ((zp x) 0)
            ((= x 1) 1)
            (t (+ (fib (- x 1)) (fib (- x 2)))))
@@ -172,7 +172,7 @@
   error.
   ~bv[]
   ACL2 !>(time$ (fib 40))
-  ; (EV-REC *RETURN-LAST-ARG3* ...) took 
+  ; (EV-REC *RETURN-LAST-ARG3* ...) took
   ; 0.99 seconds realtime, 0.98 seconds runtime
   ; (1,296 bytes allocated).
   102334155
@@ -189,12 +189,12 @@
   Time:  0.01 seconds (prove: 0.00, print: 0.00, other: 0.01)
    FIB
   ACL2 !>(time$ (fib 40))
-  ; (EV-REC *RETURN-LAST-ARG3* ...) took 
+  ; (EV-REC *RETURN-LAST-ARG3* ...) took
   ; 0.00 seconds realtime, 0.00 seconds runtime
   ; (2,864 bytes allocated).
   102334155
   ACL2 !>(time$ (fib 100))
-  ; (EV-REC *RETURN-LAST-ARG3* ...) took 
+  ; (EV-REC *RETURN-LAST-ARG3* ...) took
   ; 0.00 seconds realtime, 0.00 seconds runtime
   ; (7,024 bytes allocated).
   354224848179261915075
@@ -343,7 +343,7 @@
   the Communications of the ACM, Volume 118, Number 3, August,
   1958, pages 427-430.
 
-  Eiichi Goto, Monocopy and Associative Algorithms in Extended Lisp, 
+  Eiichi Goto, Monocopy and Associative Algorithms in Extended Lisp,
   TR-74-03, University of Toyko, 1974.
 
   Richard P. Gabriel.  Performance and Evaluation of Lisp Systems.
@@ -1071,17 +1071,17 @@
 ; the first argument deleted.  Informal remark: the alist
 ; returned is a hons when the initial ANS is not an atom.
 
-; Comment about the last clause above.  Or really? 
+; Comment about the last clause above.  Or really?
 ; Counterexamples?
-; 
+;
 ; mbu> stp
 ; ? (honsp (hons-shrink-alist '((a . b) (a . b2)) (hons-acons 1 2 3)))
 ; NIL
-; 
+;
 ; mbu> stp
 ; ? (honsp (hons-shrink-alist '((a . b) (a . b2)) nil))
 ; NIL
-; ? 
+; ?
 
 ; Some centaur/ books put entries in *never-profile-ht*.  In order to allow
 ; those books to certify in vanilla ACL2, we define a default value for that

@@ -19,7 +19,7 @@
 ; Austin, TX 78701 U.S.A.
 
 ; Table of contents.
-; 
+;
 ; 0.    PRELIMINARY MACROS
 ; I.    INTRODUCTION AND DATA TYPES
 ; II.   OP-ALIST
@@ -30,7 +30,7 @@
 ; VII.  MAIN ALGORITHM
 ; VIII. TOP-LEVEL (INTERFACE) ROUTINES
 ; IX.   COMPILING THIS FILE AND OTHER HELPFUL TIPS
-; 
+;
 
 ; Mx-id-bound is currently 438619, perhaps too low.  We could perhaps fix this
 ; by changing how we deal with close to 16 args in op-hash-index1, and by
@@ -63,7 +63,7 @@
 (defmacro logiorf (&rest args)
   (xxxjoin-fixnum 'logior args 0))
 
-(defmacro ashf (x y) 
+(defmacro ashf (x y)
   (list 'the-fixnum
         (list 'ash (list 'the-fixnum x) (list 'the-fixnum y))))
 
@@ -83,7 +83,7 @@
 ; Use this macro to increment mx-id,in order to guarantee that mx-id remains a
 ; fixnum.  X is known to be a nonnegative fixnum; this macro checks that we
 ; keep it a fixnum by adding 1 to it.  It actually checks even more, namely,
-; that 
+; that
 
   `(the-fixnum
     (let ((x ,x))
@@ -496,7 +496,7 @@
             vars))))
    (t (first-boolean-type-prescription
        (cdr type-prescription-list) ens formals))))
-    
+
 (defun recognizer-rune (fn recognizer-alist wrld ens)
   (cond
    ((endp recognizer-alist) nil)
@@ -1198,7 +1198,7 @@
                                                             'n
                                                             (kwote -1))
                                                'y)))))
-                                  
+
    (t nil)))
 
 (defun bdd-rules-alist (fns all-fns bdd-rules-alist ens wrld)
@@ -3746,7 +3746,7 @@
   ACL2 !>(thm (equal (if a b c) (if (not a) c b))
               :hints ((\"Goal\" :bdd (:vars nil)))) ; Prove with BDDs
 
-  [Note:  A hint was supplied for our processing of the goal above. 
+  [Note:  A hint was supplied for our processing of the goal above.
   Thanks!]
 
   But simplification with BDDs (7 nodes) reduces this to T, using the
@@ -3942,7 +3942,7 @@
           (IF X1 (IF X2 (IF X3 # #) (IF X2 # #))
               (IF X1 'NIL (IF X2 # #)))))
 
-  ACL2 Query (:SHOW-BDD):  Print the term in full?  (N, Y, W or ?): 
+  ACL2 Query (:SHOW-BDD):  Print the term in full?  (N, Y, W or ?):
   n ; I've seen enough.  The assignment shown above suggests
     ; (though not conclusively) that if we bind x3 to a non-nil
     ; value other than T, and bind x0, x1, and x2 to t, then we
@@ -3964,39 +3964,39 @@
 
 ; In order to check for slow code, you can execute the following from ACL2 built
 ; on GCL, inside raw Lisp.
-; 
+;
 ; (compile-file "bdd.lisp" :c-file t)
-; 
+;
 ; Then, search the file bdd.c for make_fixnum and number_ for slow stuff.  Note
 ; that you'll find a lot of these, but you only need to worry about them in the
 ; workhorse functions, and you don't need to worry about CMPmake_fixnum when it
 ; is used for an error or for a new mx-id.
-; 
+;
 ; When you find one of these, search upward for `local entry' to see which
 ; function or macro you are in.  Don't worry, for example, about commutative-p,
 ; which is a database kind of function rather than a workhorse function.
-; 
+;
 ; You'll see things like the following (from local entry to BDD).  The idea here
 ; is that we are boxing a fixnum and pushing it on a stack, but why?  LnkLI253
 ; appears to be a function call, which is found near the end of the file to
 ; correspond to leaf-cst-list-array.  If we're still not clear on what's going
 ; on, we can look up 273 as well.  When we do this, we find that we are probably
 ; in the part of the BDD code shown at the end, which is not a problem.
-; 
+;
 ;         V1570 = CMPmake_fixnum(V1549);
 ;         V1571= (*(LnkLI253))(/* INLINE-ARGS */V1569,V1570);
 ;         V1572= (*(LnkLI273))((V1525),/* INLINE-ARGS */V1571);
-; 
+;
 ; ....
-; 
+;
 ; static object  LnkTLI273(va_alist)va_dcl{va_list ap;va_start(ap);
 ;  return(object )call_proc(VV[273],&LnkLI273,2,ap);} /* DECODE-CST-ALIST */
-; 
+;
 ; static object  LnkTLI253(va_alist)va_dcl{va_list ap;va_start(ap);
 ;  return(object )call_proc(VV[253],&LnkLI253,2,ap);} /* LEAF-CST-LIST-ARRAY */
-; 
+;
 ; ; Source code from (defun bdd ...) [an earlier version]:
-; 
+;
 ;         (bdd-error
 ;          mx-id
 ;          "Unable to resolve test of IF* for term~|~%~p0~|~%under the ~
@@ -4007,8 +4007,8 @@
 ;                                        (leaf-cst-list-array
 ;                                         (strip-cdrs alist)
 ;                                         mx-id))))
-; 
+;
 ; ; We need a cst next, though we don't care about it.
-; 
+;
 ;          *cst-t*
 ;          ttree)

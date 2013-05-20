@@ -615,7 +615,7 @@
   Example and General Form:
   restore
   ~ev[]~/
-  
+
   ~c[Restore] removes the effect of an ~c[undo] command.  This always works as
   expected if ~c[restore] is invoked immediately after ~c[undo], without
   intervening instructions.  However, other commands may also interact
@@ -703,12 +703,12 @@
   define a macro command whose purpose is to print something~/
   ~bv[]
   Example:
-  (define-pc-help pp () 
+  (define-pc-help pp ()
     (if (goals t)
         (io? proof-checker nil state
              (state-stack)
              (fms0 \"~~|~~y0~~|\"
-                   (list (cons #\0 
+                   (list (cons #\0
                                (fetch-term (conc t)
                                            (current-addr t))))))
       (print-all-goals-proved-message state)))~/
@@ -753,7 +753,7 @@
                      (if (eq comm (make-pretty-pc-command :comment))
                          (let ((rst (evisc-indexed-instrs-1 name evisc-cdr)))
                            (if rst
-                               (cons (cons (car (car rev-indexed-instrs)) 
+                               (cons (cons (car (car rev-indexed-instrs))
                                            (cons "***HIDING***" instr))
                                      (cdr rst))
                              (cons (car rev-indexed-instrs)
@@ -771,7 +771,7 @@
         (case-match instr
                     ((comm ':begin & . &)
                      (if (eq comm (make-pretty-pc-command :comment))
-                         (cons (cons (car (car indexed-instrs)) 
+                         (cons (cons (car (car indexed-instrs))
                                      (cons "***UNFINISHED***" instr))
                                (mark-unfinished-instrs (cdr indexed-instrs)))
                        (cons (car indexed-instrs)
@@ -925,7 +925,7 @@
   (if current-addr
       (print-no-change2 "You must be at the top ~
                          of the goal in order to promote the ~
-                         antecedents of an implication. Try TOP first.") 
+                         antecedents of an implication. Try TOP first.")
     (case-match conc
                 (('implies x y)
                  (mv (promote-guts pc-state goals hyps x y do-not-flatten-flag) state))
@@ -1014,7 +1014,7 @@
          (mv term cl))
         ((or (variablep term) (fquotep term))
          ;; can't dive any further
-         (mv nil t)) 
+         (mv nil t))
         ((and (integerp (car addr))
               (< 0 (car addr))
               (< (car addr) (length term)))
@@ -1062,7 +1062,7 @@
       iff-flg
     ;; so, the term is a function application
     (term-id-iff (nth (car address) term)
-                 (cdr address) 
+                 (cdr address)
                  (cond ((eq (ffn-symb term) (quote if))
                         (if (= (car address) 1)
                             t
@@ -1512,7 +1512,7 @@
              (value ttree)))))
 
 (defun sublis-equal (alist tree)
-  (declare (xargs :guard (alistp alist))) 
+  (declare (xargs :guard (alistp alist)))
   (let ((pair (assoc-equal tree alist)))
     (if pair
         (cdr pair)
@@ -1587,7 +1587,7 @@
                                (io? proof-checker nil state
                                     nil
                                     (fms0 "~|***** Now entering the theorem ~
-                                           prover *****~|")) 
+                                           prover *****~|"))
                                (translate-hints+
                                 'proof-checker
                                 un-?-hints
@@ -1756,7 +1756,7 @@
     ("[1]Subgoal 14" :by nil)
     ("[1]Subgoal 15" :by nil)))
 
-(define-pc-atomic-macro bash (&rest hints) 
+(define-pc-atomic-macro bash (&rest hints)
 
   "call the ACL2 theorem prover's simplifier~/
   ~bv[]
@@ -1791,7 +1791,7 @@
                     *bash-skip-forcing-round-hints*
                     (add-string-val-pair-to-string-val-alist
                      "Goal"
-                     ;; only preprocess and simplify are allowed 
+                     ;; only preprocess and simplify are allowed
                      :do-not
                      (list 'quote '(generalize eliminate-destructors
                                                fertilize eliminate-irrelevance))
@@ -2508,7 +2508,7 @@
                        (mv (car val) (cdr val)))
                       (t (expand-address-recurse
                           :ans (append val rest-addr)
-                          :new-iff-flg nil 
+                          :new-iff-flg nil
                           :new-term (fetch-term term val))))))
             ((or (eq (car term) 'list)
                  (let ((pair (rassoc-eq-as-car (car raw-term)
@@ -2530,7 +2530,7 @@
                (if subterm
                    (expand-address-recurse
                     :ans (append lst rest-addr)
-                    :new-iff-flg nil 
+                    :new-iff-flg nil
                     :new-term subterm)
                  (dive-once-more-error))))
             (t
@@ -2542,7 +2542,7 @@
                   (if subterm
                       (expand-address-recurse
                        :ans (append lst rest-addr)
-                       :new-iff-flg nil 
+                       :new-iff-flg nil
                        :new-term subterm)
                     (dive-once-more-error))))
                (<=
@@ -2681,7 +2681,7 @@
                           :new-accumulated-addr-r (cons (car addr) (cons (cadr addr) accumulated-addr-r)))
                        (mv t
                            (er hard 'expand-address
-                               "Surprise!  Unable to dive into raw-term ~x0, which is term ~x1, 
+                               "Surprise!  Unable to dive into raw-term ~x0, which is term ~x1,
                            using list ~x2.  So far we have DV-ed using ~x3."
                                raw-term
                                term
@@ -2848,14 +2848,14 @@
   (* B C)
   ->: pp
   (BINARY-* B C)
-  ->: 
+  ->:
   ~ev[]"
 
   (let* ((conc (conc t))
          (current-addr (current-addr t))
          (abbreviations (abbreviations t))
          (current-term (fetch-term conc current-addr))
-         (term-id-iff (term-id-iff conc current-addr t))) 
+         (term-id-iff (term-id-iff conc current-addr t)))
     (mv-let (erp addr)
             ;; If erp is not nil, then it's a string explaining why DV failed,
             ;; and then addr is a list of args for that string (except #\t is
@@ -2930,7 +2930,7 @@
 ;; will guarantee a result that is GENEQV to term.
 
 ; (mutual-recursion
-; 
+;
 ; (defun subst-expr1-okp (old term equiv geneqv ens wrld)
 ;   (cond ((equal term old)
 ;          (geneqv-refinementp equiv geneqv wrld))
@@ -2939,15 +2939,15 @@
 ;         (t (subst-expr1-ok-listp old (fargs term)
 ;                                  (geneqv-lst (ffn-symb term) geneqv ens wrld)
 ;                                  equiv ens wrld))))
-; 
+;
 ; (defun subst-expr1-ok-listp (old args equiv geneqv-lst ens wrld)
 ;   (cond ((null args) nil)
 ;         (t (and (subst-expr1-okp
 ;                  old (car args) equiv (car geneqv-lst) ens wrld)
 ;                 (subst-expr1-ok-listp
 ;                  old (cdr args) equiv (cdr geneqv-lst) ens wrld)))))
-; 
-; 
+;
+;
 ; )
 
 ;; **** Need to think about what happens if we, e.g., substitute T for X
@@ -3750,7 +3750,7 @@
   ;; returns (goal rest-goals) if goal is found, else (nil ...).
   (if (consp goals)
       (if (equal (access goal (car goals) :goal-name) name)
-          (mv (car goals) (cdr goals)) 
+          (mv (car goals) (cdr goals))
         (mv-let (goal rest-goals)
                 (extract-goal name (cdr goals))
                 (mv goal (cons (car goals) rest-goals))))
@@ -3983,7 +3983,7 @@
      (io? proof-checker nil state
           (state-stack current-addr conc stars)
           (fms0 "~|~y0~|"
-                (list (cons #\0 
+                (list (cons #\0
                             (untrans0
                              (deposit-term conc
                                            current-addr
@@ -4221,7 +4221,7 @@
                           '(:hints :none)
                         rest-args)))
      (if (not (keyword-value-listp rest-args-1))
-         (pprogn (print-no-change 
+         (pprogn (print-no-change
                   "The ``rest-args'' arguments for the = command should be ~
                    empty or a list, either (i) containing one element, an ~
                    atom, or else (ii) of even length with keywords in the odd ~
@@ -4902,7 +4902,7 @@
                           (sublis-var unify-subst
                                       (access rewrite-rule lemma :rhs))
                           state)
-                         (mv 
+                         (mv
                           (change-pc-state
                            pc-state
                            :instruction
@@ -5170,7 +5170,7 @@
                                                             lemma-concl)))
                                        :depends-on
                                        (+ depends-on (length new-goals)))))
-                          (mv 
+                          (mv
                            (change-pc-state
                             pc-state
                             :instruction
@@ -5775,7 +5775,7 @@
   "set the current proof-checker theory~/
   ~bv[]
   Example:
-  (in-theory 
+  (in-theory
      (union-theories (theory 'minimal-theory) '(true-listp binary-append)))~/
 
   General Form:
@@ -5808,7 +5808,7 @@
   ~bv[]
      (in-theory (enable foo))
      (in-theory (enable bar))
-  ~ev[]  
+  ~ev[]
   Then after the second of these, ~c[bar] will be enabled in the proof-checker,
   but ~c[foo] will be disabled.  The reason is that
   ~c[(in-theory (enable bar))] instructs the proof-checker to modify the
@@ -6028,7 +6028,7 @@
                     (deposit-term-in-goal
                      (car goals) conc current-addr
                      new-term
-                     state) 
+                     state)
                     (mv (change-pc-state
                          pc-state
                          :goals
@@ -6338,7 +6338,7 @@
           (if goal
               (fms0
                "~%-------  ~x3  -------~|~q0~|"
-               (list 
+               (list
                 (cons #\0 (untranslate (access goal goal :conc) t (w state)))
                 (cons #\3 (access goal goal :goal-name))))
             (fms0 "~%No goal in CAR of state-stack.~|")))))
@@ -6486,7 +6486,7 @@
   "perform a generalization~/
   ~bv[]
   Example:
-  (generalize 
+  (generalize
    ((and (true-listp x) (true-listp y)) 0)
    ((append x y) w))~/
 
@@ -6522,10 +6522,10 @@
 
   (cond
    (current-addr
-    (print-no-change2 
+    (print-no-change2
      "Generalization may only be applied at the top of the current goal.  Try TOP first."))
    ((null args)
-    (print-no-change2 
+    (print-no-change2
      "GENERALIZE requires at least one argument."))
    (t
     (mv-let
@@ -6951,7 +6951,7 @@
                                (list (cons #\0 var)))
               (value :fail)))))
 
-(define-pc-macro reduce-by-induction (&rest hints) 
+(define-pc-macro reduce-by-induction (&rest hints)
 
   "call the ACL2 prover without induction, after going into
   induction~/

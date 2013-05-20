@@ -352,7 +352,7 @@
 
   ACL2 Error in macro expansion:  Illegal key/value args (:BAD-KEY 7)
   in macro expansion of (FOO :K1 3 :BAD-KEY 7).  The argument list for
-  FOO is 
+  FOO is
   (&REST ARGS &KEY K1 K2 K3).
 
   ACL2 !>
@@ -681,7 +681,7 @@
                        (w (cdr pair))
                      w)))
 
-; Observe that if a throw to 'raw-ev-fncall occurred during the 
+; Observe that if a throw to 'raw-ev-fncall occurred during the
 ; (apply fn args) then the local variable throw-raw-ev-fncall-flg
 ; is t and otherwise it is nil.  If a throw did occur, val is the
 ; value thrown.
@@ -731,26 +731,26 @@
 
   (case-match
    term
-   ((('LAMBDA (mv . vars) 
+   ((('LAMBDA (mv . vars)
       (('LAMBDA ('ACL2-UNWIND-PROTECT-ERP
-                 'ACL2-UNWIND-PROTECT-VAL 'STATE . vars) 
-        ('IF 'ACL2-UNWIND-PROTECT-ERP 
+                 'ACL2-UNWIND-PROTECT-VAL 'STATE . vars)
+        ('IF 'ACL2-UNWIND-PROTECT-ERP
              ('(LAMBDA (STATE ACL2-UNWIND-PROTECT-VAL
-                              ACL2-UNWIND-PROTECT-ERP) 
-                       (CONS ACL2-UNWIND-PROTECT-ERP 
+                              ACL2-UNWIND-PROTECT-ERP)
+                       (CONS ACL2-UNWIND-PROTECT-ERP
                              (CONS ACL2-UNWIND-PROTECT-VAL
-                                   (CONS STATE 'NIL)))) 
-              cleanup1 'ACL2-UNWIND-PROTECT-VAL 'ACL2-UNWIND-PROTECT-ERP) 
+                                   (CONS STATE 'NIL))))
+              cleanup1 'ACL2-UNWIND-PROTECT-VAL 'ACL2-UNWIND-PROTECT-ERP)
              ('(LAMBDA (STATE ACL2-UNWIND-PROTECT-VAL
-                              ACL2-UNWIND-PROTECT-ERP) 
-                       (CONS ACL2-UNWIND-PROTECT-ERP 
+                              ACL2-UNWIND-PROTECT-ERP)
+                       (CONS ACL2-UNWIND-PROTECT-ERP
                              (CONS ACL2-UNWIND-PROTECT-VAL
-                                   (CONS STATE 'NIL)))) 
-              cleanup2 'ACL2-UNWIND-PROTECT-VAL 'ACL2-UNWIND-PROTECT-ERP))) 
-       '(MV-NTH '0 mv) 
-       '(MV-NTH '1 mv) 
-       '(MV-NTH '2 mv) 
-       . vars)) 
+                                   (CONS STATE 'NIL))))
+              cleanup2 'ACL2-UNWIND-PROTECT-VAL 'ACL2-UNWIND-PROTECT-ERP)))
+       '(MV-NTH '0 mv)
+       '(MV-NTH '1 mv)
+       '(MV-NTH '2 mv)
+       . vars))
      body . vars)
     (declare (ignore mv vars))
 
@@ -766,21 +766,21 @@
 
     (mv t body cleanup1 cleanup2))
    ((('LAMBDA ('ACL2-UNWIND-PROTECT-ERP
-               'ACL2-UNWIND-PROTECT-VAL 'STATE . vars) 
-      ('IF 'ACL2-UNWIND-PROTECT-ERP 
-           ('(LAMBDA (STATE ACL2-UNWIND-PROTECT-VAL ACL2-UNWIND-PROTECT-ERP) 
-                     (CONS ACL2-UNWIND-PROTECT-ERP 
+               'ACL2-UNWIND-PROTECT-VAL 'STATE . vars)
+      ('IF 'ACL2-UNWIND-PROTECT-ERP
+           ('(LAMBDA (STATE ACL2-UNWIND-PROTECT-VAL ACL2-UNWIND-PROTECT-ERP)
+                     (CONS ACL2-UNWIND-PROTECT-ERP
                            (CONS ACL2-UNWIND-PROTECT-VAL
-                                 (CONS STATE 'NIL)))) 
-            cleanup1 'ACL2-UNWIND-PROTECT-VAL 'ACL2-UNWIND-PROTECT-ERP) 
-           ('(LAMBDA (STATE ACL2-UNWIND-PROTECT-VAL ACL2-UNWIND-PROTECT-ERP) 
-                     (CONS ACL2-UNWIND-PROTECT-ERP 
+                                 (CONS STATE 'NIL))))
+            cleanup1 'ACL2-UNWIND-PROTECT-VAL 'ACL2-UNWIND-PROTECT-ERP)
+           ('(LAMBDA (STATE ACL2-UNWIND-PROTECT-VAL ACL2-UNWIND-PROTECT-ERP)
+                     (CONS ACL2-UNWIND-PROTECT-ERP
                            (CONS ACL2-UNWIND-PROTECT-VAL
-                                 (CONS STATE 'NIL)))) 
-            cleanup2 'ACL2-UNWIND-PROTECT-VAL 'ACL2-UNWIND-PROTECT-ERP))) 
-     ('MV-NTH ''0 body) 
-     ('MV-NTH ''1 body) 
-     ('MV-NTH ''2 body) 
+                                 (CONS STATE 'NIL))))
+            cleanup2 'ACL2-UNWIND-PROTECT-VAL 'ACL2-UNWIND-PROTECT-ERP)))
+     ('MV-NTH ''0 body)
+     ('MV-NTH ''1 body)
+     ('MV-NTH ''2 body)
      . vars)
     (declare (ignore vars))
     (mv t body cleanup1 cleanup2))
@@ -861,7 +861,7 @@
 ;     (1a) s is of the correct shape for that stobj and
 ;     (1b) that stobj name is bound in latches to s.
 ;     Informally, the initial values of the stobjs in alist are identical
-;     to their initial current values and consistent with the stobj 
+;     to their initial current values and consistent with the stobj
 ;     definitions.
 
 ; (2) If alist binds a stobj name to a live object, then form must be
@@ -873,7 +873,7 @@
 ; latches on input may be nil and the final latches may
 ; be ignored.
 
-; If form is not single-threaded, the meaning of the final latches 
+; If form is not single-threaded, the meaning of the final latches
 ; is essentially random.
 
 ; In the most common case (where we are using ev to evaluate a form
@@ -953,7 +953,7 @@
 ; running on something that is not even a state-p.  To make this
 ; example work, first evaluate :set-guard-checking nil.
 
-; (ev '(ev 'a '((a . 1)) '(nil nil nil nil nil 0) 'nil 'nil 't) 
+; (ev '(ev 'a '((a . 1)) '(nil nil nil nil nil 0) 'nil 'nil 't)
 ;     nil state nil nil t)
 
 ; The 0, above, is the big-clock-entry and must be a non-negative
@@ -1038,7 +1038,7 @@
 
 ; Let us consider some examples to see why this works -- and to drive
 ; home some points it took me a while to see.  In the following,
- 
+
 ; (defun bump (state) (f-put-global 'bump (@ bump) state))
 ; (defun bump3 (x state) (let ((state (bump state))) (mv nil x state)))
 
@@ -1289,7 +1289,7 @@
 ; warning messages.  (This was handled incorrectly in Version_2.9.1.)
 
   '(if (and (boundp '*raw-guard-warningp*)
-            (null *raw-guard-warningp*)) 
+            (null *raw-guard-warningp*))
        nil
      (eq (f-get-global 'guard-checking-on *the-live-state*)
          t)))
@@ -1570,7 +1570,7 @@
         (COMPLEX-RATIONALP
          (mv nil (complex-rationalp x) latches))
         #+:non-standard-analysis
-        (COMPLEXP 
+        (COMPLEXP
          (mv nil (complexp x) latches))
         (COERCE
          (cond ((or guard-checking-off
@@ -1677,7 +1677,7 @@
          (mv nil x latches))
         #+:non-standard-analysis
         (I-LARGE-INTEGER ; We could omit this case, allowing a fall-through.
-         (ev-fncall-null-body-er nil fn nil latches)) 
+         (ev-fncall-null-body-er nil fn nil latches))
         (otherwise
          (cond
           ((and (null args)
@@ -1712,7 +1712,7 @@
 ; quite a soundness bug, event though the latter is defined to be the former,
 ; because ev-fncall-rec is untouchable; nevertheless the discrepancy was
 ; troubling.
- 
+
 ;   (mv-let (erp val ign)
 ;           (ev-fncall-rec-logical 'hard-error '(top "ouch" nil) (w state)
 ;                                  (user-stobj-alist state)
@@ -1720,7 +1720,7 @@
 ;           (declare (ignore ign val))
 ;           erp)
 
-         
+
                 (mv t (illegal-msg) latches))
                ((eq fn 'throw-nonexec-error)
                 (ev-fncall-null-body-er nil
@@ -2052,7 +2052,7 @@
               ((eq fn 'mbe1-raw)
 
 ; We avoid running the exec code (see comment above).
-               
+
                (ev-rec (fargn form 3) ; optimization: avoid exec argument
                        alist w user-stobj-alist
                        (decrement-big-n big-n) safe-mode gc-off latches
@@ -2213,7 +2213,7 @@
               hard-error-returns-nilp aok)
       (cond
        (body-erp ; "hard error", e.g., guard error in body
-      
+
 ; It is possible that the evaluation of body pushed some additional
 ; cleanup forms before the abort occurred.  We must get back down to
 ; the form we pushed.  This is analogous to the similar situation in
@@ -2296,7 +2296,7 @@
                     (untranslate* body nil w)
                     (untranslate* cleanup1 nil w))
                clean-latches))
-          (t 
+          (t
 
 ; We pass a SOFT error up, containing the cleaned up state.
 
@@ -2338,7 +2338,7 @@
                     (untranslate* body nil w)
                     (untranslate* cleanup2 nil w))
                clean-latches))
-          (t 
+          (t
            (mv nil
                (list (car body-val)
                      (cadr body-val)
@@ -2753,7 +2753,7 @@
                            (car-cdr-nest term)
                            (cond (fn (list fn
                                            (untranslate1 guts nil untrans-tbl
-                                                         preprocess-fn wrld))) 
+                                                         preprocess-fn wrld)))
                                  (t (cons (ffn-symb term)
                                           (untranslate1-lst (fargs term) nil
                                                             untrans-tbl
@@ -2890,7 +2890,7 @@
                       (f-get-global 'safe-mode state)
                       (gc-off state)
                       latches hard-error-returns-nilp aok)))
-  
+
 (defun ev (form alist state latches hard-error-returns-nilp aok)
   (declare (xargs :guard (and (state-p state)
                               (termp form (w state))
@@ -2973,7 +2973,7 @@
 (defun untranslate-lst (lst iff-flg wrld)
   (let ((user-untranslate-lst
          (cdr (assoc-eq 'untranslate-lst (table-alist
-                                          'user-defined-functions-table 
+                                          'user-defined-functions-table
                                           wrld)))))
     (if user-untranslate-lst
         (mv-let
@@ -3224,7 +3224,7 @@
 
   `(mv-let (ctx msg-or-val)
            ,form
-           (cond (ctx (cond (msg-or-val 
+           (cond (ctx (cond (msg-or-val
                              (assert$ (not (eq ctx t))
                                       (er@par soft ctx "~@0" msg-or-val)))
                             (t (mv@par t nil state))))
@@ -3256,7 +3256,7 @@
 
   `(mv-let (ctx msg-or-val extra-value)
            ,form
-           (cond 
+           (cond
             (ctx (cond (msg-or-val
                         (assert$ (not (eq ctx t))
                                  (mv-let (erp val state)
@@ -3278,7 +3278,7 @@
 
   `(mv-let (ctx msg-or-val extra-value)
            ,form
-           (cond 
+           (cond
             (ctx (cond (msg-or-val
                         (assert$ (not (eq ctx t))
                                  (mv-let (erp val)
@@ -4141,7 +4141,7 @@
                (find-first-var-lst (cdr lst))))))
 )
 
-(mutual-recursion 
+(mutual-recursion
 
 (defun find-first-fnsymb (term)
   (cond ((variablep term) nil)
@@ -4663,7 +4663,7 @@
 ; (loop for x in (w state) when (eq (cadr x) 'macro-body) collect (car x))
 ; Below we exhibit the value of the sloop above and comment out the macros we
 ; do not want on it.  The macros commented out will be translated away in
-; oneified code.  
+; oneified code.
 
 ; When in doubt, comment it out!
 
@@ -4673,7 +4673,7 @@
 ;   ; Must omit f-put-global, f-get-global, and f-boundp-global, in order to
 ;   ; avoid calling global-table in raw Lisp.
 ;   mv-let                 ; not of the right shape so special-cased in oneify
-    mv         
+    mv
 
 ; The following are not in primitive-event-macros (which is handled directly
 ; in oneify-cltl-code).
@@ -4696,7 +4696,7 @@
 ;   / * >= > <=   ; guarded
 ;   let* cond
 ;   + -           ; guarded
-    or and list 
+    or and list
 ;   local
 ;   defdoc
 
@@ -4720,7 +4720,7 @@
                    (duplicates lst)))))
 
 (defun chk-no-duplicate-defuns (lst ctx state)
-  (cmp-to-error-triple (chk-no-duplicate-defuns-cmp lst ctx))) 
+  (cmp-to-error-triple (chk-no-duplicate-defuns-cmp lst ctx)))
 
 (defun chk-state-ok-msg (wrld)
 
@@ -5657,7 +5657,7 @@
 
 (defun stobj-field-accessor-p (fn stobj wrld)
   (and
-   
+
 ; We believe that the first check is subsumed by the others, but we leave it
 ; here for the sake of robustness.
 
@@ -5810,7 +5810,7 @@
 ; returns (mv erp val bindings).  The result comes is the result of form1,
 ; except if that result is an error, condition is true, and form2 produces a
 ; non-nil result, then the result from form2 is returned.  In the case of an
-; error, 
+; error,
 
   `(let ((trans-or-extra-msg ,extra-msg))
      (mv-let (trans-or-erp trans-or-val trans-or-bindings)
@@ -5917,7 +5917,7 @@
 ; We skip the following case, where stobjs-out is not yet bound to a consp and
 ; some formal is a stobj, in favor of the next, which removes the stobjs-bound
 ; criterion.  But we leave this case here as a comment in case we ultimately
-; find a way to eliminate the more sweeping case after it.  Note: 
+; find a way to eliminate the more sweeping case after it.  Note:
 ; unknown-binding-msg has been replaced by unknown-binding-msg-er, so a bit of
 ; rework will be needed if this case is to be reinstalled.  Also note that we
 ; will need to bind stobjs-bound to
@@ -6024,7 +6024,7 @@
                                          bound-vars)))
                   (cond
                    (extra-body-vars
-  
+
 ; Warning: Do not eliminate this error without thinking about the possible role
 ; of variables that are declared special in Common Lisp.  There might not be
 ; such an issue, but we haven't thought about it.
@@ -6263,7 +6263,7 @@
                     (ignore-vars (ignore-vars edcls))
                     (ignorable-vars (ignorable-vars edcls))
                     (stobjs-out (translate-deref stobjs-out bindings)))
-                (cond 
+                (cond
                  ((and stobjs-bound ; hence (not (eq stobjs-out t))
                        (not (consp stobjs-out)))
                   (unknown-binding-msg-er x ctx stobjs-bound
@@ -6900,11 +6900,11 @@
 
 ; Stobjs-out is one of:
 
-; t              - meaning we do not care about multiple-value or stobj 
+; t              - meaning we do not care about multiple-value or stobj
 ;                  restrictions (as when translating proposed theorems).
 ; (s1 s2 ... sk) - a list of 1 or more stobj flags indicating where stobjs
 ;                  are returned in the translation of x
-; fn             - a function name, indicating that we are trying to deduce 
+; fn             - a function name, indicating that we are trying to deduce
 ;                  the stobjs-out setting for fn from some output branch, x,
 ;                  of its body, as we translate.  We also enforce prohibitions
 ;                  against the use of DEFUN, IN-PACKAGE, etc inside bodies.
@@ -7235,7 +7235,7 @@
    ((and (eq (car x) 'pargs)
          (true-listp x)
          (member (length x) '(2 3))
-         
+
 ; Notice that we are restricting this error case to a pargs that is
 ; syntactically well-formed, in the sense that if this pargs has one or two
 ; arguments, then the form argument is a function call.  The rest of the
@@ -7578,7 +7578,7 @@
 ; If this error burns you during system maintenance, you can subvert our
 ; security by setting untouchables to nil in raw Lisp:
 
-; (setf (cadr (assoc 'global-value 
+; (setf (cadr (assoc 'global-value
 ;                    (get 'untouchable-fns *current-acl2-world-key*)))
 ;       nil)
 
@@ -8278,17 +8278,17 @@
 ; think.
 
 ; (mutual-recursion
-; 
+;
 ; (defun all-fnnames (term)
 ;   (cond ((variablep term) nil)
 ;         ((fquotep term) nil)
 ;         ((flambda-applicationp term)
 ;          (union-eq (all-fnnames (lambda-body (ffn-symb term)))
-;                    (all-fnnames-lst (fargs term)))) 
+;                    (all-fnnames-lst (fargs term))))
 ;         (t
 ;          (add-to-set-eq (ffn-symb term)
 ;                         (all-fnnames-lst (fargs term))))))
-; 
+;
 ; (defun all-fnnames-lst (lst)
 ;   (cond ((null lst) nil)
 ;         (t (union-eq (all-fnnames (car lst))
@@ -8353,7 +8353,7 @@
 
 ; Stobjs-out should be
 ; * t           - to indicate that we are translating only for logical use, as
-;                 in theorems etc.  Do NOT use t for defuns, defmacros, 
+;                 in theorems etc.  Do NOT use t for defuns, defmacros,
 ;                 defconst, or other events involving Common Lisp execution.
 
 ; * (s1 ... sn) - where each si is either nil or a stobj name (possibly
@@ -8462,7 +8462,7 @@
 ;                                        (list 'get-global
 ;                                              (list 'quote (car vars)) 'state))
 ;                                  alist))))))
-; 
+;
 
 (defun non-stobjps (vars known-stobjs w)
   (cond ((endp vars) nil)
@@ -8556,7 +8556,7 @@
 ; trans-eval when the term to be evaluated has already been translated by
 ; translate1 with stobjs-out = :stobjs-out.
 
-  (let ((alist (cons (cons 'state 
+  (let ((alist (cons (cons 'state
                            (coerce-state-to-object state))
                      (user-stobj-alist-safe 'trans-eval vars state))))
     (mv-let
@@ -8606,7 +8606,7 @@
 ; any other stobj).  Perhaps the assertion should be that stobjs-out equals the
 ; representation for an ordinary value.
 
-  (let ((alist (cons (cons 'state 
+  (let ((alist (cons (cons 'state
                            (coerce-state-to-object state))
                      (user-stobj-alist-safe 'trans-eval vars state))))
     (mv-let
@@ -8628,7 +8628,7 @@
 
 ; Parallelism wart: check that the above comment is true and applicable in this
 ; function, even though we call ev-w instead of ev.
-       
+
        (error1@par ctx (car val) (cdr val) state))
       (t (mv nil
              (cons stobjs-out
@@ -8762,7 +8762,7 @@
                                   state nil nil aok)
                               (declare (ignore latches))
 
-; Parallelism wart: since we ignore latches, we should be able to create a 
+; Parallelism wart: since we ignore latches, we should be able to create a
 ; version of simple-translate-and-eval that returns cmp's.
 
                               (cond

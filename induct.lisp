@@ -1489,7 +1489,7 @@
                                        (list (car lst))
                                        temp fn wrld))
 ; PETE
-; In other versions the = below is, mistakenly, an int=!                   
+; In other versions the = below is, mistakenly, an int=!
 
                    ((= temp maximum)
                     (maximal-elements1 (cdr lst)
@@ -2741,7 +2741,7 @@
                        ((assoc-eq :case-split-limitations hint-settings)
                         (cdr (assoc-eq :case-split-limitations
                                        hint-settings)))
-                       (t (access rewrite-constant rcnst 
+                       (t (access rewrite-constant rcnst
                                   :case-split-limitations)))))))
 
 (defun update-hint-settings (new-hint-settings old-hint-settings)
@@ -2860,7 +2860,7 @@
   (cond ((null cl-set) accum-cl)
         ((classical-fn-list-p (all-fnnames-lst (car cl-set)) wrld)
          (trap-non-standard-vector-aux (cdr cl-set) accum-cl checks wrld))
-        (t 
+        (t
          (trap-non-standard-vector-aux (cdr cl-set)
                                        (append (merge-ns-check checks
                                                                (car cl-set)
@@ -2890,7 +2890,7 @@
 
 #+:non-standard-analysis
 (defun trap-non-standard-vector (cl-set candidate accum-cl wrld)
-  (trap-non-standard-vector-aux cl-set accum-cl 
+  (trap-non-standard-vector-aux cl-set accum-cl
                                 (non-standard-vector-check
                                  (non-standard-induction-vars
                                   candidate wrld)
@@ -3049,7 +3049,7 @@
                                 unvetoed-candidates merged-candidates
                                 flushed-candidates candidates induct-hint-val
                                 cl-set forcing-round pool-lst)
-                      
+
                           (induct-msg/continue
                            pool-lst
                            forcing-round
@@ -3142,9 +3142,9 @@
 ; list below.  However, as long as it's the only one, we feel safe.
 
   (or (ffnnames-subsetp-listp cl '(consp integerp rationalp
-                                         #+:non-standard-analysis realp 
+                                         #+:non-standard-analysis realp
                                          acl2-numberp
-                                         true-listp complex-rationalp 
+                                         true-listp complex-rationalp
                                          #+:non-standard-analysis complexp
                                          stringp characterp
                                          symbolp cons car cdr equal

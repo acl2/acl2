@@ -117,7 +117,7 @@
                              (custom-trace-ppr :in
                                                (cons ',name
                                                      (trace-hide-world-and-state
-                                                      ,(sublis *trace-sublis* 
+                                                      ,(sublis *trace-sublis*
                                                                (cadr l))))))
                       :when :before))
         (t

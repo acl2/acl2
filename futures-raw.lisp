@@ -75,7 +75,7 @@
   (assert (st-future-p st-future))
   (if (st-future-valid st-future)
       (values-list (st-future-value st-future))
-    (progn (setf (st-future-value st-future) 
+    (progn (setf (st-future-value st-future)
                  (multiple-value-list (funcall (st-future-closure st-future))))
            (setf (st-future-valid st-future) t)
            (values-list (st-future-value st-future)))))
@@ -113,7 +113,7 @@
 ; enforce this discipline.)  The producer does so by first setting the abort
 ; flag of the future and then throwing any consumer that could be evaluating
 ; that future.
-; 
+;
 ; (4) When a consumer evaluates a future, it first sets a pointer to itself in
 ; thread array and secondly checks the future's abort flag.
 ;
@@ -135,12 +135,12 @@
 ;  Producer sets the abort flag
 ;                      Consumer sets the thread
 ;  Producer looks for a thread to throw, throws
-;                                     
+;
 ;  NON-TRIVIAL to implement, need to check
 ;
 ;
 ;  (C) 1AB[2]
-;  
+;
 ;  Producer sets the abort flag
 ;                      Consumer sets the thread
 ;                      Consumer checks abort flag, aborts
@@ -169,7 +169,7 @@
 ;                      Consumer checks abort flag, continues
 ;  Producer sets the abort flag
 ;  Producer looks for a thread to throw, throws
-;  
+;
 ;  WIN
 ;
 ;
@@ -219,7 +219,7 @@
 
 ; Our version of a barrier is a hybrid between a semaphore and a condition
 ; variable.  What we need is something that once it's signaled once, any thread
-; that waits on it will be allowed to proceed.  
+; that waits on it will be allowed to proceed.
 
 ; Point of clarification that is a little distracting: Our notion of barrier is
 ; different from the traditional definition of a "multi-threaded programming
@@ -241,7 +241,7 @@
   (sem (make-semaphore)))
 
 (defun broadcast-barrier (barrier)
- 
+
 ; Update the barrier as "clear to proceed" and notify all threads waiting for
 ; such clearance.
 
@@ -256,7 +256,7 @@
 (defun wait-on-barrier (barrier)
   (if (barrier-value barrier)
       t
-    (progn 
+    (progn
       (with-lock (barrier-lock barrier)
                  (incf (barrier-wait-count barrier)))
 ; There has to be another test after holding the lock.
@@ -337,13 +337,13 @@
 
 (defvar *decremented-idle-future-thread-count* nil)
 
-(defvar *idle-future-core-count* 
+(defvar *idle-future-core-count*
   (make-atomically-modifiable-counter *core-count*))
-(defvar *idle-future-resumptive-core-count* 
+(defvar *idle-future-resumptive-core-count*
   (make-atomically-modifiable-counter (1- *core-count*)))
 (defvar *idle-core* (make-semaphore))
 
-(define-atomically-modifiable-counter *idle-future-thread-count* 
+(define-atomically-modifiable-counter *idle-future-thread-count*
 
 ; Parallelism blemish: on April 6, 2012, Rager observed that
 ; *idle-future-thread-count* and *threads-waiting-for-starting-core* can sync
@@ -376,7 +376,7 @@
 ; futures that are in the pending state.  See also *total-future-count*.
 
 ; We treat the initial thread as an active future.
-  
+
   1)
 
 (define-atomically-modifiable-counter *total-future-count*
@@ -394,9 +394,9 @@
 (defconstant *future-array-size* 200000)
 
 (defmacro faref (array subscript)
-  `(aref ,array 
+  `(aref ,array
 ; Avoid reusing slot 0, which is always reserved for the initial thread.
-         (if (equal 0 ,subscript) 
+         (if (equal 0 ,subscript)
              0
            (1+ (mod ,subscript (1- *future-array-size*))))))
 
@@ -436,9 +436,9 @@
 ; Parallelism wart: some relevant variables may be unintentionally omitted from
 ; this reset.
 
-  (setf *thread-array* 
+  (setf *thread-array*
         (make-array *future-array-size* :initial-element nil))
-  (setf *future-array* 
+  (setf *future-array*
         (make-array *future-array-size* :initial-element nil))
   (setf *future-dependencies*
         (make-array *future-array-size* :initial-element nil))
@@ -448,7 +448,7 @@
   (setf *idle-future-core-count*
         (make-atomically-modifiable-counter *core-count*))
 
-  (setf *idle-future-resumptive-core-count* 
+  (setf *idle-future-resumptive-core-count*
         (make-atomically-modifiable-counter (1- *core-count*)))
 
   (setf *idle-core* (make-semaphore))
@@ -456,7 +456,7 @@
 
   (dotimes (i *core-count*) (signal-semaphore *idle-core*))
   (dotimes (i (1- *core-count*)) (signal-semaphore *idle-resumptive-core*))
-  
+
 ; The last slot taken and saved starts at zero, because slot zero is always
 ; reserved for the initial thread.
 
@@ -514,7 +514,7 @@
 ; See :DOC topic set-total-parallelism-work-limit and :DOC topic
 ; set-total-parallelism-work-limit-error for more details.
 
-  (let ((total-parallelism-work-limit 
+  (let ((total-parallelism-work-limit
          (f-get-global 'total-parallelism-work-limit *the-live-state*)))
     (cond ((equal total-parallelism-work-limit :none)
 
@@ -524,15 +524,15 @@
           ((< (atomically-modifiable-counter-read *total-future-count*)
               total-parallelism-work-limit)
            t)
-          (t 
+          (t
 
 ; We are above the total-parallelism-work-limit.  Now the question is whether we
 ; notify the user with an error.
 
            (let ((total-parallelism-work-limit-error
                   (f-get-global 'total-parallelism-work-limit-error
-                                *the-live-state*))) 
-             (cond ((equal total-parallelism-work-limit-error t) 
+                                *the-live-state*)))
+             (cond ((equal total-parallelism-work-limit-error t)
 
 ; Cause an error to notify the user that they need to either increase the limit
 ; or disable the error by setting the global variable
@@ -593,7 +593,7 @@
   #-(or ccl sb-thread)
   `(unwind-protect ,body-form ,@cleanup-forms))
 
-(define-atomically-modifiable-counter *threads-waiting-for-starting-core* 
+(define-atomically-modifiable-counter *threads-waiting-for-starting-core*
 
 ; Once upon a time this variable was only used for debugging purposes, so we
 ; didn't make its updates atomic.  However, we actually observed this variable
@@ -617,7 +617,7 @@
   (let ((notification (make-semaphore-notification)))
     (unwind-protect-disable-interrupts-during-cleanup
      (wait-on-semaphore *idle-core* :notification notification)
-     (progn 
+     (progn
        (when (semaphore-notification-status notification)
          (setf *allocated-core* *starting-core*)
          (atomic-decf *idle-future-core-count*)
@@ -678,7 +678,7 @@
           (atomic-incf *idle-future-core-count*)
           (signal-semaphore *idle-core*)
           (setf *allocated-core* nil))
-         
+
          ((eq *allocated-core* *resumptive-core*)
           (atomic-incf *idle-future-resumptive-core-count*)
           (signal-semaphore *idle-resumptive-core*)
@@ -749,7 +749,7 @@
        (setf (faref *thread-array* index) nil)
        (when early-terminated (early-terminate-children index))
        (setf (faref *future-dependencies* index) nil)
-       
+
        (when *decremented-idle-future-thread-count*
 ; increment paired with decrement in (claim-starting-core)
          (atomic-incf *idle-future-thread-count*))
@@ -848,7 +848,7 @@
 ; programs can have trees of nested computation.
 
         (let ((random-amount-of-time (+ 10 (random 110.0))))
-          (when (not (wait-on-semaphore *future-added* 
+          (when (not (wait-on-semaphore *future-added*
                                         :timeout random-amount-of-time))
 
 ; Then we timed out.  (If the semaphore had been obtained, then the above call
@@ -968,19 +968,19 @@
 ;              tclet-result)))
 
 ; Here is a more concrete example use of throw-catch-let.
-       
+
 ;   (throw-catch-let
 ;    (x y)
 ;    (cond ((equal *flg* 3) (throw 'x 10))
 ;          ((equal *flg* 4) (throw 'y 11))
-;          (t 7))  
+;          (t 7))
 ;    ((setq *x-thrown* t)
 ;     (setq *y-thrown* t)))
 
 ; While Rager wrote this macro, he thanks Nathan Wetzler for co-development of
 ; the main ideas.
 
-  (let* ((thrown-tags (make-tclet-thrown-tags tags)))    
+  (let* ((thrown-tags (make-tclet-thrown-tags tags)))
     `(let ,(make-tclet-bindings tags)
        (let ((tclet-result ,(make-tclet-catches tags body thrown-tags)))
          (prog2 (cond ,@(make-tclet-cleanups thrown-tags cleanups))
@@ -1067,7 +1067,7 @@
 ; execute for a random-amount-of-time (see wait-for-a-closure; currently from
 ; 10 to 120 seconds).
 
-      (loop 
+      (loop
        (wait-for-a-closure)
        (eval-a-closure))))
 
@@ -1207,9 +1207,9 @@
 ;                                (list (print foo)
 ;                                      (print (symbol-value 'foo))))))
 ;   #<PROCESS asdf(3) [Reset] #x302003CEE58D>
-;   ? [RAW LISP] 
-;   1 
-;   1 
+;   ? [RAW LISP]
+;   1
+;   1
 
        (let* ((,ld-level-sym *ld-level*)
               (,ld-level-state-sym
@@ -1218,7 +1218,7 @@
 ; *ld-level* and (@ ld-level) have the same value, except perhaps when cleaning
 ; up with acl2-unwind-protect.  If it is, then David believes that it's also an
 ; invariant of ACL2(p).  We add an assertion here to check that.
-                 
+
                (assert$ (equal *ld-level*
                                (f-get-global 'ld-level *the-live-state*))
                         (f-get-global 'ld-level *the-live-state*)))
@@ -1249,7 +1249,7 @@
               (closure (lambda ()
                          (let ((*ld-level* ,ld-level-sym)
                                (*acl2-unwind-protect-stack*
-                                acl2-unwind-protect-stack) 
+                                acl2-unwind-protect-stack)
                                (*wormholep* ,wormholep-sym))
                            (state-free-global-let*
                             ((ld-level ,ld-level-state-sym)
@@ -1273,7 +1273,7 @@
            (let ((notif nil))
              (unwind-protect-disable-interrupts-during-cleanup
               (progn
-                (without-interrupts 
+                (without-interrupts
                  (free-allocated-core)
 
 ; David Rager believes that at one time, he was concerned that the following
@@ -1302,7 +1302,7 @@
               (when notif ; clean up
                 (atomic-incf *unassigned-and-active-future-count*)))))
          (when (mt-future-thrown-tag future)
-           (throw (car (mt-future-thrown-tag future)) 
+           (throw (car (mt-future-thrown-tag future))
                   (cdr (mt-future-thrown-tag future))))
          (values-list (mt-future-value future)))
         (t
@@ -1358,8 +1358,8 @@
             (assert index)
             (setf (mt-future-aborted future) t)
             (let ((thread (faref *thread-array* index)))
-              (when thread 
-                (interrupt-thread 
+              (when thread
+                (interrupt-thread
                  thread
                  (lambda ()
                    (if (equal (mt-future-index future)
@@ -1380,7 +1380,7 @@
                          (throw :result-no-longer-needed nil))
                      (incf *almost-aborted-future-count*)))))))))
         ((null future) t) ; future already removed from the future-array
-        (t 
+        (t
          (error "future-abort was given a non-future argument")))
   future)
 
@@ -1398,13 +1398,13 @@
     (progn (mt-future-abort (faref *future-array* (car indices)))
            (abort-future-indices (cdr indices)))))
 
-(defun print-non-nils-in-array (array n) 
+(defun print-non-nils-in-array (array n)
   (if (equal n (length array))
       "end"
     (if (null (faref array n))
         (print-non-nils-in-array array (1+ n))
-      (progn (print n) 
-             (print (faref array n)) 
+      (progn (print n)
+             (print (faref array n))
              (print-non-nils-in-array array (1+ n))))))
 
 (defun futures-still-in-flight ()

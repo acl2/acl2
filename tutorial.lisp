@@ -33,11 +33,11 @@
 ;     DEFUN-SK-EXAMPLE:: example of quantified notions
 ;     :doc miscellaneous-examples
 ;       * FILE-READING-EXAMPLE:: example of reading files in ACL2
-;       * MUTUAL-RECURSION-PROOF-EXAMPLE:: a small proof about mutually 
+;       * MUTUAL-RECURSION-PROOF-EXAMPLE:: a small proof about mutually
 ;            recursive functions
 ;       * GUARD-EXAMPLE    a brief transcript illustrating guards in ACL2
 ;   STARTUP
-;   TIDBITS 
+;   TIDBITS
 ;   TIPS
 
 (in-package "ACL2")
@@ -327,14 +327,14 @@
 
   define new functions (~pl[defun]);
 
-  execute functions on concrete data; 
+  execute functions on concrete data;
 
   pose and attempt to prove conjectures about previously defined
   functions (~pl[defthm]);
 
   query the ACL2 ``~il[world]'' or database (e.g., ~pl[pe]); and
 
-  numerous other things. 
+  numerous other things.
   ~eq[]
 
   In addition, there is extensive on-line ~il[documentation], of which this
@@ -706,19 +706,19 @@
 
     (in-theory (disable my-app-length)),
 
-  ~ev[] 
+  ~ev[]
   is an example of a global change to the behavior of the prover
   since this ~il[rewrite] will not be performed subsequently (unless the rule
   is again ~il[enable]d).  Finally, we can add a (local) ~il[disable] ``hint''
   to a ~ilc[defthm], meaning to ~il[disable] the lemma only in the proof of one
-  or more subgoals.  For example: 
+  or more subgoals.  For example:
   ~bv[]
-  
+
     (defthm my-app-length-commutativity
       (equal (len (my-app x y))
              (len (my-app y x)))
       :hints ((\"Goal\" :in-theory (disable my-app-length))))
-  
+
   ~ev[]
   In this case, the hint supplied is a bad idea since the proof is much
   harder with the hint than without it.  Try it both ways.
@@ -761,7 +761,7 @@
   an unusual list reverse function correct.  The screen shots of ACL2's proof output
   are outdated -- in the version shown, ACL2 does not print Key Checkpoints, but the
   concept of key checkpoint is clear in the discussion and the behavior of the
-  user.  
+  user.
 
   See
   ~url[http://www.cs.utexas.edu/users/moore/acl2/contrib/POLISHING-PROOFS-TUTORIAL.html]
@@ -921,7 +921,7 @@
     * (provable? '(equal x x))
 
     T
-    * 
+    *
   ~ev[]
 
   Certainly refinements are possible -- for example the above doesn't
@@ -1018,17 +1018,17 @@
   We will formalize and prove a small theorem about the famous
   ``Towers of Hanoi'' problem.  This problem
   is illustrated by the following picture.
-  ~bv[]  
-  
+  ~bv[]
+
             |        |        |
             |        |        |
            ---       |        |
           -----      |        |
          -------     |        |
-            
+
             A        B        C
-  
-  ~ev[] 
+
+  ~ev[]
   We have three pegs ~-[] ~c[a], ~c[b], and ~c[c] ~-[] and ~c[n] disks of
   different sizes.  The disks are all initially on peg ~c[a].  The goal
   is to move all disks to peg ~c[c] while observing the following two
@@ -1037,7 +1037,7 @@
   1. Only one disk may be moved at a time, and it must start and finish
   the move as the topmost disk on some peg;
 
-  2. A disk can never be placed on top of a smaller disk. 
+  2. A disk can never be placed on top of a smaller disk.
 
   Let's consider some simple instances of this problem.  If ~c[n] = 1,
   i.e., only one disk is to be moved, simply move it from ~c[a] to
@@ -1155,13 +1155,13 @@
   ~bv[]
 
     (defthm hanoi-moves-required
-      (implies (and (integerp n) 
+      (implies (and (integerp n)
                     (<= 0 n))    ;; n is at least 0
                (equal (len (hanoi a b c n))
                       (1- (expt 2 n)))))
 
   ~ev[]
-  and submit it to ACL2 again.  
+  and submit it to ACL2 again.
 
   Again the proof fails.  Examining the proof script we encounter the
   following text.  (How did we decide to focus on this goal?  Some
@@ -1213,7 +1213,7 @@
   appropriate instance of the ~il[term] on the right hand side.
 
   We now resubmit our lemma ~c[hanoi-moves-required] to ACL2.  On this
-  attempt, the proof succeeds and we are done.   
+  attempt, the proof succeeds and we are done.
 
   One bit of cleaning up is useful.  We needed the hypotheses that:
   ~bv[]
@@ -1298,7 +1298,7 @@
                       (<= 0 i)
                       (integerp j)
                       (<= 0 j)
-                      (equal (+ (* 3 i) (* 5 j)) 
+                      (equal (+ (* 3 i) (* 5 j))
                              n)))))
 
   ~ev[]
@@ -1326,7 +1326,7 @@
       (cons (1+ (car x)) (cdr x)))
 
     (defun split (n)
-      ;; Find a pair (i . j) such that 
+      ;; Find a pair (i . j) such that
       ;; n = 3i + 5j.
       (if (or (zp n) (< n 8))
           nil ;; any value is really reasonable here
@@ -1379,11 +1379,11 @@
   ~c[i] and ~c[j] (as we proved above).
   ~bv[]
 
-    (defthm split-splits2 
+    (defthm split-splits2
       (implies (and (integerp n)
                     (< 7 n))
                (split-able n))
-      :hints ((\"Goal\" :use (:instance split-able-suff 
+      :hints ((\"Goal\" :use (:instance split-able-suff
                                       (i (car (split n)))
                                       (j (cdr (split n)))))))
 
@@ -1399,37 +1399,37 @@
 
 ;  (defun good-phonebookp (bk)
 ;    (setp (range bk)))
-; 
+;
 ;  (defthm member-equal-strip-cdrs-bind
 ;    (implies (and (not (member-equal x (strip-cdrs bk)))
 ;                  (not (equal x num)))
 ;             (not (member-equal x (strip-cdrs (bind nm num bk))))))
-; 
+;
 ;  (defthm setp-range-bind
 ;    (implies (and (setp (range bk))
 ;                  (not (member num (range bk))))
 ;             (setp (range (bind nm num bk))))
 ;    :hints (("Goal" :in-theory (enable bind range))))
-; 
+;
 ;  (defthm ADD-PHONE-PRESERVES-NEW-INVARIANT
 ;    (implies (and (good-phonebookp bk)
 ;                  (not (member num (range bk))))
 ;             (good-phonebookp (add-phone nm num bk))))
-; 
+;
 ;  (defthm CHANGE-PHONE-PRESERVES-NEW-INVARIANT
 ;    (implies (and (good-phonebookp bk)
 ;                  (not (member num (range bk))))
 ;             (good-phonebookp (change-phone nm num bk))))
-; 
+;
 ;  (defthm member-equal-strip-cdrs-rembind
 ;    (implies (not (member-equal x (strip-cdrs bk)))
 ;             (not (member-equal x (strip-cdrs (rembind nm bk))))))
-; 
+;
 ;  (defthm setp-strip-cdrs-rembind
 ;    (implies (setp (strip-cdrs bk))
 ;             (setp (strip-cdrs (rembind nm bk))))
 ;    :hints (("Goal" :in-theory (enable rembind))))
-; 
+;
 ;  (defthm DEL-PHONE-PRESERVES-NEW-INVARIANT
 ;    (implies (good-phonebookp bk)
 ;             (good-phonebookp (del-phone nm bk)))
@@ -1463,7 +1463,7 @@
 
   It must be possible to retrieve a phone number, given a name.
 
-  It must be possible to add and delete entries. 
+  It must be possible to add and delete entries.
 
   ~eq[]
 
@@ -1529,7 +1529,7 @@
   example,
   ~bv[]
 
-    (defthm bound?-bind 
+    (defthm bound?-bind
       (equal (bound? x (bind y v a))
              (or (equal x y)
                  (bound? x a))))
@@ -1676,7 +1676,7 @@
       ;;
       (local (defun namep (x)
                ;; This declare is needed to tell
-               ;; ACL2 that we're aware that the 
+               ;; ACL2 that we're aware that the
                ;; argument x is not used in the body
                ;; of the function.
                (declare (ignore x))
@@ -1685,7 +1685,7 @@
       (defthm namep-booleanp
         (booleanp (namep x))))
 
-  ~ev[] 
+  ~ev[]
 
   This ~ilc[encapsulate] form introduces the new function ~c[namep] of one
   argument and one result and constrains ~c[(namep x)] to be Boolean,
@@ -1839,7 +1839,7 @@
   Let's formulate some of these properties.  The first one, for example, is:
   ~bv[]
 
-    (defthm add-in-book 
+    (defthm add-in-book
       (in-book? nm (add-phone nm pnum bk))).
 
   ~ev[]
@@ -1850,7 +1850,7 @@
   could have added some extraneous hypotheses and proved:
   ~bv[]
 
-    (defthm add-in-book 
+    (defthm add-in-book
       (implies (and (namep nm)
                     (pnump pnum)
                     (phonebookp bk))
@@ -1864,7 +1864,7 @@
   are usually stored as rules and used in later proofs.  For a lemma to
   be used, its hypotheses must be relieved (proved to hold in that
   instance); extra hypotheses require extra work.  So we avoid them
-  whenever possible. 
+  whenever possible.
 
   There is another, more important observation to make about our
   lemma.  Even in its simpler form (without the extraneous
@@ -1983,11 +1983,11 @@
 
   ~ev[]
   Our intuition about ~c[rembind] and ~c[bind] tells us that this goal
-  should be true even without the hypotheses.  We attempt to prove the 
+  should be true even without the hypotheses.  We attempt to prove the
   following lemma.
   ~bv[]
 
-    (defthm rembind-bind 
+    (defthm rembind-bind
       (equal (rembind nm (bind nm pnum bk))
              (rembind nm bk)))
 
@@ -2093,44 +2093,44 @@
                     (namep nm)
                     (pnump num))
                (phonebookp (bind nm num bk))))
-    
-    (defthm member-equal-strip-cars-bind 
+
+    (defthm member-equal-strip-cars-bind
       (implies (and (not (equal x y))
                     (not (member-equal x (strip-cars a))))
                (not (member-equal x (strip-cars (bind y z a))))))
-    
-    (defthm bind-preserves-domain-setp 
+
+    (defthm bind-preserves-domain-setp
       (implies (and (alistp bk)
                     (setp (domain bk)))
                (setp (domain (bind nm num bk))))
       :hints ((\"Goal\" :in-theory (enable domain))))
-    
+
     (defthm phonebookp-alistp
       (implies (phonebookp bk)
                (alistp bk)))
-    
+
     (defthm ADD-PHONE-PRESERVES-INVARIANT
       (implies (and (valid-phonebookp bk)
                     (namep nm)
                     (pnump num))
                (valid-phonebookp (add-phone nm num bk)))
       :hints ((\"Goal\" :in-theory (disable domain-bind))))
-    
+
     (defthm CHANGE-PHONE-PRESERVES-INVARIANT
       (implies (and (valid-phonebookp bk)
                     (namep nm)
                     (pnump num))
                (valid-phonebookp (change-phone nm num bk)))
       :hints ((\"Goal\" :in-theory (disable domain-bind))))
-    
+
     (defthm remove-equal-preserves-setp
       (implies (setp l)
                (setp (remove-equal x l))))
-    
-    (defthm rembind-preserves-phonebookp 
+
+    (defthm rembind-preserves-phonebookp
       (implies (phonebookp bk)
                (phonebookp (rembind nm bk))))
-    
+
     (defthm DEL-PHONE-PRESERVES-INVARIANT
       (implies (valid-phonebookp bk)
                (valid-phonebookp (del-phone nm bk))))
@@ -2170,46 +2170,46 @@
 
     (defun pnums-in-use (bk)
       (range bk))
-    
+
     (defun phonenums-unique (bk)
       (setp (pnums-in-use bk)))
-    
+
     (defun new-pnump (pnum bk)
       (not (member-equal pnum (pnums-in-use bk))))
-    
+
     (defthm member-equal-strip-cdrs-rembind
       (implies (not (member-equal x (strip-cdrs y)))
                (not (member-equal x (strip-cdrs (rembind z y))))))
-    
+
     (defthm DEL-PHONE-PRESERVES-PHONENUMS-UNIQUE
       (implies (phonenums-unique bk)
                (phonenums-unique (del-phone nm bk)))
       :hints ((\"Goal\" :in-theory (enable range))))
-    
+
     (defthm strip-cdrs-bind-non-member
       (implies (and (not (bound? x a))
                     (alistp a))
                (equal (strip-cdrs (bind x y a))
                       (append (strip-cdrs a) (list y))))
       :hints ((\"Goal\" :in-theory (enable bound?))))
-    
-    (defthm setp-append-list 
+
+    (defthm setp-append-list
       (implies (setp l)
                (equal (setp (append l (list x)))
                       (not (member-equal x l)))))
-    
+
     (defthm ADD-PHONE-PRESERVES-PHONENUMS-UNIQUE
       (implies (and (phonenums-unique bk)
                     (new-pnump pnum bk)
                     (alistp bk))
                (phonenums-unique (add-phone nm pnum bk)))
       :hints ((\"Goal\" :in-theory (enable range))))
-    
+
     (defthm member-equal-strip-cdrs-bind
       (implies (and (not (member-equal z (strip-cdrs a)))
                     (not (equal z y)))
                (not (member-equal z (strip-cdrs (bind x y a))))))
-    
+
     (defthm CHANGE-PHONE-PRESERVES-PHONENUMS-UNIQUE
       (implies (and (phonenums-unique bk)
                     (new-pnump pnum bk)
@@ -2281,12 +2281,12 @@
             :use
             ((:instance some-bigger-p-suff
                         (x (arb-lg-p-witness))
-                        (y (some-bigger-p-or-r-witness 
+                        (y (some-bigger-p-or-r-witness
                             (max (arb-lg-p-witness)
                                  (arb-lg-r-witness)))))
              (:instance some-bigger-r-suff
                         (x (arb-lg-r-witness))
-                        (y (some-bigger-p-or-r-witness 
+                        (y (some-bigger-p-or-r-witness
                             (max (arb-lg-p-witness)
                                  (arb-lg-r-witness)))))
              (:instance arb-lg-p-or-r-necc
@@ -2553,9 +2553,9 @@
                 (DECLARE (XARGS :GUARD (INTEGER-LISTP X)
                                 :VERIFY-GUARDS NIL))
   ACL2 >:set-guard-checking t
-  
+
   Turning guard checking on, value T.
-  
+
   ACL2 !>(sum-list '(1 2 abc 3))
 
   ACL2 Error in TOP-LEVEL: The guard for the function symbol
@@ -3182,11 +3182,11 @@
 
   B. Strategies for creating events
 
-  C. Dealing with failed proofs 
+  C. Dealing with failed proofs
 
-  D. Performance tips 
+  D. Performance tips
 
-  E. Miscellaneous tips and knowledge 
+  E. Miscellaneous tips and knowledge
 
   F. Some things you DON'T need to know
   ~eq[]~/
@@ -3384,7 +3384,7 @@
     (defaxiom commutativity-of-+
               (equal (+ x y) (+ y x))).
 
-  ~ev[] 
+  ~ev[]
   This would obviously lead to dangerous circular rewriting if such
   ``permutative'' rules were not governed by a further restriction.
   The restriction is that such rules will not produce a ~il[term] that
@@ -3647,7 +3647,7 @@
    The tours give you a good overview of the whole system where this tutorial
    focuses on how to use the prover itself.
 
-   If you haven't visited these links, please do so now.  
+   If you haven't visited these links, please do so now.
 
    This tutorial will take you several hours -- maybe several days -- to work
    through.  Do not breeze through it as you might a blog.  ~i[Think] your way
@@ -3853,7 +3853,7 @@
 
    We recommend that you read the following topics in the following
    order, without skipping anything but links into the reference
-   manual, which are marked by the little warning sign, ``~warn[]''.   
+   manual, which are marked by the little warning sign, ``~warn[]''.
 
    (1) ~l[introduction-to-rewrite-rules-part-1] to read about the use and design of
    rewrite rules.
@@ -3924,7 +3924,7 @@
         ~il[FREQUENTLY-ASKED-QUESTIONS-BY-NEWCOMERS]
    ~ev[]
 
-   We also recommend that you look at the ACL2 Demos, at the ``demos'' link of 
+   We also recommend that you look at the ACL2 Demos, at the ``demos'' link of
    the ACL2 home page ~url[http://www.cs.utexas.edu/users/moore/acl2].
 
    Most users of ACL2 have bought the book
@@ -4159,7 +4159,7 @@
    But before you decide the induction hypothesis is missing, look closely for
    contradictions among the hypotheses of the checkpoint formula.  For example,
    perhaps one of the hypotheses is ~c[(MEMBER e x)] and another is
-   ~c[(NOT (MEMBER e' x'))] where ~c[e], ~c[x], ~c[e'], and ~c[x'] are 
+   ~c[(NOT (MEMBER e' x'))] where ~c[e], ~c[x], ~c[e'], and ~c[x'] are
    possibly complicated expressions.
 
    Is it possible that ~c[e] and ~c[e'] are equal and ~c[x] and ~c[x'] are
@@ -4227,9 +4227,9 @@
                   (subsetp a c))
               (subsetp a (append b c)))).
    ~ev[]
- 
+
    This version is better because it handles both of the possibilities regarding whether
-   ~c[a] is a subset of the arguments of the ~c[append].  
+   ~c[a] is a subset of the arguments of the ~c[append].
 
    It would be nice if we could think of a ``strong'' version, one in which
    ~c[(SUBSETP a (APPEND b c))] is rewritten to some clearly simpler term, but
@@ -4305,16 +4305,16 @@
    and ``~i[q] ---> ~i[p].''  So the strong version quite literally says
    everything the weak version does and then some.)
 
-   But the ``strong'' version also produces a ~i[better] rewrite rule.  Here 
+   But the ``strong'' version also produces a ~i[better] rewrite rule.  Here
    are the rules generated from these two formulas, phrased as directives to
    ACL2's simplifier:
 
   ~c[member-rev-weak]: If you ever see an instance of ~c[(MEMBER e (REV b))],
-   backchain to ~c[(MEMBER e b)] (i.e., turn your attention to that term) 
+   backchain to ~c[(MEMBER e b)] (i.e., turn your attention to that term)
    and if you can show that it is true, replace ~c[(MEMBER e (REV b))] by ~c[T].
 
    ~c[member-rev-strong]:  If you ever see an instance of ~c[(MEMBER e (REV b))],
-   replace it by ~c[(MEMBER e b)]. 
+   replace it by ~c[(MEMBER e b)].
 
    Technical Note: Actually, both rules concern ~i[propositional] occurrences
    of the ``target'' expression, ~c[(MEMBER e (REV b))], i.e., occurrences of
@@ -4527,7 +4527,7 @@
    then add the hypotheses we need to make it true.  In this case, there were no
    necessary hypotheses.  But if there are, we first identify them and then we
    ask ``what can I say about the function if these hypotheses aren't true?''
-   and try to strengthen the statement still further.  
+   and try to strengthen the statement still further.
 
    Use your browser's ~b[Back Button] now to return to
    ~il[practice-formulating-strong-rules].~/~/")
@@ -4691,7 +4691,7 @@
    (implies x (append x y))
    ~ev[]
    which rewrites propositional occurrences of ~c[(APPEND x y)] to ~c[T] if
-   ~c[x] is non-~c[nil].  This is an inductive fact about ~c[append].  
+   ~c[x] is non-~c[nil].  This is an inductive fact about ~c[append].
 
    A problem with the ~c[-really-strong] rule is that it transforms even
    propositional occurrences of ~c[member] into mixed propositional and
@@ -4781,12 +4781,12 @@
 
    This does not fully characterize the situation though.  For example,
    ~c['(1 2 3 4)] is a subset of ~c[(append '(1 3) '(2 4))] without being
-   a subset of either argument of the ~c[append].  
+   a subset of either argument of the ~c[append].
 
    However, no obvious equivalence comes to mind -- indeed, to express any of
    the ideas floating around here requires defining and introducing more
    functions, which is not recommended unless those functions are already in
-   the problem.  
+   the problem.
 
    For example, if you defined the concept of ``~c[set-minus]'' so that
    ~c[(set-minus x y)] consists of those elements of ~c[x] not in ~c[y], then
@@ -4862,7 +4862,7 @@
                    (and (natp k)
                         (<= k j)))))
    ~ev[]
-   Clearly though, we'd like to get rid of the ~c[(natp j)] hypothesis and the 
+   Clearly though, we'd like to get rid of the ~c[(natp j)] hypothesis and the
    neatest plausible version is:
    ~bv[]
    (defthm member-nats-below-weak-neatest
@@ -4874,7 +4874,7 @@
    ~ev[]
    But it is not a theorem!  For example, if ~c[j] is ~c[-1] and ~c[k] is 0,
    then the left-hand side above returns ~c[t], because ~c[(nats-below j)] is ~c[(0)],
-   but the right-hand side is ~c[nil].  
+   but the right-hand side is ~c[nil].
 
    But this suggests a strategy for dealing with necessary hypotheses, like ~c[(natp j)].
    We can move them into an ~c[IF] on the right-hand side!  Something like this
@@ -4894,7 +4894,7 @@
    But by inspection of the definition of ~c[nats-below], we see that when
    ~c[(natp j)] is false, ~c[(nats-below j)] is the list ~c[(0)] because ~c[(zp j)]
    is t.  That is, ~c[nats-below] treats all non-natural arguments like
-   they were ~c[0].  Thus, when ~c[(natp j)] is false, ~c[(member k (nats-below j))] 
+   they were ~c[0].  Thus, when ~c[(natp j)] is false, ~c[(member k (nats-below j))]
    is ~c[(member k '(0))], which is ~c[(equal k 0)].
 
    So the strong version is
@@ -4907,9 +4907,9 @@
                (equal k 0))))
    ~ev[]
    This is a great :~ilc[rewrite] ~warn[] rule.  It gets rid of the ~c[member] and ~c[nats-below] and
-   introduces arithmetic.   
+   introduces arithmetic.
 
-   This example illustrates the idea of putting an ~c[if] on the right-hand-side of the 
+   This example illustrates the idea of putting an ~c[if] on the right-hand-side of the
    equivalence.  Many users tend to limit themselves to propositional forms inside
    ~c[iff] or to simple expressions inside of ~c[equal].  But it is quite natural to
    use ~c[if] to express what the answer is:  if ~c[j] is a natural, then ~c[k] is
@@ -5053,7 +5053,7 @@
    think about this subgoal?  What did ACL2 do to get here?  How does ACL2
    work?''
 
-   Two other ideas are helpful to keep in mind.  
+   Two other ideas are helpful to keep in mind.
 
    ~b[Is a key checkpoint unexpectedly complicated?]  Pay special attention to
    the case where the complication seems to be the introduction of low-level
@@ -5140,16 +5140,16 @@
    (append (rev (cdr x)) (list (car x)))
    ~ev[]
    and the ~i[actuals] of that call are, respectively, ~c[(rev (cdr x))] and
-   ~c[(list (car x))].   
+   ~c[(list (car x))].
 
    ~b[Q]: What do you get if you evaluate ~c[(rev '(a b c d))]?  ~b[A]:
    ~c[(D C B A)].
 
-   ~b[Q]: How did ~c[rev] change the case of the elements, e.g., lowercase ~c[a] 
+   ~b[Q]: How did ~c[rev] change the case of the elements, e.g., lowercase ~c[a]
    was in the input list but uppercase ~c[A] was in the output?  ~b[A]:
    This is a trick question.  ~c[Rev] doesn't change the case of the elements.
    ACL2 is case-insensitive when dealing with symbols.  The symbol ~c[a] is
-   read in as the symbol ~c[A].  Thus, when writing function names, for 
+   read in as the symbol ~c[A].  Thus, when writing function names, for
    example, we can write ~c[rev], ~c[Rev], ~c[REV], or even ~c[ReV]
    and always be referring to the function ~c[REV].  By default, ACL2
    prints symbols in uppercase.
@@ -5165,7 +5165,7 @@
    The first wrong answer above is wrong because Lisp is ``case insensitive'' only
    for symbols, not for character objects like ~c[#\\c] (the lowercase character c)
    or for strings.   Furthermore, ~c[\"A\"] is a string, not a symbol; it is different
-   from ~c[A].  The second wrong answer above is wrong because ~c[rev] does not 
+   from ~c[A].  The second wrong answer above is wrong because ~c[rev] does not
    go into the individual elements of the list, it just reverses the order of the
    elements.  So it doesn't change the element ~c[(A B C)] to ~c[(C B A)].
 
@@ -5187,7 +5187,7 @@
    about the syntax of the language that prevents it being applied to
    non-lists.
 
-   ~b[Q]: So what does ~c[(rev 23)] evaluate to?  ~b[A]:  ~c[Nil].  
+   ~b[Q]: So what does ~c[(rev 23)] evaluate to?  ~b[A]:  ~c[Nil].
 
    ~b[Q]: Why?  ~b[A]:  Because ~c[(endp 23)] is ~c[t], because ~c[endp] is
    defined:
@@ -5208,7 +5208,7 @@
    ~ev[]
    That is, it is a list whose ``terminal marker'' is the atom ~c[D].
    ~c[Rev] treats that list exactly as it treats the ~c[nil]-terminated
-   list of the same elements, ~c[(a b c)], because ~c[(endp 'D)] = 
+   list of the same elements, ~c[(a b c)], because ~c[(endp 'D)] =
    ~c[(endp nil)] = ~c[t].
 
    ~b[Q]: What does ~c[(rev 1 2 3)] evaluate to?  ~b[A]: That's a trick question.
@@ -5270,7 +5270,7 @@
 
    * ~ilc[and], ~ilc[or], ~ilc[not], ~ilc[implies], ~ilc[iff]:  The propositional
    connectives.  ~c[And] and ~c[or] are allowed to take a varying number of arguments, e.g.,
-   ~c[(and p q r)] is just an abbreviation for ~c[(and p (and q r))].  
+   ~c[(and p q r)] is just an abbreviation for ~c[(and p (and q r))].
    In Lisp, ~c[and] returns ~c[nil] if any of its arguments evaluates to ~c[nil]; otherwise
    it returns the value of the last argument!  Thus, ~c[(and t t 3)] returns ~c[3]!  If you
    object to the idea that ~c[and] is not Boolean, don't give it non-Boolean arguments!
@@ -5349,7 +5349,7 @@
    ``destructively modified'' (~pl[stobj] ~warn[], including a very special single-threaded
    object that records the ~ilc[state] ~warn[] of the ACL2 system), file input and output (~pl[io] ~warn[]),
    applicative arrays (~pl[arrays] ~warn[]) and property lists (~pl[getprop] ~warn[]) and other
-   facilities necessary for it to be a practical programming language.  
+   facilities necessary for it to be a practical programming language.
    However, we ~b[strongly] recommend that as a new user you stay away from these features until
    you are good at proving theorems about elementary list processing!
 
@@ -5359,7 +5359,7 @@
 
    If you are uncomfortable with ACL2 programming, we recommend that you study
    ~url[http://www.cs.utexas.edu/users/moore/publications/gentle-intro-to-acl2-programming.html]
-   and 
+   and
    ~url[http://www.cs.utexas.edu/users/moore/publications/acl2-programming-exercises1.html].
 
    However, we strongly recommend that you first invest in learning either
@@ -5381,7 +5381,7 @@
    ":Doc-Section introduction-to-the-theorem-prover
 
    induction on natural numbers~/
-   
+
    ~l[logic-knowledge-taken-for-granted-inductive-proof] for an explanation of
    what we mean by the induction ~i[suggested] by a recursive function or a
    term.
@@ -5390,12 +5390,12 @@
    arithmetic setting.  To prove ~c[(p n)], for all ~c[n], by classical
    induction on the construction of the natural numbers, prove each of the
    following:
-   
+
    ~bv[]
    ~i[Base Case]:
    (implies (zp n) (p n))
    ~ev[]
-   
+
    ~bv[]
    ~i[Induction Step]:
    (implies (and (not (zp n))
@@ -5411,7 +5411,7 @@
    ~c[(p (- n 1))] above is called the ~i[induction hypothesis].
 
    A function that suggests this induction is
-   ~bv[]   
+   ~bv[]
    (defun nat-recursion (n)
      (if (zp n)
          n
@@ -5442,12 +5442,12 @@
    ~b[Classical Induction on Natural Numbers Preserving Parity]: Here is
    another way to decompose natural numbers.  To prove ~c[(p n)], for all
    ~c[n], prove each of the following:
-   
+
    ~bv[]
    ~i[Base Case 1]:
    (implies (zp n) (p n))
    ~ev[]
-   
+
    ~bv[]
    ~i[Base Case 2]:
    (implies (equal n 1) (p n))
@@ -5505,7 +5505,7 @@
    ~i[Base Case]:
    (implies (endp x) (p x))
    ~ev[]
-   
+
    ~bv[]
    ~i[Induction Step]:
    (implies (and (not (endp x))
@@ -5527,7 +5527,7 @@
    (defun app (x y)
      (if (endp x)
          y
-         (cons (car x) 
+         (cons (car x)
                (app (cdr x) y)))).
    ~ev[]
 
@@ -5552,7 +5552,7 @@
    ~i[Base Case]:
    (implies (atom x) (p x))
    ~ev[]
-   
+
    ~bv[]
    ~i[Induction Step]:
    (implies (and (not (atom x))
@@ -5690,7 +5690,7 @@
    (implies (endp x)
             (p x a))
    ~ev[]
-   
+
    ~bv[]
    ~i[Induction Step]:
    (implies (and (not (endp x))
@@ -5732,7 +5732,7 @@
    case analysis as would happen if ~c[and] or ~c[or] or other propositional functions
    are used).
 
-   If you tried to prove ~c[(p x a)] and suggested the induct hint 
+   If you tried to prove ~c[(p x a)] and suggested the induct hint
    ~c[(rev1-modified x a (fact k))], as by
    ~bv[]
    (thm (p x a)
@@ -5893,12 +5893,12 @@
    (and perhaps some other variables which we don't exhibit).  Then to prove
    ~c[(p n)], for all ~c[n], by classical induction on the construction of the
    natural numbers, prove each of the following:
-   
+
    ~bv[]
    ~i[Base Case]:
    (implies (zp n) (p n))
    ~ev[]
-   
+
    ~bv[]
    ~i[Induction Step]:
    (implies (and (not (zp n))
@@ -5930,13 +5930,13 @@
    that the Base and Induction steps above are sufficient to prove ~c[p] for all
    objects is related to the fact that the following recursion defines a total,
    terminating function:
-   ~bv[]   
+   ~bv[]
    (defun nat-recursion (n)
      (if (zp n)
          n
          (nat-recursion (- n 1))))
    ~ev[]
-   
+
    When this function is admitted we have to prove that if ~c[(zp n)] does not
    hold, then ~c[(- n 1)] is smaller, in some sense, than ~c[n].  This sense of ``smaller''
    is determined by some ~i[measure] of the arguments.  That measure must return an
@@ -6099,12 +6099,12 @@
    ~i[Choice (i)] above, then you will have proved the goal conjecture, but you
    would have done it by simple case analysis:  prove it when ~c[(endp z)] and
    prove it when ~c[(not (endp z))].  While logically valid, you probably can't
-   prove ~i[Choice (i)] directly because you have no induction hypothesis to work 
+   prove ~i[Choice (i)] directly because you have no induction hypothesis to work
    with.
 
    If you thought the right answer was:
    ~bv[]
-   ~i[Induction Step -- Choice (ii)]:   
+   ~i[Induction Step -- Choice (ii)]:
    (implies (true-listp (cdr z))
             (equal (rev (rev (cdr z))) (cdr z)))
    ~ev[]
@@ -6116,7 +6116,7 @@
 
    If you thought the right answer was:
    ~bv[]
-   ~i[Induction Step -- Choice (iii)]:   
+   ~i[Induction Step -- Choice (iii)]:
    (implies (and (not (endp z))
                  (equal (rev (rev (cdr x))) (cdr x))) ; ~i[``induction hyp'']
             (implies (true-listp z)
@@ -6137,7 +6137,7 @@
    If this doesn't make sense, perhaps you should read about
    ~il[logic-knowledge-taken-for-granted-inductive-proof induction] again.
 
-   When you understand why ~i[Choice (iv)] is the correct answer, 
+   When you understand why ~i[Choice (iv)] is the correct answer,
    use your browser's ~b[Back Button] to return to
    ~il[logic-knowledge-taken-for-granted] and go to question Q2.
    ~/~/")
@@ -6227,7 +6227,7 @@
                  (true-listp z))
             (equal (rev (rev z)) z))
    ~ev[]
-   Using the Contrapositive and rearranging the order of the hypotheses (see 
+   Using the Contrapositive and rearranging the order of the hypotheses (see
    ~il[logic-knowledge-taken-for-granted-propositional-calculus propositional calculus]
    again), this is
    ~bv[]
@@ -6249,14 +6249,14 @@
    If we denote the conjecture ~c[(implies p q)] as ~c[p ---> q], then
    the Induction Step will look like this:
    ~bv[]
-     ( c  &  (p'  --->  q')) 
+     ( c  &  (p'  --->  q'))
    --->
      (p ---> q)
    ~ev[]
    where ~c[c] is the test that determines the inductive step, (e.g., ~c[(not (endp z))])
    and ~c[p'] and ~c[q'] are inductive instances of ~c[p] and ~c[q].  Promotion produces
    ~bv[]
-     ( c  & p & (p'  --->  q')) 
+     ( c  & p & (p'  --->  q'))
    --->
      q
    ~ev[]
@@ -6280,7 +6280,7 @@
            |         v
     -->   (p   --->  q )
    ~ev[]
-   
+
    When you understand why ~i[Subgoals (i)] and ~i[(ii)] are sufficient,
    use your browser's ~b[Back Button] to return to
    ~il[logic-knowledge-taken-for-granted] and go to question Q3.
@@ -6315,7 +6315,7 @@
             (s (g (h a))))
    ~ev[]
 
-   If you don't see why, re-read the discussion of 
+   If you don't see why, re-read the discussion of
    ~il[logic-knowledge-taken-for-granted-rewriting rewriting]
    again.  Forgetting about the need to relieve hypotheses is a
    common mistake in informal proofs.  ACL2 won't forget to relieve
@@ -6351,7 +6351,7 @@
    target is:
    ~bv[]
    ~i[variable in pattern]          ~i[replacement term]
-   x                              (REV A) 
+   x                              (REV A)
    y                              (REV B)
    z                              C
    ~ev[]
@@ -6380,7 +6380,7 @@
    ~bv[]
    (implies (endp z)
             (implies (true-listp z)
-                     (equal (rev (rev z)) z)))   
+                     (equal (rev (rev z)) z)))
    ~ev[]
    is equivalent to:
    ~bv[]
@@ -6388,7 +6388,7 @@
                   (true-listp z))
              (equal (rev (rev z)) z))
    ~ev[]
- 
+
    If this is surprising and you know propositional calculus, then the
    problem might be our notation.  We're exploiting the tautology
    ~bv[]
@@ -6417,7 +6417,7 @@
    ~ev[]
    then we say that formula is an ~i[implication], that ~i[hyp] is the ~i[hypothesis], and
    that ~i[concl] is the conclusion.  If the hypothesis is an ~c[and] expression, as in
-   ~bv[]   
+   ~bv[]
    (implies (and ~i[hyp1]
                  ~i[hyp2]
                  ...)
@@ -6457,7 +6457,7 @@
    ~i[Distributivity]:
    (iff (and p (or q r))
         (or (and p q)
-            (and p r)))   
+            (and p r)))
 
    ~i[Promotion]:
    (iff (implies p (implies q r))
@@ -6478,13 +6478,13 @@
    ~ev[]
    There are, of course, many others, even with these same names!  For example, there is a
    dual version of DeMorgan showing how ~c[not] distributes over ~c[or], a dual version of
-   Distributivity for ~c[or] over ~c[and], etc.  
+   Distributivity for ~c[or] over ~c[and], etc.
 
    Dealing with propositional calculus will not generally be a problem for you because
    it is decidable and ACL2 has procedures that decide propositional formulas.  However,
    propositional calculus can lead to exponential explosion and can thus explain why
    ACL2 has ``gone out to lunch.''  In addition, sometimes if you are curious as to
-   ~i[why] ACL2 is working on a certain subgoal the reason can be traced back to 
+   ~i[why] ACL2 is working on a certain subgoal the reason can be traced back to
    propositional calculus.
 
    The most common example of this is that to prove a formula of the form
@@ -6539,7 +6539,7 @@
    ~bv[]
    (implies (endp z)
             (implies (true-listp z)
-                     (equal (rev (rev z)) z)))   
+                     (equal (rev (rev z)) z)))
    ~ev[]
    This formula is an ~il[logic-knowledge-taken-for-granted-instance instance] of
    ~bv[]
@@ -6575,7 +6575,7 @@
    This sketch of propositional reasoning in ACL2 is a little suspect because
    we didn't address the possibility that the substitution might replace the
    propositional variables by non-propositional terms.  But the tautology was
-   verified only on Boolean values for those variables.  This actually 
+   verified only on Boolean values for those variables.  This actually
    works out because in ACL2 all propositional testing is done against ~c[nil]
    and any non-~c[nil] value, including ~c[t], is as good as another.  However,
    the tautology allows us to replace one formula by the other only in contexts
@@ -6584,7 +6584,7 @@
    establishing that it never returns ~c[nil], i.e., no matter what the values
    of the variables, the value of the formula is non-~c[nil].
 
-   A very simple example of this is with Double Negation.  
+   A very simple example of this is with Double Negation.
    ~bv[]
    (iff (not (not p)) p)
    ~ev[]
@@ -6601,7 +6601,7 @@
    (equal (not (not p)) p)
    ~ev[]
    we could not prove it by using Double Negation!  The formula above
-   claims that ~c[(not (not p))] and ~c[p] have identical values.  
+   claims that ~c[(not (not p))] and ~c[p] have identical values.
    They do not!  For example, ~c[(not (not 3))] is ~c[t], not ~c[3].
    However, ~c[(not (not 3))] and ~c[t] are propositionally equivalent (i.e.,
    satisfy ~c[iff]) because one is as good as the other in a test.
@@ -6610,7 +6610,7 @@
    As long as you only use propositional formulas in propositional places
    this aspect of ACL2 should not affect you.
 
-   Now please use your browser's ~b[Back Button] to return to the 
+   Now please use your browser's ~b[Back Button] to return to the
    example proof in ~il[logic-knowledge-taken-for-granted].
 
    ~/~/")
@@ -6662,7 +6662,7 @@
    ~ev[]
    to replace an instance of one side by the corresponding instance of the
    other in a goal conjecture, we call that ~i[unconditional] rewriting
-   with the equality.   
+   with the equality.
 
    ~b[Example 2]:  Suppose your goal conjecture is:
    ~bv[]
@@ -6692,18 +6692,18 @@
             (< (- (len b) 1) (len b))).
    ~ev[]
    To do this you must know that the following subgoal is provable:
-   ~bv[]   
+   ~bv[]
    ~i[Subgoal to Relieve Hyp 1]:
    (implies (and (subsetp a b)
                  (true-listp b)
                  (member e a))
             (member e b)).
-   ~ev[]   
+   ~ev[]
 
    This is an example of ~i[conditional] rewriting.  In order to use the
    ~i[Theorem] we had to establish that its hypotheses are satisfied.  That is
    called ~i[relieving the hypotheses] and was done by proving the ~i[Subgoal to Relieve Hyp 1].
-   Conditional rewriting is the most commonly used proof technique in ACL2.  
+   Conditional rewriting is the most commonly used proof technique in ACL2.
 
    Unconditional rewriting is just a special case, where there are no
    hypotheses to relieve.
@@ -6721,7 +6721,7 @@
    ``~il[logic-knowledge-taken-for-granted-instance instance]'' above and we
    recommend you read it before continuing.  Then use your browser's ~b[Back Button]
    to come back here.
-   
+
    You should also be aware of the terms introduced in our discussion of
    ~il[logic-knowledge-taken-for-granted-propositional-calculus propositional calculus].
 
@@ -6768,7 +6768,7 @@
    variables.  Hence, it is true for the values specified by ~i[sigma'].  If
    the ~i[hypi'] are true, then the target is really equal to ~i[replacement'].
    But it is always permitted to replace something by something it's equal to.
-   
+
    Rewriting thus involves several steps:
 
    (1) Finding a ~i[target] and a ~i[theorem] to use to rewrite it to some more
@@ -6803,10 +6803,10 @@
    (implies ~i[context] ~i[hypi']).
    ~ev[]
 
-   It is important to note that this description of rewriting with ~i[Theorem] 
+   It is important to note that this description of rewriting with ~i[Theorem]
    describes the process from a strictly logical perspective.  The syntax of
    the theorem and the goal don't matter.  You're free to use propositional
-   calculus to rearrange them to put them into the appropriate forms to 
+   calculus to rearrange them to put them into the appropriate forms to
    fit the descriptions given.  Clearly, if you have a candidate Theorem
    in the ``wrong'' form and but it can be rearranged with propositional
    calculus into the ``right'' form, then that rearranged theorem is also
@@ -6853,7 +6853,7 @@
 
    Now use your browser's ~b[Back Button] to return to the example proof in
    ~il[logic-knowledge-taken-for-granted].~/~/")
-   
+
 (deflabel logic-knowledge-taken-for-granted-rewriting-repeatedly
   :doc
   ":Doc-Section introduction-to-the-theorem-prover
@@ -6913,7 +6913,7 @@
 
    Next, note that the first hypothesis above is that ~c[(consp z)] is false.
    That is, ~c[(not (consp z))] is the same as ~c[(equal (consp z) nil)].
-   Thus, replacement of equals by equals means we can transform ~i[formula1'] to   
+   Thus, replacement of equals by equals means we can transform ~i[formula1'] to
    ~bv[]
    ~i[formula1'']:
    (implies (and (not (consp z))
@@ -6972,7 +6972,7 @@
    (implies (true-listp 23)
             (not (equal x 23)))
    ~ev[]
-   by substitutions of equals for equals.  That is because, by 
+   by substitutions of equals for equals.  That is because, by
    ~il[logic-knowledge-taken-for-granted-propositional-calculus propositional calculus],
    we could rearrange the formulas into their ~i[contrapositive] forms:
    ~bv[]
@@ -6994,7 +6994,7 @@
    ~c[IFF].  You can use propositional equivalence hypotheses to substitute
    one side for the other ~i[provided] the target term occurs in a propositional
    place, as discussed at the bottom of
-   ~il[logic-knowledge-taken-for-granted-propositional-calculus propositional calculus].   
+   ~il[logic-knowledge-taken-for-granted-propositional-calculus propositional calculus].
 
    Now use your browser's ~b[Back Button] to return to the example proof in
    ~il[logic-knowledge-taken-for-granted].~/~/")
@@ -7018,7 +7018,7 @@
    =
    (3x + 7y + 4).
    ~ev[]
-   That last step is just evaluation.  
+   That last step is just evaluation.
 
    It happens often in ACL2 proofs because theorems involve constants
    and defined functions and when those constants ``drift into the maw''
@@ -7070,19 +7070,19 @@
    the extent that logic mimics human reasoning, proofs can be seen as just
    extremely carefully crafted arguments.  Given that ACL2 is responsible for
    following the rules ``to the letter,'' your main job is ``explain'' the
-   big leaps.  
+   big leaps.
 
    To use the theorem prover you must understand (a) the syntax, because
    you must be able to write formulas flawlessly.  But you don't have to know
    (b) the axioms and (c) the rules of inference at nearly the same level of
    precision, as long as you understand the basic structure and language of
    proofs.
-   
+
    Below is part of a proof of a certain theorem.  You ought to be able to
    understand the following.  Since what we describe is a proof of one case of
    the formula, we hope that you're ~i[convinced] that the formula holds for
    that case.
-    
+
    Read this and follow the links to confirm that you understand what happens.
    Be sure to then use your browser's ~b[Back Button] to return to this page
    and continue.
@@ -7122,14 +7122,14 @@
             (equal (rev (rev z)) z))
    ~ev[]
 
-   ~il[logic-knowledge-taken-for-granted-rewriting-repeatedly Rewriting repeatedly] 
+   ~il[logic-knowledge-taken-for-granted-rewriting-repeatedly Rewriting repeatedly]
    starting with the definition of ~c[true-listp] produces:
    ~bv[]
    (implies (and (not (consp z))
                  (equal z nil))
             (equal (rev (rev z)) z))
    ~ev[]
-   Then using the second ~i[hypothesis], just 
+   Then using the second ~i[hypothesis], just
    ~il[logic-knowledge-taken-for-granted-equals-for-equals substituting equals for equals],
    we get
    ~bv[]
@@ -7169,17 +7169,17 @@
             (implies (true-listp z)
                      (equal (rev (rev z)) z)))
 
-   ~i[Induction Step -- Choice (ii)]:   
+   ~i[Induction Step -- Choice (ii)]:
    (implies (true-listp (cdr z))
             (equal (rev (rev (cdr z))) (cdr z)))
 
-   ~i[Induction Step -- Choice (iii)]:   
+   ~i[Induction Step -- Choice (iii)]:
    (implies (and (not (endp z))
                  (equal (rev (rev (cdr x))) (cdr x)))
             (implies (true-listp z)
                      (equal (rev (rev z)) z)))
 
-   ~i[Induction Step -- Choice (iv)]:   
+   ~i[Induction Step -- Choice (iv)]:
    (implies (and (not (endp z))
                  (implies (true-listp (cdr z))
                           (equal (rev (rev (cdr z))) (cdr z))))
@@ -7199,7 +7199,7 @@
                  (implies ~i[p'] ~i[q']))
             (implies ~i[p] ~i[q]))
    ~ev[]
-   and beside each candidate subgoal we show its structure in those terms. 
+   and beside each candidate subgoal we show its structure in those terms.
 
    ~bv[]
    ~i[Subgoal (i)]:
@@ -7241,7 +7241,7 @@
    ~ev[]
    What must you prove to relieve the hypothesis of ~i[Theorem]?
 
-   After you've thought about it, look 
+   After you've thought about it, look
    ~il[logic-knowledge-taken-for-granted-q3-answer here] for our answer.
 
    ~b[End of the Quiz]
@@ -7355,7 +7355,7 @@
    number less than the length of ~c[x].
 
    ~b[nth-rev-3]:~nl[]
-   Replace instances of ~c[(< n (LEN x))]~nl[] 
+   Replace instances of ~c[(< n (LEN x))]~nl[]
    by ~c[NIL]~nl[]
    if you can establish that ~c[n] is a natural
    number and that ~c[(NTH n (REV x))] is different from
@@ -7394,7 +7394,7 @@
    see ~i[(2x + 6)(3x - 9)] you automaticaly normalize it, by ``multiplying out
    and collecting like terms,'' to get ~i[(6x^2 - 54)].  This normalization
    strategy allows you to recognize equivalent terms presented differently,
-   such as ~i[6(x^2 - 9)].  
+   such as ~i[6(x^2 - 9)].
 
    The ACL2 user is responsible for making up the rules.  (Standard ``books''
    -- files of ACL2 definitions and theorems -- can often provide rules for
@@ -7772,7 +7772,7 @@
    hypothesis; ~pl[case-split] ~warn[].  You may add a bogus hypothesis that looks at
    the intended application of the rule and decides whether to apply the rule
    or not, performing an arbitrary computation on the syntactic context of the
-   application; ~pl[syntaxp] ~warn[].  By providing a ~c[:match-free] modifier to the 
+   application; ~pl[syntaxp] ~warn[].  By providing a ~c[:match-free] modifier to the
    ~c[:rewrite] rule declaration in your rule-classes, you may tell ACL2 to try all
    or only the first free variable value it guesses (~pl[rule-classes]
    ~warn[]).  You may provide a bogus hypothesis that computes from the
@@ -7789,7 +7789,7 @@
    output terms are equivalent, you can extend the ACL2 simplifier to call your
    metafunction.  ~l[meta] ~warn[].
 
-   ~b[The Order in which Targets are Rewritten]: 
+   ~b[The Order in which Targets are Rewritten]:
    The rewriter sweeps through terms ``inside-out'' otherwise known as
    ``left-most innermost first''.  Thus, before trying to apply rewrite
    rules to ~c[(]~i[f a1 ... an]~c[)], rules are applied to the ~i[ai].
@@ -7813,7 +7813,7 @@
    suppose you executed the following two events in the order shown:
    ~bv[]
    (defthm rule1 (equal (f (g x)) (h 1 x)))
-   (defthm rule2 (equal (f (g x)) (h 2 X)))   
+   (defthm rule2 (equal (f (g x)) (h 2 X)))
    ~ev[]
    Then if rewrite rules are applied to ~c[(F (G A))], the result
    will be ~c[(H 2 A)], because the latter rule, ~c[rule2], is applied
@@ -7847,9 +7847,9 @@
    (put i v (append a b))
    ~ev[]
    it considers the rule, with the variables ~c[i], ~c[v], ~c[a], and ~c[b]
-   of the rule ~i[bound] to whatever terms matched them in the target, say 
-   the terms ~i[i], ~i[v], ~i[a], and ~i[b].  To consider the rule, the 
-   rewriter first tries to establish (``relieve'') the hypotheses.  In 
+   of the rule ~i[bound] to whatever terms matched them in the target, say
+   the terms ~i[i], ~i[v], ~i[a], and ~i[b].  To consider the rule, the
+   rewriter first tries to establish (``relieve'') the hypotheses.  In
    particular, it rewrites:
    ~bv[]
    (natp ~i[i])           ; ~i[hyp 1]
@@ -7859,7 +7859,7 @@
    (< ~i[i] (len ~i[a])). ; ~i[hyp 2]
    ~ev[]
    If both hyptheses rewrite to true, then the rule ~i[fires] and replaces
-   the target by:   
+   the target by:
    ~bv[]
    (append (put ~i[i] ~i[v] ~i[a]) ~i[b]).
    ~ev[]
@@ -7978,14 +7978,14 @@
    The most predictable rewrite rules have no free variables.  You can add
    pragmatic advice to help ACL2 with free variables, telling it to try all
    the possibilities it finds, to try just the first, or even to compute
-   a ``creative'' guess.  
+   a ``creative'' guess.
 
    It is possible to make the rewriting process loop forever, e.g., by
    rewriting ~i[alpha] to ~i[beta] with one set of rules and rewriting ~i[beta]
    to ~i[alpha] with another.  Even a single rule can make the process loop;
    we'll show you an example of that later in the tutorial.  ACL2 can handle
    commutativity rules without looping.  It uses ~c[(equal (+ x y) (+ y x))] to
-   replace ~c[(+ B A)] by ~c[(+ A B)], but not vice versa.  (It is sensitive 
+   replace ~c[(+ B A)] by ~c[(+ A B)], but not vice versa.  (It is sensitive
    to alphabetic ordering when dealing with ~i[permutative] rules.)
 
    Logically equivalent formulas can generate radically different rewrite
@@ -8012,7 +8012,7 @@
 
    We assume you've read ~il[introduction-to-rewrite-rules-part-1] and
    ~il[introduction-to-key-checkpoints].
-   
+
    The theorem prover's heuristics are influenced by the database of rules and
    the enabled/disabled status of the rules.  You can think of the database as
    a ~i[global] hint, potentially affecting all parts of a proof attempt.
@@ -8086,7 +8086,7 @@
    them for distribution to the community.  The most common books loaded are
    probably the arithmetic books:
    ~bv[]
-   ; * for the most elementary arithmetic, needed for any problem 
+   ; * for the most elementary arithmetic, needed for any problem
    ;   that involves even simple addition and multiplication like
    ;   ~c[(+ x (* 2 y) -3)]:
 
@@ -8173,7 +8173,7 @@
    (<= (len (delete e x)) (len x))
    ~ev[]
    as a rewrite rule is that it only matches instances of that inequality and
-   thus fails to match 
+   thus fails to match
    ~bv[]
    (<= (LEN (DELETE E X)) (+ 1 (LEN X)))
    ~ev[]
@@ -8269,7 +8269,7 @@
    various forms of advice and list various adjustments you wish to make to the
    context in which the prover is operating when it begins addressing the subgoal
    named.
-   
+
    The top-level goal is always named ~c[Goal].  Thus
    ~bv[]
    (defthm ~i[name]
@@ -8279,7 +8279,7 @@
    ~ev[]
    has the effect of using ~i[hints1] for the top-level goal and all of its
    children throughout the entire proof, except for ~c[Subgoal *1/3.2''] and
-   its children, where ~i[hints2] is used instead.  
+   its children, where ~i[hints2] is used instead.
 
    There are a few hints which ``take effect'' exactly on the subgoal to which
    they are attached and are not inherited by their descendents.
@@ -8303,7 +8303,7 @@
    the theory mentioned for ~c[Goal] is the global current theory minus ~c[rule1],
    while the theory mentioned for its descendent, ~c[Subgoal *1/3.2''], is the global
    current theory minus ~c[rule2].  In particular, if both ~c[rule1] and ~c[rule2] are
-   enabled in the global current theory, then ~c[rule1] is enabled during the 
+   enabled in the global current theory, then ~c[rule1] is enabled during the
    processing of ~c[Subgoal *1/3.2''] because it was not removed explicitly there.
 
    ~l[use] ~warn[] for how to force the theorem prover to take note of
@@ -8321,7 +8321,7 @@
    ~l[cases] ~warn[] for how to force the theorem prover to do a case split to
    prove the subgoal under each of an exhaustive list of cases given in the
    hint.  This hint takes action specifically at the named subgoal and is not
-   passed down to its children. 
+   passed down to its children.
 
    ~l[induct] ~warn[] for how to tell the theorem prover to go immediately into
    induction for the subgoal in question, and to use the induction scheme
@@ -8405,7 +8405,7 @@
    ACL2 >
    ~ev[]
    then evaluation occurs strictly according to the ACL2 axioms, without regard for
-   any declared guards.  
+   any declared guards.
 
    You can switch between these two prompts by typing
    ~bv[]
@@ -8417,7 +8417,7 @@
    ~ev[]
    to turn it on.  Try typing ~c[(car 7)] to each prompt.
 
-   If there is a ``~c[p]'' in the prompt, 
+   If there is a ``~c[p]'' in the prompt,
    ~bv[]
    ACL2 p!>
    ~ev[]
@@ -8514,7 +8514,7 @@
 
    The fundamental lesson is that you should pay attention to the prompt and learn what
    the different prompts mean -- or use the ACL2 Sedan.
-   
+
    If you have been working your way through the tutorial introduction to the
    theorem prover, use your browser's ~b[Back Button] now to return to
    ~il[introduction-to-the-theorem-prover].~/~/")
@@ -8627,7 +8627,7 @@
    That is what ~il[introduction-to-the-theorem-prover] is about.
    However, if you want the most basic overview of the prover, ~pl[architecture-of-the-prover].
 
-   ~b[Q]. How do I ~b[define a new function]?  
+   ~b[Q]. How do I ~b[define a new function]?
    ~b[A]. ~l[defun].
 
    ~b[Q]. How do I ~b[define a new predicate]?  ~b[A]. ~l[defun].
@@ -8981,7 +8981,7 @@
    ~c[(:executable-counterpart f)].  Try disabling that, as in the ~c[:]~ilc[hints] ~c[((]...
    ~c[:in-theory (disable  (:executable-counterpart f)) ...~c[))].
 
-   ~b[Q]. How can I make ACL2 ~b[use a rule] in a proof?  
+   ~b[Q]. How can I make ACL2 ~b[use a rule] in a proof?
    ~b[A]. ~l[hints], specifically ~c[:use].
 
    ~b[Q].  How can I make ACL2 expand a function call in a proof?
@@ -9021,7 +9021,7 @@
    ~b[Q].  Is there a way to attach ~b[the same hint to every defthm]?
    ~b[A].  ~l[default-hints].
 
-   ~b[Q].  How can I just tell ACL2 the proof steps?  ~b[A].  ~l[verify] and 
+   ~b[Q].  How can I just tell ACL2 the proof steps?  ~b[A].  ~l[verify] and
    ~pl[proof-checker].
 
    ~b[Q]. How can I write ~b[my own simplifier]?
@@ -9035,7 +9035,7 @@
    ~b[Q]. How can redefine a user-defined function?  ~b[A].  This is tricky.  What if
    you've already proved theorems about the old definition and then wish to change it?
    There are several options.  ~l[ld-redefinition-action] (and note specifically the
-   discussion of updater function for it, ~c[set-ld-redefinition-action]); also 
+   discussion of updater function for it, ~c[set-ld-redefinition-action]); also
    ~pl[redef], ~pl[redef!], ~pl[redef+],  and ~pl[redef-].
 
    ~b[Q]. How do I ~b[change a function from] ~c[:program] ~b[mode to]
@@ -9135,7 +9135,7 @@
 
    ~b[Q].  How do I use ACL2 under ~b[Eclipse]?  ~b[A]. ~l[ACL2-Sedan].
 
-   ~b[Q].  How do I interrupt the prover?  
+   ~b[Q].  How do I interrupt the prover?
    ~b[A].  The keyboard sequence for interrupting a running process depends your
    operating system, host Common Lisp, and user interface (e.g., Emacs, Eclipse, etc.).
    But perhaps a few examples will help you discover what you need to know.
@@ -9242,7 +9242,7 @@
    When you've solved this problem, compare your answer to ours;
    ~pl[introductory-challenge-problem-1-answer].
 
-   Then, use your browser's ~b[Back Button] to return to 
+   Then, use your browser's ~b[Back Button] to return to
    ~il[introductory-challenges].
    ~/~/")
 
@@ -9303,7 +9303,7 @@
    Start in a fresh ACL2, either by restarting your ACL2 image from scratch or
    executing ~c[:ubt! 1].
 
-   Use The Method to prove 
+   Use The Method to prove
    ~bv[]
    (defthm subsetp-reflexive
      (subsetp x x))
@@ -9312,7 +9312,7 @@
    When you've solved this problem, compare your answer to ours;
    ~pl[introductory-challenge-problem-2-answer].
 
-   Then, use your browser's ~b[Back Button] to return to 
+   Then, use your browser's ~b[Back Button] to return to
    ~il[introductory-challenges].
 
    ~/~/")
@@ -9342,7 +9342,7 @@
    ; And now ~c[subsetp-reflexive] succeeds.
 
    (defthm subsetp-reflexive
-     (subsetp x x))   
+     (subsetp x x))
 
    ; A weaker version of the lemma, namely the one in which we
    ; add the hypothesis that ~c[b] is a ~c[cons], is also sufficient.
@@ -9350,7 +9350,7 @@
    ;    (defthm subsetp-cdr-weak
    ;      (implies (and (consp b)
    ;                    (subsetp a (cdr b)))
-   ;               (subsetp a b)))   
+   ;               (subsetp a b)))
 
    ; But the ~c[(consp b)] hypothesis is not really necessary in
    ; ACL2's type-free logic because ~c[(cdr b)] is ~c[nil] if ~c[b] is
@@ -9379,7 +9379,7 @@
    (defun rev (x)
      (if (endp x)
          nil
-         (append (rev (cdr x)) (list (car x)))))   
+         (append (rev (cdr x)) (list (car x)))))
 
    (defun dupsp (x)  ; does x contain duplicate elements?
      (if (endp x)
@@ -9395,7 +9395,7 @@
      When you've solved this problem, compare your answer to ours;
    ~pl[introductory-challenge-problem-3-answer].
 
-   Then, use your browser's ~b[Back Button] to return to 
+   Then, use your browser's ~b[Back Button] to return to
    ~il[introductory-challenges].
 
    ~/~/")
@@ -9479,11 +9479,11 @@
    ; interactive break we type :eval to evaluate the attempt to relieve the
    ; hypotheses of the rule.
 
-   ; (1 Breaking (:REWRITE DUPSP-APPEND) on 
+   ; (1 Breaking (:REWRITE DUPSP-APPEND) on
    ; (DUPSP (BINARY-APPEND (REV #) (CONS # #))):
    ; 1 ACL2 >:eval
 
-   ; 1x (:REWRITE DUPSP-APPEND) failed because :HYP 1 rewrote to 
+   ; 1x (:REWRITE DUPSP-APPEND) failed because :HYP 1 rewrote to
    ; (NOT (MEMBER (CAR X) (REV #))).
 
    ; Note that the report above shows that hypothesis 1 of the rule
@@ -9503,7 +9503,7 @@
    ; In either case, by thinking or using tools, we decide to prove:
 
    (defthm member-rev
-     (iff (member e (rev x)) 
+     (iff (member e (rev x))
           (member e x)))
 
    ; which succeeds.  Now when we try to prove dups-rev, it succeeds.
@@ -9533,7 +9533,7 @@
    and to prove that it returns a subset of the list with no duplications.
 
    ~b[Hint]:  We recommend that you read this hint to align your function names
-   with our solution, to make comparisons easier.  Our answer is shown in 
+   with our solution, to make comparisons easier.  Our answer is shown in
    ~pl[introductory-challenge-problem-4-answer].  In that page you'll see a definition of
    a function ~c[collect-once] and the proofs of two theorems:
    ~bv[]
@@ -9568,10 +9568,10 @@
    are much harder than the ~c[collect-once] approach, involving about a dozen
    lemmas each.
 
-   Compare your solutions to ours at 
-   ~pl[introductory-challenge-problem-4-answer].  
+   Compare your solutions to ours at
+   ~pl[introductory-challenge-problem-4-answer].
 
-   Then, use your browser's ~b[Back Button] to return to 
+   Then, use your browser's ~b[Back Button] to return to
    ~il[introductory-challenges].
 
    ~/~/")
@@ -9658,7 +9658,7 @@
              (collect-once (cdr x))
              (cons (car x) (collect-once (cdr x))))))
 
-   ; [0] 
+   ; [0]
    (defthm main-theorem-1-about-collect-once
      (subsetp (collect-once x) x))
    ; Succeeded!
@@ -9907,7 +9907,7 @@
                        main-theorem-1-about-while-loop
                        main-theorem-2-about-while-loop))
 
-   
+
    ; [0]
    ; (defthm main-theorem-1-about-while-loop-redux
    ;   (subsetp (while-loop-version x nil) x))
@@ -9923,7 +9923,7 @@
    ; (defthm main-lemma-1-about-while-loop-version
    ;   (subsetp (while-loop-version x a) (append x a)))
    ; Failed!
-   ; Key Term:  Does the wrong induction.  
+   ; Key Term:  Does the wrong induction.
 
    ; [1]
    ; (defthm main-lemma-1-about-while-loop-version
@@ -9958,7 +9958,7 @@
    ;                   (CONS (CAR X) (APPEND (CDR X) A))))
 
    ; We'd be done if we could rewrite the
-   ; (APPEND (CDR X) (CONS (CAR X) A)) 
+   ; (APPEND (CDR X) (CONS (CAR X) A))
    ; to
    ; (CONS (CAR X) (APPEND (CDR X) A))
    ; These two terms are not equal!  But they are ``set-equal'' and this kind of
@@ -9968,7 +9968,7 @@
 
    ; The plan then is to prove
    ; (iff (subsetp a (append b (cons e c)))
-   ;      (subsetp a (cons e (append b c)))) 
+   ;      (subsetp a (cons e (append b c))))
 
    ; Consider the first half of this bi-implication:
    ; (implies (subsetp a (append b (cons e c)))            ; hyp1
@@ -9981,14 +9981,14 @@
    ; The proof in the other direction is comparable but requires the
    ; (subsetp (cons e (append b c)) (append b (cons e c)))
 
-   ; Thus, our plan is prove 
+   ; Thus, our plan is prove
    ; (a) transitivity of subsetp
    ; (b) (subsetp (append b (cons e c)) (cons e (append b c)))
    ; (c) (subsetp (cons e (append b c)) (append b (cons e c)))
 
    ; in order to prove
    ; (d) (iff (subsetp a (append b (cons e c)))
-   ;         (subsetp a (cons e (append b c)))) 
+   ;         (subsetp a (cons e (append b c))))
 
    ; [2] (a)
    (defthm trans-subsetp
@@ -10156,7 +10156,7 @@
 ; /v/filer4b/v11q001/text/onr/beige-paper.tex
 ; then processed it with latex and bibtex, then displayed the pdf and copied
 ; it to text, and then formatted it as a doc string, eliminating odd characters
-; etc.  
+; etc.
 
 (deflabel interesting-applications
   :doc
@@ -10170,7 +10170,7 @@
   Collins to verify interesting properties of commercial designs.  It has been
   used to verify properties of models of microprocessors, microcode, the Sun Java
   Virtual Machine, operating system kernels, other verifiers, and interesting
-  algorithms.  
+  algorithms.
 
   Here we list just a few of the industrially-relevant results obtained with
   ACL2.  Reading the list may help you decide you want to learn how to use
@@ -10255,7 +10255,7 @@
   including a model of the JVM bytecode for the search algorithm itself (but
   not the preprocessing).  (See J S. Moore and Matt Martinez. ``A mechanically
   checked proof of the correctness of the Boyer-Moore fast string searching
-  algorithm.'' In ~i[Engineering Methods and Tools for Software Safety and Security] 
+  algorithm.'' In ~i[Engineering Methods and Tools for Software Safety and Security]
   pages 267--284. IOS Press, 2009.)
 
   ACL2 was used to verify the fidelity between an ~b[ACL2-like theorem prover]
@@ -10597,7 +10597,7 @@
   ~pl[OVERRIDE-HINTS], ~pl[ADD-CUSTOM-KEYWORD-HINT], ~pl[DEFAULT-HINTS], and
   ~pl[COMPUTED-HINTS] (also ~pl[USING-COMPUTED-HINTS] and for other topics
   ~c[USING-COMPUTED-HINTS-xxx] ~pl[MISCELLANEOUS].
-    
+
   o ~l[BIND-FREE] to bind ~il[free-variables] of a ~il[rewrite] or ~il[linear]
   rule.
 
@@ -10610,7 +10610,7 @@
 
   o ~l[FORCE] for an identity function used to force a hypothesis.
 
-  o ~l[OTF-FLG] for a way to push more than one initial subgoal for induction. 
+  o ~l[OTF-FLG] for a way to push more than one initial subgoal for induction.
 
   o ~l[RULE-CLASSES] to add various kinds of rules to the database, including
   more unusual sorts such as ~c[:]~ilc[built-in-clause] rules and

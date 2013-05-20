@@ -121,8 +121,8 @@
   ~bv[]
   (in-package 'compiler)
   (let* ((x `-fno-zero-initialized-in-bss')
-         (i (search x *cc*))) 
-          (setq *cc* (concatenate 'string 
+         (i (search x *cc*)))
+          (setq *cc* (concatenate 'string
                                   (subseq *cc* 0 i)
                                   (subseq *cc* (+ i (length x))))))
   ~ev[]
@@ -359,7 +359,7 @@
       nil))
 
 (defun set-wormhole-entry-code (whs code)
-  
+
     ":Doc-Section Miscellaneous
 
   sets the wormhole entry code in a wormhole status object~/
@@ -458,7 +458,7 @@
 ;                   data))
 ;       t)
 ;   :rule-classes nil)
-; 
+;
 ; (verify-guards wormhole-status-guarantees)
 
 ; In particular, given a legal code, set-wormhole-entry-code preserves
@@ -482,7 +482,7 @@
 (defun wormhole-eval (qname qlambda free-vars)
 
 ; A typical call of this function is
-; (wormhole-eval 'my-wormhole 
+; (wormhole-eval 'my-wormhole
 ;                '(lambda (output) (p x y output))
 ;                (list x y))
 
@@ -509,11 +509,11 @@
   Example Form:
   (wormhole-eval 'demo
      '(lambda (whs)
-        (set-wormhole-data whs 
+        (set-wormhole-data whs
                            (cons (cons name info)
                                  (wormhole-data whs))))
      (prog2$ info name))
-  
+
   General Form:
   (wormhole-eval name lambda varterm)
   ~ev[]
@@ -528,7 +528,7 @@
   to refer to those free variables in the environment in which the ~c[wormhole-eval]
   expression occurs.  The value of ~c[varterm] is irrelevant and if you provide ~c[nil]
   ACL2 will automatically provide a suitable term, namely a ~c[prog2$] form
-  like the one shown in the example above.  
+  like the one shown in the example above.
 
   Aside: Exception for ACL2(p) (~pl[parallelism]) to the irrelevance of
   ~c[varterm].  By default, calls of ~c[wormhole-eval] employ a lock,
@@ -712,7 +712,7 @@
   new state; this allows a wormhole to maintain some state from one call to the
   next.  Second, some information from the wormhole call itself is transferred
   into the new state; this allows the wormhole to be sensitive to context.
-  These two changes to the current state are reflected in the settings 
+  These two changes to the current state are reflected in the settings
   ~c[(@ wormhole-status)] and ~c[(@ wormhole-input)] discussed in detail below.
 
   Note that ~c[wormhole] may be called from environments in which ~ilc[state]
@@ -830,7 +830,7 @@
   variables, that is, the body may mention variables other than the
   ~c[lambda] formal.  These free variables are understood in the caller's
   environment.  These conventions allow us to compile the ~c[entry-lambda]
-  application very efficiently when the guard has been verified.  
+  application very efficiently when the guard has been verified.
 
   The guard on a call of ~c[wormhole] is the conjunction of the guards on the
   arguments conjoined with the guard on the body of the ~c[entry-lambda].
@@ -843,7 +843,7 @@
 
   Note that you access and manipulate the wormhole's status in two different
   ways depending on whether you're ``outside'' of the wormhole applying the
-  quoted ~c[lambda] or ``inside'' the read-eval-print loop of the wormhole.  
+  quoted ~c[lambda] or ``inside'' the read-eval-print loop of the wormhole.
 
   OUTSIDE (~c[wormhole-eval]): access via the value of the ~c[lambda] formal
   and set by returning the new status as the value of the ~c[lambda] body.
@@ -941,12 +941,12 @@
    (defun my-len (lst)
      (if (endp lst)
          0
-         (+ 1 
+         (+ 1
             (prog2$ (demo-collect (car lst))
                     (my-len (cdr lst))))))
   ~ev[]
   Thus, for example:
-  ~bv[] 
+  ~bv[]
   ACL2 !>(my-len '(4 temp car \"Hi\" rfix))
   5
   ACL2 !>(demo-status)
@@ -1028,7 +1028,7 @@
 ; The wormhole will not get past here is unless the entry code is
 ; :ENTER.  If we get past here, we manufacture a state, put
 ; x into ~c[(@ wormhole-input)] and call ld in such a way that the
-; first form executed is the quoted if-expression below.  
+; first form executed is the quoted if-expression below.
 
               x
               '(if (getprop (@ wormhole-input)
@@ -1507,7 +1507,7 @@
                                          "GENSYM"
                                          1
                                          avoid)))
-                    (cons new-var 
+                    (cons new-var
                           (gen-formals-from-pretty-flags1
                            (cdr pretty-flags)
                            (+ i 1)
@@ -2023,7 +2023,7 @@
   Old Style General Form:
   (defstub name formals output)
   (defstub name formals output :doc doc-string)
-  ~ev[] 
+  ~ev[]
   where ~c[name] is a new function symbol, ~c[formals] is its list of formal
   parameters, and ~c[output] is either a symbol (indicating that the function
   returns one result) or a term of the form ~c[(mv s1 ... sn)], where each
@@ -2262,7 +2262,7 @@
                       list of distinct variables, but ~x0 does not meet these ~
                       conditions.  The element ~x1 ~@2."
                      args culprit explan)))
-        (t 
+        (t
          (mv-let (doc-string-list body)
                  (if (and (stringp (car body))
                           (cdr body))
@@ -2321,13 +2321,13 @@
     (binary-+ (x y) (if (acl2-numberp x) (acl2-numberp y) 'nil))
     (unary-- (x) (acl2-numberp x))
     (unary-/ (x) (if (acl2-numberp x) (not (equal x '0)) 'nil))
-    (< (x y) 
+    (< (x y)
 
 ; We avoid the temptation to use real/rationalp below, since it is a macro.
 
-       (if #+:non-standard-analysis (realp x) 
+       (if #+:non-standard-analysis (realp x)
            #-:non-standard-analysis (rationalp x)
-         #+:non-standard-analysis (realp y) 
+         #+:non-standard-analysis (realp y)
          #-:non-standard-analysis (rationalp y)
          'nil))
     (car (x) (if (consp x) 't (equal x 'nil)))
@@ -2336,9 +2336,9 @@
     (characterp (x) 't)
     (code-char (x) (if (integerp x) (if (< x '0) 'nil (< x '256)) 'nil))
     (complex (x y)
-             (if #+:non-standard-analysis (realp x) 
+             (if #+:non-standard-analysis (realp x)
                  #-:non-standard-analysis (rationalp x)
-               #+:non-standard-analysis (realp y) 
+               #+:non-standard-analysis (realp y)
                #-:non-standard-analysis (rationalp y)
                'nil))
     (complex-rationalp (x) 't)
@@ -2555,14 +2555,14 @@
 
   Below we show some sample patterns and examples of things they match
   and do not match.
-  ~bv[]  
+  ~bv[]
   pattern       matches         non-matches
   (x y y)       (ABC 3 3)       (ABC 3 4)    ; 3 is not 4
   (fn x . rst)  (P (A I) B C)   (ABC)        ; NIL is not (x . rst)
                 (J (A I))                    ; rst matches nil
   ('fn (g x) 3) (FN (H 4) 3)    (GN (G X) 3) ; 'fn matches only itself
   (& t & !x)    ((A) T (B) (C))              ; provided x is '(C)
-  ~ev[]                                
+  ~ev[]
   Consider the two binary trees that contain three leaves.  They might
   be described as ~c[(x . (y . z))] and ~c[((x . y) . z)], where ~c[x],
   ~c[y], and ~c[z] are atomic.  Suppose we wished to recognize those
@@ -2880,7 +2880,7 @@
 ; If i is below the hard bound, then we get the string #@i# from a fixed array,
 ; so that we don't have to keep consing up that string.
 
-  (declare (xargs :guard (posp i))) 
+  (declare (xargs :guard (posp i)))
   (cond ((<= i *iprint-hard-bound-default*)
          (aref1 'sharp-atsign-ar *sharp-atsign-ar* i))
         (t (make-sharp-atsign i))))
@@ -3577,7 +3577,7 @@
 ; second pass how to print.
 
 ; Some additional general principles of our prettyprinter are
-; (i)    Print flat whenever possible.  
+; (i)    Print flat whenever possible.
 
 ; (ii)   However, don't print flat argument lists of length over 40; they're
 ;        too hard to parse.  (But this can be overridden by state global
@@ -3641,7 +3641,7 @@
 ;             *standard-co* state nil)
 ;        (ppr2 tuple 0 *standard-co* state t)
 ;        (fms "~%" nil *standard-co* state nil))))
-; 
+;
 ;   (defmacro test (d x)
 
 ; Ppr tuples record enough information about the widths of various forms so
@@ -3665,7 +3665,7 @@
 
 ; (FLAT n x1... . xk)- Print the xi, separated by spaces, with xk
 ;                      separated by `. ', all on one line.  Here xk
-;                      is at atom or an eviscerated object.  
+;                      is at atom or an eviscerated object.
 
 ; (FLAT n . xk)      - Here, xk is an atom (or an eviscerated object).
 ;                      Print a dot, a space, and xk.  The width will
@@ -3692,7 +3692,7 @@
 ; (QUOTE n . t1)     - Print a single-quote followed by pretty-
 ;                      printing the ppr tuple t1.
 
-; (WIDE n t1 t2 ...) - Here, t1 is a FLAT tuple of width j.  We 
+; (WIDE n t1 t2 ...) - Here, t1 is a FLAT tuple of width j.  We
 ;                      print an open paren, the contents of t1, a
 ;                      space, and then we prettyprint each of the
 ;                      remaining ti in a column.  When we're done, we
@@ -3737,25 +3737,25 @@
 ; (assign test-term
 ;         '(FFF (GGG (HHH (QUOTE (A . B))))
 ;               (III YYY ZZZ)))
-;       
-; 
+;
+;
 ; (ppr2 (ppr1 (@ test-term) (print-base) (print-radix) 30 0 state nil) 0
 ;       *standard-co* state nil)
 ; ; =>
-; (FFF (GGG (HHH '(A . B)))          (WIDE 25 (FLAT 3 FFF)                    
+; (FFF (GGG (HHH '(A . B)))          (WIDE 25 (FLAT 3 FFF)
 ;      (III YYY ZZZ))                         (FLAT 20 (GGG (HHH '(A . B))))
-;                                             (FLAT 14 (III YYY ZZZ)))      
+;                                             (FLAT 14 (III YYY ZZZ)))
 ; <-          25         ->|
-; 
+;
 ; (ppr2 (ppr1 (@ test-term) (print-base) (print-radix) 20 0 state nil) 0
 ;       *standard-co* state nil)
 ; ; =>
-; (FFF                               (1 20 (FLAT 3 FFF)          
-;  (GGG                                    (4 19 (FLAT 3 GGG)            
+; (FFF                               (1 20 (FLAT 3 FFF)
+;  (GGG                                    (4 19 (FLAT 3 GGG)
 ;      (HHH '(A . B)))                           (FLAT 15 (HHH '(A . B))))
-;  (III YYY ZZZ))                          (FLAT 14 (III YYY ZZZ)))    
-; 
-; <-       20       ->|                    
+;  (III YYY ZZZ))                          (FLAT 14 (III YYY ZZZ)))
+;
+; <-       20       ->|
 
 ; The function cons-ppr1, below, is the first interesting function in the nest.
 ; We want to build a tuple to print a given list form, like a function call.
@@ -3802,7 +3802,7 @@
 ;       0 *standard-co* state nil)
 
 ; and the ppr tuple produced by the ppr1 call.
-;        
+;
 ; d         output                 ppr tuple
 
 ;        |<-  9  ->|
@@ -3820,7 +3820,7 @@
 
 ; 5       (XX                    (2 5 (FLAT 2 XX) (DOT 1) (FLAT 3 YY))
 ;           .
-;           YY) 
+;           YY)
 
 ; 4       (XX                    (1 4 (FLAT 2 XX) (DOT 1) (FLAT 3 YY))
 ;          .
@@ -3846,7 +3846,7 @@
 ; (x   = (DOT 1)
 ; lst = ((FLAT 21 :LITTLLLLLLLLLLLLLLE))
 ; val = ((FLAT 23 . :LITTLLLLLLLLLLLLLLE)))
-; 
+;
 ; HARD ACL2 ERROR in CONS-PPR1:  I thought I could force it!
 
 (defmacro ppr-flat-right-margin ()
@@ -3884,7 +3884,7 @@
       (eq (car tuple) 'quote)
       (eq (car tuple) 'wide)
       (integerp (car tuple))))
-  
+
 (defun cons-ppr1 (x column width ppr-flat-right-margin eviscp)
 
 ; Here, x is a ppr tuple representing either a dot or a single object and
@@ -5236,7 +5236,7 @@
 
 ; (foobar
 ;   (here is a long arg)
-;   a)                  
+;   a)
 
 ; Here, col = 2, width = 23, and rpc = 19!
 
@@ -6290,7 +6290,7 @@
                 (#\\0 POPI 3)
                 (#\\1 A B))))
    (fmx \"~~@0\" pair)).
-  ~ev[] 
+  ~ev[]
   Finally, observe that when ~c[~~@0] extends the current alist, ~c[alist],
   with the one, ~c[a], in its argument, the bindings from ~c[a] are added to
   the front of ~c[alist], overriding the current values of any shared
@@ -6316,7 +6316,7 @@
           \"~~x* and \"       ; how to print the 2nd to last element
           \"~~x*, \"          ; how to print all other elements
           ,lst)))          ; the list of elements to print
-  ~ev[] 
+  ~ev[]
   will print ``~c[A, B, C, D, E, F, G and H!]''.  Try this example with
   other true list values of ~c[lst], such as ~c['(a b)], ~c['(a)], and ~c[nil].  The
   tilde-directives ~c[~~&0] and ~c[~~v0], which take a true list argument and
@@ -6339,7 +6339,7 @@
   ~bv[]
   (let* ((phrases
           (list (list \"simplifying with the replacement rules ~~&0\"
-                      (cons #\\0 '(rewrite-rule1 
+                      (cons #\\0 '(rewrite-rule1
                                   rewrite-rule2
                                   rewrite-rule3)))
                 (list \"destructor elimination using ~~x0\"
@@ -6355,7 +6355,7 @@
            \"~~@*, and~~#f~~[~~/ (finally!)~~] \"    ; second to last phrase
            \"~~@*, \"                            ; other phrases
            phrases                            ; the phrases themselves
-           (cons #\\f 
+           (cons #\\f
                  (if (>(length phrases) 3) 1 0))))) ;print ``finally''?
     (fmx \"We did it by ~~*0.\" 5-tuple))
   ~ev[]
@@ -6628,7 +6628,7 @@
    (cond ((output-in-infixp state)
           (fmt1 "~p0"
                 (list (cons #\0 ctx))
-                col channel state 
+                col channel state
                 (evisc-tuple 1 2 nil nil)))
          ((null ctx)
           (mv col state))
@@ -7089,7 +7089,7 @@
 ;                        state)
 
 ; Shape:  ((2 . 2) 2 3 4 . 4)
-; Field Depths:  
+; Field Depths:
 ; ((TYPE-ALIST . 2)
 ;  (TERM . 2)
 ;  (CL-IDS . 2)
@@ -7104,59 +7104,59 @@
 ;     (cond ((atom tree) (1+ tree))
 ;           (t (cons (bump-binary-tree (car tree))
 ;                    (bump-binary-tree (cdr tree))))))
-; 
+;
 ;   (defun cons-binary-trees (t1 t2)
 ;     (cons (bump-binary-tree t1) (bump-binary-tree t2)))
-; 
+;
 ;   (defun combine-binary-trees1 (t1 lst2 ans)
 ;     (cond ((null lst2) ans)
 ;           (t (combine-binary-trees1 t1 (cdr lst2)
 ;                                     (cons (cons-binary-trees t1 (car lst2))
 ;                                           ans)))))
-; 
+;
 ;   (defun combine-binary-trees (lst1 lst2 ans)
 ;     (cond
 ;      ((null lst1) ans)
 ;      (t (combine-binary-trees (cdr lst1)
 ;                               lst2
 ;                               (combine-binary-trees1 (car lst1) lst2 ans)))))
-; 
+;
 ;   (mutual-recursion
-; 
+;
 ;    (defun all-binary-trees1 (i n)
 ;      (cond ((= i 0) nil)
 ;            (t (revappend (combine-binary-trees (all-binary-trees i)
 ;                                                (all-binary-trees (- n i))
 ;                                                nil)
 ;                          (all-binary-trees1 (1- i) n)))))
-; 
+;
 ;    (defun all-binary-trees (n)
 ;      (cond ((= n 1) (list 0))
 ;            (t (all-binary-trees1 (floor n 2) n))))
 ;    )
-; 
+;
 ;   (defun total-access-time-binary-tree (x)
 ;     (cond ((atom x) x)
 ;           (t (+ (total-access-time-binary-tree (car x))
 ;                 (total-access-time-binary-tree (cdr x))))))
-; 
+;
 ;   (defun total-access-time-binary-tree-lst (lst)
-; 
+;
 ; ; Pairs each tree in lst with its total-access-time.
-; 
+;
 ;     (cond ((null lst) nil)
 ;           (t (cons (cons (total-access-time-binary-tree (car lst))
 ;                          (car lst))
 ;                    (total-access-time-binary-tree-lst (cdr lst))))))
-; 
+;
 ;   (defun show-binary-trees1 (n lst state)
 ;     (cond ((null lst) state)
 ;           (t (let* ((tat (floor (* (caar lst) 1000) n))
-;                     (d0 (floor tat 1000)) 
+;                     (d0 (floor tat 1000))
 ;                     (d1 (- (floor tat 100) (* d0 10)))
 ;                     (d2 (- (floor tat 10) (+ (* d0 100) (* d1 10))))
 ;                     (d3 (- tat (+ (* d0 1000) (* d1 100) (* d2 10)))))
-; 
+;
 ;                (pprogn
 ;                 (mv-let (col state)
 ;                         (fmt1 "~x0.~x1~x2~x3  ~x4~%"
@@ -7170,7 +7170,7 @@
 ;                         (declare (ignore col))
 ;                         state)
 ;                 (show-binary-trees1 n (cdr lst) state))))))
-; 
+;
 ;   (defun show-binary-trees (n state)
 ;     (let ((lst (reverse
 ;                 (merge-sort-car->
@@ -7181,28 +7181,28 @@
 ;             (list (cons #\0 n))
 ;             *standard-co* state nil)
 ;        (show-binary-trees1 n lst state))))
-; 
+;
 ;   (defun analyze-tree1 (x i)
 ;     (cond ((atom x) i)
 ;           (t (cons (analyze-tree1 (car x) (1+ i))
 ;                    (analyze-tree1 (cdr x) (1+ i))))))
-; 
+;
 ;   (defun analyze-tree2 (x i)
 ;     (cond ((atom x) (list (cons x i)))
 ;           (t (append (analyze-tree2 (car x) (1+  i))
 ;                      (analyze-tree2 (cdr x) (1+  i))))))
-; 
+;
 ;   (defun analyze-tree3 (x)
 ;     (cond ((atom x) 1)
 ;           (t (+ (analyze-tree3 (car x)) (analyze-tree3 (cdr x))))))
-; 
+;
 ;   (defun analyze-tree (x state)
 ;     (let* ((binary-tree (analyze-tree1 x 0))
 ;            (alist (analyze-tree2 x 0))
 ;            (n (analyze-tree3 x))
 ;            (k (total-access-time-binary-tree binary-tree)))
 ;       (let* ((tat (floor (* k 1000) n))
-;              (d0 (floor tat 1000)) 
+;              (d0 (floor tat 1000))
 ;              (d1 (- (floor tat 100) (* d0 10)))
 ;              (d2 (- (floor tat 10) (+ (* d0 100) (* d1 10))))
 ;              (d3 (- tat (+ (* d0 1000) (* d1 100) (* d2 10)))))
@@ -7216,9 +7216,9 @@
 ;                     (cons #\5 d3))
 ;               *standard-co* state nil)
 ;          (value :invisible)))))
-; 
+;
 ;   (defmacro sbt (n) `(pprogn (show-binary-trees ,n state) (value :invisible))))
-; 
+;
 
 (defun record-maker-function-name (name)
   (intern-in-package-of-symbol
@@ -7569,8 +7569,8 @@
            but ~x0 decoded to ~x1."
           n tuple))
      ((equal (len tuple) 6) tuple)
-     (t 
-        
+     (t
+
 ; In this case, tuple is (secs mins hrs day month yr1 yr2 ...) where 0
 ; <= yri < 100 and (yr1 yr2 ...) represents a big number, yr, in base
 ; 100.  Yr is the number of years since 1900.
@@ -7671,7 +7671,7 @@
 ; Finally io? allows for the entire io process to be illusory.  This occurs if
 ; the commentp argument is t.  In this case, the io? form is logically
 ; equivalent to NIL.  The actual output is performed after opening a wormhole
-; to state.  
+; to state.
 
 (defconst *window-descriptions*
 ;                  str clr top pop
@@ -8351,7 +8351,7 @@
 
 ; See observation.  This macro uses wormholes to avoid accessing state, and
 ; prints even when including books.
-  
+
 ; We considered using the @par naming scheme to define this macro in
 ; #+acl2-par, but the name would then have "@par" in it, which could jar users.
 
@@ -8536,7 +8536,7 @@
   o If ~c[:acl2x] is ~c[t], then:
     - If ~c[set-write-acl2x] has been (most recently) called with a
       value of ~c[t] for its first argument, then ACL2 writes the
-      corresponding ~c[.acl2x] file. 
+      corresponding ~c[.acl2x] file.
     - If ~c[set-write-acl2x] has been (most recently) called with a
       value of ~c[nil] for its first argument, or not called at all,
       then ACL2 insists on a corresponding ~c[.acl2x] file that is at
@@ -9048,7 +9048,7 @@
 ;          when (not (eql (times-expt-2-16-mod-m31 i)
 ;                         (mod (* #x10000 i) #x7fffffff)))
 ;          do (return i)))
-;  (test) 
+;  (test)
 
   (declare (type (signed-byte 32) x))
   (the (signed-byte 32)
@@ -9057,7 +9057,7 @@
          (declare (type (signed-byte 32) hi lo))
          (cond ((eql 0
                      (the (signed-byte 32)
-                          (logand lo #x8000))) ; logbitp in GCL seems to box! 
+                          (logand lo #x8000))) ; logbitp in GCL seems to box!
                 (the (signed-byte 32)
                      (plus-mod-m31 (double-mod-m31 hi)
                                    (the (signed-byte 32)
@@ -9072,7 +9072,7 @@
                                               (ash (the (signed-byte 32)
                                                         (logand lo #x7fff))
                                                    16)))))))))))
-                                       
+
 #+(and (not gcl) (not acl2-loop-only))
 (declaim (inline times-mod-m31))
 
@@ -9181,7 +9181,7 @@
 ;  - We recur using (ash n -31), but this computes the same thing as (truncate
 ;    n (expt 2 31)).
 ;
-;  - We split n into Ki by using (logand n #x7FFFFFFF), which is the same as 
+;  - We split n into Ki by using (logand n #x7FFFFFFF), which is the same as
 ;    (rem n (expt 2 31)).
 
   (declare (type (integer 0 *) n))
@@ -9190,7 +9190,7 @@
     (if (eql n 0)
         ans
       (fchecksum-natural-aux (the (integer 0 *) (ash n -31))
-                             (the (signed-byte 32) 
+                             (the (signed-byte 32)
                                (logxor ans
                                        (the (signed-byte 32)
                                          (times-mod-m31
@@ -9259,7 +9259,7 @@
            (logxor ans
                    (the (signed-byte 32)
                      (times-mod-m31 bits 506249751)))))))))
-                 
+
 (defun fchecksum-string2 (str i len ans)
 
 ; Same as above, but we don't assume i, len are (signed-byte 32)'s.
@@ -9457,7 +9457,7 @@
 ;   (er hard 'check-sum-obj "ran *1* code for check-sum-obj"))
 
 ; Here are some examples.
-; 
+;
 ;  (fchecksum-obj 0)
 ;  (fchecksum-obj 19)
 ;  (fchecksum-obj 1892)
@@ -9478,33 +9478,33 @@
 ;  (fchecksum-obj #c(19283 198))
 ;  (fchecksum-obj #c(198 19283))
 ;  (fchecksum-obj #c(-19283/1238 198))
-; 
+;
 ;  (fchecksum-obj 3)
 ;  (fchecksum-obj '(3 . nil))
 ;  (fchecksum-obj '(nil . 3))
-; 
+;
 ;  (fchecksum-obj nil)
 ;  (fchecksum-obj '(nil))
 ;  (fchecksum-obj '(nil nil))
 ;  (fchecksum-obj '(nil nil nil))
 ;  (fchecksum-obj '(nil nil nil nil))
-; 
+;
 ; ; And here are some additional comments.  If you want to generate more
 ; ; primitive roots, or verify that the ones we have picked are primitive roots,
 ; ; try this:
-; 
+;
 ;  (include-book "arithmetic-3/floor-mod/mod-expt-fast" :dir :system)
 ;  (include-book "make-event/assert" :dir :system)
-; 
+;
 ; ; Here we establish that the factors of M31-1 are 2, 3, 7, 11, 31, 151, and
 ; ; 331.
-; 
-;  (assert! (equal (- #x7FFFFFFF 1) 
+;
+;  (assert! (equal (- #x7FFFFFFF 1)
 ;                  (* 2 3 3 7 11 31 151 331)))
-; 
+;
 ; ;; And so the following is sufficient to establish that n is a primitive
 ; ;; root.
-; 
+;
 ; (defund primitive-root-p (n)
 ;   (let* ((m31   #x7FFFFFFF)
 ;          (m31-1 (- m31 1)))
@@ -9515,11 +9515,11 @@
 ;          (not (equal (mod-expt-fast n (/ m31-1 31) m31) 1))
 ;          (not (equal (mod-expt-fast n (/ m31-1 151) m31) 1))
 ;          (not (equal (mod-expt-fast n (/ m31-1 331) m31) 1)))))
-; 
-; ; And here are some primitive roots that we found.  There are lots of 
+;
+; ; And here are some primitive roots that we found.  There are lots of
 ; ; them.  If you want a new one, just pick a number and start incrementing
 ; ; or decrementing until it says T.
-; 
+;
 ;  (primitive-root-p 506249751)
 ;  (primitive-root-p 392894102)
 ;  (primitive-root-p 938187814)
@@ -9530,15 +9530,15 @@
 ;  (primitive-root-p 391892127)
 ;  (primitive-root-p 18783723)
 ;  (primitive-root-p 981827319)
-; 
+;
 ;  (primitive-root-p 627718124)
 ;  (primitive-root-p 278917287)
-; 
+;
 ; ; At one point I [Jared] used this function to analyze different
 ; ; implementations of fchecksum-natural.  You might find it useful if you want
 ; ; to write an alternate implementation.  You want to produce a fast routine
 ; ; that doesn't have many collisions.
-; 
+;
 ; (defun analyze-fchecksum-natural (n)
 ;   (let (table ones twos more)
 ;     ;; Table is a mapping from sums to the number of times they are hit.
@@ -9547,7 +9547,7 @@
 ;           (let ((sum (fchecksum-natural i)))
 ;             (setf (gethash sum table)
 ;                   (+ 1 (nfix (gethash sum table))))))
-;     ;; Now we will walk the table and see how many sums are hit once, 
+;     ;; Now we will walk the table and see how many sums are hit once,
 ;     ;; twice, or more often than that.
 ;     (setq ones 0)
 ;     (setq twos 0)
@@ -9559,13 +9559,13 @@
 ;                      (t         (incf more val))))
 ;              table)
 ;     (format t "~a~%" (list ones twos more))
-;     (format t "Unique mappings: ~5,2F%~%" 
+;     (format t "Unique mappings: ~5,2F%~%"
 ;             (* 100 (/ (coerce ones 'float) n)))
-;     (format t "2-ary collisions: ~5,2F%~%" 
+;     (format t "2-ary collisions: ~5,2F%~%"
 ;             (* 100 (/ (coerce twos 'float) n)))
-;     (format t "3+-ary collisions: ~5,2F%~%" 
+;     (format t "3+-ary collisions: ~5,2F%~%"
 ;             (* 100 (/ (coerce more 'float) n)))))
-; 
+;
 ;  (analyze-fchecksum-natural 1000)
 ;  (analyze-fchecksum-natural 10000)
 ;  (analyze-fchecksum-natural 100000)
@@ -9944,7 +9944,7 @@
 
   ~bv[]
   ACL2 !>(crash 7)
-  
+
   Error: Caught fatal error [memory may be damaged]
   ...
   ~ev[]
@@ -10313,7 +10313,7 @@
                                                        (fargs term)))))))
    ((and (null (cdr (fargs term)))
          (member-equal term recog-terms))
-    
+
 ; If the term is a recognizer call, e.g., (MY-STP MY-ST), we replace
 ; it by T.  The first conjunct above is just a quick test: If the term
 ; has 2 or more args, then don't bother to do the member-equal.  If
@@ -10362,8 +10362,8 @@
 (defun guard (fn stobj-optp w)
 
 ; This function is just the standard way to obtain the guard of fn in
-; world w.  
-            
+; world w.
+
 ; If stobj-optp is t, we optimize the returned term, simplifying it
 ; under the assumption that every stobj recognizer in it is true.  If
 ; fn traffics in stobjs, then it was translated under the stobj
@@ -10371,7 +10371,7 @@
 ; mentioned in its stobjs-in) and let st-p be the corresponding
 ; recognizer.  This function should only be called with stobj-optp = t
 ; if you know (st-p st) to be true in the context of that call.
-            
+
 ; The documentation string below addresses the general notion of
 ; guards in ACL2, rather than explaining this function.
 
@@ -10735,9 +10735,9 @@
   ~bv[]
   ACL2 !>
   ~ev[]
-  means guard checking is on and  
+  means guard checking is on and
   ~bv[]
-  ACL2 > 
+  ACL2 >
   ~ev[]
   means guard checking is off.  The exclamation mark can be thought of
   as ``barring'' certain computations.  The absence of the mark
@@ -12417,7 +12417,7 @@
 
 ; The following theorem illustrates the various cases:
 ; (thm (equal (or p (or q1 q2)) (or p q1 q2))))
-      
+
   (cond ((and (consp q)
               (eq (car q) 'or))
          (cons 'or (cons p (cdr q))))
@@ -12586,7 +12586,7 @@
          (symbolp st)
          (let ((accessor-names
                 (getprop st 'accessor-names nil 'current-acl2-world wrld)))
-           (and accessor-names 
+           (and accessor-names
                 (< n (car (dimensions st accessor-names)))
                 (aref1 st accessor-names n))))))
 
@@ -14457,7 +14457,7 @@
 ;                 state)
 ;              (newline *standard-co* state))
 ;            (print-nqthm-to-acl2-doc1 (cdr alist) state))))))))
-; 
+;
 ; (defun print-nqthm-to-acl2-doc (state)
 ;   (pprogn
 ;    (princ$ "  ~bv[]" *standard-co* state)

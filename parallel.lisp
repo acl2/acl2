@@ -113,7 +113,7 @@
   [[.. output omitted ..]]
    FOO
   ACL2 !>(foo 20)
-  (NIL NIL NIL NIL( NIL NIL NIL NIL NIL NILNIL  NIL NILNIL  NIL NILNIL 
+  (NIL NIL NIL NIL( NIL NIL NIL NIL NIL NILNIL  NIL NILNIL  NIL NILNIL
        NIL NILNIL NIL  NIL NILNIL  NIL NIL
   NIL      NILNIL  NIL NILNIL )
   NIL NIL NIL NIL NIL NIL NIL NIL)
@@ -317,7 +317,7 @@
          :very-limited)
         ((eq value :resource-and-timing-based)
          :very-limited)
-        (t 
+        (t
          (assert$ (eq value :pseudo-parallel)
                   :very-limited))))
 
@@ -604,7 +604,7 @@
 ; available for use during this proof, apply-override-hints will see them and
 ; attempt to use them.  Since override-hints are not permitted without enabling
 ; waterfall-parallelism-hacks, in this case, we must cause an error.
-            
+
           "Before changing the status of waterfall-parallelism, either (1) ~
            override hints must be removed from the default-hints-table or (2) ~
            waterfall-parallelism hacks must be enabled.  (1) can be achieved ~
@@ -646,9 +646,9 @@
                          :resource-based
                        val)))
             #+acl2-par
-            (cond 
+            (cond
              ((null (f-get-global 'parallel-execution-enabled state))
-              (er soft ctx 
+              (er soft ctx
                   "Parallel execution must be enabled before enabling ~
                    waterfall parallelism.  See :DOC set-parallel-execution"))
              (t
@@ -656,7 +656,7 @@
                       (progn
                         (cond ((null val)
                                (acl2h-init-memoizations))
-                              (t 
+                              (t
                                (acl2h-init-unmemoizations)))
                         state)
                       (f-put-global 'waterfall-parallelism val state)
@@ -675,11 +675,11 @@
 
             (pprogn
              (observation ctx
-      
+
 ; We make this an observation instead of a warning, because it's probably
 ; pretty obvious to the user whether they're using an image that was built with
 ; the acl2-par feature.
-                     
+
                           "Parallelism can only be enabled in CCL, threaded ~
                            SBCL, or Lispworks.  Additionally, the feature ~
                            :ACL2-PAR must be set when compiling ACL2 (for ~
@@ -1019,7 +1019,7 @@
                "Illegal value for set-waterfall-printing: ~x0.  The legal ~
                 values are ~&1."
                val *waterfall-printing-values*))))
-               
+
 (defmacro set-waterfall-printing (val)
 
   ":Doc-Section switches-parameters-and-modes
@@ -1200,17 +1200,17 @@
   ~ev[]
   Then in an executable image that supports parallel execution ~-[]
   ~pl[compiling-acl2p] for instructions on how to build such an executable
-  ~-[] ~c[(expensive-fn-1 4)] and ~c[(expensive-fn-2 5)] can evaluate in 
+  ~-[] ~c[(expensive-fn-1 4)] and ~c[(expensive-fn-2 5)] can evaluate in
   parallel.
 
-  A second way to enable parallel execution of a form is to place it 
+  A second way to enable parallel execution of a form is to place it
   inside a function body.  For example, consider the following definition.
   ~bv[]
   (defun foo (x y)
     (pargs (cons (expensive-fn-1 x) (expensive-fn-2 y))))
   ~ev[]
   Then in an executable image that supports parallel execution, submission of
-  the form ~c[(foo 4 5)] can cause parallel execution of 
+  the form ~c[(foo 4 5)] can cause parallel execution of
   ~c[(expensive-fn-1 4)] and ~c[(expensive-fn-2 5)].
 
   Note that ~il[guard]s need not be verified in order to obtain ~il[parallel]
@@ -2128,7 +2128,7 @@
                  (mv (if (and (f-boundp-global 'cpu-core-count state)
                               (posp (f-get-global 'cpu-core-count state)))
                          (core-count-raw nil (f-get-global 'cpu-core-count
-                                                           state)) 
+                                                           state))
                        (core-count-raw 'core-count))
                      state)))
   (mv-let (nullp val state)
@@ -2140,41 +2140,41 @@
 
 ; ; We now develop code for parallelizing calls to the arguments of a call of
 ; ; rewrite.
-; 
+;
 ; ; WARNING!  We believe that this approach has the following bug.  If
 ; ; with-prover-time-limit is used, then the main thread (which is the one
 ; ; calling waterfall-step) has a catch (implemented by the call there of
 ; ; catch-time-limit5) that will only catch throws to that tag from the SAME
 ; ; thread.  We will get in trouble if a spawned thread's call of rewrite does
 ; ; such a throw.
-; 
+;
 ; ; Warning: Moreover, if we use this code, consider modifying the
 ; ; rewrite-constant to store the value of :limit in
 ; ; rewrite-args-granularity-table.  Otherwise, we have to go to the world with a
 ; ; potentially slow getprop every time we call rewrite-args-par-big-enough.
 ; ; Maybe that's just noise, but maybe it's expensive.
-; 
+;
 ; ; We initially set the value of (the unique key) :limit to nil in
 ; ; rewrite-args-granularity-table, so that in fact we do not do such
 ; ; parallelization.  But we leave this infrastructure in place (see comment "or
 ; ; try :limit" below) in case we want to experiment with such parallelization in
 ; ; the future.
-; 
+;
 ; #+acl2-par
 ; (table rewrite-args-granularity-table nil nil
 ;        :guard (and (eq key :limit)
 ;                    (or (null val) (natp val))))
-; 
+;
 ; #+acl2-par
 ; (table rewrite-args-granularity-table :limit nil) ; or try :limit = 10
-; 
+;
 ; #+acl2-par
 ; (defun rewrite-args-par-big-enough-rec (flg x bound acc)
-; 
+;
 ; ; Flg is true when x is a list of terms; else x is a term.  Returns a number by
 ; ; accumulating into acc, or t if that number would exceed bound.  We assume
 ; ; that acc is <= bound.
-; 
+;
 ;   (cond (flg ; x is a list
 ;          (cond ((null x)
 ;                 acc)
@@ -2198,28 +2198,28 @@
 ;                t
 ;              (rewrite-args-par-big-enough-rec t (fargs x) bound new-acc))))
 ;         (t (rewrite-args-par-big-enough-rec t (fargs x) bound (1+ acc)))))
-; 
+;
 ; #+acl2-par
 ; (defun rewrite-args-par-big-enough (x wrld)
-; 
+;
 ; ; If the limit is set to nil, the function returns nil.  This allows the
 ; ; enabling and disabling of rewriting args in parallel.
-; 
+;
 ;   (let ((limit (cdr (assoc-eq :limit
 ;                               (table-alist
 ;                                'rewrite-args-granularity-table
 ;                                wrld)))))
 ;     (and limit (equal t (rewrite-args-par-big-enough-rec nil x limit 0)))))
-; 
+;
 ; ; With the additions above, we can contemplate adding something like the
 ; ; following to the rewrite nest below.  If we do that, then replace the call of
 ; ; rewrite-args in rewrite by the following:
-; 
+;
 ; ;                    #-acl2-par
 ; ;                    rewrite-args
 ; ;                    #+acl2-par
 ; ;                    rewrite-args-par
-; 
+;
 ; #+acl2-par
 ; (defun rewrite-args-par (args alist bkptr ; &extra formals
 ;                               rdepth
@@ -2228,20 +2228,20 @@
 ;                               simplify-clause-pot-lst rcnst gstack ttree)
 ;   (let ((pair (rewrite-entry (rewrite-args-par-rec args alist bkptr))))
 ;     (mv (car pair) (cdr pair))))
-; 
+;
 ; #+acl2-par
 ; (defun rewrite-args-par-rec (args alist bkptr ; &extra formals
 ;                                   rdepth
 ;                                   type-alist obj geneqv wrld state fnstack
 ;                                   ancestors backchain-limit
 ;                                   simplify-clause-pot-lst rcnst gstack ttree)
-; 
+;
 ; ; Note: In this function, the extra formal geneqv is actually a list of geneqvs
 ; ; or nil denoting a list of nil geneqvs.
-; 
+;
 ; ; Unlike rewrite-args, we return (cons rewritten-args ttree) instead of
 ; ; (mv rewritten-args ttree).
-; 
+;
 ;   (declare (type (unsigned-byte 29) rdepth))
 ;   (cond ((f-big-clock-negative-p state)
 ;          (cons (sublis-var-lst alist args)
@@ -2336,7 +2336,7 @@
     (declare (xargs :mode :program))
     (if (or (zp x) (< x 33))
         (fib-with-step-count x)
-      (spec-mv-let 
+      (spec-mv-let
        (a cnt1)
        (pfib-with-step-count (- x 1))
        (mv-let (b cnt2)
@@ -2346,7 +2346,7 @@
                        (+ 1 cnt1 cnt2))
                  (mv \"speculative result is always needed\"
                      -1))))))~/
-  
+
   General Form:
   (spec-mv-let
    (v1 ... vn)  ; bind distinct variables
@@ -2389,15 +2389,15 @@
         ((= x 1) (mv 1 1))
         (t (mv-let (a cnt1)
                    (fib-with-step-count (- x 1))
-                   (mv-let (b cnt2) 
+                   (mv-let (b cnt2)
                            (fib-with-step-count (- x 2))
                            (mv (+ a b)
                                (+ 1 cnt1 cnt2)))))))
   ~ev[]~/"
 
-  (assert$ 
-   (and (true-listp body) 
-        (equal (length body) 4) 
+  (assert$
+   (and (true-listp body)
+        (equal (length body) 4)
         (or (equal (car body) 'mv-let@par)
             (equal (car body) 'mv-let)
             (equal (car body) 'mv?-let)))
@@ -2405,8 +2405,8 @@
           (inner-bindings (cadr body))
           (inner-body (caddr body))
           (ite (cadddr body)))
-     (assert$ (and (true-listp ite) 
-                   (equal (length ite) 4) 
+     (assert$ (and (true-listp ite)
+                   (equal (length ite) 4)
                    (equal (car ite) 'if))
               (let* ((test (cadr ite))
                      (true-branch (caddr ite))
@@ -2423,7 +2423,7 @@
                    (if (check-vars-not-free ,bindings ,test)
                        (mv?-let ,bindings
                                 ,computation
-                                ,true-branch)                     
+                                ,true-branch)
                      (check-vars-not-free ,bindings ,false-branch)))))))))
 
 ; Parallelism wart: when set-verify-guards-eagerness is 0, and there is a guard
@@ -2457,7 +2457,7 @@
   ~pl[programming-with-state].)  However, ACL2(p) does not support the use of
   error triples in some of these features (e.g., ~ilc[computed-hints]) while
   ~il[waterfall-parallelism] is enabled.~/
-  
+
   You may see an error message like the following when running ACL2(p) with
   ~il[waterfall-parallelism] enabled:
 
@@ -2509,7 +2509,7 @@
   build an executable image that supports parallel execution.  Also see
   community books directory ~c[books/parallel/] for examples.~/
 
-  One may wish to perform output while executing code in parallel.  If 
+  One may wish to perform output while executing code in parallel.  If
   threads are allowed to print concurrently, the output will be interleaved and
   often unreadable.  To avoid this, the user can surround forms that perform
   output with the ~c[with-output-lock] macro.
@@ -2546,7 +2546,7 @@
   uting pfib 0
   CCoommppuuttiinngg  ppffiibb  12
 
-  ComCpuotmipnugt ipnfgi bp fib1 
+  ComCpuotmipnugt ipnfgi bp fib1
   0
   CoCmopmuptuitnign gp fpifbi b 1
   0
@@ -2654,7 +2654,7 @@
 ; The error looks like the following:
 
 ;; <snip>
-;; 
+;;
 ;;.............................................................
 ;; ***********************************************
 ;; ************ ABORTING from raw Lisp ***********

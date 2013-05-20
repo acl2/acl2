@@ -699,7 +699,7 @@
 ; the assumption of type-alist.  Immediatep indicates whether it is
 ; the user's desire to split the main goal on term immediately
 ; (immediatep = 'case-split), prove the term under alist immediately
-; (t) or delay the proof to a forcing round (nil).  
+; (t) or delay the proof to a forcing round (nil).
 
 ; WARNING: The system can be unsound if immediatep takes on any but
 ; these three values.  In functions like collect-assumptions we assume
@@ -951,7 +951,7 @@
 
 (defun tag-tree-occur-assumption-nil (ttree)
 
-; This is just (tag-tree-occur 'assumption <*nil*> ttree) where by <*nil*> we 
+; This is just (tag-tree-occur 'assumption <*nil*> ttree) where by <*nil*> we
 ; mean any assumption record with :term *nil*.
 
   (tag-tree-occur-assumption-nil-1 (tagged-objects 'assumption ttree)))
@@ -1055,10 +1055,10 @@
 ; do when we have proof objects.
 
 ; (progn
-; 
+;
 ; ; Perhaps this axiom can be proved from given ones, but I haven't taken the
 ; ; time to work it out.  I will add it.  I believe it!
-; 
+;
 ; (defaxiom *-preserves-<
 ;   (implies (and (rationalp c)
 ;                 (rationalp x)
@@ -1066,17 +1066,17 @@
 ;                 (< 0 c))
 ;            (equal (< (* c x) (* c y))
 ;                   (< x y))))
-; 
+;
 ; (defthm realpart-rational
 ;   (implies (rationalp x) (equal (realpart x) x)))
-; 
+;
 ; (defthm imagpart-rational
 ;   (implies (rationalp x) (equal (imagpart x) 0)))
-; 
+;
 ; (encapsulate (((plus * *) => *)
 ;               ((times * *) => *)
 ;               ((lessp * *) => *))
-; 
+;
 ; ; Plus and lessp here are the rational versions of those functions.  They are
 ; ; intended to be the believable, intuitive, functions.  You should read the
 ; ; properties we export to make sure you believe that the high school plus and
@@ -1085,7 +1085,7 @@
 ; ; ACL2's linear arithmetic and hence, if the soundness of ACL2's arithmetic is
 ; ; in doubt, as it is in this exercise, then no assurrance can be drawn from the
 ; ; constructive nature of this axiomatization of rational arithmetic.
-; 
+;
 ;              (local (defun plus (x y)
 ;                       (declare (xargs :verify-guards nil))
 ;                       (+ x y)))
@@ -1208,26 +1208,26 @@
 ;                              (lessp 0 c))
 ;                         (equal (lessp (times c x) (times c y))
 ;                                (lessp x y)))))
-; 
+;
 ; ; Now we "complete" +, *, <, and <= to the complex rationals and thence to the
 ; ; entire universe.  The results are CPLUS, CTIMES, CLESSP, and CLESSEQP.  You
 ; ; should buy into the claim that these functions are what we intended in ACL2's
 ; ; completed arithmetic.
-; 
+;
 ; ; Note: At first sight it seems odd to do it this way.  Why not just assume
 ; ; plus, above, is the familiar operation on the complex rationals?  We tried
 ; ; it and it didn't work very well, because ACL2 does not reason very well
 ; ; about complex arithmetic.  It seemed more direct to make the definition of
 ; ; complex addition and multiplication be explicit for the purposes of this
 ; ; proof.
-; 
+;
 ; (defun cplus (x y)
 ;   (declare (xargs :verify-guards nil))
 ;   (let ((x1 (fix x))
 ;         (y1 (fix y)))
 ;     (complex (plus (realpart x1) (realpart y1))
 ;              (plus (imagpart x1) (imagpart y1)))))
-; 
+;
 ; (defun ctimes (x y)
 ;   (declare (xargs :verify-guards nil))
 ;   (let ((x1 (fix x))
@@ -1236,7 +1236,7 @@
 ;                    (times -1 (times (imagpart x1) (imagpart y1))))
 ;              (plus (times (realpart x1) (imagpart y1))
 ;                    (times (imagpart x1) (realpart y1))))))
-; 
+;
 ; (defun clessp (x y)
 ;   (declare (xargs :verify-guards nil))
 ;   (let ((x1 (fix x))
@@ -1244,26 +1244,26 @@
 ;     (or (lessp (realpart x1) (realpart y1))
 ;         (and (equal (realpart x1) (realpart y1))
 ;              (lessp (imagpart x1) (imagpart y1))))))
-; 
+;
 ; (defun clesseqp (x y)
 ;   (declare (xargs :verify-guards nil))
 ;   (not (clessp y x)))
-; 
+;
 ; ; A trivial theorem about fix, allowing us hereafter to disable it.
-; 
+;
 ; (defthm fix-id (implies (acl2-numberp x) (equal (fix x) x)))
-; 
+;
 ; (in-theory (disable fix))
-; 
+;
 ; ;-----------------------------------------------------------------------------
 ; ; The Algebraic Laws Supporting Linear Arithmetic (ALSLA)
-; 
+;
 ; ; All the operators FIX their arguments
 ; ; (equal (+ x y) (+ (fix x) (fix y)))
 ; ; (equal (* x y) (* (fix x) (fix y)))
 ; ; (equal (< x y) (< (fix x) (fix y)))
 ; ; (fix x) = (if (acl2-numberp x) x 0)
-; 
+;
 ; (defthm operators-fix-their-arguments
 ;   (and (equal (cplus x y) (cplus (fix x) (fix y)))
 ;        (equal (ctimes x y) (ctimes (fix x) (fix y)))
@@ -1271,61 +1271,61 @@
 ;        (equal (fix x) (if (acl2-numberp x) x 0)))
 ;   :rule-classes nil
 ;   :hints (("Subgoal 1" :in-theory (enable fix))))
-; 
+;
 ; ; + Associativity, Commutativity, and Zero
 ; ; (equal (+ (+ x y) z) (+ x (+ y z)))
 ; ; (equal (+ x y) (+ y x))
 ; ; (equal (+ 0 y) (fix y))
-; 
+;
 ; (defthm cplus-associativity-etc
 ;   (and (equal (cplus (cplus x y) z) (cplus x (cplus y z)))
 ;        (equal (cplus x y) (cplus y x))
 ;        (equal (cplus 0 y) (fix y))))
-; 
+;
 ; ; * Distributes Over +
 ; ; (equal (+ (* c x) (* d x)) (* (+ c d) x))
-; 
+;
 ; (defthm ctimes-distributivity
 ;   (equal (cplus (ctimes c x) (ctimes d x)) (ctimes (cplus c d) x)))
-; 
+;
 ; ; * Associativity, Commutativity, Zero and One
-; ; (equal (* (* x y) z) (* x (* y z)))   ; See note below 
+; ; (equal (* (* x y) z) (* x (* y z)))   ; See note below
 ; ; (equal (* x y) (* y x))
 ; ; (equal (* 0 x) 0)
 ; ; (equal (* 1 x) (fix x))
-; 
+;
 ; (defthm ctimes-associativity-etc
 ;   (and (equal (ctimes (ctimes x y) z) (ctimes x (ctimes y z)))
 ;        (equal (ctimes x y) (ctimes y x))
 ;        (equal (ctimes 0 y) 0)
 ;        (equal (ctimes 1 x) (fix x))))
-; 
+;
 ; ; + Inverse
 ; ; (equal (+ x (* -1 x)) 0)
-; 
+;
 ; (defthm cplus-inverse
 ;   (equal (cplus x (ctimes -1 x)) 0))
-; 
+;
 ; ; Reflexivity of <=
 ; ; (<= x x)
-; 
+;
 ; (defthm clesseqp-reflexivity
 ;   (clesseqp x x))
-; 
+;
 ; ; Antisymmetry
 ; ; (implies (< x y) (not (< y x)))   ; (implies (< x y) (<= x y))
-; 
+;
 ; (defthm clessp-antisymmetry
 ;   (implies (clessp x y)
 ;            (not (clessp y x))))
-; 
+;
 ; ; Trichotomy
 ; ; (implies (and (acl2-numberp x)
 ; ;               (acl2-numberp y))
 ; ;          (or (< x y)
 ; ;              (< y x)
 ; ;              (equal x y)))
-; 
+;
 ; (defthm clessp-trichotomy
 ;   (implies (and (acl2-numberp x)
 ;                 (acl2-numberp y))
@@ -1333,20 +1333,20 @@
 ;                (clessp y x)
 ;                (equal x y)))
 ;   :rule-classes nil)
-; 
+;
 ; ; Additive Properties of < and <=
 ; ; (implies (and (<  x y) (<= u v)) (<  (+ x u) (+ y v)))
 ; ; (implies (and (<= x y) (<= u v)) (<= (+ x u) (+ y v)))
-; 
+;
 ; ; We have to prove three lemmas first.  But then we nail these suckers!
-; 
+;
 ;  (defthm not-lessp-plus-instance-u=v
 ;    (implies (and (rationalp x)
 ;                  (rationalp y)
 ;                  (rationalp u)
 ;                  (not (lessp y x)))
 ;             (not (lessp (plus y u) (plus x u)))))
-; 
+;
 ;  (defthm lessp-plus-commuted1
 ;    (implies (and (rationalp x)
 ;                  (rationalp y)
@@ -1356,13 +1356,13 @@
 ;                  (not (lessp v u)))
 ;             (lessp (plus u x) (plus v y)))
 ;    :hints (("goal" :use (:instance lessp-plus))))
-; 
+;
 ;  (defthm irreflexive-revisited-and-commuted
 ;    (implies (and (rationalp x)
 ;                  (rationalp y)
 ;                  (lessp y x))
 ;             (equal (equal x y) nil)))
-; 
+;
 ; (defthm clessp-additive-properties
 ;   (and (implies (and (clessp x y)
 ;                      (clesseqp u v))
@@ -1370,32 +1370,32 @@
 ;        (implies (and (clesseqp x y)
 ;                      (clesseqp u v))
 ;                 (clesseqp (cplus x u) (cplus y v)))))
-; 
+;
 ; ; The 1+ Trick
 ; ; (implies (and (integerp x)
 ; ;               (integerp y)
 ; ;               (< x y))
 ; ;          (<= (+ 1 x) y))
-; 
+;
 ; (defthm cplus-1-trick
 ;   (implies (and (integerp x)
 ;                 (integerp y)
 ;                 (clessp x y))
 ;            (clesseqp (cplus 1 x) y)))
-; 
+;
 ; ; Cross-Multiplying Allows Cancellation
 ; ; (implies (and (< c1 0)
 ; ;               (< 0 c2))
 ; ;          (equal (+ (* c1 (abs c2)) (* c2 (abs c1))) 0))
-; 
+;
 ; ; Three lemmas lead to the result.
-; 
-;  (defthm times--1--1 
+;
+;  (defthm times--1--1
 ;    (equal (times -1 -1) 1)
 ;    :hints
 ;    (("goal"
 ;      :use ((:instance plus-inverse-unique (x (times -1 -1)) (y 1))))))
-; 
+;
 ;  (defthm times--1-times--1
 ;    (implies (rationalp x)
 ;             (equal (times -1 (times -1 x)) x))
@@ -1414,50 +1414,50 @@
 ;                              (x y)
 ;                              (y (times -1 x))
 ;                              (z (times -1 y)))))))
-; 
+;
 ; ; Multiplication by Positive Preserves Inequality
 ; ;(implies (and (rationalp c)     ; see note below
 ; ;              (< 0 c))
 ; ;         (iff (< x y)
 ; ;              (< (* c x) (* c y))))
-; 
+;
 ; (defthm multiplication-by-positive-preserves-inequality
 ;   (implies (and (rationalp c)
 ;                 (clessp 0 c))
 ;            (iff (clessp x y)
 ;                 (clessp (ctimes c x) (ctimes c y)))))
-; 
+;
 ; ; The Zero Trichotomy Trick
 ; ; (implies (and (acl2-numberp x)
 ; ;               (not (equal x 0))
 ; ;               (not (equal x y)))
 ; ;          (or (< x y) (< y x)))
-; 
+;
 ;  (defthm complex-equal-0
 ;    (implies (and (rationalp x)
 ;                  (rationalp y))
 ;             (equal (equal (complex x y) 0)
 ;                    (and (equal x 0)
 ;                         (equal y 0)))))
-; 
+;
 ; (defthm zero-trichotomy-trick
 ;  (implies (and (acl2-numberp x)
 ;                (not (equal x 0))
 ;                (not (equal x y)))
 ;           (or (clessp x y) (clessp y x)))
 ;  :rule-classes nil :hints (("goal" :in-theory (enable fix))))
-; 
-; 
+;
+;
 ; ; The Find Equational Poly Trick
 ; ; (implies (and (<= x y) (<= y x)) (equal (fix x) (fix y)))
-; 
+;
 ; (defthm find-equational-poly-trick
 ;   (implies (and (clesseqp x y)
 ;                 (clesseqp y x))
-; 
+;
 ;            (equal (fix x) (fix y)))
 ;   :hints (("Goal" :in-theory (enable fix))))
-; 
+;
 ; )
 
 ;-----------------------------------------------------------------------------
@@ -1496,7 +1496,7 @@
   However, the unknowns need not be variable symbols.  For
   example, ~c[(length x)] might be used as an unknown in a linear
   polynomial.  Thus, another linear polynomial is ~c[3*(length x) + 7*a].
-  A ``linear polynomial inequality'' is an inequality 
+  A ``linear polynomial inequality'' is an inequality
   (either ~ilc[<] or ~ilc[<=])
   relation between two linear polynomials.  Note that an equality may
   be considered as a pair of inequalities; e.q., ~c[3*x + 7*a + 2 = 0]
@@ -1511,7 +1511,7 @@
 
   For example, suppose we have two assumptions
   ~bv[]
-  p1:       3*x + 7*a <  4 
+  p1:       3*x + 7*a <  4
   p2:               3 <  2*x
   ~ev[]
   and we wish to prove that, given ~c[p1] and ~c[p2], ~c[a < 0].  As
@@ -1652,7 +1652,7 @@
                                      (+f 2 calls)))))
            #+:non-standard-analysis
            ((realp evg)
-            (prog2$ (er hard? 'fn-count-evg 
+            (prog2$ (er hard? 'fn-count-evg
                         "Encountered an irrational in fn-count-evg!")
                     0))
            ((complex-rationalp evg)
@@ -1663,7 +1663,7 @@
                               (+f 2 calls)))
            #+:non-standard-analysis
            ((complexp evg)
-            (prog2$ (er hard? 'fn-count-evg 
+            (prog2$ (er hard? 'fn-count-evg
                         "Encountered a complex irrational in ~ fn-count-evg!")
                     0))
            ((symbolp evg)
@@ -1907,13 +1907,13 @@
 
 ; Polys
 
-; Historical note: Polys are now 
+; Historical note: Polys are now
 ; (<  0 (+ constant (* k1 t1) ... (* kn tn)))
 ; rather than
 ; (<  (+ constant (* k1 t1) ... (* kn tn)) 0)
 ; as in Version_2.6 and before.
 
-(defrec poly 
+(defrec poly
     (((alist parents . ttree)
       .
       (constant relation rational-poly-p . derived-from-not-equalityp)))
@@ -1987,38 +1987,38 @@
 ;   this change was inadvertant only because I did not properly understand
 ;   the old behaviour which seems odd to me.  I believe that the new
 ;   behaviour is the ``correct'' one.  Let us look at an example:
-;   
+;
 ;   Input:
-;   
+;
 ;   x = y       (1)
 ;   a + y >= b  (2)
 ;   a + x <= b  (3)
-;   
+;
 ;   After cancellation:
-;   
+;
 ;   y: x <= y      (1a)
 ;      b <= y + a  (2)
-;   
+;
 ;      y <= x      (1b)
-;   
+;
 ;   x: x + a <= b  (3)
-;   
+;
 ;      b <= x + a  (4) = (1b + 2)
-;   
+;
 ;   I think that some form of x + a = b should be generated and added to
 ;   the clause.  Under the new order, (3) and (4) would be allowed to
 ;   combine, because neither of them descended \emph{directly} from an
 ;   inequality.  This seems like the kind of fact that I, as a user, would
-;   expect ACL2 to know and use.  Under the old regime however, since (1b) 
+;   expect ACL2 to know and use.  Under the old regime however, since (1b)
 ;   was used in the derivation of (4), this was not allowed.
-;   
+;
 ;   This raises the qestion of whether the new test is too liberal.  For
 ;   example, from
-;   
+;
 ;   input:
 ;   x = y
 ;   a + x = b + y
-;   
+;
 ;   We would now generate the equality a = b.  I do not see any harm in
 ;   this.  Perhaps another example will convince me that we need to
 ;   tighten the heuristic up.
@@ -2055,8 +2055,8 @@
 ;    b. Is not itself a sum --- A poly represents a sum of terms
 ;    c. Is not of the form (* c x), where c is a rational constant ---
 ;       The c should have been ``pulled out''.
-;    d. Is not of the form (- c), (* c d), or (+ c d) where c and d are 
-;       rational constants --- These terms should be evaluated and added 
+;    d. Is not of the form (- c), (* c d), or (+ c d) where c and d are
+;       rational constants --- These terms should be evaluated and added
 ;       onto the constant, not used as an unknown.
 ;    Some of these are implied by others, but we check them each
 ;    independently.
@@ -2201,7 +2201,7 @@
 
 (defun poly-weakerp (poly1 poly2 parents-check)
 
-; We return t if poly1 is ``weaker'' than poly2. 
+; We return t if poly1 is ``weaker'' than poly2.
 
 ; Pseudo-examples:
 ; (<= 3 (* x y)) is weaker than both (< 3 (* x y)) and (<= 17/5 (* x y));
@@ -2267,7 +2267,7 @@
 
   (cond ((not flag)
          nil)
-        ((null lst) 
+        ((null lst)
          nil)
         ((arith-term-order term
                            (first-var (car lst)))
@@ -2285,7 +2285,7 @@
 ; second, the filtered list.  This list in the reverse order from that
 ; produced by nqthm.
 
-  (cond ((null lst) 
+  (cond ((null lst)
          (mv nil ans))
         ((impossible-polyp (car lst))
          (mv (car lst) nil))
@@ -2293,7 +2293,7 @@
          (filter-polys (cdr lst) ans))
         ((poly-member (car lst) ans)
          (filter-polys (cdr lst) ans))
-        (t 
+        (t
          (filter-polys (cdr lst) (cons (car lst) ans)))))
 
 
@@ -2386,7 +2386,7 @@
 
 ; We are about to add term onto a poly.  We want to enforce the poly invariant
 ; 2.d. (Described shortly before the definition of good-polyp.)   Here, we
-; check whether we should evaluate term.  If so, we do the evaluation in 
+; check whether we should evaluate term.  If so, we do the evaluation in
 ; dumb-eval immediately below.
 
   (cond ((variablep term)
@@ -2443,7 +2443,7 @@
    ((variablep term)
     (add-linear-variable term side p))
 
-; We enforce poly invariant 2.d.   (Described shortly before the 
+; We enforce poly invariant 2.d.   (Described shortly before the
 ; definition of good-polyp.)
 
    ((dumb-eval-yields-quotep term)
@@ -2463,7 +2463,7 @@
              (add-linear-term (fargn term 1) side
                               (add-linear-term (fargn term 2) side p)))
             (unary--
-             (add-linear-term (fargn term 1) 
+             (add-linear-term (fargn term 1)
                               (if (eq side 'lhs) 'rhs 'lhs)
                               p))
             (binary-*
@@ -2549,7 +2549,7 @@
 
   (if (access poly p :alist)
       (let ((c (abs (first-coefficient p))))
-        (cond 
+        (cond
          ((eql c 1)
           p)
          (t
@@ -2608,13 +2608,13 @@
 ;    (implies (and (< a b))
 ;             (< (* a c) (* b c)))
 ;    :rule-classes :linear)
-; 
+;
 ;  (defaxiom commutativity-2-of-*
 ;    (equal (* x y z)
 ;           (* y x z)))
-; 
+;
 ;  (defstub foo (x) t)
-; 
+;
 ;  (thm
 ;   (implies (and (< a (* a c))
 ;                 (< 0 evil))
@@ -2635,23 +2635,23 @@
 
 ; (trace (add-linear-lemma
 ;         :entry (list (list 'term (nth 0 si::arglist))
-;                      (list 'lemma (access linear-lemma 
+;                      (list 'lemma (access linear-lemma
 ;                                           (nth 1 si::arglist)
 ;                                           :rune))
-;                      (list 'max-term (access linear-lemma 
+;                      (list 'max-term (access linear-lemma
 ;                                              (nth 1 si::arglist)
 ;                                              :max-term))
-;                      (list 'conclusion (access linear-lemma 
+;                      (list 'conclusion (access linear-lemma
 ;                                                (nth 1 si::arglist)
 ;                                                :concl))
-;                      (list 'type-alist (show-type-alist 
+;                      (list 'type-alist (show-type-alist
 ;                                         (nth 2 si::arglist))))
 ;         :exit (if (equal (nth 9 si::arglist)
 ;                          (mv-ref 1))
 ;                   '(no change)
-;                   (list (list 'old-pot-list 
+;                   (list (list 'old-pot-list
 ;                               (show-pot-lst (nth 9 si::arglist)))
-;                         (list 'new-potlist 
+;                         (list 'new-potlist
 ;                               (show-pot-lst (mv-ref 1)))))))
 
 (defconst *max-linear-pot-loop-stopper-value* 3)
@@ -2856,14 +2856,14 @@
                         (car old-pot-lst))
                  (member-equal (access linear-pot (car new-pot-lst) :var)
                                to-be-ignored-lst))
-             (changed-pot-vars (cdr new-pot-lst) (cdr old-pot-lst) 
+             (changed-pot-vars (cdr new-pot-lst) (cdr old-pot-lst)
                                to-be-ignored-lst)
            (cons (access linear-pot (car new-pot-lst) :var)
-                 (changed-pot-vars (cdr new-pot-lst) (cdr old-pot-lst) 
+                 (changed-pot-vars (cdr new-pot-lst) (cdr old-pot-lst)
                                    to-be-ignored-lst))))
         (t
          (cons (access linear-pot (car new-pot-lst) :var)
-               (changed-pot-vars (cdr new-pot-lst) old-pot-lst 
+               (changed-pot-vars (cdr new-pot-lst) old-pot-lst
                                  to-be-ignored-lst)))))
 
 (defun infect-polys (lst ttree parents)
@@ -2924,11 +2924,11 @@
                                   ttree)))
            (cons (modify-linear-pot
                   (car new-pot-lst)
-                  (infect-polys (access linear-pot (car new-pot-lst) 
+                  (infect-polys (access linear-pot (car new-pot-lst)
                                         :positives)
                                 ttree
                                 (collect-parents ttree))
-                  (infect-polys (access linear-pot (car new-pot-lst) 
+                  (infect-polys (access linear-pot (car new-pot-lst)
                                         :negatives)
                                 ttree
                                 (collect-parents ttree)))
@@ -3145,7 +3145,7 @@
       (find-equational-poly3 poly1 (car negatives) hist)
       (cond
        (msg (mv msg lhs rhs))
-       (t (find-equational-poly2 poly1 (cdr negatives) 
+       (t (find-equational-poly2 poly1 (cdr negatives)
                                  hist)))))))
 
 (defun find-equational-poly1 (positives negatives hist)
@@ -3190,7 +3190,7 @@
 ; return must find its way into the hist entry for that
 ; simplify-clause.
 
-; Historical note: The affect of the newly (v2_8) introduced field, 
+; Historical note: The affect of the newly (v2_8) introduced field,
 ; :derived-from-not-equalityp, is different from that of the
 ; earlier function descends-from-not-equalityp.  We are now more
 ; liberal about the polys we can generate here.  See the discussion
@@ -3241,7 +3241,7 @@
 
 ; Alist1 and alist2 are the alists from two polys which we are about
 ; to cancel.  We create a new alist by adding alist1 and alist2, using
-; coeff to normalize the result.  
+; coeff to normalize the result.
 
   (cond ((null alist1)
          (cancel2 alist2 coeff))
@@ -3288,7 +3288,7 @@
 ; the cancellation yeilded a trivially true poly) or is the newly
 ; formed poly.
 
-; Historical note: The affect of the newly (v2_8) introduced field, 
+; Historical note: The affect of the newly (v2_8) introduced field,
 ; :derived-from-not-equalityp, is different from that of the
 ; earlier function descends-from-not-equalityp.  See the discussion
 ; accompanying the definition of a poly.  (Search for ``(defrec poly''.))
@@ -3299,7 +3299,7 @@
 ;           :entry (list (show-poly (car si::arglist))
 ;                        (show-poly (cadr si::arglist)))
 ;           :exit (let ((flg (car values))
-;                       (val (car (mv-refs 1)))) 
+;                       (val (car (mv-refs 1))))
 ;                   (cond (flg (append values (mv-refs 1)))
 ;                         (val (list nil (show-poly val)))
 ;                         (t (list nil nil))))))
@@ -3356,12 +3356,12 @@
                                         pt ans))
         (t (mv-let (contradictionp new-p)
              (cancel p (car polys))
-             (cond (contradictionp 
+             (cond (contradictionp
                     (mv contradictionp nil))
-                   (t 
+                   (t
                     (cancel-poly-against-all-polys
                      p
-                     (cdr polys) 
+                     (cdr polys)
                      pt
 
 ; We discard polys which are ``weaker'' (see poly-member and
@@ -3384,10 +3384,10 @@
 ; ; This is the fundamental function for changing a pot-lst.  It adds a
 ; ; single poly p to pot-lst.  All the other functions which construct
 ; ; pot lists do it, ultimately, via calls to add-poly.
-; 
+;
 ; ; In nqthm this function was called add-equation but since its argument
 ; ; is a poly we renamed it.
-; 
+;
 ; ; This function adds a poly p to the pot-lst.  Since the pot-lst is
 ; ; ordered by term-order on the vars, we recurse down the pot-lst just
 ; ; far enough to find where p fits.  There are three cases: p goes
@@ -3408,7 +3408,7 @@
 ; ; returned to us a bunch of polys that belong earlier in the pot-lst
 ; ; (from it).  Some of those polys may belong here where we are
 ; ; standing.  Others should be passed up.
-; 
+;
 ; ; To-do is the list of polys produced by the recursive add-poly.  Var,
 ; ; positives, and negatives are the appropriate components of the pot
 ; ; that add-poly is standing on.  We process those polys in to-do that
@@ -3583,13 +3583,13 @@
 ; one which needs more than 100, but less than 500 --- which is too
 ; much.  After Version_5.0, we eliminated the nonlinearp condition
 ; and prune when there are more than 100 polys in the new list.
-               
+
                ((and ; nonlinearp
                      (>=-len new-lst 101))
                 (add-polys1 (prune-poly-lst new-lst nil)
                             pot-lst nil pt nonlinearp
                             max-rounds (+ 1 rounds-completed)))
-               (t 
+               (t
                 (add-polys1 new-lst pot-lst nil
                             pt nonlinearp
                             max-rounds (+ 1 rounds-completed)))))
@@ -3633,20 +3633,20 @@
 ;                          (t (list* x '+ lst))))
 ;           (t (cond ((null lst) (list n x))
 ;                    (t (list* n x '+ lst)))))))
-; 
+;
 ; (defun show-poly1 (alist lhs rhs)
-; 
+;
 ; ; Note: This function ought to return (mv lhs rhs) but when it is used in
 ; ; tracing multiply valued functions that functionality hurts us: the
 ; ; computation performed during the tracing destroys the multiple value being
 ; ; manipulated by the function being traced.  So that we can use this function
 ; ; conveniently during tracing, we make it a single valued function.
-; 
+;
 ;   (cond ((null alist) (cons lhs rhs))
 ;         ((logical-< 0 (cdar alist))
 ;          (show-poly1 (cdr alist) lhs (show-poly2 (car alist) rhs)))
 ;         (t (show-poly1 (cdr alist) (show-poly2 (car alist) lhs) rhs))))
-; 
+;
 ; (defun show-poly (poly)
 ;   (let* ((pair (show-poly1
 ;                    (cond ((null (access poly poly :alist)) nil)
@@ -3664,20 +3664,20 @@
 ;                          (t nil))))
 ;          (lhs (car pair))
 ;          (rhs (cdr pair)))
-; 
+;
 ; ; The let* above would be (mv-let (lhs rhs) (show-poly1 ...) ...) had
 ; ; show-poly1 been specified to return two values instead of a pair.
 ; ; See note above.
-; 
+;
 ;     (append (or lhs '(0))
 ;             (cons (access poly poly :relation) (or rhs '(0))))))
-; 
+;
 ; (defun show-poly-lst (poly-lst)
 ;   (cond ((null poly-lst) nil)
 ;         (t (cons (show-poly (car poly-lst))
 ;                  (show-poly-lst (cdr poly-lst))))))
-; 
-; 
+;
+;
 ; (defun show-pot-lst (pot-lst)
 ;   (cond
 ;    ((null pot-lst) nil)
@@ -3688,7 +3688,7 @@
 ;                       (show-poly-lst
 ;                        (access linear-pot (car pot-lst) :positives))))
 ;        (show-pot-lst (cdr pot-lst))))))
-; 
+;
 ; (defun show-type-alist (type-alist)
 ;   (cond ((endp type-alist) nil)
 ;         (t (cons (list (car (car type-alist))

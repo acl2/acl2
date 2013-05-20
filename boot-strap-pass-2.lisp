@@ -546,18 +546,18 @@
 (defthm fn-count-1-type
   (implies (and (integerp fn-count-acc)
                 (integerp p-fn-count-acc))
-           (and (integerp (car (fn-count-1 flag term 
+           (and (integerp (car (fn-count-1 flag term
                                            fn-count-acc p-fn-count-acc)))
-                (integerp (mv-nth 0 (fn-count-1 flag term 
+                (integerp (mv-nth 0 (fn-count-1 flag term
                                                 fn-count-acc
                                                 p-fn-count-acc)))
-                (integerp (mv-nth 1 (fn-count-1 flag term 
+                (integerp (mv-nth 1 (fn-count-1 flag term
                                                 fn-count-acc
                                                 p-fn-count-acc)))
-                (integerp (nth 0 (fn-count-1 flag term 
+                (integerp (nth 0 (fn-count-1 flag term
                                              fn-count-acc
                                              p-fn-count-acc)))
-                (integerp (nth 1 (fn-count-1 flag term 
+                (integerp (nth 1 (fn-count-1 flag term
                                              fn-count-acc
                                              p-fn-count-acc)))))
   :rule-classes ((:forward-chaining
@@ -1408,7 +1408,7 @@
    ((eql n *len-system-verify-guards-alist*)
     '(value-triple :CHK-NEW-VERIFIED-GUARDS-COMPLETE))
    (t
-    (let* ((pair (nth n *system-verify-guards-alist*)) 
+    (let* ((pair (nth n *system-verify-guards-alist*))
            (user-book-name (car pair))
            (fns (cdr pair)))
       `(progn (include-book ,user-book-name

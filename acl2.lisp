@@ -74,7 +74,7 @@
 ;     I had to put down special code to try to do what other lisps do.
 ;     Generally, this involved just not checking for certain errors (compiling
 ;     files that weren't supposed to be compiled) in #+cmu that were checked
-;     in other lisps.  In one case, namely the initialization of 
+;     in other lisps.  In one case, namely the initialization of
 ;     current-acl2-world, it involved a little more.
 
 ; (1) cmulisp switches from *standard-input* to *terminal-io* when the input
@@ -88,7 +88,7 @@
 ; (2) Cmulisp checks type assertions at runtime.  I found two of our assertions
 ;     violated by actual use.  In fmt-char we mistakenly claimed the string's
 ;     length was less than 101.  This was a typo -- elsewhere in the same
-;     function we claimed it was just a fixnum -- apparently caused by 
+;     function we claimed it was just a fixnum -- apparently caused by
 ;     copying a type-declaration and failing to edit it thoroughly.  (Another
 ;     variable was correctly limited to 101.)
 
@@ -102,11 +102,11 @@
 ;     this object is a compiled-function-p you get t.  If you compile
 ;     foo the symbol-function changes to an object like #<Function
 ;     ...>, which also passes the test.
-    
+
 ;     The fact that everything in a symbol-function field looks like a compiled
 ;     function killed us in an interesting way.  Most locally, it made
 ;     compile-uncompiled-*1*-defuns write out an empty file of functions to
-;     compile, because everything looked compiled already.  But where that 
+;     compile, because everything looked compiled already.  But where that
 ;     really got us was that we use that function to create TMP1.lisp during
 ;     the bootstrapping.  TMP1.lisp, recall, contains the mechanically
 ;     generated executable counterparts of logic mode functions defined in
@@ -505,7 +505,7 @@
 ;;; (defmacro state-global-let*-logical (bindings body)
 ;;;   (declare (xargs :guard (and (state-global-let*-bindings-p bindings)
 ;;;                               (no-duplicatesp-equal (strip-cars bindings)))))
-;;; 
+;;;
 ;;;   `(let ((state-global-let*-cleanup-lst
 ;;;           (list ,@(state-global-let*-get-globals bindings))))
 ;;;      ,@(and (null bindings)
@@ -520,13 +520,13 @@
 ;;;       (pprogn
 ;;;        ,@(state-global-let*-cleanup bindings 0)
 ;;;        state))))
-;;; 
+;;;
 ;;; #-acl2-loop-only
 ;;; (defmacro enforce-live-state-p (form)
-;;; 
+;;;
 ;;; ; Note that STATE is intended to be lexically bound at the point where this
 ;;; ; macro is called.
-;;; 
+;;;
 ;;;   `(progn (when (not (live-state-p state)) ; (er hard! ...)
 ;;;             (let ((*hard-error-returns-nilp* nil))
 ;;;               (illegal 'enforce-live-state-p
@@ -534,18 +534,18 @@
 ;;;                         an evaluation of the form:~|~x0"
 ;;;                        (list (cons #\0 ',form)))))
 ;;;           ,form))
-;;; 
+;;;
 ;;; (defmacro state-global-let* (bindings body)
 ;;;   (cond #-acl2-loop-only
 ;;;         ((and (symbol-doublet-listp bindings)
 ;;;               (not (assoc-eq 'acl2-raw-mode-p bindings)))
-;;; 
+;;;
 ;;; ; The test above guarantees that we merely have bindings of state globals.  A
 ;;; ; triple requires cleanup using a setter function.  Also we avoid giving this
 ;;; ; simple treatment to 'acl2-raw-mode-p because the semantics of
 ;;; ; state-global-let* are to call f-put-global, which has side effects in the
 ;;; ; case of 'acl2-raw-mode-p.
-;;; 
+;;;
 ;;;          `(enforce-live-state-p
 ;;;            (warn-about-parallelism-hazard
 ;;;             '(state-global-let* ,bindings ,body)
@@ -558,10 +558,10 @@
 ;;; ; The following is in acl2.lisp, but seems to be needed here as well.
 ;;; #+ecl
 ;;; (ext:package-lock "COMMON-LISP" nil)
-;;; 
+;;;
 ;;; Similarly in acl2.lisp, just before handling of package-lock on
 ;;; "COMMON-LISP" for clisp:
-;;; 
+;;;
 ;;; #+ecl
 ;;; (ext:package-lock "COMMON-LISP" nil)
 
@@ -810,7 +810,7 @@
 ; mode, where there are no guarantees.
 
                  ,term)
-                (t 
+                (t
                  (acl2::defconst-redeclare-error ',name)))))))
 
 ; If ',name is not bound, we must evaluate ,term.  Note that we do so
@@ -1343,10 +1343,10 @@ ACL2 from scratch.")
 
 ; LispWorks Version 4.2.0 has issued the following complaint during compilation
 ; until the next form was executed:
-; **++++ Error in NTH-UPDATE-REWRITER1: 
+; **++++ Error in NTH-UPDATE-REWRITER1:
 ;   Function size 73824 is too large.
 ; But even with the next form, we have seen the following:
-; **++++ Error in XTRANS-EVAL: 
+; **++++ Error in XTRANS-EVAL:
 ;   Function size 67910 is too large.
 ; This problem has disappeared with LispWorks 6.0.  But it seems reasonable to
 ; leave the following in place.
@@ -1623,15 +1623,15 @@ which is saved just in case it's needed later.")
   (load filename))
 
 ;                       Remarks on *acl2-readtable*
-; 
-; 
+;
+;
 ; Because read-object$ calls the Common Lisp function read, read-object$
 ; is a function of the values of the Common Lisp symbols (a)
 ; *readtable*, (b) *package*, and (c) *features*.  In ACL2, the user can
 ; specify the package to use, via in-package, which sets the global
 ; current-package.  The user of ACL2 has no (legitimate) control over the
 ; readtable, which is set above and discussed below.
-; 
+;
 ; As for *features*, we currently permit full use of the *features*
 ; facility of the Common Lisp reader, with this caveat: it is an
 ; official part of the ACL2 story that *features* should have the same
@@ -1649,16 +1649,16 @@ which is saved just in case it's needed later.")
 ; all together in ACL2.  This could be done at the cost of replacing the
 ; many uses of #+ and #- in axioms.lisp, and a few other places, with
 ; some sort of regular macro.
-; 
+;
 ; Below is a detailed examination of the default Common Lisp readtable
 ; from the perspective of ACL2.  We want to make sure that when we read,
 ; we do not have side effects (e.g. via #.) of ACL2 but will merely
 ; either (a) cause an error or (b) generate a Lisp object, which we then
 ; will check with bad-lisp-object before handing it to ACL2 functions.
-; 
+;
 ; All of the standard Common Lisp characters are either white space or
 ; constituent, with the following exceptions, which are read macros:
-; 
+;
 ;   "  quote
 ;   #  number sign
 ;   '  quote
@@ -1668,15 +1668,15 @@ which is saved just in case it's needed later.")
 ;   \  single escape
 ;   `  backquote
 ;   |  multiple escape
-; 
+;
 ; With the exception of number sign, backquote and comma, we certainly
 ; want all of these readmacros to have their usual Common Lisp
 ; semantics.
-; 
+;
 ; We have defined our own backquote and discussed it above.
-; 
+;
 ; We now review the # situation:
-; 
+;
 ;   ## and #= are for reading possibly circular stuff
 ;          bad-lisp-object may run forever
 ;   #'  reads as function
@@ -1721,7 +1721,7 @@ which is saved just in case it's needed later.")
 ;          will be rejected by bad-lisp-object
 ;   #X, #x hex
 ;          ok
-; 
+;
 ; Eventually, it will be best to define a read function for ACL2 solely in terms
 ; of ACL2 character reading primitives.  Common Lisp read is ambiguous.  There is
 ; the ambiguity of backquote described above.  There is the abiguity of which
@@ -1746,16 +1746,16 @@ which is saved just in case it's needed later.")
 ; code-char.  Notice for example that if we're not careful, then ACL2
 ; could be potentially unsound when we have 8-bit characters, because
 ; it's conceivable that
-; 
+;
 ; (equal (char-code "#\fifth-control-character") 5)
-; 
+;
 ; is a theorem in one Common Lisp and yet
-; 
+;
 ; (equal (char-code "#\fifth-control-character") 6)
-; 
+;
 ; is a theorem in another.  Bizarre, but apparently not ruled out by
 ; dpANS.
-; 
+;
 ; So, we manage this simply by modifying the character reader so that
 ; the #\ notation only works for single characters and for Space, Tab,
 ; Newline, Page, and Rubout; an error is caused otherwise.
@@ -1810,47 +1810,47 @@ which is saved just in case it's needed later.")
 ; In what follows we'll quote from dpANS (an emacs Info version).  We
 ; quote here from three sections, separated by ++++++++++++++++++.
 
-; 
+;
 ; Sharpsign Backslash
 ; ...................
-; 
+;
 ; Syntax: #\<<x>>
-; 
+;
 ; [[[ text omitted ]]]
-; 
+;
 ; When the token x is more than one character long, the x must have the
 ; syntax of a symbol with no embedded package markers.  In this case, the
 ; sharpsign backslash notation parses as the character whose name is
 ; (string-upcase x); see *See Character Names::.
-; 
+;
 ; ++++++++++++++++++
-; 
+;
 ; char-name                                                        [Function]
 ; ---------------------------------------------------------------------------
-; 
+;
 ; `char-name'  character =>  name
-; 
+;
 ; Arguments and Values::
 ; ......................
-; 
+;
 ; character--a character.
-; 
+;
 ; name--a string or nil.
-; 
+;
 ; Description::
 ; .............
-; 
+;
 ; Returns a string that is the name of the character, or nil if the
 ; character has no name.
-; 
+;
 ; ++++++++++++++++++
-; 
+;
 ; Character Names
 ; ---------------
-; 
+;
 ; The following character names must be present in all conforming
 ; implementations:
-; 
+;
 ; Newline
 
 
@@ -2049,7 +2049,7 @@ which is saved just in case it's needed later.")
 ; We grow the image slowly, since we now do allocation on start-up.  We are
 ; assuming that people will be using load-acl2 only as part of the process of
 ; building a saved image, and hence that this slow growth policy will be undone
-; by the function save-acl2-in-akcl.  If we are 
+; by the function save-acl2-in-akcl.  If we are
 
     (when (not fast)
       (loop
@@ -2425,7 +2425,7 @@ which is saved just in case it's needed later.")
          (*break-env* nil)
          (be *break-enable*)
          (*break-enable*
-          (progn 
+          (progn
             (if (stringp at) nil be)))
                                         ;(*standard-input* *terminal-io*)
          (*readtable* (or *break-readtable* *readtable*))
@@ -2445,7 +2445,7 @@ which is saved just in case it's needed later.")
            (setq *no-prompt* nil)
            )
           (t (set-back at env)))
-      (loop 
+      (loop
        (setq +++ ++ ++ + + -)
        (cond (*no-prompt* (setq *no-prompt* nil))
              (t ; ACL2 patch is in the following form, only

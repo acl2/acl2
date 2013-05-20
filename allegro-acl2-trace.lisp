@@ -146,7 +146,7 @@
                                :in
                                (cons ',name
                                      (trace-hide-world-and-state
-                                      ,(sublis *trace-sublis* 
+                                      ,(sublis *trace-sublis*
                                                (cadr l))))))))
         (t
          (trace-entry name (cdr l)))))
@@ -235,7 +235,7 @@
              (push (trace-exit (car x) (cadr x) (cddr x)) new-lst)
              (push (trace-entry (car x) (cddr x)) new-lst)
              (push `(excl:unadvise ,(car x)) new-lst))))))
-            
+
 (excl:without-package-locks
  (defmacro trace (&rest fns)
    (if fns

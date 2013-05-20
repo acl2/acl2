@@ -199,7 +199,7 @@
 ; be based on the symbol nil.  This way they are assigned the nume
 ; nil by fnume (below) and will always be considered enabled.  The
 ; function runep does NOT recognize fake runes.  Fake runes cannot be
-; used in theories, etc.  
+; used in theories, etc.
 
 ; The fake runes are:
 
@@ -1386,7 +1386,7 @@
 ; used, and flg is t iff term' is a quoted constant.  We avoid running disabled
 ; functions.  The flg result is probably not interesting to callers outside of
 ; this nest.
- 
+
 ; This function's behavior on lambda applications is a little strange.
 ; Consider
 
@@ -1575,7 +1575,7 @@
    ((warning-disabled-p "Disable")
     (state-mac@par))
    (t (pprogn@par
-       (let ((fns (theory-warning-fns ens1 ens2 wrld)))            
+       (let ((fns (theory-warning-fns ens1 ens2 wrld)))
          (if fns
              (warning$@par ctx ("Disable")
                "The following 0-ary function~#0~[~/s~] will now have ~#0~[its ~
@@ -1668,7 +1668,7 @@
                    ((access theory-invariant-record inv-rec :error)
                     (mv-let@par (erp val state)
                                 (er@par soft ctx "~@0" msg)
-                                (declare (ignore erp val)) 
+                                (declare (ignore erp val))
                                 (mv@par t state)))
                    (t (pprogn@par (warning$@par ctx "Theory" "~@0" msg)
                                   (mv@par errp-acc state))))
@@ -1916,7 +1916,7 @@
                               "ACL2"))
                      (incrmt-array-name-info ; must be a clause-id
                       (intern (coerce
-                               (append root 
+                               (append root
                                        (chars-for-tilde-@-clause-id-phrase
                                         incrmt-array-name-info))
                                'string)
@@ -2267,13 +2267,13 @@
 ; solve.
 
 ;  (defstub bar (x) t)
-; 
+;
 ;  (defaxiom bar-thm
 ;    (implies (and (integerp x)
 ;                  (< 3 x))
 ;             (bar x))
 ;    :rule-classes :type-prescription)
-; 
+;
 ;  (thm
 ;   (implies (and (integerp x)
 ;                 (< 4 x))
@@ -2421,7 +2421,7 @@
                                type-alist
                                (puffert ttree)
 ; See note above about this ttree versus the old ttree0.
-                               ttree 
+                               ttree
                                pot-lst pt)
                    (type-set-not ts ttree ttree0)))
 
@@ -2451,13 +2451,13 @@
 ; We did not get a useful answer by looking in the type-alist.  We try
 ; 'type-set-<-table if we can.
 
-               (let ((temp-ts 
+               (let ((temp-ts
                       (if (or (ts-intersectp ts1
                                              #+:non-standard-analysis
                                              *ts-complex*
                                              #-:non-standard-analysis
                                              *ts-complex-rational*)
-                              (ts-intersectp ts2 
+                              (ts-intersectp ts2
                                              #+:non-standard-analysis
                                              *ts-complex*
                                              #-:non-standard-analysis
@@ -2649,7 +2649,7 @@
           ((ts= ts1 *ts-rational*)
            (mv *ts-acl2-number* (puffert ttree0)))
           (t
-           (mv (ts-union ts1 
+           (mv (ts-union ts1
                          #+:non-standard-analysis
                          (cond ((and (ts-subsetp ts1 *ts-rational*)
                                      (ts-subsetp ts2 *ts-rational*))
@@ -2949,7 +2949,7 @@
 ; true-ts then (fn x) might be true, so we should throw in *ts-t*.
 ; Conversely, if arg-ts does not intersect with true-ts then (fn x)
 ; cannot possibly be true.  Exactly analogous statements can be made
-; about false-ts.  
+; about false-ts.
 
 ; We return two results, the type set of (fn x) and an extension of
 ; ttree (or ttree0) obtained by adding the named rule, tagged 'lemma.  We
@@ -4201,7 +4201,7 @@
 
 (defun assoc-equiv (fn arg1 arg2 alist)
 
-; This function is equivalent to 
+; This function is equivalent to
 ; (or (assoc-equal (list fn arg1 arg2) alist)
 ;     (assoc-equal (list fn arg2 arg1) alist))
 ; except that it looks for both at the same time and returns whichever
@@ -4468,7 +4468,7 @@
   (declare (xargs :guard (and (pseudo-termp term1)
                               (pseudo-termp term2))))
   (cond ((variablep term1)
-         
+
 ; Suppose that term1 is a variable.  The only thing that it can be
 ; worse than is a quote.  That is, if we return t, then we must ensure
 ; that either term2 is term1 or (worse-than term1 term2) is nil.  The
@@ -4507,64 +4507,64 @@
 ;    (new-worse-than
 ;     '(f a a)
 ;     '(f b b)))
-; 
+;
 ;   (time
 ;    (new-worse-than
 ;     '(f a (f a a))
 ;     '(f b (f b b))))
-; 
+;
 ;   (time
 ;    (new-worse-than
 ;     '(f a (f a (f a a)))
 ;     '(f b (f b (f b b)))))
-; 
+;
 ;   (time
 ;    (new-worse-than
 ;     '(f a (f a (f a (f a a))))
 ;     '(f b (f b (f b (f b b))))))
-; 
+;
 ;   (time
 ;    (new-worse-than
 ;     '(f a (f a (f a (f a (f a a)))))
 ;     '(f b (f b (f b (f b (f b b)))))))
-; 
+;
 ;   (time
 ;    (new-worse-than
 ;     '(f a (f a (f a (f a (f a (f a a))))))
 ;     '(f b (f b (f b (f b (f b (f b b))))))))
-; 
+;
 ;   (time
 ;    (new-worse-than
 ;     '(f a (f a (f a (f a (f a (f a (f a a)))))))
 ;     '(f b (f b (f b (f b (f b (f b (f b b)))))))))
-; 
+;
 ;   (time
 ;    (new-worse-than
 ;     '(f a (f a (f a (f a (f a (f a (f a (f a a))))))))
 ;     '(f b (f b (f b (f b (f b (f b (f b (f b b))))))))))
-; 
+;
 ;   (time
 ;    (new-worse-than
 ;     '(f a (f a (f a (f a (f a (f a (f a (f a (f a a)))))))))
 ;     '(f b (f b (f b (f b (f b (f b (f b (f b (f b b)))))))))))
-; 
+;
 ;   (time
 ;    (new-worse-than
 ;     '(f a (f a (f a (f a (f a (f a (f a (f a (f a (f a a))))))))))
 ;     '(f b (f b (f b (f b (f b (f b (f b (f b (f b (f b b))))))))))))
-; 
+;
 ;   (time
 ;    (new-worse-than
 ;     '(f a (f a (f a (f a (f a (f a (f a (f a (f a (f a (f a a)))))))))))
 ;     '(f b (f b (f b (f b (f b (f b (f b (f b (f b (f b (f b b)))))))))))))
-; 
+;
 ;   (time
 ;    (new-worse-than
 ;     '(f a
 ;         (f a (f a (f a (f a (f a (f a (f a (f a (f a (f a (f a a))))))))))))
 ;     '(f b
 ;         (f b (f b (f b (f b (f b (f b (f b (f b (f b (f b (f b b))))))))))))))
-; 
+;
 ;   (time
 ;    (new-worse-than
 ;     '(f a
@@ -4588,47 +4588,47 @@
 ;    (new-worse-than
 ;     '(f a (f a (f a (f a (f a (f a (f a (f a (f a a)))))))))
 ;     '(f b (f b (f b (f b (f b (f b (f b (f b (f b b)))))))))))
-; 
+;
 ;   (time
 ;    (new-worse-than
 ;     '(f a (f a (f a (f a (f a (f a (f a (f a (f a a)))))))))
 ;     '(f b (f b (f b (f b (f b (f b (f b (f b (f b (f b b))))))))))))
-; 
+;
 ;   (time
 ;    (new-worse-than
 ;     '(f a (f a (f a (f a (f a (f a (f a (f a (f a a)))))))))
 ;     '(f b (f b (f b (f b (f b (f b (f b (f b (f b (f b (f b b)))))))))))))
-; 
+;
 ;   (time
 ;    (new-worse-than
 ;     '(f a (f a (f a (f a (f a (f a (f a (f a (f a a)))))))))
 ;     '(f b (f b (f b (f b (f b (f b (f b (f b (f b (f b (f b (f b b))))))))))))
 ;     ))
-; 
+;
 ;   (time
 ;    (new-worse-than
 ;     '(f a (f a (f a (f a (f a (f a (f a (f a (f a a)))))))))
 ;     '(f b (f b (f b (f b (f b (f b (f b (f b (f b (f b (f b (f b (f b b)))))))))))))
 ;     ))
-; 
+;
 ;   (time
 ;    (new-worse-than
 ;     '(f a (f a (f a (f a (f a (f a (f a (f a (f a a)))))))))
 ;     '(f b (f b (f b (f b (f b (f b (f b (f b (f b (f b (f b (f b (f b (f b b))))))))))))))
 ;     ))
-; 
+;
 ;   (time
 ;    (new-worse-than
 ;     '(f a (f a (f a (f a (f a (f a (f a (f a (f a a)))))))))
 ;     '(f b (f b (f b (f b (f b (f b (f b (f b (f b (f b (f b (f b (f b (f b (f b b)))))))))))))))
 ;     ))
-; 
+;
 ;   (time
 ;    (new-worse-than
 ;     '(f a (f a (f a (f a (f a (f a (f a (f a (f a a)))))))))
 ;     '(f b (f b (f b (f b (f b (f b (f b (f b (f b (f b (f b (f b (f b (f b (f b (f b b))))))))))))))))
 ;     ))
-; 
+;
 ;   (time
 ;    (new-worse-than
 ;     '(f a (f a (f a (f a (f a (f a (f a (f a (f a a)))))))))
@@ -4647,23 +4647,23 @@
 ;    (new-worse-than
 ;     '(f b (f b (f b (f b (f b (f b (f b (f b (f b b)))))))))
 ;     '(f a (f a (f a (f a (f a (f a (f a (f a (f a a)))))))))))
-; 
+;
 ;   (time
 ;    (new-worse-than
 ;     '(f b (f b (f b (f b (f b (f b (f b (f b (f b (f b b))))))))))
 ;     '(f a (f a (f a (f a (f a (f a (f a (f a (f a a)))))))))))
-; 
+;
 ;   (time
 ;    (new-worse-than
 ;     '(f b (f b (f b (f b (f b (f b (f b (f b (f b (f b (f b b)))))))))))
 ;     '(f a (f a (f a (f a (f a (f a (f a (f a (f a a)))))))))))
-; 
+;
 ;   (time
 ;    (new-worse-than
 ;     '(f b (f b (f b (f b (f b (f b (f b (f b (f b (f b (f b (f b b))))))))))))
 ;     '(f a (f a (f a (f a (f a (f a (f a (f a (f a a)))))))))
 ;     ))
-; 
+;
 ;   (time
 ;    (new-worse-than
 ;     '(f b
@@ -4672,7 +4672,7 @@
 ;               (f b (f b (f b (f b (f b (f b (f b (f b (f b (f b b)))))))))))))
 ;     '(f a (f a (f a (f a (f a (f a (f a (f a (f a a)))))))))
 ;     ))
-; 
+;
 ;   (time
 ;    (new-worse-than
 ;     '(f b
@@ -4684,7 +4684,7 @@
 ;                        (f b (f b (f b (f b (f b (f b (f b (f b b))))))))))))))
 ;     '(f a (f a (f a (f a (f a (f a (f a (f a (f a a)))))))))
 ;     ))
-; 
+;
 ;   (time
 ;    (new-worse-than
 ;     '(f b
@@ -4699,7 +4699,7 @@
 ;                                 (f b (f b (f b (f b (f b (f b b)))))))))))))))
 ;     '(f a (f a (f a (f a (f a (f a (f a (f a (f a a)))))))))
 ;     ))
-; 
+;
 ;   (time
 ;    (new-worse-than
 ;     '(f b
@@ -4717,7 +4717,7 @@
 ;                                          (f b (f b (f b (f b b))))))))))))))))
 ;     '(f a (f a (f a (f a (f a (f a (f a (f a (f a a)))))))))
 ;     ))
-; 
+;
 ;   (time
 ;    (new-worse-than
 ;     '(f b
@@ -4765,7 +4765,7 @@
                   :well-founded-relation o<))
   (cond ((basic-worse-than term1 term2) t)
         ((pseudo-variantp term1 term2) nil)
-        ((variablep term1) 
+        ((variablep term1)
 
 ; If term1 is a variable and not basic-worse-than term2, what do we know about
 ; term2?  Term2 might be a variable.  Term2 cannot be quote.  Term2 might be a
@@ -4853,7 +4853,7 @@
 
 (defun basic-worse-than (term1 term2)
 
-; We say that term1 is basic-worse-than term2 if 
+; We say that term1 is basic-worse-than term2 if
 
 ; * term2 is a variable and term1 properly contains it, e.g., (F A B)
 ;   is basic-worse-than A;
@@ -5624,7 +5624,7 @@
                    (normalize-linear-sum term-to-match)
                    (cond
                     ((and (equal stripped-term stripped-term-to-match)
-                          (not (eql typed-multiplicative-const 0))) 
+                          (not (eql typed-multiplicative-const 0)))
 
 ; We have found a typed-term of the desired form, described above.  We merge
 ; the constant appropriately --- see the thm and let-binding immediately below.
@@ -5636,16 +5636,16 @@
 ;                 (rationalp typed-additive-const)
 ;                 (rationalp typed-multiplicative-const)
 ;                 (not (equal typed-multiplicative-const 0))
-;                 (equal orig-term (+ additive-const 
+;                 (equal orig-term (+ additive-const
 ;                                     (* multiplicative-const term)))
-;                 (equal typed-term (+ typed-additive-const 
+;                 (equal typed-term (+ typed-additive-const
 ;                                      (* typed-multiplicative-const term))))
 ;            (equal orig-term
 ;                   (+ (- additive-const
-;                         (* multiplicative-const 
+;                         (* multiplicative-const
 ;                            typed-additive-const
 ;                            (/ typed-multiplicative-const)))
-;                      (* multiplicative-const 
+;                      (* multiplicative-const
 ;                         (/ typed-multiplicative-const)
 ;                         typed-term)))))
 
@@ -6196,7 +6196,7 @@
 
 ; In (community) books directory workshops/2004/legato/support/
 ; (see below for discussion of which forms were submitted for each experiment):
-; 
+;
 ; (set-inhibit-output-lst '(prove proof-tree))
 ; ;; (ld "/projects/acl2/devel-misc/patches/accumulated-persistence-hyps-rhs/patch.lisp")
 ; ;; (value :q)
@@ -6205,19 +6205,19 @@
 ; ;; (lp)
 ; ; (accumulated-persistence t)
 ; (time$ (ld "proof-by-generalization-mult.lisp"))
-; 
+;
 ; No accp (skip commented forms)
 ; ; 97.01 seconds realtime, 95.54 seconds runtime.
-; 
+;
 ; Old accp (include only one commented form, (accumulated-persistence t))
 ; ; 114.82 seconds realtime, 113.46 seconds runtime.
-; 
+;
 ; New accp (include all commented forms except ;;;)
 ; ; 164.95 seconds realtime, 163.69 seconds runtime.
-; 
+;
 ; New accp (include all commented forms)
 ; ; 165.09 seconds realtime, 163.90 seconds runtime.
-; 
+;
 ; The results above were based on code that always gave results for a :conc
 ; xrune.  We now skip that xrune if there are no hypotheses, but that didn't
 ; make much difference:
@@ -6294,29 +6294,29 @@
 
 ; The following comment was written before the introduction of xrunes, and we
 ; have left it unchanged from that time.
-; 
+;
 ; The following alternate code doesn't do as well, even though it uses nconc.
 ; The nconc version doesn't even seem much better on space (in fact worse in an
 ; Allegro CL test as reported by "space allocation": 669,110,675 cons cells in
 ; the nconc version vs. 593,299,188).  Compare the times below with those
 ; reported in merge-accumulated-persistence.
-; 
+;
 ; Our basic idea was to avoid walking consing up a new alist in
 ; merge-accumulated-persistence-aux when the given rune wasn't already a key in
 ; the given alist.
-; 
+;
 ; real time       :    157.780 secs
 ; run-gbc time    :    146.960 secs
 ; child run time  :      0.000 secs
 ; gbc time        :      8.990 secs
-; 
+;
 ; Replacing nconc with revappend:
-; 
+;
 ; real time       :    168.870 secs
 ; run-gbc time    :    149.930 secs
 ; child run time  :      0.000 secs
 ; gbc time        :      8.930 secs
-; 
+;
 ; (defun merge-accumulated-persistence-1 (rune entry alist)
 ;   (cond ((endp alist)
 ;          (er hard 'merge-accumulated-persistence-1
@@ -6336,18 +6336,18 @@
 ;                (cdr alist)))
 ;         (t (cons (car alist)
 ;                  (merge-accumulated-persistence-1 rune entry (cdr alist))))))
-; 
+;
 ; (defun assoc-rune= (rune alist)
 ;   (cond ((endp alist) nil)
 ;         ((rune= rune (access accp-entry (car alist) :rune))
 ;          (car alist))
 ;         (t (assoc-rune= rune (cdr alist)))))
-; 
+;
 ; (defun merge-accumulated-persistence-rec (new-alist old-alist new-alist-new)
-; 
+;
 ; ; We merge into old-alist as we go along, except that entries in new-alist that
 ; ; are not in old-alist are put into new-alist-new.
-; 
+;
 ;   (cond ((endp new-alist) (nconc new-alist-new old-alist))
 ;         (t (let* ((rune (access accp-entry (car new-alist) :rune))
 ;                   (pair (assoc-rune= rune old-alist)))
@@ -6360,10 +6360,10 @@
 ;                     (t old-alist))
 ;               (cond (pair new-alist-new)
 ;                     (t (cons (car new-alist) new-alist-new))))))))
-; 
+;
 ; ; Also would need to add final argument of nil to call of
 ; ; merge-accumulated-persistence-rec in merge-accumulated-persistence.
-; 
+;
 
 (defun add-accumulated-persistence-s (xrune delta-s delta-f alist
                                             original-alist acc)
@@ -7317,7 +7317,7 @@
                                                   display)
                         mergep)))
                (main-phrase
-                (list "" "~@*" "~@*" "~@*" 
+                (list "" "~@*" "~@*" "~@*"
                       (show-accumulated-persistence-phrase1
                        key
                        (if (eq key :useless)
@@ -7563,7 +7563,7 @@
                            (ts-complement *ts-acl2-number*)))
      (ts-intersectp
       ts2
-      (ts-complement 
+      (ts-complement
        #+:non-standard-analysis
        (ts-union *ts-positive-real* *ts-complex*)
        #-:non-standard-analysis
@@ -7604,7 +7604,7 @@
                                (ts-complement *ts-acl2-number*)))
          (ts-intersectp
           ts1
-          (ts-complement 
+          (ts-complement
            #+:non-standard-analysis
            (ts-union *ts-negative-real* *ts-complex*)
            #-:non-standard-analysis
@@ -7621,7 +7621,7 @@
      (cons-tag-trees ttree xttree)
      type-alist w))
    ((and not-flg
-         (ts-subsetp ts1 
+         (ts-subsetp ts1
                      #+:non-standard-analysis
                      *ts-negative-real*
                      #-:non-standard-analysis
@@ -7656,7 +7656,7 @@
                                #-:non-standard-analysis
                                *ts-non-positive-rational*
                                (ts-complement *ts-acl2-number*)))
-         (ts-intersectp ts2 
+         (ts-intersectp ts2
                         #+:non-standard-analysis
                         *ts-positive-real*
                         #-:non-standard-analysis
@@ -7681,7 +7681,7 @@
      (cons-tag-trees ttree xttree)
      type-alist w))
    ((and not-flg
-         (ts-subsetp ts2 
+         (ts-subsetp ts2
                      #+:non-standard-analysis *ts-positive-real*
                      #-:non-standard-analysis *ts-positive-rational*)
          (ts-intersectp ts1
@@ -7712,7 +7712,7 @@
            #-:non-standard-analysis
            (ts-union *ts-complex-rational*
                      *ts-negative-rational*)))
-         (ts-intersectp ts1 
+         (ts-intersectp ts1
                         #+:non-standard-analysis *ts-negative-real*
                         #-:non-standard-analysis *ts-negative-rational*))
     (extend-type-alist
@@ -7909,7 +7909,7 @@
 ; type-alist and the wrld.  We return two results, the final type set of term
 ; and a ttree.
 
-; Note:  If ancestors is t it means:  don't backchain.  Act as though 
+; Note:  If ancestors is t it means:  don't backchain.  Act as though
 ; the literal we're backchaining on is worse than everything in sight.
 ; This is called the ``t-ancestors hack'' and is commented upon below.
 
@@ -7937,7 +7937,7 @@
 ; adopted the invariants on type-alist requiring canonical forms.  How
 ; much these changes slow things down is anyone's guess.  Stay tuned.
 
-; The DWP flag 
+; The DWP flag
 ; or
 ; Performance Notes on the "Type-Set Objective" Idea and Double Whammy
 
@@ -8047,7 +8047,7 @@
 ; However, by arranging for assume-true-false always to call type-set
 ; with dwp = t, we make it use double whammy when assuming things.
 ; That allows us to catch this.  Our hope is that it does not slow us
-; down too much.  
+; down too much.
 
   (mv-let
    (ts0 ttree0)
@@ -8137,7 +8137,7 @@
                            pt
                            backchain-limit)
              (type-set-finish x ts0 ttree0 ts1 ttree1 type-alist)))
-        
+
 ;     ((flambda-applicationp x)
 
 ; Note: Once upon a time, assumptions only recorded the term forced and not the
@@ -8400,7 +8400,7 @@
                                pot-lst pt
                                backchain-limit)
                  (type-set-finish x ts0 ttree0 ts1 ttree1 type-alist)))
-        (t 
+        (t
 
 ; Otherwise, we apply all known type-prescriptions and conclude with
 ; whatever is built in about fn.
@@ -8443,7 +8443,7 @@
               (type-set-rec (car x) force-flg dwp type-alist ancestors ens w
                             nil pot-lst pt backchain-limit)
               (cons (cons ts ttree)
-                    (type-set-lst (cdr x) 
+                    (type-set-lst (cdr x)
                                   force-flg dwp type-alist ancestors ens w
                                   pot-lst pt backchain-limit))))))
 
@@ -8527,7 +8527,7 @@
       (mv-let
        (on-ancestorsp assumed-true)
 
-; Here is the one place where we (potentially) use the t-ancestors 
+; Here is the one place where we (potentially) use the t-ancestors
 ; hack to abort early.
 
        (if (eq ancestors t)
@@ -8754,7 +8754,7 @@
 ; Note that force-flg has been rebound by the mv-let above.  Think of
 ; it as just a temporary variable meaning (and forcep force-flg) and
 ; we use it only if it is true.
- 
+
                   (cond
                    (force-flg
                     (type-set-relieve-hyps
@@ -8798,7 +8798,7 @@
                    (mv-let
                     (on-ancestorsp assumed-true)
 
-; Here is the one place where we (potentially) use the t-ancestors 
+; Here is the one place where we (potentially) use the t-ancestors
 ; hack to abort early.
 
                     (if (eq ancestors t)
@@ -8932,7 +8932,7 @@
             dwp
             (cond ((assoc-equal (cdr (car alist)) type-alist)
                    type-alist)
-                  (t 
+                  (t
                    (mv-let (ts ttree1)
                            (type-set-rec (cdr (car alist))
                                          force-flg dwp type-alist ancestors ens
@@ -9521,7 +9521,7 @@
 ; :use hints as well as some of the results from generalization
 ; rules.  Let us look at a particular example (from inequalities.lisp
 ; in the arithmetic library):
- 
+
 ;;; (defthm <-*-right-cancel
 ;;;   (implies (and (rationalp x)
 ;;;                 (rationalp y)
@@ -9609,7 +9609,7 @@
 ;;;                   'NIL
 ;;;                   'T))))
 ; Now, under the old regime, when rewrite got hold of the conclusion
-; of the :use hint, 
+; of the :use hint,
 
 ; (< '0
 ;    (BINARY-* (ABS (BINARY-+ Y (UNARY-- X)))
@@ -9673,7 +9673,7 @@
 ; (IF a b 'nil) which is the translation of (AND a b).  This function
 ; then ensures that the truth of both a and b are recorded in the
 ; true-type-alist returned.  It is, however, written to handle the
-; general case. 
+; general case.
 
   (let ((test (fargn x 1))
         (true-branch (fargn x 2))
@@ -9688,12 +9688,12 @@
                                    backchain-limit)
 
 ; In the first two branches, we know that test must be true or that test
-; must be false.  We recur on the true branch or the false branch 
+; must be false.  We recur on the true branch or the false branch
 ; respectively.  Test-ttree is a (possibly trivial) extension of xttree
 ; containing any assumptions made when calling assume-true-false on test,
 ; so we use it on the recursive calls.
 
-            (cond 
+            (cond
              (test-mbt
               (mv-let (mbt mbf tta fta ttree)
                       (assume-true-false-rec true-branch test-ttree force-flg
@@ -9754,7 +9754,7 @@
                                  (mv-atf not-flg nil t
                                          nil
                                          (extend-type-alist-simple
-                                          x *ts-nil* 
+                                          x *ts-nil*
                                           (cons-tag-trees tb-ttree fb-ttree)
                                           type-alist)
 
@@ -9782,7 +9782,7 @@
                                           we can see what went wrong.")
                                      nil nil nil nil))
                                 (t
-                                 (mv-atf not-flg t nil 
+                                 (mv-atf not-flg t nil
                                          (extend-type-alist-simple
                                           x
 
@@ -9846,7 +9846,7 @@
                           (look-in-type-alist x type-alist w)
                           (cond ((ts= x-ts *ts-nil*)
                                  (mv-atf not-flg nil t
-                                         nil 
+                                         nil
                                          (infect-new-type-alist-entries
                                           fb-fta type-alist
                                           tb-ttree)
@@ -10648,7 +10648,7 @@
 ; assume-true-false on it and we have to normalize it to produce the
 ; desired tta and fta.  If (< x 1) appears as the entire resultant
 ; term, we'll just call type-set on it and we have to normalize it to
-; decide it.  
+; decide it.
 
 ; Another question raised is: "What about the second transformation done
 ; above?"  We assume ~(< x 0) when asked to assume (< 0 (+ 1 x)), with the
@@ -10660,7 +10660,7 @@
                 (cond
                  ((equal arg1 *0*)
                   (cond
-                   ((ts-subsetp ts2 
+                   ((ts-subsetp ts2
                                 #+:non-standard-analysis *ts-positive-real*
                                 #-:non-standard-analysis *ts-positive-rational*)
                     (mv-atf not-flg t nil type-alist nil
@@ -10684,7 +10684,7 @@
                                   ;;*** -simple
                                   arg2
                                   (ts-intersection
-                                   ts2 
+                                   ts2
                                    #+:non-standard-analysis
                                    (ts-union *ts-positive-real*
                                              *ts-complex*)
@@ -10698,7 +10698,7 @@
                                   ;;*** -simple
                                   arg2
                                   (ts-intersection
-                                   ts2 (ts-complement 
+                                   ts2 (ts-complement
                                         #+:non-standard-analysis
                                         *ts-positive-real*
                                         #-:non-standard-analysis
@@ -10716,7 +10716,7 @@
 ;;; (defstub foo (x) t)
 ;;;
 ;;; (defaxiom test1
-;;;   (implies (and (<= 0 x) 
+;;;   (implies (and (<= 0 x)
 ;;;                 (rationalp x))
 ;;;            (foo y)))
 ;;;
@@ -10814,7 +10814,7 @@
                                 xnot-flg x shared-ttree xttree ignore)))))
                  ((equal arg2 *0*)
                   (cond
-                   ((ts-subsetp ts1 
+                   ((ts-subsetp ts1
                                 #+:non-standard-analysis
                                 *ts-negative-real*
                                 #-:non-standard-analysis
@@ -10840,7 +10840,7 @@
                                   ;;*** -simple
                                   arg1
                                   (ts-intersection
-                                   ts1 
+                                   ts1
                                    #+:non-standard-analysis
                                    (ts-union *ts-negative-real*
                                              *ts-complex*)
@@ -10854,7 +10854,7 @@
                                   ;;*** -simple
                                   arg1
                                   (ts-intersection
-                                   ts1 (ts-complement 
+                                   ts1 (ts-complement
                                         #+:non-standard-analysis
                                         *ts-negative-real*
                                         #-:non-standard-analysis
@@ -11105,7 +11105,7 @@
                  (mv-atf not-flg nil nil
                          (extend-with-proper/improper-cons-ts-tuple
                           x
-                          (ts-intersection ts *ts-non-nil*) 
+                          (ts-intersection ts *ts-non-nil*)
                           (cons-tag-trees ttree xttree)
                           force-flg dwp type-alist ancestors ens
                           type-alist w
@@ -11393,7 +11393,7 @@
 ; type alist or is already in the tree, it is not added.
 
 ; This function returns (mv flg tag-tree'), where tag-tree' is the new
-; tag-tree and flg is 
+; tag-tree and flg is
 ; a) :known-true if the assumption is known to be true (non-nil);
 ; b) :known-false if the assumption is known to be false;
 ; c) :added if the assumption is not known to be true or false and
@@ -11408,7 +11408,7 @@
 ; Note that force-flg may be t above.  In that case, we force the
 ; guards of term.  For example, suppose term were (acl2-numberp (+ x y)),
 ; where x is known rational and y is unknown (and we use + for binary-+).
-;  Then ts will come back *ts-t* and the ttree will contain a 
+;  Then ts will come back *ts-t* and the ttree will contain a
 ; (acl2-numberp y) 'assumption.  If we ultimately rely on ts then we
 ; must add ttree to the incoming tag-tree.  But if we ultimately just
 ; assume term, we can ignore ttree.
@@ -11800,7 +11800,7 @@
             (cond
              (mbt (mv t nil ttree))
              (mbf (type-alist-clause-finish1 (cdr lits) (cdr ttree-lst)
-                                            force-flg 
+                                            force-flg
                                             type-alist ens wrld))
              (t (type-alist-clause-finish1 (cdr lits) (cdr ttree-lst)
                                            force-flg
@@ -11820,7 +11820,7 @@
   (mv-let (contradictionp type-alist ttree)
     (type-alist-clause-finish1 lits ttree-lst
                                force-flg type-alist ens wrld)
-    (cond (contradictionp 
+    (cond (contradictionp
            (mv contradictionp type-alist ttree))
           (t
            (mv-let (contradictionp new-type-alist ttree)

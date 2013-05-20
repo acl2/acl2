@@ -119,7 +119,7 @@ If X is a symbol, character, or number, then it is already normed and nothing
 is done.
 
 If X is a string, we check if any normed version of X already exists.  If so,
-we return the already-normed version; otherwise, we install X as the normed 
+we return the already-normed version; otherwise, we install X as the normed
 version for all strings that are ~ilc[equal] to X.
 
 If X is a cons, we must determine if there is a normed version of X, or

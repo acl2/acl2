@@ -1750,16 +1750,16 @@
 ;    (cond ((null x) nil)
 ;          ((integerp x) 1)
 ;          (t t)))
-; 
+;
 ;  (defun equiv (x y)
 ;    (equal (squash x) (squash y)))
-; 
+;
 ;  (defequiv equiv)
-; 
+;
 ;  (defun f (x) x)
-; 
+;
 ;  (defcong equiv iff (f x) 1)
-; 
+;
 
 ; In particular, (implies (equiv a b) (equal (f a) (f b))) is not a
 ; theorem (a=1 and b=2 are counterexamples), but this function, if
@@ -1879,7 +1879,7 @@
 
 ; 'literal        - the literal from cl we used, guaranteed to be of
 ;                   the form (not (equiv lhs rhs)).
-; 'clause-id      - the current clause-id 
+; 'clause-id      - the current clause-id
 ; 'hyp-phrase     - a tilde-@ phrase that describes literal in cl.
 ; 'equiv          - the equivalence relation
 ; 'bullet         - the term we substituted

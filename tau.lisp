@@ -197,7 +197,7 @@
 ; hypothesis it is not seen or opened.  Once you move it into the
 ; equivalence relation of the conclusion it is not seen or opened.
 ; Note that this processing of lambdas can cause terms to be duplicated
-; and simplified more than once (see a in [2] compared to [3]).  
+; and simplified more than once (see a in [2] compared to [3]).
 
   (case-match term
               (('if t1 t2 t3)
@@ -351,7 +351,7 @@
   (cond ((null lst) nil)
         (t (or (contains-guard-holdersp (car lst))
                (contains-guard-holdersp-lst (cdr lst)))))))
-                 
+
 (defun remove-guard-holders (term)
 
 ; Return a term equal to term, but slightly simplified.  See also the warning
@@ -503,7 +503,7 @@
               :nume nil
               :rune *fake-rune-for-anonymous-enabled-rule*
               :ts *ts-integer*
-              :terms'((integerp x)))                
+              :terms'((integerp x)))
         (make type-set-inverter-rule                 ;;; 2 bits
               :nume nil
               :rune *fake-rune-for-anonymous-enabled-rule*
@@ -605,12 +605,12 @@
               :nume nil
               :rune *fake-rune-for-anonymous-enabled-rule*
               :ts *ts-zero*
-              :terms'((equal x '0)))                   
+              :terms'((equal x '0)))
         (make type-set-inverter-rule                 ;;; 3 bits
               :nume nil
               :rune *fake-rune-for-anonymous-enabled-rule*
               :ts *ts-symbol*
-              :terms'((symbolp x)))                  
+              :terms'((symbolp x)))
         (make type-set-inverter-rule                 ;;;2 bits
               :nume nil
               :rune *fake-rune-for-anonymous-enabled-rule*
@@ -620,12 +620,12 @@
               :nume nil
               :rune *fake-rune-for-anonymous-enabled-rule*
               :ts *ts-cons*
-              :terms'((consp x)))                      
+              :terms'((consp x)))
         (make type-set-inverter-rule                 ;;; 2 bits
               :nume nil
               :rune *fake-rune-for-anonymous-enabled-rule*
               :ts *ts-true-list*
-              :terms'((true-listp x)))            
+              :terms'((true-listp x)))
         (make type-set-inverter-rule                 ;;; 1 bit
               :nume nil
               :rune *fake-rune-for-anonymous-enabled-rule*
@@ -645,22 +645,22 @@
               :nume nil
               :rune *fake-rune-for-anonymous-enabled-rule*
               :ts *ts-t*
-              :terms'((equal x 't)))                      
+              :terms'((equal x 't)))
         (make type-set-inverter-rule                 ;;; 1 bit
               :nume nil
               :rune *fake-rune-for-anonymous-enabled-rule*
               :ts *ts-nil*
-              :terms'((equal x 'nil)))                  
+              :terms'((equal x 'nil)))
         (make type-set-inverter-rule                 ;;; 1 bit
               :nume nil
               :rune *fake-rune-for-anonymous-enabled-rule*
               :ts *ts-string*
-              :terms'((stringp x)))                  
+              :terms'((stringp x)))
         (make type-set-inverter-rule                 ;;; 1 bit
               :nume nil
               :rune *fake-rune-for-anonymous-enabled-rule*
               :ts *ts-character*
-              :terms'((characterp x)))))          
+              :terms'((characterp x)))))
 
 (defun convert-type-set-to-term-lst (ts rules ens lst ttree)
 
@@ -691,7 +691,7 @@
    (t (convert-type-set-to-term-lst ts (cdr rules) ens lst ttree))))
 
 ; Here is one of the most basic functions in the theorem prover.  It is
-; surprising we got so far into the sources without defining it!  
+; surprising we got so far into the sources without defining it!
 
 ; (Students of our code should study this elementary function just to see how
 ; we recur through terms.  The function instantiates a variable, i.e.,
@@ -866,7 +866,7 @@
 (defun all-runes-in-ttree (ttree ans)
 
 ; Ttree is any ttree produced by this system.  We sweep it collecting into ans
-; every rune in it.  
+; every rune in it.
 
   (cond
    ((endp ttree) ans)
@@ -1070,13 +1070,13 @@
   ~ev[]
   and signatures for all relevant functions, e.g., writing a 32-bit natural to
   a legal slot in a register file produces a register file:
-  ~bv[]  
+  ~bv[]
   (implies (and (natp n)
                 (< n 16)
                 (n32p val)
                 (register-filep regs))
            (register-filep (update-nth n val regs))).
-  ~ev[]                 
+  ~ev[]
   For a complete description of acceptable forms see ~c[:]~ilc[tau-system].
 
   (6) The tau system is ``greedy'' in its efforts to augment its database.  Its
@@ -1212,7 +1212,7 @@
   ~ev[]
   prevents the tau system from being used in proofs and prevents the
   augmentation of the tau database by rules other than those explicitly
-  labeled ~c[:]~ilc[tau-system]. 
+  labeled ~c[:]~ilc[tau-system].
 
   To see what the tau system ``knows'' about a given function symbol
   ~pl[tau-data].  To see the entire tau database, ~pl[tau-database].  To
@@ -1347,7 +1347,7 @@
   present.  This can be expensive.  To mitigate this expense, the tau system
   caches the computation on a per proof basis (the cache is cleared after every
   proof).
-  
+
   To learn what conjunctive rules there are in your system, evaluate
   ~bv[]
   (assoc 'tau-conjunctive-rules (tau-database (w state)))
@@ -1360,7 +1360,7 @@
   The second common problem caused by the tau system in legacy proof scripts is
   that it can cause subgoals to be renumbered and thus cause hints to be
   missed.  The only ways to address this problem is either to disable
-  the tau system (locally or globally by disabling 
+  the tau system (locally or globally by disabling
   ~c[(:executable-counterpart tau-system)]) or change the legacy hints
   to use the new subgoal names.~/")
 
@@ -1413,7 +1413,7 @@
   ~ev[] to be the signature of a function with two inputs and three outputs.
   The first input must be a natural number, different from 3, 5, and 7, and
   less than 16.  The second input must be a true list.  The first output is a
-  boolean, the second a list of integers, and the third a natural.  
+  boolean, the second a list of integers, and the third a natural.
 
   To express this signature for function ~c[fn] as a formula requires
   significantly more typing by the user:
@@ -1444,7 +1444,7 @@
   and many others just based on the two recursive schemas that (a) collect
   certain elements from lists and (b) check that all elements have a certain
   property.
-                                                                        
+
   The other ``tau inference'' improvement is to implement a mechanism for
   inferring relations between user-defined Booleans, perhaps by exploiting
   example generation, testing, and knowledge of recursive schemas.  For
@@ -1466,7 +1466,7 @@
   Such assistance ~-[] while still confronting an undecidable problem ~-[] might be
   easier to implement within the tau framework than more generally in ACL2.
   (Many users have wanted such an assistant to suggest lemmas for the rewriter.)~/")
-  
+
 
 ; Essay on the Tau System
 
@@ -1835,7 +1835,7 @@
 
 (defrec tau-interval (domain (lo-rel . lo) . (hi-rel . hi)) t)
 
-; where 
+; where
 
 ; * domain is INTEGERP, RATIONALP, ACL2-NUMBERP, or NIL and indicates the
 ;   domain of the interval.  That is, it is either the integer line, the
@@ -1898,7 +1898,7 @@
 ; We sometimes write (x <? y) meaning (<? rel x y) for some rel.  We sometimes
 ; even write (lo <? x <? hi) meaning (and (<? lo-rel lo x) (<? hi-rel x hi)).
 ; Note that this is an abuse of notation!  The two occurrences of the symbol
-; ``<?'' denote different relations!  
+; ``<?'' denote different relations!
 
 ; We sometimes write (rel x y) to mean (<? rel x y).
 
@@ -1944,7 +1944,7 @@
 ; computes to nil.  (Tests show that it is faster to execute (access
 ; tau-interval x :hi-rel) than (if x (access tau-interval x :hi-rel) nil) even
 ; when x is nil.)
-       
+
 ; If an interval's domain is the integers, we narrow the bounds to integers and
 ; weaken the relation.  For example, instead of creating
 
@@ -1983,7 +1983,7 @@
 ; facts about the subject will be found in the tau-interval -- even if they are
 ; pretty unrestrictive like INTEGERP or RATIONALP without any bounds.  We will
 ; arrange to adjust the tau-interval (shrinking it) whenever we learn anything
-; that allows that.  
+; that allows that.
 
 ; Perhaps the strangest implication of this decision is that a tau-interval can
 ; say that its subject is equal to a particular rational constant, by weakly
@@ -2034,29 +2034,29 @@
 ; would restrict them to numeric inputs.
 
 ;   (er-progn
-;   
+;
 ;   ; All of the following could be proved before tau was involved.
 ;    (in-theory (disable (tau-system)))
 ;    (include-book "arithmetic-5/top" :dir :system)
-;   
+;
 ;   ; Integers are rationals and rationals are (acl2-)numbers.
 ;   (thm (and (implies (integerp x)
 ;                      (rationalp x))
 ;             (implies (rationalp x)
 ;                      (acl2-numberp x))))
-;        
+;
 ;   ; Numbers are partitioned into rationals and complex-rationals.
 ;   (thm (and (iff (acl2-numberp x)
 ;                  (or (rationalp x)
 ;                      (complex-rationalp x)))
 ;             (implies (rationalp x) (not (complex-rationalp x)))))
-;   
+;
 ;   ; < is transitive, whether applied to numbers or not.
 ;   (thm (implies (and (< x y) (< y z)) (< x z)))
-;   
+;
 ;   ; < is anti-symmetric, whether applied to numbers or not.
 ;   (thm (implies (< x y) (not (< y x))))
-;   
+;
 ;   ; Trichotomy holds, but you must know the arguments are both numbers.
 ;   (thm
 ;    (implies (and (acl2-numberp x)
@@ -2064,55 +2064,55 @@
 ;             (or (< x y)
 ;                 (< y x)
 ;                 (equal x y))))
-;   
+;
 ;   ; If something is strictly above or below 0, it must be a number.
 ;   (thm (implies (or (< x 0) (< 0 x))
 ;                 (acl2-numberp x)))
-;   
+;
 ;   ; Strict lower bounds on integers can be raised and weakened:
 ;   (thm
 ;    (implies (and (integerp x)
 ;                  (rationalp bound))
 ;             (iff (< bound x)
 ;                  (<= (+ (floor bound 1) 1) x))))
-;   
+;
 ;   ; Weak lower bounds on integers can be raised:
 ;   (thm
 ;    (implies (and (integerp x)
 ;                  (rationalp bound))
 ;             (iff (<= bound x)
 ;                  (<= (ceiling bound 1) x))))
-;   
+;
 ;   ; Strict upper bounds on integers can be lowered and weakened:
 ;   (thm
 ;    (implies (and (integerp x)
 ;                  (rationalp bound))
 ;             (iff (<  x bound)
 ;                  (<= x (- (ceiling bound 1) 1)))))
-;   
+;
 ;   ; Weak upper bounds on integers can be lowered:
 ;   (thm
 ;    (implies (and (integerp x)
 ;                  (rationalp bound))
 ;             (iff (<=  x bound)
 ;                  (<= x (floor bound 1)))))
-;   
+;
 ;   ; The other inequalities are just signed less thans, whether applied to numbers
 ;   ; or not:
-;   
+;
 ;   (thm (and (iff (<= x y) (not (< y x)))
 ;             (iff (>  x y) (< y x))
 ;             (iff (>= x y) (not (< x y)))
 ;             (iff (>= x y) (<= y x))))
-;   
+;
 ;   ; Note that the theorem above shows that we can do everything with signed < or
 ;   ; with < and <=.  These theorems are interesting only because they don't have
 ;   ; hypotheses about x and y being numbers.
-;   
+;
 ;   ; An interval bounded above and below by the same rational contains exactly one
 ;   ; element, provided either the interval is restricted to numbers or one of the
 ;   ; bounds is non-0.
-;   
+;
 ;   (thm (implies
 ;         (and (rationalp lo)
 ;              (rationalp hi)
@@ -2122,39 +2122,39 @@
 ;              (or (acl2-numberp x)
 ;                  (not (equal hi 0))))
 ;         (equal x hi)))
-;   
-;   ; Stated slightly differently, the recognizer (lambda (x) (equal x 'b)) for a 
+;
+;   ; Stated slightly differently, the recognizer (lambda (x) (equal x 'b)) for a
 ;   ; rational constant b, is equivalent to the interval recognizer:
 ;   ; (lambda (x) (and (rationalp x) (<= b x) (<= x b))):
-;   
+;
 ;   (thm (implies (rationalp b)
 ;                 (iff (equal x b)
 ;                      (and (rationalp x)
 ;                           (<= b x)
 ;                           (<= x b)))))
-;   
+;
 ;   ; Or, in the even more special case that b is an integer:
-;   
+;
 ;   (thm (implies (integerp b)
 ;                 (iff (equal x b)
 ;                      (and (integerp x)
 ;                           (<= b x)
 ;                           (<= x b)))))
-;   
+;
 ;   ; (By the way, one might ask how it is that a complex cannot lie ``between''
 ;   ; the rational b and the rational b. The reason is that if u+iv <= b and b <=
 ;   ; u+iv then one can show that u=b and v=0.  This happens because (u+iv <= b) is
 ;   ; equivalent to (u<b v (u=b & v<= 0)).  If you work out the four cases of the
 ;   ; conjunction of (u+iv <= b) & (b <= u+iv) you get three impossible ones (where
 ;   ; b<u and u<b or u=b) and one other which says u=b and v=0.)
-;   
+;
 ;   ; I do not anticipate tau using it, but here is how < is completed: first, both
 ;   ; arguments are coerced to numbers with 0 being the default.  Then, two
 ;   ; rationals are compared with the traditional <; if either argument is a
 ;   ; complex-rational, they are compared lexicographically on the real- and
 ;   ; imagparts.  (On rationals, realpart is the identity and imagpart is always
 ;   ; 0.)
-;   
+;
 ;   (thm
 ;    (equal (< x y)
 ;           (let ((x1 (if (acl2-numberp x) x 0))
@@ -2173,7 +2173,7 @@
 ; This is the logical equivalent of either (< x k) or (<= x k), depending on
 ; rel and optimized under the assumption that x is an acl2-numberp and k is a
 ; rational.
-  
+
 ; (verify-termination <?-number-v-rational)
 
 ; (thm
@@ -2199,7 +2199,7 @@
 ; This is the logical equivalent of either (< k x) or (<= k x), depending on
 ; rel and optimized under the assumption that k is a rational and x is an
 ; acl2-numberp.
-  
+
 ; (verify-termination <?-rational-v-number)
 
 ; (thm
@@ -2373,7 +2373,7 @@
 ;    (3 . CONSP)
 ;    (2 . COMPLEX-RATIONALP)
 ;    (1 . CHARACTERP))))
- 
+
 ; If you (decode-tau * 'x) you get the body of the lambda expression it represents, which is
 
 ; (lambda (x)
@@ -2687,7 +2687,7 @@
 ; The following function is used throughout the tau system to determine whether
 ; a recognizer will accept (recognize) a given constant or not.  In an earlier
 ; incarnation of the function, it was not sensitive to the enabled status of the
-; executable counterpart of the tau recognizer fn.  
+; executable counterpart of the tau recognizer fn.
 
 ; One argument for making the tau system respect the current enabled structure
 ; is that some authors disable :executable-counterparts in their proofs and if
@@ -2829,13 +2829,13 @@
    (t :UNEVALABLE)))
 
 ; Some Implementor-Level Performance Investigation Tools
-;    
+;
 ;   ; Ev-fncall-w-tau-recog, above, is used to evaluate tau predicates on
 ;   ; constants.  Of course, if the tau predicate in question is complicated this
 ;   ; evaluation can be slow.  Tau Eval rules can be used to store pre-computed
 ;   ; results and speed up subsequent evaluations.  But what predicates and what
 ;   ; constants need to be pre-computed and stored?
-;   
+;
 ;   ; In this comment we drop some raw Lisp code used to collect every call of
 ;   ; ev-fncall-w-tau-recog.  Data is stored in a simple alist and so if the number
 ;   ; of distinct recognizers grows large, this data collection will slow down the
@@ -2843,31 +2843,31 @@
 ;   ; called, what constants they were called on, how many times each recognizer
 ;   ; was called on each constant, and how long the first (and only computed) call
 ;   ; of each recognizer took.
-;   
+;
 ;   ; When you are ready to collect the data for a proof or proofs, do this to
 ;   ; exit the ACL2 loop and enter raw Lisp.
-;   
+;
 ;   (value :q)
-;   
+;
 ;   ; Next, save the current definition of ev-fncall-w-tau-recog in
 ;   ; ev-fncall-w-tau-recog1.
-;   
+;
 ;   ; Warning:  This setf hack works only if ev-fncall-w-tau-recog is not
 ;   ; recursively defined and our sources don't already use the symbol
 ;   ; ev-fncall-w-tau-recog1.
-;   
-;   (setf (symbol-function 'ev-fncall-w-tau-recog1) 
+;
+;   (setf (symbol-function 'ev-fncall-w-tau-recog1)
 ;         (symbol-function 'ev-fncall-w-tau-recog))
-;   
+;
 ;   ; Now declare the collection site.  The setq after this defvar is useful if
 ;   ; you run multiple tests and want to clear the site.
-;   
+;
 ;   (defvar ev-fncall-w-tau-recog-alist nil)
 ;   (setq ev-fncall-w-tau-recog-alist nil)
-;   
+;
 ;   ; Now redefine the raw Lisp version of  ev-fncall-w-tau-recog to
 ;   ; collect the data:
-;   
+;
 ;   (defun ev-fncall-w-tau-recog (fn evg-lst ens wrld)
 ;     (let ((fn-alist (assoc-eq fn ev-fncall-w-tau-recog-alist)))
 ;       (cond
@@ -2891,37 +2891,37 @@
 ;                   (cons (cons fn (list (list (car evg-lst) val 1 total-time)))
 ;                         ev-fncall-w-tau-recog-alist))
 ;             val)))))
-;   
+;
 ;   ; Return to the loop and run your proof(s).
 ;   (lp)
-;   
+;
 ;   ; <your proof event(s) here>
-;   
+;
 ;   ; Exit ACL2 and re-enter raw Lisp:
 ;   (value :q)
-;   
+;
 ;   ; The collected data is stored in  ev-fncall-w-tau-recog-alist.  But this
 ;   ; list can be big so we tend to investigate its size before just printing it.
-;   
+;
 ;   ; For the record, every element of ev-fncall-w-tau-recog-alist is a
 ;   ; fn-dot-alist, e.g., (fn . alist), and alist is a list of 4-tuples, each of
 ;   ; the form (const val count time), where
-;   
+;
 ;   ; (nth 0 fourtuple) -- evg that fn is applied to
 ;   ; (nth 1 fourtuple) -- val of fn on evg
 ;   ; (nth 2 fourtuple) -- number of times fn applied to evg
 ;   ; (nth 3 fourtuple) -- time it took to eval (fn evg) once
-;   
+;
 ;   ; Time, above, is measured in CLTL internal time units, where the Common Lisp
-;   ; global internal-time-units-per-second says how many of these units are in 
+;   ; global internal-time-units-per-second says how many of these units are in
 ;   ; one second.
-;   
+;
 ;   ; Some typical expressions for investigating the evaluation of recognizers on
 ;   ; constants:
-;   
+;
 ;   ; Number of distinct tau recogs evaluated:
 ;   (len ev-fncall-w-tau-recog-alist)
-;   
+;
 ;   ; Total amount of time, in seconds, devoted to ev-fncall-w-tau-recog
 ;   ; if every call were computed from the definition of the recognizers.
 ;   (list (float
@@ -2932,7 +2932,7 @@
 ;                                (nth 3 fourtuple))))
 ;             internal-time-units-per-second))
 ;         'seconds)
-;   
+;
 ;   ; Number of distinct constants concerned:
 ;   (len (loop for fn-dot-alist in ev-fncall-w-tau-recog-alist
 ;              with ans
@@ -2941,11 +2941,11 @@
 ;                                        ans))
 ;              finally (return ans)))
 ;   ; To see the constants themselves, just drop the len above.
-;   
+;
 ;   ; Number of calls of ev-fncall-tau-recog
 ;   (loop for fn-dot-alist in ev-fncall-w-tau-recog-alist
 ;         sum (loop for fourtuple in (cdr fn-dot-alist) sum (nth 3 fourtuple)))
-;   
+;
 ;   ; Display of all the data, sorted to show most expensive calls first:
 ;   ; Time is measured in internal-time-units and internal-time-units-per-second
 ;   ; says how big those units are.
@@ -2961,7 +2961,7 @@
 ;                                            '= (nth 1 fourtuple)
 ;                                            (list (nth 2 fourtuple))))))))
 ;         do (print x))
-;   
+;
 ;   ; Sort the list of recognizers by total time spent in each.
 ;   (merge-sort-car->
 ;    (loop for fn-dot-alist in ev-fncall-w-tau-recog-alist
@@ -2984,7 +2984,7 @@
 
   (cond
    ((endp pairs) nil)
-   (t 
+   (t
     (let ((val (ev-fncall-w-tau-recog (cdr (car pairs)) evg-lst ens wrld)))
       (cond
        ((eq val :UNEVALABLE)
@@ -3012,7 +3012,7 @@
 
   (cond
    ((endp pairs) nil)
-   (t 
+   (t
     (let ((val (ev-fncall-w-tau-recog (cdr (car pairs)) evg-lst ens wrld)))
       (cond
        ((eq val :UNEVALABLE)
@@ -3037,7 +3037,7 @@
 
   (cond
    ((endp pairs) t)
-   (t 
+   (t
     (let ((val (ev-fncall-w-tau-recog (cdr (car pairs)) evg-lst ens wrld)))
       (cond
        ((eq val :UNEVALABLE) nil)
@@ -3208,19 +3208,19 @@
 
 ; are propositionally and so may be ignored.
 
-; (thm (and 
+; (thm (and
 ;       (implies (or (and (<  x hi) (<= hi k))   ; A
 ;                    (and (<= x hi) (<  hi k)))
 ;                (< x k))
-; 
+;
 ;      (implies (and (or (< lo x) (<= lo x))     ; B
 ;                    (<= k lo))
 ;               (not (< x k)))
-; 
+;
 ;      (implies (and (or (<  x hi) (<= x hi))    ; C
 ;                    (<= hi k))
 ;               (<= x k))
-; 
+;
 ;      (implies (or (and (< lo x) (<= k lo))     ; D
 ;                   (and (<= lo x) (< k lo)))
 ;               (not (<= x k)))))
@@ -3291,16 +3291,16 @@
 
 ;   (verify-termination interval-decider)
 ;   (verify-termination signate)
-;   
+;
 ;   (tau-status :system nil)
-;   
+;
 ;   (defun <? (rel x y)
 ;     (if (or (null x) (null y))
 ;        t
 ;         (if rel
 ;             (< x y)
 ;             (<= x y))))
-;   
+;
 ;   (thm
 ;    (implies (and (rationalp k)
 ;                  (not (equal x nil))  x can't be an infinity
@@ -3309,10 +3309,10 @@
 ;                  (not (equal (interval-decider lo-rel lo hi-rel hi rel k) '?)))
 ;             (equal (<? rel x k)
 ;                    (interval-decider lo-rel lo hi-rel hi rel k))))
-;   
+;
 ;   ; Here is the theorem that shows how to use interval-decider to decide
 ;   ; (<? rel k x) instead of (<? rel x k).
-;   
+;
 ;   (thm
 ;    (implies (and (rationalp k)
 ;                  (not (equal x nil))  x can't be an infinity
@@ -3321,12 +3321,12 @@
 ;                  (not (equal (interval-decider lo-rel lo hi-rel hi (not rel) k) '?)))
 ;             (equal (<? rel k x)
 ;                    (signate nil (interval-decider lo-rel lo hi-rel hi (not rel) k)))))
-;   
+;
 ;   ; Alternatively, the two theorems below show how interval-decider is used to
 ;   ; decide signed :lessp-x-k or signed :lessp-k-x recognizers.  Note that
 ;   ; since < is Boolean, (signate sign (< x k)) is just (< x k) or (NOT (< x k))
 ;   ; depending on sign.
-;   
+;
 ;   (thm
 ;    (implies (and (rationalp k)
 ;                  (not (equal x nil))  x can't be an infinity
@@ -3336,7 +3336,7 @@
 ;             (equal (signate sign (< x k))  ; sign/(k . :lessp-x-k)
 ;                    (signate sign
 ;                             (interval-decider lo-rel lo hi-rel hi t k)))))
-;   
+;
 ;   (thm
 ;    (implies (and (rationalp k)
 ;                  (not (equal x nil))  x can't be an infinity
@@ -3346,7 +3346,7 @@
 ;             (equal (signate sign (< k x)) ; sign/(k . :lessp-k-x)
 ;                    (signate (not sign)
 ;                             (interval-decider lo-rel lo hi-rel hi nil k)))))
-;   
+;
 ;   ; Note that to use interval-decider on sign/(k . :lessp-x-k) you call it
 ;   ; with rel = t and then just interpret the non-? answers via sign as usual.
 ;   ; To use it on sign/(k . :lessp-k-x) you call it with rel = nil and then
@@ -3498,35 +3498,35 @@
 ; Before running these tests, add the defuns and macros for ptrans and mktau
 ; from the section ``On Tau Debugging Features'' below.  They can't be defined
 ; at this point because they use some functions not yet defined.
-;   
+;
 ;   (logic)
-;   
+;
 ;   (defun predicted (expr val)
 ;     (if (equal expr val) 'Passed 'Failed!))
-;   
+;
 ;   ; Every element of the following list should be PASSED.
-;   
+;
 ;   (list
 ;   (let ((tau (mktau t (natp x) (evenp x) (not (equal x 20)))))
 ;     (predicted (reduce-sign/recog tau t *tau-natp-pair*
 ;                                   (ens state) (w state))
 ;                t))
-;   
+;
 ;   (let ((tau (mktau t (natp x) (evenp x) (not (equal x 20)))))
 ;     (predicted (reduce-sign/recog tau nil *tau-natp-pair*
 ;                                   (ens state) (w state))
 ;                nil))
-;   
+;
 ;   (let ((tau (mktau t (natp x) (evenp x) (not (equal x 20)))))
 ;     (predicted (reduce-sign/recog tau t '(16 . nil)
 ;                                   (ens state) (w state))
 ;                '?))
-;   
+;
 ;   (let ((tau (mktau t (natp x) (evenp x) (not (equal x 20)))))
 ;     (predicted (reduce-sign/recog tau t '(15 . nil)
 ;                                   (ens state) (w state))
 ;                NIL))
-;   
+;
 ;   (let ((tau (mktau t (natp x) (evenp x) (not (equal x 20)))))
 ;     (predicted (reduce-sign/recog tau nil '(15 . nil)
 ;                                   (ens state) (w state))
@@ -3543,169 +3543,169 @@
 ;     (predicted (reduce-sign/recog tau t '(17 . nil)
 ;                                   (ens state) (w state))
 ;                NIL))
-;   
+;
 ;   ; If (10 <= x <= 20) then (x =17) may or may not be true.
 ;   (let ((tau (mktau t (<= 10 x) (<= x 20))))
 ;     (predicted (reduce-sign/recog tau t '(17 . nil)
 ;                                   (ens state) (w state))
 ;                '?))
-;   
+;
 ;   ; If (10 <= x <= 20) then (x/=17) may or may not be true
 ;   (let ((tau (mktau t (<= 10 x) (<= x 20))))
 ;     (predicted (reduce-sign/recog tau nil '(17 . nil)
 ;                                   (ens state) (w state))
 ;                '?))
-;   
+;
 ;   ; If (10 <= x <= 20) then (x =21) is false
 ;   (let ((tau (mktau t (<= 10 x) (<= x 20))))
 ;     (predicted (reduce-sign/recog tau t '(21 . nil)
 ;                                   (ens state) (w state))
 ;                nil))
-;   
+;
 ;   ; If (10 <= x <= 20) then (x/=21) is true
 ;   (let ((tau (mktau t (<= 10 x) (<= x 20))))
 ;     (predicted (reduce-sign/recog tau nil '(21 . nil)
 ;                                   (ens state) (w state))
 ;                t))
-;   
+;
 ;   ; If (10 <= x <= 20) then (x ='ABC) is false
 ;   (let ((tau (mktau t (<= 10 x) (<= x 20))))
 ;     (predicted (reduce-sign/recog tau t '(abc . nil)
 ;                                   (ens state) (w state))
 ;                nil))
-;   
+;
 ;   ; If (10 <= x <= 20) then (x/='ABC) is true
 ;   (let ((tau (mktau t (<= 10 x) (<= x 20))))
 ;     (predicted (reduce-sign/recog tau nil '(abc . nil)
 ;                                   (ens state) (w state))
 ;                t))
-;   
+;
 ;   ; If (10 <= x <= 20) then (x =20) may or may not be true
 ;   (let ((tau (mktau t (<= 10 x) (<= x 20))))
 ;     (predicted (reduce-sign/recog tau t '(20 . nil)
 ;                                   (ens state) (w state))
 ;                '?))
-;   
+;
 ;   ; If (10 <= x <= 20) then (x/=20) may or may not be true
 ;   (let ((tau (mktau t (<= 10 x) (<= x 20))))
 ;     (predicted (reduce-sign/recog tau nil '(20 . nil)
 ;                                   (ens state) (w state))
 ;                '?))
-;   
+;
 ;   ; If (10 <= x < 20) then (x =20) is false
 ;   (let ((tau (mktau t (<= 10 x) (< x 20))))
 ;     (predicted (reduce-sign/recog tau t '(20 . nil)
 ;                                   (ens state) (w state))
 ;                nil))
-;   
+;
 ;   ; If (10 <= x < 20) then (x/=20) is true
 ;   (let ((tau (mktau t (<= 10 x) (< x 20))))
 ;     (predicted (reduce-sign/recog tau nil '(20 . nil)
 ;                                   (ens state) (w state))
 ;                t))
-;   
+;
 ;   ; If (10 <= x <= 20) then (x =9) is false
 ;   (let ((tau (mktau t (<= 10 x) (<= x 20))))
 ;     (predicted (reduce-sign/recog tau t '(9 . nil)
 ;                                   (ens state) (w state))
 ;                nil))
-;   
+;
 ;   ; If (10 <= x <= 20) then (x < 9) is false
 ;   (let ((tau (mktau t (<= 10 x) (<= x 20))))
 ;     (predicted (reduce-sign/recog tau t '(9 . :lessp-x-k)
 ;                                   (ens state) (w state))
 ;                nil))
-;   
+;
 ;   ; If (10 <= x <= 20) then (x < 15) is unknown
 ;   (let ((tau (mktau t (<= 10 x) (<= x 20))))
 ;     (predicted (reduce-sign/recog tau t '(15 . :lessp-x-k)
 ;                                   (ens state) (w state))
 ;                '?))
-;   
+;
 ;   ; If (10 <= x <= 20) then (x < 24) is true
 ;   (let ((tau (mktau t (<= 10 x) (<= x 20))))
 ;     (predicted (reduce-sign/recog tau t '(24 . :lessp-x-k)
 ;                                   (ens state) (w state))
 ;                t))
-;   
+;
 ;   ; If (10 <= x <= 20) then (x < 21) is true
 ;   (let ((tau (mktau t (<= 10 x) (<= x 20))))
 ;     (predicted (reduce-sign/recog tau t '(21 . :lessp-x-k)
 ;                                   (ens state) (w state))
 ;                t))
-;   
+;
 ;   ; If (10 <= x <= 20) then (x < 20) is unknown
 ;   (let ((tau (mktau t (<= 10 x) (<= x 20))))
 ;     (predicted (reduce-sign/recog tau t '(20 . :lessp-x-k)
 ;                                   (ens state) (w state))
 ;                '?))
-;   
+;
 ;   ; If (10 <= x <= 20) then (x < 10) is false
 ;   (let ((tau (mktau t (<= 10 x) (<= x 20))))
 ;     (predicted (reduce-sign/recog tau t '(10 . :lessp-x-k)
 ;                                   (ens state) (w state))
 ;                nil))
-;   
+;
 ;   ; If (10 <= x <= 20) then (5 < x) is true
 ;   (let ((tau (mktau t (<= 10 x) (<= x 20))))
 ;     (predicted (reduce-sign/recog tau t '(5 . :lessp-k-x)
 ;                                   (ens state) (w state))
 ;                t))
-;   
+;
 ;   ; If (10 <= x <= 20) then (25 < x) is false
 ;   (let ((tau (mktau t (<= 10 x) (<= x 20))))
 ;     (predicted (reduce-sign/recog tau t '(25 . :lessp-k-x)
 ;                                   (ens state) (w state))
 ;                nil))
-;   
+;
 ;   ; If (10 <= x <= 20) then (15 < x) is unknown
 ;   (let ((tau (mktau t (<= 10 x) (<= x 20))))
 ;     (predicted (reduce-sign/recog tau t '(15 . :lessp-k-x)
 ;                                   (ens state) (w state))
 ;                '?))
-;   
+;
 ;   ; If (10 <= x <= 20) then (5 <= x) is true
 ;   (let ((tau (mktau t (<= 10 x) (<= x 20))))
 ;     (predicted (reduce-sign/recog tau nil '(5 . :lessp-x-k)
 ;                                   (ens state) (w state))
 ;                t))
-;   
+;
 ;   ; If (10 <= x <= 20) then (25 <= x) is false
 ;   (let ((tau (mktau t (<= 10 x) (<= x 20))))
 ;     (predicted (reduce-sign/recog tau nil '(25 . :lessp-x-k)
 ;                                   (ens state) (w state))
 ;                nil))
-;   
+;
 ;   ; If (10 <= x <= 20) then (15 <= x) is unknown
 ;   (let ((tau (mktau t (<= 10 x) (<= x 20))))
 ;     (predicted (reduce-sign/recog tau nil '(15 . :lessp-x-k)
 ;                                   (ens state) (w state))
 ;                '?))
-;   
+;
 ;   ; If (10 <= x <= infinity) then (x <= 15) is unknown
 ;   (let ((tau (mktau t (<= 10 x))))
 ;     (predicted (reduce-sign/recog tau nil '(15 . :lessp-k-x)
 ;                                   (ens state) (w state))
 ;                '?))
-;   
+;
 ;   ; If (10 <= x <= infinity) then (x <= 15) is true
 ;   (let ((tau (mktau t (<= x 10))))
 ;     (predicted (reduce-sign/recog tau nil '(15 . :lessp-k-x)
 ;                                   (ens state) (w state))
 ;                t))
-;   
+;
 ;   ; If (10 <= x <= infinity) then (x = 'abc) is false
 ;   (let ((tau (mktau t (<= 10 x))))
 ;     (predicted (reduce-sign/recog tau t '(abc . nil)
 ;                                   (ens state) (w state))
 ;                nil))
-;   
+;
 ;   ; If (10 <= x <= infinity) then (x = 20) is unknown
 ;   (let ((tau (mktau t (<= 10 x))))
 ;     (predicted (reduce-sign/recog tau t '(20 . nil)
 ;                                   (ens state) (w state))
 ;                '?))
-;   
+;
 ;   ; If (10 <= x <= infinity) then (acl2-numberp x) is true
 ;   (let ((tau (mktau t (<= 10 x))))
 ;     (predicted (reduce-sign/recog tau t *tau-acl2-numberp-pair*
@@ -3716,67 +3716,67 @@
 ;     (predicted (reduce-sign/recog tau t '(30 . :lessp-x-k)
 ;                                   (ens state) (w state))
 ;                t))
-;   
+;
 ;   ; If (not (acl2-numberp x)), then (< x -30) is false
 ;   (let ((tau (mktau t (not (acl2-numberp x)))))
 ;     (predicted (reduce-sign/recog tau t '(-30 . :lessp-x-k)
 ;                                   (ens state) (w state))
 ;                nil))
-;   
+;
 ;   ; If (< x -30) then (acl2-numberp x) is true
 ;   (let ((tau (mktau t (< x -30))))
 ;     (predicted (reduce-sign/recog tau t *tau-acl2-numberp-pair*
 ;                                   (ens state) (w state))
 ;                t))
-;   
+;
 ;   ; If 0 <= x <= 0 and (acl2-numberp x) then x is 0
 ;   (let ((tau (mktau t (<= 0 x) (<= x 0) (acl2-numberp x))))
 ;     (predicted (reduce-sign/recog tau t '(0 . nil)
 ;                                   (ens state) (w state))
 ;                t))
-;   
+;
 ;   ; Here I repeat the above for other permutations of the order in which the
 ;   ; hyps are processed:
-;   
+;
 ;   (let ((tau (mktau t (<= x 0) (<= 0 x) (acl2-numberp x))))
 ;     (predicted (reduce-sign/recog tau t '(0 . nil)
 ;                                   (ens state) (w state))
 ;                t))
-;   
+;
 ;   (let ((tau (mktau t (<= x 0) (acl2-numberp x) (<= 0 x))))
 ;     (predicted (reduce-sign/recog tau t '(0 . nil)
 ;                                   (ens state) (w state))
 ;                t))
-;   
+;
 ;   (let ((tau (mktau t  (<= 0 x) (acl2-numberp x) (<= x 0))))
 ;     (predicted (reduce-sign/recog tau t '(0 . nil)
 ;                                   (ens state) (w state))
 ;                t))
-;   
+;
 ;   (let ((tau (mktau t (acl2-numberp x) (<= x 0) (<= 0 x))))
 ;     (predicted (reduce-sign/recog tau t '(0 . nil)
 ;                                   (ens state) (w state))
 ;                t))
-;   
+;
 ;   (let ((tau (mktau t (acl2-numberp x) (<= 0 x) (<= x 0))))
 ;     (predicted (reduce-sign/recog tau t '(0 . nil)
 ;                                   (ens state) (w state))
 ;                t))
-;   
+;
 ;   ; IF (0 <= x <= 0) then (x=0) is unknown.
 ;   (let ((tau (mktau t (<= 0 x) (<= x 0))))
 ;     (predicted (reduce-sign/recog tau t '(0 . nil)
 ;                                   (ens state) (w state))
 ;                '?))
-;   
+;
 ;   ; IF (1/2 <= x <= 1/2) then (x=1/2) is t
 ;   (let ((tau (mktau t (<= 1/2 x) (<= x 1/2))))
 ;     (predicted (reduce-sign/recog tau t '(1/2 . nil)
 ;                                   (ens state) (w state))
 ;                t))
-;   
-;   ; IF (#c(1 2) <= x <= #c(1 2)) then (x=#c(1 2)) is '? -- because we can't handle 
-;   ;  complex bounds!  
+;
+;   ; IF (#c(1 2) <= x <= #c(1 2)) then (x=#c(1 2)) is '? -- because we can't handle
+;   ;  complex bounds!
 ;   (let ((tau (mktau t (<= #c(1 2) x) (<= x #c(1 2)))))
 ;     (predicted (reduce-sign/recog tau t '(#c(1 2) . nil)
 ;                                   (ens state) (w state))
@@ -3974,7 +3974,7 @@
 ; brevity in our comments, we use LA(x) to mean that x satisfies the lower
 ; bound on A.  For example, if A's lower bound is given by arel=t and a = 5,
 ; then LA(x) means (< 5 x).  Similar conventions are made for LB(x), UA(x), and
-; UB(x).  
+; UB(x).
 
 ; We assume that the domains of both A and B are the same.  We furthermore
 ; assume that if the domain is INTEGERP, then a-rel and b-rel are both nil (<=)
@@ -3982,10 +3982,10 @@
 
 ; We describe the meaning of each of our four functions in three ways: an
 ; informal English sentence, a formula, and a picture.  In the pictures we use
-; parentheses to mark the bounds of each interval.  But we do not mean to 
+; parentheses to mark the bounds of each interval.  But we do not mean to
 ; suggest that the intervals are open at that end.
 
-; LOWER-BOUND-<= 
+; LOWER-BOUND-<=
 
 ;  Informally: lower bound of A is weakly below the lower bound of B, by which
 ;  we mean that anything satisfying the lower bound of B will also satisfy that
@@ -4016,7 +4016,7 @@
 ;  domain which satisfies the lower bound of B but not that of A
 
 ;  Formally:  [all x : LA(x) ---> LB(x)] & [exists z : dom(z) & LB(z) & -LA(z)]
-   
+
 ;  Picture:    B   A
 ;              (-z-(---...
 
@@ -4059,7 +4059,7 @@
           (if (and a-rel (not b-rel))
               (< b a)
               (<= b a)))))
-          
+
 (defun lower-bound-> (a-rel a b-rel b)
 
 ; See Specification of Bound Comparisons, above.
@@ -4125,7 +4125,7 @@
 ; a-rel and b-rel are nil (<=) and a and b are integers unless they are NIL
 ; (infinity).
 
-; We are to return T iff 
+; We are to return T iff
 
 ; The picture:
 ;  Picture:         A   B
@@ -4235,7 +4235,7 @@
 ;                     (not (< a b)))
 ;                (implies (<? b-rel z b) (<? a-rel z b))))
 
-; Q.E.D.                
+; Q.E.D.
 
 (defun tau-subintervalp (interval1 interval2)
 
@@ -4280,7 +4280,7 @@
                          (access tau-interval interval1 :hi)))))
 
 (defun tau-implies (tau1 tau2 ens wrld)
-; If we return non-nil, then  M[tau1] --> M[tau2].  
+; If we return non-nil, then  M[tau1] --> M[tau2].
   (cond
    ((eq tau1 *tau-contradiction*) t)
    ((eq tau2 *tau-contradiction*) nil)
@@ -4306,7 +4306,7 @@
                         ens wrld)
          (eval-tau-interval (access tau tau2 :interval)
                             (car (access tau tau1 :pos-evg)))))
-   (t 
+   (t
 
 ; Every neg evg in tau2 must be implied by tau1, every symbolic recognizer of
 ; tau2 must be among the same-signed recognizers of tau1 (tau1 is stronger and
@@ -4326,7 +4326,7 @@
                              (access tau tau2 :interval))))))
 
 (defun empty-tau-intervalp (lo-rel lo hi-rel hi)
-  
+
 ; We return t if the arguments describe an empty interval.
 
   (cond ((null lo) nil)
@@ -4490,7 +4490,7 @@
         ((eql (car (car neg-evgs)) k)
          (delete-consecutive-integers-upward (+ k 1) (cdr neg-evgs)))
         (t (mv k neg-evgs))))
-         
+
 
 ; (delete-consecutive-integers-upward 6 '((3) (6) (7) (10) (17)))
 ; = (mv 8 '((10) (17)))
@@ -4667,7 +4667,7 @@
 ; upper-boundp  rel   meaning    squeezed        k'
 ; t             t     (<  x k)   (<= x k')       (floor k 1)
 ; t             nil   (<= x k)   (<= x k')       (floor k 1)
-; nil           t     (<  k x)   (<= k' x)       (ceiling k 
+; nil           t     (<  k x)   (<= k' x)       (ceiling k
 ; nil           nil   (<= k x)   (<= k' x)       (ceiling k 1)
 
 ; But when k is an integer, the table is:
@@ -4741,7 +4741,7 @@
        (if hi-rel
            (<= hi 0)
            (<  hi 0))))
-       
+
 (defun tighten-bound (tau domain upper-boundp rel k ens wrld)
 
 ; This function tightens the domain and/or an upper or lower bound on the
@@ -4756,7 +4756,7 @@
 ; Note that using k=nil or domain=nil is a way of saying ``no change of this
 ; parameter'' since they place no new restrictions and we'll use the existing
 ; parameter.
-                
+
 ; Programming note: We don't explicitly filter :neg-evgs for the new domain, we
 ; just filter it for the new upper-bound, rel, and k.  This is correct because
 ; of our precondition.  If condition (a) holds, we know that every element of
@@ -4780,7 +4780,7 @@
 
   (if (eq tau *tau-contradiction*)
       *tau-contradiction*
-      (let* ((interval (access tau tau :interval)) 
+      (let* ((interval (access tau tau :interval))
              (neg-evgs (access tau tau :neg-evgs))
              (domain0 (access tau-interval interval :domain))
              (lo0 (access tau-interval interval :lo))
@@ -4818,7 +4818,7 @@
             (if (eq domain 'INTEGERP)
                 (mv nil (squeeze-k upper-boundp rel k))
                 (mv rel k))
-           
+
 ; Now we set lo, lo-rel, hi-rel, and hi to the most restrictive bounds we have.
 
             (mv-let
@@ -4861,7 +4861,7 @@
 ; new-hi, and the neg-evgs by new-neg-evgs.  Next we bind new-domain to
 ; ACL2-NUMBERP if it was completely unrestricted and the interval does not
 ; include 0; otherwise it is domain, as before.
-            
+
                 (let ((new-domain
                        (if (and (null domain)
                                 (or (positive-lower-boundp new-lo-rel new-lo)
@@ -5081,7 +5081,7 @@
      (t ; recog is (i . fn)
       (cond
        ((access tau tau :pos-evg)
-    
+
 ; tau is a :pos-evg.  Then if sign/fn is true on the evg, we don't change
 ; anything; if sign/fn is false on the evg, we return *tau-contradiction*; else
 ; sign/fn is unevaluable and we add fn to :pos-pairs or :neg-pairs.
@@ -5225,7 +5225,7 @@
 
 ; Note 1:  The effects listed above merely concern the interval.  If add-to-tau1
 ; added additional recognizers to :pos-pairs or :neg-pairs it would violate
-; its contract not to add implicants.  For example, it may be tempting to 
+; its contract not to add implicants.  For example, it may be tempting to
 ; include:
 
 ; nil/NATP          0 <= ...           nil/INTEGERP
@@ -5265,7 +5265,7 @@
              (let ((domain
                     (access tau-interval (access tau tau1 :interval) :domain)))
                (case discriminator
-                 (ACL2-NUMBERP 
+                 (ACL2-NUMBERP
 ; If we are adding nil/ACL2-NUMBERP and the interval has a non-nil domain, then
 ; it contradicts nil/ACL2-NUMBERP.  Otherwise, we change the interval to be 0
 ; <= ... <= 0 with the unrestricted domain.  To set this interval we
@@ -5293,7 +5293,7 @@
                    ((eq domain 'INTEGERP)
                     (tighten-bound tau1 'INTEGERP t t 0 ens wrld))
                    (t tau1)))
-                 (POSP 
+                 (POSP
                   (cond
                    ((eq domain 'INTEGERP)
                     (tighten-bound tau1 nil t nil 0 ens wrld))
@@ -5334,7 +5334,7 @@
 
   (if upper-boundp
       (if rel
-          (mv t   k :lessp-x-k)      ; (< x k) 
+          (mv t   k :lessp-x-k)      ; (< x k)
           (mv nil k :lessp-k-x))     ; (<= x k)
       (if rel
           (mv t   k :lessp-k-x)      ; (< k x)
@@ -5369,7 +5369,7 @@
 
           (if (eq tau2 *tau-contradiction*)
               *tau-contradiction*
-             
+
 ; To add the interval of tau1 to tau2, we need not add the domain recognizer
 ; because it would be implied by the recognizers and bounds in tau1 and we'll
 ; add all those.
@@ -5397,7 +5397,7 @@
                                (access tau-interval interval :hi))
                               (mv sign (cons k token)))
                       (mv nil nil))
-             
+
 ; If recog1 is non-nil, then sign1/recog1 represents the lower bound of the
 ; interval in tau1.  If recog2 is non-nil, then sign2/recog2 represents the
 ; upper bound of the interval in tau1.  We add both to tau2.
@@ -5411,7 +5411,7 @@
                                         (add-to-tau1 sign2 recog2 tau2 ens wrld)
                                         tau2)))
                           tau2))))))))))))
-         
+
 ; The next two functions are used to implement the deduction that if a tau
 ; includes all the rationals between between lo and hi but excludes each of the
 ; the integers in that range, then the tau is non-INTEGERP.
@@ -5518,7 +5518,7 @@
         (cond
          ((or (null interval)
               (and (null lo) (null hi))
-              (access tau tau1 :pos-evg)) 
+              (access tau tau1 :pos-evg))
 
 ; If tau1 has an unrestricted interval (regardless of the domain) there's
 ; nothing more we can deduce from it because everything below is based on
@@ -5539,14 +5539,14 @@
 ; The bounds on the interval may allow us to deduce certain other recognizers.
 ; The implication tree of the recognizers in question is:
 
-; posp --> natp---> 
+; posp --> natp--->
 ;                  \
 ;                    -->  acl2-numberp
 ;                  /
 ; minusp ---------
 
 ; The implicants of each imply all the others along the branches above.  So we
-; just look for the strongest ones.  
+; just look for the strongest ones.
 
 ; domain and bound             effect (if not already there)
 
@@ -5574,7 +5574,7 @@
 
           (add-to-tau t *tau-minusp-pair* tau1 ens wrld))
          ((and (eq domain 'INTEGERP)
-;              (null lo-rel) ; is guaranteed with INTEGERP domain              
+;              (null lo-rel) ; is guaranteed with INTEGERP domain
                lo
                (< 0 lo)
                (not
@@ -5650,8 +5650,8 @@
 ; every integer in that interval is excluded by the neg-evgs, then we add
 ; nil/INTEGERP (if it is not already there).
 
-          (add-to-tau nil *tau-integerp-pair* tau1 ens wrld))         
-         (t 
+          (add-to-tau nil *tau-integerp-pair* tau1 ens wrld))
+         (t
 ; Otherwise we can't deduce any new recognizers from this interval and return the
 ; simply extended tau1.
           tau1)))))))
@@ -5735,7 +5735,7 @@
   (cond
    ((endp neg-evgs1) (if e e t))
    ((endp neg-evgs2)
-    (cond 
+    (cond
      ((or (not (eval-tau-interval interval2 (car (car neg-evgs1))))
           (exists-bad-valp nil pos-pairs2 (car neg-evgs1) ens wrld)
           (exists-bad-valp t   neg-pairs2 (car neg-evgs1) ens wrld))
@@ -5772,7 +5772,7 @@
          ((or (not (eval-tau-interval interval2 (car (car neg-evgs1))))
               (exists-bad-valp nil pos-pairs2 (car neg-evgs1) ens wrld)
               (exists-bad-valp t   neg-pairs2 (car neg-evgs1) ens wrld))
-          
+
 ; So the ``missing'' element is actually subsumed elsewhere tau2 and we can
 ; treat it as found.
 
@@ -5852,7 +5852,7 @@
 ; Suppose we have:
 
 ; Rule:  (integerp x) & (<= 0 x) & (<= x 100) & -(Q x)
-; Facts: (integerp x) & (< x -100) & -(Q x) 
+; Facts: (integerp x) & (< x -100) & -(Q x)
 
 ; Again, the Rule is a near subset of the Facts.  In particular, we know
 ; (integerp x), we know (<= x 100) -- indeed, x is negative, and we know -(Q
@@ -5892,7 +5892,7 @@
 
 ;   (tau-status :system nil)
 ;   (include-book "arithmetic-5/top" :dir :system)
-;   
+;
 ;   (defun generate-ABC-thms (lst)
 ;     (cond ((endp lst) nil)
 ;           (t (let ((A (nth 0 (car lst)))
@@ -5907,7 +5907,7 @@
 ;                                            (implies ,A ,B))
 ;                                          ,C)))
 ;                      (generate-ABC-thms (cdr lst)))))))
-;   
+;
 ;   (defmacro confirm-ABC-table nil
 ;     `(thm
 ;       (and
@@ -5918,22 +5918,22 @@
 ;             ((<  k x)    (<= d x)    (<= d k)    (+ k (/ (- d k) 2))) ;  2
 ;             ((<  k x)    (<= x d)    NIL         (+ (max k d) 1))             ;  3
 ;             ((<  k x)    (<  x d)    NIL         (+ (max k d) 1))             ;  4
-;   
+;
 ;             ((<= k x)    (<  d x)    (<  d k)    (+ k (/ (- d k) 2))) ;  5
 ;             ((<= k x)    (<= d x)    (<= d k)    (+ k (/ (- d k) 2))) ;  6
 ;             ((<= k x)    (<= x d)    NIL         (+ (max k d) 1))             ;  7
 ;             ((<= k x)    (<  x d)    NIL         (+ (max k d) 1))             ;  8
-;   
+;
 ;             ((<= x k)    (<  d x)    NIL         (- (min k d) 1))             ;  9
 ;             ((<= x k)    (<= d x)    NIL         (- (min k d) 1))             ; 10
 ;             ((<= x k)    (<= x d)    (<= k d)    (+ d (/ (- k d) 2))) ; 11
 ;             ((<= x k)    (<  x d)    (<  k d)    (+ d (/ (- k d) 2))) ; 12
-;   
+;
 ;             ((<  x k)    (<  d x)    NIL         (- (min k d) 1))             ; 13
 ;             ((<  x k)    (<= d x)    NIL         (- (min k d) 1))             ; 14
 ;             ((<  x k)    (<= x d)    (<= k d)    (+ d (/ (- k d) 2))) ; 15
 ;             ((<  x k)    (<  x d)    (<= k d)    (+ d (/ (- k d) 2)))))))); 16
-;   
+;
 ;   (confirm-ABC-table)
 
 ; The success of confirm-ABC-table means that the entries in the above table
@@ -5941,7 +5941,7 @@
 
 ; [forall x : (A x) --> (B x)]
 
-; is a theorem if the condition in column C is true.  
+; is a theorem if the condition in column C is true.
 
 ; For example, consider a function call (fn a) and imagine that we know that
 ; the actual, a, has tau A.  But imagine that the signature of fn requires B.
@@ -5975,12 +5975,12 @@
 ;  6      (<= k x)    (<= d x)    (<= d k)     NIL      ;  8
 ;  7      (<= k x)    (<= x d)    NIL          (<  d k) ;  5
 ;  8      (<= k x)    (<  x d)    NIL          (<= d k) ;  6
-                                                            
+
 ;  9      (<= x k)    (<  d x)    NIL          (<= k d) ; 11
 ; 10      (<= x k)    (<= d x)    NIL          (<  k d) ; 12
 ; 11      (<= x k)    (<= x d)    (<= k d)     NIL      ;  9
 ; 12      (<= x k)    (<  x d)    (<  k d)     NIL      ; 10
-                                                            
+
 ; 13      (<  x k)    (<  d x)    NIL          (<= k d) ; 15
 ; 14      (<  x k)    (<= d x)    NIL          (<= k d) ; 16
 ; 15      (<  x k)    (<= x d)    (<= k d)     NIL      ; 13
@@ -6053,9 +6053,9 @@
       (if d
           (if ap
               (if arel
-;            A            B        C             C'                                  
-; 16      (<  x k)    (<  x d)  |  (<= k d)     NIL     
-; 15      (<  x k)    (<= x d)  |  (<= k d)     NIL     
+;            A            B        C             C'
+; 16      (<  x k)    (<  x d)  |  (<= k d)     NIL
+; 15      (<  x k)    (<= x d)  |  (<= k d)     NIL
 ; 13      (<  x k)    (<  d x)  |  NIL          (<= k d)
 ; 14      (<  x k)    (<= d x)  |  NIL          (<= k d)
 
@@ -6067,10 +6067,10 @@
                       (if (<= k d) nil '?)
 ;                         (if (<= k d) nil '?))
                       )
-              
 
-; 12      (<= x k)    (<  x d)  |  (<  k d)     NIL     
-; 11      (<= x k)    (<= x d)  |  (<= k d)     NIL     
+
+; 12      (<= x k)    (<  x d)  |  (<  k d)     NIL
+; 11      (<= x k)    (<= x d)  |  (<= k d)     NIL
 ;  9      (<= x k)    (<  d x)  |  NIL          (<= k d)
 ; 10      (<= x k)    (<= d x)  |  NIL          (<  k d)
 
@@ -6083,11 +6083,11 @@
                           (if (<  k d) nil '?))))
 
               (if arel
-          
+
 ;  4      (<  k x)    (<  x d)  |  NIL          (<= d k)
 ;  3      (<  k x)    (<= x d)  |  NIL          (<= d k)
-;  1      (<  k x)    (<  d x)  |  (<= d k)     NIL     
-;  2      (<  k x)    (<= d x)  |  (<= d k)     NIL     
+;  1      (<  k x)    (<  d x)  |  (<= d k)     NIL
+;  2      (<  k x)    (<= d x)  |  (<= d k)     NIL
 
                   (if bp
 ;                     (if brel
@@ -6100,9 +6100,9 @@
 
 ;  8      (<= k x)    (<  x d)  |  NIL          (<= d k)
 ;  7      (<= k x)    (<= x d)  |  NIL          (<  d k)
-;  5      (<= k x)    (<  d x)  |  (<  d k)     NIL     
-;  6      (<= k x)    (<= d x)  |  (<= d k)     NIL     
-                                                                        
+;  5      (<= k x)    (<  d x)  |  (<  d k)     NIL
+;  6      (<= k x)    (<= d x)  |  (<= d k)     NIL
+
                   (if bp
                       (if brel
                           (if (<= d k) nil '?)
@@ -6130,14 +6130,14 @@
 ;       (if rel
 ;           (if k (< k x) t)
 ;           (if k (<= k x) t))))
-; 
+;
 ; (thm
 ;  (implies
 ;   (equal (tau-interval-endpoint-implication ap arel k bp brel d)
 ;          t)
 ;   (implies (<?? ap arel k x)
 ;            (<?? bp brel d x))))
-; 
+;
 ; (thm
 ;  (implies
 ;   (equal (tau-interval-endpoint-implication ap arel k bp brel d)
@@ -6166,7 +6166,7 @@
 ; have a tau representing a conjunctive rule and we were to add the domain in
 ; as a conjunct, we could remove it from the theorem.  I.e., the domain really
 ; is irrelevant to conjunctive rule firings.
- 
+
 ; So we may think of an interval as representing just (at most) two conjuncts,
 ; two imaginary ``tau-pairs'', one recognizing (<? lo x) and the other
 ; recognizing (<? x hi).  These recognizers exist only if their respective
@@ -6190,7 +6190,7 @@
 
 ; Also unlike the others, an interval can actually say more than just
 ; that a bound is ``missing'', it can say the bound is false.  We
-; treat the discovery of a false bound as we would the discovery that 
+; treat the discovery of a false bound as we would the discovery that
 ; multiple elements are missing, so as to avoid the application of
 ; the rule.
 
@@ -6211,7 +6211,7 @@
 ; In the following we use ``A lo'' to mean the lower bound of interval2, ``B
 ; lo'' to mean the lower bound of interval1, etc.  We use ``A lo --> B lo'' to
 ; mean the question: ``does A lo imply B lo (t), the negation of B lo (nil), or
-; is it unknown (?)?''  
+; is it unknown (?)?''
 
   (let ((b-lo-rel (access tau-interval interval1 :lo-rel))
         (b-lo-d (access tau-interval interval1 :lo))
@@ -6265,7 +6265,7 @@
                           interval1)))
                  ((eq temp nil)
                   (mv nil nil nil))
-                 (t 
+                 (t
 ; B-lo-d cannot be nil, and so must be a rational, since B lo is missing.
 ; (If the bound were nil, it would be trivially true.)  So the resulting
 ; (k . token) is a well-formed inequality recognizer.
@@ -6296,7 +6296,7 @@
                              nil b-lo-rel b-lo-d)))
                   (cond
                    ((eq temp t)
-; B-hi-d cannot be nil and so must be rational, as explain for b-lo-d above.  
+; B-hi-d cannot be nil and so must be rational, as explain for b-lo-d above.
                     (tau-interval-endpoint-to-sign-k-token t b-hi-rel b-hi-d))
                    ((eq temp nil)
                     (mv nil nil nil))
@@ -6319,7 +6319,7 @@
                                   tau-interval ~x0 and B is this one ~x1."
                                   interval2
                                   interval1)))
-                         (t 
+                         (t
 ; We only asked ``A hi --> B lo'' to detect the possible hard error.  The only
 ; expected answer is NIL or ?.  And in both cases we fail because we already have
 ; B hi missing and now we've got B lo either missing or false.
@@ -6479,7 +6479,7 @@
 ; tau-pair-saved             (i . fn), means fn has in the past been known
 ;                                      and will have this index whenever known
 
-; pos-implicants             tau:  for every sign/recog in tau, it is known 
+; pos-implicants             tau:  for every sign/recog in tau, it is known
 ;                            that (fn x) --> (sign/recog x)
 
 ; neg-implicants             tau: for every sign/recog in tau, it is known
@@ -6491,7 +6491,7 @@
 ;                            This alist is populated from Simple Rule form
 ;                            theorems proved about fn, i.e.,
 ;                            (equal x 'evg) --> sign/(fn x).
-; 
+;
 ; signature-rules-form-1     (sig-rule1 ... sig-rulen):  see defrec for
 ;                            signature-rule
 
@@ -6583,7 +6583,7 @@
 ; learn (i.e., store in the database) from the discovery that p-->q is a
 ; theorem.  To make it easier to think about, we let p take on the following
 ; four forms (handling both signs explicitly later below).
-; 
+;
 ; (p x)    ; p represents some arbitray monadic Boolean function symbol
 ; (= x a)  ; = represents EQUAL and a stands for an arbitrary quoted constant
 ; (< x i)  ; i represents an arbitrary quoted rational constant
@@ -6772,7 +6772,7 @@
 
 ; Proofs cited above:
 
-; First, 
+; First,
 ; (include-book "arithmetic-5/top" :dir :system)
 ; (tau-status :system nil)
 
@@ -6793,7 +6793,7 @@
 
 ; (defstub x1 () t)
 ; (defstub x2 () t)
- 
+
 ; (thm (or (equal (p (x1)) nil)
 ;          (equal (p (x2)) (equal (x2) (b))))
 ;      :hints (("Goal" :use ((:instance formula-5 (x (x1)))
@@ -6824,7 +6824,7 @@
 ; (thm (implies (let ((x (+ i (/ (- j i) 2))))
 ;                 (implies (not (< x i)) (< j x)))
 ;               (< j i)))
-; 
+;
 ; Case: j<=i |= thm 47:
 ; (thm (implies (< j i)
 ;               (implies (not (< x i)) (< j x))))
@@ -6837,7 +6837,7 @@
 ; Case: j<=i |= thm 61:
 ; (thm (implies (<= j i)
 ;               (implies (< i x) (< j x))))
-              
+
 ; -----------------------------------------------------------------
 
 ; A coding question: The table above guides our coding of tau-put below.  But
@@ -6865,7 +6865,7 @@
 ; rules?
 
 ; Is the danger of bugs in our code worth the extra robustness of testing for
-; explicit contradictions?  
+; explicit contradictions?
 
 ; After some consideration of this issue, we decided to code the table
 ; precisely, if only to document the analysis and make the case analysis
@@ -7136,7 +7136,7 @@
                         (mv t nil wrld))
                        (t (mv nil nil wrld))))))))
 
-         (t 
+         (t
 
 ; Else, q is an inequality or function application and we do the
 ; same thing on all of them.
@@ -7249,7 +7249,7 @@
 
 (defun tau-put*-tau (p-sign p-recog tau ens wrld)
 
-; We map over every r-sign/r-recog in tau and do 
+; We map over every r-sign/r-recog in tau and do
 
 ; (tau-put* p-sign p-recog r-sign r-recog ...).
 
@@ -7360,7 +7360,7 @@
 ; (:neg-evgs).  But in any case, each element of r-recogs is the atom
 ; of a recognizer.  The sign of all the atoms in r-recogs is r-sign.
 
-; For every r-sign/r-recog in r-sign/r-recogs (slight abuse of notation), we 
+; For every r-sign/r-recog in r-sign/r-recogs (slight abuse of notation), we
 
 ; (tau-put* p-sign p-recog r-sign r-recog ...).
 
@@ -7459,7 +7459,7 @@
 ; property for classical functions; in fact, as of Version_2.5 our
 ; intention is to put no 'classicalp property for classical functions.
 
-           t 
+           t
            'current-acl2-world wrld))
 
 ;; RAG - This function tests whether a list of names is made up purely
@@ -7472,7 +7472,7 @@
         ((not (classicalp (car names) wrld))
          nil)
         (t (classical-fn-list-p (cdr names) wrld))))
-     
+
 (defun monadic-boolean-fnp (fn ens wrld)
 
 ; Fn is known to be a function symbol.  We return (mv t ttree) if fn is a
@@ -7560,7 +7560,7 @@
 (defun putprop-tau-pair (fn wrld)
 
 ; Assign and store a ``new'' tau-pair to fn, updating the global value of
-; tau-next-index as necessary.  We return the updated world.  
+; tau-next-index as necessary.  We return the updated world.
 
 ; However, if fn has ever had a tau-pair, we re-assign the same pair to it.
 ; This is an attempt to minimize the differences between regenerations of tau
@@ -7896,7 +7896,7 @@
                   t
                   nil)))
      (t nil))))
-                     
+
 (defun tau-simple-formp (hyps concl wrld)
 
 ; Return t or nil to indicate whether (implies (and . hyps) concl) is a Simple
@@ -8012,7 +8012,7 @@
 ; (ld "ed5aa.lisp" :ld-pre-eval-print t)
 
 ; The command above will fail with a stack overflow at in the [GAUSS-INT::] event
-; SQ-ABS-<-SQ-ABS-* 
+; SQ-ABS-<-SQ-ABS-*
 
 ; However, here is a simpler example that loops:
 
@@ -8025,13 +8025,13 @@
 ;                (implies (consp x) (equal (p x) nil)))
 ;              (defthm q-sig
 ;                (implies (consp x) (equal (q x) nil)))
-;              (defthm bar-sig             
+;              (defthm bar-sig
 ;                (implies (q (mum x)) (consp (bar x)))
 ;                :rule-classes :tau-system)
 ;              (defthm mum-sig
 ;                (implies (p (bar x)) (consp (mum x)))
 ;                :rule-classes :tau-system))
-; 
+;
 ; (thm (consp (mum a)))
 
 ; Note that both bar-sig and mum-sig contain non-tau hyps, i.e., dependent
@@ -8101,7 +8101,7 @@
 ; and variants.  We recognize variants because the user might have written an
 ; OR which actually translates into the IF above with the true-branch replaced
 ; by a repetition of the test, even though the conversion of type-prescription
-; rules to terms does short-cuts that and puts a T there.  
+; rules to terms does short-cuts that and puts a T there.
 
 ; Warning: All variants MUST have the property that (fargn (fargn concl 1) 1) is
 ; the term (fn v1 ... vn).
@@ -8213,7 +8213,7 @@
                    ((and (nvariablep e)
                          (not (fquotep e))
                          (symbolp (ffn-symb e))
-                         (symbol-listp (fargs e))      ; faster than arglistp 
+                         (symbol-listp (fargs e))      ; faster than arglistp
                          (no-duplicatesp-eq (fargs e)) ; for a list of terms.
                          (not (ffnnamep-lst (ffn-symb e) hyps))
                          (subsetp (all-vars1-lst hyps nil) (fargs e)))
@@ -8311,7 +8311,7 @@
 ; Now we turn our attention to recognizing big switch functions.
 
 ; We say a variable v is a ``switch'' (or ``flag'') in a term
-; iff 
+; iff
 
 ; (a) the term is of the form (IF x y z), where x is a recognizer term, v is
 ;     the only variable free in x, and v is a switch for both y and z, or
@@ -8469,7 +8469,7 @@
                                         (cons fn fns)
                                         wrld))))))
 
-; A bounder correctness theorem is parsed into the following 
+; A bounder correctness theorem is parsed into the following
 ; record:
 
 (defrec bounder-correctness
@@ -8500,10 +8500,10 @@
 ;                (in-tau-intervalp z int3))
 ;           (and (tau-intervalp (bounder int3 int1))
 ;                (in-tau-intervalp (fn x y z) (bounder int3 int1))))
- 
+
 ; and here is the corresponding bounder-correctness record which
 ; represents this theorem:
- 
+
 ; (make bounder-correctness
 ;       :subject-fn         'fn
 ;       :acceptable-domains '((INTEGERP RATIONALP)
@@ -8511,7 +8511,7 @@
 ;                             (INTEGERP))
 ;       :bounder-fn         'bounder
 ;       :bounder-args       '(2 0))
-  
+
 ; If tau-term sees a call of fn, it determines the tau of the arguments (or at
 ; least those with non-T acceptable-domains) and checks that each tau contains
 ; an interval with an acceptable domain.  If so, it collects the intervals of
@@ -8678,7 +8678,7 @@
 ; those other functions, it takes the whole term, not (hyps . concl) pairs
 ; stripped out of the term.  Also, unlike those other functions which truly
 ; just recognize the desired forms, this function returns some additional
-; information gleaned while parsing the term.  
+; information gleaned while parsing the term.
 
 ; This function returns (mv form j bc) where form is nil, 1, or 2, where nil
 ; means term is NOT of the form of a bounder correctness rule, 1 means it is of
@@ -8755,7 +8755,7 @@
 ; We are in the plausibly Form 2 case.  We know nothing about subject-term
 ; below but we know bounder-fn below is a function symbol and the ivars are
 ; distinct variable symbols.
-                              
+
             (let ((j (cadr (fargn (fargn link-term 1) 1)))
                   (subject-term (fargn (fargn link-term 1) 2))
                   (bounder-fn (ffn-symb (fargn link-term 2)))
@@ -8816,7 +8816,7 @@
 ; We are in the plausibly Form 1 case.  We know nothing about subject-term
 ; below but we know bounder-fn below is a function symbol and the ivars are
 ; distinct variable symbols.
-                              
+
           (let ((j nil)
                 (subject-term (fargn link-term 1))
                 (bounder-fn (ffn-symb (fargn link-term 2)))
@@ -8904,7 +8904,7 @@
 ; and bc2 are about the same subject-fn, we delay that test to the end because
 ; it will most likely be true.  We check the bounder-fn and bounder-arg fields
 ; first because they're fast checks.
-  
+
   (and (eq (access bounder-correctness bc1 :bounder-fn)
            (access bounder-correctness bc2 :bounder-fn))
        (equal (access bounder-correctness bc1 :bounder-args)
@@ -9006,13 +9006,13 @@
 ; gn'':
 
 ; chk-acceptable-tau-rule < chk-acceptable-x-rules (on :tau-system rules only)
- 
+
 ; add-tau-rule <
 ;  tau-visit-defthm1 < tau-visit-defthm < TAU-VISIT-EVENT < [see below]
 
 ; tau-rules-from-type-prescriptions <
 ;   tau-visit-defuns1 < tau-visit-defuns < tau-visit-defun < TAU-VISIT-EVENT
-;                                        < TAU-VISIT-EVENT 
+;                                        < TAU-VISIT-EVENT
 
 ; Note that add-tau-rule and tau-rules-from-type-prescriptions are essentially
 ; only called from TAU-VISIT-EVENT, which is called by install-event (and
@@ -9052,7 +9052,7 @@
 ; (defthm sig (implies (force (natp x)) (natp (mv-nth 1 (foo x)))))
 
 (defun acceptable-tau-rulep (pair wrld)
-  (let ((hyps (car pair)) 
+  (let ((hyps (car pair))
         (concl (cdr pair)))
     (cond
      ((tau-boolean-formp hyps concl wrld) 'BOOLEAN)
@@ -9265,7 +9265,7 @@
 ; rule, where the explanation of the inadequacy of the syntactic check is due
 ; to it having been done in the first pass of an encapsulate that failed to
 ; export the Boolean property to the second pass where the error is to be
-; signalled.  
+; signalled.
 
 (defun add-tau-rule1 (lost-rune-action rune pairs ens wrld wrld0)
 
@@ -9372,12 +9372,12 @@
                (split-on-conjoined-disjunctions-in-hyps-of-pairs
                 (strip-force-and-case-split-in-hyps-of-pairs
                  (unprettyify term1))))
-              (lost-rune-action (if (eq (car rune) :tau-system) 
+              (lost-rune-action (if (eq (car rune) :tau-system)
                                     (if first-visitp
                                         'REPORT
                                         'ACCUMULATE)
                                     'IGNORE)))
-                                  
+
          (add-tau-rule1 lost-rune-action rune pairs ens wrld0 wrld0)))))))
 
 ; We now turn to the topic of ``visiting'' events and building up the tau
@@ -9406,7 +9406,7 @@
 (defun discover-tau-pred (fn ens wrld)
 
 ; If fn is a monadic Boolean under ens, we initialize the tau properties for a
-; tau recognizer; else not.  We return the modified wrld.  
+; tau recognizer; else not.  We return the modified wrld.
 
 ; Note: This function (re-)initializes the tau properties of fn!  Normally,
 ; this is a straightforward initialization because discover-tau-pred (actually
@@ -9452,7 +9452,7 @@
 ; without passing in wrld0.  The idea is that add-tau-rule1 is a No Change
 ; Loser and so if it signalled an error, we'd get back what we gave it.  But
 ; because this function is recursive and maps over tp-lst, it could be that
-; what we gave add-tau-rule1 has already been extended.  
+; what we gave add-tau-rule1 has already been extended.
 
 ; Note also that this function uses add-tau-rule1 rather than add-tau-rule.  In
 ; so doing, it precludes the possibility that the rule being added is a
@@ -9485,14 +9485,14 @@
                                           (car tp-lst)
                                           :rune)
                                   pairs ens wrld wrld0)
-           
+
 ; If msgp is non-nil, then x is nil and the attempt to add this rule caused an
 ; error as explained by msgp.  On the other hand, if msgp is nil, then x is the
 ; extended wrld.
 
                    (cond
-                    (msgp 
-                          
+                    (msgp
+
 ; We actually know here that wrld is wrld0 given that add-tau-rule1 is a No
 ; Change Loser, but just to be explicit:
 
@@ -9563,7 +9563,7 @@
 ; term.  It should be the case that if term is a tau-like-propositionp, then
 ; the value of term is EQUAL to the value of (expand-tau-like-proposition
 ; term).  Key to the correctness of the definition below is that all the
-; components of tau-like propositions are boolean.  
+; components of tau-like propositions are boolean.
 
 ; Warning: At one point we considered handling (EQUAL x y) as (IFF x y) since
 ; we ``knew'' that x and y are tau-like propositions.  However, we don't.  It
@@ -9603,7 +9603,7 @@
                    arg2
                    (fcons-term* 'NOT arg2))))
    (t term)))
-            
+
 (defun add-only-simple-and-conjunctive-tau-rules (rune pairs ens wrld)
 
 ; We believe every clause in clauses corresponds to a Simple or Conjunctive
@@ -9675,7 +9675,7 @@
 
 ; To see the need for more than stripping, define a recognizer as a disjunction
 ; of other recognizers, e.g., (DEFUN FOO (X) (OR (A X) (B X) (C X) (D X))).  To
-; make it easier to play, let's just think of proposition letters: 
+; make it easier to play, let's just think of proposition letters:
 
 ; FOO <--> (A v B v C v D).
 
@@ -9712,7 +9712,7 @@
 ; Suppose lit1 and lit2 are terms and neither is of the form (NOT (NOT &)).
 ; Then we determine whether one is the complement of the other, i.e., one
 ; is (NOT lit) where lit is the other.  Note that we do not use any
-; commuativity knowledge.  Thus, 
+; commuativity knowledge.  Thus,
 
 ; WARNING:  (EQUAL A B) and (NOT (EQUAL B A)) are *not* complementaryp, by
 ; this definition!
@@ -9854,7 +9854,7 @@
 
 ; Suppose we have:
 ; pairs                                 pairs'                      ancestor-lits
-; [1] x y  A u --> concl                [1'] x y A u --> concl            
+; [1] x y  A u --> concl                [1'] x y A u --> concl
 ; [2] x y -A  B u v --> concl           [2'] x y B u v --> concl           -A
 ; [3] x y -A -B  C u v w --> concl      [3'] x y C u v w --> concl      -B -A
 
@@ -9904,7 +9904,7 @@
 ; Here are some examples of the function in action.  These examples show how we
 ; are sensitive to the order of the literals.  This sensitivity is deemed
 ; unimportant because stripping the branches of normalized IFs produces the
-; regular order that we exploit.  
+; regular order that we exploit.
 
 ;   (remove-ancestor-literals-from-pairs
 ;    '(((x y  A        u) . concl)
@@ -10138,7 +10138,7 @@
   (cond
    ((endp fns) (mv nil wrld))
    (t
-    (let* ((fn (car fns))            
+    (let* ((fn (car fns))
            (db (original-def-body fn wrld))
            (formals (access def-body db :formals))
            (rhs (access def-body db :concl))
@@ -10175,7 +10175,7 @@
                  fn ens wrld wrld0)
                 (cond
                  (msgp (mv msgp wrld0))
-                 (t 
+                 (t
                   (tau-visit-defuns1 (cdr fns) ens wrld wrld0)))))))))
 
 (defun tau-visit-defuns (fns auto-modep ens wrld0)
@@ -10191,7 +10191,7 @@
 
 ; We follow the Tau Msgp Protocol and return (mv msgp wrld').  No Change Loser
 ; on wrld0.
-  
+
 ; We identify all the tau recognizers before we start to process any other kind
 ; of tau rules, so that if a mutually recursive nest introduces several
 ; recognizers, we treat them all appropriately when doing the syntactic checks
@@ -10317,7 +10317,7 @@
                  (t (tau-visit-defthm1 first-visitp
                                        (cdr terms-and-runes)
                                        ens wrld wrld0))))))))
-                  
+
 (defun tau-visit-defthm (first-visitp name auto-modep ens wrld0)
 
 ; This is the function the tau system uses to update the tau database in
@@ -10425,7 +10425,7 @@
 ; might be t.
 
     (t (mv nil (not sign) recog)))))
-             
+
 (defun apply-conjunctive-tau-rules2 (conjunctive-rules tau ens wrld changedp)
 
 ; We map over the list of conjunctive tau rules, trying each wrt the known
@@ -10541,12 +10541,12 @@
                 (equal tau new-tau))
            (mv tau calist))
           (t (apply-conjunctive-tau-rules new-tau ens wrld calist)))))
-  
+
 ; -----------------------------------------------------------------
 ; Dealing with Terms
 
 ; We now turn our attention to computing the recognizer sets of terms
-; and maintaining a list of assumptions about terms.  We start by 
+; and maintaining a list of assumptions about terms.  We start by
 ; using signature rules.  Then we will define how to use an alist of
 ; tau assumptions to compute the tau of a term.  Then we will define
 ; how to build an alist of tau assumptions.
@@ -10645,7 +10645,7 @@
 
 ; While this handling of the domains of intervals is accurate as far as it
 ; goes, we really lose a lot of precision in disjoining taus.  See the
-; discussion On Disjoining Tau. 
+; discussion On Disjoining Tau.
 
   (let* ((dom1 (access tau-interval interval1 :domain))
          (dom2 (access tau-interval interval2 :domain))
@@ -10716,7 +10716,7 @@
 
 ; The two arguments are tau-intervals.  We form the interval that stretches
 ; from the upper lower bound of the two to the lower upper bound, and has as
-; its domain the more restrictive of the two domains. 
+; its domain the more restrictive of the two domains.
 
 ; Motivation: Suppose we are finding the tau of a term and know the term lies in
 ; both interval1 and in interval2.  Then the conjunction of those two intervals
@@ -10806,7 +10806,7 @@
 ; (verify-termination lower-bound->)
 ; (verify-termination upper-bound-<)
 ; (verify-termination squeeze-k)
-; (verify-termination conjoin-intervals) 
+; (verify-termination conjoin-intervals)
 ; (include-book "arithmetic-5/top" :dir :system)
 
 ; (defthm lemma
@@ -10826,10 +10826,10 @@
 ;                    (in-tau-intervalp x (conjoin-intervals int1 int2))
 ;                    )))
 
-; The following establishes that if the conjunction of two intervals is empty 
-; then the equality of the two objects is false.  We exploit this in 
+; The following establishes that if the conjunction of two intervals is empty
+; then the equality of the two objects is false.  We exploit this in
 ; tau-interval-equal-decider.
-; 
+;
 ; (thm (implies (and (or (equal int1 nil) (tau-intervalp int1))
 ;                    (or (equal int2 nil) (tau-intervalp int2))
 ;                    (in-tau-intervalp x int1)
@@ -10843,7 +10843,7 @@
 ; We intersect them, returning a list of tau-pairs ordered descending.
 ; However, we implicitly augment each list with the pairs which have been
 ; dropped because they are true (or false) because of the corresponding
-; :pos-evg.  
+; :pos-evg.
 
 ; For example, suppose we are dealing with :pos-pairs (sign=t and both pair1
 ; and pair2 are :pos-pairs of their respective tau).  Suppose pos-evg1 contains
@@ -11102,7 +11102,7 @@
 
 (defun push-mv-nth-down (i term)
 
-; We put (MV-NTH i *) around each output of the IF-tree term.  
+; We put (MV-NTH i *) around each output of the IF-tree term.
 
   (cond ((variablep term) (fcons-term* 'MV-NTH i term))
         ((fquotep term)
@@ -11178,7 +11178,7 @@
 
 (defun deconstruct-conjunction (sign a b c)
 
-; Consider sign/(IF a b c).  There are four cases in which this is a 
+; Consider sign/(IF a b c).  There are four cases in which this is a
 ; conjunction.
 
 ; sign=t     c=nil             (and a b)
@@ -11266,7 +11266,7 @@
 ;                     :exit
 ;                     (list 'tau-term (if (eq value *tau-contradiction*) value
 ;                                         (decode-tau value (car arglist))))))
-;   
+;
 ;   (trace$ (tau-assume :entry (list 'tau-assume
 ;                                    (if (car arglist) 'positive 'negative)
 ;                                    (cadr arglist)
@@ -11386,7 +11386,7 @@
                            (collect-bounder-args actual-tau-lst
                                                  doms-lst
                                                  (cdr bounder-args))))))))
-                 
+
 (defun bounding-interval (bc actual-tau-lst wrld)
 
 ; Bc is a bounder-correctness record for some fn and actual-tau-lst is the list
@@ -11425,7 +11425,7 @@
    (t (conjoin-intervals
        (bounding-interval (car bounders) actual-tau-lst wrld)
        (conjoin-bounding-intervals (cdr bounders) actual-tau-lst wrld)))))
-                         
+
 (defun apply-tau-bounders (bounders actual-tau-lst ens wrld calist)
 
 ; Given the bounders for a function and the tau of its actuals, we compute the
@@ -11454,7 +11454,7 @@
                       (rationalp *tau-rationalp-pair*)
                       (acl2-numberp *tau-acl2-numberp-pair*)
                       (otherwise nil)))
-                   (tau1 
+                   (tau1
                     (if (null dom-pair)
                         *tau-empty*
                         (add-to-tau t dom-pair *tau-empty* ens wrld))))
@@ -11497,7 +11497,7 @@
 ; (verify-termination lower-bound->)
 ; (verify-termination upper-bound-<)
 ; (verify-termination squeeze-k)
-; (verify-termination conjoin-intervals) 
+; (verify-termination conjoin-intervals)
 ; (include-book "arithmetic-5/top" :dir :system)
 ; (verify-termination identity-intervalp)
 ; (verify-termination tau-interval-equal-decider)
@@ -11587,7 +11587,7 @@
 ;   formals to the tau of the actuals.  We tried it both ways and expansion
 ;   actually seems to result in very slightly fewer calls of tau-term.
 
-; - (NOT x):  compute the tau of x, taux, and return the tau for T or NIL 
+; - (NOT x):  compute the tau of x, taux, and return the tau for T or NIL
 ;   if taux is the tau of NIL or T, respectively; else return the tau for
 ;   Boolean
 
@@ -11681,7 +11681,7 @@
                     (mv *tau-t* calist))
                    ((or (equal tau1 *tau-t*)
                         (and (access tau tau1 :pos-evg)
-                             (not (eq (car (access tau tau1 :pos-evg)) nil))) 
+                             (not (eq (car (access tau tau1 :pos-evg)) nil)))
                         (member-nil-neg-evgs (access tau tau1 :neg-evgs)))
 
 ; Each of the following tau are non-nil:  T or any evg other than nil or any tau
@@ -11691,7 +11691,7 @@
 ; strange.  In the interests of simplicity, we just handle ``Boolean-like'' trues.
 
                     (mv *tau-nil* calist))
-                   (t 
+                   (t
 
 ; We'd like to return just the Boolean tau, but it changes as new recognizers
 ; are added so we complete it each time we need it.
@@ -11757,7 +11757,7 @@
                (integerp (cadr (fargn term 1)))
                (<= 0 (cadr (fargn term 1))))
 
-; (UNSIGNED-BYTE-P bits x) = (AND (INTEGERP x) (<= 0 x) (< x (expt 2 bits))), provided 
+; (UNSIGNED-BYTE-P bits x) = (AND (INTEGERP x) (<= 0 x) (< x (expt 2 bits))), provided
 ; bits is natp.  We just open UNSIGNED-BYTE-P under that condition.
 
           (tau-term `(if (integerp ,(fargn term 2))
@@ -11877,7 +11877,7 @@
             (t (let* ((fn (ffn-symb term))
                       (sigrules (getprop fn 'signature-rules-form-1 nil
                                          'current-acl2-world wrld))
-                          
+
                       (bounders (getprop fn 'tau-bounders-form-1 nil
                                          'current-acl2-world wrld)))
                  (cond
@@ -11888,7 +11888,7 @@
 
 ; We are dealing with (fn a1 ... ak) and have no bounder or signature rules.
 ; We expand, if possible, and recur.
-              
+
                    (mv-let (contradictionp hitp term1 calist)
                            (tau-rewrite term
                                         tau-alist type-alist pot-lst
@@ -11900,11 +11900,11 @@
                                             type-alist pot-lst
                                             ens wrld calist))
                             (t (mv *tau-empty* calist)))))
-                  (t 
+                  (t
 
 ; For all other functions we compute the tau of the actuals, then apply bounder rules,
 ; and then apply signature rules.
-                         
+
                    (mv-let
                     (actual-tau-lst calist)
                     (tau-term-lst nil
@@ -11962,7 +11962,7 @@
                         tau1
                         tau-alist type-alist pot-lst
                         ens wrld calist)))))))))))))))))
-                           
+
 (defun tau-term-lst (vars terms tau-alist type-alist pot-lst ens wrld calist)
 
 ; When non-nil, vars is assumed to be of the same length as terms.  This
@@ -12339,7 +12339,7 @@
 ; implicitly determined by the pos-pairs, we won't find an explicit nil in
 ; neg-evgs.  This ought to be fixed.  But at the moment we'll just let tau be
 ; this weak.
-               
+
                     (t (tau-assume-basic sign term
                                          tau-alist type-alist pot-lst
                                          ens wrld calist)))))))))))
@@ -12348,7 +12348,7 @@
             (integerp (cadr (fargn term 1)))
             (<= 0 (cadr (fargn term 1))))
 
-; (UNSIGNED-BYTE-P bits x) = (AND (INTEGERP x) (<= 0 x) (< x (expt 2 bits))), provided 
+; (UNSIGNED-BYTE-P bits x) = (AND (INTEGERP x) (<= 0 x) (< x (expt 2 bits))), provided
 ; bits is natp.  We just open UNSIGNED-BYTE-P under that condition.
 
        (tau-assume sign
@@ -12404,7 +12404,7 @@
                                           tau-alist type-alist pot-lst
                                           ens wrld calist))))))))))))
 )
-           
+
 ; Note on a Possible Extension of Tau-Rewrite: We have considered adding other
 ; kinds of expansions, e.g., with ABBREVIATION rewrite rules or with
 ; unconditional ``nonrec'' DEFINITION rules.  We quote nonrec because sometimes
@@ -12695,7 +12695,7 @@
 
 (defun decode-recog (sign recog e)
   (let* ((discriminator (cdr recog))
-         (atm 
+         (atm
           (cond ((null discriminator)
                  `(equal ,e (quote ,@recog)))
                 ((eq discriminator :lessp-k-x)
@@ -12706,7 +12706,7 @@
     (if sign
         atm
         `(not ,atm))))
-           
+
 (defun decode-recog-lst (sign lst e)
   (cond ((endp lst) nil)
         (t (cons (decode-recog sign (car lst) e)
@@ -12728,7 +12728,7 @@
           (decode-recog-lst nil
                             (revappend (access tau tau :neg-pairs) nil)
                             e)))
-  
+
 (defun decode-tau (tau e)
   (cond
    ((eq tau *tau-contradiction*) nil)
@@ -12743,7 +12743,7 @@
 ; our code.
 
 ;   (program)
-;   
+;
 ;   (mutual-recursion
 ;    (defun ptrans (term)
 ;   ; Like translate, but very limited: quote unquoted constants and expand
@@ -12774,15 +12774,15 @@
 ;      (cond ((endp terms) nil)
 ;            (t (cons (ptrans (car terms))
 ;                     (ptrans-lst (cdr terms)))))))
-;   
+;
 ;   ; (mktau nil (natp e) (<= e 100)) produces a tau representing just those two
 ;   ; recognizers.  Replacing the nil by t produces a ``complete'' tau with the
 ;   ; implicants.  Mktau! makes such a tau and then decodes it back to a pseudo-term.
-;   
+;
 ;   (defmacro mktau (complete-flg &rest terms)
 ;     `(convert-tau-like-terms-to-tau ,complete-flg ',(ptrans-lst terms)
 ;                                     (ens state) (w state)))
-;   
+;
 ;   (defmacro mktau! (complete-flg &rest terms)
 ;     `(decode-tau
 ;       (convert-tau-like-terms-to-tau ,complete-flg
@@ -12790,7 +12790,7 @@
 ;                                      (ens state)
 ;                                      (w state))
 ;       'e))
-;   
+;
 ;   (logic)
 
 (defun decode-tau-conjunctive-rule (tau)
@@ -12811,7 +12811,7 @@
                ((null hyps) (dumb-negate-lit concl))
                ((null (cdr hyps)) `(implies ,(car hyps) ,concl))
                (t  `(implies (and ,@hyps) ,concl))))))))))
-        
+
 (defun decode-tau-conjunctive-rules (lst)
   (cond ((endp lst) nil)
         (t (cons (decode-tau-conjunctive-rule (car lst))
@@ -12897,7 +12897,7 @@
 ; - multi-sig-cnt-1: how many functions have more than 1 form 1 signature
 ; - multi-sig-cnt-2: how many functions have more than 1 form 2 signature
 ;    for some slot
-; - multi-sig-cnt-alist: for each fn with with more than one signature 
+; - multi-sig-cnt-alist: for each fn with with more than one signature
 ;    (of either form)
 
 (defun tau-get-all-sig-fns (wrld fns-seen)
@@ -12933,7 +12933,7 @@
             fn (+ i 1) (cdr mv-lst) wrld
             (collect-rules-with-dependent-hyps fn i (car mv-lst) wrld ans)))))
 
-(defun tau-get-stats-on-signatures1 (fn wrld 
+(defun tau-get-stats-on-signatures1 (fn wrld
                                         fn-cnt-1 fn-cnt-2 fn-cnt-1-and-2
                                         multi-sig-cnt-1 multi-sig-cnt-2
                                         multi-sig-cnt-alist
@@ -12976,7 +12976,7 @@
            multi-sig-cnt-1 multi-sig-cnt-2 multi-sig-cnt-alist
            rules-with-dependent-hyps)))))
 
-(defun tau-get-stats-on-signatures (fns wrld 
+(defun tau-get-stats-on-signatures (fns wrld
                                         fn-cnt-1 fn-cnt-2 fn-cnt-1-and-2
                                         multi-sig-cnt-1 multi-sig-cnt-2
                                         multi-sig-cnt-alist
@@ -13001,7 +13001,7 @@
                                           multi-sig-cnt-1 multi-sig-cnt-2
                                           multi-sig-cnt-alist
                                           rules-with-dependent-hyps)
-            (tau-get-stats-on-signatures (cdr fns) wrld 
+            (tau-get-stats-on-signatures (cdr fns) wrld
                                          fn-cnt-1 fn-cnt-2 fn-cnt-1-and-2
                                          multi-sig-cnt-1 multi-sig-cnt-2
                                          multi-sig-cnt-alist
@@ -13212,8 +13212,8 @@
   If the signatures formula is ~c[T] it means there are no known signatures.
   (Signatures is the conjunction of all signature rules and the empty
   conjunction is ~c[T].)
-  
-  If you wish to see a long list of all the runes from which some tau 
+
+  If you wish to see a long list of all the runes from which some tau
   information has been gleaned, evaluate
   ~c[(global-val 'tau-runes (w state))].~/
   :cited-by introduction-to-the-tau-system"
@@ -13258,7 +13258,7 @@
                                ans))))))
 
 (defun tau-database (wrld)
-  
+
   ":Doc-Section History
 
   to see the tau database as a (very large) object~/
@@ -13276,7 +13276,7 @@
   If the output is not self-explanatory, please contact the implementors and we
   will improve the output or the documentation.~/
   :cited-by introduction-to-the-tau-system"
-  
+
   (tau-data-fns
    (merge-sort-lexorder (all-fnnames-world :logic wrld))
    wrld
@@ -13375,7 +13375,7 @@
                 (in-tau-intervalp ~i[target]
                                   (bounder-fn i1 ...))))
   ~ev[]
-  where ~i[target] is either ~c[(fn x1 ... y1 ...)] or 
+  where ~i[target] is either ~c[(fn x1 ... y1 ...)] or
   ~c[(mv-nth 'n (fn x1 ... y1 ...))], depending on whether we are in the
   ~i[Form 1] or ~i[Form 2] case, respectively.  However, the shape above
   is meant just as a reminder.  Details are given below.~/
@@ -13547,7 +13547,7 @@
                 (or (equal (tau-interval-dom intx) 'INTEGERP)    ; (b)
                     (equal (tau-interval-dom intx) 'RATIONALP))
                 (in-tau-intervalp x intx)                        ; (c)
- 
+
                 (tau-intervalp inty)                             ; (a)
                 (or (equal (tau-interval-dom inty) 'INTEGERP)    ; (b)
                     (equal (tau-interval-dom inty) 'RATIONALP))
@@ -13568,7 +13568,7 @@
   correctness of the components.  For example, one might need to prove that the
   domain of the new bounding interval is ~c[INTEGERP] or otherwise restricted.
   We allow such ``unnecessary'' conclusions simply to save the user the burden
-  of stating multiple theorems. 
+  of stating multiple theorems.
 
   ~i[An Illustration of Bounder Form 2]: Suppose ~c[(quad i)] is defined so
   that truncates the integer ~c[i] to the largest multiple of 4 weakly below
@@ -13676,7 +13676,7 @@
   When dealing with bounders defined compositionally in terms of other verified
   bounders, we tend to keep ~ilc[TAU-INTERVALP] and ~ilc[IN-TAU-INTERVALP]
   disabled so we can rely on the previously proved bounder theorems as rewrite
-  and forward chaining rules.  
+  and forward chaining rules.
 
   Note that this last remark means that when you prove bounder correctness
   theorems you should include corollaries that are useful ~c[:rewrite] and

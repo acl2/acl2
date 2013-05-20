@@ -89,501 +89,501 @@
 ; The figures on the next twelve pages contain a complete enumeration of the
 ; 978 external symbols in the COMMON-LISP package.
 
-  &allow-other-keys            *print-miser-width*          
-  &aux                         *print-pprint-dispatch*      
-  &body                        *print-pretty*               
-  &environment                 *print-radix*                
-  &key                         *print-readably*             
-  &optional                    *print-right-margin*         
-  &rest                        *query-io*                   
-  &whole                       *random-state*               
-  *                            *read-base*                  
-  **                           *read-default-float-format*  
-  ***                          *read-eval*                  
-  *break-on-signals*           *read-suppress*              
-  *compile-file-pathname*      *readtable*                  
-  *compile-file-truename*      *standard-input*             
-  *compile-print*              *standard-output*            
-  *compile-verbose*            *terminal-io*                
-  *debug-io*                   *trace-output*               
-  *debugger-hook*              +                            
-  *default-pathname-defaults*  ++                           
-  *error-output*               +++                          
-  *features*                   -                            
-  *gensym-counter*             /                            
-  *load-pathname*              //                           
-  *load-print*                 ///                          
-  *load-truename*              /=                           
-  *load-verbose*               1+                           
-  *macroexpand-hook*           1-                           
-  *modules*                    <                            
-  *package*                    <=                           
-  *print-array*                =                            
-  *print-base*                 >                            
-  *print-case*                 >=                           
-  *print-circle*               abort                        
-  *print-escape*               abs                          
-  *print-gensym*               acons                        
-  *print-length*               acos                         
-  *print-level*                acosh                        
-  *print-lines*                add-method                   
+  &allow-other-keys            *print-miser-width*
+  &aux                         *print-pprint-dispatch*
+  &body                        *print-pretty*
+  &environment                 *print-radix*
+  &key                         *print-readably*
+  &optional                    *print-right-margin*
+  &rest                        *query-io*
+  &whole                       *random-state*
+  *                            *read-base*
+  **                           *read-default-float-format*
+  ***                          *read-eval*
+  *break-on-signals*           *read-suppress*
+  *compile-file-pathname*      *readtable*
+  *compile-file-truename*      *standard-input*
+  *compile-print*              *standard-output*
+  *compile-verbose*            *terminal-io*
+  *debug-io*                   *trace-output*
+  *debugger-hook*              +
+  *default-pathname-defaults*  ++
+  *error-output*               +++
+  *features*                   -
+  *gensym-counter*             /
+  *load-pathname*              //
+  *load-print*                 ///
+  *load-truename*              /=
+  *load-verbose*               1+
+  *macroexpand-hook*           1-
+  *modules*                    <
+  *package*                    <=
+  *print-array*                =
+  *print-base*                 >
+  *print-case*                 >=
+  *print-circle*               abort
+  *print-escape*               abs
+  *print-gensym*               acons
+  *print-length*               acos
+  *print-level*                acosh
+  *print-lines*                add-method
 
 ;   Figure 1-4: Symbols in the COMMON-LISP package (part one of twelve).
 
 
-  adjoin                      atom          boundp                    
-  adjust-array                base-char     break                     
-  adjustable-array-p          base-string   broadcast-stream          
-  allocate-instance           bignum        broadcast-stream-streams  
-  alpha-char-p                bit           built-in-class            
-  alphanumericp               bit-and       butlast                   
-  and                         bit-andc1     byte                      
-  append                      bit-andc2     byte-position             
-  apply                       bit-eqv       byte-size                 
-  apropos                     bit-ior       caaaar                    
-  apropos-list                bit-nand      caaadr                    
-  aref                        bit-nor       caaar                     
-  arithmetic-error            bit-not       caadar                    
-  arithmetic-error-operands   bit-orc1      caaddr                    
-  arithmetic-error-operation  bit-orc2      caadr                     
-  array                       bit-vector    caar                      
-  array-dimension             bit-vector-p  cadaar                    
-  array-dimension-limit       bit-xor       cadadr                    
-  array-dimensions            block         cadar                     
-  array-displacement          boole         caddar                    
-  array-element-type          boole-1       cadddr                    
-  array-has-fill-pointer-p    boole-2       caddr                     
-  array-in-bounds-p           boole-and     cadr                      
-  array-rank                  boole-andc1   call-arguments-limit      
-  array-rank-limit            boole-andc2   call-method               
-  array-row-major-index       boole-c1      call-next-method          
-  array-total-size            boole-c2      car                       
-  array-total-size-limit      boole-clr     case                      
-  arrayp                      boole-eqv     catch                     
-  ash                         boole-ior     ccase                     
-  asin                        boole-nand    cdaaar                    
-  asinh                       boole-nor     cdaadr                    
-  assert                      boole-orc1    cdaar                     
-  assoc                       boole-orc2    cdadar                    
-  assoc-if                    boole-set     cdaddr                    
-  assoc-if-not                boole-xor     cdadr                     
-  atan                        boolean       cdar                      
-  atanh                       both-case-p   cddaar                    
+  adjoin                      atom          boundp
+  adjust-array                base-char     break
+  adjustable-array-p          base-string   broadcast-stream
+  allocate-instance           bignum        broadcast-stream-streams
+  alpha-char-p                bit           built-in-class
+  alphanumericp               bit-and       butlast
+  and                         bit-andc1     byte
+  append                      bit-andc2     byte-position
+  apply                       bit-eqv       byte-size
+  apropos                     bit-ior       caaaar
+  apropos-list                bit-nand      caaadr
+  aref                        bit-nor       caaar
+  arithmetic-error            bit-not       caadar
+  arithmetic-error-operands   bit-orc1      caaddr
+  arithmetic-error-operation  bit-orc2      caadr
+  array                       bit-vector    caar
+  array-dimension             bit-vector-p  cadaar
+  array-dimension-limit       bit-xor       cadadr
+  array-dimensions            block         cadar
+  array-displacement          boole         caddar
+  array-element-type          boole-1       cadddr
+  array-has-fill-pointer-p    boole-2       caddr
+  array-in-bounds-p           boole-and     cadr
+  array-rank                  boole-andc1   call-arguments-limit
+  array-rank-limit            boole-andc2   call-method
+  array-row-major-index       boole-c1      call-next-method
+  array-total-size            boole-c2      car
+  array-total-size-limit      boole-clr     case
+  arrayp                      boole-eqv     catch
+  ash                         boole-ior     ccase
+  asin                        boole-nand    cdaaar
+  asinh                       boole-nor     cdaadr
+  assert                      boole-orc1    cdaar
+  assoc                       boole-orc2    cdadar
+  assoc-if                    boole-set     cdaddr
+  assoc-if-not                boole-xor     cdadr
+  atan                        boolean       cdar
+  atanh                       both-case-p   cddaar
 
 ;   Figure 1-5: Symbols in the COMMON-LISP package (part two of twelve).
 
 
-  cddadr             clear-input                  copy-tree                  
-  cddar              clear-output                 cos                        
-  cdddar             close                        cosh                       
-  cddddr             clrhash                      count                      
-  cdddr              code-char                    count-if                   
-  cddr               coerce                       count-if-not               
-  cdr                compilation-speed            ctypecase                  
-  ceiling            compile                      debug                      
-  cell-error         compile-file                 decf                       
-  cell-error-name    compile-file-pathname        declaim                    
-  cerror             compiled-function            declaration                
-  change-class       compiled-function-p          declare                    
-  char               compiler-macro               decode-float               
-  char-code          compiler-macro-function      decode-universal-time      
-  char-code-limit    complement                   defclass                   
-  char-downcase      complex                      defconstant                
-  char-equal         complexp                     defgeneric                 
-  char-greaterp      compute-applicable-methods   define-compiler-macro      
-  char-int           compute-restarts             define-condition           
-  char-lessp         concatenate                  define-method-combination  
-  char-name          concatenated-stream          define-modify-macro        
-  char-not-equal     concatenated-stream-streams  define-setf-expander       
-  char-not-greaterp  cond                         define-symbol-macro        
-  char-not-lessp     condition                    defmacro                   
-  char-upcase        conjugate                    defmethod                  
-  char/=             cons                         defpackage                 
-  char<              consp                        defparameter               
-  char<=             constantly                   defsetf                    
-  char=              constantp                    defstruct                  
-  char>              continue                     deftype                    
-  char>=             control-error                defun                      
-  character          copy-alist                   defvar                     
-  characterp         copy-list                    delete                     
-  check-type         copy-pprint-dispatch         delete-duplicates          
-  cis                copy-readtable               delete-file                
-  class              copy-seq                     delete-if                  
-  class-name         copy-structure               delete-if-not              
-  class-of           copy-symbol                  delete-package             
+  cddadr             clear-input                  copy-tree
+  cddar              clear-output                 cos
+  cdddar             close                        cosh
+  cddddr             clrhash                      count
+  cdddr              code-char                    count-if
+  cddr               coerce                       count-if-not
+  cdr                compilation-speed            ctypecase
+  ceiling            compile                      debug
+  cell-error         compile-file                 decf
+  cell-error-name    compile-file-pathname        declaim
+  cerror             compiled-function            declaration
+  change-class       compiled-function-p          declare
+  char               compiler-macro               decode-float
+  char-code          compiler-macro-function      decode-universal-time
+  char-code-limit    complement                   defclass
+  char-downcase      complex                      defconstant
+  char-equal         complexp                     defgeneric
+  char-greaterp      compute-applicable-methods   define-compiler-macro
+  char-int           compute-restarts             define-condition
+  char-lessp         concatenate                  define-method-combination
+  char-name          concatenated-stream          define-modify-macro
+  char-not-equal     concatenated-stream-streams  define-setf-expander
+  char-not-greaterp  cond                         define-symbol-macro
+  char-not-lessp     condition                    defmacro
+  char-upcase        conjugate                    defmethod
+  char/=             cons                         defpackage
+  char<              consp                        defparameter
+  char<=             constantly                   defsetf
+  char=              constantp                    defstruct
+  char>              continue                     deftype
+  char>=             control-error                defun
+  character          copy-alist                   defvar
+  characterp         copy-list                    delete
+  check-type         copy-pprint-dispatch         delete-duplicates
+  cis                copy-readtable               delete-file
+  class              copy-seq                     delete-if
+  class-name         copy-structure               delete-if-not
+  class-of           copy-symbol                  delete-package
 
-;     Figure 1-6: Symbols in the COMMON-LISP package (part three of twelve).  
+;     Figure 1-6: Symbols in the COMMON-LISP package (part three of twelve).
 
 
-  denominator                    eq                   
-  deposit-field                  eql                  
-  describe                       equal                
-  describe-object                equalp               
-  destructuring-bind             error                
-  digit-char                     etypecase            
-  digit-char-p                   eval                 
-  directory                      eval-when            
-  directory-namestring           evenp                
-  disassemble                    every                
-  division-by-zero               exp                  
-  do                             export               
-  do*                            expt                 
-  do-all-symbols                 extended-char        
-  do-external-symbols            fboundp              
-  do-symbols                     fceiling             
-  documentation                  fdefinition          
-  dolist                         ffloor               
-  dotimes                        fifth                
-  double-float                   file-author          
-  double-float-epsilon           file-error           
-  double-float-negative-epsilon  file-error-pathname  
-  dpb                            file-length          
-  dribble                        file-namestring      
-  dynamic-extent                 file-position        
-  ecase                          file-stream          
-  echo-stream                    file-string-length   
-  echo-stream-input-stream       file-write-date      
-  echo-stream-output-stream      fill                 
-  ed                             fill-pointer         
-  eighth                         find                 
-  elt                            find-all-symbols     
-  encode-universal-time          find-class           
-  end-of-file                    find-if              
-  endp                           find-if-not          
-  enough-namestring              find-method          
-  ensure-directories-exist       find-package         
-  ensure-generic-function        find-restart         
+  denominator                    eq
+  deposit-field                  eql
+  describe                       equal
+  describe-object                equalp
+  destructuring-bind             error
+  digit-char                     etypecase
+  digit-char-p                   eval
+  directory                      eval-when
+  directory-namestring           evenp
+  disassemble                    every
+  division-by-zero               exp
+  do                             export
+  do*                            expt
+  do-all-symbols                 extended-char
+  do-external-symbols            fboundp
+  do-symbols                     fceiling
+  documentation                  fdefinition
+  dolist                         ffloor
+  dotimes                        fifth
+  double-float                   file-author
+  double-float-epsilon           file-error
+  double-float-negative-epsilon  file-error-pathname
+  dpb                            file-length
+  dribble                        file-namestring
+  dynamic-extent                 file-position
+  ecase                          file-stream
+  echo-stream                    file-string-length
+  echo-stream-input-stream       file-write-date
+  echo-stream-output-stream      fill
+  ed                             fill-pointer
+  eighth                         find
+  elt                            find-all-symbols
+  encode-universal-time          find-class
+  end-of-file                    find-if
+  endp                           find-if-not
+  enough-namestring              find-method
+  ensure-directories-exist       find-package
+  ensure-generic-function        find-restart
 
 ;   Figure 1-7: Symbols in the COMMON-LISP package (part four of twelve).
 
 
-  find-symbol                       get-internal-run-time        
-  finish-output                     get-macro-character          
-  first                             get-output-stream-string     
-  fixnum                            get-properties               
-  flet                              get-setf-expansion           
-  float                             get-universal-time           
-  float-digits                      getf                         
-  float-precision                   gethash                      
-  float-radix                       go                           
-  float-sign                        graphic-char-p               
-  floating-point-inexact            handler-bind                 
-  floating-point-invalid-operation  handler-case                 
-  floating-point-overflow           hash-table                   
-  floating-point-underflow          hash-table-count             
-  floatp                            hash-table-p                 
-  floor                             hash-table-rehash-size       
-  fmakunbound                       hash-table-rehash-threshold  
-  force-output                      hash-table-size              
-  format                            hash-table-test              
-  formatter                         host-namestring              
-  fourth                            identity                     
-  fresh-line                        if                           
-  fround                            ignorable                    
-  ftruncate                         ignore                       
-  ftype                             ignore-errors                
-  funcall                           imagpart                     
-  function                          import                       
-  function-keywords                 in-package                   
-  function-lambda-expression        incf                         
-  functionp                         initialize-instance          
-  gcd                               inline                       
-  generic-function                  input-stream-p               
-  gensym                            inspect                      
-  gentemp                           integer                      
-  get                               integer-decode-float         
-  get-decoded-time                  integer-length               
-  get-dispatch-macro-character      integerp                     
-  get-internal-real-time            interactive-stream-p         
+  find-symbol                       get-internal-run-time
+  finish-output                     get-macro-character
+  first                             get-output-stream-string
+  fixnum                            get-properties
+  flet                              get-setf-expansion
+  float                             get-universal-time
+  float-digits                      getf
+  float-precision                   gethash
+  float-radix                       go
+  float-sign                        graphic-char-p
+  floating-point-inexact            handler-bind
+  floating-point-invalid-operation  handler-case
+  floating-point-overflow           hash-table
+  floating-point-underflow          hash-table-count
+  floatp                            hash-table-p
+  floor                             hash-table-rehash-size
+  fmakunbound                       hash-table-rehash-threshold
+  force-output                      hash-table-size
+  format                            hash-table-test
+  formatter                         host-namestring
+  fourth                            identity
+  fresh-line                        if
+  fround                            ignorable
+  ftruncate                         ignore
+  ftype                             ignore-errors
+  funcall                           imagpart
+  function                          import
+  function-keywords                 in-package
+  function-lambda-expression        incf
+  functionp                         initialize-instance
+  gcd                               inline
+  generic-function                  input-stream-p
+  gensym                            inspect
+  gentemp                           integer
+  get                               integer-decode-float
+  get-decoded-time                  integer-length
+  get-dispatch-macro-character      integerp
+  get-internal-real-time            interactive-stream-p
 
 ;   Figure 1-8: Symbols in the COMMON-LISP package (part five of twelve).
 
 
-  intern                                  lisp-implementation-type            
-  internal-time-units-per-second          lisp-implementation-version         
-  intersection                            list                                
-  invalid-method-error                    list*                               
-  invoke-debugger                         list-all-packages                   
-  invoke-restart                          list-length                         
-  invoke-restart-interactively            listen                              
-  isqrt                                   listp                               
-  keyword                                 load                                
-  keywordp                                load-logical-pathname-translations  
-  labels                                  load-time-value                     
-  lambda                                  locally                             
-  lambda-list-keywords                    log                                 
-  lambda-parameters-limit                 logand                              
-  last                                    logandc1                            
-  lcm                                     logandc2                            
-  ldb                                     logbitp                             
-  ldb-test                                logcount                            
-  ldiff                                   logeqv                              
-  least-negative-double-float             logical-pathname                    
-  least-negative-long-float               logical-pathname-translations       
-  least-negative-normalized-double-float  logior                              
-  least-negative-normalized-long-float    lognand                             
-  least-negative-normalized-short-float   lognor                              
-  least-negative-normalized-single-float  lognot                              
-  least-negative-short-float              logorc1                             
-  least-negative-single-float             logorc2                             
-  least-positive-double-float             logtest                             
-  least-positive-long-float               logxor                              
-  least-positive-normalized-double-float  long-float                          
-  least-positive-normalized-long-float    long-float-epsilon                  
-  least-positive-normalized-short-float   long-float-negative-epsilon         
-  least-positive-normalized-single-float  long-site-name                      
-  least-positive-short-float              loop                                
-  least-positive-single-float             loop-finish                         
-  length                                  lower-case-p                        
-  let                                     machine-instance                    
-  let*                                    machine-type                        
+  intern                                  lisp-implementation-type
+  internal-time-units-per-second          lisp-implementation-version
+  intersection                            list
+  invalid-method-error                    list*
+  invoke-debugger                         list-all-packages
+  invoke-restart                          list-length
+  invoke-restart-interactively            listen
+  isqrt                                   listp
+  keyword                                 load
+  keywordp                                load-logical-pathname-translations
+  labels                                  load-time-value
+  lambda                                  locally
+  lambda-list-keywords                    log
+  lambda-parameters-limit                 logand
+  last                                    logandc1
+  lcm                                     logandc2
+  ldb                                     logbitp
+  ldb-test                                logcount
+  ldiff                                   logeqv
+  least-negative-double-float             logical-pathname
+  least-negative-long-float               logical-pathname-translations
+  least-negative-normalized-double-float  logior
+  least-negative-normalized-long-float    lognand
+  least-negative-normalized-short-float   lognor
+  least-negative-normalized-single-float  lognot
+  least-negative-short-float              logorc1
+  least-negative-single-float             logorc2
+  least-positive-double-float             logtest
+  least-positive-long-float               logxor
+  least-positive-normalized-double-float  long-float
+  least-positive-normalized-long-float    long-float-epsilon
+  least-positive-normalized-short-float   long-float-negative-epsilon
+  least-positive-normalized-single-float  long-site-name
+  least-positive-short-float              loop
+  least-positive-single-float             loop-finish
+  length                                  lower-case-p
+  let                                     machine-instance
+  let*                                    machine-type
 
-;      Figure 1-9: Symbols in the COMMON-LISP package (part six of twelve).    
+;      Figure 1-9: Symbols in the COMMON-LISP package (part six of twelve).
 
 
-  machine-version                mask-field                  
-  macro-function                 max                         
-  macroexpand                    member                      
-  macroexpand-1                  member-if                   
-  macrolet                       member-if-not               
-  make-array                     merge                       
-  make-broadcast-stream          merge-pathnames             
-  make-concatenated-stream       method                      
-  make-condition                 method-combination          
-  make-dispatch-macro-character  method-combination-error    
-  make-echo-stream               method-qualifiers           
-  make-hash-table                min                         
-  make-instance                  minusp                      
-  make-instances-obsolete        mismatch                    
-  make-list                      mod                         
-  make-load-form                 most-negative-double-float  
-  make-load-form-saving-slots    most-negative-fixnum        
-  make-method                    most-negative-long-float    
-  make-package                   most-negative-short-float   
-  make-pathname                  most-negative-single-float  
-  make-random-state              most-positive-double-float  
-  make-sequence                  most-positive-fixnum        
-  make-string                    most-positive-long-float    
-  make-string-input-stream       most-positive-short-float   
-  make-string-output-stream      most-positive-single-float  
-  make-symbol                    muffle-warning              
-  make-synonym-stream            multiple-value-bind         
-  make-two-way-stream            multiple-value-call         
-  makunbound                     multiple-value-list         
-  map                            multiple-value-prog1        
-  map-into                       multiple-value-setq         
-  mapc                           multiple-values-limit       
-  mapcan                         name-char                   
-  mapcar                         namestring                  
-  mapcon                         nbutlast                    
-  maphash                        nconc                       
-  mapl                           next-method-p               
-  maplist                        nil                         
+  machine-version                mask-field
+  macro-function                 max
+  macroexpand                    member
+  macroexpand-1                  member-if
+  macrolet                       member-if-not
+  make-array                     merge
+  make-broadcast-stream          merge-pathnames
+  make-concatenated-stream       method
+  make-condition                 method-combination
+  make-dispatch-macro-character  method-combination-error
+  make-echo-stream               method-qualifiers
+  make-hash-table                min
+  make-instance                  minusp
+  make-instances-obsolete        mismatch
+  make-list                      mod
+  make-load-form                 most-negative-double-float
+  make-load-form-saving-slots    most-negative-fixnum
+  make-method                    most-negative-long-float
+  make-package                   most-negative-short-float
+  make-pathname                  most-negative-single-float
+  make-random-state              most-positive-double-float
+  make-sequence                  most-positive-fixnum
+  make-string                    most-positive-long-float
+  make-string-input-stream       most-positive-short-float
+  make-string-output-stream      most-positive-single-float
+  make-symbol                    muffle-warning
+  make-synonym-stream            multiple-value-bind
+  make-two-way-stream            multiple-value-call
+  makunbound                     multiple-value-list
+  map                            multiple-value-prog1
+  map-into                       multiple-value-setq
+  mapc                           multiple-values-limit
+  mapcan                         name-char
+  mapcar                         namestring
+  mapcon                         nbutlast
+  maphash                        nconc
+  mapl                           next-method-p
+  maplist                        nil
 
 ;   Figure 1-10: Symbols in the COMMON-LISP package (part seven of twelve).
 
 
-  nintersection         package-error                  
-  ninth                 package-error-package          
-  no-applicable-method  package-name                   
-  no-next-method        package-nicknames              
-  not                   package-shadowing-symbols      
-  notany                package-use-list               
-  notevery              package-used-by-list           
-  notinline             packagep                       
-  nreconc               pairlis                        
-  nreverse              parse-error                    
-  nset-difference       parse-integer                  
-  nset-exclusive-or     parse-namestring               
-  nstring-capitalize    pathname                       
-  nstring-downcase      pathname-device                
-  nstring-upcase        pathname-directory             
-  nsublis               pathname-host                  
-  nsubst                pathname-match-p               
-  nsubst-if             pathname-name                  
-  nsubst-if-not         pathname-type                  
-  nsubstitute           pathname-version               
-  nsubstitute-if        pathnamep                      
-  nsubstitute-if-not    peek-char                      
-  nth                   phase                          
-  nth-value             pi                             
-  nthcdr                plusp                          
-  null                  pop                            
-  number                position                       
-  numberp               position-if                    
-  numerator             position-if-not                
-  nunion                pprint                         
-  oddp                  pprint-dispatch                
-  open                  pprint-exit-if-list-exhausted  
-  open-stream-p         pprint-fill                    
-  optimize              pprint-indent                  
-  or                    pprint-linear                  
-  otherwise             pprint-logical-block           
-  output-stream-p       pprint-newline                 
-  package               pprint-pop                     
+  nintersection         package-error
+  ninth                 package-error-package
+  no-applicable-method  package-name
+  no-next-method        package-nicknames
+  not                   package-shadowing-symbols
+  notany                package-use-list
+  notevery              package-used-by-list
+  notinline             packagep
+  nreconc               pairlis
+  nreverse              parse-error
+  nset-difference       parse-integer
+  nset-exclusive-or     parse-namestring
+  nstring-capitalize    pathname
+  nstring-downcase      pathname-device
+  nstring-upcase        pathname-directory
+  nsublis               pathname-host
+  nsubst                pathname-match-p
+  nsubst-if             pathname-name
+  nsubst-if-not         pathname-type
+  nsubstitute           pathname-version
+  nsubstitute-if        pathnamep
+  nsubstitute-if-not    peek-char
+  nth                   phase
+  nth-value             pi
+  nthcdr                plusp
+  null                  pop
+  number                position
+  numberp               position-if
+  numerator             position-if-not
+  nunion                pprint
+  oddp                  pprint-dispatch
+  open                  pprint-exit-if-list-exhausted
+  open-stream-p         pprint-fill
+  optimize              pprint-indent
+  or                    pprint-linear
+  otherwise             pprint-logical-block
+  output-stream-p       pprint-newline
+  package               pprint-pop
 
 ;   Figure 1-11: Symbols in the COMMON-LISP package (part eight of twelve).
 
 
-  pprint-tab                 read-char                   
-  pprint-tabular             read-char-no-hang           
-  prin1                      read-delimited-list         
-  prin1-to-string            read-from-string            
-  princ                      read-line                   
-  princ-to-string            read-preserving-whitespace  
-  print                      read-sequence               
-  print-not-readable         reader-error                
-  print-not-readable-object  readtable                   
-  print-object               readtable-case              
-  print-unreadable-object    readtablep                  
-  probe-file                 real                        
-  proclaim                   realp                       
-  prog                       realpart                    
-  prog*                      reduce                      
-  prog1                      reinitialize-instance       
-  prog2                      rem                         
-  progn                      remf                        
-  program-error              remhash                     
-  progv                      remove                      
-  provide                    remove-duplicates           
-  psetf                      remove-if                   
-  psetq                      remove-if-not               
-  push                       remove-method               
-  pushnew                    remprop                     
-  quote                      rename-file                 
-  random                     rename-package              
-  random-state               replace                     
-  random-state-p             require                     
-  rassoc                     rest                        
-  rassoc-if                  restart                     
-  rassoc-if-not              restart-bind                
-  ratio                      restart-case                
-  rational                   restart-name                
-  rationalize                return                      
-  rationalp                  return-from                 
-  read                       revappend                   
-  read-byte                  reverse                     
+  pprint-tab                 read-char
+  pprint-tabular             read-char-no-hang
+  prin1                      read-delimited-list
+  prin1-to-string            read-from-string
+  princ                      read-line
+  princ-to-string            read-preserving-whitespace
+  print                      read-sequence
+  print-not-readable         reader-error
+  print-not-readable-object  readtable
+  print-object               readtable-case
+  print-unreadable-object    readtablep
+  probe-file                 real
+  proclaim                   realp
+  prog                       realpart
+  prog*                      reduce
+  prog1                      reinitialize-instance
+  prog2                      rem
+  progn                      remf
+  program-error              remhash
+  progv                      remove
+  provide                    remove-duplicates
+  psetf                      remove-if
+  psetq                      remove-if-not
+  push                       remove-method
+  pushnew                    remprop
+  quote                      rename-file
+  random                     rename-package
+  random-state               replace
+  random-state-p             require
+  rassoc                     rest
+  rassoc-if                  restart
+  rassoc-if-not              restart-bind
+  ratio                      restart-case
+  rational                   restart-name
+  rationalize                return
+  rationalp                  return-from
+  read                       revappend
+  read-byte                  reverse
 
 ;   Figure 1-12: Symbols in the COMMON-LISP package (part nine of twelve).
 
 
-  room                          simple-bit-vector                  
-  rotatef                       simple-bit-vector-p                
-  round                         simple-condition                   
-  row-major-aref                simple-condition-format-arguments  
-  rplaca                        simple-condition-format-control    
-  rplacd                        simple-error                       
-  safety                        simple-string                      
-  satisfies                     simple-string-p                    
-  sbit                          simple-type-error                  
-  scale-float                   simple-vector                      
-  schar                         simple-vector-p                    
-  search                        simple-warning                     
-  second                        sin                                
-  sequence                      single-float                       
-  serious-condition             single-float-epsilon               
-  set                           single-float-negative-epsilon      
-  set-difference                sinh                               
-  set-dispatch-macro-character  sixth                              
-  set-exclusive-or              sleep                              
-  set-macro-character           slot-boundp                        
-  set-pprint-dispatch           slot-exists-p                      
-  set-syntax-from-char          slot-makunbound                    
-  setf                          slot-missing                       
-  setq                          slot-unbound                       
-  seventh                       slot-value                         
-  shadow                        software-type                      
-  shadowing-import              software-version                   
-  shared-initialize             some                               
-  shiftf                        sort                               
-  short-float                   space                              
-  short-float-epsilon           special                            
-  short-float-negative-epsilon  special-operator-p                 
-  short-site-name               speed                              
-  signal                        sqrt                               
-  signed-byte                   stable-sort                        
-  signum                        standard                           
-  simple-array                  standard-char                      
-  simple-base-string            standard-char-p                    
+  room                          simple-bit-vector
+  rotatef                       simple-bit-vector-p
+  round                         simple-condition
+  row-major-aref                simple-condition-format-arguments
+  rplaca                        simple-condition-format-control
+  rplacd                        simple-error
+  safety                        simple-string
+  satisfies                     simple-string-p
+  sbit                          simple-type-error
+  scale-float                   simple-vector
+  schar                         simple-vector-p
+  search                        simple-warning
+  second                        sin
+  sequence                      single-float
+  serious-condition             single-float-epsilon
+  set                           single-float-negative-epsilon
+  set-difference                sinh
+  set-dispatch-macro-character  sixth
+  set-exclusive-or              sleep
+  set-macro-character           slot-boundp
+  set-pprint-dispatch           slot-exists-p
+  set-syntax-from-char          slot-makunbound
+  setf                          slot-missing
+  setq                          slot-unbound
+  seventh                       slot-value
+  shadow                        software-type
+  shadowing-import              software-version
+  shared-initialize             some
+  shiftf                        sort
+  short-float                   space
+  short-float-epsilon           special
+  short-float-negative-epsilon  special-operator-p
+  short-site-name               speed
+  signal                        sqrt
+  signed-byte                   stable-sort
+  signum                        standard
+  simple-array                  standard-char
+  simple-base-string            standard-char-p
 
 ;   Figure 1-13: Symbols in the COMMON-LISP package (part ten of twelve).
 
 
-  standard-class             sublis                      
-  standard-generic-function  subseq                      
-  standard-method            subsetp                     
-  standard-object            subst                       
-  step                       subst-if                    
-  storage-condition          subst-if-not                
-  store-value                substitute                  
-  stream                     substitute-if               
-  stream-element-type        substitute-if-not           
-  stream-error               subtypep                    
-  stream-error-stream        svref                       
-  stream-external-format     sxhash                      
-  streamp                    symbol                      
-  string                     symbol-function             
-  string-capitalize          symbol-macrolet             
-  string-downcase            symbol-name                 
-  string-equal               symbol-package              
-  string-greaterp            symbol-plist                
-  string-left-trim           symbol-value                
-  string-lessp               symbolp                     
-  string-not-equal           synonym-stream              
-  string-not-greaterp        synonym-stream-symbol       
-  string-not-lessp           t                           
-  string-right-trim          tagbody                     
-  string-stream              tailp                       
-  string-trim                tan                         
-  string-upcase              tanh                        
-  string/=                   tenth                       
-  string<                    terpri                      
-  string<=                   the                         
-  string=                    third                       
-  string>                    throw                       
-  string>=                   time                        
-  stringp                    trace                       
-  structure                  translate-logical-pathname  
-  structure-class            translate-pathname          
-  structure-object           tree-equal                  
-  style-warning              truename                    
+  standard-class             sublis
+  standard-generic-function  subseq
+  standard-method            subsetp
+  standard-object            subst
+  step                       subst-if
+  storage-condition          subst-if-not
+  store-value                substitute
+  stream                     substitute-if
+  stream-element-type        substitute-if-not
+  stream-error               subtypep
+  stream-error-stream        svref
+  stream-external-format     sxhash
+  streamp                    symbol
+  string                     symbol-function
+  string-capitalize          symbol-macrolet
+  string-downcase            symbol-name
+  string-equal               symbol-package
+  string-greaterp            symbol-plist
+  string-left-trim           symbol-value
+  string-lessp               symbolp
+  string-not-equal           synonym-stream
+  string-not-greaterp        synonym-stream-symbol
+  string-not-lessp           t
+  string-right-trim          tagbody
+  string-stream              tailp
+  string-trim                tan
+  string-upcase              tanh
+  string/=                   tenth
+  string<                    terpri
+  string<=                   the
+  string=                    third
+  string>                    throw
+  string>=                   time
+  stringp                    trace
+  structure                  translate-logical-pathname
+  structure-class            translate-pathname
+  structure-object           tree-equal
+  style-warning              truename
 
 ;   Figure 1-14: Symbols in the COMMON-LISP package (part eleven of twelve).
 
 
-  truncate                             values-list               
-  two-way-stream                       variable                  
-  two-way-stream-input-stream          vector                    
-  two-way-stream-output-stream         vector-pop                
-  type                                 vector-push               
-  type-error                           vector-push-extend        
-  type-error-datum                     vectorp                   
-  type-error-expected-type             warn                      
-  type-of                              warning                   
-  typecase                             when                      
-  typep                                wild-pathname-p           
-  unbound-slot                         with-accessors            
-  unbound-slot-instance                with-compilation-unit     
-  unbound-variable                     with-condition-restarts   
-  undefined-function                   with-hash-table-iterator  
-  unexport                             with-input-from-string    
-  unintern                             with-open-file            
-  union                                with-open-stream          
-  unless                               with-output-to-string     
-  unread-char                          with-package-iterator     
-  unsigned-byte                        with-simple-restart       
-  untrace                              with-slots                
-  unuse-package                        with-standard-io-syntax   
-  unwind-protect                       write                     
-  update-instance-for-different-class  write-byte                
-  update-instance-for-redefined-class  write-char                
-  upgraded-array-element-type          write-line                
-  upgraded-complex-part-type           write-sequence            
-  upper-case-p                         write-string              
-  use-package                          write-to-string           
-  use-value                            y-or-n-p                  
-  user-homedir-pathname                yes-or-no-p               
-  values                               zerop                     
+  truncate                             values-list
+  two-way-stream                       variable
+  two-way-stream-input-stream          vector
+  two-way-stream-output-stream         vector-pop
+  type                                 vector-push
+  type-error                           vector-push-extend
+  type-error-datum                     vectorp
+  type-error-expected-type             warn
+  type-of                              warning
+  typecase                             when
+  typep                                wild-pathname-p
+  unbound-slot                         with-accessors
+  unbound-slot-instance                with-compilation-unit
+  unbound-variable                     with-condition-restarts
+  undefined-function                   with-hash-table-iterator
+  unexport                             with-input-from-string
+  unintern                             with-open-file
+  union                                with-open-stream
+  unless                               with-output-to-string
+  unread-char                          with-package-iterator
+  unsigned-byte                        with-simple-restart
+  untrace                              with-slots
+  unuse-package                        with-standard-io-syntax
+  unwind-protect                       write
+  update-instance-for-different-class  write-byte
+  update-instance-for-redefined-class  write-char
+  upgraded-array-element-type          write-line
+  upgraded-complex-part-type           write-sequence
+  upper-case-p                         write-string
+  use-package                          write-to-string
+  use-value                            y-or-n-p
+  user-homedir-pathname                yes-or-no-p
+  values                               zerop
 
 ;   Figure 1-15: Symbols in the COMMON-LISP package (part twelve of twelve).
 ))
@@ -704,18 +704,18 @@
 ; those catches by avoiding the use of FOO:: in wit1.lisp and wit2.lisp.
 
 ; ;;; file top.lisp
-; 
+;
 ;   (in-package "ACL2")
-; 
+;
 ;   (include-book "wit1")
 ;   (include-book "wit2")
-; 
+;
 ;   ; The idea:
 ;   ; (wit1) = (wit2) by symbol-equality
 ;   ; But by evaluation (see wit1-prop and wit2-prop in the included books):
 ;   ;   (symbol-package-name (intern-in-package-of-symbol "B" (wit1))) = "FOO"
 ;   ;   (symbol-package-name (intern-in-package-of-symbol "B" (wit2))) = "ACL2"
-; 
+;
 ;   (defthm bug
 ;     nil
 ;     :hints (("Goal" :use (wit1-prop
@@ -724,13 +724,13 @@
 ;                                      (s1 (wit1))
 ;                                      (s2 (wit2))))))
 ;     :rule-classes nil)
-; 
+;
 ; ;;; file wit1.lisp
-; 
+;
 ;   (in-package "ACL2")
-; 
+;
 ;   (local (include-book "sub1"))
-; 
+;
 ;   (encapsulate
 ;    ((wit1 () t))
 ;    (local (defun wit1 () (sub1)))
@@ -743,14 +743,14 @@
 ;                   (intern-in-package-of-symbol "B" (wit1)))
 ;                  "FOO"))
 ;      :rule-classes nil))
-; 
+;
 ; ;;; file sub1.lisp
-; 
+;
 ;   (in-package "ACL2")
-; 
+;
 ;   ; Portcullis:
 ;   ; (defpkg "FOO" nil)
-; 
+;
 ;   (encapsulate
 ;    ((sub1 () t))
 ;    (local (defun sub1 () 'foo::a))
@@ -761,13 +761,13 @@
 ;           (equal (symbol-package-name
 ;                   (intern-in-package-of-symbol "B" (sub1)))
 ;                  "FOO"))))
-; 
+;
 ; ;;; file wit2.lisp
-; 
+;
 ;   (in-package "ACL2")
-; 
+;
 ;   (local (include-book "sub2"))
-; 
+;
 ;   (encapsulate
 ;    ((wit2 () t))
 ;    (local (defun wit2 () (sub2)))
@@ -780,14 +780,14 @@
 ;                   (intern-in-package-of-symbol "B" (wit2)))
 ;                  "ACL2"))
 ;      :rule-classes nil))
-; 
+;
 ; ;;; file sub2.lisp
-; 
+;
 ;   (in-package "ACL2")
-; 
+;
 ;   ; Portcullis:
 ;   ; (defpkg "FOO" '(b))
-; 
+;
 ;   (encapsulate
 ;    ((sub2 () t))
 ;    (local (defun sub2 () 'foo::a))
@@ -798,16 +798,16 @@
 ;           (equal (symbol-package-name
 ;                   (intern-in-package-of-symbol "B" (sub2)))
 ;                  "ACL2"))))
-; 
+;
 ; ;;; file sub1.acl2 (portcullis for sub1.lisp)
-; 
+;
 ;   (value :q)
 ;   (lp)
 ;   (defpkg "FOO" nil)
 ;   (certify-book "sub1" 1)
-; 
+;
 ; ;;; file sub2.acl2 (portcullis for sub2.lisp)
-; 
+;
 ;   (value :q)
 ;   (lp)
 ;   (defpkg "FOO" '(b))
@@ -3217,9 +3217,9 @@
 ; (proclaim-form
 ;  (defun test1 (n)
 ;    (loop for i from 1 to n do (strip-cars test-lst))))
-; 
+;
 ; (compile 'test1)
-; 
+;
 ; (time (test1 30))
 
 ; Now the obvious tail recursive version of strip-cars is:
@@ -3229,15 +3229,15 @@
 ;    (if (endp x)
 ;        (reverse a)
 ;      (strip-cars2 (cdr x) (cons (car (car x)) a)))))
-; 
+;
 ; (compile 'strip-cars2)
-; 
+;
 ; (proclaim-form
 ;  (defun test2 (n)
 ;    (loop for i from 1 to n do (strip-cars2 test-lst))))
-; 
+;
 ; (compile 'test2)
-; 
+;
 ; (time (test2 30))
 
 ; This function is actually faster than strip-cars: 5.530 seconds!  That is
@@ -3256,15 +3256,15 @@
 ;    (if (endp x)
 ;        (nreverse a)   ;;; Note destructive reverse!
 ;      (strip-cars3 (cdr x) (cons (car (car x)) a)))))
-; 
+;
 ; (compile 'strip-cars3)
-; 
+;
 ; (proclaim-form
 ;  (defun test3 (n)
 ;    (loop for i from 1 to n do (strip-cars3 test-lst))))
-; 
+;
 ; (compile 'test3)
-; 
+;
 ; (time (test3 30))
 
 ; This function takes 2.490 seconds.
@@ -3426,7 +3426,7 @@
            (return-last fn x (mv y z)))
 
   Since FOO is non-recursive, its admission is trivial.  We observe that
-  the type of FOO is described by the theorem 
+  the type of FOO is described by the theorem
   (AND (CONSP (FOO FN X Y Z)) (TRUE-LISTP (FOO FN X Y Z))).  We used
   primitive type reasoning.
 
@@ -3475,7 +3475,7 @@
                                              (+ 3 4)))
   (PROGN (LET ((*AOKP* T)) (CW \"SOME CW PRINTING...~~%\")) (+ 3 4))
   T
-  ? [RAW LISP] 
+  ? [RAW LISP]
   ~ev[]
   Thus, the original ~c[prog2$] call generates a corresponding call of
   ~c[progn] in raw Lisp, which in turn causes evaluation of each argument and
@@ -3530,7 +3530,7 @@
          (CHK-WITH-GUARD-CHECKING-ARG :NONE)))
     (DECLARE (SPECIAL ACL2_GLOBAL_ACL2::GUARD-CHECKING-ON))
     (CAR 3))
-  ? [RAW LISP] 
+  ? [RAW LISP]
   ~ev[]
   The above raw Lisp code binds the state global variable ~c[guard-checking-on]
   to ~c[:none], as ~c[chk-with-guard-checking-arg] is just the identity
@@ -3582,7 +3582,7 @@
                 (LIST 0 NIL NIL NIL NIL)
                 (+ 3 4))
   ACL2 !>(time$ (+ 3 4))
-  ; (EV-REC *RETURN-LAST-ARG3* ...) took 
+  ; (EV-REC *RETURN-LAST-ARG3* ...) took
   ; 0.00 seconds realtime, 0.00 seconds runtime
   ; (1,120 bytes allocated).
   7
@@ -3638,7 +3638,7 @@
   (SET-DEBUGGER-ENABLE T)
   ACL2 !>(top-level (return-last 'mac-raw '3 nil))
 
-  3 
+  3
   NIL
   ACL2 !>
   ~ev[]
@@ -3739,7 +3739,7 @@
                                (MINI-PROVEALL)))
   (WITH-PROFILING-RAW '(ASSOC-EQ FGETPROP REWRITE) (MINI-PROVEALL))
   T
-  ? [RAW LISP] 
+  ? [RAW LISP]
   ~ev[]
   To understand the macro ~c[with-profiling-raw] you could look at the
   community book loaded above: ~c[books/misc/profiling-raw.lsp].
@@ -3800,7 +3800,7 @@
   (defmacro my-time (form)
     `(my-time1 nil ,form))
   ~ev[]
-  Then for example:  
+  Then for example:
   ~bv[]
   ACL2 !>(my-time (equal (make-list 1000000) (make-list 1000000)))
   Total time: 0.12
@@ -3821,7 +3821,7 @@
                            internal-time-units-per-second)))
          result)) ; WRONG -- need multiple values returned!
   ~ev[]
-  
+
   Here is a second, similar example.  This time we'll start with the error; can
   you spot it?
   ~bv[]
@@ -5647,13 +5647,13 @@
 
 
   ACL2 Error in TOP-LEVEL:  The guard for the function call (FOO X Y),
-  which is (CONSP Y), is violated by the arguments in the call 
+  which is (CONSP Y), is violated by the arguments in the call
   (FOO '(4 5) NIL).  To debug see :DOC print-gv, see :DOC trace, and
   see :DOC wet.  See :DOC set-guard-checking for information about suppressing
   this check with (set-guard-checking :none), as recommended for new
   users.
 
-  ACL2 !>  
+  ACL2 !>
   ~ev[]
   The error above arises because eventually, ~c[foo] recurs down to a value of
   parameter ~c[y] that violates the guard.  This is clear from tracing
@@ -5674,7 +5674,7 @@
 
 
   ACL2 Error in TOP-LEVEL:  The guard for the function call (FOO X Y),
-  which is (CONSP Y), is violated by the arguments in the call 
+  which is (CONSP Y), is violated by the arguments in the call
   (FOO '(4 5) NIL).  To debug see :DOC print-gv, see :DOC trace, and
   see :DOC wet.  See :DOC set-guard-checking for information about suppressing
   this check with (set-guard-checking :none), as recommended for new
@@ -7314,7 +7314,7 @@
   list of the form shown below.  Those fields marked with ``(!)''  are required
   when the ~c[:class] is as indicated.
   ~bv[]
-  (:class 
+  (:class
     :COROLLARY term
     :TRIGGER-FNS (fn1 ... fnk) ; provided :class = :META (!)
     :TRIGGER-TERMS (t1 ... tk) ; provided :class = :FORWARD-CHAINING
@@ -7621,7 +7621,7 @@
 
   where ~i[target] is
   (fn x1 ... y1 ...)             in ~i[Form 1], and
-  (mv-nth 'n (fn x1 ... y1 ...)) in ~i[Form 2] 
+  (mv-nth 'n (fn x1 ... y1 ...)) in ~i[Form 2]
 
   ~i[Big Switch]:
   (equal (fn . formals) body)
@@ -7630,14 +7630,14 @@
   (equal (nth-alt x y) (mv-nth x y)) or
   (equal (mv-nth x y) (nth-alt x y))
   ~ev[]
-  
+
   The symbols ~c[p], ~c[q], ~c[p1], etc., denote monadic (one-argument)
   Boolean-valued function symbols, or equalities in which one argument is
   constant, arithmetic comparisons in which one argument is a rational or
   integer constant, or the logical negations of such terms.  By ``equalities''
   we allow ~ilc[EQUAL], ~ilc[EQ], ~ilc[EQL], and ~ilc[=].  By ``arithmetic
   comparison'' we mean ~ilc[<], ~ilc[<=], ~ilc[>=], or ~ilc[>].  Any of
-  these tau predicates may appear negated. 
+  these tau predicates may appear negated.
 
   The notation ~c[(p v)] above might stand for any one of:
   ~bv[]
@@ -8012,7 +8012,7 @@
 ; Warning: If you change these defaults, be sure to change the documentation
 ; topics tau-system and introduction-to-the-tau-system and set-tau-auto-mode
 ; and probably tau-status, where we are likely to say that the default setting
-; the user sees is tau-system on, auto mode on. 
+; the user sees is tau-system on, auto mode on.
 
 (in-theory (if (caar *tau-status-boot-strap-settings*)
                (enable (:executable-counterpart tau-system))
@@ -8100,7 +8100,7 @@
 ;                                (p (+ x 1)))
 ;                           (p x)))
 ;             (p x))
-; 
+;
 
 (defaxiom Integer-0
   (integerp 0)
@@ -8163,7 +8163,7 @@
        (implies (complex-rationalp v) (not (stringp v)))
        (implies (complex-rationalp v) (not (consp v)))
        (implies (complex-rationalp v) (not (symbolp v)))
-       
+
        (implies (characterp v) (not (stringp v)))
        (implies (characterp v) (not (consp v)))
        (implies (characterp v) (not (symbolp v)))
@@ -8184,13 +8184,13 @@
        (booleanp (< x y))
 
        )
-       
+
   :rule-classes :tau-system)
 
 ; ; For each of the primitives we have the axiom that when their guards
 ; ; are unhappy, the result is given by apply.  This is what permits us
 ; ; to replace unguarded terms by apply's.  E.g.,
-; 
+;
 ; (defaxiom +-guard
 ;   (implies (or (not (rationalp x))
 ;                (not (rationalp y)))
@@ -8216,8 +8216,8 @@
 ;                                   (p x)))
 ;                     ----------------------------------------------
 ;                     (p x)
-; 
-; 
+;
+;
 
 (defaxiom booleanp-characterp
   (booleanp (characterp x))
@@ -8547,28 +8547,28 @@
            (equal (coerce (coerce x 'string) 'list) x)))
 
 ; A "historical document" regarding standard characters:
-; 
+;
 ; To: Kaufmann
 ; Subject: over strong axiom
 ; FCC: ~moore/old-mail
 ; --text follows this line--
 ; Axioms.lisp currently contains
-; 
+;
 ; (defaxiom coerce-inverse-2
 ;   (implies (stringp x)
 ;            (equal (coerce (coerce x 'list) 'string) x)))
-; 
+;
 ; But the guard for coerce (when the second argument is 'string) requires the first
 ; argument to be a standard-char-listp.  Thus, unless we know that (coerce x 'list)
 ; returns a standard-char-listp when (stringp x), the guard on the outer coerce is
 ; violated.
-; 
+;
 ; If we are really serious that ACL2 strings may contain nonstandard chars, then
 ; this axiom is too strong.  I will leave this note in axioms.lisp and just go
 ; on.  But when the guard question is settled I would like to return to this and
 ; make explicit our occasional implicit assumption that strings are composed of
 ; standard chars.
-; 
+;
 ; J
 
 (defaxiom coerce-inverse-2
@@ -8600,13 +8600,13 @@
 (in-theory (disable standard-char-listp standard-char-p))
 
 ; (defthm standard-char-listp-coerce-forward-chaining
-; 
+;
 ; ; If (stringp str) is in the context, we want to make a "note" that
 ; ; (coerce str 'list) is a standard-char-listp in case this fact is
 ; ; needed during later backchaining.  We see no need to forward chain
 ; ; from (standard-char-listp (coerce str 'list)), however; the rewrite
 ; ; rule generated here should suffice for relieving any such hypothesis.
-; 
+;
 ;   (implies (stringp str)
 ;            (standard-char-listp (coerce str 'list)))
 ;   :rule-classes ((:forward-chaining :trigger-terms
@@ -10801,7 +10801,7 @@
 ;   (defthm rev-append
 ;     (equal (rev (append a b))
 ;            (append (rev b) (rev a))))
-;   
+;
 ; automatically, doing several generalizations and inductions.
 
   (implies (true-listp b)
@@ -12207,7 +12207,7 @@
 
   ; Turn off all output during evaluation of the indicated thm form.
   (with-output
-   :off :all 
+   :off :all
    :gag-mode nil
    (thm (equal (app (app x y) z) (app x (app y z)))))
 
@@ -12307,7 +12307,7 @@
   (~pl[set-inhibit-output-lst]), the following output is shown:
   ~bv[]
   Since F2 is non-recursive, its admission is trivial.  We observe that
-  the type of F2 is described by the theorem (EQUAL (F2 X) X).  
+  the type of F2 is described by the theorem (EQUAL (F2 X) X).
   ~ev[]
   And then, if ~c[summary] output was not inhibited at the top level, we get
   the rest of this output:
@@ -14229,7 +14229,7 @@
 
   ~c[Floor] is a Common Lisp function.  See any Common Lisp
   documentation for more information.  However, note that unlike Common Lisp,
-  the ACL2 ~c[floor] function returns only a single value, 
+  the ACL2 ~c[floor] function returns only a single value,
 
   To see the ACL2 definition of this function, ~pl[pf].~/"
 
@@ -14288,7 +14288,7 @@
 
   ~c[Ceiling] is a Common Lisp function.  See any Common Lisp documentation for
   more information.  However, note that unlike Common Lisp, the ACL2
-  ~c[ceiling] function returns only a single value, 
+  ~c[ceiling] function returns only a single value,
 
   To see the ACL2 definition of this function, ~pl[pf].~/"
 
@@ -14420,7 +14420,7 @@
 
   ~c[Round] is a Common Lisp function.  See any Common Lisp documentation for
   more information.  However, note that unlike Common Lisp, the ACL2 ~c[round]
-  function returns only a single value, 
+  function returns only a single value,
 
   To see the ACL2 definition of this function, ~pl[pf].~/"
 
@@ -16902,7 +16902,7 @@
   ~c[if]-test conditions and the top-level ~c[:guard].  Thus, for
   ~c[verify-guards] the proof obligation from the body of ~c[f] is as follows.
   ~bv[]
-  (implies 
+  (implies
    (and (consp x) (integerp (car x))) ; from the :guard
    (and t ; from the top-level IF call
         t ; from (rationalp (cdr x))
@@ -21454,7 +21454,7 @@
                     ; - For proving that the constraints on f and h hold for
                     ;   g and j (respectively), use theorem my-thm.
 
-  
+
   (defattach f nil)   ; remove the attachment of f, if any (e.g., g above)
   (defattach (f nil)) ; same as just above~/
 
@@ -22086,9 +22086,9 @@
 ; this code.
 
 ; (defvar fgetprop-stats nil)
-; 
+;
 ; (defvar analyzed-fgetprop-stats nil)
-; 
+;
 ; (compile
 ;  (defun update-fgetprop-stats (sym key)
 ;    (let* ((sym-entry (assoc sym fgetprop-stats :test #'eq))
@@ -22097,7 +22097,7 @@
 ;            (sym-entry (setf (cdr sym-entry) (cons (cons key 1) (cdr sym-entry))))
 ;            (t (setq fgetprop-stats
 ;                     (cons (cons sym (list (cons key 1))) fgetprop-stats)))))))
-; 
+;
 ; (compile
 ;  (defun analyze-fgetprop-stats nil
 ;    (format t "Properties accessed and access counts:~%")
@@ -23589,7 +23589,7 @@
   (+ (f-get-global 'y state) 1)
   (f-put-global 'a
                 (aset1 'ascii-map-array
-                       (f-get-global 'a state) 
+                       (f-get-global 'a state)
                        66
                        'Upper-case-B)
                 state)~/
@@ -23834,15 +23834,15 @@
 ; not to cause problems.
 
 ;   % cat pkg-bug-cmucl.lisp
-;   
+;
 ;   (in-package "CL-USER")
-;   
+;
 ;   (eval-when (:load-toplevel :execute :compile-toplevel)
 ;              (cond ((not (find-package "MYPKG"))
 ;                     (print "*** About to make package ***")
 ;                     (terpri)
 ;                     (make-package "MYPKG" :use nil))))
-;   
+;
 ;   (defparameter *foo* 'mypkg::x)
 ;   % /projects/acl2/lisps/cmucl-19e-linux/bin/cmucl
 ;   CMU Common Lisp 19e (19E), running on kindness
@@ -23853,21 +23853,21 @@
 ;       Python 1.1, target Intel x86
 ;       CLOS based on Gerd's PCL 2004/04/14 03:32:47
 ;   * (load "pkg-bug-cmucl.lisp")
-;   
+;
 ;   ; Loading #P"/v/filer4b/v41q001/kaufmann/temp/pkg-bug-cmucl.lisp".
-;   
-;   "*** About to make package ***" 
+;
+;   "*** About to make package ***"
 ;   T
 ;   * (compile-file "pkg-bug-cmucl.lisp")
-;   
+;
 ;   ; Python version 1.1, VM version Intel x86 on 04 JUL 11 09:57:13 am.
 ;   ; Compiling: /v/filer4b/v41q001/kaufmann/temp/pkg-bug-cmucl.lisp 04 JUL 11 09:56:24 am
-;   
-;   ; Byte Compiling Top-Level Form: 
-;   
+;
+;   ; Byte Compiling Top-Level Form:
+;
 ;   ; pkg-bug-cmucl.x86f written.
 ;   ; Compilation finished in 0:00:00.
-;   
+;
 ;   #P"/v/filer4b/v41q001/kaufmann/temp/pkg-bug-cmucl.x86f"
 ;   NIL
 ;   NIL
@@ -23881,24 +23881,24 @@
 ;       Python 1.1, target Intel x86
 ;       CLOS based on Gerd's PCL 2004/04/14 03:32:47
 ;   * (load "pkg-bug-cmucl.x86f")
-;   
+;
 ;   ; Loading #P"/v/filer4b/v41q001/kaufmann/temp/pkg-bug-cmucl.x86f".
-;   
-;   
+;
+;
 ;   Error in function LISP::FOP-PACKAGE:  The package "MYPKG" does not exist.
 ;      [Condition of type SIMPLE-ERROR]
-;   
+;
 ;   Restarts:
 ;     0: [CONTINUE] Return NIL from load of "pkg-bug-cmucl.x86f".
 ;     1: [ABORT   ] Return to Top-Level.
-;   
+;
 ;   Debug  (type H for help)
-;   
+;
 ;   (LISP::FOP-PACKAGE)
-;   Source: Error finding source: 
+;   Source: Error finding source:
 ;   Error in function DEBUG::GET-FILE-TOP-LEVEL-FORM:  Source file no longer exists:
 ;     target:code/load.lisp.
-;   0] 
+;   0]
 
   #-cmu
   `(when (not (find-package ,name))
@@ -24968,7 +24968,7 @@
   (declare (type (unsigned-byte 31) n))
   #-acl2-loop-only
 ; See comment above (for #+acl2-par) about *acl2-par-arrays-lock*:
-; (with-lock 
+; (with-lock
 ;  *acl2-par-arrays-lock*
   (let ((prop (get-acl2-array-property name)))
     (cond ((eq l (car prop))
@@ -25337,7 +25337,7 @@
   (declare (type (unsigned-byte 31) n))
   #-acl2-loop-only
 ; See comment above (for #+acl2-par) about *acl2-par-arrays-lock*:
-; (with-lock 
+; (with-lock
 ;  *acl2-par-arrays-lock*
   (let ((prop (get-acl2-array-property name)))
     (cond ((eq l (car prop))
@@ -26069,7 +26069,7 @@
         (state (mv-nth 2 (read-object ch state))))
     (value (list erp val)))
   ~ev[]
-  
+
   To see the ACL2 definition of ~c[mv-nth], ~pl[pf].
 
   If ~c[EXPR] is an expression that is multiply valued, then the form
@@ -26526,7 +26526,7 @@
   (mv?-let (var)
            term
            (declare ...) ... (declare ...)
-           body)           
+           body)
   ~ev[]
   and this is equivalent to the following form (~pl[let]).
   ~bv[]
@@ -26969,7 +26969,7 @@
   ACL2 !>(defun foo (x) x)
 
   Since FOO is non-recursive, its admission is trivial.  We observe that
-  the type of FOO is described by the theorem (EQUAL (FOO X) X).  
+  the type of FOO is described by the theorem (EQUAL (FOO X) X).
 
   Summary
   Form:  ( DEFUN FOO ...)
@@ -26995,7 +26995,7 @@
   ACL2 !>(defun foo (x) x)
 
   Since FOO is non-recursive, its admission is trivial.  We observe that
-  the type of FOO is described by the theorem (EQUAL (FOO X) X).  
+  the type of FOO is described by the theorem (EQUAL (FOO X) X).
 
   Summary
   Form:  ( DEFUN FOO ...)
@@ -28084,7 +28084,7 @@
 ;     NIL
 ;     NIL
 ;     ACL2_INVISIBLE::|The Live State Itself|
-;     ? [RAW LISP] 
+;     ? [RAW LISP]
 
 ; The present macro is provided in order to avoid this problem: in raw Lisp
 ; (with-live-state form) binds state to *the-live-state*.  This way, we avoid
@@ -28094,20 +28094,20 @@
 ; certifies in Versions 3.5 and 4.3, and probably all versions inbetween.
 
 ;   (in-package "ACL2")
-;   
+;
 ;   (defun foo (state)
 ;     (declare (xargs :stobjs state))
 ;     (with-live-state state))
-;   
+;
 ;   (defthm thm1
 ;     (equal (caddr (foo (build-state)))
 ;            nil)
 ;     :rule-classes nil)
-;   
+;
 ;   (defthm thm2
 ;     (consp (caddr (build-state)))
 ;     :rule-classes nil)
-;   
+;
 ;   (defthm contradiction
 ;     nil
 ;     :hints (("Goal"
@@ -28324,7 +28324,7 @@
 ; of the list.
 
   ":Doc-Section Parallel-proof
-  
+
   for ACL2(p): returns the default value for global ~c[total-parallelism-work-limit]~/
 
   ~l[set-total-parallelism-work-limit].~/~/"
@@ -28666,7 +28666,7 @@
 
 ; The following variable and functions, mostly defined in raw Lisp should be
 ; redefined to implement an alternative infix syntax.
-; 
+;
 ; (defparameter *parse* ...)
 ; (defun parse-infix-from-terminal (eof) ...)
 ; (defun print-infix (x termp width rpc col file eviscp) ...)
@@ -29590,12 +29590,12 @@
 ;   (skip-proofs
 ;    (defun foo (state)
 ;      (declare (xargs :guard t))
-;      (state-global-let* 
+;      (state-global-let*
 ;       ((x 3))
 ;       (value (f-get-global 'x state)))))
- 
+
 ;   (skip-proofs
-;    (defun bar (state) 
+;    (defun bar (state)
 ;      (declare (xargs :guard t))
 ;      (with-parallelism-hazard-warnings
 ;       (foo state))))
@@ -30479,7 +30479,7 @@
   the values of ~c[op] for ~c[boole$] are ACL2 constants, rather than
   corresponding values of ~c[op] for the Common Lisp function ~c[boole].
   ~bv[]
-  op               result                                      
+  op               result
   -----------      ---------
   *boole-1*        x
   *boole-2*        y
@@ -30645,7 +30645,7 @@
     (fmt1 (string alist col channel state evisc-tuple) (mv col state))
     (fmt1! (string alist col channel state evisc-tuple) (mv col state))
     (cw (string arg0 arg1 ... argn) nil)
-    (get-output-stream-string$ (channel state 
+    (get-output-stream-string$ (channel state
                                 &optional (close-p 't)
                                           (ctx ''get-output-stream-string$))
                                (mv erp string state))
@@ -32785,10 +32785,10 @@
   (defmacro har-zip! (x filename &key sortp)
     \"See :doc hons-archive\"
     `(mv-let (erp val state)
-             (progn! 
+             (progn!
               :state-global-bindings
               ((temp-touchable-vars t set-temp-touchable-vars))
-              (state-global-let* 
+              (state-global-let*
                ((writes-okp t))
                (let ((state (har-zip-fn ,x ,filename ,sortp state)))
                  (mv nil nil state))))
@@ -33231,7 +33231,7 @@
 
 ; Deflock puts lock-symbol into the lock-table, and also defines a macro
 ; WITH-lock-symbol that is really just progn$.  However, if #+acl2-par holds,
-; then deflock also defines a 
+; then deflock also defines a
 
 ; Deflock defines what some Lisps call a "recursive lock", namely a lock that
 ; can be grabbed more than once by the same thread, but such that if a thread
@@ -33246,7 +33246,7 @@
 
   (declare (xargs :guard (lock-symbol-name-p lock-symbol)))
   (let* ((name (symbol-name lock-symbol))
-         (macro-symbol (intern 
+         (macro-symbol (intern
                         (concatenate 'string
                                      "WITH-"
                                      (subseq name 1 (1- (length name))))
@@ -33968,7 +33968,7 @@
 ;    face, it would have to be printed as \FACE or \Face or |FACE|, because the
 ;    token face would be read as a hexadecimal number (decimal value 64206) if
 ;    the value of *read-base* were 16.
-;  
+;
 ; Now, ACL2 never sets the read-base to 10, and indeed it only allows setting
 ; of its own print-base (i.e., state global 'print-base rather than Lisp
 ; variable *print-base*).  Nevertheless we take a conservative interpretation
@@ -33981,21 +33981,21 @@
 
 ;    Table 22-2: Actual Syntax of Numbers
 ;
-;    number ::= integer | ratio | floating-point-number 
-;    integer ::= [sign] {digit}+ [decimal-point] 
-;    ratio ::= [sign] {digit}+ / {digit}+ 
-;    floating-point-number ::= [sign] {digit}* decimal-point {digit}+ [exponent] 
+;    number ::= integer | ratio | floating-point-number
+;    integer ::= [sign] {digit}+ [decimal-point]
+;    ratio ::= [sign] {digit}+ / {digit}+
+;    floating-point-number ::= [sign] {digit}* decimal-point {digit}+ [exponent]
 ;                           | [sign] {digit}+ [decimal-point {digit}*] exponent
-;    sign ::= + | - 
-;    decimal-point ::= . 
-;    digit ::= 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 
-;    exponent ::= exponent-marker [sign] {digit}+  
+;    sign ::= + | -
+;    decimal-point ::= .
+;    digit ::= 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9
+;    exponent ::= exponent-marker [sign] {digit}+
 ;    exponent-marker ::= e | s | f | d | l | E | S | F | D | L
 
 ; But instead of escaping strings that represent numbers, we escape strings
 ; that represent potential numbers.  Quoting again from that same section of
 ; CLtL2:
-;  
+;
 ;    To allow for extensions to the syntax of numbers, a syntax for
 ;    potential numbers is defined in Common Lisp that is more general
 ;    than the actual syntax for numbers. Any token that is not a
@@ -34010,9 +34010,9 @@
 ;    be written using one or more escape characters.)
 ;
 ;    ...
-;  
+;
 ;    A token is a potential number if it satisfies the following requirements:
-;  
+;
 ;        * It consists entirely of digits, signs (+ or -), ratio markers
 ;          (/), decimal points (.), extension characters (^ or _), and
 ;          number markers. (A number marker is a letter. Whether a letter
@@ -34020,14 +34020,14 @@
 ;          letter that is adjacent to another letter may ever be treated
 ;          as a number marker. Floating-point exponent markers are
 ;          instances of number markers.)
-;  
+;
 ;        * It contains at least one digit. (Letters may be considered to
 ;          be digits, depending on the value of *read-base*, but only in
 ;          tokens containing no decimal points.)
-;  
+;
 ;        * It begins with a digit, sign, decimal point, or extension character.
-;  
-;        * It does not end with a sign. 
+;
+;        * It does not end with a sign.
 
 ; Below are examples.
 
@@ -34036,77 +34036,77 @@
 ;  ; Treat symbol package and name separately.  Numeric strings need escaping.
 ;      :|3| :|3G| :|33| |ACL2-PC|::|3| ; pkg is numeric except single letters
 ;  ;   :|3| :|3G| :|33|  ACL2-PC::|3|
-; 
+;
 ;  ; None of the following strings gives a potential number in base 10: "no letter
 ;  ; that is adjacent to another letter may ever be treated as a number marker".
 ;  ; All these strings represent numbers in base 16.
 ;      |ABC| |3BC| |+3BC| |-3BC|
 ;  ;16 |ABC| |3BC| |+3BC| |-3BC|
 ;  ;10  ABC   3BC   +3BC   -3BC
-; 
+;
 ;  ; Allegro gets this wrong, but ACL2 gets it right: potential number!
 ;      |_345|
 ;  ;   |_345| ; SBCL 1.0.19, LispWorks 4.4.6, CMU CL 19e, CLISP 2.41, GCL 2.6.7
 ;  ;    _345  ; [wrong] Allegro 8.0, CCL 1.2
-; 
+;
 ;  ; Also not potential numbers, even in base 16: the first because of the decimal
 ;  ; point (for base 16), the second because of the underscore, and the third
 ;  ; because of consecutive letters that are not digits even in base 16.
 ;      |A/B+.C| |3A3GG3|
 ;  ;    A/B+.C   3A3GG3
-; 
-;  ; Potential number because letters are not consecutive.    
+;
+;  ; Potential number because letters are not consecutive.
 ;      |3A3G3|
 ;  ;   |3A3G3|
-; 
+;
 ;  ; Not potential numbers: must begin with a digit, sign, decimal point, or
 ;  ; extension character, and cannot end with a sign.
 ;      |/12| |12+| |12C-|
 ;  ;    /12   12+   12C-
-; 
+;
 ;  ; Must contain at least one digit.
 ;      |+A|
 ;  ;16 |+A|
 ;  ;10  +A
 ;      ))
-; 
+;
 ;  (defconst *b*
-; 
+;
 ;  ; This example is from CLtL2 with the following explanation given there:
-; 
+;
 ;  ; As examples, the following tokens are potential numbers, but they are not
 ;  ; actually numbers as defined below, and so are reserved tokens. (They do
 ;  ; indicate some interesting possibilities for future extensions.)  So all
 ;  ; should have verticle bars.
-; 
+;
 ;    '(|1B5000| ; oddly, GCL skips the vertical bars for this first one
 ;      |777777Q| |1.7J| |-3/4+6.7J| |12/25/83| |27^19| |3^4/5| |6//7| |3.1.2.6|
 ;      |^-43^| |3.141_592_653_589_793_238_4| |-3.7+2.6I-6.17J+19.6K|))
-; 
+;
 ;  (defconst *c*
-; 
+;
 ;  ; This example is from CLtL2 with the following explanation given there:
-; 
+;
 ;  ; The following tokens are not potential numbers but are always treated as
 ;  ; symbols:
-; 
+;
 ;    '(|/| |/5| |+| |1+| |1-| |FOO+| |AB.CD| |_| |^| |^/-|))
-; 
+;
 ;  (defconst *d*
-; 
+;
 ;  ; From CLtL2, we see that we need |..| for each of the following in base 16 but
 ;  ; for none of them in base 10.
-; 
+;
 ;  ; This example is from CLtL2 with the following explanation given there:
-; 
+;
 ;  ; The following tokens are potential numbers if the value of *read-base* is 16
 ;  ; (an abnormal situation), but they are always treated as symbols if the value
 ;  ; of *read-base* is 10 (the usual value):
-; 
+;
 ;    '(|BAD-FACE| |25-DEC-83| |A/B| |FAD_CAFE| |F^|))
-; 
+;
 ; ; Now try check the answers:
-; 
+;
 ;  (set-print-base 16)
 ;  (list *a* *b* *c* *d*)
 ;  (set-print-base 10)
@@ -35507,9 +35507,9 @@
 
 ; ;??? The rewrite rule above is troubling.  I have spent some time thinking
 ; about how to eliminate it.  Here is an essay on the subject.
-; 
+;
 ; Rationalp-+, above, is needed in the guard proof for pop-timer, below.  Why?
-; 
+;
 ; Why do we need to make this a :rewrite rule?  Why can't type-set establish
 ; (rationalp (+ x y)) whenever this rule would have applied?  The reason,
 ; obviously, is that the hypotheses can't be established by type-set and must be
@@ -35517,41 +35517,41 @@
 ; program enough of type-set in the rewriter to get the rewriter to act like
 ; type-set.  That is what this lemma does (and that is why it is offensive to
 ; us).
-; 
+;
 ; Why can't type-set establish the (rationalp x) and (rationalp y) hypotheses
 ; above?  Here is the :rewrite rule we need:
-; 
+;
 ; (defthm rational-listp-implies-rationalp-car
 ;  (implies (and (rational-listp x)
 ;                x)
 ;           (rationalp (car x))))
-; 
+;
 ; Note that this lemma is "type-like" in the conclusion but not (very) type-like
 ; in the hypotheses.  I mean, (rational-listp x) is not a "type recognizer"
 ; (except in a good type system, and we haven't got one of those!).  The presence
 ; of this lemma in axioms.lisp should have alerted us to the possible need
 ; later for a lemma duplicating type-like reasoning in the rewriter.
-; 
+;
 ; Here is a simple example of a theorem we can prove using rationalp-+ that we
 ; cannot prove (directly) without it.  I introduce an undefined function so that
 ; I can state the theorem in a way that does not allow a car-cdr-elim.
-; 
+;
 ;  (defstub foo (x) t)
-; 
+;
 ;  (thm (implies (and (rational-listp (foo x)) (foo x))
 ;                (rationalp (+ 1 (car (foo x)))))
 ; ;    :hints (("Goal" :in-theory (disable rationalp-+)))
 ;      )
-; 
+;
 ; If rationalp-+ is enabled, this proof succeeds, because rewrite does our type
 ; reasoning for us (via rationalp-+) and uses rational-listp-implies-
 ; rationalp-car to get the hypothesis that (car (foo x)) is rational.  If
 ; rationalp-+ is disabled, the proof fails because type-set doesn't know that
 ; (car (foo x)) is rational.
-; 
+;
 ; In the actual application (in pop-timer below) no rational-listp hypothesis
 ; is present.  Here is the actual goal
-; 
+;
 ; (IMPLIES
 ;      (AND (CONSP (CDDR (ASSOC-EQ NAME
 ;                                  (CDR (ASSOC 'TIMER-ALIST (NTH 2 STATE))))))
@@ -35565,31 +35565,31 @@
 ;                    (CADDR (ASSOC-EQ NAME
 ;                                     (CDR (ASSOC 'TIMER-ALIST
 ;                                                 (NTH 2 STATE))))))))
-; 
+;
 ; If we insist on deleting rationalp-+ as a :rewrite rule we are obliged to
 ; add certain other rules as either :type-prescriptions or :forward-chaining
 ; rules.  Going the :type-prescription route we could add
-; 
+;
 ; (defthm rational-listp-implies-rationalp-car
 ;   (implies (and (rational-listp x) x)
 ;            (rationalp (car x)))
 ;   :rule-classes :type-prescription)
-; 
+;
 ; to get the first inkling of how to establish that the two arguments above
 ; are rational.  But we must be able to establish the hypotheses of that rule
 ; within type-set, so we need
-; 
+;
 ; (defthm timer-alistp-implies-rational-listp-assoc-eq
 ;    (implies (and (symbolp name)
 ;                  (timer-alistp alist))
 ;             (rational-listp (cdr (assoc-eq name alist))))
 ;   :rule-classes :type-prescription)
-; 
+;
 ; (defthm rational-listp-cdr
 ;    (implies (rational-listp x)
 ;             (rational-listp (cdr x)))
 ;    :rule-classes :type-prescription)
-; 
+;
 ; All three of these rules are currently :rewrite rules, so this would just shift
 ; rules from the rewriter to type-set.  I don't know whether this is a good idea.
 ; But the methodology is fairly clear, namely: make sure that all concepts used
@@ -36497,11 +36497,11 @@
 
 ;    System Class INTEGER
 ;    Class Precedence List:
-;    
+;
 ;    integer, rational, real, number, t
-;    
+;
 ;    Description:
-;    
+;
 ;    An integer is a mathematical integer. There is no limit on the
 ;    magnitude of an integer.
 
@@ -37163,7 +37163,7 @@
 (defun illegal-ruler-extenders-values (x wrld)
   (declare (xargs :guard (and (symbol-listp x)
                               (plist-worldp wrld))))
-  (cond ((endp x) nil) 
+  (cond ((endp x) nil)
         ((or (eq (car x) :lambdas)
              (function-symbolp (car x) wrld))
          (illegal-ruler-extenders-values (cdr x) wrld))
@@ -37392,7 +37392,7 @@
 ;       `(if (eq key ':new-key)
 ;            (if (eq val 't) 't (symbol-listp val))
 ;          ,(cadr (assoc-eq 'table-guard
-;                           (get 'acl2-defaults-table 
+;                           (get 'acl2-defaults-table
 ;                                *current-acl2-world-key*)))))
 
        :guard
@@ -39019,7 +39019,7 @@
   Writing the body in ~c[LAMBDA] notation:
   ~bv[]
     ((lambda (result)
-       (if (our-test result) 
+       (if (our-test result)
            result
          0))
      (if (endp x)
@@ -39059,7 +39059,7 @@
   in which it occurs. ~l[acl2-defaults-table].  The current list of
   ruler-extenders may be obtained as
   ~bv[]
-    (cdr (assoc-eq :ruler-extenders 
+    (cdr (assoc-eq :ruler-extenders
          (table-alist 'acl2-defaults-table (w state))))
   ~ev[]
   or more conveniently, as:
@@ -40156,13 +40156,13 @@
 ; it will not be used very often.
 
 ; (include-book "books/misc/file-io")
-; 
+;
 ; (defun collect-rstats-1 (filename alist acc)
-; 
+;
 ; ; Elements of alist are of the form (event-name . n).  We extend acc by an
 ; ; alist with corresponding elements (but no specified order) of the form
 ; ; ((filename . event-name) . n).
-; 
+;
 ;   (if (endp alist)
 ;       acc
 ;     (collect-rstats-1 filename
@@ -40170,26 +40170,26 @@
 ;                       (cons (cons (cons filename (caar alist))
 ;                                   (cdar alist))
 ;                             acc))))
-; 
+;
 ; (defun collect-rstats-2 (alist acc)
-; 
+;
 ; ; Elements of alist are of the form (filename . alist2), where alist2 is an
 ; ; alist with elements of the form (event-name . n).
-; 
+;
 ;   (if (endp alist)
 ;       acc
 ;     (collect-rstats-2 (cdr alist)
 ;                       (collect-rstats-1 (caar alist) (cdar alist) acc))))
-; 
+;
 ; (defun collect-rstats (infile outfile state)
-; 
+;
 ; ; Each object in infile as the form (filename . alist), where alist has
 ; ; elements of the form (event-name . n), where n is the rewrite stack depth
 ; ; required for event-name.  We write out outfile, which contains a single form
 ; ; whose elements are of the form ((filename . event-name) . n).  the cdr of
 ; ; each object in infile, as well as the object in the resulting outfile, are
 ; ; alists sorted by cdr (heaviest entry first).
-; 
+;
 ;   (declare (xargs :stobjs state :mode :program))
 ;   (er-let* ((forms (read-list infile 'collect-rstats state)))
 ;     (write-list (merge-sort-cdr-> (collect-rstats-2 forms nil))
@@ -41249,7 +41249,7 @@
   rule is quietly added to the tau database ~i[regardless of what]
   ~c[:]~ilc[rule-classes] the user named for the ~c[:corollary].  Of course,
   such rules are also stored in the ways named by the user.  See the
-  ~i[Design Philosophy] section of ~il[introduction-to-the-tau-system] for a 
+  ~i[Design Philosophy] section of ~il[introduction-to-the-tau-system] for a
   discussion of why the tau system is greedy by default.  More details
   are given on automatic mode after we explain manual mode.
 
@@ -41424,7 +41424,7 @@
   (include-book \"pwd\" :ttags (:pwd-ttag))
   (print-working-dir) ; working directory is printed to terminal
   ~ev[]~/
-  
+
   ~st[Detailed documentation.]
   ~bv[]
   General Forms:
@@ -41531,7 +41531,7 @@
   ~c[defttag] forms already evaluated in the so-called certification ~il[world]
   at the time ~ilc[certify-book] is called.  But note that ~c[(defttag nil)] is
   always legal.
- 
+
   A ~c[:ttags] argument of ~ilc[certify-book] and ~ilc[include-book] can have
   value ~c[:all], indicating that every ttag is allowed, i.e., no restriction
   is being placed on the arguments, just as in the interactive top-level loop.
@@ -42776,14 +42776,14 @@
 ;                                      (cdr (assoc-rw-cache (caar alist1)
 ;                                                           alist2))))
 ;                   (rw-tagged-objects-subsetp (cdr alist1) alist2)))))
-;   
+;
 ;   (defun chk-rw-cache-inv (ttree string)
 ;     (declare (xargs :mode :program))
 ;     (or (rw-tagged-objects-subsetp (tagged-objects 'rw-cache-nil-tag ttree)
 ;                                    (tagged-objects 'rw-cache-any-tag ttree))
 ;         (prog2$ (cw string)
 ;                 (break$))))
-;   
+;
 ;   (trace$ (relieve-hyps
 ;            :entry (chk-rw-cache-inv ttree "Relieve-hyps entry~%")
 ;            :exit (chk-rw-cache-inv (car (last values)) "Relieve-hyps exit~%")
@@ -43199,7 +43199,7 @@
   :rule-classes nil)
 
 ; Omitted for now; maybe slows down the rewriter too much.
-; 
+;
 ; (defthm default-code-char
 ;   (implies (not (and (integerp x)
 ;                      (>= x 0)
@@ -43506,15 +43506,15 @@
   ~c[(Standardp x)] is true if and only if ~c[x] is a ``standard''
   object.  This notion of ``standard'' comes from non-standard analysis
   and is discussed in Ruben Gamboa's dissertation.  In brief, all the
-  familiar objects are standard: e.g., the familiar real numbers are 
+  familiar objects are standard: e.g., the familiar real numbers are
   standard, but non-zero infinitesimals are not standard, and the familiar
-  integers are standard, but not those that exceed every integer that 
+  integers are standard, but not those that exceed every integer that
   you can express in the usual way (1, 2, 3, and so on).  Similarly,
   the familiar lists are standard, but not so a list that contains a
   large number of integers, where ``large'' means more than the standard
-  integers.  The set of standard numbers is closed under the usual 
-  arithmetic operations, hence the sum of a standard number and a 
-  non-zero infinitesimal is not standard, though it is what is called 
+  integers.  The set of standard numbers is closed under the usual
+  arithmetic operations, hence the sum of a standard number and a
+  non-zero infinitesimal is not standard, though it is what is called
   ``limited'' (~pl[i-limited]).
 
   This predicate is only defined in ACL2(r) (~pl[real]).~/~/")
@@ -43596,7 +43596,7 @@
 ;; Now, we have some theorems (axioms?) about standard-part.
 
 (defaxiom standard-part-of-standardp
-  (implies (and (acl2-numberp x) 
+  (implies (and (acl2-numberp x)
                 (standardp x))
            (equal (standard-part x) x)))
 
@@ -44015,7 +44015,7 @@
 ; Bob Boyer temporarily added a patch from Gary Byers to hons-raw.lisp to speed
 ; this up for CCL).  Jared adds (6/30/09) that CCL now handles coerce
 ; efficiently, both to strings and to lists.
- 
+
 ;  (defun my-coerce (chars)
 ;    (let* ((length (the integer (length (the list chars))))
 ;           (str    (the vector (make-string (the integer length))))
@@ -47864,7 +47864,7 @@ Lisp definition."
                               (and ,g-run-mintime
                                    (< run-elapsed ,g-run-mintime))
                               #+ccl
-                              (and ,g-minalloc 
+                              (and ,g-minalloc
                                    (< allocated ,g-minalloc))))
                    (let* ((alist (list* (cons #\t real-elapsed-str)
                                         (cons #\c run-elapsed-str)
@@ -48252,7 +48252,7 @@ Lisp definition."
     Restart actions (select using :continue):
      0: Abort entirely from this (lisp) process.
     [Current process: Initial Lisp Listener]
-    [1] ACL2(1): [RAW LISP] 
+    [1] ACL2(1): [RAW LISP]
   ~ev[]~/
 
   ~em[Details.]  ACL2 usage is intended to take place inside the ACL2
@@ -48618,7 +48618,7 @@ Lisp definition."
   (declare (xargs :guard (and (symbolp name)
                               (booleanp parallel-version)
                               (true-listp rst))))
-  (let ((serial-function-symbol 
+  (let ((serial-function-symbol
          (intern (symbol-name name)
                  "ACL2"))
         (parallel-function-symbol
@@ -48777,7 +48777,7 @@ Lisp definition."
 
 #+acl2-par
 (defmacro error-in-parallelism-mode@par (return-value form)
-  
+
 ; We avoid even trying to evaluate form, instead returning a hard error with a
 ; useful message.  Return-value must have the same output signature as that of
 ; form.
@@ -48786,15 +48786,15 @@ Lisp definition."
 ; disabled.  To restore the code to its original form, just remove the wrapper
 ; error-in-parallelism-mode@par.
 
-  `(prog2$ 
+  `(prog2$
     (er hard 'error-in-parallelism-mode@par
         "There has been an attempt to evaluate a form that is disallowed in ~
          the parallelized evaluation of the waterfall.  See :doc ~
          set-waterfall-parallelism for how to disable such parallel ~
          evaluation.  Please let the ACL2 authors know if you see this ~
          message, as our intent is that its occurence should be rare.  The ~
-         offending form is: ~x0" 
-        ',form) 
+         offending form is: ~x0"
+        ',form)
     ,return-value))
 
 #+acl2-par
@@ -48907,7 +48907,7 @@ Lisp definition."
 ;    (defthm prop-1
 ;      (equal (oracle-funcall 'f) 1)
 ;      :rule-classes nil))
-;   
+;
 ;   (encapsulate
 ;    ()
 ;    (local (defun f ()
@@ -48915,7 +48915,7 @@ Lisp definition."
 ;    (defthm prop-2
 ;      (equal (oracle-funcall 'f) 2)
 ;      :rule-classes nil))
-;   
+;
 ;   (defthm contradiction
 ;     nil
 ;     :hints (("Goal" :use (prop-1 prop-2))))
@@ -49485,74 +49485,74 @@ Lisp definition."
 ; get a proof of nil.
 
 ;   (in-package "ACL2")
-;   
+;
 ;   (defstobj const-stobj$c (const-fld$c :type bit :initially 0))
-;   
+;
 ;   (defstub stop () nil)
-;   
+;
 ;   ;; Logically preserves the field value as 0, but actually leaves it as 1
 ;   (defun change-fld$c (const-stobj$c)
 ;      (declare (xargs :stobjs const-stobj$c))
 ;      (let ((const-stobj$c (update-const-fld$c 1 const-stobj$c)))
 ;        (prog2$ (stop)
 ;                (update-const-fld$c 0 const-stobj$c))))
-;   
+;
 ;   (defun get-fld$c (const-stobj$c)
 ;      (declare (xargs :stobjs const-stobj$c))
 ;      (const-fld$c const-stobj$c))
-;   
+;
 ;   (defun const-stobj$ap (const-stobj$a)
 ;      (declare (xargs :guard t))
 ;      (equal const-stobj$a 0))
-;   
+;
 ;   (defun change-fld$a (const-stobj$a)
 ;      (declare (xargs :guard t)
 ;               (ignore const-stobj$a))
 ;      0)
-;   
+;
 ;   ;; Logically returns 0, exec version returns the field value which should
 ;   ;; always be 0...
 ;   (defun get-fld$a (const-stobj$a)
 ;      (declare (xargs :guard t)
 ;               (ignore const-stobj$a))
 ;      0)
-;   
+;
 ;   (defun create-const-stobj$a ()
 ;      (declare (xargs :guard t))
 ;      0)
-;   
+;
 ;   (defun-nx const-stobj-corr (const-stobj$c const-stobj$a)
 ;      (and (equal const-stobj$a 0) (equal const-stobj$c '(0))))
-;   
+;
 ;   (in-theory (disable (const-stobj-corr)
 ;                        (change-fld$c)))
-;   
+;
 ;   (DEFTHM CREATE-CONST-STOBJ{CORRESPONDENCE}
 ;            (CONST-STOBJ-CORR (CREATE-CONST-STOBJ$C)
 ;                              (CREATE-CONST-STOBJ$A))
 ;            :RULE-CLASSES NIL)
-;   
+;
 ;   (DEFTHM CREATE-CONST-STOBJ{PRESERVED}
 ;            (CONST-STOBJ$AP (CREATE-CONST-STOBJ$A))
 ;            :RULE-CLASSES NIL)
-;   
+;
 ;   (DEFTHM GET-FLD{CORRESPONDENCE}
 ;            (IMPLIES (CONST-STOBJ-CORR CONST-STOBJ$C CONST-STOBJ)
 ;                     (EQUAL (GET-FLD$C CONST-STOBJ$C)
 ;                            (GET-FLD$A CONST-STOBJ)))
 ;            :RULE-CLASSES NIL)
-;   
+;
 ;   (DEFTHM CHANGE-FLD{CORRESPONDENCE}
 ;            (IMPLIES (CONST-STOBJ-CORR CONST-STOBJ$C CONST-STOBJ)
 ;                     (CONST-STOBJ-CORR (CHANGE-FLD$C CONST-STOBJ$C)
 ;                                       (CHANGE-FLD$A CONST-STOBJ)))
 ;            :RULE-CLASSES NIL)
-;   
+;
 ;   (DEFTHM CHANGE-FLD{PRESERVED}
 ;            (IMPLIES (CONST-STOBJ$AP CONST-STOBJ)
 ;                     (CONST-STOBJ$AP (CHANGE-FLD$A CONST-STOBJ)))
 ;            :RULE-CLASSES NIL)
-;   
+;
 ;   (defabsstobj const-stobj
 ;      :concrete const-stobj$c
 ;      :recognizer (const-stobjp :logic const-stobj$ap :exec const-stobj$cp)
@@ -49564,7 +49564,7 @@ Lisp definition."
 ;                            ;; new
 ;                            ;; :protect t
 ;                            )))
-;   
+;
 ;   ;; Causes an error and leaves the stobj in an inconsistent state (field
 ;   ;; is 1)
 ;   (make-event
@@ -49573,9 +49573,9 @@ Lisp definition."
 ;     (trans-eval '(change-fld const-stobj) 'top state t)
 ;     (declare (ignore erp val))
 ;     (value '(value-triple nil))))
-;   
+;
 ;   (defevaluator my-ev my-ev-lst ((if a b c)))
-;   
+;
 ;   (defun my-clause-proc (clause hint const-stobj)
 ;      (declare (xargs :stobjs const-stobj
 ;                      :guard t)
@@ -49583,7 +49583,7 @@ Lisp definition."
 ;      (if (= 0 (get-fld const-stobj)) ;; always true by defn. of get-fld
 ;          (mv nil (list clause))
 ;        (mv nil nil))) ;; unsound if this branch is taken
-;   
+;
 ;   (defthm my-clause-proc-correct
 ;      (implies (and (pseudo-term-listp clause)
 ;                    (alistp a)
@@ -49593,7 +49593,7 @@ Lisp definition."
 ;                           a))
 ;               (my-ev (disjoin clause) a))
 ;      :rule-classes :clause-processor)
-;   
+;
 ;   (defthm foo nil :hints (("goal" :clause-processor
 ;                             (my-clause-proc clause nil const-stobj)))
 ;      :rule-classes nil)
@@ -49934,7 +49934,7 @@ Lisp definition."
   General Form:
   (tau-intervalp x)
   ~ev[]
-  ~/  
+  ~/
   An interval is a structure of the form: ~c[(]~i[dom] ~c[(]~i[lo-rel] ~c[.]
   ~i[lo]~c[)] ~c[.]  ~c[(]~i[hi-rel] ~c[.] ~i[hi]~c[))].  Every tau contains an
   interval used to represent the domain and the upper and lower bounds of the

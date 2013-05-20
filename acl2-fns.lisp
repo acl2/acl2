@@ -43,9 +43,9 @@
 ; objects.
 
 #+:non-standard-analysis
-(defun acl2-realp (x)                                                   
-  (rationalp x))                                                        
-                                                                        
+(defun acl2-realp (x)
+  (rationalp x))
+
 #+(and :non-standard-analysis CLTL2)
 (if (not (fboundp 'common-lisp::realp))
     (setf (symbol-function 'common-lisp::realp) (symbol-function 'acl2-realp)))
@@ -677,13 +677,13 @@
 ; labeled "Comp", is the one to be looked at for comparison purposes.  These are
 ; all done on the same Sun workstation, using Allegro 5.0.1.  The meanings of
 ; these numbers are explained below.
-; 
+;
 ;                                Comp     Actual   Comments
 ; Recent ACL2 without proclaim:  5:41     5:36:42  no meta
 ; Recent ACL2 *with*  proclaim:  5:54     5:53:58
 ; April ACL2 (before non-std.):  5:48     5:35:58  missing some pipeline and ~40
 ;                                                  sec. user time on powerlists
-; 
+;
 ; The "Comp" column estimates how long the run would have taken if all books had
 ; certified, except that no run gets past book batcher-sort in the powerlists/
 ; directory.  (The April run bogs down even slightly earlier.)  The first row is
@@ -927,13 +927,13 @@ notation causes an error and (b) the use of ,. is not permitted."
                          property for ~s."
                         sym)))
       (error "ACL2 supports #. syntax only for #.*a*, where *a* has been ~%~
-              defined by ~s." 
+              defined by ~s."
              'defconst))))
 
 (defun sharp-bang-read (stream char n)
 
 ; Thanks to Pascal J. Bourguignon for suggesting this approach.
-  
+
   (declare (ignore char n))
   (let* ((package-name (read stream t nil t))
          (package-string (cond ((symbolp package-name)
@@ -1326,7 +1326,7 @@ notation causes an error and (b) the use of ,. is not permitted."
 
 ;  ? (MERGE-PATHNAMES "foo.xxx.lx86cl64" "/u/kaufmann/temp/")
 ;  #P"/u/kaufmann/temp/foo\\.xxx.lx86cl64"
-;  ? 
+;  ?
 
 ; Gary Byers has explained that while this behavior may not be ideal, it is
 ; legal for Common Lisp.  So we avoid merge-pathnames here.

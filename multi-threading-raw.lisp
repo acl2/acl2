@@ -190,7 +190,7 @@
 ; we leave the version of the code that used SBCL's built-in primitives as a
 ; comment.
 
-;  `(progn ; (sb-debug:backtrace) 
+;  `(progn ; (sb-debug:backtrace)
 ;          (1+ (sb-ext:atomic-incf
 ;               (atomically-modifiable-counter-val ,x))))
 
@@ -224,7 +224,7 @@
 
     (dotimes (i ,count) (ccl::atomic-incf ,counter)))
   #+sb-thread
-;  `(+ (sb-ext:atomic-incf 
+;  `(+ (sb-ext:atomic-incf
 ;       (atomically-modifiable-counter-val ,counter) ,count)
 ;      ,count)
   `(sb-thread:with-recursive-lock ((atomically-modifiable-counter-lock ,counter)) nil
@@ -454,10 +454,10 @@
   (lispworks:with-unique-names (process timer)
     `(catch 'lispworks-timeout
        (let* ((,process mp:*current-process*)
-              (,timer (mp:make-timer (lambda () 
+              (,timer (mp:make-timer (lambda ()
                                        (mp:process-interrupt
                                         ,process
-                                        (lambda () 
+                                        (lambda ()
                                           (throw 'lispworks-timeout nil)))))))
          (unwind-protect-disable-interrupts-during-cleanup
           (progn
@@ -470,10 +470,10 @@
 
 ; #+sb-thread
 ; (defmacro with-potential-sbcl-timeout (&rest body &key timeout)
-; 
+;
 ; ; The below use of labels is only neccessary because we provide an implicit
 ; ; progn for the body of with-potential-sbcl-timeout.
-; 
+;
 ;   (let ((correct-body
 ;          (labels ((remove-keyword-from-list
 ;                    (lst keyword)
@@ -483,14 +483,14 @@
 ;                          (cddr lst)
 ;                        (cons (car lst) (remove-keyword-from-args (cdr lst)))))))
 ;                  (remove-keyword-from-args body :timeout))))
-; 
-; 
+;
+;
 ;     `(if ,timeout
 ;          (handler-case
 ;           (sb-sys:with-deadline
 ;            (:seconds ,timeout)
 ;            ,@correct-body)
-; 
+;
 ;           (sb-ext:timeout ()))
 ;        ,@correct-body)))
 
@@ -861,7 +861,7 @@
 
 ; We guard against this lost signal by always re-signaling the condition
 ; variable (unless we're sure we received the signal, which we would know
-; because "received-signal" would be set to t).  
+; because "received-signal" would be set to t).
 
 ; This signaling during the unwind portion of the unwind protect definitely
 ; results in some inefficient execution.  This is brought about because now any
@@ -877,22 +877,22 @@
       (with-potential-timeout
        (progn
          (loop while (<= (acl2-semaphore-count semaphore) 0) do
-              
+
 ; The current thread missed the chance to decrement and must rewait.  This can
-; only occur if another thread grabbed the lock and decremented the 
-              
+; only occur if another thread grabbed the lock and decremented the
+
                (wait-on-condition-variable (acl2-semaphore-cv semaphore)
                                            (acl2-semaphore-lock semaphore)))
          (setq received-signal t)
          t) ; if this progn returns, this t is the return value
        :timeout timeout)
-      
+
       (if received-signal
-          
+
 ; The current thread was able to record the receipt of the signal.  The current
 ; thread will decrement the count of the semaphore and set the semaphore
 ; notification object.
-          
+
           (progn
             (decf (acl2-semaphore-count semaphore))
             (when notification
@@ -926,7 +926,7 @@
 ; we also use them in futures-raw.lisp.  Rather than create another file, we
 ; place them here, at the end of the multi-threading interface.
 
-(defvar *throwable-worker-thread* 
+(defvar *throwable-worker-thread*
 
 ; When we terminate threads due to a break and abort, we need a way to
 ; terminate all threads.  We implement this by having them throw the
@@ -1060,7 +1060,7 @@
   (throw-all-threads-in-list (worker-threads))
   (let ((round 0))
     (loop do
-      
+
 ; We used to call "(thread-wait 'all-worker-threads-are-dead)".
 ; However, we noticed a synchronization problem between what we might prefer
 ; the underlying Lisp to do (in this one case) and what the Lisp actually does.
@@ -1146,7 +1146,7 @@
 
   (* 4 *core-count*))
 
-(defconstant *max-idle-thread-count* 
+(defconstant *max-idle-thread-count*
 
 ; Note that although this is a defconstant and
 ; *unassigned-and-active-work-count-limit* is a defvar, David Rager says that

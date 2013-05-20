@@ -28,7 +28,7 @@
         (t (+ (car x) (sum-list (cdr x))))))
 
 ; Note that we disable guard verification above.  We can now evaluate
-; calls of this function.  
+; calls of this function.
 
 (sum-list '(1 2 3 4))   ; this call succeeds.
 
@@ -57,9 +57,9 @@
 (verify-guards sum-list)  ; this is just like it was in Version 1.7
 
 :comp sum-list            ; this compiles both the Common Lisp version of
-                          ; sum-list and the logical (Nqthm-like ``*1*'') 
+                          ; sum-list and the logical (Nqthm-like ``*1*'')
                           ; version
-; Now we exit the loop and install a trace on the Common Lisp program 
+; Now we exit the loop and install a trace on the Common Lisp program
 ; sum-list, and then reenter the loop.
 
 :q

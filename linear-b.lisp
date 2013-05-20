@@ -51,7 +51,7 @@
     (mv-let (ts ts-ttree)
       (type-set term force-flag dwp type-alist ens wrld ttree nil nil)
       (cond ((ts-subsetp ts *ts-zero*)
-             (list 
+             (list
               ;; 0 <= term
               (add-linear-terms :rhs term
                                 (base-poly ts-ttree
@@ -65,7 +65,7 @@
                                            t
                                            nil))))
             ((ts-subsetp ts *ts-positive-integer*)
-             (list 
+             (list
               ;; 1 <= term
               (add-linear-terms :lhs *1*
                                 :rhs term
@@ -74,7 +74,7 @@
                                            t
                                            nil))))
             ((ts-subsetp ts *ts-negative-integer*)
-             (list 
+             (list
               ;; term <= -1
               (add-linear-terms :lhs term
                                 :rhs ''-1
@@ -85,7 +85,7 @@
             ((ts-subsetp ts
                          #-:non-standard-analysis *ts-positive-rational*
                          #+:non-standard-analysis *ts-positive-real*)
-             (list 
+             (list
               ;; 0 < term
               (add-linear-terms :rhs term
                                 (base-poly ts-ttree
@@ -95,7 +95,7 @@
             ((ts-subsetp ts
                          #-:non-standard-analysis *ts-negative-rational*
                          #+:non-standard-analysis *ts-negative-real*)
-             (list 
+             (list
               ;; term < 0
               (add-linear-terms :lhs term
                                 (base-poly ts-ttree
@@ -105,7 +105,7 @@
             ((ts-subsetp ts
                          #-:non-standard-analysis *ts-non-negative-rational*
                          #+:non-standard-analysis *ts-non-negative-real*)
-             (list 
+             (list
               ;; 0 <= term
               (add-linear-terms :rhs term
                                 (base-poly ts-ttree
@@ -115,7 +115,7 @@
             ((ts-subsetp ts
                          #-:non-standard-analysis *ts-non-positive-rational*
                          #+:non-standard-analysis *ts-non-positive-real*)
-             (list 
+             (list
               ;; term <= 0
               (add-linear-terms :lhs term
                                 (base-poly ts-ttree
@@ -542,7 +542,7 @@
 
                 (if positivep
 
-; (implies (equal lhs rhs) 
+; (implies (equal lhs rhs)
 ;          (and (<= lhs rhs) (<= rhs lhs)))
 
                     (let ((rationalp-flg (and (ts-real/rationalp ts-lhs)
@@ -661,14 +661,14 @@
 
 ;   (defstub bar-p (x) nil)
 ;   (defstub foo (x) nil)
-;   
+;
 ;   (defaxiom type-of-foo
 ;      (implies (force (bar-p x))
 ;               (or (and (rationalp (foo x))
 ;                        (<= 0 (foo x)))
 ;                   (equal (foo x) nil)))
 ;      :rule-classes :type-prescription)
-;   
+;
 ;   (thm (implies (not (rationalp (foo x))) (equal 0 (foo x))))
 
                                  (cond
@@ -747,7 +747,7 @@
 ; example that is not solved by the hack here of recognizing when eval
 ; solved our problem -- by arranging for rewrite-linear-concl to
 ; rewrite the inequality to something that we can't use but which
-; doesn't eval to nil.    
+; doesn't eval to nil.
 
 ; Here is another curious example:
 
@@ -756,12 +756,12 @@
 ;     (implies (and (not (consp x))
 ;                   (true-listp x))
 ;              (equal (reverse (reverse x)) x)))
-;   
+;
 ;    But simplification reduces this to T, using the :executable-counterparts
 ;    of EQUAL and REVERSE and linear arithmetic.
-;   
+;
 ;    Q.E.D.
-;   
+;
 ;    Summary
 ;    Form:  ( THM ...)
 ;    Rules: ((:DEFINITION NOT)
@@ -770,7 +770,7 @@
 ;            (:FAKE-RUNE-FOR-LINEAR NIL))
 ;    Warnings:  None
 ;    Time:  0.01 seconds (prove: 0.01, print: 0.00, other: 0.00)
-;   
+;
 ;    Proof succeeded.
 
 ; Note the presence of (:FAKE-RUNE-FOR-LINEAR NIL).
