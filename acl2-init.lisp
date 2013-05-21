@@ -293,7 +293,7 @@ implementations.")
      (defun reverse (x)
        (if (equal x "")
            ""
-         (funcall *our-old-reverse* x)))
+         (funcall (symbol-value '*our-old-reverse*) x)))
      (compile 'reverse))))
 
 ; WARNING: The next form should be an in-package (see in-package form for sbcl
