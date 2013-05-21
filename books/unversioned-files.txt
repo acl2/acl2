@@ -36,6 +36,8 @@ Makefile-tmp
 *.fas
 *.lib
 *.sse2f
+*.wx32fsl
+*.wx64fsl
 *.log
 TMP*.*
 temp-emacs-file.lsp
