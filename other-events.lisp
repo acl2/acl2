@@ -9823,6 +9823,10 @@
         p))))
 
 (defun expand-tilde-to-user-home-dir (str os ctx state)
+
+; Note that character `~' gets no special treatment by Windows.  See also
+; absolute-pathname-string-p.
+
   (cond ((and (not (eq os :mswindows))
               (or (equal str "~")
                   (and (< 1 (length str))

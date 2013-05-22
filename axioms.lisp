@@ -29752,7 +29752,35 @@
   supplied, then instead the form evaluated will be
   ~c[(set-vari 'old-vali state)].  This capability is particularly useful if
   ~c[vari] is untouchable (~pl[push-untouchable]), since the above call of
-  ~ilc[f-put-global] is illegal.~/"
+  ~ilc[f-put-global] is illegal.
+
+  Note that the scope of the bindings of a ~c[state-global-let*] form is the
+  body of that form.  This may seem obvious, but to drive the point home, let's
+  consider the following example (~pl[set-print-base] and
+  ~pl[set-print-radix]).
+  ~bv[]
+  ACL2 !>(state-global-let* ((print-base 16 set-print-base)
+                             (print-radix t set-print-radix))
+                            (mv nil 10 state))
+   10
+  ACL2 !>
+  ~ev[]
+  Why wasn't the result printed as ~c[#xA]?  The reason is that the result was
+  printed after evaluation of the entire form had completed.  If you want to
+  see ~c[#xA], do the printing in the scope of the bindings, for example as
+  follows.
+  ~bv[]
+  ACL2 !>(state-global-let* ((print-base 16 set-print-base)
+                             (print-radix t set-print-radix))
+                            (pprogn (fms \"~~x0~~%\"
+                                         (list (cons #\0 10))
+                                         *standard-co* state nil)
+                                    (mv nil 10 state)))
+
+  #xA
+   10
+  ACL2 !>
+  ~ev[]~/"
 
   (declare (xargs :guard (and (state-global-let*-bindings-p bindings)
                               (no-duplicatesp-equal (strip-cars bindings)))))
@@ -30704,7 +30732,7 @@
   By default, numbers are printed in radix 10 (base 10).  ~l[set-print-base]
   for how to get ACL2 to print numbers in radix 2, 8, or 16.
 
-  To see the ~il[guard] of an IO function, or indeed any function, ~il[args] or
+  To see the ~il[guard] of an IO function, or indeed any function, ~pl[args] or
   call the function ~c[guard]; but some built-in functions (including some IO
   functions) will print the result using the variable ~c[STATE-STATE].  While
   that is logically correct, if you want to execute the guard then you should
@@ -37132,8 +37160,13 @@
                      t))
                ((eql (char str 0) *directory-separator*)
                 t)
-               (t
-                (and (eql (char str 0) #\~) ; hard error for ~ or ~/...
+               (t ; possible hard error for ~ or ~/...
+                (and (eql (char str 0) #\~)
+
+; Note that character `~' gets no special treatment by Windows.  See also
+; expand-tilde-to-user-home-dir.
+
+                     (not (eq os :mswindows))
                      (prog2$ (and (or (eql 1 len)
                                       (eql (char str 1)
                                            *directory-separator*))

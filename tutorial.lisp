@@ -2339,18 +2339,17 @@
   This example illustrates the use of ACL2's ~il[IO] primitives to read the
   forms in a file.  ~l[io].~/
 
-  This example provides a solution to the following problem.  Let's
-  say that you have a file that contains s-expressions.  Suppose that
-  you want to build a list by starting with ~c[nil], and updating it
-  ``appropriately'' upon encountering each successive s-expression in
-  the file.  That is, suppose that you have written a function
-  ~c[update-list] such that ~c[(update-list obj current-list)] returns
-  the list obtained by ``updating'' ~c[current-list] with the next
-  object, ~c[obj], encountered in the file.  The top-level function for
-  processing such a file, returning the final list, could be defined
-  as follows.  Notice that because it opens a channel to the given
-  file, this function modifies ~il[state] and hence must return ~il[state].
-  Thus it actually returns two values:  the final list and the new
+  This example provides a solution to the following problem.  Let's say that
+  you have a file that contains s-expressions.  Suppose that you want to build
+  a list by starting with ~c[nil], and updating it ``appropriately'' upon
+  encountering each successive s-expression in the file.  That is, suppose that
+  you have written a function ~c[update-list] such that
+  ~c[(update-list obj current-list)] returns the list obtained by ``updating''
+  ~c[current-list] with the next object, ~c[obj], encountered in the file.  The
+  top-level function for processing such a file, returning the final list,
+  could be defined as follows.  Notice that because it opens a channel to the
+  given file, this function modifies ~il[state] and hence must return
+  ~il[state].  Thus it actually returns two values: the final list and the new
   ~il[state].
   ~bv[]
 
@@ -2365,12 +2364,11 @@
 
   ~ev[]
   The function ~c[process-file1] referred to above takes the currently
-  constructed list (initially, ~c[nil]), together with a channel to the
-  file being read and the ~il[state], and returns the final updated
-  list.  Notice that this function is tail recursive.  This is
-  important because many Lisp compilers will remove tail recursion,
-  thus avoiding the potential for stack overflows when the file
-  contains a large number of forms.
+  constructed list (initially, ~c[nil]), together with a channel to the file
+  being read and the ~il[state], and returns the final updated list.  Notice
+  that this function is tail recursive.  This is important because many Lisp
+  compilers will remove tail recursion, thus avoiding the potential for stack
+  overflows when the file contains a large number of forms.
   ~bv[]
 
     (defun process-file1 (current-list channel state)
@@ -2382,7 +2380,11 @@
                                  channel state)))))
 
   ~ev[]
-  ")
+
+  As an exercise, you might want to add ~il[guard]s to the functions above and
+  verify the guards (~pl[verify-guards]).  ~l[args] or make a call of the form
+  ~c[(guard 'your-function nil (w state))] to see the guard of an existing
+  function.")
 
 (deflabel guard-example
   :doc

@@ -20048,6 +20048,8 @@
 
 (deflabel note-6-1
 
+; Total number of release note items: 26.
+
 ; As usual, we made a number of improvements to the documentation, based in
 ; part on useful feedback from users.
 
@@ -20334,11 +20336,6 @@
   implementation and may have semantics that change with new ACL2 versions.  If
   you have reason to use this value, please contact the ACL2 implementors.
 
-  Even if the function ~c[f] is defined to take one or more ~il[stobj]
-  arguments, the form ~c[(ec-call (f ...))] is now legal if all arguments of
-  the call of ~c[f] are non-stobj objects, in any context where only ordinary
-  object return values are expected.
-
   ~st[NEW FEATURES]
 
   By default, the prover now gives information about case splits.
@@ -20352,10 +20349,6 @@
   ~il[events].  Thanks to Harsh Raju Chamarthi for requesting these
   capabilities.  Note that ~ilc[finalize-event-user] replaces
   ~c[print-summary-user].
-
-  We now provide support for ~il[stobj] fields of stobjs.  ~l[stobj-let].
-  Thanks to Warren Hunt and Sol Swords for requesting this feature and for
-  helpful discussions.
 
   ~st[HEURISTIC IMPROVEMENTS]
 
@@ -20728,6 +20721,11 @@
   Extended ~c[*acl2-exports*], in particular adding ~c[UNSIGNED-BYTE-P] and
   ~c[SIGNED-BYTE-P] (thanks to a suggestion by Jared Davis)
 
+  Even if the function ~c[f] is defined to take one or more ~il[stobj]
+  arguments, the form ~c[(ec-call (f ...))] is now legal if all arguments of
+  the call of ~c[f] are non-stobj objects, in any context where only ordinary
+  object return values are expected.
+
   ~st[NEW FEATURES]
 
   It is now permissible to specify a ~il[stobj] field that is itself either a
@@ -20860,6 +20858,11 @@
   standard character output channel (~pl[standard-co]).  Instead, an error
   message explains how to accomplish what was probably intended.  Thanks to
   Shilpi Goel for bringing this issue to our attention.
+
+  (Windows only) Fixed a bug that was causing a hard error on Windows when ACL2
+  encountered filenames starting with the tilde character (~c[~~]), for
+  example, ~c[(ld \"~~/acl2-customization.lsp\")].  Thanks to Sol Swords for
+  bringing this bug to our attention.
 
   ~st[CHANGES AT THE SYSTEM LEVEL]
 
