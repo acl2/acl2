@@ -18,18 +18,24 @@
 (in-package "ACL2")
 (set-verify-guards-eagerness 2)
 
-(defund sign-byte (x)
+;; BOZO rework to use bitops/sign-extend.lisp stuff
+(defund-inline sign-byte (x)
   (declare (type (unsigned-byte 8) x))
-  (if (< x 128)
-      x
-    (- x 256)))
+  (mbe :logic
+       (let ((x (nfix x)))
+         (if (< x 128)
+             x
+           (- x 256)))
+       :exec
+       (if (< x 128)
+           x
+         (- x 256))))
 
 (local (in-theory (enable sign-byte)))
 
 (defthm sign-byte-type
-  (implies (integerp x)
-           (integerp (sign-byte x)))
-  :rule-classes ((:type-prescription) (:rewrite)))
+  (integerp (sign-byte x))
+  :rule-classes :type-prescription)
 
 (local (defun logbitp-equiv (i x y)
   (declare (xargs :guard (and (natp i)

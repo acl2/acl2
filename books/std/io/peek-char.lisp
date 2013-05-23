@@ -17,31 +17,5 @@
 
 (in-package "ACL2")
 
+;; cert_param: (reloc_stub)
 (include-book "base")
-
-;; (local (include-book "update-state"))
-;; (local (include-book "open-input-channels"))
-
-;; ; [Removed by Matt K. to handle changes to member, assoc, etc. after ACL2 4.2.]
-;; ; (local (defthm assoc-eq-is-assoc-equal
-;; ;          (equal (assoc-eq a x)
-;; ;                 (assoc-equal a x))))
-
-;; (local (defthmd car-typed-io-list-char
-;;   (implies (and (typed-io-listp x :character)
-;;                 (consp x))
-;;            (characterp (car x)))))
-
-;; (defthm peek-char$-character
-;;   (implies (and (mv-nth 0 (peek-char$ channel state))
-;;                 (force (state-p1 state))
-;;                 (force (open-input-channel-p1 channel :character state)))
-;;            (characterp (mv-nth 0 (peek-char$ channel state))))
-;;   :hints(("Goal" :in-theory (disable open-input-channel-p1
-;;                                      open-input-channels)
-;;           :use (:instance car-typed-io-list-char
-;;                           (x (cddr (assoc-equal
-;;                                     channel
-;;                                     (open-input-channels state))))))))
-
-;; (in-theory (disable state-p1 open-input-channel-p1 peek-char$))

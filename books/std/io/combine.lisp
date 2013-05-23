@@ -15,98 +15,270 @@
 ;; this program; if not, write to the Free Software Foundation, Inc., 59 Temple
 ;; Place - Suite 330, Boston, MA 02111-1307, USA.
 
-
 (in-package "ACL2")
-(set-verify-guards-eagerness 2)
-
+(include-book "xdoc/top" :dir :system)
 (include-book "sign-byte")
+(include-book "tools/bstar" :dir :system)
 (local (include-book "unsigned-byte-listp"))
 (local (include-book "signed-byte-listp"))
-
-(defun combine16u (x1 x2)
-  "Given unsigned bytes x1 and x2, compute (x1 << 8) | x2, interpreted
-   as a 16-bit unsigned integer."
-  (declare (type (unsigned-byte 8) x1)
-           (type (unsigned-byte 8) x2))
-  (logior (ash x1 8) x2))
-
-(defthm combine16u-unsigned-byte
-  (implies (and (force (unsigned-byte-p 8 x1))
-                (force (unsigned-byte-p 8 x2)))
-           (unsigned-byte-p 16 (combine16u x1 x2))))
-
-(in-theory (disable combine16u))
+(set-verify-guards-eagerness 2)
 
 
-(defun combine16s (x1 x2)
-  "Given unsigned bytes x1 and x2, compute (x1 << 8) | x2, interpreted
-   as a 16-bit signed integer."
-  (declare (type (unsigned-byte 8) x1)
-           (type (unsigned-byte 8) x2))
-  (logior (ash (sign-byte x1) 8)
-          x2))
-
-(defthm combine16s-signed-byte
-  (implies (and (force (unsigned-byte-p 8 x1))
-                (force (unsigned-byte-p 8 x2)))
-           (signed-byte-p 16 (combine16s x1 x2))))
-
-(in-theory (disable combine16s))
+(defsection combine-functions
+  :parents (read-bytes$)
+  :short "Optimized byte-combining functions.")
 
 
-(defun combine32u (x1 x2 x3 x4)
-  "Given unsigned bytes x1, x2, x3, and x4, compute
-     (x1 << 24) | (x2 << 16) | (x3 << 8) | x4
-  and interpret the result as a 32-bit unsigned integer."
-  (declare (type (unsigned-byte 8) x1)
-           (type (unsigned-byte 8) x2)
-           (type (unsigned-byte 8) x3)
-           (type (unsigned-byte 8) x4))
-  (logior (ash x1 24)
-          (ash x2 16)
-          (ash x3 8)
-          x4))
+(defsection combine16u
+  :parents (combine-functions)
+  :short "@(call combine16u) merges unsigned bytes, producing the 16-bit
+unsigned interpretation of @('(a1 << 8) | a0')."
 
-(defthm combine32u-unsigned-byte
-  (implies (and (force (unsigned-byte-p 8 x1))
-                (force (unsigned-byte-p 8 x2))
-                (force (unsigned-byte-p 8 x3))
-                (force (unsigned-byte-p 8 x4)))
-           (unsigned-byte-p 32 (combine32u x1 x2 x3 x4))))
+  (defund-inline combine16u (a1 a0)
+    (declare (type (unsigned-byte 8) a1 a0))
+    (mbe :logic
+         (logior (ash (nfix a1) 8)
+                 (nfix a0))
+         :exec
+         (the (unsigned-byte 16)
+           (logior (ash a1 8) a0))))
 
-(in-theory (disable combine32u))
+  (local (in-theory (enable combine16u)))
 
-(defun combine32s (x1 x2 x3 x4)
-  "Given unsigned bytes x1, x2, x3, and x4, compute
-     (x1 << 24) | (x2 << 16) | (x3 << 8) | x4
-   and interpret the result as an 32-bit signed integer."
-  (declare (type (unsigned-byte 8) x1)
-           (type (unsigned-byte 8) x2)
-           (type (unsigned-byte 8) x3)
-           (type (unsigned-byte 8) x4))
-  (logior (ash (sign-byte x1) 24)
-          (ash x2 16)
-          (ash x3 8)
-          x4))
+  (defthm combine16u-unsigned-byte
+    (implies (and (force (unsigned-byte-p 8 a1))
+                  (force (unsigned-byte-p 8 a0)))
+             (unsigned-byte-p 16 (combine16u a1 a0)))))
 
-(defthm combine32s-signed-byte
-  (implies (and (force (unsigned-byte-p 8 x1))
-                (force (unsigned-byte-p 8 x2))
-                (force (unsigned-byte-p 8 x3))
-                (force (unsigned-byte-p 8 x4)))
-           (signed-byte-p 32 (combine32s x1 x2 x3 x4)))
-  :hints(("Goal" :use ((:instance signed-byte-p-logior
-                                  (size 32)
-                                  (x (ash (sign-byte x1) 24))
-                                  (y (logior (ash x2 16)
-                                             (ash x3 8)
-                                             x4)))
-                       (:instance unsigned-to-signed-promote
-                                  (size1 24)
-                                  (size2 32)
-                                  (x (logior (ash x2 16)
-                                             (ash x3 8)
-                                             x4)))))))
 
-(in-theory (disable combine32s))
+(defsection combine16s
+  :parents (combine-functions)
+  :short "@(call combine16s) merges unsigned bytes, producing the 16-bit signed
+interpretation of @('(a1 << 8) | a0')."
 
+  (defund-inline combine16s (a1 a0)
+    (declare (type (unsigned-byte 8) a1 a0))
+    (mbe :logic
+         (logior (ash (sign-byte (nfix a1)) 8)
+                 (nfix a0))
+         :exec
+         (the (signed-byte 16)
+           (logior (the (signed-byte 16)
+                     (ash (the (signed-byte 8) (sign-byte a1))
+                          8))
+                   a0))))
+
+  (local (in-theory (enable combine16s)))
+
+  (defthm combine16s-signed-byte
+    (implies (and (force (unsigned-byte-p 8 a1))
+                  (force (unsigned-byte-p 8 a0)))
+             (signed-byte-p 16 (combine16s a1 a0)))))
+
+
+(defsection combine32u
+  :parents (combine-functions)
+  :short "@(call combine32u) merges unsigned bytes, producing the 32-bit
+unsigned interpretation of @('(a3 << 24) | (a2 << 16) | (a1 << 8) | a0')."
+
+  (defund-inline combine32u (a3 a2 a1 a0)
+    (declare (type (unsigned-byte 8) a3 a2 a1 a0))
+    (mbe :logic
+         (logior (ash (nfix a3) 24)
+                 (ash (nfix a2) 16)
+                 (ash (nfix a1) 8)
+                 (nfix a0))
+         :exec
+         ;; Ugly series of LOGIORs because CCL won't optimize multi-arg LOGIORs
+         ;; into fixnum computations...
+         (b* ((a3  (the (unsigned-byte 32) (ash a3 24)))
+              (a2  (the (unsigned-byte 24) (ash a2 16)))
+              (a1  (the (unsigned-byte 16) (ash a1 8)))
+              (ans (the (unsigned-byte 16)
+                     (logior (the (unsigned-byte 16) a1)
+                             (the (unsigned-byte 8) a0))))
+              (ans (the (unsigned-byte 24)
+                     (logior (the (unsigned-byte 24) a2)
+                             (the (unsigned-byte 16) ans)))))
+           (the (unsigned-byte 32)
+             (logior (the (unsigned-byte 32) a3)
+                     (the (unsigned-byte 24) ans))))))
+
+  (local (in-theory (enable combine32u)))
+
+  (defthm combine32u-unsigned-byte
+    (implies (and (force (unsigned-byte-p 8 a3))
+                  (force (unsigned-byte-p 8 a2))
+                  (force (unsigned-byte-p 8 a1))
+                  (force (unsigned-byte-p 8 a0)))
+             (unsigned-byte-p 32 (combine32u a3 a2 a1 a0)))))
+
+
+
+(defsection combine32s
+  :parents (combine-functions)
+  :short "@(call combine32s) merges unsigned bytes, producing the 32-bit
+signed interpretation of @('(a3 << 24) | (a2 << 16) | (a1 << 8) | a0')."
+
+  (defund-inline combine32s (a3 a2 a1 a0)
+    (declare (type (unsigned-byte 8) a3 a2 a1 a0))
+    (mbe :logic
+         (logior (ash (sign-byte (nfix a3)) 24)
+                 (ash (nfix a2) 16)
+                 (ash (nfix a1) 8)
+                 (nfix a0))
+         :exec
+         ;; Ugly series of LOGIORs because CCL won't optimize multi-arg LOGIORs
+         ;; into fixnum computations...
+         (b* ((a3  (the (signed-byte 32)
+                     (ash (the (signed-byte 8) (sign-byte a3))
+                          24)))
+              (a2  (the (unsigned-byte 24) (ash a2 16)))
+              (a1  (the (unsigned-byte 16) (ash a1 8)))
+              (ans (the (unsigned-byte 16)
+                     (logior (the (unsigned-byte 16) a1)
+                             (the (unsigned-byte 8) a0))))
+              (ans (the (unsigned-byte 24)
+                     (logior (the (unsigned-byte 24) a2)
+                             (the (unsigned-byte 16) ans)))))
+           (the (signed-byte 32)
+             (logior (the (signed-byte 32) a3)
+                     (the (signed-byte 32) ans))))))
+
+  (local (in-theory (enable combine32s)))
+
+  (defthm combine32s-signed-byte
+    (implies (and (force (unsigned-byte-p 8 a3))
+                  (force (unsigned-byte-p 8 a2))
+                  (force (unsigned-byte-p 8 a1))
+                  (force (unsigned-byte-p 8 a0)))
+             (signed-byte-p 32 (combine32s a3 a2 a1 a0)))))
+
+
+(defsection combine64u
+  :parents (combine-functions)
+  :short "@(call combine64u) merges unsigned bytes, producing the 64-bit
+unsigned interpretation of @('{a7, a6, a5, a4, a3, a2, a1, a0}')."
+
+  (defund-inline combine64u (a7 a6 a5 a4 a3 a2 a1 a0)
+    (declare (type (unsigned-byte 8) a7 a6 a5 a4 a3 a2 a1 a0))
+    (mbe :logic
+         (logior (ash (nfix a7) 56)
+                 (ash (nfix a6) 48)
+                 (ash (nfix a5) 40)
+                 (ash (nfix a4) 32)
+                 (ash (nfix a3) 24)
+                 (ash (nfix a2) 16)
+                 (ash (nfix a1) 8)
+                 (nfix a0))
+         :exec
+         (b* ((a1 (the (unsigned-byte 16) (ash a1 8)))
+              ;; Ugly series of LOGIORs because CCL won't optimize multi-arg
+              ;; LOGIORs into fixnum computations...
+              (ans (the (unsigned-byte 16)
+                     (logior (the (unsigned-byte 16) a1)
+                             (the (unsigned-byte 16) a0))))
+              (a2 (the (unsigned-byte 24) (ash a2 16)))
+              (ans (the (unsigned-byte 24)
+                     (logior (the (unsigned-byte 24) a2)
+                             (the (unsigned-byte 24) ans))))
+              (a3 (the (unsigned-byte 32) (ash a3 24)))
+              (ans (the (unsigned-byte 32)
+                     (logior (the (unsigned-byte 32) a3)
+                             (the (unsigned-byte 32) ans))))
+              (a4 (the (unsigned-byte 40) (ash a4 32)))
+              (ans (the (unsigned-byte 40)
+                     (logior (the (unsigned-byte 40) a4)
+                             (the (unsigned-byte 40) ans))))
+              (a5 (the (unsigned-byte 48) (ash a5 40)))
+              (ans (the (unsigned-byte 48)
+                     (logior (the (unsigned-byte 48) a5)
+                             (the (unsigned-byte 48) ans))))
+              (a6 (the (unsigned-byte 56) (ash a6 48)))
+              (ans (the (unsigned-byte 56)
+                     (logior (the (unsigned-byte 56) a6)
+                             (the (unsigned-byte 56) ans))))
+              ;; Can't really do better here... :(
+              (a7 (the (unsigned-byte 64) (ash a7 56))))
+           (the (unsigned-byte 64)
+             (logior (the (unsigned-byte 64) a7)
+                     (the (unsigned-byte 56) ans))))))
+
+  (local (in-theory (enable combine64u)))
+
+  (defthm combine64u-unsigned-byte
+    (implies (and (force (unsigned-byte-p 8 a7))
+                  (force (unsigned-byte-p 8 a6))
+                  (force (unsigned-byte-p 8 a5))
+                  (force (unsigned-byte-p 8 a4))
+                  (force (unsigned-byte-p 8 a3))
+                  (force (unsigned-byte-p 8 a2))
+                  (force (unsigned-byte-p 8 a1))
+                  (force (unsigned-byte-p 8 a0)))
+             (unsigned-byte-p 64 (combine64u a7 a6 a5 a4 a3 a2 a1 a0)))))
+
+
+
+(defsection combine64s
+  :parents (combine-functions)
+  :short "@(call combine64s) merges unsigned bytes, producing the 64-bit
+unsigned interpretation of @('{a7, a6, a5, a4, a3, a2, a1, a0}')."
+
+  (defund-inline combine64s (a7 a6 a5 a4 a3 a2 a1 a0)
+    (declare (type (unsigned-byte 8) a7 a6 a5 a4 a3 a2 a1 a0))
+    (mbe :logic
+         (logior (ash (sign-byte (nfix a7)) 56)
+                 (ash (nfix a6) 48)
+                 (ash (nfix a5) 40)
+                 (ash (nfix a4) 32)
+                 (ash (nfix a3) 24)
+                 (ash (nfix a2) 16)
+                 (ash (nfix a1) 8)
+                 (nfix a0))
+         :exec
+         (b* ((a1 (the (unsigned-byte 16) (ash a1 8)))
+              ;; Ugly series of LOGIORs because CCL won't optimize multi-arg
+              ;; LOGIORs into fixnum computations...
+              (ans (the (unsigned-byte 16)
+                     (logior (the (unsigned-byte 16) a1)
+                             (the (unsigned-byte 16) a0))))
+              (a2 (the (unsigned-byte 24) (ash a2 16)))
+              (ans (the (unsigned-byte 24)
+                     (logior (the (unsigned-byte 24) a2)
+                             (the (unsigned-byte 24) ans))))
+              (a3 (the (unsigned-byte 32) (ash a3 24)))
+              (ans (the (unsigned-byte 32)
+                     (logior (the (unsigned-byte 32) a3)
+                             (the (unsigned-byte 32) ans))))
+              (a4 (the (unsigned-byte 40) (ash a4 32)))
+              (ans (the (unsigned-byte 40)
+                     (logior (the (unsigned-byte 40) a4)
+                             (the (unsigned-byte 40) ans))))
+              (a5 (the (unsigned-byte 48) (ash a5 40)))
+              (ans (the (unsigned-byte 48)
+                     (logior (the (unsigned-byte 48) a5)
+                             (the (unsigned-byte 48) ans))))
+              (a6 (the (unsigned-byte 56) (ash a6 48)))
+              (ans (the (unsigned-byte 56)
+                     (logior (the (unsigned-byte 56) a6)
+                             (the (unsigned-byte 56) ans))))
+              ;; Can't really do better here... :(
+              (a7 (the (signed-byte 64)
+                    (ash (the (signed-byte 8) (sign-byte a7))
+                         56))))
+           (the (signed-byte 64)
+             (logior (the (signed-byte 64) a7)
+                     (the (unsigned-byte 56) ans))))))
+
+  (local (in-theory (enable combine64s)))
+
+  (defthm combine64s-unsigned-byte
+    (implies (and (force (unsigned-byte-p 8 a7))
+                  (force (unsigned-byte-p 8 a6))
+                  (force (unsigned-byte-p 8 a5))
+                  (force (unsigned-byte-p 8 a4))
+                  (force (unsigned-byte-p 8 a3))
+                  (force (unsigned-byte-p 8 a2))
+                  (force (unsigned-byte-p 8 a1))
+                  (force (unsigned-byte-p 8 a0)))
+             (signed-byte-p 64 (combine64s a7 a6 a5 a4 a3 a2 a1 a0)))))

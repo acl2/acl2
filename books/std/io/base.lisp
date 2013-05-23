@@ -206,7 +206,160 @@ explanation of why opening the file failed.</p>"
               channel
               type
               (mv-nth 1 (open-input-channel fname type state))))
-    :hints(("Goal" :in-theory (enable state-p1)))))
+    :hints(("Goal" :in-theory (enable state-p1))))
+
+  ;; We now show that the channel returned by OPEN-INPUT-CHANNEL is never
+  ;;
+  ;;   - ACL2-INPUT-CHANNEL::STANDARD-CHARACTER-INPUT-0, or
+  ;;   - ACL2-INPUT-CHANNEL::STANDARD-OBJECT-INPUT-0.
+  ;;
+  ;; These facts are needed to verify the guards on CLOSE-INPUT-CHANNEL after
+  ;; you open an input channel.
+
+  (local (include-book "std/misc/explode-nonnegative-integer" :dir :system))
+  (local (include-book "std/misc/intern-in-package-of-symbol" :dir :system))
+  (local (include-book "std/lists/coerce" :dir :system))
+
+  (local (defthm lemma-0
+           (implies (and (base10-digit-char-listp y1)
+                         (base10-digit-char-listp y2)
+                         (not (base10-digit-charp x)))
+                    (equal (equal (cons x y1)
+                                  (cons x y2))
+                           (equal y1 y2)))))
+
+  (local (defthm lemma-1
+           (implies (and (base10-digit-char-listp y1)
+                         (base10-digit-char-listp y2)
+                         (not (base10-digit-charp x)))
+                    (not (equal (cons a (cons x y1))
+                                (cons x y2))))))
+
+  (local (defthm lemma-2
+           (implies (and (base10-digit-char-listp y1)
+                         (base10-digit-char-listp y2)
+                         (not (base10-digit-charp x))
+                         (equal (append a (cons x y1))
+                                (cons x y2)))
+                    (not (consp a)))
+           :hints(("Goal" :induct (append a (cons x y1))
+                   :do-not '(generalize)))))
+
+  (local (defthm lemma-3
+           (implies (and (base10-digit-char-listp y1)
+                         (base10-digit-char-listp y2)
+                         (not (base10-digit-charp x)))
+                    (equal (equal (append a (cons x y1))
+                                  (cons x y2))
+                           (and (not (consp a))
+                                (equal y1 y2))))
+           :hints(("Goal"
+                   :in-theory (disable lemma-2)
+                   :use (:instance lemma-2 (a a) (x x) (y1 y1) (y2 y2))))))
+
+  (local (defun cdr-cdr-induction (a1 a2)
+           (if (and (consp a1)
+                    (consp a2))
+               (cdr-cdr-induction (cdr a1) (cdr a2))
+             (list a1 a2))))
+
+  (local (defthm lemma-4
+           (implies (and (base10-digit-char-listp y1)
+                         (base10-digit-char-listp y2)
+                         (not (base10-digit-charp x))
+                         (true-listp a1)
+                         (true-listp a2))
+                    (equal (equal (append a1 (cons x y1))
+                                  (append a2 (cons x y2)))
+                           (and (equal y1 y2)
+                                (equal a1 a2))))
+           :hints(("Goal" :induct (cdr-cdr-induction a1 a2)))))
+
+  (local (defthm lemma-5
+           (implies (and (base10-digit-char-listp y1)
+                         (base10-digit-char-listp y2)
+                         (true-listp x1)
+                         (true-listp x2))
+                    (equal (equal (append x1 (cons #\- y1))
+                                  (append x2 (cons #\- y2)))
+                           (and (equal x1 x2)
+                                (equal y1 y2))))))
+
+  (local (defthm lemma-6
+           (implies (and (true-listp x)
+                         (natp clock))
+                    (equal (equal (append x (cons #\- (explode-atom clock 10)))
+                                  (append x (cons #\- (explode-atom 0 10))))
+                           (equal clock 0)))))
+
+  (local (defthm main-lemma
+           (implies (and (natp clock)
+                         (character-listp x))
+                    (equal (equal (make-input-channel filename clock)
+                                  (intern-in-package-of-symbol
+                                   (coerce (append x (cons #\- (explode-atom 0 10)))
+                                           'string)
+                                   'ACL2-INPUT-CHANNEL::A-RANDOM-SYMBOL-FOR-INTERN))
+                           (and (equal (coerce filename 'list) x)
+                                (equal clock 0))))
+           :hints(("Goal" :in-theory (disable (explode-atom))))))
+
+  (local (defthm coerce-reduction
+           (implies (and (syntaxp (quotep list))
+                         (character-listp list)
+                         (stringp x))
+                    (equal (equal (coerce x 'list) list)
+                           (equal x (coerce list 'string))))))
+
+  (local (defthm make-input-channel-standard-character-input-0
+           (implies (and (stringp filename)
+                         (natp clock))
+                    (equal (equal (make-input-channel filename clock)
+                                  'ACL2-INPUT-CHANNEL::STANDARD-CHARACTER-INPUT-0)
+                           (and (equal filename "STANDARD-CHARACTER-INPUT")
+                                (equal clock 0))))
+           :hints(("Goal"
+                   :in-theory (disable main-lemma)
+                   :use ((:instance main-lemma
+                                    (clock clock)
+                                    (filename filename)
+                                    (x (coerce "STANDARD-CHARACTER-INPUT" 'list))))))))
+
+  (local (defthm make-input-channel-standard-object-input-0
+           (implies (and (stringp filename)
+                         (natp clock))
+                    (equal (equal (make-input-channel filename clock)
+                                  'ACL2-INPUT-CHANNEL::STANDARD-OBJECT-INPUT-0)
+                           (and (equal filename "STANDARD-OBJECT-INPUT")
+                                (equal clock 0))))
+           :hints(("Goal"
+                   :in-theory (disable main-lemma)
+                   :use ((:instance main-lemma
+                                    (clock clock)
+                                    (filename filename)
+                                    (x (coerce "STANDARD-OBJECT-INPUT" 'list))))))))
+
+
+  (local (defthm open-input-channel-channel-elim
+           (implies (and (mv-nth 0 (open-input-channel filename type state))
+                         (state-p1 state))
+                    (equal (mv-nth 0 (open-input-channel filename type state))
+                           (make-input-channel filename (1+ (file-clock state)))))))
+
+  (defthm open-input-channel-not-standard-object-input
+    (implies (and (stringp filename)
+                  (state-p1 state))
+             (not (equal (mv-nth 0 (open-input-channel filename type state))
+                         'ACL2-INPUT-CHANNEL::STANDARD-OBJECT-INPUT-0)))
+    :hints(("Goal" :in-theory (disable make-input-channel))))
+
+  (defthm open-input-channel-not-standard-character-input
+    (implies (and (stringp filename)
+                  (state-p1 state))
+             (not (equal (mv-nth 0 (open-input-channel filename type state))
+                         'ACL2-INPUT-CHANNEL::STANDARD-CHARACTER-INPUT-0)))
+    :hints(("Goal" :in-theory (disable make-input-channel)))))
+
 
 ;; helper theorems for reading
 (local (defthm lookup-in-open-channels-p
@@ -229,6 +382,8 @@ explanation of why opening the file failed.</p>"
                                           (cadddr (car x))
                                           y)))
          :hints(("Goal" :in-theory (enable open-channel1 read-file-listp1)))))
+
+
 
 (defsection close-input-channel
   :parents (io)
@@ -444,6 +599,7 @@ reason about @('read-char$') instead.</p>"
 
   (in-theory (disable peek-char$)))
 
+
 (defsection read-byte$
   :parents (io)
   :short "Read one byte from an open @(':byte') stream."
@@ -485,6 +641,7 @@ the end of the file, @('nil') is returned.</p>"
                          (equal (cadar x) :byte)
                          (cdr x))
                     (and (bytep (cadr x))
+                         (unsigned-byte-p 8 (cadr x))
                          (natp (cadr x))
                          (integerp (cadr x))))))
 
@@ -494,7 +651,8 @@ the end of the file, @('nil') is returned.</p>"
                   (mv-nth 0 (read-byte$ channel state)))
              (and (bytep (mv-nth 0 (read-byte$ channel state)))
                   (natp (mv-nth 0 (read-byte$ channel state)))
-                  (integerp (mv-nth 0 (read-byte$ channel state)))))
+                  (integerp (mv-nth 0 (read-byte$ channel state)))
+                  (unsigned-byte-p 8 (mv-nth 0 (read-byte$ channel state)))))
     :hints(("Goal" :in-theory (e/d (state-p1) (open-channel1 bytep)))))
 
   (defthm bytep-of-read-byte$-type
@@ -511,7 +669,51 @@ the end of the file, @('nil') is returned.</p>"
              (and (< (mv-nth 0 (read-byte$ channel state)) 256)
                   (<= 0 (mv-nth 0 (read-byte$ channel state)))))
     :hints(("Goal" :use bytep-of-read-byte$))
-    :rule-classes :linear))
+    :rule-classes :linear)
+
+
+  (local (defthm l1
+           (implies (and (state-p1 state)
+                         (open-input-channel-p1 channel :byte state))
+                    (let* ((entry  (cdr (assoc-equal channel (nth 0 state)))) ;; open-input-channels
+                           (header (car entry)))
+                      (and (open-channel1 entry)
+                           (equal (second header) :byte))))
+           :hints(("Goal" :in-theory (enable state-p1)))))
+
+  (local (defthm l2
+           (let ((header (car entry))
+                 (stream (cdr entry)))
+             (implies (and (open-channel1 entry)
+                           (equal (second header) :byte))
+                      (typed-io-listp stream :byte)))))
+
+  (local (defthm l3
+           (implies (and (typed-io-listp :byte x)
+                         (not (car x)))
+                    (not (cadr x)))))
+
+  (local (defthm l4
+           (implies (and (state-p1 state)
+                         (open-input-channel-p1 channel :byte state))
+                    (let* ((entry  (cdr (assoc-equal channel (nth 0 state)))) ;; open-input-channels
+                           (stream (cdr entry)))
+                      (implies (not (car stream))
+                               (not (cadr stream)))))
+           :hints(("Goal"
+                   :in-theory (disable l1 l2)
+                   :use ((:instance l1)
+                         (:instance l2 (entry (cdr (assoc-equal channel (nth 0 state))))))))))
+
+  (defthm no-bytes-after-read-byte$-null
+    ;; Silly, but useful for avoiding NULL checks on every single byte you read.
+    (let ((byte1  (mv-nth 0 (read-byte$ channel state)))
+          (state2 (mv-nth 1 (read-byte$ channel state))))
+      (implies (and (not byte1)
+                    (state-p1 state)
+                    (open-input-channel-p1 channel :byte state))
+               (not (mv-nth 0 (read-byte$ channel state2)))))
+    :hints(("Goal" :in-theory (disable open-input-channel-p1)))))
 
 
 (defsection read-object
@@ -670,7 +872,7 @@ channel state)')</p>
 <ul>
 
 <li>@('file-name') can be either @(':string') (to indicate that you want to
-print to a string stream), or a string like @('\"temp.txt\"')that names the
+print to a string stream), or a string like @('\"temp.txt\"') that names the
 file to write to.</li>
 
 <li>@('typ') is the type of input to be used and must be one of the valid @(see

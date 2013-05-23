@@ -108,7 +108,7 @@
                         (:instance lemma-decompose-spec)
                         (:instance lemma-data-equiv (acc nil)))))))
 
- (verify-guards read-byte$-all))
+(force  (verify-guards read-byte$-all)))
 
 (defthm state-p1-of-read-byte$-all
   (implies (and (force (state-p1 state))

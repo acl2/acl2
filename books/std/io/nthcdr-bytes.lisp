@@ -16,7 +16,6 @@
 ;; Place - Suite 330, Boston, MA 02111-1307, USA.
 
 (in-package "ACL2")
-(include-book "read-byte")
 (include-book "read-file-bytes")
 (local (include-book "tools/mv-nth" :dir :system))
 (set-state-ok t)
