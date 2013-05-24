@@ -853,9 +853,9 @@ clean-doc:
 .PHONY: clean-books
 clean-books:
 ifndef ACL2
-	cd books ; $(MAKE) $(ACL2_IGNORE) ACL2=$(shell pwd)/saved_acl2 clean
+	cd books ; $(MAKE) $(ACL2_IGNORE) ACL2=$(shell pwd)/saved_acl2 moreclean
 else
-	cd books ; $(MAKE) $(ACL2_IGNORE) ACL2=$(ACL2) clean
+	cd books ; $(MAKE) $(ACL2_IGNORE) ACL2=$(ACL2) moreclean
 endif
 
 .PHONY: clean-books-nonstd
