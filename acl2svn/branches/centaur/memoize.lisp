@@ -787,9 +787,11 @@
   ~c[:condition] is supplied and not ~c[t] or ~c[nil], then the condition must
   be a ~il[guard]-verified function.
 
-  Calls of this macro generate events of the form ~c[(table memoize-table
-  fn ((:condition-fn fn) ...))].  When successful, the returned value is of the
-  form ~c[(mv nil function-symbol state)].
+  Calls of this macro generate events of the form
+   ~c[(table memoize-table fn ((:condition-fn fn) ...))]
+
+  When successful, the returned value is of the form
+   ~c[(mv nil function-symbol state)].
 
   Suppose that a function is already memoized.  Then it is illegal to memoize
   that function.  Moreover, if the function was memoized with an associated
