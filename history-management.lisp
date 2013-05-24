@@ -3352,9 +3352,9 @@
                   (newline channel state)
                   (fms *proof-failure-string* nil channel state nil))))))
 
-(defstub initialize-event-user (state) state)
+(defstub initialize-event-user (ctx qbody state) state)
 
-(defstub finalize-event-user (state) state)
+(defstub finalize-event-user (ctx qbody state) state)
 
 (defdoc initialize-event-user
   ":Doc-Section switches-parameters-and-modes
@@ -3367,11 +3367,12 @@
   ~il[events].  We assume familiarity with ~c[finalize-event-user]; here we
   focus on how to supply code for the beginning as well as the end of events.
 
-  As with ~il[finalize-event-user], you attach your own function of ~ilc[state]
-  to ~c[initialize-event-user].  The attachment should return ~c[state] and
-  have a trivial guard, requiring (implicitly) only that ~c[state] satisfies
-  ~c[state-p] unless you use trust tags to avoid that requirement.  For
-  example:
+  As with ~il[finalize-event-user], you attach your own function of argument
+  list ~c[(ctx qbody state)] to ~c[initialize-event-user].
+  (~l[finalize-event-user] for discussion of ~c[ctx] and ~c[body].)  The
+  attachment should return ~c[state] and have a trivial guard,
+  requiring (implicitly) only that ~c[state] satisfies ~c[state-p] unless you
+  use trust tags to avoid that requirement.  For example:
   ~bv[]
   (defattach initialize-event-user initialize-event-user-test)
   ~ev[]
@@ -3382,18 +3383,20 @@
   do the following.
 
   ~bv[]
-  (defun my-init (state)
+  (defun my-init (ctx body state)
     (declare (xargs :stobjs state
                     :guard-hints
-                    ((\"Goal\" :in-theory (enable read-run-time)))))
+                    ((\"Goal\" :in-theory (enable read-run-time))))
+             (ignore ctx body))
     (mv-let (seconds state)
             (read-run-time state)
             (f-put-global 'start-time seconds state)))
 
-  (defun my-final (state)
+  (defun my-final (ctx body state)
     (declare (xargs :stobjs state
                     :guard-hints
-                    ((\"Goal\" :in-theory (enable read-run-time)))))
+                    ((\"Goal\" :in-theory (enable read-run-time))))
+             (ignore ctx body))
     (mv-let (seconds state)
             (read-run-time state)
             (prog2$ (if (boundp-global 'start-time state)
@@ -3431,18 +3434,21 @@
   ACL2 prints summaries at the conclusions of processing ~il[events] (unless
   summaries are inhibited; ~pl[set-inhibit-output-lst] and also
   ~pl[set-inhibited-summary-types]).  You may arrange for processing to take
-  place just after the summary, by defining a function of ~ilc[state] that
-  returns one value, namely ~c[state].  Your function should normally be a
-  ~il[guard]-verified ~c[:]~ilc[logic] mode function with no guard other than
-  that provided by the input requirement on ~ilc[state], that is,
-  ~c[(state-p state)]; but later below we discuss how to avoid this
-  requirement.  You then attach (~pl[defattach]) your function to the function
+  place just after the summary, by defining a function with argument list
+  ~c[(ctx body state)] that returns one value, namely ~c[state].  We describe
+  ~c[ctx] and ~c[body] at the end below, but you may simply prefer to ignore
+  these arguments.)  Your function should normally be a ~il[guard]-verified
+  ~c[:]~ilc[logic] mode function with no guard other than that provided by the
+  input requirement on ~ilc[state], that is, ~c[(state-p state)]; but later
+  below we discuss how to avoid this requirement.  You then
+  attach (~pl[defattach]) your function to the function
   ~c[finalize-event-user].  The following example illustrates how this all
   works.
 
   ~bv[]
-  (defun finalize-event-user-test (state)
-    (declare (xargs :stobjs state))
+  (defun finalize-event-user-test (ctx body state)
+    (declare (xargs :stobjs state)
+             (ignore ctx body))
     (cond ((and (boundp-global 'abbrev-evisc-tuple state)
                 (open-output-channel-p *standard-co*
                                        :character
@@ -3475,7 +3481,8 @@
   ~bv[]
   (defun finalize-event-user-test2 (state)
     (declare (xargs :stobjs state
-                    :mode :program))
+                    :mode :program)
+             (ignore ctx body))
     (observation
      'my-test
      \"~~|Value of term-evisc-tuple: ~~x0~~|\"
@@ -3513,7 +3520,35 @@
   verification.
 
   Also ~pl[initialize-event-user], which discusses the handling of ~il[state]
-  globals by that utility as well as by ~c[finalize-event-user].~/~/")
+  globals by that utility as well as by ~c[finalize-event-user].~/
+
+  Finally, as promised above, we briefly describe the arguments ~c[ctx] and
+  ~c[body].  These are the arguments passed to the call of macro
+  ~c[with-ctx-summarized] under which ~c[finalize-event-user] (or
+  ~c[initialize-event-user]) was called.  Thus, they are unevaluated
+  expressions.  For example, system function ~c[defthm-fn1] has a body of the
+  following form.
+  ~bv[]
+  (with-ctx-summarized
+   (if (output-in-infixp state) event-form (cons 'defthm name))
+   (let ((wrld (w state))
+         (ens (ens state))
+         .....
+  ~ev[]
+  Thus, when ~c[initialize-event-user] and ~c[finalize-event-user] are called
+  on behalf of ~ilc[defthm], ~c[ctx] is the s-expression
+  ~bv[]
+  (if (output-in-infixp state) event-form (cons 'defthm name))
+  ~ev[]
+  while ~c[body] is the following s-expression (with most code elided).
+  ~bv[]
+   (let ((wrld (w state))
+         (ens (ens state))
+         .....
+  ~ev[]
+
+  You might find it helpful to use ~ilc[trace$] to get a sense of ~c[ctx] and
+  ~c[body], for example, ~c[(trace$ finalize-event-user)].~/")
 
 (defun lmi-seed (lmi)
 
@@ -5111,21 +5146,25 @@
 (defun xtrans-eval@par (uterm alist trans-flg ev-flg ctx state aok)
   (xtrans-eval-with-ev-w uterm alist trans-flg ev-flg ctx state aok))
 
-(defmacro xtrans-eval-state-fn-attachment (fn ctx)
+(defmacro xtrans-eval-state-fn-attachment (form ctx)
 
 ; We call xtrans-eval on (pprogn (fn state) (value nil)), unless we are in the
 ; boot-strap or fn is unattached, in which cases we return (value nil).
 
 ; Note that arguments trans-flg and aok are t in our call of xtrans-eval.
 
-  (declare (xargs :guard (symbolp fn)))
-  `(let ((fn ',fn)
+  (declare (xargs :guard (and (true-listp form)
+                              (symbolp (car form)))))
+  `(let ((form ',form)
+         (fn ',(car form))
          (ctx ,ctx)
          (wrld (w state)))
      (cond ((or (global-val 'boot-strap-flg wrld)
                 (null (attachment-pair fn wrld)))
             (value nil))
-           (t (let ((form `(pprogn (,fn state) (value nil))))
+           (t (let ((form (list 'pprogn
+                                (append form '(state))
+                                '(value nil))))
                 (mv-let (erp val state)
                         (xtrans-eval form
                                      nil ; alist
@@ -5144,10 +5183,14 @@
 (defmacro with-ctx-summarized (ctx body)
 
 ; A typical use of this macro by an event creating function is:
+
 ; (with-ctx-summarized (cons 'defun name)
 ;   (er-progn ...
 ;             (er-let* (... (v form) ...)
 ;             (install-event ...))))
+
+; Note that with-ctx-summarized binds the variables ctx and saved-wrld, which
+; thus can be used in body.
 
 ; If body changes the installed world then the new world must end with an
 ; event-landmark (we cause an error otherwise).  The segment of the new world
@@ -5174,7 +5217,7 @@
 ; we print the runes from 'accumulated-ttree.
 
   `(let ((ctx ,ctx)
-         (wrld0 (w state)))
+         (saved-wrld (w state)))
      (pprogn (initialize-summary-accumulators state)
              (mv-let
               (erp val state)
@@ -5190,7 +5233,7 @@
                                (list 'mv-let
                                      '(col state)
                                      (list 'fmt-ctx
-                                           (list 'quote ,ctx)
+                                           (list 'quote ctx)
                                            'col
                                            '(standard-co state)
                                            'state)
@@ -5198,16 +5241,18 @@
                                      '(newline (standard-co state) state)))
                          state)
                         (er-progn
-                         (xtrans-eval-state-fn-attachment initialize-event-user
-                                                          ,ctx)
+                         (xtrans-eval-state-fn-attachment
+                          (initialize-event-user ',ctx ',body)
+                          ctx)
                          ,body))
                        (pprogn
                         (print-summary erp
-                                       (equal wrld0 (w state))
+                                       (equal saved-wrld (w state))
                                        ctx state)
                         (er-progn
-                         (xtrans-eval-state-fn-attachment finalize-event-user
-                                                          ,ctx)
+                         (xtrans-eval-state-fn-attachment
+                          (finalize-event-user ',ctx ',body)
+                          ctx)
                          (mv erp val state)))))
 
 ; In the case of a compound event such as encapsulate, we do not want to save

@@ -65,6 +65,9 @@
   Common Lisp (CCL), but other ANSI-compliant host Lisp implementations may
   also work, provided there are sufficient machine resources.
 
+  If you want to use ACL2(h), you might find it helpful to consult the document
+  ~c[centaur/README.html] in the ACL2 community books.
+
   An easy way is to build ACL2(h) is to include the following with a `make'
   command:
   ~bv[]

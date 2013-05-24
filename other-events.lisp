@@ -12373,6 +12373,11 @@
                (access cert-obj cert-obj :pre-alist)))
           (t (value cert-obj)))))
 
+(defun symbol-name-equal (x str)
+  (declare (xargs :guard (stringp str)))
+  (and (symbolp x)
+       (equal (symbol-name x) str)))
+
 (defun chk-acceptable-certify-book1 (file dir k cmds cert-obj cbds names
                                           cert-op suspect-book-action-alist
                                           wrld ctx state)
@@ -12393,7 +12398,7 @@
 ; Note that for the Convert procedure of provisional certification, we keep the
 ; expansion-alist (and pcert-info) from the existing .pcert0 file.  But in all
 ; other cases, we do not keep an existing expansion-alist, even if the original
-; argument k for certify-book is t.
+; argument k for certify-book is t (or any symbol with name "T").
 
   (let ((pre-alist (global-val 'include-book-alist wrld))
         (cmds (or cmds
@@ -12416,12 +12421,13 @@
           "Books must be certified in :LOGIC mode.  The current mode is ~x0."
           (default-defun-mode wrld)))
      ((and (not (integerp k))
-           (not (eq k '?)))
+           (not (symbol-name-equal k "?")))
       (er soft ctx
-          "The second argument to certify-book must be either ~x0, ~x1, or an ~
-           integer.  You supplied ~x2.  See :DOC certify-book."
-          t '? k))
-     ((and (not (eq k '?))
+          "The second argument to certify-book must be one of the symbols T ~
+           or ? (in any package), or an integer.  You supplied ~x0.  See :DOC ~
+           certify-book."
+          k))
+     ((and (not (symbol-name-equal k "?"))
            (not (eql k (length cmds))))
       (er soft ctx
           "You indicated that the portcullis for ~x0 would be of length ~x1 ~
@@ -12691,7 +12697,7 @@
            (t (value nil)))
      (chk-book-name book-name full-book-name ctx state)
      (cond ((or (eq cert-op :convert-pcert)
-                (eq k t))
+                (symbol-name-equal k "T"))
 ; Cause early error now if certificate file is missing.
             (check-certificate-file-exists full-book-name cert-op ctx state))
            (t (value nil)))
@@ -12700,7 +12706,7 @@
       (get-portcullis-cmds wrld nil nil names ctx state)
       (cond
        (erp (silent-error state))
-       ((eq k t)
+       ((symbol-name-equal k "T")
         (cond
          (cmds
           (er soft ctx
@@ -16390,17 +16396,17 @@
                                            (value ; pass1-result:
                                             (list (or
 
-; We are computing whether proofs may have been skipped.  If k = t, then we are
-; using an existing certificate.  If proofs were skipped during that previous
-; certification, then perhaps they were skipped during evaluation of a
-; portcullis command after setting ld-skip-proofsp to a non-nil value.  So we
-; are conservative here, being sure that in such a case, we set
+; We are computing whether proofs may have been skipped.  If k is a symbol with
+; name "T", then we are using an existing certificate.  If proofs were skipped
+; during that previous certification, then perhaps they were skipped during
+; evaluation of a portcullis command after setting ld-skip-proofsp to a non-nil
+; value.  So we are conservative here, being sure that in such a case, we set
 ; :SKIPPED-PROOFSP to T in the annotations for the present book.  See the
 ; example in a comment in the deflabel note-5-0 pertaining to "Fixed a
 ; soundness bug based on the use of ~ilc[skip-proofs] ...."
 
                                                    (and
-                                                    (eql k t)
+                                                    (symbol-name-equal k "T")
                                                     cert-obj ; always true?
                                                     (let ((cert-ann
                                                            (cadddr
@@ -16872,25 +16878,27 @@
   ~c[certify-book].
 
   The ~c[k] argument to ~c[certify-book] must be either a nonnegative integer
-  or else one of the symbols ~c[t] or ~c[?] in the ~c[ACL2] package.  If ~c[k]
-  is an integer, then it must be the number of ~il[command]s that have been
-  executed after the initial ACL2 ~il[world] to create the ~il[world] in which
+  or else one of the symbols ~c[t] or ~c[?] in any package.  If ~c[k] is an
+  integer, then it must be the number of ~il[command]s that have been executed
+  after the initial ACL2 ~il[world] to create the ~il[world] in which
   ~c[certify-book] was called.  One way to obtain this number is by doing
   ~c[:pbt :start] to see all the ~il[command]s back to the first one.
 
-  If ~c[k] is ~c[t] it means that ~c[certify-book] should use the same
-  ~il[world] used in the last certification of this book.  ~c[K] may be ~c[t]
-  only if you call ~c[certify-book] in the initial ACL2 ~il[world] and there is
-  a ~il[certificate] on file for the book being certified.  (Of course, the
+  If ~c[k] is ~c[t] (or any symbol whose ~ilc[symbol-name] is ~c[\"T\"]), it
+  means that ~c[certify-book] should use the same ~il[world] used in the last
+  certification of this book.  ~c[K] may have such a value only if you call
+  ~c[certify-book] in the initial ACL2 ~il[world] and there is a
+  ~il[certificate] on file for the book being certified.  (Of course, the
   ~il[certificate] is probably invalid.)  In this case, ~c[certify-book] reads
   the old ~il[certificate] to obtain the ~il[portcullis] ~il[command]s and
   executes them to recreate the certification ~il[world].
 
-  Finally, ~c[k] may be ~c[?], in which case there is no check made on the
-  certification world.  That is, if ~c[k] is ~c[?] then no action related to
-  the preceding two paragraphs is performed, which can be a nice convenience
-  but at the cost of eliminating a potentially valuable check that the
-  certification ~il[world] may be as expected.
+  Finally, ~c[k] may be ~c[?] (or any symbol whose ~ilc[symbol-name] is
+  ~c[\"?\"]), in which case there is no check made on the certification world.
+  That is, if ~c[k] is such a value then no action related to the preceding two
+  paragraphs is performed, which can be a nice convenience but at the cost of
+  eliminating a potentially valuable check that the certification ~il[world]
+  may be as expected.
 
   We next describe the meaning of ~c[compile-flg] and how it defaults.  If
   explicit compilation has been suppressed by

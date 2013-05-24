@@ -20726,6 +20726,19 @@
   the call of ~c[f] are non-stobj objects, in any context where only ordinary
   object return values are expected.
 
+  When the second argument of ~ilc[certify-book] is a symbol, that symbol
+  formerly needed to be ~c[?] or ~c[t], in the ~c[\"ACL2\"] package.  Now, the
+  ~il[symbol-package-name] of the second argument is ignored: any symbol whose
+  ~il[symbol-name] is ~c[\"?\"] or ~c[\"T\"] is treated the same in that
+  argument position as the symbol ~c[?] or ~c[t] in the ~c[\"ACL2\"] package,
+  respectively.  Thanks to Warren Hunt and Nathan Wetzler for suggesting
+  consideration of a more relaxed criterion for that second argument.
+
+  (For system hackers, not standard ACL2 users:) Utilities
+  ~ilc[initialize-event-user] and ~ilc[finalize-event-user] now each take a
+  list of three arguments, ~c[(ctx body state)].  Thanks to Harsh Raju
+  Chamarthi for requesting this change.
+
   ~st[NEW FEATURES]
 
   It is now permissible to specify a ~il[stobj] field that is itself either a
