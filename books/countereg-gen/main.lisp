@@ -3834,10 +3834,11 @@ id processor ctx (acl2::prettyify-clause cl nil (w state)) (len hist)))
 ;;             )
 ;;         nil)))
 
-(defun initialize-event-user-cgen (state)
+(defun initialize-event-user-cgen (ctx body state)
   (declare (xargs :mode :logic 
                   :stobjs state
-                  :verify-guards nil))
+                  :verify-guards nil)
+           (ignore ctx body))
   (b* (((unless (f-boundp-global 'cgen-stats-event-stack state))
         state) ;ignore
        (cse-stack (@ cgen-stats-event-stack))
@@ -3871,16 +3872,17 @@ but also copying the test? event stats into the new entry ~%")))
                      (cons (list :gcs% gcs% :s-hist s-hist) cse-stack)
                      state)))
   
-(defun initialize-event-user-cgen-gv (state)
+(defun initialize-event-user-cgen-gv (ctx body state)
   (declare (xargs :mode :logic 
                   :stobjs state
                   :guard T))
-  (ec-call (initialize-event-user-cgen state)))
+  (ec-call (initialize-event-user-cgen ctx body state)))
   
                                           
 
-(defun finalize-event-user-cgen (state)
+(defun finalize-event-user-cgen (ctx body state)
   (declare (xargs :mode :logic :verify-guards nil :stobjs state))
+  (declare (ignore ctx body))
   (b* (((unless (f-boundp-global 'cgen-stats-event-stack state))
         state) ;ignore
        (cse-stack (@ cgen-stats-event-stack))
@@ -3926,11 +3928,11 @@ but copying its contents into the test? stats entry ~%")))
      nil ; TODO add regression statistics code here
      state)))
 
-(defun finalize-event-user-cgen-gv (state)
+(defun finalize-event-user-cgen-gv (ctx body state)
   (declare (xargs :mode :logic 
                   :guard T
                   :stobjs state))
-  (ec-call (finalize-event-user-cgen state)))
+  (ec-call (finalize-event-user-cgen ctx body state)))
 
 (defattach (acl2::initialize-event-user
             initialize-event-user-cgen-gv))
