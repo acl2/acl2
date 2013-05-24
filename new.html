@@ -44,95 +44,7 @@ eventually incorporated into official ACL2 releases.
 
 <A NAME="performance"><H2>Performance Comparisons</H2></A>
 
-<p>
-
-The statistics below correspond to runs of <code>make ACL2_JOBS=8
-regression</code> using community books
-(available from
-the <a href="https://code.google.com/p/acl2-books/">acl2-books project
-website</a>), skipping
-directory <code>books/clause-processors/SULFA/</code>, for ACL2
-executables built on Linux platforms as indicated.  Not shown are
-results of testing on Windows and Mac OS X.  Each regression was run
-on Ubuntu Linux.
-
-<p>
-
-<H3>64-bit ACL2 Linux runs on 3.5 GHz 4-core Intel(R) Xeon(R) with Hyper-Threading, using make ACL2_JOBS=8</H3>
-
-Note: We ran regression using CLISP 2.44.1 as well, but without the
-<code>centaur/</code> or <code>workshops/</code> books.  The wall
-clock time was close to 3 hours, far exceeding all the times just
-below even though those include certification of
-the above books.
-
-<ul>
-<!-- dunnottar -->
-
-<li>CCL Version 1.9-dev-r15542M-trunk:
-<pre>
-17121.010u 570.180s 2:03:26.55 238.8%	0+0k 231264+1293128io 365pf+0w</pre></li>
-
-<li>Gnu Common Lisp (GCL) Version 2.6.8pre, 524288 maximum pages:
-<pre>
-18786.760u 778.230s 1:59:34.37 272.7%	0+0k 406504+3298312io 426pf+0w</pre></li>
-
-<li>Lispworks Version 6.1.1:
-<pre>
-18272.610u 379.770s 2:08:32.22 241.8%	0+0k 218288+1358464io 324pf+0w</pre></li>
-
-<li>SBCL Version 1.0.49:
-<pre>
-22538.290u 498.680s 2:32:32.52 251.7%	0+0k 427992+1622792io 603pf+0w</pre></li>
-
-</ul>
-
-<H3>64-bit ACL2(h) Linux runs on 3.5 GHz 4-core Intel(R) Xeon(R) with Hyper-Threading, using make ACL2_JOBS=8</H3>
-
-Note that unlike the times above, the times just below are for the
-regression suite for
-the <a href="http://www.cs.utexas.edu/users/moore/acl2/current/HONS-AND-MEMOIZATION.html">HONS
-version of ACL2</a>, i.e., ACL2(h).</b>
-
-<ul>
-<!-- eld -->
-
-<li>CCL Version 1.9-dev-r15542M-trunk:
-<pre>
-21345.800u 935.270s 1:13:29.73 505.2%	0+0k 326624+1530776io 1825pf+0w</pre></li>
-
-<li>Lispworks Version 6.1.1 [Note: Skipped models/y86 because
-of insufficient values for array-dimension-limit and for
-array-dimension-limit.]:
-<pre>
-23760.990u 494.720s 1:21:12.82 497.7%	0+0k 225960+1512856io 1523pf+0w</pre>
-</li>
-
-<li>SBCL Version 1.0.49:
-<pre>
-29884.140u 703.070s 1:40:01.15 509.6%	0+0k 477576+1812312io 2079pf+0w</pre></li>
-
-</ul>
-
-<H3>32-bit ACL2 Linux runs on 2.8 GHz 4-core Intel(R) Xeon(R) with Hyper-Threading, using make ACL2_JOBS=8</H3>
-
-<ul>
-<!-- chastity -->
-
-<li>Gnu Common Lisp (GCL) Version 2.6.8pre, 524288 maximum pages:
-<pre>23144.374u 710.308s 2:33:41.31 258.6%	0+0k 347088+3101128io 254pf+0w</pre></li>
-
-<li>CCL Version 1.9-dev-r15542M-trunk:
-<pre>
-27832.755u 426.454s 3:20:08.68 235.3%	0+0k 278848+1286616io 274pf+0w</pre></li>
-
-<li>CMU Common Lisp (CMUCL) Version 19e:
-<pre>
-63694.864u 936.738s 7:38:22.49 235.0%	0+0k 179000+1574976io 245pf+0w</pre></li>
-
-</ul>
-
-<p>
+<i>To appear</i>
 
 <A NAME="courses"><H2>ACL2 Course Materials</H2></A>
 
@@ -140,6 +52,9 @@ At some point, perhaps "ACL2 Course Materials" may be a top-level link on the
 ACL2 home page.  For now, we provide some links.
 
 <ul>
+
+<li><a href="http://www.ccs.neu.edu/home/riccardo/courses/csu290-sp09/">CSU
+    290 Spring 2009</a> at Northeastern.
 
 <li>The following two interfaces to ACL2 support the teaching of ACL2
 to undergraduates:
