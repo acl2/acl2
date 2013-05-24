@@ -53,9 +53,8 @@ arithmetic book, let us know!</LI>
 <LI><A HREF="arithmetic-5">arithmetic-5</A>: books about arithmetic contributed by Robert Krug.
 The following older libraries are basically superseded by arithmetic-5
 (see README files in each directory):
-<A HREF="arithmetic-2">arithmetic-2</A>,
-<A HREF="arithmetic-3">arithmetic-3</A>, and
-<A HREF="arithmetic-5">arithmetic-5</A>.</LI>
+<A HREF="arithmetic-2">arithmetic-2</A> and
+<A HREF="arithmetic-3">arithmetic-3</A>.</LI>
 <LI><A HREF="bdd">bdd</A>: books that exercise ACL2's BDD mechanism.
 </LI>
 <LI><A HREF="centaur">centaur</A>: books contributed by Centaur formal
@@ -83,6 +82,7 @@ href="data-structures/memories">memories</a></LI>
 <LI><A HREF="deduction">deduction</A>: deduction engine(s)</LI>
 <LI><A HREF="defexec">defexec</A>: fast execution with mbe and defexec</LI>
 <LI><A HREF="defsort">defsort</A>: <code>defsort</code> defines a stable sort when given a comparison function</LI>
+<LI><A HREF="demos">demos</A>: some demos</LI>
 <LI><A HREF="finite-set-theory">finite-set-theory</A>: finite sets in ACL2</LI>
 <LI><A HREF="fix-cert">fix-cert</A>: update relocated .cert files</LI>
 <LI><A HREF="hacking">hacking</A>: a library for those who wish to use
@@ -101,6 +101,7 @@ proof-trees and acl2-mode, as well as (obsolete?) infix printing.</LI>
 <LI><A HREF="leftist-trees">leftist-trees</A>: a heap-like data structure that can be used as a priority queue</LI>
 <LI><A HREF="make-event">make-event</A>: illustrations of
 <code>make-event</code>, which implements the idea of macros that can take state</LI>
+<LI><A HREF="memoize">memoize</A>: a descendant of the memoization scheme developed by Bob Boyer and Warren A. Hunt, Jr., which was incorporated into ACL2(h)</LI>
 <LI><A HREF="meta">meta</A>: metafunctions for arithmetic</LI>
 <LI><A HREF="misc">misc</A>:  a grab-bag of useful books and
 utilities</LI>
@@ -173,6 +174,7 @@ study and answers to all the exercises</LI>
 <LI><A HREF="workshops/2007">workshops/2007</A>:  books from ACL2 Workshop 2007</LI>
 <LI><A HREF="workshops/2009">workshops/2009</A>:  books from ACL2 Workshop 2009</LI>
 <LI><A HREF="workshops/2011">workshops/2011</A>:  books from ACL2 Workshop 2011</LI>
+<LI><A HREF="workshops/2013">workshops/2013</A>:  books from ACL2 Workshop 2013</LI>
 </UL>
 </UL>
 <P>
@@ -187,47 +189,27 @@ for contributing books to ACL2</a>.
 
 <H2><A NAME="CertificationInstructions">Certification Instructions</A></H2>
 
-Many of these books are easily imagined to be of general value to ACL2 users,
-while others are more specialized.  Although this subdivision is a bit
-arbitrary, we refer to books in the former category as "basic" books.  By
-default, the <CODE>make</CODE> process certifies only the basic books.  It may
-take several hours to certify all the books, but only a couple of hours to
-certify only the "basic" books.
-
-<P>
-
-All of the instructions below assume that you are standing in subdirectory
+The instructions below assume that you are standing in subdirectory
 <CODE>books</CODE> of the ACL2 distribution.
 
 <P>
-<B>EXAMPLES:</B>
-<P>
 
-To certify the <B>basic</B> books, assuming that `<CODE>acl2</CODE>' invokes
-ACL2, execute:
+To certify the ACL2 community books, execute a command such as one of
+the following.  In the first case, we assume that if environment
+variable named "<code>ACL2</code>" is defined then it specifies your
+ACL2 executable, and otherwise the command "<code>acl2</code>" invokes
+your ACL2 executable.  In the second and third cases, we define such
+an environment variable on the command line, where in the second case
+we assume that <code>my_acl2</code> is on your path.
 <PRE>
 make
+make ACL2=my_acl2
+make ACL2=/u/smith/bin/my_acl2
 </PRE>
-To certify <B>all</B> books, assuming that `<CODE>acl2</CODE>' invokes
-ACL2, execute the following after
-you <a href="http://code.google.com/p/acl2-books/downloads/">download
+To certify more books,
+<a href="http://code.google.com/p/acl2-books/downloads/">download
 workshops.tar.gz</a> to your acl2-sources/books/ directory</a>, and
 then gunzip and extract it there.
-<PRE>
-make all-plus
-</PRE>
-To certify the <B>basic</B> books, assuming that `<CODE>my_acl2</CODE>' invokes
-ACL2, execute:
-<PRE>
-make ACL2=my_acl2
-</PRE>
-To certify <B>all</B> books using an image with absolute pathname
-<CODE>/u/bin/allegro_acl2</CODE> on a Sparc, execute the following.  Note that
-pathnames of images must be absolute pathnames (except that commands observable
-via the Unix path are OK).
-<PRE>
-make all-plus ACL2=/u/bin/allegro_acl2
-</PRE>
 <BR><BR><BR><BR><BR><BR>
 </BODY>
 </HTML>
