@@ -31,39 +31,40 @@
 
 
 (mutual-recursion
- (defun find-expands-for-arg-term (x arg world exclude)
-   (cond ((atom x) (mv nil nil))
-         ((eq (car x) 'quote) (mv nil nil))
-         (t (b* (((mv expands found)
-                  (find-expands-for-arg-list
-                   (cdr x) arg world exclude)))
-              ;; If expansion is found in the args, don't expand x yet.
-              (if expands
-                  (mv expands found)
-                (if (or found
-                        (member-equal arg (cdr x)))
-                    ;; check that x is expandable.
-                    (if (or (member (car x) exclude)
-                            (consp (car x))
-                            (member (car x) '(not car cdr)))
-                        (mv nil nil)
-                      (if (fgetprop (car x) 'def-bodies nil world)
-                          (mv (list x) nil)
-                        (mv nil t)))
-                  (mv nil nil)))))))
- (defun find-expands-for-arg-list (x arg world exclude)
+ (defun find-expands-for-arg-term (x arg world def-alist exclude)
+   (b* (((when (atom x)) (mv nil nil))
+        ((when (eq (car x) 'quote)) (mv nil nil))
+        ((mv expands found)
+         (find-expands-for-arg-list
+          (cdr x) arg world def-alist exclude))
+        ;; If expansion is found in the args, don't expand x yet.
+        ((when expands) (mv expands found))
+        ((unless (or found (member-equal arg (cdr x))))
+         (mv nil nil))
+        ;; check that x is expandable.
+        ((when (or (member (car x) exclude)
+                   (consp (car x))
+                   (member (car x) '(not car cdr))))
+         (mv nil nil))
+        (look (assoc (car x) def-alist))
+        ((when look)
+         (mv `((:with ,(cdr look) ,x)) nil))
+        ((when (fgetprop (car x) 'def-bodies nil world))
+         (mv (list x) nil)))
+     (mv nil t)))
+ (defun find-expands-for-arg-list (x arg world def-alist exclude)
    (if (atom x)
        (mv nil nil)
      (b* (((mv car-ex car-f)
-           (find-expands-for-arg-term (car x) arg world exclude))
+           (find-expands-for-arg-term (car x) arg world def-alist exclude))
           ((mv cdr-ex cdr-f)
-           (find-expands-for-arg-list (cdr x) arg world exclude)))
+           (find-expands-for-arg-list (cdr x) arg world def-alist exclude)))
        (mv (union-equal car-ex cdr-ex)
            (or car-f cdr-f))))))
 
-(defun find-expands-for-arg-clause (x arg world exclude)
+(defun find-expands-for-arg-clause (x arg world def-alist exclude)
   (mv-let (expands found)
-    (find-expands-for-arg-list x arg world exclude)
+    (find-expands-for-arg-list x arg world def-alist exclude)
     (declare (ignore found))
     expands))
 
@@ -157,7 +158,7 @@
                  consed-subterm-present-in-term))))
   :rule-classes :clause-processor)
 
-(defun structural-decomp-hint-careful (clause arg stablep state exclude)
+(defun structural-decomp-hint-careful (clause arg stablep state def-alist exclude)
   (declare (xargs :stobjs state
                   :mode :program))
   (b* (((unless stablep) (value nil))
@@ -165,12 +166,12 @@
        ((er arg) (translate arg t nil nil 'structural-decomp-hint-careful
                             world state))
        (expands
-        (find-expands-for-arg-clause clause arg world exclude))
+        (find-expands-for-arg-clause clause arg world def-alist exclude))
        ((when expands)
         (value
          `(:computed-hint-replacement
            ((structural-decomp-hint-careful
-             clause ',arg stable-under-simplificationp world ',exclude))
+             clause ',arg stable-under-simplificationp world ',def-alist ',exclude))
            :expand ,expands)))
        ;; Heuristically decide based on presence in the conclusion
        ;; or in rest of clause whether to prefer expanding
@@ -191,38 +192,38 @@
                 (value '(:no-op t)))
       (value `(:computed-hint-replacement
                ((after-select-substruct-hint
-                 clause stable-under-simplificationp state ',exclude))
+                 clause stable-under-simplificationp state ',def-alist ',exclude))
                :or ((:clause-processor
                      (select-expand-substruct clause ',1st))
                     (:clause-processor
                      (select-expand-substruct clause ',2nd))
                     (:no-op t)))))))
 
-(defun after-select-substruct-hint (clause stablep state exclude)
+(defun after-select-substruct-hint (clause stablep state def-alist exclude)
   (declare (xargs :stobjs state
                   :mode :program))
   ;; (prog2$ (cw "Running after-select-substruct-hint~%")
   (let ((term (car clause)))
     (case-match term
       (('not ('structure-decompose arg))
-       (structural-decomp-hint-careful clause arg stablep state exclude))
+       (structural-decomp-hint-careful clause arg stablep state def-alist exclude))
       (& (prog2$ (cw "After-select-substruct-hint didn't find the
 chosen structure to decompose. Clause: ~x0~%" clause)
                  (value '(:no-op t)))))))
 
-(defun structural-decomp-hint-fast (clause arg stablep state exclude)
+(defun structural-decomp-hint-fast (clause arg stablep state def-alist exclude)
   (declare (xargs :stobjs state
                   :mode :program))
   (b* (((unless stablep) (value nil))
        (world (w state))
        ((er arg) (translate arg t nil nil 'structural-decomp-hint-fast
                             world state))
-       (expands (find-expands-for-arg-clause clause arg world exclude))
+       (expands (find-expands-for-arg-clause clause arg world def-alist exclude))
        ((when expands)
         (value `(:computed-hint-replacement
                  ((structural-decomp-hint-fast
                    clause ',arg stable-under-simplificationp state
-                   ',exclude))
+                   ',def-alist ',exclude))
                  :expand ,expands)))
        ;; Heuristically decide based on presence in the conclusion
        ;; or in rest of clause whether to prefer expanding
@@ -243,16 +244,20 @@ chosen structure to decompose. Clause: ~x0~%" clause)
                 (value '(:no-op t)))
       (value `(:computed-hint-replacement
                ((structural-decomp-hint-fast
-                 clause ',1st stable-under-simplificationp state ',exclude))
+                 clause ',1st stable-under-simplificationp state ',def-alist ',exclude))
                :clause-processor
                (remove-irrel-cp clause ',1st))))))
 
 
-(defmacro structural-decomp (arg &key do-not-expand)
+(defmacro structural-decomp (arg &key do-not-expand def-alist)
   `(structural-decomp-hint-fast
-    clause ',arg stable-under-simplificationp state ,do-not-expand))
+    clause ',arg stable-under-simplificationp state
+    (append ',def-alist (table-alist 'structural-decomp-defs (w state)))
+    ,do-not-expand))
 
-(defmacro structural-decomp-careful (arg &key do-not-expand)
+(defmacro structural-decomp-careful (arg &key do-not-expand def-alist)
   `(structural-decomp-hint-careful
-    clause ',arg stable-under-simplificationp state ,do-not-expand))
+    clause ',arg stable-under-simplificationp state
+    (append ',def-alist (table-alist 'structural-decomp-defs (w state)))
+    ,do-not-expand))
 

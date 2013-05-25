@@ -624,7 +624,7 @@ clause processor to prove theorems.~/"
 
 
 
-(defmacro glcp-coverage-default-hint  (&key do-not-expand cov-theory-add)
+(defmacro glcp-coverage-default-hint  (&key do-not-expand cov-theory-add def-alist)
   `'(:computed-hint-replacement
      ((and stable-under-simplificationp
            (let ,'((last (car (last clause))))
@@ -637,6 +637,7 @@ clause processor to prove theorems.~/"
                       (e/d** ((:ruleset shape-spec-obj-in-range-open)))))
                    (acl2::structural-decomp-hint-fast
                     clause ',x stable-under-simplificationp state
+                    (append ,',def-alist (table-alist 'acl2::structural-decomp-defs (w state)))
                     (list* 'binary-and* 'booleanp ,',do-not-expand)))
                   :clause-processor (acl2::remove-irrel-cp clause ',x)))))))
      :in-theory

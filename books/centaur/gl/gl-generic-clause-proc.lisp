@@ -1589,6 +1589,7 @@
     (list 'quote obj)))
 
 (defun bindings-quote-if-needed (bindings)
+  (declare (xargs :guard (true-list-listp bindings)))
   (if (atom bindings)
       nil
     (cons (list (caar bindings)
@@ -1794,11 +1795,14 @@
 
 
 (defun glcp-pretty-print-assignments (n ctrexes concl execp state)
-  (declare (xargs :mode :program))
+  (declare (xargs :stobjs state
+                  :guard (and (natp n)
+                              (true-list-listp ctrexes)
+                              (pseudo-termp concl))))
   (if (atom ctrexes)
-      (value nil)
+      nil
     (b* (((list string assign-alist assign-spec-alist) (car ctrexes))
-         (bindings (bindings-quote-if-needed assign-alist))
+         (bindings (ec-call (bindings-quote-if-needed assign-alist)))
          (- (if (bfr-mode)
                 (cw "Example ~x2, ~@0~%Assignment:~%~x1~%~%" string bindings n)
               (cw "Example ~x3, ~@0~%Template:~%~x1~%Assignment:~%~x2~%~%" string assign-spec-alist
@@ -1806,19 +1810,27 @@
          ((unless execp)
           (glcp-pretty-print-assignments (1+ n) (cdr ctrexes) concl execp state))
          (- (cw "Running conclusion:~%"))
-         ((er (cons & val))
-          (acl2::simple-translate-and-eval
-           `(let ,bindings
-              (declare (ignorable . ,(strip-cars bindings)))
-              ,concl)
-           nil nil "glcp: running conclusion failed"
-           'glcp-pretty-print-assignments (w state) state t))
+         ;; ((acl2::cmp concl-term)
+         ;;  (acl2::translate-cmp 
+         ;;   concl t t t 'glcp-print-ctrexamples (w state)
+         ;;   (default-state-vars state)))
+
+         ;; assign-alist is actually of the form
+         ;; ((var0 val0) (var1 val1)...) --
+         ;; change it to ((var0 . val0) (var1 . val1) ...)
+         (alist (pairlis$ (acl2::alist-keys assign-alist)
+                          (acl2::alist-keys (acl2::alist-vals assign-alist))))
+         ((mv err val)
+          (ec-call (acl2::magic-ev concl alist state t t)))
+         ((when err)
+          (cw "Failed to execute the counterexample: ~@0~%" err))
          (- (cw "Result: ~x0~%~%" val)))
       (glcp-pretty-print-assignments (1+ n) (cdr ctrexes) concl execp state))))
 
 (defun glcp-print-ctrexamples (ctrexes warn-err type concl execp state)
   (declare (xargs :stobjs state
-                  :mode :program))
+                  :guard (and (true-list-listp ctrexes)
+                              (pseudo-termp concl))))
   (b* ((- (cw "
 *** SYMBOLIC EXECUTION ~@0 ***: ~@1 found." warn-err type))
        (- (and ctrexes
@@ -1829,25 +1841,25 @@
 Showing ~x0 examples. Each example consists of a template and a
 concrete assignment.  The template shows a class of examples, and the
 concrete assignment represents a specific example from that
-class:~%~%" (len ctrexes)))))
-       ((er &) (glcp-pretty-print-assignments 1 ctrexes concl execp state)))
-    (value nil)))
+class:~%~%" (len ctrexes))))))
+    (glcp-pretty-print-assignments 1 ctrexes concl execp state)))
 
-(defun glcp-counterexample-wormhole (ctrexes warn-err type concl execp)
-  (wormhole
-   'glcp-counterexample-wormhole
-   '(lambda (whs) whs)
-   nil
-   `(b* (((er &)
-          (glcp-print-ctrexamples
-           ',ctrexes ',warn-err ',type ',concl ',execp state)))
-      (value :q))
-   :ld-prompt nil
-   :ld-pre-eval-print nil
-   :ld-post-eval-print nil
-   :ld-verbose nil))
+;; (defun glcp-counterexample-wormhole (ctrexes warn-err type concl execp)
+;;   (wormhole
+;;    'glcp-counterexample-wormhole
+;;    '(lambda (whs) whs)
+;;    nil
+;;    `(b* (((er &)
+;;           (glcp-print-ctrexamples
+;;            ',ctrexes ',warn-err ',type ',concl ',execp state)))
+;;       (value :q))
+;;    :ld-prompt nil
+;;    :ld-pre-eval-print nil
+;;    :ld-post-eval-print nil
+;;    :ld-verbose nil))
 
-(in-theory (disable glcp-counterexample-wormhole))
+
+;; (in-theory (disable glcp-counterexample-wormhole))
 
 (defun glcp-error-fn (msg state)
   (declare (xargs :guard t))
@@ -1876,7 +1888,6 @@ class:~%~%" (len ctrexes)))))
   :hints(("Goal" :in-theory (disable glcp-gen-assignments))))
 
 (in-theory (disable glcp-gen-ctrexes))
-  
 
 (defun glcp-analyze-interp-result (val al hyp-bdd id concl config state)
   (b* (((glcp-config config) config)
@@ -1895,9 +1906,9 @@ class:~%~%" (len ctrexes)))))
                             false-ctrex al hyp-bdd config.nexamples state))
              (state (acl2::f-put-global 'glcp-counterex-assignments
                                         ctrexes state)))
-          (prog2$ (glcp-counterexample-wormhole
+          (prog2$ (glcp-print-ctrexamples
                    ctrexes "ERROR" "Counterexamples"
-                   concl config.exec-ctrex)
+                   concl config.exec-ctrex state)
                   (if config.abort-ctrex
                       (glcp-error
                        (acl2::msg "~
@@ -1910,9 +1921,9 @@ class:~%~%" (len ctrexes)))))
                             unk-ctrex al hyp-bdd config.nexamples state))
              (state (acl2::f-put-global 'glcp-indeterminate-assignments
                                         ctrexes state)))
-          (prog2$ (glcp-counterexample-wormhole
+          (prog2$ (glcp-print-ctrexamples
                    ctrexes (if config.abort-unknown "ERROR" "WARNING")
-                   "Indeterminate results" concl config.exec-ctrex)
+                   "Indeterminate results" concl config.exec-ctrex state)
                   (if config.abort-unknown
                       (glcp-error
                        (acl2::msg "~
