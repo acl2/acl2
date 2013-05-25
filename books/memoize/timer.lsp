@@ -216,39 +216,47 @@
 ; seconds.  Then, I tried using much smaller sleep times, and compared how
 ; close my guesses were.  Here is the code I used:
 
-;; (defparameter *true-ticks-per-second*
-;;   (estimate-ticks-per-second 20))
+; I later repeated this experiment on the machine "k", an AMD FX-8350,
+; running FreeBSD.  The results were much less consistent!
 
-;; (defun max-error-ticks (times sleep-time)
-;;   (if (= times 0)
-;;       0
-;;     (let* ((est1 (estimate-ticks-per-second sleep-time))
-;;            (diff (abs (- est1 *true-ticks-per-second*))))
-;;       (max diff (max-error-ticks (1- times) sleep-time)))))
+#||
+(defparameter *true-ticks-per-second*
+  (estimate-ticks-per-second 20))
 
-;; (defun max-error-pct (times sleep-time)
-;;   (* 100.0 (/ (max-error-ticks times sleep-time) *true-ticks-per-second*)))
+(defun max-error-ticks (times sleep-time)
+  (if (= times 0)
+      0
+    (let* ((est1 (estimate-ticks-per-second sleep-time))
+	   (diff (abs (- est1 *true-ticks-per-second*))))
+      (max diff (max-error-ticks (1- times) sleep-time)))))
 
-;; (max-error-pct 100 .0001) ;; 888.60%
-;; (max-error-pct 100 .001)  ;;  98.80%
-;; (max-error-pct 100 .01)   ;;   9.89%
-;; (max-error-pct 100 .05)   ;;   1.97%
-;; (max-error-pct 100 .08)   ;;   1.23%
-;; (max-error-pct 100 .1)    ;;   0.98%
-;; (max-error-pct 100 .12)   ;;   0.81%
-;; (max-error-pct 100 .15)   ;;   0.67%
-;; (max-error-pct 100 .2)    ;;   0.49%
-;; (max-error-pct 100 .3)    ;;   0.32%
-;; (max-error-pct 100 .5)    ;;   0.19%
+(defun max-error-pct (times sleep-time)
+  (* 100.0 (/ (max-error-ticks times sleep-time) *true-ticks-per-second*)))
 
-; In short, it seems like sleeping for .1 seconds gives an estimate that is
-; within 1% of the true ticks per second.  It seems like this is probably
-; pretty reasonable.
+                          ;; fv-1          k
+(max-error-pct 100 .0001) ;; 888.60%   20426.45%
+(max-error-pct 100 .001)  ;;  98.80%    1904.23%
+(max-error-pct 100 .01)   ;;   9.89%     105.13%
+(max-error-pct 100 .05)   ;;   1.97%      19.97%
+(max-error-pct 100 .08)   ;;   1.23%      12.60%
+(max-error-pct 100 .1)    ;;   0.98%       9.98%
+(max-error-pct 100 .12)   ;;   0.81%       8.38%
+(max-error-pct 100 .15)   ;;   0.67%       6.64%
+(max-error-pct 100 .2)    ;;   0.49%       4.99%
+(max-error-pct 100 .3)    ;;   0.32%       3.31% (but 16.62% once)
+(max-error-pct 100 .5)    ;;   0.19%       1.98%
+||#
+
+; In short, it seems like sleeping for .1 seconds gives an estimate
+; that is within 1% of the true ticks per second on fv-1 (an Intel
+; Core2 generation Xeon running Linux), which is very reasonable, but
+; that's still not very good on the AMD/FreeBSD box.  So, I guess as a
+; compromise, I'll have it sleep for .2 seconds.  Blah.
 
   (defun carefully-estimate-ticks-per-second ()
     ;; Of course, if RDTSC is wacky, maybe this doesn't give us a good number.
     ;; So, try to make sure that we have a least a 1 KHz processor. :)
-    (let* ((sleep-time 0.1))
+    (let* ((sleep-time 0.2))
       (loop do
             (setq *ticks-per-second*
                   (estimate-ticks-per-second sleep-time))
