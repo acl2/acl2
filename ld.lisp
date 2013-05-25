@@ -20912,11 +20912,6 @@
   were formerly prohibited at the directory level, but that is no longer the
   case, and we expect such cycles to occur in the future.
 
-  ACL2(pr), which includes ~il[parallelism] (as for ACL2(p)) and non-standard
-  analysis support for the ~il[real]s (as for ACL2(r)), now builds and can
-  certify the community ~c[nonstd/] books.  Thanks to David Rager for his
-  contribution to this capability.
-
   Although ACL2 users don't typically modify raw Lisp variables, we have
   arranged to reset Lisp variable ~c[*default-pathname-defaults*] if necessary
   at startup so that it will not interfere with ACL2, in particular by messing
@@ -20931,11 +20926,6 @@
   in system applications as before (e.g., write out ~c[.cert] files).  Thanks
   to Dave Greve for bringing this issue to our attention.
 
-  For ACL2(p), some anomalous behavior may no longer occur because prover
-  calls (more specifically, trips through the ACL2 ``waterfall'') will return
-  only after all sub-computations (threads) have finished.  Thanks to David
-  Rager for contributing this improvement.
-
   Jared Davis contributed changes related to the ~ilc[memoize] utility of
   ACL2(h), including some low-level changes as well as the following.
 
@@ -20946,6 +20936,16 @@
 
   o Removed the ~c[:inline] keyword option to memoize, which was just an alias
     for the ~c[:recursive] option.
+
+  For ACL2(p), some anomalous behavior may no longer occur because prover
+  calls (more specifically, trips through the ACL2 ``waterfall'') will return
+  only after all sub-computations (threads) have finished.  Thanks to David
+  Rager for contributing this improvement.
+
+  ACL2(pr), which includes ~il[parallelism] (as for ACL2(p)) and non-standard
+  analysis support for the ~il[real]s (as for ACL2(r)), now builds and can
+  certify the community ~c[nonstd/] books.  Thanks to David Rager for his
+  contribution to this capability.
 
   ~/~/")
 
