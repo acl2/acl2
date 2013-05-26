@@ -400,14 +400,14 @@ xdoc-impl/bookdoc.dat: \
 
 # We assume that ACL2_HAS_REALS indicates a regression being done in
 # nonstd/.
-ifndef ACL2_HAS_REALS
+ifeq ($(ACL2_HAS_REALS), )
 
 # The following dependency is to be ignored in ACL2(r), where the
 # relevant include-book in arithmetic-3/extra/ext.lisp is guarded by
 # #-:non-standard-analysis.
 arithmetic-3/extra/ext.cert: rtl/rel8/arithmetic/top.cert
 
-endif # ifndef ACL2_HAS_REALS
+endif # ifeq ($(ACL2_HAS_REALS), )
 
 # BOZO.   make-event/local-elided stuff is tricky because it thinks it can tell whether
 # local-elided.lisp was provisionally certified or not, which doesn't
@@ -468,7 +468,7 @@ bdd/benchmarks.lisp: bdd/cbf.cert bdd/create-benchmarks.lsp
 
 ifndef ACL2_COMP
 
-ifndef ACL2_HAS_REALS
+ifeq ($(ACL2_HAS_REALS), )
 
 # Warning!  For each file below, the directory should either have a
 # cert_pl_exclude file or else be explicitly excluded in the egrep
@@ -521,7 +521,7 @@ workshops/2011/verbeek-schmaltz/sources/correctness2.cert: \
   workshops/2011/verbeek-schmaltz/deps.cert
 	cd $(@D) ; $(STARTJOB) -c "$(MAKE)"
 
-endif # ifndef ACL2_HAS_REALS
+endif # ifeq ($(ACL2_HAS_REALS), )
 
 ACL2_CUSTOM_TARGETS += system/pcert/sub.cert
 
@@ -811,10 +811,9 @@ all: lite
 
 # OK_CERTS_EXCLUSIONS is undefined if ACL2_BOOK_CERTS is defined, but
 # that's not a problem; after all, in that case OK_CERTS wasn't
-# filtered by OK_CERTS_EXCLUSIONS.
-everything: all $(OK_CERTS_EXCLUSIONS)
-
-
+# filtered by OK_CERTS_EXCLUSIONS.  Besides, we don't intend to
+# support "everything" when ACL2_BOOK_CERTS is defined.
+everything: all $(OK_CERTS_EXCLUSIONS) $(SLOW_BOOKS)
 
 # The critical path report will work only if you have set up certificate timing
 # BEFORE you build the books.  See ./critpath.pl --help for details.
