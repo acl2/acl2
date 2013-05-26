@@ -9824,26 +9824,36 @@
 
 (defun expand-tilde-to-user-home-dir (str os ctx state)
 
-; Note that character `~' gets no special treatment by Windows.  See also
-; absolute-pathname-string-p.
+; Note that character `~' need not get special treatment by Windows.  See
+; comment just above error message below, and see absolute-pathname-string-p.
 
-  (cond ((and (not (eq os :mswindows))
-              (or (equal str "~")
-                  (and (< 1 (length str))
-                       (eql (char str 0) #\~)
-                       (eql (char str 1) #\/))))
+  (cond ((or (equal str "~")
+             (and (< 1 (length str))
+                  (eql (char str 0) #\~)
+                  (eql (char str 1) #\/)))
          (let ((user-home-dir (f-get-global 'user-home-dir state)))
-           (if user-home-dir
-               (concatenate 'string
-                            user-home-dir
-                            (subseq str 1 (length str)))
-             (prog2$ (er hard ctx
-                         "The use of ~~/ for the user home directory in ~
-                          filenames is not supported ~@0."
-                         (if (f-get-global 'certify-book-info state)
-                             "inside books being certified"
-                           "for this host Common Lisp"))
-                     str))))
+           (cond
+            (user-home-dir
+             (concatenate 'string
+                          user-home-dir
+                          (subseq str 1 (length str))))
+            (t
+
+; On Linux or Mac OS, it is surprising to find that user-home-dir is nil.  (See
+; the definition of lp to see how it is set.)  But on Windows, it seems that
+; this could be the case, say outside an environment like Cygwin, MSYS, or
+; MinGW.
+
+             (let ((certify-book-info (f-get-global 'certify-book-info state)))
+               (prog2$ (and (or certify-book-info
+                                (not (eq os :mswindows)))
+                            (er hard ctx
+                                "The use of ~~/ for the user home directory ~
+                                 in filenames is not supported ~@0."
+                                (if certify-book-info
+                                    "inside books being certified"
+                                  "for this host Common Lisp")))
+                       str))))))
         (t str)))
 
 #-acl2-loop-only

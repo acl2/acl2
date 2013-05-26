@@ -85,11 +85,6 @@
 
 (defmacro our-syntax (&rest args)
 
-; Warning: We use our-with-standard-io-syntax below, which might not be ideal
-; for GCL.  If we decide to stand behind ACL2(h) built on ANSI GCL, we might
-; want to think harder about whether progn really is sufficient where we call
-; our-with-standard-io-syntax below.
-
   "OUR-SYNTAX is similar to Common Lisp's WITH-STANDARD-IO-SYNTAX.
   The settings in OUR-SYNTAX are oriented towards reliable, standard,
   vanilla, mechanical reading and printing, and less towards human
@@ -103,7 +98,13 @@
 ; We use the *ACL2-PACKAGE* and the *ACL2-READTABLE* because we use
 ; them almost all the time in our code.
 
-  `(our-with-standard-io-syntax
+  `(with-standard-io-syntax
+
+; Note for GCL:
+; As of late May 2013, with-standard-io-syntax seems to work properly in ANSI
+; GCL.  If necessary one could use our-with-standard-io-syntax here, but better
+; would be to use an up-to-date ANSI GCL.
+
     (let ((*package* *acl2-package*)
           (*readtable* *acl2-readtable*))
       ,@args)))
@@ -3923,11 +3924,6 @@ the calls took.")
 
 (defun meminfo (pat)
 
-; Warning: We use our-with-standard-io-syntax below, which might not be ideal
-; for GCL.  If we decide to stand behind ACL2(h) built on ANSI GCL, we might
-; want to think harder about whether progn really is sufficient where we call
-; our-with-standard-io-syntax below.
-
 ;  General comment about PROBE-FILE.  PROBE-FILE, according to Gary
 ;  Byers, may reasonably cause an error.  He is undoubtedly right.  In
 ;  such cases, however, Boyer generally thinks and wishes that it
@@ -3937,7 +3933,13 @@ the calls took.")
   (or
    (and
     (our-ignore-errors (probe-file "/proc/meminfo"))
-    (our-with-standard-io-syntax
+    (with-standard-io-syntax
+
+; Note for GCL:
+; As of late May 2013, with-standard-io-syntax seems to work properly in ANSI
+; GCL.  If necessary one could use our-with-standard-io-syntax here, but better
+; would be to use an up-to-date ANSI GCL.
+
      (with-open-file (stream "/proc/meminfo")
                      (let (line)
                        (loop while (setq line (read-line stream nil nil)) do

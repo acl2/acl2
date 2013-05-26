@@ -8104,6 +8104,17 @@
         ((and (eq rc 'reclassifying)
               (conditionally-memoized-fns names
                                           (table-alist 'memoize-table wrld)))
+
+; We no longer recall exactly why we have this restriction.  However, after
+; discussing this with Sol Swords we think it's because we tolerate all sorts
+; of guard violations when dealing with :program mode functions, but we expect
+; guards to be handled properly with :logic mode functions, including the
+; condition function.  If we verify termination and guards for the memoized
+; function but not the condition, that could present a problem.  Quite possibly
+; we can relax this check somewhat after thinking things through -- e.g., if
+; the condition function is a guard-verified :logic mode function -- if there
+; is demand for such an enhancement.
+
          (er soft ctx
              "It is illegal to verify termination (i.e., convert from ~
               :program to :logic mode) for function~#0~[~/s~] ~&0, because ~
@@ -8437,6 +8448,9 @@
 ; (link-doc-to case-split miscellaneous splitter) ; no; :doc case-split exists
 (link-doc-to immed-forced miscellaneous splitter)
 (link-doc-to forced miscellaneous force)
+
+(link-doc-to print-summary-user switches-parameters-and-modes
+             finalize-event-user)
 
 #+:non-standard-analysis
 (defun build-valid-std-usage-clause (arglist body)

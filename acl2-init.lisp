@@ -316,24 +316,19 @@ implementations.")
 
   'acl2_invisible::*CURRENT-ACL2-WORLD-KEY*)
 
-#+(and gcl hons never-mind)
-; For now (5/2/2013) we will skip this error for ANSI GCL (see "never-mind"
-; just above).  If ANSI GCL ever defined *PRINT-PPRINT-DISPATCH*, we should
-; tags-search the sources for this variable and make appropriate changes.
+#+cltl2
 (when (not (boundp 'COMMON-LISP::*PRINT-PPRINT-DISPATCH*))
 
-; With-standard-io-syntax is called in memoize-raw.lisp, which has caused an
-; error in ANSI GCL when COMMON-LISP::*PRINT-PPRINT-DISPATCH* is not bound.
-; Even if that is somehow fixed, we probably should still disallow the
-; combination #+(and gcl hons (not cltl2)).
+; Many improvements were made to ANSI GCL in May, 2013.  If
+; COMMON-LISP::*PRINT-PPRINT-DISPATCH* is unbound, then something is wrong with
+; this Lisp.  In particular, with-standard-io-syntax might not work correctly.
 
    (format t
-           "ERROR: We do not support building a HONS version of ACL2 in~%~
-            a host Common Lisp when variable ~s is unbound.  This~%~
-            restriction might be lifted if you request that of the ACL2~%~
-            implementors."
+           "ERROR: We do not support building ACL2 in~%~
+            a host ANSI Common Lisp when variable ~s is unbound.  Please~%~
+            obtain a more recent version of your Lisp implementation."
            'COMMON-LISP::*PRINT-PPRINT-DISPATCH*)
-   (lisp::bye))
+   (exit-lisp))
 
 #+(and gcl cltl2)
 ; Deal with undefined cltl2 symbols in ANSI GCL, using values that would be
@@ -761,10 +756,8 @@ implementations.")
     result))
 
 (defmacro our-with-standard-io-syntax (&rest args)
-
-; Use this macro when you can live with progn instead in the case of GCL.
-
-  (cons #+gcl 'progn #-gcl 'with-standard-io-syntax
+  (cons #-cltl2 'progn
+        #+cltl2 'with-standard-io-syntax
         args))
 
 (defmacro write-exec-file (stream prefix string &rest args)

@@ -69,6 +69,9 @@
 #                    ; waterfall parallelism (requires the
 #                    ; experimental extension ACL2(p) of ACL2); see
 #                    ; file acl2-customization-files/README.
+#   make regression-everything
+#                    ; Same as make regression, except that target "everything"
+#                    ; is used in community books file, Makefile.
 #   make regression-legacy-fast [DEPRECATED as is books/regression-targets (legacy)]
 #                    ; (WARNING: This target uses variable ACL2, with default value
 #                    ;      "acl2", so it is probably a good idea to run after
@@ -766,6 +769,15 @@ else
 	cd books ; $(MAKE) $(ACL2_IGNORE) ACL2=$(ACL2)
 endif
 
+.PHONY: regression-everything
+regression-everything:
+	uname -a
+ifndef ACL2
+	cd books ; $(MAKE) $(ACL2_IGNORE) everything ACL2=$(shell pwd)/saved_acl2
+else
+	cd books ; $(MAKE) $(ACL2_IGNORE) everything ACL2=$(ACL2)
+endif
+
 .PHONY: regression-nonstd
 regression-nonstd:
 	uname -a
@@ -791,6 +803,14 @@ ifndef ACL2
 	$(MAKE) $(ACL2_IGNORE) ACL2=$(shell pwd)/saved_acl2 regression
 else
 	$(MAKE) $(ACL2_IGNORE) ACL2=$(ACL2) regression
+endif
+
+.PHONY: regression-everything-fresh
+regression-everything-fresh: clean-books
+ifndef ACL2
+	$(MAKE) $(ACL2_IGNORE) ACL2=$(shell pwd)/saved_acl2 regression-everything
+else
+	$(MAKE) $(ACL2_IGNORE) ACL2=$(ACL2) regression-everything
 endif
 
 .PHONY: regression-nonstd-fresh

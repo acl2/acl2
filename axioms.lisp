@@ -33311,10 +33311,10 @@
         (wormhole-er 'get-output-stream-string$-fn
                      (list channel)))
       (return-from get-output-stream-string$-fn
-                   (cond #-gcl
+                   (cond #-(and gcl (not cltl2))
                          ((not (typep stream 'string-stream))
                           (mv t nil state-state))
-                         #+gcl
+                         #+(and gcl (not cltl2))
                          ((or (not (typep stream 'stream))
                               (si::stream-name stream)) ; stream to a file
 
@@ -37163,8 +37163,8 @@
                (t ; possible hard error for ~ or ~/...
                 (and (eql (char str 0) #\~)
 
-; Note that character `~' gets no special treatment by Windows.  See also
-; expand-tilde-to-user-home-dir.
+; Note that a leading character of `~' need not get special treatment by
+; Windows.  See also expand-tilde-to-user-home-dir.
 
                      (not (eq os :mswindows))
                      (prog2$ (and (or (eql 1 len)

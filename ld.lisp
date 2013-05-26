@@ -20633,6 +20633,9 @@
 ; make-event forms are never redundant.  Thanks to Harsh Raju Chamarthi for an
 ; email exchange that led us to make this improvement.
 
+; For GCL only, further increased the binding stack (except, still, on
+; Windows); see the setting of si::*multiply-stacks* in init.lisp.
+
   :doc
   ":Doc-Section release-notes
 
@@ -20875,7 +20878,8 @@
   (Windows only) Fixed a bug that was causing a hard error on Windows when ACL2
   encountered filenames starting with the tilde character (~c[~~]), for
   example, ~c[(ld \"~~/acl2-customization.lsp\")].  Thanks to Sol Swords for
-  bringing this bug to our attention.
+  bringing this bug to our attention.  Also thanks to Harsh Raju Chamarthi for
+  a useful conversation that led to a better fix than our first one.
 
   ~st[CHANGES AT THE SYSTEM LEVEL]
 
