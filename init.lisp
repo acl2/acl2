@@ -66,7 +66,7 @@
 ; elsewhere for some other lisps.  However, we have seen GCL 2.6.6 on Windows
 ; break here, so we skip the stack adjustment for Windows.
 
-#+(and gcl (not mswindows))
+#+gcl
 (progn
   (defvar *acl2-gcl-multiply-stacks-evaluated* nil)
   (when (not *acl2-gcl-multiply-stacks-evaluated*)

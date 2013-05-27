@@ -3859,6 +3859,34 @@
 ; We return two lists, hyps and concls, such that term is equivalent to
 ; (implies (and . hyps) (and . concls)).
 
+; We have considered treating (IMPLIES a (IMPLIES b c)) as (IMPLIES (and a b)
+; c) when we parse :forward-chaining rules.  At the moment we do not, and hence
+; such a :forward-chaing rule might put (IMPLIES b c) on the type-alist.  The
+; code for the ``improved'' parsing is in the comment just below.  This would
+; bring the parsing of :forward-chaining rules more into line with what we do
+; for :rewrite rules.  But an email from Dave Greve gave us the impression that
+; he and others might intentionally put calls of IMPLIES on the type-alist.
+; This is in the spirit of ``just do what the user said.''  We never ran a
+; regression with the ``improved'' parsing so we don't know what effect it
+; might have.  But we decided to stick with the ``just do what the user said''
+; approach.
+
+;   (let ((term (remove-lambdas (remove-guard-holders term))))
+;     (cond ((or (variablep term)
+;                (fquotep term)
+;                (not (eq (ffn-symb term) 'implies)))
+;            (mv nil (flatten-ands-in-lit term)))
+;           (t
+;
+; ; Term is of the form (implies arg1 arg2).  We recursively
+; ; destructure arg2 first, in case it is another (implies ...).
+;
+;            (mv-let (hyps concls)
+;                    (destructure-forward-chaining-term (fargn term 2))
+;                    (mv (append (flatten-ands-in-lit (fargn term 1))
+;                                hyps)
+;                        concls)))))
+
   (let ((term (remove-lambdas (remove-guard-holders term))))
     (cond ((or (variablep term)
                (fquotep term)
