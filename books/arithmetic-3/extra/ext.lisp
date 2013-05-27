@@ -198,7 +198,7 @@
 
   (local (include-book
 ; Warning: Keep this linebreak.  This dependency is dealt with directly in
-; makefiles.
+; the top-level Makefile for all the books, for other than ACL2(r).
           "rtl/rel8/arithmetic/top" :dir :system))
 
   (defthm x*/y=1->x=y-ext
@@ -715,7 +715,9 @@
                   (integerp x))
              (integerp (mod x (/ y)))))
 
-  (local (include-book ; keep this linebreak!
+  (local (include-book
+; Warning: Keep this linebreak.  This dependency is dealt with directly in
+; the top-level Makefile for all the books, for other than ACL2(r).
           "rtl/rel8/arithmetic/extra-rules" :dir :system)) ; for exp-invert
   ; rule-classes nil
   (defthm exp-invert-ext
