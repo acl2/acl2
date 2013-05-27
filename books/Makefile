@@ -405,7 +405,8 @@ ifeq ($(ACL2_HAS_REALS), )
 # The following dependency is to be ignored in ACL2(r), where the
 # relevant include-book in arithmetic-3/extra/ext.lisp is guarded by
 # #-:non-standard-analysis.
-arithmetic-3/extra/ext.cert: rtl/rel8/arithmetic/top.cert
+arithmetic-3/extra/ext.cert: rtl/rel8/arithmetic/top.cert \
+                             rtl/rel8/arithmetic/extra-rules.cert
 
 endif # ifeq ($(ACL2_HAS_REALS), )
 
