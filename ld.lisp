@@ -23160,15 +23160,21 @@ Now you are ready to follow the link.
 <p>
 
 <li>
-The next link will take you to the Source tab of the community books
-website (which is external to the present ACL2 website).  You can then
-click in the box just under that tab and type your search term.  For
-example, if you type `<code>tail recursion</code>' then you will see
-text from several books in the svn trunk that deal with the topic of
-tail recursion.
+
+The next link will take you to the community books website (which is external
+to the present ACL2 website), spefically to the section entitled ``Searching
+and browsing the books.''  There, you will see a search box in which you can
+enter your search term.  For example, if you type `<code>tail recursion</code>'
+and then <code>&lt;RETURN&gt;</code>, you will see text from several books in
+the svn trunk that deal with the topic of tail recursion, with an
+accompanying <i>``File Path''</i> shown at the end of each book's text.
+
 <p>
-<a href=\"https://code.google.com/p/acl2-books/source/\">SEARCH THE
-  COMMUNITY BOOKS</a></a><br>
+
+<a
+  href=\"https://code.google.com/p/acl2-books/#Searching_and_browsing_the_books\">SEARCH
+  THE COMMUNITY BOOKS</a></a><br>
+
 </li>
 
 </ul>
