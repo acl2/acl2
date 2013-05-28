@@ -76,7 +76,6 @@ BAD_LINKS :=
 # Include-book forms in tools/lint.lisp for books not included in nonstd:
 # (include-book "cutil/da-base" :dir :system)
 # (include-book "str/cat" :dir :system)
-# (include-book "misc/assert" :dir :system)
 # (include-book "defsort/duplicated-members" :dir :system)
 # (include-book "clause-processors/unify-subst" :dir :system)
 BAD_LINKS += tools/lint.*
