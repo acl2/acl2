@@ -868,14 +868,6 @@ workshop2013: $(filter workshops/2013/%, $(OK_CERTS))
 
 std: $(filter std/% cutil/% str/%, $(OK_CERTS))
 
-# We provide a basic target to show maintainers how they can filter
-# out particular directories from the build.
-.PHONY: basic
-
-basic: $(filter-out centaur/%, \
-         $(filter-out coi/%, \
-           $(filter-out workshops/%, $(OK_CERTS))))
-
 # Warning: ACL2's GNUmakefile uses the following "short-test" target
 # to implement its own target, "certify-books-short".  So please be
 # careful about making major changes to "short-test" in this Makefile.
