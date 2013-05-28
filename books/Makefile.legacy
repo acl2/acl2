@@ -176,10 +176,10 @@ wp-gen: ordinals
 # xdoc has no dependencies
 xdoc-impl: xdoc str tools finite-set-theory/osets
 system: tools arithmetic arithmetic-5 misc
-std/lists: arithmetic
+std/lists: arithmetic top-with-meta-cert xdoc
 std/alists: std/lists tools
 std/typed-lists: std/lists cutil arithmetic
-std/ks: std/lists ihs arithmetic xdoc
+std/ks: std/lists ihs arithmetic xdoc std/misc
 std/io: tools xdoc system std/lists std/ks arithmetic ihs arithmetic-3
 std/misc: std/lists ihs top-with-meta-cert xdoc
 cutil: xdoc xdoc-impl tools str misc finite-set-theory/osets \
