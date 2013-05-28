@@ -9,7 +9,6 @@ srcdir="$2/$tgtdir"
 
 files="`ls -1 $srcdir | grep '[.]lisp$'`"
 files="`ls -1 $srcdir | grep '[.]lsp$' | grep -v '@expansion.lsp$'` $files"
-files="`ls -1 $srcdir | grep '[.]pl$'` $files"
 
 # For bdd/:
 files="`ls -1 $srcdir | grep '[.]be$'` $files"
@@ -32,3 +31,4 @@ for file in $files ; do \
 	$cmd ; \
     fi ;
 done
+

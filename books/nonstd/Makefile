@@ -46,7 +46,13 @@ LINKDIRS := $(filter-out $(FULLDIRS),$(ALLDIRS))
 SAVED_DIR := $(shell pwd)
 STD_DIR := $(shell cd .. ; pwd)
 
-$(info Making links...)
+$(info Making links to ../*.pl files...)
+LINKS0 := $(shell for file in $(wildcard ../*.pl) ; \
+	do \
+	if [ ! -e $${file\#../} ] ; then ln -s $$file . ; fi ; \
+	done)
+
+$(info Making links in subdirectories...)
 LINKS := $(shell \
 	(cd $(SAVED_DIR) ;\
 	for book_dir in $(LINKDIRS) ; \
@@ -58,6 +64,26 @@ LINKS := $(shell \
 	if [ -h workshops/1999/calculus/book/tree.lisp ] ; then \
 	rm workshops/1999/calculus/book/tree.lisp ; \
 	fi) >& links.log)
+
+# Some directories may have books that would require books in
+# directories not yet included under nonstd.  It might be good to
+# include those others, but in the meantime we simply exclude the
+# problematic books.
+
+$(info Removing unwanted links...)
+BAD_LINKS :=
+
+# Include-book forms in tools/lint.lisp for books not included in nonstd:
+# (include-book "cutil/da-base" :dir :system)
+# (include-book "str/cat" :dir :system)
+# (include-book "misc/assert" :dir :system)
+# (include-book "defsort/duplicated-members" :dir :system)
+# (include-book "clause-processors/unify-subst" :dir :system)
+BAD_LINKS += tools/lint.*
+
+ifneq ($(BAD_LINKS), )
+REMOVE_LINKS := $(shell rm -f $(BAD_LINKS))
+endif # ifneq ($(BAD_LINKS), )
 
 # Note that the following assumes that we execute make in this directory.
 # Also note that the parent directory provides some directory dependencies
@@ -73,12 +99,15 @@ all: $(EXTRA_TARGETS)
 # Warning: targets like all-fasl have not been updated to work for
 # nonstd.
 
-clean: clean-more
+clean: clean-more-nonstd
 
-clean-more:
+clean-more-nonstd:
 	rm -f workshops/1999/calculus/book/tree.lisp
 
 clean-links:
+	@echo 'Cleaning links *.pl:'
+	@(for file in $(wildcard *.pl) ; do \
+	 if [ -L $$file ] ; then rm -f $$file ; fi ; done) >& /dev/null
 	@echo "Cleaning links from directories:"
 	@for book_dir in $(LINKDIRS) ; \
 	do \
