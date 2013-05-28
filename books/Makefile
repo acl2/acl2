@@ -110,10 +110,10 @@
 #    possible because I've gone through and fixed up many books so that they
 #    follow certain conventions, explained below.
 #
-#  - It increases (significantly) opportunities for parallelism, by doing away
-#    with directory-level dependencies.  Essentially, any books that do not
-#    have an include-book dependency can be built in parallel.  At the same
-#    time, this means that books can be reorganized based on their logical
+#  - It increases (significantly) opportunities for book-level parallelism, by
+#    doing away with directory-level dependencies.  Essentially, any books that
+#    do not have an include-book dependency can be built in parallel.  At the
+#    same time, this means that books can be reorganized based on their logical
 #    content, without regards to directory build order.
 #
 #  - It generally increases build-system automation.  We use "find" commands to
@@ -154,7 +154,7 @@
 #       foo.acl2, if it exists, or else
 #       cert.acl2, if it exists, or else
 #       default to simply (certify-book "foo" ? t)
-#     These instructions specify argument to certify-book, for example:
+#     These instructions specify arguments to certify-book, for example:
 #       ; cert-flags: ? t :ttags :all
 #   - Books that depend on ACL2(h), such as centaur/tutorial/alu16-book.lisp,
 #     contain this line (or, a cert_param directive can be in the
