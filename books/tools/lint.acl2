@@ -21,3 +21,4 @@
 (in-package "ACL2")
 (ld "../cutil/package.lsp")
 (ld "../str/package.lsp")
+(certify-book "lint" ? t)
