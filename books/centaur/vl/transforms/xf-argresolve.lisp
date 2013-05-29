@@ -144,6 +144,7 @@ plainarg for it.</p>"
   :returns (mv successp
                (warnings vl-warninglist-p :hyp :fguard)
                (new-x    vl-arguments-p   :hyp :fguard))
+  :parents (argresolve)
   :short "Coerce arguments into plain (positional) style."
 
   :long "<p>We used to require that every port had a connection, and otherwise
