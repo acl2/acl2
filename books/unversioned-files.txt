@@ -28,6 +28,7 @@ Makefile-tmp
 *.d64fsl
 *.dx64fsl
 *.lx64fsl
+*.fx64fsl
 *.bin
 *.sparcf
 *.axpf

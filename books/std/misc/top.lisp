@@ -1,10 +1,7 @@
-; ACL2 Theory Linter
-; Copyright (C) 2013 Kookamara LLC
-;
-; Contact:
-;   Kookamara LLC
-;   11410 Windermere Meadows
-;   Austin, TX 78759
+; Standard Library - Miscellaneous
+; Portions are Copyright (C) 2008-2013 Centaur Technology
+; Portions are Copyright (C) 2004-2006 by Jared Davis
+; See individual books for details
 ;
 ; This program is free software; you can redistribute it and/or modify it under
 ; the terms of the GNU General Public License as published by the Free Software
@@ -15,10 +12,11 @@
 ; more details.  You should have received a copy of the GNU General Public
 ; License along with this program; if not, write to the Free Software
 ; Foundation, Inc., 51 Franklin Street, Suite 500, Boston, MA 02110-1335, USA.
-;
-; Original authors: Jared Davis <jared@kookamara.com>
 
 (in-package "ACL2")
-(ld "../cutil/package.lsp")
-(ld "../str/package.lsp")
-(certify-book "lint" ? t)
+(include-book "base10-digit-charp")
+(include-book "explode-atom")
+(include-book "explode-nonnegative-integer")
+(include-book "intern-in-package-of-symbol")
+(include-book "string-append")
+(include-book "two-nats-measure")

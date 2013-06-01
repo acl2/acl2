@@ -1,5 +1,5 @@
-; Centaur Miscellaneous Books
-; Copyright (C) 2008-2011 Centaur Technology
+; Standard IO Library
+; Copyright (C) 2008-2013 Centaur Technology
 ;
 ; Contact:
 ;   Centaur Technology Formal Verification Group

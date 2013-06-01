@@ -16,7 +16,7 @@
 ; License along with this program; if not, write to the Free Software
 ; Foundation, Inc., 51 Franklin Street, Suite 500, Boston, MA 02110-1335, USA.
 ;
-; Original authors: Jared Davis <jared.c.davis@gmail.com>
+; Original authors: Jared Davis <jared@kookamara.com>
 
 (in-package "ACL2")
 (include-book "xdoc/top" :dir :system)

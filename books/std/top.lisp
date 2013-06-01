@@ -1,10 +1,12 @@
-; ACL2 Theory Linter
-; Copyright (C) 2013 Kookamara LLC
+; Standard Library
+; Portions are Copyright (C) 2008-2013 Centaur Technology
+; Portions are Copyright (C) 2004-2006 by Jared Davis
+; See individual books for details.
 ;
 ; Contact:
-;   Kookamara LLC
-;   11410 Windermere Meadows
-;   Austin, TX 78759
+;   Centaur Technology Formal Verification Group
+;   7600-C N. Capital of Texas Highway, Suite 300, Austin, TX 78731, USA.
+;   http://www.centtech.com/
 ;
 ; This program is free software; you can redistribute it and/or modify it under
 ; the terms of the GNU General Public License as published by the Free Software
@@ -16,9 +18,12 @@
 ; License along with this program; if not, write to the Free Software
 ; Foundation, Inc., 51 Franklin Street, Suite 500, Boston, MA 02110-1335, USA.
 ;
-; Original authors: Jared Davis <jared@kookamara.com>
+; Original author: Jared Davis <jared@centtech.com>
 
 (in-package "ACL2")
-(ld "../cutil/package.lsp")
-(ld "../str/package.lsp")
-(certify-book "lint" ? t)
+(include-book "lists/top")
+(include-book "alists/top")
+(include-book "typed-lists/top")
+(include-book "io/top")
+(include-book "strings/top")
+(include-book "misc/top")
