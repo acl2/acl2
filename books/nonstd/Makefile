@@ -22,9 +22,18 @@
 #; University of Texas at Austin
 #; Austin, TX 78712-1188 U.S.A.
 
-# WARNING:  This mechanism isn't currently set up to use ACL2(r) automatically.
-# When you execute make, be sure to use a command of the form
+# WARNING: This mechanism isn't currently set up to use an ACL2(r)
+# executable automatically.
+# When you execute make, be sure to use a command of the form:
 # make ACL2=your_saved_acl2r
+
+# To add more directories, simply add them, run make, and keep adding
+# as required by include-book dependencies, while excluding
+# problematic individual files by adding to the variable BAD_LINKS.
+# When done, do "make clean" and also "make clean-links", in order to
+# have empty directories before executing svn add.  (Or, execute svn
+# add immediately after adding a directory -- but be sure to execute
+# svn delete if you change your mind!)
 
 SHELL := $(shell which bash)
 
