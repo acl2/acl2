@@ -581,8 +581,9 @@ Then:
            (integerp (expt r i)))
   :rule-classes (:type-prescription :generalize))
 
-(defthm Left-nullity-of-1-for-expt
-  (equal (expt 1 i) 1))
+;; [Jared] removing since it is redundant with expt-1, below
+;; (defthm Left-nullity-of-1-for-expt
+;;   (equal (expt 1 i) 1))
 
 (defthm Right-unicity-of-1-for-expt
   (equal (expt r 1)
