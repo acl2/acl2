@@ -29,10 +29,11 @@
 
 (defun clone-stobj-change-symbol (sym renaming)
   (if renaming
-      (b* (((list prefix suffix strsubst pkg) renaming))
+      (b* (((list prefix suffix strsubst pkg) renaming)
+           ((mv sub pkg?) (tmpl-str-sublis strsubst (symbol-name sym))))
         (intern-in-package-of-symbol
-         (concatenate 'string prefix (tmpl-str-sublis strsubst (symbol-name sym)) suffix)
-         pkg))
+         (concatenate 'string prefix sub suffix)
+         (or pkg? pkg)))
     sym))
 
 (defun clone-stobj-process-rename-alist (rename-alist renaming)
