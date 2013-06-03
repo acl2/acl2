@@ -111,6 +111,8 @@ all: $(EXTRA_TARGETS)
 # Warning: targets like all-fasl have not been updated to work for
 # nonstd.
 
+moreclean: clean-links
+
 clean: clean-more-nonstd
 
 clean-more-nonstd:
