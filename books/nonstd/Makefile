@@ -89,6 +89,10 @@ BAD_LINKS :=
 # (include-book "clause-processors/unify-subst" :dir :system)
 BAD_LINKS += tools/lint.*
 
+# The book std/top includes lots of stuff under std/ that is not yet in
+# the books directory nonstd/std/.
+BAD_LINKS += std/top.*
+
 ifneq ($(BAD_LINKS), )
 REMOVE_LINKS := $(shell rm -f $(BAD_LINKS))
 endif # ifneq ($(BAD_LINKS), )
