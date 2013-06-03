@@ -114,7 +114,7 @@
 
 
 
-(make-g-world (hons-assoc-equal) gl-basis-ev)
+(make-g-world (hons-assoc-equal) geval-basis)
 
 (defun canonical-general-concretep (x)
   (declare (xargs :guard t
@@ -232,25 +232,25 @@
 
 (local
  (progn
-   (in-theory (enable gl-basis-ev))
-   (eval-g-prove-f-i gl-basis-ev-f-i
-                     gl-basis-ev generic-geval)
+   (in-theory (enable geval-basis))
+   (eval-g-prove-f-i geval-basis-f-i
+                     geval-basis generic-geval)
 
    (eval-g-functional-instance
     canonical-eval-canonical-general-concretep
-    gl-basis-ev generic-geval)
+    geval-basis generic-geval)
 
    (eval-g-functional-instance
     canonicalize-general-concretep-correct
-    gl-basis-ev generic-geval)
+    geval-basis generic-geval)
 
    (eval-g-functional-instance
     generic-geval-cons
-    gl-basis-ev generic-geval)
+    geval-basis generic-geval)
 
    (eval-g-functional-instance
     general-concrete-obj-correct
-    gl-basis-ev generic-geval)
+    geval-basis generic-geval)
 
    ;; (defthmd not-keyword-symbolp-car-impl
    ;;   (implies (not (g-keyword-symbolp (car x)))
@@ -269,32 +269,32 @@
    (defthm ev-hons-assoc-equal-when-concrete-key-alistp
      (implies (and (concrete-key-alistp al)
                    (canonical-general-concretep key))
-              (equal (gl-basis-ev
+              (equal (geval-basis
                       (hons-assoc-equal key al)
                       env)
-                     (hons-assoc-equal (gl-basis-ev key env)
-                                       (gl-basis-ev al env))))
+                     (hons-assoc-equal (geval-basis key env)
+                                       (geval-basis al env))))
      :hints (("goal" :in-theory
               (e/d (; gobjectp-car-impl-not-g-types
                     ; canonical-general-concretep-impl-gobjectp
-                    gl-thm::canonical-eval-canonical-general-concretep-for-gl-basis-ev
+                    gl-thm::canonical-eval-canonical-general-concretep-for-geval-basis
                     ; not-keyword-symbolp-car-impl
 
                     hons-assoc-equal)
                    (canonical-general-concretep
                     general-concretep-def
                     concrete-gobjectp-def
-                    gl-basis-ev
+                    geval-basis
                     bfr-sat-bdd-unsat
                     (:d hons-assoc-equal)
-                    ;; gl-thm::general-concrete-obj-correct-gobj-fix-for-gl-basis-ev
+                    ;; gl-thm::general-concrete-obj-correct-gobj-fix-for-geval-basis
                     ))
               :induct (hons-assoc-equal key al)
               :expand ((:free (key) (hons-assoc-equal key al))))
              (and stable-under-simplificationp
                   '(:expand
-                    ((gl-basis-ev al env)
-                     (gl-basis-ev (car al) env))
+                    ((geval-basis al env)
+                     (geval-basis (car al) env))
                     ;;                  :in-theory
                     ;;                  (enable tag g-concrete-p g-concrete->obj)
                     ))))))
@@ -330,7 +330,7 @@
 
 ;;(local (in-theory (enable canonical-general-concretep-impl-gobjectp)))
 
-(def-g-correct-thm hons-acons gl-basis-ev)
+(def-g-correct-thm hons-acons geval-basis)
 
 
 ;; Jared: changed hons-get-fn-do-hopy to hons-get for new hons
@@ -346,17 +346,17 @@
  (progn
    (eval-g-functional-instance
     canonicalize-general-concretep-correct
-    gl-basis-ev generic-geval)
+    geval-basis generic-geval)
 
    (eval-g-functional-instance
     generic-geval-of-g-concrete-p
-    gl-basis-ev generic-geval)
+    geval-basis generic-geval)
 
    (eval-g-functional-instance
     eval-concrete-gobjectp
-    gl-basis-ev generic-geval)))
+    geval-basis generic-geval)))
 
-(def-g-correct-thm hons-get gl-basis-ev)
+(def-g-correct-thm hons-get geval-basis)
 
 
 ; Jared Note: removed hons-get-fn-do-not-hopy since it's no longer part
@@ -375,7 +375,7 @@
 
 ;; (def-gobjectp-thm hons-get-fn-do-not-hopy)
 ;; (verify-g-guards hons-get-fn-do-not-hopy)
-;; (def-g-correct-thm hons-get-fn-do-not-hopy gl-basis-ev)
+;; (def-g-correct-thm hons-get-fn-do-not-hopy geval-basis)
 
 ; Jared: changing flush-hons-get-hash-table-link to fast-alist-free
 
@@ -383,7 +383,7 @@
   `(fast-alist-free acl2::alist))
 
 (verify-g-guards fast-alist-free)
-(def-g-correct-thm fast-alist-free gl-basis-ev)
+(def-g-correct-thm fast-alist-free geval-basis)
 
 
 
@@ -391,7 +391,7 @@
   `(flush-hons-get-hash-table-link acl2::alist))
 
 (verify-g-guards flush-hons-get-hash-table-link)
-(def-g-correct-thm flush-hons-get-hash-table-link gl-basis-ev)
+(def-g-correct-thm flush-hons-get-hash-table-link geval-basis)
 
 
 

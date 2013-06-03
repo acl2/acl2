@@ -4,12 +4,34 @@
 (in-package "GL")
 
 (include-book "clause-processors/generalize" :dir :system)
-
+(include-book "tools/defevaluator-fast" :dir :system)
 (include-book "tools/mv-nth" :dir :system)
 (include-book "tools/rulesets" :dir :system)
 (include-book "gl-util")
 
 (include-book "misc/hons-help2" :dir :system)
+
+(defun defeval-fns-to-calls (fns world)
+  (declare (xargs :guard (and (symbol-listp fns)
+                              (plist-worldp world))))
+  (b* (((when (atom fns))
+        nil)
+       (formals (getprop (car fns) 'formals :missing
+                         'current-acl2-world world))
+       ((when (eq formals :missing))
+        (er hard? 'defeval-fns-to-calls
+            "Missing formals for function: ~x0~%" (car fns))
+        (defeval-fns-to-calls (cdr fns) world)))
+    (cons (cons (car fns) formals)
+          (defeval-fns-to-calls (cdr fns) world))))
+
+(defmacro defeval-wrap (ev evlst fns)
+  `(make-event
+    `(acl2::defevaluator-fast
+      ,',ev ,',evlst
+      ,(defeval-fns-to-calls ',fns (w state))
+      :namedp t)))
+
 
 (defthmd len-open-for-defapply
   (equal (len (cons a b))
@@ -71,50 +93,50 @@
         (append (make-apply-clique-entries clique world)
                 (make-apply-entries (cdr fns) world acc))))))
 
-(defun double-rewrite-formals (formals)
-  (if (atom formals)
-      nil
-    (cons `(double-rewrite ,(car formals))
-          (double-rewrite-formals (cdr formals)))))
+;; (defun double-rewrite-formals (formals)
+;;   (if (atom formals)
+;;       nil
+;;     (cons `(double-rewrite ,(car formals))
+;;           (double-rewrite-formals (cdr formals)))))
 
-(defun apply-rw-name (apply fn)
-  (intern-in-package-of-symbol
-   (concatenate 'string (symbol-name apply) "-" (symbol-name fn))
-   apply))
+;; (defun apply-rw-name (apply fn)
+;;   (intern-in-package-of-symbol
+;;    (concatenate 'string (symbol-name apply) "-" (symbol-name fn))
+;;    apply))
 
-(defun apply-rw-thms (clique name world)
-  (if (atom clique)
-      nil
-    (let* ((fn (car clique))
-           (formals (wgetprop fn 'formals)))
-      (cons `(defthm ,(apply-rw-name name fn)
-               (equal (,name ',fn (list . ,formals))
-                      (,fn . ,(double-rewrite-formals formals)))
-               :hints (("goal" :in-theory
-                        (e/d** (minimal-theory
-                                ;; (:executable-counterpart-theory :here)
-                                (equal) (len) (nth) (binary-+) (not)
-                                (zp)
-                                (:definition ,name) 
-                                len-open-for-defapply
-                                nth-open-for-defapply))
-                        :do-not '(preprocess))
-                       (and stable-under-simplificationp
-                            ;; Special case for HIDE and functions that
-                            ;; normalize to a constant.
-                            '(:expand ((:free ,formals (,fn . ,formals)))))))
-            (apply-rw-thms (cdr clique) name world)))))
+;; (defun apply-rw-thms (clique name world)
+;;   (if (atom clique)
+;;       nil
+;;     (let* ((fn (car clique))
+;;            (formals (wgetprop fn 'formals)))
+;;       (cons `(defthm ,(apply-rw-name name fn)
+;;                (equal (,name ',fn (list . ,formals))
+;;                       (,fn . ,(double-rewrite-formals formals)))
+;;                :hints (("goal" :in-theory
+;;                         (e/d** (minimal-theory
+;;                                 ;; (:executable-counterpart-theory :here)
+;;                                 (equal) (len) (nth) (binary-+) (not)
+;;                                 (zp)
+;;                                 (:definition ,name) 
+;;                                 len-open-for-defapply
+;;                                 nth-open-for-defapply))
+;;                         :do-not '(preprocess))
+;;                        (and stable-under-simplificationp
+;;                             ;; Special case for HIDE and functions that
+;;                             ;; normalize to a constant.
+;;                             '(:expand ((:free ,formals (,fn . ,formals)))))))
+;;             (apply-rw-thms (cdr clique) name world)))))
             
                  
 
 
-(defun make-apply-rewrites (name fns world)
-  (if (atom fns)
-      nil
-    (append (b* ((recursivep (getprop (car fns) 'recursivep nil
-                                      'current-acl2-world world)))
-              (apply-rw-thms (or recursivep (list (car fns))) name world))
-            (make-apply-rewrites name (cdr fns) world))))
+;; (defun make-apply-rewrites (name fns world)
+;;   (if (atom fns)
+;;       nil
+;;     (append (b* ((recursivep (getprop (car fns) 'recursivep nil
+;;                                       'current-acl2-world world)))
+;;               (apply-rw-thms (or recursivep (list (car fns))) name world))
+;;             (make-apply-rewrites name (cdr fns) world))))
 
 (def-ruleset! defapply-guards '((:executable-counterpart eqlablep)
                                 (:executable-counterpart equal)))
@@ -127,8 +149,34 @@
           (mk-arity-table (cdr lst) w))))
 
 
+;; Test case:
+(local (DEFUN MYAPP-ARITIES
+         NIL (DECLARE (XARGS :GUARD T))
+         '((MVFN . 2)
+           (IF . 3)
+           (EQUAL . 2)
+           (NOT . 1)
+           (LEN . 1)
+           (CONS . 2))))
+(local (DEFEVAL-WRAP MYAPP-EV MYAPP-EV-LST
+                           (MVFN IF EQUAL NOT LEN CONS)))
+
+(include-book "clause-processors/unify-subst" :dir :system)
+(include-book "clause-processors/meta-extract-user" :dir :system)
+(include-book "clause-processors/find-subterms" :dir :system)
+(include-book "tools/match-tree" :dir :system)
+
+
+
+
 (defun make-apply (name fns world)
   (declare (xargs :mode :program))
+  (b* ((ev (intern-in-package-of-symbol
+            (concatenate 'string (symbol-name name) "-EV")
+            name))
+       (ev-lst (intern-in-package-of-symbol
+                (concatenate 'string (symbol-name name) "-EV-LST")
+                name)))
   `(progn
      (defun ,(intern-in-package-of-symbol
               (concatenate 'string (symbol-name name) "-ARITIES")
@@ -138,32 +186,166 @@
        ',(mk-arity-table fns world))
      (encapsulate nil
        (local (in-theory (e/d** ((:ruleset defapply-guards)
+                                 eq eql car-cons cdr-cons
+                                 cadr-kwote-lst-meta-correct
+                                 (nfix)
+                                 ;; make-apply-open-nth
+                                 ;; (zp) (unary--) (binary-+)
                                  (:rules-of-class :type-prescription :here)))))
+       (defeval-wrap ,ev ,ev-lst ,fns)
+       
        (defund ,name (f args)
          (declare (xargs :guard t
                          :normalize nil))
-         (cond
-          ,@(make-apply-entries fns world nil)
-          (t (apply-stub f args))))
-       (table g-apply-table ',name ',fns))
-     (encapsulate nil
-       (local (in-theory (e/d** ((:ruleset defapply-guards)
-                                 (:rules-of-class :type-prescription
-                                                  :here)))))
-       . ,(make-apply-rewrites name fns world))))
+         (mbe :logic (,ev (cons f (kwote-lst args)) nil)
+              :exec
+              (cond
+               ,@(make-apply-entries fns world nil)
+               (t (,ev (cons f (ec-call (kwote-lst args))) nil)))))
+       (table g-apply-table ',name ',fns)))))
 
 
-;; Functions that return MVs need to be passed to DEFAPPLY in dependency
-;; order.  This is because we need to prove, if (FOO X) returns three values,
-;; (EQUAL (LIST (MV-NTH 0 (FOO X))
-;;              (MV-NTH 1 (FOO X))
-;;              (MV-NTH 2 (FOO X)))
-;;        (FOO X))
-;; If one of the branches of FOO is a call of BAR, also returning three values,
-;; then the proof of the above will reduce to the same theorem about BAR.
-;; Therefore we need to have proven this about BAR before tackling FOO.
-;; It could happen that this problem occurs in a mutually-recursive fashion, in which
-;; case we'd need to introduce a flag function, etc.  Blech.
+
 
 (defmacro defapply (name fns)
   `(make-event (make-apply ',name ',fns (w state))))
+
+(logic)
+
+(defthmd make-apply-open-nth
+  (equal (nth n args)
+         (if (zp n)
+             (car args)
+           (nth (1- n) (cdr args)))))
+
+(defund mvfn (x y) (mv x y))
+
+
+(defevaluator cadkw-ev cadkw-ev-lst
+  ((car x) (cdr x) (len x) (kwote-lst x) (< x y) (nth n x) (cons x y) (nfix x)))
+
+(defun cadr-kwote-lst-count-cdrs (x)
+  (declare (xargs :guard (pseudo-termp x)))
+  (b* (((when (or (atom x) (not (eq (car x) 'cdr))))
+        (mv 0 x))
+       ((mv count final) (cadr-kwote-lst-count-cdrs (cadr x))))
+    (mv (+ 1 count) final)))
+
+(Defthm natp-cadr-kwote-lst-count-cdrs
+  (natp (mv-nth 0 (cadr-kwote-lst-count-cdrs x)))
+  :rule-classes :type-prescription)
+
+(local (include-book "arithmetic/top-with-meta" :dir :system))
+
+(defthm cadr-kwote-lst-count-cdrs-correct
+  (mv-let (n y)
+    (cadr-kwote-lst-count-cdrs x)
+    (equal (nthcdr n (cadkw-ev y a))
+           (cadkw-ev x a)))
+  :hints (("goal" :induct (cadr-kwote-lst-count-cdrs x))))
+
+(defthm car-of-nthcdr
+  (equal (car (nthcdr n x))
+         (nth n x)))
+
+(defthm cadr-kwote-lst-count-cdrs-correct-nth
+  (mv-let (n y)
+    (cadr-kwote-lst-count-cdrs x)
+    (equal (nth n (cadkw-ev y a))
+           (car (cadkw-ev x a))))
+  :hints (("goal" :use ((:instance car-of-nthcdr
+                         (n (mv-nth 0 (cadr-kwote-lst-count-cdrs x)))
+                         (x (cadkw-ev (mv-nth 1 (cadr-kwote-lst-count-cdrs x))
+                                      a))))
+           :in-theory (disable car-of-nthcdr))))
+
+(defun cadr-kwote-lst-meta-res (x)
+  (declare (xargs :guard (pseudo-termp x)))
+  (if (and (consp x) (eq (car x) 'car))
+      (b* (((mv n kwote-lst-term) (cadr-kwote-lst-count-cdrs (cadr x)))
+           ((unless (and (consp kwote-lst-term)
+                         (eq (car kwote-lst-term) 'kwote-lst)))
+            x))
+        `(cons 'quote (cons (nth ',n ,(cadr kwote-lst-term)) 'nil)))
+    x))
+
+(defun cadr-kwote-lst-meta-hyp (x)
+  (declare (xargs :guard (pseudo-termp x)))
+  (if (and (consp x) (eq (car x) 'car))
+      (b* (((mv n kwote-lst-term) (cadr-kwote-lst-count-cdrs (cadr x)))
+           ((unless (and (consp kwote-lst-term)
+                         (eq (car kwote-lst-term) 'kwote-lst)))
+            't))
+        `(< (nfix ',n) (len ,(cadr kwote-lst-term))))
+    't))
+
+(in-theory (disable cadr-kwote-lst-count-cdrs
+                    car-of-nthcdr))
+
+(defthm nth-of-kwote-lst-when-len
+  (implies (< (nfix n) (len x))
+           (equal (nth n (kwote-lst x))
+                  (list 'quote (nth n x)))))
+
+(defthmd cadr-kwote-lst-meta-correct
+  (implies (cadkw-ev (cadr-kwote-lst-meta-hyp x) a)
+           (equal (cadkw-ev x a)
+                  (cadkw-ev (cadr-kwote-lst-meta-res x) a)))
+  :hints (("goal" :use ((:instance cadr-kwote-lst-count-cdrs-correct-nth
+                         (x (cadr x))))
+           :in-theory (disable cadr-kwote-lst-count-cdrs-correct-nth)))
+  :rule-classes ((:meta :trigger-fns (car))))
+           
+            
+
+
+;; (defapply myapp (BINARY-*
+;;    BINARY-+
+;;    PKG-WITNESS
+;; ;   UNARY-/
+;;    UNARY--
+;;    COMPLEX-RATIONALP
+;; ;   BAD-ATOM<=
+;;    ACL2-NUMBERP
+;;    SYMBOL-PACKAGE-NAME
+;;    INTERN-IN-PACKAGE-OF-SYMBOL
+;;    CODE-CHAR
+;; ;   DENOMINATOR
+;;    CDR
+;; ;   COMPLEX
+;;    CAR
+;;    CONSP
+;;    SYMBOL-NAME
+;;    CHAR-CODE
+;;    IMAGPART
+;;    SYMBOLP
+;;    REALPART
+;; ;   NUMERATOR
+;;    EQUAL
+;;    STRINGP
+;;    RATIONALP
+;;    CONS
+;;    INTEGERP
+;;    CHARACTERP
+;;    <
+;;    COERCE
+;;    booleanp
+;;    logbitp
+;;    binary-logand
+;;    binary-logior
+;;    lognot
+;;    ash
+;;    integer-length
+;;    floor
+;;    mod
+;;    truncate
+;;    rem
+;; ;   acl2::boolfix
+
+;;    ;; these are from the constant *expandable-boot-strap-non-rec-fns*.
+;;    NOT IMPLIES
+;;    EQ ATOM EQL = /= NULL ENDP ZEROP ;; SYNP
+;;    PLUSP MINUSP LISTP ;; RETURN-LAST causes guard violation
+;;    ;; FORCE CASE-SPLIT
+;;    ;; DOUBLE-REWRITE
+;;    mvfn))

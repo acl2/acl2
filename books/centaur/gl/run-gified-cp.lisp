@@ -14,8 +14,6 @@
 (local (include-book "std/lists/take" :dir :system))
 (local (include-book "gtype-thms"))
 
-
-
 (local (defun before-run-gified-ev-tag () nil))
 
 (acl2::defevaluator-fast run-gified-ev run-gified-ev-lst
@@ -363,6 +361,14 @@
    (equal (nth n (nthcdr m y))
           (nth (+ (nfix n) (nfix m)) y))))
 
+;; (encapsulate nil
+;;   (local (include-book "arithmetic/top-with-meta" :dir :system))
+;;   (defthmd equal-nthcdr-cons
+;;     (equal (equal (nthcdr n x) (cons a b))
+;;            (and (equal (nth n x) a)
+;;                 (< (nfix n) (len x))
+;;                 (equal (nthcdr (+ 1 (nfix n)) x) b)))
+;;     :hints (("goal" :induct (nthcdr n x)))))
 
 
            
@@ -566,8 +572,9 @@
                                   geval 'env))
                         a)))))
    :hints(("Goal"
-           :in-theory (disable nth-of-nthcdr assoc-equal-pairlis-nth
-                               run-gified-check-geval-thm)
+           :in-theory (e/d () ;; equal-nthcdr-cons
+                           (nth-of-nthcdr assoc-equal-pairlis-nth
+                                          run-gified-check-geval-thm))
            :use ((:instance run-gified-check-geval-thm-form)
                  (:instance run-gified-check-geval-thm-formals)
                  (:instance

@@ -13,7 +13,7 @@
 (local (include-book "hyp-fix-logic"))
 
 (local (defthm eval-g-base-apply-of-equal
-         (equal (eval-g-base-apply 'equal (list x y))
+         (equal (eval-g-base-ev (cons 'equal (kwote-lst (list x y))) a)
                 (equal x y))))
 
 (local (defthm equal-of-components-to-number-fn

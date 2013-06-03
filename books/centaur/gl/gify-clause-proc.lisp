@@ -999,7 +999,7 @@
   (def-geval-meta-fn geval eval eval-lst))
 
 ;; test.
-(local (def-geval-meta generic-geval generic-geval-ev generic-geval-ev-lst))
+(local (def-geval-meta generic-geval generic-gify-ev generic-gify-ev-lst))
                                   
 
 

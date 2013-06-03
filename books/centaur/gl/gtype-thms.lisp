@@ -303,15 +303,18 @@
 
 (defthm generic-geval-g-apply
   (equal (generic-geval (g-apply fn args) env)
-         (generic-geval-apply fn (generic-geval args env)))
+         (generic-geval-ev (cons fn (kwote-lst (generic-geval args env)))
+                           nil))
   :hints (("goal" :expand ((generic-geval (g-apply fn args) env))
            :in-theory (enable generic-geval-apply))))
 
 (defthmd generic-geval-g-apply-p
   (implies (g-apply-p x)
            (equal (generic-geval x env)
-                  (apply-stub (g-apply->fn x)
-                              (generic-geval (g-apply->args x) env))))
+                  (generic-geval-ev
+                   (cons (g-apply->fn x)
+                         (kwote-lst (generic-geval (g-apply->args x) env)))
+                   nil)))
   :hints (("goal" :expand ((generic-geval x env))
            :in-theory (enable generic-geval-apply)))
   :rule-classes ((:rewrite :backchain-limit-lst 0)))

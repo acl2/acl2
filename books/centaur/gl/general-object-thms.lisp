@@ -521,9 +521,11 @@
                (generic-geval (g-ite->then x) env)
              (generic-geval (g-ite->else x) env)))
           ((g-apply-p x)
-           (generic-geval-apply
-            (g-apply->fn x)
-            (generic-geval (g-apply->args x) env)))
+           (generic-geval-ev
+            (cons (g-apply->fn x)
+                  (kwote-lst
+                   (generic-geval (g-apply->args x) env)))
+            nil))
           (t
            (cdr (hons-assoc-equal (g-var->name x) (cdr env))))))
   :hints (("goal" ;; :induct (generic-geval x env)

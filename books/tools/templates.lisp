@@ -136,51 +136,57 @@ At each atom in the tree:
 ;; if you have '(("foo" . "bar) ("afoo" . "abar")) the second substitution
 ;; will never happen.
 
-(defun tmpl-str-sublis-iter (remainder alist x start end len)
+(defun tmpl-str-sublis-iter (remainder alist x start end len pkg)
   (b* (((when (atom remainder))
         ;; if both start and end are nil, we don't need to make a copy
-        (if (or (not (int= start 0))
-                (not (int= end len)))
-            (subseq x start end)
-          x))
-       ((cons old-str new-str) (car remainder))
+        (mv (if (or (not (int= start 0))
+                    (not (int= end len)))
+                (subseq x start end)
+              x) pkg))
+       ((cons old-str pair) (car remainder))
+       (new-str (if (consp pair) (car pair) pair))
        (loc (search old-str x :start2 start :end2 end))
        ((unless loc)
-        (tmpl-str-sublis-iter (cdr remainder) alist x start end len))
+        (tmpl-str-sublis-iter (cdr remainder) alist x start end len pkg))
+       (pkg (or pkg (and (consp pair) (cdr pair))))
        ;; since we're searching from the beginning of the string, we've already
        ;; ruled out existence of any previous keys in the prefix
-       (prefix-rw (tmpl-str-sublis-iter
-                   (cdr remainder) alist x start loc len))
+       ((mv prefix-rw pkg)
+        (tmpl-str-sublis-iter
+         (cdr remainder) alist x start loc len pkg))
        ;; but for the suffix, we need to try each of them
-       (suffix-rw (tmpl-str-sublis-iter
-                   alist alist x
-                   (+ loc (length old-str)) end len)))
-    (if (and (string-equal prefix-rw "")
-             (string-equal suffix-rw ""))
-        new-str
-      (concatenate 'string prefix-rw new-str suffix-rw))))
+       ((mv suffix-rw pkg)
+        (tmpl-str-sublis-iter
+         alist alist x
+         (+ loc (length old-str)) end len pkg)))
+    (mv (if (and (string-equal prefix-rw "")
+                 (string-equal suffix-rw ""))
+            new-str
+          (concatenate 'string prefix-rw new-str suffix-rw))
+        pkg)))
 
 
 (defun tmpl-str-sublis (alist str)
   (declare (xargs :mode :program))
   (let ((len (length str)))
-    (tmpl-str-sublis-iter alist alist str 0 len len)))
+    (tmpl-str-sublis-iter alist alist str 0 len len nil)))
 
 (make-event
- (if (equal (tmpl-str-sublis
-             '(("foo" . "bar")
-               ("fuz" . "biz")
-               ("bar" . "boz"))
-             "afuzbarcfoobbarfooafuz")
-            "abizbozcbarbbozbarabiz")
+ (if (equal (mv-list 2 (tmpl-str-sublis
+                        '(("foo" . "bar")
+                          ("fuz" "biz" . pkg)
+                          ("bar" . "boz"))
+                        "afuzbarcfoobbarfooafuz"))
+            (list "abizbozcbarbbozbarabiz" 'pkg))
      '(value-triple :ok)
    (er hard? 'tmpl-str-sublis "Test failed~%")))
 
 (defun tmpl-sym-sublis (alist sym pkg-sym)
   (b* ((str1 (symbol-name sym))
-       (str (tmpl-str-sublis alist str1)))
+       ((mv str pkg?) (tmpl-str-sublis alist str1)))
     (if (equal str1 str) sym
-      (intern-in-package-of-symbol str pkg-sym))))
+      (intern-in-package-of-symbol
+       str (or pkg? pkg-sym)))))
 
 
 (mutual-recursion

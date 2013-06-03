@@ -7,7 +7,7 @@
 (include-book "misc/hons-help" :dir :system)
 (include-book "factor-fns")
 (include-book "g-primitives-help")
-
+(include-book "tools/templates" :dir :system)
 (program)
 
 (mutual-recursion
@@ -727,6 +727,7 @@ Warning: Clock ran out in ~x0~%" ',(gl-fnsym top-fn))
 
 
 (defun g-correct-thms (top-fn ev world)
+  (declare (xargs :mode :program))
   (b* ((recp (wgetprop top-fn 'recursivep))
        (definedp (norm-function-body top-fn world)))
     (if recp
@@ -744,6 +745,7 @@ Warning: Clock ran out in ~x0~%" ',(gl-fnsym top-fn))
                              car-cons cdr-cons
                              ;; (:executable-counterpart-theory :here)
                              (cons) (not) (equal)
+                             kwote-lst kwote
                              ;; (:ruleset g-gobjectp-lemmas)
                              (:ruleset g-correct-lemmas)
                              (:ruleset ,(ruleset-for-eval ev))
@@ -805,6 +807,7 @@ Warning: Clock ran out in ~x0~%" ',(gl-fnsym top-fn))
                            car-cons cdr-cons
                            ;; (:executable-counterpart-theory :here)
                            (cons) (not) (equal)
+                           kwote-lst kwote
                            (:ruleset g-correct-lemmas)
                            (:ruleset ,(ruleset-for-eval ev))
                            ,@(and (member-eq
@@ -888,64 +891,116 @@ Warning: Clock ran out in ~x0~%" ',(gl-fnsym top-fn))
           (equal-f-fns (cdr lst)))))
 
 
-(defun eval-g-fi (eval oldeval thmname world)
-  (let* ((apply (caddr (assoc eval (table-alist 'eval-g-table world))))
-         (oldapply (caddr (assoc oldeval (table-alist 'eval-g-table world))))
-         (applyfns
-          (cdr (assoc apply (table-alist 'g-apply-table world))))
-         (oldapplyfns
-          (cdr (assoc oldapply (table-alist 'g-apply-table world))))) 
-  `(:functional-instance
-    ,thmname
-    ,@(if (eq oldapply 'apply-stub)
-          `((apply-stub ,apply))
-        `((apply-stub ,(lambda-for-apply-stub-fi
-                        oldapplyfns applyfns world))
-          (,oldapply ,apply)))
-    (,oldeval ,eval))))
-
-(defun eval-g-prove-f-i-fn (eval oldeval thmname world)
-  (let* ((apply (caddr (assoc eval (table-alist 'eval-g-table world))))
+;; (defun eval-g-fi (eval oldeval thmname world)
+;;   (let* ((apply (caddr (assoc eval (table-alist 'eval-g-table world))))
+;;          (oldapply (caddr (assoc oldeval (table-alist 'eval-g-table world))))
 ;;          (applyfns
 ;;           (cdr (assoc apply (table-alist 'g-apply-table world))))
-         )
+;;          (oldapplyfns
+;;           (cdr (assoc oldapply (table-alist 'g-apply-table world))))) 
+;;   `(:functional-instance
+;;     ,thmname
+;;     ,@(if (eq oldapply 'apply-stub)
+;;           `((apply-stub ,apply))
+;;         `((apply-stub ,(lambda-for-apply-stub-fi
+;;                         oldapplyfns applyfns world))
+;;           (,oldapply ,apply)))
+;;     (,oldeval ,eval))))
+
+
+(defun eval-g-fi (eval oldeval thmname world)
+  (b* (((list ?new-appalist new-ev new-evlst)
+        (cdr (assoc eval (table-alist 'eval-g-table world))))
+       ((list ?old-appalist old-ev old-evlst)
+        (cdr (assoc oldeval (table-alist 'eval-g-table world)))))
+    `(:functional-instance
+      ,thmname
+      (,old-ev ,new-ev)
+      (,old-evlst ,new-evlst)
+      (,oldeval ,eval))))
+
+(defconst *eval-g-prove-f-i-template*
+  '(:computed-hint-replacement
+    ((and stable-under-simplificationp
+          '(:expand ((:free (f ar)
+                      (_oldgeval_-apply f ar))
+                     (:free (f ar)
+                      (_newgeval_-apply f ar))))))
+    :use
+    ((:functional-instance
+      _theorem_
+      (_oldgeval_ _newgeval_)
+      (_oldgeval_-ev _newgeval_-ev)
+      (_oldgeval_-ev-lst _newgeval_-ev-lst)))
+    :in-theory (e/d**
+                (nth-of-_oldgeval_-ev-concrete-lst
+                 nth-of-_newgeval_-ev-concrete-lst
+                 acl2::car-to-nth-meta-correct
+                 acl2::nth-of-cdr
+                 acl2::list-fix-when-true-listp
+                 acl2::kwote-list-list-fix
+                 (:t acl2::list-fix)
+                 _oldgeval_-apply-agrees-with-_oldgeval_-ev-rev
+                 _newgeval_-apply-agrees-with-_newgeval_-ev-rev
+                 _oldgeval_-ev-rules
+                 _newgeval_-ev-rules
+                 _newgeval_-ev-constraint-0
+                 _oldgeval_-ev-constraint-0
+                 car-cons cdr-cons nth-0-cons (nfix)))
+    :expand ((_oldgeval_ x env)
+             (_newgeval_ x env))
+    :do-not-induct t))
+
+(defun eval-g-prove-f-i-fn (eval oldeval thmname)
+  (declare (xargs :mode :program))
   `(defthm ,thmname
      t
-     :hints ('(:computed-hint-replacement
-               ((case-match
-                  clause
-                  ((('equal (fn . &) . &))
-                   (cond
-                    ((eq fn ',apply)
-                     '(:computed-hint-replacement
-                       ((use-by-computed-hint clause)
-                        '(:clause-processor
-                          (apply-cond-cp clause)
-                          :do-not nil))
-                       :clause-processor
-                       (rw-cp clause
-                              (rws-from-ruleset-fn
-                               '((:definition ,apply))
-                               (w state)))))
-                    ((eq fn ',eval)
-                     '(:expand ((,eval x env))
-                               :do-not nil))))))
-               :use (,(eval-g-fi
-                       eval oldeval
-                       `(:theorem (equal (,oldeval x env)
-                                         (,oldeval x env)))
-                       world))
+     :hints (',(acl2::template-subst
+                *eval-g-prove-f-i-template*
+                :atom-alist `((_theorem_ . (:theorem
+                                            (equal (,oldeval x env)
+                                                   (,oldeval x env))))
+                              (_oldgeval_ . ,oldeval)
+                              (_newgeval_ . ,eval))
+                :str-alist `(("_OLDGEVAL_" ,(symbol-name oldeval) . ,oldeval)
+                             ("_NEWGEVAL_" ,(symbol-name eval) . ,eval))))
+     :rule-classes nil))
+
+     ;;                          (:computed-hint-replacement
+     ;;           ((case-match
+     ;;              clause
+     ;;              ((('equal (fn . &) . &))
+     ;;               (cond
+     ;;                ((eq fn ',apply)
+     ;;                 '(:computed-hint-replacement
+     ;;                   ((use-by-computed-hint clause)
+     ;;                    '(:clause-processor
+     ;;                      (apply-cond-cp clause)
+     ;;                      :do-not nil))
+     ;;                   :clause-processor
+     ;;                   (rw-cp clause
+     ;;                          (rws-from-ruleset-fn
+     ;;                           '((:definition ,apply))
+     ;;                           (w state)))))
+     ;;                ((eq fn ',eval)
+     ;;                 '(:expand ((,eval x env))
+     ;;                           :do-not nil))))))
+     ;;           :use (,(eval-g-fi
+     ;;                   eval oldeval
+     ;;                   `(:theorem (equal (,oldeval x env)
+     ;;                                     (,oldeval x env)))
+     ;;                   world))
                
-               :do-not '(preprocess simplify)
-               :in-theory nil))
-     :rule-classes nil)))
+     ;;           :do-not '(preprocess simplify)
+     ;;           :in-theory nil))
+     ;; :rule-classes nil)))
 
 (defmacro eval-g-prove-f-i
   (thmname eval oldeval
            &key (output '(:off (warning warning! observation prove acl2::proof-checker
                                         acl2::expansion event  proof-tree))))
   `(with-output ,@output
-                (make-event (eval-g-prove-f-i-fn ',eval ',oldeval ',thmname (w state)))))
+                (make-event (eval-g-prove-f-i-fn ',eval ',oldeval ',thmname))))
 
 (defun f-i-thmname (thm eval)
   (incat 'gl-thm::foo (symbol-name thm) "-FOR-" (symbol-name eval)))
@@ -1040,8 +1095,8 @@ Warning: Clock ran out in ~x0~%" ',(gl-fnsym top-fn))
           (geval-thm-names (cdr names) eval))))
 
 (defmacro correctness-lemmas (eval)
-  (let ((ev-fn (incat eval (symbol-name eval) "-EV"))
-        (evlst-fn (incat eval (symbol-name eval) "-EV-LST")))
+  (let ((ev-fn (incat eval (symbol-name eval) "-GIFY-EV"))
+        (evlst-fn (incat eval (symbol-name eval) "-GIFY-EV-LST")))
     `(make-event
       (mv-let (events theory)
         (correctness-lemmas-for-new-apply
@@ -1132,34 +1187,41 @@ Warning: Clock ran out in ~x0~%" ',(gl-fnsym top-fn))
 (defun make-unnorm-preferred-defs (fns world)
   `(progn . ,(make-unnorm-preferred-defs1 fns world)))
 
-(defun apply-rw-names-clique (ap clique)
-  (if (atom clique)
-      nil
-    (cons (apply-rw-name ap (car clique))
-          (apply-rw-names-clique ap (cdr clique)))))
+;; (defun apply-rw-names-clique (ap clique)
+;;   (if (atom clique)
+;;       nil
+;;     (cons (apply-rw-name ap (car clique))
+;;           (apply-rw-names-clique ap (cdr clique)))))
 
-(defun apply-rw-names (ap fns world)
-  (if (atom fns)
-      nil
-    (append (apply-rw-names-clique ap (or (wgetprop (car fns) 'recursivep)
-                                          (list (car fns))))
-            (apply-rw-names ap (cdr fns) world))))
+;; (defun apply-rw-names (ap fns world)
+;;   (if (atom fns)
+;;       nil
+;;     (append (apply-rw-names-clique ap (or (wgetprop (car fns) 'recursivep)
+;;                                           (list (car fns))))
+;;             (apply-rw-names ap (cdr fns) world))))
 
-(defun union-eq-values (a)
+(defun union-eq-lists (a)
   (if (atom a)
       nil
-    (union-eq (cdar a)
-              (union-eq-values (cdr a)))))
+    (union-eq (car a)
+              (union-eq-lists (cdr a)))))
+
+(defun strip-nthcdrs (n a)
+  (if (atom a)
+      nil
+    (cons (nthcdr n (Car a))
+          (strip-nthcdrs n (cdr a)))))
 
 (defun prev-apply-fns (world)
-  (union-eq-values (table-alist 'g-apply-table world)))
+  (declare (Xargs :mode :program))
+  (union-eq-lists (strip-nthcdrs 6 (table-alist 'eval-g-table world))))
 
 
 
 (defun make-g-world-fn (fns ev state)
   (declare (xargs :stobjs state :mode :program))
   (b* ((world (w state))
-       (ap (incat ev (symbol-name ev) "-APPLY"))
+       ;; (ap (incat ev (symbol-name ev) "-APPLY"))
        (new-fns (set-difference-eq
                  (collect-fn-deps fns world)
                  '(acl2::return-last)))
@@ -1185,7 +1247,10 @@ Warning: Clock ran out in ~x0~%" ',(gl-fnsym top-fn))
        (make-event (g-guards-fns-and-deps ',new-fns (w state)))
 
        (local (def-ruleset! apply-rewrites
-                ',(apply-rw-names ap apply-fns (w state))))
+                (acl2::ruleset ',(intern-in-package-of-symbol
+                                  (concatenate 'string (symbol-name ev)
+                                               "-EV-RULES")
+                                  ev))))
        (correctness-lemmas ,ev)
 
        (make-event (g-correct-fns-and-deps ',new-fns ',ev (w state))))))
@@ -1206,21 +1271,22 @@ Warning: Clock ran out in ~x0~%" ',(gl-fnsym top-fn))
   (b* ((world (w state))
        (new-fns (collect-fn-deps new-fns world))
        (fns (union-eq new-fns (prev-apply-fns world)))
-       (ap (incat geval (symbol-name geval) "-APPLY")))
+       ;; (ap (incat geval (symbol-name geval) "-APPLY"))
+       )
     `(encapsulate nil
        (logic)
        (local (table acl2::theory-invariant-table nil nil :clear))
        (local (in-theory nil))
-       (local (set-default-hints nil))
+       ; (local (set-default-hints nil))
        (set-bogus-mutual-recursion-ok t)
        (set-bogus-defun-hints-ok t)
        (set-ignore-ok t)
        (set-irrelevant-formals-ok t)
        (def-eval-g ,geval ,fns)
-       (local (def-ruleset! apply-rewrites
-                ',(apply-rw-names ap fns world)))
+       ;; (local (def-ruleset! apply-rewrites
+       ;;          ',(apply-rw-names ap fns world)))
        (correctness-lemmas ,geval))))
-       
+
 
 (defmacro make-geval
   (geval fns &key (output '(:off (warning warning! observation prove

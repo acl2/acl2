@@ -583,7 +583,16 @@
 
 
 (local (defthm eval-g-base-apply-of-equal
-         (equal (eval-g-base-apply 'equal (list x y))
+         (equal (eval-g-base-ev (list 'equal
+                                      (list 'quote x)
+                                      (list 'quote y))
+                                a)
+                (equal x y))))
+
+(local (defthm eval-g-base-apply-of-equal-kwote-lst
+         (equal (eval-g-base-ev (cons 'equal
+                                      (kwote-lst (list x y)))
+                                a)
                 (equal x y))))
 
 (local (defthm equal-of-components-to-number-fn
@@ -901,7 +910,7 @@
                       bfr-eval-g-hyp-marker
                       cons-equal
 
-                      eval-g-base-apply-of-equal
+                      eval-g-base-apply-of-equal-kwote-lst
                       
                       general-concrete-obj-of-atomic-constants
                       general-concretep-of-atomic-constants

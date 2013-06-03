@@ -23,9 +23,54 @@
 
 (in-package "ACL2")
 
+(local
+ (progn
+
+   ;; Infrastructure for testing this
+   (defun all-syms-in-world (w)
+     (remove-duplicates (strip-cars w)))
+
+   (defun list-of-nilsp (x)
+     (if (atom x)
+         (eq x nil)
+       (and (eq (car x) nil)
+            (list-of-nilsp (cdr x)))))
+
+   (defun logic-function-syms (syms world)
+     (if (atom syms)
+         nil
+       (if (and (not (eq (getprop (car syms) 'formals :none 'current-acl2-world
+                                  world)
+                         :none))
+                (member (getprop (car syms) 'symbol-class nil 'current-acl2-world world)
+                        '(:ideal :common-lisp-compliant))
+                (not (member (car syms)
+                             (global-val 'untouchable-fns world)))
+                (not (member (car syms) '(synp ;; must-be-equal
+                                          open-output-channel!
+                                          wormhole-eval)))
+                (not (assoc (car syms) *ttag-fns-and-macros*))
+                ;; (list-of-nilsp (fgetprop (car syms) 'stobjs-out nil
+                ;;                          world))
+                ;; (list-of-nilsp (fgetprop (car syms) 'stobjs-in nil
+                ;;                          world))
+                (not (and (member (car syms) *ec-call-bad-ops*)
+                          (not (equal (fgetprop (car syms) 'guard ''t
+                                                world)
+                                      ''t)))))
+           (cons (car syms) (logic-function-syms (cdr syms) world))
+         (logic-function-syms (cdr syms) world))))
+
+   (make-event
+    `(defconst *all-logic-function-syms*
+       ',(let ((world (w state)))
+           (logic-function-syms (all-syms-in-world world) world))))))
+
+
 (include-book "tools/bstar" :dir :system)
 (include-book "clause-processors/generalize" :dir :system)
 (include-book "tools/rulesets" :dir :system)
+(include-book "tools/templates" :dir :system)
 (include-book "clause-processors/use-by-hint" :dir :system)
 (include-book "misc/untranslate-patterns" :dir :system)
 (include-book "tools/defevaluator-fast" :dir :system)
@@ -52,13 +97,18 @@
 
 (defun defapply-call (fn world)
   (b* ((formals (fgetprop fn 'formals :none world))
-       (stobjs-out (fgetprop fn 'stobjs-out :none world)))
+       (stobjs-out (fgetprop fn 'stobjs-out :none world))
+       (stobjs-in (fgetprop fn 'stobjs-in nil world)))
     (cond
      ((or (eq formals :none)
           (eq stobjs-out :none))
       (er hard 'defapply-call "~
 The function ~x0 is missing its ~x1 property; perhaps it is not defined.~%"
-          fn (if formals 'stobjs-out 'formals)))
+          fn (if (eq formals :none) 'formals 'stobjs-out)))
+     ((or (assoc fn *ttag-fns-and-macros*)
+          (member fn '(mv-list return-last))
+          (remove nil stobjs-in)) ;; takes a stobj or needs a ttag
+      `(mv t (non-exec (ecc (,fn . ,(make-list-of-nths 'args 0 (length formals)))))))
      ((and (consp stobjs-out) (consp (cdr stobjs-out)))
       `(mv t (mv-list ,(len stobjs-out)
                       (ecc (,fn . ,(make-list-of-nths 'args 0 (length formals)))))))
@@ -72,11 +122,21 @@ The function ~x0 is missing its ~x1 property; perhaps it is not defined.~%"
 
 
 (defun make-apply-thm-name (apply-name fn)
-  (intern-in-package-of-symbol
-   (concatenate
-    'string (symbol-name apply-name)
-    "-OF-" (symbol-package-name fn) "::" (symbol-name fn))
-   apply-name))
+  (if (or (equal (symbol-package-name fn)
+                 (symbol-package-name apply-name))
+          (member-symbol-name fn
+                              (pkg-imports
+                               (symbol-package-name apply-name))))
+      (intern-in-package-of-symbol
+       (concatenate
+        'string (symbol-name apply-name)
+        "-OF-" (symbol-name fn))
+       apply-name)
+    (intern-in-package-of-symbol
+     (concatenate
+      'string (symbol-name apply-name)
+      "-OF-" (symbol-package-name fn) "::" (symbol-name fn))
+     apply-name)))
 
 
 (defthmd nth-open-for-defapply
@@ -125,7 +185,8 @@ The function ~x0 is missing its ~x1 property; perhaps it is not defined.~%"
                 :hints (("goal" :expand (hide x)))))
        (defun ,name (fn args)
          (declare (xargs :guard (true-listp args)
-                         :normalize nil))
+                         :normalize nil)
+                  (ignorable fn args))
          (case fn
            . ,cases))
        . ,(and theoremsp (make-apply-thms fns name world)))))
@@ -578,41 +639,6 @@ The function ~x0 is missing its ~x1 property; perhaps it is not defined.~%"
              (use-these-hints-hint clause)))))
 
 
-#||
-
-
-;; Infrastructure for testing this
-(defun all-syms-in-world (w)
-  (remove-duplicates (strip-cars w)))
-
-(defun list-of-nilsp (x)
-  (if (atom x)
-      (eq x nil)
-    (and (eq (car x) nil)
-         (list-of-nilsp (cdr x)))))
-
-(defun logic-function-syms (syms world)
-  (if (atom syms)
-      nil
-    (if (and (not (eq (getprop (car syms) 'formals :none 'current-acl2-world
-                               world)
-                      :none))
-             (member (getprop (car syms) 'symbol-class nil 'current-acl2-world world)
-                     '(:ideal :common-lisp-compliant))
-             (not (member (car syms)
-                          (global-val 'untouchable-fns world)))
-             (not (member (car syms) '(synp ;; must-be-equal
-                                            open-output-channel!)))
-             (list-of-nilsp (fgetprop (car syms) 'stobjs-out nil
-                                      world))
-             (list-of-nilsp (fgetprop (car syms) 'stobjs-in nil
-                                      world))
-             (not (and (member (car syms) *ec-call-bad-ops*)
-                       (not (equal (fgetprop (car syms) 'guard ''t
-                                             world)
-                                   ''t)))))
-        (cons (car syms) (logic-function-syms (cdr syms) world))
-      (logic-function-syms (cdr syms) world))))
 
 (defun mk-defeval-entries (fns world)
   (if (atom fns)
@@ -621,45 +647,264 @@ The function ~x0 is missing its ~x1 property; perhaps it is not defined.~%"
       (cons (cons (car fns) formals)
             (mk-defeval-entries (cdr fns) world)))))
 
-
-
 (logic)
 
-(make-event
- `(defconst *all-logic-function-syms*
-    ',(let ((world (w state)))
-        (logic-function-syms (all-syms-in-world world) world))))
 
-(make-event
- `(defconst *defeval-entries-for-all-reasonable-functions*
-    ',(let ((world (w state)))
-        (mk-defeval-entries *all-logic-function-syms* world))))
+(defevaluator cadr-nth-ev cadr-nth-ev-lst
+  ((car x) (cdr x) (nth n x)))
 
 
-(make-event
- `(defapply big-test-apply
-    ,*all-logic-function-syms*
-    :theoremsp nil))
+(defun term-count-cdrs (x)
+  (declare (xargs :guard (pseudo-termp x)))
+  (b* (((when (or (atom x) (not (eq (car x) 'cdr))))
+        (mv 0 x))
+       ((mv count final) (term-count-cdrs (cadr x))))
+    (mv (+ 1 count) final)))
 
-(make-event
- `(defevaluator-fast big-test-ev big-test-ev-lst
-    ,*defeval-entries-for-all-reasonable-functions*))
+(Defthm natp-term-count-cdrs
+  (natp (mv-nth 0 (term-count-cdrs x)))
+  :rule-classes :type-prescription)
+
+(local (include-book "arithmetic/top-with-meta" :dir :system))
+
+(defthm term-count-cdrs-correct
+  (mv-let (n y)
+    (term-count-cdrs x)
+    (equal (nthcdr n (cadr-nth-ev y a))
+           (cadr-nth-ev x a)))
+  :hints (("goal" :induct (term-count-cdrs x))))
+
+(local (defthm car-of-nthcdr
+         (equal (car (nthcdr n x))
+                (nth n x))))
+
+(defthm term-count-cdrs-correct-nth
+  (mv-let (n y)
+    (term-count-cdrs x)
+    (equal (nth n (cadr-nth-ev y a))
+           (car (cadr-nth-ev x a))))
+  :hints (("goal" :use ((:instance car-of-nthcdr
+                         (n (mv-nth 0 (term-count-cdrs x)))
+                         (x (cadr-nth-ev (mv-nth 1 (term-count-cdrs x))
+                                      a))))
+           :in-theory (disable car-of-nthcdr))))
+
+(defun car-to-nth-meta (x)
+  (declare (xargs :guard (pseudo-termp x)))
+  (b* (((unless (and (consp x) (eq (car x) 'car))) x)
+       ((mv n inner-term) (term-count-cdrs (cadr x))))
+    `(nth ',n ,inner-term)))
+
+(defthmd car-to-nth-meta-correct
+  (equal (cadr-nth-ev x a)
+         (cadr-nth-ev (car-to-nth-meta x) a))
+  :rule-classes ((:meta :trigger-fns (car))))
+
+(defthmd nth-of-cdr
+  (equal (nth n (cdr x))
+         (nth (+ 1 (nfix n)) x)))
+
+(defconst *apply/ev/concrete-ev-template*
+  '(progn
+     (encapsulate nil
+       (defapply _name_-apply
+         _fnsyms_
+         :theoremsp nil)
+
+       (def-ruleset before-_name_-ev (current-theory :here))
+       (with-output
+        :off :all :on (error)
+        (make-event
+         `(defevaluator-fast _name_-ev _name_-ev-lst
+            ,(mk-defeval-entries '_fnsyms_ (w state)))))
+       (def-ruleset _name_-ev-rules
+         (set-difference-theories
+          (current-theory :here)
+          (ruleset 'before-_name_-ev)))
+
+       (local (in-theory (Disable _name_-apply)))
+
+       (defthmd _name_-apply-agrees-with-_name_-ev
+         (implies (mv-nth 0 (_name_-apply fn args))
+                  (equal (mv-nth 1 (_name_-apply fn args))
+                         (_name_-ev (cons fn (kwote-lst args)) nil)))
+         :hints (("goal" :clause-processor
+                  (apply-for-ev-cp clause nil state)
+                  :in-theory (disable*
+                              (:rules-of-class :definition :here)
+                              (:rules-of-class :type-prescription :here)))
+                 (use-by-computed-hint clause)
+                 (use-these-hints-hint clause)
+                 (cw "fell through: ~x0~%" clause)))
+       (defthmd _name_-apply-agrees-with-_name_-ev-rev
+         (implies (mv-nth 0 (_name_-apply fn args))
+                  (equal (_name_-ev (cons fn (kwote-lst args)) nil)
+                         (mv-nth 1 (_name_-apply fn args))))
+         :hints(("Goal" :in-theory '(_name_-apply-agrees-with-_name_-ev))))
+
+       (defthmd _name_-apply-of-fns
+         (implies (member f '_fnsyms_)
+                  (mv-nth 0 (_name_-apply f args)))
+         :hints (("goal" :in-theory '(_name_-apply
+                                      nth (eql)
+                                      member-of-cons
+                                      member-when-atom))))
+       (local (in-theory (enable _name_-apply-of-fns
+                                 car-cdr-elim
+                                 car-cons
+                                 cdr-cons
+                                 acl2-count
+                                 (:t acl2-count)
+                                 o< o-finp
+                                 pseudo-term-listp
+                                 pseudo-termp
+                                 eqlablep
+                                 consp-assoc-equal
+                                 assoc-eql-exec-is-assoc-equal
+                                 alistp-pairlis$
+                                 atom not eq
+                                 symbol-listp-forward-to-true-listp)))
+
+       (mutual-recursion
+        (defun _name_-ev-concrete (x a appalist)
+          (declare (xargs :guard (and (pseudo-termp x)
+                                      (alistp appalist)
+                                      (alistp a))
+                          :hints(("Goal" :in-theory (enable
+                                                     car-cdr-elim
+                                                     car-cons
+                                                     cdr-cons
+                                                     acl2-count
+                                                     (:t acl2-count)
+                                                     o< o-finp)))))
+          (b* (((when (atom x)) (and x (cdr (assoc x a))))
+               ((when (eq (car x) 'quote)) (cadr x))
+               (args (_name_-ev-concrete-lst
+                      (cdr x) a appalist))
+               ((when (consp (car x)))
+                (_name_-ev-concrete
+                 (caddar x)
+                 (pairlis$ (cadar x) args)
+                 appalist))
+               ((mv ok val)
+                (_name_-apply (car x) args))
+               ((when ok) val))
+            (cdr (assoc-equal (cons (car x) args) appalist))))
+        (defun _name_-ev-concrete-lst (x a appalist)
+          (declare (xargs :guard (and (pseudo-term-listp x)
+                                      (alistp appalist)
+                                      (alistp a))))
+          (if (atom x)
+              nil
+            (cons (_name_-ev-concrete (car x) a appalist)
+                  (_name_-ev-concrete-lst (cdr x) a appalist)))))
+
+       (defthm _name_-ev-concrete-lst-of-kwote-lst
+         (equal (_name_-ev-concrete-lst (kwote-lst x) a appalist)
+                (list-fix x))
+         :hints(("Goal" :in-theory (enable kwote-lst list-fix kwote))))
+
+       (defthm _name_-eval-nth-kwote-lst
+         (equal (_name_-ev (nth n (kwote-lst x)) a)
+                (nth n x))
+         :hints(("Goal" :in-theory (enable kwote-lst kwote nth))))
+
+       (defthm nth-of-_name_-ev-concrete-lst
+         (equal (nth n (_name_-ev-concrete-lst x a appalist))
+                (_name_-ev-concrete (nth n x) a appalist))
+         :hints(("Goal" :in-theory (e/d (nth)
+                                        (_name_-ev-concrete))
+                 :induct t
+                 :expand ((_name_-ev-concrete nil a appalist))))))
+
+     (defthm _name_-ev-concrete-is-instance-of-_name_-ev
+       t
+       :hints (("goal" :use ((:functional-instance
+                              (:theorem (equal (_name_-ev x a) (_name_-ev x a)))
+                              (_name_-ev
+                               (lambda (x a)
+                                 (_name_-ev-concrete x a appalist)))
+                              (_name_-ev-lst
+                               (lambda (x a)
+                                 (_name_-ev-concrete-lst x a appalist)))))
+                :expand ((_name_-ev-concrete x a appalist)
+                         (:free (x y)
+                          (_name_-ev-concrete (cons x y)
+                                              nil appalist))
+                         (_name_-ev-concrete nil a appalist)
+                         (_name_-ev-concrete-lst x a appalist)
+                         (_name_-ev-concrete-lst x-lst a appalist)
+                         (:free (x) (hide x)))
+                :in-theory (e/d** (_name_-apply-of-fns
+                                   car-to-nth-meta-correct
+                                   ;; _name_-ev-rules
+                                   kwote nfix
+                                   _name_-ev-constraint-0
+                                   (cons) (equal) (member-equal) (eql)
+                                   car-cons cdr-cons _name_-eval-nth-kwote-lst
+                                   list-fix-when-true-listp
+                                   _name_-apply-agrees-with-_name_-ev-rev
+                                   _name_-apply-of-fns
+                                   _name_-ev-concrete-lst-of-kwote-lst
+                                   nth-of-_name_-ev-concrete-lst
+                                   nth-of-cdr
+                                   nth-0-cons
+                                   (:t _name_-ev-concrete-lst))
+                                  ;; (_name_-apply
+                                  ;;  member-of-cons
+                                  ;;  subsetp-car-member
+                                  ;;  member-equal
+                                  ;;  _name_-ev-concrete
+                                  ;;  sets::double-containment
+                                  ;;  default-cdr
+                                  ;;  (_name_-apply)
+                                  ;;  (:rules-of-class :definition :here))
+                                  ;; (kwote ;; kwote-lst _name_-ev-concrete-lst
+                                  ;;  nfix _name_-ev-constraint-0)
+                                  )
+                ;; :in-theory '(_name_-apply-agrees-with-_name_-ev
+                ;;              _name_-apply-of-fns
+                ;;              (member-equal) (take))
+                )
+               (and stable-under-simplificationp
+                    '(:expand ((:free (fn args) (_name_-apply fn args))
+                               (:free (x) (hide x))))))
+       :rule-classes nil)))
+
+(defun defapply/ev/concrete-ev-fn (name fns)
+  (declare (xargs :mode :program))
+  (template-subst
+   *apply/ev/concrete-ev-template*
+   :atom-alist `((_name_ . ,name)
+                 (_fnsyms_ . ,fns))
+   :str-alist `(("_NAME_" . ,(symbol-name name)))
+   :pkg-sym name))
+
+(defmacro defapply/ev/concrete-ev (name fns)
+  (defapply/ev/concrete-ev-fn name fns))
 
 
-(time$
- (defthm big-test-apply-agrees-with-big-teste-ev
-     (implies (mv-nth 0 (big-test-apply fn args))
-              (equal (mv-nth 1 (big-test-apply fn args))
-                     (big-test-ev (cons fn (kwote-lst args)) nil)))
-     :hints (("goal" :clause-processor
-              (apply-for-ev-cp clause nil state)
-              :in-theory (disable*
-                          (:rules-of-class :definition :here)
-                          (:rules-of-class :type-prescription :here)))
-             (use-by-computed-hint clause)
-             (use-these-hints-hint clause)
-             (cw "fell through: ~x0~%" clause))))
-;; awesome!
 
-||#
+(set-rewrite-stack-limit 10000)
 
+(local
+ (progn
+   ;; (defapply/ev/concrete-ev mything2 (if len mv-list binary-append))
+
+
+   (make-event
+    `(defapply/ev/concrete-ev
+       everything ,(nthcdr 400 *all-logic-function-syms*)))))
+
+;;  100:    2.02      97M
+;;  200:    4.02     204M
+;;  400:    8.77     592M
+;;  600:   16.43    1303M
+;;  800:   27.43    2474M
+;; 1000:   44.35    4235M
+;; 1200:   66.82    6708M
+;; 1246:   71.74    7391M
+
+
+
+           

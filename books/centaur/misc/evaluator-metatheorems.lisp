@@ -413,7 +413,12 @@
                ;; special case 1: return-last
                (((('consp 'x) ('equal ('car 'x) '(quote return-last)))
                  (!evfn . '((car (cdr (cdr (cdr x)))) a)))
-                (hons-acons 'return-last (cons 1 rune)
+                (hons-acons 'return-last (cons 3 rune)
+                            rest))
+
+               (((('consp 'x) ('equal ('car 'x) '(quote mv-list)))
+                 (!evfn . '((car (cdr (cdr x))) a)))
+                (hons-acons 'mv-list (cons 2 rune)
                             rest))
 
                (((('consp 'x) ('equal ('car 'x) ('quote fn)))

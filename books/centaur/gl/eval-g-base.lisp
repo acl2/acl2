@@ -2,7 +2,7 @@
 
 (in-package "GL")
 
-(include-book "defapply")
+;; (include-book "defapply")
 (include-book "generic-geval")
 
 

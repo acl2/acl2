@@ -78,7 +78,8 @@
 
 (defthm generic-geval-g-apply
   (equal (generic-geval (g-apply fn args) env)
-         (generic-geval-apply fn (generic-geval args env))))
+         (generic-geval-ev (cons fn (kwote-lst (generic-geval args env)))
+                           nil)))
 
 ;; (defthm generic-geval-gobj-fix
 ;;   (equal (generic-geval (gobj-fix x) env)
