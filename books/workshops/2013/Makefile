@@ -23,7 +23,10 @@
 # Konrad Slind and David Greve
 # A Step-Indexing Approach to Partial Functions
 
-########## Supporting materials to be provided for ACL2(r): ##########
+########## Supporting materials provided for ACL2(r): ##########
+
+# Under the books, see:
+# nonstd/workshops/2013/helms-gamboa-quantum/support/
 
 # Lucas Helms and Ruben Gamboa
 # An Interpreter for Quantum Circuits
