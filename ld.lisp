@@ -22812,7 +22812,7 @@ Start Here: <A HREF=\"~sj\">Applications</A>, <A HREF=\"~sa\">Tours</A>, and <A 
 </TD>
 <TD>
 <A HREF=\"http://www.cs.utexas.edu/users/moore/acl2/workshops.html\">ACL2
-Workshops and UT ACL2 Seminar</A>
+Workshops, UT Seminar, and Course Materials</A>
 </TD>
 <!--
 
@@ -22843,7 +22843,7 @@ entry is left blank.
 </TD>
 <TD>
 <A HREF=\"http://www.cs.utexas.edu/users/moore/publications/acl2-papers.html\">
-Books and Papers about ACL2 and Its Applications</A>
+Publications about about ACL2 and Its Applications</A>
 </TD>
 
 <TD ALIGN=CENTER VALIGN=MIDDLE>
@@ -22860,7 +22860,7 @@ and <A HREF=\"http://www.cs.utexas.edu/users/moore/publications/hyper-card.html\
 <A HREF=\"#Tools\"><img src=\"tools3.gif\" BORDER=0></A>
 </TD>
 <TD>
-<A HREF=\"#Tools\">Lemma Libraries and Utilities</A>
+<A HREF=\"#Tools\">Community Books: Lemma Libraries and Utilities</A>
 </TD>
 
 <TD ALIGN=CENTER VALIGN=MIDDLE>
@@ -23078,11 +23078,12 @@ directory):<br>
 </ul>
 
 <BR><HR><BR>
-<H2><A NAME=\"Tools\">Lemma Libraries and Utilities; and, How to Contribute</A></H2>
+<H2><A NAME=\"Tools\">Community Books: Lemma Libraries and Utilities, and How to Contribute</A></H2>
 
-A companion to ACL2 is the library of <em>community books</em>, which have been
-developed by many users over the years.  These books contain definitions and
-theorems that you might find useful in your models and proofs.  The <A
+A companion to ACL2 is the library of <em><a
+href=\"http://acl2-books.googlecode.com/\">community books</a></em>, which have
+been developed by many users over the years.  These books contain definitions
+and theorems that you might find useful in your models and proofs.  The <A
 HREF=\"installation/installation.html\">installation instructions</A> explain
 how to <A HREF=\"http://code.google.com/p/acl2-books/downloads/\">download</A>
 and install the community books.  These books include some tools built by
@@ -23090,8 +23091,9 @@ users.
 
 <p>
 
-We strongly encourage users to submit additional books by following the <A
-HREF=\"http://www.cs.utexas.edu/users/moore/acl2/books/index.html\">instructions for contributing books to ACL2</A>.
+We strongly encourage users to submit additional books by following the
+instructions at the acl2-books project page hosted at <code><A
+HREF=\"http://acl2-books.googlecode.com/\">http://acl2-books.googlecode.com</a>.
 
 <p>
 
