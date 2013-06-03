@@ -540,7 +540,6 @@ To load this book, it is sufficient to do something like this:
 	   :in-theory '(exponents-add-unrestricted (expt)))))
   
 (local (in-theory (disable expt 
-			   left-nullity-of-1-for-expt 
 			   right-unicity-of-1-for-expt
 			   expt-minus
 			   exponents-add-for-nonneg-exponents
