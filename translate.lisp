@@ -8660,7 +8660,7 @@
    (translate1 form
                :stobjs-out '((:stobjs-out . :stobjs-out))
                t
-               'top-level (w state) state)
+               ctx (w state) state)
 
 ; known-stobjs = t.  We expect trans-eval to be used only when the
 ; user is granted full access to the stobjs in state.  Of course, some
@@ -8674,7 +8674,7 @@
            (vars (all-vars trans)))
        (cond
         ((non-stobjps vars t (w state)) ;;; known-stobjs = t
-         (er soft 'top-level
+         (er soft ctx
              "Global variables, such as ~&0, are not allowed. See ~
               :DOC ASSIGN and :DOC @."
              (non-stobjps vars t (w state)))) ;;; known-stobjs = t

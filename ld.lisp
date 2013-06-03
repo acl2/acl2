@@ -20636,6 +20636,9 @@
 ; For GCL only, further increased the binding stack (except, still, on
 ; Windows); see the setting of si::*multiply-stacks* in init.lisp.
 
+; Modified *home-page* for searching books, to point to tag
+; #Searching_and_browsing_the_books.
+
   :doc
   ":Doc-Section release-notes
 
