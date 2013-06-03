@@ -23083,17 +23083,18 @@ directory):<br>
 A companion to ACL2 is the library of <em><a
 href=\"http://acl2-books.googlecode.com/\">community books</a></em>, which have
 been developed by many users over the years.  These books contain definitions
-and theorems that you might find useful in your models and proofs.  The <A
-HREF=\"installation/installation.html\">installation instructions</A> explain
-how to <A HREF=\"http://code.google.com/p/acl2-books/downloads/\">download</A>
-and install the community books.  These books include some tools built by
-users.
+and theorems that you might find useful in your models and proofs.  In
+addition, some books contain ACL2 reasoning or analysis tools built by users.
+The <A HREF=\"installation/installation.html\">installation instructions</A>
+explain how to <A
+HREF=\"http://code.google.com/p/acl2-books/downloads/\">download</A> and
+install the community books.
 
 <p>
 
 We strongly encourage users to submit additional books by following the
 instructions at the acl2-books project page hosted at <code><A
-HREF=\"http://acl2-books.googlecode.com/\">http://acl2-books.googlecode.com</a>.
+HREF=\"http://acl2-books.googlecode.com/\">http://acl2-books.googlecode.com</a></code>.
 
 <p>
 
@@ -23109,10 +23110,9 @@ ACL2 books for the problem domains in question.
 <BR><HR><BR>
 <H2><A NAME=\"Contribute\">How to contribute libraries and documentation</A></H2>
 
-As mentioned above, we strongly encourage users to submit additional
-books by following the <A
-HREF=\"http://www.cs.utexas.edu/users/moore/acl2/books/index.html\">instructions
-for contributing books to ACL2</A>.
+As mentioned above, we strongly encourage users to submit additional books by
+following the instructions at the acl2-books project page hosted at <code><A
+HREF=\"http://acl2-books.googlecode.com/\">http://acl2-books.googlecode.com</a></code>.
 
 <p>
 
