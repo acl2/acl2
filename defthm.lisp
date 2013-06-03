@@ -3591,17 +3591,27 @@
   make a rule to forward chain when a certain trigger arises~/
 
   ~l[rule-classes] for a general discussion of rule classes and how they are
-  used to build rules from formulas.  An example ~c[:]~ilc[corollary] formula
-  from which a ~c[:forward-chaining] rule might be built is:
+  used to build rules from formulas.
+
   ~bv[]
-  Example:
-  (implies (and (p x) (r x))       ; when (p a) appears in a formula to be
-           (q (f x)))              ; simplified, try to establish (r a) and
-                                   ; if successful, add (q (f a)) to the
-                                   ; known assumptions
+  Examples:
+  (defthm p-and-r-forward
+   (implies (and (p x) (r x))       ; When (p a) appears in a formula to be
+            (q (f x)))              ; simplified, try to establish (p a) and
+                                    ; (r a) and, if successful, add (q (f a))
+                                    ; to the known assumptions.
+   :rule-classes :forward-chaining)
+
+  ; Equivalent to the above:
+  (defthm p-and-r-forward
+   (implies (and (p x) (r x))
+            (q (f x)))
+   :rule-classes ((:forward-chaining :trigger-terms ((p x)))))
   ~ev[]
+
   To specify the triggering terms provide a non-empty list of terms
   as the value of the ~c[:trigger-terms] field of the rule class object.~/
+
   ~bv[]
   General Form:
   Any theorem, provided an acceptable triggering term exists.
@@ -3616,13 +3626,11 @@
 
   Forward chaining is performed as part of the simplification process: before
   the goal is rewritten a ~em[context] is established.  The context tells the
-  theorem prover what may be assumed during the rewriting, e.g., to establish
-  hypotheses of rewrite rules.  For example, if the goal is
-  ~c[(implies (and (p A) (q A)) (r A))], then when ~c[(r A)] is being
-  rewritten, the context tells us we may assume ~c[(p A)] and ~c[(q A)].
-  Forward chaining is used to extend the context before rewriting begins.  For
-  example, the ~c[:forward-chaining] rule ~c[(implies (p x) (p1 x))] would add
-  ~c[(p1 A)] to the context.
+  theorem prover what may be assumed during rewriting, in particular, to
+  establish hypotheses of rewrite rules.  Forward chaining is used to extend
+  the context before rewriting begins.  For example, the ~c[:forward-chaining]
+  rule ~c[(implies (p x) (p1 x))] would add ~c[(p1 A)] to the context, where
+  ~c[A] is some term, if ~c[(p A)] is already in the context.
 
   Forward chaining and backchaining are duals.  If a rewrite rule requires that
   ~c[(p1 A)] be established and ~c[(p A)] is known, it could be done either by
@@ -3639,17 +3647,17 @@
 
   ~em[Syntactic Restrictions]
 
-  Forward chaining rules are generated from the corollary term as follows.
-  First, every ~ilc[let] expression is expanded away (hence, so is every
-  ~ilc[let*] and ~ilc[lambda] expression), as is every call of a so-called
-  ``guard holder,'' ~ilc[mv-list] or ~ilc[return-last] (the latter resulting
-  from macroexpansion of calls of ~ilc[prog2$], ~ilc[must-be-equal] or
-  ~ilc[mbe]), ~ilc[ec-call], and a few others), or `~ilc[the]'.  If the
-  resulting term has the form ~c[(implies hyp concl)], then ~c[concl] is
-  treated as a conjunction, with one forward chaining rule with hypothesis
-  ~c[hyp] created for each conjunct.  In the other case, where the corollary
-  term is not an ~ilc[implies], we process it as we process the conclusion in
-  the first case.
+  Forward chaining rules are generated from the corollary term
+  (~pl[rule-classes]) as follows.  First, every ~ilc[let] expression is
+  expanded away (hence, so is every ~ilc[let*] and ~ilc[lambda] expression), as
+  is every call of a so-called ``guard holder,'' ~ilc[mv-list] or
+  ~ilc[return-last] (the latter resulting from macroexpansion of calls of
+  ~ilc[prog2$], ~ilc[must-be-equal] or ~ilc[mbe]), ~ilc[ec-call], and a few
+  others), or `~ilc[the]'.  If the resulting term has the form
+  ~c[(implies hyp concl)], then ~c[concl] is treated as a conjunction, with one
+  forward chaining rule with hypothesis ~c[hyp] created for each conjunct.  In
+  the other case, where the corollary term is not an ~ilc[implies], we process
+  it as we process the conclusion in the first case.
 
   Note that unlike rewrite rules, a nested implication is not folded into a
   single implication.  Consider for example the following term.
@@ -3678,11 +3686,11 @@
 
   ~em[More Details about Forward Chaining]
 
-  ~c[:Forward-chaining] rules are used by the simplifier ~em[before] it begins to
-  rewrite the literals of the goal.  (Forward chaining is thus carried out from
-  scratch for each goal.)  If any term in the goal is an instance of a trigger
-  of some forward chaining rule, we try to establish the hypotheses of that
-  forward chaining theorem (from the negation of the goal).  To relieve a
+  ~c[:Forward-chaining] rules are used by the simplifier ~em[before] it begins
+  to rewrite the literals of the goal.  (Forward chaining is thus carried out
+  from scratch for each goal.)  If any term in the goal is an instance of a
+  trigger of some forward chaining rule, we try to establish the hypotheses of
+  that forward chaining theorem (from the negation of the goal).  To relieve a
   hypothesis we only use type reasoning, evaluation of ground terms, and
   presence among our known assumptions.  We do not use rewriting.  So-called
   free variables in hypotheses are treated specially; ~pl[free-variables].  If
