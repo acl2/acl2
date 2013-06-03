@@ -80,7 +80,6 @@
 # Major top-level targets:
 #   - `all' is the default
 #   - `everything' includes everything in `all' and also some slow books
-#   - `lite' is most of `all', but with a few things excluded
 
 # Major user-definable variables (whose effects occur in this order):
 #   - ACL2
@@ -234,7 +233,7 @@ STARTJOB ?= $(SHELL)
 # definitions come much later in the file, because we start defining
 # the "all" target (at least) well before then.  Also, keep "all:"
 # here so that "all" is the top target.
-.PHONY: all lite everything
+.PHONY: all everything
 all:
 
 ##############################
@@ -774,7 +773,7 @@ else
 # support the "everything" target, so we avoid putting cert_pl_exclude
 # files in such a directory or excluding them from the egrep command
 # that is used to define REBUILD_MAKEFILE_BOOKS, above.  Instead, we
-# exclude them from the "all" and "lite" targets now.
+# exclude them from the "all" target now.
 
 OK_CERTS_EXCLUSIONS := $(filter rtl/rel7/%, $(OK_CERTS))
 
@@ -806,9 +805,7 @@ ifeq ($(shell ls workshops 2> /dev/null), )
 OK_CERTS := $(filter-out workshops/%, $(OK_CERTS))
 endif # ifeq ($(realpath workshops), )
 
-lite: $(OK_CERTS)
-
-all: lite
+all: $(OK_CERTS)
 
 # OK_CERTS_EXCLUSIONS is undefined if ACL2_BOOK_CERTS is defined, but
 # that's not a problem; after all, in that case OK_CERTS wasn't
@@ -828,9 +825,9 @@ critpath.txt: $(OK_CERTS)
 # The following are handy targets for building subsets of the books,
 # and they show how others are easy to add.  It's OK for the community
 # to make updates to this set of targets through addition, deletion,
-# or modification.  (But it's probably best to leave the "all", "lite"
-# and "everything" targets unchanged unless there is a strong reason
-# to change those.)
+# or modification.  (But it's probably best to leave the "all" and
+# "everything" targets unchanged unless there is a strong reason to
+# change those.)
 
 .PHONY: centaur coi workshops \
         workshop1999 workshop2000 workshop2001 workshop2002 \
