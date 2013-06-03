@@ -428,6 +428,7 @@
 
 
 (define string-keyed-alist-p (x)
+  :parents (undocumented)
   :short "Recognizer for alists whose keys are strings.  Used to implement and
           extend @(see regex-get)."
   :guard t
