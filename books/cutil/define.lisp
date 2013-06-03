@@ -17,7 +17,7 @@
 ; Foundation, Inc., 51 Franklin Street, Suite 500, Boston, MA 02110-1335, USA.
 ;
 ; Original author: Jared Davis <jared@centtech.com>
-; Modified by David Rager <ragerdl@cs.utexas.edu> to add :assert option
+; Modified by David Rager <ragerdl@cs.utexas.edu> with minor improvements
 ; Modified by Sol Swords <sswords@centtech.com> to add untranslate support
 
 (in-package "CUTIL")
