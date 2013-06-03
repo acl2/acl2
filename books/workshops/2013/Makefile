@@ -10,6 +10,10 @@
 # Bernard van Gastel and Julien Schmaltz
 # A formalisation of xMAS
 
+# David Hardin and Samuel Hardin
+# ACL2 Meets the GPU: Formalizing a CUDA-based Parallelizable
+# All-Pairs Shortest Path Algorithm in ACL2
+
 # Sebastiaan Joosten, Bernard van Gastel and Julien Schmaltz
 # A Macro for Reusing Abstract Functions and Theorems
 
@@ -19,14 +23,10 @@
 # Konrad Slind and David Greve
 # A Step-Indexing Approach to Partial Functions
 
-########## Waiting for possible supporting materials: ##########
+########## Supporting materials to be provided for ACL2(r): ##########
 
 # Lucas Helms and Ruben Gamboa
 # An Interpreter for Quantum Circuits
-
-# David Hardin and Samuel Hardin
-# ACL2 Meets the GPU: Formalizing a CUDA-based Parallelizable
-# All-Pairs Shortest Path Algorithm in ACL2
 
 ########## Supporting materials provided elsewhere: ##########
 
@@ -51,6 +51,7 @@
 ##############################
 
 DIRS =  goel-hunt-kaufmann/support \
+	hardin-hardin/support \
 	joosten-van-gastel-schmaltz/books \
 	verbeek-schmaltz/books \
 	van-gastel-schmaltz/books \
