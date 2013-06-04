@@ -166,48 +166,26 @@ href="http://www.cons.org/cmucl/">http://www.cons.org/cmucl/</a></code>.
 
 <P><B><A NAME="Obtaining-GCL">Obtaining GCL</A></B><P>
 
-IMPORTANT: Here we are referring to the non-ANSI version (sometimes
-called the "CLtL1 version") of GCL.  It is probably impossible to build ACL2
-with ANSI GCL just now, but that may be coming.  Note: On rare occasions you
-may see a hard error, sometimes (not always) labeled as "bad plist", that
-appears to be specific to GCL.  We have worked with the main GCL implementor
-but have not found a way to eliminate these rare errors.
+You do not need to fetch GCL if instead
+you <A HREF="http://packages.qa.debian.org/a/acl2.html">download a
+binary Debian package for ACL2</A>.  Thanks to Camm Maguire for
+maintaining this package.  Note that it may take some time after each
+ACL2 release for this binary Debian package to be updated for that
+release.  Here is a shell command that might be used to obtain that
+package.
 
-<P>
+<pre>
+apt-get -q install gcl gcl-doc if running Debian
+</pre>
 
-<B>Debian package.</B> You do not need to fetch GCL if you <A
-HREF="http://packages.qa.debian.org/a/acl2.html">download the binary Debian
-package for ACL2</A>.  Thanks to Camm Maguire for maintaining this package.
-It may take some time after each ACL2 release for this binary Debian
-package to be updated for that release.
-
-<P>
-
-GCL may be fetched from <code><a
-href="http://www.gnu.org/software/gcl/">http://www.gnu.org/software/gcl/</a></code>.
-If that site goes down, you may be able to find useful information from the <a
-href="http://people.debian.org/~camm/gcl/">GCL Temporary Distribution Site</a>.
-
-GCL maintainer Camm Maguire suggests the following, in order of preference
-(most to least):
-
-<ol>
-<li>apt-get -q install gcl gcl-doc if running Debian
-<li>Download and install the prebuilt binaries otherwise (if available for your platform)
-<li>Download the latest (stable) source tarball and build yourself otherwise
-<li>Download the latest (stable) cvs branch and build yourself
-</ol>
-
-As of December 2005, the latest recommended version is 2.6.7, and the latest
-development version is 2.7.0.  But see <A HREF="#gcl-mac">below</A> for
-suggestions for building GCL on a Macintosh running OS X.  And see the
-next paragraph:
+Otherwise, you can fetch GCL in one of the ways described below.
 
 <p>
 
-You may obtain a recent CVS version by executing, for example, the
-following command (if you have CVS installed on your system).  This
-particular command will retrieve (as of August 2010) the latest
+In Spring 2013 there were updates to GCL, reflected in ACL2, that
+allow ACL2 to build not only on traditional ("CLtL1") GCL but also on
+ANSI GCL.  Perhaps the best way to fetch a recent GCL is with the
+following command.  This particular command will retrieve the latest
 development/unstable cvs sources.
 
 <pre>
@@ -215,49 +193,60 @@ cvs -z9 -q -d:pserver:anonymous@cvs.sv.gnu.org:/sources/gcl \
      co -d gcl-2.6.8pre -r Version_2_6_8pre gcl
 </pre>
 
-<P>
-
-<A NAME="gcl-mac"><B>Macintosh.</B></A> Robert Krug has provided instructions
-for building GCL on Mac OS X, which we include here (very slightly modified, in
-part with help from Camm Maguire) in case others find them helpful.
+As per GCL installation instructions, you may wish to build GCL as
+follows on a 64-bit linux machine, instead
+using <code>--enable-maxpage=524288</code> on a 32-bit linux machine,
+and perhaps <code>--enable-maxpage=262144</code> on a Mac.
 
 <pre>
-The normal build process for GCL on Mac OS X assumes that
-you have installed fink on your Mac.  (If you do not know
-what this is, don't worry; you probably don't have it or
-want it.)  Here we give instructions that have worked for
-building GCL on OS X without fink.
-
-   A. Obtain recent sources (there is a problem, e.g., with
-      gcl-2.6.7).  For example, you can do the following:
-
-      export CVSROOT=:pserver:anonymous@cvs.sv.gnu.org:/sources/gcl
-      cvs -z9 -q co -d gcl-2.6.8pre -r Version_2_6_8pre gcl
-
-      At some point you may be able to obtain GCL from
-      ftp://ftp.gnu/org/, cd gnu, cd gcl, get
-      gcl-2.6.8.tar.gz, tar xfz gcl-2.6.8.tar.gz)
-
-   B. Make sure that /usr/local/bin is in your PATH; if not, run:
-      PATH="$PATH:/usr/local/bin"
-
-   C. cd &lt;gcl directory&gt;
-
-   D. You now need to patch file h/powerpc-macosx.defs (this might not be
-      necessary starting with GCL 2.6.8):
-
-      Replace the line:
-      LIBS := `echo $(LIBS) | sed -e 's/-lncurses/ /'` /sw/lib/libintl.dylib
-      With:
-      LIBS := `echo $(LIBS) | sed -e 's/-lncurses/ /'` /usr/local/lib/libintl.dylib
-
-   E. Configure and start to build gcl:
-      ./configure
-      make
-
-   F. Install gcl:
-      sudo make install
+./configure --enable-maxpage=1048576
+make
 </pre>
+
+You can build an ANSI image by adding <code>--enable-ansi</code> to
+the above <code>./configure</code> command.  Alternatively, you might
+find suitable prebuilt binaries for a variety of machines here:
+<br>
+<code><a href="http://packages.debian.org/search?keywords=gcl">http://packages.debian.org/search?keywords=gcl</a></code>
+
+<p>
+
+It might also be possible to fetch GCL
+from <code><a href="http://www.gnu.org/software/gcl/">http://www.gnu.org/software/gcl/</a></code>,
+though as of this writing (June 4, 2013) those versions are quite old.
+
+<P>
+
+<!--
+
+Through Version_6.1 we included the following instructions, saying
+that "GCL maintainer Camm Maguire has suggested the following, in
+order of preference (most to least):", as an ordered list:
+
+apt-get -q install gcl gcl-doc if running Debian
+Download and install the prebuilt binaries otherwise (if available for your platform)
+Download the latest (stable) source tarball and build yourself otherwise
+Download the latest (stable) cvs branch and build yourself
+
+However, it's not clear how helpful those instructions are, as opposed
+simply to spelling some things out as has been done above.
+
+-->
+
+<!--
+Through Version_6.1 there were instructions here from Robert Krug for
+building on a Mac.  But Matt Kaufmann built ACL2 on a Mac in May,
+2013, by following normal GCL instructions, modified as shown below.
+-->
+
+<p>
+
+<i>Note</i>: On rare occasions you may see a hard error, sometimes (not
+always) labeled as "bad plist", that may be due to interaction between
+GCL and GNU Make.  We have worked with the main GCL implementor but
+have not found a way to eliminate these rare errors.
+
+<P>
 
 <P><B><A NAME="Obtaining-LispWorks">Obtaining LispWorks</A></B><P>
 
