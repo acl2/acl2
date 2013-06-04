@@ -51,15 +51,15 @@
 
   hash cons, function memoization, and applicative hash tables~/
 
-  Bob Boyer and Warren Hunt have developed a canonical representation for ACL2
-  data objects and a function memoization mechanism to facilitate reuse of
-  previously computed results.  This facility includes procedures to read and
-  print ACL2 expressions in such a way that repetition of some ACL2 objects is
-  eliminated, thereby permitting a kind of on-the-fly file compression.  The
-  implementation does not alter the semantics of ACL2 except to add a handful
-  of definitions.
+  Bob Boyer and Warren Hunt, and later Jared Davis and Sol Swords, have
+  developed a canonical representation for ACL2 data objects and a function
+  memoization mechanism to facilitate reuse of previously computed results.
+  This facility includes procedures to read and print ACL2 expressions in such
+  a way that repetition of some ACL2 objects is eliminated, thereby permitting
+  a kind of on-the-fly file compression.  The implementation does not alter the
+  semantics of ACL2 except to add a handful of definitions.
 
-  We given the name ``ACL2(h)'' to the resulting experimental extension of the
+  We give the name ``ACL2(h)'' to the resulting experimental extension of the
   ACL2 system, which includes hash cons, function memoization, and fast
   association lists (applicative hash tables).  It is optimized for Clozure
   Common Lisp (CCL), but other ANSI-compliant host Lisp implementations may
