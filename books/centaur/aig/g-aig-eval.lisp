@@ -453,9 +453,10 @@
 
 (encapsulate nil
   (make-event 
-   `(gl::def-eval-g aig-eval-ev
-                    ,(list* 'aig-eval-list
-                          (cdar (table-alist 'gl::g-apply-table (w state)))))))
+   `(acl2::without-waterfall-parallelism
+     (gl::def-eval-g aig-eval-ev
+                     ,(list* 'aig-eval-list
+                             (cdar (table-alist 'gl::g-apply-table (w state))))))))
 
 (local
  (progn
