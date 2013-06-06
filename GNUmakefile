@@ -73,6 +73,7 @@
 #                    ; Same as make regression, except that target "everything"
 #                    ; is used in community books file, Makefile.
 #   make regression-legacy-fast [DEPRECATED as is books/regression-targets (legacy)]
+#                    ; NOTE: This target was not tested before the v6-2 release.
 #                    ; (WARNING: This target uses variable ACL2, with default value
 #                    ;      "acl2", so it is probably a good idea to run after
 #                    ;      explicitly setting ACL2=<path_to_ACL2>.
