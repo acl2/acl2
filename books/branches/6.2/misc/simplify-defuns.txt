@@ -1,0 +1,485 @@
+                  A Tool for Simplifying Files of Definitions
+                            Matt Kaufmann, Sept. 2002
+
+The tool simplify-defuns.lisp implements the following spec from Rob Sumners.
+Input is a certifiable book, and output is two certifiable books: one that
+defines simpler functions corresponding to some of the input book's functions,
+and one that proves equivalence between the pairs of functions.  Moreover,
+the tool can be used to transform books of lemmas about the original functions
+to books of lemmas about the new functions, with appropriate hints to make
+certification quick for the new books.
+
+At AMD, we mechanically generate files of ACL2 definitions corresponding to rtl
+(register-transfer level) hardware descriptions.  Our experience to date leads
+us to believe that with the inclusion of appropriate books of rewrite rules,
+substantial simplification can be done on such definitions.  The tool does such
+simplification to produce simplified definitions as a starting point for formal
+verification.  Without such a tool, the same sort of simplification could be
+done repeatedly during proofs.  This situation is analogous to doing
+optimizations at compile-time rather than run-time.
+
+Below we go through a little example in order to explain the tool.  The example
+illustrates some cute ACL2 proof techniques, independent of the tool.
+
+In brief, the tool takes a definition such as
+  (defun %f (...) (... (%g ...) (%f ...) ...))
+and removes the percents
+  (defun  f (...) (... ( g ...) ( f ...) ...))
+and simplifies the body.
+
+========================= script do-simp.lisp =========================
+(in-package "ACL2")
+
+; Certify support file.
+
+(certify-book "inputs")
+(u)
+
+; Certify input file.
+
+(include-book "inputs")
+(certify-book "defs-in" 1)
+(u)
+
+; Create output file.
+
+(include-book "defs-in")
+(include-book ".../simplify-defuns") ; put appropriate pathname here
+(transform-defuns "defs-in.lisp"
+                  :out-defs "defs-out.lisp"
+		  ;; can also specify
+		  ;;  :defs-extra <list of initial events for :out-defs>
+                  :equalities "defs-eq.lisp"
+		  ;; can also specify
+		  ;;  :eq-extra <list of initial events for :equalities>
+                  :thm-file-pairs '(("lemmas-in.lisp" "lemmas-out.lisp"
+                                     ;; Initial events for lemmas-out.lisp:
+                                     (include-book "defs-out")
+                                     (local (include-book "lemmas-in"))
+                                     (local (include-book "defs-eq"))
+                                     (local (in-theory (theory
+                                                        '%-removal-theory))))))
+(ubt! 1)
+
+; Certify output file.
+
+(include-book "inputs")
+(certify-book "defs-out" 1)
+(ubt! 1)
+
+; Certify equality lemmas file.
+
+(include-book "defs-in")
+(include-book "defs-out")
+(certify-book "defs-eq" 2)
+
+; Certify extra lemmas files.
+
+(ubt! 1)
+(certify-book "lemmas-in")
+(u)
+(certify-book "lemmas-out")
+
+====================== example support file inputs.lisp ======================
+
+(in-package "ACL2")
+
+(defun f1 (x)
+  (+ x x))
+
+(defstub input1 (n) t)
+(defstub input2 (n) t)
+
+====================== example input file defs-in.lisp ======================
+
+(in-package "ACL2")
+
+(defun %g1 (x y)
+  (cond
+   ((zp x) x)
+   ((< 0 (f1 x)) y)
+   (t 23)))
+
+(in-theory (disable %g1))
+
+(defun %g2 (x y)
+  (if (atom x)
+      (%g1 x y)
+    (%g2 (cdr x) y)))
+
+(in-theory (disable %g2))
+
+(mutual-recursion
+ (defun %reg1 (n)
+   (declare (xargs :measure (cons (1+ (acl2-count n)) 0)))
+   (if (zp n)
+       0
+     (logxor (%wire1 (1- n))
+             (input1 (1- n)))))
+ (defun %reg2 (n)
+   (declare (xargs :measure (cons (1+ (acl2-count n)) 1)))
+   (if (zp n)
+       (%reg1 n)
+     (logand (%wire1 (1- n))
+             (%wire2 (1- n)))))
+ (defun %wire1 (n)
+   (declare (xargs :measure (cons (1+ (acl2-count n)) 2)))
+   (logior (%reg1 n) (input2 n)))
+ (defun %wire2 (n)
+   (declare (xargs :measure (cons (1+ (acl2-count n)) 3)))
+   (lognot (%wire1 n))))
+
+(in-theory (disable %g1 %g2 %reg1 %reg2 %wire1 %wire2
+                    logand logior logxor
+                    ; Not disabled:  f1 lognot
+                    ))
+
+=================== output definitions file defs-out.lisp ===================
+
+(IN-PACKAGE "ACL2")
+
+(SET-IGNORE-OK T)
+
+(SET-IRRELEVANT-FORMALS-OK T)
+
+(SET-BOGUS-MUTUAL-RECURSION-OK T)
+
+(DEFUND G1 (X Y) (IF (ZP X) X Y))
+
+(DEFUND G2 (X Y)
+        (IF (CONSP X) (G2 (CDR X) Y) (G1 X Y)))
+
+(MUTUAL-RECURSION
+     (DEFUND REG1 (N)
+             (DECLARE (XARGS :MEASURE (CONS (1+ (ACL2-COUNT N)) 0)))
+             (IF (ZP N)
+                 0
+                 (LOGXOR (WIRE1 (+ -1 N))
+                         (INPUT1 (+ -1 N)))))
+     (DEFUND REG2 (N)
+             (DECLARE (XARGS :MEASURE (CONS (1+ (ACL2-COUNT N)) 1)))
+             (IF (ZP N)
+                 (REG1 N)
+                 (LOGAND (WIRE1 (+ -1 N))
+                         (WIRE2 (+ -1 N)))))
+     (DEFUND WIRE1 (N)
+             (DECLARE (XARGS :MEASURE (CONS (1+ (ACL2-COUNT N)) 2)))
+             (LOGIOR (REG1 N) (INPUT2 N)))
+     (DEFUND WIRE2 (N)
+             (DECLARE (XARGS :MEASURE (CONS (1+ (ACL2-COUNT N)) 3)))
+             (+ -1 (- (WIRE1 N)))))
+
+================ annotated output lemmas file defs-eq.lisp ================
+
+; Comments are added manually below.  The rest is exactly as was mechanically
+; generated.
+
+; Notice that all events in the file below are local except for those of the
+; form f-is-%f.
+
+(IN-PACKAGE "ACL2")
+
+; Induction hint used for the case of mutually-recursive functions.
+
+(LOCAL (DEFUN %%SUB1-INDUCTION (N)
+              (IF (ZP N)
+                  N (%%SUB1-INDUCTION (1- N)))))
+
+; The macro %%AND-TREE is useful for very large conjunctions.  It is equivalent
+; semantically to AND, but it creates a balanced binary tree in order to avoid
+; blowing the stack when ACL2 tries to read in a big conjunction.
+
+(LOCAL (DEFUN %%AND-TREE-FN (ARGS LEN)
+              (DECLARE (XARGS :MODE :PROGRAM))
+              (IF (< LEN 20)
+                  (CONS 'AND ARGS)
+                  (LET* ((LEN2 (FLOOR LEN 2)))
+                        (LIST 'AND
+                              (%%AND-TREE-FN (TAKE LEN2 ARGS) LEN2)
+                              (%%AND-TREE-FN (NTHCDR LEN2 ARGS)
+                                             (- LEN LEN2)))))))
+
+(LOCAL (DEFMACRO %%AND-TREE (&REST ARGS)
+                 (%%AND-TREE-FN ARGS (LENGTH ARGS))))
+
+; The first example was a nonrecursive function, g1.
+
+; We generate a new deftheory event for the start of the equivalence proof for
+; each defun or mutual-recursion form.  The theory will include a very small
+; built-in theory (for reasoning about IMPLIES etc.) together with all the
+; %f-is-f lemmas already proved.
+
+(LOCAL (DEFTHEORY THEORY-0 (THEORY 'MINIMAL-THEORY)))
+
+; Prove equivalence of old and simplified body.  This proof should follow
+; roughly the same course as the rewriter calls that produced the simplified
+; body, so even if the proof is non-trivial, we expect it to go through.  We
+; turn off the mini-simplifier "preprocess" in order to more closely mimic the
+; original simplification.  A second reason to turn off "preprocess", which is
+; important for a number of events below, is that "preprocess" can be very slow
+; (due to the way it case-splits into clauses and checks against built-in
+; clauses).
+
+(LOCAL (DEFTHM G1-BODY-IS-%G1-BODY_S
+               (EQUAL (IF (ZP X) X Y)
+                      (COND ((ZP X) X)
+                            ((< 0 (F1 X)) Y)
+                            (T 23)))
+               :HINTS (("Goal" :DO-NOT '(PREPROCESS)))
+               :RULE-CLASSES NIL))
+
+; Now we just force open the two calls (%G1 X Y) and (G1 X Y) and appeal to the
+; lemma just proved.  Notice that we use only MINIMAL-THEORY in the proof.  In
+; fact constants can be substituted for the variables, which is why we include
+; :FREE in our :EXPAND hints.
+
+(DEFTHM G1-IS-%G1 (EQUAL (G1 X Y) (%G1 X Y))
+        :HINTS
+        (("Goal" :EXPAND
+                 ((:FREE (X Y) (%G1 X Y))
+                  (:FREE (X Y) (G1 X Y)))
+                 :IN-THEORY (THEORY 'THEORY-0)
+                 :DO-NOT '(PREPROCESS)
+                 :USE G1-BODY-IS-%G1-BODY_S)))
+
+; Next we consider %G2, which is singly recursive.  Since it calls %G1, it will
+; be important to include the lemma just proved in the theory we will be
+; using.
+
+(LOCAL (DEFTHEORY THEORY-1
+                  (UNION-THEORIES '(G1-IS-%G1)
+                                  (THEORY 'THEORY-0))))
+
+; Define a recursive function, %%G2, whose body is the simplfied body (but
+; still containing the % functions), except that calls of %G2 have been
+; replaced by %%G2.
+
+(LOCAL (DEFUN %%G2 (X Y)
+              (IF (CONSP X)
+                  (%%G2 (CDR X) Y)
+                  (%G1 X Y))))
+
+; Prove %%G2 equal to G2 by induction in the smallest theory possible.  Since
+; these two definitions have exactly the same structure, this should be
+; trivial.
+
+(LOCAL (DEFTHM %%G2-IS-G2 (EQUAL (%%G2 X Y) (G2 X Y))
+               :HINTS
+               (("Goal" :IN-THEORY
+                        (UNION-THEORIES '((:INDUCTION %%G2))
+                                        (THEORY 'THEORY-1))
+                        :DO-NOT '(PREPROCESS)
+                        :EXPAND ((%%G2 X Y) (G2 X Y))
+                        :INDUCT T))))
+
+; Now functionally instantiate the preceding theorem, replacing %%G2 by %G2.
+; This creates a proof obligation, to show that %G2 satisfies the definition of
+; %%G2:
+; 
+; (equal (%g2 x y)
+;        (if (consp x)
+;            (%g2 (cdr x) y)
+;            (g1 x y)))
+; 
+; But when we expand the call of (%g2 x y), this reduces to proving that the
+; (original) body of %g2 equals the simplified body of %g2.  As in the first
+; (non-recursive) example above, this proof should succeed since it is
+; essentially retracing the rewriter's work done in producing the simplified
+; body in the first place.
+
+(DEFTHM G2-IS-%G2 (EQUAL (G2 X Y) (%G2 X Y))
+        :HINTS
+        (("Goal" :BY
+                 (:FUNCTIONAL-INSTANCE %%G2-IS-G2 (%%G2 %G2))
+                 :DO-NOT '(PREPROCESS)
+                 :EXPAND ((%G2 X Y)))))
+
+; Finally, we consider a mutual-recursion example.  Unlike the case of
+; singly-recursive functions, we assume that all functions in a
+; mutual-recursion nest have the same, unique, formal parameter.
+
+(LOCAL (DEFTHEORY THEORY-2
+                  (UNION-THEORIES '(G2-IS-%G2)
+                                  (THEORY 'THEORY-1))))
+
+; Define a predicate saying that all % functions in the nest equal their
+; corresponding simplified functions (on a given value of the formal
+; parameter).
+
+(LOCAL (DEFUN %%P2 (N)
+              (DECLARE (XARGS :NORMALIZE NIL))
+              (%%AND-TREE (EQUAL (WIRE2 N) (%WIRE2 N))
+                          (EQUAL (WIRE1 N) (%WIRE1 N))
+                          (EQUAL (REG2 N) (%REG2 N))
+                          (EQUAL (REG1 N) (%REG1 N)))))
+
+; Prove trivial rewrite rules for the above predicate.  The in-theory event
+; makes the proofs predictably fast.
+
+(LOCAL (DEFTHM %%P2-PROPERTY
+               (IMPLIES (%%P2 N)
+                        (%%AND-TREE (EQUAL (WIRE2 N) (%WIRE2 N))
+                                    (EQUAL (WIRE1 N) (%WIRE1 N))
+                                    (EQUAL (REG2 N) (%REG2 N))
+                                    (EQUAL (REG1 N) (%REG1 N))))
+               :HINTS
+               (("Goal" :IN-THEORY
+                        (UNION-THEORIES '(%%P2)
+                                        (THEORY 'MINIMAL-THEORY))))))
+
+; We will be using the following theory in our proof.  It includes the minimal
+; theory together with the four DEFTHMs just proved.
+
+(LOCAL
+     (DEFTHEORY %%P2-IMPLIES-F-IS-%F-THEORY
+                (UNION-THEORIES (SET-DIFFERENCE-THEORIES (CURRENT-THEORY :HERE)
+                                                         (CURRENT-THEORY '%%P2))
+                                (THEORY 'MINIMAL-THEORY))))
+
+; Now we handle the base step.  We turn the simplifier loose, but we have hope
+; that the proofs basically retrace part of the work done in creating the
+; simplified bodies in the first place.
+
+(LOCAL (ENCAPSULATE NIL
+                    (LOCAL (IN-THEORY (DISABLE %%P2-PROPERTY)))
+                    (LOCAL (DEFTHM REG1-IS-%REG1-BASE
+                                   (IMPLIES (ZP N)
+                                            (EQUAL (REG1 N) (%REG1 N)))
+                                   :HINTS
+                                   (("Goal" :EXPAND ((REG1 N) (%REG1 N))))))
+                    (LOCAL (DEFTHM REG2-IS-%REG2-BASE
+                                   (IMPLIES (ZP N)
+                                            (EQUAL (REG2 N) (%REG2 N)))
+                                   :HINTS
+                                   (("Goal" :EXPAND ((REG2 N) (%REG2 N))))))
+                    (LOCAL (DEFTHM WIRE1-IS-%WIRE1-BASE
+                                   (IMPLIES (ZP N)
+                                            (EQUAL (WIRE1 N) (%WIRE1 N)))
+                                   :HINTS
+                                   (("Goal" :EXPAND ((WIRE1 N) (%WIRE1 N))))))
+                    (LOCAL (DEFTHM WIRE2-IS-%WIRE2-BASE
+                                   (IMPLIES (ZP N)
+                                            (EQUAL (WIRE2 N) (%WIRE2 N)))
+                                   :HINTS
+                                   (("Goal" :EXPAND ((WIRE2 N) (%WIRE2 N))))))
+                    (DEFTHM %%P2-BASE (IMPLIES (ZP N) (%%P2 N))
+                            :INSTRUCTIONS
+                            (:PROMOTE :X-DUMB (:S :NORMALIZE NIL)))))
+
+; Next, the induction step.  We require that the definitions are in "level
+; order", i.e.: In the body of the definition of a function F in the nest,
+; every (recursive) call of a function in the nest is either on (1- N) or else
+; is a call on N of a function defined earlier than F in the nest.  This time
+; we do not turn the full prover loose, because we have seen cases where that
+; doesn't work.  Instead we use the proof-checker's :S command to closely
+; approximate what was done in the original simplification.
+
+(LOCAL
+   (ENCAPSULATE NIL
+                (LOCAL (IN-THEORY (DISABLE %%P2 %%P2-BASE)))
+                (LOCAL (DEFLABEL %%INDUCTION-START))
+                (LOCAL (DEFTHM REG1-IS-%REG1-INDUCTION_STEP
+                               (IMPLIES (AND (NOT (ZP N)) (%%P2 (1- N)))
+                                        (EQUAL (REG1 N) (%REG1 N)))
+                               :INSTRUCTIONS
+                               (:PROMOTE (:DV 1)
+                                         :X-DUMB :NX :X-DUMB :TOP
+                                         (:S :NORMALIZE NIL :BACKCHAIN-LIMIT
+                                             1000 :EXPAND :LAMBDAS :REPEAT 4))))
+                (LOCAL (DEFTHM REG2-IS-%REG2-INDUCTION_STEP
+                               (IMPLIES (AND (NOT (ZP N)) (%%P2 (1- N)))
+                                        (EQUAL (REG2 N) (%REG2 N)))
+                               :INSTRUCTIONS
+                               (:PROMOTE (:DV 1)
+                                         :X-DUMB :NX :X-DUMB :TOP
+                                         (:S :NORMALIZE NIL :BACKCHAIN-LIMIT
+                                             1000 :EXPAND :LAMBDAS :REPEAT 4))))
+                (LOCAL (DEFTHM WIRE1-IS-%WIRE1-INDUCTION_STEP
+                               (IMPLIES (AND (NOT (ZP N)) (%%P2 (1- N)))
+                                        (EQUAL (WIRE1 N) (%WIRE1 N)))
+                               :INSTRUCTIONS
+                               (:PROMOTE (:DV 1)
+                                         :X-DUMB :NX :X-DUMB :TOP
+                                         (:S :NORMALIZE NIL :BACKCHAIN-LIMIT
+                                             1000 :EXPAND :LAMBDAS :REPEAT 4))))
+                (LOCAL (DEFTHM WIRE2-IS-%WIRE2-INDUCTION_STEP
+                               (IMPLIES (AND (NOT (ZP N)) (%%P2 (1- N)))
+                                        (EQUAL (WIRE2 N) (%WIRE2 N)))
+                               :INSTRUCTIONS
+                               (:PROMOTE (:DV 1)
+                                         :X-DUMB :NX :X-DUMB :TOP
+                                         (:S :NORMALIZE NIL :BACKCHAIN-LIMIT
+                                             1000 :EXPAND :LAMBDAS :REPEAT 4))))
+                (DEFTHM %%P2-INDUCTION_STEP
+                        (IMPLIES (AND (NOT (ZP N)) (%%P2 (1- N)))
+                                 (%%P2 N))
+                        :INSTRUCTIONS
+                        (:PROMOTE :X-DUMB (:S :NORMALIZE NIL)))))
+
+; Finally, we prove that %%P2 holds by induction on N.  This proof is trivial
+; using the base and induction step lemmas proved above.
+
+(LOCAL
+     (DEFTHM %%P2-HOLDS (%%P2 N)
+             :HINTS
+             (("Goal" :INDUCT (%%SUB1-INDUCTION N)
+                      :DO-NOT '(PREPROCESS)
+                      :IN-THEORY
+                      (UNION-THEORIES '(%%P2-BASE %%P2-INDUCTION_STEP
+                                                  (:INDUCTION %%SUB1-INDUCTION))
+                                      (THEORY 'MINIMAL-THEORY))))))
+
+; Now we can derive the theorems we want as corollaries of the theorem just
+; above.
+
+(ENCAPSULATE
+     NIL
+     (LOCAL (IN-THEORY (UNION-THEORIES '(%%P2-HOLDS)
+                                       (THEORY '%%P2-IMPLIES-F-IS-%F-THEORY))))
+     (DEFTHM REG1-IS-%REG1 (EQUAL (REG1 N) (%REG1 N))
+             :HINTS (("Goal" :DO-NOT '(PREPROCESS))))
+     (DEFTHM REG2-IS-%REG2 (EQUAL (REG2 N) (%REG2 N))
+             :HINTS (("Goal" :DO-NOT '(PREPROCESS))))
+     (DEFTHM WIRE1-IS-%WIRE1
+             (EQUAL (WIRE1 N) (%WIRE1 N))
+             :HINTS (("Goal" :DO-NOT '(PREPROCESS))))
+     (DEFTHM WIRE2-IS-%WIRE2
+             (EQUAL (WIRE2 N) (%WIRE2 N))
+             :HINTS
+             (("Goal" :DO-NOT '(PREPROCESS)))))
+
+; We collect up all the %f-is-f lemmas proved above.
+
+(DEFTHEORY %-REMOVAL-THEORY
+           (UNION-THEORIES '(G1-IS-%G1 G2-IS-%G2
+                                       WIRE2-IS-%WIRE2 WIRE1-IS-%WIRE1
+                                       REG2-IS-%REG2 REG1-IS-%REG1)
+                           (THEORY 'MINIMAL-THEORY)))
+
+================ old extra lemmas file lemmas-in.lisp ================
+
+(in-package "ACL2")
+
+(include-book "defs-in")
+
+(defthm %lemma-1
+  (implies (true-listp x)
+           (equal (%g2 x y) nil))
+  :hints (("Goal" :in-theory (enable %g1 %g2))))
+
+================ new extra lemmas file lemmas-out.lisp ================
+
+(IN-PACKAGE "ACL2")
+
+(INCLUDE-BOOK "defs-out")
+
+(LOCAL (INCLUDE-BOOK "lemmas-in"))
+
+(LOCAL (INCLUDE-BOOK "defs-eq"))
+
+(LOCAL (IN-THEORY (THEORY '%-REMOVAL-THEORY)))
+
+(DEFTHM LEMMA-1
+        (IMPLIES (TRUE-LISTP X)
+                 (EQUAL (G2 X Y) NIL))
+        :HINTS (("Goal" :USE %LEMMA-1)))

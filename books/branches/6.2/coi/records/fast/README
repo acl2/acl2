@@ -1,0 +1,73 @@
+
+                        Linear Memories as Binary Trees
+                       Jared Davis <jared@cs.utexas.edu>
+
+Introduction
+
+  This is an implementation of linear memories for ACL2, using balanced binary
+  trees as the underlying representation.  The implementation allocates only
+  memory for the addresses which are actually written to, so you can use it to
+  represent very large memories (e.g. 2^64 elements and beyond) without any
+  memory issues, as long as you do not write to more addresses than your system
+  can handle.  
+
+  Loads and stores into the memory are relatively efficient, even for large 
+  memories, and are O(log_2 n) where n is the size of the address space.  For
+  practical timings, you can run the timetest.lisp script in this file, which
+  will run some basic tests, or see the file PERFORMANCE to see the results 
+  for some tests that I have run.
+
+  The code is well optimized to take advantage of fixnums, but this is entirely
+  hidden from the user and you do not have to ever deal with signed-byte-p
+  in guards and so forth.  In fact, the user-level functions (new, load, and
+  store) automatically call the most optimized versions of the implementation
+  functions possible.
+
+
+Building the Library
+
+  Edit the top lines of the makefile to correspond to your system, then just
+  invoke 'make' to build the library.  Make should create the file memory.cert
+  if it is successful.  To test your copy, you can run acl2 < timetest.lisp.
+
+
+Using the Library
+
+  The user of this library needs only to include-book the file "memory".  This
+  is a "redundant events" file (see :doc set-enforce-redundancy) that hides 
+  the messy details of implementing the tree system.
+
+  All functions are in the MEM package.  If you haven't used packages before,
+  I have a small guide here: 
+
+     http://www.cs.utexas.edu/users/jared/acl2/packages.cgi
+
+  The package really shouldn't bother you, and you mainly need to watch out 
+  for two things:
+ 
+    (1) Put MEM:: before each of the functions, e.g., MEM::new, MEM::load, 
+        MEM::store, etc.
+
+    (2) If you want to certify another book that loads the memory book, you
+        will need to (ld "package.lisp") before calling certify-book.  If 
+        you use the standard makefile system (See :doc book-makefiles), you
+        can just add this to your cert.acl2 file.  For an example, see the 
+        cert.acl2 file in this directory.
+    
+  Once you have loaded the book, you should type :doc Memory to see the 
+  online documentation.  Mainly you should be interested in the functions
+  new (which creates a new memory object), load (which reads from an address),
+  and store (which writes to an address).  You might also want to read about
+  address-p (which defines a valid address).
+  
+  When you have familiarized yourself with the library's functions, you will
+  probably want to look at the theorems in memory.lisp (there are only like
+  10 defthms).  These are the theorems that you should use to reason about
+  memories.
+
+
+Feedback and Support
+
+  Please email <jared@cs.utexas.edu> or otherwise contact me if you have any
+  questions or comments about the library, especially if you have any problems
+  with it (missing lemmas to suggest, etc).

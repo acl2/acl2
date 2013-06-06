@@ -1,0 +1,79 @@
+<html>
+<head><title>Tools</title></head>
+<body text=#000000 bgcolor="#FFFFFF">
+This directory holds miscellaneous books containing useful general-purpose
+macros.<p><p>
+
+<h3>Contents:</h3>
+<hr>
+<b>bstar.lisp</b> - Defines a macro <code>B*</code>, which operates similar to
+<code>LET*</code> but supports multiple values, sequential execution for side
+effects, and user-defined pattern-based binders.  Here is an example that
+illustrates several of its features:<p>
+<pre>
+(b* ;; let*-like binding to a single variable:
+    ((x (cons 'a 'b))
+     ;; mv binding
+     ((mv y z) (return-two-values x x))
+     ;; No binding: expression evaluated for side effects
+     (- (cw "Hello")) ;; prints "Hello"
+     ;; Dont-care: expression not evaluated at all
+     ;; (why do we want this? see below.)
+     (& (cw "Hello")) ;; does not print "Hello"
+     ;; MV which ignores a value:
+     ((mv & a) (return-garbage-in-first-mv y z))
+     ;; Pattern-based binding using cons:
+     ((cons (cons b c) d) (must-return-nested-conses a))
+     ;; Alternate form of pattern binding with cons nests:
+     (`(,e (,f . ,g)) (makes-a-list-of-conses b))
+     ;; Pattern with user-defined constructor:
+     ((my-tuple foo bar hum) (something-of-type-my-tuple e c g))
+     ;; Don't-cares with pattern bindings:
+     ((my-tuple & (cons carbar &) hum) (something-else foo f hum))
+     ;; Pattern inside an mv:
+     ((mv a (cons & c)) (make-mv-with-cons)))
+  (some-expression ....))
+</pre>
+User-defined binders can be introduced using <code>DEF-PATBIND-MACRO</code>, as
+in the form <pre> (def-patbind-macro cons (car cdr))
+</pre> which introduced the binder for cons,
+or by defining a macro named <code>PATBIND-<i>&lt;NAME&gt;</i></code>
+following the example of the definitions of <code>PATBIND-MV</code>
+and <code>PATBIND-LIST</code> in bstar.lisp.
+<hr>
+<b>pack.lisp</b> - Defines <code>PACK</code>, which takes a term-like object
+and makes a symbol that looks like it:<pre>
+ACL2 !>(pack '(if a (foo b) (bar c d)))
+|(IF A (FOO B) (BAR C D))|
+</pre>
+<hr>
+<b>progndollar.lisp</b> - Defines <code>PROGN$</code>, which evaluates
+several forms and returns the value of the last one.  Expands to a
+series of nested <code>PROG2$</code>s.
+<hr>
+<b>cws.lisp</b> - Defines <code>CWS</code>, which prints the values of
+a series of forms and returns the value of the last one:<pre>
+ACL2 !>(let ((x '(a b c)) (y '(d e f))) (cws x y))
+X: (A B C)
+Y: (D E F)
+(D E F)
+</pre>
+<hr>
+<b>defsum.lisp</b> - Defines <code>DEFSUM</code>, which introduces a
+sum-of-products datatype with recognizers, accessors, constructors,
+and theorems for reasoning about them without reference to the
+underlying cons structure.  See also deftuple and pattern-match.
+<hr>
+<b>deftuple.lisp</b> - Defines <code>DEFTUPLE</code>,
+similar <code>DEFSUM</code> (above), useful for defining product
+(tuple) datatypes.
+<hr>
+<b>pattern-match.lisp</b> - Defines <code>PATTERN-MATCH</code>, which
+provides pattern-matching functionality similar to that present in ML,
+Haskell, and other such languages.
+<hr>
+<!-- Note: I imagine if lots of other files get put here, we should split this --
+  -- documentation into one file per library or so. -->
+
+</body>
+</html>

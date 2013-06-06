@@ -1,0 +1,18 @@
+(defpkg "SYN"
+  (acl2::set-difference-equal
+   *acl2-exports*
+   '(nth
+     null
+     nil
+     apply
+     ifp
+     consp cons car cdr
+     quotep enquote dequote
+     appendp append
+     arg
+     and
+     if
+     len
+     )))
+
+(certify-book "syn-pkg" ? t)

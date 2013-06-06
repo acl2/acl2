@@ -1,0 +1,4 @@
+(in-package "ACL2")
+(ld "define-u-package.lsp")
+(ld "define-structures-package.lsp")
+(certify-book "structures" ? t)

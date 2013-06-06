@@ -1,0 +1,76 @@
+(:language vhdl
+
+:entity_name mysystem
+:inputs_signals (arg start)
+:inputs_type (natural bit)
+:outputs_signals (res fact.done)
+:outputs_type (natural bit)
+:architecture_name fact
+:local_signals (op1 op2 resmult startmult endmult)
+:local_signals_type (natural natural natural bit bit)
+:local_variables (doit.mystate r f)
+:local_variables_type (natural natural natural)
+
+:process
+  (
+    (Mult
+     (
+      (if (<= startmult 1)
+        (
+         (resmult <= (* op1 op2))
+        )
+      )
+      (endmult <= startmult)
+     )
+    )
+
+   (Doit
+    (
+     (if (<= doit.mystate 0)
+       (
+        (r := arg)
+        (f := 1)
+        (if (= start 1)
+         (
+          (doit.mystate := 1)
+         ))
+       )
+       (
+        (if (<= doit.mystate 1)
+         (
+          (if (= r 1)
+           (
+            (res <= f)
+            (fact.done <= 1)
+            (doit.mystate := 0)
+           )
+           (
+            (startmult <= 1)
+            (op1 <= r)
+            (op2 <= f)
+            (doit.mystate := 2)
+           )
+          )
+         )
+         (
+          (if (<= doit.mystate 2)
+           (
+            (if (= endmult 1)
+             (
+              (f := resmult)
+              (r := (- r 1))
+              (startmult <= 0)
+              (doit.mystate := 1)
+             )
+            )
+           )
+          )
+         )
+        )
+       )
+      )
+     )
+    )
+ )
+)
+

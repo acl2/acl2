@@ -1,0 +1,39 @@
+DONE:
+
+ (1) retract a set of simple lemmas from lib/bvecp-raw-helpers.lisp 
+
+ (2) update lib/rtl.lisp to enable setbitn by default, as rel5 does. 
+
+ (3) update lib/simple-loop-helpers.lisp to enable bitn-cat
+     
+ (4) update bits.lisp to add the defun bitvec back.   
+
+ (5) update the lib/float to have a lemma about width of the nencode function. 
+
+ (6) update the lib/bits and bitn definition to use a different guard. (see support/lib2.delta1)
+
+ (7) update the lib/log.lisp to export results about lognot, logxor, logior, and logand
+
+ (8) create lib/logn.lisp to hold results about  about lnot, lxor, lior and land.
+    
+     To have these results, user need to include "lib/logn" explicitly
+     They are not exported by including "lib/top"
+
+     added a new book to convert logn version to log version. lib/logn2log.lisp 
+
+ (9) add a defsig macro to util.lisp to allow use to define virtual "signals"
+     that one may use to specify the intermediate results. 
+
+(10) weaken some natp hypothesis into integerp hypothesis
+
+(11) add a few new facts about bits, log and add in support/lib2.delta2/ 
+
+(12) stop releasing and maintaining usr/ directory that is present in rel7 
+ 
+     most of the results are already 
+ 
+TODO:
+
+
+
+

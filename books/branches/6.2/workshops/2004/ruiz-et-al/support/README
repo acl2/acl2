@@ -1,0 +1,58 @@
+ACL2 Workshop 2004. Supporting materials for the paper:
+
+Title: A Formally Verified Quadratic Unification Algorithm
+Authors: J.L. Ruiz-Reina, J.A. Alonso, M.J. Hidalgo and F.J. Martin
+-------------------------------------------------------------------
+
+Contents description:
+=====================
+
+* basic.lisp, lists.lisp, terms.lisp, matching.lisp, subsumption.lisp
+  and subsumption-subst.lisp:
+
+  These books are a basic theory of first-order terms, alraedy developed
+  for other formalization project and reused now. 
+
+* prefix-unification-rules.lisp: 
+
+  A rule-based specification of unification for terms in prefix notation
+  (Section 3 of the paper)
+
+* dags.lisp:
+
+  A collection of results about directed acyclic graphs.
+  (Section 4 of the paper)
+
+* dag-unification-rules.lisp:
+  
+  A rule-based specification of unification for terms dags
+  (Section 5 of the paper)
+
+* q-dag-unification-rules.lisp
+
+  A rule-based specification of quadratic unification for term dags
+  (Section 6 of the paper)
+
+* terms-as-dag.lisp:
+
+   Functions for transforming a prefix rpresentation of terms in a dag
+   representation.
+
+*  q-dag-unification.lisp
+
+   The definition and verification of the quadratic unification
+   algorithm (Sections 7 and 8 of the paper) 
+
+* q-dag-unification-st.lisp
+
+   Making the implementation executable, with stobj and defexec (Section
+   9 of the paper). 
+
+----------------------------------------------------------------
+
+C implementation
+----------------
+
+ We also include a C implementation of the unification algorithm, a
+ straightforward  translation of the ACL2 implementation. Se the
+ directory dag-quadratic-C and the README file in that dierctory. 
