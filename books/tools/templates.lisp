@@ -186,7 +186,9 @@ At each atom in the tree:
        ((mv str pkg?) (tmpl-str-sublis alist str1)))
     (if (equal str1 str) sym
       (intern-in-package-of-symbol
-       str (or pkg? pkg-sym)))))
+       str (if (keywordp sym)
+               sym
+             (or pkg? pkg-sym))))))
 
 
 (mutual-recursion

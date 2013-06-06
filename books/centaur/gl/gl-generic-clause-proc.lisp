@@ -3,10 +3,10 @@
 
 
 (include-book "param")
-(include-book "g-if")
+(include-book "gl-generic-interp-defs")
+(local (include-book "gl-generic-interp"))
 (include-book "gify")
 (include-book "bfr-sat")
-(include-book "glcp-templates")
 
 (include-book "misc/untranslate-patterns" :dir :system)
 (include-book "data-structures/no-duplicates" :dir :system)
@@ -20,1340 +20,45 @@
 (local (include-book "hyp-fix-logic"))
 (local (in-theory (disable* sets::double-containment
                             w)))
-
-
-(defmacro glcp-value (res)
-  `(mv nil obligs ,res state))
-
-;; (defmacro glcp-er-let* (alist body)
-;;   (declare (xargs :guard (and (acl2::doubleton-list-p alist)
-;;                               (symbol-alistp alist))))
-;;   (if (null alist)
-;;       `(check-vars-not-free
-;;         (glcp-er-let*-use-nowhere-else)
-;;         ,body)
-;;     `(mv-let (glcp-er-let*-use-nowhere-else
-;;               obligs ,(caar alist) state)
-;;        ,(cadar alist)
-;;        (if glcp-er-let*-use-nowhere-else
-;;            (mv glcp-er-let*-use-nowhere-else
-;;                obligs ,(caar alist) state)
-;;          (glcp-er-let* ,(cdr alist) ,body)))))
-
-(defmacro patbind-glcp-er (args bindings expr)
-  (declare (xargs :guard (and (consp args) (eq (cdr args) nil))))
-  `(b* (((mv patbind-glcp-er-error obligs ,(car args) state)
-         ,(car bindings))
-        ((when patbind-glcp-er-error)
-         (mv patbind-glcp-er-error obligs nil state)))
-     (check-vars-not-free
-      (patbind-glcp-er-error) ,expr)))
-
-(verify-termination acl2::evisc-tuple)
-(verify-guards acl2::evisc-tuple)
-
-(defmacro glcp-if (test then else)
-  `(b* (((glcp-er test) ,test)
-        (gtests (gtests test hyp))
-        (then-hyp (hf (bfr-or (gtests-unknown gtests)
-                               (gtests-nonnil gtests))))
-        (else-hyp (hf (bfr-or (gtests-unknown gtests)
-                               (bfr-not (gtests-nonnil gtests)))))
-        ((glcp-er then)
-         (if then-hyp
-             (let ((hyp (bfr-and hyp then-hyp)))
-               (declare (ignorable hyp))
-               ,then)
-           (glcp-value nil)))
-        ((glcp-er else)
-         (if else-hyp
-             (let ((hyp (bfr-and hyp else-hyp)))
-               (declare (ignorable hyp))
-               ,else)
-           (glcp-value nil)))
-        (merge (gobj-ite-merge (gtests-nonnil gtests) then else
-                               (bfr-and (bfr-not (gtests-unknown gtests))
-                                         hyp))))
-     (if (hf (gtests-unknown gtests))
-         (glcp-value
-          (mk-g-ite (mk-g-boolean (gtests-unknown gtests))
-                    (mk-g-ite (gtests-obj gtests) then else)
-                    merge))
-       (glcp-value merge))))
-
-
-(defmacro glcp-or (test else)
-  `(b* (((glcp-er test) ,test)
-        (gtests (gtests test hyp))
-        (else-hyp (hf (bfr-or (gtests-unknown gtests)
-                               (bfr-not (gtests-nonnil gtests)))))
-        ((glcp-er else)
-         (if else-hyp
-             (let ((hyp (bfr-and hyp else-hyp)))
-               (declare (ignorable hyp))
-               ,else)
-           (glcp-value nil)))
-        (merge (gobj-ite-merge (gtests-nonnil gtests) test else
-                               (bfr-and (bfr-not (gtests-unknown gtests))
-                                         hyp))))
-     (if (hf (gtests-unknown gtests))
-         (glcp-value
-          (mk-g-ite (mk-g-boolean (gtests-unknown gtests))
-                    (mk-g-ite (gtests-obj gtests) test else)
-                    merge))
-       (glcp-value merge))))
-
+(local (include-book "std/lists/acl2-count" :dir :system))
+(local (include-book "clause-processors/find-matching" :dir :system))
+(local (include-book "clause-processors/just-expand" :dir :system))
 
 (local
- (defthmd gl-eval-of-atom
-   (implies (atom x)
-            (equal (generic-geval x env) x))
-   :hints (("goal" :in-theory (enable tag)
-            :expand ((generic-geval x env))))
-   :rule-classes ((:rewrite :backchain-limit-lst 0))))
-
-(set-state-ok t)
-
-(defun gl-cp-hint (x)
-  (declare (ignore x))
-  t)
-
-(in-theory (disable gl-cp-hint (:type-prescription gl-cp-hint) (gl-cp-hint)))
-
-
-
-(encapsulate
-  (((glcp-generic-run-gified * * * * state)
-    => (mv * *)
-    :formals (fn actuals hyp clk state)
-    :guard (and (symbolp fn)
-                (gobj-listp actuals)
-                (natp clk)))
-   ((glcp-generic-ev * *) => *)
-   ((glcp-generic-ev-lst * *) => *)
-   ((glcp-generic-geval * *) => *))
-
-  (local (defun glcp-generic-geval (x env)
-           (generic-geval x env)))
-
-  (local (defun glcp-generic-run-gified (fn actuals hyp clk state)
-           (declare (xargs :stobjs state
-                           :guard (and (symbolp fn)
-                                       (natp clk)))
-                    (ignorable fn actuals hyp clk state))
-           (mv nil nil)))
-
-  (local (acl2::defevaluator-fast
-          glcp-generic-ev glcp-generic-ev-lst
-          ((if a b c)
-           (gl-cp-hint x)
-           (shape-spec-obj-in-range a b)
-           (return-last fn arg1 arg2)
-           (use-by-hint x)
-           (equal a b)
-           (acl2::typespec-check ts x)
-           (implies a b)
-           (iff a b)
-           (not x)
-           (cons a b)
-           (gl-aside x)
-           (gl-ignore x)
-           (gl-error x))
-          :namedp t))
-
-  (defthm glcp-generic-run-gified-correct
-    (implies (and (bfr-eval hyp (car env))
-                  (gobj-listp actuals)
-                  (mv-nth 0 (glcp-generic-run-gified fn actuals hyp
-                                                     clk state)))
-             (equal (glcp-generic-geval
-                     (mv-nth 1 (glcp-generic-run-gified
-                                fn actuals hyp clk state))
-                     env)
-                    (glcp-generic-ev
-                     (cons fn
-                           (acl2::kwote-lst
-                            (glcp-generic-geval actuals env))) nil))))
-
-  (defthm true-listp-glcp-generic-run-gified
-    (true-listp (glcp-generic-run-gified fn actuals hyp clk state)))
-
-  (make-event
-   `(progn
-      . ,(acl2::defevaluator-fast-form/defthms-named
-          'glcp-generic-ev 'glcp-generic-ev-lst
-          '((if a b c)
-            (gl-cp-hint x)
-            (shape-spec-obj-in-range a b)
-            (return-last fn arg1 arg2)
-            (use-by-hint x)
-            (equal a b)
-            (acl2::typespec-check ts x)
-            (implies a b)
-            (iff a b)
-            (not x)
-            (cons a b)
-            (gl-aside x)
-            (gl-ignore x)
-            (gl-error x)))))
-
-
-  (defthm glcp-generic-geval-atom
-    (implies (atom x)
-             (equal (glcp-generic-geval x env) x))
-    :hints(("Goal" :in-theory (enable gl-eval-of-atom)))
-    :rule-classes ((:rewrite :backchain-limit-lst 0)))
-
-  (defthm glcp-generic-geval-mk-g-boolean-correct
-    (equal (glcp-generic-geval (mk-g-boolean x) env)
-           (bfr-eval x (car env))))
-
-
-  (defthm glcp-generic-geval-gobj-ite-merge-correct
-    (implies (bfr-eval hyp (car env))
-             (equal (glcp-generic-geval (gobj-ite-merge c x y hyp)
-                                        env)
-                    (if (bfr-eval c (car env))
-                        (glcp-generic-geval x env)
-                      (glcp-generic-geval y env))))
-    :hints(("Goal" :in-theory (disable generic-geval))))
-
-  (defthmd glcp-generic-geval-gtests-nonnil-correct
-    (implies (and (not (bfr-eval (gtests-unknown (gtests x hyp))
-                                 (car env)))
-                  (bfr-eval hyp (car env)))
-             (equal (bfr-eval (gtests-nonnil (gtests x hyp))
-                              (car env))
-                    (if (glcp-generic-geval x env) t nil)))
-    :hints (("goal" :expand ((glcp-generic-geval x env))
-             :in-theory (e/d** (gtests-nonnil-correct)))))
-
-  (defthm glcp-generic-geval-gtests-obj-correct
-    (implies (and (bfr-eval (gtests-unknown (gtests x hyp))
-                            (car env))
-                  (bfr-eval hyp (car env)))
-             (iff (glcp-generic-geval (gtests-obj (gtests x hyp))
-                                      env)
-                  (glcp-generic-geval x env)))
-    :hints (("Goal" :in-theory
-             (e/d** (glcp-generic-geval
-                     gtests-obj-correct)))))
-
-  (defthm glcp-generic-geval-mk-g-ite-correct
-    (equal (glcp-generic-geval (mk-g-ite c x y) b)
-           (if (glcp-generic-geval c b)
-               (glcp-generic-geval x b)
-             (glcp-generic-geval y b)))
-    :hints (("Goal" :in-theory
-             (e/d** (glcp-generic-geval
-                     mk-g-ite-correct)))))
-
-  (defthm glcp-generic-geval-mk-g-concrete-correct
-    (equal (glcp-generic-geval (mk-g-concrete x) env)
-           x)
-    :hints (("goal" :in-theory
-             (e/d** (glcp-generic-geval mk-g-concrete-correct)))))
-
-  (defthm glcp-generic-geval-g-concrete-quote-correct
-    (equal (glcp-generic-geval (g-concrete-quote x) env)
-           x)
-    :hints (("goal" :in-theory
-             (e/d** (glcp-generic-geval g-concrete-quote-correct)))))
-
-  (defthm glcp-generic-geval-general-concrete-obj-correct
-    (implies (general-concretep x)
-             (equal (glcp-generic-geval x env)
-                    (general-concrete-obj x)))
-    :hints (("goal" :in-theory
-             (e/d** (glcp-generic-geval general-concrete-obj-correct)))))
-
-  (defthm glcp-generic-geval-shape-spec-to-gobj-eval-env
-    (implies (and (shape-specp x)
-                  (no-duplicatesp-equal (shape-spec-indices x))
-                  (no-duplicatesp-equal (shape-spec-vars x))
-                  (shape-spec-obj-in-range x obj))
-             (equal (glcp-generic-geval
-                     (shape-spec-to-gobj x)
-                     (shape-spec-to-env x obj))
-                    obj))
-    :hints (("goal" :in-theory
-             (e/d** (glcp-generic-geval
-; [Removed by Matt K. to handle changes to member, assoc, etc. after ACL2 4.2.]
-;                      acl2::no-duplicatesp-is-no-duplicatesp-equal
-                     shape-spec-to-gobj-eval-env)))))
-
-  (defthm glcp-generic-geval-gobj-to-param-space-correct
-    (implies (bfr-eval p (car env))
-             (equal (glcp-generic-geval (gobj-to-param-space x p)
-                                        (genv-param p env))
-                    (glcp-generic-geval x env)))
-    :hints (("goal" :in-theory
-             (e/d** (glcp-generic-geval
-                     gobj-to-param-space-correct)))))
-
-  (defthm glcp-generic-geval-of-gl-cons
-    (equal (glcp-generic-geval (gl-cons x y) env)
-           (cons (glcp-generic-geval x env)
-                 (glcp-generic-geval y env)))))
-
-
-(local (in-theory (enable glcp-generic-geval-gtests-nonnil-correct)))
-
-;; (defun univ-run-gified-guard-wrapper (fn actuals hyp clk state)
-;;   (declare (xargs :guard (and (symbolp fn)
-;;                               (gobject-listp actuals)
-;;                               (bfr-p hyp)
-;;                               (natp clk))
-;;                   :stobjs state))
-;;   (ec-call (univ-run-gified fn actuals hyp clk state)))
-
-;; (defun glcp-generic-apply-concrete-guard-wrapper
-;;   (fn actuals state)
-;;   (declare (xargs :guard (true-listp actuals)
-;;                   :stobjs state))
-;;   (ec-call (glcp-generic-apply-concrete fn actuals state)))
-
-
-(local
- (progn
-   ;; (defun-nx glcp-generic-geval-lst (x env)
-   ;;   (if (atom x)
-   ;;       nil
-   ;;     (cons (glcp-generic-geval (car x) env)
-   ;;           (glcp-generic-geval-lst (cdr x) env))))
-
-   ;; (defthmd glcp-generic-geval-of-gobj-list
-   ;;   (implies (gobj-listp x)
-   ;;            (equal (glcp-generic-geval x env)
-   ;;                   (glcp-generic-geval-lst x env)))
-   ;;   :hints
-   ;;   (("goal" :induct (gobject-listp x)
-   ;;     :in-theory (enable gobject-listp-impl-gobjectp
-   ;;                        glcp-generic-geval-of-gobject-car
-   ;;                        gobject-listp))))
-
-
-
-
-
-
-   (defthm nonnil-symbol-listp-impl-eqlable-listp
-     (implies (nonnil-symbol-listp x)
-              (eqlable-listp x))
-     :hints(("Goal" :in-theory (enable nonnil-symbol-listp))))
-
-
-
-
-   ;; (defthm univ-run-gified-wrapper-unwrap
-   ;;   (equal (univ-run-gified-guard-wrapper fn actuals hyp clk state)
-   ;;          (univ-run-gified fn actuals hyp clk state)))
-
-
-
-
-   ;; (defthm glcp-generic-apply-concrete-wrapper-unwrap
-   ;;   (equal (glcp-generic-apply-concrete-guard-wrapper fn actuals state)
-   ;;          (glcp-generic-apply-concrete fn actuals state)))
-
-   ;; (in-theory (disable univ-run-gified-guard-wrapper 
-   ;;                     ;; glcp-generic-apply-concrete-guard-wrapper
-   ;;                     ))
-   ))
-
-
-
-
-(defun general-concrete-listp (x)
-  (declare (xargs :guard t))
-  (if (atom x)
-      (eq x nil)
-    (and (general-concretep (car x))
-         (general-concrete-listp (cdr x)))))
-
-(defun general-concrete-obj-list (x)
-  (declare (xargs :guard (general-concrete-listp x)))
-  (if (atom x)
-      nil
-    (cons (general-concrete-obj (car x))
-          (general-concrete-obj-list (cdr x)))))
-
-
-(mutual-recursion
- (defun sublis-into-term (x alist)
-   (declare (xargs :guard t))
-   (cond ((null x) nil)
-         ((atom x)
-          (let ((look (hons-assoc-equal x alist)))
-            (if look (acl2::kwote (cdr look)) x)))
-         ((eq (car x) 'quote) x)
-         (t (cons (car x) (sublis-into-list (cdr x) alist)))))
- (defun sublis-into-list (x alist)
-   (declare (xargs :guard t))
-   (if (atom x)
-       nil
-     (cons (sublis-into-term (car x) alist)
-           (sublis-into-list (cdr x) alist)))))
-
-(local (flag::make-flag sublis-into-term-flg sublis-into-term))
-
-;; (defthm assoc-equal-nonnil-of-append
-;;   (implies x
-;;            (equal (assoc-equal x (append a b))
-;;                   (or (assoc-equal x a)
-;;                       (assoc-equal x b))))
-;;   :hints(("Goal" :in-theory (enable append assoc-equal))))
-
-;; (defthm-sublis-into-term-flg
-;;   sublis-into-term-correct-lemma
-;;   (sublis-into-term
-;;    (implies (pseudo-termp x)
-;;             (equal (glcp-generic-ev (sublis-into-term x subst) alist)
-;;                    (glcp-generic-ev x (append subst alist))))
-;;    :name sublis-into-term-correct)
-;;   (sublis-into-list
-;;    (implies (pseudo-term-listp x)
-;;             (equal (glcp-generic-ev-lst (sublis-into-list x subst) alist)
-;;                    (glcp-generic-ev-lst x (append subst alist))))
-;;    :name sublis-into-list-correct)
-;;   :hints (("goal" :induct (sublis-into-term-flg flag x alist))
-;;           (and stable-under-simplificationp
-;;                '(:in-theory (enable glcp-generic-ev-constraint-0)))))
-
-(local
- (progn
-   (defthm len-sublis-into-list
-     (implies (pseudo-term-listp x)
-              (equal (length (sublis-into-list x subst))
-                     (length x)))
-     :hints (("goal" :induct (len x)
-              :in-theory (enable length))))
-
-   (defthm-sublis-into-term-flg
-     sublis-into-term-pseudo-term-lemma
-     (sublis-into-term
-      (implies (pseudo-termp x)
-               (pseudo-termp (sublis-into-term x subst)))
-      :name pseudo-termp-sublis-into-term)
-     (sublis-into-list
-      (implies (pseudo-term-listp x)
-               (pseudo-term-listp (sublis-into-list x subst)))
-      :name pseudo-term-listp-sublis-into-list)
-     :hints (("goal" :induct (sublis-into-term-flg flag x alist)
-              :expand ((pseudo-termp x)
-                       (:free (args) (pseudo-termp (cons (car x)
-                                                         args)))))))))
-
-
-(defconst *glcp-generic-template-subst*
-  `((interp-term . glcp-generic-interp-term)
-    (interp-list . glcp-generic-interp-list)
-    (run-cases . glcp-generic-run-cases)
-    (run-parametrized . glcp-generic-run-parametrized)
-    (clause-proc . glcp-generic)
-    (clause-proc-name . (glcp-generic-clause-proc-name))
-    (run-gified . glcp-generic-run-gified)))
-
-(defund gl-aside-wormhole (term alist)
-  (declare (xargs :guard t))
-  (wormhole 'glcp-interp-gl-aside
-            '(lambda (whs) whs)
-            nil
-            `(prog2$ ,(sublis-into-term
-                       term alist)
-                     (value :q))
-            :ld-prompt nil
-            :ld-pre-eval-print nil
-            :ld-post-eval-print nil
-            :ld-verbose nil))
-
-(defun glcp-interp-error-fn (msg state)
-  (declare (xargs :guard t :stobjs state))
-  (mv msg nil nil state))
-
-(defmacro glcp-interp-error (msg)
-  (declare (xargs :guard t))
-  `(glcp-interp-error-fn ,msg state))
-
-(add-macro-alias glcp-interp-error glcp-interp-error-fn)
-
-
-(defthmd acl2-count-last-cdr-when-cadr-hack
-  (implies (< 1 (len x))
-           (< (acl2-count (car (last x)))
-              (+ 1 (acl2-count (cdr x)))))
-  :rule-classes (:rewrite :linear))
-
-;; (defun gobject-vals-alistp (x)
-;;   (declare (Xargs :guard t))
-;;   (if (atom x)
-;;       (equal x nil)
-;;     (and (or (atom (car x))
-;;              (gobjectp (cdar x)))
-;;          (gobject-vals-alistp (cdr x)))))
-
-
-;; (defthm lookup-in-gobject-vals-alistp
-;;   (implies (gobject-vals-alistp x)
-;;            (gobjectp (cdr (hons-assoc-equal k x)))))
-
-;; (defthm gobject-vals-alistp-pairlis$
-;;   (implies (gobject-listp vals)
-;;            (gobject-vals-alistp (pairlis$ keys vals)))
-;;   :hints(("Goal" :in-theory (enable gobject-listp
-;;                                     pairlis$))))
-
-
-(cutil::defaggregate glcp-config
-  ((abort-unknown booleanp :default t)
-   (abort-ctrex booleanp :default t)
-   (exec-ctrex booleanp :default t)
-   (abort-vacuous booleanp :default t)
-   (nexamples natp :rule-classes :type-prescription :default 3)
-   (hyp-clk natp :rule-classes :type-prescription :default 1000000)
-   (concl-clk natp :rule-classes :type-prescription :default 1000000)
-   (clause-proc-name symbolp :rule-classes :type-prescription)
-   (overrides) ;;  acl2::interp-defs-alistp but might be too expensive to check the guards in clause processors
-   run-before
-   run-after
-   case-split-override)
-  :tag :glcp-config)
-
-
-
-
-
-(make-event
- (sublis *glcp-generic-template-subst*
-         *glcp-interp-template*))
-
-(in-theory (disable glcp-generic-interp-term glcp-generic-interp-list))
-
-(local (in-theory (disable* general-concretep-def acl2-count
-;                            sets::double-containment
-                            integer-abs 
-;                            sets::nonempty-means-set
-                            equal-of-booleans-rewrite
-                            put-global
-                            acl2::true-list-listp-forward-to-true-listp-assoc-equal)))
-
-(defchoose glcp-generic-ev-falsify (a) (x)
-  (not (glcp-generic-ev x a)))
-
-
-;; (defthmd gobject-listp-true-listp
-;;   (implies (gobject-listp x)
-;;            (true-listp x))
-;;   :hints(("Goal" :in-theory (enable gobject-listp)))
-;;   :rule-classes (:rewrite :forward-chaining))
-
-(acl2::def-meta-extract glcp-generic-ev glcp-generic-ev-lst)
-
-(defthm glcp-generic-geval-of-gobj-list
-  (implies (and (gobj-listp x)
-                (consp x))
-           (equal (glcp-generic-geval x env)
-                  (cons (glcp-generic-geval (car x) env)
-                        (glcp-generic-geval (cdr x) env))))
-  :hints(("Goal" :use ((:instance glcp-generic-geval-of-gl-cons
-                        (x (car x)) (y (cdr x))))
-          :in-theory (enable gl-cons gobj-listp))))
-
-
-(local
- (progn
-
-
-   (defun-nx glcp-generic-geval-alist (al env)
-     (if (atom al)
-         nil
-       (if (consp (car al))
-           (cons (cons (caar al)
-                       (glcp-generic-geval (cdar al)
-                                           env))
-                 (glcp-generic-geval-alist (cdr al) env))
-         (glcp-generic-geval-alist (cdr al) env))))
-
-   (defthm glcp-generic-geval-alist-pairlis$
-     (implies (gobj-listp actuals)
-              (equal (glcp-generic-geval-alist
-                      (pairlis$ formals actuals)
-                      env)
-                     (pairlis$ formals
-                               (glcp-generic-geval actuals env))))
-     :hints(("Goal" :in-theory (enable default-cdr pairlis$ gobj-listp)
-             :induct (pairlis$ formals actuals))))
-
-           
-
-   (flag::make-flag glcp-generic-interp-flg glcp-generic-interp-term
-                    :hints (("goal" :in-theory
-                             (e/d (acl2-count
-                                   acl2-count-last-cdr-when-cadr-hack)
-                                  (last)))))
-
-   (defthm assoc-in-add-pair
-     (implies (not (equal k1 k2))
-              (equal (assoc k1 (add-pair k2 v a))
-                     (assoc k1 a))))
-
-
-   (defthm w-of-put-global
-     (implies (not (eq var 'current-acl2-world))
-              (equal (w (put-global var val state))
-                     (w state)))
-     :hints(("Goal" :in-theory (enable w put-global add-pair))))
-
-   (local (in-theory (disable w)))
-
-   (defthm-glcp-generic-interp-flg
-     (defthm glcp-generic-interp-term-w-state-preserved
-       (equal (w (mv-nth 3 (glcp-generic-interp-term
-                            x alist hyp clk obligs config state)))
-              (w state))
-       :hints ('(:expand ((glcp-generic-interp-term
-                           x alist hyp clk obligs config state)
-                          (glcp-generic-interp-term
-                           nil alist hyp clk obligs config state))))
-       :flag glcp-generic-interp-term)
-     (defthm glcp-generic-interp-list-w-state-preserved
-       (equal (w (mv-nth 3 (glcp-generic-interp-list
-                            x alist hyp clk obligs config state)))
-              (w state))
-       :hints ('(:expand ((glcp-generic-interp-list
-                           x alist hyp clk obligs config state))))
-       :flag glcp-generic-interp-list))
-
-   
-
-   ;; (defthm-glcp-generic-interp-flg
-   ;;   (defthm gobjectp-glcp-generic-interp-term
-   ;;    (implies (and (glcp-generic-ev-meta-extract-global-facts)
-   ;;                  (equal (w st) (w state))
-   ;;                  (sym-counterparts-ok (w st))
-   ;;                  (bfr-p hyp)
-   ;;                  (not (mv-nth 0 (glcp-generic-interp-term
-   ;;                                  x alist hyp clk obligs config st))))
-   ;;             (gobjectp (mv-nth 2 (glcp-generic-interp-term
-   ;;                                  x alist hyp clk obligs config st))))
-   ;;    :flag glcp-generic-interp-term)
-
-   ;;   (defthm gobject-listp-glcp-generic-interp-list
-   ;;    (implies (and (glcp-generic-ev-meta-extract-global-facts)
-   ;;                  (equal (w st) (w state))
-   ;;                  (sym-counterparts-ok (w st))
-   ;;                  (bfr-p hyp)
-   ;;                  (not (mv-nth 0 (glcp-generic-interp-list
-   ;;                                  x alist hyp clk obligs config st))))
-   ;;             (gobject-listp (mv-nth 2 (glcp-generic-interp-list
-   ;;                                       x alist hyp clk obligs config st))))
-   ;;    :flag glcp-generic-interp-list)
-   ;;   :hints (("goal" :induct (glcp-generic-interp-flg flag x alist hyp clk obligs config st)
-   ;;            :expand ((glcp-generic-interp-term x alist hyp clk obligs config st)
-   ;;                     (glcp-generic-interp-list x alist hyp clk obligs config st)
-   ;;                     (glcp-generic-interp-term nil alist hyp clk obligs config st)
-   ;;                     (glcp-generic-interp-list nil alist hyp clk obligs config st)
-   ;;                     (gobject-listp nil)
-   ;;                     (:free (a b) (gobject-listp (cons a b))))
-   ;;            :in-theory (e/d** ( ;; gobjectp-gobj-ite-merge
-   ;;                               ;;                               gobjectp-cons
-   ;;                               ;;                               gtests-wfp
-   ;;                               ;;                               bfr-p-of-bfr-and
-   ;;                               ;;                               bfr-p-of-bfr-not
-   ;;                               ;;                               bfr-p-of-bfr-or
-   ;;                               ;;                               hyp-fix-bfr-p
-   ;;                               ;;                               (gobjectp)
-   ;;                               gobjectp-g-apply
-   ;;                               gobjectp-gobj-fix
-   ;;                               gtests-wfp
-   ;;                               gobjectp-cons
-   ;;                               bfr-p-bfr-binary-and
-   ;;                               bfr-p-bfr-not
-   ;;                               bfr-p-bfr-binary-or
-   ;;                               gobjectp-mk-g-concrete
-   ;;                               gobjectp-g-concrete-quote
-   ;;                               hyp-fix-bfr-p
-   ;;                               glcp-generic-interp-list-w-state-preserved
-   ;;                               glcp-generic-interp-term-w-state-preserved
-   ;;                               gl-aside gl-ignore gl-error-is-nil
-   ;;                               gobjectp-of-atomic-constants
-   ;;                               gobjectp-gobj-ite-merge
-   ;;                               gobjectp-mk-g-ite
-   ;;                               gobjectp-mk-g-boolean
-   ;;                               car-cons cdr-cons (bfr-p)
-   ;;                               glcp-interp-error
-   ;;                               glcp-generic-interp-flg-equivalences
-   ;;                               (:induction glcp-generic-interp-flg)
-   ;;                               booleanp-compound-recognizer
-   ;;                               bfr-p-bfr-binary-or
-   ;;                               gobjectp-mk-g-boolean
-   ;;                               (g-keyword-symbolp)))
-   ;;            :do-not-induct t)))
-
-
-
-
-
-   (defthm pseudo-termp-car
-     (implies (pseudo-term-listp x)
-              (pseudo-termp (car x))))
-
-   (defthm pseudo-term-listp-cdr
-     (implies (pseudo-term-listp x)
-              (pseudo-term-listp (cdr x))))
-
-   (defthmd pseudo-term-listp-cdr-pseudo-term
-     (implies (and (pseudo-termp x)
-                   (consp x)
-                   (not (equal (car x) 'quote)))
-              (pseudo-term-listp (cdr x))))
-
-   (defthmd pseudo-termp-symbolp-car-x
-     (implies (and (pseudo-termp x)
-                   (not (consp (car x))))
-              (symbolp (car x))))
-
-   (defthmd pseudo-termp-lambda-body
-     (implies (and (pseudo-termp x)
-                   (consp (car x)))
-              (pseudo-termp (caddar x))))
-   
-   (defthmd pseudo-termp-car-last-of-pseudo-term-listp
-     (implies (and (pseudo-term-listp x)
-                   (consp x))
-              (pseudo-termp (car (last x)))))
-
-   (defthm pseudo-termp-car-last
-     (implies (and (pseudo-termp x)
-                   (< 1 (len x))
-                   (not (equal (car x) 'quote)))
-              (pseudo-termp (car (last x))))
-     :hints(("Goal" :expand ((pseudo-termp x))
-             :in-theory (enable pseudo-termp-car-last-of-pseudo-term-listp))))
-                
-
-   (defthm-glcp-generic-interp-flg
-     (defthm obligs-okp-glcp-generic-interp-term
-      (implies (and (pseudo-termp x)
-                    (acl2::interp-defs-alistp obligs)
-                    (acl2::interp-defs-alistp (glcp-config->overrides config))
-                    (not (mv-nth 0 (glcp-generic-interp-term
-                                    x alist hyp clk obligs config state))))
-               (acl2::interp-defs-alistp
-                (mv-nth 1 (glcp-generic-interp-term
-                           x alist hyp clk obligs config state))))
-      :flag glcp-generic-interp-term)
-
-     (defthm obligs-okp-glcp-generic-interp-list
-      (implies (and (pseudo-term-listp x)
-                    (acl2::interp-defs-alistp obligs)
-                    (acl2::interp-defs-alistp (glcp-config->overrides config))
-                    (not (mv-nth 0 (glcp-generic-interp-list
-                                    x alist hyp clk obligs config state))))
-               (acl2::interp-defs-alistp
-                (mv-nth 1 (glcp-generic-interp-list
-                           x alist hyp clk obligs config state))))
-      :flag glcp-generic-interp-list)
-     :hints (("goal" ;; :induct (glcp-generic-interp-flg flag x alist hyp clk obligs config state)
-              :expand ((glcp-generic-interp-term x alist hyp clk obligs config state)
-                       (glcp-generic-interp-list x alist hyp clk obligs config state)
-                       (glcp-generic-interp-term nil alist hyp clk obligs config state)
-                       (glcp-generic-interp-list nil alist hyp clk obligs config state)
-                       (:free (a b) (acl2::interp-defs-alistp (cons a b))))
-              :in-theory (e/d** (glcp-generic-interp-flg-equivalences
-                                 car-cons cdr-cons ; pseudo-termp
-; pseudo-term-listp
-                                 pseudo-termp-car
-                                 pseudo-termp-car-last
-                                 pseudo-term-listp-cdr
-                                 pseudo-term-listp-cdr-pseudo-term
-                                 pseudo-termp-symbolp-car-x
-                                 pseudo-termp-lambda-body
-                                 glcp-interp-error
-                                 ;; Jared: changed from hons-get-fn-do-hopy to hons-get for new hons
-                                 hons-get
-                                 hons-acons hons-copy
-                                 acl2::hons-assoc-equal-interp-defs-alistp
-                                 acl2::interp-function-lookup-wfp
-                                 acl2::interp-function-lookup-defs-alistp
-                                 (:induction glcp-generic-interp-flg))))))
-
-
-
-
-
-   (in-theory (disable equal-of-booleans-rewrite))
-
-   (defthm-glcp-generic-interp-flg
-     (defthm true-listp-glcp-generic-interp-list
-       (true-listp (mv-nth 2 (glcp-generic-interp-list
-                              x alist hyp clk obligs config state)))
-       :hints(("Goal" :induct (len x)
-               :expand (glcp-generic-interp-list
-                        x alist hyp clk obligs config state)))
-       :flag list)
-     :skip-others t)
-
-   (include-book "system/f-put-global" :dir :system)
-
-   (defthm-glcp-generic-interp-flg
-     (defthm state-p1-glcp-generic-interp-term
-      (implies (state-p1 state)
-               (state-p1
-                (mv-nth 3 (glcp-generic-interp-term
-                           x alist hyp clk obligs config state))))
-      :flag glcp-generic-interp-term)
-
-     (defthm state-p1-glcp-generic-interp-list
-      (implies (state-p1 state)
-               (state-p1
-                (mv-nth 3 (glcp-generic-interp-list
-                           x alist hyp clk obligs config state))))
-      :flag glcp-generic-interp-list)
-     :hints (("goal" :induct (glcp-generic-interp-flg flag x alist hyp clk obligs config state)
-              :expand ((glcp-generic-interp-term x alist hyp clk obligs config state)
-                       (glcp-generic-interp-list x alist hyp clk obligs config state)
-                       (glcp-generic-interp-term nil alist hyp clk obligs config state)
-                       (glcp-generic-interp-list nil alist hyp clk obligs config state))
-              :in-theory (e/d** (glcp-generic-interp-flg-equivalences
-                                 acl2::state-p1-put-global
-                                 glcp-interp-error-fn
-                                 ;; state-p1-glcp-generic-apply-concrete
-                                 ;; glcp-generic-apply-concrete-guard-wrapper
-                                 (:induction glcp-generic-interp-flg))))))
-
-
-   (defthm true-listp-gl-cons
-     (equal (true-listp (gl-cons x y))
-            (true-listp y))
-     :hints(("Goal" :in-theory (enable gl-cons))))
-
-   (defthm-glcp-generic-interp-flg
-     (defthm true-listp-glcp-generic-interp-list
-       (true-listp (mv-nth 2 (glcp-generic-interp-list
-                              x alist hyp clk obligs config state)))
-       :hints ('(:expand
-                 ((glcp-generic-interp-list
-                   x alist hyp clk obligs config state))))
-       :rule-classes :type-prescription
-       :flag glcp-generic-interp-list)
-     :skip-others t)
-
-   (defthm-glcp-generic-interp-flg
-     (defthm gobj-listp-glcp-generic-interp-list
-       (gobj-listp (mv-nth 2 (glcp-generic-interp-list
-                              x alist hyp clk obligs config state)))
-       :hints ('(:expand
-                 ((glcp-generic-interp-list
-                   x alist hyp clk obligs config state))))
-       :flag glcp-generic-interp-list)
-     :skip-others t)))
-
-
-(local
- (defthm consp-last
-   (equal (consp (last x))
-          (consp x))))
-
-
-
-(set-ignore-ok t)
-
-(local (defthm plist-worldp-of-w-state
-         (implies (state-p1 state)
-                  (plist-worldp (w state)))
-         :hints(("Goal" :in-theory (e/d (state-p1 get-global w)
-                                        (all-boundp))))))
-
-;; (defun get-guard-verification-theorem (name state)
-;;   (declare (xargs :mode :program
-;;                   :stobjs state))
-;;   (b* ((wrld (w state))
-;;        (ctx 'get-guard-verification-theorem)
-;;        ((er names) (acl2::chk-acceptable-verify-guards
-;;                     name ctx wrld state))
-;;        (ens (acl2::ens state))
-;;        ((mv clauses & state)
-;;         (acl2::guard-obligation-clauses
-;;          names nil ens wrld state))
-;;        (term (acl2::termify-clause-set clauses)))
-;;     (value term)))
-
-
+ (defsection glcp-generic-geval
+   (local (in-theory (enable glcp-generic-geval)))
+
+   (acl2::def-functional-instance
+    glcp-generic-geval-shape-spec-to-gobj-eval-env
+    shape-spec-to-gobj-eval-env
+    ((sspec-geval-ev glcp-generic-geval-ev)
+     (sspec-geval-ev-lst glcp-generic-geval-ev-lst)
+     (sspec-geval glcp-generic-geval))
+    :hints ('(:in-theory (e/d* (glcp-generic-geval-ev-of-fncall-args
+                                glcp-generic-geval-apply-agrees-with-glcp-generic-geval-ev)
+                               (glcp-generic-geval-apply))
+              :expand ((:with glcp-generic-geval (glcp-generic-geval x env))))))
+
+   (acl2::def-functional-instance
+    glcp-generic-geval-gobj-to-param-space-correct
+    gobj-to-param-space-correct
+    ((generic-geval-ev glcp-generic-geval-ev)
+     (generic-geval-ev-lst glcp-generic-geval-ev-lst)
+     (generic-geval glcp-generic-geval))
+    :hints ('(:in-theory (e/d* (glcp-generic-geval-ev-of-fncall-args
+                                glcp-generic-geval-apply-agrees-with-glcp-generic-geval-ev)
+                               (glcp-generic-geval-apply))
+              :expand ((:with glcp-generic-geval (glcp-generic-geval x env))))))))
+
+
+;; redundant but included only locally
 (make-event
  (b* (((er &) (in-theory nil))
       ((er thm) (get-guard-verification-theorem 'glcp-generic-interp-term state)))
    (value
     `(defthm glcp-generic-interp-guards-ok
        ,thm
-       :hints (("goal" :in-theory
-                (e/d* (pseudo-termp-car-last-of-pseudo-term-listp
-                       gl-aside gl-ignore gl-error-is-nil)
-                      (glcp-generic-interp-term
-                       glcp-generic-interp-list
-                       consp-assoc-equal
-                       pseudo-term-listp
-                       w
-                       nonnil-symbol-listp-pseudo-term-listp true-listp symbol-listp
-                       not no-duplicatesp-equal
-                       fgetprop plist-worldp
-                       hons-assoc-equal
-;                       bfr-and-is-bfr-and
-;                       bfr-not-is-bfr-not
-;                       bfr-p-is-bfr-p
-                       assoc table-alist
-                       general-concrete-listp
-                       general-concretep-def
-                       state-p-implies-and-forward-to-state-p1
-                       (:rules-of-class :forward-chaining :here)
-                       (:rules-of-class :type-prescription :here)
-                       (force))
-                      ((:type-prescription glcp-generic-interp-term)
-                       (:type-prescription glcp-generic-interp-list)
-                       (:type-prescription acl2::interp-function-lookup)
-                       (:type-prescription general-concrete-obj-list)
-                       (:type-prescription hons-assoc-equal)))
-                :do-not-induct t))
        :rule-classes nil))))
-
-
-
-(local (defthm car-last-when-length-4
-         (implies (equal (len x) 4)
-                  (equal (car (last x))
-                         (cadddr x)))
-         :hints(("Goal" :in-theory (enable len last)))))
-
-(local
- (progn
-   (include-book "tools/def-functional-instance" :dir :system)
-
-   (acl2::def-functional-instance
-    glcp-generic-interp-function-lookup-correct
-    acl2::interp-function-lookup-correct
-    ((acl2::ifl-ev glcp-generic-ev)
-     (acl2::ifl-ev-lst glcp-generic-ev-lst)
-     (acl2::ifl-ev-falsify glcp-generic-ev-falsify)
-     (acl2::ifl-ev-meta-extract-global-badguy
-      glcp-generic-ev-meta-extract-global-badguy))
-    :hints ((and stable-under-simplificationp
-                 '(:use (glcp-generic-ev-of-fncall-args
-                         glcp-generic-ev-falsify
-                         glcp-generic-ev-meta-extract-global-badguy)))))
-
-   (acl2::def-functional-instance
-    glcp-generic-interp-function-lookup-theoremp-defs-history
-    acl2::interp-function-lookup-theoremp-defs-history
-    ((acl2::ifl-ev glcp-generic-ev)
-     (acl2::ifl-ev-lst glcp-generic-ev-lst)
-     (acl2::ifl-ev-falsify glcp-generic-ev-falsify)))
-
-
-
-   (defthm glcp-generic-interp-function-lookup-theoremp-defs-history-rev
-     (b* (((mv erp & & out-defs)
-           (acl2::interp-function-lookup fn in-defs overrides world)))
-       (implies (and (not (glcp-generic-ev-theoremp
-                           (conjoin-clauses
-                            (acl2::interp-defs-alist-clauses in-defs))))
-                     (not erp))
-                (not (glcp-generic-ev-theoremp
-                      (conjoin-clauses
-                       (acl2::interp-defs-alist-clauses out-defs)))))))
-
-   (defthm-glcp-generic-interp-flg
-     (defthm glcp-generic-interp-term-bad-obligs
-      (implies (and (not (glcp-generic-ev-theoremp
-                          (conjoin-clauses
-                           (acl2::interp-defs-alist-clauses obligs))))
-                    (not (mv-nth 0 (glcp-generic-interp-term
-                                    x alist hyp clk obligs config state))))
-               (not (glcp-generic-ev-theoremp
-                     (conjoin-clauses
-                      (acl2::interp-defs-alist-clauses
-                       (mv-nth 1 (glcp-generic-interp-term
-                                  x alist hyp clk obligs config state)))))))
-      :flag glcp-generic-interp-term)
-     (defthm glcp-generic-interp-list-bad-obligs
-      (implies (and (not (glcp-generic-ev-theoremp
-                          (conjoin-clauses
-                           (acl2::interp-defs-alist-clauses obligs))))
-                    (not (mv-nth 0 (glcp-generic-interp-list
-                                    x alist hyp clk obligs config state))))
-               (not (glcp-generic-ev-theoremp
-                     (conjoin-clauses
-                      (acl2::interp-defs-alist-clauses
-                       (mv-nth 1 (glcp-generic-interp-list
-                                  x alist hyp clk obligs config state)))))))
-      :flag glcp-generic-interp-list)
-     :hints (("goal" :induct (glcp-generic-interp-flg flag x alist hyp clk obligs config state)
-              :expand ((glcp-generic-interp-term x alist hyp clk obligs config state)
-                       (glcp-generic-interp-list x alist hyp clk obligs config state)
-                       (glcp-generic-interp-term nil alist hyp clk obligs config state)
-                       (glcp-generic-interp-list nil alist hyp clk obligs config state))
-              :in-theory (e/d** (glcp-generic-interp-flg-equivalences
-                                 hons-acons car-cons cdr-cons
-                                 glcp-interp-error           
-                                 glcp-generic-interp-function-lookup-correct
-                                 glcp-generic-interp-function-lookup-theoremp-defs-history
-                                 acl2::interp-function-lookup-defs-alistp
-                                 (:induction
-                                  glcp-generic-interp-flg))))))
-
-
-   (defthm glcp-generic-interp-term-ok-obligs
-     (implies (and (not (glcp-generic-ev-theoremp
-                         (conjoin-clauses
-                          (acl2::interp-defs-alist-clauses obligs))))
-                   (glcp-generic-ev-theoremp
-                    (conjoin-clauses
-                     (acl2::interp-defs-alist-clauses
-                      (mv-nth 1 (glcp-generic-interp-term
-                                 x alist hyp clk obligs config state))))))
-              (mv-nth 0 (glcp-generic-interp-term
-                         x alist hyp clk obligs config state))))
-
-   (defthm len-gl-cons
-     (equal (len (gl-cons x y))
-            (+ 1 (len y)))
-     :hints(("Goal" :in-theory (enable gl-cons))))
-
-
-   (defthm-glcp-generic-interp-flg
-     glcp-generic-interp-list-len-lemma
-     (glcp-generic-interp-term t :skip t)
-     (glcp-generic-interp-list
-      (mv-let (erp obligs res)
-        (glcp-generic-interp-list
-         x alist hyp clk obligs config state)
-        (declare (ignore obligs))
-        (implies (not erp)
-                 (equal (len res)
-                        (len x))))
-      :name len-glcp-generic-interp-list)
-     :hints (("goal" :induct (glcp-generic-interp-flg flag x alist hyp clk obligs
-                                                      config state)
-              :expand ((glcp-generic-interp-list x alist hyp clk obligs config state)
-                       (glcp-generic-interp-list nil alist hyp clk obligs config state)))))
-           
-
-   (defthm glcp-generic-obligs-okp-final-implies-start
-     (implies (and (glcp-generic-ev-theoremp
-                    (conjoin-clauses
-                     (acl2::interp-defs-alist-clauses
-                      (mv-nth 1 (glcp-generic-interp-term
-                                 x alist hyp clk obligs config state)))))
-                   (not (mv-nth 0 (glcp-generic-interp-term
-                                   x alist hyp clk obligs config state))))
-              (glcp-generic-ev-theoremp
-               (conjoin-clauses
-                (acl2::interp-defs-alist-clauses
-                 obligs))))
-     :rule-classes :forward-chaining)
-
-
-   (defthm assoc-eq-glcp-generic-geval-alist
-     (implies (alistp alist)
-              (equal (cdr (assoc-eq x (glcp-generic-geval-alist alist env)))
-                     (glcp-generic-geval (cdr (hons-assoc-equal x alist)) env))))
-
-
-   (defthm glcp-generic-geval-lst-general-concrete-obj-list
-     (implies (and (general-concrete-listp x)
-                   (gobj-listp x))
-              (equal (glcp-generic-geval x env)
-                     (general-concrete-obj-list x)))
-     :hints(("Goal" :in-theory (e/d (gobj-listp) ()))))
-
-
-   (defthm glcp-generic-ev-nil
-     (equal (glcp-generic-ev nil a) nil))
-
-
-
-
-   (defun glcp-generic-ev-constraint-hint (clause)
-     (declare (xargs :guard (true-listp clause)))
-     (cond
-      ((member-equal '(not (equal flag 'glcp-generic-interp-term)) clause)
-       (cond
-        ((member-equal '(not (consp x)) clause)
-         (cond
-          ((member-equal '(not (equal (car x) 'if)) clause)
-           '(:in-theory (enable glcp-generic-ev-of-if-call)))
-          ((member-equal '(not (equal (car x) 'return-last)) clause)
-           '(:in-theory (enable glcp-generic-ev-of-return-last-call)))
-          ((member-equal '(not (equal (car x) 'gl-aside)) clause)
-           '(:in-theory (enable glcp-generic-ev-of-gl-aside-call)))
-          ((member-equal '(not (equal (car x) 'gl-ignore)) clause)
-           '(:in-theory (enable glcp-generic-ev-of-gl-ignore-call)))
-          ((member-equal '(not (equal (car x) 'gl-error)) clause)
-           '(:in-theory (enable glcp-generic-ev-of-gl-error-call)))
-          ((member-equal '(not (equal (car x) 'quote)) clause)
-           '(:in-theory (enable glcp-generic-ev-of-quote)))
-          ((member-equal '(not (consp (car x))) clause)
-           '(:in-theory (enable glcp-generic-ev-of-lambda)))))
-        ((member-equal '(not (symbolp x)) clause)
-         '(:in-theory (enable glcp-generic-ev-of-variable)))))
-      ((member-equal '(equal flag 'glcp-generic-interp-term) clause)
-       (cond
-        ((member-equal '(consp x) clause)
-         '(:in-theory (enable glcp-generic-ev-lst-of-atom)))
-        ((member-equal '(not (consp x)) clause)
-         '(:in-theory (enable glcp-generic-ev-lst-of-cons)))))))
-
-   (encapsulate nil
-     (local 
-      (in-theory (e/d** (glcp-generic-geval-gobj-ite-merge-correct
-                         ; glcp-generic-geval-atom
-                         (:rules-of-class :executable-counterpart :here)
-                         pseudo-termp-car-last
-                         car-last-when-length-4
-                         gl-aside gl-ignore gl-error-is-nil
-                         (:induction glcp-generic-interp-flg)
-                         glcp-generic-interp-flg-equivalences
-                         ;; glcp-generic-apply-concrete-correct
-                         alistp-pairlis
-                         acl2::cons-car-cdr
-                         glcp-generic-ev-nil
-                         glcp-interp-error
-                         glcp-generic-geval-lst-general-concrete-obj-list
-                         gobj-listp-glcp-generic-interp-list
-                         acl2::hons-assoc-equal-interp-defs-alistp
-                         obligs-okp-glcp-generic-interp-list
-                         assoc-eq-glcp-generic-geval-alist
-                         glcp-generic-interp-term-w-state-preserved
-                         glcp-generic-interp-list-w-state-preserved
-                         ;; w-state-of-glcp-generic-apply-concrete
-                         ;; glcp-generic-ev-constraint-9
-                         ;;                       glcp-generic-ev-constraint-3
-                         ;;                       glcp-generic-ev-constraint-6
-                         ;;                       glcp-generic-ev-constraint-2
-                         ;;                       glcp-generic-ev-constraint-1
-                         ;;                       glcp-generic-ev-constraint-5
-                         ;;                       glcp-generic-ev-constraint-4
-                         pseudo-termp-car
-                         pseudo-term-listp-cdr
-                         pseudo-termp-symbolp-car-x
-                         len-glcp-generic-interp-list
-                         pseudo-term-listp-cdr-pseudo-term
-                         pseudo-termp-lambda-body
-                         car-cons cdr-cons hons-equal
-                         ;; glcp-generic-apply-concrete-wrapper-unwrap
-                         glcp-generic-geval-alist-pairlis$
-                         obligs-okp-glcp-generic-interp-term
-                         obligs-okp-glcp-generic-interp-list
-                         acl2::interp-function-lookup-defs-alistp
-                         acl2::interp-function-lookup-wfp
-                         glcp-generic-interp-function-lookup-correct
-                         glcp-generic-interp-function-lookup-theoremp-defs-history-rev
-                         ;; Jared: blah blah hons-get-fn-do-hopy
-                         hons-get
-                         eql
-                         glcp-generic-obligs-okp-final-implies-start
-                         glcp-generic-interp-term-bad-obligs
-                         glcp-generic-interp-list-bad-obligs
-                         ;; glcp-generic-obligs-okp-implies-glcp-generic-ev-fncall-equals-body-arbitrary-args
-                         ;; glcp-generic-ev-theoremp-implies-glcp-generic-ev-fncall-equals-body-arbitrary-args
-                         ;;glcp-generic-obligs-okp-hons-acons-implies
-                         ;;glcp-generic-obligs-okp-hons-assoc-equal
-                         ;; glcp-generic-ev-lst-pairlis-nonnil-symbol-list
-                         glcp-generic-run-gified-correct
-                         bfr-eval-consts
-                         bfr-and-of-nil (bfr-not) 
-                         bfr-eval-bfr-not bfr-eval-bfr-binary-and
-                         bfr-eval-bfr-binary-or
-                         glcp-generic-geval-mk-g-boolean-correct
-                         glcp-generic-geval-mk-g-ite-correct
-                         glcp-generic-geval-gtests-nonnil-correct
-                         hyp-fix-correct
-                         glcp-generic-geval-gtests-obj-correct
-                         glcp-generic-geval-mk-g-concrete-correct
-                         glcp-generic-geval-g-concrete-quote-correct
-                         GLCP-GENERIC-GEVAL-OF-GL-CONS)
-                        ())))
-
-     ;;   (local (add-bfr-fn-pat hyp-fix))
-     ;;   (local (add-bfr-fn-pat bfr-and))
-     ;;   (local (add-bfr-fn-pat bfr-or))
-     ;;   (local (add-bfr-fn-pat bfr-not))
-     ;;   (local (add-bfr-fn-pat gtests-unknown))
-     ;;   (local (add-bfr-fn-pat gtests-nonnil))
-     ;;   (local (bfr-reasoning-mode t))
-     
-;;      (local (defthm hyp-fix-iff-bfr-and
-;;               (iff (hyp-fix x hyp)
-;;                    (bfr-and x hyp))
-;;               :hints(("Goal" :in-theory (enable hyp-fix acl2::bfr-and-of-nil
-;;                                                 bfr-and)))))
-
-     (local
-      (encapsulate nil
-        (local (bfr-reasoning-mode t))
-        (local (acl2::set-bdd-patterns '((hyp-fix . &) 't 'nil)))
-        (defthm bfr-eval-gtests-unknown
-          (implies (and (not (hf (gtests-unknown (gtests test hyp))))
-                        (bfr-eval hyp env))
-                   (not (bfr-eval (gtests-unknown (gtests test hyp)) env))))
-
-        (defthm bfr-eval-gtests-unknown-or
-          (implies (and (not (hf (bfr-or (gtests-unknown (gtests test hyp)) other)))
-                        (bfr-eval hyp env))
-                   (not (bfr-eval (gtests-unknown (gtests test hyp)) env))))
-
-
-        (defthm geval-of-interp-res-hyp-fix-unknown-false
-          (implies (and (not (glcp-generic-geval interp-res env))
-                        (bfr-eval hyp (car env)))
-                   (hyp-fix (bfr-or
-                             (gtests-unknown (gtests interp-res hyp))
-                             (bfr-not
-                              (gtests-nonnil (gtests interp-res hyp))))
-                            hyp)))
-
-        (defthm geval-of-interp-res-hyp-fix-unknown-true
-          (implies (and (glcp-generic-geval interp-res env)
-                        (bfr-eval hyp (car env)))
-                   (hyp-fix (bfr-or
-                             (gtests-unknown (gtests interp-res hyp))
-                             (gtests-nonnil (gtests interp-res hyp)))
-                            hyp)))
-
-        (defthm gtests-nonnil-or-not
-          (implies
-           (and
-            (bfr-eval hyp (car env))
-            (not
-             (hyp-fix
-              (bfr-or
-               (gtests-unknown (gtests test hyp))
-               (gtests-nonnil (gtests test hyp)))
-              hyp)))
-           (hyp-fix
-            (bfr-or
-             (gtests-unknown (gtests test hyp))
-             (bfr-not (gtests-nonnil (gtests test hyp))))
-            hyp)))))
-
-
-     (defthm glcp-generic-interp-function-lookup-correct-special
-       (mv-let (erp body formals out-defs)
-         (acl2::interp-function-lookup fn in-defs overrides (w state))
-         (implies (and (not erp)
-                       (glcp-generic-ev-theoremp
-                        (conjoin-clauses
-                         (acl2::interp-defs-alist-clauses out-defs)))
-                       (acl2::interp-defs-alistp in-defs)
-                       (acl2::interp-defs-alistp overrides)
-                       (equal (len formals) (len actuals))
-                       (not (eq fn 'quote))
-                       (glcp-generic-ev-meta-extract-global-facts :state state1)
-                       (equal (w state) (w state1)))
-                  (equal (glcp-generic-ev body (pairlis$ formals
-                                                (glcp-generic-ev-lst actuals a)))
-                         (glcp-generic-ev (cons fn actuals) a)))))
-
-     (defthm glcp-generic-ev-magic-ev-fncall-special
-       (b* (((mv erp val)
-             (acl2::magic-ev-fncall f args st t nil)))
-         (implies (and (glcp-generic-ev-meta-extract-global-facts)
-                       (equal (w st) (w state))
-                       (not erp))
-                  (equal val
-                         (glcp-generic-ev (cons f (kwote-lst args)) nil))))
-       :hints(("Goal" :in-theory (enable glcp-generic-ev-meta-extract-fncall))))
-
-     (in-theory (disable glcp-generic-ev-meta-extract-fncall))
-     (local (in-theory (disable glcp-generic-interp-term-ok-obligs
-                                (:type-prescription hyp-fix)
-                                hyp-fix-of-hyp-fixedp)))
-
-     (defthm-glcp-generic-interp-flg
-       (defthm glcp-generic-interp-term-correct
-         (implies (and (bfr-eval hyp (car env))
-                       (alistp alist)
-                       (pseudo-termp x)
-                       (not (mv-nth 0 (glcp-generic-interp-term
-                                       x alist hyp clk obligs config state)))
-                       (acl2::interp-defs-alistp obligs)
-                       (acl2::interp-defs-alistp (glcp-config->overrides config))
-                       (glcp-generic-ev-theoremp
-                        (conjoin-clauses
-                         (acl2::interp-defs-alist-clauses
-                          (mv-nth 1 (glcp-generic-interp-term
-                                     x alist hyp clk obligs config state)))))
-                       ;; (glcp-generic-ev-meta-extract-global-facts)
-                       (glcp-generic-ev-meta-extract-global-facts :state state1)
-                       (equal (w state1) (w state)))
-                  (equal (glcp-generic-geval
-                          (mv-nth 2 (glcp-generic-interp-term
-                                     x alist hyp clk obligs config state))
-                          env)
-                         (glcp-generic-ev x (glcp-generic-geval-alist alist env))))
-         :flag glcp-generic-interp-term)
-
-       (defthm glcp-generic-interp-list-correct
-         (implies (and (bfr-eval hyp (car env))
-                       (not (mv-nth 0 (glcp-generic-interp-list
-                                       x alist hyp clk obligs config state)))
-                       (acl2::interp-defs-alistp obligs)
-                       (acl2::interp-defs-alistp (glcp-config->overrides config))
-                       (alistp alist)
-                       (pseudo-term-listp x)
-                       (glcp-generic-ev-theoremp
-                        (conjoin-clauses
-                         (acl2::interp-defs-alist-clauses
-                          (mv-nth 1 (glcp-generic-interp-list
-                                     x alist hyp clk obligs config state)))))
-                       (glcp-generic-ev-meta-extract-global-facts :state state1)
-                       (equal (w state1) (w state)))
-                  (equal (glcp-generic-geval
-                          (mv-nth 2 (glcp-generic-interp-list
-                                     x alist hyp clk obligs config state))
-                          env)
-                         (glcp-generic-ev-lst x (glcp-generic-geval-alist alist env))))
-         :flag glcp-generic-interp-list)
-       :hints (("goal" ;; :induct (glcp-generic-interp-flg flag x alist hyp clk obligs config state)
-                :expand
-                ((glcp-generic-interp-term x alist hyp clk obligs config state)
-                 (glcp-generic-interp-list x alist hyp clk obligs config state)
-                 (glcp-generic-interp-term nil alist hyp clk obligs config state)
-                 (glcp-generic-interp-list nil alist hyp clk obligs config state))
-                :do-not '(generalize fertilize)
-                :do-not-induct t)
-               (glcp-generic-ev-constraint-hint clause)
-               (and stable-under-simplificationp
-                    (case-match id
-                      ((('0 '1) (n . &) . &)
-                       '(:in-theory
-                         (enable
-                          glcp-generic-ev-of-fncall-args)))))
-;;                (if stable-under-simplificationp
-;;                    (let ((state (acl2::f-put-global
-;;                                  'evbdd-cp-clauses
-;;                                  (cons clause
-;;                                        (and (boundp-global 'evbdd-cp-clauses
-;;                                                            state)
-;;                                             (@ evbdd-cp-clauses)))
-;;                                  state)))
-;;                     (value '(:clause-processor
-;;                              (acl2::bfr-eval-cp
-;;                               clause
-;;                               (list '('t 'nil)
-;;                                     '((hyp-fix . &)
-;;                                ;;       (bfr-or . &)
-;; ;;                                      (bfr-not . &)
-;; ;;                                      (bfr-and . &)
-;; ;;                                      (gtests-unknown . &)
-;; ;;                                      (gtests-nonnil . &)
-;; ;;                                      'nil 't
-;;                                       )
-;;                                     ;; '((car env))
-;;                                     t)))))
-;;                  (value nil))
-               )))))
-
-(in-theory (disable glcp-generic-interp-term))
 
 
 (defun strip-cadrs (x)
@@ -1435,23 +140,23 @@
      :hints ((acl2::set-reasoning)))
 
    (defthm-collect-vars-flg
-     glcp-generic-ev-norm-alist-collect-vars-lemma
+     glcp-generic-geval-ev-norm-alist-collect-vars-lemma
      (collect-vars
       (implies (and (pseudo-termp x)
                     (subsetp-equal (collect-vars x) vars))
-               (equal (glcp-generic-ev x (norm-alist vars alist))
-                      (glcp-generic-ev x alist)))
-      :name glcp-generic-ev-norm-alist-collect-vars1)
+               (equal (glcp-generic-geval-ev x (norm-alist vars alist))
+                      (glcp-generic-geval-ev x alist)))
+      :name glcp-generic-geval-ev-norm-alist-collect-vars1)
      (collect-vars-list
       (implies (and (pseudo-term-listp x)
                     (subsetp-equal (collect-vars-list x) vars))
-               (equal (glcp-generic-ev-lst x (norm-alist vars alist))
-                      (glcp-generic-ev-lst x alist)))
-      :name glcp-generic-ev-lst-norm-alist-collect-vars-list1)
+               (equal (glcp-generic-geval-ev-lst x (norm-alist vars alist))
+                      (glcp-generic-geval-ev-lst x alist)))
+      :name glcp-generic-geval-ev-lst-norm-alist-collect-vars-list1)
      :hints (("goal" :induct (collect-vars-flg flag x)
               :in-theory (enable subsetp-equal))
              ("Subgoal *1/3"
-              :in-theory (enable glcp-generic-ev-of-fncall-args))))
+              :in-theory (enable glcp-generic-geval-ev-of-fncall-args))))
 
 
         
@@ -1508,8 +213,8 @@
                    (glcp-generic-geval x env))
             :hints (("goal" :use ((:instance glcp-generic-geval-of-gl-cons)
                                   (:instance
-                                   glcp-generic-geval-g-concrete-quote-correct))
-                     :expand ((gobject-hierarchy-lite x))
+                                   glcp-generic-geval-g-concrete-quote-correct
+                                   (b env)))
                      :in-theory (e/d (gl-cons g-concrete-quote g-keyword-symbolp)
                                      (glcp-generic-geval-of-gl-cons
                                       glcp-generic-geval-g-concrete-quote-correct))))))
@@ -1519,7 +224,7 @@
               (equal (glcp-generic-geval-alist x env)
                      (pairlis$ (strip-cars x)
                                (glcp-generic-geval (gobj-strip-cdrs x) env))))
-     :hints(("Goal" :in-theory (enable strip-cars))))
+     :hints(("Goal" :in-theory (enable strip-cars glcp-generic-geval-alist))))
 
    (defthm strip-cdrs-shape-specs-to-interp-al
      (implies (shape-spec-bindingsp x)
@@ -1870,18 +575,83 @@ class:~%~%" (len ctrexes))))))
 
 (add-macro-alias glcp-error glcp-error-fn)
 
-(defun glcp-bit-to-obj-ctrexamples (assigns sspec-alist gobj-alist)
+(defun magic-geval (x env state)
+  (declare (xargs :guard (consp env)
+                  :stobjs state
+                  :measure (acl2-count x)
+                  :hints (("goal" :in-theory '(measure-for-geval atom)))))
+  (if (atom x)
+      ;; Every atom represents itself.
+      x
+    (pattern-match x
+
+      ;; A Concrete is like an escape sequence; we take (cdr x) as a concrete
+      ;; object even if it looks symbolic.
+      ((g-concrete obj) obj)
+
+      ;; Boolean
+      ((g-boolean bool) (bfr-eval bool (car env)))
+
+      ;; Number.  This is the hairy case.  Can represent all ACL2-NUMBERPs,
+      ;; but naturals are more compact than integers, which are more compact
+      ;; than rationals, which are more compact than complexes.  Denominators
+      ;; are coerced to 1 if they evaluate to 0 -- ugly.
+      ((g-number num)
+       (b* (((mv real-num
+                 real-denom
+                 imag-num
+                 imag-denom)
+             (break-g-number num)))
+         (flet ((uval (n env)
+                      (v2n (bfr-eval-list n (car env))))
+                (sval (n env)
+                      (v2i (bfr-eval-list n (car env)))))
+           (components-to-number (sval real-num env)
+                                 (uval real-denom env)
+                                 (sval imag-num env)
+                                 (uval imag-denom env)))))
+
+      ;; If-then-else.
+      ((g-ite test then else)
+       (if (magic-geval test env state)
+           (magic-geval then env state)
+         (magic-geval else env state)))
+
+      ;; Apply: Unevaluated function call.
+      ((g-apply fn args)
+       (let* ((args (magic-geval args env state))
+              (term (cons fn (ec-call (kwote-lst args)))))
+         (mv-let (err val)
+           (ec-call (acl2::magic-ev term nil state t t))
+           (if err
+               (er hard? 'magic-geval "Failed to evaluate function call: ~x0~%"
+                   term)
+             val))))
+      
+      ;; Var: untyped variable.
+      ((g-var name)   (cdr (het name (cdr env))))
+
+      ;; Conses where the car is not a recognized flag represent conses.
+      (& (cons (magic-geval (car x) env state)
+               (magic-geval (cdr x) env state))))))
+
+(defun glcp-bit-to-obj-ctrexamples (assigns sspec-alist gobj-alist state)
+  (declare (xargs :stobjs state))
   (if (atom assigns)
       nil
-    (cons (list (caar assigns)
-                (generic-geval gobj-alist (list (cadar assigns)))
-                (inspec-show-assign-spec sspec-alist (cddar assigns)))
-          (glcp-bit-to-obj-ctrexamples (cdr assigns) sspec-alist gobj-alist))))
+    (if (or (atom (car assigns))
+            (atom (cdar assigns)))
+        (glcp-bit-to-obj-ctrexamples (cdr assigns) sspec-alist gobj-alist state)
+      (cons (list (caar assigns)
+                  (magic-geval gobj-alist (list (cadar assigns)) state)
+                  (ec-call (inspec-show-assign-spec sspec-alist (cddar assigns))))
+            (glcp-bit-to-obj-ctrexamples (cdr assigns) sspec-alist gobj-alist state)))))
 
 (defun glcp-gen-ctrexes (ctrex-info alist hyp-bdd n state)
+  (declare (xargs :stobjs state :verify-guards nil))
   (b* (((er assigns) (glcp-gen-assignments ctrex-info alist hyp-bdd n state)))
     (value (glcp-bit-to-obj-ctrexamples assigns alist (shape-spec-to-gobj
-                                                       alist)))))
+                                                       alist) state))))
 
 (defthm glcp-gen-ctrexes-does-not-fail
   (not (mv-nth 0 (glcp-gen-ctrexes n hyp-bdd bdd bound state)))
@@ -1999,7 +769,7 @@ class:~%~%" (len ctrexes))))))
    (implies (and (not (glcp-generic-geval val (cdr (assoc-equal 'env alist))))
                  (bfr-eval (bfr-to-param-space hyp-bdd hyp-bdd)
                            (car (cdr (assoc-equal 'env alist)))))
-            (not (glcp-generic-ev
+            (not (glcp-generic-geval-ev
                   (disjoin
                    (mv-nth 1 (glcp-analyze-interp-result
                               val al hyp-bdd id concl config state)))
@@ -2053,6 +823,8 @@ class:~%~%" (len ctrexes))))))
                                              state)))
           (w state))
    :hints(("Goal" :in-theory (enable glcp-gen-ctrexes)))))
+
+(local (in-theory (disable w put-global)))
 
 (local
  (defthm w-state-of-glcp-analyze-interp-result
@@ -2230,39 +1002,39 @@ The definition body, ~x1, is not a pseudo-term."
 
 (local
  (progn
-   (defthm glcp-generic-ev-dumb-negate-lit
-     (iff (glcp-generic-ev (dumb-negate-lit lit) a)
-          (not (glcp-generic-ev lit a))))
+   (defthm glcp-generic-geval-ev-dumb-negate-lit
+     (iff (glcp-generic-geval-ev (dumb-negate-lit lit) a)
+          (not (glcp-generic-geval-ev lit a))))
 
 
-   (defthm glcp-generic-ev-list*-macro
-     (equal (glcp-generic-ev (list*-macro (append x (list ''nil))) al)
-            (glcp-generic-ev-lst x al))
+   (defthm glcp-generic-geval-ev-list*-macro
+     (equal (glcp-generic-geval-ev (list*-macro (append x (list ''nil))) al)
+            (glcp-generic-geval-ev-lst x al))
      :hints(("Goal" :in-theory (enable append))))
 
 
    (defthm pairlis-eval-alist-is-norm-alist
      (implies (nonnil-symbol-listp vars)
               (equal (pairlis$ vars
-                               (glcp-generic-ev-lst vars alist))
+                               (glcp-generic-geval-ev-lst vars alist))
                      (norm-alist vars alist)))
      :hints(("Goal" :in-theory (enable nonnil-symbol-listp
                                        pairlis$))))
 
 
 
-   (defthmd glcp-generic-ev-disjoin-is-or-list-glcp-generic-ev-lst
-     (iff (glcp-generic-ev (disjoin lst) env)
-          (acl2::or-list (glcp-generic-ev-lst lst env)))
+   (defthmd glcp-generic-geval-ev-disjoin-is-or-list-glcp-generic-geval-ev-lst
+     (iff (glcp-generic-geval-ev (disjoin lst) env)
+          (acl2::or-list (glcp-generic-geval-ev-lst lst env)))
      :hints (("goal" :induct (len lst))))
 
-   (defthm glcp-generic-ev-disjoin-norm-alist
+   (defthm glcp-generic-geval-ev-disjoin-norm-alist
      (implies (and (pseudo-term-listp clause)
                    (subsetp-equal (collect-vars-list clause) vars))
-              (iff (glcp-generic-ev (disjoin clause) (norm-alist vars alist))
-                   (glcp-generic-ev (disjoin clause) alist)))
+              (iff (glcp-generic-geval-ev (disjoin clause) (norm-alist vars alist))
+                   (glcp-generic-geval-ev (disjoin clause) alist)))
      :hints(("Goal" :in-theory (enable
-                                glcp-generic-ev-disjoin-is-or-list-glcp-generic-ev-lst))))))
+                                glcp-generic-geval-ev-disjoin-is-or-list-glcp-generic-geval-ev-lst))))))
 
 
 
@@ -2314,16 +1086,16 @@ The definition body, ~x1, is not a pseudo-term."
 ;;            (equal (glcp-generic-geval-alist
 ;;                    (shape-specs-to-interp-al bindings)
 ;;                    (shape-spec-to-env (strip-cadrs bindings)
-;;                                       (glcp-generic-ev-lst (strip-cars bindings)
+;;                                       (glcp-generic-geval-ev-lst (strip-cars bindings)
 ;;                                                       alist)))
 ;;                   (pairlis$ (strip-cars bindings)
-;;                             (glcp-generic-ev-lst (strip-cars bindings) alist))))
+;;                             (glcp-generic-geval-ev-lst (strip-cars bindings) alist))))
 ;;   hie)
 
 ;;                 ((GLCP-GENERIC-GEVAL-ALIST
 ;;    (SHAPE-SPECS-TO-INTERP-AL BINDINGS)
 ;;    (SHAPE-SPEC-TO-ENV (STRIP-CADRS BINDINGS)
-;;                       (GLCP-GENERIC-EV-LST (STRIP-CARS BINDINGS)
+;;                       (GLCP-GENERIC-GEVAL-EV-LST (STRIP-CARS BINDINGS)
 ;;                                       ALIST)))
 
 
@@ -2351,29 +1123,29 @@ The definition body, ~x1, is not a pseudo-term."
      (defthm glcp-generic-run-parametrized-correct
        (b* (((mv erp (cons clauses out-obligs) &)
              (glcp-generic-run-parametrized
-              hyp concl untrans-concl vars bindings id obligs
+              hyp concl  vars bindings id obligs
               config state)))
-         (implies (and (not (glcp-generic-ev concl alist))
-                       (glcp-generic-ev-theoremp
+         (implies (and (not (glcp-generic-geval-ev concl alist))
+                       (glcp-generic-geval-ev-theoremp
                         (conjoin-clauses
                          (acl2::interp-defs-alist-clauses out-obligs)))
                        (not erp)
-                       (glcp-generic-ev hyp alist)
+                       (glcp-generic-geval-ev hyp alist)
                        (acl2::interp-defs-alistp obligs)
                        (acl2::interp-defs-alistp (glcp-config->overrides config))
                        (pseudo-termp concl)
                        (pseudo-termp hyp)
                        (equal vars (collect-vars concl))
-                       (glcp-generic-ev-meta-extract-global-facts :state state1)
+                       (glcp-generic-geval-ev-meta-extract-global-facts :state state1)
                        (equal (w state) (w state1)))
-                  (not (glcp-generic-ev-theoremp (conjoin-clauses clauses)))))
+                  (not (glcp-generic-geval-ev-theoremp (conjoin-clauses clauses)))))
        :hints (("goal" :do-not-induct
                 t
                 :in-theory
                 (e/d* ()
                       (glcp-generic-geval-alist-gobj-alist-to-param-space
                        glcp-generic-geval-gtests-nonnil-correct
-                       glcp-generic-interp-term-bad-obligs
+                       glcp-generic-interp-bad-obligs-term
                        ;; shape-spec-listp-impl-shape-spec-to-gobj-list
                        (:rules-of-class :definition :here)
                        (:rules-of-class :type-prescription :here))
@@ -2382,23 +1154,23 @@ The definition body, ~x1, is not a pseudo-term."
                                   glcp-error
                                   acl2::fast-no-duplicatesp
                                   acl2::fast-no-duplicatesp-equal))
-                :restrict ((glcp-generic-ev-disjoin-append ((a alist)))))
+                :restrict ((glcp-generic-geval-ev-disjoin-append ((a alist)))))
                (and stable-under-simplificationp
                     (acl2::bind-as-in-definition
                      (glcp-generic-run-parametrized
-                      hyp concl untrans-concl (collect-vars concl) bindings id obligs config state)
+                      hyp concl  (collect-vars concl) bindings id obligs config state)
                      (cov-clause val-clause hyp-bdd hyp-val)
                      (b* ((binding-env '(shape-spec-to-env
                                          (strip-cadrs bindings)
-                                         (glcp-generic-ev-lst
+                                         (glcp-generic-geval-ev-lst
                                           (strip-cars bindings)
                                           alist)))
                           (param-env `(genv-param ,hyp-bdd ,binding-env)))
                        `(:use
-                         ((:instance glcp-generic-ev-falsify
+                         ((:instance glcp-generic-geval-ev-falsify
                                      (x (disjoin ,cov-clause))
                                      (a alist))
-                          (:instance glcp-generic-ev-falsify
+                          (:instance glcp-generic-geval-ev-falsify
                                      (x (disjoin ,val-clause))
                                      (a `((env . ,,param-env))))
                           (:instance glcp-generic-geval-gtests-nonnil-correct
@@ -2410,31 +1182,31 @@ The definition body, ~x1, is not a pseudo-term."
    (defthm glcp-generic-run-parametrized-bad-obligs
      (b* (((mv erp (cons & out-obligs) &)
            (glcp-generic-run-parametrized
-            hyp concl untrans-concl vars bindings id obligs config state)))
+            hyp concl  vars bindings id obligs config state)))
        (implies (and (not erp)
-                     (not (glcp-generic-ev-theoremp
+                     (not (glcp-generic-geval-ev-theoremp
                            (conjoin-clauses
                             (acl2::interp-defs-alist-clauses obligs)))))
-                (not (glcp-generic-ev-theoremp
+                (not (glcp-generic-geval-ev-theoremp
                       (conjoin-clauses
                        (acl2::interp-defs-alist-clauses out-obligs)))))))
 
    (defthm glcp-generic-run-parametrized-ok-obligs
      (b* (((mv erp (cons & out-obligs) &)
            (glcp-generic-run-parametrized
-            hyp concl untrans-concl vars bindings id obligs config state)))
+            hyp concl  vars bindings id obligs config state)))
        (implies (and (not erp)
-                     (glcp-generic-ev-theoremp
+                     (glcp-generic-geval-ev-theoremp
                       (conjoin-clauses
                        (acl2::interp-defs-alist-clauses out-obligs))))
-                (glcp-generic-ev-theoremp
+                (glcp-generic-geval-ev-theoremp
                  (conjoin-clauses
                   (acl2::interp-defs-alist-clauses obligs))))))
 
    (defthm glcp-generic-run-parametrized-defs-alistp
      (b* (((mv erp (cons & out-obligs) &)
            (glcp-generic-run-parametrized
-            hyp concl untrans-concl vars bindings id obligs config state)))
+            hyp concl  vars bindings id obligs config state)))
        (implies (and (acl2::interp-defs-alistp obligs)
                      (acl2::interp-defs-alistp (glcp-config->overrides config))
                      (pseudo-termp concl)
@@ -2443,7 +1215,7 @@ The definition body, ~x1, is not a pseudo-term."
 
    (defthm glcp-generic-run-paremetrized-w-state
      (equal (w (mv-nth 2 (glcp-generic-run-parametrized
-                          hyp concl untrans-concl vars bindings id obligs config state)))
+                          hyp concl  vars bindings id obligs config state)))
             (w state)))))
 
 
@@ -2474,7 +1246,7 @@ The definition body, ~x1, is not a pseudo-term."
    (defthm glcp-generic-run-cases-interp-defs-alistp
      (b* (((mv erp (cons & out-obligs) &)
            (glcp-generic-run-cases
-            param-alist concl untrans-concl vars obligs config state)))
+            param-alist concl  vars obligs config state)))
        (implies (and (acl2::interp-defs-alistp obligs)
                      (acl2::interp-defs-alistp (glcp-config->overrides config))
                      (pseudo-termp concl)
@@ -2484,19 +1256,19 @@ The definition body, ~x1, is not a pseudo-term."
 
    (defthm glcp-generic-run-cases-ok-w-state
      (equal (w (mv-nth 2 (glcp-generic-run-cases
-                          param-alist concl untrans-concl vars obligs config
+                          param-alist concl  vars obligs config
                           state)))
             (w state)))
 
    (defthm glcp-generic-run-cases-correct
      (b* (((mv erp (cons clauses out-obligs) &)
            (glcp-generic-run-cases
-            param-alist concl untrans-concl vars obligs config state)))
-       (implies (and (glcp-generic-ev-theoremp
+            param-alist concl  vars obligs config state)))
+       (implies (and (glcp-generic-geval-ev-theoremp
                       (conjoin-clauses
                        (acl2::interp-defs-alist-clauses out-obligs)))
-                     (not (glcp-generic-ev concl a))
-                     (glcp-generic-ev (disjoin (strip-cars param-alist))
+                     (not (glcp-generic-geval-ev concl a))
+                     (glcp-generic-geval-ev (disjoin (strip-cars param-alist))
                                       a)
                      (not erp)
                      (acl2::interp-defs-alistp obligs)
@@ -2504,32 +1276,32 @@ The definition body, ~x1, is not a pseudo-term."
                      (pseudo-termp concl)
                      (pseudo-term-listp (strip-cars param-alist))
                      (equal vars (collect-vars concl))
-                     (glcp-generic-ev-meta-extract-global-facts :state state1)
+                     (glcp-generic-geval-ev-meta-extract-global-facts :state state1)
                      (equal (w state) (w state1)))
-                (not (glcp-generic-ev-theoremp (conjoin-clauses clauses))))))
+                (not (glcp-generic-geval-ev-theoremp (conjoin-clauses clauses))))))
 
 
    (defthm glcp-generic-run-cases-bad-obligs
      (b* (((mv erp (cons & out-obligs) &)
            (glcp-generic-run-cases
-            param-alist concl untrans-concl vars obligs config state)))
+            param-alist concl  vars obligs config state)))
        (implies (and (not erp)
-                     (not (glcp-generic-ev-theoremp
+                     (not (glcp-generic-geval-ev-theoremp
                            (conjoin-clauses
                             (acl2::interp-defs-alist-clauses obligs)))))
-                (not (glcp-generic-ev-theoremp
+                (not (glcp-generic-geval-ev-theoremp
                       (conjoin-clauses
                        (acl2::interp-defs-alist-clauses out-obligs)))))))
 
    (defthm glcp-generic-run-cases-ok-obligs
      (b* (((mv erp (cons & out-obligs) &)
            (glcp-generic-run-cases
-            param-alist concl untrans-concl vars obligs config state)))
+            param-alist concl  vars obligs config state)))
        (implies (and (not erp)
-                     (glcp-generic-ev-theoremp
+                     (glcp-generic-geval-ev-theoremp
                       (conjoin-clauses
                        (acl2::interp-defs-alist-clauses out-obligs))))
-                (glcp-generic-ev-theoremp
+                (glcp-generic-geval-ev-theoremp
                  (conjoin-clauses
                   (acl2::interp-defs-alist-clauses obligs))))))))
 
@@ -2607,7 +1379,7 @@ The definition body, ~x1, is not a pseudo-term."
  (progn
    ;; What am I doing here?
    (defund glcp-generic-run-parametrized-placeholder (clauses)
-     (glcp-generic-ev-theoremp (conjoin-clauses clauses)))
+     (glcp-generic-geval-ev-theoremp (conjoin-clauses clauses)))
 
    (defun check-top-level-bind-free (bindings mfc state)
      (declare (ignore state)
@@ -2618,42 +1390,42 @@ The definition body, ~x1, is not a pseudo-term."
    (defthmd glcp-generic-run-parametrized-correct-rw
      (b* (((mv erp (cons clauses out-obligs) &)
            (glcp-generic-run-parametrized
-            hyp concl untrans-concl vars bindings id obligs config st)))
+            hyp concl  vars bindings id obligs config st)))
        (implies (and (bind-free (check-top-level-bind-free
                                  '((alist . alist)) acl2::mfc state)
                                 (alist))
-                     (glcp-generic-ev-theoremp
+                     (glcp-generic-geval-ev-theoremp
                       (conjoin-clauses
                        (acl2::interp-defs-alist-clauses out-obligs)))
                      (not erp)
-                     (glcp-generic-ev hyp alist)
+                     (glcp-generic-geval-ev hyp alist)
                      (acl2::interp-defs-alistp obligs)
                      (acl2::interp-defs-alistp (glcp-config->overrides config))
                      (pseudo-termp concl)
                      (pseudo-termp hyp)
                      (equal vars (collect-vars concl))
-                     (glcp-generic-ev-meta-extract-global-facts :state state1)
+                     (glcp-generic-geval-ev-meta-extract-global-facts :state state1)
                      (equal (w st) (w state1)))
-                (iff (glcp-generic-ev-theoremp (conjoin-clauses clauses))
+                (iff (glcp-generic-geval-ev-theoremp (conjoin-clauses clauses))
                      (and (glcp-generic-run-parametrized-placeholder
                            clauses)
-                          (glcp-generic-ev concl alist)))))
+                          (glcp-generic-geval-ev concl alist)))))
      :hints(("Goal" :in-theory (enable
                                 glcp-generic-run-parametrized-placeholder))))
 
    (defund glcp-generic-run-cases-placeholder (clauses)
-     (glcp-generic-ev-theoremp (conjoin-clauses clauses)))
+     (glcp-generic-geval-ev-theoremp (conjoin-clauses clauses)))
 
    (defthmd glcp-generic-run-cases-correct-rw
      (b* (((mv erp (cons clauses out-obligs) &)
            (glcp-generic-run-cases
-            param-alist concl untrans-concl vars obligs config st)))
+            param-alist concl  vars obligs config st)))
        (implies (and (bind-free (check-top-level-bind-free
                                  '((alist . alist)) mfc state) (alist))
-                     (glcp-generic-ev-theoremp
+                     (glcp-generic-geval-ev-theoremp
                       (conjoin-clauses
                        (acl2::interp-defs-alist-clauses out-obligs)))
-                     (glcp-generic-ev (disjoin (strip-cars param-alist))
+                     (glcp-generic-geval-ev (disjoin (strip-cars param-alist))
                                       a)
                      (not erp)
                      (acl2::interp-defs-alistp obligs)
@@ -2661,11 +1433,11 @@ The definition body, ~x1, is not a pseudo-term."
                      (pseudo-termp concl)
                      (pseudo-term-listp (strip-cars param-alist))
                      (equal vars (collect-vars concl))
-                     (glcp-generic-ev-meta-extract-global-facts :state state1)
+                     (glcp-generic-geval-ev-meta-extract-global-facts :state state1)
                      (equal (w st) (w state1)))
-                (iff (glcp-generic-ev-theoremp (conjoin-clauses clauses))
+                (iff (glcp-generic-geval-ev-theoremp (conjoin-clauses clauses))
                      (and (glcp-generic-run-cases-placeholder clauses)
-                          (glcp-generic-ev concl a)))))
+                          (glcp-generic-geval-ev concl a)))))
      :hints(("Goal" :in-theory (enable glcp-generic-run-cases-placeholder))))))
 
 (local
@@ -2677,16 +1449,16 @@ The definition body, ~x1, is not a pseudo-term."
 (defthm glcp-generic-correct
   (implies (and (pseudo-term-listp clause)
                 (alistp alist)
-                (glcp-generic-ev-meta-extract-global-facts)
-                (glcp-generic-ev
+                (glcp-generic-geval-ev-meta-extract-global-facts)
+                (glcp-generic-geval-ev
                  (conjoin-clauses
                   (acl2::clauses-result
                    (glcp-generic clause hints state)))
-                 (glcp-generic-ev-falsify
+                 (glcp-generic-geval-ev-falsify
                   (conjoin-clauses
                    (acl2::clauses-result
                     (glcp-generic clause hints state))))))
-           (glcp-generic-ev (disjoin clause) alist))
+           (glcp-generic-geval-ev (disjoin clause) alist))
   :hints
   (("goal" :do-not-induct
     t
@@ -2709,19 +1481,19 @@ The definition body, ~x1, is not a pseudo-term."
            glcp-generic glcp-error
            assoc-equal pseudo-term-listp))
 
-    :restrict ((glcp-generic-ev-disjoin-append ((a alist)))
-               (glcp-generic-ev-disjoin-cons ((a alist)))))
+    :restrict ((glcp-generic-geval-ev-disjoin-append ((a alist)))
+               (glcp-generic-geval-ev-disjoin-cons ((a alist)))))
    (and stable-under-simplificationp
         (acl2::bind-as-in-definition
          glcp-generic
          (hyp-clause concl-clause params-cov-term hyp)
-         `(:use ((:instance glcp-generic-ev-falsify
+         `(:use ((:instance glcp-generic-geval-ev-falsify
                             (x (disjoin ,hyp-clause))
                             (a alist))
-                 (:instance glcp-generic-ev-falsify
+                 (:instance glcp-generic-geval-ev-falsify
                             (x (disjoin ,concl-clause))
                             (a alist))
-                 (:instance glcp-generic-ev-falsify
+                 (:instance glcp-generic-geval-ev-falsify
                   (x (disjoin (CONS
                                (CONS
                                 'NOT
@@ -2743,8 +1515,8 @@ The definition body, ~x1, is not a pseudo-term."
 ;; produces all the other necessary clauses.  We define this by
 ;; using a mock interp-term function that just returns T and no
 ;; obligs, and also a mock analyze-term
-(defun glcp-fake-interp-term (x bindings hyp clk obligs config state)
-  (declare (ignore x bindings hyp clk config))
+(defun glcp-fake-interp-term (x bindings pathcond clk obligs config state)
+  (declare (ignore x bindings pathcond clk config))
   (mv nil obligs t state))
 
 (defun glcp-fake-analyze-interp-result
@@ -2815,7 +1587,7 @@ The definition body, ~x1, is not a pseudo-term."
 
 ;; Looks up a function in the gl-function-info table to see if it has
 ;; a symbolic counterpart, and executes it if so.
-(defun gl-universal-run-gified (fn actuals hyp clk state)
+(defun gl-universal-run-gified (fn actuals pathcond clk state)
   (declare (xargs :guard (and (symbolp fn)
                               (natp clk))
                   :mode :program))
@@ -2825,7 +1597,7 @@ The definition body, ~x1, is not a pseudo-term."
        ((unless look) (mv nil nil))
        (gfn (cadr look))
        ((mv er res)
-        (acl2::magic-ev-fncall gfn (append actuals (list hyp clk))
+        (acl2::magic-ev-fncall gfn (append actuals (list pathcond clk))
                                state t t))
        ((when er)
         (prog2$ (cw "GL-UNIVERSAL-RUN-GIFIED: error: ~@0~%" er)
@@ -2850,10 +1622,16 @@ The definition body, ~x1, is not a pseudo-term."
 ;;     (mv t val state)))
 
 (defconst *gl-universal-subst*
-  `((run-gified . gl-universal-run-gified)
-    (apply-concrete . gl-universal-apply-concrete)
-    (interp-term . gl-universal-interp-term)
+  `((interp-term . gl-universal-interp-term)
     (interp-list . gl-universal-interp-list)
+    (interp-if . gl-universal-interp-if)
+    (rewrite-fncall . gl-universal-rewrite-fncall)
+    (rewrite-fncall-apply-rules . gl-universal-rewrite-fncall-apply-rules)
+    (rewrite-fncall-apply-rule . gl-universal-rewrite-fncall-apply-rule)
+    (relieve-hyps . gl-universal-relieve-hyps)
+    (relieve-hyp . gl-universal-relieve-hyp)
+    (run-gified . gl-universal-run-gified)
+    (apply-concrete . gl-universal-apply-concrete)
     (run-cases . gl-universal-run-cases)
     (run-parametrized . gl-universal-run-parametrized)
     (clause-proc . gl-universal-clause-proc)
@@ -2890,7 +1668,7 @@ The definition body, ~x1, is not a pseudo-term."
 ;; processor defined above.  X is the term, ALIST gives a
 ;; list of bindings of variables to g-objects, hyp is a BDD.
 
-(defun gl-interp-term (x alist hyp clk state)
+(defun gl-interp-term (x alist pathcond clk state)
   (declare (xargs :mode :program :stobjs state))
   (b* ((world (w state))
        ((er overrides)
@@ -2898,7 +1676,7 @@ The definition body, ~x1, is not a pseudo-term."
          (table-alist 'preferred-defs world) state))
        ((mv er obligs ans state)
         (gl-universal-interp-term
-         x alist hyp clk nil (make-glcp-config :overrides overrides) state))
+         x alist pathcond clk nil (make-glcp-config :overrides overrides) state))
        ((when er) (mv er nil state))
        (- (flush-hons-get-hash-table-link obligs)))
     (value ans)))
@@ -3248,3 +2026,4 @@ sim-params: ~x0~%" run-after-cases)
         (nexamples '3) run-after-cases (erp 't))
   `(sim-param-thm-fn ',hyp ',param-hyp ',concl ,cov-bindings ,param-bindings
                      ',ctrex-term ,nexamples ',run-after-cases ,erp state))
+

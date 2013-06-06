@@ -91,7 +91,6 @@
                                      components-to-number-alt-def
                                      eval-g-base-non-cons
                                      acl2::/r-when-abs-numerator=1
-                                     v2n-is-v2i-when-sign-nil
                                      default-unary-/
                                      s-sign-correct default-car default-cdr
                                      hons-assoc-equal))

@@ -177,76 +177,76 @@
 (in-theory (disable apply-expansions hints-okp))
 
 (mutual-recursion
- (defun term-apply-expansions (x hints)
+ (defun term-apply-expansions (x hints lambdasp)
    (declare (xargs :guard (and (pseudo-termp x)
                                (hints-okp hints))
                    :verify-guards nil))
    (if (or (variablep x)
            (fquotep x))
        x
-     (let ((args (termlist-apply-expansions (fargs x) hints))
+     (let ((args (termlist-apply-expansions (fargs x) hints lambdasp))
            (fn (ffn-symb x)))
-       (if (flambdap fn)
+       (if (and lambdasp (flambdap fn))
            ;; NOTE: this is a little odd because it doesn't consider the lambda
            ;; substitution.  Sound, but arguably expands the wrong terms (for
            ;; some value of "wrong").
-           (let* ((body (term-apply-expansions (lambda-body fn) hints)))
+           (let* ((body (term-apply-expansions (lambda-body fn) hints lambdasp)))
              (cons (make-lambda (lambda-formals fn) body)
                    args))
          (apply-expansions (cons fn args) hints)))))
- (defun termlist-apply-expansions (x hints)
+ (defun termlist-apply-expansions (x hints lambdasp)
    (declare (xargs :guard (and (pseudo-term-listp x)
                                (hints-okp hints))))
    (if (atom x)
        nil
-     (cons (term-apply-expansions (car x) hints)
-           (termlist-apply-expansions (cdr x) hints)))))
+     (cons (term-apply-expansions (car x) hints lambdasp)
+           (termlist-apply-expansions (cdr x) hints lambdasp)))))
 
 (make-flag term-apply-expansions-flg term-apply-expansions
            :flag-mapping ((term-apply-expansions . term)
                           (termlist-apply-expansions . list)))
 
 (defthm len-of-termlist-apply-expansions
-  (equal (len (termlist-apply-expansions x hints))
+  (equal (len (termlist-apply-expansions x hints lambdasp))
          (len x))
   :hints (("goal" :induct (len x)
-           :expand (termlist-apply-expansions x hints))))
+           :expand (termlist-apply-expansions x hints lambdasp))))
 
 (defthm-term-apply-expansions-flg
   (defthm pseudo-termp-term-apply-expansions
     (implies (and (pseudo-termp x)
                   (hints-okp hints))
-             (pseudo-termp (term-apply-expansions x hints)))
+             (pseudo-termp (term-apply-expansions x hints lambdasp)))
     :hints ((and stable-under-simplificationp
                  '(:expand ((:free (a b) (pseudo-termp (cons a b)))))))
     :flag term)
   (defthm pseudo-term-listp-termlist-apply-expansions
     (implies (and (pseudo-term-listp x)
                   (hints-okp hints))
-             (pseudo-term-listp (termlist-apply-expansions x hints)))
+             (pseudo-term-listp (termlist-apply-expansions x hints lambdasp)))
     :flag list))
 
 (mutual-recursion
- (defun term-apply-expansions-correct-ind (x hints a)
+ (defun term-apply-expansions-correct-ind (x hints a lambdasp)
    (if (or (variablep x)
            (fquotep x))
        (list x a)
-     (let ((args (termlist-apply-expansions (fargs x) hints))
+     (let ((args (termlist-apply-expansions (fargs x) hints lambdasp))
            (ign (termlist-apply-expansions-correct-ind
-                 (fargs x) hints a))
+                 (fargs x) hints a lambdasp))
            (fn (ffn-symb x)))
        (declare (ignore ign))
-       (if (flambdap fn)
+       (if (and lambdasp (flambdap fn))
            (term-apply-expansions-correct-ind
             (lambda-body fn) hints
             (pairlis$ (lambda-formals fn)
-                      (expev-lst args a)))
+                      (expev-lst args a)) lambdasp)
          (apply-expansions (cons fn args) hints)))))
- (defun termlist-apply-expansions-correct-ind (x hints a)
+ (defun termlist-apply-expansions-correct-ind (x hints a lambdasp)
    (if (atom x)
        nil
-     (cons (term-apply-expansions-correct-ind (car x) hints a)
-           (termlist-apply-expansions-correct-ind (cdr x) hints a)))))
+     (cons (term-apply-expansions-correct-ind (car x) hints a lambdasp)
+           (termlist-apply-expansions-correct-ind (cdr x) hints a lambdasp)))))
 
 (make-flag term-apply-expansions-correct-flg term-apply-expansions-correct-ind
            :flag-mapping ((term-apply-expansions-correct-ind . term)
@@ -259,7 +259,7 @@
     (implies (and (pseudo-termp x)
                   (hints-okp hints)
                   (expev-theoremp (conjoin-clauses (hint-alists-to-clauses hints))))
-             (equal (expev (term-apply-expansions x hints) a)
+             (equal (expev (term-apply-expansions x hints lambdasp) a)
                     (expev x a)))
     :hints ((and stable-under-simplificationp
                  '(:in-theory (enable expev-constraint-0)
@@ -269,7 +269,7 @@
     (implies (and (pseudo-term-listp x)
                   (hints-okp hints)
                   (expev-theoremp (conjoin-clauses (hint-alists-to-clauses hints))))
-             (equal (expev-lst (termlist-apply-expansions x hints) a)
+             (equal (expev-lst (termlist-apply-expansions x hints lambdasp) a)
                     (expev-lst x a)))
     :flag list))
 
@@ -287,12 +287,14 @@
 
 (defun just-expand-cp (clause hints)
   (declare (xargs :guard (pseudo-term-listp clause)))
-  (b* (((unless (hints-okp hints))
+  (b* (((unless (and (true-listp hints)
+                     (hints-okp (cadr hints))))
         (er hard? 'just-expand-cp "bad hints")
         (list clause))
+       ((list lambdasp hints) hints)
        (hint-clauses (hint-alists-to-clauses hints))
        (expanded-clause
-        (termlist-apply-expansions clause hints)))
+        (termlist-apply-expansions clause hints lambdasp)))
     (cons expanded-clause hint-clauses)))
 
 (defthm just-expand-cp-correct
@@ -306,11 +308,11 @@
                   (x (disjoin (car (just-expand-cp clause hints))))))))
   :rule-classes :clause-processor)
 
-(defmacro just-expand (expand-lst)
+(defmacro just-expand (expand-lst &key lambdasp)
   `(let ((hints (just-expand-cp-parse-hints ',expand-lst (w state))))
      `(:computed-hint-replacement
        ((use-by-computed-hint clause))
-       :clause-processor (just-expand-cp clause ',hints))))
+       :clause-processor (just-expand-cp clause '(,',lambdasp ,hints)))))
 
 (local
  (defthm foo (implies (consp x)
@@ -319,12 +321,22 @@
            (just-expand ((len x)))
            '(:do-not nil))))
 
-(defmacro just-induct-and-expand (term &key expand-others)
+;; must use :lambdasp t or this won't work
+(local
+ (defthm foo2 (implies (consp x)
+                       (let ((x (list x x)))
+                         (equal (len x) (+ 1 (len (cdr x))))))
+   :hints (("goal" :do-not '(simplify preprocess eliminate-destructors)
+            :in-theory (disable len foo))
+           (just-expand ((len x)) :lambdasp t)
+           '(:do-not nil))))
+
+(defmacro just-induct-and-expand (term &key expand-others lambdasp)
   `'(:computed-hint-replacement
      ((and (equal (car id) '(0))
            '(:induct ,term))
       (and (equal (car id) '(0 1))
-           (just-expand (,term . ,expand-others)))
+           (just-expand (,term . ,expand-others) :lambdasp ,lambdasp))
       '(:do-not nil))
      :do-not '(preprocess simplify)))
 

@@ -137,6 +137,21 @@
       (:g-number (mv-let (numspec next-idx)
                    (uniquify-number-spec (g-number->num x) next-idx)
                    (mv (g-number numspec) next-idx (lnfix next-var))))
+      (:g-integer (b* ((sign next-idx)
+                       ((mv bits next-idx)
+                        (uniquify-nat-list (g-integer->bits x)
+                                           (+ 1 (lnfix next-idx))))
+                       (var next-var))
+                    (mv (g-integer sign bits var)
+                        next-idx (+ 1 (lnfix next-var)))))
+      (:g-integer? (b* ((intp next-idx)
+                        (sign (+ 1 (lnfix next-idx)))
+                        ((mv bits next-idx)
+                         (uniquify-nat-list (g-integer?->bits x)
+                                            (+ 2 (lnfix next-idx))))
+                        (var next-var))
+                     (mv (g-integer? sign bits var intp)
+                         next-idx (+ 1 (lnfix next-var)))))
       (:g-boolean (mv (g-boolean next-idx) (+ 1 (lnfix next-idx)) (lnfix next-var)))
       (:g-concrete (mv x (lnfix next-idx) (lnfix next-var)))
       (:g-var (mv (g-var next-var) (lnfix next-idx) (1+ (lnfix next-var))))
@@ -166,10 +181,22 @@
 (verify-guards uniquify-shape-spec
   :hints(("Goal" :in-theory (enable shape-specp))))
 
+(defun integer-with-nbitsp (n x)
+  (declare (xargs :guard t)
+           (ignore n))
+  (integerp x))
+
+(defun integer?-with-nbitsp (n x)
+  (declare (xargs :guard t)
+           (ignore n x))
+  t)
+
 (defconst *default-symobj-generators*
   '(((booleanp x) (g-boolean 0))
     ((unsigned-byte-p n x) (g-number (list (numlist 0 1 (+ 1 n)))))
-    ((signed-byte-p n x) (g-number (list (numlist 0 1 n))))))
+    ((signed-byte-p n x) (g-number (list (numlist 0 1 n))))
+    ((integer-with-nbitsp n x) (g-integer 0 (numlist 0 1 n) 0))
+    ((integer?-with-nbitsp n x) (g-integer? 0 (numlist 0 1 n) 0 0))))
 
 (defun translate-term-alist (gens wrld state-vars)
   (declare (xargs :mode :program))
@@ -411,11 +438,12 @@
                                                   (acl2::term-vars-list clause)))))))
 
 
-(defun gl-auto-hint-step2 (clause g-bindings state)
+(defun gl-auto-hint-step2 (clause g-bindings print state)
   (declare (xargs :mode :program :stobjs state))
   (b* ((gl-clause-proc (latest-gl-clause-proc))
-       (- (cw "using GL on clause: ~x0~%"
-              (acl2::prettyify-clause clause nil (w state))))
+       (- (and (member :final-clause print)
+               (cw "using GL on clause: ~x0~%"
+                   (acl2::prettyify-clause clause nil (w state)))))
        (config (make-glcp-config))
        (cov-hints (glcp-coverage-hints nil nil nil nil))
        (hyp (car clause))
@@ -431,10 +459,11 @@
     (glcp-combine-hints call cov-hints nil nil nil)))
 
 
-(defun gl-auto-hint-fn (clause type-gens bad-subterms state)
+(defun gl-auto-hint-fn (clause type-gens bad-subterms print state)
   (declare (xargs :mode :program :stobjs state))
-  (b* ((- (cw "before filtering: ~x0~%"
-              (acl2::prettyify-clause clause nil (w state))))
+  (b* ((- (and (member :before-filtering print)
+               (cw "before filtering: ~x0~%"
+                   (acl2::prettyify-clause clause t (w state)))))
        (clause (filter-bad-subterms clause bad-subterms))
        ((mv bindings hyp-lits nonhyp-lits)
         (type-gen-collect-bindings clause type-gens state))
@@ -444,7 +473,7 @@
        (concl-lits (filter-nonhyp-lits nonhyp-lits vars)))
     `(:computed-hint-replacement
       ((run-let-abstraction-cp clause)
-       (gl-auto-hint-step2 clause ',g-bindings state))
+       (gl-auto-hint-step2 clause ',g-bindings ',print state))
       :clause-processor (group-lits-cp clause ',(list hyp-lits concl-lits)))))
 
 
@@ -481,13 +510,14 @@
 
 
 
-
     
-(defun try-gl-hint-fn (clause stablep fixups subterms-types type-gens bad-subterms state)
+(defun try-gl-hint-fn (clause stablep fixups subterms-types type-gens
+                              bad-subterms print state)
   (declare (xargs :mode :program :stobjs state))
   (b* (((unless stablep) nil)
-       (- (cw "original clause: ~x0~%"
-              (acl2::prettyify-clause clause nil (w state))))
+       (- (and (member :original-clause print)
+               (cw "original clause: ~x0~%"
+                   (acl2::prettyify-clause clause t (w state)))))
 
        ;; translate all the terms in the various arguments
        (state-vars (acl2::default-state-vars t))
@@ -513,8 +543,9 @@
                        clause))
 
        (- (and fixup-subst
+               (member :fixed-up-clause print)
                (cw "fixed-up clause: ~x0~%"
-                   (acl2::prettyify-clause fixup-clause nil (w state)))))
+                   (acl2::prettyify-clause fixup-clause t (w state)))))
 
        ;; collect the subterms that we'll generalize away and their type hyps
        ((mv subterms type-hyps)
@@ -530,12 +561,14 @@
           (try-gl-add-hyps-cp
            clause '(,type-hyps
                     ((progn$
-                      (cw "before generalization: ~x0~%"
-                          (acl2::prettyify-clause clause nil (w state)))
+                      ,@(and (member :before-generalization print)
+                             '((cw "before generalization: ~x0~%"
+                                   (acl2::prettyify-clause clause t (w state)))))
                       (cw "Variable mapping: ~x0~%"
                           ',(pairlis$ fresh-vars (pairlis$ subterms nil)))
                       '(:computed-hint-replacement
-                        ((gl-auto-hint-fn clause ',type-gens ',bad-subterms state))
+                        ((gl-auto-hint-fn clause ',type-gens ',bad-subterms
+                                          ',print state))
                         :clause-processor
                         (acl2::simple-generalize-cp
                          clause ',(pairlis$ subterms fresh-vars))))))))))
@@ -550,10 +583,11 @@
       add-hyps-hint)))
 
 
-(defmacro try-gl (&key fixes subterms-types type-gens bad-subterms)
+(defmacro try-gl (&key fixes subterms-types type-gens bad-subterms
+                       print)
   `(try-gl-hint-fn
     clause stable-under-simplificationp
-    ',fixes ',subterms-types ',type-gens ',bad-subterms state))
+    ',fixes ',subterms-types ',type-gens ',bad-subterms ',print state))
 
 
 ;; (include-book "gl")

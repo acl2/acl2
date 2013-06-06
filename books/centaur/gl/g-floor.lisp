@@ -115,7 +115,6 @@
                               member-equal 
                               general-number-components-ev
                               general-concretep-def
-                              v2n-is-v2i-when-sign-nil
                               general-concretep-def
                               floor
                               hons-assoc-equal

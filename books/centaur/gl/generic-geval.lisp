@@ -459,7 +459,8 @@
   '(:computed-hint-replacement
     ((and stable-under-simplificationp
           '(:expand ((:free (f ar)
-                      (_geval_-apply f ar))))))
+                      (_geval_-apply f ar))
+                     (:free (x) (hide x))))))
     :use
     ((:functional-instance
       _theorem_
@@ -482,6 +483,7 @@
     :expand ((_geval_-ev-concrete x a appalist)
              (:free (f ar)
               (_geval_-ev-concrete (cons f ar) nil appalist))
+             (:free (x) (hide x))
              (_geval_-ev-concrete-lst acl2::x-lst a appalist)
              (_geval_-appalist x env appalist))
     :do-not-induct t))
@@ -570,7 +572,7 @@
                               (generic-geval _geval_)
                               (generic-geval-ev _geval_-ev)
                               (generic-geval-ev-lst _geval_-ev-lst)))
-                :in-theory (e/d* (_geval_-ev-constraint-0
+                :in-theory (e/d* (_geval_-ev-of-fncall-args
                                   _geval_-apply-agrees-with-_geval_-ev
                                   eq atom
                                   generic-geval-apply)

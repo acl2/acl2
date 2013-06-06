@@ -71,7 +71,7 @@
     ((generic-geval-ev eval-g-base-ev)
      (generic-geval-ev-lst eval-g-base-ev-lst)
      (generic-geval eval-g-base))
- :hints ('(:in-theory (e/d* (eval-g-base-ev-constraint-0
+ :hints ('(:in-theory (e/d* (eval-g-base-ev-of-fncall-args
                              eval-g-base-apply-agrees-with-eval-g-base-ev)
                             (eval-g-base-apply))
            :expand ((:with eval-g-base (eval-g-base x env))))))))

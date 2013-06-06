@@ -335,7 +335,8 @@ The function ~x0 is missing its ~x1 property; perhaps it is not defined.~%"
 
 (defun reduce-identities (term fn)
   (case-match term
-    ((!fn . &) term)
+    ((!fn) term)
+    ((!fn ('nth . &) . &) term)
     (('mv-list & sub . &) (reduce-identities sub fn))
     (('return-last & & sub) (reduce-identities sub fn))
     (& term)))
@@ -716,7 +717,8 @@ The function ~x0 is missing its ~x1 property; perhaps it is not defined.~%"
         :off :all :on (error)
         (make-event
          `(defevaluator-fast _name_-ev _name_-ev-lst
-            ,(mk-defeval-entries '_fnsyms_ (w state)))))
+            ,(mk-defeval-entries '_fnsyms_ (w state))
+            :namedp t)))
        (def-ruleset _name_-ev-rules
          (set-difference-theories
           (current-theory :here)
@@ -839,7 +841,7 @@ The function ~x0 is missing its ~x1 property; perhaps it is not defined.~%"
                                    car-to-nth-meta-correct
                                    ;; _name_-ev-rules
                                    kwote nfix
-                                   _name_-ev-constraint-0
+                                   _name_-ev-of-fncall-args
                                    (cons) (equal) (member-equal) (eql)
                                    car-cons cdr-cons _name_-eval-nth-kwote-lst
                                    list-fix-when-true-listp

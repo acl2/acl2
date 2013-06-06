@@ -12,6 +12,16 @@
 (local (include-book "eval-g-base-help"))
 (local (include-book "hyp-fix-logic"))
 ;(local (allow-arith5-help))
+
+(defthm true-listp-of-integer-length-s1
+  (true-listp (mv-nth 1 (integer-length-s1 offset x)))
+  :hints(("Goal" :in-theory (enable integer-length-s1)))
+  :rule-classes :type-prescription)
+
+(defthm true-listp-of-integer-length-s
+  (true-listp (integer-length-s x))
+  :hints(("Goal" :in-theory (enable integer-length-s)))
+  :rule-classes :type-prescription)
  
 
 (def-g-fn integer-length

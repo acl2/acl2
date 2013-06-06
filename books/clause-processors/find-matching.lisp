@@ -46,6 +46,18 @@
         ((when ok) (mv ok subterm)))
      (find-match-list pat (cdr x) initial-alist))))
 
+;; This variant finds a literal in the clause that matches
+(defun find-matching-literal-in-clause (pat clause initial-alist)
+  (declare (xargs :guard (and (pseudo-termp pat)
+                              (pseudo-term-listp clause)
+                              (alistp initial-alist))))
+  (b* (((when (atom clause)) (mv nil nil))
+       ((mv match ?alist) (simple-one-way-unify pat (car clause)
+                                                initial-alist))
+       ((when match) (mv t (car clause))))
+    (find-matching-literal-in-clause pat (cdr clause) initial-alist)))
+    
+
 
 
 ;; Find as many occurrences as exist; return the list of subterms.

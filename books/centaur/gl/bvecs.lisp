@@ -9,11 +9,12 @@
 
 ;; (allow-arith5-help)
 
-(local (include-book "ihs/quotient-remainder-lemmas" :dir :system))
-(local (include-book "ihs/math-lemmas" :dir :system))
+;; (local (include-book "ihs/quotient-remainder-lemmas" :dir :system))
+;; (local (include-book "ihs/math-lemmas" :dir :system))
 (local (in-theory (disable floor)))
-
-
+(include-book "ihs/logops-definitions" :dir :system)
+(include-book "centaur/misc/arith-equivs" :dir :system)
+(local (include-book "centaur/bitops/ihsext-basics" :dir :system))
 
 ;; (defun bfr-listp1 (x)
 ;;   (declare (Xargs :guard t))
@@ -136,20 +137,32 @@
 
 
 (defn v2i (v)
-  (if (atom v)
-      0
-    (if (atom (cdr v))
-        (if (car v) -1 0)
-      (let ((rst (ash (v2i (cdr v)) 1)))
-        (+ (if (car v) 1 0) rst)))))
+  (declare (xargs :guard-hints (("goal" :in-theory (enable logcons)))))
+  (mbe :logic (if (atom (cdr v))
+                  (if (car v) -1 0)
+                (logcons (acl2::bool->bit (car v))
+                         (v2i (cdr v))))
+       :exec
+       (if (atom v)
+           0
+         (if (atom (cdr v))
+             (if (car v) -1 0)
+           (logcons (acl2::bool->bit (car v))
+                         (v2i (cdr v)))))))
 
 (defn i2v (n)
-  (if (eql (ifix n) 0)
-      '(nil)
-    (if (eql n -1)
-        '(t)
-      (cons (logbitp 0 n)
-            (i2v (ash n -1))))))
+  (declare (xargs :measure (integer-length n)
+                  :hints(("Goal" :in-theory (enable acl2::integer-length**)))))
+  (cond ((eql 0 (ifix n)) '(nil))
+        ((eql n -1) '(t))
+        (t (cons (equal (logcar n) 1) (i2v (logcdr n))))))
+      
+  ;; (if (eql (ifix n) 0)
+  ;;     '(nil)
+  ;;   (if (eql n -1)
+  ;;       '(t)
+  ;;     (cons (logbitp 0 n)
+  ;;           (i2v (ash n -1))))))
 
 
 (defthm v2i-repeat-last
@@ -159,39 +172,40 @@
 
 (defthm v2i-i2v
   (equal (v2i (i2v i)) (ifix i))
-  :hints (("goal" :in-theory (e/d (logbitp) ((:definition i2v)))
+  :hints (("goal" :in-theory (e/d () ((:definition i2v)))
            :induct (i2v i)
            :expand ((i2v i)))))
 
 (defn sfix (v)
-  (if (atom v)
-      (list nil)
-    (if (atom (cdr v))
-        (list (if (car v) t nil))
-      (let ((rst (sfix (cdr v)))
-            (car (if (car v) t nil)))
-        (if (and (atom (cdr rst)) (eq (car rst) car))
-            rst
-          (cons car rst))))))
+  (mbe :logic (if (atom (cdr v))
+                  (list (if (car v) t nil))
+                (let ((rst (sfix (cdr v)))
+                      (car (if (car v) t nil)))
+                  (if (and (atom (cdr rst)) (eq (car rst) car))
+                      rst
+                    (cons car rst))))
+       :exec (if (atom v)
+                 (list nil)
+               (if (atom (cdr v))
+                   (list (if (car v) t nil))
+                 (let ((rst (sfix (cdr v)))
+                       (car (if (car v) t nil)))
+                   (if (and (atom (cdr rst)) (eq (car rst) car))
+                       rst
+                     (cons car rst)))))))
 
 (defthm v2i-sfix
   (equal (v2i (sfix n))
          (v2i n)))
 
-(defthm i2v-singleton
-  (implies (and (atom (cdr (i2v x)))
-                (integerp x))
-           (equal x (if (car (i2v x)) -1 0)))
-  :rule-classes nil)
+(defthmd car-of-sfix
+  (equal (car (sfix x))
+         (if (car x) t nil)))
+           
 
 (defthm i2v-v2i
   (equal (i2v (v2i v)) (sfix v))
-  :hints (("goal" :in-theory (e/d (logbitp) ((:definition v2i)))
-           :induct (v2i v)
-           :expand ((v2i v)))
-          ("subgoal *1/4"
-           :use ((:instance i2v-singleton
-                            (x (v2i (cdr v))))))))
+  :hints (("goal" :in-theory (e/d (car-of-sfix)))))
 
 
 
@@ -199,21 +213,18 @@
 (defn v2n (v)
   (if (atom v)
       0
-    (let ((rst (ash (v2n (cdr v)) 1)))
-      (+ (if (car v) 1 0) rst))))
+    (logcons (acl2::bool->bit (car v))
+             (v2n (cdr v)))))
 
 (defn n2v (n)
   (if (eql (nfix n) 0)
       nil
-    (cons (logbitp 0 n)
-          (n2v (ash n -1)))))
+    (cons (equal 1 (logcar n))
+          (n2v (logcdr n)))))
 
 
 (defthm v2n-n2v
-  (equal (v2n (n2v n)) (nfix n))
-  :hints(("Goal" :in-theory (e/d (logbitp) ((:definition n2v)))
-          :induct (n2v n)
-          :expand ((n2v n)))))
+  (equal (v2n (n2v n)) (nfix n)))
 
 
 (defn ufix (v)
@@ -237,11 +248,7 @@
                     (:linear v2n-nonneg)))
 
 (defthm n2v-v2n
-  (equal (n2v (v2n v)) (ufix v))
-  :hints(("Goal" :in-theory (e/d (v2n-nonneg logbitp)
-                                 ((:definition v2n)))
-          :induct (v2n v)
-          :expand ((v2n v)))))
+  (equal (n2v (v2n v)) (ufix v)))
 
 
 (in-theory (disable v2n n2v v2i i2v ash logbitp))
@@ -249,14 +256,13 @@
 
 
 (defthm us-to-num
-  (implies (natp n)
-           (equal (v2n (bfr-eval-list (n2v n) env))
-                  n))
+  (equal (v2n (bfr-eval-list (n2v n) env))
+         (nfix n))
   :hints(("Goal" :in-theory (enable n2v v2n logbitp ash natp))))
 
 (defthm i2v-to-num
-  (implies (integerp n)
-           (equal (v2i (bfr-eval-list (i2v n) env)) n))
+  (equal (v2i (bfr-eval-list (i2v n) env))
+         (ifix n))
   :hints(("Goal" :in-theory (enable i2v v2i logbitp
                                     ash natp))))
 

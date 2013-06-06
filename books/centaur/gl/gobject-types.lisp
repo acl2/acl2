@@ -9,7 +9,7 @@
 (defagg g-boolean (bool))
 (defagg g-number (num))
 (defagg g-ite (test then else))
-(defagg g-apply (fn args))
+(defagg g-apply (fn args) :notinline t)
 (defagg g-var (name))
 
 (defconst *g-keywords*

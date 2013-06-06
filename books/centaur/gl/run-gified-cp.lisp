@@ -13,6 +13,7 @@
 (include-book "centaur/ubdds/witness" :dir :system)
 (local (include-book "std/lists/take" :dir :system))
 (local (include-book "gtype-thms"))
+(local (include-book "arithmetic/top-with-meta" :dir :system))
 
 (local (defun before-run-gified-ev-tag () nil))
 
@@ -1028,7 +1029,7 @@
                    (< (nfix n) (nfix m)))
               (gobj-listp (acl2::take n gobj)))
      :hints (("goal" :induct (count-down2-cdr m n gobj)
-              :in-theory (enable gobj-listp acl2::take-redefinition))))
+              :in-theory (enable gobj-listp acl2::take-redefinition nfix))))
 
    ;; (Defthm gobjectp-nth-when-gobj-listp-take
    ;;   (implies (and (gobj-listp (acl2::take m x))

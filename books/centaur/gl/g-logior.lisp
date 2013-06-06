@@ -97,7 +97,6 @@
                                      general-concretep-def
                                      binary-logior
                                      components-to-number-alt-def
-                                     v2n-is-v2i-when-sign-nil
                                      s-sign-correct
                                      hons-assoc-equal
                                      eval-g-base-non-cons

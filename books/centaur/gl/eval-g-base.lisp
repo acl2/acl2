@@ -4,7 +4,7 @@
 
 ;; (include-book "defapply")
 (include-book "generic-geval")
-
+(include-book "symbolic-arithmetic-fns")
 
 (def-eval-g eval-g-base
   (BINARY-*
@@ -56,7 +56,8 @@
    PLUSP MINUSP LISTP ;; RETURN-LAST causes guard violation
    ;; FORCE CASE-SPLIT
    ;; DOUBLE-REWRITE
-   ))
+   
+   logapp int-set-sign maybe-integer))
 
 
 (in-theory (disable eval-g-base))

@@ -100,8 +100,8 @@
     `(cons ,(mk-constructor-aux (car tree))
            ,(mk-constructor-aux (cdr tree)))))
 
-(defun mk-constructor (basename tag names tree)
-  `(defund-inline ,basename ,names
+(defun mk-constructor (basename tag names tree notinline)
+  `(,(if notinline 'defund 'defund-inline) ,basename ,names
      (declare (xargs :guard t))
      ,(if tag
           `(cons ',tag
@@ -136,12 +136,12 @@
                :rule-classes (:rewrite :linear))
             (accessor-acl2-count-thms basename (cdr accs-alist))))))
 
-(defun defagg-fn (basename fields tag)
+(defun defagg-fn (basename fields tag notinline)
   (b* ((tree (list-to-tree fields))
        (accs-alist (mk-accs-alist basename tree))
        (?accs (strip-cars accs-alist)))
     `(defsection ,basename
-       ,(mk-constructor basename tag fields tree)
+       ,(mk-constructor basename tag fields tree notinline)
        ,@(mk-accessors accs-alist tag)
        ,@(accessors-of-constructor basename accs-alist fields fields)
        ,@(accessor-acl2-count-thms basename accs-alist)
@@ -160,9 +160,10 @@
                 (def-pattern-match-constructor
                   (x) ,basename (eq (tag x) ',tag) ,accs))))))
 
-(defmacro defagg (basename fields &key (tag 'nil tag-p))
+(defmacro defagg (basename fields &key (tag 'nil tag-p) notinline)
   (defagg-fn basename fields
-    (if tag-p tag (intern (symbol-name basename) "KEYWORD"))))
+    (if tag-p tag (intern (symbol-name basename) "KEYWORD"))
+    notinline))
 
 (logic)
 

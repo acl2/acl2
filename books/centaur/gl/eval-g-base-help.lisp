@@ -3,6 +3,8 @@
 
 (include-book "eval-g-base")
 
+(include-book "g-if")
+
 (include-book "gify-clause-proc")
 
 (include-book "general-object-thms")
@@ -19,7 +21,7 @@
  ((generic-geval-ev eval-g-base-ev)
   (generic-geval-ev-lst eval-g-base-ev-lst)
   (generic-geval eval-g-base))
- :hints ('(:in-theory (e/d* (eval-g-base-ev-constraint-0
+ :hints ('(:in-theory (e/d* (eval-g-base-ev-of-fncall-args
                              eval-g-base-apply-agrees-with-eval-g-base-ev)
                             (eval-g-base-apply))
            :expand ((eval-g-base x env))))

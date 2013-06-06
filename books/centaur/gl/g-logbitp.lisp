@@ -32,7 +32,7 @@
     (if (and bintp-known aintp-known)
         (mk-g-boolean
          (logbitp-n2v 1
-                      (bfr-ite-bss-fn (bfr-and
+                      (bfr-ite-bvv-fn (bfr-and
                                      aintp (bfr-not (s-sign arn)))
                                     arn nil)
                       (bfr-ite-bss-fn bintp brn nil)))
@@ -57,6 +57,12 @@
                        (equal (logbitp a b) (logbitp a 0))))
          :hints(("Goal" :in-theory (enable logbitp)))))
 
+(local (defthm v2n-when-v2i-gte-0
+         (implies (<= 0 (v2i x))
+                  (equal (v2i x)
+                         (v2n x)))
+         :hints(("Goal" :in-theory (enable v2i v2n)))))
+
 (local
  (defthm g-logbitp-of-numbers-correct
    (implies (and (general-numberp a)
@@ -64,7 +70,8 @@
             (equal (eval-g-base (g-logbitp-of-numbers a b) env)
                    (logbitp (eval-g-base a env)
                             (eval-g-base b env))))
-   :hints (("goal" :in-theory (e/d* ((:ruleset general-object-possibilities))
+   :hints (("goal" :in-theory (e/d* ((:ruleset general-object-possibilities)
+                                     v2n-bfr-ite-bvv-fn)
                                     (general-numberp
                                      general-number-components))
             :do-not-induct t))))
@@ -118,7 +125,6 @@
                                       member-equal
                                       general-number-components-ev
                                       general-concretep-def
-                                      v2n-is-v2i-when-sign-nil
                                       general-concretep-def
                                       rationalp-implies-acl2-numberp
                                       hons-assoc-equal

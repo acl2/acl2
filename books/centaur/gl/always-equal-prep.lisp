@@ -413,6 +413,12 @@
         (implies (and (evenp x) (evenp y))
                  (not (equal x (+ 1 y)))))
 
+      (defthm *-2-not-minus-1
+        (implies (integerp n)
+                 (not (equal (* 2 n) -1)))
+        :hints (("goal" :use ((:instance even-not-equal-odd
+                               (x (* 2 n)) (y -2))))))
+
       (defthm evenp-ash-1
         (implies (integerp x)
                  (evenp (ash x 1)))

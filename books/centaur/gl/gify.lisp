@@ -944,8 +944,8 @@ Warning: Clock ran out in ~x0~%" ',(gl-fnsym top-fn))
                  _newgeval_-apply-agrees-with-_newgeval_-ev-rev
                  _oldgeval_-ev-rules
                  _newgeval_-ev-rules
-                 _newgeval_-ev-constraint-0
-                 _oldgeval_-ev-constraint-0
+                 _newgeval_-ev-of-fncall-args
+                 _oldgeval_-ev-of-fncall-args
                  car-cons cdr-cons nth-0-cons (nfix)))
     :expand ((_oldgeval_ x env)
              (_newgeval_ x env))
@@ -1225,7 +1225,9 @@ Warning: Clock ran out in ~x0~%" ',(gl-fnsym top-fn))
        (new-fns (set-difference-eq
                  (collect-fn-deps fns world)
                  '(acl2::return-last)))
-       (apply-fns (union-eq new-fns (prev-apply-fns world))))
+       (apply-fns (union-eq new-fns
+                            (prev-apply-fns world)
+                            (strip-cars (table-alist 'gl-function-info world)))))
     `(encapsulate nil
        (logic)
        (local (table acl2::theory-invariant-table nil nil :clear))
@@ -1267,10 +1269,14 @@ Warning: Clock ran out in ~x0~%" ',(gl-fnsym top-fn))
                                                       state))))
 
 (defun make-geval-fn (geval new-fns state)
-  (declare (xargs :stobjs state))
+  (declare (xargs :stobjs state :mode :program))
   (b* ((world (w state))
-       (new-fns (collect-fn-deps new-fns world))
-       (fns (union-eq new-fns (prev-apply-fns world)))
+       (new-fns (set-difference-eq
+                 (collect-fn-deps new-fns world)
+                 '(acl2::return-last)))
+       (fns (union-eq new-fns
+                      (strip-cars (table-alist 'gl-function-info world))
+                      (prev-apply-fns world)))
        ;; (ap (incat geval (symbol-name geval) "-APPLY"))
        )
     `(encapsulate nil

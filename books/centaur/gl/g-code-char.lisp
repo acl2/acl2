@@ -238,8 +238,7 @@
                    (< (v2i (bfr-eval-list x (car env))) 256))
               (equal (eval-g-base (code-char-s 8 x 0 hyp) env)
                      (code-char (v2i (bfr-eval-list x (car env))))))
-     :hints(("Goal" :in-theory (disable v2n-is-v2i-when-sign-nil
-                                        code-char-s))))))
+     :hints(("Goal" :in-theory (disable code-char-s))))))
                 
 
 ;; (defun g-code-char-of-integer (x hyp clk)
@@ -342,7 +341,6 @@
        :hints(("Goal" :in-theory (e/d (eval-g-base)
                                       (code-char-s
                                        v2i-when-<=-0
-                                       v2n-is-v2i-when-sign-nil
                                        equal-of-booleans-rewrite
                                        s-sign-correct
                                        code-char-s-correct1

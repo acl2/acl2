@@ -124,11 +124,11 @@
                               member-equal
                               general-number-components-ev
                               general-concretep-def
-                              v2n-is-v2i-when-sign-nil
                               general-concretep-def
                               rationalp-implies-acl2-numberp
                               (:rules-of-class :type-prescription :here))
-                             ((:type-prescription bfr-eval)))
+                             ((:type-prescription bfr-eval)
+                              (:type-prescription components-to-number-fn)))
      :induct (,gfn x y hyp clk)
      :do-not-induct t
      :expand ((,gfn x y hyp clk)))

@@ -3,22 +3,18 @@
 
 (in-package "GL")
 
+(include-book "shape-spec-defs")
 (include-book "gtypes")
 (include-book "gl-doc-string")
+(include-book "symbolic-arithmetic-fns")
+
 (local (include-book "gtype-thms"))
 (local (include-book "data-structures/no-duplicates" :dir :system))
 (local (include-book "tools/mv-nth" :dir :system))
-(local (include-book "ihs/ihs-lemmas" :dir :system))
+(local (include-book "centaur/bitops/ihsext-basics" :dir :system))
+(local (include-book "arithmetic/top-with-meta" :dir :system))
 (local (include-book "centaur/misc/fast-alists" :dir :system))
 
-; Modified slightly 12/4/2012 by Matt K. to be redundant with new ACL2
-; definition.
-(defund nat-listp (l)
-  (declare (xargs :guard t))
-  (cond ((atom l)
-         (eq l nil))
-        (t (and (natp (car l))
-                (nat-listp (cdr l))))))
 
 (defund slice-to-bdd-env (slice env)
   (declare (xargs :guard (and (alistp slice)
@@ -38,45 +34,6 @@
 
 (verify-guards slice-to-bdd-env
                :hints (("goal" :in-theory (enable nat-listp))))
-
-
-;; An shape spec is an object that is similar to a g object, but a) where there
-;; would be BDDs in a g object, there are natural numbers in an shape spec, and
-;; b) no G-APPLY constructs are allowed in an shape spec.
-
-(defund number-specp (nspec)
-  (declare (xargs :guard t))
-  (and (consp nspec)
-       (nat-listp (car nspec))
-       (if (atom (cdr nspec))
-           (not (cdr nspec))
-         (and (nat-listp (cadr nspec))
-              (if (atom (cddr nspec))
-                  (not (cddr nspec))
-                (and (nat-listp (caddr nspec))
-                     (if (atom (cdddr nspec))
-                         (not (cdddr nspec))
-                         (nat-listp (cadddr nspec)))))))))
-
-
-(defund shape-specp (x)
-  (declare (xargs :guard t))
-  (if (atom x)
-      (not (g-keyword-symbolp x))
-    (case (tag x)
-      (:g-number (number-specp (g-number->num x)))
-      (:g-boolean (natp (g-boolean->bool x)))
-      (:g-concrete t)
-      (:g-var t)
-      (:g-ite
-       (and (shape-specp (g-ite->test x))
-            (shape-specp (g-ite->then x))
-            (shape-specp (g-ite->else x))))
-      (:g-apply nil)
-      (otherwise (and (shape-specp (car x))
-                      (shape-specp (cdr x)))))))
-
-
 
 (local
  (defthm nat-listp-true-listp
@@ -122,6 +79,10 @@
     (pattern-match x
       ((g-number nspec)
        (number-spec-indices nspec))
+      ((g-integer sign bits &)
+       (cons sign bits))
+      ((g-integer? sign bits & intp)
+       (list* intp sign bits))
       ((g-boolean n) (list n))
       ((g-var &) nil)
       ((g-ite if then else)
@@ -148,6 +109,8 @@
       nil
     (pattern-match x
       ((g-number &) nil)
+      ((g-integer & & v) (list v))
+      ((g-integer? & & v &) (list v))
       ((g-boolean &) nil)
       ((g-var v) (list v))
       ((g-ite if then else)
@@ -243,6 +206,16 @@
    (true-listp (mv-nth 1 (number-spec-env-slice nspec obj)))
    :hints(("Goal" :in-theory (enable number-spec-env-slice)))))
 
+(defun g-integer-env-slice (sign bits var obj)
+  (declare (xargs :guard (and (natp sign) (nat-listp bits))))
+  (b* ((obj (ifix obj))
+       ((mv & slice) (natural-env-slice bits (loghead (len bits) obj)))
+       (rest (logtail (len bits) obj))
+       (signval (< rest 0)))
+    (mv (cons (cons sign signval)
+              slice)
+        (list (cons var rest)))))
+
 (defun shape-spec-arbitrary-slice (x)
   (declare (xargs :guard (shape-specp x)
                   :verify-guards nil))
@@ -254,6 +227,12 @@
          (number-spec-env-slice nspec 0)
          (declare (ignore ok))
          (mv bsl nil)))
+      ((g-integer sign bits var)
+       (g-integer-env-slice sign bits var 0))
+      ((g-integer? sign bits var intp)
+       (mv-let (bsl vsl)
+         (g-integer-env-slice sign bits var 0)
+         (mv (cons (cons intp t) bsl) vsl)))
       ((g-boolean n) (mv (list (cons n nil)) nil))
       ((g-var v) (mv nil (list (cons v nil))))
       ((g-ite if then else)
@@ -295,6 +274,17 @@
          (number-spec-env-slice nspec 0)
          (declare (ignore ok))
          (mv obj bsl nil)))
+      ((g-integer sign bits var)
+       (mv-let (bsl vsl)
+         (g-integer-env-slice sign bits var 0)
+         (mv obj bsl vsl)))
+      ((g-integer? sign bits var intp)
+       (mv-let (bsl vsl)
+         (g-integer-env-slice sign bits var 0)
+         (if obj
+             (mv t (cons (cons intp t) bsl) vsl)
+           (mv t (cons (cons intp nil) bsl)
+               (list (cons var nil))))))
       ((g-boolean n) (mv t (list (cons n obj)) nil))
       ((g-var v) (mv t nil (list (cons v obj))))
       ((g-ite if then else)
@@ -344,6 +334,17 @@
        (mv-let (ok bspec)
          (number-spec-env-slice nspec obj)
          (mv ok bspec nil)))
+      ((g-integer sign bits var)
+       (mv-let (bsl vsl)
+         (g-integer-env-slice sign bits var obj)
+         (mv (integerp obj) bsl vsl)))
+      ((g-integer? sign bits var intp)
+       (mv-let (bsl vsl)
+         (g-integer-env-slice sign bits var obj)
+         (if (integerp obj)
+             (mv t (cons (cons intp t) bsl) vsl)
+           (mv t (cons (cons intp nil) bsl)
+               (list (cons var obj))))))
       ((g-boolean n)
        (mv (booleanp obj)
            (list (cons n obj))
@@ -416,6 +417,24 @@
     (pattern-match x
       ((g-number nspec)
        (g-number (num-spec-to-num-gobj nspec)))
+      ((g-integer sign bits var)
+       (g-apply 'logapp
+                (list (len bits)
+                      (g-number (list (append (numlist-to-vars bits) (list nil))))
+                      (g-apply 'int-set-sign
+                               (list (g-boolean (bfr-var sign))
+                                     (g-var var))))))
+      ((g-integer? sign bits var intp)
+       (g-apply 'maybe-integer
+                (list
+                 (g-apply 'logapp
+                          (list (len bits)
+                                (g-number (list (append (numlist-to-vars bits) (list nil))))
+                                (g-apply 'int-set-sign
+                                         (list (g-boolean (bfr-var sign))
+                                               (g-var var)))))
+                 (g-var var)
+                 (g-boolean (bfr-var intp)))))
       ((g-boolean n) (g-boolean (bfr-var n)))
       ((g-var &) x)
       ((g-ite if then else)
@@ -573,6 +592,28 @@
 ;;               (g-concrete-p x)))
 ;;    :hints(("Goal" :in-theory (enable gobj-fix)))))
 
+(def-eval-g sspec-geval (logapp int-set-sign maybe-integer))
+
+
+
+(local (in-theory (disable logapp integer-length
+                           loghead logtail sspec-geval
+                           acl2::member-equal-of-strip-cars-when-member-equal-of-hons-duplicated-members-aux
+                           acl2::consp-of-car-when-alistp
+                           sets::double-containment)))
+
+(defun expands-with-hint (def expands)
+  (if (atom expands)
+      nil
+    (cons `(:with ,def ,(car expands))
+          (expands-with-hint def (cdr expands)))))
+
+(defthm bfr-eval-list-of-append
+  (equal (bfr-eval-list (append a b) env)
+         (append (bfr-eval-list a env)
+                 (bfr-eval-list b env))))
+
+(local (in-theory (enable gl-cons)))
 
 (local
  (defthm shape-spec-to-gobj-eval-slice-subset-append-1
@@ -580,12 +621,12 @@
                  (alistp vsl1)
                  (subsetp-equal (shape-spec-indices x)
                                 (strip-cars bsl1)))
-            (equal (generic-geval
+            (equal (sspec-geval
                     (shape-spec-to-gobj x)
                     (cons (slice-to-bdd-env
                            (append bsl1 bsl2) env)
                           vsl1))
-                   (generic-geval
+                   (sspec-geval
                     (shape-spec-to-gobj x)
                     (cons (slice-to-bdd-env
                            bsl1 env)
@@ -608,8 +649,11 @@
                     (shape-spec-vars x)
                     (shape-specp x)))
           (and stable-under-simplificationp
-               (flag::expand-calls-computed-hint
-                acl2::clause '(generic-geval)))
+               (let ((calls (acl2::find-calls-of-fns-term
+                             (car (last clause)) '(sspec-geval) nil)))
+                 (and calls
+                      `(:computed-hint-replacement t
+                        :expand ,(expands-with-hint 'sspec-geval calls)))))
           (and stable-under-simplificationp
                '(:in-theory (enable g-boolean->bool
                                     g-apply->fn
@@ -622,12 +666,12 @@
                  (alistp vsl1)
                  (subsetp-equal (shape-spec-vars x)
                                 (strip-cars vsl1)))
-            (equal (generic-geval
+            (equal (sspec-geval
                     (shape-spec-to-gobj x)
                     (cons (slice-to-bdd-env
                            bsl1 env)
                           (append vsl1 vsl2)))
-                   (generic-geval
+                   (sspec-geval
                     (shape-spec-to-gobj x)
                     (cons (slice-to-bdd-env
                            bsl1 env)
@@ -652,8 +696,10 @@
                     (shape-spec-vars x)
                     (shape-specp x)))
           (and stable-under-simplificationp
-               (flag::expand-calls-computed-hint
-                acl2::clause '(generic-geval))))))
+               (let ((calls (acl2::find-calls-of-fns-term
+                             (car (last clause)) '(sspec-geval) nil)))
+                 `(:computed-hint-replacement t
+                   :expand ,(expands-with-hint 'sspec-geval calls)))))))
 
 
 
@@ -665,12 +711,12 @@
                  (not (intersectp-equal
                        (shape-spec-indices x)
                        (strip-cars bsl1))))
-            (equal (generic-geval
+            (equal (sspec-geval
                     (shape-spec-to-gobj x)
                     (cons (slice-to-bdd-env
                            (append bsl1 bsl2) env)
                           vsl1))
-                   (generic-geval
+                   (sspec-geval
                     (shape-spec-to-gobj x)
                     (cons (slice-to-bdd-env
                            bsl2 env)
@@ -692,8 +738,10 @@
                     (shape-spec-vars x)
                     (shape-specp x)))
           (and stable-under-simplificationp
-               (flag::expand-calls-computed-hint
-                acl2::clause '(generic-geval))))))
+               (let ((calls (acl2::find-calls-of-fns-term
+                             (car (last clause)) '(sspec-geval) nil)))
+                 `(:computed-hint-replacement t
+                   :expand ,(expands-with-hint 'sspec-geval calls)))))))
 
 
 (local
@@ -702,12 +750,12 @@
                  (alistp vsl1)
                  (not (intersectp-equal (shape-spec-vars x)
                                         (strip-cars vsl1))))
-            (equal (generic-geval
+            (equal (sspec-geval
                     (shape-spec-to-gobj x)
                     (cons (slice-to-bdd-env
                            bsl1 env)
                           (append vsl1 vsl2)))
-                   (generic-geval
+                   (sspec-geval
                     (shape-spec-to-gobj x)
                     (cons (slice-to-bdd-env
                            bsl1 env)
@@ -731,8 +779,10 @@
                     (shape-spec-vars x)
                     (shape-specp x)))
           (and stable-under-simplificationp
-               (flag::expand-calls-computed-hint
-                acl2::clause '(generic-geval))))))
+               (let ((calls (acl2::find-calls-of-fns-term
+                             (car (last clause)) '(sspec-geval) nil)))
+                 `(:computed-hint-replacement t
+                   :expand ,(expands-with-hint 'sspec-geval calls)))))))
 
 
 (local
@@ -893,32 +943,32 @@
 
 
 (local
- (defthm generic-geval-of-g-ite
-   (equal (generic-geval (g-ite if then else) env)
-          (if (generic-geval if env)
-              (generic-geval then env)
-            (generic-geval else env)))
-   :hints(("Goal" :in-theory (enable generic-geval)))))
+ (defthm sspec-geval-of-g-ite
+   (equal (sspec-geval (g-ite if then else) env)
+          (if (sspec-geval if env)
+              (sspec-geval then env)
+            (sspec-geval else env)))
+   :hints(("Goal" :in-theory (enable sspec-geval)))))
 
 
 (local
  (encapsulate nil
 
-   (defthm generic-geval-when-g-concrete-tag
+   (defthm sspec-geval-when-g-concrete-tag
      (implies (equal (tag x) :g-concrete)
-              (equal (generic-geval x env)
+              (equal (sspec-geval x env)
                      (g-concrete->obj x)))
-     :hints(("Goal" :in-theory (enable tag generic-geval)))
+     :hints(("Goal" :in-theory (e/d (tag sspec-geval))))
      :rule-classes ((:rewrite :backchain-limit-lst 0)))))
 
 
 (local
  (encapsulate nil
-   (defthm generic-geval-when-g-var-tag
+   (defthm sspec-geval-when-g-var-tag
      (implies (equal (tag x) :g-var)
-              (equal (generic-geval x env)
+              (equal (sspec-geval x env)
                      (cdr (hons-assoc-equal (g-var->name x) (cdr env)))))
-     :hints(("Goal" :in-theory (enable tag generic-geval))))))
+     :hints(("Goal" :in-theory (enable tag sspec-geval))))))
 
 (local (in-theory (disable member-equal equal-of-booleans-rewrite binary-append
                            intersectp-equal subsetp-equal)))
@@ -933,13 +983,13 @@
                               acl2::subsetp-car-member
                               acl2::append-when-not-consp
                               tag-when-atom
-                              generic-geval)))
+                              sspec-geval)))
    (defthm shape-spec-to-gobj-eval-iff-slice
      (implies (and (shape-specp x)
                    (no-duplicatesp (shape-spec-indices x))
                    (no-duplicatesp (shape-spec-vars x))
                    (mv-nth 0 (shape-spec-iff-env-slice x obj)))
-              (iff (generic-geval
+              (iff (sspec-geval
                     (shape-spec-to-gobj x)
                     (cons (slice-to-bdd-env
                            (mv-nth 1 (shape-spec-iff-env-slice x obj))
@@ -954,11 +1004,11 @@
                       (shape-spec-to-gobj x)
                       (shape-specp x)
                       (:free (a b env)
-                             (generic-geval (cons a b) env))))
+                             (sspec-geval (cons a b) env))))
             (and stable-under-simplificationp
-                 '(:in-theory (enable generic-geval)))
+                 '(:in-theory (enable sspec-geval)))
             (and stable-under-simplificationp
-                 '(:in-theory (enable slice-to-bdd-env generic-geval)))))))
+                 '(:in-theory (enable slice-to-bdd-env sspec-geval)))))))
 
 (local
  (defthm bfr-eval-list-numlist-update-non-member
@@ -980,8 +1030,34 @@
 
 
 (local
+ (defthm v2i-redef
+   (equal (v2i x)
+          (if (atom x)
+              0
+            (if (atom (cdr x))
+                (if (car x) -1 0)
+              (logcons (if (car x) 1 0) (v2i (cdr x))))))
+   :hints(("Goal" :in-theory (enable v2i acl2::ash**))
+          (and stable-under-simplificationp
+               '(:in-theory (enable logcons))))
+   :rule-classes ((:definition :clique (v2i)
+                   :controller-alist ((v2i t))))))
+
+(local
+ (defthm v2n-redef
+   (equal (v2n x)
+          (if (atom x)
+              0
+            (logcons (if (car x) 1 0) (v2n (cdr x)))))
+   :hints(("Goal" :in-theory (enable v2n acl2::ash**))
+          (and stable-under-simplificationp
+               '(:in-theory (enable logcons))))
+   :rule-classes ((:definition :clique (v2n)
+                   :controller-alist ((v2n t))))))
+
+(local
  (encapsulate nil
-   (local (in-theory (e/d (ash) (floor))))
+   (local (in-theory (e/d* (acl2::ihsext-recursive-redefs) (floor))))
    (defthm eval-slice-integer-env-slice
      (implies (and (mv-nth 0 (integer-env-slice lst n))
                    (no-duplicatesp lst)
@@ -1056,6 +1132,63 @@
 ;;    :hints(("Goal" :in-theory (enable gobjectp-def g-concrete-p tag)))
 ;;    :rule-classes ((:rewrite :backchain-limit-lst 0))))
 
+;; (local (defthm loghead-non-integer
+;;          (implies (not (integerp x))
+;;                   (equal (loghead n x) 0))
+;;          :hints(("Goal" :in-theory (enable loghead)))
+;;          :rule-classes ((:rewrite :backchain-limit-lst 0))))
+
+;; (local (defthm logcdr-non-integer
+;;          (implies (not (integerp x))
+;;                   (equal (logcdr x) 0))
+;;          :hints(("Goal" :in-theory (enable logcdr)))))
+
+
+(local (defun cdr-logcdr (bits x)
+         (if (atom bits)
+             x
+           (cdr-logcdr (cdr bits) (logcdr x)))))
+
+(defthm natural-env-slice-ok-of-loghead
+  (mv-nth 0 (natural-env-slice bits (loghead (len bits) x)))
+  :hints(("Goal" :in-theory (enable len acl2::loghead** acl2::logtail**)
+          :expand ((:free (x)(natural-env-slice bits x)))
+          :induct (cdr-logcdr bits x))))
+
+(defthm v2i-of-append
+  (implies (consp b)
+           (equal (v2i (append a b))
+                  (logapp (len a) (v2n a) (v2i b))))
+  :hints(("Goal" :in-theory (e/d* (acl2::ihsext-recursive-redefs append len))
+          :induct (append a b))))
+
+(defthm len-bfr-eval-list
+  (equal (len (bfr-eval-list x env)) (len x)))
+
+(defthm len-numlist-to-vars
+  (equal (len (numlist-to-vars bits)) (len bits))
+  :hints(("Goal" :in-theory (enable numlist-to-vars))))
+
+(defthm logapp-of-loghead
+  (equal (logapp n (loghead n x) y)
+         (logapp n x y))
+  :hints(("Goal" :in-theory (enable* acl2::ihsext-inductions
+                                     acl2::ihsext-recursive-redefs))))
+
+(defthm logapp-to-logtail
+  (equal (logapp n obj (logtail n obj))
+         (ifix obj))
+  :hints(("Goal" :in-theory (enable* acl2::ihsext-inductions
+                                     acl2::ihsext-recursive-redefs))))
+
+(defthm int-set-sign-of-own-sign
+  (implies (integerp x)
+           (equal (int-set-sign (< x 0) x)
+                  x))
+  :hints(("Goal" :in-theory (e/d* (int-set-sign
+                                   acl2::ihsext-inductions
+                                   acl2::ihsext-recursive-redefs))))
+  :otf-flg t)
 
 
 (local
@@ -1063,15 +1196,42 @@
    (local (in-theory
            (e/d () (;; gobjectp-tag-rw-to-types
                     ;; gobjectp-ite-case
-                    ;; generic-geval-non-gobjectp
+                    ;; sspec-geval-non-gobjectp
                     break-g-number
                     sets::double-containment))))
+
+   (local (defthm g-keyword-symbolp-of-shape-spec-to-gobj
+            (equal (g-keyword-symbolp (shape-spec-to-gobj x))
+                   (g-keyword-symbolp x))
+            :hints(("Goal" :in-theory (enable shape-spec-to-gobj)))))
+   (local (defthm not-equal-shape-spec-to-gobj-keyword
+            (implies (and (not (g-keyword-symbolp x))
+                          (g-keyword-symbolp y))
+                     (not (equal (shape-spec-to-gobj x) y)))
+            :rule-classes ((:rewrite :backchain-limit-lst (0 1)))))
+   (local (defthm g-keyword-symbolp-compound-recognizer
+            (implies (g-keyword-symbolp x)
+                     (and (symbolp x)
+                          (not (booleanp x))))
+            :rule-classes :compound-recognizer))
+   (local (defthm shape-spec-to-gobj-when-atom
+            (implies (atom x)
+                     (equal (shape-spec-to-gobj x) x))
+            :hints(("Goal" :in-theory (enable shape-spec-to-gobj)))
+            :rule-classes ((:rewrite :backchain-limit-lst 0))))
+
+
+   (local (defthm kwote-lst-of-cons
+            (equal (kwote-lst (cons a b))
+                   (cons (kwote a) (kwote-lst b)))))
+   (local (in-theory (disable kwote-lst)))
+
    (defthm shape-spec-to-gobj-eval-slice
      (implies (and (shape-specp x)
                    (no-duplicatesp (shape-spec-indices x))
                    (no-duplicatesp (shape-spec-vars x))
                    (mv-nth 0 (shape-spec-env-slice x obj)))
-              (equal (generic-geval
+              (equal (sspec-geval
                       (shape-spec-to-gobj x)
                       (cons (slice-to-bdd-env
                              (mv-nth 1 (shape-spec-env-slice x obj))
@@ -1092,13 +1252,15 @@
                       (shape-spec-env-slice x obj))
              :induct (shape-spec-env-slice x obj))
             (and stable-under-simplificationp
-                 '(:in-theory (enable generic-geval break-g-number
+                 '(:in-theory (enable slice-to-bdd-env)
+                   :expand ((:free (x y env)
+                             (sspec-geval (cons x y) env)))))
+            (and stable-under-simplificationp
+                 '(:in-theory (enable sspec-geval break-g-number
                                       number-spec-env-slice
                                       number-specp
                                       number-spec-indices
-                                      num-spec-to-num-gobj)))
-            (and stable-under-simplificationp
-                 '(:in-theory (enable slice-to-bdd-env generic-geval)))))))
+                                      num-spec-to-num-gobj)))))))
   
 (local
  (defthm alistp-shape-spec-arbitrary-slice-0
@@ -1124,23 +1286,6 @@
     (cons (slice-to-bdd-env bsl nil) vsl)))
 
 
-(defund shape-spec-obj-in-range-iff (x obj)
-  (declare (xargs :guard (shape-specp x)
-                  :guard-hints(("Goal" :in-theory (enable shape-specp)))))
-  (if (atom x)
-      (iff x obj)
-    (pattern-match x
-      ((g-number &)
-       obj)
-      ((g-boolean &) t)
-      ((g-var &) t)
-      ((g-ite if then else)
-       (or (and (shape-spec-obj-in-range-iff if t)
-                (shape-spec-obj-in-range-iff then obj))
-           (and (shape-spec-obj-in-range-iff if nil)
-                (shape-spec-obj-in-range-iff else obj))))
-      ((g-concrete y) (iff y obj))
-      (& obj))))
 
 (local
  (defthm shape-spec-obj-in-range-iff-shape-spec-iff-env-slice
@@ -1149,50 +1294,33 @@
    :hints(("Goal" :in-theory (enable shape-spec-obj-in-range-iff
                                      shape-spec-iff-env-slice)))))
 
-(defund integer-in-range (vlist obj)
-  (declare (xargs :guard t))
-  (and (integerp obj)
-       (if (atom vlist)
-           (eql obj 0)
-         (and (<= (- (ash 1 (len (cdr vlist)))) obj)
-              (< obj (ash 1 (len (cdr vlist))))))))
 
 (local
  (encapsulate nil
-   (local (include-book "ihs/ihs-lemmas" :dir :system))
    (local (in-theory (e/d (ash) (floor))))
-   (local (defthm expt-2-of-posp
-            (implies (posp x)
-                     (integerp (* 1/2 (expt 2 x))))
-            :rule-classes nil))
-   (local
-    (encapsulate nil
-      (local (defthm rw-equal-minus
-               (implies (and (posp x) (rationalp y))
-                        (equal (equal (expt 2 x) (- y))
-                               (equal (- (expt 2 x)) y)))))
-      (defthm negative-expt-2-of-posp
-        (implies (and (posp x) (rationalp y)
-                      (equal (expt 2 x) (- y)))
-                 (integerp (* 1/2 y)))
-        :rule-classes nil)))
+   (local (include-book "ihs/ihs-lemmas" :dir :system))
+   ;; (local (defthm expt-2-of-posp
+   ;;          (implies (posp x)
+   ;;                   (integerp (* 1/2 (expt 2 x))))
+   ;;          :rule-classes nil))
+   ;; (local
+   ;;  (encapsulate nil
+   ;;    (local (defthm rw-equal-minus
+   ;;             (implies (and (posp x) (rationalp y))
+   ;;                      (equal (equal (expt 2 x) (- y))
+   ;;                             (equal (- (expt 2 x)) y)))))
+   ;;    (defthm negative-expt-2-of-posp
+   ;;      (implies (and (posp x) (rationalp y)
+   ;;                    (equal (expt 2 x) (- y)))
+   ;;               (integerp (* 1/2 y)))
+   ;;      :rule-classes nil)))
 
    (defthm integer-in-range-integer-env-slice
      (implies (integerp obj)
               (equal (mv-nth 0 (integer-env-slice vlist obj))
                      (integer-in-range vlist obj)))
-     :hints(("Goal" :in-theory (enable integer-env-slice
-                                       integer-in-range))
-            ("Subgoal *1/4.4"
-             :use ((:instance negative-expt-2-of-posp
-                              (x (+ 1 (len (cddr vlist))))
-                              (y obj))))))))
-
-(defund natural-in-range (vlist obj)
-  (declare (xargs :guard t))
-  (and (natp obj)
-       (and (<= 0 obj)
-            (< obj (ash 1 (len vlist))))))
+     :hints(("Goal" :in-theory (enable* integer-env-slice
+                                        integer-in-range))))))
 
 (local
  (encapsulate nil
@@ -1206,48 +1334,12 @@
      :hints(("Goal" :in-theory (enable natural-env-slice
                                        natural-in-range))))))
 
-(defund number-spec-in-range (nspec obj)
-  (declare (xargs :guard (number-specp nspec)
-                  :guard-hints(("Goal" :in-theory (enable number-specp)))))
-  (and (acl2-numberp obj)
-       (integer-in-range (car nspec) (numerator (realpart obj)))
-       (if (consp (cdr nspec))
-           (and (natural-in-range (cadr nspec) (denominator (realpart obj)))
-                (if (consp (cddr nspec))
-                    (and (integer-in-range
-                          (caddr nspec) (numerator (imagpart obj)))
-                         (if (consp (cdddr nspec))
-                             (natural-in-range
-                              (cadddr nspec) (denominator (imagpart obj)))
-                           (eql (denominator (imagpart obj)) 1)))
-                  (rationalp obj)))
-         (integerp obj))))
-
 (local
  (defthm number-spec-in-range-number-spec-env-slice
    (equal (mv-nth 0 (number-spec-env-slice nspec obj))
           (number-spec-in-range nspec obj))
    :hints(("Goal" :in-theory (enable number-spec-env-slice
                                      number-spec-in-range)))))
-
-(defund shape-spec-obj-in-range (x obj)
-  (declare (xargs :guard (shape-specp x)
-                  :guard-hints(("Goal" :in-theory (enable shape-specp)))))
-  (if (atom x)
-      (equal x obj)
-    (pattern-match x
-      ((g-number n) (number-spec-in-range n obj))
-      ((g-boolean &) (booleanp obj))
-      ((g-var &) t)
-      ((g-concrete y) (equal y obj))
-      ((g-ite if then else)
-       (or (and (shape-spec-obj-in-range-iff if t)
-                (shape-spec-obj-in-range then obj))
-           (and (shape-spec-obj-in-range-iff if nil)
-                (shape-spec-obj-in-range else obj))))
-      (& (and (consp obj)
-              (shape-spec-obj-in-range (car x) (car obj))
-              (shape-spec-obj-in-range (cdr x) (cdr obj)))))))
 
 (local
  (defthm shape-spec-obj-in-range-env-slice
@@ -1264,7 +1356,7 @@
                 (no-duplicatesp (shape-spec-indices x))
                 (no-duplicatesp (shape-spec-vars x))
                 (shape-spec-obj-in-range x obj))
-           (equal (generic-geval
+           (equal (sspec-geval
                    (shape-spec-to-gobj x)
                    (shape-spec-to-env x obj))
                   obj))
@@ -1369,6 +1461,8 @@
 
 (defthm shape-spec-obj-in-range-open-cons
   (implies (and (not (g-keyword-symbolp (car obj)))
+                (not (eq (car obj) :g-integer))
+                (not (eq (car obj) :g-integer?))
                 (consp obj))
            (equal (shape-spec-obj-in-range obj (cons carx cdrx))
                   (and (shape-spec-obj-in-range (car obj) carx)
@@ -1376,7 +1470,7 @@
   :hints(("Goal" :in-theory (enable shape-spec-obj-in-range
                                     g-keyword-symbolp-def
                                     member-equal)))
-  :rule-classes ((:rewrite :backchain-limit-lst (1 0))))
+  :rule-classes ((:rewrite :backchain-limit-lst (1 0 0 0))))
 
 (defun binary-and* (a b)
   (declare (xargs :guard t))

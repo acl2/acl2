@@ -3,7 +3,7 @@
 (in-package "GL")
 
 
-
+(include-book "g-logapp")
 (include-book "g-ash")
 (include-book "g-binary-+")
 (include-book "g-cons")
@@ -397,8 +397,7 @@
 
 
 
-(def-gl-clause-processor glcp
-  '(string-append expt))
+(def-gl-clause-processor glcp)
 
 (defmacro gl-bdd-mode ()
   ":Doc-section ACL2::GL

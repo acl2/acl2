@@ -30,6 +30,7 @@
 (local (in-theory (disable logcons logcar logcdr integer-length)))
 (include-book "ihsext-basics")
 (local (include-book "arithmetic/top-with-meta" :dir :system))
+(include-book "clause-processors/witness-cp" :dir :system)
 
 (local (defthm equal-of-logcdrs-when-equal-of-logcars
          (implies (and (integerp i)
@@ -761,6 +762,9 @@ want to consider enabling this rule.</p>"
 
 
 
+
+
+
 (defsection equal-by-logbitp-hammer
   :parents (equal-by-logbitp)
   :short "Drastic automation for @(see equal-by-logbitp)."
@@ -772,9 +776,10 @@ etc.</p>"
 
   (def-ruleset! logbitp-case-splits
     ;; Basic logbitp case-splitting rules to enable first
-    '(acl2::logbitp-of-ash-split
-      acl2::logbitp-of-loghead-split
-      acl2::logbitp-of-logapp-split))
+    '(logbitp-of-ash-split
+      logbitp-of-loghead-split
+      logbitp-of-logapp-split
+      logbitp-of-logsquash-split))
 
   (def-ruleset! logbitp-case-splits+
     ;; Even more case splitting rules to enable after that
@@ -801,6 +806,58 @@ etc.</p>"
                                       acl2::logbitp-of-const-split
                                       b-xor b-ior b-and)))))
             :no-thanks t))))
+
+
+(defsection equal-by-logbitp-witnessing
+  (definstantiate equal-by-logbitp-instancing
+    :predicate (equal x y)
+    :vars (bit)
+    :expr (equal (logbitp bit x) (logbitp bit y))
+    :hints ('(:in-theory nil)))
+
+  (defexample equal-by-logbitp-example
+    :pattern (logbitp bit x)
+    :templates (bit)
+    :instance-rules (equal-by-logbitp-instancing))
+
+  (defwitness unequal-by-logbitp-witnessing
+    :predicate (not (equal x y))
+    :expr (or (not (integerp x))
+              (not (integerp y))
+              (let ((bit (logbitp-mismatch x y)))
+                (not (equal (logbitp bit x)
+                            (logbitp bit y)))))
+    :generalize (((logbitp-mismatch x y) . wbit))
+    :hints ('(:in-theory '(logbitp-mismatch-correct
+                           logbitp-mismatch-under-iff
+                           ifix-when-integerp))))
+
+
+  (def-witness-ruleset equal-by-logbitp-rules
+    '(equal-by-logbitp-instancing
+      equal-by-logbitp-example
+      unequal-by-logbitp-witnessing))
+
+  (defmacro logbitp-reasoning ()
+    '(let ((witness-hint
+            (witness :ruleset equal-by-logbitp-rules)))
+       (and witness-hint
+            (let* ((hint-body (cddr witness-hint))
+                   (chr-forms (cadr witness-hint)))
+              `(:computed-hint-replacement
+                ,(append chr-forms
+                         '((and stable-under-simplificationp
+                                '(:in-theory (e/d* (acl2::logbitp-of-const-split))))
+                           (and stable-under-simplificationp
+                                '(:in-theory (e/d* (logbitp-case-splits
+                                                    logbitp-when-bit
+                                                    acl2::logbitp-of-const-split))))
+                           (and stable-under-simplificationp
+                                '(:in-theory (e/d* (logbitp-case-splits
+                                                    logbitp-when-bit
+                                                    acl2::logbitp-of-const-split
+                                                    b-xor b-ior b-and))))))
+                . ,hint-body))))))
 
 
 

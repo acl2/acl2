@@ -108,7 +108,6 @@
                                      general-concretep-def
                                      binary-logand
                                      components-to-number-alt-def
-                                     v2n-is-v2i-when-sign-nil
                                      s-sign-correct
                                      hons-assoc-equal
                                      default-car default-cdr

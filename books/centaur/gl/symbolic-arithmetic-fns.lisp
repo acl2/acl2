@@ -5,9 +5,51 @@
 
 (include-book "bvec-ite")
 (include-book "tools/mv-nth" :dir :system)
+(include-book "ihs/logops-definitions" :dir :system)
 
-                                          
-              
+(defund int-set-sign (negp i)
+  (declare (xargs :guard (integerp i)))
+  (let ((i (lifix i)))
+    (acl2::logapp (integer-length i) i (if negp -1 0))))
+
+(defthm sign-of-int-set-sign
+  (iff (< (int-set-sign negp i) 0)
+       negp)
+  :hints(("Goal" :in-theory (e/d* (int-set-sign)
+                                  (acl2::logapp
+                                   acl2::ifix-under-int-equiv)))))
+
+(defthm int-set-sign-integerp
+  (integerp (int-set-sign negp i))
+  :rule-classes :type-prescription)
+
+(defund non-int-fix (x)
+  (declare (xargs :guard t))
+  (and (not (integerp x)) x))
+
+(defthm non-int-fix-when-non-integer
+  (implies (not (integerp x))
+           (equal (non-int-fix x) x))
+  :hints(("Goal" :in-theory (enable non-int-fix)))
+  :rule-classes ((:rewrite :backchain-limit-lst 0)))
+
+(defund maybe-integer (i x intp)
+  (declare (xargs :guard (integerp i)))
+  (if intp
+      (ifix i)
+    (non-int-fix x)))
+
+(defthm maybe-integer-t
+  (equal (maybe-integer i x t)
+         (ifix i))
+  :hints(("Goal" :in-theory (enable maybe-integer))))
+
+(defthm maybe-integer-nil
+  (equal (maybe-integer i x nil)
+         (non-int-fix x))
+  :hints(("Goal" :in-theory (enable maybe-integer))))
+
+
 
 
 

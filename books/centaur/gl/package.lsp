@@ -135,6 +135,9 @@
      xor
      gl-bdd-mode gl-aig-mode gl-mbe
 
+     logcons logcar logcdr loghead logtail logapp
+     b-ior b-and b-xor b-not bfix bitp
+
      numlist
      defsection))
   '(nat-listp ; included 12/4/2012 by Matt K., for addition to *acl2-exports*

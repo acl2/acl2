@@ -56,7 +56,7 @@
   unsigned-byte-p-0
   unsigned-byte-p-plus
   difference-unsigned-byte-p
-  signed-byte-p-base-cases
+  ;; signed-byte-p-base-cases
   ;; backchain-signed-byte-p-to-unsigned-byte-p
   loghead-identity
   ;; loghead-0-i remove hyp
@@ -2149,6 +2149,197 @@
     :hints(("Goal" :in-theory (enable* ihsext-recursive-redefs
                                        ihsext-inductions nfix ifix)))))
 
+(defsection expt
+
+  (defthmd expt-2-is-ash
+    (implies (natp n)
+             (equal (expt 2 n)
+                    (ash 1 n)))
+    :hints(("Goal" :in-theory (enable ash floor))))
+
+  (defthm expt-of-ifix
+    (equal (expt r (ifix i))
+           (expt r i))
+    :hints(("Goal" :in-theory (enable expt))))
+
+  (add-to-ruleset ihsext-arithmetic '(expt-2-is-ash))
+  (add-to-ruleset ihsext-basic-thms expt-of-ifix))
+
+
+
+
+(defsection unsigned-byte-p**
+
+  (local (in-theory (enable* ihsext-recursive-redefs
+                             ihsext-inductions)))
+
+  (local (in-theory (enable expt-2-is-ash)))
+
+
+  (defthm unsigned-byte-p-of-n-0
+    (equal (unsigned-byte-p n 0)
+           (natp n)))
+
+  (defthm unsigned-byte-p-of-0-x
+    (equal (unsigned-byte-p 0 x)
+           (equal x 0)))
+
+  (defthmd unsigned-byte-p**
+    (equal (unsigned-byte-p bits x)
+           (and (integerp x)
+                (natp bits)
+                (if (zp bits)
+                    (equal x 0)
+                  (unsigned-byte-p (1- bits)
+                                   (logcdr x)))))
+    :rule-classes ((:definition
+                    :clique (unsigned-byte-p)
+                    :controller-alist ((unsigned-byte-p t t)))))
+
+  (local (in-theory (enable unsigned-byte-p**)))
+  (local (in-theory (disable unsigned-byte-p)))
+
+  (add-to-ruleset ihsext-recursive-redefs '(unsigned-byte-p**))
+
+
+  (defun unsigned-byte-p-ind (bits x)
+    (and (integerp x)
+         (natp bits)
+         (if (zp bits)
+             (equal x 0)
+           (unsigned-byte-p-ind (1- bits) (logcdr x)))))
+
+  (defthm unsigned-byte-p-induct
+    t
+    :rule-classes ((:induction
+                    :pattern (unsigned-byte-p bits x)
+                    :scheme (unsigned-byte-p-ind bits x))))
+
+  (defthmd unsigned-byte-p-incr
+    (implies (and (unsigned-byte-p a x)
+                  (natp b)
+                  (<= a b))
+             (unsigned-byte-p b x)))
+
+  (local (in-theory (enable unsigned-byte-p-incr)))
+
+  (defthmd unsigned-byte-p-logcons
+    (implies (and (unsigned-byte-p (1- b) x)
+                  (natp b))
+             (unsigned-byte-p b (logcons bit x)))
+    :hints (("goal" :expand ((unsigned-byte-p b (logcons bit x))))))
+
+  (defthmd unsigned-byte-p-logcons-free
+    (implies (and (unsigned-byte-p a x)
+                  (natp b)
+                  (<= a (1- b)))
+             (unsigned-byte-p b (logcons bit x)))
+    :hints (("goal" :expand ((unsigned-byte-p b (logcons bit x))))))
+
+  (defthmd unsigned-byte-p-logcdr
+    (implies (and (unsigned-byte-p a x)
+                  (natp b)
+                  (<= a (1+ b)))
+             (unsigned-byte-p b (logcdr x))))
+
+  (add-to-ruleset ihsext-bounds-thms '(unsigned-byte-p-incr
+                                       unsigned-byte-p-logcons
+                                       unsigned-byte-p-logcons-free
+                                       unsigned-byte-p-logcdr))
+
+  (local (in-theory (disable unsigned-byte-p-logand
+                             unsigned-byte-p-logior
+                             logior-=-0)))
+
+  (defthmd unsigned-byte-p-logand-fix
+    (implies (or (unsigned-byte-p b x)
+                 (unsigned-byte-p b y))
+             (unsigned-byte-p b (logand x y))))
+
+  (defun unsigned-byte-p-logior-ind (b x y)
+    (cond ((zp b) (list x y))
+          (t (unsigned-byte-p-logior-ind
+              (1- b) (logcdr x) (logcdr y)))))
+
+  (defthmd unsigned-byte-p-logior-fix
+    (equal (unsigned-byte-p b (logior x y))
+           (and (unsigned-byte-p b (ifix x))
+                (unsigned-byte-p b (ifix y))))
+    :hints (("goal" :induct (unsigned-byte-p-logior-ind b x y))))
+
+  (add-to-ruleset ihsext-basic-thms '(unsigned-byte-p-logand-fix
+                                      unsigned-byte-p-logior-fix))
+
+  (defthm unsigned-byte-p-of-loghead
+    (implies (and (integerp size1)
+                  (<= (nfix size) size1))
+             (unsigned-byte-p size1 (loghead size i))))
+
+  (defthm unsigned-byte-p-of-logtail
+    (implies (natp size1)
+             (equal (unsigned-byte-p size1 (logtail size i))
+                    (unsigned-byte-p (+ size1 (nfix size)) (ifix i))))
+    :hints (("goal" :induct (and (logtail size i)
+                                 (logtail size1 i)))))
+
+  (defthm unsigned-byte-p-when-unsigned-byte-p-less
+    (implies (and (unsigned-byte-p n x)
+                  (natp m)
+                  (<= n m))
+             (unsigned-byte-p m x)))
+
+  (encapsulate
+    nil
+    (local (defun ind (n m x)
+             (cond ((zip m) (list n x))
+                   ((< m 0) (ind (1+ n) (1+ m) x))
+                   (t (ind (1- n) (1- m) x)))))
+
+    (local (defthm help1
+             (implies (unsigned-byte-p n x)
+                      (natp n))))
+
+
+    (local (defthm unsigned-byte-p-of-ash-worse
+             ;; "worse" because of the natp hyp, which we'll eliminate in a moment
+             (implies (and (unsigned-byte-p (- n (ifix m)) x)
+                           (natp n))
+                      (unsigned-byte-p n (ash x m)))
+             :hints(("Goal" :in-theory (e/d* (acl2::ihsext-recursive-redefs
+                                              acl2::ihsext-inductions
+                                              nfix ifix zip)
+                                             (unsigned-byte-p))
+                     :induct (ind n m x)
+                     :do-not-induct t)
+                    (and stable-under-simplificationp
+                         '(:expand ((ash x m)))))
+             :otf-flg t))
+
+    (defthm unsigned-byte-p-of-ash
+      (implies (unsigned-byte-p (- n (ifix m)) x)
+               (equal (unsigned-byte-p n (ash x m))
+                      (natp n)))
+      :hints(("Goal"
+              :in-theory (disable unsigned-byte-p)
+              :cases ((natp n))))))
+
+  (encapsulate
+    ()
+    (local (defun my-induct (n x y)
+             (if (zp n)
+                 (list n x y)
+               (my-induct (- n 1) (logcdr x) (logcdr y)))))
+
+    (defthm unsigned-byte-p-of-logxor
+      (implies (and (unsigned-byte-p n x)
+                    (unsigned-byte-p n y))
+               (unsigned-byte-p n (logxor x y)))
+      :hints(("Goal"
+              :induct (my-induct n x y)
+              :in-theory (enable acl2::logxor**
+                                 acl2::unsigned-byte-p**))))))
+
+
 (defsection logsquash**
 
   ;; Squashes to 0 the lowest N bits of I.
@@ -2192,8 +2383,6 @@
     :rule-classes ((:induction
                     :pattern (logsquash size i)
                     :scheme (logbitp-ind size i))))
-
-
 
   (add-to-ruleset ihsext-inductions '(logsquash-induct))
 
@@ -2379,205 +2568,25 @@
 
   (defthm logsquash-<-0
     (equal (< (logsquash n x) 0)
-           (< (ifix x) 0))))
+           (< (ifix x) 0)))
 
-
-
-
-(defsection expt
-
-  (defthmd expt-2-is-ash
-    (implies (natp n)
-             (equal (expt 2 n)
-                    (ash 1 n)))
-    :hints(("Goal" :in-theory (enable ash floor))))
-
-  (defthm expt-of-ifix
-    (equal (expt r (ifix i))
-           (expt r i))
-    :hints(("Goal" :in-theory (enable expt))))
-
-  (add-to-ruleset ihsext-arithmetic '(expt-2-is-ash))
-  (add-to-ruleset ihsext-basic-thms expt-of-ifix))
-
-
-(defsection unsigned-byte-p**
-
-  (local (in-theory (enable* ihsext-recursive-redefs
-                             ihsext-inductions)))
-
-  (local (in-theory (enable expt-2-is-ash)))
-
-
-  (defthm unsigned-byte-p-of-n-0
-    (equal (unsigned-byte-p n 0)
-           (natp n)))
-
-  (defthm unsigned-byte-p-of-0-x
-    (equal (unsigned-byte-p 0 x)
-           (equal x 0)))
-
-  (defthmd unsigned-byte-p**
-    (equal (unsigned-byte-p bits x)
-           (and (integerp x)
-                (natp bits)
-                (if (zp bits)
-                    (equal x 0)
-                  (unsigned-byte-p (1- bits)
-                                   (logcdr x)))))
-    :rule-classes ((:definition
-                    :clique (unsigned-byte-p)
-                    :controller-alist ((unsigned-byte-p t t)))))
-
-  (local (in-theory (enable unsigned-byte-p**)))
-  (local (in-theory (disable unsigned-byte-p)))
-
-  (add-to-ruleset ihsext-recursive-redefs '(unsigned-byte-p**))
-
-
-  (defun unsigned-byte-p-ind (bits x)
-    (and (integerp x)
-         (natp bits)
-         (if (zp bits)
-             (equal x 0)
-           (unsigned-byte-p-ind (1- bits) (logcdr x)))))
-
-  (defthm unsigned-byte-p-induct
-    t
-    :rule-classes ((:induction
-                    :pattern (unsigned-byte-p bits x)
-                    :scheme (unsigned-byte-p-ind bits x))))
-
-  (defthmd unsigned-byte-p-incr
-    (implies (and (unsigned-byte-p a x)
-                  (natp b)
-                  (<= a b))
-             (unsigned-byte-p b x)))
-
-  (local (in-theory (enable unsigned-byte-p-incr)))
-
-  (defthmd unsigned-byte-p-logcons
-    (implies (and (unsigned-byte-p (1- b) x)
-                  (natp b))
-             (unsigned-byte-p b (logcons bit x)))
-    :hints (("goal" :expand ((unsigned-byte-p b (logcons bit x))))))
-
-  (defthmd unsigned-byte-p-logcons-free
-    (implies (and (unsigned-byte-p a x)
-                  (natp b)
-                  (<= a (1- b)))
-             (unsigned-byte-p b (logcons bit x)))
-    :hints (("goal" :expand ((unsigned-byte-p b (logcons bit x))))))
-
-  (defthmd unsigned-byte-p-logcdr
-    (implies (and (unsigned-byte-p a x)
-                  (natp b)
-                  (<= a (1+ b)))
-             (unsigned-byte-p b (logcdr x))))
-
-  (add-to-ruleset ihsext-bounds-thms '(unsigned-byte-p-incr
-                                       unsigned-byte-p-logcons
-                                       unsigned-byte-p-logcons-free
-                                       unsigned-byte-p-logcdr))
-
-  (local (in-theory (disable unsigned-byte-p-logand
-                             unsigned-byte-p-logior
-                             logior-=-0)))
-
-  (defthmd unsigned-byte-p-logand-fix
-    (implies (or (unsigned-byte-p b x)
-                 (unsigned-byte-p b y))
-             (unsigned-byte-p b (logand x y))))
-
-  (defun unsigned-byte-p-logior-ind (b x y)
-    (cond ((zp b) (list x y))
-          (t (unsigned-byte-p-logior-ind
-              (1- b) (logcdr x) (logcdr y)))))
-
-  (defthmd unsigned-byte-p-logior-fix
-    (equal (unsigned-byte-p b (logior x y))
-           (and (unsigned-byte-p b (ifix x))
-                (unsigned-byte-p b (ifix y))))
-    :hints (("goal" :induct (unsigned-byte-p-logior-ind b x y))))
-
-  (add-to-ruleset ihsext-basic-thms '(unsigned-byte-p-logand-fix
-                                      unsigned-byte-p-logior-fix))
-
-  (defthm unsigned-byte-p-of-loghead
-    (implies (and (integerp size1)
-                  (<= (nfix size) size1))
-             (unsigned-byte-p size1 (loghead size i))))
+  (defthm logsquash-cancel
+    (implies (unsigned-byte-p n x)
+             (equal (logsquash n x) 0))
+    :hints(("Goal" :in-theory (disable unsigned-byte-p))))
 
   (defthm unsigned-byte-p-of-logsquash
     (implies (and (unsigned-byte-p size1 i)
                   (<= (nfix size) (nfix size1)))
-             (unsigned-byte-p size1 (logsquash size i))))
+             (unsigned-byte-p size1 (logsquash size i)))
+    :hints(("Goal" :in-theory (disable unsigned-byte-p))))
 
-  (defthm unsigned-byte-p-of-logtail
-    (implies (natp size1)
-             (equal (unsigned-byte-p size1 (logtail size i))
-                    (unsigned-byte-p (+ size1 (nfix size)) (ifix i))))
-    :hints (("goal" :induct (and (logtail size i)
-                                 (logtail size1 i)))))
-
-  (defthm unsigned-byte-p-when-unsigned-byte-p-less
-    (implies (and (unsigned-byte-p n x)
-                  (natp m)
-                  (<= n m))
-             (unsigned-byte-p m x)))
-
-  (encapsulate
-    nil
-    (local (defun ind (n m x)
-             (cond ((zip m) (list n x))
-                   ((< m 0) (ind (1+ n) (1+ m) x))
-                   (t (ind (1- n) (1- m) x)))))
-
-    (local (defthm help1
-             (implies (unsigned-byte-p n x)
-                      (natp n))))
-
-
-    (local (defthm unsigned-byte-p-of-ash-worse
-             ;; "worse" because of the natp hyp, which we'll eliminate in a moment
-             (implies (and (unsigned-byte-p (- n (ifix m)) x)
-                           (natp n))
-                      (unsigned-byte-p n (ash x m)))
-             :hints(("Goal" :in-theory (e/d* (acl2::ihsext-recursive-redefs
-                                              acl2::ihsext-inductions
-                                              nfix ifix zip)
-                                             (unsigned-byte-p))
-                     :induct (ind n m x)
-                     :do-not-induct t)
-                    (and stable-under-simplificationp
-                         '(:expand ((ash x m)))))
-             :otf-flg t))
-
-    (defthm unsigned-byte-p-of-ash
-      (implies (unsigned-byte-p (- n (ifix m)) x)
-               (equal (unsigned-byte-p n (ash x m))
-                      (natp n)))
-      :hints(("Goal"
-              :in-theory (disable unsigned-byte-p)
-              :cases ((natp n))))))
-
-  (encapsulate
-    ()
-    (local (defun my-induct (n x y)
-             (if (zp n)
-                 (list n x y)
-               (my-induct (- n 1) (logcdr x) (logcdr y)))))
-
-    (defthm unsigned-byte-p-of-logxor
-      (implies (and (unsigned-byte-p n x)
-                    (unsigned-byte-p n y))
-               (unsigned-byte-p n (logxor x y)))
-      :hints(("Goal"
-              :induct (my-induct n x y)
-              :in-theory (enable acl2::logxor**
-                                 acl2::unsigned-byte-p**))))))
-
-
+  (defthm logsquash-of-ash-greater
+    (implies (<= (nfix n) (ifix i))
+             (equal (logsquash n (ash x i))
+                    (ash x i)))
+    :hints (("goal" :induct (and (logsquash n b)
+                                 (logsquash i b))))))
 
 
 (defsection signed-byte-p**
@@ -2906,8 +2915,8 @@
   (add-to-ruleset ihsext-basic-thms '(unsigned-byte-p-of-logapp
                                       signed-byte-p-of-logapp))
 
-  (defthm logapp-zeros
-    (equal (logapp i 0 0) 0))
+  ;; (defthm logapp-zeros
+  ;;   (equal (logapp i 0 0) 0))
 
   (defthm logapp-minus1s
     (equal (logapp i -1 -1) -1)))
