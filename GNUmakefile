@@ -130,10 +130,6 @@
 #                  ; ~moore/allegro/runcl for some clues.
 #   make full LISP=lispworks PREFIX=lispworks- ; makes acl2 in lispworks
 #   make copy DIR=targetdir  ; copies all of acl2 to targetdir.  Don't use ~ notation.
-#   make copy-distribution DIR=/projects/acl2/v2-9-aix
-#   make copy-extra DIR=/projects/acl2/v2-9-aix
-#                  ; for developers only: same as copy-distribution, but
-#                  ; includes the files in all-files-extra.txt
 #   make copy-distribution DIR=/stage/ftp/pub/moore/acl2/v2-9/acl2-sources
 #                  ; copies all of acl2 plus books, doc, etc., to the named
 #                  ; directory, as for compiling on another architecture or
@@ -438,7 +434,6 @@ copy:
 .PHONY: copy-distribution
 copy-distribution:
 # WARNING: Execute this from an ACL2 source directory.
-# Keep this in sync with copy-books.
 # You must manually rm -r ${DIR} before this or it will fail without doing
 # any damage.
 # Note that below, /projects/acl2/ is not used, because this directory must
@@ -448,41 +443,6 @@ copy-distribution:
 	rm -f acl2r.lisp
 	echo '(load "init.lisp")' > workxxx
 	echo '(acl2::copy-distribution "workyyy" "${CURDIR}" "${DIR}")' >> workxxx
-	echo '(acl2::exit-lisp)' >> workxxx
-	${LISP} < workxxx
-	chmod 777 workyyy
-	./workyyy
-	rm -f workxxx
-	rm -f workyyy
-
-.PHONY: copy-books
-copy-books:
-# WARNING: Execute this from an ACL2 source directory.
-# See the comments for copy-distribution, and keep these in sync.  Use the same
-# DIR for both.
-	rm -f workxxx
-	rm -f workyyy
-	rm -f acl2r.lisp
-	echo '(load "init.lisp")' > workxxx
-	echo '(acl2::copy-distribution "workyyy" "${CURDIR}" "${DIR}" "all-files-books.txt" t)' >> workxxx
-	echo '(acl2::exit-lisp)' >> workxxx
-	${LISP} < workxxx
-	chmod 777 workyyy
-	./workyyy
-	rm -f workxxx
-	rm -f workyyy
-
-.PHONY: copy-extra
-copy-extra:
-# Developer target only.
-# See the comments for copy-distribution, and keep these in sync.  Use the same
-# DIR for both.
-	$(MAKE) copy-distribution DIR=$(DIR)
-	rm -f workxxx
-	rm -f workyyy
-	rm -f acl2r.lisp
-	echo '(load "init.lisp")' > workxxx
-	echo '(acl2::copy-distribution "workyyy" "${CURDIR}" "${DIR}" "all-files-extra.txt" t)' >> workxxx
 	echo '(acl2::exit-lisp)' >> workxxx
 	${LISP} < workxxx
 	chmod 777 workyyy
