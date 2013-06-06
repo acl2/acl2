@@ -138,6 +138,10 @@ clean-links:
 	fi ; \
 	done
 
+# Extra links:
+
+arithmetic/top.cert: arithmetic/realp.cert arithmetic/real-listp.cert
+
 workshops/1999/calculus/book/proof-outline.cert: workshops/1999/calculus/book/tree.cert
 
 workshops/1999/calculus/book/tree.cert: workshops/1999/calculus/book/tree.lisp
