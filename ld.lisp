@@ -20642,7 +20642,7 @@
   :doc
   ":Doc-Section release-notes
 
-  ACL2 Version  6.2 (xx, 20xx) Notes~/
+  ACL2 Version  6.2 (June, 2013) Notes~/
 
   NOTE!  New users can ignore these release notes, because the
   ~il[documentation] has been updated to reflect all changes that are recorded
