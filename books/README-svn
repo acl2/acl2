@@ -91,9 +91,9 @@ K. from Sol's email, mostly to add -m arguments).
 
 To create a branch from the trunk:
 
-svn copy -m 'Make initial release branch for Version 6.1.' \
+svn copy -m 'Make initial release branch for Version 6.2.' \
         https://acl2-books.googlecode.com/svn/trunk \
-        https://acl2-books.googlecode.com/svn/branches/6.1
+        https://acl2-books.googlecode.com/svn/branches/6.2
 
 To create a tag is the same operation (note from Matt K.: Not sure we
 ever need to create a tag); the only difference is the convention that
@@ -101,35 +101,35 @@ directories under branches are to be considered branches and
 directories under tags are treated as write-once "markers" for a
 certain revision.
 
-svn copy -m 'Release branch corresponding to actual ACL2 6.1 release.' \
-        https://acl2-books.googlecode.com/svn/branches/6.1 \
-        https://acl2-books.googlecode.com/svn/tags/6.1
+svn copy -m 'Release branch corresponding to actual ACL2 6.2 release.' \
+        https://acl2-books.googlecode.com/svn/branches/6.2 \
+        https://acl2-books.googlecode.com/svn/tags/6.2
 
 If ever you want to make a branch/tag from a specific revision (i.e.
 not the latest), you can do something like (note the @660):
 
-svn copy  -m 'Release branch corresponding to actual ACL2 6.1 release.' \
-        https://acl2-books.googlecode.com/svn/branches/6.1@660 \
-        https://acl2-books.googlecode.com/svn/tags/6.1
+svn copy  -m 'Release branch corresponding to actual ACL2 6.2 release.' \
+        https://acl2-books.googlecode.com/svn/branches/6.2@660 \
+        https://acl2-books.googlecode.com/svn/tags/6.2
 
 
 For an ACL2 developer, the next step is to remember the current
 version number for the books -- below, we assume it is 663.
 
 cd /projects/acl2/devel/books/
-svn switch https://acl2-books.googlecode.com/svn/branches/6.1
+svn switch https://acl2-books.googlecode.com/svn/branches/6.2
 
 Now switch back to the trunk AFTER the release is complete,
 substituting "663" below by the number saved above (where "663" is
 mentioned):
 
 cd /projects/acl2/devel/books/
-# While still in 6.1:
-svn commit -m "Updates made for release committed to 6.1 branch"
+# While still in 6.2:
+svn commit -m "Updates made for release committed to 6.2 branch"
 # Now switch over to trunk
 svn switch https://acl2-books.googlecode.com/svn/trunk
 svn update
-svn merge -r 663:HEAD https://acl2-books.googlecode.com/svn/branches/6.1 .
+svn merge -r 663:HEAD https://acl2-books.googlecode.com/svn/branches/6.2 .
 svn commit -m "Updates made for release committed to trunk"
 
 Then resolve any conflicts.
@@ -161,9 +161,9 @@ helpful sometime:
   working copy directory, run the following command, with appropriately
   chosen revision numbers:
 
-  svn merge -r 663:HEAD https://acl2-books.googlecode.com/svn/branches/6.1 .
+  svn merge -r 663:HEAD https://acl2-books.googlecode.com/svn/branches/6.2 .
 
-  This takes the diff between revisions 663 and HEAD of the 6.1 branch
+  This takes the diff between revisions 663 and HEAD of the 6.2 branch
   and applies it to your current working copy (no change is committed to
   the repository yet.)  Again, it will notify you of conflicts if it
   encounters any.  Note to ACL2 developers: Resolve those, if any, and
@@ -174,6 +174,6 @@ helpful sometime:
 Note that if desired, you can check out a working copy of the branch
 in the usual way:
 
-svn checkout https://acl2-books.googlecode.com/svn/branches/6.1 my-new-books-dir
+svn checkout https://acl2-books.googlecode.com/svn/branches/6.2 my-new-books-dir
 
 ============================================================

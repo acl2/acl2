@@ -1,6 +1,6 @@
 # -*- mode: makefile -*-
 
-#; Support for Community Books to Go with ACL2 Version 6.1
+#; Support for Community Books to Go with ACL2 Version 6.2
 #; Copyright (C) 2013, Regents of the University of Texas
 
 #; This program is free software; you can redistribute it and/or
