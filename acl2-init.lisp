@@ -1,4 +1,4 @@
-; ACL2 Version 6.1 -- A Computational Logic for Applicative Common Lisp
+; ACL2 Version 6.2 -- A Computational Logic for Applicative Common Lisp
 ; Copyright (C) 2013, Regents of the University of Texas
 
 ; This version of ACL2 is a descendent of ACL2 Version 1.9, Copyright
@@ -1408,12 +1408,15 @@ implementations.")
 ; We have observed with SBCL 1.0.49 that "make HTML" fails on our 64-bit linux
 ; system unless we start sbcl with --control-stack-size 4 [or larger].  The
 ; default, according to http://www.sbcl.org/manual/, is 2.  The problem seems
-; to be stack overflow from fmt0, which is not tail recursive.
+; to be stack overflow from fmt0, which is not tail recursive.  More recently,
+; community book centaur/misc/defapply.lisp causes a stack overflow even with
+; --control-stack-size 4 (though that might disappear after we added (comp t)
+; in a couple of places).  So we use 8 instead of 4.
 
 ; See *sbcl-dynamic-space-size* for an explanation of the --dynamic-space-size
 ; setting below.
 
-        "~s --dynamic-space-size ~s --control-stack-size 4 --core ~s~a ~
+        "~s --dynamic-space-size ~s --control-stack-size 8 --core ~s~a ~
          --eval '(acl2::sbcl-restart)'"
         prog
         *sbcl-dynamic-space-size*

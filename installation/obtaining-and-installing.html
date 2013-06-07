@@ -1,5 +1,5 @@
 <HTML>
-<HEAD><TITLE>ACL2 Version 6.1 Installation Guide: Obtaining and Installing ACL2</TITLE></HEAD>
+<HEAD><TITLE>ACL2 Version 6.2 Installation Guide: Obtaining and Installing ACL2</TITLE></HEAD>
 
 <BODY TEXT="#000000">
 <BODY BGCOLOR="#FFFFFF">
@@ -51,9 +51,9 @@ and installing ACL2.
 
 <p>
 
-First, create a directory in which to store ACL2 Version 6.1.  We will
+First, create a directory in which to store ACL2 Version 6.2.  We will
 call this directory <I>dir</I>.  For example, <I>dir</I> might be
-<CODE>/home/jones/acl2/v6-1</CODE>.
+<CODE>/home/jones/acl2/v6-2</CODE>.
 
 <H3>NOTE: If you intend to obtain an incremental release (e.g. 2.9.4 as opposed
 to 2.9), please see the <a href="../new.html">ACL2 News</a> for instructions.
@@ -78,7 +78,7 @@ there are other shortcuts available.
 <p>
 
 WARNING: Some of these packages might be for old version of ACL2.  We
-recommend that you use the latest version of ACL2 (Version 6.1).
+recommend that you use the latest version of ACL2 (Version 6.2).
 
 <UL>
 
@@ -217,10 +217,10 @@ conversion.)
 
 <UL>
 
-<LI>Save <A HREF="http://www.cs.utexas.edu/users/moore/acl2/v6-1/distrib/acl2.tar.gz">
+<LI>Save <A HREF="http://www.cs.utexas.edu/users/moore/acl2/v6-2/distrib/acl2.tar.gz">
     acl2.tar.gz</A> on directory <I>dir</I>.  (You can
     run <code>md5sum</code> and compare
-    with <A HREF="http://www.cs.utexas.edu/users/moore/acl2/v6-1/distrib/acl2-tar-gz-md5sum">
+    with <A HREF="http://www.cs.utexas.edu/users/moore/acl2/v6-2/distrib/acl2-tar-gz-md5sum">
     acl2-tar-gz-md5sum</A> if you wish to verify the transmission.)
   </LI>
 <BR>
@@ -250,18 +250,18 @@ other than Gnu tar.  You can see if you have Gnu tar by running
 <UL>
 
   <li><b>Easy download.</b>
-    Fetch <CODE><A HREF="http://acl2-books.googlecode.com/files/books-6.1.tar.gz">a
+    Fetch <CODE><A HREF="http://acl2-books.googlecode.com/files/books-6.2.tar.gz">a
     gzipped tarfile</A></CODE> of the community books from the Google Code website, and then
     extract as follows to create a <code>books/</code>
     subdirectory:<BR>
 
-    <code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;tar xfz books-6.1.tar.gz</code>
+    <code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;tar xfz books-6.2.tar.gz</code>
   </li>
 
   <li><b><font color="red">OR</font></b>, obtain a read-only copy
     using svn as a new subdirectory, <code>books/</code>:<br>
 
-      <code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;svn checkout http://acl2-books.googlecode.com/svn/branches/6.1 books</code>
+      <code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;svn checkout http://acl2-books.googlecode.com/svn/branches/6.2 books</code>
   </li>
 	
   <li><b><font color="red">OR</font></b>, for read-write access,
@@ -270,7 +270,7 @@ other than Gnu tar.  You can see if you have Gnu tar by running
     (see <a href="https://code.google.com/p/acl2-books/">the
     acl2-books project page</a>). Then:<br>
 	  
-    <code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;svn checkout https://acl2-books.googlecode.com/svn/branches/6.1 books --username &lt;name&gt;</code>
+    <code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;svn checkout https://acl2-books.googlecode.com/svn/branches/6.2 books --username &lt;name&gt;</code>
   </li>
   <BR>
 
@@ -285,8 +285,8 @@ with ACL2(r).  You can fetch these easily as gzipped tarfiles, as
 follows, using the following links to the Google Code website.
 
 <UL>
-<LI><A HREF="http://acl2-books.googlecode.com/files/workshops-6.1.tar.gz">ACL2 Workshops books</A></LI>
-<LI><A HREF="http://acl2-books.googlecode.com/files/nonstd-6.1.tar.gz">ACL2(r) books</A></LI>
+<LI><A HREF="http://acl2-books.googlecode.com/files/workshops-6.2.tar.gz">ACL2 Workshops books</A></LI>
+<LI><A HREF="http://acl2-books.googlecode.com/files/nonstd-6.2.tar.gz">ACL2(r) books</A></LI>
 </UL>
 
 Then put the gzipped tarfile(s) in
@@ -294,8 +294,8 @@ the <CODE>acl2-sources/books/</CODE> directory, connect to that
 directory, and extract to create <CODE>workshops/</CODE>
 and <CODE>nonstd/</CODE> subdirectories, respectively:<BR>
 
-<CODE>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;tar xfz workshops-6.1.tar.gz</CODE><BR>
-<CODE>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;tar xfz nonstd-6.1.tar.gz</CODE>
+<CODE>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;tar xfz workshops-6.2.tar.gz</CODE><BR>
+<CODE>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;tar xfz nonstd-6.2.tar.gz</CODE>
 
 </UL>
 
@@ -331,7 +331,7 @@ instructions for building an executable.
 <H3><A NAME="Pre-Built-Images">Short Cut:  Pre-Built ACL2 Images</A></H3>
 
 The site <a
-href="http://www.cs.utexas.edu/users/moore/acl2/v6-1/distrib/images/Readme.html">http://www.cs.utexas.edu/users/moore/acl2/v6-1/distrib/images/Readme.html</a>
+href="http://www.cs.utexas.edu/users/moore/acl2/v6-2/distrib/images/Readme.html">http://www.cs.utexas.edu/users/moore/acl2/v6-2/distrib/images/Readme.html</a>
 contains links to ACL2 executables and packages.  Each <code>-md5sum</code> file
 was created using <code>md5sum</code>.  We may add additional
 links from time to time.
@@ -584,7 +584,7 @@ The following modification of <code>gclm.bat</code> seemed to solve the problem
 @ECHO off
 set cwd=%cd%
 path C:\gcl\gclm\mingw\bin;%PATH%
-C:\gcl\gclm\lib\gcl-2.6.1\unixport\saved_gcl.exe -dir C:/gcl/gclm/lib/gcl-2.6.1/unixport/ -libdir  C:/gcl/gclm/lib/gcl-2.6.1/ -eval "(setq si::*allow-gzipped-file* t)" %1 %2 %3 %4 %5 %6 %7 %8 %9
+C:\gcl\gclm\lib\gcl-2.6.2\unixport\saved_gcl.exe -dir C:/gcl/gclm/lib/gcl-2.6.2/unixport/ -libdir  C:/gcl/gclm/lib/gcl-2.6.2/ -eval "(setq si::*allow-gzipped-file* t)" %1 %2 %3 %4 %5 %6 %7 %8 %9
 </pre>
 
 <li><b>THIRD</b>, follow the <A HREF="#Non-Unix">instructions for
@@ -592,12 +592,12 @@ C:\gcl\gclm\lib\gcl-2.6.1\unixport\saved_gcl.exe -dir C:/gcl/gclm/lib/gcl-2.6.1/
     may be called
 <code>saved_acl2.exe</code> rather than <code>saved_acl2</code>.
 
-<!-- NOTE to developers: v6-1 below indicates a normal release, which is OK. -->
+<!-- NOTE to developers: v6-2 below indicates a normal release, which is OK. -->
 <!-- Do not edit that for incremental releases. -->
 
 <li><b>FINALLY</b>, create a file <code>acl2.bat</code> as explained in
-<code><a href="http://www.cs.utexas.edu/users/moore/acl2/v6-1/distrib/images/Readme.html#acl2-bat">
-http://www.cs.utexas.edu/users/moore/acl2/v6-1/distrib/images/Readme.html</a></code>.
+<code><a href="http://www.cs.utexas.edu/users/moore/acl2/v6-2/distrib/images/Readme.html#acl2-bat">
+http://www.cs.utexas.edu/users/moore/acl2/v6-2/distrib/images/Readme.html</a></code>.
 
 </ol>
 
@@ -718,7 +718,7 @@ split/     ; The result of splitting up acl2.tar.gz; see split/Readme.html
 
 <P>
 The entire acl2.tar.gz is about 7MB, which extracts to
-about 30MB.  The gzipped tarfile books-6.1.tar.gz (obtained as described
+about 30MB.  The gzipped tarfile books-6.2.tar.gz (obtained as described
 <a href="#Obtaining-books">above</a>) is about 12MB, which extracts to
 about 70MB.  Additional space is required to build an image, perhaps
 50 to 300 megabytes depending on the platform (including the host

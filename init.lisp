@@ -1,4 +1,4 @@
-; ACL2 Version 6.1 -- A Computational Logic for Applicative Common Lisp
+; ACL2 Version 6.2 -- A Computational Logic for Applicative Common Lisp
 ; Copyright (C) 2013, Regents of the University of Texas
 
 ; This version of ACL2 is a descendent of ACL2 Version 1.9, Copyright
@@ -79,7 +79,9 @@
 ; books/clause-processors/SULFA/books/sat-tests/sudoku.lisp was caused by
 ; bad-lisp-objectp.  Another doubling fixed each of these, but wan't enough for
 ; certifying books/centaur/aig/random-sim.lisp, again because of
-; expansion-alist-pkg-names-memoize.  So we now multiply by 8.
+; expansion-alist-pkg-names-memoize.  So we now multiply by 8.  We plan to
+; investigate a suggestion of Camm Maguire that these problems might be solved
+; by avoiding the use of interpreted code.
 
     (setq si::*multiply-stacks* 8))
   (setq *acl2-gcl-multiply-stacks-evaluated* t))

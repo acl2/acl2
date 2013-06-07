@@ -1,3 +1,1 @@
-"$Revision$"
-Thu Jun  6 10:38:21 CDT 2013
-Books Revision: 1829
+:release

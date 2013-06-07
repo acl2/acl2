@@ -1,4 +1,4 @@
-; ACL2 Version 6.1 -- A Computational Logic for Applicative Common Lisp
+; ACL2 Version 6.2 -- A Computational Logic for Applicative Common Lisp
 ; Copyright (C) 2013, Regents of the University of Texas
 
 ; This version of ACL2 is a descendent of ACL2 Version 1.9, Copyright
@@ -14160,7 +14160,7 @@
 
   Note that if you download community books as tarfiles, then you should be
   sure to download the `nonstd' books, from
-  ~url[http://acl2-books.googlecode.com/files/nonstd-6.1.tar.gz].  Then certify
+  ~url[http://acl2-books.googlecode.com/files/nonstd-6.2.tar.gz].  Then certify
   them from your acl2-sources directory, shown here as
   ~c[<DIR>]:
   ~bv[]
@@ -28410,7 +28410,7 @@
 ; The reason MCL needs special treatment is that (char-code #\Newline) = 13 in
 ; MCL, not 10.  See also :DOC version.
 
-; ACL2 Version 6.1
+; ACL2 Version 6.2
 
 ; We put the version number on the line above just to remind ourselves to bump
 ; the value of state global 'acl2-version, which gets printed out with the
@@ -28436,7 +28436,7 @@
 ; reformatting :DOC comments.
 
                   ,(concatenate 'string
-                                "ACL2 Version 6.1"
+                                "ACL2 Version 6.2"
                                 #+non-standard-analysis
                                 "(r)"
                                 #+(and mcl (not ccl))

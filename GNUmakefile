@@ -1,6 +1,6 @@
 #  -*- Fundamental -*- 
 
-# ACL2 Version 6.1 -- A Computational Logic for Applicative Common Lisp
+# ACL2 Version 6.2 -- A Computational Logic for Applicative Common Lisp
 # Copyright (C) 2013, Regents of the University of Texas
 
 # This version of ACL2 is a descendent of ACL2 Version 1.9, Copyright
@@ -95,7 +95,7 @@
 #                    ; `make regression', etc.
 
 # Also included are various legacy versions of these targets, which
-# correspond to targets through ACL2 Version 6.1.  For example, target
+# correspond to targets through ACL2 Version  6.1.  For example, target
 # regression-legacy in this file corresponds to target regression in
 # older versions of htis file.
 
