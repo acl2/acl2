@@ -218,7 +218,7 @@
 ##############################
 
 ifneq ($(ACL2_JOBS), )
-$(error Error: variable ACL2_JOBS is obsolete (use -j instead); see :DOC book-makefiles)
+${error Error: variable ACL2_JOBS is obsolete -- use -j instead -- see :DOC book-makefiles }
 endif # ifneq ($(ACL2_JOBS), )
 
 ACL2 ?= acl2
