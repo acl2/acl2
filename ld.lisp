@@ -22876,7 +22876,7 @@ entry is left blank.
 </TD>
 <TD>
 <A HREF=\"http://www.cs.utexas.edu/users/moore/publications/acl2-papers.html\">
-Publications about about ACL2 and Its Applications</A>
+Publications about ACL2 and Its Applications</A>
 </TD>
 
 <TD ALIGN=CENTER VALIGN=MIDDLE>
@@ -23200,7 +23200,7 @@ Now you are ready to follow the link.
 <li>
 
 The next link will take you to the community books website (which is external
-to the present ACL2 website), spefically to the section entitled ``Searching
+to the present ACL2 website), specifically to the section entitled ``Searching
 and browsing the books.''  There, you will see a search box in which you can
 enter your search term.  For example, if you type `<code>tail recursion</code>'
 and then <code>&lt;RETURN&gt;</code>, you will see text from several books in
