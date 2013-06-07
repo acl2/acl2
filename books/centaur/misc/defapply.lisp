@@ -61,6 +61,8 @@
            (cons (car syms) (logic-function-syms (cdr syms) world))
          (logic-function-syms (cdr syms) world))))
 
+   (comp t) ; helpful e.g. for Allegro CL
+
    (make-event
     `(defconst *all-logic-function-syms*
        ',(let ((world (w state)))
@@ -888,6 +890,8 @@ The function ~x0 is missing its ~x1 property; perhaps it is not defined.~%"
 
 
 (set-rewrite-stack-limit 10000)
+
+(comp t) ; helpful e.g. for Allegro CL
 
 (local
  (progn
