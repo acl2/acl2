@@ -25,9 +25,13 @@
 (include-book "meta-extract-user")
 (include-book "unify-subst")
 
-; Added by Matt K.: at a minimum, we need that dumb-negate-lit is in :logic
-; mode (as required by the present book) when using an ACL2 image built with
-; ACL2_DEVEL=d.
+; (Matt K.) I've added the following verify-termination form so that
+; dumb-negate-lit is in :logic mode (as required by the present book) when
+; using an ACL2 image built with ACL2_DEVEL=d.  But Sol Swords asked if this is
+; actually necessary, and indeed it seems not to be: All that is required is to
+; be able to certify books under with ACL2_DEVEL=d that are keys of ACL2
+; constant *system-verify-guards-alist*.  However, at this point it seems
+; simplest to leave this form in place.
 (verify-termination dumb-negate-lit) ; and guards
 
 (local (in-theory (disable w)))
