@@ -153,6 +153,7 @@ BOOKS_D64FSL  = $(patsubst %, %.d64fsl,  $(BOOKS_COMP))
 BOOKS_DX64FSL = $(patsubst %, %.dx64fsl, $(BOOKS_COMP))
 BOOKS_LX64FSL = $(patsubst %, %.lx64fsl, $(BOOKS_COMP))
 BOOKS_LX32FSL = $(patsubst %, %.lx32fsl, $(BOOKS_COMP))
+BOOKS_SSE2F   = $(patsubst %, %.sse2f,   $(BOOKS_COMP))
 BOOKS_X86F    = $(patsubst %, %.x86f,    $(BOOKS_COMP))
 BOOKS_O       = $(patsubst %, %.o,       $(BOOKS_COMP))
 
@@ -438,6 +439,15 @@ lx32fsl:
 %.lx32fsl: %.cert
 	@echo "Making $$PWD/$@"
 	echo '(acl2::value :q) (acl2::lp) (ld `((include-book "$(patsubst %.lx32fsl,%,$(@))" :load-compiled-file :comp :ttags :all))) (acl2::value :q) (acl2::exit-lisp)' | $(ACL2)
+
+.PHONY: sse2f
+sse2f:
+	@echo 'Using ACL2=$(ACL2)'
+	$(MAKE) -s -f $(ACL2_BOOKS_MAKEFILE) $(BOOKS_SSE2F) INHIBIT='$(INHIBIT)' ACL2='$(ACL2)'
+
+%.sse2f: %.cert
+	@echo "Making $$PWD/$@"
+	echo '(acl2::value :q) (acl2::lp) (ld `((include-book "$(patsubst %.sse2f,%,$(@))" :load-compiled-file :comp :ttags :all))) (acl2::value :q) (acl2::exit-lisp)' | $(ACL2)
 
 .PHONY: nothing
 nothing:
