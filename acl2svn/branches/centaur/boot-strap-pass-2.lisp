@@ -1,4 +1,4 @@
-; ACL2 Version 6.1 -- A Computational Logic for Applicative Common Lisp
+; ACL2 Version 6.2 -- A Computational Logic for Applicative Common Lisp
 ; Copyright (C) 2013, Regents of the University of Texas
 
 ; This version of ACL2 is a descendent of ACL2 Version 1.9, Copyright
@@ -546,18 +546,18 @@
 (defthm fn-count-1-type
   (implies (and (integerp fn-count-acc)
                 (integerp p-fn-count-acc))
-           (and (integerp (car (fn-count-1 flag term 
+           (and (integerp (car (fn-count-1 flag term
                                            fn-count-acc p-fn-count-acc)))
-                (integerp (mv-nth 0 (fn-count-1 flag term 
+                (integerp (mv-nth 0 (fn-count-1 flag term
                                                 fn-count-acc
                                                 p-fn-count-acc)))
-                (integerp (mv-nth 1 (fn-count-1 flag term 
+                (integerp (mv-nth 1 (fn-count-1 flag term
                                                 fn-count-acc
                                                 p-fn-count-acc)))
-                (integerp (nth 0 (fn-count-1 flag term 
+                (integerp (nth 0 (fn-count-1 flag term
                                              fn-count-acc
                                              p-fn-count-acc)))
-                (integerp (nth 1 (fn-count-1 flag term 
+                (integerp (nth 1 (fn-count-1 flag term
                                              fn-count-acc
                                              p-fn-count-acc)))))
   :rule-classes ((:forward-chaining
@@ -1350,12 +1350,16 @@
 ; :acl2-devel set (see discussion in the comment at the top of this section).
 ; For example, cdr of the entry for "system/top" is produced by evaluating:
 ; (include-book "system/top" :dir :system).
-; The indicated books need to be certified with :acl2-devel set, but this takes
-; about 2.5 minutes on a fast machine in Feb. 2013, as follows:
+; The indicated books need to be certified using an ACL2 executable that was
+; built with feature :acl2-devel set, but this takes about 2.5 minutes on a
+; fast machine in Feb. 2013, as follows:
 
 ; make -j 8 regression ACL2_BOOK_DIRS=system ACL2=<:acl2-devel version>
 
 ; Each member of each cdr below is of the form (fn . measured-subset).
+
+; Note that it is not necessary to do a full regression with an :acl2-devel
+; executable; only the books in the keys of this alist need to be certified.
 
   '(("system/top"
      (ARGLISTP)
@@ -1408,7 +1412,7 @@
    ((eql n *len-system-verify-guards-alist*)
     '(value-triple :CHK-NEW-VERIFIED-GUARDS-COMPLETE))
    (t
-    (let* ((pair (nth n *system-verify-guards-alist*)) 
+    (let* ((pair (nth n *system-verify-guards-alist*))
            (user-book-name (car pair))
            (fns (cdr pair)))
       `(progn (include-book ,user-book-name

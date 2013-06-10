@@ -1,4 +1,4 @@
-; ACL2 Version 6.1 -- A Computational Logic for Applicative Common Lisp
+; ACL2 Version 6.2 -- A Computational Logic for Applicative Common Lisp
 ; Copyright (C) 2013, Regents of the University of Texas
 
 ; This version of ACL2 is a descendent of ACL2 Version 1.9, Copyright
@@ -51,21 +51,24 @@
 
   hash cons, function memoization, and applicative hash tables~/
 
-  Bob Boyer and Warren Hunt have developed a canonical representation for ACL2
-  data objects and a function memoization mechanism to facilitate reuse of
-  previously computed results.  This facility includes procedures to read and
-  print ACL2 expressions in such a way that repetition of some ACL2 objects is
-  eliminated, thereby permitting a kind of on-the-fly file compression.  The
-  implementation does not alter the semantics of ACL2 except to add a handful
-  of definitions.
+  Bob Boyer and Warren Hunt, and later Jared Davis and Sol Swords, have
+  developed a canonical representation for ACL2 data objects and a function
+  memoization mechanism to facilitate reuse of previously computed results.
+  This facility includes procedures to read and print ACL2 expressions in such
+  a way that repetition of some ACL2 objects is eliminated, thereby permitting
+  a kind of on-the-fly file compression.  The implementation does not alter the
+  semantics of ACL2 except to add a handful of definitions.
 
-  We given the name ``ACL2(h)'' to the resulting experimental extension of the
+  We give the name ``ACL2(h)'' to the resulting experimental extension of the
   ACL2 system, which includes hash cons, function memoization, and fast
   association lists (applicative hash tables).  It is optimized for Clozure
   Common Lisp (CCL), but other ANSI-compliant host Lisp implementations may
   also work, provided there are sufficient machine resources.
 
-  An easy way is to build ACL2(h) is to include the following with a ~c[make]
+  If you want to use ACL2(h), you might find it helpful to consult the document
+  ~c[centaur/README.html] in the ACL2 community books.
+
+  An easy way is to build ACL2(h) is to include the following with a `make'
   command:
   ~bv[]
   ACL2_HONS=h
@@ -150,7 +153,7 @@
   (defun fib (x)
     (declare (xargs :guard (natp x)))
     (mbe
-     :logic 
+     :logic
      (cond ((zp x) 0)
            ((= x 1) 1)
            (t (+ (fib (- x 1)) (fib (- x 2)))))
@@ -172,7 +175,7 @@
   error.
   ~bv[]
   ACL2 !>(time$ (fib 40))
-  ; (EV-REC *RETURN-LAST-ARG3* ...) took 
+  ; (EV-REC *RETURN-LAST-ARG3* ...) took
   ; 0.99 seconds realtime, 0.98 seconds runtime
   ; (1,296 bytes allocated).
   102334155
@@ -189,12 +192,12 @@
   Time:  0.01 seconds (prove: 0.00, print: 0.00, other: 0.01)
    FIB
   ACL2 !>(time$ (fib 40))
-  ; (EV-REC *RETURN-LAST-ARG3* ...) took 
+  ; (EV-REC *RETURN-LAST-ARG3* ...) took
   ; 0.00 seconds realtime, 0.00 seconds runtime
   ; (2,864 bytes allocated).
   102334155
   ACL2 !>(time$ (fib 100))
-  ; (EV-REC *RETURN-LAST-ARG3* ...) took 
+  ; (EV-REC *RETURN-LAST-ARG3* ...) took
   ; 0.00 seconds realtime, 0.00 seconds runtime
   ; (7,024 bytes allocated).
   354224848179261915075
@@ -343,7 +346,7 @@
   the Communications of the ACM, Volume 118, Number 3, August,
   1958, pages 427-430.
 
-  Eiichi Goto, Monocopy and Associative Algorithms in Extended Lisp, 
+  Eiichi Goto, Monocopy and Associative Algorithms in Extended Lisp,
   TR-74-03, University of Toyko, 1974.
 
   Richard P. Gabriel.  Performance and Evaluation of Lisp Systems.
@@ -416,34 +419,6 @@
   displayed by ~c[(]~ilc[memoize-summary]~c[)]~/~/"
 
   nil)
-
-#+(or acl2-loop-only (not hons))
-(defun never-memoize-fn (fn)
-  (declare (xargs :guard (symbolp fn))
-           (ignorable fn))
-  nil)
-
-(defmacro never-memoize (fn)
-  ":Doc-Section Hons-and-Memoization
-  Mark a function as unsafe to memoize.~/
-
-  This ~il[documentation] topic relates to the experimental extension of ACL2
-  supporting hash cons, fast alists, and memoization;
-  ~pl[hons-and-memoization].
-
-  Logically, this function just returns ~c[nil].  In the execution, it records
-  that ~c[fn] must never be memoized, so that any attempt to memoize ~c[fn]
-  will fail.
-
-  Any function can be marked as unsafe to memoize, in fact ~c[fn] need not even
-  be defined at the time it is marked.
-
-  This is useful for prohibiting the memoization of aux functions that are
-  known to be called with ~c[nreverse].~/~/"
-  `(make-event
-    (b* ((- (never-memoize-fn ',fn)))
-      '(value-triple :invisible))
-    :check-expansion t))
 
 (defmacro memsum ()
   ":Doc-Section Hons-and-Memoization
@@ -1092,4 +1067,42 @@
 (defmacro memoizedp (fn)
   (declare (xargs :guard t))
   `(memoizedp-world ,fn (w state)))
+
+; Some centaur/ books put entries in *never-profile-ht*.  In order to allow
+; those books to certify in vanilla ACL2, we define a default value for that
+; variable here.
+
+#+(and (not hons) (not acl2-loop-only))
+(defparameter *never-profile-ht*
+  (make-hash-table :test 'eq))
+
+#+(or acl2-loop-only (not hons))
+(defun never-memoize-fn (fn)
+   (declare (xargs :guard (symbolp fn))
+            (ignore fn))
+   nil)
+
+(defmacro never-memoize (fn)
+  ":Doc-Section Hons-and-Memoization
+  Mark a function as unsafe to memoize.~/
+
+  This ~il[documentation] topic relates to the experimental extension of ACL2
+  supporting hash cons, fast alists, and memoization;
+  ~pl[hons-and-memoization].
+
+  Logically, this function just returns ~c[nil].  But execution of
+  ~c[(never-memoize fn)] records that ~c[fn] must never be memoized, so that
+  any attempt to memoize ~c[fn] will fail.
+
+  Any function can be marked as unsafe to memoize; in fact, ~c[fn] need not
+  even be defined at the time it is marked.
+
+  This is useful for prohibiting the memoization of functions that are known to
+  involve destructive functions like ~c[nreverse].~/~/"
+
+  (declare (xargs :guard (symbolp fn)))
+  `(make-event
+    (prog2$ (never-memoize-fn ',fn)
+            '(value-triple :invisible))
+    :check-expansion t))
 

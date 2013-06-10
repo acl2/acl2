@@ -1,6 +1,6 @@
 #  -*- Fundamental -*- 
 
-# ACL2 Version 6.1 -- A Computational Logic for Applicative Common Lisp
+# ACL2 Version 6.2 -- A Computational Logic for Applicative Common Lisp
 # Copyright (C) 2013, Regents of the University of Texas
 
 # This version of ACL2 is a descendent of ACL2 Version 1.9, Copyright
@@ -69,7 +69,11 @@
 #                    ; waterfall parallelism (requires the
 #                    ; experimental extension ACL2(p) of ACL2); see
 #                    ; file acl2-customization-files/README.
+#   make regression-everything
+#                    ; Same as make regression, except that target "everything"
+#                    ; is used in community books file, Makefile.
 #   make regression-legacy-fast [DEPRECATED as is books/regression-targets (legacy)]
+#                    ; NOTE: This target was not tested before the v6-2 release.
 #                    ; (WARNING: This target uses variable ACL2, with default value
 #                    ;      "acl2", so it is probably a good idea to run after
 #                    ;      explicitly setting ACL2=<path_to_ACL2>.
@@ -91,7 +95,7 @@
 #                    ; `make regression', etc.
 
 # Also included are various legacy versions of these targets, which
-# correspond to targets through ACL2 Version 6.1.  For example, target
+# correspond to targets through ACL2 Version  6.1.  For example, target
 # regression-legacy in this file corresponds to target regression in
 # older versions of htis file.
 
@@ -127,10 +131,6 @@
 #                  ; ~moore/allegro/runcl for some clues.
 #   make full LISP=lispworks PREFIX=lispworks- ; makes acl2 in lispworks
 #   make copy DIR=targetdir  ; copies all of acl2 to targetdir.  Don't use ~ notation.
-#   make copy-distribution DIR=/projects/acl2/v2-9-aix
-#   make copy-extra DIR=/projects/acl2/v2-9-aix
-#                  ; for developers only: same as copy-distribution, but
-#                  ; includes the files in all-files-extra.txt
 #   make copy-distribution DIR=/stage/ftp/pub/moore/acl2/v2-9/acl2-sources
 #                  ; copies all of acl2 plus books, doc, etc., to the named
 #                  ; directory, as for compiling on another architecture or
@@ -435,7 +435,6 @@ copy:
 .PHONY: copy-distribution
 copy-distribution:
 # WARNING: Execute this from an ACL2 source directory.
-# Keep this in sync with copy-books.
 # You must manually rm -r ${DIR} before this or it will fail without doing
 # any damage.
 # Note that below, /projects/acl2/ is not used, because this directory must
@@ -445,41 +444,6 @@ copy-distribution:
 	rm -f acl2r.lisp
 	echo '(load "init.lisp")' > workxxx
 	echo '(acl2::copy-distribution "workyyy" "${CURDIR}" "${DIR}")' >> workxxx
-	echo '(acl2::exit-lisp)' >> workxxx
-	${LISP} < workxxx
-	chmod 777 workyyy
-	./workyyy
-	rm -f workxxx
-	rm -f workyyy
-
-.PHONY: copy-books
-copy-books:
-# WARNING: Execute this from an ACL2 source directory.
-# See the comments for copy-distribution, and keep these in sync.  Use the same
-# DIR for both.
-	rm -f workxxx
-	rm -f workyyy
-	rm -f acl2r.lisp
-	echo '(load "init.lisp")' > workxxx
-	echo '(acl2::copy-distribution "workyyy" "${CURDIR}" "${DIR}" "all-files-books.txt" t)' >> workxxx
-	echo '(acl2::exit-lisp)' >> workxxx
-	${LISP} < workxxx
-	chmod 777 workyyy
-	./workyyy
-	rm -f workxxx
-	rm -f workyyy
-
-.PHONY: copy-extra
-copy-extra:
-# Developer target only.
-# See the comments for copy-distribution, and keep these in sync.  Use the same
-# DIR for both.
-	$(MAKE) copy-distribution DIR=$(DIR)
-	rm -f workxxx
-	rm -f workyyy
-	rm -f acl2r.lisp
-	echo '(load "init.lisp")' > workxxx
-	echo '(acl2::copy-distribution "workyyy" "${CURDIR}" "${DIR}" "all-files-extra.txt" t)' >> workxxx
 	echo '(acl2::exit-lisp)' >> workxxx
 	${LISP} < workxxx
 	chmod 777 workyyy
@@ -766,6 +730,15 @@ else
 	cd books ; $(MAKE) $(ACL2_IGNORE) ACL2=$(ACL2)
 endif
 
+.PHONY: regression-everything
+regression-everything:
+	uname -a
+ifndef ACL2
+	cd books ; $(MAKE) $(ACL2_IGNORE) everything ACL2=$(shell pwd)/saved_acl2
+else
+	cd books ; $(MAKE) $(ACL2_IGNORE) everything ACL2=$(ACL2)
+endif
+
 .PHONY: regression-nonstd
 regression-nonstd:
 	uname -a
@@ -791,6 +764,14 @@ ifndef ACL2
 	$(MAKE) $(ACL2_IGNORE) ACL2=$(shell pwd)/saved_acl2 regression
 else
 	$(MAKE) $(ACL2_IGNORE) ACL2=$(ACL2) regression
+endif
+
+.PHONY: regression-everything-fresh
+regression-everything-fresh: clean-books
+ifndef ACL2
+	$(MAKE) $(ACL2_IGNORE) ACL2=$(shell pwd)/saved_acl2 regression-everything
+else
+	$(MAKE) $(ACL2_IGNORE) ACL2=$(ACL2) regression-everything
 endif
 
 .PHONY: regression-nonstd-fresh
@@ -853,9 +834,9 @@ clean-doc:
 .PHONY: clean-books
 clean-books:
 ifndef ACL2
-	cd books ; $(MAKE) $(ACL2_IGNORE) ACL2=$(shell pwd)/saved_acl2 clean
+	cd books ; $(MAKE) $(ACL2_IGNORE) ACL2=$(shell pwd)/saved_acl2 moreclean
 else
-	cd books ; $(MAKE) $(ACL2_IGNORE) ACL2=$(ACL2) clean
+	cd books ; $(MAKE) $(ACL2_IGNORE) ACL2=$(ACL2) moreclean
 endif
 
 .PHONY: clean-books-nonstd

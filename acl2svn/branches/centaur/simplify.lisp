@@ -1,4 +1,4 @@
-; ACL2 Version 6.1 -- A Computational Logic for Applicative Common Lisp
+; ACL2 Version 6.2 -- A Computational Logic for Applicative Common Lisp
 ; Copyright (C) 2013, Regents of the University of Texas
 
 ; This version of ACL2 is a descendent of ACL2 Version 1.9, Copyright
@@ -6828,7 +6828,7 @@
 ; falsity of every literal in new-clause; see the comment in rewrite-atm about
 ; the third argument returned by that function.  Note that it is always legal
 ; to return the false clause in place of any other clause, so our use of fttree
-; is clearly sound.
+; may be viewed as heuristic, i.e., it is clearly sound.
 
 ; We return 5 values: a new step-limit; a flag indicating whether anything was
 ; done; the final ecnt; a set, ans, of clauses whose conjunction implies cl

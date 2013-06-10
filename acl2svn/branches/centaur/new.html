@@ -1,10 +1,10 @@
 <HTML>
-<HEAD><TITLE>ACL2 Version 6.1 News</TITLE></HEAD>
+<HEAD><TITLE>ACL2 Version 6.2 News</TITLE></HEAD>
 
 <BODY TEXT="#000000">
 <BODY BGCOLOR="#FFFFFF">
 
-<H1><A NAME="top"><a href="http://www.cs.utexas.edu/users/moore/acl2/">ACL2</a> Version 6.1 News</A></H1>
+<H1><A NAME="top"><a href="http://www.cs.utexas.edu/users/moore/acl2/">ACL2</a> Version 6.2 News</A></H1>
 
 <H2>Table of Contents</H2>
 
@@ -13,7 +13,6 @@
 <LI><A HREF="#vstte-12">VSTTE 2012 Competition</A></LI>
 <LI><A HREF="#acl2-books">ACL2 Books Repository</A></LI>
 <LI><A HREF="#performance">Performance Comparisons</A></LI>
-<LI><A HREF="#courses">ACL2 Course Materials</A></LI>
 
 </ul>
 
@@ -44,151 +43,7 @@ eventually incorporated into official ACL2 releases.
 
 <A NAME="performance"><H2>Performance Comparisons</H2></A>
 
-<p>
-
-The statistics below correspond to runs of <code>make ACL2_JOBS=8
-regression</code> using community books
-(available from
-the <a href="https://code.google.com/p/acl2-books/">acl2-books project
-website</a>), skipping
-directory <code>books/clause-processors/SULFA/</code>, for ACL2
-executables built on Linux platforms as indicated.  Not shown are
-results of testing on Windows and Mac OS X.  Each regression was run
-on Ubuntu Linux.
-
-<p>
-
-<H3>64-bit ACL2 Linux runs on 3.5 GHz 4-core Intel(R) Xeon(R) with Hyper-Threading, using make ACL2_JOBS=8</H3>
-
-Note: We ran regression using CLISP 2.44.1 as well, but without the
-<code>centaur/</code> or <code>workshops/</code> books.  The wall
-clock time was close to 3 hours, far exceeding all the times just
-below even though those include certification of
-the above books.
-
-<ul>
-<!-- dunnottar -->
-
-<li>CCL Version 1.9-dev-r15542M-trunk:
-<pre>
-17121.010u 570.180s 2:03:26.55 238.8%	0+0k 231264+1293128io 365pf+0w</pre></li>
-
-<li>Gnu Common Lisp (GCL) Version 2.6.8pre, 524288 maximum pages:
-<pre>
-18786.760u 778.230s 1:59:34.37 272.7%	0+0k 406504+3298312io 426pf+0w</pre></li>
-
-<li>Lispworks Version 6.1.1:
-<pre>
-18272.610u 379.770s 2:08:32.22 241.8%	0+0k 218288+1358464io 324pf+0w</pre></li>
-
-<li>SBCL Version 1.0.49:
-<pre>
-22538.290u 498.680s 2:32:32.52 251.7%	0+0k 427992+1622792io 603pf+0w</pre></li>
-
-</ul>
-
-<H3>64-bit ACL2(h) Linux runs on 3.5 GHz 4-core Intel(R) Xeon(R) with Hyper-Threading, using make ACL2_JOBS=8</H3>
-
-Note that unlike the times above, the times just below are for the
-regression suite for
-the <a href="http://www.cs.utexas.edu/users/moore/acl2/current/HONS-AND-MEMOIZATION.html">HONS
-version of ACL2</a>, i.e., ACL2(h).</b>
-
-<ul>
-<!-- eld -->
-
-<li>CCL Version 1.9-dev-r15542M-trunk:
-<pre>
-21345.800u 935.270s 1:13:29.73 505.2%	0+0k 326624+1530776io 1825pf+0w</pre></li>
-
-<li>Lispworks Version 6.1.1 [Note: Skipped models/y86 because
-of insufficient values for array-dimension-limit and for
-array-dimension-limit.]:
-<pre>
-23760.990u 494.720s 1:21:12.82 497.7%	0+0k 225960+1512856io 1523pf+0w</pre>
-</li>
-
-<li>SBCL Version 1.0.49:
-<pre>
-29884.140u 703.070s 1:40:01.15 509.6%	0+0k 477576+1812312io 2079pf+0w</pre></li>
-
-</ul>
-
-<H3>32-bit ACL2 Linux runs on 2.8 GHz 4-core Intel(R) Xeon(R) with Hyper-Threading, using make ACL2_JOBS=8</H3>
-
-<ul>
-<!-- chastity -->
-
-<li>Gnu Common Lisp (GCL) Version 2.6.8pre, 524288 maximum pages:
-<pre>23144.374u 710.308s 2:33:41.31 258.6%	0+0k 347088+3101128io 254pf+0w</pre></li>
-
-<li>CCL Version 1.9-dev-r15542M-trunk:
-<pre>
-27832.755u 426.454s 3:20:08.68 235.3%	0+0k 278848+1286616io 274pf+0w</pre></li>
-
-<li>CMU Common Lisp (CMUCL) Version 19e:
-<pre>
-63694.864u 936.738s 7:38:22.49 235.0%	0+0k 179000+1574976io 245pf+0w</pre></li>
-
-</ul>
-
-<p>
-
-<A NAME="courses"><H2>ACL2 Course Materials</H2></A>
-
-At some point, perhaps "ACL2 Course Materials" may be a top-level link on the
-ACL2 home page.  For now, we provide some links.
-
-<ul>
-
-<li>The following two interfaces to ACL2 support the teaching of ACL2
-to undergraduates:
-
-  <ul>
-
-  <li>The <a href="http://acl2s.peterd.org/acl2s/">ACL2 Sedan
-  (ACL2s)</a></li>
-
-  <li><a href="http://www.ccs.neu.edu/home/cce/acl2/">DrACuLa</a></li>
-
-  </ul>
-
-<li>Here is a link to the <a
-href="http://www.faculty.idc.ac.il/yishai/reasoning/">web
-page for Yishai Feldman's Computer-Aided Reasoning course at The Interdisciplinary Center, Herzliya</a>.</li>
-
-<li>John Cowles, <a href="http://www.cs.uwyo.edu/~cowles/jvm-acl2/">COSC5010:
-Formalizing the JVM in ACL2</a>, Univ. of Wyoming.</li>
-
-<li>Links to some of Warren Hunt's courses, many of which use ACL2, may be found <a
-href="http://www.cs.utexas.edu/users/hunt/class/index.html">here</a>.</li>
-
-<li><a
-href="http://www.ccs.neu.edu/home/pete/courses/Logic-and-Computation/2008-Spring/">Logic
-and Computation</a>, a freshman class taught by Pete Manolios and Riccardo
-Pucella at Northeastern.</li>
-
-<li>Here are links to web pages for courses taught by Pete Manolios at
-Georgia Tech:
-<ul>
-<li><a href="http://www.cc.gatech.edu/~manolios/courses/Computational-Logic/2005-Spring/">CS 8803 Computational Logic
-(Spring 2005)</a></li>
-<li><a
-href="http://www.cc.gatech.edu/fac/Pete.Manolios/courses/Hardware-Verification-Seminar/2004-Fall/">CS
-8001 Hardware Verification Fall 2004</a></li>
-<li><a href="http://www.ccs.neu.edu/home/pete/courses/Processor-design/2002-Fall/">CS 3220 Processor Design.</a></li>
-</li>
-</ul>
-
-<li>Links to some of J Moore's courses, many of which use ACL2, may be found <a
-href="http://www.cs.utexas.edu/users/moore/classes/index.html">here</a>.</li>
-
-<li><a href="http://www.cs.ou.edu/~rlpage/SEcollab/">A course taught by Rex Page at the
-Univ. of Oklahoma, and related links.</a></li>
-
-<li><a href="http://www.stanford.edu/~ewsmith/acl2/">Eric Smith's web page for a class at Stanford</a></li>
-
-</ul>
+<i>To appear</i>
 
 <br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br>
 <br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br>

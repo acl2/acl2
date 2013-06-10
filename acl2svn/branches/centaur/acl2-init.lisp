@@ -1,4 +1,4 @@
-; ACL2 Version 6.1 -- A Computational Logic for Applicative Common Lisp
+; ACL2 Version 6.2 -- A Computational Logic for Applicative Common Lisp
 ; Copyright (C) 2013, Regents of the University of Texas
 
 ; This version of ACL2 is a descendent of ACL2 Version 1.9, Copyright
@@ -217,7 +217,7 @@ implementations.")
       nil)
 
 #+(and lispworks acl2-par)
-(setq system:*stack-overflow-behaviour* 
+(setq system:*stack-overflow-behaviour*
 
 ; Since a setting of nil is at least sometimes (if not always) ignored when
 ; safety is set to 0 (according to an email communication between David Rager
@@ -293,7 +293,7 @@ implementations.")
      (defun reverse (x)
        (if (equal x "")
            ""
-         (funcall *our-old-reverse* x)))
+         (funcall (symbol-value '*our-old-reverse*) x)))
      (compile 'reverse))))
 
 ; WARNING: The next form should be an in-package (see in-package form for sbcl
@@ -316,24 +316,19 @@ implementations.")
 
   'acl2_invisible::*CURRENT-ACL2-WORLD-KEY*)
 
-#+(and gcl hons never-mind)
-; For now (5/2/2013) we will skip this error for ANSI GCL (see "never-mind"
-; just above).  If ANSI GCL ever defined *PRINT-PPRINT-DISPATCH*, we should
-; tags-search the sources for this variable and make appropriate changes.
+#+cltl2
 (when (not (boundp 'COMMON-LISP::*PRINT-PPRINT-DISPATCH*))
 
-; With-standard-io-syntax is called in memoize-raw.lisp, which has caused an
-; error in ANSI GCL when COMMON-LISP::*PRINT-PPRINT-DISPATCH* is not bound.
-; Even if that is somehow fixed, we probably should still disallow the
-; combination #+(and gcl hons (not cltl2)).
+; Many improvements were made to ANSI GCL in May, 2013.  If
+; COMMON-LISP::*PRINT-PPRINT-DISPATCH* is unbound, then something is wrong with
+; this Lisp.  In particular, with-standard-io-syntax might not work correctly.
 
    (format t
-           "ERROR: We do not support building a HONS version of ACL2 in~%~
-            a host Common Lisp when variable ~s is unbound.  This~%~
-            restriction might be lifted if you request that of the ACL2~%~
-            implementors."
+           "ERROR: We do not support building ACL2 in~%~
+            a host ANSI Common Lisp when variable ~s is unbound.  Please~%~
+            obtain a more recent version of your Lisp implementation."
            'COMMON-LISP::*PRINT-PPRINT-DISPATCH*)
-   (lisp::bye))
+   (exit-lisp))
 
 #+(and gcl cltl2)
 ; Deal with undefined cltl2 symbols in ANSI GCL, using values that would be
@@ -761,10 +756,8 @@ implementations.")
     result))
 
 (defmacro our-with-standard-io-syntax (&rest args)
-
-; Use this macro when you can live with progn instead in the case of GCL.
-
-  (cons #+gcl 'progn #-gcl 'with-standard-io-syntax
+  (cons #-cltl2 'progn
+        #+cltl2 'with-standard-io-syntax
         args))
 
 (defmacro write-exec-file (stream prefix string &rest args)
@@ -878,7 +871,7 @@ implementations.")
 ; When built with GCL 2.6.1-38 and *acl2-allocation-alist* = nil, we have:
 
 ;   ACL2>(room)
-; 
+;
 ;     4972/4972   61.7%         CONS RATIO LONG-FLOAT COMPLEX STRUCTURE
 ;      133/274    14.0%         FIXNUM SHORT-FLOAT CHARACTER RANDOM-STATE READTABLE NIL
 ;      210/462    97.5%         SYMBOL STREAM
@@ -887,17 +880,17 @@ implementations.")
 ;     1290/1884    7.4%         STRING
 ;      711/779     0.9%         CFUN BIGNUM
 ;       29/115    82.8%         SFUN GFUN CFDATA SPICE NIL
-; 
+;
 ;     1302/1400                 contiguous (176 blocks)
 ;          13107                hole
 ;          5242    0.0%         relocatable
-; 
+;
 ;         7415 pages for cells
 ;        27066 total pages
 ;        93462 pages available
 ;        10544 pages in heap but not gc'd + pages needed for gc marking
 ;       131072 maximum pages
-; 
+;
 ;   ACL2>
 
 ; So as an experiment we used some really large numbers below (but not for hole or
@@ -1296,9 +1289,23 @@ implementations.")
                          (t prog1))))
        (write-exec-file str
                         nil
-                        "~s -core ~s -eval '(acl2::cmulisp-restart)' $*~%"
+                        "~s -core ~s -dynamic-space-size ~s -eval ~
+                         '(acl2::cmulisp-restart)' $*~%"
                         prog2
-                        eventual-sysout-core)))
+                        eventual-sysout-core
+
+; In our testing for ACL2 Version_6.2 we found that certification failed for
+; ACL2(h) built on CMUCL for the book tau/bounders/elementary-bounders.lisp,
+; with the error: "CMUCL has run out of dynamic heap space (512 MB)."  This
+; failure doesn't seem to be fully reproduceable, but it seems safest to
+; increase the stack size.  Our CMUCL image, even though on 64-bit linux,
+; reported the following when we tried a value of 2000 here:
+
+; -dynamic-space-size must be no greater than 1632 MBytes.
+
+; So we use 1600 and see how it goes....
+
+                        1600)))
     (chmod-executable sysout-name)
     (system::gc)
     (extensions::save-lisp sysout-core :load-init-file nil :site-init nil
@@ -1415,12 +1422,15 @@ implementations.")
 ; We have observed with SBCL 1.0.49 that "make HTML" fails on our 64-bit linux
 ; system unless we start sbcl with --control-stack-size 4 [or larger].  The
 ; default, according to http://www.sbcl.org/manual/, is 2.  The problem seems
-; to be stack overflow from fmt0, which is not tail recursive.
+; to be stack overflow from fmt0, which is not tail recursive.  More recently,
+; community book centaur/misc/defapply.lisp causes a stack overflow even with
+; --control-stack-size 4 (though that might disappear after we added (comp t)
+; in a couple of places).  So we use 8 instead of 4.
 
 ; See *sbcl-dynamic-space-size* for an explanation of the --dynamic-space-size
 ; setting below.
 
-        "~s --dynamic-space-size ~s --control-stack-size 4 --core ~s~a ~
+        "~s --dynamic-space-size ~s --control-stack-size 8 --core ~s~a ~
          --eval '(acl2::sbcl-restart)'"
         prog
         *sbcl-dynamic-space-size*
@@ -1441,7 +1451,7 @@ implementations.")
     ;; some core file bloat, and slightly slower startup.
     (sb-ext:gc)
     (sb-ext:save-lisp-and-die sysout-core
-                              :purify 
+                              :purify
                               #+(or x86 x86-64 ppc) nil
                               #-(or x86 x86-64 ppc) t)))
 
@@ -1708,7 +1718,7 @@ implementations.")
 ; (which is not applicable to MCL sessions anyhow).
 #-(and mcl (not ccl))
 (defun save-acl2 (&optional mode other-info
-                            
+
 ; Currently do-not-save-gcl is ignored for other than GCL.  It was added in
 ; order to assist in the building of Debian packages for ACL2 based on GCL, in
 ; case Camm Maguire uses compiler::link.

@@ -1,4 +1,4 @@
-; ACL2 Version 6.1 -- A Computational Logic for Applicative Common Lisp
+; ACL2 Version 6.2 -- A Computational Logic for Applicative Common Lisp
 ; Copyright (C) 2013, Regents of the University of Texas
 
 ; This version of ACL2 is a descendent of ACL2 Version 1.9, Copyright
@@ -117,7 +117,7 @@
                              (custom-trace-ppr :in
                                                (cons ',name
                                                      (trace-hide-world-and-state
-                                                      ,(sublis *trace-sublis* 
+                                                      ,(sublis *trace-sublis*
                                                                (cadr l))))))
                       :when :before))
         (t

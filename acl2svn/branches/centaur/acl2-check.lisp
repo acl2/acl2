@@ -1,4 +1,4 @@
-; ACL2 Version 6.1 -- A Computational Logic for Applicative Common Lisp
+; ACL2 Version 6.2 -- A Computational Logic for Applicative Common Lisp
 ; Copyright (C) 2013, Regents of the University of Texas
 
 ; This version of ACL2 is a descendent of ACL2 Version 1.9, Copyright
@@ -226,7 +226,7 @@ most-negative-fixnum = ~s."
 ; T
 ; ACL2 [RAW LISP]> (format nil "~a" (code-char 13))
 ; "
-; ACL2 [RAW LISP]> 
+; ACL2 [RAW LISP]>
 
 ; So our check for CLISP is incomplete, but as explained in the comment just
 ; above this check, we can live with that.

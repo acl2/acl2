@@ -1,4 +1,4 @@
-; ACL2 Version 6.1 -- A Computational Logic for Applicative Common Lisp
+; ACL2 Version 6.2 -- A Computational Logic for Applicative Common Lisp
 ; Copyright (C) 2013, Regents of the University of Texas
 
 ; This version of ACL2 is a descendent of ACL2 Version 1.9, Copyright
@@ -146,7 +146,7 @@
                                :in
                                (cons ',name
                                      (trace-hide-world-and-state
-                                      ,(sublis *trace-sublis* 
+                                      ,(sublis *trace-sublis*
                                                (cadr l))))))))
         (t
          (trace-entry name (cdr l)))))
@@ -235,7 +235,7 @@
              (push (trace-exit (car x) (cadr x) (cddr x)) new-lst)
              (push (trace-entry (car x) (cddr x)) new-lst)
              (push `(excl:unadvise ,(car x)) new-lst))))))
-            
+
 (excl:without-package-locks
  (defmacro trace (&rest fns)
    (if fns
