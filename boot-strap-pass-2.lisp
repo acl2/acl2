@@ -1350,12 +1350,16 @@
 ; :acl2-devel set (see discussion in the comment at the top of this section).
 ; For example, cdr of the entry for "system/top" is produced by evaluating:
 ; (include-book "system/top" :dir :system).
-; The indicated books need to be certified with :acl2-devel set, but this takes
-; about 2.5 minutes on a fast machine in Feb. 2013, as follows:
+; The indicated books need to be certified using an ACL2 executable that was
+; built with feature :acl2-devel set, but this takes about 2.5 minutes on a
+; fast machine in Feb. 2013, as follows:
 
 ; make -j 8 regression ACL2_BOOK_DIRS=system ACL2=<:acl2-devel version>
 
 ; Each member of each cdr below is of the form (fn . measured-subset).
+
+; Note that it is not necessary to do a full regression with an :acl2-devel
+; executable; only the books in the keys of this alist need to be certified.
 
   '(("system/top"
      (ARGLISTP)

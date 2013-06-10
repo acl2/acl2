@@ -7065,7 +7065,44 @@ Missing functions (use *check-built-in-constants-debug* = t for verbose report):
                    (lisp-implementation-type)
                    '(lisp-implementation-version)
                    (lisp-implementation-version))
-           (error "Check failed!")))))))
+           (error "Check failed!")))))
+
+; The following is a start on checking that we don't have superfluous symbols
+; in the list values of certain constants.  But in fact there can be such
+; symbols: we want the value for each constant must be independent of
+; features :hons or :acl2-par, yet some macros and functions are only defined
+; when such features are present.  We may think more about this later.
+
+;   (let ((undefined-macros
+;          (loop for x in *primitive-macros-with-raw-code*
+;                when (not (or (macro-function x) (symbol-function x)))
+;                collect x))
+;         (undefined-program-fns
+;          (loop for x in *primitive-program-fns-with-raw-code*
+;                when (not (fboundp x))
+;                collect x))
+;         (undefined-logic-fns
+;          (loop for x in *primitive-logic-fns-with-raw-code*
+;                when (not (fboundp x))
+;                collect x)))
+;     (when undefined-macros
+;       (format
+;        t
+;        "Undefined macros in *primitive-macros-with-raw-code*:~%~s~%"
+;        undefined-macros))
+;     (when undefined-program-fns
+;       (format
+;        t
+;        "Undefined macros in *primitive-program-fns-with-raw-code*:~%~s~%"
+;        undefined-program-fns))
+;     (when undefined-logic-fns
+;       (format
+;        t
+;        "Undefined macros in *primitive-logic-fns-with-raw-code*:~%~s~%"
+;        undefined-logic-fns))
+;     (when (or undefined-macros undefined-program-fns undefined-logic-fns)
+;       (error "Check failed!")))
+    ))
 
 (defun-one-output check-none-ideal (trips acc)
   (cond

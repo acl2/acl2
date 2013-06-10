@@ -1429,6 +1429,29 @@ of backquote.")
 which is saved just in case it's needed later.")
 
 (defun set-new-dispatch-macro-character (char subchar fn)
+
+; This function currently causes an error when attempting to build ACL2(h) on
+; top of CLISP, where (get-dispatch-macro-character #\# #\Y) evaluates to
+; #<SYSTEM-FUNCTION SYSTEM::CLOSURE-READER>.  Here is a discussion of that
+; issue.
+
+; With some thought we might be able to avoid the special cases below for which
+; char is #\# and subchar is, for example, #\Y -- i.e., smashing (in that
+; example) which reader is invoked by #\Y.  We certainly have in mind our own
+; semantics for ACL2 source files, to be read using *acl2-readtable*, while the
+; host Lisp's semantics are expected for compiled files.  But consider files
+; like .cert and @expansion.lsp files, i.e., files that may be written by the
+; host Lisp (see the call of prin1 in print-object$-ser) but are read by ACL2.
+; Perhaps the issue goes away if we are using the serialize reader and writer,
+; as must be the case when we install a reader for #\Y.  We may think all this
+; through when there is sufficient reason to do so.  For now, the only problem
+; pertaining to our handling of dispatch macro characters is in the case of
+; CLISP and ACL2(h), since #\Y is already defined in CLISP -- this function
+; causes an error when attempting to build ACL2(h) on CLISP.  Since CLISP is
+; much slower than the other six host Lisps that we support, and since ACL2(h)
+; is optimized for CCL such that it is really only intended for CCL at this
+; point (June 2013), we can live without CLISP support for ACL2(h).
+
   (let ((old (get-dispatch-macro-character char subchar)))
     (cond ((or (null old)
                (eql fn old)

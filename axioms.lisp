@@ -27953,7 +27953,6 @@
     mfc-unify-subst ; *metafunction-context*
     mfc-world ; *metafunction-context*
     mfc-ap-fn ; under dependent clause-processor
-    mfc-ap-ttree ; under dependent clause-processor
     mfc-relieve-hyp-fn ; under dependent clause-processor
     mfc-relieve-hyp-ttree ; under dependent clause-processor
     mfc-rw+-fn ; under dependent clause-processor

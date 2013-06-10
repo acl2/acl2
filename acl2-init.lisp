@@ -1289,9 +1289,23 @@ implementations.")
                          (t prog1))))
        (write-exec-file str
                         nil
-                        "~s -core ~s -eval '(acl2::cmulisp-restart)' $*~%"
+                        "~s -core ~s -dynamic-space-size ~s -eval ~
+                         '(acl2::cmulisp-restart)' $*~%"
                         prog2
-                        eventual-sysout-core)))
+                        eventual-sysout-core
+
+; In our testing for ACL2 Version_6.2 we found that certification failed for
+; ACL2(h) built on CMUCL for the book tau/bounders/elementary-bounders.lisp,
+; with the error: "CMUCL has run out of dynamic heap space (512 MB)."  This
+; failure doesn't seem to be fully reproduceable, but it seems safest to
+; increase the stack size.  Our CMUCL image, even though on 64-bit linux,
+; reported the following when we tried a value of 2000 here:
+
+; -dynamic-space-size must be no greater than 1632 MBytes.
+
+; So we use 1600 and see how it goes....
+
+                        1600)))
     (chmod-executable sysout-name)
     (system::gc)
     (extensions::save-lisp sysout-core :load-init-file nil :site-init nil

@@ -194,13 +194,16 @@ The simplest way may be to fetch a recent version of GCL from
 
 <p>
 
-Another way to fetch a recent GCL is with the following command.  This
-particular command will retrieve recent development/unstable cvs
+Another way to fetch a recent GCL is with one of the following
+commands, which will retrieve recent development/unstable cvs
 sources.
 
 <pre>
 cvs -z9 -q -d:pserver:anonymous@cvs.sv.gnu.org:/sources/gcl \
-     co -d gcl-2.6.8pre -r Version_2_6_8pre gcl
+     co -d gcl-2.6.8 -r Version_2_6_8pre gcl
+
+cvs -z9 -q -d:pserver:anonymous@cvs.sv.gnu.org:/sources/gcl \
+     co -d gcl-2.6.9 -r Version_2_6_9pre gcl
 </pre>
 
 As per GCL installation instructions, you may wish to build GCL as

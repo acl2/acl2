@@ -20639,6 +20639,8 @@
 ; Modified *home-page* for searching books, to point to tag
 ; #Searching_and_browsing_the_books.
 
+; For SBCL only, increased --control-stack-size from 4 to 8.
+
   :doc
   ":Doc-Section release-notes
 
@@ -20957,6 +20959,8 @@
   ~/~/")
 
 (deflabel note-6-3
+
+; (CMUCL only) Allocated larger stack for CMUCL on 64-bit x86 installations.
 
   :doc
   ":Doc-Section release-notes

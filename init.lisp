@@ -79,9 +79,14 @@
 ; books/clause-processors/SULFA/books/sat-tests/sudoku.lisp was caused by
 ; bad-lisp-objectp.  Another doubling fixed each of these, but wan't enough for
 ; certifying books/centaur/aig/random-sim.lisp, again because of
-; expansion-alist-pkg-names-memoize.  So we now multiply by 8.  We plan to
-; investigate a suggestion of Camm Maguire that these problems might be solved
-; by avoiding the use of interpreted code.
+; expansion-alist-pkg-names-memoize.  So we now multiply by 8.  Camm Maguire
+; has suggested that these problems might be solved by avoiding the use of
+; interpreted code, and we considered investigating whether that might be done
+; (e.g., by adding (comp t) events) in the cases above.  But we see no harm in
+; simply increasing the stack size, which could be of benefit in cases where
+; users execute uncompiled code.  And besides, when we start ACL2(h) built on
+; GCL we find that (symbol-function 'expansion-alist-pkg-names-memoize) is
+; compiled.
 
     (setq si::*multiply-stacks* 8))
   (setq *acl2-gcl-multiply-stacks-evaluated* t))
