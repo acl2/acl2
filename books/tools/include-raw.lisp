@@ -195,7 +195,12 @@ differences between ACL2's reader and what raw Lisp code is expecting.</p>")
                (compiled-fname (compile-file-pathname fname)))
           (cond
            ((not (member :cltl2 *features*)) ; #-cltl2
-            (load-compiled compiled-fname))
+            (cond ((probe-file compiled-fname)
+                   (load-compiled compiled-fname))
+                  (t (format t "Compiled file ~a does not exist; loading uncompiled ~a~%"
+                             (namestring compiled-fname)
+                             fname)
+                     (raw-load-uncompiled name error-on-fail on-fail state))))
            (t ; #+cltl2
             (handler-case
              (load-compiled compiled-fname)
