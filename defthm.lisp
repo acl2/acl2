@@ -4965,7 +4965,7 @@
   returns the contradiction flag produced by linearizing ~c[term] and adding it
   to the ~c[linear-pot-lst].
 
-  ~c[(mfc-relieve-hyp hyp alist rune target bkptr mfc state): returns ~c[t] or
+  ~c[(mfc-relieve-hyp hyp alist rune target bkptr mfc state)]: returns ~c[t] or
   ~c[nil] according to whether the indicated hypothesis term, ~c[hyp], can be
   relieved (proved) under the giving variable bindings, ~c[alist].  Here,
   ~c[hyp] is the hypothesis of the indicated ~ilc[rune] at (one-based) position
