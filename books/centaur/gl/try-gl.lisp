@@ -438,12 +438,20 @@
                                                   (acl2::term-vars-list clause)))))))
 
 
+(defun maybe-print-clause-fn (print pr-name message clause state)
+  (declare (xargs :mode :program :stobjs state))
+  (and (or (eq print :all)
+           (member :all print)
+           (member pr-name print))
+       (cw message (acl2::prettyify-clause clause t (w state)))))
+
+(defmacro maybe-print-clause (pr-name message)
+  `(maybe-print-clause-fn print ,pr-name ,message clause state))
+
 (defun gl-auto-hint-step2 (clause g-bindings print state)
   (declare (xargs :mode :program :stobjs state))
   (b* ((gl-clause-proc (latest-gl-clause-proc))
-       (- (and (member :final-clause print)
-               (cw "using GL on clause: ~x0~%"
-                   (acl2::prettyify-clause clause nil (w state)))))
+       (- (maybe-print-clause :final-clause "using GL on clause: ~x0~%"))
        (config (make-glcp-config))
        (cov-hints (glcp-coverage-hints nil nil nil nil))
        (hyp (car clause))
@@ -461,9 +469,7 @@
 
 (defun gl-auto-hint-fn (clause type-gens bad-subterms print state)
   (declare (xargs :mode :program :stobjs state))
-  (b* ((- (and (member :before-filtering print)
-               (cw "before filtering: ~x0~%"
-                   (acl2::prettyify-clause clause t (w state)))))
+  (b* ((- (maybe-print-clause :before-filtering "before filtering: ~x0~%"))
        (clause (filter-bad-subterms clause bad-subterms))
        ((mv bindings hyp-lits nonhyp-lits)
         (type-gen-collect-bindings clause type-gens state))
@@ -509,15 +515,12 @@
   :rule-classes :clause-processor)
 
 
-
     
 (defun try-gl-hint-fn (clause stablep fixups subterms-types type-gens
                               bad-subterms print state)
   (declare (xargs :mode :program :stobjs state))
   (b* (((unless stablep) nil)
-       (- (and (member :original-clause print)
-               (cw "original clause: ~x0~%"
-                   (acl2::prettyify-clause clause t (w state)))))
+       (- (maybe-print-clause :original-clause "original clause: ~x0~%"))
 
        ;; translate all the terms in the various arguments
        (state-vars (acl2::default-state-vars t))
@@ -543,9 +546,7 @@
                        clause))
 
        (- (and fixup-subst
-               (member :fixed-up-clause print)
-               (cw "fixed-up clause: ~x0~%"
-                   (acl2::prettyify-clause fixup-clause t (w state)))))
+               (maybe-print-clause :fixed-up-clause "fixed-up clause: ~x0~%")))
 
        ;; collect the subterms that we'll generalize away and their type hyps
        ((mv subterms type-hyps)
@@ -561,9 +562,9 @@
           (try-gl-add-hyps-cp
            clause '(,type-hyps
                     ((progn$
-                      ,@(and (member :before-generalization print)
-                             '((cw "before generalization: ~x0~%"
-                                   (acl2::prettyify-clause clause t (w state)))))
+                      (let ((print ',print))
+                        (maybe-print-clause :before-generalization
+                                            "before generalization: ~x0~%"))
                       (cw "Variable mapping: ~x0~%"
                           ',(pairlis$ fresh-vars (pairlis$ subterms nil)))
                       '(:computed-hint-replacement

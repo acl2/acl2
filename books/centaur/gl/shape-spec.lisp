@@ -1520,6 +1520,11 @@
   (implies (consp X)
            (natp (+ -1 (len x)))))
 
+(defthm shape-spec-obj-in-range-open-g-integer
+  (equal (shape-spec-obj-in-range `(:g-integer . ,rest) x)
+         (integerp x))
+  :hints(("Goal" :in-theory (enable shape-spec-obj-in-range))))
+
 (defthm shape-spec-obj-in-range-open-integer
   (equal (shape-spec-obj-in-range `(:g-number ,bits) x)
          (if (consp bits)
@@ -1583,6 +1588,16 @@
            (equal (shape-spec-obj-in-range lst obj) t)))
 
 
+(defthm shape-spec-obj-in-range-solve-integer?
+  (equal (shape-spec-obj-in-range `(:g-integer? . ,rest) x) t)
+  :hints(("Goal" :in-theory (enable shape-spec-obj-in-range))))
+
+(defthm shape-spec-obj-in-range-backchain-g-integer
+  (implies (integerp x)
+           (equal (shape-spec-obj-in-range `(:g-integer . ,rest) x)
+                  t))
+  :hints(("Goal" :in-theory (enable shape-spec-obj-in-range))))
+
 
 (defthm shape-spec-obj-in-range-backchain-integer-1
   (implies (and (consp bits)
@@ -1640,6 +1655,8 @@
 ;; concretes.)  Then shape-spec-obj-in-range-open will 
 (def-ruleset! shape-spec-obj-in-range-backchain
   '(shape-spec-obj-in-range-open-cons
+    shape-spec-obj-in-range-solve-integer?
+    shape-spec-obj-in-range-backchain-g-integer
     shape-spec-obj-in-range-backchain-integer-1
     shape-spec-obj-in-range-backchain-integer-2
     shape-spec-obj-in-range-backchain-boolean
@@ -1655,6 +1672,8 @@
 
 (def-ruleset! shape-spec-obj-in-range-open
   '(shape-spec-obj-in-range-open-cons
+    shape-spec-obj-in-range-solve-integer?
+    shape-spec-obj-in-range-open-g-integer
     shape-spec-obj-in-range-open-integer
     shape-spec-obj-in-range-open-boolean
     shape-spec-obj-in-range-open-concrete

@@ -7,7 +7,7 @@
 (include-book "glcp-templates")
 (include-book "shape-spec-defs")
 (include-book "symbolic-arithmetic-fns")
-(include-book "centaur/rewriter/rewrite-rule" :dir :system)
+(include-book "centaur/misc/rewrite-rule" :dir :system)
 
 (defmacro glcp-value (res)
   `(mv nil obligs ,res state))
