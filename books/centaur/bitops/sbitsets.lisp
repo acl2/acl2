@@ -607,7 +607,7 @@ block size.</p>"
                   (syntaxp (term-order y x)))
              (equal (sbitset-pair-offset x)
                     (sbitset-pair-offset y)))
-    :hints((witness)))
+    :hints((set-reasoning)))
 
   (defthm consp-of-sbitset-pair-members
     (implies (force (sbitset-pairp x))
