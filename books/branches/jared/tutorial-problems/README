@@ -1,0 +1,14 @@
+This directory contains solutions to exercises of a tutorial nature.
+In each case a solution is given that shows the process of arriving at
+that solution.  A corresponding file ending with "-athena.lisp" is so
+named because it appears to spring fully formed from nowhere: the
+description of the process has been eliminated.
+
+==============================
+
+For the exercise in :doc introductory-challenge-problem-4:
+
+introductory-challenge-problem-4.lisp
+introductory-challenge-problem-4-athena.lisp
+
+==============================

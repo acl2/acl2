@@ -1,0 +1,63 @@
+; This directory is a replica of J Moore's corresponding contribution to the
+; first ACL2 workshop.  We include it here since that contribution is not part
+; of the ACL2 distribution proper.
+
+; This is the README file and certification instructions
+
+;   An Exercise in Graph Theory
+;   by J Strother Moore
+
+; This is an ACL2 file but it is not a book.  It contains expressions
+; that are not allowed in certified books.
+
+; The following files must exist on the connected directory.  Note that the
+; first one is this file.
+
+;    file                     book?
+; README                       no
+; find-path1.lisp              yes
+; find-path2.lisp              yes
+; find-path3.lisp              yes
+; helpers.lisp                 yes
+; linear-find-path.lisp        yes
+; solutions.lisp               no
+
+; ----------------------------------------------------------------------------
+; To certify the books, start up a pristine ACL2 on this directory and
+; execute:
+
+; (ld "README" :ld-pre-eval-print t)
+
+; Or, simply execute make in this directory, assuming that it sits under
+; the books/case-studies/ directory of an ACL2 distribution.
+
+; ----------------------------------------------------------------------------
+; To check the solutions file, first certify the books and then:
+
+; (ld "solutions.lisp" :ld-pre-eval-print t)
+
+; ----------------------------------------------------------------------------
+; To write a log file for the proofs and to obtain the time it takes to
+; do the whole thing, do this after exiting the ACL2 loop with :q.
+
+; (time (ld "find-path1.lisp" :standard-co "find-path1.proofs"
+;           :proofs-co "find-path1.proofs" :ld-pre-eval-print t))
+
+; On a 200MHz Sun Ultra-2 this generated:
+; real time : 26.000 secs
+; run time  : 25.460 secs
+
+; ----------------------------------------------------------------------------
+; Certification without using make:
+
+(certify-book "find-path1")  ; certify the first script
+(u)                          ; undo -- returning to pristine state
+(certify-book "helpers")     ; certify the list processing lemmas
+(u)                          ; undo
+(certify-book "find-path2")  ; certify the second script
+(u)                          ; undo
+(certify-book "find-path3")  ; certify the third script
+(u)                          ; undo
+(certify-book "linear-find-path")  ; certify the linear version
+(u)
+

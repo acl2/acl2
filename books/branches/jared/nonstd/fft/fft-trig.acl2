@@ -1,0 +1,3 @@
+(in-package "ACL2")
+(ld "../powerlists/defpkg.lsp")
+(certify-book "fft-trig" ? t)

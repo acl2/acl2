@@ -1,0 +1,77 @@
+
+
+  CONTENTS:
+---------------------------------------------------------------------------------------------------
+
+CRT.lisp                                          Proof script for the Chinese Remainder Theorem, 
+                                                  as supplied by David Russinoff.
+
+CRTcorollaries.lisp                               Some corollaries to the Chinese Remainder
+                                                  Theorem; namely, a theorem for uniqueness of inversion.
+
+Disjoint-lists.lisp                               Some lemmas about disjunct lists, 
+                                                  used to prove the inversion properties for mappings.
+
+Generic.lisp                                      Some generic lemmas about arithmetics.
+
+Memory-Assoc.lisp                                 Formalization of memories and operations upon
+                                                  them, using association lists.
+
+Mapping.lisp                                      Formalization of the notion of mapping.
+
+Minimal-Mod-Lemmas.lisp                           A book to export some necessary lemmas about mod.
+                                                  A certified version is also present.
+
+private-qr-lemmas.lisp                            A slightly modified version of the quotient-remainder
+                                                  book, that also exports some previously local lemma.
+                                                  A certified version is also present.
+
+
+Proof-Of-Equiv-From-M-Corr.lisp                   Proof of statement (1.8) in the paper. 
+
+Proof-Of-Correctness-OneCycle.lisp                Proof of statement (1.5) in the paper. It includes:
+                                                  - Proof of the correct translation of the
+                                                    comparison operation (between integers, and 
+                                                    between integer and boolean)
+
+                                                  - Proof of the correct translation of the
+                                                    subtraction operation (between integers, and 
+                                                    between integer and boolean)
+
+                                                  - Proof of the correct translation of the
+                                                    sum operation (between integers, and 
+                                                    between integer and boolean)
+
+Proof-Of-Correctness.lisp                         Proof of statement (1.4) in the paper.
+
+
+
+HOW TO RUN THE PROOFS
+-------------------------------------------------------------------------------
+
+To run the ACL2 script of the proof described in ``Design verification
+of a safety-critical embedded verifier'', you can simply run make in
+this directory.  Alternatively, follow steps 1-11:
+
+
+ 1 - Run ACL2 and (certify-book "private-qr-lemmas"). Exit ACL2.
+
+ 2 - Run ACL2 and (certify-book "Minimal-Mod-Lemmas"). Exit ACL2.
+
+ 3 - Run ACL2 and (certify-book "CRT"). Exit ACL2.
+
+ 4 - Run ACL2 and (certify-book "CRTcorollaries"). Exit ACL2.
+
+ 5 - Run ACL2 and (certify-book "Generic"). Exit ACL2.
+ 
+ 6 - Run ACL2 and (certify-book "Memory-Assoc"). Exit ACL2.
+
+ 7 - Run ACL2 and (certify-book "Mapping"). Exit ACL2.
+
+ 8 - Run ACL2 and (certify-book "Proof-Of-Equiv-From-M-Corr"). Exit ACL2.
+
+ 9 - Run ACL2 and (certify-book "Disjoint-lists"). Exit ACL2.
+
+10 - Run ACL2 and (certify-book "Proof-Of-Correctness-OneCycle"). Exit ACL2.
+
+11 - Run ACL2 and (certify-book "Proof-Of-Correctness"). Exit ACL2.

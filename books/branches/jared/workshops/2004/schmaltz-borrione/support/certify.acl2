@@ -1,0 +1,50 @@
+(ubt! 1)
+
+(certify-book "octagon_book" ? t)
+(u)
+
+(certify-book "octagon_book" ? t)
+(u)
+
+(certify-book "octagon_book" ? t)
+(u)
+
+(certify-book "octagon_book" ? t)
+(u)
+
+(certify-book "octagon_book" ? t)
+(u)
+
+(certify-book "octagon_book" ? t)
+(u)
+
+(certify-book "octagon_book" ? t)
+(u)
+
+(certify-book "octagon_book" ? t)
+(u)
+
+(certify-book "octagon_book" ? t)
+(u)
+
+(certify-book "octagon_book" ? t)
+(u)
+
+(certify-book "octagon_book" ? t)
+(u)
+
+(certify-book "octagon_book" ? t)
+(u)
+
+(certify-book "octagon_book" ? t)
+(u)
+
+(certify-book "octagon_book" ? t)
+(u)
+
+(certify-book "octagon_book" ? t)
+(u)
+
+(certify-book "octagon_book" ? t)
+(u)
+

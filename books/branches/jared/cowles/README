@@ -1,0 +1,7 @@
+This is the README file for the acl2 directory books/cowles.
+
+John Cowles
+
+agp.lisp - Theory of Abelian Groups
+asg.lisp - Theory of Abelian Semigroups
+crg.lisp - Theory of Commutative Rings

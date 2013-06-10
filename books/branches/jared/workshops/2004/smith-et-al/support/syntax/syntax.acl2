@@ -1,0 +1,2 @@
+(include-book "syntax-extensions")
+(certify-book "syntax" ? t)
