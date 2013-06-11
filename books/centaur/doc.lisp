@@ -38,6 +38,7 @@
 (include-book "vl/lint/lint")
 (include-book "vl/mlib/clean-concats")
 (include-book "vl/mlib/atts")
+(include-book "vl/mlib/json")
 (include-book "vl/transforms/xf-clean-selects")
 (include-book "vl/transforms/xf-propagate")
 (include-book "vl/transforms/xf-expr-simp")

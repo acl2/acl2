@@ -710,8 +710,8 @@ is convenient but isn't necessarily a very sensible place to do this.</p>"
   (verify-guards vl-gateinst-dirassign
                  :hints(("Goal"
                          :in-theory (e/d (vl-gatetype-p)
-                                         (vl-gatetype-p-of-vl-gateinst->type))
-                         :use ((:instance vl-gatetype-p-of-vl-gateinst->type)))))
+                                         (return-type-of-vl-gateinst->type))
+                         :use ((:instance return-type-of-vl-gateinst->type)))))
 
   (defthm vl-warninglist-p-of-vl-gateinst-dirassign
     (implies (force (vl-warninglist-p warnings))

@@ -327,7 +327,7 @@ and max, gathering their comments.</p>"
         (vl-gather-comments-fal-aux minl maxl (- n 1) min max fal acc))))
 
   (verify-guards vl-gather-comments-fal-aux
-                 :hints(("goal" :use ((:instance posp-of-vl-location->line
+                 :hints(("goal" :use ((:instance return-type-of-vl-location->line
                                                  (x min))))))
 
   (defthm vl-commentmap-p-of-vl-gather-comments-fal-aux

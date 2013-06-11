@@ -700,9 +700,9 @@ the size of @('$random') as 32.</p>"
 
   (verify-guards vl-expr-interesting-size-atoms
     :hints(("Goal"
-            :use ((:instance vl-op-p-of-vl-nonatom->op (x x)))
+            :use ((:instance return-type-of-vl-nonatom->op (x x)))
             :in-theory (e/d (vl-op-p vl-op-arity)
-                            (vl-op-p-of-vl-nonatom->op)))))
+                            (return-type-of-vl-nonatom->op)))))
 
   (defthm-vl-flag-expr-interesting-size-atoms
     (defthm vl-atomlist-p-of-vl-expr-interesting-size-atoms
@@ -1883,12 +1883,12 @@ produce unsigned values.</li>
 
   (encapsulate
     ()
-    (local (in-theory (disable vl-op-p-of-vl-nonatom->op
+    (local (in-theory (disable return-type-of-vl-nonatom->op
                                default-car
                                default-cdr)))
     (verify-guards vl-expr-typedecide-aux
       :hints(("Goal"
-              :use ((:instance vl-op-p-of-vl-nonatom->op)))
+              :use ((:instance return-type-of-vl-nonatom->op)))
              (and stable-under-simplificationp
                   '(:in-theory (enable vl-op-arity vl-op-p)))))))
 
@@ -4282,8 +4282,8 @@ context-determined expressions."
     :hints((and stable-under-simplificationp
                 '(:in-theory (e/d (vl-op-p vl-maybe-natp
                                    (:ruleset basic-arithmetic-rules))
-                                  (vl-op-p-of-vl-nonatom->op))
-                             :use ((:instance vl-op-p-of-vl-nonatom->op)))))))
+                                  (return-type-of-vl-nonatom->op))
+                             :use ((:instance return-type-of-vl-nonatom->op)))))))
 
 
 

@@ -46,7 +46,7 @@ form</a>; see @(see cnf).</li>
 href='http://fmv.jku.at/lingeling/'>lingeling</a>) on a formula, and interpret
 its output.</li>
 
-<li>A logical story that allows us to assume, using a <see topic='@(see
+<li>A logical story that allows us to assume, using a <see topic='@(url
 defttag)'>trust tag</see>, that the SAT solver only claims that formulas are
 unsatisfiable when this is indeed the case.  (When the SAT solver claims that a
 formula is satisfiable, we can just check the alleged satisfying assignment it

@@ -30,9 +30,8 @@
 (program)
 
 (defxdoc xdoc
-  :short "<i>XDOC</i> is a tool for documenting ACL2 libraries, and is
-intended as a replacement for ACL2 facilities such as @('defdoc'), @(':doc'),
-and so on."
+  :short "<i>XDOC</i> is a tool for documenting ACL2 libraries.  It is meant to
+replace ACL2 facilities such as @(see defdoc), @(':doc'), and so on."
 
   :long "<p>To use the XDOC system, the first step is:</p>
 
@@ -40,19 +39,20 @@ and so on."
  (include-book \"xdoc/top\" :dir :system)
 })
 
-<p>This is a regular ACL2 book that loads quickly, requires no ttags, and
-provides a (nearly) complete interface to the XDOC system, including:</p>
+<p>This book loads very quickly, requires no ttags, and provides a (nearly)
+complete interface to the XDOC system, including:</p>
 
 <ul>
 
-<li>@(see defxdoc), the basic command for adding documentation, which is the
-XDOC replacement for ACL2's @('defdoc') command.</li>
+<li>@(see defxdoc), the basic command for adding documentation &mdash;
+the XDOC alternative to ACL2's @(see defdoc) command.</li>
 
-<li>The @(':xdoc') command for viewing documentation within the terminal, which
-is the XDOC replacement for ACL2's @(':doc') command.</li>
+<li>The @(':xdoc') command for viewing documentation within the terminal &mdash;
+the XDOC alternative to ACL2's @(':doc') command.</li>
 
-<li>The @(see save) command, which exports all XDOC documentation as XML files
-that can be viewed in a web browser or transformed into formats like HTML.</li>
+<li>The @(see save) command, which exports all XDOC documentation into XML
+files that can be viewed in a web browser or transformed into formats like
+HTML.</li>
 
 </ul>
 
@@ -66,32 +66,46 @@ which documentation system was used to document the topic.</p>")
   :short "Add documentation to the @(see xdoc) database."
 
   :long "<box><p>Note: @('defxdoc') is very basic.  You will usually want to
-use @(see defsection) instead.</p></box>
+use @(see defsection) or @(see cutil::define) instead.</p></box>
 
-<p>@('Defxdoc') is the XDOC alternative to ACL2's built-in @('defdoc') command.
-The general form is:</p>
+<p>@('Defxdoc') is the XDOC alternative to ACL2's built-in @('defdoc')
+command.</p>
+
+<p>General form:</p>
 
 @({
  (defxdoc name
-   :parents (topic1 topic2 ...)
-   :short \"short description\"
-   :long \"longer description\")
+   [:parents parents]
+   [:short   short]
+   [:long    long])
 })
 
-<p>All of the keyword arguments are optional.</p>
+<p>Example:</p>
+
+@({
+ (defxdoc duplicity
+   :parents (std/lists defsort count no-duplicatesp)
+   :short \"@(call duplicity) counts how many times the element @('a') occurs
+within the string @('x').\"
+   :long \"<p>This function is similar to ACL2's built-in @('count') function
+but is more limited:</p>  ...\")
+})
+
+<p>All keyword arguments are optional.</p>
 
 <ul>
 
 <li>@('name') is the name of this documentation topic, and should be a
 symbol.</li>
 
-<li>@('parents') let you associate this documentation with other topics.  A
-topic can have many parents, but circular parents are not allowed and will lead
-to errors when generating documentation.</li>
+<li>@('parents') let you associate this documentation with other topics.  As
+shown in the above example, a topic can have many parents.  Note that circular
+parents are not allowed and will lead to errors when generating
+documentation.</li>
 
-<li>@('short') should be a short description of this topic and should be
-suitable for inlining in other pages.  For instance, it is displayed in the
-full index, and as \"hover\" text in the navigation page.</li>
+<li>@('short') should be a short description of this topic that is suitable for
+inlining in other pages.  For instance, it is displayed in the full index, and
+as \"hover\" text in the navigation page.</li>
 
 <li>@('long') should be the full, detailed documentation for this topic.</li>
 
@@ -101,8 +115,8 @@ full index, and as \"hover\" text in the navigation page.</li>
 markup) language, and may also use @(see preprocessor) commands to insert
 function definitions, theorems, topic links, and so on.</p>
 
-<p>Many examples of using XDOC can be found throughout the <tt>acl2/books</tt>
-directory.  See for instance the @(see acl2::str) or @(see acl2::osets)
+<p>Many examples of using XDOC can be found throughout the ACL2 books.  See for
+instance the @(see acl2::std), @(see acl2::str) or @(see acl2::osets)
 libraries.</p>
 
 <h3>Note for Advanced Users</h3>
@@ -473,10 +487,11 @@ use a version we do not currently support.</p>")
   :short "Instructions for integrating XDOC web pages with Emacs."
 
   :long "<p>@(csee preprocessor) directives such as @('@(def get-xdoc-table)')
-result in the introduction of special links for Emacs.  It is possible to
+result in the introduction of special links for Emacs.  It may be possible to
 configure your web browser so that clicking on these links will cause Emacs to
-directly open up the appropriate source file and jump to the named function.
-Here is what such a link looks like:</p>
+directly open up the appropriate source file and jump to the named function.</p>
+
+<p>Here is what such a link looks like:</p>
 
 @(def get-xdoc-table)
 
@@ -494,7 +509,7 @@ files.</li>
 </ul>
 
 <p>The net effect is that clicking on these links will send you directly to the
-desired function in the source code.  This can be <i>really</i> slick, and
+desired function in the source code.  This can be <b>really slick</b>, and
 depending on your web browser, it may not be too hard to set up.</p>
 
 
@@ -507,7 +522,7 @@ what to do with these @('xdoc-link') files.  To tell emacs to load this file at
 startup, you can just add a command to your @('.emacs') file such as:</p>
 
 @({
- (load \"/path/to/xdoc/xdoc.el\")
+ (load \"/path/to/acl2/books/xdoc/xdoc.el\")
 })
 
 
@@ -570,10 +585,11 @@ Make, instead of prompting you if you want to reload them.</li>
 <h4>Setting up Emacsclient (recommended)</h4>
 
 <p>You can set things up so that links open up in <b>new instances</b> of
-Emacs, or in <b>new buffers</b> of an already-running Emacs.  If you want
-everything to open up in a new instance of Emacs, you can skip this section.
-But I prefer to use a single Emacs for everything, and just have links open up
-in new buffers.</p>
+Emacs, or in <b>new buffers</b> of an already-running Emacs.</p>
+
+<p>If you want everything to open up in a new instance of Emacs, you can skip
+this section.  But I prefer to use a single Emacs for everything, and just have
+links open up in new buffers.</p>
 
 <p>This is quite easy.  First, add @('(server-start)') to your @('.emacs') file
 and restart Emacs.</p>
@@ -593,37 +609,38 @@ as a new buffer.</p>
 <h2>Configuring the Web Browser</h2>
 
 <p>The last thing we need to do is instruct your web browser to send
-@('xdoc-link') files to Emacs.  How this is done depends on your web
-browser.</p>
+@('xdoc-link') files to Emacs.</p>
 
-<p>Here are old instructions for Firefox, but I don't believe mime-edit still
-exists/works, so you may need to do something else now.</p>
+<p>How to do this depends on your web browser and/or operating system.  In some
+cases it may be hard to pass command-line options to emacs directly, so you may
+find it useful to use the script @('emacsclient-wrapper.sh'), found in the xdoc
+directory.</p>
 
-<p><b>Note:</b> I have not yet found a way to get Firefox to call
-@('emacsclient') with the @('--no-wait') option.  To work around this, I wrote
-a trivial script called @('emacsclient-wrapper.sh'), which is included in the
-XDOC directory.</p>
+<h4>Chrome on KDE</h4>
 
-<ol>
-
-<li>Install the <a
-href=\"https://addons.mozilla.org/en-US/firefox/addon/4498\">MIME Edit</a>
-firefox plugin.  This is quite easy, but requires firefox to be restarted.</li>
-
-<li>Use MIME-EDIT to tell firefox to give @('.xdoc-link') files to emacs:
+<p>I don't know of any way to configure MIME types directly in Chrome.
+However, a two step process seems to work:</p>
 
 <ul>
-  <li>Choose (from the menu bar): @('Tools'), @('MIME Edit')</li>
-  <li>Pick the @('Edit') tab</li>
-  <li>Click @('New Type')</li>
-  <li>MIME Type: <u>application/acl2-xdoc-link</u></li>
-  <li>Description: <u>Link to ACL2 Source Code</u></li>
-  <li>Extension: <u>xdoc-link</u></li>
-  <li>When encountered, open file with <u>/path/to/emacsclient-wrapper.sh</u></li>
+
+<li>I downloaded a @('.xdoc-link') file from Chrome.  In the downloads bar (at
+the bottom), I was able to tell Chrome to <b>Always Open Files of this
+Type</b>.</li>
+
+<li>This incorrectly opened the @('.xdoc-link') file in kwrite.  However, I
+then went into KDE's <i>Dolphin</i> file manager, right-clicked on the file, and
+said <b>Open with &gt; Other...</b>.  Here I was able to choose the @('emacsclient-wrapper.sh') script.</li>
+
 </ul>
 
-</li>
-</ol>
+<p>This seems sufficient; the only unfortunate effect is that my downloads
+folder gets filled up with @('.xdoc-link') files.</p>
+
+<h4>Firefox on KDE</h4>
+
+<p>In previous versions of Firefox I was able to use the <a
+href=\"https://addons.mozilla.org/en-US/firefox/addon/4498\">MIME Edit</a>
+Firefox plugin, but this now seems to be defunct.</p>
 
 <h2>Possibly Necessary: Configuring the Web Server</h2>
 
@@ -714,19 +731,23 @@ nil ...)')</p>
     ... events ...)
 })
 
-<p>For example,</p>
+<p>Example:</p>
 
 @({
  (defsection foo
    :parents (parent1 parent2 ...)
    :short \"@(call foo) is like @(see bar), but better when...\"
-   :long \"<p>The main difference is ...</p>\"
+   :long \"<p>The main differences between @('foo') and @('bar') are ...</p>\"
 
    (defund foo (x) ...)
    (local (in-theory (enable foo)))
    (defthm foo-thm1 ...)
    (defthm foo-thm2 ...))
 })
+
+<box><p>Note: this example might be better written as a @(see cutil::define),
+which is much like a @('defsection') but has additional features.</p></box>
+
 
 <h3>Ordinary Sections</h3>
 
@@ -750,11 +771,6 @@ the above example, the @(':long') field would be extended with:</p>
 <p>If you do not want this automatic documentation, you can turn it off with
 @(':autodoc nil').</p>
 
-<p>By the way, I particularly like to use the above style, where a @('defund')
-is immediately followed by a local @('enable'), because if I want to add a new
-theorem, say @('foo-thm3'), then I can just re-submit the defsection without
-undoing the previous one, and all of the enabling and disabling still happens
-correctly.</p>
 
 <h3>Extended Sections</h3>
 
@@ -790,12 +806,11 @@ onto the end of the documentation for @('foo').</p>")
   :short "Fancy @('(progn ...)') with a name and @(see xdoc) support."
 
   :long "<p>The @('defsection-progn') macro is like @(see defsection) except
-that it generates a @('(progn ...)') instead of an @('(encapsulate nil
-...)').</p>
+that it generates @({(progn ...)}) instead of an @({(encapsulate nil ...)})</p>
 
 <p>This has a number of consequences, mostly having to do with the scope of
-@('local') events within the section.  A @('defsection-progn') basically does
-not introduce a new scope, whereas a @('defsection') does.</p>")
+@('local') events within the section.  In short, a @('defsection-progn') does
+not introduce a new local scope, but a @('defsection') does.</p>")
 
 
 (defxdoc undocumented

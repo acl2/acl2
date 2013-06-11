@@ -36,9 +36,9 @@ natural numbers."
   :long "<h3>Introduction</h3>
 
 <p>In this library, sets of natural numbers are represented as natural numbers
-by saying @('a') is a member of the set @('X') when @('(@(see logbitp) a X)').
-For instance, the set {1, 2, 4} would be represented as the number 22.  In
-binary, this number is 10110, and you can see that bits 1, 2, and 4 are each
+by saying @('a') is a member of the set @('X') when @('(logbitp a X)').  For
+instance, the set {1, 2, 4} would be represented as the number 22.  In binary,
+this number is 10110, and you can see that bits 1, 2, and 4 are each
 \"true\".</p>
 
 <p>This representation enjoys certain efficiencies.  In particular, operations
@@ -82,13 +82,13 @@ many cases.</p>
 <p>The basic bitsets library can be loaded with:</p>
 
 @({
- (include-book \"bitops/bitsets\" :dir :cbooks)
+ (include-book \"centaur/bitops/bitsets\" :dir :system)
 })
 
 <p>An optimized version (that requires additional ttags) can be loaded with:</p>
 
 @({
- (include-book \"bitops/bitsets-opt\" :dir :cbooks)
+ (include-book \"centaur/bitops/bitsets-opt\" :dir :system)
 })
 
 
@@ -110,34 +110,34 @@ just use @('nfix').</p>
 
 <h5>Bitset Constructors</h5>
 
-<dl> <dt>@('(@(see bitset-singleton) a)')</dt> <dd>Constructs the set @('{ a
+<dl> <dt>@('(bitset-singleton a)')</dt> <dd>Constructs the set @('{ a
 }')</dd> <dd>Execution: @('(ash 1 a)')</dd>
 
-<dt>@('(@(see bitset-insert) a X)')</dt>
+<dt>@('(bitset-insert a X)')</dt>
 <dd>Constructs the set @('X U {a}')</dd>
 <dd>Execution: @('(logior (ash 1 a) x)')</dd>
 
-<dt>@('(@(see bitset-list) a b ...)')</dt>
+<dt>@('(bitset-list a b ...)')</dt>
 <dd>Constructs the set @('{a, b, ...}')</dd>
 <dd>Execution: repeated @('bitset-insert')s</dd>
 
-<dt>@('(@(see bitset-list*) a b ... X)')</dt>
+<dt>@('(bitset-list* a b ... X)')</dt>
 <dd>Constructs the set @('X U {a, b, ...}')</dd>
 <dd>Execution: repeated @('bitset-insert')s</dd>
 
-<dt>@('(@(see bitset-delete) a X)')</dt>
+<dt>@('(bitset-delete a X)')</dt>
 <dd>Constructs the set @('X - {a}')</dd>
 <dd>Execution: @('(logandc1 (ash 1 a) x)')</dd>
 
-<dt>@('(@(see bitset-union) X Y)')</dt>
+<dt>@('(bitset-union X Y)')</dt>
 <dd>Constructs the set @('X U Y')</dd>
 <dd>Execution: @('(logior x y)')</dd>
 
-<dt>@('(@(see bitset-intersect) X Y)')</dt>
+<dt>@('(bitset-intersect X Y)')</dt>
 <dd>Constructs the set @('X \\intersect Y')</dd>
 <dd>Execution: @('(logand x y)')</dd>
 
-<dt>@('(@(see bitset-difference) X Y)')</dt>
+<dt>@('(bitset-difference X Y)')</dt>
 <dd>Constructs the set @('X - Y')</dd>
 <dd>Execution: @('(logandc1 y x)')</dd>
 </dl>
@@ -145,19 +145,19 @@ just use @('nfix').</p>
 <h5>Inspecting Bitsets</h5>
 
 <dl>
-<dt>@('(@(see bitset-memberp) a X)')</dt>
+<dt>@('(bitset-memberp a X)')</dt>
 <dd>Determine whether @('a') is a member of the set @('X')</dd>
 <dd>Execution: @('(logbitp a x)')</dd>
 
-<dt>@('(@(see bitset-intersectp) X Y)')</dt>
+<dt>@('(bitset-intersectp X Y)')</dt>
 <dd>Determines whether @('X') and @('Y') have any common members</dd>
 <dd>Execution: @('(logtest x y)')</dd>
 
-<dt>@('(@(see bitset-subsetp) X Y)')</dt>
+<dt>@('(bitset-subsetp X Y)')</dt>
 <dd>Determines whether @('X') is a subset of @('Y')</dd>
 <dd>Execution: @('(= 0 (logandc2 y x))')</dd>
 
-<dt>@('(@(see bitset-cardinality) X)')</dt>
+<dt>@('(bitset-cardinality X)')</dt>
 <dd>Determines the cardinality of @('X')</dd>
 <dd>Execution: @('(logcount x)')</dd>
 
@@ -166,7 +166,7 @@ just use @('nfix').</p>
 <h5>Enumerating Bitset Members</h5>
 
 <dl>
-<dt>@('(@(see bitset-members) X)')</dt>
+<dt>@('(bitset-members X)')</dt>
 <dd>Constructs an ordinary ordered set with the elements of X.</dd>
 <dd>Expensive: must cons together all of the set elements.</dd>
 </dl>
@@ -249,7 +249,7 @@ instead.</p>
 
 <p>It is simple enough to convert a bitset into an ordered set: since the @(see
 integer-length) of @('x') gives us an upper bound on its elements, we just need
-to walk up to this bound and collect all @('i') such that @('(@(see logbitp) i
+to walk up to this bound and collect all @('i') such that @('(logbitp i
 x)').</p>
 
 <p>The definition below uses @(see bits-between) to do just this.  However,
@@ -584,7 +584,7 @@ definition should be better for symbolic simulation with @(see GL).</p>"
   :short "@(call bitset-singleton) constructs the singleton set @('{a}')."
 
   :long "<p>This is perhaps slightly more efficient than the equivalent,
- @('(@(see bitset-insert) A 0)').</p>"
+ @('(bitset-insert A 0)').</p>"
 
   (definlined bitset-singleton (a)
     (declare (xargs :guard (natp a)))

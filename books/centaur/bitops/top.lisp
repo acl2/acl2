@@ -54,20 +54,20 @@ what you actually want from the bitops library.  For arithmetic support, you
 might try:</p>
 
 @({
- (local (include-book \"bitops/ihs-extensions\" :dir :cbooks))
- (local (include-book \"bitops/equal-by-logbitp\" :dir :cbooks))
+ (local (include-book \"centaur/bitops/ihs-extensions\" :dir :system))
+ (local (include-book \"centaur/bitops/equal-by-logbitp\" :dir :system))
 })
 
 <p>For the bitsets library:</p>
 
 @({
- (include-book \"bitops/bitsets\" :dir :cbooks)
+ (include-book \"centaur/bitops/bitsets\" :dir :system)
 })
 
 <p>Or for the sparse bitsets library:</p>
 
 @({
- (include-book \"bitops/sbitsets\" :dir :cbooks)
+ (include-book \"centaur/bitops/sbitsets\" :dir :system)
 })
 
 <h3>Copyright Information</h3>
