@@ -28,6 +28,8 @@
 
 (ld "oslib/package.lsp" :dir :system)
 
+(ld "centaur/bridge/package.lsp" :dir :system)
+
 (defmacro multi-union-eq (x y &rest rst)
   (xxxjoin 'union-eq (list* x y rst)))
 

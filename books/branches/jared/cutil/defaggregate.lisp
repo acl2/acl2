@@ -391,12 +391,30 @@ optimization altogether.</p>")
   "Look up the current alist of defined aggregates."
   (cdr (assoc 'aggregates (table-alist 'defaggregate world))))
 
-(defmacro da-extend-table (name fields)
-  ;; For now an INFO structure will just have the fields, but we can extend
-  ;; this later if desired.
+(defmacro da-extend-table (name tag fields efields)
   `(table defaggregate 'aggregates
-          (cons (cons ,name (list (cons :fields ,fields)))
+          ;; This can be extended with whatever other information should be
+          ;; collected.  For now get the field names (fields) and the extended
+          ;; field info (the parsed extended formals).
+          (cons (cons ,name (list (cons :tag ,tag)
+                                  (cons :fields ,fields)
+                                  (cons :efields ,efields)))
                 (get-aggregates world))))
+
+(defun get-aggregate-tag (name world)
+  "Return the tag for an aggregate."
+  (b* ((alist (get-aggregates world))
+       (entry (assoc name alist))
+       ((unless entry)
+        (er hard? 'get-aggregate-tag
+            "~x0 was not found in the aggregates alist." name))
+       (info (cdr entry))
+       (look (and (alistp info)
+                  (assoc :tag info)))
+       ((unless look)
+        (er hard? 'get-aggregate-tag
+            "~x0 has a malformed entry in the aggregates alist." name)))
+    (cdr look)))
 
 (defun get-aggregate-fields (name world)
   "Return the field names for an aggregate."
@@ -413,10 +431,35 @@ optimization altogether.</p>")
             "~x0 has a malformed entry in the aggregates alist." name)))
     (cdr look)))
 
-;(da-extend-table 'buffalo '(horns face body legs hooves))
-;(da-extend-table 'cat '(eyes ears teeth claws fur))
-;(get-aggregate-fields 'buffalo (w state))
-;(get-aggregate-fields 'cat (w state))
+(defun get-aggregate-efields (name world)
+  "Return the extended field info for an aggregate."
+  (b* ((alist (get-aggregates world))
+       (entry (assoc name alist))
+       ((unless entry)
+        (er hard? 'get-aggregate-efields
+            "~x0 was not found in the aggregates alist." name))
+       (info (cdr entry))
+       (look (and (alistp info)
+                  (assoc :efields info)))
+       ((unless look)
+        (er hard? 'get-aggregate-efields
+            "~x0 has a malformed entry in the aggregates alist." name)))
+    (cdr look)))
+
+#||
+
+(da-extend-table 'buffalo ':buffalo '(horns face body legs hooves) 'foo)
+(da-extend-table 'cat :cat '(eyes ears teeth claws fur) 'blah)
+
+(get-aggregate-fields 'buffalo (w state))
+(get-aggregate-tag 'buffalo (w state))
+(get-aggregate-efields 'buffalo (w state))
+
+(get-aggregate-fields 'cat (w state))
+(get-aggregate-tag 'cat (w state))
+(get-aggregate-efields 'cat (w state))
+
+||#
 
 
 
@@ -838,7 +881,7 @@ optimization altogether.</p>")
 
        (event
         `(progn
-           (da-extend-table ',name ',field-names)
+           (da-extend-table ',name ',tag ',field-names ',efields)
            ,@doc-events
 
            ,(if (eq mode :logic)

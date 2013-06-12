@@ -110,7 +110,7 @@ ordered set representation except for the additional overhead of using @('(1
 <p>The sbitsets library can be loaded with:</p>
 
 @({
-  (include-book \"bitops/sbitsets\" :dir :cbooks)
+  (include-book \"centaur/bitops/sbitsets\" :dir :system)
 })
 
 <p>Valid sparse bitsets are recognized by @(see sbitsetp), and there is a
@@ -607,7 +607,7 @@ block size.</p>"
                   (syntaxp (term-order y x)))
              (equal (sbitset-pair-offset x)
                     (sbitset-pair-offset y)))
-    :hints((witness)))
+    :hints((set-reasoning)))
 
   (defthm consp-of-sbitset-pair-members
     (implies (force (sbitset-pairp x))

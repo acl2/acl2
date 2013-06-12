@@ -425,9 +425,9 @@ resulting module will be a conservative approximation of @('M').</p>"
    :off :all
    (verify-guards vl-gateinst-gateredux
                   :hints(("Goal"
-                          :use ((:instance VL-GATETYPE-P-OF-VL-GATEINST->TYPE))
+                          :use ((:instance return-type-OF-VL-GATEINST->TYPE))
                           :in-theory (e/d (vl-gatetype-p)
-                                          (VL-GATETYPE-P-OF-VL-GATEINST->TYPE))))))
+                                          (return-type-OF-VL-GATEINST->TYPE))))))
 
   (defthm vl-warninglist-p-of-vl-gateinst-gateredux
     (implies (force (vl-warninglist-p warnings))

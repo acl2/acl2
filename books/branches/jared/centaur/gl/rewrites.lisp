@@ -51,17 +51,26 @@
                          (carry 0)))
            :in-theory (disable plus-of-logapp-lemma))))
 
+;; (def-gl-rewrite loghead-of-logapp
+;;   (implies (<= (nfix n) (nfix m))
+;;            (equal (loghead n (logapp m a b))
+;;                   (loghead n a)))
+;;   :hints(("Goal" :in-theory (enable* acl2::ihsext-inductions
+;;                                      acl2::ihsext-recursive-redefs))))
+
 (def-gl-rewrite loghead-of-logapp
-  (implies (<= (nfix n) (nfix m))
-           (equal (loghead n (logapp m a b))
-                  (loghead n a)))
+  (equal (loghead n (logapp m a b))
+         (if (<= (nfix n) (nfix m))
+             (loghead n a)
+           (logapp m a (loghead (- (nfix n) (nfix m)) b))))
   :hints(("Goal" :in-theory (enable* acl2::ihsext-inductions
                                      acl2::ihsext-recursive-redefs))))
 
 (def-gl-rewrite logbitp-of-logapp
-  (implies (< (nfix n) (nfix m))
-           (equal (logbitp n (logapp m a b))
-                  (logbitp n a)))
+  (equal (logbitp n (logapp m a b))
+         (if (< (nfix n) (nfix m))
+             (logbitp n a)
+           (logbitp (- (nfix n) (nfix m)) b)))
   :hints(("Goal" :in-theory (enable* acl2::ihsext-inductions
                                      acl2::ihsext-recursive-redefs))))
 
@@ -84,12 +93,64 @@
 
 
 (def-gl-rewrite logand-of-logapp
-  (implies (and (<= 0 mask)
-                (<= (integer-length mask) (nfix n)))
-           (equal (logand mask (logapp n a b))
-                  (logand mask a)))
-  :hints (("goal" :in-theory (enable* acl2::ihsext-recursive-redefs
-                                     acl2::ihsext-inductions))))
+  (equal (logand mask (logapp n a b))
+         (logapp n (logand mask a)
+                 (logand (logtail n mask) b)))
+  :hints(("Goal" :in-theory (enable* acl2::ihsext-inductions
+                                     acl2::ihsext-recursive-redefs))))
+
+(def-gl-rewrite logand-of-logapp-2
+  (equal (logand (logapp n a b) mask)
+         (logapp n (logand mask a)
+                 (logand (logtail n mask) b)))
+  :hints(("Goal" :in-theory (enable* acl2::ihsext-inductions
+                                     acl2::ihsext-recursive-redefs))))
+
+(def-gl-rewrite logior-of-logapp
+  (equal (logior mask (logapp n a b))
+         (logapp n (logior mask a)
+                 (logior (logtail n mask) b)))
+  :hints(("Goal" :in-theory (enable* acl2::ihsext-inductions
+                                     acl2::ihsext-recursive-redefs))))
+
+(def-gl-rewrite logior-of-logapp-2
+  (equal (logior (logapp n a b) mask)
+         (logapp n (logior mask a)
+                 (logior (logtail n mask) b)))
+  :hints(("Goal" :in-theory (enable* acl2::ihsext-inductions
+                                     acl2::ihsext-recursive-redefs))))
+
+(def-gl-rewrite logand-minus-1-first
+  (equal (logand -1 n)
+         (ifix n)))
+
+(def-gl-rewrite logand-minus-1-second
+  (equal (logand n -1)
+         (ifix n)))
+
+(def-gl-rewrite logior-minus-1-first
+  (equal (logior -1 n) -1))
+
+(def-gl-rewrite logior-minus-1-second
+  (equal (logior n -1) -1))
+
+(def-gl-rewrite logior-0-first
+  (equal (logior 0 n) (ifix n)))
+
+(def-gl-rewrite logior-0-second
+  (equal (logior 0 n) (ifix n)))
+
+(def-gl-rewrite ifix-of-logapp
+  (equal (ifix (logapp n a b))
+         (logapp n a b)))
+
+;; (def-gl-rewrite logand-of-logapp
+;;   (implies (and (<= 0 (ifix mask))
+;;                 (< (ifix mask) (ash 1 (nfix n))))
+;;            (equal (logand mask (logapp n a b))
+;;                   (logand mask a)))
+;;   :hints (("goal" :in-theory (enable* acl2::ihsext-recursive-redefs
+;;                                      acl2::ihsext-inductions))))
 
 (def-gl-rewrite integerp-of-maybe-integer
   (equal (integerp (maybe-integer i x intp))
@@ -132,6 +193,22 @@
   (equal (nfix (maybe-integer i x intp))
          (if intp (nfix i) 0))
   :hints(("Goal" :in-theory (enable maybe-integer))))
+
+(def-gl-rewrite equal-of-logapp
+  (equal (equal (logapp n a b) c)
+         (and (integerp c)
+              (equal (loghead n c) (loghead n a))
+              (equal (logtail n c) (ifix b))))
+  :hints(("Goal" :in-theory (enable* acl2::ihsext-inductions
+                                     acl2::ihsext-recursive-redefs))))
+
+(def-gl-rewrite logand-0-first
+  (equal (logand 0 x)
+         0))
+
+(def-gl-rewrite logand-0-second
+  (equal (logand x 0)
+         0))
 
 ;; (local (defthm logapp-of-non-integer-second
 ;;          (implies (not (integerp b))

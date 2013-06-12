@@ -175,7 +175,8 @@
                 (and (4v-sexpr-<= v (cdr (hons-assoc-equal k al2)))
                      (4v-sexpr-alist-<= al1 al2))))
   :hints (("Goal" :do-not-induct t)
-          (witness) (witness)))
+          (witness :ruleset (4v-sexpr-alist-<=-hons-assoc-equal-example
+                             4v-sexpr-alist-<=-witnessing))))
 
 (defthm 4v-sexpr-<=-restrict
   (implies (and (4v-sexpr-alist-<= a b)

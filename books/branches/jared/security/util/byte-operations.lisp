@@ -78,11 +78,20 @@
 ; Verifies if the input is a bit (0 or 1)
 ;
 
-(defun bitp(e)
-  (if (consp e)
-      nil
-      (or (equal e 0)
-          (equal e 1))))
+; Deleted by Matt K. on 6/10/2013 because bitp is defined in
+; ihs/basic-definitions.lisp, which is now included under centaur/gl/gl.lisp,
+; and both the latter book and this one are included in ../des/des.lisp
+; (defun bitp(e)
+;   (if (consp e)
+;       nil
+;       (or (equal e 0)
+;           (equal e 1))))
+; So here is the definition from ihs/basic-definitions.lisp:
+(defun-inline bitp (b)
+; Doc string omitted here.
+  (declare (xargs :guard t))
+  (or (eql b 0)
+      (eql b 1)))
 
 ;
 ; Computes the logical XOR of two single bits

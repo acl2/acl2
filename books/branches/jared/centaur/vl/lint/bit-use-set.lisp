@@ -269,8 +269,8 @@ warnings."
                   :vl-inout))
   :hints(("Goal"
           :in-theory (e/d (vl-direction-p)
-                          (vl-direction-p-of-vl-portdecl->dir))
-          :use ((:instance vl-direction-p-of-vl-portdecl->dir)))))
+                          (return-type-of-vl-portdecl->dir))
+          :use ((:instance return-type-of-vl-portdecl->dir)))))
 
 ;; (defthm vl-compounstmt->ctrl-when-timingstmt
 ;;   ;; BOZO move to stmt tools

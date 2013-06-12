@@ -39,20 +39,15 @@ character with its location.</p>")
 
 
 (defaggregate vl-location
-  (filename line col)
-  :tag :vl-location
-  :legiblep nil
-  :require ((stringp-of-vl-location->filename
-             (stringp filename)
-             :rule-classes :type-prescription)
-            (posp-of-vl-location->line
-             (posp line)
-             :rule-classes :type-prescription)
-            (natp-of-vl-location->col
-             (natp col)
-             :rule-classes :type-prescription))
   :parents (extended-characters)
   :short "Representation of a point in a source file."
+  :tag :vl-location
+  :legiblep nil
+
+  ((filename stringp :rule-classes :type-prescription)
+   (line     posp    :rule-classes :type-prescription)
+   (col      natp    :rule-classes :type-prescription))
+
   :long "<p>Each vl-location-p represents some location in a source code file.
 These locations are attached to characters and module items to provide context
 during error reporting.</p>")

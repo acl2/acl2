@@ -408,6 +408,7 @@ Syntax:
                           ;; are the same
      :guard-hints ...     ;; for defining the step function
      :package foo)        ;; package witness symbol, default is function-name
+~ev[]
 ~/~/
 "
   ;; args contains:
@@ -687,6 +688,7 @@ Syntax:
      :length  (bar x y)     ;; final index
      :index idx-var       ;; counter variable, default N
     ... defiteration args ...)
+~ev[]
 ~/~/
 "
   ;; args contains:

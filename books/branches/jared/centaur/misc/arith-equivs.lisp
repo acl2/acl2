@@ -25,65 +25,9 @@
 ;; (local (in-theory (enable* arith-equiv-forwarding)))
 
 (in-package "ACL2")
-(include-book "ihs/basic-definitions" :dir :system)
-(include-book "tools/rulesets" :dir :system)
+(include-book "arith-equiv-defs")
 (include-book "std/lists/mfc-utils" :dir :system)
 
-(defthm bitp-compound-recognizer
-  ;; Questionable given the bitp-forward rule.  But I think we may still want
-  ;; this.
-  (implies (bitp x)
-           (natp x))
-  :rule-classes :compound-recognizer)
-
-;; (defthm bitp-when-under-2
-;;   ;; questionable to bring arithmetic into it
-;;   (implies (< x 2)
-;;            (equal (bitp x)
-;;                   (natp x))))
-
-;; (defthm bitp-when-over-1
-;;   (implies (< 1 x)
-;;            (not (bitp x))))
-
-(defun int-equiv (a b)
-  (declare (xargs :guard t))
-  (equal (ifix a) (ifix b)))
-
-(defun nat-equiv (a b)
-  (declare (xargs :guard t))
-  (equal (nfix a) (nfix b)))
-
-(defun bit-equiv (x y)
-  (declare (xargs :guard t))
-  (equal (bfix x) (bfix y)))
-
-(local (in-theory (enable int-equiv nat-equiv bit-equiv)))
-
-(defequiv int-equiv)
-(defequiv nat-equiv)
-(defequiv bit-equiv)
-
-(defrefinement int-equiv nat-equiv)
-(defrefinement nat-equiv bit-equiv)
-;; (defrefinement int-equiv bit-equiv) ;; already known
-
-(defcong int-equiv equal (ifix a) 1)
-(defcong nat-equiv equal (nfix a) 1)
-(defcong bit-equiv equal (bfix a) 1)
-
-(defthm ifix-under-int-equiv
-  (int-equiv (ifix a) a))
-
-(defthm nfix-under-nat-equiv
-  (nat-equiv (nfix a) a))
-
-(defthm bfix-under-bit-equiv
-  (bit-equiv (bfix a) a))
-
-(defcong int-equiv equal (zip a) 1)
-(defcong nat-equiv equal (zp a)  1)
-(defcong bit-equiv equal (zbp a) 1)
 
 (defthm posp-redefinition
   (equal (posp x) (not (zp x))))
@@ -201,18 +145,7 @@
 
 
 
-(defund negp (x)
-  (declare (xargs :guard t))
-  (and (integerp x)
-       (< x 0)))
-
 (local (in-theory (enable negp)))
-
-(defthm negp-compound-recognizer
-  (equal (negp x)
-         (and (integerp x)
-              (< x 0)))
-  :rule-classes :compound-recognizer)
 
 (defthm negp-when-integerp
   (implies (integerp x)
@@ -660,10 +593,6 @@
 
 (encapsulate
   ()
-
-  (defund-inline bool->bit (x)
-    (declare (xargs :guard t))
-    (if x 1 0))
 
   (local (in-theory (enable bool->bit)))
 

@@ -9,6 +9,7 @@
 (local (include-book "symbolic-arithmetic"))
 (local (include-book "eval-g-base-help"))
 (local (include-book "hyp-fix-logic"))
+(local (include-book "centaur/misc/arith-equivs" :dir :system))
 ;(local (allow-arith5-help))
 
 

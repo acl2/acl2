@@ -13,7 +13,7 @@
 ;; (local (include-book "ihs/math-lemmas" :dir :system))
 (local (in-theory (disable floor)))
 (include-book "ihs/logops-definitions" :dir :system)
-(include-book "centaur/misc/arith-equivs" :dir :system)
+(include-book "centaur/misc/arith-equiv-defs" :dir :system)
 (local (include-book "centaur/bitops/ihsext-basics" :dir :system))
 
 ;; (defun bfr-listp1 (x)

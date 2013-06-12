@@ -83,7 +83,7 @@ my $var_prefix = "CERT_PL";
 my %certlib_opts = ( "debugging" => 0,
 		     "clean_certs" => 0,
 		     "print_deps" => 0,
-		     "all_deps" => 0,
+		     "all_deps" => 1,
                      "believe_cache" => 0 );
 my $cache_file = 0;
 my $bin_dir = $ENV{'CERT_PL_BIN_DIR'};
@@ -189,8 +189,10 @@ OPTIONS:
 
    --all-deps
    -d
-           Write out dependency information for all targets
-           encountered, including ones which don\'t need updating.
+           Toggles writing out dependency information for all targets
+           encountered, including ones which don\'t need updating.  This is
+           done by default, so using -d or --all-deps actually means that
+           only targets that need updating are written to the makefile.
 
    --acl2 <cmd>
    -a <cmd>
@@ -237,7 +239,7 @@ OPTIONS:
 
    --static-makefile <makefile-name>
    -s <makefile-name>
-           Equivalent to -d -m -o <makefile-name>.  Useful for
+           Equivalent to -m -o <makefile-name>.  Useful for
            building a static makefile for your targets, which will
            suffice for certifying them as long as the dependencies
            between source files don\'t change.
@@ -303,7 +305,7 @@ OPTIONS:
            Run the following command on each source file.  The actual
            command line is created by replacing the string {} with the
            target file in the command string.  For example:
-               cert.pl top.lisp -n -d --source-cmd "echo {}; wc {}"
+               cert.pl top.lisp -n --source-cmd "echo {}; wc {}"
            Any number of --source-cmd directives may be given; the
            commands will then be run in the order in which they are given.
 
@@ -378,7 +380,7 @@ GetOptions ("help|h"               => sub { print $summary_str;
 	    "no-boilerplate"       => \$no_boilerplate,
 	    "var-prefix=s"         => \$var_prefix,
 	    "o=s"                  => \$mf_name,
-	    "all-deps|d"           => \$certlib_opts{"all_deps"},
+	    "all-deps|d"           => sub { $certlib_opts{"all_deps"} = !$certlib_opts{"all_deps"}; },
 	    "static-makefile|s=s"  => sub {shift;
 					   $mf_name = shift;
 					   $certlib_opts{"all_deps"} = 1;

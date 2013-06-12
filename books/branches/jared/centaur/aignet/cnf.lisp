@@ -53,14 +53,14 @@ value of the variable.</blockquote>
 
 It's when we add additional constraints to the CNF that it may become
 unsatisfiable.  So suppose we want to show that some cube among the nodes of
-the circuit is unsat -- say, A & B & ~C.  We first convert their subcircuits to
-CNF and then add the three singleton clauses.  Now, suppose that we have some
-assignment to the CIs that satisfies A & B & ~C.  That induces a satisfying
-assignment for the generated part of the CNF where (in particular) the literals
-corresponding to A, B, and ~C are assigned true.  That makes the three
-singleton clauses also true, so the whole CNF is satisfied.  Therefore, if we
-prove the CNF unsatisfiable, then we've proven that no assignment to the CIs
-can simultaneously satisfy A & B & ~C.</p>
+the circuit is unsat -- say, @('A & B & ~C').  We first convert their
+subcircuits to CNF and then add the three singleton clauses.  Now, suppose that
+we have some assignment to the CIs that satisfies @('A & B & ~C').  That
+induces a satisfying assignment for the generated part of the CNF where (in
+particular) the literals corresponding to A, B, and ~C are assigned true.  That
+makes the three singleton clauses also true, so the whole CNF is satisfied.
+Therefore, if we prove the CNF unsatisfiable, then we've proven that no
+assignment to the CIs can simultaneously satisfy @('A & B & ~C').</p>
 
 <p>Now the counterexample case.  We want to show that any satisfying assignment
 of the CNF is a satisfying assignment for whatever circuit constraints we've
@@ -94,7 +94,7 @@ CNF.</li>
 vals object.  We'll show that this satisfies
 <tt>cnf/aignet-evals-agree</tt> and that the CNF assignment
 satisfies the generated CNF.</li>
-</ul>
+</ul></p>
 
 <p>When actually converting an aignet to CNF, we of course process the AIG
 recursively.  We do this in chunks, where each chunk is either:
@@ -103,8 +103,8 @@ recursively.  We do this in chunks, where each chunk is either:
 <li>a mux.</li>
 </ul>
 For both of these cases, we prove that the chunk we've just added preserves the
-correctness criterion we've described.
-</p>
+correctness criterion we've described.</p>
+
 ")
 
 ;; (local (defun trivial-worse-than-or-equal (term1 term2)

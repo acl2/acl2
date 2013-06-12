@@ -4,4 +4,4 @@
 # additional options.  A script like this may be useful for connecting
 # your web browser to emacs for .xdoc-link files.
 
-emacsclient --no-wait $1
+emacsclient --no-wait "$1"
