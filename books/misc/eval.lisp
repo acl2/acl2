@@ -1,6 +1,6 @@
 ; Here we define macros that employ make-event to check evaluations of forms.
-; See eval-tests.lisp (and many other .lisp files in this directory) for how
-; these macros may be employed.
+; See community book make-event/eval-tests.lisp (and many other .lisp files in
+; that directory) for how these macros may be employed.
 
 (in-package "ACL2")
 
