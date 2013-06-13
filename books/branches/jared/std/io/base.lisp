@@ -65,21 +65,23 @@
 
 (local (table evisc-table (list 'quote *INITIAL-GLOBAL-TABLE*) "*INITIAL-GLOBAL-TABLE*"))
 
-(defthm assoc-equal-of-add-pair
-    (equal (assoc-equal k1 (add-pair k2 v a))
-           (if (equal k1 k2)
-               (cons k2 v)
-             (assoc-equal k1 a))))
+;; [Jared] Removed because this is now built into ACL2
+;; (defthm assoc-equal-of-add-pair
+;;     (equal (assoc-equal k1 (add-pair k2 v a))
+;;            (if (equal k1 k2)
+;;                (cons k2 v)
+;;              (assoc-equal k1 a))))
 
 (defthm open-channel-listp-of-add-pair
   (implies (and (open-channel1 v)
                 (open-channel-listp x))
            (open-channel-listp (add-pair k v x))))
 
-(defthm ordered-symbol-alistp-of-add-pair
-  (implies (and (symbolp k)
-                (ordered-symbol-alistp x))
-           (ordered-symbol-alistp (add-pair k v x))))
+;; [Jared] Removed because this is now built into ACL2
+;; (defthm ordered-symbol-alistp-of-add-pair
+;;   (implies (and (symbolp k)
+;;                 (ordered-symbol-alistp x))
+;;            (ordered-symbol-alistp (add-pair k v x))))
 
 (defthm open-channels-p-of-add-pair
   (implies (and (symbolp k)
@@ -1034,15 +1036,15 @@ output channels when you are done with them to avoid resource leaks.</p>"
            (open-channel1 (cons (car x) (revappend y (cdr x)))))
   :otf-flg t)
 
-;; matches unicode/explode-nonnegative-integer.lisp
+;; matches std/misc/explode-atom.lisp
 (defthm character-listp-of-explode-nonnegative-integer
   (equal (character-listp (explode-nonnegative-integer n base acc))
          (character-listp acc))
   :hints(("Goal" :in-theory (disable floor mod digit-to-char))))
 
-;; does NOT match unicode/explode-atom.lisp (so we renamed this theorem).
+;; matches std/misc/explode-atom.lisp
 ;; unicode version includes print-base-p hyp.
-(defthm character-listp-explode-atom
+(defthm character-listp-of-explode-atom
   (character-listp (explode-atom x base)))
 
 ; Added by Matt K. for princ$ change 12/7/2012.

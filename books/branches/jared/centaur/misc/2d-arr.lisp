@@ -120,7 +120,8 @@
                               arith-equiv-forwarding)
                              (nth-with-large-index
                               len-update-nth
-                              nth update-nth))))
+                              nth update-nth
+                              ))))
 
      (defstobj _prefix_e-arr2
        (_prefix_e-nrows :type (unsigned-byte 60) :initially 0)

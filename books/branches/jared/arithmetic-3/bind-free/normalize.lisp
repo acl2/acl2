@@ -186,37 +186,43 @@
         (t
          nil)))
 
-(defthm test381
-  (implies (and (true-list-listp x)
-                (true-list-listp y))
-           (true-list-listp (revappend x y))))
 
-(defthm test382
-  (implies (true-listp x)
-           (true-listp (append a x))))
+;; [Jared]  localizing since this seems like it should be local
+(local (defthm test381
+         (implies (and (true-list-listp x)
+                       (true-list-listp y))
+                  (true-list-listp (revappend x y)))))
 
-(defthm test392
-  (implies (and (pseudo-termp denominator)
-                (true-listp factors)
-                (true-list-listp to-be-found))
-           (true-list-listp (to-be-found denominator 
-                                         saved-denominator 
-                                         factors
-                                         to-be-found))))
+;; [Jared]  localizing since this seems like it should be local
+(local (defthm test382
+         (implies (true-listp x)
+                  (true-listp (append a x)))))
 
-(defthm test-302
-  (implies (and (not (equal (car denominator) 'quote))
-                (consp denominator)
-                (pseudo-termp denominator))
-           (pseudo-termp (cadr denominator)))
-  :hints (("goal" :expand (pseudo-termp denominator))))
+;; [Jared]  localizing since this seems like it should be local
+(local (defthm test392
+         (implies (and (pseudo-termp denominator)
+                       (true-listp factors)
+                       (true-list-listp to-be-found))
+                  (true-list-listp (to-be-found denominator 
+                                                saved-denominator 
+                                                factors
+                                                to-be-found)))))
 
-(defthm test-303
-  (implies (and (not (equal (car denominator) 'quote))
-                (consp denominator)
-                (pseudo-termp denominator))
-           (pseudo-termp (caddr denominator)))
-  :hints (("goal" :expand (pseudo-termp denominator))))
+;; [Jared]  localizing since this seems like it should be local
+(local (defthm test-302
+         (implies (and (not (equal (car denominator) 'quote))
+                       (consp denominator)
+                       (pseudo-termp denominator))
+                  (pseudo-termp (cadr denominator)))
+         :hints (("goal" :expand (pseudo-termp denominator)))))
+
+;; [Jared]  localizing since this seems like it should be local
+(local (defthm test-303
+         (implies (and (not (equal (car denominator) 'quote))
+                       (consp denominator)
+                       (pseudo-termp denominator))
+                  (pseudo-termp (caddr denominator)))
+         :hints (("goal" :expand (pseudo-termp denominator)))))
 
 (defun denominatorp (denominator)
   (declare (xargs :guard t))

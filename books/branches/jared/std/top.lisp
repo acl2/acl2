@@ -27,3 +27,6 @@
 (include-book "io/top")
 (include-book "strings/top")
 (include-book "misc/top")
+
+(defsection std
+  :short "Some \"standard\" libraries for ACL2.")

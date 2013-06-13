@@ -47,14 +47,10 @@
            (base10-digit-char-listp (explode-atom n 10))))
 
 (defthm character-listp-of-explode-atom
-  (implies (force (print-base-p base))
-           (character-listp (explode-atom x base)))
-  :rule-classes ((:rewrite)
-                 (:rewrite :corollary (character-listp (explode-atom x 2)))
-                 (:rewrite :corollary (character-listp (explode-atom x 8)))
-                 (:rewrite :corollary (character-listp (explode-atom x 10)))
-                 (:rewrite :corollary (character-listp (explode-atom x 16))))
+  (character-listp (explode-atom x base))
   :hints(("Goal" :in-theory (disable explode-nonnegative-integer))))
 
-
-
+; Copied from std/io/base.ilsp, wherein it was added by Matt K. for princ$
+; change 12/7/2012.
+(defthm character-listp-explode-atom+
+  (character-listp (explode-atom+ x base radix)))

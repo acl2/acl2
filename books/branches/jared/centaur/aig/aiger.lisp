@@ -1752,6 +1752,7 @@ CNSTR-AIGS - list of constraint AIGs. "
            (maybe-byte-p (mv-nth 7 (aiger-parse-header stream buf state))))
   :rule-classes (:rewrite :type-prescription))
 
+(local (in-theory (disable nth-when-zp)))
 (defmvtypes aiger-parse-header (nil natp natp natp natp natp natp nil nil))
 
 (local (in-theory (disable aiger-parse-header)))

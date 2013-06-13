@@ -124,7 +124,7 @@ functions."
   (defcong list-equiv iff        (member k x)  2 :hints(("Goal" :induct (cdr-cdr-ind x x-equiv))))
   (defcong list-equiv equal      (subsetp x y) 1 :hints(("Goal" :induct (cdr-cdr-ind x x-equiv))))
   (defcong list-equiv equal      (subsetp x y) 2 :hints(("Goal" :induct (cdr-cdr-ind x x-equiv))))
-  (defcong list-equiv equal      (remove k x)  2 :hints (("Goal" :induct (cdr-cdr-ind x x-equiv))))
+  (defcong list-equiv equal      (remove a x)  2 :hints (("Goal" :induct (cdr-cdr-ind x x-equiv))))
   (defcong list-equiv equal      (resize-list lst n default) 1)
 
   (defcong list-equiv equal (revappend x y) 1
@@ -135,6 +135,9 @@ functions."
 
   (defcong list-equiv equal (butlast lst n) 1
     :hints(("Goal" :induct (cdr-cdr-ind lst lst-equiv))))
+
+  (defcong list-equiv list-equiv (last x) 1
+    :hints(("Goal" :induct (cdr-cdr-ind x x-equiv))))
 
   (defcong list-equiv list-equiv (make-list-ac n val ac) 3)
 

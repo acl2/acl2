@@ -28,6 +28,7 @@
 (include-book "arithmetic/nat-listp" :dir :system)
 (local (include-book "arithmetic/top-with-meta" :dir :system))
 (local (include-book "tools/mv-nth" :dir :system))
+(local (include-book "std/lists/resize-list" :dir :system))
 
 
 (defsection nat-list-remove-duplicates
@@ -114,16 +115,7 @@ it can handle sparse lists well.</li>
 
    (defthm acl2-numberp-when-integerp
      (implies (integerp x)
-              (acl2-numberp x)))
-
-   (defthm len-zero
-     (equal (equal 0 (len x))
-            (atom x)))
-
-   (defthm len-of-resize-list
-     (equal (len (resize-list lst n default-value))
-            (nfix n)))))
-
+              (acl2-numberp x)))))
 
 (local (in-theory (enable nat-listp)))
 
@@ -348,21 +340,6 @@ it can handle sparse lists well.</li>
    (defthm nat-remove-dups-arr-length-of-create-nat-remove-dups-stobj
      (equal (nat-remove-dups-arr-length (create-nat-remove-dups-stobj))
             0))
-
-   (local (defun my-induct (key n lst)
-            (if (zp n)
-                (list key n lst)
-              (my-induct (- key 1) (- n 1) (if (atom lst) lst (cdr lst))))))
-
-   (local (defthm nth-of-resize-list
-            (implies (and (natp key)
-                          (natp n)
-                          (< key n))
-                     (equal (nth key (resize-list lst n default-value))
-                            (if (< key (len lst))
-                                (nth key lst)
-                              default-value)))
-            :hints(("Goal" :induct (my-induct key n lst)))))
 
    (defthm nat-remove-dups-arri-of-resize-nat-remove-dups-arr
      (implies (and (force (natp key))

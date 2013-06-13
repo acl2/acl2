@@ -20,30 +20,5 @@
 
 (in-package "ACL2")
 
-; Basic lemmas about resize-list.
-
-(local (defun my-induct (n m lst)
-         (if (zp n)
-             (list lst)
-           (if (zp m)
-               nil
-             (my-induct (- n 1) (- m 1)
-                        (if (atom lst)
-                            lst
-                          (cdr lst)))))))
-
-(defthm nth-of-resize-list
-  (equal (nth n (resize-list lst m default-value))
-         (let ((n (nfix n))
-               (m (nfix m)))
-           (and (< n m)
-                (if (< n (len lst))
-                    (nth n lst)
-                  default-value))))
-  :hints(("Goal"
-          :expand (resize-list lst m default-value)
-          :induct (my-induct n m lst))))
-
-(defthm len-of-resize-list
-  (equal (len (resize-list lst m default))
-         (nfix m)))
+; cert_param: (reloc_stub)
+(include-book "std/lists/resize-list" :dir :system)

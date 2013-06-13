@@ -1280,7 +1280,7 @@
   (implies (member-equal occ occs)
            (subsetp-equal (pat-flatten1 (gpl k (esim-get-occ occ mod)))
                           (collect-signal-list k (occs-for-names occs mod))))
-  :hints (("goal" :induct t :in-theory (enable fal-extract))
+  :hints (("goal" :induct t :in-theory (enable member-equal fal-extract))
           (and stable-under-simplificationp
                '(:in-theory (enable gpl fal-extract)))))
 
@@ -1296,7 +1296,8 @@
 (defthm occ-state-subset-of-occs-state
   (implies (member-equal occ occs)
            (subsetp-equal (pat-flatten1 (occ-state occ))
-                          (pat-flatten1 (occs-state occs)))))
+                          (pat-flatten1 (occs-state occs))))
+  :hints(("Goal" :in-theory (enable member-equal))))
 
 (defthm occ-state-subset-of-mod-state
   (implies (and (member-equal occ (gpl :occs mod))
@@ -2560,7 +2561,8 @@
                                        (pat-flatten1 (occs-state occs))))
                 (member-equal occ2 occs))
            (not (intersectp-equal (pat-flatten1 (occ-state occ))
-                                  (pat-flatten1 (occ-state occ2))))))
+                                  (pat-flatten1 (occ-state occ2)))))
+  :hints(("Goal" :in-theory (enable member-equal))))
 
 (defthmd state-of-occ-not-intersecting-member1
   (implies (and (not (intersectp-equal (pat-flatten1 (occ-state occ))
@@ -2578,7 +2580,8 @@
                 (not (equal occ1 occ2)))
            (not (intersectp-equal (pat-flatten1 (occ-state occ1))
                                   (pat-flatten1 (occ-state occ2)))))
-  :hints(("Goal" :in-theory (enable state-of-occ-not-intersecting-member
+  :hints(("Goal" :in-theory (enable member-equal
+                                    state-of-occ-not-intersecting-member
                                     state-of-occ-not-intersecting-member1))))
 
 (defthm states-of-diff-occs-not-intersecting-occs-of-mod
@@ -2620,7 +2623,7 @@
                  (pat-flatten1 (occs-state (alist-vals (fal-extract
                                                         rest-occnames (occmap mod))))))))
   :hints(("Goal" :in-theory
-          (e/d (fal-extract alist-vals occs-state)
+          (e/d (fal-extract alist-vals occs-state member-equal)
                (good-esim-modulep occ-state gpl-u-occmap-lookup
                                   default-car default-cdr))
           :induct t)

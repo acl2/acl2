@@ -320,12 +320,24 @@
                           (t
                            (- (expt x (- m n))))))))
 
-(defthm |(* (expt c n) (expt d n))|
-    (implies (and (integerp n)
-                  (syntaxp (quotep c))
-                  (syntaxp (quotep d)))
-             (equal (collect-* (expt c n) (expt d n))
-                    (expt (* c d) n))))
+
+
+;; [Jared]: removing this rule:
+;;
+;; (defthm |(* (expt c n) (expt d n))|
+;;     (implies (and (integerp n)
+;;                   (syntaxp (quotep c))
+;;                   (syntaxp (quotep d)))
+;;              (equal (collect-* (expt c n) (expt d n))
+;;                     (expt (* c d) n))))
+;;
+;; Because above we have the same thing without syntaxp hyps, except with
+;; slightly different names:
+;;  
+;; (defthm |(* (expt x n) (expt y n))|
+;;   (implies (integerp n)
+;;            (equal (collect-* (expt x n) (expt y n))
+;;                   (expt (* x y) n))))
 
 (defthm |(collect-* y x)|
     (equal (collect-* y x)

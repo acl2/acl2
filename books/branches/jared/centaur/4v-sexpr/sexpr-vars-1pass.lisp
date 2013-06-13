@@ -25,6 +25,7 @@
 
 (in-package "ACL2")
 (include-book "sexpr-vars")
+(local (include-book "std/lists/sets" :dir :system))
 
 (defsection 4v-sexpr-vars-1pass
   :parents (4v-sexpr-vars)

@@ -144,12 +144,16 @@ recommend using @('take-redefinition') instead of @('(:definition take)').</p>"
     (implies (<= (nfix n) (len x))
              (subsetp (take n x) x)))
 
-  (defthm take-of-take
-    (implies (< (nfix a) (nfix b))
+  (defthm take-fewer-of-take-more
+    ;; Note: see also repeat.lisp for related cases and a stronger rule that
+    ;; case-splits.
+    (implies (<= (nfix a) (nfix b))
              (equal (take a (take b x))
                     (take a x))))
 
   (defthm take-of-take-same
+    ;; Note: see also repeat.lisp for related cases and a stronger rule that
+    ;; case-splits.
     (equal (take a (take a x))
            (take a x))))
 

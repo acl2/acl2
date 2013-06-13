@@ -132,7 +132,7 @@ library.")
                (subsetp x y)
              nil)))
 
-  (defthmd subsetp-member
+  (defthm subsetp-member
     (implies (and (member a x)
                   (subsetp x y))
              (member a y))
@@ -229,7 +229,7 @@ about set intersection.</p>"
              (subsetp x z))
     :hints(("Goal" :in-theory (enable subsetp-member))))
 
-  (defthmd subsetp-trans2
+  (defthm subsetp-trans2
     (implies (and (subsetp y z)
                   (subsetp x y))
              (subsetp x z))
@@ -571,7 +571,7 @@ about set equivalence.</p>"
   (implies (subsetp x y)
            (subsetp (remove a x) y)))
 
-(defcong set-equiv set-equiv (remove k a) 2
+(defcong set-equiv set-equiv (remove a x) 2
   :hints(("Goal" :in-theory (enable set-equiv))))
 
 (defthm rev-under-set-equiv

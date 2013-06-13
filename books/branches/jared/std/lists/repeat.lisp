@@ -22,8 +22,8 @@
 
 (defsection repeat
   :parents (std/lists make-list)
-  :short "@(call repeat) creates a list of @('x')es with length @('n'); it
-is a simpler alternative to @(see make-list)."
+  :short "@(call repeat) creates a list of @('x')es with length @('n'); it is a
+simpler alternative to @(see make-list)."
 
   (defund repeat (x n)
     (declare (xargs :guard (natp n)
@@ -118,34 +118,6 @@ is a simpler alternative to @(see make-list)."
       :hints(("Goal" :induct (dec-dec-induct k n)))))
 
 
-
-  (encapsulate
-    ()
-    (local (include-book "append"))
-
-    (local (defun silly-repeat (x n acc)
-             (if (zp n)
-                 acc
-               (cons x (silly-repeat x (- n 1) acc)))))
-
-    (local (defthm lemma1
-             (equal (make-list-ac n x acc)
-                    (silly-repeat x n acc))))
-
-    (local (defthm lemma2
-             (equal (silly-repeat x n acc)
-                    (append (repeat x n) acc))))
-
-    (defthmd make-list-ac->repeat
-      ;; BOZO we should probably just enable this.
-      (equal (make-list-ac n x acc)
-             (append (repeat x n)
-                     acc)))
-
-    (verify-guards repeat
-      :hints(("Goal" :in-theory (enable make-list-ac->repeat)))))
-
-
   (defthm append-of-repeat-to-cons-of-same
     (equal (append (repeat a n) (cons a x))
            (cons a (append (repeat a n) x))))
@@ -184,3 +156,67 @@ is a simpler alternative to @(see make-list)."
   (defthm rev-of-repeat
     (equal (rev (repeat a n))
            (repeat a n))))
+
+
+(local (in-theory (enable repeat)))
+
+
+(defsection make-list-ac-removal
+  :parents (repeat make-list)
+  :short "Rewrite rule that eliminates @('make-list-ac') (and hence @(see
+make-list)) in favor of @(see repeat)." 
+ 
+  (local (defun silly-repeat (x n acc)
+           (if (zp n)
+               acc
+             (cons x (silly-repeat x (- n 1) acc)))))
+
+  (local (defthm lemma1
+           (equal (make-list-ac n x acc)
+                  (silly-repeat x n acc))))
+
+  (local (defthm lemma2
+           (equal (silly-repeat x n acc)
+                  (append (repeat x n) acc))))
+
+  (defthm make-list-ac-removal
+    (equal (make-list-ac n x acc)
+           (append (repeat x n)
+                   acc))))
+
+(verify-guards repeat)
+
+
+(defsection take-of-take-split
+  :parents (std/lists/take)
+  :short "Aggressive case splitting rule to reduce @('(take a (take b x))')."
+  :long "@(def take-of-take-split)
+
+<p>This rule may sometimes cause too much case splitting.  If you disable it,
+nests of @('take') can still be reduced when ACL2 can determine the
+relationship between @('a') and @('b'), using the following related rules:</p>
+
+@(def take-of-take-same)
+@(def take-more-of-take-fewer)
+@(def take-fewer-of-take-more)"
+
+  :autodoc nil
+
+  (local (defun my-induct (a b x)
+           (if (or (zp a)
+                   (zp b))
+               (list a b x)
+             (my-induct (- a 1) (- b 1) (cdr x)))))
+
+  (defthm take-more-of-take-fewer
+    (implies (< (nfix b) (nfix a))
+             (equal (take a (take b x))
+                    (append (take b x) (repeat nil (- (nfix a) (nfix b))))))
+    :hints(("Goal" :induct (my-induct a b x))))
+
+  (defthm take-of-take-split
+    ;; This has a very aggressive case split.  
+    (equal (take a (take b x))
+           (if (<= (nfix a) (nfix b))
+               (take a x)
+             (append (take b x) (repeat nil (- (nfix a) (nfix b))))))))

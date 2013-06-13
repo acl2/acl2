@@ -10,6 +10,7 @@
 ||#
 
 (include-book "x86-state-concrete")
+(include-book "std/lists/list-defuns" :dir :system)
 
 ;; Note that x86-memory-low would have memi$c and !memi$c related stuff, and
 ;; not rm* and wm* related stuff (rm*/wm* is defined in terms of the abstract
@@ -890,31 +891,38 @@
 
 ; Start proof of x86-32$cp-!mem$ci-new-page-resize
 
+(defthm mem-arrayp-repeat
+  (implies (unsigned-byte-p 8 x)
+           (mem-arrayp (repeat x n)))
+  :hints(("Goal" :in-theory (enable repeat))))
+
 (defthm mem-arrayp-resize-list
   (implies (and (mem-arrayp lst)
                 (unsigned-byte-p 8 default-value))
-           (mem-arrayp (resize-list lst new-len default-value))))
+           (mem-arrayp (resize-list lst new-len default-value)))
+  :hints(("Goal" :in-theory (enable resize-list))))
 
-(defun nth-resize-list-induction (i lst n default-value)
-  (declare (ignorable i lst n default-value))
-  (if (posp n)
-      (nth-resize-list-induction (1- i)
-                                 (if (atom lst) lst (cdr lst))
-                                 (1- n)
-                                 default-value)
-    nil))
+;; (defun nth-resize-list-induction (i lst n default-value)
+;;   (declare (ignorable i lst n default-value))
+;;   (if (posp n)
+;;       (nth-resize-list-induction (1- i)
+;;                                  (if (atom lst) lst (cdr lst))
+;;                                  (1- n)
+;;                                  default-value)
+;;     nil))
 
-(defthm nth-resize-list
-  (implies (and (natp i)
-                (natp n)
-                (<= (len lst) n)
-                (< i n))
-           (equal (nth i (resize-list lst n default))
-                  (if (< i (len lst))
-                      (nth i lst)
-                    default)))
-  :hints (("Goal" :in-theory (enable resize-list nth)
-           :induct (nth-resize-list-induction i lst n default-value))))
+;; [Jared] subsumed by better lemma in std/lists/resize-list
+;; (defthm nth-resize-list
+;;   (implies (and (natp i)
+;;                 (natp n)
+;;                 (<= (len lst) n)
+;;                 (< i n))
+;;            (equal (nth i (resize-list lst n default))
+;;                   (if (< i (len lst))
+;;                       (nth i lst)
+;;                     default)))
+;;   :hints (("Goal" :in-theory (enable resize-list nth)
+;;            :induct (nth-resize-list-induction i lst n default-value))))
 
 (defthm good-mem-arrayp-1-logic-resize-list
   (implies (and (natp next-addr)
@@ -1596,19 +1604,20 @@
                                         (NTH *MEM-TABLEI* x86-32$c)))
                   0)))
 
-(defthm nth-resize-list++
-  (implies (and (natp i)
-                (natp n)
-                (<= (len lst) n))
-           (equal (nth i (resize-list lst n default))
-                  (cond ((< i (len lst))
-                         (nth i lst))
-                        ((< i n)
-                         default)
-                        (t
-                         nil))))
-  :hints (("Goal" :in-theory (enable resize-list nth)
-           :induct (nth-resize-list-induction i lst n default-value))))
+;; [Jared] subsumed by better lemma in std/lists/resize-list
+;; (defthm nth-resize-list++
+;;   (implies (and (natp i)
+;;                 (natp n)
+;;                 (<= (len lst) n))
+;;            (equal (nth i (resize-list lst n default))
+;;                   (cond ((< i (len lst))
+;;                          (nth i lst))
+;;                         ((< i n)
+;;                          default)
+;;                         (t
+;;                          nil))))
+;;   :hints (("Goal" :in-theory (enable resize-list nth)
+;;            :induct (nth-resize-list-induction i lst n default-value))))
 
 (encapsulate
  ()

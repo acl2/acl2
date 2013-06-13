@@ -67,8 +67,9 @@ library."
                            (coerce y 'list))
                     (equal x y))))
 
-  (defthm character-listp-of-coerce-list
-    (character-listp (coerce x 'list)))
+  ;; [Jared]: Removing because this is now built into ACL2.
+  ;; (defthm character-listp-of-coerce-list
+  ;;   (character-listp (coerce x 'list)))
 
   (defthm coerce-list-under-iff
     (implies (stringp string)

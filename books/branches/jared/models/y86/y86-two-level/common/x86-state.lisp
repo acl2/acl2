@@ -694,6 +694,9 @@
                *mem-size-in-bytes*))
    :rule-classes :linear))
 
+; [Jared] disabling this new rule since it screws up the following proof
+(local (in-theory (disable nth-when-zp)))
+
 (defun good-memp (x86-32)
   (declare (xargs :stobjs x86-32))
   (let ((table-bound (1- (mem-table-length x86-32)))

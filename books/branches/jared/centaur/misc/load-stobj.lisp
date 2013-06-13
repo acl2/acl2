@@ -25,7 +25,7 @@
 (local (include-book "data-structures/list-defthms" :dir :system))
 ;;(local (include-book "unicode/take" :dir :system))
 ;;(local (include-book "unicode/nthcdr" :dir :system))
-(local (include-book "equal-by-nths"))
+(local (include-book "std/lists/nth" :dir :system))
 (local (include-book "tools/do-not" :dir :system))
 (local (do-not generalize fertilize))
 
@@ -108,10 +108,11 @@
                   nil))
          :hints(("Goal" :in-theory (enable xfirstn)))))
 
-(local (defthm nth-of-list-fix
-         (equal (nth n (list-fix a))
-                (nth n a))
-         :hints(("Goal" :in-theory (enable nth list-fix)))))
+;; part of std/lists now
+;; (local (defthm nth-of-list-fix
+;;          (equal (nth n (list-fix a))
+;;                 (nth n a))
+;;          :hints(("Goal" :in-theory (enable nth list-fix)))))
 
 
 

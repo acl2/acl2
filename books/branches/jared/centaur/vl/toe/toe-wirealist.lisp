@@ -1312,7 +1312,8 @@ some width and value.  We return a <i>width</i>-long list of symbols
   (defthm true-listp-of-vl-msb-constint-bitlist-1
     (implies (true-listp warnings)
              (true-listp (mv-nth 1 (vl-msb-constint-bitlist x warnings))))
-    :rule-classes :type-prescription)
+    :rule-classes :type-prescription
+    :hints(("Goal" :in-theory (disable (force)))))
 
   (local (defthm vl-emodwirelist-p-of-make-list-ac
            (implies (and (vl-emodwirelist-p ac)

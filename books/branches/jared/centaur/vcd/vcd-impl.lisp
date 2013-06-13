@@ -147,7 +147,7 @@
      (implies (string-listp x)
               (iff (first (last x))
                    (consp x)))
-     :hints(("Goal" :in-theory (disable (force)))))
+     :hints(("Goal" :in-theory (e/d (last) ((force))))))
 
    (defthm stringp-of-car-when-string-listp
      (implies (string-listp x)

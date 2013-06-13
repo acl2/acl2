@@ -107,6 +107,20 @@
   (filter-non-rewrite-rules
    (find-rules-of-runes (rules-of-class :rewrite :here) world)))
 
+(defun filter-disabled-rules (x ens state)
+  (cond ((atom x) 
+         nil)
+        ((active-runep (rewrite-rule->rune (car x)))
+         (cons (car x) (filter-disabled-rules (cdr x) ens state)))
+        (t
+         (filter-disabled-rules (cdr x) ens state))))
+
+(defun get-enabled-rewrite-rules (state)
+  (let* ((world (w state))
+         (ens   (ens state))
+         (rules (get-all-rewrite-rules world)))
+    (filter-disabled-rules rules ens state)))
+
 
 
 ;; Looking for compatible, redundant rules
@@ -212,7 +226,7 @@
 
 (defun lint-fn (state)
   (summarize-redundancies
-   (find-redundancies-top (get-all-rewrite-rules (w state)))
+   (find-redundancies-top (get-enabled-rewrite-rules state))
    state))
 
 (defmacro lint ()

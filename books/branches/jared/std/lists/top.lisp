@@ -32,14 +32,19 @@
 (include-book "equiv")
 (include-book "final-cdr")
 (include-book "flatten")
+(include-book "intersection")
+(include-book "last")
 (include-book "len")
 (include-book "list-fix")
 (include-book "make-character-list")
 (include-book "mfc-utils")
 (include-book "no-duplicatesp")
+(include-book "nth")
 (include-book "nthcdr")
 (include-book "prefixp")
+(include-book "remove")
 (include-book "repeat")
+(include-book "resize-list")
 (include-book "revappend")
 (include-book "reverse")
 (include-book "rev")
@@ -60,9 +65,20 @@
                     take-redefinition
                     nthcdr
                     subseq-list
+                    resize-list
+                    last
+                    butlast
+                    remove
+                    ;; It seems like disabling these is hard to do in general, so
+                    ;; I'll leave nth and update-nth enabled.
+                    ;; nth
+                    ;; update-nth
+                    member
                     subsetp
                     intersectp
-                    ;; BOZO eventually disable member and other functions
+                    union-equal
+                    set-difference-equal
+                    intersection-equal
                     ))
 
 
@@ -73,24 +89,31 @@
 
   :long "<p>The @('std/lists') library provides lemmas that are useful when
 reasoning about the basic list functions that are built into ACL2, and also
-defines many additional functions like @(see list-fix), @(see rev), @(see
+defines some additional functions like @(see list-fix), @(see rev), @(see
 set-equiv), and so on.</p>
 
+<p>The @('std/lists') library is based largely on books that were previously
+part of the @('unicode') library, but also incorporates ideas from earlier
+books such as @('data-structures/list-defthms') and
+@('data-structures/number-list-defthms') and also from @('coi/lists').</p>
+
+
+<h3>Loading the Library</h3>
+
 <p>The recommended way to load the library, especially for beginning to
-intermediate users, is to simply include the @('top') book, e.g.,</p>
+intermediate ACL2 users, is to simply include the @('top') book, e.g.,</p>
 
 @({ (include-book \"std/lists/top\" :dir :system) })
 
-<p>The top book loads quickly (typically under a second), gives you everything
-we have to offer, and sets up a \"recommended\" theory.  This theory differs
-from the default ACL2 theory in some notable ways, e.g., it @(see disable)s
-some basic, built-in ACL2 list functions like @('append') and @('len').</p>
+<p>This book loads quickly (typically in under a second), gives you everything
+we have to offer, and sets up a \"recommended\" theory.  See below for some
+general comments about this theory.</p>
 
-<p>Even for advanced users, we recommend using the @('top') book if possible.
+<p>For advanced users, we recommend using the @('top') book if possible.
 However, in case you find this book to be too heavy or too incompatible with
-your existing developments, the library is arranged in a \"buffet\" style that
-is meant to allow you to load as little or as much as you like.  A useful
-starting point is</p>
+your existing developments, the library is mostly arranged in a \"buffet\"
+style that is meant to allow you to load as little or as much as you like.  A
+particularly useful book is</p>
 
 @({ (include-book \"std/lists/list-defuns\" :dir :system) })
 
@@ -107,12 +130,43 @@ with.  The books have sensible names, e.g., you might write:</p>
 })
 
 <p>The best way to see what books are available is to just run @('ls') in the
-@('std/lists') directory.  In most cases, these individual books are meant to
-be reasonably unobtrusive, e.g., loading the @('append') book will not disable
-@(see append).</p>")
+@('std/lists') directory.  Unlike the top book, most individual books are meant
+to be reasonably unobtrusive, e.g., loading the @('append') book will not
+disable @(see append).</p>
 
 
-(defsection std
-  :short "Some \"standard\" libraries for ACL2.")
+<h3>Things to Note</h3>
+
+<p>When you include the @('top') book, note that many basic, built-in ACL2 list
+functions like @('append') and @('len') will be @(see disable)d.  As a result,
+ACL2 will sometimes not automatically try to induct as it did before.  You may
+find that you need to give explicit @(':induct') @(see hints), or explicitly
+re-@(see enable) these basic functions during certain theorems.  (On the flip
+side, you may also find that you are spending less time trying to prove
+theorems using incorrect induction schemes.)</p>
+
+<p>The library introduces a couple of useful @(see equivalence) relations,
+namely:</p>
+
+<dl>
+<dt>@(see list-equiv)</dt>
+<dd>Equivalences of lists based on @(see list-fix).</dd>
+<dd>Respected in some way by most list-processing functions.</dd>
+</dl>
+
+<dl>
+<dt>@(see set-equiv)</dt>
+<dd>Equivalence of lists up to @(see member)ship, but ignoring order and @(see
+duplicity).</dd>
+<dd>@('list-equiv') is a @(see refinement) of @('set-equiv').</dd>
+<dd>Respected in a strong way by most \"lists as sets\" functions, e.g., @(see
+subsetp), @(see union$), etc.</dd>
+<dd>Preserved by many other ordinary list functions like @(see append), @(see
+rev), etc.</dd>
+</dl>
+
+<p>These rules allow for some very powerful equivalence-based reasoning.  When
+introducing new list-processing functions, it is generally a good idea to
+define the appropriate @(see congruence) rules for these relations.</p>")
 
 

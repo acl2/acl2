@@ -40,6 +40,8 @@
       (progn
         (include-book "data-structures/list-defthms" :dir :system)
         (in-theory (enable nth update-nth resize-list))
+        (local (in-theory (disable RESIZE-LIST-WHEN-EMPTY)))
+
         (:@ :fix
          (def-universal-equiv 1d-arr-tmp-equiv
            :equiv-terms ((equal (_fix_ x)))))
@@ -81,7 +83,8 @@
          (defthm 1d-arr-tmp-listp-of-resize-list
            (implies (and (1d-arr-tmp-listp x)
                          (_pred_ default))
-                    (1d-arr-tmp-listp (resize-list x n default)))))))
+                    (1d-arr-tmp-listp (resize-list x n default))))
+           )))
 
      (defstobj _arrname_$c
        (_slotname_s$c :type (array _type-decl_

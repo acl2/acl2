@@ -42,12 +42,13 @@
                            sets::sets-are-true-lists
                            make-list-ac)))
 
-(local (include-book "centaur/misc/equal-by-nths" :dir :system))
+(local (include-book "std/lists/nth" :dir :system))
 
 (set-waterfall-parallelism nil) ; currently unknown why we need to disable
                                 ; waterfall-parallelism; something to examine
 
 (local (in-theory (disable true-listp-update-nth
+                           acl2::nth-when-zp
                            acl2::nth-with-large-index)))
 
 (local (defthmd equal-1-to-bitp
@@ -1069,6 +1070,7 @@ sequential assignments.</p>"
   (local (in-theory (disable acl2::bfix-when-not-1
                              acl2::nfix-when-not-natp)))
   (local (in-theory (enable acl2::make-list-ac-redef)))
+  (local (in-theory (disable acl2::make-list-ac-removal)))
 
   (acl2::def2darr frames
                   :prefix frames
@@ -1126,32 +1128,32 @@ sequential assignments.</p>"
            ;; out-of-bounds IDs are false
            0)
           (type (id->type id aignet)))
-       (aignet-case
-        type
-        :gate (b* ((f0 (gate-id->fanin0 id aignet))
-                   (f1 (gate-id->fanin1 id aignet)))
-                (mbe :logic (eval-and-of-lits-seq
-                             k f0 f1 frames initsts aignet)
-                     :exec (b-and (b-xor (id-eval-seq k (lit-id f0)
-                                                      frames
-                                                      initsts aignet)
-                                         (lit-neg f0))
-                                  (b-xor (id-eval-seq k (lit-id f1)
-                                                      frames
-                                                      initsts aignet)
-                                         (lit-neg f1)))))
-        :in    (let ((ionum (io-id->ionum id aignet)))
-                 (if (int= (io-id->regp id aignet) 1)
-                     (if (zp k)
-                         (get-bit ionum initsts)
-                       (id-eval-seq (1- k)
-                                    (reg-id->nxst id aignet)
-                                    frames initsts aignet))
-                   (frames-get2 k ionum frames)))
-        :out (b* ((f (co-id->fanin id aignet)))
-               (lit-eval-seq
-                k f frames initsts aignet))
-        :const 0))))
+         (aignet-case
+          type
+          :gate (b* ((f0 (gate-id->fanin0 id aignet))
+                     (f1 (gate-id->fanin1 id aignet)))
+                    (mbe :logic (eval-and-of-lits-seq
+                                 k f0 f1 frames initsts aignet)
+                         :exec (b-and (b-xor (id-eval-seq k (lit-id f0)
+                                                          frames
+                                                          initsts aignet)
+                                             (lit-neg f0))
+                                      (b-xor (id-eval-seq k (lit-id f1)
+                                                          frames
+                                                          initsts aignet)
+                                             (lit-neg f1)))))
+          :in    (let ((ionum (io-id->ionum id aignet)))
+                   (if (int= (io-id->regp id aignet) 1)
+                       (if (zp k)
+                           (get-bit ionum initsts)
+                         (id-eval-seq (1- k)
+                                      (reg-id->nxst id aignet)
+                                      frames initsts aignet))
+                     (frames-get2 k ionum frames)))
+          :out (b* ((f (co-id->fanin id aignet)))
+                   (lit-eval-seq
+                    k f frames initsts aignet))
+          :const 0))))
 
   (in-theory (disable id-eval-seq lit-eval-seq eval-and-of-lits-seq))
   (local (in-theory (enable id-eval-seq lit-eval-seq eval-and-of-lits-seq)))
@@ -1163,25 +1165,25 @@ sequential assignments.</p>"
           ;; out-of-bounds IDs are false
           0)
          (type (id->type id aignet)))
-      (aignet-case
-       type
-       :gate (b* ((f0 (gate-id->fanin0 id aignet))
-                  (f1 (gate-id->fanin1 id aignet)))
-               (list
-                (id-eval-seq-ind
-                 k (lit-id f0) aignet)
-                (id-eval-seq-ind
-                 k (lit-id f1) aignet)))
-       :in     (if (int= (io-id->regp id aignet) 1)
-                   (if (zp k)
-                       0
-                     (id-eval-seq-ind
-                      (1- k) (reg-id->nxst id aignet) aignet))
-                 0)
-       :out  (b* ((f (co-id->fanin id aignet)))
-               (id-eval-seq-ind
-                k (lit-id f) aignet))
-       :const 0)))
+        (aignet-case
+         type
+         :gate (b* ((f0 (gate-id->fanin0 id aignet))
+                    (f1 (gate-id->fanin1 id aignet)))
+                   (list
+                    (id-eval-seq-ind
+                     k (lit-id f0) aignet)
+                    (id-eval-seq-ind
+                     k (lit-id f1) aignet)))
+         :in     (if (int= (io-id->regp id aignet) 1)
+                     (if (zp k)
+                         0
+                       (id-eval-seq-ind
+                        (1- k) (reg-id->nxst id aignet) aignet))
+                   0)
+         :out  (b* ((f (co-id->fanin id aignet)))
+                   (id-eval-seq-ind
+                    k (lit-id f) aignet))
+         :const 0)))
 
   (defcong nat-equiv equal (id-eval-seq k id frames initvals aignet) 1
     :hints (("goal" :induct (id-eval-seq-ind k id aignet))))
@@ -1199,9 +1201,9 @@ sequential assignments.</p>"
              :in-theory (disable id-eval-seq lit-eval-seq))
             (and stable-under-simplificationp
                  '(:expand ((:free (k aignet)
-                             (id-eval-seq k id frames initvals aignet))
+                                   (id-eval-seq k id frames initvals aignet))
                             (:free (lit aignet)
-                             (lit-eval-seq k lit frames initvals aignet)))))))
+                                   (lit-eval-seq k lit frames initvals aignet)))))))
 
   (defcong nat-equiv equal (lit-eval-seq k lit frames initvals aignet) 1
     :hints (("goal" :expand ((lit-eval-seq k lit frames initvals aignet)))))
@@ -1211,7 +1213,7 @@ sequential assignments.</p>"
     :hints (("goal" :expand ((lit-eval-seq k lit frames initvals aignet)))))
   (defcong list-equiv equal (lit-eval-seq k lit frames initvals aignet) 5
     :hints (("goal" :expand ((:free (aignet)
-                              (lit-eval-seq k lit frames initvals aignet))))))
+                                    (lit-eval-seq k lit frames initvals aignet))))))
 
   (defcong nat-equiv equal (eval-and-of-lits-seq k lit1 lit2 frames initvals aignet) 1
     :hints (("goal" :expand ((eval-and-of-lits-seq k lit1 lit2 frames initvals aignet)))))
@@ -1223,7 +1225,7 @@ sequential assignments.</p>"
     :hints (("goal" :expand ((eval-and-of-lits-seq k lit1 lit2 frames initvals aignet)))))
   (defcong list-equiv equal (eval-and-of-lits-seq k lit1 lit2 frames initvals aignet) 6
     :hints (("goal" :expand ((:free (aignet)
-                              (eval-and-of-lits-seq k lit1 lit2 frames initvals aignet))))))
+                                    (eval-and-of-lits-seq k lit1 lit2 frames initvals aignet))))))
 
 
   (defthm bitp-of-lit-eval-seq
@@ -1238,7 +1240,7 @@ sequential assignments.</p>"
     (bitp (id-eval-seq k id frames initsts aignet))
     :hints (("goal" :expand ((id-eval-seq k id frames initsts aignet)
                              (:free (id)
-                              (id-eval-seq (+ -1 k) id frames initsts aignet))))))
+                                    (id-eval-seq (+ -1 k) id frames initsts aignet))))))
 
   (verify-guards id-eval-seq)
 
@@ -1266,9 +1268,9 @@ sequential assignments.</p>"
     :hints (("goal" :induct (id-eval-ind id aignet)
              :expand ((:free (k) (id-eval-seq k id frames initsts aignet))
                       (:free (invals regvals)
-                       (id-eval id invals regvals aignet))
+                             (id-eval id invals regvals aignet))
                       (:free (k lit)
-                       (lit-eval-seq k lit invals regvals aignet)))
+                             (lit-eval-seq k lit invals regvals aignet)))
              :in-theory (e/d (lit-eval
                               eval-and-of-lits)
                              (id-eval-seq
@@ -1320,7 +1322,7 @@ sequential assignments.</p>"
              (equal (lit-eval-seq k lit frames initvals new)
                     (lit-eval-seq k lit frames initvals orig)))
     :hints (("goal" :expand ((:free (aignet)
-                              (lit-eval-seq k lit frames initvals aignet))))))
+                                    (lit-eval-seq k lit frames initvals aignet))))))
 
   (defthm frame-regvals-of-non-reg/nxst-extension
     (implies (and (aignet-extension-binding)
@@ -1335,11 +1337,11 @@ sequential assignments.</p>"
                  (acl2::equal-by-nths-hint))))
 
   (defthm frame-regvals-when-zp
-  (implies (zp k)
-           (bits-equiv (frame-regvals k frames initvals aignet)
-                       (take (num-regs aignet) initvals)))
-  :hints(("Goal" :in-theory (enable bits-equiv
-                                    nth-of-frame-regvals-split)))))
+    (implies (zp k)
+             (bits-equiv (frame-regvals k frames initvals aignet)
+                         (take (num-regs aignet) initvals)))
+    :hints(("Goal" :in-theory (enable bits-equiv
+                                      nth-of-frame-regvals-split)))))
 
 
 
