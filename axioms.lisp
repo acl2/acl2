@@ -5601,7 +5601,7 @@
   in raw Lisp.  That is, the call of ~c[fn] is made on its evaluated arguments
   as though this call is being made in the ACL2 top-level loop, rather than in
   raw Lisp.  In particular, the ~il[guard] of ~c[fn] is checked, at least by
-  default (~pl[set-guard-checking].~eq[]
+  default (~pl[set-guard-checking]).~eq[]
 
   Note that in the term (ec-call (fn term1 ... termk))~c[], only the indicated
   call of ~c[fn] is made in the logic; each ~c[termi] is evaluated in the
@@ -6871,39 +6871,43 @@
   (BIND-FREE term t)
   (BIND-FREE term)
   ~ev[]
-  A rule which uses a ~c[bind-free] hypothesis has similarities to both a
-  rule which uses a ~ilc[syntaxp] hypothesis and to a ~c[:]~ilc[meta] rule.
-  ~c[Bind-free] is like ~ilc[syntaxp], in that it logically always
-  returns ~c[t] but may affect the application of a ~c[:]~ilc[rewrite]
-  or ~c[:]~ilc[linear] rule when it is called at the top-level of a
-  hypothesis.  It is like a ~c[:]~ilc[meta] rule, in that it allows the
-  user to perform transformations of terms under progammatic control.
+  A rule which uses a ~c[bind-free] hypothesis has similarities to both a rule
+  which uses a ~ilc[syntaxp] hypothesis and to a ~c[:]~ilc[meta] rule.
+  ~c[Bind-free] is like ~ilc[syntaxp], in that it logically always returns
+  ~c[t] but may affect the application of a ~c[:]~ilc[rewrite] or
+  ~c[:]~ilc[linear] rule when it is called at the top-level of a hypothesis.
+  It is like a ~c[:]~ilc[meta] rule, in that it allows the user to perform
+  transformations of terms under progammatic control.
 
   Note that a ~c[bind-free] hypothesis does not, in general, deal with the
-  meaning or semantics or values of the terms, but rather with their
-  syntactic forms.  Before attempting to write a rule which uses
-  ~c[bind-free], the user should be familiar with ~ilc[syntaxp] and the
-  internal form that ACL2 uses for terms.  This internal form is
-  similar to what the user sees, but there are subtle and important
-  differences.  ~ilc[Trans] can be used to view this internal form.
+  meaning or semantics or values of the terms, but rather with their syntactic
+  forms.  Before attempting to write a rule which uses ~c[bind-free], the user
+  should be familiar with ~ilc[syntaxp] and the internal form that ACL2 uses
+  for terms.  This internal form is similar to what the user sees, but there
+  are subtle and important differences.  ~ilc[Trans] can be used to view this
+  internal form.
 
-  Just as for a ~ilc[syntaxp] hypothesis, there are two types of
-  ~c[bind-free] hypotheses.  The simpler type of ~c[bind-free]
-  hypothesis may be used as the nth hypothesis in a ~c[:]~ilc[rewrite]
-  or ~c[:]~ilc[linear] rule whose ~c[:]~ilc[corollary] is
-  ~c[(implies (and hyp1 ... hypn ... hypk) (equiv lhs rhs))] provided ~c[term]
-  is a term, ~c[term] contains at least one variable, and every variable
-  occuring freely in ~c[term] occurs freely in ~c[lhs] or in some ~c[hypi],
-  ~c[i<n].  In addition, ~c[term] must not use any stobjs.
-  (Later below we will describe the second type, an ~em[extended]
-  ~c[bind-free] hypothesis, which may use ~ilc[state].)
+  Just as for a ~ilc[syntaxp] hypothesis, there are two basic types of
+  ~c[bind-free] hypotheses.  The simpler type of ~c[bind-free] hypothesis may
+  be used as the nth hypothesis in a ~c[:]~ilc[rewrite] or ~c[:]~ilc[linear]
+  rule whose ~c[:]~ilc[corollary] is
+  ~c[(implies (and hyp1 ... hypn ... hypk) (equiv lhs rhs))]
+  provided ~c[term] is a term, ~c[term] contains at least one variable, and
+  every variable occuring freely in ~c[term] occurs freely in ~c[lhs] or in
+  some ~c[hypi], ~c[i<n].  In addition, ~c[term] must not use any stobjs.
+  Later below we will describe the second type, an ~em[extended] ~c[bind-free]
+  hypothesis, which may use ~ilc[state].  Whether simple or extended, a
+  ~c[bind-free] hypothesis may return an alist that binds free variables of a
+  rewrite rule, as explained below, or it may return a list of such alists.  We
+  focus on the first of these cases: return of a single binding alist.  We
+  conclude our discussion with a section that covers the other case: return of
+  a list of alists.
 
-  We begin our description of ~c[bind-free] by examining the
-  first example above in some detail.
+  We begin our description of ~c[bind-free] by examining the first example
+  above in some detail.
 
-  We wish to write a rule which will cancel ``like'' addends from both
-  sides of an equality.  Clearly, one could write a series of rules such
-  as
+  We wish to write a rule which will cancel ``like'' addends from both sides of
+  an equality.  Clearly, one could write a series of rules such as
   ~bv[]
   (DEFTHM THE-HARD-WAY-2-1
      (EQUAL (EQUAL (+ A X B)
@@ -6911,11 +6915,11 @@
             (EQUAL (+ A B)
                    (FIX C))))
   ~ev[]
-  with one rule for each combination of positions the matching addends
-  might be found in (if one knew before-hand the maximum number of
-  addends that would appear in a sum).  But there is a better way.
-  (In what follows, we assume the presence of an appropriate set of rules
-  for simplifying sums.)
+
+  with one rule for each combination of positions the matching addends might be
+  found in (if one knew before-hand the maximum number of addends that would
+  appear in a sum).  But there is a better way.  (In what follows, we assume
+  the presence of an appropriate set of rules for simplifying sums.)
 
   Consider the following definitions and theorem:
   ~bv[]
@@ -6956,39 +6960,37 @@
   (equal (+ 3 (expt a n) (foo a c))
          (+ (bar b) (expt a n)))
   ~ev[]
-  As mentioned above, the internal form of an ACL2 term is not always
-  what one sees printed out by ACL2.  In this case, by using ~c[:]~ilc[trans]
-  one can see that the term is stored internally as
+  As mentioned above, the internal form of an ACL2 term is not always what one
+  sees printed out by ACL2.  In this case, by using ~c[:]~ilc[trans] one can
+  see that the term is stored internally as
   ~bv[]
   (equal (binary-+ '3
                    (binary-+ (expt a n) (foo a c)))
          (binary-+ (bar b) (expt a n))).
   ~ev[]
 
-  When ACL2 attempts to apply ~c[cancel-matching-addends-equal] to the
-  term under discussion, it first forms a substitution that instantiates
-  the left-hand side of the conclusion so that it is identical to the
-  target term.  This substitution is kept track of by the substitution
-  alist:
+  When ACL2 attempts to apply ~c[cancel-matching-addends-equal] to the term
+  under discussion, it first forms a substitution that instantiates the
+  left-hand side of the conclusion so that it is identical to the target term.
+  This substitution is kept track of by the substitution alist:
   ~bv[]
   ((LHS . (binary-+ '3
                      (binary-+ (expt a n) (foo a c))))
    (RHS . (binary-+ (bar b) (expt a n)))).
   ~ev[]
   ACL2 then attempts to relieve the hypotheses in the order they were
-  given. Ordinarily this means that we instantiate each hypothesis
-  with our substitution and then attempt to rewrite the resulting
-  instance to true.  Thus, in order to relieve the first hypothesis,
-  we rewrite:
+  given.  Ordinarily this means that we instantiate each hypothesis with our
+  substitution and then attempt to rewrite the resulting instance to true.
+  Thus, in order to relieve the first hypothesis, we rewrite:
   ~bv[]
   (RATIONALP (binary-+ '3
                         (binary-+ (expt a n) (foo a c)))).
   ~ev[]
-  Let us assume that the first two hypotheses rewrite to ~c[t].  How
-  do we relieve the ~c[bind-free] hypothesis?  Just as for a ~ilc[syntaxp]
-  hypothesis, ACL2 evaluates ~c[(find-match-in-plus-nests lhs rhs)]
-  in an environment where ~c[lhs] and ~c[rhs] are instantiated as determined
-  by the substitution.  In this case we evaluate
+  Let us assume that the first two hypotheses rewrite to ~c[t].  How do we
+  relieve the ~c[bind-free] hypothesis?  Just as for a ~ilc[syntaxp]
+  hypothesis, ACL2 evaluates ~c[(find-match-in-plus-nests lhs rhs)] in an
+  environment where ~c[lhs] and ~c[rhs] are instantiated as determined by the
+  substitution.  In this case we evaluate
   ~bv[]
   (FIND-MATCH-IN-PLUS-NESTS '(binary-+ '3
                                         (binary-+ (expt a n) (foo a c)))
@@ -6997,16 +6999,16 @@
   Observe that, just as in the case of a ~ilc[syntaxp] hypothesis, we
   substitute the quotation of the variables bindings into the term to be
   evaluated.  ~l[syntaxp] for the reasons for this.  The result of this
-  evaluation, ~c[((X . (EXPT A N)))], is then used to extend the
-  substitution alist:
+  evaluation, ~c[((X . (EXPT A N)))], is then used to extend the substitution
+  alist:
   ~bv[]
   ((X . (EXPT A N))
    (LHS . (binary-+ '3
                      (binary-+ (expt a n) (foo a c))))
    (RHS . (binary-+ (bar b) (expt a n)))),
   ~ev[]
-  and this extended substitution determines
-  ~c[cancel-matching-addends-equal]'s result:
+  and this extended substitution determines ~c[cancel-matching-addends-equal]'s
+  result:
   ~bv[]
   (EQUAL (+ (- X) LHS) (+ (- X) RHS))
   ==>
@@ -7016,26 +7018,23 @@
   Question: What is the internal form of this result?~nl[]
   Hint: Use ~c[:]~ilc[trans].
 
-  When this rule fires, it adds the negation of a common term
-  to both sides of the equality by selecting a binding for the
-  otherwise-free variable ~c[x], under programmatic control.  Note
-  that other mechanisms such as the binding of ~il[free-variables]
-  may also extend the substitution alist.
+  When this rule fires, it adds the negation of a common term to both sides of
+  the equality by selecting a binding for the otherwise-free variable ~c[x],
+  under programmatic control.  Note that other mechanisms such as the binding
+  of ~il[free-variables] may also extend the substitution alist.
 
-  Just as for a ~ilc[syntaxp] test, a ~c[bind-free] form signals
-  failure by returning ~c[nil].  However, while a ~ilc[syntaxp] test
-  signals success by returning true, a ~c[bind-free] form signals
-  success by returning an alist which is used to extend the current
-  substitution alist.  Because of this use of the alist, there are
-  several restrictions on it ~-[] in particular the alist must only
-  bind variables, these variables must not be already bound by the
-  substitution alist, and the variables must be bound to ACL2 terms.
-  If ~c[term] returns an alist and the alist meets these restrictions,
-  we append the alist to the substitution alist and use the result as
-  the new current substitution alist.  This new current
-  substitution alist is then used when we attempt to relieve the next
-  hypothesis or, if there are no more, instantiate the right hand side
-  of the rule.
+  Just as for a ~ilc[syntaxp] test, a ~c[bind-free] form signals failure by
+  returning ~c[nil].  However, while a ~ilc[syntaxp] test signals success by
+  returning true, a ~c[bind-free] form signals success by returning an alist
+  which is used to extend the current substitution alist.  Because of this use
+  of the alist, there are several restrictions on it ~-[] in particular the
+  alist must only bind variables, these variables must not be already bound by
+  the substitution alist, and the variables must be bound to ACL2 terms.  If
+  ~c[term] returns an alist and the alist meets these restrictions, we append
+  the alist to the substitution alist and use the result as the new current
+  substitution alist.  This new current substitution alist is then used when we
+  attempt to relieve the next hypothesis or, if there are no more, instantiate
+  the right hand side of the rule.
 
   There is also a second, optional, ~c[var-list] argument to a ~c[bind-free]
   hypothesis.  If provided, it must be either ~c[t] or a list of variables.  If
@@ -7046,15 +7045,97 @@
   this list of variables, as it allows some consistency checks to be performed
   at the time of the rule's admittance which are not possible otherwise.
 
-  An extended ~c[bind-free] hypothesis is similar to the simple type
-  described above, but it uses two additional variables, ~c[mfc] and ~c[state],
-  which must not be bound by the left hand side or an earlier hypothesis
-  of the rule.  They must be the last two variables mentioned by ~c[term]:
-  first ~c[mfc], then ~c[state].  These two variables give access to
-  the functions ~c[mfc-]xxx; ~pl[extended-metafunctions].  As
-  described there, ~c[mfc] is bound to the so-called
-  metafunction-context and ~c[state] to ACL2's ~ilc[state].  ~l[bind-free-examples]
-  for examples of the use of these extended ~c[bind-free] hypotheses.~/"
+  An extended ~c[bind-free] hypothesis is similar to the simple type described
+  above, but it uses two additional variables, ~c[mfc] and ~c[state], which
+  must not be bound by the left hand side or an earlier hypothesis of the rule.
+  They must be the last two variables mentioned by ~c[term]: first ~c[mfc],
+  then ~c[state].  These two variables give access to the functions
+  ~c[mfc-]xxx; ~pl[extended-metafunctions].  As described there, ~c[mfc] is
+  bound to the so-called metafunction-context and ~c[state] to ACL2's
+  ~ilc[state].  ~l[bind-free-examples] for examples of the use of these
+  extended ~c[bind-free] hypotheses.
+
+  ~st[SECTION]: Returning a list of alists.
+
+  As promised above, we conclude with a discussion of the case that evaluation
+  of the ~c[bind-free] term produces a list of alists, ~c[x], rather than a
+  single alist.  In this case each member ~c[b] of ~c[x] is considered in turn,
+  starting with the first and proceeding through the list.  Each such ~c[b] is
+  handled exactly as discussed above, as though it were the result of
+  evaluating the ~c[bind-free] term.  Thus, each ~c[b] extends the current
+  variable binding alist, and all remaining hypotheses are then relieved, as
+  though ~c[b] had been the value obtained by evaluating the ~c[bind-free]
+  term.  As soon as one such ~c[b] leads to successful relieving of all
+  remaining hypotheses, the process of relieving hypotheses concludes, so no
+  further members of ~c[x] are considered.
+
+  We illustrate with a simple pedagogical example.  First introduce functions
+  ~c[p1] and ~c[p2] such that a rewrite rule specifies that ~c[p2] implies
+  ~c[p1], but with a free variable.
+  ~bv[]
+
+  (defstub p1 (x) t)
+  (defstub p2 (x y) t)
+
+  (defaxiom p2-implies-p1
+    (implies (p2 x y)
+             (p1 x)))
+
+  ~ev[]
+  If we add the following axiom, then ~c[(p1 x)] follows logically for all
+  ~c[x].
+  ~bv[]
+
+  (defaxiom p2-instance
+    (p2 v (cons v 4)))
+
+  ~ev[]
+  Unfortunately, evaluation of ~c[(thm (p1 a))] fails, because ACL2 fails to
+  bind the free variable ~c[y] in order to apply the rule ~c[p2-instance].
+
+  Let's define a function that produces a list of alists, each binding the
+  variable ~c[y].  Of course, we know that only the middle one below is
+  necessary in this simple example.  In more complex examples, one might use
+  heuristics to construct such a list of alists.
+  ~bv[]
+
+  (defun my-alists (x)
+    (list (list (cons 'y (fcons-term* 'cons x ''3)))
+          (list (cons 'y (fcons-term* 'cons x ''4)))
+          (list (cons 'y (fcons-term* 'cons x ''5)))))
+
+  ~ev[]
+  The following rewrite rule uses ~c[bind-free] to return a list of candidate
+  alists binding ~c[y].
+  ~bv[]
+
+  (defthm p2-implies-p1-better
+    (implies (and (bind-free (my-alists x)
+                             (y)) ; the second argument, (y), is optional
+                  (p2 x y))
+             (p1 x)))
+
+  ~ev[]
+  Now the proof succeeds for ~c[(thm (p1 a))].  Why?  When ACL2 applies the
+  ~c[rewrite] rule ~c[p2-implies-p1-better], it evaluates ~c[my-alists], as we
+  can see from the following ~il[trace], to bind ~c[y] in three different
+  alists.
+  ~bv[]
+
+  ACL2 !>(thm (p1 a))
+  1> (ACL2_*1*_ACL2::MY-ALISTS A)
+  <1 (ACL2_*1*_ACL2::MY-ALISTS (((Y CONS A '3))
+                                ((Y CONS A '4))
+                                ((Y CONS A '5))))
+
+  Q.E.D.
+
+  ~ev[]
+  The first alist, binding ~c[y] to ~c[(cons a '3)], fails to allow the
+  hypothesis ~c[(p2 x y)] to be proved.  But the next binding of ~c[y], to
+  ~c[(cons a '4)], succeeds: then the current binding alist is
+  ~c[((x . a) (y . (cons a '4)))], for which the hypothesis ~c[(p2 x y)]
+  rewrites to true using the rewrite rule ~c[p2-instance].~/"
 
   (if vars
       `(synp (quote ,vars) (quote (bind-free ,form ,vars)) (quote ,form))
@@ -7068,7 +7149,12 @@
   examples pertaining to ~ilc[bind-free] hypotheses~/
 
   ~l[bind-free] for a basic discussion of the use of ~c[bind-free] to control
-  rewriting.~/
+  rewriting.
+
+  Note that the examples below all illustrate the common case in which a
+  ~c[bind-free] hypothesis generates a binding alist.  ~l[bind-free], in
+  particular the final section, for a discussion of the case that instead a
+  list of binding alists is generated.~/
 
   We give examples of the use of ~ilc[bind-free] hypotheses from the
   perspective of a user interested in reasoning about arithmetic, but

@@ -30013,13 +30013,15 @@
 
 (defun pc-relieve-hyp (rune hyp unify-subst type-alist wrld state ens ttree)
 
-; This function is adapted from ACL2 function relieve-hyp, but it prevents
-; backchaining, instead returning the new hypotheses.  Notice that there are no
-; arguments for obj, equiv, fnstack, ancestors, or simplify-clause-pot-lst.
-; Also notice that rcnst has been replaced by ens (an enable structure).
+; This function is adapted from ACL2 function relieve-hyp, but without
+; rewriting.  Notice that there are no arguments for obj, equiv, fnstack,
+; ancestors, or simplify-clause-pot-lst.  Also notice that rcnst has been
+; replaced by ens (an enable structure).
 
-; We return t or nil indicating whether we won, an extended unify-subst
-; and a new ttree.  This function is a No-Change Loser.
+; We return t or nil indicating whether we won, an extended unify-subst and a
+; new ttree, with one exception: we can return (mv :unify-subst-list lst
+; new-ttree), where lst is a list of binding alists, as for relieve-hyp.  This
+; function is a No-Change Loser.
 
   (cond ((and (nvariablep hyp)
               (not (fquotep hyp))
@@ -30093,6 +30095,29 @@
                                (mv t unify-subst ttree)
                              (mv nil unify-subst ttree)))))))))))))))))))
 
+(mutual-recursion
+
+(defun pc-relieve-hyps1-iter (rune hyps unify-subst-lst unify-subst
+                                   unify-subst0 ttree0 type-alist
+                                   keep-unify-subst wrld state ens ttree)
+
+; This function is adapted from ACL2 function relieve-hyps1-iter.
+
+  (mv-let
+   (relieve-hyps1-ans unify-subst1 ttree1)
+   (pc-relieve-hyps1 rune hyps
+                     (extend-unify-subst (car unify-subst-lst) unify-subst)
+                     unify-subst0 ttree0 type-alist keep-unify-subst wrld state
+                                   ens ttree)
+   (cond ((or (endp (cdr unify-subst-lst))
+              relieve-hyps1-ans)
+          (mv relieve-hyps1-ans unify-subst1 ttree1))
+         (t (pc-relieve-hyps1-iter rune hyps
+                                   (cdr unify-subst-lst)
+                                   unify-subst unify-subst0 ttree0
+                                   type-alist keep-unify-subst wrld
+                                   state ens ttree)))))
+
 (defun pc-relieve-hyps1 (rune hyps unify-subst unify-subst0 ttree0 type-alist
                               keep-unify-subst wrld state ens ttree)
 
@@ -30113,25 +30138,36 @@
 
   (cond ((null hyps)
          (mv (not (eq keep-unify-subst :FAILED)) unify-subst ttree))
-        (t (mv-let (relieve-hyp-ans new-unify-subst ttree)
+        (t (mv-let
+            (relieve-hyp-ans new-unify-subst ttree)
 
 ; We avoid rewriting in this proof-checker code, so new-ttree = ttree.
 
-             (pc-relieve-hyp rune (car hyps) unify-subst type-alist wrld state
-                             ens ttree)
-             (cond
-              ((or relieve-hyp-ans keep-unify-subst)
-               (pc-relieve-hyps1 rune
-                                 (cdr hyps)
-                                 new-unify-subst
-                                 unify-subst0 ttree0
-                                 type-alist
-                                 (if (and (eq keep-unify-subst t)
-                                          (not relieve-hyp-ans))
-                                     :FAILED
-                                   keep-unify-subst)
-                                 wrld state ens ttree))
-              (t (mv nil unify-subst0 ttree0)))))))
+            (pc-relieve-hyp rune (car hyps) unify-subst type-alist wrld
+                            state ens ttree)
+            (cond
+             ((eq relieve-hyp-ans :unify-subst-list)
+
+; The hypothesis (car hyps) is a call of bind-free that has produced a list of
+; unify-substs.
+
+              (pc-relieve-hyps1-iter rune (cdr hyps)
+                                     new-unify-subst ; a list of alists
+                                     unify-subst unify-subst0 ttree0 type-alist
+                                     keep-unify-subst wrld state ens ttree))
+             ((or relieve-hyp-ans keep-unify-subst)
+              (pc-relieve-hyps1 rune
+                                (cdr hyps)
+                                new-unify-subst
+                                unify-subst0 ttree0
+                                type-alist
+                                (if (and (eq keep-unify-subst t)
+                                         (not relieve-hyp-ans))
+                                    :FAILED
+                                  keep-unify-subst)
+                                wrld state ens ttree))
+             (t (mv nil unify-subst0 ttree0)))))))
+)
 
 (defun pc-relieve-hyps (rune hyps unify-subst type-alist keep-unify-subst wrld
                              state ens ttree)

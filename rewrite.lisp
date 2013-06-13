@@ -9239,26 +9239,40 @@
                 (t nil)))
         (bad-synp-alist1 (cdr alist) unify-subst vars-to-be-bound wrld))))
 
-(defun bad-synp-alist (alist unify-subst vars-to-be-bound wrld)
+(defun bad-synp-alist1-lst (alist-lst unify-subst vars-to-be-bound wrld)
+  (cond
+   ((endp alist-lst) nil)
+   (t (or (bad-synp-alist1 (car alist-lst) unify-subst vars-to-be-bound wrld)
+          (bad-synp-alist1-lst (cdr alist-lst) unify-subst vars-to-be-bound
+                               wrld)))))
 
-; Alist is the (non-nil non-t) value returned by a synp hypothesis,
-; Unify-subst is an alist containing the unifying substitution
-; gathered so far, and vars-to-be-bound is either t or a quoted list
-; of variables.  We check that alist is indeed an alist, that it does
-; not bind any variables already bound in unify-subst, and that it
-; only binds variables to ACL2 terms.  If vars-to-be-bound is anything
-; other than t, we also require that alist only binds vars present in
-; vars-to-be-bound.
+(defun bind-free-info (x unify-subst vars-to-be-bound wrld)
 
-; We return nil if the alist is legal, else a string or message suitable for
-; printing with ~@.
+; X is a value returned by a bind-free synp hypothesis, known not to be t or
+; nil; unify-subst is an alist containing the unifying substitution gathered so
+; far; and vars-to-be-bound is either t or a quoted list of variables.  We
+; check that alist is indeed an alist, that it does not bind any variables
+; already bound in unify-subst, and that it only binds variables to ACL2 terms.
+; If vars-to-be-bound is anything other than t, we also require that alist only
+; binds vars present in vars-to-be-bound.
 
-  (if (alistp alist)
-      (bad-synp-alist1 alist
-                       unify-subst
-                       (get-evg vars-to-be-bound 'bad-synp-alist)
-                       wrld)
-    "it is not an alist"))
+; We return nil if x is a legal alist, t if x is a legal list of alists, and
+; otherwise a string or message suitable for printing with ~@.
+
+  (cond
+   ((and (true-listp x)
+         (alistp (car x)))
+    (or (bad-synp-alist1-lst x
+                             unify-subst
+                             (get-evg vars-to-be-bound 'bad-synp-alist)
+                             wrld)
+        t))
+   ((alistp x)
+    (bad-synp-alist1 x
+                     unify-subst
+                     (get-evg vars-to-be-bound 'bad-synp-alist)
+                     wrld))
+   (t "it is not an alist")))
 
 (defun evgs-or-t (lst alist)
 
@@ -12128,14 +12142,24 @@
          (set-difference-assoc-eq (cdr lst) alist))
         (t (cons (car lst) (set-difference-assoc-eq (cdr lst) alist)))))
 
+(defun extend-unify-subst (alist unify-subst)
+
+; We attempt to keep all terms in quote-normal form, which explains the
+; modification of val just below.
+
+  (append (pairlis$ (strip-cars alist)
+                    (sublis-var-lst nil (strip-cdrs alist)))
+          unify-subst))
+
 (defun relieve-hyp-synp (rune hyp0 unify-subst rdepth type-alist wrld state
                               fnstack ancestors backchain-limit
                               simplify-clause-pot-lst rcnst gstack ttree bkptr)
 
 ; Hyp0 is a call of synp.  This special case of relieve-hyp returns some of the
-; same values as does relieve-hyp, namely:
+; same values as does relieve-hyp, namely the following
+; where wonp is t, nil, or :unify-subst-list:
 
-; (mv wonp failure-reason unify-subst' ttree''),
+; (mv wonp failure-reason unify-subst' ttree'')
 
   (let* ((synp-fn (car (get-evg (fargn hyp0 2) 'relieve-hyp)))
          (mfc (if (member-eq 'state (all-vars (get-evg (fargn hyp0 3)
@@ -12214,30 +12238,29 @@
                         rune
                         val)
                     nil unify-subst ttree))))
-             ((bad-synp-alist val unify-subst (fargn hyp0 1) wrld)
-              (mv (er hard 'relieve-hyp
-                      "The evaluation of the BIND-FREE form in hypothesis ~p0 ~
-                       of rule ~x1 produced the result ~x2, which is illegal ~
-                       because ~@3."
-                      (untranslate hyp0 t wrld)
-                      rune
-                      val
-                      (bad-synp-alist val unify-subst (fargn hyp0 1) wrld))
-                  nil unify-subst ttree))
-             (t
-              (mv t nil
-
-; We attempt to keep all terms in quote-normal form, which explains the
-; modification of val just below.
-
-                  (append (pairlis$ (strip-cars val)
-                                    (sublis-var-lst nil (strip-cdrs val)))
-                          unify-subst)
-
-; See comment for call of push-lemma above, for why we do not include the
-; executable-counterparts of functions in the term just evaluated.
-
-                  (push-lemma (fn-rune-nume 'synp nil nil wrld) ttree)))))))
+             (t (let ((info (bind-free-info val unify-subst (fargn hyp0 1)
+                                            wrld)))
+                  (cond
+                   ((eq info nil)
+                    (mv t nil
+                        (extend-unify-subst val unify-subst)
+                        (push-lemma
+                         (fn-rune-nume 'synp nil nil wrld) ; see comment above
+                         ttree)))
+                   ((eq info t)
+                    (mv :unify-subst-list nil
+                        val ; a list of alists with which to extend unify-subst
+                        (push-lemma
+                         (fn-rune-nume 'synp nil nil wrld) ; see comment above
+                         ttree)))
+                   (t
+                    (mv (er hard 'relieve-hyp
+                            "The evaluation of the BIND-FREE form in ~
+                             hypothesis ~p0 of rule ~x1 produced the result ~
+                             ~x2, which is illegal because ~@3."
+                            (untranslate hyp0 t wrld)
+                            rune val info)
+                        nil unify-subst ttree)))))))))
 
 (defun push-lemma? (rune ttree)
   (if rune
@@ -14810,24 +14833,27 @@
 ; We return six results.  Most often they are interpreted as indicated by the
 ; names:
 
-; (mv step-limit wonp failure-reason unify-subst' ttree' memo'),
+; (mv step-limit wonp failure-reason unify-subst' ttree' memo').
 
-; but there is a special case where they are interpreted differently.  In
-; general, wonp is t, nil or a term.  If it is t or nil, the interpretation of
-; the results is as hinted above: Wonp indicates whether hyp0 was relieved,
-; failure-reason is nil or else a token indicating why we failed, and the rest
-; are extended versions of the corresponding inputs.
+; Here wonp is t, nil, :unify-subst-list, or a term.  If it is t, nil, or
+; :unify-subst-list, then interpretation of the results is as hinted above:
+; wonp indicates whether hyp0 was relieved, failure-reason is nil or else a
+; token indicating why we failed, and the rest are extended versions of the
+; corresponding inputs except for the case :unify-subst-list, where
+; unify-subst' is actually a list of unifying substitutions, each of which is
+; sufficient for relieving the remaining hypotheses.
 
-; But if wonp is a term then it means that hyp0 contains free-vars, it was not
-; relieved, and the six results are to be interpreted as:
+; But there is a special case where they are interpreted quite differently: if
+; wonp is a term then it means that hyp0 contains free-vars, it was not
+; relieved, and the six results are to be interpreted as follows,
+; where the last three are unchanged.
 
 ; (mv step-limit term typ unify-subst ttree memo)
 
-; where the last three are unchanged.  This signals that the caller of
-; relieve-hyp is responsible for relieving the hypothesis and may do so in
-; either of two ways: Extend unify-subst to make term have typ in the original
-; type-alist or extend unify-subst to make hyp0 true via ground units.  This is
-; called the SPECIAL CASE.
+; This signals that the caller of relieve-hyp is responsible for relieving the
+; hypothesis and may do so in either of two ways: Extend unify-subst to make
+; term have typ in the original type-alist or extend unify-subst to make hyp0
+; true via ground units.  This is called the SPECIAL CASE.
 
 ; This function is a No-Change Loser modulo rw-cache: only the values of
 ; 'rw-cache-any-tag and 'rw-cache-nil-tag may differ between the input and
@@ -15165,6 +15191,43 @@
                               (accumulate-rw-cache t ttree0 ttree)
                               memo)))))))))))))))
 
+(defun relieve-hyps1-iter (rune target hyps backchain-limit-lst
+                                unify-subst-lst unify-subst bkptr unify-subst0
+                                ttree0 allp
+                                rw-cache-alist
+                                rw-cache-alist-new ; &extra formals
+                                rdepth step-limit
+                                type-alist obj geneqv wrld state fnstack
+                                ancestors backchain-limit
+                                simplify-clause-pot-lst rcnst gstack
+                                ttree)
+
+; This function calls relieve-hyps1 on each alist in unify-subst-list (which is
+; non-empty) until the hypotheses are relieved, extending the given unify-subst
+; by that alist for each such call.  Note that if this function fails, then the
+; failure-reason will be reported based on the last one tried.  That seems the
+; simplest approach both for this implementation and for reporting to the
+; user.  If there are user complaints about that, we can consider a more
+; elaborate form of failure reporting.
+
+  (sl-let
+   (relieve-hyps1-ans failure-reason unify-subst1 ttree1 allp
+                      rw-cache-alist-new)
+   (rewrite-entry
+    (relieve-hyps1 rune target hyps backchain-limit-lst
+                   (extend-unify-subst (car unify-subst-lst) unify-subst)
+                   bkptr unify-subst0 ttree0 allp
+                   rw-cache-alist rw-cache-alist-new))
+   (cond ((or (endp (cdr unify-subst-lst))
+              relieve-hyps1-ans)
+          (mv step-limit relieve-hyps1-ans failure-reason unify-subst1 ttree1
+              allp rw-cache-alist-new))
+         (t (rewrite-entry
+             (relieve-hyps1-iter rune target hyps backchain-limit-lst
+                                 (cdr unify-subst-lst) unify-subst bkptr
+                                 unify-subst0 ttree0 allp
+                                 rw-cache-alist rw-cache-alist-new))))))
+
 (defun relieve-hyps1 (rune target hyps backchain-limit-lst
                            unify-subst bkptr unify-subst0
                            ttree0 allp
@@ -15240,6 +15303,23 @@
                                       unify-subst0 ttree0
                                       allp
                                       rw-cache-alist rw-cache-alist-new)
+                       :obj nil
+                       :geneqv nil
+                       :ttree new-ttree))
+       ((eq relieve-hyp-ans :unify-subst-list)
+
+; The hypothesis (car hyps) is a call of bind-free that has produced a list of
+; unify-substs.
+
+        (rewrite-entry
+         (relieve-hyps1-iter rune target (cdr hyps)
+                             (cdr backchain-limit-lst)
+                             new-unify-subst ; a list of alists
+                             unify-subst
+                             (1+ bkptr)
+                             unify-subst0 ttree0
+                             allp
+                             rw-cache-alist rw-cache-alist-new)
                        :obj nil
                        :geneqv nil
                        :ttree new-ttree))

@@ -20979,6 +20979,13 @@
 
   ~st[CHANGES TO EXISTING FEATURES]
 
+  The evaluation of a term from a ~ilc[bind-free] hypothesis had been expected
+  to produce an alist binding free variables to terms.  While that is still
+  legal, it is also legal for that evaluation to produce a list of such alists:
+  then each is considered, until one of them permits all remaining hypotheses
+  to be relieved.  ~l[bind-free].  Thanks to Sol Swords for requesting this
+  enhancement.
+
   ~st[NEW FEATURES]
 
   ~st[HEURISTIC IMPROVEMENTS]
@@ -26593,7 +26600,7 @@ accompanying <i>``File Path''</i> shown at the end of each book's text.
                 :ttree nil)
                (declare (ignore step-limit failure-reason new-unify-subst
                                 memo))
-               (if (eq wonp t)
+               (if (member-eq wonp '(t :unify-subst-list))
                    (mv t ttree)
                  (mv nil nil))))))))
        (t (cw *meta-level-function-problem-2* 'mfc-relieve-hyp mfc
