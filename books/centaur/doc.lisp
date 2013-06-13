@@ -88,7 +88,7 @@
 
 (include-book "misc/hons-remove-dups")
 (include-book "misc/seed-random")
-(include-book "misc/equal-by-nths")
+(include-book "std/lists/nth" :dir :system)
 (include-book "misc/load-stobj")
 (include-book "misc/load-stobj-tests")
 
@@ -168,7 +168,7 @@
 (include-book "misc/count-up")
 (include-book "misc/memory-mgmt")
 (include-book "misc/remove-assoc")
-(include-book "misc/resize-list")
+(include-book "std/lists/resize-list" :dir :system)
 (include-book "misc/sparsemap")
 (include-book "misc/sparsemap-impl")
 (include-book "misc/stobj-swap")

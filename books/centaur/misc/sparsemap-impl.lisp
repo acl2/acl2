@@ -19,7 +19,7 @@
 ; Original author: Sol Swords <sswords@centtech.com>
 
 (in-package "ACL2")
-(include-book "resize-list")
+(include-book "std/lists/resize-list" :dir :system)
 (include-book "count-up")
 (include-book "remove-assoc")
 (include-book "arith-equivs")

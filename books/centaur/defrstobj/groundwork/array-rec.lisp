@@ -21,7 +21,7 @@
 (in-package "ACL2")
 (include-book "misc/records" :dir :system)
 (local (include-book "misc/equal-by-g" :dir :system))
-(local (include-book "centaur/misc/equal-by-nths" :dir :system))
+(local (include-book "std/lists/nth" :dir :system))
 (local (include-book "local"))
 
 

@@ -17,8 +17,7 @@
                            sets::double-containment
                            sets::sets-are-true-lists
                            make-list-ac)))
-
-(local (include-book "centaur/misc/equal-by-nths" :dir :system))
+(local (include-book "std/lists/nth" :dir :system))
 
 (local (acl2::use-trivial-ancestors-check))
 

@@ -29,7 +29,7 @@
 (include-book "ap")
 (include-book "defapply")
 (include-book "dfs-measure")
-(include-book "equal-by-nths")
+(include-book "std/lists/nth" :dir :system)
 (include-book "equal-sets")
 (include-book "evaluator-metatheorems")
 (include-book "fal-graphs")

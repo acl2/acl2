@@ -18,7 +18,7 @@
 (in-package "ACL2")
 
 (local (include-book "std/lists/append" :dir :system))
-(local (include-book "std/lists/coerce" :dir :system))
+(local (include-book "str/coerce" :dir :system))
 
 (defthm equal-of-string-appends-one
   (implies (and (stringp x)
