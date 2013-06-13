@@ -7514,7 +7514,7 @@
   ~ev[]
   ~c[Pc] always prints a space first, followed by three (possibly blank)
   ~il[characters] (``LVd'' above) explained below (four, in the experimental
-  HONS version; ~pl[hons-and-memoization]).  Then ~c[pc] prints the
+  HONS version, as discussed further below).  Then ~c[pc] prints the
   ~il[command] number, a number uniquely identifying the ~il[command]'s
   position in the sequence of ~il[command]s since the beginning of the user's
   session.  Finally, the ~il[command] itself is printed.

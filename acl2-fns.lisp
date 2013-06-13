@@ -1453,23 +1453,6 @@ notation causes an error and (b) the use of ,. is not permitted."
   #-hons
   def-form)
 
-(defun our-function-lambda-expression (sym)
-
-; This is intended only for #+hons; otherwise it reduces to (mv
-; (function-lambda-expression (symbol-function sym)) nil).
-
-  #-cltl2
-  (declare (ignore sym))
-  #-cltl2
-  (mv nil nil)
-  #+cltl2
-  (let ((temp (get sym 'acl2-saved-def)))
-    (cond (temp (values temp t))
-          (t (let* ((fn (symbol-function sym))
-                    (lam (and fn (function-lambda-expression fn))))
-               (cond (lam (values lam nil))
-                     (t (values nil nil))))))))
-
 ; [Comment from Jared]: We probably should work toward getting rid of
 ; defg/defv's in favor of regular parameters...
 
