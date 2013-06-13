@@ -1,5 +1,5 @@
 ; ACL2 String Library
-; Copyright (C) 2009-2010 Centaur Technology
+; Copyright (C) 2009-2013 Centaur Technology
 ;
 ; Contact:
 ;   Centaur Technology Formal Verification Group
@@ -33,10 +33,12 @@ The test is case-sensitive.</p>
 or @(see strrpos) for alternatives that say where a match occurs.</p>"
 
   (definline substrp (x y)
-    (declare (type string x)
-             (type string y))
-    (mbe :logic (sublistp (coerce x 'list)
-                          (coerce y 'list))
+    (declare (type string x y))
+    (mbe :logic (sublistp (explode x) (explode y))
          :exec (if (strpos x y)
                    t
-                 nil))))
+                 nil)))
+
+  (defcong streqv equal (substrp x y) 1)
+  (defcong streqv equal (substrp x y) 2))
+

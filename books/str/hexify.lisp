@@ -1,5 +1,5 @@
 ; ACL2 String Library
-; Copyright (C) 2009-2010 Centaur Technology
+; Copyright (C) 2009-2013 Centaur Technology
 ;
 ; Contact:
 ;   Centaur Technology Formal Verification Group
@@ -19,6 +19,7 @@
 ; Original author: Jared Davis <jared@centtech.com>
 
 (in-package "STR")
+(include-book "coerce")
 (include-book "tools/bstar" :dir :system)
 (local (include-book "std/misc/explode-atom" :dir :system))
 (local (include-book "arithmetic"))
@@ -61,7 +62,7 @@
          (b* ((chars (explode-atom x 16)) ;; looks like BEEF...
               (nice-chars (list* #\# #\u #\x (first chars)
                                  (insert-underscores (nthcdr 1 chars)))))
-           (coerce nice-chars 'string)))
+           (implode nice-chars)))
         ((symbolp x)
          (symbol-name x))
         ((stringp x)

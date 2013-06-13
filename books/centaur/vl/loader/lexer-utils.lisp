@@ -119,7 +119,7 @@ boolean.</p>
 @('echars').  More exactly, it computes:</p>
 
 @({
- (prefixp (coerce string 'list)
+ (prefixp (explode string)
           (vl-echarlist->chars echars))
 })
 
@@ -150,7 +150,7 @@ call @('coerce') or build the list of characters.</p>"
              (xargs :guard (and (not (equal string ""))
                                 (vl-echarlist-p echars))
                     :verify-guards nil))
-    (mbe :logic (prefixp (coerce (string-fix string) 'list) (vl-echarlist->chars echars))
+    (mbe :logic (prefixp (explode (string-fix string)) (vl-echarlist->chars echars))
          :exec (vl-matches-string-p-impl string 0 (length string) echars)))
 
   (local (defthm lemma
@@ -160,7 +160,8 @@ call @('coerce') or build the list of characters.</p>"
                          (equal len (length string))
                          (vl-echarlist-p echars))
                     (equal (vl-matches-string-p-impl string i len echars)
-                           (prefixp (nthcdr i (coerce string 'list)) (vl-echarlist->chars echars))))
+                           (prefixp (nthcdr i (explode string))
+                                    (vl-echarlist->chars echars))))
            :hints(("Goal" :in-theory (enable vl-matches-string-p-impl)))))
 
   (verify-guards vl-matches-string-p$inline)
@@ -169,7 +170,7 @@ call @('coerce') or build the list of characters.</p>"
 
   (defthm len-when-vl-matches-string-p-fc
     (implies (vl-matches-string-p string echars)
-             (<= (len (coerce string 'list))
+             (<= (len (explode string))
                  (len echars)))
     :rule-classes ((:forward-chaining)
                    (:linear)))
@@ -223,7 +224,7 @@ properties described in @(see def-prefix/remainder-thms).</p>
     (implies (and (mv-nth 0 (vl-read-literal string echars))
                   (force (vl-echarlist-p echars)))
              (equal (vl-echarlist->chars (mv-nth 0 (vl-read-literal string echars)))
-                    (coerce (string-fix string) 'list)))
+                    (explode (string-fix string))))
     :hints(("Goal" :in-theory (enable vl-matches-string-p))))
 
   (defthm vl-echarlist->string-of-prefix-of-vl-read-literal
@@ -338,7 +339,7 @@ occurs in @('echars'), then @('prefix') is the entire list of @('echars') and
 
   (defthm len-of-vl-read-until-literal
     (implies (mv-nth 0 (vl-read-until-literal string echars))
-             (<= (len (coerce string 'list))
+             (<= (len (explode string))
                  (len (mv-nth 2 (vl-read-until-literal string echars)))))
     :rule-classes ((:rewrite) (:linear)))
 

@@ -773,7 +773,7 @@ than file-based) debugging and unit testing throughout the whole process.</p>")
                         (vl-location-string (vl-echar->loc (car echars)))
                         err)
                     nil echars)
-              (mv (reverse (coerce vacc 'string))
+              (mv (str::rchars-to-string vacc)
                   (cons (car echars) (reverse eacc))
                   remainder))))
 
@@ -1386,7 +1386,7 @@ case.</li>
      ;; Basic extension test with a fixed width
      (assert! (b* (((mv warn bits)
                     (vl-correct-bitlist *vl-fakeloc*
-                                        (vl-binary-digits-to-bitlist (coerce "0111" 'list))
+                                        (vl-binary-digits-to-bitlist (explode "0111"))
                                         8
                                         nil)))
                 (and (not warn)
@@ -1394,7 +1394,7 @@ case.</li>
 
      (assert! (b* (((mv warn bits)
                     (vl-correct-bitlist *vl-fakeloc*
-                                        (vl-binary-digits-to-bitlist (coerce "1111" 'list))
+                                        (vl-binary-digits-to-bitlist (explode "1111"))
                                         8
                                         nil)))
                 (and (not warn)
@@ -1402,7 +1402,7 @@ case.</li>
 
      (assert! (b* (((mv warn bits)
                     (vl-correct-bitlist *vl-fakeloc*
-                                        (vl-binary-digits-to-bitlist (coerce "x111" 'list))
+                                        (vl-binary-digits-to-bitlist (explode "x111"))
                                         8
                                         nil)))
                 (and (not warn)
@@ -1410,7 +1410,7 @@ case.</li>
 
      (assert! (b* (((mv warn bits)
                     (vl-correct-bitlist *vl-fakeloc*
-                                        (vl-binary-digits-to-bitlist (coerce "z111" 'list))
+                                        (vl-binary-digits-to-bitlist (explode "z111"))
                                         8
                                         nil)))
                 (and (not warn)
@@ -1419,7 +1419,7 @@ case.</li>
 
      (assert! (b* (((mv warn bits)
                     (vl-correct-bitlist *vl-fakeloc*
-                                        (vl-binary-digits-to-bitlist (coerce "110111" 'list))
+                                        (vl-binary-digits-to-bitlist (explode "110111"))
                                         4
                                         nil)))
                 (and (consp warn)
@@ -1427,25 +1427,23 @@ case.</li>
 
      (assert! (b* (((mv warn ?bits)
                     (vl-correct-bitlist *vl-fakeloc*
-                                        (vl-binary-digits-to-bitlist (coerce "0111" 'list))
+                                        (vl-binary-digits-to-bitlist (explode "0111"))
                                         nil
                                         nil)))
                 (and (not warn)
                      (equal (vl-bitlist->string bits)
-                            (coerce (append (repeat #\0 29)
-                                            (repeat #\1 3))
-                                    'string)))))
+                            (implode (append (repeat #\0 29)
+                                             (repeat #\1 3)))))))
 
      (assert! (b* (((mv warn ?bits)
                     (vl-correct-bitlist *vl-fakeloc*
-                                        (vl-binary-digits-to-bitlist (coerce "Z111" 'list))
+                                        (vl-binary-digits-to-bitlist (explode "Z111"))
                                         nil
                                         nil)))
                 (and (consp warn)
                      (equal (vl-bitlist->string bits)
-                            (coerce (append (repeat #\Z 29)
-                                            (repeat #\1 3))
-                                    'string))))))))
+                            (implode (append (repeat #\Z 29)
+                                             (repeat #\1 3))))))))))
 
 
 

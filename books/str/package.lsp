@@ -1,5 +1,5 @@
 ; ACL2 String Library
-; Copyright (C) 2009-2010 Centaur Technology
+; Copyright (C) 2009-2013 Centaur Technology
 ;
 ; Contact:
 ;   Centaur Technology Formal Verification Group
@@ -18,15 +18,15 @@
 ;
 ; Original author: Jared Davis <jared@centtech.com>
 
-(ld "xdoc/package.lsp" :dir :system)
+(include-book "xdoc/portcullis" :dir :system)
 
 (defpkg "STR"
   (set-difference-eq
    (union-eq *acl2-exports*
              *common-lisp-symbols-from-main-lisp-package*
              '(quit exit simpler-take list-fix list-equiv rev
-                    prefixp str b* assert!
-                    listpos sublistp
+                    prefixp str b* assert! repeat
+                    listpos sublistp implode explode
                     a b c d e f g h i j k l m n o p q r s t u v w x y z)
              '(defxdoc defsection lnfix definlined definline
                 define defaggregate unsigned-byte-p signed-byte-p))

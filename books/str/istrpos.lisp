@@ -1,5 +1,5 @@
 ; ACL2 String Library
-; Copyright (C) 2009-2010 Centaur Technology
+; Copyright (C) 2009-2013 Centaur Technology
 ;
 ; Contact:
 ;   Centaur Technology Formal Verification Group
@@ -41,11 +41,8 @@ calling @(see istrprefixp) rather than some better algorithm.</p>
 theorems @('iprefixp-of-istrpos') and @('completeness-of-istrpos').</p>"
 
   (defund istrpos-impl (x y n xl yl)
-    (declare (type string x)
-             (type string y)
-             (type integer n)
-             (type integer xl)
-             (type integer yl)
+    (declare (type string x y)
+             (type (integer 0 *) n xl yl)
              (xargs :guard (and (stringp x)
                                 (stringp y)
                                 (natp xl)
@@ -55,14 +52,14 @@ theorems @('iprefixp-of-istrpos') and @('completeness-of-istrpos').</p>"
                                 (= xl (length x))
                                 (= yl (length y)))
                     :measure (nfix (- (nfix yl) (nfix n)))))
-    (cond ((mbe :logic (iprefixp (coerce x 'list)
-                                 (nthcdr n (coerce y 'list)))
+    (cond ((mbe :logic (iprefixp (explode x)
+                                 (nthcdr n (explode y)))
                 :exec (istrprefixp-impl (the string x)
                                         (the string y)
-                                        (the integer 0)
-                                        (the integer n)
-                                        (the integer xl)
-                                        (the integer yl)))
+                                        (the (integer 0 *) 0)
+                                        (the (integer 0 *) n)
+                                        (the (integer 0 *) xl)
+                                        (the (integer 0 *) yl)))
            (lnfix n))
           ((mbe :logic (zp (- (nfix yl) (nfix n)))
                 :exec (int= n yl))
@@ -70,18 +67,22 @@ theorems @('iprefixp-of-istrpos') and @('completeness-of-istrpos').</p>"
           (t
            (istrpos-impl (the string x)
                          (the string y)
-                         (+ 1 (lnfix n))
-                         (the integer xl)
-                         (the integer yl)))))
+                         (the (integer 0 *) (+ 1 (the (integer 0 *) (lnfix n))))
+                         (the (integer 0 *) xl)
+                         (the (integer 0 *) yl)))))
 
   (definlined istrpos (x y)
-    (declare (type string x)
-             (type string y))
-    (istrpos-impl (the string x)
-                  (the string y)
-                  (the integer 0)
-                  (the integer (length (the string x)))
-                  (the integer (length (the string y)))))
+    (declare (type string x y))
+    (let* ((xl (mbe :logic (len (explode x))
+                    :exec (length (the string x))))
+           (yl (mbe :logic (len (explode y))
+                    :exec (length (the string y)))))
+      (declare (type (integer 0 *) xl yl))
+      (istrpos-impl (the string x)
+                    (the string y)
+                    (the (integer 0 *) 0)
+                    xl
+                    yl)))
 
   (local (in-theory (enable istrpos istrpos-impl)))
 
@@ -94,33 +95,29 @@ theorems @('iprefixp-of-istrpos') and @('completeness-of-istrpos').</p>"
   (encapsulate
     ()
     (local (defthm lemma
-             (implies (and (stringp x)
-                           (stringp y)
+             (implies (and (istrpos-impl x y n xl yl)
                            (natp xl)
                            (natp yl)
                            (natp n)
-                           (<= n (length y))
-                           (= xl (length x))
-                           (= yl (length y))
-                           (istrpos-impl x y n xl yl))
-                      (iprefixp (coerce x 'list)
+                           (<= n (len (explode y)))
+                           (= xl (len (explode x)))
+                           (= yl (len (explode y))))
+                      (iprefixp (explode x)
                                 (nthcdr (istrpos-impl x y n xl yl)
-                                        (coerce y 'list))))
+                                        (explode y))))
              :hints(("Goal" :induct (istrpos-impl x y n xl yl)))))
 
     (defthm iprefixp-of-istrpos
-      (implies (and (istrpos x y)
-                    (force (stringp x))
-                    (force (stringp y)))
-               (iprefixp (coerce x 'list)
-                         (nthcdr (istrpos x y) (coerce y 'list))))))
+      (implies (istrpos x y)
+               (iprefixp (explode x)
+                         (nthcdr (istrpos x y) (explode y))))))
 
   (encapsulate
     ()
     (local (defun my-induction (x y n m xl yl)
              (declare (xargs :measure (nfix (- (nfix yl) (nfix n)))))
-             (cond ((iprefixp (coerce x 'list)
-                              (nthcdr n (coerce y 'list)))
+             (cond ((iprefixp (explode x)
+                              (nthcdr n (explode y)))
                     nil)
                    ((zp (- (nfix yl) (nfix n)))
                     (list x y n m xl yl))
@@ -129,22 +126,20 @@ theorems @('iprefixp-of-istrpos') and @('completeness-of-istrpos').</p>"
                                   (+ (nfix n) 1)
                                   (if (= (nfix n) (nfix m))
                                       (+ (nfix m) 1)
-                                    m)
+                                    (nfix m))
                                   xl yl)))))
 
     (local (defthm lemma
-             (implies (and (stringp x)
-                           (stringp y)
+             (implies (and (iprefixp (explode x)
+                                     (nthcdr m (explode y)))
                            (natp xl)
                            (natp yl)
                            (natp n)
                            (natp m)
-                           (<= n m)
-                           (<= n (length y))
-                           (= xl (length x))
-                           (= yl (length y))
-                           (iprefixp (coerce x 'list)
-                                     (nthcdr m (coerce y 'list))))
+                           (<= n (nfix m))
+                           (<= n (len (explode y)))
+                           (= xl (len (explode x)))
+                           (= yl (len (explode y))))
                       (and (natp (istrpos-impl x y n xl yl))
                            (<= (istrpos-impl x y n xl yl) m)))
              :hints(("Goal"
@@ -152,11 +147,17 @@ theorems @('iprefixp-of-istrpos') and @('completeness-of-istrpos').</p>"
                      :do-not '(generalize fertilize)))))
 
     (defthm completeness-of-istrpos
-      (implies (and (iprefixp (coerce x 'list)
-                              (nthcdr m (coerce y 'list)))
-                    (force (natp m))
-                    (force (stringp x))
-                    (force (stringp y)))
+      (implies (and (iprefixp (explode x)
+                              (nthcdr m (explode y)))
+                    (force (natp m)))
                (and (natp (istrpos x y))
-                    (<= (istrpos x y) m))))))
+                    (<= (istrpos x y) m)))))
+
+  (defcong istreqv equal (istrpos-impl x y n xl yl) 1)
+  (defcong istreqv equal (istrpos-impl x y n xl yl) 2)
+
+  (local (in-theory (disable istreqv)))
+
+  (defcong istreqv equal (istrpos x y) 1)
+  (defcong istreqv equal (istrpos x y) 2))
 

@@ -82,7 +82,7 @@ That is, it returns one of the characters: 0, 1, X, or Z.</p>"
   :parents (vl-weirdint-p)
   :short "Get the string corresponding to a @(see vl-bitlist-p)."
 
-  (coerce (vl-bitlist->charlist x) 'string)
+  (implode (vl-bitlist->charlist x))
 
   ///
 

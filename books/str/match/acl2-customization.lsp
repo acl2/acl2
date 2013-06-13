@@ -1,5 +1,5 @@
 ; ACL2 String Library
-; Copyright (C) 2009-2013 Centaur Technology
+; Copyright (C) 2009-2010 Centaur Technology
 ;
 ; Contact:
 ;   Centaur Technology Formal Verification Group
@@ -19,6 +19,5 @@
 ; Original author: Jared Davis <jared@centtech.com>
 
 (in-package "ACL2")
-(ld "package.lsp")
-; cert-flags: ? t :ttags :all
-(certify-book "portcullis" ? t :ttags :all)
+(ld "../acl2-customization.lsp")
+(in-package "STR")

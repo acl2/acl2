@@ -1,5 +1,5 @@
 ; ACL2 String Library
-; Copyright (C) 2009-2010 Centaur Technology
+; Copyright (C) 2009-2013 Centaur Technology
 ;
 ; Contact:
 ;   Centaur Technology Formal Verification Group
@@ -19,10 +19,9 @@
 ; Original author: Jared Davis <jared@centtech.com>
 
 (in-package "STR")
-(include-book "misc/definline" :dir :system)
-(include-book "xdoc/top" :dir :system)
+(include-book "eqv")
 (include-book "std/lists/prefixp" :dir :system)
-(include-book "std/lists/nthcdr" :dir :system)
+(local (include-book "std/lists/nthcdr" :dir :system))
 (local (include-book "arithmetic"))
 
 (local (defthm prefixp-lemma-1
@@ -100,8 +99,8 @@
                   (force (<= xn xl))
                   (force (<= yn yl)))
              (equal (strprefixp-impl x y xn yn xl yl)
-                    (prefixp (nthcdr xn (coerce x 'list))
-                             (nthcdr yn (coerce y 'list)))))))
+                    (prefixp (nthcdr xn (explode x))
+                             (nthcdr yn (explode y)))))))
 
 (defsection strprefixp
   :parents (substrings)
@@ -113,7 +112,7 @@ the string @('y'), in a case-sensitive manner.</p>
 <p>Logically, this is identical to</p>
 
 @({
- (prefixp (coerce x 'list) (coerce y 'list))
+ (prefixp (explode x) (explode y))
 })
 
 <p>But we use a more efficient implementation which avoids coercing the strings
@@ -122,11 +121,14 @@ into character lists.</p>"
   (definline strprefixp (x y)
     (declare (type string x)
              (type string y))
-    (mbe :logic (prefixp (coerce x 'list)
-                         (coerce y 'list))
+    (mbe :logic (prefixp (explode x)
+                         (explode y))
          :exec (strprefixp-impl (the string x)
                                 (the string y)
                                 (the integer 0)
                                 (the integer 0)
                                 (the integer (length (the string x)))
-                                (the integer (length (the string y)))))))
+                                (the integer (length (the string y))))))
+
+  (defcong streqv equal (strprefixp x y) 1)
+  (defcong streqv equal (strprefixp x y) 2))

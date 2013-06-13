@@ -1,5 +1,5 @@
 ; ACL2 String Library
-; Copyright (C) 2009-2010 Centaur Technology
+; Copyright (C) 2009-2013 Centaur Technology
 ;
 ; Contact:
 ;   Centaur Technology Formal Verification Group
@@ -25,7 +25,7 @@
 (local (include-book "arithmetic"))
 (local (include-book "std/lists/take" :dir :system))
 (local (include-book "std/lists/nthcdr" :dir :system))
-(local (include-book "std/lists/coerce" :dir :system))
+(local (include-book "coerce"))
 
 ;; NOTE: These get globally disabled by including this book!  This is probably
 ;; how things ought to be.

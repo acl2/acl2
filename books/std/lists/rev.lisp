@@ -15,10 +15,9 @@
 ; This file was originally part of the Unicode library.
 
 (in-package "ACL2")
-(include-book "revappend")
-(include-book "reverse")
-(include-book "append")
-(local (include-book "make-character-list"))
+(include-book "list-fix")
+(local (include-book "revappend"))
+(local (include-book "append"))
 
 (defun revappend-without-guard (x y)
   (declare (xargs :guard t))
@@ -96,13 +95,6 @@
     (equal (rev (append x y))
            (append (rev y) (rev x))))
 
-  (defthm character-listp-of-rev
-    ;; BOZO what is this doing here?
-    (equal (character-listp (rev x))
-           (character-listp (list-fix x)))
-    :hints(("Goal" :induct (len x))))
-
-
   (encapsulate
     ()
     (local (defun cdr-cdr-induction (x y)
@@ -130,14 +122,20 @@
              (equal (list-fix x) (list-fix y)))
       :hints(("Goal" :induct (cdr-cdr-induction x y)))))
 
+  (encapsulate
+    ()
+    (local (defthm make-character-list-of-append
+             ;; Reprove this to avoid including make-character-list
+             (equal (make-character-list (append x y))
+                    (append (make-character-list x)
+                            (make-character-list y)))))
 
-
-  (defthm make-character-list-of-rev
-    ;; blah, probably belongs in make-character-list.lisp instead, but put it
-    ;; here to avoid circular dependency problems
-    (equal (make-character-list (rev x))
-           (rev (make-character-list x)))
-    :hints(("Goal" :in-theory (enable make-character-list)))))
-
+    (defthm make-character-list-of-rev
+      ;; This arguably doesn't belong here, but maybe it makes more sense here
+      ;; than in str/make-character-list, since this way we don't have to include
+      ;; rev just to get lemmas about make-character-list.
+      (equal (make-character-list (rev x))
+             (rev (make-character-list x)))
+      :hints(("Goal" :in-theory (enable make-character-list))))))
 
 

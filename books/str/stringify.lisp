@@ -1,5 +1,5 @@
 ; ACL2 String Library
-; Copyright (C) 2009-2010 Centaur Technology
+; Copyright (C) 2009-2013 Centaur Technology
 ;
 ; Contact:
 ;   Centaur Technology Formal Verification Group
@@ -20,15 +20,15 @@
 ; Original author: Sol Swords <sswords@centtech.com>
 
 (in-package "STR")
-
+(include-book "cat")
 (include-book "natstr")
 
 (defun stringify-integer (x)
   (declare (Xargs :guard (integerp x)))
-  (if (and (integerp x) (< x 0))
-      (concatenate 'string "-" (natstr (- x)))
+  (if (and (mbt (integerp x))
+           (< x 0))
+      (cat "-" (natstr (- x)))
     (natstr x)))
-
 
 (encapsulate
   nil
@@ -43,26 +43,8 @@
     :hints(("Goal" :in-theory (enable natstr)))))
 
 
-
-(local (defthmd switch-coerce-list
-         (implies (and (character-listp x) (stringp y))
-                  (equal (equal x (coerce y 'list))
-                         (equal (coerce x 'string) y)))))
-
-(local (defthmd switch-coerce-string
-         (implies (and (character-listp y) (stringp x))
-                  (equal (equal x (coerce y 'string))
-                         (equal (coerce x 'list) y)))))
-
-(local (defthm equal-coerce-list
-         (implies (and (stringp y) (stringp x))
-                  (equal (Equal (coerce x 'list) (coerce y 'list))
-                         (equal x y)))
-         :hints(("Goal" :in-theory (enable switch-coerce-list)))))
-
 (encapsulate
   nil
-
   (local (defthm not-member-minus-char-digit-listp
            (implies (digit-listp x)
                     (not (member-equal #\- x)))))
@@ -76,26 +58,25 @@
                          (characterp a)
                          (character-listp b)
                          (stringp c))
-                    (and (equal (Equal (coerce (cons a b) 'string) c)
-                                (equal (cons a b) (coerce c 'list)))
-                         (equal (Equal c (coerce (cons a b) 'string))
-                                (equal (cons a b) (coerce c 'list)))))))
-
-  (local (in-theory (disable switch-coerce-string)))
+                    (and (equal (Equal (implode (cons a b)) c)
+                                (equal (cons a b) (explode c)))
+                         (equal (Equal c (implode (cons a b)))
+                                (equal (cons a b) (explode c)))))))
 
   (defthm stringify-integer-one-to-one
     (equal (equal (stringify-integer x)
                   (stringify-integer y))
            (equal (ifix x) (ifix y)))
     :hints (("goal" :use ((:instance not-member-minus-char-digit-listp
-                           (x (coerce (natstr x) 'list)))
+                                     (x (coerce (natstr x) 'list)))
                           (:instance not-member-minus-char-digit-listp
-                           (x (coerce (natstr y) 'list)))
+                                     (x (coerce (natstr y) 'list)))
                           (:instance natstr-one-to-one
-                           (n x) (m 0))
+                                     (n x) (m 0))
                           (:instance natstr-one-to-one
-                           (n y) (m 0)))
+                                     (n y) (m 0)))
              :in-theory (disable not-member-minus-char-digit-listp)))))
+
 
 (defthm stringify-integer-of-non-integer
   (implies (not (integerp x))
@@ -108,26 +89,27 @@
                     (not (member-equal #\/ x)))))
 
   (defthm not-member-/-stringify-integer
-    (not (member-equal #\/ (coerce (stringify-integer i) 'list))))
+    (not (member-equal #\/ (explode (stringify-integer i)))))
 
   (defthm not-member-/-natstr
-    (not (member-equal #\/ (coerce (natstr i) 'list)))))
+    (not (member-equal #\/ (explode (natstr i))))))
 
 (in-theory (disable stringify-integer))
 
 (defun stringify-rational (x)
   (declare (xargs :guard (rationalp x)))
-  (if (or (integerp x) (mbe :logic (not (rationalp x)) :exec nil))
+  (if (or (integerp x)
+          (mbe :logic (not (rationalp x))
+               :exec nil))
       (stringify-integer x)
-    (concatenate 'string (stringify-integer (numerator x))
-                 "/" (natstr (denominator x)))))
-
+    (cat (stringify-integer (numerator x))
+         "/"
+         (natstr (denominator x)))))
 
 (local (defthm member-equal-append
          (iff (member-equal k (append a b))
               (or (member-equal k a)
                   (member-equal k b)))))
-
 
 (local (defun cdr-both-equal (a b)
          (if (or (atom a) (atom b))
@@ -154,15 +136,14 @@
 
 (encapsulate
   nil
-  
   (local (defthm switch-coerce-append-string
            (implies (and (character-listp a)
                          (character-listp b)
                          (stringp c))
-                    (and (equal (Equal (coerce (append a b) 'string) c)
-                                (equal (append a b) (coerce c 'list)))
-                         (equal (Equal c (coerce (append a b) 'string))
-                                (equal (append a b) (coerce c 'list)))))))
+                    (and (equal (Equal (implode (append a b)) c)
+                                (equal (append a b) (explode c)))
+                         (equal (Equal c (implode (append a b)))
+                                (equal (append a b) (explode c)))))))
 
   (local (defthm not-equal-if-not-members-append-cons
            (implies (not (member-equal a c))
@@ -195,14 +176,14 @@
                     (not (member-equal #\# x)))))
 
   (defthm not-member-sharp-natstr
-    (not (member-equal #\# (coerce (natstr i) 'list))))
+    (not (member-equal #\# (explode (natstr i)))))
 
   (defthm not-member-sharp-stringify-integer
-    (not (member-equal #\# (coerce (stringify-integer i) 'list)))
+    (not (member-equal #\# (explode (stringify-integer i))))
     :hints(("Goal" :in-theory (enable stringify-integer))))
 
   (defthm not-member-sharp-stringify-rational
-    (not (member-equal #\# (coerce (stringify-rational r) 'list)))))
+    (not (member-equal #\# (explode (stringify-rational r))))))
 
 (encapsulate nil
   (local (defthm not-member-space-char-digit-listp
@@ -210,28 +191,28 @@
                     (not (member-equal #\Space x)))))
 
   (defthm not-member-space-natstr
-    (not (member-equal #\Space (coerce (natstr i) 'list))))
+    (not (member-equal #\Space (explode (natstr i)))))
 
   (defthm not-member-space-stringify-integer
-    (not (member-equal #\Space (coerce (stringify-integer i) 'list)))
+    (not (member-equal #\Space (explode (stringify-integer i))))
     :hints(("Goal" :in-theory (enable stringify-integer))))
 
   (defthm not-member-space-stringify-rational
-    (not (member-equal #\Space (coerce (stringify-rational r) 'list)))))
+    (not (member-equal #\Space (explode (stringify-rational r))))))
 
 (in-theory (disable stringify-rational))
 
 (defun stringify-number (x)
   (declare (xargs :guard (acl2-numberp x)))
-  (if (or (rationalp x) (mbe :logic (not (acl2-numberp x)) :exec nil))
+  (if (or (rationalp x)
+          (mbe :logic (not (acl2-numberp x))
+               :exec nil))
       (stringify-rational x)
-    (concatenate 'string
-                 "#C(" (stringify-rational (realpart x))
-                 " " (stringify-rational (imagpart x)) ")")))
+    (cat "#C(" (stringify-rational (realpart x))
+         " " (stringify-rational (imagpart x)) ")")))
 
 (encapsulate
   nil
-  
   (local (defthm switch-coerce-list*-append-string
            (implies (and (character-listp a)
                          (character-listp b)
@@ -239,10 +220,10 @@
                          (characterp f)
                          (characterp g)
                          (stringp c))
-                    (and (equal (Equal (coerce (list* e f g (append a b)) 'string) c)
-                                (equal (list* e f g (append a b)) (coerce c 'list)))
-                         (equal (Equal c (coerce (list* e f g (append a b)) 'string))
-                                (equal (list* e f g (append a b)) (coerce c 'list)))))))
+                    (and (equal (Equal (implode (list* e f g (append a b))) c)
+                                (equal (list* e f g (append a b)) (explode c)))
+                         (equal (Equal c (implode (list* e f g (append a b))))
+                                (equal (list* e f g (append a b)) (explode c)))))))
 
   (local (defthmd not-equal-by-len
            (implies (not (equal (len x) (len y)))
@@ -288,27 +269,15 @@
              :in-theory (disable not-member-space-stringify-rational
                                  realpart-imagpart-elim)))))
 
-(defun upper-casep (x)
-  (declare (type character x))
-  (mbe :logic (let ((code (char-code (char-fix x))))
-                   (and (<= (char-code #\A) code)
-                        (<= code (char-code #\Z))))
-       :exec (let ((code (the (unsigned-byte 8)
-                              (char-code (the character x)))))
-                  (declare (type (unsigned-byte 8) code))
-                  (and (<= (the (unsigned-byte 8) 65)
-                           (the (unsigned-byte 8) code))
-                       (<= (the (unsigned-byte 8) code)
-                           (the (unsigned-byte 8) 90))))))
 
 (defun upper-case-or-digit-listp (x)
   (declare (xargs :guard (character-listp x)))
   (if (atom x)
       t
-    (and (or (upper-casep (car X)) (digitp (car x)))
+    (and (or (up-alpha-p (car X)) (digitp (car x)))
          (upper-case-or-digit-listp (cdr x)))))
 
-(in-theory (disable upper-case-or-digit-listp upper-casep))
+(in-theory (disable upper-case-or-digit-listp up-alpha-p))
 
 (local (defthm characterp-car-of-character-listp
          (implies (and (character-listp x)
@@ -330,9 +299,9 @@
 ;; to be either upper-case or digits.
 (defun escape-free-symnamep (x)
   (declare (xargs :guard (stringp x)))
-  (let ((lst (coerce x 'list)))
+  (let ((lst (explode x)))
     (and (consp lst) ;; not the empty string
-         (upper-casep (car lst))
+         (up-alpha-p (car lst))
          (upper-case-or-digit-listp (cdr lst)))))
 
 (local (defthm assoc-append
@@ -350,33 +319,33 @@
 (defun stringify-symbol (x)
   (declare (type symbol x))
   (let ((name (symbol-name x))
-        (pkg (symbol-package-name x)))
+        (pkg  (symbol-package-name x)))
     (mbe :logic
          (if (symbolp x)
              (let ((pkg-string
                     (if (equal pkg "ACL2")
                         ""
                       (if (escape-free-symnamep pkg)
-                          (concatenate 'string pkg "::")
-                        (concatenate 'string "|" pkg "|::"))))
+                          (cat pkg "::")
+                        (cat "|" pkg "|::"))))
                    (name-string
                     (if (escape-free-symnamep name)
                         name
-                      (concatenate 'string "|" name "|"))))
-               (concatenate 'string pkg-string name-string))
+                      (cat "|" name "|"))))
+               (cat pkg-string name-string))
            "COMMON-LISP::NIL")
          :exec
          (if (equal pkg "ACL2")
              (if (escape-free-symnamep name)
                  name
-               (concatenate 'string "|" name "|"))
+               (cat "|" name "|"))
            (if (escape-free-symnamep pkg)
                (if (escape-free-symnamep name)
-                   (concatenate 'string pkg "::" name)
-                 (concatenate 'string pkg "::|" name "|"))
+                   (cat pkg "::" name)
+                 (cat pkg "::|" name "|"))
              (if (escape-free-symnamep name)
-                 (concatenate 'string "|" pkg "|::" name)
-               (concatenate 'string "|" pkg "|::|" name "|")))))))
+                 (cat "|" pkg "|::" name)
+               (cat "|" pkg "|::|" name "|")))))))
 
 (in-theory (disable escape-free-symnamep))
 
@@ -394,14 +363,11 @@
 ;;                `(:use ((:instance symbol-equality
 ;;                         (acl2::s1 ,(cadar (last clause))) (acl2::s2 nil)))))))
 
-
-       
 (defun stringify-atom (x)
-  (declare (Xargs :guard (not (consp x))))
-  (cond ((symbolp x) (stringify-symbol x))
-        ((stringp x) (concatenate 'string "\"" x "\""))
+  ;; BOZO escaping of strings, proper escaping of characters, ...
+  (declare (xargs :guard (atom x)))
+  (cond ((symbolp x)      (stringify-symbol x))
+        ((stringp x)      (cat "\"" x "\""))
         ((acl2-numberp x) (stringify-number x))
-        ((characterp x)
-         (concatenate 'string "#\\" (coerce (list x) 'string)))
-        (t "##**BAD-ATOM**##")))
-         
+        ((characterp x)   (cat "#\\" (implode (list x))))
+        (t                "##**BAD-ATOM**##")))

@@ -48,3 +48,10 @@
 (defthm eqlable-listp-when-character-listp
   (implies (character-listp x)
            (eqlable-listp x)))
+
+(defthm character-listp-of-rev
+  ;; BOZO consider adding to deflist
+  (equal (character-listp (rev x))
+         (character-listp (list-fix x)))
+  :hints(("Goal" :induct (len x))))
+

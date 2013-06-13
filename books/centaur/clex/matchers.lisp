@@ -126,8 +126,8 @@ returns is also @('nil').</p>"
          (defthm ,(intern-in-package-of-symbol (cat "NON-EMPTY-OF-" name-s ".MATCH")
                                                name)
            (b* (((mv . ,return-names) (,name . ,formals)))
-             (equal (consp (coerce match 'list))
-                    (if match t nil))))
+             (equal (equal match "")
+                    nil)))
 
          (defthm ,(intern-in-package-of-symbol (cat name-s "-PROGRESS-WEAK")
                                                name)
@@ -150,7 +150,7 @@ returns is also @('nil').</p>"
              ;; This very nicely takes advantage of the fact that (COERCE NIL
              ;; 'LIST) happens to be NIL, so we don't even need to check for a
              ;; match.
-             (equal (append (coerce match 'list) (strin-left new-sin))
+             (equal (append (explode match) (strin-left new-sin))
                     (strin-left sin))))
 
          (defthm ,(intern-in-package-of-symbol (cat name-s "-GRACEFUL-FAILURE")
@@ -227,7 +227,7 @@ returns is also @('nil').</p>"
 
   (defthm non-empty-of-sin-match-everything.match
     (b* (((mv ?match ?new-sin) (sin-match-everything sin)))
-      (iff (consp (coerce match 'list))
+      (iff (consp (explode match))
            (consp (strin-left sin)))))
 
   (defthm sin-match-everything-progress
@@ -237,7 +237,7 @@ returns is also @('nil').</p>"
 
   (defthm sin-match-everything-reconstruction
     (b* (((mv match new-sin) (sin-match-everything sin)))
-      (equal (append (coerce match 'list) (strin-left new-sin))
+      (equal (append (explode match) (strin-left new-sin))
              (strin-left sin)))))
 
 
@@ -314,7 +314,7 @@ paradigm of progress, etc.</p>"
       (equal (equal match lit)
              (if match
                  (and (stringp lit)
-                      (consp (coerce lit 'list)))
+                      (consp (explode lit)))
                (not lit))))))
 
 
@@ -418,7 +418,7 @@ empty string.</p>
     ;; checking whether the match is one thing or another.
     (b* (((mv ?match ?new-sin)
           (sin-match-charset* set sin)))
-      (implies (equal chars (coerce match 'list))
+      (implies (equal chars (explode match))
                (equal (append chars (strin-left new-sin))
                       (strin-left sin)))))
 
@@ -434,7 +434,7 @@ empty string.</p>
   (defthm chars-in-charset-p-of-sin-match-charset*.match
     (b* (((mv ?match ?new-sin) (sin-match-charset* set sin)))
       ;; Nicely abusing that NIL coerces to NIL...
-      (chars-in-charset-p (coerce match 'list) set))))
+      (chars-in-charset-p (explode match) set))))
 
 
 

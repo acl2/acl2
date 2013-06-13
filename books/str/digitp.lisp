@@ -1,5 +1,5 @@
 ; ACL2 String Library
-; Copyright (C) 2009-2010 Centaur Technology
+; Copyright (C) 2009-2013 Centaur Technology
 ;
 ; Contact:
 ;   Centaur Technology Formal Verification Group
@@ -19,7 +19,7 @@
 ; Original author: Jared Davis <jared@centtech.com>
 
 (in-package "STR")
-(include-book "eqv")
+(include-book "ieqv")
 (include-book "std/lists/list-fix" :dir :system)
 (local (include-book "std/lists/rev" :dir :system))
 (local (include-book "arithmetic"))
@@ -62,7 +62,10 @@ on the machine Lisp2.</p>
 
   (local (in-theory (enable digitp)))
 
-  (defcong chareqv equal (digitp x) 1))
+  (defcong ichareqv equal (digitp x) 1
+    :hints(("Goal" :in-theory (enable ichareqv
+                                      downcase-char
+                                      char-fix)))))
 
 
 
@@ -85,7 +88,10 @@ on the machine Lisp2.</p>
 
   (local (in-theory (enable nonzero-digitp)))
 
-  (defcong chareqv equal (nonzero-digitp x) 1)
+  (defcong ichareqv equal (nonzero-digitp x) 1
+    :hints(("Goal" :in-theory (enable ichareqv
+                                      downcase-char
+                                      char-fix))))
 
   (defthm digitp-when-nonzero-digitp
     (implies (nonzero-digitp x)
@@ -117,7 +123,10 @@ on the machine Lisp2.</p>
 
   (local (in-theory (enable digitp digit-val char-fix)))
 
-  (defcong chareqv equal (digit-val x) 1)
+  (defcong ichareqv equal (digit-val x) 1
+    :hints(("Goal" :in-theory (enable ichareqv
+                                      downcase-char
+                                      char-fix))))
 
   (defthm natp-of-digit-val
     (and (integerp (digit-val x))
@@ -167,8 +176,8 @@ on the machine Lisp2.</p>
            (and (digitp a)
                 (digit-listp x))))
 
-  (defcong charlisteqv equal (digit-listp x) 1
-    :hints(("Goal" :in-theory (enable charlisteqv))))
+  (defcong icharlisteqv equal (digit-listp x) 1
+    :hints(("Goal" :in-theory (enable icharlisteqv))))
 
   (defthm digit-listp-of-list-fix
     (equal (digit-listp (list-fix x))
@@ -183,6 +192,10 @@ on the machine Lisp2.</p>
     (equal (digit-listp (revappend x y))
            (and (digit-listp x)
                 (digit-listp y))))
+
+  (defthm digit-listp-of-rev
+    (equal (digit-listp (rev x))
+           (digit-listp x)))
 
   (defthm digit-listp-of-nthcdr
     (implies (digit-listp x)
@@ -234,8 +247,8 @@ can tolerate non-numeric characters after the number.</p>"
 
   (local (in-theory (enable digit-list-value)))
 
-  (defcong charlisteqv equal (digit-list-value x) 1
-    :hints(("Goal" :in-theory (enable charlisteqv))))
+  (defcong icharlisteqv equal (digit-list-value x) 1
+    :hints(("Goal" :in-theory (enable icharlisteqv))))
 
   (defthm natp-of-digit-list-value
     (natp (digit-list-value x))
@@ -284,6 +297,9 @@ can tolerate non-numeric characters after the number.</p>"
   (defcong charlisteqv charlisteqv (skip-leading-digits x) 1
     :hints(("Goal" :in-theory (enable charlisteqv))))
 
+  (defcong icharlisteqv icharlisteqv (skip-leading-digits x) 1
+    :hints(("Goal" :in-theory (enable icharlisteqv))))
+
   (defthm len-of-skip-leading-digits
     (implies (digitp (car x))
              (< (len (skip-leading-digits x))
@@ -307,11 +323,12 @@ can tolerate non-numeric characters after the number.</p>"
 
   (local (in-theory (enable take-leading-digits)))
 
-  (defcong charlisteqv equal (take-leading-digits x) 1
-    :hints(("Goal" :in-theory (enable charlisteqv
+  (defcong icharlisteqv equal (take-leading-digits x) 1
+    :hints(("Goal" :in-theory (enable icharlisteqv
                                       ;; Gross, but gets us equal.
+                                      ichareqv
+                                      downcase-char
                                       digitp
-                                      chareqv
                                       char-fix))))
 
   (defthm character-listp-of-take-leading-digits
@@ -356,7 +373,7 @@ can tolerate non-numeric characters after the number.</p>"
                   (natp n)
                   (equal xl (length x)))
              (equal (digit-string-p-aux x n xl)
-                    (digit-listp (nthcdr n (coerce x 'list)))))
+                    (digit-listp (nthcdr n (explode x)))))
     :hints(("Goal" :in-theory (enable digit-string-p-aux
                                       digit-listp))))
 
@@ -375,7 +392,8 @@ can tolerate non-numeric characters after the number.</p>"
 ;   (time$ (loop for i fixnum from 1 to 10000000 do
 ;                (str::digit-listp (coerce x 'list)))))
 
-    (mbe :logic (digit-listp (coerce x 'list))
-         :exec (digit-string-p-aux x 0 (length x)))))
+    (mbe :logic (digit-listp (explode x))
+         :exec (digit-string-p-aux x 0 (length x))))
 
+  (defcong istreqv equal (digit-string-p x) 1))
 

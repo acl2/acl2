@@ -1,5 +1,5 @@
 ; ACL2 String Library
-; Copyright (C) 2009-2010 Centaur Technology
+; Copyright (C) 2009-2013 Centaur Technology
 ;
 ; Contact:
 ;   Centaur Technology Formal Verification Group
@@ -34,8 +34,7 @@ substring of y.</p>
 matched substring.</p>"
 
   (definlined isubstrp (x y)
-    (declare (type string x)
-             (type string y))
+    (declare (type string x y))
     (if (istrpos x y)
         t
       nil))
@@ -43,22 +42,23 @@ matched substring.</p>"
   (local (in-theory (enable isubstrp)))
 
   (defthm iprefixp-when-isubstrp
-    (implies (and (isubstrp x y)
-                  (force (stringp x))
-                  (force (stringp y)))
-             (iprefixp (coerce x 'list)
-                       (nthcdr (istrpos x y) (coerce y 'list)))))
+    (implies (isubstrp x y)
+             (iprefixp (explode x)
+                       (nthcdr (istrpos x y) (explode y)))))
 
   (defthm completeness-of-isubstrp
-    (implies (and (iprefixp (coerce x 'list)
-                            (nthcdr m (coerce y 'list)))
-                  (force (natp m))
-                  (force (stringp x))
-                  (force (stringp y)))
+    (implies (and (iprefixp (explode x)
+                            (nthcdr m (explode y)))
+                  (force (natp m)))
              (isubstrp x y))
     :hints(("Goal"
             :in-theory (disable completeness-of-istrpos)
-            :use ((:instance completeness-of-istrpos))))))
+            :use ((:instance completeness-of-istrpos)))))
+
+  (local (in-theory (disable istreqv)))
+
+  (defcong istreqv equal (isubstrp x y) 1)
+  (defcong istreqv equal (isubstrp x y) 2))
 
 
 
@@ -84,6 +84,9 @@ lists instead of string lists.</p>"
            (collect-strs-with-isubstr a (cdr x)))))
 
   (local (in-theory (enable collect-strs-with-isubstr)))
+
+  (defcong istreqv equal (collect-strs-with-isubstr a x) 1
+    :hints(("Goal" :in-theory (disable istreqv))))
 
   (defthm collect-strs-with-isubstr-when-atom
     (implies (atom x)
@@ -133,6 +136,9 @@ lists instead of symbol lists.</p>"
            (collect-syms-with-isubstr a (cdr x)))))
 
   (local (in-theory (enable collect-syms-with-isubstr)))
+
+  (defcong istreqv equal (collect-syms-with-isubstr a x) 1
+    :hints(("Goal" :in-theory (disable istreqv))))
 
   (defthm collect-syms-with-isubstr-when-atom
     (implies (atom x)

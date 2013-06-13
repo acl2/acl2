@@ -64,17 +64,16 @@ eventually redo significant portions of the wirealist stuff to instead be based
 on the expression-slicing code.</p>")
 
 
-#!ACL2
 (local (defthm equal-of-string-and-nil-string
          (implies (force (stringp str))
                   (equal (equal str "NIL")
-                         (equal (coerce str 'list)
+                         (equal (explode str)
                                 '(#\N #\I #\L))))
          :hints(("Goal"
-                 :in-theory (disable equal-of-coerce-lists)
-                 :use ((:instance equal-of-coerce-lists
-                                  (x str)
-                                  (y "NIL")))))))
+                 :in-theory (disable str::equal-of-explodes)
+                 :use ((:instance str::equal-of-explodes
+                                  (acl2::x str)
+                                  (acl2::y "NIL")))))))
 
 #!ACL2
 (local (defthm intern-in-package-of-symbol-not-nil
@@ -94,9 +93,9 @@ on the expression-slicing code.</p>")
                   (member-equal a (make-character-list chars)))
          :hints(("Goal" :in-theory (enable make-character-list)))))
 
-(local (defthm coerce-is-not-nil-bracket-char
+(local (defthm implode-is-not-nil-bracket-char
          (implies (member #\[ chars)
-                  (not (equal (coerce chars 'string) "NIL")))
+                  (not (equal (implode chars) "NIL")))
          :hints(("Goal"
                  :in-theory (disable member-of-make-character-list)
                  :use ((:instance member-of-make-character-list
@@ -126,9 +125,9 @@ on the expression-slicing code.</p>")
             :hints(("Goal" :in-theory (enable str::natchars)))))
 
    (defthm no-specials-in-natstr
-     (and (not (member-equal #\! (coerce (natstr x) 'list)))
-          (not (member-equal #\. (coerce (natstr x) 'list)))
-          (not (member-equal #\/ (coerce (natstr x) 'list))))
+     (and (not (member-equal #\! (explode (natstr x))))
+          (not (member-equal #\. (explode (natstr x))))
+          (not (member-equal #\/ (explode (natstr x)))))
      :hints(("Goal" :in-theory (enable natstr))))))
 
 
@@ -405,18 +404,18 @@ raw-lisp for better performance.</p>"
     ;; this in a separate function to minimize expansion from inlining the main
     ;; function.
     (declare (type string x))
-    (b* ((chars   (coerce x 'list))
+    (b* ((chars   (explode x))
          (encoded (vl-emodwire-encode-chars chars)))
-      (coerce encoded 'string)))
+      (implode encoded)))
 
   (defund vl-emodwire-decode-aux (x)
     ;; Slow. We don't expect this to ever really be called in practice.  We keep
     ;; this in a separate function to minimize expansion from inlining the main
     ;; function.
     (declare (type string x))
-    (b* ((chars   (coerce x 'list))
+    (b* ((chars   (explode x))
          (decoded (vl-emodwire-decode-chars chars)))
-      (coerce decoded 'string)))
+      (implode decoded)))
 
   (local (in-theory (enable vl-emodwire-encode-aux
                             vl-emodwire-decode-aux)))
@@ -565,17 +564,16 @@ raw-lisp for better performance.</p>"
 
 (defsection vl-emodwire-encode-nil
 
-  #!ACL2
   (local (defthm l0
            (implies (force (stringp str))
                     (equal (equal str "NIL")
-                           (equal (coerce str 'list)
+                           (equal (explode str)
                                   '(#\N #\I #\L))))
            :hints(("Goal"
-                   :in-theory (disable equal-of-coerce-lists)
-                   :use ((:instance equal-of-coerce-lists
-                                    (x str)
-                                    (y "NIL")))))))
+                   :in-theory (disable str::equal-of-explodes)
+                   :use ((:instance str::equal-of-explodes
+                                    (acl2::x str)
+                                    (acl2::y "NIL")))))))
 
   (defthm vl-emodwire-encode-nil
     (implies (stringp x)
@@ -587,7 +585,7 @@ raw-lisp for better performance.</p>"
 
   (defthm vl-emodwire-encode-nil-alt
     (implies (stringp x)
-             (equal (equal (coerce (vl-emodwire-encode x) 'list) '(#\N #\I #\L))
+             (equal (equal (explode (vl-emodwire-encode x)) '(#\N #\I #\L))
                     (equal x "NIL")))
     :hints(("Goal"
             :in-theory (enable vl-emodwire-encode
@@ -777,7 +775,7 @@ details.</p>"
           (vl-emodwire-scan name))
          ((when (or illegal
                     (and escape
-                         (not (vl-emodwire-encoding-valid-p (coerce name 'list))))))
+                         (not (vl-emodwire-encoding-valid-p (explode name))))))
           ;; Improper escaping
           nil)
          ((when (and (not open) (not close)))
@@ -1143,11 +1141,11 @@ index of @('|reset|') is @('nil').</p>"
        :hints(("Goal" :in-theory (enable vl-emodwire-p
                                          vl-emodwire->basename-without-decoding))))
 
-     (local (defthm equal-with-coerce-string
+     (local (defthm equal-with-implode
               (implies (and (stringp x)
                             (character-listp y))
-                       (equal (equal x (coerce y 'string))
-                              (equal (coerce x 'list) y)))))
+                       (equal (equal x (implode y))
+                              (equal (explode x) y)))))
 
      (local (defthm equal-with-append-take-self
               (equal (equal x (append (take n x) y))
@@ -1183,7 +1181,7 @@ index of @('|reset|') is @('nil').</p>"
                                 len
                                 nth)
                                (acl2::consp-under-iff-when-true-listp
-                                acl2::coerce-list-under-iff)))))))
+                                str::explode-under-iff)))))))
 
 ; Reduction 3.  Because of the restrictions made in vl-emodwire-p on the name,
 ; there aren't any special characters except perhaps for { in the basename
@@ -1222,7 +1220,7 @@ index of @('|reset|') is @('nil').</p>"
         (defthm f2
           (implies (vl-emodwire-p x)
                    (vl-emodwire-encoding-valid-p
-                    (coerce (vl-emodwire->basename-without-decoding x) 'list)))
+                    (explode (vl-emodwire->basename-without-decoding x))))
           :hints(("Goal" :in-theory (enable vl-emodwire-p
                                             vl-emodwire->basename-without-decoding
                                             subseq subseq-list))))))
@@ -1232,7 +1230,7 @@ index of @('|reset|') is @('nil').</p>"
      (local
       (defthm f3
         (implies (vl-emodwire-p x)
-                 (let ((start (coerce (vl-emodwire->basename-without-decoding x) 'list)))
+                 (let ((start (explode (vl-emodwire->basename-without-decoding x))))
                    (and (not (member-equal #\[ start))
                         (not (member-equal #\] start))
                         (not (member-equal #\. start))
@@ -1257,8 +1255,8 @@ index of @('|reset|') is @('nil').</p>"
                                 vl-emodwire-decode-chars-identity
                                 equal-of-vl-emodwire-decode-chars))
                :use ((:instance equal-of-vl-emodwire-decode-chars
-                                (x (coerce (vl-emodwire->basename-without-decoding x) 'list))
-                                (y (coerce (vl-emodwire->basename-without-decoding y) 'list)))))))))
+                                (x (explode (vl-emodwire->basename-without-decoding x)))
+                                (y (explode (vl-emodwire->basename-without-decoding y))))))))))
 
 
 ; Chaining it all together we see that emodwires are equal when when their

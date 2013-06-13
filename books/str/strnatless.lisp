@@ -1,5 +1,5 @@
 ; ACL2 String Library
-; Copyright (C) 2009-2010 Centaur Technology
+; Copyright (C) 2009-2013 Centaur Technology
 ;
 ; Contact:
 ;   Centaur Technology Formal Verification Group
@@ -21,7 +21,6 @@
 (in-package "STR")
 (include-book "digitp")
 (include-book "tools/mv-nth" :dir :system)
-(include-book "tools/bstar" :dir :system)
 (local (include-book "arithmetic"))
 
 
@@ -218,10 +217,7 @@ of our logical definition.</p>"
 
   (defund parse-nat-from-string (x val len n xl)
     (declare (type string x)
-             (type integer val)
-             (type integer len)
-             (type integer n)
-             (type integer xl)
+             (type (integer 0 *) val len n xl)
              (xargs :guard (and (stringp x)
                                 (natp val)
                                 (natp len)
@@ -248,21 +244,25 @@ of our logical definition.</p>"
                 (mv val len))
                (t
                 (let ((code (the (unsigned-byte 8)
-                              (char-code (the character (char (the string x)
-                                                              (the integer n)))))))
+                              (char-code (the character
+                                           (char (the string x)
+                                                 (the (integer 0 *) n)))))))
                   (declare (type (unsigned-byte 8) code))
-                  (if (and (<= (the (unsigned-byte 8) 48) (the (unsigned-byte 8) code))
-                           (<= (the (unsigned-byte 8) code) (the (unsigned-byte 8) 57)))
+                  (if (and (<= (the (unsigned-byte 8) 48)
+                               (the (unsigned-byte 8) code))
+                           (<= (the (unsigned-byte 8) code)
+                               (the (unsigned-byte 8) 57)))
                       (let ((digit-val (the (unsigned-byte 8)
                                          (- (the (unsigned-byte 8) code)
                                             (the (unsigned-byte 8) 48)))))
                         (parse-nat-from-string
                          (the string x)
-                         (the integer (+ (the (unsigned-byte 8) digit-val)
-                                         (the integer (* 10 (the integer val)))))
-                         (the integer (+ 1 (the integer len)))
-                         (the integer (+ 1 (the integer n)))
-                         (the integer xl)))
+                         (the (integer 0 *)
+                           (+ (the (unsigned-byte 8) digit-val)
+                              (the (integer 0 *) (* 10 (the (integer 0 *) val)))))
+                         (the (integer 0 *) (+ 1 (the (integer 0 *) len)))
+                         (the (integer 0 *) (+ 1 (the (integer 0 *) n)))
+                         (the (integer 0 *) xl)))
                     (mv val len)))))))
 
   (local (in-theory (enable parse-nat-from-string)))
@@ -293,14 +293,13 @@ of our logical definition.</p>"
             :induct (parse-nat-from-string x val len n xl))))
 
   (defthm val-of-parse-nat-from-string
-    (implies (and (stringp x)
-                  (natp val)
+    (implies (and (natp val)
                   (natp len)
                   (natp n)
-                  (equal xl (length x))
+                  (equal xl (len (explode x)))
                   (<= n xl))
              (equal (mv-nth 0 (parse-nat-from-string x val len n xl))
-                    (mv-nth 0 (parse-nat-from-charlist (nthcdr n (coerce x 'list)) val len))))
+                    (mv-nth 0 (parse-nat-from-charlist (nthcdr n (explode x)) val len))))
     :hints(("Goal"
             :induct (parse-nat-from-string x val len n xl)
             :in-theory (e/d (parse-nat-from-charlist)
@@ -308,14 +307,13 @@ of our logical definition.</p>"
             :do-not '(generalize fertilize))))
 
   (defthm len-of-parse-nat-from-string
-    (implies (and (stringp x)
-                  (natp val)
+    (implies (and (natp val)
                   (natp len)
                   (natp n)
-                  (equal xl (length x))
+                  (equal xl (len (explode x)))
                   (<= n xl))
              (equal (mv-nth 1 (parse-nat-from-string x val len n xl))
-                    (mv-nth 1 (parse-nat-from-charlist (nthcdr n (coerce x 'list)) val len))))
+                    (mv-nth 1 (parse-nat-from-charlist (nthcdr n (explode x)) val len))))
     :hints(("Goal"
             :induct (parse-nat-from-string x val len n xl)
             :in-theory (e/d (parse-nat-from-charlist)
@@ -642,8 +640,6 @@ one index.</p>"
                              expt
                              default-car
                              default-cdr
-                             default-coerce-1
-                             default-coerce-2
                              (:rewrite PROGRESS-OF-PARSE-NAT-FROM-STRING)
                              )))
 
@@ -788,7 +784,6 @@ one index.</p>"
                                default-char-code
                                char<-antisymmetric
                                char<-trichotomy-strong
-                               default-coerce-2 default-coerce-1
                                default-<-1 default-<-2
                                default-+-1 default-+-2
                                acl2::open-small-nthcdr
@@ -797,10 +792,8 @@ one index.</p>"
                                ACL2::|x < y  =>  0 < -x+y|
                                nthcdr len nth not
                                strnat<-aux
-;                               char-code-linear
                                acl2::natp-fc-1
                                acl2::natp-fc-2
-                               (:FORWARD-CHAINING CHARACTER-LISTP-COERCE)
                                (:FORWARD-CHAINING EQLABLE-LISTP-FORWARD-TO-ATOM-LISTP)
                                (:FORWARD-CHAINING CHARACTER-LISTP-FORWARD-TO-EQLABLE-LISTP)
                                (:FORWARD-CHAINING ATOM-LISTP-FORWARD-TO-TRUE-LISTP)
@@ -828,12 +821,12 @@ one index.</p>"
                   (<= xn xl)
                   (<= yn yl))
              (equal (strnat<-aux x y xn yn xl yl)
-                    (charlistnat< (nthcdr xn (coerce x 'list))
-                                  (nthcdr yn (coerce y 'list)))))
+                    (charlistnat< (nthcdr xn (explode x))
+                                  (nthcdr yn (explode y)))))
     :hints(("Goal"
             :induct (strnat<-aux x y xn yn xl yl)
-            :expand ((charlistnat< (nthcdr xn (coerce x 'list))
-                                   (nthcdr yn (coerce y 'list)))
+            :expand ((charlistnat< (nthcdr xn (explode x))
+                                   (nthcdr yn (explode y)))
                      (:free (xl yl) (strnat<-aux x y xn yn xl yl)))
             :in-theory (e/d (charlistnat<
                              commutativity-of-+
@@ -863,12 +856,9 @@ than the string @('y'), using an ordering that is nice for humans.</p>
 pretty fast.</p>"
 
   (definlined strnat< (x y)
-    (declare (type string x)
-             (type string y))
+    (declare (type string x y))
     (mbe :logic
-         (charlistnat< (coerce x 'list)
-                       (coerce y 'list))
-
+         (charlistnat< (explode x) (explode y))
          :exec
          (strnat<-aux (the string x)
                       (the string y)
@@ -878,6 +868,9 @@ pretty fast.</p>"
                       (the integer (length (the string y))))))
 
   (local (in-theory (enable strnat<)))
+
+  (defcong streqv equal (strnat< x y) 1)
+  (defcong streqv equal (strnat< x y) 2)
 
   (defthm strnat<-irreflexive
     (not (strnat< x x)))
@@ -896,61 +889,3 @@ pretty fast.</p>"
                   (strnat< x y))
              (strnat< x z))))
 
-
-
-#||
-
-;; Using STP.
-
-(include-book ;; fool dependency scanner
- "top")
-
-(defn symnat< (sym1 sym2)
-  (STR::strnat< (safe-symbol-name sym1)
-                (safe-symbol-name sym2)))
-
-(defthm symnat<-transitive
-  (implies (and (symnat< x y)
-                (symnat< y z))
-           (symnat< x z)))
-
-(defsort :compare< symnat<
-         :prefix symnat<)
-
-:q
-
-(defparameter *prefixes* (list "foo" "bar" "baz" "a" "b" "c"))
-
-(defparameter *test-strings*
-  (let ((plen (length *prefixes*)))
-    (loop for i from 1 to 10000 collect
-          (concatenate 'string
-                       (nth (mod i plen) *prefixes*)
-                       "-"
-                       (coerce (explode-atom i 10) 'string)
-                       "-suff"))))
-
-(defparameter *test-syms*
-  (loop for str in *test-strings* collect (intern str "ACL2")))
-
-(plev-max)
-(take 30 *test-syms*)
-
-(equal (symnat<-sort *test-syms*)
-       (symsort *test-syms*))
-
-;; 3.308 seconds, 198,769,472 bytes allocated
-(progn
-  (ccl::gc)
-  (time (loop for i fixnum from 1 to 100 do
-              (symnat<-sort *test-syms*)))
-  nil)
-
-;; 85.062 seconds, 11,405,636,416 bytes allocated
-(progn
-  (ccl::gc)
-  (time (loop for i fixnum from 1 to 100 do
-              (symsort *test-syms*)))
-  nil)
-
-||#

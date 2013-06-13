@@ -1,5 +1,5 @@
 ; ACL2 String Library
-; Copyright (C) 2009-2010 Centaur Technology
+; Copyright (C) 2009-2013 Centaur Technology
 ;
 ; Contact:
 ;   Centaur Technology Formal Verification Group
@@ -43,8 +43,8 @@
                                 (= xl (length x))
                                 (= yl (length y)))
                     :measure (nfix (- (nfix yl) (nfix n)))))
-    (cond ((mbe :logic (prefixp (coerce x 'list)
-                                (nthcdr n (coerce y 'list)))
+    (cond ((mbe :logic (prefixp (explode x)
+                                (nthcdr n (explode y)))
                 :exec (strprefixp-impl (the string x)
                                        (the string y)
                                        (the integer 0)
@@ -77,8 +77,8 @@
                   (force (equal xl (length x)))
                   (force (equal yl (length y))))
              (equal (strpos-fast x y n xl yl)
-                    (let ((idx (listpos (coerce x 'list)
-                                        (nthcdr n (coerce y 'list)))))
+                    (let ((idx (listpos (explode x)
+                                        (nthcdr n (explode y)))))
                       (and idx
                            (+ n idx)))))
     :hints(("Goal"
@@ -106,16 +106,17 @@ calling @(see strprefixp), rather than some better algorithm.</p>
 string.  That is, @('(strpos \"\" x)') is 0 for all @('x').</p>"
 
   (definline strpos (x y)
-    (declare (type string x)
-             (type string y))
+    (declare (type string x y))
     (mbe :logic
-         (listpos (coerce x 'list)
-                  (coerce y 'list))
+         (listpos (explode x)
+                  (explode y))
          :exec
          (strpos-fast (the string x)
                       (the string y)
                       (the integer 0)
                       (the integer (length (the string x)))
-                      (the integer (length (the string y)))))))
+                      (the integer (length (the string y))))))
 
+  (defcong streqv equal (strpos x y) 1)
+  (defcong streqv equal (strpos x y) 2))
 

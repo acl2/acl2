@@ -26,6 +26,7 @@
 (include-book "str/natstr" :dir :system)
 (include-book "str/strnatless" :dir :system)
 (include-book "std/io/base" :dir :system)
+(include-book "std/typed-lists/character-listp" :dir :system)
 
 (defsection dimacs
   :parents (satlink)

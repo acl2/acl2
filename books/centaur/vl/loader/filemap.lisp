@@ -198,7 +198,7 @@ number or nil.</p>
   (defthm bounds-of-vl-string-findloc
     (implies (stringp x)
              (and (<= 0 (vl-string-findloc x loc))
-                  (<= (vl-string-findloc x loc) (len (coerce x 'list)))))
+                  (<= (vl-string-findloc x loc) (len (explode x)))))
     :rule-classes :linear))
 
 

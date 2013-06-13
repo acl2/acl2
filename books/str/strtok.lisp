@@ -1,5 +1,5 @@
 ; ACL2 String Library
-; Copyright (C) 2009-2010 Centaur Technology
+; Copyright (C) 2009-2013 Centaur Technology
 ;
 ; Contact:
 ;   Centaur Technology Formal Verification Group
@@ -20,6 +20,7 @@
 
 (in-package "STR")
 (include-book "cat")
+(include-book "eqv")
 (local (include-book "misc/assert" :dir :system))
 (local (include-book "arithmetic"))
 (local (include-book "std/lists/revappend" :dir :system))
@@ -35,8 +36,7 @@
     ;; curr is the current word we're accumulating in reverse order
     ;; acc is the string list of previously found words
     (declare (type string x)
-             (type integer n)
-             (type integer xl)
+             (type (integer 0 *) n xl)
              (xargs :guard (and (stringp x)
                                 (natp xl)
                                 (natp n)
@@ -54,7 +54,7 @@
       (let* ((char1  (char x n))
              (matchp (member char1 delimiters)))
         (strtok-aux (the string x)
-                    (+ 1 (lnfix n))
+                    (the (integer 0 *) (+ 1 (lnfix n)))
                     (the integer xl)
                     delimiters
                     (if matchp nil (cons char1 curr))
@@ -70,14 +70,11 @@
     :hints(("Goal" :induct (strtok-aux x n xl delimiters curr acc))))
 
   (defthm string-listp-of-strtok-aux
-    (implies (and (stringp x)
-                  (natp xl)
-                  (natp n)
-                  (= xl (length x))
-                  (<= n xl)
-                  (string-listp acc))
+    (implies (string-listp acc)
              (string-listp (strtok-aux x n xl delimiters curr acc)))
-    :hints(("Goal" :induct (strtok-aux x n xl delimiters curr acc)))))
+    :hints(("Goal" :induct (strtok-aux x n xl delimiters curr acc))))
+
+  (defcong streqv equal (strtok-aux x n xl delimiters curr acc) 1))
 
 
 
@@ -103,22 +100,25 @@ strings are ever found in @('strtok')'s output.</p>"
   (definlined strtok (x delimiters)
     (declare (xargs :guard (and (stringp x)
                                 (character-listp delimiters))))
-    (reverse (strtok-aux x 0 (length x) delimiters nil nil)))
+    ;; Two tricks.
+    ;;  - Use REV for better type-prescription
+    ;;  - Use LEN of EXPLODE for better congruence
+    (let ((rtokens (strtok-aux x 0 (mbe :logic (len (explode x))
+                                        :exec (length x))
+                               delimiters nil nil)))
+      (mbe :logic (rev rtokens)
+           :exec (reverse rtokens))))
 
   (local (in-theory (enable strtok)))
-
-  (defthm true-listp-of-strtok
-    (true-listp (strtok x delimiters))
-    :rule-classes :type-prescription)
 
   (local (defthm lemma
            (implies (string-listp x)
                     (string-listp (acl2::rev x)))))
 
-
   (defthm string-listp-of-strtok
-    (implies (force (stringp x))
-             (string-listp (strtok x delimiters))))
+    (string-listp (strtok x delimiters)))
+
+  (defcong streqv equal (strtok x delimiters) 1)
 
   (local
    (acl2::assert!
@@ -126,7 +126,7 @@ strings are ever found in @('strtok')'s output.</p>"
 baz,
  heyo,
     beyo"
-                (list #\Space #\, #\Newline))
+                   (list #\Space #\, #\Newline))
            (list "foo" "bar" "baz" "heyo" "beyo")))))
 
 

@@ -1,5 +1,5 @@
 ; ACL2 String Library
-; Copyright (C) 2009-2010 Centaur Technology
+; Copyright (C) 2009-2013 Centaur Technology
 ;
 ; Contact:
 ;   Centaur Technology Formal Verification Group
@@ -191,7 +191,13 @@ contrast, @('down-alpha-p') works on arbitrary characters.</p>"
 
   (defthm lower-case-p-is-down-alpha-p
     (equal (acl2::lower-case-p x)
-           (down-alpha-p (double-rewrite x)))))
+           (down-alpha-p (double-rewrite x))))
+
+  (defthm down-alpha-p-when-up-alpha-p
+    (implies (up-alpha-p x)
+             (not (down-alpha-p x)))
+    :hints(("Goal" :in-theory (enable up-alpha-p
+                                      down-alpha-p)))))
 
 
 
@@ -223,6 +229,10 @@ contrast, @('upcase-char') works on arbitrary characters.</p>"
              (equal (upcase-char x)
                     (char-fix x)))
     :hints(("Goal" :in-theory (enable down-alpha-p))))
+
+  (defthm upcase-char-of-upcase-char
+    (equal (upcase-char (upcase-char x))
+           (upcase-char x)))
 
   ;; Rewrite ACL2's char-upcase to upcase-char.  It seems simplest to just do
   ;; the proof by exhaustive testing.
@@ -293,6 +303,7 @@ contrast, @('upcase-char') works on arbitrary characters.</p>"
 
 
 
+
 (defsection downcase-char
   :parents (case-conversion acl2::char-downcase)
   :short "Convert a character to lower-case."
@@ -322,6 +333,22 @@ characters.</p>"
              (equal (downcase-char x)
                     (char-fix x)))
     :hints(("Goal" :in-theory (enable up-alpha-p))))
+
+  (defthm downcase-char-of-downcase-char
+    (equal (downcase-char (downcase-char x))
+           (downcase-char x)))
+
+  (defthm downcase-char-of-upcase-char
+    (equal (downcase-char (upcase-char x))
+           (downcase-char x))
+    :hints(("Goal" :in-theory (enable upcase-char
+                                      char-fix))))
+
+  (defthm upcase-char-of-downcase-char
+    (equal (upcase-char (downcase-char x))
+           (upcase-char x))
+    :hints(("Goal" :in-theory (enable upcase-char
+                                      char-fix))))
 
   ;; Rewrite ACL2's char-downcase to downcase-char.  It seems simplest to just do
   ;; the proof by exhaustive testing.
@@ -388,7 +415,7 @@ characters.</p>"
 
   (defthm char-downcase-is-downcase-char
     (equal (acl2::char-downcase x)
-           (downcase-char x))))
+           (downcase-char (double-rewrite x)))))
 
 
 
@@ -398,7 +425,7 @@ characters.</p>"
   :long "<p>@(call upcase-char-str) is logically equal to:</p>
 
 @({
- (coerce (list (upcase-char c)) 'string)
+ (implode (list (upcase-char c)))
 })
 
 <p>But we store these strings in a table so that they don't have to be
@@ -409,7 +436,7 @@ during @(see upcase-first).</p>"
     (declare (xargs :guard (and (natp n)
                                 (<= n 255))
                     :ruler-extenders :all))
-    (cons (cons n (coerce (list (upcase-char (code-char n))) 'string))
+    (cons (cons n (implode (list (upcase-char (code-char n)))))
           (if (zp n)
               nil
             (make-upcase-first-strtbl (- n 1)))))
@@ -425,7 +452,7 @@ during @(see upcase-first).</p>"
   (local (defun test (n)
            (declare (xargs :ruler-extenders :all))
            (and (equal (aref1 '*upcase-first-strtbl* *upcase-first-strtbl* n)
-                       (coerce (list (upcase-char (code-char n))) 'string))
+                       (implode (list (upcase-char (code-char n)))))
                 (if (zp n)
                     t
                   (test (- n 1))))))
@@ -437,19 +464,19 @@ during @(see upcase-first).</p>"
                          (<= n 255)
                          (test n))
                     (equal (aref1 '*upcase-first-strtbl* *upcase-first-strtbl* i)
-                           (coerce (list (upcase-char (code-char i))) 'string)))
+                           (implode (list (upcase-char (code-char i))))))
            :hints(("Goal" :induct (test n)))))
 
   (local (defthm l1
            (implies (and (natp i)
                          (<= i 255))
                     (equal (aref1 '*upcase-first-strtbl* *upcase-first-strtbl* i)
-                           (coerce (list (upcase-char (code-char i))) 'string)))
+                           (implode (list (upcase-char (code-char i))))))
            :hints(("Goal" :use ((:instance l0 (n 255)))))))
 
   (definline upcase-char-str (c)
     (declare (type character c))
-    (mbe :logic (coerce (list (upcase-char c)) 'string)
+    (mbe :logic (implode (list (upcase-char c)))
          :exec (aref1 '*upcase-first-strtbl* *upcase-first-strtbl* (char-code c)))))
 
 
@@ -460,7 +487,7 @@ during @(see upcase-first).</p>"
   :long "<p>@(call downcase-char-str) is logically equal to:</p>
 
 @({
- (coerce (list (downcase-char c)) 'string)
+ (implode (downcase-char c))
 })
 
 <p>But we store these strings in a table so that they don't have to be
@@ -471,7 +498,7 @@ during @(see downcase-first).</p>"
      (declare (xargs :guard (and (natp n)
                                  (<= n 255))
                      :ruler-extenders :all))
-    (cons (cons n (coerce (list (downcase-char (code-char n))) 'string))
+    (cons (cons n (implode (list (downcase-char (code-char n)))))
           (if (zp n)
               nil
             (make-downcase-first-strtbl (- n 1)))))
@@ -487,7 +514,7 @@ during @(see downcase-first).</p>"
   (local (defun test (n)
            (declare (xargs :ruler-extenders :all))
            (and (equal (aref1 '*downcase-first-strtbl* *downcase-first-strtbl* n)
-                       (coerce (list (downcase-char (code-char n))) 'string))
+                       (implode (list (downcase-char (code-char n)))))
                 (if (zp n)
                     t
                   (test (- n 1))))))
@@ -499,18 +526,18 @@ during @(see downcase-first).</p>"
                          (<= n 255)
                          (test n))
                     (equal (aref1 '*downcase-first-strtbl* *downcase-first-strtbl* i)
-                           (coerce (list (downcase-char (code-char i))) 'string)))
+                           (implode (list (downcase-char (code-char i))))))
            :hints(("Goal" :induct (test n)))))
 
   (local (defthm l1
            (implies (and (natp i)
                          (<= i 255))
                     (equal (aref1 '*downcase-first-strtbl* *downcase-first-strtbl* i)
-                           (coerce (list (downcase-char (code-char i))) 'string)))
+                           (implode (list (downcase-char (code-char i))))))
            :hints(("Goal" :use ((:instance l0 (n 255)))))))
 
   (definline downcase-char-str (c)
     (declare (type character c))
-    (mbe :logic (coerce (list (downcase-char c)) 'string)
+    (mbe :logic (implode (list (downcase-char c)))
          :exec (aref1 '*downcase-first-strtbl* *downcase-first-strtbl* (char-code c)))))
 

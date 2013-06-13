@@ -1,5 +1,5 @@
 ; ACL2 String Library
-; Copyright (C) 2009-2010 Centaur Technology
+; Copyright (C) 2009-2013 Centaur Technology
 ;
 ; Contact:
 ;   Centaur Technology Formal Verification Group
@@ -19,7 +19,7 @@
 ; Original author: Jared Davis <jared@centtech.com>
 
 (in-package "STR")
-(include-book "xdoc/top" :dir :system)
+(include-book "coerce")
 (local (include-book "misc/assert" :dir :system))
 (local (include-book "arithmetic"))
 
@@ -59,7 +59,7 @@
                     :measure (nfix (- (nfix xl) (nfix n)))))
     (mbe :logic
          (position-ac char
-                      (nthcdr n (coerce x 'list))
+                      (nthcdr n (explode x))
                       (nfix n))
          :exec
          (cond ((mbe :logic (zp (- (nfix xl) (nfix n)))

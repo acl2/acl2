@@ -1,5 +1,5 @@
 ; ACL2 String Library
-; Copyright (C) 2009-2010 Centaur Technology
+; Copyright (C) 2009-2013 Centaur Technology
 ;
 ; Contact:
 ;   Centaur Technology Formal Verification Group
@@ -30,12 +30,8 @@
   :short "Fast implementation of @(see strsubst)."
 
   (defund strsubst-aux (old new x n xl oldl acc)
-    (declare (type string old)
-             (type string new)
-             (type string x)
-             (type integer n)
-             (type integer xl)
-             (type integer oldl)
+    (declare (type string old new x)
+             (type (integer 0 *) n xl oldl)
              (xargs :guard (and (stringp old)
                                 (stringp new)
                                 (stringp x)
@@ -55,11 +51,17 @@
 
           ((strprefixp-impl old x 0 n oldl xl)
            (let ((acc (revappend-chars new acc)))
-             (strsubst-aux old new x (+ oldl (lnfix n)) xl oldl acc)))
+             (strsubst-aux old new x
+                           (the (integer 0 *)
+                             (+ oldl (the (integer 0 *) (lnfix n))))
+                           xl oldl acc)))
 
           (t
            (let ((acc (cons (char x n) acc)))
-             (strsubst-aux old new x (+ 1 (lnfix n)) xl oldl acc)))))
+             (strsubst-aux old new x
+                           (the (integer 0 *)
+                             (+ 1 (the (integer 0 *) (lnfix n))))
+                           xl oldl acc)))))
 
   (local (in-theory (enable strsubst-aux)))
 
@@ -105,11 +107,10 @@ individual characters, whereas @('strsubst') works on substrings.</p>"
     (declare (xargs :guard (and (stringp old)
                                 (stringp new)
                                 (stringp x))))
-    (let ((oldl (length old)))
+    (let ((oldl (mbe :logic (len (explode old))
+                     :exec (length old))))
       (if (zp oldl)
-          (mbe :logic (if (stringp x)
-                          x
-                        "")
+          (mbe :logic (str-fix x)
                :exec x)
         (rchars-to-string (strsubst-aux old new x 0 (length x) oldl nil)))))
 
@@ -124,7 +125,6 @@ individual characters, whereas @('strsubst') works on substrings.</p>"
 
   (local (assert! (equal (strsubst "oo" "aa" "xoooyoo")
                          "xaaoyaa"))))
-
 
 
 

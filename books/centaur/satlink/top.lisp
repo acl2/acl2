@@ -29,6 +29,7 @@
 (include-book "oslib/tempfile" :dir :system)
 (include-book "centaur/misc/tshell" :dir :system)
 (include-book "config")
+(local (include-book "std/lists/nthcdr" :dir :system))
 
 (defxdoc satlink
   :short "A way to call SAT solvers from within ACL2, and trust what they say."

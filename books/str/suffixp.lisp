@@ -1,5 +1,5 @@
 ; ACL2 String Library
-; Copyright (C) 2009-2010 Centaur Technology
+; Copyright (C) 2009-2013 Centaur Technology
 ;
 ; Contact:
 ;   Centaur Technology Formal Verification Group
@@ -20,8 +20,9 @@
 
 (in-package "STR")
 (include-book "strprefixp")
+(local (include-book "std/lists/nthcdr" :dir :system))
 (local (include-book "misc/assert" :dir :system))
-
+(local (include-book "arithmetic/top" :dir :system))
 (local (in-theory (disable acl2::prefixp-when-equal-lengths)))
 
 (local (defthm crock
@@ -31,13 +32,6 @@
                   (equal (prefixp x y)
                          (equal x y)))
          :hints(("Goal" :in-theory (enable prefixp)))))
-
-(local (defthm len-of-nthcdr
-         (implies (and (natp n)
-                       (<= n (len x)))
-                  (equal (len (nthcdr n x))
-                         (- (len x) n)))
-         :hints(("Goal" :in-theory (enable nthcdr)))))
 
 (defsection strsuffixp
   :parents (substrings)
@@ -49,8 +43,8 @@ the string @('y'), in a case-sensitive manner.</p>
 <p>Logically, we ask whether @('|x| < |y|'), and whether</p>
 
 @({
-  (equal (nthcdr (- |y| |x|) (coerce x 'list))
-         (coerce y 'list)
+  (equal (nthcdr (- |y| |x|) (explode x))
+         (explode y))
 })
 
 <p>But we use a more efficient implementation that avoids coercing the strings
@@ -61,15 +55,21 @@ equal to @('x').</p>
 That is, @('(strsuffixp \"\" x)') is always true.</p>"
 
   (definlined strsuffixp (x y)
-    (declare (xargs :guard (and (stringp x)
-                                (stringp y))))
-    (let* ((xlen (length x))
-           (ylen (length y)))
-      (and (<= xlen ylen)
-           (mbe :logic
-                (equal (nthcdr (- ylen xlen) (coerce y 'list))
-                       (coerce x 'list))
-                :exec
+    (declare (type string x y))
+    (mbe :logic
+         (let* ((xchars (explode x))
+                (ychars (explode y))
+                ;; note that using, e.g., (len (explode x)) instead of (length
+                ;; x)) gives better congruence behavior
+                (xlen   (len xchars))
+                (ylen   (len ychars)))
+           (and (<= xlen ylen)
+                (equal (nthcdr (- ylen xlen) (explode y))
+                       (explode x))))
+         :exec
+         (let* ((xlen (length x))
+                (ylen (length y)))
+           (and (<= xlen ylen)
                 (strprefixp-impl x y 0 (- ylen xlen) xlen ylen)))))
 
   (local (in-theory (enable strsuffixp)))
@@ -95,4 +95,9 @@ That is, @('(strsuffixp \"\" x)') is always true.</p>"
      (assert! (strsuffixp "oo" "foo"))
      (assert! (not (strsuffixp "ooo" "foo")))
      (assert! (not (strsuffixp "fo" "foo")))
-     (assert! (strsuffixp "foo" "foo")))))
+     (assert! (strsuffixp "foo" "foo"))))
+
+  (defcong streqv equal (strsuffixp x y) 1)
+  (defcong streqv equal (strsuffixp x y) 2))
+
+

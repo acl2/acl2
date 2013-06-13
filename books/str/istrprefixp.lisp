@@ -1,5 +1,5 @@
 ; ACL2 String Library
-; Copyright (C) 2009-2010 Centaur Technology
+; Copyright (C) 2009-2013 Centaur Technology
 ;
 ; Contact:
 ;   Centaur Technology Formal Verification Group
@@ -21,7 +21,7 @@
 (in-package "STR")
 (include-book "ieqv")
 (include-book "iprefixp")
-(include-book "std/lists/nthcdr" :dir :system)
+(local (include-book "std/lists/nthcdr" :dir :system))
 (local (include-book "arithmetic"))
 
 (local (defthm iprefixp-lemma-1
@@ -52,7 +52,7 @@ case-insensitive prefix of the string @('y').</p>
 
 <p>Logically, this is identical to</p>
 @({
-  (iprefixp (coerce x 'list) (coerce y 'list))
+  (iprefixp (explode x) (explode y))
 })
 
 <p>But we use a more efficient implementation which avoids coercing the strings
@@ -96,8 +96,8 @@ to lists.</p>"
     (declare (type string x)
              (type string y)
              (xargs :verify-guards nil))
-    (mbe :logic (iprefixp (coerce x 'list)
-                          (coerce y 'list))
+    (mbe :logic (iprefixp (explode x)
+                          (explode y))
          :exec (istrprefixp-impl (the string x)
                                  (the string y)
                                  (the integer 0)
@@ -119,5 +119,9 @@ to lists.</p>"
                               (nthcdr yn (coerce y 'list)))))
     :hints(("Goal" :in-theory (enable istrprefixp-impl))))
 
-  (verify-guards istrprefixp$inline))
+  (verify-guards istrprefixp$inline)
+
+  (defcong istreqv equal (istrprefixp x y) 1)
+  (defcong istreqv equal (istrprefixp x y) 2))
+
 

@@ -458,7 +458,7 @@ creating an intermediate list and instead just builds a string directly.  This
 notably saves a lot of memory when we build @(see vl-filemap-p)s.</p>"
 
   :enabled t
-  (coerce (vl-echarlist->chars x) 'string)
+  (implode (vl-echarlist->chars x))
 
   ///
 
@@ -702,9 +702,9 @@ Also note that we actually use @('nreverse') here.</p>"
 
   (defthm vl-echarlist-from-str-nice-correct
     (implies (force (stringp x))
-             (equal (vl-echarlist-from-str-nice x n (len (coerce x 'list))
+             (equal (vl-echarlist-from-str-nice x n (len (explode x))
                                                 filename line col)
-                    (vl-echarlist-from-chars-fn (nthcdr n (coerce x 'list))
+                    (vl-echarlist-from-chars-fn (nthcdr n (explode x))
                                                 filename line col)))
     :hints(("Goal" :in-theory (enable vl-echarlist-from-str-nice
                                       vl-echarlist-from-chars-fn))))
@@ -716,8 +716,9 @@ Also note that we actually use @('nreverse') here.</p>"
                                 (natp col)))
              (type string x filename)
              (type integer line col))
-    (mbe :logic (vl-echarlist-from-chars-fn (coerce x 'list) filename line col)
-         :exec (vl-echarlist-from-str-nice x 0 (length (the string x))
+    (mbe :logic (vl-echarlist-from-chars-fn (explode x) filename line col)
+         :exec (vl-echarlist-from-str-nice x 0
+                                           (length (the string x))
                                            filename line col)))
 
   (defmacro vl-echarlist-from-str (x &key

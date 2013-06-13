@@ -736,9 +736,9 @@ where @('n') is the number of characters printed.  If you really want a string,
   :parents (accessing-printed-output)
   :short "@('(vl-ps->string)') returns the printed characters as a string in
 the proper, non-reversed, printed order."
-  :long "<p>This is logically just @('(coerce (vl-ps->chars) 'string)'), but we
+  :long "<p>This is logically just @('(implode (vl-ps->chars))'), but we
 install a more efficient definition under the hood in raw Lisp.</p>"
-  (coerce (vl-ps->chars) 'string)
+  (implode (vl-ps->chars))
   ///
   (defttag vl-optimize)
   (progn!
@@ -1064,7 +1064,7 @@ printed.</li>
                   (<= n xl)
                   (= xl (length x)))
              (equal (vl-col-after-printing-string-aux col x n xl)
-                    (vl-col-after-printing-chars col (nthcdr n (coerce x 'list)))))
+                    (vl-col-after-printing-chars col (nthcdr n (explode x)))))
     :hints(("Goal"
             :induct (vl-col-after-printing-string-aux col x n xl)
             :in-theory (enable vl-col-after-printing-string-aux
@@ -1079,7 +1079,7 @@ printed.</li>
   :inline t
   (declare (type integer col)
            (type string string))
-  (mbe :logic (vl-col-after-printing-chars col (coerce string 'list))
+  (mbe :logic (vl-col-after-printing-chars col (explode string))
        :exec (vl-col-after-printing-string-aux col string 0 (length string))))
 
 (define vl-indent ((n natp) &key (ps 'ps))
@@ -2050,7 +2050,7 @@ characters into the accumulator in reverse order instead of printing them."
           (prog2$ (er hard? 'vl-basic-fmt-parse-tilde
                       "The format string ~x0 ends with ~x1, but this directive needs argument."
                       x
-                      (coerce (list char1 char2) 'string))
+                      (implode (list char1 char2)))
                   (mv :normal char1 (+ n 1))))
 
          (char3 (char x (+ n 2))))

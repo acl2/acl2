@@ -73,27 +73,27 @@
 
 
 
-(define coerce-to-chars-list ((x string-listp))
+(define explode-list ((x string-listp))
   :parents (utilities)
   :short "Coerce a list of strings into a @(see character-list-listp)."
 
   (if (atom x)
       nil
-    (cons (coerce (car x) 'list)
-          (coerce-to-chars-list (cdr x))))
+    (cons (explode (car x))
+          (explode-list (cdr x))))
 
   :returns (ans character-list-listp)
 
   ///
 
-  (defthm coerce-to-chars-list-when-atom
+  (defthm explode-list-when-atom
     (implies (atom x)
-             (equal (coerce-to-chars-list x)
+             (equal (explode-list x)
                     nil)))
 
-  (defthm coerce-to-chars-list-of-cons
-    (equal (coerce-to-chars-list (cons a x))
-           (cons (coerce a 'list)
-                 (coerce-to-chars-list x)))))
+  (defthm explode-list-of-cons
+    (equal (explode-list (cons a x))
+           (cons (explode a)
+                 (explode-list x)))))
 
 

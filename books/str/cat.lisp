@@ -1,5 +1,5 @@
 ; ACL2 String Library
-; Copyright (C) 2009-2010 Centaur Technology
+; Copyright (C) 2009-2013 Centaur Technology
 ;
 ; Contact:
 ;   Centaur Technology Formal Verification Group
@@ -19,14 +19,11 @@
 ; Original author: Jared Davis <jared@centtech.com>
 
 (in-package "STR")
-(include-book "xdoc/top" :dir :system)
-(include-book "misc/definline" :dir :system)
+(include-book "ieqv")
 (include-book "tools/bstar" :dir :system)
 (include-book "std/lists/list-defuns" :dir :system)
 (local (include-book "arithmetic"))
-(local (include-book "std/lists/take" :dir :system))
 (local (include-book "std/lists/equiv" :dir :system))
-(local (include-book "std/lists/rev" :dir :system))
 
 (defsection cat
   :parents (concatenation)
@@ -71,8 +68,7 @@ result may be faster.</p>"
     ;; We don't inline this because you might want to develop books without
     ;; fast-cat (for fewer ttags), but then include fast-cat later for more
     ;; performance.
-    (declare (xargs :guard (and (stringp str1)
-                                (stringp str2))))
+    (declare (type string str1 str2))
     (string-append str1 str2))
 
   (defun fast-string-append-lst (x)
@@ -109,8 +105,7 @@ result may be faster.</p>"
   :long "<p>@(call append-chars) takes the characters from the string @('x')
 and appends them onto @('y').</p>
 
-<p>Its logical definition is nothing more than @('(append (coerce x 'list)
-y)').</p>
+<p>Its logical definition is nothing more than @('(append (explode x) y)').</p>
 
 <p>In the execution, we traverse the string @('x') using @(see char) to avoid
 the overhead of @(see coerce)-ing it into a character list before performing
@@ -142,7 +137,7 @@ conses, where @('n') is the length of @('x').</p>"
                   (natp n)
                   (< n (length x)))
              (equal (append-chars-aux x n y)
-                    (append (take (+ 1 n) (coerce x 'list)) y)))
+                    (append (take (+ 1 n) (explode x)) y)))
     :hints(("Goal"
             :in-theory (enable append-chars-aux)
             :induct (append-chars-aux x n y))))
@@ -154,12 +149,12 @@ conses, where @('n') is the length of @('x').</p>"
                          (natp n)
                          (< n (length x)))
                     (equal (append-chars-aux x n y)
-                           (append (take (+ 1 n) (coerce x 'list)) y)))
+                           (append (take (+ 1 n) (explode x)) y)))
            :hints(("Goal" :use ((:instance append-chars-aux-correct))))))
 
   (definlined append-chars (x y)
     (declare (type string x))
-    (mbe :logic (append (coerce x 'list) y)
+    (mbe :logic (append (explode x) y)
          :exec (b* (((the (integer 0 *) xl) (length x))
                     ((when (eql xl 0))
                      y)
@@ -172,7 +167,13 @@ conses, where @('n') is the length of @('x').</p>"
     (equal (character-listp (append-chars x y))
            (character-listp y)))
 
-  (defcong list-equiv list-equiv (append-chars x y) 2))
+  (defcong streqv equal (append-chars x y) 1)
+  (defcong istreqv icharlisteqv (append-chars x y) 1)
+  (defcong list-equiv list-equiv (append-chars x y) 2)
+  (defcong charlisteqv charlisteqv (append-chars x y) 2)
+  (defcong icharlisteqv icharlisteqv (append-chars x y) 2))
+
+
 
 
 (defsection revappend-chars
@@ -182,8 +183,7 @@ conses, where @('n') is the length of @('x').</p>"
   :long "<p>@(call revappend-chars) takes the characters from the string
 @('x'), reverses them, and appends the result onto @('y').</p>
 
-<p>Its logical definition is nothing more than @('(revappend (coerce x 'list)
-y)').</p>
+<p>Its logical definition is nothing more than @('(revappend (explode x) y)').</p>
 
 <p>In the execution, we traverse the string @('x') using @(see char) to avoid
 the overhead of @(see coerce)-ing it into a character list before performing
@@ -199,7 +199,7 @@ instance, a sequence such as:</p>
         (acc (str::revappend-chars \"Hello, \" acc))
         (acc (str::revappend-chars \"World!\" acc))
         (acc ...))
-    (reverse (coerce acc 'string)))
+    (reverse (implode acc)))
 })
 
 <p>Is essentially the same as:</p>
@@ -227,7 +227,8 @@ more efficient way to do the final @(see reverse)/@(see coerce) steps.</p>"
              :exec (eql n xl))
         y
       (revappend-chars-aux x
-                           (the (integer 0 *) (+ 1 (lnfix n)))
+                           (the (integer 0 *)
+                             (+ 1 (the (integer 0 *) (lnfix n))))
                            xl
                            (cons (char x n) y))))
 
@@ -238,7 +239,7 @@ more efficient way to do the final @(see reverse)/@(see coerce) steps.</p>"
                   (<= n xl)
                   (equal xl (length x)))
              (equal (revappend-chars-aux x n xl y)
-                    (revappend (nthcdr n (coerce x 'list)) y)))
+                    (revappend (nthcdr n (explode x)) y)))
     :hints(("Goal"
             :in-theory (e/d (revappend-chars-aux)
                             (acl2::revappend-removal))
@@ -247,7 +248,7 @@ more efficient way to do the final @(see reverse)/@(see coerce) steps.</p>"
   (definlined revappend-chars (x y)
     (declare (xargs :guard (stringp x))
              (type string x))
-    (mbe :logic (revappend (coerce x 'list) y)
+    (mbe :logic (revappend (explode x) y)
          :exec (revappend-chars-aux x 0 (length x) y)))
 
   (local (in-theory (enable revappend-chars)))
@@ -256,7 +257,11 @@ more efficient way to do the final @(see reverse)/@(see coerce) steps.</p>"
     (equal (character-listp (revappend-chars x y))
            (character-listp y)))
 
-  (defcong list-equiv list-equiv (revappend-chars x y) 2))
+  (defcong streqv equal (revappend-chars x y) 1)
+  (defcong istreqv icharlisteqv (revappend-chars x y) 1)
+  (defcong list-equiv list-equiv (revappend-chars x y) 2)
+  (defcong charlisteqv charlisteqv (revappend-chars x y) 2)
+  (defcong icharlisteqv icharlisteqv (revappend-chars x y) 2))
 
 
 
@@ -334,6 +339,8 @@ more efficient way to do the final @(see reverse)/@(see coerce) steps.</p>"
   (defthm len-of-prefix-strings
     (equal (len (prefix-strings prefix x))
            (len x)))
+
+  (defcong streqv equal (prefix-strings prefix x) 1)
 
   (local (defthmd l0
            (equal (prefix-strings prefix (list-fix x))
@@ -463,5 +470,9 @@ and reverse the result string.</p>"
   (defcong list-equiv equal (join x separator) 1
     :hints(("Goal" :in-theory (enable list-equiv)
             :use ((:instance l0 (x x))
-                  (:instance l0 (x acl2::x-equiv)))))))
+                  (:instance l0 (x acl2::x-equiv))))))
+
+  (defcong streqv equal (join x separator) 2)
+  (defcong istreqv istreqv (join x separator) 2))
+
 

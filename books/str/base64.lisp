@@ -140,7 +140,7 @@ the original, un-encoded data.</li>
 
          (defthm characterp-of-char
            (equal (characterp (char s n))
-                  (< (nfix n) (len (coerce s 'list)))))))
+                  (< (nfix n) (len (explode s)))))))
 
 (local (defsection unsigned-byte-p-lemmas
 
@@ -327,7 +327,7 @@ mapped to NIL.</p>"
              (equal (b64-value-from-code (char-code (b64-char-from-value value)))
                     value))
     :hints(("Goal" :in-theory (e/d (b64-char-from-value unsigned-byte-p)
-                                   (acl2::equal-of-char-code-and-constant))))))
+                                   (equal-of-char-code-and-constant))))))
 
 
 
@@ -948,7 +948,7 @@ when there are two pads.</p>"
                   (force (equal xl (length x)))
                   (force (< n xl)))
              (equal (b64-encode-last-group-str x n xl)
-                    (b64-encode-last-group (nthcdr n (coerce x 'list)))))
+                    (b64-encode-last-group (nthcdr n (explode x)))))
     :hints(("Goal"
             :in-theory (e/d (b64-encode-last-group char)
                             (nthcdr nth))
@@ -986,14 +986,14 @@ when there are two pads.</p>"
                          (equal xl (length x))
                          (<= n xl))
                     (equal (b64-encode-str-impl x n xl acc)
-                           (b64-encode-list-impl (nthcdr n (coerce x 'list)) acc)))
+                           (b64-encode-list-impl (nthcdr n (explode x)) acc)))
            :hints(("Goal"
                    :induct (b64-encode-str-impl x n xl acc)
                    :in-theory (e/d (b64-encode-list-impl
                                     char)
                                    (b64-encode-list-impl-removal))
                    :expand ((b64-encode-str-impl x n xl acc)
-                            (b64-encode-list-impl (nthcdr n (coerce x 'list)) acc))
+                            (b64-encode-list-impl (nthcdr n (explode x)) acc))
                    :do-not '(generalize fertilize)
                    :do-not-induct t))))
   (defthm b64-encode-str-impl-removal
@@ -1002,7 +1002,7 @@ when there are two pads.</p>"
                   (equal xl (length x))
                   (<= n xl))
              (equal (b64-encode-str-impl x n xl acc)
-                    (revappend (base64-encode-list (nthcdr n (coerce x 'list)))
+                    (revappend (base64-encode-list (nthcdr n (explode x)))
                                acc)))
     :hints(("Goal" :in-theory (disable b64-encode-str-impl)))))
 
@@ -1012,7 +1012,7 @@ when there are two pads.</p>"
   :parents (base64)
   :short "Base64 encode a string."
   (declare (type string x))
-  (mbe :logic (coerce (base64-encode-list (coerce x 'list)) 'string)
+  (mbe :logic (implode (base64-encode-list (explode x)))
        :exec (rchars-to-string (b64-encode-str-impl x 0 (length x) nil))))
 
 (define base64-revappend-encode
@@ -1070,13 +1070,13 @@ when there are two pads.</p>"
                          (equal xl (length x))
                          (<= n xl))
                     (equal (b64-decode-str-impl x n xl acc)
-                           (b64-decode-list-impl (nthcdr n (coerce x 'list)) acc)))
+                           (b64-decode-list-impl (nthcdr n (explode x)) acc)))
            :hints(("Goal"
                    :induct (b64-decode-str-impl x n xl acc)
                    :in-theory (e/d (b64-decode-list-impl char)
                                    (b64-decode-list-impl-removal))
                    :expand ((b64-decode-str-impl x n xl acc)
-                            (b64-decode-list-impl (nthcdr n (coerce x 'list)) acc))
+                            (b64-decode-list-impl (nthcdr n (explode x)) acc))
                    :do-not '(generalize fertilize)
                    :do-not-induct t))))
   (defthm b64-decode-str-impl-removal
@@ -1085,7 +1085,7 @@ when there are two pads.</p>"
                   (equal xl (length x))
                   (<= n xl))
              (equal (b64-decode-str-impl x n xl acc)
-                    (let ((chars (nthcdr n (coerce x 'list))))
+                    (let ((chars (nthcdr n (explode x))))
                       (mv (mv-nth 0 (base64-decode-list chars))
                           (revappend (mv-nth 1 (base64-decode-list chars))
                                      acc)))))
@@ -1110,8 +1110,8 @@ when there are two pads.</p>"
   (declare (type string x))
   (mbe :logic
        (b* (((mv okp chars)
-             (base64-decode-list (coerce x 'list))))
-         (mv okp (coerce chars 'string)))
+             (base64-decode-list (explode x))))
+         (mv okp (implode chars)))
        :exec
        (b* (((mv okp rchars)
              (b64-decode-str-impl x 0 (length x) nil)))

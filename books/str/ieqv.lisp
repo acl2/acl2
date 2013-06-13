@@ -1,5 +1,5 @@
 ; ACL2 String Library
-; Copyright (C) 2009-2010 Centaur Technology
+; Copyright (C) 2009-2013 Centaur Technology
 ;
 ; Contact:
 ;   Centaur Technology Formal Verification Group
@@ -44,7 +44,40 @@ irritating to use because it has @(see standard-char-p) guards.  In contrast,
 
   (defequiv ichareqv)
 
-  (defrefinement chareqv ichareqv))
+  (defrefinement chareqv ichareqv)
+
+  (encapsulate
+    ()
+    (local (defthmd l1
+             (implies (equal (upcase-char x)
+                             (upcase-char y))
+                      (equal (downcase-char x)
+                             (downcase-char y)))
+             :hints(("Goal"
+                     :in-theory (disable downcase-char-of-upcase-char)
+                     :use ((:instance downcase-char-of-upcase-char (x x))
+                           (:instance downcase-char-of-upcase-char (x y)))))))
+
+    (local (defthmd l2
+             (implies (equal (downcase-char x)
+                             (downcase-char y))
+                      (equal (upcase-char x)
+                             (upcase-char y)))
+             :hints(("Goal"
+                     :in-theory (disable upcase-char-of-downcase-char)
+                     :use ((:instance upcase-char-of-downcase-char (x x))
+                           (:instance upcase-char-of-downcase-char (x y)))))))
+
+    (defthm equal-of-upcase-char-and-upcase-char
+      (equal (equal (upcase-char x) (upcase-char y))
+             (ichareqv x y))
+      :hints(("Goal" :use ((:instance l1)
+                           (:instance l2))))))
+
+  (defcong ichareqv equal (downcase-char x) 1)
+  (defcong ichareqv equal (upcase-char x) 1)
+  (defcong ichareqv equal (upcase-char-str x) 1)
+  (defcong ichareqv equal (downcase-char-str x) 1))
 
 
 
@@ -84,11 +117,15 @@ another.</p>
   (defcong icharlisteqv icharlisteqv (list-fix x) 1)
   (defcong icharlisteqv ichareqv     (nth n x)    2)
   (defcong icharlisteqv icharlisteqv (nthcdr n x) 2)
+  (defcong icharlisteqv icharlisteqv (take n x)   2)
   (defcong icharlisteqv icharlisteqv (append x y) 1)
   (defcong icharlisteqv icharlisteqv (append x y) 2)
-  (defcong icharlisteqv icharlisteqv (acl2::rev x) 1)
+  (defcong icharlisteqv icharlisteqv (rev x) 1)
   (defcong icharlisteqv icharlisteqv (revappend x y) 2)
   (defcong icharlisteqv icharlisteqv (revappend x y) 1)
+  (defcong icharlisteqv icharlisteqv (make-character-list x) 1)
+
+
 
   (defthm icharlisteqv-when-not-consp-left
     (implies (not (consp x))
@@ -129,7 +166,7 @@ the same length and their elements must be @(see ichareqv) to one another.</p>
 <p>Logically this is identical to</p>
 
 @({
- (icharlisteqv (coerce x 'list) (coerce y 'list))
+ (icharlisteqv (explode x) (explode y))
 })
 
 <p>But we use a more efficient implementation which avoids coercing the
@@ -169,7 +206,7 @@ strings into lists.</p>
              (type string y)
              (xargs :verify-guards nil))
     (mbe :logic
-         (icharlisteqv (coerce x 'list) (coerce y 'list))
+         (icharlisteqv (explode x) (explode y))
          :exec
          (b* (((the (integer 0 *) xl) (length x))
               ((the (integer 0 *) yl) (length y)))
@@ -196,10 +233,20 @@ strings into lists.</p>
                   (= l (length x))
                   (= l (length y)))
              (equal (istreqv-aux x y n l)
-                    (icharlisteqv (nthcdr n (coerce x 'list))
-                                  (nthcdr n (coerce y 'list)))))
+                    (icharlisteqv (nthcdr n (explode x))
+                                  (nthcdr n (explode y)))))
     :hints(("Goal"
             :in-theory (enable istreqv-aux)
             :induct (istreqv-aux x y n l))))
 
-  (verify-guards istreqv$inline))
+  (verify-guards istreqv$inline)
+
+  (defequiv istreqv)
+  (defrefinement streqv istreqv)
+
+  (defcong istreqv ichareqv (char x n) 1)
+  (defcong istreqv icharlisteqv (explode x) 1)
+  (defcong istreqv istreqv (string-append x y) 1)
+  (defcong istreqv istreqv (string-append x y) 2))
+
+

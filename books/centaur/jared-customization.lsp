@@ -108,8 +108,6 @@
 
 #!ACL2
 (progn
-  (add-untranslate-pattern (coerce ?x 'list)
-                           (chars ?x))
 
   (add-untranslate-pattern (car ?x)
                            (first ?x))

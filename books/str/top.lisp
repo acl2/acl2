@@ -1,5 +1,5 @@
 ; ACL2 String Library
-; Copyright (C) 2009-2010 Centaur Technology
+; Copyright (C) 2009-2013 Centaur Technology
 ;
 ; Contact:
 ;   Centaur Technology Formal Verification Group
@@ -74,7 +74,7 @@ details.</p>
 <h3>Copyright Information</h3>
 
 <p>ACL2 String Library<br/>
-Copyright (C) 2009-2011
+Copyright (C) 2009-2013
 <a href=\"http://www.centtech.com\">Centaur Technology</a>.</p>
 
 <p>Contact:</p>
@@ -103,11 +103,31 @@ Street, Suite 500, Boston, MA 02110-1335, USA.</p>")
 
 (defsection equivalences
   :parents (str)
-  :short "Basic equivalence relations.")
+  :short "Basic equivalence relations."
+
+  :long "<p>The string library provides the various @(see equivalence)
+relations about characters, character lists, and strings.  We end up with the
+following @(see refinement) hierarchy:</p>
+
+@({
+                      equal
+          ______________|________________
+         |              |                |
+       chareqv         list-equiv       streqv
+         |              |                |
+       ichareqv        charlisteqv      istreqv
+                        |
+                       icharlisteqv
+})")
 
 (defsection concatenation
   :parents (str)
   :short "Functions for concatenating strings and character lists.")
+
+(defsection coercion
+  :parents (str)
+  :short "Functions for converting between strings, symbols, character lists,
+and so on.")
 
 (defsection ordering
   :parents (str)

@@ -27,7 +27,7 @@
                  acl2::*common-lisp-symbols-from-main-lisp-package*)
     '(b* defsection defxdoc include-raw assert! definline definlined
          ;; to make Bridge::Bridge show up as just "Bridge" in the XDOC index
-         bridge))
+         explode implode bridge))
    '(include-book)))
 
 ; It's too frustrating NOT to have this be part of package.lsp

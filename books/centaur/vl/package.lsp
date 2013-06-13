@@ -173,6 +173,8 @@
 
       str::cat
       str::natstr
+      str::implode
+      str::explode
 
 
       ;; To make VL::VL show up as just VL in the ACL2 package, e.g., to

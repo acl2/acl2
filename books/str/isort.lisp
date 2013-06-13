@@ -1,5 +1,5 @@
 ; ACL2 String Library
-; Copyright (C) 2009-2010 Centaur Technology
+; Copyright (C) 2009-2013 Centaur Technology
 ;
 ; Contact:
 ;   Centaur Technology Formal Verification Group
@@ -21,7 +21,6 @@
 (in-package "STR")
 (include-book "iless")
 (include-book "defsort/defsort" :dir :system)
-;(include-book "std/lists/list-defunslist-fix" :dir :system)
 
 (ACL2::defsort
  :comparablep stringp

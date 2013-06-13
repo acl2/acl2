@@ -216,7 +216,7 @@ prevent matching between signals like @('bcDWCBAEnt_C0_P') and
 
 
 (defconst *typo-special-substrings-chars*
-  (coerce-to-chars-list *typo-special-substrings*))
+  (explode-list *typo-special-substrings*))
 
 (defsection typo-read-special
 
@@ -496,7 +496,7 @@ prevent matching between signals like @('bcDWCBAEnt_C0_P') and
     (if (atom x)
         nil
       (cons (cons (car x)
-                  (typo-partition (coerce (car x) 'list)))
+                  (typo-partition (explode (car x))))
             (typo-partitioning-alist (cdr x)))))
 
   (local (in-theory (enable typo-partitioning-alist)))
@@ -689,7 +689,7 @@ prevent matching between signals like @('bcDWCBAEnt_C0_P') and
     (if (atom strs)
         nil
       (let* ((name1      (car strs))
-             (partition1 (typo-partition (coerce name1 'list)))
+             (partition1 (typo-partition (explode name1)))
              (typos1     (typo-find-plausible-typos1 partition1 alist)))
         (if typos1
             (cons (cons name1 typos1)

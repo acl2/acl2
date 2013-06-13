@@ -19,8 +19,7 @@
 ; Original author: Jared Davis <jared@centtech.com>
 
 (in-package "VL")
-(include-book "xdoc/top" :dir :system)
-(include-book "misc/definline" :dir :system)
+(include-book "str/cat" :dir :system)
 (local (include-book "misc/assert" :dir :system))
 (local (include-book "arithmetic"))
 
@@ -60,9 +59,9 @@
 
   (local
    (progn
-     (assert! (equal (coerce (vl-url-encode-char #\a) 'string)           "a"))
-     (assert! (equal (coerce (vl-url-encode-char #\Space) 'string)       "%20"))
-     (assert! (equal (coerce (vl-url-encode-char (code-char 0)) 'string) "%00"))))
+     (assert! (equal (implode (vl-url-encode-char #\a))           "a"))
+     (assert! (equal (implode (vl-url-encode-char #\Space))       "%20"))
+     (assert! (equal (implode (vl-url-encode-char (code-char 0))) "%00"))))
 
   (local (in-theory (enable vl-url-encode-char)))
 
@@ -201,7 +200,8 @@
 
   (defund vl-url-encode-string (x)
     (declare (xargs :guard (stringp x)))
-    (reverse (coerce (vl-url-encode-string-aux x 0 (length x) nil) 'string)))
+    (str::rchars-to-string
+     (vl-url-encode-string-aux x 0 (length x) nil)))
 
   (local (in-theory (enable vl-url-encode-string)))
 
@@ -213,4 +213,4 @@
 (local (assert!
         (let ((x "foo123$%20 blah !==[]{}7&*^!@&*^&*)($"))
           (equal (vl-url-encode-string x)
-                 (coerce (vl-url-encode-chars (coerce x 'list)) 'string)))))
+                 (implode (vl-url-encode-chars (explode x)))))))

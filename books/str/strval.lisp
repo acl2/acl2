@@ -1,5 +1,5 @@
 ; ACL2 String Library
-; Copyright (C) 2009-2010 Centaur Technology
+; Copyright (C) 2009-2013 Centaur Technology
 ;
 ; Contact:
 ;   Centaur Technology Formal Verification Group
@@ -20,7 +20,6 @@
 
 (in-package "STR")
 (include-book "strnatless")
-(include-book "misc/definline" :dir :system)
 (local (include-book "arithmetic"))
 (local (include-book "misc/assert" :dir :system))
 
@@ -39,10 +38,18 @@
       (and (<= (char-code #\0) code)
            (<= code (char-code #\7)))))
 
+  (local (in-theory (enable octal-digitp)))
+
+  (defcong ichareqv equal (octal-digitp x) 1
+    :hints(("Goal" :in-theory (enable octal-digitp
+                                      ichareqv
+                                      downcase-char
+                                      char-fix))))
+
   (defthm digitp-when-octal-digitp
     (implies (octal-digitp x)
              (digitp x))
-    :hints(("Goal" :in-theory (enable octal-digitp digitp)))))
+    :hints(("Goal" :in-theory (enable digitp)))))
 
 
 (defsection octal-digit-listp
@@ -56,10 +63,16 @@
       (and (octal-digitp (car x))
            (octal-digit-listp (cdr x)))))
 
+  (local (in-theory (enable octal-digit-listp)))
+
   (defthm digit-listp-when-octal-digit-listp
     (implies (octal-digit-listp x)
              (digit-listp x))
-    :hints(("Goal" :in-theory (enable digit-listp octal-digit-listp)))))
+    :hints(("Goal" :in-theory (enable digit-listp))))
+
+  (defcong icharlisteqv equal (octal-digit-listp x) 1
+    :hints(("Goal" :in-theory (enable icharlisteqv)))))
+
 
 
 (defsection parse-octal-from-charlist
@@ -69,8 +82,7 @@
 digits and returns their octal value.</p>"
 
   (defund parse-octal-from-charlist (x val len)
-    (declare (type integer val)
-             (type integer len)
+    (declare (type (integer 0 *) val len)
              (xargs :guard (and (character-listp x)
                                 (natp val)
                                 (natp len))))
@@ -84,11 +96,12 @@ digits and returns their octal value.</p>"
           (t
            (mv (lnfix val) (lnfix len) x))))
 
+  (local (in-theory (enable parse-octal-from-charlist)))
+
   (defthm natp-of-parse-octal-from-charlist
     (implies (natp val)
              (natp (mv-nth 0 (parse-octal-from-charlist x val len))))
-    :rule-classes :type-prescription
-    :hints(("Goal" :in-theory (enable parse-octal-from-charlist)))))
+    :rule-classes :type-prescription))
 
 
 (defsection octal-digit-list-value
@@ -107,10 +120,21 @@ can tolerate non-octal digits after the number.</p>"
           (parse-octal-from-charlist x 0 0)))
       val))
 
+  (local (in-theory (enable octal-digit-list-value)))
+
   (defthm natp-of-octal-digit-list-value
     (natp (octal-digit-list-value x))
-    :rule-classes :type-prescription
-    :hints(("Goal" :in-theory (enable octal-digit-list-value))))
+    :rule-classes :type-prescription)
+
+  (local (defthmd l0
+           (implies (icharlisteqv x x-equiv)
+                    (equal (mv-nth 0 (parse-octal-from-charlist x val len))
+                           (mv-nth 0 (parse-octal-from-charlist x-equiv val len))))
+           :hints(("Goal" :in-theory (enable parse-octal-from-charlist
+                                             icharlisteqv)))))
+
+  (defcong icharlisteqv equal (octal-digit-list-value x) 1
+    :hints(("Goal" :use ((:instance l0 (val 0) (len 0))))))
 
   (local (assert! (and (equal (octal-digit-list-value (coerce "0" 'list)) #o0)
                        (equal (octal-digit-list-value (coerce "6" 'list)) #o6)
@@ -134,7 +158,16 @@ can tolerate non-octal digits after the number.</p>"
           (and (<= (char-code #\a) code)
                (<= code (char-code #\f)))
           (and (<= (char-code #\A) code)
-               (<= code (char-code #\F)))))))
+               (<= code (char-code #\F))))))
+
+  (local (in-theory (enable hex-digitp)))
+
+  (defcong ichareqv equal (hex-digitp x) 1
+    :hints(("Goal" :in-theory (enable hex-digitp
+                                      ichareqv
+                                      downcase-char
+                                      char-fix)))))
+
 
 (defsection hex-digit-listp
   :parents (numbers)
@@ -145,7 +178,13 @@ can tolerate non-octal digits after the number.</p>"
     (if (atom x)
         t
       (and (hex-digitp (car x))
-           (hex-digit-listp (cdr x))))))
+           (hex-digit-listp (cdr x)))))
+
+  (local (in-theory (enable hex-digit-listp)))
+
+  (defcong icharlisteqv equal (hex-digit-listp x) 1
+    :hints(("Goal" :in-theory (enable icharlisteqv)))))
+
 
 (defsection hex-digit-val
   :parents (numbers)
@@ -166,10 +205,16 @@ digit-val).</p>"
               ((<= (char-code #\A) code) (- code (- (char-code #\A) 10)))
               (t                         (- code (char-code #\0)))))))
 
+  (local (in-theory (enable hex-digit-val hex-digitp)))
+
   (defthm natp-of-hex-digit-val
     (natp (hex-digit-val x))
-    :rule-classes :type-prescription
-    :hints(("Goal" :in-theory (enable hex-digitp hex-digit-val))))
+    :rule-classes :type-prescription)
+
+  (defcong ichareqv equal (hex-digit-val x) 1
+    :hints(("Goal" :in-theory (enable ichareqv
+                                      downcase-char
+                                      char-fix))))
 
   (local (assert! (and (equal (hex-digit-val #\A) #xA)
                        (equal (hex-digit-val #\B) #xB)
@@ -201,8 +246,7 @@ digit-val).</p>"
 hex digits and returns their hexadecimal value.</p>"
 
   (defund parse-hex-from-charlist (x val len)
-    (declare (type integer val)
-             (type integer len)
+    (declare (type (integer 0 *) val len)
              (xargs :guard (and (character-listp x)
                                 (natp val)
                                 (natp len))))
@@ -210,17 +254,22 @@ hex digits and returns their hexadecimal value.</p>"
            (mv (lnfix val) (lnfix len) nil))
           ((hex-digitp (car x))
            (let ((digit-val (hex-digit-val (car x))))
-             (parse-hex-from-charlist (cdr x)
-                                      (+ digit-val (* 16 (lnfix val)))
-                                      (+ 1 (lnfix len)))))
+             (parse-hex-from-charlist
+              (cdr x)
+              (the (integer 0 *) (+ (the (integer 0 *) digit-val)
+                                    (the (integer 0 *)
+                                      (* 16 (the (integer 0 *) (lnfix val))))))
+              (the (integer 0 *) (+ 1 (the (integer 0 *) (lnfix len)))))))
           (t
            (mv (lnfix val) (lnfix len) x))))
+
+  (local (in-theory (enable parse-hex-from-charlist)))
 
   (defthm natp-of-parse-hex-from-charlist
     (implies (natp val)
              (natp (mv-nth 0 (parse-hex-from-charlist x val len))))
-    :rule-classes :type-prescription
-    :hints(("Goal" :in-theory (enable parse-hex-from-charlist)))))
+    :rule-classes :type-prescription))
+
 
 (defsection hex-digit-list-value
   :parents (numbers)
@@ -238,10 +287,21 @@ can tolerate non-hex digits after the number.</p>"
           (parse-hex-from-charlist x 0 0)))
       val))
 
+  (local (in-theory (enable hex-digit-list-value)))
+
   (defthm natp-of-hex-digit-list-value
     (natp (hex-digit-list-value x))
-    :rule-classes :type-prescription
-    :hints(("Goal" :in-theory (enable hex-digit-list-value))))
+    :rule-classes :type-prescription)
+
+  (local (defthmd l0
+           (implies (icharlisteqv x x-equiv)
+                    (equal (mv-nth 0 (parse-hex-from-charlist x val len))
+                           (mv-nth 0 (parse-hex-from-charlist x-equiv val len))))
+           :hints(("Goal" :in-theory (enable parse-hex-from-charlist
+                                             icharlisteqv)))))
+
+  (defcong icharlisteqv equal (hex-digit-list-value x) 1
+    :hints(("Goal" :use ((:instance l0 (val 0) (len 0))))))
 
   (local (assert! (and (equal (hex-digit-list-value (coerce "0" 'list)) #x0)
                        (equal (hex-digit-list-value (coerce "6" 'list)) #x6)
@@ -257,7 +317,15 @@ can tolerate non-hex digits after the number.</p>"
   (definlined bit-digitp (x)
     (declare (xargs :guard t))
     (or (eql x #\0)
-        (eql x #\1))))
+        (eql x #\1)))
+
+  (local (in-theory (enable bit-digitp)))
+
+  (defcong ichareqv equal (bit-digitp x) 1
+    :hints(("Goal" :in-theory (enable ichareqv
+                                      downcase-char
+                                      char-fix)))))
+
 
 (defsection bit-digit-listp
   :parents (numbers)
@@ -268,7 +336,14 @@ can tolerate non-hex digits after the number.</p>"
     (if (atom x)
         t
       (and (bit-digitp (car x))
-           (bit-digit-listp (cdr x))))))
+           (bit-digit-listp (cdr x)))))
+
+  (local (in-theory (enable bit-digit-listp)))
+
+  (defcong icharlisteqv equal (bit-digit-listp x) 1
+    :hints(("Goal" :in-theory (enable icharlisteqv)))))
+
+
 
 (defsection bitstring-p
   :parents (numbers)
@@ -277,8 +352,12 @@ can tolerate non-hex digits after the number.</p>"
   (defund bitstring-p (x)
     (declare (xargs :guard t))
     ;; BOZO make a faster version of this
+    ;; BOZO requiring stringp is bad for congruences
     (and (stringp x)
-         (bit-digit-listp (coerce x 'list)))))
+         (bit-digit-listp (explode x))))
+
+  (local (in-theory (enable bitstring-p))))
+
 
 (defsection parse-bits-from-charlist
   :parents (numbers)
@@ -287,8 +366,7 @@ can tolerate non-hex digits after the number.</p>"
 digits (#\\0 and #\\1) and returns their binary value.</p>"
 
   (defund parse-bits-from-charlist (x val len)
-    (declare (type integer val)
-             (type integer len)
+    (declare (type (integer 0 *) val len)
              (xargs :guard (and (character-listp x)
                                 (natp val)
                                 (natp len))))
@@ -297,21 +375,27 @@ digits (#\\0 and #\\1) and returns their binary value.</p>"
           ((eql (car x) #\0)
            (parse-bits-from-charlist
             (cdr x)
-            (mbe :logic (* 2 (nfix val)) :exec (ash val 1))
-            (+ 1 (lnfix len))))
+            (mbe :logic (* 2 (nfix val))
+                 :exec (the (integer 0 *) (ash val 1)))
+            (the (integer 0 *) (+ 1 (the (integer 0 *) (lnfix len))))))
           ((eql (car x) #\1)
            (parse-bits-from-charlist
             (cdr x)
-            (+ 1 (mbe :logic (* 2 (nfix val)) :exec (ash val 1)))
-            (+ 1 (lnfix len))))
+            (the (integer 0 *)
+              (+ 1
+                 (mbe :logic (* 2 (nfix val))
+                      :exec (the (integer 0 *) (ash val 1)))))
+            (the (integer 0 *) (+ 1 (the (integer 0 *) (lnfix len))))))
           (t
            (mv (lnfix val) (lnfix len) x))))
+
+  (local (in-theory (enable parse-bits-from-charlist)))
 
   (defthm natp-of-parse-bits-from-charlist
     (implies (natp val)
              (natp (mv-nth 0 (parse-bits-from-charlist x val len))))
-    :rule-classes :type-prescription
-    :hints(("Goal" :in-theory (enable parse-bits-from-charlist)))))
+    :rule-classes :type-prescription))
+
 
 (defsection bit-digit-list-value
   :parents (numbers)
@@ -329,10 +413,24 @@ can tolerate non-bit digits after the number.</p>"
           (parse-bits-from-charlist x 0 0)))
       val))
 
+  (local (in-theory (enable bit-digit-list-value)))
+
   (defthm natp-of-bit-digit-list-value
     (natp (bit-digit-list-value x))
-    :rule-classes :type-prescription
-    :hints(("Goal" :in-theory (enable bit-digit-list-value))))
+    :rule-classes :type-prescription)
+
+  (local (defthmd l0
+           (implies (icharlisteqv x x-equiv)
+                    (equal (mv-nth 0 (parse-bits-from-charlist x val len))
+                           (mv-nth 0 (parse-bits-from-charlist x-equiv val len))))
+           :hints(("Goal" :in-theory (enable parse-bits-from-charlist
+                                             icharlisteqv
+                                             ichareqv
+                                             downcase-char
+                                             char-fix)))))
+
+  (defcong icharlisteqv equal (bit-digit-list-value x) 1
+    :hints(("Goal" :use ((:instance l0 (val 0) (len 0))))))
 
   (local (assert! (and (equal (bit-digit-list-value (coerce "0" 'list)) #b0)
                        (equal (bit-digit-list-value (coerce "1" 'list)) #b1)
@@ -354,20 +452,27 @@ can tolerate non-bit digits after the number.</p>"
 number.  For example, @('(strval \"35\")') is 35.  If the string has any
 non-decimal digit characters or is empty, we return @('nil').</p>"
 
-  (definlined strval (x)
+  (defund strval (x)
     (declare (type string x))
-    (b* ((xl (length x))
-         ((mv val len)
+    (b* (((the (integer 0 *) xl)
+          (mbe :logic (len (explode x))
+               :exec (length x)))
+         ((mv (the (integer 0 *) val)
+              (the (integer 0 *) len))
           (str::parse-nat-from-string x 0 0 0 xl)))
       (and (< 0 len)
            (int= len xl)
            val)))
 
+  (local (in-theory (enable strval)))
+
   (defthm type-of-strval
     (or (natp (strval x))
         (not (strval x)))
-    :rule-classes :type-prescription
-    :hints(("Goal" :in-theory (enable strval)))))
+    :rule-classes :type-prescription)
+
+  (defcong istreqv equal (strval x) 1))
+
 
 (defsection strval8
   :parents (numbers)
@@ -376,18 +481,22 @@ non-decimal digit characters or is empty, we return @('nil').</p>"
 decimal numbers.  For example, @('(strval8 \"10\")') is 8.  If the string is
 empty or has any non-octal digit characters, we return @('nil').</p>"
 
-  (definlined strval8 (x)
+  (defund strval8 (x)
     (declare (type string x))
-    (let ((chars (coerce x 'list)))
+    (let ((chars (explode x)))
       (and (consp chars)
            (octal-digit-listp chars)
            (octal-digit-list-value chars))))
 
+  (local (in-theory (enable strval8)))
+
   (defthm type-of-strval8
     (or (natp (strval8 x))
         (not (strval8 x)))
-    :rule-classes :type-prescription
-    :hints(("Goal" :in-theory (enable strval8)))))
+    :rule-classes :type-prescription)
+
+  (defcong istreqv equal (strval8 x) 1))
+
 
 (defsection strval16
   :parents (numbers)
@@ -396,18 +505,22 @@ empty or has any non-octal digit characters, we return @('nil').</p>"
 of decimal numbers.  For example, @('(strval16 \"10\")') is 16.  If the string
 is empty or has any non-hex digit characters, we return @('nil').</p>"
 
-  (definlined strval16 (x)
+  (defund strval16 (x)
     (declare (type string x))
-    (let ((chars (coerce x 'list)))
+    (let ((chars (explode x)))
       (and (consp chars)
            (hex-digit-listp chars)
            (hex-digit-list-value chars))))
 
+  (local (in-theory (enable strval16)))
+
   (defthm type-of-strval16
     (or (natp (strval16 x))
         (not (strval16 x)))
-    :rule-classes :type-prescription
-    :hints(("Goal" :in-theory (enable strval16)))))
+    :rule-classes :type-prescription)
+
+  (defcong istreqv equal (strval16 x) 1))
+
 
 (defsection strval2
   :parents (numbers)
@@ -416,18 +529,22 @@ is empty or has any non-hex digit characters, we return @('nil').</p>"
 decimal numbers.  For example, @('(strval16 \"10\")') is 2.  If the string is
 empty or has any non-binary digit characters, we return @('nil').</p>"
 
-  (definlined strval2 (x)
+  (defund strval2 (x)
     (declare (type string x))
-    (let ((chars (coerce x 'list)))
+    (let ((chars (explode x)))
       (and (consp chars)
            (bit-digit-listp chars)
            (bit-digit-list-value chars))))
 
+  (local (in-theory (enable strval2)))
+
   (defthm type-of-strval2
     (or (natp (strval2 x))
         (not (strval2 x)))
-    :rule-classes :type-prescription
-    :hints(("Goal" :in-theory (enable strval2)))))
+    :rule-classes :type-prescription)
+
+  (defcong istreqv equal (strval2 x) 1))
+
 
 
 (local (assert! (equal (strval "") nil)))

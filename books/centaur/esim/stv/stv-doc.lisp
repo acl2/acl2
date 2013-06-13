@@ -26,6 +26,7 @@
 (include-book "stv-widen")
 (include-book "str/stringify" :dir :system)
 (include-book "centaur/vl/util/print-htmlencode" :dir :system)
+(local (include-book "std/typed-lists/character-listp" :dir :system))
 
 (defund stv-name-bits-to-xml (bits col acc)
   ;; Probably horrible way to print out individual bits, if the user writes that

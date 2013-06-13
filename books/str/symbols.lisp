@@ -1,5 +1,5 @@
 ; ACL2 String Library
-; Copyright (C) 2009-2010 Centaur Technology
+; Copyright (C) 2009-2013 Centaur Technology
 ;
 ; Contact:
 ;   Centaur Technology Formal Verification Group
@@ -23,6 +23,7 @@
 (include-book "std/lists/list-defuns" :dir :system)
 (local (include-book "std/lists/equiv" :dir :system))
 (local (include-book "std/lists/rev" :dir :system))
+(local (include-book "std/lists/append" :dir :system))
 
 
 (defsection symbol-list-names

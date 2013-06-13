@@ -52,7 +52,7 @@
 (defthm position-equal-under-iff-when-stringp
   (implies (stringp string)
            (iff (position-equal char string)
-                (member-equal char (coerce string 'list))))
+                (member-equal char (explode string))))
   :hints(("Goal" :in-theory (enable position-equal))))
 
 (encapsulate
@@ -116,18 +116,18 @@
           :do-not '(generalize fertilize)
           :induct (position-equal-ac item lst acc))))
 
-(defthm nth-of-position-equal-of-coerce-when-stringp
+(defthm nth-of-position-equal-of-explode-when-stringp
   (implies (and (position-equal char string)
                 (stringp string))
            (equal (nth (position-equal char string)
-                       (coerce string 'list))
+                       (explode string))
                   char))
   :hints(("Goal"
           :in-theory (e/d (position-equal)
                           (nth-of-position-equal-ac))
           :use ((:instance nth-of-position-equal-ac
                            (item char)
-                           (lst (coerce string 'list))
+                           (lst (explode string))
                            (acc 0))))))
 
 (defthm acl2-numberp-of-position-equal
@@ -188,29 +188,29 @@
   (defthm member-equal-of-subseq-chars-impossible-1
     (implies (and (not (position-equal a x))
                   (<= (nfix end) (length x)))
-             (not (member-equal a (coerce (subseq x 0 end) 'list)))))
+             (not (member-equal a (explode (subseq x 0 end))))))
 
   (defthm member-equal-of-subseq-chars-impossible-2
     (implies (and (<= end (position-equal a x))
                   (position-equal a x)
                   (natp end))
-             (not (member-equal a (coerce (subseq x 0 end) 'list))))
+             (not (member-equal a (explode (subseq x 0 end)))))
     :hints(("Goal"
             :in-theory (disable member-equal-of-subseq-chars-impossible-1 l1)
             :use ((:instance member-equal-of-subseq-chars-impossible-1)
-                  (:instance l1 (item a) (lst (coerce x 'list)) (n end)))))))
+                  (:instance l1 (item a) (lst (explode x)) (n end)))))))
 
 
 
-(defthm position-equal-of-coerce-to-string
+(defthm position-equal-of-implode
   (implies (character-listp x)
-           (equal (position-equal a (coerce x 'string))
+           (equal (position-equal a (implode x))
                   (position-equal a x)))
   :hints(("Goal" :in-theory (enable position-equal))))
 
-(defthm position-equal-of-coerce-to-list
+(defthm position-equal-of-explode
   (implies (stringp x)
-           (equal (position-equal a (coerce x 'list))
+           (equal (position-equal a (explode x))
                   (position-equal a x)))
   :hints(("Goal" :in-theory (enable position-equal))))
 

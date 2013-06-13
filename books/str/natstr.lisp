@@ -1,5 +1,5 @@
 ; ACL2 String Library
-; Copyright (C) 2009-2010 Centaur Technology
+; Copyright (C) 2009-2013 Centaur Technology
 ;
 ; Contact:
 ;   Centaur Technology Formal Verification Group
@@ -20,18 +20,8 @@
 
 (in-package "STR")
 (include-book "digitp")
-(include-book "arithmetic/nat-listp" :dir :system)
-(local (include-book "std/lists/revappend" :dir :system))
+(local (include-book "arithmetic"))
 (local (include-book "arithmetic-3/floor-mod/floor-mod" :dir :system))
-(local (include-book "std/lists/rev" :dir :system))
-(local (include-book "std/lists/coerce" :dir :system))
-
-
-(local (defthm digit-listp-of-rev
-         (implies (digit-listp x)
-                  (digit-listp (acl2::rev x)))
-         :hints(("Goal" :in-theory (enable acl2::rev)))))
-
 
 (defsection basic-natchars
   :parents (natchars)
@@ -92,14 +82,13 @@
 
 
 
-
 (defsection natchars
   :parents (numbers)
   :short "Convert a natural number into a list of characters."
   :long "<p>For instance, @('(natchars 123)') is @('(#\\1 #\\2 #\\3)').</p>"
 
   (local (defthm digit-list-value-of-rev-of-basic-natchars
-           (equal (digit-list-value (acl2::rev (basic-natchars n)))
+           (equal (digit-list-value (rev (basic-natchars n)))
                   (nfix n))
            :hints(("Goal"
                    :induct (basic-natchars n)
@@ -150,11 +139,11 @@
   (encapsulate
     ()
     (local (defthm lemma1
-             (equal (equal (acl2::rev x) (list y))
+             (equal (equal (rev x) (list y))
                     (and (consp x)
                          (not (consp (cdr x)))
                          (equal (car x) y)))
-             :hints(("Goal" :in-theory (enable acl2::rev)))))
+             :hints(("Goal" :in-theory (enable rev)))))
 
     (local (defthmd lemma2
              (not (equal (basic-natchars n) '(#\0)))
@@ -184,7 +173,7 @@
   (definlined natstr (n)
     (declare (type integer n)
              (xargs :guard (natp n)))
-    (coerce (natchars n) 'string))
+    (implode (natchars n)))
 
   (local (in-theory (enable natstr)))
 
@@ -193,14 +182,14 @@
     :rule-classes :type-prescription)
 
   (defthm digit-listp-of-natstr
-    (digit-listp (coerce (natstr n) 'list)))
+    (digit-listp (explode (natstr n))))
 
   (defthm natstr-one-to-one
     (equal (equal (natstr n) (natstr m))
            (equal (nfix n) (nfix m))))
 
   (defthm digit-list-value-of-natstr
-    (equal (digit-list-value (coerce (natstr n) 'list))
+    (equal (digit-list-value (explode (natstr n)))
            (nfix n)))
 
   (defthm natstr-nonempty
@@ -213,7 +202,7 @@
   :short "Convert a list of natural numbers into a list of strings."
 
   (defund natstr-list (x)
-    (declare (xargs :guard (acl2::nat-listp x)))
+    (declare (xargs :guard (nat-listp x)))
     (if (atom x)
         nil
       (cons (natstr (car x))

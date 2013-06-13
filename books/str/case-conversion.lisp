@@ -1,5 +1,5 @@
 ; ACL2 String Library
-; Copyright (C) 2009-2010 Centaur Technology
+; Copyright (C) 2009-2013 Centaur Technology
 ;
 ; Contact:
 ;   Centaur Technology Formal Verification Group
@@ -21,17 +21,13 @@
 ;
 ; Original author: Sol Swords <sswords@centtech.com>
 ;
-; Updated by Jared Davis <jared@centtech.com> to add documentation and improve
-; efficiency in some cases.
+; Updated by Jared Davis <jared@centtech.com> to add documentation, improve
+; efficiency in some cases, and integrate into congruences.
 
 (in-package "STR")
-(include-book "char-case")
+(include-book "ieqv")
 (include-book "cat")
 (local (include-book "arithmetic"))
-(local (include-book "std/lists/rev" :dir :system))
-(local (include-book "std/lists/coerce" :dir :system))
-(local (include-book "std/lists/take" :dir :system))
-(local (include-book "std/lists/nthcdr" :dir :system))
 (local (include-book "subseq"))
 
 (local (defthm append-singleton-crock
@@ -89,11 +85,34 @@ logical definition.</p>"
                             upcase-charlist-aux
                             charlist-has-some-down-alpha-p)))
 
+  (defthm upcase-charlist-when-atom
+    (implies (atom x)
+             (equal (upcase-charlist x)
+                    nil)))
+
+  (defthm upcase-charlist-of-cons
+    (equal (upcase-charlist (cons a x))
+           (cons (upcase-char a)
+                 (upcase-charlist x))))
+
+  (defcong icharlisteqv equal (upcase-charlist x) 1
+    :hints(("Goal" :in-theory (enable icharlisteqv))))
+
   (defthm character-listp-upcase-charlist
     (character-listp (upcase-charlist x)))
 
-  (defcong charlisteqv equal (upcase-charlist x) 1
-    :hints(("Goal" :in-theory (enable charlisteqv))))
+  (defthm consp-of-upcase-charlist
+    (equal (consp (upcase-charlist x))
+           (consp x)))
+
+  (defthm upcase-charlist-under-iff
+    (iff (upcase-charlist x)
+         (consp x))
+    :hints(("Goal" :in-theory (enable upcase-charlist))))
+
+  (defthm len-of-upcase-charlist
+    (equal (len (upcase-charlist x))
+           (len x)))
 
   (defthm upcase-charlist-aux-is-upcase-charlist
     (equal (upcase-charlist-aux x acc)
@@ -108,15 +127,9 @@ logical definition.</p>"
 
   (verify-guards upcase-charlist)
 
-  (defthm len-of-upcase-charlist
-    (equal (len (upcase-charlist x))
-           (len x)))
-
   (defthm string-upcase1-is-upcase-charlist
     (equal (acl2::string-upcase1 x)
            (upcase-charlist (double-rewrite x)))))
-
-
 
 
 
@@ -171,11 +184,34 @@ logical definition.</p>"
                             downcase-charlist-aux
                             charlist-has-some-up-alpha-p)))
 
+  (defthm downcase-charlist-when-atom
+    (implies (atom x)
+             (equal (downcase-charlist x)
+                    nil)))
+
+  (defthm downcase-charlist-of-cons
+    (equal (downcase-charlist (cons a x))
+           (cons (downcase-char a)
+                 (downcase-charlist x))))
+
+  (defcong icharlisteqv equal (downcase-charlist x) 1
+    :hints(("Goal" :in-theory (enable icharlisteqv))))
+
   (defthm character-listp-downcase-charlist
     (character-listp (downcase-charlist x)))
 
-  (defcong charlisteqv equal (downcase-charlist x) 1
-    :hints(("Goal" :in-theory (enable charlisteqv))))
+  (defthm consp-of-downcase-charlist
+    (equal (consp (downcase-charlist x))
+           (consp x)))
+
+  (defthm downcase-charlist-under-iff
+    (iff (downcase-charlist x)
+         (consp x))
+    :hints(("Goal" :in-theory (enable downcase-charlist))))
+
+  (defthm len-of-downcase-charlist
+    (equal (len (downcase-charlist x))
+           (len x)))
 
   (defthm downcase-charlist-aux-is-downcase-charlist
     (equal (downcase-charlist-aux x acc)
@@ -188,10 +224,6 @@ logical definition.</p>"
                     x)))
 
   (verify-guards downcase-charlist)
-
-  (defthm len-of-downcase-charlist
-    (equal (len (downcase-charlist x))
-           (len x)))
 
   (defthm string-downcase1-redef
     (equal (acl2::string-downcase1 x)
@@ -252,8 +284,6 @@ least we're better when no work needs to be done:</p>
       (or (down-alpha-p (char x n))
           (string-has-some-down-alpha-p x (+ 1 (lnfix n)) xl))))
 
-
-
   (defund upcase-string-aux (x n xl acc)
     (declare (type string x)
              (type integer n)
@@ -274,7 +304,7 @@ least we're better when no work needs to be done:</p>
   (defund upcase-string (x)
     (declare (type string x)
              (xargs :verify-guards nil))
-    (mbe :logic (coerce (upcase-charlist (coerce x 'list)) 'string)
+    (mbe :logic (implode (upcase-charlist (explode x)))
          :exec
          (let ((xl (length x)))
            (if (not (string-has-some-down-alpha-p x 0 xl))
@@ -283,6 +313,8 @@ least we're better when no work needs to be done:</p>
              (rchars-to-string
               (upcase-string-aux x 0 xl nil))))))
 
+  (local (in-theory (enable upcase-string)))
+
   (defthm string-has-some-down-alpha-p-redef
     (implies (and (stringp x)
                   (natp n)
@@ -290,7 +322,7 @@ least we're better when no work needs to be done:</p>
                   (= xl (length x))
                   (<= n xl))
              (equal (string-has-some-down-alpha-p x n xl)
-                    (charlist-has-some-down-alpha-p (nthcdr n (coerce x 'list)))))
+                    (charlist-has-some-down-alpha-p (nthcdr n (explode x)))))
     :hints(("Goal" :in-theory (enable string-has-some-down-alpha-p
                                       charlist-has-some-down-alpha-p))))
 
@@ -301,27 +333,30 @@ least we're better when no work needs to be done:</p>
                   (= xl (length x))
                   (<= n xl))
              (equal (upcase-string-aux x n xl acc)
-                    (revappend (upcase-charlist (nthcdr n (coerce x 'list)))
+                    (revappend (upcase-charlist (nthcdr n (explode x)))
                                acc)))
     :hints(("Goal" :in-theory (enable upcase-string-aux
                                       upcase-charlist))))
 
   (verify-guards upcase-string)
 
+  (defcong istreqv equal (upcase-string x) 1)
+
   (defthm len-of-upcase-string
-    (equal (len (coerce (upcase-string x) 'list))
-           (len (coerce x 'list)))
-    :hints(("Goal" :in-theory (enable upcase-string))))
+    (equal (len (explode (upcase-string x)))
+           (len (explode x))))
 
   (defthm length-of-upcase-string
     (equal (length (upcase-string x))
-           (length (coerce x 'list))))
+           (len (explode x))))
+
+  (defthm equal-of-empty-string-with-upcase-string
+    (equal (equal ""  (upcase-string x))
+           (atom (explode x))))
 
   (defthm string-upcase-is-upcase-string
     (equal (acl2::string-upcase x)
-           (upcase-string x))
-    :hints(("Goal" :in-theory (enable upcase-string)))))
-
+           (upcase-string (double-rewrite x)))))
 
 
 
@@ -377,13 +412,15 @@ make this fast.</p>"
   (defund downcase-string (x)
     (declare (type string x)
              (xargs :verify-guards nil))
-    (mbe :logic (coerce (downcase-charlist (coerce x 'list)) 'string)
+    (mbe :logic (implode (downcase-charlist (explode x)))
          :exec
          (let ((xl (length x)))
            (if (not (string-has-some-up-alpha-p x 0 xl))
                ;; Avoid consing when no characters need to be converted.
                x
              (rchars-to-string (downcase-string-aux x 0 xl nil))))))
+
+  (local (in-theory (enable downcase-string)))
 
   (defthm string-has-some-up-alpha-p-redef
     (implies (and (stringp x)
@@ -392,7 +429,7 @@ make this fast.</p>"
                   (= xl (length x))
                   (<= n xl))
              (equal (string-has-some-up-alpha-p x n xl)
-                    (charlist-has-some-up-alpha-p (nthcdr n (coerce x 'list)))))
+                    (charlist-has-some-up-alpha-p (nthcdr n (explode x)))))
     :hints(("Goal" :in-theory (enable string-has-some-up-alpha-p
                                       charlist-has-some-up-alpha-p))))
 
@@ -403,26 +440,30 @@ make this fast.</p>"
                   (= xl (length x))
                   (<= n xl))
              (equal (downcase-string-aux x n xl acc)
-                    (revappend (downcase-charlist (nthcdr n (coerce x 'list)))
+                    (revappend (downcase-charlist (nthcdr n (explode x)))
                                acc)))
     :hints(("Goal" :in-theory (enable downcase-string-aux
                                       downcase-charlist))))
 
   (verify-guards downcase-string)
 
+  (defcong istreqv equal (downcase-string x) 1)
+
   (defthm len-of-downcase-string
-    (equal (len (coerce (downcase-string x) 'list))
-           (len (coerce x 'list)))
-    :hints(("Goal" :in-theory (enable downcase-string))))
+    (equal (len (explode (downcase-string x)))
+           (len (explode x))))
 
   (defthm length-of-downcase-string
     (equal (length (downcase-string x))
-           (len (coerce x 'list))))
+           (len (explode x))))
+
+  (defthm equal-of-empty-string-with-downcase-string
+    (equal (equal ""  (downcase-string x))
+           (atom (explode x))))
 
   (defthm string-downcase-is-downcase-string
     (equal (acl2::string-downcase x)
-           (downcase-string x))
-    :hints(("Goal" :in-theory (enable downcase-string)))))
+           (downcase-string (double-rewrite x)))))
 
 
 
@@ -509,7 +550,8 @@ make this fast.</p>"
     (mbe :logic
          (if (atom x)
              nil
-           (cons (upcase-char (car x)) (cdr x)))
+           (cons (upcase-char (car x))
+                 (make-character-list (cdr x))))
          :exec
          (cond ((atom x)
                 nil)
@@ -519,6 +561,9 @@ make this fast.</p>"
                 x))))
 
   (local (in-theory (enable upcase-first-charlist)))
+
+  (defcong charlisteqv  equal        (upcase-first-charlist x) 1)
+  (defcong icharlisteqv icharlisteqv (upcase-first-charlist x) 1)
 
   (defthm upcase-first-charlist-when-atom
     (implies (atom x)
@@ -531,7 +576,16 @@ make this fast.</p>"
 
   (defthm len-of-upcase-first-charlist
     (equal (len (upcase-first-charlist x))
-           (len x))))
+           (len x)))
+
+  (defthm consp-of-upcase-first-charlist
+    (equal (consp (upcase-first-charlist x))
+           (consp x)))
+
+  (defthm upcase-first-charlist-under-iff
+    (iff (upcase-first-charlist x)
+         (consp x))))
+
 
 
 
@@ -550,7 +604,7 @@ unchanged when its first character is not a lower-case letter.</p>"
     (declare (type string x)
              (xargs :verify-guards nil))
     (mbe :logic
-         (coerce (upcase-first-charlist (coerce x 'list)) 'string)
+         (implode (upcase-first-charlist (explode x)))
          :exec
          (if (eql (length x) 0)
              x
@@ -568,8 +622,10 @@ unchanged when its first character is not a lower-case letter.</p>"
 
   (defthm stringp-of-upcase-first
     (stringp (upcase-first x))
-    :rule-classes :type-prescription))
+    :rule-classes :type-prescription)
 
+  (defcong streqv equal (upcase-first x) 1)
+  (defcong istreqv istreqv (upcase-first x) 1))
 
 
 
@@ -582,7 +638,8 @@ unchanged when its first character is not a lower-case letter.</p>"
     (mbe :logic
          (if (atom x)
              nil
-           (cons (downcase-char (car x)) (cdr x)))
+           (cons (downcase-char (car x))
+                 (make-character-list (cdr x))))
          :exec
          (cond ((atom x)
                 nil)
@@ -592,6 +649,9 @@ unchanged when its first character is not a lower-case letter.</p>"
                 x))))
 
   (local (in-theory (enable downcase-first-charlist)))
+
+  (defcong charlisteqv  equal        (downcase-first-charlist x) 1)
+  (defcong icharlisteqv icharlisteqv (downcase-first-charlist x) 1)
 
   (defthm downcase-first-charlist-when-atom
     (implies (atom x)
@@ -604,7 +664,16 @@ unchanged when its first character is not a lower-case letter.</p>"
 
   (defthm len-of-downcase-first-charlist
     (equal (len (downcase-first-charlist x))
-           (len x))))
+           (len x)))
+
+  (defthm consp-of-downcase-first-charlist
+    (equal (consp (downcase-first-charlist x))
+           (consp x)))
+
+  (defthm downcase-first-charlist-under-iff
+    (iff (downcase-first-charlist x)
+         (consp x))))
+
 
 
 (defsection downcase-first
@@ -622,7 +691,7 @@ unchanged when its first character is not an upper-case letter.</p>"
     (declare (type string x)
              (xargs :verify-guards nil))
     (mbe :logic
-         (coerce (downcase-first-charlist (coerce x 'list)) 'string)
+         (implode (downcase-first-charlist (explode x)))
          :exec
          (if (eql (length x) 0)
              x
@@ -640,5 +709,9 @@ unchanged when its first character is not an upper-case letter.</p>"
 
   (defthm stringp-of-downcase-first
     (stringp (downcase-first x))
-    :rule-classes :type-prescription))
+    :rule-classes :type-prescription)
+
+  (defcong streqv equal (downcase-first x) 1)
+  (defcong istreqv istreqv (downcase-first x) 1))
+
 

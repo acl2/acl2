@@ -42,7 +42,7 @@ adding a slash to between them only if @('dir') does not end with a slash."
     (cat dir
          (if (vl-ends-with-directory-separatorp dir)
              ""
-           (coerce (list ACL2::*directory-separator*) 'string))
+           (implode (list ACL2::*directory-separator*)))
          filename))
 
   (defthm stringp-of-vl-extend-pathname

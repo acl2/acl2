@@ -1,5 +1,5 @@
 ; ACL2 String Library
-; Copyright (C) 2009-2010 Centaur Technology
+; Copyright (C) 2009-2013 Centaur Technology
 ;
 ; Contact:
 ;   Centaur Technology Formal Verification Group
@@ -22,16 +22,16 @@
 (include-book "strprefixp")
 (local (include-book "arithmetic"))
 
+; BOZO should probably rewrite this to have a nice listrpos function sort of
+; thing.
+
 (defsection strrpos-fast
   :parents (strrpos)
   :short "Fast implementation of @(see strrpos)."
 
   (defund strrpos-fast (x y n xl yl)
-    (declare (type string x)
-             (type string y)
-             (type integer n)
-             (type integer xl)
-             (type integer yl)
+    (declare (type string x y)
+             (type (integer 0 *) n xl yl)
              (xargs :guard (and (stringp x)
                                 (stringp y)
                                 (natp xl)
@@ -42,23 +42,23 @@
                                 (= yl (length y)))
                     :measure (nfix n)))
     ;; N goes from YL to 0.
-    (cond ((mbe :logic (prefixp (coerce x 'list)
-                                (nthcdr n (coerce y 'list)))
+    (cond ((mbe :logic (prefixp (explode x)
+                                (nthcdr n (explode y)))
                 :exec (strprefixp-impl (the string x)
                                        (the string y)
                                        (the integer 0)
-                                       (the integer n)
-                                       (the integer xl)
-                                       (the integer yl)))
+                                       (the (integer 0 *) n)
+                                       (the (integer 0 *) xl)
+                                       (the (integer 0 *) yl)))
            (lnfix n))
           ((zp n)
            nil)
           (t
            (strrpos-fast (the string x)
                          (the string y)
-                         (+ -1 (lnfix n))
-                         (the integer xl)
-                         (the integer yl)))))
+                         (the (integer 0 *) (+ -1 (lnfix n)))
+                         (the (integer 0 *) xl)
+                         (the (integer 0 *) yl)))))
 
   (local (in-theory (enable strrpos-fast)))
 
@@ -74,7 +74,7 @@
     :rule-classes :linear)
 
   (defthm strrpos-fast-when-empty
-    (implies (and (not (consp (coerce x 'list)))
+    (implies (and (not (consp (explode x)))
                   (equal xl (length x))
                   (equal yl (length y))
                   (natp n))
@@ -100,15 +100,14 @@ string.  As a consequence, @('(strrpos \"\" x)') is (length x) for all
 @('x').</p>"
 
   (definlined strrpos (x y)
-    (declare (type string x)
-             (type string y))
+    (declare (type string x y))
     (let ((yl (length (the string y))))
-      (declare (type integer yl))
+      (declare (type (integer 0 *) yl))
       (strrpos-fast (the string x)
                     (the string y)
-                    yl
-                    (the integer (length (the string x)))
-                    yl)))
+                    (the (integer 0 *) yl)
+                    (the (integer 0 *) (length (the string x)))
+                    (the (integer 0 *) yl))))
 
   (local (in-theory (enable strrpos strrpos-fast)))
 
@@ -130,24 +129,24 @@ string.  As a consequence, @('(strrpos \"\" x)') is (length x) for all
                            (= xl (length x))
                            (= yl (length y))
                            (strrpos-fast x y n xl yl))
-                      (prefixp (coerce x 'list)
+                      (prefixp (explode x)
                                (nthcdr (strrpos-fast x y n xl yl)
-                                       (coerce y 'list))))
+                                       (explode y))))
              :hints(("Goal" :induct (strrpos-fast x y n xl yl)))))
 
     (defthm prefixp-of-strrpos
       (implies (and (strrpos x y)
                     (force (stringp x))
                     (force (stringp y)))
-               (prefixp (coerce x 'list)
-                        (nthcdr (strrpos x y) (coerce y 'list))))))
+               (prefixp (explode x)
+                        (nthcdr (strrpos x y) (explode y))))))
 
   (encapsulate
     ()
     (local (defun my-induction (x y n m xl yl)
              (declare (xargs :measure (nfix n)))
-             (cond ((prefixp (coerce x 'list)
-                             (nthcdr n (coerce y 'list)))
+             (cond ((prefixp (explode x)
+                             (nthcdr n (explode y)))
                     nil)
                    ((zp n)
                     (list x y n m xl yl))
@@ -170,8 +169,8 @@ string.  As a consequence, @('(strrpos \"\" x)') is (length x) for all
                            (<= n (length y))
                            (= xl (length x))
                            (= yl (length y))
-                           (prefixp (coerce x 'list)
-                                    (nthcdr m (coerce y 'list))))
+                           (prefixp (explode x)
+                                    (nthcdr m (explode y))))
                       (and (natp (strrpos-fast x y n xl yl))
                            (>= (strrpos-fast x y n xl yl) m)))
              :hints(("Goal"
@@ -179,8 +178,8 @@ string.  As a consequence, @('(strrpos \"\" x)') is (length x) for all
                      :do-not '(generalize fertilize)))))
 
     (defthm completeness-of-strrpos
-      (implies (and (prefixp (coerce x 'list)
-                             (nthcdr m (coerce y 'list)))
+      (implies (and (prefixp (explode x)
+                             (nthcdr m (explode y)))
                     (<= m (len y))
                     (force (natp m))
                     (force (stringp x))
@@ -193,7 +192,7 @@ string.  As a consequence, @('(strrpos \"\" x)') is (length x) for all
     (implies (and (force (stringp x))
                   (force (stringp y)))
              (<= (strrpos x y)
-                 (len (coerce y 'list))))
+                 (len (explode y))))
     :rule-classes ((:rewrite) (:linear)))
 
   (encapsulate
@@ -217,7 +216,7 @@ string.  As a consequence, @('(strrpos \"\" x)') is (length x) for all
                     (force (stringp x))
                     (force (stringp y)))
                (< (strrpos x y)
-                  (len (coerce y 'list))))
+                  (len (explode y))))
       :rule-classes ((:rewrite) (:linear)))))
 
 

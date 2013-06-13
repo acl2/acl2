@@ -162,7 +162,7 @@ letters, numbers, and underscores.")
   (defthm lex-whitespace-reconstruction
     (b* (((mv tok new-sin) (lex-whitespace sin)))
       (implies tok
-               (equal (append (coerce (token->text tok) 'list)
+               (equal (append (explode (token->text tok))
                               (strin-left new-sin))
                       (strin-left sin))))))
 
@@ -190,7 +190,7 @@ two separate @('+') tokens.</p>"
   (defthm lex-punctuation-reconstruction
     (b* (((mv tok new-sin) (lex-punctuation sin)))
       (implies tok
-               (equal (append (coerce (token->text tok) 'list)
+               (equal (append (explode (token->text tok))
                               (strin-left new-sin))
                       (strin-left sin))))))
 
@@ -231,7 +231,7 @@ token, as appropriate."
   (defthm lex-id/keyword-reconstruction
     (b* (((mv tok new-sin) (lex-id/keyword sin)))
       (implies tok
-               (equal (append (coerce (token->text tok) 'list)
+               (equal (append (explode (token->text tok))
                               (strin-left new-sin))
                       (strin-left sin))))))
 
@@ -241,7 +241,7 @@ token, as appropriate."
   :parents (example-lexer)
   :short "A string with just the newline character."
   (defmacro newline-string ()
-    (coerce (list #\Newline) 'string)))
+    (implode (list #\Newline))))
 
 (define lex-comment
   :parents (example-lexer)
@@ -269,7 +269,7 @@ token, as appropriate."
   (defthm lex-comment-reconstruction
     (b* (((mv tok new-sin) (lex-comment sin)))
       (implies tok
-               (equal (append (coerce (token->text tok) 'list)
+               (equal (append (explode (token->text tok))
                               (strin-left new-sin))
                       (strin-left sin))))))
 
@@ -305,7 +305,7 @@ token, as appropriate."
   (defthm lex1-reconstruction
     (b* (((mv tok new-sin) (lex1 sin)))
       (implies tok
-               (equal (append (coerce (token->text tok) 'list)
+               (equal (append (explode (token->text tok))
                               (strin-left new-sin))
                       (strin-left sin))))))
 
@@ -364,7 +364,7 @@ token, as appropriate."
     (b* (((mv okp tokens ?new-sin) (lex* sin)))
       (implies okp
                (equal (tokenlist-all-text tokens)
-                      (coerce (strin-left sin) 'string))))))
+                      (implode (strin-left sin)))))))
 
 
 (define lex-main
@@ -399,7 +399,7 @@ message."
     (b* (((mv errmsg tokens ?new-sin) (lex-main sin)))
       (implies (not errmsg)
                (equal (tokenlist-all-text tokens)
-                      (coerce (strin-left sin) 'string))))))
+                      (implode (strin-left sin)))))))
 
 
 (define lex-string

@@ -15,9 +15,9 @@
 ; This file was originally part of the Unicode library.
 
 (in-package "ACL2")
-(include-book "xdoc/top" :dir :system)
+(include-book "list-fix")
 (local (include-book "revappend"))
-(local (include-book "coerce"))
+(local (include-book "str/coerce" :dir :system))
 
 (defsection std/lists/reverse
   :parents (std/lists reverse)
@@ -43,15 +43,83 @@ some reason, you have disabled @('reverse') itself.</p>"
     (equal (true-listp (reverse x))
            (not (stringp x))))
 
-  (defthm equal-of-reverses-when-strings
-    (implies (and (stringp x)
-                  (stringp y))
-             (equal (equal (reverse x) (reverse y))
-                    (equal x y))))
+  ;; ACL2's built-in type-prescription rule is weaker than it should be:
+  ;;
+  ;; (OR (CONSP (REVERSE X))
+  ;;     (EQUAL (REVERSE X) NIL)
+  ;;     (STRINGP (REVERSE X)))
+  ;;
+  ;; So let's install a better one...
 
-  (defthm equal-of-reverses-when-lists
-    (implies (and (true-listp x)
-                  (true-listp y))
-             (equal (equal (reverse x) (reverse y))
-                    (equal x y)))))
+  (in-theory (disable (:type-prescription reverse)))
+
+  (defthm reverse-type
+    (or (stringp (reverse x))
+        (true-listp (reverse x)))
+    :rule-classes :type-prescription)
+
+  (local (defthm len-zero
+           (equal (equal 0 (len x))
+                  (atom x))))
+
+  (local
+   (defsection revappend-lemma
+
+     (local (defun ind (a b x y)
+              (if (or (atom a)
+                      (atom b))
+                  (list a b x y)
+                (ind (cdr a) (cdr b)
+                     (cons (car a) x)
+                     (cons (car b) y)))))
+
+     (local (defthm l0
+              (implies (and (equal (len a) (len b))
+                            (equal (len x) (len y)))
+                       (equal (equal (revappend a x)
+                                     (revappend b y))
+                              (and (equal (list-fix a) (list-fix b))
+                                   (equal x y))))
+              :hints(("Goal" :induct (ind a b x y)))))
+
+     (local (defthm l1
+              (implies (and (not (equal (len a) (len b)))
+                            (equal (len x) (len y)))
+                       (equal (equal (revappend a x)
+                                     (revappend b y))
+                              nil))
+              :hints(("Goal"
+                      :in-theory (disable len-of-revappend)
+                      :use ((:instance len-of-revappend (x a) (y x))
+                            (:instance len-of-revappend (x b) (y y)))))))
+
+     (local (defthm l2
+              (implies (not (equal (len a) (len b)))
+                       (not (equal (list-fix a) (list-fix b))))
+              :hints(("Goal"
+                      :in-theory (disable len-of-list-fix)
+                      :use ((:instance len-of-list-fix (x a))
+                            (:instance len-of-list-fix (x b)))))))
+
+     (defthm revappend-lemma
+       (implies (equal (len x) (len y))
+                (equal (equal (revappend a x)
+                              (revappend b y))
+                       (and (equal (list-fix a) (list-fix b))
+                            (equal x y))))
+       :hints(("Goal"
+               :in-theory (disable l0 l1)
+               :use ((:instance l0)
+                     (:instance l1)))))))
+
+  (defthm equal-of-reverses
+    ;; And this is why we should never use "reverse."
+    (equal (equal (reverse x) (reverse y))
+           (if (or (stringp x) (stringp y))
+               (and (stringp x)
+                    (stringp y)
+                    (equal x y))
+             (equal (list-fix x) (list-fix y))))
+    :hints(("Goal" :cases ((stringp x)
+                           (stringp y))))))
 

@@ -295,10 +295,6 @@ abc
 
 ; Worker Threads --------------------------------------------------------------
 
-(defun json-encode (x)
-  (let ((acc (json-encode-main x nil)))
-    (nreverse (coerce acc 'string))))
-
 (defun worker-write-return (type ret-list stream)
   (case type
     (:lisp    (send-message "RETURN" (prin1-to-string (car ret-list)) stream))

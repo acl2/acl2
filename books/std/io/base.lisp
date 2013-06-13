@@ -23,6 +23,7 @@
 (in-package "ACL2")
 (include-book "xdoc/top" :dir :system)
 (include-book "system/f-put-global" :dir :system)
+(local (include-book "str/coerce" :dir :system))
 
 (defsection bytep
 
@@ -218,7 +219,6 @@ explanation of why opening the file failed.</p>"
 
   (local (include-book "std/misc/explode-nonnegative-integer" :dir :system))
   (local (include-book "std/misc/intern-in-package-of-symbol" :dir :system))
-  (local (include-book "std/lists/coerce" :dir :system))
 
   (local (defthm lemma-0
            (implies (and (base10-digit-char-listp y1)
@@ -297,10 +297,9 @@ explanation of why opening the file failed.</p>"
                          (character-listp x))
                     (equal (equal (make-input-channel filename clock)
                                   (intern-in-package-of-symbol
-                                   (coerce (append x (cons #\- (explode-atom 0 10)))
-                                           'string)
+                                   (implode (append x (cons #\- (explode-atom 0 10))))
                                    'ACL2-INPUT-CHANNEL::A-RANDOM-SYMBOL-FOR-INTERN))
-                           (and (equal (coerce filename 'list) x)
+                           (and (equal (explode filename) x)
                                 (equal clock 0))))
            :hints(("Goal" :in-theory (disable (explode-atom))))))
 
@@ -308,8 +307,8 @@ explanation of why opening the file failed.</p>"
            (implies (and (syntaxp (quotep list))
                          (character-listp list)
                          (stringp x))
-                    (equal (equal (coerce x 'list) list)
-                           (equal x (coerce list 'string))))))
+                    (equal (equal (explode x) list)
+                           (equal x (implode list))))))
 
   (local (defthm make-input-channel-standard-character-input-0
            (implies (and (stringp filename)
@@ -323,7 +322,7 @@ explanation of why opening the file failed.</p>"
                    :use ((:instance main-lemma
                                     (clock clock)
                                     (filename filename)
-                                    (x (coerce "STANDARD-CHARACTER-INPUT" 'list))))))))
+                                    (x (explode "STANDARD-CHARACTER-INPUT"))))))))
 
   (local (defthm make-input-channel-standard-object-input-0
            (implies (and (stringp filename)
@@ -337,7 +336,7 @@ explanation of why opening the file failed.</p>"
                    :use ((:instance main-lemma
                                     (clock clock)
                                     (filename filename)
-                                    (x (coerce "STANDARD-OBJECT-INPUT" 'list))))))))
+                                    (x (explode "STANDARD-OBJECT-INPUT"))))))))
 
 
   (local (defthm open-input-channel-channel-elim
@@ -1173,7 +1172,7 @@ output channels when you are done with them to avoid resource leaks.</p>"
                     (charlist-suffixp (cdr x) suff)))))
 
   (local (defun symb-ends-in-dash-zero (x)
-           (charlist-suffixp (coerce (symbol-name x) 'list)
+           (charlist-suffixp (explode (symbol-name x))
                              '(#\- #\0))))
 
   (local (defthm suffixp-dash-zero-implies-member-dash

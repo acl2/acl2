@@ -1,5 +1,5 @@
 ; ACL2 String Library
-; Copyright (C) 2009-2010 Centaur Technology
+; Copyright (C) 2009-2013 Centaur Technology
 ;
 ; Contact:
 ;   Centaur Technology Formal Verification Group
@@ -208,14 +208,14 @@ longer strings.</p>
 <p>Logically, this is identical to:</p>
 
 @({
-  (icharlist< (coerce x 'list) (coerce y 'list))
+  (icharlist< (explode x) (explode y))
 })
 
 <p>But we use a more efficient implementation which avoids coercing the strings
 into lists.</p>
 
 <p>NOTE: for reasoning, we leave this function enabled and prefer to work with
-@(see icharlist<) of the coerces as our normal form.</p>"
+@(see icharlist<) of the explodes as our normal form.</p>"
 
   (defund istr<-aux (x y n xl yl)
     (declare (type string x)
@@ -279,7 +279,7 @@ into lists.</p>
              (type string y)
              (xargs :verify-guards nil))
     (mbe :logic
-         (icharlist< (coerce x 'list) (coerce y 'list))
+         (icharlist< (explode x) (explode y))
 
          :exec
          (istr<-aux (the string x)
@@ -313,5 +313,8 @@ into lists.</p>
                                 (nthcdr n (coerce y 'list)))))
     :hints(("Goal" :in-theory (enable istr<-aux icharlist<))))
 
-  (verify-guards istr<$inline))
+  (verify-guards istr<$inline)
+
+  (defcong istreqv equal (istr< x y) 1)
+  (defcong istreqv equal (istr< x y) 2))
 

@@ -26,7 +26,7 @@
 (local (include-book "std/misc/explode-atom" :dir :system))
 (local (include-book "centaur/bitops/ihsext-basics" :dir :system))
 (local (include-book "misc/assert" :dir :system))
-
+(local (include-book "std/typed-lists/character-listp" :dir :system))
 
 (defsection json-encoding
   :parents (bridge)
@@ -216,9 +216,9 @@ e.g., using \\n or \\t would be more readable.</p>"
              (character-listp (json-encode-weird-char x acc))))
 
   (local (defun test (x)
-           (let* ((acc (reverse (coerce "abc " 'list)))
+           (let* ((acc (reverse (explode "abc ")))
                   (acc (json-encode-weird-char x acc)))
-             (reverse (coerce acc 'string)))))
+             (str::rchars-to-string acc))))
 
   (local
    (progn
@@ -315,16 +315,16 @@ character list."
                   (<= n xl)
                   (eql xl (length x)))
              (equal (json-encode-str-aux x n xl acc)
-                    (json-encode-chars (nthcdr n (coerce x 'list)) acc)))
+                    (json-encode-chars (nthcdr n (explode x)) acc)))
     :hints(("Goal"
             :in-theory (enable json-encode-str-aux
                                json-encode-chars)
             :induct (json-encode-str-aux x n xl acc)
-            :expand (json-encode-chars (nthcdr n (coerce x 'list)) acc))))
+            :expand (json-encode-chars (nthcdr n (explode x)) acc))))
 
   (definline json-encode-str (x acc)
     (declare (type string x))
-    (mbe :logic (json-encode-chars (coerce x 'list) acc)
+    (mbe :logic (json-encode-chars (explode x) acc)
          :exec (json-encode-str-aux x 0 (length x) acc))))
 
 
@@ -363,9 +363,9 @@ character list."
              (character-listp (json-encode-atom x acc))))
 
   (local (defun test (x)
-           (let* ((acc (reverse (coerce "abc " 'list)))
+           (let* ((acc (reverse (explode "abc ")))
                   (acc (json-encode-atom x acc)))
-             (reverse (coerce acc 'string)))))
+             (str::rchars-to-string acc))))
 
   (local
    (progn
@@ -475,10 +475,10 @@ to fix up atoms.</p>"
            (string-append-lst (str::strtok x '(#\Newline)))))
 
   (local (defun test (x)
-           (let* ((acc (reverse (coerce "abc " 'list)))
+           (let* ((acc (reverse (explode "abc ")))
                   (acc (json-encode-main x acc)))
              (collapse-newlines
-              (reverse (coerce acc 'string))))))
+              (str::rchars-to-string acc)))))
 
   ;; Same atom tests as above
   (local
@@ -590,9 +590,8 @@ representation, which it returns as a string.</p>
 getting the characters into the right order.</p>"
 
   (defund json-encode (x)
-    "Gets nreverse optimization in bridge-raw.lsp"
     (let ((acc (json-encode-main x nil)))
-      (reverse (coerce acc 'string))))
+      (str::rchars-to-string acc)))
 
   (local (in-theory (enable json-encode)))
 

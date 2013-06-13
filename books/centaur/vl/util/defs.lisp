@@ -64,7 +64,7 @@ working with Verilog modules.")
   :short "A string consisting of a newline character."
 
   (defconst *nls*
-    (coerce (list #\Newline) 'string)))
+    (implode (list #\Newline))))
 
 
 
@@ -778,7 +778,7 @@ symbol in the ACL2 package, e.g., @('ACL2::*foo*')."
   :long "<p>Such names are the convention for naming modules in E.</p>"
 
   (intern-in-package-of-symbol
-   (coerce (cons #\* (str::append-chars name (list #\*))) 'string)
+   (implode (cons #\* (str::append-chars name (list #\*))))
    'ACL2::foo)
 
   ///

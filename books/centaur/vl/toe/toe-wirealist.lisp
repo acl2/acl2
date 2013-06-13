@@ -277,11 +277,11 @@ replacements.  This should not be too confusing since, e.g., in Verilog
                          (stringp name))
                     (equal (equal x name)
                            (and (stringp x)
-                                (equal (coerce x 'list) (coerce name 'list)))))
+                                (equal (explode x) (explode name)))))
            :hints(("Goal"
-                   :in-theory (disable acl2::coerce-inverse-2)
-                   :use ((:instance acl2::coerce-inverse-2 (acl2::x x))
-                         (:instance acl2::coerce-inverse-2 (acl2::x name)))))))
+                   :in-theory (disable str::implode-of-explode)
+                   :use ((:instance str::implode-of-explode (str::x x))
+                         (:instance str::implode-of-explode (str::x name)))))))
 
   (local (defthm open-equal-len
            (implies (syntaxp (quotep n))
@@ -304,7 +304,8 @@ replacements.  This should not be too confusing since, e.g., in Verilog
   (local (in-theory (enable len)))
 
   (definlined vl-plain-wire-name (name)
-    (declare (xargs :guard (stringp name)))
+    (declare (xargs :guard (stringp name)
+                    :guard-hints(("Goal" :in-theory (disable str::explode-under-iff)))))
     (mbe :logic
          (cond ((equal name "T")
                 (make-vl-emodwire :basename "T" :index 0))

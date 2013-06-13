@@ -568,7 +568,7 @@ vl-hid-indicies-resolved-p).</p>"
            ;; natural number.
            (cat (vl-hidpiece->name (vl-atom->guts (first args)))
                 "["
-                (coerce (explode-atom (vl-resolved->val (second args)) 10) 'string)
+                (implode (explode-atom (vl-resolved->val (second args)) 10))
                 "]"
                 (vl-flatten-hidexpr (third args))))
 

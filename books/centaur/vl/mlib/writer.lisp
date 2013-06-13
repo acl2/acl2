@@ -84,19 +84,19 @@ should hold for any valid Verilog that we parse or generate.</p>"
        ((when (zp len))
         (raise "Empty identifier")
         "")
+       ;; BOZO it'd be really good to avoid this coerce
+       (chars (explode x))
        ((when (and (vl-simple-id-head-p (char x 0))
                    (vl-simple-id-tail-string-p x 1 len)
-                   (not (member #\$ (coerce x 'list)))))
+                   (not (member #\$ chars))))
         ;; A simple identifier, nothing to add.
         (string-fix x))
        ;; Escaped identifier.  This isn't efficient but this should be pretty
        ;; unusual.
-       (chars (coerce x 'list))
        ((when (member #\Space chars))
         (raise "Identifier name has spaces?  ~x0" x)
         ""))
-    (coerce (cons #\\ (append chars (list #\Space)))
-            'string)))
+    (implode (cons #\\ (append chars (list #\Space))))))
 
 (define vl-print-modname ((x stringp) &key (ps 'ps))
   :parents (verilog-printing)

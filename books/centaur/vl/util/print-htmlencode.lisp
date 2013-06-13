@@ -19,7 +19,7 @@
 ; Original author: Jared Davis <jared@centtech.com>
 
 (in-package "VL")
-(include-book "tools/bstar" :dir :system)
+(include-book "str/cat" :dir :system)
 (local (include-book "misc/assert" :dir :system))
 (local (include-book "arithmetic"))
 
@@ -38,12 +38,12 @@
 ; not be the desired behavior in certain applications, but is very convenient
 ; for what we are trying to accomplish in VL.
 
-(defconst *vl-html-&nbsp*   (coerce "&nbsp;" 'list))
-(defconst *vl-html-newline* (append (coerce "<br/>" 'list) (list #\Newline)))
-(defconst *vl-html-&lt*     (coerce "&lt;"   'list))
-(defconst *vl-html-&gt*     (coerce "&gt;"   'list))
-(defconst *vl-html-&amp*    (coerce "&amp;"  'list))
-(defconst *vl-html-&quot*   (coerce "&quot;" 'list))
+(defconst *vl-html-&nbsp*   (explode "&nbsp;"))
+(defconst *vl-html-newline* (append (explode "<br/>") (list #\Newline)))
+(defconst *vl-html-&lt*     (explode "&lt;"))
+(defconst *vl-html-&gt*     (explode "&gt;"))
+(defconst *vl-html-&amp*    (explode "&amp;"))
+(defconst *vl-html-&quot*   (explode "&quot;"))
 
 
 (defund repeated-revappend (n x y)
@@ -170,8 +170,8 @@ tab:	  <boo> & \"foo\" blah blah")
                      ((mv str-col str-ans)
                       (vl-html-encode-string-aux x 0 (length x) 0 8 nil))
                      ((mv char-col char-ans)
-                      (vl-html-encode-chars-aux (coerce x 'list) 0 8 nil))
-                     (- (cw "~s0~%" (coerce (reverse str-ans) 'string))))
+                      (vl-html-encode-chars-aux (explode x) 0 8 nil))
+                     (- (cw "~s0~%" (str::rchars-to-string str-ans))))
                     (and (equal str-col char-col)
                          (equal str-ans char-ans)))))
 
@@ -213,19 +213,10 @@ tab:	  <boo> & \"foo\" blah blah")
   (mv-let (col acc)
           (vl-html-encode-string-aux x 0 (length x) 0 tabsize nil)
           (declare (ignore col))
-          (reverse (coerce acc 'string))))
+          (str::rchars-to-string acc)))
 
 (defthm stringp-of-vl-html-encode-string
   (stringp (vl-html-encode-string x tabsize))
   :rule-classes :type-prescription
   :hints(("Goal" :in-theory (enable vl-html-encode-string))))
 
-(defttag vl-optimize)
-(never-memoize vl-html-encode-string-aux)
-(progn! (set-raw-mode t)
-        (defun vl-html-encode-string (x tabsize)
-          (mv-let (col acc)
-            (vl-html-encode-string-aux x 0 (length x) 0 tabsize nil)
-            (declare (ignore col))
-            (nreverse (coerce acc 'string)))))
-(defttag nil)

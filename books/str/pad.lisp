@@ -1,5 +1,5 @@
 ; ACL2 String Library
-; Copyright (C) 2009-2010 Centaur Technology
+; Copyright (C) 2009-2013 Centaur Technology
 ;
 ; Contact:
 ;   Centaur Technology Formal Verification Group
@@ -20,6 +20,8 @@
 
 (in-package "STR")
 (include-book "cat")
+(include-book "ieqv")
+(local (include-book "std/lists/repeat" :dir :system))
 (local (include-book "std/lists/take" :dir :system))
 (local (include-book "arithmetic"))
 
@@ -49,28 +51,30 @@ performed.</p>"
 
   (defund rpadchars (x len)
     (declare (xargs :guard (and (character-listp x)
-                                (natp len))
-                    :guard-hints (("Goal" :in-theory (enable acl2::repeat))))
+                                (natp len)))
              (type integer len))
     (mbe :logic
-         (append x (make-list (nfix (- (nfix len) (len x)))
-                              :initial-element #\Space))
+         (append (make-character-list x)
+                 (repeat #\Space (nfix (- (nfix len) (len x)))))
          :exec
          (let* ((x-len (length (the list x)))
                 (diff  (- len x-len)))
            (if (> diff 0)
-               (append x (make-list diff :initial-element #\Space))
+               (append x (repeat #\Space diff))
              x))))
 
   (local (in-theory (enable rpadchars)))
 
   (defthm character-listp-of-rpadchars
-    (implies (force (character-listp x))
-             (character-listp (rpadchars x len))))
+    (character-listp (rpadchars x len)))
 
   (defthm len-of-rpadchars
     (equal (len (rpadchars x len))
-           (max (len x) (nfix len)))))
+           (max (len x) (nfix len))))
+
+  (defcong charlisteqv  equal        (rpadchars x len) 1)
+  (defcong icharlisteqv icharlisteqv (rpadchars x len) 1))
+
 
 
 (defsection rpadstr
@@ -97,22 +101,20 @@ coercion is performed.</p>"
 
   (defund rpadstr (x len)
     (declare (xargs :guard (and (stringp x)
-                                (natp len))
-                    :guard-debug t)
+                                (natp len)))
              (type string x)
              (type integer len))
     (mbe :logic
-         (coerce (rpadchars (coerce x 'list) len) 'string)
+         (implode (rpadchars (explode x) len))
          :exec
          (let* ((x-len (length (the string x)))
                 (diff  (- len x-len)))
            (if (> diff 0)
-               (let ((spaces (make-list diff :initial-element #\Space)))
-                 (coerce (mbe :logic (append-chars x spaces)
-                              :exec (if (zp x-len)
-                                        spaces
-                                      (append-chars-aux x (- x-len 1) spaces)))
-                         'string))
+               (let ((spaces (repeat #\Space diff)))
+                 (implode (mbe :logic (append-chars x spaces)
+                               :exec (if (zp x-len)
+                                         spaces
+                                       (append-chars-aux x (- x-len 1) spaces)))))
              x))))
 
   (local (in-theory (enable rpadstr)))
@@ -121,11 +123,15 @@ coercion is performed.</p>"
     (stringp (rpadstr x len))
     :rule-classes :type-prescription)
 
-  (defthm len-of-coerce-of-rpadstr
+  (defthm len-of-explode-of-rpadstr
     (implies (force (stringp x))
-             (equal (len (coerce (rpadstr x len) 'list))
+             (equal (len (explode (rpadstr x len)))
                     (max (length x)
-                         (nfix len))))))
+                         (nfix len)))))
+
+  (defcong streqv  equal   (rpadstr x len) 1)
+  (defcong istreqv istreqv (rpadstr x len) 1))
+
 
 
 (defsection lpadchars
@@ -153,9 +159,8 @@ performed.</p>"
                                 (natp len)))
              (type integer len))
     (mbe :logic
-         (append (make-list (nfix (- (nfix len) (len x)))
-                            :initial-element #\Space)
-                 x)
+         (append (repeat #\Space (nfix (- (nfix len) (len x))))
+                 (make-character-list x))
          :exec
          (let* ((x-len (length x))
                 (diff  (- len x-len)))
@@ -166,12 +171,14 @@ performed.</p>"
   (local (in-theory (enable lpadchars)))
 
   (defthm character-listp-of-lpadchars
-    (implies (force (character-listp x))
-             (character-listp (lpadchars x len))))
+    (character-listp (lpadchars x len)))
 
   (defthm len-of-lpadchars
     (equal (len (lpadchars x len))
-           (max (len x) (nfix len)))))
+           (max (len x) (nfix len))))
+
+  (defcong charlisteqv  equal        (lpadchars x len) 1)
+  (defcong icharlisteqv icharlisteqv (lpadchars x len) 1))
 
 
 (defsection lpadstr
@@ -202,12 +209,12 @@ performed.</p>"
              (type string x)
              (type integer len))
     (mbe :logic
-         (coerce (lpadchars (coerce x 'list) len) 'string)
+         (implode (lpadchars (explode x) len))
          :exec
          (let* ((x-len (length x))
                 (diff  (- len x-len)))
            (if (< 0 diff)
-               (coerce (make-list-ac diff #\Space (coerce x 'list)) 'string)
+               (implode (make-list-ac diff #\Space (explode x)))
              x))))
 
   (local (in-theory (enable lpadstr)))
@@ -216,11 +223,15 @@ performed.</p>"
     (stringp (lpadstr x len))
     :rule-classes :type-prescription)
 
-  (defthm len-of-coerce-of-lpadstr
+  (defthm len-of-explode-of-lpadstr
     (implies (force (stringp x))
-             (equal (len (coerce (lpadstr x len) 'list))
+             (equal (len (explode (lpadstr x len)))
                     (max (length x)
-                         (nfix len))))))
+                         (nfix len)))))
+
+  (defcong streqv  equal   (lpadstr x len) 1)
+  (defcong istreqv istreqv (lpadstr x len) 1))
+
 
 
 (defsection trim
@@ -259,12 +270,12 @@ of the string @('x').</p>
 
   (defund trim (x)
     (declare (xargs :guard (stringp x)))
-    (let* ((chars (coerce x 'list))
+    (let* ((chars (explode x))
            (chars (trim-aux chars)) ;; eat spaces at the front
            (chars (reverse chars))  ;; flip so we can get to the back
            (chars (trim-aux chars)) ;; eat spaces at the back
            (chars (reverse chars))) ;; flip again so it's back to normal
-      (coerce chars 'string)))
+      (implode chars)))
 
   (local (in-theory (enable trim)))
 

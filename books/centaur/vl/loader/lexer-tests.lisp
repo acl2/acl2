@@ -194,14 +194,14 @@
 (vl-lex-string-testcase :input "\"crazy \\7\""
                         :successp t
                         :expansion (cat "crazy "
-                                        (coerce (list (code-char 7)) 'string)))
+                                        (implode (list (code-char 7)))))
 
 (vl-lex-string-testcase :input "\"\\\\ another \\n basic \\t escape \\\" test\""
                         :successp t
                         :expansion (cat "\\ another "
-                                        (coerce (list #\Newline) 'string)
+                                        (implode (list #\Newline))
                                         " basic "
-                                        (coerce (list #\Tab) 'string)
+                                        (implode (list #\Tab))
                                         " escape \" test"))
 
 ;; Should fail string tests
@@ -436,7 +436,7 @@
                          :signedp nil
                          :value nil
                          :wasunsized t
-                         :bits (coerce (repeat #\X 32) 'string)
+                         :bits (implode (repeat #\X 32))
                          :nwarnings 1)
 
 (vl-lex-integer-testcase :input "'hxxx"
@@ -446,7 +446,7 @@
                          :signedp nil
                          :value nil
                          :wasunsized t
-                         :bits (coerce (repeat #\X 32) 'string)
+                         :bits (implode (repeat #\X 32))
                          :nwarnings 1)
 
 (vl-lex-integer-testcase :input "'bz"
@@ -456,7 +456,7 @@
                          :signedp nil
                          :value nil
                          :wasunsized t
-                         :bits (coerce (repeat #\Z 32) 'string)
+                         :bits (implode (repeat #\Z 32))
                          :nwarnings 1)
 
 (vl-lex-integer-testcase :input "'o zzz"
@@ -466,7 +466,7 @@
                          :signedp nil
                          :value nil
                          :wasunsized t
-                         :bits (coerce (repeat #\Z 32) 'string)
+                         :bits (implode (repeat #\Z 32))
                          :nwarnings 1)
 
 (vl-lex-integer-testcase :input "'bx1"
@@ -476,7 +476,7 @@
                          :signedp nil
                          :value nil
                          :wasunsized t
-                         :bits (coerce (append (repeat #\X 31) (list #\1)) 'string)
+                         :bits (implode (append (repeat #\X 31) (list #\1)))
                          :nwarnings 1)
 
 

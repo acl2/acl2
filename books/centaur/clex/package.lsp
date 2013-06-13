@@ -39,6 +39,7 @@
                defxdoc defsection definline definlined
                defabsstobj-events
                unsigned-byte-p signed-byte-p
+               explode implode
                cutil::deflist
                str::cat str::natstr
                nat-equiv int-equiv))

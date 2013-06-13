@@ -1,5 +1,5 @@
 ; ACL2 String Library
-; Copyright (C) 2009-2010 Centaur Technology
+; Copyright (C) 2009-2013 Centaur Technology
 ;
 ; Contact:
 ;   Centaur Technology Formal Verification Group
@@ -19,7 +19,7 @@
 ; Original author: Jared Davis <jared@centtech.com>
 
 (in-package "STR")
-(include-book "eqv")
+(include-book "ieqv")
 (local (include-book "arithmetic"))
 (local (include-book "std/lists/take" :dir :system))
 (local (include-book "std/lists/equiv" :dir :system))
@@ -31,7 +31,7 @@
 
   :long "<p>@(call firstn-chars) is logically equal to:</p>
 
-@({ (take (min n (length x)) (coerce x 'list)) })
+@({ (take (min n (length x)) (explode x)) })
 
 <p>But it is implemented more efficiently, via @(see char).</p>"
 
@@ -40,25 +40,28 @@
                                 (natp n)
                                 (< n (length x))))
              (type string x)
-             (type integer n))
+             (type (integer 0 *) n))
     (if (zp n)
         (cons (char x 0) acc)
       (firstn-chars-aux x
-                        (- n 1)
+                        (the (integer 0 *) (- n 1))
                         (cons (char x n) acc))))
 
   (defund firstn-chars (n x)
     (declare (xargs :guard (and (stringp x)
                                 (natp n))
                     :verify-guards nil)
-             (type string x))
+             (type string x)
+             (type (integer 0 *) n))
     (mbe :logic
-         (take (min n (length x)) (coerce x 'list))
+         (take (min n (len (explode x))) (explode x))
          :exec
          (let ((n (min n (length x))))
            (if (zp n)
                nil
-             (firstn-chars-aux x (- n 1) nil)))))
+             (firstn-chars-aux x
+                               (the (integer 0 *) (- n 1))
+                               nil)))))
 
   (local (in-theory (enable firstn-chars-aux
                             firstn-chars)))
@@ -74,9 +77,10 @@
   (verify-guards firstn-chars)
 
   (defthm character-listp-of-firstn-chars
-    (implies (force (stringp x))
-             (character-listp (firstn-chars n x)))))
+    (character-listp (firstn-chars n x)))
 
+  (defcong streqv equal (firstn-chars n x) 2)
+  (defcong istreqv icharlisteqv (firstn-chars n x) 2))
 
 
 (defsection append-firstn-chars
@@ -99,11 +103,16 @@
     :hints(("Goal" :in-theory (enable firstn-chars))))
 
   (defthm character-listp-of-append-firstn-chars
-    (implies (and (force (stringp x))
-                  (force (character-listp y)))
-             (character-listp (append-firstn-chars n x y))))
+    (equal (character-listp (append-firstn-chars n x y))
+           (character-listp y)))
 
-  (defcong list-equiv list-equiv (append-firstn-chars n x y) 3))
+  (defcong streqv  equal        (append-firstn-chars n x y) 2)
+  (defcong istreqv icharlisteqv (append-firstn-chars n x y) 2
+    :hints(("Goal" :in-theory (disable istreqv))))
+
+  (defcong list-equiv list-equiv (append-firstn-chars n x y) 3)
+  (defcong charlisteqv charlisteqv (append-firstn-chars n x y) 3)
+  (defcong icharlisteqv icharlisteqv (append-firstn-chars n x y) 3))
 
 
 #||

@@ -1,5 +1,5 @@
 ; ACL2 String Library
-; Copyright (C) 2009-2010 Centaur Technology
+; Copyright (C) 2009-2013 Centaur Technology
 ;
 ; Contact:
 ;   Centaur Technology Formal Verification Group
@@ -19,48 +19,12 @@
 ; Original author: Jared Davis <jared@centtech.com>
 
 (in-package "STR")
-(include-book "xdoc/top" :dir :system)
-(include-book "std/lists/list-defuns" :dir :system)
-(include-book "std/lists/list-fix" :dir :system)
-(include-book "misc/definline" :dir :system)
+(include-book "coerce")
+(include-book "std/lists/equiv" :dir :system)
+(include-book "std/lists/rev" :dir :system)
 (local (include-book "arithmetic"))
 
 (in-theory (disable char<))
-
-(defsection char-fix
-  :parents (equivalences)
-  :short "Coerce to a character."
-
-  :long "<p>@(call char-fix) is the identity on @(see acl2::characters), and
-returns the NUL character (i.e., the character whose code is 0) for any
-non-character.</p>
-
-<p>This is similar to other fixing functions like @(see fix) and @(see nfix).
-See also @(see chareqv).</p>"
-
-  (definlined char-fix (x)
-    (declare (xargs :guard t))
-    (if (characterp x)
-        x
-      (code-char 0)))
-
-  (local (in-theory (enable char-fix)))
-
-  (defthm char-fix-default
-    (implies (not (characterp x))
-             (equal (char-fix x)
-                    (code-char 0))))
-
-  (defthm char-fix-when-characterp
-    (implies (characterp x)
-             (equal (char-fix x)
-                    x)))
-
-  (defthm equal-of-char-codes
-    (equal (equal (char-code x) (char-code y))
-           (equal (char-fix x)
-                  (char-fix y)))))
-
 
 (defsection chareqv
   :parents (equivalences)
@@ -123,7 +87,6 @@ equal.</p>
     :rule-classes ((:rewrite :loop-stopper ((x y))))))
 
 
-
 (defsection charlisteqv
   :parents (equivalences)
   :short "Case-sensitive character-list equivalence test."
@@ -156,12 +119,46 @@ same length and their elements must be @(see chareqv) to one another.</p>
   (defcong charlisteqv equal       (len x)      1)
   (defcong charlisteqv charlisteqv (list-fix x) 1)
   (defcong charlisteqv chareqv     (nth n x)    2)
+  (defcong charlisteqv charlisteqv (take n x)   2)
   (defcong charlisteqv charlisteqv (nthcdr n x) 2)
   (defcong charlisteqv charlisteqv (append x y) 1)
   (defcong charlisteqv charlisteqv (append x y) 2)
-  (defcong charlisteqv charlisteqv (acl2::rev x) 1)
+  (defcong charlisteqv charlisteqv (rev x)      1)
   (defcong charlisteqv charlisteqv (revappend x y) 2)
   (defcong charlisteqv charlisteqv (revappend x y) 1)
+
+  (encapsulate
+    ()
+    (local (defun my-induct (x y)
+             (if (atom x)
+                 (list x y)
+               (my-induct (cdr x) (cdr y)))))
+
+    (defcong charlisteqv equal (make-character-list x) 1
+      :hints(("Goal"
+              :in-theory (enable chareqv)
+              :induct (my-induct x x-equiv)))))
+
+  (encapsulate
+    ()
+    (local (defun my-induct (x y)
+             (if (atom x)
+                 (list x y)
+               (my-induct (cdr x) (cdr y)))))
+
+    (local (defthm crock
+             (equal (charlisteqv x y)
+                    (equal (make-character-list x)
+                           (make-character-list y)))
+             :hints(("Goal"
+                     :in-theory (enable chareqv)
+                     :induct (my-induct x y)))))
+
+    (defcong charlisteqv equal (implode x) 1
+      :hints(("Goal"
+              :in-theory (disable implode-of-make-character-list)
+              :use ((:instance implode-of-make-character-list (x x))
+                    (:instance implode-of-make-character-list (x x-equiv)))))))
 
   (defthm charlisteqv-when-not-consp-left
     (implies (not (consp x))
@@ -188,4 +185,62 @@ same length and their elements must be @(see chareqv) to one another.</p>
   (defthm charlisteqv-when-not-same-lens
     (implies (not (equal (len x) (len y)))
              (not (charlisteqv x y)))))
+
+
+
+(defsection str-fix
+  :parents (equivalences)
+  :short "Coerce to a string."
+  :long "<p>@(call str-fix) is the identity on @(see acl2::stringp)s, or
+returns the empty string, @('\"\"'), for any non-string.</p>
+
+<p>This is similar to other fixing functions like @(see fix) and @(see nfix).
+See also @(see streqv).</p>"
+
+  (definlined str-fix (x)
+    (declare (xargs :guard t))
+    (if (stringp x)
+        x
+      ""))
+
+  (local (in-theory (enable str-fix)))
+
+  (defthm str-fix-default
+    (implies (not (stringp x))
+             (equal (str-fix x)
+                    "")))
+
+  (defthm str-fix-when-stringp
+    (implies (stringp x)
+             (equal (str-fix x)
+                    x))))
+
+
+
+(defsection streqv
+  :parents (equivalences)
+  :short "Case-sensitive string equivalence test."
+
+  :long "<p>@(call streqv) determines if @('x') and @('y') are equivalent when
+interpreted as strings.  That is, non-strings are first coerced to be the empty
+string (via @(see str-fix)), then we see if these coerced arguments are
+equal.</p>
+
+<p>See also @(see istreqv) for a case-insensitive alternative.</p>"
+
+  (definlined streqv (x y)
+    (declare (xargs :guard t))
+    (equal (str-fix x) (str-fix y)))
+
+  (local (in-theory (enable streqv str-fix)))
+
+  (defequiv streqv)
+
+  (defthm streqv-of-str-fix
+    (streqv (str-fix x) x))
+
+  (defcong streqv equal (char x n) 1)
+  (defcong streqv equal (explode x) 1)
+  (defcong streqv equal (string-append x y) 1)
+  (defcong streqv equal (string-append x y) 2))
 
