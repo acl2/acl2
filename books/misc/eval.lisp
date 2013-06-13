@@ -1,6 +1,8 @@
 ; Here we define macros that employ make-event to check evaluations of forms.
 ; See community book make-event/eval-tests.lisp (and many other .lisp files in
-; that directory) for how these macros may be employed.
+; that directory) for how these macros may be employed.  See also
+; make-event/eval-check.lisp for a similar book that adds :check-expansion t to
+; its make-event forms.
 
 (in-package "ACL2")
 
@@ -8,8 +10,8 @@
                                form expr
                                &key (ld-skip-proofsp ':default))
 
-; Warning: Keep this in sync with the definition of must-eval-to in
-; eval-check.lisp.
+; Warning: Keep this in sync with the definition of must-eval-to in community
+; book make-event/eval-check.lisp.
 
 ; Form should evaluate to an error triple (mv erp form-val state).  If erp is
 ; nil and expr-val is the value of expr then (must-eval-to form expr) expands

@@ -1,11 +1,13 @@
-; This is a modification of eval.lisp that uses :check-expansion t.
+; This is a modification of community book misc/eval.lisp that uses
+; :check-expansion t.
 
 (in-package "ACL2")
 
 (defmacro must-eval-to (&whole must-eval-to-form
                                form expr)
 
-; Warning: Keep this in sync with the definition of must-eval-to in eval.lisp.
+; Warning: Keep this in sync with the definition of must-eval-to in community
+; book misc/eval.lisp.
 
 ; Form should evaluate to an error triple (mv erp form-val state).  If erp is
 ; nil and expr-val is the value of expr then (must-eval-to form expr) expands
