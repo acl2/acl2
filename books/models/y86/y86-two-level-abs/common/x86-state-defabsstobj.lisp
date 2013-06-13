@@ -8,6 +8,15 @@
 
 (in-package "ACL2")
 
+#||
+
+; [Jared]: fool make_cert_help.pl into allowing more memory for this
+; book. We would just include centaur/misc/memory-mgmt, but that has a ttag.
+
+(set-max-mem (* 6 (expt 2 30)))
+
+||#
+
 (include-book "x86-memory-low")
 (include-book "defexec/other-apps/records/records" :dir :system)
 
