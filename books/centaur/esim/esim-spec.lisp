@@ -1497,7 +1497,8 @@
 
 (defthm good-occsp-nonnil
   (implies (good-esim-occsp x)
-           (not (member-equal nil x))))
+           (not (member-equal nil x)))
+  :hints(("Goal" :in-theory (enable member-equal))))
 
 (defthm nonnil-vals-occmap
   (implies (good-esim-occsp occs)

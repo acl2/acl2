@@ -27,6 +27,10 @@
   :elementp-of-nil nil
   :already-definedp t)
 
+;; Disable these ACL2 built-in rules, since the DEFLIST adds stronger ones.
+(in-theory (disable character-listp-append
+                    character-listp-revappend))
+
 (defthm true-listp-when-character-listp-rewrite
   ;; The deflist gives us a compound-recognizer, but in this case having a
   ;; rewrite rule seems worth it.

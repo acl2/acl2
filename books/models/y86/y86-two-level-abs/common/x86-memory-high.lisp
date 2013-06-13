@@ -3,6 +3,16 @@
 ;; This book is very, very sloppily done.  I'll come back to it later and re-do
 ;; it nicely.
 
+#||
+
+; [Jared and Sol]: fool make_cert_help.pl into allowing more memory for this
+; book. We would just include centaur/misc/memory-mgmt, but that has a ttag.
+
+(set-max-mem (* 6 (expt 2 30)))
+
+||#
+
+
 (in-package "ACL2")
 
 (include-book "x86-state")

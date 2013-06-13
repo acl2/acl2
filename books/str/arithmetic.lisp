@@ -26,7 +26,6 @@
 (include-book "std/lists/nthcdr" :dir :system)
 (include-book "std/lists/append" :dir :system)
 (include-book "std/lists/repeat" :dir :system)
-(in-theory (enable acl2::make-list-ac->repeat))
 
 
 ;; BOZO fundamental lemmas that should probably be part of other libraries.

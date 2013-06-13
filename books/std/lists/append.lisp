@@ -43,6 +43,9 @@ library."
            (true-listp y)))
 
   (defthm consp-of-append
+    ;; Note that data-structures/list-defthms has a similar rule, except that
+    ;; it adds two type-prescription corollaries.  I found these corollaries to
+    ;; be expensive, so I don't bother with them.
     (equal (consp (append x y))
            (or (consp x)
                (consp y))))
@@ -91,6 +94,9 @@ library."
   (defthm append-of-nil
     (equal (append x nil)
            (list-fix x)))
+
+  ;; Disable this built-in ACL2 rule since append-of-nil is stronger.
+  (in-theory (disable append-to-nil))
 
   (defthm car-of-append
     (equal (car (append x y))

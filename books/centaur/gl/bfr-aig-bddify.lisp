@@ -58,7 +58,8 @@
            (equal (nth n (vars-to-bdd-env vars aig-env))
                   (if (hons-assoc-equal (nth n vars) aig-env)
                       (cdr (hons-assoc-equal (nth n vars) aig-env))
-                    t))))
+                    t)))
+  :hints(("Goal" :in-theory (enable nth))))
 
 (defthm len-member-equal
   (implies (member-equal x vars)

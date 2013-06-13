@@ -408,7 +408,7 @@
 (defthm disjoin-of-intersection
   (implies (not (add-hyps-ev (disjoin clause) a))
            (not (add-hyps-ev (disjoin (intersection-equal x clause)) a)))
-  :hints(("Goal" :in-theory (enable intersection-equal))))
+  :hints(("Goal" :in-theory (enable member-equal intersection-equal))))
 
 (defthm group-list-cp-rec-correct
   (implies (not (add-hyps-ev (disjoin clause) a))

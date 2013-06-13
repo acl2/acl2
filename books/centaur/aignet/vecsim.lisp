@@ -25,6 +25,8 @@
 (local (in-theory (disable nth update-nth sets::double-containment)))
 (local (in-theory (enable* acl2::arith-equiv-forwarding)))
 
+(local (in-theory (disable acl2::make-list-ac-removal)))
+
 (acl2::def2darr s61v
                 :elt-type (signed-byte 61)
                 :elt-typep (lambda (x) (signed-byte-p 61 x))

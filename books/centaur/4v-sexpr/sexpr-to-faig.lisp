@@ -416,6 +416,7 @@ use the @('f-') versions of the @(see faig-constructors) at each level.</p>"
             (e/d* ()
                   (4v->faig-const
                    nth
+                   nth-when-zp
                    faig-const-fix
                    faig-const-alist->4v-alist
                    faig-const->4v

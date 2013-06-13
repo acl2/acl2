@@ -70,7 +70,11 @@
            (state-p1 (put-global key val state)))
   :hints(("Goal" :in-theory (enable state-p1 state-p1-good-worldp))))
 
-(defthm assoc-equal-add-pair
+;; [Jared]: disabling the built-in ACL2 rule about assoc of add-pair because it
+;; has unnecessary hyps.
+(in-theory (disable assoc-add-pair))
+
+(defthm assoc-add-pair-better
   (equal (assoc-equal k1 (add-pair k2 v al))
          (if (equal k1 k2)
              (cons k2 v)

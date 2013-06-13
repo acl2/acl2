@@ -128,7 +128,8 @@ endmodule
 (local (defthm l0
          (implies (vl-exprlist-p x)
                   (iff (car (last x))
-                       (consp x)))))
+                       (consp x)))
+         :hints(("Goal" :in-theory (enable last)))))
 
 (def-vl-modgen vl-make-n-bit-mult (n)
   :short "Generate an multiplier module."

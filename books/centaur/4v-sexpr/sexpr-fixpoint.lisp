@@ -250,7 +250,8 @@
   (local (defthm natp-when-nat-listp-member
            (implies (and (member a x)
                          (nat-listp x))
-                    (natp a))))
+                    (natp a))
+           :hints(("Goal" :in-theory (enable nat-listp)))))
 
   (local (defthm nat-listp-when-subsetp
            (implies (and (subsetp-equal x y)

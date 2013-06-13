@@ -2389,8 +2389,8 @@ simplifying using the known signals."
                    (sexpr-brules->boolp-rules brules)))
           (mv nil nil))
          (new-x (4v-sexpr-compose-nofal rhs subst)))
-      (mv (sexpr-rewrite new-x (sexpr-brules->rewrites brules))
-          t)))
+        (mv (sexpr-rewrite new-x (sexpr-brules->rewrites brules))
+            t)))
 
   (local (in-theory (enable sexpr-boolean-rw-apply-rule)))
 
@@ -2405,7 +2405,7 @@ simplifying using the known signals."
                                           env))
                     (4v-sexpr-eval x env)))
     :hints (("goal" :use ((:instance sexpr-unify-4v-sexpr-compose
-                           (term x)))
+                                     (term x)))
              :in-theory (disable sexpr-unify-4v-sexpr-compose))))
 
   (defthm sexpr-booleanp-keys-implies-4v-key-bool-alistp-of-eval
@@ -2425,16 +2425,18 @@ simplifying using the known signals."
 
   (defthm 4v-sexpr-eval-of-sexpr-boolean-rw-apply-rule
     (mv-let (new-x ok)
-      (sexpr-boolean-rw-apply-rule x rule brules)
-      (implies (and ok
-                    (4v-sexpr-brules-p brules)
-                    (4v-sexpr-boolean-rewritep (car rule) (cdr rule))
-                    (subsetp-equal (4v-sexpr-vars (cdr rule))
-                                   (4v-sexpr-vars (car rule)))
-                    (4v-alist-boolp (4v-sexpr-vars x) alist))
-               (equal (4v-sexpr-eval new-x alist)
-                      (4v-sexpr-eval x alist))))
-    :hints(("Goal" :in-theory (enable 4v-sexpr-brules-p)
+            (sexpr-boolean-rw-apply-rule x rule brules)
+            (implies (and ok
+                          (4v-sexpr-brules-p brules)
+                          (4v-sexpr-boolean-rewritep (car rule) (cdr rule))
+                          (subsetp-equal (4v-sexpr-vars (cdr rule))
+                                         (4v-sexpr-vars (car rule)))
+                          (4v-alist-boolp (4v-sexpr-vars x) alist))
+                     (equal (4v-sexpr-eval new-x alist)
+                            (4v-sexpr-eval x alist))))
+    :hints(("Goal" :in-theory (e/d (4v-sexpr-brules-p)
+                                   (intersection$-of-cons-left
+                                    intersection$-when-atom-left))
             :use ((:instance
                    sexpr-booleanp-keys-implies-4v-key-bool-alistp-of-eval
                    (keys (sexpr-bool-special-vars))

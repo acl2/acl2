@@ -106,7 +106,7 @@
 (defthm alist-keys-hons-put-list
   (set-equiv (alist-keys (hons-put-list vars vals rest))
              (union-equal vars (alist-keys rest)))
-  :hints (("goal" :in-theory (enable alist-keys))
+  :hints (("goal" :in-theory (enable alist-keys append))
           (set-reasoning)))
 
 

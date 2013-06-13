@@ -202,7 +202,8 @@ operates on O(log_2 n) muxes.</p>"
 (local (defthm l0
          (implies (vl-exprlist-p x)
                   (iff (car (last x))
-                       (consp x)))))
+                       (consp x)))
+         :hints(("Goal" :in-theory (enable last)))))
 
 (local (defthm l1
          (implies (vl-exprlist-p x)

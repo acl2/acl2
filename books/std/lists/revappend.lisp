@@ -54,11 +54,9 @@ these lemmas may be useful.</p>"
 
   (defthm nth-of-revappend
     (equal (nth n (revappend x y))
-           (if (<= (len x) (nfix n))
-               (nth (- (nfix n) (len x))
-                    y)
-             (nth (+ (1- (len x)) (- (nfix n)))
-                  x))))
+           (if (< (nfix n) (len x))
+               (nth (- (len x) (+ 1 (nfix n))) x)
+             (nth (- n (len x)) y))))
 
   (defthm equal-when-revappend-same
     (equal (equal (revappend x y1)

@@ -371,7 +371,8 @@ empty string.</p>
     (b* (((mv match ?new-sin) (sin-match-some-lit lits sin)))
       (implies match
                (member match lits)))
-    :hints(("Goal" :in-theory (enable sin-match-lit.match-when-ok)))))
+    :hints(("Goal" :in-theory (enable sin-match-lit.match-when-ok
+                                      member)))))
 
 
 

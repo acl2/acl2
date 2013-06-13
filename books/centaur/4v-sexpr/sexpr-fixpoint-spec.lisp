@@ -79,16 +79,13 @@
               (set-equiv (remove b a) (remove b c))))
   :hints(("Goal" :use ((:instance set-equiv-breakdown-cons)))))
 
-(defthm remove-remove
-  (equal (remove k (remove k x))
-         (remove k x))
-  :hints (("goal" :induct t)))
 
 (defthm remove-when-not-member
   (implies (not (member-equal k x))
            (equal (remove k x)
                   (append x nil)))
-  :hints(("Goal" :induct t)))
+  :hints(("Goal" :induct t
+          :in-theory (enable remove))))
 
 
 

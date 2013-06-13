@@ -136,7 +136,8 @@ sexprs.</p>")
 
    (defthm member-equal-of-list-fix
      (equal (member-equal a (list-fix x))
-            (list-fix (member-equal a x))))
+            (list-fix (member-equal a x)))
+     :hints(("Goal" :in-theory (enable member-equal))))
 
    (defthm list-fix-under-set-equiv
      (set-equiv (list-fix x)
@@ -265,7 +266,8 @@ sexprs.</p>")
      (local (defthm l0
               (implies (and (member-equal a x)
                             (member-equal k (4v-sexpr-vars a)))
-                       (member-equal k (4v-sexpr-vars-list x)))))
+                       (member-equal k (4v-sexpr-vars-list x)))
+              :hints(("Goal" :in-theory (enable member-equal)))))
 
      (defthm member-of-4v-sexpr-vars-list-when-subsetp
        (implies (and (subsetp-equal a b)
@@ -771,7 +773,8 @@ assumption that the @('Ai') really are one-hot.</p>"
               (implies (and (all-equalp *4vf* (4v-sexpr-eval-list x env))
                             (member-equal a x))
                        (equal (4v-sexpr-eval a env)
-                              *4vf*))))
+                              *4vf*))
+              :hints(("Goal" :in-theory (enable member-equal)))))
 
      (local (defthm h3
               (implies (and (4v-onehot-list-p (4v-sexpr-eval-list sexprs env))

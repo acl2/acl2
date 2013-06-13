@@ -29,6 +29,7 @@
                     update-nth
                     ;; These can interfere with stobj stuff
                     nth-0-cons
+                    nth-when-zp
                     nth-add1))
 
 (local (in-theory (enable nthcdr len nth)))
@@ -53,10 +54,11 @@
            (equal (nth n x)
                   nil)))
 
-(defrule nth-of-nthcdr
-  (equal (nth a (nthcdr b x))
-         (nth (+ (nfix a) (nfix b)) x))
-  :disable (acl2::nthcdr-of-cdr))
+;; now part of std/lists
+;; (defrule nth-of-nthcdr
+;;   (equal (nth a (nthcdr b x))
+;;          (nth (+ (nfix a) (nfix b)) x))
+;;   :disable (acl2::nthcdr-of-cdr))
 
 (defrule nthcdr-under-iff-when-true-listp
   (implies (true-listp x)

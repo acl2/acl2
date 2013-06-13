@@ -23,7 +23,10 @@
 ; extended with additional definitions, e.g., from Centaur libraries.
 
 (in-package "ACL2")
+(include-book "tools/bstar" :dir :system)
+(include-book "tools/rulesets" :dir :system)
 (local (include-book "append"))
+(local (include-book "duplicity"))
 (local (include-book "list-fix"))
 (local (include-book "flatten"))
 (local (include-book "final-cdr"))
@@ -184,3 +187,22 @@
          (let ((pos-in-cdr (listpos x (cdr y))))
            (and pos-in-cdr
                 (+ 1 pos-in-cdr))))))
+
+(defund duplicity-exec (a x n)
+  (declare (xargs :guard (natp n)))
+  (if (atom x)
+      n
+    (duplicity-exec a (cdr x)
+                    (if (equal (car x) a)
+                        (+ 1 n)
+                      n))))
+
+(defund duplicity (a x)
+  (declare (xargs :guard t))
+  (mbe :logic (cond ((atom x)
+                     0)
+                    ((equal (car x) a)
+                     (+ 1 (duplicity a (cdr x))))
+                    (t
+                     (duplicity a (cdr x))))
+       :exec (duplicity-exec a x 0)))

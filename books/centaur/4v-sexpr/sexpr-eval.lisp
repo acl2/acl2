@@ -257,7 +257,7 @@ counterpart.</p>")
       :flag sexpr-list)
     :hints (("goal"
              :in-theory (disable* (:ruleset 4v-op-defs) 4v-<= 4v-lookup
-                                  default-car default-cdr nth-add1 nth))
+                                  default-car default-cdr nth-when-zp nth-add1 nth))
             (and stable-under-simplificationp
                  '(:use ((:instance 4v-alist-<=-necc
                                     (k x)
