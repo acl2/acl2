@@ -942,3 +942,14 @@ which could not hold such large values.</p>")
              (vl-jp-modalist-aux x)
              (vl-println "}")))
 
+
+(define vl-jp-individual-modules ((x vl-modulelist-p) &key (ps 'ps))
+  ;; This doesn't print a single valid JSON object.  Instead, it prints a whole
+  ;; list of JSON objects separated by newlines.
+  (if (atom x)
+      ps
+    (vl-ps-seq (vl-jp-module (car x))
+               (vl-print "
+
+")
+               (vl-jp-individual-modules (cdr x)))))
