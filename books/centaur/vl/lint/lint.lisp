@@ -187,7 +187,13 @@ shown.</p>"
                "Ignore warnings of certain types, e.g., if this list includes
                 the string \"oddexpr\" then we will suppress warnings such as
                 @(':VL-WARN-ODDEXPR).  See @('xf-suppress-warnings.lisp') for
-                details.")))
+                details.")
+
+   (quiet      string-listp
+               "Suppress all warnings that occur within modules of these
+                names.")
+
+   ))
 
 (defaggregate vl-lintresult
   :parents (lint)
@@ -216,6 +222,29 @@ shown.</p>"
    (dalist    us-dbalist-p
               "Use-set database alist, mapping module names to use-set databases.
                Might actually not be used for anything.")))
+
+
+(define vl-delete-sd-problems-for-modnames-aux
+  ((fal "Fast alist binding names to T or whatever")
+   (x   sd-problemlist-p))
+  :returns (new-x sd-problemlist-p :hyp :fguard)
+  (b* (((when (atom x))
+        nil)
+       ((sd-problem x1) (car x))
+       ((vl-context x1.ctx) x1.ctx)
+       ((when (hons-get x1.ctx.mod fal))
+        (vl-delete-sd-problems-for-modnames-aux fal (cdr x))))
+    (cons (car x)
+          (vl-delete-sd-problems-for-modnames-aux fal (cdr x)))))
+
+(define vl-delete-sd-problems-for-modnames ((names string-listp)
+                                            (probs sd-problemlist-p))
+  :returns (new-x sd-problemlist-p
+                  :hyp (force (sd-problemlist-p probs)))
+  (b* ((fal (make-lookup-alist names))
+       (ret (vl-delete-sd-problems-for-modnames-aux fal probs)))
+    (fast-alist-free fal)
+    ret))
 
 (define run-vl-lint-main ((mods     (and (vl-modulelist-p mods)
                                          (uniquep (vl-modulelist->names mods))))
@@ -366,10 +395,12 @@ shown.</p>"
        (mods     (cwtime (vl-modulelist-multidrive-detect mods)))
 
        (- (cw "~%vl-lint: cleaning up...~%"))
-       (mods    (cwtime (vl-modulelist-clean-warnings mods)))
-       (mods    (cwtime (vl-modulelist-suppress-lint-warnings mods)))
-       (mods    (cwtime (vl-modulelist-lint-ignoreall mods config.ignore)))
-       (mwalist (cwtime (vl-origname-modwarningalist mods))))
+       (mods     (cwtime (vl-modulelist-clean-warnings mods)))
+       (mods     (cwtime (vl-modulelist-suppress-lint-warnings mods)))
+       (mods     (cwtime (vl-modulelist-lint-ignoreall mods config.ignore)))
+       (mods     (cwtime (vl-delete-modules config.quiet mods)))
+       (sd-probs (cwtime (vl-delete-sd-problems-for-modnames config.quiet sd-probs)))
+       (mwalist  (cwtime (vl-origname-modwarningalist mods))))
 
     (make-vl-lintresult :mods mods
                         :mods0 mods0
@@ -385,6 +416,7 @@ shown.</p>"
         (topmods     string-listp)
         (dropmods    string-listp)
         (ignore      string-listp)
+        (quiet       string-listp)
         (state       'state))
   :returns (mv (res vl-lintresult-p :hyp :fguard)
                (state state-p1 :hyp (state-p1 state)))
@@ -397,7 +429,8 @@ shown.</p>"
                     :loadconfig loadconfig
                     :topmods    topmods
                     :dropmods   dropmods
-                    :ignore     ignore))
+                    :ignore     ignore
+                    :quiet      quiet))
        (- (cw "~%vl-lint: loading modules...~%"))
        ((mv loadres state) (cwtime (vl-load loadconfig)))
 
@@ -435,8 +468,6 @@ shown.</p>"
          (implies (and (sd-problemlist-p x)
                        (sd-problemlist-p minor))
                   (sd-problemlist-p (mv-nth 1 (sd-filter-problems x major minor)))))))
-
-
 
 
 
@@ -885,6 +916,7 @@ wide addition instead of a 10-bit wide addition.")))
                         topmods
                         dropmods
                         ignore
+                        quiet
                         ;; gross yucky thing; acl2-suppress defaults to all
                         ;; ACL2 output, but for debugging use :acl2-suppress
                         ;; nil to be able to see what is wrong.
@@ -892,9 +924,7 @@ wide addition instead of a 10-bit wide addition.")))
   `(with-output
     :off ,(or acl2-suppress 'proof-tree)
     (make-event
-     (b* ((- (acl2::set-max-mem (* 12 (expt 2 30))))
-          (- (acl2::hons-resize :str-ht 1000000))
-          ((mv & & state)
+     (b* (((mv & & state)
            ;; For some reason we have to assign to this here, inside the
            ;; make-event code, rather than ahead of time.
            (assign acl2::writes-okp t))
@@ -904,7 +934,8 @@ wide addition instead of a 10-bit wide addition.")))
                                 :search-exts ,search-exts
                                 :topmods ,topmods
                                 :dropmods ,dropmods
-                                :ignore ,ignore)
+                                :ignore ,ignore
+                                :quiet ,quiet)
                    :name vl-lint))
           (state
            (cwtime (vl-lint-report-wrapper result state))))
