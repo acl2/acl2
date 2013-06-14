@@ -1,0 +1,4 @@
+(in-package "ACL2")
+(include-book "test1p" :ttags :all)
+; cert-flags: ? t :ttags :all
+(certify-book "test1" ? t :ttags :all)

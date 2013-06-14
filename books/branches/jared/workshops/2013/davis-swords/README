@@ -1,0 +1,12 @@
+
+Verified AIG Algorithms in ACL2
+Jared Davis and Sol Swords
+
+Supporting materials are in the following locations:
+
+centaur/aig: Hons-aig implementation and libraries
+centaur/aignet: Aignet implementation and library
+centaur/satlink: Satlink implementation
+centaur/gl/bfr-satlink.lisp: Satlink mode for GL
+
+

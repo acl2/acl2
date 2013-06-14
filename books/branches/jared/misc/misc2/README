@@ -1,0 +1,2 @@
+This directory contains books that would be in books/misc (i.e., in ../) except
+that they depend on directories that depend on misc/.

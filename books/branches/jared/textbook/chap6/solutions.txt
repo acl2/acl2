@@ -1,0 +1,1937 @@
+============================================================
+
+Exercise 6.1
+
+Use the axioms and rules of inference to prove the conjectures below.
+We enumerate the conjecture 6.1.a - 6.1.d below.
+
+Theorem 6.1.a.  t /= nil 
+
+Proof Sketch.  We have an axiom telling us (equal (car (cons a b)) a) /= nil.
+Call this ``line 1'' of our proof.  Using line 1 and the two axioms about
+equal we can prove that (equal (car (cons a b)) a) = t.  Then, using
+substitution of equals for equals, substitute t for (equal (car (cons a b))
+a) in line 1 to derive t /= nil.  Q.E.D.
+
+This high level sketch is a far removed from a formal proof.  We present a
+formal proof below, after giving you a crash course in formal proofs.  As
+noted in the book, to use ACL2 successfully you need not know how to do such
+formal proofs in the ACL2 logic.  But it is helpful to know that at the
+foundation of ACL2 is a truly formal logic and that proofs in the most
+traditional formal sense are possible.
+
+Our presentation is divided into sections with lines of hyphens.  First we
+present some terminology and notation.  Then we derive some new rules of
+inference, allowing us to take larger proof steps.  Next we prove the Theorem
+6.1.a.  Next we introduce the Deduction Rule.  After that, we prove the
+remaining Theorems 6.1.b - 6.1.d.
+
+We then describe what is perhaps the most important rule of all: Substitution
+of Equals for Equals.  After that, we reflect on what Theorems 6.1.a - 6.1.d
+``do'' for us.  We then derive another important rule, Symbolic Computation,
+and conclude our solution of this Exercise 6.1 by mentioning a few other
+important derived rules.
+
+Throughout the remainder of these solutions, we use these very high-level
+inference steps.
+
+---------------------------------------------------------------------------
+Notation
+
+The axioms presented in the book are not labeled.  We label them here for
+reference in our proofs below.
+
+Ax 1.  x  = nil -> (if x y z) = x
+Ax 2.  x /= nil -> (if x y z) = z
+Ax 3.  x  = y   -> (equal x y) = t
+Ax 4.  x /= y   -> (equal x y) = nil
+Ax 5.  (not p) = (if p nil t)
+Ax 6.  (implies p q) = (if p (if q t nil) t)
+Ax 7.  (iff p q) = (if p (if q t nil) (if q nil t))
+Ax 8.  (equal (car (cons x y)) x) /= nil
+
+In our proofs we will abbreviate certain names as indicated below:
+
+ Propositional Axiom          Prop Ax
+ Expansion Rule               Exp
+ Contraction Rule             Contr
+ Associativity Rule           Assoc
+ Reflexivity Axiom            Refl Ax
+ Equality Axiom               Eq Ax
+ Abbreviation                 Abbrev
+
+The justification of a line will either be a reference to an axiom, a
+previously proved theorem, an abbreviation or a rule of inference.
+
+When we justify a line in a proof by a reference to an axiom or a theorem we
+are almost always appealing to the Rule of Instantiation as applied to that
+axiom or theorem.  That is, the formula written is an instance of the named
+axiom or theorem, not identical to it.  We do not give the substitution since
+that is obvious.  Thus, we might say
+
+23.  (car a) = (car a)				{Refl Ax}
+
+to mean that the formula on line 23 is the instance of Reflexivity Axiom
+under the substitution {x <- (car a)}.
+
+When we justify a line as an abbreviation we indicate another line number.
+One of the lines is the result of expanding an abbreviation in the other
+line, but we do not say which.  For example, we might say
+
+24.  (alpha ^ beta) v gamma			{...}
+25.  ~(~alpha v ~beta) v gamma			{Abbrev, 24}
+26.  (~alpha v ~beta) -> gamma                  {Abbrev, 25}
+
+Note that line 25 is obtained by expanding the abbreviation for conjunction
+in the referenced line, 24.  But line 26, which is also justified as an
+abbreviation, is obtained by introducing the abbreviation for implication
+into the referenced line.  Some formal systems do not show abbreviation steps
+because the introduction and elimination of abbreviations are artifacts of
+the display of a formula, not a transformation of the formula itself.  In
+that sense, the formulas displayed on lines 24, 25 and 26 above are all
+identical.
+
+When we use a rule of inference, we name it and list the line numbers of the
+supporting formulas in the order they occur in the statement of the rule of
+inference.  Thus, 
+
+27.  ~alpha v beta				{...}
+28.  alpha v gamma				{...}
+29.  gamma v beta				{Cut, 28,27}
+
+because Cut's ``first argument'' is the formula with the positive first
+disjunct and its ``second'' is the formula with the negative first disjunct.
+
+---------------------------------------------------------------------------
+Derived Rules of Inference
+
+Before we prove Theorem 6.1.a formally, we derive several rules of inference.
+Here is the first.
+
+Derived Rule of Inference.  Commutativity of Or (aka: Comm Or)
+Derive (beta v alpha) from (alpha v beta).
+
+Derivation.
+1. (alpha v beta)				{Given}
+2. (~alpha v alpha)				{Prop Ax}
+3. (beta v alpha)   				{Cut, 1,2}
+Q.E.D.
+
+What is going on here?  This is not exactly a formal proof, because one of
+the lines is labeled ``{Given}.''  But the derivation above shows that if we
+have the line
+
+  i. (alpha v beta)				{...}
+
+in a proof, then by writing
+
+i+1. (~alpha v alpha)				{Prop Ax}
+i+2. (beta v alpha)				{Cut, i, i+1}
+
+we can derive (beta v alpha) two lines later.  Thus, we need not write down
+the intermediate line and can simply act as though we had a new rule of
+inference, secure in the knowledge that any proof that used this new rule
+could be reduced to a proof that used only the old rules.  In that sense, a
+derived rule of inference is like a subroutine.
+
+The formal proofs we offer below use many derived rules, which we prove next.
+You should inspect the derivations carefully as they reveal the basic
+machinery of the formal logic.  If we were going to spend much time doing
+proofs at this level, it would pay off to invest the time to develop a
+collection of powerful derived rules of inference.  A good book in
+mathematical logic, such as those mentioned in our book, will do this.  But
+here we do not.  We merely derive the rules we need to do a few illustrative
+proofs.
+
+Derived Rule of Inference.  Modus Ponens (aka MP)
+Derive beta from alpha and (~alpha v beta).
+
+Derivation.
+1. alpha					{Given}
+2. ~alpha v beta				{Given}
+3. beta v alpha					{Exp, 1}
+4. alpha v beta					{Comm Or, 3}
+5. beta v beta					{Cut 4,2}
+6. beta						{Contr, 5}
+Q.E.D.
+
+Since (~alpha v beta) is just an abbreviation for (alpha -> beta), we could
+have stated this rule as
+
+Derived Rule of Inference.  Modus Ponens (aka: MP)
+Derive beta from alpha and (alpha -> beta).
+
+As an exercise to illustrate the use of derived rules of inference, we now
+prove the following theorem.  Note that what we prove is a formula, not some
+meta expression standing for a formula.  (Recall, formulas built up from
+equalities between terms, using negation and disjunction.  So an utterance
+without an equality symbol in it, like alpha -> beta, is not a formula.)
+
+Theorem.  ~(~(x=x))
+Proof.
+1. x=x						{Refl Ax}
+2. ~(~(x=x)) v ~(x=x)				{Prop Ax}
+3. ~(x=x) v ~(~(x=x))				{Comm Or, 2}
+4. ~(~(x=x))					{MP, 1,3}
+Q.E.D.
+
+This proof uses two derived rules.  We could expand them and produce a proof
+in terms of the primitive rules of inference.  Here is that proof.  You
+should carry out this expansion yourself, using the derivations of the two
+derived rules of inference as a guide.
+
+Theorem.  ~(~(x=x))
+Proof.
+1 . x=x						{Refl Ax}
+2 . ~(~(x=x)) v ~(x=x)				{Prop Ax}
+2a. ~(~(~(x=x))) v ~(~(x=x))			{Prop Ax}
+3 . ~(x=x) v ~(~(x=x))				{Cut, 2,2a}
+3a. ~(~(x=x)) v x=x				{Exp, 1}
+3b. ~(~(~(x=x))) v ~(~(x=x))			{Prop Ax}
+3c. x=x v ~(~(x=x))				{Cut, 3a,3b}
+3d. ~(~(x=x)) v ~(~(x=x))			{Cut, 3c,3}
+4 . ~(~(x=x))					{Contr, 3d}
+Q.E.D.
+
+Because it is difficult to discover and to follow proofs expressed entirely
+in terms of the primitives, logicians use many derived rules of inference.
+We therefore develop several more derived rules and we henceforth use them
+without explanation or apology.
+
+Derived Rule of Inference.  Modus Tollens (aka: MT)
+Derive ~alpha from ~beta and (alpha -> beta).
+
+Derivation.
+1. ~beta					{Given}
+2. alpha -> beta				{Given}
+3. ~alpha v ~beta				{Exp, 1}
+4. ~beta v ~alpha				{Comm Or, 3}
+5. ~alpha v beta				{Abbrev, 2}
+6. beta v ~alpha				{Comm Or, 5}
+7. ~alpha v ~alpha				{Cut, 6,4}
+8. ~alpha					{Contr, 7}
+Q.E.D.
+
+Derived Rule of Inference.  Double Negation (aka: Doub Neg)
+Derive alpha from ~(~alpha).
+
+Derivation.
+1. ~(~alpha)					{Given}
+2. ~alpha v alpha				{Prop Ax}
+3. alpha v ~(~alpha)				{Exp, 1}
+4. ~(~alpha) v alpha				{Comm Or, 3}
+5. alpha v alpha				{Cut, 2,4}
+6. alpha					{Contr, 5}
+Q.E.D.
+
+Derived Rule of Inference.  And
+Derive (alpha ^ beta) from alpha and beta.
+
+Derivation.
+1. alpha					{Given}
+2. beta						{Given}
+3. ~(~alpha v ~beta) v (~alpha v ~beta)  	{Prop Ax}
+4. (~(~alpha v ~beta) v ~alpha) v ~beta  	{Assoc, 3}
+5. ~beta v (~(~alpha v ~beta) v ~alpha)  	{Comm Or, 4}
+6. ~(~alpha v ~beta) v ~alpha  			{MP 2,5}
+7. ~alpha v ~(~alpha v ~beta) 			{Comm Or, 6}
+8. ~(~alpha v ~beta)  				{MP 1,7}
+9. alpha ^ beta					{Abrrev, 8}
+Q.E.D.
+
+Derived Rule of Inference. Contrapositive
+Derive beta -> ~alpha from alpha -> ~beta.
+
+Derivation.
+1. alpha -> ~beta				{Given}
+2. ~alpha v ~beta				{Abbrev, 1}
+3. ~beta v ~alpha				{Comm Or, 2}
+4. beta -> ~alpha				{Abbrev, 3}
+Q.E.D.
+
+Derived Rule of Inference. Commutativity of Equality (aka: Comm Eq)
+Derive y = x from x = y.
+
+Derivation.
+1. x = y					{Given}
+2. x = x					{Refl Ax}
+3. (x = y ^ x = x)				{And, 1,2}
+4. (x = y ^ x = x) -> (x = x -> y = x) 		{Eq Ax}
+5. x = x -> y = x 				{MP 3,4}
+6. y = x 					{MP 2,5}
+Q.E.D.
+
+Derived Rule of Inference.  Subst Eq!
+Derive (z /= y) from (x /= y) and (x = z).  
+Derive (z /= y) from (x /= y) and (z = x).  
+
+We actually state two rules.  Note that the equality hypothesis is commuted
+in the second rule.  By calling both of these rules ``Subst Eq!'' we do not
+have to commute our hypothesis into the ``right'' order to use the rule.  We
+only prove the first rule above; the second follows by Comm Or and the first.
+
+The Subst Eq! rule is a very special case of substitution of equals for equals.
+You may think of it as saying ``If you have x = z and x /= y, then you may
+substitute z for x into the latter and get z /= y.''  This can also be
+thought of as a contrapositive form of the transitivity of equality, phrased
+as a rule of inference instead of as a theorem.
+
+Derivation.
+ 1. (x /= y)					{Given}
+ 2. (x  = z)					{Given}
+ 3. (z  = x)					{Comm Or, 2}
+ 4. (y  = y)					{Refl Ax}
+ 5. (z = x ^ y = y)				{And 3,4}
+ 6. (z = x ^ y = y) -> (z = y -> x = y)		{Eq Ax}
+ 7. z = y -> x = y				{MP 5,6}
+ 8. z /= y v x = y				{Abbrev, 7}
+ 9. x = y v z /= y				{Comm Or, 8}
+10. x /= y -> z /= y				{Abbrev, 9}
+11. z /= y					{MP 1,10}
+Q.E.D.
+
+---------------------------------------------------------------------------
+The First 6.1 Exercise
+
+We are now ready to do the first exercise formally!  Recall the informal proof.
+
+Theorem 6.1.a.  t /= nil 
+
+Proof Sketch.  We have an axiom telling us (equal (car (cons a b)) a) /= nil.
+Call this ``line 1'' of our proof.  Using line 1 and the two axioms about
+equal we can prove that (equal (car (cons a b)) a) = t.  Then, using
+substitutions of equals for equals, substitute t for (equal (car (cons a b))
+a) in line 1 to derive t /= nil.  Q.E.D.
+
+Here is its formalization.
+
+Theorem 6.1.a.  t /= nil
+
+Proof:
+1. (equal (car (cons a b)) a) /= nil		{Ax 8}
+2. (car (cons a b)) /= a -> (equal (car (cons a b)) a) = nil
+						{Ax 4}
+3. ~((car (cons a b)) /= a)			{MT, 1,2}
+4. ~(~((car (cons a b)) = a))			{Abbrev, 3}
+5. (car (cons a b)) = a				{Doub Neg, 4}
+6. (car (cons a b)) = a -> (equal (car (cons a b)) a) = t
+						{Ax 3}
+7. (equal (car (cons a b)) a) = t               {MP, 5,6}
+8. t /= nil                                     {Subst Eq!, 1,7}
+Q.E.D.
+
+=====
+
+---------------------------------------------------------------------------
+The Deduction Rule
+
+The next theorem requires that we prove something of the form (alpha <->
+beta).  We can clearly break the proof into two cases, (alpha -> beta) and
+(beta -> alpha).  Here is the derived rules that codifies this strategy.
+
+Derived Rule of Inference.  Iff
+Derive (alpha <-> beta) from (alpha -> beta) and (beta -> alpha).
+
+Derivation.
+1. alpha -> beta				{Given}
+2. beta -> alpha				{Given}
+3. (alpha -> beta) ^ (beta -> alpha)		{And, 1,2}
+4. alpha <-> beta				{Abbrev, 3}
+Q.E.D.
+
+How can we prove something of the form (alpha -> beta)?  We develop the
+Deduction Rule, an extremely useful derived rule of inference.  The Deduction
+Rule shows how we can convert a derivation of beta from alpha into a proof of
+(alpha -> beta).  From the practical standpoint, the rule thus allows us to
+prove (alpha -> beta) by writing down alpha as given and deriving beta.
+
+Derived Rule of Inference.  Deduction Rule
+Derive (alpha -> beta) from a derivation of beta in which alpha is the
+only ``Given.''
+
+The following discussion, in which we show the validity of this derived rule,
+makes the meaning of the rule clear.
+ 
+Suppose we have such a derivation of beta from alpha, e.g.,
+
+1.  alpha					{Given}
+2.  ...						{...}
+... ...						...
+n.  beta					{...}
+
+where every line except the first is justified by a primitive rule of
+inference.  Thus, except for the ``Given'' the derivation is a formal proof.
+What happens if we modify each line by disjoining ~alpha to each?
+Note that the first line becomes the Propositional Axiom and so the ``Given''
+can be replaced by ``Prop Ax.''
+
+1'.  ~alpha v alpha				{Prop Ax}
+2'.  ~alpha v ...				{...}
+... ...						...
+n'.  ~alpha v beta				{...}
+
+The last line is alpha -> beta.  So we would be done if the sequence is
+actually a proof.  Unfortunately it is not, quite, because the justifications
+are wrong.
+
+Suppose, for example, that line 23 in the original deriviation is
+
+23.  x=x					{Ref Ax}
+
+then in the modified derivation it reads
+
+23'.  ~alpha v x=x				{Ref Ax}
+
+and the formula is no longer an instance of the reflexivity axiom.
+
+But there is a derived rule of inference that explains this step.
+
+Derived Rule of Inference.  Disjoined Ax
+Derive phi v beta from the beta.
+
+Derivation.
+1. beta						{Ax}
+2. phi v beta					{Exp}
+Q.E.D.
+
+So we could replace line 23 in the original derivation by
+
+23'.  ~alpha v x=x				{Disjoined Ref Ax}
+
+and it becomes a legal proof step.
+
+What if line 24 of the original derivation is an application of Expansion?
+
+23.  x=x					{...}
+24.  gamma v x=x				{Exp, 23}
+
+Then in the modified deriviation we have
+
+23'.  ~alpha v x=x				{...}
+24'.  ~alpha v (gamma v x=x)			{Exp, 23}
+
+and, again, the justification for line 24' is not correct.  Our original
+Expansion inserted the disjunct gamma at the front but now we want to insert
+it between two others.  So we need:
+
+Derived Rule of Inference.  Disjoined Expansion.
+Derive phi v (gamma v beta) from phi v beta.
+
+Derivation.
+1. phi v beta					{Given}
+2. beta v phi					{Comm Or, 1}
+3. gamma v (beta v phi)				{Exp, 2}
+4. (gamma v beta) v phi				{Assoc, 3}
+5. phi v (gamma v beta)				{Comm Or, 4}
+Q.E.D.
+
+Thus, we can replace line 24 by
+
+23'.  ~alpha v x=x				{...}
+24'.  ~alpha v (gamma v x=x)			{Disjoined Exp, 23'}
+
+It should be clear that if we can derive a ``disjoined'' rule of inference
+corresponding to each of the remaining rules of inference (Contraction,
+Associativity, and Cut) then we will have established the validity of the
+Deduction Rule.  The required rules can indeed be derived.  We leave this as
+an exercise and recommend it to the student wishing to learn more about how
+this formal system works.
+
+We can strengthen the Deduction Rule to allow for multiple ``Givens'', by
+inductively applying the construction sketched above to each, removing one
+`Given'' on each application and eventually yeilding a formal proof.
+
+Derived Rule of Inference.  Deduction Rule (General)
+Derive ((alpha1 ^ ... ^ alphan) -> beta) from a derivation of beta in which
+alpha1, ..., and alphan are ``Given.''  
+
+We generally do not say we are using the Deduction Rule explicitly.  Instead,
+we just display ``Proofs'' containing ``Givens''.
+
+Theorem 6.1.b.  (equal x y) = t <-> x = y
+
+---------------------------------------------------------------------------
+The Remaining 6.1 Exercises
+
+We prove Theorem 6.1.b by first proving a lemma for the ``hard'' direction.
+
+Lemma 6.1.b. (equal x y) = t -> x = y
+Proof.
+1. (equal x y) = t				{Given}
+2. t /= nil					{Thm 6.1.a}
+3. (equal x y) /= nil				{Subst Eq!, 2,1}
+4. x /= y -> (equal x y) = nil			{Ax 4}
+5. ~(x /= y)					{MT, 3,4}
+6. x = y					{Doub Neg, 5}
+Q.E.D.
+
+Proof of Theorem 6.1.b.   (equal x y) = t <-> x = y
+1. (equal x y) = t -> x = y			{Lemma 6.1.b}
+2. x = y -> (equal x y) = t			{Ax 3}
+3. (equal x y) = t <-> x = y			{Iff, 1,2}
+Q.E.D.
+
+=====
+
+Theorem 6.1.c.  (equal x y) = nil <-> x /= y
+
+Lemma 6.1.c.  x = y -> (equal x y) /= nil.
+Proof.
+1. x = y 					{Given}
+2. x = y -> (equal x y) = t			{Ax 3}
+3. (equal x y) = t				{MP, 1,2}
+4. t /= nil					{Thm 6.1.a}
+5. (equal x y) /= nil				{Subst Eq!, 4,3}
+Q.E.D.
+
+Proof of Theorem 6.1.c.  (equal x y) = nil <-> x /= y
+1. x /= y -> (equal x y) = nil			{Ax 4}
+2. x = y -> (equal x y) /= nil			{Lemma 6.1.c}
+3. (equal x y) = nil -> x /= y			{Contrapositive, 2}
+4. (equal x y) = nil <-> x /= y			{Iff, 4,1}
+Q.E.D.
+
+=====
+
+Theorem 6.1.d.  (car (cons x y)) = x
+
+Proof.
+1. (equal (car (cons x y)) x) /= nil		{Ax 8}
+2. (car (cons x y)) /= x -> (equal (car (cons x y)) x) = nil
+						{Ax 4}
+3. ~((car (cons x y)) /= x)			{MT 1,2}
+4. (car (cons x y)) = x				{Doub Neg, 3}
+Q.E.D.
+
+---------------------------------------------------------------------------
+More Derived Rules:  Substitution of Equals and Equivalents
+
+Derived Rule of Inference.  Substitution of Equals
+Derive alpha' from alpha and (term1 = term2), where alpha' is obtained from
+alpha by replacing any occurrences of term1 in alpha by term2 or vice versa.
+
+The proof of this rule of inference is inductive on the structure of terms.
+We do not give the proof here, though it is covered in any good logic
+textbook.  However, we illustrate a simple example of how substitution of
+equals for equals can be carried out in our system.  The interested reader
+can fill in the details for the general (inductive) case.
+
+Let us substitute b for the second a in (car (cons a a)) = c.  That is,
+given a = b and (car (cons a a)) = c, let us derive (car (cons a b)) = c.
+
+ 1. a = b					{Given}
+ 2. (car (cons a a)) = c			{Given}
+ 3. (a = a ^ a = b) -> (cons a a) = (cons a b)	{Equality Ax for cons}
+ 4. a = a					{Ref Ax}
+ 5. (a = a ^ a = b)				{And, 4,1}
+ 6. (cons a a) = (cons a b)			{MP, 5,3}
+
+ 7. (cons a a) = (cons a b) -> (car (cons a a)) = (car (cons a b))
+						{Equality Ax for car}
+
+ 8. (car (cons a a)) = (car (cons a b))		{MP, 6,7}
+
+ 9. (((car (cons a a)) = (car (cons a b))) ^ c = c)
+     -> (((car (cons a a)) = c) -> ((car (cons a b)) = c))
+						{Eq Ax}
+
+10. c = c					{Ref Ax}
+
+11. (((car (cons a a)) = (car (cons a b))) ^ c = c)
+						{And}
+
+12. ((car (cons a a)) = c) -> ((car (cons a b)) = c)
+                                                {MP, 11,9}
+
+13. (car (cons a b)) = c			{MP, 2,12}
+Q.E.D.
+
+As we see from this example, substitution of equals for equals is a
+sophisticated rule of inference when justified in terms of our (traditional)
+logical primitives.  Note how we built the final term from the inside-out.
+The innermost function symbol involved is cons, so we first use the Equality
+Axiom for cons, line 3.  The given equality, a=b, is fed into that axiom to
+produce a new equality in which we have replaced the desired innermost
+occurrence of a by b, line 6.  We then repeat this process to add the
+appropriate function symbol onto each side of the equality.  In this example,
+that process is completed at line 8.  Then, having ascended through all the
+function symbols we have to assemble the new atomic formula, which must be an
+equality.  So we use the Equality Axiom in a strictly analogous way, creating
+line 11 which says that our original atomic formula (line 2) implies the one
+in which substitutions have been performed.  Finally, we use Modus Ponens to
+detach the desired atomic formula.  In a more general setting, we would then
+use Substitution of Equivalent Formulas, below, to substitute the
+``modified'' atomic formula into its place(s) deep in the original formula.
+
+Substitution of Equivalents tells us that, given alpha <-> beta, one can
+substitute beta for selected occurrences of alpha in any formula and maintain
+equivalence with the original formula.  The justification of this form of
+substitution is comparable to that indicated above, except it is based on the
+inductive structure of formulas rather than terms.
+
+Two reactions are appropriate to our justification of these two common forms
+of inference. ``That's really tedious'' and ``That's really cool that
+substitution can be explained with such simple rules of inference.''  But
+once we have derived the rules of substitution, we need not think of how they
+are ``implemented.''  The lesson we learned in high school, that we may
+substitute equals for equals, is now for all intents and purposes an atomic
+inference step.
+
+---------------------------------------------------------------------------
+Equal Versus =
+
+Recall that we have just proved:
+
+Theorem 6.1.a.  t /= nil 
+
+Theorem 6.1.b.  (equal x y) = t   <-> x  = y
+Theorem 6.1.c.  (equal x y) = nil <-> x /= y
+
+Recall our convention that when we use a term, tau, as formula, we mean
+the formula tau /= nil.  Throughout this book we use that convention.
+We might say, for example, say:
+
+Theorem.  (equal (car (cons a b)) a).
+
+Now the indicated ``formula'' is NOT a theorem because it is not a formula!
+It is a term.  What we mean therefore is:
+
+Theorem.  (equal (car (cons a b)) a) /= nil.
+
+This might seem awkward to reason about because the ``equality'' we wish to
+prove is not written with the relation `=' but with the function symbol
+`equal'.  However, Theorems 6.1.a and 6.1.b, together with substitution of
+equivalents, allow us to convert
+
+(equal (car (cons a b)) a) /= nil.
+
+to the equivalent
+
+(car (cons a b)) = a
+
+Thus, we can freely write equalities with the function symbol equal or with
+the relation `=' and move back and forth between them.  To say that (equal
+tau1 tau2) is nil is just to say that tau1 /= tau2.  To say that (equal tau1
+tau2) is t or non-nil is to say tau1 = tau2.
+
+Using the term-as-formula convention we might re-express
+
+Ax 8.  (equal (car (cons x y)) x) /= nil
+
+as 
+
+Ax 8.  (equal (car (cons x y)) x)
+
+Indeed, given Theorems 6.1.a - 6.1.c, we might write
+
+Ax 8.  (car (cons x y)) = x
+
+We did not write Axiom 8 that way in the first place because we used the `equal'
+formulation of it to prove that t and nil are different!
+
+---------------------------------------------------------------------------
+Still Another Rule:  Symbolic Computation
+
+Another commonly used rule is Symbolic Computation.  This is just the
+repeated use of equality axioms and theorems via substitution of equals for
+equals to reduce an expression.  We generally do not specify which axioms and
+theorems are used because it is so obvious.  When not obvious we may show
+intermediate steps in the reduction as a chain of equalities or equivalences,
+implicitly appealing to transitivity.
+
+For example, we might say
+
+ (equal (car (car (cons (cons a b) c))) a) = t	{Symbolic Computation}
+
+A more detailed derivation might be written
+
+ (equal (car (car (cons (cons a b) c))) a) 
+=						{Ax 8}
+ (equal (car (cons a b)) a)
+=						{Ax 8}
+ (equal a a)
+=						{Ref Ax}
+ t
+
+Even in this expanded version of the proof many steps are omitted or are
+technically mis-justified.  For example, we are not really using Axiom 8,
+which is (equal (car (cons x y)) x) /= nil, but rather its `=' counterpart,
+Theorem 6.1.d, (car (cons x y)) = x.  We get so used to the terms-as-formula
+convention that, except in the most formal of proofs, we do not make a
+distinction between these two.  We have omitted mention of Substitution of
+Equals.  It is often used in every step.  And the Reflexivity Axiom is (x=x)
+but the last equation makes it look like (equal x x)=t. Of course, Theorem
+6.1.b gives the connection we need.
+
+---------------------------------------------------------------------------
+Conclusions Before Moving On
+
+Another well-known proof technique, often taken for granted, is tautology
+checking.  If a formula is true under all assignments of truth values to its
+atomic formulas, then the formula can be derived from our meager set of
+axioms with the primitive inference rules.
+
+Case analysis can also be justified.  If we can prove that (alpha -> beta)
+and we can prove that (~alpha -> beta), then clearly we can prove beta:
+
+1.  alpha -> beta				{Given}
+2. ~alpha v beta				{Abbrev, 1}
+3. ~alpha -> beta				{Given}
+4. ~~alpha v beta				{Abbrev, 3}
+5. beta v beta					{Cut, 2,4}
+6. beta						{Contr, 5}
+
+More generally, we can prove beta by ``splitting'' the proof into a (finite)
+number, n, of cases, alpha1, ..., alphan, such that (alpha1 v ... v alphan)
+and deriving beta in each case.  This is generally denoted by enumerating the
+cases, exhibiting the case formula, e.g., alphai, and proving beta in each,
+usually using the case formula as a given.
+
+Proof of beta
+Case 1. alpha1
+ ...
+ beta
+
+Case 2. alpha2
+ ...
+ beta
+
+...
+
+Case n. alphan
+ ...
+ beta
+Q.E.D.
+
+Generally, (alpha1 v ... v alphan) is syntactically obvious or else it is
+proved as a final case.
+
+Proof by contradiction can be justified.  Suppose we can derive both alpha
+and ~alpha.  Then we can derive anything, e.g., beta.
+
+1. alpha					{Given}
+2. beta v alpha					{Exp, 1}
+3. alpha v beta					{Comm Or, 2}
+
+4. ~alpha					{Given}
+5. beta v ~alpha				{Exp, 4}
+6. ~alpha v beta				{Comm Or, 5}
+
+7. beta v beta					{Cut, 3,6}
+8. beta						{Contr, 7}
+
+A common form of this argument in our system is to prove (alpha -> beta) by
+assuming alpha and ~beta as ``Given'' and derive an ``obvious'' contradiction
+like (t = nil).  How is this converted to a proof of (alpha -> beta)?
+Without loss of real generality, suppose we get the ``obvious'' contradiction
+at line 7:
+
+ 1. alpha					{Given}
+ 2. ~beta					{Given}
+... ...
+ 7. t = nil					{...}
+
+Then here is how we finish:
+
+ 8. t /= nil					{Theorem 6.1.a}
+ 9. beta					{Contradiction, 7,8}
+
+By the generalized Deduction Rule, the derivation above proves (alpha ->
+(~beta -> beta)).  But
+
+ (alpha -> (~beta -> beta))
+<->
+ (alpha -> (~~beta v beta))
+<->
+ (alpha -> (beta v beta))
+<->
+ (alpha -> beta)
+
+Hence, we have proved (alpha -> beta).
+
+Another common ``obvious'' contradiction is (nil /= nil), which contradicts
+Reflexivity.  
+
+All of the common methods of reasoning about propositional formulas with
+equality can be justified with this set of axioms and inference rules.
+
+Since this book is not about formal logic per se, we will not spend further
+time doing completely formal proofs.  Consult a good logic text if you are
+interested in pursuing that line of study.  
+
+Henceforth, we will freely use propositional calculus and equality reasoning
+(PC&E) in these solutions.
+
+============================================================
+
+Exercise 6.2
+
+Prove each of the following.
+
+The key lemma used in the following proofs is
+
+Theorem If.     ((if a b c) /= nil)                            [lhs]
+                       <->                                      <->
+((a /= nil -> b /= nil) ^ (a = nil -> c /= nil))               [rhs]
+
+The notation on the right simply identifies the corresponding parts of the
+formula.
+
+Proof.
+
+Case 1. a /= nil.
+ [lhs]
+<->
+ ((if a b c) /= nil)
+<->						{Ax 2 and a/=nil}
+ (b /= nil)
+
+ [rhs]
+<->
+ ((a /= nil -> b /= nil) ^ (a = nil -> c /= nil))
+<->						{a/=nil and PC&E}
+ (b /= nil) 
+<->
+ [lhs]
+
+Case 2. a = nil
+ [lhs]
+<->
+ ((if a b c) /= nil)
+<->						{Ax 1 and a=nil}
+ (c /= nil)
+
+ [rhs]
+<->
+ ((a /= nil -> b /= nil) ^ (a = nil -> c /= nil))
+<->						{a=nil and PC&E}
+ (c /= nil) 
+<->
+ [lhs]
+
+Q.E.D.
+
+Some authors would write Case 2, say, this way:
+
+Case 2. a = nil
+ [lhs]
+<->
+ ((if a b c) /= nil)
+<->						{Ax 1 and a=nil}
+ (c /= nil)
+<->						{a=nil and PC&E}
+ ((a /= nil -> b /= nil) ^ (a = nil -> c /= nil))
+<->
+ [rhs]
+
+because it is more succinct.  Notice the difference between our proof and
+this one.  In our proof, we reduced [lhs] to some formula, say alpha, and
+then reduced [rhs] to some formula, beta, and then observed that alpha and
+beta are identical.  In this argument, the substitutions made tend to reduce
+the size or complexity of the formula, driving it toward some hoped-for
+``canonical'' form.
+
+In the alternative argument, the same substitutions are made but during the
+first part of the argument we drive [lhs] to its ``canonical'' form and then
+in the second part we do the substitutions in the other direction to
+``uncanonicalize'' it to [rhs].  Chances are that the author of the second
+proof discovered our proof (by always striving for simplicity) and then
+constructed the other proof from it.
+
+To help the reader discover proofs, we prefer the first style.  Indeed, our
+main heuristic for proving an equality or equivalence is first to simplify
+both sides more or less mechanically and then think.
+
+
+Theorem 6.2.a. (not p) /= nil <-> ~(p /= nil)
+Proof.
+  (not p) /= nil
+<->						{def not}
+  (if p nil t) /= nil
+<->						{Theorem If}
+  (p/=nil -> nil/=nil) ^ (p=nil -> t/=nil)
+<->						{PC&E}
+  ~(p/=nil)
+Q.E.D.
+
+Theorem 6.2.b. (or p q) /= nil <-> (p /= nil) v (q /= nil)
+Proof.
+ (or p q) /= nil
+<->						{def or}
+ (if p p q) /= nil
+<->						{Theorem If}
+ (p /= nil -> p /= nil) ^ (p = nil -> q /= nil)
+<->						{PC&E}
+ (p = nil -> q /= nil)
+<->						{PC&E}
+ (p /= nil v q /= nil)
+Q.E.D.
+
+Theorem 6.2.c.  (and p q) /= nil <-> (p /= nil) ^ (q /= nil)
+Proof.
+ (and p q) /= nil
+<->						{def and}
+ (if p q nil) /= nil
+<->						{Theorem If}
+ (p /= nil -> q /= nil) ^ (p = nil -> nil /= nil)
+<->						{PC&E}
+ (p /= nil -> q /= nil) ^ (p /= nil)
+<->						{PC&E}
+ (p /= nil) ^ (q /= nil)
+Q.E.D.
+
+Theorem 6.2.d.  (implies p q) /= nil <-> [(p /= nil) -> (q /= nil)]
+Proof.
+ (implies p q) /= nil
+<->						{def implies}
+ (if p (if q t nil) t) /= nil						 
+<->						{Theorem If}
+ (p /=nil -> (if q t nil) /= nil) ^ (p = nil -> t /= nil)
+<->						{PC&E}
+ (p /=nil -> (if q t nil) /= nil)
+<->						{Theorem If}
+ (p /= nil -> ((q /= nil -> t /= nil) ^ (q = nil -> nil /= nil)))
+<->						{PC&E}
+ (p /= nil -> (q = nil -> nil /= nil)
+<->						{PC&E}
+ (p /= nil -> q /= nil)
+Q.E.D.
+
+============================================================
+
+Exercise 6.3
+
+What is the (ACL2 representation of the) first ordinal larger than all
+natural numbers?
+
+Answer:  (1 . 0)
+
+============================================================
+
+Exercise 6.4
+
+Which of the following represent ordinals?
+
+(2 1 . 27)
+(2 1 1 . 27)
+(2 1 0 . 27)
+(1 2 2 . 27)
+
+Answer:  Just the first two.
+
+============================================================
+
+Exercise 6.5
+
+There are an infinite number of ordinals less than omega.  This may encourage
+hope that an infinite decreasing sequence x_i can be constructed, where x_0
+is omega and x_1 is one of the infinitely many ordinals less than it.  Try to
+construct such a sequence by choosing some ordinal less than omega for x_1.
+What is the maximum length of the resulting sequence?  Try to construct an
+infinite descending sequence from omega x 2.
+
+Answer:  There are no such infinite descending sequences.  There are
+an infinite number of choices for x_1, but they are all natural numbers.
+As soon as you have chosen x_1 < omega then you have only a finite number
+of remaining choices to fill out your sequence.  The longest such descending
+sequence is, of course, <omega, x_1, x_1 - 1, ... 1, 0>, which has x_1 + 2
+elements.
+
+The situation is little better from omega x 2.  We write this ordinal (1 1
+. 0).  All of the naturals are less than it, so we could choose x_1 to be any
+element of that infinity, but the previous paragraph explains why this does
+not lead to an infinite desceding chain.  But there are also an infinite
+number of non-natural ordinals less than omega x 2, all of the form omega + n
+and written (1 . n) here.  As soon as we have chosen x_1 (and thus n), there
+are only a finite number of smaller non-natural ordinals, (1 . n-1), ..., (1
+. 0).  (Of course, below each of these is an infinite number of naturals.)
+Once we've exhausted the finite number of non-natural ordinals below (1 . n),
+we must drop below omega again, which finitely limits our choices.
+
+============================================================
+
+Exercise 6.6
+
+Suppose i1, i2, j1, and j2 are natural numbers.
+
+Is the value of (cons i1 i2) an ordinal?
+
+Answer: If and only if i1 is not 0.  (0 . 23) is not an ordinal.  The
+elements of an ordinal are powers of omega, which must be non-0 and listed in
+descending order.  So we say (0 . 23) and (1 1 0 . 23) fail to be ordinals
+because they contain a 0 power.  (1 1 2 . 23) fails to be an ordinal because
+the powers are not (weakly) descending.  (1 1 . 0) and (2 1 1 1 . 23) are
+ordinals (representing omega x 2 and omega^2 + omega x 3 + 23, respectively).
+The ``final cdr'' of an ordinal must be a natural number (and may be 0).  See
+the definition of e0-ordinalp.
+
+Is the value of (cons (+ 1 i1) i2) an ordinal?
+
+Answer:  Yes.
+
+Under what conditions is the value of (cons (+ 1 i1) i2) less than
+(cons (+ 1 j1) j2) in the sense of e0-ord-<?
+
+Answer:  Either i1 < j1, or else both i1 = j1 and i2 < j2.  See e0-ord-<.
+
+============================================================
+
+Exercise 6.7
+
+The ACL2 ordinals with relation e0-ord-< form a well-founded structure.
+Exhibit a set, S, of ACL2 objects such that the structure (S, e0-ord-<) is not
+well-founded.
+
+One answer:  Let S = {1/2, 1/3, 1/4, 1/5, ...}.
+
+Here is another infinitely descending sequence (according to e0-ord-<):
+
+<(1 2 . 0), (1 1 2 . 0), (1 1 1 2 . 0), ...>
+
+That is, 
+
+... e0-ord-< (1 1 1 2 . 0) e0-ord-< (1 1 2 . 0) e0-ord-< (1 2 . 0) 
+
+What's wrong?  There are no infinitely descending chains of ordinals but here
+is an infinitely descending chain.  Answer: These are not ordinals.  The
+powers are not weakly descending.  See Exercise 6.6.
+
+============================================================
+
+Exercise 6.8
+
+Show that for any positive integer n, the set of n-tuples of natural numbers,
+ordered lexicographically, can be embedded into the ACL2 ordinals in an
+order-preserving way.  The lexicographic ordering, <_n, on n-tuples of naturals
+is defined as follows: <_1 is <, the less than relation on the natural numbers.
+For n > 1, <x_1, x_2, ..., x_n> <_n <y_1, y_2, ..., y_n> iff x_1 <_1 y_1 or
+(x_1 = y_1 and <x_2, ..., x_n> <_{n-1} <y_2, ..., y_n>).
+
+Answer:  We can in fact specify the mapping recursively.  We use true lists of
+length n to represent n-tuples.  First,
+
+(defun prefix (x)
+  (cond
+   ((endp x) nil)
+   ((endp (cdr x)) nil)
+   (t (cons (car x) (prefix (cdr x))))))
+
+to return the list consisting of all the elements of x except the last.
+
+Then
+
+(defun lex (tuple)
+  (if (endp tuple)
+      0
+    (if (endp (cdr tuple))
+	(1+ (car tuple))
+      (cons (lex (prefix tuple))
+            (car (last tuple))))))
+
+(To admit lex we prove the that acl2-count of (prefix tuple) is smaller than
+that of tuple, when tuple is non-empty.)
+
+For the proofs below, let x and y range over n-tuples of natural numbers.  We
+use |x| to denote the length of x. Note that n = |x| = |y|.
+
+First, we prove by induction on x that for every n-tuple x of natural
+numbers, (e0-ordinalp (lex x)).  If |x| is 1 then this is clear.  Otherwise it
+is clear by the induction hypothesis, since the cdr of (lex x) is a natural
+number.
+
+Next, note that (lex x) is a consp if |x|>1 and (lex x) is a natural number.
+We use this fact implicitly below.
+
+Third, it is easy to show by induction on x and y that x = y if and only if
+(lex x) is equal to (lex y).
+
+Finally, we prove by induction on x and y that for any n-tuples x and y of
+natural numbers, x <_n y if and only if (e0-ord-< (lex x) (lex y)).  If n is
+1 this is clear.  Otherwise write x as (x_1 ... x_n) and y as (y_1 ... y_n),
+and let x' = (x_1 ... x_{n-1}) and y' = (y_1 ... y_{n-1}).  Note that x' is
+(prefix x).  Then:
+
+(lex x) = (cons (lex x') x_n)
+(lex y) = (cons (lex y') y_n)
+
+We have
+
+(e0-ord-< (lex x) (lex y))
+
+<->		{definition of e0-ord-<}
+
+(e0-ord-< (lex x') (lex y'))
+ v
+( (equal (lex x') (lex y'))
+  ^
+  (< x_n y_n) )
+
+<->		{by the inductive hypothesis and the "Third" paragraph above}
+
+(x' <_n-1 y') v ( x' = y' ^ x_n < y_n )
+
+<->		{by Lemma below}
+
+x <_n y.
+
+Q.E.D.
+
+The Lemma in question is that the lexicographic ordering, <_n, on n-tuples of
+naturals, x and y, has the following property when n > 1.  Let x' be (prefix
+x) and y' be (prefix y).  Then (x <_n y) <-> ((x' <_{n-1} y') v ( x' = y' ^
+x_n < y_n)), where x_n and y_n are the last elements of x and y,
+respectively.  Another way of stating the Lemma is that we could have defined
+<_n recursively in terms of prefix rather than cdr.
+
+============================================================
+
+Exercise 6.9
+
+Exhibit a bijection (i.e., a 1-1, onto map) between the ACL2 ordinals and the
+natural numbers.
+
+First we exhibit a bijection, f, from an infinite subset S of the
+natural numbers onto the ACL2 ordinals.  We then exhibit a bijection,
+g, from the natural numbers onto S.  The map taking n to f(g(n)) is a
+bijection from the natural numbers to the ACL2 ordinals.
+
+Function f is defined recursively on certain numbers n of the form 2^i * 3^j,
+where i and j are natural numbers, as follows.   If i is 0, then f(n) = j.  
+If f(i) is undefined or f(j) is undefined, then f(n) is undefined.  Otherwise, 
+let a = cons(f(i),f(j)).  If a is an ACL2 ordinal then f(n) = a; otherwise,
+f(n) is undefined.
+
+f is 1-1:
+Let P(n) be the property: for all m in S, f(n) = f(m) implies n = m.
+We prove P(n) for all n in S by induction; this implies that f is
+1-1.  If n=3^j, then f(n) = j. If f(n) = f(m), by the definition
+of f, m is 3^j, so n = m.  If n=(2^i1 * 3^j1), then f(n) = cons(f(i1),f(j1)).  
+If f(n) = f(m) for some m=(2^i2 * 3^j2), then by the definition of f and 
+properties of cons, f(i1) = f(i2) and f(j1) = f(j2).  By induction hypothesis, 
+i1 = i2 and j1 = j2, therefore n = m.
+
+f is onto:
+Let P(n) be the property: ACL2 ordinal n is in the range of f.  We prove P(n) 
+for all ACL2 ordinals by induction; this implies that f is onto.  If n is a 
+natural, then f(3^n)=n.  If n is cons(a,b), then a and b are smaller ordinals, 
+hence by induction hypothesis, a=f(i) and b=f(j) for some i and j, but then 
+f(2^i * 3^j) = n.
+
+We now exhibit g, the bijection from the natural numbers to S.  g(i) =
+the ith natural for which f is defined.  
+
+============================================================
+Exercise 6.10
+
+Exhibit a bijection between the ACL2 ordinals and epsilon-0 (i.e., the
+set-theoretic ordinals less than epsilon-0) which preserves order.
+(Note: You may wish to skip this exercise if the set-theoretic
+ordinals are new to you.)
+
+
+Intro
+-----
+We use, without proof, some results from set theory.  These include
+results about ordinal arithmetic and Cantor's Normal Form (CNF),
+defined below.  If you are not familiar with these results, you can
+skip the exercise or consult a book on set theory.  If you would like
+to see a proof of the well-foundedness of the ACL2 ordinals that
+depends only on structural induction and induction on the natural
+numbers, consult the documentation topic PROOF-OF-WELL-FOUNDEDNESS.
+Below, we sometimes denote function application with an infix dot.
+
+
+Outline
+-------
+Here is an outline of the proof.  Let e_0 be an abbreviation for (the
+set of set-theoretic ordinals less than) epsilon-0.  Let C_e_0 denote
+CNF expressions (defined in the next section).  We use the
+set-theoretic result that there is an isomorphism (order-preserving
+bijection) between e_0 and C_e_0.  The expressions in C_e_0 are very
+similar to the ACL2 ordinals (denoted E_0) and we prove that the two
+are isomorphic.  We do this by exhibiting a function F from C_e_0 and
+proving that the range of F is a subset of E_0 and that x <_C y iff
+F.x <_E F.y (<_E is the less-than relation on E_0 (also known as
+e0-ord-<) and <_C is the less-than relation on C_e_0).  We then prove
+that F is 1-1 (easy) and onto.  This gives us the isomorphism.  We
+also exhibit the inverse of F.
+
+
+CNF
+---
+Expression b is in CNF if b = w^(a_0) + ... + w^(a_j) + n, where w
+corresponds to omega (the set of natural numbers), j is a natural
+number, <forall i<=j :: a_i \= 0 /\ CNF.a_i>, n is a natural number,
+and <forall i<j :: a_i >=_C a_(i+1)>.  From set theory, we have that
+the obvious map (that interprets w as omega, ^ as ordinal
+exponentiation, and + as ordinal arithmetic) from CNF expressions to
+e_0 is a bijection.  e >_C f is defined as follows: If f is a natural,
+then e >_C f iff (e is a natural implies e > f).  If f is w^a + b,
+then [e >_C f] iff [e is of the form w^c + d where 
+(c >_C a or (c = a and d >_C b))].  As usual, e >=_C f iff [e >_C f or
+e = f], and similarly with the other relations.  It is a result from
+set theory that the set-theoretic ordinals up to e_0 with their usual
+order are isomorphic to the set of CNF expressions with order <_C.
+
+Lemma 1. CNF(w^a + b)  iff  CNF.a /\ CNF.b /\ a \= 0 /\
+                            [b is a natural \/
+                             <exists c :: (b = w^c + d /\ a >=_C d)>]
+Proof.  By definition of CNF.
+
+
+F, proof that the range of F is a subset of E_0  and 
+         that x <_C y iff F.x <_E F.y 
+-----------------------------------------
+F is a function from C_e_0 and is defined as:
+F.x = x if x is a natural
+F(w^a + b) = cons(F.a, F.b)
+Notice that F is well-defined, as the size of expressions decreases 
+on the recursive call.
+
+Lemma 2. <forall x in C_e_0 :: F.x in E_0  /\  <forall y in C_e_0 :: x >_C y => F.x >_E F.y>>
+
+Proof (By induction on x; recall that <C_e_0, <_C> is isomorphic to <e_0, <>).  
+If x is a natural, then F.x=x; by def of E_0, x in E_0.
+If furthermore x >_C y, y is a natural and F.x >_E F.y.
+
+If x=(w^a + b), F.x = cons(F.a,F.b) and a \= 0 (CNF.x), so F.a \= 0.
+Since a <_C x and b <_C x,  F.a and F.b are in E_0, by IH 
+(induction hypothesis). 
+If b is a natural, cons(F.a,b) is in E_0.  Otherwise, b = w^c + d
+where a >=_C c, so F.b = cons(F.c,F.d).  By IH, F.a >_E F.c, so by 
+the def of E_0, F.x in E_0.
+Let x >_C y.  If y is a natural, F.x >_E F.y = y, by def of >_E.
+Otherwise y = w^c + d.  If c=a, then d <_C b, so F.d <_E F.b by IH
+and F.y <_E F.x by def <_E.  Otherwise c <_C a, so by IH F.c <_E F.a.
+This gives F.y <_E F.x.
+
+We now prove the other direction of x <_C y iff F.x <_E F.y.
+
+Lemma 3.  <forall x in C_e_0 :: <forall y in C_e_0 :: F.x <_E F.y  =>  x <_C y >>
+
+Proof by induction on x.
+If x is a natural, it is easy to see.
+Otherwise x may be written w^a + b, so F.x = cons(F.a,F.b)
+If F.y = cons(F.a,F.d), then y = w^a + d and F.b <_E F.d, so by IH
+b <_C d, so x = w^a + b  <_C  w^a + d = y.
+Otherwise F.y is of the form cons(F.c,F.d) where F.a <_E F.c, hence, by IH, 
+a <_C c, so x = w^a + b  <_C  w^c + d = y, by <_C.
+
+
+F is 1-1, onto
+--------------
+F is 1-1.
+If not, then there are x,y s.t.  F.x = F.y and y <_C x.  By Lemma2,
+F.y <_E F.x.  By definition of <_E, this is a contradiction.
+
+F is onto.
+<forall x in E_0 :: <exists a in C_e_0 :: F.a = x>>
+
+Proof.
+By induction on the depth of x (which is an ACL2 object).
+
+If x is a natural, a = x works.
+
+Let x = cons(y,z).  By IH we may choose b and c such that F.b = y, F.c
+= z, and CNF.b, CNF.c.  Let a = w^b + c.  We show CNF.a with Lemma 1,
+from which it follows that F.a = F(w^b + c) = cons(F.b,F.c) =
+cons(y,z) = x.  Note that b \= 0, since y \= 0 (x in E_0).  If c is a
+natural, we are done.  Otherwise c = w^d + g and z = cons(F.d,F.g).
+We have to show b >=_C d, but this follows from F.b >=_E F.d.
+
+
+Conclusion
+----------
+We have shown that F is an isomophism between E_0 and C_e_0.  We chose
+to work with the function from C_e_0 to E_0 (as opposed to the
+function from E_0 to C_e_0) because we had set theoretic results about
+C_e_0 available (e.g., that <C_e_0, <_C> is well-founded).  One may want 
+to know the inverse of F.  It is the function f defined below.
+
+f.n = n, for n a natural
+f(cons(a,b)) = w^(f.a) + f.b
+
+Note that f is well defined, as the depth of the arguments decreases in 
+the recursive call.
+
+Proof that f and F are inverses. (By induction)
+f(F.n) = n
+f(F(w^a + b)) = f(cons(F.a,F.b)) = w^(f(F.a)) + f(F.b) = w^a + b
+
+============================================================
+
+Exercise 6.11
+
+What measure can be used to admit the following definition?
+
+(defun upto (i max) 
+  (if (and (integerp i)
+           (integerp max)
+           (<= i max))
+      (+ 1 (upto (+ 1 i) max))
+    0))      
+
+What is the value of (upto 7 12)?
+
+Answer:
+
+Measure can be (nfix (- (1+ max) i)).  (See ACL2 documentation for nfix.)
+
+(upto 7 12) = 6
+
+============================================================
+
+Exercise 6.12
+
+What measure can be used to admit the following definition?
+
+(defun g (i j)
+  (if (zp i)
+      j
+    (if (zp j)
+        i
+      (if (< i j)
+          (g i (- j i))
+        (g (- i j) j)))))
+
+What is (g 18 45)?  What is (g 7 9)?
+
+Answer:
+
+Measure can be (nfix (+ i j)).
+
+(g 18 45) = 9; (g 7 9) = 1.
+
+============================================================
+
+Exercise 6.13
+
+What measure can be used to admit the following definition?
+
+(defun mlen (x y)
+  (if (or (consp x) (consp y))
+      (+ 1 (mlen (cdr x) (cdr y)))
+    0))
+
+What is (mlen '(a b c) '(a b c d e))?
+
+Answer:
+
+Measure can be (+ (acl2-count x) (acl2-count y))
+
+(mlen '(a b c) '(a b c d e)) = 5
+
+============================================================
+
+Exercise 6.14
+
+What measure can be used to admit the following definition?
+
+(defun flen (x)
+  (if (equal x nil)
+      0
+    (+ 1 (flen (cdr x)))))
+
+What is (flen '(a b c))?  What is (flen '(a b c . 7))?
+
+Answer:
+
+Measure can be:  (if (null x) 0 (1+ (acl2-count x)))
+
+(flen '(a b c)) = 3
+(flen '(a b c . 7)) = 4
+
+============================================================
+
+Exercise 6.15
+
+What measure can be used to admit the following version of Ackermann's
+function?
+
+(defun ack (x y)
+   (if (zp x) 
+       1
+     (if (zp y) 
+         (if (equal x 1) 2 (+ x 2))
+       (ack (ack (1- x) y) (1- y)))))
+
+Answer:
+
+When using the ordinals described in Chapter 6, the measure can be
+(cons (1+ (nfix y)) (nfix x)).  If you are using Version 2.8 or later of the
+ACL2 system, you will first need to submit the following commands (see :DOC
+ordinals).
+
+  (include-book "ordinals/e0-ordinal" :dir :system)
+  (set-well-founded-relation e0-ord-<)
+
+For ACL2 Version 2.8 or later, an alternate solution may be found at the end of
+books/ordinals/lexicographic-ordering.lisp.
+
+============================================================
+
+Exercise 6.16
+
+Which of the following are admissible?  If inadmissible, would unsoundness
+result from adding the ``defining equation'' as an axiom?
+
+1. (defun f (x) (f x))
+Answer:  Inadmissible, not unsound; every function satisfies this..
+
+2. (defun f (x) (not (f x)))
+Answer:  Inadmissible and unsound; (f x) can not equal (not (f x)).
+
+3. (defun f (x) (if (f x) t t))
+Answer:  Inadmissible, not unsound; (f x) can for example always return t.
+
+4. (defun f (x) (if (f x) t nil))
+Answer:  Inadmissible, not unsound; (f x) can for example always return t.
+
+5. (defun f (x) (if (f x) nil t))
+Answer:  Inadmissible and unsound
+
+6. (defun f (x) (if (zp x) 0 (f (- x 1))))
+Answer:  Admissible
+
+7. (defun f (x) (if (zp x) 0 (f (f (- x 1)))))
+Answer:  Inadmissible, not unsound.  (Constant function 0 is an example.)
+
+8. (defun f (x) (if (zp x) 0 (+ 1 (f (f (- x 1))))))
+Answer:  Inadmissible, not unsound.  (Nfix is an example.)
+
+9. (defun f (x) (if (zp x) 0 (+ 2 (f (f (- x 1))))))
+Answer:  Inadmissible, unsound.  To see that it's unsound, suppose we had
+that equation.  Observe that
+(f 0) = 0.
+(f 1) = (+ 2 (f (f 0))) = (+ 2 (f 0)) = 2.
+(f 2) = (+ 2 (f (f 1))) = (+ 2 (f 2)).
+But x /= (+ 2 x), e.g., we could prove 0 = 2 by cancellation.
+
+10. (defun f (x) (if (integerp x) (* x (f (+ x 1)) (f (- x 1))) 0))
+Answer:  Inadmissible, not unsound.  (Constant function 0 is an example.)
+
+============================================================
+
+Exercise 6.17
+
+Show that << is irreflexive, i.e., ~ (s << s) for all s \in S.
+[Here (S,<<) is an arbitrary well-founded structure.]
+
+Proof:  Otherwise we have an infinite <<-descending sequence,
+... << s << s << s.
+
+============================================================
+
+Exercise 6.18
+
+Show that (S, <<+), is a well-founded structure, where <<+ is the transitive
+closure of <<.
+
+Proof.  Suppose otherwise; say we have an infinite <<+-descending sequence
+
+... <<+ s_2 <<+ s_1 <<+ s_0.
+
+Then we can construct an infinite <<-descending sequence from this as
+follows.
+
+By definition of transitive closure, for each i we may find (for some n)
+(*)_i      s_{i+1} = s_i,n <<  ... << s_i,0 = s_i
+
+Replace each pair
+
+s_{i+1} <<+ s_i
+
+in the original sequence with the corresponding sequence, (*)_i.  The result
+is an infinite <<-descending sequence, a contradiction.
+
+============================================================
+
+Exercise 6.19
+
+Let T be a subset of S.  An element m of T is a minimal element of T iff
+there is no element n of T such that n << m.  Prove that a structure (S, <<) is
+well-founded iff all non-empty subsets of S have a minimal element.  (An
+informal proof is fine here.  Those familiar with set theory will notice that
+they are using some form of the axiom of choice in their proof.)
+
+Proof.  For one direction, suppose (S, <<) is well-founded and T is a
+non-empty subset of S; we find a minimal element of T using the axiom
+of choice.  First pick any element m0 of T.  If m0 is minimal in T,
+then we are done; else pick m1 << m0 with m1 in T.  Continue in this
+way.  Since (S, <<) is well-founded we can extend the sequence only
+finitely often.  When we can no longer extend the sequence, we have a
+minimal element.
+
+Conversely, if (S, <<) is not well-founded then there is an infinite
+<<-descending sequence
+
+... <<+ s_2 <<+ s_1 <<+ s_0
+
+which gives us a set T = {s_0, s_1, ...} with no minimal element.
+
+============================================================
+
+Exercise 6.20
+
+Show that mathematical induction is a special case of well-founded induction.
+(Instantiate W and << appropriately.)  What happened to the base case?
+
+Proof.  Suppose that we can prove P(0) and (P(n) -> P(n+1)).  We use
+well-founded induction to prove P(n), as follows.
+
+Let W be the set of natural numbers and define the relation << on W as
+follows: i << j if and only if j = i+1.  The instance of the well-founded
+induction scheme obtained is:
+
+(forall w) [( (forall v) [v+1 = w  ->  P(v)] ) -> P(w)]
+
+= { case split w = 0, w /= 0 }
+
+    [(forall v) [v+1 = 0 -> P(v)] ) -> P(0)]  
+/\  (forall w) [( (forall v) [v+1 = w+1  ->  P(v)] ) -> P(w+1)]
+
+= { v+1 = 0 is false, hence the first forall is true (the base case), 
+    arithmetic }
+
+    P(0)  
+/\  (forall w) [( (forall v) [v = w  ->  P(v)] ) -> P(w+1)]
+
+= { v = w, elimination of forall }
+
+    P(0)  
+/\  (forall w) [P(w) -> P(w+1)]
+
+But this is the principle of mathematical induction. 
+============================================================
+
+Exercise 6.21
+
+Show that course of values induction is a special case of well-founded
+induction.  (Instantiate W and << appropriately.)
+
+Proof.  Course of values induction can be stated as follows (and certainly
+is a consequence of the following):
+
+(forall n) [ (forall i) (i < n -> P(i)) -> P(n) ]
+
+Let W be the set of natural numbers and define the relation << on W to be the
+usual < relation on W.  Then the formula above is exactly an instance of the
+well-founded induction scheme.
+
+============================================================
+
+Exercise 6.22
+
+Use the Induction Principle to generate the following base case and induction
+step.
+
+Base Case:
+(implies (zp x) (phi x y a))
+
+Induction Step:
+(implies (and (not (zp x))
+              (phi (- x 1) y (+ y a)))
+         (phi x y a))
+
+Solution.  Let q_1 be (not (zp x)), and let sigma_1,1 be the substitution
+mapping x to (- x 1), y to y, and a to (+ y a).  Let m be the term
+(acl2-count x).  The corresponding instance of the Induction Principle,
+applied to p, generates the following goals.
+
+Base case:
+(implies (not q_1) p)
+
+Induction Step:
+(implies (and q_1 
+              p/sigma_1,1)
+         p)
+
+If p is (phi x y a) then p/sigma_1,1 is (phi (- x 1) y (+ y a)).  Given our
+choice of q_1, we obtain exactly the base and induction steps from the
+problem statement, except that (not (not (zp x))) is generated for the
+antecedent of the base case, which may clearly be replaced by (zp x).  The
+proof obligations from the Induction Principle are as follows.
+
+(e0-ordinalp m)
+
+(implies q_1 (e0-ord-< m/sigma_1,1 m))
+
+When we plug in for our particular q_1, m, and \sigma_1,1, we obtain:
+
+(e0-ordinalp (acl2-count x))
+
+(implies (not (zp x)) (e0-ord-< (acl2-count (- x 1)) (acl2-count x)))
+
+These are easy theorems to prove.
+
+============================================================
+
+Exercise 6.23
+
+Use the Induction Principle to generate a base case and an induction step that
+are equivalent to the following.
+
+Base Case 1:
+(implies (zp x) (phi x))
+
+Base Case 2:
+(implies (equal x 1) (phi x))
+
+Induction Step:
+(implies (and (not (zp x))
+              (not (equal x 1))
+              (phi (- x 2)))
+         (phi x))
+
+Solution.  Let q_1 be (and (not (zp x)) (not (equal x 1))), and let sigma_1,1
+be the substitution mapping x to (- x 2).  Let m be the term (acl2-count x).
+The corresponding instance of the induction principle, applied to p,
+generates the following goals.
+
+Base case:
+(implies (not q_1) p)
+
+Induction Step:
+(implies (and q_1 
+              p/sigma_1,1)
+         p)
+
+By plugging in we obtain the following.
+
+Base Case:
+(implies (not (and (not (zp x)) (not (equal x 1)))) (phi x))
+
+Induction Step:
+(implies (and (and (not (zp x))
+		   (not (equal x 1)))
+              (phi (- x 2)))
+         (phi x))
+
+The base case just above simplifies propositionally to the two base cases in
+the problem, and the induction step above simplifies trivially to the induction
+step in the problem.  The proof obligations from the Induction Principle are as
+follows.
+
+(e0-ordinalp m)
+
+(implies q_1 (e0-ord-< m/sigma_1,1 m))
+
+When we plug in for our particular q_1, m, and sigma_1,1, we obtain:
+
+(e0-ordinalp (acl2-count x))
+
+(implies (and (not (zp x)) (not (equal x 1)))
+	 (e0-ord-< (acl2-count (- x 2)) (acl2-count x)))
+
+These are easy theorems to prove.
+
+============================================================
+
+Exercise 6.24
+
+Use the Induction Principle to generate a base case and some induction steps
+that are equivalent to the following.
+
+Base Case 1:
+(implies (equal x 0)
+         (phi x))
+
+Base Case 2:
+(implies (and (not (integerp x))
+              (not (consp x)))
+         (phi x))
+
+Induction Step 1:
+(implies (and (integerp x)
+              (< x 0)
+              (phi (+ x 1)))
+         (phi x))
+
+Induction Step 2:
+(implies (and (integerp x)
+              (< 0 x)
+              (phi (- x 1)))
+         (phi x))
+
+Induction Step 3:
+(implies (and (consp x)
+              (phi (car x))
+              (phi (cdr x)))
+         (phi x))
+
+Solution.  Consider the following.
+
+q_1: (and (integerp x) (< x 0))
+sigma_1,1: the substitution mapping x to (+ x 1)
+
+q_2: (and (integerp x) (< 0 x))
+sigma_2,1: the substitution mapping x to (- x 1)
+
+q_3: (consp x)
+sigma_3,1: the substitution mapping x to (car x)
+sigma_3,2: the substitution mapping x to (cdr x)
+
+Let m be the term (acl2-count x).  The corresponding instance of the induction
+principle, applied to p, generates the following goals.
+
+Base case:
+(implies (and (not q_1) (not q_2) (not q_3)) p)
+
+Induction Step 1:
+(implies (and q_1
+              p/sigma_1,1)
+         p)
+
+Induction Step 2:
+(implies (and q_2
+              p/sigma_2,1)
+         p)
+
+Induction Step 3:
+(implies (and q_3
+              p/sigma_3,1
+              p/sigma_3,2)
+         p)
+
+By plugging in (phi x) for p and our choices for the q_i and sigma_i,j, we
+obtain the following.
+
+Base case:
+(implies (and (not (and (integerp x) (< x 0)))
+	      (not (and (integerp x) (< 0 x)))
+	      (not (consp x)))
+	 (phi x))
+
+Induction Step 1:
+(implies (and (and (integerp x) (< x 0))
+              (phi (+ x 1)))
+         (phi x))
+
+Induction Step 2:
+(implies (and (and (integerp x) (< 0 x))
+              (phi (- x 1)))
+         (phi x))
+
+Induction Step 3:
+(implies (and (consp x)
+              (phi (car x))
+              (phi (cdr x)))
+         (phi x))
+
+The induction steps are clearly equivalent to the corresponding induction
+steps in the problem statement.  It remains only to consider the base case
+in the generated scheme and contrast it to the two base cases in the problem
+statement.
+
+Syntactically, the antecedent of the generated base case,
+
+(*1) (and (not (and (integerp x) (< x 0)))       
+          (not (and (integerp x) (< 0 x)))
+          (not (consp x)))
+
+is equivalent to
+
+(*2) (or (equal x 0)
+         (and (not (integerp x))
+              (not (consp x)))).
+
+So the generated base case is equivalent to the conjunction of the two
+base cases. 
+
+Here is a derivation of the equivalence of (*1) and (*2).
+(*1) <-> (and (not (and (integerp x) (< x 0)))       
+              (not (and (integerp x) (< 0 x)))
+              (not (consp x)))
+     <-> (if (equal x 0)
+             (and (not (and (integerp x) (< x 0)))       
+                  (not (and (integerp x) (< 0 x)))
+                  (not (consp x)))
+             (and (not (and (integerp x) (< x 0)))       
+                  (not (and (integerp x) (< 0 x)))
+                  (not (consp x))))
+     <-> (if (equal x 0)
+             t
+             (and (not (and (integerp x) (< x 0)))       
+                  (not (and (integerp x) (< 0 x)))
+                  (not (consp x))))
+     <-> (if (equal x 0)
+             t
+             (and (or (not (integerp x)) (not (< x 0)))
+                  (or (not (integerp x)) (not (< 0 x)))
+                  (not (consp x))))
+     <-> (if (equal x 0)
+             t
+             (and (and (or (not (integerp x)) (not (< x 0)))
+                       (or (not (integerp x)) (not (< 0 x))))
+                  (not (consp x))))
+     <-> (if (equal x 0)
+             t
+             (and (or (not (integerp x))
+                      (and (not (< x 0))
+                           (not (< 0 x))))
+                  (not (consp x))))
+     <-> (if (equal x 0)
+             t
+             (and (or (not (integerp x))
+                      (equal x 0))
+                  (not (consp x))))
+     <-> (if (equal x 0)
+             t
+             (and (or (not (integerp x))
+                      nil)
+                  (not (consp x))))
+     <-> (if (equal x 0)
+             t
+             (and (not (integerp x))
+                  (not (consp x))))
+     <-> (or (equal x 0)
+             (and (not (integerp x))
+                  (not (consp x)))).
+
+     <-> (*2).
+
+Thus, the base case derived above is equivalent to the conjunction of
+the two base cases from the problem statement.
+
+(implies (or (equal x 0)
+	     (and (not (integerp x))
+		  (not (consp x))))
+	 (phi x))
+
+============================================================
+
+Exercise 6.25
+
+Consider the following recursive function definition (more precisely,
+definition scheme).  Characterize the relationship between the admission of
+such a definition and a certain instance of the Induction Principle.  Hint:
+Write down the measure conjectures required for the admission of f.
+Instantiate the Induction Principle so that the m, k, h_k, and q_i of the
+Induction Principle are the corresponding choices of this definition.  Let
+sigma_{i,j} of the Induction Principle be the substitution that maps each v_x
+to delta_{i,j,x}.  What is the base case of the induction?  How many induction
+steps are there?  Write down the first induction step.  How many hypotheses
+does it have?  What are they?  What are the measure conjectures of the
+induction?
+
+(defun f (v_1 ... v_n)
+  (declare (xargs :measure m))
+  (cond
+   (q_1 (list (f delta_{1,1,1} ... delta_{1,1,n})
+	      (f delta_{1,2,1} ... delta_{1,2,n})
+	      ...
+	      (f delta_{1,h_1,1} ... delta_{1,h_1,n})))
+   ...
+   (q_k (list (f delta_{k,1,1} ... delta_{k,1,n})
+	      (f delta_{k,2,1} ... delta_{k,2,n})
+	      ...
+	      (f delta_{k,h_k,1} ... delta_{k,h_2,n})))
+   (t nil)))
+
+Solution.
+
+The measure conjectures required to admit f are:
+
+Measure Conjecture 0:
+(e0-ordinalp m)
+
+Measure Conjecture i,j (for 1<=i<=k and 1<=j<=h_i):
+(implies (and (not q_1)
+              (not q_2)
+              ...
+              q_i)
+         (e0-ord-< m/sigma_{i,j} m))
+
+Without loss of generality we can assume m is a term of the form
+(m v_1 ... v_n), in which case m/sigma_{i,j} is just
+(m delta_{i,j,1} ... delta_{i,j,n}).  Under this view of m,
+
+Measure Conjecture i,j (for 1<=i<=k and 1<=j<=h_i):
+(implies (and (not q_1)
+              (not q_2)
+              ...
+              q_i)
+         (e0-ord-< (m delta_{i,j,1} ... delta_{i,j,n})
+                   (m v_1           ... v_n)))
+
+These measure conjectures are proved when f is admitted.
+
+We now identify the M, K, H_K, Q_i, and SIGMA_{i,j} of the induction
+principle, using upper case letters to distinguish them from their
+counterparts in f.
+
+Let M be (m v_1 ... v_n), K is k, H_k is h_k, the Q_i are
+(and (not q_1) (not q_2) ... q_i), and sigma_{i,j} is the
+substitution that maps v_k to delta_{i,j,k}, for 1<=k<=n.
+
+Without loss of generality, suppose we use this induction scheme to
+prove (phi v_1 ... v_n).  Then the base case is:
+
+Base case:
+(implies (and (not q_1)
+              (not (and (not q_1) q_2))
+              ...
+              (not (and (not q_1) ... (not q_{k-1}) q_k)))
+         (phi v_1 ... v_n)).
+
+But this is equivalent to
+
+Base case:
+(implies (and (not q_1) (not q_2) ... (not q_k))
+         (phi v_1 ... v_n)).
+
+
+There are k induction steps, one for each q_i.  The first induction
+step is:
+
+Induction step 1:
+(implies (and q_1
+              (phi delta_{1,1,1} ... delta_{1,1,n})
+              ...
+              (phi delta_{1,h_1,1} ... delta_{1,h_1,n}))
+         (phi v_1 ... v_n))
+
+The other induction steps are:
+
+Induction step 2:
+(implies (and (not q_1)
+              q2
+              (phi delta_{2,1,1} ... delta_{2,1,n})
+              ...
+              (phi delta_{2,h_2,1} ... delta_{2,h_2,n}))
+        (phi v_1 ... v_n))
+
+...
+
+Induction step k:
+(implies (and (not q_1) (not q_2) ... (not q_{k-1})
+              q_k
+              (phi delta_{k,1,1} ... delta_{k,1,n})
+              ...
+              (phi delta_{k,h_k,1} ... delta_{k,h_k,n}))
+        (phi v_1 ... v_n))
+
+Observe that the first induction step has h_1 induction hypotheses.
+In general, the ith induction step provides h_i induction hypotheses.
+
+The measure conjectures necessary to justify this induction are
+Measure Conjecture 0 and Measure Conjecture i,j (for 1<=i<=k and
+1<=j<=h_i), as shown for the admission of f.
+
+We say that this induction is JUSTIFIED by the admission of f.
+By that we mean that the justifying measure conjectures for the
+induction are identical to those proved when f was admitted.
+
+We say that this is the induction SUGGESTED by f in the sense that (a)
+there is a base case for the non-recursive exit of the definition of f
+and (b) there is an induction step for each group of recursive calls
+governed by a q_i.  The induction step provides as many inductive
+hypotheses as there are distinct recursive calls of f on the given
+output branch.  The variables, v_1, ..., v_n, are mapped in the
+induction hypotheses to the very same terms to which they are mapped
+in the recursive calls.
+
+============================================================
+
+
+

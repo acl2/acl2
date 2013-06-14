@@ -1,0 +1,27 @@
+
+
+  CONTENTS:
+---------------------------------------------------------------------------------------------------
+
+Minimal-Mod-Lemmas.lisp                           A book to export some necessary lemmas about mod.
+                                                  A certified version is also present.
+
+private-qr-lemmas.lisp                            A slightly modified version of the quotient-remainder
+                                                  book, that also exports some previously local lemma.
+                                                  A certified version is also present.
+
+
+HOW TO RUN THE PROOFS
+-------------------------------------------------------------------------------
+To certify the book for the ACL2 script, run make or follow steps 1-3:
+
+1 - Run ACL2 and (certify-book "private-qr-lemmas"). Exit ACL2.
+
+2 - Run ACL2 and (certify-book "Minimal-Mod-Lemmas"). Exit ACL2.
+
+3 - Run ACL2 and (certify-book "Exercise1.2").
+ 
+A certified version of the books is provided.
+
+
+

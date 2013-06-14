@@ -1,0 +1,27 @@
+This directory contains the supporting files for Chapter 11, "Using
+Macros to Mimic VHDL", by Dominique Borrione, Philippe Georgelin, and
+Vanderlei Rodrigues, in "Computer-Aided Reasoning: ACL2 Case Studies",
+edited by M. Kaufmann, P. Manolios, J Moore (Kluwer, 2000, p.167-182).
+
+These files are named :
+vhdl.lisp
+fact.lisp
+fact-proof.lisp
+exercises.lisp
+
+File vhdl.lisp contains:
+- the macros (_entity, _architecture , _process) with which a VHDL
+  design can be written in a resembling lisp syntax,;
+- all the necessary functions to construct the ACL2 model from the
+  initial VHDL design.
+
+File fact.lisp is the example in Figure 1.  It is the description of the
+circuit that computes the factorial function, using two concurrent
+processes.  It uses the macros defined in the preceding file.
+
+File fact-proof.lisp contains all the useful theorems about the behavior
+of the design described in fact.lisp, and the theorems leading to the
+proof of functional correctness described in section 5.
+
+File exercises.lisp contains solution to the exercises in this chapter,
+including the theorems.

@@ -1,0 +1,7 @@
+See the comments in top.lisp.
+See also ../../README
+
+Some of the books and lemmas which used to be in support/ have been moved to arithmetic/.
+
+This directory is still a mess (all our gross hacks are in support/), but we are gradually burying them in
+-proofs books.

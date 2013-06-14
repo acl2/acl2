@@ -1,0 +1,12 @@
+cert_pl_exclude
+
+The presence of this file tells cert.pl not to try to build any of the books in
+this directory.
+
+Quoting from workshops/2000/Makefile:
+
+# cowles/books -- tarai4 is resource-demanding: crashes some lisps, overflows
+#                 in others.  At some point we may deal with this.
+#                 Also, a change will be needed for v2-6 in tarai6, to get
+#                 through lemma tarai=Fb-3.
+

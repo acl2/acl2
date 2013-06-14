@@ -1,0 +1,3 @@
+The present directory contains J Moore's finite set theory book,
+set-theory.lisp.  Subdirectory osets/ contains Jared Davis's "Fully Ordered
+Finite Sets" library.
