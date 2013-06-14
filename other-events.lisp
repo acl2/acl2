@@ -8832,7 +8832,12 @@
              (if (eq r t)
                  state
                (f-put-global 'last-make-event-expansion r state))
-             (stop-redundant-event ctx state)))
+             (stop-redundant-event
+              ctx state
+              (and (not (eq r t))
+                   "(This event is redundant with a previous encapsulate ~
+                    event even though the two are not equal; see :DOC ~
+                    redundant-encapsulate.)"))))
            ((and (not (eq (ld-skip-proofsp state) 'include-book))
                  (not (eq (ld-skip-proofsp state) 'include-book-with-locals))
                  (not (eq (ld-skip-proofsp state) 'initialize-acl2)))

@@ -20962,6 +20962,14 @@
 
 ; (CMUCL only) Allocated larger stack for CMUCL on 64-bit x86 installations.
 
+; Evaluation of a redundant encapsulate event, in the case that the event is
+; not equal to the corresponding earlier encapsulate event, now causes an
+; additional message to be printed that directs the user to a new :doc topic --
+; redundant-events -- which explains the situation (and includes some :doc that
+; was formerly in :doc encapsulate).  Because of this, stop-redundant-event has
+; been modified.  Thanks to Carl Eastlund for suggesting improvements along
+; these lines.
+
   :doc
   ":Doc-Section release-notes
 

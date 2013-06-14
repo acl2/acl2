@@ -19163,7 +19163,8 @@
   the theorem ~c[foo-preserves-consp] is encountered in the second pass,
   ~c[foo] is a known function symbol with the indicated signature.
 
-  We turn now to more complete documentation.
+  We turn now to more complete documentation.  But discussion of redundancy for
+  ~c[encapsulate] events may be found elsewhere; ~pl[redundant-encapsulate].
 
   ~bv[]
   Other Examples:
@@ -19311,27 +19312,6 @@
   made to the ~il[world] by the superior ~c[encapsulate], to permit
   ~c[an-element] to be used as a function symbol in ~c[thm1].
 
-  The typical way for an ~c[encapsulate] event to be redundant is when a
-  syntactically identical ~c[encapsulate] has already been executed under the
-  same ~ilc[default-defun-mode], ~ilc[default-ruler-extenders], and
-  ~ilc[default-verify-guards-eagerness].  More generally, the ~c[encapsulate]
-  events need not be syntactically identical, but rather, need only to
-  correspond in the following sense: they contain the same signatures and the
-  same number of top-level events ~-[] let ~c[k] be that number ~-[] and for
-  each ~c[i < k], the ~c[i]th top-level events ~c[E1] and ~c[E2] from the
-  earlier and current ~c[encapsulate]s have one of the following properties.
-
-  o ~c[E1] and ~c[E2] are equal; or
-
-  o ~c[E1] is of the form ~c[(record-expansion E2 ...)]; or else
-
-  o ~c[E1] and ~c[E2] are equal after replacing each ~ilc[local] sub-event by
-  ~c[(local (value-triple :elided))], where a sub-event of an event ~c[E] is
-  either ~c[E] itself, or a sub-event of a constituent event of ~c[E] in the
-  case that ~c[E] is a call of ~ilc[with-output], ~ilc[with-prover-time-limit],
-  ~ilc[with-prover-step-limit], ~c[record-expansion], ~ilc[time$], ~ilc[progn],
-  ~ilc[progn!], or ~c[encapsulate] itself.
-
   Remark for ACL2(r) (~pl[real]).  For ACL2(r), ~ilc[encapsulate] can be used
   to introduce classical and non-classical functions, as determined by the
   signatures; ~pl[signature].  Those marked as classical (respectively
@@ -19346,6 +19326,99 @@
         (list 'quote cmd-lst)
         'state
         (list 'quote event-form)))
+
+(defdoc redundant-encapsulate
+  ":Doc-Section encapsulate
+
+  redundancy of ~ilc[encapsulate] ~il[events]~/
+
+  For this ~il[documentation] topic we assume familiarity with ~c[encapsulate]
+  events and the notion of redundancy for ~il[events]; ~pl[encapsulate] and
+  ~pl[redundant-events].
+
+  The typical way for an ~c[encapsulate] event to be redundant is when a
+  syntactically identical ~c[encapsulate] has already been executed under the
+  same ~ilc[default-defun-mode], ~ilc[default-ruler-extenders], and
+  ~ilc[default-verify-guards-eagerness].  But more generally, the
+  ~c[encapsulate] events need not be syntactically identical; for example, it
+  suffices that they agree when the contents of ~ilc[local] sub-events are
+  ignored.  The precise criterion for redundancy is given below, but let us
+  first look at a consequence of the point just made about ignoring the
+  contents of ~ilc[local] sub-events.  Consider the following sequence of two
+  events.
+  ~bv[]
+  (encapsulate
+   ()
+   (defun f (x) x)
+   (local (defthm f-identity
+            (equal (f x) x))))
+
+  (encapsulate
+   ()
+   (defun f (x) x)
+   (local (defthm false-claim
+            (equal (f x) (not x)))))
+  ~ev[]
+  You might be surprised to learn that the second is actually redundant, even
+  though ~c[false-claim] is clearly not a theorem; indeed, its negation is a
+  theorem!  The following two points may soften the blow.  First, this behavior
+  is as specified above (and is specified more precisely below): the contents
+  of ~il[local] events are ignored when checking redundancy of
+  ~ilc[encapsulate] events.  Second, this behavior is sound, because the
+  logical meaning of an ~ilc[encapsulate] event is taken from the events that
+  it exports, which do not include events that are ~il[local] to the
+  ~c[encapsulate] event.
+
+  Some users, however, want to use ~ilc[encapsulate] events for testing in a
+  way that is thwarted by this ignoring of ~il[local] sub-events.  Consider
+  the following sort of example.
+  ~bv[]
+  (encapsulate ()
+               (local (defthm test1 ...)))
+
+  (encapsulate ()
+               (local (defthm test2 ...)))
+  ~ev[]
+  Since the contents of local events are ignored when checking redundancy of an
+  ~c[encapsulate] event, the second form just above is indeed redundant,
+  presumably not as expected by whomever wrote these two tests.  A solution is
+  to add distinct non-local forms, for example as follows.
+  ~bv[]
+  (encapsulate ()
+               (value-triple \"test1\")
+               (local (defthm test1 ...)))
+
+  (encapsulate ()
+               (value-triple \"test2\")
+               (local (defthm test2 ...)))
+  ~ev[]
+  A different solution is to use ~ilc[make-event] for testing, as follows.
+  ~bv[]
+  (make-event (er-progn (defthm test1 ...)
+                        (value '(value-triple nil))))
+  (make-event (er-progn (defthm test2 ...)
+                        (value '(value-triple nil))))
+  ~ev[]
+  Also see community books ~c[misc/eval.lisp], ~c[make-event/eval-check.lisp],
+  and ~c[make-event/eval-tests.lisp] for more ways to test in books.
+
+  The precise criterion for redundancy of ~ilc[encapsulate] ~il[events] is that
+  the existing and proposed ~c[encapsulate] events contain the same signatures
+  and the same number of top-level events ~-[] let ~c[k] be that number ~-[]
+  and for each ~c[i < k], the ~c[i]th top-level events ~c[E1] and ~c[E2] from
+  the earlier and current ~c[encapsulate]s have one of the following
+  properties.
+
+  o ~c[E1] and ~c[E2] are equal; or
+
+  o ~c[E1] is of the form ~c[(record-expansion E2 ...)]; or else
+
+  o ~c[E1] and ~c[E2] are equal after replacing each ~ilc[local] sub-event by
+  ~c[(local (value-triple :elided))], where a sub-event of an event ~c[E] is
+  either ~c[E] itself, or a sub-event of a constituent event of ~c[E] in the
+  case that ~c[E] is a call of ~ilc[with-output], ~ilc[with-prover-time-limit],
+  ~ilc[with-prover-step-limit], ~c[record-expansion], ~ilc[time$], ~ilc[progn],
+  ~ilc[progn!], or ~c[encapsulate] itself.~/~/")
 
 (defconst *load-compiled-file-values*
   '(t nil :warn :default :comp))
