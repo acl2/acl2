@@ -1,3 +1,0 @@
-(include-book "portcullis")
-; cert-flags: ? t :ttags :all
-(certify-book "top" ? t :ttags :all)

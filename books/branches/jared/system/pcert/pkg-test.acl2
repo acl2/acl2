@@ -1,5 +1,0 @@
-(in-package "ACL2")
-(defpkg "FOO" nil)
-(defpkg "BAR" '(foo::a))
-; cert-flags: ? :default
-(certify-book "pkg-test" ? :default)

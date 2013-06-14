@@ -1,2 +1,0 @@
-; cert-flags: ? t :ttags '(oprof)
-(certify-book "oprof" ? t :ttags '(oprof))

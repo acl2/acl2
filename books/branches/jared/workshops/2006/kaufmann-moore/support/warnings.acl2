@@ -1,3 +1,0 @@
-(in-package "ACL2")
-; cert-flags: ? nil :defaxioms-okp t :skip-proofs-okp t
-(certify-book "warnings" ? nil :defaxioms-okp t :skip-proofs-okp t)

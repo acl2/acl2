@@ -1,3 +1,0 @@
-(include-book "../m5/utilities")
-
-(certify-book "factorial-jvm-correct" ? t)
