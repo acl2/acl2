@@ -9619,10 +9619,10 @@
   (cond ((eq fn 'cons)
 ; We call this function on cons so often we optimize it.
          '(nil))
-        ((eq fn 'return-last)
+        ((member-eq fn '(if return-last))
          (er hard! 'stobjs-out
              "Implementation error: Attempted to find stobjs-out for ~x0."
-             'return-last))
+             fn))
         (t (getprop fn 'stobjs-out '(nil) 'current-acl2-world w))))
 
 ; With stobjs-out defined, we can define user-defined-functions-table.

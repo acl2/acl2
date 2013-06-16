@@ -1325,6 +1325,73 @@
         (error "ACL2 Halted"))))
    (t (error "ACL2 error:  ~a." args))))
 
+#-acl2-loop-only
+(declaim (inline
+
+; Here we take a suggestion from Jared Davis and inline built-in functions,
+; starting after Version_6.2, based on successful use of such inlining at
+; Centaur Technology for many months on their local copy of ACL2.  Indeed, the
+; original list below (added on June 16, 2013) comes directly from that copy,
+; except for inclusion of aref1 and aref2 (as noted below).  As Jared said in a
+; log message when he added inline declarations for 33 functions to a local
+; copy of ACL2 at Centaur:
+
+;   This should give us a useful speedup on CCL for many functions that recur
+;   with ZP at the end.  I measured a 12% speedup for a naive FIB function.
+
+; We are seeing perhaps 2% speedup on regressions, but we believe that this
+; inlining could provide much greater benefit in some cases.
+
+; Some of these functions could probably be inlined using the defun-inline
+; feature of ACL2, but we prefer not to fight with the likely resulting
+; boot-strapping problem during the ACL2 build.
+
+; We may modify this list from time to time, for example based on user request.
+; It surely is safe to add any function symbol to the list that is not defined
+; recursively in raw Lisp (and maybe even if it is).  But of course that could
+; interfere with tracing and redefinition, so care should be taken before
+; adding a function symbol that might be traced or redefined.
+
+; We endeavor to keep the list sorted alphabetically, simply to make it easy to
+; search visually.
+
+           acl2-numberp
+           add-to-set-eq-exec
+           aref1 ; already inlined in Version_6.2 and before
+           aref2 ; already inlined in Version_6.2 and before
+           booleanp
+           complex-rationalp
+           eqlablep
+           fix
+           fn-symb
+           iff
+           ifix
+           implies
+           integer-abs
+           integer-range-p
+           len
+           member-equal
+           natp
+           nfix
+           peek-char$
+           posp
+           quotep
+           random$
+           read-byte$
+           read-char$
+           realfix
+           rfix
+           signed-byte-p
+           strip-cars
+           strip-cdrs
+           symbol-<
+           unsigned-byte-p
+           xor
+           zip
+           zp
+           zpf
+           ))
+
 ; We provide here ``raw'' implementations of basic functions that we
 ; ``wish'' were already in Common Lisp, to support primitives of the
 ; ACL2 logic.
@@ -23558,9 +23625,6 @@
 ; very large slow down.  In Rager's experiment, it was about 40x slower.  This
 ; is a terrible performance penalty, so in #+ACL2-PAR, we do not use array
 ; caching.
-
-(declaim (inline aref1))
-(declaim (inline aref2))
 
 (defparameter *acl2-array-cache*
 

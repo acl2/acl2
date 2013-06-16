@@ -8670,11 +8670,11 @@ Missing functions (use *check-built-in-constants-debug* = t for verbose report):
   (cond ((eq fn 'cons)
 ; We call this function on cons so often we optimize it.
          '(nil))
-        ((eq fn 'return-last)
+        ((member-eq fn '(if return-last))
          (interface-er "Implementation error in ~
                         get-stobjs-out-for-declare-form: Attempted to find ~
                         stobjs-out for ~x0."
-                       'return-last))
+                       fn))
         (t (let ((w (w *the-live-state*)))
              (or (getprop fn 'stobjs-out nil 'current-acl2-world w)
                  (and (getprop fn 'symbol-class nil 'current-acl2-world w)

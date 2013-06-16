@@ -20461,6 +20461,8 @@
 
 (deflabel note-6-2
 
+; Total number of release note items: 41.
+
 ; Here is the example from Sol Swords for the item below about acl2-magic-mfc
 ; and acl2-magic-canonical-pathname.  The problem was that these "placeholder"
 ; functions are really clause processors, and hence should return a list of
@@ -20970,6 +20972,10 @@
 ; been modified.  Thanks to Carl Eastlund for suggesting improvements along
 ; these lines.
 
+; Modified functions stobjs-out and get-stobjs-out-for-declare-form according
+; to a suggestion from Jared Davis, to cause an error when attempting to
+; determine the stobjs-out for IF just as we already do for RETURN-LAST.
+
   :doc
   ":Doc-Section release-notes
 
@@ -21001,6 +21007,10 @@
   ~st[BUG FIXES]
 
   ~st[CHANGES AT THE SYSTEM LEVEL]
+
+  Thanks to a suggestion from Jared Davis, over 30 built-in functions are now
+  declared to be inline in order to boost performance.  (The list may be found
+  by searching ACL2 source file ~c[axioms.lisp] for ``~c[(declaim (inline]''.)
 
   ~st[EMACS SUPPORT]
 
