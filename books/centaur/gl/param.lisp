@@ -47,15 +47,20 @@
 
 (defund gnumber-to-param-space (n p)
   (declare (xargs :guard t))
-  (and (consp n)
-       (cons (bfr-list-to-param-space p (car n))
-             (and (consp (cdr n))
-                  (cons (bfr-list-to-param-space p (cadr n))
-                        (and (consp (cddr n))
-                             (cons (bfr-list-to-param-space p (caddr n))
-                                   (and (consp (cdddr n))
-                                        (list (bfr-list-to-param-space
-                                               p (cadddr n)))))))))))
+  (b* (((mv rnum rden inum iden) (break-g-number n)))
+    (mk-g-number (bfr-list-to-param-space p rnum)
+                 (bfr-list-to-param-space p rden)
+                 (bfr-list-to-param-space p inum)
+                 (bfr-list-to-param-space p iden))))
+  ;; (and (consp n)
+  ;;      (cons (bfr-list-to-param-space p (car n))
+  ;;            (and (consp (cdr n))
+  ;;                 (cons (bfr-list-to-param-space p (cadr n))
+  ;;                       (and (consp (cddr n))
+  ;;                            (cons (bfr-list-to-param-space p (caddr n))
+  ;;                                  (and (consp (cdddr n))
+  ;;                                       (list (bfr-list-to-param-space
+  ;;                                              p (cadddr n)))))))))))
 
 ;; (local
 ;;  (defthm wf-g-numberp-gnumber-to-param-space
@@ -72,7 +77,7 @@
     (pattern-match x
       ((g-concrete &) x)
       ((g-boolean b) (mk-g-boolean (bfr-to-param-space p b)))
-      ((g-number n) (g-number (gnumber-to-param-space n p)))
+      ((g-number n) (gnumber-to-param-space n p))
       ((g-ite if then else)
        (mk-g-ite (gobj-to-param-space if p)
                  (gobj-to-param-space then p)
@@ -222,6 +227,19 @@
           '(t))
    :hints (("goal" :in-theory (enable bfr-eval-list)))))
 
+(defthm gnumber-to-param-space-correct
+  (implies (bfr-eval p (car env))
+           (equal (generic-geval (gnumber-to-param-space n p)
+                                 (cons (bfr-param-env p (car env))
+                                       (cdr env)))
+                  (generic-geval (g-number n) env)))
+  :hints(("Goal" :in-theory (e/d (gnumber-to-param-space)
+                                 (components-to-number-alt-def
+                                  break-g-number
+                                  bfr-param-env)))))
+
+
+
 (defthm gobj-to-param-space-correct
   (implies (bfr-eval p (car env))
            (equal (generic-geval (gobj-to-param-space x p)
@@ -232,8 +250,6 @@
                  genv-param
                  ;; gobjectp-g-boolean-2
                  ;; gobjectp-g-number-2
-                 gnumber-to-param-space
-                 break-g-number
                  default-car default-cdr)
                 ((force) bfr-eval-list
                  components-to-number-alt-def
@@ -251,7 +267,8 @@
                  hons-assoc-equal)
                 ((:type-prescription len)))
           :induct (gobj-to-param-space x p)
-          :expand ((gobj-to-param-space x p)))
+          :expand ((gobj-to-param-space x p))
+          :do-not-induct t)
          (and stable-under-simplificationp
               (flag::expand-calls-computed-hint
                acl2::clause '(generic-geval)))))

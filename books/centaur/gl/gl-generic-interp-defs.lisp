@@ -39,12 +39,19 @@
 (verify-termination acl2::evisc-tuple)
 (verify-guards acl2::evisc-tuple)
 
-(defmacro glcp-if (test then else)
+(defun glcp-case-split-report (test then else)
+  (declare (xargs :guard t)
+           (ignore test then else))
+  nil)
+                  
+
+(defmacro glcp-if (test then else &key report)
   `(b* ((gtests (gtests ,test hyp))
         (then-hyp (hf (bfr-or (gtests-unknown gtests)
                                (gtests-nonnil gtests))))
         (else-hyp (hf (bfr-or (gtests-unknown gtests)
                                (bfr-not (gtests-nonnil gtests)))))
+        (- (and then-hyp else-hyp ,report))
         ((glcp-er then)
          (if then-hyp
              (let ((hyp (bfr-and hyp then-hyp)))
@@ -95,9 +102,24 @@
 
 (in-theory (disable gl-cp-hint (:type-prescription gl-cp-hint) (gl-cp-hint)))
 
+(defun gl-hide (x)
+  (declare (xargs :guard t))
+  x)
+
 (def-eval-g glcp-generic-geval
-  (if gl-cp-hint shape-spec-obj-in-range return-last use-by-hint equal
-      acl2::typespec-check implies iff not cons gl-aside gl-ignore gl-error
+  (
+   ;; used in shape specs
+   logapp int-set-sign maybe-integer
+          cons car cdr consp if not equal nth len iff
+          shape-spec-slice-to-env
+          ss-append-envs
+          shape-spec-obj-in-range-iff
+          shape-spec-obj-in-range
+          shape-spec-env-slice
+          shape-spec-iff-env-slice
+
+          if gl-cp-hint shape-spec-obj-in-range return-last use-by-hint equal
+      acl2::typespec-check implies iff not cons gl-aside gl-ignore gl-error gl-hide
       BINARY-*
       BINARY-+
       PKG-WITNESS
@@ -566,6 +588,49 @@
   :rule-classes :linear)
 
 
+(mutual-recursion
+ (defun gl-term-to-apply-obj (x alist)
+   (declare (xargs :guard (pseudo-termp x)
+                   :verify-guards nil))
+   (b* (((when (not x)) nil)
+        ((when (atom x)) (cdr (hons-assoc-equal x alist)))
+        ((when (eq (car x) 'quote)) (g-concrete-quote (cadr x)))
+        (args (gl-termlist-to-apply-obj-list (cdr x) alist))
+        (fn (car x))
+        ((when (consp fn))
+         (b* ((formals (cadr fn))
+              (body (caddr fn)))
+           (gl-term-to-apply-obj body (pairlis$ formals args))))
+        ((when (eq fn 'if))
+         (g-ite (first args) (second args) (third args)))
+        ((when (eq fn 'cons))
+         (gl-cons (first args) (second args))))
+     (g-apply fn args)))
+ (defun gl-termlist-to-apply-obj-list (x alist)
+   (declare (xargs :guard (pseudo-term-listp x)))
+   (if (atom x)
+       nil
+     (gl-cons (gl-term-to-apply-obj (car x) alist)
+              (gl-termlist-to-apply-obj-list (cdr x) alist)))))
+
+(in-theory (disable gl-term-to-apply-obj
+                    gl-termlist-to-apply-obj-list))
+
+
+(flag::make-flag gl-term-to-apply-obj-flag gl-term-to-apply-obj)
+
+(defthm-gl-term-to-apply-obj-flag
+  (defthm true-listp-gl-termlist-to-apply-obj-list
+    (true-listp (gl-termlist-to-apply-obj-list x alist))
+    :hints ('(:expand ((gl-termlist-to-apply-obj-list x alist))))
+    :rule-classes :type-prescription
+    :flag gl-termlist-to-apply-obj-list)
+  :skip-others t)
+
+(verify-guards gl-term-to-apply-obj)
+         
+
+
 
 (defconst *glcp-generic-template-subst*
   `((interp-term . glcp-generic-interp-term)
@@ -659,6 +724,8 @@
            (glcp-interp-error "Error: wrong number of args to GL-ASIDE~%")))
         ((when (eq (car x) 'gl-ignore))
          (glcp-value nil))
+        ((when (eq (car x) 'gl-hide))
+         (glcp-value (gl-term-to-apply-obj x alist)))
         ((when (eq (car x) 'gl-error))
          (if (eql (len x) 2)
              (b* (((glcp-er result)
@@ -753,6 +820,8 @@
         ((mv ok ans)
          (glcp-generic-run-gified fn actuals pathcond clk state))
         ((when ok) (glcp-value ans))
+        ((when (cdr (hons-assoc-equal fn (table-alist 'gl-uninterpreted-functions (w state)))))
+         (glcp-value (g-apply fn actuals)))
         ((mv erp body formals obligs)
          (acl2::interp-function-lookup fn
                                        obligs (glcp-config->overrides config)
@@ -959,9 +1028,3 @@ but its arity is ~x3.  Its formal parameters are ~x4."
                                      alist pathcond clk obligs config state)))
        (glcp-value (gl-cons car cdr))))))
 ||#
-
-
-
-
-
-

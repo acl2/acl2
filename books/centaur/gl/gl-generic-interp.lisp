@@ -351,7 +351,8 @@
 ;;           :in-theory (enable gl-cons gobj-listp))))
 
 
-(defund-nx glcp-generic-geval-alist (al env)
+(defund glcp-generic-geval-alist (al env)
+  (declare (xargs :guard (consp env)))
   (if (atom al)
       nil
     (if (consp (car al))
@@ -518,7 +519,26 @@
                (equal (glcp-generic-geval-ev pat
                                              (glcp-generic-geval-alist alist
                                                                        env))
-                      x)))))
+                      x))))
+
+  (local (defthm hons-assoc-equal-to-member-alist-keys
+           (iff (hons-assoc-equal k a)
+                (member k (acl2::alist-keys a)))
+           :hints(("Goal" :in-theory (enable hons-assoc-equal
+                                             acl2::alist-keys)))))
+
+  (local (defthm associativity-of-union-equal
+           (equal (union-equal (union-equal a b) c)
+                  (union-equal a (union-equal b c)))))
+
+  ;; (defthm alist-keys-of-glcp-unify-concrete
+  ;;   (b* (((mv ok alist1) (glcp-unify-concrete pat x alist)))
+  ;;     (implies ok
+  ;;              (equal (acl2::alist-keys alist1)
+  ;;                     (union-equal (acl2::simple-term-vars pat)
+  ;;                                  (acl2::alist-keys alist)))))
+  ;;   :hints(("Goal" :in-theory (enable acl2::alist-keys))))
+  )
 
 (defsection glcp-unify-term/gobj
   (local (in-theory (enable pseudo-termp)))
@@ -834,6 +854,57 @@
                                     (glcp-generic-geval args env))))))))
                
     
+
+(defsection gl-term-to-apply-obj
+  (local (defthm assoc-is-hons-assoc
+           (implies k
+                    (equal (assoc k alist)
+                           (hons-assoc-equal k alist)))))
+
+  (local (defthm glcp-generic-geval-of-car-of-gl-cons
+           (equal (glcp-generic-geval (car (gl-cons x y)) env)
+                  (glcp-generic-geval x env))
+           :hints(("Goal" :in-theory (enable gl-cons glcp-generic-geval)))))
+
+  (defthm cdr-of-gl-cons
+    (equal (cdr (gl-cons x y)) y)
+    :hints(("Goal" :in-theory (enable gl-cons))))
+
+
+  (defthm-gl-term-to-apply-obj-flag
+    (defthm gobj-listp-of-gl-termlist-to-apply-obj-list
+      (gobj-listp (gl-termlist-to-apply-obj-list x alist))
+      :hints ('(:expand ((gl-termlist-to-apply-obj-list x alist))))
+      :flag gl-termlist-to-apply-obj-list)
+    :skip-others t)
+
+  (defthm-gl-term-to-apply-obj-flag
+    (defthm gl-term-to-apply-obj-correct
+      (implies (pseudo-termp x)
+               (equal (glcp-generic-geval (gl-term-to-apply-obj x alist) env)
+                      (glcp-generic-geval-ev x (glcp-generic-geval-alist alist env))))
+      :hints ('(:expand ((gl-term-to-apply-obj nil alist)
+                         (gl-term-to-apply-obj x alist)))
+              (and stable-under-simplificationp
+                   '(:in-theory (e/d (glcp-generic-geval-ev-of-fncall-args)
+                                     ((g-ite)))))
+              (and stable-under-simplificationp
+                   '(:expand ((gl-termlist-to-apply-obj-list (cdr x) alist)
+                              (gl-termlist-to-apply-obj-list (cddr x) alist)
+                              (gl-termlist-to-apply-obj-list (cdddr x) alist)
+                              (gl-termlist-to-apply-obj-list (cddddr x) alist)
+                              (gl-termlist-to-apply-obj-list nil alist)
+                              (:free (x y z)
+                               (:with glcp-generic-geval
+                                (glcp-generic-geval (g-ite x y z) env)))))))
+      :flag gl-term-to-apply-obj)
+    (defthm gl-termlist-to-apply-obj-list-correct
+      (implies (pseudo-term-listp x)
+               (equal (glcp-generic-geval (gl-termlist-to-apply-obj-list x alist) env)
+                      (glcp-generic-geval-ev-lst x (glcp-generic-geval-alist alist env))))
+      :hints ('(:expand ((gl-termlist-to-apply-obj-list x alist)
+                         (gl-termlist-to-apply-obj-list nil alist))))
+      :flag gl-termlist-to-apply-obj-list)))
 
 
 

@@ -163,6 +163,13 @@
             ((mv else next-idx next-var)
              (uniquify-shape-spec (g-ite->else x) next-idx next-var)))
          (mv (g-ite test then else) next-idx next-var)))
+      (:g-call
+       (b* (((mv args next-idx next-var)
+             (uniquify-shape-spec (g-call->args x) next-idx next-var)))
+         (mv (g-call (g-call->fn x) args
+                     (g-call->inverse x)
+                     (g-call->arity x))
+             next-idx next-var)))
       (otherwise
        (b* (((mv car next-idx next-var)
              (uniquify-shape-spec (car x) next-idx next-var))
@@ -480,7 +487,11 @@
     `(:computed-hint-replacement
       ((run-let-abstraction-cp clause)
        (gl-auto-hint-step2 clause ',g-bindings ',print state))
-      :clause-processor (group-lits-cp clause ',(list hyp-lits concl-lits)))))
+      :clause-processor (group-lits-cp clause ',(list (append hyp-lits (butlast concl-lits 1))
+                                                      (last concl-lits))))))
+
+
+
 
 
 (defun get-fixup-alist (clause fixups)

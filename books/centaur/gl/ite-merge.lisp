@@ -336,7 +336,7 @@
                    :measure (maybe-merge-measure x y)))
    (let ((ordersym (ite-merge-ordering x y)))
      (case ordersym
-       (equal (mv t x))
+       (equal (mv 'merged x))
        (booleans (mv 'merged (merge-general-booleans c x y)))
        (numbers (mv 'merged (merge-general-numbers c x y)))
        (conses (let ((hyp (bfr-and hyp (hf (bfr-ite c xhyp yhyp)))))
@@ -378,18 +378,25 @@
                   (maybe-merge c first-x first-y first-x-cond first-y-cond hyp)))
               (case merge-flg
                 (merged
-                 (if (and (eq first-x-cond t)
-                          (eq first-y-cond t))
-                     first
-                   (merge-rest (hf (bfr-ite c first-x-cond first-y-cond))
-                               first c rest-x rest-y hyp)))
+                 (cond ((and (eq first-x-cond t)
+                             (eq first-y-cond t))
+                        first)
+                       ((eq first-x-cond t)
+                        (mk-g-ite (mk-g-boolean (hf (bfr-or c first-y-cond)))
+                                  first rest-y))
+                       ((eq first-y-cond t)
+                        (mk-g-ite (mk-g-boolean (hf (bfr-or (bfr-not c)
+                                                            first-x-cond)))
+                                  first rest-x))
+                       (t (merge-rest (hf (bfr-ite c first-x-cond first-y-cond))
+                                      first c rest-x rest-y hyp))))
                 (< (if (eq first-x-cond t)
                        (mk-g-ite (mk-g-boolean c) first-x y)
                      (merge-rest (bfr-and c first-x-cond)
                                  first-x c rest-x y hyp)))
                 (t ;; >
                  (if (eq first-y-cond t)
-                     (mk-g-ite (mk-g-boolean c) x first-y)
+                     (mk-g-ite (mk-g-boolean (bfr-not c)) first-y x)
                    (merge-rest (bfr-and (bfr-not c) first-y-cond)
                                first-y c x rest-y hyp)))))))))
 
@@ -397,8 +404,6 @@
 (in-theory (disable ite-merge merge-rest))
 
 (local (in-theory (disable  hyp-fix-of-hyp-fixedp)))
-
-
 
 
 

@@ -79,13 +79,14 @@
            (and (hide else-hyp)
                 (let ((hyp else-hyp))
                   (declare (ignorable hyp))
-                  (g-branch-marker$inline ,else))))
-          (merge (gobj-ite-merge (gtests-nonnil gtests) then else
-                                 (bfr-and (bfr-not (gtests-unknown gtests))
-                                                  hyp))))
+                  (g-branch-marker$inline ,else)))))
        (mk-g-bdd-ite (gtests-unknown gtests)
                      (mk-g-ite (gtests-obj gtests) then else)
-                     merge hyp)))))
+                     (gobj-ite-merge (gtests-nonnil gtests)
+                                     then else
+                                     (bfr-and (bfr-not (gtests-unknown gtests))
+                                              hyp))
+                     hyp)))))
 
 (defmacro g-or (test else)
   `(g-or-marker$inline
@@ -101,10 +102,10 @@
            (and (hide else-hyp)
                 (let ((hyp else-hyp))
                   (declare (ignorable hyp))
-                  (g-branch-marker$inline ,else))))
-          (merge (gobj-ite-merge (gtests-nonnil gtests) test else
-                                 (bfr-and (bfr-not (gtests-unknown gtests))
-                                                  hyp))))
+                  (g-branch-marker$inline ,else)))))
        (mk-g-bdd-ite (gtests-unknown gtests)
                      (mk-g-ite (gtests-obj gtests) test else)
-                     merge hyp)))))
+                     (gobj-ite-merge (gtests-nonnil gtests) test else
+                                 (bfr-and (bfr-not (gtests-unknown gtests))
+                                                  hyp))
+                     hyp)))))
