@@ -27,8 +27,8 @@
 ; that ACL2(h) memoizes by default (in particular, fchecksum-obj needs to be
 ; memoized to include centaur/tutorial/alu16-book).
 
- (if (and (hons-enabledp state) 
-          (f-get-global 'parallel-execution-enabled state)) 
+ (if (and (hons-enabledp state)
+          (f-get-global 'parallel-execution-enabled state))
      (er-progn (set-waterfall-parallelism nil)
                (value '(value-triple nil)))
    (value '(value-triple nil))))
@@ -80,11 +80,11 @@
 ; we include them explicitly to support the hons `make' target in the books/
 ; directory (and hence the regression-hons `make' target in the acl2-sources
 ; directory).
-(include-book "../xdoc-impl/save")
+(include-book "../xdoc/save")
 (include-book "../xdoc/defxdoc-raw")
-(include-book "../xdoc-impl/mkdir-raw")
-(include-book "../xdoc-impl/topics")
-(include-book "../xdoc-impl/extra-packages")
+(include-book "../xdoc/mkdir-raw")
+(include-book "../xdoc/topics")
+(include-book "../xdoc/extra-packages")
 
 (include-book "misc/hons-remove-dups")
 (include-book "misc/seed-random")

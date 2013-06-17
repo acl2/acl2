@@ -23,7 +23,7 @@
 
 (in-package "XDOC")
 (include-book "fmt-to-str")
-(include-book "../xdoc/names")
+(include-book "names")
 (local (include-book "misc/assert" :dir :system))
 (set-state-ok t)
 (program)

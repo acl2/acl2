@@ -1,6 +1,6 @@
 
 (in-package "ACL2")
-
+(include-book "xdoc/top" :dir :system)
 ;; (local (include-book "defsum-thms"))
 ;; (include-book "defsum")
 (include-book "tools/defsum" :dir :system)

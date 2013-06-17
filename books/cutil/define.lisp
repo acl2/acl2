@@ -23,7 +23,7 @@
 (in-package "CUTIL")
 (include-book "formals")
 (include-book "returnspecs")
-(include-book "xdoc-impl/fmt-to-str" :dir :system)
+(include-book "xdoc/fmt-to-str" :dir :system)
 (include-book "tools/mv-nth" :dir :system)
 (include-book "str/cat" :dir :system)
 (set-state-ok t)

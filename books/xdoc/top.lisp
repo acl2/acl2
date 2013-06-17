@@ -30,17 +30,17 @@
 (include-book "book-thms")
 
 (make-event `(defconst *xdoc-dir/save*
-               ,(acl2::extend-pathname *xdoc-impl-dir* "save" state)))
+               ,(acl2::extend-pathname *xdoc-dir* "save" state)))
 (make-event `(defconst *xdoc-dir/display*
-               ,(acl2::extend-pathname *xdoc-impl-dir* "display" state)))
+               ,(acl2::extend-pathname *xdoc-dir* "display" state)))
 (make-event `(defconst *xdoc-dir/topics*
-               ,(acl2::extend-pathname *xdoc-impl-dir* "topics" state)))
+               ,(acl2::extend-pathname *xdoc-dir* "topics" state)))
 (make-event `(defconst *xdoc-dir/defxdoc-raw*
                ,(acl2::extend-pathname *xdoc-dir* "defxdoc-raw" state)))
 (make-event `(defconst *xdoc-dir/mkdir-raw*
-               ,(acl2::extend-pathname *xdoc-impl-dir* "mkdir-raw" state)))
+               ,(acl2::extend-pathname *xdoc-dir* "mkdir-raw" state)))
 (make-event `(defconst *xdoc-dir/extra-packages*
-               ,(acl2::extend-pathname *xdoc-impl-dir* "extra-packages" state)))
+               ,(acl2::extend-pathname *xdoc-dir* "extra-packages" state)))
 
 
 

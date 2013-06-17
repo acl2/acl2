@@ -24,19 +24,39 @@
 
 (defxdoc defalist
   :parents (cutil)
-  :short "Introduce a recognizer for a typed alist."
+  :short "Introduce a recognizer for a typed association list (alist)."
 
   :long "<p>Defalist allows you to quickly introduce a recognizer for a typed
 association list (e.g., @('string-nat-alistp')) and proves basic theorems about
 it.</p>
 
 <p>Unlike many ACL2 alist recognizers, the recognizers introduced by defalist
-do not, by default, imply @('(alistp x)'), but they do imply something like
-@('(cons-listp x)').  That is, we require that each element is a cons, but we
-do not require the alists to be nil-terminated.  This is sometimes unfortunate
-when you want to use functions like @('strip-cars') or @('strip-cdrs') that
-expect their argument to be a true-list.  But it means you can use size hints,
-names, etc., for fast alists.</p>
+<b>do not</b>, by default, imply @('(alistp x)'), but they do imply something
+like @('(cons-listp x)').  That is,</p>
+
+<ul>
+<li>We require that each element is a cons, but</li>
+<li>We do not require the alists to be nil-terminated.</li>
+</ul>
+
+<p>Not requiring @('nil') termination has some advantages.  It plays well with
+@(see equivalence) relations like @(see list-equiv) and @(see
+acl2::alist-equiv).  It also allows you to use features of @(see fast-alists)
+such as \"size hints\" and \"alist names\" (see @(see hons-acons) for
+details).</p>
+
+<p>But there is also a disadvantage.  Namely, it may be difficult to operate on
+a defalist using traditional alist functions, whose @(see guard)s require @(see
+alistp).  Fortunately, there are generally good alternatives to these
+traditional functions with no such requirement, e.g.,:</p>
+
+<ul>
+<li>@(see acons) &rarr; @(see hons-acons) or ordinary @(see cons)es.</li>
+<li>@(see assoc) &rarr; @(see hons-get) for fast alists, or @(see hons-assoc-equal)
+    for ordinary alists</li>
+<li>@(see strip-cars) &rarr; @(see alist-keys)</li>
+<li>@(see strip-cdrs) &rarr; @(see alist-vals)</li>
+</ul>
 
 <p>General form:</p>
 

@@ -1,11 +1,11 @@
 (in-package "ACL2")
 
-(ld "cutil/package.lsp" :dir :system)
+(include-book "cutil/portcullis" :dir :system)
 (ld "tools/flag-package.lsp" :dir :system)
 
 ; We need the following for provisional certification, so that ACL2
 ; can read symbols xdoc::SYM in term-patterns.acl2x at the start of
 ; the Pcertify step for input-list.pcert.
-(include-book "xdoc/top" :dir :system)
+(include-book "xdoc/portcullis" :dir :system)
 
 (certify-book "portcullis" ? t)

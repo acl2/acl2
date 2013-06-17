@@ -112,7 +112,7 @@ PL: ~pl[test-broken-link]~/~/")
                  (defconst *acl2-ground-zero-names* ',names)
                  (defconst *acl2-ground-zero-topics* ',topics)))))))
 
-(include-book "../xdoc/base")
+(include-book "base")
 (include-book "tools/bstar" :dir :system)
 
 #!XDOC
@@ -170,7 +170,7 @@ format.</p>")
     (b* (((when (cdr (assoc 'bookdoc-loaded (table-alist 'xdoc (w state)))))
           ;; (cw "~|; Already loaded bookdoc.dat.~%")
           (value `(value-triple :invisible)))
-         (path (acl2::extend-pathname *xdoc-impl-dir* "bookdoc.dat" state))
+         (path (acl2::extend-pathname *xdoc-dir* "bookdoc.dat" state))
          ((mv channel state) (open-input-channel path :object state))
          ((when (not channel))
           (cw "~|XDOC Note: unable to load bookdoc.dat.  For more complete ~
