@@ -163,6 +163,10 @@ recommend using @('take-redefinition') instead of @('(:definition take)').</p>"
   :short "@(call first-n) is logically identical to @('(take n x)'), but its
 guard does not require @('(true-listp x)')."
 
+  :long "<p><b>Reasoning Note.</b> We leave @('first-n') enabled, so it will
+just get rewritten into @('take').  You should typically never write a theorem
+about @('first-n'): write theorems about @('take') instead.</p>"
+
   (local (defun repeat (x n)
            (if (zp n)
                nil

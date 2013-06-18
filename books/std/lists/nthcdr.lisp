@@ -194,8 +194,10 @@ library."
   :parents (std/lists nthcdr)
   :short "@(see rest-n) is identical to @(see nthcdr), but its guard does not
 require @('(true-listp x)')."
-  :long "<p>Note: we leave this function enabled and always reason about @(see
-nthcdr) instead.</p>"
+
+  :long "<p><b>Reasoning Note.</b> We leave @('rest-n') enabled, so it will
+just get rewritten into @('nthcdr').  You should typically never write a
+theorem about @('rest-n'): write theorems about @('nthcdr') instead.</p>"
 
   (defun rest-n (n x)
     (declare (xargs :guard (natp n)))

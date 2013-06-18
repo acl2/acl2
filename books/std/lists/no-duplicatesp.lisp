@@ -166,10 +166,8 @@ of an arbitrary element.</p>"
 because it has no element whose @(see duplicity) is over 1."
 
   :long "<p>This is often a good way to prove @(see no-duplicatesp).  This is a
-basic pick-a-point style theorem that you can (manually) functionally
-instantiate.</p>
-
-@(def duplicity-constraint)"
+basic pick-a-point style theorem that you can (manually) <see topic='@(url
+functional-instantiation-example)'>functionally instantiate</see>.</p>"
 
   (encapsulate
     (((duplicity-hyp) => *)
