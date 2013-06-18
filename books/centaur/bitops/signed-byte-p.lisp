@@ -823,3 +823,183 @@
   :hints(("Goal" :in-theory (enable lognot
                                     unsigned-byte-p
                                     signed-byte-p))))
+
+
+(defthm signed-byte-p-of-decrement-when-natural-signed-byte-p
+  (implies (and (signed-byte-p n x)
+                (<= 0 x))
+           (signed-byte-p n (1- x)))
+  :hints(("Goal" :in-theory (enable signed-byte-p))))
+
+(defthm signed-byte-p-when-signed-byte-p-smaller
+  (implies (and (signed-byte-p size1 x)
+                (<= size1 (nfix size2)))
+           (signed-byte-p size2 x))
+   :hints(("Goal" :in-theory (enable signed-byte-p))))
+
+
+(encapsulate
+  ()
+  (local (defun my-induct (size1 size2 x)
+           (if (or (zp size1)
+                   (zp size2))
+               (list size1 size2 x)
+             (my-induct (- size1 1)
+                        (- size2 1)
+                        (logcdr x)))))
+
+  (defthm signed-byte-p-when-unsigned-byte-p-smaller
+    (implies (and (unsigned-byte-p size1 x)
+                  (< size1 (nfix size2)))
+             (signed-byte-p size2 x))
+    :hints(("Goal"
+            :induct (my-induct size1 size2 x)
+            :in-theory (enable* ihsext-recursive-redefs
+                                ihsext-inductions)))))
+
+
+(defsection signed-byte-p-of-ash-split
+
+  (local (in-theory (enable* arith-equiv-forwarding)))
+
+  (local (defun dec-induct (n)
+           (if (zp n)
+               nil
+             (dec-induct (- n 1)))))
+
+  (local (defthm k0
+           (implies (and (signed-byte-p width x)
+                         (natp n))
+                    (signed-byte-p (+ width n) (ash x n)))
+           :hints(("Goal"
+                   :induct (dec-induct n)
+                   :in-theory (enable* ihsext-recursive-redefs)))))
+
+  (local (defthm k0-better
+           (implies (and (signed-byte-p (- width n) x)
+                         (natp n))
+                    (signed-byte-p width (ash x n)))
+           :hints(("Goal"
+                   :in-theory (disable k0)
+                   :use ((:instance k0
+                                    (x x)
+                                    (n n)
+                                    (width (- width n))))))))
+
+  (local (defthm k1
+           (implies (and (signed-byte-p (+ width n) (ash x n))
+                         (natp n))
+                    (equal (signed-byte-p width x)
+                           (and (posp width)
+                                (integerp x))))
+           :hints(("Goal"
+                   :induct (dec-induct n)
+                   :in-theory (enable* ihsext-recursive-redefs)))))
+
+  (local (defthm k1-better
+           (implies (and (signed-byte-p width (ash x n))
+                         (natp n))
+                    (equal (signed-byte-p (- width n) x)
+                           (and (integerp x)
+                                (< n width))))
+           :hints(("Goal"
+                   :use ((:instance k1 (width (- width n))))))))
+
+  (local (defthm m1
+           (implies (not (integerp x))
+                    (equal (signed-byte-p width (ash x n))
+                           (posp width)))))
+
+  (local (defthm m2
+           (implies (not (integerp n))
+                    (equal (signed-byte-p width (ash x n))
+                           (signed-byte-p width (ifix x))))))
+
+  (local (defthm m3a
+           (implies (and (integerp x)
+                         (natp n)
+                         (< n width))
+                    (equal (signed-byte-p width (ash x n))
+                           (signed-byte-p (- width n) x)))
+           :hints(("Goal"
+                   :use ((:instance k0-better)
+                         (:instance k1-better))
+                   :do-not-induct t))))
+
+  (local (defthm m3b
+           (implies (and (integerp x)
+                         (integerp n)
+                         (< n 0)
+                         (posp width))
+                    (equal (signed-byte-p width (ash x n))
+                           (signed-byte-p (- width n) x)))
+           :hints(("Goal"
+                   :do-not-induct t
+                   :in-theory (disable signed-byte-p-of-logtail
+                                       right-shift-to-logtail)
+                   :use ((:instance signed-byte-p-of-logtail
+                                    (n (- n)))
+                         (:instance right-shift-to-logtail
+                                    (count n)
+                                    (i x)))))))
+
+  (local (defthm m3
+           (implies (and (integerp x)
+                         (integerp n)
+                         (< n width))
+                    (equal (signed-byte-p width (ash x n))
+                           (and (posp width)
+                                (signed-byte-p (- width n) x))))
+           :hints(("Goal" :use ((:instance m3a)
+                                (:instance m3b))))))
+
+  (local (defthm m4
+           (implies (and (integerp x)
+                         (natp n)
+                         (>= n width))
+                    (equal (signed-byte-p width (ash x n))
+                           (and (posp width)
+                                (equal x 0))))
+           :hints(("Goal"
+                   :induct (ash x n)
+                   :in-theory (enable* ihsext-recursive-redefs
+                                       ihsext-inductions)))))
+
+  (defthm signed-byte-p-of-ash-split
+    (equal (signed-byte-p width (ash x n))
+           (and (posp width)
+                (or (zip x)
+                    (if (zip n)
+                        (signed-byte-p width (ifix x))
+                      (signed-byte-p (- width n) x)))))
+    :hints(("Goal"
+            :do-not-induct t
+            :cases ((< n 0)
+                    (< n width))))))
+
+
+
+(defsection signed-byte-p-of-loghead
+
+  (local (defthm l0
+           (implies (and (natp n)
+                         (natp size)
+                         (< size n))
+                    (signed-byte-p n (loghead size x)))
+           :hints(("Goal"
+                   :do-not-induct t
+                   :in-theory (disable unsigned-byte-p-of-loghead
+                                       signed-byte-p-when-unsigned-byte-p-smaller)
+                   :use ((:instance unsigned-byte-p-of-loghead
+                                    (i x)
+                                    (size size)
+                                    (size1 size))
+                         (:instance signed-byte-p-when-unsigned-byte-p-smaller
+                                    (x (loghead size x))
+                                    (size1 size)
+                                    (size2 n)))))))
+
+  (defthm signed-byte-p-of-loghead
+    (implies (and (integerp m)
+                  (< (nfix size) m))
+             (signed-byte-p m (loghead size x)))))

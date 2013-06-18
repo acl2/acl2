@@ -7,10 +7,10 @@
 
 ;This book has a lot of good stuff about logand, etc. that is proved in books/rtl/.
 
-(local (include-book "rtl/rel4/support/logand" :dir :system))
-(local (include-book "rtl/rel4/support/logxor" :dir :system))
-(local (include-book "rtl/rel4/support/logior" :dir :system))
-(local (include-book "rtl/rel4/arithmetic/integerp" :dir :system))
+(local (include-book "rtl/rel8/support/support/logand" :dir :system))
+(local (include-book "rtl/rel8/support/support/logxor" :dir :system))
+(local (include-book "rtl/rel8/support/support/logior" :dir :system))
+(local (include-book "rtl/rel8/arithmetic/integerp" :dir :system))
 
 
 
@@ -57,7 +57,7 @@
          (logior i j k)))
 
 
-(local (include-book "rtl/rel4/arithmetic/expt" :dir :system))
+(local (include-book "rtl/rel8/arithmetic/expt" :dir :system))
 
 (defthm expt-2-positive-rational-type
   (and (rationalp (expt 2 i))
@@ -86,7 +86,7 @@
          (or (not (integerp n))
              (<= n 0))))
 
-(local (include-book "rtl/rel4/arithmetic/top" :dir :system))
+(local (include-book "rtl/rel8/arithmetic/top" :dir :system))
 
 ;this is better than the one in RTL
 ;make a linear rule?

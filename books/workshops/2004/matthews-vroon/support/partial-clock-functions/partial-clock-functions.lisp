@@ -26,7 +26,7 @@
 (encapsulate
  ()
 
- (local (include-book "rtl/rel4/arithmetic/top" :dir :system))
+ (local (include-book "rtl/rel8/arithmetic/top" :dir :system))
  (local (in-theory (enable mod-sum-cases mod-force-chosen-a-neg)))
 
  (defthm mod-zero-subtract-remainder

@@ -246,7 +246,7 @@
 ;;
 
 ;needed for the guards to the ts- functions (perhaps prove the needed lemmas in a separate book?) (e.g., loganding the cadar of a type-alistp does such and such)
-(local (include-book "rtl/rel4/support/logand" :dir :system))
+(local (include-book "rtl/rel8/support/support/logand" :dir :system))
 
 ;Checks that TS represents a non-nil type.
 ;was a macro...

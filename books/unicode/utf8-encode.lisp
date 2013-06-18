@@ -20,7 +20,18 @@
 (include-book "utf8-table36")
 (local (include-book "std/lists/append" :dir :system))
 (local (include-book "std/io/signed-byte-listp" :dir :system))  ;; for the-fixnum
+(local (include-book "centaur/bitops/ihsext-basics" :dir :system))
+(local (include-book "centaur/bitops/signed-byte-p" :dir :system))
 
+
+(local (defthm signed-byte-p-resolver
+         (implies (and (integerp n)
+                       (<= 1 n)
+                       (integerp x)
+                       (<= (- (expt 2 (1- n))) x)
+                       (< x (expt 2 (1- n))))
+                  (signed-byte-p n x))
+         :hints(("Goal" :in-theory (enable signed-byte-p)))))
 
 
 ;; Conversion From Unicode to UTF-8 ===========================================
@@ -99,7 +110,6 @@
 
 (encapsulate
  ()
-
  (local (defun test-uchar=>utf8 (i)
           (declare (xargs :guard (natp i)))
           (and (if (uchar? i)
@@ -111,6 +121,13 @@
 
  ;; We now show that if we have successfully tested all the integers between 0
  ;; and i, then each of these integers satisfies our desired property.
+
+ (local (defthm l0
+          (implies (and (integerp i)
+                        (integerp j)
+                        (<= j i))
+                   (equal (< (+ -1 i) j)
+                          (equal i j)))))
 
  (local (defthmd lemma
           (implies (and (test-uchar=>utf8 i)

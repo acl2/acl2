@@ -18,7 +18,9 @@
 (in-package "ACL2")
 (include-book "read-file-bytes")
 (include-book "nthcdr-bytes")
+(local (include-book "arithmetic/top" :dir :system))
 (set-state-ok t)
+
 
 (defund take-bytes (n channel state)
   (declare (xargs :guard (and (natp n)
@@ -54,7 +56,8 @@
            (equal (mv-nth 0 (take-bytes n channel state))
                   (take n (mv-nth 0 (read-byte$-all channel state)))))
   :hints(("Goal"
-          :in-theory (enable take-redefinition take-bytes read-byte$-all)
+          :in-theory (enable take-redefinition take-bytes read-byte$-all
+                             repeat)
           :induct (take-bytes n channel state))))
 
 (defthm mv-nth1-of-take-bytes$

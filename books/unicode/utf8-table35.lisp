@@ -18,8 +18,18 @@
 (in-package "ACL2")
 (include-book "uchar")
 (include-book "std/io/unsigned-byte-listp" :dir :system)
+(local (include-book "centaur/bitops/ihsext-basics" :dir :system))
+(local (include-book "centaur/bitops/signed-byte-p" :dir :system))
 (local (include-book "std/io/signed-byte-listp" :dir :system))
-(local (in-theory (enable unsigned-byte-p)))
+
+(local (defthm signed-byte-p-resolver
+         (implies (and (integerp n)
+                       (<= 1 n)
+                       (integerp x)
+                       (<= (- (expt 2 (1- n))) x)
+                       (< x (expt 2 (1- n))))
+                  (signed-byte-p n x))
+         :hints(("Goal" :in-theory (enable signed-byte-p)))))
 
 
 

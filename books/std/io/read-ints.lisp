@@ -17,12 +17,10 @@
 
 (in-package "ACL2")
 (include-book "base")
-(include-book "sign-byte")
 (include-book "combine")
-(local (include-book "unsigned-byte-listp"))
-(local (include-book "signed-byte-listp"))
 (local (include-book "tools/mv-nth" :dir :system))
-(local (include-book "arithmetic-3/bind-free/top" :dir :system))
+(local (include-book "centaur/bitops/ihsext-basics" :dir :system))
+(local (include-book "centaur/bitops/signed-byte-p" :dir :system))
 (set-verify-guards-eagerness 2)
 (set-state-ok t)
 
@@ -64,7 +62,7 @@
     (b* (((mv byte state) (read-byte$ channel state))
          ((unless byte)
           (mv nil state)))
-      (mv (sign-byte byte) state)))
+      (mv (sign-extend 8 byte) state)))
 
   (local (in-theory (enable read-8s)))
 

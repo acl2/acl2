@@ -30,7 +30,6 @@
 (include-book "read-file-objects")
 (include-book "read-ints")
 ; (include-book "read-object") ; stubbed out
-(include-book "sign-byte")
 (include-book "signed-byte-listp")
 (include-book "take-bytes")
 (include-book "unsigned-byte-listp")
