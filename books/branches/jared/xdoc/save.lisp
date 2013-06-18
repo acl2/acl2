@@ -27,7 +27,7 @@
 
 (in-package "XDOC")
 (include-book "mkdir")
-(include-book "../xdoc/base")
+(include-book "base")
 (include-book "preprocess")
 (include-book "parse-xml")
 (include-book "sort")

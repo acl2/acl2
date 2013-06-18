@@ -1498,6 +1498,8 @@ useful in theorems to avoid @(see ubddp) hypotheses.</p>"
 
   (local (in-theory (enable ubdd-fix)))
 
+  (memoize 'ubdd-fix :condition '(consp x))
+
   (defthm ubddp-ubdd-fix
     (ubddp (ubdd-fix x))
     :hints(("Goal" :in-theory (enable ubddp))))

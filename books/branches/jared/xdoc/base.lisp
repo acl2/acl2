@@ -40,12 +40,6 @@
 (make-event
  `(defconst *xdoc-dir* ,(cbd)))
 
-(make-event
- (let* ((books/xdoc      (cbd))
-        (books/          (acl2::extend-pathname books/xdoc ".." state))
-        (books/xdoc-impl (acl2::extend-pathname books/ "xdoc-impl" state)))
-   `(defconst *xdoc-impl-dir* ,books/xdoc-impl)))
-
 (table xdoc 'doc nil)
 
 (defun get-xdoc-table (world)

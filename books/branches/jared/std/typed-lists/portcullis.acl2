@@ -18,5 +18,5 @@
 ;
 ; Original author: Jared Davis <jared@centtech.com>
 
-(ld "cutil/package.lsp" :dir :system)
+(include-book "cutil/portcullis" :dir :system)
 (certify-book "portcullis" ? t)

@@ -72,6 +72,8 @@
            (glcp-interp-error "Error: wrong number of args to GL-ASIDE~%")))
         ((when (eq (car x) 'gl-ignore))
          (glcp-value nil))
+        ((when (eq (car x) 'gl-hide))
+         (glcp-value (gl-term-to-apply-obj x alist)))
         ((when (eq (car x) 'gl-error))
          (if (eql (len x) 2)
              (b* (((glcp-er result)
@@ -135,7 +137,7 @@
             test
             (interp-fncall-ifs fn then-args x hyp clk obligs config state)
             (interp-fncall-ifs fn else-args x hyp clk obligs config
-                                            state)))))
+                               state)))))
      (interp-fncall fn actuals x pathcond clk obligs config state)))
 
 
@@ -166,6 +168,8 @@
         ((mv ok ans)
          (run-gified fn actuals pathcond clk state))
         ((when ok) (glcp-value ans))
+        ((when (cdr (hons-assoc-equal fn (table-alist 'gl-uninterpreted-functions (w state)))))
+         (glcp-value (g-apply fn actuals)))
         ((mv erp body formals obligs)
          (acl2::interp-function-lookup fn
                                        obligs (glcp-config->overrides config)
@@ -211,8 +215,8 @@ but its arity is ~x3.  Its formal parameters are ~x4."
        (glcp-if
         test-obj
         (interp-term tbr alist hyp clk obligs config state)
-        (interp-term fbr
-                                  alist hyp clk obligs config state)))))
+        (interp-term fbr alist hyp clk obligs config state)
+        :report (glcp-case-split-report test tbr fbr)))))
 
  (defun rewrite-fncall (fn actuals pathcond clk obligs config state)
    (declare (xargs :stobjs state
@@ -372,6 +376,27 @@ but its arity is ~x3.  Its formal parameters are ~x4."
                                      alist pathcond clk obligs config state)))
        (glcp-value (gl-cons car cdr)))))))
 
+
+#||
+
+"GL" 
+(trace$ (glcp-rewrite-fncall-apply-rule
+         :cond (b* (((rewrite-rule rule) rule)
+                    ((unless (eq (cadr rule.rune) 'logand-of-logapp))
+                     nil)
+                    ((unless (and (eq rule.equiv 'equal)
+                                  (not (eq rule.subclass 'acl2::meta))
+                                  (pseudo-termp rule.lhs)
+                                  (consp rule.lhs)
+                                  (eq (car rule.lhs) fn)))
+                     (cw "malformed gl rewrite rule (lhs)?? ~x0~%" rule))
+                    ((mv unify-ok ?gobj-bindings)
+                     (glcp-unify-term/gobj-list (cdr rule.lhs) actuals nil)))
+                 unify-ok)))
+                    
+
+||#
+
 (defconst *glcp-run-parametrized-template*
   '(defun run-parametrized
      (hyp concl vars bindings id obligs config state)
@@ -413,10 +438,11 @@ In ~@0: The conclusion countains the following unbound variables: ~x1~%"
           (cov-clause
            (list '(not (gl-cp-hint 'coverage))
                  (dumb-negate-lit hyp)
-                 `(shape-spec-obj-in-range
-                   ',obj
-                   ,(list*-macro (append (strip-cars bindings)
-                                         (list ''nil))))))
+                 (shape-spec-oblig-term
+                  obj
+                  (list*-macro (append (strip-cars bindings)
+                                       (list ''nil)))
+                  nil)))
           ((mv er obligs1 hyp-val state)
            (interp-term hyp al t config.hyp-clk obligs config state))
           ((when er)

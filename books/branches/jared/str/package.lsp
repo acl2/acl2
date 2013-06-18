@@ -18,7 +18,7 @@
 ;
 ; Original author: Jared Davis <jared@centtech.com>
 
-(include-book "xdoc/portcullis" :dir :system)
+(in-package "ACL2")
 
 (defpkg "STR"
   (set-difference-eq

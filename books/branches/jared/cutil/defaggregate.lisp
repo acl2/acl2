@@ -25,7 +25,7 @@
 (in-package "CUTIL")
 (include-book "da-base")
 (include-book "formals")
-(include-book "xdoc-impl/fmt-to-str" :dir :system)
+(include-book "xdoc/fmt-to-str" :dir :system)
 (include-book "tools/rulesets" :dir :system)
 (include-book "xdoc/names" :dir :system)
 (include-book "str/cat" :dir :system)

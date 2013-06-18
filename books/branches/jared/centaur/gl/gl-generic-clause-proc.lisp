@@ -29,8 +29,8 @@
    (local (in-theory (enable glcp-generic-geval)))
 
    (acl2::def-functional-instance
-    glcp-generic-geval-shape-spec-to-gobj-eval-env
-    shape-spec-to-gobj-eval-env
+    glcp-generic-geval-shape-spec-oblig-term-correct
+    shape-spec-oblig-term-correct
     ((sspec-geval-ev glcp-generic-geval-ev)
      (sspec-geval-ev-lst glcp-generic-geval-ev-lst)
      (sspec-geval glcp-generic-geval))
@@ -528,7 +528,8 @@
          ((mv err val)
           (ec-call (acl2::magic-ev concl alist state t t)))
          ((when err)
-          (cw "Failed to execute the counterexample: ~@0~%" err))
+          (cw "Failed to execute the counterexample: ~@0~%"
+              (if (eq err t) "(t)" err)))
          (- (cw "Result: ~x0~%~%" val)))
       (glcp-pretty-print-assignments (1+ n) (cdr ctrexes) concl execp state))))
 
@@ -575,6 +576,67 @@ class:~%~%" (len ctrexes))))))
 
 (add-macro-alias glcp-error glcp-error-fn)
 
+
+
+(mutual-recursion
+ (defun magicer-ev (x alist clk state hard-errp aokp)
+   (declare (xargs :guard (and (natp clk)
+                               (pseudo-termp x)
+                               (symbol-alistp alist))
+                   :well-founded-relation acl2::nat-list-<
+                   :measure (list clk (acl2-count x))
+                   :hints(("Goal" :in-theory (enable nfix)))
+                   :verify-guards nil
+                   :stobjs state))
+   (cond ((not x) (mv nil nil))
+         ((atom x)
+          (mv nil (cdr (assoc-eq x alist))))
+         ((eq (car x) 'quote) (mv nil (cadr x)))
+         ((zp clk) (mv "clock ran out" nil))
+         ((consp (car x))
+          (b* (((mv err args)
+                (magicer-ev-lst (cdr x) alist clk state hard-errp aokp))
+               ((when err)
+                (mv err nil))
+               (new-alist (pairlis$ (cadar x) args)))
+            (magicer-ev (caddar x) new-alist clk state hard-errp aokp)))
+         ((eq (car x) 'if)
+          (b* (((mv err test)
+                (magicer-ev (cadr x) alist clk state hard-errp aokp))
+               ((when err) (mv err nil)))
+            (if test
+                (magicer-ev (caddr x) alist clk state hard-errp aokp)
+              (magicer-ev (cadddr x) alist clk state hard-errp aokp))))
+         (t (b* (((mv err args)
+                  (magicer-ev-lst (cdr x) alist clk state hard-errp aokp))
+                 ((when err)
+                  (mv err nil))
+                 (fn (car x))
+                 ((mv ev-err val)
+                  (acl2::magic-ev-fncall fn args state hard-errp aokp))
+                 ((unless ev-err) (mv nil val))
+                 ((mv ok formals body) (acl2::fn-get-def fn state))
+                 ((unless ok) (mv (acl2::msg
+                                   "can't execute and no definition: ~x0 ~@1~%"
+                                   fn (if (eq ev-err t) "" ev-err))
+                                  nil)))
+              (magicer-ev body (pairlis$ formals args) (1- clk) state hard-errp
+                          aokp)))))
+
+ (defun magicer-ev-lst (x alist clk state hard-errp aokp)
+   (declare (xargs :guard (and (posp clk)
+                               (pseudo-term-listp x)
+                               (symbol-alistp alist))
+                   :measure (list (pos-fix clk) (acl2-count x))
+                   :stobjs state))
+   (if (endp x)
+       (mv nil nil)
+     (b* (((mv err first) (magicer-ev (car x) alist clk state hard-errp aokp))
+          ((when err) (mv err nil))
+          ((mv err rest) (magicer-ev-lst (cdr x) alist clk state hard-errp aokp))
+          ((when err) (mv err nil)))
+       (mv nil (cons first rest))))))
+
 (defun magic-geval (x env state)
   (declare (xargs :guard (consp env)
                   :stobjs state
@@ -582,15 +644,15 @@ class:~%~%" (len ctrexes))))))
                   :hints (("goal" :in-theory '(measure-for-geval atom)))))
   (if (atom x)
       ;; Every atom represents itself.
-      x
+      (mv nil x)
     (pattern-match x
 
       ;; A Concrete is like an escape sequence; we take (cdr x) as a concrete
       ;; object even if it looks symbolic.
-      ((g-concrete obj) obj)
+      ((g-concrete obj) (mv nil obj))
 
       ;; Boolean
-      ((g-boolean bool) (bfr-eval bool (car env)))
+      ((g-boolean bool) (mv nil (bfr-eval bool (car env))))
 
       ;; Number.  This is the hairy case.  Can represent all ACL2-NUMBERPs,
       ;; but naturals are more compact than integers, which are more compact
@@ -606,34 +668,42 @@ class:~%~%" (len ctrexes))))))
                       (v2n (bfr-eval-list n (car env))))
                 (sval (n env)
                       (v2i (bfr-eval-list n (car env)))))
-           (components-to-number (sval real-num env)
-                                 (uval real-denom env)
-                                 (sval imag-num env)
-                                 (uval imag-denom env)))))
+           (mv nil (components-to-number (sval real-num env)
+                                         (uval real-denom env)
+                                         (sval imag-num env)
+                                         (uval imag-denom env))))))
 
       ;; If-then-else.
       ((g-ite test then else)
-       (if (magic-geval test env state)
-           (magic-geval then env state)
-         (magic-geval else env state)))
+       (b* (((mv err test) (magic-geval test env state))
+            ((unless err)
+             (if test
+                 (magic-geval then env state)
+               (magic-geval else env state))))
+         (mv err nil)))
 
       ;; Apply: Unevaluated function call.
       ((g-apply fn args)
-       (let* ((args (magic-geval args env state))
-              (term (cons fn (ec-call (kwote-lst args)))))
+       (b* (((mv err args) (magic-geval args env state))
+            ((when err) (mv err nil))
+            (term (cons fn (ec-call (kwote-lst args)))))
          (mv-let (err val)
-           (ec-call (acl2::magic-ev term nil state t t))
+           (ec-call (magicer-ev term nil 10000 state t t))
            (if err
-               (er hard? 'magic-geval "Failed to evaluate function call: ~x0~%"
-                   term)
-             val))))
+               (mv err nil)
+             (mv nil val)))))
       
       ;; Var: untyped variable.
-      ((g-var name)   (cdr (het name (cdr env))))
+      ((g-var name)   (mv nil (cdr (het name (cdr env)))))
 
       ;; Conses where the car is not a recognized flag represent conses.
-      (& (cons (magic-geval (car x) env state)
-               (magic-geval (cdr x) env state))))))
+      (& (b* (((mv err car) (magic-geval (car x) env state))
+              ((when err) (mv err nil))
+              ((mv err cdr) (magic-geval (cdr x) env state))
+              ((when err) (mv err nil)))
+           (mv nil (cons car cdr)))))))
+
+
 
 (defun glcp-bit-to-obj-ctrexamples (assigns sspec-alist gobj-alist state)
   (declare (xargs :stobjs state))
@@ -643,7 +713,11 @@ class:~%~%" (len ctrexes))))))
             (atom (cdar assigns)))
         (glcp-bit-to-obj-ctrexamples (cdr assigns) sspec-alist gobj-alist state)
       (cons (list (caar assigns)
-                  (magic-geval gobj-alist (list (cadar assigns)) state)
+                  (mv-let (err val)
+                    (magic-geval gobj-alist (list (cadar assigns)) state)
+                    (if err
+                        :unknown
+                      val))
                   (ec-call (inspec-show-assign-spec sspec-alist (cddar assigns))))
             (glcp-bit-to-obj-ctrexamples (cdr assigns) sspec-alist gobj-alist state)))))
 
@@ -1100,12 +1174,19 @@ The definition body, ~x1, is not a pseudo-term."
 
 
 (local
- (progn
+ (encapsulate nil
    ;; (defthm bfr-p-bfr-to-param-space
    ;;   (implies (and (bfr-p p) (bfr-p x))
    ;;            (bfr-p (bfr-to-param-space p x)))
    ;;   :hints(("Goal" :in-theory (enable bfr-to-param-space bfr-p))))
 
+
+   (local (in-theory (disable shape-specs-to-interp-al
+                              pseudo-termp pseudo-term-listp
+                              glcp-generic-interp-term-ok-obligs
+                              shape-spec-bindingsp
+                              acl2::consp-by-len
+                              list*-macro)))
 
    (encapsulate nil
      (local (in-theory
@@ -1160,11 +1241,16 @@ The definition body, ~x1, is not a pseudo-term."
                      (glcp-generic-run-parametrized
                       hyp concl  (collect-vars concl) bindings id obligs config state)
                      (cov-clause val-clause hyp-bdd hyp-val)
-                     (b* ((binding-env '(shape-spec-to-env
-                                         (strip-cadrs bindings)
-                                         (glcp-generic-geval-ev-lst
-                                          (strip-cars bindings)
+                     (b* ((binding-env
+                           '(let ((slice (glcp-generic-geval-ev
+                                          (shape-spec-env-term
+                                           (strip-cadrs bindings)
+                                           (list*-macro (append (strip-cars
+                                                                 bindings) '('nil)))
+                                           nil)
                                           alist)))
+                              (cons (slice-to-bdd-env (car slice) nil)
+                                    (cdr slice))))
                           (param-env `(genv-param ,hyp-bdd ,binding-env)))
                        `(:use
                          ((:instance glcp-generic-geval-ev-falsify
@@ -1242,7 +1328,12 @@ The definition body, ~x1, is not a pseudo-term."
  (sublis *glcp-generic-template-subst* *glcp-run-cases-template*))
 
 (local
- (progn
+ (encapsulate nil
+   (local (in-theory (disable pseudo-termp
+                              acl2::consp-by-len
+                              shape-spec-bindingsp
+                              nonnil-symbol-listp-pseudo-term-listp)))
+
    (defthm glcp-generic-run-cases-interp-defs-alistp
      (b* (((mv erp (cons & out-obligs) &)
            (glcp-generic-run-cases
@@ -1343,7 +1434,8 @@ The definition body, ~x1, is not a pseudo-term."
          (true-listp vals)
          (equal (len vals) (len vars))
          (not (stringp vars))
-         (not (stringp vals)))))
+         (not (stringp vals))))
+  :hints(("Goal" :in-theory (disable pseudo-termp))))
 
 (defthm bindings-to-lambda-pseudo-termp
   (implies (pseudo-termp term)
@@ -1470,6 +1562,9 @@ The definition body, ~x1, is not a pseudo-term."
            glcp-generic-geval-gtests-nonnil-correct
            glcp-generic-run-cases-correct
            glcp-generic-run-parametrized-correct
+           pseudo-term-listp-cdr
+           pseudo-termp-car
+           acl2::consp-by-len
            ;; shape-spec-listp-impl-shape-spec-to-gobj-list
            (:rules-of-class :definition :here))
           (gl-cp-hint
@@ -1687,7 +1782,7 @@ The definition body, ~x1, is not a pseudo-term."
 ;; Translate the given term, then run the interpreter.
 (defmacro gl-interp-raw (x &optional alist (hyp 't) (clk '100000))
   `(acl2::er-let*
-    ((trans (acl2::translate ,x :stobjs-out t t 'gl-interp (w state)
+    ((trans (acl2::translate ,x t t t 'gl-interp (w state)
                              state)))
     (gl-interp-term trans ,alist ,hyp ,clk state)))
 

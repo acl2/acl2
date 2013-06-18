@@ -1,23 +1,26 @@
 
-                      XDOC/ DIRECTORY README
+                             XDOC README
 
-The files that make up the XDOC system are split across two directories:
+XDOC is a tool for documenting ACL2 books, and is intended as a
+replacement for ACL2 facilities like defdoc, :doc, etc.
 
-    xdoc/              -- interfacing macros for documentation commands
-    xdoc-impl/         -- actual implementation of documentation commands
+XDOC can create manuals like this:
 
-Splitting up the files this way is an unfortunate hack that is necessary to
-deal with the limitations of the ACL2 build system.  In particular, ACL2's
-books/Makefile can't cope with a situation such as
+    http://fv.centtech.com/acl2/latest/doc/
 
-    foo/A depends on bar/B
-    bar/B depends on foo/C
+If you just want to see documentation for ACL2 and its books, the
+above link may be all you need.
 
-In our case, the xdoc implementation uses books from other directories like
-misc, tools, and str.  But we want to be able to document books in these
-directories with xdoc!
+You might prefer a local copy of the documentation, e.g., for offline
+use.  If you have already built the ACL2 books, you should already
+have a local copy here:
 
-Fortunately, very little is needed to implement the defxdoc command.  So, my
-basic approach is to make the interface available in the xdoc/ directory, which
-has no dependencies.  Then, books in directories like misc can just depend on
-xdoc, and xdoc-impl can depend on them.
+    acl2-sources/books/centaur/manual/preview.html.
+
+Additional information about XDOC itself can be found here:
+
+    http://fv.centtech.com/acl2/latest/doc/frames2.html?topic=ACL2____XDOC
+
+This documentation explains how to use XDOC to document your own
+books, generate extended manuals (e.g., that cover your proprietary
+books in addition to the ordinary ACL2 books), and so forth.

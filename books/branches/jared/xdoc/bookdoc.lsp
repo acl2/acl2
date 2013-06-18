@@ -69,13 +69,9 @@ and :save commands are executed.
 
 ||#
 
-; In case ACL2 starts up outside its loop (formerly true for Lispworks):
-;(acl2::value :q)
-;(acl2::lp)
-
 (in-package "ACL2")
 (include-book "extra-packages")
-(include-book "xdoc-impl/import-acl2doc" :dir :system)
+(include-book "xdoc/import-acl2doc" :dir :system)
 
 
 (table book-doc 'doc nil)

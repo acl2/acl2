@@ -60,11 +60,15 @@
 
 (def-gl-rewrite loghead-of-logapp
   (equal (loghead n (logapp m a b))
-         (if (<= (nfix n) (nfix m))
-             (loghead n a)
-           (logapp m a (loghead (- (nfix n) (nfix m)) b))))
+         (logapp (min (nfix m) (nfix n)) a (loghead (nfix (- (nfix n) (nfix m))) b)))
   :hints(("Goal" :in-theory (enable* acl2::ihsext-inductions
                                      acl2::ihsext-recursive-redefs))))
+
+(def-gl-rewrite loghead-of-0
+  (equal (loghead 0 x) 0))
+
+(def-gl-rewrite logapp-tail-0
+  (equal (logapp n a 0) (loghead n a)))
 
 (def-gl-rewrite logbitp-of-logapp
   (equal (logbitp n (logapp m a b))
@@ -120,6 +124,16 @@
   :hints(("Goal" :in-theory (enable* acl2::ihsext-inductions
                                      acl2::ihsext-recursive-redefs))))
 
+(def-gl-rewrite logtail-of-logapp
+  (equal (logtail m (logapp n a b))
+         (logapp (- (nfix n) (nfix m))
+                 (logtail m a)
+                 (logtail (- (nfix m) (nfix n)) b)))
+  :hints(("Goal" :in-theory (e/d* (acl2::ihsext-inductions
+                                     acl2::ihsext-recursive-redefs)
+                                  (acl2::logtail-identity
+                                   acl2::bitmaskp**)))))
+
 (def-gl-rewrite logand-minus-1-first
   (equal (logand -1 n)
          (ifix n)))
@@ -169,13 +183,16 @@
                   (< a (ifix i))))
   :hints(("Goal" :in-theory (enable maybe-integer))))
 
+(local (defthm <-logapp-0-local
+         (equal (< (logapp n i j) 0)
+                (< (ifix j) 0))
+         :hints(("Goal" :in-theory (e/d* ;; acl2::ihsext-bounds-thms
+                                    (acl2::ihsext-recursive-redefs
+                                     acl2::ihsext-inductions)
+                                    ((force)))))))
 (def-gl-rewrite <-logapp-0
   (equal (< (logapp n i j) 0)
-         (< (ifix j) 0))
-  :hints(("Goal" :in-theory (e/d* ;; acl2::ihsext-bounds-thms
-                             (acl2::ihsext-recursive-redefs
-                                     acl2::ihsext-inductions)
-                             ((force))))))
+         (< (ifix j) 0)))
 
 (def-gl-rewrite integerp-int-set-sign
   (integerp (int-set-sign negp i)))
@@ -184,15 +201,56 @@
   (equal (< (int-set-sign negp i) 0)
          (and negp t)))
 
+(defun ifix-or-zero (ip i)
+  (if ip (ifix i) 0))
+
 (def-gl-rewrite ifix-of-maybe-integer
   (equal (ifix (maybe-integer i x intp))
-         (if intp (ifix i) 0))
+         (ifix-or-zero intp i))
   :hints(("Goal" :in-theory (enable maybe-integer))))
+
+(def-gl-rewrite ifix-or-zero-of-logapp
+  (equal (ifix-or-zero ip (logapp n a b))
+         (logapp n (ifix-or-zero ip a)
+                 (ifix-or-zero ip b))))
+
+(def-gl-rewrite ifix-or-zero-of-int-set-sign
+  (equal (ifix-or-zero ip (int-set-sign negp i))
+         (int-set-sign (and ip negp) (ifix-or-zero ip i)))
+  :hints(("Goal" :in-theory (enable int-set-sign))))
+
+(defun nfix-or-zero (ip i)
+  (if ip (nfix i) 0))
 
 (def-gl-rewrite nfix-of-maybe-integer
   (equal (nfix (maybe-integer i x intp))
-         (if intp (nfix i) 0))
+         (nfix-or-zero intp i))
   :hints(("Goal" :in-theory (enable maybe-integer))))
+
+(local (defthm logapp-with-non-integer
+         (implies (zip b)
+                  (equal (logapp n a b)
+                         (loghead n a)))))
+
+(def-gl-rewrite nfix-or-zero-of-logapp
+  (equal (nfix-or-zero ip (logapp n a b))
+         (logapp n (ifix-or-zero (and ip (<= 0 (ifix b))) a)
+                 (nfix-or-zero ip b)))
+  :hints(("Goal" :in-theory (enable nfix))))
+
+(local (defthm loghead-with-zip
+         (implies (zip a)
+                  (equal (loghead n a) 0))))
+
+(def-gl-rewrite loghead-of-maybe-integer
+  (equal (loghead n (maybe-integer i x intp))
+         (ifix-or-zero intp (loghead n (ifix i))))
+  :hints(("Goal" :in-theory (enable non-int-fix maybe-integer))))
+
+(def-gl-rewrite ifix-or-zero-of-loghead
+  (equal (ifix-or-zero ip (loghead n i))
+         (loghead n (ifix-or-zero ip i))))
+
 
 (def-gl-rewrite equal-of-logapp
   (equal (equal (logapp n a b) c)
@@ -209,6 +267,9 @@
 (def-gl-rewrite logand-0-second
   (equal (logand x 0)
          0))
+
+(def-gl-rewrite integerp-floor
+  (equal (integerp (floor x y)) t))
 
 ;; (local (defthm logapp-of-non-integer-second
 ;;          (implies (not (integerp b))
