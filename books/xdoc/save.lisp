@@ -59,12 +59,11 @@
 
 ; In, out are channels.  Copy from in to out, one byte at a time.
 
-  (mv-let (byte state)
-          (read-byte$ in state)
-          (if (not byte)
-              state
-            (let ((state (write-byte$ byte out state)))
-              (stupid-copy-file-aux in out state)))))
+  (b* (((mv byte state) (read-byte$ in state))
+       ((unless byte)
+        state)
+       (state (write-byte$ byte out state)))
+    (stupid-copy-file-aux in out state)))
 
 (defun stupid-copy-file (src dest state)
 
@@ -79,12 +78,12 @@
       state))
 
 (defun stupid-copy-files (srcdir filenames destdir state)
-  (if (atom filenames)
-      state
-    (b* ((srcfile  (acl2::extend-pathname srcdir (car filenames) state))
-         (destfile (acl2::extend-pathname destdir (car filenames) state))
-         (state    (stupid-copy-file srcfile destfile state)))
-        (stupid-copy-files srcdir (cdr filenames) destdir state))))
+  (b* (((when (atom filenames))
+        state)
+       (srcfile  (oslib::catpath srcdir (car filenames)))
+       (destfile (oslib::catpath destdir (car filenames)))
+       (state    (stupid-copy-file srcfile destfile state)))
+    (stupid-copy-files srcdir (cdr filenames) destdir state)))
 
 
 
@@ -298,9 +297,9 @@
        (acc   (cons #\Newline acc))
        (acc   (str::revappend-chars "</page>" acc))
        (acc   (cons #\Newline acc))
-       (filename (acl2::extend-pathname dir "topics.xml" state))
+       (filename (oslib::catpath dir "topics.xml"))
        ((mv channel state) (open-output-channel filename :character state))
-       (state (princ$ (reverse (coerce acc 'string)) channel state))
+       (state (princ$ (str::rchars-to-string acc) channel state))
        (state (close-output-channel channel state)))
       state))
 
@@ -373,9 +372,9 @@
        (acc (cons #\Newline acc))
        ((mv acc state) (index-topics x "Full Index" dir topics-fal index-pkg state acc))
        (acc (str::revappend-chars "</page>" acc))
-       (filename (acl2::extend-pathname dir "index.xml" state))
+       (filename (oslib::catpath dir "index.xml"))
        ((mv channel state) (open-output-channel filename :character state))
-       (state (princ$ (reverse (coerce acc 'string)) channel state))
+       (state (princ$ (str::rchars-to-string acc) channel state))
        (state (close-output-channel channel state)))
       state))
 
@@ -447,7 +446,7 @@
        ;; Previously: ((mv acc state) (preprocess-main short dir base-pkg state acc))
 
        ((mv short-acc state) (preprocess-main short dir topics-fal base-pkg state nil))
-       (short-str  (reverse (coerce short-acc 'string)))
+       (short-str  (str::rchars-to-string short-acc))
        (acc        (append short-acc acc))
        ((mv err &) (parse-xml short-str))
        (state
@@ -466,7 +465,7 @@
 
        ;; Previously: ((mv acc state) (preprocess-main long dir base-pkg state acc))
        ((mv long-acc state) (preprocess-main long dir topics-fal base-pkg state nil))
-       (long-str (reverse (coerce long-acc 'string)))
+       (long-str (str::rchars-to-string long-acc))
        (acc      (append long-acc acc))
        ((mv err &) (parse-xml long-str))
        (state
@@ -493,16 +492,16 @@
        (acc    (cons #\Newline acc))
        (acc    (str::revappend-chars "</page>" acc))
        (acc    (cons #\Newline acc)))
-      (mv (reverse (coerce acc 'string)) state)))
+      (mv (str::rchars-to-string acc) state)))
 
 (defun save-topic (x all-topics dir topics-fal state)
   (b* ((name               (cdr (assoc :name x)))
        (-                  (cw "Saving ~s0::~s1.~%" (symbol-package-name name) (symbol-name name)))
        ((mv text state)    (preprocess-topic x all-topics dir topics-fal state))
-       (filename           (concatenate 'string
-                                        (reverse (coerce (file-name-mangle name nil) 'string))
-                                        ".xml"))
-       (fullpath           (acl2::extend-pathname dir filename state))
+       (filename           (str::cat (str::rchars-to-string
+                                      (file-name-mangle name nil))
+                                     ".xml"))
+       (fullpath           (oslib::catpath dir filename))
        ((mv channel state) (open-output-channel fullpath :character state))
        (state              (princ$ text channel state))
        (state              (close-output-channel channel state)))
@@ -517,7 +516,7 @@
 
 
 (defun save-success-file (ntopics dir state)
-  (b* ((file           (acl2::extend-pathname dir "success.txt" state))
+  (b* ((file           (oslib::catpath dir "success.txt"))
        ((mv out state) (open-output-channel file :character state))
        ((mv & state)   (fmt "Successfully wrote ~x0 topics.~%~%"
                             (list (cons #\0 ntopics))
@@ -530,20 +529,20 @@
         (prog2$ (er hard? 'prepare-dir "Dir must be a string, but is: ~x0.~%" dir)
                 state))
        (- (cw "; Preparing directory ~s0.~%" dir))
-       (dir/xml     (acl2::extend-pathname dir "xml" state))
+       (dir/xml     (oslib::catpath dir "xml"))
        (state       (mkdir dir state))
        (state       (mkdir dir/xml state))
 
-;;       (dir/support (acl2::extend-pathname dir "support" state))
+;;       (dir/support (oslib::catpath dir "support"))
 ;;       (state       (mkdir dir/support state))
 
-       (xdoc/support (acl2::extend-pathname *xdoc-dir* "support" state))
+       (xdoc/support (oslib::catpath *xdoc-dir* "support"))
 
        ;; We copy support/Makefile-trans to dir/Makefile.  The "-trans" part of
        ;; its name is just to prevent people from thinking they can type "make"
        ;; in the support directory to accomplish anything.
-       (Makefile-trans (acl2::extend-pathname xdoc/support "Makefile-trans" state))
-       (Makefile-out   (acl2::extend-pathname dir "Makefile" state))
+       (Makefile-trans (oslib::catpath xdoc/support "Makefile-trans"))
+       (Makefile-out   (oslib::catpath dir "Makefile"))
        (state   (stupid-copy-file Makefile-trans Makefile-out state))
 
        (state   (stupid-copy-files xdoc/support
@@ -571,7 +570,7 @@
 
 (defun save-topics (x dir index-pkg expand-level state)
   (b* ((state (prepare-dir dir state))
-       (dir   (acl2::extend-pathname dir "xml" state))
+       (dir   (oslib::catpath dir "xml"))
        (x     (clean-topics x))
        (- (cw "; Processing ~x0 topics.~%" (len x)))
        ;; Note: generate the index after the topic files, so that

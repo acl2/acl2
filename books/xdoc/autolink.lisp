@@ -24,6 +24,7 @@
 (in-package "XDOC")
 (include-book "fmt-to-str")
 (include-book "names")
+(include-book "str/cat" :dir :system)
 (local (include-book "misc/assert" :dir :system))
 (set-state-ok t)
 (program)
@@ -67,7 +68,7 @@
   (b* (((when (= xl n))
         ;; End of string?  Error if we were escaped, or if we have not actually
         ;; read some characters yet.  Otherwise, it was okay.
-        (let ((result (reverse (coerce acc 'string))))
+        (let ((result (str::rchars-to-string acc)))
           (if (or bar-escape-p slash-escape-p (not some-chars-p))
               (mv (if nice-error-msg-p
                       (concatenate 'string "Near " (error-context x n xl)
@@ -103,7 +104,7 @@
         ;; escape; end of symbol.  We can stop as long as we've actually read
         ;; some characters.
         (if some-chars-p
-            (mv nil (reverse (coerce acc 'string)) n)
+            (mv nil (str::rchars-to-string acc) n)
           (mv (if nice-error-msg-p
                   (concatenate 'string "Near " (error-context x n xl)
                                ": expected to read some part of a symbol, but found "
@@ -322,7 +323,7 @@
                 (known-pkgs (pairlis$ '("ACL2" "KEYWORD" "XDOC") nil))
                 (acc    (autolink-and-encode str 0 (length str) alist 'acl2::foo known-pkgs nil))
                 (-      (fast-alist-free alist))
-                (result (reverse (coerce acc 'string))))
+                (result (str::rchars-to-string acc)))
              (or (equal result expect)
                  (cw "Result: ~x0~%" result)
                  (cw "Expected: ~x0~%" expect)))))
@@ -366,7 +367,7 @@
 
 (defun xml-ppr-obj-fn (x topics-fal base-pkg state)
   (b* (((mv acc state) (xml-ppr-obj-aux x topics-fal base-pkg state nil))
-       (ret (reverse (coerce acc 'string))))
+       (ret (str::rchars-to-string acc)))
     (mv ret state)))
 
 ;; Ugh, the use of state-state here is awful.  formerly this wasn't a macro and
@@ -379,7 +380,7 @@
                          (base-pkg   ''acl2::foo))
   `(b* (((mv acc ,state-state)
          (xml-ppr-obj-aux ,x ,topics-fal ,base-pkg ,state-state nil))
-        (ret (reverse (coerce acc 'string))))
+        (ret (str::rchars-to-string acc)))
      (mv ret ,state-state)))
 
 

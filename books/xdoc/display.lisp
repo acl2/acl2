@@ -57,7 +57,7 @@
 
 (defun normalize-whitespace (x)
   (declare (type string x))
-  (reverse (coerce (normalize-whitespace-aux x 0 (length x) nil) 'string)))
+  (str::rchars-to-string (normalize-whitespace-aux x 0 (length x) nil)))
 
 
 
@@ -411,8 +411,8 @@
 ;       (- (cw "Merging tokens...~%"))
        (merged-tokens (reverse (merge-text tokens nil 0)))
 ;       (- (cw "Merged tokens are ~x0.~%" merged-tokens))
-       (terminal (reverse (coerce (tokens-to-terminal merged-tokens 70 nil nil nil)
-                                  'string)))
+       (terminal (str::rchars-to-string
+                  (tokens-to-terminal merged-tokens 70 nil nil nil)))
        (state (princ$ (symbol-package-name name) *standard-co* state))
        (state (princ$ "::" *standard-co* state))
        (state (princ$ (symbol-name name) *standard-co* state))

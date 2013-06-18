@@ -824,6 +824,12 @@
                                     unsigned-byte-p
                                     signed-byte-p))))
 
+(defthm basic-signed-byte-p-of-1+lognot
+  (implies (unsigned-byte-p n x)
+           (signed-byte-p (+ 1 n) (+ 1 (lognot x))))
+  :hints(("Goal" :in-theory (enable lognot
+                                    unsigned-byte-p
+                                    signed-byte-p))))
 
 (defthm signed-byte-p-of-decrement-when-natural-signed-byte-p
   (implies (and (signed-byte-p n x)

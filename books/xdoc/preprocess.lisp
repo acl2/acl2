@@ -24,6 +24,7 @@
 (in-package "XDOC")
 (include-book "autolink")
 (include-book "str/top" :dir :system)
+(include-book "oslib/catpath" :dir :system)
 (local (include-book "misc/assert" :dir :system))
 (set-state-ok t)
 (program)
@@ -317,10 +318,10 @@
 (defun read-through-some-char-aux (x n xl chars acc) ;; ==> (MV SUCCESSP STRING N-PRIME)
   (declare (type string x))
   (if (= xl n)
-      (mv nil (reverse (coerce acc 'string)) n)
+      (mv nil (str::rchars-to-string acc) n)
     (let ((charN (char x n)))
       (if (member charN chars)
-          (mv t (reverse (coerce (cons charN acc) 'string)) n)
+          (mv t (str::rchars-to-string (cons charN acc)) n)
         (read-through-some-char-aux x (+ 1 n) xl chars (cons charN acc))))))
 
 (defun read-through-some-char (x n xl chars)
@@ -484,9 +485,9 @@
 ; hoping that most of the time find-tag will take them to the right place.
 
   (b* ((shortname (coerce (string-downcase (symbol-name arg)) 'list))
-       (filename  (concatenate 'string
-                               (reverse (coerce (file-name-mangle arg nil) 'string))
-                               ".xdoc-link"))
+       (filename  (b* ((nacc (file-name-mangle arg nil))
+                       (nacc (str::revappend-chars ".xdoc-link" nacc)))
+                    (str::rchars-to-string nacc)))
 
        (acc (str::revappend-chars "<srclink file=\"" acc))
        (acc (str::revappend-chars filename acc))
@@ -497,7 +498,7 @@
        ((unless dir)
         (mv acc state))
 
-       (fullpath           (acl2::extend-pathname dir filename state))
+       (fullpath           (oslib::catpath dir filename))
        ((mv channel state) (open-output-channel fullpath :character state))
        (state (princ$ *xdoc-link-file-message* channel state))
        (state (newline channel state))
@@ -781,7 +782,7 @@
 
 (defun transform-code (x)
   ;; Fix leading spaces in <code> segments
-  (reverse (coerce (transform-code-segments x 0 (length x) nil) 'string)))
+  (str::rchars-to-string (transform-code-segments x 0 (length x) nil)))
 
 ;; (transform-code 
 ;; "<p>This is 
@@ -875,7 +876,7 @@ baz
         ;; Fine, don't do anything
         x)
        (acc (delete-leading-line-space x 0 xl nil)))
-    (reverse (coerce acc 'string))))
+    (str::rchars-to-string acc)))
 
 (encapsulate
   ()
@@ -1050,7 +1051,4 @@ baz
        ;; ((mv & & state) (acl2::set-current-package current-pkg state))
        )
       (mv acc state)))
-
-
-
 
