@@ -14862,7 +14862,7 @@
                   (or (eq *verbose-pstk* t)
                       (not (member-eq ',(car form) *verbose-pstk*))))
          (setq *pstk-start-time-stack*
-               (cons (get-internal-run-time) *pstk-start-time-stack*))
+               (cons (get-internal-time) *pstk-start-time-stack*))
          (format t "~V@TCP~D> ~S~%"
                  (* 2 *pstk-level*)
                  *pstk-level*
@@ -14883,7 +14883,7 @@
                   (* 2 *pstk-level*)
                   *pstk-level*
                   ',(car form)
-                  (/ (- (get-internal-run-time)
+                  (/ (- (get-internal-time)
                         (pop *pstk-start-time-stack*))
                      (float internal-time-units-per-second))))
         (setq *pstk-stack* (cdr *pstk-stack*))

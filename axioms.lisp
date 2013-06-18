@@ -11501,15 +11501,14 @@
   ~ilc[verify-guards]), some introduce exactly one (e.g., ~ilc[defmacro] and
   ~ilc[defthm]), and some may introduce many (e.g., ~ilc[encapsulate] ).
 
-  ACL2 typically completes processing of an event by printing a summary that
-  includes a breakdown of runtime (cpu time) used and, unless proofs are
-  skipped (~pl[ld-skip-proofsp]) or summary output is inhibited
-  (~pl[set-inhibit-output-lst]), information about the proof attempt
-  (if any) including a list of rules used, a summary of warnings, and the
-  number of ``prover steps'' (if any; ~pl[with-prover-step-limit]).  A detail:
-  The time is calculated using Common Lisp function ~c[get-internal-run-time],
-  which may ignore calls to external tools (~pl[sys-call] and
-  ~pl[clause-processor]).
+  ACL2 typically completes processing of an event by printing a summary.
+  Unless proofs are skipped (~pl[ld-skip-proofsp]) or summary output is
+  inhibited (~pl[set-inhibit-output-lst]), information about the proof attempt
+  (if any) is printed that includes a list of rules used, a summary of
+  warnings, and the number of ``prover steps'' (if any;
+  ~pl[with-prover-step-limit]).  A breakdown of the time used is also printed,
+  which by default is runtime (cpu time), but can be changed to realtime
+  (wall clock time); ~pl[get-internal-time].
 
   ~l[embedded-event-form] for a discussion of events permitted in
   ~il[books].~/")
@@ -27477,7 +27476,7 @@
 
   ~sc[Timings]
 
-  For how to obtain the runtime elapsed since the start of the ACL2 session,
+  For how to obtain the time elapsed since the start of the ACL2 session,
   ~pl[read-run-time].
 
   For a utility for saving times into the ACL2 state and for printing those
@@ -28708,6 +28707,7 @@
     (gag-mode-evisc-tuple . nil)
     (gag-state . nil)
     (gag-state-saved . nil) ; saved when gag-state is set to nil
+    (get-internal-time-as-realtime . nil) ; seems harmless to change
     (global-enabled-structure . nil) ; initialized in enter-boot-strap-mode
     (gstackp . nil)
     (guard-checking-on . t)
@@ -35094,20 +35094,78 @@
             (t (car (idates state-state))))
       (update-idates (cdr (idates state-state)) state-state)))
 
+#-acl2-loop-only
+(defun get-internal-time ()
+  (if (f-get-global 'get-internal-time-as-realtime *the-live-state*)
+      (get-internal-real-time)
+    (get-internal-run-time)))
+
+(defdoc get-internal-time
+  ":Doc-Section Miscellaneous
+
+  runtime vs. realtime in ACL2 timings~/
+
+  The ACL2 system provides utilities that deal with elapsed time.  The most
+  visible of these is in the time summaries printed when completing evaluation
+  of ~il[events].  For others, ~pl[with-prover-time-limit], ~pl[read-run-time],
+  ~pl[time-tracker], ~pl[time-tracker-tau], and ~pl[pstack].
+
+  By default, these utilities all use an underlying notion of run time provided
+  by the host Common Lisp implementation: specifically, Common Lisp function
+  ~c[get-internal-run-time].  However, Common Lisp also provides function
+  ~c[get-internal-run-time], which returns the real time (wall clock time).
+  While the latter is specified to measure elapsed time, the former is left to
+  the implementation, which might well only measure time spent in the Lisp
+  process.  Consider the following example, which is a bit arcane but basically
+  sleeps for 2 seconds.
+  ~bv[]
+    (defttag t) ; to allow sys-call
+    (make-event
+     (prog2$ (sys-call \"sleep\" '(\"2\"))
+             (value '(value-triple nil))))
+  ~ev[]
+  A typical time summary might be as follows, drastically under-reporting the
+  elapsed time.
+  ~bv[]
+    Time:  0.01 seconds (prove: 0.00, print: 0.00, other: 0.01)
+  ~ev[]
+  However, you can instruct ACL2 to switch to using elapsed time (run time), in
+  summaries and elsewhere, by evaluating the following form.
+  ~bv[]
+    (assign get-internal-time-as-realtime t)
+  ~ev[]
+  To return to using runtime:
+  ~bv[]
+    (assign get-internal-time-as-realtime nil)
+  ~ev[]
+  While the above example is rather silly, the issue becomes significant in
+  time summaries for proofs that call out to external tools (~pl[sys-call] and
+  ~pl[clause-processor]).
+
+  Note that a function ~c[get-internal-time] is defined in raw Lisp but is not
+  available inside the ACL2 loop.  However, the expression
+  ~c[(read-run-time state)] provides an interface to this function that is
+  available inside the ACL2 loop; ~pl[read-run-time].
+
+  We are open to changing the default to elapsed wall-clock time (realtime),
+  and may do so in future ACL2 releases.~/~/")
+
 (defun read-run-time (state-state)
 
   ":Doc-Section ACL2::ACL2-built-ins
 
   read elapsed runtime~/
 
-  ~c[(Read-run-time state)] returns ~c[(mv runtime state)], where runtime is
-  the elapsed runtime in seconds since the start of the current ACL2 session
-  and ~c[state] is the resulting ACL2 ~il[state].~/
+  By default, ~c[(read-run-time state)] returns ~c[(mv runtime state)], where
+  runtime is the elapsed runtime in seconds since the start of the current ACL2
+  session and ~c[state] is the resulting ACL2 ~il[state].  But
+  ~c[read-run-time] can be made to return elapsed realtime (wall clock time)
+  instead; ~pl[get-internal-time].~/
 
   The logical definition probably won't concern many users, but for
   completeness, we say a word about it here.  That definition uses the function
-  ~c[read-acl2-oracle], which modifies state by popping the returned
-  ~c[runtime] value from its acl2-oracle field.~/"
+  ~c[read-acl2-oracle], which modifies state by popping the value to return
+  from its acl2-oracle field.~/"
 
   (declare (xargs :guard (state-p1 state-state)))
 
@@ -35123,7 +35181,7 @@
 ; read-run-time to work even when *wormholep* is non-nil.
 
          (return-from read-run-time
-                      (mv (/ (get-internal-run-time)
+                      (mv (/ (get-internal-time)
                              internal-time-units-per-second)
                           state-state))))
   (mv (cond ((or (null (acl2-oracle state-state))
@@ -44813,7 +44871,7 @@
 
   (let ((time-limit-var (gensym)))
     `(let* ((,time-limit-var ,time)
-            (temp (+ (get-internal-run-time)
+            (temp (+ (get-internal-time)
                      (* internal-time-units-per-second
                         (if (consp ,time-limit-var)
                             (car ,time-limit-var)
@@ -44860,7 +44918,7 @@
   where ~c[time] evaluates to a positive rational number or to a list
   containing such, and ~c[form] is arbitrary.  Logically,
   ~c[(with-prover-time-limit time form)] is equivalent to ~c[form].  However,
-  if the runtime for evaluation of ~c[form] exceeds the value specified by
+  if the time for evaluation of ~c[form] exceeds the value specified by
   ~c[time], and if ACL2 notices this fact during a proof, then that proof will
   abort, for example like this:
   ~bv[]
@@ -44870,6 +44928,9 @@
   set up an expiration time, the inner ~c[with-prover-time-limit] call is not
   allowed to push that time further into the future unless the inner time is
   specified as a list containing a rational, rather than as a rational.
+
+  Note that by default, the time used is runtime (cpu time); to switch to
+  realtime (elapsed time), ~pl[get-internal-time].
 
   For a related utility based on prover steps instead of time,
   ~pl[with-prover-step-limit]; also ~pl[set-prover-step-limit].  Those
@@ -44988,7 +45049,7 @@
 ; Where should we call this function?  We want to strike a balance between
 ; calling it often enough that we get reasonably tight results for
 ; with-prover-time-limit, yet calling it rarely enough so that we don't slow
-; down the prover, in particular from calls of (get-internal-run-time).
+; down the prover, in particular from calls of (get-internal-time).
 
 ; As of this writing we call this function in add-poly,
 ; quick-and-dirty-subsumption-replacement-step, subsumption-replacement-loop,
@@ -45017,7 +45078,7 @@
 ; rewrite not in the scope of catch-time-limit5.
 
              (member-eq 'time-limit5-tag *time-limit-tags*)
-             (< *acl2-time-limit* (get-internal-run-time)))
+             (< *acl2-time-limit* (get-internal-time)))
     (setq *next-acl2-oracle-value*
           (if (eql *acl2-time-limit* 0)
               "Aborting due to an interrupt."
@@ -49400,12 +49461,15 @@ Lisp definition."
 
   display time spent during specified evaluation~/
 
-  The ~c[time-tracker] macro is a utility for displaying runtime (cpu time)
-  spent during specified evaluation.  In general, the user provides this
-  specification.  However, ACL2 itself uses this utility for tracking uses of
-  its ~il[tau-system] reasoning utility (~pl[time-tracker-tau]).  We discuss
-  that use as an example before discussing the general form for calls of
+  The ~c[time-tracker] macro is a utility for displaying time spent during
+  specified evaluation.  In general, the user provides this specification.
+  However, ACL2 itself uses this utility for tracking uses of its
+  ~il[tau-system] reasoning utility (~pl[time-tracker-tau]).  We discuss that
+  use as an example before discussing the general form for calls of
   ~c[time-tracker].
+
+  Note that by default, the time being tracked is runtime (cpu time); to switch
+  to realtime (elapsed time), ~pl[get-internal-time].
 
   Remark for ACL2(p) users (~pl[parallelism]): ~c[time-tracker] is merely a
   no-op in ACL2(p).
@@ -49436,7 +49500,8 @@ Lisp definition."
   ~c[time-tracker] are evaluated, the first argument is typically a keyword and
   the second is always a keyword, and such arguments evaluate to themselves.
 
-  An ACL2 function invoked at the start of a proof includes the following code.
+  An ACL2 function invoked at the start of a proof includes approximately the
+  following code.
   ~bv[]
   (progn$
    (time-tracker :tau :end)
@@ -49524,7 +49589,7 @@ Lisp definition."
   We conclude with a precise discussion of all arguments.  Note that all
   arguments are evaluated; thus when we refer to an argument, we are discussing
   the value of that argument.  All times discussed are runtimes, i.e., cpu
-  times.
+  times, unless that default is changed; ~pl[get-internal-time].
 
   ~bv[]
   General forms:

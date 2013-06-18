@@ -36148,7 +36148,7 @@
 ; reason to update that field.
 
   (init ; reset by :init
-   (get-internal-run-time) :type rational :read-only t)
+   (get-internal-time) :type rational :read-only t)
   (latest   ; reset by :init, :stop, and :start
    nil :type (or null rational))
   (elapsed  ; total time tracked, updated when updating Latest
@@ -36257,11 +36257,11 @@
                  (times (time-tracker-times tt))
                  (time (or min-time (car times))))
             (when time
-              (let* ((current-internal-run-time (get-internal-run-time))
+              (let* ((current-internal-time (get-internal-time))
                      (total (let ((latest (time-tracker-latest tt)))
                               (if latest
                                   (+ (time-tracker-elapsed tt)
-                                     (- current-internal-run-time latest))
+                                     (- current-internal-time latest))
                                 (time-tracker-elapsed tt)))))
                 (when (>= total time)
                   (let ((msg (or msg (time-tracker-msg tt))))
@@ -36299,7 +36299,7 @@
           tag))
      (t (setf (time-tracker-elapsed tt)
               (+ (time-tracker-elapsed tt)
-                 (- (get-internal-run-time) latest)))
+                 (- (get-internal-time) latest)))
         (setf (time-tracker-latest tt)
               nil)))))
 
@@ -36319,7 +36319,7 @@
            solve this problem.  See :DOC time-tracker."
           tag))
      (t (setf (time-tracker-latest tt)
-              (get-internal-run-time))))))
+              (get-internal-time))))))
 )
 
 ; We originally defined defund in axioms.lisp, but now that its definition

@@ -2824,8 +2824,13 @@
    (time-tracker :tau :init
                  :times '(1 5)
                  :interval 10
-                 :msg "Elapsed runtime in tau is ~st secs; see :DOC ~
-                       time-tracker-tau.~|~%")
+                 :msg (concatenate
+                       'string
+                       (if (f-get-global 'get-internal-time-as-realtime
+                                         state)
+                           "Elapsed realtime"
+                         "Elapsed runtime")
+                       " in tau is ~st secs; see :DOC time-tracker-tau.~|~%"))
    (pprogn (cond ((null (cdr (get-timer 'other-time state))) ; top-level event
                   (mv-let (x state)
                           (main-timer state)
@@ -3865,9 +3870,16 @@
 
                 (time-tracker :tau :print?
                               :min-time 1
-                              :msg "For the proof above, the total runtime ~
-                                    spent in the tau system was ~st seconds.  ~
-                                    See :DOC time-tracker-tau.~|~%")
+                              :msg
+                              (concatenate
+                               'string
+                               "For the proof above, the total "
+                               (if (f-get-global 'get-internal-time-as-realtime
+                                                 state)
+                                   "realtime"
+                                 "runtime")
+                               " spent in the tau system was ~st seconds.  ~
+                                See :DOC time-tracker-tau.~|~%"))
 
 ; At one time we put (time-tracker :tau :end) here.  But in community book
 ; books/hints/basic-tests.lisp, the recursive proof attempt failed just below

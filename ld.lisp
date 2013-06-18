@@ -21002,6 +21002,11 @@
 
   ~st[NEW FEATURES]
 
+  ACL2 can now be instructed to time activities using real time (wall clock
+  time) instead of run time (typically, cpu time).  ~l[get-internal-time].
+  Thanks to Jared Davis for asking to be able to obtain real-time reports in
+  event summaries.
+
   ~st[HEURISTIC IMPROVEMENTS]
 
   ~st[BUG FIXES]
@@ -25940,9 +25945,9 @@ accompanying <i>``File Path''</i> shown at the end of each book's text.
   pre-processing and database updates.  Despite the fact that ACL2 is an
   applicative language it is possible to measure time with ACL2 programs.  The
   ~ilc[state] ~warn[] contains a clock.  The times are printed in decimal
-  notation but are actually counted in integral units.  Note that each time is
-  a runtime, also known as a cpu time, as opposed to being a real time, also
-  known as a wall clock time.
+  notation but are actually counted in integral units.  Note that by default,
+  each time is a runtime, also known as a cpu time, as opposed to being a real
+  time, also known as a wall clock time.
 
   The final ~c[APP] is the value of the ~c[defun] command and was printed by
   the read-eval-print loop.  The fact that it is indented one space is a subtle
