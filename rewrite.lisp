@@ -13626,25 +13626,43 @@
   construct effective rewrite rules, ~pl[introduction-to-rewrite-rules-part-1]
   and then ~pl[introduction-to-rewrite-rules-part-2].
 
-  ~l[rule-classes] for a general discussion of rule classes and
-  how they are used to build rules from formulas.  Example ~c[:]~ilc[corollary]
-  formulas from which ~c[:rewrite] rules might be built are:
+  ~l[rule-classes] for a general discussion of rule classes, including how they
+  are used to build rules from formulas and a discussion of the various
+  keywords in a rule class description.
+
   ~bv[]
-  Example:
-  (equal (+ x y) (+ y x))            replace (+ a b) by (+ b a) provided
-                                     certain heuristics approve the
-                                     permutation.
+  Examples:
 
-  (implies (true-listp x)            replace (append a nil) by a, if
-           (equal (append x nil) x)) (true-listp a) rewrites to t
+  (defthm plus-commutes                 ; Replace (+ a b) by (+ b a) provided
+    (equal (+ x y) (+ y x)))            ; certain heuristics approve the
+                                        ; permutation.
 
-  (implies                           replace (member a (append b c)) by
-      (and (eqlablep e)              (member a (append c b)) in contexts
-           (true-listp x)            in which propositional equivalence
-           (true-listp y))           is sufficient, provided (eqlablep a)
-      (iff (member e (append x y))   (true-listp b) and (true-listp c)
-           (member e (append y x)))) rewrite to t and the permutative
-                                     heuristics approve~/
+  (defthm plus-commutes                 ; as above with most defaults filled in
+    (equal (+ x y) (+ y x))
+    :rule-classes ((:rewrite :corollary (equal (+ x y) (+ y x))
+                             :loop-stopper ((x y binary-+))
+                             ; :backchain-limit-lst is omitted (no hypotheses)
+                             :match-free :all)))
+
+  (defthm append-nil                    ; Replace (append a nil) by a, if
+    (implies (true-listp x)             ; (true-listp a) rewrites to t.
+             (equal (append x nil) x)))
+
+  (defthm append-nil                    ; as above with most defaults filled in
+    (implies (true-listp x)
+             (equal (append x nil) x))
+    :rule-classes ((:rewrite :corollary (implies (true-listp x)
+                                                 (equal (append x nil) x))
+                             :backchain-limit-lst (3) ; or equivalently, 3
+                             :match-free :all)))
+
+  (defthm member-append                 ; Replace (member e (append b c)) by
+    (implies                            ; (or (member e b) (member e c) in
+     (and                               ; contexts in which propositional
+      (true-listp x)                    ; equivalence is sufficient, provided
+      (true-listp y))                   ; b and c are true-lists.
+     (iff (member e (append x y))
+          (or (member e x) (member e y)))))~/
 
   General Form:
   (and ...

@@ -3590,23 +3590,26 @@
 
   make a rule to forward chain when a certain trigger arises~/
 
-  ~l[rule-classes] for a general discussion of rule classes and how they are
-  used to build rules from formulas.
+  ~l[rule-classes] for a general discussion of rule classes, including how they
+  are used to build rules from formulas and a discussion of the various
+  keywords in a rule class description.
 
   ~bv[]
   Examples:
-  (defthm p-and-r-forward
-   (implies (and (p x) (r x))       ; When (p a) appears in a formula to be
-            (q (f x)))              ; simplified, try to establish (p a) and
-                                    ; (r a) and, if successful, add (q (f a))
+
+  (defthm p-and-r-forward           ; When (p a) appears in a formula to be
+   (implies (and (p x) (r x))       ; simplified, try to establish (p a) and
+            (q (f x)))              ; (r a) and, if successful, add (q (f a))
                                     ; to the known assumptions.
    :rule-classes :forward-chaining)
 
-  ; Equivalent to the above:
-  (defthm p-and-r-forward
-   (implies (and (p x) (r x))
-            (q (f x)))
-   :rule-classes ((:forward-chaining :trigger-terms ((p x)))))
+  (defthm p-and-r-forward           ; as above with most defaults filled in
+    (implies (and (p x) (r x))
+             (q (f x)))
+    :rule-classes ((:forward-chaining :trigger-terms ((p x))
+                                      :corollary (implies (and (p x) (r x))
+                                                          (q (f x)))
+                                      :match-free :all)))
   ~ev[]
 
   To specify the triggering terms provide a non-empty list of terms

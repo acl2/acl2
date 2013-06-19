@@ -4837,8 +4837,8 @@
             saved-output-reversed      ;;; for feedback after expansion failure
             saved-output-p             ;;; for feedback after expansion failure
             ttags-allowed              ;;; propagate changes outside expansion
-            ld-evisc-tuple             ;;; allow user to modify this in a book
-                                       ;;;   (e.g. misc/hons-help.lisp)
+            ld-keyword-aliases         ;;; allow user to modify this in a book
+            ld-evisc-tuple             ;;; see just above
             term-evisc-tuple           ;;; see just above
             abbrev-evisc-tuple         ;;; see just above
             gag-mode-evisc-tuple       ;;; see just above

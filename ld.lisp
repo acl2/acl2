@@ -21000,6 +21000,11 @@
   to be relieved.  ~l[bind-free].  Thanks to Sol Swords for requesting this
   enhancement.
 
+  When built-in ~il[state] global ~ilc[ld-keyword-aliases] is set during
+  ~ilc[make-event] expansion, its new value will persist after expansion is
+  complete, which had not formerly been the case.  Thanks to Jared Davis for
+  correspondence leading us to make this change.
+
   ~st[NEW FEATURES]
 
   ACL2 can now be instructed to time activities using real time (wall clock
