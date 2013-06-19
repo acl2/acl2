@@ -4760,7 +4760,11 @@
   will do so in both the ~c[show-rewrites] (~c[sr]) and ~c[rewrite] commands.
   But normally, if even one hypothesis remains unrelieved, then no automatic
   extension of the substitution is made.  Except, if ~c[instantiate-free] is
-  not ~c[nil], then that extension to the substitution is kept.
+  not ~c[nil], then that extension to the substitution is kept.  (Technical
+  note: in the case of an unrelieved hypothesis and a non-~c[nil] value of
+  ~c[instantiate-free], if a ~ilc[bind-free] hypothesis produces a list of
+  binding alists, then the last of those alists is the one that is used to
+  extend the substitution.)
 
   Finally, the instruction is applied as follows.  The current subterm is
   replaced by applying the final substitution described above to the right-hand

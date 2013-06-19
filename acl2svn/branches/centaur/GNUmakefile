@@ -72,32 +72,9 @@
 #   make regression-everything
 #                    ; Same as make regression, except that target "everything"
 #                    ; is used in community books file, Makefile.
-#   make regression-legacy-fast [DEPRECATED as is books/regression-targets (legacy)]
-#                    ; NOTE: This target was not tested before the v6-2 release.
-#                    ; (WARNING: This target uses variable ACL2, with default value
-#                    ;      "acl2", so it is probably a good idea to run after
-#                    ;      explicitly setting ACL2=<path_to_ACL2>.
-#                    ;      End of warning.)
-#                    ; Certify a substantial portion of the books that
-#                    ; would be certified by `make regression', but
-#                    ; with better parallelism.  We have used this
-#                    ; with option "-j 24" to obtain over a 12x
-#                    ; speedup.  This target assumes that
-#                    ; books/Makefile-fast is up-to-date; if you are
-#                    ; using an "alpha" version, just follow
-#                    ; instructions in books/regression-targets to
-#                    ; update that file first and then update
-#                    ; books/Makefile-fast as follows:
-#                    ;   cd books/
-#                    ;   ./cert.pl -s Makefile-fast --targets regression-targets -b .
 #   make clean-books ; Remove certificate files, object files, log files,
 #                    ; debris, ..., created by `make certify-books',
 #                    ; `make regression', etc.
-
-# Also included are various legacy versions of these targets, which
-# correspond to targets through ACL2 Version  6.1.  For example, target
-# regression-legacy in this file corresponds to target regression in
-# older versions of htis file.
 
 ###############################################################################
 
@@ -948,98 +925,3 @@ ifndef ACL2
 else
 	cd books ; $(MAKE) $(ACL2_IGNORE) chk-include-book-worlds ACL2=$(ACL2)
 endif
-
-##########
-### Legacy targets
-### (renamed using "-legacy" and deprecated after ACL2 Version 6.1):
-##########
-
-# Here we provide support for a convenient way to pass -j down to the
-# community books Makefile, for both `make' and cert.pl.  It seems
-# cleanest and perhaps critical that below, when we call in the books
-# directory we do so with an explicit -j, rather than leaving this to
-# the Makefile in the books/ directory.
-export ACL2_HONS_OPT
-ifdef ACL2_JOBS
-# Note: Because of recursive call of make, ACL2_HONS_OPT could
-# ultimately include many -j options.  This anomaly seems harmless, so
-# we leave it for now but may revisit it later.
-ACL2_HONS_OPT += -j$(ACL2_JOBS)
-ACL2_JOBS_OPT := -j $(ACL2_JOBS)
-endif
-
-.PHONY: clean-books-legacy
-clean-books-legacy:
-	cd books ; $(MAKE) -f Makefile.legacy $(ACL2_IGNORE) clean
-
-.PHONY: regression-legacy
-regression-legacy:
-	uname -a
-	cd books ; $(MAKE) -f Makefile.legacy $(ACL2_IGNORE) $(ACL2_JOBS_OPT) all-plus
-
-# For a HONS regression, we do regression-legacy-hons-only first to get the
-# extra parallelism provided by cert.pl.  For regression-legacy-hons-only the
-# default for ACL2 is saved_acl2h in the development directory; for
-# regression-legacy, saved_acl2.  So the user might be happiest simply
-# providing a value for ACL2.
-.PHONY: regression-legacy-hons-only
-regression-legacy-hons-only:
-	uname -a
-	cd books ; $(MAKE) -f Makefile.legacy $(ACL2_IGNORE) hons
-
-.PHONY: regression-legacy-hons
-# For a legacy HONS regression, we do regression-legacy-hons-only
-# first to get the extra parallelism provided by cert.pl.  For
-# regression-legacy-hons-only the default for ACL2 is saved_acl2h in
-# the development directory; for regression-legacy, saved_acl2.  So
-# the user might be happiest simply providing a value for ACL2.
-regression-legacy-hons:
-	$(MAKE) regression-legacy-hons-only
-	$(MAKE) regression-legacy ACL2_CENTAUR=skip ACL2_HONS_REGRESSION=t
-
-.PHONY: clean-books-nonstd-legacy
-clean-books-legacy-nonstd:
-	cd books/nonstd ; $(MAKE) -f Makefile.legacy $(ACL2_IGNORE) clean-nonstd
-
-.PHONY: regression-legacy-nonstd
-regression-legacy-nonstd:
-	uname -a
-	cd books/nonstd ; $(MAKE) -f Makefile.legacy $(ACL2_IGNORE) $(ACL2_JOBS_OPT) all-nonstd
-
-# Warning: We are no longer actively maintaining books/Makefile-fast.
-.PHONY: regression-legacy-fast
-regression-legacy-fast:
-	uname -a
-	cd books ; pwd ; $(MAKE) $(ACL2_IGNORE) $(ACL2_JOBS_OPT) -f Makefile-fast
-
-.PHONY: regression-legacy-fresh regression-legacy-fast-fresh regression-legacy-nonstd-fresh
-regression-legacy-fresh: clean-books-legacy
-	$(MAKE) $(ACL2_IGNORE) regression-legacy
-regression-legacy-hons-fresh: clean-books-legacy
-	$(MAKE) $(ACL2_IGNORE) regression-legacy-hons
-regression-legacy-fast-fresh: clean-books-legacy
-	$(MAKE) $(ACL2_IGNORE) regression-legacy-fast
-regression-legacy-nonstd-fresh: clean-books-legacy-nonstd
-	$(MAKE) $(ACL2_IGNORE) regression-legacy-nonstd
-
-.PHONY: certify-books-legacy
-certify-books-legacy:
-	cd books ; $(MAKE) -f Makefile.legacy $(ACL2_JOBS_OPT) $(ACL2_IGNORE)
-
-# Certify main books from scratch.
-.PHONY: certify-books-legacy-fresh
-certify-books-legacy-fresh: clean-books-legacy
-	$(MAKE) $(ACL2_IGNORE) $(ACL2_JOBS_OPT) certify-books-legacy
-
-# The following allows for a relatively short test, in response to a request
-# from GCL maintainer Camm Maguire.
-.PHONY: certify-books-legacy-short
-certify-books-legacy-short:
-	cd books ; $(MAKE) -f Makefile.legacy $(ACL2_JOBS_OPT) short-test
-
-# Next is a legacy version of a developer target.
-.PHONY: chk-include-book-worlds
-chk-include-book-worlds-legacy:
-	uname -a
-	cd books ; $(MAKE) -f Makefile.legacy $(ACL2_IGNORE) chk-include-book-worlds-top
-

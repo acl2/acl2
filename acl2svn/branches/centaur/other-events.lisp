@@ -8832,7 +8832,12 @@
              (if (eq r t)
                  state
                (f-put-global 'last-make-event-expansion r state))
-             (stop-redundant-event ctx state)))
+             (stop-redundant-event
+              ctx state
+              (and (not (eq r t))
+                   "(This event is redundant with a previous encapsulate ~
+                    event even though the two are not equal; see :DOC ~
+                    redundant-encapsulate.)"))))
            ((and (not (eq (ld-skip-proofsp state) 'include-book))
                  (not (eq (ld-skip-proofsp state) 'include-book-with-locals))
                  (not (eq (ld-skip-proofsp state) 'initialize-acl2)))
@@ -29917,13 +29922,15 @@
 
 (defun pc-relieve-hyp (rune hyp unify-subst type-alist wrld state ens ttree)
 
-; This function is adapted from ACL2 function relieve-hyp, but it prevents
-; backchaining, instead returning the new hypotheses.  Notice that there are no
-; arguments for obj, equiv, fnstack, ancestors, or simplify-clause-pot-lst.
-; Also notice that rcnst has been replaced by ens (an enable structure).
+; This function is adapted from ACL2 function relieve-hyp, but without
+; rewriting.  Notice that there are no arguments for obj, equiv, fnstack,
+; ancestors, or simplify-clause-pot-lst.  Also notice that rcnst has been
+; replaced by ens (an enable structure).
 
-; We return t or nil indicating whether we won, an extended unify-subst
-; and a new ttree.  This function is a No-Change Loser.
+; We return t or nil indicating whether we won, an extended unify-subst and a
+; new ttree, with one exception: we can return (mv :unify-subst-list lst
+; new-ttree), where lst is a list of binding alists, as for relieve-hyp.  This
+; function is a No-Change Loser.
 
   (cond ((and (nvariablep hyp)
               (not (fquotep hyp))
@@ -29997,6 +30004,29 @@
                                (mv t unify-subst ttree)
                              (mv nil unify-subst ttree)))))))))))))))))))
 
+(mutual-recursion
+
+(defun pc-relieve-hyps1-iter (rune hyps unify-subst-lst unify-subst
+                                   unify-subst0 ttree0 type-alist
+                                   keep-unify-subst wrld state ens ttree)
+
+; This function is adapted from ACL2 function relieve-hyps1-iter.
+
+  (mv-let
+   (relieve-hyps1-ans unify-subst1 ttree1)
+   (pc-relieve-hyps1 rune hyps
+                     (extend-unify-subst (car unify-subst-lst) unify-subst)
+                     unify-subst0 ttree0 type-alist keep-unify-subst wrld state
+                                   ens ttree)
+   (cond ((or (endp (cdr unify-subst-lst))
+              relieve-hyps1-ans)
+          (mv relieve-hyps1-ans unify-subst1 ttree1))
+         (t (pc-relieve-hyps1-iter rune hyps
+                                   (cdr unify-subst-lst)
+                                   unify-subst unify-subst0 ttree0
+                                   type-alist keep-unify-subst wrld
+                                   state ens ttree)))))
+
 (defun pc-relieve-hyps1 (rune hyps unify-subst unify-subst0 ttree0 type-alist
                               keep-unify-subst wrld state ens ttree)
 
@@ -30017,25 +30047,36 @@
 
   (cond ((null hyps)
          (mv (not (eq keep-unify-subst :FAILED)) unify-subst ttree))
-        (t (mv-let (relieve-hyp-ans new-unify-subst ttree)
+        (t (mv-let
+            (relieve-hyp-ans new-unify-subst ttree)
 
 ; We avoid rewriting in this proof-checker code, so new-ttree = ttree.
 
-             (pc-relieve-hyp rune (car hyps) unify-subst type-alist wrld state
-                             ens ttree)
-             (cond
-              ((or relieve-hyp-ans keep-unify-subst)
-               (pc-relieve-hyps1 rune
-                                 (cdr hyps)
-                                 new-unify-subst
-                                 unify-subst0 ttree0
-                                 type-alist
-                                 (if (and (eq keep-unify-subst t)
-                                          (not relieve-hyp-ans))
-                                     :FAILED
-                                   keep-unify-subst)
-                                 wrld state ens ttree))
-              (t (mv nil unify-subst0 ttree0)))))))
+            (pc-relieve-hyp rune (car hyps) unify-subst type-alist wrld
+                            state ens ttree)
+            (cond
+             ((eq relieve-hyp-ans :unify-subst-list)
+
+; The hypothesis (car hyps) is a call of bind-free that has produced a list of
+; unify-substs.
+
+              (pc-relieve-hyps1-iter rune (cdr hyps)
+                                     new-unify-subst ; a list of alists
+                                     unify-subst unify-subst0 ttree0 type-alist
+                                     keep-unify-subst wrld state ens ttree))
+             ((or relieve-hyp-ans keep-unify-subst)
+              (pc-relieve-hyps1 rune
+                                (cdr hyps)
+                                new-unify-subst
+                                unify-subst0 ttree0
+                                type-alist
+                                (if (and (eq keep-unify-subst t)
+                                         (not relieve-hyp-ans))
+                                    :FAILED
+                                  keep-unify-subst)
+                                wrld state ens ttree))
+             (t (mv nil unify-subst0 ttree0)))))))
+)
 
 (defun pc-relieve-hyps (rune hyps unify-subst type-alist keep-unify-subst wrld
                              state ens ttree)
@@ -36017,7 +36058,7 @@
 ; reason to update that field.
 
   (init ; reset by :init
-   (get-internal-run-time) :type rational :read-only t)
+   (get-internal-time) :type rational :read-only t)
   (latest   ; reset by :init, :stop, and :start
    nil :type (or null rational))
   (elapsed  ; total time tracked, updated when updating Latest
@@ -36126,11 +36167,11 @@
                  (times (time-tracker-times tt))
                  (time (or min-time (car times))))
             (when time
-              (let* ((current-internal-run-time (get-internal-run-time))
+              (let* ((current-internal-time (get-internal-time))
                      (total (let ((latest (time-tracker-latest tt)))
                               (if latest
                                   (+ (time-tracker-elapsed tt)
-                                     (- current-internal-run-time latest))
+                                     (- current-internal-time latest))
                                 (time-tracker-elapsed tt)))))
                 (when (>= total time)
                   (let ((msg (or msg (time-tracker-msg tt))))
@@ -36168,7 +36209,7 @@
           tag))
      (t (setf (time-tracker-elapsed tt)
               (+ (time-tracker-elapsed tt)
-                 (- (get-internal-run-time) latest)))
+                 (- (get-internal-time) latest)))
         (setf (time-tracker-latest tt)
               nil)))))
 
@@ -36188,7 +36229,7 @@
            solve this problem.  See :DOC time-tracker."
           tag))
      (t (setf (time-tracker-latest tt)
-              (get-internal-run-time))))))
+              (get-internal-time))))))
 )
 
 ; We originally defined defund in axioms.lisp, but now that its definition

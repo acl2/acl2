@@ -1784,20 +1784,7 @@ the calls took.")
                             ((rationalp y)
                              (< y x))))))))))
 
-;; [Jared]: moved this here from acl2-fns.lisp, since it's only used in
-;; memoize-raw
-
 (defun our-function-lambda-expression (sym)
-
-; [Jared] I don't understand this comment
-; This is intended only for #+hons; otherwise it reduces to (mv
-; (function-lambda-expression (symbol-function sym)) nil).
-
-  #-cltl2
-  (declare (ignore sym))
-  #-cltl2
-  (mv nil nil)
-  #+cltl2
   (let ((temp (get sym 'acl2-saved-def)))
     (cond (temp (values temp t))
           (t (let* ((fn (symbol-function sym))

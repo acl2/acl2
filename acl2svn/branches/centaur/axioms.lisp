@@ -1325,6 +1325,73 @@
         (error "ACL2 Halted"))))
    (t (error "ACL2 error:  ~a." args))))
 
+#-acl2-loop-only
+(declaim (inline
+
+; Here we take a suggestion from Jared Davis and inline built-in functions,
+; starting after Version_6.2, based on successful use of such inlining at
+; Centaur Technology for many months on their local copy of ACL2.  Indeed, the
+; original list below (added on June 16, 2013) comes directly from that copy,
+; except for inclusion of aref1 and aref2 (as noted below).  As Jared said in a
+; log message when he added inline declarations for 33 functions to a local
+; copy of ACL2 at Centaur:
+
+;   This should give us a useful speedup on CCL for many functions that recur
+;   with ZP at the end.  I measured a 12% speedup for a naive FIB function.
+
+; We are seeing perhaps 2% speedup on regressions, but we believe that this
+; inlining could provide much greater benefit in some cases.
+
+; Some of these functions could probably be inlined using the defun-inline
+; feature of ACL2, but we prefer not to fight with the likely resulting
+; boot-strapping problem during the ACL2 build.
+
+; We may modify this list from time to time, for example based on user request.
+; It surely is safe to add any function symbol to the list that is not defined
+; recursively in raw Lisp (and maybe even if it is).  But of course that could
+; interfere with tracing and redefinition, so care should be taken before
+; adding a function symbol that might be traced or redefined.
+
+; We endeavor to keep the list sorted alphabetically, simply to make it easy to
+; search visually.
+
+           acl2-numberp
+           add-to-set-eq-exec
+           aref1 ; already inlined in Version_6.2 and before
+           aref2 ; already inlined in Version_6.2 and before
+           booleanp
+           complex-rationalp
+           eqlablep
+           fix
+           fn-symb
+           iff
+           ifix
+           implies
+           integer-abs
+           integer-range-p
+           len
+           member-equal
+           natp
+           nfix
+           peek-char$
+           posp
+           quotep
+           random$
+           read-byte$
+           read-char$
+           realfix
+           rfix
+           signed-byte-p
+           strip-cars
+           strip-cdrs
+           symbol-<
+           unsigned-byte-p
+           xor
+           zip
+           zp
+           zpf
+           ))
+
 ; We provide here ``raw'' implementations of basic functions that we
 ; ``wish'' were already in Common Lisp, to support primitives of the
 ; ACL2 logic.
@@ -5653,7 +5720,7 @@
   in raw Lisp.  That is, the call of ~c[fn] is made on its evaluated arguments
   as though this call is being made in the ACL2 top-level loop, rather than in
   raw Lisp.  In particular, the ~il[guard] of ~c[fn] is checked, at least by
-  default (~pl[set-guard-checking].~eq[]
+  default (~pl[set-guard-checking]).~eq[]
 
   Note that in the term (ec-call (fn term1 ... termk))~c[], only the indicated
   call of ~c[fn] is made in the logic; each ~c[termi] is evaluated in the
@@ -6927,39 +6994,43 @@
   (BIND-FREE term t)
   (BIND-FREE term)
   ~ev[]
-  A rule which uses a ~c[bind-free] hypothesis has similarities to both a
-  rule which uses a ~ilc[syntaxp] hypothesis and to a ~c[:]~ilc[meta] rule.
-  ~c[Bind-free] is like ~ilc[syntaxp], in that it logically always
-  returns ~c[t] but may affect the application of a ~c[:]~ilc[rewrite]
-  or ~c[:]~ilc[linear] rule when it is called at the top-level of a
-  hypothesis.  It is like a ~c[:]~ilc[meta] rule, in that it allows the
-  user to perform transformations of terms under progammatic control.
+  A rule which uses a ~c[bind-free] hypothesis has similarities to both a rule
+  which uses a ~ilc[syntaxp] hypothesis and to a ~c[:]~ilc[meta] rule.
+  ~c[Bind-free] is like ~ilc[syntaxp], in that it logically always returns
+  ~c[t] but may affect the application of a ~c[:]~ilc[rewrite] or
+  ~c[:]~ilc[linear] rule when it is called at the top-level of a hypothesis.
+  It is like a ~c[:]~ilc[meta] rule, in that it allows the user to perform
+  transformations of terms under progammatic control.
 
   Note that a ~c[bind-free] hypothesis does not, in general, deal with the
-  meaning or semantics or values of the terms, but rather with their
-  syntactic forms.  Before attempting to write a rule which uses
-  ~c[bind-free], the user should be familiar with ~ilc[syntaxp] and the
-  internal form that ACL2 uses for terms.  This internal form is
-  similar to what the user sees, but there are subtle and important
-  differences.  ~ilc[Trans] can be used to view this internal form.
+  meaning or semantics or values of the terms, but rather with their syntactic
+  forms.  Before attempting to write a rule which uses ~c[bind-free], the user
+  should be familiar with ~ilc[syntaxp] and the internal form that ACL2 uses
+  for terms.  This internal form is similar to what the user sees, but there
+  are subtle and important differences.  ~ilc[Trans] can be used to view this
+  internal form.
 
-  Just as for a ~ilc[syntaxp] hypothesis, there are two types of
-  ~c[bind-free] hypotheses.  The simpler type of ~c[bind-free]
-  hypothesis may be used as the nth hypothesis in a ~c[:]~ilc[rewrite]
-  or ~c[:]~ilc[linear] rule whose ~c[:]~ilc[corollary] is
-  ~c[(implies (and hyp1 ... hypn ... hypk) (equiv lhs rhs))] provided ~c[term]
-  is a term, ~c[term] contains at least one variable, and every variable
-  occuring freely in ~c[term] occurs freely in ~c[lhs] or in some ~c[hypi],
-  ~c[i<n].  In addition, ~c[term] must not use any stobjs.
-  (Later below we will describe the second type, an ~em[extended]
-  ~c[bind-free] hypothesis, which may use ~ilc[state].)
+  Just as for a ~ilc[syntaxp] hypothesis, there are two basic types of
+  ~c[bind-free] hypotheses.  The simpler type of ~c[bind-free] hypothesis may
+  be used as the nth hypothesis in a ~c[:]~ilc[rewrite] or ~c[:]~ilc[linear]
+  rule whose ~c[:]~ilc[corollary] is
+  ~c[(implies (and hyp1 ... hypn ... hypk) (equiv lhs rhs))]
+  provided ~c[term] is a term, ~c[term] contains at least one variable, and
+  every variable occuring freely in ~c[term] occurs freely in ~c[lhs] or in
+  some ~c[hypi], ~c[i<n].  In addition, ~c[term] must not use any stobjs.
+  Later below we will describe the second type, an ~em[extended] ~c[bind-free]
+  hypothesis, which may use ~ilc[state].  Whether simple or extended, a
+  ~c[bind-free] hypothesis may return an alist that binds free variables of a
+  rewrite rule, as explained below, or it may return a list of such alists.  We
+  focus on the first of these cases: return of a single binding alist.  We
+  conclude our discussion with a section that covers the other case: return of
+  a list of alists.
 
-  We begin our description of ~c[bind-free] by examining the
-  first example above in some detail.
+  We begin our description of ~c[bind-free] by examining the first example
+  above in some detail.
 
-  We wish to write a rule which will cancel ``like'' addends from both
-  sides of an equality.  Clearly, one could write a series of rules such
-  as
+  We wish to write a rule which will cancel ``like'' addends from both sides of
+  an equality.  Clearly, one could write a series of rules such as
   ~bv[]
   (DEFTHM THE-HARD-WAY-2-1
      (EQUAL (EQUAL (+ A X B)
@@ -6967,11 +7038,11 @@
             (EQUAL (+ A B)
                    (FIX C))))
   ~ev[]
-  with one rule for each combination of positions the matching addends
-  might be found in (if one knew before-hand the maximum number of
-  addends that would appear in a sum).  But there is a better way.
-  (In what follows, we assume the presence of an appropriate set of rules
-  for simplifying sums.)
+
+  with one rule for each combination of positions the matching addends might be
+  found in (if one knew before-hand the maximum number of addends that would
+  appear in a sum).  But there is a better way.  (In what follows, we assume
+  the presence of an appropriate set of rules for simplifying sums.)
 
   Consider the following definitions and theorem:
   ~bv[]
@@ -7012,39 +7083,37 @@
   (equal (+ 3 (expt a n) (foo a c))
          (+ (bar b) (expt a n)))
   ~ev[]
-  As mentioned above, the internal form of an ACL2 term is not always
-  what one sees printed out by ACL2.  In this case, by using ~c[:]~ilc[trans]
-  one can see that the term is stored internally as
+  As mentioned above, the internal form of an ACL2 term is not always what one
+  sees printed out by ACL2.  In this case, by using ~c[:]~ilc[trans] one can
+  see that the term is stored internally as
   ~bv[]
   (equal (binary-+ '3
                    (binary-+ (expt a n) (foo a c)))
          (binary-+ (bar b) (expt a n))).
   ~ev[]
 
-  When ACL2 attempts to apply ~c[cancel-matching-addends-equal] to the
-  term under discussion, it first forms a substitution that instantiates
-  the left-hand side of the conclusion so that it is identical to the
-  target term.  This substitution is kept track of by the substitution
-  alist:
+  When ACL2 attempts to apply ~c[cancel-matching-addends-equal] to the term
+  under discussion, it first forms a substitution that instantiates the
+  left-hand side of the conclusion so that it is identical to the target term.
+  This substitution is kept track of by the substitution alist:
   ~bv[]
   ((LHS . (binary-+ '3
                      (binary-+ (expt a n) (foo a c))))
    (RHS . (binary-+ (bar b) (expt a n)))).
   ~ev[]
   ACL2 then attempts to relieve the hypotheses in the order they were
-  given. Ordinarily this means that we instantiate each hypothesis
-  with our substitution and then attempt to rewrite the resulting
-  instance to true.  Thus, in order to relieve the first hypothesis,
-  we rewrite:
+  given.  Ordinarily this means that we instantiate each hypothesis with our
+  substitution and then attempt to rewrite the resulting instance to true.
+  Thus, in order to relieve the first hypothesis, we rewrite:
   ~bv[]
   (RATIONALP (binary-+ '3
                         (binary-+ (expt a n) (foo a c)))).
   ~ev[]
-  Let us assume that the first two hypotheses rewrite to ~c[t].  How
-  do we relieve the ~c[bind-free] hypothesis?  Just as for a ~ilc[syntaxp]
-  hypothesis, ACL2 evaluates ~c[(find-match-in-plus-nests lhs rhs)]
-  in an environment where ~c[lhs] and ~c[rhs] are instantiated as determined
-  by the substitution.  In this case we evaluate
+  Let us assume that the first two hypotheses rewrite to ~c[t].  How do we
+  relieve the ~c[bind-free] hypothesis?  Just as for a ~ilc[syntaxp]
+  hypothesis, ACL2 evaluates ~c[(find-match-in-plus-nests lhs rhs)] in an
+  environment where ~c[lhs] and ~c[rhs] are instantiated as determined by the
+  substitution.  In this case we evaluate
   ~bv[]
   (FIND-MATCH-IN-PLUS-NESTS '(binary-+ '3
                                         (binary-+ (expt a n) (foo a c)))
@@ -7053,16 +7122,16 @@
   Observe that, just as in the case of a ~ilc[syntaxp] hypothesis, we
   substitute the quotation of the variables bindings into the term to be
   evaluated.  ~l[syntaxp] for the reasons for this.  The result of this
-  evaluation, ~c[((X . (EXPT A N)))], is then used to extend the
-  substitution alist:
+  evaluation, ~c[((X . (EXPT A N)))], is then used to extend the substitution
+  alist:
   ~bv[]
   ((X . (EXPT A N))
    (LHS . (binary-+ '3
                      (binary-+ (expt a n) (foo a c))))
    (RHS . (binary-+ (bar b) (expt a n)))),
   ~ev[]
-  and this extended substitution determines
-  ~c[cancel-matching-addends-equal]'s result:
+  and this extended substitution determines ~c[cancel-matching-addends-equal]'s
+  result:
   ~bv[]
   (EQUAL (+ (- X) LHS) (+ (- X) RHS))
   ==>
@@ -7072,26 +7141,23 @@
   Question: What is the internal form of this result?~nl[]
   Hint: Use ~c[:]~ilc[trans].
 
-  When this rule fires, it adds the negation of a common term
-  to both sides of the equality by selecting a binding for the
-  otherwise-free variable ~c[x], under programmatic control.  Note
-  that other mechanisms such as the binding of ~il[free-variables]
-  may also extend the substitution alist.
+  When this rule fires, it adds the negation of a common term to both sides of
+  the equality by selecting a binding for the otherwise-free variable ~c[x],
+  under programmatic control.  Note that other mechanisms such as the binding
+  of ~il[free-variables] may also extend the substitution alist.
 
-  Just as for a ~ilc[syntaxp] test, a ~c[bind-free] form signals
-  failure by returning ~c[nil].  However, while a ~ilc[syntaxp] test
-  signals success by returning true, a ~c[bind-free] form signals
-  success by returning an alist which is used to extend the current
-  substitution alist.  Because of this use of the alist, there are
-  several restrictions on it ~-[] in particular the alist must only
-  bind variables, these variables must not be already bound by the
-  substitution alist, and the variables must be bound to ACL2 terms.
-  If ~c[term] returns an alist and the alist meets these restrictions,
-  we append the alist to the substitution alist and use the result as
-  the new current substitution alist.  This new current
-  substitution alist is then used when we attempt to relieve the next
-  hypothesis or, if there are no more, instantiate the right hand side
-  of the rule.
+  Just as for a ~ilc[syntaxp] test, a ~c[bind-free] form signals failure by
+  returning ~c[nil].  However, while a ~ilc[syntaxp] test signals success by
+  returning true, a ~c[bind-free] form signals success by returning an alist
+  which is used to extend the current substitution alist.  Because of this use
+  of the alist, there are several restrictions on it ~-[] in particular the
+  alist must only bind variables, these variables must not be already bound by
+  the substitution alist, and the variables must be bound to ACL2 terms.  If
+  ~c[term] returns an alist and the alist meets these restrictions, we append
+  the alist to the substitution alist and use the result as the new current
+  substitution alist.  This new current substitution alist is then used when we
+  attempt to relieve the next hypothesis or, if there are no more, instantiate
+  the right hand side of the rule.
 
   There is also a second, optional, ~c[var-list] argument to a ~c[bind-free]
   hypothesis.  If provided, it must be either ~c[t] or a list of variables.  If
@@ -7102,15 +7168,97 @@
   this list of variables, as it allows some consistency checks to be performed
   at the time of the rule's admittance which are not possible otherwise.
 
-  An extended ~c[bind-free] hypothesis is similar to the simple type
-  described above, but it uses two additional variables, ~c[mfc] and ~c[state],
-  which must not be bound by the left hand side or an earlier hypothesis
-  of the rule.  They must be the last two variables mentioned by ~c[term]:
-  first ~c[mfc], then ~c[state].  These two variables give access to
-  the functions ~c[mfc-]xxx; ~pl[extended-metafunctions].  As
-  described there, ~c[mfc] is bound to the so-called
-  metafunction-context and ~c[state] to ACL2's ~ilc[state].  ~l[bind-free-examples]
-  for examples of the use of these extended ~c[bind-free] hypotheses.~/"
+  An extended ~c[bind-free] hypothesis is similar to the simple type described
+  above, but it uses two additional variables, ~c[mfc] and ~c[state], which
+  must not be bound by the left hand side or an earlier hypothesis of the rule.
+  They must be the last two variables mentioned by ~c[term]: first ~c[mfc],
+  then ~c[state].  These two variables give access to the functions
+  ~c[mfc-]xxx; ~pl[extended-metafunctions].  As described there, ~c[mfc] is
+  bound to the so-called metafunction-context and ~c[state] to ACL2's
+  ~ilc[state].  ~l[bind-free-examples] for examples of the use of these
+  extended ~c[bind-free] hypotheses.
+
+  ~st[SECTION]: Returning a list of alists.
+
+  As promised above, we conclude with a discussion of the case that evaluation
+  of the ~c[bind-free] term produces a list of alists, ~c[x], rather than a
+  single alist.  In this case each member ~c[b] of ~c[x] is considered in turn,
+  starting with the first and proceeding through the list.  Each such ~c[b] is
+  handled exactly as discussed above, as though it were the result of
+  evaluating the ~c[bind-free] term.  Thus, each ~c[b] extends the current
+  variable binding alist, and all remaining hypotheses are then relieved, as
+  though ~c[b] had been the value obtained by evaluating the ~c[bind-free]
+  term.  As soon as one such ~c[b] leads to successful relieving of all
+  remaining hypotheses, the process of relieving hypotheses concludes, so no
+  further members of ~c[x] are considered.
+
+  We illustrate with a simple pedagogical example.  First introduce functions
+  ~c[p1] and ~c[p2] such that a rewrite rule specifies that ~c[p2] implies
+  ~c[p1], but with a free variable.
+  ~bv[]
+
+  (defstub p1 (x) t)
+  (defstub p2 (x y) t)
+
+  (defaxiom p2-implies-p1
+    (implies (p2 x y)
+             (p1 x)))
+
+  ~ev[]
+  If we add the following axiom, then ~c[(p1 x)] follows logically for all
+  ~c[x].
+  ~bv[]
+
+  (defaxiom p2-instance
+    (p2 v (cons v 4)))
+
+  ~ev[]
+  Unfortunately, evaluation of ~c[(thm (p1 a))] fails, because ACL2 fails to
+  bind the free variable ~c[y] in order to apply the rule ~c[p2-instance].
+
+  Let's define a function that produces a list of alists, each binding the
+  variable ~c[y].  Of course, we know that only the middle one below is
+  necessary in this simple example.  In more complex examples, one might use
+  heuristics to construct such a list of alists.
+  ~bv[]
+
+  (defun my-alists (x)
+    (list (list (cons 'y (fcons-term* 'cons x ''3)))
+          (list (cons 'y (fcons-term* 'cons x ''4)))
+          (list (cons 'y (fcons-term* 'cons x ''5)))))
+
+  ~ev[]
+  The following rewrite rule uses ~c[bind-free] to return a list of candidate
+  alists binding ~c[y].
+  ~bv[]
+
+  (defthm p2-implies-p1-better
+    (implies (and (bind-free (my-alists x)
+                             (y)) ; the second argument, (y), is optional
+                  (p2 x y))
+             (p1 x)))
+
+  ~ev[]
+  Now the proof succeeds for ~c[(thm (p1 a))].  Why?  When ACL2 applies the
+  ~c[rewrite] rule ~c[p2-implies-p1-better], it evaluates ~c[my-alists], as we
+  can see from the following ~il[trace], to bind ~c[y] in three different
+  alists.
+  ~bv[]
+
+  ACL2 !>(thm (p1 a))
+  1> (ACL2_*1*_ACL2::MY-ALISTS A)
+  <1 (ACL2_*1*_ACL2::MY-ALISTS (((Y CONS A '3))
+                                ((Y CONS A '4))
+                                ((Y CONS A '5))))
+
+  Q.E.D.
+
+  ~ev[]
+  The first alist, binding ~c[y] to ~c[(cons a '3)], fails to allow the
+  hypothesis ~c[(p2 x y)] to be proved.  But the next binding of ~c[y], to
+  ~c[(cons a '4)], succeeds: then the current binding alist is
+  ~c[((x . a) (y . (cons a '4)))], for which the hypothesis ~c[(p2 x y)]
+  rewrites to true using the rewrite rule ~c[p2-instance].~/"
 
   (if vars
       `(synp (quote ,vars) (quote (bind-free ,form ,vars)) (quote ,form))
@@ -7124,7 +7272,12 @@
   examples pertaining to ~ilc[bind-free] hypotheses~/
 
   ~l[bind-free] for a basic discussion of the use of ~c[bind-free] to control
-  rewriting.~/
+  rewriting.
+
+  Note that the examples below all illustrate the common case in which a
+  ~c[bind-free] hypothesis generates a binding alist.  ~l[bind-free], in
+  particular the final section, for a discussion of the case that instead a
+  list of binding alists is generated.~/
 
   We give examples of the use of ~ilc[bind-free] hypotheses from the
   perspective of a user interested in reasoning about arithmetic, but
@@ -11428,15 +11581,14 @@
   ~ilc[verify-guards]), some introduce exactly one (e.g., ~ilc[defmacro] and
   ~ilc[defthm]), and some may introduce many (e.g., ~ilc[encapsulate] ).
 
-  ACL2 typically completes processing of an event by printing a summary that
-  includes a breakdown of runtime (cpu time) used and, unless proofs are
-  skipped (~pl[ld-skip-proofsp]) or summary output is inhibited
-  (~pl[set-inhibit-output-lst]), information about the proof attempt
-  (if any) including a list of rules used, a summary of warnings, and the
-  number of ``prover steps'' (if any; ~pl[with-prover-step-limit]).  A detail:
-  The time is calculated using Common Lisp function ~c[get-internal-run-time],
-  which may ignore calls to external tools (~pl[sys-call] and
-  ~pl[clause-processor]).
+  ACL2 typically completes processing of an event by printing a summary.
+  Unless proofs are skipped (~pl[ld-skip-proofsp]) or summary output is
+  inhibited (~pl[set-inhibit-output-lst]), information about the proof attempt
+  (if any) is printed that includes a list of rules used, a summary of
+  warnings, and the number of ``prover steps'' (if any;
+  ~pl[with-prover-step-limit]).  A breakdown of the time used is also printed,
+  which by default is runtime (cpu time), but can be changed to realtime
+  (wall clock time); ~pl[get-internal-time].
 
   ~l[embedded-event-form] for a discussion of events permitted in
   ~il[books].~/")
@@ -19171,7 +19323,8 @@
   the theorem ~c[foo-preserves-consp] is encountered in the second pass,
   ~c[foo] is a known function symbol with the indicated signature.
 
-  We turn now to more complete documentation.
+  We turn now to more complete documentation.  But discussion of redundancy for
+  ~c[encapsulate] events may be found elsewhere; ~pl[redundant-encapsulate].
 
   ~bv[]
   Other Examples:
@@ -19319,27 +19472,6 @@
   made to the ~il[world] by the superior ~c[encapsulate], to permit
   ~c[an-element] to be used as a function symbol in ~c[thm1].
 
-  The typical way for an ~c[encapsulate] event to be redundant is when a
-  syntactically identical ~c[encapsulate] has already been executed under the
-  same ~ilc[default-defun-mode], ~ilc[default-ruler-extenders], and
-  ~ilc[default-verify-guards-eagerness].  More generally, the ~c[encapsulate]
-  events need not be syntactically identical, but rather, need only to
-  correspond in the following sense: they contain the same signatures and the
-  same number of top-level events ~-[] let ~c[k] be that number ~-[] and for
-  each ~c[i < k], the ~c[i]th top-level events ~c[E1] and ~c[E2] from the
-  earlier and current ~c[encapsulate]s have one of the following properties.
-
-  o ~c[E1] and ~c[E2] are equal; or
-
-  o ~c[E1] is of the form ~c[(record-expansion E2 ...)]; or else
-
-  o ~c[E1] and ~c[E2] are equal after replacing each ~ilc[local] sub-event by
-  ~c[(local (value-triple :elided))], where a sub-event of an event ~c[E] is
-  either ~c[E] itself, or a sub-event of a constituent event of ~c[E] in the
-  case that ~c[E] is a call of ~ilc[with-output], ~ilc[with-prover-time-limit],
-  ~ilc[with-prover-step-limit], ~c[record-expansion], ~ilc[time$], ~ilc[progn],
-  ~ilc[progn!], or ~c[encapsulate] itself.
-
   Remark for ACL2(r) (~pl[real]).  For ACL2(r), ~ilc[encapsulate] can be used
   to introduce classical and non-classical functions, as determined by the
   signatures; ~pl[signature].  Those marked as classical (respectively
@@ -19354,6 +19486,99 @@
         (list 'quote cmd-lst)
         'state
         (list 'quote event-form)))
+
+(defdoc redundant-encapsulate
+  ":Doc-Section encapsulate
+
+  redundancy of ~ilc[encapsulate] ~il[events]~/
+
+  For this ~il[documentation] topic we assume familiarity with ~c[encapsulate]
+  events and the notion of redundancy for ~il[events]; ~pl[encapsulate] and
+  ~pl[redundant-events].
+
+  The typical way for an ~c[encapsulate] event to be redundant is when a
+  syntactically identical ~c[encapsulate] has already been executed under the
+  same ~ilc[default-defun-mode], ~ilc[default-ruler-extenders], and
+  ~ilc[default-verify-guards-eagerness].  But more generally, the
+  ~c[encapsulate] events need not be syntactically identical; for example, it
+  suffices that they agree when the contents of ~ilc[local] sub-events are
+  ignored.  The precise criterion for redundancy is given below, but let us
+  first look at a consequence of the point just made about ignoring the
+  contents of ~ilc[local] sub-events.  Consider the following sequence of two
+  events.
+  ~bv[]
+  (encapsulate
+   ()
+   (defun f (x) x)
+   (local (defthm f-identity
+            (equal (f x) x))))
+
+  (encapsulate
+   ()
+   (defun f (x) x)
+   (local (defthm false-claim
+            (equal (f x) (not x)))))
+  ~ev[]
+  You might be surprised to learn that the second is actually redundant, even
+  though ~c[false-claim] is clearly not a theorem; indeed, its negation is a
+  theorem!  The following two points may soften the blow.  First, this behavior
+  is as specified above (and is specified more precisely below): the contents
+  of ~il[local] events are ignored when checking redundancy of
+  ~ilc[encapsulate] events.  Second, this behavior is sound, because the
+  logical meaning of an ~ilc[encapsulate] event is taken from the events that
+  it exports, which do not include events that are ~il[local] to the
+  ~c[encapsulate] event.
+
+  Some users, however, want to use ~ilc[encapsulate] events for testing in a
+  way that is thwarted by this ignoring of ~il[local] sub-events.  Consider
+  the following sort of example.
+  ~bv[]
+  (encapsulate ()
+               (local (defthm test1 ...)))
+
+  (encapsulate ()
+               (local (defthm test2 ...)))
+  ~ev[]
+  Since the contents of local events are ignored when checking redundancy of an
+  ~c[encapsulate] event, the second form just above is indeed redundant,
+  presumably not as expected by whomever wrote these two tests.  A solution is
+  to add distinct non-local forms, for example as follows.
+  ~bv[]
+  (encapsulate ()
+               (value-triple \"test1\")
+               (local (defthm test1 ...)))
+
+  (encapsulate ()
+               (value-triple \"test2\")
+               (local (defthm test2 ...)))
+  ~ev[]
+  A different solution is to use ~ilc[make-event] for testing, as follows.
+  ~bv[]
+  (make-event (er-progn (defthm test1 ...)
+                        (value '(value-triple nil))))
+  (make-event (er-progn (defthm test2 ...)
+                        (value '(value-triple nil))))
+  ~ev[]
+  Also see community books ~c[misc/eval.lisp], ~c[make-event/eval-check.lisp],
+  and ~c[make-event/eval-tests.lisp] for more ways to test in books.
+
+  The precise criterion for redundancy of ~ilc[encapsulate] ~il[events] is that
+  the existing and proposed ~c[encapsulate] events contain the same signatures
+  and the same number of top-level events ~-[] let ~c[k] be that number ~-[]
+  and for each ~c[i < k], the ~c[i]th top-level events ~c[E1] and ~c[E2] from
+  the earlier and current ~c[encapsulate]s have one of the following
+  properties.
+
+  o ~c[E1] and ~c[E2] are equal; or
+
+  o ~c[E1] is of the form ~c[(record-expansion E2 ...)]; or else
+
+  o ~c[E1] and ~c[E2] are equal after replacing each ~ilc[local] sub-event by
+  ~c[(local (value-triple :elided))], where a sub-event of an event ~c[E] is
+  either ~c[E] itself, or a sub-event of a constituent event of ~c[E] in the
+  case that ~c[E] is a call of ~ilc[with-output], ~ilc[with-prover-time-limit],
+  ~ilc[with-prover-step-limit], ~c[record-expansion], ~ilc[time$], ~ilc[progn],
+  ~ilc[progn!], or ~c[encapsulate] itself.~/~/")
 
 (defconst *load-compiled-file-values*
   '(t nil :warn :default :comp))
@@ -23494,9 +23719,6 @@
 ; is a terrible performance penalty, so in #+ACL2-PAR, we do not use array
 ; caching.
 
-(declaim (inline aref1))
-(declaim (inline aref2))
-
 (defparameter *acl2-array-cache*
 
 ; This special is always the same cons, but its car and cdr may be
@@ -27348,7 +27570,7 @@
 
   ~sc[Timings]
 
-  For how to obtain the runtime elapsed since the start of the ACL2 session,
+  For how to obtain the time elapsed since the start of the ACL2 session,
   ~pl[read-run-time].
 
   For a utility for saving times into the ACL2 state and for printing those
@@ -28580,6 +28802,7 @@
     (gag-mode-evisc-tuple . nil)
     (gag-state . nil)
     (gag-state-saved . nil) ; saved when gag-state is set to nil
+    (get-internal-time-as-realtime . nil) ; seems harmless to change
     (global-enabled-structure . nil) ; initialized in enter-boot-strap-mode
     (gstackp . nil)
     (guard-checking-on . t)
@@ -34990,20 +35213,78 @@
             (t (car (idates state-state))))
       (update-idates (cdr (idates state-state)) state-state)))
 
+#-acl2-loop-only
+(defun get-internal-time ()
+  (if (f-get-global 'get-internal-time-as-realtime *the-live-state*)
+      (get-internal-real-time)
+    (get-internal-run-time)))
+
+(defdoc get-internal-time
+  ":Doc-Section Miscellaneous
+
+  runtime vs. realtime in ACL2 timings~/
+
+  The ACL2 system provides utilities that deal with elapsed time.  The most
+  visible of these is in the time summaries printed when completing evaluation
+  of ~il[events].  For others, ~pl[with-prover-time-limit], ~pl[read-run-time],
+  ~pl[time-tracker], ~pl[time-tracker-tau], and ~pl[pstack].
+
+  By default, these utilities all use an underlying notion of run time provided
+  by the host Common Lisp implementation: specifically, Common Lisp function
+  ~c[get-internal-run-time].  However, Common Lisp also provides function
+  ~c[get-internal-run-time], which returns the real time (wall clock time).
+  While the latter is specified to measure elapsed time, the former is left to
+  the implementation, which might well only measure time spent in the Lisp
+  process.  Consider the following example, which is a bit arcane but basically
+  sleeps for 2 seconds.
+  ~bv[]
+    (defttag t) ; to allow sys-call
+    (make-event
+     (prog2$ (sys-call \"sleep\" '(\"2\"))
+             (value '(value-triple nil))))
+  ~ev[]
+  A typical time summary might be as follows, drastically under-reporting the
+  elapsed time.
+  ~bv[]
+    Time:  0.01 seconds (prove: 0.00, print: 0.00, other: 0.01)
+  ~ev[]
+  However, you can instruct ACL2 to switch to using elapsed time (run time), in
+  summaries and elsewhere, by evaluating the following form.
+  ~bv[]
+    (assign get-internal-time-as-realtime t)
+  ~ev[]
+  To return to using runtime:
+  ~bv[]
+    (assign get-internal-time-as-realtime nil)
+  ~ev[]
+  While the above example is rather silly, the issue becomes significant in
+  time summaries for proofs that call out to external tools (~pl[sys-call] and
+  ~pl[clause-processor]).
+
+  Note that a function ~c[get-internal-time] is defined in raw Lisp but is not
+  available inside the ACL2 loop.  However, the expression
+  ~c[(read-run-time state)] provides an interface to this function that is
+  available inside the ACL2 loop; ~pl[read-run-time].
+
+  We are open to changing the default to elapsed wall-clock time (realtime),
+  and may do so in future ACL2 releases.~/~/")
+
 (defun read-run-time (state-state)
 
   ":Doc-Section ACL2::ACL2-built-ins
 
   read elapsed runtime~/
 
-  ~c[(Read-run-time state)] returns ~c[(mv runtime state)], where runtime is
-  the elapsed runtime in seconds since the start of the current ACL2 session
-  and ~c[state] is the resulting ACL2 ~il[state].~/
+  By default, ~c[(read-run-time state)] returns ~c[(mv runtime state)], where
+  runtime is the elapsed runtime in seconds since the start of the current ACL2
+  session and ~c[state] is the resulting ACL2 ~il[state].  But
+  ~c[read-run-time] can be made to return elapsed realtime (wall clock time)
+  instead; ~pl[get-internal-time].~/
 
   The logical definition probably won't concern many users, but for
   completeness, we say a word about it here.  That definition uses the function
-  ~c[read-acl2-oracle], which modifies state by popping the returned
-  ~c[runtime] value from its acl2-oracle field.~/"
+  ~c[read-acl2-oracle], which modifies state by popping the value to return
+  from its acl2-oracle field.~/"
 
   (declare (xargs :guard (state-p1 state-state)))
 
@@ -35019,7 +35300,7 @@
 ; read-run-time to work even when *wormholep* is non-nil.
 
          (return-from read-run-time
-                      (mv (/ (get-internal-run-time)
+                      (mv (/ (get-internal-time)
                              internal-time-units-per-second)
                           state-state))))
   (mv (cond ((or (null (acl2-oracle state-state))
@@ -44712,7 +44993,7 @@
 
   (let ((time-limit-var (gensym)))
     `(let* ((,time-limit-var ,time)
-            (temp (+ (get-internal-run-time)
+            (temp (+ (get-internal-time)
                      (* internal-time-units-per-second
                         (if (consp ,time-limit-var)
                             (car ,time-limit-var)
@@ -44759,7 +45040,7 @@
   where ~c[time] evaluates to a positive rational number or to a list
   containing such, and ~c[form] is arbitrary.  Logically,
   ~c[(with-prover-time-limit time form)] is equivalent to ~c[form].  However,
-  if the runtime for evaluation of ~c[form] exceeds the value specified by
+  if the time for evaluation of ~c[form] exceeds the value specified by
   ~c[time], and if ACL2 notices this fact during a proof, then that proof will
   abort, for example like this:
   ~bv[]
@@ -44769,6 +45050,9 @@
   set up an expiration time, the inner ~c[with-prover-time-limit] call is not
   allowed to push that time further into the future unless the inner time is
   specified as a list containing a rational, rather than as a rational.
+
+  Note that by default, the time used is runtime (cpu time); to switch to
+  realtime (elapsed time), ~pl[get-internal-time].
 
   For a related utility based on prover steps instead of time,
   ~pl[with-prover-step-limit]; also ~pl[set-prover-step-limit].  Those
@@ -44887,7 +45171,7 @@
 ; Where should we call this function?  We want to strike a balance between
 ; calling it often enough that we get reasonably tight results for
 ; with-prover-time-limit, yet calling it rarely enough so that we don't slow
-; down the prover, in particular from calls of (get-internal-run-time).
+; down the prover, in particular from calls of (get-internal-time).
 
 ; As of this writing we call this function in add-poly,
 ; quick-and-dirty-subsumption-replacement-step, subsumption-replacement-loop,
@@ -44916,7 +45200,7 @@
 ; rewrite not in the scope of catch-time-limit5.
 
              (member-eq 'time-limit5-tag *time-limit-tags*)
-             (< *acl2-time-limit* (get-internal-run-time)))
+             (< *acl2-time-limit* (get-internal-time)))
     (setq *next-acl2-oracle-value*
           (if (eql *acl2-time-limit* 0)
               "Aborting due to an interrupt."
@@ -49299,12 +49583,15 @@ Lisp definition."
 
   display time spent during specified evaluation~/
 
-  The ~c[time-tracker] macro is a utility for displaying runtime (cpu time)
-  spent during specified evaluation.  In general, the user provides this
-  specification.  However, ACL2 itself uses this utility for tracking uses of
-  its ~il[tau-system] reasoning utility (~pl[time-tracker-tau]).  We discuss
-  that use as an example before discussing the general form for calls of
+  The ~c[time-tracker] macro is a utility for displaying time spent during
+  specified evaluation.  In general, the user provides this specification.
+  However, ACL2 itself uses this utility for tracking uses of its
+  ~il[tau-system] reasoning utility (~pl[time-tracker-tau]).  We discuss that
+  use as an example before discussing the general form for calls of
   ~c[time-tracker].
+
+  Note that by default, the time being tracked is runtime (cpu time); to switch
+  to realtime (elapsed time), ~pl[get-internal-time].
 
   Remark for ACL2(p) users (~pl[parallelism]): ~c[time-tracker] is merely a
   no-op in ACL2(p).
@@ -49335,7 +49622,8 @@ Lisp definition."
   ~c[time-tracker] are evaluated, the first argument is typically a keyword and
   the second is always a keyword, and such arguments evaluate to themselves.
 
-  An ACL2 function invoked at the start of a proof includes the following code.
+  An ACL2 function invoked at the start of a proof includes approximately the
+  following code.
   ~bv[]
   (progn$
    (time-tracker :tau :end)
@@ -49423,7 +49711,7 @@ Lisp definition."
   We conclude with a precise discussion of all arguments.  Note that all
   arguments are evaluated; thus when we refer to an argument, we are discussing
   the value of that argument.  All times discussed are runtimes, i.e., cpu
-  times.
+  times, unless that default is changed; ~pl[get-internal-time].
 
   ~bv[]
   General forms:

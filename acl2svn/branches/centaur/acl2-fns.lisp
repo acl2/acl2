@@ -1453,7 +1453,6 @@ notation causes an error and (b) the use of ,. is not permitted."
   #-hons
   def-form)
 
-
 ; [Comment from Jared]: We probably should work toward getting rid of
 ; defg/defv's in favor of regular parameters...
 

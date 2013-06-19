@@ -20457,6 +20457,8 @@
 
 (deflabel note-6-2
 
+; Total number of release note items: 41.
+
 ; Here is the example from Sol Swords for the item below about acl2-magic-mfc
 ; and acl2-magic-canonical-pathname.  The problem was that these "placeholder"
 ; functions are really clause processors, and hence should return a list of
@@ -20947,6 +20949,18 @@
 
 ; (CMUCL only) Allocated larger stack for CMUCL on 64-bit x86 installations.
 
+; Evaluation of a redundant encapsulate event, in the case that the event is
+; not equal to the corresponding earlier encapsulate event, now causes an
+; additional message to be printed that directs the user to a new :doc topic --
+; redundant-events -- which explains the situation (and includes some :doc that
+; was formerly in :doc encapsulate).  Because of this, stop-redundant-event has
+; been modified.  Thanks to Carl Eastlund for suggesting improvements along
+; these lines.
+
+; Modified functions stobjs-out and get-stobjs-out-for-declare-form according
+; to a suggestion from Jared Davis, to cause an error when attempting to
+; determine the stobjs-out for IF just as we already do for RETURN-LAST.
+
   :doc
   ":Doc-Section release-notes
 
@@ -20964,13 +20978,34 @@
 
   ~st[CHANGES TO EXISTING FEATURES]
 
+  The evaluation of a term from a ~ilc[bind-free] hypothesis had been expected
+  to produce an alist binding free variables to terms.  While that is still
+  legal, it is also legal for that evaluation to produce a list of such alists:
+  then each is considered, until one of them permits all remaining hypotheses
+  to be relieved.  ~l[bind-free].  Thanks to Sol Swords for requesting this
+  enhancement.
+
+  When built-in ~il[state] global ~ilc[ld-keyword-aliases] is set during
+  ~ilc[make-event] expansion, its new value will persist after expansion is
+  complete, which had not formerly been the case.  Thanks to Jared Davis for
+  correspondence leading us to make this change.
+
   ~st[NEW FEATURES]
+
+  ACL2 can now be instructed to time activities using real time (wall clock
+  time) instead of run time (typically, cpu time).  ~l[get-internal-time].
+  Thanks to Jared Davis for asking to be able to obtain real-time reports in
+  event summaries.
 
   ~st[HEURISTIC IMPROVEMENTS]
 
   ~st[BUG FIXES]
 
   ~st[CHANGES AT THE SYSTEM LEVEL]
+
+  Thanks to a suggestion from Jared Davis, over 30 built-in functions are now
+  declared to be inline in order to boost performance.  (The list may be found
+  by searching ACL2 source file ~c[axioms.lisp] for ``~c[(declaim (inline]''.)
 
   ~st[EMACS SUPPORT]
 
@@ -25900,9 +25935,9 @@ accompanying <i>``File Path''</i> shown at the end of each book's text.
   pre-processing and database updates.  Despite the fact that ACL2 is an
   applicative language it is possible to measure time with ACL2 programs.  The
   ~ilc[state] ~warn[] contains a clock.  The times are printed in decimal
-  notation but are actually counted in integral units.  Note that each time is
-  a runtime, also known as a cpu time, as opposed to being a real time, also
-  known as a wall clock time.
+  notation but are actually counted in integral units.  Note that by default,
+  each time is a runtime, also known as a cpu time, as opposed to being a real
+  time, also known as a wall clock time.
 
   The final ~c[APP] is the value of the ~c[defun] command and was printed by
   the read-eval-print loop.  The fact that it is indented one space is a subtle
@@ -26578,7 +26613,7 @@ accompanying <i>``File Path''</i> shown at the end of each book's text.
                 :ttree nil)
                (declare (ignore step-limit failure-reason new-unify-subst
                                 memo))
-               (if (eq wonp t)
+               (if (member-eq wonp '(t :unify-subst-list))
                    (mv t ttree)
                  (mv nil nil))))))))
        (t (cw *meta-level-function-problem-2* 'mfc-relieve-hyp mfc

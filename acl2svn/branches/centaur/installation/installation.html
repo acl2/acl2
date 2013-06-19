@@ -76,7 +76,7 @@ into the <CODE>books/</CODE> directory (but first
     follows.
 <pre>
 make regression
-(time nice make ACL2_JOBS=8 ACL2=/u/smith/bin/acl2 regression) >& make-regression.log
+(time nice make -j 8 ACL2=/u/smith/bin/acl2 regression) >& make-regression.log
 </pre>
     <A HREF="http://www.cs.utexas.edu/users/moore/acl2/current/REGRESSION.html">See
     :DOC regression</A> for explanation and further options, e.g.
