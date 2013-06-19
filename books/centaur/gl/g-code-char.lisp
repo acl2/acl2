@@ -104,6 +104,7 @@
                                      general-booleanp
                                      general-consp
                                      eval-g-base
+                                     eval-g-base-list
                                      g-keyword-symbolp)
                                     ((code-char)
                                      eval-g-base-alt-def))
@@ -338,7 +339,7 @@
                      (g-number-p x))
                 (equal (eval-g-base (g-code-char-of-number x hyp clk) env)
                        (code-char (eval-g-base x env))))
-       :hints(("Goal" :in-theory (e/d (eval-g-base)
+       :hints(("Goal" :in-theory (e/d (eval-g-base eval-g-base-list)
                                       (code-char-s
                                        v2i-when-<=-0
                                        equal-of-booleans-rewrite

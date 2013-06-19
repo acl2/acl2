@@ -126,138 +126,146 @@
   (implies (symbol-alistp x)
            (eqlable-alistp x)))
 
+(mutual-recursion
+ (defun gobj->term (x env)
+   (declare (xargs :guard (consp env)
+                   :measure (acl2-count x)
+                   :hints (("goal" :in-theory '(measure-for-geval atom)))))
+   (if (atom x)
+       (kwote x)
+     (pattern-match x
+       ((g-concrete obj) (kwote obj))
+
+       ((g-boolean bool) (kwote (bfr-eval bool (car env))))
+
+       ((g-number num)
+        (b* (((mv real-num
+                  real-denom
+                  imag-num
+                  imag-denom)
+              (break-g-number num)))
+          (flet ((uval (n env)
+                       (v2n (bfr-eval-list n (car env))))
+                 (sval (n env)
+                       (v2i (bfr-eval-list n (car env)))))
+            (kwote
+             (components-to-number (sval real-num env)
+                                   (uval real-denom env)
+                                   (sval imag-num env)
+                                   (uval imag-denom env))))))
+
+       ((g-ite test then else)
+        (list 'if
+              (gobj->term test env)
+              (gobj->term then env)
+              (gobj->term else env)))
+
+       ((g-var name) (kwote (cdr (hons-get name (cdr env)))))
+
+       ((g-apply fn args)
+        (and (not (eq fn 'quote))
+             (cons fn (gobj-list->terms args env))))
+
+       (& ;; cons
+        (list 'cons
+              (gobj->term (car x) env)
+              (gobj->term (cdr x) env))))))
+
+ (defun gobj-list->terms (x env)
+   (declare (xargs :guard (consp env)
+                   :measure (acl2-count x)))
+   (if (atom x)
+       nil
+     (cons (gobj->term (car x) env)
+           (gobj-list->terms (cdr x) env)))))
+
+
+(flag::make-flag gobj->term-flag gobj->term
+                 :flag-mapping ((gobj->term . gobj)
+                                (gobj-list->terms . list)))
+
+(in-theory (disable gobj->term gobj-list->terms))
 
 
 (defconst *geval-template*
   '(progn
      (acl2::defapply/ev/concrete-ev _geval_ _apply-fns_)
      ;; (defapply _geval_-apply _apply-fns_)
-     (defun _geval_ (x env)
-       (declare (xargs :guard (consp env)
-                       :measure (acl2-count x)
-                       :verify-guards nil
-                       :hints (("goal" :in-theory '(measure-for-geval atom)))))
-       (if (atom x)
-           ;; Every atom represents itself.
-           x
-         (pattern-match x
+     (mutual-recursion
+      (defun _geval_ (x env)
+        (declare (xargs :guard (consp env)
+                        :measure (acl2-count x)
+                        :verify-guards nil
+                        :hints (("goal" :in-theory '(measure-for-geval atom)))))
+        (if (atom x)
+            ;; Every atom represents itself.
+            x
+          (pattern-match x
 
-           ;; A Concrete is like an escape sequence; we take (cdr x) as a concrete
-           ;; object even if it looks symbolic.
-           ((g-concrete obj) obj)
+            ;; A Concrete is like an escape sequence; we take (cdr x) as a concrete
+            ;; object even if it looks symbolic.
+            ((g-concrete obj) obj)
 
-           ;; Boolean
-           ((g-boolean bool) (bfr-eval bool (car env)))
+            ;; Boolean
+            ((g-boolean bool) (bfr-eval bool (car env)))
 
-           ;; Number.  This is the hairy case.  Can represent all ACL2-NUMBERPs,
-           ;; but naturals are more compact than integers, which are more compact
-           ;; than rationals, which are more compact than complexes.  Denominators
-           ;; are coerced to 1 if they evaluate to 0 -- ugly.
-           ((g-number num)
-            (b* (((mv real-num
-                      real-denom
-                      imag-num
-                      imag-denom)
-                  (break-g-number num)))
-              (flet ((uval (n env)
-                           (v2n (bfr-eval-list n (car env))))
-                     (sval (n env)
-                           (v2i (bfr-eval-list n (car env)))))
-                (components-to-number (sval real-num env)
-                                      (uval real-denom env)
-                                      (sval imag-num env)
-                                      (uval imag-denom env)))))
+            ;; Number.  This is the hairy case.  Can represent all ACL2-NUMBERPs,
+            ;; but naturals are more compact than integers, which are more compact
+            ;; than rationals, which are more compact than complexes.  Denominators
+            ;; are coerced to 1 if they evaluate to 0 -- ugly.
+            ((g-number num)
+             (b* (((mv real-num
+                       real-denom
+                       imag-num
+                       imag-denom)
+                   (break-g-number num)))
+               (flet ((uval (n env)
+                            (v2n (bfr-eval-list n (car env))))
+                      (sval (n env)
+                            (v2i (bfr-eval-list n (car env)))))
+                 (components-to-number (sval real-num env)
+                                       (uval real-denom env)
+                                       (sval imag-num env)
+                                       (uval imag-denom env)))))
 
-           ;; If-then-else.
-           ((g-ite test then else)
-            (if (_geval_ test env)
-                (_geval_ then env)
-              (_geval_ else env)))
+            ;; If-then-else.
+            ((g-ite test then else)
+             (if (_geval_ test env)
+                 (_geval_ then env)
+               (_geval_ else env)))
 
-           ;; Apply: Unevaluated function call.
-           ((g-apply fn args)
-            (let* ((args (_geval_ args env)))
-              (mbe :logic (_geval_-ev (cons fn (kwote-lst args)) nil)
-                   :exec (b* ((args (acl2::list-fix args))
-                              ((mv ok val) (_geval_-apply fn args))
-                              ((when ok) val))
-                           (_geval_-ev (cons fn (kwote-lst args))
-                                       nil)))))
- 
-           ;; Var: untyped variable.
-           ((g-var name)   (cdr (het name (cdr env))))
+            ;; Apply: Unevaluated function call.
+            ((g-apply fn args)
+             (and (not (eq fn 'quote))
+                  (let* ((args (_geval_-list args env)))
+                    (mbe :logic (_geval_-ev (cons fn (kwote-lst args)) nil)
+                         :exec (b* ((args (acl2::list-fix args))
+                                    ((mv ok val) (_geval_-apply fn args))
+                                    ((when ok) val))
+                                 (_geval_-ev (cons fn (kwote-lst args))
+                                             nil))))))
+            
+            ;; Var: untyped variable.
+            ((g-var name)   (cdr (het name (cdr env))))
 
-           ;; Conses where the car is not a recognized flag represent conses.
-           (& (cons (_geval_ (car x) env)
-                    (_geval_ (cdr x) env))))))
+            ;; Conses where the car is not a recognized flag represent conses.
+            (& (cons (_geval_ (car x) env)
+                     (_geval_ (cdr x) env))))))
 
-     (defun _geval_-appalist (x env appal)
-       (declare (xargs :guard (and (consp env) (symbol-alistp appal))
-                       :measure (acl2-count x)
-                       :guard-hints (("goal" :in-theory
-                                      '((:type-prescription v2i)
-                                        (alistp)
-                                        (:type-prescription v2n)
-                                        (:type-prescription hons-assoc-equal)
-                                        hons-get
-                                        acl2::true-listp-of-list-fix
-                                        acl2::assoc-eql-exec-is-assoc-equal
-                                        eqlablep-compound-recognizer
-                                        consp-assoc-equal-of-cons
-                                        symbol-alistp-implies-eqlable-alistp)))
-                       :hints (("goal" :in-theory '(measure-for-geval atom)))))
-       (if (atom x)
-           ;; Every atom represents itself.
-           x
-         (pattern-match x
+      (defun _geval_-list (x env)
+        (declare (xargs :guard (consp env)
+                        :measure (acl2-count x)))
+        (if (atom x)
+            nil
+          (cons (_geval_ (car x) env)
+                (_geval_-list (cdr x) env)))))
 
-           ;; A Concrete is like an escape sequence; we take (cdr x) as a concrete
-           ;; object even if it looks symbolic.
-           ((g-concrete obj) obj)
+     (in-theory (disable _geval_ _geval_-list))
 
-           ;; Boolean
-           ((g-boolean bool) (bfr-eval bool (car env)))
-
-           ;; Number.  This is the hairy case.  Can represent all ACL2-NUMBERPs,
-           ;; but naturals are more compact than integers, which are more compact
-           ;; than rationals, which are more compact than complexes.  Denominators
-           ;; are coerced to 1 if they evaluate to 0 -- ugly.
-           ((g-number num)
-            (b* (((mv real-num
-                      real-denom
-                      imag-num
-                      imag-denom)
-                  (break-g-number num)))
-              (flet ((uval (n env)
-                           (v2n (bfr-eval-list n (car env))))
-                     (sval (n env)
-                           (v2i (bfr-eval-list n (car env)))))
-                (components-to-number (sval real-num env)
-                                      (uval real-denom env)
-                                      (sval imag-num env)
-                                      (uval imag-denom env)))))
-
-           ;; If-then-else.
-           ((g-ite test then else)
-            (if (_geval_-appalist test env appal)
-                (_geval_-appalist then env appal)
-              (_geval_-appalist else env appal)))
-
-           ;; Apply: Unevaluated function call.
-           ((g-apply fn args)
-            (let* ((args (_geval_-appalist args env appal)))
-              (ec-call (_geval_-ev-concrete (cons fn (kwote-lst (acl2::list-fix args))) nil appal))))
-
-           ;; Var: untyped variable.
-           ((g-var name)   (cdr (het name (cdr env))))
-
-           ;; Conses where the car is not a recognized flag represent conses.
-           (& (cons (_geval_-appalist (car x) env appal)
-                    (_geval_-appalist (cdr x) env appal))))))
-     
-     (table eval-g-table '_geval_ '(_geval_-appalist
+     (table eval-g-table '_geval_ '(_geval_-list
                                     _geval_-ev
                                     _geval_-ev-lst
+                                    _geval_-apply
                                     _geval_-ev-concrete
                                     _geval_-ev-concrete-lst
                                     . _apply-fns_))))
@@ -276,7 +284,9 @@
   (def-geval-fn geval fns))
 
 
-(def-geval generic-geval nil)
+(def-geval base-geval nil)
+
+
 
 ;; (defthm generic-geval-apply-ev-lst-of-kwote-lst
 ;;   (equal (generic-geval-apply-ev-lst (kwote-lst x) a)
@@ -387,48 +397,48 @@
                      
            
 
-(local (defthm generic-geval-appalist-is-instance-of-generic-geval
-         t
-         :hints (("goal" :use ((:functional-instance
-                                generic-geval
-                                (generic-geval
-                                 (lambda (x env)
-                                   (generic-geval-appalist x env appalist)))
-                                (generic-geval-ev
-                                 (lambda (x a)
-                                   (generic-geval-ev-concrete x a appalist)))
-                                (generic-geval-ev-lst
-                                 (lambda (x a)
-                                   (generic-geval-ev-concrete-lst
-                                    x a appalist)))))
-                  ;; '(generic-geval-apply-ev-lst-of-atom
-                             ;;   generic-geval-apply-ev-substitution)
-                  ;; :in-theory '(generic-geval-apply
-                  ;;              generic-geval-apply-arities
-                  ;;              member-equal
-                  ;;              generic-geval-appalist)
-                  :do-not-induct t)
-                 ;; (and stable-under-simplificationp
-                 ;;      '(:in-theory (enable
-                 ;;                    generic-geval-apply-ev-of-fncall-args)
-                 ;;        :expand ((:free (a)
-                 ;;                  (generic-geval-apply-ev-substitution
-                 ;;                   x a appalist))
-                 ;;                 (:free (x y a)
-                 ;;                  (generic-geval-apply-ev-substitution
-                 ;;                   (cons x y) a appalist)))))
-                 ;; (and stable-under-simplificationp
-                 ;;      '(:in-theory (enable
-                 ;;                    generic-geval-apply-ev-substitution
-                 ;;                    generic-geval-apply-ev-of-fncall-args)))
-                 ;; (and stable-under-simplificationp
-                 ;;      '(:expand ((generic-geval-ev-concrete-lst
-                 ;;                  acl2::x-lst a appalist)
-                 ;;                 (generic-geval-apply-ev-substitution
-                 ;;                  x a appalist))))
-                 )
-         :rule-classes nil
-         :otf-flg t))
+;; (local (defthm generic-geval-appalist-is-instance-of-generic-geval
+;;          t
+;;          :hints (("goal" :use ((:functional-instance
+;;                                 generic-geval
+;;                                 (generic-geval
+;;                                  (lambda (x env)
+;;                                    (generic-geval-appalist x env appalist)))
+;;                                 (generic-geval-ev
+;;                                  (lambda (x a)
+;;                                    (generic-geval-ev-concrete x a appalist)))
+;;                                 (generic-geval-ev-lst
+;;                                  (lambda (x a)
+;;                                    (generic-geval-ev-concrete-lst
+;;                                     x a appalist)))))
+;;                   ;; '(generic-geval-apply-ev-lst-of-atom
+;;                              ;;   generic-geval-apply-ev-substitution)
+;;                   ;; :in-theory '(generic-geval-apply
+;;                   ;;              generic-geval-apply-arities
+;;                   ;;              member-equal
+;;                   ;;              generic-geval-appalist)
+;;                   :do-not-induct t)
+;;                  ;; (and stable-under-simplificationp
+;;                  ;;      '(:in-theory (enable
+;;                  ;;                    generic-geval-apply-ev-of-fncall-args)
+;;                  ;;        :expand ((:free (a)
+;;                  ;;                  (generic-geval-apply-ev-substitution
+;;                  ;;                   x a appalist))
+;;                  ;;                 (:free (x y a)
+;;                  ;;                  (generic-geval-apply-ev-substitution
+;;                  ;;                   (cons x y) a appalist)))))
+;;                  ;; (and stable-under-simplificationp
+;;                  ;;      '(:in-theory (enable
+;;                  ;;                    generic-geval-apply-ev-substitution
+;;                  ;;                    generic-geval-apply-ev-of-fncall-args)))
+;;                  ;; (and stable-under-simplificationp
+;;                  ;;      '(:expand ((generic-geval-ev-concrete-lst
+;;                  ;;                  acl2::x-lst a appalist)
+;;                  ;;                 (generic-geval-apply-ev-substitution
+;;                  ;;                  x a appalist))))
+;;                  )
+;;          :rule-classes nil
+;;          :otf-flg t))
 
 (defun get-guard-verification-theorem (name state)
   (declare (xargs :mode :program
@@ -447,46 +457,46 @@
 
 (make-event
  (b* (((er thm) (get-guard-verification-theorem
-                 'generic-geval state)))
-   (value `(defthm generic-geval-guards-ok
+                 'base-geval state)))
+   (value `(defthm base-geval-guards-ok
              ,thm
              :hints (("goal" :do-not-induct t))
              :rule-classes nil))))
 
 ;; (prove-congruences (gobj-equiv) generic-geval)
 
-(defconst *geval-appalist-func-inst-template*
-  '(:computed-hint-replacement
-    ((and stable-under-simplificationp
-          '(:expand ((:free (f ar)
-                      (_geval_-apply f ar))
-                     (:free (x) (hide x))))))
-    :use
-    ((:functional-instance
-      _theorem_
-      (_geval_ (lambda (x env)
-                       (_geval_-appalist x env appalist)))
-      (_geval_-ev (lambda (x a)
-                          (_geval_-ev-concrete x a appalist)))
-      (_geval_-ev-lst
-       (lambda (x a)
-               (_geval_-ev-concrete-lst x a appalist)))))
-    :in-theory '(nth-of-_geval_-ev-concrete-lst
-                 acl2::car-to-nth-meta-correct
-                 acl2::nth-of-cdr
-                 _geval_-ev-concrete-lst-of-kwote-lst
-                 acl2::list-fix-when-true-listp
-                 acl2::kwote-list-list-fix
-                 (:t _geval_-ev-concrete-lst)
-                 (:t acl2::list-fix)
-                 car-cons cdr-cons nth-0-cons (nfix))
-    :expand ((_geval_-ev-concrete x a appalist)
-             (:free (f ar)
-              (_geval_-ev-concrete (cons f ar) nil appalist))
-             (:free (x) (hide x))
-             (_geval_-ev-concrete-lst acl2::x-lst a appalist)
-             (_geval_-appalist x env appalist))
-    :do-not-induct t))
+;; (defconst *geval-appalist-func-inst-template*
+;;   '(:computed-hint-replacement
+;;     ((and stable-under-simplificationp
+;;           '(:expand ((:free (f ar)
+;;                       (_geval_-apply f ar))
+;;                      (:free (x) (hide x))))))
+;;     :use
+;;     ((:functional-instance
+;;       _theorem_
+;;       (_geval_ (lambda (x env)
+;;                        (_geval_-appalist x env appalist)))
+;;       (_geval_-ev (lambda (x a)
+;;                           (_geval_-ev-concrete x a appalist)))
+;;       (_geval_-ev-lst
+;;        (lambda (x a)
+;;                (_geval_-ev-concrete-lst x a appalist)))))
+;;     :in-theory '(nth-of-_geval_-ev-concrete-lst
+;;                  acl2::car-to-nth-meta-correct
+;;                  acl2::nth-of-cdr
+;;                  _geval_-ev-concrete-lst-of-kwote-lst
+;;                  acl2::list-fix-when-true-listp
+;;                  acl2::kwote-list-list-fix
+;;                  (:t _geval_-ev-concrete-lst)
+;;                  (:t acl2::list-fix)
+;;                  car-cons cdr-cons nth-0-cons (nfix))
+;;     :expand ((_geval_-ev-concrete x a appalist)
+;;              (:free (f ar)
+;;               (_geval_-ev-concrete (cons f ar) nil appalist))
+;;              (:free (x) (hide x))
+;;              (_geval_-ev-concrete-lst acl2::x-lst a appalist)
+;;              (_geval_-appalist x env appalist))
+;;     :do-not-induct t))
 
 
 ;; (:use ((:functional-instance
@@ -538,14 +548,14 @@
 ;;     :in-theory nil
 ;;     :do-not '(preprocess simplify)))
 
-(defun geval-appalist-functional-inst-hint (thm geval)
-  (declare (xargs :mode :program))
-  (acl2::template-subst
-   *geval-appalist-func-inst-template*
-   :atom-alist `((_geval_ . ,geval)
-                 (_theorem_ . ,thm))
-   :str-alist `(("_GEVAL_" . ,(symbol-name geval)))
-   :pkg-sym geval))
+;; (defun geval-appalist-functional-inst-hint (thm geval)
+;;   (declare (xargs :mode :program))
+;;   (acl2::template-subst
+;;    *geval-appalist-func-inst-template*
+;;    :atom-alist `((_geval_ . ,geval)
+;;                  (_theorem_ . ,thm))
+;;    :str-alist `(("_GEVAL_" . ,(symbol-name geval)))
+;;    :pkg-sym geval))
 
 
 (defconst *def-eval-g-template*
@@ -568,20 +578,24 @@
      (def-geval _geval_ _apply-fns_)
      (verify-guards _geval_
        :hints (("goal" :use ((:functional-instance
-                              generic-geval-guards-ok
-                              (generic-geval _geval_)
-                              (generic-geval-ev _geval_-ev)
-                              (generic-geval-ev-lst _geval_-ev-lst)))
+                              base-geval-guards-ok
+                              (base-geval _geval_)
+                              (base-geval-list _geval_-list)
+                              (base-geval-ev _geval_-ev)
+                              (base-geval-ev-lst _geval_-ev-lst)))
                 :in-theory (e/d* (_geval_-ev-of-fncall-args
                                   _geval_-apply-agrees-with-_geval_-ev
                                   eq atom
-                                  generic-geval-apply)
+                                  _geval_
+                                  _geval_-list
+                                  base-geval-apply)
                                  (_geval_-apply))))
        :otf-flg t)
-     (local (defthm _geval_-appalist-is-instance-of-_geval_
-              t
-              :hints ((geval-appalist-functional-inst-hint '_geval_ '_geval_))
-              :rule-classes nil))))
+     ;; (local (defthm _geval_-appalist-is-instance-of-_geval_
+     ;;          t
+     ;;          :hints ((geval-appalist-functional-inst-hint '_geval_ '_geval_))
+     ;;          :rule-classes nil))
+     ))
 
 (defmacro def-eval-g (geval fns)
   (acl2::template-subst
@@ -590,6 +604,30 @@
                  (_apply-fns_ . ,fns))
    :str-alist `(("_GEVAL_" . ,(symbol-name geval)))
    :pkg-sym geval))
+
+(def-eval-g generic-geval (cons if))
+
+(defthm-gobj->term-flag
+  (defthm generic-geval-is-generic-geval-ev-of-gobj->term
+    (equal (generic-geval-ev (gobj->term x env) a)
+           (generic-geval x env))
+    :hints('(:in-theory (enable generic-geval-ev-of-fncall-args
+                                generic-geval gobj->term)
+             :expand ((gobj->term x env)))
+           (and stable-under-simplificationp
+                '(:cases ((eq (g-apply->fn x) 'quote))
+                  :expand ((gobj-list->terms (g-apply->args x) env)))))
+    :flag gobj)
+  (defthm generic-geval-list-is-generic-geval-ev-lst-of-gobj-list->terms
+    (equal (generic-geval-ev-lst (gobj-list->terms x env) a)
+           (generic-geval-list x env))
+    :hints ('(:expand ((generic-geval-list x env)
+                       (gobj-list->terms x env))))
+    :flag list))
+
+
+
+
 
 (local
  ;; test
@@ -635,7 +673,7 @@
   (local
    ;; test
    (def-eval-g little-geval
-     (BINARY-*
+     (BINARY-* if cons
       BINARY-+
       PKG-WITNESS
 ;   UNARY-/

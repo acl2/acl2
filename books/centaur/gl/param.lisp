@@ -68,24 +68,30 @@
 ;;             (wf-g-numberp (gnumber-to-param-space n p)))
 ;;    :hints(("Goal" :in-theory (enable wf-g-numberp gnumber-to-param-space)))))
 
-
-(defund gobj-to-param-space (x p)
-  (declare (xargs :guard t
-                  :verify-guards nil))
-  (if (atom x)
-      x
-    (pattern-match x
-      ((g-concrete &) x)
-      ((g-boolean b) (mk-g-boolean (bfr-to-param-space p b)))
-      ((g-number n) (gnumber-to-param-space n p))
-      ((g-ite if then else)
-       (mk-g-ite (gobj-to-param-space if p)
-                 (gobj-to-param-space then p)
-                 (gobj-to-param-space else p)))
-      ((g-apply fn args) (g-apply fn (gobj-to-param-space args p)))
-      ((g-var &) x)
-      (& (gl-cons (gobj-to-param-space (car x) p)
-                  (gobj-to-param-space (cdr x) p))))))
+(mutual-recursion
+ (defun gobj-to-param-space (x p)
+   (declare (xargs :guard t
+                   :verify-guards nil))
+   (if (atom x)
+       x
+     (pattern-match x
+       ((g-concrete &) x)
+       ((g-boolean b) (mk-g-boolean (bfr-to-param-space p b)))
+       ((g-number n) (gnumber-to-param-space n p))
+       ((g-ite if then else)
+        (mk-g-ite (gobj-to-param-space if p)
+                  (gobj-to-param-space then p)
+                  (gobj-to-param-space else p)))
+       ((g-apply fn args) (g-apply fn (gobj-list-to-param-space args p)))
+       ((g-var &) x)
+       (& (gl-cons (gobj-to-param-space (car x) p)
+                   (gobj-to-param-space (cdr x) p))))))
+ (defun gobj-list-to-param-space (x p)
+   (declare (xargs :guard t))
+   (if (atom x)
+       nil
+     (cons (gobj-to-param-space (car x) p)
+           (gobj-list-to-param-space (cdr x) p)))))
 
 ;; (local (in-theory (enable tag-when-g-var-p
 ;;                           tag-when-g-ite-p
@@ -233,45 +239,52 @@
                                  (cons (bfr-param-env p (car env))
                                        (cdr env)))
                   (generic-geval (g-number n) env)))
-  :hints(("Goal" :in-theory (e/d (gnumber-to-param-space)
+  :hints(("Goal" :in-theory (e/d (gnumber-to-param-space
+                                  generic-geval)
                                  (components-to-number-alt-def
                                   break-g-number
                                   bfr-param-env)))))
 
 
-
-(defthm gobj-to-param-space-correct
-  (implies (bfr-eval p (car env))
-           (equal (generic-geval (gobj-to-param-space x p)
-                                 (genv-param p env))
-                  (generic-geval x env)))
-  :hints(("Goal" :in-theory
-          (e/d* ((:induction gobj-to-param-space)
-                 genv-param
-                 ;; gobjectp-g-boolean-2
-                 ;; gobjectp-g-number-2
-                 default-car default-cdr)
-                ((force) bfr-eval-list
-                 components-to-number-alt-def
-                 boolean-listp bfr-eval
-                 (:rules-of-class :type-prescription :here)
-                 ; generic-geval-when-g-var-tag
-                 
+(defthm-gobj->term-flag
+  (defthm gobj-to-param-space-correct
+    (implies (bfr-eval p (car env))
+             (equal (generic-geval (gobj-to-param-space x p)
+                                   (genv-param p env))
+                    (generic-geval x env)))
+    :flag gobj)
+  (defthm gobj-list-to-param-space-correct
+    (implies (bfr-eval p (car env))
+             (equal (generic-geval-list (gobj-list-to-param-space x p)
+                                        (genv-param p env))
+                    (generic-geval-list x env)))
+    :flag list)
+    :hints(("Goal" :in-theory
+            (e/d* (genv-param
+                   ;; gobjectp-g-boolean-2
+                   ;; gobjectp-g-number-2
+                   default-car default-cdr)
+                  ((force) bfr-eval-list
+                   components-to-number-alt-def
+                   boolean-listp bfr-eval
+                   (:rules-of-class :type-prescription :here)
+; generic-geval-when-g-var-tag
+                   
 ;                 bfr-eval-of-non-consp-cheap
 ;                 bfr-eval-when-not-consp
-                 bfr-to-param-space
-                 bfr-list-to-param-space
-                 bfr-param-env
-                 ;;break-g-number
-                 generic-geval
-                 hons-assoc-equal)
-                ((:type-prescription len)))
-          :induct (gobj-to-param-space x p)
-          :expand ((gobj-to-param-space x p))
-          :do-not-induct t)
-         (and stable-under-simplificationp
-              (flag::expand-calls-computed-hint
-               acl2::clause '(generic-geval)))))
+                   bfr-to-param-space
+                   bfr-list-to-param-space
+                   bfr-param-env
+                   ;;break-g-number
+                   generic-geval
+                   hons-assoc-equal)
+                  ((:type-prescription len)))
+            :expand ((gobj-to-param-space x p)
+                     (gobj-list-to-param-space x p))
+            :do-not-induct t)
+           (and stable-under-simplificationp
+                (flag::expand-calls-computed-hint
+                 acl2::clause '(generic-geval generic-geval-list)))))
 
 
 

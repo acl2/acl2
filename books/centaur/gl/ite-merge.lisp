@@ -114,7 +114,13 @@
         ((eq (tag x) :g-apply)
          (if (eq (tag y) :g-apply)
              (if (equal (g-apply->fn x) (g-apply->fn y))
-                 'applies
+                 (if (equal (len (g-apply->args x))
+                            (len (g-apply->args y)))
+                     'applies
+                   (if (< (len (g-apply->args x))
+                          (len (g-apply->args y)))
+                       '<
+                     '>))
                (if (hlexorder (cdr x) (cdr y)) '< '>))
            '<))
         ((eq (tag y) :g-apply) '>)
@@ -179,7 +185,9 @@
                (and (not (equal x y))
                     (equal (tag x) :g-apply)
                     (equal (tag y) :g-apply)
-                    (equal (g-apply->fn x) (g-apply->fn y)))))
+                    (equal (g-apply->fn x) (g-apply->fn y))
+                    (equal (len (g-apply->args x))
+                           (len (g-apply->args y))))))
    :hints (("goal" :in-theory (enable general-booleanp general-numberp
                                       general-consp general-concrete-atom
                                       tag ite-merge-ordering)))))
@@ -307,7 +315,15 @@
                             true-under-hyp
                             false-under-hyp)
                          ((two-nats-measure)
-                          (maybe-merge-measure)))))))))
+                          (maybe-merge-measure)))))))
+
+   (defthm ite-merge-lists-measure-thm
+     (implies (consp x)
+              (and (o< (ite-merge-measure (car x) (car y))
+                       (ite-merge-measure x y))
+                   (o< (ite-merge-measure (cdr x) (cdr y))
+                       (ite-merge-measure x y))))
+     :hints(("Goal" :in-theory (enable ite-merge-measure acl2-count))))))
 
 
 
@@ -350,10 +366,10 @@
                                                  hyp)))))
        (applies (let ((hyp (bfr-and hyp (hf (bfr-ite c xhyp yhyp)))))
                   (mv 'merged (g-apply (g-apply->fn x)
-                                       (ite-merge (hf c)
-                                                  (g-apply->args x)
-                                                  (g-apply->args y)
-                                                  hyp)))))
+                                       (ite-merge-lists (hf c)
+                                                        (g-apply->args x)
+                                                        (g-apply->args y)
+                                                        hyp)))))
        (otherwise (mv ordersym nil)))))
 
 
@@ -365,7 +381,8 @@
                    :hints (("goal" :do-not-induct t
                             :in-theory '(ite-merge-measure-thm
                                          merge-rest-measure-thm
-                                         maybe-merge-measure-thm)))))
+                                         maybe-merge-measure-thm
+                                         ite-merge-lists-measure-thm)))))
    (cond ((not hyp) nil)
          ((hons-equal x y) x)
          ((th c) x)
@@ -398,7 +415,16 @@
                  (if (eq first-y-cond t)
                      (mk-g-ite (mk-g-boolean (bfr-not c)) first-y x)
                    (merge-rest (bfr-and (bfr-not c) first-y-cond)
-                               first-y c x rest-y hyp)))))))))
+                               first-y c x rest-y hyp))))))))
+
+ (defun ite-merge-lists (c x y hyp)
+   ;; (if c x y), x and y lists
+   (declare (xargs :guard (equal (len x) (len y))
+                   :measure (ite-merge-measure x y)))
+   (if (atom x)
+       nil
+     (cons (ite-merge c (car x) (car y) hyp)
+           (ite-merge-lists c (cdr x) (cdr y) hyp)))))
 
 
 (in-theory (disable ite-merge merge-rest))
@@ -569,7 +595,8 @@
                   :hints (("goal" :do-not-induct t
                            :in-theory '(ite-merge-measure-thm
                                         merge-rest-measure-thm
-                                        maybe-merge-measure-thm)))))
+                                        maybe-merge-measure-thm
+                                        ite-merge-lists-measure-thm)))))
 
 
 
@@ -647,7 +674,9 @@
                                      true-under-hyp
                                      hyp-fixedp
                                      hyp-fix
-                                     breakdown-ite-by-cond))))))))
+                                     breakdown-ite-by-cond
+                                     (:type-prescription len)
+                                     (tau-system)))))))))
 
 
 ;; (local
@@ -693,6 +722,30 @@
    (not (equal (ite-merge-ordering x y) 'merged))
    :hints(("Goal" :in-theory (enable ite-merge-ordering)))))
 
+
+
+(local (defthm generic-geval-list-when-not-consp
+         (implies (not (consp x))
+                  (equal (generic-geval-list x env) nil))
+         :hints(("Goal" :in-theory (enable generic-geval-list)))
+         :rule-classes ((:rewrite :backchain-limit-lst 0))))
+
+(local (defthm generic-geval-list-when-len-0
+         (implies (equal (len x) 0)
+                  (equal (generic-geval-list x env) nil))
+         :hints(("Goal" :in-theory (enable generic-geval-list)))
+         :rule-classes ((:rewrite :backchain-limit-lst 0))))
+
+(local (defthm len-when-not-consp
+         (implies (not (consp x))
+                  (equal (len x) 0))
+         :rule-classes ((:rewrite :backchain-limit-lst 0))))
+
+(local (defthm len-when-consp
+         (implies (consp x)
+                  (posp (len x)))
+         :rule-classes :type-prescription))
+
 (local
  (encapsulate
    nil
@@ -703,7 +756,6 @@
                             
                             boolean-list-bfr-eval-list
                             mv-nth
-                            (:type-prescription len)
                             default-car default-cdr
                             hons-assoc-equal
                             (:rewrite bfr-eval-booleanp)
@@ -714,6 +766,8 @@
                             acl2-numberp-v2n
                             default-unary-/
                             
+                            len
+
                             (:type-prescription v2n)
                             (:type-prescription v2i)
                             bfr-eval-list-consts
@@ -742,36 +796,56 @@
    ;;            :in-theory (enable false-under-hyp true-under-hyp))))
 
    (def-ite-merge-thm ite-merge-correct-lemma
-     (ite-merge (implies (bfr-eval (double-rewrite hyp) (car env))
-                         (equal (generic-geval (ite-merge c x y hyp) env)
-                                (if (bfr-eval c (car env))
-                                    (generic-geval x env)
-                                  (generic-geval y env))))
-                :name ite-merge-correct)
-     (maybe-merge (mv-let (flg ans)
-                    (maybe-merge c x y xhyp yhyp hyp)
-                    (implies (and (equal flg 'merged)
-                                  (bfr-eval hyp (car env)))
-                             (and (implies (and (bfr-eval c (car env))
-                                                (bfr-eval xhyp (car env)))
-                                           (equal (generic-geval ans env)
-                                                  (generic-geval x env)))
-                                  (implies (and (not (bfr-eval c (car env)))
-                                                (bfr-eval yhyp (car env)))
-                                           (equal (generic-geval ans env)
-                                                  (generic-geval y env))))))
-                  :name maybe-merge-correct)
-                                
-     (merge-rest (implies (bfr-eval hyp (car env))
-                          (equal (generic-geval (merge-rest firstcond first c x y hyp) env)
-                                 (if (bfr-eval firstcond (car env))
-                                     (generic-geval first env)
-                                   (if (bfr-eval c (car env))
-                                       (generic-geval x env)
-                                     (generic-geval y env)))))
-                 :name merge-rest-correct)
-     :hints (("goal" :induct (ite-merge-ind flag firstcond first xhyp yhyp c x y hyp)
-              :do-not-induct t
+     (defthm ite-merge-correct
+       (implies (bfr-eval (double-rewrite hyp) (car env))
+                (equal (generic-geval (ite-merge c x y hyp) env)
+                       (if (bfr-eval c (car env))
+                           (generic-geval x env)
+                         (generic-geval y env))))
+       :hints ('(:expand ((ite-merge c x y hyp))))
+       :flag ite-merge)
+     (defthm ite-merge-lists-correct
+      (implies (and (bfr-eval (double-rewrite hyp) (car env))
+                    (equal (len x) (len y)))
+               (equal (generic-geval-list (ite-merge-lists c x y hyp) env)
+                      (if (bfr-eval c (car env))
+                          (generic-geval-list x env)
+                        (generic-geval-list y env))))
+       :hints ('(:expand ((ite-merge-lists c x y hyp)
+                          (generic-geval-list x env)
+                          (generic-geval-list y env)
+                          (generic-geval-list nil env)
+                          (:free (a b) (generic-geval-list (cons a b) env)))))
+      :flag ite-merge-lists)
+     (defthm maybe-merge-correct 
+       (mv-let (flg ans)
+         (maybe-merge c x y xhyp yhyp hyp)
+         (implies (and (equal flg 'merged)
+                       (bfr-eval hyp (car env)))
+                  (and (implies (and (bfr-eval c (car env))
+                                     (bfr-eval xhyp (car env)))
+                                (equal (generic-geval ans env)
+                                       (generic-geval x env)))
+                       (implies (and (not (bfr-eval c (car env)))
+                                     (bfr-eval yhyp (car env)))
+                                (equal (generic-geval ans env)
+                                       (generic-geval y env))))))
+       :hints ('(:expand ((maybe-merge c x y xhyp yhyp hyp)))
+               (and stable-under-simplificationp
+                    '(:in-theory (enable generic-geval))))
+       :flag maybe-merge)
+
+     (defthm merge-rest-correct
+       (implies (bfr-eval hyp (car env))
+                (equal (generic-geval (merge-rest firstcond first c x y hyp) env)
+                       (if (bfr-eval firstcond (car env))
+                           (generic-geval first env)
+                         (if (bfr-eval c (car env))
+                             (generic-geval x env)
+                           (generic-geval y env)))))
+       :hints ('(:expand ((merge-rest firstcond first c x y hyp))))
+       :flag merge-rest)
+     :hints (("goal" :do-not-induct t
               :in-theory (set-difference-theories
                           (list* '(:induction ite-merge-ind)
                                  '(:rewrite ite-merge-ind-equivalences)
@@ -783,10 +857,10 @@
              ;;            ("Subgoal *1/13" :by nil)
              ;;            ("Subgoal *1/12" :by nil)
              ;;            ("Subgoal *1/11" :by nil)
-             (and ;;(subgoal-of "Subgoal *1/" id)
-              stable-under-simplificationp
-              (flag::expand-calls-computed-hint
-               clause '(ite-merge merge-rest maybe-merge)))
+             ;; (and ;;(subgoal-of "Subgoal *1/" id)
+             ;;  stable-under-simplificationp
+             ;;  (flag::expand-calls-computed-hint
+             ;;   clause '(ite-merge merge-rest maybe-merge)))
              (and ;;(subgoal-of "Subgoal *1/" id)
               stable-under-simplificationp
               (or (cw "enabling~%")

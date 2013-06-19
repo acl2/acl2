@@ -307,6 +307,7 @@
                      (coerce (revappend pre (eval-g-base x env)) 'string)))
      :hints(("Goal" :in-theory (e/d* ( general-concrete-obj
                                        concrete-gobjectp-def
+                                       eval-g-base-list
                                        general-concretep-def)
                                      ((:definition coerce-string)
                                       member eval-g-base
@@ -371,15 +372,16 @@
 (encapsulate nil
   (local (in-theory (disable member-equal)))
 
-  (local (defthm stringp-eval-g-base
-           (implies (and (not (general-concretep x))
-                         (not (g-ite-p x))
-                         (not (g-apply-p x))
-                         (not (g-var-p x)))
-                    (not (stringp (eval-g-base x env))))
-           :hints(("Goal" :in-theory (e/d ((:induction eval-g-base)
-                                           general-concretep-def))
-                   :induct (eval-g-base x env)
+  (local (defthm-gobj->term-flag
+           (defthm stringp-eval-g-base
+             (implies (and (not (general-concretep x))
+                           (not (g-ite-p x))
+                           (not (g-apply-p x))
+                           (not (g-var-p x)))
+                      (not (stringp (eval-g-base x env))))
+             :flag gobj)
+           :skip-others t
+           :hints(("Goal" :in-theory (e/d (general-concretep-def))
                    :expand ((:with eval-g-base (eval-g-base x env)))))))
 
 
@@ -390,7 +392,7 @@
                     (coerce (eval-g-base x env) 'list)))
     :hints(("Goal" :in-theory (e/d* (; (:ruleset g-correct-lemmas)
                                      eval-g-base-general-concrete-obj
-                                     eval-g-base)
+                                     eval-g-base eval-g-base-list)
                                     ((:definition coerce-list)
                                      eval-g-base-alt-def))
             :induct (coerce-list x hyp)
@@ -431,16 +433,17 @@
  :hints `(("Goal" :in-theory (disable ,gfn))))
 
 (local
- (defthm eval-g-base-not-equal-list
-   (implies (and (not (general-concretep y))
-                 (not (g-ite-p y))
-                 (not (g-apply-p y))
-                 (not (g-var-p y)))
-            (not (equal (eval-g-base y env) 'list)))
-   :hints(("Goal" :in-theory (e/d ((:induction eval-g-base)
-                                   general-concretep-def)
+ (defthm-gobj->term-flag
+   (defthm eval-g-base-not-equal-list
+     (implies (and (not (general-concretep y))
+                   (not (g-ite-p y))
+                   (not (g-apply-p y))
+                   (not (g-var-p y)))
+              (not (equal (eval-g-base y env) 'list)))
+     :flag gobj)
+   :skip-others t
+   :hints(("Goal" :in-theory (e/d (general-concretep-def)
                                   (eval-g-base-alt-def))
-           :induct (eval-g-base y env)
            :expand ((:with eval-g-base (eval-g-base y env)))))))
 
 

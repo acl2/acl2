@@ -179,6 +179,7 @@
                                   g-if-geval-meta-correct-eval-g-base
                                   g-or-geval-meta-correct-eval-g-base
                                   eval-g-base-atom
+                                  eval-g-base-list
                                   ;; booleanp-gobjectp
                                   )
                                  (;; bfr-p-of-boolean

@@ -247,6 +247,7 @@
        ;; (current-geval (find-current-geval world))
        (geval ;;(or current-geval
         (incat clause-proc (symbol-name clause-proc) "-GEVAL"))
+       (geval-list (incat clause-proc (symbol-name clause-proc) "-GEVAL-LIST"))
        (run-gified (incat clause-proc (symbol-name clause-proc) "-RUN-GIFIED"))
        (g-fns (strip-cars (table-alist 'gl-function-info world)))
        (ev (incat clause-proc (symbol-name geval) "-EV"))
@@ -466,6 +467,7 @@
                      (glcp-generic-geval-ev ,ev)
                      (glcp-generic-geval-ev-lst ,ev-lst)
                      (glcp-generic-geval ,geval)
+                     (glcp-generic-geval-list ,geval-list)
                      (glcp-generic-run-gified ,run-gified)
                      (glcp-generic-geval-ev-falsify ,falsify)
                      ;; (glcp-generic-apply-concrete ,apply-concrete)
@@ -487,7 +489,8 @@
                                           ,relieve-hyps
                                           ,relieve-hyp
                                           ,interp-list
-                                          ,geval))
+                                          ,geval
+                                          ,geval-list))
                             `(:expand ((,fn . ,args))
                               :do-not nil)))))
                    (and stable-under-simplificationp
@@ -530,6 +533,7 @@
                          (glcp-generic-geval-ev ,ev)
                          (glcp-generic-geval-ev-lst ,ev-lst)
                          (glcp-generic-geval ,geval)
+                         (glcp-generic-geval-list ,geval-list)
                          (glcp-generic-run-gified ,run-gified)
                          ;; (glcp-generic-apply-concrete ,apply-concrete)
                          ;; (glcp-generic-apply-concrete-guard-wrapper ,apply-concrete)

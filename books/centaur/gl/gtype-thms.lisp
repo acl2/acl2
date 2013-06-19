@@ -66,7 +66,7 @@
 (in-theory (disable concrete-gobjectp-def))
 
 
-
+(local (in-theory (enable generic-geval)))
 
 (defthm mk-g-concrete-correct
   (equal (generic-geval (mk-g-concrete x) b)
@@ -260,6 +260,12 @@
            :do-not-induct t))
   :rule-classes ((:rewrite :backchain-limit-lst 0)))
 
+(defthm g-keyword-symbolp-compound-recognizer
+  (implies (g-keyword-symbolp x)
+           (and (symbolp x)
+                (not (booleanp x))))
+  :rule-classes :compound-recognizer)
+
 ;; (defthm gobjectp-gl-cons
 ;;   (gobjectp (gl-cons x y)))
 
@@ -267,6 +273,18 @@
   (equal (generic-geval (gl-cons x y) env)
          (cons (generic-geval x env)
                (generic-geval y env))))
+
+(defthm generic-geval-list-gl-cons
+  (equal (generic-geval-list (gl-cons x y) env)
+         (cons (generic-geval x env)
+               (generic-geval-list y env)))
+  :hints(("Goal" :expand ((:free (x) (generic-geval-list (cons x y) env))))))
+
+(defthm generic-geval-list-atom
+  (implies (not (consp x))
+           (equal (generic-geval-list x env) nil))
+  :hints(("Goal" :expand ((generic-geval-list x env))))
+  :rule-classes ((:rewrite :backchain-limit-lst 0)))
 
 (in-theory (disable gl-cons))
 
@@ -302,18 +320,20 @@
 
 
 (defthm generic-geval-g-apply
-  (equal (generic-geval (g-apply fn args) env)
-         (generic-geval-ev (cons fn (kwote-lst (generic-geval args env)))
-                           nil))
+  (implies (not (equal fn 'quote))
+           (equal (generic-geval (g-apply fn args) env)
+                  (generic-geval-ev (cons fn (kwote-lst (generic-geval-list args env)))
+                                    nil)))
   :hints (("goal" :expand ((generic-geval (g-apply fn args) env))
            :in-theory (enable generic-geval-apply))))
 
 (defthmd generic-geval-g-apply-p
-  (implies (g-apply-p x)
+  (implies (and (g-apply-p x)
+                (not (equal (g-apply->fn x) 'quote)))
            (equal (generic-geval x env)
                   (generic-geval-ev
                    (cons (g-apply->fn x)
-                         (kwote-lst (generic-geval (g-apply->args x) env)))
+                         (kwote-lst (generic-geval-list (g-apply->args x) env)))
                    nil)))
   :hints (("goal" :expand ((generic-geval x env))
            :in-theory (enable generic-geval-apply)))

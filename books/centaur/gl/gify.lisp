@@ -909,15 +909,16 @@ Warning: Clock ran out in ~x0~%" ',(gl-fnsym top-fn))
 
 
 (defun eval-g-fi (eval oldeval thmname world)
-  (b* (((list ?new-appalist new-ev new-evlst)
+  (b* (((list eval-list new-ev new-evlst)
         (cdr (assoc eval (table-alist 'eval-g-table world))))
-       ((list ?old-appalist old-ev old-evlst)
+       ((list oldeval-list old-ev old-evlst)
         (cdr (assoc oldeval (table-alist 'eval-g-table world)))))
     `(:functional-instance
       ,thmname
       (,old-ev ,new-ev)
       (,old-evlst ,new-evlst)
-      (,oldeval ,eval))))
+      (,oldeval ,eval)
+      (,oldeval-list ,eval-list))))
 
 (defconst *eval-g-prove-f-i-template*
   '(:computed-hint-replacement
@@ -930,11 +931,12 @@ Warning: Clock ran out in ~x0~%" ',(gl-fnsym top-fn))
     ((:functional-instance
       _theorem_
       (_oldgeval_ _newgeval_)
+      (_oldgeval_-list _newgeval_-list)
       (_oldgeval_-ev _newgeval_-ev)
       (_oldgeval_-ev-lst _newgeval_-ev-lst)))
     :in-theory (e/d**
-                (nth-of-_oldgeval_-ev-concrete-lst
-                 nth-of-_newgeval_-ev-concrete-lst
+                (;; nth-of-_oldgeval_-ev-concrete-lst
+                 ;; nth-of-_newgeval_-ev-concrete-lst
                  acl2::car-to-nth-meta-correct
                  acl2::nth-of-cdr
                  acl2::list-fix-when-true-listp
@@ -947,8 +949,9 @@ Warning: Clock ran out in ~x0~%" ',(gl-fnsym top-fn))
                  _newgeval_-ev-of-fncall-args
                  _oldgeval_-ev-of-fncall-args
                  car-cons cdr-cons nth-0-cons (nfix)))
-    :expand ((_oldgeval_ x env)
-             (_newgeval_ x env))
+    :expand (; (_oldgeval_ x env)
+             (_newgeval_ x env)
+             (_newgeval_-list x env))
     :do-not-induct t))
 
 (defun eval-g-prove-f-i-fn (eval oldeval thmname)
@@ -1006,12 +1009,17 @@ Warning: Clock ran out in ~x0~%" ',(gl-fnsym top-fn))
   (incat 'gl-thm::foo (symbol-name thm) "-FOR-" (symbol-name eval)))
 
 (defun eval-g-functional-instance-fn (eval oldeval thmname world)
-  (let* ((apply (caddr (assoc eval (table-alist 'eval-g-table world))))
-         (oldapply (caddr (assoc oldeval (table-alist 'eval-g-table world))))
-         (thmbody (wgetprop thmname 'theorem))
-         (subst-body (subst-fns-term thmbody (list (cons oldeval eval)
-                                                   (cons oldapply apply))))
-         (newthmname (f-i-thmname thmname eval)))
+  (b* (((list neweval-list new-ev new-evlst new-apply)
+        (cdr (assoc eval (table-alist 'eval-g-table world))))
+       ((list oldeval-list old-ev old-evlst old-apply)
+        (cdr (assoc oldeval (table-alist 'eval-g-table world))))
+       (thmbody (wgetprop thmname 'theorem))
+       (subst-body (subst-fns-term thmbody (list (cons oldeval eval)
+                                                 (cons old-apply new-apply)
+                                                 (cons oldeval-list neweval-list)
+                                                 (cons old-ev new-ev)
+                                                 (cons old-evlst new-evlst))))
+       (newthmname (f-i-thmname thmname eval)))
     `(defthm ,newthmname
        ,subst-body
        :hints (("goal" :in-theory (theory 'minimal-theory)

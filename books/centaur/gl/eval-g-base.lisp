@@ -8,6 +8,7 @@
 
 (def-eval-g eval-g-base
   (BINARY-*
+   cons if
    BINARY-+
    PKG-WITNESS
 ;   UNARY-/

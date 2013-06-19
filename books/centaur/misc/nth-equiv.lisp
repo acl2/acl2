@@ -37,3 +37,50 @@
   (nth-equiv (update-nth n (nth n x) x)
              x)
   :hints(("Goal" :in-theory (enable nth-equiv))))
+
+(local (defthm +-cancel-consts
+         (implies (syntaxp (and (quotep x) (quotep y)))
+                  (equal (+ x y z) (+ (+ x y) z)))))
+
+(defcong nth-equiv equal (car x) 1
+  :hints (("goal" :use ((:instance nth-equiv-necc
+                         (n 0) (y x-equiv)))
+           :in-theory (e/d (nth) (nth-equiv-implies-equal-nth-2)))))
+
+(defcong nth-equiv nth-equiv (cdr x) 1
+  :hints (("goal" :use ((:instance nth-equiv-necc
+                         (n (+ 1 (nfix (nth-equiv-witness (cdr x) (cdr
+                                                                   x-equiv)))))
+                         (y x-equiv)))
+           :expand ((nth-equiv (cdr x) (cdr x-equiv))
+                    (nth-equiv (cdr x) nil)
+                    (nth-equiv nil (cdr x-equiv)))
+           :in-theory (disable nth-equiv-implies-equal-nth-2))))
+
+(defthmd nth-equiv-recursive
+  (equal (nth-equiv x y)
+         (or (and (atom x) (atom y))
+             (and (equal (car x) (car y))
+                  (nth-equiv (cdr x) (cdr y)))))
+  :hints ((and stable-under-simplificationp
+               '(:cases ((nth-equiv x y))))
+          (and stable-under-simplificationp
+               (cond ((equal (car clause) '(nth-equiv x y))
+                      '(:expand ((nth-equiv x y)
+                                 (:free (n) (nth n x))
+                                 (:free (n) (nth n y))))))))
+  :rule-classes ((:definition :install-body nil
+                  :clique (nth-equiv)
+                  :controller-alist ((nth-equiv t t)))))
+
+(defun cdr2-ind (x y)
+  (declare (xargs :measure (+ (acl2-count x) (acl2-count y))))
+  (if (and (atom x) (atom y))
+      nil
+    (cdr2-ind (cdr x) (cdr y))))
+
+(defthmd nth-equiv-ind
+  t
+  :rule-classes ((:induction
+                  :pattern (nth-equiv x y)
+                  :scheme (cdr2-ind x y))))

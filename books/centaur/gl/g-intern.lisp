@@ -70,11 +70,13 @@
     mk-g-ite-correct
     ((generic-geval-ev eval-g-base-ev)
      (generic-geval-ev-lst eval-g-base-ev-lst)
-     (generic-geval eval-g-base))
+     (generic-geval eval-g-base)
+     (generic-geval-list eval-g-base-list))
  :hints ('(:in-theory (e/d* (eval-g-base-ev-of-fncall-args
                              eval-g-base-apply-agrees-with-eval-g-base-ev)
                             (eval-g-base-apply))
-           :expand ((:with eval-g-base (eval-g-base x env))))))))
+           :expand ((:with eval-g-base (eval-g-base x env))
+                    (eval-g-base-list x env)))))))
 
 
 (def-g-correct-thm intern-in-package-of-symbol eval-g-base
