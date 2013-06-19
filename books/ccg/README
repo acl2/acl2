@@ -1,0 +1,16 @@
+Book: CCG - Automated termination analysis
+Author: Daron Vroon
+
+To certify the books use the standard procedure i.e. make
+or use ../cert.pl ccg.cert ccg-settings-dependencies.cert
+
+To get CCG to do termination proofs, use the following two commands.
+
+(include-book "ccg" :ttags ((:ccg)) :load-compiled-file nil)
+(ld "ccg-settings.lsp")
+
+Documentation - :doc ccg 
+
+See Readme.lsp for licensing and other information.
+
+
