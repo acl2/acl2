@@ -452,7 +452,6 @@
               (function (lambda (x y)
                           (equal (symbol-name x) (symbol-name y))))))
 
-
 ; Turn off automatic declaration of special variables, in particular since we
 ; do not want state declared special; see the comment above
 ; (eval '(setq state *the-live-state*)) in load-acl2.
@@ -2509,25 +2508,7 @@ which is saved just in case it's needed later.")
 ;                        Some hacks for CCL
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-; Bob Boyer uses the following in the hons version.  For now, we restrict to
-; that version.
-
-
-;; [Jared]: I'm removing the following #+(and ccl hons) forms because they're
-;; redundant with the acl2h-init code, so why have them here and there.
-
-
-    ;; ; We have observed about an 8% speedup in the #-hons version of ACL2 by not
-    ;; ; saving definition bodies, as opposed to saving them (with the first two setq
-    ;; ; forms below).
-    ;; #+(and ccl hons)
-    ;; (setq ccl:*save-definitions* t)
-    ;; #+(and ccl hons)
-    ;; (setq ccl:*fasl-save-definitions* t)
-
-    ;; ; Allow control-d to exit:
-    ;; #+(and ccl hons)
-    ;; (setq ccl::*quit-on-eof* t)
+; Also see the acl2h-init code.
 
 ; Bob Boyer uses the following at times.
 

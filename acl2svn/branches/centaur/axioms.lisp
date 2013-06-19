@@ -1407,9 +1407,6 @@
 ; concern to the user whether we implement + as a macro or a
 ; function.)
 
-#-acl2-loop-only
-(declaim (inline acl2-numberp))
-
 (defun-one-output acl2-numberp (x)
   (numberp x))
 
@@ -2039,9 +2036,6 @@
            (ignore x))
   nil)
 
-#-acl2-loop-only
-(declaim (inline iff))
-
 (defun iff (p q)
 
   ":Doc-Section ACL2::ACL2-built-ins
@@ -2056,9 +2050,6 @@
 
   (declare (xargs :guard t))
   (if p (if q t nil) (if q nil t)))
-
-#-acl2-loop-only
-(declaim (inline xor))
 
 (defun xor (p q)
 
@@ -2102,9 +2093,6 @@
                   :mode :logic :verify-guards t))
   (equal x y))
 
-#-acl2-loop-only
-(declaim (inline booleanp))
-
 (defun booleanp (x)
 
   ":Doc-Section ACL2::ACL2-built-ins
@@ -2134,9 +2122,6 @@
        (implies (and (iff x y) (iff y z))
                 (iff x z)))
   :rule-classes (:equivalence))
-
-#-acl2-loop-only
-(declaim (inline implies))
 
 (defun implies (p q)
 
@@ -2527,9 +2512,6 @@
 ; the defun of acl2-count below we get that the type-prescription for
 ; acl2-count is a nonnegative integer.
 
-#-acl2-loop-only
-(declaim (inline integer-abs))
-
 (defun integer-abs (x)
   (declare (xargs :guard t))
   (if (integerp x)
@@ -2600,9 +2582,6 @@
                -1)
               (t (len1 (cdr x) (the fixnum (+ (the fixnum acc) 1)))))))
 
-#-acl2-loop-only
-(declaim (inline len))
-
 (defun len (x)
 
   ":Doc-Section ACL2::ACL2-built-ins
@@ -2654,9 +2633,6 @@
   (if (stringp x)
       (len (coerce x 'list))
       (len x)))
-
-#-acl2-loop-only
-(declaim (inline complex-rationalp))
 
 #-acl2-loop-only
 (defun-one-output complex-rationalp (x)
@@ -2774,9 +2750,6 @@
 ; in order to support the definition of eql, which is in
 ; *expandable-boot-strap-non-rec-fns* and hence needs to be
 ; :common-lisp-compliant.
-
-#-acl2-loop-only
-(declaim (inline eqlablep))
 
 (defun eqlablep (x)
 
@@ -3405,9 +3378,6 @@
         (t (reverse-strip-cars (cdr x)
                                (cons (car (car x)) a)))))
 
-#-acl2-loop-only
-(declaim (inline strip-cars))
-
 (defun strip-cars (x)
 
   ":Doc-Section ACL2::ACL2-built-ins
@@ -3438,9 +3408,6 @@
   (cond ((endp x) a)
         (t (reverse-strip-cdrs (cdr x)
                                (cons (cdr (car x)) a)))))
-
-#-acl2-loop-only
-(declaim (inline strip-cdrs))
 
 (defun strip-cdrs (x)
 
@@ -3842,15 +3809,7 @@
   ? [RAW LISP]
   ~ev[]
   To understand the macro ~c[with-profiling-raw] you could look at the
-  community book loaded above: ~c[books/misc/profiling-raw.lsp].  If you wish
-  to automate certification of such a book with makefiles (~pl[book-makefiles]),
-  perhaps contributing such a book to the ACL2 community books repository (see
-  ~url[http://acl2-books.googlecode.com/]), you may also wish to look at
-  community books file ~c[books/misc/Makefile], where you'll notice the following
-  extra `~c[make]' dependency:
-  ~bv[]
-  profiling.cert: profiling-raw.lsp
-  ~ev[]
+  community book loaded above: ~c[books/misc/profiling-raw.lsp].
 
   We mentioned above that ACL2 tends to print calls of ~ilc[prog2$] or
   ~ilc[time$] (or other such utilities) instead of calls of ~c[return-last].
@@ -4655,9 +4614,6 @@
         ((eql x (car lst)) lst)
         (t (member-eql-exec x (cdr lst)))))
 
-#-acl2-loop-only
-(declaim (inline member-equal))
-
 (defun member-equal (x lst)
   (declare (xargs :guard (true-listp lst)))
   #-acl2-loop-only ; for assoc-equal, Jared Davis found native assoc efficient
@@ -5256,10 +5212,6 @@
         (if (integerp i) i (list 'the 'integer i))
         (if (integerp j) j (list 'the 'integer j))))
 
-
-#-acl2-loop-only
-(declaim (inline zp))
-
 #+acl2-loop-only
 (defun zp (x)
   (declare (xargs :mode :logic
@@ -5345,10 +5297,6 @@
                     t))))
 
 (in-theory (disable zp))
-
-
-#-acl2-loop-only
-(declaim (inline zip))
 
 #+acl2-loop-only
 (defun zip (x)
@@ -5981,10 +5929,6 @@
 
 (defaxiom Commutativity-of-+
   (equal (+ x y) (+ y x)))
-
-
-#-acl2-loop-only
-(declaim (inline fix))
 
 (defun fix (x)
 
@@ -9354,10 +9298,6 @@
                 (< i (len x)))
            (characterp (nth i x))))
 
-
-#-acl2-loop-only
-(declaim (inline ifix))
-
 (defun ifix (x)
 
   ":Doc-Section ACL2::ACL2-built-ins
@@ -9376,10 +9316,6 @@
 
   (declare (xargs :guard t))
   (if (integerp x) x 0))
-
-
-#-acl2-loop-only
-(declaim (inline rfix))
 
 (defun rfix (x)
 
@@ -9410,10 +9346,6 @@
 ; Since the next function, realfix, is referred to by other :doc topics, do not
 ; make it conditional upon #+:non-standard-analysis.
 
-
-#-acl2-loop-only
-(declaim (inline realfix))
-
 (defun realfix (x)
 
   ":Doc-Section ACL2::ACL2-built-ins
@@ -9432,10 +9364,6 @@
 
   (declare (xargs :guard t))
   (if (real/rationalp x) x 0))
-
-
-#-acl2-loop-only
-(declaim (inline nfix))
 
 (defun nfix (x)
 
@@ -9606,10 +9534,6 @@
    these functions, see the documentation at the end of community book
    ~c[books/ordinals/e0-ordinal.lisp].")
 
-
-#-acl2-loop-only
-(declaim (inline natp))
-
 (defun natp (x)
 
   ":Doc-Section ACL2::ACL2-built-ins
@@ -9634,10 +9558,6 @@
          (and (integerp x)
               (<= 0 x)))
   :rule-classes :compound-recognizer)
-
-
-#-acl2-loop-only
-(declaim (inline posp))
 
 (defun posp (x)
   ":Doc-Section ACL2::ACL2-built-ins
@@ -13183,11 +13103,6 @@
 
 ; Add-to-set
 
-#-acl2-loop-only
-(declaim (inline add-to-set-eq-exec
-                 add-to-set-eql-exec
-                 add-to-set-equal))
-
 (defun add-to-set-eq-exec (x lst)
   (declare (xargs :guard (if (symbolp x)
                              (true-listp lst)
@@ -13293,9 +13208,6 @@
 
 (defmacro fquotep (x) (list 'eq ''quote (list 'car x)))
 
-#-acl2-loop-only
-(declaim (inline quotep))
-
 (defun quotep (x)
   (declare (xargs :guard t))
   (and (consp x)
@@ -13354,9 +13266,6 @@
 (defmacro unquote (x) (list 'cadr x))
 
 (defmacro ffn-symb (x) (list 'car x))
-
-#-acl2-loop-only
-(declaim (inline fn-symb))
 
 (defun fn-symb (x)
   (declare (xargs :guard t))
@@ -15672,9 +15581,6 @@
   (if (equal str1 str2)
       (length str1)
     (string> str1 str2)))
-
-#-acl2-loop-only
-(declaim (inline symbol-<))
 
 (defun symbol-< (x y)
 
@@ -28257,7 +28163,6 @@
     set-absstobj-debug-fn
     sys-call-status ; *last-sys-call-status*
     sys-call ; system-call
-    never-memoize-fn
 
     canonical-pathname ; under dependent clause-processor
 
@@ -30169,9 +30074,6 @@
 ; local), but since types are involved with guards, that seems dicey -- so we
 ; just wait till here.
 
-#-acl2-loop-only
-(declaim (inline integer-range-p))
-
 (defun integer-range-p (lower upper x)
 
 ; Notice the strict inequality for upper.  This function was introduced in
@@ -30198,24 +30100,16 @@
 ; as conjuncts in the bodies of the definitions, an approach that seems at
 ; least as reasonable.
 
-#-acl2-loop-only
-(declaim (inline signed-byte-p))
-
 (defun signed-byte-p (bits x)
   (declare (xargs :guard t))
-  ;; BOZO mbe-optimize
   (and (integerp bits)
        (< 0 bits)
        (integer-range-p (- (expt 2 (1- bits)))
                         (expt 2 (1- bits))
                         x)))
 
-#-acl2-loop-only
-(declaim (inline unsigned-byte-p))
-
 (defun unsigned-byte-p (bits x)
   (declare (xargs :guard t))
-  ;; BOZO mbe-optimize
   (and (integerp bits)
        (<= 0 bits)
        (integer-range-p 0
@@ -30250,13 +30144,9 @@
   (list 'the '(signed-byte 30) n))
 
 #-acl2-loop-only
-(declaim (inline zpf))
-
-#-acl2-loop-only
 (defun-one-output zpf (x)
   (declare (type (unsigned-byte 29) x))
   (eql (the-fixnum x) 0))
-
 #+acl2-loop-only
 (defun zpf (x)
   (declare (type (unsigned-byte 29) x))
@@ -33839,9 +33729,6 @@
             (eql (the character ,ch)
                  (the character (code-char code)))))))
 
-#-acl2-loop-only
-(declaim (inline read-char$))
-
 (defun read-char$ (channel state-state)
 
 ; read-char$ differs from read-char in several ways.  It returns an
@@ -33877,9 +33764,6 @@
                    (open-input-channels state-state))
          state-state))))
 
-#-acl2-loop-only
-(declaim (inline peek-char$))
-
 (defun peek-char$ (channel state-state)
 
 ; Wart: We use state-state instead of state because of a bootstrap problem.
@@ -33905,9 +33789,6 @@
                   (t ch))))))
   (let ((entry (cdr (assoc-eq channel (open-input-channels state-state)))))
     (car (cdr entry))))
-
-#-acl2-loop-only
-(declaim (inline read-byte$))
 
 (defun read-byte$ (channel state-state)
 
@@ -35463,9 +35344,6 @@
                 this host Common Lisp, please contact the ACL2 ~%~
                 implementors.")))
   nil)
-
-#-acl2-loop-only
-(declaim (inline random$))
 
 (defun random$ (limit state)
 

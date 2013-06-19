@@ -433,7 +433,7 @@
 
   '(memoize-summary))
 
-; The macros MEMOIZE-ON, and MEMOIZE-OFF typically cause "under the hood"
+; The macros MEMOIZE-ON and MEMOIZE-OFF typically cause "under the hood"
 ; effects that, though not changing the semantics of what ACL2 returns, may
 ; affect the speed and/or space utilization of the computation.
 
@@ -483,12 +483,6 @@
 
 (defconst *mht-default-size* 60)
 
-
-;; [Jared]: it would be very nice to bundle up these 13 parameters into an
-;; alist or something.  Various subsets of these arguments occur in spaghetti
-;; fashion throughout the code for memoize, add-trip, the memoize-table stuff,
-;; etc.
-
 (defun memoize-form (fn
                      condition
                      condition-p
@@ -502,6 +496,12 @@
                      memo-table-init-size
                      aokp
                      ideal-okp)
+
+; Jared Davis suggests that we consider bundling up these 13 parameters, for
+; example into an alist.  He says: "Various subsets of these arguments occur in
+; spaghetti fashion throughout the code for memoize, add-trip, the
+; memoize-table stuff, etc."
+
   (declare (xargs :guard t))
   (let ((condition (cond ((equal condition ''t) t)
                          ((equal condition ''nil) nil)
@@ -763,10 +763,8 @@
   be a ~il[guard]-verified function.
 
   Calls of this macro generate events of the form
-   ~c[(table memoize-table fn ((:condition-fn fn) ...))]
-
-  When successful, the returned value is of the form
-   ~c[(mv nil function-symbol state)].
+  ~c[(table memoize-table fn ((:condition-fn fn) ...))].  When successful, the
+  returned value is of the form ~c[(mv nil function-symbol state)].
 
   Suppose that a function is already memoized.  Then it is illegal to memoize
   that function.  Moreover, if the function was memoized with an associated
@@ -785,9 +783,9 @@
   Keyword parameter ~c[:recursive] is ~c[t] by default, which means that
   recursive calls of ~c[fn] will be memoized just as ``top-level'' calls of
   ~c[fn].  When ~c[:recursive] is instead set to ~c[nil], memoization is only
-  done at the top level.  Using ~c[:recursive nil] is basically similar to
-  writing a wrapper function that just calls ~c[fn], and memoizing the wrapper
-  instead of ~c[fn].
+  done at the top level.  Using ~c[:recursive nil] is similar to writing a
+  wrapper function that just calls ~c[fn], and memoizing the wrapper instead of
+  ~c[fn].
 
   If ~c[:trace] has a non-~c[nil] value, then ~c[memoize] also traces in a
   traditional Lisp style.  If ~c[:trace] has value ~c[notinline] or
@@ -1068,6 +1066,26 @@
   (declare (xargs :guard t))
   `(memoizedp-world ,fn (w state)))
 
+;;; hons-shrink-alist
+
+; HONS-SHRINK-ALIST, when called with an atomic second
+; argument, produces an alist that is alist-equivalent
+; to the first argument, but with all irrelevant entries in
+; the first argument deleted.  Informal remark: the alist
+; returned is a hons when the initial ANS is not an atom.
+
+; Comment about the last clause above.  Or really?
+; Counterexamples?
+;
+; mbu> stp
+; ? (honsp (hons-shrink-alist '((a . b) (a . b2)) (hons-acons 1 2 3)))
+; NIL
+;
+; mbu> stp
+; ? (honsp (hons-shrink-alist '((a . b) (a . b2)) nil))
+; NIL
+; ?
+
 ; Some centaur/ books put entries in *never-profile-ht*.  In order to allow
 ; those books to certify in vanilla ACL2, we define a default value for that
 ; variable here.
@@ -1105,4 +1123,3 @@
     (prog2$ (never-memoize-fn ',fn)
             '(value-triple :invisible))
     :check-expansion t))
-

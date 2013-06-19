@@ -110,7 +110,6 @@ most-negative-fixnum = ~s."
            most-positive-fixnum
            most-negative-fixnum))
 
-
 ; Now we deal with the existence of case-sensitive images in Allegro.
 
 #+(and allegro allegro-version>= (version>= 6 0))

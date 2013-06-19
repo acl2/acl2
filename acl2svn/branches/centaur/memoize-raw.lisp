@@ -3865,9 +3865,6 @@ the calls took.")
   (when (memoizedp-raw 'expansion-alist-pkg-names-memoize)
     (unmemoize-fn 'expansion-alist-pkg-names-memoize)))
 
-
-
-
 ;;;;;;;;;;
 ;;; Start memory management code (start-sol-gc)
 ;;;;;;;;;;
@@ -3971,7 +3968,6 @@ the calls took.")
 ;next GC.~%"
 ;                *gc-min-threshold*)
           )))
-
 
 
 #+Clozure
@@ -4256,5 +4252,3 @@ the calls took.")
                              (setf (gethash k *memoize-info-ht*)
                                    new-entry)))))
                *memoize-info-ht*))))
-
-
