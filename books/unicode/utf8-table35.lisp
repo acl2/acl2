@@ -17,10 +17,10 @@
 
 (in-package "ACL2")
 (include-book "uchar")
-(include-book "std/io/unsigned-byte-listp" :dir :system)
+(include-book "std/typed-lists/unsigned-byte-listp" :dir :system)
 (local (include-book "centaur/bitops/ihsext-basics" :dir :system))
 (local (include-book "centaur/bitops/signed-byte-p" :dir :system))
-(local (include-book "std/io/signed-byte-listp" :dir :system))
+(local (include-book "std/typed-lists/signed-byte-listp" :dir :system))
 
 (local (defthm signed-byte-p-resolver
          (implies (and (integerp n)

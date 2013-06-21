@@ -1,4 +1,5 @@
 ; Standard IO Library
+; base.lisp
 ; Copyright (C) 2008-2013 Centaur Technology
 ;
 ; Contact:
@@ -18,11 +19,16 @@
 ;
 ; Original author: Sol Swords <sswords@centtech.com>
 ; Documented by Jared Davis <jared@centtech.com>
-; Moved by David Rager <ragerdl@gmail.com> on 1/10/13.
+; Moved into std by David Rager <ragerdl@gmail.com>
 
 (in-package "ACL2")
 (include-book "xdoc/top" :dir :system)
 (include-book "system/f-put-global" :dir :system)
+(include-book "std/lists/list-defuns" :dir :system)
+(include-book "file-measure")
+(local (include-book "std/lists/append" :dir :system))
+(local (include-book "std/lists/revappend" :dir :system))
+(local (include-book "std/lists/rev" :dir :system))
 (local (include-book "str/coerce" :dir :system))
 
 (defsection bytep
@@ -106,32 +112,13 @@
   :hints(("Goal" :in-theory (enable readable-files-p))))
 
 (defxdoc *file-types*
-  :parents (io)
+  :parents (std/io)
   :short "Different ways to open files for reading and writing."
 
   :long "<p>See @(see io) for general discussion of file types.</p>
 
 @(def *file-types*)")
 
-(defxdoc logical-story-of-io
-  :parents (io)
-  :short "How file reading operations are modeled in the ACL2 logic."
-
-  :long "<p>ACL2's file input operations are available in @(':logic') mode (see
-@(see defun-mode)).  This is somewhat tricky to justify in the logic, since,
-e.g., the contents of a file is external to ACL2, can be changed over time, and
-so on.</p>
-
-<p>Practically speaking, most users don't need to pay any attention to the
-details of this story.  Instead, see the book @('io/base'), which develops
-the basic theorems that are necessary to reason about the io primitives.</p>
-
-<p>If, for some reason, you do want to understand the logical story, you might
-start with this paper:</p>
-
-<p>Jared Davis.  <a
-href='http://www.ccs.neu.edu/home/pete/acl206/papers/davisb.pdf'>Reasoning
-about ACL2 File Input</a>.  ACL2 Workshop 2006.</p>")
 
 
 
@@ -142,9 +129,9 @@ about ACL2 File Input</a>.  ACL2 Workshop 2006.</p>")
 ;
 ; -----------------------------------------------------------------------------
 
-(defsection open-input-channel
-  :parents (io)
-  :short "Open a file for reading."
+(defsection std/io/open-input-channel
+  :parents (std/io open-input-channel)
+  :short "Open an file for reading."
 
   :long "<p><b>Signature:</b> @(call open-input-channel) returns @('(mv channel
 state)')</p>
@@ -386,8 +373,8 @@ explanation of why opening the file failed.</p>"
 
 
 
-(defsection close-input-channel
-  :parents (io)
+(defsection std/io/close-input-channel
+  :parents (std/io close-input-channel)
   :short "Close an input channel."
 
   :long "<p><b>Signature</b>: @(call close-input-channel) returns
@@ -442,8 +429,8 @@ them to avoid resource leaks.</p>"
                                        open-input-channel-p1
                                        open-input-channel)))))
 
-(defsection read-char$
-  :parents (io)
+(defsection std/io/read-char$
+  :parents (std/io read-char$)
   :short "Read one character from an open @(':character') stream."
 
   :long "<p>NOTE: We generally prefer to avoid @(see read-char$).  It is easy
@@ -567,8 +554,8 @@ input streams.  So, that might be worth considering.</p>"
                                   (or (characterp (mv-nth 0 (read-char$ channel state)))
                                       (null (mv-nth 0 (read-char$ channel state)))))))))
 
-(defsection peek-char$
-  :parents (io)
+(defsection std/io/peek-char$
+  :parents (std/io peek-char$)
   :short "Inspect the next character that will be read from an open
 @(':character') input stream."
 
@@ -601,8 +588,8 @@ reason about @('read-char$') instead.</p>"
   (in-theory (disable peek-char$)))
 
 
-(defsection read-byte$
-  :parents (io)
+(defsection std/io/read-byte$
+  :parents (std/io read-byte$)
   :short "Read one byte from an open @(':byte') stream."
 
   :long "<p><b>Signature:</b> @(call read-byte$) returns @('(mv byte/nil
@@ -717,8 +704,8 @@ the end of the file, @('nil') is returned.</p>"
     :hints(("Goal" :in-theory (disable open-input-channel-p1)))))
 
 
-(defsection read-object
-  :parents (io)
+(defsection std/io/read-object
+  :parents (std/io read-object)
   :short "Read one object from an open @(':object') stream."
 
   :long "<p><b>Signature:</b> @(call read-object) returns @('(mv eofp obj
@@ -826,7 +813,7 @@ foo
           :hints(("Goal" :in-theory (enable nth update-nth)))))
 
  (defsection char
-   :extension read-char$
+   :extension std/io/read-char$
    (defthm state-preserved-by-read-char$-when-eof
      (implies (and (not (mv-nth 0 (read-char$ channel state)))
                    (state-p1 state)
@@ -836,7 +823,7 @@ foo
      :hints(("Goal" :in-theory (e/d (read-char$ state-p1))))))
 
  (defsection byte
-   :extension read-byte$
+   :extension std/io/read-byte$
    (defthm state-preserved-by-read-byte$-when-eof
      (implies (and (not (mv-nth 0 (read-byte$ channel state)))
                    (state-p1 state)
@@ -846,7 +833,7 @@ foo
      :hints(("Goal" :in-theory (e/d (read-byte$ state-p1))))))
 
  (defsection object
-   :extension read-object$
+   :extension std/io/read-object$
    (defthm state-preserved-by-read-object-when-eof
      (implies (and (mv-nth 0 (read-object channel state))
                    (state-p1 state)
@@ -863,8 +850,8 @@ foo
 ;
 ; -----------------------------------------------------------------------------
 
-(defsection open-output-channel
-  :parents (io)
+(defsection std/io/open-output-channel
+  :parents (std/io open-output-channel)
   :short "Open a file for writing."
 
   :long "<p><b>Signature:</b> @(call open-output-channel) returns @('(mv
@@ -956,8 +943,8 @@ created.</li>
 
 
 
-(defsection close-output-channel
-  :parents (io)
+(defsection std/io/close-output-channel
+  :parents (std/io close-output-channel)
   :short "Close an output channel."
 
   :long "<p><b>Signature</b>: @(call close-output-channel) returns
@@ -1028,35 +1015,31 @@ output channels when you are done with them to avoid resource leaks.</p>"
                 (equal (cadar x) :object))
            (open-channel1 (list* (car x) y (cdr x)))))
 
+(defthm typed-io-listp-of-append
+  (equal (typed-io-listp (append x y) type)
+         (and (typed-io-listp (list-fix x) type)
+              (typed-io-listp y type))))
+
+(defthm typed-io-listp-of-rev
+  (equal (typed-io-listp (rev x) type)
+         (typed-io-listp (list-fix x) type))
+  :hints(("Goal" :in-theory (enable rev))))
+
 (defthm open-channel1-of-revappend-charlist
   (implies (and (open-channel1 x)
                 (equal (cadar x) :character)
                 (character-listp y))
-           (open-channel1 (cons (car x) (revappend y (cdr x)))))
-  :otf-flg t)
-
-;; matches std/misc/explode-atom.lisp
-(defthm character-listp-of-explode-nonnegative-integer
-  (equal (character-listp (explode-nonnegative-integer n base acc))
-         (character-listp acc))
-  :hints(("Goal" :in-theory (disable floor mod digit-to-char))))
-
-;; matches std/misc/explode-atom.lisp
-;; unicode version includes print-base-p hyp.
-(defthm character-listp-of-explode-atom
-  (character-listp (explode-atom x base)))
-
-; Added by Matt K. for princ$ change 12/7/2012.
-(defthm character-listp-explode-atom+
-  (character-listp (explode-atom+ x base radix)))
+           (open-channel1 (cons (car x) (append (rev y) (cdr x))))))
 
 
+(defsection std/io/princ$
+  :parents (std/io princ$)
+  :short "Print an atom to a @(':character') output stream."
+  :long "<p>ACL2 has nice documentation for @(see princ$).  The @(see std/io)
+library adds the following lemmas:</p>"
 
-;; I-AM-HERE
-(defsection princ$
-  :parents (io)
-  ;; BOZO ACL2's documentation for princ$ is nice, it'd be good to have a better
-  ;; integration between it and XDOC.
+  (local (include-book "std/misc/explode-nonnegative-integer" :dir :system))
+  (local (include-book "std/misc/explode-atom" :dir :system))
 
   (defthm state-p1-of-princ$
     (implies (and (state-p1 state)
@@ -1068,13 +1051,33 @@ output channels when you are done with them to avoid resource leaks.</p>"
   (defthm open-output-channel-p1-of-princ$
     (implies (and (state-p1 state)
                   (open-output-channel-p1 channel :character state))
-             (open-output-channel-p1 channel :character (princ$ x channel state)))))
+             (open-output-channel-p1 channel :character
+                                     (princ$ x channel state)))))
 
 
-(defsection write-byte$
-  :parents (io)
+(defsection std/io/write-byte$
+  :parents (std/io write-byte$)
+  :short "Write one byte to an open @(':byte') output stream."
+  :long "<p><b>Signature:</b> @(call write-byte$) returns @('state').</p>
 
-  ;; Write-byte$
+<ul>
+
+<li>@('byte') must be a natural number with @('byte < 256').</li>
+
+<li>@('channel') is a symbol that must refer to an open @(':byte') input
+channel; see @(see open-input-channel).</li>
+
+<li>@('state') is the ACL2 @(see state).</li>
+
+</ul>
+
+<p>This is a @(see logic)-mode function, but its logical definition is tricky;
+see @(see logical-story-of-io).  The main logical consequence is the updating
+of state.</p>
+
+<p>Under the hood, we write a byte to the Lisp output stream that is associated
+with @('channel').</p>"
+
   (defthm state-p1-of-write-byte$
     (implies (and (state-p1 state)
                   (symbolp channel)
@@ -1087,13 +1090,15 @@ output channels when you are done with them to avoid resource leaks.</p>"
   (defthm open-output-channel-p1-of-write-byte$
     (implies (and (state-p1 state)
                   (open-output-channel-p1 channel :byte state))
-             (open-output-channel-p1 channel :byte (write-byte$ byte channel state)))))
+             (open-output-channel-p1 channel :byte
+                                     (write-byte$ byte channel state)))))
 
 
-(defsection print-object$
-  :parents (io)
+(defsection std/io/print-object$
+  :parents (std/io print-object$)
+  :short "Print a Lisp object to an @(':object') output stream."
+  :long "<p>BOZO document me.</p>"
 
-  ;; print-object$
   (defthm state-p1-of-print-object$
     (implies (and (state-p1 state)
                   (symbolp channel)
@@ -1104,16 +1109,21 @@ output channels when you are done with them to avoid resource leaks.</p>"
   (defthm open-output-channel-p1-of-print-object$
     (implies (and (state-p1 state)
                   (open-output-channel-p1 channel :object state))
-             (open-output-channel-p1 channel :object (print-object$ x channel state)))))
+             (open-output-channel-p1 channel
+                                     :object (print-object$ x channel state)))))
 
 
 
-;; Close-output-channel's guard requires that the channel is not the symbol:
-;; ACL2-OUTPUT-CHANNEL::STANDARD-CHARACTER-OUTPUT-0.
-;; So we need to prove that this symbol is never returned from
-;; open-output-channel.  This is true because symbol created ends in "-" and
-;; then the new file clock, which is at least 1.  Blech!
-(encapsulate nil
+
+(defsection open-channels-distinct-from-standard-io
+  :parents (open-input-channel open-output-channel)
+  :short "Technical lemmas to show that opening input/output channels does not
+produce a symbol like @('ACL2-OUTPUT-CHANNEL::STANDARD-CHARACTER-OUTPUT-0'),
+for the guards of @(see close-input-channel) and @(see close-output-channel)."
+
+;; This is true because symbol created ends in "-" and then the new file clock,
+;; which is at least 1.  Blech!
+
   (local (in-theory (disable floor mod print-base-p)))
   (local (include-book "ihs/quotient-remainder-lemmas" :dir :system))
 
@@ -1250,92 +1260,6 @@ output channels when you are done with them to avoid resource leaks.</p>"
                          *standard-oi*)))
     :hints(("Goal" :in-theory (disable make-input-channel)))))
 
-
-(defsection file-measure
-  :parents (io)
-  :short "A measure for admitting functions that read from files."
-
-  :long "<p><b>Signature:</b> @(call file-measure) returns a natural
-number.</p>
-
-<ul>
-
-<li>@('channel') may be any symbol but is typically an open input channel.</li>
-
-<li>@('state-state') is typically the ACL2 @(see state).</li>
-
-</ul>
-
-<p>This is a @(see logic)-mode function, but its logical definition is tricky;
-see @(see logical-story-of-io).  The basic gist is that it returns how many
-objects are left in the channel and hence how many functions can still be
-read.</p>
-
-<p>This function is only meant to be used to admit functions, and cannot be
-executed on the real ACL2 @(see state).</p>
-
-<p>History.  Jared wrote an initial version of this function for the Unicode
-books.  Sol then extended it with a hack that allows us to prove it decreasing
-without assuming state-p1 in the object case.  (Really it's just a workaround
-for the fact that read-object checks @('(cdr entry)') as a substitute for
-@('(consp (cdr entry))') to find whether there are objects remaining.</p>"
-
-  (defun file-measure (channel state-state)
-    (declare (xargs :guard (and (symbolp channel)
-                                (state-p1 state-state))))
-    (+ (len (cddr (assoc-equal channel (open-input-channels state-state))))
-       (if (consp (cddr (assoc-equal channel (open-input-channels state-state))))
-           (if (cdr (last (cddr (assoc-equal channel (open-input-channels
-                                                      state-state))))) 1 0)
-         (if (cddr (assoc-equal channel (open-input-channels state-state))) 1 0))))
-
-  (defthm file-measure-of-read-byte$-weak
-    (<= (file-measure channel (mv-nth 1 (read-byte$ channel state)))
-        (file-measure channel state))
-    :rule-classes (:rewrite :linear))
-
-  (defthm file-measure-of-read-byte$-strong
-    (implies (mv-nth 0 (read-byte$ channel state))
-             (< (file-measure channel (mv-nth 1 (read-byte$ channel state)))
-                (file-measure channel state)))
-    :rule-classes (:rewrite :linear))
-
-  (defthm file-measure-of-read-byte$-rw
-    (implies (mv-nth 0 (read-byte$ channel state))
-             (equal (file-measure channel (mv-nth 1 (read-byte$ channel state)))
-                    (+ -1 (file-measure channel state)))))
-
-  (defthm file-measure-of-read-char$-weak
-    (<= (file-measure channel (mv-nth 1 (read-char$ channel state)))
-        (file-measure channel state))
-    :rule-classes (:rewrite :linear))
-
-  (defthm file-measure-of-read-char$-strong
-    (implies (mv-nth 0 (read-char$ channel state))
-             (< (file-measure channel (mv-nth 1 (read-char$ channel state)))
-                (file-measure channel state)))
-    :rule-classes (:rewrite :linear))
-
-  (defthm file-measure-of-read-char$-rw
-    (implies (mv-nth 0 (read-char$ channel state))
-             (equal (file-measure channel (mv-nth 1 (read-char$ channel state)))
-                    (1- (file-measure channel state)))))
-
-  (defthm file-measure-of-read-object-weak
-    (<= (file-measure channel (mv-nth 2 (read-object channel state)))
-        (file-measure channel state))
-    :rule-classes (:rewrite :linear))
-
-  (defthm file-measure-of-read-object-strong
-    (implies (not (mv-nth 0 (read-object channel state)))
-             (< (file-measure channel (mv-nth 2 (read-object channel state)))
-                (file-measure channel state)))
-    :rule-classes (:rewrite :linear))
-
-  (defthm file-measure-of-read-object-rw
-    (implies (not (mv-nth 0 (read-object channel state)))
-             (equal (file-measure channel (mv-nth 2 (read-object channel state)))
-                    (1- (file-measure channel state))))))
 
 
 (in-theory (disable state-p1

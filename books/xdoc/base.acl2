@@ -18,6 +18,7 @@
 ;
 ; Original author: Jared Davis <jared@centtech.com>
 
+;; Special .acl2 file for base.lisp, so that base.lisp won't need to include
+;; the portcullis files for libraries other than XDOC.
 (include-book "portcullis")
-; cert-flags: ? t :ttags :all
-(certify-book "defxdoc-raw" ? t :ttags :all)
+

@@ -18,13 +18,13 @@
 (in-package "ACL2")
 (include-book "utf8-decode")
 (include-book "std/io/take-bytes" :dir :system)
-;; (local (include-book "open-input-channel"))
-;; (local (include-book "close-input-channel"))
 (local (include-book "std/io/base" :dir :system))
 (local (include-book "tools/mv-nth" :dir :system))
 (local (include-book "centaur/bitops/ihsext-basics" :dir :system))
 (local (include-book "centaur/bitops/signed-byte-p" :dir :system))
 (set-state-ok t)
+
+(local (in-theory (disable signed-byte-p)))
 
 (local (in-theory (disable take-redefinition)))
 
@@ -437,7 +437,7 @@
                    :use ((:instance uchar?-of-utf8-combine4
                                     (x1 244)))))))
 
-  (local (include-book "std/io/signed-byte-listp" :dir :system))
+  (local (include-book "std/typed-lists/signed-byte-listp" :dir :system))
 
   (local (defthm unsigned-byte-listp-8-of-car-of-read-byte$-all-forward
            (implies (and (force (state-p1 state))

@@ -22,7 +22,7 @@
 (include-book "utf8-encode")
 (include-book "partition")
 (local (include-book "std/lists/nthcdr" :dir :system))
-(local (include-book "std/io/signed-byte-listp" :dir :system))
+(local (include-book "std/typed-lists/signed-byte-listp" :dir :system))
 (local (include-book "centaur/bitops/ihsext-basics" :dir :system))
 (local (include-book "centaur/bitops/signed-byte-p" :dir :system))
 (local (include-book "tools/mv-nth" :dir :system))

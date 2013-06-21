@@ -18,9 +18,6 @@
 ;
 ; Original author: Jared Davis <jared@centtech.com>
 
-;; BOZO shouldn't need this ttag if we can fix the sys-call issue
-;; for stupid-mkdir
-
-(ld "cert.acl2")
-; cert-flags: ? t :ttags :all
-(certify-book "mkdir-raw" ? t :ttags :all)
+;; Special .acl2 file for top.lisp, so that top.lisp won't need to include
+;; the portcullis files for libraries other than XDOC.
+(include-book "portcullis")

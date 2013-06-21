@@ -1,4 +1,4 @@
-; Standard Typed Lists Library
+; True-Listp Lemmas
 ; Copyright (C) 2008-2013 Centaur Technology
 ;
 ; Contact:
@@ -19,3 +19,34 @@
 ; Original author: Jared Davis <jared@centtech.com>
 
 (in-package "ACL2")
+(include-book "std/lists/list-defuns" :dir :system)
+(in-theory (disable true-listp))
+
+(defsection std/lists/true-listp
+  :parents (std/lists true-listp)
+  :short "Lemmas about @(see true-listp) available in the @(see std/lists)
+library."
+
+  :long "<p>Note: the list of lemmas below is quite incomplete.  For instance,
+the @(see true-listp) rule about @(see append) will be found in the
+documentation for @(see std/lists/append), instead of here.</p>"
+
+  (local (in-theory (enable true-listp)))
+
+  (defthm true-listp-when-atom
+    (implies (atom x)
+             (equal (true-listp x)
+                    (not x))))
+
+  (defthm true-listp-of-cons
+    (equal (true-listp (cons a x))
+           (true-listp x)))
+
+  (defthm consp-under-iff-when-true-listp
+    ;; BOZO even with the backchain limit, this rule can get too expensive.
+    (implies (true-listp x)
+             (iff (consp x)
+                  x))
+    :rule-classes ((:rewrite :backchain-limit-lst 0))))
+
+

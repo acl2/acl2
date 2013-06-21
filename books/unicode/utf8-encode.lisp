@@ -19,7 +19,7 @@
 (include-book "utf8-table35")
 (include-book "utf8-table36")
 (local (include-book "std/lists/append" :dir :system))
-(local (include-book "std/io/signed-byte-listp" :dir :system))  ;; for the-fixnum
+(local (include-book "std/typed-lists/signed-byte-listp" :dir :system))  ;; for the-fixnum
 (local (include-book "centaur/bitops/ihsext-basics" :dir :system))
 (local (include-book "centaur/bitops/signed-byte-p" :dir :system))
 

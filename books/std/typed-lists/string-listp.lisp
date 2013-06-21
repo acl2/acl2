@@ -1,4 +1,4 @@
-; Built-In Typed Lists
+; Standard Typed Lists Library
 ; Copyright (C) 2008-2013 Centaur Technology
 ;
 ; Contact:
@@ -21,21 +21,32 @@
 (in-package "ACL2")
 (include-book "cutil/deflist" :dir :system)
 
-(cutil::deflist string-listp (x)
-  (stringp x)
-  :true-listp t
-  :elementp-of-nil nil
-  :already-definedp t)
+(in-theory (disable string-listp))
 
-(defthm true-listp-when-string-listp-rewrite
-  ;; The deflist gives us a compound-recognizer, but in this case having a
-  ;; rewrite rule seems worth it.
-  (implies (string-listp x)
-           (true-listp x))
-  :rule-classes ((:rewrite :backchain-limit-lst 1)))
+(defsection std/typed-lists/string-listp
+  :parents (std/typed-lists string-listp)
+  :short "Lemmas about @(see string-listp) available in the @(see
+std/typed-lists) library."
+  :long "<p>Most of these are generated automatically with @(see
+cutil::deflist).</p>"
 
-(defthm string-listp-of-remove-equal
-  ;; BOZO probably add to deflist
-  (implies (string-listp x)
-           (string-listp (remove-equal a x))))
+  (cutil::deflist string-listp (x)
+    (stringp x)
+    :true-listp t
+    :elementp-of-nil nil
+    :already-definedp t
+    ;; Set :parents to nil to avoid overwriting the built-in ACL2 documentation
+    :parents nil)
+
+  (defthm true-listp-when-string-listp-rewrite
+    ;; The deflist gives us a compound-recognizer, but in this case having a
+    ;; rewrite rule seems worth it.
+    (implies (string-listp x)
+             (true-listp x))
+    :rule-classes ((:rewrite :backchain-limit-lst 1)))
+
+  (defthm string-listp-of-remove-equal
+    ;; BOZO probably add to deflist
+    (implies (string-listp x)
+             (string-listp (remove-equal a x)))))
 

@@ -543,7 +543,6 @@
                      intersectp-equal-non-cons
                      4v-sexpr-vars-list
                      4v-sexpr-restrict-alist
-                     alist-equiv-append-atom
                      alist-vals-when-atom
                      alist-keys-when-atom
                      4v-alist-to-params-append-when-first-does-not-intersect-vars

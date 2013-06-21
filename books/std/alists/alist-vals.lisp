@@ -23,91 +23,102 @@
 (include-book "alist-keys")
 (local (include-book "std/lists/sets" :dir :system))
 
-(defund alist-vals (x)
-  (declare (xargs :guard t))
-  (cond ((atom x)
-         nil)
-        ((atom (car x))
-         (alist-vals (cdr x)))
-        (t
-         (cons (cdar x) (alist-vals (cdr x))))))
+(defsection alist-vals
+  :parents (std/alists strip-cdrs)
+  :short "@(call alist-vals) collects all values bound in an alist."
 
-(local (in-theory (enable alist-vals)))
+  :long "<p>This is a \"modern\" equivalent of @(see strip-cdrs), which
+properly respects the non-alist convention; see @(see std/alists) for
+discussion of this convention.</p>
 
-(defthm alist-vals-when-atom
-  (implies (atom x)
-           (equal (alist-vals x)
-                  nil)))
+<p>Note that the list of values returned by @('alist-vals') may include
+\"shadowed\" bindings, as in @('((a . 1) (a . 2))').</p>"
 
-(defthm alist-vals-of-cons
-  (equal (alist-vals (cons a x))
-         (if (consp a)
-             (cons (cdr a) (alist-vals x))
-           (alist-vals x))))
+  (defund alist-vals (x)
+    (declare (xargs :guard t))
+    (cond ((atom x)
+           nil)
+          ((atom (car x))
+           (alist-vals (cdr x)))
+          (t
+           (cons (cdar x) (alist-vals (cdr x))))))
 
-(encapsulate
-  ()
-  (local (defthmd l0
-           (equal (alist-vals (list-fix x))
-                  (alist-vals x))))
+  (local (in-theory (enable alist-vals)))
 
-  (defcong list-equiv equal (alist-vals x) 1
-    :hints(("Goal"
-            :use ((:instance l0 (x x))
-                  (:instance l0 (x acl2::x-equiv)))))))
+  (defthm alist-vals-when-atom
+    (implies (atom x)
+             (equal (alist-vals x)
+                    nil)))
 
-(encapsulate
-  ()
-  (local (defthm l0
-           (implies (member (cons a b) x)
-                    (member b (alist-vals x)))))
+  (defthm alist-vals-of-cons
+    (equal (alist-vals (cons a x))
+           (if (consp a)
+               (cons (cdr a) (alist-vals x))
+             (alist-vals x))))
 
-  (local (defthm l1
-           (implies (and (subsetp x y)
-                         (member a (alist-vals x)))
-                    (member a (alist-vals y)))))
+  (encapsulate
+    ()
+    (local (defthmd l0
+             (equal (alist-vals (list-fix x))
+                    (alist-vals x))))
 
-  (local (defthm l2
-           (implies (subsetp x y)
-                    (subsetp (alist-vals x)
-                             (alist-vals y)))))
+    (defcong list-equiv equal (alist-vals x) 1
+      :hints(("Goal"
+              :use ((:instance l0 (x x))
+                    (:instance l0 (x acl2::x-equiv)))))))
 
-  (defcong set-equiv set-equiv (alist-vals x) 1
-    :hints(("Goal" :in-theory (enable set-equiv)))))
+  (encapsulate
+    ()
+    (local (defthm l0
+             (implies (member (cons a b) x)
+                      (member b (alist-vals x)))))
 
-(defthm true-listp-of-alist-vals
-  (true-listp (alist-vals x))
-  :rule-classes :type-prescription)
+    (local (defthm l1
+             (implies (and (subsetp x y)
+                           (member a (alist-vals x)))
+                      (member a (alist-vals y)))))
 
-(defthm alist-vals-of-hons-acons
-  (equal (alist-vals (hons-acons key val x))
-         (cons val (alist-vals x))))
+    (local (defthm l2
+             (implies (subsetp x y)
+                      (subsetp (alist-vals x)
+                               (alist-vals y)))))
 
-(defthm alist-vals-of-pairlis$
-  (implies (equal (len keys) (len vals))
-           (equal (alist-vals (pairlis$ keys vals))
-                  (list-fix vals))))
+    (defcong set-equiv set-equiv (alist-vals x) 1
+      :hints(("Goal" :in-theory (enable set-equiv)))))
 
-(defthm len-of-alist-vals
-  (equal (len (alist-vals x))
-         (len (alist-keys x)))
-  :hints(("Goal" :in-theory (enable alist-keys alist-vals))))
+  (defthm true-listp-of-alist-vals
+    (true-listp (alist-vals x))
+    :rule-classes :type-prescription)
 
-(defthm alist-vals-of-append
-  (equal (alist-vals (append x y))
-         (append (alist-vals x)
-                 (alist-vals y))))
+  (defthm alist-vals-of-hons-acons
+    (equal (alist-vals (hons-acons key val x))
+           (cons val (alist-vals x))))
 
-(defthm alist-vals-of-rev
-  (equal (alist-vals (rev x))
-         (rev (alist-vals x))))
+  (defthm alist-vals-of-pairlis$
+    (implies (equal (len keys) (len vals))
+             (equal (alist-vals (pairlis$ keys vals))
+                    (list-fix vals))))
 
-(defthm alist-vals-of-revappend
-  (equal (alist-vals (revappend x y))
-         (revappend (alist-vals x)
-                    (alist-vals y))))
+  (defthm len-of-alist-vals
+    (equal (len (alist-vals x))
+           (len (alist-keys x)))
+    :hints(("Goal" :in-theory (enable alist-keys alist-vals))))
 
-(defthm member-equal-of-cdr-when-hons-assoc-equal
-  (implies (hons-assoc-equal key map)
-           (member-equal (cdr (hons-assoc-equal key map))
-                         (alist-vals map))))
+  (defthm alist-vals-of-append
+    (equal (alist-vals (append x y))
+           (append (alist-vals x)
+                   (alist-vals y))))
+
+  (defthm alist-vals-of-rev
+    (equal (alist-vals (rev x))
+           (rev (alist-vals x))))
+
+  (defthm alist-vals-of-revappend
+    (equal (alist-vals (revappend x y))
+           (revappend (alist-vals x)
+                      (alist-vals y))))
+
+  (defthm member-equal-of-cdr-when-hons-assoc-equal
+    (implies (hons-assoc-equal key map)
+             (member-equal (cdr (hons-assoc-equal key map))
+                           (alist-vals map)))))

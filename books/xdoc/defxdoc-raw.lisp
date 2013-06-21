@@ -29,8 +29,6 @@
 
 (defttag :xdoc)
 
-(remove-untouchable 'read-acl2-oracle t)
-
 (defun all-xdoc-topics (state)
   (declare (xargs :mode :program))
   (prog2$

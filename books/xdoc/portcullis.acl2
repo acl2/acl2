@@ -18,8 +18,5 @@
 ;
 ; Original author: Jared Davis <jared@centtech.com>
 
-(include-book "str/portcullis" :dir :system)
-(include-book "oslib/portcullis" :dir :system)
 (ld "package.lsp")
-; cert-flags: ? t :ttags :all
-(certify-book "portcullis" ? t :ttags :all)
+

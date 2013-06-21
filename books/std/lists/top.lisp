@@ -50,7 +50,12 @@
 (include-book "sublistp")
 (include-book "subseq")
 (include-book "take")
+(include-book "true-listp")
 (include-book "list-defuns")
+
+; BOZO it might be best to move these disables into the corresponding
+; books, to make things more consistent when you load the individual
+; books versus the whole library.
 
 (in-theory (disable ;; I often use len as a way to induct, so I only disable
                     ;; its definition.
@@ -82,13 +87,15 @@
 
 (defsection std/lists
   :parents (std)
-  :short "A library for reasoning about basic list operations like @('append'),
-@('len'), @('member'), @('take'), etc."
+  :short "A library for reasoning about basic list operations like @(see
+append), @(see len), @(see member), @(see take), etc."
 
-  :long "<p>The @('std/lists') library provides lemmas that are useful when
-reasoning about the basic list functions that are built into ACL2, and also
-defines some additional functions like @(see list-fix), @(see rev), @(see
-set-equiv), and so on.</p>
+  :long "<h3>Introduction</h3>
+
+<p>The @('std/lists') library provides lemmas that are useful when reasoning
+about the basic list functions that are built into ACL2, and also defines some
+additional functions like @(see list-fix), @(see rev), @(see set-equiv), and so
+on.</p>
 
 <p>The @('std/lists') library is based largely on books that were previously
 part of the @('unicode') library, but also incorporates ideas from earlier

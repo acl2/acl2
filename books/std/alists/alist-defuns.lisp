@@ -48,15 +48,15 @@
         (t
          (cons (cdar x) (alist-vals (cdr x))))))
 
-(defund hons-rassoc-equal (val map)
+(defund hons-rassoc-equal (val alist)
   (declare (xargs :guard t))
-  (cond ((atom map)
+  (cond ((atom alist)
          nil)
-        ((and (consp (car map))
-              (equal val (cdar map)))
-         (car map))
+        ((and (consp (car alist))
+              (equal val (cdar alist)))
+         (car alist))
         (t
-         (hons-rassoc-equal val (cdr map)))))
+         (hons-rassoc-equal val (cdr alist)))))
 
 (defund alists-agree (keys al1 al2)
   "Do AL1 and AL2 agree on the value of every KEY in KEYS?"

@@ -1,4 +1,4 @@
-; Built-In Typed Lists
+; Standard Typed Lists Library
 ; Copyright (C) 2008-2013 Centaur Technology
 ;
 ; Contact:
@@ -20,21 +20,39 @@
 
 (in-package "ACL2")
 
-; This is Jared's preferred way to load the built-in typed-lists library and
-; get a decent theory.  If you want to keep functions like STRING-LISTP and
-; SYMBOL-LISTP enabled, you can include the individual books, which mostly try
-; to leave the default theory alone.
-
 (include-book "character-listp")
 (include-book "nat-listp")
 (include-book "string-listp")
 (include-book "symbol-listp")
-(include-book "true-listp")
+(include-book "signed-byte-listp")
+(include-book "unsigned-byte-listp")
 
-(in-theory (disable character-listp
-                    nat-listp
-                    string-listp
-                    symbol-listp
-                    true-listp))
+(defsection std/typed-lists
+  :parents (std)
+  :short "A library about the built-in typed lists, like @(see
+character-listp), @(see nat-listp), string-listp), etc."
 
+  :long "<p>The @('std/typed-lists') library provides basic lemmas about
+built-in ACL2 functions.</p>
+
+<p>If you want to load everything in the library, you can just include the
+@('top') book, e.g.,</p>
+
+@({ (include-book \"std/typed-lists/top\" :dir :system) })
+
+<p>Alternately, it is perfectly reasonable to just include the individual books
+that deal with the typed lists you are interested in.  For instance,</p>
+
+@({
+    (include-book \"std/typed-lists/character-listp\" :dir :system)
+    (include-book \"std/typed-lists/symbol-listp\" :dir :system)
+    ;; and so on.
+})
+
+<p>Most of the typed-lists library is generated automatically by @(see
+cutil::deflist).  You may find this macro useful for introducing your own,
+custom typed lists.</p>
+
+<p>BOZO this library is not very complete.  We should probably add books
+about the other kinds of typed-list recognizers.</p>")
 

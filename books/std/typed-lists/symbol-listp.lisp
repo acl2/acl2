@@ -1,4 +1,4 @@
-; Built-In Typed Lists
+; Standard Typed Lists Library
 ; Copyright (C) 2008-2013 Centaur Technology
 ;
 ; Contact:
@@ -21,30 +21,43 @@
 (in-package "ACL2")
 (include-book "cutil/deflist" :dir :system)
 
-(cutil::deflist symbol-listp (x)
-  (symbolp x)
-  :true-listp t
-  :elementp-of-nil t
-  :already-definedp t)
+(in-theory (disable symbol-listp))
 
-(defthm true-listp-when-symbol-listp-rewrite
-  ;; The deflist gives us a compound-recognizer, but in this case having a
-  ;; rewrite rule seems worth it.
-  (implies (symbol-listp x)
-           (true-listp x))
-  :rule-classes ((:rewrite :backchain-limit-lst 1)))
+(defsection std/typed-lists/symbol-listp
+  :parents (std/typed-lists symbol-listp)
+  :short "Lemmas about @(see symbol-listp) available in the @(see
+std/typed-lists) library."
+  :long "<p>Most of these are generated automatically with @(see
+cutil::deflist).</p>"
 
-(defthm symbol-listp-of-remove-equal
-  ;; BOZO probably add to deflist
-  (implies (symbol-listp x)
-           (symbol-listp (remove-equal a x))))
+  (cutil::deflist symbol-listp (x)
+    (symbolp x)
+    :true-listp t
+    :elementp-of-nil t
+    :already-definedp t
+    ;; Set :parents to nil to avoid overwriting the built-in ACL2 documentation
+    :parents nil)
 
-(defthm symbol-listp-of-make-list-ac
-  (equal (symbol-listp (make-list-ac n x ac))
-         (and (symbol-listp ac)
-              (or (symbolp x)
-                  (zp n)))))
+  (defthm true-listp-when-symbol-listp-rewrite
+    ;; The deflist gives us a compound-recognizer, but in this case having a
+    ;; rewrite rule seems worth it.
+    (implies (symbol-listp x)
+             (true-listp x))
+    :rule-classes ((:rewrite :backchain-limit-lst 1)))
 
-(defthm eqlable-listp-when-symbol-listp
-  (implies (symbol-listp x)
-           (eqlable-listp x)))
+  (defthm symbol-listp-of-remove-equal
+    ;; BOZO probably add to deflist
+    (implies (symbol-listp x)
+             (symbol-listp (remove-equal a x))))
+
+  (defthm symbol-listp-of-make-list-ac
+    ;; BOZO probably silly with REPEAT as the normal form
+    (equal (symbol-listp (make-list-ac n x ac))
+           (and (symbol-listp ac)
+                (or (symbolp x)
+                    (zp n)))))
+
+  (defthm eqlable-listp-when-symbol-listp
+    ;; Useful for, e.g., MEMBER-EQ guards 
+    (implies (symbol-listp x)
+             (eqlable-listp x))))

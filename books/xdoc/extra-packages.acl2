@@ -34,4 +34,3 @@
 (ld "tools/flag-package.lsp" :dir :system)
 (ld "oslib/package.lsp" :dir :system)
 ; cert-flags: ? t :ttags :all
-(certify-book "extra-packages" ? t :ttags :all)
