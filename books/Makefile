@@ -265,6 +265,7 @@ REBUILD_MAKEFILE_BOOKS := $(shell \
   rm -f Makefile-books; \
   time find . -name "*.lisp" \
     | egrep -v '^(\./)?(interface|nonstd|centaur/quicklisp|clause-processors/SULFA|workshops/2003/kaufmann/support)' \
+    | fgrep -v '.\#' \
   > Makefile-books; \
   ls -l Makefile-books)
 #$(info $(REBUILD_MAKEFILE_BOOKS))
