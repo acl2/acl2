@@ -26632,7 +26632,7 @@
 
 ; End of Essay on Nested Stobjs
 
-(defmacro stobj-let (&whole x &rest args)
+(defdoc nested-stobjs
 
 ; WARNING: This documentation contains examples from community book
 ; misc/nested-stobj-tests.lisp.  If you change those examples here, change them
@@ -26662,14 +26662,14 @@
   community book ~c[misc/nested-stobj-tests.lisp].  For further discussion, you
   are welcome to read the ``Essay on Nested Stobjs'', a long comment in ACL2
   source file ~c[other-events.lisp].  However, this documentation topic is
-  intended to be self-contained for those familiar with stobjs.
+  intended to be self-contained for those familiar with ~il[stobj]s.
 
   SECTION: Extension of ~ilc[defstobj] to permit ~il[stobj]s within stobjs
 
-  Recall that the ~c[:type] keyword of a ~ilc[defstobj] field descriptor can
-  specify the type of the field as a type-spec (~pl[type-spec]).  For example,
-  the following specifies an integer field and a field that is an array of
-  bytes.
+  Recall that the ~c[:type] keyword of a ~ilc[defstobj] field descriptor can be
+  a ``type-indicator'' that specifies the type of the field as a
+  type-spec (~pl[type-spec]).  For example, the following specifies an integer
+  field and a field that is an array of bytes.
   ~bv[]
     (defstobj st
       (int-field :type integer :initially 0)
@@ -26783,7 +26783,7 @@
   The following form returns the result of updating the ~c[fld2] field of
   ~c[parent], which is a stobj isomorphic to ~c[child], to have a value of 3.
   Below we explain the terms ``bindings'', ``producer variables'',
-  ``producer'', and ``consumer'', as well as how to understand the form above.
+  ``producer'', and ``consumer'', as well as how to understand this form.
   ~bv[]
     (stobj-let
      ((child (fld2 parent)))  ; bindings
@@ -26791,15 +26791,15 @@
      (update-fld 3 child)     ; producer
      (update-fld3 'a parent)) ; consumer
   ~ev[]
-  The four lines under ``~c[stobj-let]'' just above can be understood,
-  respectively, as follows.
+  The four lines under ``~c[stobj-let]'' just above can be understood as
+  follows.
   ~bf[]
   o Bindings:
       Bind ~c[child] to ~c[(fld2 parent)].
   o Producer variable(s) and producer:
-      Bind the producer variable, ~c[child], to
+      Then bind the variable, ~c[child], to
       the value of the producer, ~c[(update-fld 3 child)].
-  o Implicit extra step:
+  o Implicit update of parent:
       Update ~c[fld2] of ~c[parent] with the producer variable, ~c[child].
   o Consumer:
       Finally, return ~c[(update-fld3 'a parent)].
@@ -26809,7 +26809,7 @@
   ~bv[]
     (let ((child (fld2 parent))) ; bindings
       (let ((child (update-fld 3 child))) ; bind producer vars to producer
-        (let ((parent (update-fld2 child parent))) ; update parent
+        (let ((parent (update-fld2 child parent))) ; implicit update of parent
           (update-fld3 'a parent))))
   ~ev[]
   The bindings always bind distinct names to child stobjs of a unique parent
@@ -26838,12 +26838,74 @@
      (update-fld3 'a parent)) ; consumer
   ~ev[]
 
-  If you try to evaluate (either version of) the above ~c[stobj-let] form in
-  the top-level loop, you will get an error.  For technical reasons, ACL2
-  limits ~c[stobj-let] computation on ``live'' stobjs (as opposed to list
-  structures that happen to satisfy stobj recognizers) to be within function
-  bodies.  The following edited log illustrates how ~c[stobj-let] may be used
-  in function bodies.
+  You can experiment using ~c[:]~ilc[trans1] to see the single-step
+  macroexpansion of a ~c[stobj-let] form in the logic.  For example, here is
+  how that works for a ~c[stobj-let] form that binds three fields and updates
+  two of them.  Notice that because more than one field is updated, an
+  ~ilc[mv-let] form is generated to bind the two fields to their values
+  returned by the producer, rather than a ~ilc[let] form as previously
+  generated.  First, let's introduce some events.
+
+  ~bv[]
+  (defstobj child1 child1-fld)
+  (defstobj child2 child2-fld)
+  (defstobj child3 child3-fld)
+  (defstobj mom
+    (fld1 :type child1)
+    (fld2 :type child2)
+    (fld3 :type child3))
+  ; Silly stub:
+  (defun update-last-op (op mom)
+    (declare (xargs :stobjs mom))
+    (declare (ignore op))
+    mom)
+  (defun new-mom (mom)
+    (declare (xargs :stobjs mom))
+    (stobj-let
+     ((child1 (fld1 mom))
+      (child2 (fld2 mom))
+      (child3 (fld3 mom)))
+     (child1 child3)
+     (let* ((child1 (update-child1-fld 'one child1))
+            (child3 (update-child3-fld 'three child3)))
+       (mv child1 child3))
+     (update-last-op 'my-compute mom)))
+  ~ev[]
+  Now let's look at the single-step macroexpansion of the above ~c[stobj-let]
+  form.
+  ~bv[]
+  ACL2 !>:trans1 (stobj-let
+                  ((child1 (fld1 mom))
+                   (child2 (fld2 mom))
+                   (child3 (fld3 mom)))
+                  (child1 child3)
+                  (let* ((child1 (update-child1-fld 'one child1))
+                         (child3 (update-child3-fld 'three child3)))
+                    (mv child1 child3))
+                  (update-last-op 'my-compute mom))
+   (PROGN$
+    (LET
+     ((CHILD1 (FLD1 MOM))
+      (CHILD2 (FLD2 MOM))
+      (CHILD3 (FLD3 MOM)))
+     (DECLARE (IGNORABLE CHILD1 CHILD2 CHILD3))
+     (MV-LET
+        (CHILD1 CHILD3)
+        (CHECK-VARS-NOT-FREE (MOM)
+                             (LET* ((CHILD1 (UPDATE-CHILD1-FLD 'ONE CHILD1))
+                                    (CHILD3 (UPDATE-CHILD3-FLD 'THREE CHILD3)))
+                                   (MV CHILD1 CHILD3)))
+        (LET* ((MOM (UPDATE-FLD1 CHILD1 MOM))
+               (MOM (UPDATE-FLD3 CHILD3 MOM)))
+              (CHECK-VARS-NOT-FREE (CHILD1 CHILD2 CHILD3)
+                                   (UPDATE-LAST-OP 'MY-COMPUTE MOM))))))
+  ACL2 !>
+  ~ev[]
+
+  If you try to evaluate a ~c[stobj-let] form directly in the top-level loop,
+  rather than from within a function body, you will get an error.  The example
+  above illustrates how ~c[stobj-let] may be used in function bodies; here is
+  another example, presented using an edited log.
   ~bv[]
     ACL2 !>(defstobj child fld)
 
@@ -26893,11 +26955,11 @@
   of a child stobj among the producer variables.  So for that ~c[stobj-let]
   form, there is no implicit extra step.
 
-  For the ~c[stobj-let] expansion displayed earlier above, we said it was
-  ``approximate'' for two reasons, which we give here informally.  (You can
-  apply ~c[:]~ilc[trans1] to the ~c[stobj-let] call above to see the formal
-  expansion.)  First, ~c[stobj-let] declares the stobj-let-bound variables to
-  be ~c[ignorable] for the top ~c[let] bindings.  Second, and more importantly,
+  We labeled a ~c[stobj-let] expansion above as ``approximate'' for two
+  reasons, which we give here informally.  (Now you know how to apply
+  ~c[:]~ilc[trans1] to that ~c[stobj-let] call to see the precise expansion.)
+  First, ~c[stobj-let] declares the stobj-let-bound variables to be
+  ~c[ignorable] for the top ~c[let] bindings.  Second, and more importantly,
   ~c[stobj-let] imposes the following restrictions on the producer and
   consumer, to avoid the aliasing problem: it disallows references to the
   parent stobj in the producer and it also disallows references to any bound
@@ -27132,13 +27194,16 @@
   function that returns nil, but has a ~il[guard] that its argument is an
   ~ilc[eqlable-listp] that satisfies ~ilc[no-duplicatesp].  Finally, ~c[FORM]
   is replaced by ~c[(PROGN$ CHK1 ... CHKn FORM)], where the ~c[CHKm] range over
-  all of the above ~c[ACCi-CHECK].~/~/"
+  all of the above ~c[ACCi-CHECK].~/~/")
 
+(defmacro stobj-let (&whole x &rest args)
   (declare (ignore args))
   #+acl2-loop-only
   (stobj-let-fn x)
   #-acl2-loop-only
   (stobj-let-fn-raw x))
+
+(link-doc-to stobj-let stobj nested-stobjs)
 
 (defun push-untouchable-fn (name fn-p state doc event-form)
 

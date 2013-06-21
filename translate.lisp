@@ -5226,8 +5226,22 @@
         (wrld (caddr (getprop stobj 'stobj nil 'current-acl2-world wrld)))
         (t
          #-acl2-loop-only
-         (caddr (get (the-live-var stobj)
-                     'redundant-raw-lisp-discriminator))
+         (let ((d (get (the-live-var stobj)
+                       'redundant-raw-lisp-discriminator)))
+           (cond ((eq (car d) 'defabsstobj)
+
+; Then d is (defabstobj name . keyword-alist).
+
+                  (let ((tail (assoc-keyword :CREATOR d)))
+                    (cond (tail (let* ((field-descriptor (cadr tail))
+                                       (c (if (consp field-descriptor)
+                                              (car field-descriptor)
+                                            field-descriptor)))
+                                  (assert$ (symbolp c)
+                                           c)))
+                          (t (let ((name (cadr d)))
+                               (absstobj-name name :CREATOR))))))
+                 (t (caddr d))))
          #+acl2-loop-only
          (er hard 'stobj-creator
              "Implementation error: The call ~x0 is illegal, because ~

@@ -20976,6 +20976,10 @@
 ; to a suggestion from Jared Davis, to cause an error when attempting to
 ; determine the stobjs-out for IF just as we already do for RETURN-LAST.
 
+; Regarding the "bug in the case of a field of a (concrete) stobj that is an
+; abstract stobj": this was a bug in the #-acl2-loop-only case of
+; get-stobj-creator.
+
   :doc
   ":Doc-Section release-notes
 
@@ -21015,6 +21019,10 @@
   ~st[HEURISTIC IMPROVEMENTS]
 
   ~st[BUG FIXES]
+
+  Fixed a bug in the case of a field of a (concrete) stobj that is an abstract
+  stobj (~pl[nested-stobjs]).  Thanks to David Rager for bringing this bug to
+  our attention.
 
   ~st[CHANGES AT THE SYSTEM LEVEL]
 
