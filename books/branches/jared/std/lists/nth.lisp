@@ -77,7 +77,7 @@
            nil)))
 
 (defthm nth-of-reverse
-  (equal (nth (nfix n) (reverse x))
+  (equal (nth n (reverse x))
          (if (< (nfix n) (len x))
              (nth (- (len x) (+ 1 (nfix n))) x)
            nil)))

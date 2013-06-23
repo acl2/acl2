@@ -16,7 +16,7 @@
 ;; Place - Suite 330, Boston, MA 02111-1307, USA.
 
 (in-package "ACL2")
-(include-book "base10-digit-charp")
+(include-book "digitp")
 (local (include-book "std/lists/append" :dir :system))
 (local (include-book "explode-nonnegative-integer"))
 
@@ -42,15 +42,15 @@
                 (force (print-base-p base)))
            (not (equal (explode-atom n base) '(#\0)))))
 
-(defthm base10-digit-char-listp-of-explode-atom
+(defthm digit-listp-of-explode-atom
   (implies (natp n)
-           (base10-digit-char-listp (explode-atom n 10))))
+           (str::digit-listp (explode-atom n 10))))
 
 (defthm character-listp-of-explode-atom
   (character-listp (explode-atom x base))
   :hints(("Goal" :in-theory (disable explode-nonnegative-integer))))
 
-; Copied from std/io/base.ilsp, wherein it was added by Matt K. for princ$
+; Copied from std/io/base.lisp, wherein it was added by Matt K. for princ$
 ; change 12/7/2012.
 (defthm character-listp-explode-atom+
   (character-listp (explode-atom+ x base radix)))

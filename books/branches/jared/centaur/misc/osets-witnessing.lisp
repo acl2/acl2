@@ -153,7 +153,7 @@
 ;; prove.
 
 
-(include-book "finite-set-theory/osets/sets" :dir :system)
+(include-book "std/osets/top" :dir :system)
 (include-book "witness-cp")
 (include-book "tools/rulesets" :dir :system)
 

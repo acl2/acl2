@@ -374,90 +374,58 @@ optimization altogether.</p>")
 ;; defined predicate can be called many times, even during proofs, so the use of
 ;; @(':debugp') can result in a large amount of extra output.</p>
 
-
-
 ;; The remainder of this file just introduces the defaggregate macro.  We never
 ;; care about reasoning about these functions, so we go ahead and implement
 ;; them in program mode.
 
 
+; AGGREGATES TABLE ------------------------------------------------------------
+;
+; We save some information about each aggregate that is defined into the table
+; below.  A sufficiently advanced user can exploit this table to do various
+; kinds of macro magic.
+
+(def-primitive-aggregate agginfo
+  (tag     ;; The :tag for the aggregate, a symbol
+   name    ;; The base name for the aggregate
+   fields  ;; The field names with no extra info, a symbol-list
+   efields ;; The parsed formallist-p that has basic type requirements.
+   ;; It'd be easy to add additional fields later on.
+   )
+  :tag :agginfo)
 
 (table defaggregate)
-(table defaggregate 'aggregates
-       ;; An alist binding NAME -> INFO structures, see DA-EXTEND-TABLE
-       )
+(table defaggregate 'aggregates) ;; Alist of NAME -> AGGINFO structures
 
 (defun get-aggregates (world)
   "Look up the current alist of defined aggregates."
   (cdr (assoc 'aggregates (table-alist 'defaggregate world))))
 
-(defmacro da-extend-table (name tag fields efields)
+(defun get-aggregate (name world)
+  "NAME is the name of the aggregate, e.g., FOO for (defaggregate foo ...).
+   Look up its AGGINFO or return NIL if no such aggregate is defined."
+  (cdr (assoc name (get-aggregates world))))
+
+(defmacro da-extend-agginfo-table (agginfo)
   `(table defaggregate 'aggregates
-          ;; This can be extended with whatever other information should be
-          ;; collected.  For now get the field names (fields) and the extended
-          ;; field info (the parsed extended formals).
-          (cons (cons ,name (list (cons :tag ,tag)
-                                  (cons :fields ,fields)
-                                  (cons :efields ,efields)))
+          (cons (cons (agginfo->name ,agginfo) ,agginfo)
                 (get-aggregates world))))
-
-(defun get-aggregate-tag (name world)
-  "Return the tag for an aggregate."
-  (b* ((alist (get-aggregates world))
-       (entry (assoc name alist))
-       ((unless entry)
-        (er hard? 'get-aggregate-tag
-            "~x0 was not found in the aggregates alist." name))
-       (info (cdr entry))
-       (look (and (alistp info)
-                  (assoc :tag info)))
-       ((unless look)
-        (er hard? 'get-aggregate-tag
-            "~x0 has a malformed entry in the aggregates alist." name)))
-    (cdr look)))
-
-(defun get-aggregate-fields (name world)
-  "Return the field names for an aggregate."
-  (b* ((alist (get-aggregates world))
-       (entry (assoc name alist))
-       ((unless entry)
-        (er hard? 'get-aggregate-fields
-            "~x0 was not found in the aggregates alist." name))
-       (info (cdr entry))
-       (look (and (alistp info)
-                  (assoc :fields info)))
-       ((unless look)
-        (er hard? 'get-aggregate-fields
-            "~x0 has a malformed entry in the aggregates alist." name)))
-    (cdr look)))
-
-(defun get-aggregate-efields (name world)
-  "Return the extended field info for an aggregate."
-  (b* ((alist (get-aggregates world))
-       (entry (assoc name alist))
-       ((unless entry)
-        (er hard? 'get-aggregate-efields
-            "~x0 was not found in the aggregates alist." name))
-       (info (cdr entry))
-       (look (and (alistp info)
-                  (assoc :efields info)))
-       ((unless look)
-        (er hard? 'get-aggregate-efields
-            "~x0 has a malformed entry in the aggregates alist." name)))
-    (cdr look)))
 
 #||
 
-(da-extend-table 'buffalo ':buffalo '(horns face body legs hooves) 'foo)
-(da-extend-table 'cat :cat '(eyes ears teeth claws fur) 'blah)
+(da-extend-agginfo-table 'buffalo
+                         (make-agginfo :tag :buffalo
+                                       :name 'buffalo
+                                       :fields '(horns face body legs hooves)))
 
-(get-aggregate-fields 'buffalo (w state))
-(get-aggregate-tag 'buffalo (w state))
-(get-aggregate-efields 'buffalo (w state))
+(da-extend-agginfo-table 'cat
+                         (make-agginfo :tag :cat
+                                       :name 'cat
+                                       :fields '(eyes ears teeth claws fur)))
 
-(get-aggregate-fields 'cat (w state))
-(get-aggregate-tag 'cat (w state))
-(get-aggregate-efields 'cat (w state))
+(get-aggregate 'buffalo (w state))
+(get-aggregate 'cat     (w state))
+(get-aggregate 'lizard  (w state))
 
 ||#
 
@@ -879,9 +847,14 @@ optimization altogether.</p>")
        ((mv doc-events state)
         (da-autodoc name efields parents short long base-pkg state))
 
+       (agginfo (make-agginfo :name    name
+                              :tag     tag
+                              :fields  field-names
+                              :efields efields))
+
        (event
         `(progn
-           (da-extend-table ',name ',tag ',field-names ',efields)
+           (da-extend-agginfo-table ',agginfo)
            ,@doc-events
 
            ,(if (eq mode :logic)

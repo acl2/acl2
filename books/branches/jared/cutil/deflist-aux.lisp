@@ -19,7 +19,7 @@
 ; Original author: Jared Davis <jared@centtech.com>
 
 (in-package "CUTIL")
-(include-book "finite-set-theory/osets/sets" :dir :system)
+(include-book "std/osets/top" :dir :system)
 
 ; This should not be included directly.  It is just a helper book for deflist,
 ; and I reserve the right to eliminate and/or change it.

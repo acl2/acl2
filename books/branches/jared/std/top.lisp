@@ -28,6 +28,7 @@
 (include-book "io/top")
 (include-book "strings/top")
 (include-book "misc/top")
+(include-book "osets/top")
 
 (defsection std
   :short "Standard libraries for ACL2."

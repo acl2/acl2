@@ -24,9 +24,9 @@
 (include-book "centaur/esim/plist" :dir :system)
 (include-book "centaur/misc/patterns" :dir :system)
 (include-book "centaur/4v-sexpr/sexpr-vars" :dir :system)
-(include-book "std/misc/explode-nonnegative-integer" :dir :system)
 (include-book "std/misc/two-nats-measure" :dir :system)
 (include-book "arithmetic/nat-listp" :dir :system)
+(local (include-book "str/explode-atom" :dir :system))
 (set-well-founded-relation nat-list-<)
 
 (make-event

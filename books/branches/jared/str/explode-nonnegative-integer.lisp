@@ -1,57 +1,30 @@
-;; Processing Unicode Files with ACL2
-;; Copyright (C) 2005-2006 by Jared Davis <jared@cs.utexas.edu>
-;;
-;; This program is free software; you can redistribute it and/or modify it
-;; under the terms of the GNU General Public License as published by the Free
-;; Software Foundation; either version 2 of the License, or (at your option)
-;; any later version.
-;;
-;; This program is distributed in the hope that it will be useful but WITHOUT
-;; ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-;; FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
-;; more details.
-;;
-;; You should have received a copy of the GNU General Public License along with
-;; this program; if not, write to the Free Software Foundation, Inc., 59 Temple
-;; Place - Suite 330, Boston, MA 02111-1307, USA.
+; Processing Unicode Files with ACL2
+; Copyright (C) 2005-2006 by Jared Davis <jared@cs.utexas.edu>
+;
+; This program is free software; you can redistribute it and/or modify it under
+; the terms of the GNU General Public License as published by the Free Software
+; Foundation; either version 2 of the License, or (at your option) any later
+; version.
+;
+; This program is distributed in the hope that it will be useful but WITHOUT
+; ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+; FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
+; details.
+;
+; You should have received a copy of the GNU General Public License along with
+; this program; if not, write to the Free Software Foundation, Inc., 59 Temple
+; Place - Suite 330, Boston, MA 02111-1307, USA.
 
 (in-package "ACL2")
-
+(include-book "digitp")
 (local (include-book "ihs/quotient-remainder-lemmas" :dir :system))
 (local (include-book "std/lists/revappend" :dir :system))
-(include-book "base10-digit-charp")
+(local (include-book "std/lists/append" :dir :system))
 
-
-;; These were disabled here when this book was using arithmetic-3 rather than ihs.
-;; (local (deftheory slow-arith-rules
-;;          '(not-integerp-1b
-;;            not-integerp-2b
-;;            not-integerp-3b
-;;            not-integerp-4b
-;;            not-integerp-1a
-;;            not-integerp-2a
-;;            not-integerp-3a
-;;            not-integerp-4a
-;;            floor-zero
-;;            floor-negative
-;;            floor-positive
-;;            floor-nonpositive-1
-;;            floor-nonpositive-2
-;;            floor-nonnegative-1
-;;            floor-nonnegative-2
-;;            mod-zero
-;;            mod-positive
-;;            mod-negative
-;;            mod-nonnegative
-;;            mod-nonpositive
-;;            rationalp-mod)))
-
-;; (local (in-theory (disable slow-arith-rules)))
-
-;; Explode-nonnegative-integer is a particularly nasty function to try to
-;; reason about because it is tail recursive and has a very nasty base case.
-;; Instead of reasoning about it directly, we will split it up into the
-;; following, simpler definition.
+; Explode-nonnegative-integer is a particularly nasty function to try to reason
+; about because it is tail recursive and has a very nasty base case.  Instead
+; of reasoning about it directly, we will split it up into the following,
+; simpler definition.
 
 (local (in-theory (disable floor mod)))
 
@@ -68,11 +41,11 @@
             (cons (digit-to-char (mod n base)) ans)))))
 
 
-;; We can now redefine explode-nonnegative-integer to be a simple nonrecursive
-;; function that uses our simpler-explode-nonnegative-integer as its core, but
-;; wraps it in a simple "or" statement.  We will then disable the previous
-;; definition of explode-nonnegative-integer, so that only our new definition
-;; will be used.
+; We can now redefine explode-nonnegative-integer to be a simple nonrecursive
+; function that uses our simpler-explode-nonnegative-integer as its core, but
+; wraps it in a simple "or" statement.  We will then disable the previous
+; definition of explode-nonnegative-integer, so that only our new definition
+; will be used.
 
 (local (defthm explode-nonnegative-integer-redefinition
          (equal (explode-nonnegative-integer n base ans)
@@ -84,10 +57,10 @@
 
 
 
-;; Sadly, even simpler-explode-nonnegative-integer is hard to reason about as
-;; it is tail recursive.  So, we will introduce a non tail-recursive function
-;; in its place that does almost the same thing.  We'll call this the "basic
-;; explode-nonnegative-integer core", or the basic-eni-core for short.
+; Sadly, even simpler-explode-nonnegative-integer is hard to reason about as it
+; is tail recursive.  So, we will introduce a non tail-recursive function in
+; its place that does almost the same thing.  We'll call this the "basic
+; explode-nonnegative-integer core", or the basic-eni-core for short.
 
 (local (defun basic-eni-core (n base)
          (declare (xargs :guard (and (natp n)
@@ -102,13 +75,14 @@
          (declare (xargs :guard (and (natp n)
                                      (natp m)
                                      (print-base-p base))))
-         (if (zp n)
-             nil
-           (if (zp m)
-               nil
-             (if (not (print-base-p base))
-                 nil
-               (basic-eni-induction (floor n base) (floor m base) base))))))
+         (cond ((zp n)
+                nil)
+               ((zp m)
+                nil)
+               ((not (print-base-p base))
+                nil)
+               (t
+                (basic-eni-induction (floor n base) (floor m base) base)))))
 
 (local (defthm basic-eni-core-under-iff
          (iff (basic-eni-core n base)
@@ -145,7 +119,7 @@
                 (revappend (basic-eni-core n base) acc))))
 
 (local (defthm equal-of-simpler-explode-nonnegative-integers
-         (implies (force (print-base-p base))
+         (implies (force (print-base-p base))                         
                   (equal (equal (simpler-explode-nonnegative-integer n base acc)
                                 (simpler-explode-nonnegative-integer m base acc))
                          (equal (nfix n) (nfix m))))))
@@ -177,8 +151,8 @@
                 (true-listp acc))))
 
 (local (defthm equal-of-explode-nonnegative-integers-lemma
-         (implies (and (integerp n) (<= 0 n)
-                       (integerp m) (<= 0 m)
+         (implies (and (natp n)
+                       (natp m)
                        (not (equal n m))
                        (not (simpler-explode-nonnegative-integer n base acc))
                        (force (print-base-p base)))
@@ -207,84 +181,101 @@
   (equal (character-listp (explode-nonnegative-integer n base acc))
          (character-listp acc)))
 
-(local (defthm base10-digit-char-listp-of-basic-eni-core
-         (base10-digit-char-listp (basic-eni-core n 10))
-         :hints(("Goal" :in-theory (enable base10-digit-char-listp)))))
+(local (defthm digit-listp-of-basic-eni-core
+         (str::digit-listp (basic-eni-core n 10))))
 
-(local (defthm base10-digit-char-listp-of-simpler-eni
-         (implies (base10-digit-char-listp acc)
-                  (base10-digit-char-listp
-                   (simpler-explode-nonnegative-integer n 10 acc)))))
+(local (defthm digit-listp-of-simpler-eni
+         (implies (str::digit-listp acc)
+                  (str::digit-listp (simpler-explode-nonnegative-integer n 10 acc)))))
 
-(defthm base10-digit-char-listp-of-explode-nonnegative-integer
-  (implies (base10-digit-char-listp acc)
-           (base10-digit-char-listp (explode-nonnegative-integer n 10 acc))))
+(defthm digit-listp-of-explode-nonnegative-integer
+  (implies (str::digit-listp acc)
+           (str::digit-listp (explode-nonnegative-integer n 10 acc))))
 
 
 (encapsulate
-  ()
-  (local (defthm lemma
-           (equal (equal (revappend x acc) '(#\0))
-                  (or (and (equal acc nil)
-                           (consp x)
-                           (equal (car x) #\0)
-                           (atom (cdr x)))
-                      (and (equal acc '(#\0))
-                           (atom x))))))
+ ()
+ (local (in-theory (disable revappend-removal)))
 
-  (local (defthm lemma2
-           (implies (and (not (zp n))
-                         (print-base-p base))
-                    (consp (basic-eni-core n base)))))
+ (local (defthm lemma
+          (equal (equal (revappend x acc) '(#\0))
+                 (or (and (equal acc nil)
+                          (consp x)
+                          (equal (car x) #\0)
+                          (atom (cdr x)))
+                     (and (equal acc '(#\0))
+                          (atom x))))))
+
+ (local (defthm lemma2
+          (implies (and (not (zp n))
+                        (print-base-p base))
+                   (consp (basic-eni-core n base)))))
+
+ (defthm nonzeroness-of-explode-nonnegative-integer-when-nonzero
+   (implies (and (not (zp n))
+                 (force (print-base-p base)))
+            (not (equal (explode-nonnegative-integer n base nil)
+                        '(#\0))))
+   :hints(("Goal"
+           :in-theory (e/d (digit-to-char)
+                           (basic-eni-core))
+           :expand ((:free (base) (basic-eni-core n base)))))))
 
 
-  (defthm nonzeroness-of-explode-nonnegative-integer-when-nonzero
-    (implies (and (not (zp n))
-                  (force (print-base-p base)))
-             (not (equal (explode-nonnegative-integer n base nil)
-                         '(#\0))))
-    :hints(("Goal"
-            :in-theory (e/d (digit-to-char)
-                            (basic-eni-core))
-            :expand ((:free (base) (basic-eni-core n base)))))))
 
-
-
-(defund base10-digit-char-to-nat (x)
-  (declare (xargs :guard (base10-digit-charp x)))
-  (case x
-    (#\0 0)
-    (#\1 1)
-    (#\2 2)
-    (#\3 3)
-    (#\4 4)
-    (#\5 5)
-    (#\6 6)
-    (#\7 7)
-    (#\8 8)
-    (otherwise 9)))
-
-(defthm base10-digit-char-to-nat-of-digit-to-char
+(defthm digit-val-of-digit-to-char
   (implies (and (force (natp n))
                 (force (<= 0 n))
                 (force (<= n 9)))
-           (equal (base10-digit-char-to-nat (digit-to-char n))
+           (equal (str::digit-val (digit-to-char n))
                   n))
-  :hints(("Goal" :in-theory (enable base10-digit-char-to-nat
+  :hints(("Goal" :in-theory (enable str::digit-val
                                     digit-to-char))))
 
-(defthm digit-to-char-of-base10-digit-char-to-nat
-  (implies (force (base10-digit-charp x))
-           (equal (digit-to-char (base10-digit-char-to-nat x))
-                  x))
-  :hints(("Goal" :in-theory (enable base10-digit-charp
-                                    base10-digit-char-to-nat
-                                    digit-to-char))))
 
+(defsection digit-to-char-of-digit-val
+
+ (local (defun test (n)
+          (declare (xargs :ruler-extenders :all))
+          (and (let ((char (code-char n)))
+                 (or (not (str::digitp char))
+                     (equal (digit-to-char (str::digit-val char))
+                            char)))
+               (if (zp n)
+                   t
+                 (test (- n 1))))))
+
+ (local (defthm l0
+          (implies (and (test n)
+                        (natp i)
+                        (natp n)
+                        (<= i n))
+                   (let ((char (code-char i)))
+                     (implies (str::digitp char)
+                              (equal (digit-to-char (str::digit-val char))
+                                     char))))))
+
+ (local (defthm l1
+          (implies (and (natp i)
+                        (<= i 255))
+                   (let ((char (code-char i)))
+                     (implies (str::digitp char)
+                              (equal (digit-to-char (str::digit-val char))
+                                     char))))
+          :hints(("Goal" :use ((:instance l0 (n 255)))))))
+
+ (defthm digit-to-char-of-digit-val
+   (implies (str::digitp char)
+            (equal (digit-to-char (str::digit-val char))
+                   char))
+   :hints(("Goal" :use ((:instance l1 (i (char-code char))))))))
+
+            
 (defund basic-unexplode-core (x)
-  (declare (xargs :guard (base10-digit-char-listp x)))
+  (declare (xargs :guard (and (character-listp x)
+                              (str::digit-listp x))))
   (if (consp x)
-      (+ (base10-digit-char-to-nat (car x))
+      (+ (str::digit-val (car x))
          (* 10 (basic-unexplode-core (cdr x))))
     0))
 
@@ -296,7 +287,8 @@
                                            basic-unexplode-core)))))
 
 (defund unexplode-nonnegative-integer (x)
-  (declare (xargs :guard (base10-digit-char-listp x)))
+  (declare (xargs :guard (and (character-listp x)
+                              (str::digit-listp x))))
   (basic-unexplode-core (revappend x nil)))
 
 (encapsulate

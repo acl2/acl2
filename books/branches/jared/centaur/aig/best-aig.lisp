@@ -22,7 +22,7 @@
 (in-package "ACL2")
 (include-book "tools/bstar" :dir :system)
 (include-book "tools/mv-nth" :dir :system)
-(include-book "finite-set-theory/osets/sets" :dir :system)
+(include-book "std/osets/top" :dir :system)
 (include-book "centaur/vl/util/cwtime" :dir :system)
 
 ; Given two AIGs, A and B, we say that A is "better" than B if:

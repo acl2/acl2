@@ -32,14 +32,7 @@
   :long "<p>@('(str::cat x y z ...)') is like @('(concatenate 'string x y z
 ...)'), but is less to type.</p>
 
-<p>Warning: concatenating strings is fundamentally slow.  This is because
-Common Lisp strings are just arrays of characters, but there is not really any
-mechanism that allows you to efficiently splice arrays together.  In other
-words, any kind of string concatenation minimally requires creating a
-completely new array and copying all of the input characters into it.</p>
-
-<p>This makes it especially slow to repeatedly use @('cat') to build up a
-string.  If that's your goal, you might instead consider using the approach
+<p>  If that's your goal, you might instead consider using the approach
 outlined in @(see revappend-chars).</p>
 
 <p>In some Lisps, using @('(concatenate 'string ...)') to join strings can be

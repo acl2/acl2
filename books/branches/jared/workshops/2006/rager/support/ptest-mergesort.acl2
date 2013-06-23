@@ -1,4 +1,3 @@
 (in-package "ACL2")
-(ld "finite-set-theory/osets/sets.defpkg" :dir :system)
+(include-book "std/osets/portcullis" :dir :system)
 ; cert-flags: ? t :skip-proofs-okp t
-(certify-book "ptest-mergesort" ? t :skip-proofs-okp t)

@@ -90,7 +90,7 @@ repeatedly calling the @('strtok') function in C.</p>
 
 @({
  (strtok \"foo bar, baz!\" (list #\\Space #\\, #\\!))
-   --&gt;
+   -->
  (\"foo\" \"bar\" \"baz\")
 })
 

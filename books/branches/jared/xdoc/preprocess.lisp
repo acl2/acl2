@@ -496,6 +496,8 @@
        (acc (str::revappend-chars "</srclink>" acc))
 
        ((unless dir)
+        ;; This is an important hack for, e.g., :xdoc to work correctly.  If
+        ;; DIR is nil, then don't actually try to write any files!
         (mv acc state))
 
        (fullpath           (oslib::catpath dir filename))

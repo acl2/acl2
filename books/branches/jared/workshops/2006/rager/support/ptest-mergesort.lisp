@@ -11,7 +11,7 @@
 ; definitions, it is probably unsound (see the definition of mergesort-exec-par
 ; below).
 
-(include-book "finite-set-theory/osets/sets" :dir :system)
+(include-book "std/osets/top" :dir :system)
 
 (defun integers (n acc)
 ; Matt K.: Added guard declaration to avoid stack overflow when building

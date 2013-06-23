@@ -4408,8 +4408,9 @@ include delays, etc.</p>")
           :in-theory (union-theories
                       (union-theories (current-theory :here)
                                       '(vl-module-p vl-module))
-                      (b* ((fields (cutil::get-aggregate-fields 'vl-module world)))
-                        (cutil::da-accessor-names 'vl-module fields))))))
+                      (b* (((cutil::agginfo agg)
+                            (cutil::get-aggregate 'vl-module world)))
+                          (cutil::da-accessor-names 'vl-module agg.fields))))))
 
 (define vl-module->hands-offp ((x vl-module-p))
   :inline t

@@ -11,6 +11,17 @@
 ; ense along with this program; if not, write to the Free Soft- ware
 ; Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
 
-(in-package "ACL2")
-(ld "sets.defpkg")
-(certify-book "portcullis" ? t)
+(in-package "SETS")
+
+; These allow SETS:: versions of enable, disable, and e/d to use rulesets
+; natively.
+
+(defmacro enable (&rest args)
+  `(acl2::enable* . ,args))
+
+(defmacro disable (&rest args)
+  `(acl2::disable* . ,args))
+
+(defmacro e/d (&rest args)
+  `(acl2::e/d* . ,args))
+

@@ -1,6 +1,5 @@
 (ld "package.lsp")
-(ld "finite-set-theory/osets/sets.defpkg" :dir :system)
-;(include-book "finite-set-theory/osets/portcullis" :dir :system)
+(include-book "std/osets/portcullis" :dir :system)
 
 ; Added by Jared, justified by ACL2_COMPILE_FLG setting in Makefile
 ; cert-flags: ? t :ttags :all

@@ -350,13 +350,11 @@ encoding.</p>"
        (elem-p         (mksym 'vl- type '-p))
        (elem-p-str     (symbol-name elem-p))
 
-       (info (cdr (assoc elem (cutil::get-aggregates world))))
-       (efields (cdr (assoc :efields info)))
-       (tag     (cdr (assoc :tag info)))
-       ((unless (cutil::formallist-p efields))
+       ((cutil::agginfo agg) (cutil::get-aggregate elem world))
+       ((unless (cutil::formallist-p agg.efields))
         (raise "Expected :efields for ~x0 to be a valid formallist, found ~x1."
-               elem efields))
-       (enc-alist (make-json-encoder-alist efields omit overrides world))
+               elem agg.efields))
+       (enc-alist (make-json-encoder-alist agg.efields omit overrides world))
        ((unless (consp enc-alist))
         (raise "Expected at least one field to encode."))
        (main      (encoder-alist-main-actions elem enc-alist newlines)))
@@ -368,7 +366,7 @@ encoding.</p>"
        :long ,long
        (vl-ps-seq
         (vl-print "{\"tag\": ")
-        (jp-sym ,tag)
+        (jp-sym ,agg.tag)
         ,(if newlines
              `(vl-ps-seq (vl-println ", ")
                          (vl-indent ,newlines))

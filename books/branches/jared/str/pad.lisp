@@ -38,7 +38,7 @@
 
 @({
   (rpadchars '(#\\f #\\o #\\o) 5)
-     --&gt;
+     -->
   '(#\\f #\\o #\\o #\\Space #\\Space)
 })
 
@@ -86,7 +86,7 @@ adding spaces on the right.  For instance,</p>
 
 @({
   (rpadchars \"foo\" 5)
-     --&gt;
+     -->
   \"foo  \"
 })
 
@@ -143,7 +143,7 @@ coercion is performed.</p>"
 
 @({
   (lpadchars '(#\\f #\\o #\\o) 5)
-     --&gt;
+     -->
   '(#\\Space #\\Space #\\f #\\o #\\o)
 })
 
@@ -190,7 +190,7 @@ adding spaces on the left.  For instance,</p>
 
 @({
   (lpadstr \"foo\" 5)
-     --&gt;
+     -->
   \"  foo\"
 })
 

@@ -21,6 +21,7 @@
 (in-package "XDOC")
 (include-book "save")
 (include-book "parse-xml")
+(include-book "spellcheck")
 (set-state-ok t)
 (program)
 
@@ -422,23 +423,128 @@
     state))
 
 
+
 ; We previously tried to see if there was an acl2 doc topic.  But now that we
 ; have a fast importer from acl2 documentation, we just run (import-acl2doc)
 ; before calling colon-xdoc-fn, so we should only need to look in the xdoc
 ; database.
 
-(defun colon-xdoc-fn (name all-xdoc-topics state)
+; Until we hijacked the :doc command, I didn't feel so bad about XDOC not
+; trying very hard to tell you about related topics.  But now at least sort of
+; try to do something.  See spellcheck.lisp for the basic gist...
+
+;; (defun skip-through-close-long (xml-tokens)
+;;   (cond ((atom xml-tokens)
+;;          nil)
+;;         ((equal (car xml-tokens) '(:CLOSE "long"))
+;;          (cdr xml-tokens))
+;;         (t
+;;          (skip-through-close-long (cdr xml-tokens)))))
+    
+;; (defun eliminate-long (xml-tokens)
+;;   (cond ((atom xml-tokens)
+;;          nil)
+;;         ((and (consp (car xml-tokens))
+;;               (eq (first (car xml-tokens)) :OPEN)
+;;               (equal (second (car xml-tokens)) "long"))
+;;          (skip-through-close-long xml-tokens))
+;;         (t
+;;          (cons (car xml-tokens)
+;;                (eliminate-long (cdr xml-tokens))))))
+
+(defun summarize-nearby-topic (x state)
+  (b* ((name     (cdr (assoc :name x)))
+       (base-pkg (cdr (assoc :base-pkg x)))
+       (short    (cdr (assoc :short x)))
+;       (- (cw "Preprocessing...~%"))
+       ;; Use NIL as the topics-fal as a simple way to suppress autolinks...
+       ((mv short-acc state) (preprocess-main short
+                                              nil ;; no directory is needed here
+                                              nil ;; no topics-fal, just keep it simple
+                                              base-pkg
+                                              state
+                                              nil ;; accumulator
+                                              ))
+       (short (str::rchars-to-string short-acc))
+;       (- (cw "Text is ~x0.~%" text))
+;       (- (cw "Parsing xml...~%"))
+       ((mv err tokens) (parse-xml short))
+
+;       (- (cw "Checking result...~%"))
+       ((when err)
+        (cw "Error summarizing xdoc topic:~%~%")
+        (b* ((state (princ$ err *standard-co* state))
+             (state (newline *standard-co* state))
+             (state (newline *standard-co* state)))
+          state))
+;       (- (cw "Tokens are ~x0.~%" tokens))
+;       (- (cw "Merging tokens...~%"))
+       (merged-tokens (reverse (merge-text tokens nil 0)))
+;       (- (cw "Merged tokens are ~x0.~%" merged-tokens))
+       (terminal (str::rchars-to-string (tokens-to-terminal merged-tokens 70 nil nil nil)))
+       (state (princ$ "    " *standard-co* state))
+       (state (princ$ (symbol-package-name name) *standard-co* state))
+       (state (princ$ "::" *standard-co* state))
+       (state (princ$ (symbol-name name) *standard-co* state))
+       (state (newline *standard-co* state))
+       (state (princ$ (str::prefix-lines terminal "      ") *standard-co* state))
+       (state (newline *standard-co* state)))
+    state))
+
+(defun summarize-nearby-topics (x state)
+  (if (atom x)
+      state
+    (pprogn (summarize-nearby-topic (car x) state)
+            (summarize-nearby-topics (cdr x) state))))
+
+(defun find-topics (names all-topics)
+  (if (atom names)
+      nil
+    (cons (find-topic (car names) all-topics)
+          (find-topics (cdr names) all-topics))))
+
+(defun all-topic-names (topics)
+  (if (atom topics)
+      nil
+    (cons (cdr (assoc :name (car topics)))
+          (all-topic-names (cdr topics)))))
+
+(defun suggest-alternatives (name all-topics state)
   (declare (xargs :guard (symbolp name)))
-  (b* ((xdoc-entry      (find-topic name all-xdoc-topics))
+  (b* ((topic-names (all-topic-names all-topics))
+       (suggestions (xdoc-autocorrect name topic-names))
+       (- (cw "~%Argh!  No documentation for ~s0::~s1.~%" (symbol-package-name name)
+              (symbol-name name)))
+       ((unless suggestions)
+        state)
+       ;; Otherwise, suggestions is at most five other topics.
+       (- (if (eql (len suggestions) 1)
+              (cw "Hrmn, maybe you wanted this one:~%~%")
+            (cw "Hrmn, maybe you wanted one of these:~%~%")))
+       (suggested-topics (find-topics suggestions all-topics))
+       (state (summarize-nearby-topics suggested-topics state))
+       (state (newline *standard-co* state)))
+    state))
+      
+             
+(defun colon-xdoc-fn (name all-topics state)
+  (declare (xargs :guard (symbolp name)))
+  (b* ((xdoc-entry (find-topic name all-topics))
 
        ((when (not xdoc-entry))
-        ;; Seems safe to just print the acl2 documentation.  Even if there
-        ;; isn't an ACL2 topic, doc-fn can tell the user about similar topic
-        ;; names, which is nice.  It'd probably be nice to add nearby xdoc
-        ;; names, too.
-        (cw "No XDOC topics for ~s0::~s1.~%~%" (symbol-package-name name)
-            (symbol-name name))
-        (value :invisible))
-
-       (state      (display-topic xdoc-entry all-xdoc-topics state)))
+        (let ((state (suggest-alternatives name all-topics state)))
+          (value :invisible)))
+       
+       (state (display-topic xdoc-entry all-topics state)))
     (value :invisible)))
+
+#|
+(include-book
+ "centaur/vl/parsetree" :dir :system)
+
+(colon-xdoc-fn 'modulep (get-xdoc-table (w state)) state)
+(colon-xdoc-fn 'module->name (get-xdoc-table (w state)) state)
+(colon-xdoc-fn 'all-equal (get-xdoc-table (w state)) state)
+(colon-xdoc-fn 'cons (get-xdoc-table (w state)) state)
+
+|#
