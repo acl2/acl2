@@ -1,3 +1,0 @@
-(in-package "ACL2")
-; cert-flags: ? t :ttags (:cutil-optimize)
-(certify-book "read-file-characters-no-error" ? t :ttags (:cutil-optimize))

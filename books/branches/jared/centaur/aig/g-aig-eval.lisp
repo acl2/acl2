@@ -455,7 +455,7 @@
   (make-event 
    `(acl2::without-waterfall-parallelism
      (gl::def-eval-g aig-eval-ev
-                     ,(list* 'aig-eval-list
+                     ,(list* 'aig-eval-list 'if 'cons
                              (cdar (table-alist 'gl::g-apply-table (w state))))))))
 
 (local

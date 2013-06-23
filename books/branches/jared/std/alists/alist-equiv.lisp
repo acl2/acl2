@@ -26,9 +26,11 @@
 (local (include-book "../lists/sets"))
 
 (defsection alists-agree
+  :parents (std/alists)
+  :short "@(call alists-agree) determines if the alists @('al1') and @('al2')
+agree on the value of every key in @('keys')."
 
   (defund alists-agree (keys al1 al2)
-    "Do AL1 and AL2 agree on the value of every KEY in KEYS?"
     (declare (xargs :guard t))
     (or (atom keys)
         (and (equal (hons-get (car keys) al1)
@@ -83,11 +85,14 @@
 
 
 (defsection sub-alistp
+  :parents (std/alists)
+  :short "@(call sub-alistp) determines whether every @('key') bound in the
+alist @('a') is also bound to the same value in the alist @('b')."
 
   (defund sub-alistp (a b)
-    "Is every key bound in A also bound to the same value in B?"
     (declare (xargs :guard t))
-    (mbe :logic (alists-agree (alist-keys a) a b)
+    (mbe :logic
+         (alists-agree (alist-keys a) a b)
          :exec
          (with-fast-alist a
            (with-fast-alist b
@@ -140,11 +145,20 @@
                              (a y) (b z)))))))
 
 
-
 (defsection alist-equiv
+  :parents (std/alists)
+  :short "@(call alist-equiv) determines whether the alists @('a') and @('b')
+are equivalent up to @(see hons-assoc-equal), i.e., whether they bind the same
+value to every key."
+
+  :long "<p>This is a fundamental equivalence relation for alists.  It allows
+you to consider the equivalence of alists regardless of the order of their
+elements, the presence of shadowed elements, etc.</p>
+
+<p>Note that @(see list-equiv) is a @(see refinement) of @(see
+alist-equiv).</p>"
 
   (defund alist-equiv (a b)
-    "Do A and B agree on the values of every key?"
     (declare (xargs :guard t))
     (mbe :logic (and (sub-alistp a b)
                      (sub-alistp b a))
@@ -177,16 +191,71 @@
       (implies (alist-equiv x y)
                (alists-agree keys x y))))
 
+
+  (defsection alist-equiv-refines-list-equiv
+
+    (local (defthm l0
+             (equal (alists-agree keys (list-fix al1) al2)
+                    (alists-agree keys al1 al2))
+             :hints(("Goal" :in-theory (enable alists-agree)))))
+
+    (local (defthm l1
+             (equal (alists-agree keys al1 (list-fix al2))
+                    (alists-agree keys al1 al2))
+             :hints(("Goal" :in-theory (enable alists-agree)))))
+
+    (local (defthm l2
+             (equal (sub-alistp (list-fix x) y)
+                    (sub-alistp x y))
+             :hints(("Goal" :in-theory (enable sub-alistp)))))
+
+    (local (defthm l3
+             (equal (sub-alistp x (list-fix y))
+                    (sub-alistp x y))
+             :hints(("Goal" :in-theory (enable sub-alistp)))))
+
+    (local (defcong list-equiv equal (sub-alistp x y) 1
+             ;; This seems nice but can just be local, because above we showed
+             ;; that sub-alistp has an alist-equiv congruence here, which
+             ;; combines with the refinement relation we show below.
+             :hints(("Goal"
+                     :in-theory (e/d (list-equiv) (l2))
+                     :use ((:instance l2 (x x))
+                           (:instance l2 (x x-equiv)))))))
+
+    (local (defcong list-equiv equal (sub-alistp x y) 2
+             ;; Similarly this seems nice but is redundant after we get the
+             ;; refinement proved.
+             :hints(("Goal"
+                     :in-theory (e/d (list-equiv) (l3))
+                     :use ((:instance l3 (y y))
+                           (:instance l3 (y y-equiv)))))))
+
+    (defrefinement list-equiv alist-equiv
+      :hints(("Goal" :in-theory (enable alist-equiv))))))
+
+
+(defsection basic-alist-equiv-congruences
+  :parents (alist-equiv)
+  :short "Some @(see congruence) rules about @(see alist-equiv) for basic alist
+functions."
+
   (defcong alist-equiv equal (hons-assoc-equal x a) 2
     :hints (("goal"
+             :in-theory (enable alist-equiv alists-agree)
              :use ((:instance alist-equiv-means-all-keys-agree
                               (keys (list x)) (x a) (y a-equiv)))))))
 
 
 (defsection alist-equiv-bad-guy
+  :parents (alist-equiv)
+  :short "@(call alist-equiv-bad-guy) finds some key, if one exists, that
+differs between the alists @('al1') and @('al2')."
+
+  :long "<p>This is generally useful for doing pick-a-point style reasoning
+about alist equivalence.</p>"
 
   (defchoose alist-equiv-bad-guy (bg) (al1 al2)
-    ;; Find some key, if one exists, that differs between alists AL1 and AL2.
     (not (equal (hons-assoc-equal bg al1)
                 (hons-assoc-equal bg al2))))
 
@@ -250,122 +319,76 @@
                                     (alist-equiv))))))
 
 
-(defcong alist-equiv equal (alists-agree keys a b) 2
-  :hints (("goal" :in-theory (enable alists-agree))))
+(defsection more-congruences
+  :extension basic-alist-equiv-congruences
 
-(defcong alist-equiv equal (alists-agree keys a b) 3
-  :hints (("goal" :in-theory (enable alists-agree))))
+  (defcong alist-equiv equal (alists-agree keys a b) 2
+    :hints (("goal" :in-theory (enable alists-agree))))
 
-
-; Note that there is no similar equivalence for alist-vals, because shadowed
-; values play a role in alist-vals but not in alist-equiv.  For instance, here
-; is an example where equivalent alists have different alist-vals:
-
-#||
- (set-slow-alist-action nil)
- (let ((x '((a . 1) (a . 5)))
-       (y '((a . 1))))
-   (implies (alist-equiv x y)
-            (set-equiv (alist-vals x)
-                       (alist-vals y))))
-||#
-
-(defcong alist-equiv equal (sub-alistp x y) 1
-  :hints(("Goal"
-          :in-theory (enable alist-equiv sub-alistp-trans)
-          :cases ((sub-alistp x y)))))
-
-(defcong alist-equiv equal (sub-alistp x y) 2
-  :hints(("Goal"
-          :in-theory (enable alist-equiv sub-alistp-trans)
-          :cases ((sub-alistp x y)))))
-
-(defsection alist-equiv-refines-list-equiv
-
-  (local (defthm l0
-           (equal (alists-agree keys (list-fix al1) al2)
-                  (alists-agree keys al1 al2))
-           :hints(("Goal" :in-theory (enable alists-agree)))))
-
-  (local (defthm l1
-           (equal (alists-agree keys al1 (list-fix al2))
-                  (alists-agree keys al1 al2))
-           :hints(("Goal" :in-theory (enable alists-agree)))))
-
-  (local (defthm l2
-           (equal (sub-alistp (list-fix x) y)
-                  (sub-alistp x y))
-           :hints(("Goal" :in-theory (enable sub-alistp)))))
-
-  (local (defthm l3
-           (equal (sub-alistp x (list-fix y))
-                  (sub-alistp x y))
-           :hints(("Goal" :in-theory (enable sub-alistp)))))
-
-  (local (defcong list-equiv equal (sub-alistp x y) 1
-           ;; This seems nice but can just be local, because above we showed
-           ;; that sub-alistp has an alist-equiv congruence here, which
-           ;; combines with the refinement relation we show below.
-           :hints(("Goal"
-                   :in-theory (e/d (list-equiv) (l2))
-                   :use ((:instance l2 (x x))
-                         (:instance l2 (x x-equiv)))))))
-
-  (local (defcong list-equiv equal (sub-alistp x y) 2
-           ;; Similarly this seems nice but is redundant after we get the
-           ;; refinement proved.
-           :hints(("Goal"
-                   :in-theory (e/d (list-equiv) (l3))
-                   :use ((:instance l3 (y y))
-                         (:instance l3 (y y-equiv)))))))
-
-  (defrefinement list-equiv alist-equiv
-    :hints(("Goal" :in-theory (enable alist-equiv)))))
+  (defcong alist-equiv equal (alists-agree keys a b) 3
+    :hints (("goal" :in-theory (enable alists-agree))))
 
 
-#||
+  (defcong alist-equiv equal (sub-alistp x y) 1
+    :hints(("Goal"
+            :in-theory (enable alist-equiv sub-alistp-trans)
+            :cases ((sub-alistp x y)))))
 
-;; With the refinement in place, ACL2 will now complain if we try to submit any
-;; of these, because they're implied by the above stronger congruences about
-;; alist-equiv.
+  (defcong alist-equiv equal (sub-alistp x y) 2
+    :hints(("Goal"
+            :in-theory (enable alist-equiv sub-alistp-trans)
+            :cases ((sub-alistp x y)))))
 
- (defcong list-equiv equal (alists-agree keys x y) 2)
- (defcong list-equiv equal (alists-agree keys x y) 3)
- (defcong list-equiv equal (sub-alistp x y) 1)
- (defcong list-equiv equal (sub-alistp x y) 2)
+  #||
 
-||#
+;; With the refinement in place, ACL2 will now complain if we try to submit any ;
+;; of these, because they're implied by the above stronger congruences about ;
+;; alist-equiv. ;
 
-(defsection alist-keys-set-equivalence
+  (defcong list-equiv equal (alists-agree keys x y) 2)
+  (defcong list-equiv equal (alists-agree keys x y) 3)
+  (defcong list-equiv equal (sub-alistp x y) 1)
+  (defcong list-equiv equal (sub-alistp x y) 2)
 
-  (local (defthm l1
-           (implies (and (subsetp keys (alist-keys x))
-                         (alist-equiv x y))
-                    (subsetp keys (alist-keys y)))
-           :hints(("Goal" :induct (len keys)))))
+  ||#
 
-  (local (defthm l2
-           (implies (alist-equiv x y)
-                    (subsetp (alist-keys x) (alist-keys y)))
-           :hints(("Goal"
-                   :in-theory (disable l1)
-                   :use ((:instance l1 (keys (alist-keys x))))))))
+  (defsection alist-keys-set-equivalence
 
-  (defcong alist-equiv set-equiv (alist-keys x) 1
-    :hints(("Goal" :in-theory (enable set-equiv)))))
+    (local (defthm l1
+             (implies (and (subsetp keys (alist-keys x))
+                           (alist-equiv x y))
+                      (subsetp keys (alist-keys y)))
+             :hints(("Goal" :induct (len keys)))))
 
+    (local (defthm l2
+             (implies (alist-equiv x y)
+                      (subsetp (alist-keys x) (alist-keys y)))
+             :hints(("Goal"
+                     :in-theory (disable l1)
+                     :use ((:instance l1 (keys (alist-keys x))))))))
 
-(defcong alist-equiv alist-equiv (cons a b) 2
-  :hints (("goal" :in-theory (enable alist-equiv-when-agree-on-bad-guy))))
+    (defcong alist-equiv set-equiv (alist-keys x) 1
+      :hints(("Goal" :in-theory (enable set-equiv)))))
 
-(defcong alist-equiv alist-equiv (append a b) 1
-  :hints(("Goal" :in-theory (enable alist-equiv-when-agree-on-bad-guy))))
+; Note that there is no similar set-equivalence for alist-vals, because
+; shadowed values play a role in alist-vals but not in alist-equiv.  For
+; instance, here is an example where equivalent alists have different
+; alist-vals:
 
-(defcong alist-equiv alist-equiv (append a b) 2
-  :hints(("Goal" :in-theory (enable alist-equiv-when-agree-on-bad-guy))))
+  #||
+  (set-slow-alist-action nil)
+  (let ((x '((a . 1) (a . 5)))
+  (y '((a . 1))))
+  (implies (alist-equiv x y)
+  (set-equiv (alist-vals x)
+  (alist-vals y))))
+  ||#
 
-(defthm alist-equiv-append-atom
-  (implies (atom b)
-           (alist-equiv (append a b) a))
-  :hints(("Goal" :in-theory (enable alist-equiv-iff-agree-on-bad-guy)))
-  :rule-classes ((:rewrite :backchain-limit-lst 0)))
+  (defcong alist-equiv alist-equiv (cons a b) 2
+    :hints (("goal" :in-theory (enable alist-equiv-when-agree-on-bad-guy))))
+
+  (defcong alist-equiv alist-equiv (append a b) 1
+    :hints(("Goal" :in-theory (enable alist-equiv-when-agree-on-bad-guy))))
+
+  (defcong alist-equiv alist-equiv (append a b) 2
+    :hints(("Goal" :in-theory (enable alist-equiv-when-agree-on-bad-guy)))))

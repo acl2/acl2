@@ -89,8 +89,10 @@ process lists.  See also @(see list-fix) for more discussion.</p>"
              (list-equiv x y))
     :rule-classes :forward-chaining)
 
-  (defthm append-nil-under-list-equiv
-    (list-equiv (append x nil) x)))
+  (defthm append-atom-under-list-equiv
+    (implies (atom y)
+             (list-equiv (append x y)
+                         x))))
 
 
 (local (in-theory (enable list-equiv)))

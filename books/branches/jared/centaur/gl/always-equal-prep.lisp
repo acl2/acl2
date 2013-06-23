@@ -917,13 +917,15 @@
                       cons-equal
 
                       eval-g-base-apply-of-equal-kwote-lst
-                      
+                      eval-g-base-list-of-gl-cons
+
                       general-concrete-obj-of-atomic-constants
                       general-concretep-of-atomic-constants
                       hons-equal acl2::always-equal
                       (:induction g-always-equal-core))
                      ((general-concrete-obj)
-                      (general-concretep)))))
+                      (general-concretep)
+                      (kwote-lst)))))
 
   (defthm g-always-equal-core-correct
     (implies (and (not (bfr-mode))
@@ -941,7 +943,8 @@
                             (eval-g-base x env)
                             (eval-g-base y env)
                             (eval-g-base nil env)
-                            (eval-g-base t env))
+                            (eval-g-base t env)
+                            (eval-g-base-list nil env))
                    :do-not-induct t)))))
 
 (in-theory (disable g-always-equal-core))

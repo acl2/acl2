@@ -89,8 +89,8 @@
 (defun correct-thmname (fn)
   (incat 'gl-thm::foo (symbol-name fn) "-CORRECT"))
 
-(defun correct-thmname-appalist (fn)
-  (incat 'gl-thm::foo (symbol-name fn) "-CORRECT-APPALIST"))
+;; (defun correct-thmname-appalist (fn)
+;;   (incat 'gl-thm::foo (symbol-name fn) "-CORRECT-APPALIST"))
 
 (defun correct1-thmname (fn)
   (incat 'gl-thm::foo (symbol-name fn) "-CORRECT1"))
@@ -122,13 +122,13 @@
     (cons `(,ev ,(car formals) env)
           (ev-formals-list ev (cdr formals)))))
 
-(defun ev-formals-appalist-list (ev formals aps)
-  (declare (xargs :mode :logic
-                  :guard t))
-  (if (atom formals)
-      nil
-    (cons `(,ev ,(car formals) env ,aps)
-          (ev-formals-appalist-list ev (cdr formals) aps))))
+;; (defun ev-formals-appalist-list (ev formals aps)
+;;   (declare (xargs :mode :logic
+;;                   :guard t))
+;;   (if (atom formals)
+;;       nil
+;;     (cons `(,ev ,(car formals) env ,aps)
+;;           (ev-formals-appalist-list ev (cdr formals) aps))))
 
 ;; (defun gobj-fix-formals-list (formals)
 ;;   (if (atom formals)
@@ -145,9 +145,10 @@
 (defun def-g-correct-thm-fn (gfn fn ev hints world)
   (b* ((formals (wgetprop fn 'formals))
        (thmname (correct-thmname gfn))
-       (thmname2 (correct-thmname-appalist gfn))
-       (ev-appalist
-        (cadr (assoc ev (table-alist 'eval-g-table world)))))
+       ;;(thmname2 (correct-thmname-appalist gfn))
+       ;; (ev-appalist
+       ;;  (cadr (assoc ev (table-alist 'eval-g-table world))))
+       )
     `(encapsulate nil
        (defthm ,thmname
          (implies (bfr-eval hyp (car env))
@@ -155,15 +156,15 @@
                          (,fn . ,(ev-formals-list ev formals))))
          :hints ,hints)
        (in-theory (disable ,gfn))
-       (defthm ,thmname2
-         (implies (bfr-eval hyp (car env))
-                  (equal (,ev-appalist (,gfn ,@formals hyp clk) env appalist)
-                         (,fn . ,(ev-formals-appalist-list ev-appalist formals
-                                                           'appalist))))
-         :hints ((geval-appalist-functional-inst-hint
-                  ',thmname ',ev)))
+       ;; (defthm ,thmname2
+       ;;   (implies (bfr-eval hyp (car env))
+       ;;            (equal (,ev-appalist (,gfn ,@formals hyp clk) env appalist)
+       ;;                   (,fn . ,(ev-formals-appalist-list ev-appalist formals
+       ;;                                                     'appalist))))
+       ;;   :hints ((geval-appalist-functional-inst-hint
+       ;;            ',thmname ',ev)))
                               
-       (table sym-counterparts-table ',fn '(,gfn ,thmname2))
+       (table sym-counterparts-table ',fn '(,gfn ,thmname))
        (table gl-function-info ',fn '(,gfn (,thmname . ,ev))))))
 
 (defmacro def-g-correct-thm (fn ev &key hints)

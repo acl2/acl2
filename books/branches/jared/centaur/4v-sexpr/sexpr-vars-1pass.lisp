@@ -103,33 +103,31 @@ This stupid twist makes the proof ridiculously harder!</p>"
                         :flag-mapping ((4v-sexpr-vars-1pass-exec . sexpr)
                                        (4v-sexpr-vars-1pass-list-exec . list))))
 
-(local (defthm hons-assoc-equal-under-iff
-         (iff (hons-assoc-equal k al)
-              (member k (alist-keys al)))))
+(local (in-theory (e/d (hons-assoc-equal-iff-member-alist-keys)
+                       (alist-keys-member-hons-assoc-equal))))
 
-(local (in-theory (disable alist-keys-member-hons-assoc-equal)))
+;; (local (defthm member-by-subset
+;;            (and (implies (and (subsetp-equal x y)
+;;                               (member-equal a x))
+;;                          (member-equal a y))
+;;                 (implies (and (member-equal a x)
+;;                               (subsetp-equal x y))
+;;                          (member-equal a y)))))
 
-(local (defthm member-by-subset
-           (and (implies (and (subsetp-equal x y)
-                              (member-equal a x))
-                         (member-equal a y))
-                (implies (and (member-equal a x)
-                              (subsetp-equal x y))
-                         (member-equal a y)))))
-
-(local (defthm subset-transitive
-           (and (implies (and (subsetp-equal x y)
-                              (subsetp-equal y z))
-                         (subsetp-equal x z))
-                (implies (and (subsetp-equal y z)
-                              (subsetp-equal x y))
-                         (subsetp-equal x z)))))
+;; (local (defthm subset-transitive
+;;            (and (implies (and (subsetp-equal x y)
+;;                               (subsetp-equal y z))
+;;                          (subsetp-equal x z))
+;;                 (implies (and (subsetp-equal y z)
+;;                               (subsetp-equal x y))
+;;                          (subsetp-equal x z)))))
 
 (local (defthm helper-1
            ;; this works out because if x is an atom, then its sexpr-vars are just itself
            (implies (and (member-equal x (alist-keys seen))
                          (not (consp x))
-                         x)
+                         x
+                         )
                     (member-equal x (4v-sexpr-vars-list (alist-keys seen))))
            :hints(("goal" :induct (len seen)))))
 
@@ -143,6 +141,12 @@ This stupid twist makes the proof ridiculously harder!</p>"
                     (subsetp-equal (4v-sexpr-vars-list (cdr x))
                                    (4v-sexpr-vars-list (alist-keys seen))))
            :hints(("goal" :induct (len seen)))))
+
+(local (defthm helper-4
+         (implies (member-equal a x)
+                  (subsetp-equal (4v-sexpr-vars a)
+                                 (4v-sexpr-vars-list x)))
+         :hints(("Goal" :in-theory (enable member-equal)))))
 
 (local (defthm-flag-4v-sexpr-vars-1pass-exec
          (defthm seen-has-correct-vars-sexpr

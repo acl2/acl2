@@ -31,6 +31,20 @@
   :parents (std/lists reverse)
   :short "Logically simple alternative to @(see reverse) for lists."
 
+  :long "<p>This function is nicer to reason about than ACL2's built-in @(see
+reverse) function because it is more limited:</p>
+
+<ul>
+<li>@('reverse') can operate on strings or lists, whereas @('rev') can only
+    operate on lists.</li>
+
+<li>@('reverse') has a tail-recursive definition, which makes it generally
+    more difficult to induct over than the non tail-recursive @('rev').</li>
+</ul>
+
+<p>Despite its simple @(see append)-based logical definition, @('rev') should
+perform quite well thanks to @(see mbe).</p>"
+
   (defund rev (x)
     (declare (xargs :verify-guards nil
                     :guard t))

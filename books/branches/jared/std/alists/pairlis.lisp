@@ -27,47 +27,58 @@
 (local (include-book "../lists/equiv"))
 (local (in-theory (enable pairlis$)))
 
-(encapsulate
-  ()
-  ;; Some redundant things from alistp, strip-cars, strip-cdrs.
+(defsection std/alists/pairlis$
+  :parents (std/alists pairlis$)
+  :short "Lemmas about @(see pairlis$) available in the @(see std/alists)
+library."
 
-  (set-enforce-redundancy t) ;; Implicitly local
+  :long "<p>@('(pairlis$ x y)') is a perfectly reasonable way to create a
+proper, @('nil')-terminated @(see alistp) which can be used with either
+\"traditional\" or \"modern\" alist functions.</p>"
 
-  (defthm alistp-of-pairlis$
-    (alistp (pairlis$ x y)))
+  (defthm pairlis$-when-atom
+    (implies (atom x)
+             (equal (pairlis$ x y)
+                    nil)))
 
-  (defthm strip-cars-of-pairlis$
-    (equal (strip-cars (pairlis$ x y))
-           (list-fix x)))
+  (defthm pairlis$-of-cons
+    (equal (pairlis$ (cons a x) y)
+           (cons (cons a (car y))
+                 (pairlis$ x (cdr y)))))
 
-  (defthm strip-cdrs-of-pairlis$
-    (equal (strip-cdrs (pairlis$ x y))
-           (if (<= (len x) (len y))
-               (take (len x) y)
-             (append y (repeat nil (- (len x) (len y))))))))
+  (defthm len-of-pairlis$
+    (equal (len (pairlis$ x y))
+           (len x)))
 
-(defthm pairlis$-when-atom
-  (implies (atom x)
-           (equal (pairlis$ x y)
-                  nil)))
+  (encapsulate
+    ()
+    ;; Some redundant things from alistp, strip-cars, strip-cdrs.
+    (set-enforce-redundancy t) ;; Implicitly local
 
-(defthm pairlis$-of-cons
-  (equal (pairlis$ (cons a x) y)
-         (cons (cons a (car y))
-               (pairlis$ x (cdr y)))))
+    (defthm alistp-of-pairlis$
+      (alistp (pairlis$ x y)))
 
-(defthm len-of-pairlis$
-  (equal (len (pairlis$ x y))
-         (len x)))
+    (defthm strip-cars-of-pairlis$
+      (equal (strip-cars (pairlis$ x y))
+             (list-fix x)))
 
-(defthm pairlis$-of-list-fix-left
-  (equal (pairlis$ (list-fix x) y)
-         (pairlis$ x y)))
+    (defthm strip-cdrs-of-pairlis$
+      (equal (strip-cdrs (pairlis$ x y))
+             (if (<= (len x) (len y))
+                 (take (len x) y)
+               (append y (repeat nil (- (len x) (len y))))))))
 
-(defthm pairlis$-of-list-fix-right
-  (equal (pairlis$ x (list-fix y))
-         (pairlis$ x y)))
 
-(defcong list-equiv equal (pairlis$ x y) 1)
-(defcong list-equiv equal (pairlis$ x y) 2)
+  (defthm pairlis$-of-list-fix-left
+    (equal (pairlis$ (list-fix x) y)
+           (pairlis$ x y)))
+
+  (defthm pairlis$-of-list-fix-right
+    (equal (pairlis$ x (list-fix y))
+           (pairlis$ x y)))
+
+  (defcong list-equiv equal (pairlis$ x y) 1)
+  (defcong list-equiv equal (pairlis$ x y) 2))
+
+
 

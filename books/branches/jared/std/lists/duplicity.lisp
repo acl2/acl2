@@ -29,28 +29,27 @@
   :short "@(call duplicity) counts how many times the element @('a') occurs
 within the list @('x')."
 
-  :long "<p>This function is similar to ACL2's built-in @(see count) function
-but is more limited:</p>
+  :long "<p>This function is much nicer to reason about than ACL2's built-in
+@(see count) function because it is much more limited:</p>
 
 <ul>
 
-<li>@('count') can either scan for occurrences of a character in a string or an
-element in a list, and can only search within some particular sub-range,
-whereas</li>
+<li>@('count') can operate on either strings or lists; @('duplicity') only
+works on lists.</li>
 
-<li>@('duplicity') only works on lists and always searches the entire
-list.</li>
+<li>@('count') can consider only some particular sub-range of its input;
+@('duplicity') always considers the whole list.</li>
 
 </ul>
 
-<p>In practice, these limitations make @('duplicity') a much nicer function to
-work with and reason about.</p>
+<p>Reasoning about duplicity is useful when trying to show two lists are
+permutations of one another (sometimes called multiset- or bag-equivalence).  A
+classic exercise for new ACL2 users is to prove that a permutation function is
+symmetric.  Hint: a duplicity-based argument may compare quite favorably to
+induction on the definition of permutation.</p>
 
-<p>Reasoning about duplicity is very useful when trying to show that two lists
-are permutations of one another (sometimes called multiset- or
-bag-equivalence).  A classic exercise for new ACL2 users is to prove that a
-permutation function is symmetric.  Hint: a duplicity-based argument may
-compare quite favorably to induction on the definition of permutation.</p>"
+<p>This function can also be useful when trying to establish @(see
+no-duplicatesp), e.g., see @(see no-duplicatesp-equal-same-by-duplicity).</p>"
 
   (defund duplicity-exec (a x n)
     (declare (xargs :guard (natp n)))

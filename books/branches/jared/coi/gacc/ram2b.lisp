@@ -12,7 +12,7 @@
 
 (include-book "ram3") ;bzo move common stuff into a third book
 
-(local (include-book "rtl/rel4/arithmetic/fl" :dir :system))
+(local (include-book "rtl/rel8/arithmetic/fl" :dir :system))
 
 ;(local (include-book "../super-ihs/loglist")) ;bzo
 (local (include-book "../super-ihs/super-ihs")) ;bzo

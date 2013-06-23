@@ -68,6 +68,26 @@
          (cons (generic-geval x env)
                (generic-geval y env))))
 
+(defthm generic-geval-list-gl-cons
+  (equal (generic-geval-list (gl-cons x y) env)
+         (cons (generic-geval x env)
+               (generic-geval-list y env)))
+  :hints(("Goal" :expand ((:free (x) (generic-geval-list (cons x y) env))))))
+
+(defthm generic-geval-list-atom
+  (implies (not (consp x))
+           (equal (generic-geval-list x env) nil))
+  :hints(("Goal" :expand ((generic-geval-list x env))))
+  :rule-classes ((:rewrite :backchain-limit-lst 0)))
+
+(defthm generic-geval-g-apply
+  (implies (not (equal fn 'quote))
+           (equal (generic-geval (g-apply fn args) env)
+                  (generic-geval-ev (cons fn (kwote-lst (generic-geval-list args env)))
+                                    nil)))
+  :hints (("goal" :expand ((generic-geval (g-apply fn args) env))
+           :in-theory (enable generic-geval-apply))))
+
 (defthm generic-geval-nil
   (equal (generic-geval nil env) nil))
 
@@ -76,10 +96,11 @@
            (equal (generic-geval x env) x))
   :rule-classes ((:rewrite :backchain-limit-lst 0)))
 
-(defthm generic-geval-g-apply
-  (equal (generic-geval (g-apply fn args) env)
-         (generic-geval-ev (cons fn (kwote-lst (generic-geval args env)))
-                           nil)))
+;; (defthm generic-geval-g-apply
+;;   (implies (not (eq fn 'quote))
+;;            (equal (generic-geval (g-apply fn args) env)
+;;                   (generic-geval-ev (cons fn (kwote-lst (generic-geval-list args env)))
+;;                                     nil))))
 
 ;; (defthm generic-geval-gobj-fix
 ;;   (equal (generic-geval (gobj-fix x) env)
@@ -146,6 +167,8 @@
   '(generic-geval-gl-cons
     generic-geval-nil
     generic-geval-g-apply
+    generic-geval-list-gl-cons
+    generic-geval-list-atom
     mk-g-ite-correct
     mk-g-boolean-correct
     mk-g-concrete-correct

@@ -96,11 +96,13 @@
    mk-g-boolean-correct
    ((generic-geval-ev glcp-generic-geval-ev)
     (generic-geval-ev-lst glcp-generic-geval-ev-lst)
-    (generic-geval glcp-generic-geval))
+    (generic-geval glcp-generic-geval)
+    (generic-geval-list glcp-generic-geval-list))
    :hints ('(:in-theory (e/d* (glcp-generic-geval-ev-of-fncall-args
                                glcp-generic-geval-apply-agrees-with-glcp-generic-geval-ev)
                               (glcp-generic-geval-apply))
-             :expand ((glcp-generic-geval x env)))))
+             :expand ((glcp-generic-geval x env)
+                      (glcp-generic-geval-list x env)))))
 
 
   (acl2::def-functional-instance
@@ -108,14 +110,16 @@
    gobj-ite-merge-correct
    ((generic-geval-ev glcp-generic-geval-ev)
     (generic-geval-ev-lst glcp-generic-geval-ev-lst)
-    (generic-geval glcp-generic-geval)))
+    (generic-geval glcp-generic-geval)
+    (generic-geval-list glcp-generic-geval-list)))
 
   (acl2::def-functional-instance
    glcp-generic-geval-gtests-nonnil-correct
    gtests-nonnil-correct
    ((generic-geval-ev glcp-generic-geval-ev)
     (generic-geval-ev-lst glcp-generic-geval-ev-lst)
-    (generic-geval glcp-generic-geval)))
+    (generic-geval glcp-generic-geval)
+    (generic-geval-list glcp-generic-geval-list)))
 
   (in-theory (disable glcp-generic-geval-gtests-nonnil-correct))
 
@@ -124,35 +128,40 @@
    gtests-obj-correct
    ((generic-geval-ev glcp-generic-geval-ev)
     (generic-geval-ev-lst glcp-generic-geval-ev-lst)
-    (generic-geval glcp-generic-geval)))
+    (generic-geval glcp-generic-geval)
+    (generic-geval-list glcp-generic-geval-list)))
 
   (acl2::def-functional-instance
    glcp-generic-geval-mk-g-ite-correct
    mk-g-ite-correct
    ((generic-geval-ev glcp-generic-geval-ev)
     (generic-geval-ev-lst glcp-generic-geval-ev-lst)
-    (generic-geval glcp-generic-geval)))
+    (generic-geval glcp-generic-geval)
+    (generic-geval-list glcp-generic-geval-list)))
 
   (acl2::def-functional-instance
    glcp-generic-geval-mk-g-concrete-correct
    mk-g-concrete-correct
    ((generic-geval-ev glcp-generic-geval-ev)
     (generic-geval-ev-lst glcp-generic-geval-ev-lst)
-    (generic-geval glcp-generic-geval)))
+    (generic-geval glcp-generic-geval)
+    (generic-geval-list glcp-generic-geval-list)))
 
   (acl2::def-functional-instance
    glcp-generic-geval-g-concrete-quote-correct
    g-concrete-quote-correct
    ((generic-geval-ev glcp-generic-geval-ev)
     (generic-geval-ev-lst glcp-generic-geval-ev-lst)
-    (generic-geval glcp-generic-geval)))
+    (generic-geval glcp-generic-geval)
+    (generic-geval-list glcp-generic-geval-list)))
 
   (acl2::def-functional-instance
    glcp-generic-geval-general-concrete-obj-correct
    general-concrete-obj-correct
    ((generic-geval-ev glcp-generic-geval-ev)
     (generic-geval-ev-lst glcp-generic-geval-ev-lst)
-    (generic-geval glcp-generic-geval)))
+    (generic-geval glcp-generic-geval)
+    (generic-geval-list glcp-generic-geval-list)))
 
 
   (acl2::def-functional-instance
@@ -160,21 +169,24 @@
    generic-geval-gl-cons
    ((generic-geval-ev glcp-generic-geval-ev)
     (generic-geval-ev-lst glcp-generic-geval-ev-lst)
-    (generic-geval glcp-generic-geval)))
+    (generic-geval glcp-generic-geval)
+    (generic-geval-list glcp-generic-geval-list)))
 
   (acl2::def-functional-instance
    glcp-generic-geval-g-apply
    generic-geval-g-apply
    ((generic-geval-ev glcp-generic-geval-ev)
     (generic-geval-ev-lst glcp-generic-geval-ev-lst)
-    (generic-geval glcp-generic-geval)))
+    (generic-geval glcp-generic-geval)
+    (generic-geval-list glcp-generic-geval-list)))
 
   (acl2::def-functional-instance
    glcp-generic-geval-alt-def
    generic-geval-alt-def
    ((generic-geval-ev glcp-generic-geval-ev)
     (generic-geval-ev-lst glcp-generic-geval-ev-lst)
-    (generic-geval glcp-generic-geval))
+    (generic-geval glcp-generic-geval)
+    (generic-geval-list glcp-generic-geval-list))
    ;; :do-not-induct
    ;;   t
    ;;   :expand ((glcp-generic-geval x env))))
@@ -189,11 +201,6 @@
 (local (in-theory (enable glcp-generic-geval-gtests-nonnil-correct)))
 
 (defsection glcp-generic-geval-list
-  (defund glcp-generic-geval-list (x env)
-    (if (atom x)
-        nil
-      (cons (glcp-generic-geval (car x) env)
-            (glcp-generic-geval-list (cdr x) env))))
 
   (local (in-theory (enable glcp-generic-geval-list)))
 
@@ -211,7 +218,8 @@
     (implies (gobj-listp x)
              (equal (glcp-generic-geval x env)
                     (glcp-generic-geval-list x env)))
-    :hints (("goal" :induct t)
+    :hints (("goal" :induct (gobj-listp x)
+             :in-theory (enable gobj-listp))
             '(:use ((:instance glcp-generic-geval-of-gl-cons
                      (x (car x)) (y (cdr x))))
               :in-theory (enable gl-cons gobj-listp))))
@@ -690,11 +698,12 @@
                                     (glcp-generic-geval x env)))))))
 
   (local (defthm glcp-generic-geval-of-g-apply
-           (implies (eq (tag x) :g-apply)
+           (implies (and (eq (tag x) :g-apply)
+                         (not (equal (g-apply->fn x) 'quote)))
                     (equal (glcp-generic-geval x env)
                            (glcp-generic-geval-ev
                             (cons (g-apply->fn x)
-                                  (kwote-lst (glcp-generic-geval
+                                  (kwote-lst (glcp-generic-geval-list
                                               (g-apply->args x) env)))
                             nil)))
            :hints(("Goal" :expand ((:with glcp-generic-geval
@@ -741,7 +750,7 @@
                  (equal (glcp-generic-geval-ev-lst pat
                                                    (glcp-generic-geval-alist alist
                                                                              env))
-                        (glcp-generic-geval x env))))
+                        (glcp-generic-geval-list x env))))
       :flag list)))
 
 ;; (defsection rune
@@ -1544,7 +1553,7 @@
   (defthm glcp-generic-geval-lst-general-concrete-obj-list
     (implies (and (general-concrete-listp x)
                   (gobj-listp x))
-             (equal (glcp-generic-geval x env)
+             (equal (glcp-generic-geval-list x env)
                     (general-concrete-obj-list x)))
     :hints(("Goal" :in-theory (e/d (gobj-listp) ()))))
 
@@ -1797,7 +1806,7 @@
                                  (equal
                                   (glcp-generic-geval val env)
                                   (glcp-generic-geval-ev
-                                   (cons fn (kwote-lst (glcp-generic-geval actuals env)))
+                                   (cons fn (kwote-lst (glcp-generic-geval-list actuals env)))
                                    nil))))
       (fncall :body (implies (and (symbolp fn)
                                   (not (eq fn 'quote))
@@ -1805,7 +1814,7 @@
                              (equal
                               (glcp-generic-geval val env)
                               (glcp-generic-geval-ev
-                               (cons fn (kwote-lst (glcp-generic-geval actuals env)))
+                               (cons fn (kwote-lst (glcp-generic-geval-list actuals env)))
                                nil)))
               :hints ('(:in-theory (enable glcp-generic-geval-ev-of-fncall-args))))
       (rewrite :body (implies (and (symbolp fn)
@@ -1816,7 +1825,7 @@
                                                       (glcp-generic-geval-alist
                                                        bindings env))
                                (glcp-generic-geval-ev
-                                (cons fn (kwote-lst (glcp-generic-geval
+                                (cons fn (kwote-lst (glcp-generic-geval-list
                                                      actuals env)))
                                 nil))))
       (rules :body (implies (and (symbolp fn)
@@ -1831,7 +1840,7 @@
                                                     (glcp-generic-geval-alist
                                                      bindings env))
                              (glcp-generic-geval-ev
-                              (cons fn (kwote-lst (glcp-generic-geval
+                              (cons fn (kwote-lst (glcp-generic-geval-list
                                                    actuals env)))
                               nil)))
              :hints ('(:in-theory (enable subsetp))))
@@ -1846,7 +1855,7 @@
                                                    (glcp-generic-geval-alist
                                                     bindings env))
                             (glcp-generic-geval-ev
-                             (cons fn (kwote-lst (glcp-generic-geval
+                             (cons fn (kwote-lst (glcp-generic-geval-list
                                                   actuals env)))
                              nil)))
             :hints((and stable-under-simplificationp
@@ -1866,7 +1875,7 @@
                         '(:in-theory (enable gtests-known-and-true)))))
       (list :body (implies (and (pseudo-term-listp x)
                                 (alistp alist))
-                           (equal (glcp-generic-geval vals env)
+                           (equal (glcp-generic-geval-list vals env)
                                   (glcp-generic-geval-ev-lst
                                    x (glcp-generic-geval-alist alist
                                                                env))))

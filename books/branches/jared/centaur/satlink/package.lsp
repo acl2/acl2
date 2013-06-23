@@ -21,9 +21,9 @@
 
 (in-package "ACL2")
 
-(ld "cutil/package.lsp" :dir :system)
+(include-book "cutil/portcullis" :dir :system)
 (ld "tools/flag-package.lsp" :dir :system)
-(ld "oslib/package.lsp" :dir :system)
+(include-book "oslib/portcullis" :dir :system)
 
 (defpkg "SATLINK"
   (union-eq *acl2-exports*
@@ -60,5 +60,6 @@
               bitarr get-bit set-bit bits-length resize-bits bits-equiv
               natarr get-nat set-nat nats-length resize-nats nats-equiv
               tshell-call tshell-start tshell-stop tshell-ensure
+              satlink
               )))
 

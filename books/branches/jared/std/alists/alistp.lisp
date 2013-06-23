@@ -25,77 +25,85 @@
 (local (include-book "../lists/rev"))
 (local (include-book "../lists/take"))
 (local (include-book "../lists/repeat"))
-
 (local (in-theory (enable alistp)))
 
-(defthm alistp-when-atom
-  (implies (atom x)
-           (equal (alistp x)
-                  (not x))))
+(defsection std/alists/alistp
+  :parents (std/alists alistp)
+  :short "Lemmas about @(see alistp) available in the @(see std/alists)
+library."
 
-(defthm alistp-of-cons
-  (equal (alistp (cons a x))
-         (and (consp a)
-              (alistp x))))
+  :long "<p>Note that \"modern\" alist functions do not have @('alistp') guards
+and that theorems about them typically do not need any @('alistp') hypotheses.
+Accordingly, you may not really need to reason about @('alistp') at all.</p>"
 
-(defthm true-listp-when-alistp
-  (implies (alistp x)
-           (true-listp x))
-  :rule-classes :compound-recognizer)
+  (defthm alistp-when-atom
+    (implies (atom x)
+             (equal (alistp x)
+                    (not x))))
 
-(defthm alistp-of-append
-  (equal (alistp (append x y))
-         (and (alistp (list-fix x))
-              (alistp y))))
+  (defthm alistp-of-cons
+    (equal (alistp (cons a x))
+           (and (consp a)
+                (alistp x))))
 
-(defthm alistp-of-revappend
-  (equal (alistp (revappend x y))
-         (and (alistp (list-fix x))
-              (alistp y))))
+  (defthm true-listp-when-alistp
+    (implies (alistp x)
+             (true-listp x))
+    :rule-classes :compound-recognizer)
 
-(defthm alistp-of-rev
-  (equal (alistp (rev x))
-         (alistp (list-fix x)))
-  :hints(("Goal" :induct (len x))))
+  (defthm alistp-of-append
+    (equal (alistp (append x y))
+           (and (alistp (list-fix x))
+                (alistp y))))
 
-(defthm alistp-of-reverse
-  (equal (alistp (reverse x))
-         (and (not (stringp x))
-              (alistp (list-fix x))))
-  :hints(("Goal" :induct (len x))))
+  (defthm alistp-of-revappend
+    (equal (alistp (revappend x y))
+           (and (alistp (list-fix x))
+                (alistp y))))
 
-(defthm alistp-of-cdr
-  (implies (alistp x)
-           (alistp (cdr x))))
+  (defthm alistp-of-rev
+    (equal (alistp (rev x))
+           (alistp (list-fix x)))
+    :hints(("Goal" :induct (len x))))
 
-(defthm consp-of-car-when-alistp
-  (implies (alistp x)
-           (equal (consp (car x))
-                  (if x t nil))))
+  (defthm alistp-of-reverse
+    (equal (alistp (reverse x))
+           (and (not (stringp x))
+                (alistp (list-fix x))))
+    :hints(("Goal" :induct (len x))))
 
-(defthm alistp-of-member
-  (implies (alistp x)
-           (alistp (member a x))))
+  (defthm alistp-of-cdr
+    (implies (alistp x)
+             (alistp (cdr x))))
 
-(defthm alistp-of-repeat
-  (equal (alistp (repeat x n))
-         (or (zp n)
-             (consp x)))
-  :hints(("Goal" :in-theory (enable repeat))))
+  (defthm consp-of-car-when-alistp
+    (implies (alistp x)
+             (equal (consp (car x))
+                    (if x t nil))))
 
-(defthm alistp-of-take
-  (implies (alistp x)
-           (equal (alistp (take n x))
-                  (<= (nfix n) (len x))))
-  :hints(("Goal" :in-theory (enable take-redefinition))))
+  (defthm alistp-of-member
+    (implies (alistp x)
+             (alistp (member a x))))
 
-(defthm alistp-of-nthcdr
-  (implies (alistp x)
-           (alistp (nthcdr n x))))
+  (defthm alistp-of-repeat
+    (equal (alistp (repeat x n))
+           (or (zp n)
+               (consp x)))
+    :hints(("Goal" :in-theory (enable repeat))))
 
-(defthm alistp-of-delete-assoc-equal
-  (implies (alistp x)
-           (alistp (delete-assoc-equal key x))))
+  (defthm alistp-of-take
+    (implies (alistp x)
+             (equal (alistp (take n x))
+                    (<= (nfix n) (len x))))
+    :hints(("Goal" :in-theory (enable take-redefinition))))
 
-(defthm alistp-of-pairlis$
-  (alistp (pairlis$ x y)))
+  (defthm alistp-of-nthcdr
+    (implies (alistp x)
+             (alistp (nthcdr n x))))
+
+  (defthm alistp-of-delete-assoc-equal
+    (implies (alistp x)
+             (alistp (delete-assoc-equal key x))))
+
+  (defthm alistp-of-pairlis$
+    (alistp (pairlis$ x y))))

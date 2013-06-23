@@ -358,7 +358,9 @@
   (implies (concrete-gobjectp x)
            (equal (generic-geval x env)
                   x))
-  :hints(("Goal" :in-theory (enable concrete-gobjectp-def)))
+  :hints(("Goal" :in-theory (enable concrete-gobjectp
+                                    gobject-hierarchy-lite
+                                    generic-geval)))
   :rule-classes ((:rewrite :backchain-limit-lst 0)))
 
 (defthmd general-concrete-obj-correct
@@ -521,11 +523,12 @@
                (generic-geval (g-ite->then x) env)
              (generic-geval (g-ite->else x) env)))
           ((g-apply-p x)
-           (generic-geval-ev
-            (cons (g-apply->fn x)
-                  (kwote-lst
-                   (generic-geval (g-apply->args x) env)))
-            nil))
+           (and (not (eq (g-apply->fn x) 'quote))
+                (generic-geval-ev
+                 (cons (g-apply->fn x)
+                       (kwote-lst
+                        (generic-geval-list (g-apply->args x) env)))
+                 nil)))
           (t
            (cdr (hons-assoc-equal (g-var->name x) (cdr env))))))
   :hints (("goal" ;; :induct (generic-geval x env)
@@ -549,7 +552,10 @@
                               hons-get))
            :do-not-induct t
            :expand ((generic-geval x env))))
-  :rule-classes :definition)
+  :rule-classes
+  ((:definition :clique (generic-geval generic-geval-list)
+    :controller-alist ((generic-geval t nil)
+                       (generic-geval-list t nil)))))
 
 
 (in-theory (disable generic-geval-alt-def))

@@ -22,15 +22,26 @@
 (include-book "utf8-encode")
 (include-book "partition")
 (local (include-book "std/lists/nthcdr" :dir :system))
-(local (include-book "std/io/signed-byte-listp" :dir :system))
+(local (include-book "std/typed-lists/signed-byte-listp" :dir :system))
+(local (include-book "centaur/bitops/ihsext-basics" :dir :system))
+(local (include-book "centaur/bitops/signed-byte-p" :dir :system))
 (local (include-book "tools/mv-nth" :dir :system))
+(local (include-book "std/lists/append" :dir :system))
+(local (include-book "std/lists/revappend" :dir :system))
 (set-verify-guards-eagerness 2)
 (set-state-ok t)
 
+(local (defthm signed-byte-p-resolver
+         (implies (and (integerp n)
+                       (<= 1 n)
+                       (integerp x)
+                       (<= (- (expt 2 (1- n))) x)
+                       (< x (expt 2 (1- n))))
+                  (signed-byte-p n x))
+         :hints(("Goal" :in-theory (enable signed-byte-p)))))
+
 
 ;; BOZO library stuff
-
-(local (include-book "std/lists/append" :dir :system))
 
 (local
  (encapsulate
@@ -572,89 +583,79 @@
  )
 
 
-
 (encapsulate
- ()
+  ()
+  (local (include-book "arithmetic/top" :dir :system))
+  (local (include-book "std/lists/len" :dir :system))
 
- (local (include-book "arithmetic-3/bind-free/top" :dir :system))
+  (local (defthm lemma1
+           (implies (utf8-table35-byte-1/1? x)
+                    (utf8-table35-ok? x (list x)))
+           :hints(("Goal" :in-theory (enable unsigned-byte-p
+                                             uchar?
+                                             utf8-table35-ok?
+                                             utf8-table35-row-1?
+                                             utf8-table35-codepoint-1?
+                                             utf8-table35-byte-1/1?)))))
 
- (local (defthm lemma1
-          (implies (utf8-table35-byte-1/1? x)
-                   (utf8-table35-ok? x (list x)))
-          :hints(("Goal" :in-theory (enable unsigned-byte-p
-                                            uchar?
-                                            utf8-table35-ok?
-                                            utf8-table35-row-1?
-                                            utf8-table35-codepoint-1?
-                                            utf8-table35-byte-1/1?)))))
+  (local (defthm lemma2
+           (implies (and (equal (len x) 1)
+                         (true-listp x)
+                         (utf8-table35-byte-1/1? (first x)))
+                    (utf8-table35-ok? (first x) x))))
 
- (local (defthm lemma2
-          (implies (and (equal (len x) 1)
-                        (true-listp x)
-                        (utf8-table35-byte-1/1? (first x)))
-                   (utf8-table35-ok? (first x) x))))
+  (local (defthm lemma3
+           (implies (utf8-table35-byte-1/1? x)
+                    (utf8-table36-ok? x (list x)))
+           :hints(("Goal" :in-theory (enable unsigned-byte-p
+                                             uchar?
+                                             utf8-table36-ok?
+                                             utf8-table36-row-1?
+                                             utf8-table36-codepoint-1?
+                                             utf8-table36-bytes-1?
+                                             utf8-table35-byte-1/1?)))))
 
- (local (defthm lemma3
-          (implies (utf8-table35-byte-1/1? x)
-                   (utf8-table36-ok? x (list x)))
-          :hints(("Goal" :in-theory (enable unsigned-byte-p
-                                            uchar?
-                                            utf8-table36-ok?
-                                            utf8-table36-row-1?
-                                            utf8-table36-codepoint-1?
-                                            utf8-table36-bytes-1?
-                                            utf8-table35-byte-1/1?)))))
+  (local (defthm lemma4
+           (implies (and (equal (len x) 1)
+                         (true-listp x)
+                         (utf8-table35-byte-1/1? (first x)))
+                    (utf8-table36-ok? (first x) x))))
 
- (local (defthm lemma4
-          (implies (and (equal (len x) 1)
-                        (true-listp x)
-                        (utf8-table35-byte-1/1? (first x)))
-                   (utf8-table36-ok? (first x) x))))
+  (local (defthm lemma5-for-utf8-table35-byte-1/1?
+           (implies (utf8-table35-byte-1/1? x)
+                    (uchar? x))
+           :hints(("Goal" :in-theory (enable utf8-table35-byte-1/1?
+                                             uchar?)))))
 
- (local (defthm lemma5-for-utf8-table35-byte-1/1?
-          (implies (utf8-table35-byte-1/1? x)
-                   (uchar? x))
-          :hints(("Goal" :in-theory (enable utf8-table35-byte-1/1?
-                                            uchar?)))))
+  (local (defthm lemma6
+           (implies (utf8-table35-byte-1/1? x)
+                    (equal (uchar=>utf8 x)
+                           (list x)))
+           :hints(("Goal" :in-theory (enable uchar=>utf8
+                                             utf8-table35-byte-1/1?)))))
 
- (local (defthm lemma6
-          (implies (utf8-table35-byte-1/1? x)
-                   (equal (uchar=>utf8 x)
-                          (list x)))
-          :hints(("Goal" :in-theory (enable uchar=>utf8
-                                            utf8-table35-byte-1/1?)))))
+  (defthm uchar?-of-utf8-char=>uchar
+    (implies (utf8-char=>uchar x)
+             (uchar? (utf8-char=>uchar x)))
+    :hints(("Goal" :in-theory (enable utf8-char=>uchar))))
 
- (local (defthm len-when-true-listp
-          (implies (true-listp x)
-                   (equal (equal (len x) 0)
-                          (equal x nil)))))
+  (defthm utf8-table35-okp-of-utf8-char=>uchar
+    (implies (utf8-char=>uchar x)
+             (utf8-table35-ok? (utf8-char=>uchar x) x))
+    :hints(("Goal" :in-theory (enable utf8-char=>uchar))))
 
- (local (defthm true-listp-of-cdr-when-true-listp
-          (implies (true-listp x)
-                   (true-listp (cdr x)))))
+  (defthm utf8-table36-okp-of-utf8-char=>uchar
+    (implies (utf8-char=>uchar x)
+             (utf8-table36-ok? (utf8-char=>uchar x) x))
+    :hints(("Goal" :in-theory (enable utf8-char=>uchar))))
 
- (defthm uchar?-of-utf8-char=>uchar
-   (implies (utf8-char=>uchar x)
-            (uchar? (utf8-char=>uchar x)))
-   :hints(("Goal" :in-theory (enable utf8-char=>uchar))))
+  (defthm uchar=>utf8-of-utf8-char=>uchar
+    (implies (utf8-char=>uchar x)
+             (equal (uchar=>utf8 (utf8-char=>uchar x))
+                    x))
+    :hints(("Goal" :in-theory (enable utf8-char=>uchar))))
 
- (defthm utf8-table35-okp-of-utf8-char=>uchar
-   (implies (utf8-char=>uchar x)
-            (utf8-table35-ok? (utf8-char=>uchar x) x))
-   :hints(("Goal" :in-theory (enable utf8-char=>uchar))))
-
- (defthm utf8-table36-okp-of-utf8-char=>uchar
-   (implies (utf8-char=>uchar x)
-            (utf8-table36-ok? (utf8-char=>uchar x) x))
-   :hints(("Goal" :in-theory (enable utf8-char=>uchar))))
-
- (defthm uchar=>utf8-of-utf8-char=>uchar
-   (implies (utf8-char=>uchar x)
-            (equal (uchar=>utf8 (utf8-char=>uchar x))
-                   x))
-   :hints(("Goal" :in-theory (enable utf8-char=>uchar))))
-
- )
+  )
 
 
 
@@ -1227,20 +1228,28 @@
                  :use ((:instance uchar?-of-utf8-combine4
                                   (x1 244)))))))
 
+
 (verify-guards utf8=>ustring-fast
   :hints(("Goal"
           :do-not '(generalize fertilize)
           :do-not-induct t
-          :in-theory (enable unsigned-byte-listp
-                             utf8-char=>uchar
-                             utf8-table35-bytes
-                             utf8-table36-bytes
-                             utf8-combine2
-                             utf8-combine3
-                             utf8-combine4
-                             utf8-combine2-guard
-                             utf8-combine3-guard
-                             utf8-combine4-guard))))
+          :in-theory (e/d (unsigned-byte-listp
+                           utf8-char=>uchar
+                           utf8-table35-bytes
+                           utf8-table36-bytes
+                           utf8-combine2
+                           utf8-combine3
+                           utf8-combine4
+                           utf8-combine2-guard
+                           utf8-combine3-guard
+                           utf8-combine4-guard)
+                          ;; BOZO the above "terrible lemmas" were developed
+                          ;; before including bitops, so they're targeting the
+                          ;; wrong normal forms...
+                          (LOGAND-WITH-BITMASK
+                           simplify-logior
+                           commutativity-of-logior
+                           commutativity-of-logand)))))
 
 
 ;; Finally we are ready to present our "simpler" view of the algorithm.  The
@@ -1323,8 +1332,6 @@
 
 (encapsulate
  ()
- (local (include-book "std/lists/revappend" :dir :system))
-
  (local (defthm lemma
           (implies (and (true-listp acc)
                         (mv-nth 0 (utf8-partition x)))

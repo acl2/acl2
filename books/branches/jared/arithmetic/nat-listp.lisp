@@ -20,51 +20,55 @@
 ;; symbol-listp, etc, in that it implies true-listp.
 
 (in-package "ACL2")
+(include-book "xdoc/top" :dir :system)
 
+(in-theory (disable nat-listp))
 
-(defund nat-listp (l)
-  (declare (xargs :guard t))
-  (cond ((atom l)
-         (eq l nil))
-        (t (and (natp (car l))
-                (nat-listp (cdr l))))))
+(defsection arithmetic/nat-listp
+  :parents (nat-listp)
+  :short "Lemmas about @(see nat-listp) available in the @('arithmetic/nat-listp')
+book."
 
-(local (in-theory (enable nat-listp)))
+  :long "<p>BOZO additional lemmas about @('nat-listp') are available in the
+book @(see std/typed-list/nat-listp), which subsumes this one.  Should we get
+rid of this book?</p>"
 
-(defthm nat-listp-implies-true-listp
-  (implies (nat-listp x)
-           (true-listp x))
-  :rule-classes (:rewrite :compound-recognizer))
+  (local (in-theory (enable nat-listp)))
 
-(in-theory (disable (:rewrite nat-listp-implies-true-listp)))
+  (defthm nat-listp-implies-true-listp
+    (implies (nat-listp x)
+             (true-listp x))
+    :rule-classes (:rewrite :compound-recognizer))
 
-(defthm nat-listp-when-not-consp
-  (implies (not (consp x))
-           (equal (nat-listp x)
-                  (not x)))
-  :hints(("Goal" :in-theory (enable nat-listp))))
+  (in-theory (disable (:rewrite nat-listp-implies-true-listp)))
 
-(defthm nat-listp-of-cons
-  (equal (nat-listp (cons a x))
-         (and (natp a)
-              (nat-listp x)))
-  :hints(("Goal" :in-theory (enable nat-listp))))
+  (defthm nat-listp-when-not-consp
+    (implies (not (consp x))
+             (equal (nat-listp x)
+                    (not x)))
+    :hints(("Goal" :in-theory (enable nat-listp))))
 
-(defthm nat-listp-of-append-weak
-  ;; [Jared] added "weak" in support of std/typed-lists/nat-listp
-  (implies (true-listp x)
-           (equal (nat-listp (append x y))
-                  (and (nat-listp x)
-                       (nat-listp y)))))
+  (defthm nat-listp-of-cons
+    (equal (nat-listp (cons a x))
+           (and (natp a)
+                (nat-listp x)))
+    :hints(("Goal" :in-theory (enable nat-listp))))
 
-(defthm car-nat-listp
-  (implies (and (nat-listp x)
-                x)
-           (natp (car x)))
-  :rule-classes :forward-chaining)
+  (defthm nat-listp-of-append-weak
+    ;; [Jared] added "weak" in support of std/typed-lists/nat-listp
+    (implies (true-listp x)
+             (equal (nat-listp (append x y))
+                    (and (nat-listp x)
+                         (nat-listp y)))))
 
-(defthm nat-listp-of-cdr-when-nat-listp
-  ;; [Jared] added double-rewrite in support of std/typed-lists/nat-listp
-  (implies (nat-listp (double-rewrite x))
-           (equal (nat-listp (cdr x))
-                  t)))
+  (defthm car-nat-listp
+    (implies (and (nat-listp x)
+                  x)
+             (natp (car x)))
+    :rule-classes :forward-chaining)
+
+  (defthm nat-listp-of-cdr-when-nat-listp
+    ;; [Jared] added double-rewrite in support of std/typed-lists/nat-listp
+    (implies (nat-listp (double-rewrite x))
+             (equal (nat-listp (cdr x))
+                    t))))

@@ -333,11 +333,13 @@
                       equal-of-numbers-correct
                       general-numberp-of-atom
                       
+                      eval-g-base-list-of-gl-cons
                       hons-equal
                       general-concrete-obj-of-atomic-constants
                       general-concretep-of-atomic-constants)
                      ((general-concrete-obj)
-                      (general-concretep)))))
+                      (general-concretep)
+                      (kwote-lst)))))
 
   (local
    (make-event
@@ -358,6 +360,7 @@
                              (eval-g-base x env)
                              (eval-g-base y env)
                              (eval-g-base nil env)
+                             (eval-g-base-list nil env)
                              (eval-g-base t env))
                     :do-not-induct t))
              ;; (case-match id

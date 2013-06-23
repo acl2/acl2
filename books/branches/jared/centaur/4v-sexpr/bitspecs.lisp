@@ -1132,13 +1132,14 @@
                            (x x) (y (car spec)) (spec (cdr spec)))))))
 
 
-(defthm true-listp-and-subset-and-no-intersect-impl-nil
-  (implies (and (true-listp x)
-                (subsetp-equal x y)
-                (not (intersectp-equal x y)))
-           (Equal x nil))
-  :hints ((set-reasoning))
-  :rule-classes nil)
+(local (defthm true-listp-and-subset-and-no-intersect-impl-nil
+         (implies (and (true-listp x)
+                       (subsetp-equal x y)
+                       (not (intersectp-equal x y)))
+                  (Equal x nil))
+         :hints (("Goal" :in-theory (enable intersectp-equal))
+                 (set-reasoning))
+         :rule-classes nil))
 
 (defthm true-listp-4v-bitspec-entry-vars
   (implies (4v-bitspec-entryp x)
@@ -1150,9 +1151,10 @@
            (iff (intersectp-equal (4v-bitspec-entry-vars x)
                                        (4v-bitspec-vars spec))
                 (not (equal (4v-bitspec-entry-vars x) nil))))
-  :hints (("goal" :use ((:instance true-listp-and-subset-and-no-intersect-impl-nil
-                                   (x (4v-bitspec-entry-vars x))
-                                   (y (4v-bitspec-vars spec))))
+  :hints (("goal"
+           :use ((:instance true-listp-and-subset-and-no-intersect-impl-nil
+                            (x (4v-bitspec-entry-vars x))
+                            (y (4v-bitspec-vars spec))))
            :in-theory (disable 4v-bitspec-entry-vars))))
 
 (defthm param-for-4v-bitspec-entryp-when-no-vars

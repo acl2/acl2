@@ -1192,7 +1192,7 @@
                                   keys-equiv-when-alist-keys
                                   (:type-prescription 4v-fix$inline)
                                   4v-sexpr-eval
-                                  alist-equiv-append-atom
+                                  ;alist-equiv-append-atom
                                   esim-fixpoint-p-occs
                                   4v-fix))
           :expand ((esim-fixpoint-p-occs mod occs (append fixpoint env) env)
@@ -1716,7 +1716,7 @@
                            alist-equiv-append-when-keys-nil
                            append ; 4v-sexpr-eval-lookup-in-atom-val-alist
                            4v-alist-extract
-                           alist-equiv-append-atom
+                           ;alist-equiv-append-atom
                            4v-sexpr-eval-possibilities
                            ; 4v-sexpr-fixpoint-lower-boundp-atom-ups
                            4v-alists-agree-commute

@@ -33,7 +33,8 @@
     shape-spec-oblig-term-correct
     ((sspec-geval-ev glcp-generic-geval-ev)
      (sspec-geval-ev-lst glcp-generic-geval-ev-lst)
-     (sspec-geval glcp-generic-geval))
+     (sspec-geval glcp-generic-geval)
+     (sspec-geval-list glcp-generic-geval-list))
     :hints ('(:in-theory (e/d* (glcp-generic-geval-ev-of-fncall-args
                                 glcp-generic-geval-apply-agrees-with-glcp-generic-geval-ev)
                                (glcp-generic-geval-apply))
@@ -44,7 +45,8 @@
     gobj-to-param-space-correct
     ((generic-geval-ev glcp-generic-geval-ev)
      (generic-geval-ev-lst glcp-generic-geval-ev-lst)
-     (generic-geval glcp-generic-geval))
+     (generic-geval glcp-generic-geval)
+     (generic-geval-list glcp-generic-geval-list))
     :hints ('(:in-theory (e/d* (glcp-generic-geval-ev-of-fncall-args
                                 glcp-generic-geval-apply-agrees-with-glcp-generic-geval-ev)
                                (glcp-generic-geval-apply))
@@ -272,7 +274,8 @@
 
    (defthm shape-spec-listp-strip-cadrs
      (implies (shape-spec-bindingsp x)
-              (shape-spec-listp (strip-cadrs x))))
+              (shape-spec-listp (strip-cadrs x)))
+     :hints(("Goal" :in-theory (enable shape-spec-listp))))
 
    (defthm shape-specp-strip-cadrs-bindings
      (implies (shape-spec-bindingsp x)
@@ -637,71 +640,83 @@ class:~%~%" (len ctrexes))))))
           ((when err) (mv err nil)))
        (mv nil (cons first rest))))))
 
-(defun magic-geval (x env state)
-  (declare (xargs :guard (consp env)
-                  :stobjs state
-                  :measure (acl2-count x)
-                  :hints (("goal" :in-theory '(measure-for-geval atom)))))
-  (if (atom x)
-      ;; Every atom represents itself.
-      (mv nil x)
-    (pattern-match x
+(mutual-recursion
+ (defun magic-geval (x env state)
+   (declare (xargs :guard (consp env)
+                   :stobjs state
+                   :measure (acl2-count x)
+                   :hints (("goal" :in-theory '(measure-for-geval atom)))))
+   (if (atom x)
+       ;; Every atom represents itself.
+       (mv nil x)
+     (pattern-match x
 
-      ;; A Concrete is like an escape sequence; we take (cdr x) as a concrete
-      ;; object even if it looks symbolic.
-      ((g-concrete obj) (mv nil obj))
+       ;; A Concrete is like an escape sequence; we take (cdr x) as a concrete
+       ;; object even if it looks symbolic.
+       ((g-concrete obj) (mv nil obj))
 
-      ;; Boolean
-      ((g-boolean bool) (mv nil (bfr-eval bool (car env))))
+       ;; Boolean
+       ((g-boolean bool) (mv nil (bfr-eval bool (car env))))
 
-      ;; Number.  This is the hairy case.  Can represent all ACL2-NUMBERPs,
-      ;; but naturals are more compact than integers, which are more compact
-      ;; than rationals, which are more compact than complexes.  Denominators
-      ;; are coerced to 1 if they evaluate to 0 -- ugly.
-      ((g-number num)
-       (b* (((mv real-num
-                 real-denom
-                 imag-num
-                 imag-denom)
-             (break-g-number num)))
-         (flet ((uval (n env)
-                      (v2n (bfr-eval-list n (car env))))
-                (sval (n env)
-                      (v2i (bfr-eval-list n (car env)))))
-           (mv nil (components-to-number (sval real-num env)
-                                         (uval real-denom env)
-                                         (sval imag-num env)
-                                         (uval imag-denom env))))))
+       ;; Number.  This is the hairy case.  Can represent all ACL2-NUMBERPs,
+       ;; but naturals are more compact than integers, which are more compact
+       ;; than rationals, which are more compact than complexes.  Denominators
+       ;; are coerced to 1 if they evaluate to 0 -- ugly.
+       ((g-number num)
+        (b* (((mv real-num
+                  real-denom
+                  imag-num
+                  imag-denom)
+              (break-g-number num)))
+          (flet ((uval (n env)
+                       (v2n (bfr-eval-list n (car env))))
+                 (sval (n env)
+                       (v2i (bfr-eval-list n (car env)))))
+            (mv nil (components-to-number (sval real-num env)
+                                          (uval real-denom env)
+                                          (sval imag-num env)
+                                          (uval imag-denom env))))))
 
-      ;; If-then-else.
-      ((g-ite test then else)
-       (b* (((mv err test) (magic-geval test env state))
-            ((unless err)
-             (if test
-                 (magic-geval then env state)
-               (magic-geval else env state))))
-         (mv err nil)))
+       ;; If-then-else.
+       ((g-ite test then else)
+        (b* (((mv err test) (magic-geval test env state))
+             ((unless err)
+              (if test
+                  (magic-geval then env state)
+                (magic-geval else env state))))
+          (mv err nil)))
 
-      ;; Apply: Unevaluated function call.
-      ((g-apply fn args)
-       (b* (((mv err args) (magic-geval args env state))
-            ((when err) (mv err nil))
-            (term (cons fn (ec-call (kwote-lst args)))))
-         (mv-let (err val)
-           (ec-call (magicer-ev term nil 10000 state t t))
-           (if err
-               (mv err nil)
-             (mv nil val)))))
-      
-      ;; Var: untyped variable.
-      ((g-var name)   (mv nil (cdr (het name (cdr env)))))
+       ;; Apply: Unevaluated function call.
+       ((g-apply fn args)
+        (b* (((mv err args) (magic-geval args env state))
+             ((when err) (mv err nil))
+             (term (cons fn (ec-call (kwote-lst args)))))
+          (mv-let (err val)
+            (ec-call (magicer-ev term nil 10000 state t t))
+            (if err
+                (mv err nil)
+              (mv nil val)))))
+       
+       ;; Var: untyped variable.
+       ((g-var name)   (mv nil (cdr (het name (cdr env)))))
 
-      ;; Conses where the car is not a recognized flag represent conses.
-      (& (b* (((mv err car) (magic-geval (car x) env state))
-              ((when err) (mv err nil))
-              ((mv err cdr) (magic-geval (cdr x) env state))
-              ((when err) (mv err nil)))
-           (mv nil (cons car cdr)))))))
+       ;; Conses where the car is not a recognized flag represent conses.
+       (& (b* (((mv err car) (magic-geval (car x) env state))
+               ((when err) (mv err nil))
+               ((mv err cdr) (magic-geval (cdr x) env state))
+               ((when err) (mv err nil)))
+            (mv nil (cons car cdr)))))))
+ (defun magic-geval-list (x env state)
+   (declare (xargs :guard (consp env)
+                   :stobjs state
+                   :measure (acl2-count x)))
+   (if (atom x)
+       (mv nil nil)
+     (b* (((mv err val) (magic-geval (car x) env state))
+          ((when err) (mv err nil))
+          ((mv err rest) (magic-geval (car x) env state))
+          ((when err) (mv err nil)))
+       (mv nil (cons val rest))))))
 
 
 
@@ -917,11 +932,11 @@ class:~%~%" (len ctrexes))))))
 
 (local
  (progn
-   (defun gobj-list-to-param-space (list p)
-     (if (atom list)
-         nil
-       (gl-cons (gobj-to-param-space (car list) p)
-             (gobj-list-to-param-space (cdr list) p))))
+   ;; (defun gobj-list-to-param-space (list p)
+   ;;   (if (atom list)
+   ;;       nil
+   ;;     (gl-cons (gobj-to-param-space (car list) p)
+   ;;           (gobj-list-to-param-space (cdr list) p))))
 
 
    (defthm glcp-generic-geval-alist-gobj-alist-to-param-space

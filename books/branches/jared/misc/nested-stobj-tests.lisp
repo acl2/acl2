@@ -1042,3 +1042,10 @@ ACL2 !>
  (top1-fld.update-fld1 17 top1c)
  :check
  (f1 17 top1c))
+
+; Test the case where stobj fields are abstract stobjs.
+
+; Fails in Version 6.2: Bug from :doc note-6-3 says "Fixed a bug in the case of
+; a field of a (concrete) stobj that is an abstract stobj".
+(defstobj parent
+  (abs-child :type top1{abs}))

@@ -1,26 +1,21 @@
-;; Processing Unicode Files with ACL2
-;; Copyright (C) 2005-2006 by Jared Davis <jared@cs.utexas.edu>
-;;
-;; This program is free software; you can redistribute it and/or modify it
-;; under the terms of the GNU General Public License as published by the Free
-;; Software Foundation; either version 2 of the License, or (at your option)
-;; any later version.
-;;
-;; This program is distributed in the hope that it will be useful but WITHOUT
-;; ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-;; FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
-;; more details.
-;;
-;; You should have received a copy of the GNU General Public License along with
-;; this program; if not, write to the Free Software Foundation, Inc., 59 Temple
-;; Place - Suite 330, Boston, MA 02111-1307, USA.
+; Standard IO Library
+; combine.lisp -- originally part of the Unicode library
+; Copyright (C) 2005-2013 by Jared Davis <jared@cs.utexas.edu>
+;
+; This program is free software; you can redistribute it and/or modify it under
+; the terms of the GNU General Public License as published by the Free Software
+; Foundation; either version 2 of the License, or (at your option) any later
+; version.  This program is distributed in the hope that it will be useful but
+; WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+; FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
+; more details.  You should have received a copy of the GNU General Public
+; License along with this program; if not, write to the Free Software
+; Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
 
 (in-package "ACL2")
-(include-book "xdoc/top" :dir :system)
-(include-book "sign-byte")
-(include-book "tools/bstar" :dir :system)
-(local (include-book "unsigned-byte-listp"))
-(local (include-book "signed-byte-listp"))
+(include-book "centaur/bitops/sign-extend" :dir :system)
+(local (include-book "centaur/bitops/ihsext-basics" :dir :system))
+(local (include-book "centaur/bitops/signed-byte-p" :dir :system))
 (set-verify-guards-eagerness 2)
 
 
@@ -51,6 +46,7 @@ unsigned interpretation of @('(a1 << 8) | a0')."
              (unsigned-byte-p 16 (combine16u a1 a0)))))
 
 
+
 (defsection combine16s
   :parents (combine-functions)
   :short "@(call combine16s) merges unsigned bytes, producing the 16-bit signed
@@ -59,12 +55,13 @@ interpretation of @('(a1 << 8) | a0')."
   (defund-inline combine16s (a1 a0)
     (declare (type (unsigned-byte 8) a1 a0))
     (mbe :logic
-         (logior (ash (sign-byte (nfix a1)) 8)
+         (logior (ash (sign-extend 8 (nfix a1)) 8)
                  (nfix a0))
          :exec
          (the (signed-byte 16)
            (logior (the (signed-byte 16)
-                     (ash (the (signed-byte 8) (sign-byte a1))
+                     (ash (the (signed-byte 8)
+                            (sign-extend 8 a1))
                           8))
                    a0))))
 
@@ -74,6 +71,7 @@ interpretation of @('(a1 << 8) | a0')."
     (implies (and (force (unsigned-byte-p 8 a1))
                   (force (unsigned-byte-p 8 a0)))
              (signed-byte-p 16 (combine16s a1 a0)))))
+
 
 
 (defsection combine32u
@@ -123,7 +121,7 @@ signed interpretation of @('(a3 << 24) | (a2 << 16) | (a1 << 8) | a0')."
   (defund-inline combine32s (a3 a2 a1 a0)
     (declare (type (unsigned-byte 8) a3 a2 a1 a0))
     (mbe :logic
-         (logior (ash (sign-byte (nfix a3)) 24)
+         (logior (ash (sign-extend 8 (nfix a3)) 24)
                  (ash (nfix a2) 16)
                  (ash (nfix a1) 8)
                  (nfix a0))
@@ -131,7 +129,7 @@ signed interpretation of @('(a3 << 24) | (a2 << 16) | (a1 << 8) | a0')."
          ;; Ugly series of LOGIORs because CCL won't optimize multi-arg LOGIORs
          ;; into fixnum computations...
          (b* ((a3  (the (signed-byte 32)
-                     (ash (the (signed-byte 8) (sign-byte a3))
+                     (ash (the (signed-byte 8) (sign-extend 8 a3))
                           24)))
               (a2  (the (unsigned-byte 24) (ash a2 16)))
               (a1  (the (unsigned-byte 16) (ash a1 8)))
@@ -227,7 +225,7 @@ unsigned interpretation of @('{a7, a6, a5, a4, a3, a2, a1, a0}')."
   (defund-inline combine64s (a7 a6 a5 a4 a3 a2 a1 a0)
     (declare (type (unsigned-byte 8) a7 a6 a5 a4 a3 a2 a1 a0))
     (mbe :logic
-         (logior (ash (sign-byte (nfix a7)) 56)
+         (logior (ash (sign-extend 8 (nfix a7)) 56)
                  (ash (nfix a6) 48)
                  (ash (nfix a5) 40)
                  (ash (nfix a4) 32)
@@ -264,7 +262,7 @@ unsigned interpretation of @('{a7, a6, a5, a4, a3, a2, a1, a0}')."
                              (the (unsigned-byte 56) ans))))
               ;; Can't really do better here... :(
               (a7 (the (signed-byte 64)
-                    (ash (the (signed-byte 8) (sign-byte a7))
+                    (ash (the (signed-byte 8) (sign-extend 8 a7))
                          56))))
            (the (signed-byte 64)
              (logior (the (signed-byte 64) a7)

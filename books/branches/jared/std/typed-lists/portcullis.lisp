@@ -1,4 +1,4 @@
-; Built-In Typed Lists
+; Standard Typed Lists Library
 ; Copyright (C) 2008-2013 Centaur Technology
 ;
 ; Contact:

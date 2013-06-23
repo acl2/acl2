@@ -167,8 +167,7 @@
        (b* (((mv args next-idx next-var)
              (uniquify-shape-spec (g-call->args x) next-idx next-var)))
          (mv (g-call (g-call->fn x) args
-                     (g-call->inverse x)
-                     (g-call->arity x))
+                     (g-call->inverse x))
              next-idx next-var)))
       (otherwise
        (b* (((mv car next-idx next-var)

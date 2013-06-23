@@ -111,6 +111,8 @@
 
 (include-book "countereg-gen/top" :dir :system)
 
+(include-book "std/top" :dir :system)
+
 #||
 
 ;; This really doesn't belong here, but I want it out of cutil/top to improve

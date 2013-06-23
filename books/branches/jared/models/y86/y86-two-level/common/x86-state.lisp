@@ -8,6 +8,7 @@
 (in-package "ACL2")
 
 (include-book "constants")
+(include-book "std/lists/list-defuns" :dir :system)
 
 ; Increase memory for X86 memory.
 ;; (include-book "centaur/misc/memory-mgmt-logic" :dir :system)
@@ -356,6 +357,17 @@
          (t 'impossible)))
 ) ;; End of encapsulate
 
+
+(defthm rational-listp-append
+  (equal (rational-listp (append x y))
+         (and (rational-listp (list-fix x))
+              (rational-listp y)))
+  :hints(("Goal" :induct (len x))))
+
+(defthm rational-listp-rev
+  (equal (rational-listp (rev x))
+         (rational-listp (list-fix x)))
+  :hints(("Goal" :induct (len x))))
 
 (defthm rational-listp-revappend
   (implies (rational-listp x)

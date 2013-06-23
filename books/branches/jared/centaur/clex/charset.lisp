@@ -310,7 +310,7 @@ automatically.</p>")
            :hints(("Goal"
                    :in-theory (enable code-in-charset-p)
                    :use ((:instance defcharset-lemma2
-                                    (i (char-code x))))))))
+                                    (i (char-code ,x))))))))
 
        (deflist ,foo-charlist-p (,x)
          (,foo-char-p ,x)

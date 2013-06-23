@@ -1,28 +1,23 @@
-;; Processing Unicode Files with ACL2
-;; Copyright (C) 2005-2006 by Jared Davis <jared@cs.utexas.edu>
-;;
-;; This program is free software; you can redistribute it and/or modify it
-;; under the terms of the GNU General Public License as published by the Free
-;; Software Foundation; either version 2 of the License, or (at your option)
-;; any later version.
-;;
-;; This program is distributed in the hope that it will be useful but WITHOUT
-;; ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-;; FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
-;; more details.
-;;
-;; You should have received a copy of the GNU General Public License along with
-;; this program; if not, write to the Free Software Foundation, Inc., 59 Temple
-;; Place - Suite 330, Boston, MA 02111-1307, USA.
+; Standard IO Library
+; read-ints.lisp -- originally part of the Unicode library
+; Copyright (C) 2005-2013 by Jared Davis <jared@cs.utexas.edu>
+;
+; This program is free software; you can redistribute it and/or modify it under
+; the terms of the GNU General Public License as published by the Free Software
+; Foundation; either version 2 of the License, or (at your option) any later
+; version.  This program is distributed in the hope that it will be useful but
+; WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+; FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
+; more details.  You should have received a copy of the GNU General Public
+; License along with this program; if not, write to the Free Software
+; Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
 
 (in-package "ACL2")
 (include-book "base")
-(include-book "sign-byte")
 (include-book "combine")
-(local (include-book "unsigned-byte-listp"))
-(local (include-book "signed-byte-listp"))
 (local (include-book "tools/mv-nth" :dir :system))
-(local (include-book "arithmetic-3/bind-free/top" :dir :system))
+(local (include-book "centaur/bitops/ihsext-basics" :dir :system))
+(local (include-book "centaur/bitops/signed-byte-p" :dir :system))
 (set-verify-guards-eagerness 2)
 (set-state-ok t)
 
@@ -64,7 +59,7 @@
     (b* (((mv byte state) (read-byte$ channel state))
          ((unless byte)
           (mv nil state)))
-      (mv (sign-byte byte) state)))
+      (mv (sign-extend 8 byte) state)))
 
   (local (in-theory (enable read-8s)))
 
@@ -886,7 +881,7 @@ input channel."
 
 
 (defsection read-bytes$
-  :parents (io)
+  :parents (std/io)
   :short "Flexible macro for reading and combining 1, 2, 4, or 8 bytes from an
 open @(':byte') input stream into a single value."
 
@@ -895,7 +890,7 @@ open @(':byte') input stream into a single value."
      (read-bytes$ channel
                   [:bytes bytes]    ;; default: 1
                   [:signed signed]  ;; default: nil
-                  [:end end]        ;; default: big
+                  [:end end]        ;; default: :big
                   )
        -->
      (mv value state)
@@ -907,13 +902,13 @@ open @(':byte') input stream into a single value."
 
 <li>If you provide @('signed'), it must be either t or nil.</li>
 
-<li>If you provide @('end'), it must be either big or little. (For the 1-byte
-readers, :end does not matter.)</li>
+<li>If you provide @('end'), it must be either @(':big') or @(':little'). (For
+the 1-byte readers, @('end') does not matter.)</li>
 
 </ul>
 
-<p>This is a macro that expands into the appropriate function from the table
-below.</p>
+<p>@('Read-byte$') is a macro that expands into the appropriate function from
+the table below.</p>
 
 @({
      Name         Bytes Read    Value Range        Endian-ness
@@ -941,16 +936,16 @@ below.</p>
   (defmacro read-bytes$ (channel &key
                                  (bytes '1)
                                  (signed 'nil)
-                                 (end 'big))
+                                 (end ':big))
     (declare (xargs :guard (and (symbolp channel)
                                 (booleanp signed)
                                 (or (equal bytes 1)
                                     (equal bytes 2)
                                     (equal bytes 4))
-                                (or (equal end 'little)
-                                    (equal end 'big)))))
+                                (or (equal end :little)
+                                    (equal end :big)))))
     (case end
-      ('big (if signed
+      (:big (if signed
                 (case bytes
                   (1 `(read-8s ,channel state))
                   (2 `(read-16sbe ,channel state))
@@ -963,7 +958,7 @@ below.</p>
                 (4 `(read-32ube ,channel state))
                 (8 `(read-64ube ,channel state))
                 (t (er hard 'read-bytes$ "Bad case in read-bytes$.")))))
-      ('little (if signed
+      (:little (if signed
                    (case bytes
                      (1 `(read-8s ,channel state))
                      (2 `(read-16sle ,channel state))
@@ -1185,7 +1180,7 @@ below.</p>
 
 
 (defsection read-bytes$-n
-  :parents (io)
+  :parents (std/io)
   :short "Flexible macro for reading whole lists of @('n') 1-, 2-, 4-, or
 8-byte values from an open @(':byte') input stream."
 
@@ -1195,7 +1190,7 @@ below.</p>
      (read-bytes$-n n channel
                     [:bytes bytes]     ;; default: 1
                     [:signed signed]   ;; default: nil
-                    [:end end]         ;; default: big
+                    [:end end]         ;; default: :big
                     )
 })
 
@@ -1211,16 +1206,16 @@ we return @('fail').  Otherwise, we return an @('n')-element list, where every
 member is an appropriate integer for this combination of signedness and
 size.</p>"
 
-  (defmacro read-bytes$-n (n channel &key (bytes '1) (signed 'nil) (end 'big))
+  (defmacro read-bytes$-n (n channel &key (bytes '1) (signed 'nil) (end ':big))
     (declare (xargs :guard (and (symbolp channel)
                                 (booleanp signed)
                                 (or (equal bytes 1)
                                     (equal bytes 2)
                                     (equal bytes 4))
-                                (or (equal end 'little)
-                                    (equal end 'big)))))
+                                (or (equal end :little)
+                                    (equal end :big)))))
     (case end
-      ('big (if signed
+      (:big (if signed
                 (case bytes
                   (1 `(read-8s-n ,n ,channel state))
                   (2 `(read-16sbe-n ,n ,channel state))
@@ -1233,7 +1228,7 @@ size.</p>"
                 (4 `(read-32ube-n ,n ,channel state))
                 (8 `(read-64ube-n ,n ,channel state))
                 (t (er hard 'read-bytes$-n "Bad case in read-bytes$-n.")))))
-      ('little (if signed
+      (:little (if signed
                    (case bytes
                      (1 `(read-8s-n ,n ,channel state))
                      (2 `(read-16sle-n ,n ,channel state))

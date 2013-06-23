@@ -8,51 +8,25 @@
 ; whatever that means).
 
 (in-package "ACL2")
-
 (include-book "read-file-characters")
 (local (include-book "tools/mv-nth" :dir :system))
 
-; The below definitions are basically an expansion of the below commented
-; define.  We could use this form if we didn't need to abstain from depending
-; on cutil.
-
-;; (define read-file-characters-no-error ((filename stringp)
-;;                                        (state state-p))
-;;   :returns (mv (characters character-listp :hyp :fguard)
-;;                (state state-p :hyp :fguard))
-;;   (mv-let (data state)
-;;     (read-file-characters filename state)
-;;     (mv (if (stringp data)
-;;             (prog2$ (er hard? 'read-file-characters-no-error
-;;                         data)
-;;                     nil)
-;;           data)
-;;         state)))
-
-(defun read-file-characters-no-error (filename state)
+(defund read-file-characters-no-error (filename state)
   (declare (xargs :guard (and (stringp filename)
                               (state-p state))))
   (declare (xargs :stobjs (state)))
-  (let
-      ((__function__ 'read-file-characters-no-error))
-    (declare (ignorable __function__))
-    (mv-let (data state)
-      (read-file-characters filename state)
-      (mv (if (stringp data)
-              (prog2$ (er hard? 'read-file-characters-no-error
-                          data)
-                      nil)
-            data)
-          state))))
+  (b* (((mv data state)
+        (read-file-characters filename state))
+       ((when (stringp data))
+        (mv (er hard? 'read-file-characters-no-error data) state)))
+    (mv data state)))
 
-(defthm read-file-characters-no-error-preserves-state
+(local (in-theory (enable read-file-characters-no-error)))
+
+(defthm state-p1-of-read-file-characters-no-error
   (implies (and (force (state-p1 state))
                 (force (stringp filename)))
            (state-p1 (mv-nth 1 (read-file-characters-no-error filename state)))))
 
 (defthm read-file-characters-no-error-returns-character-list
-  (implies (and (force (state-p1 state))
-                (force (stringp filename)))
-           (character-listp (mv-nth 0 (read-file-characters-no-error filename state)))))
-
-(in-theory (disable read-file-characters-no-error))
+  (character-listp (mv-nth 0 (read-file-characters-no-error filename state))))

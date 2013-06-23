@@ -1,6 +1,7 @@
 ; Standard Library
 ; Portions are Copyright (C) 2008-2013 Centaur Technology
-; Portions are Copyright (C) 2004-2006 by Jared Davis
+; Portions are Copyright (C) 2004-2013 Jared Davis
+; Portions are Copyright (C) 2013 Kookamara LLC
 ; See individual books for details.
 ;
 ; Contact:
@@ -29,4 +30,25 @@
 (include-book "misc/top")
 
 (defsection std
-  :short "Some \"standard\" libraries for ACL2.")
+  :short "Standard libraries for ACL2."
+
+  :long "<p>The @('std') library is meant to become <i>ACL2, Batteries
+Included</i>.  Its features a wide variety of books that work well together to
+provide a well-thought-out, documented, coherent reasoning strategy.</p>
+
+<p>@('Std') is currently under active development.  You are welcome to use it,
+but please be aware that things may change out from under you.</p>
+
+<p>So far, @('std') itself includes libraries about
+   <see topic='@(url std/lists)'>lists</see>,
+   <see topic='@(url std/alists)'>alists</see>,
+   <see topic='@(url std/typed-lists)'>typed-lists</see>, and
+   <see topic='@(url std/io)'>input/output</see>.
+Each of these libraries provides many lemmas for reasoning about built-in
+ACL2 functions, and also many additional functions.</p>
+
+<p>The @('Std') books already play well with libraries such as @(see osets),
+@(see str), and @(see cutil).  We are working to further integrate these
+libraries, and may soon incorporate some of them into @(see std), itself.</p>")
+
+

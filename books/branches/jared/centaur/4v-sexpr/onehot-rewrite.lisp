@@ -1042,8 +1042,8 @@ implement.</p>"
          (false-bindings  (hons-acons var (4vs-f) bindings)))
 
       (4vs-ite*-list-dumb (car vars)
-                     sexprs/bindings
-                     (4v-onehot-sexpr-list-prime-exec (cdr vars) false-bindings sexprs))))
+                          sexprs/bindings
+                          (4v-onehot-sexpr-list-prime-exec (cdr vars) false-bindings sexprs))))
 
   (local (in-theory (enable 4v-onehot-sexpr-list-prime-exec)))
 
@@ -1074,6 +1074,11 @@ implement.</p>"
   (local (defthm l0
            (implies (atom sexprs)
                     (not (4v-onehot-sexpr-list-prime-exec vars false-bindings sexprs)))))
+
+  (local (defthm l1a
+           (iff (4vs-ite*-list-dumb c as bs)
+                (consp as))
+           :hints(("Goal" :in-theory (enable 4vs-ite*-list-dumb)))))
 
   (local (defthm l1
            (equal (consp (4v-onehot-sexpr-list-prime-exec vars false-bindings sexprs))

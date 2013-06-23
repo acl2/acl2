@@ -93,7 +93,7 @@
                       (coerce (list (char x n)) 'string) *nls*
                       "Nearby text: {" (error-context x n xl) "}" *nls*)
             n nil))
-       (str (reverse (coerce rchars 'string))))
+       (str (str::rchars-to-string rchars)))
     (mv nil n str)))
 
 (defun read-attrval (x n xl)
@@ -115,7 +115,7 @@
                       "Nearby text: {" (error-context x saved-n xl) "}" *nls*)
             n nil))
        (n (+ n 1)) ;; eat the closing quote-char
-       (val-str (reverse (coerce chars 'string))))
+       (val-str (str::rchars-to-string chars)))
     (mv nil n val-str)))
 
 (defun read-tag-attributes (x n xl tag-start-n atts)
@@ -245,7 +245,7 @@
                       "Nearby text: {" (error-context x saved-n xl) "}" *nls*)
             n nil))
        (n (+ 1 n)) ;; eat the ;
-       (str (reverse (coerce rchars 'string)))
+       (str (str::rchars-to-string rchars))
        ((when (equal str "amp"))  (mv nil n '(:ENTITY :AMP)))
        ((when (equal str "lt"))   (mv nil n '(:ENTITY :LT)))
        ((when (equal str "gt"))   (mv nil n '(:ENTITY :GT)))
@@ -283,7 +283,7 @@
        ;; Otherwise, plain text.
        ((mv ?foundp n rchars)
         (read-until x n xl '(#\< #\& #\>) nil))
-       (token (list :TEXT (reverse (coerce rchars 'string)))))
+       (token (list :TEXT (str::rchars-to-string rchars))))
     (parse-xml-aux x n xl (cons token acc))))
 
 

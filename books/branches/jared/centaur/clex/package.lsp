@@ -20,8 +20,8 @@
 
 (in-package "ACL2")
 
-(ld "cutil/package.lsp" :dir :system)
-(ld "str/package.lsp" :dir :system)
+(include-book "cutil/portcullis" :dir :system)
+(include-book "str/portcullis" :dir :system)
 
 (defpkg "CLEX"
   (set-difference-eq
@@ -39,8 +39,8 @@
                defxdoc defsection definline definlined
                defabsstobj-events
                unsigned-byte-p signed-byte-p
+               unsigned-byte-listp
                explode implode
-               cutil::deflist
                str::cat str::natstr
                nat-equiv int-equiv))
    '(number-char-p digit-char-p sin)))

@@ -18,13 +18,25 @@
 (in-package "ACL2")
 (include-book "utf8-decode")
 (include-book "std/io/take-bytes" :dir :system)
-;; (local (include-book "open-input-channel"))
-;; (local (include-book "close-input-channel"))
 (local (include-book "std/io/base" :dir :system))
 (local (include-book "tools/mv-nth" :dir :system))
+(local (include-book "centaur/bitops/ihsext-basics" :dir :system))
+(local (include-book "centaur/bitops/signed-byte-p" :dir :system))
 (set-state-ok t)
 
+(local (in-theory (disable signed-byte-p)))
+
 (local (in-theory (disable take-redefinition)))
+
+(local (defthm signed-byte-p-resolver
+         (implies (and (integerp n)
+                       (<= 1 n)
+                       (integerp x)
+                       (<= (- (expt 2 (1- n))) x)
+                       (< x (expt 2 (1- n))))
+                  (signed-byte-p n x))
+         :hints(("Goal" :in-theory (enable signed-byte-p)))))
+
 
 
 ;; We now want to recreate our utf8=>ustring function but directly using the
@@ -274,308 +286,316 @@
 ;; a lot of this is the same as what we needed for utf8=>ustring-fast.
 
 (encapsulate
- ()
- (local (in-theory (enable take-redefinition)))
+  ()
+  (local (in-theory (enable take-redefinition)))
 
- (local (defthm terrible-lemma-1
-          (implies (and (integerp x)
-                        (<= 0 x)
-                        (<= x 127))
-                   (uchar? x))
-          :hints(("Goal" :in-theory (enable uchar?)))))
+  (local (defthm terrible-lemma-1
+           (implies (and (integerp x)
+                         (<= 0 x)
+                         (<= x 127))
+                    (uchar? x))
+           :hints(("Goal" :in-theory (enable uchar?)))))
 
- (local (defthm terrible-lemma-2
-          (IMPLIES (AND (force (integerp x1))
-                        (force (integerp x2))
-                        (< 127 X1)
-                        (<= 194 X1)
-                        (<= X1 223)
-                        (<= 128 X2)
-                        (<= X2 191))
-                   (UCHAR? (LOGIOR (ASH (LOGAND X1 31) 6)
-                                   (LOGAND X2 63))))
-          :hints(("Goal"
-                  :in-theory (enable utf8-combine2-guard
-                                     utf8-combine2
-                                     utf8-table35-bytes
-                                     utf8-table36-bytes)
-                  :use ((:instance uchar?-of-utf8-combine2))))))
+  (local (defthm terrible-lemma-2
+           (IMPLIES (AND (force (integerp x1))
+                         (force (integerp x2))
+                         (< 127 X1)
+                         (<= 194 X1)
+                         (<= X1 223)
+                         (<= 128 X2)
+                         (<= X2 191))
+                    (UCHAR? (LOGIOR (ASH (LOGAND X1 31) 6)
+                                    (LOGAND X2 63))))
+           :hints(("Goal"
+                   :in-theory (enable utf8-combine2-guard
+                                      utf8-combine2
+                                      utf8-table35-bytes
+                                      utf8-table36-bytes)
+                   :use ((:instance uchar?-of-utf8-combine2))))))
 
- (local (defthm terrible-lemma-3
-          (IMPLIES (AND (force (integerp x2))
-                        (force (integerp x3))
-                        (<= 160 X2)
-                        (<= X2 191)
-                        (<= 128 X3)
-                        (<= X3 191))
-                   (UCHAR? (LOGIOR 0 (ASH (LOGAND X2 63) 6)
-                                   (LOGAND X3 63))))
-          :hints(("Goal"
-                  :in-theory (enable utf8-combine3-guard
-                                     utf8-combine3
-                                     utf8-table35-bytes
-                                     utf8-table36-bytes)
-                  :use ((:instance uchar?-of-utf8-combine3
-                                   (x1 224)))))))
+  (local (defthm terrible-lemma-3
+           (IMPLIES (AND (force (integerp x2))
+                         (force (integerp x3))
+                         (<= 160 X2)
+                         (<= X2 191)
+                         (<= 128 X3)
+                         (<= X3 191))
+                    (UCHAR? (LOGIOR 0 (ASH (LOGAND X2 63) 6)
+                                    (LOGAND X3 63))))
+           :hints(("Goal"
+                   :in-theory (enable utf8-combine3-guard
+                                      utf8-combine3
+                                      utf8-table35-bytes
+                                      utf8-table36-bytes)
+                   :use ((:instance uchar?-of-utf8-combine3
+                                    (x1 224)))))))
 
- (local (defthm terrible-lemma-4
-          (IMPLIES (AND (force (integerp X1))
-                        (force (integerp X2))
-                        (force (integerp X3))
-                        (<= 224 X1)
-                        (<= X1 239)
-                        (NOT (EQUAL X1 224))
-                        (NOT (EQUAL X1 237))
-                        (<= 128 X2)
-                        (<= X2 191)
-                        (<= 128 X3)
-                        (<= X3 191))
-                   (UCHAR? (LOGIOR (ASH (LOGAND X1 15) 12)
-                                   (ASH (LOGAND X2 63) 6)
-                                   (LOGAND X3 63))))
-          :hints(("Goal"
-                  :in-theory (enable utf8-combine3-guard
-                                     utf8-combine3
-                                     utf8-table35-bytes
-                                     utf8-table36-bytes)
-                  :use ((:instance uchar?-of-utf8-combine3))))))
+  (local (defthm terrible-lemma-4
+           (IMPLIES (AND (force (integerp X1))
+                         (force (integerp X2))
+                         (force (integerp X3))
+                         (<= 224 X1)
+                         (<= X1 239)
+                         (NOT (EQUAL X1 224))
+                         (NOT (EQUAL X1 237))
+                         (<= 128 X2)
+                         (<= X2 191)
+                         (<= 128 X3)
+                         (<= X3 191))
+                    (UCHAR? (LOGIOR (ASH (LOGAND X1 15) 12)
+                                    (ASH (LOGAND X2 63) 6)
+                                    (LOGAND X3 63))))
+           :hints(("Goal"
+                   :in-theory (enable utf8-combine3-guard
+                                      utf8-combine3
+                                      utf8-table35-bytes
+                                      utf8-table36-bytes)
+                   :use ((:instance uchar?-of-utf8-combine3))))))
 
- (local (defthm terrible-lemma-5
-          (IMPLIES (AND (force (integerp x2))
-                        (force (integerp x3))
-                        (<= 128 X2)
-                        (<= X2 159)
-                        (<= 128 X3)
-                        (<= X3 191))
-                   (UCHAR? (LOGIOR 53248 (ASH (LOGAND X2 63) 6)
-                                   (LOGAND X3 63))))
-          :hints(("Goal"
-                  :in-theory (enable utf8-combine3-guard
-                                     utf8-combine3
-                                     utf8-table35-bytes
-                                     utf8-table36-bytes)
-                  :use ((:instance uchar?-of-utf8-combine3
-                                   (x1 237)))))))
+  (local (defthm terrible-lemma-5
+           (IMPLIES (AND (force (integerp x2))
+                         (force (integerp x3))
+                         (<= 128 X2)
+                         (<= X2 159)
+                         (<= 128 X3)
+                         (<= X3 191))
+                    (UCHAR? (LOGIOR 53248 (ASH (LOGAND X2 63) 6)
+                                    (LOGAND X3 63))))
+           :hints(("Goal"
+                   :in-theory (enable utf8-combine3-guard
+                                      utf8-combine3
+                                      utf8-table35-bytes
+                                      utf8-table36-bytes)
+                   :use ((:instance uchar?-of-utf8-combine3
+                                    (x1 237)))))))
 
- (local (defthm terrible-lemma-6
-          (IMPLIES (AND (force (integerp x2))
-                        (force (integerp x3))
-                        (force (integerp x4))
-                        (<= 144 X2)
-                        (<= X2 191)
-                        (<= 128 X3)
-                        (<= X3 191)
-                        (<= 128 X4)
-                        (<= X4 191))
-                   (UCHAR? (LOGIOR 0 (ASH (LOGAND X2 63) 12)
-                                   (ASH (LOGAND X3 63) 6)
-                                   (LOGAND X4 63))))
-          :hints(("Goal"
-                  :in-theory (enable utf8-combine4-guard
-                                     utf8-combine4
-                                     utf8-table35-bytes
-                                     utf8-table36-bytes)
-                  :use ((:instance uchar?-of-utf8-combine4
-                                   (x1 240)))))))
+  (local (defthm terrible-lemma-6
+           (IMPLIES (AND (force (integerp x2))
+                         (force (integerp x3))
+                         (force (integerp x4))
+                         (<= 144 X2)
+                         (<= X2 191)
+                         (<= 128 X3)
+                         (<= X3 191)
+                         (<= 128 X4)
+                         (<= X4 191))
+                    (UCHAR? (LOGIOR 0 (ASH (LOGAND X2 63) 12)
+                                    (ASH (LOGAND X3 63) 6)
+                                    (LOGAND X4 63))))
+           :hints(("Goal"
+                   :in-theory (enable utf8-combine4-guard
+                                      utf8-combine4
+                                      utf8-table35-bytes
+                                      utf8-table36-bytes)
+                   :use ((:instance uchar?-of-utf8-combine4
+                                    (x1 240)))))))
 
- (local (defthm terrible-lemma-7
-          (IMPLIES (AND (force (integerp x1))
-                        (force (integerp x2))
-                        (force (integerp x3))
-                        (force (integerp x4))
-                        (<= 240 X1)
-                        (<= X1 244)
-                        (NOT (EQUAL X1 240))
-                        (NOT (EQUAL X1 244))
-                        (<= 128 X2)
-                        (<= X2 191)
-                        (<= 128 X3)
-                        (<= X3 191)
-                        (<= 128 X4)
-                        (<= X4 191))
-                   (UCHAR? (LOGIOR (ASH (LOGAND X1 7) 18)
-                                   (ASH (LOGAND X2 63) 12)
-                                   (ASH (LOGAND X3 63) 6)
-                                   (LOGAND X4 63))))
-          :hints(("Goal"
-                  :in-theory (enable utf8-combine4-guard
-                                     utf8-combine4
-                                     utf8-table35-bytes
-                                     utf8-table36-bytes)
-                  :use ((:instance uchar?-of-utf8-combine4))))))
+  (local (defthm terrible-lemma-7
+           (IMPLIES (AND (force (integerp x1))
+                         (force (integerp x2))
+                         (force (integerp x3))
+                         (force (integerp x4))
+                         (<= 240 X1)
+                         (<= X1 244)
+                         (NOT (EQUAL X1 240))
+                         (NOT (EQUAL X1 244))
+                         (<= 128 X2)
+                         (<= X2 191)
+                         (<= 128 X3)
+                         (<= X3 191)
+                         (<= 128 X4)
+                         (<= X4 191))
+                    (UCHAR? (LOGIOR (ASH (LOGAND X1 7) 18)
+                                    (ASH (LOGAND X2 63) 12)
+                                    (ASH (LOGAND X3 63) 6)
+                                    (LOGAND X4 63))))
+           :hints(("Goal"
+                   :in-theory (enable utf8-combine4-guard
+                                      utf8-combine4
+                                      utf8-table35-bytes
+                                      utf8-table36-bytes)
+                   :use ((:instance uchar?-of-utf8-combine4))))))
 
- (local (defthm terrible-lemma-8
-          (IMPLIES (AND (force (integerp x2))
-                        (force (integerp x3))
-                        (force (integerp x4))
-                        (<= 128 x2)
-                        (<= x2 143)
-                        (<= 128 x3)
-                        (<= x3 191)
-                        (<= 128 x4)
-                        (<= x4 191))
-                   (UCHAR? (LOGIOR 1048576 (ASH (LOGAND x2 63) 12)
-                                   (ASH (LOGAND x3 63) 6)
-                                   (LOGAND x4 63))))
-          :hints(("Goal"
-                  :in-theory (enable utf8-combine4-guard
-                                     utf8-combine4
-                                     utf8-table35-bytes
-                                     utf8-table36-bytes)
-                  :use ((:instance uchar?-of-utf8-combine4
-                                   (x1 244)))))))
+  (local (defthm terrible-lemma-8
+           (IMPLIES (AND (force (integerp x2))
+                         (force (integerp x3))
+                         (force (integerp x4))
+                         (<= 128 x2)
+                         (<= x2 143)
+                         (<= 128 x3)
+                         (<= x3 191)
+                         (<= 128 x4)
+                         (<= x4 191))
+                    (UCHAR? (LOGIOR 1048576 (ASH (LOGAND x2 63) 12)
+                                    (ASH (LOGAND x3 63) 6)
+                                    (LOGAND x4 63))))
+           :hints(("Goal"
+                   :in-theory (enable utf8-combine4-guard
+                                      utf8-combine4
+                                      utf8-table35-bytes
+                                      utf8-table36-bytes)
+                   :use ((:instance uchar?-of-utf8-combine4
+                                    (x1 244)))))))
 
- (local (include-book "std/io/signed-byte-listp" :dir :system))
+  (local (include-book "std/typed-lists/signed-byte-listp" :dir :system))
 
- (local (defthm unsigned-byte-listp-8-of-car-of-read-byte$-all-forward
-          (implies (and (force (state-p1 state))
-                        (force (open-input-channel-p1 channel :byte state))
-                        (force (symbolp channel)))
-                   (unsigned-byte-listp 8 (mv-nth 0 (read-byte$-all channel state))))
-          :rule-classes ((:forward-chaining :trigger-terms ((read-byte$-all channel state))))))
+  (local (defthm unsigned-byte-listp-8-of-car-of-read-byte$-all-forward
+           (implies (and (force (state-p1 state))
+                         (force (open-input-channel-p1 channel :byte state))
+                         (force (symbolp channel)))
+                    (unsigned-byte-listp 8 (mv-nth 0 (read-byte$-all channel state))))
+           :rule-classes ((:forward-chaining :trigger-terms ((read-byte$-all channel state))))))
 
- (local (defthm unsigned-byte-listp-8-of-cdr-when-unsigned-byte-listp-8
-          (implies (unsigned-byte-listp 8 x)
-                   (unsigned-byte-listp 8 (cdr x)))
-          :rule-classes ((:forward-chaining))))
+  (local (defthm unsigned-byte-listp-8-of-cdr-when-unsigned-byte-listp-8
+           (implies (unsigned-byte-listp 8 x)
+                    (unsigned-byte-listp 8 (cdr x)))
+           :rule-classes ((:forward-chaining))))
 
- (local (defthm crock
-          (implies (unsigned-byte-listp bytes x)
-                   (iff (consp x)
-                        x))))
+  (local (defthm crock
+           (implies (unsigned-byte-listp bytes x)
+                    (iff (consp x)
+                         x))))
 
-(local (defthm hideous-lemma-1
-          (implies (and (force (state-p1 state))
-                        (force (open-input-channel-p1 channel :byte state))
-                        (force (symbolp channel))
-                        (mv-nth 0 (read-byte$-all channel state)))
-                   (unsigned-byte-p 8 (car (mv-nth 0 (read-byte$-all channel state)))))
-          :rule-classes ((:rewrite)
-                         (:forward-chaining
-                          :trigger-terms ((mv-nth 0 (read-byte$-all channel state)))))))
+  (local (defthm hideous-lemma-1
+           (implies (and (force (state-p1 state))
+                         (force (open-input-channel-p1 channel :byte state))
+                         (force (symbolp channel))
+                         (mv-nth 0 (read-byte$-all channel state)))
+                    (unsigned-byte-p 8 (car (mv-nth 0 (read-byte$-all channel state)))))
+           :rule-classes ((:rewrite)
+                          (:forward-chaining
+                           :trigger-terms ((mv-nth 0 (read-byte$-all channel state)))))))
 
-(local (defthm hideous-lemma-2
-          (implies (and (force (state-p1 state))
-                        (force (open-input-channel-p1 channel :byte state))
-                        (force (symbolp channel))
-                        (cdr (mv-nth 0 (read-byte$-all channel state))))
-                   (unsigned-byte-p 8 (cadr (mv-nth 0 (read-byte$-all channel state)))))
-          :rule-classes ((:rewrite)
-                         (:forward-chaining
-                          :trigger-terms ((cdr (mv-nth 0 (read-byte$-all channel state))))))))
+  (local (defthm hideous-lemma-2
+           (implies (and (force (state-p1 state))
+                         (force (open-input-channel-p1 channel :byte state))
+                         (force (symbolp channel))
+                         (cdr (mv-nth 0 (read-byte$-all channel state))))
+                    (unsigned-byte-p 8 (cadr (mv-nth 0 (read-byte$-all channel state)))))
+           :rule-classes ((:rewrite)
+                          (:forward-chaining
+                           :trigger-terms ((cdr (mv-nth 0 (read-byte$-all channel state))))))))
 
-(local (defthm hideous-lemma-3
-          (implies (and (force (state-p1 state))
-                        (force (open-input-channel-p1 channel :byte state))
-                        (force (symbolp channel))
-                        (cddr (mv-nth 0 (read-byte$-all channel state))))
-                   (unsigned-byte-p 8 (caddr (mv-nth 0 (read-byte$-all channel state)))))
-          :rule-classes ((:rewrite)
-                         (:forward-chaining
-                          :trigger-terms ((cddr (mv-nth 0 (read-byte$-all channel state))))))
-          :hints(("Goal"
-                  :in-theory (e/d (read-byte$-all)
-                                  (car-of-read-byte$))
-                  :expand ((read-byte$-all channel state)
-                           (read-byte$-all channel (mv-nth 1 (read-byte$ channel state)))
-                           (read-byte$-all
-                            channel
-                            (mv-nth 1 (read-byte$ channel
-                                                  (mv-nth 1 (read-byte$ channel
-                                                                        state))))))))))
+  (local (defthm hideous-lemma-3
+           (implies (and (force (state-p1 state))
+                         (force (open-input-channel-p1 channel :byte state))
+                         (force (symbolp channel))
+                         (cddr (mv-nth 0 (read-byte$-all channel state))))
+                    (unsigned-byte-p 8 (caddr (mv-nth 0 (read-byte$-all channel state)))))
+           :rule-classes ((:rewrite)
+                          (:forward-chaining
+                           :trigger-terms ((cddr (mv-nth 0 (read-byte$-all channel state))))))
+           :hints(("Goal"
+                   :in-theory (e/d (read-byte$-all)
+                                   (car-of-read-byte$))
+                   :expand ((read-byte$-all channel state)
+                            (read-byte$-all channel (mv-nth 1 (read-byte$ channel state)))
+                            (read-byte$-all
+                             channel
+                             (mv-nth 1 (read-byte$ channel
+                                                   (mv-nth 1 (read-byte$ channel
+                                                                         state))))))))))
 
-(local (defthm hideous-lemma-4
-          (implies (and (force (state-p1 state))
-                        (force (open-input-channel-p1 channel :byte state))
-                        (force (symbolp channel))
-                        (cdddr (mv-nth 0 (read-byte$-all channel state))))
-                   (unsigned-byte-p 8 (car (cdddr (mv-nth 0 (read-byte$-all channel state))))))
-          :rule-classes ((:rewrite)
-                         (:forward-chaining
-                          :trigger-terms ((cdddr (mv-nth 0 (read-byte$-all channel state))))))
-          :hints(("Goal"
-                  :in-theory (e/d (read-byte$-all)
-                                  (car-of-read-byte$))
-                  :expand ((read-byte$-all channel state)
-                           (read-byte$-all channel
-                                           (mv-nth 1 (read-byte$ channel state)))
-                           (read-byte$-all
-                            channel
-                            (mv-nth 1 (read-byte$ channel
-                                                  (mv-nth 1 (read-byte$ channel state)))))
-                           (read-byte$-all
-                            channel
-                            (mv-nth 1 (read-byte$
-                                       channel
-                                       (mv-nth 1 (read-byte$
-                                                  channel
-                                                  (mv-nth 1 (read-byte$ channel
-                                                                        state))))))))))))
+  (local (defthm hideous-lemma-4
+           (implies (and (force (state-p1 state))
+                         (force (open-input-channel-p1 channel :byte state))
+                         (force (symbolp channel))
+                         (cdddr (mv-nth 0 (read-byte$-all channel state))))
+                    (unsigned-byte-p 8 (car (cdddr (mv-nth 0 (read-byte$-all channel state))))))
+           :rule-classes ((:rewrite)
+                          (:forward-chaining
+                           :trigger-terms ((cdddr (mv-nth 0 (read-byte$-all channel state))))))
+           :hints(("Goal"
+                   :in-theory (e/d (read-byte$-all)
+                                   (car-of-read-byte$))
+                   :expand ((read-byte$-all channel state)
+                            (read-byte$-all channel
+                                            (mv-nth 1 (read-byte$ channel state)))
+                            (read-byte$-all
+                             channel
+                             (mv-nth 1 (read-byte$ channel
+                                                   (mv-nth 1 (read-byte$ channel state)))))
+                            (read-byte$-all
+                             channel
+                             (mv-nth 1 (read-byte$
+                                        channel
+                                        (mv-nth 1 (read-byte$
+                                                   channel
+                                                   (mv-nth 1 (read-byte$ channel
+                                                                         state))))))))))))
 
-(local (defthm integerp-when-unsigned-byte-p-8
-          (implies (unsigned-byte-p 8 x)
-                   (integerp x))))
+  (local (defthm integerp-when-unsigned-byte-p-8
+           (implies (unsigned-byte-p 8 x)
+                    (integerp x))))
 
-(local (defthm signed-byte-p-from-unsigned-byte-p-8
-          (implies (and (unsigned-byte-p 8 x)
-                        (< 8 (nfix n)))
-                   (signed-byte-p n x))))
+  (local (defthm signed-byte-p-from-unsigned-byte-p-8
+           (implies (and (unsigned-byte-p 8 x)
+                         (< 8 (nfix n)))
+                    (signed-byte-p n x))))
 
-(local (defthm len-zero-when-true-listp
-          (implies (true-listp x)
-                   (equal (equal (len x) 0)
-                          (not x)))))
+  (local (defthm len-zero-when-true-listp
+           (implies (true-listp x)
+                    (equal (equal (len x) 0)
+                           (not x)))))
 
-(local (defthm integer-squeeze-lemma
-          (implies (and (syntaxp (quotep n))
-                        (integerp n)
-                        (< (1- n) x)
-                        (< x (1+ n)))
-                   (equal (equal x n)
-                          (integerp x)))
-          :rule-classes ((:rewrite :backchain-limit-lst 1))))
+  (local (defthm integer-squeeze-lemma
+           (implies (and (syntaxp (quotep n))
+                         (integerp n)
+                         (< (1- n) x)
+                         (< x (1+ n)))
+                    (equal (equal x n)
+                           (integerp x)))
+           :rule-classes ((:rewrite :backchain-limit-lst 1))))
 
-(local (defthm unsigned-byte-p-8-when-valid-integer
-          (implies (and (<= 0 x)
-                        (< x 255))
-                   (equal (unsigned-byte-p 8 x)
-                          (integerp x)))
-          :rule-classes ((:rewrite :backchain-limit-lst 1))
-          :hints(("Goal" :in-theory (enable unsigned-byte-p)))))
+  (local (defthm unsigned-byte-p-8-when-valid-integer
+           (implies (and (<= 0 x)
+                         (< x 255))
+                    (equal (unsigned-byte-p 8 x)
+                           (integerp x)))
+           :rule-classes ((:rewrite :backchain-limit-lst 1))
+           :hints(("Goal" :in-theory (enable unsigned-byte-p)))))
 
-(local (include-book "arithmetic-3/bind-free/top" :dir :system))
+  (local (include-book "arithmetic-3/bind-free/top" :dir :system))
 
-(local (defthm nthcdr-bytes-hack
-          (implies (and (force (state-p1 state))
-                        (force (open-input-channel-p1 channel :byte state))
-                        (force (symbolp channel))
-                        (force (natp n)))
-                   (equal (nthcdr-bytes n channel (mv-nth 1 (read-byte$ channel state)))
-                          (nthcdr-bytes (+ 1 n) channel state)))
-          :hints(("Goal"
-                  :expand (nthcdr-bytes (+ 1 n) channel state)
-                  :in-theory (enable nthcdr-bytes)
-                  :do-not-induct t))))
+  (local (defthm nthcdr-bytes-hack
+           (implies (and (force (state-p1 state))
+                         (force (open-input-channel-p1 channel :byte state))
+                         (force (symbolp channel))
+                         (force (natp n)))
+                    (equal (nthcdr-bytes n channel (mv-nth 1 (read-byte$ channel state)))
+                           (nthcdr-bytes (+ 1 n) channel state)))
+           :hints(("Goal"
+                   :expand (nthcdr-bytes (+ 1 n) channel state)
+                   :in-theory (enable nthcdr-bytes)
+                   :do-not-induct t))))
 
-(local (in-theory (enable unsigned-byte-listp
-                           utf8-char=>uchar
-                           utf8-table35-bytes
-                           utf8-table36-bytes
-                           utf8-combine2
-                           utf8-combine3
-                           utf8-combine4
-                           utf8-combine2-guard
-                           utf8-combine3-guard
-                           utf8-combine4-guard)))
+  (local (in-theory (e/d (unsigned-byte-listp
+                          utf8-char=>uchar
+                          utf8-table35-bytes
+                          utf8-table36-bytes
+                          utf8-combine2
+                          utf8-combine3
+                          utf8-combine4
+                          utf8-combine2-guard
+                          utf8-combine3-guard
+                          utf8-combine4-guard)
+                         (
+                          ;; BOZO the above "terrible lemmas" were developed before
+                          ;; including bitops, so they're targeting the wrong normal
+                          ;; forms...
+                          LOGAND-WITH-BITMASK
+                          simplify-logior
+                          commutativity-of-logior
+                          commutativity-of-logand
+                          UTF8-PARTITION-SUCCESSFUL-WHEN-ANY-VALID-PARTITIONING-EXISTS
+                          ))))
 
-(verify-guards read-utf8-fast
-                :hints(("Subgoal 2"
-                        :in-theory (disable unsigned-byte-p-8-when-valid-integer
-                                            nthcdr-bytes-hack))))
+  (verify-guards read-utf8-fast
+    :hints(("Goal"
+            :do-not-induct t
+            :do-not '(generalize fertilize))))
 
- )
-
-
+  )
 
 
 (defun read-utf8 (filename state)

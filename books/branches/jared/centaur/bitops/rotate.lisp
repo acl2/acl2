@@ -37,6 +37,20 @@
                 0)
          :hints(("Goal" :in-theory (enable mod floor)))))
 
+(local (defthm rem-is-mod
+         ;; (let ((places 20)
+         ;;       (width 4))
+         ;;   ;; REM finishes in 2.4 seconds, MOD in 2.8 seconds...
+         ;;   (time (loop for i fixnum from 1 to 100000000 do
+         ;;               (mod places width)))
+         ;;   (time (loop for i fixnum from 1 to 100000000 do
+         ;;               (rem places width))))
+         (implies (and (natp places)
+                       (posp width))
+                  (equal (rem places width)
+                         (mod places width)))
+         :hints(("Goal" :in-theory (enable mod rem)))))
+
 
 (defsection rotate-left
 
@@ -57,8 +71,17 @@ same as not rotating at all."
 
     (let* ((width      (lnfix width))
            (places     (lnfix places))
-           (x          (logand x (1- (ash 1 width)))) ; chop x down to size
-           (places     (mod places width))            ; e.g., 20 places --> 4 places
+           (wmask      (1- (ash 1 width)))
+           (x          (logand x wmask))              ; chop x down to size
+           (places     (mbe :logic (mod places width) ; e.g., 20 places --> 4 places
+                            :exec
+                            ;; REM is slightly cheaper than MOD, but in many
+                            ;; cases we can probably avoid REM entirely because
+                            ;; usually we'll be rotating by some amount less
+                            ;; than the width...
+                            (if (< places width)
+                                places
+                              (rem places width))))
            (low-num    (- width places))              ; e.g., 12
            (mask       (1- (ash 1 low-num)))          ; e.g., 0000_1111_1111_1111
            (xl         (logand x mask))               ; e.g., 0000_BBBB_CCCC_DDDD
@@ -302,8 +325,17 @@ same as not rotating at all."
                                    logbitp-of-rotate-left-split)))))))
 
 
-
 (defsection rotate-right
+
+  (local (defthm loghead-removal-backwards
+           ;; BOZO should really fix loghead's definition instead...
+           (implies (natp width)
+                    (equal (logand x (+ -1 (ash 1 width)))
+                           (loghead width x)))
+           :hints((equal-by-logbitp-hint)
+                  (and stable-under-simplificationp
+                       '(:in-theory (enable b-and bool->bit
+                                            logbitp-of-loghead-split))))))
 
   (defund rotate-right (x width places)
     "Rotate X, a vector of some WIDTH, by PLACES places to the right.
@@ -315,14 +347,19 @@ same as not rotating at all."
     (declare (xargs :guard (and (integerp x)
                                 (posp width)
                                 (natp places))))
-
     ;; Running example to help understand the code: suppose X is some 16-bit
     ;; number, say 16'b AAAA_BBBB_CCCC_DDDD, so the width is 16, and suppose we
     ;; want to rotate by 20 places.
     (let* ((width      (lnfix width))
-           (x          (loghead width x))
+           (x          (mbe :logic (loghead width x)
+                            :exec (logand x (+ -1 (ash 1 width)))))
            (places     (lnfix places))
-           (places     (mod places width))          ; e.g., 20 places --> 4 places
+           (places     (mbe :logic (mod places width) ; e.g., 20 places --> 4 places
+                            :exec
+                            ;; As in rotate-left
+                            (if (< places width)
+                                places
+                              (rem places width))))
            (mask       (1- (ash 1 places)))         ; e.g., 0000_0000_0000_1111
            (xl         (logand x mask))             ; e.g., 0000_0000_0000_DDDD
            (xh-shift   (ash x (- places)))          ; e.g., 0000_AAAA_BBBB_CCCC

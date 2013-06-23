@@ -1,3 +1,8 @@
+; expander.lisp  --  symbolic expansion utilities for ACL2
+; Copyright (C) 2013, Regents of the University of Texas
+; Originally written by Matt Kaufmann
+; License: A 3-clause BSD license.  See the LICENSE file distributed with ACL2.
+
 ; Changes by Pete Manolios Wed Jul 15 21:22:03 EDT 2009
 ; Changes by Daron Vroon shortly thereafter.
 ; Made minor modifications and added simplification
@@ -5,31 +10,15 @@
 ; "termination checkpoints" we generate. See the end of the file
 ; for documentation, examples, and ideas for extending this work.
 
-; expander.lisp  --  symbolic expansion utilities for ACL2
-; Copyright (C) 1997  Computational Logic, Inc.
+; Historical comments:
 
-; This book is free software; you can redistribute it and/or modify
-; it under the terms of the GNU General Public License as published by
-; the Free Software Foundation; either version 2 of the License, or
-; (at your option) any later version.
+;   Although some attempt has been made to bring it up to date with ACL2
+;   Release 2.0, this file should be viewed as a set of routines that may prove
+;   useful in using ACL2 but _not_ as code that can be trusted to the extent
+;   that the ACL2 system prover may be trusted.
 
-; This book is distributed in the hope that it will be useful,
-; but WITHOUT ANY WARRANTY; without even the implied warranty of
-; MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-; GNU General Public License for more details.
-
-; You should have received a copy of the GNU General Public License
-; along with this book; if not, write to the Free Software
-; Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
-
-; Originally written by Matt Kaufmann at Computational Logic, Inc.
-; Although some attempt has been made to bring it up to date with ACL2
-; Release 2.0, this file should be viewed as a set of routines that
-; may prove useful in using ACL2 but _not_ as code that can be trusted
-; to the extent that the ACL2 system prover may be trusted.
-
-; For ACL2 3.0, removed symsim-for-value (not clear that it's been used for a
-; long time).  And, we allow symsim to return multiple clauses.
+;   For ACL2 3.0, removed symsim-for-value (not clear that it's been used for a
+;   long time).  And, we allow symsim to return multiple clauses.
 
 ; Top-level routines (only the first two have reasonable documentation):
 

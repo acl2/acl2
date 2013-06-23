@@ -18,6 +18,5 @@
 ;
 ; Original author: Jared Davis <jared@centtech.com>
 
-(ld "cert.acl2")
-; cert-flags: ? t :ttags :all
-(certify-book "all" ? t :ttags :all)
+;; Special .acl2 file for book-thms.lisp, because it doesn't need to depend
+;; on any packages at all.

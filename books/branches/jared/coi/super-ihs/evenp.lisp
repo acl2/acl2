@@ -7,8 +7,8 @@
 
 ;We include arithmetic facts only locally to keep this book from enforcing an choice of arithmetic theories on its user.
 (local (include-book "arithmetic"))
-(local (include-book "rtl/rel4/arithmetic/even-odd" :dir :system)) ;bzo combine this included book with the present book?
-(local (include-book "rtl/rel4/arithmetic/integerp" :dir :system))
+(local (include-book "rtl/rel8/arithmetic/even-odd" :dir :system)) ;bzo combine this included book with the present book?
+(local (include-book "rtl/rel8/arithmetic/integerp" :dir :system))
 
 (in-theory (disable evenp))
 

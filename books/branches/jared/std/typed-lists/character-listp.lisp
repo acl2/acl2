@@ -1,4 +1,4 @@
-; Built-In Typed Lists
+; Standard Typed Lists Library
 ; Copyright (C) 2008-2013 Centaur Technology
 ;
 ; Contact:
@@ -21,41 +21,52 @@
 (in-package "ACL2")
 (include-book "cutil/deflist" :dir :system)
 
-(cutil::deflist character-listp (x)
-  (characterp x)
-  :true-listp t
-  :elementp-of-nil nil
-  :already-definedp t)
-
-;; Disable these ACL2 built-in rules, since the DEFLIST adds stronger ones.
-(in-theory (disable character-listp-append
+; We disable CHARACTER-LISTP itself, and also the following ACL2 built-in
+; rules, since the DEFLIST adds stronger ones.
+(in-theory (disable character-listp
+                    character-listp-append
                     character-listp-revappend))
 
-(defthm true-listp-when-character-listp-rewrite
-  ;; The deflist gives us a compound-recognizer, but in this case having a
-  ;; rewrite rule seems worth it.
-  (implies (character-listp x)
-           (true-listp x))
-  :rule-classes ((:rewrite :backchain-limit-lst 1)))
+(defsection std/typed-lists/character-listp
+  :parents (std/typed-lists character-listp)
+  :short "Lemmas about @(see character-listp) available in the @(see
+std/typed-lists) library."
+  :long "<p>Most of these are generated automatically with @(see
+cutil::deflist).</p>"
 
-(defthm character-listp-of-remove-equal
-  ;; BOZO probably add to deflist
-  (implies (character-listp x)
-           (character-listp (remove-equal a x))))
+  (cutil::deflist character-listp (x)
+    (characterp x)
+    :true-listp t
+    :elementp-of-nil nil
+    :already-definedp t
+    ;; Set :parents to nil to avoid overwriting the built-in ACL2 documentation
+    :parents nil)
 
-(defthm character-listp-of-make-list-ac
-  (equal (character-listp (make-list-ac n x ac))
-         (and (character-listp ac)
-              (or (characterp x)
-                  (zp n)))))
+  (defthm true-listp-when-character-listp-rewrite
+    ;; The deflist gives us a compound-recognizer, but in this case having a
+    ;; rewrite rule seems worth it.
+    (implies (character-listp x)
+             (true-listp x))
+    :rule-classes ((:rewrite :backchain-limit-lst 1)))
 
-(defthm eqlable-listp-when-character-listp
-  (implies (character-listp x)
-           (eqlable-listp x)))
+  (defthm character-listp-of-remove-equal
+    ;; BOZO probably add to deflist
+    (implies (character-listp x)
+             (character-listp (remove-equal a x))))
 
-(defthm character-listp-of-rev
-  ;; BOZO consider adding to deflist
-  (equal (character-listp (rev x))
-         (character-listp (list-fix x)))
-  :hints(("Goal" :induct (len x))))
+  (defthm character-listp-of-make-list-ac
+    (equal (character-listp (make-list-ac n x ac))
+           (and (character-listp ac)
+                (or (characterp x)
+                    (zp n)))))
+
+  (defthm eqlable-listp-when-character-listp
+    (implies (character-listp x)
+             (eqlable-listp x)))
+
+  (defthm character-listp-of-rev
+    ;; BOZO consider adding to deflist
+    (equal (character-listp (rev x))
+           (character-listp (list-fix x)))
+    :hints(("Goal" :induct (len x)))))
 

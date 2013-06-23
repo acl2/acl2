@@ -25,95 +25,104 @@
 (include-book "alist-vals")
 (local (include-book "../lists/list-fix"))
 
-(defund hons-rassoc-equal (val map)
-  (declare (xargs :guard t))
-  (cond ((atom map)
-         nil)
-        ((and (consp (car map))
-              (equal val (cdar map)))
-         (car map))
-        (t
-         (hons-rassoc-equal val (cdr map)))))
+(defsection hons-rassoc-equal
+  :parents (std/alists)
+  :short "@(call hons-rassoc-equal) returns the first pair found in the alist
+@('alist') whose value is @('val'), if one exists, or @('nil') otherwise."
 
-(local (in-theory (enable hons-rassoc-equal)))
+  :long "<p>This is a \"modern\" equivalent of @(see rassoc), which properly
+respects the non-alist convention; see @(see std/alists) for discussion of this
+convention.</p>"
 
-(defthm hons-rassoc-equal-when-atom
-  (implies (atom map)
-           (equal (hons-rassoc-equal val map)
-                  nil)))
+  (defund hons-rassoc-equal (val alist)
+    (declare (xargs :guard t))
+    (cond ((atom alist)
+           nil)
+          ((and (consp (car alist))
+                (equal val (cdar alist)))
+           (car alist))
+          (t
+           (hons-rassoc-equal val (cdr alist)))))
 
-(defthm hons-rassoc-equal-of-hons-acons
-  (equal (hons-rassoc-equal a (cons (cons key b) map))
-         (if (equal a b)
-             (cons key b)
-           (hons-rassoc-equal a map))))
+  (local (in-theory (enable hons-rassoc-equal)))
 
-(defthm hons-rassoc-equal-type
-  (or (not (hons-rassoc-equal val map))
-      (consp (hons-rassoc-equal val map)))
-  :rule-classes :type-prescription)
+  (defthm hons-rassoc-equal-when-atom
+    (implies (atom alist)
+             (equal (hons-rassoc-equal val alist)
+                    nil)))
 
-(encapsulate
-  ()
-  (local (defthmd l0
-           (equal (hons-rassoc-equal key (list-fix alist))
-                  (hons-rassoc-equal key alist))))
+  (defthm hons-rassoc-equal-of-hons-acons
+    (equal (hons-rassoc-equal a (cons (cons key b) alist))
+           (if (equal a b)
+               (cons key b)
+             (hons-rassoc-equal a alist))))
 
-  (defcong list-equiv equal (hons-rassoc-equal key alist) 2
-    :hints(("Goal"
-            :in-theory (enable list-equiv)
-            :use ((:instance l0 (alist alist))
-                  (:instance l0 (alist alist-equiv)))))))
+  (defthm hons-rassoc-equal-type
+    (or (not (hons-rassoc-equal val alist))
+        (consp (hons-rassoc-equal val alist)))
+    :rule-classes :type-prescription)
 
-(defthm consp-of-hons-rassoc-equal
-  (equal (consp (hons-rassoc-equal val map))
-         (if (hons-rassoc-equal val map)
-             t
-           nil)))
+  (encapsulate
+    ()
+    (local (defthmd l0
+             (equal (hons-rassoc-equal key (list-fix alist))
+                    (hons-rassoc-equal key alist))))
 
-(defthm cdr-of-hons-rassoc-equal
-  (equal (cdr (hons-rassoc-equal val map))
-         (if (hons-rassoc-equal val map)
-             val
-           nil)))
+    (defcong list-equiv equal (hons-rassoc-equal key alist) 2
+      :hints(("Goal"
+              :in-theory (enable list-equiv)
+              :use ((:instance l0 (alist alist))
+                    (:instance l0 (alist alist-equiv)))))))
 
-(defthm member-equal-of-alist-vals-under-iff
-  (iff (member-equal val (alist-vals map))
-       (hons-rassoc-equal val map))
-  :hints(("Goal" :in-theory (enable hons-rassoc-equal
-                                    alist-vals))))
+  (defthm consp-of-hons-rassoc-equal
+    (equal (consp (hons-rassoc-equal val alist))
+           (if (hons-rassoc-equal val alist)
+               t
+             nil)))
 
-(defthm hons-assoc-equal-of-car-when-hons-rassoc-equal
-  (implies (hons-rassoc-equal val map)
-           (hons-assoc-equal (car (hons-rassoc-equal val map)) map))
-  :hints(("Goal" :in-theory (enable hons-assoc-equal
-                                    hons-rassoc-equal))))
+  (defthm cdr-of-hons-rassoc-equal
+    (equal (cdr (hons-rassoc-equal val alist))
+           (if (hons-rassoc-equal val alist)
+               val
+             nil)))
 
-(defthm hons-assoc-equal-of-car-when-hons-rassoc-equal-and-no-duplicates
-  (implies (and (no-duplicatesp-equal (alist-keys map))
-                (hons-rassoc-equal val map))
-           (equal (hons-assoc-equal (car (hons-rassoc-equal val map)) map)
-                  (hons-rassoc-equal val map)))
-  :hints(("Goal" :in-theory (enable hons-assoc-equal
-                                    hons-rassoc-equal))))
+  (defthm member-equal-of-alist-vals-under-iff
+    (iff (member-equal val (alist-vals alist))
+         (hons-rassoc-equal val alist))
+    :hints(("Goal" :in-theory (enable hons-rassoc-equal
+                                      alist-vals))))
 
-(defthm member-equal-of-car-when-hons-rassoc-equal
-  (implies (hons-rassoc-equal val map)
-           (member-equal (car (hons-rassoc-equal val map))
-                         (alist-keys map))))
+  (defthm hons-assoc-equal-of-car-when-hons-rassoc-equal
+    (implies (hons-rassoc-equal val alist)
+             (hons-assoc-equal (car (hons-rassoc-equal val alist)) alist))
+    :hints(("Goal" :in-theory (enable hons-assoc-equal
+                                      hons-rassoc-equal))))
 
-(defthm hons-rassoc-equal-of-cdr-when-hons-assoc-equal
-  (implies (hons-assoc-equal key map)
-           (hons-rassoc-equal (cdr (hons-assoc-equal key map)) map))
-  :hints(("Goal" :in-theory (enable hons-assoc-equal
-                                    hons-rassoc-equal))))
+  (defthm hons-assoc-equal-of-car-when-hons-rassoc-equal-and-no-duplicates
+    (implies (and (no-duplicatesp-equal (alist-keys alist))
+                  (hons-rassoc-equal val alist))
+             (equal (hons-assoc-equal (car (hons-rassoc-equal val alist)) alist)
+                    (hons-rassoc-equal val alist)))
+    :hints(("Goal" :in-theory (enable hons-assoc-equal
+                                      hons-rassoc-equal))))
 
-(defthm hons-rassoc-equal-of-cdr-when-hons-assoc-equal-and-no-duplicates
-  (implies (and (no-duplicatesp-equal (alist-vals map))
-                (hons-assoc-equal key map))
-           (equal (hons-rassoc-equal (cdr (hons-assoc-equal key map)) map)
-                  (hons-assoc-equal key map)))
-  :hints(("Goal" :in-theory (enable hons-assoc-equal
-                                    hons-rassoc-equal))))
+  (defthm member-equal-of-car-when-hons-rassoc-equal
+    (implies (hons-rassoc-equal val alist)
+             (member-equal (car (hons-rassoc-equal val alist))
+                           (alist-keys alist))))
+
+  (defthm hons-rassoc-equal-of-cdr-when-hons-assoc-equal
+    (implies (hons-assoc-equal key alist)
+             (hons-rassoc-equal (cdr (hons-assoc-equal key alist)) alist))
+    :hints(("Goal" :in-theory (enable hons-assoc-equal
+                                      hons-rassoc-equal))))
+
+  (defthm hons-rassoc-equal-of-cdr-when-hons-assoc-equal-and-no-duplicates
+    (implies (and (no-duplicatesp-equal (alist-vals alist))
+                  (hons-assoc-equal key alist))
+             (equal (hons-rassoc-equal (cdr (hons-assoc-equal key alist)) alist)
+                    (hons-assoc-equal key alist)))
+    :hints(("Goal" :in-theory (enable hons-assoc-equal
+                                      hons-rassoc-equal)))))
 
 
