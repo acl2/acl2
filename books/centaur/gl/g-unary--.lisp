@@ -34,10 +34,10 @@
        ((g-number num)
         (mv-let (rn rd in id)
           (break-g-number num)
-          (mk-g-number (unary-minus-s rn)
-                       rd
-                       (unary-minus-s in)
-                       id)))
+          (mk-g-number (bfr-unary-minus-s rn)
+                       (rlist-fix rd)
+                       (bfr-unary-minus-s in)
+                       (rlist-fix id))))
        (& 0))))
 
 ;; (def-gobjectp-thm unary--

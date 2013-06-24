@@ -27,9 +27,15 @@
 (defun bfr-list-to-param-space (p x)
   (declare (xargs :guard t)
            (ignorable p))
-  (bfr-case :bdd (acl2::to-param-space-list p x)
-            :aig (acl2::aig-restrict-list
-                  x (acl2::aig-extract-iterated-assigns-alist p 10))))
+  (mbe :logic (if (atom x)
+                  nil
+                (cons (bfr-to-param-space p (car x))
+                      (bfr-list-to-param-space p (cdr x))))
+       :exec (if (atom x)
+                 nil
+               (bfr-case :bdd (acl2::to-param-space-list p x)
+                         :aig (acl2::aig-restrict-list
+                               x (acl2::aig-extract-iterated-assigns-alist p 10))))))
 
 ;; (local
 ;;  (defthm bfr-p-to-param-space
@@ -208,9 +214,33 @@
             (equal (bfr-eval-list (bfr-list-to-param-space p x)
                                   (bfr-param-env p env))
                    (bfr-eval-list x env)))
-   :hints(("Goal" :in-theory (enable bfr-eval-list
-                                     bfr-eval
-                                     bfr-list-to-param-space)))))
+   :hints(("Goal" :in-theory (e/d (bfr-eval-list
+                                     bfr-list-to-param-space)
+                                  (bfr-param-env))))))
+
+(local
+ (defthm bfr-list->s-to-param-space-list
+   (implies (bfr-eval p env)
+            (equal (bfr-list->s (bfr-list-to-param-space p x)
+                                  (bfr-param-env p env))
+                   (bfr-list->s x env)))
+   :hints(("Goal" :in-theory (e/d (bfr-list->s scdr s-endp
+                                     ;; bfr-eval
+                                     bfr-list-to-param-space)
+                                  (bfr-to-param-space
+                                   bfr-param-env))))))
+
+(local
+ (defthm bfr-list->u-to-param-space-list
+   (implies (bfr-eval p env)
+            (equal (bfr-list->u (bfr-list-to-param-space p x)
+                                  (bfr-param-env p env))
+                   (bfr-list->u x env)))
+   :hints(("Goal" :in-theory (e/d (bfr-list->u scdr s-endp
+                                     ;; bfr-eval
+                                     bfr-list-to-param-space)
+                                  (bfr-to-param-space
+                                   bfr-param-env))))))
 
 (local
  (defthm nth-open-const-idx

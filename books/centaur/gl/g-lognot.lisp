@@ -38,10 +38,10 @@
                 (break-g-number num))
                ((mv intp intp-known)
                 (if (equal rd '(t))
-                    (mv (bfr-or (=-ss in nil) (=-uu id nil)) t)
+                    (mv (bfr-or (bfr-=-ss in nil) (bfr-=-uu id nil)) t)
                   (mv nil nil))))
             (if intp-known
-                (mk-g-number (lognot-s (bfr-ite-bss-fn intp rn nil)))
+                (mk-g-number (bfr-lognot-s (bfr-ite-bss-fn intp rn nil)))
               (g-apply 'lognot (gl-list x)))))
          (& -1)))))
 

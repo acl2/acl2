@@ -256,17 +256,17 @@
         (declare (ignore arn))
         (if (equal ard '(t))
             (mk-g-boolean
-             (bfr-or (=-ss ain nil)
-                   (=-uu aid nil)))
+             (bfr-or (bfr-=-ss ain nil)
+                   (bfr-=-uu aid nil)))
           (g-apply 'integerp (list x)))))
      (& nil))
     :encap ((local (in-theory (enable bfr-eval-bfr-binary-or
                                       bfr-or-of-t
-                                      =-uu-correct
-                                      =-ss-correct
+                                      bfr-=-uu-correct
+                                      bfr-=-ss-correct
                                       (:type-prescription break-g-number)))))
     :guard-encap ((local (bfr-reasoning-mode t))
-                  (local (add-bfr-pats (=-uu . &) (=-ss . &))))
+                  (local (add-bfr-pats (bfr-=-uu . &) (bfr-=-ss . &))))
     :corr-hints ((and stable-under-simplificationp
                       (append '(:in-theory (enable components-to-number-alt-def))
                               (flag::expand-calls-computed-hint
@@ -280,12 +280,12 @@
         (break-g-number num)
         (declare (ignore arn ard))
         (mk-g-boolean
-         (bfr-or (=-ss ain nil)
-               (=-uu aid nil)))))
+         (bfr-or (bfr-=-ss ain nil)
+               (bfr-=-uu aid nil)))))
      (& nil))
     :encap ((local (in-theory (enable bfr-eval-bfr-binary-or
-                                      =-uu-correct
-                                      =-ss-correct
+                                      bfr-=-uu-correct
+                                      bfr-=-ss-correct
                                       bfr-or-of-t
                                       (:type-prescription break-g-number)))))
     :guard-encap ((local (bfr-reasoning-mode t)))

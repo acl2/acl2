@@ -276,13 +276,13 @@
 (defun norm-bvec-s (v)
   (declare (xargs :guard T))
   (if (boolean-listp v)
-      (v2i v)
+      (bfr-list->s v nil)
     v))
 
 (defun norm-bvec-u (v)
-  (declare (xargs :guard T))
+  (declare (xargs :guard t))
   (if (boolean-listp v)
-      (v2n v)
+      (bfr-list->u v nil)
     v))
 
 

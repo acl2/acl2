@@ -21,17 +21,17 @@
         (general-number-components y))
        ((mv xintp xintp-known)
         (if (equal xrd '(t))
-            (mv (bfr-or (=-ss xin nil)
-                      (=-uu xid nil)) t)
+            (mv (bfr-or (bfr-=-ss xin nil)
+                      (bfr-=-uu xid nil)) t)
           (mv nil nil)))
        ((mv yintp yintp-known)
         (if (equal yrd '(t))
-            (mv (bfr-or (=-ss yin nil)
-                      (=-uu yid nil)) t)
+            (mv (bfr-or (bfr-=-ss yin nil)
+                      (bfr-=-uu yid nil)) t)
           (mv nil nil))))
     (if (and xintp-known yintp-known)
         (mk-g-number
-         (logand-ss (bfr-ite-bss-fn xintp xrn nil)
+         (bfr-logand-ss (bfr-ite-bss-fn xintp xrn nil)
                     (bfr-ite-bss-fn yintp yrn nil)))
       (g-apply 'binary-logand (gl-list x y)))))
 
@@ -108,7 +108,6 @@
                                      general-concretep-def
                                      binary-logand
                                      components-to-number-alt-def
-                                     s-sign-correct
                                      hons-assoc-equal
                                      default-car default-cdr
                                      (:rules-of-class :type-prescription :here)))

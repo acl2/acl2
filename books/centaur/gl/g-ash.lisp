@@ -22,16 +22,16 @@
         (general-number-components c))
        ((mv iintp iintp-known)
         (if (equal ird '(t))
-            (mv (bfr-or (=-ss iin nil) (=-uu iid nil)) t)
+            (mv (bfr-or (bfr-=-ss iin nil) (bfr-=-uu iid nil)) t)
           (mv nil nil)))
        ((mv cintp cintp-known)
         (if (equal crd '(t))
-            (mv (bfr-or (=-ss cin nil) (=-uu cid nil)) t)
+            (mv (bfr-or (bfr-=-ss cin nil) (bfr-=-uu cid nil)) t)
           (mv nil nil))))
     (if (and cintp-known iintp-known)
         (mk-g-number
          (rlist-fix
-          (ash-ss 1 (bfr-ite-bss-fn iintp irn nil)
+          (bfr-ash-ss 1 (bfr-ite-bss-fn iintp irn nil)
                   (bfr-ite-bss-fn cintp crn nil))))
       (g-apply 'ash (gl-list i c)))))
 
@@ -47,9 +47,9 @@
    ;;   :hints(("Goal" :in-theory (enable bfr-listp))))
 
 
-   ;; (defthm not-integerp-ash-ss
-   ;;   (not (integerp (ash-ss place n shamt)))
-   ;;   :hints(("Goal" :in-theory (enable ash-ss))))
+   ;; (defthm not-integerp-bfr-ash-ss
+   ;;   (not (integerp (bfr-ash-ss place n shamt)))
+   ;;   :hints(("Goal" :in-theory (enable bfr-ash-ss))))
 
 
    (defthm ash-complex-1
@@ -138,6 +138,7 @@
                               general-concretep-def
                               general-concretep-def
                               rationalp-implies-acl2-numberp
+                              ash
                               (:rules-of-class :type-prescription :here))
                              ((:type-prescription bfr-eval)))
      :induct (,gfn i c hyp clk)

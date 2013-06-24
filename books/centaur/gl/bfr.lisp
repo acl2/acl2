@@ -793,3 +793,430 @@
 ;;                                 (w state)))))
 
 
+
+
+;; Could just be done on trees but this makes the proofs easier (?)
+;; This returns one plus the maximum natural number present -- this way it's
+;; similar to the BDD lib's MAX-DEPTH.
+(defund aig-max-nat (x)
+  (declare (xargs :guard t))
+  (cond ((natp x) (+ 1 x))
+        ((atom x) 0)
+        ((not (cdr x)) (aig-max-nat (car x)))
+        (t (max (aig-max-nat (car x))
+                (aig-max-nat (cdr x))))))
+
+(local
+ (progn
+   (defthm aig-eval-of-acons-max-nat
+     (implies (and (<= (aig-max-nat x) var)
+                   (natp var))
+              (equal (acl2::aig-eval x (cons (cons var val) env))
+                     (acl2::aig-eval x env)))
+     :hints(("Goal" :in-theory (enable acl2::aig-eval aig-max-nat))))
+
+   (defthm aig-max-nat-of-aig-not
+     (equal (aig-max-nat (acl2::aig-not x))
+            (aig-max-nat x))
+     :hints(("Goal" :in-theory (enable acl2::aig-not aig-max-nat))))
+
+   ;; (defthm aig-max-nat-of-aig-and
+   ;;   (<= (aig-max-nat (acl2::aig-and x y)) (max (aig-max-nat x)
+   ;;                                              (aig-max-nat y)))
+   ;;   :hints(("Goal" :in-theory (enable acl2::aig-and aig-max-nat)))
+   ;;   :rule-classes (:rewrite :linear))
+
+   (defthm gte-aig-max-nat-of-and
+     (implies (and (<= (aig-max-nat x) n)
+                   (<= (aig-max-nat y) n))
+              (<= (aig-max-nat (acl2::aig-and x y)) n))
+     :hints(("Goal" :in-theory (enable acl2::aig-and aig-max-nat)))
+     :rule-classes (:rewrite
+                    (:linear :match-free :all)))
+
+   ;; (defthm aig-max-nat-of-aig-or
+   ;;   (<= (aig-max-nat (acl2::aig-or x y)) (max (aig-max-nat x)
+   ;;                                             (aig-max-nat y)))
+   ;;   :hints(("Goal" :in-theory (e/d (acl2::aig-or aig-max-nat))))
+   ;;   :rule-classes (:rewrite :linear))
+
+   (defthm gte-aig-max-nat-of-or
+     (implies (and (<= (aig-max-nat x) n)
+                   (<= (aig-max-nat y) n))
+              (<= (aig-max-nat (acl2::aig-or x y)) n))
+     :hints(("Goal" :in-theory (enable acl2::aig-or aig-max-nat)))
+     :rule-classes (:rewrite
+                    (:linear :match-free :all)))
+
+
+   ;; (defthm aig-max-nat-of-aig-xor
+   ;;   (<= (aig-max-nat (acl2::aig-xor x y)) (max (aig-max-nat x)
+   ;;                                              (aig-max-nat y)))
+   ;;   :hints(("Goal" :in-theory (enable acl2::aig-xor aig-max-nat)
+   ;;           :do-not-induct t))
+   ;;   :rule-classes (:rewrite :linear))
+
+   (defthm gte-aig-max-nat-of-xor
+     (implies (and (<= (aig-max-nat x) n)
+                   (<= (aig-max-nat y) n))
+              (<= (aig-max-nat (acl2::aig-xor x y)) n))
+     :hints(("Goal" :in-theory (enable acl2::aig-xor aig-max-nat)))
+     :rule-classes (:rewrite
+                    (:linear :match-free :all)))
+
+   (defthm gte-aig-max-nat-of-iff
+     (implies (and (<= (aig-max-nat x) n)
+                   (<= (aig-max-nat y) n))
+              (<= (aig-max-nat (acl2::aig-iff x y)) n))
+     :hints(("Goal" :in-theory (enable acl2::aig-iff aig-max-nat)))
+     :rule-classes (:rewrite
+                    (:linear :match-free :all)))
+
+   (defthm gte-aig-max-nat-of-ite
+     (implies (and (<= (aig-max-nat x) n)
+                   (<= (aig-max-nat y) n)
+                   (<= (aig-max-nat z) n))
+              (<= (aig-max-nat (acl2::aig-ite x y z)) n))
+     :hints(("Goal" :in-theory (enable acl2::aig-ite aig-max-nat)))
+     :rule-classes (:rewrite
+                    (:linear :match-free :all)))))
+
+
+(memoize 'aig-max-nat :condition '(and (consp x) (cdr x)))
+
+(local
+ (progn
+   (defun ind (x n env)
+         (if (zp n)
+             x
+           (if (car env)
+               (ind (car x) (1- n) (cdr env))
+             (ind (cdr x) (1- n) (cdr env)))))
+
+   (defthm eval-bdd-of-update-past-max-depth
+     (implies (<= (max-depth x) (nfix n))
+              (equal (acl2::eval-bdd x (update-nth n v env))
+                     (acl2::eval-bdd x env)))
+     :hints(("Goal" :expand ((:free (env) (acl2::eval-bdd x env))
+                             (max-depth x)
+                             (update-nth n v env))
+             :induct (ind x n env))))))
+
+(defund bfr-max-nat-var (x)
+  (declare (xargs :guard t))
+  (bfr-case :bdd (max-depth x)
+            :aig (aig-max-nat x)))
+
+(local (in-theory (enable bfr-max-nat-var)))
+
+
+(defthm bfr-eval-of-bfr-set-var-past-max-nat
+  (implies (and (<= (bfr-max-nat-var x) var)
+                (natp var))
+           (equal (bfr-eval x (bfr-set-var var val env))
+                  (bfr-eval x env)))
+  :hints(("Goal" :in-theory (enable bfr-set-var bfr-eval))))
+
+
+
+(local
+ (progn
+   (include-book "arithmetic/top-with-meta" :dir :system)
+
+   (defthm max-plus
+     (equal (max (+ n x) (+ n y))
+            (+ n (max x y))))
+
+   (defthm max-assoc
+     (equal (max (max a b) c)
+            (max a (max b c))))
+
+   (defthm max-commute
+     (implies (and (rationalp a) (rationalp b))
+              (equal (max a b)
+                     (max b a)))
+     :rule-classes ((:rewrite :loop-stopper ((a b max)))))
+
+   (defthm max-commute-2
+     (implies (and (rationalp a) (rationalp b))
+              (equal (max a (max b c))
+                     (max b (max a c))))
+     :rule-classes ((:rewrite :loop-stopper ((a b max)))))
+
+   (defthm max-id
+     (equal (max x x) x))
+
+   (defthm max-id-2
+     (equal (max x (max x y)) (max x y)))
+
+   (defthm gt-max-implies
+     (equal (< (max a b) c)
+            (and (< a c)
+                 (< b c))))
+   
+   (defthm lt-max-implies
+     (equal (< c (max a b))
+            (or (< c a)
+                (< c b))))
+
+   (defthm gt-max-plus-1-implies
+     (equal (< (+ 1 (max a b)) c)
+            (and (< (+ 1 a) c)
+                 (< (+ 1 b) c))))
+
+   (defthm lt-max-plus-1-implies
+     (equal (< c (+ 1 (max a b)))
+            (or (< c (+ 1 a))
+                (< c (+ 1 b)))))
+
+   (defun max-depth2-ind (x y n)
+     (declare (xargs :measure (+ (acl2-count x) (acl2-count y))))
+     (if (and (atom x) (atom y))
+         n
+       (list (max-depth2-ind (car x) (car y) (1- n))
+             (max-depth2-ind (cdr x) (cdr y) (1- n)))))
+
+   (defthm max-depth-of-q-not
+     (equal (max-depth (acl2::q-not x))
+            (max-depth x))
+     :hints(("Goal" :in-theory (enable acl2::q-not max-depth))))
+
+   (defthm max-depth-of-q-and
+     (implies (and (<= (max-depth x) n)
+                   (<= (max-depth y) n))
+              (<= (max-depth (acl2::q-and x y)) n))
+     :hints(("Goal" :in-theory (e/d (max-depth)
+                                    ((force) max))
+             :induct (max-depth2-ind x y n)
+             :expand ((acl2::q-and x y))))
+     :rule-classes (:rewrite
+                    (:linear :match-free :all)))
+
+   (defthm max-depth-of-q-or
+     (implies (and (<= (max-depth x) n)
+                   (<= (max-depth y) n))
+              (<= (max-depth (acl2::q-or x y)) n))
+     :hints(("Goal" :in-theory (e/d (max-depth)
+                                    ((force) max))
+             :induct (max-depth2-ind x y n)
+             :expand ((acl2::q-or x y))))
+     :rule-classes (:rewrite
+                    (:linear :match-free :all)))
+
+   (defthm max-depth-of-q-xor
+     (implies (and (<= (max-depth x) n)
+                   (<= (max-depth y) n))
+              (<= (max-depth (acl2::q-xor x y)) n))
+     :hints(("Goal" :in-theory (e/d (max-depth)
+                                    ((force) max))
+             :induct (max-depth2-ind x y n)
+             :expand ((acl2::q-binary-xor x y))))
+     :rule-classes (:rewrite
+                    (:linear :match-free :all)))
+
+   (defthm max-depth-of-q-iff
+     (implies (and (<= (max-depth x) n)
+                   (<= (max-depth y) n))
+              (<= (max-depth (acl2::q-iff x y)) n))
+     :hints(("Goal" :in-theory (e/d (max-depth)
+                                    ((force) max))
+             :induct (max-depth2-ind x y n)
+             :expand ((acl2::q-binary-iff x y))))
+     :rule-classes (:rewrite
+                    (:linear :match-free :all)))))
+
+(local
+ (progn
+
+   (defun replace-if-equal (x y v)
+     (if (equal x y) v y))
+
+   (defthm q-ite-redef
+     (equal (acl2::q-ite-fn x y z)
+            (COND
+             ((NULL X) Z)
+             ((ATOM X) Y)
+             (T
+              (LET
+               ((Y (replace-if-equal x y t))
+                (Z (replace-if-equal x z nil)))
+               (COND
+                ((HONS-EQUAL Y Z) Y)
+                ((AND (EQ Y T) (EQ Z NIL)) X)
+                ((AND (EQ Y NIL) (EQ Z T))
+                 (ACL2::Q-NOT X))
+                (T (ACL2::QCONS (ACL2::Q-ITE-FN (CAR X)
+                                                (ACL2::QCAR Y)
+                                                (ACL2::QCAR Z))
+                                (ACL2::Q-ITE-FN (CDR X)
+                                                (ACL2::QCDR Y)
+                                                (ACL2::QCDR Z)))))))))
+     :hints(("Goal" :in-theory (e/d () ((force)))))
+     :rule-classes ((:definition :clique (acl2::q-ite-fn)
+                     :controller-alist ((acl2::q-ite-fn t nil nil)))))
+
+   (defun max-depth3-ind (x y z n)
+     (if (atom x)
+         (list y z n)
+       (list (max-depth3-ind (car x)
+                             (acl2::qcar (replace-if-equal x y t))
+                             (acl2::qcar (replace-if-equal x z nil))
+                             (1- n))
+             (max-depth3-ind (cdr x)
+                             (acl2::qcdr (replace-if-equal x y t))
+                             (acl2::qcdr (replace-if-equal x z nil))
+                             (1- n)))))
+
+   (defthm max-depth-of-qcar-replace-strong
+     (implies (and (consp y) (not (consp a)))
+              (< (max-depth (acl2::qcar (replace-if-equal x y a))) (max-depth y)))
+     :hints (("goal" :expand ((max-depth y)
+                              (max-depth a))))
+     :rule-classes :linear)
+
+   (defthm max-depth-of-qcdr-replace-strong
+     (implies (and (consp y) (not (consp a)))
+              (< (max-depth (acl2::qcdr (replace-if-equal x y a))) (max-depth y)))
+     :hints (("goal" :expand ((max-depth y)
+                              (max-depth a))))
+     :rule-classes :linear)
+
+   (defthm max-depth-of-qcar-replace-weak
+     (implies (not (consp a))
+              (<= (max-depth (acl2::qcar (replace-if-equal x y a))) (max-depth y)))
+     :hints (("goal" :expand ((max-depth y)
+                              (max-depth a))))
+     :rule-classes :linear)
+
+   (defthm max-depth-of-qcdr-replace-weak
+     (implies (not (consp a))
+              (<= (max-depth (acl2::qcdr (replace-if-equal x y a))) (max-depth y)))
+     :hints (("goal" :expand ((max-depth y)
+                              (max-depth a))))
+     :rule-classes :linear)
+
+   (defthm max-depth-of-qcar-replace-atom
+     (implies (and (not (consp y)) (not (consp a)))
+              (equal (max-depth (acl2::qcar (replace-if-equal x y a))) 0))
+     :hints (("goal" :expand ((max-depth y)
+                              (max-depth a)))))
+
+   (defthm max-depth-of-qcdr-replace-atom
+     (implies (and (not (consp y)) (not (consp a)))
+              (equal (max-depth (acl2::qcdr (replace-if-equal x y a))) 0))
+     :hints (("goal" :expand ((max-depth y)
+                              (max-depth a)))))
+
+   ;; (defthm max-depth-of-qcdr-strong
+   ;;   (implies (consp x)
+   ;;            (< (max-depth (acl2::qcdr x)) (max-depth x)))
+   ;;   :hints (("goal" :expand ((max-depth x))))
+   ;;   :rule-classes :linear)
+
+   ;; (defthm max-depth-of-qcdr-atom
+   ;;   (implies (not (consp x))
+   ;;            (equal (max-depth (acl2::qcdr x)) 0))
+   ;;   :hints (("goal" :expand ((max-depth x)))))
+
+   (defthm max-depth-of-replace-if-equal
+     (implies (not (consp a))
+              (<= (max-depth (replace-if-equal x y a)) (max-depth y)))
+     :hints (("goal" :expand ((max-depth a))))
+     :rule-classes :linear)
+
+   (local (in-theory (disable replace-if-equal acl2::qcar acl2::qcdr)))
+
+   (defthm max-depth-of-qcons
+     (implies (and (<= (max-depth x) (+ -1 n))
+                   (<= (max-depth y) (+ -1 n)))
+              (<= (max-depth (acl2::qcons x y)) n))
+     :hints(("Goal" :in-theory (enable acl2::qcons max-depth)))
+     :rule-classes ((:linear :trigger-terms ((max-depth (acl2::qcons x y)))
+                     :match-free :all)))
+         
+
+   ;; (local (defthm qcar/cdr-when-consp
+   ;;          (implies (consp x)
+   ;;                   (and (equal (acl2::qcar x) (car x))
+   ;;                        (equal (acl2::qcdr x) (cdr x))))
+   ;;          :rule-classes ((:rewrite :backchain-limit-lst 0))))
+   ;; (local (defthm qcar/cdr-when-atom
+   ;;          (implies (not (consp x))
+   ;;                   (and (equal (acl2::qcar x) x)
+   ;;                        (equal (acl2::qcdr x) x)))
+   ;;          :rule-classes ((:rewrite :backchain-limit-lst 0))))
+
+   (defthm max-depth-of-q-ite
+     (implies (and (<= (max-depth x) n)
+                   (<= (max-depth y) n)
+                   (<= (max-depth z) n))
+              (<= (max-depth (acl2::q-ite-fn x y z)) n))
+     :hints(("Goal" :in-theory (e/d (max-depth)
+                                    ((force) max acl2::qcar acl2::qcdr acl2::qcons))
+             :induct (max-depth3-ind x y z n)
+             :expand ((acl2::q-ite-fn x y z)))
+            (and stable-under-simplificationp
+                 '(:cases ((consp y))))
+            (and stable-under-simplificationp
+                 '(:cases ((consp z)))))
+     :rule-classes ((:rewrite)
+                    (:linear :match-free :all)))))
+
+(defthm bfr-max-nat-var-of-bfr-not
+  (equal (bfr-max-nat-var (bfr-not x))
+         (bfr-max-nat-var x))
+  :hints(("Goal" :in-theory (enable bfr-max-nat-var bfr-not))))
+
+(defthm bfr-max-nat-var-of-bfr-and
+  (implies (and (<= (bfr-max-nat-var x) n)
+                (<= (bfr-max-nat-var y) n))
+           (<= (bfr-max-nat-var (bfr-binary-and x y)) n))
+  :hints(("Goal" :in-theory (e/d (bfr-max-nat-var bfr-binary-and)
+                                 (max gt-max-implies gt-max-plus-1-implies))))
+  :rule-classes ((:rewrite)
+                 (:linear :match-free :all)))
+
+(defthm bfr-max-nat-var-of-bfr-or
+  (implies (and (<= (bfr-max-nat-var x) n)
+                (<= (bfr-max-nat-var y) n))
+           (<= (bfr-max-nat-var (bfr-binary-or x y)) n))
+  :hints(("Goal" :in-theory (e/d (bfr-max-nat-var bfr-binary-or)
+                                 (max gt-max-implies gt-max-plus-1-implies))))
+  :rule-classes ((:rewrite)
+                 (:linear :match-free :all)))
+
+(defthm bfr-max-nat-var-of-bfr-xor
+  (implies (and (<= (bfr-max-nat-var x) n)
+                (<= (bfr-max-nat-var y) n))
+           (<= (bfr-max-nat-var (bfr-xor x y)) n))
+  :hints(("Goal" :in-theory (e/d (bfr-max-nat-var bfr-xor)
+                                 (max gt-max-implies gt-max-plus-1-implies))))
+  :rule-classes ((:rewrite)
+                 (:linear :match-free :all)))
+
+(defthm bfr-max-nat-var-of-bfr-iff
+  (implies (and (<= (bfr-max-nat-var x) n)
+                (<= (bfr-max-nat-var y) n))
+           (<= (bfr-max-nat-var (bfr-iff x y)) n))
+  :hints(("Goal" :in-theory (e/d (bfr-max-nat-var bfr-iff)
+                                 (max gt-max-implies gt-max-plus-1-implies))))
+  :rule-classes (:rewrite
+                 (:linear :match-free :all)))
+
+(defthm bfr-max-nat-var-of-bfr-ite
+  (implies (and (<= (bfr-max-nat-var x) n)
+                (<= (bfr-max-nat-var y) n)
+                (<= (bfr-max-nat-var z) n))
+           (<= (bfr-max-nat-var (bfr-ite-fn x y z)) n))
+  :hints(("Goal" :in-theory (e/d (bfr-max-nat-var bfr-ite-fn)
+                                 (max gt-max-implies gt-max-plus-1-implies))))
+  :rule-classes ((:rewrite)
+                 (:linear :match-free :all)))
+
+(defthm bfr-max-nat-var-of-consts
+  (and (equal (bfr-max-nat-var nil) 0)
+       (equal (bfr-max-nat-var t) 0))
+  :hints(("Goal" :in-theory (e/d (bfr-max-nat-var)
+                                 ((bfr-max-nat-var))))))
+   
+

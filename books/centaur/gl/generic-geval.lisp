@@ -42,12 +42,16 @@
                               (mv (car x) (cdr x))
                             (mv nil nil)))
        (imag-denom (if (consp x) (car x) '(t))))
-    (mv (rlist-fix real-numer)
-        (rlist-fix real-denom)
-        (rlist-fix imag-numer)
-        (rlist-fix imag-denom))))
+    ;; (mv (rlist-fix real-numer)
+    ;;     (rlist-fix real-denom)
+    ;;     (rlist-fix imag-numer)
+    ;;     (rlist-fix imag-denom))
+    (mv real-numer
+        real-denom
+        imag-numer
+        imag-denom)))
 
-(acl2::defmvtypes break-g-number (true-listp true-listp true-listp true-listp))
+;; (acl2::defmvtypes break-g-number (true-listp true-listp true-listp true-listp))
 
 
 
@@ -145,9 +149,9 @@
                   imag-denom)
               (break-g-number num)))
           (flet ((uval (n env)
-                       (v2n (bfr-eval-list n (car env))))
+                       (bfr-list->u n (car env)))
                  (sval (n env)
-                       (v2i (bfr-eval-list n (car env)))))
+                       (bfr-list->s n (car env))))
             (kwote
              (components-to-number (sval real-num env)
                                    (uval real-denom env)
@@ -220,9 +224,9 @@
                        imag-denom)
                    (break-g-number num)))
                (flet ((uval (n env)
-                            (v2n (bfr-eval-list n (car env))))
+                            (bfr-list->u n (car env)))
                       (sval (n env)
-                            (v2i (bfr-eval-list n (car env)))))
+                            (bfr-list->s n (car env))))
                  (components-to-number (sval real-num env)
                                        (uval real-denom env)
                                        (sval imag-num env)

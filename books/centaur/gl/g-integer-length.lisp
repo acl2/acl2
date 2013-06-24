@@ -13,15 +13,15 @@
 (local (include-book "hyp-fix-logic"))
 ;(local (allow-arith5-help))
 
-(defthm true-listp-of-integer-length-s1
-  (true-listp (mv-nth 1 (integer-length-s1 offset x)))
-  :hints(("Goal" :in-theory (enable integer-length-s1)))
-  :rule-classes :type-prescription)
+;; (defthm true-listp-of-bfr-integer-length-s1
+;;   (true-listp (mv-nth 1 (bfr-integer-length-s1 offset x)))
+;;   :hints(("Goal" :in-theory (enable bfr-integer-length-s1)))
+;;   :rule-classes :type-prescription)
 
-(defthm true-listp-of-integer-length-s
-  (true-listp (integer-length-s x))
-  :hints(("Goal" :in-theory (enable integer-length-s)))
-  :rule-classes :type-prescription)
+;; (defthm true-listp-of-bfr-integer-length-s
+;;   (true-listp (bfr-integer-length-s x))
+;;   :hints(("Goal" :in-theory (enable bfr-integer-length-s)))
+;;   :rule-classes :type-prescription)
  
 
 (def-g-fn integer-length
@@ -44,10 +44,10 @@
          ((g-number num)
           (mv-let (arn ard ain aid)
             (break-g-number num)
-            (g-if (mk-g-boolean (hyp-fix (bfr-or (=-uu aid nil)
-                                               (=-ss ain nil)) hyp))
+            (g-if (mk-g-boolean (hyp-fix (bfr-or (bfr-=-uu aid nil)
+                                               (bfr-=-ss ain nil)) hyp))
                   (g-if (equal ard '(t))
-                        (let ((res (integer-length-s arn)))
+                        (let ((res (rlist-fix (bfr-integer-length-s arn))))
                           (mk-g-number res 1 0 1))
                         (g-apply 'integer-length (gl-list x)))
                   0)))

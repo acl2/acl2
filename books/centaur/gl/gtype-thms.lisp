@@ -109,10 +109,10 @@
 ;;            (eq (car (mk-g-number a b c d e f)) :g-number)))
 
 
-(defthm nonzero-natp-implies-us
-  (implies (and (natp x) (not (eql x 0)))
-           (n2v x))
-  :hints(("Goal" :in-theory (enable n2v))))
+;; (defthm nonzero-natp-implies-us
+;;   (implies (and (natp x) (not (eql x 0)))
+;;            (n2v x))
+;;   :hints(("Goal" :in-theory (e/d (n2v bfr-ucons) (logcar logcdr)))))
 
 (encapsulate nil
   (local (include-book "arithmetic/top-with-meta" :dir :system))
@@ -182,7 +182,7 @@
 ; (components-to-number)
                           components-to-number
                           components-to-number-alt-def
-                          bfr-eval bfr-eval-list natp v2n
+                          bfr-eval bfr-eval-list natp
                           n2v i2v default-car default-cdr
                           (:rules-of-class :type-prescription :here)
                           acl2::cancel_times-equal-correct
@@ -195,18 +195,43 @@
            (equal (len (cons x y))
                   (+ 1 (len y)))
            :hints(("Goal" :in-theory (enable len)))))
+
+  (local (defthm boolean-listp-scdr
+           (implies (boolean-listp x)
+                    (boolean-listp (scdr x)))
+           :hints(("Goal" :in-theory (enable scdr)))))
+
+  (local (defthm bfr-list->s-of-boolean-list-norm
+           (implies (and (syntaxp (not (equal env ''nil)))
+                         (boolean-listp x))
+                    (equal (bfr-list->s x env)
+                           (bfr-list->s x nil)))))
+
+  (local (defthm bfr-list->u-of-boolean-list-norm
+           (implies (and (syntaxp (not (equal env ''nil)))
+                         (boolean-listp x))
+                    (equal (bfr-list->u x env)
+                           (bfr-list->u x nil)))))
+
+  ;; (local (defthm bfr-list->u-of-list-fix
+  ;;          (equal (bfr-list->u (acl2::list-fix x) env)
+  ;;                 (bfr-list->u x env))))
+
+  ;; (local (defthm bfr-list->s-of-list-fix
+  ;;          (equal (bfr-list->s (acl2::list-fix x) env)
+  ;;                 (bfr-list->s x env))))
+
   (defthm mk-g-number-correct
-    (flet ((to-nat (n env) (if (natp n) n (v2n (bfr-eval-list n (car env)))))
-           (to-int (n env) (if (integerp n) n (v2i (bfr-eval-list n (car
-                                                                     env))))))
+    (flet ((to-nat (n env) (if (natp n) n (bfr-list->u n (car env))))
+           (to-int (n env) (if (integerp n) n (bfr-list->s n (car env)))))
       (equal (generic-geval (mk-g-number rnum rden inum iden) env)
              (components-to-number (to-int rnum env)
                                    (to-nat rden env)
                                    (to-int inum env)
                                    (to-nat iden env))))
     :hints (("Goal" :do-not preprocess)
-            '(:cases ((and (integerp rnum) (natp rden)
-                           (integerp inum) (natp iden))))
+            ;; '(:cases ((and (integerp rnum) (natp rden)
+            ;;                (integerp inum) (natp iden))))
             '(:expand ((:free (a c d f)
                               (mk-g-number a c d f))))
             '(:expand ((:free (a b)

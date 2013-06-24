@@ -15,52 +15,49 @@
 
 (defun s-take (n x)
   (declare (xargs :guard (natp n)))
-  (b* (((when (zp n)) nil)
-       ((mv first rest) (cond ((atom x)        (mv nil nil))
-                              ((atom (cdr x))  (mv (car x) x))
-                              (t               (mv (car x) (cdr x))))))
-    (cons first (s-take (1- n) rest))))
+  (b* (((when (zp n)) (bfr-sterm nil))
+       ((mv first rest &) (first/rest/end x)))
+    (bfr-ucons first (s-take (1- n) rest))))
 
 
 (defthm s-take-correct
-  (equal (v2n (bfr-eval-list (s-take n x) env))
-         (loghead n (v2i (bfr-eval-list x env))))
+  (equal (bfr-list->u (s-take n x) env)
+         (loghead n (bfr-list->s x env)))
   :hints (("goal" :induct (s-take n x)
-           :in-theory (enable* acl2::ihsext-recursive-redefs
-                               v2n v2i))))
+           :in-theory (enable* acl2::ihsext-recursive-redefs))))
     
 
 
-(local (defthm v2i-of-append
-         (implies (consp y)
-                  (equal (v2i (append x y))
-                         (logapp (len x) (v2n x) (v2i y))))
-         :hints (("goal" :induct (append x y)
-                  :in-theory (enable* acl2::ihsext-recursive-redefs
-                                      v2i v2n)))))
+;; (local (defthm v2i-of-append
+;;          (implies (consp y)
+;;                   (equal (v2i (append x y))
+;;                          (logapp (len x) (v2n x) (v2i y))))
+;;          :hints (("goal" :induct (append x y)
+;;                   :in-theory (enable* acl2::ihsext-recursive-redefs
+;;                                       v2i v2n)))))
 
-(defthm bfr-eval-list-of-append
-  (equal (bfr-eval-list (append a b) env)
-         (append (bfr-eval-list a env)
-                 (bfr-eval-list b env))))
+;; (defthm bfr-eval-list-of-append
+;;   (equal (bfr-eval-list (append a b) env)
+;;          (append (bfr-eval-list a env)
+;;                  (bfr-eval-list b env))))
 
-(defthm len-of-bfr-eval-list
-  (equal (len (bfr-eval-list x env))
-         (len x)))
+;; (defthm len-of-bfr-eval-list
+;;   (equal (len (bfr-eval-list x env))
+;;          (len x)))
 
-(defthm len-of-s-take
-  (equal (len (s-take w x))
-         (nfix w)))
+;; (defthm len-of-s-take
+;;   (equal (len (s-take w x))
+;;          (nfix w)))
 
-(defun append-us (x y)
-  (declare (xargs :guard (true-listp x)))
-  (append x (if (consp y) y '(nil))))
+;; (defun append-us (x y)
+;;   (declare (xargs :guard (true-listp x)))
+;;   (append x (if (consp y) y '(nil))))
 
-(defthm append-us-correct
-  (equal (v2i (bfr-eval-list (append-us x y) env))
-         (logapp (len x) (v2n (bfr-eval-list x env))
-                 (v2i (bfr-eval-list y env))))
-  :hints(("Goal" :in-theory (enable append-us))))
+;; (defthm append-us-correct
+;;   (equal (bfr-list->s (append-us x y) env)
+;;          (logapp (len x) (bfr-list->u x env)
+;;                  (bfr-list->s y env)))
+;;   :hints(("Goal" :in-theory (enable append-us))))
 
 
 (defun logapp-uss (w n x y)
@@ -70,9 +67,9 @@
       y
     (bfr-ite-bss
      (car n)
-     (append-us (s-take w x)
-                (logapp-uss (ash (lnfix w) 1) (cdr n) (s-nthcdr w x)
-                            y))
+     (bfr-logapp-nus (lnfix w) (s-take w x)
+                 (logapp-uss (ash (lnfix w) 1) (cdr n) (logtail-ns w x)
+                             y))
      (logapp-uss (ash (lnfix w) 1) (cdr n) x y))))
 
 (local
@@ -117,16 +114,16 @@
                                         acl2::ihsext-recursive-redefs)
              :induct (loghead n x))))))
 
-(defthm true-listp-append-us
-  (implies (true-listp y)
-           (true-listp (append-us x y)))
-  :hints(("Goal" :in-theory (enable append-us)))
-  :rule-classes :type-prescription)
+;; (defthm true-listp-append-us
+;;   (implies (true-listp y)
+;;            (true-listp (append-us x y)))
+;;   :hints(("Goal" :in-theory (enable append-us)))
+;;   :rule-classes :type-prescription)
 
-(defthm true-listp-logapp-uss
-  (implies (true-listp y)
-           (true-listp (logapp-uss w n x y)))
-  :rule-classes :type-prescription)
+;; (defthm true-listp-logapp-uss
+;;   (implies (true-listp y)
+;;            (true-listp (logapp-uss w n x y)))
+;;   :rule-classes :type-prescription)
 
 ;; (defun logapp-uss-conc (w n x y)
 ;;   (if (zp n)
@@ -146,17 +143,17 @@
 
 
 
-(local (in-theory (disable append-us)))
+;; (local (in-theory (disable append-us)))
 
 
 
 (defthm logapp-uss-correct
-  (equal (v2i (bfr-eval-list (logapp-uss w n x y) env))
-         (logapp (* (v2n (bfr-eval-list n env))
+  (equal (bfr-list->s (logapp-uss w n x y) env)
+         (logapp (* (bfr-list->u n env)
                     (nfix w))
-                 (v2i (bfr-eval-list x env))
-                 (v2i (bfr-eval-list y env))))
-  :hints(("Goal" :in-theory (enable v2i v2n acl2::ash** logcons))))
+                 (bfr-list->s x env)
+                 (bfr-list->s y env)))
+  :hints(("Goal" :in-theory (enable acl2::ash** logcons))))
 
 (local (in-theory (disable logapp-uss)))
 
@@ -174,18 +171,18 @@
         (general-number-components y))
        ((mv nintp nintp-known)
         (if (equal nrd '(t))
-            (mv (bfr-or (=-ss nin nil)
-                        (=-uu nid nil)) t)
+            (mv (bfr-or (bfr-=-ss nin nil)
+                        (bfr-=-uu nid nil)) t)
           (mv nil nil)))
        ((mv xintp xintp-known)
         (if (equal xrd '(t))
-            (mv (bfr-or (=-ss xin nil)
-                      (=-uu xid nil)) t)
+            (mv (bfr-or (bfr-=-ss xin nil)
+                      (bfr-=-uu xid nil)) t)
           (mv nil nil)))
        ((mv yintp yintp-known)
         (if (equal yrd '(t))
-            (mv (bfr-or (=-ss yin nil)
-                      (=-uu yid nil)) t)
+            (mv (bfr-or (bfr-=-ss yin nil)
+                      (bfr-=-uu yid nil)) t)
           (mv nil nil)))
        ((unless (and nintp-known xintp-known yintp-known))
         (g-apply 'logapp (gl-list n x y)))
@@ -196,7 +193,7 @@
        (xbits (bfr-ite-bss-fn xintp xrn nil))
        (ybits (bfr-ite-bss-fn yintp yrn nil))
        (resbits (logapp-uss 1 nbits xbits ybits)))
-    (mk-g-number resbits)))
+    (mk-g-number (rlist-fix resbits))))
 
 
 (in-theory (disable (g-logapp-of-numbers)))
@@ -222,11 +219,11 @@
          :hints(("Goal" :in-theory (enable acl2::logapp**)))
          :rule-classes ((:rewrite :backchain-limit-lst 0))))
 
-(local (defthm v2n-when-v2i-gte-0
-         (implies (<= 0 (v2i x))
-                  (equal (v2i x)
-                         (v2n x)))
-         :hints(("Goal" :in-theory (enable v2i v2n)))))
+(local (defthm bfr-list->s-when-gte-0
+         (implies (<= 0 (bfr-list->s x env))
+                  (equal (bfr-list->s x env)
+                         (bfr-list->u x env)))
+         :hints(("Goal" :in-theory (enable scdr s-endp)))))
 
 (defthm g-logapp-of-numbers-correct
   (implies (and (general-numberp n)
@@ -237,8 +234,9 @@
                           (eval-g-base x env)
                           (eval-g-base y env))))
   :hints (("goal" :in-theory (e/d* ((:ruleset general-object-possibilities)
-                                    v2n-bfr-ite-bvv-fn)
+                                    )
                                    (general-numberp
+                                    bfr-list->s
                                     general-number-components))
            :do-not-induct t)))
 
@@ -312,14 +310,13 @@
                                     ((:definition ,gfn)
                                      general-concretep-def
                                      logapp
+                                     member-equal
                                      eval-g-base-alt-def
                                      components-to-number-alt-def
-                                     s-sign-correct
                                      hons-assoc-equal
                                      sets::double-containment
                                      equal-of-booleans-rewrite
                                      bfr-eval-list
-                                     v2n-when-v2i-gte-0
                                      acl2::cancel_times-equal-correct
                                      acl2::cancel_plus-equal-correct
                                      default-car default-cdr
@@ -356,8 +353,8 @@
         (general-number-components y))
        ((mv yintp yintp-known)
         (if (equal yrd '(t))
-            (mv (bfr-or (=-ss yin nil)
-                        (=-uu yid nil)) t)
+            (mv (bfr-or (bfr-=-ss yin nil)
+                        (bfr-=-uu yid nil)) t)
           (mv nil nil)))
        (negtest (gtests negp hyp))
        ((unless (and yintp-known
@@ -365,16 +362,16 @@
         (g-apply 'int-set-sign (gl-list negp y)))
        (negbfr (gtests-nonnil negtest))
        (ybits (bfr-ite-bss-fn yintp yrn nil))
-       (ylen (integer-length-s ybits))
+       (ylen (bfr-integer-length-s ybits))
        (resbits (logapp-uss 1 ylen ybits (bfr-ite-bss-fn negbfr '(t) '(nil)))))
-    (mk-g-number resbits)))
+    (mk-g-number (rlist-fix resbits))))
 
 
-(local (defthm integer-length-s-correct-v2n
-         (equal (v2n (bfr-eval-list (integer-length-s x) env))
-                (integer-length (v2i (bfr-eval-list x env))))
-         :hints(("Goal" :use ((:instance integer-length-s-correct))
-                 :in-theory (disable integer-length-s-correct)))))
+(local (defthm bfr-integer-length-s-correct-v2n
+         (equal (bfr-list->u (bfr-integer-length-s x) env)
+                (integer-length (bfr-list->s x env)))
+         :hints(("Goal" :use ((:instance bfr-integer-length-s-correct))
+                 :in-theory (disable bfr-integer-length-s-correct)))))
 
 (local (defthm integer-length-zip
          (implies (zip x)
@@ -388,10 +385,9 @@
                   (int-set-sign (eval-g-base negp env)
                                 (eval-g-base y env))))
   :hints (("goal" :in-theory (e/d* ((:ruleset general-object-possibilities)
-                                    v2n-bfr-ite-bvv-fn
                                     int-set-sign)
                                    (general-numberp
-                                    V2N-WHEN-V2I-GTE-0
+                                    bfr-list->s-when-gte-0
                                     general-number-components))
            :do-not-induct t)))
 
@@ -460,8 +456,8 @@
         (general-number-components i))
        ((mv iintp iintp-known)
         (if (equal ird '(t))
-            (mv (bfr-or (=-ss iin nil)
-                        (=-uu iid nil)) t)
+            (mv (bfr-or (bfr-=-ss iin nil)
+                        (bfr-=-uu iid nil)) t)
           (mv nil nil)))
        ((unless iintp-known) (mv t nil)) ;; error
        ;; ifix

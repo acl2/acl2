@@ -23,15 +23,15 @@
         (general-number-components b))
        ((mv aintp aintp-known)
         (if (equal ard '(t))
-            (mv (bfr-or (=-ss ain nil) (=-uu aid nil)) t)
+            (mv (bfr-or (bfr-=-ss ain nil) (bfr-=-uu aid nil)) t)
           (mv nil nil)))
        ((mv bintp bintp-known)
         (if (equal brd '(t))
-            (mv (bfr-or (=-ss bin nil) (=-uu bid nil)) t)
+            (mv (bfr-or (bfr-=-ss bin nil) (bfr-=-uu bid nil)) t)
           (mv nil nil))))
     (if (and bintp-known aintp-known)
         (mk-g-boolean
-         (logbitp-n2v 1
+         (bfr-logbitp-n2v 1
                       (bfr-ite-bvv-fn (bfr-and
                                      aintp (bfr-not (s-sign arn)))
                                     arn nil)
@@ -57,11 +57,11 @@
                        (equal (logbitp a b) (logbitp a 0))))
          :hints(("Goal" :in-theory (enable logbitp)))))
 
-(local (defthm v2n-when-v2i-gte-0
-         (implies (<= 0 (v2i x))
-                  (equal (v2i x)
-                         (v2n x)))
-         :hints(("Goal" :in-theory (enable v2i v2n)))))
+(local (defthm bfr-list->s-when-positive
+         (implies (<= 0 (bfr-list->s x env))
+                  (equal (bfr-list->s x env)
+                         (bfr-list->u x env)))
+         :hints(("Goal" :in-theory (enable scdr s-endp)))))
 
 (local
  (defthm g-logbitp-of-numbers-correct
@@ -70,10 +70,10 @@
             (equal (eval-g-base (g-logbitp-of-numbers a b) env)
                    (logbitp (eval-g-base a env)
                             (eval-g-base b env))))
-   :hints (("goal" :in-theory (e/d* ((:ruleset general-object-possibilities)
-                                     v2n-bfr-ite-bvv-fn)
+   :hints (("goal" :in-theory (e/d* ((:ruleset general-object-possibilities))
                                     (general-numberp
-                                     general-number-components))
+                                     general-number-components
+                                     logbitp))
             :do-not-induct t))))
 
 (in-theory (disable g-logbitp-of-numbers))
@@ -134,6 +134,7 @@
                                       possibilities-for-x-5
                                       possibilities-for-x-3
                                       general-boolean-value-cases
+                                      logbitp bfr-list->s bfr-list->u
                                       (:rules-of-class :type-prescription :here))
                                      ((:type-prescription bfr-eval)))
              :induct (,gfn i j hyp clk)
