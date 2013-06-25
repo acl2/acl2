@@ -678,20 +678,32 @@
 
 
 
-;; (defn v2i (v)
-;;   (declare (xargs :guard-hints (("goal" :in-theory (enable logcons s-endp scdr
-;;                                                            acl2::bool->bit)))))
-;;   (mbe :logic (if (s-endp v)
-;;                   (bool->sign (car v))
-;;                 (logcons (acl2::bool->bit (car v))
-;;                          (v2i (scdr v))))
-;;        :exec
-;;        (if (atom v)
-;;            0
-;;          (if (atom (cdr v))
-;;              (if (car v) -1 0)
-;;            (logcons (acl2::bool->bit (car v))
-;;                     (v2i (cdr v)))))))
+(defn v2i (v)
+  (declare (xargs :guard-hints (("goal" :in-theory (enable logcons s-endp scdr
+                                                           acl2::bool->bit)))))
+  (mbe :logic (if (s-endp v)
+                  (bool->sign (car v))
+                (logcons (acl2::bool->bit (car v))
+                         (v2i (scdr v))))
+       :exec
+       (if (atom v)
+           0
+         (if (atom (cdr v))
+             (if (car v) -1 0)
+           (logcons (acl2::bool->bit (car v))
+                    (v2i (cdr v)))))))
+
+(defthm v2i-of-bfr-eval-list
+  (equal (v2i (bfr-eval-list x env))
+         (bfr-list->s x env))
+  :hints(("Goal" :induct (bfr-list->s x env)
+          :expand ((bfr-eval-list x env))
+          :in-theory (enable s-endp scdr))))
+
+(defthm v2i-of-i2v
+  (equal (v2i (i2v x))
+         (ifix x))
+  :hints(("Goal" :in-theory (enable bfr-scons s-endp scdr))))
 
 
 
@@ -763,11 +775,21 @@
 
 
 
-;; (defn v2n (v)
-;;   (if (atom v)
-;;       0
-;;     (logcons (acl2::bool->bit (car v))
-;;              (v2n (cdr v)))))
+(defn v2n (v)
+  (if (atom v)
+      0
+    (logcons (acl2::bool->bit (car v))
+             (v2n (cdr v)))))
+
+(defthm v2n-of-bfr-eval-list
+  (equal (v2n (bfr-eval-list x env))
+         (bfr-list->u x env)))
+
+(defthm v2n-of-n2v
+  (equal (v2n (n2v x))
+         (nfix x))
+  :hints(("Goal" :in-theory (enable bfr-ucons))))
+
 
 ;; (defund ucons (b x)
 ;;   (declare (xargs :guard t))
