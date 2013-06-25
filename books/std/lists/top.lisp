@@ -32,6 +32,7 @@
 (include-book "final-cdr")
 (include-book "flatten")
 (include-book "intersection")
+(include-book "index-of")
 (include-book "last")
 (include-book "len")
 (include-book "list-fix")

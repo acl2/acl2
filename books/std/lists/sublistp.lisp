@@ -99,21 +99,7 @@ front.  This makes it generally much more pleasant to reason about.</p>"
 of the sublist @('x') within the list @('y'), or @('NIL') if there is no such
 occurrence."
 
-  :long "<p>This function is much nicer to reason about than ACL2's built-in
-@(see position) function because it is simpler.</p>
-
-<ul>
-
-<li>@('position') can operate on either lists or strings, whereas @('listpos')
-    only operates on lists; see also @(see str::strpos) for a string
-    analogue.</li>
-
-<li>@('position') has a tail-recursive definition, which makes it generally
-    difficult to induct over than the non tail-recursive @('listpos').</li>
-
-</ul>
-
-<p>See also @(see sublistp), which is closely related.</p>"
+  :long "<p>See also @(see sublistp), which is closely related.</p>"
 
   (defund listpos (x y)
     (declare (xargs :guard t))
