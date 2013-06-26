@@ -695,10 +695,9 @@
 
 ; (Students of our code should study this elementary function just to see how
 ; we recur through terms.  The function instantiates a variable, i.e.,
-; (subst-var new old form w) substitutes the term new for the variable old in
-; the term form.  W is the property list world and is used merely to keep
-; certain terms (constants) in a canonical form.  For example, (subst-var '(car
-; a) 'x '(foo x y)) = '(foo (car a) y).)
+; (subst-var new old form) substitutes the term new for the variable old in the
+; term form.  For example, (subst-var '(car a) 'x '(foo x y)) = '(foo (car a)
+; y).)
 
 (mutual-recursion
 
