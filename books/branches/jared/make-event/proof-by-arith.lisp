@@ -32,7 +32,9 @@
 (include-book "arithmetic/top-with-meta" :dir :system)
 (include-book "arithmetic-3/top" :dir :system)
 (include-book "rtl/rel8/arithmetic/top" :dir :system)
-(include-book "rtl/rel5/arithmetic/top" :dir :system)
+
+;; [Jared] trying to remove rtl/rel5
+;; (include-book "rtl/rel5/arithmetic/top" :dir :system)
 (include-book "arithmetic-5/top" :dir :system)
 ||#
 
@@ -173,7 +175,8 @@
        stable-under-simplificationp
        hist
        pspv))))
-  ("rtl/rel5/arithmetic/top")
+  ;; [Jared]: trying to remove rtl/rel5
+  ("rtl/rel8/arithmetic/top")
   ("arithmetic-3/bind-free/top"
    (set-default-hints
     '((nonlinearp-default-hint
