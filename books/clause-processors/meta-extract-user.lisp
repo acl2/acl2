@@ -1063,6 +1063,11 @@
 
 
 
+(defthm plist-worldp-w-state
+  (implies (state-p1 state)
+           (plist-worldp (w state)))
+  :hints(("Goal" :in-theory (enable w))))
+
 ;; Allows use of meta-extract-formula with just the world.  You still need
 ;; state in the theorems (and to know that wrld = (w state)).
 (defund meta-extract-formula-w (name wrld)

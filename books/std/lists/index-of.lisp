@@ -103,7 +103,34 @@ and is not (logically) tail-recursive."
   (defthm nth-of-index-when-member
     (implies (member k x)
              (equal (nth (index-of k x) x)
-                    k))))
+                    k)))
+
+  (defthm index-of-<-len
+    (implies (member k x)
+             (< (index-of k x) (len x)))
+    :rule-classes :linear)
+
+  (defthm index-of-append-first
+    (implies (index-of k x)
+             (equal (index-of k (append x y))
+                    (index-of k x))))
+
+  (defthm index-of-append-second
+    (implies (and (not (index-of k x))
+                  (index-of k y))
+             (equal (index-of k (append x y))
+                    (+ (len x) (index-of k y)))))
+
+  (defthm index-of-append-neither
+    (implies (and (not (index-of k x))
+                  (not (index-of k y)))
+             (not (index-of k (append x y)))))
+
+  (defthmd index-of-append-split
+    (equal (index-of k (append x y))
+           (or (index-of k x)
+               (and (index-of k y)
+                    (+ (len x) (index-of k y)))))))
                 
 
   
