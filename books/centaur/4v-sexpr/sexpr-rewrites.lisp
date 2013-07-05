@@ -2281,7 +2281,8 @@ simplifying using the known signals."
   ;; need not be known Boolean.)
   '(((xor a a)        . (f))
     ((xor a (not a))  . (t))
-    ((ite* a x x)     . (buf x))))
+    ((ite* a x x)     . (buf x))
+    ((buf a)          . a)))
            
 (defsection 4v-sexpr-boolean-rewritep
 
