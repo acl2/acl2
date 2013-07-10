@@ -75,6 +75,7 @@
 (include-book "esim/stv/stv-debug")
 (include-book "esim/esim-sexpr-correct")
 
+(include-book "regression/common")
 
 ; The following are included automatically by the xdoc::save command below, but
 ; we include them explicitly to support the hons `make' target in the books/
