@@ -20,6 +20,7 @@
 
 (in-package "OSLIB")
 
+(include-book "argv")
 (include-book "catpath")
 (include-book "date")
 (include-book "getpid")

@@ -37,7 +37,7 @@ execution we use Common Lisp's @('get-decoded-time') function to figure out
 what the current date and time is.  We think this <i>should</i> work on any
 Common Lisp system.</p>"
 
-  (b* ((- (er hard? __function__ "Raw Lisp definition not installed?"))
+  (b* ((- (raise "Raw Lisp definition not installed?"))
        ((mv err val state) (read-acl2-oracle state)))
     (if (and (not err)
              (stringp val))
