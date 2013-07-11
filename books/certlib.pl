@@ -885,7 +885,7 @@ sub parse_params {
 sub get_cert_param {
     my ($base,$the_line,$events) = @_;
 
-    my $regexp = "cert[-_]param:[\\s]*\\(?([^)]*)\\)?";
+    my $regexp = "cert[-_]param:?[\\s]*\\(?([^)]*)\\)?";
     my @match = $the_line =~ m/$regexp/;
     if (@match) {
 	debug_print_event($base, "cert_param", \@match);
