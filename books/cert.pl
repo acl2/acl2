@@ -54,6 +54,8 @@ use Getopt::Long qw(:config bundling_override);
 (do "$RealBin/certlib.pl") or die ("Error loading $RealBin/certlib.pl:\n!: $!\n\@: $@\n");
 (do "$RealBin/paths.pl") or die ("Error loading $RealBin/paths.pl:\n!: $!\n\@: $@\n");
 
+my %reqparams = ("hons-only" => "HONS_ONLY",
+                 "uses-glucose" => "USES_GLUCOSE");
 
 # use lib "/usr/lib64/perl5/5.8.8/x86_64-linux-thread-multi/Devel";
 # use Devel::DProf;
@@ -667,18 +669,21 @@ unless ($no_makefile) {
 
     # Write out the list of hons-only certs
     # Propagate the hons-only requirement:
-    my %visited = ();
-    foreach my $cert (@certs) {
-	propagate_reqparam($cert, "hons-only", \%visited, \%depmap);
-    }
-    print $mf "${var_prefix}_HONS_ONLY :=";
-    foreach my $cert (@certs) {
-	if (cert_get_param($cert, \%depmap, "hons-only")) {
-	    print $mf " \\\n     $cert ";
+    my %visited;
+    foreach my $reqparam (keys %reqparams) {
+	%visited = ();
+	foreach my $cert (@certs) {
+	    propagate_reqparam($cert, $reqparam, \%visited, \%depmap);
 	}
-    }
-    print $mf "\n\n";
 
+	print $mf "${var_prefix}_${reqparams{$reqparam}} :=";
+	foreach my $cert (@certs) {
+	    if (cert_get_param($cert, \%depmap, $reqparam)) {
+		print $mf " \\\n     $cert ";
+	    }
+	}
+	print $mf "\n\n";
+    }
     # If there are labels, write out the sources and certs for those
     foreach my $label (sort(keys %labels)) {
 	my @topcerts = @{$labels{$label}};

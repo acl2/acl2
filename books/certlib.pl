@@ -31,7 +31,7 @@ use File::Spec;
 use Storable qw(nstore retrieve);
 use Cwd 'abs_path';
 
-my $cache_version_code = 3;
+my $cache_version_code = 4;
 
 # Note: for debugging you can enable this use and then print an error message
 # using
@@ -918,6 +918,8 @@ sub get_cert_param {
     return 0;
 }
 
+# (check-hons-enabled (:book
+# cert_param (hons-only)
 
 
 
