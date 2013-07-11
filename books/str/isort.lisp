@@ -21,6 +21,7 @@
 (in-package "STR")
 (include-book "iless")
 (include-book "defsort/defsort" :dir :system)
+(local (include-book "std/typed-lists/string-listp" :dir :system))
 
 (ACL2::defsort
  :comparablep stringp
@@ -31,11 +32,6 @@
   (equal (istr-list-p x)
          (string-listp (list-fix x)))
   :hints(("Goal" :in-theory (enable istr-list-p))))
-
-(defthm string-listp-of-list-fix
-  ;; BOZO misplaced
-  (implies (string-listp x)
-           (string-listp (list-fix x))))
 
 (defthm string-listp-of-istr-sort
   (implies (force (string-listp x))

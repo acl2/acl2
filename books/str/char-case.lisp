@@ -36,7 +36,7 @@
 
 
 (defsection up-alpha-p
-  :parents (case-conversion acl2::upper-case-p)
+  :parents (cases acl2::upper-case-p)
   :short "Determine if a character is an upper-case letter (A-Z)."
 
   :long "<p>@(call up-alpha-p) determines if @('x') is an upper-case alphabetic
@@ -111,12 +111,15 @@ contrast, @('up-alpha-p') works on arbitrary characters.</p>"
 
   (defthm upper-case-p-is-up-alpha-p
     (equal (acl2::upper-case-p x)
-           (up-alpha-p (double-rewrite x)))))
+           (up-alpha-p (double-rewrite x))))
+
+  ;; No longer necessary since we'll rewrite upper-case-p away
+  (in-theory (disable acl2::upper-case-p-char-upcase)))
 
 
 
 (defsection down-alpha-p
-  :parents (case-conversion acl2::lower-case-p)
+  :parents (cases acl2::lower-case-p)
   :short "Determine if a character is a lower-case letter (a-z)."
 
   :long "<p>@(call down-alpha-p) determines if @('x') is an lower-case
@@ -193,6 +196,9 @@ contrast, @('down-alpha-p') works on arbitrary characters.</p>"
     (equal (acl2::lower-case-p x)
            (down-alpha-p (double-rewrite x))))
 
+  ;; No longer necessary since we'll rewrite lower-case-p away
+  (in-theory (disable acl2::lower-case-p-char-downcase))
+
   (defthm down-alpha-p-when-up-alpha-p
     (implies (up-alpha-p x)
              (not (down-alpha-p x)))
@@ -202,7 +208,7 @@ contrast, @('down-alpha-p') works on arbitrary characters.</p>"
 
 
 (defsection upcase-char
-  :parents (case-conversion acl2::char-upcase)
+  :parents (cases acl2::char-upcase)
   :short "Convert a character to upper-case."
 
   :long "<p>@(call upcase-char) converts lower-case characters into their
@@ -305,7 +311,7 @@ contrast, @('upcase-char') works on arbitrary characters.</p>"
 
 
 (defsection downcase-char
-  :parents (case-conversion acl2::char-downcase)
+  :parents (cases acl2::char-downcase)
   :short "Convert a character to lower-case."
 
   :long "<p>@(call downcase-char) converts upper-case characters into their
@@ -420,7 +426,7 @@ characters.</p>"
 
 
 (defsection upcase-char-str
-  :parents (case-conversion)
+  :parents (cases)
   :short "Convert a character into an upper-case one-element string."
   :long "<p>@(call upcase-char-str) is logically equal to:</p>
 
@@ -482,7 +488,7 @@ during @(see upcase-first).</p>"
 
 
 (defsection downcase-char-str
-  :parents (case-conversion)
+  :parents (cases)
   :short "Convert a character into a lower-case one-element string."
   :long "<p>@(call downcase-char-str) is logically equal to:</p>
 

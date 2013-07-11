@@ -89,11 +89,11 @@ The replacement is done globally and non-recursively.</p>
 <p>Examples:</p>
 @({
  (strsubst \"World\" \"Star\" \"Hello, World!\")
-   --&gt;
+   -->
  \"Hello, Star!\"
 
  (strsubst \"oo\" \"aa\" \"xoooyoo\")
-   --&gt;
+   -->
  \"xaaoyaa\"
 })
 
@@ -141,7 +141,7 @@ individual characters, whereas @('strsubst') works on substrings.</p>"
  (strsubst-list \"Sun\"
                 \"Moon\"
                 '(\"Sun Roof\" \"Hello Sun\" \"Sunny Sunshades\"))
-   --&gt;
+   -->
  (\"Moon Roof\" \"Hello Moon\" \"Moonny Moonshades\")
 })"
 

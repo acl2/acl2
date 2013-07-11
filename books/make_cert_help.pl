@@ -545,6 +545,7 @@ write_whole_file($lisptmp, $instrs);
     }
 
     $shinsts .= "EXITCODE=\$?\n";
+    $shinsts .= "echo Exit code from ACL2 is \$EXITCODE >> $outfile\n";
     $shinsts .= "ls -l $goal >> $outfile || echo $goal seems to be missing >> $outfile\n";
     $shinsts .= "exit \$EXITCODE\n";
 

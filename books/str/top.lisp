@@ -122,7 +122,20 @@ following @(see refinement) hierarchy:</p>
 
 (defsection concatenation
   :parents (str)
-  :short "Functions for concatenating strings and character lists.")
+  :short "Functions for joining strings together.
+
+<p><b><color rgb='#ff0000'>Efficiency Warning</color></b>.  Concatenating
+strings in ACL2 is fundamentally slow.  Why?  In Common Lisp, strings are just
+arrays of characters, and there is not any mechanism for efficiently splicing
+together arrays.  Any kind of string concatenation, then, minimally requires
+creating a completely new array and copying all of the input characters into
+it.  This makes it especially slow to repeatedly use, e.g., @(see cat) to build
+up a string.</p>
+
+<p>To build strings more efficiently, a good general strategy is to build up a
+reverse-order character list, and then convert it into a string at the end.
+See for instance the functions @(see revappend-chars) and @(see
+rchars-to-string), which make this rather easy to do.</p>")
 
 (defsection coercion
   :parents (str)
@@ -143,10 +156,10 @@ and so on.")
   :long "<p>See also @(see ordering) for some functions that can sort strings
 in alphanumeric ways.</p>")
 
-(defsection case-conversion
+(defsection cases
   :parents (str)
-  :short "Functions for recognizing upper- and lower-case characters,
-converting between cases, etc.")
+  :short "Functions for recognizing and translating between upper- and
+lower-case.")
 
 (defsection symbols
   :parents (str)
@@ -155,3 +168,18 @@ converting between cases, etc.")
 (defsection substitution
   :parents (str)
   :short "Functions for doing string replacement.")
+
+(defsection lines
+  :parents (str)
+  :short "Functions for operating on the lines of a string."
+
+  :long "<p>Note that these functions generally work with Unix-style newline
+characters, i.e., @('\\n') instead of something like @('\\r\\n').  Depending on
+your application, this may or may not be appropriate.</p>
+
+<p>One option for treating a string as lines is to just use, e.g., @(see
+strtok) to literally split it into a list of lines.  The functions here are
+generally meant to be more efficient, e.g., @(see prefix-lines) can add a
+prefix to every line without constructing an temporary string list or doing any
+intermediate string concatenation.</p>")
+

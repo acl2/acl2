@@ -21,9 +21,9 @@
 (in-package "ACL2")
 
 ; We load these here now so we can import their symbols into cutil as desired.
-(ld "str/package.lsp" :dir :system)
-(ld "xdoc/package.lsp" :dir :system)
-(ld "finite-set-theory/osets/sets.defpkg" :dir :system)
+(include-book "str/portcullis" :dir :system)
+(include-book "xdoc/portcullis" :dir :system)
+(include-book "std/osets/portcullis" :dir :system)
 
 (defpkg "CUTIL"
   (set-difference-eq

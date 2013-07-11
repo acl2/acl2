@@ -65,7 +65,12 @@ on the machine Lisp2.</p>
   (defcong ichareqv equal (digitp x) 1
     :hints(("Goal" :in-theory (enable ichareqv
                                       downcase-char
-                                      char-fix)))))
+                                      char-fix))))
+
+  (defthm characterp-when-digitp
+    (implies (str::digitp char)
+             (characterp char))
+    :rule-classes :compound-recognizer))
 
 
 

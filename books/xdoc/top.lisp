@@ -42,9 +42,6 @@
 (make-event `(defconst *xdoc-dir/extra-packages*
                ,(acl2::extend-pathname *xdoc-dir* "extra-packages" state)))
 
-
-
-
 (defmacro colon-xdoc-init ()
   '(with-output :off (summary event)
      (make-event
@@ -73,6 +70,19 @@
           (b* (((mv all-xdoc-topics state) (all-xdoc-topics state))
                ((mv & & state) (colon-xdoc-fn ',name all-xdoc-topics state)))
             (value '(value-triple :invisible))))))))
+
+; Hijack ACL2's :doc keyword and replace it with :xdoc
+
+(defun add-ld-keyword-aliases (alist state)
+  (declare (xargs :mode :program :stobjs state))
+  (let ((current (f-get-global 'acl2::ld-keyword-aliases state)))
+    (set-ld-keyword-aliases (append alist current) state)))
+
+(make-event
+  (er-progn (add-ld-keyword-aliases '((:doc 1 xdoc)) state)
+            (value '(value-triple :invisible)))
+  ;; Try check-expansion in case that helps make it stick
+  :check-expansion t)
 
 (defmacro save (dir &key
                     (index-pkg 'acl2::foo)

@@ -33,6 +33,8 @@
                (value '(value-triple nil)))
    (value '(value-triple nil))))
 
+(include-book "misc/memory-mgmt")
+(value-triple (set-max-mem (* 10 (expt 2 30))))
 
 (include-book "vl/top")
 (include-book "vl/lint/lint")
@@ -169,7 +171,6 @@
 (include-book "gl/gl-ttags")
 (include-book "gl/gobject-type-thms")
 (include-book "misc/count-up")
-(include-book "misc/memory-mgmt")
 (include-book "misc/remove-assoc")
 (include-book "std/lists/resize-list" :dir :system)
 (include-book "misc/sparsemap")

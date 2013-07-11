@@ -21,7 +21,7 @@
 (in-package "ACL2")
 
 ;; BOZO we could consider removing osets now...
-(include-book "finite-set-theory/osets/sets" :dir :system)
+(include-book "std/osets/top" :dir :system)
 (include-book "std/lists/sets" :dir :system)
 (include-book "witness-cp")
 

@@ -14,9 +14,5 @@
 ; Foundation, Inc., 51 Franklin Street, Suite 500, Boston, MA 02110-1335, USA.
 
 (in-package "ACL2")
-(include-book "base10-digit-charp")
-(include-book "explode-atom")
-(include-book "explode-nonnegative-integer")
 (include-book "intern-in-package-of-symbol")
-(include-book "string-append")
 (include-book "two-nats-measure")

@@ -23,7 +23,7 @@
 (include-book "str/cat" :dir :system)
 (include-book "str/natstr" :dir :system)
 (include-book "std/misc/two-nats-measure" :dir :system)
-(local (include-book "std/misc/explode-atom" :dir :system))
+(local (include-book "str/explode-atom" :dir :system))
 (local (include-book "centaur/bitops/ihsext-basics" :dir :system))
 (local (include-book "misc/assert" :dir :system))
 (local (include-book "std/typed-lists/character-listp" :dir :system))

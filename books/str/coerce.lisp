@@ -66,8 +66,9 @@ rewrite it away into @(see explode) or @(see implode).</p>"
                            (coerce y 'list))
                     (equal x y))))
 
-  (defthm character-listp-of-coerce-list
-    (character-listp (coerce x 'list)))
+  ;; Redundant with built-in ACL2 rule character-listp-coerce
+  ;; (defthm character-listp-of-coerce-list
+  ;;   (character-listp (coerce x 'list)))
 
   (defthm coerce-list-under-iff
     (iff (coerce string 'list)

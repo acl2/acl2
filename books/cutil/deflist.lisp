@@ -26,7 +26,7 @@
 (include-book "xdoc/top" :dir :system)
 (include-book "tools/bstar" :dir :system)
 (include-book "str/cat" :dir :system)
-(include-book "finite-set-theory/osets/sets" :dir :system)
+(include-book "std/osets/top" :dir :system)
 (include-book "defsort/duplicated-members" :dir :system)
 (include-book "std/lists/sets" :dir :system)
 (include-book "std/lists/list-fix" :dir :system)
@@ -266,7 +266,7 @@ of which recognizers require true-listp and which don't.</p>")
   ;; Deflist does most of its work in a very minimal theory.  These are a few
   ;; lemmas that we enable so that it will work.
 
-  (local (include-book "finite-set-theory/osets/under-set-equiv" :dir :system))
+  (local (include-book "std/osets/under-set-equiv" :dir :system))
 
   (defthmd deflist-lemma-member-of-car
     (iff (member-equal (car x) x)

@@ -19,6 +19,6 @@
 ; Original author: Jared Davis <jared@centtech.com>
 
 (in-package "ACL2")
-(ld "finite-set-theory/osets/sets.defpkg" :dir :system)
-(ld "cutil/package.lsp" :dir :system)
+(include-book "std/osets/portcullis" :dir :system)
+(include-book "cutil/portcullis" :dir :system)
 ; cert-flags: ? t :ttags :all

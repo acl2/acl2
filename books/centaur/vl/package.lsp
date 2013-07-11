@@ -20,15 +20,10 @@
 
 (in-package "ACL2")
 
-;; Must be included here for sets:: functions
-(ld "finite-set-theory/osets/sets.defpkg" :dir :system)
-
-;; Must be included here for cutil:: functions
-(ld "cutil/package.lsp" :dir :system)
-
-(ld "oslib/package.lsp" :dir :system)
-
-(ld "centaur/bridge/package.lsp" :dir :system)
+(include-book "std/osets/portcullis" :dir :system)
+(include-book "cutil/portcullis" :dir :system)
+(include-book "oslib/portcullis" :dir :system)
+(include-book "centaur/bridge/portcullis" :dir :system)
 
 (defmacro multi-union-eq (x y &rest rst)
   (xxxjoin 'union-eq (list* x y rst)))

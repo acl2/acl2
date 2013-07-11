@@ -25,7 +25,7 @@
 (local (include-book "arithmetic"))
 
 (defsection ichareqv
-  :parents (equivalences)
+  :parents (equivalences cases)
   :short "Case-insensitive character equivalence test."
   :long "<p>@(call ichareqv) determines if @('x') and @('y') are equivalent
 when interpreted as characters without regard to case.  For instance,
@@ -82,7 +82,7 @@ irritating to use because it has @(see standard-char-p) guards.  In contrast,
 
 
 (defsection icharlisteqv
-  :parents (equivalences)
+  :parents (equivalences cases)
   :short "Case-insensitive character-list equivalence test."
 
   :long "<p>@(call icharlisteqv) determines if @('x') and @('y') are
@@ -156,7 +156,7 @@ another.</p>
 
 
 (defsection istreqv
-  :parents (equivalences)
+  :parents (equivalences cases)
   :short "Case-insensitive string equivalence test."
 
   :long "<p>@(call istreqv) determines if @('x') and @('y') are

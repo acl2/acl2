@@ -21,7 +21,7 @@
 (in-package "STR")
 (include-book "coerce")
 (include-book "tools/bstar" :dir :system)
-(local (include-book "std/misc/explode-atom" :dir :system))
+(local (include-book "explode-atom"))
 (local (include-book "arithmetic"))
 
 (defund insert-underscores (x)

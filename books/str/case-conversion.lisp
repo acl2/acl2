@@ -35,7 +35,7 @@
                 (append a (cons x y)))))
 
 (defsection upcase-charlist
-  :parents (case-conversion)
+  :parents (cases)
   :short "Convert every character in a list to upper case."
 
   :long "<p>@(call upcase-charlist) maps @(see upcase-char) across a character
@@ -134,7 +134,7 @@ logical definition.</p>"
 
 
 (defsection downcase-charlist
-  :parents (case-conversion)
+  :parents (cases)
   :short "Convert every character in a list to lower case."
 
   :long "<p>@(call downcase-charlist) maps @(see downcase-char) across a
@@ -233,7 +233,7 @@ logical definition.</p>"
 
 
 (defsection upcase-string
-  :parents (case-conversion acl2::string-upcase)
+  :parents (cases acl2::string-upcase)
   :short "Convert a string to upper case."
 
   :long "<p>@(call upcase-string) converts a string to upper case, effectively
@@ -361,7 +361,7 @@ least we're better when no work needs to be done:</p>
 
 
 (defsection downcase-string
-  :parents (case-conversion acl2::string-downcase)
+  :parents (cases acl2::string-downcase)
   :short "Convert a string to lower case."
 
   :long "<p>@(call downcase-string) converts a string to lower case,
@@ -468,7 +468,7 @@ make this fast.</p>"
 
 
 (defsection upcase-string-list
-  :parents (case-conversion)
+  :parents (cases)
   :short "Convert every string in a list to upper case."
 
   (defund upcase-string-list-aux (x acc)
@@ -505,7 +505,7 @@ make this fast.</p>"
 
 
 (defsection downcase-string-list
-  :parents (case-conversion)
+  :parents (cases)
   :short "Convert every string in a list to lower case."
 
   (defund downcase-string-list-aux (x acc)
@@ -542,7 +542,7 @@ make this fast.</p>"
 
 
 (defsection upcase-first-charlist
-  :parents (case-conversion)
+  :parents (cases)
   :short "Convert the first character of a character list to upper case."
 
   (defund upcase-first-charlist (x)
@@ -590,7 +590,7 @@ make this fast.</p>"
 
 
 (defsection upcase-first
-  :parents (case-conversion)
+  :parents (cases)
   :short "Convert the first character of a string to upper case."
 
   :long "<p>@(call upcase-first) returns a copy of the string @('x') except
@@ -630,7 +630,7 @@ unchanged when its first character is not a lower-case letter.</p>"
 
 
 (defsection downcase-first-charlist
-  :parents (case-conversion)
+  :parents (cases)
   :short "Convert the first character of a character list to downper case."
 
   (defund downcase-first-charlist (x)
@@ -677,7 +677,7 @@ unchanged when its first character is not a lower-case letter.</p>"
 
 
 (defsection downcase-first
-  :parents (case-conversion)
+  :parents (cases)
   :short "Convert the first character of a string to downper case."
 
   :long "<p>@(call downcase-first) returns a copy of the string @('x') except

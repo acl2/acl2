@@ -191,7 +191,7 @@
 
 (encapsulate
  ()
- (local (include-book "rtl/rel5/arithmetic/top" :dir :system))
+ (local (include-book "rtl/rel8/arithmetic/top" :dir :system))
 
  (defthm _ADDRESS-P-of-floor
    (implies (MEM::|_ADDRESS-P| ADDR DEPTH)
@@ -605,7 +605,7 @@
 
 (encapsulate
  ()
- (local (include-book "rtl/rel5/arithmetic/top" :dir :system))
+ (local (include-book "rtl/rel8/arithmetic/top" :dir :system))
 
  (defthm test
   (implies (and (force (bit-listp rbl))
