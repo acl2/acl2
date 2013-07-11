@@ -10,51 +10,56 @@
 ; License along with this program; if not, write to the Free Software
 ; Foundation, Inc., 51 Franklin Street, Suite 500, Boston, MA 02110-1335, USA.
 
+;; cert_param: (uses-glucose)
+
 (in-package "ACL2")
 
 (include-book "common")
 
-(defmodules *multiply-modules*
+(defmodules *subtract-modules*
   (vl::make-vl-loadconfig
-   :start-files (list "multiply.v")))
+   :start-files (list "subtract.v")))
 
-(defmacro multiply-thm (n)
+(defmacro subtract-thm (n)
   (let* ((n-str (str::natstr n))
 
          (constant-name ;;; defining a constant is a bit silly, but having this
                         ;;; intermediate artifact to view
-          (intern$ (str::cat "*MULTIPLY-" n-str "-MODULE*")
+          (intern$ (str::cat "*SUBTRACT-" n-str "-MODULE*")
+
                    "ACL2"))
 
          (thm-name
-          (intern$ (str::cat "MULTIPLY-" n-str "-CORRECT")
+          (intern$ (str::cat "SUBTRACT-" n-str "-CORRECT")
+
                    "ACL2"))
 
-         (module-name (str::cat "multiply" n-str))
+         (module-name (str::cat "subtract" n-str))
 
          (test-vector-name
-          (intern$ (str::cat "MULTIPLY-" n-str "-TEST-VECTOR")
+          (intern$ (str::cat "SUBTRACT-" n-str "-TEST-VECTOR")
                    "ACL2"))
-
 
          (test-vector-autohyps-name
           (intern$ (str::cat (symbol-name test-vector-name)
                              "-AUTOHYPS")
+
                    "ACL2"))
 
          (test-vector-autoins-name
           (intern$ (str::cat (symbol-name test-vector-name)
                              "-AUTOINS")
+
                    "ACL2"))
 
          (g-bindings
-          `(gl::auto-bindings (:mix (:nat a ,n)
-                                    (:nat b ,n)))))
+         `(gl::auto-bindings (:mix (:nat a ,n)
+                                   (:nat b ,n)))))
 
     `(progn
        (defconst ,constant-name
          (vl::vl-module->esim
-          (vl::vl-find-module ,module-name (vl::vl-translation->mods *multiply-modules*))))
+          (vl::vl-find-module ,module-name (vl::vl-translation->mods *subtract-modules*))))
 
 
 
@@ -72,26 +77,18 @@
                               (out-alist (stv-run (,test-vector-name) in-alist))
                               (res       (cdr (assoc 'res out-alist))))
                          res)
-                       (mod (* a b) (expt 2 ,n)))
+                       (mod (- a b) (expt 2 ,n)))
          :g-bindings ,g-bindings))))
 
 
-(multiply-thm 1)
-(multiply-thm 2)
-(multiply-thm 3)
-(multiply-thm 4)
-(multiply-thm 8) ; took 1.57 seconds with glucose 2.2 on modern, yet slow, laptop
-(multiply-thm 10) ; took 86.11 seconds with glucose 2.2 on modern, yet slow, laptop
-
-#|
-
-; These are left as benchmarks for the future
-
-(multiply-thm 12)
-(multiply-thm 16)
-(multiply-thm 32)
-(multiply-thm 64)
-(multiply-thm 128)
-(multiply-thm 256)
-(multiply-thm 512)
-|#
+(subtract-thm 1)
+(subtract-thm 2)
+(subtract-thm 3)
+(subtract-thm 4)
+(subtract-thm 8)
+(subtract-thm 16)
+(subtract-thm 32)
+(subtract-thm 64)
+(subtract-thm 128)
+(subtract-thm 256) ; took 7.82 seconds (with glucose 2.2)
+(subtract-thm 512) ; took 29.34 seconds (with glucose 2.2)
