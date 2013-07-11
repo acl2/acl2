@@ -112,7 +112,8 @@
                        lst)
                   item))
   :hints(("Goal"
-          :in-theory (enable position-equal-ac)
+          :in-theory (e/d (position-equal-ac)
+                          (acl2::position-equal-ac-is-index-of-aux))
           :do-not '(generalize fertilize)
           :induct (position-equal-ac item lst acc))))
 
@@ -171,7 +172,8 @@
                          (<= n (- (position-equal-ac item lst acc) acc)))
                     (not (member-equal item (take n lst))))
            :hints(("Goal"
-                   :in-theory (enable position-equal-ac)
+                   :in-theory (e/d (position-equal-ac)
+                                   (acl2::position-equal-ac-is-index-of-aux))
                    :induct (my-induct item n lst acc)))))
 
   (local (defthm l1
@@ -252,4 +254,5 @@
                         0
                       (and (position-equal a x)
                            (+ 1 (position-equal a x))))))
-    :hints(("Goal" :in-theory (enable position-equal)))))
+    :hints(("Goal" :in-theory (e/d (position-equal)
+                                   (acl2::position-equal-ac-is-index-of-aux))))))

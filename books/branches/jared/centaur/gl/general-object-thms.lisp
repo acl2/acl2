@@ -67,11 +67,11 @@
 
 (defthm boolean-listp-n2v
   (boolean-listp (n2v n))
-  :hints(("Goal" :in-theory (enable n2v))))
+  :hints(("Goal" :in-theory (e/d (n2v bfr-ucons) (logcar logcdr)))))
 
 (defthm boolean-listp-i2v
   (boolean-listp (i2v n))
-  :hints(("Goal" :in-theory (enable i2v))))
+  :hints(("Goal" :in-theory (e/d (i2v bfr-scons) (logcar logcdr)))))
 
 (defthm number-to-components-boolean-listps
   (and (boolean-listp (mv-nth 0 (number-to-components n)))
@@ -81,39 +81,33 @@
 
 
 
-(defthm v2n-us
-  (implies (natp n)
-           (equal (v2n (n2v n)) n))
-  :hints (("goal" :in-theory (disable floor))))
+;; (defthm v2n-us
+;;   (implies (natp n)
+;;            (equal (v2n (n2v n)) n))
+;;   :hints (("goal" :in-theory (disable floor))))
 
-(defthm v2n-non-natp
-  (implies (not (natp n))
-           (equal (v2n (n2v n)) 0)))
+;; (defthm v2n-non-natp
+;;   (implies (not (natp n))
+;;            (equal (v2n (n2v n)) 0)))
 
-(defthm acl2-numberp-v2n
-  (and (acl2-numberp (v2n x))
-       (rationalp (v2n x))
-       (integerp (v2n x))
-       (natp (v2n x)))
-  :rule-classes (:rewrite :type-prescription))
+;; (defthm acl2-numberp-v2n
+;;   (and (acl2-numberp (v2n x))
+;;        (rationalp (v2n x))
+;;        (integerp (v2n x))
+;;        (natp (v2n x)))
+;;   :rule-classes (:rewrite :type-prescription))
 
 
 (defthm number-to-components-components-to-number
   (b* (((mv rnum rden inum iden)
         (number-to-components n)))
     (implies (acl2-numberp n)
-             (and (equal (components-to-number
-                          (v2i rnum)
-                          (v2n rden)
-                          (v2i inum)
-                          (v2n iden))
-                         n)
-                  (equal (components-to-number
-                          (v2i (bfr-eval-list rnum env))
-                          (v2n (bfr-eval-list rden env))
-                          (v2i (bfr-eval-list inum env))
-                          (v2n (bfr-eval-list iden env)))
-                         n))))
+             (equal (components-to-number
+                     (bfr-list->s rnum env)
+                     (bfr-list->u rden env)
+                     (bfr-list->s inum env)
+                     (bfr-list->u iden env))
+                    n)))
   :hints (("goal" :in-theory (enable components-to-number-alt-def))))
 
 
@@ -138,9 +132,9 @@
            (mv-let (rn rd in id)
              (general-number-components a)
              (flet ((uval (n env)
-                          (v2n (bfr-eval-list n (car env))))
+                          (bfr-list->u n (car env)))
                     (sval (n env)
-                          (v2i (bfr-eval-list n (car env)))))
+                          (bfr-list->s n (car env))))
                (equal (generic-geval a env)
                       (components-to-number
                        (sval rn env)
@@ -508,9 +502,9 @@
            (b* (((mv rn rd in id)
                  (general-number-components x)))
              (flet ((uval (n env)
-                          (v2n (bfr-eval-list n (car env))))
+                          (bfr-list->u n (car env)))
                     (sval (n env)
-                          (v2i (bfr-eval-list n (car env)))))
+                          (bfr-list->s n (car env))))
                (components-to-number (sval rn env)
                                      (uval rd env)
                                      (sval in env)
@@ -792,10 +786,10 @@
              (general-number-components x)
              (equal (general-concrete-obj x)
                     (components-to-number-fn
-                     (v2i (bfr-eval-list rn (car env)))
-                     (v2n (bfr-eval-list rd (car env)))
-                     (v2i (bfr-eval-list in (car env)))
-                     (v2n (bfr-eval-list id (car env)))))))
+                     (bfr-list->s rn (car env))
+                     (bfr-list->u rd (car env))
+                     (bfr-list->s in (car env))
+                     (bfr-list->u id (car env))))))
   :hints(("Goal" :in-theory (enable ;general-concretep-def
                              general-numberp
                              general-concrete-obj

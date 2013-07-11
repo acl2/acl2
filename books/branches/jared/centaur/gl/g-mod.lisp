@@ -19,13 +19,13 @@
         (general-number-components x))
        ((mv yrn yrd yin yid)
         (general-number-components y)))
-    (if (and (eq (=-uu xrd '(t)) t)
-             (eq (=-uu yrd '(t)) t)
-             (eq (bfr-or (=-ss xin nil)
-                       (=-uu xid nil)) t)
-             (eq (bfr-or (=-ss yin nil)
-                       (=-uu yid nil)) t))
-        (mk-g-number (rlist-fix (mod-ss xrn yrn)))
+    (if (and (eq (bfr-=-uu xrd '(t)) t)
+             (eq (bfr-=-uu yrd '(t)) t)
+             (eq (bfr-or (bfr-=-ss xin nil)
+                       (bfr-=-uu xid nil)) t)
+             (eq (bfr-or (bfr-=-ss yin nil)
+                       (bfr-=-uu yid nil)) t))
+        (mk-g-number (rlist-fix (bfr-mod-ss xrn yrn)))
       (g-apply 'mod (gl-list x y)))))
 
 (in-theory (disable (g-mod-of-numbers)))
@@ -33,18 +33,18 @@
 
 (local (include-book "arithmetic/top-with-meta" :dir :system))
 
-;; (local (defthm not-integerp-mod-ss
+;; (local (defthm not-integerp-bfr-mod-ss
 ;;          (implies (and (bfr-listp a) (bfr-listp b))
-;;                   (not (integerp (mod-ss a b))))
-;;          :hints (("goal" :use ((:instance bfr-listp-mod-ss))
-;;                   :in-theory (e/d (bfr-listp) (bfr-listp-mod-ss))))))
+;;                   (not (integerp (bfr-mod-ss a b))))
+;;          :hints (("goal" :use ((:instance bfr-listp-bfr-mod-ss))
+;;                   :in-theory (e/d (bfr-listp) (bfr-listp-bfr-mod-ss))))))
 
 (local (defthm rationalp-mod
          (implies (and (integerp x) (integerp y))
                   (rationalp (mod x y)))))
 
-(local (add-bfr-fn-pat =-uu))
-(local (add-bfr-fn-pat =-ss))
+(local (add-bfr-fn-pat bfr-=-uu))
+(local (add-bfr-fn-pat bfr-=-ss))
 
 (local
  (defthm g-mod-of-numbers-correct

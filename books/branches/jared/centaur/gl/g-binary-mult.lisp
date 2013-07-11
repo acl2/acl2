@@ -23,15 +23,14 @@
              (equal yrd '(t))
              (equal xid '(t))
              (equal yid '(t)))
-        (let* ((rprod (+-ss nil (*-ss xrn yrn)
-                            (unary-minus-s
-                             (*-ss xin yin))))
-               (iprod (+-ss nil (*-ss xrn yin)
-                            (*-ss xin yrn))))
+        (let* ((rprod (bfr-+-ss nil (bfr-*-ss xrn yrn)
+                            (bfr-unary-minus-s
+                             (bfr-*-ss xin yin))))
+               (iprod (bfr-+-ss nil (bfr-*-ss xrn yin)
+                            (bfr-*-ss xin yrn))))
           (mk-g-number
-           (if (boolean-listp rprod) (v2i rprod) rprod)
-           1
-           (if (boolean-listp iprod) (v2i iprod) iprod)))
+           rprod
+           1 iprod))
       (g-apply 'binary-* (gl-list x y)))))
 
 (in-theory (disable (g-binary-*-of-numbers)))

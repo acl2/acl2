@@ -7631,9 +7631,10 @@
                                           wrld))))
                   (value (cond ((null (cdr names)) (car names))
                                (t names)))
-                (defun-make-event
-                  names fives symbol-class term-method
-                  (car pair) event-form state)))))))))))))
+                (er-let* ((fives (chk-defuns-tuples def-lst nil ctx wrld state)))
+                  (defun-make-event
+                    names fives symbol-class term-method
+                    (car pair) event-form state))))))))))))))
 
 ; redefine defuns-fn to "be" (call) ccg-defuns-fn.
 ;

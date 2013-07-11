@@ -31,20 +31,10 @@
         (general-number-components x))
        ((mv yrn yrd yin yid)
         (general-number-components y)))
-    (flet ((ubv-ite (c a b)
-                    (let ((res (bfr-ite-bvv-fn c a b)))
-                      (if (boolean-listp res)
-                          (v2n res)
-                        res)))
-           (sbv-ite (c a b)
-                    (let ((res (bfr-ite-bss-fn c a b)))
-                      (if (boolean-listp res)
-                          (v2i res)
-                        res))))
-      (mk-g-number (sbv-ite c xrn yrn)
-                     (ubv-ite c xrd yrd)
-                     (sbv-ite c xin yin)
-                     (ubv-ite c xid yid)))))
+    (mk-g-number (bfr-ite-bss-fn c xrn yrn)
+                 (bfr-ite-bvv-fn c xrd yrd)
+                 (bfr-ite-bss-fn c xin yin)
+                 (bfr-ite-bvv-fn c xid yid))))
 
 (in-theory (disable merge-general-numbers))
 
@@ -452,34 +442,34 @@
                      (equal (bfr-eval-list x env)
                             x))))
    
-   (local (defthm rewrite-v2i-of-boolean-list
-            (implies (and (syntaxp (not (and (consp x)
-                                             (eq (car x) 'bfr-eval-list))))
-                          (bind-free '((env . (car env))) (env))
-                          (boolean-listp x))
-                     (equal (v2i x)
-                            (v2i (bfr-eval-list x env))))
-            :hints(("Goal" :in-theory (enable bfr-eval-list-when-boolean-listp)))
-            :rule-classes ((:rewrite :backchain-limit-lst 0))))
+   ;; (local (defthm rewrite-v2i-of-boolean-list
+   ;;          (implies (and (syntaxp (not (and (consp x)
+   ;;                                           (eq (car x) 'bfr-eval-list))))
+   ;;                        (bind-free '((env . (car env))) (env))
+   ;;                        (boolean-listp x))
+   ;;                   (equal (v2i x)
+   ;;                          (bfr-list->s x env)))
+   ;;          :hints(("Goal" :in-theory (enable bfr-eval-list-when-boolean-listp)))
+   ;;          :rule-classes ((:rewrite :backchain-limit-lst 0))))
 
-   (local (defthm rewrite-v2n-of-boolean-list
-            (implies (and (syntaxp (not (and (consp x)
-                                             (eq (car x) 'bfr-eval-list))))
-                          (bind-free '((env . (car env))) (env))
-                          (boolean-listp x))
-                     (equal (v2n x)
-                            (v2n (bfr-eval-list x env))))
-            :hints(("Goal" :in-theory (enable bfr-eval-list-when-boolean-listp)))
-            :rule-classes ((:rewrite :backchain-limit-lst 0))))
+   ;; (local (defthm rewrite-v2n-of-boolean-list
+   ;;          (implies (and (syntaxp (not (and (consp x)
+   ;;                                           (eq (car x) 'bfr-eval-list))))
+   ;;                        (bind-free '((env . (car env))) (env))
+   ;;                        (boolean-listp x))
+   ;;                   (equal (v2n x)
+   ;;                          (bfr-list->u x env)))
+   ;;          :hints(("Goal" :in-theory (enable bfr-eval-list-when-boolean-listp)))
+   ;;          :rule-classes ((:rewrite :backchain-limit-lst 0))))
 
-   (defthm bfr-eval-list-of-bfr-ite-bvv-fn-under-v2n
-     (equal (v2n (bfr-eval-list (bfr-ite-bvv-fn c a b) env))
-            (v2n (if (bfr-eval c env)
-                     (bfr-eval-list a env)
-                   (bfr-eval-list b env))))
-     :hints(("Goal" :in-theory (enable bfr-ite-bvv-fn v2n)
-             :induct t)
-            (bfr-reasoning)))
+   ;; (defthm bfr-list->u-of-bfr-ite-bvv-fn-under
+   ;;   (equal (bfr-list->u (bfr-ite-bvv-fn c a b) env)
+   ;;          (if (bfr-eval c env)
+   ;;              (bfr-list->u a env)
+   ;;            (bfr-list->u b env)))
+   ;;   :hints(("Goal" :in-theory (enable bfr-ite-bvv-fn)
+   ;;           :induct t)
+   ;;          (bfr-reasoning)))
 
    (defthm merge-general-numbers-correct
      (implies (and (general-numberp a) (general-numberp b))
@@ -763,13 +753,10 @@
                             generic-geval
                             hyp-fix-of-hyp-fixedp
                             eval-concrete-gobjectp
-                            acl2-numberp-v2n
                             default-unary-/
                             
                             len
 
-                            (:type-prescription v2n)
-                            (:type-prescription v2i)
                             bfr-eval-list-consts
                             default-*-1 default-*-2
                             (:type-prescription booleanp)

@@ -163,6 +163,9 @@ produces.)</li>
                (prog2$
                 (cw "SATLINK: Don't recognize this line: ~s0~%" line)
                 (mv t saw-unsat-p saw-sat-p saw-zero-p env$)))))
+       ((when (str::strprefixp "Solved by" line))
+        ;; Ignore glucose 2.2 feature
+        (mv nil saw-unsat-p saw-sat-p saw-zero-p env$))
        ((unless (eql char #\v))
         (cw "SATLINK: Don't recognize this line: ~s0~%" line)
         (mv t saw-unsat-p saw-sat-p saw-zero-p env$))

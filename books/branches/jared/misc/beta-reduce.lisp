@@ -16,6 +16,51 @@
   (if arg (pseudo-term-listp term)
     (pseudo-termp term)))
 
+(local
+ (encapsulate nil
+   (local (defun pos-ac-ind (x n)
+            (if (endp x) n
+              (list (pos-ac-ind (cdr x) (+ 1 n))
+                    (pos-ac-ind (cdr x) 1)))))
+
+   (defthm position-equal-ac-iff-zero
+     (implies (and n
+                   (syntaxp (not (equal n ''0))))
+              (iff (position-equal-ac k x n)
+                   (position-equal-ac k x 0)))
+     :hints (("goal" :induct (pos-ac-ind x n))))
+
+   (local (defthm blah
+            (implies (syntaxp (and (quotep a) (quotep b)))
+                     (equal (+ a b c)
+                            (+ (+ a b) c)))))
+
+   (local (defun pos-ac-ind2 (x n)
+            (if (endp x) n
+              (list (pos-ac-ind2 (cdr x) (+ 1 n))
+                    (pos-ac-ind2 (cdr x) 0)))))
+
+   (defthm position-equal-ac-redef
+     (equal (position-equal-ac k x n)
+            (cond ((endp x) nil)
+                  ((equal k (car x)) n)
+                  (t (let ((res (position-equal-ac k (cdr x) 0)))
+                       (and res (+ 1 n res))))))
+     :hints (("goal" :induct (pos-ac-ind2 x n)))
+     :rule-classes ((:definition :clique (position-equal-ac)
+                     :controller-alist ((position-equal-ac nil t nil)))))
+
+   (defthm position-equal-ac-iff-member
+     (implies n
+              (iff (position-equal-ac k x n)
+                   (member k x))))
+
+   (defthm nth-of-position-is-assoc-of-pairlis
+     (implies (member k x)
+              (equal (nth (position-equal-ac k x 0) y)
+                     (cdr (assoc k (pairlis$ x y)))))
+     :hints (("goal" :induct (pairlis$ x y))))))
+
 (defun beta-reduce-term (arg term keys vals)
   (declare (type (satisfies true-listp) keys vals))
   (declare (xargs :guard (pseudo-termp-key arg term)))
@@ -28,9 +73,12 @@
    (t
     (cond
      ((and (symbolp term) term)
-      (if (member term keys)
-	  (cdr (assoc-eq term (pairlis$ keys vals)))
-	'(quote nil)))
+      (mbe :logic
+           (if (member term keys)
+               (cdr (assoc-eq term (pairlis$ keys vals)))
+             '(quote nil))
+           :exec (let ((pos (position-eq term keys)))
+                   (if pos (nth pos vals) '(quote nil)))))
      ((atom term) term)
      ((eq (car term) 'quote) term)
      ((consp (car term))

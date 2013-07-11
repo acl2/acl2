@@ -52,379 +52,526 @@
 
 
 
+;; equality of two unsigned bool/bfr vectors
+;; (defund =-uu (a b)
+;;   (declare (xargs :guard t
+;;                   :measure (+ (len a) (len b))))
+;;   (if (and (atom a) (atom b))
+;;       t
+;;     (b* (((mv head1 tail1) (car/cdr a))
+;;          ((mv head2 tail2) (car/cdr b)))
+;;       (and (iff head1 head2)
+;;            (=-uu tail1 tail2)))))
 
-
-;; equality of two unsigned bdd vectors
-(defund =-uu (a b)
+(defund bfr-=-uu (a b)
   (declare (xargs :guard t
                   :measure (+ (len a) (len b))))
   (if (and (atom a) (atom b))
       t
-    (b* (((mv head1 tail1)
-          (if (atom a) (mv nil nil) (mv (car a) (cdr a))))
-         ((mv head2 tail2)
-          (if (atom b) (mv nil nil) (mv (car b) (cdr b)))))
+    (b* (((mv head1 tail1) (car/cdr a))
+         ((mv head2 tail2) (car/cdr b)))
       (bfr-and (bfr-iff head1 head2)
-               (=-uu tail1 tail2)))))
+               (bfr-=-uu tail1 tail2)))))
 
-(defund =-ss (a b)
+
+
+;; (defund =-ss (a b)
+;;   (declare (xargs :guard t
+;;                   :measure (+ (len a) (len b))))
+;;   (b* (((mv head1 tail1 end1) (first/rest/end a))
+;;        ((mv head2 tail2 end2) (first/rest/end b)))
+;;     (if (and end1 end2)
+;;         (iff head1 head2)
+;;       (and (iff head1 head2)
+;;            (=-ss tail1 tail2)))))
+
+(defund bfr-=-ss (a b)
   (declare (xargs :guard t
                   :measure (+ (len a) (len b))))
-  (b* (((mv head1 tail1 end1)
-        (if (atom a)
-            (mv nil nil t)
-          (if (atom (cdr a))
-              (mv (car a) a t)
-            (mv (car a) (cdr a) nil))))
-       ((mv head2 tail2 end2)
-        (if (atom b)
-            (mv nil nil t)
-          (if (atom (cdr b))
-              (mv (car b) b t)
-            (mv (car b) (cdr b) nil)))))
+  (b* (((mv head1 tail1 end1) (first/rest/end a))
+       ((mv head2 tail2 end2) (first/rest/end b)))
     (if (and end1 end2)
         (bfr-iff head1 head2)
       (bfr-and (bfr-iff head1 head2)
-               (=-ss tail1 tail2)))))
+               (bfr-=-ss tail1 tail2)))))
 
 
 
 
 
-(defund s-nthcdr (place n)
+(defund logtail-ns (place n)
   (declare (xargs :guard (natp place)))
-  (if (or (zp place) (atom n) (atom (cdr n)))
+  (if (or (zp place) (s-endp n))
       n
-    (s-nthcdr (1- place) (cdr n))))
+    (logtail-ns (1- place) (scdr n))))
 
 (defund s-sign (x)
   (declare (xargs :guard t))
-  (if (atom x) nil (car (last x))))
+  (b* (((mv first rest endp) (first/rest/end x)))
+    (if endp
+        first
+      (s-sign rest))))
 
 
-(defund +-ss (c v1 v2)
+;; (defund +-ss (c v1 v2)
+;;   (declare (xargs :measure (+ (len v1) (len v2))
+;;                   :guard t))
+;;   (b* (((mv head1 tail1 end1) (first/rest/end v1))
+;;        ((mv head2 tail2 end2) (first/rest/end v2))
+;;        (axorb (xor head1 head2))
+;;        (s (xor c axorb)))
+;;     (if (and end1 end2)
+;;         (let ((last (if axorb (not c) head1)))
+;;           (scons s (sterm last)))
+;;       (let* ((c (or (and c axorb)
+;;                     (and head1 head2)))
+;;              (rst (+-ss c tail1 tail2)))
+;;         (scons s rst)))))
+
+(defund bfr-+-ss (c v1 v2)
   (declare (xargs :measure (+ (len v1) (len v2))
                   :guard t))
-  (b* (((mv head1 tail1 end1)
-        (if (atom v1)
-            (mv nil nil t)
-          (if (atom (cdr v1))
-              (mv (car v1) v1 t)
-            (mv (car v1) (cdr v1) nil))))
-       ((mv head2 tail2 end2)
-        (if (atom v2)
-            (mv nil nil t)
-          (if (atom (cdr v2))
-              (mv (car v2) v2 t)
-            (mv (car v2) (cdr v2) nil))))
+  (b* (((mv head1 tail1 end1) (first/rest/end v1))
+       ((mv head2 tail2 end2) (first/rest/end v2))
        (axorb (bfr-xor head1 head2))
        (s (bfr-xor c axorb)))
     (if (and end1 end2)
         (let ((last (bfr-ite axorb (bfr-not c) head1)))
-          (if (hqual s last)
-              (list s)
-            (list s last)))
+          (bfr-scons s (bfr-sterm last)))
       (let* ((c (bfr-or (bfr-and c axorb)
                         (bfr-and head1 head2)))
-             (rst (+-ss c tail1 tail2)))
-        (if (and (atom (cdr rst))
-                 (hqual s (car rst)))
-            rst
-          (cons s rst))))))
+             (rst (bfr-+-ss c tail1 tail2)))
+        (bfr-scons s rst)))))
 
+(defthm not-s-endp-compound-recognizer
+  (implies (not (s-endp x))
+           (consp x))
+  :hints(("Goal" :in-theory (enable s-endp)))
+  :rule-classes :compound-recognizer)
 
+;; (defund lognot-s (x)
+;;   (declare (xargs :guard t))
+;;   (b* (((mv head tail end) (first/rest/end x)))
+;;     (if end
+;;         (sterm (not head))
+;;       (scons (not head)
+;;              (lognot-s tail)))))
 
+;; (defund lognot-bv (x)
+;;   (declare (xargs :guard t
+;;                   :measure (len x)))
+;;   (if (atom x)
+;;       nil
+;;     (cons (not (car x))
+;;           (lognot-bv (cdr x)))))
 
-(defund lognot-bv (x)
-  (declare (xargs :guard t
-                  :measure (len x)))
-  (if (atom x)
-      nil
-    (prog2$
-     (acl2::last-chance-wash-memory)
-     (cons (bfr-not (car x))
-           (lognot-bv (cdr x))))))
-
-(defund unary-minus-s (x)
+(defund bfr-lognot-s (x)
   (declare (xargs :guard t))
-  (if (consp x)
-      (+-ss t nil (lognot-bv x))
-    nil))
+  (b* (((mv head tail end) (first/rest/end x)))
+    (if end
+        (bfr-sterm (bfr-not head))
+      (bfr-scons (bfr-not head)
+                 (bfr-lognot-s tail)))))
+
+;; (defund unary-minus-s (x)
+;;   (declare (xargs :guard t))
+;;   (+-ss t nil (lognot-s x)))
+
+(defund bfr-unary-minus-s (x)
+  (declare (xargs :guard t))
+  (bfr-+-ss t nil (bfr-lognot-s x)))
+
+;; (defund *-ss (v1 v2)
+;;   (declare (xargs :guard t
+;;                   :measure (+ (len v1) (len v2))))
+;;   (b* (((mv dig1 rest end1) (first/rest/end v1)))
+;;     (if end1
+;;         (if dig1
+;;             (unary-minus-s v2)
+;;           nil)
+;;       (let ((rest (*-ss rest v2)))
+;;         (+-ss nil
+;;               (if dig1 v2 nil)
+;;               (scons nil rest))))))
 
 
-(defund *-ss (v1 v2)
+(defund bfr-*-ss (v1 v2)
   (declare (xargs :guard t
                   :measure (+ (len v1) (len v2))))
-  (b* (((mv dig1 end1)
-        (if (atom v1)
-            (mv nil t)
-          (if (atom (cdr v1))
-              (mv (car v1) t)
-            (mv (car v1) nil)))))
+  (b* (((mv dig1 rest end1) (first/rest/end v1)))
     (if end1
         (bfr-ite-bss dig1
-                     (unary-minus-s v2)
+                     (bfr-unary-minus-s v2)
                      nil)
-      (let ((rest (*-ss (cdr v1) v2)))
-        (+-ss nil
+      (let ((rest (bfr-*-ss rest v2)))
+        (bfr-+-ss nil
               (bfr-ite-bss dig1 v2 nil)
-              (cons nil rest))))))
+              (bfr-scons nil rest))))))
 
-(defund <-=-ss (a b)
+;; (defund <-=-ss (a b)
+;;   (declare (xargs :guard t
+;;                   :measure (+ (len a) (len b))))
+;;   (b* (((mv head1 tail1 end1) (first/rest/end a))
+;;        ((mv head2 tail2 end2) (first/rest/end b)))
+;;     (if (and end1 end2)
+;;         (mv (and head1 (not head2))
+;;             (iff head1 head2))
+;;       (mv-let (rst< rst=)
+;;         (<-=-ss tail1 tail2)
+;;         (mv (or rst< (and rst= head2 (not head1)))
+;;             (and rst= (iff head1 head2)))))))
+
+(defund bfr-<-=-ss (a b)
   (declare (xargs :guard t
                   :measure (+ (len a) (len b))))
-  (b* (((mv head1 tail1 end1)
-        (if (atom a)
-            (mv nil nil t)
-          (if (atom (cdr a))
-              (mv (car a) a t)
-            (mv (car a) (cdr a) nil))))
-       ((mv head2 tail2 end2)
-        (if (atom b)
-            (mv nil nil t)
-          (if (atom (cdr b))
-              (mv (car b) b t)
-            (mv (car b) (cdr b) nil)))))
+  (b* (((mv head1 tail1 end1) (first/rest/end a))
+       ((mv head2 tail2 end2) (first/rest/end b)))
     (if (and end1 end2)
         (mv (bfr-and head1 (bfr-not head2))
             (bfr-iff head1 head2))
       (mv-let (rst< rst=)
-        (<-=-ss tail1 tail2)
+        (bfr-<-=-ss tail1 tail2)
         (mv (bfr-or rst< (bfr-and rst= head2 (bfr-not head1)))
             (bfr-and rst= (bfr-iff head1 head2)))))))
 
-(defund <-ss (a b)
+
+;; (defund <-ss (a b)
+;;   (declare (xargs :guard t))
+;;   (b* (((mv head1 tail1 end1) (first/rest/end a))
+;;        ((mv head2 tail2 end2) (first/rest/end b)))
+;;     (if (and end1 end2)
+;;         (and head1 (not head2))
+;;       (mv-let (rst< rst=)
+;;         (<-=-ss tail1 tail2)
+;;         (or rst< (and rst= head2 (not head1)))))))
+
+(defund bfr-<-ss (a b)
   (declare (xargs :guard t))
-  (b* (((mv head1 tail1 end1)
-        (if (atom a)
-            (mv nil nil t)
-          (if (atom (cdr a))
-              (mv (car a) a t)
-            (mv (car a) (cdr a) nil))))
-       ((mv head2 tail2 end2)
-        (if (atom b)
-            (mv nil nil t)
-          (if (atom (cdr b))
-              (mv (car b) b t)
-            (mv (car b) (cdr b) nil)))))
+  (b* (((mv head1 tail1 end1) (first/rest/end a))
+       ((mv head2 tail2 end2) (first/rest/end b)))
     (if (and end1 end2)
         (bfr-and head1 (bfr-not head2))
       (mv-let (rst< rst=)
-        (<-=-ss tail1 tail2)
+        (bfr-<-=-ss tail1 tail2)
         (bfr-or rst< (bfr-and rst= head2 (bfr-not head1)))))))
 
 
+;; (defund logapp-nss (n a b)
+;;   (declare (xargs :guard (natp n)))
+;;   (if (zp n)
+;;       b
+;;     (b* (((mv first rest &) (first/rest/end a)))
+;;       (scons first (logapp-nss (1- n) rest b)))))
 
+(defund bfr-logapp-nss (n a b)
+  (declare (xargs :guard (natp n)))
+  (if (zp n)
+      b
+    (b* (((mv first rest &) (first/rest/end a)))
+      (bfr-scons first (bfr-logapp-nss (1- n) rest b)))))
 
+(defund bfr-logapp-nus (n a b)
+  (declare (xargs :guard (natp n)))
+  (if (zp n)
+      b
+    (b* (((mv first rest) (car/cdr a)))
+      (bfr-scons first (bfr-logapp-nus (1- n) rest b)))))
 
-(defund ash-ss (place n shamt)
+;; (defund ash-ss (place n shamt)
+;;   (declare (xargs :guard (posp place)
+;;                   :measure (len shamt)))
+;;   (b* (((mv shdig shrst shend) (first/rest/end shamt)))
+;;     (if shend
+;;         (if shdig
+;;             (logtail-ns 1 n)
+;;           (logapp-nss (1- place) nil n))
+;;       (let ((rst (ash-ss (* 2 place) n shrst)))
+;;         (if shdig
+;;             rst
+;;           (logtail-ns place rst))))))
+
+(defund bfr-ash-ss (place n shamt)
   (declare (xargs :guard (posp place)
                   :measure (len shamt)))
-  (b* (((mv shdig shrst shend)
-        (if (atom shamt)
-            (mv nil nil t)
-          (if (atom (cdr shamt))
-              (mv (car shamt) shamt t)
-            (mv (car shamt) (cdr shamt) nil)))))
+  (b* (((mv shdig shrst shend) (first/rest/end shamt)))
     (if shend
         (bfr-ite-bss shdig
-                     (s-nthcdr 1 n)
-                     (make-list-ac (1- place) nil n))
-      (let ((rst (ash-ss (* 2 place) n shrst)))
+                     (logtail-ns 1 n)
+                     (bfr-logapp-nss (1- place) nil n))
+      (let ((rst (bfr-ash-ss (* 2 place) n shrst)))
         (bfr-ite-bss shdig
                      rst
-                     (s-nthcdr place rst))))))
+                     (logtail-ns place rst))))))
+
+;; (defund logbitp-n2v (place digit n)
+;;   (declare (xargs :guard (natp place)
+;;                   :hints (("goal" :in-theory (enable len)))
+;;                   ;; :guard-hints ('(:in-theory (e/d (ash) (floor))))
+;;                   :measure (len digit)))
+;;   (b* (((mv first & end) (first/rest/end n)))
+;;     (if (or (atom digit) end)
+;;         first
+;;       (if (car digit)
+;;           (logbitp-n2v (* 2 place) (cdr digit) (logtail-ns place n))
+;;         (logbitp-n2v (* 2 place) (cdr digit) n)))))
 
 
-
-(defund logbitp-n2v (place digit n)
+(defund bfr-logbitp-n2v (place digit n)
   (declare (xargs :guard (natp place)
                   :hints (("goal" :in-theory (enable len)))
                   :guard-hints ('(:in-theory (enable ash)))
                   :measure (len digit)))
-  (if (atom n)
-      nil
-    (if (or (atom digit) (atom (cdr n)))
-        (car n)
+  (b* (((mv first & end) (first/rest/end n)))
+    (if (or (atom digit) end)
+        first
       (bfr-ite (car digit)
-               (logbitp-n2v (ash place 1) (cdr digit) (s-nthcdr place n))
-               (logbitp-n2v (ash place 1) (cdr digit) n)))))
+               (bfr-logbitp-n2v (* 2 place) (cdr digit) (logtail-ns place n))
+               (bfr-logbitp-n2v (* 2 place) (cdr digit) n)))))
 
-(defund integer-length-s1 (offset x)
+
+;; (defund integer-length-s1 (offset x)
+;;   (declare (xargs :guard (natp offset)
+;;                   :measure (len x)))
+;;   (b* (((mv first rest end) (first/rest/end x)))
+;;     (if end
+;;         (mv nil nil)
+;;       (mv-let (changed res)
+;;         (integer-length-s1 (1+ offset) rest)
+;;         (if (eq changed t)
+;;             (mv t res)
+;;           (let ((change (xor first (car rest))))
+;;             (mv (or changed change)
+;;                 (if changed
+;;                     res
+;;                   (if change
+;;                       (i2v offset)
+;;                     nil)))))))))
+
+(defund bfr-integer-length-s1 (offset x)
   (declare (xargs :guard (natp offset)
                   :measure (len x)))
-  (if (or (atom x) (atom (cdr x)))
-      (mv nil nil)
-    (mv-let (changed res)
-      (integer-length-s1 (1+ offset) (cdr x))
-      (if (eq changed t)
-          (mv t res)
-        (let ((change (bfr-xor (car x) (cadr x))))
-          (mv (bfr-or changed change)
-              (bfr-ite-bss changed
-                           res
-                           (bfr-ite-bss change
-                                        (i2v offset)
-                                        nil))))))))
+  (b* (((mv first rest end) (first/rest/end x)))
+    (if end
+        (mv nil nil)
+      (mv-let (changed res)
+        (bfr-integer-length-s1 (1+ offset) rest)
+        (if (eq changed t)
+            (mv t res)
+          (let ((change (bfr-xor first (car rest))))
+            (mv (bfr-or changed change)
+                (bfr-ite-bss changed
+                             res
+                             (bfr-ite-bss change
+                                          (i2v offset)
+                                          nil)))))))))
 
-(defund integer-length-s (x)
+;; (defund integer-length-s (x)
+;;   (declare (xargs :guard t))
+;;   (mv-let (ign res)
+;;     (integer-length-s1 1 x)
+;;     (declare (ignore ign))
+;;     res))
+
+(defund bfr-integer-length-s (x)
   (declare (xargs :guard t))
   (mv-let (ign res)
-    (integer-length-s1 1 x)
+    (bfr-integer-length-s1 1 x)
     (declare (ignore ign))
     res))
 
 
 
-(defund logand-ss (a b)
+;; (defund logand-ss (a b)
+;;   (declare (xargs :guard t
+;;                   :measure (+ (len a) (len b))))
+;;   (b* (((mv af ar aend) (first/rest/end a))
+;;        ((mv bf br bend) (first/rest/end b)))
+;;     (if (and aend bend)
+;;         (sterm (and af bf))
+;;       (b* ((c (and af bf))
+;;            (r (logand-ss ar br)))
+;;         (scons c r)))))
+
+(defund bfr-logand-ss (a b)
   (declare (xargs :guard t
                   :measure (+ (len a) (len b))))
-  (b* (((mv af ar aend)
-        (if (atom a)
-            (mv nil nil t)
-          (if (atom (cdr a))
-              (mv (car a) a t)
-            (mv (car a) (cdr a) nil))))
-       ((mv bf br bend)
-        (if (atom b)
-            (mv nil nil t)
-          (if (atom (cdr b))
-              (mv (car b) b t)
-            (mv (car b) (cdr b) nil)))))
+  (b* (((mv af ar aend) (first/rest/end a))
+       ((mv bf br bend) (first/rest/end b)))
     (if (and aend bend)
-        (list (bfr-and af bf))
+        (bfr-sterm (bfr-and af bf))
       (b* ((c (bfr-and af bf))
-           (r (logand-ss ar br)))
-        (if (and (atom (cdr r))
-                 (hqual (car r) c))
-            r
-          (cons c r))))))
+           (r (bfr-logand-ss ar br)))
+        (bfr-scons c r)))))
 
 
-;; Symbolically computes the FLOOR and MOD for positive divisor B (when MINUS-B
-;; is the negation of B.)
-(defund floor-mod-ss (a b minus-b)
+;; ;; Symbolically computes the FLOOR and MOD for positive divisor B (when MINUS-B
+;; ;; is the negation of B.)
+;; (defund floor-mod-ss (a b minus-b)
+;;   (declare (xargs :guard t
+;;                   :measure (len a)))
+;;   (b* (((mv first rest endp) (first/rest/end a)))
+;;     (if endp
+;;         (mv (sterm first)
+;;             (if first
+;;                 (+-ss nil '(t) b) ;; (mod -1 b) = b-1 with b > 0
+;;               '(nil))) ;; (mod  0  b) = 0
+;;       (b* (((mv rf rm)
+;;             (floor-mod-ss rest b minus-b))
+;;            (rm (scons first rm))
+;;            (less (<-ss rm b))
+;;            (rf (scons nil rf)))
+;;         (mv (if less
+;;                 rf
+;;               (+-ss t nil rf))
+;;             (if less
+;;                 rm
+;;               (+-ss nil minus-b rm)))))))
+
+(defund bfr-floor-mod-ss (a b minus-b)
   (declare (xargs :guard t
                   :measure (len a)))
-  (b* (((mv digit endp)
-        (if (atom a)
-            (mv nil t)
-          (if (atom (cdr a))
-              (mv (car a) t)
-            (mv (car a) nil)))))
+  (b* (((mv first rest endp) (first/rest/end a)))
     (if endp
-        (mv (bfr-ite-bss
-             digit
-             '(t) ;; (floor -1  b) = -1 with b > 0
-             '(nil)) ;; (floor  0  b) = 0
+        (mv (bfr-sterm first) ;; (floor  0  b) = 0
             (bfr-ite-bss
-             digit
-             (+-ss nil '(t) b) ;; (mod -1 b) = b-1 with b > 0
+             first
+             (bfr-+-ss nil '(t) b) ;; (mod -1 b) = b-1 with b > 0
              '(nil))) ;; (mod  0  b) = 0
       (b* (((mv rf rm)
-            (floor-mod-ss (cdr a) b minus-b))
-           (rm (cons (car a) (if (atom rm) '(nil) rm)))
-           (less (<-ss rm b))
-           (rf (cons nil rf)))
+            (bfr-floor-mod-ss rest b minus-b))
+           (rm (bfr-scons first rm))
+           (less (bfr-<-ss rm b))
+           (rf (bfr-scons nil rf)))
         (mv (bfr-ite-bss
              less
              rf
-             (+-ss t nil rf))
+             (bfr-+-ss t nil rf))
             (bfr-ite-bss
              less rm
-             (+-ss nil minus-b rm)))))))
+             (bfr-+-ss nil minus-b rm)))))))
 
-(defund floor-ss (a b)
+
+;; ;; (mv (sign b) (- b) (abs b) (- (abs b)))
+;; (defund sign-abs-neg-s (x)
+;;   (declare (xargs :guard t))
+;;   (b* ((sign (s-sign x))
+;;        (minus (unary-minus-s x)))
+;;     (if sign
+;;         (mv sign minus minus x)
+;;       (mv sign minus x minus))))
+
+
+(defund bfr-sign-abs-neg-s (x)
   (declare (xargs :guard t))
-  (bfr-ite-bss (=-ss b nil)
+  (b* ((sign (s-sign x))
+       (minus (bfr-unary-minus-s x))
+       (abs (bfr-ite-bss sign minus x))
+       (neg (bfr-ite-bss sign x minus)))
+    (mv sign minus abs neg)))
+
+
+;; (defund floor-ss (a b)
+;;   (declare (xargs :guard t))
+;;   (if (=-ss b nil)
+;;       nil
+;;     (b* (((mv bsign & babs bneg) (sign-abs-neg-s b))
+;;          (anorm (if bsign (unary-minus-s a) a))
+;;          ((mv f &) (floor-mod-ss anorm babs bneg)))
+;;       f)))
+
+(defund bfr-floor-ss (a b)
+  (declare (xargs :guard t))
+  (bfr-ite-bss (bfr-=-ss b nil)
                nil
-               (b* ((bsign (s-sign b))
-                    (babs (bfr-ite-bss bsign (unary-minus-s b) b))
-                    (anorm (bfr-ite-bss bsign (unary-minus-s a) a))
-                    (bneg (unary-minus-s babs))
-                    ((mv f &) (floor-mod-ss anorm babs bneg)))
+               (b* (((mv bsign & babs bneg) (bfr-sign-abs-neg-s b))
+                    (anorm (bfr-ite-bss bsign (bfr-unary-minus-s a) a))
+                    ((mv f &) (bfr-floor-mod-ss anorm babs bneg)))
                  f)))
 
-(defund mod-ss (a b)
-  (declare (xargs :guard t))
-  (bfr-ite-bss (=-ss b nil)
-               a
-               (b* ((bsign (s-sign b))
-                    (babs (bfr-ite-bss bsign (unary-minus-s b) b))
-                    (anorm (bfr-ite-bss bsign (unary-minus-s a) a))
-                    (bneg (unary-minus-s babs))
-                    ((mv & m) (floor-mod-ss anorm babs bneg)))
-                 (bfr-ite-bss bsign (unary-minus-s m) m))))
+;; (defund mod-ss (a b)
+;;   (declare (xargs :guard t))
+;;   (if (=-ss b nil)
+;;       a
+;;     (b* (((mv bsign & babs bneg) (sign-abs-neg-s b))
+;;          (anorm (if bsign (unary-minus-s a) a))
+;;          ((mv & m) (floor-mod-ss anorm babs bneg)))
+;;       (if bsign (unary-minus-s m) m))))
 
-(defund truncate-ss (a b)
+(defund bfr-mod-ss (a b)
   (declare (xargs :guard t))
-  (bfr-ite-bss (=-ss b nil)
+  (bfr-ite-bss (bfr-=-ss b nil)
+               a
+               (b* (((mv bsign & babs bneg) (bfr-sign-abs-neg-s b))
+                    (anorm (bfr-ite-bss bsign (bfr-unary-minus-s a) a))
+                    ((mv & m) (bfr-floor-mod-ss anorm babs bneg)))
+                 (bfr-ite-bss bsign (bfr-unary-minus-s m) m))))
+
+
+;; (defund truncate-ss (a b)
+;;   (declare (xargs :guard t))
+;;   (if (=-ss b nil)
+;;       nil
+;;     (b* (((mv bsign & babs bneg) (sign-abs-neg-s b))
+;;          ((mv asign & aabs &) (sign-abs-neg-s a))
+;;          ((mv f &) (floor-mod-ss aabs babs bneg)))
+;;       (if (xor bsign asign)
+;;           (unary-minus-s f)
+;;         f))))
+
+(defund bfr-truncate-ss (a b)
+  (declare (xargs :guard t))
+  (bfr-ite-bss (bfr-=-ss b nil)
                nil
-               (b* ((bsign (s-sign b))
-                    (asign (s-sign a))
-                    (babs (bfr-ite-bss bsign (unary-minus-s b) b))
-                    (aabs (bfr-ite-bss asign (unary-minus-s a) a))
-                    (bneg (unary-minus-s babs))
-                    ((mv f &) (floor-mod-ss aabs babs bneg)))
+               (b* (((mv bsign & babs bneg) (bfr-sign-abs-neg-s b))
+                    ((mv asign & aabs &) (bfr-sign-abs-neg-s a))
+                    ((mv f &) (bfr-floor-mod-ss aabs babs bneg)))
                  (bfr-ite-bss (bfr-xor bsign asign)
-                              (unary-minus-s f) f))))
+                              (bfr-unary-minus-s f) f))))
 
 
 
+;; (defund rem-ss (a b)
+;;   (declare (xargs :guard t))
+;;   (if (=-ss b nil)
+;;       a
+;;     (b* (((mv & & babs bneg) (sign-abs-neg-s b))
+;;          ((mv asign & aabs &) (sign-abs-neg-s a))
+;;          ((mv & m) (floor-mod-ss aabs babs bneg)))
+;;       (if asign (unary-minus-s m) m))))
 
-(defund rem-ss (a b)
+
+(defund bfr-rem-ss (a b)
   (declare (xargs :guard t))
-  (bfr-ite-bss (=-ss b nil)
+  (bfr-ite-bss (bfr-=-ss b nil)
                a
-               (b* ((bsign (s-sign b))
-                    (asign (s-sign a))
-                    (babs (bfr-ite-bss bsign (unary-minus-s b) b))
-                    (aabs (bfr-ite-bss asign (unary-minus-s a) a))
-                    (bneg (unary-minus-s babs))
-                    ((mv & m) (floor-mod-ss aabs babs bneg)))
-                 (bfr-ite-bss asign (unary-minus-s m) m))))
+               (b* (((mv & & babs bneg) (bfr-sign-abs-neg-s b))
+                    ((mv asign & aabs &) (bfr-sign-abs-neg-s a))
+                    ((mv & m) (bfr-floor-mod-ss aabs babs bneg)))
+                 (bfr-ite-bss asign (bfr-unary-minus-s m) m))))
 
 
+;; (defund logior-ss (a b)
+;;   (declare (xargs :guard t
+;;                   :measure (+ (len a) (len b))))
+;;   (b* (((mv af ar aend) (first/rest/end a))
+;;        ((mv bf br bend) (first/rest/end b)))
+;;     (if (and aend bend)
+;;         (sterm (or af bf))
+;;       (b* ((c (or af bf))
+;;            (r (logior-ss ar br)))
+;;         (scons c r)))))
 
-
-
-
-(defund lognot-s (a)
-  (declare (xargs :guard t
-                  :measure (len a)))
-  (b* (((mv a1 aend)
-        (if (atom a)
-            (mv nil t)
-          (if (atom (cdr a))
-              (mv (car a) t)
-            (mv (car a) nil)))))
-    (if aend
-        (list (bfr-not a1))
-      (cons (bfr-not a1) (lognot-s (cdr a))))))
-
-
-(defund logior-ss (a b)
+(defund bfr-logior-ss (a b)
   (declare (xargs :guard t
                   :measure (+ (len a) (len b))))
-  (b* (((mv af ar aend)
-        (if (atom a)
-            (mv nil nil t)
-          (if (atom (cdr a))
-              (mv (car a) a t)
-            (mv (car a) (cdr a) nil))))
-       ((mv bf br bend)
-        (if (atom b)
-            (mv nil nil t)
-          (if (atom (cdr b))
-              (mv (car b) b t)
-            (mv (car b) (cdr b) nil)))))
+  (b* (((mv af ar aend) (first/rest/end a))
+       ((mv bf br bend) (first/rest/end b)))
     (if (and aend bend)
-        (list (bfr-or af bf))
+        (bfr-sterm (bfr-or af bf))
       (b* ((c (bfr-or af bf))
-           (r (logior-ss ar br)))
-        (if (and (atom (cdr r))
-                 (hqual (car r) c))
-            r
-          (cons c r))))))
+           (r (bfr-logior-ss ar br)))
+        (bfr-scons c r)))))
+
+
 
 

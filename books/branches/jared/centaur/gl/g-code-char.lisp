@@ -11,7 +11,7 @@
 (local (include-book "hyp-fix-logic"))
 (include-book "g-lessthan")
 (local (include-book "arithmetic/top-with-meta" :dir :system))
-
+(local (include-book "centaur/bitops/ihsext-basics" :dir :system))
 ;; (defaxiom completion-of-code-char
 ;;   (equal (code-char x)
 ;;          (if (and (integerp x)
@@ -124,6 +124,10 @@
    ;;   :hints(("Goal" :in-theory (enable bfr-listp))))
    ))
 
+(local (defthm floor-1
+         (implies (integerp n)
+                  (equal (floor n 1) n))
+         :hints(("Goal" :in-theory (enable floor)))))
 
 (defun code-char-s (n x acc hyp)
   (declare (xargs :guard (and (natp n)
@@ -132,7 +136,7 @@
                               (natp acc)
                               (<= acc (- 256 (ash 1 n))))
                   :guard-hints ((and stable-under-simplificationp
-                                     '(:in-theory (enable ash))))))
+                                     '(:in-theory (enable ash expt))))))
   (if (zp n)
       (code-char acc)
     (g-if (mk-g-boolean (nth (1- n) x))
@@ -164,17 +168,24 @@
             (append (bfr-eval-list a env)
                     (bfr-eval-list b env))))
 
-   (defthm v2n-append
-     (equal (v2n (append a b))
-            (+ (v2n a)
-               (* (v2n b) (expt 2 (len a)))))
-     :hints(("Goal" :in-theory (enable v2n ash))))
+   ;; (defthm v2n-append
+   ;;   (equal (v2n (append a b))
+   ;;          (+ (v2n a)
+   ;;             (* (v2n b) (expt 2 (len a)))))
+   ;;   :hints(("Goal" :in-theory (enable v2n ash))))
+   (defthm bfr-list->u-of-append
+     (equal (bfr-list->u (append a b) env)
+            (+ (bfr-list->u a env)
+               (* (bfr-list->u b env) (expt 2 (len a)))))
+     :hints(("Goal" :in-theory (e/d* (acl2::logapp** logcons
+                                                     acl2::bool->bit)
+                                     (logapp)))))
 
 ;; (defthm bfr-eval-list-first-n
 ;;   (implies (not (zp n))
-;;            (equal (v2n (bfr-eval-list (first-n n x) env))
+;;            (equal (bfr-list->u (first-n n x) env)
 ;;                   (+ (if (bfr-eval (nth (1- n) x) env) (expt 2 (1- n)) 0)
-;;                      (v2n (bfr-eval-list (first-n (1- n) x) env)))))
+;;                      (bfr-list->u (first-n (1- n) x) env))))
 ;;   :hints (("goal" :induct (first-n n x)
 ;;            :in-theory (e/d (ash) ((:definition first-n)))
 ;;            :expand ((first-n n x)
@@ -183,28 +194,30 @@
 
    (defthm floor-1
      (implies (integerp n)
-              (equal (floor n 1) n)))
+              (equal (floor n 1) n))
+     :hints(("Goal" :in-theory (enable floor))))
 
    (defthm len-bfr-eval-list
      (equal (len (Bfr-eval-list x env))
             (len x)))
 
    (defthm code-char-s-correct1
-     (implies (and (< (+ acc (v2n (bfr-eval-list (first-n n x) (car env)))) 256)
+     (implies (and (< (+ acc (bfr-list->u (first-n n x) (car env))) 256)
                    (integerp acc)
                    (bfr-eval hyp (car env)))
               (equal (eval-g-base (code-char-s n x acc hyp) env)
-                     (code-char (+ acc (v2n (bfr-eval-list (first-n n x) (car
-                                                                          env)))))))
+                     (code-char (+ acc (bfr-list->u (first-n n x) (car env))))))
      :hints (("goal" :induct (code-char-s n x acc hyp)
               :expand ((code-char-s n x acc hyp)
                        (code-char-s 0 x acc hyp))
               :in-theory (e/d (ash) (floor (:definition code-char-s))))))
 
-   (defthm v2i-when-<=-0
-     (implies (<= 0 (v2i x))
-              (equal (v2i x) (v2n x)))
-     :hints(("Goal" :in-theory (enable v2i v2n ash))))
+   (defthm bfr-list->s-when-<=-0
+     (implies (<= 0 (bfr-list->s x env))
+              (equal (bfr-list->s x env) (bfr-list->u x env)))
+     :hints(("Goal" :in-theory (enable scdr s-endp))))
+
+   
 
    (defthm bfr-eval-list-nth
      (equal (nth n (bfr-eval-list x env))
@@ -224,21 +237,29 @@
      (equal (first-n n x)
             (first-n-alt n x)))
 
-   (defthm v2n-first-n
-     (implies (< (v2n x) (expt 2 (nfix n)))
-              (equal (v2n (first-n n x))
-                     (v2n x)))
-     :hints(("Goal" :in-theory (enable v2n ash first-n-is-first-n-alt)
-             :induct (first-n-alt n x)
-             :expand ( ;; (v2n x)
-                      (:free (a b) (v2n (cons a b)))))))
+   (defthm bfr-list->u-of-first-n
+     (implies (< (bfr-list->u x env) (expt 2 (nfix n)))
+              (equal (bfr-list->u (first-n n x) env)
+                     (bfr-list->u x env)))
+     :hints(("Goal" :in-theory (enable first-n-is-first-n-alt
+                                       logcons acl2::bool->bit
+                                       expt))))
+
+   ;; (defthm v2n-first-n
+   ;;   (implies (< (v2n x) (expt 2 (nfix n)))
+   ;;            (equal (v2n (first-n n x))
+   ;;                   (v2n x)))
+   ;;   :hints(("Goal" :in-theory (enable v2n ash first-n-is-first-n-alt)
+   ;;           :induct (first-n-alt n x)
+   ;;           :expand ( ;; (v2n x)
+   ;;                    (:free (a b) (v2n (cons a b)))))))
 
    (defthm code-char-s-correct
      (implies (and (bfr-eval hyp (car env))
-                   (<= 0 (v2i (bfr-eval-list x (car env))))
-                   (< (v2i (bfr-eval-list x (car env))) 256))
+                   (<= 0 (bfr-list->s x (car env)))
+                   (< (bfr-list->s x (car env)) 256))
               (equal (eval-g-base (code-char-s 8 x 0 hyp) env)
-                     (code-char (v2i (bfr-eval-list x (car env))))))
+                     (code-char (bfr-list->s x (car env)))))
      :hints(("Goal" :in-theory (disable code-char-s))))))
                 
 
@@ -258,13 +279,13 @@
   (mv-let (xrn xrd xin xid)
     (break-g-number (g-number->num x))
     (if (equal xrd '(t))
-        (g-if (g-if (mk-g-boolean (bfr-or (=-ss xin nil)
-                                          (=-uu xid nil)))
+        (g-if (g-if (mk-g-boolean (bfr-or (bfr-=-ss xin nil)
+                                          (bfr-=-uu xid nil)))
                     (g-if (glr < x 0 hyp clk)
                           nil
                           (glr < x 256 hyp clk))
                     nil)
-              (code-char-s 8 xrn 0 hyp)
+              (code-char-s 8 (rlist-fix xrn) 0 hyp)
               (code-char 0))
       (g-apply 'code-char (list x)))))
 
@@ -279,8 +300,8 @@
 ;;   (mv-let (xrn xrd xin xid)
 ;;     (break-g-number (g-number->num x))
 ;;     (if (equal xrd '(t))
-;;         (g-if (mk-g-boolean (bfr-or (=-ss xin nil)
-;;                                     (=-uu xid nil)))
+;;         (g-if (mk-g-boolean (bfr-or (bfr-=-ss xin nil)
+;;                                     (bfr-=-uu xid nil)))
 ;;               (g-if (glr < x 0 hyp clk)
 ;;                     (code-char 0)
 ;;                     (g-if (glr < x 256 hyp clk)
@@ -312,13 +333,13 @@
               (not (equal (/ x) 0))))
 
    (defthm not-integerp-when-imag-parts-nonzero
-     (implies (and (not (equal (v2i (bfr-eval-list
+     (implies (and (not (equal (bfr-list->s
                                      (mv-nth 2 (break-g-number (g-number->num x)))
-                                     (car env)))
+                                     (car env))
                                0))
-                   (not (equal (v2n (bfr-eval-list
+                   (not (equal (bfr-list->u
                                      (mv-nth 3 (break-g-number (g-number->num x)))
-                                     (car env)))
+                                     (car env))
                                0))
                    (g-number-p x))
               (not (integerp (eval-g-base x env))))
@@ -341,12 +362,11 @@
                        (code-char (eval-g-base x env))))
        :hints(("Goal" :in-theory (e/d (eval-g-base eval-g-base-list)
                                       (code-char-s
-                                       v2i-when-<=-0
                                        equal-of-booleans-rewrite
-                                       s-sign-correct
                                        code-char-s-correct1
                                        code-char-s-correct
                                        bfr-eval-list
+                                       bfr-list->s-when-<=-0
                                        eval-g-base-alt-def))
                :do-not-induct t
                :do-not '(generalize fertilize eliminate-destructors))

@@ -18,13 +18,13 @@
         (general-number-components x))
        ((mv yrn yrd yin yid)
         (general-number-components y)))
-    (if (and (eq (=-uu xrd '(t)) t)
-             (eq (=-uu yrd '(t)) t)
-             (eq (bfr-or (=-ss xin nil)
-                       (=-uu xid nil)) t)
-             (eq (bfr-or (=-ss yin nil)
-                       (=-uu yid nil)) t))
-        (mk-g-number (rlist-fix (floor-ss xrn yrn)))
+    (if (and (eq (bfr-=-uu xrd '(t)) t)
+             (eq (bfr-=-uu yrd '(t)) t)
+             (eq (bfr-or (bfr-=-ss xin nil)
+                       (bfr-=-uu xid nil)) t)
+             (eq (bfr-or (bfr-=-ss yin nil)
+                       (bfr-=-uu yid nil)) t))
+        (mk-g-number (rlist-fix (bfr-floor-ss xrn yrn)))
       (g-apply 'floor (gl-list x y)))))
 
 (in-theory (disable (g-floor-of-numbers)))
@@ -39,14 +39,14 @@
 
 (local (include-book "arithmetic/top-with-meta" :dir :system))
 
-;; (local (defthm not-integerp-floor-ss
+;; (local (defthm not-integerp-bfr-floor-ss
 ;;          (implies (and (bfr-listp a) (bfr-listp b))
-;;                   (not (integerp (floor-ss a b))))
-;;          :hints (("goal" :use ((:instance bfr-listp-floor-ss))
-;;                   :in-theory (e/d (bfr-listp) (bfr-listp-floor-ss))))))
+;;                   (not (integerp (bfr-floor-ss a b))))
+;;          :hints (("goal" :use ((:instance bfr-listp-bfr-floor-ss))
+;;                   :in-theory (e/d (bfr-listp) (bfr-listp-bfr-floor-ss))))))
 
-(local (add-bfr-fn-pat =-uu))
-(local (add-bfr-fn-pat =-ss))
+(local (add-bfr-fn-pat bfr-=-uu))
+(local (add-bfr-fn-pat bfr-=-ss))
 
 (local
  (defthm g-floor-of-numbers-correct

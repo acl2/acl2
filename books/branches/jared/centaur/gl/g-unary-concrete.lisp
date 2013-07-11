@@ -118,7 +118,7 @@
   (mv-let (rn rd in id)
     (break-g-number (g-number->num x))
     (declare (ignore in id))
-    (mk-g-number rn rd))
+    (mk-g-number (rlist-fix rn) (rlist-fix rd)))
   :boolean-case 0
   :cons-case 0)
 
@@ -127,7 +127,7 @@
   (mv-let (rn rd in id)
     (break-g-number (g-number->num x))
     (declare (ignore rn rd))
-    (mk-g-number in id))
+    (mk-g-number (rlist-fix in) (rlist-fix id)))
   :boolean-case 0
   :cons-case 0)
 

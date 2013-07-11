@@ -22,18 +22,58 @@
     
     (if (and (equal ard brd)
              (equal aid bid))
-        (b* (((mv r< r=) (<-=-ss arn brn)))
+        (b* (((mv r< r=) (bfr-<-=-ss arn brn)))
           (mk-g-boolean
-           (bfr-ite (=-uu ard nil)
-                  (bfr-and (bfr-not (=-uu aid nil))
-                         (<-ss ain bin))
+           (bfr-ite (bfr-=-uu ard nil)
+                  (bfr-and (bfr-not (bfr-=-uu aid nil))
+                         (bfr-<-ss ain bin))
                   (bfr-or r<
                         (bfr-and r=
-                               (bfr-not (=-uu aid nil))
-                               (<-ss ain bin))))))
+                               (bfr-not (bfr-=-uu aid nil))
+                               (bfr-<-ss ain bin))))))
       (g-apply '< (gl-list a b)))))
 
 (in-theory (disable (g-<-of-numbers)))
+
+(local
+ (encapsulate nil
+   (local
+    (defthm rationalp-complex
+      (equal (rationalp (complex a b))
+             (equal (rfix b) 0))
+      :hints (("goal" :use ((:instance
+                             (:theorem (implies (rationalp x)
+                                                (equal (imagpart x) 0)))
+                             (x (complex a b))))))))
+
+
+   (defthm realpart-of-complex
+     (equal (realpart (complex a b))
+            (rfix a))
+     :hints (("goal" :cases ((rationalp b)))))
+
+   (defthm imagpart-of-complex
+     (equal (imagpart (complex a b))
+            (rfix b))
+     :hints (("goal" :cases ((rationalp a)))))
+
+
+   (defthm complex-<-1
+     (equal (< (complex a b) c)
+            (or (< (rfix a) (realpart c))
+                (and (equal (rfix a) (realpart c))
+                     (< (rfix b) (imagpart c)))))
+     :hints (("goal" :use ((:instance completion-of-<
+                            (x (complex a b)) (y c))))))
+
+
+   (defthm complex-<-2
+     (equal (< a (complex b c))
+            (or (< (realpart a) (rfix b))
+                (and (equal (realpart a) (rfix b))
+                     (< (imagpart a) (rfix c)))))
+     :hints (("goal" :use ((:instance completion-of-<
+                            (x a) (y (complex b c)))))))))
 
 (local
  (progn
@@ -92,7 +132,7 @@
                                      eval-g-base-non-cons
                                      acl2::/r-when-abs-numerator=1
                                      default-unary-/
-                                     s-sign-correct default-car default-cdr
+                                     default-car default-cdr
                                      hons-assoc-equal))
             :induct (,gfn x y hyp clk)
             :expand ((,gfn x y hyp clk)))))

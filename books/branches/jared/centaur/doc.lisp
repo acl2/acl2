@@ -33,6 +33,8 @@
                (value '(value-triple nil)))
    (value '(value-triple nil))))
 
+(include-book "misc/memory-mgmt")
+(value-triple (set-max-mem (* 10 (expt 2 30))))
 
 (include-book "vl/top")
 (include-book "vl/lint/lint")
@@ -75,6 +77,7 @@
 (include-book "esim/stv/stv-debug")
 (include-book "esim/esim-sexpr-correct")
 
+(include-book "regression/common")
 
 ; The following are included automatically by the xdoc::save command below, but
 ; we include them explicitly to support the hons `make' target in the books/
@@ -168,7 +171,6 @@
 (include-book "gl/gl-ttags")
 (include-book "gl/gobject-type-thms")
 (include-book "misc/count-up")
-(include-book "misc/memory-mgmt")
 (include-book "misc/remove-assoc")
 (include-book "std/lists/resize-list" :dir :system)
 (include-book "misc/sparsemap")

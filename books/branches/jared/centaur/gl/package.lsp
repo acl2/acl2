@@ -136,7 +136,7 @@
      gl-bdd-mode gl-aig-mode gl-mbe
 
      logcons logcar logcdr loghead logtail logapp
-     b-ior b-and b-xor b-not bfix bitp
+     b-ior b-and b-xor b-not bfix bitp boolfix
 
      numlist
      defsection))

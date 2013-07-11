@@ -157,7 +157,7 @@ explicitly, which adds a layer of X-detection around the core circuitry.</p>"
   :guard (posp n)
   :body
   (b* (((when (= n 1))
-        (list *vl-1-bit-mult*))
+        (list *vl-1-bit-mult* *vl-1-bit-and* *vl-1-bit-xor*))
        (name  (hons-copy (cat "VL_" (natstr n) "_BIT_MULT")))
 
        ((mv o-expr o-port o-portdecl o-netdecl) (vl-occform-mkport "o" :vl-output n))
@@ -207,7 +207,9 @@ explicitly, which adds a layer of X-detection around the core circuitry.</p>"
                             :minloc    *vl-fakeloc*
                             :maxloc    *vl-fakeloc*)))
 
-    (list* mod (append adder-mods xprop-modules))))
+    (list* mod
+           (cons *vl-1-bit-buf* ;; used in partprod-insts
+                 (append adder-mods xprop-modules)))))
 
 
 #||

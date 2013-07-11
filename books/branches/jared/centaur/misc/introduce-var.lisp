@@ -25,7 +25,7 @@
 (in-package "ACL2")
 (include-book "clause-processors/generalize" :dir :system)
 (include-book "centaur/vl/util/namedb" :dir :system)
-
+(include-book "beta-reduce-full")
 
 ; We introduce the INTRODUCE-VARS clause processor.  To use this clause
 ; processor you should just do this:
@@ -74,11 +74,87 @@
 ; And will replace it with something like IDX, IDX_1, etc., as appropriate to
 ; avoid name clashes.
 
+
+
+(local
+ (defthm beta-reduce-full-correct-for-gen-eval
+   (implies (pseudo-termp x)
+            (equal (gen-eval (beta-reduce-full x) a)
+                   (gen-eval x a)))
+   :hints (("goal" :use ((:functional-instance
+                          beta-reduce-full-correct
+                          (beta-eval gen-eval)
+                          (beta-eval-list gen-eval-lst)))
+            :in-theory (enable gen-eval-constraint-0)))))
+
+(local
+ (defthm beta-reduce-full-list-correct-for-gen-eval
+   (implies (pseudo-term-listp x)
+            (equal (gen-eval-lst (beta-reduce-full-list x) a)
+                   (gen-eval-lst x a)))
+   :hints (("goal" :use ((:functional-instance
+                          beta-reduce-full-list-correct
+                          (beta-eval gen-eval)
+                          (beta-eval-list gen-eval-lst)))
+            :in-theory (enable gen-eval-constraint-0)))))
+
+
+
 (defund introduce-var (name term)
   (declare (xargs :guard t)
            (ignore name))
   term)
 
+
+;; Note: We've seen problems where sometimes two apparently-identical terms get
+;; generalized to two different variables because they differ in something like
+;; the order of lambda formals, e.g. one is
+;; (hide ((lambda (a b) (list a b)) aa bb))
+;; and the other is
+;; (hide ((lambda (b a) (list a b)) bb aa)).
+;; So we normalize these (and also differences in bound variable names)
+;; by fully beta-reducing introduce-var terms.
+(mutual-recursion
+ (defun beta-reduce-introduce-vars (x)
+   (declare (xargs :guard (pseudo-termp x)))
+   (b* (((when (or (variablep x) (fquotep x))) x)
+        (fn (ffn-symb x))
+        ((when (eq fn 'introduce-var))
+         (beta-reduce-full x)))
+     (cons fn (beta-reduce-introduce-vars-list (fargs x)))))
+ (defun beta-reduce-introduce-vars-list (x)
+   (declare (xargs :guard (pseudo-term-listp x)))
+   (if (atom x)
+       nil
+     (cons (beta-reduce-introduce-vars (car x))
+           (beta-reduce-introduce-vars-list (cdr x))))))
+
+(defthm len-of-beta-reduce-introduce-vars-list
+  (equal (len (beta-reduce-introduce-vars-list x))
+         (len x)))
+
+(defthm-beta-reduce-flg
+  (defthm beta-reduce-introduce-vars-correct
+    (implies (pseudo-termp x)
+             (equal (gen-eval (beta-reduce-introduce-vars x) a)
+                    (gen-eval x a)))
+    :hints ('(:in-theory (enable gen-eval-constraint-0)))
+    :flag term)
+  (defthm beta-reduce-introduce-vars-list-correct
+    (implies (pseudo-term-listp x)
+             (equal (gen-eval-lst (beta-reduce-introduce-vars-list x) a)
+                    (gen-eval-lst x a)))
+    :flag list))
+
+(defthm-beta-reduce-flg
+  (defthm pseudo-termp-beta-reduce-introduce-vars
+    (implies (pseudo-termp x)
+             (pseudo-termp (beta-reduce-introduce-vars x)))
+    :flag term)
+  (defthm pseudo-term-listp-beta-reduce-introduce-vars-list
+    (implies (pseudo-term-listp x)
+             (pseudo-term-listp (beta-reduce-introduce-vars-list x)))
+    :flag list))
 
 (mutual-recursion
 
@@ -202,12 +278,52 @@
     (vl::vl-free-namedb namedb)
     fresh-alist))
 
+(defun introduce-vars-cp (clause pkg)
+  (declare (xargs :guard (pseudo-term-listp clause)))
+  (let* ((clause (beta-reduce-introduce-vars-list clause))
+         (al (mbe :logic (scan-for-introduce-var pkg clause)
+                  :exec (if (and (stringp pkg)
+                                 (not (equal pkg "")))
+                            (scan-for-introduce-var pkg clause)
+                          (ec-call (scan-for-introduce-var pkg clause))))))
+    (ec-call (simple-generalize-cp clause al))))
+
+(defthm eval-disjoin-of-beta-reduce-introduce-vars-list
+  (implies (pseudo-term-listp clause)
+           (iff (gen-eval (disjoin (beta-reduce-introduce-vars-list clause)) a)
+                (gen-eval (disjoin clause) a)))
+  :hints (("goal" :induct (len clause)
+           :in-theory (enable gen-eval-disjoin-when-consp))))
+
+(defthm introduce-vars-cp-correct
+  (implies (and (pseudo-term-listp clause)
+                (alistp a)
+                (gen-eval (conjoin-clauses (introduce-vars-cp clause pkg))
+                          (alist-for-simple-generalize-cp
+                           (beta-reduce-introduce-vars-list clause)
+                           (scan-for-introduce-var
+                            pkg (beta-reduce-introduce-vars-list clause))
+                           a)))
+           (gen-eval (disjoin clause) a))
+  :hints (("goal" :use ((:instance simple-generalize-cp-correct
+                         (clause (beta-reduce-introduce-vars-list clause))
+                         (env a)
+                         (alist (scan-for-introduce-var
+                                 pkg (beta-reduce-introduce-vars-list clause)))))
+           :in-theory (disable simple-generalize-cp
+                               alist-for-simple-generalize-cp)))
+  :rule-classes :clause-processor)
+
 (defmacro introduce-vars ()
-  '(let ((al (scan-for-introduce-var (current-package state) clause)))
-     (and al
+  '(let* ((pkg (current-package state))
+          (al (scan-for-introduce-var pkg clause)))
+     (and al ;; this just tells us whether we have any before we go ahead and
+          ;; run the clause-processor
           `(:computed-hint-replacement
             t
-            :clause-processor (simple-generalize-cp clause ',al)))))
+            :clause-processor (introduce-vars-cp clause ',pkg)))))
+  
+
 
 #||
 

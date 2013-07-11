@@ -85,12 +85,12 @@
         (general-number-components a))
        ((mv brn brd bin bid)
         (general-number-components b)))
-    (g-if (mk-g-boolean (bfr-and (=-uu ard brd)
-                               (=-uu aid bid)))
-          (mk-g-boolean (bfr-and (bfr-or (=-uu nil ard)
-                                     (=-ss arn brn))
-                               (bfr-or (=-uu nil aid)
-                                     (=-ss ain bin))))
+    (g-if (mk-g-boolean (bfr-and (bfr-=-uu ard brd)
+                               (bfr-=-uu aid bid)))
+          (mk-g-boolean (bfr-and (bfr-or (bfr-=-uu nil ard)
+                                     (bfr-=-ss arn brn))
+                               (bfr-or (bfr-=-uu nil aid)
+                                     (bfr-=-ss ain bin))))
           (g-apply 'equal (gl-list a b)))))
 
 
@@ -258,7 +258,7 @@
                            (:type-prescription general-booleanp)
                            (:type-prescription general-numberp)
                            (:type-prescription general-concretep)
-                           (:type-prescription =-uu)
+                           (:type-prescription bfr-=-uu)
                            hyp-fix-of-hyp-fixedp
                            (:meta mv-nth-cons-meta)
                            zp-open default-<-2 default-<-1
@@ -324,7 +324,6 @@
                       bfr-eval-booleanp
                       gtests-nonnil-correct-for-eval-g-base
                       hyp-fix-correct
-                      (:type-prescription v2i)
                       bfr-eval-g-hyp-marker
 
                       cons-equal

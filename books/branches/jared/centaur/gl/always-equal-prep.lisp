@@ -448,12 +448,12 @@
        (always-equal-uu x y)
        (implies (and (not (bfr-mode)))
                 (and (implies always-equal
-                              (equal (v2n (bfr-eval-list x env))
-                                     (v2n (bfr-eval-list y env))))
+                              (equal (bfr-list->u x env)
+                                     (bfr-list->u y env)))
                      (implies (and (not always-equal)
                                    (bfr-eval ctrex-bdd env))
-                              (not (equal (v2n (bfr-eval-list x env))
-                                          (v2n (bfr-eval-list y env))))))))
+                              (not (equal (bfr-list->u x env)
+                                          (bfr-list->u y env)))))))
      :hints(("Goal" 
              :induct (always-equal-uu x y))
             '(:use ((:instance ctrex-for-always-equal-correct
@@ -463,7 +463,7 @@
                      (x (car x)))
                     (:instance acl2::eval-bdd-ubdd-fix
                      (x (car y))))
-              :in-theory (e/d (bfr-eval bfr-eval-list v2n)
+              :in-theory (e/d (bfr-eval bfr-eval-list)
                               (acl2::eval-bdd-ubdd-fix)))))
 
    (defthm always-equal-ss-under-hyp-correct
@@ -473,16 +473,16 @@
                           (not (bfr-mode))
                           (acl2::ubddp hyp)
                           (bfr-eval hyp env))
-                     (equal (v2i (bfr-eval-list x env))
-                            (v2i (bfr-eval-list y env))))
+                     (equal (bfr-list->s x env)
+                            (bfr-list->s y env)))
             (implies (and (not (bfr-mode))
                           (bfr-eval ctrex-bdd env)
                           (acl2::ubddp hyp)
                           (not always-equal))
                      (and (bfr-eval hyp env)
-                          (not (equal (v2i (bfr-eval-list x env))
-                                      (v2i (bfr-eval-list y env))))))))
-     :hints(("Goal" :in-theory (e/d* (bfr-eval-list bfr-eval v2i)
+                          (not (equal (bfr-list->s x env)
+                                      (bfr-list->s y env)))))))
+     :hints(("Goal" :in-theory (e/d* (bfr-list->s bfr-eval scdr s-endp)
                                      (ctrex-for-always-equal-under-hyp-correct1
                                       ctrex-for-always-equal-under-hyp-correct2
                                       ctrex-for-always-equal-under-hyp
@@ -498,8 +498,7 @@
                                       (:rules-of-class :type-prescription
                                                        :here))
                                      ((:type-prescription bfr-eval)
-                                      (:type-prescription ash)
-                                      (:type-prescription v2i)))
+                                      (:type-prescription ash)))
              :induct (always-equal-ss-under-hyp x y hyp)
              :expand ((always-equal-ss-under-hyp x y hyp)
                       (always-equal-ss-under-hyp x nil hyp)
@@ -842,7 +841,7 @@
                           (:type-prescription general-numberp)
                           (:type-prescription acl2::ubddp)
                           (:type-prescription general-concretep)
-                          (:type-prescription =-uu)
+                          (:type-prescription bfr-=-uu)
                           ;; (:type-prescription assume-true-under-hyp2)
                           ;; (:type-prescription assume-false-under-hyp2)
                           ;(:type-prescription assume-true-under-hyp)
@@ -911,7 +910,6 @@
                       hyp-fix-correct 
                       always-equal-of-numbers-correct
                       always-equal-of-booleans-correct
-                      (:type-prescription v2i)
                       
                       bfr-eval-g-hyp-marker
                       cons-equal

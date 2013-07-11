@@ -224,3 +224,6 @@
         (xdoc::colon-xdoc-init))
    `(value-triple nil)))
 
+
+; maybe actually report correct times
+(assign get-internal-time-as-realtime t)

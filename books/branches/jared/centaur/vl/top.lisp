@@ -123,8 +123,8 @@ working with Verilog source code.  It includes:</p>
 <p>The original (and still primary) purpose of VL is to translate Verilog
 modules into E-language modules for formal verification.  E is a comparatively
 simple, hierarchical, register-transfer level hardware description language.
-Because E is still under active development we have not yet released it, but an
-early version is described in the following paper:</p>
+An early version of E is described in the following paper.  The interpreter for
+E is @(see esim).</p>
 
 <p>Warren A. Hunt, Jr. and Sol Swords.  \"Centaur technology media unit
 verification.  Case study: Floating point addition.\" in Computer Aided

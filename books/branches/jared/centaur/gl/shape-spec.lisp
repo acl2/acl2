@@ -8,6 +8,7 @@
 (include-book "gl-doc-string")
 (include-book "symbolic-arithmetic-fns")
 
+(local (include-book "symbolic-arithmetic"))
 (local (include-book "gtype-thms"))
 (local (include-book "data-structures/no-duplicates" :dir :system))
 (local (include-book "tools/mv-nth" :dir :system))
@@ -204,7 +205,8 @@
        ((g-integer sign bits var)
         (g-apply 'logapp
                  (list (len bits)
-                       (g-number (list (append (numlist-to-vars bits) (list nil))))
+                       (g-number (list (bfr-logapp-nus
+                                        (len bits) (numlist-to-vars bits) nil)))
                        (g-apply 'int-set-sign
                                 (list (g-boolean (bfr-var sign))
                                       (g-var var))))))
@@ -213,7 +215,8 @@
                  (list
                   (g-apply 'logapp
                            (list (len bits)
-                                 (g-number (list (append (numlist-to-vars bits) (list nil))))
+                                 (g-number (list (bfr-logapp-nus
+                                                  (len bits) (numlist-to-vars bits) nil)))
                                  (g-apply 'int-set-sign
                                           (list (g-boolean (bfr-var sign))
                                                 (g-var var)))))
@@ -315,29 +318,57 @@
 ;;             (bfr-eval (bfr-var n) env)))))
 
 (local
- (defthm bfr-eval-list-numlist-subset-append
+ (defthm bfr-list->s-numlist-subset-append
    (implies (and (nat-listp lst)
                  (subsetp-equal lst (strip-cars bsl1)))
-            (equal (bfr-eval-list (numlist-to-vars lst)
-                                  (slice-to-bdd-env (append bsl1 bsl2) env))
-                   (bfr-eval-list (numlist-to-vars lst)
-                                  (slice-to-bdd-env bsl1 env))))
-   :hints(("Goal" :in-theory (enable numlist-to-vars
+            (equal (bfr-list->s (numlist-to-vars lst)
+                                (slice-to-bdd-env (append bsl1 bsl2) env))
+                   (bfr-list->s (numlist-to-vars lst)
+                                (slice-to-bdd-env bsl1 env))))
+   :hints(("Goal" :in-theory (enable numlist-to-vars scdr s-endp
                                      slice-to-bdd-env
                                      subsetp-equal
                                      nat-listp)
            :induct (numlist-to-vars lst)))))
 
 (local
- (defthm bfr-eval-list-numlist-no-intersect-append
+ (defthm bfr-list->s-numlist-no-intersect-append
    (implies (and (nat-listp lst)
                  (nat-listp (strip-cars bsl1))
                  (not (intersectp-equal lst (strip-cars bsl1))))
-            (equal (bfr-eval-list (numlist-to-vars lst)
+            (equal (bfr-list->s (numlist-to-vars lst)
                                   (slice-to-bdd-env (append bsl1 bsl2) env))
-                   (bfr-eval-list (numlist-to-vars lst)
+                   (bfr-list->s (numlist-to-vars lst)
                                   (slice-to-bdd-env bsl2 env))))
-   :hints(("Goal" :in-theory (enable numlist-to-vars
+   :hints(("Goal" :in-theory (enable numlist-to-vars scdr s-endp
+                                     slice-to-bdd-env
+                                     nat-listp)
+           :induct (numlist-to-vars lst)))))
+
+(local
+ (defthm bfr-list->u-numlist-subset-append
+   (implies (and (nat-listp lst)
+                 (subsetp-equal lst (strip-cars bsl1)))
+            (equal (bfr-list->u (numlist-to-vars lst)
+                                (slice-to-bdd-env (append bsl1 bsl2) env))
+                   (bfr-list->u (numlist-to-vars lst)
+                                (slice-to-bdd-env bsl1 env))))
+   :hints(("Goal" :in-theory (enable numlist-to-vars scdr s-endp
+                                     slice-to-bdd-env
+                                     subsetp-equal
+                                     nat-listp)
+           :induct (numlist-to-vars lst)))))
+
+(local
+ (defthm bfr-list->u-numlist-no-intersect-append
+   (implies (and (nat-listp lst)
+                 (nat-listp (strip-cars bsl1))
+                 (not (intersectp-equal lst (strip-cars bsl1))))
+            (equal (bfr-list->u (numlist-to-vars lst)
+                                  (slice-to-bdd-env (append bsl1 bsl2) env))
+                   (bfr-list->u (numlist-to-vars lst)
+                                  (slice-to-bdd-env bsl2 env))))
+   :hints(("Goal" :in-theory (enable numlist-to-vars scdr s-endp
                                      slice-to-bdd-env
                                      nat-listp)
            :induct (numlist-to-vars lst)))))
@@ -415,6 +446,23 @@
   (equal (bfr-eval-list (append a b) env)
          (append (bfr-eval-list a env)
                  (bfr-eval-list b env))))
+
+(defthm bfr-list->s-of-append
+  (implies (consp b)
+           (equal (bfr-list->s (append a b) env)
+                  (logapp (len a) (bfr-list->s a env)
+                          (bfr-list->s b env))))
+  :hints(("Goal" :in-theory (enable scdr s-endp acl2::logapp** append)
+          :induct (append a b)
+          :expand ((:free (a b) (bfr-list->s (cons a b) env))))))
+
+(defthm bfr-list->u-of-append
+  (equal (bfr-list->u (append a b) env)
+         (logapp (len a) (bfr-list->u a env)
+                 (bfr-list->u b env)))
+  :hints(("Goal" :in-theory (enable  acl2::logapp** append)
+          :induct (append a b)
+          :expand ((:free (a b) (bfr-list->u (cons a b) env))))))
 
 (local (in-theory (enable gl-cons)))
 
@@ -938,6 +986,28 @@
    :hints(("Goal" :in-theory (enable numlist-to-vars bfr-eval-list
                                      nat-listp member-equal)))))
 
+(local
+ (defthm bfr-list->s-numlist-update-non-member
+   (implies (and (natp n) (nat-listp lst)
+                 (not (member-equal n lst)))
+            (equal (bfr-list->s (numlist-to-vars lst)
+                                  (bfr-set-var n x env))
+                   (bfr-list->s (numlist-to-vars lst) env)))
+   :hints(("Goal" :in-theory (enable numlist-to-vars bfr-list->s
+                                     scdr s-endp
+                                     nat-listp member-equal)))))
+
+(local
+ (defthm bfr-list->u-numlist-update-non-member
+   (implies (and (natp n) (nat-listp lst)
+                 (not (member-equal n lst)))
+            (equal (bfr-list->u (numlist-to-vars lst)
+                                  (bfr-set-var n x env))
+                   (bfr-list->u (numlist-to-vars lst) env)))
+   :hints(("Goal" :in-theory (enable numlist-to-vars bfr-list->u
+                                     scdr s-endp
+                                     nat-listp member-equal)))))
+
 
 (local
  (defthm consp-numlist-to-vars
@@ -947,31 +1017,31 @@
 
 
 
-(local
- (defthm v2i-redef
-   (equal (v2i x)
-          (if (atom x)
-              0
-            (if (atom (cdr x))
-                (if (car x) -1 0)
-              (logcons (if (car x) 1 0) (v2i (cdr x))))))
-   :hints(("Goal" :in-theory (enable v2i acl2::ash**))
-          (and stable-under-simplificationp
-               '(:in-theory (enable logcons))))
-   :rule-classes ((:definition :clique (v2i)
-                   :controller-alist ((v2i t))))))
+;; (local
+;;  (defthm v2i-redef
+;;    (equal (v2i x)
+;;           (if (atom x)
+;;               0
+;;             (if (atom (cdr x))
+;;                 (if (car x) -1 0)
+;;               (logcons (if (car x) 1 0) (v2i (cdr x))))))
+;;    :hints(("Goal" :in-theory (enable v2i acl2::ash**))
+;;           (and stable-under-simplificationp
+;;                '(:in-theory (enable logcons))))
+;;    :rule-classes ((:definition :clique (v2i)
+;;                    :controller-alist ((v2i t))))))
 
-(local
- (defthm v2n-redef
-   (equal (v2n x)
-          (if (atom x)
-              0
-            (logcons (if (car x) 1 0) (v2n (cdr x)))))
-   :hints(("Goal" :in-theory (enable v2n acl2::ash**))
-          (and stable-under-simplificationp
-               '(:in-theory (enable logcons))))
-   :rule-classes ((:definition :clique (v2n)
-                   :controller-alist ((v2n t))))))
+;; (local
+;;  (defthm v2n-redef
+;;    (equal (v2n x)
+;;           (if (atom x)
+;;               0
+;;             (logcons (if (car x) 1 0) (v2n (cdr x)))))
+;;    :hints(("Goal" :in-theory (enable v2n acl2::ash**))
+;;           (and stable-under-simplificationp
+;;                '(:in-theory (enable logcons))))
+;;    :rule-classes ((:definition :clique (v2n)
+;;                    :controller-alist ((v2n t))))))
 
 (local
  (encapsulate nil
@@ -981,14 +1051,14 @@
                    (no-duplicatesp lst)
                    (integerp n)
                    (nat-listp lst))
-              (equal (v2i (bfr-eval-list
+              (equal (bfr-list->s
                            (numlist-to-vars lst)
-                           (slice-to-bdd-env (mv-nth 1 (integer-env-slice lst n)) env)))
+                           (slice-to-bdd-env (mv-nth 1 (integer-env-slice lst n)) env))
                      n))
      :hints(("Goal" :in-theory (enable integer-env-slice
                                        numlist-to-vars
                                        bfr-eval-list
-                                       v2i nat-listp
+                                       nat-listp scdr s-endp
                                        slice-to-bdd-env
                                        integer-env-slice
                                        logbitp)
@@ -999,18 +1069,36 @@
                    (no-duplicatesp lst)
                    (natp n)
                    (nat-listp lst))
-              (equal (v2n (bfr-eval-list
+              (equal (bfr-list->u
                            (numlist-to-vars lst)
-                           (slice-to-bdd-env (mv-nth 1 (natural-env-slice lst n)) env)))
+                           (slice-to-bdd-env (mv-nth 1 (natural-env-slice lst n)) env))
                      n))
      :hints(("Goal" :in-theory (enable natural-env-slice
                                        numlist-to-vars
                                        bfr-eval-list
-                                       v2n nat-listp
+                                       nat-listp
                                        slice-to-bdd-env
                                        natural-env-slice
                                        logbitp)
              :induct (natural-env-slice lst n))))
+
+   ;; (defthm eval-slice-bfr-list->s-natural-env-slice
+   ;;   (implies (and (mv-nth 0 (natural-env-slice lst n))
+   ;;                 (no-duplicatesp lst)
+   ;;                 (natp n)
+   ;;                 (nat-listp lst))
+   ;;            (equal (bfr-list->s
+   ;;                         (numlist-to-vars lst)
+   ;;                         (slice-to-bdd-env (mv-nth 1 (natural-env-slice lst n)) env))
+   ;;                   n))
+   ;;   :hints(("Goal" :in-theory (enable natural-env-slice
+   ;;                                     numlist-to-vars
+   ;;                                     bfr-eval-list
+   ;;                                     nat-listp
+   ;;                                     slice-to-bdd-env
+   ;;                                     natural-env-slice
+   ;;                                     logbitp)
+   ;;           :induct (natural-env-slice lst n))))
 
 
    (defthm realpart-when-imagpart-0
@@ -1073,12 +1161,13 @@
           :expand ((:free (x)(natural-env-slice bits x)))
           :induct (cdr-logcdr bits x))))
 
-(defthm v2i-of-append
-  (implies (consp b)
-           (equal (v2i (append a b))
-                  (logapp (len a) (v2n a) (v2i b))))
-  :hints(("Goal" :in-theory (e/d* (acl2::ihsext-recursive-redefs append len))
-          :induct (append a b))))
+
+;; (defthm v2i-of-append
+;;   (implies (consp b)
+;;            (equal (v2i (append a b))
+;;                   (logapp (len a) (v2n a) (v2i b))))
+;;   :hints(("Goal" :in-theory (e/d* (acl2::ihsext-recursive-redefs append len))
+;;           :induct (append a b))))
 
 (defthm len-bfr-eval-list
   (equal (len (bfr-eval-list x env)) (len x)))

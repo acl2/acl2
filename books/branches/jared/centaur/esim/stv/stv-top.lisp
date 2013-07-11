@@ -673,7 +673,8 @@ way to describe most kind of bindings.</dd>
 acl2::symbolic-test-vectors)'>symbolic test vector</see> defined with @(see
 acl2::defstv).</p>"
                            (or (stv-to-xml stv compiled-stv labels)
-                               "Error generating diagram"))))
+                               "Error generating diagram")
+                           long)))
 
 
          ;; Stupid trick to avoid saving the module in the .cert file

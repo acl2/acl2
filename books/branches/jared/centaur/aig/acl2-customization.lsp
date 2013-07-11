@@ -19,3 +19,4 @@
 ; Original author: Sol Swords <sswords@centtech.com>
 
 (set-inhibit-warnings "theory" "disable")
+(ld "~/acl2-customization.lsp" :ld-missing-input-ok t)

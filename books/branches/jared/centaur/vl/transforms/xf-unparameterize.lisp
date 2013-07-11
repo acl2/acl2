@@ -1625,6 +1625,8 @@ them, saying that we were unable to unparameterize them.</p>"
 
              (progn$
               (cw "; vl-unparameterize: counter exhausted before fixed point reached.~%")
+              (cw "; modules that still have parameters: ~&0"
+                  (vl-modulelist->names withparams))
               (vl-handle-unparam-fail mods)))
 
 
@@ -1636,6 +1638,8 @@ them, saying that we were unable to unparameterize them.</p>"
                      (progn$
                       (cw "; vl-unparameterize: fixed point reached with n = ~x0, but ~
                            there are still modules with parameters: ~%" n)
+                      (cw "; modules that still have parameters: ~&0"
+                          (vl-modulelist->names withparams))
                       (vl-handle-unparam-fail mods))
 
                    (mv-let (success-rest fail-rest)
