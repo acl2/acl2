@@ -31,17 +31,17 @@
   :parents (oslib)
   :short "Get the \"application level\" command line arguments passed to ACL2."
 
-  :long "<p>In the logic, this function reads from the ACL2 oracle and coerces
+  :long "<p>Typically, @('(argv)') is useful for writing command-line programs
+atop ACL2, e.g., using @(see save-exec).</p>
+
+<p>In the logic, this function reads from the ACL2 oracle and coerces
 whatever it finds into a @(see string-listp).  In the execution, we use
 whatever mechanism the host Lisp provides for reading the command line
 arguments that were given to ACL2.</p>
 
-<p>Typically, @('(argv)') is useful for writing command-line programs atop
-ACL2, e.g., using @(see save-exec).</p>
-
 <p>Dead simple, right?  Well, not really.</p>
 
-<p>Usually ACL2 itself, or any custom program you build atopq ACL2 using @(see
+<p>Usually ACL2 itself, or any custom program you build atop ACL2 using @(see
 save-exec), is really just an <i>image</i> that is executed by the
 <i>runtime</i> for the host Lisp.  For instance, when you build ACL2 on CCL,
 you get:</p>
