@@ -159,6 +159,8 @@
 #     contain this line (or, a cert_param directive can be in the
 #     .acl2 file that is consulted, as discussed above):
 #       ; cert_param: (hons-only)
+#   - Books that require glucose (a SAT solver) contain this line:
+#       ; cert_param: (uses-glucose)
 #   - Two-pass certification is handled as follows, for example in
 #     books/make-event/stobj-test.acl2 (as indicated above, this can
 #     also go into the book instead of the relevant .acl2 file):
@@ -298,6 +300,15 @@ ACL2_FEATURES := $(shell \
      "$(ACL2) < cert_features.lsp &> Makefile-features.out" ;\
   ls -l Makefile-features)
 
+$(info Determining whether Glucose is installed)
+# If glucose doesn't exist, then the error message saying it can't be
+# found is redirected to /dev/null, resulting in an empty value for
+# GLUCOSE_EXISTS
+GLUCOSE_EXISTS := $(shell glucose --version 2>/dev/null)
+ifdef GLUCOSE_EXISTS
+  OS_HAS_GLUCOSE := 1
+endif # ifdef GLUCOSE_EXISTS
+
 # Only conditionally include Makefile-features, so that make clean works even
 # if ACL2 isn't built.
 -include Makefile-features
@@ -306,6 +317,7 @@ $(info ACL2_HAS_PARALLEL := $(ACL2_HAS_PARALLEL))
 $(info ACL2_HAS_REALS    := $(ACL2_HAS_REALS))
 $(info ACL2_COMP_EXT     := $(ACL2_COMP_EXT))
 $(info ACL2_HOST_LISP    := $(ACL2_HOST_LISP))
+$(info OS_HAS_GLUCOSE    := $(OS_HAS_GLUCOSE))
 $(info Done with features.)
 
 OK_CERTS := $(CERT_PL_CERTS)
@@ -316,6 +328,13 @@ ifeq ($(ACL2_HAS_HONS), )
 OK_CERTS := $(filter-out $(CERT_PL_HONS_ONLY), $(OK_CERTS))
 
 endif # ifeq ($(ACL2_HAS_HONS), )
+
+ifeq ($(OS_HAS_GLUCOSE), )
+
+# $(info Excluding books that depend on the Glucose SAT-solver)
+OK_CERTS := $(filter-out $(CERT_PL_USES_GLUCOSE), $(OK_CERTS))
+
+endif # ifeq ($(OS_HAS_GLUCOSE), )
 
 # SLOW_BOOKS are books that are too slow to include as part of an
 # ordinary regression.  There are currently comments in some of the
