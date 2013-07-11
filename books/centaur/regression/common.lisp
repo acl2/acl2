@@ -22,12 +22,13 @@
 (include-book "centaur/4v-sexpr/top" :dir :system)
 (include-book "tools/plev-ccl" :dir :system)
 (include-book "centaur/misc/memory-mgmt" :dir :system)
+(include-book "str/top" :dir :system)
 
 (set-waterfall-parallelism nil) ; for below call of def-gl-clause-processor
 
-; I'm unsure why the below is critical, but intro.lisp uses it.  It introduces
-; a GL clause processor that can natively execute at least the functions from
-; the above books that get marked with add-clause-proc-exec-fns:
+; I'm unsure why the below is critical, but the "GL Clock" runs out without it.
+; It introduces a GL clause processor that can natively execute at least the
+; functions from the above books that get marked with add-clause-proc-exec-fns.
 
 (def-gl-clause-processor my-glcp)
 

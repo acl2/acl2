@@ -19,46 +19,37 @@
    :start-files (list "multiply.v")))
 
 (defmacro multiply-thm (n)
-  (let* ((n-str (coerce (explode-nonnegative-integer n 10 nil)
-                        'string))
+  (let* ((n-str (str::natstr n))
 
          (constant-name ;;; defining a constant is a bit silly, but having this
                         ;;; intermediate artifact to view
-          (intern$ (concatenate 'string
-                                "*MULTIPLY-"
-                                n-str
-                                "-MODULE*")
-
+          (intern$ (str::cat "*MULTIPLY-" n-str "-MODULE*")
                    "ACL2"))
+
          (thm-name
-          (intern$ (concatenate 'string
-                                "MULTIPLY-" n-str "-CORRECT")
-
+          (intern$ (str::cat "MULTIPLY-" n-str "-CORRECT")
                    "ACL2"))
-        (module-name (concatenate 'string
-                                  "multiply" n-str))
-        (test-vector-name
-         (intern$ (concatenate 'string
-                               "MULTIPLY-" n-str "-TEST-VECTOR")
 
-                  "ACL2"))
+         (module-name (str::cat "multiply" n-str))
 
-
-        (test-vector-autohyps-name
-          (intern$ (concatenate 'string
-                                (symbol-name test-vector-name)
-                                "-AUTOHYPS")
-
+         (test-vector-name
+          (intern$ (str::cat "MULTIPLY-" n-str "-TEST-VECTOR")
                    "ACL2"))
-        (test-vector-autoins-name
-          (intern$ (concatenate 'string
-                                (symbol-name test-vector-name)
-                                "-AUTOINS")
 
+
+         (test-vector-autohyps-name
+          (intern$ (str::cat (symbol-name test-vector-name)
+                             "-AUTOHYPS")
                    "ACL2"))
-        (g-bindings
-         `(gl::auto-bindings (:mix (:nat a ,n)
-                                   (:nat b ,n)))))
+
+         (test-vector-autoins-name
+          (intern$ (str::cat (symbol-name test-vector-name)
+                             "-AUTOINS")
+                   "ACL2"))
+
+         (g-bindings
+          `(gl::auto-bindings (:mix (:nat a ,n)
+                                    (:nat b ,n)))))
 
     `(progn
        (defconst ,constant-name

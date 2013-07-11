@@ -19,44 +19,38 @@
    :start-files (list "subtract.v")))
 
 (defmacro subtract-thm (n)
-  (let* ((n-str (coerce (explode-nonnegative-integer n 10 nil)
-                        'string))
+  (let* ((n-str (str::natstr n))
 
          (constant-name ;;; defining a constant is a bit silly, but having this
                         ;;; intermediate artifact to view
-          (intern$ (concatenate 'string
-                                "*SUBTRACT-"
-                                n-str
-                                "-MODULE*")
+          (intern$ (str::cat "*SUBTRACT-" n-str "-MODULE*")
 
                    "ACL2"))
+
          (thm-name
-          (intern$ (concatenate 'string
-                                "SUBTRACT-" n-str "-CORRECT")
+          (intern$ (str::cat "SUBTRACT-" n-str "-CORRECT")
 
                    "ACL2"))
-        (module-name (concatenate 'string
-                                  "subtract" n-str))
-        (test-vector-name
-         (intern$ (concatenate 'string
-                               "SUBTRACT-" n-str "-TEST-VECTOR")
 
-                  "ACL2"))
+         (module-name (str::cat "subtract" n-str))
 
+         (test-vector-name
+          (intern$ (str::cat "SUBTRACT-" n-str "-TEST-VECTOR")
+                   "ACL2"))
 
-        (test-vector-autohyps-name
-          (intern$ (concatenate 'string
-                                (symbol-name test-vector-name)
-                                "-AUTOHYPS")
+         (test-vector-autohyps-name
+          (intern$ (str::cat (symbol-name test-vector-name)
+                             "-AUTOHYPS")
 
                    "ACL2"))
-        (test-vector-autoins-name
-          (intern$ (concatenate 'string
-                                (symbol-name test-vector-name)
-                                "-AUTOINS")
+
+         (test-vector-autoins-name
+          (intern$ (str::cat (symbol-name test-vector-name)
+                             "-AUTOINS")
 
                    "ACL2"))
-        (g-bindings
+
+         (g-bindings
          `(gl::auto-bindings (:mix (:nat a ,n)
                                    (:nat b ,n)))))
 

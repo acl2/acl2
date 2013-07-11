@@ -19,43 +19,35 @@
    :start-files (list "add.v")))
 
 (defmacro add-thm (n)
-  (let* ((n-str (coerce (explode-nonnegative-integer n 10 nil)
-                        'string))
+  (let* ((n-str (str::natstr n))
 
          (constant-name ;;; defining a constant is a bit silly, but having this
                         ;;; intermediate artifact to view
-          (intern$ (concatenate 'string
-                                "*ADD-"
-                                n-str
-                                "-MODULE*")
-
+          (intern$ (str::cat "*ADD-" n-str "-MODULE*")
                    "ACL2"))
+
          (thm-name
-          (intern$ (concatenate 'string
-                                "ADD-" n-str "-CORRECT")
-
+          (intern$ (str::cat "ADD-" n-str "-CORRECT")
                    "ACL2"))
-        (module-name (concatenate 'string
-                                  "add" n-str))
-        (test-vector-name
-         (intern$ (concatenate 'string
-                               "ADD-" n-str "-TEST-VECTOR")
 
+        (module-name (str::cat "add" n-str))
+
+        (test-vector-name
+         (intern$ (str::cat "ADD-" n-str "-TEST-VECTOR")
                   "ACL2"))
 
-
         (test-vector-autohyps-name
-          (intern$ (concatenate 'string
-                                (symbol-name test-vector-name)
-                                "-AUTOHYPS")
+          (intern$ (str::cat (symbol-name test-vector-name)
+                             "-AUTOHYPS")
 
                    "ACL2"))
+
         (test-vector-autoins-name
-          (intern$ (concatenate 'string
-                                (symbol-name test-vector-name)
-                                "-AUTOINS")
+          (intern$ (str::cat (symbol-name test-vector-name)
+                             "-AUTOINS")
 
                    "ACL2"))
+
         (g-bindings
          `(gl::auto-bindings (:mix (:nat a ,n)
                                    (:nat b ,n)))))
