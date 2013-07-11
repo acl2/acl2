@@ -14,32 +14,32 @@
 
 (include-book "common")
 
-(defmodules *add-modules*
+(defmodules *multiply-modules*
   (vl::make-vl-loadconfig
-   :start-files (list "add.v")))
+   :start-files (list "multiply.v")))
 
-(defmacro add-thm (n)
+(defmacro multiply-thm (n)
   (let* ((n-str (coerce (explode-nonnegative-integer n 10 nil)
                         'string))
 
          (constant-name ;;; defining a constant is a bit silly, but having this
                         ;;; intermediate artifact to view
           (intern$ (concatenate 'string
-                                "*ADD-"
+                                "*MULTIPLY-"
                                 n-str
                                 "-MODULE*")
 
                    "ACL2"))
          (thm-name
           (intern$ (concatenate 'string
-                                "ADD-" n-str "-CORRECT")
+                                "MULTIPLY-" n-str "-CORRECT")
 
                    "ACL2"))
         (module-name (concatenate 'string
-                                  "add" n-str))
+                                  "multiply" n-str))
         (test-vector-name
          (intern$ (concatenate 'string
-                               "ADD-" n-str "-TEST-VECTOR")
+                               "MULTIPLY-" n-str "-TEST-VECTOR")
 
                   "ACL2"))
 
@@ -63,7 +63,7 @@
     `(progn
        (defconst ,constant-name
          (vl::vl-module->esim
-          (vl::vl-find-module ,module-name (vl::vl-translation->mods *add-modules*))))
+          (vl::vl-find-module ,module-name (vl::vl-translation->mods *multiply-modules*))))
 
 
 
@@ -81,18 +81,26 @@
                               (out-alist (stv-run (,test-vector-name) in-alist))
                               (res       (cdr (assoc 'res out-alist))))
                          res)
-                       (mod (+ a b) (expt 2 ,n)))
+                       (mod (* a b) (expt 2 ,n)))
          :g-bindings ,g-bindings))))
 
 
-(add-thm 1)
-(add-thm 2)
-(add-thm 3)
-(add-thm 4)
-(add-thm 8)
-(add-thm 16)
-(add-thm 32)
-(add-thm 64)
-(add-thm 128)
-(add-thm 256) ; took 6.98 seconds (with glucose 2.2)
-(add-thm 512) ; took 26.33 seconds (with glucose 2.2)
+(multiply-thm 1)
+(multiply-thm 2)
+(multiply-thm 3)
+(multiply-thm 4)
+(multiply-thm 8) ; took 1.57 seconds with glucose 2.2 on modern, yet slow, laptop
+(multiply-thm 10) ; took 86.11 seconds with glucose 2.2 on modern, yet slow, laptop
+
+#|
+
+; These are left as benchmarks for the future
+
+(multiply-thm 12)
+(multiply-thm 16)
+(multiply-thm 32)
+(multiply-thm 64)
+(multiply-thm 128)
+(multiply-thm 256)
+(multiply-thm 512)
+|#

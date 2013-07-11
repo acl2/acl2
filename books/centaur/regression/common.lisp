@@ -10,6 +10,8 @@
 ; License along with this program; if not, write to the Free Software
 ; Foundation, Inc., 51 Franklin Street, Suite 500, Boston, MA 02110-1335, USA.
 
+;; cert_param(uses-glucose)
+
 (in-package "ACL2")
 
 (include-book "centaur/vl/top" :dir :system)
@@ -28,6 +30,23 @@
 ; the above books that get marked with add-clause-proc-exec-fns:
 
 (def-gl-clause-processor my-glcp)
+
+(include-book "centaur/gl/bfr-satlink" :dir :system)
+
+(make-event (prog2$ (tshell-ensure)
+                    '(value-triple :invisible))
+            :check-expansion t)
+
+(gl::gl-satlink-mode)
+
+(defun my-glucose-config ()
+  (declare (xargs :guard t))
+  (satlink::make-config :cmdline "glucose"
+                        :verbose t
+                        :mintime 1/2
+                        :remove-temps t))
+
+(defattach gl::gl-satlink-config my-glucose-config)
 
 (local (defthm unsigned-byte-p-re-redef
          (equal (unsigned-byte-p bits x)
