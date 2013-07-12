@@ -69,12 +69,12 @@
          '(("out"    res)))
 
        (def-gl-thm ,thm-name
-         :hyp (and (,test-vector-autohyps-name) (not (equal b 0)))
+         :hyp (and (,test-vector-autohyps-name)#| (not (equal b 0))|#)
          :concl (equal (let* ((in-alist  (,test-vector-autoins-name))
                               (out-alist (stv-run (,test-vector-name) in-alist))
                               (res       (cdr (assoc 'res out-alist))))
                          res)
-                       (floor a b))
+                       (if (equal b 0) 'X (floor a b)))
          :g-bindings ,g-bindings))))
 
 
@@ -84,7 +84,7 @@
 (divide-thm 4)
 (divide-thm 8)
 (divide-thm 10) ; took 2.79 seconds with glucose 2.2 on modern, yet slow, laptop
-(divide-thm 12) ; ; took 14.59 seconds with glucose 2.2 on modern, yet slow, laptop
+; (divide-thm 12) ; ; took 14.59 seconds with glucose 2.2 on modern, yet slow, laptop
 
 #|
 
