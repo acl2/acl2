@@ -91,4 +91,4 @@
 (subtract-thm 64)
 (subtract-thm 128)
 (subtract-thm 256) ; took 7.82 seconds (with glucose 2.2)
-(subtract-thm 512) ; took 29.34 seconds (with glucose 2.2)
+; (subtract-thm 512) ; took 29.34 seconds (with glucose 2.2)
