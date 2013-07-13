@@ -69,7 +69,7 @@
          '(("out"    res)))
 
        (def-gl-thm ,thm-name
-         :hyp (and (,test-vector-autohyps-name)#| (not (equal b 0))|#)
+         :hyp (and (,test-vector-autohyps-name))
          :concl (equal (let* ((in-alist  (,test-vector-autoins-name))
                               (out-alist (stv-run (,test-vector-name) in-alist))
                               (res       (cdr (assoc 'res out-alist))))
