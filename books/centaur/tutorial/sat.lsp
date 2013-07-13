@@ -109,6 +109,8 @@
 ;
 ;    Glucose version 2.1
 ;       https://www.lri.fr/~simon/?page=glucose
+;       Some packages Rager needed in order to build glocuse included:
+;       g++ and libc6-dev-i386
 ;
 ; But probably most any solver that is part of the SAT Competition should work,
 ; modulo a few concerns about the input format (see :xdoc satlink::dimacs).
@@ -121,10 +123,10 @@
 
 
 ; The particular SAT solver that SATLINK will call, and other options about,
-; e.g., what kind of debugging information will printed, whether temporary
+; e.g., what kind of debugging information will be printed, whether temporary
 ; files should be removed, etc., are governed by a configuration object.  For
-; details, see :XDOC satlink::config-p.  GL will use whatever configuration
-; is returned by:
+; details, see :XDOC satlink::config-p.  GL will use whatever configuration is
+; returned by:
 
 (gl::gl-satlink-config)
 
@@ -186,7 +188,9 @@
   '(("opcode" op)           ;; verilog name --> inputs we are going to supply
     ("abus"   a)            ;;                  at each phase
     ("bbus"   b))           ;; we only have one phase, so we'll just supply a
-                            ;; variable for each vector.
+                            ;; variable for each vector (note that we do not
+                            ;; yet need to specify anything related to the
+                            ;; length of the vectors).
 
   :outputs                  ;; verilog name --> variable names we will use
   '(("out"    res)))
