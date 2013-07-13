@@ -17,6 +17,7 @@
 ; Foundation, Inc., 51 Franklin Street, Suite 500, Boston, MA 02110-1335, USA.
 ;
 ; Original author: Jared Davis <jared@centtech.com>
+; Additional author: David Rager <ragerdl@cs.utexas.edu>
 
 (in-package "STR")
 (include-book "cat")
@@ -234,27 +235,22 @@ performed.</p>"
 
 
 
-(defsection trim
+(defsection trim-bag
   :parents (pad-trim)
-  :short "Remove whitespace from the front and end of a string."
+  :short "Remove particular characters from the front and end of a string."
 
-  :long "<p>@(call trim) removes whitespace characters from the front and end
-of the string @('x').</p>
+  :long "<p>@(call trim-bag) removes the characters in @('bag') from the
+front and end of the string @('x').</p>
 
 <p>BOZO eventually make this efficient.</p>"
 
-  (defund trim-aux (x)
-    (declare (xargs :guard (character-listp x)))
+  (defund trim-aux (x bag)
+    (declare (xargs :guard (and (character-listp x)
+                                (character-listp bag))))
     ;; Remove all whitespace characters from the front of a list.
     (if (consp x)
-        (if (or (eql (car x) #\Space)
-                (eql (car x) #\Tab)
-                (eql (car x) #\Newline)
-                (eql (car x) #\Page)
-                (eql (car x) (code-char 13)) ;; Carriage Return
-                (eql (car x) (code-char 11)) ;; Vertical Tab
-                )
-            (trim-aux (cdr x))
+        (if (acl2::member (car x) bag) ; :test eql is default
+            (trim-aux (cdr x) bag)
           x)
       nil))
 
@@ -262,20 +258,45 @@ of the string @('x').</p>
 
   (defthm character-listp-of-trim-aux
     (implies (force (character-listp x))
-             (character-listp (trim-aux x))))
+             (character-listp (trim-aux x bag))))
 
   (local (defthm true-listp-when-character-listp
            (implies (character-listp x)
                     (true-listp x))))
 
+  (defund trim-bag (x bag)
+    (declare (xargs :guard (and (stringp x)
+                                (character-listp bag))))
+    (let* ((chars (explode x))
+           (chars (trim-aux chars bag)) ;; eat spaces at the front
+           (chars (reverse chars))      ;; flip so we can get to the back
+           (chars (trim-aux chars bag)) ;; eat spaces at the back
+           (chars (reverse chars)))     ;; flip again so it's back to normal
+      (implode chars)))
+
+  (local (in-theory (enable trim-bag)))
+
+  (defthm stringp-of-trim-bag
+    (stringp (trim-bag x bag))
+    :rule-classes :type-prescription))
+
+(defsection trim
+  :parents (pad-trim)
+  :short "Remove whitespace characters from the front and end of a string."
+
+  :long "<p>@(call trim) removes whitespace characters from the
+front and end of the string @('x').</p>"
+
+
   (defund trim (x)
     (declare (xargs :guard (stringp x)))
-    (let* ((chars (explode x))
-           (chars (trim-aux chars)) ;; eat spaces at the front
-           (chars (reverse chars))  ;; flip so we can get to the back
-           (chars (trim-aux chars)) ;; eat spaces at the back
-           (chars (reverse chars))) ;; flip again so it's back to normal
-      (implode chars)))
+    (let* ((bag (list #\Space
+                      #\Tab
+                      #\Newline
+                      #\Page
+                      (code-char 13)    ;; Carriage Return
+                      (code-char 11)))) ;; Vertical Tab
+      (trim-bag x bag)))
 
   (local (in-theory (enable trim)))
 
