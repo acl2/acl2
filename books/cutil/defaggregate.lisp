@@ -261,6 +261,14 @@ defined a \"compatible\" recognizer.</dd>
 will follow some automatically generated documentation that describes the
 fields of the aggregate.</dd>
 
+<dt>:extra-field-keywords</dt>
+
+<dd>Advanced option for people who are writing extensions of @('defaggregate').
+This tells defaggregate to tolerate (and ignore) certain additional keywords in
+its fields.  The very advanced user can then inspect these fields after
+submitting the aggregate, and perhaps use them to generate additional
+events.</dd>
+
 <dt>:require</dt>
 
 <dd>This option is deprecated.  Please use the new fields syntax, instead.</dd>
@@ -743,6 +751,7 @@ optimization altogether.</p>")
     :short
     :long
     :already-definedp
+    :extra-field-keywords
     ;; deprecated options
     :require
     :rest))
@@ -758,6 +767,7 @@ optimization altogether.</p>")
     (cons (formal->default (car x))
           (formallist->defaults (cdr x)))))
 
+#!CUTIL
 (defun defaggregate-fn (name rest state)
   (b* ((__function__ 'defaggregate)
 
@@ -771,11 +781,14 @@ optimization altogether.</p>")
        ((mv kwd-alist field-specs)
         (extract-keywords ctx *da-valid-keywords* main-stuff nil))
 
+       (extra-field-keywords (cdr (assoc :extra-field-keywords kwd-alist)))
        ((unless (consp field-specs))
         (mv (raise "~x0: No fields given." name) state))
        ((unless (tuplep 1 field-specs))
         (mv (raise "~x0: Too many field specifiers: ~x1" name field-specs) state))
-       (efields     (parse-formals ctx (car field-specs) '(:rule-classes :default)))
+       (efields     (parse-formals ctx (car field-specs)
+                                   (append '(:rule-classes :default)
+                                           extra-field-keywords)))
        (field-names (formallist->names efields))
        (field-defaults (formallist->defaults efields))
        ((unless (no-duplicatesp field-names))
@@ -854,6 +867,7 @@ optimization altogether.</p>")
 
        (event
         `(progn
+           (set-inhibit-warnings "theory") ;; implicitly local
            (da-extend-agginfo-table ',agginfo)
            ,@doc-events
 
@@ -871,7 +885,6 @@ optimization altogether.</p>")
            ,@(and
               (eq mode :logic)
               `(
-
                 ;; (defthm ,(intern-in-package-of-symbol
                 ;;           (concatenate 'string (symbol-name make-foo) "-UNDER-IFF")
                 ;;           name)
@@ -961,8 +974,17 @@ optimization altogether.</p>")
            ,(da-make-honsed-maker-fn name field-names field-defaults)
            ,(da-make-honsed-maker name field-names)
 
-           . ,other-events)))
-    (mv event state)))
+           (with-output :stack :pop
+             (progn . ,other-events))
+
+           (value-triple '(defaggregate ,name)))))
+    (mv `(with-output
+           :stack :push
+           :gag-mode t
+           :off (acl2::summary acl2::observation acl2::prove acl2::proof-tree
+                               acl2::event)
+           ,event)
+        state)))
 
 (defmacro defaggregate (name &rest args)
   `(make-event

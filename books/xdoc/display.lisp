@@ -22,6 +22,7 @@
 (include-book "save")
 (include-book "parse-xml")
 (include-book "spellcheck")
+(include-book "word-wrap")
 (set-state-ok t)
 (program)
 
@@ -38,27 +39,6 @@
 ; command incurs a ttag by loading the defxdoc-raw book.  Of course, this is
 ; typically not a problem since you only use :xdoc in interactive sessions, and
 ; not while certifying books.
-
-
-; NORMALIZE-WHITESPACE canonicalizes whitespace so that any adjacent whitespace
-; characters are merged into a single space.
-
-(defun normalize-whitespace-aux (x n xl acc)
-  (b* (((when (>= n xl))
-        acc)
-       (char-n (char x n))
-       ((when (member char-n '(#\Space #\Tab #\Page #\Newline)))
-        (normalize-whitespace-aux
-         x (+ n 1) xl
-         (if (and (< (+ n 1) xl)
-                  (member (char x (+ n 1)) '(#\Space #\Tab #\Page #\Newline)))
-             acc
-           (cons #\Space acc)))))
-    (normalize-whitespace-aux x (+ n 1) xl (cons char-n acc))))
-
-(defun normalize-whitespace (x)
-  (declare (type string x))
-  (str::rchars-to-string (normalize-whitespace-aux x 0 (length x) nil)))
 
 
 
@@ -129,57 +109,6 @@
        (merged-tok (list :TEXT (str::cat (texttok-text (car acc))
                                          (texttok-text tok1)))))
     (merge-text rest (cons merged-tok (cdr acc)) codes)))
-
-
-
-; (WORD-WRAP-PARAGRAPH X INDENT WRAP-COL) reformats the string X, trying to
-; word wrap to WRAP-COL and indenting each subsequent line to INDENT.  We
-; assume that indent-many characters have already been printed, so the first
-; line is not indented.
-
-(defun add-word-to-paragraph (x n xl col acc)
-  "Returns (MV N COL ACC)"
-  (b* (((when (>= n xl))
-        (mv n col acc))
-       (char-n (char x n))
-       ((when (eql char-n #\Space))
-        (mv n col acc)))
-    (add-word-to-paragraph x (+ n 1) xl (+ 1 col) (cons char-n acc))))
-
-(defun remove-spaces-from-front (x)
-  (if (atom x)
-      x
-    (if (eql (car x) #\Space)
-        (remove-spaces-from-front (cdr x))
-      x)))
-
-(defun word-wrap-paragraph-aux (x n xl col wrap-col indent acc)
-  (b* (((when (>= n xl))
-        acc)
-       (char-n (char x n))
-       ((when (eql char-n #\Space))
-        (word-wrap-paragraph-aux x (+ n 1) xl (+ col 1)
-                                 wrap-col indent (cons char-n acc)))
-       ((mv spec-n spec-col spec-acc)
-        (add-word-to-paragraph x n xl col acc))
-       ((when (or (< spec-col wrap-col)
-                  (= col indent)))
-        ;; Either (1) it fits, or (2) we can't get any more space by moving to
-        ;; the next line anyway, so accept this speculative addition.
-        (word-wrap-paragraph-aux x spec-n xl spec-col wrap-col indent spec-acc))
-       ;; Else, try again, starting on the next line.
-       (acc (remove-spaces-from-front acc)) ;; deletes trailing spaces on this line
-       (acc (cons #\Newline acc))
-       (acc (append (make-list indent :initial-element #\Space) acc)))
-    (word-wrap-paragraph-aux x n xl indent wrap-col indent acc)))
-
-(defun word-wrap-paragraph (x indent wrap-col)
-  (let* ((acc (word-wrap-paragraph-aux x 0 (length x) 0 wrap-col indent nil))
-         (acc (remove-spaces-from-front acc))
-         (acc (reverse acc))
-         (acc (remove-spaces-from-front acc)))
-    (coerce acc 'string)))
-
 
 
 (defun has-tag-above (tag open-tags)
