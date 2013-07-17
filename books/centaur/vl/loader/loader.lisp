@@ -295,7 +295,7 @@ warning that maybe something is amiss with file loading.</p>")
   :returns (mv (merged   (vl-modulelist-p merged) :hyp :fguard)
                (modalist (equal modalist (vl-modalist merged)) :hyp :fguard)
                (walist   vl-modwarningalist-p :hyp :fguard))
-  :parents (vl-load)
+  :parents (loader)
   :short "Merge newly found Verilog modules with previously loaded modules,
 warning about multiply defined modules."
 
@@ -342,7 +342,7 @@ name clashes, the previous definition wins, and we add a warning to the
                       state)
   :returns (mv (st    vl-loadstate-p :hyp :fguard)
                (state state-p1       :hyp (force (state-p1 state))))
-  :parents (vl-load)
+  :parents (loader)
   :short "Main function for loading a single Verilog file."
 
   :long "<p>Even loading a single file is a multi-step process:</p>
@@ -504,7 +504,7 @@ our internal representation of Verilog.</li>
                        state)
   :returns (mv (st       vl-loadstate-p :hyp :fguard)
                (state    state-p1       :hyp (force (state-p1 state))))
-  :parents (vl-load)
+  :parents (loader)
   :short "Load a list of files."
   (b* (((when (atom filenames))
         (mv st state))
@@ -518,7 +518,7 @@ our internal representation of Verilog.</li>
                         state)
   :returns (mv (st    vl-loadstate-p :hyp :fguard)
                (state state-p1       :hyp (force (state-p1 state))))
-  :parents (vl-load)
+  :parents (loader)
   :short "Try to load a module from the search path."
 
   (b* (((vl-loadstate st) st)
@@ -545,7 +545,7 @@ our internal representation of Verilog.</li>
                          state)
   :returns (mv (st    vl-loadstate-p :hyp :fguard)
                (state state-p1       :hyp (force (state-p1 state))))
-  :parents (vl-load)
+  :parents (loader)
   :short "Extend @(see vl-load-module) to try to load a list of modules."
 
   (b* (((when (atom modnames))
@@ -557,7 +557,7 @@ our internal representation of Verilog.</li>
 
 (define vl-modules-left-to-load ((st vl-loadstate-p))
   :returns (names string-listp :hyp :fguard)
-  :parents (vl-load)
+  :parents (loader)
   :short "Determine which modules we still need to load."
 
   :long "<p>For loading to be completely done, we want to have:</p>
@@ -598,7 +598,7 @@ up searching for.</p>"
   :returns (mv (st    vl-loadstate-p :hyp :fguard)
                (state state-p1       :hyp (force (state-p1 state))
                       :hints(("Goal" :in-theory (disable (force))))))
-  :parents (vl-load)
+  :parents (loader)
   :short "Attempt to find and load any missing modules."
 
   :long "<p>After some initial files have been loaded, it is generally
@@ -705,7 +705,7 @@ look for new modules.</p>"
                       state)
   :returns (mv (result vl-loadresult-p :hyp :fguard)
                (state  state-p1        :hyp (force (state-p1 state))))
-  :parents (vl-load)
+  :parents (loader)
   :short "Top level interface for loading Verilog sources."
 
   (b* ((config
@@ -784,7 +784,7 @@ look for new modules.</p>"
 
 
 (defsection vl-load-summary
-  :parents (vl-load)
+  :parents (loader)
   :short "Print summary information (e.g., warnings, numbers of modules loaded,
 etc.) after modules have been loaded."
 

@@ -64,6 +64,7 @@
                         (append ',slurped-docs (xdoc::get-xdoc-table acl2::world))))))
 
 (defxdoc osets
+  :parents (std)
   :short "ACL2 Ordered Sets Library."
 
   :long "<p>This is a finite set theory implementation for ACL2 based on fully

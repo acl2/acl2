@@ -34,7 +34,9 @@
 ; BOZO consider using defprojection throughout?
 
 (defxdoc aig
-  :short "Centaur AIG Library"
+  :parents (boolean-reasoning)
+  :short "A @(see hons)-based And-Inverter Graph (AIG) representation for
+Boolean functions."
 
   :long "<p><b>AIGs</b> (And/Inverter Graphs) are a representation of Boolean
 functions, using only <i>and</i> and <i>not</i> operations.</p>
@@ -949,7 +951,9 @@ ordinary (slow) alist as a result.</p>"
 ; [Jared] it would be nice to move the FAIG stuff out into a separate file.
 
 (defxdoc faig
-  :short "A representation of a four-valued function using two AIGs."
+  :parents (boolean-reasoning)
+  :short "A @(see hons)-based representation of four-valued functions as
+pairs of @(see aig)s."
 
   :long "<p>A <b>FAIG</b> (Four-valued AIG) combines two @(see aig)s together
 to represent a function with four possible values.  Such functions can be

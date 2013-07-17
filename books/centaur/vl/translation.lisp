@@ -73,7 +73,7 @@ defmodules) command.</p>")
 
 (define vl-translation-has-module ((modname stringp)
                                    (x       vl-translation-p))
-  :parents (translation-p)
+  :parents (vl-translation-p)
   :short "Check whether a module was successfully translated."
 
   :long "<p>The @('modname') should be the desired module's name as a string,

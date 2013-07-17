@@ -31,7 +31,9 @@
 (include-book "extra-defs")
 
 (defxdoc bitops
-  :short "Centaur Bitops Library"
+  :parents (arithmetic)
+  :short "The Centaur Bitops Library is a successor to @(see ihs); it is a
+comprehensive library geared towards bit-vector arithmetic."
 
   :long "<p>We provide:</p>
 

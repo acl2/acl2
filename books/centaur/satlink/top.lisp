@@ -32,10 +32,11 @@
 (local (include-book "std/lists/nthcdr" :dir :system))
 
 (defxdoc satlink
-  :short "A way to call SAT solvers from within ACL2, and trust what they say."
+  :parents (acl2::boolean-reasoning)
+  :short "A library for calling SAT solvers from within ACL2 and trusting what
+they say."
 
-  :long "<p>SATLINK is a basic connection to SAT solvers from within ACL2.  At
-a high level, it provides:</p>
+  :long "<p>At a high level, Satlink provides:</p>
 
 <ul>
 

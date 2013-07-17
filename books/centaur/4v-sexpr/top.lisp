@@ -47,7 +47,9 @@
 
 
 (defxdoc 4v
-  :short "Centaur four-valued logic library."
+  :parents (boolean-reasoning)
+  :short "An s-expression based representation of four-valued functions, using
+@(see hons) for structure sharing."
 
   :long "<p>This library defines the logic of the @(see esim) symbolic
 simulator.  By \"four-valued\", we mean that each wire can take one of the four

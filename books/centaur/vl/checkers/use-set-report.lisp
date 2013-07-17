@@ -98,7 +98,7 @@
 (define vl-star-names-of-warning-wires ((x             string-listp)
                                         (warning-wires string-listp))
   :returns (new-x string-listp :hyp (force (string-listp x)))
-  :parents (useset)
+  :parents (use-set)
   :short "Change names in @('x') by putting a @('*') in front of any name that
 is among the @('warning-wires')."
   (cond ((atom x)

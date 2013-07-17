@@ -42,14 +42,15 @@ but please be aware that things may change out from under you.</p>
 
 <p>So far, @('std') itself includes libraries about
    <see topic='@(url std/lists)'>lists</see>,
+   <see topic='@(url osets)'>sets</see>,
    <see topic='@(url std/alists)'>alists</see>,
    <see topic='@(url std/typed-lists)'>typed-lists</see>, and
    <see topic='@(url std/io)'>input/output</see>.
 Each of these libraries provides many lemmas for reasoning about built-in
 ACL2 functions, and also many additional functions.</p>
 
-<p>The @('Std') books already play well with libraries such as @(see osets),
-@(see str), and @(see cutil).  We are working to further integrate these
-libraries, and may soon incorporate some of them into @(see std), itself.</p>")
+<p>The @('Std') books also play well with libraries like @(see str), and @(see
+cutil).  We are working to further integrate these libraries, and may soon
+incorporate some of them into @(see std), itself.</p>")
 
 

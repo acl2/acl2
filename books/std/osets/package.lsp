@@ -48,7 +48,9 @@
                def-ruleset!
                add-to-ruleset
                ;; To make Sets::Osets print as just Osets in the XDOC index
-               osets)
+               osets
+               ;; For similar nice-documentation reasons
+               std)
              *acl2-exports*
              *common-lisp-symbols-from-main-lisp-package*)
 

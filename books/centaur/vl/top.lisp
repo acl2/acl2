@@ -98,6 +98,7 @@
 
 
 (defxdoc vl
+  :parents (hardware-verification)
   :short "VL Verilog Toolkit."
   :long "<box><p><b>Note</b>: this documentation is mainly a reference manual.
 If you are new to VL, please see @(see getting-started) first.</p></box>")
