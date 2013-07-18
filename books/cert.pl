@@ -55,7 +55,9 @@ use Getopt::Long qw(:config bundling_override);
 (do "$RealBin/paths.pl") or die ("Error loading $RealBin/paths.pl:\n!: $!\n\@: $@\n");
 
 my %reqparams = ("hons-only" => "HONS_ONLY",
-                 "uses-glucose" => "USES_GLUCOSE");
+		 "uses-glucose" => "USES_GLUCOSE",
+		 "uses-quicklisp" => "USES_QUICKLISP",
+    );
 
 # use lib "/usr/lib64/perl5/5.8.8/x86_64-linux-thread-multi/Devel";
 # use Devel::DProf;

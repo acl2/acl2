@@ -23,4 +23,4 @@
 (ld "vl/package.lsp")
 (ld "gl/package.lsp")
 ; cert-flags: ? t :ttags :all :skip-proofs-okp t
-(certify-book "doc" ? t :ttags :all :skip-proofs-okp t)
+

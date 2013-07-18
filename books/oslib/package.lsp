@@ -40,7 +40,9 @@
                defsection
                defsection-progn
                live-state-p
-               oslib))
+               oslib
+               value
+               msg))
    '(delete union)))
 
 (assign acl2::verbose-theory-warning nil)

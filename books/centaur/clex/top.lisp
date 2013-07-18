@@ -24,6 +24,7 @@
 (include-book "str/natstr" :dir :system)
 
 (defsection clex
+  :parents (acl2::interfacing-tools)
   :short "<b>C</b>entaur <b>Lex</b>er Library."
 
   :long "<p>This is a rudimentary library for creating lexers for character

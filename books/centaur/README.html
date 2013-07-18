@@ -73,7 +73,7 @@ design <a href="http://www.via.com.tw/en/products/processors/">x86
 processors</a> for our parent company, <a href="http://www.via.com.tw/">VIA
 Technologies</a>.  We have used these books to prove correctness properties of
 several execution units, and to develop other tools such as an equivalence
-checker, a linter, etc.
+checker, a linter, etc.</p>
 
 
 <h3>Prerequisites</h3>
@@ -86,23 +86,26 @@ often need to extend them.</p>
 
 <dt>Recommended Hardware</dt>
 
-<dd>You probably want at least a <b>dual-core</b> machine with <b>8 GB</b> of
-memory.</dd>
+<dd>You will at least want a fast <b>dual-core</b> machine with <b>8 GB</b> of
+memory.  Having additional cores is very useful for quickly re-certifying books
+in parallel, but careful here: with more cores you'll need even more memory to
+avoid swapping death.  A good target might be at least
+<b>4 GB per core</b>.</dd>
 
-<dd>You might even want more memory than this.  Having ample memory is
-especially important when you want to carry out proofs using BDDs.  Many of our
-real hardware proofs are made faster (or possible) by having 32 or more GB of
-memory.  Even things like our Verilog parser are written in a memory-hungry way
-because that's just the kind of environment we work in.</dd>
-
-<dd>Having additional cores is very useful for certifying books in parallel.</dd>
+<dd>We used to recommend even more memory than this.  Ample memory was
+especially important when we carried out large proofs using BDDs, but these
+days we often use SAT instead, and SAT is far less memory intensive.  Even so,
+today many of our real hardware proofs are made faster (or possible) by having
+32 or more GB of memory.  Also, many of our tools, e.g., our Verilog parser,
+are written in a memory-hungry way because that's just the kind of environment
+we work in.</dd>
 
 
 <dt>Recommended Operating System</dt>
 
-<dd>We use <b>64-bit Linux</b>.  It might be possible to use Darwin or BSD or
-other unixes instead, but Linux is the main platform.  You will need the
-typical tools like perl, make, etc.</dd>
+<dd>We use <b>64-bit Linux</b>.  Other unix derivatives like Darwin, FreeBSD,
+etc., might work reasonably well, but Linux is our main platform.  Windows
+probably won't work.  You will need ordinary tools like perl, make, etc.</dd>
 
 
 <dt>Clozure Common Lisp Configuration</dt>
@@ -112,9 +115,10 @@ Other Lisps probably won't work.</dd>
 
 <dd>We usually use a fairly recent SVN snapshot.</dd>
 
-<dd>We use <a href="ccl-config.lsp">ccl-config.lsp</a> to do some extra
-configuration that increases the stack sizes and tunes the garbage
-collector for better performance.</dd>
+<dd><b style="color: #ff0000;">CCL Configuration before building ACL2:</b> We
+use <a href="ccl-config.lsp">ccl-config.lsp</a> to do some extra configuration
+that increases the stack sizes and tunes the garbage collector for better
+performance.</dd>
 
 <dd>We configure our <tt>PATH</tt> so that we can launch CCL by
 typing <tt>ccl</tt>.</dd>
@@ -131,7 +135,7 @@ enabled.  The recommended way to build is with:</dd>
 <dd>Using a large <tt>ACL2_SIZE</tT> can help avoid performance problems due to
 filling up the ACL2 package with too many symbols.</dd>
 
-<dd>We generally configure our <tt>PATH</tt> so that we can launch ACL2(h) by
+<dd>We configure our <tt>PATH</tt> so that we can launch ACL2(h) by
 typing <tt>acl2</tt>.</dd>
 
 
@@ -143,7 +147,7 @@ your <tt>PATH</tt> so you can invoke it by just typing <tt>cert.pl</tt>.</dd>
 
 
 
-<dt>GTKWave Configuration (Optional)</dt>
+<dt>(Optional) GTKWave Configuration</dt>
 
 <dd>We often use <a href="http://gtkwave.sourceforge.net/">GTKWave</a> for
 debugging waveforms.  Other VCD file viewers may also work.</dd>
@@ -151,30 +155,45 @@ debugging waveforms.  Other VCD file viewers may also work.</dd>
 <dd>We configure our <tt>PATH</tt> so that we can run GTKWave by
 typing <tt>gtkwave</tt>.</dd>
 
+
+<dt>(Optional) Glucose Configuration</dt>
+
+<dd>We often use the <a href="http://www.lri.fr/~simon/?page=glucose">Glucose</a>
+Sat Solver.</dd>
+
+<dd>We configure out <tt>PATH</tt> so that we can run Glucose (sometimes called
+<tt>glucose.sh</tt>) by typing <tt>glucose</tt>.</dd>
+
+
+<dt>(Optional) Lingeling Configuration</dt>
+
+<dd>We sometimes use the <a href="http://fmv.jku.at/lingeling/">Lingeling</a>
+Sat Solver.</dd>
+
+<dd>We configure our path so that we can run the Lingeling executable by
+typing <tt>lingeling</tt>.</dd>
+
 </dl>
 
 
-<h3>Building the Centaur Books</h3>
+<h3>Building the Books</h3>
 
-<p>Once you have all the above prerequisites, you will be ready to certify the
-Centaur books.  There are two steps:</p>
-
-<p>1. Build the Quicklisp book.  This is special because it has to go download
-Quicklisp and run its setup.</p>
+<p>Once you have the above prerequisites, you will be ready to certify the ACL2
+books.  The preferred command to do this is:</p>
 
 <pre>
-cd [...]/acl2/books/centaur/quicklisp
-make
+cd [...]/acl2/books
+make USE_QUICKLISP=1 -j 4    # -j 4 for a quad-core processor
 </pre>
 
-<p>2. Build the rest of the books and all available documentation:</p>
+<p>The USE_QUICKLISP=1 instructs <tt>make</tt> to download and install
+<a href="http://www.quicklisp.org">Quicklisp</a>, which is sort of a Common
+Lisp equivalent to CPAN for Perl, RubyGems for Ruby, etc.  This is necessary
+for certain books.</p>
 
-<pre>
-cd [...]/acl2/books/centaur
-cert.pl doc.lisp -j 4           # -j 4 for a quad-core processor
-</pre>
-
-<p>Depending on your hardware this may take ten minutes up to hours.</p>
+<p>Depending on your hardware this may take ten minutes up to hours.  For
+reference, it takes about an hour on an 8-core AMD-FX8350 with 32 GB of memory
+running FreeBSD.</p>
 
 
 <h3>Next Steps</h3>
@@ -186,9 +205,10 @@ use, e.g., str, osets, ihs, etc.</p>
 
 <p>To view the manual, point your web browser
 at <a href="manual/preview.html">books/centaur/manual/preview.html</a>.  (Note:
-this will be a broken link until you generate the manual.)  You can also build
-an HTML version of the manual that may render faster, see the documentation for
-XDOC for more information.</p>
+this will be a broken link until you generate the manual, and the preview page
+often does not render in Google Chrome, so you may want to use Firefox.)  You
+can also build an HTML version of the manual that may render faster (and works
+in Chrome), see the documentation for XDOC for more information.</p>
 
 <p>There is also a very preliminary <b>tutorial</b> that walks through the
 verification of a trivial ALU module.  To get started, see:</p>
@@ -209,7 +229,7 @@ time.</p>
 
 <h3>License Information</h3>
 
-<p>Copyright &copy; 2008-2012 Centaur Technology and others
+<p>Copyright &copy; 2008-2013 Centaur Technology and others
 (see <b style="color: #009000">**</b>)</p>
 
 <dl>

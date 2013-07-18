@@ -9,6 +9,7 @@
 (include-book "xdoc/top" :dir :system)
 
 (defxdoc with-timeout
+  :parents (testing)
   :short "Evaluate form with a timeout (in seconds)"
   :long "Evaluate form with a timeout in seconds. The syntax of
   this macro is (with-timeout <i>duration</i> <i>body</i>

@@ -814,6 +814,7 @@ not introduce a new local scope, but a @('defsection') does.</p>")
 
 
 (defxdoc undocumented
+  :parents (xdoc)
   :short "Placeholder for undocumented topics.")
 
 

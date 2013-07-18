@@ -26,6 +26,7 @@
 ; (depends-on "bridge-raw.lsp")
 
 (defxdoc bridge
+  :parents (acl2::interfacing-tools)
   :short "Connects ACL2 and the outside world."
 
   :long "<p>The ACL2 Bridge is a general mechanism for allowing other

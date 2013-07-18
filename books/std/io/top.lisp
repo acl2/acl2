@@ -27,7 +27,7 @@
 
 
 (defxdoc std/io
-  :parents (std io)
+  :parents (std io interfacing-tools)
   :short "A library for reasoning about file input/output operations."
 
   :long "<h3>Introduction</h3>

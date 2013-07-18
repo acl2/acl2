@@ -31,7 +31,7 @@ use File::Spec;
 use Storable qw(nstore retrieve);
 use Cwd 'abs_path';
 
-my $cache_version_code = 4;
+my $cache_version_code = 5;
 
 # Note: for debugging you can enable this use and then print an error message
 # using

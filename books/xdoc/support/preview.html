@@ -28,7 +28,7 @@ function getPageParameters ()
 }
 
 var params = getPageParameters();
-var topic = params["topic"];
+var topic = params["topic"] || "ACL2____TOP";
 var url = topic ? ("xml/" + topic + ".xml") : "xml/index.xml";
 
 document.write("<frameset cols='20%,*' border='3' bordercolor='black'>\n");

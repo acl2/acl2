@@ -57,12 +57,11 @@
 ; (certify-book "expander").
 
 (in-package "ACL2")
-(include-book "doc-section")
 
 ; The following deflabel is placed here primarily to provide a section in which
 ; to hang documentation.
 (deflabel expander :doc
- ":Doc-Section misc
+ ":Doc-Section miscellaneous
 
   routines for simplifying terms~/
 

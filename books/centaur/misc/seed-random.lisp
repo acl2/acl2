@@ -26,7 +26,7 @@
   nil)
 
 (defmacro seed-random$ (name &key (freshp 't))
-  ":Doc-Section Programming
+  ":Doc-Section random$
 Influence the random numbers produced by ~ilc[random$]~/
 
 General form:

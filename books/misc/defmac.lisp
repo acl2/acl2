@@ -4,7 +4,6 @@
 ; 2/27/09
 
 (in-package "ACL2")
-(include-book "doc-section")
 
 ; See :doc defmac for information.
 
@@ -67,7 +66,7 @@
 
 ; The documentation below borrows heavily from :doc defmacro.
 
-  ":Doc-Section misc
+  ":Doc-Section defmacro
 
   define a macro that expands efficiently~/
   ~bv[]

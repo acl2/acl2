@@ -31,7 +31,7 @@ function getPageParameters ()
 }
 
 var params = getPageParameters();
-var topic = params["topic"];
+var topic = params["topic"] || "ACL2____TOP";
 var url = topic ? ("html/" + topic + ".html") : "html/full-index.html";
 
 document.write("<frameset cols='20%,*' border='2' bordercolor='#000000'>\n");

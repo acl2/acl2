@@ -7,10 +7,9 @@
 ;; particular purpose.
 
 (in-package "ACL2")
-(include-book "doc-section")
 
 (defmacro definline (name formals &rest args)
-  ":Doc-Section misc
+  ":Doc-Section defun
   Alias for ~ilc[defun-inline]~/
   Examples:
   ~bv[]
@@ -28,7 +27,7 @@
   `(defun-inline ,name ,formals . ,args))
 
 (defmacro definlined (name formals &rest args)
-  ":Doc-Section misc
+  ":Doc-Section defun
   Alias for ~ilc[defund-inline]~/
   This is a ~il[defund]-like version of ~il[definline].~/~/"
   `(defund-inline ,name ,formals . ,args))

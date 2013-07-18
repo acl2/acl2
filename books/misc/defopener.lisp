@@ -3,7 +3,6 @@
 ; Thanks to Robert Krug for requesting this tool.
 
 (in-package "ACL2")
-(include-book "doc-section")
 (include-book "bash")
 
 (program)
@@ -366,7 +365,7 @@
                             name call
                             &key hyp equiv hints debug (flatten 't))
 
-  ":Doc-Section misc
+  ":Doc-Section miscellaneous
 
   create a defthm equating a call with its simplification~/
 

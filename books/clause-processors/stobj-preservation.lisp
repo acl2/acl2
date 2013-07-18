@@ -7,6 +7,7 @@
 
 
 (defxdoc preservation-thms
+  :parents (stobj)
   :short "Automation for proving that stobj-modifying functions preserve
 certain properties"
   :long "

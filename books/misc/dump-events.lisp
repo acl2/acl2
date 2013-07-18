@@ -25,15 +25,12 @@
 ; (certify-book "dump-events").
 
 (in-package "ACL2")
-(include-book "doc-section")
-
-; We know what we are doing when using state:
 (set-state-ok t)
 
 (program)
 
 (defmacro dump-events (filename &optional (earlier-cd '0) (later-cd ':x))
- ":Doc-Section misc
+ ":Doc-Section miscellaneous
 
   dump events to a file~/
 

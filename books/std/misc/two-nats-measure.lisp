@@ -21,7 +21,7 @@
 (include-book "xdoc/top" :dir :system)
 
 (defsection two-nats-measure
-  :parents (misc)
+  :parents (ordinals)
   :short "One of the simplest non-natural ordinal measures imaginable"
   :long "Two-nats-measure provides one of the simplest non-natural ordinal
    measures imaginable.  It is useful if one has a one count that is decreasing

@@ -100,6 +100,10 @@
 #   - ACL2_BOOK_DIRS
 #     Augments the targets with all targets that have a prefix among
 #     this list of strings.
+#   - USE_QUICKLISP
+#     Set this if you want to build Quicklisp (which is sort of like
+#     CPAN or RubyGems but for Lisp).  Required for certain books in
+#     oslib.
 
 # Jared Davis has summarized the improvements over the earlier
 # Makefile as follows.
@@ -238,6 +242,41 @@ STARTJOB ?= $(SHELL)
 .PHONY: all everything
 all:
 
+
+QUICKLISP_DIR=centaur/quicklisp
+
+ifneq ($(USE_QUICKLISP), )
+
+$(QUICKLISP_DIR)/quicklisp.lisp:
+	@echo "Downloading Quicklisp"
+	@cd $(QUICKLISP_DIR); curl -O http://beta.quicklisp.org/quicklisp.lisp
+	@ls -l $(QUICKLISP_DIR)/quicklisp.lisp
+
+$(QUICKLISP_DIR)/setup.lisp: $(QUICKLISP_DIR)/quicklisp.lisp \
+                             $(QUICKLISP_DIR)/install.lsp
+	@echo "Setting up Quicklisp"
+	@cd $(QUICKLISP_DIR); $(STARTJOB) -c "$(ACL2) < install.lsp &> install.out"
+	@ls -l $(QUICKLISP_DIR)/setup.lisp
+
+$(QUICKLISP_DIR)/top.cert: $(QUICKLISP_DIR)/setup.lisp \
+                           $(QUICKLISP_DIR)/cert.acl2 \
+                           tools/include-raw.cert
+
+.PHONY: quicklisp_clean
+
+quicklisp_clean:
+	@echo "Removing downloaded quicklisp files"
+	@cd $(QUICKLISP_DIR); rm -rf setup.lisp quicklisp.lisp asdf.lisp \
+          cache dists local-projects tmp install.out quicklisp Makefile-tmp
+
+all: $(QUICKLISP_DIR)/top.cert
+
+clean: quicklisp_clean
+
+endif # USE_QUICKLISP
+
+
+
 ##############################
 ### Section: Create auxiliary files (Makefile-xxx) and initial OK_CERTS
 ##############################
@@ -255,13 +294,11 @@ all:
 
 ifndef NO_RESCAN
 
-# In the following, we exclude centaur/quicklisp explicitly rather
-# than using the usual cert_pl_exclude file, because centaur/quicklisp
-# uses cert.pl to certify books.  We exclude centaur/quicklisp
-# explicitly since when we do want to make it, it will use cert.pl and
-# hence we can't put a cert_pl_exclude file in that directory.  Some
-# others we exclude because there are subdirectories and it's simply
-# easiest to stop at the root.
+# We exclude centaur/quicklisp explicitly, instead of using a cert_pl_exclude
+# file, because when people actually install Quicklisp packages, it ends up
+# having subdirectories that we don't know about ahead of time.  We exclude
+# some other directories because there are subdirectories and it's just easiest
+# to stop at the root.
 $(info Scanning for books...)
 REBUILD_MAKEFILE_BOOKS := $(shell \
   rm -f Makefile-books; \
@@ -318,23 +355,29 @@ $(info ACL2_HAS_REALS    := $(ACL2_HAS_REALS))
 $(info ACL2_COMP_EXT     := $(ACL2_COMP_EXT))
 $(info ACL2_HOST_LISP    := $(ACL2_HOST_LISP))
 $(info OS_HAS_GLUCOSE    := $(OS_HAS_GLUCOSE))
+$(info USE_QUICKLISP     := $(USE_QUICKLISP))
 $(info Done with features.)
 
 OK_CERTS := $(CERT_PL_CERTS)
 
 ifeq ($(ACL2_HAS_HONS), )
 
-# $(info Excluding books that depend on ACL2(h))
+$(info Excluding books that need ACL2(h) [...])
 OK_CERTS := $(filter-out $(CERT_PL_HONS_ONLY), $(OK_CERTS))
 
 endif # ifeq ($(ACL2_HAS_HONS), )
 
 ifeq ($(OS_HAS_GLUCOSE), )
 
-# $(info Excluding books that depend on the Glucose SAT-solver)
+$(info Excluding books that need Glucose: [$(CERT_PL_USES_GLUCOSE)])
 OK_CERTS := $(filter-out $(CERT_PL_USES_GLUCOSE), $(OK_CERTS))
 
 endif # ifeq ($(OS_HAS_GLUCOSE), )
+
+ifeq ($(USE_QUICKLISP), )
+$(info Excluding books that depend on Quicklisp: [$(CERT_PL_USES_QUICKLISP)])
+OK_CERTS := $(filter-out $(CERT_PL_USES_QUICKLISP), $(OK_CERTS))
+endif
 
 # SLOW_BOOKS are books that are too slow to include as part of an
 # ordinary regression.  There are currently comments in some of the
@@ -385,7 +428,7 @@ clean_books:
 clean: clean_books
 	@echo "Removing extra, explicitly temporary files."
 	rm -rf $(CLEAN_FILES_EXPLICIT)
-	for dir in centaur/quicklisp $(dir $(ACL2_CUSTOM_TARGETS)) ; \
+	for dir in $(dir $(ACL2_CUSTOM_TARGETS)) ; \
 	do \
 	if [ -d $$dir ] ; then \
 	(cd $$dir ; $(MAKE) clean) ; \

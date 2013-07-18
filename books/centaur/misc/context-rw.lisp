@@ -34,6 +34,7 @@
                            all-keys-bound)))
 
 (defxdoc contextual-rewriting
+  :parents (proof-automation)
   :short "A meta-rule system that lets the ACL2 rewriter pass around contextual
 information.  Similar to Dave Greve's NARY.  This extends ACL2's notion of
 congruence-based rewriting."
