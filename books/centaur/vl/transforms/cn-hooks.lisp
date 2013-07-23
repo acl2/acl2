@@ -54,47 +54,6 @@
 
 
 (encapsulate
-  (((vl-modulelist-drop-vcovers-hook *) => *
-    :formals (x)
-    :guard (vl-modulelist-p x)))
-
-  (local (defun vl-modulelist-drop-vcovers-hook (x) x))
-
-  (defthm vl-modulelist-p-of-vl-modulelist-drop-vcovers-hook
-    (implies (force (vl-modulelist-p x))
-             (vl-modulelist-p (vl-modulelist-drop-vcovers-hook x))))
-
-  (defthm vl-modulelist->names-of-vl-modulelist-drop-vcovers-hook
-    (equal (vl-modulelist->names (vl-modulelist-drop-vcovers-hook x))
-           (vl-modulelist->names x))))
-
-(defattach vl-modulelist-drop-vcovers-hook identity)
-
-
-
-
-(encapsulate
-  (((vl-modulelist-verrors-to-guarantees-hook *) => *
-    :formals (x)
-    :guard (vl-modulelist-p x)))
-
-  (local (defun vl-modulelist-verrors-to-guarantees-hook (x) x))
-
-  (defthm vl-modulelist-p-of-vl-modulelist-verrors-to-guarantees-hook
-    (implies (force (vl-modulelist-p x))
-             (vl-modulelist-p (vl-modulelist-verrors-to-guarantees-hook x))))
-
-  (defthm no-duplicatesp-equal-of-vl-modulelist->names-of-vl-modulelist-verrors-to-guarantees-hook
-    (implies (force (no-duplicatesp-equal (vl-modulelist->names x)))
-             (no-duplicatesp-equal
-              (vl-modulelist->names (vl-modulelist-verrors-to-guarantees-hook x))))))
-
-(defattach vl-modulelist-verrors-to-guarantees-hook identity)
-
-
-
-
-(encapsulate
   (((vl-modulelist-pre-toe-hook *) => *
     :formals (x)
     :guard (and (vl-modulelist-p x)
@@ -111,25 +70,5 @@
            (vl-modulelist->names x))))
 
 (defattach vl-modulelist-pre-toe-hook identity)
-
-
-
-;; (encapsulate
-;;   (((vl-modulelist-esim-trans-hook *) => *
-;;     :formals (x)
-;;     :guard (vl-modulelist-p x)))
-
-;;   (local (defun vl-modulelist-esim-trans-hook (x) x))
-
-;;   (defthm vl-modulelist-p-of-vl-modulelist-esim-trans-hook
-;;     (implies (force (vl-modulelist-p x))
-;;              (vl-modulelist-p (vl-modulelist-esim-trans-hook x))))
-
-;;   (defthm vl-modulelist->names-of-vl-modulelist-esim-trans-hook
-;;     (equal (vl-modulelist->names (vl-modulelist-esim-trans-hook x))
-;;            (vl-modulelist->names x))))
-
-;; (defattach vl-modulelist-esim-trans-hook identity)
-
 
 

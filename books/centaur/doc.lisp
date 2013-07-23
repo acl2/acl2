@@ -151,7 +151,7 @@
 ;; (include-book "vcd/vcd-impl")
 
 (include-book "vl/top")
-(include-book "vl/lint/lint")
+(include-book "vl/kit/top")
 (include-book "vl/mlib/clean-concats")
 (include-book "vl/mlib/atts")
 (include-book "vl/mlib/json")
@@ -368,7 +368,10 @@ functions.")
      (xdoc::change-parents quit (good-bye))
 
      (xdoc::change-parents |Pages Written Especially for the Tours| (acl2-tutorial))
+
      (xdoc::change-parents introduction-to-the-tau-system (tau-system))
+     (xdoc::change-parents tau-data (tau-system))
+     (xdoc::change-parents tau-database (tau-system))
 
      (xdoc::change-parents wof (io))
      (xdoc::change-parents serialize (io))

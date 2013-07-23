@@ -20,16 +20,29 @@
 
 (in-package "VL")
 
-(include-book "bit-use-set")
-(include-book "check-case")
-(include-book "check-namespace")
-(include-book "disconnected")
-(include-book "xf-drop-missing-submodules")
-(include-book "xf-drop-user-submodules")
-(include-book "xf-lint-stmt-rewrite")
-(include-book "xf-remove-toohard")
-(include-book "xf-undefined-names")
-(include-book "xf-suppress-warnings")
+(make-event
+
+; Disabling waterfall parallelism because this book allegedly uses memoization
+; while performing its proofs.
+
+ (if (and (ACL2::hons-enabledp state)
+          (f-get-global 'ACL2::parallel-execution-enabled state))
+     (er-progn (set-waterfall-parallelism nil)
+               (value '(value-triple nil)))
+   (value '(value-triple nil))))
+
+(include-book "../loader/loader")
+
+(include-book "../lint/bit-use-set")
+(include-book "../lint/check-case")
+(include-book "../lint/check-namespace")
+(include-book "../lint/disconnected")
+(include-book "../lint/xf-drop-missing-submodules")
+(include-book "../lint/xf-drop-user-submodules")
+(include-book "../lint/xf-lint-stmt-rewrite")
+(include-book "../lint/xf-remove-toohard")
+(include-book "../lint/xf-undefined-names")
+(include-book "../lint/xf-suppress-warnings")
 
 (include-book "../checkers/condcheck")
 (include-book "../checkers/duplicate-detect")
@@ -43,7 +56,6 @@
 (include-book "../checkers/selfassigns")
 (include-book "../checkers/skip-detect")
 
-(include-book "../loader/loader")
 (include-book "../transforms/cn-hooks")
 (include-book "../transforms/xf-argresolve")
 (include-book "../transforms/xf-array-indexing")
@@ -70,25 +82,138 @@
 (local (include-book "../util/arithmetic"))
 (local (include-book "../util/osets"))
 
-(make-event
-
-; Disabling waterfall parallelism because this book allegedly uses memoization
-; while performing its proofs.
-
- (if (and (ACL2::hons-enabledp state)
-          (f-get-global 'ACL2::parallel-execution-enabled state))
-     (er-progn (set-waterfall-parallelism nil)
-               (value '(value-triple nil)))
-   (value '(value-triple nil))))
+(include-book "centaur/getopt/top" :dir :system)
+(include-book "std/io/read-file-characters" :dir :system)
+(include-book "progutils")
 
 
 (defsection lint
   :parents (vl)
   :short "A linting tool for Verilog."
+
   :long "<p>A <a
 href='http://en.wikipedia.org/wiki/Lint_%28software%29'>linter</a> is a tool
 that looks for possible bugs in a program.  We now implement such a linter for
 Verilog, reusing much of @(see vl).</p>")
+
+
+(defoptions vl-lintconfig
+  :parents (lint)
+  :short "Command-line options for running @('vl lint')."
+  :tag :vl-lint-opts
+
+  ((start-files string-listp
+                "The list of files to process."
+                :hide t)
+
+   (help        booleanp
+                "Show a brief usage message and exit."
+                :rule-classes :type-prescription
+                :alias #\h)
+
+   (readme      booleanp
+                "Show a more elaborate README and exit."
+                :rule-classes :type-prescription)
+
+   (search-path string-listp
+                :longname "search"
+                :alias #\s
+                :argname "DIR"
+                "Control the search path for finding modules.  You can give
+                 this switch multiple times, to set up multiple search paths in
+                 priority order."
+                :parser getopt::parse-string
+                :merge acl2::rcons)
+
+   (search-exts string-listp
+                :longname "searchext"
+                :argname "EXT"
+                "Control the search extensions for finding modules.  You can
+                 give this switch multiple times.  By default we just look for
+                 files named \"foo.v\" in the --search directories.  But if you
+                 have Verilog files with different extensions, this won't work,
+                 so you can add these extensions here.  EXT should not include
+                 the period, e.g., use \"--searchext vv\" to consider files
+                 like \"foo.vv\", etc."
+                :parser getopt::parse-string
+                :merge acl2::rcons
+                :default '("v"))
+
+   (topmods    string-listp
+               :longname "topmod"
+               :argname "MOD"
+               "Limit the scope of the report to MOD.  By default we include
+                all warnings for any module we encounter.  But if you say
+                \"--topmod foo\", we suppress all warnings for modules that foo
+                does not depend on.  You can give this switch multiple times,
+                e.g., \"--topmod foo --topmod bar\" means: only show warnings
+                for foo, bar, and modules that they depend on."
+               :parser getopt::parse-string
+               :merge cons)
+
+   (quiet      string-listp
+               :alias #\q
+               :argname "MOD"
+               "Suppress all warnings that about MOD.  You can give this switch
+                multiple times, e.g., \"-q foo -q bar\" will hide the warnings
+                about modules foo and bar."
+               :parser getopt::parse-string
+               :merge cons)
+
+   (dropmods   string-listp
+               :longname "drop"
+               :alias #\d
+               :argname "MOD"
+               "Delete MOD from the module hierarchy before doing any linting
+                at all.  This is a gross (but effective) way to work through
+                any bugs in the linter that are triggered by certain modules.
+                The dropped modules are removed from the module list without
+                destroying modules above them.  This may occasionally lead to
+                false warnings about the modules above (e.g., it may think some
+                wires are unused, because the module that uses them has been
+                removed.)"
+               :parser getopt::parse-string
+               :merge cons)
+
+   (ignore     string-listp
+               :alias #\i
+               :argname "TYPE"
+               "Ignore warnings of this TYPE.  For instance, \"--ignore
+                oddexpr\" will suppress VL_WARN_ODDEXPR warnings.  Note that
+                there are much finer-grained ways to suppress warnings; see
+                \"vl lint --readme\" for more information."
+                :parser getopt::parse-string
+                :merge cons)
+
+   (mem         posp
+                :alias #\m
+                :argname "GB"
+                "How much memory to try to use.  Default: 4 GB.  Raising this
+                 may improve performance by avoiding garbage collection.  To
+                 avoid swapping, keep this below (physical_memory - 2 GB)."
+                :default 4
+                :rule-classes :type-prescription)
+
+   (debug       booleanp
+                "Print extra information for debugging."
+                :rule-classes :type-prescription)))
+
+(defsection *vl-lint-help*
+  :parents (lint)
+  :short "Usage message for vl lint."
+  :long "@(def *vl-lint-help*)"
+
+  (defconsts *vl-lint-help* (str::cat "
+vl lint:  A linting tool for Verilog.  Scans your Verilog files for things
+          that look like bugs (size mismatches, unused wires, etc.)
+
+Example:  vl lint engine.v wrapper.v core.v \\
+            --search ./simlibs \\
+            --search ./baselibs
+
+Usage:    vl lint [OPTIONS] file.v [file2.v ...]
+
+Options:" *nls* *nls* *vl-lintconfig-usage* *nls*)))
 
 
 (define vl-filter-mods-with-good-paramdecls
@@ -161,39 +286,6 @@ shown.</p>"
         (vl-println ""))))))
 
 
-(defaggregate vl-lintconfig
-  :parents (lint)
-  :short "Options for running the linter."
-  :tag :vl-lintconfig
-  ((loadconfig vl-loadconfig-p
-               "Configuration for @(see vl-load); says what files to load, what
-                search paths to use, etc.")
-
-   (topmods    string-listp
-               "This is a way to filter the report to exclude modules you do
-                not care about.  If @('nil'), no filtering is done and we
-                include warnings for every module.  Otherwise, we throw out any
-                modules that aren't necessary for some module in
-                @('topmods').")
-
-   (dropmods   string-listp
-               "This is a way to explicitly drop modules that are problematic
-                for whatever reason.  The dropped modules are removed from the
-                module list without destroying modules above them.  This is
-                obviously unsound, but can be useful.")
-
-   (ignore     string-listp
-               ;; BOZO xdoc for how this stuff works
-               "Ignore warnings of certain types, e.g., if this list includes
-                the string \"oddexpr\" then we will suppress warnings such as
-                @(':VL-WARN-ODDEXPR).  See @('xf-suppress-warnings.lisp') for
-                details.")
-
-   (quiet      string-listp
-               "Suppress all warnings that occur within modules of these
-                names.")
-
-   ))
 
 (defaggregate vl-lintresult
   :parents (lint)
@@ -409,34 +501,27 @@ shown.</p>"
                         :dalist dalist)))
 
 
-(define run-vl-lint
-  (&key (start-files string-listp)
-        (search-path string-listp)
-        (search-exts string-listp)
-        (topmods     string-listp)
-        (dropmods    string-listp)
-        (ignore      string-listp)
-        (quiet       string-listp)
-        (state       'state))
+(define run-vl-lint ((config vl-lintconfig-p) &key (state 'state))
   :returns (mv (res vl-lintresult-p :hyp :fguard)
                (state state-p1 :hyp (state-p1 state)))
   (b* ((- (cw "Starting VL-Lint~%"))
+       ((vl-lintconfig config) config)
+       (- (or (not config.debug)
+              (cw "Lint configuration: ~x0~%" config)))
+
        (loadconfig (make-vl-loadconfig
-                    :start-files   start-files
-                    :search-path   search-path
-                    :search-exts   search-exts))
-       (lintconfig (make-vl-lintconfig
-                    :loadconfig loadconfig
-                    :topmods    topmods
-                    :dropmods   dropmods
-                    :ignore     ignore
-                    :quiet      quiet))
+                    :start-files   config.start-files
+                    :search-path   config.search-path
+                    :search-exts   config.search-exts))
+       (- (or (not config.debug)
+              (cw "Load configuration: ~x0~%" loadconfig)))
+
        (- (cw "~%vl-lint: loading modules...~%"))
        ((mv loadres state) (cwtime (vl-load loadconfig)))
 
        (lintres
         (cwtime (run-vl-lint-main (vl-loadresult->mods loadres)
-                                  lintconfig))))
+                                  config))))
     (mv lintres state)))
 
 
@@ -467,17 +552,31 @@ shown.</p>"
                   (sd-problemlist-p (mv-nth 0 (sd-filter-problems x major minor))))
          (implies (and (sd-problemlist-p x)
                        (sd-problemlist-p minor))
-                  (sd-problemlist-p (mv-nth 1 (sd-filter-problems x major minor)))))))
+                  (sd-problemlist-p (mv-nth 1 (sd-filter-problems x major minor))))))
+
+  (defthm true-listp-sd-filter-problems
+    (and (implies (true-listp major)
+                  (true-listp (mv-nth 0 (sd-filter-problems x major minor))))
+         (implies (true-listp minor)
+                  (true-listp (mv-nth 1 (sd-filter-problems x major minor)))))))
 
 
 
+(defthm symbol-listp-of-vl-warninglist->types
+  (implies (force (vl-warninglist-p x))
+           (symbol-listp (vl-warninglist->types x)))
+  :hints(("Goal" :induct (len x))))
 
-(defund vl-modwarningalist-types (x)
-  (declare (xargs :guard (vl-modwarningalist-p x)))
+
+(define vl-modwarningalist-types ((x vl-modwarningalist-p))
   (if (atom x)
       nil
     (append (vl-warninglist->types (cdar x))
-            (vl-modwarningalist-types (cdr x)))))
+            (vl-modwarningalist-types (cdr x))))
+  ///
+  (defthm symbol-listp-of-vl-modwarningalist-types
+    (implies (force (vl-modwarningalist-p x))
+             (symbol-listp (vl-modwarningalist-types x)))))
 
 
 (defund vl-keep-from-modwarningalist (types x)
@@ -663,9 +762,11 @@ shown.</p>"
 
    ))
 
+(local (in-theory (disable sets::in sets::in-tail
+                           sets::difference sets::mergesort)))
+
 (defun vl-lint-report (lintresult state)
   (declare (xargs :guard (vl-lintresult-p lintresult)
-                  :mode :program
                   :stobjs state))
 
   (b* (((vl-lintresult lintresult) lintresult)
@@ -901,43 +1002,57 @@ wide addition instead of a 10-bit wide addition.")))
     state))
 
 
-(encapsulate
-  ()
-  (defttag vl-lint)
-  (remove-untouchable acl2::writes-okp nil))
+(defconsts (*vl-lint-readme* state)
+  (b* (((mv contents state) (acl2::read-file-characters "lint.readme" state))
+       ((when (stringp contents))
+        (raise contents)
+        (mv "" state)))
+    (mv (implode contents) state)))
 
-(defun vl-lint-report-wrapper (result state)
-  (declare (xargs :mode :program :stobjs state))
-  (vl-lint-report result state))
+(define vl-lint ((args string-listp) &key (state 'state))
+  :parents (kit lint)
+  :short "The @('vl lint') command."
 
-(defmacro vl-lint (&key start-files
-                        search-path
-                        (search-exts ''("v"))
-                        topmods
-                        dropmods
-                        ignore
-                        quiet
-                        ;; gross yucky thing; acl2-suppress defaults to all
-                        ;; ACL2 output, but for debugging use :acl2-suppress
-                        ;; nil to be able to see what is wrong.
-                        (acl2-suppress ':all))
-  `(with-output
-    :off ,(or acl2-suppress 'proof-tree)
-    (make-event
-     (b* (((mv & & state)
-           ;; For some reason we have to assign to this here, inside the
-           ;; make-event code, rather than ahead of time.
-           (assign acl2::writes-okp t))
-          ((mv result state)
-           (cwtime (run-vl-lint :start-files ,start-files
-                                :search-path ,search-path
-                                :search-exts ,search-exts
-                                :topmods ,topmods
-                                :dropmods ,dropmods
-                                :ignore ,ignore
-                                :quiet ,quiet)
-                   :name vl-lint))
-          (state
-           (cwtime (vl-lint-report-wrapper result state))))
-       (value `(defconst *lint-result* ',result))))))
+  (b* (((mv errmsg config start-files)
+        (parse-vl-lintconfig args))
+       ((when errmsg)
+        (die "~@0~%" errmsg)
+        state)
+       (config
+        (change-vl-lintconfig config
+                              :start-files start-files))
+       ((vl-lintconfig config) config)
+
+       (- (acl2::set-max-mem ;; newline to appease cert.pl
+           (* (expt 2 30) config.mem)))
+
+       ((when config.help)
+        (vl-cw-ps-seq (vl-print *vl-lint-help*))
+        (exit-ok)
+        state)
+
+       ((when config.readme)
+        (vl-cw-ps-seq (vl-print *vl-lint-readme*))
+        (exit-ok)
+        state)
+
+       (- (or (not config.debug)
+              (vl-cw-ps-seq
+               (vl-cw "Raw args: ~x0~%" args)
+               (vl-cw "Start-files: ~x0~%" start-files))))
+
+       ((unless (consp config.start-files))
+        (die "No files to process.")
+        state)
+
+       (state (must-be-regular-files! config.start-files))
+       (state (must-be-directories! config.search-path))
+
+       ((mv result state)
+        (cwtime (run-vl-lint config)
+                :name vl-lint))
+       (state
+        (cwtime (vl-lint-report result state))))
+    (exit-ok)
+    state))
 

@@ -1,5 +1,5 @@
 ; VL Verilog Toolkit
-; Copyright (C) 2008-2011 Centaur Technology
+; Copyright (C) 2008-2013 Centaur Technology
 ;
 ; Contact:
 ;   Centaur Technology Formal Verification Group
@@ -18,13 +18,32 @@
 ;
 ; Original author: Jared Davis <jared@centtech.com>
 
-(in-package "ACL2")
-(ld "package.lsp")
-(ld "data-structures/define-u-package.lsp" :dir :system)
-(ld "tools/flag-package.lsp" :dir :system)
-(ld "cowles/packages.lsp" :dir :system)
-(include-book "str/portcullis" :dir :system)
-(include-book "xdoc/portcullis" :dir :system)
-(include-book "centaur/getopt/portcullis" :dir :system)
-; cert-flags: ? t :ttags :all
+(in-package "VL")
+(include-book "progutils")
+(include-book "tools/include-raw" :dir :system)
+(include-book "cutil/define" :dir :system)
+; (depends-on "shell-raw.lsp")
+
+(defconst *vl-shell-help* "
+vl shell:  Starts an interactive VL command loop (for experts).
+
+Usage:     vl shell    (there are no options)
+
+VL is built atop the ACL2 theorem prover.  The VL shell gives you access to the
+ACL2 command loop, with all of the VL functions already built in.
+
+This is mainly useful for VL developers who want to debug problems or explore
+adding new functionality.
+
+")
+
+(define vl-shell ((argv string-listp) &key (state 'state))
+  :returns state
+  :ignore-ok t
+  (progn$ (die "Raw lisp definition not installed?")
+          state))
+
+
+(defttag :vl-shell)
+(acl2::include-raw "shell-raw.lsp")
 

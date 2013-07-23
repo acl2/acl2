@@ -24,6 +24,7 @@
 (include-book "../mlib/context")
 (include-book "../mlib/welltyped")
 (include-book "../mlib/lvalues")
+(local (include-book "clause-processors/autohide" :dir :system))
 (local (include-book "../util/arithmetic"))
 
 

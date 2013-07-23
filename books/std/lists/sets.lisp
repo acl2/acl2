@@ -23,6 +23,7 @@
 (include-book "equiv")
 (include-book "mfc-utils")
 (include-book "rev")
+(include-book "rcons")
 (include-book "flatten")
 
 (local (defthm equal-of-booleans-to-iff
@@ -606,4 +607,10 @@ about set equivalence.</p>"
 
   (defcong set-equiv set-equiv (flatten x) 1
     :hints(("Goal" :in-theory (enable set-equiv)))))
+
+
+(defthm rcons-under-set-equiv
+  (set-equiv (rcons a x)
+             (cons a x))
+  :hints(("Goal" :in-theory (enable rcons))))
 

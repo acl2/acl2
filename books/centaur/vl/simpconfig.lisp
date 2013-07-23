@@ -26,7 +26,11 @@
   :short "Options for how to simplify Verilog modules."
   :tag :vl-simpconfig
 
-  ((problem-mods string-listp
+  ((compress-p   booleanp
+                 "Hons the modules at various points.  This takes some time,
+                  but can produce smaller translation files.")
+
+   (problem-mods string-listp
                  "Names of modules that should thrown out, perhaps because they
                   cause some kind of problems."
                  :default nil)

@@ -186,11 +186,11 @@ You can probably easily imagine incorporating this into your program's
 @(see string-listp) into a @('myopts-p') structure.  The signature of
 @('parse-myopts') is:</p>
 
-<box><p>
-@('(parse-myopts args &key (init '*default-myopts*))')
-&nbsp; &nbsp; &rarr;
-@('(mv errmsg result extra)')
-</p></box>
+@({
+ (parse-myopts args &key (init '*default-myopts*))
+  -->
+ (mv errmsg result extra)
+})
 
 <p>The @('args') here are just a string list.  Normally, if you were writing a
 real command-line program with ACL2, you would normally get the @('args') to
@@ -430,6 +430,11 @@ argument.  That is, by default, we will produce usage messages like:</p>
                 ;;
                 ;; And so on, so you'd use :argnames like "PORT" and "FILE"
                 ;; The default is "ARG" unless it's a plain option.
+
+    :hide       ;; A hidden option.  This requires that there is no alias,
+                ;; usage message, argname, or any of that.  This is generally
+                ;; useful for options you're going to fill in yourself, like
+                ;; file names.
     ))
 
 (define formal->longname ((x formal-p))
@@ -546,14 +551,30 @@ argument.  That is, by default, we will produce usage messages like:</p>
         ""))
     "ARG"))
 
+(define formal->hiddenp ((x formal-p))
+  :parents (getopt)
+  :returns (longname stringp)
+  (b* (((formal x) x)
+       (hide (cdr (assoc :hide x.opts)))
+       ((when hide)
+        t))
+    nil))
 
+(define drop-hidden-options ((x formallist-p))
+  :returns (subset formallist-p)
+  (cond ((atom x)
+         nil)
+        ((formal->hiddenp (car x))
+         (drop-hidden-options (cdr x)))
+        (t
+         (cons (car x) (drop-hidden-options (cdr x))))))
 
 (define sanity-check-formals ((basename symbolp)
                               (x        formallist-p)
                               (world    plist-worldp))
   :parents (getopt)
   :short "Make sure longnames and aliases are unique, every field has a parser,
-and so forth."
+and so forth.  This only applies to visible options."
 
   (b* ((longnames (formallist->longnames x))
        ((unless (uniquep longnames))
@@ -1030,12 +1051,13 @@ and so forth."
 (define defoptions-fn ((info  cutil::agginfo-p)
                        (world plist-worldp))
   (b* (((cutil::agginfo info) info)
-       (- (sanity-check-formals info.name info.efields world))
+       (visible      (drop-hidden-options info.efields))
+       (- (sanity-check-formals info.name visible world))
        (foop         (cutil::da-recognizer-name info.name))
        (usage-const  (intern-in-package-of-symbol
                       (cat "*" (symbol-name info.name) "-USAGE*")
                       info.name))
-       (usage-msg    (make-usage info.efields world))
+       (usage-msg    (make-usage visible world))
        (usage-html   (b* ((acc (str::revappend-chars "<code>" nil))
                           (acc (xdoc::simple-html-encode-chars
                                 (explode usage-msg) acc))
@@ -1047,10 +1069,10 @@ and so forth."
                                    (str::strprefixp
                                     set-difference-equal))))
 
-           ,(make-parse-long info.name info.efields world)
-           ,(make-parse-short->long info.name info.efields)
+           ,(make-parse-long info.name visible world)
+           ,(make-parse-short->long info.name visible)
            ,(make-parse-bundle info.name)
-           ,(make-parse-aux info.name info.efields world)
+           ,(make-parse-aux info.name visible world)
            ,(make-parse info.name)
            (defsection ,usage-const
              :parents (,foop)

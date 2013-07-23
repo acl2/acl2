@@ -71,6 +71,7 @@
                repeat
                list-fix
                rev
+               rcons
                revappend-without-guard
                value
                two-nats-measure

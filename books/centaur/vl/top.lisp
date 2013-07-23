@@ -886,12 +886,14 @@ instances, supply elimination, dependency-order sorting, E translation."
   (defmvtypes vl-simplify-main (true-listp true-listp nil)))
 
 
+
 (define vl-simplify
   ((mods "parsed Verilog modules, typically from @(see vl-load)."
          (and (vl-modulelist-p mods)
               (uniquep (vl-modulelist->names mods))))
    (config "various options that govern how to simplify the modules."
            vl-simpconfig-p))
+  :guard-debug t
   :returns
   (mv (mods "modules that we simplified successfully"
             :hyp :fguard
@@ -906,7 +908,29 @@ instances, supply elimination, dependency-order sorting, E translation."
   :long "<p>This is a high-level routine that applies our @(see transforms) in
 a suitable order to simplify Verilog modules and to produce E modules.</p>"
 
-  (vl-simplify-main (vl-annotate-mods mods) config)
+  (mbe :logic
+       (b* (((mv mods failmods use-set-report)
+             (vl-simplify-main (vl-annotate-mods mods) config)))
+         (mv mods failmods use-set-report))
+       :exec
+       (b* (((vl-simpconfig config) config)
+            (mods (vl-annotate-mods mods))
+            (mods (if config.compress-p
+                      (cwtime (hons-copy mods)
+                              :name compress-annotated-mods)
+                    mods))
+            ((mv mods failmods use-set-report)
+             (vl-simplify-main mods config))
+            (mods (if config.compress-p
+                      (cwtime (hons-copy mods)
+                              :name compress-simplified-mods)
+                    mods))
+            (failmods (if config.compress-p
+                          (cwtime (hons-copy failmods)
+                                  :name compress-failed-mods)
+                        failmods)))
+         (vl-gc)
+         (mv mods failmods use-set-report)))
   ///
   (defmvtypes vl-simplify (true-listp true-listp nil)))
 
@@ -924,7 +948,12 @@ a suitable order to simplify Verilog modules and to produce E modules.</p>"
   (b* (((mv loadresult state)
         (cwtime (vl-load loadconfig)))
 
-       ((vl-loadresult loadresult) loadresult)
+       ((vl-loadresult loadresult)
+        (if (vl-simpconfig->compress-p simpconfig)
+            (cwtime (change-vl-loadresult
+                     loadresult :mods (hons-copy (vl-loadresult->mods loadresult)))
+                    :name compress-original-mods)
+          loadresult))
 
        ((mv mods failmods use-set-report)
         (cwtime (vl-simplify loadresult.mods simpconfig)))
@@ -950,6 +979,7 @@ a suitable order to simplify Verilog modules and to produce E modules.</p>"
 
        (result (make-vl-translation :mods          mods
                                     :failmods      failmods
+                                    :origmods      loadresult.mods
                                     :filemap       loadresult.filemap
                                     :defines       loadresult.defines
                                     :loadwarnings  loadresult.warnings

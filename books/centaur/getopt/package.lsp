@@ -40,6 +40,7 @@
               getopt
               assert!
               list-fix
+              rcons
               prefixp
               lnfix
               lifix
@@ -81,5 +82,6 @@
 (defpkg "GETOPT-DEMO"
   (union-eq *acl2-exports*
             *common-lisp-symbols-from-main-lisp-package*
-            getopt::*getopt-exports*))
+            getopt::*getopt-exports*
+            '(acl2::rcons)))
 

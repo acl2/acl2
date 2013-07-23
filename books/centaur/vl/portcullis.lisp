@@ -26,7 +26,6 @@
 
 (include-book "tools/safe-case" :dir :system)
 (include-book "xdoc/top" :dir :system)
-(include-book "clause-processors/autohide" :dir :system)
 (include-book "tools/rulesets" :dir :system)
 
 (defmacro VL::case (&rest args)

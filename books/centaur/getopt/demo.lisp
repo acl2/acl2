@@ -21,18 +21,7 @@
 (in-package "GETOPT-DEMO")
 (include-book "top")
 (include-book "str/top" :dir :system)
-
-(defund push-string (a x)
-  (declare (xargs :guard (and (stringp a)
-                              (string-listp x))))
-  (append x (list a)))
-
-(defthm string-listp-of-push-string
-  (implies (and (stringp a)
-                (string-listp x))
-           (string-listp (push-string a x)))
-  :hints(("Goal" :in-theory (enable push-string))))
-
+(local (include-book "std/typed-lists/string-listp" :dir :system))
 
 (defoptions demo
   :parents (getopt)
@@ -143,10 +132,18 @@ arguments given to ACL2.</li>
             ;; tell defoptions how to merge the results of the parser with the
             ;; previous value.  Using CONS would actually reverse the order of
             ;; the dirs, because the options are processed in order.  So we
-            ;; avoid that by writing push-string, to push the strings on the
-            ;; end.
-            :merge push-string)))
+            ;; avoid that by using rcons, to push the strings on the end.
+            :merge rcons)
 
+   (extra-stuff "Hidden option that the user never sees, but that is part of
+                 our aggregate."
+                :hide t)
+
+   (extra-stuff2 stringp
+                 "Hidden option that the user never sees, but that is part of
+                 our aggregate."
+                 :hide t
+                 :default "")))
 
 
 #||

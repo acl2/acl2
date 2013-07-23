@@ -18,13 +18,5 @@
 ;
 ; Original author: Jared Davis <jared@centtech.com>
 
-(in-package "ACL2")
-(ld "package.lsp")
-(ld "data-structures/define-u-package.lsp" :dir :system)
-(ld "tools/flag-package.lsp" :dir :system)
-(ld "cowles/packages.lsp" :dir :system)
-(include-book "str/portcullis" :dir :system)
-(include-book "xdoc/portcullis" :dir :system)
-(include-book "centaur/getopt/portcullis" :dir :system)
-; cert-flags: ? t :ttags :all
-
+(ld "../acl2-customization.lsp")
+(in-package "VL")

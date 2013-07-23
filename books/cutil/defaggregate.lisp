@@ -30,6 +30,7 @@
 (include-book "xdoc/names" :dir :system)
 (include-book "str/cat" :dir :system)
 (set-state-ok t)
+
 (program)
 
 (def-ruleset tag-reasoning nil)
@@ -614,7 +615,11 @@ optimization altogether.</p>")
        (implies (force (,(da-recognizer-name name) ,(da-x name)))
                 ,(ACL2::sublis map (second require)))
        :rule-classes ,rule-classes
-       :hints(("Goal" :in-theory (enable ,(da-recognizer-name name) ,@accnames))))))
+       :hints(("Goal"
+               :in-theory
+               (union-theories
+                '(,(da-recognizer-name name) . ,accnames)
+                (theory 'defaggregate-basic-theory)))))))
 
 (defun da-make-requirements-of-recognizer-aux (name require map accnames)
   (if (consp require)
@@ -767,6 +772,7 @@ optimization altogether.</p>")
     (cons (formal->default (car x))
           (formallist->defaults (cdr x)))))
 
+
 #!CUTIL
 (defun defaggregate-fn (name rest state)
   (b* ((__function__ 'defaggregate)
@@ -865,8 +871,20 @@ optimization altogether.</p>")
                               :fields  field-names
                               :efields efields))
 
+       (booleanp-of-foop (intern-in-package-of-symbol
+                          (concatenate 'string "BOOLEANP-OF-" (symbol-name foop))
+                          name))
+
        (event
         `(progn
+
+; Note: the theory stuff here a bit ugly for performance.  Using progn instead
+; of encapsulate means we don't have a local scope to work with.  Just using
+; encapsulate instead slowed down vl/parsetree by 4 seconds, and when I added
+; ordinary, local theory forms, it slowed down the book from 40 seconds to 70
+; seconds!  So that was pretty horrible.  At any rate, the union-theory stuff
+; here is ugly, but at least it's fast.
+
            (set-inhibit-warnings "theory") ;; implicitly local
            (da-extend-agginfo-table ',agginfo)
            ,@doc-events
@@ -900,23 +918,25 @@ optimization altogether.</p>")
                   :rule-classes :type-prescription
                   :hints(("Goal" :in-theory (enable ,make-foo))))
 
-                (defthm ,(intern-in-package-of-symbol
-                          (concatenate 'string "BOOLEANP-OF-" (symbol-name foop))
-                          name)
+                (defthm ,booleanp-of-foop
                   (booleanp (,foop ,x))
                   :rule-classes :type-prescription
                   :hints(("Goal" :in-theory (enable ,foop))))
 
-                ,(if (consp require)
-                     `(defthm ,foop-of-make-foo
-                        (implies (force (and ,@(strip-cadrs require)))
+                (defthm ,foop-of-make-foo
+                  ,(if (consp require)
+                       `(implies (force (and ,@(strip-cadrs require)))
                                  (equal (,foop (,make-foo ,@field-names))
                                         t))
-                        :hints(("Goal" :in-theory (enable ,foop ,make-foo))))
-                   `(defthm ,foop-of-make-foo
-                      (equal (,foop (,make-foo ,@field-names))
-                             t)
-                      :hints(("Goal" :in-theory (enable ,foop ,make-foo)))))
+                     `(equal (,foop (,make-foo ,@field-names))
+                             t))
+                  :hints(("Goal"
+                          :in-theory
+                          (union-theories
+                           '(,foop ,make-foo)
+                           (theory 'defaggregate-basic-theory))
+                          :use ((:instance ,booleanp-of-foop
+                                           (,x (,make-foo ,@field-names)))))))
 
                 ,@(and tag
                        `((defthm ,(intern-in-package-of-symbol
@@ -924,7 +944,11 @@ optimization altogether.</p>")
                                    name)
                            (equal (tag (,make-foo ,@field-names))
                                   ,tag)
-                           :hints(("Goal" :in-theory (enable tag ,make-foo))))
+                           :hints(("Goal"
+                                   :in-theory
+                                   (union-theories
+                                    '(,make-foo)
+                                    (theory 'defaggregate-basic-theory)))))
 
                          (defthm ,(intern-in-package-of-symbol
                                    (str::cat "TAG-WHEN-" (symbol-name foop))
@@ -934,7 +958,11 @@ optimization altogether.</p>")
                                            ,tag))
                            :rule-classes ((:rewrite :backchain-limit-lst 0)
                                           (:forward-chaining))
-                           :hints(("Goal" :in-theory (enable tag ,foop))))
+                           :hints(("Goal"
+                                   :in-theory
+                                   (union-theories
+                                    '(,foop)
+                                    (theory 'defaggregate-basic-theory)))))
 
                          (defthm ,(intern-in-package-of-symbol
                                    (str::cat (symbol-name foop) "-WHEN-WRONG-TAG")
@@ -942,7 +970,12 @@ optimization altogether.</p>")
                            (implies (not (equal (tag ,x) ,tag))
                                     (equal (,foop ,x)
                                            nil))
-                           :rule-classes ((:rewrite :backchain-limit-lst 1)))
+                           :rule-classes ((:rewrite :backchain-limit-lst 1))
+                           :hints(("Goal"
+                                   :in-theory
+                                   (union-theories
+                                    '(,foop)
+                                    (theory 'defaggregate-basic-theory)))))
 
                          (add-to-ruleset tag-reasoning
                                          '(,(intern-in-package-of-symbol
@@ -958,7 +991,10 @@ optimization altogether.</p>")
                   (implies (,foop ,x)
                            (consp ,x))
                   :rule-classes :compound-recognizer
-                  :hints(("Goal" :in-theory (enable ,foop))))
+                  :hints(("Goal"
+                          :in-theory
+                          (union-theories '(,foop)
+                                          (theory 'defaggregate-basic-theory)))))
 
                 ,@(da-make-accessors-of-constructor name field-names)
                 ,@(da-make-requirements-of-recognizer name require field-names)))

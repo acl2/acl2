@@ -52,6 +52,20 @@ reasoning about @('car') in general.</p>"
     :rule-classes :forward-chaining
     :hints(("Goal" :in-theory (enable tag)))))
 
+(deftheory defaggregate-basic-theory
+  (union-theories
+   '(tag
+     car-cons
+     cdr-cons
+     alistp
+     assoc-equal
+     hons
+     booleanp
+     booleanp-compound-recognizer
+     tag)
+   (theory 'minimal-theory)))
+
+
 (program)
 
 ; NAME GENERATION.  We introduce some functions to generate the names of
@@ -270,7 +284,24 @@ reasoning about @('car') in general.</p>"
   ;; inline accessors.
   (let ((foo (da-constructor-name basename)))
     `(defund ,foo ,fields
-       (declare (xargs :guard ,guard))
+       (declare (xargs :guard ,guard
+                       :guard-hints
+                       (("Goal" :in-theory (theory 'minimal-theory))
+                        (and stable-under-simplificationp
+                             ;; I hadn't expected to need to do this, because
+                             ;; the constructor is just consing something
+                             ;; together, so how could it have guard
+                             ;; obligations?
+                             ;;
+                             ;; But it turns out that it CAN have other guard
+                             ;; obligations, since the ,guard above can be
+                             ;; arbitrarily complicated.  So, we will rely on
+                             ;; the user to provide a theory that can satisfy
+                             ;; these obligations.
+                             ;;
+                             ;; This looks like it does nothing, but really it
+                             ;; "undoes" the in-theory event above.
+                             '(:in-theory (enable ))))))
        ,(da-pack-fields honsp legiblep tag fields))))
 
 (defun da-make-honsed-constructor-raw (basename tag fields guard legiblep)
@@ -278,7 +309,14 @@ reasoning about @('car') in general.</p>"
         (honsed-foo (da-honsed-constructor-name basename)))
     `(defun ,honsed-foo ,fields
        (declare (xargs :guard ,guard
-                       :guard-hints(("Goal" :in-theory (enable ,foo)))))
+                       ;; Same hints as for the ordinary constructor
+                       :guard-hints
+                       (("Goal"
+                         :in-theory (union-theories
+                                     '(,foo)
+                                     (theory 'minimal-theory)))
+                        (and stable-under-simplificationp
+                             '(:in-theory (enable ))))))
        (mbe :logic (,foo . ,fields)
             :exec ,(da-pack-fields t legiblep tag fields)))))
 
@@ -294,7 +332,25 @@ reasoning about @('car') in general.</p>"
          (fields-map (da-fields-map basename tag legiblep fields))
          (let-binds  (da-fields-map-let-bindings fields-map)))
   `(defund ,foo-p (,x)
-     (declare (xargs :guard t))
+     (declare (xargs :guard t
+                     :guard-hints
+                     (("Goal"
+                       :in-theory (union-theories
+                                   '((:executable-counterpart acl2::eqlablep)
+                                     acl2::consp-assoc-equal
+                                     acl2::assoc-eql-exec-is-assoc-equal)
+                                   (theory 'defaggregate-basic-theory)))
+                      (and stable-under-simplificationp
+                           ;; This looks like it does nothing, but the basic
+                           ;; effect is to undo the "goal" theory and go back
+                           ;; into the default theory.
+                           ;;
+                           ;; This is sometimes necessary because the later
+                           ;; requirements might have guards that depend on the
+                           ;; previous requirements.  The user needs to provide
+                           ;; a theory that is adequate to show this is the
+                           ;; case.
+                           '(:in-theory (enable ))))))
      (and ,@(if tag
                 `((consp ,x)
                   (eq (car ,x) ,tag))
@@ -315,7 +371,14 @@ reasoning about @('car') in general.</p>"
         (body     (cdr (assoc field map))))
   `(defund-inline ,foo->bar (,x)
      (declare (xargs :guard (,foo-p ,x)
-                     :guard-hints (("Goal" :in-theory (enable ,foo-p)))))
+                     :guard-hints (("Goal"
+                                    :in-theory
+                                    (union-theories
+                                     '(,foo-p
+                                       (:executable-counterpart acl2::eqlablep)
+                                       acl2::consp-assoc-equal
+                                       acl2::assoc-eql-exec-is-assoc-equal)
+                                     (theory 'defaggregate-basic-theory))))))
      ,body)))
 
 #||
@@ -347,7 +410,11 @@ reasoning about @('car') in general.</p>"
              basename)
      (equal (,foo->bar (,foo . ,all-fields))
             ,field)
-     :hints(("Goal" :in-theory (enable ,foo->bar ,foo))))))
+     :hints(("Goal"
+             :in-theory
+             (union-theories
+              '(,foo->bar ,foo)
+              (theory 'defaggregate-basic-theory)))))))
 
 (defun da-make-accessors-of-constructor-aux (basename fields all-fields)
   (if (consp fields)

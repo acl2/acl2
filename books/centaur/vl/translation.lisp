@@ -40,10 +40,15 @@
                    could not be fully simplified.  Typically each module here
                    will have fatal @(see warnings).")
 
+   (origmods      vl-modulelist-p
+                  "The raw list of unsimplified modules that were found
+                   immediately after parsing.  This can be useful for
+                   pretty-printing and understanding modules.")
+
    (filemap       vl-filemap-p
-                  "Contains the actual Verilog source code that was
-                   read. Occasionally this is useful for understanding warnings
-                   that refer to particular file locations.")
+                  "The actual Verilog source code that was read. Occasionally
+                   this is useful for understanding warnings that refer to
+                   particular file locations.")
 
    (defines       vl-defines-p
                   "Records all of the @('`define') directives that were

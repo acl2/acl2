@@ -27,3 +27,4 @@
 (ld "str/package.lsp" :dir :system)
 (ld "xdoc/package.lsp" :dir :system)
 (ld "cowles/packages.lsp" :dir :system)
+(ld "centaur/getopt/package.lsp" :dir :system)

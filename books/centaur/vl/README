@@ -90,13 +90,18 @@ vl/top.lisp       -- top-level book
   * provides the defmodules command
 
 
+vl/kit/           -- VL as a command-line program
+
+  * this is where the "vl" program gets generated from
+
+vl/bin
 
 
 MISCELLANEOUS STUFF
 
 vl/lint/           -- a basic Verilog linter
 
-vl/doc/            -- a couple of (old) presentations about VL
+vl/talks/          -- some old talks about VL
 
-vl/wf-*.lisp       -- well-formedness checks
+vl/wf-*.lisp       -- well-formedness checks (mostly old)
 

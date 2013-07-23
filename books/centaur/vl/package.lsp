@@ -24,6 +24,7 @@
 (include-book "cutil/portcullis" :dir :system)
 (include-book "oslib/portcullis" :dir :system)
 (include-book "centaur/bridge/portcullis" :dir :system)
+(include-book "centaur/getopt/portcullis" :dir :system)
 
 (defmacro multi-union-eq (x y &rest rst)
   (xxxjoin 'union-eq (list* x y rst)))
@@ -33,6 +34,7 @@
    ;; Things to add:
    (multi-union-eq
     cutil::*cutil-exports*
+    getopt::*getopt-exports*
     sets::*sets-exports*
     acl2::*acl2-exports*
     acl2::*common-lisp-symbols-from-main-lisp-package*
@@ -171,7 +173,6 @@
       str::implode
       str::explode
 
-
       ;; To make VL::VL show up as just VL in the ACL2 package, e.g., to
       ;; make the XDOC index prettier.
       vl
@@ -180,6 +181,8 @@
       ;; acl2-customization file stuff
       why
       with-redef
+
+
 
       ))
 

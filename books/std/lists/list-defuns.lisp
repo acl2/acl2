@@ -35,6 +35,7 @@
 (local (include-book "repeat"))
 (local (include-book "revappend"))
 (local (include-book "nthcdr"))
+(local (include-book "rcons"))
 (local (include-book "rev"))
 (local (include-book "equiv"))
 (local (include-book "sets"))

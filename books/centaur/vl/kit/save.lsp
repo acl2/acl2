@@ -1,5 +1,5 @@
 ; VL Verilog Toolkit
-; Copyright (C) 2008-2011 Centaur Technology
+; Copyright (C) 2008-2013 Centaur Technology
 ;
 ; Contact:
 ;   Centaur Technology Formal Verification Group
@@ -19,12 +19,18 @@
 ; Original author: Jared Davis <jared@centtech.com>
 
 (in-package "ACL2")
-(ld "package.lsp")
-(ld "data-structures/define-u-package.lsp" :dir :system)
-(ld "tools/flag-package.lsp" :dir :system)
-(ld "cowles/packages.lsp" :dir :system)
-(include-book "str/portcullis" :dir :system)
-(include-book "xdoc/portcullis" :dir :system)
-(include-book "centaur/getopt/portcullis" :dir :system)
-; cert-flags: ? t :ttags :all
+(ld "cert.acl2")
+(in-package "VL")
+(include-book "top")
+(set-deferred-ttag-notes t state)
+(set-gag-mode :goals)
 
+;; (encapsulate
+;;   ()
+;;   (defttag vl-lint)
+;;   (remove-untouchable acl2::writes-okp nil))
+;; (assign acl2::writes-okp t)
+
+:q
+
+(save-exec "../bin/vl" "VL Verilog Toolkit")

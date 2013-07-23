@@ -448,7 +448,8 @@ of which recognizers require true-listp and which don't.</p>")
     acl2::set-equiv-implies-equal-subsetp-2
     acl2::subsetp-refl
     acl2::list-fix-under-list-equiv
-    sets::mergesort-under-set-equiv))
+    sets::mergesort-under-set-equiv
+    acl2::binary-append-without-guard))
 
 
 
@@ -905,6 +906,16 @@ list.</p>"
                      (equal (,name ,@(subst `(butlast ,x ,n) x formals))
                             t))
             :hints(("Goal" :do-not-induct t)))
+
+          (defthm ,(mksym name '-of-rcons)
+            (equal (,name ,@(subst `(rcons ,a ,x) x formals))
+                   (and ,(if negatedp
+                             `(not (,elementp ,@(subst a x elem-formals)))
+                           `(,elementp ,@(subst a x elem-formals)))
+                        (,name ,@(if true-listp
+                                     (subst `(list-fix ,x) x formals)
+                                   formals))))
+            :hints(("Goal" :in-theory (enable rcons))))
 
           (defthm ,(mksym name '-of-duplicated-members)
             (implies (,name ,@(subst `(double-rewrite ,x) x formals))

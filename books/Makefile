@@ -1033,3 +1033,25 @@ chk-include-book-worlds: $(BOOKS_BKCHK_OUT)
 # workshops/2003/greve-wilding-vanfleet/deps.cert
 # workshops/2003/kaufmann/deps.cert
 # workshops/2011/verbeek-schmaltz/deps.cert
+
+
+
+
+# VL Toolkit
+
+centaur/vl/bin/vl: centaur/vl/kit/top.cert
+	@echo "Making VL Verilog Toolkit executable"
+	@cd centaur/vl/kit; \
+         ACL2_CUSTOMIZATION=NONE $(STARTJOB) -c "$(ACL2) < save.lsp &> save.out"
+	@ls -la centaur/vl/bin/vl
+
+.PHONY: vl
+vl: centaur/vl/bin/vl
+
+.PHONY: clean_vl
+clean_vl:
+	@echo "Cleaning centaur/vl/bin directory"
+	@rm -f centaur/vl/bin/*
+
+clean: clean_vl
+
