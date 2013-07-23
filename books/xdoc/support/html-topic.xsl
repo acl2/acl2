@@ -40,7 +40,7 @@
 
 <xsl:template match="see">
   <a href="{@topic}.html">
-    <xsl:value-of select="."/>
+    <xsl:apply-templates/>
   </a>
 </xsl:template>
 

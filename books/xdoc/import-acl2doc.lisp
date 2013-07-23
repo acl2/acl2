@@ -139,10 +139,10 @@ PL: ~pl[test-broken-link]~/~/")
 (defxdoc acl2
   :short "Documentation for the <a
   href=\"http://www.cs.utexas.edu/users/moore/acl2\">ACL2 Theorem Prover</a>."
-  :long "<p>This is a parent topic for <see topic=\"@(url documentation)\">ACL2
-documentation</see> that is written in the classic @(see doc-string)
-format.</p>")
-
+  :long "<p>This is a parent topic for most <see topic=\"@(url
+documentation)\">ACL2 documentation</see> that is written in the classic @(see
+doc-string) format.  (We take some liberties with the hierarchy to integrate
+certain topics into more appropriate places.)</p>")
 
 ; BOZO add some documentation for built-in functions that aren't documented.
 ; Eventually these sorts of things should be moved into ACL2 itself.

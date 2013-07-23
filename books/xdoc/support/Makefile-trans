@@ -124,7 +124,7 @@ html-dir:
 	@echo "Preparing html/ directory"
 	@mkdir -p html
 	@cp xml/xdoc.css xml/xdoc.js html
-	@cp xml/plus.png xml/minus.png xml/leaf.png html
+	@cp xml/*.png xml/*.gif html
 
 # Goofy to copy them all one by one, but prevents "too many arguments"
 # warnings during the copy command in some extreme cases
