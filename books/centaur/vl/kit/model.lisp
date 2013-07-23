@@ -108,8 +108,7 @@
                  directories.  See the VL documentation on overrides (under
                  loader) for more information."
                 :parser getopt::parse-string
-                :merge acl2::rcons
-                :default '("v"))
+                :merge acl2::rcons)
 
    (defines     string-listp
                 :longname "define"
