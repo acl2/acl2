@@ -12795,9 +12795,9 @@
   proof.  If an error message is produced by evaluating a call of the function
   on a list of arguments that includes ~c[state] or user-defined ~ilc[stobj]s,
   these arguments will be shown as symbols such as ~c[|<state>|] in the error
-  message.  In the case of a user-defined stobj bound by
-  ~ilc[with-local-stobj] or ~ilc[stobj-let], the symbol printed will include
-  the suffix ~c[{instance}], for example, ~c[|<st>{instance}|].
+  message.  In the case of a user-defined stobj bound by ~ilc[with-local-stobj]
+  or ~ilc[stobj-let], the symbol printed will include the suffix
+  ~c[{instance}], for example, ~c[|<st>{instance}|].
 
   It is harmless to include ~c[:non-executable t] in your own ~ilc[xargs]
   ~ilc[declare] form; ~c[defun-nx] will still lay down its own such
@@ -18116,20 +18116,20 @@
             :congruent-to old-stobj-name)
   ~ev[]
   where ~c[name] is a new symbol, each ~c[fieldi] is a symbol, each ~c[typei]
-  is either a ~ilc[type-spec] or ~c[(ARRAY] ~ilc[type-spec] ~c[(max))], each
-  ~c[vali] is an object satisfying ~c[typei], and each ~c[bi] is ~c[t] or
-  ~c[nil].  Each pair ~c[:initially vali] and ~c[:resizable bi] may be omitted;
-  more on this below.  The ~c[:renaming alist] argument is optional and allows
-  the user to override the default function names introduced by this event.
-  The ~ilc[doc-string] is also optional.  The ~c[:inline flg] Boolean argument
-  is also optional and declares to ACL2 that the generated access and update
-  functions for the stobj should be implemented as macros under the hood (which
-  has the effect of inlining the function calls).  The optional
-  ~c[:congruent-to old-stobj-name] argument specifies an existing stobj with
-  exactly the same structure, and is discussed below.  We describe further
-  restrictions on the ~c[fieldi], ~c[typei], ~c[vali], and on ~c[alist] below.
-  We recommend that you read about single-threaded objects (stobjs) in ACL2
-  before proceeding; ~pl[stobj].
+  is either a type-indicator (a ~ilc[type-spec] or ~il[stobj] name) or of the
+  form ~c[(ARRAY type-indicator max)], each ~c[vali] is an object satisfying
+  ~c[typei], and each ~c[bi] is ~c[t] or ~c[nil].  Each pair
+  ~c[:initially vali] and ~c[:resizable bi] may be omitted; more on this below.
+  The ~c[:renaming alist] argument is optional and allows the user to override
+  the default function names introduced by this event.  The ~ilc[doc-string] is
+  also optional.  The ~c[:inline flg] Boolean argument is also optional and
+  declares to ACL2 that the generated access and update functions for the stobj
+  should be implemented as macros under the hood (which has the effect of
+  inlining the function calls).  The optional ~c[:congruent-to old-stobj-name]
+  argument specifies an existing stobj with exactly the same structure, and is
+  discussed below.  We describe further restrictions on the ~c[fieldi],
+  ~c[typei], ~c[vali], and on ~c[alist] below.  We recommend that you read
+  about single-threaded objects (stobjs) in ACL2 before proceeding; ~pl[stobj].
 
   The effect of this event is to introduce a new single-threaded object (i.e.,
   a ``~il[stobj]''), named ~c[name], and the associated recognizers, creator,
@@ -18152,7 +18152,7 @@
   a type-spec; ~pl[type-spec].  However, ~c[type-indicator] can also be the
   name of a stobj that was previously introduced (by ~c[defstobj] or
   ~ilc[defabsstobj]).  We ignore this ``nested stobj'' case below;
-  ~pl[stobj-let] for a discussion of stobjs within stobjs.
+  ~pl[nested-stobjs] for a discussion of stobjs within stobjs.
 
   The keyword value ~c[:initially val] specifies the initial value of a field,
   except for the case of a ~c[:type] ~c[(ARRAY type-indicator (max))], in which
@@ -18179,10 +18179,10 @@
   are not evaluated.  If omitted, the type defaults to ~c[t] (unrestricted) and
   the initial value defaults to ~c[nil].
 
-  Each ~c[typei] must be either a ~ilc[type-spec] (with the exception noted
-  above for nested stobjs, discussed elsewhere; ~pl[stobj-let]) or else a list
-  of the form ~c[(ARRAY type-spec (max))].  The latter forms are said to be
-  ``array types.''  Examples of legal ~c[typei] are:
+  Each ~c[typei] must be either a ~ilc[type-spec] or else a list of the form
+  ~c[(ARRAY type-spec (max))].  (Again, we are ignoring the case of nested
+  stobjs, discussed elsewhere; ~pl[nested-stobjs].)  The latter forms are said
+  to be ``array types.''  Examples of legal ~c[typei] are:
   ~bv[]
   (INTEGER 0 31)
   (SIGNED-BYTE 31)
