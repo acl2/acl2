@@ -573,7 +573,6 @@ list.</p>"
           ;; We start with the basic requirements about elementp.  Note that these
           ;; theorems are done in the user's current theory.  It's up to the user
           ;; to be able to prove these.
-
           (local (defthm deflist-local-booleanp-element-thm
                    (or (equal ,element t)
                        (equal ,element nil))
@@ -1028,14 +1027,15 @@ list.</p>"
        ,@(and parents `(:parents ,parents))
        ,@(and short   `(:short ,short))
        ,@(and long    `(:long ,long))
-       . ,(if (not rest)
-              events
-            `(;; keep all our deflist theory stuff bottled up
-              (encapsulate () . ,events)
-              ;; now do the rest of the events with name enabled, so they get
-              ;; included in the section
-              (local (in-theory (enable ,name)))
-              . ,rest)))))
+       ;; keep all our deflist theory stuff bottled up.  BOZO encapsulate is
+       ;; slow, better to use a progn here
+       (encapsulate ()
+         . ,events)
+       ;; now do the rest of the events with name enabled, so they get included
+       ;; in the section
+       . ,(and rest
+               `((local (in-theory (enable ,name)))
+                 . ,rest)))))
 
 
 (defmacro deflist (name formals element

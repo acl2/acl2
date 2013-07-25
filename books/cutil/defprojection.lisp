@@ -24,6 +24,29 @@
 
 (in-package "CUTIL")
 (include-book "deflist")
+(include-book "std/lists/append" :dir :system)
+
+(defun variable-or-constant-listp (x)
+  (declare (xargs :guard t))
+  (if (atom x)
+      t
+    (and (or (symbolp (car x))
+             (quotep (car x))
+             ;; things that quote to themselves
+             (acl2-numberp (car x))
+             (stringp (car x))
+             (characterp (car x)))
+         (variable-or-constant-listp (cdr x)))))
+
+(defun collect-vars (x)
+  (declare (xargs :guard t))
+  (if (atom x)
+      nil
+    (if (and (symbolp (car x))
+             (not (keywordp (car x))))
+        (cons (car x) (collect-vars (cdr x)))
+      (collect-vars (cdr x)))))
+
 
 (defxdoc defprojection
   :parents (cutil)
@@ -121,35 +144,24 @@ documentation will be automatically generated for @(':short') and @(':long').
 If you don't like this documentation, you can supply your own @(':short')
 and/or @(':long') to override it.</p>
 
-<p>The optional @(':parallelize') keyword should be set to non-@('nil') when
-the user wishes to parallelize the execution of the defined function.</p>")
+<p>The optional @(':parallelize') keyword can be set to @('t') if you want to
+try to speed up the execution of new function using parallelism.  This is
+experimental and will only work with ACL2(p).  Note that we don't do anything
+smart to split the work up into large chunks, and you lose tail-recursion when
+you use this.</p>")
 
-(defthmd defprojection-append-of-nil
-  (implies (true-listp a)
-           (equal (append a nil) a)))
+(deftheory defprojection-theory
+  (union-theories '(acl2::append-to-nil
+                    acl2::append-when-not-consp
+                    acl2::append-of-cons
+                    acl2::associativity-of-append
+                    acl2::rev-of-cons
+                    acl2::rev-when-not-consp
+                    acl2::revappend-removal
+                    acl2::reverse-removal)
+                  (union-theories (theory 'minimal-theory)
+                                  (theory 'deflist-support-lemmas))))
 
-(defthmd defprojection-associativity-of-append
-  (equal (append (append x y) z)
-         (append x (append y z))))
-
-(defun variable-or-constant-listp (x)
-  (if (atom x)
-      t
-    (and (or (symbolp (car x))
-             (quotep (car x))
-             ;; things that quote to themselves
-             (acl2-numberp (car x))
-             (stringp (car x))
-             (characterp (car x)))
-         (variable-or-constant-listp (cdr x)))))
-
-(defun collect-vars (x)
-  (if (atom x)
-      nil
-    (if (and (symbolp (car x))
-             (not (keywordp (car x))))
-        (cons (car x) (collect-vars (cdr x)))
-      (collect-vars (cdr x)))))
 
 (defun defprojection-fn (name formals element
                               nil-preservingp already-definedp
@@ -309,23 +321,24 @@ the user wishes to parallelize the execution of the defined function.</p>")
        (ndef      `(defun ,list-fn (,@list-args)
                      (nreverse (,exec-fn ,@list-args nil))))
 
-       (opt       (if (or already-definedp (not optimize))
-                      nil
-                    `((progn
-                        (make-event
-                         (if (acl2::global-val 'acl2::include-book-path (w state))
-                             ;; We're in an include book.  Don't print.
-                             (value '(value-triple :invisible))
-                           (value '(value-triple
-                                    (cw "~|~%Optimizing definition of ~s0:~%  ~p1~%~%"
-                                        ',list-fn ',ndef)))))
-                        (defttag cutil-optimize)
-                        ;; To justify nreverse, exec-fn must never be memoized
-                        (never-memoize ,exec-fn)
-                        (progn!
-                         (set-raw-mode t)
-                         ,ndef)
-                        (defttag nil)))))
+       (opt       (and optimize
+                       (not already-definedp)
+                       `((progn
+                           (make-event
+                            (if (acl2::global-val
+                                 'acl2::include-book-path (w state))
+                                ;; We're in an include book.  Don't print.
+                                (value '(value-triple :invisible))
+                              (value
+                               '(value-triple
+                                 (cw "~|~%Optimizing definition of ~s0:~%  ~p1~%~%"
+                                     ',list-fn ',ndef)))))
+                           (defttag cutil-optimize)
+                           ;; To justify nreverse, exec-fn must never be memoized
+                           (never-memoize ,exec-fn)
+                           (progn! (set-raw-mode t)
+                                   ,ndef)
+                           (defttag nil)))))
 
        ((when (eq mode :program))
         `(defsection ,name
@@ -337,43 +350,80 @@ the user wishes to parallelize the execution of the defined function.</p>")
            ,@opt
            ,@rest))
 
-       (events
-        `((logic)
-          ,@def
+       (listp-when-not-consp  (mksym list-fn '-when-not-consp))
+       (listp-of-cons         (mksym list-fn '-of-cons))
+       (listp-nil-preservingp (mksym list-fn '-nil-preservingp-lemma))
 
-          ,@(if already-definedp
-                nil
-              `((in-theory (disable ,list-fn ,exec-fn))))
+       (main-thms
+        `(,@(and nil-preservingp
+                 `((local (maybe-defthm-as-rewrite
+                           ,listp-nil-preservingp
+                           (equal (,elem-fn ,@(subst ''nil x elem-args))
+                                  nil)
+                           ;; We just rely on the user to be able to prove this
+                           ;; in their current theory.
+                           ))))
 
-          (local (in-theory (enable defprojection-append-of-nil
-                                    defprojection-associativity-of-append)))
+          (local (make-event
+                  ;; Bllalaaaaah... This sucks so bad.  I just want to have a
+                  ;; rule with this name, whatever it is.
+                  (if (is-theorem-p ',listp-nil-preservingp (w state))
+                      (value '(value-triple :invisible))
+                    (value '(defthm ,listp-nil-preservingp
+                              (or (equal (alistp x) t)
+                                  (equal (alistp x) nil))
+                              :rule-classes :type-prescription
+                              :hints(("Goal"
+                                      :in-theory
+                                      '((:type-prescription alistp)))))))))
 
-          (defthm ,(mksym list-fn '-when-not-consp)
+          (defthm ,listp-when-not-consp
             (implies (not (consp ,x))
                      (equal (,list-fn ,@list-args)
                             nil))
-            :hints(("Goal" :in-theory (enable ,list-fn))))
+            :hints(("Goal"
+                    :in-theory
+                    (union-theories '(,list-fn)
+                                    (theory 'defprojection-theory)))))
 
-          (defthm ,(mksym list-fn '-of-cons)
+          (defthm ,listp-of-cons
             (equal (,list-fn ,@(subst `(cons ,a ,x) x list-args))
                    (cons (,elem-fn ,@(subst a x elem-args))
                          (,list-fn ,@list-args)))
-            :hints(("Goal" :in-theory (enable ,list-fn))))
+            :hints(("Goal"
+                    :in-theory
+                    (union-theories '(,list-fn)
+                                    (theory 'defprojection-theory)))))
 
           (defthm ,(mksym 'true-listp-of- list-fn)
             (equal (true-listp (,list-fn ,@list-args))
                    t)
-            :hints(("Goal" :induct (len ,x))))
+            :hints(("Goal"
+                    :induct (len ,x)
+                    :in-theory
+                    (union-theories '(,listp-when-not-consp
+                                      ,listp-of-cons)
+                                    (theory 'defprojection-theory)))))
 
           (defthm ,(mksym 'len-of- list-fn)
             (equal (len (,list-fn ,@list-args))
                    (len ,x))
-            :hints(("Goal" :induct (len ,x))))
+            :hints(("Goal"
+                    :induct (len ,x)
+                    :in-theory
+                    (union-theories '(,listp-when-not-consp
+                                      ,listp-of-cons)
+                                    (theory 'defprojection-theory)))))
 
           (defthm ,(mksym 'consp-of- list-fn)
             (equal (consp (,list-fn ,@list-args))
                    (consp ,x))
-            :hints(("Goal" :induct (len ,x))))
+            :hints(("Goal"
+                    :induct (len ,x)
+                    :in-theory
+                    (union-theories '(,listp-when-not-consp
+                                      ,listp-of-cons)
+                                    (theory 'defprojection-theory)))))
 
           (defthm ,(mksym 'car-of- list-fn)
             (equal (car (,list-fn ,@list-args))
@@ -381,59 +431,115 @@ the user wishes to parallelize the execution of the defined function.</p>")
                         `(,elem-fn ,@(subst `(car ,x) x elem-args))
                       `(if (consp ,x)
                            (,elem-fn ,@(subst `(car ,x) x elem-args))
-                         nil))))
+                         nil)))
+            :hints(("Goal"
+                    :in-theory
+                    (union-theories '(,listp-when-not-consp
+                                      ,listp-of-cons
+                                      . ,(and nil-preservingp
+                                              `(,listp-nil-preservingp
+                                                acl2::default-car)))
+                                    (theory 'defprojection-theory)))))
 
           (defthm ,(mksym 'cdr-of- list-fn)
             (equal (cdr (,list-fn ,@list-args))
-                   (,list-fn ,@(subst `(cdr ,x) x list-args))))
+                   (,list-fn ,@(subst `(cdr ,x) x list-args)))
+            :hints(("Goal"
+                    :in-theory
+                    (union-theories '(,listp-when-not-consp
+                                      ,listp-of-cons)
+                                    (theory 'defprojection-theory)))))
+
 
           (defthm ,(mksym list-fn '-under-iff)
             (iff (,list-fn ,@list-args)
                  (consp ,x))
-            :hints(("Goal" :induct (len ,x))))
+            :hints(("Goal"
+                    :induct (len ,x)
+                    :in-theory
+                    (union-theories '(,listp-when-not-consp
+                                      ,listp-of-cons)
+                                    (theory 'defprojection-theory)))))
 
           (defthm ,(mksym list-fn '-of-list-fix)
             (equal (,list-fn ,@(subst `(list-fix ,x) x list-args))
                    (,list-fn ,@list-args))
-            :hints(("Goal" :induct (len ,x))))
+            :hints(("Goal"
+                    :induct (len ,x)
+                    :in-theory
+                    (union-theories '(,listp-when-not-consp
+                                      ,listp-of-cons)
+                                    (theory 'defprojection-theory)))))
 
           (defthm ,(mksym list-fn '-of-append)
             (equal (,list-fn ,@(subst `(append ,x ,y) x list-args))
                    (append (,list-fn ,@list-args)
                            (,list-fn ,@(subst y x list-args))))
-            :hints(("Goal" :induct (len ,x))))
+            :hints(("Goal"
+                    :induct (len ,x)
+                    :in-theory
+                    (union-theories '(,listp-when-not-consp
+                                      ,listp-of-cons)
+                                    (theory 'defprojection-theory)))))
 
           (defthm ,(mksym list-fn '-of-rev)
             (equal (,list-fn ,@(subst `(rev ,x) x list-args))
                    (rev (,list-fn ,@list-args)))
-            :hints(("Goal" :induct (len ,x))))
+            :hints(("Goal"
+                    :induct (len ,x)
+                    :in-theory
+                    (union-theories '(,(mksym list-fn '-of-append)
+                                      ,listp-when-not-consp
+                                      ,listp-of-cons)
+                                    (theory 'defprojection-theory)))))
 
           (defthm ,(mksym list-fn '-of-revappend)
             (equal (,list-fn ,@(subst `(revappend ,x ,y) x list-args))
                    (revappend (,list-fn ,@list-args)
-                              (,list-fn ,@(subst y x list-args)))))
+                              (,list-fn ,@(subst y x list-args))))
+            :hints(("Goal" :in-theory
+                    (union-theories '(,(mksym list-fn '-of-append)
+                                      ,(mksym list-fn '-of-rev))
+                                    (theory 'defprojection-theory)))))
 
           ,@(if nil-preservingp
                 `((defthm ,(mksym 'take-of- list-fn)
                     (equal (take ,n (,list-fn ,@list-args))
                            (,list-fn ,@(subst `(take ,n ,x) x list-args)))
                     :hints(("Goal"
-                            :in-theory (enable acl2::take-redefinition)
-                            :induct (take ,n ,x)))))
+                            :induct (take ,n ,x)
+                            :in-theory
+                            (union-theories '(acl2::take-redefinition
+                                              ,listp-when-not-consp
+                                              ,listp-of-cons
+                                              . ,(and nil-preservingp
+                                                      `(,listp-nil-preservingp
+                                                        acl2::default-car)))
+                                            (theory 'defprojection-theory))))))
               nil)
 
           (defthm ,(mksym 'nthcdr-of- list-fn)
             (equal (nthcdr ,n (,list-fn ,@list-args))
                    (,list-fn ,@(subst `(nthcdr ,n ,x) x list-args)))
             :hints(("Goal"
-                    :in-theory (enable nthcdr)
-                    :induct (nthcdr ,n ,x))))
+                    :induct (nthcdr ,n ,x)
+                    :in-theory
+                    (union-theories '(nthcdr
+                                      ,listp-when-not-consp
+                                      ,listp-of-cons)
+                                    (theory 'defprojection-theory)))))
 
           (defthm ,(mksym 'member-equal-of- elem-fn '-in- list-fn '-when-member-equal)
             (implies (member-equal ,a (double-rewrite ,x))
                      (member-equal (,elem-fn ,@(subst a x elem-args))
                                    (,list-fn ,@list-args)))
-            :hints(("Goal" :induct (len ,x))))
+            :hints(("Goal"
+                    :induct (len ,x)
+                    :in-theory
+                    (union-theories '(member-equal
+                                      ,listp-when-not-consp
+                                      ,listp-of-cons)
+                                    (theory 'defprojection-theory)))))
 
           (defthm ,(mksym 'subsetp-equal-of- list-fn 's-when-subsetp-equal)
             (implies (subsetp-equal (double-rewrite ,x)
@@ -441,17 +547,29 @@ the user wishes to parallelize the execution of the defined function.</p>")
                      (subsetp-equal (,list-fn ,@list-args)
                                     (,list-fn ,@(subst y x list-args))))
             :hints(("Goal"
-                    ;; bleh
-                    :in-theory (enable subsetp-equal)
-                    :induct (len ,x))))
+                    :induct (len ,x)
+                    :in-theory
+                    (union-theories '(subsetp-equal
+                                      ,(mksym 'member-equal-of- elem-fn
+                                              '-in- list-fn '-when-member-equal)
+                                      ,listp-when-not-consp
+                                      ,listp-of-cons)
+                                    (theory 'defprojection-theory)))))
 
           ,@(if nil-preservingp
                 `((defthm ,(mksym 'nth-of- list-fn)
                     (equal (nth ,n (,list-fn ,@list-args))
                            (,elem-fn ,@(subst `(nth ,n ,x) x elem-args)))
                     :hints(("Goal"
-                            :in-theory (enable nth)
-                            :induct (nth ,n ,x)))))
+                            :induct (nth ,n ,x)
+                            :in-theory
+                            (union-theories '(nth
+                                              ,listp-when-not-consp
+                                              ,listp-of-cons
+                                              . ,(and nil-preservingp
+                                                      `(,listp-nil-preservingp
+                                                        acl2::default-car)))
+                                            (theory 'defprojection-theory))))))
               nil)
 
           ,@(if already-definedp
@@ -460,39 +578,61 @@ the user wishes to parallelize the execution of the defined function.</p>")
                   ;; we don't need the hyp... (implies (force (true-listp ,acc))
                   (equal (,exec-fn ,@list-args ,acc)
                          (revappend (,list-fn ,@list-args) ,acc))
-                  :hints(("Goal" :in-theory (enable ,exec-fn))))
+                  :hints(("Goal"
+                          :induct (,exec-fn ,@list-args ,acc)
+                          :in-theory
+                          (union-theories '(,exec-fn
+                                            ,listp-when-not-consp
+                                            ,listp-of-cons)
+                                          (theory 'defprojection-theory)))))))
 
-                ,@(if verify-guards
-                      `((verify-guards ,exec-fn)
-                        (verify-guards ,list-fn))
-                    nil)))
 
-          ,@(and result-type
-                 `((defthm ,(mksym result-type '-of- list-fn)
-                     ,(if (eq guard t)
-                          `(,result-type (,list-fn ,@list-args))
-                        `(implies (force ,guard)
-                                  (,result-type (,list-fn ,@list-args))))
-                     :hints(("Goal"
-                             :induct (len ,x)
-                             :in-theory (enable (:induction len)))))))
-
-          . ,opt)))
+          )))
 
     `(defsection ,name
        ,@(and parents `(:parents ,parents))
        ,@(and short   `(:short ,short))
        ,@(and long    `(:long ,long))
-       . ,(if (not rest)
-              events
-            `((encapsulate ()
-                ;; keep all our deflist theory stuff bottled up
-                . ,events)
-
-              ;; now do the rest of the events with name enabled, so they get
-              ;; included in the section
-              (local (in-theory (enable ,name)))
-              . ,rest)))))
+       (logic)
+       ,@def
+       (set-inhibit-warnings "disable") ;; implicitly local
+       ,@main-thms
+       ,@(and (not already-definedp)
+              verify-guards
+              `((verify-guards ,exec-fn
+                  :hints(("Goal"
+                          :in-theory
+                          (union-theories '(,exec-fn)
+                                          (theory 'defprojection-theory)))
+                         (and stable-under-simplificationp
+                              '(:in-theory (enable )))))
+                (verify-guards ,list-fn
+                  :hints(("Goal"
+                          :in-theory
+                          (union-theories '(,list-fn
+                                            ,(mksym exec-fn '-removal)
+                                            ,(mksym 'true-listp-of- list-fn)
+                                            acl2::reverse-removal
+                                            acl2::revappend-removal
+                                            acl2::rev-of-append
+                                            acl2::rev-of-rev)
+                                          (theory 'defprojection-theory)))
+                         (and stable-under-simplificationp
+                              '(:in-theory (enable )))))))
+       ,@opt
+       (local (in-theory (enable ,list-fn
+                                 ,listp-when-not-consp
+                                 ,listp-of-cons)))
+       ,@(and result-type
+              `((defthm ,(mksym result-type '-of- list-fn)
+                  ,(if (eq guard t)
+                       `(,result-type (,list-fn ,@list-args))
+                     `(implies (force ,guard)
+                               (,result-type (,list-fn ,@list-args))))
+                  :hints(("Goal"
+                          :induct (len ,x)
+                          :in-theory (enable (:induction len)))))))
+       . ,rest)))
 
 (defmacro defprojection (name formals element &key nil-preservingp already-definedp
                               (optimize 't)

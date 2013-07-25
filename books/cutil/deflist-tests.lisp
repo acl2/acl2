@@ -24,11 +24,17 @@
 
 (in-package "CUTIL")
 (include-book "deflist")
-(local (include-book "str/top" :dir :system))
-(local (include-book "misc/assert" :dir :system))
+(include-book "str/top" :dir :system)
+(include-book "misc/assert" :dir :system)
+
+(make-event
+ (prog2$
+  (cw "~%~%~%WARNING!  PRINTER ON FIRE!~%You are loading ~
+       cutil/deflist-tests! Don't do that!~%~%")
+  '(value-triple :invisible))
+ :check-expansion t)
 
 
-(local (progn
 
 (in-theory
  ;; This is awful and you should generally never do it.  But here, the idea is
@@ -259,8 +265,6 @@
  (b* ((topic (xdoc::find-topic 'ratlist (xdoc::get-xdoc-table (w state)))))
    (str::isubstrp "@(def |CUTIL|::|RATLIST-IS-RATIONAL-LISTP|)"
                   (cdr (assoc :long topic)))))
-
-))
 
 
 

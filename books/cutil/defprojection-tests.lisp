@@ -20,120 +20,175 @@
 
 (in-package "CUTIL")
 (include-book "defprojection")
-(local (include-book "misc/assert" :dir :system))
+(include-book "misc/assert" :dir :system)
 
-(local
- (encapsulate
-  ()
+(make-event
+ (prog2$
+  (cw "~%~%~%WARNING!  PRINTER ON FIRE!~%You are loading ~
+       cutil/defprojection-tests! Don't do that!~%~%")
+  '(value-triple :invisible))
+ :check-expansion t)
 
-  (defund square (x)
-    (declare (xargs :guard (integerp x)))
-    (* x x))
+(in-theory
+ ;; This is awful and you should generally never do it.  But here, the idea is
+ ;; to show that all of these deflists will succeed even in a crippled theory.
+ nil)
 
-  (defprojection slow-square-list (x)
-    (square x)
-    :guard (integer-listp x)
-    :optimize nil)
+; Dupe is nice because it has a guard of T.
 
-  (defprojection square-list (x)
-    (square x)
-    :guard (integer-listp x))
+(defun dupe (x)
+  (declare (xargs :guard t))
+  (cons x x))
 
-  (defprojection program-square-list (x)
-    (square x)
-    :guard (integer-listp x)
-    :mode :program)
+(defprojection dupe-list (x)
+  (dupe x)
+  :optimize nil)
 
-  (assert! (let ((x '(1 2 3 4 5 6 7 8 9 10)))
-             (and (equal (square-list x)
-                         (slow-square-list x))
-                  (equal (square-list x)
-                         (program-square-list x)))))
+(defprojection dupe-list2 (x)
+  (dupe x)
+  :optimize t)
 
-  (defthm integerp-of-square
-    (implies (integerp x)
-             (integerp (square x)))
-    :hints(("Goal" :in-theory (enable square))))
+(defprojection dupe-list3 (x)
+  (dupe x)
+  :verify-guards nil)
 
-  (defprojection slow-square-list-with-result-type (x)
-    (square x)
-    :guard (integer-listp x)
-    :result-type integer-listp
-    :optimize nil)
+(defprojection dupe-list4 (x)
+  (dupe x)
+  :mode :program)
 
-  (defprojection slow-square-list-with-result-type-and-parallelism (x)
-    (square x)
-    :guard (integer-listp x)
-    :result-type integer-listp
-    :optimize nil
-    :parallelize t)
+
+; Square adds some tests of guard handling.  For the guards to verify the
+; user's theory needs to know something about integer-listp.
+
+(local (in-theory (enable integer-listp)))
+
+(defund square (x)
+  (declare (xargs :guard (integerp x)))
+  (* x x))
+
+(defprojection slow-square-list (x)
+  (square x)
+  :guard (integer-listp x)
+  :optimize nil)
+
+(defprojection square-list (x)
+  (square x)
+  :guard (integer-listp x))
+
+(defprojection program-square-list (x)
+  (square x)
+  :guard (integer-listp x)
+  :mode :program)
+
+
+(assert! (let ((x '(1 2 3 4 5 6 7 8 9 10)))
+           (and (equal (square-list x)
+                       (slow-square-list x))
+                (equal (square-list x)
+                       (program-square-list x)))))
+
+
+; For result-type theorems the user's theory needs to be slightly more sane.
+
+(local (in-theory (enable car-cons
+                          cdr-cons
+                          car-cdr-elim)))
+
+(defthm integerp-of-square
+  (implies (integerp x)
+           (integerp (square x)))
+  :hints(("Goal" :in-theory (enable square))))
+
+(defprojection square-list-r (x)
+  (square x)
+  :guard (integer-listp x)
+  :result-type integer-listp
+  :optimize nil)
+
+(defprojection square-list-r2 (x)
+  (square x)
+  :guard (integer-listp x)
+  :result-type integer-listp
+  :optimize nil
+  :parallelize t)
+
 
 
   ;; Some tests with constants...
 
-  (defprojection add1-list (x)
-    (+ 1 x)
-    :guard (integer-listp x)
-    :parents (foo)
-    :rest
-    ((defthm add1-list-integer-list
-       (implies (integer-listp x)
-                (integer-listp (add1-list x))))))
+(defprojection add1-list (x)
+  ;; Well, this won't work if it's nil-preservingp, but if someone complains
+  ;; about they can go yell at Matt to fix maybe-defthm-as-rewrite.
+  (+ 1 x)
+  :guard (integer-listp x)
+  :parents (foo)
+  :rest
+  ((defthm add1-list-integer-list
+     (implies (integer-listp x)
+              (integer-listp (add1-list x))))))
 
-  (defprojection symbol-<-foo-list (x)
-    (symbol-< :foo x)
-    :guard (symbol-listp x))
+(local (in-theory (enable symbol-listp)))
 
-  (defprojection symbol-<-bar-list (x)
-    (symbol-< 'bar x)
-    :guard (symbol-listp x))
+(defprojection symbol-<-foo-list (x)
+  (symbol-< :foo x)
+  :guard (symbol-listp x))
 
-  ))
-
-
+(defprojection symbol-<-bar-list (x)
+  (symbol-< 'bar x)
+  :guard (symbol-listp x))
 
 
 
+(local (in-theory (enable alistp)))
+
+(defprojection my-strip-cars (x)
+  (car x)
+  :nil-preservingp t
+  :guard (alistp x))
+
+
+(defund f (x)
+  (declare (xargs :guard (consp x)))
+  (car x))
+
+(defprojection my-strip-cars2 (x)
+  (f x)
+  :nil-preservingp t
+  :guard (alistp x))
 
 
 #||
 
-;; Test for includeed book.  (Unlocalize the encapsulate above, first.)  It
-;; seems to work just fine.
+(include-book ;; newline to appease cert.pl
+ "defprojection-tests")
 
-(in-package "VL")
-(include-book ;; fool dependency scanner
- "util-defprojection")
 :q
 
 (defparameter *test* (loop for i from 1 to 1000 collect i))
 
-(equal (vl::square-list *test*)
-       (vl::slow-square-list *test*))
+(equal (cutil::square-list *test*)
+       (cutil::slow-square-list *test*))
 
 ;; .76 seconds, 320 MB
 (progn
     (gc$)
     (time (loop for i from 1 to 10000
                 do
-                (consp (vl::slow-square-list *test*)))))
+                (consp (cutil::slow-square-list *test*)))))
 
 ;; .43 seconds, 160 MB
 (progn
     (gc$)
     (time (loop for i from 1 to 10000
                 do
-                (consp (vl::square-list *test*)))))
+                (consp (cutil::square-list *test*)))))
 
 ;; .43 seconds, 160 MB
 (progn
     (gc$)
     (time (loop for i from 1 to 10000
                 do
-                (consp (vl::program-square-list *test*)))))
+                (consp (cutil::program-square-list *test*)))))
 
-
-
-  ))
 
 ||#

@@ -835,6 +835,7 @@ wire [0:3] w;
                   (repeat (vl-expr->finalwidth a) n))
            :hints(("Goal" :in-theory (enable repeat)))))
 
+  (local (in-theory (disable car-of-vl-exprlist->finalwidths)))
   (local (defthm vl-expr->finalwidth-of-first
            (equal (vl-expr->finalwidth (first x))
                   (first (vl-exprlist->finalwidths x)))))
@@ -855,12 +856,12 @@ wire [0:3] w;
                (equal (vl-exprlist->finalwidths (mv-nth 2 ret))
                       (repeat 1 (vl-atom->finalwidth x))))))
 
-
   (local (defthm vl-exprlist->finaltypes-of-repeat
            (equal (vl-exprlist->finaltypes (repeat a n))
                   (repeat (vl-expr->finaltype a) n))
            :hints(("Goal" :in-theory (enable repeat)))))
 
+  (local (in-theory (disable car-of-vl-exprlist->finaltypes)))
   (local (defthm vl-expr->finaltype-of-first
            (equal (vl-expr->finaltype (first x))
                   (first (vl-exprlist->finaltypes x)))))
