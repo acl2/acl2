@@ -372,6 +372,9 @@ reasoning about @('car') in general.</p>"
   `(defund-inline ,foo->bar (,x)
      (declare (xargs :guard (,foo-p ,x)
                      :guard-hints (("Goal"
+                                    ;; expand hint sometimes needed due to mutual
+                                    ;; recursions
+                                    :expand (,foo-p ,x)
                                     :in-theory
                                     (union-theories
                                      '(,foo-p
