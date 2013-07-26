@@ -112,9 +112,12 @@ BFR-COUNTEREX-ALIST.
           :use ((:instance acl2::eval-bdd-ubdd-fix
                            (x prop))))))
 
+
 (acl2::defattach
  (bfr-sat bfr-sat-bdd
           :hints (("goal" :in-theory '(bfr-sat-bdd-unsat)))))
+
+(in-theory (disable bfr-sat-bdd-unsat bfr-sat-unsat))
 
 
 
@@ -153,3 +156,124 @@ BFR-COUNTEREX-ALIST.
   (if (eq (bfr-counterex-mode) t) ;; alist
       ctrex
     (to-satisfying-assign assign ctrex)))
+
+
+
+
+
+(defund bfr-known-value (x)
+  (declare (xargs :guard t))
+  (bfr-case :bdd (and x t)
+            :aig (acl2::aig-eval x nil)))
+
+
+(defsection bfr-constcheck
+  ;; Bfr-constcheck: use SAT (or examine the BDD) to determine whether x is
+  ;; constant, and if so return that constant.
+  (defund bfr-constcheck (x)
+    (declare (xargs :guard t))
+    (if (bfr-known-value x)
+        (b* (((mv sat ok &) (bfr-sat (bfr-not x))))
+          (if (or sat (not ok))
+              x
+            t))
+      (b* (((mv sat ok &) (bfr-sat x)))
+        (if (or sat (not ok))
+            x
+          nil))))
+
+  (local (in-theory (enable bfr-constcheck)))
+
+  (defthm bfr-eval-of-bfr-constcheck
+    (equal (bfr-eval (bfr-constcheck x) env)
+           (bfr-eval x env))
+    :hints (("goal" :use ((:instance bfr-sat-unsat
+                           (prop x))
+                          (:instance bfr-sat-unsat
+                           (prop (bfr-not x)))))))
+
+  (defthm pbfr-depends-on-of-bfr-constcheck
+    (implies (not (pbfr-depends-on k p x))
+             (not (pbfr-depends-on k p (bfr-constcheck x))))))
+
+(defsection bfr-constcheck-pathcond
+  ;; Bfr-constcheck: use SAT (or examine the BDD) to determine whether x is
+  ;; constant, and if so return that constant.
+  (defund bfr-constcheck-pathcond (x pathcond)
+    (declare (xargs :guard t))
+    (b* (((mv sat ok &) (bfr-sat (bfr-and pathcond x)))
+         ((unless (or sat (not ok)))
+          nil)
+         ((mv sat ok &) (bfr-sat (bfr-and pathcond (bfr-not x))))
+         ((unless (or sat (not ok)))
+          t))
+      x))
+
+  (local (in-theory (enable bfr-constcheck-pathcond)))
+
+  (defthm bfr-eval-of-bfr-constcheck-pathcond
+    (implies (bfr-eval pathcond env)
+             (equal (bfr-eval (bfr-constcheck-pathcond x pathcond) env)
+                    (bfr-eval x env)))
+    :hints (("goal" :use ((:instance bfr-sat-unsat
+                           (prop (bfr-and pathcond x)))
+                          (:instance bfr-sat-unsat
+                           (prop (bfr-and pathcond (bfr-not x))))))))
+
+  (defthm pbfr-depends-on-of-bfr-constcheck-pathcond
+    (implies (not (pbfr-depends-on k p x))
+             (not (pbfr-depends-on k p (bfr-constcheck-pathcond x pathcond))))))
+
+
+(defsection bfr-check-true
+  ;; Bfr-constcheck: use SAT (or examine the BDD) to determine whether x is
+  ;; constant, and if so return that constant.
+  (defund bfr-check-true (x)
+    (declare (xargs :guard t))
+    (if (bfr-known-value x)
+        (b* (((mv sat ok &) (bfr-sat (bfr-not x))))
+          (if (or sat (not ok))
+              x
+            t))
+      x))
+
+  (local (in-theory (enable bfr-check-true)))
+
+  (defthm bfr-eval-of-bfr-check-true
+    (equal (bfr-eval (bfr-check-true x) env)
+           (bfr-eval x env))
+    :hints (("goal" :use ((:instance bfr-sat-unsat
+                           (prop x))
+                          (:instance bfr-sat-unsat
+                           (prop (bfr-not x)))))))
+
+  (defthm pbfr-depends-on-of-bfr-check-true
+    (implies (not (pbfr-depends-on k p x))
+             (not (pbfr-depends-on k p (bfr-check-true x))))))
+
+(defsection bfr-check-false
+  ;; Bfr-constcheck: use SAT (or examine the BDD) to determine whether x is
+  ;; constant, and if so return that constant.
+  (defund bfr-check-false (x)
+    (declare (xargs :guard t))
+    (if (bfr-known-value x)
+        x
+      (b* (((mv sat ok &) (bfr-sat x)))
+        (if (or sat (not ok))
+            x
+          nil))))
+
+  (local (in-theory (enable bfr-check-false)))
+
+  (defthm bfr-eval-of-bfr-check-false
+    (equal (bfr-eval (bfr-check-false x) env)
+           (bfr-eval x env))
+    :hints (("goal" :use ((:instance bfr-sat-unsat
+                           (prop x))
+                          (:instance bfr-sat-unsat
+                           (prop (bfr-not x)))))))
+
+  (defthm pbfr-depends-on-of-bfr-check-false
+    (implies (not (pbfr-depends-on k p x))
+             (not (pbfr-depends-on k p (bfr-check-false x))))))
+

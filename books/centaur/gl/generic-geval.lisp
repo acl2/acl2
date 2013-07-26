@@ -183,12 +183,64 @@
      (cons (gobj->term (car x) env)
            (gobj-list->terms (cdr x) env)))))
 
+(mutual-recursion
+ (defun gobj-ind (x env)
+   (declare (xargs :guard (consp env)
+                   :measure (acl2-count x)
+                   :hints (("goal" :in-theory '(measure-for-geval atom)))))
+   (if (atom x)
+       (kwote x)
+     (pattern-match x
+       ((g-concrete obj) (kwote obj))
 
-(flag::make-flag gobj->term-flag gobj->term
-                 :flag-mapping ((gobj->term . gobj)
-                                (gobj-list->terms . list)))
+       ((g-boolean bool) (kwote (bfr-eval bool (car env))))
 
-(in-theory (disable gobj->term gobj-list->terms))
+       ((g-number num)
+        (b* (((mv real-num
+                  real-denom
+                  imag-num
+                  imag-denom)
+              (break-g-number num)))
+          (flet ((uval (n env)
+                       (bfr-list->u n (car env)))
+                 (sval (n env)
+                       (bfr-list->s n (car env))))
+            (kwote
+             (components-to-number (sval real-num env)
+                                   (uval real-denom env)
+                                   (sval imag-num env)
+                                   (uval imag-denom env))))))
+
+       ((g-ite test then else)
+        (list 'if
+              (gobj-ind test env)
+              (gobj-ind then env)
+              (gobj-ind else env)))
+
+       ((g-var name) (kwote (cdr (hons-get name (cdr env)))))
+
+       ((g-apply fn args)
+        (cons fn (gobj-list-ind args env)))
+
+       (& ;; cons
+        (list 'cons
+              (gobj-ind (car x) env)
+              (gobj-ind (cdr x) env))))))
+
+ (defun gobj-list-ind (x env)
+   (declare (xargs :guard (consp env)
+                   :measure (acl2-count x)))
+   (if (atom x)
+       nil
+     (cons (gobj-ind (car x) env)
+           (gobj-list-ind (cdr x) env)))))
+
+
+(flag::make-flag gobj-flag gobj-ind
+                 :flag-mapping ((gobj-ind . gobj)
+                                (gobj-list-ind . list)))
+
+(in-theory (disable gobj-ind gobj-list-ind))
 
 
 (defconst *geval-template*
@@ -611,7 +663,7 @@
 
 (def-eval-g generic-geval (cons if))
 
-(defthm-gobj->term-flag
+(defthm-gobj-flag
   (defthm generic-geval-is-generic-geval-ev-of-gobj->term
     (equal (generic-geval-ev (gobj->term x env) a)
            (generic-geval x env))

@@ -50,6 +50,7 @@
    truncate
    rem
    acl2::boolfix
+   hons-assoc-equal
 
    ;; these are from the constant *expandable-boot-strap-non-rec-fns*.
    NOT IMPLIES

@@ -40,6 +40,14 @@
 
 (in-theory (disable (g-logbitp-of-numbers)))
 
+
+(defthm deps-of-g-logbitp-of-numbers
+  (implies (and (not (gobj-depends-on k p x))
+                (not (gobj-depends-on k p y))
+                (general-numberp x)
+                (general-numberp y))
+           (not (gobj-depends-on k p (g-logbitp-of-numbers x y)))))
+
 ;; (local
 ;;  (defthm gobjectp-g-logbitp-of-numbers
 ;;    (implies (and (gobjectp a)
@@ -96,8 +104,8 @@
 ;;                    (:ruleset gl-tag-rewrites)
 ;;                    mv-nth-cons-meta
 ;;                    bfr-ite-bss-fn))
-;;             :induct (,gfn i j hyp clk)
-;;             :expand ((,gfn i j hyp clk)))))
+;;             :induct (,gfn i j . ,params)
+;;             :expand ((,gfn i j . ,params)))))
 
 (verify-g-guards
  logbitp
@@ -105,6 +113,11 @@
            (disable* ,gfn
                      (:rules-of-class :type-prescription :here)))))
 
+
+(def-gobj-dependency-thm logbitp
+  :hints `(("goal" :induct ,gcall
+            :expand (,gcall)
+            :in-theory (disable (:d ,gfn)))))
 
 (local (defthm logbitp-when-not-numbers
          (and (implies (not (acl2-numberp a))
@@ -137,5 +150,5 @@
                                       logbitp bfr-list->s bfr-list->u
                                       (:rules-of-class :type-prescription :here))
                                      ((:type-prescription bfr-eval)))
-             :induct (,gfn i j hyp clk)
-             :expand ((,gfn i j hyp clk)))))
+             :induct (,gfn i j . ,params)
+             :expand ((,gfn i j . ,params)))))

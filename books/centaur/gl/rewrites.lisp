@@ -309,3 +309,19 @@
               )))
 
 ||#
+
+(gl::def-gl-rewrite not-to-if
+  (iff (not x)
+       (if x nil t)))
+
+
+(defthm merge-if-of-cons
+  (implies (consp z)
+           (equal (if c (cons x y) z)
+                  (cons (if c x (car z))
+                        (if c y (cdr z)))))
+  :rule-classes nil)
+
+(table gl-branch-merge-rules
+       'cons
+       '(merge-if-of-cons))

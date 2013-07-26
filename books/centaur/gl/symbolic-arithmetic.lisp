@@ -61,11 +61,11 @@
     (equal (bfr-eval (bfr-=-uu a b) env)
            (= (bfr-list->u a env) (bfr-list->u b env))))
 
-  (defthm bfr-max-nat-var-of-bfr-=-uu
-    (implies (and (<= (bfr-max-nat-var-list a) n)
-                  (<= (bfr-max-nat-var-list b) n))
-             (<= (bfr-max-nat-var (bfr-=-uu a b)) n))
-    :hints(("Goal" :in-theory (enable bfr-max-nat-var-list)))))
+  (defthm pbfr-depends-on-of-bfr-=-uu
+    (implies (and (not (pbfr-list-depends-on n p a))
+                  (not (pbfr-list-depends-on n p b)))
+             (not (pbfr-depends-on n p (bfr-=-uu a b))))
+    :hints(("Goal" :in-theory (enable pbfr-list-depends-on)))))
 
 (defsection =-ss
 
@@ -86,11 +86,11 @@
               (bfr-list->s b env)))
     :hints (("goal" :induct (scdr2-ind a b))))
 
-  (defthm bfr-max-nat-var-of-bfr-=-ss
-    (implies (and (<= (bfr-max-nat-var-list a) n)
-                  (<= (bfr-max-nat-var-list b) n))
-             (<= (bfr-max-nat-var (bfr-=-ss a b)) n))
-    :hints(("Goal" :in-theory (enable bfr-max-nat-var-list)))))
+  (defthm pbfr-depends-on-of-bfr-=-ss
+    (implies (and (not (pbfr-list-depends-on n p a))
+                  (not (pbfr-list-depends-on n p b)))
+             (not (pbfr-depends-on n p (bfr-=-ss a b))))
+    :hints(("Goal" :in-theory (enable pbfr-list-depends-on)))))
 
 (defsection logtail-ns
 
@@ -122,11 +122,10 @@
            (logtail place (bfr-list->s n env)))
     :hints(("Goal" :in-theory (enable acl2::logtail**))))
 
-  (defthm bfr-max-nat-var-list-of-logtail-ns
-    (<= (bfr-max-nat-var-list (logtail-ns place n))
-        (bfr-max-nat-var-list n))
-    :hints(("Goal" :in-theory (enable bfr-max-nat-var-list)))
-    :rule-classes (:rewrite :linear)))
+  (defthm pbfr-list-depends-on-of-logtail-ns
+    (implies (not (pbfr-list-depends-on k p n))
+             (not (pbfr-list-depends-on k p (logtail-ns place n))))
+    :hints(("Goal" :in-theory (enable pbfr-list-depends-on)))))
 
   ;; (defthm logtail-ns-correct
   ;;   (equal (v2i (logtail-ns place n))
@@ -146,11 +145,10 @@
     (equal (bfr-eval (s-sign x) env)
            (< (bfr-list->s x env) 0)))
 
-  (defthm bfr-max-nat-var-of-s-sign
-    (<= (bfr-max-nat-var (s-sign n))
-        (bfr-max-nat-var-list n))
-    :hints(("Goal" :in-theory (enable bfr-max-nat-var-list)))
-    :rule-classes :linear))
+  (defthm pbfr-depends-on-of-s-sign
+    (implies (not (pbfr-list-depends-on k p n))
+             (not (pbfr-depends-on k p (s-sign n))))
+    :hints(("Goal" :in-theory (enable pbfr-list-depends-on)))))
 
   ;; (defthm s-sign-correct
   ;;   (iff (s-sign x)
@@ -182,18 +180,17 @@
                      ))))
 
   
-  (defthm bfr-max-nat-var-list-of-bfr-+-ss
-    (implies (and (<= (bfr-max-nat-var c) n)
-                  (<= (bfr-max-nat-var-list v1) n)
-                  (<= (bfr-max-nat-var-list v2) n))
-             (<= (bfr-max-nat-var-list (bfr-+-ss c v1 v2)) n))
-    :hints(("Goal" :in-theory (e/d (bfr-max-nat-var-list)
-                                   ((bfr-max-nat-var-list)
-                                    (bfr-max-nat-var)
+  (defthm pbfr-list-depends-on-of-bfr-+-ss
+    (implies (and (not (pbfr-depends-on n p c))
+                  (not (pbfr-list-depends-on n p v1))
+                  (not (pbfr-list-depends-on n p v2)))
+             (not (pbfr-list-depends-on n p (bfr-+-ss c v1 v2))))
+    :hints(("Goal" :in-theory (e/d (pbfr-list-depends-on)
+                                   ((pbfr-list-depends-on)
+                                    (pbfr-depends-on)
                                     (:d bfr-+-ss)))
             :induct (bfr-+-ss c v1 v2)
-            :expand ((bfr-+-ss c v1 v2))))
-    :rule-classes (:rewrite (:linear :match-free :all)))
+            :expand ((bfr-+-ss c v1 v2)))))
 )
  ;;           (and stable-under-simplificationp
 ;;                 (let ((call (acl2::find-call '+-ss (caddr (car (last clause))))))
@@ -473,11 +470,10 @@
     (equal (bfr-list->s (bfr-lognot-s x) env)
            (lognot (bfr-list->s x env))))
 
-  (defthm bfr-max-nat-var-list-of-bfr-lognot-s
-    (<= (bfr-max-nat-var-list (bfr-lognot-s x))
-        (bfr-max-nat-var-list x))
-    :hints(("Goal" :in-theory (enable bfr-max-nat-var-list)))
-    :rule-classes :linear))
+  (defthm pbfr-list-depends-on-of-bfr-lognot-s
+    (implies (not (pbfr-list-depends-on k p x))
+             (not (pbfr-list-depends-on k p (bfr-lognot-s x))))
+    :hints(("Goal" :in-theory (enable pbfr-list-depends-on)))))
 
   ;; (defthm lognot-s-correct
   ;;   (equal (v2i (lognot-s x))
@@ -493,14 +489,10 @@
            (- (bfr-list->s x env)))
     :hints(("Goal" :in-theory (enable logcons lognot))))
 
-  (defthm bfr-max-nat-var-list-of-bfr-unary-minus-s
-    (<= (bfr-max-nat-var-list (bfr-unary-minus-s x))
-        (bfr-max-nat-var-list x))
-    :rule-classes :linear)
-
-  (defthm bfr-max-nat-var-list-of-bfr-unary-minus-s-rw
-    (implies (<= (bfr-max-nat-var-list x) n)
-             (<= (bfr-max-nat-var-list (bfr-unary-minus-s x)) n))))
+  (defthm pbfr-list-depends-on-of-bfr-unary-minus-s
+    (implies (not (pbfr-list-depends-on n p x))
+             (not (pbfr-list-depends-on n p (bfr-unary-minus-s x))))
+    :hints(("Goal" :in-theory (enable pbfr-list-depends-on)))))
 
   ;; (defthm unary-minus-s-correct
   ;;   (equal (v2i (unary-minus-s x))
@@ -520,17 +512,16 @@
             :expand ((bfr-*-ss v1 v2)
                      (bfr-*-ss nil v2)))))
 
-  (defthm bfr-max-nat-var-list-of-bfr-*-ss
-    (implies (and (<= (bfr-max-nat-var-list v1) n)
-                  (<= (bfr-max-nat-var-list v2) n))
-             (<= (bfr-max-nat-var-list (bfr-*-ss v1 v2)) n))
-    :hints(("Goal" :in-theory (e/d (bfr-max-nat-var-list)
-                                   ((bfr-max-nat-var-list)
-                                    (bfr-max-nat-var)
+  (defthm pbfr-list-depends-on-of-bfr-*-ss
+    (implies (and (not (pbfr-list-depends-on n p v1))
+                  (not (pbfr-list-depends-on n p v2)))
+             (not (pbfr-list-depends-on n p (bfr-*-ss v1 v2))))
+    :hints(("Goal" :in-theory (e/d (pbfr-list-depends-on)
+                                   ((pbfr-list-depends-on)
+                                    (pbfr-depends-on)
                                     (:d bfr-*-ss)))
             :induct (bfr-*-ss v1 v2)
-            :expand ((bfr-*-ss v1 v2))))
-    :rule-classes (:rewrite (:linear :match-free :all))))
+            :expand ((bfr-*-ss v1 v2))))))
 
   ;; (local (defthm +-double-minus
   ;;          (equal (+ x (- (* 2 x)))
@@ -595,13 +586,12 @@
             :induct (bfr-<-=-ss a b)
             :expand ((bfr-<-=-ss a b)))))
 
-  (defthm bfr-max-nat-var-of-bfr-<-=-ss
+  (defthm pbfr-depends-on-of-bfr-<-=-ss
     (b* (((mv less equal) (bfr-<-=-ss a b)))
-      (implies (and (<= (bfr-max-nat-var-list a) n)
-                    (<= (bfr-max-nat-var-list b) n))
-               (and (<= (bfr-max-nat-var less) n)
-                    (<= (bfr-max-nat-var equal) n))))
-    :rule-classes (:rewrite (:linear :match-free :all))))
+      (implies (and (not (pbfr-list-depends-on n p a))
+                    (not (pbfr-list-depends-on n p b)))
+               (and (not (pbfr-depends-on n p less))
+                    (not (pbfr-depends-on n p equal)))))))
 
 
 (defsection bfr-<-ss
@@ -613,11 +603,10 @@
            (< (bfr-list->s a env)
               (bfr-list->s b env))))
 
-  (defthm bfr-max-nat-var-of-bfr-<-ss
-    (implies (and (<= (bfr-max-nat-var-list a) n)
-                  (<= (bfr-max-nat-var-list b) n))
-             (<= (bfr-max-nat-var (bfr-<-ss a b)) n))
-    :rule-classes (:rewrite (:linear :match-free :all))))
+  (defthm pbfr-depends-on-of-bfr-<-ss
+    (implies (and (not (pbfr-list-depends-on n p a))
+                  (not (pbfr-list-depends-on n p b)))
+             (not (pbfr-depends-on n p (bfr-<-ss a b))))))
 
 
 (defsection bfr-logapp-nss
@@ -629,11 +618,10 @@
                    (bfr-list->s b env)))
     :hints(("Goal" :in-theory (enable acl2::logapp** acl2::ash**))))
 
-  (defthm bfr-max-nat-var-list-of-bfr-logapp-nss
-    (implies (and (<= (bfr-max-nat-var-list a) n)
-                  (<= (bfr-max-nat-var-list b) n))
-             (<= (bfr-max-nat-var-list (bfr-logapp-nss m a b)) n))
-    :rule-classes (:rewrite (:linear :match-free :all))))
+  (defthm pbfr-list-depends-on-of-bfr-logapp-nss
+    (implies (and (not (pbfr-list-depends-on n p a))
+                  (not (pbfr-list-depends-on n p b)))
+             (not (pbfr-list-depends-on n p (bfr-logapp-nss m a b))))))
 
 (defsection bfr-logapp-nus
   (local (in-theory (enable bfr-logapp-nus)))
@@ -646,11 +634,10 @@
                                       acl2::ash**
                                       acl2::loghead**))))
 
-  (defthm bfr-max-nat-var-list-of-bfr-logapp-nus
-    (implies (and (<= (bfr-max-nat-var-list a) n)
-                  (<= (bfr-max-nat-var-list b) n))
-             (<= (bfr-max-nat-var-list (bfr-logapp-nus m a b)) n))
-    :rule-classes (:rewrite (:linear :match-free :all))))
+  (defthm pbfr-list-depends-on-of-bfr-logapp-nus
+    (implies (and (not (pbfr-list-depends-on n p a))
+                  (not (pbfr-list-depends-on n p b)))
+             (not (pbfr-list-depends-on n p (bfr-logapp-nus m a b))))))
 
 (defsection bfr-ash-ss
 
@@ -686,11 +673,11 @@
             :expand ((bfr-ash-ss place n shamt)
                      (:free (b) (logcons b (bfr-list->s (scdr shamt) env)))))))
 
-  (defthm bfr-max-nat-var-list-of-bfr-ash-ss
-    (implies (and (<= (bfr-max-nat-var-list a) n)
-                  (<= (bfr-max-nat-var-list b) n))
-             (<= (bfr-max-nat-var-list (bfr-ash-ss place a b)) n))
-    :rule-classes (:rewrite (:linear :match-free :all))))
+  (defthm pbfr-list-depends-on-of-bfr-ash-ss
+    (implies (and (not (pbfr-list-depends-on n p a))
+                  (not (pbfr-list-depends-on n p b)))
+             (not (pbfr-list-depends-on n p (bfr-ash-ss place a b))))
+    :hints(("Goal" :in-theory (enable pbfr-list-depends-on)))))
 
 ;; (encapsulate nil
 ;;   (local (defthm ash-of-logcons-0
@@ -755,11 +742,10 @@
             :induct (bfr-logbitp-n2v place digit n)
             :expand ((bfr-logbitp-n2v place digit n)))))
 
-  (defthm bfr-max-nat-var-list-of-bfr-logbitp-n2v
-    (implies (and (<= (bfr-max-nat-var-list digit) n)
-                  (<= (bfr-max-nat-var-list x) n))
-             (<= (bfr-max-nat-var (bfr-logbitp-n2v place digit x)) n))
-    :rule-classes (:rewrite (:linear :match-free :all))))
+  (defthm pbfr-list-depends-on-of-bfr-logbitp-n2v
+    (implies (and (not (pbfr-list-depends-on n p digit))
+                  (not (pbfr-list-depends-on n p x)))
+             (not (pbfr-depends-on n p (bfr-logbitp-n2v place digit x))))))
 
 ;; (encapsulate nil
 ;;   (local (in-theory (enable bfr-logbitp-n2v logcons acl2::ash**)))
@@ -807,32 +793,24 @@
             :expand ((bfr-integer-length-s1 offset x)))
            (bfr-reasoning)))
 
-  (defthm bfr-max-nat-var-of-bfr-integer-length-s1
+  (defthm pbfr-depends-on-of-bfr-integer-length-s1-rw
     (b* (((mv done ilen) (bfr-integer-length-s1 offset x)))
-      (and (<= (bfr-max-nat-var done) (bfr-max-nat-var-list x))
-           (<= (bfr-max-nat-var-list ilen) (bfr-max-nat-var-list x))))
-    :hints(("Goal" :in-theory (enable bfr-integer-length-s1)))
-    :rule-classes :linear)
-
-  (defthm bfr-max-nat-var-of-bfr-integer-length-s1-rw
-    (b* (((mv done ilen) (bfr-integer-length-s1 offset x)))
-      (implies (<= (bfr-max-nat-var-list x) n)
-               (and (<= (bfr-max-nat-var done) n)
-                    (<= (bfr-max-nat-var-list ilen) n)))))
+      (implies (not (pbfr-list-depends-on n p x))
+               (and (not (pbfr-depends-on n p done))
+                    (not (pbfr-list-depends-on n p ilen)))))
+    :hints(("Goal" :in-theory (enable pbfr-list-depends-on
+                                      bfr-integer-length-s1))))
 
   (defthm bfr-integer-length-s-correct
     (equal (bfr-list->s (bfr-integer-length-s x) env)
            (integer-length (bfr-list->s x env)))
     :hints(("Goal" :in-theory (enable bfr-integer-length-s))))
 
-  (defthm bfr-max-nat-var-of-bfr-integer-length-s
-    (<= (bfr-max-nat-var-list (bfr-integer-length-s x)) (bfr-max-nat-var-list x))
-    :hints(("Goal" :in-theory (enable bfr-integer-length-s)))
-    :rule-classes :linear)
-
-  (defthm bfr-max-nat-var-of-bfr-integer-length-s-rw
-    (implies (<= (bfr-max-nat-var-list x) n)
-             (<= (bfr-max-nat-var-list (bfr-integer-length-s x)) n))))
+  (defthm pbfr-depends-on-of-bfr-integer-length-s
+    (implies (not (pbfr-list-depends-on n p x))
+             (not (pbfr-list-depends-on n p (bfr-integer-length-s x))))
+    :hints(("Goal" :in-theory (enable pbfr-list-depends-on
+                                      bfr-integer-length-s)))))
 
   
 
@@ -876,17 +854,16 @@
             :in-theory (e/d (acl2::logand**))
             :expand ((bfr-logand-ss a b)))))
 
-  (defthm bfr-max-nat-var-list-of-bfr-logand-ss
-    (implies (and (<= (bfr-max-nat-var-list v1) n)
-                  (<= (bfr-max-nat-var-list v2) n))
-             (<= (bfr-max-nat-var-list (bfr-logand-ss v1 v2)) n))
-    :hints(("Goal" :in-theory (e/d (bfr-max-nat-var-list bfr-logand-ss)
-                                   ((bfr-max-nat-var-list)
-                                    (bfr-max-nat-var)
+  (defthm pbfr-list-depends-on-of-bfr-logand-ss
+    (implies (and (not (pbfr-list-depends-on n p v1))
+                  (not (pbfr-list-depends-on n p v2)))
+             (not (pbfr-list-depends-on n p (bfr-logand-ss v1 v2))))
+    :hints(("Goal" :in-theory (e/d (pbfr-list-depends-on bfr-logand-ss)
+                                   ((pbfr-list-depends-on)
+                                    (pbfr-depends-on)
                                     (:d bfr-logand-ss)))
             :induct (bfr-logand-ss v1 v2)
-            :expand ((bfr-logand-ss v1 v2))))
-    :rule-classes (:rewrite (:linear :match-free :all))))
+            :expand ((bfr-logand-ss v1 v2))))))
 
 (defsection bfr-logior-ss
   (defthm bfr-logior-ss-correct
@@ -898,17 +875,16 @@
             :in-theory (e/d (acl2::logior**))
             :expand ((bfr-logior-ss a b)))))
 
-  (defthm bfr-max-nat-var-list-of-bfr-logior-ss
-    (implies (and (<= (bfr-max-nat-var-list v1) n)
-                  (<= (bfr-max-nat-var-list v2) n))
-             (<= (bfr-max-nat-var-list (bfr-logior-ss v1 v2)) n))
-    :hints(("Goal" :in-theory (e/d (bfr-max-nat-var-list bfr-logior-ss)
-                                   ((bfr-max-nat-var-list)
-                                    (bfr-max-nat-var)
+  (defthm pbfr-list-depends-on-of-bfr-logior-ss
+    (implies (and (not (pbfr-list-depends-on n p v1))
+                  (not (pbfr-list-depends-on n p v2)))
+             (not (pbfr-list-depends-on n p (bfr-logior-ss v1 v2))))
+    :hints(("Goal" :in-theory (e/d (pbfr-list-depends-on bfr-logior-ss)
+                                   ((pbfr-list-depends-on)
+                                    (pbfr-depends-on)
                                     (:d bfr-logior-ss)))
             :induct (bfr-logior-ss v1 v2)
-            :expand ((bfr-logior-ss v1 v2))))
-    :rule-classes (:rewrite (:linear :match-free :all))))
+            :expand ((bfr-logior-ss v1 v2))))))
 
 
 ;; ------
@@ -1163,15 +1139,14 @@
                       (bfr-floor-mod-ss nil b bminus)))
             (bfr-reasoning)))
 
-  (defthm bfr-max-nat-var-list-of-bfr-floor-mod-ss
+  (defthm pbfr-list-depends-on-of-bfr-floor-mod-ss
     (b* (((mv floor mod) (bfr-floor-mod-ss a b bminus)))
-      (implies (and (<= (bfr-max-nat-var-list a) n)
-                    (<= (bfr-max-nat-var-list b) n)
-                    (<= (bfr-max-nat-var-list bminus) n))
-               (and (<= (bfr-max-nat-var-list floor) n)
-                    (<= (bfr-max-nat-var-list mod) n))))
-    :hints(("Goal" :in-theory (enable bfr-floor-mod-ss bfr-max-nat-var-list)))
-    :rule-classes (:rewrite (:linear :match-free :all))))
+      (implies (and (not (pbfr-list-depends-on n p a))
+                    (not (pbfr-list-depends-on n p b))
+                    (not (pbfr-list-depends-on n p bminus)))
+               (and (not (pbfr-list-depends-on n p floor))
+                    (not (pbfr-list-depends-on n p mod)))))
+    :hints(("Goal" :in-theory (enable bfr-floor-mod-ss pbfr-list-depends-on)))))
 
 (defsection bfr-sign-abs-neg-s
 
@@ -1191,22 +1166,13 @@
                   (- (abs x)))))
     :hints ((bfr-reasoning)))
 
-  (defthm bfr-max-nat-var-list-of-bfr-sign-abs-neg-s
-    (b* (((mv sign minus abs neg) (bfr-sign-abs-neg-s x))
-         (x (bfr-max-nat-var-list x)))
-      (and (<= (bfr-max-nat-var sign) x)
-           (<= (bfr-max-nat-var-list minus) x)
-           (<= (bfr-max-nat-var-list abs) x)
-           (<= (bfr-max-nat-var-list neg) x)))
-    :rule-classes :linear)
-
-  (defthm bfr-max-nat-var-list-of-bfr-sign-abs-neg-s-rw
+  (defthm pbfr-list-depends-on-of-bfr-sign-abs-neg-s-rw
     (b* (((mv sign minus abs neg) (bfr-sign-abs-neg-s x)))
-      (implies (<= (bfr-max-nat-var-list x) n)
-               (and (<= (bfr-max-nat-var sign) n)
-                    (<= (bfr-max-nat-var-list minus) n)
-                    (<= (bfr-max-nat-var-list abs) n)
-                    (<= (bfr-max-nat-var-list neg) n))))))
+      (implies (not (pbfr-list-depends-on n p x))
+               (and (not (pbfr-depends-on n p sign))
+                    (not (pbfr-list-depends-on n p minus))
+                    (not (pbfr-list-depends-on n p abs))
+                    (not (pbfr-list-depends-on n p neg)))))))
 
 
 (defsection bfr-floor-ss
@@ -1227,13 +1193,12 @@
              :in-theory (enable bfr-floor-ss))
             (bfr-reasoning)))
 
-  (defthm bfr-max-nat-var-list-of-bfr-floor-ss
-      (implies (and (<= (bfr-max-nat-var-list a) n)
-                    (<= (bfr-max-nat-var-list b) n)
-                    (<= (bfr-max-nat-var-list bminus) n))
-               (<= (bfr-max-nat-var-list (bfr-floor-ss a b)) n))
-    :hints(("Goal" :in-theory (enable bfr-floor-ss)))
-    :rule-classes (:rewrite (:linear :match-free :all))))
+  (defthm pbfr-list-depends-on-of-bfr-floor-ss
+      (implies (and (not (pbfr-list-depends-on n p a))
+                    (not (pbfr-list-depends-on n p b)))
+               (not (pbfr-list-depends-on n p (bfr-floor-ss a b))))
+    :hints(("Goal" :in-theory (enable bfr-floor-ss
+                                      pbfr-list-depends-on)))))
 
 (defsection bfr-mod-ss
 
@@ -1258,13 +1223,12 @@
              :in-theory (enable bfr-mod-ss))
             (bfr-reasoning)))
 
-  (defthm bfr-max-nat-var-list-of-bfr-mod-ss
-      (implies (and (<= (bfr-max-nat-var-list a) n)
-                    (<= (bfr-max-nat-var-list b) n)
-                    (<= (bfr-max-nat-var-list bminus) n))
-               (<= (bfr-max-nat-var-list (bfr-mod-ss a b)) n))
-    :hints(("Goal" :in-theory (enable bfr-mod-ss)))
-    :rule-classes (:rewrite (:linear :match-free :all))))
+  (defthm pbfr-list-depends-on-of-bfr-mod-ss
+      (implies (and (not (pbfr-list-depends-on n p a))
+                    (not (pbfr-list-depends-on n p b)))
+               (not (pbfr-list-depends-on n p (bfr-mod-ss a b))))
+    :hints(("Goal" :in-theory (enable bfr-mod-ss
+                                      pbfr-list-depends-on)))))
 
 (defsection bfr-truncate-ss
 
@@ -1298,13 +1262,12 @@
             (bfr-reasoning))
     :otf-flg t)
 
-  (defthm bfr-max-nat-var-list-of-bfr-truncate-ss
-      (implies (and (<= (bfr-max-nat-var-list a) n)
-                    (<= (bfr-max-nat-var-list b) n)
-                    (<= (bfr-max-nat-var-list bminus) n))
-               (<= (bfr-max-nat-var-list (bfr-truncate-ss a b)) n))
-    :hints(("Goal" :in-theory (enable bfr-truncate-ss)))
-    :rule-classes (:rewrite (:linear :match-free :all))))
+  (defthm pbfr-list-depends-on-of-bfr-truncate-ss
+      (implies (and (not (pbfr-list-depends-on n p a))
+                    (not (pbfr-list-depends-on n p b)))
+               (not (pbfr-list-depends-on n p (bfr-truncate-ss a b))))
+    :hints(("Goal" :in-theory (enable bfr-truncate-ss
+                                      pbfr-list-depends-on)))))
 
 (defsection bfr-rem-ss
 
@@ -1345,10 +1308,9 @@
              :in-theory (enable bfr-rem-ss))
             (bfr-reasoning)))
 
-  (defthm bfr-max-nat-var-list-of-bfr-rem-ss
-      (implies (and (<= (bfr-max-nat-var-list a) n)
-                    (<= (bfr-max-nat-var-list b) n)
-                    (<= (bfr-max-nat-var-list bminus) n))
-               (<= (bfr-max-nat-var-list (bfr-rem-ss a b)) n))
-    :hints(("Goal" :in-theory (enable bfr-rem-ss)))
-    :rule-classes (:rewrite (:linear :match-free :all))))
+  (defthm pbfr-list-depends-on-of-bfr-rem-ss
+      (implies (and (not (pbfr-list-depends-on n p a))
+                    (not (pbfr-list-depends-on n p b)))
+               (not (pbfr-list-depends-on n p (bfr-rem-ss a b))))
+    :hints(("Goal" :in-theory (enable bfr-rem-ss
+                                      pbfr-list-depends-on)))))

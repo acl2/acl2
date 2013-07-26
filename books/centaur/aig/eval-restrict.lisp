@@ -119,13 +119,6 @@
 (defsection aig-eval-alist-thms
   :extension aig-eval-alist
 
-  (defthm hons-assoc-equal-aig-eval-alist
-    (equal (hons-assoc-equal key (aig-eval-alist x env))
-           (and (hons-assoc-equal key x)
-                (cons key
-                      (aig-eval (cdr (hons-assoc-equal key x)) env))))
-    :hints(("Goal" :induct t)))
-
   (defcong aig-alist-equiv alist-equiv (aig-eval-alist x env) 1
     :hints((witness)))
 
@@ -156,13 +149,6 @@
   :extension aig-restrict
 
   (local (in-theory (enable aig-restrict)))
-
-  (defthm aig-eval-of-aig-restrict
-    (equal (aig-eval (aig-restrict x al1) al2)
-           (aig-eval x (append (aig-eval-alist al1 al2) al2)))
-    :hints(("Goal"
-            :induct t
-            :in-theory (enable aig-env-lookup))))
 
   (defcong aig-equiv aig-equiv (aig-restrict x al) 1
     :hints((witness :ruleset aig-equiv-witnessing)))

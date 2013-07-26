@@ -22,8 +22,8 @@
         (if (zp clk)
             (g-apply 'unary-- (gl-list x))
           (g-if test
-                (,gfn then hyp clk)
-                (,gfn else hyp clk))))
+                (,gfn then . ,params)
+                (,gfn else . ,params))))
        ((g-apply & &)
         (g-apply 'unary-- (gl-list x)))
        ((g-concrete obj)
@@ -42,14 +42,18 @@
 
 ;; (def-gobjectp-thm unary--
 ;;   :hints `(("Goal" :in-theory (e/d () ((:definition ,gfn)))
-;;             :induct (,gfn x hyp clk)
-;;             :expand ((,gfn x hyp clk)
+;;             :induct (,gfn x . ,params)
+;;             :expand ((,gfn x . ,params)
 ;;                      (:free (x) (gobjectp (- x)))))))
 
 (verify-g-guards
  unary--
  :hints `(("Goal" :in-theory (disable ,gfn))))
 
+(def-gobj-dependency-thm unary--
+  :hints `(("goal" :induct ,gcall
+            :expand (,gcall)
+            :in-theory (disable (:d ,gfn)))))
 
 (local (include-book "arithmetic/top-with-meta" :dir :system))
 
@@ -96,7 +100,7 @@
                                     ((:definition ,gfn)
                                      general-number-components-ev
                                      general-numberp-eval-to-numberp))
-            :induct (,gfn x hyp clk)
+            :induct (,gfn x . ,params)
             :do-not-induct t
-            :expand ((,gfn x hyp clk)
+            :expand ((,gfn x . ,params)
                      (:with eval-g-base (eval-g-base x env))))))

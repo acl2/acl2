@@ -37,16 +37,14 @@
          (head (bfr-ite-fn c v11 v01)))
       (bfr-ucons head tail))))
 
-(defthm bfr-max-nat-var-list-of-bfr-ite-bvv-fn
-  (implies (and (<= (bfr-max-nat-var c) n)
-                (<= (bfr-max-nat-var-list v1) n)
-                (<= (bfr-max-nat-var-list v0) n))
-           (<= (bfr-max-nat-var-list
-                (bfr-ite-bvv-fn c v1 v0)) n))
-  :hints(("Goal" :in-theory (e/d (bfr-max-nat-var-list)
-                                 (bfr-max-nat-var (bfr-max-nat-var)
-                                                  (bfr-max-nat-var-list)))))
-  :rule-classes ((:rewrite) (:linear :match-free :all)))
+(defthm pbfr-list-depends-on-of-bfr-ite-bvv-fn
+  (implies (and (not (pbfr-depends-on n p c))
+                (not (pbfr-list-depends-on n p v1))
+                (not (pbfr-list-depends-on n p v0)))
+           (not (pbfr-list-depends-on n p (bfr-ite-bvv-fn c v1 v0))))
+  :hints(("Goal" :in-theory (e/d (pbfr-list-depends-on)
+                                 (pbfr-depends-on (pbfr-depends-on)
+                                                  (pbfr-list-depends-on))))))
 
 (defthm eval-of-bfr-ite-bvv-fn
   (equal (bfr-list->u (bfr-ite-bvv-fn c v1 v0) env)
@@ -113,16 +111,14 @@
         (bfr-scons head rst)))))
 
 
-(defthm bfr-max-nat-var-list-of-bfr-ite-bss-fn
-  (implies (and (<= (bfr-max-nat-var c) n)
-                (<= (bfr-max-nat-var-list v1) n)
-                (<= (bfr-max-nat-var-list v0) n))
-           (<= (bfr-max-nat-var-list
-                (bfr-ite-bss-fn c v1 v0)) n))
-  :hints(("Goal" :in-theory (e/d (bfr-max-nat-var-list)
-                                 (bfr-max-nat-var (bfr-max-nat-var)
-                                                  (bfr-max-nat-var-list)))))
-  :rule-classes ((:rewrite) (:linear :match-free :all)))
+(defthm pbfr-list-depends-on-of-bfr-ite-bss-fn
+  (implies (and (not (pbfr-depends-on n p c))
+                (not (pbfr-list-depends-on n p v1))
+                (not (pbfr-list-depends-on n p v0)))
+           (not (pbfr-list-depends-on n p (bfr-ite-bss-fn c v1 v0))))
+  :hints(("Goal" :in-theory (e/d (pbfr-list-depends-on)
+                                 (pbfr-depends-on (pbfr-depends-on)
+                                                  (pbfr-list-depends-on))))))
 
 
 

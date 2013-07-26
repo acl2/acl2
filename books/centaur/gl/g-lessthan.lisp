@@ -33,6 +33,13 @@
                                (bfr-<-ss ain bin))))))
       (g-apply '< (gl-list a b)))))
 
+(defthm deps-of-g-<-of-numbers
+  (implies (and (not (gobj-depends-on k p a))
+                (not (gobj-depends-on k p b))
+                (general-numberp a)
+                (general-numberp b))
+           (not (gobj-depends-on k p (g-<-of-numbers a b)))))
+
 (in-theory (disable (g-<-of-numbers)))
 
 (local
@@ -120,6 +127,11 @@
 (verify-g-guards
  < :hints `(("Goal" :in-theory (disable* ,gfn general-concretep-def))))
 
+(def-gobj-dependency-thm <
+  :hints `(("goal" :induct ,gcall
+            :expand (,gcall)
+            :in-theory (disable (:d ,gfn)))))
+
 
 (def-g-correct-thm < eval-g-base
   :hints `(("Goal" :in-theory (e/d* ((:ruleset general-object-possibilities)
@@ -134,5 +146,5 @@
                                      default-unary-/
                                      default-car default-cdr
                                      hons-assoc-equal))
-            :induct (,gfn x y hyp clk)
-            :expand ((,gfn x y hyp clk)))))
+            :induct ,gcall
+            :expand (,gcall))))

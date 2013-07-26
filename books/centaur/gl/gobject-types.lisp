@@ -98,3 +98,10 @@
   :rule-classes ((:rewrite :backchain-limit-lst 0)
                  :type-prescription))
 
+(defun gl-cons (x y)
+  (declare (xargs :guard t))
+  (cons (if (g-keyword-symbolp x)
+            (g-concrete x)
+          x)
+        y))
+

@@ -192,7 +192,11 @@
                                  bfr-and-of-nil
                                  bfr-or-of-t
                                  (g-keyword-symbolp)
-                                 gl-aside gl-error-is-nil))
+                                 gl-aside gl-error-is-nil
+                                 gobj-depends-on-of-g-if-marker
+                                 gobj-depends-on-of-g-or-marker
+                                 gobj-depends-on-g-if-meta
+                                 gobj-depends-on-g-or-meta))
 
 ;; (defthm bfr-fix-x-is-x-when-bfr-p
 ;;   (implies (bfr-p x)

@@ -39,8 +39,8 @@
                  (if (zp clk)
                      (g-apply ',fn (gl-list ,x))
                    (g-if test
-                         (,gfn then hyp clk)
-                         (,gfn else hyp clk))))
+                         (,gfn then . ,params)
+                         (,gfn else . ,params))))
                 ((g-apply & &) (g-apply ',fn (gl-list ,x)))
                 ((g-var &) (g-apply ',fn (gl-list ,x)))
                 ((g-number &) ,',number-case)
@@ -51,18 +51,23 @@
        ;;             (e/d ()
        ;;                  ((force)
        ;;                   (:definition ,gfn)))
-       ;;             :induct (,gfn ,',x hyp clk)
-       ;;             :expand ((,gfn ,',x hyp clk)))))
+       ;;             :induct (,gfn ,',x . ,params)
+       ;;             :expand ((,gfn ,',x . ,params)))))
        (verify-g-guards
         ,fn
         :hints `(("Goal" :in-theory (Disable ,gfn))))
+
+       (def-gobj-dependency-thm ,fn
+         :hints `(("goal" :induct ,gcall
+                   :expand (,gcall)
+                   :in-theory (disable (:d ,gfn)))))
 
        (def-g-correct-thm ,fn eval-g-base
          :hints `(("Goal" :in-theory (e/d ((:induction ,gfn)
                                            general-concrete-obj)
                                           ((:definition ,gfn)))
-                   :induct (,gfn ,',x hyp clk)
-                   :expand ((,gfn ,',x hyp clk)
+                   :induct (,gfn ,',x . ,params)
+                   :expand ((,gfn ,',x . ,params)
                             (:with eval-g-base (eval-g-base ,',x env))))
                   . ,',hints)))))
 

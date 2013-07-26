@@ -18,8 +18,8 @@
           (if (zp clk)
               x
             (g-if test
-                  (,gfn then hyp clk)
-                  (,gfn else hyp clk))))
+                  (,gfn then . ,params)
+                  (,gfn else . ,params))))
          ((g-apply & &) x)
          ((g-var &) x)
          ((g-boolean &) x)
@@ -36,9 +36,14 @@
 
 (verify-g-guards acl2::make-fast-alist)
 
+(def-gobj-dependency-thm acl2::make-fast-alist
+  :hints `(("goal" :induct ,gcall
+            :expand (,gcall)
+            :in-theory (disable (:d ,gfn)))))
+
 (def-g-correct-thm acl2::make-fast-alist eval-g-base
-  :hints `(("Goal" :induct (,gfn acl2::alist hyp clk)
-            :expand (,gfn acl2::alist hyp clk)
+  :hints `(("Goal" :induct (,gfn acl2::alist . ,params)
+            :expand (,gfn acl2::alist . ,params)
             :in-theory (disable (:definition ,gfn)))
            (and stable-under-simplificationp
                 '(:expand ((:with eval-g-base (eval-g-base acl2::alist

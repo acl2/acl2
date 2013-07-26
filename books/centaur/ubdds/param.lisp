@@ -29,14 +29,14 @@
 
 (local (include-book "arithmetic/top" :dir :system))
 
-(in-theory (disable* default-car default-cdr ;; blp-implies-t
-                     default-+-2 default-+-1 default-<-2 default-<-1
-                     (:ruleset canonicalize-to-q-ite)
-                     equal-by-eval-bdds
-                     ))
+(local (in-theory (disable* default-car default-cdr ;; blp-implies-t
+                            default-+-2 default-+-1 default-<-2 default-<-1
+                            (:ruleset canonicalize-to-q-ite)
+                            equal-by-eval-bdds
+                            )))
 
-(in-theory (enable eval-bdd eval-bdd-list ubddp ubdd-listp
-                   q-compose q-compose-list))
+(local (in-theory (enable eval-bdd eval-bdd-list ubddp ubdd-listp
+                          q-compose q-compose-list)))
 
 (make-event
 
@@ -147,8 +147,7 @@
 ;; more.  2) only holds for variable assignments of length NVARS.
 (defn q-param (x nvars)
   (cond ((zp (nfix nvars)) nil)
-        ((atom x) (if x (qv-list 0 1 nvars)
-                    (make-list-ac nvars nil nil)))
+        ((atom x) (qv-list 0 1 nvars))
         ((not (car x))
          (cons nil (q-param (cdr x) (1- nvars))))
         ((not (cdr x))
@@ -709,7 +708,7 @@
 (memoize 'from-param-space :condition '(or (consp p) (consp y)))
 
 (defn to-param-space (p y)
-  (cond ((atom p) (if p y nil))
+  (cond ((atom p) y)
         ((atom y) y)
         ((eq (car p) nil)
          (to-param-space (cdr p) (cdr y)))
@@ -734,8 +733,8 @@
 
 (defun param-env (p env)
   (declare (xargs :guard t))
-  (cond ((atom env) nil)
-        ((atom p) env)
+  (cond ((atom p) env)
+        ((atom env) nil)
         ((eq (car p) nil) (param-env (cdr p) (cdr env)))
         ((eq (cdr p) nil) (param-env (car p) (cdr env)))
         ((car env) (cons t (param-env (car p) (cdr env))))
@@ -759,9 +758,34 @@
              (cons car (unparam-env (if car (car p) (cdr p))
                                     cdr))))))
 
+
+(encapsulate
+  nil
+  (local (defun ind (x p env)
+           (if (consp x)
+               (if (consp p)
+                   (if (car p)
+                       (if (cdr p)
+                           (if (car env)
+                               (ind (car x) (car p) (cdr env))
+                             (ind (cdr x) (cdr p) (cdr env)))
+                         (ind x (car p) env))
+                     (ind x (cdr p) env))
+                 x)
+             env)))
+
+  (defthm eval-param-env-of-unparam-env
+    (equal (eval-bdd x (param-env p (unparam-env p env)))
+           (eval-bdd x env))
+    :hints (("goal" :induct (ind x p env)
+             :in-theory (enable default-car default-cdr))
+            (and stable-under-simplificationp
+                 '(:expand ((:free (env) (eval-bdd x env))))))))
+
 (defthm eval-with-unparam-env
   (implies (and p (ubddp p))
            (eval-bdd p (unparam-env p env))))
+
 
 (defun unparam-env-ind (x p env)
   (cond ((atom p) (list x env))
@@ -772,15 +796,20 @@
                             (cdr env)))))
 
 (defthmd unparam-env-to-param-space
-  (implies (and p (ubddp p))
-           (equal (eval-bdd (to-param-space p x) env)
-                  (eval-bdd x (unparam-env p env))))
+  (equal (eval-bdd (to-param-space p x) env)
+         (eval-bdd x (unparam-env p env)))
   :hints (("goal" :induct (unparam-env-ind x p env)
            :expand ((:free (env) (eval-bdd x env))
                     (:free (env) (unparam-env p env)))
            :in-theory (enable default-car default-cdr))))
 
-
+(defthm unparam-env-of-param-env
+  (implies (eval-bdd p env)
+           (equal (eval-bdd x (unparam-env p (param-env p env)))
+                  (eval-bdd x env)))
+  :hints (("goal" :use ((:instance param-env-to-param-space)
+                        (:instance unparam-env-to-param-space
+                         (env (param-env p env)))))))
 
 (defn to-param-space-list (p list)
   (if (atom list)
@@ -924,3 +953,23 @@
                   x))
   :hints (("goal" :induct (from-param-space p x)
            :in-theory (e/d (q-and) (ubddp)))))
+
+
+
+(defun param-env-ind (x p env)
+  (cond ((atom p) (list x env))
+        ((eq (car p) nil) (param-env-ind x (cdr p) (cdr env)))
+        ((eq (cdr p) nil) (param-env-ind x (car p) (cdr env)))
+        ((car env) (cons t (param-env-ind (car x) (car p) (cdr env))))
+        (t       (cons nil (param-env-ind (cdr x) (cdr p) (cdr env))))))
+
+(defthm eval-of-from-param-space
+  (implies (eval-bdd p env)
+           (equal (eval-bdd (from-param-space p x)
+                            env)
+                  (eval-bdd x (param-env p env))))
+  :hints (("goal" :induct (param-env-ind x p env)
+           :expand ((from-param-space p x)
+                    (unparam-env p env)
+                    (:free (env) (eval-bdd x env))
+                    (eval-bdd p env)))))

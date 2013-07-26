@@ -38,6 +38,12 @@
 
 (in-theory (disable (g-binary-logior-of-numbers)))
 
+(defthm deps-of-g-binary-logior-of-numbers
+  (implies (and (not (gobj-depends-on k p x))
+                (not (gobj-depends-on k p y))
+                (general-numberp x)
+                (general-numberp y))
+           (not (gobj-depends-on k p (g-binary-logior-of-numbers x y)))))
 
 (local (defthm logior-non-integers
          (and (implies (not (integerp i))
@@ -84,6 +90,11 @@
  :hints `(("Goal" :in-theory (disable* ,gfn
                                        general-concretep-def))))
 
+(def-gobj-dependency-thm binary-logior
+  :hints `(("goal" :induct ,gcall
+            :expand (,gcall)
+            :in-theory (disable (:d ,gfn)))))
+
 (local (defthm logior-non-acl2-numbers
          (and (implies (not (acl2-numberp i))
                        (equal (logior i j) (logior 0 j)))
@@ -102,6 +113,6 @@
                                      eval-g-base-non-cons
                                      default-car default-cdr
                                      (:rules-of-class :type-prescription :here)))
-            :induct (,gfn i j hyp clk)
+            :induct (,gfn i j . ,params)
             :do-not-induct t
-            :expand ((,gfn i j hyp clk)))))
+            :expand ((,gfn i j . ,params)))))

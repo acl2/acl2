@@ -9,6 +9,7 @@
 (local (include-book "symbolic-arithmetic"))
 (local (include-book "eval-g-base-help"))
 (local (include-book "hyp-fix-logic"))
+(local (include-book "clause-processors/just-expand" :dir :system))
 ;(local (allow-arith5-help))
 
 ;; (include-book "univ-gl-eval")
@@ -79,6 +80,16 @@
                                      general-number-components))
             :do-not-induct t))))
 
+(local
+ (defthm dependencies-of-g-binary-+-of-numbers
+   (implies (and (general-numberp x)
+                 (general-numberp y)
+                 (not (gobj-depends-on n p x))
+                 (not (gobj-depends-on n p y)))
+            (not (gobj-depends-on n p (g-binary-+-of-numbers x y))))
+   :hints (("goal" :do-not-induct t))
+   :otf-flg t))
+
 (in-theory (disable g-binary-+-of-numbers))
 
 (def-g-binary-op binary-+
@@ -105,6 +116,12 @@
                        (equal (+ x y)
                               (+ x 0))))))
 
+(def-gobj-dependency-thm binary-+
+  :hints `(("goal" :in-theory (disable (:d ,gfn)
+                                       gobj-depends-on)
+            :induct ,gcall
+            :expand (,gcall))))
+
 (def-g-correct-thm binary-+ eval-g-base
   :hints
   `(("goal" :in-theory (e/d* (general-concretep-atom
@@ -126,9 +143,9 @@
                               (:rules-of-class :type-prescription :here))
                              ((:type-prescription bfr-eval)
                               (:type-prescription components-to-number-fn)))
-     :induct (,gfn x y hyp clk)
+     :induct ,gcall
      :do-not-induct t
-     :expand ((,gfn x y hyp clk)))
+     :expand (,gcall))
     (and stable-under-simplificationp
          (flag::expand-calls-computed-hint
           clause '(eval-g-base)))))

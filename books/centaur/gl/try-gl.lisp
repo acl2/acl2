@@ -102,31 +102,88 @@
 (include-book "gl-generic-clause-proc")
 (include-book "centaur/misc/numlist" :dir :system)
 (include-book "shape-spec")
+(include-book "str/natstr" :dir :system)
+(include-book "str/strnatless" :dir :system)
+(include-book "defsort/duplicated-members" :dir :system)
 
-(defun uniquify-nat-list (x next-idx)
-  (declare (xargs :guard (natp next-idx)))
-  (mv (numlist next-idx 1 (len x))
-      (+ (lnfix next-idx) (len x))))
+(defun uniquify-nat-list (x next-idx used-idxs)
+  (declare (xargs :guard (and (nat-listp x)
+                              (natp next-idx))
+                  :guard-hints ('(:in-theory (enable nat-listp)))))
+  (if (atom x)
+      (mv nil (lnfix next-idx))
+    (b* ((xx (lnfix (car x)))
+         (usedp (hons-get xx used-idxs))
+         ((mv rest-lst rest-next)
+          (uniquify-nat-list
+           (cdr x) (if usedp (+ 1 (lnfix next-idx)) next-idx) used-idxs)))
+      (mv (cons (if usedp (lnfix next-idx) xx) rest-lst)
+          rest-next))))
 
 (defthm natp-next-idx-of-uniquify-nat-list
-  (natp (mv-nth 1 (uniquify-nat-list x next-idx))))
+  (natp (mv-nth 1 (uniquify-nat-list x next-idx used-idxs))))
 
-(defun uniquify-number-spec (x next-idx)
-  (declare (xargs :guard (natp next-idx)))
+(defun nat-list-listp (x)
+  (declare (xargs :guard t))
+  (if (atom x)
+      (eq x nil)
+    (and (nat-listp (car x))
+         (nat-list-listp (cdr x)))))
+
+(local (defthm nat-list-listp-when-number-specp
+         (implies (number-specp x)
+                  (nat-list-listp x))
+         :hints(("Goal" :in-theory (enable nat-list-listp
+                                           number-specp)))))
+
+(defun uniquify-number-spec (x next-idx used-idxs)
+  (declare (xargs :guard (and (nat-list-listp x)
+                              (natp next-idx))))
   (if (atom x)
       (mv nil (lnfix next-idx))
     (b* (((mv field next-idx)
-          (uniquify-nat-list (car x) next-idx))
+          (uniquify-nat-list (car x) next-idx used-idxs))
          ((mv rest next-idx)
-          (uniquify-number-spec (cdr X) next-idx)))
+          (uniquify-number-spec (cdr X) next-idx used-idxs)))
       (mv (cons field rest) next-idx))))
 
 (defthm natp-next-idx-of-uniquify-number-spec
-  (natp (mv-nth 1 (uniquify-number-spec x next-idx))))
+  (natp (mv-nth 1 (uniquify-number-spec x next-idx used-idxs))))
+
+(defun to-symb (n)
+  (declare (xargs :guard (natp n)))
+  (intern$
+   (concatenate 'string "X" (str::natstr n))
+   "ACL2"))
+
+(defun max-xn-sym (syms)
+  (declare (xargs :guard t
+                  :verify-guards nil))
+  (b* (((when (atom syms))
+        0)
+       (sym (car syms))
+       ((unless (symbolp sym)) (max-xn-sym (cdr syms)))
+       (str (symbol-name sym))
+       (len (length str))
+       ((unless (and (< 1 len)
+                     (eql (char str 0) #\X)
+                     (str::digit-string-p-aux str 1 len)
+                     ;; not generally correct but there arent any XN symbols in
+                     ;; ACL2's package imports
+                     (equal (symbol-package-name sym) "ACL2")))
+        (max-xn-sym (cdr syms)))
+       ((mv val &) (str::parse-nat-from-string str 0 0 1 len)))
+    (max (+ 1 val) (max-xn-sym (cdr syms)))))
+
+(defthm natp-max-xn-sym
+  (natp (max-xn-sym syms))
+  :rule-classes :type-prescription)
+
+(verify-guards max-xn-sym)
 
 ;; Transforms a shape spec so that all bit indices and var names are unique;
 ;; they'll just be sequentially numbered.
-(defun uniquify-shape-spec (x next-idx next-var)
+(defun uniquify-shape-spec (x next-idx next-var used-idxs used-vars)
   (declare (xargs :guard (and (shape-specp x)
                               (natp next-idx)
                               (natp next-var))
@@ -135,12 +192,13 @@
       (mv x (lnfix next-idx) (lnfix next-var))
     (case (tag x)
       (:g-number (mv-let (numspec next-idx)
-                   (uniquify-number-spec (g-number->num x) next-idx)
+                   (uniquify-number-spec (g-number->num x) next-idx used-idxs)
                    (mv (g-number numspec) next-idx (lnfix next-var))))
       (:g-integer (b* ((sign next-idx)
                        ((mv bits next-idx)
                         (uniquify-nat-list (g-integer->bits x)
-                                           (+ 1 (lnfix next-idx))))
+                                           (+ 1 (lnfix next-idx))
+                                           used-idxs))
                        (var next-var))
                     (mv (g-integer sign bits var)
                         next-idx (+ 1 (lnfix next-var)))))
@@ -148,40 +206,47 @@
                         (sign (+ 1 (lnfix next-idx)))
                         ((mv bits next-idx)
                          (uniquify-nat-list (g-integer?->bits x)
-                                            (+ 2 (lnfix next-idx))))
+                                            (+ 2 (lnfix next-idx))
+                                            used-idxs))
                         (var next-var))
                      (mv (g-integer? sign bits var intp)
                          next-idx (+ 1 (lnfix next-var)))))
-      (:g-boolean (mv (g-boolean next-idx) (+ 1 (lnfix next-idx)) (lnfix next-var)))
+      (:g-boolean (if (hons-get (g-boolean->bool x) used-idxs)
+                      (mv (g-boolean next-idx) (+ 1 (lnfix next-idx)) (lnfix next-var))
+                    (mv x (lnfix next-idx) (lnfix next-var))))
       (:g-concrete (mv x (lnfix next-idx) (lnfix next-var)))
-      (:g-var (mv (g-var next-var) (lnfix next-idx) (1+ (lnfix next-var))))
+      (:g-var (b* ((v (g-var->name x)))
+                (if (and (symbolp v)
+                         (not (hons-get v used-vars)))
+                    (mv x (lnfix next-idx) (lnfix next-var))
+                  (mv (g-var (to-symb next-var)) (lnfix next-idx) (1+ (lnfix next-var))))))
       (:g-ite
        (b* (((mv test next-idx next-var)
-             (uniquify-shape-spec (g-ite->test x) next-idx next-var))
+             (uniquify-shape-spec (g-ite->test x) next-idx next-var used-idxs used-vars))
             ((mv then next-idx next-var)
-             (uniquify-shape-spec (g-ite->then x) next-idx next-var))
+             (uniquify-shape-spec (g-ite->then x) next-idx next-var used-idxs used-vars))
             ((mv else next-idx next-var)
-             (uniquify-shape-spec (g-ite->else x) next-idx next-var)))
+             (uniquify-shape-spec (g-ite->else x) next-idx next-var used-idxs used-vars)))
          (mv (g-ite test then else) next-idx next-var)))
       (:g-call
        (b* (((mv args next-idx next-var)
-             (uniquify-shape-spec (g-call->args x) next-idx next-var)))
+             (uniquify-shape-spec (g-call->args x) next-idx next-var used-idxs used-vars)))
          (mv (g-call (g-call->fn x) args
                      (g-call->inverse x))
              next-idx next-var)))
       (otherwise
        (b* (((mv car next-idx next-var)
-             (uniquify-shape-spec (car x) next-idx next-var))
+             (uniquify-shape-spec (car x) next-idx next-var used-idxs used-vars))
             ((mv cdr next-idx next-var)
-             (uniquify-shape-spec (cdr x) next-idx next-var)))
+             (uniquify-shape-spec (cdr x) next-idx next-var used-idxs used-vars)))
          (mv (cons car cdr) next-idx next-var))))))
 
 (defthm natp-next-idx-of-uniquify-shape-spec
-  (natp (mv-nth 1 (uniquify-shape-spec x next-idx next-var)))
+  (natp (mv-nth 1 (uniquify-shape-spec x next-idx next-var used-idxs used-vars)))
   :rule-classes (:rewrite :type-prescription))
 
 (defthm natp-next-var-of-uniquify-shape-spec
-  (natp (mv-nth 2 (uniquify-shape-spec x next-idx next-var)))
+  (natp (mv-nth 2 (uniquify-shape-spec x next-idx next-var used-idxs used-vars)))
   :rule-classes (:rewrite :type-prescription))
 
 (verify-guards uniquify-shape-spec
@@ -480,7 +545,15 @@
        ((mv bindings hyp-lits nonhyp-lits)
         (type-gen-collect-bindings clause type-gens state))
        (bindings (fast-alist-free (hons-shrink-alist bindings nil)))
-       ((mv g-bindings & &) (uniquify-shape-spec bindings 0 0))
+       (indices (shape-spec-indices bindings))
+       (vars (shape-spec-vars bindings))
+       (next-idx (+ 1 (max-list indices)))
+       (next-var (max-xn-sym vars))
+       (used-idxs (pairlis$ (acl2::duplicated-members indices) nil))
+       (used-vars (pairlis$ (acl2::duplicated-members vars) nil))
+       ((acl2::with-fast used-idxs used-vars))
+       ((mv g-bindings & &)
+        (uniquify-shape-spec bindings next-idx next-var used-idxs used-vars))
        (vars (strip-cars g-bindings))
        (concl-lits (filter-nonhyp-lits nonhyp-lits vars)))
     `(:computed-hint-replacement
@@ -525,6 +598,15 @@
   :rule-classes :clause-processor)
 
 
+(defun remove-variables (x)
+  (if (atom x)
+      nil
+    (if (and (symbolp (car x))
+             (car x))
+        (remove-variables (cdr x))
+      (cons (car x) (remove-variables (cdr x))))))
+    
+
     
 (defun try-gl-hint-fn (clause stablep fixups subterms-types type-gens
                               bad-subterms print state)
@@ -561,7 +643,7 @@
        ;; collect the subterms that we'll generalize away and their type hyps
        ((mv subterms type-hyps)
         (collect-subterm-types fixup-clause subterms-types))
-       (subterms (remove-duplicates-equal subterms))
+       (subterms (remove-variables (remove-duplicates-equal subterms)))
        (type-hyps (remove-duplicates-equal type-hyps))
        (clause-vars (acl2::term-vars-list fixup-clause))
        (fresh-vars (make-n-vars (len subterms) 'x 0 clause-vars))

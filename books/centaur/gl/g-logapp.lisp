@@ -19,6 +19,10 @@
        ((mv first rest &) (first/rest/end x)))
     (bfr-ucons first (s-take (1- n) rest))))
 
+(defthm deps-of-s-take
+  (implies (not (pbfr-list-depends-on k p x))
+           (not (pbfr-list-depends-on k p (s-take n x)))))
+
 
 (defthm s-take-correct
   (equal (bfr-list->u (s-take n x) env)
@@ -71,6 +75,12 @@
                  (logapp-uss (ash (lnfix w) 1) (cdr n) (logtail-ns w x)
                              y))
      (logapp-uss (ash (lnfix w) 1) (cdr n) x y))))
+
+(defthm deps-of-logapp-uss
+  (implies (and (not (pbfr-list-depends-on k p n))
+                (not (pbfr-list-depends-on k p x))
+                (not (pbfr-list-depends-on k p y)))
+           (not (pbfr-list-depends-on k p (logapp-uss w n x y)))))
 
 (local
  (progn
@@ -198,6 +208,15 @@
 
 (in-theory (disable (g-logapp-of-numbers)))
 
+(defthm deps-of-g-logapp-of-numbers
+  (implies (and (not (gobj-depends-on k p n))
+                (not (gobj-depends-on k p x))
+                (not (gobj-depends-on k p y))
+                (general-numberp n)
+                (general-numberp x)
+                (general-numberp y))
+           (not (gobj-depends-on k p (g-logapp-of-numbers n x y)))))
+
 (local (defthm logapp-zp-n
          (implies (zp n)
                   (equal (logapp n x y)
@@ -258,8 +277,8 @@
                       (then (g-ite->then size))
                       (else (g-ite->else size)))
                  (g-if test
-                       (,gfn then i j hyp clk)
-                       (,gfn else i j hyp clk)))
+                       (,gfn then i j . ,params)
+                       (,gfn else i j . ,params)))
              (g-apply 'logapp (gl-list size i j))))
           ((unless (or (atom i)
                        (not (member-eq (tag i) '(:g-ite :g-var :g-apply)))))
@@ -269,8 +288,8 @@
                       (then (g-ite->then i))
                       (else (g-ite->else i)))
                  (g-if test
-                       (,gfn size then j hyp clk)
-                       (,gfn size else j hyp clk)))
+                       (,gfn size then j . ,params)
+                       (,gfn size else j . ,params)))
              (g-apply 'logapp (gl-list size i j))))
           ((unless (or (atom j)
                        (not (member-eq (tag j) '(:g-ite :g-var :g-apply)))))
@@ -280,8 +299,8 @@
                       (then (g-ite->then j))
                       (else (g-ite->else j)))
                  (g-if test
-                       (,gfn size i then hyp clk)
-                       (,gfn size i else hyp clk)))
+                       (,gfn size i then . ,params)
+                       (,gfn size i else . ,params)))
              (g-apply 'logapp (gl-list size i j))))
           (size (if (general-numberp size) size 0))
           (i (if (general-numberp i) i 0))
@@ -291,6 +310,11 @@
 (verify-g-guards logapp
                  :hints `(("Goal" :in-theory (disable* ,gfn
                                                        general-concretep-def))))
+
+(def-gobj-dependency-thm logapp
+  :hints `(("goal" :induct ,gcall
+            :expand (,gcall)
+            :in-theory (disable (:d ,gfn)))))
 
 (local (defthm logapp-non-acl2-numbers
          (and (implies (not (acl2-numberp size))
@@ -323,9 +347,9 @@
                                      (:rules-of-class :type-prescription
                                       :here))
                                     ((:t logapp)))
-            :induct (,gfn acl2::size i j hyp clk)
+            :induct (,gfn acl2::size i j . ,params)
             :do-not-induct t
-            :expand ((,gfn acl2::size i j hyp clk)))
+            :expand ((,gfn acl2::size i j . ,params)))
            (and stable-under-simplificationp
                 (intersectp-equal '((not (equal (tag$inline acl2::size) ':g-ite))
                                     (not (general-concretep acl2::size)))
@@ -366,6 +390,12 @@
        (resbits (logapp-uss 1 ylen ybits (bfr-ite-bss-fn negbfr '(t) '(nil)))))
     (mk-g-number (rlist-fix resbits))))
 
+(defthm deps-of-g-int-set-sign-of-number
+  (implies (and (not (gobj-depends-on k p negp))
+                (not (gobj-depends-on k p y))
+                (general-numberp y))
+           (not (gobj-depends-on k p (g-int-set-sign-of-number negp y hyp)))))
+
 
 (local (defthm bfr-integer-length-s-correct-v2n
          (equal (bfr-list->u (bfr-integer-length-s x) env)
@@ -404,6 +434,11 @@
            (disable* ,gfn
                      (:rules-of-class :type-prescription :here)))))
 
+(def-gobj-dependency-thm int-set-sign
+  :hints `(("goal" :induct ,gcall
+            :expand (,gcall)
+            :in-theory (disable (:d ,gfn)))))
+
 (local (defthm int-set-sign-non-acl2-number
          (implies (not (acl2-numberp i))
                   (equal (int-set-sign negp i)
@@ -435,8 +470,8 @@
                                       (:rules-of-class :type-prescription :here))
                                      ((:type-prescription bfr-eval)
                                       eval-g-base-non-cons))
-             :induct (,gfn negp i hyp clk)
-             :expand ((,gfn negp i hyp clk)))
+             :induct (,gfn negp i . ,params)
+             :expand ((,gfn negp i . ,params)))
            (and stable-under-simplificationp
                 (intersectp-equal '((not (equal (tag$inline negp) ':g-ite))
                                     (not (general-concretep negp)))
@@ -464,6 +499,12 @@
        (ibits (bfr-ite-bss-fn iintp irn nil)))
     (mv nil (mk-g-number ibits))))
 
+(defthm deps-of-g-ifix-of-number
+  (implies (and (not (gobj-depends-on k p i))
+                (general-numberp i))
+           (not (gobj-depends-on k p (mv-nth 1 (g-ifix-of-number i)))))
+  :hints(("Goal" :in-theory (enable g-ifix-of-number))))
+
 (defthm g-ifix-of-number-correct
   (b* (((mv erp res) (g-ifix-of-number i)))
     (implies (and (not erp)
@@ -490,8 +531,8 @@
         ;;             (then (g-ite->then intp))
         ;;             (else (g-ite->else intp)))
         ;;        (g-if test
-        ;;              (,gfn i x then hyp clk)
-        ;;              (,gfn i x else hyp clk)))
+        ;;              (,gfn i x then . ,params)
+        ;;              (,gfn i x else . ,params)))
         ;;    (g-apply 'maybe-integer (gl-list i x intp))))
         ((when (and (consp i)
                     (member (tag i) '(:g-ite :g-var :g-apply))))
@@ -501,8 +542,8 @@
                     (then (g-ite->then i))
                     (else (g-ite->else i)))
                (g-if test
-                     (,gfn then x intp hyp clk)
-                     (,gfn else x intp hyp clk)))
+                     (,gfn then x intp . ,params)
+                     (,gfn else x intp . ,params)))
            (g-apply 'maybe-integer (gl-list i x intp))))
         ;; ((when (and (consp x) (eq (tag x) :g-ite)))
         ;;  (if (not (zp clk))
@@ -510,8 +551,8 @@
         ;;             (then (g-ite->then x))
         ;;             (else (g-ite->else x)))
         ;;        (g-if test
-        ;;              (,gfn i then intp hyp clk)
-        ;;              (,gfn i else intp hyp clk)))
+        ;;              (,gfn i then intp . ,params)
+        ;;              (,gfn i else intp . ,params)))
         ;;    (g-apply 'maybe-integer (gl-list i x intp))))
         (i (if (general-numberp i) i 0))
         ((mv undef ifix) (g-ifix-of-number i))
@@ -528,6 +569,12 @@
  :hints `(("Goal" :in-theory
            (disable* ,gfn
                      (:rules-of-class :type-prescription :here)))))
+
+(def-gobj-dependency-thm maybe-integer
+  :hints `(("goal" :induct ,gcall
+            :expand (,gcall)
+            :in-theory (disable (:d ,gfn)))))
+
 
 (def-g-correct-thm maybe-integer eval-g-base
    :hints `(("Goal" :in-theory (e/d* (general-concretep-atom
@@ -556,8 +603,8 @@
                                       (:rules-of-class :type-prescription :here))
                                      ((:type-prescription bfr-eval)
                                       eval-g-base-non-cons))
-             :induct (,gfn i x intp hyp clk)
-             :expand ((,gfn i x intp hyp clk)))
+             :induct (,gfn i x intp . ,params)
+             :expand ((,gfn i x intp . ,params)))
            (and stable-under-simplificationp
                 (intersectp-equal '((not (equal (tag$inline i) ':g-ite))
                                     (not (general-concretep i))

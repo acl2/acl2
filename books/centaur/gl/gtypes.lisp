@@ -330,13 +330,6 @@
 ;; the case, that is, if the first is a g-keyword-symbol it wraps it in a g-concrete.
 
 
-(defun gl-cons (x y)
-  (declare (xargs :guard t))
-  (cons (if (g-keyword-symbolp x)
-            (g-concrete x)
-          x)
-        y))
-
 (defun gl-list-macro (lst)
   (if (atom lst)
       nil
@@ -362,3 +355,32 @@
     (implies (gobj-listp x)
              (gobj-listp (gl-cons k x)))
     :hints(("Goal" :in-theory (enable gl-cons tag)))))
+
+
+(mutual-recursion
+ (defun gobj-depends-on (k p x)
+   (if (atom x)
+       nil
+     (pattern-match x
+       ((g-boolean b) (pbfr-depends-on k p b))
+       ((g-number n)
+        (b* (((mv rn rd in id) (break-g-number n)))
+          (or (pbfr-list-depends-on k p rn)
+              (pbfr-list-depends-on k p rd)
+              (pbfr-list-depends-on k p in)
+              (pbfr-list-depends-on k p id))))
+       ((g-ite test then else)
+        (or (gobj-depends-on k p test)
+            (gobj-depends-on k p then)
+            (gobj-depends-on k p else)))
+       ((g-concrete &) nil)
+       ((g-var &) nil)
+       ((g-apply & args) (gobj-list-depends-on k p args))
+       (& (or (gobj-depends-on k p (car x))
+              (gobj-depends-on k p (cdr x)))))))
+ (defun gobj-list-depends-on (k p x)
+   (if (atom x)
+       nil
+     (or (gobj-depends-on k p (car x))
+         (gobj-list-depends-on k p (cdr x))))))
+

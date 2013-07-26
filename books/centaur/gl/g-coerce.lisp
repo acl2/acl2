@@ -47,6 +47,10 @@
     (revappend-concrete (cdr a)
                         (gl-cons (mk-g-concrete (car a)) b))))
 
+(defthm no-deps-of-revappend-concrete
+  (implies (not (gobj-depends-on k p b))
+           (not (gobj-depends-on k p (revappend-concrete a b)))))
+
 (local
  (progn
    ;; (defthm gobjectp-revappend-concrete
@@ -142,6 +146,13 @@
                                                'string)))
              (&
               (coerce-string (cdr x) (cons (code-char 0) pre) hyp))))))))
+
+(defthm deps-of-coerce-string
+  (implies (not (gobj-depends-on k p x))
+           (not (gobj-depends-on k p (coerce-string x pre hyp))))
+  :hints (("goal" :induct (coerce-string x pre hyp)
+           :expand ((coerce-string x pre hyp))
+           :in-theory (disable (:d coerce-string)))))
 
 
 (local
@@ -353,6 +364,13 @@
       ((g-var &) (g-apply 'coerce (gl-list x 'list)))
       (& nil))))
 
+(defthm deps-of-coerce-list
+  (implies (not (gobj-depends-on k p x))
+           (not (gobj-depends-on k p (coerce-list x hyp))))
+  :hints (("goal" :induct  (coerce-list x hyp)
+           :expand ((coerce-list x hyp))
+           :in-theory (disable (:d coerce-list)))))
+
 
 ;; (local
 ;;  (defthm gobjectp-coerce-list
@@ -372,7 +390,7 @@
 (encapsulate nil
   (local (in-theory (disable member-equal)))
 
-  (local (defthm-gobj->term-flag
+  (local (defthm-gobj-flag
            (defthm stringp-eval-g-base
              (implies (and (not (general-concretep x))
                            (not (g-ite-p x))
@@ -412,8 +430,8 @@
         (if (zp clk)
             (g-apply 'coerce (gl-list x y))
           (g-if ytest
-                (,gfn x ythen hyp clk)
-                (,gfn x yelse hyp clk))))
+                (,gfn x ythen hyp clk config bvar-db state)
+                (,gfn x yelse hyp clk config bvar-db state))))
        ((g-apply & &)
         (g-apply 'coerce (gl-list x y)))
        ((g-var &)
@@ -432,8 +450,13 @@
  coerce
  :hints `(("Goal" :in-theory (disable ,gfn))))
 
+(def-gobj-dependency-thm coerce
+  :hints `(("goal" :induct ,gcall
+            :expand (,gcall)
+            :in-theory (disable (:d ,gfn)))))
+
 (local
- (defthm-gobj->term-flag
+ (defthm-gobj-flag
    (defthm eval-g-base-not-equal-list
      (implies (and (not (general-concretep y))
                    (not (g-ite-p y))
@@ -470,8 +493,8 @@
                                      ; eval-g-base-g-apply-p
                                      eval-g-base-alt-def
                                      eval-g-base-not-equal-list))
-            :induct (,gfn x y hyp clk)
-            :expand ((,gfn x y hyp clk)))
+            :induct ,gcall
+            :expand (,gcall))
            (and stable-under-simplificationp
                 '(:in-theory (enable general-concrete-obj-correct
                                      eval-g-base-not-equal-list)))))

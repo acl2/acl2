@@ -15,7 +15,7 @@
 
 
 (def-g-fn gl-mbe
-  `(b* ((equal? (glr acl2::always-equal spec impl hyp clk))
+  `(b* ((equal? (glr acl2::always-equal spec impl . ,params))
         (tests (gtests equal? hyp))
         (false (bfr-and hyp
                         (bfr-not (gtests-unknown tests))
@@ -23,8 +23,15 @@
         ((mv false-sat false-succ ?false-ctrex)
          (bfr-sat false))
         ((when (and false-sat false-succ))
+         (make-fast-alist false-ctrex)
          ;; (acl2::sneaky-save 'gl-mbe-ctrex false-ctrex)
-         (er hard? 'gl-mbe "GL-MBE assertion failed. Ctrex: ~x0" false-ctrex)
+         (er hard? 'gl-mbe "GL-MBE assertion failed. Ctrex: ~x0 Args: ~x1 ~
+                            ~x2. Other: ~x3~%"
+             false-ctrex
+             ;; BOZO this is all assuming aig/alist-ctrex mode
+             (gobj->term spec (list false-ctrex))
+             (gobj->term impl (list false-ctrex))
+             (gobj->term other-info (list false-ctrex)))
          spec)
         ((when (not false-succ))
          (er hard? 'gl-mbe "GL-MBE assertion failed to prove.")
@@ -57,6 +64,11 @@
                             (env ,env))
                 (instantiate-bfr-sat-hint (cdr clause) env)))
          (& (instantiate-bfr-sat-hint (cdr clause) env)))))))
+
+(def-gobj-dependency-thm gl-mbe
+  :hints `(("goal" 
+            :expand (,gcall)
+            :in-theory (disable (:d ,gfn)))))
 
 (def-g-correct-thm gl-mbe eval-g-base
   :hints '(("goal" :do-not-induct t

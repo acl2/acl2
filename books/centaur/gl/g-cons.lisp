@@ -15,7 +15,8 @@
        ((g-ite test then else)
         (if (zp clk)
             (g-apply 'cdr (gl-list x))
-          (g-if test (,gfn then hyp clk) (,gfn else hyp clk))))
+          (g-if test (,gfn then . ,params)
+                (,gfn else . ,params))))
        ((g-boolean &) nil)
        ((g-number &) nil)
        ((g-apply & &) (g-apply 'cdr (gl-list x)))
@@ -32,11 +33,17 @@
  cdr
  :hints `(("goal" :in-theory (disable ,gfn))))
 
+(def-gobj-dependency-thm cdr
+  :hints `(("goal" :induct ,gcall
+            :expand (,gcall)
+            :in-theory (disable (:d ,gfn)))))
+  
+
 (def-g-correct-thm cdr eval-g-base
   :hints `(("goal" :in-theory (e/d (eval-g-base general-concrete-obj)
                                    ((:definition ,gfn)))
-            :induct (,gfn x hyp clk)
-            :expand ((,gfn x hyp clk)))))
+            :induct (,gfn x . ,params)
+            :expand ((,gfn x . ,params)))))
 
 
 (def-g-fn car
@@ -46,7 +53,7 @@
        ((g-ite test then else)
         (if (zp clk)
             (g-apply 'car (gl-list x))
-          (g-if test (,gfn then hyp clk) (,gfn else hyp clk))))
+          (g-if test (,gfn then . ,params) (,gfn else . ,params))))
        ((g-boolean &) nil)
        ((g-number &) nil)
        ((g-apply & &) (g-apply 'car (gl-list x)))
@@ -56,18 +63,23 @@
 
 ;; (def-gobjectp-thm car
 ;;   :hints `(("goal" :in-theory (disable (:definition ,gfn))
-;;             :induct (,gfn x hyp clk)
-;;             :expand ((,gfn x hyp clk)))))
+;;             :induct (,gfn x . ,params)
+;;             :expand ((,gfn x . ,params)))))
 
 (verify-g-guards
  car
  :hints `(("goal" :in-theory (disable ,gfn))))
 
+(def-gobj-dependency-thm car
+  :hints `(("goal" :induct ,gcall
+            :expand (,gcall)
+            :in-theory (disable (:d ,gfn)))))
+
 (def-g-correct-thm car eval-g-base
   :hints `(("goal" :in-theory (e/d (eval-g-base general-concrete-obj)
                                    ((:definition ,gfn)))
-            :induct (,gfn x hyp clk)
-            :expand ((,gfn x hyp clk)))))
+            :induct (,gfn x . ,params)
+            :expand ((,gfn x . ,params)))))
 
 
 
@@ -77,5 +89,7 @@
 ;; (def-gobjectp-thm cons)
 
 (verify-g-guards cons)
+
+(def-gobj-dependency-thm cons)
 
 (def-g-correct-thm cons eval-g-base)

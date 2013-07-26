@@ -24,8 +24,8 @@
           (if (zp clk)
               (g-apply 'lognot (gl-list x))
             (g-if test
-                  (,gfn then hyp clk)
-                  (,gfn else hyp clk))))
+                  (,gfn then . ,params)
+                  (,gfn else . ,params))))
          ((g-apply & &)
           (g-apply 'lognot (gl-list x)))
          ((g-concrete obj)
@@ -54,13 +54,18 @@
 ;; (def-gobjectp-thm lognot
 ;;   :hints `(("Goal" :in-theory (e/d ()
 ;;                                    ((:definition ,gfn) lognot))
-;;             :induct (,gfn i hyp clk)
-;;             :expand ((,gfn i hyp clk)
+;;             :induct (,gfn i . ,params)
+;;             :expand ((,gfn i . ,params)
 ;;                      (:free (x) (gobjectp (- x)))))))
 
 (verify-g-guards
  lognot
  :hints `(("Goal" :in-theory (disable ,gfn))))
+
+(def-gobj-dependency-thm lognot
+  :hints `(("goal" :induct ,gcall
+            :expand (,gcall)
+            :in-theory (disable (:d ,gfn)))))
 
 (local
  (progn
@@ -81,7 +86,7 @@
                                      general-number-components-ev
                                      general-numberp-eval-to-numberp
                                      lognot))
-             :induct (,gfn i hyp clk)
-             :expand ((,gfn i hyp clk)
+             :induct (,gfn i . ,params)
+             :expand ((,gfn i . ,params)
                       (:with eval-g-base (eval-g-base i env))))))
 

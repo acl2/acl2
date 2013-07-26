@@ -3,14 +3,88 @@
 
 (include-book "bfr")
 
+;; determines whether x, a non-negated aig, is trivially necessarily true or
+;; false assuming hyp.  Just traverses the top-level ANDs of hyp.  Returns (mv
+;; known val).
+(defund aig-under-hyp1 (x hyp)
+  (declare (xargs :guard t))
+  (b* (((when (hqual hyp x)) (mv t t))
+       ((when (atom hyp))    (mv nil nil))
+       ((when (eq (cdr hyp) nil))
+        (mv (hqual (car hyp) x) nil))
+       ((mv known1 val1) (aig-under-hyp1 x (car hyp)))
+       ((when known1) (mv known1 val1)))
+    (aig-under-hyp1 x (cdr hyp))))
+
+(defthm aig-under-hyp1-correct
+  (b* (((mv known val) (aig-under-hyp1 x hyp)))
+    (implies (and known
+                  (acl2::aig-eval hyp env))
+             (equal (acl2::aig-eval x env) val)))
+  :hints (("Goal" :induct (aig-under-hyp1 x hyp)
+           :in-theory (e/d ((:i aig-under-hyp1))
+                           ((:d aig-under-hyp1) acl2::aig-eval))
+           :expand ((aig-under-hyp1 x hyp)
+                    (aig-under-hyp1 hyp hyp)))
+          (and stable-under-simplificationp
+               '(:expand ((acl2::aig-eval hyp env))))))
+
+(defthm booleanp-of-aig-under-hyp1-val
+  (booleanp (mv-nth 1 (aig-under-hyp1 x hyp)))
+  :hints(("Goal" :in-theory (enable aig-under-hyp1)))
+  :rule-classes :type-prescription)
+
+(defund aig-under-hyp (x hyp)
+  (declare (xargs :guard t))
+  (cond ((booleanp x) (mv t x))
+        ((atom x) (aig-under-hyp1 x hyp))
+        ((eq (cdr x) nil)
+         (b* (((mv known val) (aig-under-hyp1 (car x) hyp)))
+           (mv known (not val))))
+        (t (b* (((mv known1 val1)
+                 (aig-under-hyp (car x) hyp))
+                ((when (and known1 (not val1)))
+                 (mv t nil))
+                ((mv known2 val2)
+                 (aig-under-hyp (cdr x) hyp))
+                ((when (and known2 (not val2)))
+                 (mv t nil)))
+             (mv (and known1 known2) t)))))
+
+(defthm aig-under-hyp-correct
+  (b* (((mv known val) (aig-under-hyp x hyp)))
+    (implies (and known
+                  (acl2::aig-eval hyp env))
+             (equal (acl2::aig-eval x env) val)))
+  :hints(("Goal" :in-theory (enable aig-under-hyp))))
+
+(defthm aig-under-hyp-of-booleans
+  (implies (booleanp x)
+           (equal (aig-under-hyp x hyp)
+                  (mv t x)))
+  :hints(("Goal" :in-theory (enable aig-under-hyp)))
+  :rule-classes ((:rewrite :backchain-limit-lst 0)))
+
+(defthm booleanp-of-aig-under-hyp-val
+  (booleanp (mv-nth 1 (aig-under-hyp x hyp)))
+  :hints(("Goal" :in-theory (enable aig-under-hyp)))
+  :rule-classes :type-prescription)
+
+
+
 (defun hyp-fix (x hyp)
   (declare (xargs :guard t))
-  (let ((and (bfr-and x hyp)))
-    (if and
-        (if (hqual and hyp)
-            t
-          x)
-      nil)))
+  (bfr-case
+   :bdd (let ((and (bfr-and x hyp)))
+          (if and
+              (if (hqual and hyp)
+                  t
+                x)
+            nil))
+   :aig (b* (((mv known val) (aig-under-hyp x hyp)))
+          (if known
+              val
+            x))))
 
 ;; (prove-congruences (bfr-equiv bfr-equiv) hyp-fix)
 

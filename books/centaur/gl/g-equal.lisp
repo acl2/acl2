@@ -11,6 +11,7 @@
 ; (include-book "tools/with-arith5-help" :dir :system)
 (local (include-book "symbolic-arithmetic"))
 (local (include-book "hyp-fix-logic"))
+(local (include-book "var-bounds"))
 
 (local (defthm eval-g-base-apply-of-equal
          (equal (eval-g-base-ev (cons 'equal (kwote-lst (list x y))) a)
@@ -106,7 +107,15 @@
                  (e/d* ((:ruleset general-object-possibilities)
                         boolean-list-bfr-eval-list))))))
 
+(local (defthm dependencies-of-equal-of-numbers
+         (implies (and (not (gobj-depends-on k p a))
+                       (not (gobj-depends-on k p b))
+                       (general-numberp a)
+                       (general-numberp b))
+                  (not (gobj-depends-on k p (equal-of-numbers a b hyp))))))
+
 (in-theory (Disable equal-of-numbers))
+
 
 (def-g-fn equal
   ;; Once we've ruled out the case where they're both atoms, start by recurring
@@ -130,10 +139,10 @@
                           (and (general-consp b)
                                (g-if (,gfn (general-consp-car a)
                                            (general-consp-car b)
-                                           hyp clk)
+                                           hyp clk config bvar-db state)
                                      (,gfn (general-consp-cdr a)
                                            (general-consp-cdr b)
-                                           hyp clk)
+                                           hyp clk config bvar-db state)
                                      nil)))
                          (t nil)))
                   ((eq (tag b) :g-ite)
@@ -143,8 +152,8 @@
                             (then (g-ite->then b))
                             (else (g-ite->else b)))
                        (g-if test
-                             (,gfn a then hyp clk)
-                             (,gfn a else hyp clk)))))
+                             (,gfn a then hyp clk config bvar-db state)
+                             (,gfn a else hyp clk config bvar-db state)))))
                   (t (g-apply 'equal (gl-list a b)))))
            ((eq (tag a) :g-ite)
             (if (zp clk)
@@ -153,8 +162,8 @@
                      (then (g-ite->then a))
                      (else (g-ite->else a)))
                 (g-if test
-                      (,gfn then b hyp clk)
-                      (,gfn else b hyp clk)))))
+                      (,gfn then b hyp clk config bvar-db state)
+                      (,gfn else b hyp clk config bvar-db state)))))
            (t (g-apply 'equal (gl-list a b))))))
 
 ;; (cond ((and (general-concretep a) (general-concretep b))
@@ -164,20 +173,20 @@
 ;;            (t (pattern-match a
 ;;                 ((g-ite test then else)
 ;;                  (g-if test
-;;                        (,gfn then b hyp clk)
-;;                        (,gfn else b hyp clk)))
+;;                        (,gfn then b hyp clk config bvar-db state)
+;;                        (,gfn else b hyp clk config bvar-db state)))
 ;;                 (& (pattern-match b
 ;;                      ((g-ite test then else)
 ;;                       (g-if test
-;;                             (,gfn a then hyp clk)
-;;                             (,gfn a else hyp clk)))
+;;                             (,gfn a then hyp clk config bvar-db state)
+;;                             (,gfn a else hyp clk config bvar-db state)))
 ;;                      ((g-var &)
 ;;                       (or (equal a b)
 ;;                           (g-apply 'equal (gl-list a b))))
 ;;                      ((g-apply fn args)
 ;;                       (pattern-match a
 ;;                         ((g-apply !fn aargs)
-;;                          (g-if (,gfn args aargs hyp clk)
+;;                          (g-if (,gfn args aargs hyp clk config bvar-db state)
 ;;                                t
 ;;                                (g-apply 'equal (gl-list a b))))
 ;;                         (& (g-apply 'equal (gl-list a b)))))
@@ -199,10 +208,10 @@
 ;;                                (if (general-consp b)
 ;;                                    (g-if (,gfn (general-consp-car a)
 ;;                                                (general-consp-car b)
-;;                                                hyp clk)
+;;                                                hyp clk config bvar-db state)
 ;;                                          (,gfn (general-consp-cdr a)
 ;;                                                (general-consp-cdr b)
-;;                                                hyp clk)
+;;                                                hyp clk config bvar-db state)
 ;;                                          nil)
 ;;                                  nil))
 ;;                               (t nil))))))))))))
@@ -227,9 +236,9 @@
 ;;                                      (:rules-of-class :type-prescription :here)
 ;;                                      (:ruleset gl-wrong-tag-rewrites)
 ;;                                      (:ruleset gl-tag-forward)))
-;;             :induct (,gfn x y hyp clk)
-;;             :expand ((,gfn x y hyp clk)
-;;                      (,gfn x x hyp clk)))
+;;             :induct (,gfn x y hyp clk config bvar-db state)
+;;             :expand ((,gfn x y hyp clk config bvar-db state)
+;;                      (,gfn x x hyp clk config bvar-db state)))
 ;;            (and stable-under-simplificationp
 ;;                 '(:in-theory (e/d* (booleanp-gobjectp)
 ;;                                     ((:definition ,gfn)
@@ -279,6 +288,25 @@
 
 (local (include-book "clause-processors/just-expand" :dir :System))
 
+
+
+(def-gobj-dependency-thm equal
+    :hints `((acl2::just-induct-and-expand
+              (,gfn x y hyp clk config bvar-db state))
+             '(:in-theory (disable ,gfn))
+             (and stable-under-simplificationp
+                  `(:expand ((,',gfn x y hyp clk config bvar-db state)
+                             (,',gfn x x hyp clk config bvar-db state)
+                             (,',gfn x y hyp clk config bvar-db state)
+                             (,',gfn x x hyp clk config bvar-db state)
+                             (eval-g-base x env)
+                             (eval-g-base y env)
+                             (eval-g-base nil env)
+                             (eval-g-base-list nil env)
+                             (eval-g-base t env))
+                    :do-not-induct t))))
+
+
 (encapsulate nil
 
   (local
@@ -301,6 +329,10 @@
                       mk-g-boolean-correct-for-eval-g-base
                       geval-g-if-marker-eval-g-base
                       geval-g-or-marker-eval-g-base
+
+                      gobj-depends-on-of-g-apply
+                      gobj-depends-on-of-gl-cons
+                      gobj-list-depends-on-of-gl-cons
                       
                       general-concretep-not-general-consp
                       general-concretep-not-general-booleanp
@@ -348,14 +380,14 @@
   
 
 
-  (def-g-correct-thm equal eval-g-base
+    (def-g-correct-thm equal eval-g-base
     :hints `((acl2::just-induct-and-expand
-              (,gfn x y hyp clk))
+              (,gfn x y hyp clk config bvar-db state))
              (and stable-under-simplificationp
-                  `(:expand ((,',gfn x y hyp clk)
-                             (,',gfn x x hyp clk)
-                             (,',gfn x y hyp clk)
-                             (,',gfn x x hyp clk)
+                  `(:expand ((,',gfn x y hyp clk config bvar-db state)
+                             (,',gfn x x hyp clk config bvar-db state)
+                             (,',gfn x y hyp clk config bvar-db state)
+                             (,',gfn x x hyp clk config bvar-db state)
                              (eval-g-base x env)
                              (eval-g-base y env)
                              (eval-g-base nil env)
@@ -374,7 +406,7 @@
              ;;                   possibilities-for-x-7
              ;;                   possibilities-for-x-8
              ;;                   possibilities-for-x-9)
-             ;;          :expand ((,',gfn x y hyp clk)
+             ;;          :expand ((,',gfn x y hyp clk config bvar-db state)
              ;;                   (eval-g-base ,(if (eql n 3) 'x 'y) env)
              ;;                   (eval-g-base nil env)
              ;;                   (eval-g-base t env)))

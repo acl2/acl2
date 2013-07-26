@@ -31,6 +31,12 @@
 
 (local (include-book "arithmetic/top-with-meta" :dir :system))
 
+(defthm deps-of-g-truncate-of-numbers
+  (implies (and (not (gobj-depends-on k p x))
+                (not (gobj-depends-on k p y))
+                (general-numberp x)
+                (general-numberp y))
+           (not (gobj-depends-on k p (g-truncate-of-numbers x y)))))
 
 (local (add-bfr-fn-pat bfr-=-uu))
 (local (add-bfr-fn-pat bfr-=-ss))
@@ -67,6 +73,11 @@
            (disable* ,gfn
                      (:rules-of-class :type-prescription :here)))))
 
+(def-gobj-dependency-thm truncate
+  :hints `(("goal" :induct ,gcall
+            :expand (,gcall)
+            :in-theory (disable (:d ,gfn)))))
+
 (local (defthm truncate-when-not-numberp
          (and (implies (not (acl2-numberp i))
                        (equal (truncate i j) (truncate 0 j)))
@@ -94,9 +105,9 @@
                               rationalp-implies-acl2-numberp
                               (:rules-of-class :type-prescription :here))
                              ((:type-prescription bfr-eval)))
-     :induct (,gfn i j hyp clk)
+     :induct (,gfn i j . ,params)
      :do-not-induct t
-     :expand ((,gfn i j hyp clk)))
+     :expand ((,gfn i j . ,params)))
     (and stable-under-simplificationp
          (flag::expand-calls-computed-hint
           clause '(eval-g-base)))))

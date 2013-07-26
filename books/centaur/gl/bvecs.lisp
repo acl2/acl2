@@ -73,38 +73,68 @@
          (bfr-eval-list x env)))
 
 
-(defund bfr-max-nat-var-list (x)
-  (declare (xargs :guard t))
+(defund pbfr-list-depends-on (k p x)
   (if (atom x)
-      0
-    (max (bfr-max-nat-var (car x))
-         (bfr-max-nat-var-list (cdr x)))))
+      nil
+    (or (pbfr-depends-on k p (car x))
+        (pbfr-list-depends-on k p (cdr x)))))
 
-(defthm bfr-eval-list-of-bfr-set-var-past-max-nat
-  (implies (and (<= (bfr-max-nat-var-list x) var)
-                (natp var))
-           (equal (bfr-eval-list x (bfr-set-var var val env))
-                  (bfr-eval-list x env)))
-  :hints(("Goal" :in-theory (enable bfr-max-nat-var-list))))
+(defthm pbfr-list-depends-on-of-list-fix
+  (equal (pbfr-list-depends-on k p (acl2::list-fix x))
+         (pbfr-list-depends-on k p x))
+  :hints(("Goal" :in-theory (enable pbfr-list-depends-on))))
+
+(defthm bfr-eval-list-of-set-non-dep
+  (implies (and (not (pbfr-list-depends-on k p x))
+                (bfr-eval p env)
+                (bfr-eval p (bfr-set-var k v env)))
+           (equal (bfr-eval-list x (bfr-param-env p (bfr-set-var k v env)))
+                  (bfr-eval-list x (bfr-param-env p env))))
+  :hints(("Goal" :in-theory (enable pbfr-list-depends-on))))
 
 
-(defthm bfr-max-nat-var-of-car
-  (<= (bfr-max-nat-var (car x)) (bfr-max-nat-var-list x))
-  :hints(("Goal" :in-theory (enable bfr-max-nat-var-list)))
-  :rule-classes :linear)
+(defthm bfr-depends-on-car
+  (implies (not (pbfr-list-depends-on k p x))
+           (not (pbfr-depends-on k p (car x))))
+  :hints(("Goal" :in-theory (enable pbfr-list-depends-on default-car))))
 
-(defthm bfr-max-nat-var-list-of-car-rw
-  (implies (<= (bfr-max-nat-var-list x) n)
-           (<= (bfr-max-nat-var (car x)) n)))
+(defthm bfr-depends-on-cdr
+  (implies (not (pbfr-list-depends-on k p x))
+           (not (pbfr-list-depends-on k p (cdr x))))
+  :hints(("Goal" :in-theory (enable pbfr-list-depends-on))))
 
-(defthm bfr-max-nat-var-of-cdr
-  (<= (bfr-max-nat-var-list (cdr x)) (bfr-max-nat-var-list x))
-  :hints(("Goal" :in-theory (enable bfr-max-nat-var-list)))
-  :rule-classes :linear)
+;; (defund bfr-max-nat-var-list (x)
+;;   (declare (xargs :guard t))
+;;   (if (atom x)
+;;       0
+;;     (max (bfr-max-nat-var (car x))
+;;          (bfr-max-nat-var-list (cdr x)))))
 
-(defthm bfr-max-nat-var-list-of-cdr-rw
-  (implies (<= (bfr-max-nat-var-list x) n)
-           (<= (bfr-max-nat-var-list (cdr x)) n)))
+;; (defthm bfr-eval-list-of-bfr-set-var-past-max-nat
+;;   (implies (and (<= (bfr-max-nat-var-list x) var)
+;;                 (natp var))
+;;            (equal (bfr-eval-list x (bfr-set-var var val env))
+;;                   (bfr-eval-list x env)))
+;;   :hints(("Goal" :in-theory (enable bfr-max-nat-var-list))))
+
+
+;; (defthm bfr-max-nat-var-of-car
+;;   (<= (bfr-max-nat-var (car x)) (bfr-max-nat-var-list x))
+;;   :hints(("Goal" :in-theory (enable bfr-max-nat-var-list)))
+;;   :rule-classes :linear)
+
+;; (defthm bfr-max-nat-var-list-of-car-rw
+;;   (implies (<= (bfr-max-nat-var-list x) n)
+;;            (<= (bfr-max-nat-var (car x)) n)))
+
+;; (defthm bfr-max-nat-var-of-cdr
+;;   (<= (bfr-max-nat-var-list (cdr x)) (bfr-max-nat-var-list x))
+;;   :hints(("Goal" :in-theory (enable bfr-max-nat-var-list)))
+;;   :rule-classes :linear)
+
+;; (defthm bfr-max-nat-var-list-of-cdr-rw
+;;   (implies (<= (bfr-max-nat-var-list x) n)
+;;            (<= (bfr-max-nat-var-list (cdr x)) n)))
 
 
 
@@ -117,14 +147,19 @@
   (mbe :logic (if (atom (cdr v)) v (cdr v))
        :exec (if (or (atom v) (atom (cdr v))) v (cdr v))))
 
-(defthm bfr-max-nat-var-list-of-scdr
-  (<= (bfr-max-nat-var-list (scdr x)) (bfr-max-nat-var-list x))
-  :hints(("Goal" :in-theory (enable bfr-max-nat-var-list scdr)))
-  :rule-classes :linear)
+(defthm pbfr-list-depends-on-scdr
+  (implies (not (pbfr-list-depends-on k p x))
+           (not (pbfr-list-depends-on k p (scdr x))))
+  :hints(("Goal" :in-theory (enable scdr pbfr-list-depends-on))))
 
-(defthm bfr-max-nat-var-list-of-scdr-rw
-  (implies (<= (bfr-max-nat-var-list x) n)
-           (<= (bfr-max-nat-var-list (scdr x)) n)))
+;; (defthm bfr-max-nat-var-list-of-scdr
+;;   (<= (bfr-max-nat-var-list (scdr x)) (bfr-max-nat-var-list x))
+;;   :hints(("Goal" :in-theory (enable bfr-max-nat-var-list scdr)))
+;;   :rule-classes :linear)
+
+;; (defthm bfr-max-nat-var-list-of-scdr-rw
+;;   (implies (<= (bfr-max-nat-var-list x) n)
+;;            (<= (bfr-max-nat-var-list (scdr x)) n)))
 
 (defthm scdr-of-list-fix
   (equal (scdr (acl2::list-fix x))
@@ -252,13 +287,19 @@
           :expand ((bfr-list->s (bfr-scons b x) env))
           :do-not-induct t)))
 
-(defthm bfr-max-nat-var-list-of-bfr-scons
-  (implies (and (<= (bfr-max-nat-var b) n)
-                (<= (bfr-max-nat-var-list x) n))
-           (<= (bfr-max-nat-var-list (bfr-scons b x)) n))
-  :hints(("Goal" :in-theory (e/d (bfr-scons bfr-max-nat-var-list)
-                                 ((bfr-max-nat-var-list)))))
-  :rule-classes (:rewrite (:linear :match-free :all)))
+(defthm pbfr-list-depends-on-of-scons
+  (implies (and (not (pbfr-depends-on k p b))
+                (not (pbfr-list-depends-on k p x)))
+           (not (pbfr-list-depends-on k p (bfr-scons b x))))
+  :hints(("Goal" :in-theory (enable bfr-scons pbfr-list-depends-on))))
+
+;; (defthm bfr-max-nat-var-list-of-bfr-scons
+;;   (implies (and (<= (bfr-max-nat-var b) n)
+;;                 (<= (bfr-max-nat-var-list x) n))
+;;            (<= (bfr-max-nat-var-list (bfr-scons b x)) n))
+;;   :hints(("Goal" :in-theory (e/d (bfr-scons bfr-max-nat-var-list)
+;;                                  ((bfr-max-nat-var-list)))))
+;;   :rule-classes (:rewrite (:linear :match-free :all)))
 
 (defund bfr-sterm (b)
   (declare (xargs :guard t))
@@ -283,10 +324,15 @@
   (equal (bfr-list->s (bfr-sterm b) env)
          (bool->sign (bfr-eval b env))))
 
-(defthm bfr-max-nat-var-list-of-bfr-sterm
-  (equal (bfr-max-nat-var-list (bfr-sterm b))
-         (bfr-max-nat-var b))
-  :hints(("Goal" :in-theory (enable bfr-sterm bfr-max-nat-var-list))))
+(defthm pbfr-list-depends-on-of-bfr-sterm
+  (equal (pbfr-list-depends-on k p (bfr-sterm b))
+         (pbfr-depends-on k p b))
+  :hints(("Goal" :in-theory (enable pbfr-list-depends-on bfr-sterm))))
+
+;; (defthm bfr-max-nat-var-list-of-bfr-sterm
+;;   (equal (bfr-max-nat-var-list (bfr-sterm b))
+;;          (bfr-max-nat-var b))
+;;   :hints(("Goal" :in-theory (enable bfr-sterm bfr-max-nat-var-list))))
 
 (defthm scdr-when-s-endp
   (implies (s-endp x)
@@ -324,19 +370,30 @@
   (equal (bfr-list->s (i2v n) env)
          (ifix n)))
 
-(defthm bfr-max-nat-var-list-of-i2v
-  (equal (bfr-max-nat-var-list (i2v n)) 0)
-  :hints(("Goal" :in-theory (e/d (bfr-max-nat-var-list bfr-scons bfr-max-nat-var)
-                                 ((bfr-max-nat-var-list))))))
+(defthm pbfr-list-depends-on-of-i2v
+  (not (pbfr-list-depends-on k p (i2v n)))
+  :hints(("Goal" :in-theory (enable pbfr-list-depends-on i2v))))
+
+;; (defthm bfr-max-nat-var-list-of-i2v
+;;   (equal (bfr-max-nat-var-list (i2v n)) 0)
+;;   :hints(("Goal" :in-theory (e/d (bfr-max-nat-var-list bfr-scons bfr-max-nat-var)
+;;                                  ((bfr-max-nat-var-list))))))
 
 
+(defthm bfr-list->s-of-set-non-dep
+  (implies (and (not (pbfr-list-depends-on k p x))
+                (bfr-eval p env)
+                (bfr-eval p (bfr-set-var k v env)))
+           (equal (bfr-list->s x (bfr-param-env p (bfr-set-var k v env)))
+                  (bfr-list->s x (bfr-param-env p env))))
+  :hints(("Goal" :in-theory (enable pbfr-list-depends-on))))
 
-(defthm bfr-list->s-of-bfr-set-var-past-max-nat
-  (implies (and (<= (bfr-max-nat-var-list x) var)
-                (natp var))
-           (equal (bfr-list->s x (bfr-set-var var val env))
-                  (bfr-list->s x env)))
-  :hints(("Goal" :in-theory (enable bfr-max-nat-var-list))))
+;; (defthm bfr-list->s-of-bfr-set-var-past-max-nat
+;;   (implies (and (<= (bfr-max-nat-var-list x) var)
+;;                 (natp var))
+;;            (equal (bfr-list->s x (bfr-set-var var val env))
+;;                   (bfr-list->s x env)))
+;;   :hints(("Goal" :in-theory (enable bfr-max-nat-var-list))))
 
 
 
@@ -371,12 +428,20 @@
 
 (in-theory (disable (:t bfr-list->u)))
 
-(defthm bfr-list->u-of-bfr-set-var-past-max-nat
-  (implies (and (<= (bfr-max-nat-var-list x) var)
-                (natp var))
-           (equal (bfr-list->u x (bfr-set-var var val env))
-                  (bfr-list->u x env)))
-  :hints(("Goal" :in-theory (enable bfr-max-nat-var-list))))
+(defthm bfr-list->u-of-set-non-dep
+  (implies (and (not (pbfr-list-depends-on k p x))
+                (bfr-eval p env)
+                (bfr-eval p (bfr-set-var k v env)))
+           (equal (bfr-list->u x (bfr-param-env p (bfr-set-var k v env)))
+                  (bfr-list->u x (bfr-param-env p env))))
+  :hints(("Goal" :in-theory (enable pbfr-list-depends-on))))
+
+;; (defthm bfr-list->u-of-bfr-set-var-past-max-nat
+;;   (implies (and (<= (bfr-max-nat-var-list x) var)
+;;                 (natp var))
+;;            (equal (bfr-list->u x (bfr-set-var var val env))
+;;                   (bfr-list->u x env)))
+;;   :hints(("Goal" :in-theory (enable bfr-max-nat-var-list))))
 
 ;; (in-theory (disable (bfr-listp)))
 
@@ -396,12 +461,18 @@
                   (bfr-list->u x env)))
   :hints(("Goal" :in-theory (enable bfr-ucons))))
 
-(defthm bfr-max-nat-var-list-of-bfr-ucons
-  (implies (and (<= (bfr-max-nat-var b) n)
-                (<= (bfr-max-nat-var-list x) n))
-           (<= (bfr-max-nat-var-list (bfr-ucons b x)) n))
-  :hints(("Goal" :in-theory (enable bfr-ucons bfr-max-nat-var-list)))
-  :rule-classes (:rewrite (:linear :match-free :all)))
+(defthm pbfr-list-depends-on-of-bfr-ucons
+  (implies (and (not (pbfr-depends-on k p b))
+                (not (pbfr-list-depends-on k p x)))
+           (not (pbfr-list-depends-on k p (bfr-ucons b x))))
+  :hints(("Goal" :in-theory (enable pbfr-list-depends-on bfr-ucons))))
+
+;; (defthm bfr-max-nat-var-list-of-bfr-ucons
+;;   (implies (and (<= (bfr-max-nat-var b) n)
+;;                 (<= (bfr-max-nat-var-list x) n))
+;;            (<= (bfr-max-nat-var-list (bfr-ucons b x)) n))
+;;   :hints(("Goal" :in-theory (enable bfr-ucons bfr-max-nat-var-list)))
+;;   :rule-classes (:rewrite (:linear :match-free :all)))
 
 
 (defn n2v (n)
@@ -414,10 +485,14 @@
   (equal (bfr-list->u (n2v n) env)
          (nfix n)))
 
-(defthm bfr-max-nat-var-list-of-n2v
-  (equal (bfr-max-nat-var-list (n2v n)) 0)
-  :hints(("Goal" :in-theory (e/d (bfr-max-nat-var-list bfr-ucons bfr-max-nat-var)
-                                 ((bfr-max-nat-var-list))))))
+(defthm pbfr-list-depends-on-of-n2v
+  (not (pbfr-list-depends-on k p  (n2v n)))
+  :hints(("Goal" :in-theory (enable pbfr-list-depends-on n2v))))
+
+;; (defthm bfr-max-nat-var-list-of-n2v
+;;   (equal (bfr-max-nat-var-list (n2v n)) 0)
+;;   :hints(("Goal" :in-theory (e/d (bfr-max-nat-var-list bfr-ucons bfr-max-nat-var)
+;;                                  ((bfr-max-nat-var-list))))))
 
 
 
@@ -693,12 +768,18 @@
            (logcons (acl2::bool->bit (car v))
                     (v2i (cdr v)))))))
 
+(defthm consp-of-bfr-eval-list
+  (equal (consp (bfr-eval-list x env))
+         (consp x)))
+
+
+
 (defthm v2i-of-bfr-eval-list
   (equal (v2i (bfr-eval-list x env))
          (bfr-list->s x env))
   :hints(("Goal" :induct (bfr-list->s x env)
           :expand ((bfr-eval-list x env))
-          :in-theory (enable s-endp scdr))))
+          :in-theory (enable s-endp scdr default-car))))
 
 (defthm v2i-of-i2v
   (equal (v2i (i2v x))

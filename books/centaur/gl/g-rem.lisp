@@ -31,6 +31,13 @@
 (in-theory (disable (g-rem-of-numbers)))
 
 
+(defthm deps-of-g-rem-of-numbers
+  (implies (and (not (gobj-depends-on k p x))
+                (not (gobj-depends-on k p y))
+                (general-numberp x)
+                (general-numberp y))
+           (not (gobj-depends-on k p (g-rem-of-numbers x y)))))
+
 (local (include-book "arithmetic/top-with-meta" :dir :system))
 
 ;; (local (defthm not-integerp-bfr-rem-ss
@@ -77,6 +84,13 @@
            (disable* ,gfn
                      (:rules-of-class :type-prescription :here)))))
 
+(def-gobj-dependency-thm rem
+  :hints `(("goal" :induct ,gcall
+            :expand (,gcall)
+            :in-theory (disable (:d ,gfn)))))
+
+
+
 (local (defthm rem-when-not-numberp
          (and (implies (not (acl2-numberp x))
                        (equal (rem x y) (rem 0 y)))
@@ -104,9 +118,9 @@
                               rationalp-implies-acl2-numberp
                               (:rules-of-class :type-prescription :here))
                              ((:type-prescription bfr-eval)))
-     :induct (,gfn x y hyp clk)
+     :induct (,gfn x y . ,params)
      :do-not-induct t
-     :expand ((,gfn x y hyp clk)))
+     :expand ((,gfn x y . ,params)))
     (and stable-under-simplificationp
          (flag::expand-calls-computed-hint
           clause '(eval-g-base)))))

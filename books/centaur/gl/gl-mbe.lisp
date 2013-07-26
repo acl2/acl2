@@ -4,7 +4,7 @@
 (include-book "centaur/gl/gl-doc-string" :dir :system)
 
 
-(defun gl-mbe (spec impl)
+(defun gl-mbe (spec impl other-info)
   ":doc-section ACL2::GL
 Assert that a particular symbolic object is equivalent to a second form, and
 use the second in place of the first.~/
@@ -34,8 +34,33 @@ result, which cuts off the upper bits of X, improving symbolic execution
 performance.  However, because logically GL-MBE just returns X, the meaning of
 the specification is unaffected.~/
 "
-  (declare (xargs :guard t))
+  (declare (xargs :guard t)
+           (ignore other-info))
   (prog2$ (or (equal spec impl)
               (er hard? 'gl-mbe "GL-MBE assertion failed: ~x0 not equal to ~x1~%"
                   spec impl))
           spec))
+
+
+
+
+(defun gl-force-check (x)
+  (declare (xargs :guard t))
+  x)
+
+(defun gl-force-true (x)
+  (declare (xargs :guard t))
+  x)
+
+(defun gl-force-false (x)
+  (declare (xargs :guard t))
+  x)
+
+(defun gl-force-check-strong (x)
+  (declare (xargs :guard t))
+  x)
+
+(table gl-uninterpreted-functions 'gl-force-check-strong t)
+(table gl-uninterpreted-functions 'gl-force-check t)
+(table gl-uninterpreted-functions 'gl-force-true t)
+(table gl-uninterpreted-functions 'gl-force-false t)

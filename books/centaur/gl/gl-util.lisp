@@ -203,7 +203,7 @@ passed to ~x2 in that theorem.~%"
   `(,(gl-fnsym fn) ,@args))
 
 (defmacro glc (fn &rest args)
-  `(,(gl-fnsym fn) ,@args t 1000000))
+  `(,(gl-fnsym fn) ,@args hyp clk config bvar-db state))
 
 
 

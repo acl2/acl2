@@ -36,6 +36,16 @@
                  (bfr-ite-bss-fn c xin yin)
                  (bfr-ite-bvv-fn c xid yid))))
 
+(defthm gobj-depends-on-of-merge-general-numbers
+  (implies (and (not (pbfr-depends-on k p c))
+                (not (gobj-depends-on k p x))
+                (not (gobj-depends-on k p y))
+                (general-numberp x)
+                (general-numberp y))
+           (not (gobj-depends-on k p (merge-general-numbers c x y))))
+  :hints(("Goal" :in-theory (enable merge-general-numbers
+                                    gobj-depends-on))))
+
 (in-theory (disable merge-general-numbers))
 
 
@@ -50,6 +60,16 @@
          (bv (general-boolean-value b))
          (val (bfr-ite c av bv)))
     (mk-g-boolean val)))
+
+(defthm gobj-depends-on-of-merge-general-booleans
+  (implies (and (not (pbfr-depends-on k p c))
+                (not (gobj-depends-on k p x))
+                (not (gobj-depends-on k p y))
+                (general-booleanp x)
+                (general-booleanp y))
+           (not (gobj-depends-on k p (merge-general-booleans c x y))))
+  :hints(("Goal" :in-theory (enable merge-general-booleans
+                                    gobj-depends-on))))
 
 (in-theory (disable merge-general-booleans))
 
@@ -151,6 +171,18 @@
           (bool-cond-itep-truebr x)
           (bool-cond-itep-falsebr x))
     (mv t x nil)))
+
+(defthm gobj-depends-on-of-breakdown-ite-by-cond
+  (implies (not (gobj-depends-on k p x))
+           (b* (((mv test x y) (breakdown-ite-by-cond x)))
+             (and (not (pbfr-depends-on k p test))
+                  (not (gobj-depends-on k p x))
+                  (not (gobj-depends-on k p y)))))
+  :hints(("Goal" :in-theory (enable breakdown-ite-by-cond
+                                    bool-cond-itep
+                                    bool-cond-itep-truebr
+                                    bool-cond-itep-falsebr
+                                    bool-cond-itep-cond))))
 
 
 
@@ -864,8 +896,54 @@
                                      ;; ite-merge-guard merge-rest-guard
                                      ;; maybe-merge-guard
                                      hyp-fix hyp-fixedp)
-                                    ()))))))))
+                                    ()))))))
 
+   (local (Defthm gobj-list-depends-on-nil
+            (not (gobj-list-depends-on k p nil))
+            :hints(("Goal" :in-theory (enable gobj-list-depends-on)))))
+
+   (def-ite-merge-thm gobj-depends-on-of-ite-merge-lemma
+     (defthm gobj-depends-on-of-ite-merge
+       (implies (and (not (pbfr-depends-on k p c))
+                     (not (gobj-depends-on k p x))
+                     (not (gobj-depends-on k p y)))
+                (not (gobj-depends-on k p (ite-merge c x y hyp))))
+       :hints ('(:expand ((ite-merge c x y hyp)
+                          (ite-merge c x y nil)
+                          (ite-merge c x x hyp))))
+       :flag ite-merge)
+     (defthm gobj-depends-on-of-ite-merge-lists
+       (implies (and (not (pbfr-depends-on k p c))
+                     (not (gobj-list-depends-on k p x))
+                     (not (gobj-list-depends-on k p y)))
+                (not (gobj-list-depends-on k p (ite-merge-lists c x y hyp))))
+       :hints ('(:expand ((ite-merge-lists c x y hyp))))
+      :flag ite-merge-lists)
+     (defthm gobj-depends-on-of-maybe-merge
+       (mv-let (flg ans)
+         (maybe-merge c x y xhyp yhyp hyp)
+         (declare (ignore flg))
+         (implies (and (not (pbfr-depends-on k p c))
+                       (not (gobj-depends-on k p x))
+                       (not (gobj-depends-on k p y)))
+                  (not (gobj-depends-on k p ans))))
+       :hints ('(:expand ((maybe-merge c x y xhyp yhyp hyp)
+                          (maybe-merge c x x xhyp yhyp hyp)))
+               (and stable-under-simplificationp
+                    '(:in-theory (enable generic-geval))))
+       :flag maybe-merge)
+
+     (defthm gobj-depends-on-of-merge-rest
+       (implies (and (not (pbfr-depends-on k p firstcond))
+                     (not (gobj-depends-on k p first))
+                     (not (pbfr-depends-on k p c))
+                     (not (gobj-depends-on k p x))
+                     (not (gobj-depends-on k p y)))
+                (not (gobj-depends-on k p (merge-rest firstcond first c x y hyp))))
+       :hints ('(:expand ((merge-rest firstcond first c x y hyp)
+                          (merge-rest firstcond first c x y nil))))
+       :flag merge-rest)
+     :hints (("goal" :do-not-induct t)))))
 
 
 (verify-guards ite-merge
@@ -930,4 +1008,11 @@
                       (generic-geval x env)
                     (generic-geval y env))))
   :hints(("Goal" :in-theory (e/d (gobj-ite-merge)))))
+
+(defthm gobj-depends-on-of-gobj-ite-merge
+  (implies (and (not (pbfr-depends-on k p c))
+                (not (gobj-depends-on k p x))
+                (not (gobj-depends-on k p y)))
+           (not (gobj-depends-on k p (gobj-ite-merge c x y hyp))))
+  :hints(("Goal" :in-theory (enable gobj-ite-merge))))
 

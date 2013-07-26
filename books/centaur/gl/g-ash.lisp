@@ -11,7 +11,7 @@
 (local (include-book "symbolic-arithmetic"))
 (local (include-book "eval-g-base-help"))
 (local (include-book "hyp-fix-logic"))
-
+(local (include-book "clause-processors/just-expand" :dir :system))
 
 (defun g-ash-of-numbers (i c)
   (declare (xargs :guard (and (general-numberp i)
@@ -37,7 +37,12 @@
 
 (in-theory (disable (g-ash-of-numbers)))
 
-
+(defthm deps-of-g-ash-of-numbers
+  (implies (and (not (gobj-depends-on k p i))
+                (not (gobj-depends-on k p c))
+                (general-numberp i)
+                (general-numberp c))
+           (not (gobj-depends-on k p (g-ash-of-numbers i c)))))
 
 (local
  (progn
@@ -121,6 +126,12 @@
                        (equal (ash x y) (ash x 0))))
          :hints(("Goal" :in-theory (enable ash)))))
 
+(def-gobj-dependency-thm ash
+  :hints `(("goal" :in-theory (e/d ((:i ,gfn))
+                                   ((:d ,gfn)
+                                    gobj-depends-on)))
+           (acl2::just-induct-and-expand ,gcall)))
+
 (def-g-correct-thm ash eval-g-base
   :hints
   `(("goal" :in-theory (e/d* (general-concretep-atom
@@ -141,9 +152,8 @@
                               ash
                               (:rules-of-class :type-prescription :here))
                              ((:type-prescription bfr-eval)))
-     :induct (,gfn i c hyp clk)
-     :do-not-induct t
-     :expand ((,gfn i c hyp clk)))
+     :do-not-induct t)
+    (acl2::just-induct-and-expand ,gcall)
     (and stable-under-simplificationp
          (flag::expand-calls-computed-hint
           clause '(eval-g-base)))))

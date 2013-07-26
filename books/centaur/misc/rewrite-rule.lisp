@@ -58,3 +58,76 @@
                        (world plist-worldp))
   :returns rules
   (fgetprop fn 'lemmas nil world))
+
+
+(defmacro make-rewrite-rule (&key rune nume hyps equiv lhs rhs subclass
+                                  heuristic-info backchain-limit-lst
+                                  var-info match-free)
+  `(make-rewrite-rule-fn ,rune ,nume ,hyps ,equiv ,lhs ,rhs ,subclass
+                         ,heuristic-info ,backchain-limit-lst
+                         ,var-info ,match-free))
+
+(define make-rewrite-rule-fn (rune nume hyps equiv lhs rhs subclass
+                                   heuristic-info backchain-limit-lst
+                                   var-info match-free)
+  :inline t
+  (make rewrite-rule :rune rune :nume nume :hyps hyps :equiv equiv :lhs lhs
+        :rhs rhs :subclass subclass :heuristic-info heuristic-info
+        :backchain-limit-lst backchain-limit-lst :var-info var-info :match-free
+        match-free)
+  ///
+  (defthm weak-rewrite-rule-p-of-make-rewrite-rule-fn
+    (weak-rewrite-rule-p (make-rewrite-rule-fn
+                          rune nume hyps equiv lhs rhs subclass
+                          heuristic-info backchain-limit-lst
+                          var-info match-free)))
+  (defthm rewrite-rule->hyps-of-make-rewrite-rule-fn
+    (equal (rewrite-rule->hyps (make-rewrite-rule-fn
+                                rune nume hyps equiv lhs rhs subclass
+                                heuristic-info backchain-limit-lst
+                                var-info match-free))
+           hyps)
+    :hints(("Goal" :in-theory (enable rewrite-rule->hyps))))
+  (defthm rewrite-rule->lhs-of-make-rewrite-rule-fn
+    (equal (rewrite-rule->lhs (make-rewrite-rule-fn
+                                rune nume hyps equiv lhs rhs subclass
+                                heuristic-info backchain-limit-lst
+                                var-info match-free))
+           lhs)
+    :hints(("Goal" :in-theory (enable rewrite-rule->lhs))))
+  (defthm rewrite-rule->rhs-of-make-rewrite-rule-fn
+    (equal (rewrite-rule->rhs (make-rewrite-rule-fn
+                                rune nume hyps equiv lhs rhs subclass
+                                heuristic-info backchain-limit-lst
+                                var-info match-free))
+           rhs)
+    :hints(("Goal" :in-theory (enable rewrite-rule->rhs))))
+  (defthm rewrite-rule->equiv-of-make-rewrite-rule-fn
+    (equal (rewrite-rule->equiv (make-rewrite-rule-fn
+                                rune nume hyps equiv lhs rhs subclass
+                                heuristic-info backchain-limit-lst
+                                var-info match-free))
+           equiv)
+    :hints(("Goal" :in-theory (enable rewrite-rule->equiv))))
+  (defthm rewrite-rule->subclass-of-make-rewrite-rule-fn
+    (equal (rewrite-rule->subclass (make-rewrite-rule-fn
+                                rune nume hyps equiv lhs rhs subclass
+                                heuristic-info backchain-limit-lst
+                                var-info match-free))
+           subclass)
+    :hints(("Goal" :in-theory (enable rewrite-rule->subclass))))
+  (defthm rewrite-rule->heuristic-info-of-make-rewrite-rule-fn
+    (equal (rewrite-rule->heuristic-info (make-rewrite-rule-fn
+                                rune nume hyps equiv lhs rhs subclass
+                                heuristic-info backchain-limit-lst
+                                var-info match-free))
+           heuristic-info)
+    :hints(("Goal" :in-theory (enable rewrite-rule->heuristic-info))))
+  (defthm rewrite-rule->rune-of-make-rewrite-rule-fn
+    (equal (rewrite-rule->rune (make-rewrite-rule-fn
+                                rune nume hyps equiv lhs rhs subclass
+                                heuristic-info backchain-limit-lst
+                                var-info match-free))
+           rune)
+    :hints(("Goal" :in-theory (enable rewrite-rule->rune)))))
+

@@ -47,6 +47,10 @@
   (equal (bfr-eval (g-hyp-marker x) env)
          (bfr-eval x env)))
 
+(defthm pbfr-depends-on-of-g-hyp-marker
+  (equal (pbfr-depends-on n p (g-hyp-marker x))
+         (pbfr-depends-on n p x)))
+
 (in-theory (disable g-hyp-marker (:t g-hyp-marker)
                     (g-hyp-marker)))
 

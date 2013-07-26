@@ -7,5 +7,4 @@
 (include-book "bfr-aig-bddify")
 (include-book "bfr-satlink")
 
-(def-gl-clause-processor glcp-ttags)
-
+(def-gl-clause-processor glcp-ttags :output nil)

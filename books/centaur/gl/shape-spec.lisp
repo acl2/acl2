@@ -44,17 +44,6 @@
    :rule-classes (:rewrite :forward-chaining)))
 
 
-(defund number-spec-indices (nspec)
-  (declare (xargs :guard (number-specp nspec)
-                  :guard-hints (("goal" :in-theory (enable number-specp)))))
-  (append (car nspec)
-          (and (consp (cdr nspec))
-               (append (cadr nspec)
-                       (and (consp (cddr nspec))
-                            (append (caddr nspec)
-                                    (and (consp (cdddr nspec))
-                                         (cadddr nspec))))))))
-
 (local
  (defthm nat-listp-append
    (implies (and (nat-listp a)
@@ -73,35 +62,6 @@
   :hints(("Goal" :in-theory (enable number-specp number-spec-indices))))
 
 
-(mutual-recursion
- (defun shape-spec-indices (x)
-   (declare (xargs :guard (shape-specp x)
-                   :verify-guards nil))
-   (if (atom x)
-       nil
-     (pattern-match x
-       ((g-number nspec)
-        (number-spec-indices nspec))
-       ((g-integer sign bits &)
-        (cons sign bits))
-       ((g-integer? sign bits & intp)
-        (list* intp sign bits))
-       ((g-boolean n) (list n))
-       ((g-var &) nil)
-       ((g-ite if then else)
-        (append (shape-spec-indices if)
-                (shape-spec-indices then)
-                (shape-spec-indices else)))
-       ((g-concrete &) nil)
-       ((g-call & args &) (shape-spec-list-indices args))
-       (& (append (shape-spec-indices (car x))
-                  (shape-spec-indices (cdr x)))))))
- (defun shape-spec-list-indices (x)
-   (declare (xargs :guard (shape-spec-listp x)))
-   (if (atom x)
-       nil
-     (append (shape-spec-indices (car x))
-             (shape-spec-list-indices (cdr x))))))
 
 
 (defthm-shape-spec-flag
@@ -172,75 +132,9 @@
 
 
 
-(defund numlist-to-vars (lst)
-  (declare (xargs :guard (nat-listp lst)
-                  :guard-hints (("goal" :in-theory (enable nat-listp)))))
-  (if (atom lst)
-      nil
-    (cons (bfr-var (car lst))
-          (numlist-to-vars (cdr lst)))))
-
-(defund num-spec-to-num-gobj (nspec)
-  (declare (xargs :guard (number-specp nspec)
-                  :guard-hints (("goal" :in-theory (enable number-specp)))))
-  (cons (numlist-to-vars (car nspec))
-        (and (consp (cdr nspec))
-             (cons (numlist-to-vars (cadr nspec))
-                   (and (consp (cddr nspec))
-                        (cons (numlist-to-vars (caddr nspec))
-                              (and (consp (cdddr nspec))
-                                   (list (numlist-to-vars
-                                          (cadddr nspec))))))))))
-
-(mutual-recursion
- (defun shape-spec-to-gobj (x)
-   (declare (xargs :guard (shape-specp x)
-                   :guard-hints (("goal" :in-theory (enable shape-specp
-                                                            shape-spec-listp)))))
-   (if (atom x)
-       x
-     (pattern-match x
-       ((g-number nspec)
-        (g-number (num-spec-to-num-gobj nspec)))
-       ((g-integer sign bits var)
-        (g-apply 'logapp
-                 (list (len bits)
-                       (g-number (list (bfr-logapp-nus
-                                        (len bits) (numlist-to-vars bits) nil)))
-                       (g-apply 'int-set-sign
-                                (list (g-boolean (bfr-var sign))
-                                      (g-var var))))))
-       ((g-integer? sign bits var intp)
-        (g-apply 'maybe-integer
-                 (list
-                  (g-apply 'logapp
-                           (list (len bits)
-                                 (g-number (list (bfr-logapp-nus
-                                                  (len bits) (numlist-to-vars bits) nil)))
-                                 (g-apply 'int-set-sign
-                                          (list (g-boolean (bfr-var sign))
-                                                (g-var var)))))
-                  (g-var var)
-                  (g-boolean (bfr-var intp)))))
-       ((g-boolean n) (g-boolean (bfr-var n)))
-       ((g-var &) x)
-       ((g-ite if then else)
-        (g-ite (shape-spec-to-gobj if)
-               (shape-spec-to-gobj then)
-               (shape-spec-to-gobj else)))
-       ((g-concrete &) x)
-       ((g-call fn args &) (g-apply fn (shape-spec-list-to-gobjs args)))
-       (& (gl-cons (shape-spec-to-gobj (car x))
-                   (shape-spec-to-gobj (cdr x)))))))
- (defun shape-spec-list-to-gobjs (x)
-   (declare (xargs :guard (shape-spec-listp x)))
-   (if (atom x)
-       nil
-     (cons (shape-spec-to-gobj (car x))
-           (shape-spec-list-to-gobjs (cdr x))))))
 
 (in-theory (disable shape-spec-to-gobj
-                    shape-spec-list-to-gobjs))
+                    shape-spec-to-gobj-list))
 
 
 
@@ -484,18 +378,18 @@
                              bsl1 env)
                             vsl1))))
      :flag ss)
-   (defthm shape-spec-list-to-gobjs-eval-slice-subset-append-1
+   (defthm shape-spec-to-gobj-list-eval-slice-subset-append-1
      (implies (and (shape-spec-listp x)
                    (alistp vsl1)
                    (subsetp-equal (shape-spec-list-indices x)
                                   (strip-cars bsl1)))
               (equal (sspec-geval-list
-                      (shape-spec-list-to-gobjs x)
+                      (shape-spec-to-gobj-list x)
                       (cons (slice-to-bdd-env
                              (append bsl1 bsl2) env)
                             vsl1))
                      (sspec-geval-list
-                      (shape-spec-list-to-gobjs x)
+                      (shape-spec-to-gobj-list x)
                       (cons (slice-to-bdd-env
                              bsl1 env)
                             vsl1))))
@@ -513,7 +407,7 @@
                                    boolean-listp
                                    binary-append))
            :expand ((shape-spec-to-gobj x)
-                    (shape-spec-list-to-gobjs x)
+                    (shape-spec-to-gobj-list x)
                     (shape-spec-indices x)
                     (shape-spec-list-indices x)
                     (shape-spec-vars x)
@@ -549,18 +443,18 @@
                              bsl1 env)
                             vsl1))))
      :flag ss)
-   (defthm shape-spec-list-to-gobjs-eval-slice-subset-append-2
+   (defthm shape-spec-to-gobj-list-eval-slice-subset-append-2
      (implies (and (shape-spec-listp x)
                    (alistp vsl1)
                    (subsetp-equal (shape-spec-list-vars x)
                                   (strip-cars vsl1)))
               (equal (sspec-geval-list
-                      (shape-spec-list-to-gobjs x)
+                      (shape-spec-to-gobj-list x)
                       (cons (slice-to-bdd-env
                              bsl1 env)
                             (append vsl1 vsl2)))
                      (sspec-geval-list
-                      (shape-spec-list-to-gobjs x)
+                      (shape-spec-to-gobj-list x)
                       (cons (slice-to-bdd-env
                              bsl1 env)
                             vsl1))))
@@ -578,7 +472,7 @@
                                    boolean-listp
                                    binary-append))
            :expand ((shape-spec-to-gobj x)
-                    (shape-spec-list-to-gobjs x)
+                    (shape-spec-to-gobj-list x)
                     (shape-spec-indices x)
                     (shape-spec-list-indices x)
                     (shape-spec-vars x)
@@ -623,12 +517,12 @@
                          (shape-spec-list-indices x)
                          (strip-cars bsl1))))
               (equal (sspec-geval-list
-                      (shape-spec-list-to-gobjs x)
+                      (shape-spec-to-gobj-list x)
                       (cons (slice-to-bdd-env
                              (append bsl1 bsl2) env)
                             vsl1))
                      (sspec-geval-list
-                      (shape-spec-list-to-gobjs x)
+                      (shape-spec-to-gobj-list x)
                       (cons (slice-to-bdd-env
                              bsl2 env)
                             vsl1))))
@@ -646,7 +540,7 @@
                                    boolean-listp
                                    binary-append))
            :expand ((shape-spec-to-gobj x)
-                    (shape-spec-list-to-gobjs x)
+                    (shape-spec-to-gobj-list x)
                     (shape-spec-indices x)
                     (shape-spec-list-indices x)
                     (shape-spec-vars x)
@@ -688,12 +582,12 @@
                    (not (intersectp-equal (shape-spec-list-vars x)
                                           (strip-cars vsl1))))
               (equal (sspec-geval-list
-                      (shape-spec-list-to-gobjs x)
+                      (shape-spec-to-gobj-list x)
                       (cons (slice-to-bdd-env
                              bsl1 env)
                             (append vsl1 vsl2)))
                      (sspec-geval-list
-                      (shape-spec-list-to-gobjs x)
+                      (shape-spec-to-gobj-list x)
                       (cons (slice-to-bdd-env
                              bsl1 env)
                             vsl2))))
@@ -711,7 +605,7 @@
                                    boolean-listp
                                    binary-append))
            :expand ((shape-spec-to-gobj x)
-                    (shape-spec-list-to-gobjs x)
+                    (shape-spec-to-gobj-list x)
                     (shape-spec-indices x)
                     (shape-spec-list-indices x)
                     (shape-spec-vars x)
@@ -1380,11 +1274,11 @@
 
 
 
-(defun shape-spec-to-gobj-list (x)
-  (if (atom x)
-      nil
-    (cons (shape-spec-to-gobj (car x))
-          (shape-spec-to-gobj-list (cdr x)))))
+;; (defun shape-spec-to-gobj-list (x)
+;;   (if (atom x)
+;;       nil
+;;     (cons (shape-spec-to-gobj (car x))
+;;           (shape-spec-to-gobj-list (cdr x)))))
 
 ;; (defun shape-spec-listp (x)
 ;;   (if (atom x)
@@ -2233,7 +2127,7 @@ simpler, unparametrized shape spec.
        (implies (equal (tag x) :g-call)
                 (equal (shape-spec-to-gobj x)
                        (g-apply (g-call->fn x)
-                                (shape-spec-list-to-gobjs (g-call->args x)))))
+                                (shape-spec-to-gobj-list (g-call->args x)))))
        :hints(("Goal" :in-theory (enable shape-spec-to-gobj))))
 
      (defthm shape-spec-indices-of-g-call
@@ -2333,7 +2227,7 @@ simpler, unparametrized shape spec.
                        (shape-spec-listp x)
                        (no-duplicatesp (shape-spec-list-indices x))
                        (no-duplicatesp (shape-spec-list-vars x)))
-                  (equal (sspec-geval-list (shape-spec-list-to-gobjs x)
+                  (equal (sspec-geval-list (shape-spec-to-gobj-list x)
                                            (cons (slice-to-bdd-env (car env) ee)
                                                  (cdr env)))
                          (sspec-geval-ev-lst obj-terms a))))
@@ -2349,7 +2243,7 @@ simpler, unparametrized shape spec.
                                                x obj-term iff-flg))
                              (:free (env) (sspec-geval-list nil env))
                              (:free (a b env) (sspec-geval-list (cons a b) env))
-                             (shape-spec-list-to-gobjs x)
+                             (shape-spec-to-gobj-list x)
                              (shape-spec-listp x)
                              (shape-spec-list-indices x)
                              (shape-spec-list-vars x))
@@ -2375,6 +2269,19 @@ simpler, unparametrized shape spec.
                       (sspec-geval-ev obj-term a))))
     :hints (("goal" :use ((:instance shape-spec-oblig-term-correct-lemma
                            (iff-flg nil))))))
+
+  (defthm shape-spec-list-oblig-term-correct
+    (let ((env (sspec-geval-ev (shape-spec-list-env-term
+                                x obj-terms)
+                               a)))
+      (implies (and (sspec-geval-ev (shape-spec-list-oblig-term x obj-terms) a)
+                    (shape-spec-listp x)
+                    (no-duplicatesp (shape-spec-list-indices x))
+                    (no-duplicatesp (shape-spec-list-vars x)))
+               (equal (sspec-geval-list (shape-spec-to-gobj-list x)
+                                        (cons (slice-to-bdd-env (car env) ee)
+                                              (cdr env)))
+                      (sspec-geval-ev-lst obj-terms a)))))
 
   (defthm shape-spec-oblig-term-correct-iff
     (let ((env (sspec-geval-ev (shape-spec-env-term

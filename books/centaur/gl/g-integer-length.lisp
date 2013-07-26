@@ -33,8 +33,8 @@
           (if (zp clk)
               (g-apply 'integer-length (gl-list x))
             (g-if test
-                  (,gfn then hyp clk)
-                  (,gfn else hyp clk))))
+                  (,gfn then . ,params)
+                  (,gfn else . ,params))))
          ((g-apply & &)
           (g-apply 'integer-length (gl-list x)))
          ((g-var &)
@@ -65,13 +65,18 @@
 ;; (def-gobjectp-thm integer-length
 ;;   :hints `(("Goal" :in-theory (e/d ()
 ;;                                  ((:definition ,gfn)))
-;;           :induct (,gfn i hyp clk)
-;;           :expand ((,gfn i hyp clk)))))
+;;           :induct (,gfn i . ,params)
+;;           :expand ((,gfn i . ,params)))))
 
 (verify-g-guards
  integer-length
  :hints `(("Goal" :in-theory (disable ,gfn))))
 
+
+(def-gobj-dependency-thm integer-length
+  :hints `(("goal" :induct ,gcall
+            :expand (,gcall)
+            :in-theory (disable (:d ,gfn)))))
 
 
 (local (defthm non-integerp-integer-length
@@ -102,7 +107,7 @@
                                     general-concretep-def
                                     eval-g-base-alt-def
                                     integer-length))
-            :induct (,gfn i hyp clk)
-            :expand ((,gfn i hyp clk)))
+            :induct (,gfn i . ,params)
+            :expand ((,gfn i . ,params)))
            (and stable-under-simplificationp
                 '(:expand ((:with eval-g-base (eval-g-base i env)))))))

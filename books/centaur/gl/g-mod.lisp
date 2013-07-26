@@ -30,6 +30,12 @@
 
 (in-theory (disable (g-mod-of-numbers)))
 
+(defthm deps-of-g-mod-of-numbers
+  (implies (and (not (gobj-depends-on k p x))
+                (not (gobj-depends-on k p y))
+                (general-numberp x)
+                (general-numberp y))
+           (not (gobj-depends-on k p (g-mod-of-numbers x y)))))
 
 (local (include-book "arithmetic/top-with-meta" :dir :system))
 
@@ -81,9 +87,9 @@
 ;;                                      gobj-fix-when-gobjectp
 ;;                                      (:rules-of-class :type-prescription :here)
 ;;                                      (:ruleset gl-wrong-tag-rewrites)))
-;;             :induct (,gfn x y hyp clk)
+;;             :induct (,gfn x y . ,params)
 ;;             :do-not-induct t
-;;             :expand ((,gfn x y hyp clk)
+;;             :expand ((,gfn x y . ,params)
 ;;                      (gobjectp (mod (gobj-fix i) (gobj-fix j)))))))
 
 (verify-g-guards
@@ -91,6 +97,11 @@
  :hints `(("goal" :in-theory
            (disable* ,gfn 
                      (:rules-of-class :type-prescription :here)))))
+
+(def-gobj-dependency-thm mod
+  :hints `(("goal" :induct ,gcall
+            :expand (,gcall)
+            :in-theory (disable (:d ,gfn)))))
 
 (local (defthm mod-when-not-numberp
          (and (implies (not (acl2-numberp x))
@@ -119,9 +130,9 @@
                               rationalp-implies-acl2-numberp
                               (:rules-of-class :type-prescription :here))
                              ((:type-prescription bfr-eval)))
-     :induct (,gfn x y hyp clk)
+     :induct (,gfn x y . ,params)
      :do-not-induct t
-     :expand ((,gfn x y hyp clk)))
+     :expand ((,gfn x y . ,params)))
     (and stable-under-simplificationp
          (flag::expand-calls-computed-hint
           clause '(eval-g-base)))))

@@ -31,7 +31,7 @@
                        ,@(make-list-of-nths
                           'actuals 0
                           (len (wgetprop (car names) 'formals)))
-                       hyp clk)))
+                       hyp clk config bvar-db state)))
     (glcp-predef-cases-fn (cdr names) world))))
 
 
@@ -239,6 +239,22 @@
            (true-listp x))
   :hints(("Goal" :in-theory (enable gobj-listp)))
   :rule-classes :forward-chaining)
+
+(defun glcp-put-name-each (name lst)
+  (if (atom lst)
+      nil
+    (cons (incat name (symbol-name name) "-" (symbol-name (car lst)))
+          (glcp-put-name-each name (cdr lst)))))
+
+
+(defthm gobj-depends-on-of-nth
+  (implies (not (gobj-list-depends-on k p x))
+           (not (gobj-depends-on k p (nth n x))))
+  :hints(("Goal" :in-theory (enable nth gobj-list-depends-on))))
+
+(defthm gobj-depends-on-of-nil
+  (not (gobj-depends-on k p nil)))
+
       
 (defun def-gl-clause-processor-fn
   (clause-proc output state)
@@ -247,7 +263,11 @@
        ;; (current-geval (find-current-geval world))
        (geval ;;(or current-geval
         (incat clause-proc (symbol-name clause-proc) "-GEVAL"))
+       (geval-ev ;;(or current-geval
+        (incat clause-proc (symbol-name clause-proc) "-GEVAL-EV"))
        (geval-list (incat clause-proc (symbol-name clause-proc) "-GEVAL-LIST"))
+       (geval-ev-lst ;;(or current-geval
+        (incat clause-proc (symbol-name clause-proc) "-GEVAL-EV-LST"))
        (run-gified (incat clause-proc (symbol-name clause-proc) "-RUN-GIFIED"))
        (g-fns (strip-cars (table-alist 'gl-function-info world)))
        (ev (incat clause-proc (symbol-name geval) "-EV"))
@@ -264,46 +284,47 @@
                        "-IS-FUNCTIONAL-INST-OF-GENERIC-GEVAL-FOR-GL-CLAUSE-PROC"))
        (run-gified-correct
         (incat run-gified (symbol-name run-gified) "-CORRECT"))
-       (interp-term (interp-term-fnname clause-proc))
-       (interp-list (incat clause-proc (symbol-name clause-proc)
-                           "-INTERP-LIST"))
-       (interp-if (incat clause-proc (symbol-name clause-proc)
-                         "-INTERP-IF"))
-       (interp-fncall (incat clause-proc (symbol-name clause-proc)
-                             "-INTERP-FNCALL"))
-       (interp-fncall-ifs (incat clause-proc (symbol-name clause-proc)
-                                 "-INTERP-FNCALL-IFS"))
-       (rewrite-fncall (incat clause-proc (symbol-name clause-proc)
-                              "-REWRITE-FNCALL"))
-       (rewrite-fncall-apply-rules (incat clause-proc (symbol-name clause-proc)
-                                          "-REWRITE-FNCALL-APPLY-RULES"))
-       (rewrite-fncall-apply-rule (incat clause-proc (symbol-name clause-proc)
-                                         "-REWRITE-FNCALL-APPLY-RULE"))
-       (relieve-hyps (incat clause-proc (symbol-name clause-proc)
-                            "-RELIEVE-HYPS"))
-       (relieve-hyp (incat clause-proc (symbol-name clause-proc)
-                           "-RELIEVE-HYP"))
-       (run-parametrized (incat clause-proc (symbol-name clause-proc)
-                                "-RUN-PARAMETRIZED"))
-       (run-cases (incat clause-proc (symbol-name clause-proc)
-                         "-RUN-CASES"))
-       (subst `((interp-term . ,interp-term)
-                (interp-list . ,interp-list)
-                (interp-if . ,interp-if)
-                (interp-fncall . ,interp-fncall)
-                (interp-fncall-ifs . ,interp-fncall-ifs)
-                (rewrite-fncall . ,rewrite-fncall)
-                (rewrite-fncall-apply-rules . ,rewrite-fncall-apply-rules)
-                (rewrite-fncall-apply-rule . ,rewrite-fncall-apply-rule)
-                (relieve-hyps . ,relieve-hyps)
-                (relieve-hyp . ,relieve-hyp)
-                (run-parametrized . ,run-parametrized)
-                (run-cases . ,run-cases)
-                (clause-proc-name . ',clause-proc)
-                (clause-proc . ,clause-proc)
-                (run-gified . ,run-gified)
-                ;; (apply-concrete . ,apply-concrete)
-                ))
+       (run-gified-deps
+        (incat run-gified (symbol-name run-gified) "-DEPS"))
+       (interp-term
+        (incat clause-proc (symbol-name clause-proc) "-INTERP-TERM"))
+       ;; (run-parametrized
+       ;;  (incat clause-proc (symbol-name clause-proc) "-RUN-PARAMETRIZED"))
+       ;; (run-cases
+       ;;  (incat clause-proc (symbol-name clause-proc) "-RUN-CASES"))
+       (subst-names '(run-gified
+                      interp-term
+                      interp-term-equivs
+                      interp-test
+                      interp-fncall
+                      ; interp-fncall-ifs
+                      interp-if/or
+                      maybe-interp
+                      interp-if
+                      interp-or
+                      merge-branches
+                      simplify-if-test
+                      rewrite
+                      rewrite-apply-rules
+                      rewrite-apply-rule
+                      relieve-hyps
+                      relieve-hyp
+                      interp-list
+                      interp-top-level-term
+                      interp-concl
+                      interp-hyp/concl
+                      run-parametrized
+                      run-cases
+                      geval
+                      geval-list
+                      geval-ev
+                      geval-ev-lst
+                      geval-ev-falsify
+                      geval-ev-meta-extract-global-badguy))
+       (fn-names (cons clause-proc (glcp-put-name-each clause-proc subst-names)))
+       (subst (pairlis$ (cons 'clause-proc subst-names) fn-names))
+       (fi-subst (pairlis$ (cons 'glcp-generic (glcp-put-name-each 'glcp-generic subst-names))
+                           (pairlis$ fn-names nil)))
        (f-i-lemmas (incat clause-proc (symbol-name clause-proc)
                           "-FUNCTIONAL-INSTANCE-LEMMAS"))
        (correct-thm (incat clause-proc (symbol-name clause-proc) "-CORRECT")))
@@ -321,15 +342,16 @@
          (encapsulate nil
            (set-case-split-limitations '(1 1))
            (defun ,run-gified
-             (fn actuals hyp clk state)
+             (fn actuals hyp clk config bvar-db state)
              (declare (xargs :guard (and (symbolp fn)
-                                         (gobj-listp actuals)
+                                         (true-listp actuals)
+                                         (glcp-config-p config)
                                          (natp clk))
                              :guard-hints
                              (("goal" :in-theory
                                (e/d** ((:forward-chaining gobj-listp-true-listp)))
                                :do-not '(preprocess)))
-                             :stobjs state)
+                             :stobjs (bvar-db state))
                       (ignorable state))
              (case fn
                . ,(glcp-predef-cases-fn
@@ -368,6 +390,7 @@
          ;; Define the interpreter mutual-recursion, the
          ;; run-parametrized and run-cases functions, and the clause proc.
          ,@(sublis subst (list *glcp-interp-template*
+                               *glcp-interp-wrappers-template*
                                *glcp-run-parametrized-template*
                                *glcp-run-cases-template*
                                *glcp-clause-proc-template*))
@@ -385,25 +408,35 @@
             (eval-g-functional-instance
              general-concrete-obj-correct ,geval generic-geval)
             
+            
+            ;; Prove correctness of run-gified
+            (defthm ,run-gified-deps
+              (implies (not (gobj-list-depends-on k p actuals))
+                       (not (gobj-depends-on
+                             k p (mv-nth 1 (,run-gified
+                                            fn actuals hyp clk config bvar-db state)))))
+              :hints(("Goal" :in-theory (append '(gobj-depends-on-of-nth
+                                                  gobj-depends-on-of-nil
+                                                  ,run-gified)
+                                                (strip-cdrs
+                                                 (table-alist
+                                                  'sym-counterpart-dep-thms
+                                                  world))))))
+
             ;; Prove correctness of run-gified
             (defthm ,run-gified-correct
               (implies (and (bfr-eval hyp (car env))
-                            (gobj-listp actuals)
                             (mv-nth 0 (,run-gified
-                                       fn actuals hyp clk state)))
+                                       fn actuals hyp clk config bvar-db state)))
                        (equal (,geval (mv-nth 1 (,run-gified
-                                                 fn actuals hyp clk state))
+                                                 fn actuals hyp clk config bvar-db state))
                                       env)
                               (,ev (cons fn (acl2::kwote-lst
-                                             (,geval actuals env))) nil)))
+                                             (,geval-list actuals env))) nil)))
               :hints (("goal" :clause-processor
                        (run-gified-clause-proc
                         clause
-                        '(,(f-i-thmname
-                            'gl-eval-consp-when-gobj-listp geval)
-                          ,(f-i-thmname
-                            'gl-eval-car-cdr-of-gobj-listp geval)
-                          ,(f-i-thmname 'gl-eval-of-nil geval))
+                        ',(f-i-thmname 'gl-eval-of-nil geval)
                         state))
                       (use-by-computed-hint clause)))
 
@@ -430,6 +463,7 @@
                       ;;   (nthcdr (- (len constr) 18) constr))
                       '(,ctrex-thm
                         ,run-gified-correct
+                        ,run-gified-deps
                         ;; ,apply-concrete-lemma
                         ;; ,apply-concrete-state
                         ,(f-i-thmname 'generic-geval-gl-cons geval)
@@ -454,22 +488,7 @@
            :hints (("goal" :by
                     (:functional-instance
                      glcp-generic-interp-guards-ok
-                     (glcp-generic-interp-term ,interp-term)
-                     (glcp-generic-interp-list ,interp-list)
-                     (glcp-generic-interp-if ,interp-if)
-                     (glcp-generic-interp-fncall ,interp-fncall)
-                     (glcp-generic-interp-fncall-ifs ,interp-fncall-ifs)
-                     (glcp-generic-rewrite-fncall ,rewrite-fncall)
-                     (glcp-generic-rewrite-fncall-apply-rules ,rewrite-fncall-apply-rules)
-                     (glcp-generic-rewrite-fncall-apply-rule ,rewrite-fncall-apply-rule)
-                     (glcp-generic-relieve-hyps ,relieve-hyps)
-                     (glcp-generic-relieve-hyp ,relieve-hyp)
-                     (glcp-generic-geval-ev ,ev)
-                     (glcp-generic-geval-ev-lst ,ev-lst)
-                     (glcp-generic-geval ,geval)
-                     (glcp-generic-geval-list ,geval-list)
-                     (glcp-generic-run-gified ,run-gified)
-                     (glcp-generic-geval-ev-falsify ,falsify)
+                     . ,fi-subst
                      ;; (glcp-generic-apply-concrete ,apply-concrete)
                      ;; (glcp-generic-apply-concrete-guard-wrapper ,apply-concrete)
                      )
@@ -479,18 +498,9 @@
                    (let ((term (car (last clause))))
                      (case-match term
                        (('equal (fn . args) . &)
-                        (and (member fn '(,interp-term
-                                          ,interp-if
-                                          ,interp-fncall
-                                          ,interp-fncall-ifs
-                                          ,rewrite-fncall
-                                          ,rewrite-fncall-apply-rules
-                                          ,rewrite-fncall-apply-rule
-                                          ,relieve-hyps
-                                          ,relieve-hyp
-                                          ,interp-list
-                                          ,geval
-                                          ,geval-list))
+                        (and (member fn ',(set-difference-eq fn-names
+                                                             (list geval-ev
+                                                                   geval-ev-lst)))
                             `(:expand ((,fn . ,args))
                               :do-not nil)))))
                    (and stable-under-simplificationp
@@ -520,35 +530,12 @@
                     :in-theory (e/d** (,ctrex-thm))
                     :by (:functional-instance
                          glcp-generic-correct
-                         (glcp-generic-interp-term ,interp-term)
-                         (glcp-generic-interp-list ,interp-list)
-                         (glcp-generic-interp-if ,interp-if)
-                         (glcp-generic-interp-fncall ,interp-fncall)
-                         (glcp-generic-interp-fncall-ifs ,interp-fncall-ifs)
-                         (glcp-generic-rewrite-fncall ,rewrite-fncall)
-                         (glcp-generic-rewrite-fncall-apply-rules ,rewrite-fncall-apply-rules)
-                         (glcp-generic-rewrite-fncall-apply-rule ,rewrite-fncall-apply-rule)
-                         (glcp-generic-relieve-hyps ,relieve-hyps)
-                         (glcp-generic-relieve-hyp ,relieve-hyp)
-                         (glcp-generic-geval-ev ,ev)
-                         (glcp-generic-geval-ev-lst ,ev-lst)
-                         (glcp-generic-geval ,geval)
-                         (glcp-generic-geval-list ,geval-list)
-                         (glcp-generic-run-gified ,run-gified)
-                         ;; (glcp-generic-apply-concrete ,apply-concrete)
-                         ;; (glcp-generic-apply-concrete-guard-wrapper ,apply-concrete)
-                         (glcp-generic-geval-ev-falsify ,falsify)
-                         (glcp-generic-geval-ev-meta-extract-global-badguy
-                          ,badguy)
-                         (glcp-generic-run-parametrized
-                          ,run-parametrized)
-                         (glcp-generic-run-cases ,run-cases)
-                         (glcp-generic ,clause-proc)))
+                         . ,fi-subst))
                    (case-match clause
                      ((('equal (fn . args) . &))
-                      (and (member fn '(,clause-proc
-                                        ,run-parametrized
-                                        ,run-cases))
+                      (and (member fn ',(set-difference-eq fn-names
+                                                           (list geval-ev
+                                                                 geval-ev-lst)))
                            `(:expand ((,fn . ,args)))))
                      (((ev ('acl2::meta-extract-global-fact+ . &)
                            . &)
@@ -1223,7 +1210,7 @@ PARAM-BINDINGS must be provided in DEF-GL-PARAM-THM.~%"))
         (hyp-clk '1000000)
         (concl-clk '1000000)
         (n-counterexamples '3)
-        (abort-indeterminate 't) (abort-ctrex 't) (exec-ctrex 't) (abort-vacuous 't)
+        (abort-indeterminate 't) (abort-ctrex 't) (exec-ctrex 't) (abort-vacuous 'nil)
         run-before-cases run-after-cases
         case-split-override
         case-split-hints local test-side-goals

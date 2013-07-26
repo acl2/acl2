@@ -12,6 +12,8 @@
 (include-book "g-lessthan")
 (local (include-book "arithmetic/top-with-meta" :dir :system))
 (local (include-book "centaur/bitops/ihsext-basics" :dir :system))
+(local (include-book "tools/trivial-ancestors-check" :dir :system))
+(local (acl2::use-trivial-ancestors-check))
 ;; (defaxiom completion-of-code-char
 ;;   (equal (code-char x)
 ;;          (if (and (integerp x)
@@ -37,6 +39,10 @@
          (g-apply 'code-char (list x)))
         (t ;; cons
          (code-char 0))))
+
+(defthm deps-of-g-code-char-concrete
+  (implies (not (gobj-depends-on k p x))
+           (not (gobj-depends-on k p (g-code-char-concrete x)))))
 
 (local
  (progn
@@ -142,6 +148,17 @@
     (g-if (mk-g-boolean (nth (1- n) x))
           (code-char-s (1- n) x (+ (ash 1 (1- n)) acc) hyp)
           (code-char-s (1- n) x acc hyp))))
+
+(defthm pbfr-depends-on-nth
+  (implies (not (pbfr-list-depends-on k p x))
+           (not (pbfr-depends-on k p (nth n x)))))
+
+(defthm deps-of-code-char-s
+  (implies (not (pbfr-list-depends-on k p x))
+           (not (gobj-depends-on k p (code-char-s n x acc hyp))))
+  :hints (("goal" :induct (code-char-s n x acc hyp)
+           :in-theory (disable (:d code-char-s))
+           :expand ((code-char-s n x acc hyp)))))
 
 ;; (local (defun first-n (n x)
 ;;          (if (zp n)
@@ -270,10 +287,12 @@
 ;;         nil
 ;;         (glr < x 256 hyp clk))
   
-(defun g-code-char-of-number (x hyp clk)
+(defun g-code-char-of-number (x hyp clk config bvar-db state)
   (declare (xargs :guard (and (consp x)
                               (g-number-p x)
+                              (glcp-config-p config)
                               (natp clk))
+                  :stobjs (bvar-db state)
                   :guard-hints(("Goal" :in-theory
                                 (disable code-char-s)))))
   (mv-let (xrn xrd xin xid)
@@ -281,13 +300,22 @@
     (if (equal xrd '(t))
         (g-if (g-if (mk-g-boolean (bfr-or (bfr-=-ss xin nil)
                                           (bfr-=-uu xid nil)))
-                    (g-if (glr < x 0 hyp clk)
+                    (g-if (glr < x 0 hyp clk config bvar-db state)
                           nil
-                          (glr < x 256 hyp clk))
+                          (glr < x 256 hyp clk config bvar-db state))
                     nil)
               (code-char-s 8 (rlist-fix xrn) 0 hyp)
               (code-char 0))
       (g-apply 'code-char (list x)))))
+
+(defthm deps-of-g-code-char-of-number
+  (implies (and (not (gobj-depends-on k p x))
+                (g-number-p x))
+           (not (gobj-depends-on k p (g-code-char-of-number x hyp clk config
+                                                            bvar-db state))))
+  :hints (("goal" :in-theory (e/d ((force))
+                                  (gobj-depends-on
+                                   code-char-s)))))
 
 
 ;; (defun g-code-char-of-number (x hyp clk)
@@ -358,7 +386,8 @@
      (defthm g-code-char-of-number-correct
        (implies (and (bfr-eval hyp (car env))
                      (g-number-p x))
-                (equal (eval-g-base (g-code-char-of-number x hyp clk) env)
+                (equal (eval-g-base (g-code-char-of-number x hyp clk config
+                                                           bvar-db state) env)
                        (code-char (eval-g-base x env))))
        :hints(("Goal" :in-theory (e/d (eval-g-base eval-g-base-list)
                                       (code-char-s
@@ -386,19 +415,25 @@
 
 (def-g-fn code-char
   `(cond ((atom x) (g-code-char-concrete x))
-         ((g-number-p x) (g-code-char-of-number x hyp clk))
+         ((g-number-p x) (g-code-char-of-number x hyp clk config bvar-db state))
          ((g-ite-p x)
           (if (zp clk)
               (g-apply 'code-char (gl-list x))
             (g-if (g-ite->test x)
-                  (,gfn (g-ite->then x) hyp clk)
-                  (,gfn (g-ite->else x) hyp clk))))
+                  (,gfn (g-ite->then x) hyp clk config bvar-db state)
+                  (,gfn (g-ite->else x) hyp clk config bvar-db state))))
          (t (g-code-char-concrete x))))
 
 ;;(def-gobjectp-thm code-char)
 
 (verify-g-guards code-char
                  :hints `(("goal" :in-theory (Disable ,gfn))))
+
+(def-gobj-dependency-thm code-char
+  :hints `(("goal" :induct ,gcall
+            :expand (,gcall)
+            :in-theory (disable (:d ,gfn) gobj-depends-on
+                                g-code-char-of-number))))
 
 
 (def-g-correct-thm code-char eval-g-base
@@ -407,8 +442,8 @@
                                     g-code-char-of-number
                                     eval-g-base-alt-def
                                     (:definition ,gfn)))
-            :expand ((,gfn x hyp clk))
-            :induct (,gfn x hyp clk))
+            :expand (,gcall)
+            :induct ,gcall)
            (and stable-under-simplificationp
                 '(:expand ((:with eval-g-base (eval-g-base x env))
                            (:with eval-g-base (eval-g-base nil env)))))))

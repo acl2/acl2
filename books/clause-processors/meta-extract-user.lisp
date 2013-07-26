@@ -227,7 +227,7 @@
 
 (defthm mextract-lemma-term
   (implies (and (mextract-ev-global-facts)
-                (member rule (getprop fn 'lemmas nil 'current-acl2-world (w st)))
+                (member rule (fgetprop fn 'lemmas nil (w st)))
                 (equal (w st) (w state)))
            (mextract-ev (rewrite-rule-term rule)
                       a))
@@ -244,7 +244,7 @@
 ;; symbol in the world is a correct rewrite rule.
 (defthm mextract-lemma
   (implies (and (mextract-ev-global-facts)
-                (member rule (getprop fn 'lemmas nil 'current-acl2-world (w st)))
+                (member rule (fgetprop fn 'lemmas nil (w st)))
                 (not (eq (access rewrite-rule rule :subclass) 'meta))
                 (mextract-ev (conjoin (access rewrite-rule rule :hyps)) a)
                 (equal (w st) (w state)))
@@ -579,8 +579,7 @@
                     '(evfn (CONS (CAR X)
                                  (KWOTE-LST (evlst-fn (CDR X) A)))
                            'NIL)
-                    (getprop 'evfn 'lemmas nil 'current-acl2-world (w
-                                                                    state)))))
+                    (getprop 'evfn 'lemmas nil 'current-acl2-world (w state)))))
          (prog2$
           (or rule
               (er hard? 'def-meta-extract

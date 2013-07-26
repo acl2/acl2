@@ -49,6 +49,13 @@
   :hints (("goal" :in-theory (enable generic-geval)))
   :rule-classes ((:rewrite :backchain-limit-lst 0)))
 
+(defthm pbfr-depends-on-of-general-boolean-value
+  (implies (and (not (gobj-depends-on k p x))
+                (general-booleanp x))
+           (not (pbfr-depends-on k p (general-boolean-value x))))
+  :hints(("Goal" :in-theory (enable general-booleanp general-boolean-value
+                                    booleanp))))
+
 
 (in-theory (disable general-booleanp general-boolean-value))
 
@@ -147,6 +154,18 @@
 (in-theory (disable general-number-components
                     general-numberp))
 
+(defthm pbfr-depends-on-of-general-number-components
+  (implies (and (general-numberp x)
+                (not (gobj-depends-on k p x)))
+           (b* (((mv rn rd in id) (general-number-components x)))
+             (and (not (pbfr-list-depends-on k p rn))
+                  (not (pbfr-list-depends-on k p rd))
+                  (not (pbfr-list-depends-on k p in))
+                  (not (pbfr-list-depends-on k p id)))))
+  :hints(("Goal" :in-theory (enable general-number-components)
+          :expand ((gobj-depends-on k p x)
+                   (general-numberp x)))))
+
 
 
 (local (defthm nth-open-when-constant-idx
@@ -220,6 +239,17 @@
            (< (acl2-count (general-consp-cdr x)) (acl2-count x)))
   :hints (("goal" :in-theory (enable mk-g-concrete g-concrete g-concrete->obj)))
   :rule-classes (:rewrite :linear))
+
+(defthm gobj-depends-on-of-general-consp
+  (implies (and (not (gobj-depends-on k p x))
+                (general-consp x))
+           (and (not (gobj-depends-on k p (general-consp-car x)))
+                (not (gobj-depends-on k p (general-consp-cdr x)))))
+  :hints(("Goal" :in-theory (enable general-consp
+                                    general-consp-car
+                                    general-consp-cdr
+                                    g-keyword-symbolp-def))))
+
 
 (in-theory (disable general-consp general-consp-car general-consp-cdr))
 

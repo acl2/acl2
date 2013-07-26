@@ -32,7 +32,10 @@
   (defthm hyp-fix-correct
     (implies (bfr-eval hyp env)
              (equal (bfr-eval (hyp-fix x hyp) env)
-                    (bfr-eval x env))))
+                    (bfr-eval x env)))
+    :hints ((and stable-under-simplificationp
+                 (member-equal '(not (bfr-mode)) clause)
+                 '(:in-theory (enable bfr-eval)))))
 
 
   (defthmd hyp-ops-correct
@@ -55,7 +58,10 @@
            (equal (hyp-fix x hyp)
                   x)))
 
-
+(defthm pbfr-depends-on-of-hyp-fix
+  (implies (not (pbfr-depends-on k p x))
+           (not (pbfr-depends-on k p (hyp-fix x hyp))))
+  :hints(("Goal" :in-theory (enable hyp-fix))))
 
 
 ;; (local (bfr-reasoning-mode t))

@@ -30,6 +30,11 @@
 (verify-g-guards intern-in-package-of-symbol
                  :hints `(("Goal" :in-theory (disable ,gfn))))
 
+(def-gobj-dependency-thm intern-in-package-of-symbol
+  :hints `(("goal" :induct ,gcall
+            :expand (,gcall)
+            :in-theory (disable (:d ,gfn)))))
+
 (local
  (progn
    ;; (defthm gobjectp-not-g-keyword-symbolp
@@ -80,12 +85,12 @@
 
 
 (def-g-correct-thm intern-in-package-of-symbol eval-g-base
-  :hints `(("goal" :induct (,gfn acl2::str acl2::sym hyp clk)
+  :hints `(("goal" :induct (,gfn acl2::str acl2::sym . ,params)
             :in-theory (e/d (general-concrete-obj)
                             ((:definition ,gfn)
                              bfr-eval-list
                              eval-g-base-alt-def))
-            :expand ((,gfn acl2::str acl2::sym hyp clk)
+            :expand ((,gfn acl2::str acl2::sym . ,params)
                      (:with eval-g-base (eval-g-base nil env))))
            (and stable-under-simplificationp
                 '(:expand ((:with eval-g-base

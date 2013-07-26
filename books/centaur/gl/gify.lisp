@@ -107,7 +107,7 @@ be gified.  If not, implement this case.  Culprit (in function ~x0): ~x1~%"
               fn (car x)))
          (t (cons (gl-fnsym (car x))
                   (append (gify-term-list (cdr x) fn)
-                          '(hyp clk))))))
+                          '(hyp clk config bvar-db state))))))
  (defun gify-term-list (x fn)
    (if (endp x)
        nil
@@ -168,13 +168,15 @@ be gified.  If not, implement this case.  Culprit (in function ~x0): ~x1~%"
          (gbody (gify-body body (car fns)))
          (formals (wgetprop fn 'formals))
          (recursivep (wgetprop top-fn 'recursivep))
-         (guards `(natp clk))
+         (guards `(and (natp clk)
+                       (glcp-config-p config)))
          (name (gl-fnsym (if endp top-fn fn)))
          (defun
-           `(defun ,name ,(append formals '(hyp clk))
+           `(defun ,name ,(append formals '(hyp clk config bvar-db state))
               (declare
                (xargs
                 :guard ,guards
+                :stobjs (bvar-db state)
                 :verify-guards nil
                 . ,(and recursivep
                         `(:measure
@@ -183,7 +185,7 @@ be gified.  If not, implement this case.  Culprit (in function ~x0): ~x1~%"
                                   `(:hints (("goal" :in-theory
                                              (e/d** ((:ruleset
                                                       clk-measure-rules))))))))))
-               (ignorable hyp clk . ,formals))
+               (ignorable hyp clk config bvar-db state . ,formals))
                 ,(if endp
                      (let ((clkbody `(if (zp clk)
                                          (prog2$
@@ -241,8 +243,10 @@ Warning: Clock ran out in ~x0~%" ',(gl-fnsym top-fn))
                       (wgetprop fn 'non-executablep)
                       (assoc-eq fn (table-alist 'do-not-execute
                                                 world)))))
-    `(defun ,name (,@formals hyp clk)
-       (declare (xargs :guard (natp clk)
+    `(defun ,name (,@formals hyp clk config bvar-db state)
+       (declare (xargs :guard (and (natp clk)
+                                   (glcp-config-p config))
+                       :stobjs (bvar-db state)
                        :verify-guards nil))
        ,(if nonexec
             `(g-apply ',fn (gl-list . ,formals))
@@ -298,7 +302,7 @@ Warning: Clock ran out in ~x0~%" ',(gl-fnsym top-fn))
 ;;          (endp (endp (cdr fns)))
 ;;          (name (gl-fnsym (if endp top-fn fn)))
 ;;          (gobjectp-thm `(,name
-;;                          (gobjectp (,name ,@formals hyp clk))
+;;                          (gobjectp (,name ,@formals hyp clk config bvar-db state))
 ;;                          :name ,(gobjectp-thmname name))))
 ;;       (if endp
 ;;           (cons gobjectp-thm entries)
@@ -321,7 +325,7 @@ Warning: Clock ran out in ~x0~%" ',(gl-fnsym top-fn))
 ;;          (thmname (gobjectp-thmname name))
 ;;          (formals (wgetprop fn 'formals)))
 ;;       (cons `(defthm ,thmname
-;;                (gobjectp (,name ,@formals hyp clk)))
+;;                (gobjectp (,name ,@formals hyp clk config bvar-db state)))
 ;;             (gobjectp-redundant-top-thms (cdr clique) world)))))
          
          
@@ -343,9 +347,9 @@ Warning: Clock ran out in ~x0~%" ',(gl-fnsym top-fn))
 ;;          (defname (defname name))
 ;;          (gobjectp-thm
 ;;           `(defthm ,gobjectp-name
-;;              (gobjectp (,name ,@formals hyp clk))
+;;              (gobjectp (,name ,@formals hyp clk config bvar-db state))
 ;;              :hints (("goal" :expand ((:with (:definition ,defname)
-;;                                              (,name ,@formals hyp clk)))
+;;                                              (,name ,@formals hyp clk config bvar-db state)))
 ;;                       :do-not '(preprocess)))))
 ;;          (gobjectp-thm (if endp gobjectp-thm `(local ,gobjectp-thm))))
 ;;       (if endp
@@ -622,7 +626,7 @@ Warning: Clock ran out in ~x0~%" ',(gl-fnsym top-fn))
          (name (gl-fnsym fn))
          (g-correct-thm `(,name
                           (implies (bfr-eval hyp (car env))
-                                   (equal (,ev (,name ,@formals hyp clk) env)
+                                   (equal (,ev (,name ,@formals hyp clk config bvar-db state) env)
                                           (,fn . ,(eval-list-env ev formals))))
                           . ,(if endp
                                  `(:name ,(correct-thmname name))
@@ -662,10 +666,10 @@ Warning: Clock ran out in ~x0~%" ',(gl-fnsym top-fn))
          (g-correct-thm
           `(defthm ,g-correct-name
              (implies (bfr-eval hyp (car env))
-                      (equal (,ev (,name ,@formals hyp clk) env)
+                      (equal (,ev (,name ,@formals hyp clk config bvar-db state) env)
                              (,fn . ,(eval-list-env ev formals))))
              :hints (("goal" :expand
-                      ((,name ,@formals hyp clk))
+                      ((,name ,@formals hyp clk config bvar-db state))
                       ,@(and endp definedp
                              `(:in-theory (e/d ()
                                                ,(factored-fn-correct-thms
@@ -950,8 +954,8 @@ Warning: Clock ran out in ~x0~%" ',(gl-fnsym top-fn))
                  _oldgeval_-ev-of-fncall-args
                  car-cons cdr-cons nth-0-cons (nfix)))
     :expand (; (_oldgeval_ x env)
-             (_newgeval_ x env)
-             (_newgeval_-list x env))
+             (:with _newgeval_ (_newgeval_ x env))
+             (:with _newgeval_-list (_newgeval_-list x env)))
     :do-not-induct t))
 
 (defun eval-g-prove-f-i-fn (eval oldeval thmname)

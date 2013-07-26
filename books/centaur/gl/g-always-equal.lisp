@@ -16,8 +16,8 @@
 (def-g-fn acl2::always-equal
   ;; Once we've ruled out the case where they're both atoms, start by recurring
   ;; down to non-ITEs on both a and b:
-  `(bfr-case :bdd (g-always-equal-core x y hyp clk)
-             :aig (glr equal x y hyp clk)))
+  `(bfr-case :bdd (g-always-equal-core x y hyp clk config bvar-db state)
+             :aig (glr equal x y hyp clk config bvar-db state)))
 
 
 
@@ -32,7 +32,7 @@
 ;;                                     (:type-prescription booleanp)
 ;;                                     (:type-prescription gobj-fix)
 ;;                                     equal-of-booleans-rewrite))
-;;             :expand ((,gfn x y hyp clk)))))
+;;             :expand ((,gfn x y hyp clk config bvar-db state)))))
 
 (verify-g-guards
    acl2::always-equal
@@ -40,7 +40,10 @@
 
 
 
-
+(def-gobj-dependency-thm acl2::always-equal
+  :hints `(("Goal" :in-theory (e/d (,gfn)
+                                   (g-always-equal-core
+                                    gobj-depends-on)))))
 
 
 (def-g-correct-thm acl2::always-equal eval-g-base

@@ -23,6 +23,7 @@
 (include-book "tools/bstar" :dir :system)
 (include-book "ihs/logops-definitions" :dir :system)
 (include-book "centaur/misc/arith-equivs" :dir :system)
+(include-book "centaur/gl/gl-mbe" :dir :system)
 (local (include-book "ihsext-basics"))
 (local (include-book "arithmetic/top-with-meta" :dir :system))
 (local (include-book "equal-by-logbitp"))
@@ -82,6 +83,13 @@ same as not rotating at all."
                             (if (< places width)
                                 places
                               (rem places width))))
+           (places     (gl::gl-mbe places ;; logically this is a no-op
+                                   ;; ensure that GL knows places is short
+                                   (logand places (lognot (ash -1
+                                                               (integer-length
+                                                                width))))
+                                   ;; debugging if this check failes
+                                   (list places width)))
            (low-num    (- width places))              ; e.g., 12
            (mask       (1- (ash 1 low-num)))          ; e.g., 0000_1111_1111_1111
            (xl         (logand x mask))               ; e.g., 0000_BBBB_CCCC_DDDD

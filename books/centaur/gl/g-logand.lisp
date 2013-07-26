@@ -38,6 +38,13 @@
 (in-theory (disable (g-binary-logand-of-numbers)))
 
 
+(defthm deps-of-g-binary-logand-of-numbers
+  (implies (and (not (gobj-depends-on k p x))
+                (not (gobj-depends-on k p y))
+                (general-numberp x)
+                (general-numberp y))
+           (not (gobj-depends-on k p (g-binary-logand-of-numbers x y)))))
+
 (local (defthm logand-non-integers
          (and (implies (not (integerp i))
                        (equal (logand i j) (logand 0 j)))
@@ -84,8 +91,8 @@
 ;;                                      gobj-fix-when-gobjectp
 ;;                                      (:ruleset gl-wrong-tag-rewrites)
 ;;                                      (:rules-of-class :type-prescription :here)))
-;;             :induct (,gfn i j hyp clk)
-;;             :expand ((,gfn i j hyp clk)
+;;             :induct (,gfn i j . ,params)
+;;             :expand ((,gfn i j . ,params)
 ;;                      (gobjectp (logand (gobj-fix i)
 ;;                                        (gobj-fix j)))))))
 
@@ -93,6 +100,11 @@
  binary-logand
  :hints `(("Goal" :in-theory (disable* ,gfn
                                        general-concretep-def))))
+
+(def-gobj-dependency-thm binary-logand
+  :hints `(("goal" :induct ,gcall
+            :expand (,gcall)
+            :in-theory (disable (:d ,gfn)))))
 
 (local (defthm logand-non-acl2-numbers
          (and (implies (not (acl2-numberp i))
@@ -111,6 +123,6 @@
                                      hons-assoc-equal
                                      default-car default-cdr
                                      (:rules-of-class :type-prescription :here)))
-            :induct (,gfn i j hyp clk)
+            :induct (,gfn i j . ,params)
             :do-not-induct t
-            :expand ((,gfn i j hyp clk)))))
+            :expand ((,gfn i j . ,params)))))

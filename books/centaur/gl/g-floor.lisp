@@ -29,6 +29,13 @@
 
 (in-theory (disable (g-floor-of-numbers)))
 
+(defthm deps-of-g-floor-of-numbers
+  (implies (and (not (gobj-depends-on k p x))
+                (not (gobj-depends-on k p y))
+                (general-numberp x)
+                (general-numberp y))
+           (not (gobj-depends-on k p (g-floor-of-numbers x y)))))
+
 ;; (local
 ;;  (defthm gobjectp-g-floor-of-numbers
 ;;    (implies (and (gobjectp x)
@@ -83,9 +90,9 @@
 ;;                                      gobj-fix-when-gobjectp
 ;;                                      (:rules-of-class :type-prescription :here)
 ;;                                      (:ruleset gl-wrong-tag-rewrites)))
-;;             :induct (,gfn i j hyp clk)
+;;             :induct (,gfn i j . ,params)
 ;;             :do-not-induct t
-;;             :expand ((,gfn i j hyp clk)
+;;             :expand ((,gfn i j . ,params)
 ;;                      (gobjectp (floor (gobj-fix i) (gobj-fix j)))))))
 
 (verify-g-guards
@@ -93,6 +100,11 @@
  :hints `(("goal" :in-theory
            (disable* ,gfn 
                      (:rules-of-class :type-prescription :here)))))
+
+(def-gobj-dependency-thm floor
+  :hints `(("goal" :induct ,gcall
+            :expand (,gcall)
+            :in-theory (disable (:d ,gfn)))))
 
 (local (defthm floor-when-not-numberp
          (and (implies (not (acl2-numberp i))
@@ -121,9 +133,9 @@
                               rationalp-implies-acl2-numberp
                               (:rules-of-class :type-prescription :here))
                              ((:type-prescription bfr-eval)))
-     :induct (,gfn i j hyp clk)
+     :induct (,gfn i j . ,params)
      :do-not-induct t
-     :expand ((,gfn i j hyp clk)))
+     :expand ((,gfn i j . ,params)))
     (and stable-under-simplificationp
          (flag::expand-calls-computed-hint
           clause '(eval-g-base)))))

@@ -63,6 +63,12 @@
                    concrete-gobjectp-def
                    acl2::cons-car-cdr)))))
 
+(defthmd gobj-depends-on-when-concrete-gobjectp
+  (implies (concrete-gobjectp x)
+           (not (gobj-depends-on k p x)))
+  :hints (("goal" :induct (concrete-gobjectp-ind x)
+           :expand ((gobj-depends-on k p x)))))
+
 (in-theory (disable concrete-gobjectp-def))
 
 
@@ -84,6 +90,15 @@
                   g-concrete-quote))))
 
 
+(defthm gobj-depends-on-of-mk-g-concrete
+  (not (gobj-depends-on k p (mk-g-concrete x)))
+  :hints(("Goal" :in-theory (enable gobj-depends-on mk-g-concrete
+                                    gobj-depends-on-when-concrete-gobjectp))))
+
+(defthm gobj-depends-on-of-g-concrete-quote
+  (not (gobj-depends-on k p (g-concrete-quote x)))
+  :hints(("Goal" :in-theory (enable gobj-depends-on g-concrete-quote))))
+
 
 (defthm mk-g-ite-correct
   (equal (generic-geval (mk-g-ite c x y) b)
@@ -96,11 +111,23 @@
               '(:expand ((generic-geval c b)))))
   :otf-flg t)
 
+(defthm gobj-depends-on-of-mk-g-ite-rw
+  (implies (and (not (gobj-depends-on k p c))
+                (not (gobj-depends-on k p x))
+                (not (gobj-depends-on k p y)))
+           (not (gobj-depends-on k p (mk-g-ite c x y))))
+  :hints(("Goal" :in-theory (enable mk-g-ite))))
+
 
 (defthm mk-g-boolean-correct
   (equal (generic-geval (mk-g-boolean x) env)
          (bfr-eval x (car env)))
   :hints(("Goal" :in-theory (enable mk-g-boolean))))
+
+(defthm gobj-depends-on-of-mk-g-boolean
+  (equal (gobj-depends-on k p (mk-g-boolean x))
+         (pbfr-depends-on k p x))
+  :hints(("Goal" :in-theory (enable mk-g-boolean booleanp pbfr-depends-on))))
 
 
 
@@ -241,8 +268,52 @@
                               (generic-geval
                                (g-number x) env))))
             (and stable-under-simplificationp
-                 '(:in-theory (e/d (components-to-number-alt-def natp)))))))
+                 '(:in-theory (e/d (components-to-number-alt-def natp))))))
 
+  (defthm pbfr-depends-on-list-of-boolean-listp
+    (implies (and (syntaxp (quotep lst))
+                  (boolean-listp lst))
+             (not (pbfr-list-depends-on k p lst)))
+    :hints(("Goal" :in-theory (enable pbfr-list-depends-on))))
+
+  (local (defthm gobj-depends-on-of-g-number
+           (equal (gobj-depends-on k p (g-number n))
+                  (or (pbfr-list-depends-on k p (car n))
+                      (pbfr-list-depends-on k p (cadr n))
+                      (pbfr-list-depends-on k p (caddr n))
+                      (pbfr-list-depends-on k p (cadddr n))))
+           :hints(("Goal" :in-theory (e/d (break-g-number
+                                           default-car default-cdr)
+                                          ((pbfr-list-depends-on)))))))
+
+  (local (in-theory (disable gobj-depends-on
+                             sets::double-containment
+                             default-<-1
+                             default-<-2)))
+
+  (defthm gobj-depends-on-of-mk-g-number
+    (implies (and (or (integerp rnum)
+                      (not (pbfr-list-depends-on k p rnum)))
+                  (or (natp rden)
+                      (not (pbfr-list-depends-on k p rden)))
+                  (or (integerp inum)
+                      (not (pbfr-list-depends-on k p inum)))
+                  (or (natp iden)
+                      (not (pbfr-list-depends-on k p iden))))
+             (not (gobj-depends-on k p (mk-g-number-fn rnum rden inum iden))))
+    :hints(("Goal" :in-theory (e/d (mk-g-number-fn
+                                    (:t components-to-number-fn))
+                                   ((pbfr-list-depends-on) max
+                                    gobj-depends-on
+                                    bfr-list->s
+                                    bfr-list->u
+                                    norm-bvec-s
+                                    norm-bvec-u))
+            :expand ((:free (a b c d)
+                      (gobj-depends-on k p
+                       (components-to-number-fn a b c d)))
+                     (mk-g-number-fn rnum rden inum iden))))))
+                  
 
 
 
@@ -299,11 +370,24 @@
          (cons (generic-geval x env)
                (generic-geval y env))))
 
+(defthm gobj-depends-on-of-gl-cons
+  (equal (gobj-depends-on k p (gl-cons x y))
+         (or (gobj-depends-on k p x)
+             (gobj-depends-on k p y)))
+  :hints(("Goal" :in-theory (enable gl-cons)
+          :expand ((gobj-depends-on k p (cons x y))))))
+
 (defthm generic-geval-list-gl-cons
   (equal (generic-geval-list (gl-cons x y) env)
          (cons (generic-geval x env)
                (generic-geval-list y env)))
   :hints(("Goal" :expand ((:free (x) (generic-geval-list (cons x y) env))))))
+
+(defthm gobj-list-depends-on-of-gl-cons
+  (equal (gobj-list-depends-on k p (gl-cons x y))
+         (or (gobj-depends-on k p x)
+             (gobj-list-depends-on k p y)))
+  :hints(("Goal" :in-theory (enable gl-cons))))
 
 (defthm generic-geval-list-atom
   (implies (not (consp x))
@@ -365,3 +449,170 @@
   :rule-classes ((:rewrite :backchain-limit-lst 0)))
 
 
+
+
+
+(defsection gobj-depends-on
+
+  (local (in-theory (enable gobj-depends-on)))
+
+  (defthm gobj-list-depends-on-of-g-apply->args
+    (implies (and (not (gobj-depends-on k p x))
+                  (eq (tag x) :g-apply))
+             (not (gobj-list-depends-on k p (g-apply->args x)))))
+
+  (defthm gobj-depends-on-of-g-ite->test
+    (implies (and (not (gobj-depends-on k p x))
+                  (eq (tag x) :g-ite))
+             (not (gobj-depends-on k p (g-ite->test x)))))
+
+  (defthm gobj-depends-on-of-g-ite->then
+    (implies (and (not (gobj-depends-on k p x))
+                  (eq (tag x) :g-ite))
+             (not (gobj-depends-on k p (g-ite->then x)))))
+
+  (defthm gobj-depends-on-of-g-ite->else
+    (implies (and (not (gobj-depends-on k p x))
+                  (eq (tag x) :g-ite))
+             (not (gobj-depends-on k p (g-ite->else x)))))
+
+  (defthm gobj-depends-on-car-of-gobj-list
+    (implies (not (gobj-list-depends-on k p x))
+             (not (gobj-depends-on k p (car x)))))
+
+  (defthm gobj-list-depends-on-cdr-of-gobj-list
+    (implies (not (gobj-list-depends-on k p x))
+             (not (gobj-list-depends-on k p (cdr x)))))
+
+  (defthm gobj-list-depends-on-of-cons
+    (equal (gobj-list-depends-on k p (cons a b))
+           (not (and (not (gobj-depends-on k p a))
+                     (not (gobj-list-depends-on k p b))))))
+
+  (defthm gobj-list-depends-on-of-atom
+    (implies (not (consp x))
+             (equal (gobj-list-depends-on k p x) nil))
+    :rule-classes ((:rewrite :backchain-limit-lst 0)))
+
+  (defthm gobj-depends-on-car-of-gobj
+    (implies (and (not (gobj-depends-on k p x))
+                  (NOT (EQUAL (TAG X) :G-CONCRETE))
+                  (NOT (EQUAL (TAG X) :G-BOOLEAN))
+                  (NOT (EQUAL (TAG X) :G-NUMBER))
+                  (NOT (EQUAL (TAG X) :G-ITE))
+                  (NOT (EQUAL (TAG X) :G-VAR))
+                  (NOT (EQUAL (TAG X) :G-APPLY)))
+             (not (gobj-depends-on k p (car x)))))
+
+  (defthm gobj-depends-on-cdr-of-gobj
+    (implies (and (not (gobj-depends-on k p x))
+                  (NOT (EQUAL (TAG X) :G-CONCRETE))
+                  (NOT (EQUAL (TAG X) :G-BOOLEAN))
+                  (NOT (EQUAL (TAG X) :G-NUMBER))
+                  (NOT (EQUAL (TAG X) :G-ITE))
+                  (NOT (EQUAL (TAG X) :G-VAR))
+                  (NOT (EQUAL (TAG X) :G-APPLY)))
+             (not (gobj-depends-on k p (cdr x)))))
+
+  (defthm gobj-depends-on-of-g-boolean->bool
+    (implies (and (not (gobj-depends-on k p x))
+                  (eq (tag x) :g-boolean))
+             (not (pbfr-depends-on k p (g-boolean->bool x)))))
+
+  (defthm gobj-depends-on-of-g-number->num-0
+    (implies (and (not (gobj-depends-on k p x))
+                  (eq (tag x) :g-number))
+             (not (pbfr-list-depends-on k p (mv-nth 0 (break-g-number (g-number->num x)))))))
+
+  (defthm gobj-depends-on-of-g-number->num-1
+    (implies (and (not (gobj-depends-on k p x))
+                  (eq (tag x) :g-number))
+             (not (pbfr-list-depends-on k p (mv-nth 1 (break-g-number (g-number->num x)))))))
+
+  (defthm gobj-depends-on-of-g-number->num-2
+    (implies (and (not (gobj-depends-on k p x))
+                  (eq (tag x) :g-number))
+             (not (pbfr-list-depends-on k p (mv-nth 2 (break-g-number (g-number->num x)))))))
+
+  (defthm gobj-depends-on-of-g-number->num-3
+    (implies (and (not (gobj-depends-on k p x))
+                  (eq (tag x) :g-number))
+             (not (pbfr-list-depends-on k p (mv-nth 3 (break-g-number
+                                                       (g-number->num x)))))))
+
+  (defthm-gobj-flag
+    (defthm generic-geval-of-set-var-when-gobj-depends-on
+      (implies (and (not (gobj-depends-on k p x))
+                    (bfr-eval p env)
+                    (bfr-eval p (bfr-set-var k v env)))
+               (equal (generic-geval x (cons (bfr-param-env p (bfr-set-var k v env))
+                                             var-env))
+                      (generic-geval x (cons (bfr-param-env p env)
+                                             var-env))))
+      :hints ('(:expand ((:free (env) (:with generic-geval (generic-geval x env))))))
+      :flag gobj)
+    (defthm generic-geval-list-of-set-var-when-gobj-depends-on
+      (implies (and (not (gobj-list-depends-on k p x))
+                    (bfr-eval p env)
+                    (bfr-eval p (bfr-set-var k v env)))
+               (equal (generic-geval-list x (cons (bfr-param-env p (bfr-set-var k v env))
+                                                  var-env))
+                      (generic-geval-list x (cons (bfr-param-env p env)
+                                                  var-env))))
+      :hints ('(:expand ((:free (env) (generic-geval-list x env)))))
+      :flag list))
+
+  (defthm gobj-depends-on-of-atom
+    (implies (not (consp x))
+             (not (gobj-depends-on k p x)))
+    :rule-classes ((:rewrite :backchain-limit-lst 0)))
+
+  (defthm gobj-depends-on-of-cons
+    (implies (not (g-keyword-symbolp x))
+             (equal (gobj-depends-on k p (cons x y))
+                    (not (and (not (gobj-depends-on k p x))
+                              (not (gobj-depends-on k p y))))))
+    :hints(("Goal" :in-theory (enable g-keyword-symbolp))))
+
+  
+
+  (defthm gobj-depends-on-of-g-apply
+    (equal (gobj-depends-on k p (g-apply fn args))
+           (gobj-list-depends-on k p args)))
+
+  (defthm gobj-depends-on-of-g-ite
+    (equal (gobj-depends-on k p (g-ite test then else))
+           (not (and (not (gobj-depends-on k p test))
+                     (not (gobj-depends-on k p then))
+                     (not (gobj-depends-on k p else))))))
+
+  (defthm gobj-depends-on-of-g-number
+    (equal (gobj-depends-on k p (g-number num))
+           (not (b* (((mv rn rd in id) (break-g-number num)))
+                  (and (not (pbfr-list-depends-on k p rn))
+                       (not (pbfr-list-depends-on k p rd))
+                       (not (pbfr-list-depends-on k p in))
+                       (not (pbfr-list-depends-on k p id)))))))
+
+  (defthm gobj-depends-on-of-g-boolean
+    (equal (gobj-depends-on k p (g-boolean bool))
+           (pbfr-depends-on k p bool)))
+
+  (defthm gobj-depends-on-of-g-concrete
+    (equal (gobj-depends-on k p (g-concrete val)) nil))
+
+  (defthm gobj-depends-on-of-g-var
+    (equal (gobj-depends-on k p (g-var val)) nil))
+
+  
+  (defthm gobj-depends-on-when-g-concrete
+    (implies (equal (tag x) :g-concrete)
+             (equal (gobj-depends-on k p x) nil))
+    :hints (("goal" :expand ((not (gobj-depends-on k p x)))))
+    :rule-classes ((:rewrite :backchain-limit-lst 0)))
+
+  (defthm gobj-depends-on-when-g-var
+    (implies (equal (tag x) :g-var)
+             (equal (gobj-depends-on k p x) nil))
+    :hints (("goal" :expand ((gobj-depends-on k p x))))
+    :rule-classes ((:rewrite :backchain-limit-lst 0))))

@@ -2,9 +2,10 @@
 
 (in-package "GL")
 
-(include-book "shape-spec")
-
-
+(include-book "bfr-param")
+(include-book "gtypes")
+(include-book "bvar-db")
+(include-book "tools/clone-stobj" :dir :system)
 (local (include-book "gtype-thms"))
 (local (include-book "data-structures/no-duplicates" :dir :system))
 (local (include-book "tools/mv-nth" :dir :system))
@@ -16,26 +17,6 @@
 (local (include-book "../aig/eval-restrict"))
 
 (local (in-theory (disable acl2::append-of-nil)))
-
-(defun bfr-to-param-space (p x)
-  (declare (xargs :guard t)
-           (ignorable p))
-  (bfr-case :bdd (acl2::to-param-space p x)
-            :aig (acl2::aig-restrict
-                  x (acl2::aig-extract-iterated-assigns-alist p 10))))
-
-(defun bfr-list-to-param-space (p x)
-  (declare (xargs :guard t)
-           (ignorable p))
-  (mbe :logic (if (atom x)
-                  nil
-                (cons (bfr-to-param-space p (car x))
-                      (bfr-list-to-param-space p (cdr x))))
-       :exec (if (atom x)
-                 nil
-               (bfr-case :bdd (acl2::to-param-space-list p x)
-                         :aig (acl2::aig-restrict-list
-                               x (acl2::aig-extract-iterated-assigns-alist p 10))))))
 
 ;; (local
 ;;  (defthm bfr-p-to-param-space
@@ -99,6 +80,24 @@
      (cons (gobj-to-param-space (car x) p)
            (gobj-list-to-param-space (cdr x) p)))))
 
+;; (defthm tag-of-gobj-to-param-space
+;;   (implies (and (syntaxp (quotep tag))
+;;                 (g-keyword-symbolp tag)
+;;                 (not (equal (tag x) tag))
+;;                 (not (equal (tag x) :g-ite)))
+;;            (not (equal (tag (gobj-to-param-space x p)) tag)))
+;;   :hints (("goal" :expand ((gobj-to-param-space x p))
+;;            :in-theory (e/d (g-keyword-symbolp
+;;                             mk-g-boolean
+;;                             gnumber-to-param-space
+;;                             mk-g-number
+;;                             mk-g-ite
+;;                             gl-cons)
+;;                            (norm-bvec-s
+;;                             norm-bvec-u
+;;                             break-g-number))
+;;            :do-not-induct t)))
+
 ;; (local (in-theory (enable tag-when-g-var-p
 ;;                           tag-when-g-ite-p
 ;;                           tag-when-g-apply-p
@@ -115,17 +114,7 @@
 (verify-guards gobj-to-param-space
                :hints(("Goal" :in-theory (e/d () ((force))))))
 
-(defun bfr-param-env (p env)
-  (declare (xargs :guard t)
-           (ignorable p))
-  (bfr-case :bdd (acl2::param-env p env)
-            :aig env))
 
-(defund genv-param (p env)
-  (declare (xargs :guard (consp env))
-           (ignorable p))
-  (cons (bfr-param-env p (car env))
-        (cdr env)))
 
 ;; (local
 ;;  (defthmd gobjectp-g-number-2
@@ -198,49 +187,6 @@
 ;;                                      g-ite->then g-ite->else tag)))))
 
 
-(local
- (defthm bfr-eval-to-param-space
-   (implies (bfr-eval p env)
-            (equal (bfr-eval (bfr-to-param-space p x)
-                             (bfr-param-env p env))
-                   (bfr-eval x env)))
-   :hints(("Goal" :in-theory (e/d* (bfr-eval
-                                    bfr-to-param-space
-                                    acl2::param-env-to-param-space))))))
-
-(local
- (defthm bfr-eval-list-to-param-space-list
-   (implies (bfr-eval p env)
-            (equal (bfr-eval-list (bfr-list-to-param-space p x)
-                                  (bfr-param-env p env))
-                   (bfr-eval-list x env)))
-   :hints(("Goal" :in-theory (e/d (bfr-eval-list
-                                     bfr-list-to-param-space)
-                                  (bfr-param-env))))))
-
-(local
- (defthm bfr-list->s-to-param-space-list
-   (implies (bfr-eval p env)
-            (equal (bfr-list->s (bfr-list-to-param-space p x)
-                                  (bfr-param-env p env))
-                   (bfr-list->s x env)))
-   :hints(("Goal" :in-theory (e/d (bfr-list->s scdr s-endp
-                                     ;; bfr-eval
-                                     bfr-list-to-param-space)
-                                  (bfr-to-param-space
-                                   bfr-param-env))))))
-
-(local
- (defthm bfr-list->u-to-param-space-list
-   (implies (bfr-eval p env)
-            (equal (bfr-list->u (bfr-list-to-param-space p x)
-                                  (bfr-param-env p env))
-                   (bfr-list->u x env)))
-   :hints(("Goal" :in-theory (e/d (bfr-list->u scdr s-endp
-                                     ;; bfr-eval
-                                     bfr-list-to-param-space)
-                                  (bfr-to-param-space
-                                   bfr-param-env))))))
 
 (local
  (defthm nth-open-const-idx
@@ -275,8 +221,27 @@
                                   break-g-number
                                   bfr-param-env)))))
 
+(defthm gnumber-to-param-space-correct-with-unparam-env
+  (implies (syntaxp (not (case-match env
+                           (('cons ('bfr-param-env . &) . &) t))))
+           (equal (generic-geval (gnumber-to-param-space n p)
+                                 env)
+                  (generic-geval (g-number n)
+                                 (genv-unparam p env))))
+  :hints(("Goal" :in-theory (e/d (gnumber-to-param-space
+                                  generic-geval genv-unparam)
+                                 (components-to-number-alt-def
+                                  break-g-number
+                                  bfr-param-env)))))
 
-(defthm-gobj->term-flag
+
+(local (defthm generic-geval-g-number-of-g-number->num
+         (implies (equal (tag x) :g-number)
+                  (equal (generic-geval (g-number (g-number->num x)) env)
+                         (generic-geval x env)))
+         :hints(("Goal" :in-theory (enable generic-geval)))))
+
+(defthm-gobj-flag
   (defthm gobj-to-param-space-correct
     (implies (bfr-eval p (car env))
              (equal (generic-geval (gobj-to-param-space x p)
@@ -313,23 +278,195 @@
                      (gobj-list-to-param-space x p))
             :do-not-induct t)
            (and stable-under-simplificationp
+                '(:expand ((:free (env) (generic-geval x env)))))
+           (and stable-under-simplificationp
                 (flag::expand-calls-computed-hint
                  acl2::clause '(generic-geval generic-geval-list)))))
 
 
 
-(defun shape-spec-to-gobj-param (spec p)
-  (declare (xargs :guard (shape-specp spec)))
-  (gobj-to-param-space (shape-spec-to-gobj spec) p))
+(defthm-gobj-flag
+  (defthm gobj-to-param-space-correct-with-unparam-env
+    (implies (syntaxp (not (and (consp env) (eq (car env) 'genv-param))))
+             (equal (generic-geval (gobj-to-param-space x p) env)
+                    (generic-geval x (genv-unparam p env))))
+    :flag gobj)
+  (defthm gobj-list-to-param-space-correct-with-unparam-env
+    (implies (syntaxp (not (and (consp env) (eq (car env) 'genv-param))))
+             (equal (generic-geval-list (gobj-list-to-param-space x p) env)
+                    (generic-geval-list x (genv-unparam p env))))
+    :flag list)
+    :hints(("Goal" :in-theory
+            (e/d* (genv-unparam
+                   ;; gobjectp-g-boolean-2
+                   ;; gobjectp-g-number-2
+                   default-car default-cdr)
+                  ((force) bfr-eval-list
+                   components-to-number-alt-def
+                   boolean-listp bfr-eval
+                   (:rules-of-class :type-prescription :here)
+; generic-geval-when-g-var-tag
+                   
+;                 bfr-eval-of-non-consp-cheap
+;                 bfr-eval-when-not-consp
+                   bfr-to-param-space
+                   bfr-list-to-param-space
+                   bfr-param-env
+                   ;;break-g-number
+                   generic-geval
+                   hons-assoc-equal)
+                  ((:type-prescription len)))
+            :expand ((gobj-to-param-space x p)
+                     (gobj-list-to-param-space x p))
+            :do-not-induct t)
+           (and stable-under-simplificationp
+                '(:expand ((:free (env) (generic-geval x env)))))
+           (and stable-under-simplificationp
+                (flag::expand-calls-computed-hint
+                 acl2::clause '(generic-geval generic-geval-list)))))
 
-(defun shape-spec-to-env-param (x obj p)
-  (declare (xargs :guard (shape-specp x)))
-  (genv-param p (shape-spec-to-env x obj)))
 
 
 (defthm eval-bfr-to-param-space-self
   (implies (bfr-eval x (car env))
            (bfr-eval (bfr-to-param-space x x) (car (genv-param x env))))
   :hints(("Goal" :in-theory (enable bfr-eval bfr-to-param-space genv-param
-                                    bfr-param-env
+                                    bfr-param-env bfr-unparam-env
                                     default-car))))
+
+
+(defun gobj-alist-to-param-space (alist p)
+  (if (atom alist)
+      nil
+    (if (consp (car alist))
+        (cons (cons (caar alist) (gobj-to-param-space (cdar alist) p))
+              (gobj-alist-to-param-space (cdr alist) p))
+      (gobj-alist-to-param-space (cdr alist) p))))
+
+(defthm alistp-gobj-alist-to-param-space
+  (alistp (gobj-alist-to-param-space x pathcond)))
+
+
+
+
+
+(acl2::defstobj-clone bvar-db1 bvar-db :suffix "1")
+
+
+;; Copies the entries of bvar-db into bvar-db1 but parametrizes all the bound g
+;; objects.
+(defund parametrize-bvar-db-aux (n p bvar-db bvar-db1)
+  (declare (xargs :stobjs (bvar-db bvar-db1)
+                  :guard (and (natp n)
+                              (<= (base-bvar bvar-db) n)
+                              (<= n (next-bvar bvar-db)))
+                  :measure (nfix (- (next-bvar bvar-db) (nfix n)))))
+  (b* (((when (mbe :logic (zp (- (next-bvar bvar-db) (nfix n)))
+                   :exec (int= (next-bvar bvar-db) n)))
+        bvar-db1)
+       (gobj (get-bvar->term n bvar-db))
+       (pgobj (gobj-to-param-space gobj p))
+       (bvar-db1 (add-term-bvar pgobj bvar-db1)))
+    (parametrize-bvar-db-aux (+ 1 (lnfix n)) p bvar-db bvar-db1)))
+
+(defund parametrize-term-equivs (p x)
+  (declare (xargs :guard (alistp x)))
+  (if (atom x)
+      nil
+    (hons-acons (gobj-to-param-space (caar x) p)
+                (cdar x)
+                (parametrize-term-equivs p (cdr x)))))
+
+
+(defund parametrize-bvar-db (p bvar-db bvar-db1)
+  (declare (xargs :stobjs (bvar-db bvar-db1)
+                  :verify-guards nil))
+  (b* ((base (base-bvar bvar-db))
+       (bvar-db1 (init-bvar-db base bvar-db1))
+       (bvar-db1 (parametrize-bvar-db-aux base p bvar-db bvar-db1)))
+    (update-term-equivs (parametrize-term-equivs p (term-equivs bvar-db))
+                        bvar-db1)))
+
+
+
+
+(defsection parametrize-bvar-db
+  (local (in-theory (enable parametrize-bvar-db parametrize-bvar-db-aux)))
+  (local (include-book "arithmetic/top-with-meta" :dir :system))
+
+  (local (defthm alistp-when-term-equivsp
+           (implies (and (bind-free '((bvar-db . bvar-db)) (bvar-db))
+                         (term-equivsp$a x bvar-db))
+                    (alistp x))
+           :hints(("Goal" :in-theory (enable alistp)))))
+
+  (defthm get-bvar->term-of-parametrize-bvar-db-aux
+    (implies (and (<= (base-bvar$a bvar-db1) (nfix m))
+                  (< (nfix m) (+ (next-bvar$a bvar-db1)
+                                 (- (next-bvar$a bvar-db) (nfix n)))))
+             (equal (get-bvar->term$a m (parametrize-bvar-db-aux n p bvar-db bvar-db1))
+                    (if (<= (next-bvar$a bvar-db1) (nfix m))
+                        (gobj-to-param-space
+                         (get-bvar->term$a (+ (- (nfix m) (next-bvar$a bvar-db1))
+                                              (nfix n))
+                                           bvar-db)
+                         p)
+                      (get-bvar->term$a m bvar-db1)))))
+
+  (defthm base-bvar-of-parametrize-bvar-db-aux
+    (equal (base-bvar$a (parametrize-bvar-db-aux n p bvar-db bvar-db1))
+           (base-bvar$a bvar-db1)))
+
+  (defthm next-bvar-of-parametrize-bvar-db-aux
+    (equal (next-bvar$a (parametrize-bvar-db-aux n p bvar-db bvar-db1))
+           (+ (nfix (- (next-bvar$a bvar-db) (nfix n))) (next-bvar$a
+                                                         bvar-db1))))
+
+  (local (defthm bvar-listp-when-same-next/base
+           (implies (and (bvar-listp$a x bvar-db)
+                         (equal (base-bvar$a bvar-db) (base-bvar$a bvar-db1))
+                         (equal (next-bvar$a bvar-db) (next-bvar$a bvar-db1)))
+                    (bvar-listp$a x bvar-db1))
+           :hints(("Goal" :induct (len x)))))
+
+  (local (defthm term-equivsp-when-same-next/base
+           (implies (and (term-equivsp$a x bvar-db)
+                         (equal (base-bvar$a bvar-db) (base-bvar$a bvar-db1))
+                         (equal (next-bvar$a bvar-db) (next-bvar$a bvar-db1)))
+                    (term-equivsp$a x bvar-db1))
+           :hints(("Goal" :induct (len x)))))
+
+  (defthm term-equivsp-of-parametrize-term-equivs
+    (implies (and (bind-free (and (consp x)
+                                  (equal (car x) 'term-equivs$a)
+                                  `((bvar-db . ,(cadr x))))
+                             (bvar-db))
+                  (term-equivsp x bvar-db)
+                  (equal (base-bvar$a bvar-db) (base-bvar$a bvar-db1))
+                  (equal (next-bvar$a bvar-db) (next-bvar$a bvar-db1)))
+             (term-equivsp$a (parametrize-term-equivs p x) bvar-db1))
+    :hints(("Goal" :in-theory (enable parametrize-term-equivs))))
+             
+
+  (verify-guards parametrize-bvar-db)
+
+
+  (defthm normalize-parametrize-bvar-db
+    (implies (syntaxp (not (equal bvar-db1 ''nil)))
+             (equal (parametrize-bvar-db p bvar-db bvar-db1)
+                    (parametrize-bvar-db p bvar-db nil))))
+
+  (defthm base-bvar-of-parametrize-bvar-db       
+    (equal (base-bvar$a (parametrize-bvar-db p bvar-db bvar-db1))
+           (base-bvar$a bvar-db)))
+
+  (defthm next-bvar-of-parametrize-bvar-db
+    (equal (next-bvar$a (parametrize-bvar-db p bvar-db bvar-db1))
+           (next-bvar$a bvar-db)))
+
+  (defthm get-bvar->term-of-parametrize-bvar-db
+    (implies (and (<= (base-bvar$a bvar-db) (nfix n))
+                  (< (nfix n) (next-bvar$a bvar-db)))
+             (equal (get-bvar->term$a n (parametrize-bvar-db p bvar-db bvar-db1))
+                    (gobj-to-param-space
+                     (get-bvar->term$a n bvar-db) p)))))

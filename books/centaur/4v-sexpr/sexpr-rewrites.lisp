@@ -2223,6 +2223,12 @@ simplifying using the known signals."
                     (equal (4v-sexpr-eval y env)
                            (4v-sexpr-eval x (4v-sexpr-eval-alist al env))))))
 
+  (local (in-theory (disable sexpr-booleanp-by-rule
+                             sexpr-booleanp-by-rules
+                             sexpr-booleanp
+                             intersection$-of-cons-left
+                             sexpr-booleanp-list)))
+
   (defthm-flag-sexpr-booleanp
     (defthm 4v-boolp-when-sexpr-booleanp-by-rule
       (implies (and (sexpr-booleanp-by-rule rule x all-rules)
@@ -2230,7 +2236,8 @@ simplifying using the known signals."
                     (4v-sexpr-boolean-rulesp all-rules)
                     (4v-alist-boolp (4v-sexpr-vars x) alist))
                (4v-boolp (4v-sexpr-eval x alist)))
-      :hints ((and stable-under-simplificationp
+      :hints ('(:expand ((sexpr-booleanp-by-rule rule x all-rules)))
+              (and stable-under-simplificationp
                    '(:use ((:instance sexpr-unify-4v-sexpr-compose
                             (pat rule) (term x) (alist nil)))
                      :in-theory (e/d (4v-sexpr-eval-4v-sexpr-compose-strong)
@@ -2242,13 +2249,16 @@ simplifying using the known signals."
                     (4v-sexpr-boolean-rulesp all-rules)
                     (4v-alist-boolp (4v-sexpr-vars x) alist))
                (4v-boolp (4v-sexpr-eval x alist)))
+      :hints ('(:expand ((sexpr-booleanp-by-rules rules x all-rules))))
       :flag rules)
     (defthm 4v-boolp-when-sexpr-booleanp
       (implies (and (sexpr-booleanp x all-rules)
                     (4v-sexpr-boolean-rulesp all-rules)
                     (4v-alist-boolp (4v-sexpr-vars x) alist))
                (4v-boolp (4v-sexpr-eval x alist)))
-      :hints ((and stable-under-simplificationp
+      :hints ('(:expand ((sexpr-booleanp x all-rules)
+                         (sexpr-booleanp nil all-rules)))
+              (and stable-under-simplificationp
                    '(:expand ((:free (x) (4v-alist-boolp (list x) alist))))))
       :flag sexpr)
     (defthm 4v-boolp-when-sexpr-booleanp-list
@@ -2256,6 +2266,7 @@ simplifying using the known signals."
                     (4v-sexpr-boolean-rulesp all-rules)
                     (4v-alist-boolp (4v-sexpr-vars-list x) alist))
                (4v-bool-listp (4v-sexpr-eval-list x alist)))
+      :hints ('(:expand ((sexpr-booleanp-list x all-rules))))
       :flag list))
    
 

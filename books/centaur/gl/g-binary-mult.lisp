@@ -35,6 +35,13 @@
 
 (in-theory (disable (g-binary-*-of-numbers)))
 
+(defthm deps-of-g-binary-*-of-numbers
+  (implies (and (not (gobj-depends-on k p x))
+                (not (gobj-depends-on k p y))
+                (general-numberp x)
+                (general-numberp y))
+           (not (gobj-depends-on k p (g-binary-*-of-numbers x y)))))
+
 (local
  (progn
    ;; (defthm gobjectp-g-binary-*-of-numbers
@@ -119,6 +126,12 @@
                               (* x 0))))))
 
 
+(def-gobj-dependency-thm binary-*
+  :hints `(("goal" :induct ,gcall
+           :expand (,gcall)
+           :in-theory (disable (:d ,gfn)
+                               gobj-depends-on))))
+
 
 (def-g-correct-thm binary-* eval-g-base
   :hints
@@ -140,9 +153,9 @@
                               rationalp-implies-acl2-numberp
                               (:rules-of-class :type-prescription :here))
                              ((:type-prescription bfr-eval)))
-     :induct (,gfn x y hyp clk)
+     :induct ,gcall
      :do-not-induct t
-     :expand ((,gfn x y hyp clk)))
+     :expand (,gcall))
 ;;     '(:use ((:instance possibilities-for-x)
 ;;             (:instance possibilities-for-x (x y))))
     (and stable-under-simplificationp

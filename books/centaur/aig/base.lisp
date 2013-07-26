@@ -336,7 +336,14 @@ ordinary (slow) alist as a result.</p>"
            (aig-eval-alist (cdr x) env))
           (t
            (cons (cons (caar x) (aig-eval (cdar x) env))
-                 (aig-eval-alist (cdr x) env))))))
+                 (aig-eval-alist (cdr x) env)))))
+
+  (defthm hons-assoc-equal-aig-eval-alist
+    (equal (hons-assoc-equal key (aig-eval-alist x env))
+           (and (hons-assoc-equal key x)
+                (cons key
+                      (aig-eval (cdr (hons-assoc-equal key x)) env))))
+    :hints(("Goal" :induct t))))
 
 
 
@@ -715,7 +722,19 @@ aig-partial-eval).</p>"
                :and (let ((a (aig-restrict (car x) sigma)))
                       (and a (aig-and a (aig-restrict (cdr x) sigma))))))
 
-  (memoize 'aig-restrict :condition '(and (consp x) (cdr x))))
+  (memoize 'aig-restrict :condition '(and (consp x) (cdr x)))
+
+  (local (defthm hons-assoc-equal-of-append
+           (equal (hons-assoc-equal k (append a b))
+                  (or (hons-assoc-equal k a)
+                      (hons-assoc-equal k b)))))
+
+  (defthm aig-eval-of-aig-restrict
+    (equal (aig-eval (aig-restrict x al1) al2)
+           (aig-eval x (append (aig-eval-alist al1 al2) al2)))
+    :hints(("Goal" 
+            :induct t
+            :in-theory (enable aig-env-lookup)))))
 
 
 (defsection aig-restrict-list

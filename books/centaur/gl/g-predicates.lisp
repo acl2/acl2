@@ -58,8 +58,8 @@
                (if (zp clk)
                    (g-apply ',',fn (list ,',x))
                  (g-if test
-                       (,gfn then hyp clk)
-                       (,gfn else hyp clk))))
+                       (,gfn then . ,params)
+                       (,gfn else . ,params))))
               ((g-apply & &) (g-apply ',',fn (list ,',x)))
               ((g-var &) (g-apply ',',fn (list ,',x)))
               . ,',cases)))
@@ -111,8 +111,8 @@
 ;;          ,@gobj-encap
 ;;          (def-gobjectp-thm ,fn
 ;;            :hints `(("goal"
-;;                      :induct (,gfn ,',x hyp clk)
-;;                      :expand ((,gfn ,',x hyp clk)))
+;;                      :induct (,gfn ,',x . ,params)
+;;                      :expand ((,gfn ,',x . ,params)))
 ;;                     . ,',gobj-hints)))
        (encapsulate nil
          (local (in-theory
@@ -161,6 +161,10 @@
          ,@guard-encap
          (verify-g-guards ,fn
                           :hints ',guard-hints))
+       (def-gobj-dependency-thm ,fn
+         :hints `(("goal" :induct ,gcall
+                   :expand (,gcall)
+                   :in-theory (e/d ((:i ,gfn)) ((:d ,gfn))))))
        (encapsulate nil
          (local (in-theory (e/d* (;; gobjectp-tag-rw-to-types
                                   ;; gobjectp-gobj-fix
@@ -197,8 +201,8 @@
          ,@corr-encap
          (def-g-correct-thm ,fn eval-g-base
            :hints `(("goal" :in-theory (enable (:induction ,gfn))
-                     :induct (,gfn ,',x hyp clk)
-                     :expand ((,gfn ,',x hyp clk)))
+                     :induct (,gfn ,',x . ,params)
+                     :expand ((,gfn ,',x . ,params)))
                     (and stable-under-simplificationp
                          '(:expand ((:with eval-g-base (eval-g-base ,',x env))
                                     (:with eval-g-base (eval-g-base nil env))

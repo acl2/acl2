@@ -104,7 +104,7 @@
     (b* (((when (eq fn 'expand-me))
           (b* ((term (first args)))
             (expand-this-term term nil w)))
-         ((when (and (eq fn 'expand-me)
+         ((when (and (eq fn 'expand-me-with)
                      (quotep (first args))))
           (b* ((rule (unquote (first args)))
                (term (second args))
