@@ -12279,8 +12279,9 @@
 
 (defun sublis-var (alist form)
 
-; The two following comments come from the nqthm version of this
-; function and do not necessarily pertain to ACL2 (but see below).
+; Call this function with alist = nil to put form into quote-normal form so
+; that for example if form is (cons '1 '2) then '(1 . 2) is returned.  The
+; following two comments come from the nqthm version of this function.
 
 ;     In REWRITE-WITH-LEMMAS we use this function with the nil alist
 ;     to put form into quote normal form.  Do not optimize this
@@ -12291,9 +12292,8 @@
 ;     However, even this function requires that form be at least a
 ;     pseudo-termp.
 
-; Note however the comment from rewrite-with-lemma that says:
-;   The sublis-var below normalizes the explicit constant
-;   constructors in evaled-hyp, e.g., (cons '1 '2) becomes '(1 . 2).
+; We rely on quote-normal form for the return value, for example in calls of
+; sublis-var in rewrite-with-lemma and in apply-top-hints-clause1.
 
   (declare (xargs :guard (and (symbol-alistp alist)
                               (pseudo-term-listp (strip-cdrs alist))
