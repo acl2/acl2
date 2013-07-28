@@ -1980,6 +1980,13 @@
            (subsetp-equal (car cl-set1) (car cl-set2)))
       (clause-set-subsumes-1 init-subsumes-count cl-set1 cl-set2 t)))
 
+(defun preprocess-clause? (cl hist pspv wrld state step-limit)
+  (cond ((member-eq 'preprocess-clause
+                    (assoc-eq :do-not (access prove-spec-var pspv
+                                              :hint-settings)))
+         (mv step-limit 'miss nil nil nil))
+        (t (preprocess-clause cl hist pspv wrld state step-limit))))
+
 (defun apply-use-hint-clauses (temp clauses pspv wrld state step-limit)
 
 ; Note: There is no apply-use-hint-clause.  We just call this function
@@ -2049,7 +2056,7 @@
      (t
       (sl-let
        (signal C ttree irrel-pspv)
-       (preprocess-clause constraint-cl nil pspv wrld state step-limit)
+       (preprocess-clause? constraint-cl nil pspv wrld state step-limit)
        (declare (ignore irrel-pspv))
        (cond
         ((eq signal 'miss)
@@ -2380,14 +2387,19 @@
            pspv))
       (t
        (let ((lmi-lst (cadr temp)) ; a singleton list
-             (thm (remove-guard-holders
+             (thm (sublis-var nil
+
+; This call of sublis-var ensures that thm is in quote-normal form, to avoid
+; certain trivial mismatches when checking subsumption.
+
+                              (remove-guard-holders
 
 ; We often remove guard-holders without tracking their use in the tag-tree.
 ; Other times we record their use (but not here).  This is analogous to our
 ; reporting of the use of (:DEFINITION NOT) in some cases but not in others
 ; (e.g., when we use strip-not).
 
-                   (caddr temp)))
+                               (caddr temp))))
              (constraint-cl (cadddr temp))
              (sr-limit (car (access rewrite-constant
                                     (access prove-spec-var pspv
@@ -2410,14 +2422,23 @@
 
 ; WARNING: See the warning about the processing in translate-by-hint.
 
-         (let* ((cl (remove-guard-holders-lst cl))
+         (let* ((cl (sublis-var-lst nil
+
+; This call of sublis-var-lst ensures that cl is in quote-normal form, to avoid
+; certain trivial mismatches when checking subsumption.
+
+                                    (remove-guard-holders-lst cl)))
+                (cl (remove-equal *nil* cl))
                 (easy-winp
-                 (if (and cl (null (cdr cl)))
-                     (equal (car cl) thm)
-                   (equal thm
-                          (implicate
-                           (conjoin (dumb-negate-lit-lst (butlast cl 1)))
-                           (car (last cl))))))
+                 (cond ((null cl) ; very weird case!
+                        (equal thm *nil*))
+                       ((null (cdr cl))
+                        (equal (car cl) thm))
+                       (t
+                        (equal thm
+                               (implicate
+                                (conjoin (dumb-negate-lit-lst (butlast cl 1)))
+                                (car (last cl)))))))
                 (cl1 (if (and (not easy-winp)
                               (ffnnamep-lst 'implies cl))
                          (expand-some-non-rec-fns-lst '(implies) cl wrld)
@@ -2493,8 +2514,8 @@
 ; was copied from that historically older code.
 
              (sl-let (signal clauses ttree irrel-pspv)
-                     (preprocess-clause constraint-cl nil pspv wrld
-                                        state step-limit)
+                     (preprocess-clause? constraint-cl nil pspv wrld
+                                         state step-limit)
                      (declare (ignore irrel-pspv))
                      (cond ((eq signal 'miss)
                             (mv step-limit
@@ -2555,8 +2576,8 @@
 ; leave this code here in case we change our minds on that.
 
                         (if (eq subsumes '?)
-                            " because our subsumption heuristics were ~
-                                   unable to decide the question"
+                            " because our subsumption heuristics were unable ~
+                             to decide the question"
                           "")
                         (untranslate thm t wrld)
                         (prettyify-clause-set cl-set

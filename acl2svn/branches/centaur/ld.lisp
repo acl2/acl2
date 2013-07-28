@@ -20980,6 +20980,16 @@
 ; abstract stobj": this was a bug in the #-acl2-loop-only case of
 ; get-stobj-creator.
 
+; Here is a little example showing the change to :by hints involving
+; quote-normal form.  The proof of the THM failed until this change was made.
+;
+;   (defthm my-thm
+;     (equal (car '(3 . 4)) 3)
+;     :rule-classes nil)
+;
+;   (thm (equal (car (cons 3 4)) 3)
+;        :hints (("Goal" :by my-thm)))
+
   :doc
   ":Doc-Section release-notes
 
@@ -21017,6 +21027,22 @@
   event summaries.
 
   ~st[HEURISTIC IMPROVEMENTS]
+
+  The processing of ~c[:use] and ~c[:by] ~il[hints] has been changed in the
+  following two rather subtle ways, thanks to suggestions from Sol Swords.
+  ~bq[]
+  o For ~c[:by] hints, the simplest check was an equality check, rather than a
+  more general subsumption check.  That equality check was made after removing
+  so-called ``guard holders'' (~ilc[must-be-equal], ~ilc[prog2$],
+  ~ilc[ec-call], ~ilc[the]) from both the previous theorem and the purported
+  theorem.  Now, those two results are also put into so-called quote-normal
+  form, for example replacing ~c[(cons '3 '4)] by ~c['(3 . 4)].
+
+  o For a ~il[lemma-instance] provided to a ~c[:use] or ~c[:by] hint that
+  is a ~c[:functional-instance], if a ~c[:do-not] hint (~pl[hints]) has
+  specified that ~c[preprocess-clause] is not to be used, then preprocessing
+  will not be used on the constraints.
+  ~eq[]
 
   ~st[BUG FIXES]
 

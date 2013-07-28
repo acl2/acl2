@@ -23224,7 +23224,7 @@
   for more about congruent stobjs.  Note that if two names are congruent, then
   they are either both ordinary stobjs or both abstract stobjs.
 
-  ~c[Protect-default] should either be ~c[nil] (th default) or ~c[t].  It
+  ~c[Protect-default] should either be ~c[nil] (the default) or ~c[t].  It
   provides the value of keyword ~c[:PROTECT] for each member of ~c[exports]
   that does not explicitly specify ~c[:PROTECT].  See the discussion of
   ~c[exports] below.
