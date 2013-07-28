@@ -492,17 +492,20 @@
                      ;; (glcp-generic-apply-concrete ,apply-concrete)
                      ;; (glcp-generic-apply-concrete-guard-wrapper ,apply-concrete)
                      )
-                    ;; :do-not '(preprocess simplify)
+                    :do-not '(preprocess simplify)
                     :in-theory (e/d** ((:ruleset ,f-i-lemmas)))
                     :do-not-induct t)
+                   '(:clause-processor dumb-clausify-cp)
                    (let ((term (car (last clause))))
                      (case-match term
                        (('equal (fn . args) . &)
-                        (and (member fn ',(set-difference-eq fn-names
-                                                             (list geval-ev
-                                                                   geval-ev-lst)))
-                            `(:expand ((,fn . ,args))
-                              :do-not nil)))))
+                        (if (member fn ',(set-difference-eq fn-names
+                                                            (list geval-ev
+                                                                  geval-ev-lst)))
+                            `(:by ,fn
+                              :do-not nil)
+                          '(:do-not nil)))
+                       (& '(:do-not nil))))
                    (and stable-under-simplificationp
                         '(:in-theory (e/d** ((:ruleset ,f-i-lemmas)
                                              (:ruleset ,ev-rules)))))
@@ -528,22 +531,24 @@
                     (,ev (disjoin clause) alist))
            :hints (("goal" :do-not-induct t
                     :in-theory (e/d** (,ctrex-thm))
+                    :do-not '(preprocess)
                     :by (:functional-instance
                          glcp-generic-correct
                          . ,fi-subst))
+                   '(:clause-processor dumb-clausify-cp)
                    (case-match clause
                      ((('equal (fn . args) . &))
                       (and (member fn ',(set-difference-eq fn-names
                                                            (list geval-ev
                                                                  geval-ev-lst)))
-                           `(:expand ((,fn . ,args)))))
+                           `(:by ,fn)))
                      (((ev ('acl2::meta-extract-global-fact+ . &)
                            . &)
                        ('not (ev ('acl2::meta-extract-global-fact+ . &)
                                  . &)))
-                      '(:use ,badguy))
+                      '(:use ,badguy :do-not nil))
                      ((('true-listp . &) . &)
-                      '(:use ,badguy))))
+                      '(:use ,badguy :do-not nil))))
            :otf-flg t
            :rule-classes :clause-processor)
 
