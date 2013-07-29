@@ -1,0 +1,568 @@
+                        A Guard-Verified Version of M1
+
+                                      or
+
+             A Very Simplified Model of the Java Virtual Machine,
+                                   including
+                            a Bytecode Interpreter,
+                             a Bytecode Verifier,
+              a Proof that the Bytecode Verifier Insures Safety,
+             Sample Correctness Proofs for Many Bytecode Programs,
+            a Verifying Compiler from mini-Lisp to M1 Bytecode, and
+              a Proof that the Model is Turing Machine Equivalent
+
+                               J Strother Moore
+                          [last update: March, 2013]
+
+Heads-Up!
+
+This is the guard verified version of M1: we characterize a well-formed M1
+state and verify that well-formed code preserves such states.  But there is
+an earlier (and simpler to understand) version of M1 among the ACL2 Community
+Books on the directory books/models/jvm/m1.
+
+The guard verified version of M1 is semantically equivalent to the earlier
+version of M1.  All the code proofs there are reproduced here for
+completeness.  In addition, certain files have been added here to specify and
+verify the guards on the M1 model.
+
+As of Version 6.3 of ACL2 this directory and the earlier one were
+intellectually identical except for the issue of guards: both included the
+same bytecode programs, the same correctness theorems of those programs, and
+the proof that M1 is Turing machine equivalent.  Guards complicate the
+presentation of the model but don't effect subsequent proofs except insofar
+as the lemma database required to verify the guards slightly changes the
+environment in which subsequent proofs are performed.  Indeed, only four
+of the earlier files were changed:
+
+script.lsp -- includes a different M1 defpkg so that NTH and UPDATE-NTH
+              are the native ACL2 versions
+m1.lisp -- the definition of M1 now includes guards
+tmi-reductions.lisp -- now omits one lemma from the earlier version
+defsys-utilities.lisp -- now omits one lemma from the earlier version
+
+The vast majority of the material here is found verbatim on the earlier
+directory.
+
+However, as time goes on it would not surprise me if new results were added
+just to the guard verified version of M1.
+
+But even if that happens, if you're looking just to get a sense of the M1
+model and how we prove M1 bytecode programs correct with it, I advise you to
+look at the earlier version.
+
+Summary
+
+This is the README file for the guard-verified version of the M1 machine model.
+M1 is a simple stack machine that is suggestive of the JVM.  It supports only
+nine ``bytecode'' instructions and provides only two interesting resources: a
+finite number of local variable values (thought of as a local variable
+``array'' but actually a list) and an unbounded pushdown stack.
+
+M1 differs from the JVM in so many ways it is pointless to try to list them.
+But so that readers will not think I think M1 is a model of the JVM (!) let
+me say that (a) the instruction stream in M1 is a list of fully parsed
+symbolic instructions, not bytes, (b) the only data type supported is
+integers, (c) integers are unbounded, (d) the only instructions modeled are
+the analogues of ILOAD, ISTORE, ICONST, IADD, ISUB, IMUL, IFEQ, GOTO, and
+HALT (instead of IRETURN), (e) there is no heap, (f) there are no Objects,
+(g) there are no methods, classes, or class tables -- just a single parsed
+bytecode program, (h) there are no threads or monitors, and (i) there are no
+exceptions.  Otherwise, it's just like the JVM (!).
+
+Nevertheless, for many years my students have found M1 a good introduction to
+the JVM and have extended M1 in countless ways to ``grow it up'' into a
+realistic JVM model.  This process was brought to its stunning conclusion by
+Habing Liu who developed the M6 model, capable of accurately executing most
+J2ME compiled Java programs (except those with significant I/O or
+floating-point).  See
+
+  Hanbing Liu, "Formal Specification and Verification of a JVM and its Bytecode
+  Verifier," PhD Dissertation, Computer Science Department, University of Texas
+  at Austin, August, 2006.
+
+One can think of the books on this directory as being partitioned into
+three sections:
+
+Section 1: definition and guard-verification of the M1 machine, including a
+  ``verifier'' for checking that a program is well-formed, akin to the JVM's
+  bytecode verifier,
+
+Section 2: use of the M1 model to verify the functional correctness of some
+  simple M1 bytecode programs, and
+
+Section 3: proof that M1 can do anything a Turing machine can do, i.e., that it
+  is Turing Equivalent (given the thesis that it is no more powerful than
+  Turing machines!).
+
+Operational Information
+
+To re-certify all the books on this directory,
+
+(ld "script.lsp" :ld-pre-eval-print t)
+
+See script.lsp for the defpkg for the "M1" symbol package, in which all this
+work is done.
+
+Aside from several new files to support guards, and the provision of guards in
+the m1.lisp file, only three files were changed from the M1 model released with
+ACL2 Version 6.1:
+
+ tmi-reductions.lisp -- one lemma was deleted (and simply moved into
+  good-statep.lisp where it was needed earlier in the recertifications
+  sequence)
+
+ defsys-utilities.lisp -- omits a now unnecessary lemma
+
+ script.lsp -- includes new M1 defpkg and commands for guard verification
+  certification
+
+About Section 1:
+
+M1 is a very simple virtual machine providing local variables, a pushdown
+stack, and an execute-only program composed of the instructions ILOAD, ISTORE,
+ICONST, IADD, ISUB, IMUL, GOTO, IFEQ, and HALT.  M1 was developed as a
+pedagogical introduction to machine modeling in ACL2, techniques for proving
+properties of such models, and techniques for proving code correct.  The ``I''
+prefix for many of the instructions, which in the JVM would indicate that the
+instruction manipulates 32-bit int data, is misleading here.  Those names were
+chosen to facilitate the students looking up the names in the Sun JVM
+specification and comparing the informal descriptions to their formal
+counterparts.  All of the arithmetic instructions here operate correctly on
+unbounded rationals.
+
+Historically, the books here were developed by the author from 1997 through the
+present as part of an undergraduate course on formal modeling techniques.  The
+course culminates in the exploration of a very detailed model of the Java
+Virtual Machine.  Many students, TAs, and research colleagues share
+responsibility for developing these techniques over decades of machine modeling
+and code proof techniques by many members of the Boyer-Moore user community.
+
+If M1 is considered a very simplified model of the Java Virtual Machine (JVM),
+the functions guarding it are a very simplified model of Java's bytecode
+verifier: the guard guarantees that bytecode programs will ``stay in the
+sandbox,'' i.e., do not add non-numbers, jump outside the bounds of the
+program, or access non-existent variables or stack locations.  Verifying the M1
+guards is akin to verifying the correctness of the bytecode verifier.
+
+How does this m1 differ from earlier unguarded M1 models, specifically the file
+books/model/jvm/m1/m1.lisp released with ACL2 Version 6.1?  The functions in
+the unguarded model do not have have guards while the same functions here do
+have guards.  Logically, corresponding definitions are identical.
+
+For example, consider the stack manipulation functions, top and pop.  Logically
+they are defined in the unguarded and guarded books to be car and cdr,
+respectively.  They are unguarded in books/model/jvm/m1/m1.lisp but guarded
+here; each has a guard requiring that the stack be well-formed (a true list of
+rationals) and non-empty.  Because ACL2 requires that the guard for a function
+be exhibited at the time the function is defined it was impossible to produce a
+guard verified version of m1.lisp without editing the text in m1.lisp to insert
+guards.
+
+To preserve, as much as possible, the presentation of the earlier unguarded M1
+we define in one book all the functions we need to specify the guards, and we
+specify in another book all the lemmas we need to verify those guards.  We then
+sandwich the guarded version of m1.lisp between them.  Specifically, the
+``new'' books are:
+
+* good-statep.lisp -- define the invariant good-statep, which recognizes
+  well-formed M1 states; good-statep may be considered a simple example of a
+  bytecode verifier
+
+* m1.lisp -- define the M1 machine interpreter
+
+* verify-guards.lisp -- verify that M1 respects the good-statep invariant in
+  two senses:
+
+  - M1 never does anything ``unexpected'' to a state (e.g., encounter an
+    undefined instruction, access a non-existent local variable, perform
+    arithmetic on a non-number, jump to a non-existent location, or attempt to
+    pop something off an empty stack).  In ACL2 parlance, this is ``guard
+    verification'';
+
+  - M1 maintains the good-statep invariant (e.g., when given a well formed
+    state it returns one).
+
+Many ACL2 users add guards to their functions to make them run faster.  We are
+not interested in that motivation here.  We added guards simply to specify our
+expectations on the arguments of our functions -- largely for pedagogical
+purposes.  In addition, the exercise of adding guards is a good way to
+investigate how one formalizes and verifies a static checker like the bytecode
+verifier.  If our interest were in making M1 run faster on concrete data, the
+first change would have been to abandon the repeated use of make-state in our
+semantic functions and adopt the single-threaded object (stobj) paradigm.  We
+stick with the make-state paradigm because we feel it is pedagogically clearer.
+
+About Section 2:
+
+After defining M1 and verifying its guards, we use m1.lisp to verify many
+simple M1 programs.  In these exercises we do not exploit the fact that M1 is
+guard verified: we prove that the given bytecode, when interpreted by the M1
+logical machinery, returns its specified answer, whether or not the initial
+state (and bytecode) satisfy the bytecode verifier.  Indeed, sometimes the
+bytecode does NOT satisfy the bytecode verifier -- and yet still operates
+provably correctly on the unguarded M1.
+
+One such example is funny-fact.lisp, which computes factorial of n by pushing
+n, n-1, n-2, ..., 2, 1 onto the stack in one loop and then multiplying them
+together in a second loop.  The javac compiler would never generate such code.
+The Java programmer does not have direct access to the JVM operand stack.  This
+bytecode violates the bytecode verifier because the verifier requires that the
+depth of the operand stack be fixed for each pc.  Both the actual bytecode
+verifier and our simplification of it insist on this restriction.  For example,
+the guard on the function top, which returns the topmost element of the operand
+stack, requires that the stack be non-empty (have a non-zero depth) whenever
+top is used.  Thus, the IMUL instruction, for example, does not check the stack
+depth.  Instead, the good-statep predicate insures that whenever an IMUL is
+encountered there are at least two things on the stack.  It does this by
+constructing a ``stack map'' via an abstract interpreter-like process that
+walks the code calculating the stack depth at each location.
+
+The actual JVM solves the stack problem the same way.  The operand stack is
+used merely to evaluate expressions and hence its depth is always 0 on the
+boundaries of Java statements and, mid-statement, is limited to a fixed size
+determined by the amount of function/operator nesting in the expression being
+evaluated.  By insisting on this, the actual JVM can compute the maximal amount
+of stack space needed for a given method invocation and hence detect all stack
+overflows by checking only on method invocation.  Nevertheless, an actual JVM
+would operate correctly on funny-fact.lisp (until stack overflow wrecked the
+image) even though the Java compiler would never generate that bytecode.
+
+We generally prove total correctness by the ``clock function'' method: if you
+run a certain (constructively given) number of steps from a
+certain (constructively given) initial state, you arrive at a state that is
+halted and that has the expected answer on top of the stack.  In addition, we
+generally prove that the starting state satisfies the invariants of our
+``bytecode verifier,'' although this is not necessary to the functional
+correctness proof.  We prove functional correctness of one program that
+violates the invariants -- and we prove that it is never approved by the
+bytecode verifier.
+
+For a discussion of how we prove theorems about M1, see my Marktoberdorf 2008
+lectures on ``Mechanized Operational Semantics'' at
+
+http://www.cs.utexas.edu/users/moore/publications/talks/marktoberdorf-08/index.html
+
+There you will not only find a version of M1 very much like this one but an
+explanation of the ``clock function'' method of proving code totally correct,
+and an explanation of how we can also use the Floyd-Hoare inductive assertion
+method to prove both partial and total correctness.  [By adding or deleting
+M1 instructions we make certain programs easier or harder to write; for
+example, some M1 models include the instruction IFLT for testing whether the
+top of stack is less than 0, while others just have IFEQ for testing whether
+it is equal to 0.  These minor differences are what distinguish various
+versions of M1 floating around in the literature.]
+
+See also the paper
+
+ ``Proof Styles in Operational Semantics,'' with S. Ray, Formal Methods in
+ Computer-Aided Design (FMCAD 2004), A. J. Hu and A. K. Martin (eds.),
+ Springer Lecture Notes in Computer Science, 3312, pages 67-81, 2004.
+ http://www.cs.utexas.edu/users/sandip/publications/proof-styles/main.html
+
+and the supporting material in the Community Books on the directory
+books/proofstyles/ for discussion of the comparison of clock style proofs
+with inductive assertion style proofs.
+
+The programs dealt with in this directory include the following.  Unless
+otherwise noted, the inputs to the programs are natural numbers.  The
+programs are simple but illustrative of various code proof techniques.
+
+"template.lisp"                - product of two naturals by repeated addition
+"sum.lisp"                     - sum of the naturals below n
+"sumsq.lisp"                   - sum of squares of the naturals below n
+"fact.lisp"                    - factorial of n
+"power.lisp"                   - 2^n
+"expt.lisp"                    - n^m
+"alternating-sum.lisp"         - n/2 by summing alternate naturals below n
+"alternating-sum-variant.lisp" - same as above but slightly different proof
+"fib.lisp"                     - Fibonnaci n
+"lessp.lisp"                   -  1 or 0 depending on whether n < m
+"even-solution-1.lisp"         - 1 or 0 depending on whether n is even
+"even-solution-2.lisp"         - same as above but different program
+"sign.lisp"                    - -1, 0, or 1 depending on sign of integer i
+"div.lisp"                     - floor of n/d for non-0 d
+"bexpt.lisp"                   - n^m by binary method
+"magic.lisp"                   - illustration of the importance of total
+                                 correctness:  we exhibit and verify a
+                                 program that can ``compute'' any function
+                                 on the natural numbers -- sort of!
+"funny-fact.lisp"              - factorial again, but with a program that
+                                 violates the bytecode verifier
+"wormhole-abstraction.lisp"    - factorial, again, but by a different proof
+                                 method
+
+As of this writing (ACL2 Version 6.3) there are not illustrations of
+inductive assertion style proofs here.  I hope to add some in the future.
+
+I recommend studying these proofs in the order listed above.  The template file
+contains many comments trying to explain the basic method used.  The other
+files follow the template to verify similar programs and begin to introduce
+other proof techniques.
+
+To really learn how to do this I recommend reading the template and
+understanding it and then just trying to tackle each of the problems described
+above WITHOUT looking at my solutions.  For example, instead of
+reading "sum.lisp":
+
+ Define your own M1 program that takes a natural number, n, in local variable 0
+ and sums the naturals (weakly) below it, n+(n-1)+...+2+1, leaving the final
+ sum on the stack.  Prove that this program passes the bytecode verifier,
+ halts, and leaves (n * (n + 1))/2 on the stack.
+
+Then repeat that for the other simple programs described above.
+
+About Section 3:
+
+We then prove, in "theorems-a-and-b.lisp" (and supporting files) that M1 is
+Turing equivalent, meaning that it can emulate a Turing Machine.  The starting
+point of this work is the 1984 paper by Boyer and Moore in which a Turing
+machine interpreter is defined in the Pure Lisp of Nqthm.
+
+ A Mechanical Proof of the Turing Completeness of PURE LISP, with
+ R. S. Boyer. In W. W. Bledsoe and D. W. Loveland (eds.), Contemporary
+ Mathematics, Volume 29, Automated Theorem Proving: After 25 Years, American
+ Mathematical Society, Providence, Rhode Island, 1984, pp. 133-168.
+
+We define that function in ACL2 as tmi.  We then refine it down to a
+numerically based function tmi3 and then implement tmi3 on M1 and prove the
+equivalence of all these machines.
+
+We create the emulator by first writing a verifying compiler that takes an
+arbitrary system description written in a very simple Lisp-like language and:
+
+(i)   compiles it into M1 bytecode
+
+(ii)  generates clock functions that specify how long it runs on given input
+      (with suitable handling of non-terminating computations)
+
+(iii) generates theorems stating that the M1 bytecode satisfies its
+      specification,
+
+(iv)  generates the lemmas and hints necessary to lead ACL2 to the proofs, and
+
+(v)   proves all the theorems.
+
+By the way, the compiled code does not, in general, satisfy the good-statep
+predicate.  The reason it that it uses the M1 operand stack to
+
+(i)   save the return pc
+(ii)  pass arguments
+(iii) protect the local variables of the caller
+(iv)  store intermediate results during expression evaluation
+
+essentially following the standard x86 protocol for subroutine call and
+return.  (Of course, since M1 does not have a POPJ or RET instruction,
+returning to the saved pc is actually done by a big case split and the compiler
+keeps track of every location from which a subroutine is called.)
+
+Thus, multiple arrivals at the subroutine entry code for a given subroutine
+from different locations in the main program may have different stack depths.
+For example, the compiled code for (+ (foo x) (foo x)) jumps to the code for
+foo twice (and returns).  But on the second jump there is one more item on the
+stack than there was on the first jump, violating the bytecode verifier's stack
+conventions.
+
+Then we give this verifying compiler the description of tmi3 and get back an
+895 instruction verified M1 program implementing tmi3.  We then prove that tmi3
+is equivalent (modulo mappings between representations) to the 1984 Boyer-Moore
+tmi.
+
+We conclude by proving two theorems, analogous to theorems A and B in the
+Boyer-Moore paper:
+
+Let tm be any Turing machine, tape be any input tape, and st be any state of
+tm.  We will define an M1 program that, when given encodings st, tape, and tm,
+emulates the behavior of any given Turing machine.  We prove that
+
+(a) If there is an i such that running the M1 emulator halts after i steps,
+then there exists a j such that running the Turing machine tm on the given tape
+starting in st halts in j steps.  The contrapositive of this is that if there
+does not exist such a j, there does not exist such an i, i.e., if the Turing
+machine runs forever, so does the M1 emulator.
+
+(b) If tm on tape starting in st halts in n steps, then there exists a k such
+that the emulator halts in k steps and returns (an M1 representation of) the
+same final tape.
+
+These two theorems are formally stated as follows in terms of down and up,
+where down maps st, tape, and tm into an M1 state poised to run the emulator
+and up projects a tape out of an M1 state.  Technically, one should inspect the
+definitions of down and up to ascertain that we don't ``cheat'' and do the
+Turing machine computation with some kind of non-constructive mapping.
+
+Theorem a:
+(implies
+ (and (symbolp st)
+      (tapep tape)
+      (turing-machinep tm)
+      (natp i))
+ (let ((s_f (m1 (down st tape tm) i)))
+   (implies (haltedp s_f)
+            (tmi st tape tm (find-j st tape tm i)))))
+
+Theorem b:
+(implies (and (symbolp st)
+              (tapep tape)
+              (turing-machinep tm)
+              (tmi st tape tm n))
+         (let ((s_f (m1 (down st tape tm)
+                        (find-k st tape tm n))))
+           (and (haltedp s_f)
+                (equal (up s_f)
+                       (tmi st tape tm n)))))
+
+Finally, we demonstrate the extraordinary inefficiency of the M1 emulator.  We
+show a simple Turing Machine, taken from Rogers' book, that doubles the number
+of 1s on the initial tape, and show that to compute eight 1s from 4 1s requires
+
+291,202,253,588,734,484,219,274,297,505,568,945,357,129,888,612,375,663,883
+
+M1 steps.  That is between 10^56 and 10^57 steps.
+
+This illustrates that we can prove things about computational models that are
+way too expensive to run and that our method of counting steps works even for
+quite complex computations.
+
+The organization of the files in this section is:
+
+"tmi-reductions.lisp"   -- prove reduction theorems from the 1984 Boyer-Moore
+                           model of a Turing machine interpreter to an
+                           algorithm implementable with the all-numeric
+                           resources of M1
+
+"defsys-utilities.lisp" -- utilities for the verifying compiler
+
+""defsys.lisp""         -- a verifying compiler from a simple Lisp-like source
+                           language to M1 bytecode
+
+"low-seven.lisp"        -- simple example of the use of the verifying compiler;
+                           irrelevant to the main goal of proving Turing
+                           equivalence of M1
+
+"implementation.lisp"   -- the Lisp-like description of a Turing machine
+                           interpreter, compiled and verified by the verifying
+                           compiler
+
+"theorems-a-and-b.lisp" -- relating the tmi-reductions to the implementation
+                           and reshaping the final theorems into forms (a)
+                           and (b) of the 1984 Boyer-Moore paper
+
+"find-k!.lisp"          -- converting certain of the clock functions into
+                           equivalent closed-form algebraic expressions (and
+                           proving their equivalence) so that it is possible to
+                           compute the time it takes to simulate a given Turing
+                           machine computation by the M1 implementation.  It was
+                           only after this conversion that I could compute the
+                           time taken for the example program that doubles the
+                           number on the tape: ~ 10^56 steps.
+
+History, Related Work, and Background
+
+I developed M1 for the first offering, in 1997, of the course ``CS378 A Formal
+Model of the Java Virtual Machine,'' in the Computer Science Department of the
+University of Texas at Austin.  The course taught students how to model complex
+digital artifacts like microprocessors and virtual machines.  Over the course
+of the semester, the students modified and elaborated M1 until it became a
+reasonably accurate model of a substantial part of the JVM.  This process was
+taken to its stunning conclusion with M6 by Hanbing Liu in his 2006 UT Austin
+PhD dissertation, ``Formal Specification and Verification of a JVM and its
+Bytecode Verifier.''
+
+I found it helpful, over the years, to modify the original M1 in various ways
+to make program coding, proofs, and/or subsequent elaborations easier for the
+students.  Thus, papers that mention ``M1'' published from time to time by me
+and others do not necessarily talk about the version of M1 defined here!
+However, the most common discrepancy is just in the particular choice of subset
+of the instructions modeled.  I think any reasonable person would look at the
+various formal definitions and pronounce them all ``virtually the same.''
+
+M1 differs from the JVM in so many ways it is pointless to try to list them.
+But so that readers will not think I think M1 is a model of the JVM let me say that
+(a) the instruction stream in M1 is a list of fully parsed instructions, not
+bytes, (b) the only data type supported is integers, (c) integers are unbounded,
+(d) the only instructions modeled are the analogues of ILOAD, ISTORE, ICONST,
+IADD, ISUB, IMUL, IFEQ, and GOTO, (e) there is no heap, (f) there are no Objects,
+(g) there are no methods, classes, or class tables -- just a single parsed
+bytecode program, (h) there are no threads or monitors, (i) there are no
+exceptions, and (j) there is no bytecode verifier or class loader.  But by
+enumerating these omissions you can get a sense for what the students formalized
+(with my help) over the semester.
+
+Despite these limitations, since M1 has unbounded integers it is Turing
+equivalent and thus strictly more powerful than any finite computing machine.
+It wasn't until March, 2012, that I bothered to prove that M1 is Turing
+equivalent.  In class that month the students said that M1 was hard to program
+and I countered that it was Turing equivalent.  But since M1 is a pedagogical
+device designed to show students how to model and reason about computing
+artifacts, I felt it was incumbent upon me not to merely allege that it was
+Turing equivalent but to formalize and prove it.
+
+This amounts to implementing a Turing machine interpreter in M1 bytecode and
+proving it correct.  I completed the first proof of M1's Turing equivalence
+over Spring Break, March 10--18, 2012.  I coded the interpreter by hand -- all
+804 M1 instructions -- and manually wrote the specifications and lemmas
+necessary to prove it correct.  I was helped in this endeavor by the fact that
+by 2012 I had taught the JVM course so many times that programming and
+verifying M1 code was second nature.  But the biggest help was that in 1984,
+Bob Boyer and I had proved the Turing equivalence of Pure Lisp with Nqthm:
+
+ A Mechanical Proof of the Turing Completeness of PURE LISP, with
+ R. S. Boyer. In W. W. Bledsoe and D. W. Loveland (eds.), Contemporary
+ Mathematics, Volume 29, Automated Theorem Proving: After 25 Years, American
+ Mathematical Society, Providence, Rhode Island, 1984, pp. 133-168.
+
+This paper gave me the definition, in the Nqthm logic, of an acceptable Turing
+machine interpreter and the form of the two theorems I had to prove to capture
+the notion that a convenient computational paradigm (in this case, M1) is as
+powerful as Turing machines.  The basic idea is to set up a correspondence
+between Turing machines and M1 states and then to prove that (a) if a Turing
+machine runs forever it corresponding M1 computation runs forever and (b) if a
+Turing machine halts with a given tape, its M1 counterpart halts with the same
+tape (modulo data representation).  Great care must be taken to insure that the
+computing machines and not the correspondence perform the necessary work.
+
+The title of the 1984 paper used ``completeness'' where today I use
+``equivalence.'' I believe that in 1984, the term ``Turing completeness'' was
+an acceptable way to say what we mean by ``Turing equivalence'' today and,
+today, ``Turing completeness'' means something different than we meant by in it
+1984.
+
+I also believe that the 1984 Boyer-Moore paper was the first time a computing
+paradigm, in that case, Pure Lisp, was mechanically proved to be as powerful as
+Turing machines.  I believe this M1 proof is only the second time.
+Furthermore, I believe M1 is the first von Neumann paradigm mechanically proved
+Turing equivalent.
+
+Finally, I should note that in neither the 1984 work nor the present work do we
+prove that Turing machines can emulate the more convenient paradigms (Pure Lisp
+or M1).  Since it is commonly accepted that any computation can be done by
+Turing machines, the interesting direction whether a more convenient paradigm
+can emulate Turing machines.
+
+The week after Spring Break, I gave two talks on the M1 proof.  The first was
+at the ACL2 research group seminar and the second was in my JVM class.
+
+I learned a lot about the complexity of presenting the work in those two
+seminars.  Neither went as smoothly as I wished, in part because the work
+itself was so complicated but also because it was messy and I did not know what
+I wanted to emphasize.  But, having given the talks I put the whole thing down.
+
+I believe it was a few weeks later, in early April, 2012, that I decided to
+implement a verifying compiler from a simple Lisp subset to M1.  The compiler
+could then be used to produce both the bytecode implementation and the
+necessary lemmas.  That version of the proof was being polished by April 14,
+2012.
+
+But I did not change the talk nor did I give the talk again.
+
+Then in Edinburgh during the Summer of 2012, I volunteered to give the talk
+again to Alan Bundy's group and then realized I needed to clean it up.  I
+started during the evenings of the Dagstuhl workshop on ``AI and Formal
+Software Development'', July 2-6, 2012.  But instead of working on the proof
+script, I worked exclusively on the talk.  The version of the talk I created
+that week is quite similar to the pdf file provided below.
+
+Having finished preparing a better talk, I then repeated the proof a third time
+to make it reflect what I wanted to say.  I gave the third talk in Bundy's
+seminar in July, 2012.
