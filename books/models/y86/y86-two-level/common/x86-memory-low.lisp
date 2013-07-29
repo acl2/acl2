@@ -1685,6 +1685,17 @@
 ;;   :hints (("Goal" :in-theory (enable resize-list nth)
 ;;            :induct (nth-resize-list-induction i lst n default-value))))
 
+; At least some of the following enables and disables are required on 7/28/2013
+; for read-write, perhaps due to a change in or under centaur/books/gl/gl.lisp
+; -- actually the culprit is at least in part probably the additions of some
+; rules to centaur/misc/arith-equivs.lisp.
+(local (in-theory (e/d (nfix natp)
+                       (natp-when-gte-0
+                        natp-when-integerp
+                        nfix-when-natp
+                        nfix-when-not-natp
+                        nth-when-too-large))))
+
 (encapsulate
  ()
 

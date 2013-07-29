@@ -311,6 +311,9 @@
                   (good-mem-table-entriesp-weak (1+ i) table-bound x86-32))))
         (t nil)))
 
+; Required on 7/28/2013, perhaps due to a change in or under
+; centaur/books/gl/gl.lisp:
+(local (in-theory (enable nfix)))
 
 (encapsulate
  ()
