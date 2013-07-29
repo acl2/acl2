@@ -11,10 +11,9 @@
 (include-book "centaur/misc/vecs-ints" :dir :system)
 (include-book "std/misc/two-nats-measure" :dir :system)
 (include-book "generic-geval")
-(include-book "clause-processors/just-expand" :dir :system)
 (include-book "glcp-config")
 (include-book "centaur/misc/hons-extra" :dir :system)
-
+(local (include-book "centaur/misc/arith-equivs" :dir :system))
 (set-state-ok t)
 
 ;; To-satisfying-assign-spec generates the same satisfying assignment as
@@ -655,6 +654,33 @@
 ;; Iterates up the bvar-db list chronologically, given a counterexample
 ;; assignment (a bfr environment).  Builds up a variable alist by applying
 ;; rewrites to simplify the assignments induced by the bvar-db.
+;; (defun glcp-ctrex-set-vars1 (n ctrex-assign unparam-ctrex-assign
+;;                                rule-table bvar-db state)
+;;   (declare (xargs :stobjs (state bvar-db)
+;;                   :guard (natp n)
+;;                   :verify-guards nil
+;;                   :measure (nfix n)))
+;;   (b* (((when (<= (the integer (lnfix n))
+;;                   (the integer (base-bvar bvar-db))))
+;;         nil)
+;;        (n (1- n))
+;;        (var-alist (glcp-ctrex-set-vars1
+;;                    n ctrex-assign unparam-ctrex-assign
+;;                    rule-table bvar-db state))
+;;        (bvar-val (bfr-lookup n unparam-ctrex-assign))
+;;        (gobj (get-bvar->term n bvar-db))
+;;        (term (gobj->term-partial gobj ctrex-assign))
+;;        (lhs1 (magic-ev-partial term nil state t t))
+;;        (pair (list lhs1 (kwote bvar-val)))
+;;        (assign-pairs (glcp-ctrex-rewrite 10000 pair rule-table state))
+;;        (gregs3 (nth 3 (nth 4 (cdr (assoc 'uc::st var-alist)))))
+;;        (var-alist (glcp-ctrex-update-assigns assign-pairs var-alist state))
+;;        (gregs3-new (nth 3 (nth 4 (cdr (assoc 'uc::st var-alist))))))
+;;     (and (not (equal gregs3 gregs3-new))
+;;          (cw "gregs3: prev ~x0 new ~x1~%pair: ~x2~%assigns: ~x3~%gobj: ~x4"
+;;              gregs3 gregs3-new pair assign-pairs gobj))
+;;     var-alist))
+
 (defun glcp-ctrex-set-vars1 (n ctrex-assign unparam-ctrex-assign
                                rule-table bvar-db state)
   (declare (xargs :stobjs (state bvar-db)

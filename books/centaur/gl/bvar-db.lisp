@@ -1,10 +1,11 @@
 
 (in-package "GL")
 
-(include-book "centaur/misc/arith-equivs" :dir :system)
+(include-book "centaur/misc/arith-equiv-defs" :dir :system)
+(local (include-book "centaur/misc/arith-equivs" :dir :system))
 (include-book "centaur/misc/absstobjs" :dir :system)
 ;; (include-book "std/lists/index-of" :dir :system)
-(include-book "std/lists/final-cdr" :dir :system)
+(local (include-book "std/lists/final-cdr" :dir :system))
 (local (include-book "std/lists/resize-list" :dir :system))
 (local (include-book "arithmetic/top-with-meta" :dir :system))
 (local (include-book "std/lists/nth" :dir :system))

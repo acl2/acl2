@@ -7,8 +7,9 @@
 (include-book "tools/mv-nth" :dir :system)
 (include-book "tools/flag" :dir :system)
 (include-book "tools/rulesets" :dir :system)
-(include-book "centaur/misc/equal-sets" :dir :system)
-(include-book "centaur/misc/alist-equiv" :dir :system)
+(include-book "misc/hons-help" :dir :system)
+(local (include-book "centaur/misc/equal-sets" :dir :system))
+(local (include-book "centaur/misc/alist-equiv" :dir :system))
 
 
 ;;; What does 'rws' abbreviate, in anything, asks Boyer???

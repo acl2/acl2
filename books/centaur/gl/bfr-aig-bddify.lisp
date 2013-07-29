@@ -3,7 +3,8 @@
 
 (include-book "bfr-sat")
 (include-book "gl-doc-string")
-(include-book "../aig/bddify-correct")
+(include-book "../aig/bddify")
+(local (include-book "../aig/bddify-correct"))
 (local (include-book "../aig/eval-restrict"))
 
 
@@ -33,8 +34,8 @@
 
 
 
-(defthm ubddp-val-alistp-vars-to-bdd-bindings
-  (acl2::ubddp-val-alistp (vars-to-bdd-bindings x n)))
+(local (defthm ubddp-val-alistp-vars-to-bdd-bindings
+         (acl2::ubddp-val-alistp (vars-to-bdd-bindings x n))))
 
 
 (local (include-book "arithmetic/top-with-meta" :dir :system))

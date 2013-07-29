@@ -2,7 +2,8 @@
 
 (in-package "GL")
 (include-book "centaur/misc/universal-equiv" :dir :system)
-(include-book "centaur/misc/arith-equivs" :dir :system)
+(include-book "centaur/misc/arith-equiv-defs" :dir :system)
+(local (include-book "centaur/misc/arith-equivs" :dir :system))
 
 (defstub bfr-mode () t)
 (defun bfr-aig () (declare (xargs :guard t)) t)

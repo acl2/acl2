@@ -10,7 +10,7 @@
 (include-book "bfr-sat")
 
 (include-book "misc/untranslate-patterns" :dir :system)
-(include-book "data-structures/no-duplicates" :dir :system)
+(local (include-book "data-structures/no-duplicates" :dir :system))
 (include-book "clause-processors/use-by-hint" :dir :system)
 (include-book "clause-processors/decomp-hint" :dir :system)
 (include-book "centaur/misc/interp-function-lookup" :dir :system)
@@ -1371,7 +1371,7 @@ The definition body, ~x1, is not a pseudo-term."
                               pseudo-termp pseudo-term-listp
                               glcp-generic-interp-term-ok-obligs
                               shape-spec-bindingsp
-                              acl2::consp-by-len
+                              ; acl2::consp-by-len
                               list*-macro)))
 
    ;; (encapsulate nil
@@ -1517,7 +1517,7 @@ The definition body, ~x1, is not a pseudo-term."
 (local
  (encapsulate nil
    (local (in-theory (disable pseudo-termp
-                              acl2::consp-by-len
+                              ;; acl2::consp-by-len
                               shape-spec-bindingsp
                               nonnil-symbol-listp-pseudo-term-listp)))
 
@@ -1756,9 +1756,10 @@ The definition body, ~x1, is not a pseudo-term."
            glcp-generic-run-parametrized-correct
            pseudo-term-listp-cdr
            pseudo-termp-car
-           acl2::consp-under-iff-when-true-listp
+           ;; acl2::consp-under-iff-when-true-listp
            glcp-generic-run-cases-bad-obligs
-           acl2::consp-by-len
+           ;; acl2::consp-by-len
+           nfix
            ;; shape-spec-listp-impl-shape-spec-to-gobj-list
            (:rules-of-class :definition :here))
           (gl-cp-hint

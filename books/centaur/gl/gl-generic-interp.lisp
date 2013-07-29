@@ -4,7 +4,7 @@
 (include-book "gl-generic-interp-defs")
 
 (include-book "misc/untranslate-patterns" :dir :system)
-(include-book "data-structures/no-duplicates" :dir :system)
+(local (include-book "data-structures/no-duplicates" :dir :system))
 (include-book "clause-processors/use-by-hint" :dir :system)
 (include-book "clause-processors/decomp-hint" :dir :system)
 (include-book "centaur/misc/interp-function-lookup" :dir :system)
@@ -2183,7 +2183,7 @@
   (local (in-theory (disable* (:rules-of-class :type-prescription :here)
                               pseudo-termp
                              len
-                             acl2::nfix-when-natp
+                             ; acl2::nfix-when-natp
                              no-duplicatesp-equal
                              fgetprop
                              member-equal
@@ -2193,7 +2193,7 @@
                              pseudo-termp-symbolp-car-x
                              glcp-generic-interp-term-ok-obligs
                              hyp-fix-of-hyp-fixedp
-                             acl2::nfix-when-not-natp
+                             ; acl2::nfix-when-not-natp
                              acl2::cancel_times-equal-correct
                              acl2::cancel_plus-equal-correct)))
   
@@ -2419,6 +2419,7 @@
           (bvar-db-depends-on k p (1- (nfix n)) bvar-db))))
 
   (local (in-theory (enable bvar-db-depends-on)))
+  (local (include-book "centaur/misc/arith-equivs" :dir :system))
 
   (defthm gobj-depends-on-of-get-bvar->term
     (implies (and (<= (base-bvar bvar-db) (nfix m))
@@ -2426,7 +2427,6 @@
                   (< (nfix m) (next-bvar bvar-db))
                   (< (nfix m) (nfix n)))
              (not (gobj-depends-on k p (get-bvar->term$a m bvar-db))))))
-             
 
 (defsection check-equiv-replacement
 
@@ -3023,9 +3023,11 @@
 
 
 
+(local (include-book "centaur/misc/arith-equivs" :dir :system))
 
 
 (encapsulate nil
+
   (local (defthm gobj-alist-depends-on-nil
            (not (gobj-alist-depends-on k p nil))))
 
@@ -3035,6 +3037,17 @@
                              (:t hyp-fix) (:t hyp-fixedp)
                              hyp-fix-of-hyp-fixedp
                              acl2::nfix-when-not-natp
+                             acl2::natp-when-integerp
+                             acl2::natp-rw
+                             default-cdr
+                             acl2::natp-when-gte-0
+                             default-<-1
+                             default-<-2
+                             not len
+                             pbfr-depends-on-t
+                             acl2::cancel_plus-lessp-correct
+                             acl2::cancel_plus-equal-correct
+                             rationalp-implies-acl2-numberp
                              gobj-depends-on
                              glcp-or-test-contexts
                              gobj-alist-depends-on
@@ -3072,6 +3085,7 @@
   (local (in-theory (disable* (:rules-of-class :type-prescription :here))))
   (local (in-theory (enable (:t type-of-get-term->bvar$a)
                             (:t type-of-next-bvar$a))))
+
 
   (def-glcp-interp-thm dependencies-of-glcp-generic-interp
     :hyps (and ;; (not erp)

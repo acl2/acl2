@@ -84,7 +84,12 @@ sub get_abs_path {
 sub abs_canonical_path {
     my $path = shift;
     # print "path: $path\n";
-    my $abspath = File::Spec->rel2abs($path);
+    my $abspath;
+    if (File::Spec->file_name_is_absolute($path)) {
+	$abspath = $path;
+    } else {
+	$abspath = File::Spec->rel2abs($path);
+    }
     # print "abspath: $abspath\n";
     my ($vol, $dir, $file) = File::Spec->splitpath($abspath);
     # print "path: $path vol: $vol dir: $dir file: $file\n";

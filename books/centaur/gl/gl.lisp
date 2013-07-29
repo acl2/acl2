@@ -377,7 +377,8 @@
              (and stable-under-simplificationp
                   '(:expand
                     ((:with eval-g-base (eval-g-base al env))
-                     (:with eval-g-base (eval-g-base (car al) env)))
+                     (:with eval-g-base (eval-g-base (car al) env))
+                     (:free (key a b) (hons-assoc-equal key (cons a b))))
                     ;;                  :in-theory
                     ;;                  (enable tag g-concrete-p g-concrete->obj)
                     ))))))

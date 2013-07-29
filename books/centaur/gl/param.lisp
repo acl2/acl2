@@ -393,6 +393,7 @@
 (defsection parametrize-bvar-db
   (local (in-theory (enable parametrize-bvar-db parametrize-bvar-db-aux)))
   (local (include-book "arithmetic/top-with-meta" :dir :system))
+  (local (include-book "centaur/misc/arith-equivs" :dir :system))
 
   (local (defthm alistp-when-term-equivsp
            (implies (and (bind-free '((bvar-db . bvar-db)) (bvar-db))

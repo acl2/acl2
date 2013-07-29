@@ -763,7 +763,7 @@
            (good-mem-arrayp-1-logic index2 len mem-array)))
 
 
-(local (in-theory (disable nth-when-zp)))
+;; (local (in-theory (disable nth-when-zp)))
 
 (encapsulate
  ()
@@ -901,26 +901,29 @@
            (mem-arrayp (resize-list lst new-len default-value)))
   :hints(("Goal" :in-theory (enable resize-list))))
 
-;; (defun nth-resize-list-induction (i lst n default-value)
-;;   (declare (ignorable i lst n default-value))
-;;   (if (posp n)
-;;       (nth-resize-list-induction (1- i)
-;;                                  (if (atom lst) lst (cdr lst))
-;;                                  (1- n)
-;;                                  default-value)
-;;     nil))
 
-;; (defthm nth-resize-list
-;;   (implies (and (natp i)
-;;                 (natp n)
-;;                 (<= (len lst) n)
-;;                 (< i n))
-;;            (equal (nth i (resize-list lst n default))
-;;                   (if (< i (len lst))
-;;                       (nth i lst)
-;;                     default)))
-;;   :hints (("Goal" :in-theory (enable resize-list nth)
-;;            :induct (nth-resize-list-induction i lst n default-value))))
+(local
+ (progn
+   (defun nth-resize-list-induction (i lst n default-value)
+     (declare (ignorable i lst n default-value))
+     (if (posp n)
+         (nth-resize-list-induction (1- i)
+                                    (if (atom lst) lst (cdr lst))
+                                    (1- n)
+                                    default-value)
+       nil))
+
+   (defthm nth-resize-list
+     (implies (and (natp i)
+                   (natp n)
+                   (<= (len lst) n)
+                   (< i n))
+              (equal (nth i (resize-list lst n default))
+                     (if (< i (len lst))
+                         (nth i lst)
+                       default)))
+     :hints (("Goal" :in-theory (enable resize-list nth)
+              :induct (nth-resize-list-induction i lst n default-value))))))
 
 (defthm good-mem-arrayp-1-logic-resize-list
   (implies (and (natp next-addr)
@@ -1689,12 +1692,12 @@
 ; for read-write, perhaps due to a change in or under centaur/books/gl/gl.lisp
 ; -- actually the culprit is at least in part probably the additions of some
 ; rules to centaur/misc/arith-equivs.lisp.
-(local (in-theory (e/d (nfix natp)
-                       (natp-when-gte-0
-                        natp-when-integerp
-                        nfix-when-natp
-                        nfix-when-not-natp
-                        nth-when-too-large))))
+;; (local (in-theory (e/d (nfix natp)
+;;                        (natp-when-gte-0
+;;                         natp-when-integerp
+;;                         nfix-when-natp
+;;                         nfix-when-not-natp
+;;                         nth-when-too-large))))
 
 (encapsulate
  ()

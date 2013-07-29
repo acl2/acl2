@@ -8,8 +8,8 @@
 (include-book "g-if")
 (local (include-book "eval-g-base-help"))
 (include-book "eval-g-base")
-(include-book "clause-processors/find-subterms" :dir :system)
-(include-book "clause-processors/just-expand" :dir :system)
+(local (include-book "clause-processors/find-subterms" :dir :system))
+(local (include-book "clause-processors/just-expand" :dir :system))
 (local (include-book "centaur/bitops/ihsext-basics" :dir :system))
 
 ;; This introduces a symbolic counterpart function for EQUAL (more
