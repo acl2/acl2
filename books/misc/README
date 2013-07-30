@@ -61,6 +61,11 @@ evaluator.
 
 ===============================================================================
 
+book-checks.lisp -- utilities for checking that libraries don't
+                    enable/disable existing rules unexpectedly
+
+===============================================================================
+
 callers-and-ancestors.lisp -- utilities for finding all callers and
                               ancestors (supporters) of functions; see
                               the book for disclaimers
@@ -205,8 +210,8 @@ but perhaps the examples will help some.
 
 ===============================================================================
 
-dijkstra-shortest-path.lisp -- A Proof of the Correctness of Dijkstra's
-                               Shortest Path Algorithm in ACL2
+dijkstra-shortest-path.lisp -- a proof of the correctness of Dijkstra's
+                               shortest path algorithm
 
 ===============================================================================
 
@@ -323,15 +328,15 @@ goodstein.lisp -- Goodstein function in ACL2
 
 ===============================================================================
 
-hanoi.lisp -- A solution to the Towers of Hanoi problem
+hanoi.lisp -- a solution to the Towers of Hanoi problem
 
 ===============================================================================
 
-hons-help.lisp and hons-help2.lisp -- Support for HONS extension of ACL2
+hons-help.lisp and hons-help2.lisp -- support for HONS extension of ACL2
 
 ===============================================================================
 
-hons-tests.lisp -- Tests of HONS extension of ACL2
+hons-tests.lisp -- tests of HONS extension of ACL2
 
 ===============================================================================
 
@@ -342,13 +347,14 @@ See: http://www.cs.utexas.edu/users/moore/publications/how-to-prove-thms
 
 ===============================================================================
 
-integer-type-set-test.lisp -- Tests of enhancement to integer reasoning
+integer-type-set-test.lisp -- tests of enhancement to integer reasoning
 
 ===============================================================================
 
-invariants.lisp -- Tries to prove lemmas stating that if a certain
-property is true of the arguments to a function, that property will be
-true of the arguments to all its recursive calls.
+invariants.lisp -- tries to prove lemmas stating that if a certain
+                   property is true of the arguments to a function,
+                   that property will be true of the arguments to all
+                   its recursive calls.
 
 ===============================================================================
 
