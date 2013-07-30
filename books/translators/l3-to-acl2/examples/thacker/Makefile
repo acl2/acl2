@@ -54,8 +54,8 @@ run-check: run.cert
 	@echo '(include-book "run")' > workxxx.$@
 	@echo '(run-output st$$ state)' >> workxxx.$@
 	@$(ACL2) < workxxx.$@ > $@.out
-	@echo "diff $@.out gold/$@.out"
-	@diff $@.out gold/$@.out
+	@echo "diff $@.out gold/$@.txt"
+	@diff $@.out gold/$@.txt
 	@echo "Successfully completed $@"
 
 run-test.out: run.cert

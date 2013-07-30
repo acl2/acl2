@@ -548,6 +548,14 @@ ACL2_CUSTOM_TARGETS := \
   workshops/2004/sumners-ray/support/success.txt \
   workshops/2011/verbeek-schmaltz/sources/correctness2.cert
 
+# Warning!  For each target below, if there is a cert_pl_exclude file
+# in the directory and a "deps" file is used, then that "deps" file
+# should be placed in a different directory (that is not excluded).
+# For example, translators/l3-to-acl2/target.cert below depends on
+# translators/l3-to-acl2-deps.cert, for which dependencies will be
+# generated since there is no cert_pl_exclude file in translators/
+# (even though there is a cert_pl_exclude in translators/l3-to-acl2/).
+
 # We only make the books under SULFA if a documented test for an
 # installed SAT solver succeeds.
 clause-processors/SULFA/target.cert: \
@@ -564,7 +572,7 @@ fix-cert/fix-cert.cert:
 	cd $(@D) ; $(STARTJOB) -c "$(MAKE)"
 
 translators/l3-to-acl2/target.cert: \
-  translators/l3-to-acl2/deps.cert
+  translators/l3-to-acl2-deps.cert
 	cd $(@D) ; $(STARTJOB) -c "$(MAKE) -j 1"
 
 workshops/1999/multiplier/proof.cert: \
