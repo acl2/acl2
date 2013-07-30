@@ -5507,32 +5507,24 @@
 ; We accumulate the modified ttree into state.
 
   (declare (ignorable cl-id step-limit state))
-  (let ((ttree (set-cl-ids-of-assumptions (cond ((cdr clauses) ttree)
-                                                (t (remove-tag-from-tag-tree
-                                                    'splitter-if-intro
-                                                    ttree)))
-                                          cl-id)))
+  (let ((ttree (set-cl-ids-of-assumptions ttree cl-id)))
 
 ; We extract the assumptions we are to handle immediately.
 
-   (mv-let
-    (n assumed-terms pairs ttree)
-    (extract-and-clausify-assumptions
-     clause
-     ttree
-     'non-nil ; collect CASE-SPLIT and immediate FORCE assumptions
-     (access rewrite-constant
-             (access prove-spec-var new-pspv :rewrite-constant)
-             :current-enabled-structure)
-     wrld
-     (access rewrite-constant
-             (access prove-spec-var new-pspv :rewrite-constant)
-             :splitter-output))
-    (declare (ignore n))
-    (mv-let@par
-     (erp ttree state)
-     (accumulate-ttree-and-step-limit-into-state@par ttree step-limit state)
-     (declare (ignore erp))
+    (mv-let
+     (n assumed-terms pairs ttree)
+     (extract-and-clausify-assumptions
+      clause
+      ttree
+      'non-nil ; collect CASE-SPLIT and immediate FORCE assumptions
+      (access rewrite-constant
+              (access prove-spec-var new-pspv :rewrite-constant)
+              :current-enabled-structure)
+      wrld
+      (access rewrite-constant
+              (access prove-spec-var new-pspv :rewrite-constant)
+              :splitter-output))
+     (declare (ignore n))
 
 ; Note below that we throw away the cars of the pairs, which are
 ; typically assumnotes.  We keep only the clauses themselves.
@@ -5553,6 +5545,9 @@
                               (dumb-negate-lit-lst assumed-terms)
                               clauses))
                 wrld)))
+            (ttree (cond ((cdr clauses) ttree)
+                         (t (remove-tag-from-tag-tree 'splitter-if-intro
+                                                      ttree))))
 
 ; We create the history entry for this step.  We have to be careful about
 ; specious hits to prevent a loop described below.
@@ -5616,26 +5611,31 @@
                          :cl-id ; only needed for #+acl2-par, but harmless
                          cl-id)
                    hist)))
-       (cond
-        ((consp (access history-entry ; (SPECIOUS . processor)
-                        (car new-hist) :processor))
-         (mv@par 'MISS nil ttree new-hist
-                 (accumulate-rw-cache-into-pspv processor ttree pspv)
-                 state))
-        (t (mv@par signal clauses ttree new-hist
-                   (cond
-                    ((or (member-eq processor *simplify-clause-ledge-complement*)
-                         (eq processor 'settled-down-clause))
-                     (put-ttree-into-pspv ttree new-pspv))
-                    ((eq processor 'simplify-clause)
-                     (put-ttree-into-pspv ttree
-                                          (maybe-set-rw-cache-state-enabled
-                                           new-pspv)))
-                    (t
-                     (put-ttree-into-pspv (erase-rw-cache ttree)
-                                          (maybe-set-rw-cache-state-disabled
-                                           (erase-rw-cache-from-pspv new-pspv)))))
-                   state))))))))
+       (mv-let@par
+        (erp ttree state)
+        (accumulate-ttree-and-step-limit-into-state@par ttree step-limit state)
+        (declare (ignore erp))
+
+        (cond
+         ((consp (access history-entry ; (SPECIOUS . processor)
+                         (car new-hist) :processor))
+          (mv@par 'MISS nil ttree new-hist
+                  (accumulate-rw-cache-into-pspv processor ttree pspv)
+                  state))
+         (t (mv@par signal clauses ttree new-hist
+                    (cond
+                     ((or (member-eq processor *simplify-clause-ledge-complement*)
+                          (eq processor 'settled-down-clause))
+                      (put-ttree-into-pspv ttree new-pspv))
+                     ((eq processor 'simplify-clause)
+                      (put-ttree-into-pspv ttree
+                                           (maybe-set-rw-cache-state-enabled
+                                            new-pspv)))
+                     (t
+                      (put-ttree-into-pspv (erase-rw-cache ttree)
+                                           (maybe-set-rw-cache-state-disabled
+                                            (erase-rw-cache-from-pspv new-pspv)))))
+                    state))))))))
 
 (defun@par waterfall-step (processor cl-id clause hist pspv wrld ctx state
                                      step-limit)

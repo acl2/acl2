@@ -21050,6 +21050,9 @@
   stobj (~pl[nested-stobjs]).  Thanks to David Rager for bringing this bug to
   our attention.
 
+  Splitter output for type ~c[if-intro] (~pl[splitter]) could formerly occur
+  even when at most one subgoal is generated.  This has been fixed.
+
   ~st[CHANGES AT THE SYSTEM LEVEL]
 
   Thanks to a suggestion from Jared Davis, over 30 built-in functions are now
