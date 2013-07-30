@@ -12,6 +12,7 @@ consider-hint-tests.acl2
 consider-hint-tests.lisp
 consider-hint.lisp
 huet-lang-algorithm-tests.lisp
+huet-lang-algorithm.pdf
 huet-lang-algorithm.lisp
 merge-hint.lisp
 ")
