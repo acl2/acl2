@@ -45,8 +45,11 @@
 
 ; We start by developing the Huet-Lang algorithm.
 
-; For a description of the basic algorithm, see huet-lang-algorithm.pdf,
-; which is my rendition of G. Huet and B. Lang, ``Proving and applying
+; For a description of the basic algorithm, see "Automatically
+; Computing Functional Instantiations," in Proceedings of the ACL2
+; Workshop 2009(eds. D. Russinoff and S. Ray), Boston, 2009, URL
+; http://www.cs.utexas.edu/users/moore/publications/moore-09a.pdf .
+; That is my rendition of G. Huet and B. Lang, ``Proving and applying
 ; program transformations expressed with second-order patterns,'' Acta
 ; Informatica, 11, pp 31--55, 1997.
 
