@@ -40,27 +40,7 @@ Lisp creates object files with .o extensions.  You can also do
 
 ===============================================================================
 
-defattach-bang.lisp -- avoid normal guard verification requirement for a
-                       function to be attached to a constrained function
-
-===============================================================================
-
-defattach-example.lisp -- example use of defattach
-
-===============================================================================
-
-defabsstobj-example-*.lisp -- example uses of defabsstobj
-
-===============================================================================
-
-dijkstra-shortest-path.lisp -- A Proof of the Correctness of Dijkstra's
-                               Shortest Path Algorithm in ACL2
-
-===============================================================================
-
-disassemble.lisp -- support for disassemble$, an interface to Common
-                    Lisp's disassemble utility for showing assembly
-                    code for a given function symbol's definition
+assert.lisp -- an assertion mechanism for use within books
 
 ===============================================================================
 
@@ -78,13 +58,6 @@ beta-reduce.lisp -- proof of correctness for a beta-reduction routine
 The final event in this book illustrates how to use this book to prove
 correctness for a simple beta-reduction routine for an arbitrary ACL2
 evaluator.
-
-===============================================================================
-
-book-thms.lisp --         returns theorems and axioms at the top level of an
-                          included book
-
-book-thms-example.lisp -- an example illustrating the use of book-thms.lisp
 
 ===============================================================================
 
@@ -138,7 +111,16 @@ dead-events.lisp -- an analysis tool that shows dependencies, and thus
 
 ===============================================================================
 
-defattach-example.lisp -- illustration of using defattach for system building
+defabsstobj-example-*.lisp -- example uses of defabsstobj
+
+===============================================================================
+
+defattach-bang.lisp -- avoid normal guard verification requirement for a
+                       function to be attached to a constrained function
+
+===============================================================================
+
+defattach-example.lisp -- example use of defattach
 
 ===============================================================================
 
@@ -155,11 +137,6 @@ See also :doc defmac after including this book.
 
 ===============================================================================
 
-misc2/defpun-exec-domain-example.lisp -- execute partial functions on a
-                                         specified domain
-
-===============================================================================
-
 defopener.lisp -- create theorem equating term with its simplification
 
 For documentation:
@@ -168,6 +145,10 @@ followed by
 :doc! defopener.
 
 See also bash.lisp and expander.lisp.
+
+===============================================================================
+
+defproxy-test.lisp -- examples of the use of defproxy
 
 ===============================================================================
 
@@ -185,7 +166,8 @@ ACL2'' http://www.cs.utexas.edu/users/moore/publications/defpun/index.html
 
 ===============================================================================
 
-defproxy-test.lisp -- examples of the use of defproxy
+misc2/defpun-exec-domain-example.lisp -- execute partial functions on a
+                                         specified domain
 
 ===============================================================================
 
@@ -223,9 +205,33 @@ but perhaps the examples will help some.
 
 ===============================================================================
 
+dijkstra-shortest-path.lisp -- A Proof of the Correctness of Dijkstra's
+                               Shortest Path Algorithm in ACL2
+
+===============================================================================
+
+disassemble.lisp -- support for disassemble$, an interface to Common
+                    Lisp's disassemble utility for showing assembly
+                    code for a given function symbol's definition
+
+===============================================================================
+
 equal-by-g.lisp -- a generic theorem for proving that records (in the sense of
 the misc/records book) are equal, by showing that any arbitrary field has the
 same value in both records.
+
+===============================================================================
+
+eval.lisp -- macros to check evaluation of forms
+
+Utilities defined in this book include the following:
+
+must-eval-to
+must-eval-to-t
+must-succeed
+must-fail
+thm?
+not-thm?
 
 ===============================================================================
 
@@ -240,8 +246,8 @@ global EVALABLE-LD-PRINTINGP, as in (assign evalable-ld-printingp t).
 
 ===============================================================================
 
-expander.lisp     --   symbolic expansion utilities for ACL2
 dump-events.lisp  --   file-dumping utility for ACL2
+expander.lisp     --   symbolic expansion utilities for ACL2
 
 See also simplify-defuns.lisp for a related tool.
 
@@ -317,18 +323,15 @@ goodstein.lisp -- Goodstein function in ACL2
 
 ===============================================================================
 
-hacker.lisp -- Utilities in support of building ACL2 extensions/modifications
-
-THIS BOOK HAS BEEN REMOVED.  Instead please use
-books/hacking/hacker.lisp in the ACL2 distribution.
-
-===============================================================================
-
 hanoi.lisp -- A solution to the Towers of Hanoi problem
 
 ===============================================================================
 
 hons-help.lisp and hons-help2.lisp -- Support for HONS extension of ACL2
+
+===============================================================================
+
+hons-tests.lisp -- Tests of HONS extension of ACL2
 
 ===============================================================================
 
@@ -381,6 +384,10 @@ correctly implements multiplication.
 
 ===============================================================================
 
+nested-stobj-tests.lisp -- tests for nested stobjs (and stobj-let)
+
+===============================================================================
+
 oprof.lisp -- simple performance profiling tool for OpenMCL
 
 This book only works on the OpenMCL-based version of ACL2.  It implements a 
@@ -410,6 +417,10 @@ process-book-readme.lisp -- checker for Readme.lsp for user-contributed books
 profiling.lisp -- support for profiling functions in some host Lisps
 
 See the documentation at the top of the file.
+
+===============================================================================
+
+qi.lisp and qi-correct.lisp -- unlabeled BDDs (ubdds) and correctness thereof
 
 ===============================================================================
 
@@ -472,6 +483,18 @@ Quoting the file:
 ; The following proof is a translation to ACL2 of a proof by Magnus Myreen
 ; (Univ. of Cambridge), inspired by separation logic, about reversing linked
 ; lists.
+
+===============================================================================
+
+rtl-untranslate.lisp -- replacement for untranslate suitable rtl functions
+
+===============================================================================
+
+misc2/ruler-extenders-tests.lisp -- tests for ruler-extenders
+
+This suite of tests is mainly for regression, though users interested
+in more information about ruler-extenders, beyond that provided in
+:doc ruler-extenders, may find this file to be interesting.
 
 ===============================================================================
 
@@ -540,14 +563,6 @@ A symbol-btree is a data structure of the form (symbol value left . right)
 where left and right are symbol-btrees.  These data structures give faster
 access to values than alists, using function (symbol-btree-lookup key btree).
 See the top of the file for examples and a relevant theorem.
-
-===============================================================================
-
-misc2/ruler-extenders-tests.lisp -- tests for ruler-extenders
-
-This suite of tests is mainly for regression, though users interested
-in more information about ruler-extenders, beyond that provided in
-:doc ruler-extenders, may find this file to be interesting.
 
 ===============================================================================
 
