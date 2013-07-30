@@ -45,7 +45,7 @@
 
 ; We start by developing the Huet-Lang algorithm.
 
-; For a description of the basic algorithm, see huet-lang-algorithm.ps,
+; For a description of the basic algorithm, see huet-lang-algorithm.pdf,
 ; which is my rendition of G. Huet and B. Lang, ``Proving and applying
 ; program transformations expressed with second-order patterns,'' Acta
 ; Informatica, 11, pp 31--55, 1997.
