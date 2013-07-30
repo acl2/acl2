@@ -1,0 +1,165 @@
+Table of contents.
+
+I.   ORGANIZATION
+II.  HOW TO RUN THINGS USING make
+III. HOW TO DO THE TRANSLATION MANUALLY
+IV.  STATUS AND POSSIBLE FUTURE DIRECTIONS
+
+============================================================
+I.   ORGANIZATION
+============================================================
+
+Subdirectories (each with a README):
+
+examples/       examples (only one worked as of this writing)
+misc/           miscellaneous stuff
+translator/     the translator and supporting library
+
+Files in the current directory:
+
+LICENSE         license/copyright/authorship file
+Makefile        top-level makefile
+README          this README
+notes.txt       some technical notes
+
+============================================================
+II.  HOW TO RUN THINGS USING make
+============================================================
+
+# Optional (edit as appropriate):
+bash
+ACL2_DIR=/Users/kaufmann/acl2/v6-2/acl2-sources
+export ACL2=${ACL2_DIR}/saved_acl2
+export ACL2_SYSTEM_BOOKS=${ACL2_DIR}/books
+
+# Connect to the directory of this README.
+
+# First build the translator.
+cd translator
+make clean
+make
+
+# Now do the translation, certification of books, a check that running
+# the model gives expected result, and timing runs.  Output should
+# help explain all that.
+cd -
+cd examples/thacker
+# Ignore "egrep" warnings on the following (sorry).
+make clean
+# The following should go quickly except for the one step,
+# tiny-manual.cert, which might take a couple of minutes.
+# WARNING: Do not use -j !
+make
+
+============================================================
+III. HOW TO DO THE TRANSLATION MANUALLY
+============================================================
+
+First, prepare the translator as described above, basically:
+
+  cd translator ; make
+
+Then, connect to the examples/thacker/ directory.
+
+Now start up ACL2 and run the following commands.  The :str-to-sym
+argument is a renaming argument: normally a string from the input file
+(tiny-acl2.txt) is translated to a symbol by uppercasing the string
+after changing each "'" to "-", with the exception of "t" and "nil"
+(see *initial-bindings* in translator/l3-to-acl2.lisp), but the
+:str-to-sym alist overrides that default behavior, mapping strings
+directly to symbols as specified.  This is useful for preventing name
+clashes (see notes.txt for more about that).
+
+(include-book "../../translator/l3-to-acl2")
+(l3-to-acl2 "tiny-acl2.txt" ; input file
+            "tiny.lisp"     ; output file
+            :str-to-sym
+            '(("PC" . pctr) ("alu" . alu_var) ("function"
+            . function0)))
+
+The optional keyword argument :logic is nil by default, which results
+in most of the output file being in ACL2's :program mode -- so
+functions can be run, but not reasoned about.  However, :logic can
+also be :logic-only or t.  We use :logic-only to generate the file
+tiny-logic.lisp:
+
+(l3-to-acl2 "tiny-acl2.txt"   ; input file
+            "tiny-logic.lisp" ; output file
+            :logic :logic-only
+            :str-to-sym
+            '(("PC" . pctr) ("alu" . alu_var) ("function"
+            . function0)))
+
+============================================================
+IV.  STATUS AND POSSIBLE FUTURE DIRECTIONS
+============================================================
+
+The translator seems to work fine for examples/thacker/.  But NOTE
+that if you use make, then -j n for n>1 is not supported.
+
+However, the translator produces numerous errors when attempting to
+run on examples/x86-64/ or examples/mips/.  Mostly this is just a
+matter of translating more of the L3 language.  There is one hard Lisp
+error that has occurred for examples/x86-64/, which perhaps should be
+fixed first -- errors should be clean, and produced deliberately by
+the translator rather than by accident in raw Lisp.
+
+**NOTE**: See especially examples/mips/README for notes on how to
+modify the translator to be able to handle the MIPS example.
+
+Thus, the translator suffers from incompleteness and possible bugs.
+It could also use more complete documentation (especially, Lisp
+comments), but I think I'll be able to make sense of what's there
+now if I return to it, since there is a running example.  Probably
+translator/l3.lisp could be made a bit prettier.
+
+But another possible future direction is to include proof support for
+generating a certifiable book whose functions are guard-verified.
+There is a manually-writee book examples/thacker/tiny-manual.lisp that
+can be included in the same session with examples/thacker/tiny.lisp,
+so we know that their definitions agree.  But tiny-manual.lisp has all
+functions guard-verified, albeit with manually produced defthm events
+to serve as lemmas.  With some thought it might be possible to do a
+clean job of reflecting the L3 type system in ACL2 in a manner that
+avoids the need to create such lemmas manually, perhaps by generating
+lemmas that help the tau system.
+
+That's an interesting research idea, but it's not clear how important
+it is.  Now guard verification does give added confidence in the
+translation.  (I think I caught some mistakes this way, when guard
+proofs failed.)  But perhaps most of the benefit is already there from
+the manually completed Thacker example.  Another benefit typically
+given is faster execution.  But :program mode evaluation is just as
+fast, so the only way faster execution could be useful is during
+proofs.  But our preliminary tests show little benefit for guard
+verification when running our models.  For example, timing runs show
+the following results (these numbers are for 10,000 runs, which thus
+includes 10,000 initialization and 350,000 instructions), and the
+differences are rather in the noise.
+
+Program mode (using tiny.lisp):
+; 0.48 seconds realtime, 0.46 seconds runtime
+
+Logic mode, not guard-verified (using tiny-logic.lisp):
+; 0.49 seconds realtime, 0.47 seconds runtime
+
+Logic mode, guard-verified (using tiny-manual.lisp):
+; 0.48 seconds realtime, 0.45 seconds runtime
+
+In each case, the corresponding time for 10,000 initializations and no
+instructions was:
+
+; 0.17 seconds realtime, 0.17 seconds runtime
+
+When we subtract that from 0.48 seconds of realtime, we get 0.31
+seconds for 350,000 instructions, which yields about 1.1M ips.
+
+But Warren Hunt has said that the paging-free x86 model at UT runs at
+about 5M ips.  So we can probably speed up our L3 evaluation.  The
+timing results (from "make") show more than 100M bytes generated for
+our tests, which probably represents a lot of garbage.  I'd guess that
+this comes from decoding instruction words into tupled (cons) data
+structures.  Probably we can devise a scheme that avoids this consing
+and provides significant speed-up.
+
+============================================================

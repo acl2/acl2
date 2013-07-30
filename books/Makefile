@@ -541,6 +541,7 @@ ifeq ($(ACL2_HAS_REALS), )
 ACL2_CUSTOM_TARGETS := \
   clause-processors/SULFA/target.cert \
   fix-cert/fix-cert.cert \
+  translators/l3-to-acl2/target.cert \
   workshops/1999/multiplier/proof.cert \
   workshops/2003/greve-wilding-vanfleet/support/firewallworks.cert \
   workshops/2003/kaufmann/support/input/defs-in.cert \
@@ -561,6 +562,10 @@ clause-processors/SULFA/target.cert: \
 # The following has no dependencies, so doesn't need a "deps" file.
 fix-cert/fix-cert.cert:
 	cd $(@D) ; $(STARTJOB) -c "$(MAKE)"
+
+translators/l3-to-acl2/target.cert: \
+  translators/l3-to-acl2/deps.cert
+	cd $(@D) ; $(STARTJOB) -c "$(MAKE) -j 1"
 
 workshops/1999/multiplier/proof.cert: \
   workshops/1999/deps-multiplier.cert
