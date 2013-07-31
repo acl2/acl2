@@ -489,6 +489,9 @@
                        (nacc (str::revappend-chars ".xdoc-link" nacc)))
                     (str::rchars-to-string nacc)))
 
+       ;; NOTE: the use of filename here is legacy stuff for the classic
+       ;; viewer.  We don't need it or use it in the fancy viewer.  The fancy
+       ;; viewer only uses the shortname, i.e., the text of the link.
        (acc (str::revappend-chars "<srclink file=\"" acc))
        (acc (str::revappend-chars filename acc))
        (acc (str::revappend-chars "\">" acc))

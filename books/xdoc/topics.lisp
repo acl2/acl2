@@ -50,9 +50,9 @@ the XDOC alternative to ACL2's @(see defdoc) command.</li>
 <li>The @(':xdoc') command for viewing documentation within the terminal &mdash;
 the XDOC alternative to ACL2's @(':doc') command.</li>
 
-<li>The @(see save) command, which exports all XDOC documentation into XML
-files that can be viewed in a web browser or transformed into formats like
-HTML.</li>
+<li>The @(see save) command, which exports all XDOC documentation into files
+that can be viewed in a web browser or transformed into formats like plain HTML
+or TEXT files.</li>
 
 </ul>
 
@@ -409,12 +409,10 @@ need to be escaped.</p>")
 
 (defxdoc save
   :parents (xdoc)
-  :short "Saves the XDOC database as @('.xml') files (which can also be
-translated into HTML or other formats)."
+  :short "Saves the XDOC database into files for web browsers, etc."
 
   :long "<p>Once you have documented your library with @(see defxdoc), you may
 wish to create a manual that can be viewed from a web browser.</p>
-
 
 <h3>Saving a Manual</h3>
 
@@ -430,10 +428,24 @@ saved.  If the directory does not exist, it will be created.  If there are
 files in the directory, they <color rgb=\"#ff0000\">may be
 overwritten</color>.</p>
 
+<h3>Types of Manuals</h3>
 
-<h3>Structure of a Manual</h3>
+<p>XDOC can actually generate two kinds of manuals.</p>
 
-<p>The resulting @('mylib-manual') directory includes:</p>
+<ul>
+<li>By default, a @(see fancy-manual) is produced.</li>
+
+<li>Alternately, you can create a @(see classic-manual) by using
+@(':type :classic') in your save command.</li> </ul>")
+
+
+(defxdoc classic-manual
+  :parents (save)
+  :short "Structure of a @(':type :classic') manual."
+
+  :long "<p>If you run @(see save) with @(':type :classic'), it will write out
+a manual in the \"classic\" format.  In this case, the resulting manual
+directory will include:</p>
 
 <ul>
 
@@ -448,8 +460,8 @@ using your web browser.</li>
 
 </ul>
 
-<p>Many web browsers can now directly display XML files.  So, you may be able
-to view @('preview.html') without any additional steps.</p>
+<p>Many web browsers can directly display XML files, so you may be able to view
+@('preview.html') without any additional steps.</p>
 
 
 <h3>HTML and Other Formats</h3>
@@ -482,35 +494,56 @@ welcome modifications to file <tt>support/Makefile-trans</tt> if you wish to
 use a version we do not currently support.</p>")
 
 
+(defxdoc fancy-manual
+  :parents (save)
+  :short "Structure of a @(':type :fancy') manual."
+
+  :long "<p>By default, @(see save) will create a manual in the new, \"fancy\"
+format, which extensively uses JavaScript to provide rich documentation with
+dynamic navigation, quick jump-to links, and so forth.</p>
+
+<p>In many ways, a fancy manual is simpler than a @(see classic-manual).
+Instead of generating thousands of files ahead of time, we basically just write
+the XDOC database out into JSON format and then use JavaScript to do all of the
+layout and organization.</p>")
+
+
 (defxdoc emacs-links
   :parents (xdoc)
-  :short "Instructions for integrating XDOC web pages with Emacs."
+  :short "Instructions for integrating XDOC web pages with <a
+  href='http://www.gnu.org/software/emacs/'>Emacs</a>."
 
   :long "<p>@(csee preprocessor) directives such as @('@(def get-xdoc-table)')
-result in the introduction of special links for Emacs.  It may be possible to
-configure your web browser so that clicking on these links will cause Emacs to
-directly open up the appropriate source file and jump to the named function.</p>
-
-<p>Here is what such a link looks like:</p>
+result in the introduction of special links for Emacs.  Here's what these links
+look like:</p>
 
 @(def get-xdoc-table)
 
-<p>How does this work?</p>
+<p>Depending on your environment, it <b>may</b> be easy to configure your web
+browser so that clicking on these links will cause Emacs to directly open up
+the appropriate source file and jump to the named function.</p>
+
+<p>The basic idea is:</p>
 
 <ul>
 
-<li>These Emacs links point to @('xdoc-link') files.</li>
+<li>Each Emacs link generates a <a
+href='https://en.wikipedia.org/wiki/Data_URI_scheme'>Data URIs</a> that tells
+your web browser to download a new, generated file whose <a
+href='https://en.wikipedia.org/wiki/Internet_media_type'>MIME type</a> is
+@('application/x-acl2-xdoc-link').</li>
 
-<li>We instruct your web browser to send these files to Emacs.</li>
+<li>You configure your web browser to send @('application/x-acl2-xdoc-link')
+files to Emacs.</li>
 
-<li>We instruct Emacs to carry out a tags search instead of loading these
-files.</li>
+<li>You configure your Emacs to carry out a tags search instead of loading
+these files.</li>
 
 </ul>
 
 <p>The net effect is that clicking on these links will send you directly to the
-desired function in the source code.  This can be <b>really slick</b>, and
-depending on your web browser, it may not be too hard to set up.</p>
+desired function in the source code.  This is <b>really slick</b> if you can
+get it working.</p>
 
 
 <h2>Configuring Emacs</h2>
@@ -518,8 +551,8 @@ depending on your web browser, it may not be too hard to set up.</p>
 <h4>Loading the XDOC Elisp</h4>
 
 <p>The XDOC directory includes a file called @('xdoc.el'), which tells emacs
-what to do with these @('xdoc-link') files.  To tell emacs to load this file at
-startup, you can just add a command to your @('.emacs') file such as:</p>
+what to do with these xdoc-link files.  To tell emacs to load this file at
+startup, you can just add a command to your @('.emacs') file like:</p>
 
 @({
  (load \"/path/to/acl2/books/xdoc/xdoc.el\")
@@ -608,54 +641,71 @@ as a new buffer.</p>
 
 <h2>Configuring the Web Browser</h2>
 
-<p>The last thing we need to do is instruct your web browser to send
-@('xdoc-link') files to Emacs.</p>
+<p>The last thing we need to do is instruct your web browser to send xdoc-link
+files to Emacs.</p>
 
 <p>How to do this depends on your web browser and/or operating system.  In some
 cases it may be hard to pass command-line options to emacs directly, so you may
 find it useful to use the script @('emacsclient-wrapper.sh'), found in the xdoc
 directory.</p>
 
-<h4>Chrome on KDE</h4>
+<p>The basic starting point is probably to try to click on an emacs link like
+@(srclink append) and try to tell your browser to open it with the
+@('emacsclient-wrapper.sh') script.  If your browser opens it with some other
+program, you might need to edit the default file associations of your operating
+system or window manager.</p>")
 
-<p>I don't know of any way to configure MIME types directly in Chrome.
-However, a two step process seems to work:</p>
 
-<ul>
+(defxdoc go.xdoc-link
+  :parents (emacs-links)
+  :short "Trivial web service provided by @('fv.centtech.com') for resolving
+@(see emacs-links)."
 
-<li>I downloaded a @('.xdoc-link') file from Chrome.  In the downloads bar (at
-the bottom), I was able to tell Chrome to <b>Always Open Files of this
-Type</b>.</li>
+  :long "<p>Historically, @(see emacs-links) were implemented by writing out a
+separate @('xdoc-link') file for every tags-search that we wanted to support.
+To avoid writing out these thousands of files, we now just implement a simple
+web service at @('fv.centtech.com').</p>
 
-<li>This incorrectly opened the @('.xdoc-link') file in kwrite.  However, I
-then went into KDE's <i>Dolphin</i> file manager, right-clicked on the file, and
-said <b>Open with &gt; Other...</b>.  Here I was able to choose the @('emacsclient-wrapper.sh') script.</li>
+<p>The basic idea is that if you just go to:</p>
 
-</ul>
+@('http://fv.centtech.com/cgi-bin/go.xdoc-link?name=append')
 
-<p>This seems sufficient; the only unfortunate effect is that my downloads
-folder gets filled up with @('.xdoc-link') files.</p>
+<p>Then it will generate an appropriate @('.xdoc-link') file that is flagged
+with the right mime-type.</p>
 
-<h4>Firefox on KDE</h4>
-
-<p>In previous versions of Firefox I was able to use the <a
-href=\"https://addons.mozilla.org/en-US/firefox/addon/4498\">MIME Edit</a>
-Firefox plugin, but this now seems to be defunct.</p>
-
-<h2>Possibly Necessary: Configuring the Web Server</h2>
-
-<p>This step shouldn't be needed if you're viewing the documentation on your
-hard drive.  But if you are using a web server like Apache to serve your
-documentation, you may need to use something like:</p>
+<p>If you prefer to use your own web server, you can recreate this service by
+putting the following, trivial script into your cgi-bin:</p>
 
 @({
-AddType application/x-acl2-xdoc-link .xdoc-link
-})
+    #!/usr/bin/perl
 
-<p>to your @('httpd.conf') or an @('.htaccess') file as appropriate.  Without
-this step, your web server might report that @('.xdoc-link') files are just
-text files to the web browser, and the web browser will not load them with the
-content-handler.</p>")
+    use warnings;
+    use strict;
+    use CGI qw(:standard);
+
+    my $name = param(\"name\") || \"APPEND\";
+
+    $| = 1;
+
+    print <<END;
+    Content-Type: application/x-acl2-xdoc-link .xdoc-link
+
+    ; This is an XDOC Link file.
+    ; Ordinarily, you should not see this file.
+    ;
+    ; If you are viewing this file in a web browser, you probably
+    ; have not configured your web browser to send .xdoc-link files
+    ; to Emacs.
+    ;
+    ; If you are viewing this file in Emacs, you probably have not
+    ; loaded xdoc.el from the xdoc/ directory.
+    ;
+    ; Please see the XDOC manual for more information.
+
+    $name
+
+    END
+})")
 
 
 

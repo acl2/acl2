@@ -19,7 +19,7 @@
 ; Original author: Jared Davis <jared@centtech.com>
 
 (in-package "XDOC")
-(include-book "save")
+(include-book "save-classic")
 (include-book "parse-xml")
 (include-book "spellcheck")
 (include-book "word-wrap")

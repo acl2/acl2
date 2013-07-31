@@ -29,8 +29,10 @@
 (include-book "base")
 (include-book "book-thms")
 
-(make-event `(defconst *xdoc-dir/save*
-               ,(acl2::extend-pathname *xdoc-dir* "save" state)))
+(make-event `(defconst *xdoc-dir/save-classic*
+               ,(acl2::extend-pathname *xdoc-dir* "save-classic" state)))
+(make-event `(defconst *xdoc-dir/save-fancy*
+               ,(acl2::extend-pathname *xdoc-dir* "save-fancy" state)))
 (make-event `(defconst *xdoc-dir/display*
                ,(acl2::extend-pathname *xdoc-dir* "display" state)))
 (make-event `(defconst *xdoc-dir/topics*
@@ -85,13 +87,17 @@
   :check-expansion t)
 
 (defmacro save (dir &key
+                    (type ':fancy)
+                    (import 't)
+                    ;; Classic options (ignored for type :fancy)
                     (index-pkg 'acl2::foo)
-                    (expand-level '1)
-                    (import 't))
+                    (expand-level '1))
   `(progn
      (include-book ,*xdoc-dir/defxdoc-raw* :ttags :all)
      (include-book ,*xdoc-dir/mkdir-raw* :ttags :all)
-     (include-book ,*xdoc-dir/save*)
+     (include-book ,(if (eq type :fancy)
+                        *xdoc-dir/save-fancy*
+                      *xdoc-dir/save-classic*))
 
      ;; ugh, stupid stupid writes-ok stupidity
      (defttag :xdoc)
@@ -106,7 +112,10 @@
       (b* (((mv all-xdoc-topics state) (all-xdoc-topics state))
            (- (cw "(len all-xdoc-topics): ~x0~%" (len all-xdoc-topics)))
            ((mv & & state) (assign acl2::writes-okp t))
-           (state (save-topics all-xdoc-topics ,dir ',index-pkg ',expand-level state)))
+           (state
+            ,(if (eq type :fancy)
+                 `(save-fancy ,dir state)
+               `(save-topics all-xdoc-topics ,dir ',index-pkg ',expand-level state))))
         (value '(value-triple :invisible))))))
 
 (defmacro xdoc-just-from-events (events)

@@ -35,6 +35,63 @@
 
 (program)
 
+(defconst *acl2-graphics*
+  ;; Blah, horrible
+  (list "acl2-logo-200-134.gif"
+        "acl2-logo-62-41.gif"
+        "acl2-system-architecture.gif"
+        "automatic-theorem-prover.gif"
+        "binary-trees-app-expl.gif"
+        "binary-trees-app.gif"
+        "binary-trees-x-y.gif"
+        "book04.gif"
+        "bridge-analysis.gif"
+        "bridge.gif"
+        "chem01.gif"
+        "common-lisp.gif"
+        "computing-machine-5x7.gif"
+        "computing-machine-5xy.gif"
+        "computing-machine-a.gif"
+        "computing-machine.gif"
+        "computing-machine-xxy.gif"
+        "concrete-proof.gif"
+        "doc03.gif"
+        "docbag2.gif"
+        "door02.gif"
+        "file03.gif"
+        "file04.gif"
+        "flying.gif"
+        "ftp2.gif"
+        "gift.gif"
+        "green-line.gif"
+        "index.gif"
+        "info04.gif"
+        "interactive-theorem-prover-a.gif"
+        "interactive-theorem-prover.gif"
+        "landing.gif"
+        "large-flying.gif"
+        "large-walking.gif"
+        "llogo.gif"
+        "logo.gif"
+        "mailbox1.gif"
+        "new04.gif"
+        "note02.gif"
+        "open-book.gif"
+        "pisa.gif"
+        "proof.gif"
+        "sitting.gif"
+        "stack.gif"
+        "state-object.gif"
+        "teacher1.gif"
+        "teacher2.gif"
+        "time-out.gif"
+        "tools3.gif"
+        "twarning.gif"
+        "uaa-rewrite.gif"
+        "walking.gif"
+        "warning.gif"
+        ))
+
 (defun clean-topics-aux (x seen-names-fal)
   ;; Remove topics we've already seen.
   (b* (((when (atom x))
@@ -533,19 +590,15 @@
        (state       (mkdir dir state))
        (state       (mkdir dir/xml state))
 
-;;       (dir/support (oslib::catpath dir "support"))
-;;       (state       (mkdir dir/support state))
+       (xdoc/classic (oslib::catpath *xdoc-dir* "classic"))
 
-       (xdoc/support (oslib::catpath *xdoc-dir* "support"))
-
-       ;; We copy support/Makefile-trans to dir/Makefile.  The "-trans" part of
+       ;; We copy classic/Makefile-trans to dir/Makefile.  The "-trans" part of
        ;; its name is just to prevent people from thinking they can type "make"
-       ;; in the support directory to accomplish anything.
-       (Makefile-trans (oslib::catpath xdoc/support "Makefile-trans"))
+       ;; in the classic directory to accomplish anything.
+       (Makefile-trans (oslib::catpath xdoc/classic "Makefile-trans"))
        (Makefile-out   (oslib::catpath dir "Makefile"))
        (state   (stupid-copy-file Makefile-trans Makefile-out state))
-
-       (state   (stupid-copy-files xdoc/support
+       (state   (stupid-copy-files xdoc/classic
                                    (list "xdoc.css"
                                          "xdoc.js"
                                          "plus.png"
@@ -561,67 +614,13 @@
                                          "xml-topic-index.xsl"
                                          "xml-full-index.xsl")
                                    dir/xml state))
-       (state   (stupid-copy-files xdoc/support
+       (state   (stupid-copy-files xdoc/classic
                                    (list "frames2.html"
                                          "frames3.html"
                                          "preview.html")
                                    dir state))
-       (state   (stupid-copy-files xdoc/support
-                                   ;; Oh, fuck it all.
-                                   (list "acl2-logo-200-134.gif"
-                                         "acl2-logo-62-41.gif"
-                                         "acl2-system-architecture.gif"
-                                         "automatic-theorem-prover.gif"
-                                         "binary-trees-app-expl.gif"
-                                         "binary-trees-app.gif"
-                                         "binary-trees-x-y.gif"
-                                         "book04.gif"
-                                         "bridge-analysis.gif"
-                                         "bridge.gif"
-                                         "chem01.gif"
-                                         "common-lisp.gif"
-                                         "computing-machine-5x7.gif"
-                                         "computing-machine-5xy.gif"
-                                         "computing-machine-a.gif"
-                                         "computing-machine.gif"
-                                         "computing-machine-xxy.gif"
-                                         "concrete-proof.gif"
-                                         "doc03.gif"
-                                         "docbag2.gif"
-                                         "door02.gif"
-                                         "file03.gif"
-                                         "file04.gif"
-                                         "flying.gif"
-                                         "ftp2.gif"
-                                         "gift.gif"
-                                         "green-line.gif"
-                                         "index.gif"
-                                         "info04.gif"
-                                         "interactive-theorem-prover-a.gif"
-                                         "interactive-theorem-prover.gif"
-                                         "landing.gif"
-                                         "large-flying.gif"
-                                         "large-walking.gif"
-                                         "llogo.gif"
-                                         "logo.gif"
-                                         "mailbox1.gif"
-                                         "new04.gif"
-                                         "note02.gif"
-                                         "open-book.gif"
-                                         "pisa.gif"
-                                         "proof.gif"
-                                         "sitting.gif"
-                                         "stack.gif"
-                                         "state-object.gif"
-                                         "teacher1.gif"
-                                         "teacher2.gif"
-                                         "time-out.gif"
-                                         "tools3.gif"
-                                         "twarning.gif"
-                                         "uaa-rewrite.gif"
-                                         "walking.gif"
-                                         "warning.gif"
-                                         )
+       (state   (stupid-copy-files xdoc/classic
+                                   *acl2-graphics*
                                    dir/xml state)))
     state))
 

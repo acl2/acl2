@@ -20,19 +20,6 @@
 
 (in-package "ACL2")
 
-; This file generates an XDOC manual for the Community Books
-;
-; By default the manual is written to
-;   acl2-books/centaur/manual
-;
-; You may optionally override this default by setting the environment variable
-;
-;     ACL2_XDOC_MANUAL=/path/you/would/prefer
-;
-; Before certifying the book.  For instance, if your acl2-books directory is
-; located on an expensive, slow, backed-up NFS system, you might want to point
-; this to a scratch disk, e.g., to avoid backups, slow performance, etc.
-
 (make-event
 
 ; Disabling waterfall parallelism because the include-books are too slow with
@@ -57,7 +44,7 @@
 ;   books/ directory (and hence the regression-hons `make' target in the
 ;   acl2-sources directory).
 
-(include-book "../xdoc/save")
+(include-book "../xdoc/save-fancy")
 (include-book "../xdoc/defxdoc-raw")
 (include-book "../xdoc/mkdir-raw")
 (include-book "../xdoc/topics")
@@ -570,27 +557,14 @@ functions.")
 
 (local (xdoc::fix-the-hierarchy))
 
-(defconsts (*acl2-xdoc-manual* state)
-  (b* (((mv err val state)
-        (getenv$ "ACL2_XDOC_MANUAL" state))
-       ((when err)
-        (raise "Error reading ACL2_XDOC_MANUAL environment variable?")
-        (mv "./manual" state))
-       ((when val)
-        (mv val state)))
-    (mv "./manual" state)))
-
-(value-triple
- (prog2$ (cw "Writing XDOC manual to: ~s0~%" *acl2-xdoc-manual*)
-         :invisible))
-
 (make-event
 ; xdoc::save is an event, so we might have just called it directly.  But for
 ; reasons Jared doesn't understand this is screwing up the extended manual we
 ; build at Centaur.  So, I'm putting the save event into a make-event to try
 ; to localize its effects to just this book's certification.
-  (er-progn (xdoc::save *acl2-xdoc-manual*
+  (er-progn (xdoc::save "./manual"
                         ;; Don't import again since we just imported.
                         :import nil
+                        ;; For classic mode only...
                         :expand-level 2)
             (value `(value-triple :manual))))

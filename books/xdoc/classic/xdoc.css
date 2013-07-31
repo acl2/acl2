@@ -105,6 +105,12 @@ a:hover {
 }
 
 
+.tip {
+    width: 50em; 
+    background-color: red;
+}
+
+
 /* Brief index, used only in the 3-frame displayed */
 
 .index_brief_dt {

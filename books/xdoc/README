@@ -15,7 +15,7 @@ You might prefer a local copy of the documentation, e.g., for offline
 use.  If you have already built the ACL2 books, you should already
 have a local copy here:
 
-    acl2-sources/books/centaur/manual/preview.html.
+    acl2-sources/books/centaur/manual/
 
 Additional information about XDOC itself can be found here:
 

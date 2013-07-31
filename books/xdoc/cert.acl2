@@ -20,5 +20,6 @@
 
 (include-book "str/portcullis" :dir :system)
 (include-book "oslib/portcullis" :dir :system)
+(include-book "centaur/bridge/portcullis" :dir :system)
 (include-book "portcullis")
 ; cert-flags: ? t :ttags :all

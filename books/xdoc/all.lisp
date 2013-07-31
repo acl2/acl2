@@ -39,7 +39,7 @@
 (include-book "mkdir-raw")
 (include-book "parse-xml")
 (include-book "preprocess")
-(include-book "save")
+(include-book "save-classic")
 (include-book "topics")
 (include-book "write-acl2-xdoc")
 
