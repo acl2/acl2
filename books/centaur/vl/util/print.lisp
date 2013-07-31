@@ -910,9 +910,10 @@ top-level) for a workaround.</p>"
   :parents (basic-printing)
   :short "Print to standard-out using @(see ps)"
 
-  :long "<p>@('(vl-cw-ps-seq ...)') expands to @('(cw-unformatted (@(see
-with-local-ps) ...))').  Due to the use of @(see with-local-ps), this macro can
-only be used within functions, and cannot be called from the top level.</p>"
+  :long "<p>@('(vl-cw-ps-seq ...)') expands to
+@('(cw-unformatted (with-local-ps ...))').  Due to the use of @(see
+with-local-ps), this macro can only be used within functions, and cannot be
+called from the top level.</p>"
 
   (defmacro vl-cw-ps-seq (&rest args)
     `(cw-unformatted (with-local-ps ,@args))))
