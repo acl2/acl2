@@ -53,10 +53,19 @@
   (implies (< (nfix n) (len x))
            (member (nth n x) x)))
 
-(defthm nth-when-too-large
+(defthmd nth-when-too-large
+  ;; Matt Kaufmann reported that this lemma got expensive in one of his books,
+  ;; so we now disable it by default and instead leave enabled a -cheap rule
+  ;; with a backchain limit.
   (implies (<= (len x) (nfix n))
            (equal (nth n x)
                   nil)))
+
+(defthm nth-when-too-large-cheap
+  (implies (<= (len x) (nfix n))
+           (equal (nth n x)
+                  nil))
+  :rule-classes ((:rewrite :backchain-limit-lst 1)))
 
 (defthm nth-of-append
   (equal (nth n (append x y))
