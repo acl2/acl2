@@ -363,7 +363,11 @@
                                                 "style.css"
                                                 "view_flat.png"
                                                 "view_tree.png"
-                                                "xdoc.js")
+                                                "config.js"
+                                                "xdoc.js"
+                                                "xdataget.pl"
+                                                "xdata2sql.pl"
+                                                )
                                           dir state))
 
        (- (cw "Copying fancy viewer library files...~%"))

@@ -20,10 +20,12 @@
 ; Original author: Jared Davis <jared@centtech.com>
 */
 
+"use strict";
+
 var TOP_KEY = "ACL2____TOP";
 var xindex_loaded = false;
 var xdata_loaded = false;
-
+var xdata = [];
 
 
 // --------------------------------------------------------------------------
@@ -64,7 +66,7 @@ function render_text (str) { // XDOC Markup (string) --> Plain Text Fragment
     // string is free of " and ' characters.
     return String(str)
              .replace(/"/g, '&quot;')
-	     .replace(/'/g, '&apos;');
+             .replace(/'/g, '&apos;');
 }
 
 function render_html (str) { // XDOC Markup (string) --> HTML DOM Fragment
@@ -116,16 +118,16 @@ function starts_with_alpha(str) {
 var waitmsg = 0;
 function please_wait() {
     var msgs = ["Still loading",
-	        "Gah, what's taking so long?",
-		"Man, tubes must be clogged...",
-		"The boy has no patience.",
-		"It's not ready yet!",
-  	        "Dude, stop clicking already!"];
+                "Gah, what's taking so long?",
+                "Man, tubes must be clogged...",
+                "The boy has no patience.",
+                "It's not ready yet!",
+                "Dude, stop clicking already!"];
     $("#still_loading").html("<p>" + msgs[waitmsg] + "</p>");
     $("#still_loading").fadeIn(100).delay(500).fadeOut(100);
     waitmsg = waitmsg + 1;
     if (waitmsg == msgs.length)
-	waitmsg = msgs.length - 1;
+        waitmsg = msgs.length - 1;
 }
 
 
@@ -180,23 +182,20 @@ var XI_CHILDREN = 4; // array of keys for children
 var XD_PNAMES = 0;
 var XD_LONG = 1;
 
-
-
-
 function xindex_add_children() { // assumes xindex is populated
     for(var child_key in xindex) {
-	var parent_keys = xindex[child_key][XI_PKEYS];
-	for(var i in parent_keys) {
-	    var parent_key = parent_keys[i];
-	    // It's incorrect, but possible for a child topic to list parents
-	    // that don't exist, so we have to make sure it really exists:
-	    if (parent_key in xindex) {
-		var parent_node = xindex[parent_key];
-		if (!parent_node[XI_CHILDREN])
-		    parent_node[XI_CHILDREN] = [];
-		parent_node[XI_CHILDREN].push(child_key);
-	    }
-	}
+        var parent_keys = xindex[child_key][XI_PKEYS];
+        for(var i in parent_keys) {
+            var parent_key = parent_keys[i];
+            // It's incorrect, but possible for a child topic to list parents
+            // that don't exist, so we have to make sure it really exists:
+            if (parent_key in xindex) {
+                var parent_node = xindex[parent_key];
+                if (!parent_node[XI_CHILDREN])
+                    parent_node[XI_CHILDREN] = [];
+                parent_node[XI_CHILDREN].push(child_key);
+            }
+        }
     }
     xindex_loaded = true;
 }
@@ -204,32 +203,114 @@ function xindex_add_children() { // assumes xindex is populated
 function key_title(key)
 {
     return (key in xindex)
-	     ? ("XDOC &mdash; " + xindex[key][XI_NAME])
-	     : ("XDOC &mdash; " + key);
+             ? ("XDOC &mdash; " + xindex[key][XI_NAME])
+             : ("XDOC &mdash; " + key);
+}
+
+function key_info(key) {
+    if (key in xindex)
+        return xindex[key];
+    var ret = [];
+    ret[XI_NAME] = "Error: Key " + key + " not found";
+    ret[XI_RAWNAME] = "Error: Key " + key + " not found";
+    ret[XI_PKEYS] = [];
+    ret[XI_SHORT] = "Error: Key " + key + " not found";
+    ret[XI_CHILDREN] = [];
+    return ret;
 }
 
 function key_sorted_children(key) { // Returns a nicely sorted array of child_keys
-    if (!(key in xindex)) {
-	return [];
-    }
-    var info = xindex[key];
+    var info = key_info(key);
     var children = info[XI_CHILDREN];
 
     var tmp = [];
-    for(i in children) {
-	var child_key = children[i];
-	var rawname = xindex[child_key][XI_RAWNAME];
-	tmp.push({key:child_key, rawname:rawname});
+    for(var i in children) {
+        var child_key = children[i];
+        var rawname = key_info(child_key)[XI_RAWNAME];
+        tmp.push({key:child_key, rawname:rawname});
     }
     tmp.sort(function(a,b) { return alphanum(a.rawname, b.rawname); });
 
     var ret = [];
-    for(i in tmp) {
-	ret.push(tmp[i].key);
+    for(var i in tmp) {
+        ret.push(tmp[i].key);
     }
     return ret;
 }
 
+function xdata_when_ready (keys, whenReady)
+{
+    var missing = [];  // Optimization, don't load keys we've already loaded
+    for(var i in keys) {
+        if (!xdata[keys[i]])
+            missing.push(keys[i]);
+    }
+
+    if (missing.length == 0) {
+        whenReady();
+        return;
+    }
+
+    if (!XDATAGET) {
+        // We're running in local mode, so we can't load any more data from
+        // the server.  Any missing keys are errors!
+        for(var i in missing)
+            xdata[missing[i]] = "Error: no such topic.";
+        whenReady();
+        return;
+    }
+
+    // Else, running on a server and missing some keys.  Try to load them.
+    var url = XDATAGET + "?keys=" + missing.join(":");
+
+    $.ajax({url: url,
+            type: "GET",
+            dataType: "json",
+            success: function(obj) {
+                var results = "results" in obj && obj["results"];
+                if (results && results.length == missing.length) {
+                    for(var i in results)
+                        xdata[missing[i]] = results[i];
+                }
+                else {
+                    var val = "Error: malformed reply from " + url;
+                    if ("error" in obj)
+                        val = obj["error"];
+                    for(var i in missing)
+                        xdata[missing[i]] = val;
+                }
+                whenReady();
+                return;
+            },
+            error: function(xhr, status, exception) {
+                var val = "Error: AJAX query failed."
+                        + "xhr status " + xhr.status
+                        + ", text" + xhr.responseText
+                        + ", exception" + exception;
+                for(var i in missing)
+                    xdata[missing[i]] = val;
+                whenReady();
+                return;
+            }});
+}
+
+// // This is kind of dumb.  It would probably be much more efficient to do
+// // a single query that fetches data for a list of topics.
+
+// function xdata_when_all_ready_aux (i, keys, whenReady) {
+//     if (i == keys.length) {
+//      whenReady();
+//      return;
+//     }
+//     xdata_when_ready([keys[i]],
+//     function() {
+//      xdata_when_all_ready_aux(1 + i, keys, whenReady);
+//     });
+// }
+
+// function xdata_when_all_ready (keys, whenReady) {
+//     xdata_when_all_ready_aux(0, keys, whenReady);
+// }
 
 
 // --------------------------------------------------------------------------
@@ -282,23 +363,23 @@ function nav_make_node(key) {
     var id = nav_id_table.length;
     nav_id_table[id] = {"key":key, "ever_expanded":false};
 
-    var info = xindex[key];
+    var info = key_info(key);
     var name = info[XI_NAME];
     var tooltip = "<p>" + render_text(info[XI_SHORT]) + "</p>";
 
     var node = "<ul class=\"hindex\" id=\"_nav" + id + "\">";
     node += "<li><nobr>";
     if (!info[XI_CHILDREN]) {
-	node += "<img src=\"leaf.png\"/>";
+        node += "<img src=\"leaf.png\"/>";
     }
     else {
-	node += "<a id=\"_nav_ilink" + id + "\" ";
-	node += " href=\"javascript:nav_expand(" + id + ")\">";
-	node += "<img src=\"plus.png\" id=\"_nav_img" + id + "\"/>";
-	node += "</a>";
+        node += "<a id=\"_nav_ilink" + id + "\" ";
+        node += " href=\"javascript:nav_expand(" + id + ")\">";
+        node += "<img src=\"plus.png\" id=\"_nav_img" + id + "\"/>";
+        node += "</a>";
     }
     node += "<a id=\"_golink" + id + "\" href=\"javascript:nav_go(" + id
-	    + ")\" data-powertip=\"" + tooltip + "\">";
+            + ")\" data-powertip=\"" + tooltip + "\">";
     node += name;
     node += "</a>";
     node += "</nobr>";
@@ -324,25 +405,25 @@ function nav_expand(id) {
     var key = nav_id_table[id]["key"];
 
     if(nav_id_table[id]["ever_expanded"]) {
-	$("#_nav_tree" + id).show();
-	return;
+        $("#_nav_tree" + id).show();
+        return;
     }
 
     nav_id_table[id]["ever_expanded"] = true;
-    var info = xindex[key];
+    var info = key_info(key);
     var children = key_sorted_children(key);
 
     var start = nav_id_table.length; // stupid hack for tooltip activation
     var exp = "";
-    for(i in children) {
-	exp += nav_make_node(children[i]);
+    for(var i in children) {
+        exp += nav_make_node(children[i]);
     }
     $("#_nav_tree" + id).append(exp);
 
     // Activate only the tooltips that we have just added.  (If we try to
     // activate them more than once, they don't seem to work.)
     for(var i = start; i < nav_id_table.length; ++i) {
-	nav_activate_tooltip(i);
+        nav_activate_tooltip(i);
     }
 }
 
@@ -360,8 +441,8 @@ var nav_flat_ever_shown = false;
 
 function nav_tree() {
     if (!xindex_loaded) {
-	please_wait();
-	return;
+        please_wait();
+        return;
     }
     if (nav_mode == "tree") { return; }
     nav_flat_top = $("#left").scrollTop();
@@ -373,8 +454,8 @@ function nav_tree() {
 
 function nav_flat() {
     if (!xindex_loaded) {
-	please_wait();
-	return;
+        please_wait();
+        return;
     }
     if (nav_mode == "flat") { return; }
     nav_tree_top = $("#left").scrollTop();
@@ -394,29 +475,29 @@ function nav_flat() {
 
     var myarr = [];
     for(key in xindex) {
-	myarr.push({key:key, rawname: xindex[key][XI_RAWNAME]});
+        myarr.push({key:key, rawname: xindex[key][XI_RAWNAME]});
     }
     myarr.sort(function(a,b) { return alphanum(a.rawname, b.rawname); });
 
     var dl = jQuery("<ul></ul>");
     var current_startchar = "";
-    for(i in myarr) {
-	var key = myarr[i].key;
-	var info = xindex[key];
-	var name = info[XI_NAME];
-	var rawname = info[XI_RAWNAME];
-	var tooltip = "<p>" + render_text(info[XI_SHORT]) + "</p>";
-	if ((rawname.charAt(0) != current_startchar) && starts_with_alpha(rawname)) {
-	    current_startchar = rawname.charAt(0).toUpperCase();
-	    dl.append("<li class=\"flatsec\" id=\"flat_startchar_" + current_startchar + "\"><b>"
-		      + current_startchar + "</b></li>");
-	}
+    for(var i in myarr) {
+        var key = myarr[i].key;
+        var info = key_info(key);
+        var name = info[XI_NAME];
+        var rawname = info[XI_RAWNAME];
+        var tooltip = "<p>" + render_text(info[XI_SHORT]) + "</p>";
+        if ((rawname.charAt(0) != current_startchar) && starts_with_alpha(rawname)) {
+            current_startchar = rawname.charAt(0).toUpperCase();
+            dl.append("<li class=\"flatsec\" id=\"flat_startchar_" + current_startchar + "\"><b>"
+                      + current_startchar + "</b></li>");
+        }
 
-	dl.append("<li><a class=\"flatnav\""
-		  + " href=\"JavaScript:action_go_key('" + key + "')\""
-		  + " data-powertip=\"" + tooltip + "\">"
-		  + name
-		  + "</li>");
+        dl.append("<li><a class=\"flatnav\""
+                  + " href=\"JavaScript:action_go_key('" + key + "')\""
+                  + " data-powertip=\"" + tooltip + "\">"
+                  + name
+                  + "</li>");
     }
     $("#flat").append(dl);
     $(".flatnav").powerTip({placement:'se',smartPlacement: true});
@@ -454,30 +535,31 @@ function nav_go(id)
 var dat_id_table = []; // map of Occurrence ID to {"key":KEY,"ever_expanded":bool}
 
 function dat_load_parents(key) {
-    var info = xindex[key];
+    // Assumes xdata[key] is ready
+    var info = key_info(key);
     var parent_keys = info[XI_PKEYS];
     var parent_names = xdata[key][XD_PNAMES];
     var acc = "";
     if (parent_keys.length == 0) {
-	$("#parents").hide();
-	$("#parents").html("");
-	return;
+        $("#parents").hide();
+        $("#parents").html("");
+        return;
     }
     acc += "<ul>";
     for(var i in parent_keys) {
-	var pkey = parent_keys[i];
-	var pname = parent_names[i];
-	var tooltip = "Error: parent topic is missing!";
-	if (pkey in xindex) {
-	    var pinfo = xindex[pkey];
-	    tooltip = render_text(pinfo[XI_SHORT]);
-	}
-	acc += "<li>";
-	acc += "<a href=\"javascript:action_go_key('" + pkey + "')\""
-	    + "data-powertip=\"<p>" + tooltip + "</p>\">";
-	acc += pname;
-	acc += "</a>";
-	acc += "</li>\n";
+        var pkey = parent_keys[i];
+        var pname = parent_names[i];
+        var tooltip = "Error: parent topic is missing!";
+        if (pkey in xindex) {
+            var pinfo = xindex[pkey];
+            tooltip = render_text(pinfo[XI_SHORT]);
+        }
+        acc += "<li>";
+        acc += "<a href=\"javascript:action_go_key('" + pkey + "')\""
+            + "data-powertip=\"<p>" + tooltip + "</p>\">";
+        acc += pname;
+        acc += "</a>";
+        acc += "</li>\n";
     }
     acc += "</ul>";
     $("#parents").html(acc);
@@ -487,19 +569,19 @@ function dat_load_parents(key) {
 
 function dat_short_subtopics(key)
 {
-    var info = xindex[key];
+    var info = key_info(key);
     var children = key_sorted_children(key);
 
     var dl = jQuery("<div></div>");
     for(var i in children) {
-	var child_key = children[i];
-	var child_info = xindex[child_key];
-	dl.append("<dt><a href=\"javascript:action_go_key('" + child_key + "')\">"
-		  + child_info[XI_NAME]
-		  + "</dt>");
-	var dd = jQuery("<dd></dd>");
-	dd.append(render_html(child_info[XI_SHORT]));
-	dl.append(dd);
+        var child_key = children[i];
+        var child_info = key_info(child_key);
+        dl.append("<dt><a href=\"javascript:action_go_key('" + child_key + "')\">"
+                  + child_info[XI_NAME]
+                  + "</dt>");
+        var dd = jQuery("<dd></dd>");
+        dd.append(render_html(child_info[XI_SHORT]));
+        dl.append(dd);
     }
     return dl;
 }
@@ -512,23 +594,25 @@ function dat_expand(dat_id)
     $("#_dat_long" + dat_id).show();
 
     if (dat_id_table[dat_id]["ever_expanded"] == true) {
-	// Already showed it, nothing more to do
-	return;
+        // Already showed it, nothing more to do
+        return;
     }
 
     dat_id_table[dat_id]["ever_expanded"] = true;
     var key = dat_id_table[dat_id]["key"];
-    var info = xindex[key];
+    var info = key_info(key);
     var children = key_sorted_children(key);
-
-    var div = $("#_dat_long" + dat_id);
-    for(i in children) {
-	var child_key = children[i];
-	div.append(dat_long_topic(child_key));
-	if (i != children.length - 1) {
-	    div.append("<hr></hr>");
-	}
-    }
+    xdata_when_ready(children,
+    function(){
+        var div = $("#_dat_long" + dat_id);
+        for(var i in children) {
+            var child_key = children[i];
+            div.append(dat_long_topic(child_key));
+            if (i != children.length - 1) {
+                div.append("<hr></hr>");
+            }
+        }
+    });
 }
 
 function dat_collapse(dat_id)
@@ -541,13 +625,14 @@ function dat_collapse(dat_id)
 
 function dat_long_topic(key)
 {
+    // Assumes xdata[key] is ready
     var dat_id = dat_id_table.length;
     dat_id_table[dat_id] = {"key":key, "ever_expanded":false};
 
     var div = jQuery("<div></div>");
     if (!(key in xindex)) {
-	div.append("<h3>Error: " + key + " not found</h3>");
-	return div;
+        div.append("<h3>Error: " + key + " not found</h3>");
+        return div;
     }
 
     var info = xindex[key];
@@ -557,20 +642,20 @@ function dat_long_topic(key)
     div.append(shortp);
     div.append(render_html(xdata[key][XD_LONG]));
     if (info[XI_CHILDREN]) {
-	var acc = "<h3>";
-	acc += "Subtopics ";
-	acc += "<a id=\"_dat_ilink" + dat_id + "\""
-		+ " href=\"javascript:dat_expand(" + dat_id + ")\">";
-	acc += "<img id=\"_dat_img" + dat_id + "\""
-		+ " src=\"expand_subtopics.png\" align=\"top\"/>";
-	acc += "</a>";
-	acc += "</h3>";
-	var sub = jQuery("<dl id=\"_dat_short" + dat_id + "\"></dl>");
-	sub.append(dat_short_subtopics(key));
-	div.append(acc);
-	div.append(sub);
-	div.append("<div id=\"_dat_long" + dat_id + "\" "
-		   + "style=\"display:none\" class=\"dat_long\"></dl>");
+        var acc = "<h3>";
+        acc += "Subtopics ";
+        acc += "<a id=\"_dat_ilink" + dat_id + "\""
+                + " href=\"javascript:dat_expand(" + dat_id + ")\">";
+        acc += "<img id=\"_dat_img" + dat_id + "\""
+                + " src=\"expand_subtopics.png\" align=\"top\"/>";
+        acc += "</a>";
+        acc += "</h3>";
+        var sub = jQuery("<dl id=\"_dat_short" + dat_id + "\"></dl>");
+        sub.append(dat_short_subtopics(key));
+        div.append(acc);
+        div.append(sub);
+        div.append("<div id=\"_dat_long" + dat_id + "\" "
+                   + "style=\"display:none\" class=\"dat_long\"></dl>");
     }
 
     return div;
@@ -580,19 +665,18 @@ function dat_load_key(key)
 {
     // BOZO consider doing something to find the key in the navigation
     // hierarchy somewhere, to make the navigation follow along with you?
-
-    $("#parents").html("");
-    $("#data").html("");
-    $("#right").scrollTop(0);
-    dat_id_table = [];
-    dat_load_parents(key);
-    $("#data").append(dat_long_topic(key));
-    $("title").html(key_title(key));
+    var keys = [key];
+    xdata_when_ready(keys,
+    function() {
+        $("#parents").html("");
+        $("#data").html("");
+        $("#right").scrollTop(0);
+        dat_id_table = [];
+        dat_load_parents(key);
+        $("#data").append(dat_long_topic(key));
+        $("title").html(key_title(key));
+    });
 }
-
-
-
-
 
 
 
@@ -614,23 +698,23 @@ function jump_init() {
 
     var ta_data = [];
     for(var key in xindex) {
-	var info = xindex[key];
-	var tokens = [];
-	tokens.push(info[XI_RAWNAME]);
-	var entry = {"value": key,
-		     "nicename": info[XI_NAME],
-		     "short": render_text(info[XI_SHORT]),
-		     "tokens": tokens};
-	ta_data.push(entry);
+        var info = xindex[key];
+        var tokens = [];
+        tokens.push(info[XI_RAWNAME]);
+        var entry = {"value": key,
+                     "nicename": info[XI_NAME],
+                     "short": render_text(info[XI_SHORT]),
+                     "tokens": tokens};
+        ta_data.push(entry);
     }
 
     $("#jump").typeahead([{
-	    name: "topics",
-	    local: ta_data,
-	    limit: 6,
-	    template: "<p><b class=\"sf\">{{{nicename}}}</b> &mdash; {{{short}}}<br/>"
-  		     + "<tt>{{value}}</tt></p>",
-	    engine: Hogan
+            name: "topics",
+            local: ta_data,
+            limit: 6,
+            template: "<p><b class=\"sf\">{{{nicename}}}</b> &mdash; {{{short}}}<br/>"
+                     + "<tt>{{value}}</tt></p>",
+            engine: Hogan
     }]);
 
     $("#jump").bind('typeahead:selected', jump_go);
@@ -643,9 +727,9 @@ function jump_init() {
 function jump_go(obj,datum) {
     var key = datum["value"];
     if (key in xindex)
-	action_go_key(key);
+        action_go_key(key);
     else
-	alert("Invalid key " + key);
+        alert("Invalid key " + key);
     $("#jump").val("");
     $("#jump").typeahead('setQuery', '');
 }
@@ -655,17 +739,24 @@ function onIndexLoaded()
 {
     xindex_add_children();
 
-    // Load xdata.js after xindex_add_children because that way we know the
-    // index is fully initialized by the time we run onDataLoaded.
-    LazyLoad.js('xdata.js', onDataLoaded);
+    if (XDATAGET == "") {
+        // Load xdata.js after xindex_add_children because that way we know the
+        // index is fully initialized by the time we run onDataLoaded.
+        LazyLoad.js('xdata.js', onDataLoaded);
+    }
+    else {
+        // Running with the support of a server.  We can just regard the data
+        // as already loaded.
+        onDataLoaded();
+    }
 
     var acc = "";
     var chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
-    for(i in chars) {
-	var c = chars.charAt(i);
-	acc += "<a href=\"javascript:nav_flat_tochar('" + c + "')\">" + c + "</a>";
-	if (c == "M")
-	    acc += "<br/>";
+    for(var i in chars) {
+        var c = chars.charAt(i);
+        acc += "<a href=\"javascript:nav_flat_tochar('" + c + "')\">" + c + "</a>";
+        if (c == "M")
+            acc += "<br/>";
     }
     $("#letters").html(acc);
 
@@ -682,14 +773,18 @@ function onDataLoaded()
     xdata_loaded = true;
     var params = getPageParameters();
     var key = params["topic"] || TOP_KEY;
+    if (!key.match(/^[A-Za-z0-9._\-]*$/)) {
+        $("#right").html("Illegal topic name, rejecting to prevent XSS attacks.");
+        return;
+    }
 
     window.history.replaceState({"key":key}, key_title(key), "?topic=" + key);
     dat_load_key(key);
 
     window.addEventListener('popstate',
-			    function(event) {
-				action_go_back(event.state);
-			    });
+                            function(event) {
+                                action_go_back(event.state);
+                            });
 }
 
 function getPageParameters ()
@@ -700,7 +795,7 @@ function getPageParameters ()
    }
    var param_strs = RegExp.$1.split("&");
    var param_arr = {};
-   for(i in param_strs)
+   for(var i in param_strs)
    {
       var tmp = param_strs[i].split("=");
       var key = decodeURI(tmp[0]);
@@ -717,24 +812,24 @@ function srclink(key)
     key = key.replace(".xdoc-link", "");
     var rawname = key;
     if (key in xindex) {
-	rawname = xindex[key][XI_RAWNAME];
+        rawname = xindex[key][XI_RAWNAME];
     }
 
     // Fancy Data URL generator
     var srclink_header =
-	"; -*- mode: xdoc-link -*-\n" +
-	"; This is an XDOC Link file.\n" +
-	"; Ordinarily, you should not see this file.\n" +
-	";\n" +
-	"; If you are viewing this file in a web browser, you probably\n" +
-	"; have not configured your web browser to send .xdoc-link files\n" +
-	"; to Emacs.\n" +
-	";\n" +
-	"; If you are viewing this file in Emacs, you probably have not\n" +
-	"; loaded xdoc.el from the xdoc/ directory.\n" +
-	";\n" +
-	"; For more information, please see \"Emacs Links\" in the XDOC\n" +
-	"; manual.\n\n"
+        "; -*- mode: xdoc-link -*-\n" +
+        "; This is an XDOC Link file.\n" +
+        "; Ordinarily, you should not see this file.\n" +
+        ";\n" +
+        "; If you are viewing this file in a web browser, you probably\n" +
+        "; have not configured your web browser to send .xdoc-link files\n" +
+        "; to Emacs.\n" +
+        ";\n" +
+        "; If you are viewing this file in Emacs, you probably have not\n" +
+        "; loaded xdoc.el from the xdoc/ directory.\n" +
+        ";\n" +
+        "; For more information, please see \"Emacs Links\" in the XDOC\n" +
+        "; manual.\n\n"
 
     window.open('data:application/x-acl2-xdoc-link;charset=utf-8,' +
     encodeURIComponent(srclink_header + rawname));
@@ -743,8 +838,8 @@ function srclink(key)
 function action_go_key(key)
 {
     if (!xdata_loaded) {
-	please_wait();
-	return;
+        please_wait();
+        return;
     }
     window.history.pushState({"key":key}, key_title(key), "?topic=" + key);
     dat_load_key(key);
@@ -753,8 +848,9 @@ function action_go_key(key)
 function action_go_back(data) {
     var key = ("key" in data) ? data["key"] : null;
     if (key) {
-	dat_load_key(key);
+        dat_load_key(key);
     }
 }
+
 
 
