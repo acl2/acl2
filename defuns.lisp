@@ -8345,6 +8345,12 @@
              ld-skip-proofsp)
 (link-doc-to set-ld-keyword-aliases switches-parameters-and-modes
              ld-keyword-aliases)
+(link-doc-to set-ld-keyword-aliases! switches-parameters-and-modes
+             ld-keyword-aliases)
+(link-doc-to add-ld-keyword-alias switches-parameters-and-modes
+             ld-keyword-aliases)
+(link-doc-to add-ld-keyword-alias! switches-parameters-and-modes
+             ld-keyword-aliases)
 (link-doc-to set-ld-redefinition-action switches-parameters-and-modes
              ld-redefinition-action)
 

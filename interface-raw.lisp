@@ -6582,7 +6582,6 @@
     (ld-skip-proofsp . ,ld-skip-proofsp)
     (ld-redefinition-action . nil)
     (ld-prompt . ,(if ld-skip-proofsp nil t))
-    (ld-keyword-aliases . nil)
     (ld-missing-input-ok . nil)
     (ld-pre-eval-filter . :all)
     (ld-pre-eval-print . ,(if ld-skip-proofsp nil t))

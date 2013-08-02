@@ -647,7 +647,6 @@
                          (ld-skip-proofsp 'same ld-skip-proofspp)
                          (ld-redefinition-action 'save ld-redefinition-actionp)
                          (ld-prompt ''wormhole-prompt)
-                         (ld-keyword-aliases 'same ld-keyword-aliasesp)
                          (ld-missing-input-ok 'same ld-missing-input-okp)
                          (ld-pre-eval-filter 'same ld-pre-eval-filterp)
                          (ld-pre-eval-print 'same ld-pre-eval-printp)
@@ -683,7 +682,6 @@
     :ld-skip-proofsp    ...  ; nil, t or 'include-book
     :ld-redefinition-action  ; nil or '(:a . :b)
     :ld-prompt          ...  ; nil, t, or some prompt printer fn
-    :ld-keyword-aliases ...  ; an alist pairing keywords to parse info
     :ld-missing-input-ok ... ; nil, t, :warn, or warning message
     :ld-pre-eval-filter ...  ; :all, :query, or some new name
     :ld-pre-eval-print  ...  ; nil, t, or :never
@@ -1124,10 +1122,6 @@
                            ,ld-redefinition-action))
             nil)
           (list `(cons 'ld-prompt ,ld-prompt))
-          (if ld-keyword-aliasesp
-              (list `(cons 'ld-keyword-aliases
-                           ,ld-keyword-aliases))
-            nil)
           (if ld-missing-input-okp
               (list `(cons 'ld-missing-input-ok ,ld-missing-input-ok))
             nil)
@@ -13507,39 +13501,70 @@
 
 (defun ld-keyword-aliases (state)
 
-  ":Doc-Section Miscellaneous
+  ":Doc-Section switches-parameters-and-modes
 
-  allows the abbreviation of some keyword commands~/
+  abbreviation of some keyword commands~/
   ~bv[]
-  Example:
+  Examples:
+  (set-ld-keyword-aliases '((:q 0 q-fn)
+                            (:e 0 exit-acl2-macro))
+                          state)
+  (ld-keyword-aliases state) ; current value of the ld-keyword-aliases table
+  ~ev[]
+  ~c[Ld-keyword-aliases] is the name of a ACL2 table (~pl[table]) and also the
+  name of a function of ~c[state] that returns the value of this table.  That
+  value must be an alist, each element of which is of the form
+  ~c[(:keyword n fn)], where ~c[:keyword] is a keyword, ~c[n] is a nonnegative
+  integer, and ~c[fn] is a function symbol of arity ~c[n], a macro symbol, or a
+  ~c[lambda] expression of arity ~c[n].  When ~c[keyword] is typed as an
+  ~ilc[ld] command, ~c[n] more forms are read, ~c[x1, ..., xn], and the form
+  ~c[(fn 'x1 ... 'xn)] is then evaluated.  The initial value of the
+  ~c[ld-keyword-aliases] ~il[table] is ~c[nil].
+
+  ACL2 provides functions to modify the ~c[ld-keyword-aliases] table, as
+  follows.
+  ~bq[]
+
+  ~c[(Set-ld-keyword-aliases val state)]: sets the table to ~c[val], which must
+  be a legal alist as described above.  This is an event that may go into a
+  book (~pl[events]), but its effect will be ~il[local] to that book.
+
+  ~c[Set-ld-keyword-aliases!] is the same as ~c[set-ld-keyword-aliases], except
+  that its effect is not ~il[local].  Indeed, the form
+  ~c[(set-ld-keyword-aliases val state)] is equivalent to the form
+  ~c[(local (set-ld-keyword-aliases! val state)].
+
+  ~c[(Add-ld-keyword-alias key val state)]: modifies the table by binding the
+  keyword ~c[key] to ~c[val], which must be a legal value as described above.
+  This is an event that may go into a book (~pl[events]), but its effect will
+  be ~il[local] to that book.
+
+  ~c[Add-ld-keyword-alias!] is the same as ~c[add-ld-keyword-alias], except
+  that its effect is not ~il[local].  Indeed, the form
+  ~c[(add-ld-keyword-alias key val state)] is equivalent to the form
+  ~c[(local (add-ld-keyword-alias! key val state)].
+
+  ~eq[]
+  Consider the first example above:
+  ~bv[]
   (set-ld-keyword-aliases '((:q 0 q-fn)
                             (:e 0 exit-acl2-macro))
                           state)
   ~ev[]
-  ~c[Ld-keyword-aliases] is an ~ilc[ld] special (~pl[ld]).  The accessor
-  is ~c[(ld-keyword-aliases state)] and the updater is
-  ~c[(set-ld-keyword-aliases val state)].  ~c[Ld-keyword-aliases] must be an
-  alist, each element of which is of the form ~c[(:keyword n fn)], where
-  ~c[:keyword] is a keyword, ~c[n] is a nonnegative integer, and ~c[fn] is a
-  function symbol of arity ~c[n], a macro symbol, or a ~c[lambda] expression
-  of arity ~c[n].  When ~c[keyword] is typed as an ~ilc[ld] command, ~c[n] more forms
-  are read, ~c[x1, ..., xn], and the form ~c[(fn 'x1 ... 'xn)] is then
-  evaluated.  The initial value of ~c[ld-keyword-aliases] is ~c[nil].
-
-  In the example above, ~c[:]~ilc[q] has been redefined to have the effect of
-  executing ~c[(q-fn)], so for example if you define
+  With this event, ~c[:]~ilc[q] is redefined to have the effect of executing
+  ~c[(q-fn)], so for example if you have defined ~c[q-fn] with
   ~bv[]
   (defmacro q-fn ()
     '(er soft 'q \"You un-bound :q and now we have a soft error.\"))
   ~ev[]
-  then ~c[:]~ilc[q] will cause an error, and if you define
+  then ~c[:]~ilc[q] will cause an error, and if you have defined
   ~bv[]
   (defmacro exit-acl2-macro () '(exit-ld state))
   ~ev[]
   then ~c[:e] will cause the effect (it so happens) that ~c[:]~ilc[q] normally
-  has.  If you prefer ~c[:e] to ~c[:]~ilc[q] for exiting the ACL2 loop, you might
-  even want to put such definitions of ~c[q-fn] and ~c[exit-acl2-macro]
-  together with the ~c[set-ld-keyword-aliases] form above in your
+  has.  If you prefer ~c[:e] to ~c[:]~ilc[q] for exiting the ACL2 loop, you
+  might even want to put such definitions of ~c[q-fn] and ~c[exit-acl2-macro]
+  together with the ~c[set-ld-keyword-aliases] form above into your
   ~c[\"acl2-customization.lsp\"] file; ~pl[acl2-customization].~/
 
   The general-purpose ACL2 read-eval-print loop, ~ilc[ld], reads forms from
@@ -13547,51 +13572,73 @@
   However, there are various flags that control ~ilc[ld]'s behavior and
   ~c[ld-keyword-aliases] is one of them.  ~c[Ld-keyword-aliases] affects how
   keyword commands are parsed.  Generally speaking, ~ilc[ld]'s command
-  interpreter reads ``~c[:fn x1 ... xn]'' as ``~c[(fn 'x1 ... 'xn)]'' when ~c[:fn]
-  is a keyword and ~c[fn] is the name of an ~c[n]-ary function;
+  interpreter reads ``~c[:fn x1 ... xn]'' as ``~c[(fn 'x1 ... 'xn)]'' when
+  ~c[:fn] is a keyword and ~c[fn] is the name of an ~c[n]-ary function;
   ~pl[keyword-commands].  But this parse is overridden, as described above, for
-  the keywords bound in ~c[ld-keyword-aliases]."
+  the keywords bound in the ~c[ld-keyword-aliases] ~il[table]."
 
-  (f-get-global 'ld-keyword-aliases state))
+  (table-alist 'ld-keyword-aliases (w state)))
 
-(defun ld-keyword-aliasesp (x wrld)
-  (cond ((atom x) (null x))
-        ((and (true-listp (car x))
-              (= (length (car x)) 3))
-         (let ((key (car (car x)))
-               (n (cadr (car x)))
-               (fn (caddr (car x))))
-           (and (keywordp key)
-                (integerp n)
-                (>= n 0)
-                (cond
-                 ((and (symbolp fn)
-                       (function-symbolp fn wrld))
-                  (equal (arity fn wrld) n))
-                 ((and (symbolp fn)
-                       (getprop fn 'macro-body nil
-                                'current-acl2-world wrld))
-                  t)
-                 (t (and (true-listp fn)
-                         (>= (length fn) 3)
-                         (<= (length fn) 4)
-                         (eq (car fn) 'lambda)
-                         (arglistp (cadr fn))
-                         (int= (length (cadr fn)) n))))
-                (ld-keyword-aliasesp (cdr x) wrld))))
-        (t nil)))
+(defun ld-keyword-aliasesp (key val wrld)
+  (and (keywordp key)
+       (true-listp val)
+       (int= (length val) 2)
+       (let ((n (car val))
+             (fn (cadr val)))
+         (and (natp n)
+              (cond
+               ((and (symbolp fn)
+                     (function-symbolp fn wrld))
+                (equal (arity fn wrld) n))
+               ((and (symbolp fn)
+                     (getprop fn 'macro-body nil
+                              'current-acl2-world wrld))
+                t)
+               (t (and (true-listp fn)
+                       (>= (length fn) 3)
+                       (<= (length fn) 4)
+                       (eq (car fn) 'lambda)
+                       (arglistp (cadr fn))
+                       (int= (length (cadr fn)) n))))))))
 
-(defun chk-ld-keyword-aliases (val ctx state)
-  (cond ((ld-keyword-aliasesp val (w state))
-         (value nil))
-        (t (er soft ctx *ld-special-error* 'ld-keyword-aliases val))))
+(table ld-keyword-aliases nil nil
+       :guard
+       (ld-keyword-aliasesp key val world))
 
-(defun set-ld-keyword-aliases (val state)
-  (er-progn
-   (chk-ld-keyword-aliases val 'set-ld-keyword-aliases state)
-   (pprogn
-    (f-put-global 'ld-keyword-aliases val state)
-    (value val))))
+#+acl2-loop-only
+(defmacro add-ld-keyword-alias! (key val)
+  `(state-global-let*
+    ((inhibit-output-lst (list* 'summary 'event (@ inhibit-output-lst))))
+    (progn (table ld-keyword-aliases ,key ,val)
+           (table ld-keyword-aliases))))
+
+#-acl2-loop-only
+(defmacro add-ld-keyword-alias! (key val)
+  (declare (ignore key val))
+  nil)
+
+(defmacro add-ld-keyword-alias (key val)
+  `(local (add-ld-keyword-alias! ,key ,val)))
+
+#+acl2-loop-only
+(defmacro set-ld-keyword-aliases! (alist)
+  `(state-global-let*
+    ((inhibit-output-lst (list* 'summary 'event (@ inhibit-output-lst))))
+    (progn (table ld-keyword-aliases nil ',alist :clear)
+           (table ld-keyword-aliases))))
+
+#-acl2-loop-only
+(defmacro set-ld-keyword-aliases! (alist)
+  (declare (ignore alist))
+  nil)
+
+(defmacro set-ld-keyword-aliases (alist &optional state)
+
+; We add state (optionally) just for backwards compatibility through
+; Version_6.2.  We might eliminate it after Version_6.3.
+
+  (declare (ignore state))
+  `(local (set-ld-keyword-aliases! ,alist)))
 
 (defun ld-missing-input-ok (state)
 

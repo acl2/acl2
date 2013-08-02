@@ -11539,10 +11539,11 @@
   To view the documentation in a web browser, open a browser to file
   ~c[doc/HTML/acl2-doc.html] under your ACL2 source directory, or just go to
   the ACL2 home page at ~url[http://www.cs.utexas.edu/users/moore/acl2/].
+
   Alternatively, follow a link on the ACL2 home page to the new ``xdoc''
-  version of the manual, which can be found locally after running a regression
-  by pointing your web browser at community books file
-  ~c[books/xdoc/manual/preview.html].
+  version of the manual.  You can build a local copy using the ACL2 Community
+  books; see the topic ``BUILDING THE MANUAL'' in ~c[books/Makefile] for
+  instructions.
 
   To use Emacs Info (inside Emacs), first load distributed file
   ~c[emacs/emacs-acl2.el] (perhaps inside your ~c[.emacs] file) and then
@@ -12404,31 +12405,31 @@
   (with-output :key1 val1 ... :keyk valk form)
   ~ev[]
   where each ~c[:keyi] is either ~c[:off], ~c[:on], ~c[:stack],
-  ~c[:summary], or ~c[:gag-mode], and ~c[vali] is as follows.  If ~c[:keyi]
-  is ~c[:off] or ~c[:on], then ~c[vali] can be ~c[:all], and otherwise is a
-  symbol or non-empty list of symbols representing output types that can be
-  inhibited; ~pl[set-inhibit-output-lst].  If ~c[:keyi] is ~c[:gag-mode], then
-  ~c[vali] is one of the legal values for ~c[:]~ilc[set-gag-mode].
-  If ~c[:keyi] is ~c[:summary], then ~c[vali] is either ~c[:all] or a true-list
-  of symbols each of which belongs to the list ~c[*summary-types*].  Otherwise
-  ~c[:keyi] is ~c[:stack], in which case ~c[:vali] is ~c[:push] or ~c[:pop];
-  for now assume that ~c[:stack] is not specified (we'll return to it below).
-  The result of evaluating the General Form above is to evaluate ~c[form], but
-  in an environment where output occurs as follows.  If ~c[:on :all] is
-  specified, then every output type is turned on except as inhibited by
-  ~c[:off]; else if ~c[:off :all] is specified, then every output type is
-  inhibited except as specified by ~c[:on]; and otherwise, the
-  currently-inhibited output types are reduced as specified by ~c[:on] and then
-  extended as specified by ~c[:off].  But if ~c[:gag-mode] is specified, then
-  before modifying how output is inhibited, ~ilc[gag-mode] is set for the
-  evaluation of ~c[form] as specified by the value of ~c[:gag-mode];
-  ~pl[set-gag-mode].  If ~c[summary] is among the output types that are turned
-  on (not inhibited), then if ~c[:summary] is specified, the only parts of the
-  summary to be printed will be those specified by the value of ~c[:summary].
-  The correspondence should be clear, except perhaps that ~c[header] refers to
-  the line containing only the word ~c[Summary], and ~c[value] refers to the
-  value of the form printed during evaluation of sequences of events as for
-  ~ilc[progn] and ~ilc[encapsulate].
+  ~c[:summary], or ~c[:gag-mode]; ~c[form] evaluates to an error triple
+  (~pl[error-triples]); and ~c[vali] is as follows.  If ~c[:keyi] is ~c[:off]
+  or ~c[:on], then ~c[vali] can be ~c[:all], and otherwise is a symbol or
+  non-empty list of symbols representing output types that can be inhibited;
+  ~pl[set-inhibit-output-lst].  If ~c[:keyi] is ~c[:gag-mode], then ~c[vali] is
+  one of the legal values for ~c[:]~ilc[set-gag-mode].  If ~c[:keyi] is
+  ~c[:summary], then ~c[vali] is either ~c[:all] or a true-list of symbols each
+  of which belongs to the list ~c[*summary-types*].  Otherwise ~c[:keyi] is
+  ~c[:stack], in which case ~c[:vali] is ~c[:push] or ~c[:pop]; for now assume
+  that ~c[:stack] is not specified (we'll return to it below).  The result of
+  evaluating the General Form above is to evaluate ~c[form], but in an
+  environment where output occurs as follows.  If ~c[:on :all] is specified,
+  then every output type is turned on except as inhibited by ~c[:off]; else if
+  ~c[:off :all] is specified, then every output type is inhibited except as
+  specified by ~c[:on]; and otherwise, the currently-inhibited output types are
+  reduced as specified by ~c[:on] and then extended as specified by ~c[:off].
+  But if ~c[:gag-mode] is specified, then before modifying how output is
+  inhibited, ~ilc[gag-mode] is set for the evaluation of ~c[form] as specified
+  by the value of ~c[:gag-mode]; ~pl[set-gag-mode].  If ~c[summary] is among
+  the output types that are turned on (not inhibited), then if ~c[:summary] is
+  specified, the only parts of the summary to be printed will be those
+  specified by the value of ~c[:summary].  The correspondence should be clear,
+  except perhaps that ~c[header] refers to the line containing only the word
+  ~c[Summary], and ~c[value] refers to the value of the form printed during
+  evaluation of sequences of events as for ~ilc[progn] and ~ilc[encapsulate].
 
   Note that the handling of the ~c[:stack] argument pays no attention to the
   ~c[:summary] argument.
@@ -28405,6 +28406,7 @@
     catch-throw-to-local-top-level
     with-fast-alist-raw with-stolen-alist-raw fast-alist-free-on-exit-raw
     stobj-let
+    add-ld-keyword-alias! set-ld-keyword-aliases!
     ))
 
 (defmacro with-live-state (form)
@@ -29754,7 +29756,6 @@
     (ld-skip-proofsp . nil)
     (ld-redefinition-action . nil)
     (ld-prompt . t)
-    (ld-keyword-aliases . nil)
     (ld-missing-input-ok . nil)
     (ld-pre-eval-filter . :all)
     (ld-pre-eval-print . nil)
@@ -30215,6 +30216,23 @@
 ; least as reasonable.
 
 (defun signed-byte-p (bits x)
+
+  ":Doc-Section ACL2::ACL2-built-ins
+
+  recognizer for signed integers that fit in a specified bit width~/
+
+  ~c[(Signed-byte-p bits x)] is ~c[T] when ~c[bits] is a positive integer and
+  ~c[x] is a signed integer whose 2's complement representation fits in a
+  bit-width of ~c[bits], i.e., ~c[-2^(bits-1) <= x < 2^(bits-1)].~/
+
+  Note that a ~il[type-spec] of ~c[(signed-byte i)] for a variable ~c[x] in a
+  function's ~ilc[declare] form translates to a ~il[guard] condition of
+  ~c[(signed-byte-p i x)].
+
+  The ~il[guard] for ~c[signed-byte-p] is ~c[T].
+
+  To see the ACL2 definition of this function, ~pl[pf].~/"
+
   (declare (xargs :guard t))
   (and (integerp bits)
        (< 0 bits)
@@ -30223,6 +30241,23 @@
                         x)))
 
 (defun unsigned-byte-p (bits x)
+
+  ":Doc-Section ACL2::ACL2-built-ins
+
+  recognizer for natural numbers that fit in a specified bit width~/
+
+  ~c[(Unsigned-byte-p bits x)] is ~c[T] when ~c[bits] is a positive integer and
+  ~c[x] is a nonnegative integer that fits into a bit-width of ~c[bits], i.e.,
+  ~c[0 <= x < 2^bits].~/
+
+  Note that a ~il[type-spec] of ~c[(unsigned-byte i)] for a variable ~c[x] in a
+  function's ~ilc[declare] form translates to a ~il[guard] condition of
+  ~c[(unsigned-byte-p i x)].
+
+  The ~il[guard] for ~c[unsigned-byte-p] is ~c[T].
+
+  To see the ACL2 definition of this function, ~pl[pf].~/"
+
   (declare (xargs :guard t))
   (and (integerp bits)
        (<= 0 bits)
@@ -32363,6 +32398,10 @@
   ":Doc-Section ACL2::ACL2-built-ins
 
   print an error message and ``cause an error''~/
+
+  ~l[fmt] for a general discussion of formatted printing in ACL2.  All calls of
+  ~c[er] print formatted strings, just as is done by ~ilc[fmt].
+
   ~bv[]
   Example Forms:
   (er hard  'top-level \"Illegal inputs, ~~x0 and ~~x1.\" a b)
@@ -36676,7 +36715,6 @@
     standard-co
     proofs-co
     ld-prompt
-    ld-keyword-aliases
     ld-missing-input-ok
     ld-pre-eval-filter
     ld-pre-eval-print

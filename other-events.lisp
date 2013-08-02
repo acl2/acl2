@@ -4290,6 +4290,7 @@
      add-custom-keyword-hint
      add-default-hints!
      add-include-book-dir
+     add-ld-keyword-alias!
      add-match-free-override
      comp
      defabsstobj

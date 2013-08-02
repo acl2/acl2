@@ -361,9 +361,6 @@
           (ld-prompt
            (er-progn (chk-ld-prompt val ctx state)
                      (value pair)))
-          (ld-keyword-aliases
-           (er-progn (chk-ld-keyword-aliases val ctx state)
-                     (value pair)))
           (ld-missing-input-ok
            (er-progn (chk-ld-missing-input-ok val ctx state)
                      (value pair)))
@@ -625,8 +622,6 @@
          (f-put-global 'ld-redefinition-action (cdar alist) state))
         (ld-prompt
          (f-put-global 'ld-prompt (cdar alist) state))
-        (ld-keyword-aliases
-         (f-put-global 'ld-keyword-aliases (cdar alist) state))
         (ld-missing-input-ok
          (f-put-global 'ld-missing-input-ok (cdar alist) state))
         (ld-pre-eval-filter
@@ -674,8 +669,6 @@
               (f-get-global 'ld-redefinition-action state))
         (cons 'ld-prompt
               (f-get-global 'ld-prompt state))
-        (cons 'ld-keyword-aliases
-              (f-get-global 'ld-keyword-aliases state))
         (cons 'ld-missing-input-ok
               (f-get-global 'ld-missing-input-ok state))
         (cons 'ld-pre-eval-filter
@@ -764,8 +757,7 @@
 ; the parsed form of the command read, e.g., (acl2::ubt 'foo).  If non-nil,
 ; keyp is the actual list of objects read, e.g., (:ubt foo).
 
-  (let ((temp (assoc-eq key
-                        (f-get-global 'ld-keyword-aliases state))))
+  (let ((temp (assoc-eq key (ld-keyword-aliases state))))
     (cond
      (temp
       (mv-let (erp args state)
@@ -1851,7 +1843,6 @@
               (ld-skip-proofsp 'same ld-skip-proofspp)
               (ld-redefinition-action 'same ld-redefinition-actionp)
               (ld-prompt 'same ld-promptp)
-              (ld-keyword-aliases 'same ld-keyword-aliasesp)
               (ld-missing-input-ok 'same ld-missing-input-okp)
               (ld-pre-eval-filter 'same ld-pre-eval-filterp)
               (ld-pre-eval-print 'same ld-pre-eval-printp)
@@ -1885,7 +1876,6 @@
                                    ;   (~pl[ld-skip-proofsp])
       :ld-redefinition-action ...  ; nil or '(:a . :b)
       :ld-prompt          ...      ; nil, t, or some prompt printer fn
-      :ld-keyword-aliases ...      ; an alist pairing keywords to parse info
       :ld-missing-input-ok ...     ; nil, t, :warn, or warning message
       :ld-pre-eval-filter ...      ; :all, :query, or some new name
       :ld-pre-eval-print  ...      ; nil, t, or :never
@@ -2131,10 +2121,6 @@
              (if ld-promptp
                  (list `(cons 'ld-prompt ,ld-prompt))
                  nil)
-             (if ld-keyword-aliasesp
-                 (list `(cons 'ld-keyword-aliases
-                              ,ld-keyword-aliases))
-                 nil)
              (if ld-missing-input-okp
                  (list `(cons 'ld-missing-input-ok ,ld-missing-input-ok))
                nil)
@@ -2310,7 +2296,6 @@
           state)))
        (if ans
            (ld (list cmd)
-               :ld-keyword-aliases nil
                :ld-pre-eval-filter :all
                :ld-pre-eval-print t
                :ld-post-eval-print :command-conventions
@@ -2409,7 +2394,6 @@
          (if redo-cmds
              (ld redo-cmds
                  :ld-redefinition-action '(:doit! . :overwrite)
-                 :ld-keyword-aliases nil
                  :ld-pre-eval-filter :all
                  :ld-pre-eval-print t
                  :ld-post-eval-print :command-conventions
@@ -2771,7 +2755,6 @@
           :proofs-co *standard-co*
           :ld-skip-proofsp t
           :ld-prompt nil
-          :ld-keyword-aliases nil
           :ld-missing-input-ok nil
           :ld-pre-eval-filter filter
           :ld-pre-eval-print nil
@@ -21014,10 +20997,18 @@
   to be relieved.  ~l[bind-free].  Thanks to Sol Swords for requesting this
   enhancement.
 
-  When built-in ~il[state] global ~ilc[ld-keyword-aliases] is set during
-  ~ilc[make-event] expansion, its new value will persist after expansion is
-  complete, which had not formerly been the case.  Thanks to Jared Davis for
-  correspondence leading us to make this change.
+  ACL2 continues to provide a way to specify keyword command abbreviations for
+  the top-level loop; ~pl[ld-keyword-aliases].  However,
+  ~ilc[ld-keyword-aliases] is now a ~il[table] rather than a ~il[state] global;
+  it is thus no longer a so-called ~il[LD] special.  The functionality of
+  ~c[set-ld-keyword-aliases] has essentially been preserved, except that it is
+  now an event (~pl[events]), hence it may appear in a book; it is ~il[local]
+  to a book (or ~ilc[encapsulate] event); and the ~ilc[state] argument is
+  optional, and deprecated.  A non-local version (~c[set-ld-keyword-aliases!])
+  has been added, along with corresponding utilities ~c[add-keyword-alias] and
+  ~c[add-keyword-alias!] for adding a single keyword alias.
+  ~l[ld-keyword-aliases].  Thanks to Jared Davis for correspondence that
+  ultimately led us to make this change.
 
   The ~il[proof-checker] command ~c[(exit t)] now exits without a query (but
   still prints an event to show the ~c[:INSTRUCTIONS]).  Thanks to Warren Hunt
@@ -21935,7 +21926,6 @@
                                      (new-defpkg-list defpkg-items kpa kpa))
                                    cmds)
                            :ld-skip-proofsp 'include-book-with-locals
-                           :ld-keyword-aliases nil
                            :ld-verbose nil
                            :ld-prompt nil
                            :ld-missing-input-ok nil
@@ -23171,9 +23161,8 @@ which you can find under your local <CODE>acl2-sources/</CODE> diretory at
 
 <li>Alternatively, for web browsing you can use <A
 HREF=\"http://fv.centtech.com/acl2/6.2/doc/\">documentation generated by Jared
-Davis's xdoc utility</A>.  After you install and certify the ACL2 community
-books (see <A HREF=\"#Tools\">below</A>), you will find a complete local copy
-at <CODE>books/xdoc-impl/manual/preview.html</A></CODE>.
+Davis's xdoc utility</A>.  You can build a local copy from the ACL2 Community
+Books, following instructions in <code>books/Makefile</code>.</li>
 
 <li>Those familiar with Emacs Info can read the documentation in that format by
 loading the file <CODE>emacs/emacs-acl2.el</CODE> distributed with ACL2 (under

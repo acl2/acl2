@@ -7089,7 +7089,7 @@
 ;     brr-wormhole is thus (:key data), where data is the alist mapping
 ;     brr-globals to their values as described below
 ; (1) brr-wormhole implements brr-global variables which are set
-;     from input-alist (or else retain their values from the the
+;     from input-alist (or else retain their values from the
 ;     last exit of the 'brr wormhole).
 ; (2) test-form returns (value t) or (value nil) indicating whether
 ;     a break is to occur.
@@ -7103,6 +7103,7 @@
              ,input-alist
              `(pprogn (restore-brr-globals state)
                       (er-progn
+                       (set-ld-keyword-aliases! ,,aliases)
                        (set-ld-prompt 'brr-prompt state)
 
 ; The above reference to the function symbol brr-prompt is a little startling
@@ -7120,7 +7121,6 @@
                                            (value :invisible)))
                                 (t (exit-brr-wormhole state))))))
              :ld-prompt  nil
-             :ld-keyword-aliases ,aliases
              :ld-missing-input-ok nil
              :ld-pre-eval-filter :all
              :ld-pre-eval-print  nil
@@ -7685,25 +7685,23 @@
 
   Break-rewrite permits the user to inspect the current ~il[state] by
   evaluating break-rewrite commands.  Type ~c[:]~ilc[help] in break-rewrite to
-  see what the break-rewrite commands are.  However, break-rewrite is
-  actually just a call of the general ACL2 read-eval-print loop, ~ilc[ld],
-  on a certain ~il[state] and the break-rewrite commands are simply aliases
-  provided by the ~ilc[ld]-special ~ilc[ld-keyword-aliases].  ~l[ld] for
-  details about this read-eval-print loop.  Thus, with a few
-  exceptions, anything you can do at the ACL2 top-level can be done
-  within break-rewrite.  For example, you can evaluate arbitrary
-  expressions, use the keyword command hack, access ~il[documentation],
-  print ~il[events], and even define functions and prove theorems.
-  However, the ``certain ~il[state]'' upon which ~ilc[ld] was called is a
-  ``~il[wormhole] ~il[state]'' (~pl[wormhole]) because break-rewrite is not
-  allowed to have any effect upon the behavior of rewrite.  What this
-  means, very roughly but understandably, is that break-rewrite
+  see what the break-rewrite commands are.  However, break-rewrite is actually
+  just a call of the general ACL2 read-eval-print loop, ~ilc[ld], on a certain
+  ~il[state] and the break-rewrite commands are simply aliases provided by
+  ~c[ld-keyword-aliases] ~il[table] (~pl[ld-keyword-aliases]).  ~l[ld] for
+  details about this read-eval-print loop.  Thus, with a few exceptions,
+  anything you can do at the ACL2 top-level can be done within break-rewrite.
+  For example, you can evaluate arbitrary expressions, use the keyword command
+  hack, access ~il[documentation], print ~il[events], and even define functions
+  and prove theorems.  However, the ``certain ~il[state]'' upon which ~ilc[ld]
+  was called is a ``~il[wormhole] ~il[state]'' (~pl[wormhole]) because
+  break-rewrite is not allowed to have any effect upon the behavior of rewrite.
+  What this means, very roughly but understandably, is that break-rewrite
   operates on a copy of the ~il[state] being used by rewrite and when
   break-rewrite exits the ~il[wormhole] closes and the ~il[state] ``produced''
-  by break-rewrite disappears.  Thus, break-rewrite lets you query the
-  state of the rewriter and even do experiments involving proofs,
-  etc., but these experiments have no effect on the ongoing proof
-  attempt.  In particular:
+  by break-rewrite disappears.  Thus, break-rewrite lets you query the state of
+  the rewriter and even do experiments involving proofs, etc., but these
+  experiments have no effect on the ongoing proof attempt.  In particular:
 
   Note that the output from break-rewrite is sometimes abbreviated by default,
   such as for the term causing the break.  This can be controlled by setting
