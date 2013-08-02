@@ -159,12 +159,18 @@
 #       default to simply (certify-book "foo" ? t)
 #     These instructions specify arguments to certify-book, for example:
 #       ; cert-flags: ? t :ttags :all
-#   - Books that depend on ACL2(h), such as centaur/tutorial/alu16-book.lisp,
-#     contain this line (or, a cert_param directive can be in the
-#     .acl2 file that is consulted, as discussed above):
-#       ; cert_param: (hons-only)
-#   - Books that require glucose (a SAT solver) contain this line:
-#       ; cert_param: (uses-glucose)
+#   - In the following cases, books may be skipped in which case,
+#     recursively, so are books that include such books, books that
+#     include those parent books, and so on.  In each case, the
+#     indicated line may be placed either in the .lisp file or in the
+#     .acl2 file that is consulted, as discussed above.
+#       - Books that depend on ACL2(h), such as
+#         centaur/tutorial/alu16-book.lisp, contain this line:
+#           ; cert_param: (hons-only)
+#       - Books that require glucose (a SAT solver) contain this line:
+#           ; cert_param: (uses-glucose)
+#       - Books that require quicklisp contain this line:
+#           ; cert_param: (uses-quicklisp)
 #   - Two-pass certification is handled as follows, for example in
 #     books/make-event/stobj-test.acl2 (as indicated above, this can
 #     also go into the book instead of the relevant .acl2 file):
@@ -196,6 +202,13 @@
 # should be something like: if you give a certify-book command, we use it;
 # otherwise we generate one using the cert-flags.
 
+# BUILDING THE MANUAL
+
+# The manual is built in centaur/manual/, top page index.html, as a
+# byproduct of building centaur/doc.lisp using USE_QUICKLISP=1 on the
+# `make' command line.  This has been tested using CCL on Linux, but
+# may work for other OS/Lisp combinations.  See also
+# centaur/README.html.
 
 # STATUS / TODO LIST / MISSING FEATURES / BOZOS:
 #

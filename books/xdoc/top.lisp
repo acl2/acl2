@@ -75,16 +75,7 @@
 
 ; Hijack ACL2's :doc keyword and replace it with :xdoc
 
-(defun add-ld-keyword-aliases (alist state)
-  (declare (xargs :mode :program :stobjs state))
-  (let ((current (f-get-global 'acl2::ld-keyword-aliases state)))
-    (set-ld-keyword-aliases (append alist current) state)))
-
-(make-event
-  (er-progn (add-ld-keyword-aliases '((:doc 1 xdoc)) state)
-            (value '(value-triple :invisible)))
-  ;; Try check-expansion in case that helps make it stick
-  :check-expansion t)
+(add-ld-keyword-alias! :doc '(1 xdoc))
 
 (defmacro save (dir &key
                     (type ':fancy)

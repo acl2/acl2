@@ -120,7 +120,7 @@
 
 (defun keyword-command-arg-number (key state)
   (declare (xargs :mode :program))
-  (let ((temp (assoc-eq key (f-get-global 'ld-keyword-aliases state))))
+  (let ((temp (assoc-eq key (ld-keyword-aliases state))))
     (cond (temp (cadr temp))
 	  ((eq key :q) 0)
 	  (t

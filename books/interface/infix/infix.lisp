@@ -3309,7 +3309,7 @@ In which case we don't want to print *no-tab-command-trailer*."
 (defun ld-printer (term)
   (let ((keys (extract-keywords term '(:standard-co :proofs-co :current-package
 				       :ld-skip-proofsp :ld-redefinition-action
-				       :ld-prompt :ld-keyword-aliases :ld-pre-eval-filter
+				       :ld-prompt :ld-pre-eval-filter
 				       :ld-pre-eval-print :ld-post-eval-print :ld-evisc-tuple
 				       :ld-error-triples :ld-error-action
 				       :ld-query-control-alist :ld-verbose)))) 
@@ -3320,7 +3320,7 @@ In which case we don't want to print *no-tab-command-trailer*."
     (if keys
 	(let ((pairs (pairlis '(:standard-co :proofs-co :current-package
 			        :ld-skip-proofsp :ld-redefinition-action
-				:ld-prompt :ld-keyword-aliases :ld-pre-eval-filter
+				:ld-prompt :ld-pre-eval-filter
 				:ld-pre-eval-print :ld-post-eval-print :ld-evisc-tuple
 				:ld-error-triples :ld-error-action
 				:ld-query-control-alist :ld-verbose)
@@ -4199,23 +4199,6 @@ Allow redefinition (even of system functions) without undoing.")
 	(t
 	 (ppformat " prompt function = ~a" (cdr pair)))))
 
-(defun ld-keyword-aliases-keyword-printer (pair)
-  ;; pair = (:ld-keyword-aliases '((:q 0 q-fn) (:e 0 exit-acl2-macro)))
-  (let ((x (cdr pair)))
-    (if (equal (car x) 'quote)
-	(setq x (cadr x)))
-    (ppformat " define keyword aliases (")
-    (sloop for tail on x do
-	   (cond ((cddr tail)
-		  (ppformat "~s = ~a of arity ~d, "
-			    (car (car tail)) (caddr (car tail)) (cadr (car tail))))
-		 ((cdr tail)
-		  (ppformat "~s = ~a of arity ~d and "
-			    (car (car tail)) (caddr (car tail)) (cadr (car tail))))
-		 (t (ppformat "~s = ~a of arity ~d"
-			      (car (car tail)) (caddr (car tail)) (cadr (car tail))))))
-    (ppformat ")")))
-
 (defun ld-pre-eval-filter-keyword-printer (pair)
   ;; :all
   (cond ((null (cdr pair)))
@@ -4305,7 +4288,6 @@ Allow redefinition (even of system functions) without undoing.")
 	(list ':ld-skip-proofsp (function ld-skip-proofsp-keyword-printer))
 	(list ':ld-redefinition-action (function ld-redefinition-action-keyword-printer))
 	(list ':ld-prompt (function ld-prompt-keyword-printer))
-	(list ':ld-keyword-aliases (function ld-keyword-aliases-keyword-printer))
 	(list ':ld-pre-eval-filter (function ld-pre-eval-filter-keyword-printer))
 	(list ':ld-pre-eval-print (function ld-pre-eval-print-keyword-printer))
 	(list ':ld-post-eval-print (function ld-post-eval-print-keyword-printer))
