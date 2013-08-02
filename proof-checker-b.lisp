@@ -396,6 +396,7 @@
   ~bv[]
   Examples:
   exit                        -- exit the interactive proof-checker
+  (exit t)                    -- exit after printing a bogus defthm event
   (exit append-associativity) -- exit and create a defthm
                                  event named append-associativity~/
 
@@ -403,8 +404,10 @@
 
   exit --  Exit without storing an event.
 
-  (exit event-name &optional rule-classes do-it-flg)
-  Exit, and store an event.
+  (exit t) -- Exit after printing a bogus defthm event, showing :INSTRUCTIONS.
+
+  (exit event-name &optional rule-classes do-it-flg) --
+  Exit, and perhaps store an event
   ~ev[]
   The command ~c[exit] returns you to the ACL2 loop.  At a later time,
   ~c[(verify)] may be executed to get back into the same proof-checker
@@ -468,87 +471,86 @@
                 (or event-name
                     (car event-name-and-types-and-raw-term)))
                (instructions (instructions-of-state-stack state-stack nil)))
-          (er-let*
-           ((event-name
-             (if event-name
-                 (value event-name)
-               (pprogn (io? proof-checker nil state
-                            nil
-                            (fms0 "Please supply an event name (or :A to ~
+          (er-let* ((event-name
+                     (if event-name
+                         (value event-name)
+                       (pprogn (io? proof-checker nil state
+                                    nil
+                                    (fms0 "Please supply an event name (or :A to ~
                                    abort)~%>> "))
-                       (state-global-let*
-                        ((infixp nil))
-                        (read-object *standard-oi* state))))))
-           (if (eq event-name :a)
-               (pprogn (io? proof-checker nil state
-                            nil
-                            (fms0 "~|Exit aborted.~%"))
-                       (mv nil nil state))
-             (if (null (goals t))
-                 (let* ((rule-classes (if (consp (cdr args))
-                                          rule-classes
-                                        (if (and (consp args)
-                                                 (eq (car args) nil))
-                                            (cadr event-name-and-types-and-raw-term)
-                                          '(:rewrite))))
-                        (event-form `(defthm ,event-name
-                                       ,(caddr event-name-and-types-and-raw-term)
-                                       ,@(if (equal rule-classes '(:rewrite))
-                                             nil
-                                           (list :rule-classes rule-classes))
-                                       :instructions ,instructions)))
-                   (mv-let (erp stobjs-out/vals state)
-                           (pprogn
-                            (print-pc-defthm event-form state)
-                            (mv-let (erp ans state)
-                                    (if do-it-flg
-                                        (value :y)
-                                      (replay-query state))
-                                    (declare (ignore erp))
-                                    (case ans
-                                          (:y (trans-eval event-form
-                                                          'acl2-pc::exit
-                                                          state
-                                                          t))
-                                          (:r (pprogn (state-from-instructions
-                                                       (caddr event-form)
-                                                       event-name
-                                                       rule-classes
-                                                       instructions
-                                                       '(signal value)
-                                                       state)
-                                                      (trans-eval event-form
-                                                                  'acl2-pc::exit
-                                                                  state
-                                                                  t)))
-                                          (:a (mv t '(nil . t) state))
-                                          (otherwise (mv t '(nil . nil) state)))))
+                               (state-global-let*
+                                ((infixp nil))
+                                (read-object *standard-oi* state))))))
+            (if (eq event-name :a)
+                (pprogn (io? proof-checker nil state
+                             nil
+                             (fms0 "~|Exit aborted.~%"))
+                        (mv nil nil state))
+              (if (null (goals t))
+                  (let* ((rule-classes (if (consp (cdr args))
+                                           rule-classes
+                                         (if (and (consp args)
+                                                  (eq (car args) nil))
+                                             (cadr event-name-and-types-and-raw-term)
+                                           '(:rewrite))))
+                         (event-form `(defthm ,event-name
+                                        ,(caddr event-name-and-types-and-raw-term)
+                                        ,@(if (equal rule-classes '(:rewrite))
+                                              nil
+                                            (list :rule-classes rule-classes))
+                                        :instructions ,instructions)))
+                    (mv-let (erp stobjs-out/vals state)
+                            (pprogn
+                             (print-pc-defthm event-form state)
+                             (mv-let (erp ans state)
+                                     (cond (do-it-flg (value :y))
+                                           ((eq event-name t) (value :n))
+                                           (t (replay-query state)))
+                                     (declare (ignore erp))
+                                     (case ans
+                                       (:y (trans-eval event-form
+                                                       'acl2-pc::exit
+                                                       state
+                                                       t))
+                                       (:r (pprogn (state-from-instructions
+                                                    (caddr event-form)
+                                                    event-name
+                                                    rule-classes
+                                                    instructions
+                                                    '(signal value)
+                                                    state)
+                                                   (trans-eval event-form
+                                                               'acl2-pc::exit
+                                                               state
+                                                               t)))
+                                       (:a (mv t '(nil . t) state))
+                                       (otherwise (mv t '(nil . nil) state)))))
 
 ; We assume here that if DEFTHM returns without error, then it succeeds.
 
-                           (if (or erp (null (car stobjs-out/vals)))
-                               (if (eq (cdr stobjs-out/vals) t)
-                                   (pprogn (io? proof-checker nil state
-                                                nil
-                                                (fms0 "~|Exit aborted.~%"))
-                                           (mv nil nil state))
-                                 (mv *pc-complete-signal* nil state))
-                             (mv *pc-complete-signal* event-name state))))
+                            (if (or erp (null (car stobjs-out/vals)))
+                                (if (eq (cdr stobjs-out/vals) t)
+                                    (pprogn (io? proof-checker nil state
+                                                 nil
+                                                 (fms0 "~|Exit aborted.~%"))
+                                            (mv nil nil state))
+                                  (mv *pc-complete-signal* nil state))
+                              (mv *pc-complete-signal* event-name state))))
 
 ; Otherwise, we have an incomplete proof.
 
-               (pprogn (io? proof-checker nil state
-                            (instructions event-name-and-types-and-raw-term
-                                          state-stack)
-                            (fms0 "~%Not exiting, as there remain unproved ~
+                (pprogn (io? proof-checker nil state
+                             (instructions event-name-and-types-and-raw-term
+                                           state-stack)
+                             (fms0 "~%Not exiting, as there remain unproved ~
                                    goals:  ~&0.~%The original goal is:~%~ ~ ~ ~
                                    ~ ~y1~|  Here is the current instruction ~
                                    list, starting with the first:~%~ ~ ~ ~ ~
                                    ~y2~|"
-                                  (list (cons #\0 (goal-names (goals t)))
-                                        (cons #\1 (caddr event-name-and-types-and-raw-term))
-                                        (cons #\2 instructions))))
-                       (mv nil nil state))))))
+                                   (list (cons #\0 (goal-names (goals t)))
+                                         (cons #\1 (caddr event-name-and-types-and-raw-term))
+                                         (cons #\2 instructions))))
+                        (mv nil nil state))))))
       (pprogn (io? proof-checker nil state
                    nil
                    (fms0 "~|Exiting....~%"))

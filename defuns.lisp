@@ -7212,71 +7212,67 @@
 
   formals that are used but only insignificantly~/
 
-  Let ~c[fn] be a function of ~c[n] arguments.  Let ~c[x] be the ~c[i]th formal of ~c[fn].
-  We say ~c[x] is ``irrelevant in ~c[fn]'' if ~c[x] is not involved in either the
-  ~il[guard] or the measure for ~c[fn], ~c[x] is used in the body, but the value of
+  Let ~c[fn] be a function of ~c[n] arguments.  Let ~c[x] be the ~c[i]th formal
+  of ~c[fn].  We say ~c[x] is ``irrelevant in ~c[fn]'' if ~c[x] does not occur
+  in either the ~il[guard] or the measure for ~c[fn], and the value of
   ~c[(fn a1...ai...an)] is independent of ~c[ai].~/
 
-  The easiest way to define a function with an irrelevant formal is
-  simply not to use the formal in the body of the
-  function.  Such formals are said to be ``ignored'' by Common Lisp
-  and a special declaration is provided to allow ignored formals.
-  ACL2 makes a distinction between ignored and irrelevant formals.  Note
-  however that if a variable is ~ilc[declare]d ~c[ignore]d or ~c[ignorable],
-  then it will not be reported as irrelevant.
+  The easiest way to define a function with an irrelevant formal is simply not
+  to use the formal in the body of the function.  Such formals are said to be
+  ``ignored'' by Common Lisp and a special declaration is provided to allow
+  ignored formals.  ACL2 makes a distinction between ignored and irrelevant
+  formals.  Note however that if a variable is ~ilc[declare]d ~c[ignore]d or
+  ~c[ignorable], then it will not be reported as irrelevant.
 
   An example of an irrelevant formal is ~c[x] in the definition of ~c[fact]
   below.
   ~bv[]
   (defun fact (i x)
     (declare (xargs :guard (and (integerp i) (<= 0 i))))
-    (if (zerop i) 0 (* i (fact (1- i) (cons i x))))).
+    (if (zerop i) 1 (* i (fact (1- i) (cons i x))))).
   ~ev[]
   Observe that ~c[x] is only used in recursive calls of ~c[fact]; it never
-  ``gets out'' into the result.  ACL2 can detect some irrelevant
-  formals by a closure analysis on how the formals are used.  For
-  example, if the ~c[i]th formal is only used in the ~c[i]th argument position
-  of recursive calls, then it is irrelevant.  This is how ~c[x] is used
-  above.
+  ``gets out'' into the result.  ACL2 can detect some irrelevant formals by a
+  closure analysis on how the formals are used.  For example, if the ~c[i]th
+  formal is only used in the ~c[i]th argument position of recursive calls, then
+  it is irrelevant.  This is how ~c[x] is used above.
 
-  It is possible for a formal to appear only in recursive calls but
-  still be relevant.  For example, ~c[x] is ~st[not] irrelevant below, even
-  though it only appears in the recursive call.
+  It is possible for a formal to appear only in recursive calls but still be
+  relevant.  For example, ~c[x] is ~st[not] irrelevant below, even though it
+  only appears in the recursive call.
   ~bv[]
   (defun fn (i x) (if (zerop i) 0 (fn x (1- i))))
   ~ev[]
-  The key observation above is that while ~c[x] only appears in a
-  recursive call, it appears in an argument position, namely ~c[i]'s, that
-  is relevant.  (The function above can be admitted with a ~c[:]~ilc[guard]
-  requiring both arguments to be nonnegative integers and the ~c[:measure]
-  ~c[(+ i x)].)
+  The key observation above is that while ~c[x] only appears in a recursive
+  call, it appears in an argument position, namely ~c[i]'s, that is
+  relevant.  (The function above can be admitted with a ~c[:measure] of
+  ~c[(+ (nfix i) (nfix x))].)
 
-  Establishing that a formal is irrelevant, in the sense defined
-  above, can be an arbitrarily hard problem because it requires
-  theorem proving.  For example, is ~c[x] irrelevant below?
+  Establishing that a formal is irrelevant, in the sense defined above, can be
+  an arbitrarily hard problem because it requires theorem proving.  For
+  example, is ~c[x] irrelevant below?
   ~bv[]
   (defun test (i j k x) (if (p i j k) 0 x))
   ~ev[]
   Note that the value of ~c[(test i j k x)] is independent of ~c[x] ~-[] thus
-  making ~c[x] irrelevant ~-[] precisely if ~c[(p i j k)] is a theorem.
-  ACL2's syntactic analysis of a definition does not guarantee to
-  notice all irrelevant formals.
+  making ~c[x] irrelevant ~-[] precisely if ~c[(p i j k)] is a theorem.  ACL2's
+  syntactic analysis of a definition does not guarantee to notice all
+  irrelevant formals.
 
-  We regard the presence of irrelevant formals as an indication that
-  something is wrong with the definition.  We cause an error on such
-  definitions and suggest that you recode the definition so as to
-  eliminate the irrelevant formals.  If you must have an irrelevant
-  formal, one way to ``trick'' ACL2 into accepting the definition,
-  without slowing down the execution of your function, is to use the
-  formal in an irrelevant way in the ~il[guard].  For example, to admit
-  fact, above, with its irrelevant ~c[x] one might use
+  We regard the presence of irrelevant formals as an indication that something
+  is wrong with the definition.  We cause an error on such definitions and
+  suggest that you recode the definition so as to eliminate the irrelevant
+  formals.  If you must have an irrelevant formal, one way to ``trick'' ACL2
+  into accepting the definition, without slowing down the execution of your
+  function, is to use the formal in an irrelevant way in the ~il[guard].  For
+  example, to admit fact, above, with its irrelevant ~c[x] one might use
   ~bv[]
   (defun fact (i x)
     (declare (xargs :guard (and (integerp i) (<= 0 i) (equal x x))))
     (if (zerop i) 0 (* i (fact (1- i) (cons i x)))))
   ~ev[]
-  For those who really want to turn off this feature, we have
-  provided a way to use the ~ilc[acl2-defaults-table] for this purpose;
+  For those who really want to turn off this feature, we have provided a way to
+  use the ~ilc[acl2-defaults-table] for this purpose;
   ~pl[set-irrelevant-formals-ok].")
 
 (defun chk-logic-subfunctions (names0 names terms wrld str ctx state)

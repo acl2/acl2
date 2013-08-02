@@ -13511,15 +13511,129 @@
 
 (defmacro msg (str &rest args)
 
-; This macro returns a pair suitable giving to the fmt directive ~@.  Fmt is
-; defined much later.  But we need msg now because several of our macros
+; Fmt is defined much later.  But we need msg now because several of our macros
 ; generate calls of msg and thus msg must be a function when terms using those
 ; macros are translated.
 
-; In any case, suppose that #\0, say, is bound to the value of this function.
-; Then the fmt directive ~@0 will print out the string, str, above, in the
-; context of the alist in which the successive fmt variables #\0 through
-; possibly #\9 are bound to the successive elements of args.
+  ":Doc-Section ACL2::ACL2-built-ins
+
+  construct a ``message'' suitable for the ~c[~~@] directive of ~ilc[fmt]~/
+
+  ~l[fmt] for background on formatted printing with ACL2.
+
+  We document ~c[msg] precisely below, but first, we give an informal
+  introduction and illustrate with an example.  Suppose you are writing a
+  program that is to do some printing.  Typically, you will either pass the
+  ACL2 state around (~pl[programming-with-state]) and use formatted printing
+  functions that take the state as an argument (~pl[fmt])), or else you might
+  avoid using state by calling the utility, ~ilc[cw], to do you printing.
+  Alternatively, you might print error messages upon encountering illegal
+  situations; ~pl[er].  But there are times where instead of printing
+  immediately, you may prefer to pass messages around, for example to
+  accumulate them before printing a final message.  In such cases, it may be
+  desirable to construct ``message'' objects to pass around.
+
+  For example, consider the following pair of little programs.  The first
+  either performs a computation or prints an error, and the second calls the
+  first on two inputs.
+  ~bv[]
+
+  (defun invert1 (x)
+    (if (consp x)
+        (cons (cdr x) (car x))
+      (prog2$ (cw \"ERROR: ~~x0 expected a cons, but was given ~~x1.~~|\"
+                  'invert1 x)
+              nil)))
+
+  (defun invert2 (x1 x2)
+    (list (invert1 x1) (invert1 x2)))
+
+  ~ev[]
+  For example:
+  ~bv[]
+
+    ACL2 !>(invert1 '(3 . 4))
+    (4 . 3)
+    ACL2 !>(invert1 'a)
+    ERROR: INVERT1 expected a cons, but was given A.
+    NIL
+    ACL2 !>(invert2 '(3 . 4) '(5 . 6))
+    ((4 . 3) (6 . 5))
+    ACL2 !>(invert2 'a 'b)
+    ERROR: INVERT1 expected a cons, but was given A.
+    ERROR: INVERT1 expected a cons, but was given B.
+    (NIL NIL)
+    ACL2 !>
+
+  ~ev[]
+  Notice that when there are errors, there is no attempt to explain that these
+  are due to a call of ~c[invert2].  That could be fixed, of course, by
+  arranging for ~c[invert2] to print its own error; but for complicated
+  programs it can be awkward to coordinate printing from many sources.  So
+  let's try a different approach.  This time, the first function returns two
+  results.  The first result is an ``error indicator'' ~-[] either a message
+  object or ~c[nil] ~-[] while the second is the computed value (only of
+  interest when the first result is ~c[nil]).  Then the higher-level function
+  can print a single error message that includes the error message(s) from the
+  lower-level function, as shown below.
+  ~bv[]
+
+  (defun invert1a (x)
+    (if (consp x)
+        (mv nil
+            (cons (cdr x) (car x)))
+      (mv (msg \"ERROR: ~~x0 expected a cons, but was given ~~x1.~~|\"
+               'invert1a x)
+          nil)))
+
+  (defun invert2a (x1 x2)
+    (mv-let (erp1 y1)
+            (invert1a x1)
+            (mv-let (erp2 y2)
+                    (invert1a x2)
+                    (if erp1
+                        (if erp2
+                            (cw \"~~x0 failed with two errors:~~|  ~~@1  ~~@2\"
+                                'invert2a erp1 erp2)
+                          (cw \"~~x0 failed with one error:~~|  ~~@1\"
+                              'invert2a erp1))
+                      (if erp2
+                          (cw \"~~x0 failed with one error:~~|  ~~@1\"
+                              'invert2a erp2)
+                        (list y1 y2))))))
+  ~ev[]
+  For example:
+  ~bv[]
+    ACL2 !>(invert2a '(3 . 4) '(5 . 6))
+    ((4 . 3) (6 . 5))
+    ACL2 !>(invert2a '(3 . 4) 'b)
+    INVERT2A failed with one error:
+      ERROR: INVERT1A expected a cons, but was given B.
+    NIL
+    ACL2 !>(invert2a 'a 'b)
+    INVERT2A failed with two errors:
+      ERROR: INVERT1A expected a cons, but was given A.
+      ERROR: INVERT1A expected a cons, but was given B.
+    NIL
+    ACL2 !>
+  ~ev[]
+
+  If you study the example above, you might well understand ~c[msg].  But we
+  conclude with precise documentation.~/
+
+  ~bv[]
+  General Form:
+  (msg str arg1 ... argk)
+  ~ev[]
+  where ~c[str] is a string and ~c[k] is at most 9.
+
+  This macro returns a pair suitable for giving to the ~c[fmt] directive
+  ~c[~~@].  Thus, suppose that ~c[#\\c] is bound to the value of
+  ~c[(msg str arg1 ... argk)], where ~c[c] is a character and ~c[k] is at most
+  9.  Then the ~c[fmt] directive ~c[~~@c] will print out the string, ~c[str],
+  in the context of the alist in which the successive ~c[fmt] variables
+  ~c[#\\0], ~c[#\\1], ..., ~c[#\\k] are bound to the successive elements of
+  ~c[(arg1 ... argk)].~/"
 
   (declare (xargs :guard (<= (length args) 10)))
 

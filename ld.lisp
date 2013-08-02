@@ -21019,6 +21019,10 @@
   complete, which had not formerly been the case.  Thanks to Jared Davis for
   correspondence leading us to make this change.
 
+  The ~il[proof-checker] command ~c[(exit t)] now exits without a query (but
+  still prints an event to show the ~c[:INSTRUCTIONS]).  Thanks to Warren Hunt
+  for feedback leading us to make this change.
+
   ~st[NEW FEATURES]
 
   ACL2 can now be instructed to time activities using real time (wall clock

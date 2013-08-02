@@ -1704,11 +1704,11 @@
   ACL2 supports ~c[:instructions] as a hints keyword.  The following example
   forms the basis for our running example.  This example does not actually need
   hints, but imagine that the inductive step ~-[] which is \"Subgoal *1/2\"
-  ~-[] was proving difficult.  You could submit that goal to ~ilc[verify], do
-  an interactive proof, submit ~c[(exit t)] to obtain the list of
-  ~c[:instructions] (answering with `N' at the prompt, to complete the exit),
-  and then paste in those instructions.  When you submit the result event, you
-  might see the following.  Below we'll explain the hint processing.
+  ~-[] was difficult.  You could submit that goal to ~ilc[verify], do an
+  interactive proof, submit ~c[(exit t)] to obtain the list of
+  ~c[:instructions], and then paste in those instructions.  When you submit the
+  resulting event, you might see the following.  Below we'll explain the hint
+  processing.
   ~bv[]
   ACL2 !>(thm (equal (append (append x y) z)
                      (append x (append y z)))
@@ -1840,13 +1840,14 @@
   in the above output.  Normally one needs a trust tag (~pl[defttag]) to
   install a trusted clause-processor, but that is not the case for the built-in
   clause-processor, ~c[proof-checker-cl-proc].  Finally, we note that
-  ~c[:instructions] ~il[hints] are ``spliced'' in: the appropriate
-  ~c[:]~ilc[clause-processor] hint replaces the ~c[:instructions] hint, and the
-  other hints remain intact.  It may seems surprising that one can thus, for
-  example, use ~c[:instructions] and ~c[:in-theory] together; but although the
-  ~c[:in-theory] hint will have no effect on execution of the ~c[:instructions]
-  (see first bullet above), the ~c[:in-theory] hint will apply in the usual
-  manner to any child goes (~pl[hints-and-the-waterfall]).  End of Remark.
+  ~c[:instructions] ~il[hints] are ``spliced'' into the hints as follows: the
+  appropriate ~c[:]~ilc[clause-processor] hint replaces the ~c[:instructions]
+  hint, and the other hints remain intact.  It may seems surprising that one
+  can thus, for example, use ~c[:instructions] and ~c[:in-theory] together; but
+  although the ~c[:in-theory] hint will have no effect on execution of the
+  ~c[:instructions] (see first bullet above), the ~c[:in-theory] hint will
+  apply in the usual manner to any child goals (~pl[hints-and-the-waterfall]).
+  End of Remark.
 
   Now consider the case that the supplied instructions do not prove the goal.
   That is, suppose that the execution of those instructions results in a
@@ -1983,20 +1984,18 @@
                           (equal (reverse (reverse x)) x)))
   ->: bash
   ***** Now entering the theorem prover *****
+  Goal'
 
-  [Note:  A hint was supplied for our processing of the goal above.
-  Thanks!]
-
-  This simplifies, using the :definition REVERSE and the :type-prescription
-  rule REVAPPEND, to
+  ([ A key checkpoint:
 
   Goal'
   (IMPLIES (TRUE-LISTP X)
            (EQUAL (REVAPPEND (REVAPPEND X NIL) NIL)
-                  X)).
+                  X))
 
-  But we have been asked to pretend that this goal is subsumed by the
-  yet-to-be-proved |PROOF-CHECKER Goal'|.
+  Goal' is subsumed by a goal yet to be proved.
+
+  ])
 
   Q.E.D.
 
@@ -2007,71 +2006,17 @@
   the following subgoals remain to be proved:
     (MAIN . 1).
   Now proving (MAIN . 1).
-  ->: th
+  ->: th ; show current goal (\"th\" for \"theorem\")
   *** Top-level hypotheses:
   1. (TRUE-LISTP X)
 
   The current subterm is:
   (EQUAL (REVAPPEND (REVAPPEND X NIL) NIL)
          X)
-  ->: 1
-  ->: sr ; show-rewrites
-
-  1. REVAPPEND-REVAPPEND (disabled)
-    New term: (REVAPPEND NIL (APPEND X NIL))
-    Hypotheses: <none>
-    Equiv: EQUAL
-
-  2. REVAPPEND
-    New term: (AND (CONSP (REVAPPEND X NIL))
-                   (REVAPPEND (CDR (REVAPPEND X NIL))
-                              (LIST (CAR (REVAPPEND X NIL)))))
-    Hypotheses: <none>
-    Equiv: EQUAL
-  ->: (r 1) ; rewrite with rule #1 above
-  Rewriting with REVAPPEND-REVAPPEND.
-  ->: exit
-  Exiting....
-   NIL
-  ACL2 !>(verify (implies (true-listp x)
-                          (equal (reverse (reverse x)) x)))
-  ->: bash
-  ***** Now entering the theorem prover *****
-
-  [Note:  A hint was supplied for our processing of the goal above.
-  Thanks!]
-
-  This simplifies, using the :definition REVERSE and the :type-prescription
-  rule REVAPPEND, to
-
-  Goal'
-  (IMPLIES (TRUE-LISTP X)
-           (EQUAL (REVAPPEND (REVAPPEND X NIL) NIL)
-                  X)).
-
-  But we have been asked to pretend that this goal is subsumed by the
-  yet-to-be-proved |PROOF-CHECKER Goal'|.
-
-  Q.E.D.
-
-
-  Creating one new goal:  (MAIN . 1).
-
-  The proof of the current goal, MAIN, has been completed.  However,
-  the following subgoals remain to be proved:
-    (MAIN . 1).
-  Now proving (MAIN . 1).
-  ->: th
-  *** Top-level hypotheses:
-  1. (TRUE-LISTP X)
-
-  The current subterm is:
+  ->: p ; show current subterm only
   (EQUAL (REVAPPEND (REVAPPEND X NIL) NIL)
          X)
-  ->: p
-  (EQUAL (REVAPPEND (REVAPPEND X NIL) NIL)
-         X)
-  ->: 1
+  ->: 1 ; dive to first argument
   ->: p
   (REVAPPEND (REVAPPEND X NIL) NIL)
   ->: sr ; show-rewrites
@@ -2091,30 +2036,23 @@
   Rewriting with REVAPPEND-REVAPPEND.
   ->: p
   (REVAPPEND NIL (APPEND X NIL))
-  ->: top
+  ->: top ; move to the top of the conclusion, making it the current subterm
+  ->: p
+  (EQUAL (REVAPPEND NIL (APPEND X NIL)) X)
   ->: prove ; finish the proof
   ***** Now entering the theorem prover *****
-
-  But simplification reduces this to T, using the :definition REVAPPEND,
-  the :executable-counterpart of CONSP, primitive type reasoning and
-  the :rewrite rule APPEND-TO-NIL.
 
   Q.E.D.
 
   *!*!*!*!*!*!* All goals have been proved! *!*!*!*!*!*!*
   You may wish to exit.
-  ->: (exit t) ; to get :instructions; could give name, or (exit t nil t)
+  ->: (exit t) ; the argument, t, causes :instructions to be printed
   (DEFTHM T
           (IMPLIES (TRUE-LISTP X)
                    (EQUAL (REVERSE (REVERSE X)) X))
           :INSTRUCTIONS (:BASH (:DV 1)
                                (:REWRITE REVAPPEND-REVAPPEND)
                                :TOP :PROVE))
-
-  ACL2 Query (ACL2-PC::EXIT):
-  Do you want to submit this event?  Possible replies are:
-  Y (Yes), R (yes and Replay commands), N (No, but exit), A (Abort exiting).
-     (Y, R, N or A):  n
    NIL
   ACL2 !>(thm
           (IMPLIES (TRUE-LISTP X)
@@ -2124,18 +2062,18 @@
                    (:BASH (:DV 1)
                           (:REWRITE REVAPPEND-REVAPPEND)
                           :TOP :PROVE))))
+  Goal'
 
-  [Note:  A hint was supplied for our processing of the goal above.
-  Thanks!]
+  Q.E.D.
 
-  But the trusted :CLAUSE-PROCESSOR function PROOF-CHECKER-CL-PROC replaces
-  this goal by T.
+  Q.E.D.
 
   Q.E.D.
 
   Summary
   Form:  ( THM ...)
   Rules: NIL
+  Hint-events: ((:CLAUSE-PROCESSOR PROOF-CHECKER-CL-PROC))
   Time:  0.00 seconds (prove: 0.00, print: 0.00, other: 0.00)
 
   Proof succeeded.
