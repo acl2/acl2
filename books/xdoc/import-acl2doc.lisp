@@ -147,40 +147,6 @@ certain topics into more appropriate places.)</p>")
 ; BOZO add some documentation for built-in functions that aren't documented.
 ; Eventually these sorts of things should be moved into ACL2 itself.
 
-(defxdoc msg
-  :parents (fmt cw er)
-  :short "@(call msg) is like @(see cw) but, instead of printing the message,
-it returns a \"message object\" that can be printed later using, e.g., the
-@('~@') @(see fmt) directive."
-
-  :long "<p>Usually you won't care <i>how</i> this works, but basically, it
-just conses @('str') onto a suitable alist, for instance:</p>
-
-@({
- (msg \"Name is ~s0 and dexterity is ~x1.\" \"Bobo\" 42)
-  -->
- (\"Name is ~s0 and dexterity is ~x1.\"
-   . ((#\\0 . \"Bobo\")
-      (#\\1 . 42)))
-})
-
-<p>These objects can be displayed later using the @('~@') @(see fmt) directive,
-which is understood by commands like @(see cw) or @(see er).  For instance:</p>
-
-@({
-    (let* ((filename \"foo.txt\")
-           (err      (msg \"Can't open file ~s0\" filename)))
-      (cw \"Error: ~@0.~%\" err))
-})
-
-<p>Prints @('Error: Can't open file foo.txt').</p>
-
-<p>@('Msg') is generally useful for error handling.  E.g., you might write a
-function that returns @('(mv errmsg? result)'), where the @('errmsg?') is
-either @('nil') to indicate success, or an error @('msg') that explains what
-happened on failure.</p>")
-
-
 
 #!XDOC
 (defmacro import-acl2doc ()
