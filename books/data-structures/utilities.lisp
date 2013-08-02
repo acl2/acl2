@@ -100,7 +100,7 @@
 ; intern-in-package-of-symbol
 ; keyword-value-listp
 ; member-equal
-; msg
+  msg
 ; program
   translate-declaration-to-guard-var-lst
 ; true-listp
