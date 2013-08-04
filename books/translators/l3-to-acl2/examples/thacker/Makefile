@@ -58,7 +58,7 @@ run-check.out: run.cert
 	@echo 'Checking that the model runs as expected.'
 	@echo '(include-book "run")' > workxxx.$@
 	@echo '(run-output st$$ state)' >> workxxx.$@
-	@$(ACL2) < workxxx.$@ > run-check.txt
+	@$(ACL2) < workxxx.$@ > run-check.out
 	@echo "diff run-check.txt gold/run-check.txt"
 	@diff run-check.txt gold/run-check.txt
 	@echo "Successfully completed $@" > $@
