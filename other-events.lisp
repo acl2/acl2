@@ -9072,7 +9072,8 @@
         (eval-event-lst
          0 nil
          ev-lst
-         progn!p ; quietp
+         (or (ld-skip-proofsp state)
+             progn!p) ; quietp
          (eval-event-lst-environment in-encapsulatep state)
          (f-get-global 'in-local-flg state)
          nil
