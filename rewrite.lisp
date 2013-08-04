@@ -8040,18 +8040,19 @@
   utility for watching the activity of the rewriter and some other proof
   processes, in real time.  This utility is called ``dmr'', which is an acronym
   for ``dynamically monitor rewrites''.  The utility comes in two parts: an
-  ACL2 component that frequently writes a file (the ``dmr file'') containing
-  the relevant information, and an Emacs component that frequently displays the
-  contents of that file in an Emacs buffer (the ``dmr buffer'').  Other editors
-  could, in principle, be programmed to display that file; anyone developing
-  such a capability is invited to contribute it to the ACL2 community.
+  ACL2 component that frequently updates a file (the ``dmr file'') containing
+  the relevant information, and an Emacs component that frequently updates the
+  an Emacs buffer (the ``dmr buffer'') with the contents of that file.  Other
+  editors could, in principle, be programmed to display that file; anyone
+  developing such a capability is invited to contribute it to the ACL2
+  community.
 
   The dmr utility can be extremely helpful for expensive proofs, especially
-  when ACL2 is not providing any output.  The ~il[break-rewrite] and
-  ~ilc[accumulated-persistence] utilities may be a bit easier to use, so you
-  might want to try those first.  But the dmr utility can be a very helpful
-  debugging aide, as it can visually give you a sense of where ACL2 is spending
-  its time.
+  when ACL2 is not providing any output to the terminal.  The
+  ~il[break-rewrite] and ~ilc[accumulated-persistence] utilities may be a bit
+  easier to use, so you might want to try those first.  But the dmr utility can
+  be a very helpful debugging aide, as it can visually give you a sense of
+  where ACL2 is spending its time.
 
   The Emacs portion of this utility is already loaded if you load the
   distributed Emacs file ~c[emacs/emacs-acl2.el].  Otherwise, invoke the
@@ -8180,8 +8181,10 @@
   In order to update the dmr file with the latest stack information, interrupt
   ACL2 and then evaluate: ~c[(dmr-flush)].  In order to support resumption of
   the interrupted proof (assuming your host Common Lisp supports resumption),
-  evaluation of ~c[(dmr-start)] automatically causes evaluation of the form
-  ~c[(set-debugger-enable t)]; ~pl[set-debugger-enable].
+  evaluation of ~c[(dmr-start)] will automatically enable the debugger if it is
+  not already enabled and not fully disabled with value
+  ~c[:never] (~pl[set-debugger-enable]).  If such automatic enabling takes
+  place, then ~c[(dmr-stop)] will restore the old setting of the debugger.
 
   Note for users of the experimental extension ACL2(p) (~pl[parallelism]): when
   waterfall-parallelism has been set to a non-~c[nil] value

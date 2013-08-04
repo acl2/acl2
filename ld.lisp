@@ -21014,6 +21014,25 @@
   still prints an event to show the ~c[:INSTRUCTIONS]).  Thanks to Warren Hunt
   for feedback leading us to make this change.
 
+  We made the following minor changes to ~c[dmr]; ~pl[dmr].  First, if ~c[dmr]
+  monitoring is enabled, then ~c[(dmr-start)] will have no effect other than to
+  print a corresponding observation, and if monitoring is disabled, then
+  ~c[(dmr-stop)] will have no effect other than to print a corresponding
+  observation.  Second, it had been the case that when ~c[(dmr-start)] is
+  invoked, the debugger was always automatically enabled with value
+  ~c[t] (~pl[set-debugger-enable]), and the debugger remained enabled when
+  ~c[(dmr-stop)] was invoked.  Now, the debugger is only enabled by
+  ~c[(dmr-start)] if it is not already enabled and does not have setting
+  ~c[:never]; and if such automatic enabling takes place, then the old setting
+  for the debugger is restored by ~c[(dmr-stop)].  Furthermore, if the value of
+  ~il[state] global variable ~c['debugger-enable] is ~c[:bt], then the new
+  value will be ~c[:break-bt], not ~c[t].
+
+  When a call of ~ilc[progn] is executed in the ACL2 loop, its constituent
+  ~il[events] and their results are printed, just as was already done for calls
+  of ~ilc[encapsulate].  Thanks to Jared Davis for a conversation causing us to
+  consider this change.
+
   ~st[NEW FEATURES]
 
   ACL2 can now be instructed to time activities using real time (wall clock
@@ -21047,6 +21066,9 @@
 
   Splitter output for type ~c[if-intro] (~pl[splitter]) could formerly occur
   even when at most one subgoal is generated.  This has been fixed.
+
+  Fixed a bug in ~ilc[wof], hence in ~ilc[psof] (which uses ~c[wof]), that was
+  causing the printing of a bogus error message.
 
   ~st[CHANGES AT THE SYSTEM LEVEL]
 
@@ -22826,9 +22848,14 @@
 
 (defun dmr-stop-fn (state)
   (declare (xargs :guard (state-p state)))
-  #-acl2-loop-only
-  (dmr-stop-fn-raw)
-  (f-put-global 'dmrp nil state))
+  (let ((dmrp (f-get-global 'dmrp state)))
+    (cond (dmrp #-acl2-loop-only
+                (dmr-stop-fn-raw)
+                (if (consp dmrp)
+                    (set-debugger-enable-fn (car dmrp) state)
+                  state))
+          (t (observation 'dmr-stop
+                          "Skipping dmr-stop (dmr is already stopped).")))))
 
 (defmacro dmr-stop ()
   '(dmr-stop-fn #+acl2-loop-only state
@@ -22836,12 +22863,25 @@
 
 (defun dmr-start-fn (state)
   (declare (xargs :guard (state-p state)))
-  (pprogn
-   (dmr-stop-fn state)
-   (set-debugger-enable-fn t state) ; supports interactive use of dmr-flush
-   #-acl2-loop-only
-   (dmr-start-fn-raw state)
-   (f-put-global 'dmrp t state)))
+  (cond ((f-get-global 'dmrp state)
+         (observation 'dmr-start
+                      "Skipping dmr-start (dmr is already started)."))
+        (t (let* ((old-debugger-enable (f-get-global 'debugger-enable state))
+                  (new-debugger-enable ; for interactive use of dmr-flush
+                   (case old-debugger-enable
+                     ((nil) t)
+                     (:bt :break-bt))))
+             (pprogn
+              (if new-debugger-enable
+                  (set-debugger-enable-fn new-debugger-enable state)
+                state)
+              #-acl2-loop-only
+              (dmr-start-fn-raw state)
+              (f-put-global 'dmrp
+                            (if new-debugger-enable
+                                (list old-debugger-enable)
+                              t)
+                            state))))))
 
 (defmacro dmr-start ()
   '(dmr-start-fn #+acl2-loop-only state
@@ -27267,16 +27307,16 @@ accompanying <i>``File Path''</i> shown at the end of each book's text.
       (pprogn
        (princ$ "-*- Mode: auto-revert -*-" wof-chan state)
        (newline wof-chan state)
-       (state-global-let*
-        ((standard-co wof-chan set-standard-co-state)
-         (proofs-co wof-chan set-proofs-co-state))
-        (mv-let (erp val state)
+       (mv-let (erp val state)
+               (state-global-let*
+                ((standard-co wof-chan set-standard-co-state)
+                 (proofs-co wof-chan set-proofs-co-state))
                 (check-vars-not-free
                  (wof-chan)
-                 ,form)
-                (pprogn (close-output-channel wof-chan state)
-                        (cond (erp (silent-error state))
-                              (t (value val)))))))))))
+                 ,form))
+               (pprogn (close-output-channel wof-chan state)
+                       (cond (erp (silent-error state))
+                             (t (value val))))))))))
 
 (defmacro wof (filename form) ; Acronym: With Output File
 
