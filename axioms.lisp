@@ -38374,7 +38374,7 @@
   ~ev[]"
 
   `(state-global-let*
-    ((inhibit-output-lst (cons 'summary (@ inhibit-output-lst))))
+    ((inhibit-output-lst (list* 'event 'summary (@ inhibit-output-lst))))
     (progn (table acl2-defaults-table :enforce-redundancy ,x)
            (table acl2-defaults-table :enforce-redundancy))))
 
@@ -38424,7 +38424,7 @@
   ~ev[]"
 
   `(state-global-let*
-    ((inhibit-output-lst (cons 'summary (@ inhibit-output-lst))))
+    ((inhibit-output-lst (list* 'event 'summary (@ inhibit-output-lst))))
     (progn (table acl2-defaults-table :ignore-doc-string-error ,x)
            (table acl2-defaults-table :ignore-doc-string-error))))
 
@@ -38496,7 +38496,7 @@
   ~c[(default-verify-guards-eagerness (w state))]."
 
   `(state-global-let*
-    ((inhibit-output-lst (cons 'summary (@ inhibit-output-lst))))
+    ((inhibit-output-lst (list* 'event 'summary (@ inhibit-output-lst))))
     (progn (table acl2-defaults-table :verify-guards-eagerness ,x)
            (table acl2-defaults-table :verify-guards-eagerness))))
 
@@ -38564,7 +38564,7 @@
   :cited-by Programming"
 
   `(state-global-let*
-    ((inhibit-output-lst (cons 'summary (@ inhibit-output-lst))))
+    ((inhibit-output-lst (list* 'event 'summary (@ inhibit-output-lst))))
      (progn (table acl2-defaults-table :compile-fns ,x)
             (table acl2-defaults-table :compile-fns))))
 
@@ -38640,7 +38640,7 @@
   ~ilc[acl2-count].~/"
 
   `(state-global-let*
-    ((inhibit-output-lst (cons 'summary (@ inhibit-output-lst))))
+    ((inhibit-output-lst (list* 'event 'summary (@ inhibit-output-lst))))
      (progn (table acl2-defaults-table :measure-function ',name)
             (table acl2-defaults-table :measure-function))))
 
@@ -38690,7 +38690,7 @@
   arguments decreases according to ~c[rel].~/"
 
   `(state-global-let*
-    ((inhibit-output-lst (cons 'summary (@ inhibit-output-lst))))
+    ((inhibit-output-lst (list* 'event 'summary (@ inhibit-output-lst))))
      (progn (table acl2-defaults-table :well-founded-relation ',rel)
             (table acl2-defaults-table :well-founded-relation))))
 
@@ -38792,7 +38792,7 @@
   ~l[embedded-event-form]."
 
   '(state-global-let*
-    ((inhibit-output-lst (cons 'summary (@ inhibit-output-lst))))
+    ((inhibit-output-lst (list* 'summary (@ inhibit-output-lst))))
     (er-progn (table acl2-defaults-table :defun-mode :logic)
               (value :invisible))))
 
@@ -38851,7 +38851,7 @@
   ~l[embedded-event-form]."
 
   '(state-global-let*
-    ((inhibit-output-lst (cons 'summary (@ inhibit-output-lst))))
+    ((inhibit-output-lst (list* 'summary (@ inhibit-output-lst))))
     (er-progn (table acl2-defaults-table :defun-mode :program)
               (value :invisible))))
 
@@ -39128,7 +39128,7 @@
   ~c[(set-bogus-defun-hints-ok :warn)].~/~/"
 
   `(state-global-let*
-    ((inhibit-output-lst (cons 'summary (@ inhibit-output-lst))))
+    ((inhibit-output-lst (list* 'event 'summary (@ inhibit-output-lst))))
      (progn (table acl2-defaults-table :bogus-defun-hints-ok ,x)
             (table acl2-defaults-table :bogus-defun-hints-ok))))
 
@@ -39183,7 +39183,7 @@
   :cited-by Programming"
 
   `(state-global-let*
-    ((inhibit-output-lst (cons 'summary (@ inhibit-output-lst))))
+    ((inhibit-output-lst (list* 'event 'summary (@ inhibit-output-lst))))
      (progn (table acl2-defaults-table :bogus-mutual-recursion-ok ,x)
             (table acl2-defaults-table :bogus-mutual-recursion-ok))))
 
@@ -39602,7 +39602,7 @@
 ; not available for the expression of that event.
 
   `(state-global-let*
-    ((inhibit-output-lst (cons 'summary (@ inhibit-output-lst))))
+    ((inhibit-output-lst (list* 'event 'summary (@ inhibit-output-lst))))
     (er-progn
      (chk-ruler-extenders ,x soft 'set-ruler-extenders (w state))
      (progn
@@ -39655,7 +39655,7 @@
   :cited-by Programming"
 
   `(state-global-let*
-    ((inhibit-output-lst (cons 'summary (@ inhibit-output-lst))))
+    ((inhibit-output-lst (list* 'event 'summary (@ inhibit-output-lst))))
      (progn (table acl2-defaults-table :irrelevant-formals-ok ,x)
             (table acl2-defaults-table :irrelevant-formals-ok))))
 
@@ -39704,7 +39704,7 @@
   :cited-by Programming"
 
   `(state-global-let*
-    ((inhibit-output-lst (cons 'summary (@ inhibit-output-lst))))
+    ((inhibit-output-lst (list* 'event 'summary (@ inhibit-output-lst))))
      (progn (table acl2-defaults-table :ignore-ok ,x)
             (table acl2-defaults-table :ignore-ok))))
 
@@ -39757,7 +39757,7 @@
   ~c[:inhibit-warnings] is entirely irrelevant."
 
   `(state-global-let*
-    ((inhibit-output-lst (cons 'summary (@ inhibit-output-lst))))
+    ((inhibit-output-lst (list* 'event 'summary (@ inhibit-output-lst))))
     (progn (table acl2-defaults-table :inhibit-warnings ',lst)
            (table acl2-defaults-table :inhibit-warnings))))
 
@@ -39952,7 +39952,7 @@
   "
 
   `(state-global-let*
-    ((inhibit-output-lst (cons 'summary (@ inhibit-output-lst))))
+    ((inhibit-output-lst (list* 'event 'summary (@ inhibit-output-lst))))
     (progn (table acl2-defaults-table :state-ok ,x)
            (table acl2-defaults-table :state-ok))))
 
@@ -40008,7 +40008,7 @@
   Thus, the mode may be set locally in books."
 
   `(state-global-let*
-    ((inhibit-output-lst (cons 'summary (@ inhibit-output-lst))))
+    ((inhibit-output-lst (list* 'event 'summary (@ inhibit-output-lst))))
     (progn (table acl2-defaults-table :let*-abstractionp ,x)
            (table acl2-defaults-table :let*-abstractionp))))
 
@@ -40088,7 +40088,7 @@
   The default limit is ~c[(nil nil)]."
 
   `(state-global-let*
-    ((inhibit-output-lst (cons 'summary (@ inhibit-output-lst))))
+    ((inhibit-output-lst (list* 'event 'summary (@ inhibit-output-lst))))
     (progn (table acl2-defaults-table :backchain-limit
                   (let ((limit ,limit))
                     (if (atom limit)
@@ -40317,7 +40317,7 @@
   The initial default backchain-limit is ~c[nil]."
 
   `(state-global-let*
-    ((inhibit-output-lst (cons 'summary (@ inhibit-output-lst))))
+    ((inhibit-output-lst (list* 'event 'summary (@ inhibit-output-lst))))
     (progn (table acl2-defaults-table :default-backchain-limit
                   (let ((limit ,limit))
                     (if (atom limit)
@@ -40565,7 +40565,7 @@
   forgotten when returning from that call.~/"
 
   `(state-global-let*
-    ((inhibit-output-lst (cons 'summary (@ inhibit-output-lst))))
+    ((inhibit-output-lst (list* 'event 'summary (@ inhibit-output-lst))))
     (pprogn
      (let ((rec (f-get-global 'step-limit-record state))
            (limit (or ,limit *default-step-limit*)))
@@ -40706,7 +40706,7 @@
   For a different but somewhat related concept, ~pl[backchain-limit]."
 
   `(state-global-let*
-    ((inhibit-output-lst (cons 'summary (@ inhibit-output-lst))))
+    ((inhibit-output-lst (list* 'event 'summary (@ inhibit-output-lst))))
     (progn (table acl2-defaults-table :rewrite-stack-limit
                   ,(if (or (null limit) (equal limit (kwote nil)))
                        (1- (expt 2 28))
@@ -40813,7 +40813,7 @@
   nu-rewriter."
 
   `(state-global-let*
-    ((inhibit-output-lst (cons 'summary (@ inhibit-output-lst))))
+    ((inhibit-output-lst (list* 'event 'summary (@ inhibit-output-lst))))
     (progn (table acl2-defaults-table :nu-rewriter-mode ,x)
            (table acl2-defaults-table :nu-rewriter-mode))))
 
@@ -41011,7 +41011,7 @@
   the standard proofs output.~/"
 
   `(state-global-let*
-    ((inhibit-output-lst (cons 'summary (@ inhibit-output-lst))))
+    ((inhibit-output-lst (list* 'event 'summary (@ inhibit-output-lst))))
     (progn (table acl2-defaults-table :case-split-limitations
                   (let ((lst ,lst))
                     (cond ((eq lst nil)
@@ -41237,7 +41237,7 @@
 ; :cited-by free-variables add-match-free-override set-match-free-error
 
   `(state-global-let*
-    ((inhibit-output-lst (cons 'summary (@ inhibit-output-lst))))
+    ((inhibit-output-lst (list* 'event 'summary (@ inhibit-output-lst))))
      (progn (table acl2-defaults-table :match-free-default ,x)
             (table acl2-defaults-table :match-free-default))))
 
@@ -41398,7 +41398,7 @@
 ; :cited-by free-variables set-match-free-default set-match-free-error
 
   `(state-global-let*
-    ((inhibit-output-lst (cons 'summary (@ inhibit-output-lst))))
+    ((inhibit-output-lst (list* 'event 'summary (@ inhibit-output-lst))))
     ,(cond
       ((eq flg :clear)
        (cond
@@ -41631,7 +41631,7 @@
   The initial value is ~c[nil]."
 
   `(state-global-let*
-    ((inhibit-output-lst (cons 'summary (@ inhibit-output-lst))))
+    ((inhibit-output-lst (list* 'event 'summary (@ inhibit-output-lst))))
      (progn (table acl2-defaults-table :non-linearp ,toggle)
             (table acl2-defaults-table :non-linearp))))
 
@@ -41801,7 +41801,7 @@
   settings of those two flags."
 
   `(state-global-let*
-    ((inhibit-output-lst (cons 'summary (@ inhibit-output-lst))))
+    ((inhibit-output-lst (list* 'event 'summary (@ inhibit-output-lst))))
      (progn (table acl2-defaults-table :tau-auto-modep ,toggle)
             (table acl2-defaults-table :tau-auto-modep))))
 
@@ -42068,7 +42068,7 @@
 
   (declare (xargs :guard (symbolp tag-name)))
   `(state-global-let*
-    ((inhibit-output-lst (cons 'summary (@ inhibit-output-lst))))
+    ((inhibit-output-lst (list* 'event 'summary (@ inhibit-output-lst))))
     (progn (table acl2-defaults-table
                   :ttag
                   ',(and tag-name
@@ -42867,7 +42867,7 @@
   outside the enclosing ~ilc[encapsulate] or book.~/~/"
 
   `(state-global-let*
-    ((inhibit-output-lst (cons 'summary (@ inhibit-output-lst))))
+    ((inhibit-output-lst (list* 'event 'summary (@ inhibit-output-lst))))
     (progn (table default-hints-table t ,lst)
            (table default-hints-table t))))
 
@@ -42937,7 +42937,7 @@
   outside the enclosing ~ilc[encapsulate] or book.~/~/"
 
   `(state-global-let*
-    ((inhibit-output-lst (cons 'summary (@ inhibit-output-lst))))
+    ((inhibit-output-lst (list* 'event 'summary (@ inhibit-output-lst))))
     (progn (table default-hints-table t
                   (if ,at-end
                       (append (default-hints world) ,lst)
@@ -43001,7 +43001,7 @@
   outside the enclosing ~ilc[encapsulate] or book.~/~/"
 
   `(state-global-let*
-    ((inhibit-output-lst (cons 'summary (@ inhibit-output-lst))))
+    ((inhibit-output-lst (list* 'event 'summary (@ inhibit-output-lst))))
     (progn (table default-hints-table t
                   (set-difference-equal (default-hints world) ,lst))
            (table default-hints-table t))))
@@ -43014,7 +43014,7 @@
 #+acl2-loop-only
 (defmacro set-override-hints-macro (lst at-end ctx)
   `(state-global-let*
-    ((inhibit-output-lst (cons 'summary (@ inhibit-output-lst))))
+    ((inhibit-output-lst (list* 'summary (@ inhibit-output-lst))))
     (set-override-hints-fn ,lst ,at-end ,ctx (w state) state)))
 
 #-acl2-loop-only
@@ -43430,7 +43430,7 @@
   in which it occurs.~/~/"
 
   `(state-global-let*
-    ((inhibit-output-lst (cons 'summary (@ inhibit-output-lst))))
+    ((inhibit-output-lst (list* 'event 'summary (@ inhibit-output-lst))))
     (progn (table rw-cache-state-table t ,val)
            (table rw-cache-state-table t))))
 
@@ -48797,13 +48797,21 @@ Lisp definition."
 (defun set-debugger-enable-fn (val state)
   (declare (xargs :guard (and (state-p state)
                               (member-eq val '(t nil :never :break :bt
-                                                 :break-bt :bt-break)))))
-  (f-put-global 'debugger-enable val state)
+                                                 :break-bt :bt-break)))
+                  :guard-hints (("Goal" :in-theory (enable state-p1)))))
   #+(and (not acl2-loop-only)
          (and gcl (not cltl2)))
   (when (live-state-p state)
-    (setq lisp::*break-enable* (debugger-enabledp state))
-    state))
+    (setq lisp::*break-enable* (debugger-enabledp state)))
+  (pprogn
+   (f-put-global 'debugger-enable val state)
+   (if (consp (f-get-global 'dmrp state))
+
+; Then user invoked this function, so avoid having a later stop-dmr change the
+; value of 'debugger-enable.
+
+       (f-put-global 'dmrp t state)
+     state)))
 
 ; See comment in true-listp-cadr-assoc-eq-for-open-channels-p.
 (in-theory (disable true-listp-cadr-assoc-eq-for-open-channels-p))

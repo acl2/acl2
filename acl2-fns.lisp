@@ -1257,7 +1257,8 @@ notation causes an error and (b) the use of ,. is not permitted."
 ; Finally, consider namestringp.  If nil, then as above we either return nil or
 ; the truename (a pathname object).  Otherwise, we return the namestring of
 ; such a truename, with the following treatment if that truename is nil: return
-; nil if namestringp is :safe, else cause an error.
+; nil if namestringp is :safe, else cause an error, where if namestringp is a
+; msgp then incorporate it into the error message.
 
   (when (pathnamep filename)
     (setq filename (namestring filename)))
@@ -1296,8 +1297,11 @@ notation causes an error and (b) the use of ,. is not permitted."
            (cond ((eq namestringp :safe) nil)
                  (t (qfuncall
                      interface-er
-                     "Unable to obtain the truename of file ~x0."
-                     filename))))
+                     "Unable to obtain the truename of file ~x0.~@1"
+                     filename
+                     (if (qfuncall msgp namestringp)
+                         (qfuncall msg "  ~@0" namestringp)
+                       "")))))
           (t (namestring truename)))))
 
 (defun our-pwd ()
@@ -1307,7 +1311,7 @@ notation causes an error and (b) the use of ,. is not permitted."
 ; make invokes another make in a different directory.
 
   (qfuncall pathname-os-to-unix
-            (our-truename "" t)
+            (our-truename "" "Note: Calling OUR-TRUENAME from OUR-PWD.")
             (get-os)
             *the-live-state*))
 

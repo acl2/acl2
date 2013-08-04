@@ -20973,6 +20973,37 @@
 ;   (thm (equal (car (cons 3 4)) 3)
 ;        :hints (("Goal" :by my-thm)))
 
+; (GCL only) Just below is a book, certifiable in ACL2 Version_6.2,
+; illustrating the "obscure soundness bug due to an error in the GCL
+; implementation of set-debugger-enable".  The problem was that the definition
+; of set-debugger-enable-fn ended with #-acl2-loop-only code of the form (when
+; (live-state-p state) ... state), which erroneously returns nil for a non-live
+; state.
+;
+;   (in-package "ACL2")
+;
+;   (defthm false-formula
+;     (equal (set-debugger-enable-fn nil (build-state))
+;            nil)
+;     :rule-classes nil)
+;
+;   (defthm true-formula
+;     (implies (state-p1 s)
+;              (state-p1 (set-debugger-enable-fn nil s)))
+;     :hints (("Goal" :in-theory (enable state-p1)))
+;     :rule-classes nil)
+;
+;   (defthm contradiction
+;     nil
+;     :hints (("Goal"
+;              :use (false-formula
+;                    (:instance true-formula
+;                               (s (build-state))))))
+;     :rule-classes nil)
+
+; Improved our-truename (definition and calls) so that in case of an error, we
+; get additional information.
+
   :doc
   ":Doc-Section release-notes
 
@@ -21007,26 +21038,28 @@
   optional, and deprecated.  A non-local version (~c[set-ld-keyword-aliases!])
   has been added, along with corresponding utilities ~c[add-keyword-alias] and
   ~c[add-keyword-alias!] for adding a single keyword alias.
-  ~l[ld-keyword-aliases].  Thanks to Jared Davis for correspondence that
-  ultimately led us to make this change.
+  ~l[ld-keyword-aliases].  Thanks to Jared Davis for correspondence that led us
+  to make this change.
 
   The ~il[proof-checker] command ~c[(exit t)] now exits without a query (but
   still prints an event to show the ~c[:INSTRUCTIONS]).  Thanks to Warren Hunt
   for feedback leading us to make this change.
 
-  We made the following minor changes to ~c[dmr]; ~pl[dmr].  First, if ~c[dmr]
-  monitoring is enabled, then ~c[(dmr-start)] will have no effect other than to
-  print a corresponding observation, and if monitoring is disabled, then
-  ~c[(dmr-stop)] will have no effect other than to print a corresponding
-  observation.  Second, it had been the case that when ~c[(dmr-start)] is
-  invoked, the debugger was always automatically enabled with value
-  ~c[t] (~pl[set-debugger-enable]), and the debugger remained enabled when
-  ~c[(dmr-stop)] was invoked.  Now, the debugger is only enabled by
-  ~c[(dmr-start)] if it is not already enabled and does not have setting
-  ~c[:never]; and if such automatic enabling takes place, then the old setting
-  for the debugger is restored by ~c[(dmr-stop)].  Furthermore, if the value of
-  ~il[state] global variable ~c['debugger-enable] is ~c[:bt], then the new
-  value will be ~c[:break-bt], not ~c[t].
+  We made the following minor changes to the behavior or ~c[dmr]; ~pl[dmr].
+  First, if ~c[dmr] monitoring is enabled, then ~c[(dmr-start)] will have no
+  effect other than to print a corresponding observation, and if monitoring is
+  disabled, then ~c[(dmr-stop)] will have no effect other than to print a
+  corresponding observation.  Second, it had been the case that when
+  ~c[(dmr-start)] is invoked, the debugger was always automatically enabled
+  with value ~c[t] (~pl[set-debugger-enable]), and the debugger remained
+  enabled when ~c[(dmr-stop)] was invoked.  Now, the debugger is only enabled
+  by ~c[(dmr-start)] if it is not already enabled and does not have setting
+  ~c[:never].  Moreover, if such automatic enabling takes place, then the old
+  setting for the debugger is restored by ~c[(dmr-stop)] unless
+  ~ilc[set-debugger-enable] has first been called after that automatic
+  enabling.  Finally, if the value of ~il[state] global variable
+  ~c['debugger-enable] is ~c[:bt], then the new value will be ~c[:break-bt],
+  not ~c[t].
 
   When a call of ~ilc[progn] is executed in the ACL2 loop, its constituent
   ~il[events] and their results are printed, just as was already done for calls
@@ -21059,6 +21092,10 @@
   ~eq[]
 
   ~st[BUG FIXES]
+
+  (GCL only) Fixed an obscure soundness bug due to an error in the GCL
+  implementation of ~ilc[set-debugger-enable].  For details, see the relevant
+  comment in the ACL2 source code under ~c[(deflabel note-6-3 ...)].
 
   Fixed a bug in the case of a field of a (concrete) stobj that is an abstract
   stobj (~pl[nested-stobjs]).  Thanks to David Rager for bringing this bug to
@@ -22851,9 +22888,10 @@
   (let ((dmrp (f-get-global 'dmrp state)))
     (cond (dmrp #-acl2-loop-only
                 (dmr-stop-fn-raw)
-                (if (consp dmrp)
-                    (set-debugger-enable-fn (car dmrp) state)
-                  state))
+                (pprogn (f-put-global 'dmrp nil state)
+                        (if (consp dmrp)
+                            (set-debugger-enable-fn (car dmrp) state)
+                          state)))
           (t (observation 'dmr-stop
                           "Skipping dmr-stop (dmr is already stopped).")))))
 

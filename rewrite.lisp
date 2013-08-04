@@ -8184,7 +8184,10 @@
   evaluation of ~c[(dmr-start)] will automatically enable the debugger if it is
   not already enabled and not fully disabled with value
   ~c[:never] (~pl[set-debugger-enable]).  If such automatic enabling takes
-  place, then ~c[(dmr-stop)] will restore the old setting of the debugger.
+  place, then ~c[(dmr-stop)] will restore the old setting of the debugger
+  unless, after ~c[(dmr-start)] enables the debugger but before ~c[(dmr-stop)]
+  is called, you call ~ilc[set-debugger-enable] (or more precisely: function
+  ~c[set-debugger-enable-fn] is called).
 
   Note for users of the experimental extension ACL2(p) (~pl[parallelism]): when
   waterfall-parallelism has been set to a non-~c[nil] value
