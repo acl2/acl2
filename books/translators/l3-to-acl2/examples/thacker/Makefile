@@ -14,7 +14,7 @@
 
 override ACL2_PCERT =
 
-top: all run-check.out run-test
+top: all run-check.txt run-test
 
 include $(ACL2_SYSTEM_BOOKS)/Makefile-generic
 # See the end for dependencies -- we don't auto-generate
@@ -53,7 +53,7 @@ tiny-logic.lisp: ../../translator/l3-to-acl2.cert tiny-acl2.txt
 	@diff tiny-logic.lisp gold/tiny-logic.lisp --ignore-matching-lines='(INCLUDE-BOOK' --ignore-matching-lines='/l3'
 	@echo "Successfully built $@"
 
-run-check.out: run.cert
+run-check.txt: run.cert
 	@echo '####################'
 	@echo 'Checking that the model runs as expected.'
 	@echo '(include-book "run")' > workxxx.$@
@@ -61,7 +61,7 @@ run-check.out: run.cert
 	@$(ACL2) < workxxx.$@ > run-check.out
 	@echo "diff run-check.txt gold/run-check.txt"
 	@diff run-check.txt gold/run-check.txt
-	@echo "Successfully completed $@" > $@
+	@echo "Successfully completed $@"
 
 run-test.out: run.cert
 	@echo '####################'
@@ -92,7 +92,7 @@ run-test:
 clean: clean-more
 
 clean-more:
-	rm -f tiny.lisp tiny-logic.lisp
+	rm -f tiny.lisp tiny-logic.lisp run-check.txt
 
 # Dependencies for generated files:
 
