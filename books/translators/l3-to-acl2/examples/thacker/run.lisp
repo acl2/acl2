@@ -129,11 +129,11 @@
           (declare (ignore unit-val))
           (mv-let
            (chan state)
-           (open-output-channel "run-check.out" :character state)
+           (open-output-channel "run-check.txt" :character state)
            (cond (chan (run-loop-output 0 st$ chan state))
                  (t (pprogn
                      (fms "ERROR: Unable to open file ~x0 for output.~|"
-                          (list (cons #\0 "run-check.out"))
+                          (list (cons #\0 "run-check.txt"))
                           *standard-co* state nil)
                      (mv st$ state)))))))
 
