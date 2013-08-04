@@ -77,6 +77,10 @@
 #    - <target> is optional and defaults to "all" when omitted,
 #        or names the target you want to build (see below).
 
+# Of course, the usual GNU make options are available.  In particular,
+# -k is useful for causing make to keep going when an error is
+# encountered (but return a non-zero error status at the end).
+
 # Major top-level targets:
 #   - `all' is the default
 #   - `everything' includes everything in `all' and also some slow books

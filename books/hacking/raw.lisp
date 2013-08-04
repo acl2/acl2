@@ -2,7 +2,7 @@
 
 ; Modification by Matt K. after v4-3: Removed :load-compiled-file :comp, which
 ; was part of the include-book forms just below, in support of provisional
-; certification.  Presumably the indicate books have already been compiled by
+; certification.  Presumably the indicated books have already been compiled by
 ; now, anyhow.
 (include-book "defstruct-parsing"); was in portcullis
 
