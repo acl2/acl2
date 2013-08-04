@@ -1,3 +1,24 @@
-; cert-flags: ? t :ttags (:ccg)
+; cert-flags: ? nil :ttags (:ccg)
 
-(certify-book "ccg" ? t :ttags (:ccg))
+; Here is a low-level explanation of the change by Matt Kaufmann, 8/4/2013, of
+; the third argument of certify-book (below) from t to nil:
+
+; We avoid compiling this book in order to avoid certification errors in some
+; Lisps (in particular, we have seen one in an ACL2(h) regression with
+; Lispworks), and to avoid errors when attempting to include this book in
+; perhaps every Lisp.  It appears that the problem is with the use of
+; defmacro-raw, which calls assert-unbound to cause an error when such a
+; macro's definition is attempted while the macro is already defined.  If you
+; save the expansion file (ccg@expansion.lsp) when attempting to certify this
+; book, using (assign save-expansion-file t), then you'll see that the macro
+; context-fn, defined by defmacro-raw, isn't mentioned in *hcomp-macro-alist*,
+; and hence isn't made undefined after an early load of the compiled file.
+; Indeed, if we look at the definition of defmacro-raw in hacking/raw.lisp,
+; we'll see that while there is some attempt to maintain the undo-stack
+; appropriately, there appears to be nothing that addresses the problem
+; mentioned above of failing to unbind the definition after early load of the
+; compiled file.  I'm not sufficiently familiar with the hacking/ stuff to know
+; how best to fix this, but since trust tags are used, that's the
+; responsibility of whomever is maintaining these books.
+
+(certify-book "ccg" ? nil :ttags (:ccg))
