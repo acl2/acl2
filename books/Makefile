@@ -379,9 +379,11 @@ OK_CERTS := $(CERT_PL_CERTS)
 
 ifeq ($(ACL2_HAS_HONS), )
 
-# Suddenly getting error in make 3.80 from the following line, so
-# commenting it out for now (will look into it soon) -- Matt K.
+# Sadly, although make 3.80 generally ignores $(info ...), it break
+# below when we write "ACL2(h)" and ACL2_HAS_HONS is false.  So we
+# write "ACL2{h}" instead, leaving the original line as a comment.
 # $(info Excluding books that need ACL2(h) [...])
+$(info Excluding books that need ACL2{h} [...])
 OK_CERTS := $(filter-out $(CERT_PL_HONS_ONLY), $(OK_CERTS))
 
 endif # ifeq ($(ACL2_HAS_HONS), )
