@@ -1,9 +1,8 @@
+; Copyright (C) 2013, Regents of the University of Texas
+; Written by Panagiotis Manolios and J Strother Moore, July 7, 2001
+; License: A 3-clause BSD license.  See the LICENSE file distributed with ACL2.
+
 ; (certify-book "/u/moore/priorities")
-
-; J Strother Moore
-; Pete Manolios
-
-; July 7, 2001
 
 ; Abstract
 
