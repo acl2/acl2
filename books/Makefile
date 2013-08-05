@@ -379,7 +379,9 @@ OK_CERTS := $(CERT_PL_CERTS)
 
 ifeq ($(ACL2_HAS_HONS), )
 
-$(info Excluding books that need ACL2(h) [...])
+# Suddenly getting error in make 3.80 from the following line, so
+# commenting it out for now (will look into it soon) -- Matt K.
+# $(info Excluding books that need ACL2(h) [...])
 OK_CERTS := $(filter-out $(CERT_PL_HONS_ONLY), $(OK_CERTS))
 
 endif # ifeq ($(ACL2_HAS_HONS), )
