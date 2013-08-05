@@ -107,7 +107,6 @@
 #                  ; Note:  Allegro is not always named cl at CLI.  See
 #                  ; ~moore/allegro/runcl for some clues.
 #   make full LISP=lispworks PREFIX=lispworks- ; makes acl2 in lispworks
-#   make copy DIR=targetdir  ; copies all of acl2 to targetdir.  Don't use ~ notation.
 #   make copy-distribution DIR=/stage/ftp/pub/moore/acl2/v2-9/acl2-sources
 #                  ; copies all of acl2 plus books, doc, etc., to the named
 #                  ; directory, as for compiling on another architecture or
@@ -398,15 +397,6 @@ full-meter:
 	echo '(acl2::exit-lisp)' >> workxxx
 	${LISP} < workxxx
 	@$(MAKE) check_compile_ok
-	rm -f workxxx
-
-.PHONY: copy
-copy:
-	rm -f workxxx
-	echo '(load "init.lisp")' > workxxx
-	echo '(acl2::copy-acl2 "${DIR}")' >> workxxx
-	echo '(acl2::exit-lisp)' >> workxxx
-	${LISP} < workxxx
 	rm -f workxxx
 
 .PHONY: copy-distribution
