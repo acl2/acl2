@@ -355,9 +355,9 @@ scope with control-t o."
   (push-mark) ; I think I sometimes like to go back to the form.
   (let ((str (acl2-current-form-string)))
     (switch-to-buffer *acl2-shell*)
-    (end-of-buffer)
+    (goto-char (point-max))
     (insert str))
-  (end-of-buffer) ; harmless; seemed necessary at one point
+  (goto-char (point-max)) ; harmless; seemed necessary at one point
   )
 
 (defun enter-theorem-other-window ()
@@ -366,7 +366,7 @@ scope with control-t o."
   (let ((str (acl2-current-form-string)))
     (other-window 1)
     (switch-to-buffer *acl2-shell*)
-    (end-of-buffer)
+    (goto-char (point-max))
     (insert str)))
 
 (defun event-name ()
@@ -405,7 +405,7 @@ current top-level form.  See the documentation for enter-theorem."
       (forward-sexp)
       (end-of-line)
       (open-line 1)
-      (next-line 1)
+      (forward-line 1)
       (insert ")")
       (lisp-indent-line))))
 
@@ -466,7 +466,7 @@ current top-level form.  See the documentation for enter-theorem."
 	(end (max (point) (mark))))
     (write-region-for-shell beg end)
     (switch-to-buffer *acl2-shell*)
-    (end-of-buffer)
+    (goto-char (point-max))
     (insert message)))
 
 (defun acl2-load ()
@@ -527,7 +527,7 @@ work for encapsulate or progn, and is ignorant of packages."
 	       (car (read-from-string (acl2-current-form-string t)))
 	       t)))
     (cond (name (switch-to-buffer *acl2-shell*)
-		(end-of-buffer)
+		(goto-char (point-max))
 		(insert (format ":ubt! %s" name)))
 	  (t (error "ERROR: Unable to find event name for undoing.")))))
 

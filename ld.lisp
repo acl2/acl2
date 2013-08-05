@@ -21115,6 +21115,11 @@
 
   ~st[EMACS SUPPORT]
 
+  Modified file ~c[emacs/emacs-acl2.el] to eliminate some warnings that were
+  appearing in a recent Emacs version, replacing ~c[(end-of-buffer)] by
+  ~c[(goto-char (point-max))] and ~c[next-line] by ~c[forward-line].  Thanks to
+  Warren Hunt for bringing the warnings to our attention.
+
   ~st[EXPERIMENTAL/ALTERNATE VERSIONS]
 
   ~/~/")
