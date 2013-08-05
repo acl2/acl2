@@ -1,5 +1,6 @@
-; Matt Kaufmann
-; May 2008
+; Copyright (C) 2013, Regents of the University of Texas
+; Written by Matt Kaufmann, May, 2008
+; License: A 3-clause BSD license.  See the LICENSE file distributed with ACL2.
 
 ; This book defines a function, computed-hint-rewrite, that makes it easy to
 ; call the ACL2 rewriter in a computed hint.  For details see the comment in

@@ -1,3 +1,7 @@
+; Copyright (C) 2013, Regents of the University of Texas
+; Written by Matt Kaufmann (some years before that)
+; License: A 3-clause BSD license.  See the LICENSE file distributed with ACL2.
+
 ; The macro assert!, defined and illustrated below, allows for assertions
 ; within an ACL2 book, as requested by David Rager.
 

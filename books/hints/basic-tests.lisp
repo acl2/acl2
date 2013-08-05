@@ -1,3 +1,7 @@
+; Copyright (C) 2013, Regents of the University of Texas
+; Written by Matt Kaufmann (some years before that)
+; License: A 3-clause BSD license.  See the LICENSE file distributed with ACL2.
+
 ; This file contains some basic tests of various hint mechanisms.
 
 ; Note that because of must-fail, REBUILD doesn't work for this book.

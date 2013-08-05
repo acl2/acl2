@@ -1,3 +1,7 @@
+; Copyright (C) 2013, Regents of the University of Texas
+; Written by Matt Kaufmann (sometime before that)
+; License: A 3-clause BSD license.  See the LICENSE file distributed with ACL2.
+
 ; Here we illustrate the must-succeed and must-fail macros, which use
 ; make-event to check that a form evaluates as expected.
 

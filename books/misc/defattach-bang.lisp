@@ -1,5 +1,6 @@
-; Matt Kaufmann
-; April, 2011
+; Copyright (C) 2013, Regents of the University of Texas
+; Written by Matt Kaufmann, April, 2011
+; License: A 3-clause BSD license.  See the LICENSE file distributed with ACL2.
 
 ; We define a macro based on defattach that does not require guard verification
 ; for a function to be attached to a constrained function.

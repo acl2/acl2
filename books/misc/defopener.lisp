@@ -1,5 +1,7 @@
-; Matt Kaufmann
-; August, 2007
+; Copyright (C) 2013, Regents of the University of Texas
+; Written by Matt Kaufmann, August, 2007
+; License: A 3-clause BSD license.  See the LICENSE file distributed with ACL2.
+
 ; Thanks to Robert Krug for requesting this tool.
 
 (in-package "ACL2")

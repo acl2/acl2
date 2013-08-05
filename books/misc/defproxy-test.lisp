@@ -1,3 +1,7 @@
+; Copyright (C) 2013, Regents of the University of Texas
+; Written by Matt Kaufmann, December, 2010
+; License: A 3-clause BSD license.  See the LICENSE file distributed with ACL2.
+
 ; The following little book shows how to use defproxy.  See :DOC defproxy for
 ; more information.  Most users probably will have no need for defproxy, but
 ; for those who use attachments, it provides a convenient way to experiment

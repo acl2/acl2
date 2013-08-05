@@ -1,3 +1,7 @@
+; Copyright (C) 2013, Regents of the University of Texas
+; Written by Matt Kaufmann, October, 2010
+; License: A 3-clause BSD license.  See the LICENSE file distributed with ACL2.
+
 ; See profiling.lisp for information on how to use with-profiling.
 
 ; We have seen problems on Windows CCL, so we avoid Windows here for CCL.  It

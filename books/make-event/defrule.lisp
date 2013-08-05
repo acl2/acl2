@@ -1,5 +1,6 @@
-; Matt Kaufmann
-; October, 2010
+; Copyright (C) 2013, Regents of the University of Texas
+; Written by Matt Kaufmann, October, 2010
+; License: A 3-clause BSD license.  See the LICENSE file distributed with ACL2.
 
 ; This book introduces a macro, DEFRULE.  DEFRULE behaves just like defthm,
 ; except that its intended use is to generate rewrite rules from formulas that

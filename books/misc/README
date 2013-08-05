@@ -15,9 +15,9 @@
 ; along with this book; if not, write to the Free Software
 ; Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 
-This directory contains a bunch of ACL2 books that were created over the
-years at CLI.  They don't have any relation to each other; this is
-really a grab-bag.
+This directory contains a bunch of ACL2 books that were created over
+the years, starting at CLI.  They don't have any relation to each
+other; this is really a grab-bag.
 
 ===============================================================================
 

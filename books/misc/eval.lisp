@@ -1,3 +1,7 @@
+; Copyright (C) 2013, Regents of the University of Texas
+; Written by Matt Kaufmann (some years before that)
+; License: A 3-clause BSD license.  See the LICENSE file distributed with ACL2.
+
 ; Here we define macros that employ make-event to check evaluations of forms.
 ; See community book make-event/eval-tests.lisp (and many other .lisp files in
 ; that directory) for how these macros may be employed.  See also

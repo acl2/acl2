@@ -1,3 +1,7 @@
+; Copyright (C) 2013, Regents of the University of Texas
+; Written by Sandip Ray and Matt Kaufmann, October, 2006
+; License: A 3-clause BSD license.  See the LICENSE file distributed with ACL2.
+
 (in-package "ACL2")
 
 #|

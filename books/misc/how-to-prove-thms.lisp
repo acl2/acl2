@@ -1,3 +1,7 @@
+; Copyright (C) 2013, Regents of the University of Texas
+; Written by J Strother Moore
+; License: A 3-clause BSD license.  See the LICENSE file distributed with ACL2.
+
 ; Solutions to the Exercises
 ;            in
 

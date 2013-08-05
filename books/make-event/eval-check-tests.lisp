@@ -1,3 +1,7 @@
+; Copyright (C) 2013, Regents of the University of Texas
+; Written by Matt Kaufmann (sometime before that)
+; License: A 3-clause BSD license.  See the LICENSE file distributed with ACL2.
+
 ; This is a variant of eval-tests.lisp that includes eval-check.lisp, which
 ; employs :check-expansion t, instead of
 ; eval.lisp.  See below for the main change, marked with "New comment for

@@ -1,6 +1,8 @@
+; Copyright (C) 2013, Regents of the University of Texas
+; Written by Matt Kaufmann and J Strother Moore, April 2, 2003
+; License: A 3-clause BSD license.  See the LICENSE file distributed with ACL2.
+
 ; A Proof of the Correctness of a Towers of Hanoi Program
-; Matt Kaufmann and J Strother Moore
-; April 2, 2003
 
 ; Abstract
 

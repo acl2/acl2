@@ -1,6 +1,6 @@
-; Save-time macro
-; Matt Kaufmann
-; January, 2012
+; Copyright (C) 2013, Regents of the University of Texas
+; Written by Matt Kaufmann, January, 2012
+; License: A 3-clause BSD license.  See the LICENSE file distributed with ACL2.
 
 ; Thanks to Sarah Weissman for the idea of this book and helpful discussions.
 

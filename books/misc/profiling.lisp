@@ -1,5 +1,8 @@
+; Copyright (C) 2013, Regents of the University of Texas
+; Written by Matt Kaufmann, October, 2010
+; License: A 3-clause BSD license.  See the LICENSE file distributed with ACL2.
+
 ; Interface to some Lisp profilers
-; Matt Kaufmann
 
 ; Note: See also oprof.lisp (contributed by Jared Davis).
 

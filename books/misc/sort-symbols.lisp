@@ -1,3 +1,7 @@
+; Copyright (C) 2013, Regents of the University of Texas
+; Written by Matt Kaufmann (original date July, 2006)
+; License: A 3-clause BSD license.  See the LICENSE file distributed with ACL2.
+
 ; Proof of correctness of reasonably efficient symbol sorting function,
 ; sort-symbol-<.  This function is included in :program mode in the ACL2 source
 ; code, and is used by defpkg.
@@ -6,25 +10,6 @@
 ; sources, so that now strict-merge-symbol-<, strict-merge-sort-symbol-<,
 ; strict-symbol-<-sortedp, and sort-symbol-listp are guard-verified when ACL2
 ; starts up.
-
-; Matt Kaufmann, July 2006
-
-; Copyright (C) 2006 by Matt Kaufmann <kaufmann@cs.utexas.edu>
-
-; This program is free software; you can redistribute it and/or 
-; modify it under the terms of the GNU General Public License as 
-; published by the Free Software Foundation; either version 2 of 
-; the License, or (at your option) any later version.
-
-; This program is distributed in the hope that it will be useful, 
-; but WITHOUT ANY WARRANTY; without even the implied warranty of 
-; MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the 
-; GNU General Public License for more details.
-
-; You should have received a copy of the GNU General Public 
-; License along with this program; if not, write to the Free 
-; Software Foundation, Inc., 51 Franklin Street, Fifth Floor,
-; Boston, MA 02110-1301, USA.
 
 (in-package "ACL2")
 

@@ -1,10 +1,11 @@
+; Copyright (C) 2013, Regents of the University of Texas
+; Written by Matt Kaufmann, 12/13/05
+; License: A 3-clause BSD license.  See the LICENSE file distributed with ACL2.
+
 (in-package "ACL2")
 
 ; Sticky disabling and enabling, implementing an idea suggested by Ray
 ; Richards by using tables.
-
-; Matt Kaufmann
-; 12/13/05
 
 ; This book introduces the following macros:
 

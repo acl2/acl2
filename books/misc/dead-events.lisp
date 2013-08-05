@@ -1,8 +1,8 @@
+; Copyright (C) 2013, Regents of the University of Texas
+; Written by Shilpi Goel and Matt Kaufmann (original date January, 2012)
+; License: A 3-clause BSD license.  See the LICENSE file distributed with ACL2.
+
 ; Dead events (dead code and theorems) analysis tool
-; Initial authors:
-;   Shilpi Goel
-;   Matt Kaufmann
-;   January, 2012
 
 ; For some relevant background, see :DOC dead-events in the ACL2
 ; documentation.
