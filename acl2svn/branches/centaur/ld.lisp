@@ -361,9 +361,6 @@
           (ld-prompt
            (er-progn (chk-ld-prompt val ctx state)
                      (value pair)))
-          (ld-keyword-aliases
-           (er-progn (chk-ld-keyword-aliases val ctx state)
-                     (value pair)))
           (ld-missing-input-ok
            (er-progn (chk-ld-missing-input-ok val ctx state)
                      (value pair)))
@@ -625,8 +622,6 @@
          (f-put-global 'ld-redefinition-action (cdar alist) state))
         (ld-prompt
          (f-put-global 'ld-prompt (cdar alist) state))
-        (ld-keyword-aliases
-         (f-put-global 'ld-keyword-aliases (cdar alist) state))
         (ld-missing-input-ok
          (f-put-global 'ld-missing-input-ok (cdar alist) state))
         (ld-pre-eval-filter
@@ -674,8 +669,6 @@
               (f-get-global 'ld-redefinition-action state))
         (cons 'ld-prompt
               (f-get-global 'ld-prompt state))
-        (cons 'ld-keyword-aliases
-              (f-get-global 'ld-keyword-aliases state))
         (cons 'ld-missing-input-ok
               (f-get-global 'ld-missing-input-ok state))
         (cons 'ld-pre-eval-filter
@@ -764,8 +757,7 @@
 ; the parsed form of the command read, e.g., (acl2::ubt 'foo).  If non-nil,
 ; keyp is the actual list of objects read, e.g., (:ubt foo).
 
-  (let ((temp (assoc-eq key
-                        (f-get-global 'ld-keyword-aliases state))))
+  (let ((temp (assoc-eq key (ld-keyword-aliases state))))
     (cond
      (temp
       (mv-let (erp args state)
@@ -1851,7 +1843,6 @@
               (ld-skip-proofsp 'same ld-skip-proofspp)
               (ld-redefinition-action 'same ld-redefinition-actionp)
               (ld-prompt 'same ld-promptp)
-              (ld-keyword-aliases 'same ld-keyword-aliasesp)
               (ld-missing-input-ok 'same ld-missing-input-okp)
               (ld-pre-eval-filter 'same ld-pre-eval-filterp)
               (ld-pre-eval-print 'same ld-pre-eval-printp)
@@ -1885,7 +1876,6 @@
                                    ;   (~pl[ld-skip-proofsp])
       :ld-redefinition-action ...  ; nil or '(:a . :b)
       :ld-prompt          ...      ; nil, t, or some prompt printer fn
-      :ld-keyword-aliases ...      ; an alist pairing keywords to parse info
       :ld-missing-input-ok ...     ; nil, t, :warn, or warning message
       :ld-pre-eval-filter ...      ; :all, :query, or some new name
       :ld-pre-eval-print  ...      ; nil, t, or :never
@@ -2131,10 +2121,6 @@
              (if ld-promptp
                  (list `(cons 'ld-prompt ,ld-prompt))
                  nil)
-             (if ld-keyword-aliasesp
-                 (list `(cons 'ld-keyword-aliases
-                              ,ld-keyword-aliases))
-                 nil)
              (if ld-missing-input-okp
                  (list `(cons 'ld-missing-input-ok ,ld-missing-input-ok))
                nil)
@@ -2310,7 +2296,6 @@
           state)))
        (if ans
            (ld (list cmd)
-               :ld-keyword-aliases nil
                :ld-pre-eval-filter :all
                :ld-pre-eval-print t
                :ld-post-eval-print :command-conventions
@@ -2409,7 +2394,6 @@
          (if redo-cmds
              (ld redo-cmds
                  :ld-redefinition-action '(:doit! . :overwrite)
-                 :ld-keyword-aliases nil
                  :ld-pre-eval-filter :all
                  :ld-pre-eval-print t
                  :ld-post-eval-print :command-conventions
@@ -2771,7 +2755,6 @@
           :proofs-co *standard-co*
           :ld-skip-proofsp t
           :ld-prompt nil
-          :ld-keyword-aliases nil
           :ld-missing-input-ok nil
           :ld-pre-eval-filter filter
           :ld-pre-eval-print nil
@@ -3897,7 +3880,7 @@
   This section of the online ~il[documentation] contains notes on the
   changes that distinguish successive released versions of ACL2.
 
-  The current version of ACL2 is the value of the constant
+  The current ~il[version] of ACL2 is the value of the constant
   ~c[(@ acl2-version)].")
 
 (deflabel note1
@@ -20990,6 +20973,37 @@
 ;   (thm (equal (car (cons 3 4)) 3)
 ;        :hints (("Goal" :by my-thm)))
 
+; (GCL only) Just below is a book, certifiable in ACL2 Version_6.2,
+; illustrating the "obscure soundness bug due to an error in the GCL
+; implementation of set-debugger-enable".  The problem was that the definition
+; of set-debugger-enable-fn ended with #-acl2-loop-only code of the form (when
+; (live-state-p state) ... state), which erroneously returns nil for a non-live
+; state.
+;
+;   (in-package "ACL2")
+;
+;   (defthm false-formula
+;     (equal (set-debugger-enable-fn nil (build-state))
+;            nil)
+;     :rule-classes nil)
+;
+;   (defthm true-formula
+;     (implies (state-p1 s)
+;              (state-p1 (set-debugger-enable-fn nil s)))
+;     :hints (("Goal" :in-theory (enable state-p1)))
+;     :rule-classes nil)
+;
+;   (defthm contradiction
+;     nil
+;     :hints (("Goal"
+;              :use (false-formula
+;                    (:instance true-formula
+;                               (s (build-state))))))
+;     :rule-classes nil)
+
+; Improved our-truename (definition and calls) so that in case of an error, we
+; get additional information.
+
   :doc
   ":Doc-Section release-notes
 
@@ -21014,10 +21028,43 @@
   to be relieved.  ~l[bind-free].  Thanks to Sol Swords for requesting this
   enhancement.
 
-  When built-in ~il[state] global ~ilc[ld-keyword-aliases] is set during
-  ~ilc[make-event] expansion, its new value will persist after expansion is
-  complete, which had not formerly been the case.  Thanks to Jared Davis for
-  correspondence leading us to make this change.
+  ACL2 continues to provide a way to specify keyword command abbreviations for
+  the top-level loop; ~pl[ld-keyword-aliases].  However,
+  ~ilc[ld-keyword-aliases] is now a ~il[table] rather than a ~il[state] global;
+  it is thus no longer a so-called ~il[LD] special.  The functionality of
+  ~c[set-ld-keyword-aliases] has essentially been preserved, except that it is
+  now an event (~pl[events]), hence it may appear in a book; it is ~il[local]
+  to a book (or ~ilc[encapsulate] event); and the ~ilc[state] argument is
+  optional, and deprecated.  A non-local version (~c[set-ld-keyword-aliases!])
+  has been added, along with corresponding utilities ~c[add-keyword-alias] and
+  ~c[add-keyword-alias!] for adding a single keyword alias.
+  ~l[ld-keyword-aliases].  Thanks to Jared Davis for correspondence that led us
+  to make this change.
+
+  The ~il[proof-checker] command ~c[(exit t)] now exits without a query (but
+  still prints an event to show the ~c[:INSTRUCTIONS]).  Thanks to Warren Hunt
+  for feedback leading us to make this change.
+
+  We made the following minor changes to the behavior or ~c[dmr]; ~pl[dmr].
+  First, if ~c[dmr] monitoring is enabled, then ~c[(dmr-start)] will have no
+  effect other than to print a corresponding observation, and if monitoring is
+  disabled, then ~c[(dmr-stop)] will have no effect other than to print a
+  corresponding observation.  Second, it had been the case that when
+  ~c[(dmr-start)] is invoked, the debugger was always automatically enabled
+  with value ~c[t] (~pl[set-debugger-enable]), and the debugger remained
+  enabled when ~c[(dmr-stop)] was invoked.  Now, the debugger is only enabled
+  by ~c[(dmr-start)] if it is not already enabled and does not have setting
+  ~c[:never].  Moreover, if such automatic enabling takes place, then the old
+  setting for the debugger is restored by ~c[(dmr-stop)] unless
+  ~ilc[set-debugger-enable] has first been called after that automatic
+  enabling.  Finally, if the value of ~il[state] global variable
+  ~c['debugger-enable] is ~c[:bt], then the new value will be ~c[:break-bt],
+  not ~c[t].
+
+  When a call of ~ilc[progn] is executed in the ACL2 loop, its constituent
+  ~il[events] and their results are printed, just as was already done for calls
+  of ~ilc[encapsulate].  Thanks to Jared Davis for a conversation causing us to
+  consider this change.
 
   ~st[NEW FEATURES]
 
@@ -21046,9 +21093,19 @@
 
   ~st[BUG FIXES]
 
+  (GCL only) Fixed an obscure soundness bug due to an error in the GCL
+  implementation of ~ilc[set-debugger-enable].  For details, see the relevant
+  comment in the ACL2 source code under ~c[(deflabel note-6-3 ...)].
+
   Fixed a bug in the case of a field of a (concrete) stobj that is an abstract
   stobj (~pl[nested-stobjs]).  Thanks to David Rager for bringing this bug to
   our attention.
+
+  Splitter output for type ~c[if-intro] (~pl[splitter]) could formerly occur
+  even when at most one subgoal is generated.  This has been fixed.
+
+  Fixed a bug in ~ilc[wof], hence in ~ilc[psof] (which uses ~c[wof]), that was
+  causing the printing of a bogus error message.
 
   ~st[CHANGES AT THE SYSTEM LEVEL]
 
@@ -21057,6 +21114,11 @@
   by searching ACL2 source file ~c[axioms.lisp] for ``~c[(declaim (inline]''.)
 
   ~st[EMACS SUPPORT]
+
+  Modified file ~c[emacs/emacs-acl2.el] to eliminate some warnings that were
+  appearing in a recent Emacs version, replacing ~c[(end-of-buffer)] by
+  ~c[(goto-char (point-max))] and ~c[next-line] by ~c[forward-line].  Thanks to
+  Warren Hunt for bringing the warnings to our attention.
 
   ~st[EXPERIMENTAL/ALTERNATE VERSIONS]
 
@@ -21928,7 +21990,6 @@
                                      (new-defpkg-list defpkg-items kpa kpa))
                                    cmds)
                            :ld-skip-proofsp 'include-book-with-locals
-                           :ld-keyword-aliases nil
                            :ld-verbose nil
                            :ld-prompt nil
                            :ld-missing-input-ok nil
@@ -22829,9 +22890,15 @@
 
 (defun dmr-stop-fn (state)
   (declare (xargs :guard (state-p state)))
-  #-acl2-loop-only
-  (dmr-stop-fn-raw)
-  (f-put-global 'dmrp nil state))
+  (let ((dmrp (f-get-global 'dmrp state)))
+    (cond (dmrp #-acl2-loop-only
+                (dmr-stop-fn-raw)
+                (pprogn (f-put-global 'dmrp nil state)
+                        (if (consp dmrp)
+                            (set-debugger-enable-fn (car dmrp) state)
+                          state)))
+          (t (observation 'dmr-stop
+                          "Skipping dmr-stop (dmr is already stopped).")))))
 
 (defmacro dmr-stop ()
   '(dmr-stop-fn #+acl2-loop-only state
@@ -22839,12 +22906,25 @@
 
 (defun dmr-start-fn (state)
   (declare (xargs :guard (state-p state)))
-  (pprogn
-   (dmr-stop-fn state)
-   (set-debugger-enable-fn t state) ; supports interactive use of dmr-flush
-   #-acl2-loop-only
-   (dmr-start-fn-raw state)
-   (f-put-global 'dmrp t state)))
+  (cond ((f-get-global 'dmrp state)
+         (observation 'dmr-start
+                      "Skipping dmr-start (dmr is already started)."))
+        (t (let* ((old-debugger-enable (f-get-global 'debugger-enable state))
+                  (new-debugger-enable ; for interactive use of dmr-flush
+                   (case old-debugger-enable
+                     ((nil) t)
+                     (:bt :break-bt))))
+             (pprogn
+              (if new-debugger-enable
+                  (set-debugger-enable-fn new-debugger-enable state)
+                state)
+              #-acl2-loop-only
+              (dmr-start-fn-raw state)
+              (f-put-global 'dmrp
+                            (if new-debugger-enable
+                                (list old-debugger-enable)
+                              t)
+                            state))))))
 
 (defmacro dmr-start ()
   '(dmr-start-fn #+acl2-loop-only state
@@ -23164,9 +23244,8 @@ which you can find under your local <CODE>acl2-sources/</CODE> diretory at
 
 <li>Alternatively, for web browsing you can use <A
 HREF=\"http://fv.centtech.com/acl2/6.2/doc/\">documentation generated by Jared
-Davis's xdoc utility</A>.  After you install and certify the ACL2 community
-books (see <A HREF=\"#Tools\">below</A>), you will find a complete local copy
-at <CODE>books/xdoc-impl/manual/preview.html</A></CODE>.
+Davis's xdoc utility</A>.  You can build a local copy from the ACL2 Community
+Books, following instructions in <code>books/Makefile</code>.</li>
 
 <li>Those familiar with Emacs Info can read the documentation in that format by
 loading the file <CODE>emacs/emacs-acl2.el</CODE> distributed with ACL2 (under
@@ -27271,16 +27350,16 @@ accompanying <i>``File Path''</i> shown at the end of each book's text.
       (pprogn
        (princ$ "-*- Mode: auto-revert -*-" wof-chan state)
        (newline wof-chan state)
-       (state-global-let*
-        ((standard-co wof-chan set-standard-co-state)
-         (proofs-co wof-chan set-proofs-co-state))
-        (mv-let (erp val state)
+       (mv-let (erp val state)
+               (state-global-let*
+                ((standard-co wof-chan set-standard-co-state)
+                 (proofs-co wof-chan set-proofs-co-state))
                 (check-vars-not-free
                  (wof-chan)
-                 ,form)
-                (pprogn (close-output-channel wof-chan state)
-                        (cond (erp (silent-error state))
-                              (t (value val)))))))))))
+                 ,form))
+               (pprogn (close-output-channel wof-chan state)
+                       (cond (erp (silent-error state))
+                             (t (value val))))))))))
 
 (defmacro wof (filename form) ; Acronym: With Output File
 

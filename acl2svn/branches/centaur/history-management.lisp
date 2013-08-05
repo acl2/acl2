@@ -4837,7 +4837,6 @@
             saved-output-reversed      ;;; for feedback after expansion failure
             saved-output-p             ;;; for feedback after expansion failure
             ttags-allowed              ;;; propagate changes outside expansion
-            ld-keyword-aliases         ;;; allow user to modify this in a book
             ld-evisc-tuple             ;;; see just above
             term-evisc-tuple           ;;; see just above
             abbrev-evisc-tuple         ;;; see just above
@@ -11154,22 +11153,22 @@
    (t
     (io? temporary nil (mv erp val state)
          (name)
-         (let ((channel (standard-co state))
-               (temp (if (keywordp name)
-                         (assoc-eq name
-                                   (f-get-global 'ld-keyword-aliases state))
-                       nil))
-               (doc-tuple (access-doc-string-database name state)))
+         (let* ((channel (standard-co state))
+                (ld-keyword-aliases (ld-keyword-aliases state))
+                (temp (if (keywordp name)
+                          (assoc-eq name ld-keyword-aliases)
+                        nil))
+                (doc-tuple (access-doc-string-database name state)))
            (cond
             ((or temp
                  (null doc-tuple))
              (let ((temp (cond
                           ((symbolp name)
                            (assoc-eq (intern (symbol-name name) "KEYWORD")
-                                     (f-get-global 'ld-keyword-aliases state)))
+                                     ld-keyword-aliases))
                           ((stringp name)
                            (assoc-eq (intern name "KEYWORD")
-                                     (f-get-global 'ld-keyword-aliases state)))
+                                     ld-keyword-aliases))
                           (t nil))))
                (cond
                 ((null temp)

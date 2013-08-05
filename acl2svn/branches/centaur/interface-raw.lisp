@@ -6582,7 +6582,6 @@
     (ld-skip-proofsp . ,ld-skip-proofsp)
     (ld-redefinition-action . nil)
     (ld-prompt . ,(if ld-skip-proofsp nil t))
-    (ld-keyword-aliases . nil)
     (ld-missing-input-ok . nil)
     (ld-pre-eval-filter . :all)
     (ld-pre-eval-print . ,(if ld-skip-proofsp nil t))
@@ -7642,7 +7641,9 @@ Missing functions (use *check-built-in-constants-debug* = t for verbose report):
                                home)
                               t)
                              #-(and mcl (not ccl))
-                             (our-truename home t)
+                             (our-truename home
+                                           "Note: Calling OUR-TRUENAME from ~
+                                            INITIAL-CUSTOMIZATION-FILENAME")
                              (os (w *the-live-state*))
                              *the-live-state*)
                             "acl2-customization")))
@@ -7811,7 +7812,9 @@ Missing functions (use *check-built-in-constants-debug* = t for verbose report):
                                                    "NIL")))))
                 (user-home-dir-path (our-user-homedir-pathname))
                 (user-home-dir0 (and user-home-dir-path
-                                     (our-truename user-home-dir-path t)))
+                                     (our-truename user-home-dir-path
+                                                   "Note: Calling ~
+                                                    OUR-TRUENAME from LP.")))
                 (user-home-dir (and user-home-dir0
                                     (if (eql (char user-home-dir0
                                                    (1- (length user-home-dir0)))
@@ -8185,7 +8188,9 @@ Missing functions (use *check-built-in-constants-debug* = t for verbose report):
          (gcl-flg
           #+gcl
           (compile-file
-           (our-truename (pathname-unix-to-os fn-file state) t)
+           (our-truename (pathname-unix-to-os fn-file state)
+                         "Note: Calling OUR-TRUENAME from ~
+                          COMPILE-UNCOMPILED-DEFUNS (under gcl-flg and #+gcl).")
            :c-file t :h-file t)
           #-gcl
           (er hard 'compile-uncompiled-defuns
@@ -8194,7 +8199,8 @@ Missing functions (use *check-built-in-constants-debug* = t for verbose report):
          (t
           (let ((lisp-file
                  (our-truename (pathname-unix-to-os fn-file state)
-                               t)))
+                               "Note: Calling OUR-TRUENAME from ~
+                                COMPILE-UNCOMPILED-DEFUNS.")))
             (compile-file lisp-file)
             (when (not (keep-tmp-files state))
               (delete-file lisp-file)
@@ -8417,7 +8423,10 @@ Missing functions (use *check-built-in-constants-debug* = t for verbose report):
          (gcl-flg
           #+gcl
           (compile-file
-           (our-truename (pathname-unix-to-os fn-file state) t)
+           (our-truename (pathname-unix-to-os fn-file state)
+                         "Note: Calling OUR-TRUENAME from ~
+                          COMPILE-UNCOMPILED-*1*-DEFUNS (under gcl-flg and ~
+                          #+gcl).")
            :c-file t :h-file t)
           #-gcl
           (er hard 'compile-uncompiled-defuns
@@ -8425,7 +8434,9 @@ Missing functions (use *check-built-in-constants-debug* = t for verbose report):
                legal when running under GCL."))
          (t
           (let ((lisp-file
-                 (our-truename (pathname-unix-to-os fn-file state) t)))
+                 (our-truename (pathname-unix-to-os fn-file state)
+                               "Note: Calling OUR-TRUENAME from ~
+                                COMPILE-UNCOMPILED-*1*-DEFUNS.")))
             (compile-file lisp-file)
             (when (not (keep-tmp-files state))
               (delete-file lisp-file)

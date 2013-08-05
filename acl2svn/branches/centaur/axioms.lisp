@@ -11539,10 +11539,11 @@
   To view the documentation in a web browser, open a browser to file
   ~c[doc/HTML/acl2-doc.html] under your ACL2 source directory, or just go to
   the ACL2 home page at ~url[http://www.cs.utexas.edu/users/moore/acl2/].
+
   Alternatively, follow a link on the ACL2 home page to the new ``xdoc''
-  version of the manual, which can be found locally after running a regression
-  by pointing your web browser at community books file
-  ~c[books/xdoc/manual/preview.html].
+  version of the manual.  You can build a local copy using the ACL2 Community
+  books; see the topic ``BUILDING THE MANUAL'' in ~c[books/Makefile] for
+  instructions.
 
   To use Emacs Info (inside Emacs), first load distributed file
   ~c[emacs/emacs-acl2.el] (perhaps inside your ~c[.emacs] file) and then
@@ -12404,31 +12405,31 @@
   (with-output :key1 val1 ... :keyk valk form)
   ~ev[]
   where each ~c[:keyi] is either ~c[:off], ~c[:on], ~c[:stack],
-  ~c[:summary], or ~c[:gag-mode], and ~c[vali] is as follows.  If ~c[:keyi]
-  is ~c[:off] or ~c[:on], then ~c[vali] can be ~c[:all], and otherwise is a
-  symbol or non-empty list of symbols representing output types that can be
-  inhibited; ~pl[set-inhibit-output-lst].  If ~c[:keyi] is ~c[:gag-mode], then
-  ~c[vali] is one of the legal values for ~c[:]~ilc[set-gag-mode].
-  If ~c[:keyi] is ~c[:summary], then ~c[vali] is either ~c[:all] or a true-list
-  of symbols each of which belongs to the list ~c[*summary-types*].  Otherwise
-  ~c[:keyi] is ~c[:stack], in which case ~c[:vali] is ~c[:push] or ~c[:pop];
-  for now assume that ~c[:stack] is not specified (we'll return to it below).
-  The result of evaluating the General Form above is to evaluate ~c[form], but
-  in an environment where output occurs as follows.  If ~c[:on :all] is
-  specified, then every output type is turned on except as inhibited by
-  ~c[:off]; else if ~c[:off :all] is specified, then every output type is
-  inhibited except as specified by ~c[:on]; and otherwise, the
-  currently-inhibited output types are reduced as specified by ~c[:on] and then
-  extended as specified by ~c[:off].  But if ~c[:gag-mode] is specified, then
-  before modifying how output is inhibited, ~ilc[gag-mode] is set for the
-  evaluation of ~c[form] as specified by the value of ~c[:gag-mode];
-  ~pl[set-gag-mode].  If ~c[summary] is among the output types that are turned
-  on (not inhibited), then if ~c[:summary] is specified, the only parts of the
-  summary to be printed will be those specified by the value of ~c[:summary].
-  The correspondence should be clear, except perhaps that ~c[header] refers to
-  the line containing only the word ~c[Summary], and ~c[value] refers to the
-  value of the form printed during evaluation of sequences of events as for
-  ~ilc[progn] and ~ilc[encapsulate].
+  ~c[:summary], or ~c[:gag-mode]; ~c[form] evaluates to an error triple
+  (~pl[error-triples]); and ~c[vali] is as follows.  If ~c[:keyi] is ~c[:off]
+  or ~c[:on], then ~c[vali] can be ~c[:all], and otherwise is a symbol or
+  non-empty list of symbols representing output types that can be inhibited;
+  ~pl[set-inhibit-output-lst].  If ~c[:keyi] is ~c[:gag-mode], then ~c[vali] is
+  one of the legal values for ~c[:]~ilc[set-gag-mode].  If ~c[:keyi] is
+  ~c[:summary], then ~c[vali] is either ~c[:all] or a true-list of symbols each
+  of which belongs to the list ~c[*summary-types*].  Otherwise ~c[:keyi] is
+  ~c[:stack], in which case ~c[:vali] is ~c[:push] or ~c[:pop]; for now assume
+  that ~c[:stack] is not specified (we'll return to it below).  The result of
+  evaluating the General Form above is to evaluate ~c[form], but in an
+  environment where output occurs as follows.  If ~c[:on :all] is specified,
+  then every output type is turned on except as inhibited by ~c[:off]; else if
+  ~c[:off :all] is specified, then every output type is inhibited except as
+  specified by ~c[:on]; and otherwise, the currently-inhibited output types are
+  reduced as specified by ~c[:on] and then extended as specified by ~c[:off].
+  But if ~c[:gag-mode] is specified, then before modifying how output is
+  inhibited, ~ilc[gag-mode] is set for the evaluation of ~c[form] as specified
+  by the value of ~c[:gag-mode]; ~pl[set-gag-mode].  If ~c[summary] is among
+  the output types that are turned on (not inhibited), then if ~c[:summary] is
+  specified, the only parts of the summary to be printed will be those
+  specified by the value of ~c[:summary].  The correspondence should be clear,
+  except perhaps that ~c[header] refers to the line containing only the word
+  ~c[Summary], and ~c[value] refers to the value of the form printed during
+  evaluation of sequences of events as for ~ilc[progn] and ~ilc[encapsulate].
 
   Note that the handling of the ~c[:stack] argument pays no attention to the
   ~c[:summary] argument.
@@ -13511,15 +13512,129 @@
 
 (defmacro msg (str &rest args)
 
-; This macro returns a pair suitable giving to the fmt directive ~@.  Fmt is
-; defined much later.  But we need msg now because several of our macros
+; Fmt is defined much later.  But we need msg now because several of our macros
 ; generate calls of msg and thus msg must be a function when terms using those
 ; macros are translated.
 
-; In any case, suppose that #\0, say, is bound to the value of this function.
-; Then the fmt directive ~@0 will print out the string, str, above, in the
-; context of the alist in which the successive fmt variables #\0 through
-; possibly #\9 are bound to the successive elements of args.
+  ":Doc-Section ACL2::ACL2-built-ins
+
+  construct a ``message'' suitable for the ~c[~~@] directive of ~ilc[fmt]~/
+
+  ~l[fmt] for background on formatted printing with ACL2.
+
+  We document ~c[msg] precisely below, but first, we give an informal
+  introduction and illustrate with an example.  Suppose you are writing a
+  program that is to do some printing.  Typically, you will either pass the
+  ACL2 state around (~pl[programming-with-state]) and use formatted printing
+  functions that take the state as an argument (~pl[fmt])), or else you might
+  avoid using state by calling the utility, ~ilc[cw], to do you printing.
+  Alternatively, you might print error messages upon encountering illegal
+  situations; ~pl[er].  But there are times where instead of printing
+  immediately, you may prefer to pass messages around, for example to
+  accumulate them before printing a final message.  In such cases, it may be
+  desirable to construct ``message'' objects to pass around.
+
+  For example, consider the following pair of little programs.  The first
+  either performs a computation or prints an error, and the second calls the
+  first on two inputs.
+  ~bv[]
+
+  (defun invert1 (x)
+    (if (consp x)
+        (cons (cdr x) (car x))
+      (prog2$ (cw \"ERROR: ~~x0 expected a cons, but was given ~~x1.~~|\"
+                  'invert1 x)
+              nil)))
+
+  (defun invert2 (x1 x2)
+    (list (invert1 x1) (invert1 x2)))
+
+  ~ev[]
+  For example:
+  ~bv[]
+
+    ACL2 !>(invert1 '(3 . 4))
+    (4 . 3)
+    ACL2 !>(invert1 'a)
+    ERROR: INVERT1 expected a cons, but was given A.
+    NIL
+    ACL2 !>(invert2 '(3 . 4) '(5 . 6))
+    ((4 . 3) (6 . 5))
+    ACL2 !>(invert2 'a 'b)
+    ERROR: INVERT1 expected a cons, but was given A.
+    ERROR: INVERT1 expected a cons, but was given B.
+    (NIL NIL)
+    ACL2 !>
+
+  ~ev[]
+  Notice that when there are errors, there is no attempt to explain that these
+  are due to a call of ~c[invert2].  That could be fixed, of course, by
+  arranging for ~c[invert2] to print its own error; but for complicated
+  programs it can be awkward to coordinate printing from many sources.  So
+  let's try a different approach.  This time, the first function returns two
+  results.  The first result is an ``error indicator'' ~-[] either a message
+  object or ~c[nil] ~-[] while the second is the computed value (only of
+  interest when the first result is ~c[nil]).  Then the higher-level function
+  can print a single error message that includes the error message(s) from the
+  lower-level function, as shown below.
+  ~bv[]
+
+  (defun invert1a (x)
+    (if (consp x)
+        (mv nil
+            (cons (cdr x) (car x)))
+      (mv (msg \"ERROR: ~~x0 expected a cons, but was given ~~x1.~~|\"
+               'invert1a x)
+          nil)))
+
+  (defun invert2a (x1 x2)
+    (mv-let (erp1 y1)
+            (invert1a x1)
+            (mv-let (erp2 y2)
+                    (invert1a x2)
+                    (if erp1
+                        (if erp2
+                            (cw \"~~x0 failed with two errors:~~|  ~~@1  ~~@2\"
+                                'invert2a erp1 erp2)
+                          (cw \"~~x0 failed with one error:~~|  ~~@1\"
+                              'invert2a erp1))
+                      (if erp2
+                          (cw \"~~x0 failed with one error:~~|  ~~@1\"
+                              'invert2a erp2)
+                        (list y1 y2))))))
+  ~ev[]
+  For example:
+  ~bv[]
+    ACL2 !>(invert2a '(3 . 4) '(5 . 6))
+    ((4 . 3) (6 . 5))
+    ACL2 !>(invert2a '(3 . 4) 'b)
+    INVERT2A failed with one error:
+      ERROR: INVERT1A expected a cons, but was given B.
+    NIL
+    ACL2 !>(invert2a 'a 'b)
+    INVERT2A failed with two errors:
+      ERROR: INVERT1A expected a cons, but was given A.
+      ERROR: INVERT1A expected a cons, but was given B.
+    NIL
+    ACL2 !>
+  ~ev[]
+
+  If you study the example above, you might well understand ~c[msg].  But we
+  conclude with precise documentation.~/
+
+  ~bv[]
+  General Form:
+  (msg str arg1 ... argk)
+  ~ev[]
+  where ~c[str] is a string and ~c[k] is at most 9.
+
+  This macro returns a pair suitable for giving to the ~c[fmt] directive
+  ~c[~~@].  Thus, suppose that ~c[#\\c] is bound to the value of
+  ~c[(msg str arg1 ... argk)], where ~c[c] is a character and ~c[k] is at most
+  9.  Then the ~c[fmt] directive ~c[~~@c] will print out the string, ~c[str],
+  in the context of the alist in which the successive ~c[fmt] variables
+  ~c[#\\0], ~c[#\\1], ..., ~c[#\\k] are bound to the successive elements of
+  ~c[(arg1 ... argk)].~/"
 
   (declare (xargs :guard (<= (length args) 10)))
 
@@ -28291,6 +28406,7 @@
     catch-throw-to-local-top-level
     with-fast-alist-raw with-stolen-alist-raw fast-alist-free-on-exit-raw
     stobj-let
+    add-ld-keyword-alias! set-ld-keyword-aliases!
     ))
 
 (defmacro with-live-state (form)
@@ -29640,7 +29756,6 @@
     (ld-skip-proofsp . nil)
     (ld-redefinition-action . nil)
     (ld-prompt . t)
-    (ld-keyword-aliases . nil)
     (ld-missing-input-ok . nil)
     (ld-pre-eval-filter . :all)
     (ld-pre-eval-print . nil)
@@ -30101,6 +30216,23 @@
 ; least as reasonable.
 
 (defun signed-byte-p (bits x)
+
+  ":Doc-Section ACL2::ACL2-built-ins
+
+  recognizer for signed integers that fit in a specified bit width~/
+
+  ~c[(Signed-byte-p bits x)] is ~c[T] when ~c[bits] is a positive integer and
+  ~c[x] is a signed integer whose 2's complement representation fits in a
+  bit-width of ~c[bits], i.e., ~c[-2^(bits-1) <= x < 2^(bits-1)].~/
+
+  Note that a ~il[type-spec] of ~c[(signed-byte i)] for a variable ~c[x] in a
+  function's ~ilc[declare] form translates to a ~il[guard] condition of
+  ~c[(signed-byte-p i x)].
+
+  The ~il[guard] for ~c[signed-byte-p] is ~c[T].
+
+  To see the ACL2 definition of this function, ~pl[pf].~/"
+
   (declare (xargs :guard t))
   (and (integerp bits)
        (< 0 bits)
@@ -30109,6 +30241,23 @@
                         x)))
 
 (defun unsigned-byte-p (bits x)
+
+  ":Doc-Section ACL2::ACL2-built-ins
+
+  recognizer for natural numbers that fit in a specified bit width~/
+
+  ~c[(Unsigned-byte-p bits x)] is ~c[T] when ~c[bits] is a positive integer and
+  ~c[x] is a nonnegative integer that fits into a bit-width of ~c[bits], i.e.,
+  ~c[0 <= x < 2^bits].~/
+
+  Note that a ~il[type-spec] of ~c[(unsigned-byte i)] for a variable ~c[x] in a
+  function's ~ilc[declare] form translates to a ~il[guard] condition of
+  ~c[(unsigned-byte-p i x)].
+
+  The ~il[guard] for ~c[unsigned-byte-p] is ~c[T].
+
+  To see the ACL2 definition of this function, ~pl[pf].~/"
+
   (declare (xargs :guard t))
   (and (integerp bits)
        (<= 0 bits)
@@ -32249,6 +32398,10 @@
   ":Doc-Section ACL2::ACL2-built-ins
 
   print an error message and ``cause an error''~/
+
+  ~l[fmt] for a general discussion of formatted printing in ACL2.  All calls of
+  ~c[er] print formatted strings, just as is done by ~ilc[fmt].
+
   ~bv[]
   Example Forms:
   (er hard  'top-level \"Illegal inputs, ~~x0 and ~~x1.\" a b)
@@ -36562,7 +36715,6 @@
     standard-co
     proofs-co
     ld-prompt
-    ld-keyword-aliases
     ld-missing-input-ok
     ld-pre-eval-filter
     ld-pre-eval-print
@@ -38222,7 +38374,7 @@
   ~ev[]"
 
   `(state-global-let*
-    ((inhibit-output-lst (cons 'summary (@ inhibit-output-lst))))
+    ((inhibit-output-lst (list* 'event 'summary (@ inhibit-output-lst))))
     (progn (table acl2-defaults-table :enforce-redundancy ,x)
            (table acl2-defaults-table :enforce-redundancy))))
 
@@ -38272,7 +38424,7 @@
   ~ev[]"
 
   `(state-global-let*
-    ((inhibit-output-lst (cons 'summary (@ inhibit-output-lst))))
+    ((inhibit-output-lst (list* 'event 'summary (@ inhibit-output-lst))))
     (progn (table acl2-defaults-table :ignore-doc-string-error ,x)
            (table acl2-defaults-table :ignore-doc-string-error))))
 
@@ -38344,7 +38496,7 @@
   ~c[(default-verify-guards-eagerness (w state))]."
 
   `(state-global-let*
-    ((inhibit-output-lst (cons 'summary (@ inhibit-output-lst))))
+    ((inhibit-output-lst (list* 'event 'summary (@ inhibit-output-lst))))
     (progn (table acl2-defaults-table :verify-guards-eagerness ,x)
            (table acl2-defaults-table :verify-guards-eagerness))))
 
@@ -38412,7 +38564,7 @@
   :cited-by Programming"
 
   `(state-global-let*
-    ((inhibit-output-lst (cons 'summary (@ inhibit-output-lst))))
+    ((inhibit-output-lst (list* 'event 'summary (@ inhibit-output-lst))))
      (progn (table acl2-defaults-table :compile-fns ,x)
             (table acl2-defaults-table :compile-fns))))
 
@@ -38488,7 +38640,7 @@
   ~ilc[acl2-count].~/"
 
   `(state-global-let*
-    ((inhibit-output-lst (cons 'summary (@ inhibit-output-lst))))
+    ((inhibit-output-lst (list* 'event 'summary (@ inhibit-output-lst))))
      (progn (table acl2-defaults-table :measure-function ',name)
             (table acl2-defaults-table :measure-function))))
 
@@ -38538,7 +38690,7 @@
   arguments decreases according to ~c[rel].~/"
 
   `(state-global-let*
-    ((inhibit-output-lst (cons 'summary (@ inhibit-output-lst))))
+    ((inhibit-output-lst (list* 'event 'summary (@ inhibit-output-lst))))
      (progn (table acl2-defaults-table :well-founded-relation ',rel)
             (table acl2-defaults-table :well-founded-relation))))
 
@@ -38640,7 +38792,7 @@
   ~l[embedded-event-form]."
 
   '(state-global-let*
-    ((inhibit-output-lst (cons 'summary (@ inhibit-output-lst))))
+    ((inhibit-output-lst (list* 'summary (@ inhibit-output-lst))))
     (er-progn (table acl2-defaults-table :defun-mode :logic)
               (value :invisible))))
 
@@ -38699,7 +38851,7 @@
   ~l[embedded-event-form]."
 
   '(state-global-let*
-    ((inhibit-output-lst (cons 'summary (@ inhibit-output-lst))))
+    ((inhibit-output-lst (list* 'summary (@ inhibit-output-lst))))
     (er-progn (table acl2-defaults-table :defun-mode :program)
               (value :invisible))))
 
@@ -38976,7 +39128,7 @@
   ~c[(set-bogus-defun-hints-ok :warn)].~/~/"
 
   `(state-global-let*
-    ((inhibit-output-lst (cons 'summary (@ inhibit-output-lst))))
+    ((inhibit-output-lst (list* 'event 'summary (@ inhibit-output-lst))))
      (progn (table acl2-defaults-table :bogus-defun-hints-ok ,x)
             (table acl2-defaults-table :bogus-defun-hints-ok))))
 
@@ -39031,7 +39183,7 @@
   :cited-by Programming"
 
   `(state-global-let*
-    ((inhibit-output-lst (cons 'summary (@ inhibit-output-lst))))
+    ((inhibit-output-lst (list* 'event 'summary (@ inhibit-output-lst))))
      (progn (table acl2-defaults-table :bogus-mutual-recursion-ok ,x)
             (table acl2-defaults-table :bogus-mutual-recursion-ok))))
 
@@ -39450,7 +39602,7 @@
 ; not available for the expression of that event.
 
   `(state-global-let*
-    ((inhibit-output-lst (cons 'summary (@ inhibit-output-lst))))
+    ((inhibit-output-lst (list* 'event 'summary (@ inhibit-output-lst))))
     (er-progn
      (chk-ruler-extenders ,x soft 'set-ruler-extenders (w state))
      (progn
@@ -39503,7 +39655,7 @@
   :cited-by Programming"
 
   `(state-global-let*
-    ((inhibit-output-lst (cons 'summary (@ inhibit-output-lst))))
+    ((inhibit-output-lst (list* 'event 'summary (@ inhibit-output-lst))))
      (progn (table acl2-defaults-table :irrelevant-formals-ok ,x)
             (table acl2-defaults-table :irrelevant-formals-ok))))
 
@@ -39552,7 +39704,7 @@
   :cited-by Programming"
 
   `(state-global-let*
-    ((inhibit-output-lst (cons 'summary (@ inhibit-output-lst))))
+    ((inhibit-output-lst (list* 'event 'summary (@ inhibit-output-lst))))
      (progn (table acl2-defaults-table :ignore-ok ,x)
             (table acl2-defaults-table :ignore-ok))))
 
@@ -39605,7 +39757,7 @@
   ~c[:inhibit-warnings] is entirely irrelevant."
 
   `(state-global-let*
-    ((inhibit-output-lst (cons 'summary (@ inhibit-output-lst))))
+    ((inhibit-output-lst (list* 'event 'summary (@ inhibit-output-lst))))
     (progn (table acl2-defaults-table :inhibit-warnings ',lst)
            (table acl2-defaults-table :inhibit-warnings))))
 
@@ -39800,7 +39952,7 @@
   "
 
   `(state-global-let*
-    ((inhibit-output-lst (cons 'summary (@ inhibit-output-lst))))
+    ((inhibit-output-lst (list* 'event 'summary (@ inhibit-output-lst))))
     (progn (table acl2-defaults-table :state-ok ,x)
            (table acl2-defaults-table :state-ok))))
 
@@ -39856,7 +40008,7 @@
   Thus, the mode may be set locally in books."
 
   `(state-global-let*
-    ((inhibit-output-lst (cons 'summary (@ inhibit-output-lst))))
+    ((inhibit-output-lst (list* 'event 'summary (@ inhibit-output-lst))))
     (progn (table acl2-defaults-table :let*-abstractionp ,x)
            (table acl2-defaults-table :let*-abstractionp))))
 
@@ -39936,7 +40088,7 @@
   The default limit is ~c[(nil nil)]."
 
   `(state-global-let*
-    ((inhibit-output-lst (cons 'summary (@ inhibit-output-lst))))
+    ((inhibit-output-lst (list* 'event 'summary (@ inhibit-output-lst))))
     (progn (table acl2-defaults-table :backchain-limit
                   (let ((limit ,limit))
                     (if (atom limit)
@@ -40165,7 +40317,7 @@
   The initial default backchain-limit is ~c[nil]."
 
   `(state-global-let*
-    ((inhibit-output-lst (cons 'summary (@ inhibit-output-lst))))
+    ((inhibit-output-lst (list* 'event 'summary (@ inhibit-output-lst))))
     (progn (table acl2-defaults-table :default-backchain-limit
                   (let ((limit ,limit))
                     (if (atom limit)
@@ -40413,7 +40565,7 @@
   forgotten when returning from that call.~/"
 
   `(state-global-let*
-    ((inhibit-output-lst (cons 'summary (@ inhibit-output-lst))))
+    ((inhibit-output-lst (list* 'event 'summary (@ inhibit-output-lst))))
     (pprogn
      (let ((rec (f-get-global 'step-limit-record state))
            (limit (or ,limit *default-step-limit*)))
@@ -40554,7 +40706,7 @@
   For a different but somewhat related concept, ~pl[backchain-limit]."
 
   `(state-global-let*
-    ((inhibit-output-lst (cons 'summary (@ inhibit-output-lst))))
+    ((inhibit-output-lst (list* 'event 'summary (@ inhibit-output-lst))))
     (progn (table acl2-defaults-table :rewrite-stack-limit
                   ,(if (or (null limit) (equal limit (kwote nil)))
                        (1- (expt 2 28))
@@ -40661,7 +40813,7 @@
   nu-rewriter."
 
   `(state-global-let*
-    ((inhibit-output-lst (cons 'summary (@ inhibit-output-lst))))
+    ((inhibit-output-lst (list* 'event 'summary (@ inhibit-output-lst))))
     (progn (table acl2-defaults-table :nu-rewriter-mode ,x)
            (table acl2-defaults-table :nu-rewriter-mode))))
 
@@ -40859,7 +41011,7 @@
   the standard proofs output.~/"
 
   `(state-global-let*
-    ((inhibit-output-lst (cons 'summary (@ inhibit-output-lst))))
+    ((inhibit-output-lst (list* 'event 'summary (@ inhibit-output-lst))))
     (progn (table acl2-defaults-table :case-split-limitations
                   (let ((lst ,lst))
                     (cond ((eq lst nil)
@@ -41085,7 +41237,7 @@
 ; :cited-by free-variables add-match-free-override set-match-free-error
 
   `(state-global-let*
-    ((inhibit-output-lst (cons 'summary (@ inhibit-output-lst))))
+    ((inhibit-output-lst (list* 'event 'summary (@ inhibit-output-lst))))
      (progn (table acl2-defaults-table :match-free-default ,x)
             (table acl2-defaults-table :match-free-default))))
 
@@ -41246,7 +41398,7 @@
 ; :cited-by free-variables set-match-free-default set-match-free-error
 
   `(state-global-let*
-    ((inhibit-output-lst (cons 'summary (@ inhibit-output-lst))))
+    ((inhibit-output-lst (list* 'event 'summary (@ inhibit-output-lst))))
     ,(cond
       ((eq flg :clear)
        (cond
@@ -41479,7 +41631,7 @@
   The initial value is ~c[nil]."
 
   `(state-global-let*
-    ((inhibit-output-lst (cons 'summary (@ inhibit-output-lst))))
+    ((inhibit-output-lst (list* 'event 'summary (@ inhibit-output-lst))))
      (progn (table acl2-defaults-table :non-linearp ,toggle)
             (table acl2-defaults-table :non-linearp))))
 
@@ -41649,7 +41801,7 @@
   settings of those two flags."
 
   `(state-global-let*
-    ((inhibit-output-lst (cons 'summary (@ inhibit-output-lst))))
+    ((inhibit-output-lst (list* 'event 'summary (@ inhibit-output-lst))))
      (progn (table acl2-defaults-table :tau-auto-modep ,toggle)
             (table acl2-defaults-table :tau-auto-modep))))
 
@@ -41916,7 +42068,7 @@
 
   (declare (xargs :guard (symbolp tag-name)))
   `(state-global-let*
-    ((inhibit-output-lst (cons 'summary (@ inhibit-output-lst))))
+    ((inhibit-output-lst (list* 'event 'summary (@ inhibit-output-lst))))
     (progn (table acl2-defaults-table
                   :ttag
                   ',(and tag-name
@@ -42715,7 +42867,7 @@
   outside the enclosing ~ilc[encapsulate] or book.~/~/"
 
   `(state-global-let*
-    ((inhibit-output-lst (cons 'summary (@ inhibit-output-lst))))
+    ((inhibit-output-lst (list* 'event 'summary (@ inhibit-output-lst))))
     (progn (table default-hints-table t ,lst)
            (table default-hints-table t))))
 
@@ -42785,7 +42937,7 @@
   outside the enclosing ~ilc[encapsulate] or book.~/~/"
 
   `(state-global-let*
-    ((inhibit-output-lst (cons 'summary (@ inhibit-output-lst))))
+    ((inhibit-output-lst (list* 'event 'summary (@ inhibit-output-lst))))
     (progn (table default-hints-table t
                   (if ,at-end
                       (append (default-hints world) ,lst)
@@ -42849,7 +43001,7 @@
   outside the enclosing ~ilc[encapsulate] or book.~/~/"
 
   `(state-global-let*
-    ((inhibit-output-lst (cons 'summary (@ inhibit-output-lst))))
+    ((inhibit-output-lst (list* 'event 'summary (@ inhibit-output-lst))))
     (progn (table default-hints-table t
                   (set-difference-equal (default-hints world) ,lst))
            (table default-hints-table t))))
@@ -42862,7 +43014,7 @@
 #+acl2-loop-only
 (defmacro set-override-hints-macro (lst at-end ctx)
   `(state-global-let*
-    ((inhibit-output-lst (cons 'summary (@ inhibit-output-lst))))
+    ((inhibit-output-lst (list* 'summary (@ inhibit-output-lst))))
     (set-override-hints-fn ,lst ,at-end ,ctx (w state) state)))
 
 #-acl2-loop-only
@@ -43278,7 +43430,7 @@
   in which it occurs.~/~/"
 
   `(state-global-let*
-    ((inhibit-output-lst (cons 'summary (@ inhibit-output-lst))))
+    ((inhibit-output-lst (list* 'event 'summary (@ inhibit-output-lst))))
     (progn (table rw-cache-state-table t ,val)
            (table rw-cache-state-table t))))
 
@@ -48645,13 +48797,21 @@ Lisp definition."
 (defun set-debugger-enable-fn (val state)
   (declare (xargs :guard (and (state-p state)
                               (member-eq val '(t nil :never :break :bt
-                                                 :break-bt :bt-break)))))
-  (f-put-global 'debugger-enable val state)
+                                                 :break-bt :bt-break)))
+                  :guard-hints (("Goal" :in-theory (enable state-p1)))))
   #+(and (not acl2-loop-only)
          (and gcl (not cltl2)))
   (when (live-state-p state)
-    (setq lisp::*break-enable* (debugger-enabledp state))
-    state))
+    (setq lisp::*break-enable* (debugger-enabledp state)))
+  (pprogn
+   (f-put-global 'debugger-enable val state)
+   (if (consp (f-get-global 'dmrp state))
+
+; Then user invoked this function, so avoid having a later stop-dmr change the
+; value of 'debugger-enable.
+
+       (f-put-global 'dmrp t state)
+     state)))
 
 ; See comment in true-listp-cadr-assoc-eq-for-open-channels-p.
 (in-theory (disable true-listp-cadr-assoc-eq-for-open-channels-p))

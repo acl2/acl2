@@ -502,7 +502,9 @@ implementations.")
          (setq source-directory
                (subseq source-directory 0 (1- (length source-directory))))))
   (cond ((not (equal (our-truename (format nil "~a/" source-directory) :safe)
-                     (our-truename "" t)))
+                     (our-truename
+                      ""
+                      "Note: Calling OUR-TRUENAME from COPY-DISTRIBUTION.")))
          (error "We expected to be in the directory~%~s~%~
                  but instead are apparently in the directory~%~s .~%~
                  Either issue, in Unix, the command~%~

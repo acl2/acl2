@@ -4290,6 +4290,7 @@
      add-custom-keyword-hint
      add-default-hints!
      add-include-book-dir
+     add-ld-keyword-alias!
      add-match-free-override
      comp
      defabsstobj
@@ -9071,7 +9072,8 @@
         (eval-event-lst
          0 nil
          ev-lst
-         t ; quietp
+         (or (ld-skip-proofsp state)
+             progn!p) ; quietp
          (eval-event-lst-environment in-encapsulatep state)
          (f-get-global 'in-local-flg state)
          nil
