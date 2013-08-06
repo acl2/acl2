@@ -762,6 +762,24 @@ implementations.")
         #+cltl2 'with-standard-io-syntax
         args))
 
+(defun user-args-string (&optional alternate-prefix)
+
+; This function is used in calls of write-exec-file to save images that can
+; comprehend command line arguments supplied directly by the user to ACL2,
+; which thus are not intended for direct use by the host Lisp.  Jared Davis,
+; who suggested using the "--" argument that we now use (except, he pointed out
+; a different approach for SBCL, which we also use), has created a community
+; book, books/oslib/argv.lisp, that grabs all the command-line arguments.  The
+; goal here is simply to tell the host Lisp about arguments that are to be
+; ignored by it -- namely, those after "--" (or, for sbcl,
+; "--end-toplevel-options") -- other than to affect the value of a variable (or
+; function) such as ccl::*unprocessed-command-line-arguments* (see
+; books/oslib/argv.lisp), for use by the application.
+
+  (if alternate-prefix
+      (concatenate 'string alternate-prefix " \"$@\"")
+    "-- \"$@\""))
+
 (defmacro write-exec-file (stream prefix string &rest args)
 
 ; Prefix is generally nil, but can be (string . fmt-args).  String is the
@@ -814,7 +832,9 @@ implementations.")
     (if (probe-file gcl-exec-file)
         (delete-file gcl-exec-file))
     (with-open-file (str sysout-name :direction :output)
-                    (write-exec-file str nil "~s $*~%" gcl-exec-file))
+                    (write-exec-file str nil "~s ~a~%"
+                                     gcl-exec-file
+                                     (user-args-string)))
     (cond ((and set-optimize-maximum-pages
                 (boundp 'si::*optimize-maximum-pages*))
 
@@ -1217,8 +1237,9 @@ implementations.")
 ; changing the underlying Lisp implementation before building ACL2 (again,
 ; presumably based on knowledge of the host Lisp implementation).
 
-                                     "~s -init - -siteinit - $*~%"
-                                     eventual-lw-exec-file))
+                                     "~s -init - -siteinit - ~a~%"
+                                     eventual-lw-exec-file
+                                     (user-args-string)))
     (chmod-executable sysout-name)
     (cond ((and system::*init-file-loaded*
                 system::*complain-about-init-file-loaded*)
@@ -1292,7 +1313,7 @@ implementations.")
        (write-exec-file str
                         nil
                         "~s -core ~s -dynamic-space-size ~s -eval ~
-                         '(acl2::cmulisp-restart)' $*~%"
+                         '(acl2::cmulisp-restart)' ~a~%"
                         prog2
                         eventual-sysout-core
 
@@ -1307,7 +1328,8 @@ implementations.")
 
 ; So we use 1600 and see how it goes....
 
-                        1600)))
+                        1600
+                        (user-args-string))))
     (chmod-executable sysout-name)
     (system::gc)
     (extensions::save-lisp sysout-core :load-init-file nil :site-init nil
@@ -1432,21 +1454,17 @@ implementations.")
 ; See *sbcl-dynamic-space-size* for an explanation of the --dynamic-space-size
 ; setting below.
 
-        "~s --dynamic-space-size ~s --control-stack-size 8 --core ~s~a ~
-         --eval '(acl2::sbcl-restart)'"
+; Note that --no-userinit was introduced into SBCL in Version 0.9.13, hence has
+; been part of SBCL since 2007 (perhaps earlier).  So when Jared Davis pointed
+; out this option to us after ACL2 Version_6.2, we started using it in place of
+; " --userinit /dev/null", which had not worked on Windows.
+
+        "~s --dynamic-space-size ~s --control-stack-size 8 --core ~s ~
+         --end-runtime-options --no-userinit --eval '(acl2::sbcl-restart)' ~a"
         prog
         *sbcl-dynamic-space-size*
         eventual-sysout-core
-
-; We have found (August 2008) that SBCL 1.0.13 on Windows does not like
-; "--userinit /dev/null".  But we have been using this option for quite some
-; time on other platforms.  So we conditionalize here, but we are open to
-; suggestions from SBCL users on a better way to handle this.
-
-        #-mswindows
-        " --userinit /dev/null"
-        #+mswindows
-        "")))
+        (user-args-string "--end-toplevel-options"))))
     (chmod-executable sysout-name)
     ;; In SBCL 0.9.3 the read-only space is too small for dumping ACL2 on x86,
     ;; so we have to specify :PURIFY NIL. This will unfortunately result in
@@ -1518,11 +1536,12 @@ implementations.")
 ; Allegro 6.2 to avoid getting Allegro copyright information printed upon :q if
 ; we start up in the ACL2 read-eval-print loop.
 
-;         "~s -I ~s -L ~s~%"
+;         "~s -I ~s -L ~s ~s~%"
 
-          "~s -I ~s $*~%"
+          "~s -I ~s ~a~%"
           (system::command-line-argument 0)
-          eventual-sysout-dxl))
+          eventual-sysout-dxl
+          (user-args-string)))
         (chmod-executable sysout-name)
         (excl:dumplisp :name sysout-dxl)))
     #-(and allegro-version>= (version>= 5 0))
@@ -1588,7 +1607,7 @@ implementations.")
      (str sysout-name :direction :output)
      (write-exec-file str
                       nil
-                      "~s -i ~s -p ACL2 -M ~s -m ~dMB -E ISO-8859-1 $*~%"
+                      "~s -i ~s -p ACL2 -M ~s -m ~dMB -E ISO-8859-1 ~a~%"
                       (or (ext:getenv "LISP") "clisp")
                       (rc-filename save-dir)
                       eventual-sysout-mem
@@ -1604,7 +1623,8 @@ implementations.")
 ; write-exec-file seems to put a decimal point after the number when using ~s,
 ; and CLISP complains about that when starting up.
 
-                      10))
+                      10
+                      (user-args-string)))
     (chmod-executable sysout-name)
     (ext:gc)
     (ext:saveinitmem sysout-mem
@@ -1692,9 +1712,11 @@ implementations.")
 ; See the section on "reading characters from files" in file acl2.lisp for an
 ; explanation of the -K argument below.
 
-                      "~s -I ~s -K ISO-8859-1 -e \"(acl2::acl2-default-restart)\" $*~%"
+                      "~s -I ~s -K ISO-8859-1 -e ~
+                       \"(acl2::acl2-default-restart)\" ~a~%"
                       ccl-program
-                      core-name))
+                      core-name
+                      (user-args-string)))
     (chmod-executable sysout-name)
     (ccl::gc)
     (ccl:save-application core-name)))

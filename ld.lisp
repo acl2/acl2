@@ -21113,6 +21113,11 @@
   declared to be inline in order to boost performance.  (The list may be found
   by searching ACL2 source file ~c[axioms.lisp] for ``~c[(declaim (inline]''.)
 
+  Better support has been provided for command line arguments, especially those
+  supplied directly by the user when calling ACL2.  (See the comment in source
+  function ~c[user-args-string], source file ~c[acl2-init.lisp], for more
+  information.)  Thanks to Jared Davis for suggesting these changes.
+
   ~st[EMACS SUPPORT]
 
   Modified file ~c[emacs/emacs-acl2.el] to eliminate some warnings that were
