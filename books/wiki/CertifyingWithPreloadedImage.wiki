@@ -1,0 +1,16 @@
+#summary Rough sketch of how Centaur Certifications
+
+= Introduction =
+
+When doing proofs using VL, it often takes awhile just to include the VL books.  As such, after a smaller set of books is built (think "str", "std", etc.), Centaur saves an image with save-exec.  This image is then used to certify the books that require having the VL Books load.
+
+= Transcript of Jared's Explanation =
+
+We do use a custom acl2 image for most of our proof work.  It's called "stp" so our Makefile is sort of like an extended version of books/Makefile that adds an stp target.  
+
+Then the problem is: how do you tell cert.pl which image to use?  For that, there's .image files.   So, e.g., just like you can have foo.lisp get its portcullis from either foo.acl2 or cert.acl2, cert.pl will look for either foo.image or cert.image, in that priority.  And these image files just contain the name of the ACL2 image you want to use, e.g., in our case they would just contain "stp".  When cert.pl sees that, it'll know it's supposed to certify foo.lisp using stp instead of ordinary ACL2.
+
+We fortunately haven't ever wanted to do that for released books, i.e., we only use stp on our internal books, and in fact some parts of stp aren't even released.
+
+
+By the way, if you want to do this same thing, a good way to do it is to make your save-image nothing more than (include-book "my-books") (q) (save-exec "my-image" ...).  Then you can put (include-book "my-books") at the top of your normal files and everything still works if you just use ordinary ACL2 but you get this shortcut for yourself because that line is redundant in your image (well, you may want a reset-prehistory in there, too).
