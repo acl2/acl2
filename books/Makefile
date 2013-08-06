@@ -206,13 +206,16 @@
 # should be something like: if you give a certify-book command, we use it;
 # otherwise we generate one using the cert-flags.
 
-# BUILDING THE MANUAL
+# BUILDING THE XDOC MANUAL
 
-# The manual is built in centaur/manual/, top page index.html, as a
-# byproduct of building centaur/doc.lisp using USE_QUICKLISP=1 on the
-# `make' command line.  This has been tested using CCL on Linux, but
-# may work for other OS/Lisp combinations.  See also
-# centaur/README.html.
+# The xdoc manual is built in centaur/manual/, top page index.html, as
+# a byproduct of building centaur/doc.lisp with ACL2(h) using
+# USE_QUICKLISP=1 on the `make' command line.  This has been tested
+# using CCL on Linux, but may work for other OS/Lisp combinations.
+# See also centaur/README.html.  Note that you can create your own
+# manual using ACL2 or ACL2(h); see topic SAVE (parent topic XDOC) in
+# the xdoc manual, either in centaur/manual/ or on the web at
+# http://fv.centtech.com/acl2/latest/doc/.
 
 # STATUS / TODO LIST / MISSING FEATURES / BOZOS:
 #
