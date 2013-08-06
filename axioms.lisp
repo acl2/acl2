@@ -6106,19 +6106,29 @@
 
   identity function used to force a hypothesis~/
 
-  When a hypothesis of a conditional rule has the form ~c[(force hyp)] it
-  is logically equivalent to ~c[hyp] but has a pragmatic effect.  In
-  particular, when the rule is considered, the needed instance of the
-  hypothesis, ~c[hyp'], is assumed and a special case is generated,
-  requiring the system to prove that ~c[hyp'] is true in the current
-  context.  The proofs of all such ``forced assumptions'' are delayed
-  until the successful completion of the main goal.
-  ~l[forcing-round].
+  ~c[Force] is the identity function: ~c[(force x)] is equal to ~c[x].
+  However, for rules of many classes (~pl[rule-classes]), a hypothesis of the
+  form ~c[(force term)] is given special treatment, as described below.  This
+  treatment takes place for rule classes ~c[:]~ilc[rewrite], ~c[:]~ilc[linear],
+  ~c[:]~ilc[type-prescription], ~c[:]~ilc[definition], ~c[:]~ilc[meta] (actually
+  in that case, the result of evaluating the hypothesis metafunction call), and
+  ~c[:]~ilc[forward-chaining].
 
-  Forcing should only be used on hypotheses that are always expected to be
-  true, as is commonly the case for ~il[guard]s of functions.  All the power of
-  the theorem prover is brought to bear on a forced hypothesis and no
-  backtracking is possible.  Forced goals can be attacked immediately
+  When a hypothesis of a conditional rule (of one of the classes listed above)
+  has the form ~c[(force hyp)], it is logically equivalent to ~c[hyp] but has a
+  pragmatic effect.  In particular, when the rule is considered, the needed
+  instance of the hypothesis, ~c[hyp'], may be assumed if the usual process
+  fails to prove it or its negation.  In that situation, if the rule is
+  eventually applied, then a special case is generated, requiring the system to
+  prove that ~c[hyp'] is true in the current context.  The proofs of all such
+  ``forced assumptions'' are, by default, delayed until the successful
+  completion of the main goal.  ~l[forcing-round] and
+  ~pl[immediate-force-modep].
+
+  Forcing is generally used on hypotheses that are always expected to be true,
+  as is commonly the case for ~il[guard]s of functions.  All the power of the
+  theorem prover is brought to bear on a forced hypothesis and no backtracking
+  is possible.  Forced goals can be attacked immediately
   (~pl[immediate-force-modep]) or in a subsequent forcing round
   (~pl[forcing-round]).  Also ~pl[case-split] for a related utility.  If the
   ~c[:]~ilc[executable-counterpart] of the function ~c[force] is ~il[disable]d,
@@ -6294,14 +6304,22 @@
 
   like force but immediately splits the top-level goal on the hypothesis~/
 
-  When a hypothesis of a conditional rule has the form ~c[(case-split hyp)]
-  it is logically equivalent to ~c[hyp].  However it affects the
-  application of the rule generated as follows:  if ACL2
-  attempts to apply the rule but cannot establish that the required
-  instance of ~c[hyp] holds in the current context, it considers the
-  hypothesis true anyhow, but (assuming all hypotheses are seen to be true and
-  the rule is applied) creates a subgoal in which that instance of ~c[hyp] is
-  assumed false.  (There are exceptions, noted below.)~/
+  ~c[Case-split] is an variant of ~ilc[force], which has similar special
+  treatment in hypotheses of rules for the same ~il[rule-classes] as for
+  ~c[force] (~pl[force]).  This treatment takes place for rule classes
+  ~c[:]~ilc[rewrite], ~c[:]~ilc[linear], ~c[:]~ilc[type-prescription],
+  ~c[:]~ilc[definition], ~c[:]~ilc[meta] (actually in that case, the result of
+  evaluating the hypothesis metafunction call), and
+  ~c[:]~ilc[forward-chaining].
+
+  When a hypothesis of a conditional rule (of one of the classes listed above)
+  has the form ~c[(case-split hyp)] it is logically equivalent to ~c[hyp].
+  However it affects the application of the rule generated as follows: if ACL2
+  attempts to apply the rule but cannot establish that the required instance of
+  ~c[hyp] holds in the current context, it considers the hypothesis true
+  anyhow, but (assuming all hypotheses are seen to be true and the rule is
+  applied) creates a subgoal in which that instance of ~c[hyp] is assumed
+  false.  (There are exceptions, noted below.)~/
 
   For example, given the rule
   ~bv[]
@@ -6318,14 +6336,14 @@
   (IMPLIES (AND (NOT (P1 (CAR X))) (P3 X))
            (P2 (CAR X))).
   ~ev[]
-  Unlike ~ilc[force], ~c[case-split] does not delay the ``false case'' to
-  a forcing round but tackles it more or less immediately.
+  Unlike ~ilc[force], ~c[case-split] does not delay the ``false case'' to a
+  forcing round but tackles it more or less immediately.
 
   The special ``split'' treatment of ~c[case-split] can be disabled by
-  disabling forcing:  ~pl[force] for a discussion of disabling forcing, and
-  also ~pl[disable-forcing].  Finally, we should mention that the rewriter is
-  never willing to split when there is an ~ilc[if] term present in the goal
-  being simplified.  Since ~ilc[and] terms and ~ilc[or] terms are merely
+  disabling forcing: ~pl[force] for a discussion of disabling forcing, and also
+  ~pl[disable-forcing].  Finally, we should mention that the rewriter is never
+  willing to split when there is an ~ilc[if] term present in the goal being
+  simplified.  Since ~ilc[and] terms and ~ilc[or] terms are merely
   abbreviations for ~ilc[if] terms, they also prevent splitting.  Note that
   ~ilc[if] terms are ultimately eliminated using the ordinary flow of the proof
   (but ~pl[set-case-split-limitations]), so ~c[case-split] will ultimately
@@ -6482,11 +6500,17 @@
   (declare (xargs :guard t))
   ":Doc-Section Miscellaneous
 
-  attach a heuristic filter on a ~c[:]~ilc[rewrite], ~c[:]~ilc[meta], or ~c[:]~ilc[linear] rule~/
+  attach a heuristic filter on a rule~/
+
+  A calls of ~c[syntaxp] in the hypothesis of a ~c[:]~ilc[rewrite],
+  ~c[:]~ilc[definition], or ~c[:]~ilc[linear] rule is treated specially, as
+  described below.  Similar treatment is given to the evaluation of a
+  ~c[:]~ilc[meta] rule's hypothesis function call.
+
+  For example, consider the ~c[:]~ilc[rewrite] rule created from the following
+  formula.
   ~bv[]
   Example:
-  Consider the :REWRITE rule created from
-
   (IMPLIES (SYNTAXP (NOT (AND (CONSP X)
                               (EQ (CAR X) 'NORM))))
            (EQUAL (LXD X)
@@ -6522,12 +6546,12 @@
   display this internal representation.
 
   There are two types of ~c[syntaxp] hypotheses.  The simpler type may be a
-  hypothesis of a ~c[:]~ilc[rewrite] or ~c[:]~ilc[linear] rule provided
-  ~c[test] contains at least one variable but no free variables
-  (~pl[free-variables]).  In particular, ~c[test] may not use ~il[stobj]s; any
-  stobj name will be treated as an ordinary variable.  The case of
-  ~c[:]~ilc[meta] rules is similar to the above, except that it applies to the
-  result of applying the hypothesis metafunction.  (Later below we will
+  hypothesis of a ~c[:]~ilc[rewrite], ~c[:]~ilc[definition], or
+  ~c[:]~ilc[linear] rule provided ~c[test] contains at least one variable but
+  no free variables (~pl[free-variables]).  In particular, ~c[test] may not use
+  ~il[stobj]s; any stobj name will be treated as an ordinary variable.  The
+  case of ~c[:]~ilc[meta] rules is similar to the above, except that it applies
+  to the result of applying the hypothesis metafunction.  (Later below we will
   describe the second type, an ~em[extended] ~c[syntaxp] hypothesis, which may
   use ~ilc[state].)
 
@@ -6913,7 +6937,7 @@
                                   (not (member-eq nil vars))))))
   ":Doc-Section Miscellaneous
 
-  to bind free variables of a rewrite or linear rule~/
+  to bind free variables of a rewrite, definition, or linear rule~/
   ~bv[]
   Examples:
   (IMPLIES (AND (RATIONALP LHS)
@@ -6941,10 +6965,11 @@
   A rule which uses a ~c[bind-free] hypothesis has similarities to both a rule
   which uses a ~ilc[syntaxp] hypothesis and to a ~c[:]~ilc[meta] rule.
   ~c[Bind-free] is like ~ilc[syntaxp], in that it logically always returns
-  ~c[t] but may affect the application of a ~c[:]~ilc[rewrite] or
-  ~c[:]~ilc[linear] rule when it is called at the top-level of a hypothesis.
-  It is like a ~c[:]~ilc[meta] rule, in that it allows the user to perform
-  transformations of terms under progammatic control.
+  ~c[t] but may affect the application of a ~c[:]~ilc[rewrite],
+  ~c[:]~ilc[definition], or ~c[:]~ilc[linear] rule when it is called at the
+  top-level of a hypothesis.  It is like a ~c[:]~ilc[meta] rule, in that it
+  allows the user to perform transformations of terms under progammatic
+  control.
 
   Note that a ~c[bind-free] hypothesis does not, in general, deal with the
   meaning or semantics or values of the terms, but rather with their syntactic
@@ -6956,19 +6981,18 @@
 
   Just as for a ~ilc[syntaxp] hypothesis, there are two basic types of
   ~c[bind-free] hypotheses.  The simpler type of ~c[bind-free] hypothesis may
-  be used as the nth hypothesis in a ~c[:]~ilc[rewrite] or ~c[:]~ilc[linear]
-  rule whose ~c[:]~ilc[corollary] is
-  ~c[(implies (and hyp1 ... hypn ... hypk) (equiv lhs rhs))]
-  provided ~c[term] is a term, ~c[term] contains at least one variable, and
-  every variable occuring freely in ~c[term] occurs freely in ~c[lhs] or in
-  some ~c[hypi], ~c[i<n].  In addition, ~c[term] must not use any stobjs.
-  Later below we will describe the second type, an ~em[extended] ~c[bind-free]
-  hypothesis, which may use ~ilc[state].  Whether simple or extended, a
-  ~c[bind-free] hypothesis may return an alist that binds free variables of a
-  rewrite rule, as explained below, or it may return a list of such alists.  We
-  focus on the first of these cases: return of a single binding alist.  We
-  conclude our discussion with a section that covers the other case: return of
-  a list of alists.
+  be used as the nth hypothesis in a ~c[:]~ilc[rewrite], ~c[:]~ilc[definition],
+  or ~c[:]~ilc[linear] rule whose ~c[:]~ilc[corollary] is
+  ~c[(implies (and hyp1 ... hypn ... hypk) (equiv lhs rhs))] provided ~c[term]
+  is a term, ~c[term] contains at least one variable, and every variable
+  occuring freely in ~c[term] occurs freely in ~c[lhs] or in some ~c[hypi],
+  ~c[i<n].  In addition, ~c[term] must not use any stobjs.  Later below we will
+  describe the second type, an ~em[extended] ~c[bind-free] hypothesis, which
+  may use ~ilc[state].  Whether simple or extended, a ~c[bind-free] hypothesis
+  may return an alist that binds free variables, as explained below, or it may
+  return a list of such alists.  We focus on the first of these cases: return
+  of a single binding alist.  We conclude our discussion with a section that
+  covers the other case: return of a list of alists.
 
   We begin our description of ~c[bind-free] by examining the first example
   above in some detail.
@@ -7503,9 +7527,9 @@
   ~il[documentation] facilities do not permit us to use keywords below).
 
   ~/
-  See also ~ilc[force], ~il[case-split], ~ilc[syntaxp], and ~ilc[bind-free]
-  for ``pragmas'' one can wrap around individual hypotheses of ~c[linear] and
-  ~c[rewrite] rules to affect how the hypothesis is relieved.
+  See also ~ilc[force], ~il[case-split], ~ilc[syntaxp], and ~ilc[bind-free] for
+  ``pragmas'' one can wrap around individual hypotheses of certain classes of
+  rules to affect how the hypothesis is relieved.
 
   Before we get into the discussion of rule classes, let us return to an
   important point.  In spite of the large variety of rule classes available, at

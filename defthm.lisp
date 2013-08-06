@@ -1678,18 +1678,19 @@
 
   make some arithmetic inequality rules~/
 
-  ~l[rule-classes] for a general discussion of rule classes and how they are
-  used to build rules from formulas.  An example ~c[:]~ilc[corollary] formula
-  from which a ~c[:linear] rule might be built is:
+  ~l[rule-classes] for a general discussion of rule classes, including how they
+  are used to build rules from formulas and a discussion of the various
+  keywords in a rule class description.
+
   ~bv[]
   Example:
-  (implies (and (eqlablep e)           if inequality reasoning begins to
-                (true-listp x))        consider how (length (member a b))
-           (<= (length (member e x))   compares to any other term, add to
-               (length x)))            set of known inequalities the fact
-                                       that it is no larger than (length b),
-                                       provided (eqlablep a) and (true-listp b)
-                                       rewrite to t
+  (defthm length-member-leq-length       If inequality reasoning begins to
+    (implies (and (eqlablep e)           consider how (length (member a b))
+                  (true-listp x))        compares to any other term, add to
+             (<= (length (member e x))   the set of known inequalities the fact
+                 (length x)))            that it is no larger than (length b),
+    :rule-classes :linear)               provided (eqlablep a) and
+                                         (true-listp b) rewrite to t.
 
   General Form:
   (and ...
@@ -2383,21 +2384,24 @@
 
   show that a relation is well-founded on a set~/
 
-  ~l[rule-classes] for a general discussion of rule classes and
-  how they are used to build rules from formulas.  An example
-  ~c[:]~ilc[corollary] formula from which a ~c[:well-founded-relation] rule might be
-  built is as follows.  (Of course, the functions ~c[pairp], ~c[lex2p], and
-  ~c[ordinate] would have to be defined first.)
+  ~l[rule-classes] for a general discussion of rule classes, including how they
+  are used to build rules from formulas and a discussion of the various
+  keywords in a rule class description.
+
   ~bv[]
   Example:
-  (and (implies (pairp x) (o-p (ordinate x)))
-       (implies (and (pairp x)
-                     (pairp y)
-                     (lex2p x y))
-                (o< (ordinate x) (ordinate y))))
+  (defthm lex2p-is-well-founded-relation
+    (and (implies (pairp x) (o-p (ordinate x)))
+         (implies (and (pairp x)
+                       (pairp y)
+                       (lex2p x y))
+                  (o< (ordinate x) (ordinate y))))
+    :rule-classes :well-founded-relation)
   ~ev[]
-  The above example establishes that ~c[lex2p] is a well-founded
-  relation on ~c[pairp]s.  We explain and give details below.~/
+  The example above creates a ~c[:well-founded-relation] rule, where of course
+  the functions ~c[pairp], ~c[lex2p], and ~c[ordinate] would have to be defined
+  first.  It establishes that ~c[lex2p] is a well-founded relation on
+  ~c[pairp]s.  We explain and give details below.~/
 
   Exactly two general forms are recognized:
   ~bv[]
@@ -2648,35 +2652,39 @@
 
   to build a clause into the simplifier~/
 
-  ~l[rule-classes] for a general discussion of rule classes and
-  how they are used to build rules from formulas.  A ~c[:built-in-clause]
-  rule can be built from any formula other than propositional
-  tautologies.  Roughly speaking, the system uses the list of built-in
-  clauses as the first method of proof when attacking a new goal.  Any
+  ~l[rule-classes] for a general discussion of rule classes, including how they
+  are used to build rules from formulas and a discussion of the various
+  keywords in a rule class description.
+
+  ~bv[]
+  Example:
+  (defthm acl2-count-abl
+    (and (implies (and (true-listp x)
+                       (not (equal x nil)))
+                  (< (acl2-count (abl x))
+                     (acl2-count x)))
+         (implies (and (true-listp x)
+                       (not (equal nil x)))
+                  (< (acl2-count (abl x))
+                     (acl2-count x))))
+    :rule-classes :built-in-clause)
+  ~ev[]
+
+  A ~c[:built-in-clause] rule can be built from any formula other than
+  propositional tautologies.  Roughly speaking, the system uses the list of
+  built-in clauses as the first method of proof when attacking a new goal.  Any
   goal that is subsumed by a built in clause is proved ``silently.''~/
 
-  ACL2 maintains a set of ``built-in'' clauses that are used to
-  short-circuit certain theorem proving tasks.  We discuss this at
-  length below.  When a theorem is given the rule class
-  ~c[:built-in-clause] ACL2 flattens the ~ilc[implies] and ~ilc[and] structure of the
-  ~c[:]~ilc[corollary] formula so as to obtain a set of formulas whose
-  conjunction is equivalent to the given corollary.  It then converts
-  each of these to clausal form and adds each clause to the set of
-  built-in clauses.
+  ACL2 maintains a set of ``built-in'' clauses that are used to short-circuit
+  certain theorem proving tasks.  We discuss this at length below.  When a
+  theorem is given the rule class ~c[:built-in-clause] ACL2 flattens the
+  ~ilc[implies] and ~ilc[and] structure of the ~c[:]~ilc[corollary] formula so
+  as to obtain a set of formulas whose conjunction is equivalent to the given
+  corollary.  It then converts each of these to clausal form and adds each
+  clause to the set of built-in clauses.
 
-  For example, the following ~c[:]~ilc[corollary] (regardless of the definition
-  of ~c[abl])
-  ~bv[]
-  (and (implies (and (true-listp x)
-                     (not (equal x nil)))
-                (< (acl2-count (abl x))
-                   (acl2-count x)))
-       (implies (and (true-listp x)
-                     (not (equal nil x)))
-                (< (acl2-count (abl x))
-                   (acl2-count x))))
-  ~ev[]
-  will build in two clauses,
+  The example above (regardless of the definition of ~c[abl]) will build in two
+  clauses,
   ~bv[]
   {(not (true-listp x))
    (equal x nil)
@@ -2723,43 +2731,39 @@
   and the subsumption property just means that ~c[c1] follows trivially
   from ~c[c2] by instantiation.
 
-  The set of built-in clauses is just a set of known theorems in
-  clausal form.  Any formula that is subsumed by a built-in clause is
-  thus a theorem.  If the set of built-in theorems is reasonably
-  small, this little theorem prover is fast.  ACL2 uses the ``built-in
-  clause check'' in four places: (1) at the top of the iteration in
-  the prover -- thus if a built-in clause is generated as a subgoal it
-  will be recognized when that goal is considered, (2) within the
+  The set of built-in clauses is just a set of known theorems in clausal form.
+  Any formula that is subsumed by a built-in clause is thus a theorem.  If the
+  set of built-in theorems is reasonably small, this little theorem prover is
+  fast.  ACL2 uses the ``built-in clause check'' in four places: (1) at the top
+  of the iteration in the prover -- thus if a built-in clause is generated as a
+  subgoal it will be recognized when that goal is considered, (2) within the
   simplifier so that no built-in clause is ever generated by
-  simplification, (3) as a filter on the clauses generated to prove
-  the termination of recursively ~ilc[defun]'d functions and (4) as a
-  filter on the clauses generated to verify the guards of a function.
+  simplification, (3) as a filter on the clauses generated to prove the
+  termination of recursively ~ilc[defun]'d functions and (4) as a filter on the
+  clauses generated to verify the guards of a function.
 
-  The latter two uses are the ones that most often motivate an
-  extension to the set of built-in clauses.  Frequently a given
-  formalization problem requires the definition of many functions
-  which require virtually identical termination and/or guard proofs.
-  These proofs can be short-circuited by extending the set of built-in
-  clauses to contain the most general forms of the clauses generated
-  by the definitional schemes in use.
+  The latter two uses are the ones that most often motivate an extension to the
+  set of built-in clauses.  Frequently a given formalization problem requires
+  the definition of many functions which require virtually identical
+  termination and/or guard proofs.  These proofs can be short-circuited by
+  extending the set of built-in clauses to contain the most general forms of
+  the clauses generated by the definitional schemes in use.
 
-  The attentive user might have noticed that there are some recursive
-  schemes, e.g., recursion by ~ilc[cdr] after testing ~ilc[consp], that ACL2 just
-  seems to ``know'' are ok, while for others it generates measure
-  clauses to prove.  Actually, it always generates measure clauses but
-  then filters out any that pass the built-in clause check.  When ACL2
-  is initialized, the clause justifying ~ilc[cdr] recursion after a ~ilc[consp]
-  test is added to the set of built-in clauses.  (That clause is ~c[c2]
-  above.)
+  The attentive user might have noticed that there are some recursive schemes,
+  e.g., recursion by ~ilc[cdr] after testing ~ilc[consp], that ACL2 just seems
+  to ``know'' are ok, while for others it generates measure clauses to prove.
+  Actually, it always generates measure clauses but then filters out any that
+  pass the built-in clause check.  When ACL2 is initialized, the clause
+  justifying ~ilc[cdr] recursion after a ~ilc[consp] test is added to the set
+  of built-in clauses.  (That clause is ~c[c2] above.)
 
-  Note that only a subsumption check is made; no rewriting or
-  simplification is done.  Thus, if we want the system to ``know''
-  that ~ilc[cdr] recursion is ok after a negative ~ilc[atom] test (which, by the
-  definition of ~ilc[atom], is the same as a ~ilc[consp] test), we have to build
-  in a second clause.  The subsumption algorithm does not ``know''
-  about commutative functions.  Thus, for predictability, we have
-  built in commuted versions of each clause involving commutative
-  functions.  For example, we build in both
+  Note that only a subsumption check is made; no rewriting or simplification is
+  done.  Thus, if we want the system to ``know'' that ~ilc[cdr] recursion is ok
+  after a negative ~ilc[atom] test (which, by the definition of ~ilc[atom], is
+  the same as a ~ilc[consp] test), we have to build in a second clause.  The
+  subsumption algorithm does not ``know'' about commutative functions.  Thus,
+  for predictability, we have built in commuted versions of each clause
+  involving commutative functions.  For example, we build in both
   ~bv[]
   {(not (integerp x))
    (< 0 x)
@@ -3052,29 +3056,28 @@
 
   make a rule used by the typing mechanism~/
 
-  ~l[rule-classes] for a general discussion of rule classes and
-  how they are used to build rules from formulas.  An example
-  ~c[:]~ilc[corollary] formula from which a ~c[:compound-recognizer] rule might be
-  built is:
-  ~bv[]
-  Example:
-  (implies (alistp x)         When (alistp x) is assumed true,
-           (true-listp x))    add the additional hypothesis that x
-                              is of primitive type true-listp.~/
-  ~ev[]
+  ~l[rule-classes] for a general discussion of rule classes, including how they
+  are used to build rules from formulas and a discussion of the various
+  keywords in a rule class description.
 
-  Before presenting the General Forms, we start with a motivating example.  The
-  following provides a nice example of a ~c[:compound-recognizer] rule that is
-  built into ACL2.
   ~bv[]
-  (defthm natp-compound-recognizer
+  Examples:
+  (defthm alistp-implies-true-listp-compound-recognizer
+    (implies (alistp x)                 ; When (alistp x) is assumed true, add
+             (true-listp x))            ; the additional hypothesis that x is
+    :rule-classes :compound-recognizer) ; of primitive type true-listp.~/
+
+  (defthm natp-compound-recognizer      ; See discussion below.
     (equal (natp x)
            (and (integerp x)
                 (<= 0 x)))
     :rule-classes :compound-recognizer)
   ~ev[]
-  To see how this rule might be useful, consider the following (admittedly very
-  simple) ~il[events].
+
+  Before presenting the General Forms, we start with a motivating example: the
+  second ~ilc[defthm] form above, which provides a nice example of a
+  ~c[:compound-recognizer] rule that is built into ACL2.  To see how this rule
+  might be useful, consider the following (admittedly very simple) ~il[events].
   ~bv[]
   (defun triple (x)
     (* 3 x))
@@ -3600,8 +3603,7 @@
   (defthm p-and-r-forward           ; When (p a) appears in a formula to be
    (implies (and (p x) (r x))       ; simplified, try to establish (p a) and
             (q (f x)))              ; (r a) and, if successful, add (q (f a))
-                                    ; to the known assumptions.
-   :rule-classes :forward-chaining)
+   :rule-classes :forward-chaining) ; to the known assumptions.
 
   (defthm p-and-r-forward           ; as above with most defaults filled in
     (implies (and (p x) (r x))
@@ -3971,11 +3973,38 @@
 
   make a ~c[:meta] rule (a hand-written simplifier)~/
 
-  ~l[rule-classes] for a general discussion of rule classes and how they are
-  used to build rules from formulas.  Meta rules extend the ACL2 simplifier
-  with hand-written code to transform certain terms to equivalent ones.  To add
-  a meta rule, the ~c[:]~ilc[corollary] formula must establish that the
-  hand-written ``metafunction'' preserves the meaning of the transformed term.
+  ~l[rule-classes] for a general discussion of rule classes, including how they
+  are used to build rules from formulas and a discussion of the various
+  keywords in a rule class description.
+
+  Meta rules extend the ACL2 simplifier with hand-written code to transform
+  certain terms to equivalent ones.  To add a meta rule, the
+  ~c[:]~ilc[corollary] formula must establish that the hand-written
+  ``metafunction'' preserves the meaning of the transformed term.
+
+  ~bv[]
+  Examples:
+  (defthm fn-correct-1                ; Modify the rewriter to use fn to
+    (equal (evl x a)                  ; transform terms that are calls of
+           (evl (fn x) a))            ; nth or of foo.
+    :rule-classes ((:meta :trigger-fns (nth foo))))
+
+  (defthm fn-correct-2                ; As above, but this illustrates
+    (implies (and (pseudo-termp x)    ; that without loss of generality we
+                  (alistp a))         ; may restrict x to be shaped like a
+             (equal (evl x a)         ; term and a to be an alist.
+                    (evl (fn x) a)))
+    :rule-classes ((:meta :trigger-fns (nth foo))))
+
+  (defthm fn-correct-3                ; As above (with or without the
+    (implies (and (pseudo-termp x)    ; hypotheses on x and a), with the
+                  (alistp a)          ; additional restriction that the
+                  (evl (hyp-fn x) a)) ; meaning of (hyp-fn x) is true in
+             (equal (evl x a)         ; the current context.  That is, the
+                    (evl (fn x) a)))  ; applicability of the transformation
+    :rule-classes                     ; may be dependent upon some computed
+    ((:meta :trigger-fns (nth foo)))) ; hypotheses.
+  ~ev[]
 
   While our intention is that the set of ACL2 documentation topics is
   self-contained, readers might find it useful to see the following paper for
@@ -3985,35 +4014,11 @@
   Reasoning in ACL2.''  TPHOLs 2005, ed. J. Hurd and T. F. Melham, LNCS 3603,
   Springer-Verlag, Berlin, 2005, pp. 163-178.~eq[]
 
-  Example ~c[:]~ilc[corollary] formulas from which ~c[:meta] rules might be
-  built are:
-  ~bv[]
-  Examples:
-  (equal (evl x a)                  ; Modify the rewriter to use fn to
-         (evl (fn x) a))            ; transform terms.  The :trigger-fns
-                                    ; of the :meta rule-class specify
-                                    ; the top-most function symbols of
-                                    ; those x that are candidates for
-                                    ; this transformation.
-
-  (implies (and (pseudo-termp x)    ; As above, but this illustrates
-                (alistp a))         ; that without loss of generality we
-           (equal (evl x a)         ; may restrict x to be shaped like a
-                  (evl (fn x) a)))  ; term and a to be an alist.
-
-  (implies (and (pseudo-termp x)    ; As above (with or without the
-                (alistp a)          ; hypotheses on x and a) with the
-                (evl (hyp-fn x) a)) ; additional restriction that the
-           (equal (evl x a)         ; meaning of (hyp-fn x) is true in
-                  (evl (fn x) a)))  ; the current context.  That is, the
-                                    ; applicability of the transforma-
-                                    ; tion may be dependent upon some
-                                    ; computed hypotheses.
-  ~ev[]
   A non-~c[nil] list of function symbols must be supplied as the value
   of the ~c[:trigger-fns] field in a ~c[:meta] rule class object
   (except that a macro alias can stand in for a function symbol;
   ~pl[add-macro-alias]).~/
+
   ~bv[]
   General Forms:
   (implies (and (pseudo-termp x)        ; this hyp is optional
@@ -7042,11 +7047,22 @@
 
   make a destructor elimination rule~/
 
-  ~l[rule-classes] for a general discussion of rule classes and how they are
-  used to build rules from formulas.  Here we describe the class of ~c[:elim]
-  rules, which is fundamentally quite different from the more common class of
-  ~c[:]~ilc[rewrite] rules.  Briefly put, a ~c[:rewrite] rule replaces
-  instances of its left-hand side with corresponding instances of its
+  ~l[rule-classes] for a general discussion of rule classes, including how they
+  are used to build rules from formulas and a discussion of the various
+  keywords in a rule class description.
+
+  The following example of an ~c[:elim] rule is an important one, and is built
+  into ACL2.
+  ~bv[]
+  (defaxiom car-cdr-elim
+    (implies (consp x)
+             (equal (cons (car x) (cdr x)) x))
+    :rule-classes :elim)
+  ~ev[]
+
+  The class of ~c[:elim] rules is fundamentally quite different from the more
+  common class of ~c[:]~ilc[rewrite] rules.  Briefly put, a ~c[:rewrite] rule
+  replaces instances of its left-hand side with corresponding instances of its
   right-hand side.  But an ~c[:elim] rule, on the other hand, has the effect of
   generalizing so-called ``destructor'' function applications to variables.  In
   essence, applicability of a ~c[:rewrite] rule is based on matching its
@@ -7096,26 +7112,17 @@
   we will focus on it, giving full details when we introduce the ``General
   Form'' below.
 
-  The example above employs the following built-in ~c[:elim] rule named
-  ~c[car-cdr-elim].
-  ~bv[]
-  Example:
-  (implies (consp x)                      when (car v) or (cdr v) appears
-           (equal (cons (car x) (cdr x))  in a conjecture, and v is a
-                  x))                     variable, consider replacing v by
-                                          (cons a b), for two new variables
-                                          a and b.
-  ~ev[]
-  Notice that the situation is complicated a bit by the fact that this
-  replacement is only valid if the variable being replaced a cons structure.
-  Thus, when ACL2 applies ~c[car-cdr-elim] to replace a variable ~c[v], it will
-  split into two cases: one case in which ~c[(consp v)] is true, in which ~c[v]
-  is replaced by ~c[(cons (car v) (cdr v))] and then ~c[(car v)] and
-  ~c[(cdr v)] are generalized to new variables; and one case in which
-  ~c[(consp v)] is false.  In practice, ~c[(consp v)] is often provable,
-  perhaps even literally present as a hypotheses; then of course there is no
-  need to introduce the second case.  That is why there is no such second case
-  in the example above.
+  Notice that the situation can be complicated a bit by a rule's hypotheses.
+  For example, the replacement specified by the rule ~c[car-cdr-elim] (shown
+  near the beginning of this discussion) is only valid if the variable being
+  replaced is a cons structure.  Thus, when ACL2 applies ~c[car-cdr-elim] to
+  replace a variable ~c[v], it will split into two cases: one case in which
+  ~c[(consp v)] is true, in which ~c[v] is replaced by
+  ~c[(cons (car v) (cdr v))] and then ~c[(car v)] and ~c[(cdr v)] are
+  generalized to new variables; and one case in which ~c[(consp v)] is false.
+  In practice, ~c[(consp v)] is often provable, perhaps even literally present
+  as a hypotheses; then of course there is no need to introduce the second
+  case.  That is why there is no such second case in the example above.
 
   You might find ~c[:elim] rules to be useful whenever you have in mind a data
   type that can be built up from its fields with a ``constructor'' function and
@@ -7326,21 +7333,31 @@
 
   make a rule to restrict generalizations~/
 
-  ~l[rule-classes] for a general discussion of rule classes and
-  how they are used to build rules from formulas.  An example
-  ~c[:]~ilc[corollary] formula from which a ~c[:generalize] rule might be built is:
+  ~l[rule-classes] for a general discussion of rule classes, including how they
+  are used to build rules from formulas and a discussion of the various
+  keywords in a rule class description.
+
   ~bv[]
   Example:
-  any theorem~/
+  (defthm integer-listp-rev
+    (implies (integer-listp x)
+             (integer-listp (rev x)))
+    :rule-classes :generalize)~/
 
   General Form:
   any theorem
   ~ev[]
-  To use such a ~c[:generalize] rule, the system waits until it has
-  decided to generalize some term, ~c[term], by replacing it with some new
-  variable ~c[v].  If any ~c[:generalize] formula can be instantiated so that
-  some non-variable subterm becomes ~c[term], then that instance of the
-  formula is added as a hypothesis.
+  To use a ~c[:generalize] rule, the system waits until it has decided to
+  generalize some term, ~c[term], by replacing it with some new variable ~c[v].
+  If any ~c[:generalize] formula can be instantiated so that some non-variable
+  subterm becomes ~c[term], then that instance of the formula is added as a
+  hypothesis.  Thus for the example above, if the term ~c[(rev x2)] is
+  generalized to the variable ~c[rv] during a proof, then the following is
+  added as a hypothesis when generalizing to a new goal.
+  ~bv[]
+  (implies (integer-listp x2)
+           (integer-listp rv))
+  ~ev[]
 
   At the moment, the best description of how ACL2 ~c[:generalize] rules
   are used may be found in the discussion of ``Generalize Rules,'' page
@@ -7374,29 +7391,47 @@
 
   make a rule that specifies the type of a term~/
 
-  ~l[rule-classes] for a general discussion of rule classes and how they are
-  used to build rules from formulas.  Some example ~c[:]~ilc[corollary]
-  formulas from which ~c[:type-prescription] rules might be built are:
+  ~l[rule-classes] for a general discussion of rule classes, including how they
+  are used to build rules from formulas and a discussion of the various
+  keywords in a rule class description.
+
   ~bv[]
   Examples:
-  (implies                           (nth n lst) is of type characterp
-   (and (character-listp lst)        provided the two hypotheses can
-        (< n (length lst)))          be established by type reasoning
-   (characterp (nth n lst))).
+  (defthm integerp-foo                       ; Assumes that foo has been
+    (integerp (foo x y))                     ; defined; then, states that
+    :rule-classes :type-prescription)        ; (foo x y) is of type integer.
 
-  (implies                           (demodulize a lst 'value ans) is
-   (and (atom a)                     either a nonnegative integer or
-        (true-listp lst)             of the same type as ans, provided
-        (member-equal a lst))        the hyps can be established by type
-   (or (and                          reasoning
-         (integerp
-          (demodulize a lst 'value ans))
-         (>= (demodulize a lst 'value ans) 0))
-       (equal (demodulize a lst 'value ans) ans))).
+  (defthm characterp-nth-type-prescription   ; (Nth n lst) is of type character
+    (implies                                 ; provided the hypotheses can be
+     (and (character-listp lst)              ; established by type reasoning.
+          (<= 0 n)
+          (< n (len lst)))
+     (characterp (nth n lst)))
+    :rule-classes :type-prescription)
+
+  (defthm characterp-nth-type-prescription-alt ; equivalent to the above
+    (implies
+     (and (character-listp lst)
+          (<= 0 n)
+          (< n (len lst)))
+     (characterp (nth n lst)))
+    :rule-classes ((:type-prescription :typed-term (nth n lst))))
+
+  (defthm demodulize-type-for-quote-value  ; (Demodulize a lst 'value ans) is
+    (implies                               ; either a nonnegative integer or
+     (and (atom a)                         ; of the same type as ans, provided
+          (true-listp lst)                 ; the hyps can be established by type
+          (member-equal a lst))            ; reasoning
+     (or (and (integerp (demodulize a lst 'value ans))
+              (>= (demodulize a lst 'value ans) 0))
+       (equal (demodulize a lst 'value ans) ans)))
+    :rule-classes :type-prescription)
   ~ev[]
+
   To specify the term whose type (~pl[type-set]) is described by the rule,
   provide that term as the value of the ~c[:typed-term] field of the rule class
   object.~/
+
   ~bv[]
   General Form (after preprocessing; see below):
   (implies hyps
@@ -7448,13 +7483,13 @@
   ~bv[]
     (defun my-statep (x)
       (and (true-listp x)
-           (equal (length x) 2)))
+           (equal (len x) 2)))
   ~ev[]
   and suppose ~c[(my-statep s)] occurs as a hypothesis of a
   ~c[:type-prescription] rule that is being considered for use in the proof
   attempt for a conjecture with the hypothesis ~c[(my-statep s)].  Since the
   hypothesis in the conjecture is rewritten, it will become the conjunction of
-  ~c[(true-listp s)] and ~c[(equal (length s) 2)].  Those two terms will be
+  ~c[(true-listp s)] and ~c[(equal (len s) 2)].  Those two terms will be
   assumed to have type ~c[t] in the context in which the ~c[:type-prescription]
   rule is tried.  But type reasoning will be unable to deduce that
   ~c[(my-statep s)] has type ~c[t] in this context.  Thus, either ~c[my-statep]
@@ -8149,20 +8184,24 @@
 
   mark a relation as an equivalence relation~/
 
-  ~l[rule-classes] for a general discussion of rule classes and
-  how they are used to build rules from formulas.  An example
-  ~c[:]~ilc[corollary] formula from which a ~c[:equivalence] rule might be built is
-  as follows.  (We assume that ~c[r-equal] has been defined.)
+  ~l[rule-classes] for a general discussion of rule classes, including how they
+  are used to build rules from formulas and a discussion of the various
+  keywords in a rule class description.
+
   ~bv[]
   Example:
-  (and (booleanp (r-equal x y))
-       (r-equal x x)
-       (implies (r-equal x y) (r-equal y x))
-       (implies (and (r-equal x y)
-                     (r-equal y z))
-                (r-equal x z))).
+  (defthm r-equal-is-an-equivalence ; assumes that r-equal has been defined
+    (and (booleanp (r-equal x y))
+         (r-equal x x)
+         (implies (r-equal x y) (r-equal y x))
+         (implies (and (r-equal x y)
+                       (r-equal y z))
+                  (r-equal x z)))
+    :rule-classes :equivalence)
   ~ev[]
+
   Also ~pl[defequiv].~/
+
   ~bv[]
   General Form:
   (and (booleanp (equiv x y))
@@ -8791,14 +8830,20 @@
 
   record that one equivalence relation refines another~/
 
-  ~l[rule-classes] for a general discussion of rule classes and
-  how they are used to build rules from formulas.  An example
-  ~c[:]~ilc[corollary] formula from which a ~c[:refinement] rule might be built is:
+  ~l[rule-classes] for a general discussion of rule classes, including how they
+  are used to build rules from formulas and a discussion of the various
+  keywords in a rule class description.
+
   ~bv[]
   Example:
-  (implies (bag-equal x y) (set-equal y x)).
+  (defthm bag-equal-refines-set-equal
+    (implies (bag-equal x y)
+             (set-equal y x))
+    :rule-classes :refinement)
   ~ev[]
+
   Also ~pl[defrefinement].~/
+
   ~bv[]
   General Form:
   (implies (equiv1 x y) (equiv2 x y))
@@ -8989,12 +9034,17 @@
   ~l[rule-classes] for a general discussion of rule classes and
   how they are used to build rules from formulas.  An example
   ~c[:]~ilc[corollary] formula from which a ~c[:congruence] rule might be built is:
+
   ~bv[]
   Example:
-  (implies (set-equal x y)
-           (iff (memb e x) (memb e y))).
+  (defthm set-equal-implies-iff-memb-2
+    (implies (set-equal x y)
+             (iff (memb e x) (memb e y)))
+    :rule-classes :congruence)
   ~ev[]
+
   Also ~pl[defcong] and ~pl[equivalence].~/
+
   ~bv[]
   General Form:
   (implies (equiv1 xk xk-equiv)
@@ -9389,14 +9439,27 @@
   used to build rules from formulas.  An example ~c[:]~ilc[corollary] formula
   from which a ~c[:definition] rule might be built is:
   ~bv[]
-  Example:
-  (implies (true-listp x)
-           (equal (len x)
-                  (if (null x)
-                      0
+  Examples:
+  (defthm open-len-twice
+    (implies (true-listp x)
+             (equal (len x)
+                    (if (null x)
+                        0
                       (if (null (cdr x))
                           1
-                          (+ 2 (len (cddr x)))))))~/
+                        (+ 2 (len (cddr x)))))))
+    :rule-classes :definition)
+
+  ; Same as above, with :controller-alist made explicit:
+  (defthm open-len-twice
+    (implies (true-listp x)
+             (equal (len x)
+                    (if (null x)
+                        0
+                      (if (null (cdr x))
+                          1
+                        (+ 2 (len (cddr x)))))))
+    :rule-classes ((:definition :controller-alist ((len t)))))~/
 
   General Form:
   (implies hyp (equiv (fn a1 ... an) body))
@@ -9679,65 +9742,62 @@
   make a rule that suggests a certain induction~/
   ~bv[]
   Example:
-  (:induction :corollary t  ; the theorem proved is irrelevant!
-              :pattern (* 1/2 i)
-              :condition (and (integerp i) (>= i 0))
-              :scheme (recursion-by-sub2 i))
+  (defthm recursion-by-sub2-induction-rule
+    t
+    :rule-classes ((:induction :pattern (* 1/2 i)
+                               :condition (and (integerp i) (>= i 0))
+                               :scheme (recursion-by-sub2 i))))
   ~ev[]~/
 
   In ACL2, as in Nqthm, the functions in a conjecture ``suggest'' the
-  inductions considered by the system.  Because every recursive
-  function must be admitted with a justification in terms of a measure
-  that decreases in a well-founded way on a given set of
-  ``controlling'' arguments, every recursive function suggests a dual
-  induction scheme that ``unwinds'' the function from a given
-  application.
+  inductions considered by the system.  Because every recursive function must
+  be admitted with a justification in terms of a measure that decreases in a
+  well-founded way on a given set of ``controlling'' arguments, every recursive
+  function suggests a dual induction scheme that ``unwinds'' the function from
+  a given application.
 
-  For example, since ~ilc[append] (actually ~ilc[binary-append], but we'll ignore
-  the distinction here) decomposes its first argument by successive
+  For example, since ~ilc[append] (actually ~ilc[binary-append], but we'll
+  ignore the distinction here) decomposes its first argument by successive
   ~ilc[cdr]s as long as it is a non-~c[nil] true list, the induction scheme
   suggested by ~c[(append x y)] has a base case supposing ~c[x] to be either
-  not a true list or to be ~c[nil] and then has an induction step in which
-  the induction hypothesis is obtained by replacing ~c[x] by ~c[(cdr x)].
-  This substitution decreases the same measure used to justify the
-  definition of ~ilc[append].  Observe that an induction scheme is suggested
-  by a recursive function application only if the controlling actuals
-  are distinct variables, a condition that is sufficient to ensure
-  that the ``substitution'' used to create the induction hypothesis is
-  indeed a substitution and that it drives down a certain measure.  In
-  particular, ~c[(append (foo x) y)] does not suggest an induction
-  unwinding ~ilc[append] because the induction scheme suggested by
-  ~c[(append x y)] requires that we substitute ~c[(cdr x)] for ~c[x] and
-  we cannot do that if ~c[x] is not a variable symbol.
+  not a true list or to be ~c[nil] and then has an induction step in which the
+  induction hypothesis is obtained by replacing ~c[x] by ~c[(cdr x)].  This
+  substitution decreases the same measure used to justify the definition of
+  ~ilc[append].  Observe that an induction scheme is suggested by a recursive
+  function application only if the controlling actuals are distinct variables,
+  a condition that is sufficient to ensure that the ``substitution'' used to
+  create the induction hypothesis is indeed a substitution and that it drives
+  down a certain measure.  In particular, ~c[(append (foo x) y)] does not
+  suggest an induction unwinding ~ilc[append] because the induction scheme
+  suggested by ~c[(append x y)] requires that we substitute ~c[(cdr x)] for
+  ~c[x] and we cannot do that if ~c[x] is not a variable symbol.
 
-  Once ACL2 has collected together all the suggested induction schemes
-  it massages them in various ways, combining some to simultaneously
-  unwind certain cliques of functions and vetoing others because they
-  ``flaw'' others.  We do not further discuss the induction heuristics
-  here; the interested reader should see Chapter XIV of A
-  Computational Logic (Boyer and Moore, Academic Press, 1979) which
-  represents a fairly complete description of the induction heuristics
-  of ACL2.
+  Once ACL2 has collected together all the suggested induction schemes it
+  massages them in various ways, combining some to simultaneously unwind
+  certain cliques of functions and vetoing others because they ``flaw'' others.
+  We do not further discuss the induction heuristics here; the interested
+  reader should see Chapter XIV of A Computational Logic (Boyer and Moore,
+  Academic Press, 1979) which represents a fairly complete description of the
+  induction heuristics of ACL2.
 
-  However, unlike Nqthm, ACL2 provides a means by which the user can
-  elaborate the rules under which function applications suggest
-  induction schemes.  Such rules are called ~c[:induction] rules.  The
-  definitional principle automatically creates an ~c[:induction] rule,
-  named ~c[(:induction fn)], for each admitted recursive function, ~c[fn].  It
-  is this rule that links applications of ~c[fn] to the induction scheme
-  it suggests.  Disabling ~c[(:induction fn)] will prevent ~c[fn] from
-  suggesting the induction scheme derived from its recursive
-  definition.  It is possible for the user to create additional
-  ~c[:induction] rules by using the ~c[:induction] rule class in ~ilc[defthm].
+  However, unlike Nqthm, ACL2 provides a means by which the user can elaborate
+  the rules under which function applications suggest induction schemes.  Such
+  rules are called ~c[:induction] rules.  The definitional principle
+  automatically creates an ~c[:induction] rule, named ~c[(:induction fn)], for
+  each admitted recursive function, ~c[fn].  It is this rule that links
+  applications of ~c[fn] to the induction scheme it suggests.  Disabling
+  ~c[(:induction fn)] will prevent ~c[fn] from suggesting the induction scheme
+  derived from its recursive definition.  It is possible for the user to create
+  additional ~c[:induction] rules by using the ~c[:induction] rule class in
+  ~ilc[defthm].
 
-  Technically we are ``overloading'' ~ilc[defthm] by using it in the
-  creation of ~c[:induction] rules because no theorem need be proved to
-  set up the heuristic link represented by an ~c[:induction] rule.
-  However, since ~ilc[defthm] is generally used to create rules and
-  rule-class objects are generally used to specify the exact form of
-  each rule, we maintain that convention and introduce the notion of
-  an ~c[:induction] rule.  An ~c[:induction] rule can be created from any
-  lemma whatsoever.
+  Technically we are ``overloading'' ~ilc[defthm] by using it in the creation
+  of ~c[:induction] rules because no theorem need be proved to set up the
+  heuristic link represented by an ~c[:induction] rule.  However, since
+  ~ilc[defthm] is generally used to create rules and rule-class objects are
+  generally used to specify the exact form of each rule, we maintain that
+  convention and introduce the notion of an ~c[:induction] rule.  An
+  ~c[:induction] rule can be created from any lemma whatsoever.
   ~bv[]
   General Form of an :induction Lemma or Corollary:
   T
@@ -9747,9 +9807,9 @@
               :condition cond-term
               :scheme scheme-term)
   ~ev[]
-  where ~c[pat-term], ~c[cond-term], and ~c[scheme-term] are all terms, ~c[pat-term]
-  is the application of a function symbol, ~c[fn], ~c[scheme-term] is the
-  application of a function symbol, ~c[rec-fn], that suggests an
+  where ~c[pat-term], ~c[cond-term], and ~c[scheme-term] are all terms,
+  ~c[pat-term] is the application of a function symbol, ~c[fn], ~c[scheme-term]
+  is the application of a function symbol, ~c[rec-fn], that suggests an
   induction, and, finally, every free variable of ~c[cond-term] and
   ~c[scheme-term] is a free variable of ~c[pat-term].  We actually check that
   ~c[rec-fn] is either recursively defined ~-[] so that it suggests the
@@ -9757,15 +9817,15 @@
   ~c[:induction] rule has been proved linking a call of ~c[rec-fn] as the
   ~c[:pattern] to some scheme.
 
-  The induction rule created is used as follows.  When an instance of
-  the ~c[:pattern] term occurs in a conjecture to be proved by induction
-  and the corresponding instance of the ~c[:condition] term is known to be
+  The induction rule created is used as follows.  When an instance of the
+  ~c[:pattern] term occurs in a conjecture to be proved by induction and the
+  corresponding instance of the ~c[:condition] term is known to be
   non-~c[nil] (by type reasoning alone), the corresponding instance of the
-  ~c[:scheme] term is created and the rule ``suggests'' the induction, if
-  any, suggested by that term.  (Analysis of that term may further involve
-  induction rules, though the applied rule is removed from consideration during
-  that further analysis, in order to avoid looping.)  If ~c[rec-fn] is
-  recursive, then the suggestion is the one that unwinds that recursion.
+  ~c[:scheme] term is created and the rule ``suggests'' the induction, if any,
+  suggested by that term.  (Analysis of that term may further involve induction
+  rules, though the applied rule is removed from consideration during that
+  further analysis, in order to avoid looping.)  If ~c[rec-fn] is recursive,
+  then the suggestion is the one that unwinds that recursion.
 
   Consider, for example, the example given above,
   ~bv[]
@@ -9782,11 +9842,11 @@
         (recursion-by-sub2 (- i 2))
         t))
   ~ev[]
-  Observe that this function recursively decomposes its integer
-  argument by subtracting ~c[2] from it repeatedly and stops when the
-  argument is ~c[1] or less.  The value of the function is irrelevant; it
-  is its induction scheme that concerns us.  The induction scheme
-  suggested by ~c[(recursion-by-sub2 i)] is
+  Observe that this function recursively decomposes its integer argument by
+  subtracting ~c[2] from it repeatedly and stops when the argument is ~c[1] or
+  less.  The value of the function is irrelevant; it is its induction scheme
+  that concerns us.  The induction scheme suggested by
+  ~c[(recursion-by-sub2 i)] is
   ~bv[]
   (and (implies (not (and (integerp i) (< 1 i)))   ; base case
                 (:p i))
@@ -9794,50 +9854,48 @@
                      (:p (- i 2)))
                 (:p i)))
   ~ev[]
-  We can think of the base case as covering two situations.  The
-  first is when ~c[i] is not an integer.  The second is when the integer ~c[i]
-  is ~c[0] or ~c[1].  In the base case we must prove ~c[(:p i)] without further
-  help.  The induction step deals with those integer ~c[i] greater than ~c[1],
-  and inductively assumes the conjecture for ~c[i-2] while proving it for
-  ~c[i].  Let us call this scheme ``induction on ~c[i] by twos.''
+  We can think of the base case as covering two situations.  The first is when
+  ~c[i] is not an integer.  The second is when the integer ~c[i] is ~c[0] or
+  ~c[1].  In the base case we must prove ~c[(:p i)] without further help.  The
+  induction step deals with those integer ~c[i] greater than ~c[1], and
+  inductively assumes the conjecture for ~c[i-2] while proving it for ~c[i].
+  Let us call this scheme ``induction on ~c[i] by twos.''
 
-  Suppose the above ~c[:induction] rule has been added.  Then an
-  occurrence of, say, ~c[(* 1/2 k)] in a conjecture to be proved by
-  induction would suggest, via this rule, an induction on ~c[k] by twos,
-  provided ~c[k] was known to be a nonnegative integer.  This is because
-  the induction rule's ~c[:pattern] is matched in the conjecture, its
-  ~c[:condition] is satisfied, and the ~c[:scheme] suggested by the rule is
-  that derived from ~c[(recursion-by-sub2 k)], which is induction on ~c[k] by
-  twos.  Similarly, the term ~c[(* 1/2 (length l))] would suggest no
-  induction via this rule, even though the rule ``fires'' because it
-  creates the ~c[:scheme] ~c[(recursion-by-sub2 (length l))] which suggests no
-  inductions unwinding ~c[recursion-by-sub2] (since the controlling
-  argument of ~c[recursion-by-sub2] in this ~c[:scheme] is not a variable
-  symbol).
+  Suppose the above ~c[:induction] rule has been added.  Then an occurrence of,
+  say, ~c[(* 1/2 k)] in a conjecture to be proved by induction would suggest,
+  via this rule, an induction on ~c[k] by twos, provided ~c[k] was known to be
+  a nonnegative integer.  This is because the induction rule's ~c[:pattern] is
+  matched in the conjecture, its ~c[:condition] is satisfied, and the
+  ~c[:scheme] suggested by the rule is that derived from
+  ~c[(recursion-by-sub2 k)], which is induction on ~c[k] by twos.  Similarly,
+  the term ~c[(* 1/2 (length l))] would suggest no induction via this rule,
+  even though the rule ``fires'' because it creates the ~c[:scheme]
+  ~c[(recursion-by-sub2 (length l))] which suggests no inductions unwinding
+  ~c[recursion-by-sub2] (since the controlling argument of
+  ~c[recursion-by-sub2] in this ~c[:scheme] is not a variable symbol).
 
   Continuing this example one step further illustrates the utility of
   ~c[:induction] rules.  We could define the function ~c[recursion-by-cddr]
-  that suggests the induction scheme decomposing its ~ilc[consp] argument
-  two ~ilc[cdr]s at a time.  We could then add the ~c[:induction] rule linking
+  that suggests the induction scheme decomposing its ~ilc[consp] argument two
+  ~ilc[cdr]s at a time.  We could then add the ~c[:induction] rule linking
   ~c[(* 1/2 (length x))] to ~c[(recursion-by-cddr x)] and arrange for
   ~c[(* 1/2 (length l))] to suggest induction on ~c[l] by ~ilc[cddr].
 
-  Observe that ~c[:induction] rules require no proofs to be done.  Such a
-  rule is merely a heuristic link between the ~c[:pattern] term, which may
-  occur in conjectures to be proved by induction, and the ~c[:scheme]
-  term, from which an induction scheme may be derived.  Hence, when an
-  ~c[:induction] rule-class is specified in a ~ilc[defthm] event, the theorem
-  proved is irrelevant.  The easiest theorem to prove is, of course,
-  ~c[t].  Thus, we suggest that when an ~c[:induction] rule is to be created,
-  the following form be used:
+  Observe that ~c[:induction] rules require no proofs to be done.  Such a rule
+  is merely a heuristic link between the ~c[:pattern] term, which may occur in
+  conjectures to be proved by induction, and the ~c[:scheme] term, from which
+  an induction scheme may be derived.  Hence, when an ~c[:induction] rule-class
+  is specified in a ~ilc[defthm] event, the theorem proved is irrelevant.  The
+  easiest theorem to prove is, of course, ~c[t].  Thus, we suggest that when an
+  ~c[:induction] rule is to be created, the following form be used:
   ~bv[]
   (defthm name T
     :rule-classes ((:induction :pattern pat-term
                                :condition cond-term
                                :scheme scheme-term)))
   ~ev[]
-  The name of the rule created is ~c[(:induction name)].  When that rune
-  is disabled the heuristic link between ~c[pat-term] and ~c[scheme-term] is
+  The name of the rule created is ~c[(:induction name)].  When that rune is
+  disabled the heuristic link between ~c[pat-term] and ~c[scheme-term] is
   broken.")
 
 (defun chk-acceptable-induction-rule (name term ctx wrld state)
@@ -9870,13 +9928,15 @@
 
   exhibit a new decoding for an ACL2 type-set~/
 
-  ~l[rule-classes] for a general discussion of rule classes and
-  how they are used to build rules from formulas.
+  ~l[rule-classes] for a general discussion of rule classes, including how they
+  are used to build rules from formulas and a discussion of the various
+  keywords in a rule class description.
+
   ~bv[]
   Example Rule Class:
   (:type-set-inverter
     :corollary (equal (and (counting-number x) (not (equal x 0)))
-                      (and (integerp x) (< x 0)))
+                      (and (integerp x) (< 0 x)))
     :type-set 2)~/
 
   General Forms of Rule Class:
@@ -10024,6 +10084,22 @@
 
   make or apply a ~c[:clause-processor] rule (goal-level simplifier)~/
 
+  ~l[rule-classes] for a general discussion of rule classes, including how they
+  are used to build rules from formulas and a discussion of the various
+  keywords in a rule class description.
+
+  ~bv[]
+  Example (which we'll return to, below):
+  (defthm correctness-of-note-fact-clause-processor
+    (implies (and (pseudo-term-listp cl)
+                  (alistp a)
+                  (evl0 (conjoin-clauses
+                         (note-fact-clause-processor cl term))
+                        a))
+             (evl0 (disjoin cl) a))
+    :rule-classes :clause-processor)
+  ~ev[]
+
   Also ~pl[define-trusted-clause-processor] for documentation of an analogous
   utility that does not require the clause-processor to be proved correct.  But
   please read the present documentation before reading about that utility.
@@ -10089,9 +10165,10 @@
     ((not x) (if x y z)))
 
   ~ev[]
-  ACL2 can now prove the following theorem automatically.  (Of course,
+  ACL2 can now prove the following theorem automatically.  (This is the example
+  displayed at the outset of this ~il[documentation] topic.)  Of course,
   ~c[:clause-processor] rules about clause-processor functions less trivial
-  than ~c[note-fact-clause-processor] may require lemmas to be proved first!)
+  than ~c[note-fact-clause-processor] may require lemmas to be proved first!
   The function ~c[disjoin] takes a clause and returns its disjunction (the
   result of applying ~ilc[OR] to its members), and ~c[conjoin-clauses] applies
   ~c[disjoin] to every element of a given list of clauses and then conjoins
