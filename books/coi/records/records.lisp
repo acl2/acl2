@@ -5,7 +5,7 @@
 #|===========================================================================|#
 (in-package "ACL2")
 
-;;This book is sort of a wrapper around misc/records.  It includes that booka
+;;This book is sort of a wrapper around misc/records.  It includes that book
 ;;and then defines and proves some more stuff about records.
 
 (local (include-book "../lists/basic")) ;trying with this local..
