@@ -30,10 +30,9 @@ tiny.lisp: ../../translator/l3-to-acl2.cert tiny-acl2.txt
 	@echo '####################'
 	@echo 'Creating file $@'
 	@echo '(include-book "$(L3_TO_ACL2_DIR)/l3-to-acl2")' > workxxx.$@
-	@echo '(l3-to-acl2 "tiny-acl2.txt" "tiny.lisp" \
-          :str-to-sym \
-	  (quote (("PC" . pctr) ("alu" . alu_var) ("function" . function0))))' \
-	  >> workxxx.$@
+	@echo '(l3-to-acl2 "tiny-acl2.txt" "tiny.lisp"' >> workxxx.$@
+	@echo '            :str-to-sym' >> workxxx.$@
+	@echo '            (quote (("PC" . pctr) ("alu" . alu_var) ("function" . function0))))' >> workxxx.$@
 	@$(ACL2) < workxxx.$@ > $@.out
 	@echo "diff tiny.lisp gold/tiny.lisp --ignore-matching-lines='(INCLUDE-BOOK' --ignore-matching-lines='/l3'"
 	@diff tiny.lisp gold/tiny.lisp --ignore-matching-lines='(INCLUDE-BOOK' --ignore-matching-lines='/l3'
@@ -43,11 +42,10 @@ tiny-logic.lisp: ../../translator/l3-to-acl2.cert tiny-acl2.txt
 	@echo '####################'
 	@echo 'Creating file $@'
 	@echo '(include-book "$(L3_TO_ACL2_DIR)/l3-to-acl2")' > workxxx.$@
-	@echo '(l3-to-acl2 "tiny-acl2.txt" "tiny-logic.lisp" \
-          :logic :logic-only \
-          :str-to-sym \
-	  (quote (("PC" . pctr) ("alu" . alu_var) ("function" . function0))))' \
-	  >> workxxx.$@
+	@echo '(l3-to-acl2 "tiny-acl2.txt" "tiny-logic.lisp"' >> workxxx.$@
+	@echo '            :logic :logic-only' >> workxxx.$@
+	@echo '            :str-to-sym' >> workxxx.$@
+	@echo '            (quote (("PC" . pctr) ("alu" . alu_var) ("function" . function0))))' >> workxxx.$@
 	@$(ACL2) < workxxx.$@ > $@.out
 	@echo "diff tiny-logic.lisp gold/tiny-logic.lisp --ignore-matching-lines='(INCLUDE-BOOK' --ignore-matching-lines='/l3'"
 	@diff tiny-logic.lisp gold/tiny-logic.lisp --ignore-matching-lines='(INCLUDE-BOOK' --ignore-matching-lines='/l3'
