@@ -1,6 +1,8 @@
-(in-package "ACL2")
+; Copyright (C) 2013, Regents of the University of Texas
+; Written by J Moore, 6/13/01
+; License: A 3-clause BSD license.  See the LICENSE file distributed with ACL2.
 
-; J Moore, 6/13/01
+(in-package "ACL2")
 
 ; All the "terms" encountered in this work are untranslated.  We nevertheless
 ; explore them.  We will always check that they are "deft terms" which means
