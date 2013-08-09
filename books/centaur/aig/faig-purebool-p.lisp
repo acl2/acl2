@@ -48,8 +48,8 @@ executed; it uses a SAT solver to answer the question.</p>
 
   (defun-sk faig-purebool-p (x)
     (forall (env)
-            (or (equal (faig-eval x env) *4t*)
-                (equal (faig-eval x env) *4f*))))
+            (or (equal (faig-eval x env) (faig-t))
+                (equal (faig-eval x env) (faig-f)))))
 
   (verify-guards faig-purebool-p))
 
@@ -168,8 +168,8 @@ executed; it uses a SAT solver to answer the question.</p>
                  (faig-purebool-check x :config config)))
              (implies (and (not fail)
                            (not purebool))
-                      (and (not (equal (faig-eval x alist) *4f*))
-                           (not (equal (faig-eval x alist) *4t*)))))
+                      (and (not (equal (faig-eval x alist) (faig-f)))
+                           (not (equal (faig-eval x alist) (faig-t))))))
            :hints(("Goal"
                    :in-theory (e/d (faig-purebool-p-as-aig-eval
                                     faig-purebool-aig
@@ -183,8 +183,8 @@ executed; it uses a SAT solver to answer the question.</p>
           (faig-purebool-check x :config config)))
       (implies (and (not fail)
                     (not (faig-purebool-p x)))
-               (and (not (equal (faig-eval x alist) *4f*))
-                    (not (equal (faig-eval x alist) *4t*)))))
+               (and (not (equal (faig-eval x alist) (faig-f)))
+                    (not (equal (faig-eval x alist) (faig-t))))))
     :hints(("Goal"
             :in-theory (disable faig-purebool-check-correct
                                 faig-purebool-check)
