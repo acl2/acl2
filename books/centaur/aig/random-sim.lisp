@@ -26,6 +26,8 @@
 (include-book "aig-equivs")
 (include-book "misc")
 (include-book "centaur/bitops/equal-by-logbitp" :dir :system)
+(include-book "system/random" :dir :system)
+(include-book "cutil/define" :dir :system)
 (local (include-book "centaur/bitops/ihs-extensions" :dir :system))
 (local (include-book "ihs/quotient-remainder-lemmas" :dir :system))
 (local (include-book "data-structures/list-defthms" :dir :system))
@@ -34,113 +36,108 @@
 (local (in-theory (enable* arith-equiv-forwarding)))
 (local (in-theory (disable aig-vars)))
 
-(defthm state-p1-of-random
-  (implies (force (state-p1 state))
-           (state-p1 (mv-nth 1 (random$ limit state))))
-  :hints(("Goal" :in-theory (enable random$ read-acl2-oracle))))
+
+(defxdoc aig-random-sim
+  :parents (aig)
+  :short "Functions for randomly vector simulations of Hons @(see aig)s."
+
+  :long "<p>Simulating AIGs on random vectors is useful in algorithms such as
+<a
+href='http://citeseerx.ist.psu.edu/viewdoc/summary?doi=10.1.1.66.3434'>fraiging</a>,
+to look for nodes that are probably equivalent and might be merged.</p>
+
+<p>Our hons-based @(see aig) representation is not especially efficient or
+well-suited for carrying out random simulations, and nowadays @(see aignet) is
+a much faster alternative.  Nevertheless, we have developed various routines
+for vector-simulations of Hons AIGs.</p>
+
+<p>Note that some of these routines make use of 60-bit natural numbers, which
+are fixnums on 64-bit CCL and SBCL.  They may perform quite badly on other
+Lisps with smaller fixnum ranges.</p>")
 
 
-
-(defund random-list-aux (n limit acc state)
-  (declare (xargs :guard (and (natp n)
-                              (posp limit))))
-  (if (zp n)
-      (mv acc state)
-    (b* (((mv x1 state) (random$ limit state)))
-      (random-list-aux (- n 1) limit (cons x1 acc) state))))
-
-(defthm state-p1-of-random-list-aux
-  (implies (force (state-p1 state))
-           (state-p1 (mv-nth 1 (random-list-aux n limit acc state))))
-  :hints(("Goal" :in-theory (enable random-list-aux))))
-
-
-
-(defund random-list (n limit state)
-  ;; Generate N random integers in [0, limit)
-  (declare (xargs :guard (and (natp n)
-                              (posp limit))))
-  (random-list-aux n limit nil state))
-
-(defthm state-p1-of-random-list
-  (implies (force (state-p1 state))
-           (state-p1 (mv-nth 1 (random-list n limit state))))
-  :hints(("Goal" :in-theory (enable random-list))))
-
-
-
-(defun n-random-60-bit-nats (n state)
-  ;; Generate N random integers in [0, 2^60)
-  ;; We just leave this enabled.
-  (declare (xargs :guard (natp n)))
+(define n-random-60-bit-nats ((n natp "How many to generate.") state)
+  :parents (aig-random-sim)
+  :short "Generate a list of 60-bit naturals."
+  :long "<p>We just leave this enabled.</p>"
+  :enabled t
   (random-list n (ash 1 60) state))
 
 
-(defund init-random-state (vars state)
-  ;; Fast alist binding each variable to a random integer in [0, 2^60)
-  (declare (xargs :guard t))
-  (b* (((mv nums state)
-        (n-random-60-bit-nats (len vars) state)))
-    (mv (make-fal (ec-call (pairlis$ vars nums)) nil)
-        state)))
-
-(defthm state-p1-of-init-random-state
-  (implies (force (state-p1 state))
-           (state-p1 (mv-nth 1 (init-random-state vars state))))
-  :hints(("Goal" :in-theory (enable init-random-state))))
-
-
-
-(defconst *60-bit-mask* (1- (ash 1 60)))
-
-(encapsulate
- ()
- (local (include-book "arithmetic/top-with-meta" :dir :system))
- (defthm logbitp-of-60-bit-mask
-   (implies (natp i)
-           (equal (logbitp i *60-bit-mask*)
-                  (< i 60)))
-   :hints (("goal" :in-theory (enable logbitp**)))))
+(define init-random-state
+  :parents (aig-random-sim)
+  :short "Create a fast alist binding each variable to a random 60-bit natural."
+  (vars state)
+  :returns (mv fal state)
+  (b* ((vars (mbe :logic (list-fix vars)
+                  :exec (if (true-listp vars)
+                            vars
+                          (list-fix vars))))
+       ((mv nums state)
+        (n-random-60-bit-nats (length vars) state)))
+    (mv (make-fast-alist (pairlis$ vars nums))
+        state))
+  ///
+  (defthm state-p1-of-init-random-state
+    (implies (force (state-p1 state))
+             (state-p1 (mv-nth 1 (init-random-state vars state))))))
 
 
-(defun 60-bit-fix (x)
-  (declare (xargs :guard t :verify-guards nil))
+(defsection *60-bit-mask*
+  :parents (aig-random-sim)
+  :short "The largest 60-bit natural, all ones."
+  (defconst *60-bit-mask* (1- (ash 1 60)))
 
-; Old definition:
-;
-; (the (signed-byte 61)
-;   (if (integerp x)
-;       (logand x (the (signed-byte 61) *60-bit-mask*))
-;     0)))
-;
-; The new definition is slightly faster because we avoid the lookup of the
-; *60-bit-mask*.
-;
-; We could make this almost twice as fast by redefining it under the hood as
-; (if (typep x '(signed-byte 61)) x 0), but I had some trouble getting this to
-; properly inline, and probably it's best to avoid a ttag for such a minor
-; optimization.
+  (local (include-book "arithmetic/top-with-meta" :dir :system))
 
+  (defthm logbitp-of-60-bit-mask
+    (implies (natp i)
+             (equal (logbitp i *60-bit-mask*)
+                    (< i 60)))
+    :hints (("goal" :in-theory (enable logbitp**)))))
+
+
+(define 60-bit-fix (x)
+  :parents (aig-random-sim)
+  :short "Coerce an object to a 60-bit natural."
+  :long "<p>A previous definition for this function was:</p>
+
+@({
+    (the (signed-byte 61)
+      (if (integerp x)
+          (logand x (the (signed-byte 61) *60-bit-mask*))
+        0))
+})
+
+<p>But the new definition is slightly faster because we avoid the lookup of the
+@(see *60-bit-mask*).</p>
+
+<p>We could make this almost twice as fast by redefining it under the hood as
+@('(if (typep x '(signed-byte 61)) x 0)'), but I had some trouble getting this
+to properly inline, and probably it's best to avoid a ttag for such a minor
+optimization.</p>"
+
+  :inline t
+  :enabled t
+  :guard-hints(("Goal" :in-theory (disable logand-with-bitmask)))
   (if (integerp x)
       (the (signed-byte 61) (logand x (- (ash 1 60) 1)))
     0))
 
-(verify-guards 60-bit-fix
-  :hints(("Goal" :in-theory (disable logand-with-bitmask))))
 
-
-
-(defun aig-vecsim60 (aig alst)
-  ;; We do a 60-bit wide evaluation of AIG under ALST, which should bind the
-  ;; variables of AIG to 60-bit integers.  (If there are any missing or invalid
-  ;; bindings in ALST, we just 60-bit-fix them.)
-  (declare (xargs :guard t
-                  :verify-guards nil))
+(define aig-vecsim60
+  :parents (aig-random-sim)
+  :short "Do a 60-bit wide evaluation of an AIG."
+  ((aig "The AIG to simulate.")
+   (alst "An alist that should bind the variables of @('aig') to 60-bit
+          naturals.  If there are any missing or invalid bindings, we
+          just @(see 60-bit-fix) them."))
+  :verify-guards nil
   (cond ((atom aig)
          (cond ((eq aig nil)
                 0)
                ((eq aig t)
-                -1)
+                -1)           ;; BOZO shouldn't we return *60-bit-mask*???
                (t
                 (let ((look (hons-get aig alst)))
                   (if look
@@ -148,8 +145,8 @@
                     -1)))))
         ((not (cdr aig))
          (the (signed-byte 61)
-              (lognot (the (signed-byte 61)
-                           (aig-vecsim60 (car aig) alst)))))
+           (lognot (the (signed-byte 61)
+                     (aig-vecsim60 (car aig) alst)))))
         (t
          (let ((a (aig-vecsim60 (car aig) alst)))
            (mbe
@@ -157,63 +154,72 @@
             :exec (if (= (the (signed-byte 61) a) 0)
                       0
                     (the (signed-byte 61)
-                         (logand (the (signed-byte 61) a)
-                                 (the (signed-byte 61)
-                                      (aig-vecsim60 (cdr aig) alst))))))))))
+                      (logand (the (signed-byte 61) a)
+                              (the (signed-byte 61)
+                                (aig-vecsim60 (cdr aig) alst)))))))))
+  ///
+  (defthm aig-vecsim60-60-bits
+    (signed-byte-p 61 (aig-vecsim60 aig alst))
+    :hints(("Goal" :in-theory (disable logand-with-bitmask))))
 
-(defthm aig-vecsim60-60-bits
-  (signed-byte-p 61 (aig-vecsim60 aig alst))
-  :hints(("Goal" :in-theory (disable logand-with-bitmask))))
+  (verify-guards aig-vecsim60)
 
-(verify-guards aig-vecsim60)
-
-(memoize 'aig-vecsim60 :condition '(and (consp aig) (cdr aig)))
+  (memoize 'aig-vecsim60 :condition '(and (consp aig) (cdr aig))))
 
 
-(defun logbitp-env60 (i alst)
-  ;; Given an ALST binding variables to 60-bit integers as in aig-vecsim60, we
-  ;; extract the ordinary, Boolean-valued alist by using the Ith bit of each
-  ;; variable.
-  (if (atom alst)
-      nil
-    (if (atom (car alst))
-        (logbitp-env60 i (cdr alst))
-      (cons (cons (caar alst)
-                  (if (natp i)
-                      (if (< i 60)
-                          (logbitp i (cdar alst))
-                        nil)
-                    (logbitp 0 (cdar alst))))
-            (logbitp-env60 i (cdr alst))))))
 
-(local
- (progn
-   (local (include-book "arithmetic/top-with-meta" :dir :system))
+(define logbitp-env60 (i alst)
+  :parents (aig-random-sim)
+  :short "Given an ALST binding variables to 60-bit integers as in @(see
+aig-vecsim60), we extract an ordinary, Boolean-valued alist by using the Ith
+bit of each variable."
+  :verify-guards nil ;; Not meant to be executed
+  (cond ((atom alst)
+         nil)
+        ((atom (car alst))
+         (logbitp-env60 i (cdr alst)))
+        (t
+         (cons (cons (caar alst)
+                     (if (natp i)
+                         (if (< i 60)
+                             (logbitp i (cdar alst))
+                           nil)
+                       (logbitp 0 (cdar alst))))
+               (logbitp-env60 i (cdr alst))))))
 
-   (defthm hons-assoc-equal-logbitp-env60
-     (equal (cdr (hons-assoc-equal v (logbitp-env60 i alst)))
-            (if (natp i)
-                (and (< i 60)
-                     (logbitp i (cdr (hons-assoc-equal v alst))))
-              (logbitp 0 (cdr (hons-assoc-equal v alst)))))
-     :hints(("Goal" :in-theory (enable hons-assoc-equal))))
+(local (include-book "arithmetic/top-with-meta" :dir :system))
 
-   (defthm hons-assoc-equal-logbitp-env60-iff
-     (iff (hons-assoc-equal v (logbitp-env60 i alst))
-          (hons-assoc-equal v alst)))
+(encapsulate
+  ()
+  (local (in-theory (enable logbitp-env60)))
 
-   (defthm logbitp-env60-non-natp
-     (implies (not (natp i))
-              (equal (logbitp-env60 i alst)
-                     (logbitp-env60 0 alst))))))
+  (local
+   (progn
+     (defthm hons-assoc-equal-logbitp-env60
+       (equal (cdr (hons-assoc-equal v (logbitp-env60 i alst)))
+              (if (natp i)
+                  (and (< i 60)
+                       (logbitp i (cdr (hons-assoc-equal v alst))))
+                (logbitp 0 (cdr (hons-assoc-equal v alst)))))
+       :hints(("Goal" :in-theory (enable hons-assoc-equal))))
 
-(defthm logbitp-of-aig-vecsim60
-  (equal (aig-eval aig (logbitp-env60 i alst))
-         (logbitp i (aig-vecsim60 aig alst)))
-  :hints (("Goal" :induct (aig-vecsim60 aig alst)
-           :in-theory (enable natp aig-env-lookup))
-          (and stable-under-simplificationp
-               '(:cases ((natp i))))))
+     (defthm hons-assoc-equal-logbitp-env60-iff
+       (iff (hons-assoc-equal v (logbitp-env60 i alst))
+            (hons-assoc-equal v alst)))
+
+     (defthm logbitp-env60-non-natp
+       (implies (not (natp i))
+                (equal (logbitp-env60 i alst)
+                       (logbitp-env60 0 alst))))))
+
+  (defthm logbitp-of-aig-vecsim60
+    (equal (aig-eval aig (logbitp-env60 i alst))
+           (logbitp i (aig-vecsim60 aig alst)))
+    :hints (("Goal" :induct (aig-vecsim60 aig alst)
+             :in-theory (enable natp aig-env-lookup
+                                aig-vecsim60))
+            (and stable-under-simplificationp
+                 '(:cases ((natp i)))))))
 
 
 
@@ -909,6 +915,7 @@
                    :do-not '(generalize fertilize)
                    :induct (aig-rsim60 aig renv)
                    :in-theory (enable aig-rsim60 aig-vars aig-eval aig-env-lookup
+                                      aig-vecsim60 
                                       subsetp-equal
                                       logbitp-of-loghead-split)))))
 

@@ -22,6 +22,7 @@
 (in-package "ACL2")
 (include-book "misc/total-order" :dir :system)
 (include-book "equal-sets")
+(local (include-book "std/typed-lists/atom-listp" :dir :system))
 
 
 ; Abuse of atom-listp on ordered sets
@@ -37,8 +38,9 @@
   :hints(("Goal" :in-theory (enable* (:ruleset sets::primitive-rules)))))
 
 (defthm atom-listp-of-sfix
-  (implies (atom-listp x)
-           (atom-listp (sets::sfix x)))
+  (implies (atom-listp (double-rewrite x))
+           (equal (atom-listp (sets::sfix x))
+                  t))
   :hints(("Goal" :in-theory (enable* (:ruleset sets::primitive-rules)))))
 
 (defthm atom-listp-of-insert
@@ -48,9 +50,9 @@
   :hints(("Goal" :in-theory (enable* (:ruleset sets::primitive-rules) sets::insert))))
 
 (defthm atom-listp-of-union
-  (implies (and (atom-listp x)
-                (atom-listp y))
-           (atom-listp (sets::union x y))))
+  (equal (atom-listp (sets::union x y))
+         (and (atom-listp (sets::sfix x))
+              (atom-listp (sets::sfix y)))))
 
 
 

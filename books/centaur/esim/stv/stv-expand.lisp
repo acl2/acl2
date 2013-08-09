@@ -123,16 +123,23 @@ as the first return value.</p>"
                 (equal (list name msb lsb) '("foo" 5 3)))))))
 
 
-(defsection stv-expand-name
+(define stv-expand-name
   :parents (stv-expand)
   :short "Expand a name from a symbolic test vector's line into explicit lists
 of E bits."
 
-  :long "<p><b>Signature:</b> @(call stv-expand-name) returns an LSB-first list
-of E bits for a non-hierarchical valid STV signal name.</p>
+  ((x    "The name that the user put at the start of some STV line.")
+   (type "Either @(':i') or @(':o') and says whether this should be the name
+          of an input or output."
+         (or (eq type :i)
+             (eq type :o)))
+   (mod  "The @(see esim) module we are working in, so we can look up names."))
 
-<p>As described in @(see acl2::symbolic-test-vector-format), the signal names
-for :input and :output lines can be either:</p>
+  :returns (lsb-bits "An LSB-first list of E bits for a non-hierarchical valid
+                      STV signal name, e.g., @('(|foo[0]| |foo[1]| ...)').")
+
+  :long "<p>Recall from @(see acl2::symbolic-test-vector-format) that signal
+names for :input and :output lines can be either:</p>
 
 <ul>
 <li>A string that names a particular input bus,</li>
@@ -141,81 +148,68 @@ bus, or</li>
 <li>An explicit list of E bits (in LSB-first order).</li>
 </ul>
 
-<p>This function is given @('x'), the actual name that occurs on such a line.
-Our goal is to convert @('x') into the explicit bit list form.  If @('x') is
-already a list of bits then this is trivial.  Otherwise, we have to look it up
-in the module.</p>
+<p>Here, our goal is to convert any such name, @('x'), into the explicit bit
+list form.  If @('x') is already a list of bits then this is trivial.
+Otherwise, we have to look it up in the module.  We do basic error checking to
+make sure that the name refers to valid input or output bits.</p>"
 
-<p>Type is either @(':i') or @(':o') and says whether this should be the name
-of an input or output, and @('mod') is the whole E module so that we can look
-up its inputs and outputs.</p>
+  (b* ((pat     (gpl type mod))
+       (modname (gpl :n mod))
 
-<p>We do basic error checking to make sure that the name refers to valid input
-or output bits.</p>"
+       ((when (stringp x))
+        (b* ( ;; Note: for plain names msb/lsb will be nil.
+             ((mv ?err basename msb lsb) (stv-wirename-parse x))
+             ((when err)
+              (raise "~s0" err))
+             (basename-bits         (vl::esim-vl-find-io basename pat))
+             ((unless basename-bits)
+              (raise "Trying to expand ~s0, but there is no ~s1 named ~s2 in ~
+                      ~x3."
+                     x
+                     (if (eq type :i) "input" "output")
+                     basename
+                     modname))
 
-  (defund stv-expand-name (x type mod)
-    "Returns an LSB-first list of bit names, e.g., (|foo[0]| |foo[1]| ...)."
-    (declare (xargs :guard (symbolp type)))
-    (b* ((pat     (gpl type mod))
-         (modname (gpl :n mod))
+             ((unless (and msb lsb))
+              ;; The input name is just "foo", so get all of the wires of
+              ;; foo.  This lets you refer to busses by name without having
+              ;; to give their explicit indices in the STV.
+              basename-bits)
 
-         ((when (stringp x))
-          (b* ( ;; Note: for plain names msb/lsb will be nil.
-               ((mv ?err basename msb lsb) (stv-wirename-parse x))
-               ((when err)
-                (er hard? 'stv-expand-name "~s0" err))
-               (basename-bits         (vl::esim-vl-find-io basename pat))
-               ((unless basename-bits)
-                (er hard? 'stv-expand-name
-                    "Trying to expand ~s0, but there is no ~s1 named ~s2 in ~x3."
-                    x
-                    (if (equal type :i) "input" "output")
-                    basename
-                    modname))
+             ;; Else, the input is "foo[5:3]" or similar, so we want to just
+             ;; get bits 5-3.  But put them in LSB-first order so they'll line
+             ;; up with the basename-bits
+             (expect-bits
+              ;; Stupid hack: it would be nicer to write:
+              ;; (reverse (vl-emodwires-from-msb-to-lsb basename msb lsb))
+              ;; But we just reverse the lsb/msb to avoid the extra consing
+              (vl::vl-emodwires-from-msb-to-lsb basename lsb msb))
+             ((unless (ordered-subsetp expect-bits basename-bits))
+              (raise "Trying to expand ~s0, but the bits being asked for ~s1.~% ~
+                      - Found wires: ~x2 through ~x3~% ~
+                      - Want wires:  ~x4 through ~x5."
+                     x
+                     (if (subsetp-equal expect-bits basename-bits)
+                         "are not in the right order"
+                       "are not found")
+                     (car basename-bits)
+                     (car (last basename-bits))
+                     (car expect-bits)
+                     (car (last expect-bits)))))
+          expect-bits))
 
-               ((unless (and msb lsb))
-                ;; The input name is just "foo", so get all of the wires of
-                ;; foo.  This lets you refer to busses by name without having
-                ;; to give their explicit indices in the STV.
-                basename-bits)
+       ;; Otherwise, we should have been given a list of valid input bits.
+       ((unless (symbol-listp x))
+        (raise "Invalid input name (expected string or a list of e bits), but ~
+                found ~x0."
+               x))
 
-               ;; Else, the input is "foo[5:3]" or similar, so we want to just
-               ;; get bits 5-3.  But put them in LSB-first order so they'll line
-               ;; up with the basename-bits
-               (expect-bits
-                ;; Stupid hack: it would be nicer to write:
-                ;; (reverse (vl-emodwires-from-msb-to-lsb basename msb lsb))
-                ;; But we just reverse the lsb/msb to avoid the extra consing
-                (vl::vl-emodwires-from-msb-to-lsb basename lsb msb))
-               ((unless (ordered-subsetp expect-bits basename-bits))
-                (er hard? 'stv-expand-name
-                    "Trying to expand ~s0, but the bits being asked for ~s1.~% ~
-                    - Found wires: ~x2 through ~x3~% ~
-                    - Want wires:  ~x4 through ~x5."
-                    x
-                    (if (subsetp-equal expect-bits basename-bits)
-                        "are not in the right order"
-                      "are not found")
-                    (car basename-bits)
-                    (car (last basename-bits))
-                    (car expect-bits)
-                    (car (last expect-bits)))))
-            expect-bits))
-
-         ;; Otherwise, we should have been given a list of valid input bits.
-         ((unless (symbol-listp x))
-          (er hard? 'stv-expand-name
-              "Invalid input name (expected string or a list of e bits), but ~
-              found ~x0."
-              x))
-
-         (flat-pat (pat-flatten1 pat))
-         ((unless  (subsetp-equal x flat-pat))
-          (er hard? 'stv-expand-name
-              "Trying to provide bindings for ~s0 that don't exist: ~x1."
-              (if (equal type :i) "inputs" "outputs")
-              (set-difference-equal flat-pat x))))
-      x)))
+       (flat-pat (pat-flatten1 pat))
+       ((unless  (subsetp-equal x flat-pat))
+        (raise "Trying to provide bindings for ~s0 that don't exist: ~x1."
+               (if (eq type :i) "inputs" "outputs")
+               (set-difference-equal flat-pat x))))
+    x))
 
   #||
 
@@ -230,32 +224,27 @@ or output bits.</p>"
 
 
 
-(defsection stv-expand-names-in-lines
+(define stv-expand-names-in-lines
   :parents (stv-expand)
-  :short "@(call stv-expand-names-in-lines) expands all of the names in a list
-of STV :input or :output lines."
-
-  (defund stv-expand-names-in-lines (lines type mod)
-    (declare (xargs :guard (and (or (eq type :i)
-                                    (eq type :o))
-                                (true-list-listp lines))))
-    (b* (((when (atom lines))
-          nil)
-         (line1              (car lines))
-         ((cons name phases) line1)
-         (new-name           (stv-expand-name name type mod)))
-      (cons (cons new-name phases)
-            (stv-expand-names-in-lines (cdr lines) type mod))))
-
-  (local (in-theory (enable stv-expand-names-in-lines)))
-
+  :short "Expands all of the names in a list of STV :input or :output lines."
+  ((lines true-list-listp)
+   (type  (or (eq type :i) (eq type :o)))
+   mod)
+  :returns (new-lines)
+  (b* (((when (atom lines))
+        nil)
+       (line1              (car lines))
+       ((cons name phases) line1)
+       (new-name           (stv-expand-name name type mod)))
+    (cons (cons new-name phases)
+          (stv-expand-names-in-lines (cdr lines) type mod)))
+  ///
   (defthm alistp-of-stv-expand-names-in-lines
     (alistp (stv-expand-names-in-lines lines type mod)))
 
   (defthm true-list-listp-of-stv-expand-names-in-lines
     (implies (true-list-listp lines)
              (true-list-listp (stv-expand-names-in-lines lines type mod)))))
-
 
 
 
@@ -269,107 +258,91 @@ of STV :input or :output lines."
 ; E.g., the user might want to pull out or initialize some signal in the
 ; top-level module, or in some submodule.
 
-(defsection stv-hid-split
+(define stv-hid-split
   :parents (stv-expand)
   :short "Splits up a HID into a list of instance names and a wire name."
 
-  (defund stv-hid-split (hid)
-    "Returns (MV INSTNAMES WIRENAME) or causes an error."
-    (declare (xargs :guard (and (vl::vl-expr-p hid)
-                                (vl::vl-hidexpr-p hid))))
-    (b* (((unless (vl::vl-hid-indicies-resolved-p hid))
-          (er hard? 'stv-hid-split
-              "HID has unresolved indices: ~s0~%" (vl::vl-pps-expr hid))
-          (mv nil ""))
-         (parts (vl::vl-explode-hid hid))
-         ((unless (string-listp parts))
-          ;; Parts is like ("foo" "bar" 3 "baz") for foo.bar[3].baz, too hard
-          (er hard? 'stv-hid-split
-              "We don't currently support hierarchical identifiers that go ~
-             through array instances, like foo.bar[3].baz.  The HID that ~
-             triggered this error was: ~s0~%" (vl::vl-pps-expr hid))
-          (mv nil ""))
-         ((when (< (len parts) 2))
-          ;; I don't really see how this could happen.  Maybe it can't happen.
-          (er hard? 'stv-hid-split
-              "Somehow the HID has only one piece?  ~s0~%"
-              (vl::vl-pps-expr hid))
-          (mv nil ""))
-         (instnames (butlast parts 1))
-         (wirename  (car (last parts))))
-      (mv instnames wirename)))
+  ((hid (and (vl::vl-expr-p hid)
+             (vl::vl-hidexpr-p hid))))
 
-  (local (in-theory (enable stv-hid-split)))
+  :returns (mv (instnames true-listp :rule-classes :type-prescription)
+               (wirename stringp :rule-classes :type-prescription))
 
-  (defthm true-listp-of-stv-hid-split
-    (true-listp (mv-nth 0 (stv-hid-split hid)))
-    :rule-classes :type-prescription)
+  (b* (((unless (vl::vl-hid-indicies-resolved-p hid))
+        (raise "HID has unresolved indices: ~s0~%" (vl::vl-pps-expr hid))
+        (mv nil ""))
+       (parts (vl::vl-explode-hid hid))
+       ((unless (string-listp parts))
+        ;; Parts is like ("foo" "bar" 3 "baz") for foo.bar[3].baz, too hard
+        (raise "We don't currently support hierarchical identifiers that go ~
+                through array instances, like foo.bar[3].baz.  The HID that ~
+                triggered this error was: ~s0~%" (vl::vl-pps-expr hid))
+        (mv nil ""))
+       ((when (< (len parts) 2))
+        ;; I don't really see how this could happen.  Maybe it can't happen.
+        (raise "Somehow the HID has only one piece?  ~s0~%"
+               (vl::vl-pps-expr hid))
+        (mv nil ""))
+       (instnames (butlast parts 1))
+       (wirename  (car (last parts))))
+    (mv instnames wirename))
 
-  (local (defthm l0
-           (implies (and (string-listp x)
-                         (consp x))
-                    (stringp (car (last x))))
-           :hints(("Goal" :expand (last x)))))
-
-  (defthm stringp-of-stv-hid-split
-    (stringp (mv-nth 1 (stv-hid-split hid)))
-    :rule-classes :type-prescription
-    :hints(("goal" :use ((:instance l0 (x (vl::vl-explode-hid hid)))))))
-
+  ///
   (defthm string-listp-of-stv-hid-split
     (string-listp (mv-nth 0 (stv-hid-split hid)))))
 
 
-(defsection stv-hid-parse
+(define stv-hid-parse
   :parents (stv-expand)
   :short "Match a Verilog-style plain or hierarchical name, perhaps with a bit-
 or part-select on the end of it."
 
-  :long "<p><b>Signature:</b> @(call stv-hid-parse) returns @('(mv instnames
-wirename msb-idx lsb-idx)')</p>
-
-<p>This is sort of misnamed because it works for normal identifiers as well as
-hierarchical identifiers.</p>
+  :long "<p>This is sort of misnamed; it works for normal identifiers as well
+as hierarchical identifiers.</p>
 
 <p>Examples:</p>
 
-<ul>
- <li>\"foo[3]\" becomes @('(mv nil \"foo\" 3 3)')</li>
- <li>\"foo.bar.baz\" becomes @('(mv '(\"foo\" \"bar\") \"baz\" nil nil)')</li>
- <li>\"foo.bar.baz[3]\" becomes @('(mv '(\"foo\" \"bar\") \"baz\" 3 3)')</li>
- <li>\"foo.bar.baz[3:0]\" becomes @('(mv '(\"foo\" \"bar\") \"baz\" 3 0)')</li>
-</ul>
+@({
+                       instnames    wirename   msb    lsb
+ foo[3]           -->  nil          foo        3      3
+ foo.bar.baz      -->  (foo bar)    baz        nil    nil
+ foo.bar.baz[3]   -->  (foo bar)    baz        3      3
+ foo.bar.baz[3:0] -->  (foo bar)    baz        3      0
+})
 
-<p>If the input string name isn't of an acceptable form, an error is
-caused.</p>"
+<p>If the input string name isn't of an acceptable form, we cause an
+error.</p>"
 
-  (defund stv-hid-parse (str)
-    (declare (xargs :guard (stringp str)))
-    (b* ((expr (vl::vl-parse-expr-from-str str))
-         ((unless expr)
-          (er hard? 'stv-hid-parse "Failed to parse: ~s0" str)
-          (mv nil "" nil nil))
-         ((mv err from msb lsb) (stv-maybe-match-select expr))
-         ((when err)
-          (er hard? 'stv-hid-parse "~s0" err)
-          (mv nil "" nil nil))
+  ((str stringp "The string to parse and split up."))
 
-         ((when (vl::vl-idexpr-p from))
-          ;; This is legitimate for top-level internal wires like foo[3]; There
-          ;; just aren't any instnames to follow.
-          (mv nil (vl::vl-idexpr->name from) msb lsb))
+  :returns
+  (mv (instnames true-listp :rule-classes :type-prescription)
+      (wirename  stringp    :rule-classes :type-prescription)
+      (msb-idx   (or (not msb-idx) (natp msb-idx)) :rule-classes :type-prescription)
+      (lsb-idx   (or (not lsb-idx) (natp lsb-idx)) :rule-classes :type-prescription))
 
-         ((unless (vl::vl-hidexpr-p from))
-          (er hard? 'stv-hid-parse "Invalid STV wire name: ~s0" str)
-          (mv nil "" nil nil))
+  (b* ((expr (vl::vl-parse-expr-from-str str))
+       ((unless expr)
+        (raise "Failed to parse: ~s0" str)
+        (mv nil "" nil nil))
+       ((mv err from msb lsb) (stv-maybe-match-select expr))
+       ((when err)
+        (raise "~s0" err)
+        (mv nil "" nil nil))
 
-         ((mv instnames wirename) (stv-hid-split from)))
-      (mv instnames wirename msb lsb)))
+       ((when (vl::vl-idexpr-p from))
+        ;; This is legitimate for top-level internal wires like foo[3]; There
+        ;; just aren't any instnames to follow.
+        (mv nil (vl::vl-idexpr->name from) msb lsb))
 
-  (local (in-theory (enable stv-hid-parse)))
+       ((unless (vl::vl-hidexpr-p from))
+        (raise "Invalid STV wire name: ~s0" str)
+        (mv nil "" nil nil))
 
-  (defmvtypes stv-hid-parse
-    (true-listp stringp (or (not x) (natp x)) (or (not x) (natp x))))
+       ((mv instnames wirename) (stv-hid-split from)))
+    (mv instnames wirename msb lsb))
+
+  ///
 
   (defthm string-listp-of-stv-hid-parse
     (string-listp (mv-nth 0 (stv-hid-parse str))))
@@ -420,92 +393,87 @@ caused.</p>"
 
 
 
-(defsection stv-hid-to-paths
+(define stv-turn-bits-into-non-canonical-paths
+  :parents (stv-hid-to-paths)
+  ((instname-list  true-listp
+                   "e.g., (foo bar)")
+   (bits           "e.g., (baz[3] baz[2] baz[1] baz[0])"))
+  :returns (merged "e.g., @({
+                               ((foo bar . baz[3])
+                                (foo bar . baz[2])
+                                ...
+                                (foo bar . baz[0]))
+                          })")
+  (if (atom bits)
+      nil
+    (cons (append instname-list (car bits))
+          (stv-turn-bits-into-non-canonical-paths instname-list (cdr bits)))))
+
+
+(define stv-hid-to-paths
   :parents (stv-expand)
   :short "Convert a Verilog-style plain or hierarchical name (optionally with a
 bit- or part-select) into an LSB-ordered list of <b>non-canonical</b> ESIM
 paths."
 
-  :long "<p>@(call stv-hid-to-paths) returns a list of LSB-first ordered paths
-in the sense of @(see acl2::mod-internal-paths).</p>
+  ((x stringp "A string like @('foo'), @('foo[3:0]'), @('foo.bar.baz'),
+               @('foo.bar.baz[3]'), etc.  That is, it should either be a plain
+               or hierarchical Verilog identifier, perhaps with a bit or
+               part-select on the end.")
 
-<ul>
+   (mod "The @(see esim) module that this path should be relative to."))
 
-<li>@('x') is a string like @('foo'), @('foo[3:0]'), @('foo.bar.baz'),
-@('foo.bar.baz[3]'), etc.  That is, it should either be a plain or hierarchical
-Verilog identifier, perhaps with a bit or part-select on the end.</li>
+  :returns (lsb-paths "LSB-first list of non-canonical paths for @('x'), in the
+                       sense of @(see acl2::mod-internal-paths).</p>")
 
-<li>@('mod') is the E module that X is based in.</li>
+  (b* (((mv instnames wirename msb lsb) (stv-hid-parse x))
 
-</ul>"
+       ;; 1. Find the submod that this HID points to.
+       (instnames (str::intern-list instnames))
+       (submod    (follow-esim-path instnames mod))
+       ((unless submod)
+        (raise "Error following path ~x0 in ~x1." x (gpl :n mod)))
 
-  (defund stv-turn-bits-into-non-canonical-paths
-    (instname-list  ;; (foo bar)
-     bits           ;; (baz[3] baz[2] baz[1] baz[0])
-     )
-    ;; ---> ( (foo bar . baz[3])
-    ;;        (foo bar . baz[2])
-    ;;        ...
-    ;;        (foo bar . baz[0]) )
-    (declare (xargs :guard (true-listp instname-list)))
-    (if (atom bits)
-        nil
-      (cons (append instname-list (car bits))
-            (stv-turn-bits-into-non-canonical-paths instname-list (cdr bits)))))
+       ;; 2. Look up this E names for this wire in the wire alist.  Note that
+       ;; the WALIST has the bits in MSB-First order!
+       (walist (vl::esim-vl-wirealist submod))
+       (lookup (hons-assoc-equal wirename walist))
+       ((unless lookup)
+        (raise "Can't follow ~s0: followed the instances ~x1 to an ~x2 ~
+                submodule, but then there was no wire named ~s3 in the wire ~
+                alist." x instnames (gpl :n submod) wirename))
+       (msb-first-wires (cdr lookup))
+       (lsb-first-wires (reverse msb-first-wires))
 
-  (defund stv-hid-to-paths (x mod)
-    (declare (xargs :guard (stringp x)))
-    (b* (((mv instnames wirename msb lsb) (stv-hid-parse x))
+       ((unless (and msb lsb))
+        ;; X is something like "foo" or "foo.bar.baz" with no bit- or
+        ;; part-select, so the user is asking for the whole wire!
+        (stv-turn-bits-into-non-canonical-paths instnames lsb-first-wires))
 
-         ;; 1. Find the submod that this HID points to.
-         (instnames (intern-list-in-package-of-symbol instnames (pkg-witness "ACL2")))
-         (submod    (follow-esim-path instnames mod))
-         ((unless submod)
-          (er hard? 'stv-hid-to-paths
-              "Error following path ~x0 in ~x1." x (gpl :n mod)))
+       ;; Otherwise, X is something like "foo[3]" or "foo.bar.baz[5:3]", so
+       ;; we need to make sure this range is in bounds and going in the right
+       ;; direction.
+       (expect-bits
+        ;; Stupid hack: it would be nicer to write:
+        ;; (reverse (vl-emodwires-from-msb-to-lsb basename msb lsb))
+        ;; But we just reverse the lsb/msb to avoid the extra consing
+        (vl::vl-emodwires-from-msb-to-lsb wirename lsb msb))
 
-         ;; 2. Look up this E names for this wire in the wire alist.  Note that
-         ;; the WALIST has the bits in MSB-First order!
-         (walist (vl::esim-vl-wirealist submod))
-         (lookup (hons-assoc-equal wirename walist))
-         ((unless lookup)
-          (er hard? 'stv-hid-to-paths
-              "Can't follow ~s0: followed the instances ~x1 to an ~x2 ~
-               submodule, but then there was no wire named ~s3 in the wire ~
-               alist." x instnames (gpl :n submod) wirename))
-         (msb-first-wires (cdr lookup))
-         (lsb-first-wires (reverse msb-first-wires))
+       ;; Make sure that the bits exist and are properly ordered for this wire
+       ((unless (ordered-subsetp expect-bits lsb-first-wires))
+        (raise "Trying to expand ~s0, but the bits being asked for ~s1.~% ~
+                 - Found wires: ~x2 through ~x3~% ~
+                 - Want wires:  ~x4 through ~x5."
+               x
+               (if (subsetp-equal expect-bits lsb-first-wires)
+                   "are not in the right order"
+                 "are not found")
+               (car lsb-first-wires)
+               (car (last lsb-first-wires))
+               (car expect-bits)
+               (car (last expect-bits)))))
 
-         ((unless (and msb lsb))
-          ;; X is something like "foo" or "foo.bar.baz" with no bit- or
-          ;; part-select, so the user is asking for the whole wire!
-          (stv-turn-bits-into-non-canonical-paths instnames lsb-first-wires))
-
-         ;; Otherwise, X is something like "foo[3]" or "foo.bar.baz[5:3]", so
-         ;; we need to make sure this range is in bounds and going in the right
-         ;; direction.
-         (expect-bits
-          ;; Stupid hack: it would be nicer to write:
-          ;; (reverse (vl-emodwires-from-msb-to-lsb basename msb lsb))
-          ;; But we just reverse the lsb/msb to avoid the extra consing
-          (vl::vl-emodwires-from-msb-to-lsb wirename lsb msb))
-
-         ;; Make sure that the bits exist and are properly ordered for this wire
-         ((unless (ordered-subsetp expect-bits lsb-first-wires))
-          (er hard? 'stv-hid-to-paths
-              "Trying to expand ~s0, but the bits being asked for ~s1.~% ~
-               - Found wires: ~x2 through ~x3~% ~
-               - Want wires:  ~x4 through ~x5."
-              x
-              (if (subsetp-equal expect-bits lsb-first-wires)
-                  "are not in the right order"
-                "are not found")
-              (car lsb-first-wires)
-              (car (last lsb-first-wires))
-              (car expect-bits)
-              (car (last expect-bits)))))
-
-      (stv-turn-bits-into-non-canonical-paths instnames expect-bits))))
+    (stv-turn-bits-into-non-canonical-paths instnames expect-bits)))
 
   #||
 
@@ -543,68 +511,56 @@ Verilog identifier, perhaps with a bit or part-select on the end.</li>
 ;; This one is an output:
 
 (stv-hid-to-paths "mmxdphi.logicops001.mdpmmxlogres_e" acl2::|*mmx*|)
-   ;; -- good, suerior module's wire, 64-127
+   ;; -- good, superior module's wire, 64-127
 
   ||#
 
 
-
-(defsection stv-expand-hids-in-lines
+(define stv-expand-hids-in-lines
   :parents (stv-expand)
   :short "@(call stv-expand-hids-in-lines) expands all of the HIDs in a list of
 STV internal lines into lists of esim paths."
+  ((lines true-list-listp) mod)
+  :returns (new-lines "Copy of @('lines') except with expanded names.")
 
-  (defund stv-expand-hids-in-lines (lines mod)
-    (declare (xargs :guard (true-list-listp lines)))
-    (b* (((when (atom lines))
-          nil)
-         (line1              (car lines))
-         ((cons name phases) line1)
-         ((unless (stringp name))
-          (er hard? 'stv-expand-hids-in-lines
-              "Internals line name is not a string: ~x0" name))
-         (lsb-paths (stv-hid-to-paths name mod)))
-      (cons (cons lsb-paths phases)
-            (stv-expand-hids-in-lines (cdr lines) mod))))
-
-  (local (in-theory (enable stv-expand-hids-in-lines)))
-
+  (b* (((when (atom lines))
+        nil)
+       (line1              (car lines))
+       ((cons name phases) line1)
+       ((unless (stringp name))
+        (raise "Internals line name is not a string: ~x0" name))
+       (lsb-paths (stv-hid-to-paths name mod)))
+    (cons (cons lsb-paths phases)
+          (stv-expand-hids-in-lines (cdr lines) mod)))
+  ///
   (defthm alistp-of-stv-expand-hids-in-lines
     (alistp (stv-expand-hids-in-lines lines mod)))
-
   (defthm true-list-listp-of-stv-expand-hids-in-lines
     (implies (true-list-listp lines)
              (true-list-listp (stv-expand-hids-in-lines lines mod)))))
 
 
-
-(defsection stv-expand
+(define stv-expand
   :parents (symbolic-test-vectors)
   :short "Expand Verilog-style names throughout an STV into LSB-ordered ESIM
 style paths."
 
-  :long "<p><b>Signature:</b> @(call stv-expand) returns a new @(see
-stvdata-p).</p>
+  ((stv stvdata-p)
+   mod)
+  :returns (new-stv stvdata-p :hyp :fguard
+                    "Copy of @('stv') but with all names expanded.")
 
-<p>This is an STV preprocessing step which can be run before or after @(see
-stv-widen).  It only affects the names in each STV line.</p>
+  :long "<p>This is an STV preprocessing step which can be run before or after
+@(see stv-widen).  It only affects the names in each STV line.</p>
 
 <p>During this step, we resolve Verilog-style names like \"foo[3:0]\" and
 \"foo.bar.baz[6:0],\" replacing them with LSB-ordered lists of ESIM bits or
 paths.  This keeps the Verilog-specific stuff out of the rest of the STV
 compiler.</p>"
 
-  (defund stv-expand (stv mod)
-    (declare (xargs :guard (stvdata-p stv)))
-    (b* (((stvdata stv) stv))
-      (make-stvdata :inputs    (stv-expand-names-in-lines stv.inputs :i mod)
-                    :outputs   (stv-expand-names-in-lines stv.outputs :o mod)
-                    :initial   (stv-expand-hids-in-lines stv.initial mod)
-                    :internals (stv-expand-hids-in-lines stv.internals mod))))
-
-  (local (in-theory (enable stv-expand)))
-
-  (defthm stvdata-p-of-stv-expand
-    (implies (force (stvdata-p stv))
-             (stvdata-p (stv-expand stv mod)))))
+  (b* (((stvdata stv) stv))
+    (make-stvdata :inputs    (stv-expand-names-in-lines stv.inputs :i mod)
+                  :outputs   (stv-expand-names-in-lines stv.outputs :o mod)
+                  :initial   (stv-expand-hids-in-lines stv.initial mod)
+                  :internals (stv-expand-hids-in-lines stv.internals mod))))
 

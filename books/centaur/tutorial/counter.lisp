@@ -89,7 +89,7 @@
   '(("out"    o0   _  o1   _  o2   _  o3   _  o4 _))   ; extract out before each posedge
 
   ;; I'll use this as a chance to also show off the documentation features.
-  :labels '(c0  c1 c1  c2 c2  c3 c3  c4 c4)
+  :labels '(c0  c1 c1  c2 c2  c3 c3  c4 c4  c5)
   :parents (esim-tutorial)
   :short "Running the counter module"
   :long "<p>This is a demo of the defstv documentation stuff.  You can see what

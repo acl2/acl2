@@ -56,6 +56,8 @@
 (include-book "aig/aig-equivs")
 (include-book "aig/aig-vars")
 (include-book "aig/aig-vars-fast")
+(include-book "aig/aig2c")
+(include-book "aig/aig-sat")
 (include-book "aig/base")
 (include-book "aig/bddify")
 (include-book "aig/bddify-correct")
@@ -65,7 +67,6 @@
 (include-book "aig/misc")
 (include-book "aig/three-four")
 (include-book "aig/witness")
-(include-book "aig/vuaig")
 (include-book "aig/best-aig")
 (include-book "aig/random-sim")
 
@@ -185,6 +186,7 @@
 (include-book "cutil/defmapappend-tests" :dir :system)
 (include-book "cutil/defprojection-tests" :dir :system)
 (include-book "cutil/tools/assert-return-thms" :dir :system)
+(include-book "centaur/misc/tshell-tests" :dir :system)
 
 (include-book "defrstobj/groundwork/demo1")
 (include-book "defrstobj/groundwork/demo2")
@@ -215,16 +217,18 @@
 ; manual more approachable and relevant, we now try to impose a better
 ; hierarchy and add some context.
 
-(defxdoc acl2::top
+(local
+ (defxdoc acl2::top
 
 ; The TOP topic will be the first thing the user sees when they open the
-; manual!
+; manual!  We localize this because you may want to write your own top topics
+; for custom manuals.
 
-  :short "User manual for the <a
+   :short "User manual for the <a
 href='http://www.cs.utexas.edu/users/moore/acl2/'>ACL2 Theorem Prover</a> and
 the <a href='http://acl2-books.googlecode.com/'>ACL2 Community Books</a>."
 
-  :long "<h3>Introduction</h3>
+   :long "<h3>Introduction</h3>
 
 <p><a href='http://www.cs.utexas.edu/users/moore/acl2/'>ACL2</a> is an
 interactive theorem prover.  It combines a Lisp-based programming language for
@@ -242,9 +246,14 @@ other systems, productivity tools for better proof automation and debugging,
 and specialty libraries for areas like hardware verification.</p>
 
 <p>This documentation is a combined manual that covers ACL2 and the Community
-Books.  It is very much a work in progress.  If you can contribute, please join
-the <a href='https://code.google.com/p/acl2-books/'>acl2-books</a>
-project!</p>")
+Books.  It is derived from both the classic @(see doc-string)s found in the
+ACL2 source code and certain books, and also from the @(see xdoc) topics found
+in other books.  Beyond just importing the documentation, we also rearrange the
+topic hierarchy to try to improve its organization.</p>
+
+<p>This manual is very much a work in progress.  If you would like to
+contribute to its development, please join the <a
+href='https://code.google.com/p/acl2-books/'>acl2-books</a> project!</p>"))
 
 (defsection arithmetic
   :parents (top)
@@ -258,7 +267,7 @@ geared toward large-scale automatic reasoning, e.g., via SAT solving and AIG or
 BDD packages.")
 
 (defsection macro-libraries
-  :parents (top)
+  :parents (top macros)
   :short "Generally useful macros for writing more concise code, and frameworks
 for quickly introducing concepts like typed structures, typed lists, defining
 functions with type signatures, and automating other common tasks.")
@@ -284,6 +293,11 @@ interfacing with <see topic='@(url bridge)'>other programs</see>.")
   :parents (top)
   :short "Tools for debugging failed or slow proofs, or misbehaving
 functions.")
+
+(defsection macros
+  :parents (acl2)
+  :short "Macros allow you to extend the syntax of ACL2.")
+
 
 
 ; Huge stupid hack.  Topics that are documented with the old :DOC system can't
@@ -361,6 +375,8 @@ functions.")
      (xdoc::change-parents bibliography (about-acl2))
      (xdoc::change-parents acknowledgments (about-acl2))
      (xdoc::change-parents acl2-help (about-acl2))
+
+     (xdoc::change-parents nqthm-to-acl2 (acl2-tutorial))
 
      (xdoc::change-parents exit (good-bye))
      (xdoc::change-parents quit (good-bye))
@@ -512,14 +528,32 @@ functions.")
      (xdoc::change-parents defun-mode (defun))
 
 
-     (xdoc::change-parents defabbrev (defmacro))
-     (xdoc::change-parents macro-args (defmacro))
+     (xdoc::change-parents defabbrev (macros))
+     (xdoc::change-parents macro-args (macros))
      (xdoc::change-parents &allow-other-keys (macro-args))
      (xdoc::change-parents &body (macro-args))
      (xdoc::change-parents &key (macro-args))
      (xdoc::change-parents &optional (macro-args))
      (xdoc::change-parents &rest (macro-args))
      (xdoc::change-parents &whole (macro-args))
+     (xdoc::change-parents trans (macros))
+     (xdoc::change-parents trans1 (macros))
+     (xdoc::change-parents trans! (macros))
+     (xdoc::change-parents defmacro (macros events))
+     (xdoc::change-parents make-event (macros events))
+     (xdoc::change-parents untranslate-patterns (macros user-defined-functions-table))
+     (xdoc::change-parents add-macro-alias (macros switches-parameters-and-modes))
+     (xdoc::change-parents add-macro-fn (macros switches-parameters-and-modes))
+     (xdoc::change-parents macro-aliases-table (macros switches-parameters-and-modes))
+     (xdoc::change-parents remove-binop (macros switches-parameters-and-modes))
+     (xdoc::change-parents remove-macro-alias (macros switches-parameters-and-modes))
+     (xdoc::change-parents remove-macro-fn (macros switches-parameters-and-modes))
+     (xdoc::change-parents untrans-table (macros switches-parameters-and-modes))
+     (xdoc::change-parents user-defined-functions-table (macros switches-parameters-and-modes))
+
+
+
+
      (xdoc::change-parents apropos (docs))
 
      (xdoc::change-parents certify-book! (certify-book))
@@ -562,9 +596,9 @@ functions.")
 ; reasons Jared doesn't understand this is screwing up the extended manual we
 ; build at Centaur.  So, I'm putting the save event into a make-event to try
 ; to localize its effects to just this book's certification.
-  (er-progn (xdoc::save "./manual"
-                        ;; Don't import again since we just imported.
-                        :import nil
-                        ;; For classic mode only...
-                        :expand-level 2)
-            (value `(value-triple :manual))))
+ (er-progn (xdoc::save "./manual"
+                       ;; Don't import again since we just imported.
+                       :import nil
+                       ;; For classic mode only...
+                       :expand-level 2)
+           (value `(value-triple :manual))))

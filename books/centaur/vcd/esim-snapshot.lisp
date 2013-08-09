@@ -56,7 +56,7 @@
 ;
 ; If you want to directly use the resulting alist in a VCD dump, you'll have to
 ; make sure your values are valid for VCD-DUMP, e.g., they can be concrete
-; FAIGS like *4f*, S-expressions like *4vf*, or results from OT like the
+; FAIGS like (faig-f), S-expressions like *4vf*, or results from OT like the
 ; symbols T, NIL, X, or U.
 ;
 ; However, MOD-VCD-SNAPSHOT doesn't care what values are being used, so for

@@ -812,11 +812,11 @@
 (def-with-bddify aig-eval)
 (def-with-bddify faig-eval)
 (def-with-bddify aig-eval-list)
-(def-with-bddify aig-eval-pat)
 (def-with-bddify aig-eval-alist)
 (def-with-bddify faig-eval-list)
-(def-with-bddify faig-eval-pat)
 (def-with-bddify faig-eval-alist)
+
+
 
 ;; Now we apply these to various shapes of AIG-EVAL.
 (local
@@ -828,33 +828,12 @@
               al tries mwa))
             (faig-eval-list-with-bddify pairs al tries mwa)))
 
-
-   (defthm aig-eval-pat-to-aig-eval-list
-     (equal (aig-list-to-pat
-             pat
-             (aig-eval-list-with-bddify
-              (pat-to-aig-list pat x acc)
-              al tries mwa))
-            (mv (aig-eval-pat-with-bddify pat x al tries mwa)
-                (aig-eval-list-with-bddify acc al tries mwa))))
-
-
-
-   (defthm faig-eval-pat-is-faig-eval-list
-     (equal (b* ((faig-list (pat-to-aig-list pat x acc))
-                 (pair-eval (faig-eval-list-with-bddify faig-list al tries mwa)))
-              (aig-list-to-pat pat pair-eval))
-            (mv (faig-eval-pat-with-bddify pat x al tries mwa)
-                (faig-eval-list-with-bddify acc al tries mwa))))
-
-
    (defthm aig-eval-alist-is-aig-eval-list
      (equal (pairlis$ (strip-pair-cars aig-al)
                       (aig-eval-list-with-bddify
                        (strip-pair-cdrs aig-al)
                        al tries mwa))
             (aig-eval-alist-with-bddify aig-al al tries mwa)))
-
 
    (defthm faig-eval-alist-is-faig-eval-list
      (equal (pairlis$ (strip-pair-cars aig-al)
@@ -869,10 +848,8 @@
    
    (in-theory (disable aig-eval-with-bddify
                        aig-eval-list-with-bddify
-                       aig-eval-pat-with-bddify
                        aig-eval-alist-with-bddify
                        faig-eval-list-with-bddify
-                       faig-eval-pat-with-bddify
                        faig-eval-alist-with-bddify))))
 
 
@@ -902,38 +879,7 @@
            al tries mwa)))
   :rule-classes nil)
 
-(defthm aig-eval-pat-in-terms-of-aig-eval-list
-  (equal (aig-eval-pat-with-bddify pat x al tries mwa)
-         (mv-let (ev rest)
-           (aig-list-to-pat
-            pat
-            (aig-eval-list-with-bddify
-             (pat-to-aig-list pat x nil)
-             al tries mwa))
-           (declare (ignore rest))
-           ev))
-  :rule-classes nil)
 
-
-;; (defthm faig-eval-pat-in-terms-of-faig-eval-list1
-;;   (equal (faig-eval-pat-with-bddify pat x al tries mwa)
-;;          (b* ((faig-list (pat-to-aig-list pat x acc))
-;;               (pair-eval (faig-eval-list-with-bddify
-;;                           faig-list al tries mwa))
-;;               ((mv ev &) (aig-list-to-pat pat pair-eval)))
-;;            ev))
-;;   :hints(("Goal" :in-theory (disable faig-eval-list-to-aig-eval-list)))
-;;   :rule-classes nil)
-
-(defthm faig-eval-pat-in-terms-of-faig-eval-list
-  (equal (faig-eval-pat-with-bddify pat x al tries mwa)
-         (b* ((faig-list (pat-to-aig-list pat x nil))
-              (pair-eval (faig-eval-list-with-bddify
-                          faig-list al tries mwa))
-              ((mv ev &) (aig-list-to-pat pat pair-eval)))
-           ev))
-  :hints(("Goal" :in-theory (disable faig-eval-list-to-aig-eval-list)))
-  :rule-classes nil)
 
 (defthm aig-eval-alist-in-terms-of-aig-eval-list
   (equal (aig-eval-alist-with-bddify aig-al al tries mwa)
@@ -967,26 +913,6 @@
     (mv (aig-list-to-faig-list bdds)
         (aig-list-to-faig-list aigs)
         exact)))
-
-(defun aig-bddify-pat (tries pat x al maybe-wash-args)
-  (b* (((mv bdds aigs exact)
-        (aig-bddify-list
-         tries
-         (pat-to-aig-list pat x nil)
-         al maybe-wash-args))
-       ((mv bdds &) (aig-list-to-pat pat bdds))
-       ((mv aigs &) (aig-list-to-pat pat aigs)))
-    (mv bdds aigs exact)))
-
-(defun faig-bddify-pat (tries pat x al maybe-wash-args)
-  (b* (((mv bdds aigs exact)
-        (faig-bddify-list
-         tries
-         (pat-to-aig-list pat x nil)
-         al maybe-wash-args))
-       ((mv bdds &) (aig-list-to-pat pat bdds))
-       ((mv aigs &) (aig-list-to-pat pat aigs)))
-    (mv bdds aigs exact)))
 
 
 (defun aig-bddify-alist (tries x al maybe-wash-args)

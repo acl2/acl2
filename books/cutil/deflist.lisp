@@ -704,7 +704,20 @@ list.</p>"
             :hints(("Goal"
                     :induct (len ,x)
                     :in-theory (enable subsetp-equal ,name)
-                    :expand (true-listp ,x))))
+                    :expand (true-listp ,x)
+                    :do-not '(eliminate-destructors))
+
+                   ;; Horrible, horrible hack.  I found that I couldn't get
+                   ;; deflist to process ATOM-LISTP because ACL2 knows too much
+                   ;; about ATOM, so the member-equal rule above ends up being
+                   ;; no good because it tries to target ATOM instead of CONSP,
+                   ;; and we get nowhere.  Solution: try to explicitly use the
+                   ;; member rule if we get stuck.
+                   (and stable-under-simplificationp
+                        '(:use ((:instance
+                                 ,(mksym elementp '-when-member-equal-of- name)
+                                 (,a (car ,x))
+                                 (,x ,y)))))))
 
           ,@(and (not true-listp)
                  ;; Awesome set congruence rule for loose recognizers, but not

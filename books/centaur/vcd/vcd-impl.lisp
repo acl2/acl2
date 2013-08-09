@@ -71,7 +71,7 @@
 ; The VALUE bound to each name may be:
 ;
 ;    - Concrete FAIGs
-;          i.e., *4f*, *4t*, *4x*, or *4z*
+;          i.e., (faig-f), (faig-t), (faig-x), or (faig-z)
 ;
 ;    - Concrete S-Expression Results
 ;          i.e., *4vf*, *4vt*, *4vx*, or *4vz*   ('F, 'T, 'X, 'Z)
@@ -306,10 +306,10 @@
   (defund vcd-value-p (x)
     (declare (xargs :guard t))
     (if (consp x)
-        (or (equal x acl2::*4f*)
-            (equal x acl2::*4t*)
-            (equal x acl2::*4x*)
-            (equal x acl2::*4z*))
+        (or (equal x (acl2::faig-f))
+            (equal x (acl2::faig-t))
+            (equal x (acl2::faig-x))
+            (equal x (acl2::faig-z)))
       (or (eq x nil)
           (eq x 'acl2::f)
           (eq x t)
@@ -323,10 +323,10 @@
           (er hard? 'vcd-value->char "Not a vcd-value-p: ~x0." x)
           #\x)
          ((when (consp x))
-          (cond ((equal x acl2::*4f*) #\0)
-                ((equal x acl2::*4t*) #\1)
-                ((equal x acl2::*4z*) #\z)
-                (t                    #\x))))
+          (cond ((equal x (acl2::faig-f)) #\0)
+                ((equal x (acl2::faig-t)) #\1)
+                ((equal x (acl2::faig-z)) #\z)
+                (t                        #\x))))
       (case x
         ((nil acl2::f) #\0)
         ((t)           #\1)
@@ -341,10 +341,10 @@
      (assert! (equal (vcd-value->char 'acl2::x) #\x))
      (assert! (equal (vcd-value->char 'acl2::z) #\z))
      (assert! (equal (vcd-value->char 'acl2::u) #\z))
-     (assert! (equal (vcd-value->char acl2::*4f*) #\0))
-     (assert! (equal (vcd-value->char acl2::*4t*) #\1))
-     (assert! (equal (vcd-value->char acl2::*4x*) #\x))
-     (assert! (equal (vcd-value->char acl2::*4z*) #\z)))))
+     (assert! (equal (vcd-value->char (acl2::faig-f)) #\0))
+     (assert! (equal (vcd-value->char (acl2::faig-t)) #\1))
+     (assert! (equal (vcd-value->char (acl2::faig-x)) #\x))
+     (assert! (equal (vcd-value->char (acl2::faig-z)) #\z)))))
 
 
 (defsection vcd-valuelist-p

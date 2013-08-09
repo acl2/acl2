@@ -34,7 +34,7 @@
 ;; See :doc untranslate-patterns-table or :doc add-untranslate-pattern after
 ;; loading this file for usage examples.
 
-(defdoc untranslate-patterns-table
+(defdoc untranslate-patterns
   ":Doc-Section Events
 
   a database used to extend untranslate with pattern-based rules~/
@@ -257,7 +257,7 @@
             (acons ',target ',replacement pat-database))))
 
 (defmacro add-untranslate-pattern (target replacement)
-  ":Doc-Section Events
+  ":Doc-Section untranslate-patterns
   add a new pattern to the untranslate patterns table~/
   General Form:
   ~bv[]
@@ -287,7 +287,7 @@
 
 
 (defmacro optimize-untranslate-patterns ()
-  ":Doc-Section Events
+  ":Doc-Section untranslate-patterns
   optimize the untranslate patterns table~/
   Usage:
   ~bv[]

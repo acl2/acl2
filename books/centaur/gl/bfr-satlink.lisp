@@ -2,7 +2,7 @@
 (in-package "GL")
 
 (include-book "bfr-sat")
-(include-book "../aignet/aig-sat")
+(include-book "../aig/aig-sat")
 
 (encapsulate
   (((gl-satlink-config) => *))
@@ -24,7 +24,7 @@
    :bdd (mv nil nil nil) ;; fail
    :aig
    (b* (((mv status env)
-         (aignet::aig-sat prop :config (gl-satlink-config))))
+         (acl2::aig-sat prop :config (gl-satlink-config))))
      (case status
        (:sat (mv t t env))
        (:unsat (mv nil t nil))

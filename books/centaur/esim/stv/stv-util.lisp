@@ -24,44 +24,44 @@
 (in-package "ACL2")
 (include-book "../esim-sexpr-support")
 (include-book "cutil/defaggregate" :dir :system)
+(include-book "cutil/define" :dir :system)
 
 (cutil::defaggregate stvdata
-  (initial inputs outputs internals)
-  :tag :stvdata
-  :require ((true-list-listp-of-stvdata->initial   (true-list-listp initial))
-            (true-list-listp-of-stvdata->inputs    (true-list-listp inputs))
-            (true-list-listp-of-stvdata->outputs   (true-list-listp outputs))
-            (true-list-listp-of-stvdata->internals (true-list-listp internals)))
   :parents (symbolic-test-vectors)
-  :short "Temporary internal representation of STV lines during compilation.")
+  :short "Temporary internal representation of STV lines during compilation."
+  :tag :stvdata
+  ((initial   true-list-listp)
+   (inputs    true-list-listp)
+   (outputs   true-list-listp)
+   (internals true-list-listp)))
 
 (cutil::defaggregate compiled-stv
-  (nphases            ;; number of phases for this simulation
-   out-extract-alists ;; what to extract at times 0...{N-1} from outputs
-   int-extract-alists ;; what to extract at times 0...{N-1} from internals
-   restrict-alist     ;; (init-state -> sexpr) + (input-bit@phase -> sexpr) alist
-   in-usersyms        ;; (simulation var -> bit list) alist for INITIAL+INS
-   out-usersyms       ;; (simulation var -> bit list) alist for OUTS+INTS
-   expanded-ins       ;; not useful for much
-   expanded-outs      ;; not useful for much
-   expanded-ints      ;; not useful for much
-   )
-  :tag :compiled-stv
-  :require ((posp-of-compiled-stv->nphases
-             (posp nphases)
-             :rule-classes :type-prescription))
   :parents (symbolic-test-vectors)
-  :short "Compiled form of @(see symbolic-test-vectors).")
+  :short "Compiled form of @(see symbolic-test-vectors)."
+  :tag :compiled-stv
+  ((nphases posp
+            "number of phases for this simulation"
+            :rule-classes :type-prescription)
+   (out-extract-alists "what to extract at times 0...{N-1} from outputs")
+   (int-extract-alists "what to extract at times 0...{N-1} from internals")
+   (restrict-alist     "combined alist binding
+                         (init-state &rarr; sexpr) and
+                         (input-bit@phase &rarr; sexpr)")
+   (in-usersyms        "(simulation var &rarr; bit list) alist for INITIAL+INS")
+   (out-usersyms       "(simulation var &rarr; bit list) alist for OUTS+INTS")
+   (expanded-ins       "not useful for much")
+   (expanded-outs      "not useful for much")
+   (expanded-ints      "not useful for much")))
 
 (cutil::defaggregate processed-stv
-  (mod                ;; module
-   user-stv           ;; pre-compilation stv
-   compiled-stv       ;; post-compilation stv
-   relevant-signals   ;; (out/int sim var bit -> sexpr) alist
-   )
-  :tag :processed-stv
   :parents (stv-process)
   :short "Representation of a processed STV."
+  :tag :processed-stv
+  ((mod                "module being simulated")
+   (user-stv           "pre-compilation stv")
+   (compiled-stv       compiled-stv-p
+                       "post-compilation stv")
+   (relevant-signals   "(out/int sim var bit &rarr; sexpr) alist"))
 
   :long "<p>You should probably read @(see stv-implementation-details) to
 understand these fields.</p>
@@ -89,10 +89,7 @@ evaluated by @(see stv-run).</li>
 <p>Historically we had another field that could also optionally store
 pre-computed snapshots for debugging.  We took this out because it could make
 @(see stv-run) a lot slower during GL proofs.  The snapshots were huge, and
-this really slowed down GL's gl-concrete-lite check.</p>"
-
-  :require ((compiled-stv-p-of-processed-stv->compiled-stv
-             (compiled-stv-p compiled-stv))))
+this really slowed down GL's gl-concrete-lite check.</p>")
 
 
 (defund ordered-subsetp (x y)
@@ -105,90 +102,68 @@ this really slowed down GL's gl-concrete-lite check.</p>"
              (ordered-subsetp x (cdr y))))
     t))
 
-(defund intern-list-in-package-of-symbol (x y)
-  ;; BOZO find me a home
-  (declare (xargs :guard (and (string-listp x)
-                              (symbolp y))))
+
+(define stv-max-phases-in-lines ((lines true-list-listp))
+  :returns (max-phases natp :rule-classes :type-prescription)
+  :parents (stv-number-of-phases)
+  (if (atom lines)
+      0
+    (max (length (cdr (car lines)))
+         (stv-max-phases-in-lines (cdr lines)))))
+
+(define stv-number-of-phases ((stv stvdata-p))
+  :returns (num-phases natp :rule-classes :type-prescription)
+  :parents (symbolic-test-vectors)
+  :short "Maximum length of any line of an STV (i.e., how many phases we are
+going to simulate."
+
+  (b* (((stvdata stv) stv))
+    (max (stv-max-phases-in-lines stv.inputs)
+         (max (stv-max-phases-in-lines stv.outputs)
+              (stv-max-phases-in-lines stv.internals)))))
+
+
+(define stv-suffix-signals ((x atom-listp)
+                            (suffix stringp))
+  :returns (symbols symbol-listp)
+  :parents (symbolic-test-vectors)
+  :short "Convert a list of atoms into a list of symbols with some suffix."
+  ;; BOZO do we really need to support atom-listps?
   (if (atom x)
       nil
-    (cons (intern-in-package-of-symbol (car x) y)
-          (intern-list-in-package-of-symbol (cdr x) y))))
+    (cons (intern$ (str::cat (stringify (car x)) suffix) "ACL2")
+          (stv-suffix-signals (cdr x) suffix))))
 
 
-
-(defsection stv-number-of-phases
-  :parents (symbolic-test-vectors)
-  :short "@(call stv-number-of-phases) determines the maximum number of phases
-that are used in any line of a symbolic test vector."
-
-  (defund stv-max-phases-in-lines (lines)
-    (declare (xargs :guard (true-list-listp lines)))
-    (if (atom lines)
-        0
-      (max (length (cdr (car lines)))
-           (stv-max-phases-in-lines (cdr lines)))))
-
-  (defund stv-number-of-phases (stv)
-    (declare (xargs :guard (stvdata-p stv)))
-    (b* (((stvdata stv) stv))
-      (max (stv-max-phases-in-lines stv.inputs)
-           (max (stv-max-phases-in-lines stv.outputs)
-                (stv-max-phases-in-lines stv.internals))))))
-
-
-(defsection stv-suffix-signals
-  :parents (symbolic-test-vectors)
-  :short "@(call stv-suffix-signals) converts @('x'), a list of atoms, into a
-list of symbols with the given @('suffix')."
-
-  (defund stv-suffix-signals (x suffix)
-    (declare (xargs :guard (and (atom-listp x)
-                                (stringp suffix))))
-    (if (atom x)
-        nil
-      (cons (intern$ (str::cat (stringify (car x)) suffix) "ACL2")
-            (stv-suffix-signals (cdr x) suffix))))
-
-  (local (in-theory (enable stv-suffix-signals)))
-
-  (defthm symbol-listp-of-stv-suffix-signals
-    (symbol-listp (stv-suffix-signals x suffix))))
-
-
-
-(defsection safe-pairlis-onto-acc
+(define safe-pairlis-onto-acc (x y acc)
   :parents (stv-compile)
-  :short "@(call safe-pairlis-onto-acc) pairs up @('x') and @('y'), and
-accumulates them onto @('acc').  It is \"safe\" in that it causes an error if
-@('x') and @('y') aren't the same length."
-
-  (defun safe-pairlis-onto-acc (x y acc)
-    (declare (xargs :guard t))
-    (mbe :logic
-         (revappend (pairlis$ x y) acc)
-         :exec
-         (b* (((when (and (atom x)
-                          (atom y)))
-               acc)
-              ((when (atom x))
-               (er hard? 'safe-pairlis-onto-acc "Too many values!")
-               acc)
-              ((when (atom y))
-               (er hard? 'safe-pairlis-onto-acc "Not enough values!")
-               (safe-pairlis-onto-acc (cdr x) nil
-                                      (cons (cons (car x) nil) acc))))
-           (safe-pairlis-onto-acc (cdr x) (cdr y)
-                                  (cons (cons (car x) (car y)) acc))))))
+  :short "Just @(see pairlis$) onto an accumulator, but for safety cause an
+error if the lists to pair up aren't the same length."
+  :enabled t
+  (mbe :logic
+       (revappend (pairlis$ x y) acc)
+       :exec
+       (b* (((when (and (atom x)
+                        (atom y)))
+             acc)
+            ((when (atom x))
+             (raise "Too many values!")
+             acc)
+            ((when (atom y))
+             (raise "Not enough values!")
+             (safe-pairlis-onto-acc (cdr x) nil
+                                    (cons (cons (car x) nil) acc))))
+         (safe-pairlis-onto-acc (cdr x) (cdr y)
+                                (cons (cons (car x) (car y)) acc)))))
 
 
-
-(defsection stv->ins
+(define stv->ins ((x processed-stv-p))
+  :returns (inputs "Should be a symbol-listp in practice.") ;; BOZO strengthen
   :parents (symbolic-test-vectors)
   :short "Get a list of an STV's input simulation variables."
 
-  :long "<p>@(call stv->ins) returns the user-level symbolic variables from the
-input and initial lines of a symbolic test vector.  For instance, if you have
-an input line like:</p>
+  :long "<p>We collect simulation variables from all input and initial lines.
+For instance, if you have an input line like:</p>
 
 @({
  (\"a_bus\"  _ _ _ a1 _ a2 _ _)
@@ -196,20 +171,18 @@ an input line like:</p>
 
 <p>Then the returned list will include @('a1') and @('a2').</p>"
 
-  (defund stv->ins (x)
-    (declare (xargs :guard (processed-stv-p x)))
-    (b* (((processed-stv x) x)
-         ((compiled-stv cstv) x.compiled-stv))
-      (alist-keys cstv.in-usersyms))))
+  (b* (((processed-stv x) x)
+       ((compiled-stv cstv) x.compiled-stv))
+    (alist-keys cstv.in-usersyms)))
 
 
-(defsection stv->outs
+(define stv->outs ((x processed-stv-p))
+  :returns (outputs "Should be a symbol-listp in practice.") ;; BOZO strengthen
   :parents (symbolic-test-vectors)
   :short "Get a list of an STV's output simulation variables."
 
-  :long "<p>@(call stv->outs) returns the user-level symbolic variables from
-the output and internals lines of a symbolic test vector.  For instance, if you
-have an output line like:</p>
+  :long "<p>We collect simulation variables from all output and internals
+lines.  For instance, if you have an output line like:</p>
 
 @({
  (\"main_result\"  _ _ _ res1 _ res2 _ _)
@@ -217,77 +190,75 @@ have an output line like:</p>
 
 <p>Then the returned list will include @('res1') and @('res2').</p>"
 
-  (defund stv->outs (x)
-    (declare (xargs :guard (processed-stv-p x)))
-    (b* (((processed-stv x) x)
-         ((compiled-stv cstv) x.compiled-stv))
-      (alist-keys cstv.out-usersyms))))
+  (b* (((processed-stv x) x)
+       ((compiled-stv cstv) x.compiled-stv))
+    (alist-keys cstv.out-usersyms)))
 
 
-(defsection stv->vars
+(define stv->vars ((x processed-stv-p))
+  :returns (vars "Should be a symbol-listp in practice.") ;; BOZO strengthen
   :parents (symbolic-test-vectors)
   :short "Get a list of an STV's simulation variables (both inputs and
 outputs)."
-  :long "<p>See @(see stv->ins) and @(see stv->outs).</p>"
 
-  (defund stv->vars (x)
-    (declare (xargs :guard (processed-stv-p x)))
-    (append (stv->ins x)
-            (stv->outs x))))
+  (append (stv->ins x)
+          (stv->outs x)))
 
 
-(defsection stv-out->width
+(define stv-out->width ((x   symbolp)
+                        (stv processed-stv-p))
+  ;; BOZO fix this up to guarantee posp?
+  :returns (width natp :rule-classes :type-prescription)
   :parents (symbolic-test-vectors)
   :short "Get the bit-length for a particular output simulation variable."
 
-  :long "<p>@(call stv-out->width) returns the bit-length of an output
-simulation variable.  For instance, if you have an STV output line like:</p>
+  :long "<p>For instance, if you have an STV output line like:</p>
 
 @({
  (\"main_result\"  _ _ _ res1 _ res2 _ _)
 })
 
 <p>Then @('(stv-out->width 'res1 stv)') will return the width of
-@('main_result'), say 64.  If @('x') isn't one of the STV's outputs, we cause a
-runtime error and logically return 0.</p>"
+@('main_result'), say 64.</p>
 
-  (defun stv-out->width (x stv)
-    (declare (xargs :guard (and (symbolp x)
-                                (processed-stv-p stv))))
-    (b* (((processed-stv stv) stv)
-         ((compiled-stv cstv) stv.compiled-stv)
-         (look (hons-assoc-equal x cstv.out-usersyms))
-         ((unless look)
-          (er hard? 'stv-out->width "Unknown output: ~x0~%" x)
-          ;; returning 0 gets us at least a natp type prescription
-          0))
-      (len (cdr look)))))
+<p>If @('x') isn't one of the STV's outputs, we cause a runtime error and
+logically return 0.</p>"
+
+  (b* (((processed-stv stv) stv)
+       ((compiled-stv cstv) stv.compiled-stv)
+       (look (hons-assoc-equal x cstv.out-usersyms))
+       ((unless look)
+        (raise "Unknown output: ~x0~%" x)
+        ;; returning 0 gets us at least a natp type prescription
+        0))
+    (len (cdr look))))
 
 
-(defsection stv-in->width
+(define stv-in->width ((x   symbolp)
+                       (stv processed-stv-p))
+  ;; BOZO fix this up to guarantee posp?
+  :returns (width natp :rule-classes :type-prescription)
   :parents (symbolic-test-vectors)
   :short "Get the bit-length for a particular input simulation variable."
 
-  :long "<p>@(call stv-in->width) returns the bit-length of an input simulation
-variable.  For instance, if you have an STV input line like:</p>
+  :long "<p>For instance, if you have an STV input line like:</p>
 
 @({
  (\"a_bus\"  _ _ _ a1 _ a2 _ _)
 })
 
 <p>Then @('(stv-in->width 'a1 stv)') will return the width of @('a_bus'), say
-128.  If @('x') isn't one of the STV's inputs, we cause a runtime error and
+128.</p>
+
+<p>If @('x') isn't one of the STV's inputs, we cause a runtime error and
 logically return 0.</p>"
 
-  (defun stv-in->width (x stv)
-    (declare (xargs :guard (and (symbolp x)
-                                (processed-stv-p stv))))
-    (b* (((processed-stv stv) stv)
-         ((compiled-stv cstv) stv.compiled-stv)
-         (look (hons-assoc-equal x cstv.in-usersyms))
-         ((unless look)
-          (er hard? 'stv-in->width "Unknown input: ~x0~%" x)
-          ;; returning 0 gets us at least a natp type prescription
-          0))
-      (len (cdr look)))))
+  (b* (((processed-stv stv) stv)
+       ((compiled-stv cstv) stv.compiled-stv)
+       (look (hons-assoc-equal x cstv.in-usersyms))
+       ((unless look)
+        (raise "Unknown input: ~x0~%" x)
+        ;; returning 0 gets us at least a natp type prescription
+        0))
+    (len (cdr look))))
 

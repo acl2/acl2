@@ -268,7 +268,7 @@
  
    (local (in-theory (disable atom-key-gobj-val-alistp
                               suffixp ; car-member-when-suffix
-                              faig-bddify-pat)))))
+                              )))))
 
 
 
@@ -689,8 +689,6 @@
 
 (gl::set-preferred-def aig-eval-with-bddify
        aig-eval-in-terms-of-aig-eval-list)
-(gl::set-preferred-def aig-eval-pat-with-bddify
-       aig-eval-pat-in-terms-of-aig-eval-list)
 (gl::set-preferred-def aig-eval-alist-with-bddify
        aig-eval-alist-in-terms-of-aig-eval-list)
 
@@ -698,8 +696,6 @@
                        faig-eval-in-terms-of-faig-eval-list)
 (gl::set-preferred-def faig-eval-list-with-bddify
        faig-eval-list-in-terms-of-aig-eval-list)
-(gl::set-preferred-def faig-eval-pat-with-bddify
-       faig-eval-pat-in-terms-of-faig-eval-list)
 (gl::set-preferred-def faig-eval-alist-with-bddify
        faig-eval-alist-in-terms-of-faig-eval-list)
 
@@ -709,16 +705,10 @@
 (gl::set-preferred-def aig-eval-list aig-eval-list-in-terms-of-with-bddify)
 (table gl::override-props 'aig-eval-list '((recursivep . nil)))
 
-(gl::set-preferred-def aig-eval-pat aig-eval-pat-in-terms-of-with-bddify)
-(table gl::override-props 'aig-eval-pat '((recursivep . nil)))
-
 (gl::set-preferred-def faig-eval faig-eval-in-terms-of-with-bddify)
 
 (gl::set-preferred-def faig-eval-list faig-eval-list-in-terms-of-with-bddify)
 (table gl::override-props 'faig-eval-list '((recursivep . nil)))
-
-(gl::set-preferred-def faig-eval-pat faig-eval-pat-in-terms-of-with-bddify)
-(table gl::override-props 'faig-eval-pat '((recursivep . nil)))
 
 (gl::set-preferred-def aig-eval-alist aig-eval-alist-in-terms-of-with-bddify)
 (table gl::override-props 'aig-eval-alist '((recursivep . nil)))

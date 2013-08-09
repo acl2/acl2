@@ -20,5 +20,7 @@
 
 (in-package "ACL2")
 (include-book "centaur/vl/portcullis" :dir :system)
+(include-book "centaur/satlink/portcullis" :dir :system)
+(include-book "centaur/aignet/portcullis" :dir :system)
 (ld "fsm-pkg.lsp")
 ; cert-flags: ? t :ttags :all

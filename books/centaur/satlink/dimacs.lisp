@@ -100,11 +100,17 @@ line.</li>
 that conform to these more stringent requirements, since otherwise a SAT solver
 that believes it can make these assumptions may make a mistake.  We may
 eventually add a cleaning phase to our SAT integration, to ensure that we only
-call the SAT solver on \"clean\" formulas.</p>"
+call the SAT solver on \"clean\" formulas.</p>")
 
-; Basic idea: ACC is a character list with the output we have "printed" in
-; reverse order.  This means (cons char acc) is the same as printing a char,
-; (str::revappend-chars str acc) is the same as printing str, etc.
+(defsection dimacs-export
+  :parents (dimacs)
+  :short "Writer to translate @(see cnf) formulas into DIMACS files."
+
+  :long "<p>The basic idea here is that @('acc') is a character list with the
+output we have printed in reverse order.  This means @('(cons char acc)') is
+the same as printing a char, @('(str::revappend-chars str acc)') is the same as
+printing @('str'), etc.  See @(see str::revappend-chars) for more background
+about this basic approach.</p>"
 
   (define dimacs-write-lit ((lit litp) (acc character-listp))
     :returns (acc character-listp :hyp :guard)

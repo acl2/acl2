@@ -156,8 +156,14 @@
      (implies (acl2-numberp idx)
               (good-svarmap (num-varmap keys idx))))
 
-
    (in-theory (disable num-varmap))))
+
+(defthm good-svarmap-num-varmap
+  ;; [Jared]: Adding this non-locally so that I can use it in simple
+  ;; sexpr->faig conversion.
+  (implies (acl2-numberp idx)
+           (good-svarmap (num-varmap keys idx))))
+
 
 
 (defun 4v-sexpr-eval-by-faig (x al)
@@ -388,6 +394,18 @@
              (and stable-under-simplificationp
                   '(:in-theory (enable 4v-fix))))
      :otf-flg t)))
+
+(defthm 4v-alist-equiv-faig-const-alist->4v-alist-lemma
+  ;; [Jared]: Adding this non-locally so that I can use it in simple
+  ;; sexpr->faig conversion.
+  (4v-env-equiv
+   (FAIG-CONST-ALIST->4V-ALIST
+    (FAIG-EVAL-ALIST
+     (num-varmap (alist-keys al) 0)
+     (SIG-AL-TO-sVAR-AL
+      (4V-ALIST->FAIG-CONST-ALIST AL)
+      (num-varmap (alist-keys al) 0))))
+   al))
 
 (defthm 4v-sexpr-eval-by-faig-is-4v-sexpr-eval
   (equal (4v-sexpr-eval-by-faig x al)

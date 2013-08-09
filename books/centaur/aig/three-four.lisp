@@ -23,14 +23,24 @@
 
 (in-package "ACL2")
 
-(include-book "base")
+(include-book "faig-base")
 (include-book "tools/bstar" :dir :system)
 (include-book "tools/rulesets" :dir :system)
 
-(defconst *4x* (hons t t))
-(defconst *4z* (hons nil nil))
-(defconst *4t* (hons t nil))
-(defconst *4f* (hons nil t))
+
+(defsection faig-constants
+  :parents (faig)
+  :short "The four @(see FAIG) values, representing true, false, X, and Z."
+
+  (defconst *faig-x* (hons t t))
+  (defconst *faig-z* (hons nil nil))
+  (defconst *faig-t* (hons t nil))
+  (defconst *faig-f* (hons nil t))
+
+  (defmacro faig-x () '*faig-x*)
+  (defmacro faig-z () '*faig-z*)
+  (defmacro faig-t () '*faig-t*)
+  (defmacro faig-f () '*faig-f*))
 
 
 (def-b*-binder faig

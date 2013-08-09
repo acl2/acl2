@@ -39,42 +39,20 @@
 (make-event
 
 ; Disabling waterfall parallelism because this book allegedly uses memoization
-; while performing its proofs.  
+; while performing its proofs.
 
- (if (and (hons-enabledp state) 
-          (f-get-global 'parallel-execution-enabled state)) 
+ (if (and (hons-enabledp state)
+          (f-get-global 'parallel-execution-enabled state))
      (er-progn (set-waterfall-parallelism nil)
                (value '(value-triple nil)))
    (value '(value-triple nil))))
-
-(local (defthm atom-listp-of-append
-         (implies (and (atom-listp x)
-                       (atom-listp y))
-                  (atom-listp (append x y)))
-         :hints(("Goal" :in-theory (disable (force))))))
 
 (local (defthm atom-listp-of-pat-flatten1
          (atom-listp (pat-flatten1 x))
          :hints(("Goal" :in-theory (e/d (pat-flatten1)
                                         ((force)))))))
 
-;; (local (defthm alist-keys-of-pairlis$
-;;          (equal (alist-keys (pairlis$ x y))
-;;                 (list-fix x))
-;;          :hints(("Goal" :in-theory (enable pairlis$)))))
-
-(local (defthm consp-when-member-of-atom-listp
-         (implies (and (atom-listp x)
-                       (member-equal a x))
-                  (equal (consp a)
-                         nil))))
-
-(local (defthm atom-listp-when-subsetp
-         (implies (and (subsetp x y)
-                       (atom-listp y))
-                  (equal (atom-listp x)
-                         (true-listp x)))
-         :hints(("Goal" :induct (len x)))))
+(local (in-theory (enable consp-when-member-equal-of-atom-listp)))
 
 
 ; NOTE: throughout this code we assume the STV has already been preprocessed!
@@ -88,29 +66,34 @@
 ;  - The input/output/internal lines have been widened (e.g., by stv-widen),
 ;    and all share some length.
 
+(define stv-gensyms-aux ((prefix stringp)
+                         (n      natp)
+                         acc)
+  :returns (syms symbol-listp :hyp (symbol-listp acc))
+  :parents (stv-gensyms)
+  (b* (((when (zp n))
+        acc)
+       (n     (- n 1))
+       (sym1  (intern$ (str::cat prefix "[" (str::natstr n) "]") "ACL2")))
+    (stv-gensyms-aux prefix n (cons sym1 acc)))
+  ///
+  (defthm len-of-stv-gensyms-aux
+    (equal (len (stv-gensyms-aux prefix n acc))
+           (+ (len acc) (nfix n)))))
 
-(defsection stv-gensyms
+
+(define stv-gensyms ((prefix stringp)
+                     (n      natp))
+  :returns (syms symbol-listp)
   :parents (stv-compile)
-  :short "@(call stv-gensyms) produces the list of symbols @('(prefix[0]
-  ... prefix[n-1])')."
-
+  :short "Generate a list of symbols, @('(foo[0] ... foo[n-1])')."
   ;; I originally used VL's emodwire stuff for this, but it's nice to eliminate
   ;; that dependency and just generate our own symbols.
-
-  (defund stv-gensyms-aux (prefix n acc)
-    (declare (xargs :guard (and (stringp prefix)
-                                (natp n))))
-    (b* (((when (zp n))
-          acc)
-         (n     (- n 1))
-         (sym1  (intern$ (str::cat prefix "[" (str::natstr n) "]") "ACL2")))
-      (stv-gensyms-aux prefix n (cons sym1 acc))))
-
-  (defun stv-gensyms (prefix n)
-    "Enumerate (prefix[0] ... prefix[n-1])"
-    (declare (xargs :guard (and (stringp prefix)
-                                (natp n))))
-    (stv-gensyms-aux prefix n nil)))
+  (stv-gensyms-aux prefix n nil)
+  ///
+  (defthm len-of-stv-gensyms
+    (equal (len (stv-gensyms prefix n))
+           (nfix n))))
 
 
 
@@ -205,27 +188,18 @@
 ; that's either crazy or just beyond the scope of what I want to think about
 ; supporting.
 
-(defsection stv-forge-state-bit
+(define stv-forge-state-bit ((instnames "List of instance names")
+                             (st-name atom))
+  :returns (full-name atom :hyp :guard)
   :parents (stv-compile)
   :short "Generate the name for a state bit, like @('foo!bar!baz!inst!S'),
 given a list of instance names and the name of the state bit."
-
   ;; BOZO have to keep this in sync with mod-state/occ-state
-
-  (defund stv-forge-state-bit (instnames st-name)
-    (declare (xargs :guard (atom st-name)))
-    (if (atom instnames)
-        st-name
-      (acl2::prefix-atom (acl2::stringify (car instnames))
-                         "!"
-                         (stv-forge-state-bit (cdr instnames) st-name))))
-
-  (local (in-theory (enable stv-forge-state-bit)))
-
-  (defthm atom-of-stv-forge-state-bit
-    (implies (atom st-name)
-             (atom (stv-forge-state-bit instnames st-name)))))
-
+  (if (atom instnames)
+      st-name
+    (acl2::prefix-atom (acl2::stringify (car instnames))
+                       "!"
+                       (stv-forge-state-bit (cdr instnames) st-name))))
 
 (cutil::defprojection stv-forge-state-bits (instnames x)
   (stv-forge-state-bit instnames x)
@@ -234,240 +208,217 @@ given a list of instance names and the name of the state bit."
 
 
 
-
-
-(defsection stv-initial-line-binding
+(define stv-initial-line-binding
   :parents (stv-compile)
   :short "Find the state bit(s) associated with some path and bind them to
 their initial values."
 
-  :long "<p><b>Signature:</b> @(call stv-initial-line-binding) returns a sexpr
-alist.</p>
+  ((path   "Any path into @('mod').  It need not be canonical.  We will follow
+            the path with @(see follow-path-backwards), and we expect that new
+            path we arrive at will be either an @(see *esim-flop*) or to an @(see
+            *esim-latch*).  If not, we cause a run-time error.")
 
-<p>The @('path') is any path into @('mod').  It need not be canonical.  We will
-follow the path with @(see follow-path-backwards), and we expect that new path
-we arrive at will be either an @(see *esim-flop*) or to an @(see *esim-latch*).
-If not, we cause a run-time error.</p>
+   (sexpr  "A sexpr that we want to use as the initial value for @('path').  The
+            basic idea is to bind @('sexpr') to the state bits we have found.
+            A slight twist is that, if walking from @('path') to the state bits
+            took us through an inversion, then we will bind the state bits to
+            @('(not sexpr)') instead.  This should ensure that our initial
+            bindings to state bits do indeed initialize @('path') to the
+            desired value.")
 
-<p>The @('sexpr') is a sexpr that we want to use as the initial value for
-@('path').  The basic idea is to bind @('sexpr') to the state bits we have
-found.  A slight twist is that, if walking from @('path') to the state bits
-took us through an inversion, then we will bind the state bits to @('(not
-sexpr)') instead.  This should ensure that our initial bindings to state bits
-do indeed initialize @('path') to the desired value.</p>
+   (mod    good-esim-modulep
+           "The E module we're working in."))
 
-<p>If the path leads to a latch then there is just one state bit, and our alist
-will contain only a single entry.</p>
+  :returns (sexpr-alist alistp
+                        "If the path leads to a latch then there is just one
+                         state bit, and our alist will contain only a single
+                         entry.  But if the path leads to a flop, then there
+                         are two state bits!")
 
-<p>If the path leads to a flop, then there are two state bits!  <b>BOZO</b> for
-now, we initialize <b>BOTH</b> state bits together.  This shouldn't cause any
-problems until we want to compose together different STV runs.  To support
-composition, we'll probably want an extended syntax that lets you specify
-whether the master or slave bit gets initialized.</p>"
+  :long "<p><b>BOZO</b> for now, in the flop case, we initialize <b>BOTH</b>
+         state bits together.  This shouldn't cause any problems until we want
+         to compose together different STV runs.  To support composition, we'll
+         probably want an extended syntax that lets you specify whether the
+         master or slave bit gets initialized.</p>"
 
-  (defund stv-initial-line-binding (path sexpr mod)
-    (declare (xargs :guard (good-esim-modulep mod)))
-    (b* (((mv new-path invp) (follow-path-backwards path mod))
-         (instnames          (list-fix new-path))
-         (wirename           (final-cdr new-path))
-         (submod             (follow-esim-path instnames mod))
-         ((unless submod)
-          (er hard? 'stv-initial-line-binding
-              "Error creating :initial binding for ~x0.  We followed the path ~
-               backward to ~x1, but this path doesn't seem valid?" path new-path))
+  (b* (((mv new-path invp) (follow-path-backwards path mod))
+       (instnames          (list-fix new-path))
+       (wirename           (final-cdr new-path))
+       (submod             (follow-esim-path instnames mod))
+       ((unless submod)
+        (raise "Error creating :initial binding for ~x0.  We followed the ~
+                path backward to ~x1, but this path doesn't seem valid?"
+               path new-path))
 
-         ;; Basic sanity check to make sure that the path leads to a flop/latch.
-         (name (gpl :n submod))
-         ((unless (or (eq name 'acl2::*esim-latch*)
-                      (eq name 'acl2::*esim-flop*)))
-          ;; BOZO I'm just using a name-based check to see if we're at a flop
-          ;; or a latch.  Is this okay?  Should we do something deeper?
-          (er hard? 'stv-initial-line-binding
-              "Error creating :initial binding for ~x0.  We followed the path ~
-               backward to ~x1.  We expected this to be a latch or flop, but ~
-               instead it is a ~x2 module." path new-path name))
+       ;; Basic sanity check to make sure that the path leads to a flop/latch.
+       (name (gpl :n submod))
+       ((unless (or (eq name 'acl2::*esim-latch*)
+                    (eq name 'acl2::*esim-flop*)))
+        ;; BOZO I'm just using a name-based check to see if we're at a flop
+        ;; or a latch.  Is this okay?  Should we do something deeper?
+        (raise "Error creating :initial binding for ~x0.  We followed the ~
+                path backward to ~x1.  We expected this to be a latch or ~
+                flop, but instead it is a ~x2 module." path new-path name))
 
-         ((unless (eq wirename 'acl2::|q|))
-          ;; Probably silly sanity check.  This may be of no use.  If it ever
-          ;; fails, it might indicate that our flop/latch format has changed.
-          (er hard? 'stv-initial-line-binding
-              "Error creating :initial binding for ~x0.  We followed the path ~
-               backward to ~x1, and found a flop/latch whose output isn't ~
-               even named acl2::|q|: ~x2?" path new-path wirename))
+       ((unless (eq wirename 'acl2::|q|))
+        ;; Probably silly sanity check.  This may be of no use.  If it ever
+        ;; fails, it might indicate that our flop/latch format has changed.
+        (raise "Error creating :initial binding for ~x0.  We followed the ~
+                path backward to ~x1, and found a flop/latch whose output ~
+                isn't even named acl2::|q|: ~x2?" path new-path wirename))
 
-         (ebits
-          ;; Gross way to come up with the actual state bits we want.  Note
-          ;; that the PAT-FLATTEN1 here is quite cheap: the submod is a latch
-          ;; or a flop, so its mod-state is just one or two bits.
-          (stv-forge-state-bits instnames (pat-flatten1 (mod-state submod))))
-         (nbits (length ebits))
+       (ebits
+        ;; Gross way to come up with the actual state bits we want.  Note
+        ;; that the PAT-FLATTEN1 here is quite cheap: the submod is a latch
+        ;; or a flop, so its mod-state is just one or two bits.
+        (stv-forge-state-bits instnames (pat-flatten1 (mod-state submod))))
+       (nbits (length ebits))
 
-         ((unless (or (and (eq name 'acl2::*esim-latch*) (= nbits 1))
-                      (and (eq name 'acl2::*esim-flop*) (= nbits 2))))
-          ;; Cheap, very trivial sanity check.  This could save us if we do
-          ;; something to the representation of latches/flops.
-          (er hard? 'stv-initial-line-binding
-              "Error creating :initial binding for ~x0.  Wrong number of bits ~
-               for flop/latch?  The new-path is ~x1 and alleged ebits are ~x2."
-              path new-path ebits))
+       ((unless (or (and (eq name 'acl2::*esim-latch*) (= nbits 1))
+                    (and (eq name 'acl2::*esim-flop*) (= nbits 2))))
+        ;; Cheap, very trivial sanity check.  This could save us if we do
+        ;; something to the representation of latches/flops.
+        (raise "Error creating :initial binding for ~x0.  Wrong number of ~
+                bits for flop/latch?  The new-path is ~x1 and alleged ebits ~
+                are ~x2." path new-path ebits))
 
-         ((unless (subsetp-of-pat-flatten ebits (mod-state mod)))
-          ;; Cheap, good sanity check to make sure that we've actually
-          ;; identified state bits.  Note that EBITS is only going to be one or
-          ;; two bits, so even though this is O(n^2), N is very small.  This
-          ;; should save us from disaster if our naming conventions change.
-          (er hard? 'stv-path-to-statepath
-              "Error creating :initial binding for ~x0.  Something has gone ~
-               horribly wrong. The new-path, ~x1, seems to point to a valid ~
-               flop/latch.  But the bits we generated, ~x2, aren't in the ~
-               mod-state for the module?" path new-path ebits))
+       ((unless (subsetp-of-pat-flatten ebits (mod-state mod)))
+        ;; Cheap, good sanity check to make sure that we've actually
+        ;; identified state bits.  Note that EBITS is only going to be one or
+        ;; two bits, so even though this is O(n^2), N is very small.  This
+        ;; should save us from disaster if our naming conventions change.
+        (raise "Error creating :initial binding for ~x0.  Something has gone ~
+                horribly wrong. The new-path, ~x1, seems to point to a valid ~
+                flop/latch.  But the bits we generated, ~x2, aren't in the ~
+                mod-state for the module?" path new-path ebits))
 
-         ;; Everything looks good, we got the right number of state bits,
-         ;; checked that they exist, etc.  Make the bindings.  We invert the
-         ;; sexpr if the path is inverting, so that the value on PATH will be
-         ;; what the user asked for.
-         (sexpr (if invp
-                    (hons-list 'acl2::not sexpr)
-                  sexpr))
-         (vals  (repeat sexpr nbits)))
-      (pairlis$ ebits vals)))
+       ;; Everything looks good, we got the right number of state bits,
+       ;; checked that they exist, etc.  Make the bindings.  We invert the
+       ;; sexpr if the path is inverting, so that the value on PATH will be
+       ;; what the user asked for.
+       (sexpr (if invp
+                  (hons-list 'acl2::not sexpr)
+                sexpr))
+       (vals  (repeat sexpr nbits)))
+    (pairlis$ ebits vals))
 
-  (local (in-theory (enable stv-initial-line-binding)))
-
-  (defthm alistp-of-stv-initial-line-binding
-    (alistp (stv-initial-line-binding path sexpr mod)))
-
+  ///
   (defthm keys-of-stv-initial-line-binding-are-states
     (subsetp-equal (alist-keys (stv-initial-line-binding path sexpr mod))
                    (pat-flatten1 (mod-state mod)))))
 
 
-(defsection stv-initial-line-bindings-aux
+(define stv-initial-line-bindings-aux
   :parents (stv-compile)
   :short "Extends @(see stv-initial-line-binding) to path/sexpr lists."
 
-  (defund stv-initial-line-bindings-aux (paths sexprs mod)
-    (declare (xargs :guard (and (equal (len paths) (len sexprs))
-                                (good-esim-modulep mod))))
-    (if (atom paths)
-        nil
-      (append (stv-initial-line-binding (car paths) (car sexprs) mod)
-              (stv-initial-line-bindings-aux (cdr paths) (cdr sexprs) mod))))
+  ((paths  "List of paths to resolve")
+   (sexprs "Corresponding list of sexprs to bind to these paths"
+           (equal (len paths) (len sexprs)))
+   (mod    "Module we're working in."
+           good-esim-modulep))
 
-  (local (in-theory (enable stv-initial-line-bindings-aux)))
-  (local (in-theory (disable (force))))
+  :returns (sexpr-alist alistp "Appended bindings for these paths.")
 
-  (defthm alistp-of-stv-initial-line-bindings-aux
-    (alistp (stv-initial-line-bindings-aux path sexpr mod)))
+  (if (atom paths)
+      nil
+    (append (stv-initial-line-binding (car paths) (car sexprs) mod)
+            (stv-initial-line-bindings-aux (cdr paths) (cdr sexprs) mod)))
 
+  ///
   (defthm keys-of-stv-initial-line-bindings-aux-are-states
     (subsetp-equal (alist-keys (stv-initial-line-bindings-aux path sexpr mod))
                    (pat-flatten1 (mod-state mod)))))
 
 
-(defsection stv-initial-line-bindings
+(define stv-initial-line-bindings
   :parents (stv-compile)
   :short "Convert an :initial line into an alist binding state bits to sexprs."
 
-  :long "<p><b>Signature:</b> @(call stv-initial-line-bindings) returns @('(mv
-bindings usersyms)').</p>
+  ((line "An :initial line from the STV.  Note that its name should be a list
+          of E paths in lsb-first order.  That is, Verilog-style names should
+          first be expanded with @(see stv-expand-names) or similar. These
+          paths don't need to be canonical, and they don't need to refer to
+          state bits; we'll walk back from them to find the associated
+          latch/flop that drives them.")
 
-<p>The @('line') is an :initial line from the STV.  Note that its name should
-be a list of E paths in lsb-first order.  That is, Verilog-style names shoudl
-have already been expanded away using @(see stv-expand-names) or similar.
-These paths don't need to be canonical, and they don't need to refer to state
-bits.  We'll walk back from them to find the associated latch/flop that drives
-them.</p>
+   (usersyms "A fast alist that binds the names of simulation variables like
+              @('opcode') to lists of bits that we generate for these symbols,
+              i.e., @('(opcode[0] ... opcode[n])').  This allows us to check
+              for name collisions with generated symbols and width mismatches.
+              That is, we will allow the same variable to be given to multiple
+              inputs at multiple phases, but for that to be sensible these
+              inputs had better have the same width.")
 
-<p>@('usersyms') is a fast alist that binds the names of simulation variables
-like @('opcode') to lists of bits that we generate for these symbols, i.e.,
-@('(opcode[0] ... opcode[n])').  This allows us to check for name collisions
-with generated symbols and width mismatches.  That is, we will allow the same
-variable to be given to multiple inputs at multiple phases, but for that to be
-sensible these inputs had better have the same width.</p>
+   (mod good-esim-modulep
+        "The module we're working in, needed for various path lookups."))
 
-<p>The @('mod') is needed to do various path lookups.</p>"
+  :returns (mv (bindings alistp)
+               usersyms)
 
-  (local (defthm len-of-bool-to-4v-sexpr-lst
-           (equal (len (bool-to-4v-sexpr-lst x))
-                  (len x))))
+  :prepwork
+  ((local (defthm len-of-bool-to-4v-sexpr-lst
+            (equal (len (bool-to-4v-sexpr-lst x))
+                   (len x)))))
 
-  (local (defthm len-of-stv-gensyms-aux
-           (equal (len (stv-gensyms-aux prefix n acc))
-                  (+ (len acc) (nfix n)))
-           :hints(("Goal" :in-theory (enable stv-gensyms-aux)))))
+  (b* (((unless (tuplep 2 line))
+        (raise "An :initial line must have the form (name value), so this ~
+                line is not valid: ~x0." line)
+        (mv nil usersyms))
 
-  (defund stv-initial-line-bindings (line usersyms mod)
-    "Returns (MV BINDINGS USERSYMS)"
-    (declare (xargs :guard (good-esim-modulep mod)))
-    (b* (((unless (tuplep 2 line))
-          (er hard? 'stv-initial-line-bindings
-              "An :initial line must have the form (name value), so this line ~
-               is not valid: ~x0." line)
-          (mv nil usersyms))
+       ((list paths entry) line)
 
-         ((list paths entry) line)
+       ((unless (and (consp paths)
+                     (true-listp paths)))
+        (raise "Expected all :initial line names to be already expanded to ~
+                non-empty path lists, but found ~x0." paths)
+        (mv nil usersyms))
 
-         ((unless (and (consp paths)
-                       (true-listp paths)))
-          (er hard? 'stv-initial-line-bindings
-              "Expected all :initial line names to be already expanded to ~
-               non-empty path lists, but found ~x0." paths)
-          (mv nil usersyms))
+       (width (length paths))
 
-         (width (length paths))
+       ((when (eq entry '_))
+        ;; Special case: we'll allow blanks, but generate no bindings for them.
+        (mv nil usersyms))
 
-         ((when (eq entry '_))
-          ;; Special case: we'll allow blanks, but generate no bindings for them.
-          (mv nil usersyms))
+       ((mv sexprs usersyms)
+        (b* (((when (natp entry))
+              (or (< entry (ash 1 width))
+                  (raise "At :initial line for ~x0: value ~x1 is too wide to ~
+                          fit into ~x2 bits!" paths entry width))
+              (mv (bool-to-4v-sexpr-lst (int-to-v entry width)) usersyms))
 
-         ((mv sexprs usersyms)
-          (b* (((when (natp entry))
-                (or (< entry (ash 1 width))
-                    (er hard? 'stv-initial-line-bindings
-                        "At :initial line for ~x0: value ~x1 is too wide to ~
-                         fit into ~x2 bits!" paths entry width))
-                (mv (bool-to-4v-sexpr-lst (int-to-v entry width)) usersyms))
+             ((when (eq entry 'x))
+              (mv (repeat *4vx-sexpr* width) usersyms))
 
-               ((when (eq entry 'x))
-                (mv (repeat *4vx-sexpr* width) usersyms))
+             ((when (eq entry :ones))
+              (mv (repeat *4vt-sexpr* width) usersyms))
 
-               ((when (eq entry :ones))
-                (mv (repeat *4vt-sexpr* width) usersyms))
+             ((when (or (eq entry '~)
+                        (keywordp entry)
+                        (not (symbolp entry))))
+              (raise "At :initial line for ~x0: value ~x1 is not allowed in ~
+                      :initial lines." paths entry)
+              (mv (repeat *4vx-sexpr* width) usersyms))
 
-               ((when (or (eq entry '~)
-                          (keywordp entry)
-                          (not (symbolp entry))))
-                (er hard? 'stv-initial-line-bindings
-                    "At :initial line for ~x0: value ~x1 is not allowed in ~
-                     :initial lines." paths entry)
-                (mv (repeat *4vx-sexpr* width) usersyms))
+             (my-syms (stv-gensyms (symbol-name entry) width))
+             (look    (hons-get entry usersyms)))
 
-               (my-syms (stv-gensyms (symbol-name entry) width))
-               (look    (hons-get entry usersyms)))
+          (or (not look)
+              (equal (cdr look) my-syms)
+              (raise "At :initial line for ~x0: variable ~x1 cannot be used ~
+                      here.  This input is ~x2 bits wide, but ~x1 was ~
+                      previously used for a ~x3-bit input."
+                     paths entry width (len (cdr look))))
 
-            (or (not look)
-                (equal (cdr look) my-syms)
-                (er hard? 'stv-expand-input-entry
-                    "At :initial line for ~x0: variable ~x1 cannot be used ~
-                     here.  This input is ~x2 bits wide, but ~x1 was ~
-                     previously used for a ~x3-bit input."
-                    paths entry width (len (cdr look))))
+          (mv my-syms (if look
+                          usersyms
+                        (hons-acons entry my-syms usersyms)))))
 
-            (mv my-syms (if look
-                            usersyms
-                          (hons-acons entry my-syms usersyms)))))
+       (bindings (stv-initial-line-bindings-aux paths sexprs mod)))
+    (mv bindings usersyms))
 
-         (bindings (stv-initial-line-bindings-aux paths sexprs mod)))
-      (mv bindings usersyms)))
-
-  (local (in-theory (enable stv-initial-line-bindings)))
-
+  ///
   (defmvtypes stv-initial-line-bindings (true-listp nil))
-
-  (defthm alistp-of-stv-initial-line-bindings
-    (b* ((ret (stv-initial-line-bindings line usersyms mod)))
-      (alistp (mv-nth 0 ret))))
 
   (defthm keys-of-stv-initial-line-bindings-are-states
     (let ((ret (stv-initial-line-bindings line usersyms mod)))
@@ -475,54 +426,47 @@ sensible these inputs had better have the same width.</p>
                      (pat-flatten1 (mod-state mod))))))
 
 
-(defsection stv-initial-lines-to-alist
+(define stv-initial-lines-to-alist
   :parents (stv-compile)
   :short "Extend @(see stv-initial-line-bindings) across all the :initial lines."
-
-  (defund stv-initial-lines-to-alist (lines usersyms mod)
-    "Returns (MV BINDINGS USERSYMS)"
-    (declare (xargs :guard (good-esim-modulep mod)))
-    (b* (((when (atom lines))
-          (mv nil usersyms))
-         ((mv bindings1 usersyms) (stv-initial-line-bindings (car lines) usersyms mod))
-         ((mv bindings2 usersyms) (stv-initial-lines-to-alist (cdr lines) usersyms mod)))
-      (mv (append bindings1 bindings2) usersyms)))
-
-  (local (in-theory (disable (force))))
-  (local (in-theory (enable stv-initial-lines-to-alist)))
-
+  (lines usersyms (mod good-esim-modulep))
+  :returns (mv (bindings alistp)
+               usersyms)
+  (b* (((when (atom lines))
+        (mv nil usersyms))
+       ((mv bindings1 usersyms) (stv-initial-line-bindings (car lines) usersyms mod))
+       ((mv bindings2 usersyms) (stv-initial-lines-to-alist (cdr lines) usersyms mod)))
+    (mv (append bindings1 bindings2) usersyms))
+  ///
   (defmvtypes stv-initial-lines-to-alist (true-listp nil))
 
-  (defthm alistp-of-stv-initial-lines-to-alist
-    (b* ((ret (stv-initial-lines-to-alist lines usersyms mod)))
-      (alistp (mv-nth 0 ret))))
-
   (defthm keys-of-stv-initial-lines-to-alist-are-states
-    (let ((ret (stv-initial-lines-to-alist lines usersyms mod)))
-      (subsetp-equal (alist-keys (mv-nth 0 ret))
+    (b* (((mv bindings ?usersyms)
+          (stv-initial-lines-to-alist lines usersyms mod)))
+      (subsetp-equal (alist-keys bindings)
                      (pat-flatten1 (mod-state mod)))))
 
   (defthm atom-listp-of-alist-keys-of-stv-initial-lines-to-alist
-    (let ((ret (stv-initial-lines-to-alist lines usersyms mod)))
-      (atom-listp (alist-keys (mv-nth 0 ret))))
+    (b* (((mv bindings ?usersyms)
+          (stv-initial-lines-to-alist lines usersyms mod)))
+      (atom-listp (alist-keys bindings)))
     :hints(("Goal"
             :in-theory (disable stv-initial-lines-to-alist
                                 keys-of-stv-initial-lines-to-alist-are-states)
             :use ((:instance keys-of-stv-initial-lines-to-alist-are-states))))))
 
 
-
-(defsection stv-add-suffixes-to-initial-alist
+(define stv-add-suffixes-to-initial-alist
   :parents (stv-compile)
   :short "Add .INIT suffixes to the state bits so that they can't clash with
 input signal names."
 
-  (defund stv-add-suffixes-to-initial-alist (x)
-    (declare (xargs :guard (atom-listp (alist-keys x))))
-    (b* ((keys (alist-keys x))
-         (vals (alist-vals x))
-         (keys.INIT (stv-suffix-signals keys ".INIT")))
-      (pairlis$ keys.INIT vals))))
+  ((x (atom-listp (alist-keys x))))
+
+  (b* ((keys (alist-keys x))
+       (vals (alist-vals x))
+       (keys.INIT (stv-suffix-signals keys ".INIT")))
+    (pairlis$ keys.INIT vals)))
 
 #||
 
@@ -555,18 +499,15 @@ input signal names."
 ;
 ; -----------------------------------------------------------------------------
 
-(defsection stv-expand-input-entry
+(define stv-expand-input-entry
   :parents (stv-compile)
   :short "Convert a single user-level input value (e.g., 17, X, abus, etc) into
 a list of @(see 4v-sexprs)."
 
-  :long "<p><b>Signature:</b> @(call stv-expand-input-entry) returns @('(mv
-new-val gensyms usersyms)').</p>
-
-<p>This function basically defines what each value in an :input line means.  We
-transform each such value into a list of @(see 4v-sexprs).  These are the
-sexprs that will be given to this input during this phase.  At a high level,
-our expansion strategy is:</p>
+  :long "<p>This function basically defines what each value in an :input line
+means.  We transform each such value into a list of @(see 4v-sexprs).  These
+are the sexprs that will be given to this input during this phase.  At a high
+level, our expansion strategy is:</p>
 
 <ul>
 
@@ -590,183 +531,169 @@ names of input bits for this line.  Basically, @('|foo[0]|') gets turned into
 <li><b>Simulation variables</b>.  A simulation variable like @('opcode') is
 turned into a list like @('(|opcode[0]| ... |opcode[n]|)').</li>
 
-</ul>
-
-<p>To support this strategy, this function takes a number of inputs.</p>
-
-<ul>
-
-<li>@('name') is the name of this input, and should be a list of E input bits
-in lsb-first order.  (That is, Verilog-style names should have already been
-expanded away using @(see stv-expand-names) or similar.)</li>
-
-<li>@('width') is the pre-computed width of this input, i.e., it must be
-exactly equal to @('(len name)').</li>
-
-<li>@('pnum') is the current phase number (and starts at 0).  We use this to
-know what suffix to put onto the generated variable names for @('_') values,
-e.g., @('|foo[0].P4|')</li>
-
-<li>@('entry') is the actual entry we are trying to expand.  For instance, it
-might be @('5'), @(':ones'), @('_'), or whatever else the user wrote down for
-this input at this phase number.</li>
-
-<li>@('gensyms') is a flat list of all the names we have generated so far for
-@('_') entries, which we may extend.  This allows us to check for name
-collisions later on.</li>
-
-<li>@('usersyms') is a fast alist that binds the names of simulation variables
-like @('opcode') to lists of bits that we generate for these symbols, i.e.,
-@('(opcode[0] ... opcode[n])').  This allows us to check for name collisions
-with generated symbols and width mismatches.  That is, we will allow the same
-variable to be given to multiple inputs at multiple phases, but for that to be
-sensible these inputs had better have the same width.</li>
-
-<li>@('prev-val') is the sexpr list that this signal expanded to in the
-previous phase, or NIL if this is the first phase of the simulation.  We use
-this to figure out the new value of a @('~') entry.</li>
-
 </ul>"
 
-  (defund stv-expand-input-entry (name width pnum entry gensyms usersyms prev-val)
-    (declare (xargs :guard (and (atom-listp name)
-                                (consp name)
-                                (natp pnum)
-                                (equal width (len name)))))
-    (b* (((when (natp entry))
-          (or (< entry (ash 1 width))
-              (er hard? 'stv-expand-input-entry
-                  "Phase ~x0 for ~x1: value ~x2 is too wide to fit in ~x3 ~
-                   bits!" pnum name entry width))
-          (mv (bool-to-4v-sexpr-lst (int-to-v entry width)) gensyms usersyms))
+  ((name (and (atom-listp name)
+              (consp name))
+         "The name of this input, and should be a list of E input bits in
+          lsb-first order.  (That is, Verilog-style names should have already
+          been expanded away using @(see stv-expand-names) or similar.)")
 
-         ((when (eq entry 'x))
-          (mv (repeat *4vx-sexpr* width) gensyms usersyms))
+   (width (equal width (len name))
+          "Just the pre-computed width of this input.")
 
-         ((when (eq entry :ones))
-          (mv (repeat *4vt-sexpr* width) gensyms usersyms))
+   (pnum natp
+         "The current phase number (and starts at 0).  We use this to know what
+          suffix to put onto the generated variable names for @('_') values,
+          e.g., @('|foo[0].P4|').")
 
-         ((when (eq entry '~))
-          (or (= width 1)
-              (er hard? 'stv-expand-input-entry
-                  "Phase ~x0 for ~x1: value ~~ is not legal here.  It can ~
-                   only be used in one-bit inputs, but this input is ~x2 bits ~
-                   wide." pnum name width))
-          (or prev-val
-              (er hard? 'stv-expand-input-entry
-                  "Phase ~x0 for ~x1: value ~~ is not legal here.  It must be ~
-                   preceeded by a constant true or false, so it cannot be ~
-                   used at the start of a line." pnum name))
-          (or (equal prev-val (list *4vt-sexpr*))
-              (equal prev-val (list *4vf-sexpr*))
-              (er hard? 'stv-expand-input-entry
-                  "Phase ~x0 for ~x1: value ~~ is not legal here.  It must be ~
-                   preceeded by a constant true or false, but the previous ~
-                   value was ~x2." pnum name prev-val))
-          (mv (if (equal prev-val (list *4vt-sexpr*))
-                  (list *4vf-sexpr*)
-                (list *4vt-sexpr*))
-              gensyms usersyms))
+   (entry "The actual entry we are trying to expand.  For instance, it might be
+           @('5'), @(':ones'), @('_'), or whatever else the user wrote down for
+           this input at this phase number.")
 
-         ((when (eq entry '_))
-          (let ((my-syms (stv-suffix-signals name (str::cat ".P" (str::natstr pnum)))))
-            (mv my-syms
-                (append my-syms gensyms)
-                usersyms)))
+   (gensyms "A flat list of all the names we have generated so far for @('_')
+             entries, which we may extend.  This allows us to check for name
+             collisions later on.")
 
-         ((unless (and (symbolp entry)
-                       (not (keywordp entry))))
-          (er hard? 'stv-expand-input-entry
-              "Phase ~x0 for ~x1: value ~x2 is not legal for input lines of ~
-               symbolic test vectors.  See :xdoc symbolic-test-vector-format ~
-               for help." pnum name entry)
-          (mv (repeat *4vx-sexpr* width) gensyms usersyms))
+   (usersyms "A fast alist that binds the names of simulation variables like
+              @('opcode') to lists of bits that we generate for these symbols,
+              i.e., @('(opcode[0] ... opcode[n])').  This allows us to check
+              for name collisions with generated symbols and width mismatches.
+              That is, we will allow the same variable to be given to multiple
+              inputs at multiple phases, but for that to be sensible these
+              inputs had better have the same width.")
 
-         (my-syms (stv-gensyms (symbol-name entry) width))
-         (look    (hons-get entry usersyms)))
+   (prev-val "The sexpr list that this signal expanded to in the previous
+              phase, or NIL if this is the first phase of the simulation.  We
+              use this to figure out the new value of a @('~') entry."))
 
-      (or (not look)
-          (equal (cdr look) my-syms)
-          (er hard? 'stv-expand-input-entry
-              "Phase ~x0 for ~x1: variable ~x2 cannnot be used here.  This ~
-               input is ~x3 bits wide, but ~x2 was previously used for a ~
-               ~x4-bit input." pnum name entry width (len (cdr look))))
-      (mv my-syms gensyms (if look
-                              usersyms
-                            (hons-acons entry my-syms usersyms)))))
+  :returns (mv new-val gensyms usersyms)
 
-  (local (in-theory (enable stv-expand-input-entry)))
+  (b* (((when (natp entry))
+        (or (< entry (ash 1 width))
+            (raise "Phase ~x0 for ~x1: value ~x2 is too wide to fit in ~x3 ~
+                    bits!" pnum name entry width))
+        (mv (bool-to-4v-sexpr-lst (int-to-v entry width)) gensyms usersyms))
 
+       ((when (eq entry 'x))
+        (mv (repeat *4vx-sexpr* width) gensyms usersyms))
+
+       ((when (eq entry :ones))
+        (mv (repeat *4vt-sexpr* width) gensyms usersyms))
+
+       ((when (eq entry '~))
+        (or (= width 1)
+            (raise "Phase ~x0 for ~x1: value ~~ is not legal here.  It can ~
+                    only be used in one-bit inputs, but this input is ~x2 ~
+                    bits wide." pnum name width))
+        (or prev-val
+            (raise "Phase ~x0 for ~x1: value ~~ is not legal here.  It must ~
+                    be preceeded by a constant true or false, so it cannot be ~
+                    used at the start of a line." pnum name))
+        (or (equal prev-val (list *4vt-sexpr*))
+            (equal prev-val (list *4vf-sexpr*))
+            (raise "Phase ~x0 for ~x1: value ~~ is not legal here.  It must ~
+                    be preceeded by a constant true or false, but the ~
+                    previous value was ~x2." pnum name prev-val))
+        (mv (if (equal prev-val (list *4vt-sexpr*))
+                (list *4vf-sexpr*)
+              (list *4vt-sexpr*))
+            gensyms usersyms))
+
+       ((when (eq entry '_))
+        (let ((my-syms (stv-suffix-signals name (str::cat ".P" (str::natstr pnum)))))
+          (mv my-syms
+              (append my-syms gensyms)
+              usersyms)))
+
+       ((unless (and (symbolp entry)
+                     (not (keywordp entry))))
+        (raise "Phase ~x0 for ~x1: value ~x2 is not legal for input lines of ~
+                symbolic test vectors.  See :xdoc symbolic-test-vector-format ~
+                for help." pnum name entry)
+        (mv (repeat *4vx-sexpr* width) gensyms usersyms))
+
+       (my-syms (stv-gensyms (symbol-name entry) width))
+       (look    (hons-get entry usersyms)))
+
+    (or (not look)
+        (equal (cdr look) my-syms)
+        (raise "Phase ~x0 for ~x1: variable ~x2 cannnot be used here.  This ~
+                input is ~x3 bits wide, but ~x2 was previously used for a ~
+                ~x4-bit input." pnum name entry width (len (cdr look))))
+    (mv my-syms gensyms (if look
+                            usersyms
+                          (hons-acons entry my-syms usersyms))))
+  ///
   (defthm true-listp-of-stv-expand-input-entry-gensyms
-    (let ((ret (stv-expand-input-entry name width pnum entry gensyms usersyms prev-val)))
-      (implies (true-listp gensyms)
-               (true-listp (mv-nth 1 ret))))))
+    (implies (true-listp gensyms)
+             (b* (((mv ?new-val gensyms ?usersyms)
+                   (stv-expand-input-entry name width pnum entry
+                                           gensyms usersyms prev-val)))
+               (true-listp gensyms)))))
 
 
-(defsection stv-expand-input-entries
+(define stv-expand-input-entries
   :parents (stv-compile)
   :short "Extend @(see stv-expand-input-entry) across a line."
+  ((name (and (atom-listp name)
+              (consp name)))
+   (width (equal width (len name)))
+   (pnum natp)
+   (entries true-listp)
+   gensyms
+   usersyms
+   prev-val)
+  :returns (mv new-entries gensyms usersyms)
 
-  (defund stv-expand-input-entries (name width pnum entries gensyms usersyms prev-val)
-    "Returns (MV NEW-ENTRIES GENSYMS USERSYMS)"
-    (declare (xargs :guard (and (atom-listp name)
-                                (consp name)
-                                (natp pnum)
-                                (equal width (len name))
-                                (true-listp entries))))
-    (b* (((when (atom entries))
-          (mv nil gensyms usersyms))
-         ((mv new-car gensyms usersyms)
-          (stv-expand-input-entry name width pnum (car entries)
-                                  gensyms usersyms prev-val))
-         ((mv new-cdr gensyms usersyms)
-          (stv-expand-input-entries name width (+ 1 pnum) (cdr entries)
-                                    gensyms usersyms new-car)))
-      (mv (cons new-car new-cdr) gensyms usersyms)))
-
-  (local (in-theory (enable stv-expand-input-entries)))
-
+  (b* (((when (atom entries))
+        (mv nil gensyms usersyms))
+       ((mv new-car gensyms usersyms)
+        (stv-expand-input-entry name width pnum (car entries)
+                                gensyms usersyms prev-val))
+       ((mv new-cdr gensyms usersyms)
+        (stv-expand-input-entries name width (+ 1 pnum) (cdr entries)
+                                  gensyms usersyms new-car)))
+    (mv (cons new-car new-cdr) gensyms usersyms))
+  ///
   (defmvtypes stv-expand-input-entries (true-listp nil nil))
 
   (defthm true-listp-of-stv-expand-input-entries-gensyms
-    (let ((ret (stv-expand-input-entries name width pnum entries gensyms usersyms prev-val)))
-      (implies (true-listp gensyms)
-               (true-listp (mv-nth 1 ret))))))
+    (implies (true-listp gensyms)
+             (b* (((mv ?new-entries gensyms ?usersyms)
+                   (stv-expand-input-entries name width pnum entries
+                                             gensyms usersyms prev-val)))
+               (true-listp gensyms)))))
 
 
-(defsection stv-expand-input-lines
+(define stv-expand-input-lines
   :parents (stv-compile)
   :short "Extend @(see stv-expand-input-entry) across a list of lines."
+  ((lines true-list-listp)
+   gensyms
+   usersyms)
+  :returns (mv (new-lines true-list-listp)
+               gensyms
+               usersyms)
+  (b* (((when (atom lines))
+        (mv nil gensyms usersyms))
+       (line1 (car lines))
+       ((cons name1 entries1) line1)
 
-  (defund stv-expand-input-lines (lines gensyms usersyms)
-    "Returns (MV NEW-LINES GENSYMS USERSYMS)"
-    (declare (xargs :guard (true-list-listp lines)))
-    (b* (((when (atom lines))
-          (mv nil gensyms usersyms))
-         (line1 (car lines))
-         ((cons name1 entries1) line1)
+       ((unless (and (consp name1)
+                     (atom-listp name1)))
+        (raise "Expected all input line names to be already expanded to ~
+                non-empty lists of E bits, but found ~x0." name1)
+        (mv nil gensyms usersyms))
 
-         ((unless (and (consp name1)
-                       (atom-listp name1)))
-          (er hard? 'stv-expand-input-lines
-              "Expected all input line names to be already expanded to ~
-               non-empty lists of E bits, but found ~x0." name1)
-          (mv nil gensyms usersyms))
-
-         ((mv new-entries1 gensyms usersyms)
-          (stv-expand-input-entries name1 (len name1) 0 entries1 gensyms usersyms nil))
-         (new-car (cons name1 new-entries1))
-         ((mv new-cdr gensyms usersyms)
-          (stv-expand-input-lines (cdr lines) gensyms usersyms)))
-      (mv (cons new-car new-cdr) gensyms usersyms)))
-
-  (local (in-theory (enable stv-expand-input-lines)))
-
+       ((mv new-entries1 gensyms usersyms)
+        (stv-expand-input-entries name1 (len name1) 0 entries1 gensyms usersyms nil))
+       (new-car (cons name1 new-entries1))
+       ((mv new-cdr gensyms usersyms)
+        (stv-expand-input-lines (cdr lines) gensyms usersyms)))
+    (mv (cons new-car new-cdr) gensyms usersyms))
+  ///
   (defmvtypes stv-expand-input-lines (true-listp nil nil))
-
-  (defthm true-list-listp-of-stv-expand-input-lines
-    (let ((ret (stv-expand-input-lines lines gensyms usersyms)))
-      (true-list-listp (mv-nth 0 ret))))
 
   (defthm true-listp-of-stv-expand-input-lines-gensyms
     (let ((ret (stv-expand-input-lines lines gensyms usersyms)))
@@ -781,25 +708,39 @@ this to figure out the new value of a @('~') entry.</li>
 ;
 ; -----------------------------------------------------------------------------
 
-(defsection stv-restrict-alist
+(define stv-restrict-alist-aux ((name atom-listp)
+                                (phase natp)
+                                entries
+                                acc)
+  :returns (acc alistp :hyp (alistp acc))
+  :parents (stv-restrict-alist)
+  (b* (((when (atom entries))
+        acc)
+       (name-at-phase (stv-suffix-signals name (str::cat ".P" (str::natstr phase))))
+       (val-at-phase  (car entries))
+       (acc           (safe-pairlis-onto-acc name-at-phase val-at-phase acc)))
+    (stv-restrict-alist-aux name (+ 1 phase) (cdr entries) acc)))
+
+(define stv-restrict-alist
   :parents (stv-compile)
   :short "Construct an alist binding fully-general input names (for all phases)
 to @(see 4v-sexprs) derived from the symbolic test vector."
 
-  :long "<p>@(call stv-restrict-alist) produces an alist.</p>
+  ((lines true-list-listp
+          "The output from @(see stv-expand-input-lines).  That is, these
+           should STV input lines that have already been widened, had their
+           names resolved into E bits, and had their entries turned into
+           4v-sexpr lists.")
+   (acc "An alist that we extend.  Typically it is the alist that has the
+         @(':initial') bindings."))
 
-<p>@('lines') are the output from @(see stv-expand-input-lines).  We expect
-that the lines have been widened, had their names resolved into E bits, and had
-their entries turned into 4v-sexpr lists.</p>
+  :returns (restrict-alist alistp :hyp (alistp acc))
 
-<p>@('acc') is an alist that we extend.  Typically it is the alist that has the
-@(':initial') bindings.</p>
-
-<p>We construct an ordinary (slow) alist that binds the input names we are
-going to use in our fully-general simulation to their bindings according to the
-symbolic test vector.  This is a single alist that includes the bindings for
-the variables at all phases, plus (presumably, via acc) any initial bindings
-for state bits.</p>
+  :long "<p>We construct an ordinary (slow) alist that binds the input names we
+are going to use in our fully-general @(see esim) simulation to their bindings
+according to the symbolic test vector.  This is a single alist that includes
+the bindings for the variables at all phases, plus (presumably, via acc) any
+initial bindings for state bits.</p>
 
 <p>The sexprs in this alist will often be constants (e.g., when natural
 numbers, @(':ones'), @('x'), or @('~') values are used), but they can also have
@@ -809,27 +750,14 @@ free variables from @('_') symbols and also simulation variable bits.</p>
 with @(see 4v-sexpr-restrict) to specialize the fully general simulation,
 effectively \"assuming\" the STV.</p>"
 
-  (defund stv-restrict-alist-aux (name phase entries acc)
-    (declare (xargs :guard (and (atom-listp name)
-                                (natp phase))))
-    (b* (((when (atom entries))
-          acc)
-         (name-at-phase (stv-suffix-signals name (str::cat ".P" (str::natstr phase))))
-         (val-at-phase  (car entries))
-         (acc           (safe-pairlis-onto-acc name-at-phase val-at-phase acc)))
-      (stv-restrict-alist-aux name (+ 1 phase) (cdr entries) acc)))
-
-  (defund stv-restrict-alist (lines acc)
-    (declare (xargs :guard (true-list-listp lines)))
     (b* (((when (atom lines))
           acc)
          (line1 (car lines))
          ((cons name entries) line1)
          ((unless (atom-listp name))
-          (er hard? 'stv-restrict-alist
-              "Name should be a list of E bits, but is ~x0." name))
+          (raise "Name should be a list of E bits, but is ~x0." name))
          (acc (stv-restrict-alist-aux name 0 entries acc)))
-      (stv-restrict-alist (cdr lines) acc))))
+      (stv-restrict-alist (cdr lines) acc)))
 
 
 
@@ -839,135 +767,113 @@ effectively \"assuming\" the STV.</p>"
 ;
 ; -----------------------------------------------------------------------------
 
-(defsection stv-expand-output-entry
+(define stv-expand-output-entry
   :parents (stv-compile)
   :short "Convert a single user-level output/internal value (e.g., _, result)
 into a list of @(see 4v-sexprs)."
 
-  :long "<p><b>Signature:</b> @(call stv-expand-output-entry) returns @('(mv
-new-val usersyms)').</p>
+  :long "<p>The only valid entries for output lines are @('_') (for signals we
+don't care about) and simulation variables.  Here, we just leave any @('_')
+values alone, but we replace simulation variables with lists of new variables
+that we generate from their names.  That is, a simulation variable like
+@('result') will be converted into a list of bits like @('(result[0]
+... result[4])').</p>"
 
-<p>The only valid entries for output lines are @('_') (for signals we don't
-care about) and simulation variables.  Here, we just leave any @('_') values
-alone, but we replace simulation variables with lists of new variables that we
-generate from their names.  That is, a simulation variable like @('result')
-will be converted into a list of bits like @('(result[0] ... result[4])').</p>
+  ((name (and (true-listp name)
+              (consp name))
+         "The name of this output.  It should be a list of E input bits in
+          lsb-first order.  That is, Verilog-style names should have already
+          been expanded away using @(see stv-expand-names) or similar.")
 
-<p>We are given:</p>
+   (width (equal width (len name))
+          "Just the pre-computed width of this output.  It must be exactly
+           equal to @('(len name)').  This lets us know how many variables to
+           generate when we hit a simulation variable.")
 
-<ul>
+   (pnum natp
+         "The current phase number (and starts at 0).  This is semantically
+          irrelevant; we use it only to generate better error messages.")
 
-<li>@('name') is the name of this output.  It should be a list of E input bits
-in lsb-first order.  That is, Verilog-style names should have already been
-expanded away using @(see stv-expand-names) or similar.</li>
+   (entry "The actual entry we are trying to expand, i.e., it's what the user
+           wrote down for this output at this phase.  To be well-formed, the
+           entry needs to be @('_') or a simulation variable, but the user can
+           write down anything so we have to check that it is valid.")
 
-<li>@('width') is the pre-computed width of this output.  It must be exactly
-equal to @('(len name)').  This lets us know how many variables to generate
-when we hit a simulation variable.</li>
+   (usersyms "A fast alist binding simulation variables to the lists of bits
+              that we've generated to represent them.  We assume this only
+              contains the output simulation variables.  This lets us make sure
+              that output variables aren't being reused."))
 
-<li>@('pnum') is the current phase number (and starts at 0).  This is
-semantically irrelevant; we use it only to generate better error messages.</li>
+  :returns (mv new-val usersyms)
 
-<li>@('entry') is the actual entry we are trying to expand, i.e., it's what the
-user wrote down for this output at this phase.  To be well-formed, the entry
-needs to be @('_') or a simulation variable, but the user can write down
-anything so we have to check that it is valid.</li>
+  (b* (((when (or (natp entry)
+                  (eq entry 'x)
+                  (eq entry '~)
+                  (keywordp entry)
+                  (not (symbolp entry))))
+        (raise "Phase ~x0 for ~x1: value ~x2 is not legal for :output lines."
+               pnum name entry)
+        (mv nil usersyms))
 
-<li>@('usersyms') is a fast alist binding simulation variables to the lists of
-bits that we've generated to represent them.  We assume this only contains the
-output simulation variables.  This lets us make sure that output variables
-aren't being reused.</li>
+       ((when (eq entry '_))
+        ;; That's fine, just leave it alone.
+        (mv entry usersyms))
 
-</ul>"
+       ;; Else, a simulation variable.  It had better not be used yet.
+       (look (hons-get entry usersyms))
+       ((when look)
+        (raise "Phase ~x0 for ~x1: variable ~x2 is already in use, so it ~
+                cannot be used again." pnum name entry)
+        (mv nil usersyms))
 
-  (defund stv-expand-output-entry (name width pnum entry usersyms)
-    "Returns (MV NEW-VAL USERSYMS)"
-    (declare (xargs :guard (and (true-listp name)
-                                (consp name)
-                                (natp pnum)
-                                (equal width (len name)))))
-    (b* (((when (or (natp entry)
-                    (eq entry 'x)
-                    (eq entry '~)
-                    (keywordp entry)
-                    (not (symbolp entry))))
-          (er hard? 'stv-expand-output-entry
-              "Phase ~x0 for ~x1: value ~x2 is not legal for :output lines."
-              pnum name entry)
-          (mv nil usersyms))
+       ;; Okay it wasn't used.  Make its symbols and such.
+       (my-syms  (stv-gensyms (symbol-name entry) width))
+       (usersyms (hons-acons entry my-syms usersyms)))
+    (mv my-syms usersyms)))
 
-         ((when (eq entry '_))
-          ;; That's fine, just leave it alone.
-          (mv entry usersyms))
-
-         ;; Else, a simulation variable.  It had better not be used yet.
-         (look (hons-get entry usersyms))
-         ((when look)
-          (er hard? 'stv-expand-output-entry
-              "Phase ~x0 for ~x1: variable ~x2 is already in use, so it ~
-               cannot be used again." pnum name entry)
-          (mv nil usersyms))
-
-         ;; Okay it wasn't used.  Make its symbols and such.
-         (my-syms  (stv-gensyms (symbol-name entry) width))
-         (usersyms (hons-acons entry my-syms usersyms)))
-      (mv my-syms usersyms))))
-
-
-(defsection stv-expand-output-entries
+(define stv-expand-output-entries
   :parents (stv-compile)
   :short "Extend @(see stv-expand-output-entry) across a line."
+  ((name    (and (true-listp name) (consp name)))
+   (width   (equal width (len name)))
+   (pnum    natp)
+   (entries true-listp)
+   usersyms)
+  :returns (mv (new-entries true-listp :rule-classes :type-prescription)
+               usersyms)
+  (b* (((when (atom entries))
+        (mv nil usersyms))
+       ((mv new-car usersyms)
+        (stv-expand-output-entry name width pnum (car entries) usersyms))
+       ((mv new-cdr usersyms)
+        (stv-expand-output-entries name width (+ 1 pnum) (cdr entries) usersyms)))
+    (mv (cons new-car new-cdr) usersyms)))
 
-  (defund stv-expand-output-entries (name width pnum entries usersyms)
-    "Returns (MV NEW-ENTRIES USERSYMS)"
-    (declare (xargs :guard (and (true-listp name)
-                                (consp name)
-                                (natp pnum)
-                                (equal width (len name))
-                                (true-listp entries))))
-    (b* (((when (atom entries))
-          (mv nil usersyms))
-         ((mv new-car usersyms)
-          (stv-expand-output-entry name width pnum (car entries) usersyms))
-         ((mv new-cdr usersyms)
-          (stv-expand-output-entries name width (+ 1 pnum) (cdr entries) usersyms)))
-      (mv (cons new-car new-cdr) usersyms)))
-
-  (defmvtypes stv-expand-output-entries (true-listp nil)))
-
-
-(defsection stv-expand-output-lines
+(define stv-expand-output-lines
   :parents (stv-compile)
   :short "Extend @(see stv-expand-output-entry) across a list of lines."
 
-  (defund stv-expand-output-lines (lines usersyms)
-    "Returns (MV NEW-LINES USERSYMS)"
-    (declare (xargs :guard (true-list-listp lines)))
-    (b* (((when (atom lines))
-          (mv nil usersyms))
-         (line1 (car lines))
-         ((cons name1 entries1) line1)
+  ((lines true-list-listp) usersyms)
+  :returns (mv (new-lines true-list-listp)
+               usersyms)
+  (b* (((when (atom lines))
+        (mv nil usersyms))
+       (line1 (car lines))
+       ((cons name1 entries1) line1)
 
-         ((unless (and (consp name1)
-                       (atom-listp name1)))
-          (er hard? 'stv-expand-output-lines
-              "Expected :output line names to be already expanded to non-empty ~
-               lists of E bits, but found ~x0." name1)
-          (mv nil usersyms))
+       ((unless (and (consp name1)
+                     (atom-listp name1)))
+        (raise "Expected :output line names to be already expanded to ~
+                non-empty lists of E bits, but found ~x0." name1)
+        (mv nil usersyms))
 
-         ((mv new-entries1 usersyms)
-          (stv-expand-output-entries name1 (len name1) 0 entries1 usersyms))
+       ((mv new-entries1 usersyms)
+        (stv-expand-output-entries name1 (len name1) 0 entries1 usersyms))
 
-         (new-car (cons name1 new-entries1))
-         ((mv new-cdr usersyms)
-          (stv-expand-output-lines (cdr lines) usersyms)))
-      (mv (cons new-car new-cdr) usersyms)))
-
-  (local (in-theory (enable stv-expand-output-lines)))
-
-  (defthm true-list-listp-of-stv-expand-output-lines
-    (let ((ret (stv-expand-output-lines lines usersyms)))
-      (true-list-listp (mv-nth 0 ret)))))
+       (new-car (cons name1 new-entries1))
+       ((mv new-cdr usersyms)
+        (stv-expand-output-lines (cdr lines) usersyms)))
+    (mv (cons new-car new-cdr) usersyms)))
 
 
 
@@ -980,59 +886,50 @@ aren't being reused.</li>
 ; These are almost the same as output lines.  The only difference is that we
 ; need to canonicalize their paths.
 
-(defsection stv-expand-internal-line
+(define stv-expand-internal-line
   :parents (stv-compile)
+  ((line true-listp)
+   usersyms
+   (mod good-esim-modulep))
+  :returns (mv (new-line true-listp :rule-classes :type-prescription)
+               usersyms)
+  (b* (((cons name entries) line)
+       ((unless (and (consp name)
+                     (true-listp name)))
+        (raise "Expected :internal line names to be already expanded to ~
+                non-empty lists of E paths, but found ~x0." name)
+        (mv nil usersyms))
 
-  (local (defthm fast-canonicalize-paths-1-under-iff
-           (iff (mv-nth 1 (fast-canonicalize-paths paths mod))
-                (consp paths))
-           :hints(("Goal" :in-theory (enable fast-canonicalize-paths)))))
+       ;; The ESIM simulation only involves canonical paths, so to be able to
+       ;; extract the right paths we need to canonicalize these paths.
+       ((mv okp new-name) (fast-canonicalize-paths name mod))
+       ((unless okp)
+        (raise "Failed to canonicalize all the paths for ~x0." name)
+        (mv nil usersyms))
+       ((mv new-entries usersyms)
+        (stv-expand-output-entries new-name (len new-name) 0 entries usersyms))
+       (new-line (cons new-name new-entries)))
+    (mv new-line usersyms))
+  :prepwork
+  ((local (defthm fast-canonicalize-paths-1-under-iff
+            (iff (mv-nth 1 (fast-canonicalize-paths paths mod))
+                 (consp paths))
+            :hints(("Goal" :in-theory (enable fast-canonicalize-paths)))))))
 
-  (defund stv-expand-internal-line (line usersyms mod)
-    "Returns (MV NEW-LINE USERSYMS)"
-    (declare (xargs :guard (and (true-listp line)
-                                (good-esim-modulep mod))))
-    (b* (((cons name entries) line)
-
-         ((unless (and (consp name)
-                       (true-listp name)))
-          (er hard? 'stv-expand-internal-lines
-              "Expected :internal line names to be already expanded to non-empty ~
-               lists of E paths, but found ~x0." name)
-          (mv nil usersyms))
-
-         ;; The ESIM simulation only involves canonical paths, so to be able to
-         ;; extract the right paths we need to canonicalize these paths.
-         ((mv okp new-name) (fast-canonicalize-paths name mod))
-         ((unless okp)
-          (er hard? 'stv-expand-internal-lines
-              "Failed to canonicalize all the paths for ~x0." name)
-          (mv nil usersyms))
-
-         ((mv new-entries usersyms)
-          (stv-expand-output-entries new-name (len new-name) 0 entries usersyms))
-
-         (new-line (cons new-name new-entries)))
-      (mv new-line usersyms)))
-
-  (defmvtypes stv-expand-internal-line (true-listp nil)))
-
-
-(defsection stv-expand-internal-lines
+(define stv-expand-internal-lines
   :parents (stv-compile)
   :short "Extend @(see stv-expand-internal-line) across a list of lines."
+  ((lines true-list-listp)
+   (usersyms)
+   (mod good-esim-modulep))
+  :returns (mv (new-lines true-list-listp)
+               usersyms)
+  (b* (((when (atom lines))
+        (mv nil usersyms))
+       ((mv line1 usersyms) (stv-expand-internal-line (car lines) usersyms mod))
+       ((mv lines2 usersyms) (stv-expand-internal-lines (cdr lines) usersyms mod)))
+    (mv (cons line1 lines2) usersyms)))
 
-  (defund stv-expand-internal-lines (lines usersyms mod)
-    "Returns (MV NEW-LINES USERSYMS)"
-    (declare (xargs :guard (and (true-list-listp lines)
-                                (good-esim-modulep mod))))
-    (b* (((when (atom lines))
-          (mv nil usersyms))
-         ((mv line1 usersyms) (stv-expand-internal-line (car lines) usersyms mod))
-         ((mv lines2 usersyms) (stv-expand-internal-lines (cdr lines) usersyms mod)))
-      (mv (cons line1 lines2) usersyms)))
-
-  (defmvtypes stv-expand-internal-lines (true-list-listp nil)))
 
 
 ; -----------------------------------------------------------------------------
@@ -1041,18 +938,38 @@ aren't being reused.</li>
 ;
 ; -----------------------------------------------------------------------------
 
-(defsection stv-extraction-alists
+(define stv-nth-extraction-alist
+  :parents (stv-extraction-alists)
+  :short "Add the bindings for name to entryN to the NTH-ALIST-ACC"
+  ((n             natp)
+   (lines         true-list-listp   "A list of (name entry1 ... entryK)")
+   (nth-alist-acc alistp))
+   (b* (((when (atom lines))
+         nth-alist-acc)
+        (line1 (car lines))
+        ((cons name entries) line1)
+        (entry (nth n entries))
+        ((when (eq entry '_))
+         ;; Don't care about this output at this time.  Keep going.
+         (stv-nth-extraction-alist n (cdr lines) nth-alist-acc))
+        (nth-alist-acc (safe-pairlis-onto-acc name entry nth-alist-acc)))
+     (stv-nth-extraction-alist n (cdr lines) nth-alist-acc)))
+
+(define stv-extraction-alists
   :parents (stv-compile)
   :short "Alists explaining what signals we want to extract from the simulation
 after each phase."
+  ((n          natp            "Initially this is the total number of phases.
+                                It will counts down from the max phase to 0.")
 
-  :long "<p>@(call stv-extraction-alists) takes the total number of phases, the
-output or internal lines (which we assume have already been expanded), and an
-accumulator which should initially be @('nil').</p>
+   (lines      true-list-listp "Constant.  Expanded output or internals lines.")
 
-<p>It returns a list of alists that say, after each step, which output bits we
-want to collect, and how we want to name them.  The basic idea is that if we have
-a list of outputs like this:</p>
+   (alists-acc "Accumulator, initially nil."))
+
+  :returns (alists-acc "A list of alists that say, after each step, which
+                        output bits we want to collect, and how to name them.")
+
+  :long "<p>The basic idea is that if we have a list of outputs lines like:</p>
 
 @({
    (foo  _ _ a _)
@@ -1085,32 +1002,11 @@ is empty.  The P1 alist binds something like</p>
 phase, the names of the output signals we want to extract from the simulation,
 and which bit of which simulation variable the name corresponds to.</p>"
 
-  (defund stv-nth-extraction-alist (n lines nth-alist-acc)
-    "Lines are (name entry1 ... entryK)
-     Add the bindings for name to entryN to the NTH-ALIST-ACC"
-    (declare (xargs :guard (and (natp n)
-                                (true-list-listp lines))))
-    (b* (((when (atom lines))
-          nth-alist-acc)
-         (line1 (car lines))
-         ((cons name entries) line1)
-         (entry (nth n entries))
-         ((when (eq entry '_))
-          ;; Don't care about this output at this time.  Keep going.
-          (stv-nth-extraction-alist n (cdr lines) nth-alist-acc))
-         (nth-alist-acc (safe-pairlis-onto-acc name entry nth-alist-acc)))
-      (stv-nth-extraction-alist n (cdr lines) nth-alist-acc)))
-
-  (defund stv-extraction-alists (n lines alists-acc)
-    "N counts down from the max phase to zero.  Lines are constant.
-     We return the list of binding alists, in the proper phase order."
-    (declare (xargs :guard (and (natp n)
-                                (true-list-listp lines))))
-    (let* ((nth-alist  (stv-nth-extraction-alist n lines nil))
-           (alists-acc (cons nth-alist alists-acc)))
-      (if (zp n)
-          alists-acc
-        (stv-extraction-alists (- n 1) lines alists-acc)))))
+  (let* ((nth-alist  (stv-nth-extraction-alist n lines nil))
+         (alists-acc (cons nth-alist alists-acc)))
+    (if (zp n)
+        alists-acc
+      (stv-extraction-alists (- n 1) lines alists-acc))))
 
 
 
@@ -1120,34 +1016,37 @@ and which bit of which simulation variable the name corresponds to.</p>"
 ;
 ; -----------------------------------------------------------------------------
 
-(defsection stv-compile
+(define stv-compile
   :parents (symbolic-test-vectors)
   :short "Syntactically transform a symbolic test vector, readying it for
 evaluation, debugging, etc."
 
-  :long "<p><b>Signature:</b> @(call stv-compile) returns a @(see
-compiled-stv-p).</p>
+  ((stv stvdata-p
+        "An @(see stvdata-p) that has already had its lines widened and any
+         Verilog-style names expanded; see @(see stv-widen) and @(see
+         stv-expand-names).")
 
-<p>Here, @('mod') should be a valid @(see esim) module, and @('stv') should be
-an @(see stvdata-p) that has already had its lines widened and any
-Verilog-style names expanded; see for instance @(see stv-widen) and @(see
-stv-expand-names).</p>
+   (mod good-esim-modulep
+        "The @(see esim) module this STV is about."))
 
-<p>Compiling an STV involves doing lots of error checking to ensure the STV is
-syntactically well-formed, only refers to legitimate inputs and outputs, and so
-forth.  After sanity checking, our basic goal is to compile the STV into a form
-that functions like @(see stv-run) and @(see stv-debug) can efficiently
-process.</p>
+  :returns (cstv (equal (compiled-stv-p cstv)
+                        (if cstv t nil)))
 
-<p>In particular, after compiling an STV we obtain an @(see compiled-stv-p)
-structure that says says how many steps we need to run for, explains the
-mappings from user-level simulation variables to their internal bit-encodings,
-and and has pre-computed alists for restricting the a @(see esim) run and
-extracting the results.</p>
+  :long " <p>Compiling an STV involves doing lots of error checking to ensure
+the STV is syntactically well-formed, only refers to legitimate inputs and
+outputs, and so forth.  After sanity checking, our basic goal is to compile the
+STV into a form that functions like @(see stv-run) and @(see stv-debug) can
+efficiently process.</p>
 
-<p>Compilation is a syntactic process that is relatively cheap.  We memoize it
-mainly in the hopes that it will keep the various alists the same across
-multiple evaluations of an STV.</p>
+<p>In particular, after (successfully) compiling an STV we obtain a @(see
+compiled-stv-p) structure that says says how many steps we need to run for,
+explains the mappings from user-level simulation variables to their internal
+bit-encodings, and and has pre-computed alists for restricting the a @(see
+esim) run and extracting the results.</p>
+
+<p>Compilation is a syntactic process that is relatively cheap.  We @(see
+memoize) it mainly in the hopes of keeping the various alists we create the
+same across multiple evaluations of an STV.</p>
 
 <p>Note that to reuse the same @(see esim) simulations across related STVs, our
 basic approach in @(see stv-run) is to do a fully general simulation of the
@@ -1166,106 +1065,94 @@ above.</p>
 builds a list of alists that say, for each step, which output bits we want to
 collect and how we want to name them.</p>"
 
-  (defund stv-compile (stv mod)
-    (declare (xargs :guard (and (stvdata-p stv)
-                                (good-esim-modulep mod))))
-    (b* (((stvdata stv) stv)
-         (nphases (stv-number-of-phases stv))
-         ((unless (posp nphases))
-          (er hard? 'stv-compile "Trying to compile an STV without any phases?"))
+  (b* (((stvdata stv) stv)
+       (nphases (stv-number-of-phases stv))
+       ((unless (posp nphases))
+        (raise "Trying to compile an STV without any phases?"))
 
-         ;; Initials and inputs...
-         (in-usersyms nil)
-         ((mv initial-alist in-usersyms)  (stv-initial-lines-to-alist stv.initial in-usersyms mod))
-         ((mv inputs gensyms in-usersyms) (stv-expand-input-lines stv.inputs nil in-usersyms))
-         (restrict-alist (stv-add-suffixes-to-initial-alist initial-alist))
-         (restrict-alist (stv-restrict-alist inputs restrict-alist))
-         (restrict-alist (make-fast-alist restrict-alist))
+       ;; Initials and inputs...
+       (in-usersyms nil)
+       ((mv initial-alist in-usersyms)  (stv-initial-lines-to-alist stv.initial in-usersyms mod))
+       ((mv inputs gensyms in-usersyms) (stv-expand-input-lines stv.inputs nil in-usersyms))
+       (restrict-alist (stv-add-suffixes-to-initial-alist initial-alist))
+       (restrict-alist (stv-restrict-alist inputs restrict-alist))
+       (restrict-alist (make-fast-alist restrict-alist))
 
-         ;; Outputs and internals...
-         (out-usersyms nil)
-         ((mv outputs out-usersyms)   (stv-expand-output-lines stv.outputs out-usersyms))
-         ((mv internals out-usersyms) (stv-expand-internal-lines stv.internals out-usersyms mod))
-         (out-extract-alists (stv-extraction-alists (- nphases 1) outputs nil))
-         (int-extract-alists (stv-extraction-alists (- nphases 1) internals nil))
+       ;; Outputs and internals...
+       (out-usersyms nil)
+       ((mv outputs out-usersyms)   (stv-expand-output-lines stv.outputs out-usersyms))
+       ((mv internals out-usersyms) (stv-expand-internal-lines stv.internals out-usersyms mod))
+       (out-extract-alists (stv-extraction-alists (- nphases 1) outputs nil))
+       (int-extract-alists (stv-extraction-alists (- nphases 1) internals nil))
 
-         (all-in-bits (alist-keys restrict-alist))
-         ((unless (uniquep all-in-bits))
-          ;; This could be really bad because you'd be shadowing one value with
-          ;; another, and it could easily happen to you if you gave two
-          ;; different paths on :initial things that turned out to refer to the
-          ;; same state bit.
-          (er hard? 'stv-compile
-              "Name clash.  Multiple input/initial bindings were generated for ~x0."
-              (duplicated-members all-in-bits)))
+       (all-in-bits (alist-keys restrict-alist))
+       ((unless (uniquep all-in-bits))
+        ;; This could be really bad because you'd be shadowing one value with
+        ;; another, and it could easily happen to you if you gave two
+        ;; different paths on :initial things that turned out to refer to the
+        ;; same state bit.
+        (raise "Name clash.  Multiple input/initial bindings were generated ~
+                for ~x0." (duplicated-members all-in-bits)))
 
-         (in-simvars (alist-keys in-usersyms))
-         (out-simvars (alist-keys out-usersyms))
-         ((unless (and (uniquep in-simvars)
-                       (uniquep out-simvars)
-                       (symbol-listp in-simvars)
-                       (symbol-listp out-simvars)))
-          (er hard? 'stv-compile
-              "Programming error.  in-simvars or out-simvars aren't unique ~
-               symbols.  This shouldn't be possible."))
+       (in-simvars (alist-keys in-usersyms))
+       (out-simvars (alist-keys out-usersyms))
+       ((unless (and (uniquep in-simvars)
+                     (uniquep out-simvars)
+                     (symbol-listp in-simvars)
+                     (symbol-listp out-simvars)))
+        (raise "Programming error.  in-simvars or out-simvars aren't unique ~
+                symbols.  This shouldn't be possible."))
 
-         (illegally-reused-simvars (duplicated-members (append in-simvars out-simvars)))
-         ((when illegally-reused-simvars)
-          ;; This is something the user could try to do.  It wouldn't *really*
-          ;; be a problem, but certainly seems to indicate confusion on their
-          ;; part.
-          (er hard? 'stv-compile
-              "Error: It is illegal to reuse the input simulation variables ~
-               (from :input and :initial lines) as output simulation ~
-               variables (from :output and :internal lines).  Illegally ~
-               reused variables: ~x0" illegally-reused-simvars))
+       (illegally-reused-simvars (duplicated-members (append in-simvars out-simvars)))
+       ((when illegally-reused-simvars)
+        ;; This is something the user could try to do.  It wouldn't *really*
+        ;; be a problem, but certainly seems to indicate confusion on their
+        ;; part.
+        (raise "Error: It is illegal to reuse the input simulation variables ~
+                (from :input and :initial lines) as output simulation ~
+                variables (from :output and :internal lines).  Illegally ~
+                reused variables: ~x0" illegally-reused-simvars))
 
-         (all-bits (vl::append-domains-exec in-usersyms gensyms))
-         (all-bits (vl::append-domains-exec out-usersyms all-bits))
-         ((unless (uniquep all-bits))
-          ;; It's hard to imagine this happening, if the in-usersyms and
-          ;; out-usersyms have unique keys.  But if somehow the user gave a
-          ;; simulation variable name that clashed with a gensym, it'd be bad.
-          (er hard? 'stv-compile "Name clash for ~x0." (duplicated-members all-bits)))
+       (all-bits (vl::append-domains-exec in-usersyms gensyms))
+       (all-bits (vl::append-domains-exec out-usersyms all-bits))
+       ((unless (uniquep all-bits))
+        ;; It's hard to imagine this happening, if the in-usersyms and
+        ;; out-usersyms have unique keys.  But if somehow the user gave a
+        ;; simulation variable name that clashed with a gensym, it'd be bad.
+        (raise "Name clash for ~x0." (duplicated-members all-bits)))
 
-         (ret (make-compiled-stv
-               :nphases        nphases
-               :restrict-alist restrict-alist
+       (ret (make-compiled-stv
+             :nphases        nphases
+             :restrict-alist restrict-alist
 
-               ;; These have to stay separate because we have to use them to
-               ;; extract from different esim outputs
-               :out-extract-alists out-extract-alists
-               :int-extract-alists int-extract-alists
+             ;; These have to stay separate because we have to use them to
+             ;; extract from different esim outputs
+             :out-extract-alists out-extract-alists
+             :int-extract-alists int-extract-alists
 
-               ;; I reverse these here so that they are "in the right order"
-               ;; per the lines of the STV.  This isn't anything that is
-               ;; semantically important, but it makes things like
-               ;; stv-autohyps, stv-autoins, stv->ins, etc. nicer to look at
-               ;; because you see the stuff in the same order as you put it in.
-               :in-usersyms  (make-fast-alist (rev in-usersyms))
-               :out-usersyms (make-fast-alist (rev out-usersyms))
+             ;; I reverse these here so that they are "in the right order"
+             ;; per the lines of the STV.  This isn't anything that is
+             ;; semantically important, but it makes things like
+             ;; stv-autohyps, stv-autoins, stv->ins, etc. nicer to look at
+             ;; because you see the stuff in the same order as you put it in.
+             :in-usersyms  (make-fast-alist (rev in-usersyms))
+             :out-usersyms (make-fast-alist (rev out-usersyms))
 
-               ;; These have some various uses in documentation and also in
-               ;; stv-process, but probably we should work to get rid of these.
-               :expanded-ins  inputs
-               :expanded-outs outputs
-               :expanded-ints internals
-               )))
+             ;; These have some various uses in documentation and also in
+             ;; stv-process, but probably we should work to get rid of these.
+             :expanded-ins  inputs
+             :expanded-outs outputs
+             :expanded-ints internals
+             )))
 
-      (fast-alist-free in-usersyms)
-      (fast-alist-free out-usersyms)
-      ret))
+    (fast-alist-free in-usersyms)
+    (fast-alist-free out-usersyms)
+    ret)
+
+  ///
 
   ;; Compilation isn't necessarily slow, but memoizing it seems like a good
   ;; idea to make sure that all of the alists stay the same.
-  (memoize 'stv-compile)
-
-  (local (in-theory (enable stv-compile)))
-
-  (defthm compiled-stv-p-of-stv-compile
-    (equal (compiled-stv-p (stv-compile stv mod))
-           (if (stv-compile stv mod)
-               t
-             nil))))
+  (memoize 'stv-compile))
 
 

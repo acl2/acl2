@@ -20,6 +20,7 @@
 
 (in-package "ACL2")
 
+(include-book "atom-listp")
 (include-book "character-listp")
 (include-book "nat-listp")
 (include-book "string-listp")

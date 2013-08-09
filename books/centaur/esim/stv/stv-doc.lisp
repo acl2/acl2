@@ -29,17 +29,42 @@
 (local (include-book "std/typed-lists/character-listp" :dir :system))
 (local (include-book "str/explode-nonnegative-integer" :dir :system))
 
-(defund stv-name-bits-to-xml (bits col acc)
-  ;; Probably horrible way to print out individual bits, if the user writes that
-  ;; sort of thing
-  (declare (xargs :guard (and (true-listp bits)
-                              (natp col))))
+(defsection stv-doc
+  :parents (symbolic-test-vectors)
+  :short "Automatic documentation support for symbolic test vectors."
+
+  :long "<p>Symbolic test vectors are integrated into @(see xdoc) so that you
+can generate attractive explanations of your setup.  This is often useful when
+communicating with logic designers.  For an example, see @(see counter-run) in
+the @(see esim-tutorial).</p>
+
+<p><b>NOTE</b>: the topics here cover how we generate this documentation.  If
+you just want to document your own STVs, you don't need to know about any of
+this&mdash;just give a @(':parents'), @(':short'), or @(':long') argument to
+@(see defstv).</p>
+
+<p>These functions don't do much error checking.  We expect that we only are
+going to generate documentation after successfully processing the STV, so we
+generally just expect things to be well-formed at this point.</p>
+
+<p>The XML we generate is not documented in @(see xdoc)'s @(see xdoc::markup),
+and is not supported by tools like @(':xdoc').  How these new tags get rendered
+into HTML is controlled by, e.g., @('xdoc/fancy/render.xsl').</p>")
+
+(define stv-name-bits-to-xml ((bits true-listp)
+                              (col  natp)
+                              acc)
+  :returns (acc character-listp :hyp (character-listp acc))
+  :parents (stv-doc)
+  :short "Encode the name of an STV line, when the name is a list of E bits."
+  :long "<p>This is really horrible, but it doesn't matter since nobody would
+ever actually use a list of E bits to name their input.</p>"
   (b* (((when (atom bits))
         acc)
        ;; Print the name of this bit
        (name1 (stringify (car bits)))
        ((mv col acc)
-        (vl::vl-html-encode-string-aux name1 0 (length name1) col 8 acc))
+        (vl::vl-html-encode-string-aux name1 0 (length name1) (lnfix col) 8 acc))
        ;; Print ", " if there are more bits.
        ((mv col acc)
         (if (atom (cdr bits))
@@ -48,14 +73,10 @@
     ;; Print the rest of the bit names.
     (stv-name-bits-to-xml (cdr bits) col acc)))
 
-(defthm character-listp-of-stv-name-bits-to-xml
-  (implies (and (character-listp acc)
-                (natp col))
-           (character-listp (stv-name-bits-to-xml bits col acc)))
-  :hints(("Goal" :in-theory (enable stv-name-bits-to-xml))))
-
-(defund stv-name-to-xml (name acc)
-  (declare (xargs :guard t))
+(define stv-name-to-xml (name acc)
+  :returns (acc character-listp :hyp (character-listp acc))
+  :parents (stv-doc)
+  :short "Encode the name of an STV line."
   (cond ((stringp name)
          ;; It already looks like a Verilog name, so this is easy enough.
          (b* (((mv ?col acc)
@@ -68,15 +89,14 @@
               (acc (cons #\} acc)))
            acc))
         (t
-         (er hard? 'stv-name-to-xml "Bad name for stv line: ~x0." name))))
+         (raise "Bad name for stv line: ~x0." name))))
 
-(defthm character-listp-of-stv-name-to-xml
-  (implies (character-listp acc)
-           (character-listp (stv-name-to-xml name acc)))
-  :hints(("Goal" :in-theory (enable stv-name-to-xml))))
-
-(defund stv-entry-to-xml (entry expansion acc)
-  (declare (xargs :guard t))
+(define stv-entry-to-xml ((entry     "The value that the user gave, originally.")
+                          (expansion "Its expanded out value, a sexpr list.")
+                          acc)
+  :returns (acc character-listp :hyp (character-listp acc))
+  :parents (stv-doc)
+  :short "Encode a single value from an STV line."
   (cond ((natp entry)
          (if (< entry 10)
              ;; As a special nicety, write values under 10 without any
@@ -84,7 +104,7 @@
              (revappend (str::natchars entry) acc)
            ;; For any larger constants, write them in hex.  I'll use a 0x
            ;; prefix instead of a #x prefix, since it's probably more widely
-           ;; understood.
+           ;; understood (e.g., by logic designers)
            (let* ((pound-x-hex-digits (explode-atom+ entry 16 t))           ;; #x1000
                   (zero-x-hex-digits  (cons #\0 (cdr pound-x-hex-digits)))) ;; 0x1000
              (revappend zero-x-hex-digits acc))))
@@ -103,7 +123,7 @@
                ((equal expansion (list *4vf-sexpr*))
                 (cons #\0 acc))
                (t
-                (progn$ (er hard? 'stv-entry-to-xml "Expansion of ~ should be 1 or 0.")
+                (progn$ (raise "Expansion of ~ should be 1 or 0.")
                         acc))))
 
         ((eq entry '_)
@@ -120,16 +140,15 @@
            acc))
 
         (t
-         (er hard? 'stv-entry-to-xml
-             "Bad entry in stv line: ~x0." entry))))
+         (raise "Bad entry in stv line: ~x0." entry))))
 
-(defthm character-listp-of-stv-entry-to-xml
-  (implies (character-listp acc)
-           (character-listp (stv-entry-to-xml entry expansion acc)))
-  :hints(("Goal" :in-theory (enable stv-entry-to-xml))))
-
-(defund stv-entries-to-xml (entries expansions acc)
-  (declare (xargs :guard (true-listp expansions)))
+(define stv-entries-to-xml ((entries "The original entries for this line.")
+                            (expansions "The expanded entries for this line."
+                                        true-listp)
+                            acc)
+  :returns (acc character-listp :hyp (character-listp acc))
+  :parents (stv-doc)
+  :short "Encode all the values from an STV line."
   (b* (((when (atom entries))
         acc)
        (acc (str::revappend-chars "<stv_entry>" acc))
@@ -137,14 +156,15 @@
        (acc (str::revappend-chars "</stv_entry>" acc)))
     (stv-entries-to-xml (cdr entries) (cdr expansions) acc)))
 
-(defthm character-listp-of-stv-entries-to-xml
-  (implies (character-listp acc)
-           (character-listp (stv-entries-to-xml entries expansions acc)))
-  :hints(("Goal" :in-theory (enable stv-entries-to-xml))))
-
-(defund stv-line-to-xml (line expansion acc)
-  (declare (xargs :guard (and (true-listp line)
-                              (true-listp expansion))))
+(define stv-line-to-xml
+  ((line      "Original line, with name, given by the user."
+              true-listp)
+   (expansion "Fully expanded line, with name, after STV processing"
+              true-listp)
+   acc)
+  :returns (acc character-listp :hyp (character-listp acc))
+  :parents (stv-doc)
+  :short "Encode one full line from the STV into XML for XDOC."
   (b* ((acc (str::revappend-chars "<stv_line>" acc))
        (acc (str::revappend-chars "<stv_name>" acc))
        (acc (stv-name-to-xml (car line) acc))
@@ -154,27 +174,20 @@
        (acc (cons #\Newline acc)))
     acc))
 
-(defthm character-listp-of-stv-line-to-xml
-  (implies (character-listp acc)
-           (character-listp (stv-line-to-xml line expansion acc)))
-  :hints(("Goal" :in-theory (enable stv-line-to-xml))))
-
-(defund stv-lines-to-xml (lines expansions acc)
-  (declare (xargs :guard (and (true-list-listp lines)
-                              (true-list-listp expansions))))
+(define stv-lines-to-xml ((lines      true-list-listp)
+                          (expansions true-list-listp)
+                          acc)
+  :returns (acc character-listp :hyp (character-listp acc))
+  :parents (stv-doc)
   (b* (((when (atom lines))
         acc)
        (acc (stv-line-to-xml (car lines) (car expansions) acc)))
     (stv-lines-to-xml (cdr lines) (cdr expansions) acc)))
 
-(defthm character-listp-of-stv-lines-to-xml
-  (implies (character-listp acc)
-           (character-listp (stv-lines-to-xml lines expansions acc)))
-  :hints(("Goal" :in-theory (enable stv-lines-to-xml))))
-
-
-(defund stv-labels-to-xml (labels acc)
-  (declare (xargs :guard (symbol-listp labels)))
+(define stv-labels-to-xml ((labels symbol-listp)
+                           acc)
+  :returns (acc character-listp :hyp (character-listp acc))
+  :parents (stv-doc)
   (b* (((when (atom labels))
         acc)
        (acc (str::revappend-chars "<stv_label>" acc))
@@ -184,26 +197,24 @@
        (acc (str::revappend-chars "</stv_label>" acc)))
     (stv-labels-to-xml (cdr labels) acc)))
 
-(defthm character-listp-of-stv-labels-to-xml
-  (implies (character-listp acc)
-           (character-listp (stv-labels-to-xml labels acc)))
-  :hints(("Goal" :in-theory (enable stv-labels-to-xml))))
+(define stv-to-xml ((stv    stvdata-p)
+                    (cstv   compiled-stv-p)
+                    (labels symbol-listp))
+  :returns (encoding (or (stringp encoding)
+                         (not encoding))
+                     :rule-classes :type-prescription)
+  :parents (stv-doc)
+  :short "Top-level routine to generate a nice XML description of an STV."
 
-
-
-(defund stv-to-xml (stv cstv labels)
-  (declare (xargs :guard (and (stvdata-p stv)
-                              (compiled-stv-p cstv)
-                              (symbol-listp labels))))
   (b* (;; Widen all the lines so the table will be filled.
        (stv        (stv-widen stv))
        ((stvdata stv) stv)
 
        ;; Grab the expanded input lines, since they'll have the resolved tilde
        ;; (~) entries.  We don't need to expand the output or internal lines.
-       (ex-ins    (compiled-stv->expanded-ins cstv))
+       (ex-ins  (compiled-stv->expanded-ins cstv))
        ((unless (true-list-listp ex-ins))
-        (er hard? 'stv-to-xml "Expanded inputs aren't a true-list-listp?"))
+        (raise "Expanded inputs aren't a true-list-listp?"))
 
        (acc nil)
        (acc (str::revappend-chars "<stv>" acc))
@@ -242,12 +253,7 @@
        (acc (cons #\Newline acc))
 
        (acc (str::revappend-chars "</stv>" acc)))
-    (reverse (coerce acc 'string))))
+    (str::rchars-to-string acc)))
 
-(defthm stringp-of-stv-to-xml
-  (or (stringp (stv-to-xml stv expansion labels))
-      (not (stv-to-xml stv expansion labels)))
-  :rule-classes :type-prescription
-  :hints(("Goal" :in-theory (enable stv-to-xml))))
 
 

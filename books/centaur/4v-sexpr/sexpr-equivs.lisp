@@ -32,8 +32,8 @@
 
 (def-universal-equiv 4v-equiv
   ;; X === Y for in the sense of four-valued objects if they fix to the same
-  ;; four-vauled constant.  That is, besides *4f*, *4z*, and *4t*, all objects
-  ;; are equivalent to *4x* under this relationship.
+  ;; four-vauled constant.  That is, besides *4vf*, *4vz*, and *4vt*, all
+  ;; objects are equivalent to *4vx* under this relationship.
   :equiv-terms ((equal (4v-fix x))))
 
 (in-theory (enable 4v-equiv))

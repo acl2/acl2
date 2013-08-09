@@ -321,3 +321,21 @@
                   :elementp-of-nil t))))
 
 
+
+
+(deflist atom-listp (acl2::x)
+  ;; This is an especially hard case because ACL2 knows so much about
+  ;; ATOM and CONSP.
+  (atom acl2::x)
+  :true-listp t
+  :elementp-of-nil t
+  :already-definedp t)
+
+(deflist alistp (acl2::x)
+  ;; This is an especially hard case because ACL2 knows so much about
+  ;; ATOM and CONSP.
+  (consp acl2::x)
+  :true-listp t
+  :elementp-of-nil nil
+  :already-definedp t)
+

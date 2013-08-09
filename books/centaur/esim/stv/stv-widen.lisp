@@ -26,82 +26,69 @@
 (include-book "std/lists/repeat" :dir :system)
 (local (include-book "std/lists/take" :dir :system))
 
-(defsection stv-widen-lines
+(define stv-widen-lines ((lines true-list-listp)
+                         (number-of-phases natp)
+                         (warn-non-blank booleanp))
+  :returns (widened-lines true-list-listp :hyp :guard)
   :parents (stv-widen)
-  :short "@(call stv-widen-lines) rewrites lines of an STV, repeating the last
-entry in each line until the desired number of phases is reached."
+  :short "Rewrite lines of an STV, repeating the last entry in each line to
+extend it to the desired number of phases."
 
   :long "<p>The @('warn-non-blank') is intended to be set for :output lines
 and :internals lines.  When it is set, we cause an error if an attempt is made
 to replicate any element other than @('_'), since it doesn't make sense to
 replicate simulation variables.</p>"
 
-  (defund stv-widen-lines (lines number-of-phases warn-non-blank)
-    (declare (xargs :guard (and (true-list-listp lines)
-                                (natp number-of-phases))))
-    (b* (((when (atom lines))
-          nil)
-         (line1         (car lines))
-         (line1-name    (car line1))
-         (line1-phases  (cdr line1))
-         (- (or (consp line1-phases)
-                (er hard? 'stv-widen-lines
-                    "No phases were provided for ~x0.~%" line1-name)))
-         (line1-nphases (len line1-phases))
-         (line1-widened-phases
-          (cond ((= line1-nphases number-of-phases)
-                 line1-phases)
-                ((< line1-nphases number-of-phases)
-                 (b* ((repeat-me (car (last line1-phases))))
-                   (or (not warn-non-blank)
-                       (eq repeat-me '_)
-                       (er hard? 'stv-widen-lines
-                           "The line for ~x0 needs to be extended, but it ends ~
+  (b* (((when (atom lines))
+        nil)
+       (line1         (car lines))
+       (line1-name    (car line1))
+       (line1-phases  (cdr line1))
+       (- (or (consp line1-phases)
+              (er hard? 'stv-widen-lines
+                  "No phases were provided for ~x0.~%" line1-name)))
+       (line1-nphases (len line1-phases))
+       (line1-widened-phases
+        (cond ((= line1-nphases number-of-phases)
+               line1-phases)
+              ((< line1-nphases number-of-phases)
+               (b* ((repeat-me (car (last line1-phases))))
+                 (or (not warn-non-blank)
+                     (eq repeat-me '_)
+                     (er hard? 'stv-widen-lines
+                         "The line for ~x0 needs to be extended, but it ends ~
                           with ~x1.  We only allow output and internal lines ~
                           to be extended when they end with an underscore."
-                           line1-name repeat-me))
-                   (append line1-phases
-                           (repeat repeat-me (- number-of-phases line1-nphases)))))
-                (t
-                 (prog2$
-                  (er hard? 'stv-widen-lines
-                      "Entry for ~x0 is longer than the max number of phases?" line1-name)
-                  (take number-of-phases line1-phases))))))
-      (cons (cons line1-name line1-widened-phases)
-            (stv-widen-lines (cdr lines) number-of-phases warn-non-blank))))
+                         line1-name repeat-me))
+                 (append line1-phases
+                         (repeat repeat-me (- number-of-phases line1-nphases)))))
+              (t
+               (prog2$
+                (er hard? 'stv-widen-lines
+                    "Entry for ~x0 is longer than the max number of phases?" line1-name)
+                (take number-of-phases line1-phases))))))
+    (cons (cons line1-name line1-widened-phases)
+          (stv-widen-lines (cdr lines) number-of-phases warn-non-blank))))
 
-  (local (in-theory (enable stv-widen-lines)))
-
-  (defthm true-list-listp-of-stv-widen-lines
-    (implies (true-list-listp lines)
-             (true-list-listp (stv-widen-lines lines number-of-phases warn-non-blank)))))
-
-
-(defsection stv-widen
+(define stv-widen ((stv stvdata-p))
+  :returns (widened-stv stvdata-p :hyp :guard)
   :parents (symbolic-test-vectors)
   :short "Widen the input/output/internals lines so that they all agree on how
 many phases there are."
-  :long "<p><b>Signature:</b> @(call stv-widen) returns a new @(see stvdata-p).</p>
 
-<p>This is an STV preprocessing step which can be run before or after @(see
-stv-expand).  We generally expect that all the lines have been widened before
-any compilation is performed.</p>
+  :long "<p>This is an STV preprocessing step which can be run before or after
+@(see stv-expand).  We generally expect that all the lines have been widened
+before any compilation is performed.</p>
 
 <p>Note that we don't widen @(':initial') lines; they have only one value, not
 a series of values over time.</p>"
 
-  (defund stv-widen (stv)
-    (declare (xargs :guard (stvdata-p stv)))
-    (b* (((stvdata stv) stv)
-         (number-of-phases  (stv-number-of-phases stv)))
-      (change-stvdata stv
-                      :inputs    (stv-widen-lines stv.inputs number-of-phases nil)
-                      :outputs   (stv-widen-lines stv.outputs number-of-phases t)
-                      :internals (stv-widen-lines stv.internals number-of-phases t))))
-
-  (local (in-theory (enable stv-widen)))
-
-  (defthm stvdata-p-of-stv-widen
-    (implies (stvdata-p stv)
-             (stvdata-p (stv-widen stv)))))
-
+  (b* (((stvdata stv) stv)
+       (number-of-phases (stv-number-of-phases stv))
+       (new-inputs       (stv-widen-lines stv.inputs number-of-phases nil))
+       (new-outputs      (stv-widen-lines stv.outputs number-of-phases t))
+       (new-internals    (stv-widen-lines stv.internals number-of-phases t)))
+    (change-stvdata stv
+                    :inputs    new-inputs
+                    :outputs   new-outputs
+                    :internals new-internals)))

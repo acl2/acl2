@@ -19,8 +19,8 @@
 ; Original author: Sol Swords <sswords@centtech.com>
 
 (in-package "ACL2")
-
-(include-book "base")
+(include-book "aig-base")
+(include-book "faig-base")
 (include-book "centaur/misc/witness-cp" :dir :system)
 (include-book "centaur/misc/universal-equiv" :dir :system)
 (include-book "centaur/misc/fast-alists" :dir :system)

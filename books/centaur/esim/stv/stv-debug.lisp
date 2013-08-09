@@ -28,7 +28,7 @@
 (include-book "centaur/misc/tshell" :dir :system)
 (include-book "../esim-vcd")
 (local (include-book "centaur/vl/util/arithmetic" :dir :system))
-
+(local (include-book "system/f-put-global" :dir :system))
 
 (local (defthm len-of-4v-sexpr-restrict-with-rw-alists
          (equal (len (4v-sexpr-restrict-with-rw-alists x al))
@@ -43,157 +43,152 @@
 (local (defthm cons-list-listp-of-4v-sexpr-restrict-with-rw-alists
          (vl::cons-list-listp (4v-sexpr-restrict-with-rw-alists x al))))
 
+(local (defthm cons-listp-of-4v-sexpr-eval-alist
+         (vl::cons-listp (4v-sexpr-eval-alist x al))))
 
+(local (defthm cons-list-listp-of-4v-sexpr-eval-alists
+         (vl::cons-list-listp (4v-sexpr-eval-alists x al))))
+
+(define stv-combine-into-snapshots
+  :parents (stv-debug)
+  ((in-alists true-list-listp)
+   (out-alists true-list-listp)
+   (int-alists true-list-listp))
+  :guard (and (same-lengthp in-alists out-alists)
+              (same-lengthp in-alists int-alists))
+  :returns (snapshots vl::cons-list-listp
+                      :hyp (and (vl::cons-list-listp in-alists)
+                                (vl::cons-list-listp out-alists)
+                                (vl::cons-list-listp int-alists)))
+  (b* (((when (atom in-alists))
+        nil)
+       (snapshot1 (append (car in-alists)
+                          (car out-alists)
+                          (car int-alists))))
+    (cons snapshot1 (stv-combine-into-snapshots (cdr in-alists)
+                                                (cdr out-alists)
+                                                (cdr int-alists)))))
+
+(define stv-make-snapshots
+  :parents (stv-debug)
+  :short "Prepare an STV for debugging by create \"snapshots\" that are ready
+to be evaluated and written to the VCD file."
+  ((pstv processed-stv-p))
+  :returns (snapshots vl::cons-list-listp)
+  :long "<p>This is computationally expensive.  We memoize it so that we only
+need to make the snapshots the first time you want to debug an STV.  The same
+snapshots can then be reused across as many calls of @(see stv-debug) as you
+like.</p>"
+
+  (b* (((processed-stv pstv) pstv)
+       ((compiled-stv cstv) pstv.compiled-stv)
+       (nphases (nfix cstv.nphases))
+       ((unless (posp nphases))
+        (raise "STV has no phases?"))
+
+       ((mv ?init-st-general
+            in-alists-general
+            ?nst-alists-general
+            out-alists-general
+            int-alists-general)
+        (time$ (stv-fully-general-simulation-debug nphases pstv.mod)
+               :msg "; stv debug simulation: ~st sec, ~sa bytes.~%"
+               :mintime 1/2)))
+
+    (with-fast-alist cstv.restrict-alist
+      (time$ (stv-combine-into-snapshots
+              (4v-sexpr-restrict-with-rw-alists in-alists-general cstv.restrict-alist)
+              (4v-sexpr-restrict-with-rw-alists out-alists-general cstv.restrict-alist)
+              (4v-sexpr-restrict-with-rw-alists int-alists-general cstv.restrict-alist))
+             :msg "; stv-debug general snapshots: ~st sec, ~sa bytes.~%"
+             :mintime 1/2)))
+  ///
+  (memoize 'stv-make-snapshots :aokp t))
 
 (defttag writes-okp)
 (remove-untouchable acl2::writes-okp nil)
 
-(defsection stv-make-snapshots
-
-  (defund stv-combine-into-snapshots (in-alists out-alists int-alists)
-    (declare (xargs :guard (and (vl::same-lengthp in-alists out-alists)
-                                (vl::same-lengthp in-alists int-alists)
-                                (true-list-listp in-alists)
-                                (true-list-listp out-alists)
-                                (true-list-listp int-alists))))
-    (if (atom in-alists)
-        nil
-      (let ((snapshot1 (append (car in-alists)
-                               (car out-alists)
-                               (car int-alists))))
-        (cons snapshot1 (stv-combine-into-snapshots (cdr in-alists)
-                                                    (cdr out-alists)
-                                                    (cdr int-alists))))))
-
-  (local (defthm c0
-           (implies (and (vl::cons-list-listp in-alists)
-                         (vl::cons-list-listp out-alists)
-                         (vl::cons-list-listp int-alists))
-                    (vl::cons-list-listp
-                     (stv-combine-into-snapshots in-alists out-alists int-alists)))
-           :hints(("Goal" :in-theory (enable stv-combine-into-snapshots)))))
-
-  (defund stv-make-snapshots (pstv)
-    (declare (xargs :guard (processed-stv-p pstv)))
-    (b* (((processed-stv pstv) pstv)
-
-         ((compiled-stv cstv) pstv.compiled-stv)
-         (nphases (nfix cstv.nphases))
-         ((unless (posp nphases))
-          (er hard? 'stv-process "STV has no phases?"))
-
-         ((mv ?init-st-general
-              in-alists-general
-              ?nst-alists-general
-              out-alists-general
-              int-alists-general)
-          (time$ (stv-fully-general-simulation-debug nphases pstv.mod)
-                 :msg "; stv debug simulation: ~st sec, ~sa bytes.~%"
-                 :mintime 1/2))
-
-         (snapshots
-          (with-fast-alist cstv.restrict-alist
-            (time$ (stv-combine-into-snapshots
-                    (4v-sexpr-restrict-with-rw-alists in-alists-general cstv.restrict-alist)
-                    (4v-sexpr-restrict-with-rw-alists out-alists-general cstv.restrict-alist)
-                    (4v-sexpr-restrict-with-rw-alists int-alists-general cstv.restrict-alist))
-                   :msg "; stv-debug general snapshots: ~st sec, ~sa bytes.~%"
-                   :mintime 1/2))))
-      snapshots))
-
-  (memoize 'stv-make-snapshots :aokp t)
-
-  (defthm cons-list-listp-of-stv-make-snapshots
-    (vl::cons-list-listp (stv-make-snapshots pstv))
-    :hints(("Goal" :in-theory (e/d (stv-make-snapshots)
-                                   ((force)))))))
-
-
-
-(defsection stv-debug
+(define stv-debug
   :parents (symbolic-test-vectors)
   :short "Evaluate a symbolic test vector at particular, concrete inputs, and
 generate a waveform."
-
+  ((pstv (and (processed-stv-p pstv)
+              (good-esim-modulep (processed-stv->mod pstv))))
+   input-alist
+   &key
+   ((filename stringp) '"stv.debug")
+   ((viewer   stringp) '"gtkwave")
+   (state    'state))
+  :returns (mv out-alist state)
   :long "<p>This macro is an extended version of @(see stv-run).  In addition
 to building an alist of the output simulation variables, it also writes out a
 waveform that can be viewed in a VCD viewer.  Note that debugging can be slow,
 especially the first time before things are memoized.</p>"
 
-  (defun stv-debug-fn (pstv input-alist filename viewer state)
-    "Returns (MV OUT-ALIST STATE)"
-    (declare (xargs :guard (processed-stv-p pstv)
-                    :stobjs state
-                    :mode :program))
-    (time$
-     (b* (((processed-stv pstv) pstv)
-          ((compiled-stv cstv) pstv.compiled-stv)
+  (time$
+   (b* (((processed-stv pstv) pstv)
+        ((compiled-stv cstv) pstv.compiled-stv)
 
-          (snapshots
-           (time$ (stv-make-snapshots pstv)
-                  :mintime 1/2
-                  :msg "; stv-debug snapshots: ~st sec, ~sa bytes.~%"))
+        (snapshots
+         (time$ (stv-make-snapshots pstv)
+                :mintime 1/2
+                :msg "; stv-debug snapshots: ~st sec, ~sa bytes.~%"))
 
-          (in-usersyms
-           ;; These should already be a fast alist, but in case the object was
-           ;; serialized and reloaded or something, we'll go ahead and try to
-           ;; make them fast again.
-           (make-fast-alist cstv.in-usersyms))
+        (in-usersyms
+         ;; These should already be a fast alist, but in case the object was
+         ;; serialized and reloaded or something, we'll go ahead and try to
+         ;; make them fast again.
+         (make-fast-alist cstv.in-usersyms))
 
-          (ev-alist
-           (time$ (make-fast-alist
-                   (stv-simvar-inputs-to-bits input-alist in-usersyms))
-                  :mintime 1/2
-                  :msg "; stv-debug ev-alist: ~st sec, ~sa bytes.~%"))
+        (ev-alist
+         (time$ (make-fast-alist
+                 (stv-simvar-inputs-to-bits input-alist in-usersyms))
+                :mintime 1/2
+                :msg "; stv-debug ev-alist: ~st sec, ~sa bytes.~%"))
 
-          (evaled-out-bits
-           (time$ (make-fast-alist
-                   (4v-sexpr-eval-alist pstv.relevant-signals ev-alist))
-                  :mintime 1/2
-                  :msg "; stv-debug evaluating sexprs: ~st sec, ~sa bytes.~%"))
+        (evaled-out-bits
+         (time$ (make-fast-alist
+                 (4v-sexpr-eval-alist pstv.relevant-signals ev-alist))
+                :mintime 1/2
+                :msg "; stv-debug evaluating sexprs: ~st sec, ~sa bytes.~%"))
 
-          (evaled-snapshots
-           (time$ (4v-sexpr-eval-alists snapshots ev-alist)
-                  :mintime 1/2
-                  :msg "; stv-debug evaluating snapshots: ~st sec, ~sa bytes.~%"))
+        (evaled-snapshots
+         (time$ (4v-sexpr-eval-alists snapshots ev-alist)
+                :mintime 1/2
+                :msg "; stv-debug evaluating snapshots: ~st sec, ~sa bytes.~%"))
 
-          (- (fast-alist-free ev-alist))
+        (- (fast-alist-free ev-alist))
 
-          (assembled-outs
-           (time$ (stv-assemble-output-alist evaled-out-bits cstv.out-usersyms)
-                  :mintime 1/2
-                  :msg "; stv-debug assembling outs: ~st sec, ~sa bytes.~%"))
+        (assembled-outs
+         (time$ (stv-assemble-output-alist evaled-out-bits cstv.out-usersyms)
+                :mintime 1/2
+                :msg "; stv-debug assembling outs: ~st sec, ~sa bytes.~%"))
 
-          (- (fast-alist-free evaled-out-bits))
+        (- (fast-alist-free evaled-out-bits))
 
-          ;; Actual VCD generation
-          ((mv date state) (oslib::date))
-          (dump (vl::vcd-dump-main pstv.mod evaled-snapshots date))
+        ;; Actual VCD generation
+        ((mv date state) (oslib::date))
+        (dump (vl::vcd-dump-main pstv.mod evaled-snapshots date))
 
-          ((mv & & state) (assign acl2::writes-okp t))
-          (state (time$ (vl::with-ps-file filename
-                           (vl::vl-ps-update-rchars dump))
-                        :mintime 1/2
-                        :msg "; vcd-dump file generation: ~st seconds, ~sa bytes.~%"))
+        ((mv & & state) (assign acl2::writes-okp t))
+        (state (time$ (vl::with-ps-file filename
+                                        (vl::vl-ps-update-rchars dump))
+                      :mintime 1/2
+                      :msg "; vcd-dump file generation: ~st seconds, ~sa bytes.~%"))
 
-          ;; Maybe launch a VCD viewer, but not if we're certifying books
-          (certifying-book-p (acl2::f-get-global 'acl2::certify-book-info state))
+        ;; Maybe launch a VCD viewer, but not if we're certifying books
+        (certifying-book-p
+         (and (acl2::boundp-global 'acl2::certify-book-info state)
+              (acl2::f-get-global 'acl2::certify-book-info state)))
 
-          ;; BOZO we aren't really escaping filenames right or anything like that
-          (- (if (and viewer (not certifying-book-p))
-                 (b* ((cmd (str::cat viewer " " filename)))
-                   (cw "; vcd-dump launching \"~s0\".~%" cmd)
-                   (acl2::tshell-ensure)
-                   (acl2::tshell-run-background cmd))
-               nil)))
+        ;; BOZO we aren't really escaping filenames right or anything like that
+        (- (if (and viewer (not certifying-book-p))
+               (b* ((cmd (str::cat viewer " " filename)))
+                 (cw "; vcd-dump launching \"~s0\".~%" cmd)
+                 (acl2::tshell-ensure)
+                 (acl2::tshell-run-background cmd))
+             nil)))
 
-       (mv assembled-outs state))
-     :msg "; stv-debug: ~st sec, ~sa bytes.~%"
-     :mintime 1))
-
-  (defmacro stv-debug (pstv input-alist
-                            &key
-                            (filename '"stv.debug")
-                            (viewer   '"gtkwave"))
-    `(stv-debug-fn ,pstv ,input-alist ,filename ,viewer state)))
-
+     (mv assembled-outs state))
+   :msg "; stv-debug: ~st sec, ~sa bytes.~%"
+   :mintime 1))

@@ -94,22 +94,22 @@ generates an appropriate @('onoff') so that it can carry out a @(see
 
 (defthm faig-eval-of-constants
   ;; BOZO find me a home
-  (and (equal (faig-eval *4t* env) *4t*)
-       (equal (faig-eval *4f* env) *4f*)
-       (equal (faig-eval *4z* env) *4z*)
-       (equal (faig-eval *4x* env) *4x*)
-       (equal (faig-eval nil env)  *4x*))
+  (and (equal (faig-eval (faig-t) env) (faig-t))
+       (equal (faig-eval (faig-f) env) (faig-f))
+       (equal (faig-eval (faig-z) env) (faig-z))
+       (equal (faig-eval (faig-x) env) (faig-x))
+       (equal (faig-eval nil env)  (faig-x)))
   :hints(("Goal" :in-theory (enable faig-eval))))
 
 (local (defthm faig-equiv-nil-x
          ;; BOZO find me a home?
-         (equal (faig-equiv nil *4x*) t)
+         (equal (faig-equiv nil (faig-x)) t)
          :hints (("goal" :in-theory (enable faig-equiv)))))
 
 (local (defthm faig-eval-when-atom
          (implies (atom x)
                   (equal (faig-eval x env)
-                         *4x*))
+                         (faig-x)))
          :hints(("Goal" :in-theory (enable faig-eval)))))
 
 
@@ -141,7 +141,7 @@ to just say anything malformed gets fixed to @('X').</p>"
     (declare (xargs :guard t))
     (if (faig-const-p x)
         x
-      *4x*))
+      (faig-x)))
 
   (defthm faig-const-fix-of-faig-eval
     (equal (faig-const-fix (faig-eval x env))
@@ -160,7 +160,7 @@ to just say anything malformed gets fixed to @('X').</p>"
     (let ((x (faig-const-fix x))
           (y (faig-const-fix y)))
       (or (equal x y)
-          (equal x *4x*)))))
+          (equal x (faig-x))))))
 
 
 
@@ -172,9 +172,9 @@ to just say anything malformed gets fixed to @('X').</p>"
 
   (defun faig-const->4v (x)
     (declare (xargs :guard t))
-    (cond ((equal x *4t*) (4vt))
-          ((equal x *4f*) (4vf))
-          ((equal x *4z*) (4vz))
+    (cond ((equal x (faig-t)) (4vt))
+          ((equal x (faig-f)) (4vf))
+          ((equal x (faig-z)) (4vz))
           (t              (4vx)))))
 
 (defsection faig-const-list->4v-list
@@ -220,10 +220,10 @@ to just say anything malformed gets fixed to @('X').</p>"
   (defun 4v->faig-const (x)
     "4V constant --> FAIG constant"
     (declare (xargs :guard t))
-    (cond ((eq x (4vt)) *4t*)
-          ((eq x (4vf)) *4f*)
-          ((eq x (4vz)) *4z*)
-          (t            *4x*)))
+    (cond ((eq x (4vt)) (faig-t))
+          ((eq x (4vf)) (faig-f))
+          ((eq x (4vz)) (faig-z))
+          (t            (faig-x))))
 
   (local (in-theory (enable 4v-fix)))
 
@@ -337,13 +337,13 @@ use the @('f-') versions of the @(see faig-constructors) at each level.</p>"
                (let ((look (hons-get x onoff)))
                  (if (consp (cdr look))
                      (cdr look)
-                   *4x*))
-             *4x*))
+                   (faig-x)))
+             (faig-x)))
           (fn (car x))
-          ((when (eq fn (4vt))) *4t*)
-          ((when (eq fn (4vf))) *4f*)
-          ((when (eq fn (4vz))) *4z*)
-          ((when (eq fn (4vx))) *4x*)
+          ((when (eq fn (4vt))) (faig-t))
+          ((when (eq fn (4vf))) (faig-f))
+          ((when (eq fn (4vz))) (faig-z))
+          ((when (eq fn (4vx))) (faig-x))
           (args (4v-sexpr-to-faig-plain-list (cdr x) onoff))
           (arg1 (4v-first  args))
           (arg2 (4v-second args))
@@ -361,7 +361,7 @@ use the @('f-') versions of the @(see faig-constructors) at each level.</p>"
          (ite       (f-aig-ite    arg1 arg2 arg3))
          (pullup    (f-aig-pullup arg1))
          (id        (faig-fix     arg1))
-         (otherwise *4x*))))
+         (otherwise (faig-x)))))
 
    (defun 4v-sexpr-to-faig-plain-list (x onoff)
      (declare (xargs :guard t))
@@ -529,13 +529,13 @@ use the @('f-') versions of the @(see faig-constructors) at each level.</p>"
                (let ((look (hons-get x onoff)))
                  (if (consp (cdr look))
                      (cdr look)
-                   *4x*))
-             *4x*))
+                   (faig-x)))
+             (faig-x)))
           (fn (car x))
-          ((when (eq fn (4vt))) *4t*)
-          ((when (eq fn (4vf))) *4f*)
-          ((when (eq fn (4vz))) *4z*)
-          ((when (eq fn (4vx))) *4x*)
+          ((when (eq fn (4vt))) (faig-t))
+          ((when (eq fn (4vf))) (faig-f))
+          ((when (eq fn (4vz))) (faig-z))
+          ((when (eq fn (4vx))) (faig-x))
           (sargs (cdr x))
           (args (4v-sexpr-to-faig-opt-list sargs onoff))
           ;; There are a few functions where we don't really get any benefit from
@@ -558,7 +558,7 @@ use the @('f-') versions of the @(see faig-constructors) at each level.</p>"
          (or        (t-aig-or   arg1 arg2))
          (buf       (faig-fix   arg1))
          (ite       (t-aig-ite  arg1 arg2 arg3))
-         (otherwise *4x*))))
+         (otherwise (faig-x)))))
    (defun 4v-sexpr-to-faig-opt-list (x onoff)
      (declare (xargs :guard t))
      (if (atom x)

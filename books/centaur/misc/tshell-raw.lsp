@@ -19,7 +19,6 @@
 ; Tshell
 ; Original author: Jared Davis <jared@centtech.com>
 
-
 (in-package "ACL2")
 
 ; NOTE: This file requires that str/strprefixp has been loaded.
@@ -203,38 +202,8 @@
 
 
 
-(defun tshell (cmd &key (print 't) (save 't))
-
-; (TSHELL CMD :PRINT [t/nil] :SAVE [t/nil]) --> (FINISHEDP STATUS LINES)
-;
-; Inputs:
-;
-;    CMD should be an ordinary shell command that takes no input and does not
-;    attempt to do any I/O redirection.  It can have arguments, e.g., you can
-;    write something like "echo hello" here.
-;
-;    :PRINT says whether to print the lines produced by CMD as they are
-;    produced.  The default is T.
-;
-;    :SAVE says whether to buffer the lines produced by CMD and return them as
-;    LINES.  The default is T.  You can set :SAVE NIL if you want to use less
-;    memory and don't care about inspecting the lines programmatically.
-;
-;    Note that :SAVE and :PRINT are independent from one another.  You can
-;    print without saving, save without printing, or do both.
-;
-; Outputs:
-;
-;    FINISHEDP is T if the command completed execution normally, or is NIL if
-;    the command was aborted via interrupting.
-;
-;    STATUS is the exit status code of the command (e.g., typically 0 means
-;    success and some non-0 value means failure).  It is only meaningful if
-;    FINISHEDP is T.
-;
-;    LINES are a list of strings which represent the output of the command,
-;    (both to standard output and standard error.)  Note that LINES will just
-;    be NIL when you set :SAVE NIL.
+(defun tshell-call-fn (cmd print save)
+  ;; See the documentation in tshell.lisp.
 
   (unless (tshell-check)
     (error "Invalid *tshell*, *tshell-killer*, or *tshell-bg* -- did you call (tshell-start)?"))

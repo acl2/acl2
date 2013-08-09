@@ -30,10 +30,12 @@
 (program)
 
 (defxdoc xdoc
-  :short "<i>XDOC</i> is a tool for documenting ACL2 libraries.  It is meant to
-replace ACL2 facilities such as @(see defdoc), @(':doc'), and so on."
+  :short "<i>XDOC</i> is a tool for documenting ACL2 books.  You can use it to
+look up documentation, document your own libraries, and create web-based
+manuals.  It is meant to replace ACL2 facilities like @(see defdoc), @(':doc'),
+and so on."
 
-  :long "<p>To use the XDOC system, the first step is:</p>
+  :long "<p>To use XDOC, the first step is:</p>
 
 @({
  (include-book \"xdoc/top\" :dir :system)
@@ -44,15 +46,15 @@ complete interface to the XDOC system, including:</p>
 
 <ul>
 
-<li>@(see defxdoc), the basic command for adding documentation &mdash;
-the XDOC alternative to ACL2's @(see defdoc) command.</li>
+<li>The @(':xdoc') command for viewing documentation within the terminal
+&mdash; the XDOC alternative to ACL2's @(':doc') command.</li>
 
-<li>The @(':xdoc') command for viewing documentation within the terminal &mdash;
-the XDOC alternative to ACL2's @(':doc') command.</li>
+<li>@(see defxdoc) and @(see defsection), which are the basic commands for
+adding documentation &mdash; the XDOC alternatives to ACL2's @(see defdoc)
+command.</li>
 
-<li>The @(see save) command, which exports all XDOC documentation into files
-that can be viewed in a web browser or transformed into formats like plain HTML
-or TEXT files.</li>
+<li>The @(see save) command, which can be used to create web-based manuals for
+your libraries.</li>
 
 </ul>
 

@@ -771,25 +771,3 @@ constant false, whereas the car of @('y') is @('t'), constant true.</p>
 (prove-faig-congruences f-aig-pullup (a))
 (prove-faig-congruences f-aig-bi-buf (c a b))
 
-
-
-
-;; Pat stuff, could maybe move to EMOD/ESIM books...
-
-(defthm faig-eval-pat-of-faig-restrict-pat
-  (equal (faig-eval-pat pat (faig-restrict-pat pat aigs al1) al2)
-         (faig-eval-pat pat aigs (append (aig-eval-alist al1 al2) al2)))
-  :hints(("Goal" :induct t)))
-
-(defthm faig-eval-pat-of-faig-partial-eval-pat
-  (equal (faig-eval-pat pat (faig-partial-eval-pat pat aigs al1) al2)
-         (faig-eval-pat pat aigs (append al1 al2)))
-  :hints(("Goal" :induct t)))
-
-(defthm faig-eval-pat-of-faig-compose-pat
-  (equal (faig-eval-pat pat (faig-compose-pat pat aigs al1) al2)
-         (faig-eval-pat pat aigs (aig-eval-alist al1 al2)))
-  :hints(("Goal" :induct t)))
-
-(defcong aig-env-equiv equal (faig-eval-pat pat x env) 3
-  :hints(("Goal" :induct t)))

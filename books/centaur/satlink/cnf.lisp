@@ -29,8 +29,13 @@
 (include-book "centaur/misc/bitarr" :dir :system)
 (local (include-book "data-structures/list-defthms" :dir :system))
 
-(defstobj-clone env$ bitarr
-  :exports (env$-length env$-get env$-set env$-resize))
+
+(defsection env$
+  :parents (cnf)
+  :short "A bit array that serves as the environment for @(see eval-formula)."
+
+  (defstobj-clone env$ bitarr
+    :exports (env$-length env$-get env$-set env$-resize)))
 
 (local (defthm equal-1-when-bitp
          (implies (bitp x)
@@ -40,26 +45,33 @@
 
 (defxdoc cnf
   :parents (satlink)
-  :short "Representation of CNF formulas."
+  :short "Our representation (syntax and semantics) for <a
+href='http://en.wikipedia.org/wiki/Conjunctive_normal_form'>conjunctive normal
+form</a> formulas."
 
-  :long "<ul>
+  :long "<p>To express what it means to call a SAT solver, we need a
+representation and a semantics for Boolean formulas in conjunctive normal form.
+Our syntax is as follows:</p>
 
-<li>A <b>VARIABLE</b> is a natural number.  To help keep variables separate
+<ul>
+
+<li>A <b>variable</b> is a natural number.  To help keep variables separate
 from literals, we represent them @(see varp)s, instead of @(see natp)s.</li>
 
-<li>A <b>LITERAL</b> represents either a variable or a negated variable.  We
+<li>A <b>literal</b> represents either a variable or a negated variable.  We
 represent these using a typical numeric encoding: the least significant bit is
 the negated bit, and the remaining bits are the variable.  See @(see
 litp).</li>
 
-<li>A <b>CLAUSE</b> is a disjunction of literals.  We represent these as
+<li>A <b>clause</b> is a disjunction of literals.  We represent these as
 ordinary lists of literals.  See @(see lit-listp).</li>
 
-<li>A <b>FORMULA</b> is a conjunction of clauses.  We represent these using
+<li>A <b>formula</b> is a conjunction of clauses.  We represent these using
 @(see lit-list-listp).</li>
 
-</ul>")
+</ul>
 
+<p>The semantics of these formulas are given by @(see eval-formula).</p>")
 
 (defsection eval-formula
   :parents (cnf)
@@ -68,9 +80,10 @@ ordinary lists of literals.  See @(see lit-listp).</li>
   :long "<p>We define a simple evaluator for CNF formulas that uses an
 environment to assign values to the identifiers.</p>
 
-<p>The environment is represented as a bit array.  Our evaluators produce a
-<b>BIT</b> (i.e., 0 or 1) instead of a BOOL (i.e., T or NIL) to make it
-directly compatible with the bitarr stobj.</p>"
+<p>The environment, @(see $env), is an abstract stobj that implements a simple
+bit array.  Our evaluators produce a <b>BIT</b> (i.e., 0 or 1) instead of a
+BOOL (i.e., T or NIL) to make it directly compatible with the bitarr
+stobj.</p>"
 
   (define eval-var ((var varp) env$)
     :returns (bit bitp)
