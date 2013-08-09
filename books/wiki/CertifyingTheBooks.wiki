@@ -8,12 +8,10 @@ If you encounter a build failure and the branch you are building is appropriate 
 
 It's probably easiest to:
   # extract the current ACL2 distribution
-  # replace its "books" directory with what you've checked out from SVN
+  # create a "books" subdirectory checked out from SVN
   # build yourself an ACL2 image as usual to obtain the `saved_acl2` file
 
-Then, you can just go into the books directory and run:
-  * `make` -- to certify everything except the workshop books, or
-  * `make all-plus` -- for everything including the workshop books.
+Then, you can just go into the books directory and run `make` to certify the books.
 
 You can also use `make -j 2` if you have a dual-core system, `make -j 4` if you have four cores, etc., to instruct it to use more CPUs.
 
@@ -42,4 +40,4 @@ ACL2_SYSTEM_BOOKS="/path/to/my/acl2-books"
 exec "/[...]/gcl-saved_acl2.gcl" $*
 }}}
 
-See also ACL2 documentation topic BOOK-MAKEFILES for more information.
+See also ACL2 documentation topic BOOKS-CERTIFICATION for more information.
