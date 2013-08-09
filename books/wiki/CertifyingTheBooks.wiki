@@ -11,7 +11,7 @@ It's probably easiest to:
   # create a "books" subdirectory checked out from SVN
   # build yourself an ACL2 image as usual to obtain the `saved_acl2` file
 
-Then, you can just go into the books directory and run `make` to certify the books.
+Then, you can just go into the books directory and run `make` to certify the books, assuming that the command `acl2` invokes the desired ACL2 executable (otherwise, see next section).
 
 You can also use `make -j 2` if you have a dual-core system, `make -j 4` if you have four cores, etc., to instruct it to use more CPUs.
 
