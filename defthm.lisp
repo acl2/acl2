@@ -8065,15 +8065,29 @@
   (mv-let
    (erp hyps concl ts vars ttree)
    (destructure-type-prescription name typed-term term ens wrld)
-   (declare (ignore ts vars))
+   (declare (ignore ts))
    (cond
     (erp (er soft ctx "~@0" erp))
     (t (let* ((weakp
 
 ; We avoid calling weak-type-prescription-rulep if we are going to ignore the
-; warning anyhow.  Otherwise, we construct a temporary world using
+; warning anyhow.  Otherwise, we construct a temporary world.
 
-               (and (not (warning-disabled-p "Type prescription"))
+; We check (null vars) because otherwise, the warning can be needlessly harsh.
+; For example, try submitting these events in a fresh ACL2 session after
+; removing the (null vars) check from this function.
+
+; (defstub foo (x) x)
+; (defaxiom foo-type-prescription
+;           (or (integerp (foo y))
+;               (equal (foo y) y))
+;           :rule-classes :type-prescription)
+
+; Then the warning will be printed without the (null vars) check, even though
+; the rule above is a perfectly good one.
+
+               (and (null vars)
+                    (not (warning-disabled-p "Type prescription"))
                     (let* ((nume (get-next-nume wrld))
                            (rune (list :type-prescription name))
                            (wrld2 (add-type-prescription-rule
@@ -8091,8 +8105,8 @@
             (warning$ ctx ("Type prescription")
                       "The :type-prescription rule generated for ~x0 may be ~
                        weaker than you expect.  Note that the conclusion of a ~
-                       :type-prescription rule is stored as a type rather ~
-                       than a term.  It so happens that~|  ~p1~|is not ~
+                       :type-prescription rule is stored as a numeric type ~
+                       rather than a term.  It so happens that~|  ~p1~|is not ~
                        provable using type-set reasoning in the extension of ~
                        the current world by that rule.  Because information ~
                        has been lost, this rule probably does not have the ~

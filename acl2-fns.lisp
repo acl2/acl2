@@ -109,38 +109,69 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ; The variable acl2::*do-proclaims* determines whether or not we proclaim ACL2
-; functions before compiling them.  Normally this seems to improve performance,
-; though we believe that such proclaiming had the opposite effect for some
-; combination of ACL2 and Allegro CL; see comment in proclaim-file.
+; functions before compiling them.  The intent of proclaiming is to improve
+; performance, though we once observed proclaiming to have had the opposite
+; effect for some combination of ACL2 and Allegro CL; see a comment in
+; proclaim-file.
 
-; The constant acl2::*suppress-compile-build-time* determines whether or not we
-; avoid calling the compiler.  If this variable is false, then in compile-acl2
-; we load each source file, then proclaim it, and finally compile it.  But we
-; skip all that when acl2::*suppress-compile-build-time* is true; we can't
-; proclaim before loading because macros may not all have been defined, and it
-; seems dicey to do the sequence load,proclaim,load because the second load
-; redefines functions.  So in this case, we instead do the build by first
-; optionally (though required in GCL) calling generate-acl2-proclaims to do the
-; entire load/initialization sequence and write out file acl2-proclaims.lisp.
-; At the makefile level (see GNUmakefile), this sequence is accomplished with
+; In compile-acl2 we load each source file, then proclaim it, and finally
+; compile it, provided acl2::*suppress-compile-build-time* is false.  in
+; compile-acl2 we load each source file, then proclaim it, and finally
+; Otherwise we skip all that: we can't proclaim before loading because macros
+; may not all have been defined, and it seems dicey to do the sequence
+; load,proclaim,load because the second load redefines functions.  So in this
+; case, we could do the build as follow (though this isn't the default; see
+; variable ACL2_PROCLAIMS_ACTION in GNUmakefile): first call
+; generate-acl2-proclaims to do the entire load/initialization sequence, then
+; write out file acl2-proclaims.lisp, then compile again using that file.  At
+; the makefile level (see GNUmakefile), this sequence is accomplished with
 ; target "large" as follows: target "full" does a compile (basically a no-op if
 ; *suppress-compile-build-time* is true), then target "init" first invokes
 ; target "make-acl2-proclaims" to do the load/initialization and writing out of
 ; file acl2-proclaims.lisp, and finally "init" does a new load/initialization
 ; but this time loading the existing acl2-proclaims.lisp to proclaim functions.
 
+; We considered using the above two-step process for GCL, expecting that better
+; proclaim forms would be generated after doing initialization of the
+; boot-strap world, since our code that generates proclaims tries to take
+; advantage of stobjs-out properties.  However, we found (August 8, 2013) that
+; the generated proclaim forms were the same whether we did that, or we merely
+; generated them during the load/proclaim/compile of each source file.  So, we
+; do the latter, which speeds up the build (see :DOC note-6-3).
+
 ; At one time we proclaimed for CCL, but one profiling run of a
 ; compute-intensive include-book form showed that this was costing us some 10%
 ; of the time.  After checking with Gary Byers we decided that there was little
 ; if any benefit in CCL for proclaiming functions, so we no longer do it.
-; Perhaps we should reconsider some time.
+; Perhaps we should reconsider some time; in fact we have done so on 8/9/2013
+; (see comments below in *do-proclaims*).
 
 ; We considered adding &OPTIONAL to the end of every VALUES form (see comments
 ; below), based on output (since forgotten) from SBCL.  But GCL issued several
 ; dozen warnings during the build when this happened, so for now, since we are
-; only proclaiming functions for GCL, we'll remove the &optional and be happy.
+; only proclaiming functions for GCL, we omit the &optional.
 
 (defvar *do-proclaims*
+
+; We may want to experiment for proclaiming with other Lisps besides GCL.  But
+; this might not be a good idea, in particular for Allegro CL and CCL (see
+; above).
+
+; In fact we experimented with CCL and ACL2(h) on 8/9/2013, by temporarily
+; setting this variable to T.  We got these results from "time" for make -j 8
+; with target regression-fresh on dunnottar.cs.utexas.edu.  The results are
+; inconclusive, so we keep things simple (and avoid stepping on the possibility
+; of future CCL improvements) by the lskipping of function proclaiming in CCL.
+
+; Built as follows (not showing here the setting PREFIX=):
+;   make ACL2_HONS=h LISP=ccl-trunk ACL2_SIZE=3000000
+; 27815.314u 1395.775s 1:09:03.35 705.0%        0+0k 2008+1736952io 34pf+0w
+
+; Built as follows (not showing here the setting PREFIX=):
+;   make ACL2_HONS=h LISP=ccl-trunk ACL2_SIZE=3000000 \
+;     ACL2_PROCLAIMS_ACTION=generate_and_reuse
+; 27272.420u 1401.555s 1:09:11.18 690.7%        0+0k 333088+1750384io 303pf+0w
+
   #+gcl t
   #-gcl nil)
 
@@ -154,12 +185,11 @@
 
 (defun macroexpand-till (form sym)
 
-; In order to find the THEs that we want to find to do automatic
-; proclaiming of the output types of functions, we need to do
-; macroexpansion at proclaim-time.  It is possible that a given
-; implementation of Common Lisp will macroexpand THE forms further.
-; Hence we gently do the macroexpansion we need, one expansion at a
-; time, looking for the THE we want to find.
+; In order to find the THEs that we want to find to do automatic proclaiming of
+; the output types of functions, we need to do macroexpansion at proclaim-time.
+; It is possible that a given implementation of Common Lisp will macroexpand
+; THE forms further.  Hence we gently do the macroexpansion we need, one
+; expansion at a time, looking for the THE we want to find.
 
   (loop (cond ((and (consp form) (eq (car form) sym))
                (return form))
@@ -624,10 +654,22 @@
          (eval form)))))
 
 (defun proclaim-form (form &optional stream)
+
+; We assume that this function is called under proclaim-file, which binds
+; *package*.  See the comment below for the in-package case.
+
   (when *do-proclaims*
     (cond ((consp form)
            (case (car form)
-             ((in-package) (eval-or-print form stream) nil)
+             ((in-package)
+              (eval-or-print form stream)
+              (when stream
+
+; We make sure that when we're merely printing, nevertheless we are in the
+; correct package as we read the rest of the file.
+
+                (eval form))
+              nil)
              ((defmacro defvar defparameter) nil)
              ((defconst)
               (eval-or-print (make-defconst-declare-form form) stream)
@@ -669,8 +711,8 @@
 ; Lisps other than GCL.  However, our tests in Allegro suggested that this may
 ; not help.  The comment below gives some details.  Perhaps we will proclaim
 ; for MCL in the future.  At any rate, CCL (OpenMCL) is supported starting with
-; Version_2.8, and we proclaim there since Warren Hunt thought that might be
-; useful.
+; Version_2.8.  We tried proclaiming for that Lisp, but no longer do so; see
+; Section "PROCLAIMING" above.
 
 ; Here is a summary of three comparable user times from certifying all the ACL2
 ; books in June 2000, just before Release 2.5 is complete.  The first column,

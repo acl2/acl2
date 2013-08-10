@@ -11564,10 +11564,11 @@
   ~c[doc/HTML/acl2-doc.html] under your ACL2 source directory, or just go to
   the ACL2 home page at ~url[http://www.cs.utexas.edu/users/moore/acl2/].
 
-  Alternatively, follow a link on the ACL2 home page to the new ``xdoc''
-  version of the manual.  You can build a local copy using the ACL2 Community
-  books; see the topic ``BUILDING THE MANUAL'' in ~c[books/Makefile] for
-  instructions.
+  Alternatively, follow a link on the ACL2 home page to a manual, known as the
+  xdoc manual, which incorporates (but rearranges) the ACL2 documentation as
+  well as documentation from many ACL2 community books.  You can build a local
+  copy of that manual; see for example the section ``BUILDING THE XDOC MANUAL''
+  in the community books ~c[Makefile] for instructions.
 
   To use Emacs Info (inside Emacs), first load distributed file
   ~c[emacs/emacs-acl2.el] (perhaps inside your ~c[.emacs] file) and then
@@ -20261,10 +20262,12 @@
 
   ~st[Restriction to Event Contexts]
 
-  A ~c[make-event] call must occur either at the top level or as an argument of
-  an event constructor, as explained in more detail below.  This restriction is
-  imposed to enable ACL2 to track expansions produced by ~c[make-event].  The
-  following examples illustrate this restriction.
+  A ~c[make-event] call must occur either at the top level, or during
+  ~c[make-event] expansion, or as an argument of an event constructor.  We
+  explain in more detail below.  This restriction is imposed to enable ACL2 to
+  track expansions produced by ~c[make-event].
+
+  The following examples illustrate this restriction.
   ~bv[]
   ; Legal:
   (progn (with-output
@@ -20277,10 +20280,12 @@
           (mv erp val state))
   ~ev[]
 
-  More precisely: after macroexpansion has taken place, a ~c[make-event] call
-  must be in an ``event context'', defined recursively as follows.  (All but
-  the first two cases below correspond to similar cases for constructing
-  events; ~pl[embedded-event-form].)
+  More precisely: a ~c[make-event] call that is not itself evaluated during
+  ~c[make-event] expansion is subject to the following requirement.  After
+  macroexpansion has taken place, such a ~c[make-event] call must be in an
+  ``event context'', defined recursively as follows.  (All but the first two
+  cases below correspond to similar cases for constructing events;
+  ~pl[embedded-event-form].)
   ~bq[]
 
   o A form submitted at the top level, or more generally, supplied to a call of
@@ -20302,11 +20307,11 @@
   ~c[(]~ilc[WITH-PROVER-TIME-LIMIT]~c[ ... x1)] is in an event context, then so
   is ~c[x1].
 
-  o Given a call of ~ilc[PROGN] or ~ilc[PROGN!] in an event context, each of its
-  arguments is in an event context.
+  o For any call of ~ilc[PROGN] or ~ilc[PROGN!], each of its arguments is in an
+  event context.
 
-  o Given a call of ~ilc[ENCAPSULATE] in an event context, each of its
-  arguments except the first (the signature list) is in an event context.
+  o For any call of ~ilc[ENCAPSULATE], each of its arguments except the
+  first (the signature list) is in an event context.
 
   o If ~c[(RECORD-EXPANSION x1 x2)] is in an event context, then ~c[x1] and
   ~c[x2] are in event contexts.  Note: ~c[record-expansion] is intended for use

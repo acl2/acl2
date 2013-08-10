@@ -142,11 +142,14 @@
 ;                               SAFETY AND PROCLAIMING
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-; The user is welcome to modify the following proclaim form.
-
 (proclaim `(optimize #+cltl2 (compilation-speed 0)
+
+; The user is welcome to modify this proclaim form.  Warning: Keep it in sync
+; with the settings in compile-acl2 under #+sbcl.
+
 ; The following may allow more tail recursion elimination (from "Lisp
 ; Knowledgebase" at lispworks.com); might consider for Allegro CL too.
+
                      #+(or lispworks ccl) (debug 0)
                      #+cmu (extensions:inhibit-warnings 3)
                      #+sbcl (sb-ext:inhibit-warnings 3)
@@ -1881,16 +1884,31 @@ which is saved just in case it's needed later.")
 ;                       COMPILING and LOADING, PART 2
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(defun non-trivial-acl2-proclaims-file-p ()
+  (with-open-file (str "acl2-proclaims.lisp"
+                       :direction :input
+                       :if-does-not-exist nil)
+                  (and str
+                       (let* ((new-cons (cons nil nil))
+                              (val (read str nil new-cons)))
+                         (and (not (eq new-cons val))
+
+; We might not need the following, but just in case we decide always to print
+; an in-package form into the file, we require that the file have at least two
+; forms.
+
+                              (not (eq new-cons
+                                       (read str nil new-cons))))))))
+
 (defun compile-acl2 (&optional use-acl2-proclaims)
-  (declare (ignorable use-acl2-proclaims))
 
   (with-warnings-suppressed
 
    #+sbcl
    (declaim (optimize (safety 0) (space 0) (speed 3) (debug 0)))
 
-; Here is a natural place to put compiler options.  In fact, we put
-; them above, globally.
+; Here is a natural place to put compiler options.  In fact, we put them above,
+; globally.
 
 ; (declaim (optimize (safety 0) (space 0) (speed 3)))
 
@@ -1928,23 +1946,33 @@ which is saved just in case it's needed later.")
 ;(12) once the bug is fixed, be sure to change the declaim
 ;     back to (safety 0) (speed 3) before recompiling.
 
-; Note on loading before compiling.  We load each ACL2 source file
-; before compiling it to make sure that the functions needed to
-; execute macros have been defun-ed before they are called.  Normal
-; Common Lisp compilation does not do this.  So we cause all forms to
-; be executed before we start the compilation.  This guarantees that
-; when macros run, the functions they call have been defined.
+; Note on loading before compiling.  We load each ACL2 source file before
+; compiling it to make sure that the functions needed to execute macros have
+; been defun-ed before they are called.  Normal Common Lisp compilation does
+; not do this.  So we cause all forms to be executed before we start the
+; compilation.  This guarantees that when macros run, the functions they call
+; have been defined.
 
-; In general, and for the same reason, all ACL2 user checked files
-; are also be loaded before they are compiled.
-
-   #-acl2-mv-as-values
-   (when use-acl2-proclaims
-     (return-from compile-acl2 nil))
+; In general, and for the same reason, all ACL2 user checked files are also
+; loaded before they are compiled.
 
 ; As of version 18a, cmulisp spews gc messages to the terminal even when
 ; standard and error output are redirected.  So we turn them off.
 
+   (when (and use-acl2-proclaims
+              (not (non-trivial-acl2-proclaims-file-p)))
+
+; Note that GNUmakefile provides special treatment for the value :REUSE of
+; environment/make variable USE_ACL2_PROCLAIMS.  With that treatment, we avoid
+; calling compile-acl2 with use-acl2-proclaims = t, and thus we don't get to
+; this point.
+
+     (error "Note: Skipping compilation that is intended to use generated ~
+             file \"acl2-proclaims.lisp\", because that file is missing or ~
+             has no forms in it."))
+   (when (and (not use-acl2-proclaims)
+              (probe-file "acl2-proclaims.lisp"))
+     (delete-file "acl2-proclaims.lisp"))
    (cond
     ((or (not (probe-file *acl2-status-file*))
          (with-open-file (str *acl2-status-file*
@@ -1963,7 +1991,7 @@ which is saved just in case it's needed later.")
 
             (compiler:*suppress-compiler-notes* t))
         (when use-acl2-proclaims
-          (load "acl2-proclaims.lisp"))
+          (proclaim-files nil "acl2-proclaims.lisp" nil))
         (dolist (name *acl2-files*)
           (or (equal name "defpkgs")
               (let ((source (make-pathname :name name
@@ -2054,14 +2082,21 @@ which is saved just in case it's needed later.")
 
 (defun load-acl2 (&optional fast)
 
-  #-akcl (declare (ignore fast)) ; fast only avoids slow growth during gcl init
+; If fast is true, then we are welcome to avoid optimizations that might make
+; for a better saved image.  For example, we use fast = t when building simply
+; to write proclaim forms into acl2-proclaims.lisp.
+
+  (declare (ignorable fast))
 
   (our-with-compilation-unit ; only needed when *suppress-compile-build-time*
    (with-warnings-suppressed
 
-; If we are in the first pass of two passes because of acl2-mv-as-values, then
-; don't waste time doing the slow build for GCL (where we compile all *1*
-; functions as we go through initialization).
+    (when (not fast)
+      (proclaim-files nil "acl2-proclaims.lisp" t))
+
+; If we are in the first pass of two passes, then don't waste time doing the
+; slow build for GCL (where we compile all *1* functions as we go through
+; initialization).
 
     #+(and gcl acl2-mv-as-values)
     (when fast

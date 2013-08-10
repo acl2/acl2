@@ -189,17 +189,16 @@
            (er-progn
             (get-and-chk-last-make-event-expansion
 
-; We allow time$ and with-prover-time-limit at the top level only for purposes
-; of tracking make-event, for now.  If there is user demand, we could consider
-; allowing these in arbitrary positions of embedded event forms, though in that
-; case we should be careful to check that nested calls work well.  Note that we
-; look for time$ and with-prover-time-limit, not for return-last, because we
-; are looking at a user-supplied form, not its macroexpansion.
+; For purposes of tracking make-event, we allow time$ only at the top level.
+; If there is user demand, we could consider allowing it in arbitrary positions
+; of embedded event forms, though in that case we should be careful to check
+; that nested calls work well.  Note that we look for time$, not for
+; return-last, because we are looking at a user-supplied form, not its
+; macroexpansion.
 
              (cond ((consp form)
                     (case (car form)
                       (time$ (cadr form))
-                      (with-prover-time-limit (caddr form))
                       (otherwise form)))
                    (t form))
              wrld 'top-level state
@@ -21004,6 +21003,29 @@
 ; Improved our-truename (definition and calls) so that in case of an error, we
 ; get additional information.
 
+; Added new :doc topic, ignored-attachment, pointing to it in the message
+; printed by function ignored-attachment-msg.
+
+; Changed all-equal to have a test of atom instead of endp, so that it
+; could be guard-verifiable as requested by Eric Smith.
+
+; Updated :doc make-event to clarify that it is legal to call make-event during
+; make-event expansion, even outside an event context.
+
+; Modified function maybe-add-command-landmark to avoid giving special
+; treatment to with-prover-time-limit, since with-prover-time-limit is
+; a full-fledged event constructor and hence this is not necessary.
+
+; Removed definition of obsolete function, called acl2, from the
+; sources.
+
+; Slightly changed wording pertaining to the "combined" (xdoc) manual on the
+; ACL2 home page.
+
+; Fixed TAGS! target in GNUmakefile to do what it has been claming to
+; do: rebuild TAGS even when TAGS is up-to-date with respect to the
+; source files.
+
   :doc
   ":Doc-Section release-notes
 
@@ -21088,8 +21110,13 @@
   o For a ~il[lemma-instance] provided to a ~c[:use] or ~c[:by] hint that
   is a ~c[:functional-instance], if a ~c[:do-not] hint (~pl[hints]) has
   specified that ~c[preprocess-clause] is not to be used, then preprocessing
-  will not be used on the constraints.
-  ~eq[]
+  will not be used on the constraints.~eq[]
+
+  We eliminated certain warnings about being ``weak'' for every
+  ~c[:]~ilc[type-prescription] rule whose conclusion designates that the
+  function call can be equal to one of its arguments, e.g.,
+  ~c[(or (integerp (foo y)) (equal (foo y) y))].  In many cases (such as the
+  one above), such warnings about ``weak'' simply aren't correct.
 
   ~st[BUG FIXES]
 
@@ -21117,6 +21144,11 @@
   supplied directly by the user when calling ACL2.  (See the comment in source
   function ~c[user-args-string], source file ~c[acl2-init.lisp], for more
   information.)  Thanks to Jared Davis for suggesting these changes.
+
+  A rather extensive overhaul has taken place for the function proclaiming
+  mechanism.  As before, this is only used when the host Lisp is GCL.  However,
+  building an executable now faster for some Lisps, including GCL, by avoiding
+  repeated recompilation and perhaps repeated initialization.
 
   ~st[EMACS SUPPORT]
 
@@ -23150,13 +23182,13 @@ There are libraries of <i>books</i> (files containing definitions and theorems)
 that extend the code that we have written.  Books are contributed and
 maintained by the ACL2 community (see <code><A
 HREF=\"http://acl2-books.googlecode.com/\">http://acl2-books.googlecode.com/</A></code>;
-in particular, the [Source] tab near the top takes you to a search box)
-and their authors are generally noted in each book or its
-<code>README</code> file.  There is a <A
-HREF=\"http://fv.centtech.com/acl2/6.2/doc/\">combined manual</A> that
-incorporates not only <A HREF=\"#User's-Manual\">The User's Manual</A>
-for ACL2 but also documentation for many books; thanks to Jared Davis
-for building this view of the documentation.
+in particular, the [Source] tab near the top takes you to a search box) and
+their authors are generally noted in each book or its <code>README</code> file.
+There is a <A HREF=\"http://fv.centtech.com/acl2/6.2/doc/\">combined manual,
+known as the <i>xdoc manual</i></A>, that incorporates not only <A
+HREF=\"#User's-Manual\">The User's Manual</A> for ACL2 (with some topics
+rearranged) but also documentation for many books.  Thanks to Jared Davis for
+building the xdoc processor for creating this view of the documentation.
 
 <p>
 

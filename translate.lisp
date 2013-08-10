@@ -403,9 +403,123 @@
 (defun ignored-attachment-msg (ignored-attachment)
   (cond (ignored-attachment (msg "~|~%Note that because of logical ~
                                   considerations, attachments (including ~x0) ~
-                                  must not be called in this context."
+                                  must not be called in this context.  See ~
+                                  :DOC ignored-attachment."
                                  ignored-attachment))
         (t "")))
+
+(defdoc ignored-attachment
+
+  ":Doc-Section miscellaneous
+
+  why attachments are sometimes not used~/
+
+  Attachments provide a way to execute constrained functions.  But in some
+  cases, ACL2 will not permit such execution.  We discuss this issue briefly
+  here.  For more information about attachments, ~pl[defattach].
+
+  We illustrate this issue with the following example, discussed below.
+  ~bv[]
+    (encapsulate
+     ()
+     (defstub foo () t)
+     (defn foo-impl-1 () t)
+     (defattach foo foo-impl-1)
+     (defn foo-impl-2 () nil)
+     (local (defattach foo foo-impl-2))
+     (defmacro mac () (foo)) ; nil in the first pass, t in the second pass
+     (defun bar () (mac))    ; nil in the first pass, t in the second pass
+     (defthm bar-is-nil
+       (equal (bar) nil))
+     )
+  ~ev[]
+
+  Here, a non-executable function ~c[foo] is introduced with no constraints,
+  and is provided two contradictory implementations, ~c[foo-impl-1] and
+  ~c[foo-impl-2].  A function, ~c[bar], is defined using a macro, ~c[mac],
+  whose expansion depends on which of ~c[foo-impl-1] or ~c[foo-impl-2] is
+  attached to ~c[foo].  If ACL2 were to allow this, then as indicated by the
+  comments above, ~c[(bar)] would be defined to be ~c[nil] on the first pass of
+  the ~ilc[encapsulate] form, where ~c[foo] is attached to ~c[foo-impl-2]; but
+  ~c[(bar)] would be defined to be ~c[t] on the second pass, where ~c[foo] is
+  attached to ~c[foo-impl-1] because the second ~ilc[defattach] call is
+  ~ilc[local].  Thus, after execution of the ~c[encapsulate] form, ~c[(bar)]
+  would be provably equal to ~c[t] even though there would be a theorem,
+  ~c[bar-is-nil] ~-[] proved during the first pass of the ~c[encapsulate] ~-[]
+  saying that ~c[(bar)] is ~c[nil]!
+
+  Fortunately, ACL2 does not permit this to happen.  The example above produces
+  the following output.
+
+  ~bv[]
+    ACL2 !>>(DEFUN BAR NIL (MAC))
+
+
+    ACL2 Error in ( DEFUN BAR ...):  In the attempt to macroexpand the
+    form (MAC), evaluation of the macro body caused the following error:
+
+    ACL2 cannot ev the call of undefined function FOO on argument list:
+
+    NIL
+
+    Note that because of logical considerations, attachments (including
+    FOO-IMPL-2) must not be called in this context.
+  ~ev[]
+
+  We see, then, the importance of disallowing evaluation using attachments
+  during macroexpansion.  ACL2 is careful to avoid attachments in situations,
+  like this one, where using attachments could be unsound.~/
+
+  We conclude with an example illustrating how ~ilc[make-event] can be used to
+  work around the refusal of ACL2 to use attachments during macroexpansion.
+  The idea is that ~ilc[make-event] expansions are stored, and this avoids the
+  issue of ~ilc[local] attachments.  In particular, for the example below, the
+  second ~ilc[defattach] affects the body of ~c[f2] even though that
+  ~ilc[defattach] is ~ilc[local], because the expansion of the corresponding
+  ~ilc[make-event] is saved during the first pass of ~ilc[certify-book], when
+  full admissibility checks are done.  Then even after including the book, the
+  definition of ~c[f2] will be based on the second (~ilc[local])
+  ~ilc[defattach] form below.
+
+  ~bv[]
+  (in-package \"ACL2\")
+
+  (defun body-1 (name formals body)
+    (declare (ignore name))
+    `(if (consp ,(car formals))
+         ,body
+       nil))
+
+  (defun body-2 (name formals body)
+    (declare (ignore name))
+    `(if (acl2-numberp ,(car formals))
+         ,body
+       t))
+
+  (defmacro defun+ (name formals body)
+    `(make-event
+      (if (foo) ; attachable stub
+          '(defun ,name ,formals ,(body-1 name formals body))
+        '(defun ,name ,formals ,(body-2 name formals body)))))
+
+  ;;; (defun+ f1 (x y) (cons x y)) ; fails because foo has no attachment
+
+  (defstub foo () t)
+  (defn foo-true () t)
+  (defn foo-false () nil)
+
+  (defattach foo foo-true)
+
+  (defun+ f1 (x y) (cons x y))
+
+  (local (defattach foo foo-false))
+
+  (defun+ f2 (x y) (cons x y))
+
+  (assert-event (equal (f1 3 t) nil))
+
+  (assert-event (equal (f2 3 t) (cons 3 t)))
+  ~ev[]~/")
 
 (defun ev-fncall-null-body-er-msg (ignored-attachment fn args)
   (cond

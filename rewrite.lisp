@@ -10647,7 +10647,8 @@
             (reconcile-terms (cdr terms) (cdr exts))))))
 
 (defun all-equal (x lst)
-  (cond ((endp lst) t)
+  (declare (xargs :guard t))
+  (cond ((atom lst) t)
         (t (and (equal x (car lst))
                 (all-equal x (cdr lst))))))
 

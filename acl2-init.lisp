@@ -808,6 +808,57 @@ implementations.")
             ,string
             ,@args)))
 
+(defun proclaim-files (&optional outfilename infilename infile-optional-p)
+
+; IMPORTANT: This function assumes that the defconst and defmacro forms in the
+; given files have already been evaluated.  One way to achieve this state of
+; affairs, of course, is to load the files first.
+
+  (when (and outfilename infilename)
+    (error "It is illegal to supply non-nil values for both optional ~
+            arguments of proclaim-files."))
+  (when (not *do-proclaims*)
+    (return-from proclaim-files nil))
+  (cond
+   (outfilename
+    (format t
+            "Writing proclaim forms for ACL2 source files to file ~s.~%"
+            outfilename))
+   (t
+    (when infilename
+        (cond ((probe-file infilename)
+               (format t
+                       "Loading nontrivial generated file of proclaim forms, ~
+                        ~s...~%"
+                       infilename)
+               (load infilename)
+               (format t
+                       "Completed load of ~s.~%"
+                       infilename)
+               (return-from proclaim-files nil))
+              (infile-optional-p) ; fall through as though infilename is nil
+              (t (error "File ~s is to be loaded by proclaim-files, but does ~
+                         not exist."
+                        infilename))))
+       (format t
+            "Generating and evaluating proclaim forms for ACL2 source ~
+             files.~%")))
+  (let (str)
+    (when outfilename
+      (if (probe-file outfilename)
+          (delete-file outfilename))
+      (or (setq str (safe-open outfilename :direction :output))
+          (error "Unable to open file ~s for output." outfilename)))
+
+; It is tempting to print an in-package form, but we leave that task to
+; proclaim-file, which presumably finds the first form to be an in-package
+; form.
+
+    (dolist (fl *acl2-files*)
+      (proclaim-file (format nil "~a.lisp" fl) str))
+    (when str ; equivalently, when outfilename is non-nil
+      (close str))))
+
 #+akcl
 (defun save-acl2-in-akcl-aux (sysout-name gcl-exec-name
                                           write-worklispext
@@ -982,14 +1033,6 @@ implementations.")
                        (t (si::allocate type n t)))))))
             (lp)))
   (load "akcl-acl2-trace.lisp")
-
-; The following is important so that ACL2 functions are efficient in certain
-; situations.  For example, (aref1 'foo foo n) should avoid boxing a fixnum n.
-
-  (cond (*suppress-compile-build-time*
-         (load "acl2-proclaims.lisp")
-         (load-acl2))
-        (t (proclaim-files)))
 
 ; Return to normal allocation growth.  Keep this in sync with load-acl2, which
 ; had presumably already set the allocation growth to be particularly slow.
@@ -1481,12 +1524,6 @@ implementations.")
    (setq *saved-mode* mode)
    (if (probe-file "worklispext")
        (delete-file "worklispext"))
-   (cond ((and *suppress-compile-build-time*
-               (probe-file "acl2-proclaims.lisp"))
-; We do the following load when *suppress-compile-build-time* in save-acl2, but
-; it's harmless enough to do it again here.
-          (load "acl2-proclaims.lisp"))
-         (t (proclaim-files)))
    (with-open-file (str "worklispext" :direction :output)
                    (format str "core"))
    (save-acl2-in-sbcl-aux sysout-name core-name)))
@@ -1724,12 +1761,6 @@ implementations.")
 #+ccl
 (defun save-acl2-in-ccl (sysout-name &optional mode core-name)
   (setq *saved-mode* mode)
-  (cond ((and *suppress-compile-build-time*
-              (probe-file "acl2-proclaims.lisp"))
-; We do the following load when *suppress-compile-build-time* in save-acl2, but
-; it's harmless enough to do it again here.
-         (load "acl2-proclaims.lisp"))
-        (t (proclaim-files)))
   (load "openmcl-acl2-trace.lisp")
   (save-acl2-in-ccl-aux sysout-name core-name))
 
@@ -1760,8 +1791,6 @@ implementations.")
 ; (ccl::save-application "acl2-image" :size (expt 2 24))
 ; for the Mac.
 
-  (when (and *suppress-compile-build-time* (probe-file "acl2-proclaims.lisp"))
-    (load "acl2-proclaims.lisp"))
   (load-acl2)
   (setq *saved-build-date-lst*
 
@@ -1803,33 +1832,12 @@ implementations.")
   (error "We do not know how to save ACL2 in this Common Lisp.")
   (format t "Saving of ACL2 is complete.~%"))
 
-(defun proclaim-files (&optional outfilename)
-
-; IMPORTANT:  This function assumes that the defconst forms in the
-; given files have already been evaluated.  One way to achieve this
-; state of affairs, of course, is to load the files first.
-
-  (if outfilename
-      (format t
-              "Writing proclaim forms for ACL2 source files to file ~s.~%"
-              outfilename)
-    (format t
-              "Generating and evaluating proclaim forms for ACL2 source ~
-               files.~%"))
-  (let (str)
-    (when outfilename
-      (if (probe-file outfilename)
-          (delete-file outfilename))
-      (or (setq str (safe-open outfilename :direction :output))
-          (error "Unable to open file ~s for output." outfilename))
-      (format str "(in-package \"ACL2\")~%"))
-    (dolist (fl *acl2-files*)
-      (proclaim-file (format nil "~a.lisp" fl) str))))
-
 (defun generate-acl2-proclaims ()
+
+; See the section "PROCLAIMING" in acl2-fns.lisp.
+
   (let ((filename "acl2-proclaims.lisp"))
-    (cond ((and *suppress-compile-build-time*
-                *do-proclaims*)
+    (cond (*do-proclaims*
            (format t "Beginning load-acl2 and initialize-acl2 on behalf of ~
                       generate-acl2-proclaims.~%")
            (load-acl2 t)
@@ -1845,20 +1853,6 @@ implementations.")
             (format str
                     "; No proclaims are generated here for this host Lisp.~%"))
            nil))))
-
-(defun acl2 nil
-  (let ((*readtable* *acl2-readtable*)
-        (extension (if *suppress-compile-build-time*
-                       *lisp-extension*
-                     *compiled-file-extension*)))
-    (dolist (name (remove "defpkgs" *acl2-files* :test #'equal))
-            (if (equal name "proof-checker-pkg")
-                (load "proof-checker-pkg.lisp")
-              (load-compiled (make-pathname :name name
-                                            :type extension))))
-    (load "defpkgs.lisp")
-    (in-package "ACL2")
-    "ACL2"))
 
 ; The following avoids core being dumped in certain circumstances
 ; resulting from very hard errors.
