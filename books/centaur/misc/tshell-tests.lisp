@@ -27,7 +27,7 @@
 (value-triple (tshell-ensure))
 
 (defmacro test-tshell (&key cmd save print okp lines)
-  (declare (ignorable cmd save print lines))
+  (declare (ignorable cmd save print okp lines))
   #-Clozure
   `(value-triple :invisible)
   #+Clozure
