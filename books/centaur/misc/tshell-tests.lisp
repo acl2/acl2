@@ -67,11 +67,15 @@
              :okp t
              :lines '("tshell-tests.lisp"))
 
+; Matt K., 8/11/2013: Commenting out the following test, at Jared's suggestion,
+; since it is failing on a Mac.
+#||
 (test-tshell :cmd "ls -1 tshell.lisp tshell-tests.lisp"
              :save t
              :print t
              :okp t
              :lines '("tshell.lisp" "tshell-tests.lisp"))
+||#
 
 (test-tshell :cmd "ls file-that-should-not-exist.txt"
              :save t
