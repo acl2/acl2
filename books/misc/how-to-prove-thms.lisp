@@ -7,7 +7,6 @@
 
 ; How To Prove Theorems Formally
 ; Matt Kaufmann   J Strother Moore
-; AMD             UT Austin
 
 ; This file contains our solutions to the exercises in the paper
 ; above.  Remember, your solutions may be different but just as

@@ -1,3 +1,7 @@
+; Copyright (C) 2013, Regents of the University of Texas
+; Written by Matt Kaufmann
+; License: A 3-clause BSD license.  See the LICENSE file distributed with ACL2.
+
 ; This is just a little variation macros.lisp that uses skip-proofs.  We check
 ; the expansions in macros-skip-proofs-include.lisp, much as we check
 ; expansions from macros.lisp in macros-include.lisp.

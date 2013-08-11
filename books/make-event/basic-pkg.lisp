@@ -1,3 +1,7 @@
+; Copyright (C) 2013, Regents of the University of Texas
+; Written by Matt Kaufmann
+; License: A 3-clause BSD license.  See the LICENSE file distributed with ACL2.
+
 ; This book is similar to (part of) basic.lisp, but is in package "FOO" and
 ; hence must be certified in a world where package "FOO" has been defined (see
 ; basic-pkg.acl2).

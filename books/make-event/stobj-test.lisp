@@ -1,3 +1,7 @@
+; Copyright (C) 2013, Regents of the University of Texas
+; Written by Matt Kaufmann
+; License: A 3-clause BSD license.  See the LICENSE file distributed with ACL2.
+
 ; This book tests the interaction of make-event with stobjs.  Up through ACL2
 ; 3.0.1 this book failed to certify, as explained in the "Technical remark"
 ; below.

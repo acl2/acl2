@@ -1,3 +1,7 @@
+; Copyright (C) 2013, Regents of the University of Texas
+; Written by Matt Kaufmann
+; License: A 3-clause BSD license.  See the LICENSE file distributed with ACL2.
+
 ; This macro, defconst-fast, is based on a conversation with Warren Hunt.  A
 ; defconst in a book has the unfortunate property that its form is evaluated
 ; not only when that book is certified, but also (again) when that book is

@@ -1,1 +1,4 @@
+; Written by John Cowles
+; Copyright/License: See the LICENSE file in this directory.
+
 (ld "packages.lsp")

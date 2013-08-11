@@ -1,3 +1,7 @@
+; Copyright (C) 2013, Regents of the University of Texas
+; Written by Matt Kaufmann
+; License: A 3-clause BSD license.  See the LICENSE file distributed with ACL2.
+
 ; Here are some tests involving macros.  See macros-include.lisp for expected
 ; expansion results.  Each form below is labeled with its position [p] in the
 ; resulting expansion-alist.

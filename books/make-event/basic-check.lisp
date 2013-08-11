@@ -1,3 +1,7 @@
+; Copyright (C) 2013, Regents of the University of Texas
+; Written by Matt Kaufmann
+; License: A 3-clause BSD license.  See the LICENSE file distributed with ACL2.
+
 ; This variant of basic.lisp uses :check-expansion t.  If you care to look in
 ; basic-check.cert, you'll see that the expansions saved for test1 (position 1
 ; in this file) and test2 (position 2 in this file) are of the form

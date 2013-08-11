@@ -1,6 +1,8 @@
+; Copyright (C) 2013, Regents of the University of Texas
+; Written by J Strother Moore, February, 2013
+; License: A 3-clause BSD license.  See the LICENSE file distributed with ACL2.
+
 ; A Utility for Comparing the .out Files Produced during Book Certification
-; J Strother Moore
-; February, 2013
 
 ; To recertify:
 ; (certify-book "compare-out-files")

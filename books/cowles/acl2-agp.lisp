@@ -1,3 +1,6 @@
+; Written by John Cowles
+; Copyright/License: See the LICENSE file in this directory.
+
 #| This is the .lisp file for the Abelian Group book.
 
    John Cowles, University of Wyoming, Summer 1993

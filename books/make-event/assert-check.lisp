@@ -1,3 +1,7 @@
+; Copyright (C) 2013, Regents of the University of Texas
+; Written by Matt Kaufmann
+; License: A 3-clause BSD license.  See the LICENSE file distributed with ACL2.
+
 ; This variant of assert.lisp runs assertions at all times, rather than
 ; skipping them during include-book and the second pass of encapsulate.  The
 ; comment below "Specific to this file", below, describes the interesting

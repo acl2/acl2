@@ -1,3 +1,7 @@
+; Copyright (C) 2013, Regents of the University of Texas
+; Written by Matt Kaufmann
+; License: A 3-clause BSD license.  See the LICENSE file distributed with ACL2.
+
 ; Sandip Ray suggested that we might want to be able to evaluate arbitrary
 ; forms, but in this file, test-case should be applied to forms that return a
 ; single non-stobj value.

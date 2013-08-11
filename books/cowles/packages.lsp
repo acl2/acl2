@@ -1,3 +1,6 @@
+; Written by John Cowles
+; Copyright/License: See the LICENSE file in this directory.
+
 (defpkg 
   "ACL2-CRG"
   (set-difference-equal

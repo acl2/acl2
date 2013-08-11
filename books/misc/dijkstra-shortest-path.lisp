@@ -1,13 +1,14 @@
+; Copyright (C) 2013, Regents of the University of Texas
+; Written by: J Strother Moore and Qiang Zhang
+;             Department of Computer Sciences
+;             Univesity of Texas at Austin
+;             October, 2004
+; License: A 3-clause BSD license.  See the LICENSE file distributed with ACL2.
+
 ; (certify-book "script")
 
 ; A Proof of the Correctness of Dijkstra's Shortest Path Algorithm in
 ; ACL2
-
-; J Strother Moore and Qiang Zhang
-; Department of Computer Sciences
-; Univesity of Texas at Austin
-
-; October, 2004
 
 ; See the paper ``Dijkstra's Shortest Path Algorithm Verified with ACL2''
 ; by the authors for a description of this script.

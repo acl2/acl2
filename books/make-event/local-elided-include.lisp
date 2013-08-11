@@ -1,3 +1,7 @@
+; Copyright (C) 2013, Regents of the University of Texas
+; Written by Matt Kaufmann
+; License: A 3-clause BSD license.  See the LICENSE file distributed with ACL2.
+
 ; This book checks that expansions are stored as expected.  The constant below
 ; is what we expect to find for the :expansion-alist field of
 ; local-elided.cert.  The last form in this file shows how we can do useful
