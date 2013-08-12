@@ -230,7 +230,7 @@
 
    :short "User manual for the <a
 href='http://www.cs.utexas.edu/users/moore/acl2/'>ACL2 Theorem Prover</a> and
-the <a href='http://acl2-books.googlecode.com/'>ACL2 Community Books</a>."
+the <a href='http://acl2-books.googlecode.com/'>ACL2 Community Books</a>"
 
    :long "<h3>Introduction</h3>
 
@@ -249,11 +249,11 @@ quickly writing and documenting code, interfacing tools for connecting ACL2 to
 other systems, productivity tools for better proof automation and debugging,
 and specialty libraries for areas like hardware verification.</p>
 
-<p>This documentation is a combined manual that covers ACL2 and the Community
-Books.  It is derived from both the classic @(see doc-string)s found in the
-ACL2 source code and certain books, and also from the @(see xdoc) topics found
-in other books.  Beyond just importing the documentation, we also rearrange the
-topic hierarchy to try to improve its organization.</p>
+<p>This user manual covers both ACL2 and the Community Books.  It is derived by
+combining the classic @(see doc-string)s found in the ACL2 source code and some
+books with the @(see xdoc) topics found in other books.  Besides just importing
+the documentation, we also rearrange the topic hierarchy to try to improve its
+organization.</p>
 
 <p>This manual is very much a work in progress.  If you would like to
 contribute to its development, please join the <a

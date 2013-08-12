@@ -642,8 +642,14 @@ function dat_long_topic(key)
     var fromp = (from == "Unknown")
                    ? ""
                    : "<p class='from'>" + xdata[key][XD_FROM] + "</p>";
-    div.append("<h1>" + info[XI_NAME] + "</h1>" + fromp);
-    var shortp = jQuery("<p></p>");
+    var shortp;
+    if (key != TOP_KEY) {
+	div.append("<h1>" + info[XI_NAME] + "</h1>" + fromp);
+	shortp = jQuery("<p></p>");
+    } else {
+	div.append("<h1><img src='xdoc-logo.png'/></h1>");
+	shortp = jQuery("<p align='center'></p>");
+    }
     shortp.append(render_html(info[XI_SHORT]));
     div.append(shortp);
     div.append(render_html(xdata[key][XD_LONG]));
