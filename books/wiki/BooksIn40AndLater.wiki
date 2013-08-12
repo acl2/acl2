@@ -1,4 +1,4 @@
-#summary Book information for Versions 4.0 and later of ACL2
+#summary Version numbers for the Books Repository, corresponding with each release of ACL2
 
 = Introduction =
 
