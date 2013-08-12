@@ -58,8 +58,7 @@
       (pprogn (pprint-object-or-string (car list) channel state)
               (newline channel state)
               (newline channel state)
-              (write-objects (cdr list) channel state)
-              state)
+              (write-objects (cdr list) channel state))
     state))
 
 (defun write-list-body-fn (bangp)
