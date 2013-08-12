@@ -37,3 +37,258 @@ Version 6.0 of ACL2 corresponds to r1408.
 Version 6.1 of ACL2 corresponds to r1542.
 
 Version 6.2 of ACL2 corresponds to r1835.
+
+
+= 3.6.1 =
+
+The following alphabetical list of books and directories describes
+additions to ACL2 Version 3.6.1 (made after the release of ACL2 Version
+3.6).  For changes to existing books rather than additions, see the
+log entries (follow the [[Source]] link) starting with revision
+329 up through revision 350.
+
+= List of Books =
+
+books/clause-processors/nvalues-thms.lisp:
+   Clause-processor that can help prove theorems saying that
+   a function returns a certain number of values
+
+books/tools/defevaluator-fast.lisp:
+   Provides a macro much like defevaluator, but much faster
+   when the number of functions to be recognized is large
+
+= 3.6 = 
+
+The following alphabetical list of books and directories describes
+additions to ACL2 Version 3.6 (made after the release of ACL2 Version
+3.5).  For changes to existing books rather than additions, see the
+log entries (follow the [[Source]] link) starting with revision r286 up
+through revision r329.
+
+= List of Books =
+
+critpath.pl:
+   Part of an experimental build system that is not yet intended, for
+   example, to be capable of running the whole regression
+
+defsort/remove-dups.lisp:
+   Minor addition of a duplicate-removing function to defsort
+
+fix-cert/:
+   After moving books from one place to another in a filesystem, use
+   this library to update the .cert files accordingly without costly
+   recertification.
+
+hacking/dynamic-make-event.lisp:
+   Low-level support for system hacking; see comment near top of file.
+   New, related files: hacking/dynamic-make-event-test.acl2,
+   hacking/dynamic-make-event-test.lisp, and
+   hacking/dynamic-make-event.acl2.
+
+misc/seqw.lisp:
+   New SEQW macro is like seq (see misc/seq.lisp), but collects
+   warnings.  See also new, related file misc/seqw-examples.lsp.
+
+serialize/:
+   Optimized routines for Serializing ACL2 objects (for any host Lisp
+   other than GCL).  Quoting the :doc: "We implement some routines for
+   writing arbitrary ACL2 objects to files, and for loading those
+   files later."
+
+tools/with-quoted-forms.lisp:
+   Useful for computing large :USE hints; see comment at top of file.
+
+unicode/two-nats-measure.lisp:
+   Lexicographic order measure for pairs of natural numbers
+
+
+= 3.5 =
+
+The following alphabetical list of books and directories describes
+changes since the release of ACL2 Version 3.4, before the release
+of ACL2 Version 3.5.
+
+Other changes to Version 3.5 since Version 3.4: (1) Files that are not to be
+certified and had .lisp suffixes now generally have .lsp suffixes; and
+(2) Many cert.lsp and certify.lsp files have been removed.
+
+= List of Books =
+
+add-ons/hash-stobjs.lisp:
+   Experimental book which allows stobjs to contain hash table members.
+   Requires a trust tag since it redefines ACL2 system functions.
+
+arithmetic-5/:
+   Replacement for (and improvement on) arithmetic-4/.
+
+clause-processors/decomp-hint.lisp:
+
+   Introduces computed hints useful for proving local properties of a
+   cons tree by systematically structurally decomposing it.
+
+clause-processors/equality.lisp:
+   NOT NEW, but no longer requires a ttag to use.
+
+clause-processors/generalize.lisp:
+   Provides a generalization clause processor.
+
+clause-processors/join-thms.lisp:
+   Contains a macro which introduces rules about an evaluator and
+   conjoin and disjoin; useful for verifying clause processors.
+
+clause-processors/generalize.lisp:
+   Defines a verified clause processor which replaces certain terms
+   with fresh variables.  Also contains useful functions for creating
+   fresh variables.
+
+clause-processors/multi-env-trick.lisp:
+   Introduces a trick that can be useful for proving clause processors
+   correct when the variables in the clauses produced have complicated
+   binding relationships with the original clause.
+
+clause-processors/null-fail-hints.lisp:
+   Introduces keyword hints :null, which does nothing, and :fail,
+   which causes the proof to fail.  These are probably not as good as
+   :no-op and :error, which are built into ACL2.
+
+clause-processors/replace-defined-consts.lisp:
+   Introduces a computed hint that replaces defined constants (see
+   tools/defined-const.lisp) with their definitions.
+
+clause-processors/replace-impl.lisp:
+   Introduces a clause processor that replaces a hyp with something
+   implied by that hyp.
+
+clause-processors/use-by-hint.lisp:
+   Introduces a computed hint to apply a particular :by hint as
+   signalled by a logically meaningless hyp placed in the clause, so
+   that a clause processor can produce clauses that are copies of
+   statements of existing theorems.
+
+coi/:
+   The coi books comprise a "shelf" of ACL2 books related to the
+   modeling of "computational objects" such as processors, memories,
+   kernels, microcode, and so on.
+
+defsort/:
+   Defines a stable sort when given a comparison function.
+
+hacking/evalable-ld-printing.lisp:
+   Print LD results in "evalable" way.
+
+hons-archive/:
+   Implements Hons Archives (HARs), which are a way to write ACL2
+   objects to disk so they can be loaded in other ACL2 sessions.
+
+make-event/ REMOVALS:
+   embedded-defaxioms/, embedded-defaxioms.{acl2,lisp}
+
+make-event/defmac.lisp:
+   Alternative to defmacro that can be more efficient for macro expansion.
+
+make-event/make-redundant.lisp:
+   Defines a simple make-event which submits a redundant copy of a
+   defthm/defun/defmacro event.  The practical use of this is for
+   cases where in a book or encapsulate context, an encapsulate
+   exports some events that should be book-local and some that should
+   not.
+
+make-event/require-book.lisp:
+   Provides a way of specifying that a book should be included when
+   using a book but is not needed for certification.
+
+misc/evalable-printing.lisp:
+   Implements a "beginner-friendly" way of printing objects such that
+   evaluating the printed result gives that same result.  See also
+   ../hacking/evalable-ld-printing.lisp, which prints LD results in
+   "evalable" way, as provided by "evalable-printing" book.
+
+misc/fast-coerce.lisp:
+   A replacement for coerce, which speeds up (coerce x 'list).
+
+misc/invariants.lisp:
+   Tries to prove lemmas stating that if a certain property is true of
+   the arguments to a function, that property will be true of the
+   arguments to all its recursive calls.
+
+misc/misc2/ruler-extender-tests.lisp
+   Tests of the new ruler-extenders feature.
+
+misc/simplify-thm.lisp:
+   A simple event generator which breaks a term thought to be a theorem
+   into some number of theorems of a form where none of the hyps nor
+   the conclusion contain IFs.  Someone may wish to extend this with
+   rule-classes and other more flexible options.
+
+misc/trace1.lisp:
+   Alternate implementation of tracing.
+
+misc/trace-star.lisp:
+   A beginner-friendly variant of trace$.  Features "evalable"
+   printing, provided by "evalable-printing" book, and other
+   modifications.
+
+regex/:
+   An ACL2 regular expression library aiming for feature parity with
+   grep.
+
+rtl/rel8/:
+   Replacement for (and probably improvement on) rtl/rel7/.
+
+security/:
+   Provides a place to store work related to security protocol 
+   verification.
+
+security/jfkr:
+   A model for key-establishment security protocol JFKr.  Also contains
+   a cryptography library that models "perfect cryptography" and a
+   Diffie-Helman implementation.
+
+tools/defined-const:
+   Utility which, when using the HONS system, can define a constant to
+   be the result of some expensive computation and prove a theorem that
+   the constant equals the original term, while only running the
+   computation once.  Requires running the computation twice if not
+   using the HONS system.  Also see
+   clause-processors/replace-defined-consts.lisp.
+
+tools/flag.lisp:
+   Make-event that defines a "flag function" that provides an
+   induction scheme appropriate for use with a mutually-recursive
+   clique, and also defines a macro useful for proving theorems about
+   functions in the clique.
+
+tools/mv-nth.lisp:
+   Provides a :meta rule to open MV-NTH occurrences, and disables
+   MV-NTH so that you see (MV-NTH 0 ...) rather than (CAR ...).
+
+tools/rulesets.lisp:
+   Provides tools for defining and modifying rulesets, which are
+   similar in spirit to defined theories but can be modified once
+   defined.
+
+tools/safe-case.lisp:
+   A drop-in replacement for case, and is logically identical to case.
+   The only difference is during execution.  When case is used and
+   none of the cases match, the answer is nil.  But when safe-case is
+   used and none of the cases match, the result is an error.
+
+tools/saved-errors.lisp
+   Provides a mechanism for running a series of generated events and
+   printing a useful error message when one of them fails.
+
+tools/stobj-help.lisp:
+   Provides a make-event which proves some useful rules about a stobj,
+   such as type theorems, access/update rewrite rules, etc.
+
+tools/with-arith5-help:
+   Utility which locally loads the arithmetic-5 books, but disables the
+   rules it introduces. Provides macros which can enable these rules
+   when they are needed.
+
+unicode/:
+   Added books prefixp.lisp, read-file-objects.lisp, and rev.lisp, and
+   removed books utf8-decode-string.lisp and utf8.lisp.
+
+workshops/2009/:
+   Supporting books for the 2009 ACL2 Workshop.
