@@ -44,11 +44,10 @@
 ;   books/ directory (and hence the regression-hons `make' target in the
 ;   acl2-sources directory).
 
-(include-book "../xdoc/save-fancy")
-(include-book "../xdoc/defxdoc-raw")
-(include-book "../xdoc/mkdir-raw")
-(include-book "../xdoc/topics")
-(include-book "../xdoc/extra-packages")
+(include-book "xdoc/save-fancy" :dir :system)
+(include-book "xdoc/defxdoc-raw" :dir :system)
+(include-book "xdoc/mkdir-raw" :dir :system)
+(include-book "xdoc/topics" :dir :system)
 
 (include-book "4v-sexpr/top")
 
@@ -135,10 +134,6 @@
 (include-book "std/lists/resize-list" :dir :system)
 (include-book "std/lists/nth" :dir :system)
 
-(include-book "tutorial/intro")
-(include-book "tutorial/alu16-book")
-(include-book "tutorial/counter")
-
 (include-book "ubdds/lite")
 (include-book "ubdds/param")
 
@@ -171,6 +166,15 @@
 (include-book "vl/mlib/lvalues-mentioning")
 (include-book "vl/mlib/rvalues")
 (include-book "vl/mlib/ram-tools")
+
+
+(include-book "hacking/all" :dir :system)
+(include-book "hints/consider-hint" :dir :system)
+(include-book "tools/do-not" :dir :system)
+
+(include-book "tutorial/intro")
+(include-book "tutorial/alu16-book")
+(include-book "tutorial/counter")
 
 
 #||
@@ -264,7 +268,88 @@ arithmetic, modular arithmetic, etc.")
   :parents (top)
   :short "Libraries related to representing and processing Boolean functions,
 geared toward large-scale automatic reasoning, e.g., via SAT solving and AIG or
-BDD packages.")
+BDD packages."
+
+  :long "<h3>Introduction</h3>
+
+<p><a href='http://en.wikipedia.org/wiki/Boolean_function'>Boolean
+functions</a> are widely useful throughout mathematical logic, computer
+science, and computer engineering.  In formal verification, they are especially
+interesting because many high-capacity, fully automatic techniques are known
+for analyzing, comparing, and simplifying them; for instance, see <a
+href='http://en.wikipedia.org/wiki/Binary_decision_diagram'>binary decision
+diagrams</a> (bdds), <a
+href='http://en.wikipedia.org/wiki/Boolean_satisfiability_problem'>SAT
+solvers</a>, <a
+href='http://en.wikipedia.org/wiki/And-inverter_graph'>and-inverter
+graphs</a> (aigs), <a href='http://en.wikipedia.org/wiki/Model_checking'>model
+checking</a>, <a
+href='http://en.wikipedia.org/wiki/Formal_equivalence_checking'>equivalence
+checking</a>, and so forth.</p>
+
+<h3>Libraries for Boolean Functions</h3>
+
+<p>We have developed some libraries for working with Boolean functions, for
+instance:</p>
+
+<ul>
+
+<li>@(see satlink) provides a representation of <a
+href='http://en.wikipedia.org/wiki/Conjunctive_normal_form'>conjunctive normal
+form</a> formulas and a way to call SAT solvers from ACL2 and trust their
+results.</li>
+
+<li>Libraries like @(see aig) and @(see ubdd) provide @(see hons)-based AIG and
+BDD packages.</li>
+
+<li>@(see aignet) provides a more efficient, @(see stobj)-based AIG
+representation similar to that used by <a
+href='http://www.eecs.berkeley.edu/~alanmi/abc/'>ABC</a>.</li>
+
+</ul>
+
+<p>These libraries are important groundwork for the @(see gl) framework for
+bit-blasting ACL2 theorems, and may be of interest to anyone who is trying to
+develop new, automatic tools or proof techniques.</p>
+
+<h3>Libraries for Four-Valued Logic</h3>
+
+<p>Being able to process large-scale Boolean functions is especially important
+in @(see hardware-verification).  But actually, here, to model certain circuits
+and to implement certain algorithms, it can be useful to go beyond Boolean
+functions and consider a richer logic.</p>
+
+<p>You might call Boolean functions or Boolean logic a two-valued logic, since
+there are just two values (true and false) that any variable can take.  It is
+often useful to add a third value, usually called X, to represent an
+\"unknown\" value.  In some systems, a fourth value, Z, is added to represent
+an undriven wire.  For more on this, see @(see why-4v-logic).</p>
+
+<p>We have developed two libraries to support working in four-valued logic.  Of
+these, the @(see 4v) library is somewhat higher level and is generally simpler
+and more convenient to work with.  It serves as the basis of the @(see esim)
+hardware simulator.  Meanwhile, the @(see faig) library is a bit lower-level
+and does not enjoy the very nice @(see 4v-monotonicy) property of @(see
+4v-sexprs).  On the other hand, @(see faig)s are closer to @(see aig)s, and can
+be useful for loading expressions into @(see aignet) or @(see satlink).</p>
+
+<h3>Related Papers</h3>
+
+<p>Besides the documentation here, you may find the following papers
+useful:</p>
+
+<p>Jared Davis and Sol Swords.  <a
+href='http://dx.doi.org/10.4204/EPTCS.114.8'>Verified AIG Algorithms in
+ACL2.</a>  In ACL2 Workshop 2013. May, 2013. EPTCS 114.  Pages 95-110.</p>
+
+<p>Sol Swords and Jared Davis.  <a
+href='http://dx.doi.org/10.4204/EPTCS.70.7'>Bit-Blasting ACL2 Theorems</a>.
+In ACL2 Workshop 2011.  November, 2011.  EPTCS 70.  Pages 84-102.</p>
+
+<p>Sol Swords and Warren A Hunt, Jr.  <a
+href='http://dx.doi.org/10.1007/978-3-642-14052-5_30'>A Mechanically Verified
+AIG to BDD Conversion Algorithm</a>.  In ITP 2010,LNCS 6172, Springer.  Pages
+435-449.</p>")
 
 (defsection macro-libraries
   :parents (top macros)
@@ -304,11 +389,8 @@ functions.")
 ; have XDOC topics for their parents.  So, get them all loaded and converted
 ; into proper XDOC topics, then move them around where we want them.
 
-(local (include-book "xdoc/topics" :dir :system))
-(local (include-book "xdoc/extra-packages" :dir :system))
 
 (local (xdoc::import-acl2doc))
-(local (xdoc::maybe-import-bookdoc))
 
 #!XDOC
 (defun change-parents-fn (name new-parents all-topics)
@@ -590,6 +672,8 @@ functions.")
                (get-xdoc-table world)))))))
 
 (local (xdoc::fix-the-hierarchy))
+
+
 
 (make-event
 ; xdoc::save is an event, so we might have just called it directly.  But for

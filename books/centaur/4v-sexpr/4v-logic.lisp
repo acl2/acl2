@@ -142,7 +142,16 @@ non-@(see 4vp) objects are coerced to X.</p>"
   :parents (4v)
   :short "Primitive operations in our four-valued logic."
 
-  :long "<p>Note that all of these operations are <see topic='@(url
+  :long "<p>This is a collection of operations on @(see 4vp)s that are
+generally meant to model the behavior of particular, primitive kinds of
+circuits.  For instance, in the @(see esim) hardware simulator, the @(see
+esim-primitives) are generally based on these operations.</p>
+
+<p>The operations here apply to four-valued constants and produce new
+four-valued constants as results.  If you are looking for operations that
+construct new @(see 4v-sexprs), see instead the @(see 4vs-constructors).</p>
+
+<p>Note that all of these operations are <see topic='@(url
 4v-monotonicity)'>monotonic</see>.</p>")
 
 

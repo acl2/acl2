@@ -426,7 +426,6 @@ OK_CERTS := $(filter-out $(SLOW_BOOKS), $(OK_CERTS))
 # script will remove things like .cert and .fasl files.
 
 CLEAN_FILES_EXPLICIT := \
-   xdoc/bookdoc.dat \
    Makefile-comp \
    Makefile-comp-pre \
    Makefile-deps \
@@ -468,21 +467,6 @@ moreclean: clean
 ##############################
 
 # Next, we deal with books that need special handling.
-
-# xdoc is tricky because we have to generate bookdoc.dat.
-
-centaur/doc.cert: xdoc/bookdoc.dat
-
-xdoc/bookdoc.dat: \
-  xdoc/acl2-customization.lsp \
-  xdoc/bookdoc.lsp \
-  xdoc/package.lsp \
-  $(wildcard xdoc/*.lisp) \
-  xdoc/extra-packages.cert
-	@echo "Making xdoc/bookdoc.dat"
-	@cd xdoc; \
-          $(STARTJOB) -c "$(ACL2) < bookdoc.lsp &> bookdoc.out"
-	@ls -l xdoc/bookdoc.dat
 
 # We assume that ACL2_HAS_REALS indicates a regression being done in
 # nonstd/.

@@ -33,8 +33,9 @@
 
 (defxdoc satlink
   :parents (acl2::boolean-reasoning)
-  :short "A library for calling SAT solvers from within ACL2 and trusting what
-they say. (CCL Only)"
+  :short "A simple representation for Boolean formulas in <see topic='@(url
+cnf)'>conjunctive normal form</see>, and a mechanism for calling SAT solvers
+from within ACL2 and trusting what they say. (CCL Only)"
 
   :long "<p>SAT solvers are programs that can solve the <a
 href='https://en.wikipedia.org/wiki/Boolean_satisfiability_problem'>Boolean

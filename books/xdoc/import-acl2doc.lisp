@@ -20,6 +20,8 @@
 
 (in-package "ACL2") ;; So the acl2 topic comes from the acl2 package.
 (include-book "write-acl2-xdoc")
+(include-book "system/origin" :dir :system)
+(set-state-ok t)
 (program)
 
 (defdoc broken-link
@@ -85,6 +87,12 @@ PL: ~pl[test-broken-link]~/~/")
       (cons (change-self-parent-to-acl2 (car topics))
             (change-self-parents-to-acl2 (cdr topics)))))
 
+  (defun add-from-acl2 (topics)
+    (if (atom topics)
+        nil
+      (cons (acons :from "ACL2 Sources" (car topics))
+            (add-from-acl2 (cdr topics)))))
+
   (defun all-topic-names (topics)
     (if (atom topics)
         nil
@@ -107,16 +115,14 @@ PL: ~pl[test-broken-link]~/~/")
      (declare (ignore er val))
      (let* ((topics (acl2::f-get-global 'acl2::xdoc-alist state))
             (topics (change-self-parents-to-acl2 topics))
-            (names  (all-topic-names topics)))
-       (value `(progn
-                 (defconst *acl2-ground-zero-names* ',names)
-                 (defconst *acl2-ground-zero-topics* ',topics)))))))
+            (topics (add-from-acl2 topics)))
+       (value `(defconst *acl2-ground-zero-topics* ',topics))))))
 
 (include-book "base")
 (include-book "tools/bstar" :dir :system)
 
-#!XDOC
 ;; Actually install the ground-zero topics
+#!XDOC
 (table xdoc 'doc
 
 ; Something subtle about this is, what do we do if there is both an ACL2 :doc
@@ -144,62 +150,119 @@ documentation)\">ACL2 documentation</see> that is written in the classic @(see
 doc-string) format.  (We take some liberties with the hierarchy to integrate
 certain topics into more appropriate places.)</p>")
 
-; BOZO add some documentation for built-in functions that aren't documented.
-; Eventually these sorts of things should be moved into ACL2 itself.
+(include-book "system/origin" :dir :system)
 
+#!XDOC
+(defun extend-topic-with-origin (topic state)
+  ;; Returns (MV TOPIC STATE)
+  (b* ((name (cdr (assoc :name topic)))
+       (from (cdr (assoc :from topic)))
+
+       ((when from)
+        (er hard? 'extend-topic-with-origin
+            "Topic ~x0 already has :from." name)
+        (mv topic state))
+
+       ((unless (symbolp name))
+        (er hard? 'extend-topic-with-origin
+            "Topic with non-symbolic name ~x0" name)
+        (mv topic state))
+
+       ((mv er val state)
+        (acl2::origin-fn name 'extend-topic-with-origin state))
+       ((when er)
+        ;; This can occur at least in cases such as DEFDOC, which do not
+        ;; introduce logical names.  I'm not sure if there's a way to identify
+        ;; where a DEFDOC originates from.  Well, some origins are better than
+        ;; none, so we'll just not worry about it.
+        ;;(cw "~x0: unknown: ~@1~%" name er)
+        (mv (acons :from "Unknown" topic)
+            state))
+
+       ((when (and (consp val)
+                   (eq (car val) :built-in)))
+        ;;(cw "~x0: built-in~%" name)
+        (mv (acons :from "ACL2 Sources" topic)
+            state))
+
+       ((when (natp val))
+        ;;(cw "~x0: current session.~%" name)
+        (mv (acons :from "Current Interactive Session" topic)
+            state))
+
+       ((when (and (consp val)
+                   (string-listp val)))
+        (b* ((bookname (car (last val)))
+             (bookname (normalize-bookname bookname state)))
+          ;; (cw "~x0: ~x1~%" name bookname)
+          (mv (acons :from bookname topic)
+              state))))
+
+    (er hard? 'extend-topic-with-origin
+        "origin-fn returned unexpected value ~x0." val)
+    (mv topic state)))
+
+#!XDOC
+(defun extend-topics-with-origins (topics state)
+  (b* (((when (atom topics))
+        (mv nil state))
+       ((mv first state)
+        (extend-topic-with-origin (car topics) state))
+       ((mv rest state)
+        (extend-topics-with-origins (cdr topics) state)))
+    (mv (cons first rest) state)))
 
 #!XDOC
 (defmacro import-acl2doc ()
   ;; This is for refreshing the documentation to reflect topics documented in
-  ;; libraries.  We throw away any ACL2-system topics that we've already had
-  ;; added to the xdoc table.
+  ;; libraries.  We throw away any defdoc topics for names that already have
+  ;; documentation.  This saves us the work of repeatedly importing
+  ;; documentation topics, and usually allows XDOC topics to override ACL2
+  ;; defdoc topics.
   `(make-event
-    (mv-let (er val state)
-      (time$ (acl2::write-xdoc-alist :skip-topics *acl2-ground-zero-names*)
-             :msg "~|; Importing acl2 :doc topics: ~st sec, ~sa bytes~%"
-             :mintime 1)
-      (declare (ignore er val))
-      (let* ((topics (acl2::f-get-global 'acl2::xdoc-alist state))
-             ;(topics (time$ (remove-topics-by-name topics *acl2-ground-zero-names*)))
-             )
-        (value `(table xdoc 'doc
-                       (append ',topics (get-xdoc-table world))))))))
+    (b* ((all-topics (get-xdoc-table (w state)))
+         (names      (xdoc::all-topic-names all-topics))
+         (skip-fal   (make-fast-alist (pairlis$ names nil)))
+         ((mv ?er ?val state)
+          (time$ (acl2::write-xdoc-alist :skip-topics-fal skip-fal)
+                 :msg "~|; Importing acl2 :doc topics: ~st sec, ~sa bytes~%"
+                 :mintime 1))
+         (new-topics (acl2::f-get-global 'acl2::xdoc-alist state))
+         ((mv new-topics state)
+          (extend-topics-with-origins new-topics state)))
+      (value `(table xdoc 'doc
+                     (append ',new-topics (get-xdoc-table world)))))))
 
 
-; see bookdoc.lsp
+#||
+;; Test code:
 
-#!XDOC
-(defmacro maybe-import-bookdoc ()
-  `(make-event
-    (b* (((when (cdr (assoc 'bookdoc-loaded (table-alist 'xdoc (w state)))))
-          ;; (cw "~|; Already loaded bookdoc.dat.~%")
-          (value `(value-triple :invisible)))
-         (path (acl2::extend-pathname *xdoc-dir* "bookdoc.dat" state))
-         ((mv channel state) (open-input-channel path :object state))
-         ((when (not channel))
-          (cw "~|XDOC Note: unable to load bookdoc.dat.  For more complete ~
-            documentation, you may wish to run 'make bookdoc.dat' in ~
-            acl2/books/xdoc.~%~%")
-          (value `(value-triple :invisible)))
-         ((mv state new-topics)
-          (time$
-           ;; bookdoc.lsp always writes the topics relative to the ACL2
-           ;; package, so we need to be sure to read them in that way.
-           (b* (((mv & & state) (acl2::set-current-package "ACL2" state))
-                ((mv & book-topics state)
-                 (read-object channel state))
-                (state (close-input-channel channel state))
-                (curr-topics (get-xdoc-table (w state)))
-                (book-names (all-topic-names book-topics))
-                (curr-names (all-topic-names curr-topics))
-                (dont-want  (intersection-equal book-names curr-names))
-                (book-keep  (remove-topics-by-name book-topics dont-want))
-                (new-topics (append book-keep curr-topics)))
-             (mv state new-topics))
-           :msg "~|; Loading bookdoc.dat: ~st sec, ~sa bytes.~%"
-           :mintime 1/2)))
-      (value `(progn
-                (table xdoc 'doc ',new-topics)
-                (table xdoc 'bookdoc-loaded t))))))
+(len (xdoc::get-xdoc-table (w state)))  ;; 1546
+(make-event
+ `(defconst *prev-names*
+    ',(xdoc::all-topic-names (xdoc::get-xdoc-table (w state)))))
+(include-book
+ "ihs/logops-lemmas" :dir :system)
+(len (xdoc::get-xdoc-table (w state)))  ;; 1546
+(time$ (xdoc::import-acl2doc))  ;; .2 seconds, converting all that ihs doc
+(len (xdoc::get-xdoc-table (w state)))  ;; 1841
+(set-difference-equal
+ (xdoc::all-topic-names (xdoc::get-xdoc-table (w state)))
+ *prev-names*)
+(time$ (xdoc::import-acl2doc))  ;; almost no time
+(len (xdoc::get-xdoc-table (w state))) ;; 1841
 
 
+(defun all-topic-froms (topics)
+  (if (atom topics)
+      nil
+    (cons (cdr (assoc :from (car topics)))
+          (all-topic-froms (cdr topics)))))
+
+(let ((topics (xdoc::get-xdoc-table (w state))))
+  (pairlis$ (all-topic-names topics)
+            (all-topic-froms topics)))
+
+
+
+||#

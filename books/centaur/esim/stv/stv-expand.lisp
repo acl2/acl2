@@ -424,7 +424,7 @@ paths."
    (mod "The @(see esim) module that this path should be relative to."))
 
   :returns (lsb-paths "LSB-first list of non-canonical paths for @('x'), in the
-                       sense of @(see acl2::mod-internal-paths).</p>")
+                       sense of @(see acl2::mod-internal-paths).")
 
   (b* (((mv instnames wirename msb lsb) (stv-hid-parse x))
 

@@ -48,6 +48,12 @@
   (defun f (x) x)
   (origin 'f)     --> (value 3)
 
+  ;; bad names
+  (mv-let (er val state)               ;; ((:er (\"Not a logical name: ~x0\"
+          (origin 'not-defined-thing)  ;;        (#\0 . NOT-DEFINED-THING))
+   (mv (list :er er :val val)          ;;   :val nil)
+       state))                         ;;  <state>)
+
 })")
 
 
@@ -80,6 +86,8 @@
            (zp (getprop logical-name 'absolute-event-number nil 'current-acl2-world wrld)))
       ;; Things that are built into ACL2 without a defining event
       (value (list :built-in nil)))
+     ((not (decode-logical-name logical-name wrld))
+      (mv (msg "Not logical name: ~x0." logical-name) nil state))
      (t
       (er-let*
        ((ev-wrld  (er-decode-logical-name logical-name wrld ctx state))

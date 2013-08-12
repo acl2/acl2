@@ -24,10 +24,6 @@
 (in-package "ACL2")
 (include-book "aig-base")
 
-; faig-base.lisp
-;  - Semantics of FAIGs (faig-eval)
-;  - 
-
 (defxdoc faig
   :parents (boolean-reasoning)
   :short "A @(see hons)-based representation of four-valued functions as
@@ -44,15 +40,10 @@ useful in hardware verification.</p>
 four possible values of an FAIG are:</p>
 
 <ul>
-
 <li>@('(nil . nil)'), which we call Z,</li>
-
 <li>@('(t . nil)'), which we call True,</li>
-
 <li>@('(nil . t)'), which we call False, and</li>
-
 <li>@('(t . t)'), which we call X.</li>
-
 </ul>
 
 <p>We generally think of the onset as being a Boolean functions that should
@@ -63,9 +54,17 @@ represents a bad case where the wire is simultaneously driven to both True and
 False.</p>
 
 <p>Hons convention.  We ordinarly construct all AIGs with @(see hons), but we
-don't bother to hons the FAIG conses that put these AIGs together.</p>
+don't bother to hons the FAIG conses that put these AIGs together.</p>")
 
-<p>BOZO discuss vu-faigs too.</p>")
+
+(defsection faig-constants
+  :parents (faig)
+  :short "The four @(see FAIG) values, representing true, false, X, and Z."
+
+  (defmacro faig-x () ''(t   . t))
+  (defmacro faig-z () ''(nil . nil))
+  (defmacro faig-t () ''(t   . nil))
+  (defmacro faig-f () ''(nil . t)))
 
 
 ; [Jared] BOZO consider a warning as in aig-eval for when faig-eval,

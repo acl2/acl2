@@ -175,12 +175,14 @@ var XI_CHILDREN = 4; // array of keys for children
 // The XDATA table is simpler:
 //
 //   xdata:         KEY -> {"pnames" : [array of xml encoded nice parent names],
+//                          "from"   : "xml encoded string for topic location",
 //                          "long"   : "xml encoded long topic description"}
 //
 // Except that again we use an array to save a tiny amount of space.
 
 var XD_PNAMES = 0;
-var XD_LONG = 1;
+var XD_FROM = 1;
+var XD_LONG = 2;
 
 function xindex_add_children() { // assumes xindex is populated
     for(var child_key in xindex) {
@@ -636,7 +638,11 @@ function dat_long_topic(key)
     }
 
     var info = xindex[key];
-    div.append("<h1>" + info[XI_NAME] + "</h1>");
+    var from = xdata[key][XD_FROM];
+    var fromp = (from == "Unknown")
+                   ? ""
+                   : "<p class='from'>" + xdata[key][XD_FROM] + "</p>";
+    div.append("<h1>" + info[XI_NAME] + "</h1>" + fromp);
     var shortp = jQuery("<p></p>");
     shortp.append(render_html(info[XI_SHORT]));
     div.append(shortp);

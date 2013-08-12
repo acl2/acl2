@@ -41,8 +41,6 @@
                ,(acl2::extend-pathname *xdoc-dir* "defxdoc-raw" state)))
 (make-event `(defconst *xdoc-dir/mkdir-raw*
                ,(acl2::extend-pathname *xdoc-dir* "mkdir-raw" state)))
-(make-event `(defconst *xdoc-dir/extra-packages*
-               ,(acl2::extend-pathname *xdoc-dir* "extra-packages" state)))
 
 (defmacro colon-xdoc-init ()
   '(with-output :off (summary event)
@@ -52,9 +50,7 @@
            (include-book ,*xdoc-dir/defxdoc-raw* :ttags :all)
            (include-book ,*xdoc-dir/topics*)
            (include-book ,*xdoc-dir/display*)
-           (include-book ,*xdoc-dir/extra-packages*)
            (import-acl2doc)
-           (maybe-import-bookdoc)
            (table xdoc 'colon-xdoc-support-loaded t))
         '(value-triple :invisible)))))
 
@@ -95,9 +91,7 @@
      (remove-untouchable acl2::writes-okp nil)
      ,@(and import
             `((include-book ,*xdoc-dir/topics*)
-              (include-book ,*xdoc-dir/extra-packages*)
-              (import-acl2doc)
-              (maybe-import-bookdoc)))
+              (import-acl2doc)))
      ;; b* should have been included by the above includes
      (make-event
       (b* (((mv all-xdoc-topics state) (all-xdoc-topics state))

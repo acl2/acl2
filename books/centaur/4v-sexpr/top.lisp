@@ -48,8 +48,8 @@
 
 (defxdoc 4v
   :parents (boolean-reasoning)
-  :short "An s-expression based representation of four-valued functions, using
-@(see hons) for structure sharing."
+  :short "An @(see hons)-based, s-expression representation of <see
+topic='@(url 4v-monotonicity)'>monotonic</see>, four-valued functions."
 
   :long "<p>This library defines the logic of the @(see esim) symbolic
 simulator.  By \"four-valued\", we mean that each wire can take one of the four

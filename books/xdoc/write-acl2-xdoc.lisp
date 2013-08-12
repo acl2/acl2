@@ -248,19 +248,19 @@ an xdoc file.  See :DOC markup")
             (xdoc-alist1 (cdr doc-alist) fmt-alist channel state
                          (cons entry acc))))))
 
-(defun filter-doc-alist (skip-topics doc-alist)
+(defun filter-doc-alist (skip-topics-fal doc-alist)
   (if (atom doc-alist)
       nil
     (let* ((doc-tuple (car doc-alist))
            (name (if (stringp (nth 0 doc-tuple))
                      (intern (nth 0 doc-tuple) "ACL2")
                    (nth 0 doc-tuple))))
-      (if (member name skip-topics)
-          (filter-doc-alist skip-topics (cdr doc-alist))
+      (if (hons-get name skip-topics-fal)
+          (filter-doc-alist skip-topics-fal (cdr doc-alist))
         (cons doc-tuple
-              (filter-doc-alist skip-topics (cdr doc-alist)))))))
+              (filter-doc-alist skip-topics-fal (cdr doc-alist)))))))
 
-(defun write-xdoc-alist-fn (write-p return-p skip-topics state)
+(defun write-xdoc-alist-fn (write-p return-p skip-topics-fal state)
   (acl2::state-global-let*
    ((acl2::fmt-hard-right-margin 500 acl2::set-fmt-hard-right-margin)
     (acl2::fmt-soft-right-margin 480 acl2::set-fmt-soft-right-margin))
@@ -270,7 +270,7 @@ an xdoc file.  See :DOC markup")
       (channel state)
       (open-output-channel :string :object state)
       (acl2::er-let*
-       ((result (xdoc-alist1 (filter-doc-alist skip-topics doc-alist)
+       ((result (xdoc-alist1 (filter-doc-alist skip-topics-fal doc-alist)
                              (xdoc-fmt-alist doc-alist nil)
                              channel state nil)))
        (pprogn (close-output-channel channel state)
@@ -282,8 +282,8 @@ an xdoc file.  See :DOC markup")
 
 (defmacro acl2::write-xdoc-alist (&key (write-p 't)
                                        (return-p 'nil)
-                                       (skip-topics 'nil))
-  `(write-xdoc-alist-fn ,write-p ,return-p ,skip-topics state))
+                                       (skip-topics-fal 'nil))
+  `(write-xdoc-alist-fn ,write-p ,return-p ,skip-topics-fal state))
 
 ; Utility for accessing element of xdoc-alist:
 

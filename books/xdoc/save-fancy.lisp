@@ -213,25 +213,30 @@
 
 
 (defun json-encode-data-entry (topic topics-fal state acc)
-  (b* ((name     (cdr (assoc :name topic)))
+  (b* ((__function__ 'json-encode-data-entry)
+       (name     (cdr (assoc :name topic)))
        (base-pkg (cdr (assoc :base-pkg topic)))
        (short    (or (cdr (assoc :short topic)) ""))
        (long     (or (cdr (assoc :long topic)) ""))
        (parents  (cdr (assoc :parents topic)))
+       (from     (or (cdr (assoc :from topic)) "Unknown"))
        ((unless (symbolp name))
-        (mv (er hard? 'preprocess-topic "Name is not a string: ~x0.~%" topic)
+        (mv (er hard? __function__ "Name is not a string: ~x0.~%" topic)
             state))
        ((unless (symbolp base-pkg))
-        (mv (er hard? 'preprocess-topic "Base-pkg is not a symbol: ~x0.~%" topic)
+        (mv (er hard? __function__ "Base-pkg is not a symbol: ~x0.~%" topic)
             state))
        ((unless (symbol-listp parents))
-        (mv (er hard? 'preprocess-topic "Parents are not a symbol-listp: ~x0.~%" topic)
+        (mv (er hard? __function__ "Parents are not a symbol-listp: ~x0.~%" topic)
             state))
        ((unless (stringp short))
-        (mv (er hard? 'preprocess-topic "Short is not a string: ~x0.~%" topic)
+        (mv (er hard? __function__ "Short is not a string: ~x0.~%" topic)
             state))
        ((unless (stringp long))
-        (mv (er hard? 'preprocess-topic "Long is not a string: ~x0.~%" topic)
+        (mv (er hard? __function__ "Long is not a string: ~x0.~%" topic)
+            state))
+       ((unless (stringp from))
+        (mv (er hard? __function__ "From is not a string: ~x0.~%" topic)
             state))
 
        ((mv long-rchars state) (preprocess-main long nil topics-fal base-pkg state nil))
@@ -247,6 +252,10 @@
                (fms "~%~%" nil *standard-co* state nil))
           state))
 
+       (from-xml (str::rchars-to-string
+                  (simple-html-encode-chars
+                   (coerce from 'list) nil)))
+
        (acc (json-encode-filename name acc))
        (acc (str::revappend-chars ":[" acc))
 
@@ -255,6 +264,9 @@
        ; parent names (xml encoded nice parent names)
        ; BOZO move to xdata, probably
        (acc (json-encode-topicnames parents base-pkg acc))
+       (acc (cons #\, acc))
+
+       (acc (json-encode-string from-xml acc))
        (acc (cons #\, acc))
 
        (acc (json-encode-string long-str acc))

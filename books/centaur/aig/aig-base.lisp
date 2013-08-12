@@ -21,8 +21,9 @@
 ; July 2011, Jared added lots of documentation.
 
 (in-package "ACL2")
-(include-book "xdoc/top" :dir :system)
+(include-book "cutil/define" :dir :system)
 (include-book "../misc/hons-alphorder-merge")
+
 
 ; aig-base.lisp
 ;   - Semantics of AIGs (aig-eval)
@@ -36,53 +37,23 @@
   :short "A @(see hons)-based And-Inverter Graph (AIG) representation for
 Boolean functions."
 
-  :long "<p><b>AIGs</b> (And/Inverter Graphs) are a representation of Boolean
-functions, using only <i>and</i> and <i>not</i> operations.</p>
+  :long "<h3>Introduction</h3>
 
-<p><b><see topic='@(url faig)'>FAIGs</see></b> (Four-valued AIGs) are a related
-concept, where two AIGs are pasted together to represent a function in
-four-valued logic.</p>
+<p>And-Inverter Graphs (AIGs) are a way to represent Boolean functions using
+only the operations <i>and</i> and <i>not</i>.</p>
 
-
-<h3>Motivation for AIGs</h3>
-
-<p>There are many ways to represent Boolean functions.  One alternative is
-to use BDDs, e.g., we provide a @(see ubdds) library.  In comparison with
-BDDs, AIGs are:</p>
+<p>This AIG library is sometimes called the <b>Hons-AIG library</b> to
+distinguish it from another AIG library, @(see aignet).  In very brief:</p>
 
 <ul>
-
-<li>cheaper to construct, e.g., if we want to <i>or</i> together the functions
-@('f') and @('g'), it only takes a few conses with AIGs, whereas with BDDs we
-need to walk through @('f') and @('g') to construct a new structure (which
-might be quite large); but</li>
-
-<li>more expensive to compare, e.g., with BDDs we can determine if @('f') and
-@('g') are equal via pointer equality, whereas with AIGs this is a
-satisfiablity problem.</li>
-
+ <li>Hons-AIGs are simpler, easier to work with, and easier to reason about.</li>
+ <li>@(see aignet) is faster.</li>
 </ul>
 
-<p>This tradeoff is often worth it because you can simplify and reduce AIGs
-after they have been constructed, but before comparing them.  For instance, our
-@(see bddify) algorithm converts an AIG into a BDD, and since it can often
-\"prune\" branches of the AIG that turn out to be irrelevant, it can be much
-more efficient than directly constructing BDDs.  A more sophisticated tool is
-@(see abc), which provides various kinds of rewriting and reductions on AIGs.
-These reductions can be used before calling a SAT solver or @('bddify') to make
-the input AIGs much smaller and easier to process.</p>
-
-<p>Another alternative would be to use a richer language such as Lisp-style
-s-expressions, where operations other than <i>and</i> and <i>not</i> could be
-used directly.  On the surface, this approach would appear to be more compact,
-e.g., we can represent @('(or a b)') as a single operation instead of as
-something like @('(not (and (not a) (not b)))').</p>
-
-<p>But another critical part of memory efficiency is structure sharing.  That
-is, suppose that we already need @('(not a)') and @('(not b)') elsewhere in the
-function.  With s-expressions, these terms would have nothing in common with
-@('(or a b)'), but with AIGs we can reuse the existing parts of
-@('(not (and (not a) (not b)))').</p>
+<p>We won't say anything more about AIGNET here.  For a much more detailed
+comparison of the libraries, please see: Jared Davis and Sol Swords.  <a
+href='http://dx.doi.org/10.4204/EPTCS.114.8'>Verified AIG Algorithms in
+ACL2.</a> In ACL2 Workshop 2013. May, 2013. EPTCS 114.  Pages 95-110.</p>
 
 
 <h3>Representation of AIGs</h3>
@@ -112,6 +83,18 @@ aig-eval), which returns the (Boolean) value of an AIG under some particular
 assignment to its variables.  Note that every ACL2 object is a well-formed AIG
 under this definition.</p>
 
+<p>You might wonder why we would restrict ourselves to using only <i>and</i>
+and <i>not</i>?  On the surface, using a richer language like S-expressions
+might seem more compact.  For instance, with S-expressions we could represent
+@('(or a b)') is much smaller looking than its and/not equivalent:
+@('(not (and (not a) (not b)))').
+
+<p>But another critical part of memory efficiency is structure sharing.  That
+is, suppose that we already need @('(not a)') and @('(not b)') elsewhere in the
+function.  With s-expressions, these terms would have nothing in common with
+@('(or a b)'), but with AIGs we can reuse the existing parts of
+@('(not (and (not a) (not b)))').</p>
+
 
 <h3>Library Functions</h3>
 
@@ -125,11 +108,35 @@ aig-compose) allow you to substitute into AIGs.</p>
 <p>It is often important to know which variables occur in an AIG.  One way to
 do this is with @(see aig-vars).</p>
 
-<p>The @(see bddify) algorithm provides a way to construct a BDD from an AIG.
-This is also used as the basis for an efficient @(see GL) symbolic counterpart
-of @(see aig-eval).</p>
+<p>We provide some tools to \"solve\" AIGs.  Historically we have heavily used
+the @(see bddify) algorithm, which constructs a BDD from an AIG.  More
+recently, @(see aig-sat) provides a nice alternative using @(see aignet) and
+@(see satlink) to give the problem to a SAT solver.</p>
 
-<p>BOZO other things that we haven't released yet.</p>")
+
+<h3>AIGs versus BDDs</h3>
+
+<p>Another option for representing Boolean functions would be to use <see
+topic='@(url ubdds)'>BDDs</see>.  In comparison with BDDs, AIGs are:</p>
+
+<ul>
+
+<li>cheaper to construct, e.g., if we want to <i>or</i> together the functions
+@('f') and @('g'), it only takes a few conses with AIGs, whereas with BDDs we
+need to walk through @('f') and @('g') to construct a new structure (which
+might be quite large); but</li>
+
+<li>more expensive to compare, e.g., with BDDs we can determine if @('f') and
+@('g') are equal via pointer equality, whereas with AIGs this is a
+satisfiability problem.</li>
+
+</ul>
+
+<p>This tradeoff is often worth it.  For instance, it can often be more faster
+to construct an AIG and then @(see bddify) it than to just directly build the
+BDD.  Why?  With the whole AIG visible, the bddify algorithm can often
+\"prune\" branches of the AIG that turn out to be irrelevant, and hence avoid
+constructing large parts of the BDD that aren't really needed.</p>")
 
 
 

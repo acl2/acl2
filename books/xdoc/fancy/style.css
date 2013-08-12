@@ -104,6 +104,16 @@ body {
     box-shadow: 0px 0px 0px 3px rgba(0,0,70,0.3);
 }
 
+h1 { margin-bottom: 0; }
+
+.from {
+    font-size: 90%;
+    text-align: center;
+    margin-left: 0;
+    margin-right: 0;
+    margin-top: -.2em;
+    padding: 0;
+}
 
 
 /* ---------------------------- COLORS -------------------------------- */
@@ -148,6 +158,9 @@ xdo
     border-color: #FF6700;
 }
 
+.from {
+    color: #3C9DD0;
+}
 
 
 /* ----------------------- FONTS --------------------------------- */
@@ -162,14 +175,9 @@ dt, .hindex, #flat, #still_loading {
     font-family: "Tahoma", "Geneva", "Verdana", sans-serif;
 }
 
-.code, .srclink, .tt, #letters {
+.code, .srclink, .tt, #letters, .from {
     font-family: "Consolas", "Bitstream Vera Sans Mono", "DejaVu Sans Mono", "Lucida Console", monospace;
 }
-
-
-
-
-
 
 
 

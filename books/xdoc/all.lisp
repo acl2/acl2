@@ -21,10 +21,9 @@
 
 ; all.lisp -- most users should ignore this book and include top.lisp instead.
 ;
-; Unlike top.lisp, this book depends on everything else in xdoc except for
-; bookdoc.dat.  It may be useful as a target in some Makefiles that want to
-; ensure that all of XDOC gets built.  Note that your Makefile will probably
-; also want to generate bookdoc.dat.
+; Unlike top.lisp, this book depends on everything else in xdoc.  It may be
+; useful as a target in some Makefiles that want to ensure that all of XDOC
+; gets built.
 
 (in-package "XDOC")
 
@@ -40,6 +39,7 @@
 (include-book "parse-xml")
 (include-book "preprocess")
 (include-book "save-classic")
+(include-book "save-fancy")
 (include-book "topics")
 (include-book "write-acl2-xdoc")
 
