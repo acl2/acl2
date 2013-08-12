@@ -2,40 +2,27 @@
 
 = Introduction =
 
-Version 4.0 of ACL2 corresponds to r544.
-
-Version 4.1 of ACL2 corresponds to r578.
-
-Version 4.2 of ACL2 corresponds to r666.
-
-Version 4.3 of ACL2 corresponds to r819.
-
-Version 5.0 of ACL2 corresponds to r1206.
-
-Version 6.0 of ACL2 corresponds to r1408.
-
-Version 6.1 of ACL2 corresponds to r1542.
-
 Version 6.2 of ACL2 corresponds to r1835.
 
 = Details =
 
-Version 4.0 of ACL2 corresponds to svn revision r544.
-
-Version 4.1 of ACL2 corresponds to svn revision r578.
-
-Version 4.2 of ACL2 corresponds to svn revision r666.
-
-Version 4.3 of ACL2 corresponds to r819.
-
-Version 5.0 of ACL2 corresponds to r1206.
-
-Version 6.0 of ACL2 corresponds to r1408.
+Version 6.2 of ACL2 corresponds to r1835.
 
 Version 6.1 of ACL2 corresponds to r1542.
 
-Version 6.2 of ACL2 corresponds to r1835.
+Version 6.0 of ACL2 corresponds to r1408.
 
+Version 5.0 of ACL2 corresponds to r1206.
+
+Version 4.3 of ACL2 corresponds to r819.
+
+Version 4.2 of ACL2 corresponds to svn revision r666.
+
+Version 4.1 of ACL2 corresponds to svn revision r578.
+
+Version 4.0 of ACL2 corresponds to svn revision r544.
+
+Some older versions are discussed below.
 
 = 3.6.1 =
 
@@ -98,7 +85,6 @@ tools/with-quoted-forms.lisp:
 
 unicode/two-nats-measure.lisp:
    Lexicographic order measure for pairs of natural numbers
-
 
 = 3.5 =
 
