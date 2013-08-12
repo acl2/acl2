@@ -1,3 +1,0 @@
-#summary [deprecated] Version numbers for the Books Repository, corresponding with each release of ACL2
-
-= Please see wiki topic ReleaseVersionNumbers instead =
