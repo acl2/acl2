@@ -1,4 +1,4 @@
-#summary Rough sketch of how Centaur Certifications
+#summary Rough sketch of how Centaur performs Certifications
 
 = Introduction =
 
