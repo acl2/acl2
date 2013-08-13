@@ -287,6 +287,7 @@ in the certificate file instead of being recomputed.~/")
        (event    (if cmds
                      `(list 'progn ,@cmds)
                    ''(value-triple :empty-defconsts)))
+       (event    `(list 'with-output :off '(event) ,event))
 
        ;; If there are any stobjs, we need to return
        ;;    (mv nil '(progn (defconst ...)) state ... stobjs ...)
@@ -447,3 +448,5 @@ in the certificate file instead of being recomputed.~/")
      :rule-classes nil)
    (defthm f2 (equal *oops2* '|(DEFCONSTS (*OOPS2* ...) ...)|)
      :rule-classes nil)))
+
+
