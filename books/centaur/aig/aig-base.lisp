@@ -87,7 +87,7 @@ under this definition.</p>
 and <i>not</i>?  On the surface, using a richer language like S-expressions
 might seem more compact.  For instance, with S-expressions we could represent
 @('(or a b)') is much smaller looking than its and/not equivalent:
-@('(not (and (not a) (not b)))').
+@('(not (and (not a) (not b)))').</p>
 
 <p>But another critical part of memory efficiency is structure sharing.  That
 is, suppose that we already need @('(not a)') and @('(not b)') elsewhere in the

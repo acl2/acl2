@@ -56,8 +56,8 @@ directories.</li>
 
 </ul>
 
-<p>Our top-level function for loading Verilog files, @(see vl-load), implements
-such a scheme.  It has various <see topic='@(url
+<p>Our top-level function for loading Verilog files, @(see vl-load),
+implements such a scheme.  It has various <see topic='@(url
 vl-loadconfig-p)'>options</see> that allow you to specify the search paths and
 extensions to use when looking for files, etc.  It also features an @(see
 overrides) mechanism that can be used to \"safely\" use alternate definitions
@@ -846,6 +846,13 @@ you might want to attach some other kind of report here.</p>
 (define vl-load ((config vl-loadconfig-p)
                  &key
                  (state 'state))
+  :parents (load)
+  :short "Wrapper for @(see vl-load-main) that also reports errors or (with
+some configuration) can print other information."
+
+  :long "<p>This is very similar to @(see vl-load-main), but calls @(see
+vl-load-summary) afterwards.</p>"
+
   :returns (mv (result vl-loadresult-p :hyp :fguard)
                (state  state-p1        :hyp (force (state-p1 state))))
   (b* (((vl-loadconfig config) config)
