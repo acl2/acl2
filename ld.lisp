@@ -21026,6 +21026,9 @@
 ; do: rebuild TAGS even when TAGS is up-to-date with respect to the
 ; source files.
 
+; Added new state global, acl2-sources-dir, in support of the new ACL2 startup
+; banner in the case of an svn version.
+
   :doc
   ":Doc-Section release-notes
 
@@ -21095,6 +21098,11 @@
   Thanks to Jared Davis for asking to be able to obtain real-time reports in
   event summaries.
 
+  A new utility, ~ilc[sys-call+], is similar to existing utility ~ilc[sys-call]
+  in that it executes a command.  Unlike ~c[sys-call], however, ~c[sys-call+]
+  returns values that include output from the command (in addition to the exit
+  status), rather than simply printing the command.  ~l[sys-call+].
+
   ~st[HEURISTIC IMPROVEMENTS]
 
   The processing of ~c[:use] and ~c[:by] ~il[hints] has been changed in the
@@ -21133,6 +21141,10 @@
 
   Fixed a bug in ~ilc[wof], hence in ~ilc[psof] (which uses ~c[wof]), that was
   causing the printing of a bogus error message.
+
+  A small logical bug has been fixed in the logical definition of
+  ~ilc[sys-call-status].  Formerly it always returned ~c[(mv nil state)]
+  whenever the oracle of the state is non-empty (~pl[state]).
 
   ~st[CHANGES AT THE SYSTEM LEVEL]
 

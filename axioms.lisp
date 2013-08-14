@@ -1298,9 +1298,6 @@
 (defconstant *non-existent-stream*
   'acl2_invisible::|A Non-Existent Stream|)
 
-(defmacro live-state-p (x)
-  (list 'eq x '*the-live-state*))
-
 ; We get ready to handle errors in such a way that they return to the
 ; top level logic loop if we are under it.
 
@@ -1450,29 +1447,7 @@
 ; package can be redefined only if its imports list is identical to that in its
 ; old definition.
 
-; The following alist associates package names with Common Lisp packages, and
-; is used in function find-package-fast, which is used by princ$ in place of
-; find-package in order to save perhaps 15% of the print time.
-(defparameter *package-alist* nil)
-
-(defun-one-output find-package-fast (string)
-  (or (cdr (assoc-equal string *package-alist*))
-      (let ((pkg (find-package string)))
-        (push (cons string pkg) *package-alist*)
-        pkg)))
-
 (defvar **1*-symbol-key* (make-symbol "**1*-SYMBOL-KEY*"))
-
-(defvar *global-symbol-key* (make-symbol "*GLOBAL-SYMBOL-KEY*"))
-
-(defun global-symbol (x)
-  (or (get x *global-symbol-key*)
-      (setf (get x *global-symbol-key*)
-            (intern (symbol-name x)
-                    (find-package-fast
-                     (concatenate 'string
-                                  *global-package-prefix*
-                                  (symbol-package-name x)))))))
 
 (defun *1*-symbol (x)
 ; Keep this in sync with *1*-symbol?.
@@ -23945,6 +23920,7 @@
   :rule-classes (:type-prescription
                  (:forward-chaining :trigger-terms ((assoc-equal name l)))))
 
+#+acl2-loop-only
 (defmacro f-get-global (x st)
 
   ":Doc-Section ACL2::ACL2-built-ins
@@ -23975,29 +23951,6 @@
   structures even though you may undo back past where you computed and saved
   them.~/"
 
-  #-acl2-loop-only
-  (cond ((and (consp x)
-              (eq 'quote (car x))
-              (symbolp (cadr x))
-              (null (cddr x)))
-
-; The cmulisp compiler complains about unreachable code every (perhaps) time
-; that f-get-global is called in which st is *the-live-state*.  The following
-; optimization is included primarily in order to eliminate those warnings;
-; the extra efficiency is pretty minor, though a nice side effect.
-
-         (if (eq st '*the-live-state*)
-             `(let ()
-                (declare (special ,(global-symbol (cadr x))))
-                ,(global-symbol (cadr x)))
-           (let ((s (gensym)))
-             `(let ((,s ,st))
-                (declare (special ,(global-symbol (cadr x))))
-                (cond ((live-state-p ,s)
-                       ,(global-symbol (cadr x)))
-                      (t (get-global ,x ,s)))))))
-        (t `(get-global ,x ,st)))
-  #+acl2-loop-only
   (list 'get-global x st))
 
 #-acl2-loop-only
@@ -28307,6 +28260,7 @@
     set-absstobj-debug-fn
     sys-call-status ; *last-sys-call-status*
     sys-call ; system-call
+    sys-call+ ; system-call+
 
     canonical-pathname ; under dependent clause-processor
 
@@ -28767,7 +28721,7 @@
   `((abbrev-evisc-tuple . :default)
     (accumulated-ttree . nil) ; just what succeeded; tracking the rest is hard
     (acl2-raw-mode-p . nil)
-
+    (acl2-sources-dir . nil) ; set by initialize-state-globals
     (acl2-version .
 
 ; Keep this value in sync with the value assigned to
@@ -29658,17 +29612,17 @@
                         (global-table state-state))
                        state-state))
 
+#+acl2-loop-only
 (defun get-global (x state-state)
 
 ; Wart: We use state-state instead of state because of a bootstrap problem.
 
+; Keep this in sync with the #+acl2-loop-only definition of get-global (which
+; uses qfuncall).
+
   (declare (xargs :guard (and (symbolp x)
                               (state-p1 state-state)
                               (boundp-global1 x state-state))))
-  #-acl2-loop-only
-  (cond ((live-state-p state-state)
-         (return-from get-global
-                      (symbol-value (the symbol (global-symbol x))))))
   (cdr (assoc x (global-table state-state))))
 
 (defun put-global (key value state-state)
@@ -35601,10 +35555,12 @@
           (sys-call-status state))
   ~ev[]
   The first argument of ~c[sys-call] is a command for the host operating
-  system, and the second argument is a list of strings that are the
-  arguments for that command.  In GCL and perhaps other lisps, you can put the
+  system, and the second argument is a list of strings that are the arguments
+  for that command.  In GCL and perhaps some other lisps, you can put the
   arguments with the command; but this is not the case, for example, in Allegro
   CL running on Linux.
+
+  For a related utility, ~pl[sys-call+].
 
   The use of ~ilc[prog2$] above is optional, but illustrates a typical sort
   of use when one wishes to get the return status.  ~l[sys-call-status].~/
@@ -35656,13 +35612,12 @@
   Finally, we make a comment about output redirection, which also applies to
   other related features that one may expect of a shell.  ~c[Sys-call] does not
   directly support output redirection.  If you want to run a program, ~c[P],
-  and redirect its output, we suggest that you create a wrapper script, ~c[W]
+  and redirect its output, one option is to create a wrapper script, ~c[W]
   to call instead.  Thus ~c[W] might be a shell script containing the line:
   ~bv[]
   P $* >& foo.out
   ~ev[]
-  If this sort of solution proves inadequate, please contact the ACL2
-  implementors and perhaps we can come up with a solution."
+  For a different, more direct solution, ~pl[sys-call+]."
 
   (declare (xargs :guard t))
   #+acl2-loop-only
@@ -35672,8 +35627,7 @@
     (progn (setq *last-sys-call-status* rslt)
            nil))
   #+acl2-loop-only
-  nil
-  )
+  nil)
 
 (defun sys-call-status (state)
 
@@ -35699,7 +35653,256 @@
                  (mv *last-sys-call-status* state)))
   (mv-let (erp val state)
           (read-acl2-oracle state)
-          (mv (and erp val) state)))
+          (declare (ignore erp))
+          (mv val state)))
+
+#-acl2-loop-only
+(defun read-file-by-lines (file &optional delete-after-reading)
+  (let ((acc nil)
+        (eof '(nil))
+        missing-newline-p)
+    (with-open-file
+     (s file :direction :input)
+     (loop (multiple-value-bind (line temp)
+               (read-line s nil eof)
+             (cond ((eq line eof)
+                    (return acc))
+                   (t
+                    (setq missing-newline-p temp)
+                    (setq acc
+                          (if acc
+                              (concatenate 'string acc (string #\Newline) line)
+                            line)))))))
+    (when delete-after-reading
+      (delete-file file))
+    (if missing-newline-p
+        acc
+      (concatenate 'string acc (string #\Newline)))))
+
+#-acl2-loop-only
+(defun system-call+ (string arguments)
+
+; Warning: Keep this in sync with system-call.
+
+  (let* (exit-code ; assigned below
+         #+(or gcl clisp)
+         (tmp-file (format nil
+                           "~a/tmp~s"
+                           (or (f-get-global 'tmp-dir *the-live-state*)
+                               "/tmp")
+                           (getpid$)))
+         no-error
+         (output-string
+          (our-ignore-errors
+           (prog1
+               #+gcl ; does wildcard expansion
+             (progn (setq exit-code
+                          (si::system
+                           (let ((result string))
+                             (dolist
+                               (x arguments)
+                               (setq result (concatenate 'string result " " x)))
+                             (concatenate 'string result " > " tmp-file))))
+                    (read-file-by-lines tmp-file t))
+             #+lispworks ; does wildcard expansion (see comment below)
+             (with-output-to-string
+               (s)
+               (setq exit-code
+                     (system::call-system-showing-output
+
+; It was tempting to use (cons string arguments).  This would cause the given
+; command, string, to be applied to the given arguments, without involving the
+; shell.  But then a command such as "ls" would not work; one would have to
+; provide a string such as "/bin/ls".  So instead of using a list here, we use
+; a string, which according to the LispWorks manual will invoke the shell,
+; which will find commands (presumably including built-ins and also using the
+; user's path).
+
+                      (let ((result string))
+                        (dolist
+                          (x arguments)
+                          (setq result (concatenate 'string result " " x)))
+                        result)
+                      :output-stream s
+                      :prefix ""
+                      :show-cmd nil
+                      :kill-process-on-abort t))
+               #+windows ; process is returned above, not exit code
+               (setq exit-code nil))
+             #+allegro ; does wildcard expansion
+             (multiple-value-bind
+                 (stdout-lines stderr-lines exit-status)
+                 (excl.osi::command-output
+                  (let ((result string))
+                    (dolist
+                      (x arguments)
+                      (setq result (concatenate 'string result " " x)))
+                    result))
+               (declare (ignore stderr-lines))
+               (setq exit-code exit-status)
+               (let ((acc nil))
+                 (loop for line in stdout-lines
+                       do
+                       (setq acc
+                             (if acc
+                                 (concatenate 'string
+                                              acc
+                                              (string #\Newline)
+                                              line)
+                               line)))
+                 acc))
+             #+cmu
+             (with-output-to-string
+               (s)
+               (setq exit-code
+                     (let (temp)
+                       (if (ignore-errors
+                             (progn
+                               (setq temp
+                                     (ext:process-exit-code
+                                      (common-lisp-user::run-program
+                                       string arguments
+                                       :output s)))
+                               1))
+                           temp
+                         1))))
+             #+sbcl
+             (with-output-to-string
+               (s)
+               (setq exit-code
+                     (let (temp)
+                       (if (ignore-errors
+                             (progn
+                               (setq temp
+                                     (sb-ext:process-exit-code
+                                      (sb-ext:run-program string arguments
+                                                          :output s
+                                                          :search t)))
+                               1))
+                           temp
+                         1))))
+             #+clisp
+             (progn (setq exit-code
+                          (or (ext:run-program string
+                                               :arguments arguments
+                                               :output tmp-file)
+                              0))
+                    (read-file-by-lines tmp-file t))
+             #+ccl
+             (with-output-to-string
+               (s)
+               (setq exit-code
+                     (let* ((proc
+                             (ccl::run-program string arguments
+                                               :output s
+                                               :wait t))
+                            (status (multiple-value-list
+                                     (ccl::external-process-status proc))))
+                       (if (not (and (consp status)
+                                     (eq (car status) :EXITED)
+                                     (consp (cdr status))
+                                     (integerp (cadr status))))
+                           1 ; just some non-zero exit code here
+                         (cadr status)))))
+             #-(or gcl lispworks allegro cmu sbcl clisp ccl)
+             (declare (ignore string arguments))
+             #-(or gcl lispworks allegro cmu sbcl clisp ccl)
+             (error "SYSTEM-CALL is not yet defined in this Lisp.")
+             (setq no-error t)))))
+    (values (cond ((integerp exit-code)
+                   exit-code)
+                  ((null exit-code)
+                   (if no-error 0 1))
+                  (t (format t
+                             "WARNING: System-call produced non-integer, ~
+                              non-nil exit code:~%~a~%"
+                             exit-code)
+                     0))
+            (if (stringp output-string)
+                output-string
+              ""))))
+
+(defun sys-call+ (command-string args state)
+
+  ":Doc-Section ACL2::ACL2-built-ins
+
+  make a system call to the host OS, returning status and output~/
+  ~bv[]
+  Example Form:
+  ; The following returns (mv nil s state), where s is the standard output
+  ; from the command: ls -l ./
+  (sys-call+ \"ls\" '(\"-l\" \"./\") state)
+
+  General Form:
+  (sys-call+ cmd args state)
+  ~ev[]
+  where ~c[cmd] is a command to the host operating system and ~c[args] is a
+  list of strings.  Also ~pl[sys-call]; but there are two differences between
+  ~ilc[sys-call] and ~c[sys-call+].  First, the latter takes an extra argument,
+  ~c[state].  Second, while ~c[sys-call] returns ~c[nil], ~c[sys-call+] returns
+  three values: a so-called error triple (~pl[error-triples]),
+  ~c[(mv erp val state)].  While execution returns values as described just
+  below, further below we explain the logical return values.  In the following,
+  please keep in mind that the exact behavior depends on the platform; the
+  description is only a guide.  For example, on some platforms ~c[erp] might
+  always be ~c[nil], even if in the error case, and ~c[val] might or might not
+  include error output.  (For details, look at the ACL2 source code for
+  function ~c[system-call+], whose output is converted by replacing an ~c[erp]
+  of ~c[nil] by 0.)
+  ~bq[]
+
+  ~c[Erp] is either ~c[nil] or a non-zero integer.  Normally, ~c[nil] indicates
+  that the command ran without error, and otherwise ~c[erp] is the exit
+  status.
+
+  ~c[Val] is a string, typically the output generated by the call of ~c[cmd].
+
+  ~c[State] is an ACL2 ~il[state].~eq[]
+
+  While the description above pertains to the values returned by executing
+  ~c[sys-call+], the logical values are as follows.  For a discussion of the
+  ~c[acl2-oracle] field of an ACL2 state, ~pl[state].
+  ~bq[]
+
+  ~c[Erp] is the first element of the ~c[acl2-oracle] of the input state if
+  that element is a nonzero integer, and otherwise is ~c[nil].
+
+  ~c[Val] is the second element of the ~c[acl2-oracle] of the input state if it
+  is a string, else the empty string, ~c[\"\"].
+
+  ~c[State] is the result of popping the ~c[acl2-oracle] field twice from the
+  input state.~eq[]
+
+  Note that unlike ~ilc[sys-call], a call of ~ilc[sys-call+] has no effect on
+  subsequent calls of ~ilc[sys-call-status].
+
+  As is the case for ~c[sys-call], a trust tag is required to call
+  ~c[sys-call+].  For discussion of this and more, ~pl[sys-call].~/~/"
+
+  (declare (xargs :guard t))
+  #+acl2-loop-only
+  (declare (ignore command-string args))
+  #+acl2-loop-only
+  (mv-let (erp1 erp state)
+          (read-acl2-oracle state)
+          (declare (ignore erp1))
+          (mv-let (erp2 val state)
+                  (read-acl2-oracle state)
+                  (declare (ignore erp2))
+                  (mv (and (integerp erp)
+                           (not (eql 0 erp))
+                           erp)
+                      (if (stringp val) val "")
+                      state)))
+  #-acl2-loop-only
+  (multiple-value-bind
+      (status rslt)
+      (system-call+ command-string args)
+    (mv (if (eql status 0)
+            nil
+          status)
+        rslt
+        state)))
 
 ; End of system calls
 
@@ -36804,6 +37007,7 @@
     deferred-ttag-notes-saved
     pc-assign
     illegal-to-certify-message
+    acl2-sources-dir
     ))
 
 ; There are a variety of state global variables, 'ld-skip-proofsp among them,

@@ -974,6 +974,7 @@ ACL2 from scratch.")
          #-cltl2 'user::*acl2-compiler-enabled*))
     `(progn (dolist (pair *initial-global-table*)
               (f-put-global (car pair) (cdr pair) *the-live-state*))
+            (f-put-global 'acl2-sources-dir (our-pwd) *the-live-state*)
             (f-put-global 'iprint-ar
                           (compress1 'iprint-ar
                                      (f-get-global 'iprint-ar *the-live-state*))
@@ -2091,7 +2092,18 @@ which is saved just in case it's needed later.")
   (our-with-compilation-unit ; only needed when *suppress-compile-build-time*
    (with-warnings-suppressed
 
-    (when (not fast)
+    (when (and *suppress-compile-build-time*
+               (not fast))
+
+; When we rely on Lisp to compile on-the-fly, we want to proclaim before
+; loading.  This might actually be broken; we got an error when trying to do
+; proclaiming here for GCL, complaining that "The variable
+; *COMMON-LISP-SYMBOLS-FROM-MAIN-LISP-PACKAGE* is unbound."  If we ever decide
+; to proclaim when *suppress-compile-build-time* is true, we can deal with that
+; problem then, perhaps by using
+; *copy-of-common-lisp-symbols-from-main-lisp-package* instead (though we
+; haven't tried that).
+
       (proclaim-files nil "acl2-proclaims.lisp" t))
 
 ; If we are in the first pass of two passes, then don't waste time doing the
@@ -2149,6 +2161,9 @@ which is saved just in case it's needed later.")
               (load-compiled (make-pathname :name name
                                             :type extension)))))
       (load "defpkgs.lisp")
+      (when (and (not *suppress-compile-build-time*) ; other case is above
+                 (not fast))
+        (proclaim-files nil "acl2-proclaims.lisp" t))
       (in-package "ACL2")
 
 ; Do not make state special, as that can interfere with tail recursion removal.

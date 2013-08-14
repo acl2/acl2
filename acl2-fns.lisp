@@ -20,6 +20,10 @@
 
 (in-package "ACL2")
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;                            PRELIMINARIES
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (defmacro qfuncall (fn &rest args)
 
 ; Avoid noise in CCL about undefined functions, not avoided by funcall alone.
@@ -32,6 +36,73 @@
     `(let () (declare (ftype function ,fn)) (,fn ,@args))
     #-(and cltl2 (not cmu) (not gcl))
     `(funcall ',fn ,@args)))
+
+(defmacro defun-one-output (&rest args)
+
+; Use this for raw Lisp functions that are known to return a single value in
+; raw Lisp, since make-defun-declare-form uses that assumption to make an
+; appropriate declaration.
+
+  (cons 'defun args))
+
+; The following alist associates package names with Common Lisp packages, and
+; is used in function find-package-fast, which is used by princ$ in place of
+; find-package in order to save perhaps 15% of the print time.
+(defparameter *package-alist* nil)
+
+(defun-one-output find-package-fast (string)
+  (or (cdr (assoc string *package-alist* :test 'equal))
+      (let ((pkg (find-package string)))
+        (push (cons string pkg) *package-alist*)
+        pkg)))
+
+(defvar *global-symbol-key* (make-symbol "*GLOBAL-SYMBOL-KEY*"))
+
+(defun global-symbol (x)
+  (or (get x *global-symbol-key*)
+      (setf (get x *global-symbol-key*)
+            (intern (symbol-name x)
+                    (find-package-fast
+                     (concatenate 'string
+                                  *global-package-prefix*
+                                  (symbol-package-name x)))))))
+
+(defmacro live-state-p (x)
+  (list 'eq x '*the-live-state*))
+
+#-acl2-loop-only
+(defun get-global (x state-state)
+
+; Keep this in sync with the #+acl2-loop-only definition of get-global (which
+; doesn't use qfuncall).
+
+  (cond ((live-state-p state-state)
+         (return-from get-global
+                      (symbol-value (the symbol (global-symbol x))))))
+  (cdr (assoc x (qfuncall global-table state-state))))
+
+(defmacro f-get-global (x st)
+  (cond ((and (consp x)
+              (eq 'quote (car x))
+              (symbolp (cadr x))
+              (null (cddr x)))
+
+; The cmulisp compiler complains about unreachable code every (perhaps) time
+; that f-get-global is called in which st is *the-live-state*.  The following
+; optimization is included primarily in order to eliminate those warnings;
+; the extra efficiency is pretty minor, though a nice side effect.
+
+         (if (eq st '*the-live-state*)
+             `(let ()
+                (declare (special ,(global-symbol (cadr x))))
+                ,(global-symbol (cadr x)))
+           (let ((s (gensym)))
+             `(let ((,s ,st))
+                (declare (special ,(global-symbol (cadr x))))
+                (cond ((live-state-p ,s)
+                       ,(global-symbol (cadr x)))
+                      (t (get-global ,x ,s)))))))
+        (t `(get-global ,x ,st))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;                            SUPPORT FOR NON-STANDARD ANALYSIS
@@ -174,14 +245,6 @@
 
   #+gcl t
   #-gcl nil)
-
-(defmacro defun-one-output (&rest args)
-
-; Use this for raw Lisp functions that are known to return a single value in
-; raw Lisp, since make-defun-declare-form uses that assumption to make an
-; appropriate declaration.
-
-  (cons 'defun args))
 
 (defun macroexpand-till (form sym)
 
