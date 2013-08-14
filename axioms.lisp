@@ -47627,8 +47627,31 @@ Lisp definition."
                       tbl)))
           :clear))
 
+(defun splice-keyword-alist (key new-segment keyword-alist)
+  (declare (xargs :guard (and (keywordp key)
+                              (keyword-value-listp keyword-alist)
+                              (true-listp new-segment))))
+  (cond
+   ((endp keyword-alist) nil)
+   ((eq key (car keyword-alist))
+    (append new-segment (cddr keyword-alist)))
+   (t (cons (car keyword-alist)
+            (cons (cadr keyword-alist)
+                  (splice-keyword-alist key new-segment
+                                        (cddr keyword-alist)))))))
+
+(deflabel custom-keyword-hints
+  :doc
+  ":Doc-Section Miscellaneous
+
+  user-defined hints~/
+
+  ~l[add-custom-keyword-hint] for a discussion of how advanced users can define
+  their own hint keywords.  For examples, see the community books directory
+  ~c[books/hints/], in particular ~c[basic-tests.lisp].~/~/")
+
 (defmacro show-custom-keyword-hint-expansion (flg)
-  ":Doc-Section Events
+  ":Doc-Section custom-keyword-hints
 
    print out custom keyword hints when they are expanded~/
   ~bv[]
@@ -47653,29 +47676,6 @@ Lisp definition."
   ~pl[custom-keyword-hints].~/"
 
   `(f-put-global 'show-custom-keyword-hint-expansion ,flg state))
-
-(defun splice-keyword-alist (key new-segment keyword-alist)
-  (declare (xargs :guard (and (keywordp key)
-                              (keyword-value-listp keyword-alist)
-                              (true-listp new-segment))))
-  (cond
-   ((endp keyword-alist) nil)
-   ((eq key (car keyword-alist))
-    (append new-segment (cddr keyword-alist)))
-   (t (cons (car keyword-alist)
-            (cons (cadr keyword-alist)
-                  (splice-keyword-alist key new-segment
-                                        (cddr keyword-alist)))))))
-
-(deflabel custom-keyword-hints
-  :doc
-  ":Doc-Section Miscellaneous
-
-  user-defined hints~/
-
-  ~l[add-custom-keyword-hint] for a discussion of how advanced users can define
-  their own hint keywords.  For examples, see the community books directory
-  ~c[books/hints/], in particular ~c[basic-tests.lisp].~/~/")
 
 ; Start implementation of search.
 
