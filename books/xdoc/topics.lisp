@@ -224,10 +224,11 @@ Technology</a>.</p>
 
 <p>For section headings,</p>
 <ul>
- <li>@('<h1>') creates the biggest heading,</li>
- <li>@('<h2>') the next biggest,</li>
- <li>... and so on ...</li>
- <li>@('<h5>') is the smallest heading.</li>
+ <li>@('<h1>') creates the biggest heading:<h1>Example</h1></li>
+ <li>@('<h2>') the next biggest:<h2>Example</h2></li>
+ <li>@('<h3>') a medium-sized heading:<h3>Example</h3></li>
+ <li>@('<h4>') the second smallest:<h4>Example</h4></li>
+ <li>@('<h5>') the smallest heading:<h5>Example</h5></li>
 </ul>
 
 <p>@('<p>') tags should be put around paragraphs.</p>
