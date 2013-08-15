@@ -325,7 +325,7 @@ $(info Scanning for books...)
 REBUILD_MAKEFILE_BOOKS := $(shell \
   rm -f Makefile-books; \
   time find . -name "*.lisp" \
-    | egrep -v '^(\./)?(interface|nonstd|centaur/quicklisp|clause-processors/SULFA|workshops/2003/kaufmann/support|models/y86)' \
+    | egrep -v '^(\./)?(interface|nonstd|centaur/quicklisp|clause-processors/SULFA|workshops/2003/kaufmann/support)' \
     | fgrep -v '.\#' \
   > Makefile-books; \
   ls -l Makefile-books)
@@ -549,7 +549,6 @@ ifeq ($(ACL2_HAS_REALS), )
 # Otherwise we might make the same file twice, would could cause
 # conflicts if -j is other than 1.
 ACL2_CUSTOM_TARGETS := \
-  models/y86/target.cert \
   clause-processors/SULFA/target.cert \
   fix-cert/fix-cert.cert \
   translators/l3-to-acl2/target.cert \
@@ -558,17 +557,6 @@ ACL2_CUSTOM_TARGETS := \
   workshops/2003/kaufmann/support/input/defs-in.cert \
   workshops/2004/sumners-ray/support/success.txt \
   workshops/2011/verbeek-schmaltz/sources/correctness2.cert
-
-ifneq ($(ACL2_HAS_HONS), )
-# A MacBook Pro with 8 GB of memory can use all available memory while
-# certifying y86 books if we run `make' with, say, -j 4.  Here are
-# figures observed when including some of the y86 books.
-#   models/y86/y86-basic/common/x86-state: 4.13 GB
-#   models/y86/y86-two-level-abs/common/x86-state: 3.28 GB
-#   models/y86/y86-two-level/common/x86-state: 1.71 GB
-# So we certify books under models/y86/ with -j 1.
-ACL2_CUSTOM_TARGETS += models/y86/
-endif
 
 # Warning!  For each target below, if there is a cert_pl_exclude file
 # in the directory and a "deps" file is used, then that "deps" file
@@ -592,9 +580,6 @@ clause-processors/SULFA/target.cert: \
 # The following has no dependencies, so doesn't need a "deps" file.
 fix-cert/fix-cert.cert:
 	cd $(@D) ; $(STARTJOB) -c "$(MAKE)"
-
-models/y86/target.cert:
-	cd $(@D) ; $(STARTJOB) -c "$(MAKE) -j 1"
 
 translators/l3-to-acl2/target.cert: \
   translators/l3-to-acl2-deps.cert
