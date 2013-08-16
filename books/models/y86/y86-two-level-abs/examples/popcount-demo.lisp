@@ -11,10 +11,14 @@
 
 ; If popcount-demo.lisp (which, incidentally, is more or less subsumed by
 ; popcount.lisp) is certified in parallel with popcount.lisp, that could result
-; in memory usage that stresses a machine with 8GB of RAM.  So we add an
-; artificial dependency here:
+; in memory usage that stresses a machine with 8GB of RAM.  So we are tempted
+; to add artificial dependency here, and we did at one time.  But now, the
+; overall books/Makefile ensures that only one book is certified under
+; books/models/y86/ at a time, and that seems sufficient.  To restore the
+; previous state of affairs, eliminate the newline below as indicated.
 #||
-(include-book "popcount")
+(include-book
+ "popcount")
 ||#
 
 (defthm x86-32p-create-x86-32

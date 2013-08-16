@@ -297,7 +297,8 @@ clean: quicklisp_clean
 
 endif # USE_QUICKLISP
 
-
+# Ensure that the following variable is simply expanded.
+ACL2_CUSTOM_TARGETS :=
 
 ##############################
 ### Section: Create auxiliary files (Makefile-xxx) and initial OK_CERTS
@@ -325,7 +326,7 @@ $(info Scanning for books...)
 REBUILD_MAKEFILE_BOOKS := $(shell \
   rm -f Makefile-books; \
   time find . -name "*.lisp" \
-    | egrep -v '^(\./)?(interface|nonstd|centaur/quicklisp|clause-processors/SULFA|workshops/2003/kaufmann/support)' \
+    | egrep -v '^(\./)?(interface|nonstd|centaur/quicklisp|clause-processors/SULFA|workshops/2003/kaufmann/support|models/y86/)' \
     | fgrep -v '.\#' \
   > Makefile-books; \
   ls -l Makefile-books)
@@ -380,6 +381,22 @@ $(info OS_HAS_GLUCOSE    := $(OS_HAS_GLUCOSE))
 $(info USE_QUICKLISP     := $(USE_QUICKLISP))
 $(info Done with features.)
 
+# Cause error for illegal certification attempts:
+
+ifeq ($(ACL2_HAS_HONS), )
+
+$(CERT_PL_HONS_ONLY):
+	$(MAKE) no_hons_error NO_RESCAN=1 CERT_PL_HONS_ONLY_BOOK=$@
+
+.PHONY: no_hons_error
+no_hons_error:
+	@echo "Error! Target $(CERT_PL_HONS_ONLY_BOOK) requires hons."
+	@exit 1
+
+endif
+
+# End of "Cause error for illegal certification attempts".
+
 OK_CERTS := $(CERT_PL_CERTS)
 
 ifeq ($(ACL2_HAS_HONS), )
@@ -405,17 +422,23 @@ $(info Excluding books that depend on Quicklisp: [$(CERT_PL_USES_QUICKLISP)])
 OK_CERTS := $(filter-out $(CERT_PL_USES_QUICKLISP), $(OK_CERTS))
 endif
 
-# SLOW_BOOKS are books that are too slow to include as part of an
-# ordinary regression.  There are currently comments in some of the
-# corresponding Makefiles that explain something about these books.
+# SLOW_BOOKS is a list of books that are too slow to include as part
+# of an ordinary regression.  There are currently comments in some of
+# the corresponding Makefiles that explain something about these
+# books.  WARNING: It is probably a bad idea to include targets here
+# that are in ACL2_CUSTOM_TARGETS: SLOW_BOOKS is removed from OK_CERTS
+# just below, but later, ACL2_CUSTOM_TARGETS adds its targets to
+# OK_CERTS.
 
 SLOW_BOOKS := \
   coi/termination/assuming/complex.cert \
   models/jvm/m5/apprentice.cert \
+  models/y86-target.cert \
   parallel/proofs/ideal-speedup.cert \
   workshops/2009/sumners/support/examples.cert \
   workshops/2011/krug-et-al/support/MinVisor/va-to-pa-thm.cert \
-  workshops/2011/krug-et-al/support/MinVisor/setup-nested-page-tables.cert
+  workshops/2011/krug-et-al/support/MinVisor/setup-nested-page-tables.cert \
+  $(filter rtl/rel7/%, $(OK_CERTS))
 
 OK_CERTS := $(filter-out $(SLOW_BOOKS), $(OK_CERTS))
 
@@ -449,13 +472,15 @@ clean_books:
 
 # We test that directory centaur/quicklisp exists because it probably
 # doesn't for nonstd/, and we include this makefile from that
-# directory.
+# directory.  Also, we clean models/y86 explicitly, since
+# models/Makefile (from custom target models/y86-target.cert) doesn't
+# exist.
 clean: clean_books
 	@echo "Removing extra, explicitly temporary files."
 	rm -rf $(CLEAN_FILES_EXPLICIT)
-	for dir in $(dir $(ACL2_CUSTOM_TARGETS)) ; \
+	for dir in $(dir $(ACL2_CUSTOM_TARGETS)) models/y86 ; \
 	do \
-	if [ -d $$dir ] ; then \
+	if [ -f $$dir/Makefile ] ; then \
 	(cd $$dir ; $(MAKE) clean) ; \
 	fi ; \
 	done
@@ -547,7 +572,9 @@ ifeq ($(ACL2_HAS_REALS), )
 # cert_pl_exclude file or else be explicitly excluded in the egrep
 # command that is used to define REBUILD_MAKEFILE_BOOKS, above.
 # Otherwise we might make the same file twice, would could cause
-# conflicts if -j is other than 1.
+# conflicts if -j is other than 1.  Also: Do not include any targets,
+# such as models/y86-target.cert, that we don't want built with "all".
+
 ACL2_CUSTOM_TARGETS := \
   clause-processors/SULFA/target.cert \
   fix-cert/fix-cert.cert \
@@ -559,12 +586,14 @@ ACL2_CUSTOM_TARGETS := \
   workshops/2011/verbeek-schmaltz/sources/correctness2.cert
 
 # Warning!  For each target below, if there is a cert_pl_exclude file
-# in the directory and a "deps" file is used, then that "deps" file
-# should be placed in a different directory (that is not excluded).
-# For example, translators/l3-to-acl2/target.cert below depends on
-# translators/l3-to-acl2-deps.cert, for which dependencies will be
-# generated since there is no cert_pl_exclude file in translators/
-# (even though there is a cert_pl_exclude in translators/l3-to-acl2/).
+# in the directory or it is exluded explicitly by
+# REBUILD_MAKEFILE_BOOKS, and a "deps" file is used, then that "deps"
+# file should be placed in a different directory (that is not
+# excluded).  For example, translators/l3-to-acl2/target.cert below
+# depends on translators/l3-to-acl2-deps.cert, for which dependencies
+# will be generated since there is no cert_pl_exclude file in
+# translators/ (even though there is a cert_pl_exclude in
+# translators/l3-to-acl2/).
 
 # We only make the books under SULFA if a documented test for an
 # installed SAT solver succeeds.
@@ -580,6 +609,11 @@ clause-processors/SULFA/target.cert: \
 # The following has no dependencies, so doesn't need a "deps" file.
 fix-cert/fix-cert.cert:
 	cd $(@D) ; $(STARTJOB) -c "$(MAKE)"
+
+# The following need not be made a custom target, since it's not in
+# an excluded directory.
+models/y86-target.cert:
+	cd $(@D)/y86 ; $(STARTJOB) -c "$(MAKE) -j 1"
 
 translators/l3-to-acl2/target.cert: \
   translators/l3-to-acl2-deps.cert
@@ -667,7 +701,7 @@ ifdef ACL2_COMP
 # its books.)
 $(info For building compiled (.$(ACL2_COMP_EXT)) files, excluding centaur books)
 OK_CERTS := $(filter-out centaur/%, \
-              $(filter-out models/y86/%, \
+              $(filter-out models/y86%, \
                 $(OK_CERTS)))
 
 ifndef NO_RESCAN
@@ -832,57 +866,18 @@ OK_CERTS := $(filter-out $(addsuffix %, $(EXCLUDED_PREFIXES)), $(OK_CERTS))
 # accordingly.  Note that the pathnames in ACL2_BOOK_DIRS should be
 # relative to the top-level books directory, not absolute pathnames.
 
-# So  that ACL2_BOOK_CERTS is not recursive:
+# So that ACL2_BOOK_CERTS is not recursive (but don't set it to the
+# empty string, since it might be set on the command line!).
 ACL2_BOOK_CERTS := $(ACL2_BOOK_CERTS)
 ifneq ($(ACL2_BOOK_DIRS), )
 $(info ACL2_BOOK_DIRS = $(ACL2_BOOK_DIRS))
 ACL2_BOOK_DIRS_PATTERNS := $(addsuffix /%, $(ACL2_BOOK_DIRS))
-ACL2_BOOK_CERTS += $(ACL2_BOOK_CERTS) \
-                   $(filter $(ACL2_BOOK_DIRS_PATTERNS), $(OK_CERTS))
+ACL2_BOOK_CERTS += $(filter $(ACL2_BOOK_DIRS_PATTERNS), $(OK_CERTS))
 endif # ifneq ($(ACL2_BOOK_DIRS), )
 
 ifneq ($(ACL2_BOOK_CERTS), )
 $(info ACL2_BOOK_CERTS = $(ACL2_BOOK_CERTS))
 OK_CERTS := $(ACL2_BOOK_CERTS)
-else
-
-# Normal case, where neither ACL2_BOOK_DIRS nor ACL2_BOOK_CERTS is
-# defined:
-
-# We prefer not to certify books under the directories filtered out
-# just below, for the following reasons.
-# - rtl/rel7/: This directory isn't used anywhere else and it doesn't
-#   add much from a regression perspective, given the other rtl/
-#   subdirectories that are included in the regression.
-
-# However, we want cert.pl to scan within any such directory, to
-# support the "everything" target, so we avoid putting cert_pl_exclude
-# files in such a directory or excluding them from the egrep command
-# that is used to define REBUILD_MAKEFILE_BOOKS, above.  Instead, we
-# exclude them from the "all" target now.
-
-OK_CERTS_EXCLUSIONS := $(filter rtl/rel7/%, $(OK_CERTS))
-
-ifneq ($(ACL2_HAS_HONS), )
-ifeq ($(filter CCL ALLEGRO SBCL, $(ACL2_HOST_LISP)), )
-
-# We exclude models/y86/ for ACL2(h) except for CCL, which has
-# significant optimizations for ACL2(h), and except for other Lisps
-# that we have observed to perform acceptably on certifying these
-# books.  In an ANSI GCL ACL2(h) regression, certification runs were
-# still proceeding after more than 10 hours for each of four books
-# under models/y86/ (y86-basic/common/x86-state,
-# y86-two-level/common/x86-state,
-# y86-two-level-abs/common/x86-state-concrete, and
-# y86-basic/py86/popcount), probably because of the demands of
-# def-gl-thm.  Moreover, LispWorks has too small a value for
-# array-dimension-limit to support these certifications.
-
-OK_CERTS_EXCLUSIONS += $(filter models/y86/%, $(OK_CERTS))
-endif # ifeq ($(ACL2_HOST_LISP), GCL)
-endif # ifneq ($(ACL2_HAS_HONS), )
-
-OK_CERTS := $(filter-out $(OK_CERTS_EXCLUSIONS), $(OK_CERTS))
 
 endif # ifneq ($(ACL2_BOOK_CERTS), )
 
@@ -893,11 +888,37 @@ endif # ifeq ($(realpath workshops), )
 
 all: $(OK_CERTS)
 
-# OK_CERTS_EXCLUSIONS is undefined if ACL2_BOOK_CERTS is defined, but
-# that's not a problem; after all, in that case OK_CERTS wasn't
-# filtered by OK_CERTS_EXCLUSIONS.  Besides, we don't intend to
-# support "everything" when ACL2_BOOK_CERTS is defined.
-everything: all $(OK_CERTS_EXCLUSIONS) $(SLOW_BOOKS)
+# Now compute books to add.  We add all of SLOW_BOOKS, except that we
+# only include models/y86-target.cert for Lisps that can handle it.
+
+# We don't want to certify the models/y86 books unless the host Lisp
+# can tolerate it, such as CCL, which has significant optimizations
+# for ACL2(h).  Note that since we exclude models/y86/ when defining
+# REBUILD_MAKEFILE_BOOKS, those books are only made because of the
+# book models/y86-target.lisp, which while not included in
+# ACL2_CUSTOM_TARGETS nevertheless has custom dependencies above.
+# Now, in an ANSI GCL ACL2(h) regression, certification runs were
+# still proceeding after more than 10 hours for each of four books
+# under models/y86/ (y86-basic/common/x86-state,
+# y86-two-level/common/x86-state,
+# y86-two-level-abs/common/x86-state-concrete, and
+# y86-basic/py86/popcount), probably because of the demands of
+# def-gl-thm.  Moreover, LispWorks has too small a value for
+# array-dimension-limit to support these certifications.
+
+ifeq ($(ACL2_HAS_HONS), )
+
+ifneq ($(filter CCL ALLEGRO SBCL, $(ACL2_HOST_LISP)), )
+ADDED_BOOKS := $(SLOW_BOOKS)
+else
+ADDED_BOOKS := models/y86-target.cert $(SLOW_BOOKS)
+endif # ifeq ($(filter CCL ALLEGRO SBCL, $(ACL2_HOST_LISP)), )
+
+else
+ADDED_BOOKS := models/y86-target.cert $(SLOW_BOOKS))
+endif # ifeq ($(ACL2_HAS_HONS), )
+
+everything: all $(ADDED_BOOKS)
 
 # The critical path report will work only if you have set up certificate timing
 # BEFORE you build the books.  See ./critpath.pl --help for details.
