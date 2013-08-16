@@ -1,0 +1,734 @@
+<S> ::= 
+    <CompilationUnit>
+
+<Identifier> ::= 
+    <IDENTIFIER>
+
+<QualifiedIdentifier> ::= 
+    <Identifier> 
+  | <Identifier> <PERIOD> <QualifiedIdentifier>
+
+<QualifiedIdentifierList> ::= 
+    <QualifiedIdentifier> 
+  | <QualifiedIdentifier> <COMMA> <QualifiedIdentifierList>
+
+<ImportDeclarationRag> ::= 
+    <ImportDeclaration> 
+  | <ImportDeclaration> <ImportDeclarationRag>
+
+<TypeDeclarationRag> ::= 
+    <TypeDeclaration>
+  | <TypeDeclaration> <TypeDeclarationRag>
+
+<CompilationUnit> ::= 
+    <PACKAGE> <QualifiedIdentifier> <SEMICOLON> <ImportDeclarationRag> <TypeDeclarationRag> 
+  | <ImportDeclarationRag> <TypeDeclarationRag> 
+  | <ImportDeclarationRag> 
+  | <TypeDeclarationRag>
+
+<IdentifierRag> ::= 
+    <Identifier>
+  | <Identifier> <PERIOD> <IdentifierRag>
+
+<ImportDeclaration> ::= 
+    <IMPORT> <IdentifierRag> <SEMICOLON> 
+  | <IMPORT> <STATIC> <IdentifierRag> <SEMICOLON> 
+  | <IMPORT> <IdentifierRag> <PERIOD> <STAR> <SEMICOLON> 
+  | <IMPORT> <STATIC> <IdentifierRag> <PERIOD> <STAR> <SEMICOLON>
+
+<TypeDeclaration> ::= 
+    <ClassOrInterfaceDeclaration> 
+  | <SEMICOLON>
+
+<ModifierRag> ::= 
+    <Modifier> 
+  | <Modifier> <ModifierRag>
+
+<ClassOrInterfaceDeclaration> ::= 
+    <ClassDeclaration> 
+  | <InterfaceDeclaration> 
+  | <ModifierRag> <ClassDeclaration> 
+  | <ModifierRag> <InterfaceDeclaration> 
+
+<ClassDeclaration> ::= 
+    <NormalClassDeclaration> 
+  | <EnumDeclaration>
+
+<InterfaceDeclaration> ::= 
+    <NormalInterfaceDeclaration> 
+  | <AnnotationTypeDeclaration>
+
+<NormalClassDeclaration> ::= 
+    <CLASS> <Identifier> <ClassBody>
+  | <CLASS> <Identifier> <TypeParameters> <ClassBody>
+  | <CLASS> <Identifier> <EXTENDS> <Type> <ClassBody>
+  | <CLASS> <Identifier> <TypeParameters> <EXTENDS> <Type> <ClassBody>
+  | <CLASS> <Identifier> <IMPLEMENTS> <TypeList> <ClassBody>
+  | <CLASS> <Identifier> <TypeParameters> <IMPLEMENTS> <TypeList> <ClassBody>
+  | <CLASS> <Identifier> <EXTENDS> <Type> <IMPLEMENTS> <TypeList> <ClassBody>
+  | <CLASS> <Identifier> <TypeParameters> <EXTENDS> <Type> <IMPLEMENTS> <TypeList> <ClassBody>
+
+<EnumDeclaration> ::= 
+    <ENUM> <Identifier> <EnumBody> 
+  | <ENUM> <Identifier> <IMPLEMENTS> <TypleList> <EnumBody>
+
+<NormalInterfaceDeclaration> ::= 
+    <INTERFACE> <Identifier> <InterfaceBody> 
+  | <INTERFACE> <Identifier> <TypeParameters> <InterfaceBody> 
+  | <INTERFACE> <Identifier> <TypeParameters> <EXTENDS> <TypeList> <InterfaceBody> 
+  | <INTERFACE> <Identifier> <EXTENDS> <TypeList> <InterfaceBody>
+
+<AnnotationTypeDeclaration> ::= 
+    <AT> <INTERFACE> <Identifier> <AnnotationTypeBody>
+
+<Type> ::= 
+    <BasicType> 
+  | <BasicType> <SqBrRag>
+
+<Type> ::= 
+    <ReferenceType> 
+  | <ReferenceType> <SqBrRag>
+
+<BasicType> ::= 
+    <BYTE> 
+  | <SHORT> 
+  | <CHAR> 
+  | <INT> 
+  | <LONG> 
+  | <FLOAT> 
+  | <DOUBLE> 
+  | <BOOLEAN>
+
+<ReferenceType> ::=
+    <Identifier>
+  | <Identifier> <PERIOD> <ReferenceType>
+  | <Identifier> <TypeArguments>
+  | <Identifier> <TypeArguments> <PERIOD> <ReferenceType>
+
+<TypeArgumentRag> ::= 
+    <COMMA> <TypeArgument> 
+  | <COMMA> <TypeArgument> <TypeArgumentRag>
+
+<TypeArguments> ::= 
+    <LT> <TypeArgument> <GT> 
+  | <LT> <TypeArgument> <TypeArgumentRag> <GT>
+
+<TypeArgument> ::= 
+    <ReferenceType> 
+  | <QUESTION> <EXTENDS> <ReferenceType> 
+  | <QUESTION> <SUPER> <ReferenceType> 
+  | <QUESTION>
+
+<NonWildcardTypeArguments> ::= 
+    <LT> <TypeList> <GT>
+
+<TypeList> ::= 
+    <ReferenceType> 
+  | <ReferenceType> <COMMAD> <TypeList>
+
+<TypeArgumentsOrDiamond> ::= 
+    <LT> <GT> 
+  | <TypeArguments>
+
+<NonWildcardTypeArgumentsOrDiamond> ::= 
+    <LT> <GT> 
+  | <NonWildcardTypeArguments>
+
+<TypeParametersRag> ::= 
+    <COMMA> <TypeParameter> <TypeParameterRag> 
+  | <COMMA> <TypeParameter>
+
+<TypeParemeters> ::= 
+    <LT> <TypeParameter> <GT> 
+  | <LT> <TypeParameter> <TypeParameterRag> <GT>
+
+<TypeParameter> ::= 
+    <Identifier> 
+  | <Identifier> <EXTENDS> <Bound>
+
+<ReferenceTypeRag> ::= 
+    <AMPERSTAND> <ReferenceType> 
+  | <AMPERSTAND> <ReferenceType> <ReferenceTypeRag>
+
+<Bound> ::= 
+    <ReferenceType> 
+  | <ReferenceType> <ReferenceTypeRag>
+
+<Modifier> ::= 
+    <Annotation> 
+  | <PUBLIC> 
+  | <PROTECTED> 
+  | <PRIVATE> 
+  | <STATIC> 
+  | <ABSTRACT> 
+  | <FINAL> 
+  | <NATIVE> 
+  | <SYNCHRONIZED> 
+  | <TRANSIENT> 
+  | <VOLATILE> 
+  | <STRICTFP>
+
+<Annotations> ::= 
+    <Annotation> 
+  | <Annotation> <Annotations>
+
+<Annotation> ::= 
+    <AT> <QualifiedIdentifier> 
+  | <AT> <QualifiedIdentifier> <LPAREN> <AnnotationElement>
+
+<AnnotationElement> ::= 
+    <ElementValuePairs> 
+  | <ElementValue>
+
+<ElementValuePairs> ::= 
+    <ElementValuePair> 
+  | <ElementValuePair> <COMMA> <ElementValuePairs>
+
+<ElementValuePair> ::= 
+    <Identifier> <EQUAL> <ElementValue>
+
+<ElementValue> ::= 
+    <Annotation> 
+  | <Expression1> 
+  | <ElementValueArrayInitializer>
+
+<ElementValueArrayInitializer> ::= 
+    <ElementValues> 
+
+<ElementValues> ::= 
+    <ElementValue> 
+  | <ElementValue> <COMMA> <ElementValues>
+
+<ClassBodyDeclarationRag> ::= 
+    <ClassBodyDeclaration> 
+  | <ClassBodyDeclaration> <ClassBodyDeclarationRag>
+
+<ClassBody> ::= 
+    <LBRACK> <RBRACK>
+  | <LBRACK> <ClassBodyDeclarationRag> <RBRACK>
+
+<ModifierRag> ::= 
+    <Modifier> 
+  | <Modifier> <ModifierRag> 
+
+<ClassBodyDeclaration> ::= 
+    <SEMICOLON> 
+  | <MemberDecl> 
+  | <ModifierRag> <MemberDecl> 
+  | <Block> 
+  | <STATIC> <Block>
+
+<MemberDecl> ::= 
+    <MethodOrFieldDecl> 
+  | <VOID> <Identifier> <VoidMethodDeclaratorRest> 
+  | <Identifier> <ConstructorDeclaratorRest> 
+  | <GenericMethodOrConstructorDecl> 
+  | <ClassDeclaration> 
+  | <InterfaceDeclaration>
+
+<MethodOrFieldDecl> ::= 
+    <Type> <Identifier> <MethodOrFieldRest>
+
+<MethodOrFieldRest> ::= 
+    <FieldDeclaratorsRest> <SEMICOLON> 
+  | <MethodDeclaratorRest>
+
+<VariableDeclaratorRag> ::= 
+    <COMMA> <VariableDeclarator> 
+  | <COMMA> <VariableDeclarator> <VariableDeclaratorRag>
+
+<FieldDeclaratorsRest> ::= 
+    <VariableDeclaratorRest> 
+  | <VariableDeclaratorRest> <VariableDeclaratorRag>
+
+<SqBrRag> ::= 
+    <LSQB> <RSQB> 
+  | <LSQB> <RSQB> <SqBrRag>
+
+<MethodDeclaratorRest> ::= 
+    <FormalParameters> <Block> 
+  | <FormalParameters> <SEMICOLON> 
+  | <FormalParameters> <SqBrRag> <Block> 
+  | <FormalParameters> <SqBrRag> <SEMICOLON> 
+  | <FormalParameters> <THROWS> <QualifiedIdentifierList> <Block> 
+  | <FormalParameters> <THROWS> <QualifiedIdentifierList> <SEMICOLON> 
+  | <FormalParameters> <SqBrRag> <THROWS> <QualifiedIdentifierList> <Block> 
+  | <FormalParameters> <SqBrRag> <THROWS> <QualifiedIdentifierList> <SEMICOLON>
+
+<VoidMethodDeclaratorRest> ::=
+    <FormalParameters> <Block> 
+  | <FormalParameters> <SEMICOLON> 
+  | <FormalParameters> <THROWS> <QualifiedIdentifierList> <Block> 
+  | <FormalParameters> <THROWS> <QualifiedIdentifierList> <SEMICOLON> 
+
+<ConstructorDeclaratorRest> ::= 
+    <FormalParameters> <Block> 
+  | <FormalParameters> <THROWS> <QualifiedIdentifierList> <Block>
+
+<GenericMethodOrConstrcutorDecl> ::= 
+    <TypeParameters> <GenericMethodOrConstructorRest>
+
+<GenericMethodOrConstructorRest> ::= 
+    <Type> <Identifier> <MethodDeclaratorRset> 
+  | <VOID> <Identifier> <MethodDeclaratorRset> 
+  | <Identifier> <ConstructorDeclaratorRest>
+
+<InterfaceBodyDeclarationRag> ::= 
+    <InterfaceBodyDeclaration> 
+  | <InterfaceBodyDeclaration> <InterfaceBodyDeclarationRag>
+
+<InterfaceBody> ::= <LBRACK> <InterfaceBodyDeclarationRag> <RBRACK>
+
+<InterfaceBodyDeclaration> ::= 
+    <SEMICOLON> 
+  | <ModifierRag> <InterfaceMemberDecl>
+
+<InterfaceMemberDecl> ::= 
+    <InterfaceMethodOrFieldDecl> 
+  | <VOID> <Identifier> <VoidInterfaceMEthodDeclaratorRest> 
+  | <InterfaceGenericMethodDecl> 
+  | <ClassDeclaration> 
+  | <InterfaceDeclaration>
+
+<InterfaceMethodOrFieldDecl> ::= 
+    <Type> <Identifier> <InterfaceMtehodOrFieldRest>
+
+<InterfaceMethodOrFieldRest> ::= 
+    <ConstantDeclaratorsRest> <SEMICOLON> 
+  | <InterfaceMEthodDeclaratorRest>
+
+<ConstantDeclaratorRag> ::= 
+    <COMMA> <ConstantDeclarator> 
+  | <COMMA> <ConstantDeclarator> <ConstantDeclaratorRag>
+
+<ConstantDeclaratorsRest> ::= 
+    <ConstantDeclaratorRest> 
+  | <ConstantDeclaratorRest> <ConstantDeclaratorRag>
+
+<ConstantDeclaratorRest> ::= 
+    <EQUAL> <VariableInitializer> 
+  | <SqBrRag> <EQUAL> <VariableInitializer>
+
+<ConstantDeclarator> ::= <Identifier> <ConstantDeclaratorRest>
+
+<InterfaceMethodDeclaratorRest> ::= 
+    <FormalParameters> <SEMICOLON> 
+  | <FormalParameters> <THROWS> <QualifiedIdentifierList> <SEMICOLON> 
+  | <FormalParameters> <SqBrRag> <SEMICOLON> 
+  | <FormalParameters> <SqBrRag> <THROWS> <QualifiedIdentifierList> <SEMICOLON>
+
+<VoidInterfaceMethodDeclaratorRest> ::= 
+    <FormalParameters> <SEMICOLON> 
+  | <FormalParameters> <THROWS> <QualifiedIdentifierList> <SEMICOLON>
+
+<InterfaceGenericMethodDecl> ::= 
+    <TypeParameters> <Type> <Identifier> <InterfaceMethodDeclaratorRest> 
+  | <TypeParameters> <VOID> <Identifier> <InterfaceMethodDeclaratorRest> 
+
+<FormalParameters> ::= 
+    <LPAREN> <RPAREN> 
+  | <LPAREN> <FormalParameterDecls> <RPAREN>
+
+<VariableModiferRag> ::= 
+    <VariableModifier> 
+  | <VariableModifier> <VariableModifierRag>
+
+<FormalParameterDecls> ::= 
+    <Type> <FormalParameterDeclsRest> 
+  | <VariableModifierRag> <Type> <FormalParameterDeclsRest>
+
+<VariableModifier> ::= 
+    <FINAL> 
+  | <Annotation>
+
+<FormalParameterDeclsRest> ::= 
+    <VariableDeclaratorId> 
+  | <VariableDeclaratorId> <COMMA> <FormalParameterDecls> 
+  | <DOTDOTDOT> <VariableDeclaratorId>
+
+<VariableDeclaratorId> ::= 
+    <Identifier> 
+  | <Identifier> <SqBrRag>
+
+<VariableDeclaratorRag> ::= 
+    <COMMA> <VariableDeclaratorRest> 
+  | <COMMA> <VariableDeclaratorRest> <VariableDeclaratorRag>
+
+<VariableDeclarators> ::= 
+    <VariableDeclarator> 
+  | <VariableDeclarator> <VariableDeclaratorRag>
+
+<VariableDeclarator> ::=
+    <Identifier>
+  | <Identifier> <VariableDeclaratorRest>
+
+<VariableDeclaratorRest> ::= 
+    <SqBrRag> 
+  | <EQUAL> <VariableInitializer> 
+  | <SqBrRag> <EQUAL> <VariableInitializer>
+
+<VariableInitializer> ::= 
+    <ArrayInitializer> 
+  | <Expression>
+
+<ArrayInitializer> ::= 
+    <NOTIMPLEMENTED>
+
+<Block> ::= 
+    <LBRACK> <RBRACK>
+  | <LBRACK> <BlockStatements> <RBRACK>
+
+<BlockStatements> ::= 
+    <BlockStatement> 
+  | <BlockStatement> <BlockStatements>
+
+<BlockStatement> ::= 
+    <LocalVariableDeclarationStatement> 
+  | <ClassOrInterfaceDeclaration> 
+  | <Statement> 
+  | <Identifier> <COLON> <Statement>
+
+<VariableModifierRag> ::= 
+    <VariableModifier> 
+  | <VariableModifier> <VariableModifierRag>
+
+<LocalVariableDeclarationStatement> ::= 
+    <Type> <VariableDeclarators> <SEMICOLON> 
+  | <VariableModifierRag> <Type> <VariableDeclarators> <SEMICOLON>
+
+<Statement> ::= 
+    <Block> 
+  | <SEMICOLON>
+  | <Identifier> <COLON> <Statement>
+  | <IF> <ParExpression> <Statement>
+  | <IF> <ParExpression> <Statement> <ELSE> <Statement>
+  | <ASSERT> <Expression> <SEMICOLON>
+  | <ASSERT> <Expression> <COLON> <Expression> <SEMICOLON>
+  | <SWITCH> <ParExpression> <LBRACK> <SwitchBlockStatementGroups> <RBRACK>
+  | <WHILE> <ParExpression> <Statement>
+  | <DO> <Statement> <WHILE> <ParExpression> <SEMICOLON>
+  | <FOR> <LPAREN> <ForControl> <RPAREN> <Statement>
+  | <BREAK> <SEMICOLON>
+  | <BREAK> <Identifier> <SEMICOLON>
+  | <CONTINUE> <SEMICOLON>
+  | <CONTINUE> <Identifier> <SEMICOLON>
+  | <RETURN> <SEMICOLON>
+  | <RETURN> <Expression> <SEMICOLON>
+  | <THROW> <Expression> <SEMICOLON>
+  | <SYNCHRONIZED> <ParExpression> <Block>
+  | <TRY> <Block> <Catches>
+  | <TRY> <Block> <Finally>
+  | <TRY> <Block> <Catches> <Finally>
+  | <TRY> <ResourceSpecification> <Block>
+  | <TRY> <ResourceSpecification> <Block> <Catches>
+  | <TRY> <ResourceSpecification> <Block> <Finally>
+  | <TRY> <ResourceSpecification> <Block> <Catches> <Finally>
+
+<StatementExpression> ::= 
+    <Expression>
+
+<Catches> ::= 
+    <CatchClause> 
+  | <CatchClause> <Catches>
+
+<CatchClause> ::= 
+    <CATCH> <LPAREN> <VariableModiferRag> <CatchType> <Identifier> <RPAREN> <Block>
+  | <CATCH> <LPAREN> <CatchType> <Identifier> <RPAREN> <Block>
+
+<CatchType> ::=
+    <QualifiedIdentifier> 
+  | <QualifiedIdentifier> <VERTICALBAR> <CatchType>
+
+<Finally> ::= 
+    <FINALLY> <Block>
+
+<ResourceSpecification> ::= 
+    <LPAREN> <Resources> <RPAREN>
+  | <LPAREN> <Resources> <SEMICOLON> <RPAREN>
+
+<Resources> ::=
+    <Resource>
+  | <Resource> <SEMICOLON> <Resources>
+
+<Resource> ::= 
+    <ReferenceType> <VariableDeclaratorId> <EQUAL> <Expression>
+  | <VariableModifierRag> <ReferenceType> <VariableDeclaratorId> <EQUAL> <Expression>
+
+<SwitchBlockStatementGroups> ::=
+    <SwitchBlockStatementGroup>
+  | <SwitchBlockStatementGroup> | <SwitchBlockStatementGroups>
+
+<SwitchBlockStatementGroup> ::= 
+    <SwitchLabels> <BlockStatements>
+
+<SwitchLabels> ::= 
+    <SwitchLabel> 
+  | <SwitchLabel> <SwitchLables>
+
+<SwitchLabel> ::=
+    <CASE> <Expression> <COLON>
+  | <CASE> <EnumConstantName> <COLON>
+  | <DEFAULT> <COLON>
+
+<EnumConstantName> ::= <Identifier>
+
+<ForControl> ::=
+    <ForVarControl>
+  | <ForInit> <SEMICOLON> <SEMICOLON>
+  | <ForInit> <SEMICOLON> <Expression> <SEMICOLON>
+  | <ForInit> <SEMICOLON> <SEMICOLON> <ForUpdate>
+  | <ForInit> <SEMICOLON> <Expression> <SEMICOLON> <ForUpdate>
+
+<ForVarControl> ::=
+    <Type> <VariableDeclaratorId> <ForVarControlRest>
+  | <VariableModifierRag> <Type> <VariableDeclaratorId> <ForVarControlRest>
+
+<ForVarControlRest> ::=
+    <ForVariableDeclaratorsRest> <SEMICOLON> <SEMICOLON>
+  | <ForVariableDeclaratorsRest> <SEMICOLON> <Expression> <SEMICOLON>
+  | <ForVariableDeclaratorsRest> <SEMICOLON> <SEMICOLON> <ForUpdate>
+  | <ForVariableDeclaratorsRest> <SEMICOLON> <Expression> <SEMICOLON> <ForUpdate>
+  | <COLON> <Expression>
+
+<ForVariableDeclaratorsRest> ::=
+    <EQUAL> <VariableInitializer>
+  | <EQUAL> <VariableInitializer> <VariableDeclaratorRag>
+  | <VariableDeclaratorRag>
+
+<StatementExpressionRag> ::= 
+    <COMMA> <StatementExpression> 
+  | <COMMA> <StatementExpression> <StatementExpressionRag>
+
+<ForInit> ::= 
+    <StatementExpression> 
+  | <StatementExpression> <StatementExpressionRag>
+
+<ForUpdate> ::= 
+    <StatementExpression> 
+  | <StatementExpression> <StatementExpressionRag>
+
+
+<Expression> ::= 
+    <Expression1> 
+  | <Expression1> <AssignmentOperator> <Expression1>
+
+<AssignmentOperator> ::= 
+    <EQUAL> 
+  | <PLUSEQUAL> 
+  | <MINUSEQUAL> 
+  | <STAREQUAL>
+  | <FORWARDSLASHEQUAL> 
+  | <AMPERSTANDEQUAL> 
+  | <VERTICALBAREQUAL> 
+  | <CARROTEQUAL> 
+  | <PERCENTEQUAL> 
+  | <LTLTEQUAL> 
+  | <GTGTEQUAL> 
+  | <GTGTGTEQUAL>
+
+<Expression1> ::= 
+    <Expression2> 
+  | <Expression2> <Expression1Rest>
+
+<Expression1Rest> ::= 
+    <QUESTION> <Expression> <COLON> <Expression1>
+
+<Expression2> ::= 
+    <Expression3> 
+  | <Expression3> <Expression2Rest>
+
+<InfixOpExpression3Rag> ::= 
+    <InfixOp> <Expression3> 
+  | <InfixOp> <Expression3> <InfixOpExpression3Rag>
+
+<Expression2Rest> ::= 
+    <InfixOpExpression3Rag> 
+  | <INSTANCEOF> <Type>
+
+<InfixOp> ::= 
+    <DOUBLEVERTICALBAR> 
+  | <DOUBLEAMPERSTAND> 
+  | <VERTICALBAR> 
+  | <AMPERSTAND> 
+  | <CARROT> 
+  | <DOUBLEEQUAL> 
+  | <NOTEQUAL> 
+  | <LT> 
+  | <GT> 
+  | <LTE> 
+  | <GTE> 
+  | <LTLT> 
+  | <GTGT> 
+  | <GTGTGT> 
+  | <PLUS> 
+  | <MINUS> 
+  | <STAR> 
+  | <FORWARDSLASH> <PERCENT>
+
+<SelectorRag> ::= 
+    <Selector> 
+  | <Selector> <SelectorRag>
+
+<PostfixOpRag> ::= 
+    <PostfixOp> 
+  | <PostfixOp> <PostfixOpRag>
+
+<Expression3> ::= 
+    <PrefixOp> <Expression3> 
+  | <LPAREN> <Expression> <RPAREN> <Expression3> 
+  | <LPAREN> <Type> <RPAREN> <Expression3> 
+  | <Primary> 
+  | <Primary> <SelectorRag> 
+  | <Primary> <PostFixOpRag> 
+  | <Primary> <SelectorRag> <PostFixOpRag>
+
+<PrefixOp> ::=  
+    <PLUSPLUS> 
+  | <MINUSMINUS> 
+  | <BANG> 
+  | <TILDE> 
+  | <PLUS>
+  | <MINUS>
+
+<PostFixOp> ::= 
+    <PLUSPLUS> 
+  | <MINUSMINUS>
+
+<Primary> ::= 
+    <Literal> 
+  | <ParExpression> 
+  | <THIS> 
+  | <THIS> <Arguments> 
+  | <SUPER> <SuperSuffix> 
+  | <NEW> <Creator> 
+  | <NonWildcardTypeArguments> <ExplicitGenericInvocationSuffix> 
+  | <NonWildcardTypeArguents> <THIS> <Arguments> 
+  | <IdentifierRag>
+  | <IdentifierRag> <IdentifierSuffix>
+  | <BasicType> <PERIOD> <CLASS>
+  | <BasicType> <SqBrRag> <PERIOD> <CLASS>
+  | <VOID> <PERIOD> <CLASS>
+
+<Literal> ::= 
+    <IntegerLiteral> 
+  | <FloatingPointLiteral> 
+  | <CharacterLiteral> 
+  | <StringLiteral> 
+  | <BooleanLiteral> 
+  | <NullLiteral>
+
+<ParExpression> ::= 
+    <LPAREN> <Expression> <RPAREN>
+
+<ArgumentExpressionRag> ::=
+    <Expression>
+  | <Expression> <COMMA> <ArgumentExpressionRag>
+
+<Arguments> ::=
+    <LPAREN> <RPAREN>
+  | <LPAREN> <ArgumentExpressionRag> <RPAREN>
+
+<SuperSuffix> ::= 
+    <Arguments> 
+  | <PERIOD> <Identifier> 
+  | <PERIOD> <Identifier> <Arguments>
+
+<ExplicitGenericInvocationSuffix> ::= 
+    <SUPER> <SuperSuffix> 
+  | <Identifier> <Arguments>
+
+<CreatedName> ::=
+    <Identifier>
+  | <Identifier> <TypeArgumentsOrDiamond>
+  | <Identifier> <TypeArgumentsOrDiamond> <PERIOD> <CreatedName>
+
+<Creator> ::= 
+    <NonWildcardTypeArguments> <CreatedName> <ClassCreatorRest> 
+  | <CreatedName> <ClassCreatorRest> 
+  | <CreatedName> <ArrayCreatorRest>
+
+<ClassCreatorRest> ::= 
+    <Arguments> <ClassBody> 
+  | <Arguments>
+
+<ExpressionRag> ::= 
+    <Expression> 
+  | <Expression> <ExpressionRag>
+
+<ArrayCreatorRest> ::= 
+    <LSQB> <SqBrRag> <ArrayInitializer> <RSQB> <SqBrRag>
+  | <LSQB> <SqBrRag> <Expression> <RSQB> <SqBrRag>
+  | <LSQB> <SqBrRag> <ArrayInitializer> <RSQB> <LSQB> <ExpressionRag> <RSQB> <SqBrRag>
+  | <LSQB> <SqBrRag> <Expression> <RSQB> <LSQB> <ExpressionRag> <RSQB> <SqBrRag>
+
+<IdentifierSuffix> ::= 
+    <Arguments>
+  | <NOTIMPLEMENTED>
+
+<ExplicitGenericInvocation> ::= 
+    <NonWildcardTypeArguments> <ExplicitGenericInvocationSuffix>
+
+<InnerCreator> ::= 
+    <Identifier> <NonWildcardTypeArgumentsOrDiamond> <ClassCreatorRest> 
+  | <Identifier> <ClassCreatorRest>
+
+<Selector> ::=
+    <NOTIMPLEMENTED>
+  | <PERIOD> <Identifier> <Arguments>
+
+<EnumBody> ::= 
+    <EnumConstants> 
+  | <LBRACK> <EnumConstants> <COMMA> <RBRACK>
+  | <LBRACK> <EnumConstants> <EnumBodyDeclarations> <RBRACK>
+  | <LBRACK> <EnumConstants> <COMMA> <EnumBodyDeclarations> <RBRACK>
+  | <LBRACK> <RBRACK>
+  | <LBRACK> <COMMA>  <RBRACK>
+  | <LBRACK> <EnumBodyDeclarations> <RBRACK>
+  | <LBRACK> <COMMA> <EnumBodyDeclarations> <RBRACK>
+
+<EnumConstants> ::= 
+    <EnumConstant> 
+  | <EnumConstant> <COMMA> <EnumConstants>
+
+<EnumConstant> ::= 
+    <Identifier> 
+  | <Identifier> <Arguments> 
+  | <Identifier> <Arguments> <ClassBody> 
+  | <Identifier> <ClassBody>
+  | <Annotations> <Identifier> 
+  | <Annotations> <Identifier> <Arguments> 
+  | <Annotations> <Identifier> <Arguments> <ClassBody> 
+  | <Annotations> <Identifier> <ClassBody>
+
+<EnumBodyDeclarations> := 
+    <SEMICOLON> 
+  | <SEMICOLON>  <ClassBodyDeclarationRag>
+
+<AnnotationTypeBody> ::= 
+    <LBRACK> <RBRACK>
+  | <LBRACK> <AnnotationTypeElementDeclarations> <RBRACK>
+
+<AnnotationTypeDeclarations> ::=
+    <AnnotationTypeDeclaration>
+  | <AnnotationTypeDeclaration> <AnnotationTypeDeclarations>
+
+<AnnotationTypeElementDeclaration> ::=
+    <AnnotationTypeElementRest>
+  | <ModiferRag> <AnnotationTypeElementRest>
+
+<AnnotationTypeElementRest> ::=
+    <Type> <Identifier> <AnnotationMethodOrConstantRest> <SEMICOLON>
+  | <ClassDeclaration>
+  | <InterfaceDeclaration>
+  | <EnumDeclaration>
+  | <AnnotationTypeDeclaration>
+
+<AnnotationMethodOrConstantRest> ::=
+    <AnnotationMethodRest>
+  | <ConstantDeclaratorsRest>
+
+<AnnotationMethodRest> ::= 
+    <LPAREN> <RPAREN>
+  | <LPAREN> <RPAREN> <LSQB> <RSQB>
+  | <LPAREN> <RPAREN> <DEFAULT> <ElementValue>
+  | <LPAREN> <RPAREN> <LSQB> <RSQB> <DEFAULT> <ElementValue>
