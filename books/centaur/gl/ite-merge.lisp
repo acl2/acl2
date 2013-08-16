@@ -9,6 +9,7 @@
 
 (include-book "bvec-ite")
 (include-book "hyp-fix")
+(include-book "split-args")
 (include-book "std/misc/two-nats-measure" :dir :system)
 
 (include-book "tools/mv-nth" :dir :system)
@@ -378,20 +379,22 @@
        (booleans (mv 'merged (merge-general-booleans c x y)))
        (numbers (mv 'merged (merge-general-numbers c x y)))
        (conses (let ((hyp (bfr-and hyp (hf (bfr-ite c xhyp yhyp)))))
-                 (mv 'merged (gl-cons (ite-merge (hf c)
-                                                 (general-consp-car x)
-                                                 (general-consp-car y)
-                                                 hyp)
-                                      (ite-merge (hf c)
-                                                 (general-consp-cdr x)
-                                                 (general-consp-cdr y)
-                                                 hyp)))))
+                 (mv 'merged (gl-cons ;; gl-cons-split-ite ;; 
+                              (ite-merge (hf c)
+                                         (general-consp-car x)
+                                         (general-consp-car y)
+                                         hyp)
+                              (ite-merge (hf c)
+                                         (general-consp-cdr x)
+                                         (general-consp-cdr y)
+                                         hyp)))))
        (applies (let ((hyp (bfr-and hyp (hf (bfr-ite c xhyp yhyp)))))
-                  (mv 'merged (g-apply (g-apply->fn x)
-                                       (ite-merge-lists (hf c)
-                                                        (g-apply->args x)
-                                                        (g-apply->args y)
-                                                        hyp)))))
+                  (mv 'merged (g-apply ;; gl-fncall-split-ite ;; 
+                               (g-apply->fn x)
+                               (ite-merge-lists (hf c)
+                                                (g-apply->args x)
+                                                (g-apply->args y)
+                                                hyp)))))
        (otherwise (mv ordersym nil)))))
 
 

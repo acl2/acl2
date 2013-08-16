@@ -57,6 +57,8 @@
                          :in-theory (e/d** ((:rules-of-class :executable-counterpart :here)
                                             acl2::open-nat-list-<
                                             acl2-count len nfix fix
+                                            acl2-count-of-general-consp-car
+                                            acl2-count-of-general-consp-cdr
                                             car-cons cdr-cons commutativity-of-+
                                             unicity-of-0 null atom
                                             eq acl2-count-last-cdr-when-cadr-hack
@@ -64,8 +66,8 @@
                                             acl2::zp-compound-recognizer
                                             acl2::posp-compound-recognizer
                                             pos-fix
-                                            g-ite-depth-sum-of-glcp-interp-args-split-ite-then
-                                            g-ite-depth-sum-of-glcp-interp-args-split-ite-else
+                                            g-ite-depth-sum-of-gl-args-split-ite-then
+                                            g-ite-depth-sum-of-gl-args-split-ite-else
                                             g-ite->test-acl2-count-decr
                                             g-ite->then-acl2-count-decr
                                             g-ite->else-acl2-count-decr
@@ -162,51 +164,54 @@
            ((glcp-er actuals)
             (interp-list (cdr x)
                          alist . ,*glcp-common-inputs*)))
-        (interp-fncall fn actuals x contexts . ,*glcp-common-inputs*)))
+        (interp-fncall-ifs fn actuals x contexts . ,*glcp-common-inputs*)))
 
-    ;; (defun interp-fncall-ifs
-    ;;   (fn actuals x contexts . ,*glcp-common-inputs*)
-    ;;   (declare (xargs
-    ;;             :measure (list (pos-fix clk) 1515 (g-ite-depth-sum actuals) 20)
-    ;;             :guard (and (posp clk)
-    ;;                         (symbolp fn)
-    ;;                         (contextsp contexts)
-    ;;                         (not (eq fn 'quote))
-    ;;                         (true-listp actuals)
-    ;;                         . ,*glcp-common-guards*)
-    ;;             :stobjs (bvar-db state)))
-    ;;   (b* (((mv has-if test then-args else-args)
-    ;;         (glcp-interp-args-split-ite actuals))
-    ;;        ((unless has-if)
-    ;;         (interp-fncall fn actuals x contexts . ,*glcp-common-inputs*))
-    ;;        ((glcp-er test-bfr)
-    ;;         (simplify-if-test test t . ,*glcp-common-inputs*))
-    ;;        ((glcp-er then-obj)
-    ;;         (maybe-interp-fncall-ifs fn then-args x contexts test-bfr
-    ;;                                  . ,*glcp-common-inputs*))
-    ;;        ((glcp-er else-obj)
-    ;;         (maybe-interp-fncall-ifs fn else-args x contexts (bfr-not test-bfr)
-    ;;                                  . ,*glcp-common-inputs*)))
-    ;;     (merge-branches test-bfr then-obj else-obj nil contexts . ,*glcp-common-inputs*)))
+    (defun interp-fncall-ifs
+      (fn actuals x contexts . ,*glcp-common-inputs*)
+      (declare (xargs
+                :measure (list (pos-fix clk) 1919 (g-ite-depth-sum actuals) 20)
+                :guard (and (posp clk)
+                            (symbolp fn)
+                            (contextsp contexts)
+                            (not (eq fn 'quote))
+                            (true-listp actuals)
+                            . ,*glcp-common-guards*)
+                :stobjs (bvar-db state)))
+      (b* (((unless (glcp-lift-ifsp fn (glcp-config->lift-ifsp config)
+                                    (w state)))
+            (interp-fncall fn actuals x contexts . ,*glcp-common-inputs*))
+           ((mv has-if test then-args else-args)
+            (gl-args-split-ite actuals))
+           ((unless has-if)
+            (interp-fncall fn actuals x contexts . ,*glcp-common-inputs*))
+           ((glcp-er test-bfr)
+            (simplify-if-test test t . ,*glcp-common-inputs*))
+           ((glcp-er then-obj)
+            (maybe-interp-fncall-ifs fn then-args x contexts test-bfr
+                                     . ,*glcp-common-inputs*))
+           ((glcp-er else-obj)
+            (maybe-interp-fncall-ifs fn else-args x contexts (bfr-not test-bfr)
+                                     . ,*glcp-common-inputs*)))
+        (merge-branches test-bfr then-obj else-obj nil contexts . ,*glcp-common-inputs*)))
 
 
-    ;; (defun maybe-interp-fncall-ifs (fn actuals x contexts branchcond . ,*glcp-common-inputs*)
-    ;;   (declare (xargs
-    ;;             :measure (list (pos-fix clk) 1616 (g-ite-depth-sum actuals) 45)
-    ;;             :verify-guards nil
-    ;;             :guard (and (posp clk)
-    ;;                         (symbolp fn)
-    ;;                         (contextsp contexts)
-    ;;                         (not (eq fn 'quote))
-    ;;                         (true-listp actuals)
-    ;;                         . ,*glcp-common-guards*)
-    ;;             :stobjs (bvar-db state)))
-    ;;   (let ((branchcond (hyp-fix branchcond pathcond)))
-    ;;     (if branchcond
-    ;;         (let ((pathcond (bfr-and pathcond branchcond)))
-    ;;           (interp-fncall-ifs
-    ;;            fn actuals x contexts . ,*glcp-common-inputs*))
-    ;;       (glcp-value nil))))
+    (defun maybe-interp-fncall-ifs (fn actuals x contexts branchcond . ,*glcp-common-inputs*)
+      (declare (xargs
+                :measure (list (pos-fix clk) 1919 (g-ite-depth-sum actuals) 45)
+                :verify-guards nil
+                :guard (and (posp clk)
+                            (symbolp fn)
+                            (contextsp contexts)
+                            (not (eq fn 'quote))
+                            (true-listp actuals)
+                            . ,*glcp-common-guards*)
+                :stobjs (bvar-db state)))
+      (let ((branchcond (hyp-fix branchcond pathcond)))
+        (if branchcond
+            (let ((pathcond (bfr-and pathcond branchcond)))
+              (interp-fncall-ifs
+               fn actuals x contexts . ,*glcp-common-inputs*))
+          (glcp-value nil))))
 
     (defun interp-fncall
       (fn actuals x contexts . ,*glcp-common-inputs*)
@@ -219,8 +224,12 @@
                             (contextsp contexts)
                             . ,*glcp-common-guards*)
                 :stobjs (bvar-db state)))
-      (b* (((mv fncall-failed ans)
-            (if (general-concrete-listp actuals)
+      (b* ((uninterp (cdr (hons-assoc-equal fn (table-alist
+                                                'gl-uninterpreted-functions (w
+                                                                             state)))))
+           ((mv fncall-failed ans)
+            (if (and (not uninterp)
+                     (general-concrete-listp actuals))
                 (acl2::magic-ev-fncall fn (general-concrete-obj-list actuals)
                                        state t nil)
               (mv t nil)))
@@ -337,7 +346,9 @@ but its arity is ~x3.  Its formal parameters are ~x4."
 
     (defun merge-branches (test-bfr then else switchedp contexts . ,*glcp-common-inputs*)
       (declare (xargs
-                :measure (list (pos-fix clk) 2020 0 (if switchedp 0 1))
+                :measure (list (pos-fix clk) 1818
+                               (+ (acl2-count then) (acl2-count else))
+                               (if switchedp 20 30))
                 :verify-guards nil
                 :guard (and (posp clk)
                             (contextsp contexts)
@@ -345,13 +356,15 @@ but its arity is ~x3.  Its formal parameters are ~x4."
                 :stobjs (bvar-db state)))
       (b* (((when (eq test-bfr t)) (glcp-value then))
            ((when (eq test-bfr nil)) (glcp-value else))
+           ((when (hons-equal then else)) (glcp-value then))
            ((when (or (atom then)
                       (and (g-keyword-symbolp (tag then))
                            (or (not (eq (tag then) :g-apply))
                                (not (symbolp (g-apply->fn then)))
                                (eq (g-apply->fn then) 'quote)))))
             (if switchedp
-                (glcp-value (gobj-ite-merge test-bfr then else pathcond))
+                (merge-branch-subterms
+                 (bfr-not test-bfr) else then . ,*glcp-common-inputs*)
               (merge-branches (bfr-not test-bfr) else then t contexts . ,*glcp-common-inputs*)))
            (fn (if (eq (tag then) :g-apply)
                    (g-apply->fn then)
@@ -368,8 +381,72 @@ but its arity is ~x3.  Its formal parameters are ~x4."
             (b* ((clk (1- clk)))
               (interp-term-equivs term bindings contexts . ,*glcp-common-inputs*))))
         (if switchedp
-            (glcp-value (gobj-ite-merge test-bfr then else pathcond))
+            (merge-branch-subterms (bfr-not test-bfr) else then . ,*glcp-common-inputs*)
           (merge-branches (bfr-not test-bfr) else then t contexts . ,*glcp-common-inputs*))))
+
+    (defun merge-branch-subterms (test-bfr then else
+                                           . ,*glcp-common-inputs*)
+      (declare (xargs :measure (list (pos-fix clk) 1818
+                                     (+ (acl2-count then) (acl2-count else))
+                                     15)
+                      :guard (and (posp clk)
+                                  . ,*glcp-common-guards*)
+                :stobjs (bvar-db state)))
+      (b* (((when (or (atom then)
+                      (atom else)
+                      (xor (eq (tag then) :g-apply)
+                           (eq (tag else) :g-apply))
+                      (not (or (eq (tag then) :g-apply)
+                               (and (general-consp then)
+                                    (general-consp else))))
+                      (and (eq (tag then) :g-apply)
+                           (not (and (symbolp (g-apply->fn then))
+                                     (not (eq (g-apply->fn then) 'quote))
+                                     (eq (g-apply->fn then) (g-apply->fn else))
+                                     (int= (len (g-apply->args then))
+                                           (len (g-apply->args else))))))))
+            (glcp-value (gobj-ite-merge test-bfr then else pathcond)))
+           ((unless (eq (tag then) :g-apply))
+            (b* (((glcp-er car) (merge-branches test-bfr
+                                                (general-consp-car then)
+                                                (general-consp-car else)
+                                                nil nil . ,*glcp-common-inputs*))
+                 ((glcp-er cdr) (merge-branches test-bfr
+                                                (general-consp-cdr then)
+                                                (general-consp-cdr else)
+                                                nil nil . ,*glcp-common-inputs*)))
+              (glcp-value ;; (gl-cons-split-ite car cdr)
+               (gl-cons-maybe-split car cdr
+                                    (glcp-config->split-conses config)
+                                    (w state)))))
+           ((glcp-er args)
+            (merge-branch-subterm-lists test-bfr
+                                        (g-apply->args then)
+                                        (g-apply->args else)
+                                        . ,*glcp-common-inputs*)))
+        (glcp-value (gl-fncall-maybe-split
+                     (g-apply->fn then) args
+                     (glcp-config->split-fncalls config)
+                     (w state)))))
+
+    (defun merge-branch-subterm-lists (test-bfr then else 
+                                                . ,*glcp-common-inputs*)
+      (declare (xargs :measure (list (pos-fix clk) 1818
+                                     (+ (acl2-count then) (acl2-count else))
+                                     15)
+                      :guard (and (posp clk)
+                                  (equal (len then) (len else))
+                                  . ,*glcp-common-guards*)
+                :stobjs (bvar-db state)))
+      (b* (((when (atom then))
+            (glcp-value nil))
+           ((cons then1 thenr) then)
+           ((cons else1 elser) else)
+           ((glcp-er rest) (merge-branch-subterm-lists test-bfr thenr elser
+                                                       . ,*glcp-common-inputs*))
+           ((glcp-er first) (merge-branches test-bfr then1 else1 nil nil
+                                            . ,*glcp-common-inputs*)))
+        (glcp-value (cons first rest))))
 
     ;; returns a glcp-value of a bfr
     (defun simplify-if-test (test-obj intro-bvars . ,*glcp-common-inputs*)

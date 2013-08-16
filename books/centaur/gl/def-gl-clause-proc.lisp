@@ -297,12 +297,15 @@
                       interp-term-equivs
                       interp-test
                       interp-fncall
-                      ; interp-fncall-ifs
+                      interp-fncall-ifs
+                      maybe-interp-fncall-ifs
                       interp-if/or
                       maybe-interp
                       interp-if
                       interp-or
                       merge-branches
+                      merge-branch-subterms
+                      merge-branch-subterm-lists
                       simplify-if-test
                       rewrite
                       rewrite-apply-rules

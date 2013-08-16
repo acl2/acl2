@@ -541,3 +541,79 @@
                                 alist-keys
                                 good-svarmap
                                 4v-sexpr-to-faig-opt))
+
+
+(include-book "centaur/gl/def-gl-rewrite" :dir :system)
+
+(gl::gl-set-uninterpreted bool-to-4v)
+(gl::gl-set-uninterpreted faig-const->4v)
+(gl::def-gl-rewrite 4v->faig-const-of-bool-to-4v-gl
+                    (equal (4v->faig-const (bool-to-4v x))
+                           (cons (not (not x)) (not x))))
+(gl::def-gl-rewrite faig-const->4v-equal-x-gl
+                    (equal (equal (faig-const->4v a) 'x)
+                           (not (or (equal a (faig-t))
+                                    (equal a (faig-f))
+                                    (equal a (faig-z))))))
+
+(gl::def-gl-rewrite 4v->faig-const-of-faig-const->4v-gl
+                    (equal (4v->faig-const (faig-const->4v x))
+                           (if (and (consp x)
+                                    (booleanp (car x))
+                                    (booleanp (cdr x)))
+                               x
+                             '(t . t))))
+
+(gl::def-gl-rewrite 4vp-of-faig-const->4v-rewrite
+                    (equal (4vp (faig-const->4v x)) t))
+
+;; the following 4 theorems are not needed in STV proofs but end up being
+;; useful in non-STV ones
+(gl::def-gl-rewrite equal-of-bool-to-4v-1
+                    (equal (equal (bool-to-4v x) y)
+                           (or (and x (equal y (4vt)))
+                               (and (equal x nil) (equal y (4vf))))))
+
+(gl::def-gl-rewrite equal-of-bool-to-4v-2
+                    (equal (equal y (bool-to-4v x))
+                           (or (and x (equal y (4vt)))
+                               (and (equal x nil) (equal y (4vf))))))
+
+(gl::def-gl-rewrite equal-of-faig-const->4v-1
+                    (equal (equal (faig-const->4v x) y)
+                           (or (and (equal x (faig-t)) (equal y (4vt)))
+                               (and (equal x (faig-f)) (equal y (4vf)))
+                               (and (equal x (faig-z)) (equal y (4vz)))
+                               (and (not (equal x (faig-t)))
+                                    (not (equal x (faig-f)))
+                                    (not (equal x (faig-z)))
+                                    (equal y (4vx))))))
+
+(gl::def-gl-rewrite equal-of-faig-const->4v-2
+                    (equal (equal y (faig-const->4v x))
+                           (or (and (equal x (faig-t)) (equal y (4vt)))
+                               (and (equal x (faig-f)) (equal y (4vf)))
+                               (and (equal x (faig-z)) (equal y (4vz)))
+                               (and (not (equal x (faig-t)))
+                                    (not (equal x (faig-f)))
+                                    (not (equal x (faig-z)))
+                                    (equal y (4vx))))))
+
+
+;; this is used in STVs
+(defun 4v-to-nat-cons (car rest)
+  (b* (((unless (integerp rest)) rest)
+       (a (4v->faig-const car))
+       ((unless (or (equal a (faig-t))
+                    (equal a (faig-f))))
+        'x))
+    (+ (if (equal a (faig-t)) 1 0) (* 2 rest))))
+
+(defthmd 4v-to-nat-redef
+  (equal (4v-to-nat x)
+         (b* (((when (atom x)) 0)
+              (rest (4v-to-nat (cdr x))))
+           (4v-to-nat-cons (car x) rest)))
+  :rule-classes ((:definition :install-body nil)))
+           
+(gl::set-preferred-def 4v-to-nat 4v-to-nat-redef)

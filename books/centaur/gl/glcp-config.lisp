@@ -21,6 +21,9 @@
    run-before
    run-after
    case-split-override
+   (split-conses booleanp :default nil)
+   (split-fncalls booleanp :default nil)
+   (lift-ifsp booleanp :default nil)
    )
   :tag :glcp-config)
 

@@ -13,6 +13,7 @@
 (include-book "glcp-config")
 (include-book "centaur/misc/beta-reduce-full" :dir :system)
 (include-book "gl-mbe")
+(include-book "split-args")
 
 (defmacro glcp-value (res)
   `(mv nil obligs ,res bvar-db state))
@@ -494,114 +495,6 @@
        ((when err)
         (mv (acl2::msg "synp error: ~@0~%" (if (eq err t) "error" err)) nil nil)))
     (mv nil val bindings)))
-
-
-(defund glcp-interp-args-split-ite-cond (test args)
-  (declare (xargs :guard t))
-  (b* (((when (atom args)) (mv nil nil))
-       (obj (car args))
-       ((mv rest-then rest-else)
-        (glcp-interp-args-split-ite-cond test (cdr args)))
-       ((when (and (consp obj)
-                   (eq (tag obj) :g-ite)
-                   (hons-equal (g-ite->test obj) test)))
-        (mv (cons (g-ite->then obj) rest-then)
-            (cons (g-ite->else obj) rest-else))))
-    (mv (cons obj rest-then)
-        (cons obj rest-else))))
-    
-
-(defund glcp-interp-args-split-ite (args)
-  (declare (xargs :guard t))
-  (b* (((when (atom args))
-        (mv nil nil nil nil))
-       (obj (car args))
-       ((when (and (consp obj)
-                   (eq (tag obj) :g-ite)))
-        (b* ((test (g-ite->test obj))
-             (then (g-ite->then obj))
-             (else (g-ite->else obj))
-             ((mv then-rest else-rest)
-              (glcp-interp-args-split-ite-cond test (cdr args))))
-          (mv t test (cons then then-rest) (cons else else-rest))))
-       ((mv has-if test then else)
-        (glcp-interp-args-split-ite (cdr args)))
-       ((unless has-if)
-        (mv nil nil nil nil)))
-    (mv has-if test (cons obj then) (cons obj else))))
-
-(defund g-ite-depth (x)
-  (declare (xargs :guard t))
-  (if (mbe :logic (eq (tag x) :g-ite)
-           :exec (and (consp x)
-                      (eq (tag x) :g-ite)))
-      (+ 1 (max (g-ite-depth (g-ite->then x))
-                (g-ite-depth (g-ite->else x))))
-    0))
-
-(defthm posp-g-ite-depth
-  (implies (equal (tag x) :g-ite)
-           (posp (g-ite-depth x)))
-  :hints(("Goal" :in-theory (enable g-ite-depth)))
-  :rule-classes :type-prescription)
-
-
-(defthm g-ite-depth-of-g-ite->then
-  (implies (eq (tag x) :g-ite)
-           (< (g-ite-depth (g-ite->then x))
-              (g-ite-depth x)))
-  :hints(("Goal" :expand ((g-ite-depth x))))
-  :rule-classes :linear)
-
-(defthm g-ite-depth-of-g-ite->else
-  (implies (eq (tag x) :g-ite)
-           (< (g-ite-depth (g-ite->else x))
-              (g-ite-depth x)))
-  :hints(("Goal" :expand ((g-ite-depth x))))
-  :rule-classes :linear)
-
-(defund g-ite-depth-sum (x)
-  (declare (xargs :guard t))
-  (if (atom x)
-      0
-    (+ (g-ite-depth (car x))
-       (g-ite-depth-sum (cdr x)))))
-
-(defthm g-ite-depth-of-g-concrete
-  (equal (g-ite-depth (g-concrete x)) 0)
-  :hints(("Goal" :in-theory (enable g-ite-depth))))
-
-(defthm g-ite-depth-sum-of-glcp-interp-args-split-ite-cond-0
-  (<= (g-ite-depth-sum (mv-nth 0 (glcp-interp-args-split-ite-cond test args)))
-      (g-ite-depth-sum args))
-  :hints(("Goal" :in-theory (enable glcp-interp-args-split-ite-cond
-                                    g-ite-depth-sum gl-cons)))
-  :rule-classes :linear)
-
-(defthm g-ite-depth-sum-of-glcp-interp-args-split-ite-cond-1
-  (<= (g-ite-depth-sum (mv-nth 1 (glcp-interp-args-split-ite-cond test args)))
-      (g-ite-depth-sum args))
-  :hints(("Goal" :in-theory (enable glcp-interp-args-split-ite-cond
-                                    g-ite-depth-sum gl-cons)))
-  :rule-classes :linear)
-
-(defthm g-ite-depth-sum-of-glcp-interp-args-split-ite-then
-  (b* (((mv has-ite ?test ?then ?else)
-        (glcp-interp-args-split-ite args)))
-    (implies has-ite
-             (< (g-ite-depth-sum then) (g-ite-depth-sum args))))
-  :hints(("Goal" :in-theory (enable glcp-interp-args-split-ite
-                                    g-ite-depth-sum gl-cons)))
-  :rule-classes :linear)
-
-(defthm g-ite-depth-sum-of-glcp-interp-args-split-ite-else
-  (b* (((mv has-ite ?test ?then ?else)
-        (glcp-interp-args-split-ite args)))
-    (implies has-ite
-             (< (g-ite-depth-sum else) (g-ite-depth-sum args))))
-  :hints(("Goal" :in-theory (enable glcp-interp-args-split-ite
-                                    g-ite-depth-sum gl-cons)))
-  :rule-classes :linear)
 
 
 (mutual-recursion
@@ -1383,18 +1276,28 @@
       '(iff)
     nil))
 
+(defund glcp-lift-ifsp (fn flg w)
+  (declare (xargs :guard (and (symbolp fn)
+                              (plist-worldp w))))
+  (and flg
+       (not (cdr (hons-assoc-equal fn (table-alist 'gl-if-opaque-fns w))))))
+  
+
 (defconst *glcp-generic-template-subst*
   '((run-gified . glcp-generic-run-gified)
     (interp-test . glcp-generic-interp-test)
     (interp-term . glcp-generic-interp-term)
     (interp-term-equivs . glcp-generic-interp-term-equivs)
     (interp-fncall-ifs . glcp-generic-interp-fncall-ifs)
+    (maybe-interp-fncall-ifs . glcp-generic-maybe-interp-fncall-ifs)
     (interp-fncall . glcp-generic-interp-fncall)
     (interp-if/or . glcp-generic-interp-if/or)
     (maybe-interp . glcp-generic-maybe-interp)
     (interp-if . glcp-generic-interp-if)
     (interp-or . glcp-generic-interp-or)
     (merge-branches . glcp-generic-merge-branches)
+    (merge-branch-subterms . glcp-generic-merge-branch-subterms)
+    (merge-branch-subterm-lists . glcp-generic-merge-branch-subterm-lists)
     (simplify-if-test . glcp-generic-simplify-if-test)
     (rewrite . glcp-generic-rewrite)
     (rewrite-apply-rules . glcp-generic-rewrite-apply-rules)
@@ -1436,6 +1339,39 @@
 ;;                   (< (acl2-count (g-apply->args x)) (acl2-count x)))
 ;;          :rule-classes :linear))
 
+(encapsulate nil
+  (local (defthm acl2-count-of-g-concrete->obj
+           (implies (equal (tag x) :g-concrete)
+                    (< (acl2-count (g-concrete->obj x))
+                       (acl2-count x)))
+           :rule-classes :linear))
+  (local (defthm acl2-count-of-car-strong
+           (implies (consp x)
+                    (< (acl2-count (car X)) (acl2-count x)))
+           :rule-classes :linear))
+  (local (defthm acl2-count-of-cdr-strong
+           (implies (consp x)
+                    (< (acl2-count (cdr X)) (acl2-count x)))
+           :rule-classes :linear))
+
+  (local (defthm acl2-count-of-g-concrete
+           (equal (acl2-count (g-concrete x))
+                  (+ 1 (acl2-count x)))
+           :hints(("Goal" :in-theory (enable g-concrete)))))
+  
+  (defthmd acl2-count-of-general-consp-car
+    (implies (general-consp x)
+             (< (acl2-count (general-consp-car x))
+                (acl2-count x)))
+    :hints(("Goal" :in-theory (enable mk-g-concrete)))
+    :rule-classes :linear)
+
+  (defthmd acl2-count-of-general-consp-cdr
+    (implies (general-consp x)
+             (< (acl2-count (general-consp-cdr x))
+                (acl2-count x)))
+    :hints(("Goal" :in-theory (enable mk-g-concrete)))
+    :rule-classes :linear))
 
 (make-event
  (sublis *glcp-generic-template-subst*
@@ -1448,7 +1384,7 @@
  (sublis *glcp-generic-template-subst*
          *glcp-interp-wrappers-template*))
 
-  
+
 #||
 ;; redundant
 (mutual-recursion
@@ -1468,8 +1404,8 @@
                                          acl2::zp-compound-recognizer
                                          acl2::posp-compound-recognizer
                                          pos-fix
-                                         g-ite-depth-sum-of-glcp-interp-args-split-ite-then
-                                         g-ite-depth-sum-of-glcp-interp-args-split-ite-else
+                                         g-ite-depth-sum-of-gl-args-split-ite-then
+                                         g-ite-depth-sum-of-gl-args-split-ite-else
                                          g-ite->test-acl2-count-decr
                                          g-ite->then-acl2-count-decr
                                          g-ite->else-acl2-count-decr
@@ -1582,7 +1518,7 @@
                          (acl2::interp-defs-alistp (glcp-config->overrides config)))
              :stobjs (bvar-db state)))
    (b* (((mv has-if test then-args else-args)
-         (glcp-interp-args-split-ite actuals))
+         (gl-args-split-ite actuals))
         ((when has-if)
          (b* ((hyp pathcond))
            (glcp-if

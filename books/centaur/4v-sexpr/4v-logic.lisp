@@ -1226,3 +1226,21 @@ value is a four-valued constant), when X[k] &lt;= Y[k] for every key k.</p>"
                                       (y b)
                                       (k k0)))))))))
 
+
+
+(defun bool-to-4v (x)
+  (declare (xargs :guard t))
+  (if x *4vt* *4vf*))
+
+(defun 4v-to-nat (a)
+  (declare (xargs :guard t))
+  (if (atom a)
+      0
+    (let ((rest (4v-to-nat (cdr a))))
+      (if (integerp rest)
+          (case (car a)
+            ((t) (+ 1 (* 2 rest)))
+            ((f) (* 2 rest))
+            (t 'x))
+        rest))))
+
