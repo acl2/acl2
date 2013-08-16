@@ -1,0 +1,18 @@
+#summary Some details on how Centaur goes about certifying books using a cluster
+
+= Introduction =
+
+Centaur uses a cluster to certify books in parallel.  This saves them a lot of time.  Here are some hints from Jared on how they go about it.
+
+
+= Details =
+
+At Centaur we use a ROCKS cluster to do our builds.  It uses PBS scripts that allow you to say how much memory a job is going to take.  If the job takes more than its allotted memory, the clustering software can decide to kill it.  More generally, the clustering software uses this memory limit to ensure that when it allocates jobs to machines, the machine will have enough physical machine to run the job.
+
+This is really unbelievably useful.  If you let a machine start swapping into the gigabytes, at worst it dies a special kind of horrible death where its load average is 50 and you can't even "kill" anything.  In a slightly better case, you may discover just how awful the Linux overcommit and OOM killer really are.  My favorite article on the topic, from back before we had the cluster and were running into this frequently, is here: http://thoughts.davisjeff.com/2009/11/29/linux-oom-killer/
+
+At any rate, fwiw, when cert.pl writes out the scripts to certify books, it includes some PBS commands (just bash comments that are harmless to anyone not running a cluster).  One of these commands says how much memory the book is expected to take.  This is done by a stupid heuristic: we search for (set-max-mem ...) lines; if no such line is found we say the book will take 4 GB, and otherwise we reserve I think 2-3 GB more than the set-max-mem line calls for.  This extra padding is because set-max-mem only affects the heap, and doesn't account for the stacks, and we typically build a CCL image with large stacks, as explained in centaur/ccl-config.lsp, and also because set-max-mem is sort of best thought of as a soft cap, anyway.
+
+Maybe this information could somehow be used to avoid problems on other systems.
+
+But I kind of doubt it.  I think we investigated whether or not GNU Make can manage memory like this and concluded that it has no support for dynamically limiting jobs.  Worse, I don't believe it's even possible to determine how many jobs Make has been invoked with---I have sometimes found this very frustrating, so please correct me if you know a way to do it---so I'm not sure there's any reasonable way to even warn a user that they are using a -j that is exceeding some limit, even given a nice, portable way to determine the machine's physical memory.
