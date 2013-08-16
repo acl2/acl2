@@ -915,7 +915,7 @@ ADDED_BOOKS := models/y86-target.cert $(SLOW_BOOKS)
 endif # ifeq ($(filter CCL ALLEGRO SBCL, $(ACL2_HOST_LISP)), )
 
 else
-ADDED_BOOKS := models/y86-target.cert $(SLOW_BOOKS))
+ADDED_BOOKS := models/y86-target.cert $(SLOW_BOOKS)
 endif # ifeq ($(ACL2_HAS_HONS), )
 
 everything: all $(ADDED_BOOKS)
