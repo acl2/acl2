@@ -121,9 +121,9 @@
 ; when the term one is trying to prove is (consp (firstn-chars 1 lexeme)) so it
 ; should be pretty cheap.  Please correct me if I've got it wrong.
 
-  (implies (and (stringp lexeme)
-                (< 0 (length lexeme)))
-           (consp (firstn-chars 1 lexeme)))
+  (implies (and (stringp x)
+                (< 0 (length x)))
+           (consp (firstn-chars 1 x)))
   :hints (("Goal" :in-theory (enable firstn-chars length))))
 
 #||
