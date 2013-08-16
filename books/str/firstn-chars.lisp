@@ -114,6 +114,17 @@
   (defcong charlisteqv charlisteqv (append-firstn-chars n x y) 3)
   (defcong icharlisteqv icharlisteqv (append-firstn-chars n x y) 3))
 
+(defthm firstn-chars-consp
+
+; I (David Rager) needed this lemma in one of my uses of firstn-chars, so I've
+; placed it here in case others find it useful.  I think it will only trigger
+; when the term one is trying to prove is (consp (firstn-chars 1 lexeme)) so it
+; should be pretty cheap.  Please correct me if I've got it wrong.
+
+  (implies (and (stringp lexeme)
+                (< 0 (length lexeme)))
+           (consp (firstn-chars 1 lexeme)))
+  :hints (("Goal" :in-theory (enable firstn-chars length))))
 
 #||
 
