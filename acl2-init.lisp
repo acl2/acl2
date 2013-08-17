@@ -782,23 +782,21 @@ implementations.")
         #+cltl2 'with-standard-io-syntax
         args))
 
-(defun user-args-string (&optional alternate-prefix)
+(defun user-args-string (inert-args &optional (separator '"--"))
 
-; This function is used in calls of write-exec-file to save images that can
-; comprehend command line arguments supplied directly by the user to ACL2,
-; which thus are not intended for direct use by the host Lisp.  Jared Davis,
-; who suggested using the "--" argument that we now use (except, he pointed out
-; a different approach for SBCL, which we also use), has created a community
-; book, books/oslib/argv.lisp, that grabs all the command-line arguments.  The
-; goal here is simply to tell the host Lisp about arguments that are to be
-; ignored by it -- namely, those after "--" (or, for sbcl,
-; "--end-toplevel-options") -- other than to affect the value of a variable (or
-; function) such as ccl::*unprocessed-command-line-arguments* (see
-; books/oslib/argv.lisp), for use by the application.
+; This function is used when saving executable scripts, which may specify that
+; certain command line arguments are not to be processed by Lisp (other than to
+; affect the value of a variable or function such as
+; ccl::*unprocessed-command-line-arguments*; see books/oslib/argv.lisp).  Also
+; see :doc save-exec.  A common convention is that arguments after `--' are not
+; processed by Lisp.
 
-  (if alternate-prefix
-      (concatenate 'string alternate-prefix " \"$@\"")
-    "-- \"$@\""))
+  (cond ((null inert-args)
+         "\"$@\"")
+        ((eq inert-args t)
+         (concatenate 'string separator " \"$@\""))
+        (t
+         (concatenate 'string separator " " inert-args " \"$@\""))))
 
 (defmacro write-exec-file (stream prefix string &rest args)
 
@@ -879,10 +877,16 @@ implementations.")
     (when str ; equivalently, when outfilename is non-nil
       (close str))))
 
+(defun insert-string (s)
+  (cond ((null s) "")
+        (t (concatenate 'string " " s))))
+
 #+akcl
 (defun save-acl2-in-akcl-aux (sysout-name gcl-exec-name
                                           write-worklispext
-                                          set-optimize-maximum-pages)
+                                          set-optimize-maximum-pages
+                                          host-lisp-args
+                                          inert-args)
   (if (and write-worklispext (probe-file "worklispext"))
       (delete-file "worklispext"))
   (let* ((ext "gcl")
@@ -903,9 +907,10 @@ implementations.")
     (if (probe-file gcl-exec-file)
         (delete-file gcl-exec-file))
     (with-open-file (str sysout-name :direction :output)
-                    (write-exec-file str nil "~s ~a~%"
+                    (write-exec-file str nil "~s~s ~a~%"
                                      gcl-exec-file
-                                     (user-args-string)))
+                                     (insert-string host-lisp-args)
+                                     (user-args-string inert-args)))
     (cond ((and set-optimize-maximum-pages
                 (boundp 'si::*optimize-maximum-pages*))
 
@@ -1133,13 +1138,14 @@ implementations.")
 
 ;  (print "Save the system") ;debugging
   (when (not do-not-save-gcl)
-    (save-acl2-in-akcl-aux sysout-name gcl-exec-name t t)))
+    (save-acl2-in-akcl-aux sysout-name gcl-exec-name t t nil nil)))
 
 #+akcl
-(defun save-exec-raw (sysout-name)
+(defun save-exec-raw (sysout-name host-lisp-args inert-args)
   (setq *acl2-allocation-alist* nil) ; Don't meddle with allocations.
   (setq *acl2-default-restart-complete* nil)
-  (save-acl2-in-akcl-aux sysout-name sysout-name nil nil))
+  (save-acl2-in-akcl-aux sysout-name sysout-name nil nil host-lisp-args
+                         inert-args))
 
 (defvar *acl2-default-restart-complete* nil)
 
@@ -1237,7 +1243,8 @@ implementations.")
                   :full-gc t))
 
 #+lispworks
-(defun lispworks-save-exec-aux (sysout-name eventual-sysout-name)
+(defun lispworks-save-exec-aux (sysout-name eventual-sysout-name
+                                            host-lisp-args inert-args)
 
 ; LispWorks support (Dave Fox) pointed out, in the days of LispWorks 4, that we
 ; need to be sure to call (mp:initialize-multiprocessing) when starting up.  Up
@@ -1304,9 +1311,10 @@ implementations.")
 ; changing the underlying Lisp implementation before building ACL2 (again,
 ; presumably based on knowledge of the host Lisp implementation).
 
-                                     "~s -init - -siteinit - ~a~%"
+                                     "~s -init - -siteinit -~a ~a~%"
                                      eventual-lw-exec-file
-                                     (user-args-string)))
+                                     (insert-string host-lisp-args)
+                                     (user-args-string inert-args)))
     (chmod-executable sysout-name)
     (cond ((and system::*init-file-loaded*
                 system::*complain-about-init-file-loaded*)
@@ -1338,18 +1346,21 @@ implementations.")
       (delete-file "worklispext"))
   (with-open-file (str "worklispext" :direction :output)
                   (format str "lw"))
-  (lispworks-save-exec-aux sysout-name eventual-sysout-name))
+  (lispworks-save-exec-aux sysout-name eventual-sysout-name
+                           nil nil))
 
 #+lispworks
-(defun save-exec-raw (sysout-name)
+(defun save-exec-raw (sysout-name host-lisp-args inert-args)
 
 ; See the comment above about :multiprocessing t.
 
   (setq *acl2-default-restart-complete* nil)
-  (lispworks-save-exec-aux sysout-name sysout-name))
+  (lispworks-save-exec-aux sysout-name sysout-name
+                           host-lisp-args inert-args))
 
 #+cmu
-(defun save-acl2-in-cmulisp-aux (sysout-name core-name)
+(defun save-acl2-in-cmulisp-aux (sysout-name core-name
+                                             host-lisp-args inert-args)
   (let ((eventual-sysout-core
          (unix-full-pathname core-name "core"))
         (sysout-core
@@ -1380,7 +1391,7 @@ implementations.")
        (write-exec-file str
                         nil
                         "~s -core ~s -dynamic-space-size ~s -eval ~
-                         '(acl2::cmulisp-restart)' ~a~%"
+                         '(acl2::cmulisp-restart)'~a ~a~%"
                         prog2
                         eventual-sysout-core
 
@@ -1396,7 +1407,8 @@ implementations.")
 ; So we use 1600 and see how it goes....
 
                         1600
-                        (user-args-string))))
+                        (insert-string host-lisp-args)
+                        (user-args-string inert-args))))
     (chmod-executable sysout-name)
     (system::gc)
     (extensions::save-lisp sysout-core :load-init-file nil :site-init nil
@@ -1413,12 +1425,12 @@ implementations.")
       (delete-file "worklispext"))
   (with-open-file (str "worklispext" :direction :output)
                   (format str "core"))
-  (save-acl2-in-cmulisp-aux sysout-name core-name))
+  (save-acl2-in-cmulisp-aux sysout-name core-name nil nil))
 
 #+cmu
-(defun save-exec-raw (sysout-name)
+(defun save-exec-raw (sysout-name host-lisp-args inert-args)
   (setq *acl2-default-restart-complete* nil)
-  (save-acl2-in-cmulisp-aux sysout-name sysout-name))
+  (save-acl2-in-cmulisp-aux sysout-name sysout-name host-lisp-args inert-args))
 
 #+sbcl
 (defvar *sbcl-dynamic-space-size*
@@ -1468,7 +1480,17 @@ implementations.")
   #-(and x86-64 hons) 2000)
 
 #+sbcl
-(defun save-acl2-in-sbcl-aux (sysout-name core-name)
+(defvar *sbcl-contrib-dir* nil)
+
+#+sbcl
+(defun save-acl2-in-sbcl-aux (sysout-name core-name
+                                          host-lisp-args
+                                          toplevel-args
+                                          inert-args)
+
+; Note that host-lisp-args specifies what the SBCL manual calls "runtime
+; options", while toplevel-args is what it calls "toplevel options".
+
   (declaim (optimize (sb-ext:inhibit-warnings 3)))
   (let ((eventual-sysout-core
          (unix-full-pathname core-name "core"))
@@ -1491,19 +1513,23 @@ implementations.")
 
         ("~a~%"
          (let ((contrib-dir
-                (and (boundp 'sb-ext::*core-pathname*)
-                     (ignore-errors
-                      (let* ((core-dir
-                              (pathname-directory sb-ext::*core-pathname*))
-                             (contrib-dir-pathname
-                              (and (equal (car (last core-dir))
-                                          "output")
-                                   (make-pathname
-                                    :directory
-                                    (append (butlast core-dir 1)
-                                            (list "contrib"))))))
-                        (and (probe-file contrib-dir-pathname)
-                             (namestring contrib-dir-pathname)))))))
+                (or
+                 *sbcl-contrib-dir*
+                 (and (boundp 'sb-ext::*core-pathname*)
+                      (ignore-errors
+                        (let* ((core-dir
+                                (pathname-directory
+                                 sb-ext::*core-pathname*))
+                               (contrib-dir-pathname
+                                (and (equal (car (last core-dir))
+                                            "output")
+                                     (make-pathname
+                                      :directory
+                                      (append (butlast core-dir 1)
+                                              (list "contrib"))))))
+                          (and (probe-file contrib-dir-pathname)
+                               (setq *sbcl-contrib-dir*
+                                     (namestring contrib-dir-pathname)))))))))
            (if contrib-dir
                (format nil
                        "export SBCL_HOME=~s"
@@ -1526,12 +1552,14 @@ implementations.")
 ; out this option to us after ACL2 Version_6.2, we started using it in place of
 ; " --userinit /dev/null", which had not worked on Windows.
 
-        "~s --dynamic-space-size ~s --control-stack-size 8 --core ~s ~
-         --end-runtime-options --no-userinit --eval '(acl2::sbcl-restart)' ~a"
+        "~s --dynamic-space-size ~s --control-stack-size 8 --core ~s~a ~
+         --end-runtime-options --no-userinit --eval '(acl2::sbcl-restart)'~a ~a~%"
         prog
         *sbcl-dynamic-space-size*
         eventual-sysout-core
-        (user-args-string "--end-toplevel-options"))))
+        (insert-string host-lisp-args)
+        (insert-string toplevel-args)
+        (user-args-string inert-args "--end-toplevel-options"))))
     (chmod-executable sysout-name)
     ;; In SBCL 0.9.3 the read-only space is too small for dumping ACL2 on x86,
     ;; so we have to specify :PURIFY NIL. This will unfortunately result in
@@ -1550,16 +1578,18 @@ implementations.")
        (delete-file "worklispext"))
    (with-open-file (str "worklispext" :direction :output)
                    (format str "core"))
-   (save-acl2-in-sbcl-aux sysout-name core-name)))
+   (save-acl2-in-sbcl-aux sysout-name core-name nil nil nil)))
 
 #+sbcl
-(defun save-exec-raw (sysout-name)
+(defun save-exec-raw (sysout-name host-lisp-args toplevel-args inert-args)
   (with-warnings-suppressed
    (setq *acl2-default-restart-complete* nil)
-   (save-acl2-in-sbcl-aux sysout-name sysout-name)))
+   (save-acl2-in-sbcl-aux sysout-name sysout-name host-lisp-args toplevel-args
+                          inert-args)))
 
 #+allegro
-(defun save-acl2-in-allegro-aux (sysout-name dxl-name)
+(defun save-acl2-in-allegro-aux (sysout-name dxl-name
+                                             host-lisp-args inert-args)
   (excl:gc t) ; Suggestions are welcome for better gc call(s)!
   #+(and allegro-version>= (version>= 4 3))
   (progn
@@ -1599,10 +1629,11 @@ implementations.")
 
 ;         "~s -I ~s -L ~s ~s~%"
 
-          "~s -I ~s ~a~%"
+          "~s -I ~s~s ~a~%"
           (system::command-line-argument 0)
           eventual-sysout-dxl
-          (user-args-string)))
+          (insert-string host-lisp-args)
+          (user-args-string inert-args)))
         (chmod-executable sysout-name)
         (excl:dumplisp :name sysout-dxl)))
     #-(and allegro-version>= (version>= 5 0))
@@ -1624,12 +1655,12 @@ implementations.")
   (with-open-file (str "worklispext" :direction :output)
                   (format str "dxl"))
   (load "allegro-acl2-trace.lisp") ; Robert Krug's trace patch
-  (save-acl2-in-allegro-aux sysout-name dxl-name))
+  (save-acl2-in-allegro-aux sysout-name dxl-name nil nil))
 
 #+allegro
-(defun save-exec-raw (sysout-name)
+(defun save-exec-raw (sysout-name host-lisp-args inert-args)
   (setq *acl2-default-restart-complete* nil)
-  (save-acl2-in-allegro-aux sysout-name sysout-name))
+  (save-acl2-in-allegro-aux sysout-name sysout-name host-lisp-args inert-args))
 
 (defun rc-filename (dir)
   (concatenate 'string dir ".acl2rc"))
@@ -1653,7 +1684,7 @@ implementations.")
                   (ACL2::LP)~%")))))
 
 #+clisp
-(defun save-acl2-in-clisp-aux (sysout-name mem-name)
+(defun save-acl2-in-clisp-aux (sysout-name mem-name host-lisp-args inert-args)
   (let ((save-dir (our-pwd))
         (eventual-sysout-mem
          (unix-full-pathname mem-name "mem"))
@@ -1668,7 +1699,7 @@ implementations.")
      (str sysout-name :direction :output)
      (write-exec-file str
                       nil
-                      "~s -i ~s -p ACL2 -M ~s -m ~dMB -E ISO-8859-1 ~a~%"
+                      "~s -i ~s -p ACL2 -M ~s -m ~dMB -E ISO-8859-1~a ~a~%"
                       (or (ext:getenv "LISP") "clisp")
                       (rc-filename save-dir)
                       eventual-sysout-mem
@@ -1685,7 +1716,8 @@ implementations.")
 ; and CLISP complains about that when starting up.
 
                       10
-                      (user-args-string)))
+                      (insert-string host-lisp-args)
+                      (user-args-string inert-args)))
     (chmod-executable sysout-name)
     (ext:gc)
     (ext:saveinitmem sysout-mem
@@ -1704,15 +1736,15 @@ implementations.")
       (delete-file "worklispext"))
   (with-open-file (str "worklispext" :direction :output)
                   (format str "mem"))
-  (save-acl2-in-clisp-aux sysout-name mem-name))
+  (save-acl2-in-clisp-aux sysout-name mem-name nil nil))
 
 #+clisp
-(defun save-exec-raw (sysout-name)
+(defun save-exec-raw (sysout-name host-lisp-args inert-args)
   (setq *acl2-default-restart-complete* nil)
-  (save-acl2-in-clisp-aux sysout-name sysout-name))
+  (save-acl2-in-clisp-aux sysout-name sysout-name host-lisp-args inert-args))
 
 #+ccl
-(defun save-acl2-in-ccl-aux (sysout-name core-name)
+(defun save-acl2-in-ccl-aux (sysout-name core-name host-lisp-args inert-args)
   (let* ((ccl-program0
           (or (car ccl::*command-line-argument-list*) ; Gary Byers suggestion
               (error "Unable to determine CCL program pathname!")))
@@ -1764,20 +1796,36 @@ implementations.")
                                      default-dir)
                            "")))
 
+; We use -Z 64M even though the default for -Z (as of mid-2013) is 2M, in order
+; to get larger stacks.  We have ample evidence that a larger stack would be
+; useful: an ACL2 example from David Russinoff in August 2013 for which 8M was
+; insufficient (defining a constant function with body '(...), a quoted list of
+; length 65536; our own x86 model requiring 4M for an ACL2 proof using
+; def-gl-thm; and more generally, Centaur's routine use of large stacks,
+; equivalent to -Z 256M.  Not surprisingly, we that performance was not hurt
+; using a larger stack size, for two pairs of ACL2(h) regressions as follows.
+; We ran one pair of runs on a Linux system with 32GB of RAM, and one pair of
+; runs on a MacBook Pro with 8GB of RAM, all in August 2013.  For each pair we
+; ran with -Z 64M and also omitting -Z (equivalent to using -Z 2M).  Our main
+; concern was potentially larger backtraces when using (set-debugger-enable
+; :bt), as during a regression.  We solved that by restricting backtrace counts
+; using *ccl-print-call-history-count*.
+
+; See the section on "reading characters from files" in file acl2.lisp for an
+; explanation of the -K argument below.
+
 ; It is probably important to use -e just below instead of :toplevel-function,
 ; at least for #+hons.  Jared Davis and Sol Swords have told us that it seems
 ; that with :toplevel-function one gets a new "toplevel" thread at start-up,
 ; which "plays badly with the thread-local hash tables that make up the hons
 ; space".
 
-; See the section on "reading characters from files" in file acl2.lisp for an
-; explanation of the -K argument below.
-
-                      "~s -I ~s -K ISO-8859-1 -e ~
-                       \"(acl2::acl2-default-restart)\" ~a~%"
+                      "~s -I ~s -Z 64M -K ISO-8859-1 -e ~
+                       \"(acl2::acl2-default-restart)\"~a ~a~%"
                       ccl-program
                       core-name
-                      (user-args-string)))
+                      (insert-string host-lisp-args)
+                      (user-args-string inert-args)))
     (chmod-executable sysout-name)
     (ccl::gc)
     (ccl:save-application core-name)))
@@ -1786,12 +1834,12 @@ implementations.")
 (defun save-acl2-in-ccl (sysout-name &optional mode core-name)
   (setq *saved-mode* mode)
   (load "openmcl-acl2-trace.lisp")
-  (save-acl2-in-ccl-aux sysout-name core-name))
+  (save-acl2-in-ccl-aux sysout-name core-name nil nil))
 
 #+ccl
-(defun save-exec-raw (sysout-name)
+(defun save-exec-raw (sysout-name host-lisp-args inert-args)
   (setq *acl2-default-restart-complete* nil)
-  (save-acl2-in-ccl-aux sysout-name sysout-name))
+  (save-acl2-in-ccl-aux sysout-name sysout-name host-lisp-args inert-args))
 
 ; Since saved-build-date-string is avoided for MCL, we avoid the following too
 ; (which is not applicable to MCL sessions anyhow).

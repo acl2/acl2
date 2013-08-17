@@ -3475,19 +3475,6 @@
   quitting from the break will only return you to that environment, not to the
   top of ACL2's read-eval-print loop.~/")
 
-(deflabel saving-and-restoring
-  :doc
-  ":Doc-Section Miscellaneous
-
-  saving and restoring your logical state~/
-
-  One normally works on an ACL2-based project by developing ~il[books], which
-  can then be included when continuing on that project in later ACL2 sessions;
-  ~pl[include-book].  However, this approach can be time-consuming when there
-  are very large collections of ~il[books] to be included.  See ~pl[save-exec]
-  for the description of a utility that saves your ACL2 state so that you can
-  immediately re-start later in that same state.~/~/")
-
 (deflabel ordinals
   :doc
   ":Doc-Section Miscellaneous
@@ -21091,6 +21078,13 @@
   of ~ilc[encapsulate].  Thanks to Jared Davis for a conversation causing us to
   consider this change.
 
+  (CCL only) When ~ilc[set-debugger-enable] is invoked with an argument that
+  prints a backtrace and CCL is the host Lisp, the backtrace will be limited to
+  10,000 stack frames.  (We have seen more than 65,000 stack frames before this
+  change.)  This limit is the value of raw Lisp variable
+  ~c[*ccl-print-call-history-count*], which may be assigned another positive
+  integer value to serve as the maximum number of stack frames to be printed.
+
   ~st[NEW FEATURES]
 
   ACL2 can now be instructed to time activities using real time (wall clock
@@ -21153,14 +21147,32 @@
   by searching ACL2 source file ~c[axioms.lisp] for ``~c[(declaim (inline]''.)
 
   Better support has been provided for command line arguments, especially those
-  supplied directly by the user when calling ACL2.  (See the comment in source
-  function ~c[user-args-string], source file ~c[acl2-init.lisp], for more
-  information.)  Thanks to Jared Davis for suggesting these changes.
+  supplied directly by the user when calling ACL2.  For one, problems with
+  quoting have been solved using ~c[\"$@\"] in place of ~c[$*].  Also, the
+  function ~ilc[save-exec] now allows specification of arguments, both for the
+  host Lisp as well as ``inert'' arguments that can be passed along to calls of
+  programs (as with ~ilc[sys-call]).  ~l[save-exec].  See the source function
+  ~c[user-args-string] and its comments, source file ~c[acl2-init.lisp], for
+  more information.  Thanks to Jared Davis for suggesting the use of
+  ~c[\"$@\"], as well as modifications to ~ilc[save-exec] and helpful
+  conversations about that.
 
   A rather extensive overhaul has taken place for the function proclaiming
   mechanism.  As before, this is only used when the host Lisp is GCL.  However,
-  building an executable now faster for some Lisps, including GCL, by avoiding
-  repeated recompilation and perhaps repeated initialization.
+  building an executable is now faster for some Lisps, including GCL, by
+  avoiding repeated recompilation and perhaps repeated initialization.
+
+  (CCL only) We increased stack sizes when the host Lisp is CCL.  The default
+  for recent CCL versions is equivalent to specifying `~c[-Z 2M]' on the
+  command line, but saved ACL2 scripts (including experimental versions
+  ACL2(h), ACL2(p), ACL2(r), and combinations of them) to `~c[-Z 64M]',
+  representing a 32-fold increase.  Thanks to Jared Davis for pointing us to
+  community books file ~c[books/centaur/ccl-config.lsp] and to Sol Swords for
+  helpful discussions.
+
+  (SBCL only) Fixed ~c[save-exec] for host Lisp SBCL to provide the same export
+  of variable ~c[SBCL_HOME] that was provided in the original ~c[saved_acl2]
+  script.
 
   ~st[EMACS SUPPORT]
 
@@ -27614,45 +27626,8 @@ accompanying <i>``File Path''</i> shown at the end of each book's text.
 #-acl2-loop-only
 (defparameter *initial-cbd* nil)
 
-(defun save-exec (exec-filename extra-startup-string)
-
-  ":Doc-Section Other
-
-  save an executable image and (for most Common Lisps) a wrapper script~/
-
-  ~l[saving-and-restoring] for an explanation of why one might want to use this
-  function.
-  ~bv[]
-  Examples:
-  ; Save an executable named my-saved_acl2:
-  (save-exec \"my-saved_acl2\"
-             \"This saved image includes Version 7 of Project Foo.\")
-
-  ; Same as above, but with a generic comment instead:
-  (save-exec \"my-saved_acl2\" nil)~/
-  General Form:
-  (save-exec exec-filename extra-startup-string)
-  ~ev[]
-  where ~c[exec-filename] is the filename of the proposed executable and
-  ~c[extra-startup-string] is a non-empty string to be printed after the normal
-  ACL2 startup message when you start up the saved image.  However,
-  ~c[extra-startup-string] is allowed to be ~c[nil], in which case a generic
-  string will be printed instead.
-
-  ~st[Notes]:
-
-  1. For technical reasons, you must first exit the ACL2 read-eval-print loop,
-  for example by executing ~c[:q], before evaluating a ~c[save-exec] call.
-
-  2. The image will be saved so that in the new image, the raw Lisp package and
-  the package in the ACL2 read-eval-print loop (~pl[lp]) will be the same as
-  their respective values at the time ~c[save-exec] is called.
-
-  3. For most Common Lisps, the specified file (e.g., ~c[\"my-saved_acl2\"] in
-  the examples above) will be written as a small script, which in turn invokes
-  a saved image to which an extension has been appended (e.g.,
-  ~c[my-saved_acl2.gcl] for the examples above, when the underlying Common Lisp
-  is GCL on a non-Windows system).~/"
+(defun save-exec-fn (exec-filename extra-startup-string host-lisp-args
+                                   toplevel-args inert-args)
 
   #-acl2-loop-only
   (progn
@@ -27660,6 +27635,10 @@ accompanying <i>``File Path''</i> shown at the end of each book's text.
 ; Parallelism blemish: it may be a good idea to reset the parallelism variables
 ; in all #+acl2-par compilations before saving the image.
 
+    #-sbcl (when toplevel-args
+             (er hard 'save-exec
+                 "Keyword argument :toplevel-args is only allowed when the ~
+                  host Lisp is SBCL."))
     (if (not (eql *ld-level* 0))
         (er hard 'save-exec
             "Please type :q to exit the ACL2 read-eval-print loop and then try ~
@@ -27699,11 +27678,272 @@ accompanying <i>``File Path''</i> shown at the end of each book's text.
 
           (cons (saved-build-date-string)
                 *saved-build-date-lst*))
-    (save-exec-raw exec-filename))
+    (save-exec-raw exec-filename
+                   host-lisp-args
+                   #+sbcl toplevel-args
+                   inert-args))
   #+acl2-loop-only
-  (declare (ignore exec-filename extra-startup-string))
+  (declare (ignore exec-filename extra-startup-string host-lisp-args
+                   toplevel-args inert-args))
   nil ; Won't get to here in GCL and perhaps other lisps
   )
+
+(defmacro save-exec (exec-filename extra-startup-string
+                                   &key
+                                   host-lisp-args toplevel-args inert-args)
+
+  ":Doc-Section Other
+
+  save an executable image and a wrapper script~/
+
+  ~c[Save-exec] saves your ACL2 state so that you can immediately re-start
+  later in that same state.  This utility can be useful for a project with
+  ~il[books] to be included every time ACL2 is started, to avoid time taken to
+  run ~ilc[include-book].  Another use of ~c[save-exec] is to save an
+  executable that takes command-line arguments beyond those normally passed to
+  the host Lisp executable.
+
+  ~bv[]
+  Examples:
+
+  ; Save an executable script named my-saved_acl2, with the indicated message
+  ; added to the start-up banner:
+  (save-exec \"my-saved_acl2\"
+             \"This saved image includes Version 7 of Project Foo.\")
+
+  ; Same as above, but instead with a generic comment in the start-up banner:
+  (save-exec \"my-saved_acl2\" nil)
+
+  ; Arrange that the generated script passes the indicated arguments to be
+  ; processed by the Lisp (ACL2) executable (where this example is specific to
+  ; the case that CCL is the host Lisp):
+  (save-exec \"my-saved_acl2\" nil
+             :host-lisp-args \"--no-init -Z 256M\")
+
+  ; Arrange that the generated script passes along the indicated arguments
+  ; to Lisp (ACL2), but that they are not processed by Lisp other than to
+  ; record the additional arguments (see (6) below).
+  (save-exec \"my-saved_acl2\" nil
+             :inert-args \"abc xyz -i foo\")
+
+  ; Combining the preceding two examples:
+  (save-exec \"my-saved_acl2\" nil
+             :host-lisp-args \"--no-init -Z 256M\"
+             :inert-args \"abc xyz -i foo\")
+  ~ev[]
+
+  Each example above generates a file named \"my-saved_acl2\".  That file is
+  quite similar in form to the script generated when building ACL2 directly
+  from source code; details are below.  For example, here are the contents of
+  that generated file if the host Lisp is CCL (but where dates and pathnames
+  are specific to one's environment).  Here, we break lines using `\\', but the
+  ~c[exec] command is actually on a single line.
+
+  ~bv[]
+  #!/bin/sh
+
+  # Saved August 16, 2013  23:06:49
+  #  then August 17, 2013  11:01:56
+
+  export CCL_DEFAULT_DIRECTORY=\"/projects/acl2/lisps/ccl/15542/ccl\"
+  exec \"/projects/ccl/lx86cl64\" -I \"/u/smith/my-saved_acl2.lx86cl64\" \\
+       -Z 64M -K ISO-8859-1 -e \"(acl2::acl2-default-restart)\" \\
+       --no-init -Z 256M \\
+       -- \\
+       abc xyz -i foo \\
+       \"$@\"
+  ~ev[]~/
+
+  ~bv[]
+  General Form:
+  (save-exec exec-filename extra-startup-string
+             :host-lisp-args host-lisp-args
+             :inert-args inert-args)
+  ~ev[]
+  where the keyword arguments are optional, and arguments are as follows.
+  ~bq[]
+  ~c[Exec-filename] is the filename of the proposed executable.
+
+  ~c[Extra-startup-string] is a non-empty string to be printed after the normal
+  ACL2 startup message when you start up the saved image.  However,
+  ~c[extra-startup-string] is allowed to be ~c[nil], in which case a generic
+  string will be printed instead.
+
+  ~c[Host-lisp-args] can be ~c[nil] (the default), but if it is a non-~c[nil]
+  value, then it is a string to be inserted into the command line in the saved
+  script, specifying additional arguments that are to be processed by the host
+  Lisp executable.  (Note for SBCL only: these are runtime options; for
+  toplevel options, see (8) below.)
+
+  ~c[Inert-args] can be ~c[nil] (the default), but if it is a non-~c[nil]
+  value, then it is a string to be inserted into the command line in the saved
+  script, specifying additional arguments that are not to be processed by the
+  host Lisp executable.~eq[]
+
+  ~st[Details]:
+
+  (1) You must first exit the ACL2 read-eval-print loop, typically by executing
+  ~c[:q], before evaluating a ~c[save-exec] call; otherwise an error occurs.
+
+  (2) The image will be saved so that in the new image, the raw Lisp package
+  and the package in the ACL2 read-eval-print loop (~pl[lp]) will be the same
+  as their respective values at the time ~c[save-exec] is called.
+
+  (3) ~c[Save-exec] generates a small script file (e.g., ~c[\"my-saved_acl2\"]
+  in the examples above), similar in form (see (4) below) to the script
+  generated when building ACL2 directly from source code, but with a comment
+  line indicating the time at which the new script is written.  ~c[Save-exec]
+  also saves an associated binary file.  The binary file's name is obtained by
+  putting a suffix on the script filename; for example, if the host Lisp is GCL
+  running on a Linux or Darwin (MacOS) system, then that binary file has the
+  name ~c[my-saved_acl2.gcl] in the examples above.
+
+  (4) If ~c[inert-args] is ~c[nil] (for example if keyword ~c[:inert-args] is
+  omitted), then when the generated ACL2 script is invoked with command line
+  arguments, those arguments will be passed to the host Lisp; otherwise they
+  will not.  Thus for the example above, suppose we invoke the generated script
+  as follows.
+  ~bv[]
+  my-saved_acl2 -a bcd -e fgh
+  ~ev[]
+  If ~c[my-saved_acl2] was generated using a ~c[save-exec] command with a
+  non-~c[nil] value specified for keyword ~c[:inert-args], then the arguments
+  ``~c[-a bcd -e fgh]'' will not be passed to the host Lisp; otherwise, they
+  will be.  Note that for ACL2 executable scripts generated by an ordinary ACL2
+  build from sources, the latter case (i.e., without ~c[inert-args]) takes
+  place.
+
+  (5) The generated script, which specifies execution with ~c[/bin/sh], will
+  generally contain a line of one of the following forms.  (But for SBCL,
+  see (8) below.)  In the examples that follow, ~c[ACL2_options] is a suitable
+  list of command-line arguments given to the ACL2 executable.  The quoted
+  string ~c[\"$@\"] is intended to allow the user to pass additional
+  command-line arguments to that executable.
+  ~bq[]
+
+  If ~c[host-lisp-args] and ~c[inert-args] are omitted (or ~c[nil]):
+  ~bv[]
+  exec <lisp_executable> <ACL2_options> \"$@\"
+  ~ev[]
+
+  More generally, ~c[host-lisp-args] is inserted immediately after
+  ~c[<ACL2_options>], but only if it is non-~c[nil] (hence a string).  If
+  ~c[inert-args] is ~c[nil], we thus get:
+  ~bv[]
+  exec <lisp_executable> <ACL2_options> host-lisp-args \"$@\"
+  ~ev[]
+  If ~c[host-lisp-args] redefines a value from ~c[<ACL2_options>], then it is
+  up to the host lisp which value to use.  For example, experiments show that
+  in CCL, if ~c[-Z] appears twice, each with a legal value, then the second
+  value is the one that is used (i.e. it does indeed override the original
+  value written out by ACL2 in ~c[<ACL2_options>].  But experiments also show
+  that in LispWorks, where ``~c[-init -]'' is included in ~c[<ACL2_options>],
+  then inclusion of ``~c[-init foo.lisp]'' in ~c[host-lisp-args] is ignored.
+
+  The remaining cases below are for a non-~c[nil] value of ~c[inert-args].  In
+  each case, if ~c[host-lisp-args] is ~c[nil] then it should be omitted from
+  the displayed command.
+
+  If ~c[inert-args] is ~c[t] then an additional argument, `~c[--]', indicates
+  that when ACL2 is given command line arguments, these should not be processed
+  by the host Lisp (other than recording them; see (6) below):
+  ~bv[]
+  exec <lisp_executable> <ACL2_options> host-lisp-args -- \"$@\"
+  ~ev[]
+
+  If ~c[inert-args] is a string then the result is similar to the above, except
+  that ~c[inert-args] is added immediately after `~c[--]':
+  ~bv[]
+  exec <lisp_executable> <ACL2_options> host-lisp-args -- inert-args \"$@\"
+  ~ev[]~eq[]
+
+  (6) See community books ~c[books/oslib/argv] for a utility that returns a
+  list of all command line arguments (both ~c[host-lisp-args] and
+  ~c[inert-args]) from the invocation of ACL2.
+
+  (7) Suppose that you invoke an ACL2 script, say ~c[\"my-saved_acl2\"], that
+  was generated by ~c[save-exec], and then optionally evaluate some forms.
+  Then you may save a new ACL2 script with ~c[save-exec].  The new script will
+  contain comment lines that extend comment lines in ~c[\"my-saved_acl2\"] with
+  a new write date, but otherwise will be identical to the script that would
+  have been generated by executing the new ~c[save-exec] call after invoking
+  the original ACL2 executable (built directly from ACL2 sources) instead of
+  ~c[\"my-saved_acl2\"].  In other words, the options added by the earlier
+  ~c[save-exec] call that created ~c[\"my-saved_acl2\"] are discarded by the
+  new ~c[save-exec] call.  However, the ~c[.core] file will built on top of the
+  ~c[.core] file that was consulted when ~c[\"my-saved_acl2\"] was invoked.
+
+  (8) The following note pertains only to the case that the host Lisp is SBCL.
+  For SBCL, the scripts written are analogous to, but slightly different from,
+  those shown above.  Please note that for SBCL, the ~c[host-lisp-args] are
+  what the SBCL manual calls ``runtime options''.  For SBCL only, an extra
+  keyword argument, ~c[:toplevel-args], may be used for specifying what the
+  SBCL manual calls ``toplevel options.  As with ~c[:host-lisp-args], this
+  value, ~c[toplevel-args], should be ~c[nil] (the default) or a string.  Here
+  is an example.
+  ~bv[]
+  (save-exec \"my-saved_acl2\" nil
+             :host-lisp-args \"--dynamic-space-size 12000\"
+             :toplevel-args \"--eval '(print \\\"HELLO\\\")'\"
+             :inert-args \"--my-option my-value\")
+  ~ev[]
+  The script generated by this example call of ~c[save-exec] contains a line
+  such as the following (with the same convention for `\\' as before)
+  ~bv[]
+  exec \"/projects/sbcl-1.1.7-x86-64-linux/src/runtime/sbcl\" \\
+       --dynamic-space-size 2000 --control-stack-size 8 \\
+       --core \"/u/smith/my-saved_acl2.core\" --dynamic-space-size 12000 \\
+       --end-runtime-options \\
+       --no-userinit --eval '(acl2::sbcl-restart)' \\
+       --eval '(print \"HELLO\")' \\
+       --end-toplevel-options \\
+       --my-option my-value \\
+       \"$@\"
+  ~ev[]
+
+  In general, the generated script is of one of the following forms (with the
+  same convention for `\\' as before).
+  ~bq[]
+
+  For the case that ~c[inert-args] is ~c[nil]:
+  ~bv[]
+  exec <lisp_executable> \\
+       <ACL2_runtime_options> host-lisp-args --end-runtime-options \\
+       <ACL2_toplevel_options> host-lisp-args \\
+       \"$@\"
+  ~ev[]
+
+  For the case that ~c[inert-args] is non-~c[nil]:
+  ~bv[]
+  exec <lisp_executable> \\
+       <ACL2_runtime_options> host-lisp-args --end-runtime-options \\
+       <ACL2_toplevel_options> host-lisp-args --end-toplevel-options \\
+       inert-args \"$@\"
+  ~ev[]~eq[]
+
+  Notice that as before, when the generated script is invoked (for example, at
+  the shell), additional command-line arguments provided at that time are
+  passed to Lisp if and only if ~c[inert-args] is ~c[nil].  For SBCL, when they
+  are passed to Lisp they are passed as toplevel options, not as runtime
+  options.~/"
+
+  `(save-exec-fn ,exec-filename ,extra-startup-string ,host-lisp-args
+                 ,toplevel-args ,inert-args))
+
+(defdoc command-line
+
+  ":Doc-Section Other
+
+  handling of command-line arguments when ACL2 is invoked~/
+
+  You may provide command-line arguments when invoking ACL2, which are passed
+  to the host Lisp.  For more information on this topic, along with a
+  discussion of how to save an ACL2 executable that avoids passing command-line
+  arguments to the host Lisp, ~pl[save-exec].~/~/
+
+  :cite save-exec")
+
+(link-doc-to saving-and-restoring miscellaneous save-exec)
 
 (deflabel about-acl2
   :doc

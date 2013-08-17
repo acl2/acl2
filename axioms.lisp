@@ -28053,7 +28053,7 @@
     ev-fncall-w ; *the-live-state*
     ev-rec ; wormhole-eval
     setup-simplify-clause-pot-lst1 ; dmr-flush
-    save-exec ; save-exec-raw, etc.
+    save-exec-fn ; save-exec-raw, etc.
     cw-gstack-fn ; *deep-gstack*
     recompress-global-enabled-structure ; get-acl2-array-property
     ev-w ; *the-live-state*
@@ -48811,6 +48811,30 @@ Lisp definition."
          (break)))
   nil)
 
+#-acl2-loop-only
+(defvar *ccl-print-call-history-count*
+
+; This variable is only used by CCL, but we define it for all Lisps so that
+; this name is equally unavailable as a name for defconst in all host Lisps.
+
+; The user is welcome to change this in raw Lisp.  Perhaps we should advertise
+; it and use a state global.  We have attempted to choose a value sufficiently
+; large to get well into the stack, but not so large as to swamp the system.
+; Even with the default for CCL (as of mid-2013) of -Z 2M, the stack without
+; this restriction could be much larger.  For example, in the ACL2 loop we
+; made the definition
+
+;   (defun foo (x) (if (atom x) nil (cons (car x) (foo (cdr x)))))
+
+; and then ran (foo (make-list 1000000)), and after 65713 abbreviated stack
+; frames CCL just hung.  But with this restriction, it took less than 6 seconds
+; to evaluate the following in raw Lisp, including printing the stack to the
+; terminal (presumably it would be much faster to print to a file):
+
+;   (time$ (ignore-errors (ld '((foo (make-list 1000000))))))
+
+  10000)
+
 (defun print-call-history ()
 
 ; We welcome suggestions from users or Lisp-specific experts for how to improve
@@ -48829,7 +48853,8 @@ Lisp definition."
   #+(and ccl (not acl2-loop-only))
   (when (fboundp 'ccl::print-call-history)
 ; See CCL file lib/backtrace.lisp for more options
-    (eval '(ccl::print-call-history :detailed-p nil)))
+    (eval '(ccl::print-call-history :detailed-p nil
+                                    :count *ccl-print-call-history-count*)))
 
 ; It seems awkward to deal with GCL, both because of differences in debugger
 ; handling and because we haven't found documentation on how to get a
