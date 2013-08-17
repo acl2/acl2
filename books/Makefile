@@ -401,11 +401,8 @@ OK_CERTS := $(CERT_PL_CERTS)
 
 ifeq ($(ACL2_HAS_HONS), )
 
-# Sadly, although make 3.80 generally ignores $(info ...), it break
-# below when we write "ACL2(h)" and ACL2_HAS_HONS is false.  So we
-# write "ACL2{h}" instead, leaving the original line as a comment.
-# $(info Excluding books that need ACL2(h) [...])
-$(info Excluding books that need ACL2{h} [...])
+# We use "{...}" delimeters to avoid errors in version 3.80 of make.
+${info Excluding books that need ACL2(h) [...]}
 OK_CERTS := $(filter-out $(CERT_PL_HONS_ONLY), $(OK_CERTS))
 
 endif # ifeq ($(ACL2_HAS_HONS), )
@@ -433,12 +430,15 @@ endif
 SLOW_BOOKS := \
   coi/termination/assuming/complex.cert \
   models/jvm/m5/apprentice.cert \
-  models/y86-target.cert \
   parallel/proofs/ideal-speedup.cert \
   workshops/2009/sumners/support/examples.cert \
   workshops/2011/krug-et-al/support/MinVisor/va-to-pa-thm.cert \
   workshops/2011/krug-et-al/support/MinVisor/setup-nested-page-tables.cert \
   $(filter rtl/rel7/%, $(OK_CERTS))
+
+ifneq ($(ACL2_HAS_HONS), )
+  SLOW_BOOKS += models/y86-target.cert
+endif
 
 OK_CERTS := $(filter-out $(SLOW_BOOKS), $(OK_CERTS))
 
@@ -612,8 +612,10 @@ fix-cert/fix-cert.cert:
 
 # The following need not be made a custom target, since it's not in
 # an excluded directory.
+ifneq ($(ACL2_HAS_HONS), )
 models/y86-target.cert:
 	cd $(@D)/y86 ; $(STARTJOB) -c "$(MAKE) -j 1"
+endif
 
 translators/l3-to-acl2/target.cert: \
   translators/l3-to-acl2-deps.cert
@@ -918,7 +920,14 @@ else
 ADDED_BOOKS := models/y86-target.cert $(SLOW_BOOKS)
 endif # ifeq ($(ACL2_HAS_HONS), )
 
-everything: all $(ADDED_BOOKS)
+# It was tempted to handle the `everything' target as follows:
+#  everything: USE_QUICKLISP = 1
+#  everything: all $(ADDED_BOOKS)
+# But that didn't work, presumably because the value of OK_CERTS was
+# on a first pass through the Makefile without USE_QUICKLISP being
+# set.
+everything:
+	$(MAKE) all $(ADDED_BOOKS) USE_QUICKLISP=1
 
 # The critical path report will work only if you have set up certificate timing
 # BEFORE you build the books.  See ./critpath.pl --help for details.
