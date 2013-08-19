@@ -69,10 +69,11 @@
 ;     and results in trivially fewer runtime type checks in HONS-GET and
 ;     HONS-ACONS.  I think it makes sense to use flex alists in classic
 ;     honsing, where we can imagine often finding cdrs for which we don't have
-;     at least 18 separate cars.  But fast alists are much more targeted; if
-;     an ACL2 user is building a fast alist, it seems very likely that they
-;     know they are doing something big (or probably big) -- otherwise they
-;     wouldn't be bothering with fast alists.
+;     at least 18 separate cars.  But fast alists are much more targeted; if an
+;     ACL2 user is building a fast alist, it seems very likely that they know
+;     they are doing something big (or probably big) -- otherwise they wouldn't
+;     be bothering with fast alists.
+
 
 
 ; ESSAY ON CTRL+C SAFETY
@@ -89,17 +90,24 @@
 ; ensure that, e.g., (SETF (GETHASH ...)) does not leave a hash table in an
 ; internally inconsistent state.
 
-(defconstant *hl-mht-default-rehash-size* 1.5)
-(defconstant *hl-mht-default-rehash-threshold* 0.7)
+#+static-hons
+(defmacro hl-without-interrupts (&rest forms)
+  `(ccl::without-interrupts . ,forms))
+
+
+; CROSS-LISP COMPATIBILITY WRAPPERS
+;
+; As groundwork toward porting the static honsing scheme to other Lisps that
+; might be able to support it, we have added these wrappers for various ccl::
+; functionality.
 
 (defun hl-mht (&key (test             'eql)
                     (size             '60)
-                    (rehash-size      *hl-mht-default-rehash-size*)
-                    (rehash-threshold *hl-mht-default-rehash-threshold*)
+                    (rehash-size      '1.5)
+                    (rehash-threshold '0.7)
                     (weak             'nil)
                     (shared           'nil)
-                    (lock-free        'nil)
-                    )
+                    (lock-free        'nil))
 
 ; Wrapper for make-hash-table.
 ;
@@ -118,6 +126,68 @@
                    #+Clozure :lock-free #+Clozure lock-free
                    ))
 
+
+; In CCL, one can use (ccl::static-cons a b) in place of (cons a b) to create a
+; cons that will not be moved by the garbage collector.
+;
+; Unlike an ordinary cons, every static cons has a unique index, which is a
+; fixnum, and which may be obtained with (ccl::%staticp x).  Per Gary Byers,
+; this index will be forever fixed, even after garbage collection, even after
+; saving an image.
+;
+; Even more interesting, the cons itself can be recovered from its index using
+; ccl::%static-inverse-cons.  Given the index of a static cons, such as
+; produced by ccl::%staticp, %static-inverse-cons produces the corresponding
+; static cons.  Given an invalid index (such as the index of a cons that has
+; been garbage collected), %static-inverse-cons produces NIL.  Hence, this
+; gives us a way to tell if a cons has been garbage collected, and lets us
+; implement a clever scheme for "washing" honses.
+;
+; We now write wrappers for static-cons, %staticp, and %static-inverse-cons, to
+; make it easier to plug in alternative implementations in other Lisps.
+
+#+static-hons
+(defabbrev hl-static-cons (a b)
+  (ccl::static-cons a b))
+
+#+static-hons
+(defabbrev hl-staticp (x)
+  (ccl::%staticp x))
+
+#+static-hons
+(defabbrev hl-static-inverse-cons (x)
+  (ccl::%static-inverse-cons x))
+
+
+
+#+static-hons
+(defabbrev hl-machine-address-of (x)
+  (ccl::%address-of x))
+
+#+static-hons
+(defabbrev hl-machine-hash (x)
+
+; NOT A FUNCTION.  Note that (EQUAL (HL-MACHINE-HASH X) (HL-MACHINE-HASH X)) is
+; not necessarily true, because objects may be moved during garbage collection
+; in CCL.
+;
+; We use the machine address of an object to compute a hash code within [0,
+; 2^20).  We obtain a good distribution on 64-bit CCL, but we have not tried
+; this on 32-bit CCL.
+;
+; We right-shift the address by five places because smaller shifts led to worse
+; distributions.  We think this is because the low 3 bits are just tag bits
+; (which are not interesting), and the next 2 bits never add any information
+; because conses are word-aligned.
+;
+; To change this from 2^20 to other powers of 2, you should only need to adjust
+; the mask.  We think 2^20 is a good number, since a 2^20 element array seems
+; to require about 8 MB of memory, e.g., our whole cache will take 16 MB.
+
+  (let* ((addr    (hl-machine-address-of x))
+         (addr>>5 (the fixnum (ash (the fixnum addr) -5))))
+    ;; (ADDR>>5) % 2^20
+    (the fixnum (logand (the fixnum addr>>5) #xFFFFF))))
 
 
 ; ----------------------------------------------------------------------
@@ -181,7 +251,7 @@
 ; Implementation 2.  For 64-bit CCL (#+static-hons) we use a better scheme.
 ;
 ;    A Cache Table contains two arrays, KEYDATA and VALDATA.  These arrays
-;    associate "hash codes" (array indicies) to keys and values, respectively.
+;    associate "hash codes" (array indices) to keys and values, respectively.
 ;    We could have used a single array with (key . val) pairs as its entries,
 ;    but using two separate arrays allows us to implement hl-cache-set with no
 ;    consing.
@@ -262,32 +332,6 @@
   #-static-hons
   (count     0 :type fixnum))
 
-
-#+static-hons
-(defabbrev hl-machine-hash (x)
-
-; NOT A FUNCTION.  Note that (EQUAL (HL-MACHINE-HASH X) (HL-MACHINE-HASH X)) is
-; not necessarily true, because objects may be moved during garbage collection
-; in CCL.
-;
-; We use the machine address of an object to compute a hash code within [0,
-; 2^20).  We obtain a good distribution on 64-bit CCL, but we have not tried
-; this on 32-bit CCL.
-;
-; We right-shift the address by five places because smaller shifts led to worse
-; distributions.  We think this is because the low 3 bits are just tag bits
-; (which are not interesting), and the next 2 bits never add any information
-; because conses are word-aligned.
-;
-; To change this from 2^20 to other powers of 2, you should only need to adjust
-; the mask.  We think 2^20 is a good number, since a 2^20 element array seems
-; to require about 8 MB of memory, e.g., our whole cache will take 16 MB.
-
-  (let* ((addr    (ccl::%address-of x))
-         (addr>>5 (the fixnum (ash (the fixnum addr) -5))))
-    ;; (ADDR>>5) % 2^20
-    (the fixnum (logand (the fixnum addr>>5) #xFFFFF))))
-
 (defun hl-cache-set (key val cache)
   (declare (type hl-cache cache))
 
@@ -295,7 +339,7 @@
   (let ((keydata (hl-cache-keydata cache))
         (valdata (hl-cache-valdata cache))
         (code    (hl-machine-hash key)))
-    (ccl::without-interrupts
+    (hl-without-interrupts
      (setf (svref keydata (the fixnum code)) key)
      (setf (svref valdata (the fixnum code)) val)))
 
@@ -479,12 +523,6 @@
 ; Static Honsing is a scheme for tracking normed conses that can be used only
 ; in Clozure Common Lisp.
 ;
-; In CCL, one can use (ccl::static-cons a b) in place of (cons a b) to create a
-; cons that will not be moved by the garbage collector.  The 'index' of such a
-; cons, which is a fixnum exceeding 128, may be obtained with (ccl::%staticp x)
-; and, per Gary Byers, will be forever fixed, even after garbage collection,
-; even after saving an image.
-;
 ; Static Honsing is an alternative to classic honsing that exploits static
 ; conses for greater efficiency.  Here, only static conses can be considered
 ; normed, and SBITS is a bit-array that records which static conses are
@@ -512,7 +550,7 @@
 ; that BASE is the start of the dynamically-allocated range.  Then,
 ;
 ;    The address of a static cons, C, is Index(C) + BASE, where Index(C) is the
-;    index returned by ccl::%staticp.
+;    index returned by HL-STATICP.
 ;
 ;    For any other atom, X, we construct an associated static cons, say X_C,
 ;    and then use Index(X_C) + BASE as the address of X.
@@ -612,7 +650,7 @@
 ; the non lock-free version of 'remhash', there is a special case: deleting the
 ; last remaining element from a hash table triggers a linear walk of the hash
 ; table, where every element in the vector is overwritten with the
-; free-hash-marker.  This is devestating when there is exactly one active fast
+; free-hash-marker.  This is devastating when there is exactly one active fast
 ; alist: every "hons-acons" and "fast-alist-free" operation requires a linear
 ; walk over the TABLE.  This took me two whole days to figure out.  To ensure
 ; that nobody else is bitten by it, and that I am not bitten by it again, here
@@ -895,7 +933,7 @@
 ; determine if X is a static cons whose bit is set in the SBITS array.  If so,
 ; we X is considered normed with respect to HS.
 
-  (let* ((idx (ccl::%staticp x)))
+  (let* ((idx (hl-staticp x)))
     (and idx
          (let ((sbits (hl-hspace-sbits hs)))
            (and (< (the fixnum idx) (the fixnum (length sbits)))
@@ -1160,9 +1198,9 @@
        (if addr-cons
            (cdr addr-cons)
          ;; Okay, safe to generate a new address.
-         (let* ((new-addr-cons (ccl::static-cons s nil))
+         (let* ((new-addr-cons (hl-static-cons s nil))
                 (true-addr     (+ hl-dynamic-base-addr
-                                  (ccl::%staticp new-addr-cons))))
+                                  (hl-staticp new-addr-cons))))
            (rplacd (the cons new-addr-cons) true-addr)
            (setf (get (the symbol s) 'hl-static-address) new-addr-cons)
            true-addr))))))
@@ -1203,9 +1241,9 @@
                ;; return the TRUE-ADDR.
                (cdr entry)
              ;; Else, we need to create an entry.
-             (let* ((new-addr-cons (ccl::static-cons x nil))
+             (let* ((new-addr-cons (hl-static-cons x nil))
                     (true-addr     (+ hl-dynamic-base-addr
-                                      (ccl::%staticp new-addr-cons))))
+                                      (hl-staticp new-addr-cons))))
                (rplacd (the cons new-addr-cons) true-addr)
                (setf (gethash x other-ht) new-addr-cons)
                true-addr))))))
@@ -1227,7 +1265,7 @@
 
   `(let ((x ,x))
      (cond ((consp x)
-            (+ hl-dynamic-base-addr (ccl::%staticp x)))
+            (+ hl-dynamic-base-addr (hl-staticp x)))
            ((eq x nil) 256)
            ((eq x t)   257)
            (t
@@ -1446,8 +1484,8 @@
 ;
 ; Static Honsing only.  IDX must be a natural number and HS must be a Hons
 ; Space.  We generally expect this function to be called when SBITS has become
-; too short to handle IDX, the ccl::%staticp index of some static cons.  We
-; copy SBITS into a new, larger array and install it into the Hons Space.
+; too short to handle IDX, the static index of some static cons.  We copy SBITS
+; into a new, larger array and install it into the Hons Space.
 ;
 ; Growing SBITS is slow because we need to (1) allocate a new, bigger array,
 ; and (2) copy the old contents of SBITS into this new array.  Accordingly, we
@@ -1509,9 +1547,9 @@
       ;; where NX is the normed version of X and TRUE-ADDR = Index(XC) + Base.
       (if entry
           (car entry)
-        (let* ((new-addr-cons (ccl::static-cons x nil))
+        (let* ((new-addr-cons (hl-static-cons x nil))
                (true-addr     (+ hl-dynamic-base-addr
-                                 (ccl::%staticp new-addr-cons))))
+                                 (hl-staticp new-addr-cons))))
           (rplacd (the cons new-addr-cons) true-addr)
           (setf (gethash x str-ht) new-addr-cons)
           x))))
@@ -1571,19 +1609,19 @@
                (let* ((hint-idx (and (consp hint)
                                      (eq (car hint) a)
                                      (eq (cdr hint) b)
-                                     (ccl::%staticp hint)))
+                                     (hl-staticp hint)))
                       (pair     (if hint-idx
                                     ;; Safe to use hint.
                                     hint
-                                  (ccl::static-cons a b)))
-                      (idx      (or hint-idx (ccl::%staticp pair)))
+                                  (hl-static-cons a b)))
+                      (idx      (or hint-idx (hl-staticp pair)))
                       (sbits    (hl-hspace-sbits hs)))
                  ;; Make sure there are enough sbits.  Ctrl+C Safe.
                  (when (>= (the fixnum idx)
                            (the fixnum (length sbits)))
                    (hl-hspace-grow-sbits idx hs)
                    (setq sbits (hl-hspace-sbits hs)))
-                 (ccl::without-interrupts
+                 (hl-without-interrupts
                   ;; Since we must simultaneously update SBITS and ADDR-HT, the
                   ;; installation of PAIR must be protected by without-interrupts.
                   (setf (aref sbits idx) 1)
@@ -2744,7 +2782,7 @@ To avoid the following break and get only the above warning:~%  ~a~%"
       ;; Nothing to do because we assume all atoms have already been
       ;; installed.
       x
-    (let ((index (ccl::%staticp x)))
+    (let ((index (hl-staticp x)))
       (if (= (aref sbits index) 1)
           ;; Nothing to do; we've already reinstalled X.
           x
@@ -2784,7 +2822,7 @@ To avoid the following break and get only the above warning:~%  ~a~%"
     (hl-cache-clear norm-cache)
     (setf (hl-hspace-faltable hs) temp-faltable)
     (setf (hl-hspace-persist-ht hs) temp-persist-ht)
-    (ccl::without-interrupts
+    (hl-without-interrupts
      (setf (hl-hspace-addr-ht hs) temp-addr-ht)
      (setf (hl-hspace-sbits hs) temp-sbits))
 
@@ -2820,7 +2858,7 @@ To avoid the following break and get only the above warning:~%  ~a~%"
             (hash-table-count addr-ht))
 
     ;; Order matters, reinstall addr-ht and sbits before fal-ht and persist-ht!
-    (ccl::without-interrupts
+    (hl-without-interrupts
      (setf (hl-hspace-addr-ht hs) addr-ht)
      (setf (hl-hspace-sbits hs) sbits))
     (setf (hl-hspace-faltable hs) faltable)
@@ -2839,12 +2877,6 @@ To avoid the following break and get only the above warning:~%  ~a~%"
 ;
 ; ----------------------------------------------------------------------
 
-; Washing is a much better garbage collection mechanism than clearing, made
-; possible by ccl::%static-inverse-cons.  Given the index of a static cons,
-; such as produced by ccl::%staticp, %static-inverse-cons produces the
-; corresponding static cons.  Given an invalid index (such as the index of a
-; cons that has been garbage collected), %static-inverse-cons produces NIL.
-; Hence, this gives us a way to tell if a cons has been garbage collected.
 
 ; BOZO thread unsafe.  It is probably not okay to use this function in a
 ; multi-threaded environment.  In particular, another thread could create a
@@ -2870,7 +2902,7 @@ To avoid the following break and get only the above warning:~%  ~a~%"
              (fixnum num-survivors))
     (loop for i fixnum below max-index do
           (when (= (aref sbits i) 1)
-            (let ((object (ccl::%static-inverse-cons i)))
+            (let ((object (hl-static-inverse-cons i)))
               (if object
                   (incf num-survivors)
                 (setf (aref sbits i) 0)))))
@@ -2896,7 +2928,7 @@ To avoid the following break and get only the above warning:~%  ~a~%"
     (loop for i fixnum below max-index do
           (when (= (aref sbits i) 1)
             ;; This object was previously normed.
-            (let ((object (ccl::%static-inverse-cons i)))
+            (let ((object (hl-static-inverse-cons i)))
               (cond ((not object)
                      (error "Expected SBITS to already be fixed up."))
                     (t
@@ -3006,7 +3038,7 @@ To avoid the following break and get only the above warning:~%  ~a~%"
     ;; invalidates the STR-HT or OTHER-HT, so we leave them alone.
     (setf (hl-hspace-faltable hs) temp-faltable)
     (setf (hl-hspace-persist-ht hs) temp-persist-ht)
-    (ccl::without-interrupts ;; These two must be done together or not at all.
+    (hl-without-interrupts ;; These two must be done together or not at all.
      (setf (hl-hspace-addr-ht hs) temp-addr-ht)
      (setf (hl-hspace-sbits hs) temp-sbits))
 
@@ -3060,7 +3092,7 @@ To avoid the following break and get only the above warning:~%  ~a~%"
 
       ;; All objects restored.  The hons space should now be in a fine state
       ;; once again.  Restore it.
-      (ccl::without-interrupts
+      (hl-without-interrupts
        (setf (hl-hspace-addr-ht hs) addr-ht)
        (setf (hl-hspace-sbits hs) sbits))
       (setf (hl-hspace-persist-ht hs) persist-ht)
@@ -3234,7 +3266,7 @@ To avoid the following break and get only the above warning:~%  ~a~%"
     (format t " - SBITS array length:    ~15:D~%"
             (length sbits))
     (format t "   New static cons index: ~15:D~%~%"
-            (ccl::%staticp (ccl::static-cons nil nil)))
+            (hl-staticp (hl-static-cons nil nil)))
     (format t " - ADDR-HT:      ~15:D count, ~15:D size (~5,2f% full)~%"
             (hash-table-count addr-ht)
             (hash-table-size addr-ht)
