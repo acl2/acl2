@@ -389,9 +389,51 @@
                          (cdr (assoc ',fnsym (table-alist
                                               'glcp-ctrex-rewrite world))))))))
 
-(defmacro def-glcp-ctrex-rewrite (from to &key (test 't))
-  `(make-event
-    (def-glcp-ctrex-rewrite-fn ',from ',test ',(list to) state)))
+(defsection def-glcp-ctrex-rewrite
+  :parents (reference)
+  :short "Define a heuristic for GL to use when generating counterexamples"
+  :long
+  "<p>Usage:</p>
+
+@({
+ (gl::def-glcp-ctrex-rewrite
+   ;; from:
+   (lhs-lvalue lhs-rvalue)
+   ;; to:
+   (rhs-lvalue rhs-rvalue)
+   :test syntaxp-term)
+ })
+<p>Example:</p>
+@({
+ (gl::def-glcp-ctrex-rewrite
+   ((logbitp n x) t)         
+   (x (logior (ash 1 n) x))
+   :test (quotep n))
+})
+
+<p>If GL has generated Boolean variables corresponding to term-level objects,
+then an assignment to the Boolean variables does not directly induce an
+assignment of ACL2 objects to the ACL2 variables.  Instead, we have terms that
+are assigned true or false by the Boolean assignment, and to generate a
+counterexample, we must find an assignment for the variables in those terms
+that cause the terms to take the required truth values.  Ctrex-rewrite rules
+tell GL how to move from a valuation of a term to valuations of its
+components.</p>
+
+<p>The example rule above says that if we want @('(logbitp n x)') to be @('t'),
+and @('n') is (syntactically) a quoted constant, then assign @('x') a new value
+by effectively setting its @('n')th bit to T (that is, bitwise ORing X with the
+appropriate mask).</p>
+
+<p>Note that this rule does not always yield the desired result -- for example,
+in the case where N is a negative integer.  Because these are just heuristics
+for generating counterexamples, there is no correctness requirement and no
+checking of these rules.  Bad counterexample rules can't make anything unsound,
+but they can cause generated counterexamples to be nonsense.  Be careful!</p>"
+
+  (defmacro def-glcp-ctrex-rewrite (from to &key (test 't))
+    `(make-event
+      (def-glcp-ctrex-rewrite-fn ',from ',test ',(list to) state))))
 
 (defmacro def-glcp-ctrex-split-rewrite (from tos &key (test 't))
   `(make-event

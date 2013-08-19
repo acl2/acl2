@@ -3,66 +3,67 @@
 (in-package "GL")
 
 (include-book "bfr")
-(include-book "gl-doc-string")
 
-(defdoc experimental-aig-reasoning
-  ":Doc-section ACL2::GL
-  Note about GL's experimental AIG reasoning mode.~/
 
-  By default, GL operates on BDD-based data structures and resolves Boolean
-reasoning questions using BDD operations.  However, it also has some support
-for a different mode that uses And-Inverter graphs instead.
-Using AIG mode requires a way to solve Boolean satisfiability problems on AIGs.
-We provide one method, of dubious utility, which is to transform the AIG into a
+(defxdoc experimental-aig-reasoning
+  :parents (modes)
+  :short "Notes about GL's experimental AIG reasoning mode."
+
+  :long "<p>By default, GL operates on BDD-based data structures and resolves
+Boolean reasoning questions using BDD operations.  However, it also has some
+support for a different mode that uses And-Inverter graphs instead.  Using AIG
+mode requires a way to solve Boolean satisfiability problems on AIGs.  We
+provide one method, of dubious utility, which is to transform the AIG into a
 BDD.  This mode may be used by including the book \"bfr-aig-bddify\" and then
 running (GL-AIG-BDDIFY-MODE), which is an ACL2 event.  (To return to the
 default BDD-only mode, simply run (GL-BDD-MODE).)  We describe below the
 mechanisms provided for putting GL into different reasoning modes.  These
 mechanisms may be used, by an adventurous user, to attach an external SAT
 solver and use that to solve AIG satisfiability queries, avoiding the necessity
-of the AIG to BDD transformation.  ~/
+of the AIG to BDD transformation.</p>
 
-GL can be put into different modes using ~il[defattach].  There are several
+<p>GL can be put into different modes using @(see defattach).  There are several
 functions that need to have proper attachments in order for GL to function;
 when the GL library is loaded, they are set up to a default configuration in
-which GL will use BDD-based reasoning.
+which GL will use BDD-based reasoning.</p>
 
-The functions that need attachments follow.  Here, BFR stands for Boolean
-function representation.
+<p>The functions that need attachments follow.  Here, BFR stands for Boolean
+function representation.</p>
 
- * BFR-MODE: 0-ary with no constraints.  This detemines whether the Boolean
+<p>* BFR-MODE: 0-ary with no constraints.  This detemines whether the Boolean
 function components in the symbolic object representation are BDDs or AIGs, and
 thus the functions used to combine them.  E.g., the definition of BFR-NOT
-is (basically):
+is (basically):</p>
 
-~bv[]
+@({
  (if (bfr-mode) (aig-not x) (q-not x)).
-~ev[]
+})
 
-Similarly, BFR-EVAL either applies EVAL-BDD or AIG-EVAL, depending on BFR-MODE.
+<p>Similarly, BFR-EVAL either applies EVAL-BDD or AIG-EVAL, depending on
+BFR-MODE.</p>
 
-By default the function BFR-BDD (which returns NIL) is attached to BFR-MODE,
+<p>By default the function BFR-BDD (which returns NIL) is attached to BFR-MODE,
 and thus BFR-NOT uses the BDD operation Q-NOT.  To use AIGs instead, attach
-BFR-AIG, which returns T.  
+BFR-AIG, which returns T.</p>
 
- * BFR-SAT: Unary, returning three values: SAT, SUCCEEDED, CTREX.  The main
+<p>* BFR-SAT: Unary, returning three values: SAT, SUCCEEDED, CTREX.  The main
 constraint of BFR-SAT is that if it returns SAT=NIL and SUCCEEDED=T, then
 BFR-EVAL of the input on any environment must be NIL, i.e., the input must be
 an unsatisfiable BDD or AIG (depending on the BFR-MODE.)  The CTREX value
 should be a counterexample in the case of a SAT result, represented either as a
 BDD or an alist mapping variables to Boolean values; see below under
-BFR-COUNTEREX-MODE.
+BFR-COUNTEREX-MODE.</p>
 
-To satisfy the constraint in the BDD case, it suffices to simply check whether
+<p>To satisfy the constraint in the BDD case, it suffices to simply check whether
 the input BDD is NIL; if so, it is satisfiable, and otherwise, it isn't.  This
 method is implemented as BFR-SAT-BDD, which is the default attachment of
 BFR-SAT.  For AIG mode, we provide an attachment BFR-SAT-BDDIFY which solves an
 AIG satisfiability query by transforming the input AIG into a BDD.  However,
 one might instead hook up a SAT solver into ACL2 so that it can take an AIG as
 input.  Given a way of calling such an external tool, it would not be difficult
-to produce a function that conforms to the constraint described above. :-)
+to produce a function that conforms to the constraint described above. :-)</p>
 
- * BFR-COUNTEREX-MODE: 0-ary, no constraints.  This says whether the
+<p>* BFR-COUNTEREX-MODE: 0-ary, no constraints.  This says whether the
 counterexample value sometimes returned by BFR-SAT is in the form of a BDD or
 an association list.  If it is set up wrong, then output in case of a
 counterexample will be garbled.  In both the default BDD mode and in the AIG
@@ -70,9 +71,7 @@ BDDIFY mode provided, the counterexample is in the form of a BDD, and so we
 attach BFR-COUNTEREX-BDD by default.  However, if an external SAT solver is
 used, then there will likely be a single assignment returned, which might more
 conveniently be provided as an alist.  Then one would instead attach
-BFR-COUNTEREX-ALIST.
-~/
-")
+BFR-COUNTEREX-ALIST.</p>")
 
 (encapsulate
   (((bfr-sat *) => (mv * * *)))

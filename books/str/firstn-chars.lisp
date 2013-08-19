@@ -54,7 +54,7 @@
              (type string x)
              (type (integer 0 *) n))
     (mbe :logic
-         (take (min n (len (explode x))) (explode x))
+         (take (min (nfix n) (len (explode x))) (explode x))
          :exec
          (let ((n (min n (length x))))
            (if (zp n)
@@ -114,17 +114,19 @@
   (defcong charlisteqv charlisteqv (append-firstn-chars n x y) 3)
   (defcong icharlisteqv icharlisteqv (append-firstn-chars n x y) 3))
 
-(defthm firstn-chars-consp
-
-; I (David Rager) needed this lemma in one of my uses of firstn-chars, so I've
-; placed it here in case others find it useful.  I think it will only trigger
-; when the term one is trying to prove is (consp (firstn-chars 1 lexeme)) so it
-; should be pretty cheap.  Please correct me if I've got it wrong.
-
-  (implies (and (stringp x)
-                (< 0 (length x)))
-           (consp (firstn-chars 1 x)))
+(defthm consp-of-firstn-chars
+  ;; May be expensive, leaving enabled for now
+  (equal (consp (firstn-chars n x))
+         (and (posp n)
+              (consp (explode x))))
   :hints (("Goal" :in-theory (enable firstn-chars length))))
+
+(defthm consp-of-firstn-chars-of-1
+  ;; Improved version of a lemma added by David Rager
+  (equal (consp (firstn-chars 1 x))
+         (consp (explode x)))
+  :hints (("Goal" :in-theory (enable firstn-chars length))))
+
 
 #||
 

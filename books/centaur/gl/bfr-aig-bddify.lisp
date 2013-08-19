@@ -2,7 +2,6 @@
 (in-package "GL")
 
 (include-book "bfr-sat")
-(include-book "gl-doc-string")
 (include-book "../aig/bddify")
 (local (include-book "../aig/bddify-correct"))
 (local (include-book "../aig/eval-restrict"))
@@ -120,18 +119,20 @@
                  (acl2::vars (vars-to-bdd-env (acl2::aig-vars prop) env)))))))
 
 
-(defmacro gl-aig-bddify-mode ()
-  ":Doc-section ACL2::GL
-Use experimental AIG-based symbolic simulation in GL.~/
-This macro produces an event which sets the GL reasoning mode to use AIGs.
-This is a new, experimental feature under development.~/~/"
-  '(progn (acl2::defattach bfr-mode bfr-aig)
-          (acl2::defattach bfr-counterex-mode bfr-counterex-bdd)
-          (acl2::defattach
-           (bfr-sat bfr-sat-bddify)
-           :hints (("goal" :in-theory '(bfr-sat-bddify-unsat))
-                   (and stable-under-simplificationp
-                        '(:in-theory (enable bfr-sat-bddify)))))))
+(defsection gl-aig-bddify-mode
+  :parents (modes reference)
+  :short "Use experimental AIG-based symbolic simulation in GL."
+  :long "<p>This macro produces an event which sets the GL reasoning mode to
+use AIGs.  This is a new, experimental feature under development.</p>"
+
+  (defmacro gl-aig-bddify-mode ()
+    '(progn (acl2::defattach bfr-mode bfr-aig)
+            (acl2::defattach bfr-counterex-mode bfr-counterex-bdd)
+            (acl2::defattach
+             (bfr-sat bfr-sat-bddify)
+             :hints (("goal" :in-theory '(bfr-sat-bddify-unsat))
+                     (and stable-under-simplificationp
+                          '(:in-theory (enable bfr-sat-bddify))))))))
 
 (local (gl-aig-bddify-mode))
 

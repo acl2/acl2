@@ -443,7 +443,6 @@ functions.")
      (xdoc::change-parents hacker (interfacing-tools))
 
      (xdoc::change-parents witness-cp (proof-automation))
-     (xdoc::change-parents gl (proof-automation hardware-verification))
      (xdoc::change-parents esim (hardware-verification))
 
      (xdoc::change-parents testing (debugging))
@@ -672,8 +671,6 @@ functions.")
                (get-xdoc-table world)))))))
 
 (local (xdoc::fix-the-hierarchy))
-
-
 
 (make-event
 ; xdoc::save is an event, so we might have just called it directly.  But for

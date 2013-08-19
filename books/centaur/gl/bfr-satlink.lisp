@@ -31,15 +31,14 @@
        (t ;; failed
         (mv nil nil nil))))))
 
-(defmacro gl-satlink-mode ()
-  ":Doc-section ACL2::GL
-Use satlink to check AIGs in GL AIG mode~/
-Produces defattach events necessary to set the GL reasoning mode to use AIGs
-with Satlink.~/~/"
-  '(progn
-     (defattach bfr-mode bfr-aig)
-     (defattach bfr-counterex-mode bfr-counterex-alist)
-     (defattach (bfr-sat bfr-satlink)
-       :hints(("Goal" :in-theory (enable bfr-eval))))))
+(defsection gl-satlink-mode
+  :parents (modes reference)
+  :short "Use @(see satlink) to check @(see aig)s in GL AIG mode."
 
+  (defmacro gl-satlink-mode ()
+    '(progn
+       (defattach bfr-mode bfr-aig)
+       (defattach bfr-counterex-mode bfr-counterex-alist)
+       (defattach (bfr-sat bfr-satlink)
+         :hints(("Goal" :in-theory (enable bfr-eval)))))))
 

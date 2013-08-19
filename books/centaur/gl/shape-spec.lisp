@@ -5,7 +5,6 @@
 
 (include-book "shape-spec-defs")
 (include-book "gtypes")
-(include-book "gl-doc-string")
 (include-book "symbolic-arithmetic-fns")
 
 (local (include-book "symbolic-arithmetic"))
@@ -1599,113 +1598,114 @@
     (expt) (unary--) (binary-+) (consp) (integerp) (len)
     (car) (cdr) (booleanp) (list-of-g-booleansp) (tag) eql
     len-plus-one len-zero (zp) (boolean-listp) (true-listp)))
-    
 
 
 
-(defdoc shape-specs ":Doc-section ACL2::GL
-Simplified symbolic objects useful for coverage proofs in GL~/
+(defxdoc shape-specs
+  :parents (introduction)
+  :short "Simplified symbolic objects useful for coverage proofs in GL."
 
-Shape specifiers are a simplified format of GL symbolic objects,
-capable of representing Booleans, numbers, and conses, as well as
-unconstrained variables and if-then-else objects.  While less
-expressive than full-fledged symbolic objects, shape spec objects make
-it easier to prove coverage lemmas necessary for proving theorems by
-symbolic simulation.  Here, we document common constructions of
-shape-spec objects and what it means to prove coverage.~/
+  :long "<p>Shape specifiers are a simplified format of GL symbolic objects,
+capable of representing Booleans, numbers, and conses, as well as unconstrained
+variables and if-then-else objects.  While less expressive than full-fledged
+symbolic objects, shape spec objects make it easier to prove coverage lemmas
+necessary for proving theorems by symbolic simulation.  Here, we document
+common constructions of shape-spec objects and what it means to prove
+coverage.</p>
 
-------------------------------------------------------
+<h3>Creating Shape Spec Objects</h3>
 
-CREATING SHAPE SPEC OBJECTS
-Shape spec objects are a straightforward transformation of symbolic
-objects: wherever a BDD occurs in a symbolic object, a shape specifier
-instead contains a natural number representing a BDD variable.
-Furthermore, ~c[G-APPLY] constructs are prohibited, and the BDD
-variable numbers used in an shape spec may not repeat, nor may the
-variable names used in ~c[G-VAR] constructs.  See
-~il[GL::SYMBOLIC-OBJECTS].  The most common and useful constructions
-of shape spec objects are as follows:
+<p>Shape spec objects are a straightforward transformation of symbolic objects:
+wherever a BDD occurs in a symbolic object, a shape specifier instead contains
+a natural number representing a BDD variable.  Furthermore, @('G-APPLY')
+constructs are prohibited, and the BDD variable numbers used in an shape spec
+may not repeat, nor may the variable names used in @('G-VAR') constructs.  See
+@(see SYMBOLIC-OBJECTS).  The most common and useful constructions of shape
+spec objects are as follows:</p>
 
- (:G-BOOLEAN . <num>)
-Represents a Boolean.
+<dl>
 
- (:G-NUMBER  <list-of-nums>)
-Represents a two's-complement integer with bits corresponding to the
-list, least significant bit first.  Rationals and complex rationals
-are also available; ~l[GL::SYMBOLIC-OBJECTS].  A :G-NUMBER construct with
-a list of length ~c[N] represents integers ~c[X] where
- ~c[(<= (- (expt 2 n) x)] and ~c[(< x (expt 2 n))].
+<dt>@('(:G-BOOLEAN . <num>)')</dt>
 
- (<Car> . <Cdr>)
-Represents a cons; Car and Cdr should be well-formed shape specifiers.
+<dd>Represents a Boolean.</dd>
 
- <Atom>
-Represents the atom itself; must not be one of the six distinguished
+
+<dt>@('(:G-NUMBER  <list-of-nums>)')</dt>
+
+<dd>Represents a two's-complement integer with bits corresponding to the list,
+least significant bit first.  Rationals and complex rationals are also
+available; @(see SYMBOLIC-OBJECTS).  A :G-NUMBER construct with a list of
+length @('N') represents integers @('X') where @('(<= (- (expt 2 n)) x)') and
+@('(< x (expt 2 n))').</dd>
+
+<dt>@('(<Car> . <Cdr>)')</dt>
+
+<dd>Represents a cons; Car and Cdr should be well-formed shape specifiers.</dd>
+
+<dt>@('<Atom>')</dt>
+
+<dd>Represents the atom itself; must not be one of the six distinguished
 keyword symbols :G-CONCRETE, :G-BOOLEAN, :G-NUMBER, :G-ITE, :G-VAR, or
-:G-APPLY.
+:G-APPLY.</dd>
 
-------------------------------------------------------
+</dl>
 
-WHAT IS A COVERAGE PROOF?
-In order to prove a theorem by symbolic simulation, one binds each
-variable mentioned in the theorem to a symbolic object and then
-symbolically simulates the conclusion of the theorem on these symbolic
-objects.  If the result is true, what can we conclude?  It depends on
-the coverage of the symbolic inputs.  For example, one might
-symbolically simulate the term ~c[(< (+ A B) 7)] with ~c[A] and ~c[B]
-bound to symbolic objects representing two-bit natural numbers and
-recieve a result of ~c[T].  From this, it would be fallacious to
-conclude ~c[(< (+ 6 8) 7)], because the symbolic simulation didn't
-cover the case where ~c[A] was 6 and ~c[B] 7.  In fact, it isn't
-certain that we can conclude ~c[(< (+ 2 2) 7)] from our symbolic
-simulation, because the symbolic object bindings for ~c[A] and ~c[B]
-might have interedependencies such that ~c[A] and ~c[B] can't
-simultaneously represent 2.  (For example, the bindings could be such
-that bit 0 of ~c[A] and ~c[B] are always opposite.)  In order to prove
-a useful theorem from the result of such a symbolic simulation, we
-must show that some set of concrete input vectors is covered by the
-symbolic objects bound to ~c[A] and ~c[B].  But in general, it is a
-tough computational problem to determine the set of concrete input
-vectors that are covered by a given symbolic input vector.
 
-To make these determinations easier, shape spec objects are somewhat
+<h3>What is a Coverage Proof?</h3>
+
+<p>In order to prove a theorem by symbolic simulation, one binds each variable
+mentioned in the theorem to a symbolic object and then symbolically simulates
+the conclusion of the theorem on these symbolic objects.  If the result is
+true, what can we conclude?  It depends on the coverage of the symbolic inputs.
+For example, one might symbolically simulate the term @('(< (+ A B) 7)') with
+@('A') and @('B') bound to symbolic objects representing two-bit natural
+numbers and recieve a result of @('T').  From this, it would be fallacious to
+conclude @('(< (+ 6 8) 7)'), because the symbolic simulation didn't cover the
+case where @('A') was 6 and @('B') 7.  In fact, it isn't certain that we can
+conclude @('(< (+ 2 2) 7)') from our symbolic simulation, because the symbolic
+object bindings for @('A') and @('B') might have interedependencies such that
+@('A') and @('B') can't simultaneously represent 2.  (For example, the bindings
+could be such that bit 0 of @('A') and @('B') are always opposite.)  In order
+to prove a useful theorem from the result of such a symbolic simulation, we
+must show that some set of concrete input vectors is covered by the symbolic
+objects bound to @('A') and @('B').  But in general, it is a tough
+computational problem to determine the set of concrete input vectors that are
+covered by a given symbolic input vector.</p>
+
+<p>To make these determinations easier, shape spec objects are somewhat
 restricted.  Whereas symbolic objects generally use BDDs to represent
-individual Booleans or bits of numeric values (~l[GL::SYMBOLIC-OBJECTS]),
+individual Booleans or bits of numeric values (see @(see symbolic-objects)),
 shape specs instead use natural numbers representing UBDD variables.
-Additionally, shape specs are restricted such that no BDD variable
-number may be used more than once among the bindings for the variables
-of a theorem; this is to prevent interdependencies among them.
+Additionally, shape specs are restricted such that no BDD variable number may
+be used more than once among the bindings for the variables of a theorem; this
+is to prevent interdependencies among them.</p>
 
-While in general it is a difficult problem to determine whether a
-symbolic object can evaluate to a given concrete object, a function
-~c[SHAPE-SPEC-OBJ-IN-RANGE] can make that determination about shape
-specs.  ~c[SHAPE-SPEC-OBJ-IN-RANGE] takes two arguments, a shape spec
-and some object, and returns T if that object is in the coverage set
-of the shape spec, and NIL otherwise.  Therefore, if we wish to
-conclude that shape specs bound to ~c[A] and ~c[B] cover all two-bit
-natural numbers, we may prove the following theorem:
-~bv[]
+<p>While in general it is a difficult problem to determine whether a symbolic
+object can evaluate to a given concrete object, a function
+@('SHAPE-SPEC-OBJ-IN-RANGE') can make that determination about shape specs.
+@('SHAPE-SPEC-OBJ-IN-RANGE') takes two arguments, a shape spec and some object,
+and returns T if that object is in the coverage set of the shape spec, and NIL
+otherwise.  Therefore, if we wish to conclude that shape specs bound to @('A')
+and @('B') cover all two-bit natural numbers, we may prove the following
+theorem:</p>
+
+@({
  (implies (and (natp a) (< a 4)
                (natp b) (< b 4))
           (shape-spec-obj-in-range (list a-binding b-binding)
                                    (list a b)))
-~ev[]
+})
 
-When proving a theorem using the GL clause processor, variable
-bindings are given as shape specs so that coverage obligations may be
-stated in terms of ~c[SHAPE-SPEC-OBJ-IN-RANGE].  The shape specs are
-converted to symbolic objects and may be parametrized based on some
-restrictions from the hypotheses, restricting their range further.
-Thus, in order to prove a theorem about fixed-length natural numbers,
-for example, one may provide a shape specifier that additionally
-covers negative integers of the given length; parametrization can then
-restrict the symbolic inputs used in the simulation to only cover the
-naturals, while the coverage proof may still be done using the
-simpler, unparametrized shape spec.
-~/
-")
-
-
+<p>When proving a theorem using the GL clause processor, variable bindings are
+given as shape specs so that coverage obligations may be stated in terms of
+@('SHAPE-SPEC-OBJ-IN-RANGE').  The shape specs are converted to symbolic
+objects and may be parametrized based on some restrictions from the hypotheses,
+restricting their range further.  Thus, in order to prove a theorem about
+fixed-length natural numbers, for example, one may provide a shape specifier
+that additionally covers negative integers of the given length; parametrization
+can then restrict the symbolic inputs used in the simulation to only cover the
+naturals, while the coverage proof may still be done using the simpler,
+unparametrized shape spec.</p>")
 
 
 (defund shape-spec-call-free (x)

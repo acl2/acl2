@@ -10,7 +10,6 @@
 (include-book "run-gified-cp")
 (local (include-book "general-object-thms"))
 (include-book "glcp-templates")
-(include-book "gl-doc-string")
 (include-book "generic-geval")
 ;; Now that we've proven the correctness of the generic clause processor above,
 ;; we now define a macro which makes a clause processor for a particular set of
@@ -105,7 +104,7 @@
 ;; (defthm open-cdr-kwote-lst
 ;;   (equal (cdr (acl2::kwote-lst lst))
 ;;          (acl2::kwote-lst (cdr lst))))
- 
+
 ;; (defthm gobj-listp-cdr
 ;;   (implies (gobj-listp x)
 ;;            (gobj-listp (cdr x)))
@@ -255,7 +254,7 @@
 (defthm gobj-depends-on-of-nil
   (not (gobj-depends-on k p nil)))
 
-      
+
 (defun def-gl-clause-processor-fn
   (clause-proc output state)
   (declare (xargs :mode :program :stobjs state))
@@ -360,7 +359,7 @@
                . ,(glcp-predef-cases-fn
                    (remove 'if g-fns) world))))
 
-         
+
 
          ;; ;; make the evaluator, falsifier
          ;; (local (defun dummy-label-for-make-evaluator-fn () nil))
@@ -399,7 +398,7 @@
                                *glcp-clause-proc-template*))
 
          ;; Prep for the run-gified correctness and gobjectp theorems
-         (local 
+         (local
           (progn
             (eval-g-prove-f-i ,f-i-thm ,geval generic-geval)
             (eval-g-functional-instance
@@ -410,8 +409,8 @@
              gl-eval-of-nil ,geval generic-geval)
             (eval-g-functional-instance
              general-concrete-obj-correct ,geval generic-geval)
-            
-            
+
+
             ;; Prove correctness of run-gified
             (defthm ,run-gified-deps
               (implies (not (gobj-list-depends-on k p actuals))
@@ -486,7 +485,7 @@
 
          ;; Verify guards of the interpreter.
          (local (in-theory nil))
-         (verify-guards 
+         (verify-guards
            ,interp-term
            :hints (("goal" :by
                     (:functional-instance
@@ -561,65 +560,71 @@
 
 
 
-(defmacro def-gl-clause-processor
-  (name &rest rest-args
-        ;; apply-fns &key (output
-        ;;                 '(:off (warning warning! observation prove
-        ;;                                 event summary proof-tree
-        ;;                                 acl2::expansion)
-        ;;                        :gag-mode nil))
-        ;; top-apply-fns
-        ;; include-nonrec
-        )
-  ":Doc-section ACL2::GL
-Define a GL clause processor with a given set of built-in symbolic counterparts.~/
+(defsection def-gl-clause-processor
+  :parents (reference)
+  :short "Define a GL clause processor with a given set of built-in symbolic
+  counterparts."
 
-Usage:
-~bv[]
+  :long "<p>Usage:</p>
+
+@({
  (def-gl-clause-processor my-gl-clause-processor
    :output with-output-settings)
-~ev[]
-The above form defines a GL clause processor function named
+})
+
+<p>The above form defines a GL clause processor function named
 my-gl-clause-processor.  This clause processor is defined so that it can
-execute all existing symbolic counterpart functions.
+execute all existing symbolic counterpart functions.</p>
 
-There is rarely a necessity for a user to define a new GL clause processor now,
-unless they have added symbolic counterpart functions either by hand-coding
-them or using ~c[MAKE-G-WORLD].~/
+<p>There is rarely a necessity for a user to define a new GL clause processor
+now, unless they have added symbolic counterpart functions either by
+hand-coding them or using @(see make-g-world).</p>
 
-Each GL clause processor has an associated sets of functions that it can
+<p>Each GL clause processor has an associated sets of functions that it can
 directly execute symbolically.  DEF-GL-CLAUSE-PROCESSOR makes a new processor
-that can execute the full set of existing symbolic counterparts.
- (Symbolic counterparts may be defined by hand or using ~c[MAKE-G-WORLD].)
+that can execute the full set of existing symbolic counterparts. (Symbolic
+counterparts may be defined by hand or using @(see make-g-world).)</p>
 
-It used to be the case that the clause processor also had a fixed set of
+<p>It used to be the case that the clause processor also had a fixed set of
 functions it could execute concretely.  That is no longer the case.  We still
 accept the old form of def-gl-clause-processor, which takes an additional
 argument after the name of the clause processor and before the :output keyword
  (if any).  However, this is deprecated and a message will be printed saying so.
+</p>
 
-~l[DEF-GL-THM] and ~il[GL-HINT] for information on using the GL
-clause processor to prove theorems.~/"
-  (b* (((mv oldp keys)
-        (if (or (not rest-args)
-                (keywordp (car rest-args)))
-            (mv nil rest-args)
-          (mv t (cdr rest-args))))
-       (- (and oldp
-               (cw "DEPRECATED (def-gl-clause-proc): Def-gl-clause-proc now ~
-                    takes fewer arguments than it used to; in particular, the ~
-                    old APPLY-FNS argument is now ignored.  See :doc ~
-                    def-gl-clause-proc for the new syntax.~%")))
-       (output-look (assoc-keyword :output keys))
-       (output (if output-look
-                   (cadr output-look)
-                 '(:off (warning warning! observation prove
-                                 event summary proof-tree
-                                 acl2::expansion)
-                   :gag-mode nil))))
-  `(make-event
-    (def-gl-clause-processor-fn
-      ',name ',output state))))
+<p>See @(see def-gl-thm) and @(see gl-hint) for information on using the GL
+clause processor to prove theorems.</p>"
+
+  (defmacro def-gl-clause-processor
+    (name &rest rest-args
+          ;; apply-fns &key (output
+          ;;                 '(:off (warning warning! observation prove
+          ;;                                 event summary proof-tree
+          ;;                                 acl2::expansion)
+          ;;                        :gag-mode nil))
+          ;; top-apply-fns
+          ;; include-nonrec
+          )
+    (b* (((mv oldp keys)
+          (if (or (not rest-args)
+                  (keywordp (car rest-args)))
+              (mv nil rest-args)
+            (mv t (cdr rest-args))))
+         (- (and oldp
+                 (cw "DEPRECATED (def-gl-clause-proc): Def-gl-clause-proc now ~
+                      takes fewer arguments than it used to; in particular, ~
+                      the old APPLY-FNS argument is now ignored.  See :doc ~
+                      def-gl-clause-proc for the new syntax.~%")))
+         (output-look (assoc-keyword :output keys))
+         (output (if output-look
+                     (cadr output-look)
+                   '(:off (warning warning! observation prove
+                                   event summary proof-tree
+                                   acl2::expansion)
+                          :gag-mode nil))))
+      `(make-event
+        (def-gl-clause-processor-fn
+          ',name ',output state)))))
 
 
 
@@ -766,7 +771,7 @@ See :DOC GL::COVERAGE-PROOFS.
                  :case-split-override case-split-override))
 
         (cov-hints (glcp-coverage-hints
-                    do-not-expand cov-theory-add cov-hints cov-hints-position)) 
+                    do-not-expand cov-theory-add cov-hints cov-hints-position))
         ((er trhyp)
          (acl2::translate hyp t t nil 'gl-hint-fn (w state) state))
         ((er trparam)
@@ -785,7 +790,7 @@ bindings:
                       (cw "****  WARNING ****~%~@0~%" msg)
                   ;;  (er hard? 'gl-hint "~@0" msg)
                       )))
-        (bindings 
+        (bindings
          (add-var-bindings missing-vars
                            bindings))
         (param-bindings (add-param-var-bindings vars param-bindings))
@@ -795,46 +800,30 @@ bindings:
                 state)))
      (value (glcp-combine-hints call cov-hints hyp-hints result-hints case-split-hints))))
 
-(defmacro gl-hint (clause-proc &key
-                               bindings param-bindings
-                               (hyp-clk '1000000)
-                               (concl-clk '1000000)
-                               cov-hints cov-hints-position
-                               cov-theory-add do-not-expand
-                               hyp-hints
-                               result-hints
-                               (hyp ''t) param-hyp concl
-                               (n-counterexamples '3)
-                               (abort-indeterminate 't)
-                               (abort-ctrex 't)
-                               (exec-ctrex 't)
-                               (abort-vacuous 't)
-                               (case-split-override 'nil)
-                               case-split-hints
-                               run-before-cases run-after-cases
-                               test-side-goals)
-  ":Doc-section ACL2::GL
-Try to prove a goal using GL symbolic simulation.~/
 
-Usage, as a computed hint (~l[using-computed-hints]):
-~bv[]
+(defsection gl-hint
+  :parents (reference)
+  :short "Try to prove a goal using GL symbolic simulation."
+  :long "<p>Usage, as a computed hint (see @(see using-computed-hints)):</p>
+
+@({
  (gl-hint my-gl-clause-processor
          :bindings `((a ,(g-number (list (mk-number-list 1 1 9))))
                      (b ,(g-boolean 0)))
          :hyp '(bvecp a 8)
          :coverage-hints ('(:expand ((bvecp a 8)))))
-~ev[]
+})
 
-The above hint causes an attempt to apply the clause processor
-my-gl-clause-processor to the current clause.  Such a clause processor
-must be created using ~il[DEF-GL-CLAUSE-PROCESSOR].  One such
-clause processor, ~c[GL::GLCP], is predefined in the GL system.
-Various keyword arguments control the symbolic simulation and
-auxilliary proofs.~/
+<p>The above hint causes an attempt to apply the clause processor
+my-gl-clause-processor to the current clause.  Such a clause processor must be
+created using @(see def-gl-clause-processor).  One such clause processor, @(see
+glcp), is predefined in the GL system.  Various keyword arguments control the
+symbolic simulation and auxilliary proofs.</p>
 
-The full interface is as follows, with default values and brief
-descriptions of each keyword argument:
-~bv[]
+<p>The full interface is as follows, with default values and brief
+descriptions of each keyword argument:</p>
+
+@({
  (gl-hint clause-processor-name
 
           ;; bindings of variables to symbolic object specs
@@ -848,7 +837,7 @@ descriptions of each keyword argument:
 
           ;; conclusion of the theorem
           :concl                   nil
-           
+
           ;; hints for proving coverage
           :cov-hints               nil
           :cov-hints-position      nil
@@ -878,19 +867,36 @@ descriptions of each keyword argument:
           :param-hyp               nil
           :run-before-cases        nil
           :run-after-cases         nil)
-~ev[]
+})
 
-The keyword arguments to ~c[GL-HINT] are similar to ones for the
-macros ~il[DEF-GL-THM] and ~il[DEF-GL-PARAM-THM], and are
-documented there.
-~/"
+<p>The keyword arguments to @('gl-hint') are similar to ones for the macros
+@(see def-gl-thm) and @(see def-gl-param-thm), and are documented there.</p>"
 
-  (gl-hint-fn clause-proc bindings param-bindings hyp param-hyp concl
-              hyp-clk concl-clk cov-hints cov-hints-position
-              cov-theory-add do-not-expand hyp-hints result-hints
-              n-counterexamples abort-indeterminate abort-ctrex exec-ctrex abort-vacuous
-              run-before-cases run-after-cases
-              case-split-override case-split-hints test-side-goals))
+  (defmacro gl-hint (clause-proc &key
+                                 bindings param-bindings
+                                 (hyp-clk '1000000)
+                                 (concl-clk '1000000)
+                                 cov-hints cov-hints-position
+                                 cov-theory-add do-not-expand
+                                 hyp-hints
+                                 result-hints
+                                 (hyp ''t) param-hyp concl
+                                 (n-counterexamples '3)
+                                 (abort-indeterminate 't)
+                                 (abort-ctrex 't)
+                                 (exec-ctrex 't)
+                                 (abort-vacuous 't)
+                                 (case-split-override 'nil)
+                                 case-split-hints
+                                 run-before-cases run-after-cases
+                                 test-side-goals)
+
+    (gl-hint-fn clause-proc bindings param-bindings hyp param-hyp concl
+                hyp-clk concl-clk cov-hints cov-hints-position
+                cov-theory-add do-not-expand hyp-hints result-hints
+                n-counterexamples abort-indeterminate abort-ctrex exec-ctrex abort-vacuous
+                run-before-cases run-after-cases
+                case-split-override case-split-hints test-side-goals)))
 
 
 (defun def-gl-thm-fn
@@ -953,7 +959,7 @@ in DEF-GL-THM.~%"))
         (with-output :stack :pop
           ,form))
        (value-triple :invisible))))
-  
+
 
 
 ;; If a clause-processor name is supplied, this creates a defthm event
@@ -973,29 +979,12 @@ in DEF-GL-THM.~%"))
 
 
 
-;; Define a macro that provides a drop-in replacement for DEF-G-THM and
-;; uses the new clause processor.
-(defmacro def-gl-thm
-  (name &key (clause-proc 'nil clause-procp)
-        skip-g-proofs
-        (hyp 'nil hyp-p)
-        (concl 'nil concl-p)
-        (g-bindings 'nil g-bindings-p)
-        cov-hints cov-hints-position
-        cov-theory-add
-        do-not-expand 
-        (hyp-clk '1000000)
-        (concl-clk '1000000)
-        (n-counterexamples '3)
-        (abort-indeterminate 't) (abort-ctrex 't) (exec-ctrex 't) (abort-vacuous 't)
-        local
-        test-side-goals
-        (rule-classes ':rewrite))
-  ":Doc-section ACL2::GL
-Prove a theorem using GL symbolic simulation~/
+(defsection def-gl-thm
+  :parents (reference)
+  :short "Prove a theorem using GL symbolic simulation."
+  :long "<p>Usage:</p>
 
-Usage:
-~bv[]
+@({
  (def-gl-thm <theorem-name>
    :hyp <hypothesis term>
    :concl <conclusion term>
@@ -1014,123 +1003,155 @@ Usage:
    :do-not-expand <list of functions>
    :cov-hints <computed hints>
    :cov-hints-position <:replace, :before, or :after>
-   
+
    :test-side-goals <t or nil>)
-~ev[]
+})
 
-This form submits a ~c[DEFTHM] event for the theorem
-~c[(implies <hyp> <concl>)] and the specified rule-classes, and gives a hint to
-attempt to prove it by symbolic execution using a GL clause processor.~/
+<p>This form submits a @(see defthm) event for the theorem</p>
 
-Out of the list of keyword arguments recognized by this macro, three are
-necessary: ~c[:hyp], ~c[:concl], and ~c[:g-bindings].  As noted, the theorem to
-be proved takes the form ~c[(implies <hyp> <concl>)].  The ~c[hyp] is also used
-in proving coverage, explained below.
+@({(implies <hyp> <concl>)})
 
-The ~c[g-bindings] must be a term evaluating to an alist formatted as follows:
-~bv[]
+<p>and the specified rule-classes, and gives a hint to attempt to prove it by
+symbolic execution using a GL clause processor.</p>
+
+<p>Out of the list of keyword arguments recognized by this macro, three are
+necessary: @(':hyp'), @(':concl'), and @(':g-bindings').  As noted, the theorem
+to be proved takes the form @('(implies <hyp> <concl>)').  The @('hyp') is also
+used in proving coverage, explained below.</p>
+
+<p>The @(':g-bindings') must be a term evaluating to an alist formatted as
+follows:</p>
+
+@({
  ((<var-name1>  <shape-spec1>)
   (<var-name2>  <shape-spec2>)
   ...)
-~ev[]
-The shape specs must be well-formed as described in ~il[GL::SHAPE-SPECS]; notably,
-they must not reuse BDD variable numbers or unconstrainted variable names.
-Note also that this is not a dotted alist; the shape spec is the ~c[CADR], not
-the ~c[CDR], of each entry.  If any variables mentioned in the theorem are not
-bound in this alist, they will be given an unconstrained variable binding.
+})
 
-The symbolic objects used as the inputs to the symbolic simulation are obtained
-by translating each shape spec into a symbolic object.  The hyp is symbolically
-executed on these symbolic inputs.  Parametrizing the symbolic objects by the
-resulting predicate object yields (absent any ~c[G-APPLY] or ~c[G-VAR] objects)
-symbolic objects with coverage restricted to only inputs satisfying the hyp.
+<p>The shape specs must be well-formed as described in @(see shape-specs);
+notably, they must not reuse BDD variable numbers or unconstrained variable
+names.  Note also that this is not a dotted alist; the shape spec is the @(see
+cadr), not the @(see cdr), of each entry.  If any variables mentioned in the
+theorem are not bound in this alist, they will be given an unconstrained
+variable binding.</p>
 
-Here is a simple example theorem:
-~bv[]
+<p>The symbolic objects used as the inputs to the symbolic simulation are
+obtained by translating each shape spec into a symbolic object.  The hyp is
+symbolically executed on these symbolic inputs.  Parametrizing the symbolic
+objects by the resulting predicate object yields (absent any @('G-APPLY') or
+@('G-VAR') objects) symbolic objects with coverage restricted to only inputs
+satisfying the hyp.</p>
+
+<p>Here is a simple example theorem:</p>
+
+@({
  (def-gl-thm commutativity-of-+-up-to-16
     :hyp (and (natp a) (natp b)
               (< a 16) (< b 16))
     :concl (equal (+ a b) (+ b a))
     :g-bindings '((a (:g-number (0 2 4 6 8)))
                   (b (:g-number (1 3 5 7 9)))))
-~ev[]
+})
 
-This theorem binds its free variables ~c[A] and ~c[B] to symbolic numbers of
-five bits.  Note that integers are two's-complement, so to represent natural
+<p>This theorem binds its free variables @('a') and @('b') to symbolic numbers
+of five bits.  Note that integers are two's-complement, so to represent natural
 numbers one needs one more bit than in the unsigned representation.  Therefore,
 these shape specs cover negative numbers down to -16 as well as naturals less
 than 16.  However, parametrization by the hypotheses will yield symbolic
-objects that only cover the specified range.
+objects that only cover the specified range.</p>
 
-The coverage obligation for a theorem will be a goal like this:
-~bv[]
+<p>The coverage obligation for a theorem will be a goal like this:</p>
+
+@({
  (implies <hyp>
           (shape-spec-obj-in-range
            (list <shape-spec1> <shape-spec2> ...)
            (list <var-name1> <var-name2> ...)))
-~ev[]
-In the example above:
-~bv[]
+})
+
+<p> In the example above:</p>
+
+@({
  (implies (and (natp a) (natp b)
                (< a 16) (< b 16))
           (shape-spec-obj-in-range
            '((:g-number (0 2 4 6 8)) (:g-number (1 3 5 7 9)))
            (list a b)))
-~ev[]
+})
 
-It is often convenient to work out the coverage theorem before running the
+<p>It is often convenient to work out the coverage theorem before running the
 symbolic simulation, since the symbolic simulation may take a very long time
-even when successful.  The keyword argument ~c[:test-side-goals] may be given a
-value of ~c[T] in order to attempt the coverage proof on its own; if
+even when successful.  The keyword argument @(':test-side-goals') may be given
+a value of @('T') in order to attempt the coverage proof on its own; if
 successful, no theorem will be stored by ACL2, but one can then be fairly sure
-that the coverage proof will go through in the real theorem.
+that the coverage proof will go through in the real theorem.</p>
 
-Several hints are given by default for proving coverage; see
-~il[GL::SHAPE-SPECS] for details.  The keyword arguments ~c[:cov-theory-add],
-~c[:do-not-expand], ~c[:cov-hints], and ~c[cov-hints-position] affect the
-coverage proof.
+<p>Several hints are given by default for proving coverage; see @(see
+shape-specs) for details.  The keyword arguments @(':cov-theory-add'),
+@(':do-not-expand'), @(':cov-hints'), and @(':cov-hints-position') affect the
+coverage proof.</p>
 
-When proof by symbolic simulation fails, the clause processor will print
-randomized counterexamples.  The keyword argument ~c[:n-counterexamples]
+<p>When proof by symbolic simulation fails, the clause processor will print
+randomized counterexamples.  The keyword argument @(':n-counterexamples')
 determines how many it prints.  The default is 3.  (For SAT-based proofs,
 likely only one counterexample is available, so it may print the same
-counterexample each time.)
+counterexample each time.)</p>
 
-By default, the clause processor will execute conclusion on the counterexamples
-that it finds; this is useful for printing debugging information.  However,
-sometimes the conclusion is not executable; in that case, you may turn off
-execution of counterexamples using ~c[:exec-ctrex nil].
+<p>By default, the clause processor will execute conclusion on the
+counterexamples that it finds; this is useful for printing debugging
+information.  However, sometimes the conclusion is not executable; in that
+case, you may turn off execution of counterexamples using @(':exec-ctrex
+nil').</p>
 
-A symbolic simulation may result in a symbolic object that can't be
+<p>A symbolic simulation may result in a symbolic object that can't be
 syntactically determined to be non-nil; for example, the result may contain a
-~c[:G-APPLY] object.  In these situations, the proof attempt will
-abort, and an example will be shown of inputs for which the symbolic result's
-value could not be determined.  To debug this type of problem, see
-~il[GL::DEBUGGING-INDETERMINATE-RESULTS].
+@(':G-APPLY') object.  In these situations, the proof attempt will abort, and
+an example will be shown of inputs for which the symbolic result's value could
+not be determined.  To debug this type of problem, see @(see
+debugging-indeterminate-results).</p>
 
-The symbolic interpreter and all symbolic counterpart functions take a clock
+<p>The symbolic interpreter and all symbolic counterpart functions take a clock
 argument to ensure termination.  The starting clocks for the symbolic
 executions of the hyp (for parametrization) and the conclusion may be set using
-the keyword arguments ~c[:hyp-clk] and ~c[:concl-clk]; the defaults are both
-1000000.
+the keyword arguments @(':hyp-clk') and @(':concl-clk'); the defaults are both
+1000000.</p>
 
-The keyword argument ~c[:clause-proc] can be used to select the clause
-processor to be used; see ~c[DEF-GL-CLAUSE-PROCESSOR].  By default, the latest
-clause processor introduced is used.  If no ~c[:clause-proc] keyword argument
-is given, then this macro expands to a ~c[make-event], which in turn expands to
-the ~c[defthm] event; otherwise, this expands directly to the ~c[defthm].
+<p>The keyword argument @(':clause-proc') can be used to select the clause
+processor to be used; see @(see def-gl-clause-processor).  By default, the
+latest clause processor introduced is used.  If no @(':clause-proc') keyword
+argument is given, then this macro expands to a @(see make-event), which in
+turn expands to the @(see defthm) event; otherwise, this expands directly to
+the @(see defthm).</p>
 
-The keyword argument ~c[:rule-classes] can be used to select the rule-classes
-for the theorem produced, as in ~c[defthm]; the default is ~c[:rewrite].
-~/
-"
-  (declare (ignore skip-g-proofs local))
-  (def-gl-thm-find-cp name clause-proc clause-procp
-    (list hyp hyp-p concl concl-p g-bindings g-bindings-p cov-hints
-          cov-hints-position cov-theory-add do-not-expand hyp-clk concl-clk
-          n-counterexamples abort-indeterminate abort-ctrex exec-ctrex abort-vacuous test-side-goals
-          rule-classes)))
+<p>The keyword argument @(':rule-classes') can be used to select the
+rule-classes for the theorem produced, as in @(see defthm); the default is
+@(':rewrite').</p>"
 
+  ;; Define a macro that provides a drop-in replacement for DEF-G-THM and
+  ;; uses the new clause processor.
+  (defmacro def-gl-thm
+    (name &key (clause-proc 'nil clause-procp)
+          skip-g-proofs
+          (hyp 'nil hyp-p)
+          (concl 'nil concl-p)
+          (g-bindings 'nil g-bindings-p)
+          cov-hints cov-hints-position
+          cov-theory-add
+          do-not-expand
+          (hyp-clk '1000000)
+          (concl-clk '1000000)
+          (n-counterexamples '3)
+          (abort-indeterminate 't) (abort-ctrex 't) (exec-ctrex 't) (abort-vacuous 't)
+          local
+          test-side-goals
+          (rule-classes ':rewrite))
+
+    (declare (ignore skip-g-proofs local))
+    (def-gl-thm-find-cp name clause-proc clause-procp
+      (list hyp hyp-p concl concl-p g-bindings g-bindings-p cov-hints
+            cov-hints-position cov-theory-add do-not-expand hyp-clk concl-clk
+            n-counterexamples abort-indeterminate abort-ctrex exec-ctrex abort-vacuous test-side-goals
+            rule-classes))))
 
 
 
@@ -1204,30 +1225,15 @@ PARAM-BINDINGS must be provided in DEF-GL-PARAM-THM.~%"))
           (def-gl-param-thm-fn ',name clause-proc ',rest))))))
 
 
-(defmacro def-gl-param-thm
-  (name &key (clause-proc 'nil clause-procp)
-        skip-g-proofs
-        (hyp 'nil hyp-p)
-        (param-hyp 'nil param-hyp-p)
-        (concl 'nil concl-p)
-        (cov-bindings 'nil cov-bindings-p)
-        (param-bindings 'nil param-bindings-p)
-        cov-hints cov-hints-position
-        cov-theory-add
-        do-not-expand 
-        (hyp-clk '1000000)
-        (concl-clk '1000000)
-        (n-counterexamples '3)
-        (abort-indeterminate 't) (abort-ctrex 't) (exec-ctrex 't) (abort-vacuous 'nil)
-        run-before-cases run-after-cases
-        case-split-override
-        case-split-hints local test-side-goals
-        (rule-classes ':rewrite))
-  ":Doc-section ACL2::GL
-Prove a theorem using GL symbolic simulation with parametrized case-splitting.~/
 
-Usage:
-~bv[]
+(defsection def-gl-param-thm
+  :parents (reference optimization)
+  :short "Prove a theorem using GL symbolic simulation with parametrized
+case-splitting."
+
+  :long "<p>Usage:</p>
+
+@({
  (def-gl-param-thm <theorem-name>
    :hyp <hypotheses>
    :concl <conclusion>
@@ -1250,53 +1256,59 @@ Usage:
    :do-not-expand <list of functions>
    :cov-hints <computed hints>
    :cov-hints-position <:replace, :before, or :after>
-   
+
    :test-side-goals <t or nil>)
-~ev[]
+})
 
-This form submits a ~c[DEFTHM] event for the theorem
-~c[(implies <hyp> <concl>)] and the specified rule classes, and gives a hint to
-attempt to prove it using a GL clause processor with parametrized
-case-splitting.  See ~il[def-gl-thm] for a simpler version that does not do
-case splitting.~/
+<p>This form submits a @(see defthm) event for the theorem @('(implies <hyp>
+<concl>)') and the specified rule classes, and gives a hint to attempt to prove
+it using a GL clause processor with parametrized case-splitting.  See @(see
+def-gl-thm) for a simpler version that does not do case splitting.</p>
 
-Out of the list of keyword arguments recognized by this macro, five are
-necessary: ~c[:hyp], ~c[:concl], ~c[param-hyp], ~c[:cov-bindings], and
-~c[:param-bindings].  As noted, the theorem to be proved takes the form
-~c[(implies <hyp> <concl>)].  The theorem is split into cases based on the
-~c[param-hyp], a term containing some free variables of the theorem and some
+<p>Out of the list of keyword arguments recognized by this macro, five are
+necessary: @(':hyp'), @(':concl'), @('param-hyp'), @(':cov-bindings'), and
+@(':param-bindings').  As noted, the theorem to be proved takes the form
+@('(implies <hyp> <concl>)').  The theorem is split into cases based on the
+@('param-hyp'), a term containing some free variables of the theorem and some
 additional variables used in case splitting.  Values are assigned to these
-variables based on the entries in the ~c[param-bindings], an alist of the
-following form:
-~bv[]
+variables based on the entries in the @('param-bindings'), an alist of the
+following form:</p>
+
+@({
  ((<case-bindings1> <var-bindings1>)
   (<case-bindings2> <var-bindings2>)
   ...)
-~ev[]
-Each of the case-bindings is, in turn, an alist of the following form:
-~bv[]
+})
+
+<p>Each of the case-bindings is, in turn, an alist of the following form:</p>
+
+@({
  ((<case-var1> <obj1>)
   (<case-var2> <obj2>)
   ...)
-~ev[]
-and each of the var-bindings is an alist of the following form:
-~bv[]
+})
+
+<p>and each of the var-bindings is an alist of the following form:</p>
+
+@({
  ((<thm-var1> <shape-spec1>)
   (<thm-var2> <shape-spec2>)
   ...)
-~ev[]
+})
 
-For each entry in the ~c[param-bindings], the ~c[param-hyp] is instantiated
-with the case variables bound to the objects specified in the entry's
-case-bindings.  This term gives a hypothesis about the free variables of the
-theorem, and the set of these terms generated from the param-bindings gives the
-full case-split.  The case split must cover the theorem's hypotheses; that is,
-the theorem's hypothesis must imply the disjunction of the case hypotheses.  To
-prove this, we symbolically simulate this disjunction using the shape specs
-given in the ~c[cov-bindings], which are formatted like the var-bindings above.
+<p>For each entry in the @('param-bindings'), the @('param-hyp') is
+instantiated with the case variables bound to the objects specified in the
+entry's case-bindings.  This term gives a hypothesis about the free variables
+of the theorem, and the set of these terms generated from the param-bindings
+gives the full case-split.  The case split must cover the theorem's hypotheses;
+that is, the theorem's hypothesis must imply the disjunction of the case
+hypotheses.  To prove this, we symbolically simulate this disjunction using the
+shape specs given in the @('cov-bindings'), which are formatted like the
+var-bindings above.</p>
 
-A simple example is as follows:
-~bv[]
+<p>A simple example is as follows:</p>
+
+@({
  (def-gl-param-thm addititive-inverse-for-5-bits
    :hyp (and (integerp n) (<= -16 n) (< n 16))
    :concl (equal (- n n) 0)
@@ -1312,52 +1324,70 @@ A simple example is as follows:
      (((sign nil) (lower-bits 1)) ((n (:g-number (0 1 2 4 5)))))
      (((sign nil) (lower-bits 2)) ((n (:g-number (0 1 2 3 5)))))
      (((sign nil) (lower-bits 3)) ((n (:g-number (0 1 2 3 4)))))))
-~ev[]
+})
 
-This theorem is proved by symbolic simulation of five cases, in each of which
-the param-hyp is assumed with a different setting of the sign and lower-bits
-case variables; in one case ~c[N] is required to be negative, and in the others
-it is required to be positive and have a given value on its two low-order
-bits.  To show that the case-split is complete, another symbolic simulation is
-performed (using the given ~c[:cov-bindings]) which proves that the disjunction
-of the case assumptions is complete; effectively,
-~bv[]
+<p>This theorem is proved by symbolic simulation of five cases, in each of
+which the param-hyp is assumed with a different setting of the sign and
+lower-bits case variables; in one case @('N') is required to be negative, and
+in the others it is required to be positive and have a given value on its two
+low-order bits.  To show that the case-split is complete, another symbolic
+simulation is performed (using the given @(':cov-bindings')) which proves that
+the disjunction of the case assumptions is complete; effectively,</p>
+
+@({
  (implies (and (integerp n) (<= -16 n) (< n 16))
           (or (< n 0)
               (and (<= 0 n) (equal (logand n 3) 0))
               (and (<= 0 n) (equal (logand n 3) 1))
               (and (<= 0 n) (equal (logand n 3) 2))
               (and (<= 0 n) (equal (logand n 3) 3))))
-~ev[]
+})
 
-Most of the remaining keyword arguments to ~c[DEF-GL-PARAM-THM] are also
-available in ~il[DEF-GL-THM] and are documented there.  The rest are as
-follows:
+<p>Most of the remaining keyword arguments to @('DEF-GL-PARAM-THM') are also
+available in @(see def-gl-thm) and are documented there.  The rest are as
+follows:</p>
 
-~c[:RUN-BEFORE-CASES] and ~c[:RUN-AFTER-CASES] cause a user-specified form to
+<p>@(':RUN-BEFORE-CASES') and @(':RUN-AFTER-CASES') cause a user-specified form to
 be run between the parametrized symbolic simulations.  These may use the
-variable ~c[id], which is bound to the current assignment of the case-splitting
+variable @('id'), which is bound to the current assignment of the case-splitting
 variables.  These can be used to print a message before and after running each
-case so that the user can monitor the theorem's progress.
+case so that the user can monitor the theorem's progress.</p>
 
-By default, if a counterexample is encountered on any of the cases, the proof
-will abort.  Setting ~c[:ABORT-CTREX] to ~c[NIL] causes it to go on; the proof
+<p>By default, if a counterexample is encountered on any of the cases, the proof
+will abort.  Setting @(':ABORT-CTREX') to @('NIL') causes it to go on; the proof
 will fail after the clause processor returns because it will produce a goal of
-~c[NIL].
+@('NIL').</p>
 
-By default, if any case hypothesis is unsatisfiable, the proof will abort.
-Setting ~c[:ABORT-VACUOUS] to ~c[NIL] causes it to go on.
+<p>By default, if any case hypothesis is unsatisfiable, the proof will abort.
+Setting @(':ABORT-VACUOUS') to @('NIL') causes it to go on.</p>"
 
-~/
-"
-  (declare (ignore skip-g-proofs local))
-  (def-gl-param-thm-find-cp name clause-proc clause-procp
-    (list hyp hyp-p param-hyp param-hyp-p concl concl-p cov-bindings
-          cov-bindings-p param-bindings param-bindings-p cov-hints
-          cov-hints-position cov-theory-add do-not-expand hyp-clk concl-clk
-          n-counterexamples abort-indeterminate abort-ctrex exec-ctrex
-          abort-vacuous run-before-cases run-after-cases case-split-override
-          case-split-hints test-side-goals rule-classes)))
+  (defmacro def-gl-param-thm
+    (name &key (clause-proc 'nil clause-procp)
+          skip-g-proofs
+          (hyp 'nil hyp-p)
+          (param-hyp 'nil param-hyp-p)
+          (concl 'nil concl-p)
+          (cov-bindings 'nil cov-bindings-p)
+          (param-bindings 'nil param-bindings-p)
+          cov-hints cov-hints-position
+          cov-theory-add
+          do-not-expand
+          (hyp-clk '1000000)
+          (concl-clk '1000000)
+          (n-counterexamples '3)
+          (abort-indeterminate 't) (abort-ctrex 't) (exec-ctrex 't) (abort-vacuous 'nil)
+          run-before-cases run-after-cases
+          case-split-override
+          case-split-hints local test-side-goals
+          (rule-classes ':rewrite))
+    (declare (ignore skip-g-proofs local))
+    (def-gl-param-thm-find-cp name clause-proc clause-procp
+      (list hyp hyp-p param-hyp param-hyp-p concl concl-p cov-bindings
+            cov-bindings-p param-bindings param-bindings-p cov-hints
+            cov-hints-position cov-theory-add do-not-expand hyp-clk concl-clk
+            n-counterexamples abort-indeterminate abort-ctrex exec-ctrex
+            abort-vacuous run-before-cases run-after-cases case-split-override
+            case-split-hints test-side-goals rule-classes))))
 
 
 
