@@ -2719,7 +2719,7 @@
     (cond ((atom term)
            (add-to-set-eq term ans))
           ((fquotep term) ans)
-          (t (free-vars1-lst (fargs term) ans))))
+          (t (free-vars1-lst (cdr term) ans))))
 
   (defun free-vars1-lst (lst ans)
     (cond ((atom lst) ans)

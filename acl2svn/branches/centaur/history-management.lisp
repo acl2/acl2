@@ -11924,11 +11924,14 @@
 
   brief ~il[documentation] (type ~c[:doc name])~/
 
-  NOTE:  The ~c[:doc] command only makes sense at the terminal.
-  Furthermore it only works at the terminal when a ``full-size'' image
-  has been built.  Most users will probably access the ACL2
-  documentation in other ways, as explained in the file ~c[\"doc/README\"]
-  that comes with the ACL2 distribution.
+  NOTE: The ~c[:doc] command only makes sense at the terminal.  Most users will
+  probably access the ACL2 documentation in other ways; ~pl[documentation].  In
+  particular, consider using the xdoc manual at the following location on the
+  web, for topics documented in ACL2 community ~il[books] as well as the ACL2
+  system (though the latter are rearranged):
+
+  ~url[http://fv.centtech.com/acl2/latest/doc/]
+
   ~bv[]
   Examples:
   ACL2 !>:doc DEFTHM          ; print documentation of DEFTHM

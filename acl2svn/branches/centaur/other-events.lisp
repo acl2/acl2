@@ -9620,6 +9620,9 @@
 
   :cite include-book")
 
+(link-doc-to certifying-books books books-certification)
+(link-doc-to book-makefiles books books-certification)
+
 (deflabel community-books
   :doc
   ":Doc-Section  Books
@@ -18495,7 +18498,9 @@
   explain how to certify those books, or some of those books, with ACL2.  We
   thank Bishop Brock, Jared Davis, and Sol Swords for their substantial
   contributions to this methodology.  See ~c[books/Makefile], in the community
-  books, for more about ``Credits and History''.
+  books, for more about ``Credits and History'', and for additional technical
+  details not covered in this topic (for example, how to build a local copy of
+  the xdoc manual for those who may wish to do that).
 
   For more information about installing ACL2, see the installation
   instructions, either by following a link from the ACL2 home page or by going

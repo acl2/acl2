@@ -164,15 +164,32 @@ ifdef NONSTD
 	ACL2_SUFFIX := $(ACL2_SUFFIX)r
 endif
 
-# The user may legally edit the following variable, or set it on the command
-# line, only when :acl2-mv-as-values is pushed on to *features*.  In that case,
-# this variable may be set to ":REUSE", as shown in the comment below.  That
-# will cause the use of the existing acl2-proclaims.lisp, which will save one
-# compile and one initialization.  BUT this should only be done if the
-# acl2-proclaims.lisp that would otherwise be generated would be identical to
-# the existing acl2-proclaims.lisp.
-USE_ACL2_PROCLAIMS =
-# USE_ACL2_PROCLAIMS = :REUSE
+# The following variable, ACL2_PROCLAIMS_ACTION, is intended to be
+# user-settable to one of three values, as shown below.  By default,
+# it avoids consideration of file acl2-proclaims.lisp: that file is
+# neither consulted (i.e., reused) nor generated.
+
+ifndef ACL2_PROCLAIMS_ACTION
+
+# Default action: Do not reuse or build acl2-proclaims.lisp.
+ACL2_PROCLAIMS_ACTION := default
+
+# Use the existing acl2-proclaims.lisp for compilation.
+# ACL2_PROCLAIMS_ACTION ?= reuse
+
+# Do compile/initialize twice, in order to build acl2-proclaims.lisp
+# and then consult it before the second compile.
+# ACL2_PROCLAIMS_ACTION ?= generate_and_reuse
+
+endif
+
+# Variable ACL2_PROCLAIMS_ACTION is not to be set by the user.  We use
+# override directives to ensure this.
+ifeq ($(ACL2_PROCLAIMS_ACTION), reuse)
+USE_ACL2_PROCLAIMS := t
+else
+USE_ACL2_PROCLAIMS :=
+endif
 
 # The user may define PREFIX; otherwise it is implicitly the empty string.
 PREFIX = 
@@ -439,7 +456,9 @@ TAGS:   acl2.lisp acl2-check.lisp acl2-fns.lisp acl2-init.lisp ${sources}
 # useful when building a hons or parallel version after a normal version, or
 # vice-versa.
 .PHONY: TAGS!
-TAGS!:  acl2r TAGS
+TAGS!:  acl2r
+	rm -f TAGS
+	$(MAKE) TAGS
 
 .PHONY: move-to-old
 move-to-old:
@@ -455,6 +474,7 @@ move-new:
 	if [ -f nsaved_acl2.${LISPEXT} ]; then \
 	mv -f nsaved_acl2.${LISPEXT} ${PREFIXsaved_acl2}.${LISPEXT} ; fi
 
+# See Section "PROCLAIMING" in acl2-fns.lisp.
 acl2-proclaims.lisp: ${sources}
 	rm -f acl2-proclaims.lisp
 	rm -f workxxx
@@ -466,12 +486,17 @@ acl2-proclaims.lisp: ${sources}
 	${LISP} < workxxx
 	[ -f acl2-proclaims.lisp ]
 
+# If ACL2_PROCLAIMS_ACTION has value generate_and_reuse, then the
+# following target remakes acl2-proclaims.lisp and recompiles, as
+# follows.  The first subsidiary call of $(MAKE) initializes, i.e.,
+# gets ACL2 to LD its own sources.  Then, a second $(MAKE) uses that
+# file of proclaim forms to recompile.
+# See also the Section "PROCLAIMING" in acl2-fns.lisp.
 .PHONY: make-acl2-proclaims
 make-acl2-proclaims:
-	if [ "$(USE_ACL2_PROCLAIMS)" != ":REUSE" ]; then \
-	rm -f acl2-proclaims.lisp; \
+	if [ "$(ACL2_PROCLAIMS_ACTION)" = "generate_and_reuse" ]; then \
 	$(MAKE) acl2-proclaims.lisp; \
-	$(MAKE) full USE_ACL2_PROCLAIMS=t; \
+	$(MAKE) full ACL2_PROCLAIMS_ACTION=reuse; \
 	fi
 
 .PHONY: init

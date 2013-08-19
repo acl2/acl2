@@ -1298,9 +1298,6 @@
 (defconstant *non-existent-stream*
   'acl2_invisible::|A Non-Existent Stream|)
 
-(defmacro live-state-p (x)
-  (list 'eq x '*the-live-state*))
-
 ; We get ready to handle errors in such a way that they return to the
 ; top level logic loop if we are under it.
 
@@ -1450,29 +1447,7 @@
 ; package can be redefined only if its imports list is identical to that in its
 ; old definition.
 
-; The following alist associates package names with Common Lisp packages, and
-; is used in function find-package-fast, which is used by princ$ in place of
-; find-package in order to save perhaps 15% of the print time.
-(defparameter *package-alist* nil)
-
-(defun-one-output find-package-fast (string)
-  (or (cdr (assoc-equal string *package-alist*))
-      (let ((pkg (find-package string)))
-        (push (cons string pkg) *package-alist*)
-        pkg)))
-
 (defvar **1*-symbol-key* (make-symbol "**1*-SYMBOL-KEY*"))
-
-(defvar *global-symbol-key* (make-symbol "*GLOBAL-SYMBOL-KEY*"))
-
-(defun global-symbol (x)
-  (or (get x *global-symbol-key*)
-      (setf (get x *global-symbol-key*)
-            (intern (symbol-name x)
-                    (find-package-fast
-                     (concatenate 'string
-                                  *global-package-prefix*
-                                  (symbol-package-name x)))))))
 
 (defun *1*-symbol (x)
 ; Keep this in sync with *1*-symbol?.
@@ -6106,19 +6081,29 @@
 
   identity function used to force a hypothesis~/
 
-  When a hypothesis of a conditional rule has the form ~c[(force hyp)] it
-  is logically equivalent to ~c[hyp] but has a pragmatic effect.  In
-  particular, when the rule is considered, the needed instance of the
-  hypothesis, ~c[hyp'], is assumed and a special case is generated,
-  requiring the system to prove that ~c[hyp'] is true in the current
-  context.  The proofs of all such ``forced assumptions'' are delayed
-  until the successful completion of the main goal.
-  ~l[forcing-round].
+  ~c[Force] is the identity function: ~c[(force x)] is equal to ~c[x].
+  However, for rules of many classes (~pl[rule-classes]), a hypothesis of the
+  form ~c[(force term)] is given special treatment, as described below.  This
+  treatment takes place for rule classes ~c[:]~ilc[rewrite], ~c[:]~ilc[linear],
+  ~c[:]~ilc[type-prescription], ~c[:]~ilc[definition], ~c[:]~ilc[meta] (actually
+  in that case, the result of evaluating the hypothesis metafunction call), and
+  ~c[:]~ilc[forward-chaining].
 
-  Forcing should only be used on hypotheses that are always expected to be
-  true, as is commonly the case for ~il[guard]s of functions.  All the power of
-  the theorem prover is brought to bear on a forced hypothesis and no
-  backtracking is possible.  Forced goals can be attacked immediately
+  When a hypothesis of a conditional rule (of one of the classes listed above)
+  has the form ~c[(force hyp)], it is logically equivalent to ~c[hyp] but has a
+  pragmatic effect.  In particular, when the rule is considered, the needed
+  instance of the hypothesis, ~c[hyp'], may be assumed if the usual process
+  fails to prove it or its negation.  In that situation, if the rule is
+  eventually applied, then a special case is generated, requiring the system to
+  prove that ~c[hyp'] is true in the current context.  The proofs of all such
+  ``forced assumptions'' are, by default, delayed until the successful
+  completion of the main goal.  ~l[forcing-round] and
+  ~pl[immediate-force-modep].
+
+  Forcing is generally used on hypotheses that are always expected to be true,
+  as is commonly the case for ~il[guard]s of functions.  All the power of the
+  theorem prover is brought to bear on a forced hypothesis and no backtracking
+  is possible.  Forced goals can be attacked immediately
   (~pl[immediate-force-modep]) or in a subsequent forcing round
   (~pl[forcing-round]).  Also ~pl[case-split] for a related utility.  If the
   ~c[:]~ilc[executable-counterpart] of the function ~c[force] is ~il[disable]d,
@@ -6294,14 +6279,22 @@
 
   like force but immediately splits the top-level goal on the hypothesis~/
 
-  When a hypothesis of a conditional rule has the form ~c[(case-split hyp)]
-  it is logically equivalent to ~c[hyp].  However it affects the
-  application of the rule generated as follows:  if ACL2
-  attempts to apply the rule but cannot establish that the required
-  instance of ~c[hyp] holds in the current context, it considers the
-  hypothesis true anyhow, but (assuming all hypotheses are seen to be true and
-  the rule is applied) creates a subgoal in which that instance of ~c[hyp] is
-  assumed false.  (There are exceptions, noted below.)~/
+  ~c[Case-split] is an variant of ~ilc[force], which has similar special
+  treatment in hypotheses of rules for the same ~il[rule-classes] as for
+  ~c[force] (~pl[force]).  This treatment takes place for rule classes
+  ~c[:]~ilc[rewrite], ~c[:]~ilc[linear], ~c[:]~ilc[type-prescription],
+  ~c[:]~ilc[definition], ~c[:]~ilc[meta] (actually in that case, the result of
+  evaluating the hypothesis metafunction call), and
+  ~c[:]~ilc[forward-chaining].
+
+  When a hypothesis of a conditional rule (of one of the classes listed above)
+  has the form ~c[(case-split hyp)] it is logically equivalent to ~c[hyp].
+  However it affects the application of the rule generated as follows: if ACL2
+  attempts to apply the rule but cannot establish that the required instance of
+  ~c[hyp] holds in the current context, it considers the hypothesis true
+  anyhow, but (assuming all hypotheses are seen to be true and the rule is
+  applied) creates a subgoal in which that instance of ~c[hyp] is assumed
+  false.  (There are exceptions, noted below.)~/
 
   For example, given the rule
   ~bv[]
@@ -6318,14 +6311,14 @@
   (IMPLIES (AND (NOT (P1 (CAR X))) (P3 X))
            (P2 (CAR X))).
   ~ev[]
-  Unlike ~ilc[force], ~c[case-split] does not delay the ``false case'' to
-  a forcing round but tackles it more or less immediately.
+  Unlike ~ilc[force], ~c[case-split] does not delay the ``false case'' to a
+  forcing round but tackles it more or less immediately.
 
   The special ``split'' treatment of ~c[case-split] can be disabled by
-  disabling forcing:  ~pl[force] for a discussion of disabling forcing, and
-  also ~pl[disable-forcing].  Finally, we should mention that the rewriter is
-  never willing to split when there is an ~ilc[if] term present in the goal
-  being simplified.  Since ~ilc[and] terms and ~ilc[or] terms are merely
+  disabling forcing: ~pl[force] for a discussion of disabling forcing, and also
+  ~pl[disable-forcing].  Finally, we should mention that the rewriter is never
+  willing to split when there is an ~ilc[if] term present in the goal being
+  simplified.  Since ~ilc[and] terms and ~ilc[or] terms are merely
   abbreviations for ~ilc[if] terms, they also prevent splitting.  Note that
   ~ilc[if] terms are ultimately eliminated using the ordinary flow of the proof
   (but ~pl[set-case-split-limitations]), so ~c[case-split] will ultimately
@@ -6482,11 +6475,17 @@
   (declare (xargs :guard t))
   ":Doc-Section Miscellaneous
 
-  attach a heuristic filter on a ~c[:]~ilc[rewrite], ~c[:]~ilc[meta], or ~c[:]~ilc[linear] rule~/
+  attach a heuristic filter on a rule~/
+
+  A calls of ~c[syntaxp] in the hypothesis of a ~c[:]~ilc[rewrite],
+  ~c[:]~ilc[definition], or ~c[:]~ilc[linear] rule is treated specially, as
+  described below.  Similar treatment is given to the evaluation of a
+  ~c[:]~ilc[meta] rule's hypothesis function call.
+
+  For example, consider the ~c[:]~ilc[rewrite] rule created from the following
+  formula.
   ~bv[]
   Example:
-  Consider the :REWRITE rule created from
-
   (IMPLIES (SYNTAXP (NOT (AND (CONSP X)
                               (EQ (CAR X) 'NORM))))
            (EQUAL (LXD X)
@@ -6522,12 +6521,12 @@
   display this internal representation.
 
   There are two types of ~c[syntaxp] hypotheses.  The simpler type may be a
-  hypothesis of a ~c[:]~ilc[rewrite] or ~c[:]~ilc[linear] rule provided
-  ~c[test] contains at least one variable but no free variables
-  (~pl[free-variables]).  In particular, ~c[test] may not use ~il[stobj]s; any
-  stobj name will be treated as an ordinary variable.  The case of
-  ~c[:]~ilc[meta] rules is similar to the above, except that it applies to the
-  result of applying the hypothesis metafunction.  (Later below we will
+  hypothesis of a ~c[:]~ilc[rewrite], ~c[:]~ilc[definition], or
+  ~c[:]~ilc[linear] rule provided ~c[test] contains at least one variable but
+  no free variables (~pl[free-variables]).  In particular, ~c[test] may not use
+  ~il[stobj]s; any stobj name will be treated as an ordinary variable.  The
+  case of ~c[:]~ilc[meta] rules is similar to the above, except that it applies
+  to the result of applying the hypothesis metafunction.  (Later below we will
   describe the second type, an ~em[extended] ~c[syntaxp] hypothesis, which may
   use ~ilc[state].)
 
@@ -6913,7 +6912,7 @@
                                   (not (member-eq nil vars))))))
   ":Doc-Section Miscellaneous
 
-  to bind free variables of a rewrite or linear rule~/
+  to bind free variables of a rewrite, definition, or linear rule~/
   ~bv[]
   Examples:
   (IMPLIES (AND (RATIONALP LHS)
@@ -6941,10 +6940,11 @@
   A rule which uses a ~c[bind-free] hypothesis has similarities to both a rule
   which uses a ~ilc[syntaxp] hypothesis and to a ~c[:]~ilc[meta] rule.
   ~c[Bind-free] is like ~ilc[syntaxp], in that it logically always returns
-  ~c[t] but may affect the application of a ~c[:]~ilc[rewrite] or
-  ~c[:]~ilc[linear] rule when it is called at the top-level of a hypothesis.
-  It is like a ~c[:]~ilc[meta] rule, in that it allows the user to perform
-  transformations of terms under progammatic control.
+  ~c[t] but may affect the application of a ~c[:]~ilc[rewrite],
+  ~c[:]~ilc[definition], or ~c[:]~ilc[linear] rule when it is called at the
+  top-level of a hypothesis.  It is like a ~c[:]~ilc[meta] rule, in that it
+  allows the user to perform transformations of terms under progammatic
+  control.
 
   Note that a ~c[bind-free] hypothesis does not, in general, deal with the
   meaning or semantics or values of the terms, but rather with their syntactic
@@ -6956,19 +6956,18 @@
 
   Just as for a ~ilc[syntaxp] hypothesis, there are two basic types of
   ~c[bind-free] hypotheses.  The simpler type of ~c[bind-free] hypothesis may
-  be used as the nth hypothesis in a ~c[:]~ilc[rewrite] or ~c[:]~ilc[linear]
-  rule whose ~c[:]~ilc[corollary] is
-  ~c[(implies (and hyp1 ... hypn ... hypk) (equiv lhs rhs))]
-  provided ~c[term] is a term, ~c[term] contains at least one variable, and
-  every variable occuring freely in ~c[term] occurs freely in ~c[lhs] or in
-  some ~c[hypi], ~c[i<n].  In addition, ~c[term] must not use any stobjs.
-  Later below we will describe the second type, an ~em[extended] ~c[bind-free]
-  hypothesis, which may use ~ilc[state].  Whether simple or extended, a
-  ~c[bind-free] hypothesis may return an alist that binds free variables of a
-  rewrite rule, as explained below, or it may return a list of such alists.  We
-  focus on the first of these cases: return of a single binding alist.  We
-  conclude our discussion with a section that covers the other case: return of
-  a list of alists.
+  be used as the nth hypothesis in a ~c[:]~ilc[rewrite], ~c[:]~ilc[definition],
+  or ~c[:]~ilc[linear] rule whose ~c[:]~ilc[corollary] is
+  ~c[(implies (and hyp1 ... hypn ... hypk) (equiv lhs rhs))] provided ~c[term]
+  is a term, ~c[term] contains at least one variable, and every variable
+  occuring freely in ~c[term] occurs freely in ~c[lhs] or in some ~c[hypi],
+  ~c[i<n].  In addition, ~c[term] must not use any stobjs.  Later below we will
+  describe the second type, an ~em[extended] ~c[bind-free] hypothesis, which
+  may use ~ilc[state].  Whether simple or extended, a ~c[bind-free] hypothesis
+  may return an alist that binds free variables, as explained below, or it may
+  return a list of such alists.  We focus on the first of these cases: return
+  of a single binding alist.  We conclude our discussion with a section that
+  covers the other case: return of a list of alists.
 
   We begin our description of ~c[bind-free] by examining the first example
   above in some detail.
@@ -7503,9 +7502,9 @@
   ~il[documentation] facilities do not permit us to use keywords below).
 
   ~/
-  See also ~ilc[force], ~il[case-split], ~ilc[syntaxp], and ~ilc[bind-free]
-  for ``pragmas'' one can wrap around individual hypotheses of ~c[linear] and
-  ~c[rewrite] rules to affect how the hypothesis is relieved.
+  See also ~ilc[force], ~il[case-split], ~ilc[syntaxp], and ~ilc[bind-free] for
+  ``pragmas'' one can wrap around individual hypotheses of certain classes of
+  rules to affect how the hypothesis is relieved.
 
   Before we get into the discussion of rule classes, let us return to an
   important point.  In spite of the large variety of rule classes available, at
@@ -11540,10 +11539,11 @@
   ~c[doc/HTML/acl2-doc.html] under your ACL2 source directory, or just go to
   the ACL2 home page at ~url[http://www.cs.utexas.edu/users/moore/acl2/].
 
-  Alternatively, follow a link on the ACL2 home page to the new ``xdoc''
-  version of the manual.  You can build a local copy using the ACL2 Community
-  books; see the topic ``BUILDING THE MANUAL'' in ~c[books/Makefile] for
-  instructions.
+  Alternatively, follow a link on the ACL2 home page to a manual, known as the
+  xdoc manual, which incorporates (but rearranges) the ACL2 documentation as
+  well as documentation from many ACL2 community books.  You can build a local
+  copy of that manual; see for example the section ``BUILDING THE XDOC MANUAL''
+  in the community books ~c[Makefile] for instructions.
 
   To use Emacs Info (inside Emacs), first load distributed file
   ~c[emacs/emacs-acl2.el] (perhaps inside your ~c[.emacs] file) and then
@@ -20237,10 +20237,12 @@
 
   ~st[Restriction to Event Contexts]
 
-  A ~c[make-event] call must occur either at the top level or as an argument of
-  an event constructor, as explained in more detail below.  This restriction is
-  imposed to enable ACL2 to track expansions produced by ~c[make-event].  The
-  following examples illustrate this restriction.
+  A ~c[make-event] call must occur either at the top level, or during
+  ~c[make-event] expansion, or as an argument of an event constructor.  We
+  explain in more detail below.  This restriction is imposed to enable ACL2 to
+  track expansions produced by ~c[make-event].
+
+  The following examples illustrate this restriction.
   ~bv[]
   ; Legal:
   (progn (with-output
@@ -20253,10 +20255,12 @@
           (mv erp val state))
   ~ev[]
 
-  More precisely: after macroexpansion has taken place, a ~c[make-event] call
-  must be in an ``event context'', defined recursively as follows.  (All but
-  the first two cases below correspond to similar cases for constructing
-  events; ~pl[embedded-event-form].)
+  More precisely: a ~c[make-event] call that is not itself evaluated during
+  ~c[make-event] expansion is subject to the following requirement.  After
+  macroexpansion has taken place, such a ~c[make-event] call must be in an
+  ``event context'', defined recursively as follows.  (All but the first two
+  cases below correspond to similar cases for constructing events;
+  ~pl[embedded-event-form].)
   ~bq[]
 
   o A form submitted at the top level, or more generally, supplied to a call of
@@ -20278,11 +20282,11 @@
   ~c[(]~ilc[WITH-PROVER-TIME-LIMIT]~c[ ... x1)] is in an event context, then so
   is ~c[x1].
 
-  o Given a call of ~ilc[PROGN] or ~ilc[PROGN!] in an event context, each of its
-  arguments is in an event context.
+  o For any call of ~ilc[PROGN] or ~ilc[PROGN!], each of its arguments is in an
+  event context.
 
-  o Given a call of ~ilc[ENCAPSULATE] in an event context, each of its
-  arguments except the first (the signature list) is in an event context.
+  o For any call of ~ilc[ENCAPSULATE], each of its arguments except the
+  first (the signature list) is in an event context.
 
   o If ~c[(RECORD-EXPANSION x1 x2)] is in an event context, then ~c[x1] and
   ~c[x2] are in event contexts.  Note: ~c[record-expansion] is intended for use
@@ -23916,6 +23920,7 @@
   :rule-classes (:type-prescription
                  (:forward-chaining :trigger-terms ((assoc-equal name l)))))
 
+#+acl2-loop-only
 (defmacro f-get-global (x st)
 
   ":Doc-Section ACL2::ACL2-built-ins
@@ -23946,29 +23951,6 @@
   structures even though you may undo back past where you computed and saved
   them.~/"
 
-  #-acl2-loop-only
-  (cond ((and (consp x)
-              (eq 'quote (car x))
-              (symbolp (cadr x))
-              (null (cddr x)))
-
-; The cmulisp compiler complains about unreachable code every (perhaps) time
-; that f-get-global is called in which st is *the-live-state*.  The following
-; optimization is included primarily in order to eliminate those warnings;
-; the extra efficiency is pretty minor, though a nice side effect.
-
-         (if (eq st '*the-live-state*)
-             `(let ()
-                (declare (special ,(global-symbol (cadr x))))
-                ,(global-symbol (cadr x)))
-           (let ((s (gensym)))
-             `(let ((,s ,st))
-                (declare (special ,(global-symbol (cadr x))))
-                (cond ((live-state-p ,s)
-                       ,(global-symbol (cadr x)))
-                      (t (get-global ,x ,s)))))))
-        (t `(get-global ,x ,st)))
-  #+acl2-loop-only
   (list 'get-global x st))
 
 #-acl2-loop-only
@@ -28071,7 +28053,7 @@
     ev-fncall-w ; *the-live-state*
     ev-rec ; wormhole-eval
     setup-simplify-clause-pot-lst1 ; dmr-flush
-    save-exec ; save-exec-raw, etc.
+    save-exec-fn ; save-exec-raw, etc.
     cw-gstack-fn ; *deep-gstack*
     recompress-global-enabled-structure ; get-acl2-array-property
     ev-w ; *the-live-state*
@@ -28278,6 +28260,7 @@
     set-absstobj-debug-fn
     sys-call-status ; *last-sys-call-status*
     sys-call ; system-call
+    sys-call+ ; system-call+
 
     canonical-pathname ; under dependent clause-processor
 
@@ -28738,7 +28721,7 @@
   `((abbrev-evisc-tuple . :default)
     (accumulated-ttree . nil) ; just what succeeded; tracking the rest is hard
     (acl2-raw-mode-p . nil)
-
+    (acl2-sources-dir . nil) ; set by initialize-state-globals
     (acl2-version .
 
 ; Keep this value in sync with the value assigned to
@@ -29629,17 +29612,17 @@
                         (global-table state-state))
                        state-state))
 
+#+acl2-loop-only
 (defun get-global (x state-state)
 
 ; Wart: We use state-state instead of state because of a bootstrap problem.
 
+; Keep this in sync with the #+acl2-loop-only definition of get-global (which
+; uses qfuncall).
+
   (declare (xargs :guard (and (symbolp x)
                               (state-p1 state-state)
                               (boundp-global1 x state-state))))
-  #-acl2-loop-only
-  (cond ((live-state-p state-state)
-         (return-from get-global
-                      (symbol-value (the symbol (global-symbol x))))))
   (cdr (assoc x (global-table state-state))))
 
 (defun put-global (key value state-state)
@@ -35572,10 +35555,12 @@
           (sys-call-status state))
   ~ev[]
   The first argument of ~c[sys-call] is a command for the host operating
-  system, and the second argument is a list of strings that are the
-  arguments for that command.  In GCL and perhaps other lisps, you can put the
+  system, and the second argument is a list of strings that are the arguments
+  for that command.  In GCL and perhaps some other lisps, you can put the
   arguments with the command; but this is not the case, for example, in Allegro
   CL running on Linux.
+
+  For a related utility, ~pl[sys-call+].
 
   The use of ~ilc[prog2$] above is optional, but illustrates a typical sort
   of use when one wishes to get the return status.  ~l[sys-call-status].~/
@@ -35627,13 +35612,12 @@
   Finally, we make a comment about output redirection, which also applies to
   other related features that one may expect of a shell.  ~c[Sys-call] does not
   directly support output redirection.  If you want to run a program, ~c[P],
-  and redirect its output, we suggest that you create a wrapper script, ~c[W]
+  and redirect its output, one option is to create a wrapper script, ~c[W]
   to call instead.  Thus ~c[W] might be a shell script containing the line:
   ~bv[]
   P $* >& foo.out
   ~ev[]
-  If this sort of solution proves inadequate, please contact the ACL2
-  implementors and perhaps we can come up with a solution."
+  For a different, more direct solution, ~pl[sys-call+]."
 
   (declare (xargs :guard t))
   #+acl2-loop-only
@@ -35643,8 +35627,7 @@
     (progn (setq *last-sys-call-status* rslt)
            nil))
   #+acl2-loop-only
-  nil
-  )
+  nil)
 
 (defun sys-call-status (state)
 
@@ -35670,7 +35653,256 @@
                  (mv *last-sys-call-status* state)))
   (mv-let (erp val state)
           (read-acl2-oracle state)
-          (mv (and erp val) state)))
+          (declare (ignore erp))
+          (mv val state)))
+
+#-acl2-loop-only
+(defun read-file-by-lines (file &optional delete-after-reading)
+  (let ((acc nil)
+        (eof '(nil))
+        missing-newline-p)
+    (with-open-file
+     (s file :direction :input)
+     (loop (multiple-value-bind (line temp)
+               (read-line s nil eof)
+             (cond ((eq line eof)
+                    (return acc))
+                   (t
+                    (setq missing-newline-p temp)
+                    (setq acc
+                          (if acc
+                              (concatenate 'string acc (string #\Newline) line)
+                            line)))))))
+    (when delete-after-reading
+      (delete-file file))
+    (if missing-newline-p
+        acc
+      (concatenate 'string acc (string #\Newline)))))
+
+#-acl2-loop-only
+(defun system-call+ (string arguments)
+
+; Warning: Keep this in sync with system-call.
+
+  (let* (exit-code ; assigned below
+         #+(or gcl clisp)
+         (tmp-file (format nil
+                           "~a/tmp~s"
+                           (or (f-get-global 'tmp-dir *the-live-state*)
+                               "/tmp")
+                           (getpid$)))
+         no-error
+         (output-string
+          (our-ignore-errors
+           (prog1
+               #+gcl ; does wildcard expansion
+             (progn (setq exit-code
+                          (si::system
+                           (let ((result string))
+                             (dolist
+                               (x arguments)
+                               (setq result (concatenate 'string result " " x)))
+                             (concatenate 'string result " > " tmp-file))))
+                    (read-file-by-lines tmp-file t))
+             #+lispworks ; does wildcard expansion (see comment below)
+             (with-output-to-string
+               (s)
+               (setq exit-code
+                     (system::call-system-showing-output
+
+; It was tempting to use (cons string arguments).  This would cause the given
+; command, string, to be applied to the given arguments, without involving the
+; shell.  But then a command such as "ls" would not work; one would have to
+; provide a string such as "/bin/ls".  So instead of using a list here, we use
+; a string, which according to the LispWorks manual will invoke the shell,
+; which will find commands (presumably including built-ins and also using the
+; user's path).
+
+                      (let ((result string))
+                        (dolist
+                          (x arguments)
+                          (setq result (concatenate 'string result " " x)))
+                        result)
+                      :output-stream s
+                      :prefix ""
+                      :show-cmd nil
+                      :kill-process-on-abort t))
+               #+windows ; process is returned above, not exit code
+               (setq exit-code nil))
+             #+allegro ; does wildcard expansion
+             (multiple-value-bind
+                 (stdout-lines stderr-lines exit-status)
+                 (excl.osi::command-output
+                  (let ((result string))
+                    (dolist
+                      (x arguments)
+                      (setq result (concatenate 'string result " " x)))
+                    result))
+               (declare (ignore stderr-lines))
+               (setq exit-code exit-status)
+               (let ((acc nil))
+                 (loop for line in stdout-lines
+                       do
+                       (setq acc
+                             (if acc
+                                 (concatenate 'string
+                                              acc
+                                              (string #\Newline)
+                                              line)
+                               line)))
+                 acc))
+             #+cmu
+             (with-output-to-string
+               (s)
+               (setq exit-code
+                     (let (temp)
+                       (if (ignore-errors
+                             (progn
+                               (setq temp
+                                     (ext:process-exit-code
+                                      (common-lisp-user::run-program
+                                       string arguments
+                                       :output s)))
+                               1))
+                           temp
+                         1))))
+             #+sbcl
+             (with-output-to-string
+               (s)
+               (setq exit-code
+                     (let (temp)
+                       (if (ignore-errors
+                             (progn
+                               (setq temp
+                                     (sb-ext:process-exit-code
+                                      (sb-ext:run-program string arguments
+                                                          :output s
+                                                          :search t)))
+                               1))
+                           temp
+                         1))))
+             #+clisp
+             (progn (setq exit-code
+                          (or (ext:run-program string
+                                               :arguments arguments
+                                               :output tmp-file)
+                              0))
+                    (read-file-by-lines tmp-file t))
+             #+ccl
+             (with-output-to-string
+               (s)
+               (setq exit-code
+                     (let* ((proc
+                             (ccl::run-program string arguments
+                                               :output s
+                                               :wait t))
+                            (status (multiple-value-list
+                                     (ccl::external-process-status proc))))
+                       (if (not (and (consp status)
+                                     (eq (car status) :EXITED)
+                                     (consp (cdr status))
+                                     (integerp (cadr status))))
+                           1 ; just some non-zero exit code here
+                         (cadr status)))))
+             #-(or gcl lispworks allegro cmu sbcl clisp ccl)
+             (declare (ignore string arguments))
+             #-(or gcl lispworks allegro cmu sbcl clisp ccl)
+             (error "SYSTEM-CALL is not yet defined in this Lisp.")
+             (setq no-error t)))))
+    (values (cond ((integerp exit-code)
+                   exit-code)
+                  ((null exit-code)
+                   (if no-error 0 1))
+                  (t (format t
+                             "WARNING: System-call produced non-integer, ~
+                              non-nil exit code:~%~a~%"
+                             exit-code)
+                     0))
+            (if (stringp output-string)
+                output-string
+              ""))))
+
+(defun sys-call+ (command-string args state)
+
+  ":Doc-Section ACL2::ACL2-built-ins
+
+  make a system call to the host OS, returning status and output~/
+  ~bv[]
+  Example Form:
+  ; The following returns (mv nil s state), where s is the standard output
+  ; from the command: ls -l ./
+  (sys-call+ \"ls\" '(\"-l\" \"./\") state)
+
+  General Form:
+  (sys-call+ cmd args state)
+  ~ev[]
+  where ~c[cmd] is a command to the host operating system and ~c[args] is a
+  list of strings.  Also ~pl[sys-call]; but there are two differences between
+  ~ilc[sys-call] and ~c[sys-call+].  First, the latter takes an extra argument,
+  ~c[state].  Second, while ~c[sys-call] returns ~c[nil], ~c[sys-call+] returns
+  three values: a so-called error triple (~pl[error-triples]),
+  ~c[(mv erp val state)].  While execution returns values as described just
+  below, further below we explain the logical return values.  In the following,
+  please keep in mind that the exact behavior depends on the platform; the
+  description is only a guide.  For example, on some platforms ~c[erp] might
+  always be ~c[nil], even if in the error case, and ~c[val] might or might not
+  include error output.  (For details, look at the ACL2 source code for
+  function ~c[system-call+], whose output is converted by replacing an ~c[erp]
+  of ~c[nil] by 0.)
+  ~bq[]
+
+  ~c[Erp] is either ~c[nil] or a non-zero integer.  Normally, ~c[nil] indicates
+  that the command ran without error, and otherwise ~c[erp] is the exit
+  status.
+
+  ~c[Val] is a string, typically the output generated by the call of ~c[cmd].
+
+  ~c[State] is an ACL2 ~il[state].~eq[]
+
+  While the description above pertains to the values returned by executing
+  ~c[sys-call+], the logical values are as follows.  For a discussion of the
+  ~c[acl2-oracle] field of an ACL2 state, ~pl[state].
+  ~bq[]
+
+  ~c[Erp] is the first element of the ~c[acl2-oracle] of the input state if
+  that element is a nonzero integer, and otherwise is ~c[nil].
+
+  ~c[Val] is the second element of the ~c[acl2-oracle] of the input state if it
+  is a string, else the empty string, ~c[\"\"].
+
+  ~c[State] is the result of popping the ~c[acl2-oracle] field twice from the
+  input state.~eq[]
+
+  Note that unlike ~ilc[sys-call], a call of ~ilc[sys-call+] has no effect on
+  subsequent calls of ~ilc[sys-call-status].
+
+  As is the case for ~c[sys-call], a trust tag is required to call
+  ~c[sys-call+].  For discussion of this and more, ~pl[sys-call].~/~/"
+
+  (declare (xargs :guard t))
+  #+acl2-loop-only
+  (declare (ignore command-string args))
+  #+acl2-loop-only
+  (mv-let (erp1 erp state)
+          (read-acl2-oracle state)
+          (declare (ignore erp1))
+          (mv-let (erp2 val state)
+                  (read-acl2-oracle state)
+                  (declare (ignore erp2))
+                  (mv (and (integerp erp)
+                           (not (eql 0 erp))
+                           erp)
+                      (if (stringp val) val "")
+                      state)))
+  #-acl2-loop-only
+  (multiple-value-bind
+      (status rslt)
+      (system-call+ command-string args)
+    (mv (if (eql status 0)
+            nil
+          status)
+        rslt
+        state)))
 
 ; End of system calls
 
@@ -36775,6 +37007,7 @@
     deferred-ttag-notes-saved
     pc-assign
     illegal-to-certify-message
+    acl2-sources-dir
     ))
 
 ; There are a variety of state global variables, 'ld-skip-proofsp among them,
@@ -47394,8 +47627,31 @@ Lisp definition."
                       tbl)))
           :clear))
 
+(defun splice-keyword-alist (key new-segment keyword-alist)
+  (declare (xargs :guard (and (keywordp key)
+                              (keyword-value-listp keyword-alist)
+                              (true-listp new-segment))))
+  (cond
+   ((endp keyword-alist) nil)
+   ((eq key (car keyword-alist))
+    (append new-segment (cddr keyword-alist)))
+   (t (cons (car keyword-alist)
+            (cons (cadr keyword-alist)
+                  (splice-keyword-alist key new-segment
+                                        (cddr keyword-alist)))))))
+
+(deflabel custom-keyword-hints
+  :doc
+  ":Doc-Section Miscellaneous
+
+  user-defined hints~/
+
+  ~l[add-custom-keyword-hint] for a discussion of how advanced users can define
+  their own hint keywords.  For examples, see the community books directory
+  ~c[books/hints/], in particular ~c[basic-tests.lisp].~/~/")
+
 (defmacro show-custom-keyword-hint-expansion (flg)
-  ":Doc-Section Events
+  ":Doc-Section custom-keyword-hints
 
    print out custom keyword hints when they are expanded~/
   ~bv[]
@@ -47420,29 +47676,6 @@ Lisp definition."
   ~pl[custom-keyword-hints].~/"
 
   `(f-put-global 'show-custom-keyword-hint-expansion ,flg state))
-
-(defun splice-keyword-alist (key new-segment keyword-alist)
-  (declare (xargs :guard (and (keywordp key)
-                              (keyword-value-listp keyword-alist)
-                              (true-listp new-segment))))
-  (cond
-   ((endp keyword-alist) nil)
-   ((eq key (car keyword-alist))
-    (append new-segment (cddr keyword-alist)))
-   (t (cons (car keyword-alist)
-            (cons (cadr keyword-alist)
-                  (splice-keyword-alist key new-segment
-                                        (cddr keyword-alist)))))))
-
-(deflabel custom-keyword-hints
-  :doc
-  ":Doc-Section Miscellaneous
-
-  user-defined hints~/
-
-  ~l[add-custom-keyword-hint] for a discussion of how advanced users can define
-  their own hint keywords.  For examples, see the community books directory
-  ~c[books/hints/], in particular ~c[basic-tests.lisp].~/~/")
 
 ; Start implementation of search.
 
@@ -48578,6 +48811,30 @@ Lisp definition."
          (break)))
   nil)
 
+#-acl2-loop-only
+(defvar *ccl-print-call-history-count*
+
+; This variable is only used by CCL, but we define it for all Lisps so that
+; this name is equally unavailable as a name for defconst in all host Lisps.
+
+; The user is welcome to change this in raw Lisp.  Perhaps we should advertise
+; it and use a state global.  We have attempted to choose a value sufficiently
+; large to get well into the stack, but not so large as to swamp the system.
+; Even with the default for CCL (as of mid-2013) of -Z 2M, the stack without
+; this restriction could be much larger.  For example, in the ACL2 loop we
+; made the definition
+
+;   (defun foo (x) (if (atom x) nil (cons (car x) (foo (cdr x)))))
+
+; and then ran (foo (make-list 1000000)), and after 65713 abbreviated stack
+; frames CCL just hung.  But with this restriction, it took less than 6 seconds
+; to evaluate the following in raw Lisp, including printing the stack to the
+; terminal (presumably it would be much faster to print to a file):
+
+;   (time$ (ignore-errors (ld '((foo (make-list 1000000))))))
+
+  10000)
+
 (defun print-call-history ()
 
 ; We welcome suggestions from users or Lisp-specific experts for how to improve
@@ -48596,7 +48853,8 @@ Lisp definition."
   #+(and ccl (not acl2-loop-only))
   (when (fboundp 'ccl::print-call-history)
 ; See CCL file lib/backtrace.lisp for more options
-    (eval '(ccl::print-call-history :detailed-p nil)))
+    (eval '(ccl::print-call-history :detailed-p nil
+                                    :count *ccl-print-call-history-count*)))
 
 ; It seems awkward to deal with GCL, both because of differences in debugger
 ; handling and because we haven't found documentation on how to get a

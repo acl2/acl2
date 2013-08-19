@@ -117,12 +117,7 @@
 
       (cond ((< x ,(mx-id-bound))
              (1+f x))
-            (t (ifix
-
-; This use of ifix looks goofy, but the reason is that we want the compiler
-; to behave properly, and we have proclaimed (at least in GCL) that this
-; function returns a fixnum.
-
+            (t (the-fixnum ; the-fixnum call may help with proclaiming
                 (er-hard-val 0 'bdd
                     "Maximum id for bdds exceeded.  Current maximum id is ~x0."
                     x)))))))

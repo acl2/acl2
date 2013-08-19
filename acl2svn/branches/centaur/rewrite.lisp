@@ -10647,7 +10647,8 @@
             (reconcile-terms (cdr terms) (cdr exts))))))
 
 (defun all-equal (x lst)
-  (cond ((endp lst) t)
+  (declare (xargs :guard t))
+  (cond ((atom lst) t)
         (t (and (equal x (car lst))
                 (all-equal x (cdr lst))))))
 
@@ -13625,14 +13626,14 @@
 
   make some ~c[:rewrite] rules (possibly conditional ones)~/
 
+  ~l[rule-classes] for a general discussion of rule classes, including how they
+  are used to build rules from formulas and a discussion of the various
+  keywords in a rule class description.
+
   This doc topic discusses the rule-class ~c[:rewrite].  If you want a general
   discussion of how rewriting works in ACL2 and some guidance on how to
   construct effective rewrite rules, ~pl[introduction-to-rewrite-rules-part-1]
   and then ~pl[introduction-to-rewrite-rules-part-2].
-
-  ~l[rule-classes] for a general discussion of rule classes, including how they
-  are used to build rules from formulas and a discussion of the various
-  keywords in a rule class description.
 
   ~bv[]
   Examples:
@@ -13641,19 +13642,18 @@
     (equal (+ x y) (+ y x)))            ; certain heuristics approve the
                                         ; permutation.
 
-  (defthm plus-commutes                 ; as above with most defaults filled in
+  (defthm plus-commutes                 ; equivalent to the above
     (equal (+ x y) (+ y x))
     :rule-classes ((:rewrite :corollary (equal (+ x y) (+ y x))
                              :loop-stopper ((x y binary-+))
-                             ; :backchain-limit-lst is omitted (no hypotheses)
                              :match-free :all)))
 
   (defthm append-nil                    ; Replace (append a nil) by a, if
     (implies (true-listp x)             ; (true-listp a) rewrites to t.
              (equal (append x nil) x)))
 
-  (defthm append-nil                    ; as above with most defaults filled in
-    (implies (true-listp x)
+  (defthm append-nil                    ; as above, but with defaults and
+    (implies (true-listp x)             ; a backchain limit
              (equal (append x nil) x))
     :rule-classes ((:rewrite :corollary (implies (true-listp x)
                                                  (equal (append x nil) x))
