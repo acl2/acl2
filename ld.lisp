@@ -21142,6 +21142,21 @@
 
   ~st[CHANGES AT THE SYSTEM LEVEL]
 
+  The ACL2 sources are now publicly available between ACL2 releases, using svn;
+  see the new ``~c[acl2-devel]'' project hosted by Google code at
+  ~url[http://acl2-devel.googlecode.com].  Although such a copy of ACL2 is
+  likely to work well with the latest svn (trunk) revision of the ACL2
+  community books (~pl[community-books]), please take seriously the warning
+  message printed at startup: ``The authors of ACL2 consider svn distributions
+  to be experimental; they may be incomplete, fragile, and unable to pass our
+  own regression.''  That message also provides instructions for bug reports.
+  If you decide to use svn versions of either the community books or ACL2, then
+  you should use both, as they tend to be kept in sync.  We fully expect ACL2
+  releases to continue from time to time, as usual.  Thanks to Jared Davis for
+  his efforts in setting up the new acl2-devel project and svn repository, and
+  to him and David Rager for convincing us to distribute ACL2 sources via svn
+  between releases.
+
   Thanks to a suggestion from Jared Davis, over 30 built-in functions are now
   declared to be inline in order to boost performance.  (The list may be found
   by searching ACL2 source file ~c[axioms.lisp] for ``~c[(declaim (inline]''.)
@@ -23184,8 +23199,39 @@ How to contribute libraries and documentation
 
 <HR>
 
-<BR>
-The ACL2 distribution includes several extensions, which were
+<p>
+
+Libraries of <i>books</i> (files containing definitions and theorems) extend
+the code that we have written.  These <i>community books</i> are contributed
+and maintained by the members of the ACL2 community; see the <code><A
+HREF=\"http://acl2-books.googlecode.com/\">acl2-books</A></code> project page.
+
+<p>
+
+The libraries and the ACL2 source code are under revision control, using svn.
+Experimental copies of ACL2 and the libraries are thus available between ACL2
+releases.  <i>The authors of ACL2 consider svn distributions to be
+experimental; while they will likely be fully functional in most cases, they
+could however be incomplete, fragile, and unable to pass our own
+regression.</i> If you decide to use svn versions of either the libraries or
+ACL2, then you should use both, as they tend to be kept in sync.  See the
+project websites, <code><A
+HREF=\"http://acl2-books.googlecode.com/\">acl2-books</A></code> and <code><A
+HREF=\"http://acl2-devel.googlecode.com/\">acl2-devel</A></code>, for the ACL2
+libraries and development sources, respectively.
+
+<p>
+
+A combined manual, known as the <A
+HREF=\"http://fv.centtech.com/acl2/6.2/doc/\">xdoc manual</A>, incorporates not
+only <A HREF=\"#User's-Manual\">The User's Manual</A> for ACL2 (with some
+topics rearranged) but also documentation for many books.  Thanks to Jared
+Davis for building the xdoc processor for creating this view of the
+documentation.
+
+<p>
+
+The ACL2 distribution includes the following extensions, which were
 contributed by the individuals shown.
 <UL>
 <LI><A HREF=\"REAL.html\">ACL2(r)</A><BR>
@@ -23199,20 +23245,6 @@ Bob Boyer, Warren A. Hunt, Jr., Jared Davis, and Sol Swords</LI>
 Support for parallel evaluation<BR>
 David L. Rager</LI>
 </UL>
-
-<p>
-
-There are libraries of <i>books</i> (files containing definitions and theorems)
-that extend the code that we have written.  Books are contributed and
-maintained by the ACL2 community (see <code><A
-HREF=\"http://acl2-books.googlecode.com/\">http://acl2-books.googlecode.com/</A></code>;
-in particular, the [Source] tab near the top takes you to a search box) and
-their authors are generally noted in each book or its <code>README</code> file.
-There is a <A HREF=\"http://fv.centtech.com/acl2/6.2/doc/\">combined manual,
-known as the <i>xdoc manual</i></A>, that incorporates not only <A
-HREF=\"#User's-Manual\">The User's Manual</A> for ACL2 (with some topics
-rearranged) but also documentation for many books.  Thanks to Jared Davis for
-building the xdoc processor for creating this view of the documentation.
 
 <p>
 
