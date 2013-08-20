@@ -1606,47 +1606,69 @@
   :short "Simplified symbolic objects useful for coverage proofs in GL."
 
   :long "<p>Shape specifiers are a simplified format of GL symbolic objects,
-capable of representing Booleans, numbers, and conses, as well as unconstrained
-variables and if-then-else objects.  While less expressive than full-fledged
-symbolic objects, shape spec objects make it easier to prove coverage lemmas
-necessary for proving theorems by symbolic simulation.  Here, we document
-common constructions of shape-spec objects and what it means to prove
-coverage.</p>
+capable of representing Booleans, numbers, conses, free variables, and function
+calls.  While less expressive than full-fledged symbolic objects, shape spec
+objects make it easier to prove coverage lemmas necessary for proving theorems
+by symbolic simulation.  Here, we document common constructions of shape-spec
+objects and what it means to prove coverage.</p>
 
 <h3>Creating Shape Spec Objects</h3>
 
-<p>Shape spec objects are a straightforward transformation of symbolic objects:
-wherever a BDD occurs in a symbolic object, a shape specifier instead contains
-a natural number representing a BDD variable.  Furthermore, @('G-APPLY')
-constructs are prohibited, and the BDD variable numbers used in an shape spec
-may not repeat, nor may the variable names used in @('G-VAR') constructs.  See
-@(see SYMBOLIC-OBJECTS).  The most common and useful constructions of shape
-spec objects are as follows:</p>
+<p>Shape spec objects are analogues of <see topic=\"@(url
+gl::symbolic-objects)\">symbolic objects</see>, but with several tweaks that make
+it more straightforward to prove that a given concrete object is covered:</p>
+<ul>
+<li>Symbolic objects contain arbitrary Boolean formulas (BDDs or AIGs), whereas
+shape specifiers are restricted to contain only independent Boolean variables.
+Therefore, every bit in a shape specifier is independent from every other
+bit.</li>
+<li>The @(':g-apply') symbolic object construct is replaced by the @(':g-call')
+shape specifier construct.  The @(':g-call') object has an additional field that holds a
+user-provided inverse function, which is useful for proving coverage; see @(see
+g-call).</li>
+</ul>
+
+<p>Shape spec objects may be created using the following constructors
+ (roughly in order of usefulness).  Additionally, a non-keyword atom is a shape
+spec representing itself:</p>
 
 <dl>
 
-<dt>@('(:G-BOOLEAN . <num>)')</dt>
+<dt>@('(G-BOOLEAN <num>)')</dt>
 
-<dd>Represents a Boolean.</dd>
+<dd>Represents a Boolean.  @('num') (a natural number) may not be repeated in
+any other @(':G-BOOLEAN') or @(':G-NUMBER') construct in the shape-spec.</dd>
 
-
-<dt>@('(:G-NUMBER  <list-of-nums>)')</dt>
+<dt>@('(G-NUMBER  (list <list-of-nums>))')</dt>
 
 <dd>Represents a two's-complement integer with bits corresponding to the list,
 least significant bit first.  Rationals and complex rationals are also
 available; @(see SYMBOLIC-OBJECTS).  A :G-NUMBER construct with a list of
 length @('N') represents integers @('X') where @('(<= (- (expt 2 n)) x)') and
-@('(< x (expt 2 n))').</dd>
+@('(< x (expt 2 n))').  The @('list-of-nums') must be natural numbers, may not
+repeat, and may not occur in any other @(':G-BOOLEAN') or @(':G-NUMBER')
+construct.</dd>
 
-<dt>@('(<Car> . <Cdr>)')</dt>
+<dt>@('(cons <Car> <Cdr>)')</dt>
 
 <dd>Represents a cons; Car and Cdr should be well-formed shape specifiers.</dd>
 
-<dt>@('<Atom>')</dt>
+<dt>@('(G-VAR <name>)')</dt>
 
-<dd>Represents the atom itself; must not be one of the six distinguished
-keyword symbols :G-CONCRETE, :G-BOOLEAN, :G-NUMBER, :G-ITE, :G-VAR, or
-:G-APPLY.</dd>
+<dd>A free variable that may represent any object.  This is primarily useful
+when using GL's term-level capabilities; see @(see term-level-reasoning).</dd>
+
+<dt>@('(G-CALL <fnname> <arglist> <inverse>)')</dt>
+
+<dd>Represents a call of the named function applied to the given arguments.
+The @('inverse') does not affect the symbolic object generated, which is
+@('(:G-APPLY <fnname> . <arglist>)'), but is used in the coverage proof; see
+@(see g-call). This construct is primarily useful when using GL's term-level
+capabilities; see @(see term-level-reasoning).</dd>
+
+<dt>@('(G-ITE <test> <then> <else>)')</dt>
+<dd>Represents an if/then/else, where @('test'), @('then'), and @('else') are
+shape specs.</dd>
 
 </dl>
 
@@ -1673,12 +1695,13 @@ computational problem to determine the set of concrete input vectors that are
 covered by a given symbolic input vector.</p>
 
 <p>To make these determinations easier, shape spec objects are somewhat
-restricted.  Whereas symbolic objects generally use BDDs to represent
+restricted.  Whereas symbolic objects generally use BDDs (or AIGs, depending on
+the <see topic=\"@(url modes)\">mode</see>) to represent
 individual Booleans or bits of numeric values (see @(see symbolic-objects)),
-shape specs instead use natural numbers representing UBDD variables.
-Additionally, shape specs are restricted such that no BDD variable number may
+shape specs instead use natural numbers representing Boolean variables.
+Additionally, shape specs are restricted such that no Boolean variable number may
 be used more than once among the bindings for the variables of a theorem; this
-is to prevent interdependencies among them.</p>
+prevents interdependencies among them.</p>
 
 <p>While in general it is a difficult problem to determine whether a symbolic
 object can evaluate to a given concrete object, a function
@@ -1706,6 +1729,141 @@ that additionally covers negative integers of the given length; parametrization
 can then restrict the symbolic inputs used in the simulation to only cover the
 naturals, while the coverage proof may still be done using the simpler,
 unparametrized shape spec.</p>")
+
+(defxdoc g-call
+  :parents (shape-specs term-level-reasoning)
+  :short "A shape-spec representing a function call."
+  :long
+  "<p>Note: This is an advanced topic.  You should first read @(see
+term-level-reasoning) to see whether this is of interest, then be familiar with
+@(see shape-specs) before reading this.</p>
+
+<p>@('G-CALL') is the constructor for a shape-spec representing a function
+call.  Usage:</p>
+
+@({
+  (g-call <function name>
+          <list of argument shape-specs>
+          <inverse function>)
+ })
+
+<p>This yields a G-APPLY object (see @(see symbolic-objects)):</p>
+@({
+  (g-apply <function name>
+           <list of argument symbolic objects>)
+ })
+
+<p>The inverse function field does not affect the symbolic object that is
+generated from the g-call object, but it determines how we attempt to prove the
+coverage obligation.</p>
+
+<p>The basic coverage obligation for assigning some variable V a shape spec SS
+is that for every possible value of V satisfying the hypotheses, there must be
+an environment under which the symbolic object derived from SS evaluates to
+that value.  The coverage proof must show that there exists such an
+environment.</p>
+
+<p>Providing an inverse function INV basically says:</p>
+
+<p><box>
+   \"If we need (FN ARGS) to evaluate to VAL, then ARGS should be (INV VAL).\"
+</box></p>
+
+<p>So to prove that (G-CALL FN ARGS INV) covers VAL, we first prove that ARGS
+cover (INV VAL), then that (FN (INV VAL)) equals VAL.  The argument that this
+works is:</p>
+
+<ul>
+
+<li>We first prove ARGS covers (INV VAL) -- that is, there exists some
+environment E under which the symbolic objects derived from ARGS evaluate
+to (INV VAL).</li>
+
+<li>Since (FN (INV VAL)) equals VAL, this same environment E suffices to make
+the symbolic object (FN ARGS) evaluate to VAL.</li>
+
+</ul>
+
+<p>We'll now show an example. We build on the memory example discussed in @(see
+term-level-reasoning).  Suppose we want to initially assign a memory object
+@('mem') a symbolic value under which address 1 has been assigned a 10-bit
+integer.  That is, we want to be able to assume only the following about
+@('mem'):</p>
+
+@({
+  (signed-byte-p 10 (access-mem 1 mem))
+ })
+
+<p>Assuming our memory follows the standard record rules, i.e.</p>
+
+@({
+  (update-mem addr (access-mem addr mem) mem) = mem,
+})
+
+<p>we can represent any such memory as</p>
+
+@({
+  (update-mem 1 <some 10-bit integer> <some memory>)
+})
+
+<p>Our shape-spec for this will therefore be:</p>
+
+@({
+ (g-call 'update-mem
+         (list 1
+               (g-number (list 0 1 2 3 4 5 6 7 8 9)) ;; 10-bit integer
+               (g-var 'mem)) ;; free variable
+         <some inverse function>)
+})
+
+<p>What is an appropriate inverse?  The inverse needs to take any memory
+satisfying our assumption and generate the list of necessary arguments to
+update-mem that fit this template.  The following works:</p>
+
+@({
+   (lambda (m) (list 1 (access-mem 1 m) m))
+})
+
+<p>because for any value m satisfying our assumptions,</p>
+
+<ul>
+
+<li>the first argument returned is 1, which is covered by our shape-spec 1</li>
+
+<li>the second argument returned will (by the assumption) be a 10-bit integer,
+which is covered by our g-number shape-spec</li>
+
+<li>the third argument returned matches our g-var shape-spec since anything at
+all is covered by it</li>
+
+<li>the final term we end up with is:
+@({
+        (update-mem 1 (access-mem 1 m) m)
+})
+    which (by the record rule above) equals m.</li>
+
+</ul>
+
+<p>GL tries to manage coverage proofs itself, and when using G-CALL constructs
+some rules besides the ones it typically uses may be necessary -- for example,
+the redundant record update rule used here.  You may add these rules to the
+rulesets used for coverage proofs as follows:</p>
+
+@({
+ (acl2::add-to-ruleset gl::shape-spec-obj-in-range-backchain
+                       redundant-mem-update)
+ (acl2::add-to-ruleset gl::shape-spec-obj-in-range-open
+                       redundant-mem-update)
+})
+
+<p>There are two rulesets because these are used in slightly different phases of
+the coverage proof.</p>
+
+<p>This feature has not yet been widely used and the detailed mechanisms
+for (e.g.)  adding rules to the coverage strategy are likely to change.</p>")
+
+
+
 
 
 (defund shape-spec-call-free (x)

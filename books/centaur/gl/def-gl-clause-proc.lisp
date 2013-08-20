@@ -980,7 +980,7 @@ in DEF-GL-THM.~%"))
 
 
 (defsection def-gl-thm
-  :parents (reference)
+  :parents (reference introduction)
   :short "Prove a theorem using GL symbolic simulation."
   :long "<p>Usage:</p>
 

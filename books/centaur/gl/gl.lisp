@@ -525,8 +525,7 @@
   :parents (modes reference)
   :short "Use BDD-based symbolic simulation in GL."
   :long "<p>This macro produces an event which sets the GL reasoning mode to
-use @(see ubdd)s.  This is the default, relatively stable form of GL symbolic
-simulation.</p>"
+use @(see ubdd)s.  This is the default form of GL symbolic simulation.</p>"
 
   (defmacro gl-bdd-mode ()
     '(progn (acl2::defattach bfr-mode bfr-bdd)
@@ -780,10 +779,10 @@ proofs (Section \ref{sec:debugging}).</p>")
 
 
 
-(defxdoc modes
-  :parents (gl)
-  :short "Documentation about GL modes.  BOZO write something nicer here."
-  :long "<p>BOZO and here too.</p>")
+;; (defxdoc modes
+;;   :parents (gl)
+;;   :short "Documentation about GL modes.  BOZO write something nicer here."
+;;   :long "<p>BOZO and here too.</p>")
 
 
 (defxdoc reference
@@ -1130,106 +1129,9 @@ whatsoever, so its coverage obligations are trivial.</p>
 </ul>
 
 <p>The symbolic term resulting from this shape spec is simply the application
-of FN to the symbolic objects derived from ARGS.  INV is an extra piece of
-information that tells us how to prove coverage.</p>
-
-<p>The basic coverage obligation for assigning some variable V a shape spec SS
-is that for every possible value of V satisfying the hypotheses, there must be
-an environment under which the symbolic object derived from SS evaluates to
-that value.  The coverage proof must show that there exists such an
-environment.</p>
-
-<p>Providing an inverse function basically says:</p>
-
-<p><box>
-   \"If we need (FN ARGS) to evaluate to VAL, then ARGS should be (INV VAL).\"
-</box></p>
-
-<p>So to prove that (G-CALL FN ARGS INV) covers VAL, we first prove that ARGS
-cover (INV VAL), then that (FN (INV VAL)) equals VAL.  The argument that this
-works is:</p>
-
-<ul>
-
-<li>We first prove ARGS covers (INV VAL) -- that is, there exists some
-environment E under which the symbolic objects derived from ARGS evaluate
-to (INV VAL).</li>
-
-<li>Since (FN (INV VAL)) equals VAL, this same environment E suffices to make
-the symbolic object (FN ARGS) evaluate to VAL.</li>
-
-</ul>
-
-<p>Following our memory example above, suppose we want to initially assign our
-memory object a symbolic value under which address 1 has been assigned a 10-bit
-integer.  Assuming our memory follows the standard record rules, i.e.</p>
-
-@({
-  (update-mem addr (access-mem addr mem) mem) = mem,
-})
-
-<p>we can represent any such memory as</p>
-
-@({
-  (update-mem 1 <some 10-bit integer> <some memory>)
-})
-
-<p>Our shape-spec for this will therefore be:</p>
-
-@({
- (g-call 'update-mem
-         (list 1
-               (g-number (list 0 1 2 3 4 5 6 7 8 9)) ;; 10-bit integer
-               (g-var 'mem)) ;; free variable
-         <some inverse function!>)
-})
-
-<p>What is an appropriate inverse?  The inverse needs to take any memory
-satisfying our assumption and generate the list of necessary arguments to
-update-mem that fit this template.  The following works:</p>
-
-@({
-   (lambda (m) (list 1 (access-mem 1 m) m))
-})
-
-<p>because for any value m satisfying our assumptions,</p>
-
-<ul>
-
-<li>the first argument returned is 1, which is covered by our shape-spec 1</li>
-
-<li>the second argument returned will (by the assumption) be a 10-bit integer,
-which is covered by our g-number shape-spec</li>
-
-<li>the third argument returned matches our g-var shape-spec since anything at
-all is covered by it</li>
-
-<li>the final term we end up with is:
-@({
-        (update-mem 1 (access-mem 1 m) m)
-})
-    which (by the record rule above) equals m.</li>
-
-</ul>
-
-<p>GL tries to manage coverage proofs itself, and when using G-CALL constructs
-some rules besides the ones it typically uses may be necessary -- for example,
-the redundant record update rule used here.  You may add these rules to the
-rulesets used for coverage proofs as follows:</p>
-
-@({
- (acl2::add-to-ruleset gl::shape-spec-obj-in-range-backchain
-                       redundant-mem-update)
- (acl2::add-to-ruleset gl::shape-spec-obj-in-range-open
-                       redundant-mem-update)
-})
-
-<p>There are two rulesets because these are used in slightly different phases of
-the coverage proof.</p>
-
-<p>This feature has not yet been widely used and the detailed mechanisms
-for (e.g.)  adding rules to the coverage strategy are likely to change.</p>
-
+(G-APPLY) of FN to the symbolic objects derived from ARGS.  INV is an extra
+piece of information that tells us how to prove coverage.  Its usage is
+discussed in @(see g-call).</p>
 
 <h3>Automatic Boolean Variable Generation</h3>
 

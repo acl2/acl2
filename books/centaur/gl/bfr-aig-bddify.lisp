@@ -121,9 +121,8 @@
 
 (defsection gl-aig-bddify-mode
   :parents (modes reference)
-  :short "Use experimental AIG-based symbolic simulation in GL."
-  :long "<p>This macro produces an event which sets the GL reasoning mode to
-use AIGs.  This is a new, experimental feature under development.</p>"
+  :short "GL: use AIGs as the Boolean function representation and solve queries
+by transforming them to BDDs."
 
   (defmacro gl-aig-bddify-mode ()
     '(progn (acl2::defattach bfr-mode bfr-aig)

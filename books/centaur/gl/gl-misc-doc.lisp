@@ -29,22 +29,22 @@ symbol used in the G-APPLY object.  An evaluator may not evaluate a symbolic
 object containing a G-APPLY construct with an unrecognized function symbol.
 One evaluator, named EVAL-G-BASE, is initially defined in the GL library, and
 recognizes function symbols of the predefined primitives included with the
-library.  When new symbolic functions are created using the MAKE-G-WORLD event,
-a new evaluator is created that recognizes each of the functions for which
-symbolic counterparts exist, both newly created and preexisting.</p>
+library.</p>
 
 <h4>Environments</h4>
 
 <p>The basic components of symbolic objects are data structures containing
-UBDDs, which represent Boolean functions of Boolean variables, and G-VAR
+Boolean functions, represented either by BDDs or AIGs (see @(see modes)), and G-VAR
 constructs, which represent unconstrained variables.  To evaluate a symbolic
-object, each of these needs to be evaluated to a constant.  We evaluate UBDDs
-to Booleans by choosing to take either the true or false branch at each
-decision level; this series of choices is described by a list of Booleans.  We
-evaluate unconstrained variables by looking them up by name in a list of
-bindings.  Therefore an environment is a pair containing a list of Booleans
-used for evaluating UBDDs, and an association list containing pairings of
-variable names and objects, used for evaluating G-VAR constructs.</p>
+object, each of these needs to be evaluated to a constant.  An environment
+contains the information necessary to evaluate either kind of expression:</p>
+<ul>
+<li>a truth assignment for the Boolean variables used in the Boolean function
+representation; in AIG mode, this is an alist mapping variable names to
+Booleans, and in BDD mode, an ordered list of Booleans corresponding to the
+decision levels of the BDDs.</li>
+<li>an alist mapping unconstrained variable names to their values.</li>
+</ul>
 
 <h4>Symbolic Object Representation</h4>
 
@@ -54,8 +54,8 @@ construction and its evaluation.</p>
 
 <dl>
 
-<dt>Representation: (:G-BOOLEAN . bdd)</dt>
-<dt>Constructor: (G-BOOLEAN bdd)</dt>
+<dt>Representation: (:G-BOOLEAN . bfr)</dt>
+<dt>Constructor: (G-BOOLEAN bfr)</dt>
 
 <dd>Takes the values T and NIL.  The evaluation of a G-BOOLEAN object is simply
 the evaluation of @('<bdd>') using the list of Booleans in the
@@ -114,9 +114,7 @@ evaluation of @('<then>'); otherwise this evaluates to the evaluation of
 object.  If the evaluator recognizes @('<fn>') and @('<arglist>') evaluates to
 @('<args>'), a true-list of length equal to the arity of the function
 @('<fn>'), then this object evaluates to the application of @('<fn>') to
-@('<args>').  Otherwise, the evaluation is undefined; more specifically, it is
-provably equal to @('(APPLY-STUB <fn> <args>)'), where APPLY-STUB is an
-undefined stub function.</dd>
+@('<args>').  Otherwise, the evaluation is undefined.</dd>
 
 <dt>Representation: atom</dt>
 
@@ -167,17 +165,23 @@ symbolically executing the conclusion of a conjecture contains one of these
 objects, usually the proof will then fail, since GL can't determine that the
 result is never NIL.</p>
 
-<p>Usually, however, G-VAR forms are not used, and G-APPLY forms are unwelcome
-if they appear at all; they typically result in a symbolic execution failure of
-some sort.  The following are a few common situations in which G-APPLY forms
-are generated:</p>
+<p>It is common to use GL in such a way that G-VAR forms are not used, and
+G-APPLY forms are unwelcome if they appear at all; when they do, they typically
+result in a symbolic execution failure of some sort.  However, there are ways
+of using GL in which G-VAR and G-APPLY forms are expected to exist; see @(see
+term-level-reasoning).  The following are a few common situations in which
+G-APPLY forms may be unexpectedly generated:</p>
 
 <ul>
 
-<li>The stack depth limit, or \"clock\", was exhausted.</li>
+<li>The stack depth limit, or \"clock\", was exhausted.  This may happen when
+symbolically executing a recursive function if the termination condition can't
+be detected, though this is often caused by previous introduction of an
+unexpected G-APPLY object.</li>
 
 <li>An unsupported primitive was called.  For example, as of November 2010 we
-do not yet support UNARY-/</li>
+do not yet support UNARY-/, so any call of UNARY-/ encountered during symbolic
+execution will return a G-APPLY of UNARY-/ to the input argument.</li>
 
 <li>A primitive was called on an unsupported type of symbolic object.  For
 example, the symbolic counterparts for most arithmetic primitives will produce
@@ -187,18 +191,28 @@ simply don't implement them for the most part.</li>
 
 </ul>
 
-<p>In order to determine why a G-APPLY form is being created, we suggest using
-the following TRACE$ form:</p>
+<p>If you are not expecting GL to create G-APPLY objects but you are
+encountering indeterminate results, we suggest using the following TRACE$ form
+to determine why a G-APPLY object is first being created:</p>
 
 @({
  (trace$ (gl::g-apply :entry (prog2$ (cw \"Note: G-APPLY called.~%\")
                                      (break$))
                       :exit nil))
 })
-
 <p>Then when GL::G-APPLY is called in order to create the form, @('(BREAK$)')
 will be called.  Usually this will allow you to look at the backtrace and
 determine in what context the first G-APPLY object is being created.</p>
+
+<p>Alternatively, if you are expecting some G-APPLY forms to be created but
+unexpected ones are cropping up, you can add a :cond to make the break
+conditional on the function symbol being applied:</p>
+@({
+ (trace$ (gl::g-apply :cond (not (eq gl::fn 'foo))
+                      :entry (prog2$ (cw \"Note: G-APPLY called.~%\")
+                                     (break$))
+                      :exit nil))
+})
 
 <p>Usually, the culprit is one of the last two bullets above.  Sometimes these
 problems may be worked around by choosing a slightly different implementation
@@ -317,7 +331,7 @@ of these functions.</p>
 Because of this, you may see in the proof output a goal which should be
 obvious, but is not proven because the necessary rule is not included.  The
 keyword argument @(':COV-THEORY-ADD') may be used to enable certain additional
-rules that are not included.  The set of rules that is used is defined in the
+rules that are not included.  The set of rules that are used is defined in the
 ruleset @('GL::SHAPE-SPEC-OBJ-IN-RANGE-OPEN'), which can be listed using</p>
 
 @({
@@ -335,8 +349,6 @@ defaults are not used at all; @(':FIRST'), in which case the user-provided
 @(':LAST'), in which case the default coverage heuristic is tried before the
 user-provided hints.</p>
 
-<p>One thing to keep in mind when replacing or supplementing the default
-heuristics with your own computed hints is that subgoal names will be different
-between a @(':TEST-SIDE-GOALS') and an actual attempt at proving the theorem.
-Therefore, it is best not to write computed hints that depend on the @('ID')
-variable.</p>")
+<p>Note that subgoal names will be different between a @(':TEST-SIDE-GOALS')
+and an actual attempt at proving the theorem.  Therefore, it is best not to
+write computed hints that depend on the @('ID') variable.</p>")

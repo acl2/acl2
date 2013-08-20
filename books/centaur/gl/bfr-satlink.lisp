@@ -33,7 +33,8 @@
 
 (defsection gl-satlink-mode
   :parents (modes reference)
-  :short "Use @(see satlink) to check @(see aig)s in GL AIG mode."
+  :short "GL: Use AIGs as the Boolean function representation and @(see
+satlink) to solve queries."
 
   (defmacro gl-satlink-mode ()
     '(progn
