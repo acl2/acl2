@@ -3564,4 +3564,3 @@ To avoid the following break and get only the above warning:~%  ~a~%"
   (clear-memoize-tables)
   (hons-wash))
 
-
