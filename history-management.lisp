@@ -11936,7 +11936,7 @@
   Examples:
   ACL2 !>:doc DEFTHM          ; print documentation of DEFTHM
   ACL2 !>:doc logical-name    ; print documentation of LOGICAL-NAME
-  ACL2 !>:doc \"MY-PKG\"      ; print documentation of \"MY-PKG\"
+  ACL2 !>:doc \"MY-PKG\"        ; print documentation of \"MY-PKG\"
 
   Related Topics:
   :more                      ; continues last :doc or :more-doc text

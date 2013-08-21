@@ -21016,6 +21016,9 @@
 ; Added new state global, acl2-sources-dir, in support of the new ACL2 startup
 ; banner in the case of an svn version.
 
+; The guard for function ENDP has potentially been made trivially more
+; efficient by using EQ to test against nil instead of EQUAL.
+
   :doc
   ":Doc-Section release-notes
 
@@ -21084,6 +21087,16 @@
   change.)  This limit is the value of raw Lisp variable
   ~c[*ccl-print-call-history-count*], which may be assigned another positive
   integer value to serve as the maximum number of stack frames to be printed.
+
+  Improvements have been made pertaining to the disabling (inhibiting) of
+  individual types of warning.  Now, inhibited warnings are implemented in a
+  straightforward way using a separate ~il[table] for this purpose, the
+  ~c[inhibit-warnings-table], rather than using the ~ilc[acl2-defaults-table].
+  ~l[set-inhibit-warnings], and ~pl[set-inhibit-warnings!] for a variant that
+  is not ~ilc[local] to an ~ilc[encapsulate] or a book in which it occurs.
+  Thanks to Sol Swords for sending examples showing how
+  ~ilc[set-inhibit-warnings] did not always behave as one might reasonably
+  expect when books are involved.
 
   ~st[NEW FEATURES]
 

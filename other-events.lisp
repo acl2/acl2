@@ -4334,7 +4334,7 @@
      set-enforce-redundancy
      set-ignore-doc-string-error
      set-ignore-ok
-     set-inhibit-warnings
+     set-inhibit-warnings!
      set-invisible-fns-table
      set-irrelevant-formals-ok
      set-let*-abstractionp
@@ -4822,7 +4822,6 @@
                              set-enforce-redundancy
                              set-ignore-doc-string-error
                              set-ignore-ok
-                             set-inhibit-warnings
                              set-irrelevant-formals-ok
                              set-let*-abstractionp
                              set-match-free-default
@@ -11599,14 +11598,6 @@
                                             ctx state
                                             (cons form ans))))))))))
 
-(defun initial-acl2-defaults-table (acl2-defaults-table)
-  (let ((entry (assoc-eq :INHIBIT-WARNINGS acl2-defaults-table)))
-    (cond (entry (put-assoc-eq :INHIBIT-WARNINGS
-                               (cdr entry)
-                               *initial-acl2-defaults-table*))
-          (t *initial-acl2-defaults-table*))))
-
-
 (defun chk-raise-portcullis1 (file1 file2 ch port-file-p ctx state)
 
 ; After resetting the acl2-defaults-table, we read and eval each of the forms
@@ -11634,7 +11625,7 @@
 ; x) = (car x), then in a new session include this book after
 ; (set-verify-guards-eagerness 2), and then get a hard error with (foo 3).
 
-     (initial-acl2-defaults-table (table-alist 'acl2-defaults-table (w state)))
+     *initial-acl2-defaults-table*
      state)
     (chk-raise-portcullis2 file1 file2 ch port-file-p ctx state nil))))
 
@@ -30992,10 +30983,10 @@
 ; loading of compiled files before corresponding event processing, which causes
 ; routine evaluation of add-include-book-dir and include-book in raw Lisp.
 
-; Therefore we maintain for raw Lisp a variant of the acl2-default-table's
+; Therefore we maintain for raw Lisp a variant of the acl2-defaults-table's
 ; include-book-dir-alist, namely state global 'raw-include-book-dir-alist.  The
 ; value of this variable is initially :ignore, meaning that we are to use the
-; acl2-default-table's include-book-dir-alist.  But when the value is not
+; acl2-defaults-table's include-book-dir-alist.  But when the value is not
 ; :ignore, then it is an alist that is used as the include-book-dir-alist.  We
 ; guarantee that every embedded event form that defines handling of :dir values
 ; for include-book does so in a manner that works when loading compiled files,

@@ -2925,7 +2925,7 @@
   To see the ACL2 definition of this function, ~pl[pf].~/"
 
   (declare (xargs :mode :logic
-                  :guard (or (consp x) (equal x nil))))
+                  :guard (or (consp x) (eq x nil))))
   (atom x))
 
 #+acl2-loop-only
@@ -19762,11 +19762,10 @@
 
   At the beginning of execution of an ~c[include-book] form, even before
   executing ~il[portcullis] ~il[command]s, the value of
-  ~ilc[acl2-defaults-table] is restored to the value it had at startup, except
-  that the value of key ~c[:inhibit-warnings] is preserved.  After execution of
-  an ~c[include-book] form, the value of ~ilc[acl2-defaults-table] is restored
-  to what it was immediately before that ~c[include-book] form was executed.
-  ~l[acl2-defaults-table].
+  ~ilc[acl2-defaults-table] is restored to the value it had at startup.  After
+  execution of an ~c[include-book] form, the value of ~ilc[acl2-defaults-table]
+  is restored to what it was immediately before that ~c[include-book] form was
+  executed.  ~l[acl2-defaults-table].
 
   ~b[Books Directory.]  We refer to the ``books directory'' of an executable
   image as the full pathname string of the directory associated with
@@ -28326,7 +28325,7 @@
     logic er deflabel mv-let program value-triple
     set-body comp set-bogus-defun-hints-ok
     dmr-stop defpkg set-measure-function
-    set-inhibit-warnings defthm mv
+    set-inhibit-warnings! defthm mv
     f-big-clock-negative-p reset-prehistory
     mutual-recursion set-rewrite-stack-limit set-prover-step-limit
     add-match-free-override
@@ -38125,8 +38124,6 @@
          (member-eq val '(t nil :warn)))
         ((eq key :ignore-ok)
          (member-eq val '(t nil :warn)))
-        ((eq key :inhibit-warnings)
-         (string-listp val))
         ((eq key :bdd-constructors)
 
 ; We could insist that the symbols are function symbols by using
@@ -38308,21 +38305,6 @@
   bypassed; otherwise, the value is the keyword ~c[nil] (the default)
   or ~c[:warn] (which makes the check but merely warns when the check
   fails).  ~l[set-ignore-ok].
-  ~bv[]
-  :inhibit-warnings
-  ~ev[]
-  ACL2 prints warnings that may, from time to time, seem excessive to
-  experienced users.  Each warning is ``labeled'' with a string
-  identifying the type of warning.  Consider for example
-  ~bv[]
-  ACL2 Warning [Use] in ( THM ...):  It is unusual to :USE ....
-  ~ev[]
-  Here, the label is \"Use\".  The value of the key
-  ~c[:inhibit-warnings] is a list of such labels, where case is
-  ignored.  Any warning whose label is a member of this list (where
-  again, case is ignored) is suppressed.
-  ~l[set-inhibit-warnings] and also
-  ~pl[set-inhibit-output-lst].
   ~bv[]
   :bdd-constructors
   ~ev[]
@@ -39947,11 +39929,34 @@
   nil)
 
 #-acl2-loop-only
-(defmacro set-inhibit-warnings (&rest x)
+(defmacro set-inhibit-warnings! (&rest x)
   (declare (ignore x))
   nil)
 
+(table inhibit-warnings-table nil nil
+       :guard
+       (stringp key))
+
 #+acl2-loop-only
+(defmacro set-inhibit-warnings! (&rest lst)
+
+  ":Doc-Section switches-parameters-and-modes
+
+  control warnings non-~ilc[local]ly~/
+
+  Please ~pl[set-inhibit-warnings], which is the same as
+  ~c[set-inhibit-warnings!]  except that the latter is not ~ilc[local] to the
+  ~ilc[encapsulate] or the book in which it occurs.  Probably
+  ~il[set-inhibit-warnings] is to be preferred unless you have a good reason
+  for wanting to export the effect of this event outside the enclosing
+  ~ilc[encapsulate] or book.~/~/"
+
+  (declare (xargs :guard (string-listp lst)))
+  `(state-global-let*
+    ((inhibit-output-lst (list* 'event 'summary (@ inhibit-output-lst))))
+    (progn (table inhibit-warnings-table nil ',(pairlis$ lst nil) :clear)
+           (value-triple ',lst))))
+
 (defmacro set-inhibit-warnings (&rest lst)
 
   ":Doc-Section switches-parameters-and-modes
@@ -39963,36 +39968,44 @@
   ~ev[]
   Note: This is an event!  It does not print the usual event summary
   but nevertheless changes the ACL2 logical ~il[world] and is so
-  recorded.  Moreover, its effect is to set the ~ilc[acl2-defaults-table], and
-  hence its effect is ~ilc[local] to the book or ~ilc[encapsulate] form
-  containing it; ~pl[acl2-defaults-table].~/
+  recorded.  It is ~ilc[local] to the book or ~ilc[encapsulate] form in which it
+  occurs; ~pl[set-inhibit-warnings!] for a corresponding non-~ilc[local]
+  event.  Indeed, ~c[(set-inhibit-warnings ...)] is equivalent to
+  ~c[(local (set-inhibit-warnings! ...))].~/
   ~bv[]
   General Form:
   (set-inhibit-warnings string1 string2 ...)
   ~ev[]
-  where each string is considered without regard to case.  This macro
-  is equivalent to ~c[(table acl2-defaults-table :inhibit-warnings lst)],
-  where ~c[lst] is the list of strings supplied.  This macro is an event
-  (~pl[table]), but no output results from a
-  ~c[set-inhibit-warnings] event.
+  where each string is considered without regard to case.  This macro is
+  equivalent to ~c[(local (table inhibit-warnings-table nil 'lst :clear))],
+  where ~c[lst] is the list of strings supplied.  This macro is an
+  event (~pl[table]), but no output results from a ~c[set-inhibit-warnings]
+  event.
 
-  The effect of this event is to suppress any warning whose label is a
-  member of this list (where again, case is ignored).  For example,
-  the warning
+  ACL2 prints warnings that may, from time to time, seem excessive to
+  experienced users.  Each warning is ``labeled'' with a string identifying the
+  type of warning.  Consider for example
   ~bv[]
-    ACL2 Warning [Use] in ( THM ...):  It is unusual to :USE ....
+  ACL2 Warning [Use] in ( THM ...):  It is unusual to :USE ....
   ~ev[]
-  will not be printed if ~c[\"use\"] (or ~c[\"USE\"], etc.) is a member
-  of the given list of strings.
+  Here, the label is \"Use\".  The argument list for ~c[set-inhibit-warnings]
+  is a list of such labels, each of which is a string.  Any warning is
+  suppressed if its label is a member of this list, where case is ignored, .
+  Thus, for example, the warning above will not be printed after a call of
+  ~c[set-inhibit-warnings] that contains the string, ~c[\"Use\"] (or any string
+  that is ~ilc[string-equal] to ~c[\"Use\"], such as ~c[\"use\"] or
+  ~c[\"USE\"]).  In summary: the effect of this event is to suppress any
+  warning whose label is a member of the given argument list, where case is
+  ignored.
 
-  Of course, if warnings are inhibited overall ~-[]
-  ~pl[set-inhibit-output-lst] ~-[] then the value of
-  ~c[:inhibit-warnings] is entirely irrelevant."
+  The list of currently inhibited warnings is the list of keys in the
+  ~il[table] named ~c[inhibit-warnings-table].  (The values in the table are
+  irrelevant.)  One way to get that value is to get the result from evaluating
+  the following form: ~c[(table-alist 'inhibit-warnings-table (w state))].  Of
+  course, if warnings are inhibited overall ~-[] ~pl[set-inhibit-output-lst]
+  ~-[] then this value is entirely irrelevant."
 
-  `(state-global-let*
-    ((inhibit-output-lst (list* 'event 'summary (@ inhibit-output-lst))))
-    (progn (table acl2-defaults-table :inhibit-warnings ',lst)
-           (table acl2-defaults-table :inhibit-warnings))))
+  `(local (set-inhibit-warnings! ,@lst)))
 
 (defmacro set-inhibit-output-lst (lst)
 
@@ -43045,7 +43058,7 @@
   Note: This is an event!  It does not print the usual event summary
   but nevertheless changes the ACL2 logical ~il[world] and is so
   recorded.  It is ~ilc[local] to the book or ~ilc[encapsulate] form in which it
-  occurs (~pl[set-default-hints!] for a corresponding non-~ilc[local] event).~/
+  occurs; ~pl[set-default-hints!] for a corresponding non-~ilc[local] event.~/
   ~bv[]
   General Form:
   (set-default-hints lst)
