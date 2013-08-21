@@ -49,9 +49,9 @@ For internal flags dont use a doc-string"
   (b* (((unless (symbolp name))
         (er hard 'add-acl2s-parameter
             "Name must be a symbol, but is ~x0." name))
-       ((unless (allp guard))
-        (er hard 'add-acl2s-parameter 
-            ":guard must be a term, but is ~x0." guard))
+       ;; ((unless (pseudo-termp guard))
+       ;;  (er hard 'add-acl2s-parameter 
+       ;;      ":guard must be a term, but is ~x0." guard))
        );*b
 
     `(progn 
@@ -93,6 +93,14 @@ For internal flags dont use a doc-string"
   ~url[http://www.ccs.neu.edu/home/harshrc/ITaITP.pdf]
   ")
 
+(defdoc ACL2::acl2s-defaults
+  ":Doc-Section ACL2::acl2s-defaults
+  
+  Getting and setting defaults for various parameters in ACL2 Sedan~/
+                                 
+  ~/ 
+  
+  ")
 
 (add-acl2s-parameter 
  num-trials 1000
@@ -246,7 +254,7 @@ For internal flags dont use a doc-string"
   or  ~t[:hybrid] (untested).
   ~t[:incremental] uses a dpll-like algorithm to search
   for counterexamples.
-  By default this parameter is set to the symbol <tt>:simple</tt>.
+  By default this parameter is set to the symbol ~t[:simple].
    ~bv[]
     Usage:
     (acl2s-defaults :set search-strategy :simple)
@@ -266,7 +274,7 @@ For internal flags dont use a doc-string"
  
   Specify which of the following methods to
   use for instantiating free variables of the conjecture
-  under test: ~t[:be] or ~t[:random] or ~t[:mixed]
+  under test: ~t[:be] or ~t[:random] or ~t[:uniform-random] or ~t[:mixed]
   By default this parameter is set to the symbol ~t[:random]
    ~bv[]
     Usage:
@@ -275,7 +283,7 @@ For internal flags dont use a doc-string"
     :doc sampling-method
    ~ev[]
    "
- :guard (member-eq value '(:be :random :mixed)))
+ :guard (member-eq value '(:be :uniform-random :random :mixed)))
 
 ;; (add-acl2s-parameter 
 ;;  flatten-defdata nil
@@ -435,20 +443,6 @@ For internal flags dont use a doc-string"
 ;if testing-hint is disabled and user wants to turn it off its no-op
       '(value-triple :REDUNDANT)))))
 
-(defdoc set-acl2s-random-testing-enabled
-   ":Doc-Section ACL2::TESTING
-  
-   Control enabling/disabling testing hint~/~/
-  
-   Control enabling/disabling random-testing computed override-hint.
-   If set to ~t[nil], thm and defthm retain their default ACL2 behavior.
-   If set to ~t[t], then all theorem-proving (defthm, thm, function
-   termination, guard-verification) will use random-testing pervasively.
-   
-   ~bv[]
-    Usage:
-    (set-acl2s-random-testing-enabled nil)
-   ~ev[]" )
 
 ;top-level exported macro to know enable random testing
 (defmacro set-acl2s-random-testing-enabled (v forms)

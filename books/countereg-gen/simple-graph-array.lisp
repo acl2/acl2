@@ -175,7 +175,7 @@ the vertice with the maximum post time."
         
 
 (defun dfs-all-vertices (g$ vs n fin cnum) 
-"Do DFS over all vertices in vs"
+  "Do DFS over all vertices in vs"
   (declare (xargs :stobjs (g$)
                   :guard (and (g$p g$)
                               (nat-listp vs);vertices
@@ -388,7 +388,7 @@ post times."
     (b* ((alst! (fix-adjacency-list alst))
          (- (cw? (and (not (equal alst alst!))
                                debug-flag)
-            "SCC: Got Adjacency list : ~x0 Fixed to : ~x1~%" alst alst!)))
+            "CEgen/Note: SCC: Got Adjacency list : ~x0 Fixed to : ~x1~%" alst alst!)))
       (acl2::with-local-stobj 
        g$
        

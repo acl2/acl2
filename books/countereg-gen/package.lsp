@@ -28,7 +28,7 @@
      
      ;; misc exports: (n-x and finxlst-x added by harshrc)
      oneof anyof data-constructors 
-     x n r a v infxlst finxlst
+     x n v infxlst finxlst
 
      ;;added by harshrc
       listof enum record map set nfixg

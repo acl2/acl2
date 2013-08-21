@@ -8,7 +8,7 @@
 
 (in-package "DEFDATA")
 (include-book "utilities" :load-compiled-file :comp)
-(include-book "data" :load-compiled-file :comp)
+;(include-book "data" :load-compiled-file :comp)
 
 ;;;; harshrc --
 ;;;; NOTE: This is an old graph book which will be replaced by the
@@ -171,9 +171,8 @@
 
 ;****shift to TABLES *******
 (table explicit-vertex-index-map nil nil :guard
-       (and (symbolp key)
-            (natp val)
-            (is-a-typeName key world)
+       (and (symbolp key) ;removed earlier restriction of typeName 8th April '13
+            (natp val) 
             (<= val 999))) ;at the moment only 1000 types allowed because of colori
 
 ;table stores exactly one value, a 1-dim array which maps explicit indices to implicit ones.
@@ -1499,11 +1498,13 @@
   (or (aref2 d-nmI d2gI t1 t2)
       (aref2 d-nmI d2gI t2 t1))) ;simulate undirected graph (Possible BUG)
 
-(defun is-disjoint (t1 t2 wrld)
+(defun is-disjoint-current (t1 t2 wrld)
   (declare (xargs :verify-guards nil
                   :guard (and (symbolp t1)
                               (symbolp t2)
                               (plist-worldp wrld))))
+  (if (eq t1 t2)
+      nil
   (let* ((e-vert-map (table-alist 'explicit-vertex-index-map wrld)) ;get map
          (t1-entry (assoc-eq t1 e-vert-map))
          (t2-entry (assoc-eq t2 e-vert-map)))
@@ -1518,35 +1519,69 @@
              (nm-d2gI (table-alist 'implied-disjoint-dt2g wrld)) ;get implied disjoint dtg alst
              (d-nmI (caar nm-d2gI)) ;get name of g
              (d2gI (cdar nm-d2gI))) ;get implied g
-        (is-disjoint-in-implied-graph t1-index t2-index d-nmI d2gI))
-      nil))) ;safely say that they are not disjoint?? can result in BUG?
+        (if (= t1-index t2-index)
+            nil ;; trivially disjoint (symmetric with bugfix in is-subtype) Jun 26 '13
+        (is-disjoint-in-implied-graph t1-index t2-index d-nmI d2gI)))
+      nil)))) ;safely say that they are not disjoint?? can result in BUG?
 
 ;is t1 a subtype of t2 i.e is t1 < t2
-(defun is-subtype (t1 t2 wrld)
+(defun is-subtype-current (t1 t2 wrld)
   (declare (xargs :verify-guards nil
                   :guard (and (plist-worldp wrld)
                               (symbolp t1)
                               (symbolp t2))))
-  (let* ((e-vert-map (table-alist 'explicit-vertex-index-map wrld)) ;get map
+  (if (eq t1 t2)
+      t
+    (b* ((e-vert-map (table-alist 'explicit-vertex-index-map wrld)) ;get map
+       (- (cw? nil "~|DEBUG: explicit-vertex-index-map ~x0" e-vert-map))
         (t1-entry (assoc-eq t1 e-vert-map))
         (t2-entry (assoc-eq t2 e-vert-map)))
     (if (and e-vert-map t1-entry t2-entry) ;only bother if they exist
-      (let* ((t1-e-index (cdr t1-entry));get its explicit index
-             (e-i-map-nm-alst (table-alist 'explicit-implicit-index-map wrld)) ;get implicit index map
-             (e-i-map-nm (caar e-i-map-nm-alst));get name of 1-dim array storing map
-             (e-i-map-arr (cdar e-i-map-nm-alst));get the 1-dim array
-             (t1-index (aref1 e-i-map-nm e-i-map-arr t1-e-index));get the implicit index
+      (b* ((t1-e-index (cdr t1-entry));get its explicit index
+           (e-i-map-nm-alst (table-alist 'explicit-implicit-index-map wrld))
+;get name of 1-dim array storing map
+             (e-i-map-nm (caar e-i-map-nm-alst))
+;get the 1-dim array
+             (e-i-map-arr (cdar e-i-map-nm-alst))
+             (- (cw? nil "~|DEBUG: 1-dim array e-i-map ~x0" e-i-map-arr))
+;get the implicit index
+             (t1-index (aref1 e-i-map-nm e-i-map-arr t1-e-index))
              (t2-e-index (cdr t2-entry)) ;get second explicit index
-             (t2-index (aref1 e-i-map-nm e-i-map-arr t2-e-index)) ;get its implicit index
-             (nm-s2gI (table-alist 'implied-subtype-dt2g wrld));get implied subtype dtg alst
-             (s-nmI (caar nm-s2gI));get name of implied subtype g storing TC
+;get its implicit index
+             (t2-index (aref1 e-i-map-nm e-i-map-arr t2-e-index))
+;get implied subtype dtg alst 
+             (nm-s2gI (table-alist 'implied-subtype-dt2g wrld))
+;get name of implied subtype g storing TC
+             (s-nmI (caar nm-s2gI))
              (s2gI (cdar nm-s2gI)));get implied s2g
-        (is-subtype-in-implied-graph t1-index t2-index s-nmI s2gI))
-      nil)))
+        (if (= t1-index t2-index)
+            t ;; trivially a subtype
+; bugfix - alias (defdata element all), (subtype-p element all) Jun 26 '13
+; TODO - this is a hack fix. Throw this implementation.
+          (is-subtype-in-implied-graph t1-index t2-index s-nmI s2gI)))
+      nil))))
 
+(defun is-subtype-gv (t1 t2 wrld)
+  (ec-call (is-subtype-current t1 t2 wrld)))
 
+(defun is-disjoint-gv (t1 t2 wrld)
+  (ec-call (is-disjoint-current t1 t2 wrld)))
 
+(defattach is-subtype is-subtype-gv)
+(defattach is-disjoint is-disjoint-gv)
 
+(defun is-alias-current (t1 t2 wrld)
+  (declare (xargs :verify-guards nil
+                  :guard (and (plist-worldp wrld)
+                              (symbolp t1)
+                              (symbolp t2))))
+  (and (is-subtype t1 t2 wrld)
+       (is-subtype t2 t1 wrld)))
+
+(defun is-alias-gv (t1 t2 wrld)
+  (ec-call (is-alias-current t1 t2 wrld)))
+
+(defattach is-alias is-alias-gv)
 
 
 ;WORLD CHANGING FUNCTION - EXTERNAL

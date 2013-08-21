@@ -1,25 +1,70 @@
+; ****************** BEGIN INITIALIZATION FOR ACL2s MODE ****************** ;
+; (Nothing to see here!  Your actual file is after this initialization code);
+
+#+acl2s-startup (er-progn (assign fmt-error-msg "Problem loading the TRACE* book.~%Please choose \"Recertify ACL2s system books\" under the ACL2s menu and retry after successful recertification.") (value :invisible))
+; only load for interactive sessions: 
+#+acl2s-startup (include-book "trace-star" :uncertified-okp nil :dir :acl2s-modes :ttags ((:acl2s-interaction)) :load-compiled-file nil);v4.0 change
+
+#+acl2s-startup (assign evalable-printing-abstractions nil)
+
+;arithmetic book
+#+acl2s-startup (er-progn (assign fmt-error-msg "Problem loading arithmetic-5/top book.~%Please choose \"Recertify ACL2s system books\" under the ACL2s menu and retry after successful recertification.") (value :invisible))
+(include-book "arithmetic-5/top" :dir :system)
+
+;basic thms/lemmas about lists
+#+acl2s-startup (er-progn (assign fmt-error-msg "Problem loading coi/lists book.~%Please choose \"Recertify ACL2s system books\" under the ACL2s menu and retry after successful recertification.") (value :invisible))
+(include-book "coi/lists/basic" :dir :system)
+
+#+acl2s-startup (er-progn (assign fmt-error-msg "Problem loading ACL2's lexicographic-ordering-without-arithmetic book.~%This indicates that either your ACL2 installation is missing the standard books are they are not properly certified.") (value :invisible))
+(include-book "ordinals/lexicographic-ordering-without-arithmetic" :dir :system)
+
+#+acl2s-startup (er-progn (assign fmt-error-msg "Problem loading the CCG book.~%Please choose \"Recertify ACL2s system books\" under the ACL2s menu and retry after successful recertification.") (value :invisible))
+(include-book "ccg" :uncertified-okp nil :dir :acl2s-modes :ttags ((:ccg)) :load-compiled-file nil);v4.0 change
+
+#+acl2s-startup (er-progn (assign fmt-error-msg "Problem loading ACL2s customizations book.~%Please choose \"Recertify ACL2s system books\" under the ACL2s menu and retry after successful recertification.") (value :invisible))
+(include-book "custom" :dir :acl2s-modes :uncertified-okp nil :load-compiled-file :comp :ttags :all)
+
+#+acl2s-startup (er-progn (assign fmt-error-msg "Problem setting up ACL2s mode.") (value :invisible))
+
+;Settings common to all ACL2s modes
+(acl2s-common-settings)
+
+; Non-events:
+(set-guard-checking :none)
+
+
+; ******************* END INITIALIZATION FOR ACL2s MODE ******************* ;
+;$ACL2s-SMode$;ACL2s
+;$ACL2s-LMode$;Demo
 ;; this regression file aims at testing the various features of 
 ;; counterexample generation in ACL2 Sedan
 
-(include-book "countereg-gen/top" :dir :system)
+
+;(add-include-book-dir :acl2s-modes "../")
+;(ld "acl2s-mode.lsp" :dir :acl2s-modes)
+
+;(include-book "top")
+(acl2s-defaults :set sampling-method :uniform-random)
+(acl2s-defaults :set search-strategy :incremental)
+(acl2s-defaults :set verbosity-level 2)
 
 ;++++++++++++++++testcase 1 [classic reverse example]++++++++++++++++++++++++++
 ;Define Reverse function
-(defun rev (x)
+(defun rev1 (x)
   (if (endp x)
     nil
-    (append (rev (cdr x)) (list (car x)))))
+    (append (rev1 (cdr x)) (list (car x)))))
 
 (acl2s-defaults :set verbosity-level 2)
-(test? (equal (rev (rev x)) x))
+(test? (equal (rev1 (rev1 x)) x))
 
 (acl2s-defaults :set testing-enabled T)
-(thm (equal (rev (rev x)) x))
+(thm (equal (rev1 (rev1 x)) x))
 (acl2s-defaults :set testing-enabled :naive)
 
 ;Modify the conjecture, add the type hypothesis
 (test? (implies (true-listp x)
-                (equal (rev (rev x)) x)))
+                (equal (rev1 (rev1 x)) x)))
 ;; Issues
 ;; 1. If a function is not golden (guards not verified), then test?
 ;; errors out. e.g above rev is not golden and above test? fails with:
@@ -70,8 +115,7 @@ of which have not yet been verified.  See :DOC verify-guards.
                (> (third x) 256)
                (= (third x)
                   (* (second x) (first x))))
-          (not (equal "isosceles" (shape x)))))
-)
+          (not (equal "isosceles" (shape x))))))
 
 (acl2s-defaults :set num-trials 1000)
 ;; fixed a bug where get-testing-enabled fn was giving wrong answer
@@ -82,8 +126,10 @@ of which have not yet been verified.  See :DOC verify-guards.
 
 ;; whoa! Without arithmetic-5, I get nowhere with the
 ;; below example. 
-(include-book "arithmetic-5/top" :dir :system)
-
+;; 20th March 2013 - lets try arithmetic with meta
+;(include-book "arithmetic/top-with-meta" :dir :system)
+; But even without these books, now the following works fine,
+; but with the above book, it produces way more cts (201 vs 4)
 (test?
  (implies (and (triplep x)
                (trianglep x)
@@ -105,7 +151,7 @@ of which have not yet been verified.  See :DOC verify-guards.
 ;update: Address * Value * Memory -> Memory
 ;If Address is found in Memory, update it, or else add it to the end
 ;of the memory.
-(defdata memory (listof (cons nat integer))) 
+(defdata memory (listof (cons nat integer)))
 ;ISSUE: map not working due to guards
 
 ;; (defdata memory (map nat integer))
@@ -161,6 +207,8 @@ of which have not yet been verified.  See :DOC verify-guards.
 (test?
  (implies (and (memoryp m)
                (natp a1)
+               ;(< a1 56) ;ranges
+               ;(< 4 a1)
                (natp a2))
           (equal (update a1 v1 (update a2 v2 m))
                  (update a2 v2 (update a1 v1 m)))))
@@ -194,11 +242,12 @@ of which have not yet been verified.  See :DOC verify-guards.
 
 
 ;; testcase 4 (Russinoff's example)
-
+(acl2s-defaults :set verbosity-level 3)
 (test? (implies (and (real/rationalp a)
                      (real/rationalp b)
                      (real/rationalp c)
-                     (< 0 a)
+                     ;(<= 0 a)
+                     (<= a 1)
                      (< 0 b)
                      (< 0 c)
                      (<= (expt a 2) (* b (+ c 1)))
@@ -272,8 +321,8 @@ of which have not yet been verified.  See :DOC verify-guards.
                (posp z)
                ;Idea of introducing variables to help SELECT
                ;(equal w (* z z))
-               (<= (+ x y) (* 2 z)))
-          (> (* z z) (* x y))))
+               (<= (acl2::+ x y) (acl2::* 2 z)))
+          (> (acl2::* z z) (acl2::* x y))))
 
 ;; testcase 7 (from Harrison's book)
 (defdata formula (oneof pos
@@ -340,9 +389,6 @@ of which have not yet been verified.  See :DOC verify-guards.
   (equal (nnf (simplify f))
          (simplify (nnf f)))))
 
-; TODO: print-testing-summary should not appear after the summary when a new
-;form is called.
-
 ;; testcase 8 (Moore's example)
 (defun square-root1 (i ri)
   (declare (xargs :mode :program))
@@ -371,7 +417,9 @@ of which have not yet been verified.  See :DOC verify-guards.
 (acl2s-defaults :set num-trials 2500)
 ;No luck without arithmetic-5.
 ;Lets add arith-5 lib and see now. Still no luck
-
+; 19th March - I saw some counterexamples with (ld acl2s-mode.lsp)
+; 20th March 2013 - arithmetic/top-with-meta no luck.
+; 15 July 2013 - incremental finds it now in some subgoal!
 (test? 
   (implies (and (integerp c1)
                 (integerp c2)
@@ -464,8 +512,12 @@ of which have not yet been verified.  See :DOC verify-guards.
 
 
 ;Note: incremental does a really bad job with this test?
-(acl2s-defaults :set search-strategy :simple)
-(test? 
+;(acl2s-defaults :set search-strategy :simple)
+(acl2s-defaults :set subgoal-timeout 15)
+;BOZO 20th March 2013 - arithmetic-5 caused the following to hang.
+;ADDENDUM 9 July 2013 - timeout does not work if prover hangs.
+(acl2s-defaults :set testing-enabled :naive)
+(test?
  (implies (and (posp k)
                (posp n)
                (< n 15))
@@ -484,9 +536,13 @@ of which have not yet been verified.  See :DOC verify-guards.
 ;;  -- (K 14) and (N 12)
 ;;  -- (K 10) and (N 5)
 
+;; 20th March 2013 - The above example does much better with
+;; arithmetic-5 loaded and that too in the acl2s-mode env.
 
 ;The third case
 (acl2s-defaults :set num-trials 1000)
+(acl2s-defaults :set testing-enabled T)
+
 ;; Fermats last theorem
 ; No counterexamples and proof is probably out of ACL2's reach!
 ; TODO: fix timeout issues. Here exponentiation probably causes problem
@@ -679,6 +735,35 @@ of which have not yet been verified.  See :DOC verify-guards.
            (equal (defdata::permutation (sets::delete a X)
                         (sets::delete a Y))
                   (defdata::permutation X Y))))
+
+(defun perm (x y)
+  (if (endp x)
+      (endp y)
+    (and (member-equal (car x) y)
+         (perm (cdr x) (remove1-equal (car x) y)))))
+
+(defun forall-in (x y)
+  (if (endp x)
+      t
+    (and (member-equal (car x) y)
+         (forall-in (cdr x) y))))
+
+(test?
+ (implies (and (pos-listp x)
+               (pos-listp y)
+               )
+          (equal (perm x y)
+                 (and (= (len x) (len y))
+                      (forall-in x y)
+                      (forall-in y x)))))
+
+(test?
+ (implies (and (pos-listp x)
+               (pos-listp y))
+          (iff (perm x y)
+               (and (= (len x) (len y))
+                    (subsetp-equal x y)
+                    (subsetp-equal y x)))))
  
 ;#|
 ;air turbulence logic puzzle (Jim Steinberg gave me the link)
@@ -753,19 +838,23 @@ We falsified the conjecture. Here is the counterexample:
 (in-theory (disable hash))
 
 
-(defun f (x y)
+(defun f1 (x y)
   (if (equal x (hash y))
     'error
     0))
-(acl2s-defaults :set instantiation-method :incremental)
-(test? (/= (f x y) 'error))
+
+(acl2s-defaults :set verbosity-level 4)
+(trace$ defdata::cts-wts-search defdata::assign-propagate (defdata::simple-search :entry (list :simple (first arglist) (second arglist) (third arglist) (fourth arglist)) :exit :b))
+(trace$ (defdata::incremental-search :entry (list :incremental (first arglist) (second arglist) (third arglist)) :exit :b)
+        (defdata::backtrack :entry (list :backtrack (first arglist)) :exit :b))
+(test? (/= (f1 x y) 'error))
 
 (test? ;(implies (and (integerp x) (integerp y))
                 (NOT (EQUAL X (HASH Y))))
 
 (set-acl2s-random-testing-enabled nil)
 (thm (implies (and (integerp x) (integerp y))
-                (/= (f x y) 'error)))
+                (/= (f1 x y) 'error)))
 
 (set-acl2s-random-testing-enabled t)
 
@@ -789,6 +878,7 @@ We falsified the conjecture. Here is the counterexample:
                (equal w (max x y)))
           (< w z))))
 
+(acl2s-defaults :set testing-enabled t) 
 ;tests multiple dest-elim
 (test? (implies (AND (CONSP X)
                 (NOT (EQUAL (LEN X) 2))

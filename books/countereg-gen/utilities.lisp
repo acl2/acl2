@@ -48,19 +48,16 @@
      nil))
 
 
-(defun allp (x)
-  (declare (xargs :mode :logic
-                  :guard t)
-           (ignore x))
-  t)
 
 
 (defmacro   debug-flag  (vl)
-  `(> ,vl 2))
+  `(> ,vl 3))
 
 (defmacro   system-debug-flag ( vl)
-  `(> ,vl 3))
- 
+  `(> ,vl 4))
+
+(defmacro   verbose-stats-flag ( vl)
+  `(> ,vl 2)) 
 
 (defmacro   verbose-flag ( vl)
   `(> ,vl 1))
@@ -102,10 +99,8 @@
             (stringp (subseq pname x y)))
    :rule-classes :type-prescription))
 
-
-
 ;;inverse operation of the above --added by harshrc
-(defun get-typesymbol-from-pred (sym)
+(defun get-typesymbol-from-pred-P-naming-convention (sym)
   (declare (xargs :guard (and (symbolp sym))
                   :guard-hints (("Goal" :in-theory (disable acl2::length acl2::subseq)))))
 
@@ -119,26 +114,8 @@
       NIL))) ;TODO.Beware
       ;(er hard 'get-typesymbol-from-pred "~x0 doesnt follow our convention of predicates ending with 'p'.~%" sym))))
 
-(defun len-<-0-syms (syms)
-  (declare (xargs :guard (symbol-listp syms)))
-                  ;:VERIFY-GUARDS NIL))
-  (if (endp syms)
-    't
-    (and (if (symbolp (car syms)) 't 'nil)
-         (< 0 (length (symbol-name (car syms))))
-         (len-<-0-syms (cdr syms)))))
 
-(defun get-typesymbol-from-pred-lst (syms)
-  (declare (xargs :guard (and (symbol-listp syms)
-                              (len-<-0-syms syms))))
-                         
-  (if (endp syms)
-    nil
-    (let ((type (get-typesymbol-from-pred (car syms))))
-      (if type ;it might be NIL (Ideally it shud be an ERROR??)
-        (cons type
-              (get-typesymbol-from-pred-lst (cdr syms)))
-        (get-typesymbol-from-pred-lst (cdr syms))))))
+
 
 (defun or-list (lst)
   (if (atom lst)
@@ -992,6 +969,7 @@
         (t (cons (subst-equal new old (car tree))
                  (subst-equal new old (cdr tree))))))
 
+
 (mutual-recursion
 ;(ev-fncall-w FN ARGS W SAFE-MODE GC-OFF HARD-ERROR-RETURNS-NILP AOK)
 ;I use sumners default values for
@@ -1173,3 +1151,27 @@ Mainly to be used for evaluating enum lists "
   (if (null connected-vs-lst)
       A
     (order-var-te-alist. A connected-vs-lst '() )))
+
+(defun to-string (x)
+  (declare (xargs :mode :program))
+  (coerce (cdr (coerce (fms-to-string "~x0" (list (cons #\0 x))) 'list)) 'string))
+
+;check this TODO
+(defun is-singleton-type-p (obj)
+  (possible-constant-valuep obj))
+
+(defun is-singleton-type-lst-p (obj-lst)
+  (declare (xargs :guard (true-listp obj-lst)))
+  (if (endp obj-lst)
+    t
+  (and (possible-constant-valuep (car obj-lst))
+       (is-singleton-type-lst-p (cdr obj-lst)))))
+
+
+
+(defstub is-disjoint (* * *) => *)
+(defstub is-subtype (* * *) => *)
+(defstub is-alias (* * *) => *)
+(defstub is-type-predicate (* *) => *)
+(defstub is-a-typeName (* *) => *)
+(defstub is-a-custom-type (* *) => *)

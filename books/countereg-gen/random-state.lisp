@@ -47,7 +47,7 @@
     (mv 0 seed.)
     (b* (((mv (the (integer 0 32) v) 
               (the (unsigned-byte 31) seed.))
-          (genrandom (acl2::*f 2 base) seed.)))
+          (genrandom-seed (acl2::*f 2 base) seed.)))
      (if (>= v base)
          (b* (((mv v2 seed.); can do better type information here TODO
                  (random-natural-basemax1 base 
@@ -61,25 +61,140 @@
 (defun random-natural-seed (seed.)
   (declare (type (unsigned-byte 31) seed.))
   (declare (xargs :guard (unsigned-byte-p 31 seed.)))
-  (random-natural-basemax1 10 6 seed.))
+  (mbe :logic (if (unsigned-byte-p 31 seed.)
+                    (random-natural-basemax1 10 6 seed.)
+                  (random-natural-basemax1 10 6 1382728371)) ;random seed in random-state-basis1
+       :exec  (random-natural-basemax1 10 6 seed.)))
       
-(defthm random-natural-basemax1-type
-  (implies (and (posp b) (natp d) (unsigned-byte-p 31 r))
-           (natp (car (random-natural-basemax1 b d r))))
-  
-  :rule-classes (:rewrite :type-prescription))
+(defmacro random-index-seed (max seed.)
+  `(genrandom-seed ,max ,seed.))
 
-(defthm random-natural-seed-type
+
+(defthm random-natural-basemax1-type-car
+  (implies (and (posp b) (natp d) (natp r))
+           (and (integerp (car (random-natural-basemax1 b d r)))
+                (>= (car (random-natural-basemax1 b d r)) 0)))
+  
+  :rule-classes (:type-prescription))
+
+(defthm random-natural-basemax1-type-cadr
+  (implies (and (posp b) (natp d) (unsigned-byte-p 31 r))
+           (unsigned-byte-p 31 (mv-nth 1 (random-natural-basemax1 b d r))))
+  :rule-classes  :type-prescription)
+
+(defthm random-natural-basemax1-type-cadr-0
+  (implies (and (posp b) (natp d) (unsigned-byte-p 31 r))
+           (and (<= 0 (mv-nth 1 (random-natural-basemax1 b d r)))
+                (< (mv-nth 1 (random-natural-basemax1 b d r)) 2147483648)))
+  :rule-classes (:linear :type-prescription))
+
+(defthm random-natural-basemax1-type-cadr-type
+  (implies (and (posp b) (natp d) (natp r))
+           (and (integerp (mv-nth 1 (random-natural-basemax1 b d r)))
+                (>= (mv-nth 1 (random-natural-basemax1 b d r)) 0)))
+  :rule-classes (:type-prescription))
+
+(defthm random-natural-seed-type-car
   (implies (unsigned-byte-p 31 r)
            (natp (car (random-natural-seed r))))
+  :rule-classes (:type-prescription))
+
+(defthm random-natural-seed-type-car-type
+  (implies (natp r)
+           (and (integerp (car (random-natural-seed r)))
+                (>= (car (random-natural-seed r)) 0)))
   :rule-classes :type-prescription)
+
+;; (defthm random-natural-seed-type-cadr
+;;   (implies (unsigned-byte-p 31 r)
+;;            (unsigned-byte-p 31 (mv-nth 1 (random-natural-seed r))))
+;;   :rule-classes (:type-prescription))
+
+(defthm random-natural-seed-type-cadr-linear
+;  (implies (unsigned-byte-p 31 r)
+  (and (<= 0 (mv-nth 1 (random-natural-seed r)))
+       (< (mv-nth 1 (random-natural-seed r)) 2147483648))
+;)
+  :rule-classes (:linear :tau-system))
+
+(defthm random-natural-seed-type-cadr-type
+;  (implies (natp r)
+           (and (integerp (mv-nth 1 (random-natural-seed r)))
+                (>= (mv-nth 1 (random-natural-seed r)) 0))
+;)
+  :rule-classes (:type-prescription))
+
+
+
 (in-theory (disable random-natural-basemax1
                     random-natural-seed))
-(defun putseed (s state)
-  (declare (xargs :stobjs (state)))
-                  ;:guard (unsigned-byte-p 31 s)))
-  ;(declare (type (unsigned-byte 31) s))
-  (acl2::f-put-global 'random-seed s state))
+
+
+; pseudo-uniform rational between 0 and 1 (inclusive)
+;optimize later (copied from below but simplified)
+(defun random-probability-seed (seed.)
+  (declare (type (unsigned-byte 31) seed.))
+  (declare (xargs :verify-guards nil ;TODO
+                  :guard (unsigned-byte-p 31 seed.)))
+  (mbe :logic (if (unsigned-byte-p 31 seed.)
+                  (mv-let (a seed.)
+                          (random-natural-seed seed.)
+                          ;; try to bias this to get more of small probabilities (close to 1)
+                          (let ((denom (if (int= a 0)
+                                           (1+ a)
+                                         a)))
+                            (mv-let (numer seed.)
+                                    (genrandom-seed (1+ denom) seed.)
+                                    (mv (/ numer denom) seed.))))
+                (mv 0 seed.))
+       :exec (mv-let (a seed.)
+                     (random-natural-seed seed.)
+                     (let ((denom (if (int= a 0)
+                                           (1+ a)
+                                         a)))
+                       (mv-let (numer seed.)
+                               (genrandom-seed (1+ denom) seed.)
+                               (mv (/ numer denom) seed.))))))
+                
+
+;optimize later (copied from below)
+(defun random-rational-between-seed (lo hi seed.)
+  (declare (type (unsigned-byte 31) seed.))
+  (declare (xargs :verify-guards nil
+                  :guard (unsigned-byte-p 31 seed.)))
+  (mv-let (p seed.)
+          (random-probability-seed seed.)
+          (mv (rfix (+ lo (* p (- hi lo)))) seed.)))
+
+
+(defun random-integer-seed (seed.)
+  (declare (type (unsigned-byte 31) seed.))
+  (declare (xargs :guard (unsigned-byte-p 31 seed.)))
+  (mv-let (num seed.)
+          (genrandom-seed 2 seed.)
+          (mv-let (nat seed.)
+                  (random-natural-seed seed.)
+                  (mv (if (int= num 0) nat (- nat))
+                      seed.))))
+
+(defun random-int-between-seed (lo hi seed.)
+  (declare (type (unsigned-byte 31) seed.)
+           (type (signed-byte 30) lo)
+           (type (signed-byte 30) hi))
+  (declare (xargs :guard (and (unsigned-byte-p 31 seed.)
+                              (integerp lo)
+                              (integerp hi)
+                              (signed-byte-p 30 lo)
+                              (signed-byte-p 30 hi)
+                              (posp (- hi lo)))))
+  (mv-let (num seed.)
+          (genrandom-seed (1+ (- hi lo)) seed.)
+          (mv (+ lo num) seed.)))
+
+
+
+
+;-----------------------------------state random functions -------------------------
 
 (defun random-natural-basemax (base maxdigits state)
    (declare (type (integer 1 16) base)

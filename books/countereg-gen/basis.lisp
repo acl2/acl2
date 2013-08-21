@@ -69,11 +69,7 @@
 ;========================Function Metadata table <=======================
 ; This table stores metadata about the functions introduced using def in
 ; our testing framework. We will also populate the data for each ACL2
-; function the framework uses. Henceforth the testing framework will simply
-; be referred to as "mu-lam", which stands for "The model-theoritic (mu)
-; path/way (lam)" and is
-; to be used in conjunction or merged with "tau", the monadic predicate
-; "types" book written by J Moore. This table stores properties of the
+; function the framework uses. This table stores properties of the
 ; introduced functions just like world, so perhaps this too will be folded
 ; into the acl2 world. The following defrec will explain these properties.
 
@@ -237,24 +233,24 @@
 (in-theory (disable modify-symbol-lst))
 
 
-;most functions are taken from either the COI books or rtl radix book
-(defthm character-listp-explode-nonnegative-integerp                            
-  (implies
-   (character-listp list)
-   (character-listp (explode-nonnegative-integer number 10 list))))
+;; ;most functions are taken from either the COI books or rtl radix book
+;; (defthm character-listp-explode-nonnegative-integerp                            
+;;   (implies
+;;    (character-listp list)
+;;    (character-listp (explode-nonnegative-integer number 10 list))))
 
-;Convert a string|symbol|integer to a string, all other are coerced to ""
-(defund to-string (entry)
-  (declare (type t entry))
-  (cond
-   ((symbolp entry) (symbol-name entry))
-   ((integerp entry)
-    (if (<= 0 entry)
-        (coerce (explode-nonnegative-integer entry 10 nil) 'acl2::string)
-      (acl2::concatenate 'acl2::string "-"
-                   (coerce (explode-nonnegative-integer (- entry) 10 nil) 'acl2::string))))
-   ((stringp entry) entry)
-   (t "")))
+;; ;Convert a string|symbol|integer to a string, all other are coerced to ""
+;; (defund to-string (entry)
+;;   (declare (type t entry))
+;;   (cond
+;;    ((symbolp entry) (symbol-name entry))
+;;    ((integerp entry)
+;;     (if (<= 0 entry)
+;;         (coerce (explode-nonnegative-integer entry 10 nil) 'acl2::string)
+;;       (acl2::concatenate 'acl2::string "-"
+;;                    (coerce (explode-nonnegative-integer (- entry) 10 nil) 'acl2::string))))
+;;    ((stringp entry) entry)
+;;    (t "")))
 
 
 (defun fn-p (x)
@@ -489,7 +485,7 @@
     
     (& (er hard ctx "~|Ill-formed def form. ~
 General form: ~
-(def name arglist decl [decl] body)~%"))))
+(def name arglist decl [declare] body)~%"))))
 
 (defun defs-fn (def-lst aux-events. defuns-tuples. ctx wrld state)
   "my own defun for storing type metadata for later type-checking.

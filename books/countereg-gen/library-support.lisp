@@ -7,6 +7,7 @@
 
 ;record implementation
 (include-book "defexec/other-apps/records/records" :dir :system :load-compiled-file :comp)
+;(include-book "finite-set-theory/osets/sets" :dir :system :load-compiled-file :comp)
 (include-book "std/osets/top" :dir :system :load-compiled-file :comp)
 
 
@@ -93,3 +94,7 @@
   :hints (("Goal" :in-theory (enable sets::empty)))
   :rule-classes :forward-chaining)
 
+(defthm good-map-implies-not-ifmp
+  (implies (good-map x) (not (ifmp x)))
+  :rule-classes ((:rewrite :backchain-limit-lst 1)
+                 (:forward-chaining)))
