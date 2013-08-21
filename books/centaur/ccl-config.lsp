@@ -51,9 +51,16 @@
 ; These stack sizes apply to the first (initial) Lisp listener thread, where
 ; the bulk of ACL2 computations take place.
 
+; WARNING: This setting of stack size values only takes effect after starting a
+; new Lisp process.  The typical ACL2 procedure is to save an executable using
+; save-exec after doing these assignments, which will then take effect when you
+; invoke the new executable.
+
 (let ((stack-size (if (< most-positive-fixnum (expt 2 34))
                       (expt 2 23)
                     (expt 2 28))))
+
+; See WARNING above.
 
   (setq *initial-listener-default-control-stack-size* stack-size)
   (setq *initial-listener-default-value-stack-size*   stack-size)
