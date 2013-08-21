@@ -4713,20 +4713,20 @@ id processor ctx (acl2::prettyify-clause cl nil (w state)) (len hist)))
   that there is a specification error.
   
   If no counterexample is found, there are three possibilities. First,
-  it possible that the conjecture is false, in which case increasing
+  it is possible that the conjecture is false, in which case increasing
   the amount of testing we do may lead to the discovery of a
   counterexample.  Second, it is also possible that ACL2 proves that
   the conjecture is true, in which case we print a message reporting
   success.  Finally, the conjecture may be true, but ACL2 cannot prove
   it.  For all of these three cases, we consider testing to have
-  succeeded, so test? will report success.
+  succeeded, so ~t[test?] will report success.
   
   We note that in order to be able to generate counterexamples, we do
   not allow ACL2 to use any of the following processes: induction,
   generalization, and cross-fertilization. We do allow destructor-
   elimination, though in rare cases, user defined elim rules may
   generalize the conjecture. Such situations are recognized.  If you
-  want to enable the above processes, use thm instead, but
+  want to enable the above processes, use ~t[thm] instead, but
   note that counterexamples shown might not be of the top-level conjecture.
 
     
