@@ -91,7 +91,7 @@
 
 (include-book "clex/example")
 
-(include-book "countereg-gen/top" :dir :system)
+(include-book "cgen/top" :dir :system)
 
 (include-book "defrstobj/defrstobj")
 
