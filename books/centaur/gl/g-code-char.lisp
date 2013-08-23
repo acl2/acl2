@@ -1,19 +1,37 @@
+; GL - A Symbolic Simulation Framework for ACL2
+; Copyright (C) 2008-2013 Centaur Technology
+;
+; Contact:
+;   Centaur Technology Formal Verification Group
+;   7600-C N. Capital of Texas Highway, Suite 300, Austin, TX 78731, USA.
+;   http://www.centtech.com/
+;
+; This program is free software; you can redistribute it and/or modify it under
+; the terms of the GNU General Public License as published by the Free Software
+; Foundation; either version 2 of the License, or (at your option) any later
+; version.  This program is distributed in the hope that it will be useful but
+; WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+; FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
+; more details.  You should have received a copy of the GNU General Public
+; License along with this program; if not, write to the Free Software
+; Foundation, Inc., 51 Franklin Street, Suite 500, Boston, MA 02110-1335, USA.
+;
+; Original author: Sol Swords <sswords@centtech.com>
 
 (in-package "GL")
-
 (include-book "g-if")
 (include-book "g-primitives-help")
 (include-book "eval-g-base")
 (include-book "symbolic-arithmetic-fns")
+(include-book "g-lessthan")
 (local (include-book "symbolic-arithmetic"))
-;(include-book "tools/with-arith5-help" :dir :system)
 (local (include-book "eval-g-base-help"))
 (local (include-book "hyp-fix-logic"))
-(include-book "g-lessthan")
 (local (include-book "arithmetic/top-with-meta" :dir :system))
 (local (include-book "centaur/bitops/ihsext-basics" :dir :system))
 (local (include-book "tools/trivial-ancestors-check" :dir :system))
 (local (acl2::use-trivial-ancestors-check))
+
 ;; (defaxiom completion-of-code-char
 ;;   (equal (code-char x)
 ;;          (if (and (integerp x)
@@ -234,7 +252,7 @@
               (equal (bfr-list->s x env) (bfr-list->u x env)))
      :hints(("Goal" :in-theory (enable scdr s-endp))))
 
-   
+
 
    (defthm bfr-eval-list-nth
      (equal (nth n (bfr-eval-list x env))
@@ -278,7 +296,7 @@
               (equal (eval-g-base (code-char-s 8 x 0 hyp) env)
                      (code-char (bfr-list->s x (car env)))))
      :hints(("Goal" :in-theory (disable code-char-s))))))
-                
+
 
 ;; (defun g-code-char-of-integer (x hyp clk)
 ;;   (declare (xargs :guard (and (gobjectp x) (g-number-p x)
@@ -286,7 +304,7 @@
 ;;   (g-if (glr < x 0 hyp clk)
 ;;         nil
 ;;         (glr < x 256 hyp clk))
-  
+
 (defun g-code-char-of-number (x hyp clk config bvar-db state)
   (declare (xargs :guard (and (consp x)
                               (g-number-p x)

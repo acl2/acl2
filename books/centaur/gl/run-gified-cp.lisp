@@ -1,6 +1,24 @@
+; GL - A Symbolic Simulation Framework for ACL2
+; Copyright (C) 2008-2013 Centaur Technology
+;
+; Contact:
+;   Centaur Technology Formal Verification Group
+;   7600-C N. Capital of Texas Highway, Suite 300, Austin, TX 78731, USA.
+;   http://www.centtech.com/
+;
+; This program is free software; you can redistribute it and/or modify it under
+; the terms of the GNU General Public License as published by the Free Software
+; Foundation; either version 2 of the License, or (at your option) any later
+; version.  This program is distributed in the hope that it will be useful but
+; WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+; FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
+; more details.  You should have received a copy of the GNU General Public
+; License along with this program; if not, write to the Free Software
+; Foundation, Inc., 51 Franklin Street, Suite 500, Boston, MA 02110-1335, USA.
+;
+; Original author: Sol Swords <sswords@centtech.com>
 
 (in-package "GL")
-
 (include-book "bfr")
 (include-book "gobjectp")
 (include-book "gtypes")
@@ -212,7 +230,7 @@
         (& (mv (acl2::msg "bad gl-function-info table entry: ~x0" entry) nil))))))
 
 (in-theory (disable geval-rule-alist))
-             
+
 
 
 (defun run-gified-case-breakdown (body)
@@ -316,8 +334,8 @@
 ;  (defthmd member-is-member-equal
 ;    (equal (member x y)
 ;           (member-equal x y))))
-; 
-; (local (in-theory (enable member-is-member-equal)))  
+;
+; (local (in-theory (enable member-is-member-equal)))
 
 (local
  (defthm run-gified-check-geval-thm-formals
@@ -357,7 +375,7 @@
 (local
  (defthm nthcdr-nil
    (equal (nthcdr n nil) nil)))
-   
+
 (local
  (defthm nth-of-nthcdr
    (equal (nth n (nthcdr m y))
@@ -373,7 +391,7 @@
 ;;     :hints (("goal" :induct (nthcdr n x)))))
 
 
-           
+
 
 (local
  (encapsulate nil
@@ -479,7 +497,7 @@
      :hints (("goal" :induct (replace-term-flg flag new old avoid x))
              (and stable-under-simplificationp
                   '(:in-theory (enable equality-cp-ev-constraint-0)))))
-  
+
    (in-theory (disable replace-term replace-term-list))
 
    (defthm replace-term-list-correct-disjoin
@@ -556,7 +574,7 @@
            (env (cdr (assoc-equal 'env a))))
        (implies (and (not erp)
                      (run-gified-ev
-                      thm 
+                      thm
                       (cons (cons 'env (cdr (assoc-equal 'env a)))
                             (pairlis$ formals (run-gified-ev-lst args a))))
                      (not (eq geval 'quote))
@@ -728,9 +746,9 @@
             :in-theory (disable ev-function-clause-correct-for-run-gified-ev)))))
 
 (in-theory (disable run-gified-get-eval-thm))
-               
-             
-                  
+
+
+
 (defun nths-matching-formalsp (acl2::idx formals acl2::varname list)
   (declare (xargs :measure (acl2-count formals)))
   (if (atom formals)
@@ -759,10 +777,10 @@
 
 
 (in-theory (disable nths-matching-formalsp))
-    
 
 
-                       
+
+
 
 
 
@@ -839,7 +857,7 @@
 ;;                 (natp n) (< 0 n))
 ;;            (or (atom x) (gobjectp (car x))))
 ;;   :rule-classes nil)
-           
+
 
 
 ;; (defthm geval-geval-list-def-thm-correct-corollary
@@ -994,7 +1012,7 @@
                                 `((args . ,args) (a . ,a))
                                 'acl2::? nil mfc state)
                  args)))
-                 
+
 
    (defthmd my-run-gified-ev-constraint-0
      (implies (and (syntaxp (test-constraint-0-result args a mfc state))
@@ -1195,7 +1213,7 @@
                          actuals))
                        gevalfn env)
                       nil)))
-     :hints(("Goal" 
+     :hints(("Goal"
              :induct t
              :in-theory (enable acl2::take-redefinition)
              :expand ((:free (a b c)
@@ -1299,7 +1317,7 @@
     access
     `(b* ,(access-b*-bindings (car args) (car forms) (cdr args))
        ,rest-expr)))
-                     
+
 
 (defun ev-constraint-for-search (lemmas hyp-terms ev-term)
   (if (atom lemmas)
@@ -1315,8 +1333,8 @@
           rune
         (ev-constraint-for-search
          (cdr lemmas) hyp-terms ev-term)))))
-         
-           
+
+
 
 
 (defun ev-constraint-for-fn (ev fn world)
@@ -1326,13 +1344,13 @@
 
 (defmacro ev-constraint-for (ev fn)
   `(ev-constraint-for-fn ',ev ',fn world))
-       
+
 
 (local
  (encapsulate nil
 
    (local
-    (in-theory (disable 
+    (in-theory (disable
                         cheap-default-car cheap-default-cdr acl2::take-redefinition
                         ev-quote-clause-correct-for-run-gified-ev
                         ev-lookup-var-clause-correct-for-run-gified-ev
@@ -1415,7 +1433,7 @@
                      (mv-nth 0 (run-gified-ev body a))
                      (bfr-eval (cdr (assoc-equal 'hyp a))
                                (cadr (assoc-equal 'env a))))
-                (equal (run-gified-ev 
+                (equal (run-gified-ev
                         `(,gevalfn (mv-nth '1 ,body) env)
                         a)
                        (run-gified-ev
@@ -1479,7 +1497,7 @@
                    (mv-nth 0 (run-gified-ev body a))
                    (bfr-eval (cdr (assoc-equal 'hyp a))
                              (cadr (assoc-equal 'env a))))
-              (equal (run-gified-ev 
+              (equal (run-gified-ev
                       (list gevalfn
                             (list 'quote (mv-nth 1 (run-gified-ev body a)))
                             (list 'quote (cdr (assoc-equal 'env a))))
@@ -1492,7 +1510,7 @@
    :hints(("Goal" :in-theory (e/d (run-gified-ev-constraint-0)
                                   (run-gified-process-body-correct))
            :use ((:instance run-gified-process-body-correct))))))
-   
+
 
 
 
@@ -1567,7 +1585,7 @@
 
 (local
  (encapsulate nil
-   (local 
+   (local
 
     (defun cdr-down2 (a b)
       (if (atom a)
@@ -1608,7 +1626,7 @@
      (run-gified-lhs-and-okp-breakdown lhs okp)
      (implies (not erp)
               (and (equal (run-gified-ev lhs a)
-                          (run-gified-ev 
+                          (run-gified-ev
                            `(,geval (mv-nth '1 (,run-gified fn actuals hyp clk config bvar-db state))
                                     env)
                            a))
@@ -1676,7 +1694,7 @@
                                . evalfn)
                               ((MV-NTH '2 (RUN-GIFIED-RHS-BREAKDOWN RHS))
                                . geval-list-fn)
-                              
+
                               ((MV-NTH '1
                                        (GEVAL-RULE-ALIST (TABLE-ALIST 'GL-FUNCTION-INFO
                                                                       (W STATE))

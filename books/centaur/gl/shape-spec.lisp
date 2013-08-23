@@ -1,12 +1,27 @@
-
-
+; GL - A Symbolic Simulation Framework for ACL2
+; Copyright (C) 2008-2013 Centaur Technology
+;
+; Contact:
+;   Centaur Technology Formal Verification Group
+;   7600-C N. Capital of Texas Highway, Suite 300, Austin, TX 78731, USA.
+;   http://www.centtech.com/
+;
+; This program is free software; you can redistribute it and/or modify it under
+; the terms of the GNU General Public License as published by the Free Software
+; Foundation; either version 2 of the License, or (at your option) any later
+; version.  This program is distributed in the hope that it will be useful but
+; WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+; FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
+; more details.  You should have received a copy of the GNU General Public
+; License along with this program; if not, write to the Free Software
+; Foundation, Inc., 51 Franklin Street, Suite 500, Boston, MA 02110-1335, USA.
+;
+; Original author: Sol Swords <sswords@centtech.com>
 
 (in-package "GL")
-
 (include-book "shape-spec-defs")
 (include-book "gtypes")
 (include-book "symbolic-arithmetic-fns")
-
 (local (include-book "symbolic-arithmetic"))
 (local (include-book "gtype-thms"))
 (local (include-book "data-structures/no-duplicates" :dir :system))
@@ -1163,7 +1178,7 @@
                                       number-specp
                                       number-spec-indices
                                       num-spec-to-num-gobj)))))))
-  
+
 (local
  (defthm-shape-spec-flag
    (defthm alistp-shape-spec-arbitrary-slice-0
@@ -1255,7 +1270,7 @@
         (shape-spec-obj-in-range x obj))
    :hints(("Goal" :in-theory (enable shape-spec-obj-in-range
                                      shape-spec-env-slice)))))
-              
+
 
 
 
@@ -1307,7 +1322,7 @@
 
 
 
-       
+
 
 
 
@@ -1442,7 +1457,7 @@
                    (<= (- (expt 2 (1- (len bits)))) x)
                    (< x (expt 2 (1- (len bits)))))
            (equal x 0)))
-  :hints(("Goal" :in-theory (enable shape-spec-obj-in-range 
+  :hints(("Goal" :in-theory (enable shape-spec-obj-in-range
                                     number-spec-in-range
                                     integer-in-range
                                     g-number->num
@@ -1562,7 +1577,7 @@
 ;; simplification approach.  The backchain ruleset will be tried first to
 ;; reduce the goals to as few as possible clauses with conclusions that are
 ;; calls of shape-spec-obj-in-range on "atomic" shape specs (numbers, booleans,
-;; concretes.)  Then shape-spec-obj-in-range-open will 
+;; concretes.)  Then shape-spec-obj-in-range-open will
 (def-ruleset! shape-spec-obj-in-range-backchain
   '(shape-spec-obj-in-range-open-cons
     shape-spec-obj-in-range-solve-integer?
@@ -1573,7 +1588,7 @@
     shape-spec-obj-in-range-backchain-concrete
     shape-spec-obj-in-range-backchain-atom
     shape-spec-obj-in-range-backchain-list-of-g-booleans
-    shape-spec-obj-in-range-var 
+    shape-spec-obj-in-range-var
     car-cons cdr-cons natp-compound-recognizer
     (shape-spec-obj-in-range) (g-keyword-symbolp) (ash)
     (expt) (unary--) (binary-+) (consp) (integerp) (len)
@@ -1602,7 +1617,7 @@
 
 
 (defxdoc shape-specs
-  :parents (introduction)
+  :parents (reference)
   :short "Simplified symbolic objects useful for coverage proofs in GL."
 
   :long "<p>Shape specifiers are a simplified format of GL symbolic objects,
@@ -1886,7 +1901,7 @@ for (e.g.)  adding rules to the coverage strategy are likely to change.</p>")
 
 (local
  (defsection shape-spec-call-free
-   
+
 
    (local (in-theory (enable shape-spec-call-free)))
 
@@ -2032,7 +2047,7 @@ for (e.g.)  adding rules to the coverage strategy are likely to change.</p>")
          (& (if iff-flg
                 obj-term
               `(if (consp ,obj-term)
-                   (if ,(shape-spec-oblig-term (car x) (car-term obj-term) nil) 
+                   (if ,(shape-spec-oblig-term (car x) (car-term obj-term) nil)
                        ,(shape-spec-oblig-term (cdr x) (cdr-term obj-term) nil)
                      'nil)
                  'nil))))))
@@ -2049,7 +2064,7 @@ for (e.g.)  adding rules to the coverage strategy are likely to change.</p>")
               'nil)
          ''nil))))
 
-  
+
 
   (mutual-recursion
    (defun shape-spec-env-term (x obj-term iff-flg)
@@ -2085,7 +2100,7 @@ for (e.g.)  adding rules to the coverage strategy are likely to change.</p>")
                (nths (make-nth-terms inverse-term 0 (len args))))
             (shape-spec-list-env-term args nths)))
          (& `(ss-append-envs
-              ,(shape-spec-env-term (car x) (car-term obj-term) nil) 
+              ,(shape-spec-env-term (car x) (car-term obj-term) nil)
               ,(shape-spec-env-term (cdr x) (cdr-term obj-term) nil))))))
    (defun shape-spec-list-env-term (x obj-terms)
      (declare (xargs :guard (and (shape-spec-listp x)
@@ -2188,7 +2203,7 @@ for (e.g.)  adding rules to the coverage strategy are likely to change.</p>")
                      :in-theory (disable shape-spec-vars-subset-cars-env-slice
                                          shape-spec-vars-subset-cars-iff-env-slice)))))
 
-  
+
   (defthm-shape-spec-term-flag
     (defthm alistp-car-shape-spec-env-term
       (alistp (car (sspec-geval-ev (shape-spec-env-term x obj-term iff-flg)

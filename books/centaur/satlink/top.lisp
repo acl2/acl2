@@ -50,7 +50,7 @@ e.g., bounded arithmetic problems, into SAT problems.  This allows for a large
 class of theorems to be solved quickly and automatically by the SAT solver.
 This is especially useful in @(see hardware-verification).</p>
 
-<p>Satlink is an interfacing library that allows ACL2 to make use of
+<p><b>Satlink</b> is an interfacing library that allows ACL2 to make use of
 off-the-shelf SAT solvers like <a
 href='http://fmv.jku.at/lingeling/'>lingeling</a>, <a
 href='https://www.lri.fr/~simon/?page=glucose'>glucose</a>, and so on.  It
@@ -78,13 +78,13 @@ produces.</p>
 
 <h3>Loading the Library</h3>
 
-<p>Satlink is a relatively low-level library so it would be a bit weird to want
-to use it directly.  Instead, it is typically used indirectly through other
-tools, such as the @(see gl) framework, or @(see aig-sat), or the @(see
-aignet-cnf) translation.  These other approaches are likely to be more
+<p>Satlink is a low-level library.  It would be a bit weird to want to use it
+directly.  Instead, it is typically used indirectly through other tools, such
+as the @(see gl::gl) framework, or @(see acl2::aig-sat), or the @(see
+aignet::aignet-cnf) translation.  These other approaches are likely to be more
 convenient than using Satlink directly.</p>
 
-<p>If you want to use Satlink directly for some reason, the book to include
+<p>If you want to include Satlink directly for some reason, the book to include
 is:</p>
 
 @({
@@ -93,6 +93,8 @@ is:</p>
 
 <p>Once you load this book, you generally need to construct your input @(see
 cnf) formula in some way, and then call @(see sat).</p>
+
+
 
 
 <h3>Copyright Information</h3>

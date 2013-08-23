@@ -1,9 +1,24 @@
-
+; GL - A Symbolic Simulation Framework for ACL2
+; Copyright (C) 2008-2013 Centaur Technology
+;
+; Contact:
+;   Centaur Technology Formal Verification Group
+;   7600-C N. Capital of Texas Highway, Suite 300, Austin, TX 78731, USA.
+;   http://www.centtech.com/
+;
+; This program is free software; you can redistribute it and/or modify it under
+; the terms of the GNU General Public License as published by the Free Software
+; Foundation; either version 2 of the License, or (at your option) any later
+; version.  This program is distributed in the hope that it will be useful but
+; WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+; FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
+; more details.  You should have received a copy of the GNU General Public
+; License along with this program; if not, write to the Free Software
+; Foundation, Inc., 51 Franklin Street, Suite 500, Boston, MA 02110-1335, USA.
+;
+; Original author: Sol Swords <sswords@centtech.com>
 
 (in-package "GL")
-
-
-
 (include-book "tools/bstar" :dir :system)
 (include-book "rws")
 (include-book "clause-processors/generalize" :dir :system)
@@ -11,9 +26,6 @@
 (include-book "gl-util")
 
 (program)
-
-; what is the reason for this switch over to program mode?
-; who did it?  ????? -- Boyer
 
 (defun constant-syntax-p (name)
   ;; This is adapted from legal-variable-or-constant-namep, but only performs
@@ -40,7 +52,7 @@
   (incat 'gl-fact::foo
          (symbol-package-name fn) "::" (symbol-name fn) "-LAMBDA-"
          (acl2::nat-to-str idx)))
-  
+
 (mutual-recursion
  (defun calldepth-greaterp (term depth)
    (cond ((or (atom term)
@@ -252,7 +264,7 @@
       events
     (b* ((fn (car clique))
          (body (norm-function-body fn world))
-         (- (or body 
+         (- (or body
                 (er hard 'factor-fn-clique
                     "No body retrieved for ~x0~%" fn)))
          (vars (wgetprop fn 'formals))
@@ -280,5 +292,5 @@
        `(progn (logic)
                ,@(reverse (factor-fn-clique clique world nil))
                (local (in-theory (disable* (:ruleset factor-ruleset)))))))))
-         
-         
+
+

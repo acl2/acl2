@@ -1,11 +1,28 @@
-
+; GL - A Symbolic Simulation Framework for ACL2
+; Copyright (C) 2008-2013 Centaur Technology
+;
+; Contact:
+;   Centaur Technology Formal Verification Group
+;   7600-C N. Capital of Texas Highway, Suite 300, Austin, TX 78731, USA.
+;   http://www.centtech.com/
+;
+; This program is free software; you can redistribute it and/or modify it under
+; the terms of the GNU General Public License as published by the Free Software
+; Foundation; either version 2 of the License, or (at your option) any later
+; version.  This program is distributed in the hope that it will be useful but
+; WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+; FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
+; more details.  You should have received a copy of the GNU General Public
+; License along with this program; if not, write to the Free Software
+; Foundation, Inc., 51 Franklin Street, Suite 500, Boston, MA 02110-1335, USA.
+;
+; Original author: Sol Swords <sswords@centtech.com>
 
 (in-package "GL")
-
 (include-book "g-if")
 (include-book "g-primitives-help")
-(local (include-book "eval-g-base-help"))
 (include-book "eval-g-base")
+(local (include-book "eval-g-base-help"))
 (local (include-book "hyp-fix-logic"))
 
 (def-g-fn cdr
@@ -37,7 +54,7 @@
   :hints `(("goal" :induct ,gcall
             :expand (,gcall)
             :in-theory (disable (:d ,gfn)))))
-  
+
 
 (def-g-correct-thm cdr eval-g-base
   :hints `(("goal" :in-theory (e/d (eval-g-base general-concrete-obj)

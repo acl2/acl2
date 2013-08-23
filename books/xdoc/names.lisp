@@ -27,6 +27,7 @@
 
 (in-package "XDOC")
 (include-book "base")
+(include-book "str/case-conversion" :dir :system)
 (program)
 
 
@@ -226,6 +227,18 @@
 ;(sneaky-downcase "SILLY-ACL2-TUTORIAL")
 
 
+(defun name-low (name)
+  (declare (type string name))
+  (b* ((has-lowercase-p (str::string-has-some-down-alpha-p name 0 (length name)))
+       (name-low        (if has-lowercase-p
+                            ;; They had to go out of their way to type this
+                            ;; name, using something like |foo| instead of FOO.
+                            ;; So let's not forcibly downcase things, in case
+                            ;; they want mixed case for some reason.
+                            name
+                          (sneaky-downcase name))))
+    name-low))
+
 (defun sym-mangle (x base-pkg acc)
 
 ; This is our "standard" for displaying symbols in HTML (in lowercase).  We
@@ -233,12 +246,12 @@
 ; Characters to print are accumulated onto acc in reverse order.  BOZO think
 ; about adding keyword support?
 
-  (let* ((pkg-low  (string-downcase (symbol-package-name x)))
-         (name-low (sneaky-downcase (symbol-name x)))
+  (let* ((name-low (name-low (symbol-name x)))
          (acc (if (in-package-p x base-pkg)
                   acc
-                (list* #\: #\:
-                       (simple-html-encode-chars (coerce pkg-low 'list) acc)))))
+                (let ((pkg-low (name-low (symbol-package-name x))))
+                  (list* #\: #\:
+                         (simple-html-encode-chars (coerce pkg-low 'list) acc))))))
     (simple-html-encode-chars (coerce name-low 'list) acc)))
 
 (defun upcase-first-letter (x)
@@ -249,19 +262,21 @@
                  (coerce (list (char-upcase (char x 0))) 'string)
                  (subseq x 1 nil))))
 
+
+
 (defun sym-mangle-cap (x base-pkg acc)
 
 ; Same as sym-mangle, but upper-case the first letter.
 
+  (b* ((name-low (name-low (symbol-name x))))
     (if (in-package-p x base-pkg)
-        (let* ((name-low (sneaky-downcase (symbol-name x)))
-               (name-cap (upcase-first-letter name-low)))
+        (let* ((name-cap (upcase-first-letter name-low)))
           (simple-html-encode-chars (coerce name-cap 'list) acc))
-      (let* ((pkg-low (string-downcase (symbol-package-name x)))
+      (let* ((pkg-low (name-low (symbol-package-name x)))
              (pkg-cap (upcase-first-letter pkg-low))
-             (name-low (sneaky-downcase (symbol-name x)))
-             (acc (list* #\: #\: (simple-html-encode-chars (coerce pkg-cap 'list) acc))))
-        (simple-html-encode-chars (coerce name-low 'list) acc))))
+             (acc (list* #\: #\:
+                         (simple-html-encode-chars (coerce pkg-cap 'list) acc))))
+        (simple-html-encode-chars (coerce name-low 'list) acc)))))
 
 
 ; (reverse (coerce (sym-mangle 'acl2 'acl2::foo nil) 'string))

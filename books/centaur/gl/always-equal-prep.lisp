@@ -1,13 +1,29 @@
-
+; GL - A Symbolic Simulation Framework for ACL2
+; Copyright (C) 2008-2013 Centaur Technology
+;
+; Contact:
+;   Centaur Technology Formal Verification Group
+;   7600-C N. Capital of Texas Highway, Suite 300, Austin, TX 78731, USA.
+;   http://www.centtech.com/
+;
+; This program is free software; you can redistribute it and/or modify it under
+; the terms of the GNU General Public License as published by the Free Software
+; Foundation; either version 2 of the License, or (at your option) any later
+; version.  This program is distributed in the hope that it will be useful but
+; WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+; FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
+; more details.  You should have received a copy of the GNU General Public
+; License along with this program; if not, write to the Free Software
+; Foundation, Inc., 51 Franklin Street, Suite 500, Boston, MA 02110-1335, USA.
+;
+; Original author: Sol Swords <sswords@centtech.com>
 
 (in-package "GL")
-
-
 (include-book "symbolic-arithmetic-fns")
-(local (include-book "hyp-fix-logic"))
 (include-book "g-if")
-(local (include-book "eval-g-base-help"))
 (include-book "eval-g-base")
+(local (include-book "hyp-fix-logic"))
+(local (include-book "eval-g-base-help"))
 (local (include-book "clause-processors/find-subterms" :dir :system))
 (local (include-book "clause-processors/just-expand" :dir :system))
 (local (include-book "centaur/bitops/ihsext-basics" :dir :system))
@@ -202,9 +218,9 @@
             (cdr hyp))
            (mv ok (cons nil env))))
         ;; The bad case here is when x and y are equal wherever the hyp holds
-        ;; and unequal everywhere else. 
+        ;; and unequal everywhere else.
         ;; Possible ways to deal with this: Q-AND the hyp with each arg and
-        ;; compare equality, or else recur on the car and then the cdr.  
+        ;; compare equality, or else recur on the car and then the cdr.
         ;; We take a hybrid approch: recur down the car in hopes of finding an
         ;; easy counterexample, then at each level, use the Q-AND approch on
         ;; the cdr.
@@ -239,9 +255,9 @@
             (cdr hyp)
             (cdr env)))
         ;; The bad case here is when x and y are equal wherever the hyp holds
-        ;; and unequal everywhere else. 
+        ;; and unequal everywhere else.
         ;; Possible ways to deal with this: Q-AND the hyp with each arg and
-        ;; compare equality, or else recur on the car and then the cdr.  
+        ;; compare equality, or else recur on the car and then the cdr.
         ;; We take a hybrid approch: recur down the car in hopes of finding an
         ;; easy counterexample, then at each level, use the Q-AND approch on
         ;; the cdr.
@@ -373,7 +389,7 @@
 
 (local
  (encapsulate nil
-  
+
    (local
     (progn
 
@@ -427,7 +443,7 @@
    ;;                                 (bfr-eval ctrex-bdd env))
    ;;                            (not (equal (bfr-list->u x env)
    ;;                                        (bfr-list->u y env)))))))
-   ;;   :hints(("Goal" 
+   ;;   :hints(("Goal"
    ;;           :induct (always-equal-uu x y))
    ;;          '(:use ((:instance ctrex-for-always-equal-correct
    ;;                             (x (and (consp x) (acl2::ubdd-fix (car x))))
@@ -485,7 +501,7 @@
                                 (x ,(second call)) (y ,(third call)) (hyp ,(fourth call)))))))
                    nil)))
      :rule-classes ((:rewrite :match-free :all)))))
-                           
+
 
 
 ;; (local
@@ -905,7 +921,7 @@
                       mk-g-boolean-correct-for-eval-g-base
                       geval-g-if-marker-eval-g-base
                       geval-g-or-marker-eval-g-base
-                      
+
                       general-concretep-not-general-consp
                       general-concretep-not-general-booleanp
                       general-concretep-not-general-numberp
@@ -923,15 +939,15 @@
                       booleanp-compound-recognizer
 
                       gtests-g-test-marker
-                      
+
                       bfr-eval-bfr-binary-and
                       bfr-eval-bfr-not
                       bfr-eval-bfr-binary-or
                       gtests-nonnil-correct-for-eval-g-base
-                      hyp-fix-correct 
+                      hyp-fix-correct
                       always-equal-of-numbers-correct
                       always-equal-of-booleans-correct
-                      
+
                       bfr-eval-g-hyp-marker
                       cons-equal
 

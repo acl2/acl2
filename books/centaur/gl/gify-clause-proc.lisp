@@ -1,10 +1,28 @@
+; GL - A Symbolic Simulation Framework for ACL2
+; Copyright (C) 2008-2013 Centaur Technology
+;
+; Contact:
+;   Centaur Technology Formal Verification Group
+;   7600-C N. Capital of Texas Highway, Suite 300, Austin, TX 78731, USA.
+;   http://www.centtech.com/
+;
+; This program is free software; you can redistribute it and/or modify it under
+; the terms of the GNU General Public License as published by the Free Software
+; Foundation; either version 2 of the License, or (at your option) any later
+; version.  This program is distributed in the hope that it will be useful but
+; WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+; FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
+; more details.  You should have received a copy of the GNU General Public
+; License along with this program; if not, write to the Free Software
+; Foundation, Inc., 51 Franklin Street, Suite 500, Boston, MA 02110-1335, USA.
+;
+; Original author: Sol Swords <sswords@centtech.com>
 
 (in-package "GL")
-
 (include-book "g-if")
 (include-book "clause-processors/unify-subst" :dir :system)
-(local (include-book "tools/def-functional-instance" :dir :system))
 (include-book "tools/defevaluator-fast" :dir :system)
+(local (include-book "tools/def-functional-instance" :dir :system))
 (local (include-book "hyp-fix-logic"))
 (local (defun dummy-for-g-if-ev-start () nil))
 
@@ -295,7 +313,7 @@
 (local (defthm pseudo-termp-fourth
          (implies (pseudo-termp x)
                   (pseudo-termp (fourth x)))))
-                       
+
 
 (defun gobj-depends-on-g-or-hyp (x)
   (b* (((unless (and (consp x) (eq (car x) 'gobj-depends-on-g-or)))
@@ -431,7 +449,7 @@
                (geval-for-meta x b)
              (geval-for-meta y b)))))
 
-         
+
 
 
 
@@ -449,7 +467,7 @@
      (local (add-bfr-pat (bfr-fix . &)))
      (local (in-theory (disable bfr-eval-booleanp
                                 equal-of-booleans-rewrite)))
- 
+
 
 
      (defthm geval-for-meta-mk-g-bdd-ite-correct
@@ -649,7 +667,7 @@
 ;;              :do-not-induct t)))))
 
 ;; (in-theory (disable g-or-gobjectp-extract))
-  
+
 
 ;; (defun g-or-gobjectp-meta-hyp (x)
 ;;   (b* (((mv ok term) (g-or-gobjectp-extract x 'extract))
@@ -718,7 +736,7 @@
 ;;              :do-not-induct t)))))
 
 ;; (in-theory (disable g-if-gobjectp-extract))
-  
+
 
 ;; (defun g-if-gobjectp-meta-hyp (x)
 ;;   (b* (((mv ok term) (g-if-gobjectp-extract x 'extract))
@@ -841,7 +859,7 @@
                       (geval-for-meta geval)
                       (g-if-ev eval)
                       (g-if-ev-lst eval-lst))))))
-     
+
 
      (local
       (defthm geval-of-g-or-term-subst
@@ -927,7 +945,7 @@
      (defun g-or-geval-meta-subterms-wrapper (x)
        (declare (xargs :guard t))
        (ec-call (g-or-geval-meta-subterms x 'subterms)))
-    
+
 
      (defthm g-or-geval-meta-subterms-correct
        (mv-let (ok hyp test else env)
@@ -947,7 +965,7 @@
      (in-theory (disable g-or-geval-meta-subterms))
 
      (memoize 'g-or-geval-meta-subterms-wrapper :condition nil)
-             
+
      (defun g-or-geval-meta-hyp (x)
        (b* (((mv ok hyp & & env)
              (g-or-geval-meta-subterms-wrapper x))
@@ -1021,7 +1039,7 @@
                   :do-not-induct t)))))
 
      (in-theory (disable g-if-geval-extract))
-  
+
 
      (defun g-if-geval-meta-subterms (x dummy)
        (declare (ignore dummy))
@@ -1042,7 +1060,7 @@
      (defun g-if-geval-meta-subterms-wrapper (x)
        (declare (xargs :guard t))
        (ec-call (g-if-geval-meta-subterms x 'subterms)))
-    
+
 
      (defthm g-if-geval-meta-subterms-correct
        (mv-let (ok hyp test then else env)
@@ -1064,7 +1082,7 @@
      (in-theory (disable g-if-geval-meta-subterms))
 
      (memoize 'g-if-geval-meta-subterms-wrapper :condition nil)
-             
+
      (defun g-if-geval-meta-hyp (x)
        (b* (((mv ok hyp & & & env)
              (g-if-geval-meta-subterms-wrapper x))
@@ -1167,7 +1185,7 @@
 
 ;; test.
 (local (def-geval-meta generic-geval generic-gify-ev generic-gify-ev-lst))
-                                  
+
 
 
 
@@ -1273,10 +1291,10 @@
 ;;                    (mv erp (cons x gobj-assms) gnorm-assms obligs)))
 ;;              (mv "bad or" gobj-assms gnorm-assms obligs))))
 ;;         (&
-         
-         
-              
-        
+
+
+
+
 
 
 

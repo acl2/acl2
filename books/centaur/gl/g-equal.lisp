@@ -1,17 +1,33 @@
+; GL - A Symbolic Simulation Framework for ACL2
+; Copyright (C) 2008-2013 Centaur Technology
+;
+; Contact:
+;   Centaur Technology Formal Verification Group
+;   7600-C N. Capital of Texas Highway, Suite 300, Austin, TX 78731, USA.
+;   http://www.centtech.com/
+;
+; This program is free software; you can redistribute it and/or modify it under
+; the terms of the GNU General Public License as published by the Free Software
+; Foundation; either version 2 of the License, or (at your option) any later
+; version.  This program is distributed in the hope that it will be useful but
+; WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+; FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
+; more details.  You should have received a copy of the GNU General Public
+; License along with this program; if not, write to the Free Software
+; Foundation, Inc., 51 Franklin Street, Suite 500, Boston, MA 02110-1335, USA.
+;
+; Original author: Sol Swords <sswords@centtech.com>
 
 (in-package "GL")
-
-(set-inhibit-warnings "theory")
-
 (include-book "g-if")
 (include-book "g-primitives-help")
 (include-book "symbolic-arithmetic-fns")
-(local (include-book "eval-g-base-help"))
 (include-book "eval-g-base")
-; (include-book "tools/with-arith5-help" :dir :system)
+(local (include-book "eval-g-base-help"))
 (local (include-book "symbolic-arithmetic"))
 (local (include-book "hyp-fix-logic"))
 (local (include-book "var-bounds"))
+(set-inhibit-warnings "theory")
 
 (local (defthm eval-g-base-apply-of-equal
          (equal (eval-g-base-ev (cons 'equal (kwote-lst (list x y))) a)
@@ -312,7 +328,7 @@
   (local
    (in-theory (e/d** (
                       possibilities-for-x-1
-                      
+
                       possibilities-for-x-2
                       possibilities-for-x-3
                       possibilities-for-x-4
@@ -333,7 +349,7 @@
                       gobj-depends-on-of-g-apply
                       gobj-depends-on-of-gl-cons
                       gobj-list-depends-on-of-gl-cons
-                      
+
                       general-concretep-not-general-consp
                       general-concretep-not-general-booleanp
                       general-concretep-not-general-numberp
@@ -349,7 +365,7 @@
                       booleanp-compound-recognizer
 
                       gtests-g-test-marker
-                      
+
                       bfr-eval-bfr-binary-and
                       bfr-eval-bfr-not
                       bfr-eval-bfr-binary-or
@@ -363,7 +379,7 @@
                       bfr-eval-bfr-iff
                       equal-of-numbers-correct
                       general-numberp-of-atom
-                      
+
                       eval-g-base-list-of-gl-cons
                       hons-equal
                       general-concrete-obj-of-atomic-constants
@@ -377,7 +393,7 @@
     `(in-theory
       (enable (:induction ,(gl-fnsym 'equal))))))
 
-  
+
 
 
     (def-g-correct-thm equal eval-g-base

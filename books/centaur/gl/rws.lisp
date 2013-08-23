@@ -1,6 +1,24 @@
+; GL - A Symbolic Simulation Framework for ACL2
+; Copyright (C) 2008-2013 Centaur Technology
+;
+; Contact:
+;   Centaur Technology Formal Verification Group
+;   7600-C N. Capital of Texas Highway, Suite 300, Austin, TX 78731, USA.
+;   http://www.centtech.com/
+;
+; This program is free software; you can redistribute it and/or modify it under
+; the terms of the GNU General Public License as published by the Free Software
+; Foundation; either version 2 of the License, or (at your option) any later
+; version.  This program is distributed in the hope that it will be useful but
+; WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+; FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
+; more details.  You should have received a copy of the GNU General Public
+; License along with this program; if not, write to the Free Software
+; Foundation, Inc., 51 Franklin Street, Suite 500, Boston, MA 02110-1335, USA.
+;
+; Original author: Sol Swords <sswords@centtech.com>
 
 (in-package "GL")
-
 (include-book "clause-processors/use-by-hint" :dir :system)
 (include-book "clause-processors/multi-env-trick" :dir :system)
 (include-book "tools/bstar" :dir :system)
@@ -170,7 +188,7 @@
        nil
      (hons (beta-reduce-term (car x))
            (beta-reduce-list (cdr x))))))
-   
+
 
 (flag::make-flag beta-reduce-flag beta-reduce-term)
 
@@ -433,7 +451,7 @@
                           used
                         (hons-acons rule t used))))
              (mv ans (hons-acons x ans mem) used)))))))
- 
+
  (defun term-rw-lst (x rws mem used)
    (declare (xargs :guard (and (pseudo-term-listp x)
                                (term-rw-mem-wfp mem)
@@ -465,7 +483,7 @@
                 ((mv ans rule) (fncall-rewrite (cons (car x) args) rws))
                 (used (if (hons-get rule used) used (hons-acons rule t used))))
              (mv ans (hons-acons x ans mem) used)))))))
- 
+
  (defun term-rw-lst-indep-ind (x rws mem used)
    (declare (xargs :guard (and (pseudo-term-listp x)
                                (term-rw-mem-wfp mem)
@@ -506,7 +524,7 @@
   (implies (and (term-rw-mem-wfp mem)
                 (hons-assoc-equal x mem))
            (pseudo-termp (cdr (hons-assoc-equal x mem)))))
-      
+
 
 (defthm-term-rw-ind len-term-rw-lst1
   (term-rw t :skip t)
@@ -700,7 +718,7 @@
         (cons (cdr (hons-get (caar used) used-al))
               (used-and-used-al-to-alist-lists (cdr used) used-al))
       (used-and-used-al-to-alist-lists (cdr used) used-al))))
-          
+
 
 (acl2::def-multi-env-fns dumb-ev dumb-ev-lst)
 
@@ -894,7 +912,7 @@
                           (dumb-ev-lst x a)))))
    :hints (("goal" :use ((:instance term-rw-lst-correct (used-al nil)))
             :in-theory (e/d** (used-al-to-used)))))
-                 
+
 
 
 (defthm fncall-rewrite-if
@@ -957,7 +975,7 @@
                               used-al-to-used
                               used-al-to-used-term-rw-term-rw-alist-lst
                               term-rw-mem-wfp)))))
-  
+
 
 (local (defun or-list (x)
          (if (atom x)
@@ -1012,15 +1030,11 @@
          (list* (cadr eq)
                 (caddr eq)
                 name))))
-    
+
 
 
 
 (defun rws-from-ruleset-fn (runes world)
-
-; What is the reason for this switch over to program mode?  Who did
-; it?????  Asks Boyer.
-
   (declare (xargs :mode :program))
   (if (atom runes)
       nil

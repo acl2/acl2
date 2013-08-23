@@ -1,7 +1,24 @@
-
+; GL - A Symbolic Simulation Framework for ACL2
+; Copyright (C) 2008-2013 Centaur Technology
+;
+; Contact:
+;   Centaur Technology Formal Verification Group
+;   7600-C N. Capital of Texas Highway, Suite 300, Austin, TX 78731, USA.
+;   http://www.centtech.com/
+;
+; This program is free software; you can redistribute it and/or modify it under
+; the terms of the GNU General Public License as published by the Free Software
+; Foundation; either version 2 of the License, or (at your option) any later
+; version.  This program is distributed in the hope that it will be useful but
+; WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+; FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
+; more details.  You should have received a copy of the GNU General Public
+; License along with this program; if not, write to the Free Software
+; Foundation, Inc., 51 Franklin Street, Suite 500, Boston, MA 02110-1335, USA.
+;
+; Original author: Sol Swords <sswords@centtech.com>
 
 (in-package "GL")
-
 (include-book "tools/bstar" :dir :system)
 (include-book "defapply")
 (include-book "misc/hons-help" :dir :system)
@@ -30,7 +47,7 @@
        acc
      (collect-fns-lst (cdr lst) clique
                       (collect-fns (car lst) clique acc)))))
-          
+
 
 (defun clique-bodies (clique world)
   (if (atom clique)
@@ -101,7 +118,7 @@
                    (else (gify-term (cadddr x) fn)))
               `(g-if ,test ,then ,else))))
          ((consp (car x))
-          (er hard 'gify-term 
+          (er hard 'gify-term
               "We expect lambdas to all have been factored out of functions to
 be gified.  If not, implement this case.  Culprit (in function ~x0): ~x1~%"
               fn (car x)))
@@ -211,7 +228,7 @@ Warning: Clock ran out in ~x0~%" ',(gl-fnsym top-fn))
         (gify-factored-fns top-fn (cdr fns) (1+ idx) world
                            (cons defun defuns))))))
 
-                           
+
 
 (defmacro factored-fns (fn)
   `(cdr (assoc-eq ,fn (table-alist 'factored-fns world))))
@@ -234,7 +251,7 @@ Warning: Clock ran out in ~x0~%" ',(gl-fnsym top-fn))
     (if (and recp (<= 2 (length defuns)))
         `(mutual-recursion . ,defuns)
       `(progn . ,(reverse defuns)))))
-                     
+
 
 (defun gify-stub (fn world)
   (let* ((formals (wgetprop fn 'formals))
@@ -286,7 +303,7 @@ Warning: Clock ran out in ~x0~%" ',(gl-fnsym top-fn))
 
 
 
-            
+
 
 ;; (defun gobjectp-thmname (fn)
 ;;   (incat 'gl-thm::foo "GOBJECTP-" (symbol-name fn)))
@@ -327,8 +344,8 @@ Warning: Clock ran out in ~x0~%" ',(gl-fnsym top-fn))
 ;;       (cons `(defthm ,thmname
 ;;                (gobjectp (,name ,@formals hyp clk config bvar-db state)))
 ;;             (gobjectp-redundant-top-thms (cdr clique) world)))))
-         
-         
+
+
 
 
 (defmacro defname (name)
@@ -534,7 +551,7 @@ Warning: Clock ran out in ~x0~%" ',(gl-fnsym top-fn))
 
 
 
-(defun g-factored-fns-verify-guards (top-fn fns world) 
+(defun g-factored-fns-verify-guards (top-fn fns world)
  (if (endp fns)
       (er hard 'g-factored-fns-verify-guards
           "Empty list of functions; top: ~x0~%" top-fn)
@@ -558,7 +575,7 @@ Warning: Clock ran out in ~x0~%" ',(gl-fnsym top-fn))
           (cons `(:type-prescription ,(car clique))
                 (type-prescriptions-of-mv-fns (cdr clique) world))
         (type-prescriptions-of-mv-fns (cdr clique) world)))))
-          
+
 
 
 (defun g-guards-fns-and-deps1 (deps world)
@@ -592,7 +609,7 @@ Warning: Clock ran out in ~x0~%" ',(gl-fnsym top-fn))
                                  zp natp)
                                 ((immediate-force-modep) not))))
        . ,(g-guards-fns-and-deps1 deps world))))
-           
+
 
 
 
@@ -793,7 +810,7 @@ Warning: Clock ran out in ~x0~%" ',(gl-fnsym top-fn))
                                              `(:expand (,term)))))))
                                (and stable-under-simplificationp
                                     '(:expand ((:free (x) (hide x))))))))
-                      
+
                       ;; BOZO. This is an ugly sort of desperation move. Blech.
                       ;; (and stable-under-simplificationp
 ;;                            '(:in-theory (union-theories
@@ -861,7 +878,7 @@ Warning: Clock ran out in ~x0~%" ',(gl-fnsym top-fn))
       (if (hons-get-any clique al)
           (remove-cliques-in-al (cdr fns) al world)
         (cons fn (remove-cliques-in-al (cdr fns) al world))))))
-         
+
 
 (defun lambda-for-apply-stub-fi (oldfns newfns world)
   `(lambda (f args)
@@ -901,7 +918,7 @@ Warning: Clock ran out in ~x0~%" ',(gl-fnsym top-fn))
 ;;          (applyfns
 ;;           (cdr (assoc apply (table-alist 'g-apply-table world))))
 ;;          (oldapplyfns
-;;           (cdr (assoc oldapply (table-alist 'g-apply-table world))))) 
+;;           (cdr (assoc oldapply (table-alist 'g-apply-table world)))))
 ;;   `(:functional-instance
 ;;     ,thmname
 ;;     ,@(if (eq oldapply 'apply-stub)
@@ -997,7 +1014,7 @@ Warning: Clock ran out in ~x0~%" ',(gl-fnsym top-fn))
      ;;                   `(:theorem (equal (,oldeval x env)
      ;;                                     (,oldeval x env)))
      ;;                   world))
-               
+
      ;;           :do-not '(preprocess simplify)
      ;;           :in-theory nil))
      ;; :rule-classes nil)))
@@ -1031,8 +1048,8 @@ Warning: Clock ran out in ~x0~%" ',(gl-fnsym top-fn))
 
 (defmacro eval-g-functional-instance (thmname eval oldeval)
   `(make-event (eval-g-functional-instance-fn ',eval ',oldeval ',thmname (w state))))
-    
-  
+
+
 
 
 (defun correctness-lemmas-for-new-apply11
@@ -1047,7 +1064,7 @@ Warning: Clock ran out in ~x0~%" ',(gl-fnsym top-fn))
                ((mv thms done-finsts)
                 (if (member thmeval done-finsts)
                     (mv thms done-finsts)
-                  (mv (cons `(local (eval-g-prove-f-i 
+                  (mv (cons `(local (eval-g-prove-f-i
                                      ,(incat 'gl-thm::foo
                                              (symbol-name eval)
                                              "-IS-FUNCTIONAL-INSTANCE-OF-"
@@ -1066,7 +1083,7 @@ Warning: Clock ran out in ~x0~%" ',(gl-fnsym top-fn))
          (cdr alist) eval world done-finsts thms (cons thmbase theory))))))
 
 
-  
+
 (defun correctness-lemmas-for-new-apply1 (alist eval world
                                                 done-finsts thms theory)
   (if (atom alist)
@@ -1194,7 +1211,7 @@ Warning: Clock ran out in ~x0~%" ',(gl-fnsym top-fn))
              `(in-theory (disable ,thmname))
              `(table preferred-defs ',fn ',thmname)
              (make-unnorm-preferred-defs1 (cdr fns) world)))))
-           
+
 
 (defun make-unnorm-preferred-defs (fns world)
   `(progn . ,(make-unnorm-preferred-defs1 fns world)))
@@ -1255,8 +1272,8 @@ Warning: Clock ran out in ~x0~%" ',(gl-fnsym top-fn))
        (make-event (gify-fns-and-deps ',new-fns (w state)))
        (make-event (flagify-g-fns-and-deps ',new-fns (w state)))
 
-       
-       
+
+
        ;; (make-event (gobjectp-fns-and-deps ',new-fns (w state)))
        (make-event (g-guards-fns-and-deps ',new-fns (w state)))
 

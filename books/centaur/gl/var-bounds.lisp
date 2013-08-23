@@ -1,6 +1,27 @@
+; GL - A Symbolic Simulation Framework for ACL2
+; Copyright (C) 2008-2013 Centaur Technology
+;
+; Contact:
+;   Centaur Technology Formal Verification Group
+;   7600-C N. Capital of Texas Highway, Suite 300, Austin, TX 78731, USA.
+;   http://www.centtech.com/
+;
+; This program is free software; you can redistribute it and/or modify it under
+; the terms of the GNU General Public License as published by the Free Software
+; Foundation; either version 2 of the License, or (at your option) any later
+; version.  This program is distributed in the hope that it will be useful but
+; WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+; FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
+; more details.  You should have received a copy of the GNU General Public
+; License along with this program; if not, write to the Free Software
+; Foundation, Inc., 51 Franklin Street, Suite 500, Boston, MA 02110-1335, USA.
+;
+; tutorial.lisp
+;
+; Original authors: Sol Swords <sswords@centtech.com>
+;                   Jared Davis <jared@centtech.com>
 
 (in-package "GL")
-
 (include-book "gtypes")
 (include-book "bvar-db")
 (include-book "param")
@@ -39,7 +60,7 @@
                   `(:expand (,(cadar (last clause))))))))
 
   (defcong acl2::nat-equiv equal (bfr-vars-bounded n x) 1
-    :hints(("Goal" 
+    :hints(("Goal"
             :use ((:instance bfr-vars-bounded-necc
                    (m (bfr-vars-bounded-witness acl2::n-equiv x)))
                   (:instance bfr-vars-bounded-necc
@@ -118,7 +139,7 @@
                   `(:expand (,(cadar (last clause))))))))
 
   (defcong acl2::nat-equiv equal (pbfr-vars-bounded n p x) 1
-    :hints(("Goal" 
+    :hints(("Goal"
             :use ((:instance pbfr-vars-bounded-necc
                    (m (pbfr-vars-bounded-witness acl2::n-equiv p x)))
                   (:instance pbfr-vars-bounded-necc
@@ -535,7 +556,7 @@
                          (gobj-vars-bounded k p y))))
     :hints(("Goal" :in-theory (enable g-keyword-symbolp))))
 
-  
+
 
   (defthm gobj-vars-bounded-of-g-apply
     (equal (gobj-vars-bounded k p (g-apply fn args))
@@ -565,7 +586,7 @@
   (defthm gobj-vars-bounded-of-g-var
     (equal (gobj-vars-bounded k p (g-var val)) t))
 
-  
+
   (defthm gobj-vars-bounded-when-g-concrete
     (implies (equal (tag x) :g-concrete)
              (equal (gobj-vars-bounded k p x) t))
@@ -579,7 +600,7 @@
     :rule-classes ((:rewrite :backchain-limit-lst 0))))
 
 (defsection gobj-vars-bounded-of-gobj-to-param-space
-  
+
   (defthmd pbfr-list-vars-bounded-of-boolean-list
     (implies (boolean-listp x)
              (pbfr-list-vars-bounded k p x))

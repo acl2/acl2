@@ -1,4 +1,5 @@
-; Copyright (C) 2013 Centaur Technology
+; GL - A Symbolic Simulation Framework for ACL2
+; Copyright (C) 2008-2013 Centaur Technology
 ;
 ; Contact:
 ;   Centaur Technology Formal Verification Group

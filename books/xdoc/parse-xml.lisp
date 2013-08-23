@@ -33,13 +33,17 @@
 ; X should be an XML-formatted string (with no preprocessor stuff).  We break
 ; it into a list of tokens, which may be any of the following:
 ;
-;    (:OPEN STR ALIST) represents <tag [... atts ...]>
+;    (:OPEN STR ALIST LOC) represents <tag [... atts ...]>
 ;
 ;       - STR is a string that is the tag name, e.g., "p" for <p>
 ;
 ;       - ALIST is an alist of the attribute.  Each entry is either:
 ;            (KEY-STR . VAL-STR)   for ordinary key="val" style atts
 ;            (KEY-STR . NIL)       for value-free atts like <hr noshade>
+;
+;       - LOC is semantically irrelevant.  It's the location of this
+;         open token in the string, which can be useful for better
+;         error messages about unbalanced strings.
 ;
 ;    (:CLOSE STR) represents </tag>
 ;
@@ -227,7 +231,7 @@
         (read-tag-attributes x n xl tag-start-n nil))
        ((when err)
         (mv err n nil))
-       (open (list :OPEN name (reverse atts)))
+       (open (list :OPEN name (reverse atts) tag-start-n))
        ((when (not closep))
         (mv nil n (list open)))
        (close (list :CLOSE name)))
@@ -292,6 +296,7 @@
 (defun opentok-p (x) (eq (first x) :OPEN))
 (defun opentok-name (x) (second x))
 (defun opentok-atts (x) (third x))
+(defun opentok-loc (x) (fourth x))
 
 (defun closetok-p (x) (eq (first x) :CLOSE))
 (defun closetok-name (x) (second x))
@@ -344,24 +349,50 @@
     (str::cat (flatten-token-for-errormsg (car x))
               (flatten-tokens-for-errormsg (cdr x)))))
 
+
+(defun nearby-text (index str)
+  (let* ((strlen (length str))
+         (start index)
+         (stop   (min strlen (+ index 60))))
+    (concatenate 'string
+                 (substitute #\Space #\Newline (subseq str start stop))
+                 (if (equal stop strlen) "" "..."))))
+
+(defun open-tag-backtrace-entry (orig-str open-tok)
+  (declare (type string orig-str))
+  (let* ((n          (opentok-loc open-tok))
+         (name       (opentok-name open-tok))
+         (name-len   (length name))
+         (spaces-len (max 0 (- 6 name-len)))
+         (pad        (coerce (make-list spaces-len :initial-element #\Space) 'string))
+         (nearby     (nearby-text n orig-str)))
+    (concatenate 'string "   <" name "> " pad nearby *nls*)))
+
+(defun open-tags-backtrace (orig-str open-tags)
+  (if (atom open-tags)
+      ""
+    (concatenate 'string
+                 (open-tag-backtrace-entry orig-str (car open-tags))
+                 (open-tags-backtrace orig-str (cdr open-tags)))))
+
 (defun find-tag-imbalance (x open-tags loc)
-  "Returns (MV ERROR/NIL LOC/NIL)"
+  "Returns (MV ERROR/NIL LOC/NIL STILL-OPEN-TAGS/NIL)"
   (b* (((when (atom x))
-        (mv (if open-tags
-                (str::cat (opentok-name (car open-tags)) " tag is never closed.")
-              nil)
-            nil))
+        (if open-tags
+            (mv (str::cat (opentok-name (car open-tags)) " tag is never closed.")
+                nil open-tags)
+          (mv nil nil nil)))
        ((when (opentok-p (car x)))
         (find-tag-imbalance (cdr x) (cons (car x) open-tags) (+ 1 loc)))
        ((when (closetok-p (car x)))
         (b* ((close-name (closetok-name (car x)))
              ((unless (consp open-tags))
               (mv (str::cat "Found </" close-name "> with no matching opening tag.")
-                  loc))
+                  loc open-tags))
              (open-name (opentok-name (car open-tags)))
              ((unless (equal close-name open-name))
               (mv (str::cat "Found <" open-name "> with mismatched </" close-name ">.")
-                  loc)))
+                  loc open-tags)))
           (find-tag-imbalance (cdr x) (cdr open-tags) (+ 1 loc)))))
     (find-tag-imbalance (cdr x) open-tags (+ 1 loc))))
 
@@ -371,7 +402,7 @@
        ((when err)
         (mv err nil))
        (tokens (reverse rtokens))
-       ((mv err loc) (find-tag-imbalance tokens nil 0))
+       ((mv err loc open-tags) (find-tag-imbalance tokens nil 0))
        ((when err)
         (b* (((when (not loc))
               (mv err nil))
@@ -379,7 +410,10 @@
              (start-ctx (nthcdr back-one tokens))
              (context   (take (min 8 (len start-ctx)) start-ctx))
              (nearby    (flatten-tokens-for-errormsg context)))
-          (mv (str::cat err "
-Nearby text: {" nearby "}" *nls*)
+          (mv (str::cat err *nls* "Nearby text: {" nearby "}" *nls* *nls*
+                        (if open-tags
+                            (concatenate 'string "Open tags stack:" *nls*
+                                         (open-tags-backtrace x (reverse open-tags)))
+                          ""))
               nil))))
     (mv err tokens)))

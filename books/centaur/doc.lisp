@@ -411,6 +411,7 @@ functions.")
           (change-parents-fn ',name ',new-parents
                              (get-xdoc-table world))))
 
+
 #!XDOC
 (defun force-root-parents (all-topics)
   ;; Assumes the topics have been normalized.
@@ -672,6 +673,8 @@ functions.")
 
 (local (xdoc::fix-the-hierarchy))
 
+(local (deflabel doc-rebuild-label))
+
 (make-event
 ; xdoc::save is an event, so we might have just called it directly.  But for
 ; reasons Jared doesn't understand this is screwing up the extended manual we
@@ -683,3 +686,38 @@ functions.")
                        ;; For classic mode only...
                        :expand-level 2)
            (value `(value-triple :manual))))
+
+(local
+ (defmacro doc-rebuild ()
+
+; It is sometimes useful to make tweaks to the documentation and then quickly
+; be able to see your changes.  This macro can be used to do this, as follows:
+;
+; SETUP:
+;
+;  (ld "doc.lisp")  ;; slow, takes a few minutes to get all the books loaded
+;
+; DEVELOPMENT LOOP: {
+;
+;   1. make documentation changes in new-doc.lsp; e.g., you can add new topics
+;      there with defxdoc, or use commands like change-parents, etc.
+;
+;   2. type (doc-rebuild) to rebuild the manual with your changes; this only
+;      takes 20-30 seconds
+;
+;   3. view your changes, make further edits
+;
+; }
+;
+; Finally, move your changes out of new-doc.lsp and integrate them properly
+; into the other sources, and do a proper build.
+
+   `(er-progn
+     (ubt! 'doc-rebuild-label)
+     (ld ;; newline to fool dependency scanner
+      "new-doc.lsp")
+     (make-event
+      (er-progn (xdoc::save "./manual"
+                            :import nil
+                            :expand-level 2)
+                (value `(value-triple :manual)))))))

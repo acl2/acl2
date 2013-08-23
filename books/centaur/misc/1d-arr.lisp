@@ -49,15 +49,15 @@
         (def-universal-equiv 1d-arr-tmp-list-equiv
           :qvars (i)
           :equiv-terms ((1d-arr-tmp-equiv (nth i x))))
-        
+
         (defcong 1d-arr-tmp-list-equiv 1d-arr-tmp-equiv (nth i x) 2
           :hints(("Goal" :in-theory (e/d (1d-arr-tmp-list-equiv-necc)
                                          (1d-arr-tmp-equiv)))))
-        
+
         (defcong 1d-arr-tmp-list-equiv 1d-arr-tmp-list-equiv (update-nth i v x) 3
           :hints((and stable-under-simplificationp
                       `(:expand (,(car (last clause)))))))
-        
+
         (defcong 1d-arr-tmp-equiv 1d-arr-tmp-list-equiv (update-nth i v x) 2
           :hints((and stable-under-simplificationp
                       `(:expand (,(car (last clause)))))))
@@ -203,12 +203,13 @@
   :short "Defines a stobj containing an array of objects of a certain type, and
 a convenient abstraction so that logically operations on it are just list
 manipulations"
-  :long "
- <p>Def-1d-arr produces an abstract stobj whose accessors/updaters are
+
+  :long "<p>Def-1d-arr produces an abstract stobj whose accessors/updaters are
 list operations in the logic, but use fast array accesses to execute.</p>
 
 <h2>Usage</h2>
-<p>Example:
+
+<p>Example:</p>
 @({
  (def-1d-arr :arrname swidgarr
       :slotname swidg
@@ -219,11 +220,13 @@ list operations in the logic, but use fast array accesses to execute.</p>
       :pkg-sym xdoc::asdfs)
 })
 
-The possible arguments are as follows:
+<p>The possible arguments are as follows:</p>
 <ul>
+
  <li>@(':arrname') is the name of the abstract stobj that will be produced.  It
   defaults to @('<slotname>arr'), and @(':slotname') must be provided if
   @(':arrname') is not.</li>
+
  <li>@(':slotname') is the base for the names of the accessor functions.  It
   defaults to @('<arrname>val').  In this case, with slotname @('swidg'), the
   accessor functions will be:
@@ -233,25 +236,27 @@ The possible arguments are as follows:
    <li>@('set-swidg')</li>
    <li>@('resize-swidgs')</li>
   </ul></li>
+
  <li>@(':pred') is a predicate recognizing elements of the desired type.  It
   defaults to @('nil'), in which case any object is accepted.</li>
+
  <li>@(':fix') is a fixing function of the desired type.  This may only be
 supplied if @(':pred') is also given.  When the fixing function is supplied,
 the logical definition of e.g. @('get-swidg') is @('(swidg-fix (nth i
 swidgarr))'), which makes it trivial to show that array accesses always produce
 elements of the correct type.</li>
+
   <li>@(':type-decl') is the type declaration that will be put on the base
 stobj, primarily affecting performance.</li>
+
   <li>@(':default-val') gives the default array element for resizing (the
    @(':initially') argument to the stobj).</li>
+
   <li>@(':pkg-sym'), if given, determines the package in which any newly
 created symbols will be interned.  If not given, @(':arrname') or
 @(':slotname') are used instead.</li>
-</ul>
 
-</p>
-
-")
+</ul>")
 
 
 (deffunmac def-1d-arr (&key arrname
@@ -295,7 +300,7 @@ created symbols will be interned.  If not given, @(':arrname') or
       tmpl)))
 
 
-                              
+
 
 
 

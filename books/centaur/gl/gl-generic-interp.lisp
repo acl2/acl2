@@ -1,24 +1,39 @@
+; GL - A Symbolic Simulation Framework for ACL2
+; Copyright (C) 2008-2013 Centaur Technology
+;
+; Contact:
+;   Centaur Technology Formal Verification Group
+;   7600-C N. Capital of Texas Highway, Suite 300, Austin, TX 78731, USA.
+;   http://www.centtech.com/
+;
+; This program is free software; you can redistribute it and/or modify it under
+; the terms of the GNU General Public License as published by the Free Software
+; Foundation; either version 2 of the License, or (at your option) any later
+; version.  This program is distributed in the hope that it will be useful but
+; WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+; FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
+; more details.  You should have received a copy of the GNU General Public
+; License along with this program; if not, write to the Free Software
+; Foundation, Inc., 51 Franklin Street, Suite 500, Boston, MA 02110-1335, USA.
+;
+; Original author: Sol Swords <sswords@centtech.com>
 
 (in-package "GL")
-
 (include-book "gl-generic-interp-defs")
-
 (include-book "misc/untranslate-patterns" :dir :system)
-(local (include-book "data-structures/no-duplicates" :dir :system))
 (include-book "clause-processors/use-by-hint" :dir :system)
 (include-book "clause-processors/decomp-hint" :dir :system)
 (include-book "centaur/misc/interp-function-lookup" :dir :system)
 (include-book "var-bounds")
+(local (include-book "data-structures/no-duplicates" :dir :system))
 (local (include-book "general-object-thms"))
 (local (include-book "tools/with-quoted-forms" :dir :system))
 (local (include-book "hyp-fix-logic"))
-(local (in-theory (disable* sets::double-containment
-                            w)))
 (local (include-book "std/lists/acl2-count" :dir :system))
 (local (include-book "clause-processors/find-matching" :dir :system))
 (local (include-book "clause-processors/just-expand" :dir :system))
 (local (include-book "arithmetic/top-with-meta" :dir :system))
-
+(local (in-theory (disable* sets::double-containment w)))
 
 (flag::make-flag sublis-into-term-flg sublis-into-term)
 
@@ -373,7 +388,7 @@
    ;;   (equal (glcp-generic-apply-concrete-guard-wrapper fn actuals state)
    ;;          (glcp-generic-apply-concrete fn actuals state)))
 
-   ;; (in-theory (disable univ-run-gified-guard-wrapper 
+   ;; (in-theory (disable univ-run-gified-guard-wrapper
    ;;                     ;; glcp-generic-apply-concrete-guard-wrapper
    ;;                     ))
    ))
@@ -410,7 +425,7 @@
 
 (local (in-theory (disable* general-concretep-def acl2-count
 ;                            sets::double-containment
-                            integer-abs 
+                            integer-abs
 ;                            sets::nonempty-means-set
                             equal-of-booleans-rewrite
                             put-global
@@ -472,7 +487,7 @@
             (cons (cons k (glcp-generic-geval v env))
                   (glcp-generic-geval-alist al env))))))
 
-           
+
 
 
 
@@ -562,7 +577,7 @@
       (equal (alistp alist1)
              (or (not ok) (alistp alist)))))
 
-    
+
   (defthm glcp-unify-concrete-preserves-all-keys-bound
     (b* (((mv ok alist1) (glcp-unify-concrete pat x alist)))
       (implies (and ok (all-keys-bound keys alist))
@@ -686,7 +701,7 @@
       :hints ('(:in-theory (enable all-keys-bound)
                 :expand ((:free (x) (glcp-unify-term/gobj-list pat x alist)))))
       :flag list))
-    
+
   (defthm glcp-unify-term/gobj-preserves-all-keys-bound
     (b* (((mv ok alist1) (glcp-unify-term/gobj pat x alist)))
       (implies (and ok (all-keys-bound keys alist))
@@ -923,7 +938,7 @@
 ;;          :exec (cadr rune)))
 
 ;;   (local (in-theory (enable rune->thmname)))
-  
+
 ;;   (defthm symbolp-of-rune->thmname
 ;;     (symbolp (rune->thmname rune))))
 
@@ -948,7 +963,7 @@
                     (equal (w state) (w st)))
                (glcp-generic-geval-ev hyp (glcp-generic-geval-alist bindings env))))))
 
-    
+
 
 (defsection gl-term-to-apply-obj
   (local (defthm assoc-is-hons-assoc
@@ -1212,7 +1227,7 @@
             (cdar list) basename keys (caar list))
           (interp-thm-body-calls (cdr list) basename keys))))
 
-    
+
 
 (defun def-glcp-interp-thm-fn (basename keys)
   (declare (xargs :mode :program))
@@ -1286,7 +1301,7 @@
                            rune hyp bindings pathcond clk obligs config bvar-db st))))
        :flag hyp)
      :skip-others t)))
-   
+
 
    ;; (defthm-glcp-generic-interp-flg
    ;;   (defthm gobjectp-glcp-generic-interp-term
@@ -1379,7 +1394,7 @@
     (implies (and (pseudo-termp x)
                   (consp (car x)))
              (pseudo-termp (caddar x))))
-  
+
   (defthm pseudo-termp-car-last-of-pseudo-term-listp
     (implies (pseudo-term-listp x)
              (pseudo-termp (car (last x))))
@@ -1395,7 +1410,7 @@
 
 
 (encapsulate nil
-  (local (in-theory (disable 
+  (local (in-theory (disable
                      sets::sets-are-true-lists
                      pseudo-term-listp
                      (:t hyp-fix)
@@ -1497,12 +1512,12 @@
                               symbol-listp
                               hyp-fix-of-hyp-fixedp
                               state-p-implies-and-forward-to-state-p1
-                              
+
                               (:rules-of-class :type-prescription :here))))
   (def-glcp-interp-thm glcp-generic-interp-state-p1-preserved
     :body (implies (state-p1 st)
                    (state-p1 state1))
-    
+
     :expand-calls t))
 
 
@@ -1643,7 +1658,7 @@
                                    (acl2::beta-eval-list
                                     glcp-generic-geval-ev-lst))))
                     :in-theory (enable glcp-generic-geval-ev-of-fncall-args)))))
-                                   
+
 
   (defthmd rewrite-rule-term-alt-def
     (equal (acl2::rewrite-rule-term x)
@@ -1671,7 +1686,7 @@
                                     (atom x)
                                   (and (consp x)
                                        (equal (len (cdr x)) (1- n)))))))))
-                               
+
 
 
   (defthm glcp-branch-merge-formula-to-rule-correct
@@ -1880,7 +1895,7 @@
                        nil))
            ((when ok) t))
         (find-bad-obligs-lit (cdr clause)))))
-                       
+
   (def-glcp-interp-thm glcp-generic-interp-bad-obligs
     :hyps (and ;; (syntaxp ((lambda (mfc state)
                ;;             (find-bad-obligs-lit (mfc-clause mfc)))
@@ -1920,7 +1935,7 @@
 
 
 
-  
+
 
   (defthm glcp-generic-obligs-okp-final-implies-start
     (implies (and (glcp-generic-geval-ev-theoremp
@@ -1998,8 +2013,8 @@
 ;;                     (glcp-generic-geval-ev
 ;;                      (cons fn (kwote-lst (glcp-generic-geval actuals env)))
 ;;                      nil))))
-;;   :hints (("goal" 
-                
+;;   :hints (("goal"
+
 
 
 (local (defthm true-listp-cdr-when-pseudo-termp
@@ -2203,7 +2218,7 @@
                              ; acl2::nfix-when-not-natp
                              acl2::cancel_times-equal-correct
                              acl2::cancel_plus-equal-correct)))
-  
+
   (defthm base-bvar-of-maybe-add-equiv-term
     (equal (base-bvar$a (maybe-add-equiv-term test-obj bvar bvar-db state))
            (base-bvar$a bvar-db))
@@ -2265,7 +2280,7 @@
     :body (equal (glcp-generic-bvar-db-env-ok bvar-db1 p bound env)
                  (glcp-generic-bvar-db-env-ok bvar-db p bound env))
     :expand-calls t)
- 
+
   (def-ruleset! env-ok-preserved-rules
     (set-difference-theories
      (current-theory :here)
@@ -2348,12 +2363,12 @@
              :expand ((glcp-generic-eval-context-equiv* '(iff) a b)
                       (glcp-generic-eval-context-equiv* '(iff) a nil)
                       (glcp-generic-eval-context-equiv* '(iff) nil b))))))
-  
 
 
 
 
-       
+
+
 
 (defthm glcp-generic-eval-context-equiv-of-rewrites
   (implies (and (glcp-generic-geval-ev-theoremp (acl2::rewrite-rule-term rule))
@@ -2395,7 +2410,7 @@
     :hints (("goal" :use ((:instance glcp-generic-eval-context-equiv*-suff
                            (chain (list x y))))
              :in-theory (disable glcp-generic-eval-context-equiv*-suff))))
-  
+
   (local (in-theory (enable glcp-generic-eval-context-equiv*-when-equiv)))
 
   (defthm glcp-generic-eval-context-equiv*-of-rewrites
@@ -2497,7 +2512,7 @@
                 contexts
                 (glcp-generic-geval replacement env)
                 (glcp-generic-geval x env))))
-    :hints (("goal" 
+    :hints (("goal"
              :in-theory (e/d (glcp-generic-eval-context-equiv*-when-equiv)
                              (check-equiv-replacement)))))
 
@@ -2664,7 +2679,7 @@
             (equal (len (general-concrete-obj-list x))
                    (len x))
             :hints(("Goal" :in-theory (enable general-concrete-obj-list len)))))
-   
+
    (local (defthmd glcp-generic-geval-of-consp
             (implies (and (NOT (EQUAL (TAG X) :G-BOOLEAN))
                           (NOT (EQUAL (TAG X) :G-NUMBER))
@@ -2771,7 +2786,7 @@
                       glcp-or-test-contexts)))
 
    (local (in-theory (enable* env-ok-special-rules)))
-   
+
    (def-glcp-interp-thm glcp-generic-interp-correct
      :hyps (and (bfr-eval pathcond (car env))
                 (not erp)
@@ -2937,7 +2952,7 @@
                                             glcp-generic-geval-ev-of-quote
                                             hyp-fix-bfr-not
                                             acl2::expand-marked-meta)))))
-      
+
 
       (fncall-ifs :body (implies (and (symbolp fn)
                                       (not (eq fn 'quote))
@@ -3353,7 +3368,7 @@
      (test-simp :body (implies (gobj-vars-bounded k p test-obj)
                                (and (pbfr-vars-bounded k p val)
                                     (bvar-db-vars-bounded k p nn bvar-db1))))
-     
+
 
      (fncall-ifs :body (implies (gobj-list-vars-bounded k p actuals)
                                 (and (gobj-vars-bounded k p val)
@@ -3413,7 +3428,7 @@
   :hints (("goal" :in-theory (enable gobj-vars-bounded-in-terms-of-witness
                                      gobj-list-vars-bounded-in-terms-of-witness
                                      gobj-alist-vars-bounded-in-terms-of-witness))))
-  
+
 
 (encapsulate nil
   (local (in-theory (disable pseudo-termp
@@ -3438,7 +3453,7 @@
     (implies (pbfr-vars-bounded k p x)
              (pbfr-vars-bounded k p (bfr-not x)))
     :hints (("goal" :expand ((pbfr-vars-bounded k p (bfr-not x))))))
-    
+
   (local (defthmd gobj-vars-bounded-when-gobject-hierarchy-lite
            (implies (gobject-hierarchy-lite x)
                     (gobj-vars-bounded k p x))
@@ -3551,7 +3566,7 @@
        (bfr-env (bvar-db-fix-env n min bvar-db p bfr-env var-env))
        (term (get-bvar->term n bvar-db))
        (val (glcp-generic-geval term (cons bfr-env var-env))))
-    (bfr-param-env p 
+    (bfr-param-env p
                    (bfr-set-var n val (bfr-unparam-env p bfr-env)))))
 
 (defthm bvar-db-fix-env-eval-p-lemma
@@ -4047,7 +4062,7 @@
 ;; with the bvar-db, satisfies (the self-parameterization of) H, and does not satisfy C.
 
 ;; Now assume we have a counterexample to the original hyp => concl.  We want
-;; to construct an env from this that contradicts our proof.  
+;; to construct an env from this that contradicts our proof.
 
 
 
@@ -4295,7 +4310,7 @@
                (glcp-generic-bvar-db-env-ok
                 bvar-db1 p (next-bvar$a bvar-db1) (cons bfr-env1 var-env))))
     :hints(("Goal" :in-theory (disable glcp-generic-interp-top-level-term)))))
-                  
+
 
 
 
@@ -4412,7 +4427,7 @@
              (equal (parametrize-bvar-db p bvar-db bvar-db1)
                     (parametrize-bvar-db p bvar-db nil))))
 
-  (defthm base-bvar-of-parametrize-bvar-db       
+  (defthm base-bvar-of-parametrize-bvar-db
     (equal (base-bvar$a (parametrize-bvar-db p bvar-db bvar-db1))
            (base-bvar$a bvar-db)))
 
@@ -4814,7 +4829,7 @@
        (bfr-env1 (bvar-db-fix-env (next-bvar bvar-db1)
                                   next-bvar bvar-db1 t
                                   (car env) (cdr env)))
-       ((unless (glcp-generic-geval-ev 
+       ((unless (glcp-generic-geval-ev
                  hyp (glcp-generic-geval-alist alist env)))
         bfr-env1)
        ((mv ?er ?obligs ?concl-bfr bvar-db state)

@@ -1,6 +1,24 @@
+; GL - A Symbolic Simulation Framework for ACL2
+; Copyright (C) 2008-2013 Centaur Technology
+;
+; Contact:
+;   Centaur Technology Formal Verification Group
+;   7600-C N. Capital of Texas Highway, Suite 300, Austin, TX 78731, USA.
+;   http://www.centtech.com/
+;
+; This program is free software; you can redistribute it and/or modify it under
+; the terms of the GNU General Public License as published by the Free Software
+; Foundation; either version 2 of the License, or (at your option) any later
+; version.  This program is distributed in the hope that it will be useful but
+; WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+; FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
+; more details.  You should have received a copy of the GNU General Public
+; License along with this program; if not, write to the Free Software
+; Foundation, Inc., 51 Franklin Street, Suite 500, Boston, MA 02110-1335, USA.
+;
+; Original author: Sol Swords <sswords@centtech.com>
 
 (in-package "GL")
-
 (include-book "bvar-db")
 (include-book "cutil/defaggregate" :dir :system)
 (include-book "clause-processors/meta-extract-user" :dir :system)
@@ -293,7 +311,7 @@
             (if err
                 (mv err nil)
               (mv nil val)))))
-       
+
        ;; Var: untyped variable.
        ((g-var name)   (mv nil (cdr (het name (cdr env)))))
 
@@ -368,7 +386,7 @@
        ((er aa) (acl2::translate a t t t ctx (w state) state))
        ((er bb) (acl2::translate b t t t ctx (w state) state)))
     (value (list aa bb))))
-       
+
 (defun translate-pair-list (pairs ctx state)
   (declare (xargs :stobjs state :mode :program))
   (b* (((when (atom pairs)) (value nil))
@@ -406,7 +424,7 @@
 <p>Example:</p>
 @({
  (gl::def-glcp-ctrex-rewrite
-   ((logbitp n x) t)         
+   ((logbitp n x) t)
    (x (logior (ash 1 n) x))
    :test (quotep n))
 })
@@ -690,7 +708,7 @@ but they can cause generated counterexamples to be nonsense.  Be careful!</p>"
             (if (eq ev-err t) "T" ev-err))
         (glcp-ctrex-update-assigns (cdr pairs) var-alist state)))
     (glcp-ctrex-update-assigns (cdr pairs) (hons-acons lhs rhs-val var-alist) state)))
-       
+
 
 (local (in-theory (enable* acl2::arith-equiv-forwarding)))
 ;; Iterates up the bvar-db list chronologically, given a counterexample
@@ -863,11 +881,11 @@ but they can cause generated counterexamples to be nonsense.  Be careful!</p>"
                 (cw "Example ~x2, ~@0~%Assignment:~%~x1~%~%" string bindings n)
               (cw "Example ~x3, ~@0~%Template:~%~x1~%Assignment:~%~x2~%~%" string assign-spec-alist
                   bindings n)))
-         
+
          ((unless (and execp (consp env)))
           (glcp-pretty-print-assignments (1+ n) (cdr ctrexes) concl execp param-bfr
                                      bvar-db state))
-         
+
          (unparam-env (bfr-unparam-env param-bfr (car env)))
          ((acl2::with-fast unparam-env))
          (bvar-db-violations (glcp-ctrex-check-bvar-db
@@ -877,9 +895,9 @@ but they can cause generated counterexamples to be nonsense.  Be careful!</p>"
                  ;; bozo make error message better
                  (not (cw "Some IF test terms were assigned inconsistent values:~%"))
                  (glcp-pretty-print-bvar-db-violations bvar-db-violations)))
-         (- (cw "Running conclusion:~%"))
+         (- (cw "Running conclusion to verify the counterexample.~%"))
          ;; ((acl2::cmp concl-term)
-         ;;  (acl2::translate-cmp 
+         ;;  (acl2::translate-cmp
          ;;   concl t t t 'glcp-print-ctrexamples (w state)
          ;;   (default-state-vars state)))
 
@@ -889,17 +907,20 @@ but they can cause generated counterexamples to be nonsense.  Be careful!</p>"
          (alist (pairlis$ (acl2::alist-keys assign-alist)
                           (acl2::alist-keys (acl2::alist-vals assign-alist))))
          ((mv err val)
-          (ec-call (acl2::magic-ev concl alist state t t))))
-      (if err
-          (progn$
-           (cw "Failed to execute the counterexample: ~@0~%"
-               (if (eq err t) "(t)" err))
-           (cw "Trying to logically simulate it...~%")
-           (b* (((mv err val) (ec-call (magicer-ev concl alist 10000 state t t)))
-                ((when err) (cw "...failed: ~@0~%"
-                                err)))
-             (cw "Result: ~x0~%~%" val)))
-        (cw "Result: ~x0~%~%" val))
+          (ec-call (acl2::magic-ev concl alist state t t)))
+         ((mv err val)
+          (if (not err)
+              (mv err val)
+            (progn$
+             (cw "Failed to execute the counterexample: ~@0~%"
+                 (if (eq err t) "(t)" err))
+             (cw "Trying to logically simulate it...~%")
+             (ec-call (magicer-ev concl alist 10000 state t t)))))
+         ((when err) (cw "Evaluating the counterexample failed: ~@0~%"
+                         (if (eq err t) "(t)" err))))
+      (if val
+          (cw "False counterexample!  See :xdoc gl::false-counterexamples.~%")
+        (cw "Counterexample verified.~%"))
       (glcp-pretty-print-assignments (1+ n) (cdr ctrexes) concl execp param-bfr
                                      bvar-db state))))
 
@@ -930,7 +951,7 @@ class:~%~%" (len ctrexes))))))
   (b* (((glcp-config config) config)
        (state (acl2::f-put-global 'glcp-var-bindings config.shape-spec-alist state))
        (state (acl2::f-put-global 'glcp-counterex ctrex-info state))
-       ((er ctrexes) (glcp-gen-ctrexes ctrex-info 
+       ((er ctrexes) (glcp-gen-ctrexes ctrex-info
                                        config.shape-spec-alist
                                        config.param-bfr
                                        config.nexamples

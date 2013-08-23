@@ -1,3 +1,22 @@
+; GL - A Symbolic Simulation Framework for ACL2
+; Copyright (C) 2008-2013 Centaur Technology
+;
+; Contact:
+;   Centaur Technology Formal Verification Group
+;   7600-C N. Capital of Texas Highway, Suite 300, Austin, TX 78731, USA.
+;   http://www.centtech.com/
+;
+; This program is free software; you can redistribute it and/or modify it under
+; the terms of the GNU General Public License as published by the Free Software
+; Foundation; either version 2 of the License, or (at your option) any later
+; version.  This program is distributed in the hope that it will be useful but
+; WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+; FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
+; more details.  You should have received a copy of the GNU General Public
+; License along with this program; if not, write to the Free Software
+; Foundation, Inc., 51 Franklin Street, Suite 500, Boston, MA 02110-1335, USA.
+;
+; Original author: Sol Swords <sswords@centtech.com>
 
 (in-package "GL")
 
@@ -19,7 +38,7 @@
          (not (g-var-p x))
          (list (concrete-gobjectp-ind (car x))
                (concrete-gobjectp-ind (cdr x))))))
-    
+
 
 (defthm gobject-hierarchy-lite-possibilities
   (or (equal (gobject-hierarchy-lite x) nil)
@@ -162,7 +181,7 @@
     (implies (syntaxp (not (equal rnum ''0)))
              (equal (components-to-number rnum 0    inum iden)
                     (components-to-number 0    1    inum iden))))
-  
+
   (defthm components-to-number-alt-def
     (equal (components-to-number rnum rden inum iden)
            (complex (* rnum (/ rden))
@@ -197,12 +216,12 @@
 ;;   (equal (generic-geval (gobj-fix x) env)
 ;;          (generic-geval x env))
 ;;   :hints(("Goal" :in-theory (enable gobj-fix))))
-                         
+
 
 
 (encapsulate nil
   (local (include-book "arithmetic/top-with-meta" :dir :system))
-  (local (in-theory 
+  (local (in-theory
           (e/d*
            (boolean-list-bfr-eval-list)
            (generic-geval mk-g-number
@@ -313,7 +332,7 @@
                       (gobj-depends-on k p
                        (components-to-number-fn a b c d)))
                      (mk-g-number-fn rnum rden inum iden))))))
-                  
+
 
 
 
@@ -574,7 +593,7 @@
                               (not (gobj-depends-on k p y))))))
     :hints(("Goal" :in-theory (enable g-keyword-symbolp))))
 
-  
+
 
   (defthm gobj-depends-on-of-g-apply
     (equal (gobj-depends-on k p (g-apply fn args))
@@ -604,7 +623,7 @@
   (defthm gobj-depends-on-of-g-var
     (equal (gobj-depends-on k p (g-var val)) nil))
 
-  
+
   (defthm gobj-depends-on-when-g-concrete
     (implies (equal (tag x) :g-concrete)
              (equal (gobj-depends-on k p x) nil))

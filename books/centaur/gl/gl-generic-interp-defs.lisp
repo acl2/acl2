@@ -1,19 +1,36 @@
+; GL - A Symbolic Simulation Framework for ACL2
+; Copyright (C) 2008-2013 Centaur Technology
+;
+; Contact:
+;   Centaur Technology Formal Verification Group
+;   7600-C N. Capital of Texas Highway, Suite 300, Austin, TX 78731, USA.
+;   http://www.centtech.com/
+;
+; This program is free software; you can redistribute it and/or modify it under
+; the terms of the GNU General Public License as published by the Free Software
+; Foundation; either version 2 of the License, or (at your option) any later
+; version.  This program is distributed in the hope that it will be useful but
+; WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+; FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
+; more details.  You should have received a copy of the GNU General Public
+; License along with this program; if not, write to the Free Software
+; Foundation, Inc., 51 Franklin Street, Suite 500, Boston, MA 02110-1335, USA.
+;
+; Original author: Sol Swords <sswords@centtech.com>
 
 (in-package "GL")
-
-
 (include-book "ite-merge")
 (include-book "gtests")
 (include-book "glcp-templates")
 (include-book "shape-spec-defs")
 (include-book "symbolic-arithmetic-fns")
-(include-book "centaur/misc/rewrite-rule" :dir :system)
 (include-book "param")
 (include-book "bfr-sat")
 (include-book "glcp-config")
-(include-book "centaur/misc/beta-reduce-full" :dir :system)
 (include-book "gl-mbe")
 (include-book "split-args")
+(include-book "centaur/misc/rewrite-rule" :dir :system)
+(include-book "centaur/misc/beta-reduce-full" :dir :system)
 
 (defmacro glcp-value (res)
   `(mv nil obligs ,res bvar-db state))
@@ -49,7 +66,7 @@
   (declare (xargs :guard t)
            (ignore test then else))
   nil)
-                  
+
 
 (defmacro glcp-if (test then else &key report)
   `(b* ((hyp pathcond)
@@ -177,7 +194,7 @@
       PLUSP MINUSP LISTP ;; RETURN-LAST causes guard violation
       ;; FORCE CASE-SPLIT
       ;; DOUBLE-REWRITE
-      
+
       ;; used for shape specs
       acl2::logapp int-set-sign maybe-integer
 
@@ -252,7 +269,7 @@
     (implies (not (gobj-list-depends-on k p actuals))
              (not (gobj-depends-on k p (mv-nth 1 (glcp-generic-run-gified
                                                   fn actuals hyp clk config bvar-db state))))))
-                  
+
 
   ;; (defthm true-listp-glcp-generic-run-gified
   ;;   (true-listp (glcp-generic-run-gified fn actuals hyp clk config bvar-db state)))
@@ -476,7 +493,7 @@
                   :guard (and (consp hyp)
                               (pseudo-termp hyp))))
   (b* ((args (cdr hyp))
-       ((unless #!acl2 (and 
+       ((unless #!acl2 (and
                         ;; check that synp is defined as expected
                         (fn-check-def 'synp state '(vars form term) ''t)
                         ;; check that all three args are quoted
@@ -548,7 +565,7 @@
     (and (or (symbolp (car x))
              (pseudo-termp (car x)))
          (contextsp (cdr x)))))
-     
+
 
 ;; (defund-nx glcp-generic-eval-context-equivs (contexts x y a)
 ;;   (b* (((when (atom contexts))
@@ -599,7 +616,7 @@
                            ((lambda (x) ,ctx) y))))))
     (or (glcp-generic-geval-ev (list ctx-fn (kwote x) (kwote y)) nil)
         (glcp-generic-eval-context-equiv (cdr contexts) x y))))
-           
+
 
 (defthmd glcp-generic-eval-context-equiv-commute
   (implies (and (proper-contextsp contexts)
@@ -716,7 +733,7 @@
                     (equal (car (append x y))
                            (car x)))))
 
-  
+
   (local (defthm car-rev-when-consp
            (implies (consp x)
                     (equal (car (acl2::rev x))
@@ -933,7 +950,7 @@
                                    (pseudo-termp)))))
 
   (local (in-theory (enable check-equiv-rule-correct)))
-  
+
 
   (defund congruences-find-equiv-rule (congs e w)
     (declare (xargs :guard (and (symbolp e)
@@ -960,7 +977,7 @@
                                    (pseudo-termp
                                     acl2::weak-congruence-rule-p
                                     default-car)))))
-  
+
   (local (in-theory (enable congruences-find-equiv-rule-correct)))
 
   (defund ensure-equiv-relationp (e w)
@@ -1078,7 +1095,7 @@
         (try-equivalences x (cdr bvars) pathcond contexts p bvar-db state)))
     (mv t repl)))
 
-                               
+
 
 (defund try-equivalences-loop (x pathcond contexts clk p bvar-db state)
   (declare (xargs :guard (and (natp clk)
@@ -1249,7 +1266,7 @@
     (glcp-branch-merge-formulas-to-rules thms wrld)))
 
 (memoize 'glcp-get-branch-merge-rules)
-                              
+
 (defun weak-rewrite-rule-listp (x)
   (declare (xargs :guard t))
   (if (atom x)
@@ -1281,7 +1298,7 @@
                               (plist-worldp w))))
   (and flg
        (not (cdr (hons-assoc-equal fn (table-alist 'gl-if-opaque-fns w))))))
-  
+
 
 (defconst *glcp-generic-template-subst*
   '((run-gified . glcp-generic-run-gified)
@@ -1358,7 +1375,7 @@
            (equal (acl2-count (g-concrete x))
                   (+ 1 (acl2-count x)))
            :hints(("Goal" :in-theory (enable g-concrete)))))
-  
+
   (defthmd acl2-count-of-general-consp-car
     (implies (general-consp x)
              (< (acl2-count (general-consp-car x))
@@ -1451,7 +1468,7 @@
                (fbr (car (cdr (cdr (cdr x))))))
            (glcp-generic-interp-if test tbr fbr alist pathcond contexts clk obligs
                                    config bvar-db state)))
-        
+
         ((when (eq (car x) 'gl-aside))
          (if (eql (len x) 2)
              (prog2$ (gl-aside-wormhole (cadr x) alist)
@@ -1608,7 +1625,7 @@ but its arity is ~x3.  Its formal parameters are ~x4."
                                  clk obligs config bvar-db state)))
      (glcp-generic-finish-if test-bfr tbr fbr alist pathcond contexts clk
                              obligs config bvar-db state)))
- 
+
 
  (defun glcp-generic-finish-or (test-bfr then-obj fbr alist pathcond contexts clk obligs
                                          config bvar-db state)
@@ -1622,7 +1639,7 @@ but its arity is ~x3.  Its formal parameters are ~x4."
                          (glcp-config-p config)
                          (acl2::interp-defs-alistp (glcp-config->overrides config)))
              :stobjs (bvar-db state)))
-   
+
    (b* ((hyp pathcond)
         (else-hyp (hf (bfr-not test-bfr)))
         ((glcp-er else)
@@ -1739,9 +1756,9 @@ but its arity is ~x3.  Its formal parameters are ~x4."
                                           (bfr-var bvar)))))
        (& ;; cons
         (glcp-value t)))))
- 
- 
- 
+
+
+
 
  (defun glcp-generic-rewrite (fn actuals rwtype pathcond contexts clk obligs config bvar-db state)
    (declare (xargs :stobjs (bvar-db state)
@@ -1755,7 +1772,7 @@ but its arity is ~x3.  Its formal parameters are ~x4."
                                 (glcp-config->overrides config)))
                    :measure (list (pos-fix clk) 12 0 0))
             (ignorable rwtype))
-   
+
    ;; (mv erp obligs1 successp term bindings bvar-db state)
    (b* ((rules (cdr (hons-assoc-equal fn (table-alist 'gl-rewrite-rules (w state)))))
         ;; or perhaps we should pass the table in the obligs? see if this is
@@ -1765,8 +1782,8 @@ but its arity is ~x3.  Its formal parameters are ~x4."
         (fn-rewrites (getprop fn 'acl2::lemmas nil 'current-acl2-world (w state))))
      (glcp-generic-rewrite-apply-rules
       fn-rewrites rules fn actuals pathcond contexts clk obligs config bvar-db state)))
- 
- 
+
+
  (defun glcp-generic-rewrite-apply-rules
    (fn-rewrites rules fn actuals pathcond contexts clk obligs config bvar-db state)
    (declare (xargs :stobjs (bvar-db state)

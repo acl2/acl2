@@ -1,7 +1,24 @@
-
+; GL - A Symbolic Simulation Framework for ACL2
+; Copyright (C) 2008-2013 Centaur Technology
+;
+; Contact:
+;   Centaur Technology Formal Verification Group
+;   7600-C N. Capital of Texas Highway, Suite 300, Austin, TX 78731, USA.
+;   http://www.centtech.com/
+;
+; This program is free software; you can redistribute it and/or modify it under
+; the terms of the GNU General Public License as published by the Free Software
+; Foundation; either version 2 of the License, or (at your option) any later
+; version.  This program is distributed in the hope that it will be useful but
+; WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+; FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
+; more details.  You should have received a copy of the GNU General Public
+; License along with this program; if not, write to the Free Software
+; Foundation, Inc., 51 Franklin Street, Suite 500, Boston, MA 02110-1335, USA.
+;
+; Original author: Sol Swords <sswords@centtech.com>
 
 (in-package "GL")
-
 (include-book "tools/flag" :dir :system)
 
 (defconst *glcp-common-inputs*
@@ -46,7 +63,7 @@
                                                 bvar-db state)))
         (mv er obligs xobj bvar-db state)))
 
-    
+
 
     (defun interp-term
       (x alist contexts . ,*glcp-common-inputs*)
@@ -112,7 +129,7 @@
                   (tbr (car (cdr (cdr x))))
                   (fbr (car (cdr (cdr (cdr x))))))
               (interp-if/or test tbr fbr alist contexts . ,*glcp-common-inputs*)))
-           
+
            ((when (eq (car x) 'gl-aside))
             (if (eql (len x) 2)
                 (prog2$ (gl-aside-wormhole (cadr x) alist)
@@ -298,7 +315,7 @@ but its arity is ~x3.  Its formal parameters are ~x4."
               (interp-term-equivs
                x alist contexts . ,*glcp-common-inputs*))
           (glcp-value nil))))
-      
+
     (defun interp-or (test fbr alist contexts . ,*glcp-common-inputs*)
       (declare (xargs
                 :measure (list (pos-fix clk) 2020 (+ (acl2-count test)
@@ -429,7 +446,7 @@ but its arity is ~x3.  Its formal parameters are ~x4."
                      (glcp-config->split-fncalls config)
                      (w state)))))
 
-    (defun merge-branch-subterm-lists (test-bfr then else 
+    (defun merge-branch-subterm-lists (test-bfr then else
                                                 . ,*glcp-common-inputs*)
       (declare (xargs :measure (list (pos-fix clk) 1818
                                      (+ (acl2-count then) (acl2-count else))
@@ -550,9 +567,9 @@ but its arity is ~x3.  Its formal parameters are ~x4."
                                   pathcond))))
           (& ;; cons
            (glcp-value t)))))
-    
-    
-    
+
+
+
 
     (defun rewrite (fn actuals rwtype contexts . ,*glcp-common-inputs*)
       (declare (xargs :stobjs (bvar-db state)
@@ -563,7 +580,7 @@ but its arity is ~x3.  Its formal parameters are ~x4."
                                   . ,*glcp-common-guards*)
                       :measure (list (pos-fix clk) 1212 0 0))
                (ignorable rwtype))
-      
+
       ;; (mv erp obligs1 successp term bindings bvar-db state)
       (b* ((rules (cdr (hons-assoc-equal fn (table-alist 'gl-rewrite-rules (w state)))))
            ;; or perhaps we should pass the table in the obligs? see if this is
@@ -573,8 +590,8 @@ but its arity is ~x3.  Its formal parameters are ~x4."
            (fn-rewrites (getprop fn 'acl2::lemmas nil 'current-acl2-world (w state))))
         (rewrite-apply-rules
          fn-rewrites rules fn actuals contexts . ,*glcp-common-inputs*)))
-    
-    
+
+
     (defun rewrite-apply-rules
       (fn-rewrites rules fn actuals contexts . ,*glcp-common-inputs*)
       (declare (xargs :stobjs (bvar-db state)
@@ -763,7 +780,7 @@ but its arity is ~x3.  Its formal parameters are ~x4."
 
 #||
 
-"GL" 
+"GL"
 (trace$ (glcp-rewrite-fncall-apply-rule
          :cond (b* (((rewrite-rule rule) rule)
                     ((unless (eq (cadr rule.rune) 'logand-of-logapp))
@@ -777,7 +794,7 @@ but its arity is ~x3.  Its formal parameters are ~x4."
                     ((mv unify-ok ?gobj-bindings)
                      (glcp-unify-term/gobj-list (cdr rule.lhs) actuals nil)))
                  unify-ok)))
-                    
+
 
 ||#
 
@@ -922,7 +939,7 @@ In ~@0: The conclusion countains the following unbound variables: ~x1~%"
                            (append cases-res-clauses
                                    (list* params-cov-res-clause
                                           params-cov-cov-clause
-                                          (acl2::interp-defs-alist-clauses 
+                                          (acl2::interp-defs-alist-clauses
                                            (flush-hons-get-hash-table-link obligs1)))))))
          ;; No case-splitting.
          (b* (((er (list res-clause cov-clause obligs))

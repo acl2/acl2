@@ -33,7 +33,7 @@
   :parents (acl2::macro-libraries)
   :short "The Centaur Utility Library&mdash;automates defining types,
 introducing typed functions, mapping over lists, and other boilerplate stuff,
-with good integration with the @(see std) libraries."
+with good integration with the @(see acl2::std) libraries."
 
   :long "<p>We provide macros for</p>
 

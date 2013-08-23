@@ -1,14 +1,27 @@
-
+; GL - A Symbolic Simulation Framework for ACL2
+; Copyright (C) 2008-2013 Centaur Technology
+;
+; Contact:
+;   Centaur Technology Formal Verification Group
+;   7600-C N. Capital of Texas Highway, Suite 300, Austin, TX 78731, USA.
+;   http://www.centtech.com/
+;
+; This program is free software; you can redistribute it and/or modify it under
+; the terms of the GNU General Public License as published by the Free Software
+; Foundation; either version 2 of the License, or (at your option) any later
+; version.  This program is distributed in the hope that it will be useful but
+; WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+; FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
+; more details.  You should have received a copy of the GNU General Public
+; License along with this program; if not, write to the Free Software
+; Foundation, Inc., 51 Franklin Street, Suite 500, Boston, MA 02110-1335, USA.
+;
+; Original author: Sol Swords <sswords@centtech.com>
 
 (in-package "GL")
-
-
 (include-book "symbolic-arithmetic-fns")
 (local (include-book "clause-processors/find-subterms" :dir :system))
 (local (include-book "centaur/bitops/ihs-extensions" :dir :system))
-;; (include-book "tools/with-arith5-help" :dir :system)
-;; (local (allow-arith5-help))
-
 (local (include-book "arithmetic/top-with-meta" :dir :system))
 
 
@@ -101,7 +114,7 @@
   ;;          (if (or (zp n) (s-endp x) (s-endp y))
   ;;              (list n x y)
   ;;            (scdr2/count-ind (1- (nfix n)) (scdr x) (scdr y)))))
-             
+
   ;; (local (defthm logtail-of-equiv-to-endp
   ;;          (IMPLIES (AND (S-ENDP X-EQUIV)
   ;;                        (SV-EQUIV X X-EQUIV))
@@ -179,7 +192,7 @@
                      ;; (bfr-eval-list nil env)
                      ))))
 
-  
+
   (defthm pbfr-list-depends-on-of-bfr-+-ss
     (implies (and (not (pbfr-depends-on n p c))
                   (not (pbfr-list-depends-on n p v1))
@@ -299,7 +312,7 @@
 
 ;;   ;; ;; (local (defthm sv-equiv-of-singleton-2
 ;;   ;; ;;          (implies (and (sv-equiv a b)
-;;   ;; ;;                        (s-endp b)) 
+;;   ;; ;;                        (s-endp b))
 ;;   ;; ;;                   (equal (sv-equiv (list c) a)
 ;;   ;; ;;                          (iff (car b) c)))
 ;;   ;; ;;          :hints(("Goal" :in-theory (enable sfix s-endp)))
@@ -556,7 +569,7 @@
   ;;   :hints (("goal" :induct (scdr2-ind x x-equiv)
   ;;            :in-theory (disable sv-equiv)))))
 
-  ;; (local (in-theory (disable bfr-ite-bss-fn v2i 
+  ;; (local (in-theory (disable bfr-ite-bss-fn v2i
   ;;                            (:definition bfr-*-ss))))
 
   ;; (defthm bfr-*-ss-correct
@@ -566,7 +579,7 @@
 
   ;; (local (bfr-reasoning-mode t))
 
-  
+
 
   ;; )
 
@@ -686,7 +699,7 @@
 ;;                            (logcons 0 (ash n m))))
 ;;            :hints(("Goal" :in-theory (enable* acl2::ihsext-inductions
 ;;                                               acl2::ihsext-recursive-redefs)))))
-  
+
 ;;   (local
 ;;    (defthm make-list-ac-nil-v2i-eval
 ;;      (equal (v2i (bfr-eval-list (make-list-ac n nil m) env))
@@ -706,7 +719,7 @@
 
 ;;   ;; (local (bfr-reasoning-mode t))
 ;;   (defthm bfr-ash-ss-correct
-;;     (implies (and 
+;;     (implies (and
 ;;               (posp place))
 ;;              (equal (v2i (bfr-eval-list (bfr-ash-ss place n shamt) env))
 ;;                     (ash (v2i (bfr-eval-list n env))
@@ -812,7 +825,7 @@
     :hints(("Goal" :in-theory (enable pbfr-list-depends-on
                                       bfr-integer-length-s)))))
 
-  
+
 
 ;; (encapsulate nil
 ;;   (local (in-theory (enable bfr-integer-length-s1 bfr-integer-length-s)))
@@ -1245,7 +1258,7 @@
                        (floor (abs a) (abs b)))))
      :hints(("Goal" :in-theory (enable truncate floor)))))
 
-  
+
   (local (defthm truncate-0
            (equal (truncate x 0) 0)
            :hints(("Goal" :in-theory (enable truncate)))))

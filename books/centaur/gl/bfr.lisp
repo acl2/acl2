@@ -1,14 +1,35 @@
-
+; GL - A Symbolic Simulation Framework for ACL2
+; Copyright (C) 2008-2013 Centaur Technology
+;
+; Contact:
+;   Centaur Technology Formal Verification Group
+;   7600-C N. Capital of Texas Highway, Suite 300, Austin, TX 78731, USA.
+;   http://www.centtech.com/
+;
+; This program is free software; you can redistribute it and/or modify it under
+; the terms of the GNU General Public License as published by the Free Software
+; Foundation; either version 2 of the License, or (at your option) any later
+; version.  This program is distributed in the hope that it will be useful but
+; WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+; FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
+; more details.  You should have received a copy of the GNU General Public
+; License along with this program; if not, write to the Free Software
+; Foundation, Inc., 51 Franklin Street, Suite 500, Boston, MA 02110-1335, USA.
+;
+; Original author: Sol Swords <sswords@centtech.com>
 
 (in-package "GL")
 (include-book "centaur/misc/universal-equiv" :dir :system)
 (include-book "centaur/misc/arith-equiv-defs" :dir :system)
+(include-book "centaur/ubdds/lite" :dir :system)
+(include-book "centaur/ubdds/param" :dir :system)
+(include-book "centaur/aig/witness" :dir :system)
+(include-book "centaur/aig/misc" :dir :system)
 (local (include-book "centaur/misc/arith-equivs" :dir :system))
 
 (defstub bfr-mode () t)
 (defun bfr-aig () (declare (xargs :guard t)) t)
 (defun bfr-bdd () (declare (xargs :guard t)) nil)
-
 
 (defmacro bfr-case (&key aig bdd)
   `(if (bfr-mode)
@@ -19,17 +40,13 @@
 ;;     (if *experimental-aig-mode*
 ;;         ',aig ',bdd)))
 
-(include-book "centaur/ubdds/lite" :dir :system)
-(include-book "centaur/ubdds/param" :dir :system)
-(include-book "../aig/witness")
-(include-book "../aig/misc")
 
 (local (in-theory (enable booleanp)))
 
 ;; (defun bfr-p (x)
 ;;   (declare (xargs :guard t)
 ;;            (ignorable x))
-;;   (mbe :logic 
+;;   (mbe :logic
 ;;        (bfr-case :bdd (acl2::ubddp x) :aig t)
 ;;        :exec (or (booleanp x)
 ;;                  (bfr-case :bdd (acl2::ubddp x) :aig t))))
@@ -81,7 +98,7 @@
 ;;   `(let ,(bfr-fix-bindings vars)
 ;;      (declare (ignorable . ,vars))
 ;;      ,body))
-     
+
 
 (defun bfr-eval (x env)
   (declare (xargs :guard t))
@@ -134,7 +151,7 @@
 
 (defun bfr-binary-and (x y)
   (declare (xargs :guard t))
-  (mbe :logic 
+  (mbe :logic
        (bfr-case :bdd (acl2::q-binary-and x y)
                  :aig (acl2::aig-and x y))
        :exec
@@ -170,9 +187,9 @@
 (defun bfr-and-macro-logic-part (args)
   ;; Generates the :logic part for a bfr-and MBE call.
   (declare (xargs :mode :program))
-  (cond ((atom args) 
+  (cond ((atom args)
          t)
-        ((atom (cdr args)) 
+        ((atom (cdr args))
          (car args))
         (t
          `(bfr-binary-and ,(car args) ,(bfr-and-macro-logic-part (cdr args))))))
@@ -180,11 +197,11 @@
 (defun bfr-and-macro-exec-part (args)
   ;; Generates the :exec part for a bfr-and MBE call.
   (declare (xargs :mode :program))
-  (cond ((atom args) 
+  (cond ((atom args)
          t)
-        ((atom (cdr args)) 
+        ((atom (cdr args))
          (car args))
-        (t 
+        (t
          `(let ((bfr-and-x-do-not-use-elsewhere ,(car args)))
             (and bfr-and-x-do-not-use-elsewhere
                  (bfr-binary-and
@@ -242,7 +259,7 @@
   (cond ((and (or (quotep y) (atom y))
               (or (quotep z) (atom z)))
          `(bfr-ite-fn ,x ,y ,z))
-        (t 
+        (t
          `(mbe :logic (bfr-ite-fn ,x ,y ,z)
                :exec (let ((bfr-ite-x-do-not-use-elsewhere ,x))
                        (cond
@@ -289,20 +306,20 @@
 
 (defun bfr-or-macro-logic-part (args)
   (declare (xargs :mode :program))
-  (cond ((atom args) 
+  (cond ((atom args)
          nil)
-        ((atom (cdr args)) 
+        ((atom (cdr args))
          (car args))
         (t
          `(bfr-binary-or ,(car args) ,(bfr-or-macro-logic-part (cdr args))))))
 
 (defun bfr-or-macro-exec-part (args)
   (declare (xargs :mode :program))
-  (cond ((atom args) 
+  (cond ((atom args)
          nil)
-        ((atom (cdr args)) 
+        ((atom (cdr args))
          (car args))
-        (t 
+        (t
          `(let ((bfr-or-x-do-not-use-elsewhere ,(car args)))
             ;; We could be slightly more permissive and just check
             ;; for any non-nil atom here.  But it's probably faster
@@ -533,7 +550,7 @@
        nil
      (union-equal (collect-bfr-eval-vals (car clause) patterns)
                   (collect-bfr-eval-vals-list (cdr clause) patterns)))))
- 
+
 
 (include-book "tools/flag" :dir :system)
 (flag::make-flag collect-bfr-eval-vals-flag collect-bfr-eval-vals
@@ -664,7 +681,7 @@
 
 (defmacro bfr-reasoning (&key or-hint)
   `(if stable-under-simplificationp
-       (er-progn 
+       (er-progn
         ;; This just lets us collect the clauses on which this hint is used.
         ,'(assign bfr-eval-cp-clauses
                   (cons clause
@@ -683,7 +700,7 @@
                                  (:no-thanks t)))
                         cphint)))))
      (value nil)))
-    
+
 
 (defmacro bfr-reasoning-mode (flg)
   (if flg
@@ -1406,7 +1423,7 @@
 ;;      (equal (< (max a b) c)
 ;;             (and (< a c)
 ;;                  (< b c))))
-   
+
 ;;    (defthm lt-max-implies
 ;;      (equal (< c (max a b))
 ;;             (or (< c a)
@@ -1586,7 +1603,7 @@
 ;;      :hints(("Goal" :in-theory (enable acl2::qcons max-depth)))
 ;;      :rule-classes ((:linear :trigger-terms ((max-depth (acl2::qcons x y)))
 ;;                      :match-free :all)))
-         
+
 
 ;;    ;; (local (defthm qcar/cdr-when-consp
 ;;    ;;          (implies (consp x)
@@ -1671,5 +1688,5 @@
 ;;        (equal (bfr-max-nat-var t) 0))
 ;;   :hints(("Goal" :in-theory (e/d (bfr-max-nat-var)
 ;;                                  ((bfr-max-nat-var))))))
-   
+
 

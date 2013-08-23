@@ -1,33 +1,47 @@
+; GL - A Symbolic Simulation Framework for ACL2
+; Copyright (C) 2008-2013 Centaur Technology
+;
+; Contact:
+;   Centaur Technology Formal Verification Group
+;   7600-C N. Capital of Texas Highway, Suite 300, Austin, TX 78731, USA.
+;   http://www.centtech.com/
+;
+; This program is free software; you can redistribute it and/or modify it under
+; the terms of the GNU General Public License as published by the Free Software
+; Foundation; either version 2 of the License, or (at your option) any later
+; version.  This program is distributed in the hope that it will be useful but
+; WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+; FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
+; more details.  You should have received a copy of the GNU General Public
+; License along with this program; if not, write to the Free Software
+; Foundation, Inc., 51 Franklin Street, Suite 500, Boston, MA 02110-1335, USA.
+;
+; Original author: Sol Swords <sswords@centtech.com>
 
 (in-package "GL")
-
 (include-book "tools/clone-stobj" :dir :system)
 (include-book "var-bounds")
 (include-book "shape-spec")
 (include-book "gl-generic-interp-defs")
-(local (include-book "gl-generic-interp"))
+(include-book "ctrex-utils")
+(include-book "shape-spec")
 (include-book "gify")
 (include-book "bfr-sat")
-
 (include-book "misc/untranslate-patterns" :dir :system)
-(local (include-book "data-structures/no-duplicates" :dir :system))
 (include-book "clause-processors/use-by-hint" :dir :system)
 (include-book "clause-processors/decomp-hint" :dir :system)
 (include-book "centaur/misc/interp-function-lookup" :dir :system)
-
+(local (include-book "gl-generic-interp"))
 (local (include-book "general-object-thms"))
+(local (include-book "hyp-fix-logic"))
+(local (include-book "data-structures/no-duplicates" :dir :system))
 (local (include-book "centaur/misc/hons-sets" :dir :system))
 (local (include-book "tools/with-quoted-forms" :dir :system))
-(local (include-book "hyp-fix-logic"))
-(local (in-theory (disable* sets::double-containment
-                            w)))
 (local (include-book "std/lists/acl2-count" :dir :system))
 (local (include-book "clause-processors/find-matching" :dir :system))
 (local (include-book "clause-processors/just-expand" :dir :system))
+(local (in-theory (disable* sets::double-containment w)))
 
-(include-book "ctrex-utils")
-
-(include-book "shape-spec")
 
 (defun shape-spec-to-gobj-param (spec p)
   (declare (xargs :guard (shape-specp spec)))
@@ -174,7 +188,7 @@
               :in-theory (enable glcp-generic-geval-ev-of-fncall-args))))
 
 
-        
+
 
    (encapsulate nil
      (local (defthm member-equal-second-revappend
@@ -270,14 +284,14 @@
    ;; (defthm strip-cdrs-gobj-alist-to-param-space
    ;;   (equal (gobj-strip-cdrs (gobj-alist-to-param-space x p))
    ;;          (gobj-to-param-space (gobj-strip-cdrs x) p))
-   ;;   :hints(("Goal" :in-theory (enable strip-cdrs 
+   ;;   :hints(("Goal" :in-theory (enable strip-cdrs
    ;;                                     gobj-to-param-space
    ;;                                     tag)
    ;;           :induct (gobj-alist-to-param-space x p)
    ;;           :expand ((:free (a b) (gobj-to-param-space (cons a b) p))))))
 
    ;; (defthm alistp-gobj-alist-to-param-space
-   ;;   (alistp (gobj-alist-to-param-space x p))) 
+   ;;   (alistp (gobj-alist-to-param-space x p)))
 
 
    (defthm nonnil-symbol-listp-strip-cars-shape-spec-bindings
@@ -375,7 +389,7 @@
 
 
 
- 
+
 
 
 
@@ -830,7 +844,7 @@ The definition body, ~x1, is not a pseudo-term."
                 (pbfr-list-vars-bounded
                  k p (mv-nth 3 (break-g-number (list int))))))
   :hints(("Goal" :in-theory (enable break-g-number))))
-  
+
 
 
 (defthm-shape-spec-flag
@@ -896,7 +910,7 @@ The definition body, ~x1, is not a pseudo-term."
               :expand ((:free (env) (glcp-generic-geval-list x env))))))))
 
 
- 
+
 
 
 (make-event
@@ -906,7 +920,7 @@ The definition body, ~x1, is not a pseudo-term."
 ; [Removed by Matt K. to handle changes to member, assoc, etc. after ACL2 4.2.]
 ;          (defthm member-eq-is-member-equal
 ;            (equal (member-eq x y) (member-equal x y)))
-;          
+;
 ;          (defthm set-difference-eq-is-set-difference-equal
 ;            (equal (set-difference-eq x y) (set-difference-equal x y))
 ;            :hints(("Goal" :in-theory (enable set-difference-equal))))
@@ -918,7 +932,7 @@ The definition body, ~x1, is not a pseudo-term."
 
 
 
-(local 
+(local
  (encapsulate nil
    (local (defthm true-listp-when-nat-listp
             (implies (nat-listp x)
@@ -1124,7 +1138,7 @@ The definition body, ~x1, is not a pseudo-term."
             (gobj-alist-vars-bounded n t (shape-specs-to-interp-al bindings)))))
 
 
-  
+
 
 
 ;; (defthm bfr-vars-bounded-of-glcp-generic-interp-top-level
