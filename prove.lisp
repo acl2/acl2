@@ -2361,7 +2361,6 @@
                use-pspv)))))))
     (:by
 
-
 ; If there is a :by hint then it is of one of the two forms (:by .  name) or
 ; (:by lmi-lst thm constraint-cl k event-names new-entries).  The first form
 ; indicates that we are to give this clause a bye and let the proof fail late.
@@ -2387,19 +2386,14 @@
            pspv))
       (t
        (let ((lmi-lst (cadr temp)) ; a singleton list
-             (thm (sublis-var nil
-
-; This call of sublis-var ensures that thm is in quote-normal form, to avoid
-; certain trivial mismatches when checking subsumption.
-
-                              (remove-guard-holders
+             (thm (remove-guard-holders
 
 ; We often remove guard-holders without tracking their use in the tag-tree.
 ; Other times we record their use (but not here).  This is analogous to our
 ; reporting of the use of (:DEFINITION NOT) in some cases but not in others
 ; (e.g., when we use strip-not).
 
-                               (caddr temp))))
+                   (caddr temp)))
              (constraint-cl (cadddr temp))
              (sr-limit (car (access rewrite-constant
                                     (access prove-spec-var pspv
@@ -2422,12 +2416,7 @@
 
 ; WARNING: See the warning about the processing in translate-by-hint.
 
-         (let* ((cl (sublis-var-lst nil
-
-; This call of sublis-var-lst ensures that cl is in quote-normal form, to avoid
-; certain trivial mismatches when checking subsumption.
-
-                                    (remove-guard-holders-lst cl)))
+         (let* ((cl (remove-guard-holders-lst cl))
                 (cl (remove-equal *nil* cl))
                 (easy-winp
                  (cond ((null cl) ; very weird case!

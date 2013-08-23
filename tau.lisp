@@ -271,7 +271,23 @@
 
 (mutual-recursion
 
-(defun remove-guard-holders1 (term)
+(defun remove-guard-holders1 (changedp0 term)
+
+; We return (mv changedp new-term), where new-term is provably equal to term,
+; and where if changedp is nil, then changedp0 is nil and new-term is identical
+; to term.  The second part can be restated as follows: if changedp0 is true
+; then changedp is true (a kind of monotonicity), and if the resulting term is
+; distinct from the input term then changedp is true.  Intuitively, if changedp
+; is true then new-term might be distinct from term but we don't know that
+; (especially if changedp0 is true), but if changedp is nil then we know that
+; new-term is just term.
+
+; See the Essay on the Removal of Guard Holders.
+
+; WARNING: The resulting term is in quote normal form.  We take advantage of
+; this fact in our implementation of :by hints, in function
+; apply-top-hints-clause1, to increase the chances that the "easy-winp" case
+; holds.
 
 ; WARNING.  Remove-guard-holders is used in constraint-info,
 ; induction-machine-for-fn1, and termination-machine, so (remove-guard-holders1
@@ -284,8 +300,8 @@
 ; MV-LIST appear in *non-instantiable-primitives*.
 
   (cond
-   ((variablep term) term)
-   ((fquotep term) term)
+   ((variablep term) (mv changedp0 term))
+   ((fquotep term) (mv changedp0 term))
    ((or (eq (ffn-symb term) 'RETURN-LAST)
         (eq (ffn-symb term) 'MV-LIST))
 
@@ -296,96 +312,102 @@
 ; to the bottom with things like (prog2$ (illegal ...) body) and (prog2$ T
 ; body), we just open up the prog2$ early, throwing away the dcl-guardian.
 
-    (remove-guard-holders1 (car (last (fargs term)))))
+    (remove-guard-holders1 t (car (last (fargs term)))))
    ((flambdap (ffn-symb term))
     (case-match
-     term
-     ((('LAMBDA ('VAR) ('THE-CHECK & & 'VAR))
-       val)
-      (remove-guard-holders1 val))
-     ((('LAMBDA formals ('RETURN-LAST ''MBE1-RAW & logic))
-       . args) ; pattern for equality variants
-      (subcor-var formals
-                  (remove-guard-holders1-lst args)
-                  (remove-guard-holders1 logic)))
-     (&
-      (mcons-term (make-lambda (lambda-formals (ffn-symb term))
-                               (remove-guard-holders1
-                                (lambda-body (ffn-symb term))))
-                  (remove-guard-holders1-lst (fargs term))))))
-   (t (mcons-term (ffn-symb term)
-                  (remove-guard-holders1-lst (fargs term))))))
+      term
+      ((('LAMBDA ('VAR) ('THE-CHECK & & 'VAR))
+        val)
+       (remove-guard-holders1 t val))
+      ((('LAMBDA formals ('RETURN-LAST ''MBE1-RAW & logic))
+        . args) ; pattern for equality variants
+       (mv-let
+        (changedp1 args1)
+        (remove-guard-holders1-lst args)
+        (declare (ignore changedp1))
+        (mv-let
+         (changedp2 logic2)
+         (remove-guard-holders1 nil logic)
+         (declare (ignore changedp2))
+         (mv t (subcor-var formals args1 logic2)))))
+      (&
+       (mv-let
+        (changedp1 lambda-body)
+        (remove-guard-holders1 nil (lambda-body (ffn-symb term)))
+        (mv-let
+         (changedp2 args)
+         (remove-guard-holders1-lst (fargs term))
+         (cond ((or changedp1 changedp2)
+                (mv t
+                    (mcons-term
+                     (if changedp1
+                         (make-lambda (lambda-formals (ffn-symb term))
+                                      lambda-body)
+                       (ffn-symb term))
+                     args)))
+               (t (mv changedp0 term))))))))
+   (t (mv-let
+       (changedp1 args)
+       (remove-guard-holders1-lst (fargs term))
+       (cond ((null changedp1)
+              (cond ((quote-listp args)
+                     (let ((new-term (mcons-term (ffn-symb term)
+                                                 args)))
+                       (cond ((equal term new-term) ; even if not eq
+                              (mv changedp0 term))
+                             (t (mv t new-term)))))
+                    (t (mv changedp0 term))))
+             (t (mv t (mcons-term (ffn-symb term)
+                                  args))))))))
 
 (defun remove-guard-holders1-lst (lst)
-  (cond ((null lst) nil)
-        (t (cons (remove-guard-holders1 (car lst))
-                 (remove-guard-holders1-lst (cdr lst)))))))
-
-; We wish to avoid copying the body to remove stuff that we won't find.
-; So we have a predicate that mirrors the function above.
-
-(mutual-recursion
-
-(defun contains-guard-holdersp (term)
-  (cond
-   ((variablep term) nil)
-   ((fquotep term) nil)
-   ((or (eq (ffn-symb term) 'RETURN-LAST)
-        (eq (ffn-symb term) 'MV-LIST))
-    t)
-   ((flambdap (ffn-symb term))
-    (case-match term
-                ((('LAMBDA ('VAR) ('THE-CHECK & & 'VAR))
-                  &)
-                 t)
-                ((('LAMBDA & ('RETURN-LAST ''MBE1-RAW & &))
-                  . &) ; pattern for equality variants
-                 t)
-                (&
-                 (or (contains-guard-holdersp
-                      (lambda-body (ffn-symb term)))
-                     (contains-guard-holdersp-lst (fargs term))))))
-   (t (contains-guard-holdersp-lst (fargs term)))))
-
-(defun contains-guard-holdersp-lst (lst)
-  (cond ((null lst) nil)
-        (t (or (contains-guard-holdersp (car lst))
-               (contains-guard-holdersp-lst (cdr lst)))))))
+  (cond ((null lst) (mv nil nil))
+        (t (mv-let (changedp1 a)
+                   (remove-guard-holders1 nil (car lst))
+                   (mv-let (changedp2 b)
+                           (remove-guard-holders1-lst (cdr lst))
+                           (cond ((or changedp1 changedp2)
+                                  (mv t (cons a b)))
+                                 (t (mv nil lst))))))))
+)
 
 (defun remove-guard-holders (term)
 
 ; Return a term equal to term, but slightly simplified.  See also the warning
 ; in remove-guard-holders1.
 
-  (cond ((contains-guard-holdersp term)
-         (remove-guard-holders1 term))
-        (t term)))
+  (mv-let (changedp result)
+          (remove-guard-holders1 nil term)
+          (declare (ignore changedp))
+          result))
 
 (defun remove-guard-holders-lst (lst)
 
 ; Return a list of terms element-wise equal to lst, but slightly simplified.
 
-  (cond ((contains-guard-holdersp-lst lst)
-         (remove-guard-holders1-lst lst))
-        (t lst)))
-
-(defun contains-guard-holdersp-lst-lst (lst)
-  (cond ((null lst) nil)
-        (t (or (contains-guard-holdersp-lst (car lst))
-               (contains-guard-holdersp-lst-lst (cdr lst))))))
+  (mv-let (changedp result)
+          (remove-guard-holders1-lst lst)
+          (declare (ignore changedp))
+          result))
 
 (defun remove-guard-holders1-lst-lst (lst)
-  (cond ((null lst) nil)
-        (t (cons (remove-guard-holders1-lst (car lst))
-                 (remove-guard-holders1-lst-lst (cdr lst))))))
+  (cond ((null lst) (mv nil nil))
+        (t (mv-let (changedp1 a)
+                   (remove-guard-holders1-lst (car lst))
+                   (mv-let (changedp2 b)
+                           (remove-guard-holders1-lst-lst (cdr lst))
+                           (cond ((or changedp1 changedp2)
+                                  (mv t (cons a b)))
+                                 (t (mv nil lst))))))))
 
-(defun remove-guard-holders-lst-lst (x)
+(defun remove-guard-holders-lst-lst (lst)
 
 ; Return a list of clauses element-wise equal to lst, but slightly simplified.
 
-  (cond ((contains-guard-holdersp-lst-lst x)
-         (remove-guard-holders1-lst-lst x))
-        (t x)))
+  (mv-let (changedp result)
+          (remove-guard-holders1-lst-lst lst)
+          (declare (ignore changedp))
+          result))
 
 ; Before moving on, we develop the code to translate a type-prescription
 ; to a term so that we can recognize if a type-prescription can be

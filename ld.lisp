@@ -21019,6 +21019,10 @@
 ; The guard for function ENDP has potentially been made trivially more
 ; efficient by using EQ to test against nil instead of EQUAL.
 
+; In support of :by hint processing (see the :doc string below),
+; remove-guard-holders now returns a term in quote normal form, even when the
+; input term contains no guard holders.
+
   :doc
   ":Doc-Section release-notes
 
@@ -21115,12 +21119,14 @@
   The processing of ~c[:use] and ~c[:by] ~il[hints] has been changed in the
   following two rather subtle ways, thanks to suggestions from Sol Swords.
   ~bq[]
+
   o For ~c[:by] hints, the simplest check was an equality check, rather than a
   more general subsumption check.  That equality check was made after removing
   so-called ``guard holders'' (~ilc[must-be-equal], ~ilc[prog2$],
   ~ilc[ec-call], ~ilc[the]) from both the previous theorem and the purported
-  theorem.  Now, those two results are also put into so-called quote-normal
-  form, for example replacing ~c[(cons '3 '4)] by ~c['(3 . 4)].
+  theorem.  Now, guard-holder removal has been strengthened, so that the
+  results are also put into so-called quote-normal form, for example replacing
+  ~c[(cons '3 '4)] by ~c['(3 . 4)].
 
   o For a ~il[lemma-instance] provided to a ~c[:use] or ~c[:by] hint that
   is a ~c[:functional-instance], if a ~c[:do-not] hint (~pl[hints]) has
