@@ -24,6 +24,7 @@
 
 (in-package "ACL2")
 (include-book "gl")
+; cert_param: (hons-only)
 
 
 ;; Solutions to exercises in the GL Basic Tutorial
@@ -221,8 +222,21 @@
 
 ; To make this execute much faster, we'll want a higher memory ceiling.
 
-(include-book "centaur/misc/memory-mgmt" :dir :system)
-(value-triple (set-max-mem (* 8 (expt 2 30))))
+; Added 8/24/13 by Matt K.: This book failed to certify because of a missing
+; :ttags for the include-book form below..  However, the difference between
+; using the two forms below, and not, was trivial when I used time$ to time the
+; proof of 1f below:
+;
+;   ; including memory-mgmt:
+;   36.39 seconds realtime, 36.29 seconds runtime
+;   (3,472,888,144 bytes allocated).
+;
+;   ; NOT including memory-mgmt:
+;   36.46 seconds realtime, 36.37 seconds runtime
+;   (3,472,888,240 bytes allocated).
+;
+; (include-book "centaur/misc/memory-mgmt" :dir :system)
+; (value-triple (set-max-mem (* 8 (expt 2 30))))
 
 (def-gl-thm 1f
   :hyp (and (unsigned-byte-p 3000 x)
