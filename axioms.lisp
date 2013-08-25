@@ -21745,10 +21745,10 @@
   Below we explain ~c[defattach] in some detail.  But it is important to keep
   in mind that evaluation with the attachment equations takes place in an
   extension of the logical theory of the session.  ACL2 guarantees that this
-  so-called ``evaluation theory'' remains consistent, assuming that the absence
-  of ~ilc[defaxiom] ~il[events] from the user.  This guarantee is a consequence
-  of a more general guarantee: an ACL2 logical ~il[world] exists in
-  which (loosely speaking) the attachment equation for ~c[(defattach f g)], as
+  so-called ``evaluation theory'' remains consistent, assuming the absence of
+  ~ilc[defaxiom] ~il[events] from the user.  This guarantee is a consequence of
+  a more general guarantee: an ACL2 logical ~il[world] exists in which (loosely
+  speaking) the attachment equation for ~c[(defattach f g)], as
   ~c[(defun f (...) (g ...))], takes the place of the original defining event
   for ~c[f], for each ~c[defattach] event.  This more general guarantee holds
   even if there are ~ilc[defaxiom] events, though as explained below, no
@@ -40730,6 +40730,11 @@
   the exception stated above: if the ``limit'' is ~c[nil] or is the value of
   ~c[*default-step-limit*], then no limit is imposed.
 
+  There is at best a loose connection between the counting of steps and
+  ~ilc[with-prover-time-limit].  In particular, for a call of ~c[mfc-rw] or any
+  ~c[mfc-] function (~pl[extended-metafunctions]), the steps taken during that
+  call are forgotten when returning from that call.
+
   The limit is relevant for every event, as well as for calls of ~ilc[thm] and
   ~ilc[certify-book] ~-[] and more generally, to any form that creates a
   ``summary context'' to print the usual event summary.  The limit is also put
@@ -40804,11 +40809,7 @@
   Prover steps counted:  41090
    NIL
   ACL2 !>
-  ~ev[]
-
-  Technical Remark.  For a call of ~c[mfc-rw] or any ~c[mfc-]
-  function (~pl[extended-metafunctions]), the steps taken during that call are
-  forgotten when returning from that call.~/"
+  ~ev[]~/"
 
   `(state-global-let*
     ((inhibit-output-lst (list* 'event 'summary (@ inhibit-output-lst))))
