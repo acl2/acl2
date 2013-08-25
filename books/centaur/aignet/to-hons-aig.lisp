@@ -20,7 +20,7 @@
 
 (in-package "AIGNET")
 (include-book "semantics")
-(include-book "centaur/aig/base" :dir :system)
+(include-book "centaur/aig/aig-base" :dir :system)
 (include-book "centaur/vl/util/cwtime" :dir :system)
 (local (include-book "arithmetic/top-with-meta" :dir :system))
 (local (in-theory (disable nth update-nth
@@ -45,7 +45,7 @@
                   :slotname aig
                   :default-val nil)
 
-  
+
 
 (define id-trans-logic ((id :type (integer 0 *))
                         aigtrans aignet)
@@ -165,7 +165,7 @@
     (equal (id-trans-logic id (aignet-translate-iter n aigtrans aignet)
                            aignet)
            (id-trans-logic id aigtrans aignet))
-    :hints((acl2::just-induct-and-expand 
+    :hints((acl2::just-induct-and-expand
             (aignet-translate-iter n aigtrans aignet))))
 
   (defthm aignet-translate-iter-preserves-input-entries
@@ -178,7 +178,7 @@
   (defthm aignet-trans-invariant-of-aignet-translate-iter
     (aignet-trans-invariant
      n (aignet-translate-iter n aigtrans aignet) aignet)
-    :hints((acl2::just-induct-and-expand 
+    :hints((acl2::just-induct-and-expand
             (aignet-translate-iter n aigtrans aignet))
            (and stable-under-simplificationp
                 '(:expand ((:free (aigtrans)
@@ -191,7 +191,7 @@
   (defthm aignet-aigs-size-of-aignet-translate-iter
     (<= (len aigtrans)
         (len (aignet-translate-iter n aigtrans aignet)))
-    :hints((acl2::just-induct-and-expand 
+    :hints((acl2::just-induct-and-expand
             (aignet-translate-iter n aigtrans aignet)))
     :rule-classes :linear)
 
@@ -303,6 +303,3 @@
        (outlist (aignet-trans-get-outs 0 aigtrans aignet))
        (reglist (aignet-trans-get-nxsts 0 aigtrans aignet)))
     (mv outlist (pairlis$ regnames reglist) aigtrans)))
-
-
-

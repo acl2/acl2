@@ -21,7 +21,7 @@
 (in-package "ACL2")
 (include-book "cutil/top" :dir :system)
 (include-book "centaur/vl/util/namedb" :dir :system)
-(include-book "base")
+(include-book "aig-base")
 (include-book "aig-vars-ext")
 (local (include-book "std/typed-lists/string-listp" :dir :system))
 

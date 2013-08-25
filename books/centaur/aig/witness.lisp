@@ -21,7 +21,7 @@
 (in-package "ACL2")
 
 (include-book "misc/hons-help2" :dir :system)
-(include-book "base")
+(include-book "aig-base")
 
 (include-book "clause-processors/term-patterns" :dir :system)
 (include-book "clause-processors/join-thms" :dir :system)

@@ -29,7 +29,8 @@
 
 (in-package "ACL2")
 
-(include-book "base")
+(include-book "aig-base")
+(include-book "faig-base")
 (include-book "tools/bstar" :dir :system)
 (include-book "tools/mv-nth" :dir :system)
 (include-book "misc/hons-help2" :dir :system)

@@ -26,7 +26,8 @@
 ; [Jared] After consideration, we think this is the right book to use; the FAIG
 ; monotonicity stuff was just too hard and should eventually be scrapped.
 
-(include-book "centaur/aig/base" :dir :system)
+(include-book "centaur/aig/aig-base" :dir :system)
+(include-book "centaur/aig/faig-base" :dir :system)
 (include-book "centaur/misc/fast-alists" :dir :system)
 (include-book "centaur/misc/hons-sets" :dir :system)
 (local (include-book "data-structures/no-duplicates" :dir :system))

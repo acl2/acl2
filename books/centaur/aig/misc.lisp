@@ -21,7 +21,7 @@
 
 (in-package "ACL2")
 
-(include-book "base")
+(include-book "aig-base")
 (include-book "centaur/misc/equal-sets" :dir :system)
 (include-book "tools/mv-nth" :dir :system)
 (include-book "misc/gentle" :dir :system)

@@ -23,7 +23,7 @@
 
 (in-package "ACL2")
 
-(include-book "base")
+(include-book "aig-base")
 (include-book "aig-equivs")
 (include-book "three-four")
 (include-book "aig-vars")

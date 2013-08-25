@@ -117,7 +117,11 @@ encountered.</p>
 
 <p>After carrying out some transformation, we can scan the list of modules for
 any fatal warnings, and these modules (and their dependents) can be easily
-thrown out using @(see vl-propagate-errors).</p>")
+thrown out using @(see vl-propagate-errors).</p>
+
+<h3>Printing Warnings</h3>
+
+See @(see vl::printer) for information on printing warnings.")
 
 
 (defaggregate vl-warning

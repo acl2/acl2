@@ -21,7 +21,7 @@
 
 (in-package "ACL2")
 (include-book "defsort/defsort" :dir :system)
-(include-book "centaur/aig/base" :dir :system)
+(include-book "aig-base")
 (include-book "tools/bstar" :dir :system)
 (include-book "centaur/bitops/sbitsets" :dir :system)
 (include-book "centaur/misc/hons-extra" :dir :system)

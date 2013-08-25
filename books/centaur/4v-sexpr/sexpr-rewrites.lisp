@@ -19,7 +19,7 @@
 ; Original author: Sol Swords <sswords@centtech.com>
 
 (in-package "ACL2")
-(include-book "centaur/aig/base" :dir :system) ;; BOZO for alphorder-sort
+(include-book "centaur/aig/aig-base" :dir :system) ;; BOZO for alphorder-sort
 (include-book "sexpr-advanced")
 (include-book "centaur/misc/hons-extra" :dir :system)
 (include-book "sexpr-vars-1pass")

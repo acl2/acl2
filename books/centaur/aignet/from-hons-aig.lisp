@@ -22,7 +22,7 @@
 (include-book "construction")
 (include-book "misc/hons-help" :dir :system)
 (include-book "centaur/aig/aig-vars-fast" :dir :system)
-(include-book "centaur/aig/base" :dir :system)
+(include-book "centaur/aig/aig-base" :dir :system)
 (local (include-book "arithmetic/top-with-meta" :dir :system))
 (local (include-book "std/lists/nthcdr" :dir :system))
 ;; Translating from Hons AIGs to aignets.
