@@ -1087,6 +1087,7 @@
   user should feel free to set *PROFILE-REJECT-HT* ad lib, at any
   time.")
 
+(declaim (hash-table *profile-reject-ht*))
 
 (defun-one-output dubious-to-profile (fn)
   (cond ((not (symbolp fn)) "not a symbol.")
@@ -1114,8 +1115,8 @@
                continue."))
         ((eq fn 'return-last)
          "the function RETURN-LAST.")
-        ((gethash fn *never-profile-ht*)
-         (ofn "~%;~10tin *NEVER-PROFILE-HT*."))
+        ((gethash fn *never-memoize-ht*)
+         (ofn "~%;~10tin *NEVER-MEMOIZE-HT*."))
         ((gethash fn *profile-reject-ht*)
          (ofn "in~%;~10t*PROFILE-REJECT-HT*.  Override with~
                ~%;~10t(REMHASH '~a *PROFILE-REJECT-HT*)."
@@ -1142,6 +1143,12 @@
         ((null (number-of-arguments fn))
          (input-output-number-warning fn))))
 
+(declaim (ftype (function (t) (values t)) event-number))
+
+(defun event-number (fn)
+  (cond ((symbolp fn)
+         (fgetprop fn 'absolute-event-number t (w *the-live-state*)))
+        (t (error "EVENT-NUMBER: ** ~a is not a symbol." fn))))
 
 (defun profile-acl2 (&key (start 0)
                           trace
