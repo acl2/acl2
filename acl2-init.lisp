@@ -1173,6 +1173,20 @@ implementations.")
       (setq *default-pathname-defaults* p)))
   nil)
 
+(defvar *print-startup-banner*
+
+; One might want to set this variable to nil in raw Lisp before calling
+; save-exec, in order to avoid seeing startup information.  We do not comment
+; here on whether that is legally appropriate; for example, it suppresses
+; copyright information for ACL2 and, for CCL at least, information about the
+; host Lisp.
+
+; Note that LD always prints some startup information, regardless of the value
+; of *print-startup-banner*.  To suppress that information, evaluate
+; (set-ld-verbose nil state) in the ACL2 loop.
+
+  t)
+
 (defun acl2-default-restart ()
   (if *acl2-default-restart-complete*
       (return-from acl2-default-restart nil))
@@ -1190,23 +1204,25 @@ implementations.")
 ; In CCL, print greeting now, rather than upon first re-entry to ACL2 loop.
 ; Here we follow a suggestion from Gary Byers.
 
-    (format t "~&Welcome to ~A ~A!~%"
-            (lisp-implementation-type)
-            (lisp-implementation-version))
+    (when *print-startup-banner*
+      (format t "~&Welcome to ~A ~A!~%"
+              (lisp-implementation-type)
+              (lisp-implementation-version)))
     (setq ccl::*inhibit-greeting* t))
   #+hons (qfuncall acl2h-init)
-  (format t
-          *saved-string*
-          *copy-of-acl2-version*
-          (saved-build-dates :terminal)
-          (if (null *acl2-svn-revision-string*)
-              ""
-            (qfuncall acl2-books-revision))
-          (cond (*saved-mode*
-                 (format nil "~% Initialized with ~a." *saved-mode*))
-                (t ""))
-          (eval '(latest-release-note-string)) ; avoid possible warning
-          )
+  (when *print-startup-banner*
+    (format t
+            *saved-string*
+            *copy-of-acl2-version*
+            (saved-build-dates :terminal)
+            (if (null *acl2-svn-revision-string*)
+                ""
+              (qfuncall acl2-books-revision))
+            (cond (*saved-mode*
+                   (format nil "~% Initialized with ~a." *saved-mode*))
+                  (t ""))
+            (eval '(latest-release-note-string)) ; avoid possible warning
+            ))
   (maybe-load-acl2-init)
   (eval `(in-package ,*startup-package-name*))
 
@@ -1744,7 +1760,10 @@ implementations.")
   (save-acl2-in-clisp-aux sysout-name sysout-name host-lisp-args inert-args))
 
 #+ccl
-(defun save-acl2-in-ccl-aux (sysout-name core-name host-lisp-args inert-args)
+(defun save-acl2-in-ccl-aux (sysout-name core-name
+                                         &optional
+                                         (host-lisp-args nil save-exec-p)
+                                         inert-args)
   (let* ((ccl-program0
           (or (car ccl::*command-line-argument-list*) ; Gary Byers suggestion
               (error "Unable to determine CCL program pathname!")))
@@ -1796,6 +1815,31 @@ implementations.")
                                      default-dir)
                            "")))
 
+; See the section on "reading characters from files" in file acl2.lisp for an
+; explanation of the -K argument below.
+
+; It is probably important to use -e just below instead of :toplevel-function,
+; at least for #+hons.  Jared Davis and Sol Swords have told us that it seems
+; that with :toplevel-function one gets a new "toplevel" thread at start-up,
+; which "plays badly with the thread-local hash tables that make up the hons
+; space".
+
+                      "~s -I ~s~a -K ISO-8859-1 -e ~
+                       \"(acl2::acl2-default-restart)\"~a ~a~%"
+                      ccl-program
+                      core-name
+                      (if save-exec-p
+
+; For an ACL2 built from sources, the saved script will include "-Z 64M"; see
+; comment below.  But with save-exec, no -Z option will be written.  The new
+; script can then be expected to invoke ACL2 with the same stack sizes as did
+; the original (which had -Z 64M explicitly), unless an explicit -Z option is
+; given to save-exec or globals such as
+; ccl::*initial-listener-default-control-stack-size* (see community book
+; books/centaur/ccl-config.lsp) are set before the save-exec call.
+
+; Turning now to the case of building from sources, as opposed to save-exec:
+
 ; We use -Z 64M even though the default for -Z (as of mid-2013) is 2M, in order
 ; to get larger stacks.  We have ample evidence that a larger stack would be
 ; useful: an ACL2 example from David Russinoff in August 2013 for which 8M was
@@ -1811,19 +1855,8 @@ implementations.")
 ; :bt), as during a regression.  We solved that by restricting backtrace counts
 ; using *ccl-print-call-history-count*.
 
-; See the section on "reading characters from files" in file acl2.lisp for an
-; explanation of the -K argument below.
-
-; It is probably important to use -e just below instead of :toplevel-function,
-; at least for #+hons.  Jared Davis and Sol Swords have told us that it seems
-; that with :toplevel-function one gets a new "toplevel" thread at start-up,
-; which "plays badly with the thread-local hash tables that make up the hons
-; space".
-
-                      "~s -I ~s -Z 64M -K ISO-8859-1 -e ~
-                       \"(acl2::acl2-default-restart)\"~a ~a~%"
-                      ccl-program
-                      core-name
+                          ""
+                        " -Z 64M")
                       (insert-string host-lisp-args)
                       (user-args-string inert-args)))
     (chmod-executable sysout-name)
@@ -1834,7 +1867,7 @@ implementations.")
 (defun save-acl2-in-ccl (sysout-name &optional mode core-name)
   (setq *saved-mode* mode)
   (load "openmcl-acl2-trace.lisp")
-  (save-acl2-in-ccl-aux sysout-name core-name nil nil))
+  (save-acl2-in-ccl-aux sysout-name core-name))
 
 #+ccl
 (defun save-exec-raw (sysout-name host-lisp-args inert-args)

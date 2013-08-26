@@ -21023,6 +21023,11 @@
 ; remove-guard-holders now returns a term in quote normal form, even when the
 ; input term contains no guard holders.
 
+; The startup banner can now be suppressed, though only by unsanctioned hacking
+; in raw Lisp, as requested by Jared Davis.  See *print-startup-banner*, which
+; has a comment explaining more about how this may not be appropriate and what
+; needs to be done to suppress startup information.
+
   :doc
   ":Doc-Section release-notes
 
