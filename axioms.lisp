@@ -22673,7 +22673,7 @@
 
   ":Doc-Section ACL2::ACL2-built-ins
 
-  modify an association list by associating a value with a key~/
+  remove the first pair from an association list for a given key~/
   ~bv[]
   General Forms:
   (delete-assoc key alist)
