@@ -27806,7 +27806,7 @@ accompanying <i>``File Path''</i> shown at the end of each book's text.
   (save-exec \"my-acl2\" \"Start with foo defined.\"
              :return-from-lp '(with-output
                                :off :all
-                               (quote (defun foo (x) x))))
+                               (defun foo (x) x)))
 
   ; Immediately exit the ACL2 read-eval-print loop after starting up and
   ; defining variable xxx in raw Lisp.
