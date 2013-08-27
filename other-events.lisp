@@ -9157,7 +9157,6 @@
 ; known-package-alist immediately after form is evaluated; and if not, we
 ; return a soft error.
 
-  (declare (ignorable on-behalf-of)) ; for hons
   (let ((original-wrld (w state)))
     (protect-system-state-globals
      (er-let*

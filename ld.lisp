@@ -21107,6 +21107,10 @@
   ~ilc[set-inhibit-warnings] did not always behave as one might reasonably
   expect when books are involved.
 
+  It had been the case that ~ilc[lp] took a single argument, ~c['raw].  This
+  argument was not documented and also caused an error, so it has been
+  eliminated.
+
   ~st[NEW FEATURES]
 
   ACL2 can now be instructed to time activities using real time (wall clock
@@ -21190,11 +21194,12 @@
   quoting have been solved using ~c[\"$@\"] in place of ~c[$*].  Also, the
   function ~ilc[save-exec] now allows specification of arguments, both for the
   host Lisp as well as ``inert'' arguments that can be passed along to calls of
-  programs (as with ~ilc[sys-call]).  ~l[save-exec].  See the source function
-  ~c[user-args-string] and its comments, source file ~c[acl2-init.lisp], for
-  more information.  Thanks to Jared Davis for suggesting the use of
-  ~c[\"$@\"], as well as modifications to ~ilc[save-exec] and helpful
-  conversations about that.
+  programs (as with ~ilc[sys-call]).  A keyword argument, ~c[:return-from-lp],
+  specifies a form to evaluate before quitting the read-eval-print loop at
+  startup.  ~l[save-exec].  Also see the source function ~c[user-args-string]
+  and its comments, source file ~c[acl2-init.lisp], for more information.
+  Thanks to Jared Davis for suggesting the use of ~c[\"$@\"], as well as
+  modifications to ~ilc[save-exec] and helpful conversations about that.
 
   A rather extensive overhaul has taken place for the function proclaiming
   mechanism.  As before, this is only used when the host Lisp is GCL.  However,
@@ -27682,8 +27687,11 @@ accompanying <i>``File Path''</i> shown at the end of each book's text.
 #-acl2-loop-only
 (defparameter *initial-cbd* nil)
 
+#-acl2-loop-only
+(defvar *return-from-lp* nil)
+
 (defun save-exec-fn (exec-filename extra-startup-string host-lisp-args
-                                   toplevel-args inert-args)
+                                   toplevel-args inert-args return-from-lp)
 
   #-acl2-loop-only
   (progn
@@ -27691,6 +27699,7 @@ accompanying <i>``File Path''</i> shown at the end of each book's text.
 ; Parallelism blemish: it may be a good idea to reset the parallelism variables
 ; in all #+acl2-par compilations before saving the image.
 
+    (setq *return-from-lp* return-from-lp)
     #-sbcl (when toplevel-args
              (er hard 'save-exec
                  "Keyword argument :toplevel-args is only allowed when the ~
@@ -27721,7 +27730,6 @@ accompanying <i>``File Path''</i> shown at the end of each book's text.
 
     (f-put-global 'connected-book-directory nil *the-live-state*)
     (setq *initial-cbd* nil)
-    (setq *lp-ever-entered-p* nil)
     (setq *startup-package-name* (package-name *package*))
     (setq *saved-build-date-lst*
 
@@ -27740,13 +27748,14 @@ accompanying <i>``File Path''</i> shown at the end of each book's text.
                    inert-args))
   #+acl2-loop-only
   (declare (ignore exec-filename extra-startup-string host-lisp-args
-                   toplevel-args inert-args))
+                   toplevel-args inert-args return-from-lp))
   nil ; Won't get to here in GCL and perhaps other lisps
   )
 
 (defmacro save-exec (exec-filename extra-startup-string
                                    &key
-                                   host-lisp-args toplevel-args inert-args)
+                                   host-lisp-args toplevel-args inert-args
+                                   return-from-lp)
 
   ":Doc-Section Other
 
@@ -27757,7 +27766,8 @@ accompanying <i>``File Path''</i> shown at the end of each book's text.
   ~il[books] to be included every time ACL2 is started, to avoid time taken to
   run ~ilc[include-book].  Another use of ~c[save-exec] is to save an
   executable that takes command-line arguments beyond those normally passed to
-  the host Lisp executable.
+  the host Lisp executable.  All arguments of a call of ~c[save-exec] are
+  evaluated.
 
   ~bv[]
   Examples:
@@ -27786,6 +27796,27 @@ accompanying <i>``File Path''</i> shown at the end of each book's text.
   (save-exec \"my-saved_acl2\" nil
              :host-lisp-args \"--no-init -Z 256M\"
              :inert-args \"abc xyz -i foo\")
+
+  ; Immediately exit the ACL2 read-eval-print loop after starting up.
+  (save-exec \"my-acl2\" nil
+             :return-from-lp t)
+
+  ; Immediately exit the ACL2 read-eval-print loop after starting up and
+  ; defining function FOO in the logic.
+  (save-exec \"my-acl2\" \"Start with foo defined.\"
+             :return-from-lp '(with-output
+                               :off :all
+                               (quote (defun foo (x) x))))
+
+  ; Immediately exit the ACL2 read-eval-print loop after starting up and
+  ; defining variable xxx in raw Lisp.
+  (save-exec \"my-acl2\" \"Start with xxx defined.\"
+             :return-from-lp '(with-output
+                               :off :all
+                               (ld '((set-raw-mode-on!)
+                                     (defvar xxx (make-list 10))
+                                     (set-raw-mode nil)
+                                     (u)))))
   ~ev[]
 
   Each example above generates a file named \"my-saved_acl2\".  That file is
@@ -27814,7 +27845,8 @@ accompanying <i>``File Path''</i> shown at the end of each book's text.
   General Form:
   (save-exec exec-filename extra-startup-string
              :host-lisp-args host-lisp-args
-             :inert-args inert-args)
+             :inert-args inert-args
+             :return-from-lp return-from-lp)
   ~ev[]
   where the keyword arguments are optional, and arguments are as follows.
   ~bq[]
@@ -27835,6 +27867,19 @@ accompanying <i>``File Path''</i> shown at the end of each book's text.
   value, then it is a string to be inserted into the command line in the saved
   script, specifying additional arguments that are not to be processed by the
   host Lisp executable.~eq[]
+
+  ~c[Return-from-lp] is ~c[nil] by default.  Regardless of the value of
+  ~c[return-from-lp], ACL2 starts up and enters its read-eval-print loop as
+  usual; ~pl[lp].  Normally you'll stay inside that loop, but if
+  ~c[return-from-lp] is not ~c[nil], then it is evaluated in the loop, which is
+  then exited, leaving you in raw Lisp.  Evaluation of ~c[return-from-lp] is
+  done with ~ilc[ld] options that minimize output; also ~pl[with-output] to
+  minimize output.  Suggestion: let ~c[return-from-lp] be ~c[t] if you simply
+  want to exit the read-eval-print loop at startup, without evaluating any
+  (nontrivial) form.
+
+  The remainder of this documentation focuses on the options other than
+  ~c[return-from-lp].
 
   ~st[Details]:
 
@@ -27983,7 +28028,7 @@ accompanying <i>``File Path''</i> shown at the end of each book's text.
   options.~/"
 
   `(save-exec-fn ,exec-filename ,extra-startup-string ,host-lisp-args
-                 ,toplevel-args ,inert-args))
+                 ,toplevel-args ,inert-args ,return-from-lp))
 
 (defdoc command-line
 

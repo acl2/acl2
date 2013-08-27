@@ -1187,10 +1187,13 @@ implementations.")
 
   t)
 
+(defvar *lp-ever-entered-p* nil)
+
 (defun acl2-default-restart ()
   (if *acl2-default-restart-complete*
       (return-from acl2-default-restart nil))
 
+  (setq *lp-ever-entered-p* nil)
   (#+cltl2
    common-lisp-user::acl2-set-character-encoding
    #-cltl2
@@ -1242,7 +1245,8 @@ implementations.")
 
 #+cmu
 (defun cmulisp-restart ()
-  (extensions::print-herald t)
+  (when *print-startup-banner*
+    (extensions::print-herald t))
   (acl2-default-restart)
   (lp))
 

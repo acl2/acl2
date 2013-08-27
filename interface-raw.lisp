@@ -7701,6 +7701,9 @@ Missing functions (use *check-built-in-constants-debug* = t for verbose report):
 ; our-truename will generally return nil.  Hence, we sometimes call
 ; our-truename on "" rather than on a file name.
 
+  (when args
+    (error "LP takes no arguments."))
+
   (with-more-warnings-suppressed
 
 ; Parallelism wart: we currently reset the parallelism variables twice on
@@ -7738,12 +7741,7 @@ Missing functions (use *check-built-in-constants-debug* = t for verbose report):
    (f-put-global 'parallel-execution-enabled t *the-live-state*)
    (let ((state *the-live-state*)
          #+(and gcl (not cltl2))
-         (lisp::*break-enable* (debugger-enabledp *the-live-state*))
-         (raw-p
-          (cond
-           ((null args) nil)
-           ((equal args '(raw)) 'raw)
-           (t (error "LP either takes no args or a single argument, 'raw.")))))
+         (lisp::*break-enable* (debugger-enabledp *the-live-state*)))
      (cond
       ((> *ld-level* 0)
        (when (raw-mode-p *the-live-state*)
@@ -7753,19 +7751,9 @@ Missing functions (use *check-built-in-constants-debug* = t for verbose report):
                :set-raw-mode nil.~|"
               nil (standard-co *the-live-state*) *the-live-state* nil))
        (return-from lp nil))
-      (*lp-ever-entered-p*
-       (f-put-global 'standard-oi
-                     (if (and raw-p (not (raw-mode-p state)))
-                         (cons '(set-raw-mode t)
-                               *standard-oi*)
-                       *standard-oi*)
-                     *the-live-state*)
-       (with-suppression ; package locks, not just warnings; to read 'cl::foo
-        (ld-fn (f-get-ld-specials *the-live-state*)
-               *the-live-state*
-               nil)))
-      (t (set-initial-cbd)
-         (eval `(in-package ,*startup-package-name*)) ;only changes raw Lisp pkg
+      ((not *lp-ever-entered-p*)
+       (set-initial-cbd)
+       (eval `(in-package ,*startup-package-name*)) ;only changes raw Lisp pkg
 
 ; We formerly set *debugger-hook* at the top level using setq, just below the
 ; definition of our-abort.  But that didn't work in Lispworks, where that value
@@ -7774,8 +7762,8 @@ Missing functions (use *check-built-in-constants-debug* = t for verbose report):
 ; globally to nil when input comes from a file, which is how ACL2 is built,
 ; rather than standard-input,
 
-         #-(and gcl (not cltl2))
-         (setq *debugger-hook* 'our-abort)
+       #-(and gcl (not cltl2))
+       (setq *debugger-hook* 'our-abort)
 
 ; Even with the setting of *stack-overflow-behaviour* to nil or :warn in
 ; acl2-init.lisp, we cannot eliminate the following form for LispWorks.  (We
@@ -7784,67 +7772,66 @@ Missing functions (use *check-built-in-constants-debug* = t for verbose report):
 ; certifying community books books/concurrent-programs/bakery/stutter2 and
 ; books/unicode/read-utf8.lisp.)
 
-         #+lispworks (hcl:extend-current-stack 400)
+       #+lispworks (hcl:extend-current-stack 400)
 
-         #+(and lispworks acl2-par)
-         (when (< (hcl:current-stack-length)
+       #+(and lispworks acl2-par)
+       (when (< (hcl:current-stack-length)
 
 ; Keep the below number (currently 80000) in sync with the value given to
 ; *sg-default-size* (set elsewhere in our code).
 
-                  80000)
-           (hcl:extend-current-stack
+                80000)
+         (hcl:extend-current-stack
 
 ; this calculation sets the current stack length to be within 1% of 80000
 
-            (- (round (* 100 (/ (hcl:current-stack-length) 80000))) 100)))
+          (- (round (* 100 (/ (hcl:current-stack-length) 80000))) 100)))
 
 ; Acl2-default-restart isn't enough in Allegro, at least, to get the new prompt
 ; when we start up:
 
-         (let* ((system-dir (let ((str (getenv$-raw "ACL2_SYSTEM_BOOKS")))
-                              (and str
-                                   (maybe-add-separator str))))
-                (save-expansion (let ((s (getenv$-raw "ACL2_SAVE_EXPANSION")))
-                                  (and s
-                                       (not (equal s ""))
-                                       (not (equal (string-upcase s)
-                                                   "NIL")))))
-                (user-home-dir-path (our-user-homedir-pathname))
-                (user-home-dir0 (and user-home-dir-path
-                                     (our-truename user-home-dir-path
-                                                   "Note: Calling ~
+       (let* ((system-dir (let ((str (getenv$-raw "ACL2_SYSTEM_BOOKS")))
+                            (and str
+                                 (maybe-add-separator str))))
+              (save-expansion (let ((s (getenv$-raw "ACL2_SAVE_EXPANSION")))
+                                (and s
+                                     (not (equal s ""))
+                                     (not (equal (string-upcase s)
+                                                 "NIL")))))
+              (user-home-dir-path (our-user-homedir-pathname))
+              (user-home-dir0 (and user-home-dir-path
+                                   (our-truename user-home-dir-path
+                                                 "Note: Calling ~
                                                     OUR-TRUENAME from LP.")))
-                (user-home-dir (and user-home-dir0
-                                    (if (eql (char user-home-dir0
-                                                   (1- (length user-home-dir0)))
-                                             *directory-separator*)
-                                        (subseq user-home-dir0
-                                                0
-                                                (1- (length user-home-dir0)))
-                                      user-home-dir0))))
-           (when system-dir
-             (f-put-global 'system-books-dir
-                           (canonical-dirname!
-                            (unix-full-pathname system-dir)
-                            'lp
-                            *the-live-state*)
-                           *the-live-state*))
-           (when (and save-expansion
-                      (not (equal (string-upcase save-expansion)
-                                  "NIL")))
-             (f-put-global 'save-expansion-file t *the-live-state*))
-           (when user-home-dir
-             (f-put-global 'user-home-dir user-home-dir *the-live-state*)))
-         (set-gag-mode-fn :goals *the-live-state*)
-         #-hons
+              (user-home-dir (and user-home-dir0
+                                  (if (eql (char user-home-dir0
+                                                 (1- (length user-home-dir0)))
+                                           *directory-separator*)
+                                      (subseq user-home-dir0
+                                              0
+                                              (1- (length user-home-dir0)))
+                                    user-home-dir0))))
+         (when system-dir
+           (f-put-global 'system-books-dir
+                         (canonical-dirname!
+                          (unix-full-pathname system-dir)
+                          'lp
+                          *the-live-state*)
+                         *the-live-state*))
+         (when (and save-expansion
+                    (not (equal (string-upcase save-expansion)
+                                "NIL")))
+           (f-put-global 'save-expansion-file t *the-live-state*))
+         (when user-home-dir
+           (f-put-global 'user-home-dir user-home-dir *the-live-state*)))
+       (set-gag-mode-fn :goals *the-live-state*)
+       #-hons
 ; Hons users are presumably advanced enough to tolerate the lack of a
 ; "[RAW LISP]" prompt.
-         (install-new-raw-prompt)
-         (setq *lp-ever-entered-p* t)
-         #+hons (f-put-global 'serialize-character-system #\Z state)
-         #+(and (not acl2-loop-only) acl2-rewrite-meter)
-         (setq *rewrite-depth-alist* nil)
+       (install-new-raw-prompt)
+       #+hons (f-put-global 'serialize-character-system #\Z state)
+       #+(and (not acl2-loop-only) acl2-rewrite-meter)
+       (setq *rewrite-depth-alist* nil)
 
 ; Without the following call, it was impossible to read and write with ACL2 I/O
 ; functions to *standard-co* in CLISP 2.30.  Apparently the appropriate Lisp
@@ -7852,7 +7839,7 @@ Missing functions (use *check-built-in-constants-debug* = t for verbose report):
 ; up.  So we "refresh" the appropriate property lists with the current such
 ; Lisp streams.
 
-         (setup-standard-io)
+       (setup-standard-io)
 
 ; The following applies to CLISP 2.30, where charset:iso-8859-1 is defined, not to
 ; CLISP 2.27, where charset:utf-8 is not defined.  It apparently has to be
@@ -7860,63 +7847,71 @@ Missing functions (use *check-built-in-constants-debug* = t for verbose report):
 ; before saving an image, but the value of custom:*default-file-encoding* at
 ; startup was #<ENCODING CHARSET:ASCII :UNIX>.
 
-         #+(and clisp unicode)
-         (setq custom:*default-file-encoding* charset:iso-8859-1)
-         #+gcl
+       #+(and clisp unicode)
+       (setq custom:*default-file-encoding* charset:iso-8859-1)
+       #+gcl
 
 ; In GCL, at least through Version 2.6.7, there are only 1024 indices n
 ; available for the #n= reader macro.  That is such a small number that for
 ; GCL, we turn off the use of this reader macro when printing out files such as
 ; .cert files.
 
-         (f-put-global 'print-circle-files nil state)
-         (let ((customization-full-file-name
-                (initial-customization-filename)))
-           (cond
-            ((or (eq customization-full-file-name :none)
-                 (global-val 'boot-strap-flg (w state)))
-             nil)
-            (customization-full-file-name
+       (f-put-global 'print-circle-files nil state)
+       (let ((customization-full-file-name
+              (initial-customization-filename)))
+         (cond
+          ((or (eq customization-full-file-name :none)
+               (global-val 'boot-strap-flg (w state)))
+           nil)
+          (customization-full-file-name
 
 ; If the ACL2 customization file exists (and we are not booting) then it hasn't
 ; been included yet, and we include it now.
 
-             (fms "Customizing with ~x0.~%"
-                  (list (cons #\0 customization-full-file-name))
-                  *standard-co*
-                  state
-                  nil)
-             (let ((old-infixp (f-get-global 'infixp *the-live-state*)))
-               (f-put-global 'infixp nil *the-live-state*)
-               (with-suppression ; package locks, not just warnings, for read
-                (state-free-global-let*
-                 ((connected-book-directory
-                   (f-get-global 'connected-book-directory state)))
-                 (ld-fn (put-assoc-eq
-                         'standard-oi
-                         (if (and raw-p (not (raw-mode-p state)))
-                             (cons '(set-raw-mode t)
-                                   customization-full-file-name)
-                           customization-full-file-name)
-                         (put-assoc-eq
-                          'ld-error-action :return
-                          (f-get-ld-specials *the-live-state*)))
-                        *the-live-state*
-                        nil)))
-               (f-put-global 'infixp old-infixp *the-live-state*)))))
-         (f-put-global 'standard-oi
-                       (if (and raw-p (not (raw-mode-p state)))
-                           (cons '(set-raw-mode t)
-                                 *standard-oi*)
-                         *standard-oi*)
-                       *the-live-state*)
-         (f-put-global 'ld-error-action :continue *the-live-state*)
-         (with-suppression ; package locks, not just warnings; to read 'cl::foo
-          (ld-fn (f-get-ld-specials state)
-                 *the-live-state*
-                 nil))))
-     (fms "Exiting the ACL2 read-eval-print loop.  To re-enter, execute (LP)."
-          nil *standard-co* *the-live-state* nil)
+           (fms "Customizing with ~x0.~%"
+                (list (cons #\0 customization-full-file-name))
+                *standard-co*
+                state
+                nil)
+           (let ((old-infixp (f-get-global 'infixp *the-live-state*)))
+             (f-put-global 'infixp nil *the-live-state*)
+             (with-suppression ; package locks, not just warnings, for read
+              (state-free-global-let*
+               ((connected-book-directory
+                 (f-get-global 'connected-book-directory state)))
+               (ld-fn (put-assoc-eq
+                       'standard-oi
+                       customization-full-file-name
+                       (put-assoc-eq
+                        'ld-error-action :return
+                        (f-get-ld-specials *the-live-state*)))
+                      *the-live-state*
+                      nil)))
+             (f-put-global 'infixp old-infixp *the-live-state*)))))
+       (f-put-global 'ld-error-action :continue *the-live-state*)))
+     (with-suppression ; package locks, not just warnings; to read 'cl::foo
+      (cond ((and *return-from-lp*
+                  (not *lp-ever-entered-p*))
+             (f-put-global 'standard-oi
+                           `(,*return-from-lp* (value :q))
+                           *the-live-state*)
+             (setq *return-from-lp* nil)
+             (setq *lp-ever-entered-p* t)
+             (state-free-global-let*
+              ((ld-verbose nil)
+               (ld-prompt nil)
+               (ld-post-eval-print nil))
+              (ld-fn (f-get-ld-specials *the-live-state*)
+                     *the-live-state*
+                     nil)))
+            (t (setq *lp-ever-entered-p* t)
+               (f-put-global 'standard-oi *standard-oi* *the-live-state*)
+               (ld-fn (f-get-ld-specials *the-live-state*)
+                      *the-live-state*
+                      nil)
+               (fms "Exiting the ACL2 read-eval-print loop.  To re-enter, ~
+                     execute (LP)."
+                    nil *standard-co* *the-live-state* nil))))
      #+(and acl2-par lispworks)
      (spawn-extra-lispworks-listener)
      (values))))

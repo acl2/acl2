@@ -16055,9 +16055,6 @@
 (defparameter *acl2-unwind-protect-stack* nil)
 
 #-acl2-loop-only
-(defvar *lp-ever-entered-p* nil)
-
-#-acl2-loop-only
 (defmacro push-car (item place ctx)
   (let ((g (gensym)))
     `(let ((,g ,place))
