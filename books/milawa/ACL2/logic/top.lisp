@@ -1,0 +1,70 @@
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;           __    __        __    __                                        ;;
+;;          /  \  /  \      (__)  |  |    ____   ___      __    ____         ;;
+;;         /    \/    \      __   |  |   / _  |  \  \ __ /  /  / _  |        ;;
+;;        /  /\    /\  \    |  |  |  |  / / | |   \  '  '  /  / / | |        ;;
+;;       /  /  \__/  \  \   |  |  |  |  \ \_| |    \  /\  /   \ \_| |        ;;
+;;      /__/          \__\  |__|  |__|   \____|     \/  \/     \____|        ;;
+;; ~ ~~ \  ~ ~  ~_~~ ~/~ /~ | ~|~ | ~| ~ /~_ ~|~ ~  ~\  ~\~ ~  ~ ~  |~~    ~ ;;
+;;  ~ ~  \~ \~ / ~\~ / ~/ ~ |~ | ~|  ~ ~/~/ | |~ ~~/ ~\/ ~~ ~ / / | |~   ~   ;;
+;; ~ ~  ~ \ ~\/ ~  \~ ~/ ~~ ~__|  |~ ~  ~ \_~  ~  ~  .__~ ~\ ~\ ~_| ~  ~ ~~  ;;
+;;  ~~ ~  ~\  ~ /~ ~  ~ ~  ~ __~  |  ~ ~ \~__~| ~/__~   ~\__~ ~~___~| ~ ~    ;;
+;; ~  ~~ ~  \~_/  ~_~/ ~ ~ ~(__~ ~|~_| ~  ~  ~~  ~  ~ ~~    ~  ~   ~~  ~  ~  ;;
+;;                                                                           ;;
+;;            A   R e f l e c t i v e   P r o o f   C h e c k e r            ;;
+;;                                                                           ;;
+;;       Copyright (C) 2005-2009 by Jared Davis <jared@cs.utexas.edu>        ;;
+;;                                                                           ;;
+;; This program is free software; you can redistribute it and/or modify it   ;;
+;; under the terms of the GNU General Public License as published by the     ;;
+;; Free Software Foundation; either version 2 of the License, or (at your    ;;
+;; option) any later version.                                                ;;
+;;                                                                           ;;
+;; This program is distributed in the hope that it will be useful, but       ;;
+;; WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABIL-  ;;
+;; ITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public      ;;
+;; License for more details.                                                 ;;
+;;                                                                           ;;
+;; You should have received a copy of the GNU General Public License along   ;;
+;; with this program (see the file COPYING); if not, write to the Free       ;;
+;; Software Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA    ;;
+;; 02110-1301, USA.                                                          ;;
+;;                                                                           ;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(in-package "MILAWA")
+
+(include-book "arities-okp")
+(include-book "appeal-identity")
+(include-book "base-evaluator")
+(include-book "disjoin-formulas")
+(include-book "find-proof")
+(include-book "formula-size")
+(include-book "formulas")
+(include-book "fterm-lists")
+(include-book "functional-axiom")
+(include-book "fuse")
+(include-book "groundp")
+(include-book "negate-formulas")
+(include-book "negate-term")
+(include-book "pand")
+(include-book "patmatch-formula")
+(include-book "patmatch-term")
+(include-book "pequal-list")
+(include-book "piff")
+(include-book "por-list")
+(include-book "proofp")
+(include-book "quote-range")
+(include-book "replace-subterm")
+(include-book "replace-proofs")
+(include-book "substitute-formula")
+(include-book "substitute-term")
+(include-book "subtermp")
+(include-book "termination")
+(include-book "term-formula")
+(include-book "term-order")
+(include-book "terms")
+(include-book "trace-proofp")
+(include-book "translate")
+(include-book "translate-sigma")
+

@@ -326,7 +326,7 @@ $(info Scanning for books...)
 REBUILD_MAKEFILE_BOOKS := $(shell \
   rm -f Makefile-books; \
   time find . -name "*.lisp" \
-    | egrep -v '^(\./)?(interface|nonstd|centaur/quicklisp|clause-processors/SULFA|workshops/2003/kaufmann/support|models/y86/)' \
+    | egrep -v '^(\./)?(interface|nonstd|centaur/quicklisp|milawa|clause-processors/SULFA|workshops/2003/kaufmann/support|models/y86/)' \
     | fgrep -v '.\#' \
   > Makefile-books; \
   ls -l Makefile-books)
