@@ -176,10 +176,10 @@
 
 
 
-(defsection expand-marked
+(defsection expand-marked-term
 
   (mutual-recursion
-   (defun expand-marked (x w)
+   (defun expand-marked-term (x w)
      (declare (xargs :guard (and (pseudo-termp x)
                                  (plist-worldp w))
                      :verify-guards nil))
@@ -189,7 +189,7 @@
           (args (expand-marked-list (fargs x) w))
           ((when (flambdap fn))
            `((lambda ,(lambda-formals fn)
-               ,(expand-marked (lambda-body fn) w))
+               ,(expand-marked-term (lambda-body fn) w))
              . ,args)))
        (expand-if-marked fn args w)))
 
@@ -198,12 +198,12 @@
                                  (plist-worldp w))))
      (if (atom x)
          nil
-       (cons (expand-marked (car x) w)
+       (cons (expand-marked-term (car x) w)
              (expand-marked-list (cdr x) w)))))
 
 
 
-  (in-theory (disable expand-marked
+  (in-theory (disable expand-marked-term
                       expand-marked-list))
 
   (defthm len-of-expand-marked-list
@@ -212,10 +212,10 @@
     :hints(("Goal" :in-theory (enable expand-marked-list))))
 
   (defthm-expev-term/alist-flag
-    (defthm expand-marked-pseudo-termp
+    (defthm expand-marked-term-pseudo-termp
       (implies (pseudo-termp x)
-               (pseudo-termp (expand-marked x w)))
-      :hints ('(:expand ((expand-marked x w))))
+               (pseudo-termp (expand-marked-term x w)))
+      :hints ('(:expand ((expand-marked-term x w))))
       :flag term)
     (defthm expand-marked-list-pseudo-term-listp
       (implies (pseudo-term-listp x)
@@ -228,16 +228,16 @@
            (implies (pseudo-term-listp x)
                     (pseudo-termp (car x)))))
 
-  (verify-guards expand-marked)
+  (verify-guards expand-marked-term)
 
   (defthm-expev-term/alist-flag
-    (defthm expand-marked-correct
+    (defthm expand-marked-term-correct
       (implies (and (expev-meta-extract-global-facts)
                     (equal w (w state))
                     (pseudo-termp x))
-               (equal (expev (expand-marked x w) al)
+               (equal (expev (expand-marked-term x w) al)
                       (expev x al)))
-      :hints ('(:expand ((expand-marked x w))
+      :hints ('(:expand ((expand-marked-term x w))
                 :in-theory (enable expev-of-fncall-args)))
       :flag term)
     (defthm expand-marked-list-correct
@@ -248,6 +248,80 @@
                       (expev-lst x al)))
       :hints ('(:expand ((expand-marked-list x w)
                          (expand-marked-list nil w))))
+      :flag list)))
+
+
+(defsection remove-expand-mes
+
+  (mutual-recursion
+   (defun remove-expand-mes (x)
+     (declare (xargs :guard (and (pseudo-termp x))
+                     :verify-guards nil))
+     (b* (((when (variablep x)) x)
+          (fn (ffn-symb x))
+          ((when (eq fn 'quote)) x)
+          (args (remove-expand-mes-list (fargs x)))
+          ((when (flambdap fn))
+           `((lambda ,(lambda-formals fn)
+               ,(remove-expand-mes (lambda-body fn)))
+             . ,args))
+          ((when (and (eq fn 'expand-me) (equal (len args) 1)))
+           (car args))
+          ((when (and (eq fn 'expand-me-with) (equal (len args) 2)))
+           (cadr args)))
+       (cons fn args)))
+
+   (defun remove-expand-mes-list (x)
+     (declare (xargs :guard (and (pseudo-term-listp x))))
+     (if (atom x)
+         nil
+       (cons (remove-expand-mes (car x))
+             (remove-expand-mes-list (cdr x))))))
+
+
+
+  (in-theory (disable remove-expand-mes
+                      remove-expand-mes-list))
+
+  (defthm len-of-remove-expand-mes-list
+    (equal (len (remove-expand-mes-list x))
+           (len x))
+    :hints(("Goal" :in-theory (enable remove-expand-mes-list))))
+
+  (defthm-expev-term/alist-flag
+    (defthm remove-expand-mes-pseudo-termp
+      (implies (pseudo-termp x)
+               (pseudo-termp (remove-expand-mes x)))
+      :hints ('(:expand ((remove-expand-mes x))))
+      :flag term)
+    (defthm remove-expand-mes-list-pseudo-term-listp
+      (implies (pseudo-term-listp x)
+               (pseudo-term-listp (remove-expand-mes-list x)))
+      :hints ('(:expand ((remove-expand-mes-list x)
+                         (remove-expand-mes-list nil))))
+      :flag list))
+
+  (local (defthm pseudo-termp-car-when-pseudo-term-listp
+           (implies (pseudo-term-listp x)
+                    (pseudo-termp (car x)))))
+
+  (verify-guards remove-expand-mes)
+
+  (defthm-expev-term/alist-flag
+    (defthm remove-expand-mes-correct
+      (implies (pseudo-termp x)
+               (equal (expev (remove-expand-mes x) al)
+                      (expev x al)))
+      :hints ('(:expand ((remove-expand-mes x))
+                :in-theory (enable expev-of-fncall-args
+                                   expand-me expand-me-with)))
+      :flag term)
+    (defthm remove-expand-mes-list-correct
+      (implies (pseudo-term-listp x)
+               (equal (expev-lst (remove-expand-mes-list x) al)
+                      (expev-lst x al)))
+      :hints ('(:expand ((remove-expand-mes-list x)
+                         (remove-expand-mes-list nil))))
       :flag list)))
   
 
@@ -329,31 +403,31 @@
             (just-expand-cp-parse-hints (cdr hints) w)))))
 
 
-(defsection hints-okp
+(defsection just-exp-hints-okp
 
-  (defund hint-alist-okp (alist)
+  (defund just-exp-hint-alist-okp (alist)
     (declare (xargs :guard t))
     (and (alistp alist)
          (symbolp (cdr (assoc 'rule alist)))
          (alistp (cdr (assoc 'subst alist)))))
 
-  (defund hints-okp (hints)
+  (defund just-exp-hints-okp (hints)
     (declare (xargs :guard t))
     (or (atom hints)
         (and (consp (car hints))
              (pseudo-termp (caar hints))
-             (hint-alist-okp (cdar hints))
-             (hints-okp (cdr hints))))))
+             (just-exp-hint-alist-okp (cdar hints))
+             (just-exp-hints-okp (cdr hints))))))
 
 
 (defsection mark-expansion
 
-  (local (in-theory (enable hint-alist-okp)))
+  (local (in-theory (enable just-exp-hint-alist-okp)))
 
   (defund mark-expansion (term pattern alist)
     (declare (xargs :guard (and (pseudo-termp term)
                                 (pseudo-termp pattern)
-                                (hint-alist-okp alist))))
+                                (just-exp-hint-alist-okp alist))))
     (b* ((subst (cdr (assoc 'subst alist)))
          ((mv pat-ok &) (simple-one-way-unify pattern term subst))
          ((unless pat-ok) term)
@@ -367,7 +441,7 @@
   (defthm mark-expansion-correct
     (implies (and (pseudo-termp term)
                   (pseudo-termp pattern)
-                  (hint-alist-okp alist))
+                  (just-exp-hint-alist-okp alist))
              (equal (expev (mark-expansion term pattern alist) a)
                     (expev term a)))
     :hints (("goal" :do-not-induct t)))
@@ -378,11 +452,11 @@
 
 
 (defsection mark-expansions
-  (local (in-theory (enable hints-okp)))
+  (local (in-theory (enable just-exp-hints-okp)))
 
   (defund mark-expansions (term hints)
     (declare (xargs :guard (and (pseudo-termp term)
-                                (hints-okp hints))))
+                                (just-exp-hints-okp hints))))
     (if (atom hints)
         term
       (mark-expansions
@@ -393,7 +467,7 @@
 
 
   (defthm mark-expansions-correct
-    (implies (and (hints-okp hints)
+    (implies (and (just-exp-hints-okp hints)
                   (pseudo-termp term))
              (equal (expev (mark-expansions term hints) a)
                     (expev term a))))
@@ -410,7 +484,7 @@
   (mutual-recursion
    (defun mark-expands-with-hints (x hints lambdasp)
      (declare (xargs :guard (and (pseudo-termp x)
-                                 (hints-okp hints))
+                                 (just-exp-hints-okp hints))
                      :verify-guards nil))
      (b* (((when (variablep x)) x)
           (fn (ffn-symb x))
@@ -427,7 +501,7 @@
 
    (defun mark-expands-with-hints-list (x hints lambdasp)
      (declare (xargs :guard (and (pseudo-term-listp x)
-                                 (hints-okp hints))))
+                                 (just-exp-hints-okp hints))))
      (if (atom x)
          nil
        (cons (mark-expands-with-hints (car x) hints lambdasp)
@@ -459,7 +533,7 @@
 
   (defthm-expev-term/alist-flag
     (defthm mark-expands-with-hints-correct
-      (implies (and (hints-okp hints)
+      (implies (and (just-exp-hints-okp hints)
                     (pseudo-termp x))
                (equal (expev (mark-expands-with-hints x hints lambdasp) al)
                       (expev x al)))
@@ -467,7 +541,7 @@
                 :in-theory (enable expev-of-fncall-args)))
       :flag term)
     (defthm mark-expands-with-hints-list-correct
-      (implies (and (hints-okp hints)
+      (implies (and (just-exp-hints-okp hints)
                     (pseudo-term-listp x))
                (equal (expev-lst (mark-expands-with-hints-list x hints lambdasp) al)
                       (expev-lst x al)))
@@ -479,12 +553,12 @@
 
 (defsection apply-expansion
 
-  (local (in-theory (enable hint-alist-okp)))
+  (local (in-theory (enable just-exp-hint-alist-okp)))
 
   (defund apply-expansion (term pattern alist w)
     (declare (xargs :guard (and (pseudo-termp term)
                                 (pseudo-termp pattern)
-                                (hint-alist-okp alist)
+                                (just-exp-hint-alist-okp alist)
                                 (plist-worldp w))))
     (b* ((subst (cdr (assoc 'subst alist)))
          ((mv pat-ok &) (simple-one-way-unify pattern term subst))
@@ -499,7 +573,7 @@
                   (equal w (w state))
                   (pseudo-termp term)
                   (pseudo-termp pattern)
-                  (hint-alist-okp alist))
+                  (just-exp-hint-alist-okp alist))
              (equal (expev (apply-expansion term pattern alist w) a)
                     (expev term a)))
     :hints (("goal" :do-not-induct t)))
@@ -509,11 +583,11 @@
              (pseudo-termp (apply-expansion term pattern alist w)))))
 
 (defsection apply-expansions
-  (local (in-theory (enable hints-okp)))
+  (local (in-theory (enable just-exp-hints-okp)))
 
   (defund apply-expansions (term hints w)
     (declare (xargs :guard (and (pseudo-termp term)
-                                (hints-okp hints)
+                                (just-exp-hints-okp hints)
                                 (plist-worldp w))))
     (if (atom hints)
         term
@@ -527,7 +601,7 @@
   (defthm apply-expansions-correct
     (implies (and (expev-meta-extract-global-facts)
                   (equal w (w state))
-                  (hints-okp hints)
+                  (just-exp-hints-okp hints)
                   (pseudo-termp term))
              (equal (expev (apply-expansions term hints w) a)
                     (expev term a))))
@@ -543,7 +617,7 @@
    (defun expand-with-hints (x hints lambdasp w)
      (declare (xargs :guard (and (pseudo-termp x)
                                  (plist-worldp w)
-                                 (hints-okp hints))
+                                 (just-exp-hints-okp hints))
                      :verify-guards nil))
      (b* (((when (variablep x)) x)
           (fn (ffn-symb x))
@@ -560,7 +634,7 @@
 
    (defun expand-with-hints-list (x hints lambdasp w)
      (declare (xargs :guard (and (pseudo-term-listp x)
-                                 (hints-okp hints)
+                                 (just-exp-hints-okp hints)
                                  (plist-worldp w))))
      (if (atom x)
          nil
@@ -595,7 +669,7 @@
     (defthm expand-with-hints-correct
       (implies (and (expev-meta-extract-global-facts)
                     (equal w (w state))
-                    (hints-okp hints)
+                    (just-exp-hints-okp hints)
                     (pseudo-termp x))
                (equal (expev (expand-with-hints x hints lambdasp w) al)
                       (expev x al)))
@@ -605,7 +679,7 @@
     (defthm expand-with-hints-list-correct
       (implies (and (expev-meta-extract-global-facts)
                     (equal w (w state))
-                    (hints-okp hints)
+                    (just-exp-hints-okp hints)
                     (pseudo-term-listp x))
                (equal (expev-lst (expand-with-hints-list x hints lambdasp w) al)
                       (expev-lst x al)))
@@ -621,7 +695,7 @@
 ;; (mutual-recursion
 ;;  (defun term-apply-expansions (x hints lambdasp)
 ;;    (declare (xargs :guard (and (pseudo-termp x)
-;;                                (hints-okp hints))
+;;                                (just-exp-hints-okp hints))
 ;;                    :verify-guards nil))
 ;;    (if (or (variablep x)
 ;;            (fquotep x))
@@ -638,7 +712,7 @@
 ;;          (apply-expansions (cons fn args) hints)))))
 ;;  (defun termlist-apply-expansions (x hints lambdasp)
 ;;    (declare (xargs :guard (and (pseudo-term-listp x)
-;;                                (hints-okp hints))))
+;;                                (just-exp-hints-okp hints))))
 ;;    (if (atom x)
 ;;        nil
 ;;      (cons (term-apply-expansions (car x) hints lambdasp)
@@ -657,14 +731,14 @@
 ;; (defthm-term-apply-expansions-flg
 ;;   (defthm pseudo-termp-term-apply-expansions
 ;;     (implies (and (pseudo-termp x)
-;;                   (hints-okp hints))
+;;                   (just-exp-hints-okp hints))
 ;;              (pseudo-termp (term-apply-expansions x hints lambdasp)))
 ;;     :hints ((and stable-under-simplificationp
 ;;                  '(:expand ((:free (a b) (pseudo-termp (cons a b)))))))
 ;;     :flag term)
 ;;   (defthm pseudo-term-listp-termlist-apply-expansions
 ;;     (implies (and (pseudo-term-listp x)
-;;                   (hints-okp hints))
+;;                   (just-exp-hints-okp hints))
 ;;              (pseudo-term-listp (termlist-apply-expansions x hints lambdasp)))
 ;;     :flag list))
 
@@ -699,7 +773,7 @@
 ;; (defthm-term-apply-expansions-correct-flg
 ;;   (defthm term-apply-expansions-correct
 ;;     (implies (and (pseudo-termp x)
-;;                   (hints-okp hints)
+;;                   (just-exp-hints-okp hints)
 ;;                   (expev-theoremp (conjoin-clauses (hint-alists-to-clauses hints))))
 ;;              (equal (expev (term-apply-expansions x hints lambdasp) a)
 ;;                     (expev x a)))
@@ -709,7 +783,7 @@
 ;;     :flag term)
 ;;   (defthm termlist-apply-expansions-correct
 ;;     (implies (and (pseudo-term-listp x)
-;;                   (hints-okp hints)
+;;                   (just-exp-hints-okp hints)
 ;;                   (expev-theoremp (conjoin-clauses (hint-alists-to-clauses hints))))
 ;;              (equal (expev-lst (termlist-apply-expansions x hints lambdasp) a)
 ;;                     (expev-lst x a)))
@@ -769,26 +843,34 @@
 
    (defthm not-or-list-of-butlast-if-not-or-list
      (implies (not (or-list x))
-              (not (or-list (butlast x n)))))))
+              (not (or-list (butlast x n)))))
+
+   (defthm pseudo-term-listp-append
+     (implies (and (pseudo-term-listp x)
+                   (pseudo-term-listp y))
+              (pseudo-term-listp (append x y))))))
 
 (defsection just-expand-cp
+
+  (local (defthm true-listp-butlast
+           (true-listp (butlast lst n))))
+
 
   (defund just-expand-cp (clause hints state)
     (declare (xargs :guard (pseudo-term-listp clause)
                     :stobjs state))
     (b* (((unless (and (true-listp hints)
-                       (hints-okp (caddr hints))))
+                       (just-exp-hints-okp (caddr hints))))
           (mv "bad hints" nil))
          ((list last-only lambdasp hints) hints)
-         ; ((when (atom clause)) (mv nil (list nil)))
-         (new-clause
+         (clause
           (if last-only
               (append (butlast clause 1)
                       (expand-with-hints-list
                        (last clause) hints lambdasp (w state)))
             (expand-with-hints-list
              clause hints lambdasp (w state)))))
-      (mv nil (list new-clause))))
+      (mv nil (list clause))))
 
   (local (in-theory (enable just-expand-cp)))
   (local (in-theory (disable butlast-redefinition or-list last)))
@@ -806,12 +888,84 @@
                     (x (disjoin (car (mv-nth 1 (just-expand-cp clause hints state)))))))))
     :rule-classes :clause-processor))
 
+
+(defsection expand-marked-cp
+
+  (local (defthm true-listp-butlast
+           (true-listp (butlast lst n))))
+
+
+  (defund expand-marked-cp (clause hints state)
+    (declare (xargs :guard (pseudo-term-listp clause)
+                    :stobjs state))
+    (b* (((unless (true-listp hints))
+          (mv "bad hints" nil))
+         ((list last-only) hints)
+         (clause
+          (if last-only
+              (append (remove-expand-mes-list (butlast clause 1))
+                      (expand-marked-list (last clause) (w state)))
+            (expand-marked-list clause (w state)))))
+
+      (mv nil (list clause))))
+
+  (local (in-theory (enable expand-marked-cp)))
+  (local (in-theory (disable butlast-redefinition or-list last)))
+
+  (defthm expand-marked-cp-correct
+    (implies (and (expev-meta-extract-global-facts)
+                  (pseudo-term-listp clause)
+                  (alistp a)
+                  (expev-theoremp
+                   (conjoin-clauses
+                    (clauses-result (expand-marked-cp clause hints state)))))
+             (expev (disjoin clause) a))
+    :hints (("goal" :do-not-induct t
+             :use ((:instance expev-falsify
+                    (x (disjoin (car (mv-nth 1 (expand-marked-cp clause hints state)))))))))
+    :rule-classes :clause-processor))
+
+(defsection remove-expand-marks-cp
+
+  (local (defthm true-listp-butlast
+           (true-listp (butlast lst n))))
+
+
+  (defund remove-expand-marks-cp (clause hints)
+    (declare (xargs :guard (pseudo-term-listp clause)))
+    (b* (((unless (true-listp hints))
+          (mv "bad hints" nil))
+         ((list butlast-only) hints)
+         (clause
+          (if butlast-only
+              (append (remove-expand-mes-list (butlast clause 1))
+                      (last clause))
+            (remove-expand-mes-list clause))))
+
+      (mv nil (list clause))))
+
+  (local (in-theory (enable remove-expand-marks-cp)))
+  (local (in-theory (disable butlast-redefinition or-list last)))
+
+  (defthm remove-expand-marks-cp-correct
+    (implies (and (expev-meta-extract-global-facts)
+                  (pseudo-term-listp clause)
+                  (alistp a)
+                  (expev-theoremp
+                   (conjoin-clauses
+                    (clauses-result (remove-expand-marks-cp clause hints)))))
+             (expev (disjoin clause) a))
+    :hints (("goal" :do-not-induct t
+             :use ((:instance expev-falsify
+                    (x (disjoin (car (mv-nth 1 (remove-expand-marks-cp clause hints)))))))))
+    :rule-classes :clause-processor))
+
 (defsection mark-expands-cp
 
   (defund mark-expands-cp (clause hints)
     (declare (xargs :guard (pseudo-term-listp clause)))
     (b* (((unless (and (true-listp hints)
-                       (hints-okp (caddr hints))))
+                       (just-exp-hints-okp (caddr hints))))
           (mv "bad hints" nil))
          ((list last-only lambdasp hints) hints)
          ; ((when (atom clause)) (mv nil (list nil)))
@@ -849,6 +1003,18 @@
        :clause-processor
        ,cproc)))
 
+(defmacro expand-marked (&key last-only)
+  ``(:computed-hint-replacement
+     ((use-by-computed-hint clause))
+     :clause-processor
+     (expand-marked-cp clause (list ,',last-only) state)))
+
+(defmacro remove-expand-marks (&key butlast-only)
+  ``(:computed-hint-replacement
+     ((use-by-computed-hint clause))
+     :clause-processor
+     (remove-expand-marks-cp clause (list ,',butlast-only))))
+
 
 (local
  (encapsulate nil
@@ -882,13 +1048,28 @@
 (local
  (encapsulate nil
    (value-triple 3)
-   (defthm foo (implies (consp x)
-                        (let ((x (list x x)))
-                          (equal (len x) (+ 1 (len (cdr x))))))
-     :hints (("goal" :do-not '(simplify preprocess eliminate-destructors)
-              :in-theory (disable len))
-             (just-expand ((len x)) :lambdasp t)
-             '(:do-not nil)))))
+   (local (defthm foo (implies (consp x)
+                               (let ((x (list x x)))
+                                 (equal (len x) (+ 1 (len (cdr x))))))
+            :hints (("goal" :do-not '(simplify preprocess eliminate-destructors)
+                     :in-theory (disable len))
+                    (just-expand ((len x)) :lambdasp t)
+                    '(:do-not nil))))))
+
+(local
+ (encapsulate nil
+   (value-triple 4)
+   (local (defthm foo (implies (consp x)
+                               (equal (len x) (+ 1 (len (cdr x)))))
+            :hints (("goal" :do-not '(simplify preprocess eliminate-destructors)
+                     :in-theory (disable len))
+                    (let ((res (just-expand ((len x)) :mark-only t)))
+                      (progn$ (cw "hint: ~x0~%" res)
+                              res))
+                    '(:do-not nil)
+                    (and stable-under-simplificationp
+                         (expand-marked)))
+            :rule-classes nil))))
 
 (defsection clause-to-term
 
@@ -941,18 +1122,29 @@
 
 
 
-(defmacro just-induct-and-expand (term &key expand-others lambdasp mark-only)
-  `'(:computed-hint-replacement
-     ((and (equal (car id) '(0))
-           '(:induct ,term))
-      (and (equal (car id) '(0 1))
-           (just-expand (,term . ,expand-others) :lambdasp ,lambdasp
-                        :last-only t
-                        :mark-only ,mark-only))
-      '(:do-not nil))
-     :clause-processor clause-to-term
-     :do-not '(preprocess simplify)))
+;; (defmacro just-induct-and-expand (term &key expand-others lambdasp mark-only)
+;;   `'(:computed-hint-replacement
+;;      ((and (equal (car id) '(0))
+;;            '(:induct ,term))
+;;       (and (equal (car id) '(0 1))
+;;            (just-expand (,term . ,expand-others) :lambdasp ,lambdasp
+;;                         :last-only t
+;;                         :mark-only ,mark-only))
+;;       '(:do-not nil))
+;;      :clause-processor clause-to-term
+;;      :do-not '(preprocess simplify)))
 
+
+(defmacro just-induct-and-expand (term &key expand-others lambdasp)
+  `(if (equal (car id) '(0))
+       (b* ((hints (just-expand-cp-parse-hints (cons ',term ',expand-others) (w state)))
+            (cproc `(mark-expands-cp clause '(nil ,',lambdasp ,hints))))
+         `(:computed-hint-replacement
+           (; (and (equal (car id) '(0)) '(:clause-processor clause-to-term))
+            (and (equal (car id) '(0)) '(:induct ,',term)))
+           :clause-processor ,cproc))
+     (and (equal (car id) '(0 1))
+          (expand-marked :last-only t))))
 
 (local
  (progn
@@ -976,12 +1168,13 @@
 
    (encapsulate nil
      (value-triple 'just-induct-test)
+     (local (in-theory (disable (:definition ind))))
      (local
       (defthm true-listp-ind
         (implies (true-listp z)
                  (true-listp (ind x y z)))
-        :hints (("goal" :in-theory (disable (:definition ind))
-                 :do-not-induct t)
+        :hints (;; ("goal" :in-theory (disable (:definition ind))
+                ;;  :do-not-induct t)
                 (just-induct-and-expand (ind x y z))))))
    (encapsulate nil
      (value-triple 'just-induct-mark-only-test)
@@ -989,9 +1182,10 @@
       (defthm true-listp-ind
         (implies (true-listp z)
                  (true-listp (ind x y z)))
-        :hints (("goal" :in-theory (disable (:definition ind))
-                 :do-not-induct t)
-                (just-induct-and-expand (ind x y z) :mark-only t)
-                (and stable-under-simplificationp
-                     '(:in-theory (e/d (expand-marked-meta)
-                                       (ind))))))))))
+        :hints (;; ("goal" :in-theory (disable (:definition ind))
+                ;;  :do-not-induct t)
+                (just-induct-and-expand (ind x y z))
+                ;; (and stable-under-simplificationp
+                ;;      '(:in-theory (e/d (expand-marked-meta)
+                ;;                        (ind))))
+                ))))))

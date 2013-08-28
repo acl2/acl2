@@ -477,15 +477,15 @@ effect.  We simply translate subgoal hints to computed hints:</p>
      nil)))
 
 
-(defun make-flag-body-aux (fn-name formals alist full-alist world)
+(defun make-flag-body-aux (flag-var fn-name formals alist full-alist world)
   (if (consp alist)
       (let* ((orig-body (get-body (caar alist) world))
              (new-body (mangle-body orig-body fn-name full-alist formals world)))
         (cond ((consp (cdr alist))
-               (cons `(,(cdar alist) ,new-body)
-                     (make-flag-body-aux fn-name formals (cdr alist) full-alist world)))
+               (cons `((equal ,flag-var ',(cdar alist)) ,new-body)
+                     (make-flag-body-aux flag-var fn-name formals (cdr alist) full-alist world)))
               (t
-               (list `(otherwise ,new-body)))))
+               (list `(t ,new-body)))))
     (er hard 'make-flag-body-aux "Never get here.")))
 
 (defun make-flag-body (fn-name flag-var alist hints ruler-extenders world)
@@ -501,9 +501,9 @@ effect.  We simply translate subgoal hints to computed hints:</p>
                                                       world)
                      :mode :logic)
               (ignorable . ,formals))
-     (case ,flag-var
+     (cond
        .
-       ,(make-flag-body-aux fn-name formals alist alist world)))))
+       ,(make-flag-body-aux flag-var fn-name formals alist alist world)))))
 
 (defun extract-keyword-from-args (kwd args)
   (if (consp args)
@@ -582,11 +582,13 @@ effect.  We simply translate subgoal hints to computed hints:</p>
                                (set-difference-eq possibilities
                                                   (acl2::strip-cadrs inequivs))))
                          (and (eql (len not-ruled-out) 1)
-                              (list 'quote (car not-ruled-out)))))))
+                              (list 'quote (car not-ruled-out))))))
+          (first (extract-keyword-from-args :first cases))
+          (cases (throw-away-keyword-parts cases)))
       (and flagval
            (let ((hints (cdr (assoc (cadr flagval) cases))))
              `(:computed-hint-replacement
-               ,(translate-subgoal-to-computed-hints hints)
+               (,@first . ,(translate-subgoal-to-computed-hints hints))
                :clause-processor (flag-is-cp clause ,flagval)))))))
 
 (defmacro flag-hint-cases (flagname &rest cases)
@@ -613,7 +615,7 @@ effect.  We simply translate subgoal hints to computed hints:</p>
 
 
 
-(defun pair-up-cases-with-thmparts (alist thmparts skip-ok)
+(defun pair-up-cases-with-thmparts (flag-var alist thmparts skip-ok)
   ;; Each thmpart is an thing like
   ;; _either_ (flag <thm-body> :name ... :rule-classes ... :doc ...)
   ;;;    (for backwards compatibility)
@@ -632,9 +634,9 @@ effect.  We simply translate subgoal hints to computed hints:</p>
                             (t ;; (flag body ...)
                              (cadr lookup)))))
             (if (consp (cdr alist))
-                (cons `(,flag ,body)
-                      (pair-up-cases-with-thmparts (cdr alist) thmparts skip-ok))
-              (list `(otherwise ,body))))))
+                (cons `((equal ,flag-var ',flag) ,body)
+                      (pair-up-cases-with-thmparts flag-var (cdr alist) thmparts skip-ok))
+              (list `(t ,body))))))
     (er hard 'pair-up-cases-with-thmparts
         "Never get here.")))
 
@@ -764,8 +766,8 @@ given.  The following theorem does not have a name: ~x0~%" entry)))))
        (encapsulate
         ()
         (local (defthm ,name
-                 (case ,flag-var . ,(pair-up-cases-with-thmparts
-                                     alist thmparts skip-ok))
+                 (cond . ,(pair-up-cases-with-thmparts
+                           flag-var alist thmparts skip-ok))
                  :rule-classes nil
                  :hints ,hints
                  :instructions ,instructions

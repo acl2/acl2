@@ -427,25 +427,28 @@
 
 
 
-(defun glcp-analyze-interp-result (concl-bfr al hyp-bfr id concl config bvar-db
-                                             state)
+(defun glcp-analyze-interp-result (hyp-bfr concl-bfr constraint al id concl config bvar-db
+                                           state)
   (declare (xargs :stobjs (bvar-db state)
                   :verify-guards nil))
   (b* ((config (glcp-config-update-param hyp-bfr config))
        (config (glcp-config-update-term concl config))
        ((glcp-config config) config)
        (hyp-param (bfr-to-param-space hyp-bfr hyp-bfr))
-       (false (bfr-and hyp-param (bfr-not concl-bfr)))
+       (false (bfr-and hyp-param (bfr-and constraint (bfr-not concl-bfr))))
        (state (acl2::f-put-global 'glcp-var-bindings al state))
        (state (acl2::f-put-global 'glcp-concl-bfr false state))
        ((mv false-sat false-succ false-ctrex) (bfr-sat false))
        ((when (and false-sat false-succ))
-        (b* (((er &) (glcp-gen/print-ctrexamples
-                      false-ctrex "ERROR" "Counterexamples" config bvar-db state))
+        (b* (((mv er & state)
+              (glcp-gen/print-ctrexamples
+               false-ctrex "ERROR" "Counterexamples" config bvar-db state))
+             ((when er) (mv er nil state))
              ((when config.abort-ctrex)
-              (glcp-error
-               (acl2::msg "~x0: Counterexamples found in ~@1; aborting~%"
-                          config.clause-proc-name id))))
+              (mv (msg
+                   "~x0: Counterexamples found in ~@1; aborting~%"
+                   config.clause-proc-name id)
+                  nil state)))
           (value (list ''nil))))
        ((when false-succ)
         ;; Both checks succeeded and were UNSAT, so the theorem is proved
@@ -453,9 +456,10 @@
         (value (list ''t))))
     ;; The SAT check failed:
     (if config.abort-unknown
-        (glcp-error
-         (acl2::msg "~x0: SAT check failed in ~@1; aborting~%"
-                    config.clause-proc-name id))
+        (mv
+         (msg "~x0: SAT check failed in ~@1; aborting~%"
+              config.clause-proc-name id)
+         nil state)
       (value (list ''nil)))))
 
 
@@ -493,25 +497,28 @@
 ;;                                  glcp-gen-ctrexes-does-not-fail
 ;;                                  glcp-error))))))
 
+(local (in-theory (disable glcp-gen/print-ctrexamples)))
 
 (local
  (defthm glcp-analyze-interp-result-correct
    (implies (and (not (bfr-eval val (cadr (assoc-equal 'env alist))))
                  (bfr-eval (bfr-to-param-space hyp-bfr hyp-bfr)
+                           (car (cdr (assoc-equal 'env alist))))
+                 (bfr-eval constraint
                            (car (cdr (assoc-equal 'env alist)))))
             (not (glcp-generic-geval-ev
                   (disjoin
                    (mv-nth 1 (glcp-analyze-interp-result
-                              val al hyp-bfr id concl config bvar-db state)))
+                               hyp-bfr val constraint al id concl config bvar-db state)))
                   alist)))
    :hints (("goal" :use
             ((:instance
               bfr-sat-unsat
               (prop (bfr-and (bfr-to-param-space hyp-bfr hyp-bfr)
-                             (bfr-not val)))
+                             (bfr-and constraint (bfr-not val))))
               (env (cadr (assoc-equal 'env alist)))))
             :in-theory (e/d (gl-cp-hint)
-                            (glcp-generic-geval-gtests-nonnil-correct
+                            (; glcp-generic-geval-gtests-nonnil-correct
                              gtests-nonnil-correct
                              bfr-sat-unsat))
             :do-not-induct t)
@@ -550,18 +557,28 @@
 
 (local (in-theory (disable w put-global)))
 
+;; (local (defthm w-state-of-glcp-pretty-print-assignments
+;;          (equal (w (mv-nth 2 (glcp-pretty-print-assignments
+;;                               n ctrexes concl execp param-bfr bvar-db state)))
+;;                 (w state))
+;;          :hints(("Goal" :in-theory (disable glcp-ctrex-check-bvar-db
+;;                                             bindings-quote-if-needed
+;;                                             acl2::magic-ev
+;;                                             magicer-ev)))))
+
 (local
  (defthm w-state-of-glcp-analyze-interp-result
    (equal (w (mv-nth 2 (glcp-analyze-interp-result
-                        val al hyp-bfr id concl config bvar-db state)))
+                         hyp-bfr val constr al id concl config bvar-db state)))
           (w state))
-   :hints(("Goal" :in-theory (enable glcp-analyze-interp-result)))))
+   :hints(("Goal" :in-theory (enable glcp-analyze-interp-result
+                                     glcp-gen/print-ctrexamples)))))
 
 (local
  (defthm glcp-analyze-interp-result-pseudo-term-listp
    (pseudo-term-listp
     (mv-nth 1 (glcp-analyze-interp-result
-               val al hyp-bfr id concl config bvar-db state)))))
+               hyp-bfr val constr al id concl config bvar-db state)))))
 
 (in-theory (disable glcp-analyze-interp-result))
 
@@ -1002,9 +1019,12 @@ The definition body, ~x1, is not a pseudo-term."
         (env1 (glcp-generic-geval-ev env-term alist))
         (env (cons (slice-to-bdd-env (car env1) nil) (cdr env1)))
         (next-bvar (shape-spec-max-bvar-list
-                    (strip-cadrs bindings))))
+                    (strip-cadrs bindings)))
+        (interp-st (create-interp-st))
+        (interp-st (update-is-obligs obligs interp-st))
+        (interp-st (update-is-constraint t interp-st)))
      (glcp-generic-interp-hyp/concl-env
-      env hyp concl al config.concl-clk obligs config next-bvar state))))
+      env hyp concl al config.concl-clk config interp-st next-bvar state))))
     ;;    ;; (bvar-db nil)
     ;;    ;; (bvar-db1 nil)
     ;;    (bvar-db (init-bvar-db (shape-spec-max-bvar-list
@@ -1284,7 +1304,7 @@ The definition body, ~x1, is not a pseudo-term."
                     (disjoin val-clause)
                     `((env . ,(list ctrex-env)))))))
    :hints (("goal" :do-not-induct t
-            :in-theory (disable collect-vars
+            :in-theory (disable collect-vars nth update-nth
                                 pseudo-termp
                                 dumb-negate-lit)))))
 
@@ -1383,8 +1403,8 @@ The definition body, ~x1, is not a pseudo-term."
 
    (local (in-theory (disable shape-specs-to-interp-al
                               pseudo-termp pseudo-term-listp
-                              glcp-generic-interp-term-ok-obligs
                               shape-spec-bindingsp
+                              nth update-nth
                               ; acl2::consp-by-len
                               list*-macro)))
 
@@ -1476,7 +1496,8 @@ The definition body, ~x1, is not a pseudo-term."
                 (not (glcp-generic-geval-ev-theoremp
                       (conjoin-clauses
                        (acl2::interp-defs-alist-clauses out-obligs))))))
-     :hints(("Goal" :in-theory (disable collect-vars pseudo-termp dumb-negate-lit))))
+     :hints(("Goal" :in-theory (disable collect-vars pseudo-termp
+                                        dumb-negate-lit))))
 
    (defthm glcp-generic-run-parametrized-ok-obligs
      (b* (((mv erp (list & & out-obligs) &)
@@ -1765,7 +1786,7 @@ The definition body, ~x1, is not a pseudo-term."
            glcp-generic-run-parametrized-correct-rw)
           (glcp-analyze-interp-result-correct
            ;; glcp-generic-geval-alist-gobj-alist-to-param-space
-           glcp-generic-geval-gtests-nonnil-correct
+           ;; glcp-generic-geval-gtests-nonnil-correct
            glcp-generic-run-cases-correct
            glcp-generic-run-parametrized-correct
            pseudo-term-listp-cdr
@@ -1819,15 +1840,15 @@ The definition body, ~x1, is not a pseudo-term."
 ;; produces all the other necessary clauses.  We define this by
 ;; using a mock interp-term function that just returns T and no
 ;; obligs, and also a mock analyze-term
-(defun glcp-fake-interp-hyp/concl (hyp concl bindings clk obligs config
+(defun glcp-fake-interp-hyp/concl (hyp concl bindings clk config interp-st
                                        next-bvar bvar-db bvar-db1 state)
   (declare (ignore hyp concl bindings clk config next-bvar)
-           (xargs :stobjs (bvar-db bvar-db1 state)))
-  (mv nil obligs t t bvar-db bvar-db1 state))
+           (xargs :stobjs (interp-st bvar-db bvar-db1 state)))
+  (mv t t bvar-db1 nil interp-st bvar-db state))
 
 (defun glcp-fake-analyze-interp-result
-  (val param-al hyp-bfr id concl config bvar-db state)
-  (declare (ignore val param-al hyp-bfr id concl config bvar-db)
+  (hyp-bfr val constr param-al id concl config bvar-db state)
+  (declare (ignore val param-al hyp-bfr id concl config bvar-db constr)
            (xargs :stobjs (bvar-db state)))
   (mv nil '('t) state))
 
@@ -1893,25 +1914,26 @@ The definition body, ~x1, is not a pseudo-term."
 
 ;; Looks up a function in the gl-function-info table to see if it has
 ;; a symbolic counterpart, and executes it if so.
-(defun gl-universal-run-gified (fn actuals pathcond clk config bvar-db state)
-  (declare (xargs :guard (and (symbolp fn)
-                              (glcp-config-p config)
-                              (natp clk))
-                  :stobjs (bvar-db state)
-                  :mode :program)
-           (ignorable config bvar-db))
-  (b* ((world (w state))
-       (al (table-alist 'gl-function-info world))
-       (look (assoc-eq fn al))
-       ((unless look) (mv nil nil))
-       (gfn (cadr look))
-       ((mv er res)
-        (acl2::magic-ev-fncall gfn (append actuals (list pathcond clk))
-                               state t t))
-       ((when er)
-        (prog2$ (cw "GL-UNIVERSAL-RUN-GIFIED: error: ~@0~%" er)
-                (mv nil nil))))
-    (mv t res)))
+;; (defun gl-universal-run-gified (fn actuals pathcond clk config bvar-db state)
+;;   (declare (xargs :guard (and (symbolp fn)
+;;                               (glcp-config-p config)
+;;                               (natp clk))
+;;                   :stobjs (bvar-db state)
+;;                   :mode :program)
+;;            (ignorable config bvar-db))
+;;   (b* ((world (w state))
+;;        (al (table-alist 'gl-function-info world))
+;;        (look (assoc-eq fn al))
+;;        ((unless look) (mv nil nil))
+;;        (gfn (cadr look))
+;;        ((mv er res)
+;;         (acl2::magic-ev-fncall gfn (append actuals (list pathcond clk config
+;;                                                          bvar-db state))
+;;                                state t t))
+;;        ((when er)
+;;         (prog2$ (cw "GL-UNIVERSAL-RUN-GIFIED: error: ~@0~%" er)
+;;                 (mv nil nil))))
+;;     (mv t res)))
 
 ;; (defun gl-universal-apply-concrete (fn actuals state)
 ;;   (declare (xargs :guard (true-listp actuals)
@@ -1930,51 +1952,51 @@ The definition body, ~x1, is not a pseudo-term."
 ;;                 (mv nil nil state))))
 ;;     (mv t val state)))
 
-(defconst *gl-universal-subst*
-  '((run-gified . gl-universal-run-gified)
-    (interp-term . gl-universal-interp-term)
-    (interp-fncall-ifs . gl-universal-interp-fncall-ifs)
-    (interp-fncall . gl-universal-interp-fncall)
-    (interp-if . gl-universal-interp-if)
-    (finish-or . gl-universal-finish-or)
-    (finish-if . gl-universal-finish-if)
-    (simplify-if-test . gl-universal-simplify-if-test)
-    (rewrite . gl-universal-rewrite)
-    (rewrite-apply-rules . gl-universal-rewrite-apply-rules)
-    (rewrite-apply-rule . gl-universal-rewrite-apply-rule)
-    (relieve-hyps . gl-universal-relieve-hyps)
-    (relieve-hyp . gl-universal-relieve-hyp)
-    (interp-list . gl-universal-interp-list)
-    (interp-top-level-term . gl-universal-interp-top-level-term)
-    (interp-concl . gl-universal-interp-concl)
-    (interp-hyp/concl . gl-universal-interp-hyp/concl)
-    (run-parametrized . gl-universal-run-parametrized)
-    (run-cases . gl-universal-run-cases)
-    (clause-proc . gl-universal)
-    (clause-proc-name . (gl-universal-clause-proc-name))))
+;; (defconst *gl-universal-subst*
+;;   '((run-gified . gl-universal-run-gified)
+;;     (interp-term . gl-universal-interp-term)
+;;     (interp-fncall-ifs . gl-universal-interp-fncall-ifs)
+;;     (interp-fncall . gl-universal-interp-fncall)
+;;     (interp-if . gl-universal-interp-if)
+;;     (finish-or . gl-universal-finish-or)
+;;     (finish-if . gl-universal-finish-if)
+;;     (simplify-if-test . gl-universal-simplify-if-test)
+;;     (rewrite . gl-universal-rewrite)
+;;     (rewrite-apply-rules . gl-universal-rewrite-apply-rules)
+;;     (rewrite-apply-rule . gl-universal-rewrite-apply-rule)
+;;     (relieve-hyps . gl-universal-relieve-hyps)
+;;     (relieve-hyp . gl-universal-relieve-hyp)
+;;     (interp-list . gl-universal-interp-list)
+;;     (interp-top-level-term . gl-universal-interp-top-level-term)
+;;     (interp-concl . gl-universal-interp-concl)
+;;     (interp-hyp/concl . gl-universal-interp-hyp/concl)
+;;     (run-parametrized . gl-universal-run-parametrized)
+;;     (run-cases . gl-universal-run-cases)
+;;     (clause-proc . gl-universal)
+;;     (clause-proc-name . (gl-universal-clause-proc-name))))
 
-(program)
+;; (program)
 
-(make-event (sublis *gl-universal-subst* *glcp-interp-template*))
-(make-event (sublis *gl-universal-subst* *glcp-interp-wrappers-template*))
+;; (make-event (sublis *gl-universal-subst* *glcp-interp-template*))
+;; (make-event (sublis *gl-universal-subst* *glcp-interp-wrappers-template*))
 
-(make-event (sublis *gl-universal-subst*
-                    *glcp-run-parametrized-template*))
+;; (make-event (sublis *gl-universal-subst*
+;;                     *glcp-run-parametrized-template*))
 
-(make-event (sublis *gl-universal-subst* *glcp-run-cases-template*))
+;; (make-event (sublis *gl-universal-subst* *glcp-run-cases-template*))
 
-(make-event (sublis *gl-universal-subst*
-                    *glcp-clause-proc-template*))
+;; (make-event (sublis *gl-universal-subst*
+;;                     *glcp-clause-proc-template*))
 
-(logic)
+;; (logic)
 
 
-;; To install this as a clause processor, run the following.  Note
-;; that this creates a ttag.
-(defmacro allow-gl-universal-clause-processor ()
-  '(acl2::define-trusted-clause-processor
-    gl-universal-clause-proc
-    nil :ttag gl-universal-clause-proc))
+;; ;; To install this as a clause processor, run the following.  Note
+;; ;; that this creates a ttag.
+;; (defmacro allow-gl-universal-clause-processor ()
+;;   '(acl2::define-trusted-clause-processor
+;;     gl-universal-clause-proc
+;;     nil :ttag gl-universal-clause-proc))
 
 
 
@@ -2025,45 +2047,44 @@ The definition body, ~x1, is not a pseudo-term."
 ;; (defmacro gl-parametrize-by-hyp (hyp bindings)
 ;;   `(gl-parametrize-by-hyp-fn ,hyp ,bindings state))
 
-(defun gl-interp-fn (hyp term al bvar-db bvar-db1 state)
-  (declare (xargs :mode :program
-                  :stobjs (bvar-db bvar-db1 state)))
+
+(table latest-greatest-gl-clause-proc nil *glcp-generic-template-subst* :clear)
+
+(defun gl-interp-fn (hyp term al config state)
+  (declare (xargs :mode :program :stobjs state))
   (b* ((gobj-al (shape-specs-to-interp-al al))
        ((mv erp overrides state)
         (preferred-defs-to-overrides
          (table-alist 'preferred-defs (w state)) state))
-       ((when erp) (mv erp nil nil nil bvar-db bvar-db1 state))
+       ((when erp) (mv erp nil nil nil state))
        ((mv erp hyp-trans state)
         (acl2::translate hyp t t t 'gl-interp (w state)
                          state))
-       ((when erp) (mv erp nil nil nil bvar-db bvar-db1 state))
+       ((when erp) (mv erp nil nil nil state))
        ((mv erp term-trans state)
         (acl2::translate term t t t 'gl-interp (w state)
                          state))
-       ((when erp) (mv erp nil nil nil bvar-db bvar-db1 state))
-       (config (make-glcp-config :overrides overrides
-                                 :param-bfr t))
-       (bvar-db (init-bvar-db (shape-spec-max-bvar-list
-                               (strip-cadrs al))
-                              bvar-db))
-       (bvar-db1 (init-bvar-db (shape-spec-max-bvar-list
-                                (strip-cadrs al))
-                               bvar-db1))
-       ((mv er obligs hyp-bfr bvar-db state)
-        (gl-universal-interp-top-level-term
-         hyp-trans gobj-al t 1000000 nil config bvar-db state))
-       ((when er) (mv er nil nil nil bvar-db bvar-db1 state))
-       (param-al (gobj-alist-to-param-space gobj-al hyp-bfr))
-       (bvar-db1 (parametrize-bvar-db hyp-bfr bvar-db bvar-db1))
-       (config (glcp-config-update-param hyp-bfr config))
-       (pathcond (bfr-to-param-space hyp-bfr hyp-bfr))
-       ((mv erp ?obligs res-obj bvar-db1 state)
-        (gl-universal-interp-term
-         term-trans param-al pathcond nil 100000 obligs config bvar-db1 state)))
-    (mv erp hyp-bfr param-al res-obj bvar-db bvar-db1 state)))
+       ((when erp) (mv erp nil nil nil state))
+       (config (or config (make-glcp-config :overrides overrides)))
+       (interp-fn (cdr (assoc 'interp-term-under-hyp
+                              (table-alist 'latest-greatest-gl-clause-proc
+                                           (w state)))))
+       (next-bvar (shape-spec-max-bvar-list (strip-cadrs al)))
+       (form `(,interp-fn ',hyp-trans ',term-trans ',gobj-al ',next-bvar ',config
+                          interp-st bvar-db bvar-db1 state))
+       ((mv trans-eval-erp (cons ?stobjs-out
+                                 (list hyp-bfr param-al res-obj interp-erp
+                                       ;; and some stobj symbols
+                                       ))
+            state)
+        (acl2::trans-eval form 'gl-interp state t))
+       ((when trans-eval-erp) (mv trans-eval-erp nil nil nil state))
+       ((when interp-erp) (mv interp-erp nil nil nil state)))
+    (mv nil hyp-bfr param-al res-obj state)))
 
-(defmacro gl-interp (term al &key (hyp 't))
-  `(gl-interp-fn ',hyp ',term ,al bvar-db bvar-db1 state))
+
+(defmacro gl-interp (term al &key (hyp 't) (config 'nil))
+  `(gl-interp-fn ',hyp ',term ,al ',config state))
 
 (defxdoc gl-interp
   :parents (reference)
@@ -2107,26 +2128,8 @@ bvar-db1 live stobjs. It returns:</p>
  (mv error-message hyp-bfr param-al result bvar-db bvar-db1 state)
 })
 
-<p>The symbolic interpreter used by @('gl-interp') is not one introduced by
-def-gl-clause-processor as usual, but a special one which can call any symbolic
-counterpart function.  (Other interpreters can call a fixed list of symbolic
-counterpart functions.)  However, typically a fixed interpreter is used when
-proving theorems (otherwise a ttag is needed.)  This has some
-performance-related consequences:</p>
-
-<ul>
-
-<li>@('gl-interp') may interpret a term faster than @('def-gl-thm').  This
-occurs mainly when some function has a symbolic counterpart that isn't known to
-the current fixed interpreter.  You can define a new fixed interpreter to solve
-this problem; see @(see def-gl-clause-proc).</li>
-
-<li>@('gl-interp') may interpret a term slower than @('def-gl-thm').  The
-universal interpreter uses somewhat more overhead on each symbolic counterpart
-call than fixed interpreters do, so when interpreter overhead is a large
-portion of the runtime relative to BDD operations, @('gl-interp') may be a
-constant factor slower than a fixed interpreter.</li>
-
+<p>The symbolic interpreter used by @('gl-interp') is the latest interpreter
+defined using def-gl-clause-processor (as recorded in the
+gl::latest-greatest-gl-clause-proc table).</p>
 </ul>")
-
 

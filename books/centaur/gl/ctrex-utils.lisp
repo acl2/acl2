@@ -333,6 +333,105 @@
           ((when err) (mv err nil)))
        (mv nil (cons val rest))))))
 
+(defun gl-bit-abstract (bfr bfr-alist n)
+  (declare (xargs :guard (natp n)))
+  (b* ((n (lnfix n))
+       ((when (booleanp bfr))
+        (mv bfr bfr-alist n))
+       (res (hons-get bfr bfr-alist))
+       ((when res)
+        (mv (cdr res) bfr-alist n)))
+    (mv n (hons-acons bfr n bfr-alist) (1+ n))))
+
+(defthm gl-bit-abstract-new-n-type
+  (natp (mv-nth 2 (gl-bit-abstract bfr bfr-alist n)))
+  :rule-classes :type-prescription)
+
+(defun gl-bitlist-abstract (bfrs bfr-alist n)
+  (declare (xargs :guard (natp n)))
+  (b* (((when (atom bfrs))
+        (mv nil bfr-alist (lnfix n)))
+       ((mv first bfr-alist n) (gl-bit-abstract (car bfrs) bfr-alist n))
+       ((mv rest bfr-alist n) (gl-bitlist-abstract (cdr bfrs) bfr-alist n)))
+    (mv (cons first rest) bfr-alist n)))
+
+(defthm gl-bitlist-abstract-new-n-type
+  (natp (mv-nth 2 (gl-bitlist-abstract bfrs bfr-alist n)))
+  :rule-classes :type-prescription)
+
+(defun gl-bitlistlist-abstract (bfr-lists bfr-alist n)
+  (declare (xargs :guard (natp n)))
+  (b* (((when (atom bfr-lists))
+        (mv nil bfr-alist (lnfix n)))
+       ((mv first bfr-alist n) (gl-bitlist-abstract (car bfr-lists) bfr-alist n))
+       ((mv rest bfr-alist n) (gl-bitlistlist-abstract (cdr bfr-lists) bfr-alist n)))
+    (mv (cons first rest) bfr-alist n)))
+
+(defthm gl-bitlistlist-abstract-new-n-type
+  (natp (mv-nth 2 (gl-bitlistlist-abstract bfrs bfr-alist n)))
+  :rule-classes :type-prescription)
+
+(mutual-recursion
+ (defun gobj-abstract (x bfr-alist n)
+   (declare (xargs :guard (natp n)
+                   :verify-guards nil))
+   (if (atom x)
+       (mv x bfr-alist (lnfix n))
+     (case (tag x)
+       (:g-boolean (b* (((mv bit bfr-alist n)
+                         (gl-bit-abstract (g-boolean->bool x) bfr-alist n)))
+                     (mv (g-boolean bit) bfr-alist n)))
+       (:g-number (b* (((mv bits bfr-alist n)
+                        (gl-bitlistlist-abstract (g-number->num x) bfr-alist n)))
+                    (mv (g-number bits) bfr-alist n)))
+       (:g-concrete (mv x bfr-alist (lnfix n)))
+       (:g-ite (b* (((mv test bfr-alist n)
+                     (gobj-abstract (g-ite->test x) bfr-alist n))
+                    ((mv then bfr-alist n)
+                     (gobj-abstract (g-ite->then x) bfr-alist n))
+                    ((mv else bfr-alist n)
+                     (gobj-abstract (g-ite->else x) bfr-alist n)))
+                 (mv (g-ite test then else) bfr-alist n)))
+       (:g-var (mv x bfr-alist (lnfix n)))
+       (:g-apply (b* (((mv args bfr-alist n)
+                       (gobjlist-abstract (g-apply->args x) bfr-alist n)))
+                   (mv (g-apply (g-apply->fn x) args) bfr-alist n)))
+       (otherwise (b* (((mv car bfr-alist n)
+                        (gobj-abstract (car x) bfr-alist n))
+                       ((mv cdr bfr-alist n)
+                        (gobj-abstract (cdr x) bfr-alist n)))
+                    (mv (cons car cdr) bfr-alist n))))))
+
+ (defun gobjlist-abstract (x bfr-alist n)
+   (declare (xargs :guard (natp n)))
+   (b* (((when (atom x)) (mv x bfr-alist (lnfix n)))
+        ((mv car bfr-alist n)
+         (gobj-abstract (car x) bfr-alist n))
+        ((mv cdr bfr-alist n)
+         (gobjlist-abstract (cdr x) bfr-alist n)))
+     (mv (cons car cdr) bfr-alist n))))
+
+
+(flag::make-flag gobj-abstract-flg gobj-abstract)
+
+(defthm-gobj-abstract-flg
+  (defthm gobj-abstract-new-n-type
+    (natp (mv-nth 2 (gobj-abstract x bfr-alist n)))
+    :hints ('(:expand ((gobj-abstract x bfr-alist n))))
+    :flag gobj-abstract)
+  (defthm gobjlist-abstract-new-n-type
+    (natp (mv-nth 2 (gobjlist-abstract x bfr-alist n)))
+    :hints ('(:expand ((gobjlist-abstract x bfr-alist n))))
+    :flag gobjlist-abstract))
+
+(verify-guards gobj-abstract)
+
+(defun gobj-abstract-top (x)
+  (declare (xargs :guard t))
+  (b* (((mv x al &) (gobj-abstract x nil 0)))
+    (fast-alist-free al)
+    x))
+
 
 (defun bool-to-bit (x)
   (cond ((eq x t) 1)
@@ -742,18 +841,18 @@ but they can cause generated counterexamples to be nonsense.  Be careful!</p>"
 ;;     var-alist))
 
 (defun glcp-ctrex-set-vars1 (n ctrex-assign unparam-ctrex-assign
-                               rule-table bvar-db state)
+                               rule-table var-alist bvar-db state)
   (declare (xargs :stobjs (state bvar-db)
                   :guard (natp n)
                   :verify-guards nil
                   :measure (nfix n)))
   (b* (((when (<= (the integer (lnfix n))
                   (the integer (base-bvar bvar-db))))
-        nil)
+        var-alist)
        (n (1- n))
        (var-alist (glcp-ctrex-set-vars1
                    n ctrex-assign unparam-ctrex-assign
-                   rule-table bvar-db state))
+                   rule-table var-alist bvar-db state))
        (bvar-val (bfr-lookup n unparam-ctrex-assign))
        (gobj (get-bvar->term n bvar-db))
        (term (gobj->term-partial gobj ctrex-assign))
@@ -765,13 +864,15 @@ but they can cause generated counterexamples to be nonsense.  Be careful!</p>"
 (defun glcp-ctrex-set-vars (ctrex-assign unparam-assign bvar-db state)
   (declare (xargs :stobjs (bvar-db state)
                   :verify-guards nil))
-  (b* ((rule-table (table-alist 'glcp-ctrex-rewrite (w state))))
+  (b* ((rule-table (table-alist 'glcp-ctrex-rewrite (w state)))
+       (var-alist (glcp-ctrex-set-vars1 (next-bvar bvar-db)
+                                        ctrex-assign
+                                        unparam-assign
+                                        rule-table nil bvar-db state)))
     (glcp-ctrex-set-vars1 (next-bvar bvar-db)
                           ctrex-assign
                           unparam-assign
-                          rule-table
-                          bvar-db
-                          state)))
+                          rule-table var-alist bvar-db state)))
 
 (defun glcp-ctrex-bits-to-objs (ctrex-assign param-bfr gobj-alist bvar-db state)
   (declare (xargs :stobjs (bvar-db state)
@@ -833,21 +934,23 @@ but they can cause generated counterexamples to be nonsense.  Be careful!</p>"
        (gobj (get-bvar->term n bvar-db))
        (bvalue (bfr-lookup n unparam-env))
        ((mv er gvalue) (magic-geval gobj env state))
-       ((when (and (not er) (iff bvalue gvalue)))
-        rest)
+       ;; ((when (and (not er) (iff bvalue gvalue)))
+       ;;  rest)
        (partial (gobj->term-partial gobj (car env)))
        ((when er)
         (cw "Couldn't evaluate bvar-db term: ~x0, error: ~@1~%"
             partial (if (eq er t) "T" er))
         rest))
-    (cons (list partial bvalue gobj) rest)))
+    (cons (list (if (iff bvalue gvalue) "GOOD" "FAIL") partial bvalue gobj n) rest)))
 
 (defun glcp-pretty-print-bvar-db-violations (pairs)
   (declare (xargs :guard t))
   (b* (((when (atom pairs)) nil)
        ((unless (true-listp (car pairs)))
         (glcp-pretty-print-bvar-db-violations (cdr pairs))))
-    (cw "~x0 should be ~x1~%" (caar pairs) (cadar pairs))
+    (and (equal (caar pairs) "FAIL")
+         (cw "~x0 should be ~x1~%" (cadar pairs) (caddar pairs))
+         (cw "gobj: ~x0~%" (gobj-abstract-top (ec-call (nth 3 (car pairs))))))
     (glcp-pretty-print-bvar-db-violations (cdr pairs))))
 
 (defun quote-if-needed (obj)
@@ -874,7 +977,7 @@ but they can cause generated counterexamples to be nonsense.  Be careful!</p>"
                               (true-list-listp ctrexes)
                               (pseudo-termp concl))))
   (if (atom ctrexes)
-      nil
+      nil ;; (value nil)
     (b* (((list* string assign-alist env assign-spec-alist) (car ctrexes))
          (bindings (ec-call (bindings-quote-if-needed assign-alist)))
          (- (if (bfr-mode)
@@ -888,13 +991,14 @@ but they can cause generated counterexamples to be nonsense.  Be careful!</p>"
 
          (unparam-env (bfr-unparam-env param-bfr (car env)))
          ((acl2::with-fast unparam-env))
-         (bvar-db-violations (glcp-ctrex-check-bvar-db
-                              (next-bvar bvar-db) env unparam-env bvar-db
-                              state))
-         (- (and bvar-db-violations
+         (bvar-db-info (glcp-ctrex-check-bvar-db
+                        (next-bvar bvar-db) env unparam-env bvar-db
+                        state))
+         ;;(state (f-put-global 'bvar-db-info bvar-db-info state))
+         (- (and (hons-assoc-equal "FAIL" bvar-db-info)
                  ;; bozo make error message better
                  (not (cw "Some IF test terms were assigned inconsistent values:~%"))
-                 (glcp-pretty-print-bvar-db-violations bvar-db-violations)))
+                 (glcp-pretty-print-bvar-db-violations bvar-db-info)))
          (- (cw "Running conclusion to verify the counterexample.~%"))
          ;; ((acl2::cmp concl-term)
          ;;  (acl2::translate-cmp
@@ -916,8 +1020,11 @@ but they can cause generated counterexamples to be nonsense.  Be careful!</p>"
                  (if (eq err t) "(t)" err))
              (cw "Trying to logically simulate it...~%")
              (ec-call (magicer-ev concl alist 10000 state t t)))))
-         ((when err) (cw "Evaluating the counterexample failed: ~@0~%"
-                         (if (eq err t) "(t)" err))))
+         ((when err)
+          (cw "Evaluating the counterexample failed: ~@0~%"
+              (if (eq err t) "(t)" err))
+          ;; (value nil)
+          ))
       (if val
           (cw "False counterexample!  See :xdoc gl::false-counterexamples.~%")
         (cw "Counterexample verified.~%"))
@@ -956,14 +1063,13 @@ class:~%~%" (len ctrexes))))))
                                        config.param-bfr
                                        config.nexamples
                                        bvar-db state))
-       (state (acl2::f-put-global 'glcp-counterex-assignments ctrexes state))
-       (- (glcp-print-ctrexamples
-           ctrexes warn/err type
-           config.top-level-term
-           config.exec-ctrex
-           config.param-bfr
-           bvar-db state)))
-    (value nil)))
+       (state (acl2::f-put-global 'glcp-counterex-assignments ctrexes state)))
+    (value (glcp-print-ctrexamples
+            ctrexes warn/err type
+            config.top-level-term
+            config.exec-ctrex
+            config.param-bfr
+            bvar-db state))))
 
 
 (defun glcp-print-single-ctrex (bfr-env warn/err type config bvar-db state)

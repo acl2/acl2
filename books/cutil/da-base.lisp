@@ -544,46 +544,35 @@ reasoning about @('car') in general.</p>"
 
 (defun da-patbind-make-field-vars-alist (var fields)
   ;; Given var = 'foo and fields = '(a b c),
-  ;; Constructs '((a . foo.a) (b . foo.b) (c . foo.c))
+  ;; Constructs '(("FOO.A" . a) ("FOO.B" . b) ("FOO.C" . c))
   (if (atom fields)
       nil
-    (acons (car fields)
-           (intern-in-package-of-symbol
-            (concatenate 'string (symbol-name var) "." (symbol-name (car fields)))
-            var)
-          (da-patbind-make-field-vars-alist var (cdr fields)))))
+    (acons (concatenate 'string (symbol-name var) "." (symbol-name (car fields)))
+           (car fields)
+           (da-patbind-make-field-vars-alist var (cdr fields)))))
 
-(defun da-patbind-find-unused-vars (form vars)
-  ;; Return all vars not used in form.  We do this completely stupidly, not
-  ;; even avoiding quoted constants.  We can try to improve this if it's a
-  ;; problem, but at some level what we're trying to do is inherently broken
-  ;; anyway -- we just hope it's useful most of the time anyway.
+(defun da-patbind-find-used-vars (form varstrs acc)
+  ;; Varstrs is a list of strings such as "X.FOO" "X.BAR" etc.
+  ;; Acc accumulates (uniquely) all the symbols in FORM for which the
+  ;; symbol-name is in varstrs.
   (if (atom form)
-      (if (symbolp form)
-          (remove1 form vars)
-        vars)
-    (da-patbind-find-unused-vars (car form)
-                                 (da-patbind-find-unused-vars (cdr form) vars))))
+      (if (and (symbolp form)
+               (member-equal (symbol-name form) varstrs)
+               (not (member-eq form acc)))
+          (cons form acc)
+        acc)
+    (da-patbind-find-used-vars (car form) varstrs
+                               (da-patbind-find-used-vars (cdr form) varstrs acc))))
 
-;; (da-patbind-find-unused-vars '(foo (+ 1 a) c) '(a b c d)) --> '(b d)
-
-(defun da-patbind-remove-unused-vars (valist unused)
-  (cond ((atom valist)
-         nil)
-        ((member (cdar valist) unused)
-         (da-patbind-remove-unused-vars (cdr valist) unused))
-        (t
-         (cons (car valist)
-               (da-patbind-remove-unused-vars (cdr valist) unused)))))
-
-(defun da-patbind-alist-to-bindings (name valist target)
-  (if (atom valist)
+(defun da-patbind-alist-to-bindings (name vars valist target)
+  (if (atom vars)
       nil
-    (let* ((accessor (da-accessor-name name (caar valist)))
+    (let* ((fldname (cdr (assoc-equal (symbol-name (car vars)) valist)))
+           (accessor (da-accessor-name name fldname))
            (call     (list accessor target))     ;; (taco->shell foo)
-           (binding  (list (cdar valist) call))) ;; (x.foo (taco->shell foo))
+           (binding  (list (car vars) call))) ;; (x.foo (taco->shell foo))
       (cons binding
-            (da-patbind-alist-to-bindings name (cdr valist) target)))))
+            (da-patbind-alist-to-bindings name (cdr vars) valist target)))))
 
 
 (defun da-patbind-fn (name fields args forms rest-expr)
@@ -599,10 +588,9 @@ term.  The attempted binding of~|~% ~p1~%~%is not of this form."
 
        (var             (car args))
        (full-vars-alist (da-patbind-make-field-vars-alist var fields))
-       (field-vars      (strip-cdrs full-vars-alist))
-       (unused-vars     (da-patbind-find-unused-vars rest-expr field-vars))
-       (vars-alist      (da-patbind-remove-unused-vars full-vars-alist unused-vars))
-       ((unless vars-alist)
+       (field-vars      (strip-cars full-vars-alist))
+       (used-vars       (da-patbind-find-used-vars rest-expr field-vars nil))
+       ((unless used-vars)
         (progn$
          (cw "Note: not introducing any ~x0 field bindings for ~x1, since ~
               none of its fields appear to be used.~%" name var)
@@ -619,7 +607,7 @@ term.  The attempted binding of~|~% ~p1~%~%is not of this form."
        (binding  (if forms (car forms) var))
        (evaledp  (or (atom binding) (eq (car binding) 'quote)))
        (target   (if evaledp binding (acl2::pack binding)))
-       (bindings (da-patbind-alist-to-bindings name vars-alist target))
+       (bindings (da-patbind-alist-to-bindings name used-vars full-vars-alist target))
 
        ;;(- (cw "Binding is ~x0.~%" var))
        ;;(- (cw "Evaledp is ~x0.~%" var))

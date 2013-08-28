@@ -323,6 +323,7 @@
                       merge-branch-subterms
                       merge-branch-subterm-lists
                       simplify-if-test
+                      simplify-if-test-fncall
                       rewrite
                       rewrite-apply-rules
                       rewrite-apply-rule
@@ -332,6 +333,7 @@
                       interp-top-level-term
                       interp-concl
                       interp-hyp/concl
+                      interp-term-under-hyp
                       run-parametrized
                       run-cases
                       geval
@@ -571,7 +573,7 @@
            :otf-flg t
            :rule-classes :clause-processor)
 
-         (table latest-greatest-gl-clause-proc ',clause-proc t)))))
+         (table latest-greatest-gl-clause-proc nil ',subst :clear)))))
 
 
 
@@ -957,15 +959,15 @@ in DEF-GL-THM.~%"))
       form)))
 
 (defmacro latest-gl-clause-proc ()
-  '(caar (table-alist
-          'latest-greatest-gl-clause-proc
-          (w state))))
+  '(cdr (assoc 'clause-proc (table-alist
+                             'latest-greatest-gl-clause-proc
+                             (w state)))))
 
 (defmacro latest-gl-interp ()
-  '(interp-term-fnname
-    (caar (table-alist
-           'latest-greatest-gl-clause-proc
-           (w state)))))
+  '(cdr (assoc 'interp-term
+               (table-alist
+                'latest-greatest-gl-clause-proc
+                (w state)))))
 
 
 ;; just wraps with-output around all this stuff and invisiblifies the return value
