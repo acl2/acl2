@@ -8032,10 +8032,9 @@
 ; computation on behalf of disabled warnings.
 
   (or (and summary
-           (member-string-equal
+           (assoc-string-equal
             summary
-            (cdr (assoc-eq :inhibit-warnings
-                           (table-alist 'acl2-defaults-table wrld)))))
+            (table-alist 'inhibit-warnings-table wrld)))
 
 ; The above is sufficient to turn off (warning$ "string" ...).  But even when
 ; the above condition isn't met, we turn off all warnings -- with the exception

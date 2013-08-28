@@ -21016,6 +21016,18 @@
 ; Added new state global, acl2-sources-dir, in support of the new ACL2 startup
 ; banner in the case of an svn version.
 
+; The guard for function ENDP has potentially been made trivially more
+; efficient by using EQ to test against nil instead of EQUAL.
+
+; In support of :by hint processing (see the :doc string below),
+; remove-guard-holders now returns a term in quote normal form, even when the
+; input term contains no guard holders.
+
+; The startup banner can now be suppressed, though only by unsanctioned hacking
+; in raw Lisp, as requested by Jared Davis.  See *print-startup-banner*, which
+; has a comment explaining more about how this may not be appropriate and what
+; needs to be done to suppress startup information.
+
   :doc
   ":Doc-Section release-notes
 
@@ -21085,6 +21097,20 @@
   ~c[*ccl-print-call-history-count*], which may be assigned another positive
   integer value to serve as the maximum number of stack frames to be printed.
 
+  Improvements have been made pertaining to the disabling (inhibiting) of
+  individual types of warning.  Now, inhibited warnings are implemented in a
+  straightforward way using a separate ~il[table] for this purpose, the
+  ~c[inhibit-warnings-table], rather than using the ~ilc[acl2-defaults-table].
+  ~l[set-inhibit-warnings], and ~pl[set-inhibit-warnings!] for a variant that
+  is not ~ilc[local] to an ~ilc[encapsulate] or a book in which it occurs.
+  Thanks to Sol Swords for sending examples showing how
+  ~ilc[set-inhibit-warnings] did not always behave as one might reasonably
+  expect when books are involved.
+
+  It had been the case that ~ilc[lp] took a single argument, ~c['raw].  This
+  argument was not documented and also caused an error, so it has been
+  eliminated.
+
   ~st[NEW FEATURES]
 
   ACL2 can now be instructed to time activities using real time (wall clock
@@ -21102,12 +21128,14 @@
   The processing of ~c[:use] and ~c[:by] ~il[hints] has been changed in the
   following two rather subtle ways, thanks to suggestions from Sol Swords.
   ~bq[]
+
   o For ~c[:by] hints, the simplest check was an equality check, rather than a
   more general subsumption check.  That equality check was made after removing
   so-called ``guard holders'' (~ilc[must-be-equal], ~ilc[prog2$],
   ~ilc[ec-call], ~ilc[the]) from both the previous theorem and the purported
-  theorem.  Now, those two results are also put into so-called quote-normal
-  form, for example replacing ~c[(cons '3 '4)] by ~c['(3 . 4)].
+  theorem.  Now, guard-holder removal has been strengthened, so that the
+  results are also put into so-called quote-normal form, for example replacing
+  ~c[(cons '3 '4)] by ~c['(3 . 4)].
 
   o For a ~il[lemma-instance] provided to a ~c[:use] or ~c[:by] hint that
   is a ~c[:functional-instance], if a ~c[:do-not] hint (~pl[hints]) has
@@ -21142,6 +21170,21 @@
 
   ~st[CHANGES AT THE SYSTEM LEVEL]
 
+  The ACL2 sources are now publicly available between ACL2 releases, using svn;
+  see the new ``~c[acl2-devel]'' project hosted by Google code at
+  ~url[http://acl2-devel.googlecode.com].  Although such a copy of ACL2 is
+  likely to work well with the latest svn (trunk) revision of the ACL2
+  community books (~pl[community-books]), please take seriously the warning
+  message printed at startup: ``The authors of ACL2 consider svn distributions
+  to be experimental; they may be incomplete, fragile, and unable to pass our
+  own regression.''  That message also provides instructions for bug reports.
+  If you decide to use svn versions of either the community books or ACL2, then
+  you should use both, as they tend to be kept in sync.  We fully expect ACL2
+  releases to continue from time to time, as usual.  Thanks to Jared Davis for
+  his efforts in setting up the new acl2-devel project and svn repository, and
+  to him and David Rager for convincing us to distribute ACL2 sources via svn
+  between releases.
+
   Thanks to a suggestion from Jared Davis, over 30 built-in functions are now
   declared to be inline in order to boost performance.  (The list may be found
   by searching ACL2 source file ~c[axioms.lisp] for ``~c[(declaim (inline]''.)
@@ -21151,11 +21194,12 @@
   quoting have been solved using ~c[\"$@\"] in place of ~c[$*].  Also, the
   function ~ilc[save-exec] now allows specification of arguments, both for the
   host Lisp as well as ``inert'' arguments that can be passed along to calls of
-  programs (as with ~ilc[sys-call]).  ~l[save-exec].  See the source function
-  ~c[user-args-string] and its comments, source file ~c[acl2-init.lisp], for
-  more information.  Thanks to Jared Davis for suggesting the use of
-  ~c[\"$@\"], as well as modifications to ~ilc[save-exec] and helpful
-  conversations about that.
+  programs (as with ~ilc[sys-call]).  A keyword argument, ~c[:return-from-lp],
+  specifies a form to evaluate before quitting the read-eval-print loop at
+  startup.  ~l[save-exec].  Also see the source function ~c[user-args-string]
+  and its comments, source file ~c[acl2-init.lisp], for more information.
+  Thanks to Jared Davis for suggesting the use of ~c[\"$@\"], as well as
+  modifications to ~ilc[save-exec] and helpful conversations about that.
 
   A rather extensive overhaul has taken place for the function proclaiming
   mechanism.  As before, this is only used when the host Lisp is GCL.  However,
@@ -23184,8 +23228,39 @@ How to contribute libraries and documentation
 
 <HR>
 
-<BR>
-The ACL2 distribution includes several extensions, which were
+<p>
+
+Libraries of <i>books</i> (files containing definitions and theorems) extend
+the code that we have written.  These <i>community books</i> are contributed
+and maintained by the members of the ACL2 community; see the <code><A
+HREF=\"http://acl2-books.googlecode.com/\">acl2-books</A></code> project page.
+
+<p>
+
+The libraries and the ACL2 source code are under revision control, using svn.
+Experimental copies of ACL2 and the libraries are thus available between ACL2
+releases.  <i>The authors of ACL2 consider svn distributions to be
+experimental; while they will likely be fully functional in most cases, they
+could however be incomplete, fragile, and unable to pass our own
+regression.</i> If you decide to use svn versions of either the libraries or
+ACL2, then you should use both, as they tend to be kept in sync.  See the
+project websites, <code><A
+HREF=\"http://acl2-books.googlecode.com/\">acl2-books</A></code> and <code><A
+HREF=\"http://acl2-devel.googlecode.com/\">acl2-devel</A></code>, for the ACL2
+libraries and development sources, respectively.
+
+<p>
+
+A combined manual, known as the <A
+HREF=\"http://fv.centtech.com/acl2/6.2/doc/\">xdoc manual</A>, incorporates not
+only <A HREF=\"#User's-Manual\">The User's Manual</A> for ACL2 (with some
+topics rearranged) but also documentation for many books.  Thanks to Jared
+Davis for building the xdoc processor for creating this view of the
+documentation.
+
+<p>
+
+The ACL2 distribution includes the following extensions, which were
 contributed by the individuals shown.
 <UL>
 <LI><A HREF=\"REAL.html\">ACL2(r)</A><BR>
@@ -23199,20 +23274,6 @@ Bob Boyer, Warren A. Hunt, Jr., Jared Davis, and Sol Swords</LI>
 Support for parallel evaluation<BR>
 David L. Rager</LI>
 </UL>
-
-<p>
-
-There are libraries of <i>books</i> (files containing definitions and theorems)
-that extend the code that we have written.  Books are contributed and
-maintained by the ACL2 community (see <code><A
-HREF=\"http://acl2-books.googlecode.com/\">http://acl2-books.googlecode.com/</A></code>;
-in particular, the [Source] tab near the top takes you to a search box) and
-their authors are generally noted in each book or its <code>README</code> file.
-There is a <A HREF=\"http://fv.centtech.com/acl2/6.2/doc/\">combined manual,
-known as the <i>xdoc manual</i></A>, that incorporates not only <A
-HREF=\"#User's-Manual\">The User's Manual</A> for ACL2 (with some topics
-rearranged) but also documentation for many books.  Thanks to Jared Davis for
-building the xdoc processor for creating this view of the documentation.
 
 <p>
 
@@ -27626,8 +27687,11 @@ accompanying <i>``File Path''</i> shown at the end of each book's text.
 #-acl2-loop-only
 (defparameter *initial-cbd* nil)
 
+#-acl2-loop-only
+(defvar *return-from-lp* nil)
+
 (defun save-exec-fn (exec-filename extra-startup-string host-lisp-args
-                                   toplevel-args inert-args)
+                                   toplevel-args inert-args return-from-lp)
 
   #-acl2-loop-only
   (progn
@@ -27635,6 +27699,7 @@ accompanying <i>``File Path''</i> shown at the end of each book's text.
 ; Parallelism blemish: it may be a good idea to reset the parallelism variables
 ; in all #+acl2-par compilations before saving the image.
 
+    (setq *return-from-lp* return-from-lp)
     #-sbcl (when toplevel-args
              (er hard 'save-exec
                  "Keyword argument :toplevel-args is only allowed when the ~
@@ -27665,7 +27730,6 @@ accompanying <i>``File Path''</i> shown at the end of each book's text.
 
     (f-put-global 'connected-book-directory nil *the-live-state*)
     (setq *initial-cbd* nil)
-    (setq *lp-ever-entered-p* nil)
     (setq *startup-package-name* (package-name *package*))
     (setq *saved-build-date-lst*
 
@@ -27684,13 +27748,14 @@ accompanying <i>``File Path''</i> shown at the end of each book's text.
                    inert-args))
   #+acl2-loop-only
   (declare (ignore exec-filename extra-startup-string host-lisp-args
-                   toplevel-args inert-args))
+                   toplevel-args inert-args return-from-lp))
   nil ; Won't get to here in GCL and perhaps other lisps
   )
 
 (defmacro save-exec (exec-filename extra-startup-string
                                    &key
-                                   host-lisp-args toplevel-args inert-args)
+                                   host-lisp-args toplevel-args inert-args
+                                   return-from-lp)
 
   ":Doc-Section Other
 
@@ -27701,7 +27766,8 @@ accompanying <i>``File Path''</i> shown at the end of each book's text.
   ~il[books] to be included every time ACL2 is started, to avoid time taken to
   run ~ilc[include-book].  Another use of ~c[save-exec] is to save an
   executable that takes command-line arguments beyond those normally passed to
-  the host Lisp executable.
+  the host Lisp executable.  All arguments of a call of ~c[save-exec] are
+  evaluated.
 
   ~bv[]
   Examples:
@@ -27730,6 +27796,27 @@ accompanying <i>``File Path''</i> shown at the end of each book's text.
   (save-exec \"my-saved_acl2\" nil
              :host-lisp-args \"--no-init -Z 256M\"
              :inert-args \"abc xyz -i foo\")
+
+  ; Immediately exit the ACL2 read-eval-print loop after starting up.
+  (save-exec \"my-acl2\" nil
+             :return-from-lp t)
+
+  ; Immediately exit the ACL2 read-eval-print loop after starting up and
+  ; defining function FOO in the logic.
+  (save-exec \"my-acl2\" \"Start with foo defined.\"
+             :return-from-lp '(with-output
+                               :off :all
+                               (defun foo (x) x)))
+
+  ; Immediately exit the ACL2 read-eval-print loop after starting up and
+  ; defining variable xxx in raw Lisp.
+  (save-exec \"my-acl2\" \"Start with xxx defined.\"
+             :return-from-lp '(with-output
+                               :off :all
+                               (ld '((set-raw-mode-on!)
+                                     (defvar xxx (make-list 10))
+                                     (set-raw-mode nil)
+                                     (u)))))
   ~ev[]
 
   Each example above generates a file named \"my-saved_acl2\".  That file is
@@ -27758,7 +27845,8 @@ accompanying <i>``File Path''</i> shown at the end of each book's text.
   General Form:
   (save-exec exec-filename extra-startup-string
              :host-lisp-args host-lisp-args
-             :inert-args inert-args)
+             :inert-args inert-args
+             :return-from-lp return-from-lp)
   ~ev[]
   where the keyword arguments are optional, and arguments are as follows.
   ~bq[]
@@ -27779,6 +27867,19 @@ accompanying <i>``File Path''</i> shown at the end of each book's text.
   value, then it is a string to be inserted into the command line in the saved
   script, specifying additional arguments that are not to be processed by the
   host Lisp executable.~eq[]
+
+  ~c[Return-from-lp] is ~c[nil] by default.  Regardless of the value of
+  ~c[return-from-lp], ACL2 starts up and enters its read-eval-print loop as
+  usual; ~pl[lp].  Normally you'll stay inside that loop, but if
+  ~c[return-from-lp] is not ~c[nil], then it is evaluated in the loop, which is
+  then exited, leaving you in raw Lisp.  Evaluation of ~c[return-from-lp] is
+  done with ~ilc[ld] options that minimize output; also ~pl[with-output] to
+  minimize output.  Suggestion: let ~c[return-from-lp] be ~c[t] if you simply
+  want to exit the read-eval-print loop at startup, without evaluating any
+  (nontrivial) form.
+
+  The remainder of this documentation focuses on the options other than
+  ~c[return-from-lp].
 
   ~st[Details]:
 
@@ -27858,8 +27959,7 @@ accompanying <i>``File Path''</i> shown at the end of each book's text.
   ~ev[]~eq[]
 
   (6) See community books ~c[books/oslib/argv] for a utility that returns a
-  list of all command line arguments (both ~c[host-lisp-args] and
-  ~c[inert-args]) from the invocation of ACL2.
+  list of all ~c[inert-args] from an invocation of ACL2.
 
   (7) Suppose that you invoke an ACL2 script, say ~c[\"my-saved_acl2\"], that
   was generated by ~c[save-exec], and then optionally evaluate some forms.
@@ -27928,7 +28028,7 @@ accompanying <i>``File Path''</i> shown at the end of each book's text.
   options.~/"
 
   `(save-exec-fn ,exec-filename ,extra-startup-string ,host-lisp-args
-                 ,toplevel-args ,inert-args))
+                 ,toplevel-args ,inert-args ,return-from-lp))
 
 (defdoc command-line
 

@@ -4031,7 +4031,9 @@
   limit on prover steps globally instead of setting it for just one form, and
   for a discussion of the notion of ``prover steps'', which could change in
   future ACL2 releases.  For a related utility based on time instead of prover
-  steps, ~pl[with-prover-time-limit].
+  steps, ~pl[with-prover-time-limit]; but as discussed in the
+  ~il[documentation] for ~ilc[set-prover-step-limit], there is at best a loose
+  connection between the counting of steps and ~ilc[with-prover-time-limit].
 
   The arguments of ~c[(with-prover-step-limit expr form)] are evaluated.
   However, the (optional) argument ~c[flg] is not evaluated in
@@ -11936,7 +11938,7 @@
   Examples:
   ACL2 !>:doc DEFTHM          ; print documentation of DEFTHM
   ACL2 !>:doc logical-name    ; print documentation of LOGICAL-NAME
-  ACL2 !>:doc \"MY-PKG\"      ; print documentation of \"MY-PKG\"
+  ACL2 !>:doc \"MY-PKG\"        ; print documentation of \"MY-PKG\"
 
   Related Topics:
   :more                      ; continues last :doc or :more-doc text

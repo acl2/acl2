@@ -38,10 +38,11 @@ ${ACL2} < doc/workxxx.tex
 
 cd doc/TEX
 
-# Note: At UT CS we typically use an old version of texinfo.tex stored at
-# /projects/acl2/devel-misc/doc/texinfo.tex
-# in order to build the documentation.  But anyone can build it using the
-# default texinfo.tex.
+# Note: At UT CS we typically use an old version of texinfo.tex stored
+# at /projects/acl2/devel-misc/doc/texinfo.tex in order to build the
+# documentation, which seems to result in more pages with an arguably
+# more attractive result.  But anyone can build it using the default
+# texinfo.tex.
 if [ -e ../texinfo.tex ] ; then \
     cp ../texinfo.tex . ;\
 fi
