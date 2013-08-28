@@ -152,6 +152,30 @@ certain topics into more appropriate places.)</p>")
 
 (include-book "system/origin" :dir :system)
 
+(defun defdoc-include-book-path (name wrld)
+
+; Tool from Matt Kaufmann for figuring out where a DEFDOC event comes from.
+;
+; We return nil if there is no defdoc for name.  Otherwise, we return the
+; include-book path (with closest book first, hence opposite from the order
+; typically displayed by :pe) for the most recent defdoc of name, else t if
+; that path is nil.
+
+  (declare (xargs :mode :program))
+  (cond ((endp wrld)
+         nil)
+        (t (or (let ((x (car wrld)))
+                 (case-match x
+                   (('EVENT-LANDMARK 'GLOBAL-VALUE . event-tuple)
+                    (let ((form (access-event-tuple-form event-tuple)))
+                      (case-match form
+                        (('DEFDOC !name . &)
+                         ;; Matt's version didn't reverse these, but mine
+                         ;; does for compatibility with the origin book.
+                         (or (reverse (global-val 'include-book-path wrld))
+                             t)))))))
+               (defdoc-include-book-path name (cdr wrld))))))
+
 #!XDOC
 (defun extend-topic-with-origin (topic state)
   ;; Returns (MV TOPIC STATE)
@@ -170,12 +194,20 @@ certain topics into more appropriate places.)</p>")
 
        ((mv er val state)
         (acl2::origin-fn name 'extend-topic-with-origin state))
+       ((mv er val)
+        (b* (((unless er)
+              (mv er val))
+             ;; This can occur at least in cases such as DEFDOC, which do not
+             ;; introduce logical names.
+             ;(- (cw "~x0: unknown: ~@1~%" name er))
+             (new-val (acl2::defdoc-include-book-path name (w state)))
+             ((when new-val)
+              ;(cw "~x0: tried harder and found ~x1.~%" name new-val)
+              (mv nil new-val)))
+          ;(cw "~x0: tried harder and still failed." name)
+          (mv er val)))
+
        ((when er)
-        ;; This can occur at least in cases such as DEFDOC, which do not
-        ;; introduce logical names.  I'm not sure if there's a way to identify
-        ;; where a DEFDOC originates from.  Well, some origins are better than
-        ;; none, so we'll just not worry about it.
-        ;;(cw "~x0: unknown: ~@1~%" name er)
         (mv (acons :from "Unknown" topic)
             state))
 
@@ -260,8 +292,18 @@ certain topics into more appropriate places.)</p>")
           (all-topic-froms (cdr topics)))))
 
 (let ((topics (xdoc::get-xdoc-table (w state))))
-  (pairlis$ (all-topic-names topics)
+  (pairlis$ (xdoc::all-topic-names topics)
             (all-topic-froms topics)))
+
+;; ACL2::UNSIGNED-BYTE-P-LEMMAS: unknown: Not logical name: 
+;; ACL2::UNSIGNED-BYTE-P-LEMMAS.
+;; ACL2::SIGNED-BYTE-P-LEMMAS: unknown: Not logical name: 
+;; ACL2::SIGNED-BYTE-P-LEMMAS.
+;; ACL2::IHS: unknown: Not logical name: ACL2::IHS.
+;; ACL2::DATA-STRUCTURES: unknown: Not logical name: ACL2::DATA-STRUCTURES.
+;; ACL2::B*-BINDERS: unknown: Not logical name: ACL2::B*-BINDERS.
+
+(acl2::defdoc-include-book-path 'acl2::ihs (w state))
 
 
 
