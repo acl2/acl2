@@ -68,10 +68,11 @@ list to be nil-terminated."
   :short "Shorthand for causing hard errors."
 
   :long "<p>@(call raise) is equivalent to @('(er hard? ...)'), but it
-automatically fills in the function name using @('__function__').  This only
-works in contexts where @('__function__') is bound, e.g., the body of a @(see
-define) or within a @(see defconsts) form.  In these contexts, rather than
-write something like:</p>
+automatically fills in the function name using @('__function__').</p>
+
+<p>This only works in contexts where @('__function__') is bound, e.g., the body
+of a @(see define) or within a @(see defconsts) form.  In these contexts,
+rather than write something like:</p>
 
 @({
  (er hard? __function__ \"bad input value ~x0~%\" x)

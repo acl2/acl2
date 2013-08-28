@@ -25,10 +25,17 @@
 
 (defoptions demo
   :parents (getopt)
-  :short "A basic demo of using @(see getopt)."
+  :short "A basic demo of using @(see getopt) to parse command-line options."
 
-  :long "<p>This is a basic demo of how to use getopt.  It's also a collection
-of unit tests to make sure getopt is working correctly.</p>
+  :long "<p>This is a basic demo of how to use getopt, and a collection of unit
+tests to make sure getopt is working correctly.</p>
+
+<p>Note: our focus in this demo is just on the command-line parsing piece.  We
+illustrate illustrates a lot of the things you can do with getopt, e.g., short
+aliases, long names, default values, validating inputs, and accumulating
+arguments.  But we <b>don't</b> turn it into a working program.  If you want to
+understand how @(see getopt) and @(see argv) and @(see save-exec) fit together,
+see @(see demo2).</p>
 
 <p>This @('defoptions') call does two things:</p>
 

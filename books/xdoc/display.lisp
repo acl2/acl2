@@ -19,10 +19,12 @@
 ; Original author: Jared Davis <jared@centtech.com>
 
 (in-package "XDOC")
-(include-book "save-classic")
-(include-book "parse-xml")
+;(include-book "save-classic")
+(include-book "prepare-topic")
 (include-book "spellcheck")
 (include-book "word-wrap")
+(include-book "str/natstr" :dir :system)
+(include-book "str/prefix-lines" :dir :system)
 (set-state-ok t)
 (program)
 

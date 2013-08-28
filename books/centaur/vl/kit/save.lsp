@@ -25,12 +25,14 @@
 (set-deferred-ttag-notes t state)
 (set-gag-mode :goals)
 
-;; (encapsulate
-;;   ()
-;;   (defttag vl-lint)
-;;   (remove-untouchable acl2::writes-okp nil))
-;; (assign acl2::writes-okp t)
-
 :q
 
-(save-exec "../bin/vl" "VL Verilog Toolkit")
+;; Set up our program to not print a bunch of ACL2 banners.
+(setq *print-startup-banner* nil)
+
+;; Set up our program NOT try to read the any customization files.
+(defun initial-customization-filename () :none)
+
+(save-exec "../bin/vl" "VL Verilog Toolkit"
+           :inert-args ""
+           :return-from-lp '(vl::vl-main))

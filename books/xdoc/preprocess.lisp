@@ -23,7 +23,9 @@
 
 (in-package "XDOC")
 (include-book "autolink")
-(include-book "str/top" :dir :system)
+(include-book "str/strprefixp" :dir :system)
+(include-book "str/istrprefixp" :dir :system)
+(include-book "str/strpos" :dir :system)
 (include-book "oslib/catpath" :dir :system)
 (local (include-book "misc/assert" :dir :system))
 (set-state-ok t)

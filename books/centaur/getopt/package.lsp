@@ -21,6 +21,7 @@
 (in-package "ACL2")
 
 (include-book "cutil/portcullis" :dir :system)
+(include-book "oslib/portcullis" :dir :system)
 
 (defpkg "GETOPT"
   (union-eq (set-difference-eq
@@ -83,5 +84,6 @@
   (union-eq *acl2-exports*
             *common-lisp-symbols-from-main-lisp-package*
             getopt::*getopt-exports*
-            '(acl2::rcons)))
+            '(acl2::rcons xdoc::defsection xdoc::defxdoc
+                          b* oslib::argv)))
 

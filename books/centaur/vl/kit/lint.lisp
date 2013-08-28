@@ -78,6 +78,7 @@
 
 (include-book "../../misc/sneaky-load")
 
+(include-book "../mlib/json")
 (local (include-book "../mlib/modname-sets"))
 (local (include-book "../util/arithmetic"))
 (local (include-book "../util/osets"))
@@ -286,7 +287,6 @@ shown.</p>"
         (vl-println ""))))))
 
 
-
 (defaggregate vl-lintresult
   :parents (lint)
   :short "Results from running the linter."
@@ -337,6 +337,27 @@ shown.</p>"
        (ret (vl-delete-sd-problems-for-modnames-aux fal probs)))
     (fast-alist-free fal)
     ret))
+
+
+(local (defthm no-duplicatesp-when-setp
+         (implies (setp x)
+                  (no-duplicatesp x))))
+
+(local (defthm VL-MODULELIST-P-OF-APPEND-fast
+         (implies (and (force (vl-modulelist-p x))
+                       (force (vl-modulelist-p y)))
+                  (vl-modulelist-p (append x y)))))
+
+(local (in-theory (disable
+                   NO-DUPLICATESP-EQUAL-WHEN-SAME-LENGTH-MERGESORT
+                   SUBSETP-EQUAL-OF-VL-MODINSTLIST->MODNAMESS-WHEN-SUBSETP-EQUAL
+                   CDR-OF-VL-MODULELIST-DUPERHS-CHECK
+                   CDR-OF-VL-MODULELIST-ORIGEXPRS
+                   CDR-OF-VL-MODULELIST-MAKE-ARRAY-INDEXING
+                   vl-modulelist-p-of-append
+                   NO-DUPLICATESP-EQUAL-OF-APPEND
+                   acl2::no-duplicatesp-equal-append-iff
+                   mergesort)))
 
 (define run-vl-lint-main ((mods     (and (vl-modulelist-p mods)
                                          (uniquep (vl-modulelist->names mods))))
@@ -624,6 +645,23 @@ shown.</p>"
      (vl-print-modwarningalist walist))))
 
 
+(define vl-jp-modwarningalist-aux ((x vl-modwarningalist-p) &key (ps 'ps))
+  (b* (((when (atom x))
+        ps)
+       ((cons modname warnings) (car x)))
+    (vl-ps-seq (vl-indent 1)
+               (jp-str modname)
+               (vl-print ":")
+               (vl-jp-warninglist warnings)
+               (if (atom (cdr x))
+                   ps
+                 (vl-println ","))
+               (vl-jp-modwarningalist-aux (cdr x)))))
+
+(define vl-jp-modwarningalist ((x vl-modwarningalist-p) &key (ps 'ps))
+  (vl-ps-seq (vl-print "{")
+             (vl-jp-modwarningalist-aux x)
+             (vl-println "}")))
 
 (defconst *use-set-warnings*
   (list :use-set-fudging
@@ -997,7 +1035,15 @@ wide addition instead of a 10-bit wide addition.")))
         (vl-ps-update-autowrap-col 68)
         (vl-lint-print-warnings "vl-other.txt" "Other/Unclassified" othertypes walist)))
 
-       (- (cw "~%")))
+      (- (cw "~%"))
+
+      (state
+       (cwtime
+        (with-ps-file "vl-warnings.json"
+                      (vl-print "{\"warnings\":")
+                      (vl-jp-modwarningalist walist)
+                      (vl-println "}"))
+        :name write-warnings-json)))
 
     state))
 
@@ -1056,3 +1102,9 @@ wide addition instead of a 10-bit wide addition.")))
     (exit-ok)
     state))
 
+
+#||
+
+(vl-lint (list "
+
+||#

@@ -20,4 +20,3 @@
 
 (include-book "portcullis")
 ; cert-flags: ? t :ttags :all
-(certify-book "defprojection-tests" ? t :ttags :all)

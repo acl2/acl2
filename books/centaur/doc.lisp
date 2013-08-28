@@ -102,6 +102,7 @@
 
 (include-book "centaur/getopt/top" :dir :system)
 (include-book "centaur/getopt/demo" :dir :system)
+(include-book "centaur/getopt/demo2" :dir :system)
 
 (include-book "gl/gl")
 (include-book "gl/bfr-aig-bddify")
@@ -596,7 +597,7 @@ functions.")
      (xdoc::change-parents stobjs (xargs))
 
      (xdoc::change-parents stobj (programming))
-     (xdoc::change-parents defabsstobj (stobj))
+     (xdoc::change-parents defabsstobj (stobj events))
      (xdoc::change-parents single-threaded-objects (stobj))
 
 

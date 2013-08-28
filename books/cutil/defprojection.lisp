@@ -267,7 +267,7 @@ you use this.</p>")
 
        (def  (if already-definedp
                  nil
-               `((defun ,exec-fn (,@list-args ,acc)
+               `((defund ,exec-fn (,@list-args ,acc)
                    (declare (xargs :guard
                                    ;; Previously we required that acc was a
                                    ;; true-listp in the guard.  But on reflection,
@@ -295,7 +295,7 @@ you use this.</p>")
                                        ,acc))
                      ,acc))
 
-                 (defun ,list-fn (,@list-args)
+                 (defund ,list-fn (,@list-args)
                    (declare (xargs :guard ,guard
                                    :mode ,mode
                                    ;; we tell ACL2 not to normalize because

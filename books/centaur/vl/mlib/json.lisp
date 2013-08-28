@@ -19,7 +19,7 @@
 ; Original author: Jared Davis <jared@centtech.com>
 
 (in-package "VL")
-(include-book "../util/print")
+(include-book "fmt")
 (include-book "find-module")
 (include-book "centaur/bridge/to-json" :dir :system)
 (local (include-book "../util/arithmetic"))
@@ -897,6 +897,36 @@ which could not hold such large values.</p>")
 
 
 
+
+(define vl-jp-warning ((x vl-warning-p) &key (ps 'ps))
+  :parents (json-encoders)
+  :short "Special, custom JSON encoder for warnings."
+
+  :long "<p>We probably don't want to use the ordinary aggregate-encoding stuff
+to print @(see vl-warning-p) objects, since the types in the @(':args') field
+are dynamic and, besides, who wants to reimplement @(see vl-cw) in other
+languages.  Instead, it's probably more convenient to just go ahead and convert
+the warning into a printed message here.  We'll include both HTML and plain
+TEXT versions of the message.</p>"
+
+  (b* (((vl-warning x) x)
+       (text (with-local-ps (vl-cw-obj x.msg x.args)))
+       (html (with-local-ps (vl-ps-update-htmlp t)
+                            (vl-cw-obj x.msg x.args))))
+    (jp-object :tag    (vl-print "\"warning\"")
+               :fatalp (jp-bool x.fatalp)
+               :type   (jp-str (symbol-name x.type))
+               :fn     (jp-str (symbol-name x.fn))
+               :text   (jp-str text)
+               :html   (jp-str html))))
+
+(add-json-encoder vl-warning-p jp-warning)
+
+(def-vl-jp-list warning :newlines 4)
+
+
+
+
 (define vl-jp-commentmap-aux ((x vl-commentmap-p) &key (ps 'ps))
   (b* (((when (atom x))
         ps))
@@ -918,7 +948,7 @@ which could not hold such large values.</p>")
 (add-json-encoder vl-commentmap-p vl-jp-commentmap)
 
 (def-vl-jp-aggregate module
-  :omit (params warnings esim)
+  :omit (params esim)
   :newlines 2)
 
 (def-vl-jp-list module

@@ -35,7 +35,7 @@ adds:</p>
 
 <ul>
 
-<li>A more concise syntax for @(see hints) that target @('\"Goal\").</li>
+<li>A more concise syntax for @(see hints) that target @('\"Goal\"').</li>
 
 <li>A very concise syntax for
 @({

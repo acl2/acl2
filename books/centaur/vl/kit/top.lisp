@@ -158,11 +158,13 @@ toolkit with their own commands.</p>
   (defattach vl-toolkit-other-command vl-toolkit-other-command-default))
 
 
-(define vl-main ((argv string-listp) &key (state 'state))
+(define vl-main (&key (state 'state))
   :parents (kit)
   :short "The top-level @('vl') meta-command."
 
-  (b* (((unless (consp argv))
+  (b* (((mv argv state) (oslib::argv))
+
+       ((unless (consp argv))
         (b* ((state (vl-help '("help"))))
           (exit-fail)
           state))
