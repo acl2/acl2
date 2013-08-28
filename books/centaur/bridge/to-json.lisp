@@ -590,6 +590,7 @@ representation, which it returns as a string.</p>
 getting the characters into the right order.</p>"
 
   (defund json-encode (x)
+    (declare (xargs :guard t))
     (let ((acc (json-encode-main x nil)))
       (str::rchars-to-string acc)))
 
