@@ -122,7 +122,27 @@ more meaningful error messages.</p>"
 
           (test-expr (first args))
           (test-size (vl-qmark-test-size test-expr))
-          ((unless (equal test-size 1))
+          ((unless (or (equal test-size 1)
+                       ;; Historically we didn't have this extra exclusion for
+                       ;; nil test sizes.  I later discovered that, e.g., due
+                       ;; to using arrays or other things that VL doesn't
+                       ;; support, we could run into a case like:
+                       ;;
+                       ;;    wire [2:0] foo;
+                       ;;    wire bar;
+                       ;;
+                       ;;    assign foo = bar ? bad-expression : 3'b0;
+                       ;;
+                       ;; Here BAR is a perfectly good expression, but due to
+                       ;; the bad-expression, our sizing code will fail to
+                       ;; assign any size to BAR.
+                       ;;
+                       ;; In this case, the warning we produced was very
+                       ;; confusing because the condition is obviously just a
+                       ;; single bit.  I think it just doesn't make sense to
+                       ;; try to create a warning in this case, so now we will
+                       ;; suppress these.
+                       (not test-size)))
            (cons (make-vl-warning :type :vl-warn-qmark-width
                                   :msg "~a0: ~x1-bit wide \"test\" expression for ?: operator, ~a2."
                                   :args (list ctx test-size test-expr)
