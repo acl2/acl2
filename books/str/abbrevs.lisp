@@ -139,7 +139,7 @@
 (add-macro-alias strprefixp STR::strprefixp)
 
 (defmacro strsuffixp (x y) `(STR::strsuffixp ,x ,y))
-(add-macro-alias strprefixp STR::strsuffixp)
+(add-macro-alias strsuffixp STR::strsuffixp)
 
 (defmacro substrp (x y) `(STR::substrp ,x ,y))
 (add-macro-alias substrp STR::substrp)
