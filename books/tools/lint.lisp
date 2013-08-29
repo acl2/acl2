@@ -199,7 +199,7 @@
                       (t
                        concl)))
        (name (second rule.rune))
-       ((mv er origin state) (origin-fn name 'summarize-rule state))
+       ((mv er origin state) (origin-fn name state))
        (origin (if er
                    (prog2$ (cw "Error in summarize-rule: ~x0" er)
                            :error)

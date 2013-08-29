@@ -193,7 +193,7 @@ certain topics into more appropriate places.)</p>")
         (mv topic state))
 
        ((mv er val state)
-        (acl2::origin-fn name 'extend-topic-with-origin state))
+        (acl2::origin-fn name state))
        ((mv er val)
         (b* (((unless er)
               (mv er val))

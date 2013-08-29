@@ -18,6 +18,8 @@
 ;
 ; Original authors: Jared Davis <jared@kookamara.com>
 
+; Modified by Matt Kaufmann 8/28/2013 to avoid command world errors.
+
 (in-package "ACL2")
 (include-book "xdoc/top" :dir :system)
 (set-state-ok t)
@@ -30,11 +32,9 @@
 @({
   (include-book \"system/origin\" :dir :system)
 
-  ;; certain built-in commands don't have a command number
-  (origin 'consp)    --> (value (:built-in nil))
-
-  ;; other built-in ACL2 commands have command numbers
-  (origin 'car-cons) --> (value (:built-in -936))
+  ;; built-in names get a return value of :built-in
+  (origin 'consp)    --> (value :built-in)
+  (origin 'car-cons) --> (value :built-in)
 
   ;; include-book path is reported for events included from other books
   (origin 'xdoc::save) --> (value (\"/home/jared/acl2/books/system/origin.lisp\"
@@ -46,7 +46,7 @@
 
   ;; some definitions are from the current session, e.g.:
   (defun f (x) x)
-  (origin 'f)     --> (value 3)
+  (origin 'f)     --> (value :TOP-LEVEL)
 
   ;; bad names
   (mv-let (er val state)               ;; ((:er (\"Not a logical name: ~x0\"
@@ -56,44 +56,21 @@
 
 })")
 
-
-(defun origin-fn1 (wrld ev-wrld cmd-wrld)
-  ;; Styled after PE-FN1.  I have no idea what I'm doing.
-  (cond
-   ((equal (access-event-tuple-form (cddar ev-wrld))
-           (access-command-tuple-form (cddar cmd-wrld)))
-    ;; This handles two kinds of things:
-    ;;  (1) built-in things with a defining event, and
-    ;;  (2) things from the current session (not an include-book)
-    ;; :pe-fn1 would do a print-ldd of a make-command-ldd here, which, if you work out
-    ;; the cases, seems to be just doing this:
-    (absolute-to-relative-command-number
-     (access-command-tuple-number (cddar cmd-wrld))
-     wrld))
-   (t
-    (let ((book-path (global-val 'include-book-path ev-wrld)))
-      (cond (book-path
-             (reverse book-path))
-            (t
-             :session?))))))
-
-(defun origin-fn (logical-name ctx state)
-  ;; Styled after PE-FN.  I have no idea what I'm doing.
-  (let ((wrld (w state)))
+(defun origin-fn (logical-name state)
+  (let* ((wrld (w state)))
     (cond
-     ((and (symbolp logical-name)
-           (not (eq logical-name :here))
-           (zp (getprop logical-name 'absolute-event-number nil 'current-acl2-world wrld)))
-      ;; Things that are built into ACL2 without a defining event
-      (value (list :built-in nil)))
-     ((not (decode-logical-name logical-name wrld))
-      (mv (msg "Not logical name: ~x0." logical-name) nil state))
+     ((acl2-system-namep logical-name wrld)
+      (value :built-in))
      (t
-      (er-let*
-       ((ev-wrld  (er-decode-logical-name logical-name wrld ctx state))
-        (cmd-wrld (superior-command-world ev-wrld wrld ctx state)))
-       (value (origin-fn1 wrld ev-wrld cmd-wrld)))))))
+      (let ((ev-wrld (decode-logical-name logical-name wrld)))
+        (cond (ev-wrld
+               (value (let ((book-path (global-val 'include-book-path ev-wrld)))
+                        (cond (book-path
+                               (reverse book-path))
+                              (t
+                               :top-level)))))
+              (t (mv (msg "Not logical name: ~x0." logical-name) nil state))))))))
 
 (defmacro origin (logical-name)
-  `(origin-fn ,logical-name 'origin state))
+  `(origin-fn ,logical-name state))
 
