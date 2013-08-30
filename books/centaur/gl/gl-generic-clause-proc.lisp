@@ -31,6 +31,7 @@
 (include-book "clause-processors/use-by-hint" :dir :system)
 (include-book "clause-processors/decomp-hint" :dir :system)
 (include-book "centaur/misc/interp-function-lookup" :dir :system)
+(include-book "constraint-db-deps")
 (local (include-book "gl-generic-interp"))
 (local (include-book "general-object-thms"))
 (local (include-book "hyp-fix-logic"))
@@ -799,16 +800,19 @@ The definition body, ~x1, is not a pseudo-term."
 
 
 
-
+(local (defthm pbfr-depends-on-t-is-bfr-depends-on
+         (equal (pbfr-depends-on k t x)
+                (bfr-depends-on k x))
+         :hints (("goal" :in-theory (enable pbfr-depends-on
+                                            bfr-depends-on
+                                            pbfr-semantic-depends-on
+                                            bfr-from-param-space)))))
 
 (defthm pbfr-vars-bounded-of-bfr-var
   (implies (<= (+ 1 (nfix v)) (nfix k))
            (pbfr-vars-bounded k t (bfr-var v)))
   :hints ((and stable-under-simplificationp
-               `(:expand (,(car (last clause)))))
-          (and stable-under-simplificationp
-               `(:expand (,(cadr (car (last clause))))
-                 :in-theory (enable nfix)))))
+               `(:expand (,(car (last clause)))))))
 
 
 (defthm pbfr-list-vars-bounded-of-numlist-to-vars
@@ -928,10 +932,80 @@ The definition body, ~x1, is not a pseudo-term."
 
 
 
+(defun glcp-cases-wormhole (term id)
+  (wormhole 'glcp-cases-wormhole
+            '(lambda (whs) whs)
+            nil
+            `(prog2$ (let ((id ',id))
+                       (declare (ignorable id))
+                       ,term)
+                     (value :q))
+            :ld-prompt nil
+            :ld-pre-eval-print nil
+            :ld-post-eval-print nil
+            :ld-verbose nil))
+
+(defun doubleton-list-to-alist (x)
+  (if (atom x)
+      nil
+    (cons (cons (caar x) (cadar x))
+          (doubleton-list-to-alist (cdr x)))))
+
+(defun bindings-to-vars-vals (x)
+  (if (atom x)
+      (mv nil nil)
+    (mv-let (vars vals)
+      (bindings-to-vars-vals (cdr x))
+      (if (and (symbolp (caar x))
+               (pseudo-termp (cadar x)))
+          (mv (cons (caar x) vars)
+              (cons (cadar x) vals))
+        (mv vars vals)))))
+
+(defun bindings-to-lambda (bindings term)
+  (mv-let (vars vals)
+    (bindings-to-vars-vals bindings)
+    `((lambda ,vars ,term) . ,vals)))
+
+(defthm bindings-to-vars-vals-wfp
+  (mv-let (vars vals)
+    (bindings-to-vars-vals x)
+    (and (symbol-listp vars)
+         (pseudo-term-listp vals)
+         (true-listp vals)
+         (equal (len vals) (len vars))
+         (not (stringp vars))
+         (not (stringp vals))))
+  :hints(("Goal" :in-theory (disable pseudo-termp))))
+
+(defthm bindings-to-lambda-pseudo-termp
+  (implies (pseudo-termp term)
+           (pseudo-termp (bindings-to-lambda bindings term)))
+  :hints(("Goal" :in-theory (enable true-listp length pseudo-termp))))
+
+(in-theory (disable bindings-to-lambda))
+
+;; Transforms an alist with elements of the form
+;; (((param1 val1) (param2 val2)) shape-spec)
+;; to the form (parametrized-hyp . shape-spec).
+(defun param-bindings-to-alist (hyp bindings)
+  (if (atom bindings)
+      nil
+    (cons (list* (sublis-into-term
+                  hyp (doubleton-list-to-alist (caar bindings)))
+;;           (bindings-to-lambda (caar bindings) hyp)
+           (acl2::msg "case: ~x0" (caar bindings))
+           (cadar bindings))
+          (param-bindings-to-alist hyp (cdr bindings)))))
+(local
+ (defthm param-bindings-to-alist-pseudo-term-listp-strip-cars
+   (implies (pseudo-termp hyp)
+            (pseudo-term-listp (strip-cars (param-bindings-to-alist hyp bindings))))))
+
 
 
 (make-event
- (sublis *glcp-generic-template-subst* *glcp-run-parametrized-template*))
+ (sublis *glcp-generic-template-subst* *glcp-clause-proc-template*))
 
 (local (progn
 ; [Removed by Matt K. to handle changes to member, assoc, etc. after ACL2 4.2.]
@@ -1022,7 +1096,11 @@ The definition body, ~x1, is not a pseudo-term."
                     (strip-cadrs bindings)))
         (interp-st (create-interp-st))
         (interp-st (update-is-obligs obligs interp-st))
-        (interp-st (update-is-constraint t interp-st)))
+        (interp-st (update-is-constraint t interp-st))
+        (interp-st (update-is-constraint-db
+                    (gbc-db-make-fast
+                     (table-alist 'gl-bool-constraints (w state)))
+                    interp-st)))
      (glcp-generic-interp-hyp/concl-env
       env hyp concl al config.concl-clk config interp-st next-bvar state))))
     ;;    ;; (bvar-db nil)
@@ -1304,9 +1382,10 @@ The definition body, ~x1, is not a pseudo-term."
                     (disjoin val-clause)
                     `((env . ,(list ctrex-env)))))))
    :hints (("goal" :do-not-induct t
-            :in-theory (disable collect-vars nth update-nth
-                                pseudo-termp
-                                dumb-negate-lit)))))
+            :in-theory (e/d (gbc-db-empty-implies-gbc-db-vars-bounded)
+                            (collect-vars nth update-nth
+                                          pseudo-termp
+                                          dumb-negate-lit))))))
 
 
 (local
@@ -1529,25 +1608,11 @@ The definition body, ~x1, is not a pseudo-term."
 
 (in-theory (disable glcp-generic-run-parametrized))
 
-(defun glcp-cases-wormhole (term id)
-  (wormhole 'glcp-cases-wormhole
-            '(lambda (whs) whs)
-            nil
-            `(prog2$ (let ((id ',id))
-                       (declare (ignorable id))
-                       ,term)
-                     (value :q))
-            :ld-prompt nil
-            :ld-pre-eval-print nil
-            :ld-post-eval-print nil
-            :ld-verbose nil))
+
 
 (in-theory (disable glcp-cases-wormhole))
 
 
-
-(make-event
- (sublis *glcp-generic-template-subst* *glcp-run-cases-template*))
 
 (local
  (encapsulate nil
@@ -1629,68 +1694,9 @@ The definition body, ~x1, is not a pseudo-term."
 
 
 
-(defun doubleton-list-to-alist (x)
-  (if (atom x)
-      nil
-    (cons (cons (caar x) (cadar x))
-          (doubleton-list-to-alist (cdr x)))))
-
-(defun bindings-to-vars-vals (x)
-  (if (atom x)
-      (mv nil nil)
-    (mv-let (vars vals)
-      (bindings-to-vars-vals (cdr x))
-      (if (and (symbolp (caar x))
-               (pseudo-termp (cadar x)))
-          (mv (cons (caar x) vars)
-              (cons (cadar x) vals))
-        (mv vars vals)))))
-
-(defun bindings-to-lambda (bindings term)
-  (mv-let (vars vals)
-    (bindings-to-vars-vals bindings)
-    `((lambda ,vars ,term) . ,vals)))
-
-(defthm bindings-to-vars-vals-wfp
-  (mv-let (vars vals)
-    (bindings-to-vars-vals x)
-    (and (symbol-listp vars)
-         (pseudo-term-listp vals)
-         (true-listp vals)
-         (equal (len vals) (len vars))
-         (not (stringp vars))
-         (not (stringp vals))))
-  :hints(("Goal" :in-theory (disable pseudo-termp))))
-
-(defthm bindings-to-lambda-pseudo-termp
-  (implies (pseudo-termp term)
-           (pseudo-termp (bindings-to-lambda bindings term)))
-  :hints(("Goal" :in-theory (enable true-listp length pseudo-termp))))
-
-(in-theory (disable bindings-to-lambda))
-
-;; Transforms an alist with elements of the form
-;; (((param1 val1) (param2 val2)) shape-spec)
-;; to the form (parametrized-hyp . shape-spec).
-(defun param-bindings-to-alist (hyp bindings)
-  (if (atom bindings)
-      nil
-    (cons (list* (sublis-into-term
-                  hyp (doubleton-list-to-alist (caar bindings)))
-;;           (bindings-to-lambda (caar bindings) hyp)
-           (acl2::msg "case: ~x0" (caar bindings))
-           (cadar bindings))
-          (param-bindings-to-alist hyp (cdr bindings)))))
-(local
- (defthm param-bindings-to-alist-pseudo-term-listp-strip-cars
-   (implies (pseudo-termp hyp)
-            (pseudo-term-listp (strip-cars (param-bindings-to-alist hyp bindings))))))
 
 
 
-
-
-(make-event (sublis *glcp-generic-template-subst* *glcp-clause-proc-template*))
 
 (local
  (progn
@@ -1860,10 +1866,6 @@ The definition body, ~x1, is not a pseudo-term."
     (clause-proc-name . 'glcp-side-goals-clause-proc)
     (glcp-analyze-interp-result . glcp-fake-analyze-interp-result)))
 
-(make-event (sublis *glcp-side-goals-subst*
-                    *glcp-run-parametrized-template*))
-
-(make-event (sublis *glcp-side-goals-subst* *glcp-run-cases-template*))
 
 (make-event (sublis *glcp-side-goals-subst*
                     *glcp-clause-proc-template*))

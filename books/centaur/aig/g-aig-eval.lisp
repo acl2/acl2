@@ -462,20 +462,23 @@
    (defun pbfr-list-depends-on-witness (k p x)
      (if (atom x)
          nil
-       (if (pbfr-depends-on k p (car x))
+       (if (pbfr-semantic-depends-on k p (car x))
            (mv-let (env v)
-             (pbfr-depends-on-witness k p (car x))
+             (pbfr-semantic-depends-on-witness k p (car x))
              (list env v))
          (pbfr-list-depends-on-witness k p (cdr x)))))
 
    (defthm pbfr-list-depends-on-witness-iff
-     (iff (pbfr-list-depends-on-witness k p x)
-          (pbfr-list-depends-on k p x))
-     :hints(("Goal" :in-theory (enable pbfr-list-depends-on))))
+     (implies (not (bfr-mode))
+              (iff (pbfr-list-depends-on-witness k p x)
+                   (pbfr-list-depends-on k p x)))
+     :hints(("Goal" :in-theory (enable pbfr-list-depends-on
+                                       pbfr-depends-on))))
 
    (defthm pbfr-list-depends-on-by-witness
-     (implies (acl2::rewriting-negative-literal
-               `(pbfr-list-depends-on ,k ,p ,x))
+     (implies (and (acl2::rewriting-negative-literal
+                    `(pbfr-list-depends-on ,k ,p ,x))
+                   (not (bfr-mode)))
               (equal (pbfr-list-depends-on k p x)
                      (mv-let (env v) (pbfr-list-depends-on-witness k p x)
                        (and (bfr-eval p env)
@@ -483,9 +486,10 @@
                             (not (equal (bfr-eval-list x (bfr-param-env p (bfr-set-var k v env)))
                                         (bfr-eval-list x (bfr-param-env p env))))))))
      :hints(("Goal" :in-theory (enable pbfr-list-depends-on
+                                       pbfr-depends-on
                                        bfr-eval-list))
             (and stable-under-simplificationp
-                 '(:expand ((pbfr-depends-on k p (car x)))))))))
+                 '(:expand ((pbfr-semantic-depends-on k p (car x)))))))))
 
 (defthm bfr-eval-alist-when-set-non-dep
   (implies (and (not (gl::pbfr-list-depends-on k p (alist-vals bfr-al)))
@@ -497,13 +501,23 @@
                    bfr-al (gl::bfr-param-env p env))))
   :hints(("Goal" :in-theory (enable gl::pbfr-list-depends-on alist-vals))))
 
+
+
 (defthm deps-of-aig-bfrify-list
   (mv-let (res exact)
     (aig-bfrify-list tries aigs bfr-al maybe-wash-args)
     (implies (and exact
                   (not (gl::pbfr-list-depends-on k p (alist-vals bfr-al))))
              (not (gl::pbfr-list-depends-on k p res))))
-  :hints(("Goal" :in-theory (disable aig-bfrify-list))))
+  :hints(("Goal" :in-theory (disable aig-bfrify-list)
+          :cases ((gl::bfr-mode)))
+         (cond ((member-equal '(not (gl::bfr-mode)) clause)
+                '(:in-theory (enable aig-bfrify-list
+                                     gl::pbfr-list-depends-on
+                                     gl::pbfr-depends-on
+                                     gl::bfr-depends-on
+                                     gl::bfr-from-param-space)))))
+  :otf-flg t)
  
 
 

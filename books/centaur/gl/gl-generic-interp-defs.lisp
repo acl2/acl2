@@ -33,7 +33,7 @@
 (include-book "centaur/misc/rewrite-rule" :dir :system)
 (include-book "centaur/misc/beta-reduce-full" :dir :system)
 (include-book "glcp-geval")
-
+(include-book "constraint-db-deps")
 
 (verify-termination acl2::evisc-tuple)
 (verify-guards acl2::evisc-tuple)
@@ -1072,37 +1072,6 @@
        (not (cdr (hons-assoc-equal fn (table-alist 'gl-if-opaque-fns w))))))
 
 
-(defconst *glcp-generic-template-subst*
-  '((run-gified . glcp-generic-run-gified)
-    (interp-test . glcp-generic-interp-test)
-    (interp-term . glcp-generic-interp-term)
-    (interp-term-equivs . glcp-generic-interp-term-equivs)
-    (interp-fncall-ifs . glcp-generic-interp-fncall-ifs)
-    (maybe-interp-fncall-ifs . glcp-generic-maybe-interp-fncall-ifs)
-    (interp-fncall . glcp-generic-interp-fncall)
-    (interp-if/or . glcp-generic-interp-if/or)
-    (maybe-interp . glcp-generic-maybe-interp)
-    (interp-if . glcp-generic-interp-if)
-    (interp-or . glcp-generic-interp-or)
-    (merge-branches . glcp-generic-merge-branches)
-    (merge-branch-subterms . glcp-generic-merge-branch-subterms)
-    (merge-branch-subterm-lists . glcp-generic-merge-branch-subterm-lists)
-    (simplify-if-test . glcp-generic-simplify-if-test)
-    (simplify-if-test-fncall . glcp-generic-simplify-if-test-fncall)
-    (rewrite . glcp-generic-rewrite)
-    (rewrite-apply-rules . glcp-generic-rewrite-apply-rules)
-    (rewrite-apply-rule . glcp-generic-rewrite-apply-rule)
-    (relieve-hyps . glcp-generic-relieve-hyps)
-    (relieve-hyp . glcp-generic-relieve-hyp)
-    (interp-list . glcp-generic-interp-list)
-    (interp-top-level-term . glcp-generic-interp-top-level-term)
-    (interp-concl . glcp-generic-interp-concl)
-    (interp-hyp/concl . glcp-generic-interp-hyp/concl)
-    (interp-term-under-hyp . glcp-generic-interp-term-under-hyp)
-    (run-parametrized . glcp-generic-run-parametrized)
-    (run-cases . glcp-generic-run-cases)
-    (clause-proc . glcp-generic)
-    (clause-proc-name . (glcp-generic-clause-proc-name))))
 
 (defthmd acl2-count-of-car
   (<= (acl2-count (car x)) (acl2-count x))
@@ -1164,14 +1133,16 @@
     :hints(("Goal" :in-theory (enable mk-g-concrete)))
     :rule-classes :linear))
 
+
+(defconst *glcp-generic-template-subst*
+  (let ((names (cons 'run-gified
+                     (remove 'clause-proc *glcp-fnnames*))))
+    (cons '(clause-proc . glcp-generic)
+          (pairlis$ names (glcp-put-name-each 'glcp-generic names)))))
+
 (make-event
  (sublis *glcp-generic-template-subst*
          *glcp-interp-template*))
 
 
-
-
-(make-event
- (sublis *glcp-generic-template-subst*
-         *glcp-interp-wrappers-template*))
 

@@ -51,13 +51,25 @@
                     (equal (bfr-eval x (bfr-set-var k-equiv v env))
                            (bfr-eval x env)))))
 
+  (encapsulate nil
+    (local (defthm bfr-semantic-depends-on-of-set-var-equiv
+             (implies (and (not (bfr-semantic-depends-on k1 x))
+                           (acl2::nat-equiv k1 k2))
+                      (equal (bfr-eval x (bfr-set-var k2 v env))
+                             (bfr-eval x env)))))
+
+    (defcong acl2::nat-equiv equal (bfr-semantic-depends-on k x) 1
+      :hints(("Goal" :cases ((bfr-semantic-depends-on k x))
+              :in-theory (e/d (bfr-depends-on)
+                              (acl2::nat-equiv)))
+             (and stable-under-simplificationp
+                  (if (eq (caar clause) 'not)
+                      `(:expand (,(cadar clause)))
+                    `(:expand (,(cadar (last clause)))))))))
+
   (defcong acl2::nat-equiv equal (bfr-depends-on k x) 1
     :hints(("Goal" :cases ((bfr-depends-on k x))
-            :in-theory (disable acl2::nat-equiv))
-           (and stable-under-simplificationp
-                (if (eq (caar clause) 'not)
-                    `(:expand (,(cadar clause)))
-                  `(:expand (,(cadar (last clause))))))))
+            :in-theory (enable bfr-depends-on))))
 
   (defcong acl2::nat-equiv equal (bfr-vars-bounded n x) 1
     :hints(("Goal"
@@ -130,13 +142,27 @@
                     (equal (bfr-eval x (bfr-param-env p (bfr-set-var k-equiv v env)))
                            (bfr-eval x (bfr-param-env p env))))))
 
+  (encapsulate nil
+    (local (defthm pbfr-semantic-depends-on-of-set-var-equiv
+             (implies (and (not (pbfr-semantic-depends-on k1 p x))
+                           (acl2::nat-equiv k1 k2)
+                           (bfr-eval p env)
+                           (bfr-eval p (bfr-set-var k2 v env)))
+                      (equal (bfr-eval x
+                                       (bfr-param-env p (bfr-set-var k2 v env)))
+                             (bfr-eval x (bfr-param-env p env))))))
+    
+
+    (defcong acl2::nat-equiv equal (pbfr-semantic-depends-on k p x) 1
+      :hints(("Goal" :cases ((pbfr-semantic-depends-on k p x))
+              :in-theory (disable acl2::nat-equiv))
+             (and stable-under-simplificationp
+                  (if (eq (caar clause) 'not)
+                      `(:expand (,(cadar clause)))
+                    `(:expand (,(cadar (last clause)))))))))
+
   (defcong acl2::nat-equiv equal (pbfr-depends-on k p x) 1
-    :hints(("Goal" :cases ((pbfr-depends-on k p x))
-            :in-theory (disable acl2::nat-equiv))
-           (and stable-under-simplificationp
-                (if (eq (caar clause) 'not)
-                    `(:expand (,(cadar clause)))
-                  `(:expand (,(cadar (last clause))))))))
+    :hints(("Goal" :in-theory (enable pbfr-depends-on))))
 
   (defcong acl2::nat-equiv equal (pbfr-vars-bounded n p x) 1
     :hints(("Goal"
@@ -163,26 +189,40 @@
     :hints(("Goal" :in-theory (enable bfr-unparam-env))))
 
 
+  (defthm pbfr-semantic-depends-on-t
+    (implies (not (pbfr-semantic-depends-on k t x))
+             (not (bfr-semantic-depends-on k x)))
+    :hints (("goal" :expand ((bfr-semantic-depends-on k x))
+             :use ((:instance pbfr-semantic-depends-on-suff
+                    (p t)
+                    (v (mv-nth 1 (bfr-semantic-depends-on-witness k x)))
+                    (env (mv-nth 0 (bfr-semantic-depends-on-witness k x)))))
+             :in-theory (disable pbfr-semantic-depends-on-suff))))
+
   (defthm pbfr-depends-on-t
     (implies (not (pbfr-depends-on k t x))
              (not (bfr-depends-on k x)))
-    :hints (("goal" :expand ((bfr-depends-on k x))
-             :use ((:instance pbfr-depends-on-suff
+    :hints(("Goal" :in-theory (enable pbfr-depends-on bfr-depends-on
+                                      bfr-from-param-space))))
+
+  (defthm pbfr-semantic-depends-on-of-bfr-to-param-space
+    (implies (not (pbfr-semantic-depends-on k t x))
+             (not (pbfr-semantic-depends-on k p (bfr-to-param-space p x))))
+    :hints (("goal" :expand ((pbfr-semantic-depends-on k p (bfr-to-param-space p x)))
+             :use ((:instance pbfr-semantic-depends-on-suff
                     (p t)
-                    (v (mv-nth 1 (bfr-depends-on-witness k x)))
-                    (env (mv-nth 0 (bfr-depends-on-witness k x)))))
-             :in-theory (disable pbfr-depends-on-suff))))
+                    (env (mv-nth 0 (pbfr-semantic-depends-on-witness k p (bfr-to-param-space p x))))
+                    (v (mv-nth 1 (pbfr-semantic-depends-on-witness k p (bfr-to-param-space p x))))))
+             :in-theory (disable pbfr-semantic-depends-on-suff
+                                 pbfr-eval-of-set-non-dep))))
 
   (defthm pbfr-depends-on-of-bfr-to-param-space
     (implies (not (pbfr-depends-on k t x))
              (not (pbfr-depends-on k p (bfr-to-param-space p x))))
-    :hints (("goal" :expand ((pbfr-depends-on k p (bfr-to-param-space p x)))
-             :use ((:instance pbfr-depends-on-suff
-                    (p t)
-                    (env (mv-nth 0 (pbfr-depends-on-witness k p (bfr-to-param-space p x))))
-                    (v (mv-nth 1 (pbfr-depends-on-witness k p (bfr-to-param-space p x))))))
-             :in-theory (disable pbfr-depends-on-suff
-                                 pbfr-eval-of-set-non-dep))))
+    :hints(("Goal" :in-theory (enable pbfr-depends-on))
+           (and stable-under-simplificationp
+                '(:in-theory (enable bfr-to-param-space bfr-from-param-space
+                                     bfr-depends-on)))))
 
   (defthm pbfr-vars-bounded-t
     (implies (pbfr-vars-bounded k t x)

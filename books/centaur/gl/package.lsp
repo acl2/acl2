@@ -31,6 +31,8 @@
      definline definlined
      defxdoc defsection define
 
+     alist-keys alist-vals
+
      qv bfr-and bfr-not bfr-and
      bfr-p bfr-or bfr-xor bfr-iff bfr-ite bfr-eval bfr-eval-list
      q-implies add-bfr-fn add-bfr-pat add-bfr-fn-pat max-depth

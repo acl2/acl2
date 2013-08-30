@@ -1140,7 +1140,7 @@
        (b* ((hints (just-expand-cp-parse-hints (cons ',term ',expand-others) (w state)))
             (cproc `(mark-expands-cp clause '(nil ,',lambdasp ,hints))))
          `(:computed-hint-replacement
-           (; (and (equal (car id) '(0)) '(:clause-processor clause-to-term))
+           ((and (equal (car id) '(0)) '(:clause-processor clause-to-term))
             (and (equal (car id) '(0)) '(:induct ,',term)))
            :clause-processor ,cproc))
      (and (equal (car id) '(0 1))

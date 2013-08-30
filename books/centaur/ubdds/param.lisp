@@ -941,6 +941,47 @@
   :hints (("goal" :induct (to-param-space p x)
            :in-theory (e/d (q-and) (ubddp)))))
 
+(defthm eval-bdd-of-qcons
+  (equal (eval-bdd (qcons x y) env)
+         (if (car env)
+             (eval-bdd x (cdr env))
+           (eval-bdd y (cdr env)))))
+
+(defun to-from-ind (p x env)
+  (if (consp p)
+      (cond ((eq (car p) nil)
+             (and (not (car env))
+                  (to-from-ind (cdr p) (cdr x) (cdr env))))
+            ((eq (cdr p) nil)
+             (and (car env)
+                  (to-from-ind (car p) (car x) (cdr env))))
+            (t (list (to-from-ind (car p) (car x) (cdr env))
+                     (to-from-ind (cdr p) (cdr x) (cdr env)))))
+    (list p x env)))
+    
+
+(defthm from-param-space-of-qcons
+  (implies (and (car p) (cdr p))
+           (equal (from-param-space p (qcons x y))
+                  (if (atom (qcons x y))
+                      (and x p)
+                    (qcons (from-param-space (car p) x)
+                           (from-param-space (cdr p) y)))))
+  :otf-flg t)
+
+(defthm consp-qcons
+  (equal (consp (qcons x y))
+         (not (and (booleanp x)
+                   (equal x y)))))
+
+(defthm to-from-param-space-eval
+  (equal (eval-bdd (from-param-space p (to-param-space p x)) env)
+         (and (eval-bdd p env)
+              (eval-bdd x env)))
+  :hints (("goal" :induct (to-from-ind p x env)
+           :in-theory (disable qcons))))
+
+
 (defthm to-param-space-self
   (implies (and (ubddp p) p)
            (equal (to-param-space p p) t))

@@ -182,11 +182,32 @@
                      :rule-classes nil)
                    (gbc-add-rule ,name ,alist ,syntaxp-trans)))))
 
-(defmacro def-gl-boolean-constraint (name &key bindings (syntaxp ''t) body
-                                             hints)
-  `(make-event
-    (def-gl-boolean-constraint-fn
-      ',name ',bindings ',syntaxp ',body ',hints state)))
+(defsection def-gl-boolean-constraint
+  :parents (reference g-call)
+  :short "Define a rule that recognizes constraints among GL generated Boolean variables"
+  :long "
+<p>When using GL in a term-level style (see @(see term-level-reasoning)), GL
+may generate new Boolean variables from terms that appear as IF tests.</p>
+
+<p>Sometimes, the terms from which these variables are generated have
+interdependent meanings.  For example, if Boolean variable @('a') represents
+@('(logbitp 5 x)') and Boolean variable @('b') represents @('(integerp x)'), it
+should be impossible for @('a') to be true when @('b') is false.  However, by
+default, the Boolean variables generated this way are unconstrained.  When
+this sort of interdependency among variables exists but is not accounted for,
+it can cause GL to find @(see false-counterexamples).</p>
+
+<p>@('Def-gl-boolean-constraint') provides a mechanism to make such constraints
+known to GL.  While symbolically executing a form, GL maintains a constraint, a
+Boolean formula known to always be true (under the evolving assignment of
+Boolean variables to terms).  </p>"
+
+
+  (defmacro def-gl-boolean-constraint (name &key bindings (syntaxp ''t) body
+                                            hints)
+    `(make-event
+      (def-gl-boolean-constraint-fn
+        ',name ',bindings ',syntaxp ',body ',hints state))))
 
 (defun gbc-signature (common-vars subst)
   (if (atom common-vars)
@@ -306,13 +327,52 @@
     (mv (append substs1 substs-rest) ccat)))
 
 
-(defun gbc-process-new-lit (lit ccat state)
+(defund gbc-process-new-lit (lit ccat state)
   (declare (xargs :stobjs state :verify-guards nil))
   (b* (((unless (and (consp lit)
                      (eq (tag lit) :g-apply)))
         (mv nil ccat))
        (tuples (cdr (hons-get (g-apply->fn lit) ccat))))
     (gbc-process-new-lit-tuples lit tuples ccat state)))
+
+
+(defun gbc-tuples-make-fast (x)
+  (if (atom x)
+      nil
+    (cons (change-constraint-tuple (car x)
+                                   :sig-table
+                                   (make-fast-alist
+                                    (constraint-tuple->sig-table (car x))))
+          (gbc-tuples-make-fast (cdr x)))))
+
+(defun gbc-tuples-free (x)
+  (if (atom x)
+      nil
+    (prog2$ (fast-alist-free (constraint-tuple->sig-table (car x)))
+            (gbc-tuples-free (cdr x)))))
+
+(defun gbc-db-make-fast-rec (x acc)
+  (b* (((when (atom x)) acc)
+       (acc (if (and (consp (car x))
+                     (not (hons-get (caar x) acc)))
+                (hons-acons (caar x)
+                            (gbc-tuples-make-fast (cdar x))
+                            acc)
+              acc)))
+    (gbc-db-make-fast-rec (cdr x) acc)))
+
+(defund gbc-db-make-fast (x)
+  (gbc-db-make-fast-rec x nil))
+
+(defun gbc-db-free-rec (x)
+  (if (atom x)
+      nil
+    (prog2$ (and (consp (car x))
+                 (gbc-tuples-free (cdar x)))
+            (gbc-db-free-rec (cdr x)))))
+
+(defund gbc-db-free (x)
+  (gbc-db-free-rec (fast-alist-free x)))
 
 
 

@@ -722,11 +722,6 @@
 
 (acl2::def-multi-env-fns dumb-ev dumb-ev-lst)
 
-(defmacro alist-keys (x)
-  `(acl2::alist-keys ,x))
-
-(add-macro-alias alist-keys acl2::alist-keys)
-
 (defun alists-apply-alists-dumb-ev (used-al)
   (let ((used (used-al-to-used used-al)))
     (clauses-apply-alists-dumb-ev

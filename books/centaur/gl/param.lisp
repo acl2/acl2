@@ -22,7 +22,6 @@
 (include-book "bfr-param")
 (include-book "gtypes")
 (include-book "bvar-db")
-(include-book "constraint-db")
 (include-book "tools/clone-stobj" :dir :system)
 (include-book "centaur/ubdds/param" :dir :system)
 (include-book "centaur/ubdds/lite" :dir :system)
@@ -488,45 +487,4 @@
              (equal (get-bvar->term$a n (parametrize-bvar-db p bvar-db bvar-db1))
                     (gobj-to-param-space
                      (get-bvar->term$a n bvar-db) p)))))
-
-
-(defun parametrize-gobj-alists (p alists)
-  (declare (xargs :guard t))
-  (if (atom alists)
-      nil
-    (cons (gobj-alist-to-param-space (car alists) p)
-          (parametrize-gobj-alists p (cdr alists)))))
-
-(defun parametrize-sig-table (p sig-table)
-  (declare (xargs :guard t))
-  (if (atom sig-table)
-      nil
-    (if (atom (car sig-table))
-        (parametrize-sig-table p (cdr sig-table))
-      (hons-acons (caar sig-table)
-                  (parametrize-gobj-alists p (cdar sig-table))
-                  (parametrize-sig-table p (cdr sig-table))))))
-                   
-
-(defun parametrize-constraint-db-tuples (p tuples)
-  (declare (xargs :guard t))
-  (b* (((when (atom tuples)) nil)
-       ((unless (constraint-tuple-p (car tuples)))
-        (parametrize-constraint-db-tuples p (cdr tuples)))
-       ((constraint-tuple x) (car tuples))
-       (sig-table (parametrize-sig-table p x.sig-table)))
-    (fast-alist-free x.sig-table)
-    (cons (constraint-tuple x.rule x.existing-lits x.matching-lit x.common-vars
-                            x.existing-vars sig-table)
-          (parametrize-constraint-db-tuples p (cdr tuples)))))
-
-(defun parametrize-constraint-db (p ccat)
-  (declare (xargs :guard t))
-  (b* (((when (atom ccat)) nil)
-       ((when (atom (car ccat)))
-        (parametrize-constraint-db p (cdr ccat))))
-    (hons-acons (caar ccat)
-                (parametrize-constraint-db-tuples p (cdar ccat))
-                (parametrize-constraint-db p (cdr ccat)))))
-
 

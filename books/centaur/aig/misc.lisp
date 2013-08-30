@@ -281,6 +281,22 @@
   (equal (aig-eval-alist (aig-extract-assigns-alist x) env)
          (aig-extract-assigns-alist x)))
 
+(defthm assign-var-list-lookup
+  (equal (hons-assoc-equal k (assign-var-list x v))
+         (and (member k x)
+              (cons k v)))
+  :hints(("Goal" :in-theory (enable assign-var-list hons-assoc-equal member))))
+
+(local (defthm hons-assoc-equal-of-append
+         (equal (hons-assoc-equal k (append x y))
+                (or (hons-assoc-equal k x)
+                    (hons-assoc-equal k y)))))
+
+(defthmd aig-extract-assigns-alist-lookup-boolean
+  (booleanp (cdr (hons-assoc-equal k (aig-extract-assigns-alist x))))
+  :hints(("Goal" :in-theory (enable aig-extract-assigns-alist)))
+  :rule-classes :type-prescription)
+
 
 (defthm aig-extract-assigns-restrict
 ;;   (implies (aig-eval x env)
@@ -343,6 +359,12 @@
                   (aig-eval y nil)))
   :hints (("goal" :use ((:instance aig-extract-iterated-assigns-restrict
                                    (env nil))))))
+
+(defthmd aig-extract-iterated-assigns-alist-lookup-boolean
+  (booleanp (cdr (hons-assoc-equal k (aig-extract-iterated-assigns-alist x clk))))
+  :hints(("Goal" :in-theory (enable aig-extract-iterated-assigns-alist
+                                    aig-extract-assigns-alist-lookup-boolean)))
+  :rule-classes :type-prescription)
 
 
 (memoize 'aig-extract-iterated-assigns-alist

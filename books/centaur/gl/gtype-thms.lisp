@@ -146,7 +146,7 @@
 (defthm gobj-depends-on-of-mk-g-boolean
   (equal (gobj-depends-on k p (mk-g-boolean x))
          (pbfr-depends-on k p x))
-  :hints(("Goal" :in-theory (enable mk-g-boolean booleanp pbfr-depends-on))))
+  :hints(("Goal" :in-theory (enable mk-g-boolean booleanp))))
 
 
 

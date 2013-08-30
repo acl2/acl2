@@ -432,6 +432,14 @@
     (fast-alist-free al)
     x))
 
+(defun gobjlist-abstract-top (x)
+  (declare (xargs :guard t))
+  (b* (((mv x al &) (gobjlist-abstract x nil 0)))
+    (fast-alist-free al)
+    x))
+
+
+
 
 (defun bool-to-bit (x)
   (cond ((eq x t) 1)
@@ -949,8 +957,8 @@ but they can cause generated counterexamples to be nonsense.  Be careful!</p>"
        ((unless (true-listp (car pairs)))
         (glcp-pretty-print-bvar-db-violations (cdr pairs))))
     (and (equal (caar pairs) "FAIL")
-         (cw "~x0 should be ~x1~%" (cadar pairs) (caddar pairs))
-         (cw "gobj: ~x0~%" (gobj-abstract-top (ec-call (nth 3 (car pairs))))))
+         (or (cw "~x0 should be ~x1~%" (cadar pairs) (caddar pairs))
+             (cw "gobj: ~x0~%" (gobj-abstract-top (ec-call (nth 3 (car pairs)))))))
     (glcp-pretty-print-bvar-db-violations (cdr pairs))))
 
 (defun quote-if-needed (obj)

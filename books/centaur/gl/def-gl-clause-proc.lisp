@@ -256,12 +256,6 @@
   :hints(("Goal" :in-theory (enable gobj-listp)))
   :rule-classes :forward-chaining)
 
-(defun glcp-put-name-each (name lst)
-  (if (atom lst)
-      nil
-    (cons (incat name (symbol-name name) "-" (symbol-name (car lst)))
-          (glcp-put-name-each name (cdr lst)))))
-
 
 (defthm gobj-depends-on-of-nth
   (implies (not (gobj-list-depends-on k p x))
@@ -308,40 +302,14 @@
        ;;  (incat clause-proc (symbol-name clause-proc) "-RUN-PARAMETRIZED"))
        ;; (run-cases
        ;;  (incat clause-proc (symbol-name clause-proc) "-RUN-CASES"))
-       (subst-names '(run-gified
-                      interp-term
-                      interp-term-equivs
-                      interp-test
-                      interp-fncall
-                      interp-fncall-ifs
-                      maybe-interp-fncall-ifs
-                      interp-if/or
-                      maybe-interp
-                      interp-if
-                      interp-or
-                      merge-branches
-                      merge-branch-subterms
-                      merge-branch-subterm-lists
-                      simplify-if-test
-                      simplify-if-test-fncall
-                      rewrite
-                      rewrite-apply-rules
-                      rewrite-apply-rule
-                      relieve-hyps
-                      relieve-hyp
-                      interp-list
-                      interp-top-level-term
-                      interp-concl
-                      interp-hyp/concl
-                      interp-term-under-hyp
-                      run-parametrized
-                      run-cases
-                      geval
-                      geval-list
-                      geval-ev
-                      geval-ev-lst
-                      geval-ev-falsify
-                      geval-ev-meta-extract-global-badguy))
+       (subst-names (append '(run-gified
+                              geval
+                              geval-list
+                              geval-ev
+                              geval-ev-lst
+                              geval-ev-falsify
+                              geval-ev-meta-extract-global-badguy)
+                            (remove 'clause-proc *glcp-fnnames*)))
        (fn-names (cons clause-proc (glcp-put-name-each clause-proc subst-names)))
        (subst (pairlis$ (cons 'clause-proc subst-names) fn-names))
        (fi-subst (pairlis$ (cons 'glcp-generic (glcp-put-name-each 'glcp-generic subst-names))
@@ -411,9 +379,6 @@
          ;; Define the interpreter mutual-recursion, the
          ;; run-parametrized and run-cases functions, and the clause proc.
          ,@(sublis subst (list *glcp-interp-template*
-                               *glcp-interp-wrappers-template*
-                               *glcp-run-parametrized-template*
-                               *glcp-run-cases-template*
                                *glcp-clause-proc-template*))
 
          ;; Prep for the run-gified correctness and gobjectp theorems
@@ -1237,10 +1202,7 @@ PARAM-BINDINGS must be provided in DEF-GL-PARAM-THM.~%"))
          ,(def-gl-param-thm-fn name clause-proc rest))
     `(without-waterfall-parallelism
        (make-event
-        (let ((clause-proc
-               (caar (table-alist
-                      'latest-greatest-gl-clause-proc
-                      (w state)))))
+        (let ((clause-proc (latest-gl-clause-proc)))
           (def-gl-param-thm-fn ',name clause-proc ',rest))))))
 
 
