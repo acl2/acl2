@@ -40832,7 +40832,8 @@
                                                 :strictp)))
                             state))
              (t state)))
-     (progn (table acl2-defaults-table :step-limit ,limit)
+     (progn (table acl2-defaults-table :step-limit
+                   (or ,limit *default-step-limit*))
             (table acl2-defaults-table :step-limit)))))
 
 #-acl2-loop-only

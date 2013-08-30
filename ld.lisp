@@ -21168,6 +21168,10 @@
   ~ilc[sys-call-status].  Formerly it always returned ~c[(mv nil state)]
   whenever the oracle of the state is non-empty (~pl[state]).
 
+  Fixed a bug that was causing an error upon evaluation of the form
+  ~c[(set-prover-step-limit nil)].  Thanks to David Russinoff for reporting
+  this error.
+
   ~st[CHANGES AT THE SYSTEM LEVEL]
 
   The ACL2 sources are now publicly available between ACL2 releases, using svn;
