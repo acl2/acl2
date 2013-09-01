@@ -1,4 +1,4 @@
-DIRS = rel1 rel4 rel5 rel8
+DIRS = rel1 rel4 rel5 rel8 rel9
 
 # Note: Directories rel2 and rel3 still exist, but are no longer
 # distributed.  Directory rel1 is needed not only for ACL2(r) but also
