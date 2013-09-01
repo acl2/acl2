@@ -60,7 +60,6 @@
 (str::rchars-to-string (json-encode-filenames '(xdoc::a acl2::b str::c) nil))
 ||#
 
-
 (defun json-encode-topicname (x base-pkg acc)
   (declare (type symbol x)
            (type symbol base-pkg))
@@ -92,11 +91,56 @@
                                                'xdoc::bar nil))
 ||#
 
+(defun json-encode-uid (x acc)
+  (declare (type integer x))
+  (if (< x 0)
+      (str::revappend-natchars (- x) (cons #\- acc))
+    (str::revappend-natchars x acc)))
+
+(defun json-encode-uids-aux (x acc)
+  (declare (xargs :guard (integer-listp x)))
+  (b* (((when (atom x))
+        acc)
+       (acc (json-encode-uid (car x) acc))
+       ((when (atom (cdr x)))
+        acc)
+       (acc (cons #\, acc)))
+    (json-encode-uids-aux (cdr x) acc)))
+
+(defun json-encode-uids (x acc)
+  (declare (xargs :guard (integer-listp x)))
+  (b* ((acc (cons #\[ acc))
+       (acc (json-encode-uids-aux x acc)))
+    (cons #\] acc)))
+
+#||
+(str::rchars-to-string (json-encode-uids '() nil))
+(str::rchars-to-string (json-encode-uids '(1 2 3) nil))
+(str::rchars-to-string (json-encode-uids '(2 3 17 100) nil))
+(str::rchars-to-string (json-encode-uids '(1 2 -3 -77) nil))
+||#
+
+(defun make-uid-map (n topics map)
+  (b* (((when (atom topics))
+        map)
+       (name1 (cdr (assoc :name (car topics))))
+       (map   (hons-acons name1 n map)))
+    (make-uid-map (+ n 1) (cdr topics) map)))
+
+(defun collect-uids (names uid-map)
+  ;; Converts missing names into -1's.
+  (b* (((when (atom names))
+        nil)
+       (look (cdr (hons-get (car names) uid-map)))
+       ((when look)
+        (cons (nfix look) (collect-uids (cdr names) uid-map))))
+    (cons -1 (collect-uids (cdr names) uid-map))))
+
 
 ; The basic idea here is to split the database into two files:
 ;
-;  - The INDEX will bind KEY -> {name,parents,short,...}
-;     (and will also contain the long string for the "top" topic)
+;  - The INDEX will be an array containing sub-arrays with
+;        [key, name, parents, short, ...]
 ;
 ;  - The DATA will bind KEY -> long
 ;
@@ -104,17 +148,23 @@
 ; are nice, safe names that can be used in URLs or wherever.
 ;
 ; Why not just save it as one big table?  The hope is that this kind of split
-; will let us (in a web interface) load in the index and give the user a
+; will let us (in the web interface) load in the index and give the user a
 ; working display, even before the data has been loaded.
 ;
 ; As of July 2013, the serialized version of the xdoc table (before
 ; preprocessing, mind you) is 7.1 MB.  The JSON-encoded, post-preprocessing
 ; (i.e., proper XML) version is over 22 MB.  This doesn't count the additional
 ; documentation internal to Centaur or other companies.  Even with fast
-; internet connections, that can be a noticable delay, and the size will only
+; internet connections, that can be a noticeable delay, and the size will only
 ; grow.
+;
+; We previously represented the XINDEX as a hash binding KEY -> [name, ...],
+; but we now use an array instead and embed the key within it.  The advantage
+; of this new scheme is that it gives us an implicit way to refer to topics,
+; viz., their position in the array.  This seems like a useful capability for
+; implementing search features.
 
-(defun json-encode-index-entry (topic topics-fal state acc)
+(defun json-encode-index-entry (topic topics-fal uid-map state acc)
   (b* ((name     (cdr (assoc :name topic)))
        (base-pkg (cdr (assoc :base-pkg topic)))
        (short    (or (cdr (assoc :short topic)) ""))
@@ -136,6 +186,8 @@
         (mv (er hard? 'preprocess-topic "Long is not a string: ~x0.~%" topic)
             state))
 
+       (parent-uids (collect-uids parents uid-map))
+
        ((mv short-rchars state) (preprocess-main short nil topics-fal base-pkg state nil))
        (short-str (str::rchars-to-string short-rchars))
        ((mv err &) (parse-xml short-str))
@@ -149,8 +201,6 @@
                (fms "~%~%" nil *standard-co* state nil))
           state))
 
-       (acc (json-encode-filename name acc))
-
 ; I originally used a JSON object like {"name":"Append","rawname":"..."}  But
 ; then some back-of-the-napkin calculations said that these nice names were
 ; taking up about 400 KB of space in the index, so I figured I'd get rid of
@@ -158,19 +208,23 @@
 
 ; IF YOU ADD/CHANGE THE ORDER THEN YOU MUST UPDATE XDOC.JS:
 
-       ; name (xml encoded nice topic name)
-       (acc (str::revappend-chars ":[" acc))
+       ;; [key
+       (acc (cons #\[ acc))
+       (acc (json-encode-filename name acc))
+
+       ; ,name (xml encoded nice topic name)
+       (acc (cons #\, acc))
        (acc (json-encode-topicname name base-pkg acc))
 
-       ; raw name (non-encoded symbol name, no package)
+       ; ,raw name (non-encoded symbol name, no package)
        (acc (cons #\, acc))
        (acc (json-encode-string (symbol-name name) acc))
 
-       ; parent keys (array of keys for parents)
+       ; ,parent keys (array of keys for parents)
        (acc (cons #\, acc))
-       (acc (json-encode-filenames parents acc))
+       (acc (json-encode-uids parent-uids acc))
 
-       ; short: xml encoded short topic description
+       ; ,short: xml encoded short topic description
        (acc (cons #\, acc))
        (acc (json-encode-string short-str acc))
 
@@ -186,20 +240,20 @@
   state)
 ||#
 
-(defun json-encode-index-aux (topics topics-fal state acc)
+(defun json-encode-index-aux (topics topics-fal uid-map state acc)
   (b* (((when (atom topics))
         (mv acc state))
-       ((mv acc state) (json-encode-index-entry (car topics) topics-fal
+       ((mv acc state) (json-encode-index-entry (car topics) topics-fal uid-map
                                                 state acc))
        ((when (atom (cdr topics)))
         (mv acc state))
        (acc (list* #\Space #\Newline #\, acc)))
-    (json-encode-index-aux (cdr topics) topics-fal state acc)))
+    (json-encode-index-aux (cdr topics) topics-fal uid-map state acc)))
 
-(defun json-encode-index (topics topics-fal state acc)
-  (b* ((acc (cons #\{ acc))
-       ((mv acc state) (json-encode-index-aux topics topics-fal state acc))
-       (acc (cons #\} acc)))
+(defun json-encode-index (topics topics-fal uid-map state acc)
+  (b* ((acc (cons #\[ acc))
+       ((mv acc state) (json-encode-index-aux topics topics-fal uid-map state acc))
+       (acc (cons #\] acc)))
     (mv acc state)))
 
 #||
@@ -312,11 +366,12 @@
        (topics (normalize-parents-list (clean-topics topics)))
        (- (cw "; Writing JSON for ~x0 topics.~%" (len topics)))
        (topics-fal (time$ (topics-fal topics)))
+       (uid-map    (time$ (make-uid-map 0 topics nil)))
 
        (index nil)
        (index (str::revappend-chars "var xindex = " index));
        ((mv index state)
-        (time$ (json-encode-index topics topics-fal state index)))
+        (time$ (json-encode-index topics topics-fal uid-map state index)))
        (index (cons #\; index))
        (index (str::rchars-to-string index))
        (idxfile (oslib::catpath dir "xindex.js"))
@@ -340,6 +395,9 @@
     (or (not orphans)
         (cw "~|~%WARNING: found topics with non-existent parents:~%~x0~%These ~
              topics may only show up in the index pages.~%~%" orphans))
+
+    (fast-alist-free topics-fal)
+    (fast-alist-free uid-map)
     state))
 
 
@@ -378,6 +436,7 @@
                                                 "view_tree.png"
                                                 "config.js"
                                                 "xdoc.js"
+                                                "xdoc_index.js"
                                                 "xdataget.pl"
                                                 "xdata2sql.pl"
                                                 )

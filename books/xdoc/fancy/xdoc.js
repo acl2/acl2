@@ -23,7 +23,6 @@
 "use strict";
 
 var TOP_KEY = "ACL2____TOP";
-var xindex_loaded = false;
 var xdata_loaded = false;
 var xdata = [];
 
@@ -144,91 +143,34 @@ function please_wait() {
 //
 // We load these files lazily to make the page seem to appear faster!  This
 // means you have to sort of be aware of when the data becomes available.  We
-// load xindex first, then once it's complete we load xdata.
-//
-// XINDEX is smaller.  In the xindex.js file, you can roughly think of XINDEX
-// as being a mapping from:
-//
-//    xindex:   KEY -> { "name":"xml encoded nice topic name",
-//                       "pkeys":[array of KEY for parents],
-//                       "short":"xml encoded short topic description",
-//                       "rawname":"non-encoded symbol-name (no package)" }
-//
-// Except that actually we use an array instead of a hash (which saves about
-// 400 KB) from centaur/doc.lisp at the time of this writing.  The indexes
-// into the array are as follows.  These MUST AGREE WITH SAVE-FANCY.LISP:
-
-var XI_NAME    = 0;
-var XI_RAWNAME = 1;
-var XI_PKEYS   = 2;
-var XI_SHORT   = 3;
-
-// But once XINDEX gets loaded, we also fill in some additional information.
-// In particular, it is useful to have a list of all of a topic's children.
-// (This is fast and easy to construct, given that xindex already maps each
-// child to its parents).  So we fill in each XINDEX entry with a "children"
-// field.
-
-var XI_CHILDREN = 4; // array of keys for children
-
-
-// The XDATA table is simpler:
+// load xindex first, then once it's complete we load xdata.  The format of
+// xindex is described in xdoc_index.js.  The XDATA table is simpler:
 //
 //   xdata:         KEY -> {"pnames" : [array of xml encoded nice parent names],
 //                          "from"   : "xml encoded string for topic location",
 //                          "long"   : "xml encoded long topic description"}
 //
-// Except that again we use an array to save a tiny amount of space.
+// Except that we represent each entry with an array, instead of a hash, to
+// save a tiny amount of space.
 
 var XD_PNAMES = 0;
 var XD_FROM = 1;
 var XD_LONG = 2;
 
-function xindex_add_children() { // assumes xindex is populated
-    for(var child_key in xindex) {
-        var parent_keys = xindex[child_key][XI_PKEYS];
-        for(var i in parent_keys) {
-            var parent_key = parent_keys[i];
-            // It's incorrect, but possible for a child topic to list parents
-            // that don't exist, so we have to make sure it really exists:
-            if (parent_key in xindex) {
-                var parent_node = xindex[parent_key];
-                if (!parent_node[XI_CHILDREN])
-                    parent_node[XI_CHILDREN] = [];
-                parent_node[XI_CHILDREN].push(child_key);
-            }
-        }
-    }
-    xindex_loaded = true;
-}
-
 function key_title(key)
 {
-    return (key in xindex)
-             ? ("XDOC &mdash; " + xindex[key][XI_NAME])
-             : ("XDOC &mdash; " + key);
-}
-
-function key_info(key) {
-    if (key in xindex)
-        return xindex[key];
-    var ret = [];
-    ret[XI_NAME] = "Error: Key " + key + " not found";
-    ret[XI_RAWNAME] = "Error: Key " + key + " not found";
-    ret[XI_PKEYS] = [];
-    ret[XI_SHORT] = "Error: Key " + key + " not found";
-    ret[XI_CHILDREN] = [];
-    return ret;
+    return (topic_exists(key))
+       ? ("XDOC &mdash; " + topic_name(key))
+       : ("XDOC &mdash; " + key);
 }
 
 function key_sorted_children(key) { // Returns a nicely sorted array of child_keys
-    var info = key_info(key);
-    var children = info[XI_CHILDREN];
+    var children = topic_child_keys(key);
 
     var tmp = [];
     for(var i in children) {
         var child_key = children[i];
-        var rawname = key_info(child_key)[XI_RAWNAME];
+        var rawname = topic_rawname(child_key);
         tmp.push({key:child_key, rawname:rawname});
     }
     tmp.sort(function(a,b) { return alphanum(a.rawname, b.rawname); });
@@ -296,24 +238,6 @@ function xdata_when_ready (keys, whenReady)
             }});
 }
 
-// // This is kind of dumb.  It would probably be much more efficient to do
-// // a single query that fetches data for a list of topics.
-
-// function xdata_when_all_ready_aux (i, keys, whenReady) {
-//     if (i == keys.length) {
-//      whenReady();
-//      return;
-//     }
-//     xdata_when_ready([keys[i]],
-//     function() {
-//      xdata_when_all_ready_aux(1 + i, keys, whenReady);
-//     });
-// }
-
-// function xdata_when_all_ready (keys, whenReady) {
-//     xdata_when_all_ready_aux(0, keys, whenReady);
-// }
-
 
 // --------------------------------------------------------------------------
 //
@@ -365,13 +289,12 @@ function nav_make_node(key) {
     var id = nav_id_table.length;
     nav_id_table[id] = {"key":key, "ever_expanded":false};
 
-    var info = key_info(key);
-    var name = info[XI_NAME];
-    var tooltip = "<p>" + render_text(info[XI_SHORT]) + "</p>";
+    var name = topic_name(key);
+    var tooltip = "<p>" + render_text(topic_short(key)) + "</p>";
 
     var node = "<ul class=\"hindex\" id=\"_nav" + id + "\">";
     node += "<li><nobr>";
-    if (!info[XI_CHILDREN]) {
+    if (topic_child_keys(key).length == 0) {
         node += "<img src=\"leaf.png\"/>";
     }
     else {
@@ -412,7 +335,6 @@ function nav_expand(id) {
     }
 
     nav_id_table[id]["ever_expanded"] = true;
-    var info = key_info(key);
     var children = key_sorted_children(key);
 
     var start = nav_id_table.length; // stupid hack for tooltip activation
@@ -442,7 +364,7 @@ var nav_flat_top = 0;
 var nav_flat_ever_shown = false;
 
 function nav_tree() {
-    if (!xindex_loaded) {
+    if (!xindex_ready()) {
         please_wait();
         return;
     }
@@ -455,7 +377,7 @@ function nav_tree() {
 }
 
 function nav_flat() {
-    if (!xindex_loaded) {
+    if (!xindex_ready()) {
         please_wait();
         return;
     }
@@ -476,8 +398,10 @@ function nav_flat() {
     nav_flat_ever_shown = true;
 
     var myarr = [];
-    for(key in xindex) {
-        myarr.push({key:key, rawname: xindex[key][XI_RAWNAME]});
+    var keys = all_keys();
+    for(var i in keys) {
+	var key = keys[i];
+        myarr.push({key:key, rawname: topic_rawname(key)});
     }
     myarr.sort(function(a,b) { return alphanum(a.rawname, b.rawname); });
 
@@ -485,10 +409,9 @@ function nav_flat() {
     var current_startchar = "";
     for(var i in myarr) {
         var key = myarr[i].key;
-        var info = key_info(key);
-        var name = info[XI_NAME];
-        var rawname = info[XI_RAWNAME];
-        var tooltip = "<p>" + render_text(info[XI_SHORT]) + "</p>";
+        var name = topic_name(key);
+        var rawname = topic_rawname(key);
+        var tooltip = "<p>" + render_text(topic_short(key)) + "</p>";
         if ((rawname.charAt(0) != current_startchar) && starts_with_alpha(rawname)) {
             current_startchar = rawname.charAt(0).toUpperCase();
             dl.append("<li class=\"flatsec\" id=\"flat_startchar_" + current_startchar + "\"><b>"
@@ -538,8 +461,7 @@ var dat_id_table = []; // map of Occurrence ID to {"key":KEY,"ever_expanded":boo
 
 function dat_load_parents(key) {
     // Assumes xdata[key] is ready
-    var info = key_info(key);
-    var parent_keys = info[XI_PKEYS];
+    var parent_keys = topic_parent_keys(key);
     var parent_names = xdata[key][XD_PNAMES];
     var acc = "";
     if (parent_keys.length == 0) {
@@ -552,9 +474,8 @@ function dat_load_parents(key) {
         var pkey = parent_keys[i];
         var pname = parent_names[i];
         var tooltip = "Error: parent topic is missing!";
-        if (pkey in xindex) {
-            var pinfo = xindex[pkey];
-            tooltip = render_text(pinfo[XI_SHORT]);
+        if (topic_exists(key)) {
+            tooltip = render_text(topic_short(pkey));
         }
         acc += "<li>";
         acc += "<a href=\"javascript:action_go_key('" + pkey + "')\""
@@ -571,18 +492,16 @@ function dat_load_parents(key) {
 
 function dat_short_subtopics(key)
 {
-    var info = key_info(key);
     var children = key_sorted_children(key);
 
     var dl = jQuery("<div></div>");
     for(var i in children) {
         var child_key = children[i];
-        var child_info = key_info(child_key);
         dl.append("<dt><a href=\"javascript:action_go_key('" + child_key + "')\">"
-                  + child_info[XI_NAME]
+                  + topic_name(child_key)
                   + "</dt>");
         var dd = jQuery("<dd></dd>");
-        dd.append(render_html(child_info[XI_SHORT]));
+        dd.append(render_html(topic_short(child_key)));
         dl.append(dd);
     }
     return dl;
@@ -602,7 +521,6 @@ function dat_expand(dat_id)
 
     dat_id_table[dat_id]["ever_expanded"] = true;
     var key = dat_id_table[dat_id]["key"];
-    var info = key_info(key);
     var children = key_sorted_children(key);
     xdata_when_ready(children,
     function(){
@@ -632,28 +550,27 @@ function dat_long_topic(key)
     dat_id_table[dat_id] = {"key":key, "ever_expanded":false};
 
     var div = jQuery("<div></div>");
-    if (!(key in xindex)) {
+    if (!topic_exists(key)) {
         div.append("<h3>Error: " + key + " not found</h3>");
         return div;
     }
 
-    var info = xindex[key];
     var from = xdata[key][XD_FROM];
     var fromp = (from == "Unknown")
                    ? ""
                    : "<p class='from'>" + xdata[key][XD_FROM] + "</p>";
     var shortp;
     if (key != TOP_KEY) {
-	div.append("<h1>" + info[XI_NAME] + "</h1>" + fromp);
+	div.append("<h1>" + topic_name(key) + "</h1>" + fromp);
 	shortp = jQuery("<p></p>");
     } else {
 	div.append("<h1><img src='xdoc-logo.png'/></h1>");
 	shortp = jQuery("<p align='center'></p>");
     }
-    shortp.append(render_html(info[XI_SHORT]));
+    shortp.append(render_html(topic_short(key)));
     div.append(shortp);
     div.append(render_html(xdata[key][XD_LONG]));
-    if (info[XI_CHILDREN]) {
+    if (topic_child_keys(key).length != 0) {
         var acc = "<h3>";
         acc += "Subtopics ";
         acc += "<a id=\"_dat_ilink" + dat_id + "\""
@@ -709,13 +626,14 @@ $(document).ready(function()
 function jump_init() {
 
     var ta_data = [];
-    for(var key in xindex) {
-        var info = xindex[key];
+    var keys = all_keys();
+    for(var i in keys) {
+	var key = keys[i];
         var tokens = [];
-        tokens.push(info[XI_RAWNAME]);
+        tokens.push(topic_rawname(key));
         var entry = {"value": key,
-                     "nicename": info[XI_NAME],
-                     "short": render_text(info[XI_SHORT]),
+                     "nicename": topic_name(key),
+                     "short": render_text(topic_short(key)),
                      "tokens": tokens};
         ta_data.push(entry);
     }
@@ -738,7 +656,7 @@ function jump_init() {
 
 function jump_go(obj,datum) {
     var key = datum["value"];
-    if (key in xindex)
+    if (topic_exists(key))
         action_go_key(key);
     else
         alert("Invalid key " + key);
@@ -749,10 +667,10 @@ function jump_go(obj,datum) {
 
 function onIndexLoaded()
 {
-    xindex_add_children();
+    xindex_init();
 
     if (XDATAGET == "") {
-        // Load xdata.js after xindex_add_children because that way we know the
+        // Load xdata.js after xindex_init() because that way we know the
         // index is fully initialized by the time we run onDataLoaded.
         LazyLoad.js('xdata.js', onDataLoaded);
     }
@@ -823,8 +741,8 @@ function srclink(key)
     // BOZO stupid hack, eventually generate this without the .xdoc-link part.
     key = key.replace(".xdoc-link", "");
     var rawname = key;
-    if (key in xindex) {
-        rawname = xindex[key][XI_RAWNAME];
+    if (topic_exists(key)) {
+        rawname = topic_rawname(key);
     }
 
     // Fancy Data URL generator
