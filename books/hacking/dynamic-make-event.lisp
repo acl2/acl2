@@ -32,6 +32,7 @@ dynamic-make-event-test.lisp
   (make-event-fn `',body
                  nil
                  nil
+                 nil
                  event-form
                  state))
 

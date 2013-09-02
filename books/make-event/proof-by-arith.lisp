@@ -72,38 +72,25 @@
         hist
         nil))))))
 
-(defun proof-by-arith-1 (event book-alist ctx state)
-  (declare (xargs :mode :program :stobjs state))
+(defun proof-by-arith-1 (event book-alist inh)
+  (declare (xargs :guard (true-list-listp book-alist)))
   (cond
    ((endp book-alist)
-    (silent-error state)) ; (mv t nil state), a soft error
-   (t (let* ((pair (car book-alist))
-             (book (car pair))
-             (extra-events (cdr pair))
-             (in-certify-book (f-get-global 'certify-book-info state))
-             (encap-event
-              `(encapsulate
-                ()
-                (local (include-book ,book :dir :system))
-                ,@extra-events
-                ,event))
-             (final-encap-event
-              (cond (in-certify-book encap-event)
-                    (t `(encapsulate
-                         ()
-                         (local (include-book ,book :dir :system))
-                         (set-inhibit-warnings "Skip-proofs")
-                         (skip-proofs
-                          (encapsulate
-                           ()
-                           ,@extra-events
-                           ,event)))))))
-        (mv-let (erp trans-ans state) ; trans-ans is (cons stobjs-out values)
-                (trans-eval encap-event ctx state t)
-                (cond ((or erp
-                           (car (cdr trans-ans))) ; erp from trans-ans
-                       (proof-by-arith-1 event (cdr book-alist) ctx state))
-                      (t (value final-encap-event))))))))
+    nil)
+   (t (cons (let* ((pair (car book-alist))
+                   (book (car pair))
+                   (extra-events (cdr pair))
+                   (encap `(encapsulate
+                            ()
+                            (local (include-book ,book :dir :system))
+                            ,@extra-events
+                            ,event)))
+              (if inh
+                  `(with-output
+                    :off ,inh
+                    ,encap)
+                encap))
+            (proof-by-arith-1 event (cdr book-alist) inh)))))
 
 (defmacro proof-by-arith (&whole whole-form
                                  event &optional quietp arith-book-alist)
@@ -113,30 +100,16 @@
 ; Note that all of the arguments are taken literally, i.e., none should be
 ; quoted.
 
-  (let ((body `(proof-by-arith-1 ',event
-                                 ,(if arith-book-alist
-                                      (list 'quote arith-book-alist)
-                                    '*default-arith-book-alist*)
-                                 'proof-by-arith
-                                 state)))
-    `(make-event
-      (state-global-let*
-       ((ld-skip-proofsp (if (eq (cert-op state) :write-acl2xu)
-
-; We are doing provisional certification, so we need to save the correct
-; expansion in the .acl2x file.  Normally we do a successful proof twice using
-; proof-by-arith, and that will still hold in this case: once when generating
-; the .acl2x file, and once when generating the .pcert file.
-
-                             nil
-                           (f-get-global 'ld-skip-proofsp state))))
-       ,(if quietp
-            `(er-progn (set-inhibit-output-lst '(prove proof-tree warning
-                                                       observation event
-                                                       expansion summary))
-                       ,body)
-          body))
-      :on-behalf-of ,whole-form)))
+  `(make-event
+    (cons :or (proof-by-arith-1 ',event
+                                ,(if arith-book-alist
+                                     (list 'quote arith-book-alist)
+                                   '*default-arith-book-alist*)
+                                ',(and quietp
+                                       '(prove proof-tree warning
+                                               observation event
+                                               expansion summary))))
+    :on-behalf-of ,whole-form))
 
 ; From John Erickson's email to acl2-help, 4/19/06.
 (proof-by-arith
