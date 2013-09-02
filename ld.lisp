@@ -21111,6 +21111,18 @@
   argument was not documented and also caused an error, so it has been
   eliminated.
 
+  The functionality of ~ilc[make-event] has been significantly expanded.
+  First: if the expansion is of the form ~c[(:OR e1 e2 ...)], then event forms
+  ~c[e1], ~c[e2], and so on are evaluated, in order, until the evaluation of
+  some ~c[ek] completes without error.  In that case, the expansion is treated
+  simply as ~c[ek].  With this capability, alternative expansions can be
+  attempted and the successful one does not need to be evaluated again.  See
+  the new version of community book ~c[books/make-event/proof-by-arith.lisp]
+  for an example.  Second, an expansion may be of the form ~c[(:DO-PROOFS e)],
+  in which case the event ~c[e] is evaluated with proofs ~st[not] skipped;
+  ~pl[ld-skip-proofsp].  Third, new keyword ~c[:EXPANSION?] can be used to
+  avoid storing expansions in certificate files.  ~l[make-event].
+
   ~st[NEW FEATURES]
 
   ACL2 can now be instructed to time activities using real time (wall clock

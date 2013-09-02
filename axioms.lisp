@@ -1899,10 +1899,12 @@
 
 (defmacro make-event (&whole event-form
                              form
-                             &key check-expansion on-behalf-of)
+                             &key
+                             expansion? check-expansion on-behalf-of)
   (declare (ignore form on-behalf-of))
   (cond ((consp check-expansion)
          check-expansion)
+        (expansion?)
         (t `(error ; not er; so certify-book and include-book fail
              "It is illegal to execute make-event in raw Lisp (including ~%~
               raw mode) unless :check-expansion is a cons, which represents ~%~
@@ -19807,7 +19809,8 @@
 #+acl2-loop-only
 (defmacro make-event (&whole event-form
                              form
-                             &key check-expansion on-behalf-of)
+                             &key
+                             expansion? check-expansion on-behalf-of)
 
 ; Essay on Make-event
 
@@ -19876,7 +19879,8 @@
   ~st[Detailed Documentation]~nl[]
   ~st[Error Reporting]~nl[]
   ~st[Restriction to Event Contexts]~nl[]
-  ~st[Examples illustrating how to access state]
+  ~st[Examples Illustrating How to Access State]~nl[]
+  ~st[Advanced Expansion Control]
 
   We begin with an informal introduction, which focuses on examples and
   introduces the key notion of ``expansion phase''.
@@ -20072,34 +20076,37 @@
   ; should return the same value as it did when the book was
   ; certified.
   (make-event (generate-form state)
-              :check-expansion t)
+              :CHECK-EXPANSION t)
 
-  ; As above (where the :check-expansion value can be included or
+  ; As above (where the :CHECK-EXPANSION value can be included or
   ; not), where if there is an error during expansion, then the error
   ; message will explain that expansion was on behalf of the indicated
   ; object, typically specified as the first argument.
   (make-event (generate-form state)
-              :on-behalf-of (generate-form state))
+              :ON-BEHALF-OF (generate-form state))
 
   General Form:
-  (make-event form :check-expansion chk :on-behalf-of obj)
+  (make-event form :CHECK-EXPANSION chk :ON-BEHALF-OF obj :EXPANSION? form)
   ~ev[]
   where ~c[chk] is ~c[nil] (the default), ~c[t], or the intended ``expansion
   result'' from the evaluation of ~c[form] (as explained below); and if
   supplied, ~c[obj] is an arbitrary ACL2 object, used only in reporting errors
-  in expansion, i.e., in the evaluation of form.
+  in expansion, i.e., in the evaluation of form.  The ~c[:EXPANSION?] keyword
+  is discussed in the final section, on Advanced Expansion Control.
 
   We strongly recommend that you browse some ~c[.lisp] files in the community
   books directory ~c[books/make-event/].  You may even find it helpful, in
   order to understand ~c[make-event], to do so before continuing to read this
-  documentation.  For example, ~c[eval.lisp] contains definitions of macros
+  documentation.  You may also find it useful to browse community book
+  ~c[books/misc/eval.lisp], which contains definitions of macros
   ~c[must-succeed] and ~c[must-fail] that are useful for testing and are used
-  in many other books in that directory, especially ~c[eval-tests.lisp].
-  Another example, ~c[defrule.lisp], shows how to use macros whose calls expand
-  to ~c[make-event] forms, which in turn can generate ~il[events].  For more
-  examples, see file ~c[Readme.lsp] in the above directory.  Other than the
-  examples, the explanations here should suffice for most users.  If you want
-  explanations of subtler details, ~pl[make-event-details].
+  in many books in the ~c[books/make-event/] directory, especially
+  ~c[eval-tests.lisp].  Another example, ~c[books/make-event/defrule.lisp],
+  shows how to use macros whose calls expand to ~c[make-event] forms, which in
+  turn can generate ~il[events].  For more examples, see file
+  ~c[books/make-event/Readme.lsp].  Other than the examples, the explanations
+  here should suffice for most users.  If you want explanations of subtler
+  details, ~pl[make-event-details].
 
   Note that ~c[make-event] may only be used at the ``top level'' or where an
   event is expected.  See the section ``Restriction to Event Contexts'', below.
@@ -20107,7 +20114,9 @@
   ~c[Make-event] is related to Lisp macroexpansion in the sense that its
   argument is evaluated to obtain an expansion result, which is evaluated
   again.  Let us elaborate on each of these notions in turn: ``is evaluated,''
-  ``expansion result'', and ``evaluated again.''~bq[]
+  ``expansion result'', and ``evaluated again.''  The final section, on
+  Advanced Expansion Control, will generalize these processes in a way that we
+  ignore for now.~bq[]
 
   ``is evaluated'' ~-[] The argument can be any expression, which is evaluated
   as would be any expression submitted to ACL2's top level loop.  Thus,
@@ -20120,34 +20129,31 @@
   ~ilc[state] global variables (~pl[assign]) are preserved).  So, for example,
   events might be evaluated during expansion, but they will disappear from the
   logical ~il[world] after expansion returns its result.  Moreover, proofs are
-  enabled by default at the start of expansion (~pl[ld-skip-proofsp]), because
-  an anticipated use of ~c[make-event] is to call the prover to decide which
-  event to generate, and that would presumably be necessary even if proofs had
-  been disabled.
+  enabled by default at the start of expansion (~pl[ld-skip-proofsp]) if
+  keyword ~c[:CHECK-EXPANSION] is supplied and has a non-~c[nil] value.
 
   ``expansion result'' ~-[] The above expansion may result in an ordinary
   (non-~ilc[state], non-~ilc[stobj]) value, which we call the ``expansion
   result.''  Or, expansion may result in a multiple value of the form
-  ~c[(mv erp val state stobj-1 ... stobj-k)], where ~c[k] may be 0; in fact the
-  most common case is probably ~c[(mv erp val state)].  In that case, if
-  ~c[erp] is not ~c[nil], then there is no expansion result, and the original
-  ~c[make-event] evaluates to a soft error.  If however ~c[erp] is ~c[nil],
-  then the resulting value is ~c[val].  Moreover, ~c[val] must be an embedded
-  event form (~pl[embedded-event-form]); otherwise, the original ~c[make-event]
-  evaluates to a soft error.  Note that error messages from expansion are
-  printed as described under ``Error Reporting'' below.
+  ~c[(mv erp val state)], or, more generally,
+  ~c[(mv erp val state stobj-1 ... stobj-k)] where each ~c[stobj-i] is a
+  ~il[stobj]; then the expansion result is ~c[val] unless ~c[erp] is not
+  ~c[nil], in which case there is no expansion result, and the original
+  ~c[make-event] evaluates to a soft error.  In either case (single or multiple
+  value), either ~c[val] is an embedded event form (~pl[embedded-event-form]),
+  or else the original ~c[make-event] evaluates to a soft error, printed as
+  described under ``Error Reporting'' below.
 
   ``evaluated again'' ~-[] the expansion result is evaluated in place of the
   original ~c[make-event].
 
-  ~eq[]Note that the result of expansion can be an ordinary event, but it can
-  instead be another call of ~c[make-event], or even of a call of a macro that
-  expands to a call of ~c[make-event].  Or, expansion itself can cause
-  subsidiary calls of ~c[make-event], for example if expansion uses ~ilc[ld] to
-  evaluate some ~c[make-event] forms.  The state global variable
-  ~c[make-event-debug] may be set to a non-~c[nil] value in order to see a
-  trace of the expansion process, where the level shown (as in ``~c[3>]'')
-  indicates the depth of expansions in progress.
+  ~eq[]The expansion process can invoke subsidiary calls of ~c[make-event], and
+  the expansion result can (perhaps after macroexpansion) be a call of
+  ~c[make-event].  It can be useful to track all these ~c[make-event] calls.
+  The ~il[state] global variable ~c[make-event-debug] may be set to a
+  non-~c[nil] value, for example ~c[(assign make-event-debug t)], in order to
+  see a trace of the expansion process, where a level is displayed (as in
+  ``~c[3>]'') to indicate the depth of subsidiary expansions.
 
   Expansion of a ~c[make-event] call will yield an event that replaces the
   original ~c[make-event] call.  In particular, if you put a ~c[make-event]
@@ -20155,52 +20161,57 @@
   created during the proof pass of the ~ilc[certify-book] process.  We now
   elaborate on this idea of keeping the original expansion.
 
-  By default, a ~c[make-event] call in a certified book is replaced (by a
-  process hidden from the user, in an ~c[:expansion-alist] field of the book's
-  ~il[certificate]) by the expansion result from evaluation of its first
-  argument.  Thus, although the book is not textually altered during
-  certification, one may imagine a ``book expansion'' corresponding to the
-  original book in which all of the events for which expansion took place
-  (during the proof phase of certification) have been replaced by their
-  expansions.  A subsequent ~ilc[include-book] will then include the book
-  expansion corresponding to the indicated book.  When a book is compiled
-  during ~ilc[certify-book], it is actually the corresponding book expansion,
-  stored as a temporary file, that is compiled instead.  That temporary file is
-  deleted after compilation unless one first evaluates the form
-  ~c[(assign keep-tmp-files t)].  Note however that all of the original forms
-  must still be legal ~il[events] (~pl[embedded-event-form]).  So for example,
-  if the first event in a book is ~c[(local (defmacro my-id (x) x))], followed
-  by ~c[(my-id (make-event ...))], the final ``~c[include-book]'' pass of
-  ~ilc[certify-book] will fail because ~c[my-id] is not defined when the
-  ~c[my-id] call is encountered.
+  A ~c[make-event] call generates a ``~c[make-event] replacement'' that may be
+  stored by the system.  In the simplest case, this replacement is the
+  expansion result.  When a book is certified, these replacements are stored in
+  a book's certificate (technically, in the ~c[:EXPANSION-ALIST] field).  Thus,
+  although the book is not textually altered during certification, one may
+  imagine a ``book expansion'' corresponding to the original book, in which
+  events are substituted by replacements that were generated during the proof
+  phase of certification.  A subsequent ~ilc[include-book] will then include
+  the book expansion corresponding to the indicated book.  When a book is
+  compiled during ~ilc[certify-book], it is actually the corresponding book
+  expansion, stored as a temporary file, that is compiled instead.  That
+  temporary file is deleted after compilation unless one first evaluates the
+  form ~c[(assign keep-tmp-files t)].  Note however that all of the original
+  forms must still be legal ~il[events]; ~pl[embedded-event-form].  So for
+  example, if the first event in a book is ~c[(local (defmacro my-id (x) x))],
+  and is followed by ~c[(my-id (make-event ...))], the final
+  ``~c[include-book]'' pass of ~ilc[certify-book] will fail because ~c[my-id]
+  is not defined when the ~c[my-id] call is encountered.
 
-  The preceding paragraph begins with ``by default'' because if you specify
-  ~c[:check-expansion t], then subsequent evaluation of the same ~c[make-event]
-  call ~-[] during the second pass of an ~ilc[encapsulate] or during event
-  processing on behalf of ~ilc[include-book] ~-[] will do the expansion again
-  and check that the expansion result equals the original expansion result.  In
-  the unusual case that you know the expected expansion result, ~c[res], you
-  can specify ~c[:check-expansion res].  This will will cause a check that
-  every subsequent expansion result for the ~c[make-event] form is ~c[res],
-  including the original one.  IMPORTANT NOTE: That expansion check is only
-  done when processing events, not during a preliminary load of a book's
-  compiled file.  The following paragraph elaborates.
+  A ~c[make-event] replacement might not be the expansion when either of the
+  keyword arguments ~c[:CHECK-EXPANSION] or ~c[:EXPANSION?] is supplied.  We
+  deal with the latter in the final section, on Advanced Expansion Control.  If
+  ~c[:CHECK-EXPANSION t] is supplied and the expansion is ~c[exp], then the
+  replacement is obtained from the original ~c[make-event] call, by
+  substituting ~c[exp] for ~c[t] as the value of keyword ~c[:CHECK-EXPANSION].
+  Such a ~c[make-event] call ~-[] during the second pass of an
+  ~ilc[encapsulate] or during event processing on behalf of ~ilc[include-book]
+  ~-[] will do the expansion again and check that the expansion result is equal
+  to the original expansion result, ~c[exp].  In the unusual case that you know
+  the expected expansion result, ~c[res], you can specify
+  ~c[:CHECK-EXPANSION res] in the first place, so that the check is also done
+  during the initial evaluation of the ~c[make-event] form.  IMPORTANT BUT
+  OBSCURE DETAIL: That expansion check is only done when processing events, not
+  during a preliminary load of a book's compiled file.  The following paragraph
+  elaborates.
 
   (Here are details on the point made just above, for those who use the
-  ~c[:check-expansion] argument to perform side-effects on the ~il[state].
+  ~c[:CHECK-EXPANSION] argument to perform side-effects on the ~il[state].
   When you include a book, ACL2 generally loads a compiled file before
   processing the events in the book; ~pl[book-compiled-file].  While it is true
-  that a non-~c[nil] ~c[:check-expansion] argument causes ~ilc[include-book] to
+  that a non-~c[nil] ~c[:CHECK-EXPANSION] argument causes ~ilc[include-book] to
   perform expansion of the ~c[make-event] form during event processing it does
   ~em[not] perform expansion when the compiled file (or expansion file; again,
   ~pl[book-compiled-file]) is loaded.)
 
-  ACL2 performs the following space-saving optimization for book certificates:
-  a ~ilc[local] event arising from ~c[make-event] expansion is replaced in that
-  expansion by ~c[(local (value-triple :ELIDED))].
+  ACL2 performs the following space-saving optimization: when the expansion
+  result is a ~ilc[local] event, then the ~c[make-event] replacement is
+  ~c[(local (value-triple :ELIDED))].
 
-  We note that ACL2 extends the notion of ``make-event expansion'' to the case
-  that a call of ~c[make-event] is found in the course of macroexpansion.  The
+  The notion of ``expansion'' and ``replacement'' extend to the case that a
+  call of ~c[make-event] is found in the course of macroexpansion.  The
   following example illustrates this point.
   ~bv[]
   (encapsulate
@@ -20211,7 +20222,7 @@
   :pe :here
   ~ev[]
   The above call of ~ilc[pe] shows that the form ~c[(my-mac)] has a
-  ~c[make-event] expansion of ~c[(DEFUN FOO (X) X)]:
+  ~c[make-event] expansion (and replacement) of ~c[(DEFUN FOO (X) X)]:
   ~bv[]
   (ENCAPSULATE NIL
                (DEFMACRO MY-MAC
@@ -20288,7 +20299,7 @@
   ~c[x2] are in event contexts.  Note: ~c[record-expansion] is intended for use
   only by the implementation, which imposes the additional restriction that
   ~c[x1] and its subsidiary ~c[make-event] calls (if any) must specify a
-  ~c[:check-expansion] argument that is a ~il[consp].
+  ~c[:CHECK-EXPANSION] argument that is a ~il[consp].
   ~eq[]
 
   Low-level remark, for system implementors.  There is the one exception to
@@ -20299,11 +20310,11 @@
   ~ev[]
   However, the following form may be preferable (~pl[progn!]):
   ~bv[]
-  (progn! :state-global-bindings <bindings> (make-event ...))
+  (progn! :STATE-GLOBAL-BINDINGS <bindings> (make-event ...))
   ~ev[]
   Also ~pl[remove-untouchable] for an interesting use of this exception.
 
-  ~st[Examples illustrating how to access state]
+  ~st[Examples Illustrating How to Access State]
 
   You can modify the ACL2 ~il[state] by doing your state-changing computation
   during the expansion phase, before expansion returns the event that is
@@ -20351,7 +20362,7 @@
   ~bv[]
   (make-event
     (let ((world-len (length (w state))))
-      `(progn (table my-table :stored-world-length ,world-len)
+      `(progn (table my-table :STORED-WORLD-LENGTH ,world-len)
               (defun foo (x) (cons x ,world-len)))))
   ~ev[]
   Then:
@@ -20367,11 +20378,136 @@
 
   By the way, most built-in ~il[state] globals revert after expansion.  But
   your own global (like ~c[my-global] above) can be set during expansion, and
-  the new value will persist."
+  the new value will persist.
+
+  ~st[Advanced Expansion Control]
+
+  We conclude this ~il[documentation] section by discussing three kinds of
+  additional control over ~c[make-event] expansion.  These are all illustrated
+  in community book ~c[books/make-event/make-event-keywords-or-exp.lisp].
+  The discussion below is split into the following three parts.
+
+  (1) The value produced by expansion may have the form ~c[(:DO-PROOFS exp)],
+  which specifies ~c[exp] as the expansion result, to be evaluated without
+  skipping proofs even when including a book.
+
+  (2) The value produced by expansion may have the form
+  ~c[(:OR exp-1 ... exp-k)], which specifies that the first form ~c[exp-i] to
+  evaluate without error is the expansion result.
+
+  (3) The keyword argument ~c[:EXPANSION?] can serve to eliminate the storing
+  of ~c[make-event] replacements, as described above for the ``book expansion''
+  of a book.
+
+  We now elaborate on each of these.
+
+  (1) ~c[:DO-PROOFS] ``call'' produced by expansion.
+
+  We have discussed the expansion result produced by the expansion phase of
+  evaluating a ~c[make-event] call.  However, if the expansion phase produces
+  an expression of the form ~c[(:DO-PROOFS exp)], then the expansion result is
+  actually ~c[exp].  The ~c[:DO-PROOFS] wrapper indicates that even if proofs
+  are currently being skipped (~pl[ld-skip-proofsp]), then evaluation of
+  ~c[exp] should take place with proofs not skipped.  For example, proofs will
+  be performed when evaluating the ~c[make-event] expansion, namely the
+  indicated ~c[defthm] event, in the following example.
+  ~bv[]
+  (set-ld-skip-proofsp t state)
+  (make-event '(:DO-PROOFS
+                (defthm app-assoc (equal
+                                   (append (append x y) z)
+                                   (append x y z)))))
+  ~ev[]
+
+  Note that such use of ~c[:DO-PROOFS] causes proofs to be performed when
+  evaluating the expansion while including an uncertified book.  But when
+  including a certified book, then unless ~c[:CHECK-EXPANSION] is supplied a
+  non-~c[nil] value, the ~c[make-event] replacement will just be the expansion,
+  which does not include the ~c[:DO-PROOFS] wrapper and hence will be evaluated
+  with proofs skipped.
+
+  (2) ~c[:OR] ``call'' produced by expansion.
+
+  There may be times where you want to try different expansions.  For example,
+  the community book ~c[books/make-event/proof-by-arith.lisp] attempts to admit
+  a given event, which we'll denote ~c[EV], by trying events of the following
+  form as ~c[BOOK] various over different community books.
+  ~bv[]
+  (encapsulate
+   ()
+   (local (include-book BOOK :DIR :SYSTEM))
+   EV)
+  ~ev[]
+  A naive implementation of this macro would evaluate all such
+  ~ilc[encapsulate] events until one succeeds, and then return that successful
+  event as the expansion.  Then that event would need to be evaluated again!
+  With some hacking one could avoid that re-evaluation by using
+  ~ilc[skip-proofs], but that won't work if you are trying to create a
+  certified book without skipped proofs.  Instead, the implementation creates
+  an expansion of the form ~c[(:OR ev-1 ev-2 ... ev-k)], where the list
+  ~c[(ev-1 ev-2 ... ev-k)] enumerates the generated encapsulate events.  In
+  general, for this ``disjunctive case'' of a result from expansion, each
+  ~c[ev-i] is evaluated in sequence, and the first that succeeds without error
+  is considered to be the expansion result ~-[] and a repeat evaluation is
+  avoided.  If evaluation of each ~c[ev-i] results in an error, then so does
+  the ~c[make-event] call.
+
+  This special use of ~c[:OR] in a value produced by expansion is only
+  supported at the top level.  That is, the result can be
+  ~c[(:OR ev-1 ev-2 ... ev-k)] but then each ~c[ev-i] must be a legal expansion
+  result, without such further use of ~c[:OR] ~-[] except, ~c[ev-i] may be
+  ~c[(:DO-PROOFS ev-i')], where ~c[ev-i'] then would serve as the expansion
+  rather than ~c[ev-i].
+
+  (3) The ~c[:EXPANSION?] keyword argument.
+
+  Suppose keyword argument ~c[:EXPANSION? exp] is specified, where ~c[exp] is
+  not ~c[nil].  Then the ~c[:CHECK-EXPANSION] keyword must be omitted or have
+  value ~c[nil] or ~c[t], not a cons pair.  To explain the effect of
+  ~c[:EXPANSION? exp], we split into the following two cases.
+
+  o Case 1: Evaluation is not taking place when including a book or evaluating
+  the second pass of an ~ilc[encapsulate] event; more precisely, the value of
+  ~c[(ld-skip-proofsp state)] is not the symbol ~c[INCLUDE-BOOK].  There are
+  two subcases.
+  ~bq[]
+
+  - Case 1a: The expansion result is not ~c[exp].  Then the ~c[make-event] call
+  is processed as though the ~c[:EXPANSION?] keyword had been omitted.
+
+  - Case 2a: The expansion result is ~c[exp].  Then there is no ~c[make-event]
+  replacement for this call of ~c[make-event]; no replacement will be put into
+  the ~il[certificate] file for a book containing this ~c[make-event] call.
+  When that book is subsequently included, the original form will be evaluated.
+  Which leads us to:~eq[]
+
+  o Case 2: Evaluation is taking place when including a book or evaluating the
+  second pass of an ~ilc[encapsulate] event; more precisely, the value of
+  ~c[(ld-skip-proofsp state)] is the symbol ~c[INCLUDE-BOOK].  Then the
+  expansion is ~c[exp].  The expansion phase is skipped unless
+  ~c[:CHECK-EXPANSION] is ~c[t].
+
+  The ~c[:EXPANSION?] keyword can be particularly useful in concert with the
+  disjunctive case (2) discussed above.  Suppose that expansion produces a
+  value as discussed in (2) above, ~c[(:OR exp-1 ... exp-k)].  If one of these
+  expressions ~c[exp-i] is more likely than the others to be the expansion,
+  then you may wish to specify ~c[:EXPANSION? exp-i], as this will avoid
+  storing a ~c[make-event] replacement in that common case.  This could be
+  useful if the expressions are large, to avoid enlarging the ~il[certificate]
+  file for a book containing the ~c[make-event] call.
+
+  It is legal to specify both ~c[:EXPANSION? exp] and ~c[:CHECK-EXPANSION t].
+  When ~c[(ld-skip-proofsp state)] is the symbol ~c[INCLUDE-BOOK], and in raw
+  Lisp, this is treated the same as if ~c[:EXPANSION?] is omitted and the value
+  of ~c[:CHECK-EXPANSION] is ~c[exp].  Otherwise, this combination is treated
+  the same as ~c[:CHECK-EXPANSION t], modified to accommodate the effect of
+  ~c[:EXPANSION?] as discussed above: if the expansion is indeed the value of
+  ~c[:EXPANSION?], then no ~c[make-event] replacement is generated."
 
   (declare (xargs :guard t))
 ; Keep this in sync with the -acl2-loop-only definition.
   `(make-event-fn ',form
+                  ',expansion?
                   ',check-expansion
                   ',on-behalf-of
                   ',event-form

@@ -4931,14 +4931,16 @@
           ((eq (car form) 'make-event)
            (cond ((and make-event-chk
                        (not (and (true-listp form)
-                                 (consp (cadr (member-eq :check-expansion
-                                                         form))))))
+                                 (or (consp (cadr (member-eq :check-expansion
+                                                             form)))
+                                     (consp (cadr (member-eq :expansion?
+                                                             form)))))))
                   (er soft ctx
-                      "The :check-expansion argument of make-event should be ~
-                       a consp in the present context.  Unless you called ~
-                       record-expansion explicitly, this is an ACL2 bug; ~
-                       please contact the ACL2 implementors.  Current ~
-                       form:~|~%~X01"
+                      "Either the :check-expansion or :expansion? argument of ~
+                       make-event should be a consp in the present context.  ~
+                       Unless you called record-expansion explicitly, this is ~
+                       an ACL2 bug; please contact the ACL2 implementors.  ~
+                       Current form:~|~%~X01"
                       form
                       nil))
                  (t (value form))))
@@ -9251,7 +9253,91 @@
        :guard
        (eq key 'empty-event-key))
 
-(defun make-event-fn (form check-expansion on-behalf-of whole-form state)
+(defun make-event-fn2 (expansion0 whole-form in-encapsulatep check-expansion
+                                  wrld ctx state)
+  (mv-let
+   (do-proofsp expansion0)
+   (case-match expansion0
+     ((':DO-PROOFS x)
+      (mv (ld-skip-proofsp state)
+          x))
+     (& (mv nil expansion0)))
+   (er-let* ((expansion1a ; apply macroexpansion to get embedded event form
+              (do-proofs?
+
+; This wrapper of do-proofs? avoids errors in checking expansions when
+; ld-skip-proofsp is 'include-book.  See the "Very Technical Remark" in
+; community book  books/make-event/read-from-file.lisp.
+
+               check-expansion
+               (chk-embedded-event-form
+                expansion0 whole-form wrld ctx state (primitive-event-macros)
+                nil ; portcullisp
+                (f-get-global 'in-local-flg state)
+                in-encapsulatep
+                nil))) 
+             (expansion1
+              (value (or expansion1a
+
+; Else the alleged embedded event form, from the expansion, is nil, presumably
+; because of local.
+
+                         *local-value-triple-elided*)))
+             (stobjs-out-and-raw-result
+              (do-proofs?
+               do-proofsp
+               (trans-eval
+
+; Note that expansion1 is guaranteed to be an embedded event form, which (as
+; checked just below) must evaluate to an error triple.
+
+                expansion1
+                ctx state t))))
+     (let ((raw-result (cdr stobjs-out-and-raw-result)))
+       (cond ((car raw-result)
+              (silent-error state))
+             (t (value (list* expansion1
+                              (car stobjs-out-and-raw-result)
+                              (cadr raw-result)))))))))
+
+(defun make-event-fn2-lst (expansion-lst whole-form in-encapsulatep
+                                         check-expansion wrld ctx state)
+  (cond ((atom expansion-lst)
+         (er soft ctx
+             "Evaluation failed for all expansions."))
+        (t (pprogn
+            (cond
+             ((f-get-global 'make-event-debug state)
+              (fms "Attempting evaluation of next expansion:~|~Y01"
+                   (list (cons #\0 (car expansion-lst))
+                         (cons #\1 (abbrev-evisc-tuple state)))
+                   (proofs-co state)
+                   state
+                   nil))
+             (t state))
+            (mv-let
+             (erp val state)
+             (make-event-fn2 (car expansion-lst)
+                             whole-form in-encapsulatep check-expansion
+                             wrld ctx state)
+             (cond (erp (make-event-fn2-lst (cdr expansion-lst)
+                                            whole-form in-encapsulatep
+                                            check-expansion wrld ctx state))
+                   (t (value val))))))))
+
+(defun make-event-fn1 (expansion0 whole-form in-encapsulatep check-expansion
+                                  wrld ctx state)
+  (cond ((and (consp expansion0)
+              (eq (car expansion0) :OR))
+         (make-event-fn2-lst (cdr expansion0)
+                             whole-form in-encapsulatep check-expansion
+                             wrld ctx state))
+        (t (make-event-fn2 expansion0
+                           whole-form in-encapsulatep check-expansion
+                           wrld ctx state))))
+
+(defun make-event-fn (form expansion? check-expansion on-behalf-of whole-form
+                           state)
   (let ((ctx (make-event-ctx whole-form))
         #-acl2-loop-only
         (old-kpa (known-package-alist state)))
@@ -9290,9 +9376,32 @@
                 (consp check-expansion)))
        (er soft ctx
            "The check-expansion flag of make-event must be t, nil, or a cons ~
-            pair.  The following check-expansion flag is thus illegal: ~x0.  ~
-            See :DOC make-event."
+             pair.  The following check-expansion flag is thus illegal: ~x0.  ~
+             See :DOC make-event."
            check-expansion))
+      ((and expansion?
+            (consp check-expansion))
+
+; We considered allowing :EXPANSION? FORM1 and :CHECK-EXPANSION FORM2 (where
+; FORM2 is not nil or t), and if someone presents a natural example for which
+; this would be useful, we might do so.  But the semantics of this would be
+; potentially confusing.  Which one is consulted when including a book or
+; running in raw Lisp?  If FORM1 = FORM2, this looks redundant.  Otherwise,
+; this is, oddly, inherently contradictory, in the sense that FORM1 should
+; never be the expansion (unless one is deliberately arranging for evaluation
+; of the make-event call to fail -- but there are simpler ways to do that).
+
+; If we decide to support the combination of expansion? and (consp
+; check-expansion), then we need to be careful to handle that combination --
+; something we don't do now, but we code defensively, giving priority to (consp
+; check-expansion).
+
+       (er soft ctx
+           "It is illegal to supply a non-nil value for the keyword argument ~
+            :EXPANSION? of make-event when keyword argument :CHECK-EXPANSION ~
+            is give a value other than T or NIL.  If you think you have a ~
+            reason why such a combination should be supported, please contact ~
+            the ACL2 implementors."))
       (t
        (revert-world-on-error
         (state-global-let*
@@ -9300,10 +9409,26 @@
                                                     state))))
          (let ((wrld (w state)))
            (er-let*
-            ((debug-depth (make-event-debug-pre form on-behalf-of state))
-             (expansion0/new-kpa/new-ttags-seen
-              (do-proofs?
-               (or check-expansion
+               ((debug-depth (make-event-debug-pre form on-behalf-of state))
+                (expansion0/new-kpa/new-ttags-seen
+                 (cond
+                  ((and expansion?
+                        (eq (ld-skip-proofsp state) 'include-book)
+
+; Even if expansion? is specified, we do not assume it's right if
+; check-expansion is t.
+
+                        (assert$ (iff check-expansion
+
+; In code above, we disallowed the combination of non-nil expansion? with a
+; consp value of :check-expansion.
+
+                                      (eq check-expansion t))
+                                 (not (eq check-expansion t))))
+                   (value (list* expansion? nil nil)))
+                  (t
+                   (do-proofs?
+                    (or check-expansion
 
 ; For example, a must-fail form in community book books/make-event/defspec.lisp
 ; will fail during the Pcertify process of provisional certification unless we
@@ -9316,58 +9441,36 @@
 ; certification as a way of validating some code.  So our approach is only to
 ; move proofs from the Convert procedure to the Pcertify procedure.
 
-                   (eq (cert-op state) :create-pcert))
-               (protected-eval form on-behalf-of ctx state t)))
-             (expansion0 (value (car expansion0/new-kpa/new-ttags-seen)))
-             (new-kpa (value (cadr expansion0/new-kpa/new-ttags-seen)))
-             (new-ttags-seen (value (cddr expansion0/new-kpa/new-ttags-seen)))
-             (expansion1a ; apply macroexpansion to get embedded event form
-              (pprogn
-               (make-event-debug-post debug-depth expansion0 state)
-               (do-proofs?
-
-; This wrapper of do-proofs? avoids errors in checking expansions when
-; ld-skip-proofsp is 'include-book.  See the "Very Technical Remark" in
-; community book  books/make-event/read-from-file.lisp.
-
-                check-expansion
-                (chk-embedded-event-form
-                 expansion0 whole-form wrld ctx state (primitive-event-macros)
-                 nil ; portcullisp
-                 (f-get-global 'in-local-flg state)
-                 (in-encapsulatep (global-val 'embedded-event-lst wrld) nil)
-                 nil))))
-             (new-ttags-p
-              (value (not (equal new-ttags-seen
-                                 (global-val 'ttags-seen (w state))))))
-             (expansion1
-              (value (or expansion1a
-
-; Else the alleged embedded event form, from the expansion, is nil, presumably
-; because of local.
-
-                         *local-value-triple-elided*)))
-             (stobjs-out-and-result
-              (pprogn
-               (cond (new-ttags-p
-                      (set-w! (global-set 'ttags-seen new-ttags-seen (w state))
-                              state))
-                     (t state))
-               (trans-eval
-
-; Note that expansion1 is guaranteed to be an embedded event form, which (as
-; checked just below) must evaluate to an error triple.
-
-                expansion1
-                ctx state t))))
-            (let ((stobjs-out (car stobjs-out-and-result))
-                  (result (cdr stobjs-out-and-result))
-                  (expansion2
-                   (cond
-                    ((f-get-global 'last-make-event-expansion state)
-                     (mv-let
-                      (wrappers base)
-                      (destructure-expansion expansion1)
+                        (eq (cert-op state) :create-pcert))
+                    (protected-eval form on-behalf-of ctx state t)))))
+                (expansion0 (value (car expansion0/new-kpa/new-ttags-seen)))
+                (new-kpa (value (cadr expansion0/new-kpa/new-ttags-seen)))
+                (new-ttags-seen (value (cddr expansion0/new-kpa/new-ttags-seen)))
+                (new-ttags-p
+                 (pprogn
+                  (make-event-debug-post debug-depth expansion0 state)
+                  (cond ((equal new-ttags-seen
+                                (global-val 'ttags-seen wrld))
+                         (value nil))
+                        (t (pprogn
+                            (set-w! (global-set 'ttags-seen t wrld)
+                                    state)
+                            (value t))))))
+                (wrld0 (value (w state)))
+                (expansion1/stobjs-out/result
+                 (make-event-fn1
+                  expansion0 whole-form
+                  (in-encapsulatep (global-val 'embedded-event-lst wrld0) nil)
+                  check-expansion wrld0 ctx state)))
+             (let* ((expansion1 (car expansion1/stobjs-out/result))
+                    (stobjs-out (cadr expansion1/stobjs-out/result))
+                    (result (cddr expansion1/stobjs-out/result))
+                    (expansion2
+                     (cond
+                      ((f-get-global 'last-make-event-expansion state)
+                       (mv-let
+                        (wrappers base)
+                        (destructure-expansion expansion1)
 
 ; At this point we know that (car base) is from the list '(make-event progn
 ; progn! encapsulate); indeed, just after the release of v3-5, we ran a
@@ -9377,46 +9480,57 @@
 ; ACL2s can create make-event expansions out of events other than the four
 ; types above, e.g., defun.
 
-                      (declare (ignore base))
-                      (rebuild-expansion
-                       wrappers
-                       (f-get-global 'last-make-event-expansion state))))
-                    (t expansion1))))
-              (assert$
-               (equal stobjs-out *error-triple-sig*) ; evaluated an event form
-               (cond ((car result)
-                      (silent-error state))
-                     ((and (consp check-expansion)
-                           (not (equal check-expansion expansion2)))
-                      (er soft ctx
-                          "The current MAKE-EVENT expansion differs from the ~
-                           expected (original or specified) expansion.  See ~
-                           :DOC make-event.~|~%~|~%Make-event ~
-                           argument:~|~%~y0~|~%Expected ~
-                           expansion:~|~%~y1~|~%Current expansion:~|~%~y2~|"
-                          form
-                          check-expansion
-                          expansion2))
-                     (t
-                      (let ((actual-expansion
-                             (cond
-                              ((consp check-expansion)
+                        (declare (ignore base))
+                        (rebuild-expansion
+                         wrappers
+                         (f-get-global 'last-make-event-expansion state))))
+                      (t expansion1))))
+               (assert$
+                (equal stobjs-out *error-triple-sig*) ; evaluated an event form
+                (let ((expected-expansion (if (consp check-expansion)
+                                              check-expansion
+                                            (and (eq (ld-skip-proofsp state)
+                                                     'include-book)
+                                                 check-expansion
+                                                 expansion?))))
+                  (cond ((and expected-expansion
+                              (not (equal expected-expansion expansion2)))
+                         (er soft ctx
+                             "The current MAKE-EVENT expansion differs from ~
+                              the expected (original or specified) expansion. ~
+                              ~ See :DOC make-event.~|~%~|~%Make-event ~
+                              argument:~|~%~y0~|~%Expected ~
+                              expansion:~|~%~y1~|~%Current expansion:~|~%~y2~|"
+                             form
+                             expected-expansion
+                             expansion2))
+                        (t
+                         (let ((actual-expansion
+                                (cond
+                                 ((or (consp check-expansion)
+                                      (equal expansion? expansion2))
 
-; The original make-event form is already expanded (see :doc
-; make-event-details).
+; The original make-event form does not generate a make-event replacement (see
+; :doc make-event).
 
-                               nil)
-                              (check-expansion
-                               (assert$
-                                (eq check-expansion t) ; from macro guard
-                                (list* 'make-event form
-                                       :check-expansion expansion2
-                                       (and on-behalf-of
-                                            `(:on-behalf-of
-                                              ,on-behalf-of)))))
-                              (t expansion2))))
-                        #-acl2-loop-only
-                        (let ((msg
+                                  nil)
+                                 (check-expansion
+                                  (assert$
+                                   (eq check-expansion t) ; from macro guard
+                                   (list* 'make-event form
+
+; Note that we deliberately omit :expansion? here, even if it was supplied
+; originally.  If :expansion? had been supplied and appropropriate, then we
+; would be in the previous case, where we don't generate a make-event around
+; the expansion.
+
+                                          :check-expansion expansion2
+                                          (and on-behalf-of
+                                               `(:on-behalf-of
+                                                 ,on-behalf-of)))))
+                                 (t expansion2))))
+                           #-acl2-loop-only
+                           (let ((msg
 
 ; We now may check the expansion to see if an unknown package appears.  The
 ; following example shows why this can be important.  Consider a book "foo"
@@ -9452,26 +9566,26 @@
 ; world installed at the end of expansion, so if expansion doesn't extend the
 ; world with any new packages, then we can avoid this check.
 
-                               (and (not (eq old-kpa new-kpa))
-                                    (bad-lisp-objectp actual-expansion))))
-                          (when msg
-                            (er hard ctx
-                                "Make-event expansion for the form ~x0 has ~
-                                 produced an illegal object for the current ~
-                                 ACL2 world.  ~@1"
-                                form
-                                msg)))
-                        (pprogn
-                         (f-put-global 'last-make-event-expansion
-                                       actual-expansion
-                                       state)
-                         (er-progn
-                          (cond ((and new-ttags-p ; optimization
-                                      (let ((wrld1 (w state)))
-                                        (not (and (eq (caar wrld1)
-                                                      'event-landmark)
-                                                  (eq (cadar wrld1)
-                                                      'global-value)))))
+                                  (and (not (eq old-kpa new-kpa))
+                                       (bad-lisp-objectp actual-expansion))))
+                             (when msg
+                               (er hard ctx
+                                   "Make-event expansion for the form ~x0 has ~
+                                    produced an illegal object for the ~
+                                    current ACL2 world.  ~@1"
+                                   form
+                                   msg)))
+                           (pprogn
+                            (f-put-global 'last-make-event-expansion
+                                          actual-expansion
+                                          state)
+                            (er-progn
+                             (cond ((and new-ttags-p ; optimization
+                                         (let ((wrld1 (w state)))
+                                           (not (and (eq (caar wrld1)
+                                                         'event-landmark)
+                                                     (eq (cadar wrld1)
+                                                         'global-value)))))
 
 ; We lay down an event landmark.  Before we did so, an error was reported by
 ; print-redefinition-warning in the following example, because we weren't
@@ -9488,28 +9602,28 @@
 ;        (not (cdr (assoc-eq 'empty-event-key
 ;                            (table-alist 'acl2-system-table world)))))
 
-                                 (state-global-let*
-                                  ((inhibit-output-lst
-                                    (add-to-set-eq
-                                     'summary
-                                     (f-get-global 'inhibit-output-lst
-                                                   state))))
-                                  (TABLE-FN
-                                   'ACL2-SYSTEM-TABLE
-                                   '('EMPTY-EVENT-KEY
-                                     (NOT (CDR (ASSOC-EQ 'EMPTY-EVENT-KEY
+                                    (state-global-let*
+                                     ((inhibit-output-lst
+                                       (add-to-set-eq
+                                        'summary
+                                        (f-get-global 'inhibit-output-lst
+                                                      state))))
+                                     (TABLE-FN
+                                      'ACL2-SYSTEM-TABLE
+                                      '('EMPTY-EVENT-KEY
+                                        (NOT (CDR (ASSOC-EQ 'EMPTY-EVENT-KEY
+                                                            (TABLE-ALIST
+                                                             'ACL2-SYSTEM-TABLE
+                                                             WORLD)))))
+                                      STATE
+                                      '(TABLE ACL2-SYSTEM-TABLE 'EMPTY-EVENT-KEY
+                                              (NOT (CDR (ASSOC-EQ
+                                                         'EMPTY-EVENT-KEY
                                                          (TABLE-ALIST
                                                           'ACL2-SYSTEM-TABLE
-                                                          WORLD)))))
-                                   STATE
-                                   '(TABLE ACL2-SYSTEM-TABLE 'EMPTY-EVENT-KEY
-                                           (NOT (CDR (ASSOC-EQ
-                                                      'EMPTY-EVENT-KEY
-                                                      (TABLE-ALIST
-                                                       'ACL2-SYSTEM-TABLE
-                                                       WORLD))))))))
-                                (t (value nil)))
-                         (value (cadr result))))))))))))))))))
+                                                          WORLD))))))))
+                                   (t (value nil)))
+                             (value result))))))))))))))))))
 
 ; Now we develop the book mechanism, which shares a lot with what
 ; we've just done.  In the discussion that follows, Unix is a
