@@ -31,90 +31,35 @@
 
 ;; (local (in-theory (disable append-of-nil)))
 
-(defn aig-print (x)
-  (declare (xargs :verify-guards nil))
-  (aig-cases
-   x
-   :true t
-   :false nil
-   :var x
-   :inv `(not ,(aig-print (car x)))
-   :and (let* ((a (aig-print (car x)))
-               (d (aig-print (cdr x))))
-          `(and ,@(if (and (consp a) (eq (car a) 'and))
-                      (cdr a)
-                    (list a))
-                ,@(if (and (consp d) (eq (car d) 'and))
-                      (cdr d)
-                    (list d))))))
 
-;; (local
-;;  (defthm true-listp-append
-;;    (implies (true-listp b)
-;;             (true-listp (append a b)))))
-(local
- (defthm true-listp-cdr-aig-print
-   (implies (and (consp (aig-print x))
-                 (eq (car (aig-print x)) 'and))
-            (true-listp (cdr (aig-print x))))))
+;; BOZO misplaced
 
-(verify-guards aig-print)
+(local (defthm true-listp-of-make-fal
+         (implies (true-listp name)
+                  (true-listp (make-fal al name)))))
 
-(memoize 'aig-print :condition '(consp x))
+(defthm make-fal-is-append
+  (implies (alistp x)
+           (equal (make-fal x y) (append x y))))
+
+(defthm aig-eval-alist-append
+  (equal (aig-eval-alist (append a b) env)
+         (append (aig-eval-alist a env)
+                 (aig-eval-alist b env))))
 
 
 
-;; Forms an AIG from an ACL2-like term.
-(mutual-recursion
- (defun expr-to-aig (expr)
-   (declare (Xargs :guard t
-                   :measure (+ 1 (* 2 (acl2-count expr)))))
-   (if (atom expr)
-       expr
-     (let ((fn (car expr))
-           (args (cdr expr)))
-       (cond
-        ((and (eq fn 'not) (= (len args) 1))
-         (aig-not (expr-to-aig (car args))))
-        ((eq fn 'and) (expr-to-aig-args 'and t args))
-        ((eq fn 'or)  (expr-to-aig-args 'or nil args))
-        ((eq fn 'nand) (aig-not (expr-to-aig-args 'and t args)))
-        ((eq fn 'nor)  (aig-not (expr-to-aig-args 'or nil args)))
-        ((and (eq fn 'iff) (= (len args) 2))
-         (aig-iff (expr-to-aig (car args))
-                  (expr-to-aig (cadr args))))
-        ((and (eq fn 'xor) (= (len args) 2))
-         (aig-xor (expr-to-aig (car args))
-                  (expr-to-aig (cadr args))))
-        ((and (eq fn 'implies) (= (len args) 2))
-         (aig-or (aig-not (expr-to-aig (car args)))
-                 (expr-to-aig (cadr args))))
-        ((and (eq fn 'if) (= (len args) 3))
-         (aig-ite (expr-to-aig (car args))
-                  (expr-to-aig (cadr args))
-                  (expr-to-aig (caddr args))))
-        (t (prog2$ (er hard? 'expr-to-aig "Malformed: ~x0~%" expr)
-                   nil))))))
- (defun expr-to-aig-args (op final exprs)
-   (declare (xargs :guard t
-                   :measure (* 2 (acl2-count exprs))))
-   (if (atom exprs)
-       final
-     (let ((first (expr-to-aig (car exprs)))
-           (rest (expr-to-aig-args op final (cdr exprs))))
-       (case op
-         (and (aig-and first rest))
-         (or (aig-or first rest)))))))
 
-(defun faig-vars-pat (pat aigs)
-  (if pat
-      (if (atom pat)
-          (list :signal pat
-                (aig-vars (car aigs))
-                (aig-vars (cdr aigs)))
-        (cons (faig-vars-pat (car pat) (car aigs))
-              (faig-vars-pat (cdr pat) (cdr aigs))))
-    nil))
+
+;; (defun faig-vars-pat (pat aigs)
+;;   (if pat
+;;       (if (atom pat)
+;;           (list :signal pat
+;;                 (aig-vars (car aigs))
+;;                 (aig-vars (cdr aigs)))
+;;         (cons (faig-vars-pat (car pat) (car aigs))
+;;               (faig-vars-pat (cdr pat) (cdr aigs))))
+;;     nil))
 
 
 ;; Extracts necessary variable assignments from an AIG by breaking down its
@@ -258,24 +203,12 @@
               (make-fal (assign-var-list falses nil)
                         nil))))
 
-(local (defthm true-listp-of-make-fal
-         (implies (true-listp name)
-                  (true-listp (make-fal al name)))))
-
 (local (defthm true-listp-of-aig-extract-assigns-alist
          (true-listp (aig-extract-assigns-alist x))))
 
-(defthm make-fal-is-append
-  (implies (alistp x)
-           (equal (make-fal x y) (append x y))))
 
 (defthm alistp-aig-extract-assigns-alist
   (alistp (aig-extract-assigns-alist x)))
-
-(defthm aig-eval-alist-append
-  (equal (aig-eval-alist (append a b) env)
-         (append (aig-eval-alist a env)
-                 (aig-eval-alist b env))))
 
 (defthm aig-eval-alist-aig-extract-assigns-alist
   (equal (aig-eval-alist (aig-extract-assigns-alist x) env)

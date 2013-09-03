@@ -78,7 +78,7 @@
            :induct (check-property-strong updates prop curr-st inputs))
           (and stable-under-simplificationp
                (cond
-                ((member-equal 
+                ((member-equal
                   '(AIG-EVAL PROP (binary-APPEND CURR-ST (CAR INPUTS)))
                   clause)
                  '(:use ((:instance check-ag-property-necc
@@ -98,7 +98,7 @@
                                           (if (consp rest)
                                               rest
                                             (list nil)))))))))))))
-  
+
 
 
 (defun-sk unsat-p (x)
@@ -173,9 +173,9 @@
 ;; initialization, then check-property is always true.
 ;; One subtlety: here the initial state may be partial, i.e. an alist that does
 ;; not bind all the state variables.  In this case the full initial state
-;; applied is determined by the first input vector.  
+;; applied is determined by the first input vector.
 (defthm inductive-invariant-impl-check-property
-  (implies (and 
+  (implies (and
             ;; The variables of the invariant must be state variables, not inputs
             (subsetp-equal (aig-vars invar)
                            (alist-keys updates))
@@ -193,7 +193,7 @@
            :in-theory (disable unsat-p))))
 
 (defthm inductive-invariant-impl-check-ag-property
-  (implies (and 
+  (implies (and
             ;; The variables of the invariant must be state variables, not inputs
             (subsetp-equal (aig-vars invar)
                            (alist-keys updates))
@@ -209,7 +209,7 @@
            (check-ag-property updates prop initst)))
 
 (defthm inductive-invariant-impl-check-property-strong
-  (implies (and 
+  (implies (and
             ;; The variables of the invariant must be state variables, not inputs
             (subsetp-equal (aig-vars invar)
                            (alist-keys updates))

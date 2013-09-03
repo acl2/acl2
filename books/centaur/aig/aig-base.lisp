@@ -24,7 +24,6 @@
 (include-book "cutil/define" :dir :system)
 (include-book "../misc/hons-alphorder-merge")
 
-
 ; aig-base.lisp
 ;   - Semantics of AIGs (aig-eval)
 ;   - Primitive AIG constructors (aig-not, aig-and, ...)
@@ -32,112 +31,21 @@
 
 ; BOZO consider using defprojection throughout?
 
-(defxdoc aig
-  :parents (boolean-reasoning)
-  :short "A @(see hons)-based And-Inverter Graph (AIG) representation for
-Boolean functions."
+(defsection aig-cases
+  :parents (aig-other)
+  :short "Control-flow macro to split into cases on what kind of AIG you have
+encountered."
+  :long "@(def aig-cases)"
 
-  :long "<h3>Introduction</h3>
-
-<p>And-Inverter Graphs (AIGs) are a way to represent Boolean functions using
-only the operations <i>and</i> and <i>not</i>.</p>
-
-<p>This AIG library is sometimes called the <b>Hons-AIG library</b> to
-distinguish it from another AIG library, @(see aignet).  In very brief:</p>
-
-<ul>
- <li>Hons-AIGs are simpler, easier to work with, and easier to reason about.</li>
- <li>@(see aignet) is faster.</li>
-</ul>
-
-<p>We won't say anything more about AIGNET here.  For a much more detailed
-comparison of the libraries, please see: Jared Davis and Sol Swords.  <a
-href='http://dx.doi.org/10.4204/EPTCS.114.8'>Verified AIG Algorithms in
-ACL2.</a> In ACL2 Workshop 2013. May, 2013. EPTCS 114.  Pages 95-110.</p>
-
-
-<h3>Representation of AIGs</h3>
-
-<p>We always construct AIGs with @(see hons) so that existing pieces of AIGs
-will be automatically reused.  We represent AIGs as arbitrary cons trees, which
-we interpret as follows:</p>
-
-<ul>
-
-<li>@('T') represents the constant-true function.</li>
-
-<li>@('NIL') represents the constant-false function.</li>
-
-<li>Any other atom represents a Boolean variable (i.e., an input to the
-function.)</li>
-
-<li>A cons of the form @('(A . NIL)') represents the negation of @('A').</li>
-
-<li>Any other cons, @('(A . B)'), represents the conjunction of @('A') and
-@('B').</li>
-
-</ul>
-
-<p>This meaning of cons trees is given by the evaluation function @(see
-aig-eval), which returns the (Boolean) value of an AIG under some particular
-assignment to its variables.  Note that every ACL2 object is a well-formed AIG
-under this definition.</p>
-
-<p>You might wonder why we would restrict ourselves to using only <i>and</i>
-and <i>not</i>?  On the surface, using a richer language like S-expressions
-might seem more compact.  For instance, with S-expressions we could represent
-@('(or a b)') is much smaller looking than its and/not equivalent:
-@('(not (and (not a) (not b)))').</p>
-
-<p>But another critical part of memory efficiency is structure sharing.  That
-is, suppose that we already need @('(not a)') and @('(not b)') elsewhere in the
-function.  With s-expressions, these terms would have nothing in common with
-@('(or a b)'), but with AIGs we can reuse the existing parts of
-@('(not (and (not a) (not b)))').</p>
-
-
-<h3>Library Functions</h3>
-
-<p>We provide some basic, low-level @(see aig-constructors) for building
-AIGs (<i>and</i>, <i>or</i>, etc.).  We prove these operations correct with
-respect to @(see aig-eval).</p>
-
-<p>There are also higher-level operations such as @(see aig-restrict) and @(see
-aig-compose) allow you to substitute into AIGs.</p>
-
-<p>It is often important to know which variables occur in an AIG.  One way to
-do this is with @(see aig-vars).</p>
-
-<p>We provide some tools to \"solve\" AIGs.  Historically we have heavily used
-the @(see bddify) algorithm, which constructs a BDD from an AIG.  More
-recently, @(see aig-sat) provides a nice alternative using @(see aignet) and
-@(see satlink) to give the problem to a SAT solver.</p>
-
-
-<h3>AIGs versus BDDs</h3>
-
-<p>Another option for representing Boolean functions would be to use <see
-topic='@(url ubdds)'>BDDs</see>.  In comparison with BDDs, AIGs are:</p>
-
-<ul>
-
-<li>cheaper to construct, e.g., if we want to <i>or</i> together the functions
-@('f') and @('g'), it only takes a few conses with AIGs, whereas with BDDs we
-need to walk through @('f') and @('g') to construct a new structure (which
-might be quite large); but</li>
-
-<li>more expensive to compare, e.g., with BDDs we can determine if @('f') and
-@('g') are equal via pointer equality, whereas with AIGs this is a
-satisfiability problem.</li>
-
-</ul>
-
-<p>This tradeoff is often worth it.  For instance, it can often be more faster
-to construct an AIG and then @(see bddify) it than to just directly build the
-BDD.  Why?  With the whole AIG visible, the bddify algorithm can often
-\"prune\" branches of the AIG that turn out to be irrelevant, and hence avoid
-constructing large parts of the BDD that aren't really needed.</p>")
-
+  (defmacro aig-cases (x &key true false var inv and)
+    `(let ((aig-cases-var ,x))
+       (cond
+        ((atom aig-cases-var)
+         (cond ((eq aig-cases-var t) ,true)
+               ((eq aig-cases-var nil) ,false)
+               (t ,var)))
+        ((eq (cdr aig-cases-var) nil) ,inv)
+        (t ,and)))))
 
 
 ; -----------------------------------------------------------------------------
@@ -159,7 +67,7 @@ with @(see aig-env-lookup-missing-action).</p>"
 
 (defsection aig-env-lookup-missing-action
   :parents (aig-eval)
-  :short "Configure warnings about missing variables in AIG evaluation."
+  :short "Configurable warnings about missing variables in AIG evaluation."
 
   :long "<p>Ordinarily @(see aig-eval) treats any variables that are not bound
 in the environment as having value @('t').  But a missing bindings could be the
@@ -223,123 +131,96 @@ valid @('action')s are:</p>
   (aig-env-lookup-missing-action :warn))
 
 
-;;(defsection aig-cases
-;;  :parents (aig)
-;;  :short "Control-flow macro to split into cases on what kind of AIG you have
-;;encountered."
-;;  :long "@(def aig-cases)"
+(define aig-env-lookup
+  :parents (aig-eval)
+  :short "Look up the value of an AIG variable in an environment."
 
-;;  (defmacro aig-cases (x &key true false var inv and)
-;;    `(let ((aig-cases-var ,x))
-;;       (cond
-;;        ((eq aig-cases-var t) ,true)
-;;        ((eq aig-cases-var nil) ,false)
-;;        ((atom aig-cases-var) ,var)
-;;        ((eq (cdr aig-cases-var) nil) ,inv)
-;;        (t ,and)))))
+  ((x   "Variable to look up.")
+   (env "Fast alist mapping variables to values."))
 
-(defsection aig-cases
-  :parents (aig)
-  :short "Control-flow macro to split into cases on what kind of AIG you have
-encountered."
-  :long "@(def aig-cases)"
-
-  (defmacro aig-cases (x &key true false var inv and)
-    `(let ((aig-cases-var ,x))
-       (cond
-        ((atom aig-cases-var)
-         (cond ((eq aig-cases-var t) ,true)
-               ((eq aig-cases-var nil) ,false)
-               (t ,var)))
-        ((eq (cdr aig-cases-var) nil) ,inv)
-        (t ,and)))))
-
-
-
-(defsection aig-eval
-  :parents (aig)
-  :short "@(call aig-eval) evaluates @('x'), an @(see aig), under the
-environment @('env'), producing a Boolean result."
-
-  :long "<p>The @('env') should be a fast alist (see @(see fast-alists)) that
-binds variables in the AIG to values.  Typically it should bind every variable
-in the AIG to a Boolean value.</p>
-
-<p>This function is @(see memoize)d.  You should typically free its memo table
-after you are done with whatever @('env') you are using, to avoid excessive
-memory usage.  (We don't use @(':forget t') because you often want to evaluate
-several related AIGs.)</p>
-
-<p>Unbound variables are given the default value @('t') instead of @('nil')
-because this makes theorems about @(see faig) evaluation work out more
+  :long "<p>Unbound variables are given the default value @('t') instead of
+@('nil') because this makes theorems about @(see faig) evaluation work out more
 nicely (it makes unbound FAIG variables evaluate to @('X')).</p>
 
-<p>This function essentially defines the semantics of AIGs.</p>"
+<p>Jared was once tempted to change this to produce an always Boolean
+result, since it would seem nicer to do that here than in @(see aig-eval).  But
+this function is also used in @(see aig-compose), and it is not valid to
+Boolean-fix it there.</p>"
 
-  (defun aig-env-lookup (x env)
-    (declare (xargs :guard t))
-    (let ((look (hons-get x env)))
-      (if look
-          ;; [Jared] I was once tempted to change this to produce an always
-          ;; Boolean result, since it would seem nicer to do that here than in
-          ;; aig-eval.  But this function is also used in AIG-COMPOSE, and it
-          ;; is not valid to Boolean-fix it there.
-          (cdr look)
-        (mbe :logic t
-             :exec
-             (if *aig-env-lookup-warn-missing-binding*
-                 (prog2$ (aig-env-lookup-missing-output x)
-                         t)
-               t)))))
+  :enabled t
 
-  (defun aig-eval (x env)
-    (declare (xargs :guard t))
-    (aig-cases x
-               :true t
-               :false nil
-               :var (and (aig-env-lookup x env) t)
-               :inv (not (aig-eval (car x) env))
-               :and (and (aig-eval (car x) env)
-                         (aig-eval (cdr x) env))))
+  (let ((look (hons-get x env)))
+    (if look
+        (cdr look)
+      (mbe :logic t
+           :exec
+           (if *aig-env-lookup-warn-missing-binding*
+               (prog2$ (aig-env-lookup-missing-output x)
+                       t)
+             t)))))
 
-  ;; [Jared] note, changed memoization condition from just (consp x) to exclude
-  ;; not nodes; this matches aig-vars and I think is probably what we want.
+
+(define aig-eval
+  :parents (aig-semantics)
+  :short "@(call aig-eval) gives the semantics of @(see AIG)s: it gives the
+Boolean value of the AIG @('x') under the environment @('env')."
+
+  ((x   "The AIG to evaluate.")
+   (env "A fast alist that binds variables to values.  Typically it should bind
+every variable in @('x') to some Boolean value.  When this isn't the case,
+variables are assigned the default value @('t'); see @(see aig-env-lookup)."))
+
+  :long "<p>This function is @(see memoize)d.  You should typically free its
+memo table after you are done with whatever @('env') you are using, to avoid
+excessive memory usage.  (We don't use @(':forget t') because you often want to
+evaluate several related AIGs.)</p>"
+
+  :enabled t
+
+  (aig-cases x
+    :true t
+    :false nil
+    :var (and (aig-env-lookup x env) t)
+    :inv (not (aig-eval (car x) env))
+    :and (and (aig-eval (car x) env)
+              (aig-eval (cdr x) env)))
+
+  ///
   (memoize 'aig-eval :condition '(and (consp x) (cdr x))))
 
-
-(defsection aig-eval-list
-  :parents (aig-eval)
+(define aig-eval-list
+  :parents (aig-semantics)
   :short "@(call aig-eval-list) evaluates a list of AIGs."
+  ((x   "The AIG list to evaluate.")
+   (env "The environment to use; see @(see aig-eval)."))
+  :returns
+  (vals "A list of Boolean values; the evaluations of each AIG under this
+         environment.")
+  :enabled t
+  (if (atom x)
+      nil
+    (cons (aig-eval (car x) env)
+          (aig-eval-list (cdr x) env))))
 
-  ;; BOZO formal is named benv right now, eventually rename to env but we need
-  ;; to patch up GL so it doesn't care about formals named env.
-  (defun aig-eval-list (x benv)
-    (declare (xargs :guard t))
-    (if (atom x)
-        nil
-      (cons (aig-eval (car x) benv)
-            (aig-eval-list (cdr x) benv)))))
-
-
-(defsection aig-eval-alist
-  :parents (aig-eval)
+(define aig-eval-alist
+  :parents (aig-semantics)
   :short "@(call aig-eval-alist) evaluates an AIG Alist (an alist binding keys
 to AIGs)."
-
-  :long "<p>The alist @('x') does not need to be fast, and we produce an
-ordinary (slow) alist as a result.</p>"
-
-  (defun aig-eval-alist (x env)
-    (declare (xargs :guard t))
-    (cond ((atom x)
-           nil)
-          ((atom (car x))
-           ;; Bad-alist convention
-           (aig-eval-alist (cdr x) env))
-          (t
-           (cons (cons (caar x) (aig-eval (cdar x) env))
-                 (aig-eval-alist (cdr x) env)))))
-
+  ((x   "The AIG alist to evaluate.  This does not need to be a fast alist.")
+   (env "The environment to use; see @(see aig-eval)."))
+  :returns
+  (vals-alist "An ordinary (slow) alist that binds the same keys to the values
+               of their associated AIGs.")
+  :enabled t
+  (cond ((atom x)
+         nil)
+        ((atom (car x))
+         ;; Bad-alist convention
+         (aig-eval-alist (cdr x) env))
+        (t
+         (cons (cons (caar x) (aig-eval (cdar x) env))
+               (aig-eval-alist (cdr x) env))))
+  ///
   (defthm hons-assoc-equal-aig-eval-alist
     (equal (hons-assoc-equal key (aig-eval-alist x env))
            (and (hons-assoc-equal key x)
@@ -347,18 +228,19 @@ ordinary (slow) alist as a result.</p>"
                       (aig-eval (cdr (hons-assoc-equal key x)) env))))
     :hints(("Goal" :induct t))))
 
-
-
-(defsection aig-eval-alists
-  :parents (aig-eval)
+(define aig-eval-alists
+  :parents (aig-semantics)
   :short "Evaluate a list of AIG Alists."
-
-  (defun aig-eval-alists (x env)
-    (declare (xargs :guard t))
-    (if (atom x)
-        nil
-      (cons (aig-eval-alist (car x) env)
-            (aig-eval-alists (cdr x) env)))))
+  ((x   "List of AIG Alists to evaluate.")
+   (env "The environment to use; see @(see aig-eval)."))
+  :returns
+  (vals-alists "A copy of @('x'), except that each AIG has been replaced with
+                its value.")
+  :enabled t
+  (if (atom x)
+      nil
+    (cons (aig-eval-alist (car x) env)
+          (aig-eval-alists (cdr x) env))))
 
 
 
@@ -369,30 +251,45 @@ ordinary (slow) alist as a result.</p>"
 ;
 ; -----------------------------------------------------------------------------
 
-(defsection aig-vars
+(define aig-vars (x)
   :parents (aig)
-  :short "@(call aig-vars) returns the list of variables used in the AIG
-@('X')."
+  :short "@(call aig-vars) returns the variables of the AIG @('X')."
+  :returns (vars "An ordered set of AIG variables (atoms).")
 
-  :long "<p>This is one scheme for collecting variables from an AIG.  We
-memoize the whole computation and return ordered lists so that merging is
-linear.  This can be very expensive.  See @(see 4v-sexpr-vars) for an analagous
-discussion.</p>"
+  :long "<p>Note: variable collection can be surprisingly tricky to do
+efficiently.  For a good background discussion that describes various
+approaches to the problem and ways to avoid needing to collect variables, see
+@(see 4v-sexpr-vars).</p>
 
-  (defun aig-vars (x)
-    (declare (xargs :guard t
-                    :verify-guards nil))
-    (aig-cases x
-               :true  nil
-               :false nil
-               :var   (mbe :logic (sets::insert x nil)
-                           :exec (hons x nil))
-               :inv   (aig-vars (car x))
-               :and   (mbe :logic (sets::union (aig-vars (car x))
-                                               (aig-vars (cdr x)))
-                           :exec (hons-alphorder-merge (aig-vars (car x))
-                                                       (aig-vars (cdr x))))))
+<p>@('aig-vars') is a slow but simple way to collect the variables that occur
+within an AIG, and we adopt it as our <b>normal form</b> for talking about the
+variables of an AIG.  That is, when we introduce other, faster algorithms for
+collecting variables, we always relate them back to @('aig-vars').</p>
 
+<p>The variable collection strategy used by @('aig-vars') is to memoize the
+whole computation; this implicitly records, for every AND node, the exact set
+of variables that are found under that node.  We use ordinary @(see osets) as
+our variable set representation so that merging these sets is linear at each
+node.  The overall complexity is then @('O(n^2)') in the size of the AIG.</p>
+
+<p>This approach records the full variable information for every AND node
+throughout the AIG.  This takes a lot of memory, and often you do not need
+nearly this much information.  In practice, functions like @(see
+aig-vars-1pass) are often much more practical.</p>"
+
+  :verify-guards nil
+  :enabled t
+  (aig-cases x
+    :true  nil
+    :false nil
+    :var   (mbe :logic (sets::insert x nil)
+                :exec (hons x nil))
+    :inv   (aig-vars (car x))
+    :and   (mbe :logic (sets::union (aig-vars (car x))
+                                    (aig-vars (cdr x)))
+                :exec (hons-alphorder-merge (aig-vars (car x))
+                                            (aig-vars (cdr x)))))
+  ///
   (defthm atom-listp-aig-vars
     (atom-listp (aig-vars x)))
 
@@ -418,266 +315,201 @@ discussion.</p>"
 ;
 ; -----------------------------------------------------------------------------
 
-(defxdoc aig-constructors
-  :parents (aig)
-  :short "Low-level functions for constructing AIGs.")
-
-
-
-(defsection aig-not
+(define aig-not (x)
   :parents (aig-constructors)
   :short "@(call aig-not) constructs an AIG representing @('(not x)')."
-
   :long "<p>This could be implemented as @('(hons x nil)'), but we at least
 take care to fold constants and avoid creating double negatives.</p>"
-
-  (defund aig-not (x)
-    (declare (xargs :guard t))
-    (cond ((eq x nil) t)
-          ((eq x t) nil)
-          ((and (consp x) (eq (cdr x) nil))
-           (car x))
-          (t
-           (hons x nil))))
-
-  (local (in-theory (enable aig-not)))
-
+  :returns aig
+  (cond ((eq x nil) t)
+        ((eq x t) nil)
+        ((and (consp x) (eq (cdr x) nil))
+         (car x))
+        (t
+         (hons x nil)))
+  ///
   (defthm aig-eval-not
     (equal (aig-eval (aig-not x) env)
            (not (aig-eval x env)))))
 
-
-
-(defsection aig-and
+(define aig-and (x y)
   :parents (aig-constructors)
   :short "@(call aig-and) constructs an AIG representing @('(and x y)')."
-
   :long "<p>This could have been implemented as @('(hons x y)'), but we take
 care to fold constants and reduce @('x & x') and @('x & ~x').</p>"
-
-  (defund aig-and (x y)
-    (declare (xargs :guard t))
-    (cond
-     ((or (eq x nil) (eq y nil)) nil)
-     ((eq x t) y)
-     ((eq y t) x)
-     ((hons-equal x y) x)
-     ((and (consp y) (eq (cdr y) nil)
-           (hons-equal (car y) x))
-      nil)
-     ((and (consp x) (eq (cdr x) nil)
-           (hons-equal (car x) y))
-      nil)
-     (t (hons x y))))
-
-  (local (in-theory (enable aig-and)))
-
+  :returns aig
+  (cond ((or (eq x nil) (eq y nil)) nil)
+        ((eq x t) y)
+        ((eq y t) x)
+        ((hons-equal x y) x)
+        ((and (consp y) (eq (cdr y) nil)
+              (hons-equal (car y) x))
+         nil)
+        ((and (consp x) (eq (cdr x) nil)
+              (hons-equal (car x) y))
+         nil)
+        (t (hons x y)))
+  ///
   (defthm aig-eval-and
     (equal (aig-eval (aig-and x y) env)
            (and (aig-eval x env)
                 (aig-eval y env))))
-
   (defthm aig-and-constants
     (and (equal (aig-and nil x) nil)
          (equal (aig-and x nil) nil)
          (equal (aig-and x t) x)
          (equal (aig-and t x) x))))
 
-
-
-(defsection aig-or
+(define aig-or (x y)
   :parents (aig-constructors)
   :short "@(call aig-or) constructs an AIG representing @('(or x y)')."
-
-  (defund aig-or (x y)
-    (declare (xargs :guard t))
-    (aig-not (aig-and (aig-not x) (aig-not y))))
-
-  (local (in-theory (enable aig-or)))
-
+  :returns aig
+  (aig-not (aig-and (aig-not x) (aig-not y)))
+  ///
   (defthm aig-eval-or
     (equal (aig-eval (aig-or x y) env)
            (or (aig-eval x env)
                (aig-eval y env)))))
 
-
-
-(defsection aig-xor
+(define aig-xor (x y)
   :parents (aig-constructors)
   :short "@(call aig-xor) constructs an AIG representing @('(xor x y)')."
-
-  (defund aig-xor (x y)
-    (declare (xargs :guard t))
-    (aig-or (aig-and x (aig-not y))
-            (aig-and (aig-not x) y)))
-
-  (local (in-theory (enable aig-xor)))
-
+  :returns aig
+  (aig-or (aig-and x (aig-not y))
+          (aig-and (aig-not x) y))
+  ///
   (defthm aig-eval-xor
     (equal (aig-eval (aig-xor x y) env)
            (xor (aig-eval x env)
                 (aig-eval y env)))))
 
-
-
-(defsection aig-iff
+(define aig-iff (x y)
   :parents (aig-constructors)
   :short "@(call aig-iff) constructs an AIG representing @('(iff x y)')."
-
-  (defund aig-iff (x y)
-    (declare (xargs :guard t))
-    (aig-or (aig-and x y)
-            (aig-and (aig-not x) (aig-not y))))
-
-  (local (in-theory (enable aig-iff)))
-
+  :returns aig
+  (aig-or (aig-and x y)
+          (aig-and (aig-not x) (aig-not y)))
+  ///
   (defthm aig-eval-iff
     (equal (aig-eval (aig-iff x y) env)
            (iff (aig-eval x env)
                 (aig-eval y env)))))
 
-
-
-(defsection aig-implies
+(define aig-implies (x y)
   :parents (aig-constructors)
   :short "@(call aig-implies) constructs an AIG representing @('(implies x
   y)')."
-
-  (defund aig-implies (x y)
-    (declare (xargs :guard t))
-    (aig-not (aig-and x (aig-not y))))
-
-  (local (in-theory (enable aig-implies)))
-
+  :returns aig
+  (aig-not (aig-and x (aig-not y)))
+  ///
   (defthm aig-eval-implies
     (equal (aig-eval (aig-implies x y) env)
            (implies (aig-eval x env)
                     (aig-eval y env)))))
 
-
-
-(defsection aig-ite
+(define aig-ite (a b c)
   :parents (aig-constructors)
   :short "@(call aig-ite) constructs an AIG representing @('(if a b c)')."
-
-  (defund aig-ite (a b c)
-    (declare (xargs :guard t))
-    (cond ((hons-equal b c)
-           b)
-          ((eq b t)
-           (aig-or a c))
-          (t
-           (aig-or (aig-and a b)
-                   (aig-and (aig-not a) c)))))
-
-  (local (in-theory (enable aig-ite)))
-
+  :returns aig
+  (cond ((hons-equal b c)
+         b)
+        ((eq b t)
+         (aig-or a c))
+        (t
+         (aig-or (aig-and a b)
+                 (aig-and (aig-not a) c))))
+  ///
   (defthm aig-eval-ite
     (iff (aig-eval (aig-ite a b c) env)
          (if (aig-eval a env)
              (aig-eval b env)
            (aig-eval c env)))))
 
-
-(defsection aig-not-list
+(define aig-not-list (x)
   :parents (aig-constructors)
   :short "@(call aig-not-list) negates every AIG in the list @('x')."
+  :returns aig-list
+  :enabled t
+  (if (atom x)
+      nil
+    (cons (aig-not (car X))
+          (aig-not-list (cdr x)))))
 
-  (defun aig-not-list (x)
-    (declare (xargs :guard t))
-    (if (atom x)
-        nil
-      (cons (aig-not (car X))
-            (aig-not-list (cdr x))))))
-
-
-(defsection aig-and-list
+(define aig-and-list (x)
   :parents (aig-constructors)
-  :short "@(call aig-and-list) ands together all of the AIGs in the list
+  :short "@(call aig-and-list) <i>and</i>s together all of the AIGs in the list
 @('x')."
+  :returns aig
+  :enabled t
+  (if (atom x)
+      t
+    (aig-and (car x)
+             (aig-and-list (cdr x)))))
 
-  (defun aig-and-list (x)
-    (declare (xargs :guard t))
-    (if (atom x)
-        t
-      (aig-and (car x)
-               (aig-and-list (cdr x))))))
-
-
-(defsection aig-or-list
+(define aig-or-list (x)
   :parents (aig-constructors)
-  :short "@(call aig-or-list) ors together all of the AIGs in the list @('x')."
+  :short "@(call aig-or-list) <i>or</i>s together all of the AIGs in the list
+@('x')."
+  :returns aig
+  :enabled t
+  (if (atom x)
+      nil
+    (aig-or (car x) (aig-or-list (cdr x)))))
 
-  (defun aig-or-list (x)
-    (declare (xargs :guard t))
-    (if (atom x)
-        nil
-      (aig-or (car x) (aig-or-list (cdr x))))))
-
-
-(defsection aig-and-lists
+(define aig-and-lists (x y)
   :parents (aig-constructors)
   :short "@(call aig-and-lists) pairwise <i>and</i>s together the AIGs from the
 lists @('x') and @('y')."
+  :returns aig-list
+  :enabled t
+  (if (or (atom x) (atom y))
+      nil
+    (cons (aig-and (car x) (car y))
+          (aig-and-lists (cdr x) (cdr y)))))
 
-  (defun aig-and-lists (x y)
-    (if (or (atom x) (atom y))
-        nil
-      (cons (aig-and (car x) (car y))
-            (aig-and-lists (cdr x) (cdr y))))))
-
-
-(defsection aig-or-lists
+(define aig-or-lists (x y)
   :parents (aig-constructors)
   :short "@(call aig-or-lists) pairwise <i>or</i>s together the AIGs from the
 lists @('x') and @('y')."
+  :returns aig-list
+  :enabled t
+  (if (or (atom x) (atom y))
+      nil
+    (cons (aig-or (car x) (car y))
+          (aig-or-lists (cdr x) (cdr y)))))
 
-  (defun aig-or-lists (x y)
-    (declare (xargs :guard t))
-    (if (or (atom x) (atom y))
-        nil
-      (cons (aig-or (car x) (car y))
-            (aig-or-lists (cdr x) (cdr y))))))
-
-
-(defsection aig-iff-lists
+(define aig-iff-lists (x y)
   :parents (aig-constructors)
   :short "@(call aig-iff-lists) pairwise <i>iff</i>s together the AIGs from the
 lists @('x') and @('y')."
+  :returns aig-list
+  :enabled t
+  (if (or (atom x) (atom y))
+      nil
+    (cons (aig-iff (car x) (car y))
+          (aig-iff-lists (cdr x) (cdr y)))))
 
-  (defun aig-iff-lists (x y)
-    (declare (xargs :guard t))
-    (if (or (atom x) (atom y))
-        nil
-      (cons (aig-iff (car x) (car y))
-            (aig-iff-lists (cdr x) (cdr y))))))
-
-
-(defsection aig-xor-lists
+(define aig-xor-lists (x y)
   :parents (aig-constructors)
   :short "@(call aig-xor-lists) pairwise <i>xor</i>s together the AIGs from the
 lists @('x') and @('y')."
+  :returns aig-list
+  :enabled t
+  (if (or (atom x) (atom y))
+      nil
+    (cons (aig-xor (car x) (car y))
+          (aig-xor-lists (cdr x) (cdr y)))))
 
-  (defun aig-xor-lists (x y)
-    (declare (xargs :guard t))
-    (if (or (atom x) (atom y))
-        nil
-      (cons (aig-xor (car x) (car y))
-            (aig-xor-lists (cdr x) (cdr y))))))
-
-
-(defsection aig-implies-lists
+(define aig-implies-lists (x y)
   :parents (aig-constructors)
   :short "@(call aig-implies-lists) pairwise <i>implies</i> together the AIGs
 from the lists @('x') and @('y')."
-
-  (defun aig-implies-lists (x y)
-    (declare (xargs :guard t))
-    (if (or (atom x) (atom y))
-        nil
-      (cons (aig-implies (car x) (car y))
-            (aig-implies-lists (cdr x) (cdr y))))))
-
+  :returns aig-list
+  :enabled t
+  (if (or (atom x) (atom y))
+      nil
+    (cons (aig-implies (car x) (car y))
+          (aig-implies-lists (cdr x) (cdr y)))))
 
 
 
@@ -687,40 +519,40 @@ from the lists @('x') and @('y')."
 ;
 ; -----------------------------------------------------------------------------
 
-(defsection aig-restrict
-  :parents (aig)
+(define aig-restrict
+  :parents (aig-substitution)
   :short "@(call aig-restrict) performs variable substitution throughout the
 AIG @('x'), replacing any variables bound in @('sigma') with their
 corresponding values."
+  ((x     "The AIG to restrict.")
+   (sigma "A fast alist binding variables to replacement AIGs."))
+  :returns
+  (aig "Modified version of @('x') where all variables bound in @('sigma') are
+replaced, and any unmentioned variables are left <b>unchanged</b>.")
 
-  :long "<p>@('sigma') should be a fast alist; its name is intended to evoke
-the notion of substitution lists in logic.  Any variables that are not
-mentioned in @('sigma') are left unchanged.</p>
+  :long "<p>The name @('sigma') is intended to evoke the notion of substitution
+lists in logic.  Any variables that are not mentioned in @('sigma') are left
+unchanged.  When all of the variables in @('x') are bound in @('sigma'), and
+all of the values are Boolean, this is equivalent to @(see aig-eval).</p>
 
 <p>This function is @(see memoize)d.  You should typically free its memo table
 after you are done with whatever @('sigma') you are using, to avoid excessive
 memory usage.  (We don't use @(':forget t') because you often want to restrict
-several related AIGs.)</p>
+several related AIGs.)</p>"
 
-<p>When all of the variables in @('x') are bound in @('sigma'), and all of the
-values are Boolean, this is equivalent to @(see aig-eval).</p>
+  :enabled t
 
-<p>Some related functions are @(see aig-compose) and @(see
-aig-partial-eval).</p>"
-
-  (defun aig-restrict (x sigma)
-    (declare (xargs :guard t))
-    (aig-cases x
-               :true t
-               :false nil
-               :var (let ((a (hons-get x sigma)))
-                      (if a
-                          (cdr a)
-                        x))
-               :inv (aig-not (aig-restrict (car x) sigma))
-               :and (let ((a (aig-restrict (car x) sigma)))
-                      (and a (aig-and a (aig-restrict (cdr x) sigma))))))
-
+  (aig-cases x
+    :true t
+    :false nil
+    :var (let ((a (hons-get x sigma)))
+           (if a
+               (cdr a)
+             x))
+    :inv (aig-not (aig-restrict (car x) sigma))
+    :and (let ((a (aig-restrict (car x) sigma)))
+           (and a (aig-and a (aig-restrict (cdr x) sigma)))))
+  ///
   (memoize 'aig-restrict :condition '(and (consp x) (cdr x)))
 
   (local (defthm hons-assoc-equal-of-append
@@ -731,58 +563,61 @@ aig-partial-eval).</p>"
   (defthm aig-eval-of-aig-restrict
     (equal (aig-eval (aig-restrict x al1) al2)
            (aig-eval x (append (aig-eval-alist al1 al2) al2)))
-    :hints(("Goal" 
+    :hints(("Goal"
             :induct t
             :in-theory (enable aig-env-lookup)))))
 
-
-(defsection aig-restrict-list
-  :parents (aig-restrict)
+(define aig-restrict-list
+  :parents (aig-substitution)
   :short "@(call aig-restrict-list) substitutes into a list of AIGs."
+  ((x     "List of AIGs.")
+   (sigma "Fast alist binding variables to replacement AIGs, as in @(see
+           aig-restrict)."))
+  :returns aig-list
+  :enabled t
+  (if (atom x)
+      nil
+    (cons (aig-restrict (car x) sigma)
+          (aig-restrict-list (cdr x) sigma))))
 
-  (defun aig-restrict-list (x sigma)
-    (declare (xargs :guard t))
-    (if (atom x)
-        nil
-      (cons (aig-restrict (car x) sigma)
-            (aig-restrict-list (cdr x) sigma)))))
-
-
-(defsection aig-restrict-alist
-  :parents (aig-restrict)
+(define aig-restrict-alist
+  :parents (aig-substitution)
   :short "@(call aig-restrict-alist) substitutes into an AIG Alist (an alist
 binding keys to AIGs)."
-
-  :long "<p>The alist @('x') does not need to be fast, and we produce an
-ordinary (slow) alist as a result.</p>"
-
-  (defun aig-restrict-alist (x sigma)
-    (declare (xargs :guard t))
-    (cond ((atom x)
-           nil)
-          ((atom (car x))
-           ;; Bad-alist convention
-           (aig-restrict-alist (cdr x) sigma))
-          (t
-           (cons (cons (caar x)
-                       (aig-restrict (cdar x) sigma))
-                 (aig-restrict-alist (cdr x) sigma)))))
-
+  ((x     "Alist binding names to AIGs.  This doesn't need to be a fast alist.")
+   (sigma "Fast alist binding variables to replacement AIGs, as in @(see
+           aig-restrict)."))
+  :returns
+  (aig-alist "Ordinary (slow) alist with the same keys as @('x'), and values
+              formed by restricting each aig with @(see aig-restrict).")
+  :enabled t
+  (cond ((atom x)
+         nil)
+        ((atom (car x))
+         ;; Bad-alist convention
+         (aig-restrict-alist (cdr x) sigma))
+        (t
+         (cons (cons (caar x)
+                     (aig-restrict (cdar x) sigma))
+               (aig-restrict-alist (cdr x) sigma))))
+  ///
   (defthm alistp-of-aig-restrict-alist
     (alistp (aig-restrict-alist x sigma))))
 
-
-(defsection aig-restrict-alists
-  :parents (aig-restrict)
+(define aig-restrict-alists
+  :parents (aig-substitution)
   :short "@(call aig-restrict-alists) substitutes into a list of AIG Alists."
-
-  (defun aig-restrict-alists (x sigma)
-    (declare (xargs :guard t))
-    (if (atom x)
-        nil
-      (cons (aig-restrict-alist (car x) sigma)
-            (aig-restrict-alists (cdr x) sigma)))))
-
+  ((x     "List of AIG alists, which need not be fast.")
+   (sigma "Fast alist binding variables to replacement AIGs, as in @(see
+           aig-restrict)."))
+  :returns
+  (aig-alists "List of ordinary (slow) alists, derived from @('x') via
+               @(see aig-restrict-alist).")
+  :enabled t
+  (if (atom x)
+      nil
+    (cons (aig-restrict-alist (car x) sigma)
+          (aig-restrict-alists (cdr x) sigma))))
 
 
 
@@ -792,80 +627,89 @@ ordinary (slow) alist as a result.</p>"
 ;
 ; -----------------------------------------------------------------------------
 
-(defsection aig-compose
-  :parents (aig)
+(define aig-compose
+  :parents (aig-substitution)
   :short "@(call aig-compose) performs variable substitution throughout the AIG
 @('x'), <b>unconditionally</b> replacing every variable in @('x') with its
 binding in @('sigma')."
+  ((x     "The AIG to compose into.")
+   (sigma "A fast alist that should bind variables to replacement AIGs."))
+  :returns
+  (aig "Modified version of @('x') where every variable is replaced with its
+        binding in @('sigma') or @('t') if it has no binding.")
 
-  :long "<p>@('sigma') should be a fast alist; its name is intended to evoke
-the notion of substitution lists in logic.</p>
+  :long "<p>The name @('sigma') is intended to evoke the notion of substitution
+lists in logic.  This operation is similar to @(see aig-restrict), except that
+whereas @('aig-restrict') leaves unbound variables alone, @('aig-compose')
+replaces them with @('t').  This has the logically nice property that the
+variables after composition are just the variables in the AIGs of
+@('sigma').</p>
 
 <p>This function is @(see memoize)d.  You should typically free its memo table
 after you are done with whatever @('sigma') you are using, to avoid excessive
 memory usage.  (We don't use @(':forget t') because you often want to compose
-several related AIGs.)</p>
+several related AIGs.)</p>"
 
-<p>This operation is similar to @(see aig-restrict), except that whereas
-@('aig-restrict') leaves unbound variables alone, @('aig-compose') replaces
-them with @('t').  (This has the logically nice property that the variables
-after composition are just the variables in the AIGs of @('sigma').)</p>"
+  :enabled t
 
-  (defun aig-compose (x sigma)
-    (declare (xargs :guard t))
-    (aig-cases x
-               :true t
-               :false nil
-               :var (aig-env-lookup x sigma)
-               :inv (aig-not (aig-compose (car x) sigma))
-               :and (let ((a (aig-compose (car x) sigma)))
-                      (and a (aig-and a (aig-compose (cdr x) sigma))))))
-
+  (aig-cases x
+    :true t
+    :false nil
+    :var (aig-env-lookup x sigma)
+    :inv (aig-not (aig-compose (car x) sigma))
+    :and (let ((a (aig-compose (car x) sigma)))
+           (and a (aig-and a (aig-compose (cdr x) sigma)))))
+  ///
   (memoize 'aig-compose :condition '(and (consp x) (cdr x))))
 
-
-(defsection aig-compose-list
-  :parents (aig-compose)
+(define aig-compose-list
+  :parents (aig-substitution)
   :short "@(call aig-compose-list) composes into a list of AIGs."
+  ((x     "List of AIGs.")
+   (sigma "Fast alist binding variables to replacement AIGs, as in @(see
+           aig-compose)."))
+  :returns aig-list
+  :enabled t
+  (if (atom x)
+      nil
+    (cons (aig-compose (car x) sigma)
+          (aig-compose-list (cdr x) sigma))))
 
-  (defun aig-compose-list (x sigma)
-    (declare (xargs :guard t))
-    (if (atom x)
-        nil
-      (cons (aig-compose (car x) sigma)
-            (aig-compose-list (cdr x) sigma)))))
-
-
-(defsection aig-compose-alist
-  :parents (aig-compose)
+(define aig-compose-alist
+  :parents (aig-substitution)
   :short "@(call aig-compose-alist) composes into an AIG Alist (an alist
 binding keys to AIGs)."
+  ((x     "Alist binding names to AIGs.  This doesn't need to be a fast alist.")
+   (sigma "Fast alist binding variables to replacement AIGs, as in @(see
+           aig-compose)."))
+  :returns
+  (aig-alist "Ordinary (slow) alist with the same keys as @('x'), and values formed
+              by restricting each aig with @(see aig-compose).")
+  :enabled t
+  (cond ((atom x)
+         nil)
+        ((atom (car x))
+         ;; Bad alist convention
+         (aig-compose-alist (cdr x) sigma))
+        (t
+         (cons (cons (caar x)
+                     (aig-compose (cdar x) sigma))
+               (aig-compose-alist (cdr x) sigma)))))
 
-  :long "<p>The alist @('x') does not need to be fast, and we produce an
-ordinary (slow) alist as a result.</p>"
-
-  (defun aig-compose-alist (x sigma)
-    (declare (xargs :guard t))
-    (cond ((atom x)
-           nil)
-          ((atom (car x))
-           ;; Bad alist convention
-           (aig-compose-alist (cdr x) sigma))
-          (t
-           (cons (cons (caar x)
-                       (aig-compose (cdar x) sigma))
-                 (aig-compose-alist (cdr x) sigma))))))
-
-
-(defsection aig-compose-alists
-  :parents (aig-compose)
+(define aig-compose-alists
+  :parents (aig-substitution)
   :short "@(call aig-compose-alists) composes into a list of AIG Alists."
-
-  (defn aig-compose-alists (x sigma)
-    (if (atom x)
-        nil
-      (cons (aig-compose-alist (car x) sigma)
-            (aig-compose-alists (cdr x) sigma)))))
+  ((x     "List of AIG alists, which need not be fast.")
+   (sigma "Fast alist binding variables to replacement AIGs, as in @(see
+           aig-compose)."))
+  :returns
+  (aig-alists "List of ordinary (slow) alists, derived from @('x') via @(see
+               aig-compose-alist).")
+  :enabled t
+  (if (atom x)
+      nil
+    (cons (aig-compose-alist (car x) sigma)
+          (aig-compose-alists (cdr x) sigma))))
 
 
 
@@ -875,85 +719,86 @@ ordinary (slow) alist as a result.</p>"
 ;
 ; -----------------------------------------------------------------------------
 
-(defsection aig-partial-eval
-  :parents (aig)
+(define aig-partial-eval
+  :parents (aig-substitution)
   :short "@(call aig-partial-eval) evaluates @('x'), an AIG, under the partial
 environment @('env'), producing a new AIG as a result."
+  ((x   "The AIG to partially evaluate.")
+   (env "A fast alist that (typically) binds some of the variables in @('x') to
+         Boolean values."))
+  :returns
+  (aig "Modified version of @('x') obtained by replacing bound variables with their
+        values and doing basic constant propagation.")
 
-  :long "<p>@('env') should be a fast alist that binds some of the variables in
-the AIG to Boolean values.</p>
-
-<p>This function is @(see memoize)d.  You should typically free its memo table
-after you are done with whatever @('env') you are using, to avoid excessive
-memory usage.  (We don't use @(':forget t') because you often want to evaluate
-several related AIGs.)</p>
-
-<p>In ordinary AIG evaluation with @(see aig-eval), any variables that are
-missing from @('env') are just assumed to have a default value.  Because of
+  :long "<p>In ordinary AIG evaluation with @(see aig-eval), any variables that
+are missing from @('env') are just assumed to have a default value.  Because of
 this, every variable can be given a Boolean value and we can evaluate the whole
 AIG to produce a Boolean result.</p>
 
 <p>In partial evaluation, variables that aren't bound in @('env') are left
-alone.  Because of this, the result of a partial evaluation is a
-new (presumably smaller) AIG, instead of a Boolean.</p>
+alone.  Because of this, the result of a partial evaluation is a typically a
+reduced AIG instead of a Boolean.</p>
 
-<p>Another way to do partial evaluations is with @(see aig-restrict).  The only
-difference between @('aig-restrict') and @('aig-partial-eval') is that
+<p>Another way to do partial evaluations is with @(see aig-restrict).  In fact,
+the only difference between @('aig-restrict') and @('aig-partial-eval') is that
 @('aig-partial-eval') Boolean-fixes the values in the alist as it looks them
 up.  This has logically nice properties, e.g., since we never replace a
 variable by a subtree, only by a Boolean, we know unconditionally that the
 variables of the resulting AIG are a subset of the variables of the
-original.</p>"
+original.</p>
 
-  (defun aig-partial-eval (x env)
-    (declare (xargs :guard t))
-    (aig-cases x
-               :true t
-               :false nil
-               :var (let ((a (hons-get x env)))
-                      (if a (and (cdr a) t) x))
-               :inv (aig-not (aig-partial-eval (car x) env))
-               :and (let ((a (aig-partial-eval (car x) env)))
-                      (and a
-                           (aig-and a (aig-partial-eval (cdr x) env))))))
+<p>This function is @(see memoize)d.  You should typically free its memo table
+after you are done with whatever @('env') you are using, to avoid excessive
+memory usage.  (We don't use @(':forget t') because you often want to evaluate
+several related AIGs.)</p>"
 
-  ;; [Jared] note: this had no memoize condition, so I added the usual one.
-
+  :enabled t
+  (aig-cases x
+    :true t
+    :false nil
+    :var (let ((a (hons-get x env)))
+           (if a (and (cdr a) t) x))
+    :inv (aig-not (aig-partial-eval (car x) env))
+    :and (let ((a (aig-partial-eval (car x) env)))
+           (and a
+                (aig-and a (aig-partial-eval (cdr x) env)))))
+  ///
   (memoize 'aig-partial-eval :condition '(and (consp x) (cdr x))))
 
-
-(defsection aig-partial-eval-list
-  :parents (aig-partial-eval)
+(define aig-partial-eval-list
+  :parents (aig-substitution)
   :short "@(call aig-partial-eval-list) partially evaluates a list of AIGs."
+  ((x   "List of AIGs.")
+   (env "Fast alist binding variables to Booleans, as in @(see
+         aig-partial-eval)."))
+  :returns aig-list
+  :enabled t
+  (if (atom x)
+      nil
+    (cons (aig-partial-eval (car x) env)
+          (aig-partial-eval-list (cdr x) env))))
 
-  (defun aig-partial-eval-list (x env)
-    (declare (xargs :guard t))
-    (if (atom x)
-        nil
-      (cons (aig-partial-eval (car x) env)
-            (aig-partial-eval-list (cdr x) env)))))
-
-
-(defsection aig-partial-eval-alist
-  :parents (aig-partial-eval)
+(define aig-partial-eval-alist
+  :parents (aig-substitution)
   :short "@(call aig-partial-eval-alist) partially evaluates an AIG Alist (an
 alist binding keys to AIGs)."
-
-  :long "<p>The alist @('x') does not need to be fast, and we produce an
-ordinary (slow) alist as a result.</p>"
-
-  (defun aig-partial-eval-alist (x env)
-    (declare (xargs :guard t))
-    (cond ((atom x)
-           nil)
-          ((atom (car x))
-           ;; Bad-alist convention
-           (aig-partial-eval-alist (cdr x) env))
-          (t
-           (cons (cons (caar x)
-                       (aig-partial-eval (cdar x) env))
-                 (aig-partial-eval-alist (cdr x) env)))))
-
+  ((x   "Alist binding names to AIGs.  This doesn't need to be a fast alist.")
+   (env "Fast alist binding variables to Booleans, as in @(see
+         aig-partial-eval)."))
+  :returns
+  (aig-alist "Ordinary (slow) alist with the same keys as x, and values formed
+              by restricting each aig with @(see aig-partial-eval).")
+  :enabled t
+  (cond ((atom x)
+         nil)
+        ((atom (car x))
+         ;; Bad-alist convention
+         (aig-partial-eval-alist (cdr x) env))
+        (t
+         (cons (cons (caar x)
+                     (aig-partial-eval (cdar x) env))
+               (aig-partial-eval-alist (cdr x) env))))
+  ///
   (defthm alistp-of-aig-partial-eval-alist
     (alistp (aig-partial-eval-alist x env))))
 

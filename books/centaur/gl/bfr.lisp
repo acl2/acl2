@@ -23,7 +23,6 @@
 (include-book "centaur/misc/arith-equiv-defs" :dir :system)
 (include-book "centaur/ubdds/lite" :dir :system)
 (include-book "centaur/ubdds/param" :dir :system)
-;; (include-book "centaur/aig/witness" :dir :system)
 (include-book "centaur/aig/misc" :dir :system)
 (local (include-book "centaur/aig/aig-vars" :dir :system))
 (local (include-book "centaur/misc/arith-equivs" :dir :system))

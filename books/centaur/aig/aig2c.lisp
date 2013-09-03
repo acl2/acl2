@@ -35,7 +35,7 @@
 
 
 (defsection aig2c
-  :parents (aig)
+  :parents (aig-other)
   :short "Naive compiler from Hons AIGs into C/C++ code fragments."
 
   :long "<p>The idea here is to be able to take an AIG and embed it in a C or
@@ -46,11 +46,13 @@ but some basic example output is:</p>
   const uint32_t n_8 = inputs.a;     // prologue: initializes temp variables
   const uint32_t n_2 = inputs.b;     //   you can control the rhs'es here
   const uint32_t n_4 = inputs.c;
+
   const uint32_t n_3 = ~n_4;         // main aig contents
   const uint32_t n_1 = n_2 & n_3;    //   never try to understand this
   const uint32_t n_7 = ~n_8;
   const uint32_t n_6 = n_4 & n_7;
   const uint32_t n_5 = n_6 & n_1;
+
   out1 = n_1;                        // epilogue: extracts aigs to outputs
   out2 = n_5;                        //   you can control the lhs'es here
 })

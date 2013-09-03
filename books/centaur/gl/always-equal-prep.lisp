@@ -678,8 +678,10 @@
          (implies (not (equal (acl2::eval-bdd a env) (acl2::eval-bdd b env)))
                   (not (equal (acl2::ubdd-fix a) (acl2::ubdd-fix b))))
          :hints (("goal" :in-theory (disable ACL2::EVAL-BDD-UBDD-FIX)
-                  :use ((:instance ACL2::EVAL-BDD-UBDD-FIX (x a))
-                        (:instance ACL2::EVAL-BDD-UBDD-FIX (x b)))))))
+                  :use ((:instance ACL2::EVAL-BDD-UBDD-FIX (x a)
+                                   (acl2::env gl::env))
+                        (:instance ACL2::EVAL-BDD-UBDD-FIX (x b)
+                                   (acl2::env gl::env)))))))
 
 (local (defthm always-equal-of-booleans-correct
          (implies (and (not (bfr-mode))

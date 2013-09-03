@@ -25,8 +25,9 @@
 
 (include-book "aig-base")
 (include-book "aig-equivs")
-(include-book "three-four")
 (include-book "aig-vars")
+(include-book "faig-constructors") ;; bozo?
+(include-book "faig-equivs")       ;; bozo?
 
 (in-theory (disable aig-env-lookup))
 (in-theory (disable aig-restrict))
@@ -752,7 +753,7 @@ constant false, whereas the car of @('y') is @('t'), constant true.</p>
 (defmacro prove-faig-congruences (f args)
   `(progn . ,(prove-faig-congruences-fn (len args) f args)))
 
-(prove-faig-congruences t-aig-fix (a))
+(prove-faig-congruences f-aig-unfloat (a))
 (prove-faig-congruences t-aig-not (a))
 (prove-faig-congruences f-aig-not (a))
 (prove-faig-congruences t-aig-and (a b))
@@ -767,7 +768,7 @@ constant false, whereas the car of @('y') is @('t'), constant true.</p>
 (prove-faig-congruences f-aig-ite (c a b))
 (prove-faig-congruences t-aig-ite* (c a b))
 (prove-faig-congruences f-aig-ite* (c a b))
-(prove-faig-congruences t-aig-buf (c a))
+(prove-faig-congruences t-aig-tristate (c a))
 (prove-faig-congruences f-aig-pullup (a))
-(prove-faig-congruences f-aig-bi-buf (c a b))
+
 

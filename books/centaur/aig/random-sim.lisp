@@ -24,21 +24,17 @@
 ;; Functions for performing fixnum-length data-parallel simulations on AIGs.
 ;; Much slower than AIGPU, you can be sure :-)
 (include-book "aig-equivs")
-(include-book "misc")
-(include-book "centaur/bitops/equal-by-logbitp" :dir :system)
 (include-book "system/random" :dir :system)
-(include-book "cutil/define" :dir :system)
+(include-book "centaur/bitops/equal-by-logbitp" :dir :system)
 (local (include-book "centaur/bitops/ihs-extensions" :dir :system))
 (local (include-book "ihs/quotient-remainder-lemmas" :dir :system))
-(local (include-book "data-structures/list-defthms" :dir :system))
-(local (include-book "eval-restrict"))
 (set-state-ok t)
 (local (in-theory (enable* arith-equiv-forwarding)))
 (local (in-theory (disable aig-vars)))
 
 
 (defxdoc aig-random-sim
-  :parents (aig)
+  :parents (aig-other)
   :short "Functions for randomly vector simulations of Hons @(see aig)s."
 
   :long "<p>Simulating AIGs on random vectors is useful in algorithms such as
@@ -254,7 +250,8 @@ bit of each variable."
           :use ((:instance aig-equiv-necc
                            (env (aig-vecsim60-diff a b vecs))
                            (x a) (y b)))
-          :in-theory (disable aig-equiv-implies-equal-aig-eval-1))))
+          ;:in-theory (disable aig-equiv-implies-equal-aig-eval-1)
+          )))
 
 
 
@@ -975,7 +972,8 @@ bit of each variable."
                                                                (aig-vars b))
                                                    renv))
                              (x a) (y b)))
-            :in-theory (disable aig-equiv-implies-equal-aig-eval-1)))))
+            ;:in-theory (disable aig-equiv-implies-equal-aig-eval-1)
+            ))))
 
 
 (defsection aig-rsim60-bind-variable

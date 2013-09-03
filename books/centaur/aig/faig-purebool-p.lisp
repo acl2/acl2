@@ -21,7 +21,7 @@
 
 (in-package "ACL2")
 (include-book "aig-sat")
-(include-book "three-four")
+(include-book "faig-base")
 
 (local (in-theory (disable faig-eval)))
 

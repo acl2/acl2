@@ -19,45 +19,50 @@
 ; Original author: Sol Swords <sswords@centtech.com>
 
 (in-package "ACL2")
-
 (include-book "aig-base")
+
+;; BOZO should these be local?
 (include-book "centaur/misc/equal-sets" :dir :system)
 (include-book "centaur/misc/alist-equiv" :dir :system)
 
 (local (in-theory (disable sets::double-containment)))
 
-(defthm aig-vars-cons
-  (equal (aig-vars (cons x y))
-         (sets::union (aig-vars x)
-                      (aig-vars y))))
+(defsection aig-vars-thms
+  :parents (aig-vars)
+  :short "Theorems about @(see aig-vars) from @(see centaur/aig/aig-vars)."
 
-(defthm member-aig-vars-alist-vals
-  (implies (not (sets::in v (aig-vars (alist-vals al))))
-           (not (sets::in v (aig-vars (cdr (hons-assoc-equal x al))))))
-  :hints(("Goal" :in-theory (enable hons-assoc-equal))))
+  (defthm aig-vars-cons
+    (equal (aig-vars (cons x y))
+           (sets::union (aig-vars x)
+                        (aig-vars y))))
 
-(defthm member-aig-vars-aig-and
-  (implies (and (not (sets::in v (aig-vars x)))
-                (not (sets::in v (aig-vars y))))
-           (not (sets::in v (aig-vars (aig-and x y)))))
-  :hints(("Goal" :in-theory (enable aig-and))))
+  (defthm member-aig-vars-alist-vals
+    (implies (not (sets::in v (aig-vars (alist-vals al))))
+             (not (sets::in v (aig-vars (cdr (hons-assoc-equal x al))))))
+    :hints(("Goal" :in-theory (enable hons-assoc-equal))))
 
-(defthm aig-vars-aig-not
-  (equal (aig-vars (aig-not x))
-         (aig-vars x))
-  :hints(("Goal" :in-theory (enable aig-not))))
+  (defthm member-aig-vars-aig-and
+    (implies (and (not (sets::in v (aig-vars x)))
+                  (not (sets::in v (aig-vars y))))
+             (not (sets::in v (aig-vars (aig-and x y)))))
+    :hints(("Goal" :in-theory (enable aig-and))))
 
-(defthm member-aig-vars-aig-restrict
-  (implies (and (not (and (sets::in v (aig-vars x))
-                          (not (member-equal v (alist-keys al)))))
-                (not (sets::in v (aig-vars (alist-vals al)))))
-           (not (sets::in v (aig-vars (aig-restrict x al)))))
-  :hints(("Goal" :in-theory (enable aig-restrict))))
+  (defthm aig-vars-aig-not
+    (equal (aig-vars (aig-not x))
+           (aig-vars x))
+    :hints(("Goal" :in-theory (enable aig-not))))
 
-(defthm member-aig-vars-aig-partial-eval
-  (implies (not (and (sets::in v (aig-vars x))
-                     (not (member-equal v (alist-keys al)))))
-           (not (sets::in v (aig-vars (aig-partial-eval x al)))))
-  :hints(("Goal" :in-theory (enable aig-partial-eval))))
+  (defthm member-aig-vars-aig-restrict
+    (implies (and (not (and (sets::in v (aig-vars x))
+                            (not (member-equal v (alist-keys al)))))
+                  (not (sets::in v (aig-vars (alist-vals al)))))
+             (not (sets::in v (aig-vars (aig-restrict x al)))))
+    :hints(("Goal" :in-theory (enable aig-restrict))))
+
+  (defthm member-aig-vars-aig-partial-eval
+    (implies (not (and (sets::in v (aig-vars x))
+                       (not (member-equal v (alist-keys al)))))
+             (not (sets::in v (aig-vars (aig-partial-eval x al)))))
+    :hints(("Goal" :in-theory (enable aig-partial-eval)))))
 
 

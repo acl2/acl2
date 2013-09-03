@@ -955,7 +955,6 @@ centaur: $(filter centaur/%, $(OK_CERTS))
 coi: $(filter coi/%, $(OK_CERTS))
 
 xdoc: $(filter xdoc/%, $(OK_CERTS))
-xdoc: xdoc/bookdoc.dat
 
 workshops: $(filter workshops/%, $(OK_CERTS))
 workshop1999: $(filter workshops/1999/%, $(OK_CERTS))

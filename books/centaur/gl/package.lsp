@@ -152,7 +152,7 @@
      mk-g-number mk-g-boolean mk-g-ite mk-g-concrete
      gobjectp glc glr gl-fnsym gl-interp
      gl-interp-raw gl-interp
-     gl-aside gl-ignore nonnil-symbol-listp env
+     gl-aside gl-ignore nonnil-symbol-listp
 
      xor
      gl-bdd-mode gl-aig-mode gl-mbe
