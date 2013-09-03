@@ -9453,7 +9453,7 @@
                                 (global-val 'ttags-seen wrld))
                          (value nil))
                         (t (pprogn
-                            (set-w! (global-set 'ttags-seen t wrld)
+                            (set-w! (global-set 'ttags-seen new-ttags-seen wrld)
                                     state)
                             (value t))))))
                 (wrld0 (value (w state)))
@@ -10853,6 +10853,11 @@
                                             system-books-dir
                                             connected-book-directory)))
             (mv-let (erp pair state)
+
+; It's perfectly OK for erp to be non-nil here.  That case is handled below.
+; So if you have called break-on-error and wind up here, it's a reasonable bet
+; that it's nothing to worry about!
+
               (simple-translate-and-eval body nil nil
                                          "The second argument to defpkg"
                                          ctx w state nil)
