@@ -1,4 +1,4 @@
-; Copyright (C) 2013, Regents of the University of Texas
+; Copyright (C) 2013, ForrestHunt, Inc.
 ; Written by J Strother Moore (some years before that)
 ; License: A 3-clause BSD license.  See the LICENSE file distributed with ACL2.
 
