@@ -1,3 +1,7 @@
+; Copyright (C) 2013, Regents of the University of Texas
+; Written by Bob Boyer and Warren A. Hunt, Jr. (some years before that)
+; License: A 3-clause BSD license.  See the LICENSE file distributed with ACL2.
+
 ; gentle.lisp                                 Boyer & Hunt
 
 ; Jared took these functions out of hons-help.lisp since they (generally) don't

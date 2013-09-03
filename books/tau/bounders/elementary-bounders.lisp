@@ -1,3 +1,7 @@
+; Copyright (C) 2013, Regents of the University of Texas
+; Written by J Strother Moore, December, 2012
+; License: A 3-clause BSD license.  See the LICENSE file distributed with ACL2.
+
 ; (certify-book "elementary-bounders")
 
 ; Tau Interval Functions for Basic Arithmetic

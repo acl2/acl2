@@ -1,7 +1,8 @@
-; Toy: Finding the Minimal Value of a Function over a Pair of Integer Intervals
+; Copyright (C) 2013, Regents of the University of Texas
+; Written by J Strother Moore, December 20, 2012
+; License: A 3-clause BSD license.  See the LICENSE file distributed with ACL2.
 
-; J Strother Moore
-; December 20, 2012
+; Toy: Finding the Minimal Value of a Function over a Pair of Integer Intervals
 
 ; To recertify:
 ; (certify-book "find-minimal-2d")

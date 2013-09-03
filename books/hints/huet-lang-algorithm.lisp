@@ -1,10 +1,11 @@
+; Copyright (C) 2013, Regents of the University of Texas
+; Written by J Strother Moore, December, 2003 (revised July, 2007)
+; License: A 3-clause BSD license.  See the LICENSE file distributed with ACL2.
+
 ; I have marked with (i-am-here) various questions worthy of
 ; additional work.
 
 ; Second-Order Matching Under a Set of Rewriting Rules
-
-; J Strother Moore
-; December, 2003 (revised July, 2007)
 
 ; I implement the second-order matching algorithm of Huet and Lang and
 ; then couple it with a search strategy that generates and tests ``all
