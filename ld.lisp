@@ -21135,6 +21135,13 @@
   returns values that include output from the command (in addition to the exit
   status), rather than simply printing the command.  ~l[sys-call+].
 
+  The new macro ~ilc[verify-guards+] extends the functionality of
+  ~ilc[verify-guards] by permitting macro-aliases (~pl[macro-aliases-table]).
+  ~l[verify-guards+].  Thanks to Jared Davis for requesting this feature and
+  suggesting the use of ~ilc[make-event] in its implementation.  We have also
+  modified ~ilc[verify-guards] to print a friendlier error message when its
+  argument is a macro-alias.
+
   ~st[HEURISTIC IMPROVEMENTS]
 
   The processing of ~c[:use] and ~c[:by] ~il[hints] has been changed in the

@@ -17128,6 +17128,11 @@
   of guard verification is to ensure that during evaluation of an expression
   without free variables, no guard violation takes place.
 
+  Technical note: the first argument of ~c[verify-guards] must be a function
+  symbol or the name of a ~ilc[defthm] or ~ilc[defaxiom] event, not a
+  macro-alias for a function symbol (~pl[macro-aliases-table]).
+  ~l[verify-guards+] for a utility that does not have this restriction.
+
   Guard verification is intended to guarantee that for any call of a given
   function, if its ~il[guard] holds for that call then the ~il[guard] will hold
   for every function call in the body of that function.  Moreover, in order to
@@ -17422,6 +17427,84 @@
        (list 'quote guard-debug)
        (list 'quote doc)
        (list 'quote event-form)))
+
+(defmacro verify-guards+ (name &rest rest)
+
+; We considered renaming verify-guards as verify-guards-basic, and then
+; defining verify-guards on top of verify-guards-basic just as we now define
+; verify-guards+ on top of verify-guards.  But that could be complicated to
+; carry out during the boot-strap, and it could be challenging to present a
+; nice view to the user, simulataneously promoting the fiction that
+; verify-guards is a primitive while giving accurate feedback.  So we are
+; leaving verify-guards as the primitive, but improving it to point to
+; verify-guards+ when there is a macro alias.
+
+; The example in the documentation below doesn't immediately yield a proof of
+; nil, but perhaps mbe could be used for that (we haven't tried).  At any rate,
+; violation of the intent of guard verification is bad enough.
+
+  ":Doc-Section Events
+
+  verify the ~il[guard]s of a function~/
+
+  We assume familiarity with ~il[guard] verification; ~pl[verify-guards].
+  Unlike ~c[verify-guards], the macro call ~c[(verify-guards+ mac ...)] will
+  verify guards for a function, ~c[fn], such that the macro ~c[mac] is
+  associated with the function symbol ~c[fn] in ~ilc[macro-aliases-table]
+  (also ~pl[add-macro-alias]).  For example, if you define a macro ~c[app] and
+  list append function ~c[binary-app], and you associate macro ~c[app] with
+  function symbol ~c[binary-app] in ~ilc[macro-aliases-table], then evaluation
+  of the form ~c[(verify-guard+ app)] will have the effect of evaluating
+  ~c[(verify-guards fn)].  Note that in this setting, evaluation of
+  ~c[(verify-guard app)] would cause an error, because ~c[app] is a macro and
+  ~c[verify-guards], unlike ~c[verify-guards+], cannot handle macros.~/
+
+  The rest of this ~il[documentation] topic discusses why we do not simply
+  arrange that ~c[verify-guards] be permitted to take a macro alias.  The
+  following example shows a soundness issue in doing so.
+  ~bv[]
+  (encapsulate
+   ()
+   (defun f1 (x)
+     (declare (xargs :guard (consp x)
+                     :verify-guards nil))
+     (car x))
+   (defun f2 (x)
+     (declare (xargs :guard t
+                     :verify-guards nil))
+     (cdr x))
+   (defmacro mac (x)
+     x)
+   (add-macro-alias mac f2) ; silly macro alias ;
+   (local (add-macro-alias mac f1)) ; alternate silly macro alias ;
+   (verify-guards mac))
+  ~ev[]
+
+  If we were to allow macro aliases in ~ilc[verify-guards], this event would be
+  admitted, because on the first pass we are verifying guards of ~c[f1].  But
+  after the ~ilc[encapsulate] form completes evaluation, it would appear that
+  ~c[f2] is guard-verified.  That could of course cause a raw Lisp error.
+
+  The enhanced functionality provided by ~c[verify-guards+] does not have the
+  above problem, because it takes advantage of ~ilc[make-event] to avoid taking
+  advantage of the contradictory results produced by the two calls of
+  ~c[add-macro-alias].  ~l[make-event].  If the specific example above is
+  modified by replacing ~c[verify-guards] with ~c[verify-guards+], then the
+  first pass through the ~ilc[encapsulate] form will expand the form
+  ~c[(verify-guards+ mac)] to ~c[(verify-guards f1)].  That same expansion will
+  be used for the ~c[verify-guards+] call during the second pass through the
+  ~c[encapsulate] form, which is evaluated successfully and leaves us in a
+  ~il[world] where ~c[f1] is guard-verified and ~c[f2] is not.~/"
+
+  `(make-event
+    (let* ((name ',name)
+           (rest ',rest)
+           (fn (deref-macro-name name (macro-aliases (w state)))))
+      (pprogn (observation 'verify-guards+
+                           "Attempting to verify guards for ~x0."
+                           fn)
+              (value (list* 'verify-guards fn rest))))
+    :expansion? (verify-guards ,name ,@rest)))
 
 (defdoc defpun
 

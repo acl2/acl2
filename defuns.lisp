@@ -4615,74 +4615,79 @@
 ; an error and say you can't verify the guards of any of the functions in the
 ; nest.
 
-  (er-let*
-   ((symbol-class
-     (cond ((symbolp name)
-            (value (symbol-class name wrld)))
-           (t
-            (er soft ctx
-                "Verify-guards can only be applied to a name theorem or ~
-                 function symbol.  ~x0 is neither.  See :DOC verify-guards."
-                name)))))
-   (cond
-    ((eq symbol-class :common-lisp-compliant)
-     (value 'redundant))
-    ((getprop name 'theorem nil 'current-acl2-world wrld)
+  (er-let* ((symbol-class
+             (cond ((symbolp name)
+                    (value (symbol-class name wrld)))
+                   (t
+                    (er soft ctx
+                        "~x0 is not a symbol.  See :DOC verify-guards."
+                        name)))))
+    (cond
+     ((eq symbol-class :common-lisp-compliant)
+      (value 'redundant))
+     ((getprop name 'theorem nil 'current-acl2-world wrld)
 
 ; Theorems are of either symbol-class :ideal or :common-lisp-compliant.
 
-     (er-progn
-      (chk-acceptable-verify-guards-formula
-       name
-       (getprop name 'untranslated-theorem nil 'current-acl2-world wrld)
-       ctx wrld state)
-      (value (list name))))
-    ((function-symbolp name wrld)
-     (case symbol-class
-       (:program
-        (er soft ctx
-            "~x0 is :program.  Only :logic functions can have their guards ~
+      (er-progn
+       (chk-acceptable-verify-guards-formula
+        name
+        (getprop name 'untranslated-theorem nil 'current-acl2-world wrld)
+        ctx wrld state)
+       (value (list name))))
+     ((function-symbolp name wrld)
+      (case symbol-class
+        (:program
+         (er soft ctx
+             "~x0 is :program.  Only :logic functions can have their guards ~
              verified.  See :DOC verify-guards."
-            name))
-       (:ideal
-        (let* ((recp (getprop name 'recursivep nil
-                              'current-acl2-world wrld))
-               (names (cond
-                       ((null recp)
-                        (list name))
-                       (t recp)))
-               (non-ideal-names (collect-non-ideals names wrld)))
-          (cond (non-ideal-names
-                 (er soft ctx
-                     "One or more of the mutually-recursive peers of ~x0 ~
+             name))
+        (:ideal
+         (let* ((recp (getprop name 'recursivep nil
+                               'current-acl2-world wrld))
+                (names (cond
+                        ((null recp)
+                         (list name))
+                        (t recp)))
+                (non-ideal-names (collect-non-ideals names wrld)))
+           (cond (non-ideal-names
+                  (er soft ctx
+                      "One or more of the mutually-recursive peers of ~x0 ~
                       either was not defined in :logic mode or has already ~
                       had its guards verified.  The offending function~#1~[ ~
                       is~/s are~] ~&1.  We thus cannot verify the guards of ~
                       ~x0.  This situation can arise only through ~
                       redefinition."
-                     name
-                     non-ideal-names))
-                (t
-                 (er-progn
-                  (chk-common-lisp-compliant-subfunctions
-                   names names
-                   (guard-lst names nil wrld)
-                   wrld "guard" ctx state)
-                  (chk-common-lisp-compliant-subfunctions
-                   names names
-                   (getprop-x-lst names 'unnormalized-body wrld)
-                   wrld "body" ctx state)
-                  (value names))))))
-       (otherwise ; the symbol-class :common-lisp-compliant is handled above
-        (er soft ctx
-            "The argument to VERIFY-GUARDS must be the name of a function ~
-             defined in :logic mode.  ~x0 is thus illegal.  See :DOC ~
-             verify-guards."
-            name))))
-    (t (er soft ctx
-           "~x0 is not a theorem name or a function symbol in the current ~
-            ACL2 world.  See :DOC verify-guards."
-           name)))))
+                      name
+                      non-ideal-names))
+                 (t
+                  (er-progn
+                   (chk-common-lisp-compliant-subfunctions
+                    names names
+                    (guard-lst names nil wrld)
+                    wrld "guard" ctx state)
+                   (chk-common-lisp-compliant-subfunctions
+                    names names
+                    (getprop-x-lst names 'unnormalized-body wrld)
+                    wrld "body" ctx state)
+                   (value names))))))
+        (otherwise ; the symbol-class :common-lisp-compliant is handled above
+         (er soft ctx
+             "Implementation error: Unexpected symbol-class, ~x0, for the ~
+              function symbol ~x1."
+             symbol-class name))))
+     (t (let ((fn (deref-macro-name name (macro-aliases wrld))))
+          (er soft ctx
+              "~x0 is not a theorem name or a function symbol in the current ~
+               ACL2 world.  ~@1"
+              name
+              (cond ((eq fn name) "See :DOC verify-guards.")
+                    (t (msg "Note that ~x0 is a macro-alias for ~x1.  ~
+                             Consider calling verify-guards with argument ~x1 ~
+                             instead, or use verify-guards+.  See :DOC ~
+                             verify-guards, see :DOC verify-guards+, and see ~
+                             :DOC macro-aliases-table."
+                            name fn)))))))))
 
 (defun guard-obligation-clauses (x guard-debug ens wrld state)
 
