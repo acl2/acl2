@@ -127,3 +127,26 @@
             x2)
         x1)
     x0))
+
+; Testing verify-guards+
+
+(defun g0 (x)
+  x)
+
+(verify-guards+ g0)
+
+(defun g1 (x)
+  x)
+
+(defmacro m1 (x)
+  x)
+
+(add-macro-alias m1 g1)
+
+(verify-guards+ m1)
+
+(assert-event (eq (symbol-class 'g0 (w state))
+                  :COMMON-LISP-COMPLIANT))
+
+(assert-event (eq (symbol-class 'g1 (w state))
+                  :COMMON-LISP-COMPLIANT))

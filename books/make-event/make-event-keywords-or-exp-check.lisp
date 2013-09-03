@@ -125,7 +125,9 @@
                                                         X3)
                                                     X2)
                                                 X1)
-                                            X0))))))
+                                            X0))))
+                   (16 RECORD-EXPANSION (VERIFY-GUARDS+ M1)
+                       (VERIFY-GUARDS G1))))
           (value '(value-triple nil)))
          (t (er soft 'top
                 "Unexpected form in else-star.cert!")))))
