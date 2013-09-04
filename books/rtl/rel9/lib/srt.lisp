@@ -1386,7 +1386,7 @@
 
 (local (defthm xtable-5
   (integerp (xtable-entry i j))
-  :rule-classes (::rewrite :type-prescription)
+  :rule-classes (:rewrite :type-prescription)
   :hints (("Goal" :in-theory (enable xtable-entry)))))
 
 (local (defthmd xtable-6
