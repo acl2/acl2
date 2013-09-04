@@ -21111,6 +21111,18 @@
   argument was not documented and also caused an error, so it has been
   eliminated.
 
+  The functionality of ~ilc[make-event] has been significantly expanded.
+  First: if the expansion is of the form ~c[(:OR e1 e2 ...)], then event forms
+  ~c[e1], ~c[e2], and so on are evaluated, in order, until the evaluation of
+  some ~c[ek] completes without error.  In that case, the expansion is treated
+  simply as ~c[ek].  With this capability, alternative expansions can be
+  attempted and the successful one does not need to be evaluated again.  See
+  the new version of community book ~c[books/make-event/proof-by-arith.lisp]
+  for an example.  Second, an expansion may be of the form ~c[(:DO-PROOFS e)],
+  in which case the event ~c[e] is evaluated with proofs ~st[not] skipped;
+  ~pl[ld-skip-proofsp].  Third, new keyword ~c[:EXPANSION?] can be used to
+  avoid storing expansions in certificate files.  ~l[make-event].
+
   ~st[NEW FEATURES]
 
   ACL2 can now be instructed to time activities using real time (wall clock
@@ -21122,6 +21134,13 @@
   in that it executes a command.  Unlike ~c[sys-call], however, ~c[sys-call+]
   returns values that include output from the command (in addition to the exit
   status), rather than simply printing the command.  ~l[sys-call+].
+
+  The new macro ~ilc[verify-guards+] extends the functionality of
+  ~ilc[verify-guards] by permitting macro-aliases (~pl[macro-aliases-table]).
+  ~l[verify-guards+].  Thanks to Jared Davis for requesting this feature and
+  suggesting the use of ~ilc[make-event] in its implementation.  We have also
+  modified ~ilc[verify-guards] to print a friendlier error message when its
+  argument is a macro-alias.
 
   ~st[HEURISTIC IMPROVEMENTS]
 
@@ -21167,6 +21186,10 @@
   A small logical bug has been fixed in the logical definition of
   ~ilc[sys-call-status].  Formerly it always returned ~c[(mv nil state)]
   whenever the oracle of the state is non-empty (~pl[state]).
+
+  Fixed a bug that was causing an error upon evaluation of the form
+  ~c[(set-prover-step-limit nil)].  Thanks to David Russinoff for reporting
+  this error.
 
   ~st[CHANGES AT THE SYSTEM LEVEL]
 
