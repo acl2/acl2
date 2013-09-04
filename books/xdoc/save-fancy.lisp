@@ -28,6 +28,10 @@
 (set-state-ok t)
 (program)
 
+
+
+
+
 (defun-inline json-encode-string (x acc)
   (declare (type string x))
   (cons #\" (bridge::json-encode-str x (cons #\" acc))))
@@ -363,7 +367,10 @@
 
 (defun save-json-files (dir state)
   (b* ((topics (get-xdoc-table (w state)))
-       (topics (normalize-parents-list (clean-topics topics)))
+       (topics (force-root-parents
+                (maybe-add-top-topic
+                 (normalize-parents-list
+                  (clean-topics topics)))))
        (- (cw "; Writing JSON for ~x0 topics.~%" (len topics)))
        (topics-fal (time$ (topics-fal topics)))
        (uid-map    (time$ (make-uid-map 0 topics nil)))

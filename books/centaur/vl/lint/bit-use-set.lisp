@@ -2705,7 +2705,7 @@ warnings."
                          (cons (make-vl-warning
                                 :type :use-set-fudging
                                 :msg "~a0: No wires for this net?"
-                                :args (list x)
+                                :args (list (car x))
                                 :fatalp nil
                                 :fn 'vl-netdecllist-wires)
                                warnings)))

@@ -396,25 +396,6 @@ functions.")
                              (get-xdoc-table world))))
 
 
-#!XDOC
-(defun force-root-parents (all-topics)
-  ;; Assumes the topics have been normalized.
-  (declare (xargs :mode :program))
-  (b* (((when (atom all-topics))
-        nil)
-       (topic (car all-topics))
-       (name    (cdr (assoc :name topic)))
-       (parents (cdr (assoc :parents topic)))
-       ((when (or (equal name 'acl2::top)
-                  (consp parents)))
-        (cons topic (force-root-parents (cdr all-topics))))
-       (- (cw "Relinking top-level ~x0 to be a child of TOPICS.~%" name))
-       (new-topic
-        (cons (cons :parents '(acl2::top))
-              topic)))
-    (cons new-topic (force-root-parents (cdr all-topics)))))
-
-
 (defmacro xdoc::fix-the-hierarchy ()
   ;; I make this a macro so I can reuse it in Centaur internal manuals.
   `(progn
@@ -646,14 +627,7 @@ functions.")
      (xdoc::change-parents o< (ordinals))
      (xdoc::change-parents o-p (ordinals))
 
-     (xdoc::change-parents keyword (keywordp))
-
-     #!XDOC
-     (table xdoc 'doc
-            (force-root-parents
-             (normalize-parents-list
-              (clean-topics
-               (get-xdoc-table world)))))))
+     (xdoc::change-parents keyword (keywordp))))
 
 (local (xdoc::fix-the-hierarchy))
 

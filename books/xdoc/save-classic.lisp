@@ -164,6 +164,23 @@
         x
       (acons :parents parents x))))
 
+(defun force-root-parents (all-topics)
+  ;; Assumes the topics have been normalized.
+  (declare (xargs :mode :program))
+  (b* (((when (atom all-topics))
+        nil)
+       (topic (car all-topics))
+       (name    (cdr (assoc :name topic)))
+       (parents (cdr (assoc :parents topic)))
+       ((when (or (equal name 'acl2::top)
+                  (consp parents)))
+        (cons topic (force-root-parents (cdr all-topics))))
+       (- (cw "Relinking top-level ~x0 to be a child of TOPICS.~%" name))
+       (new-topic
+        (cons (cons :parents '(acl2::top))
+              topic)))
+    (cons new-topic (force-root-parents (cdr all-topics)))))
+
 (defun normalize-parents-list (x)
 
 ; Clean up parents throughout all xdoc topics.
@@ -172,6 +189,35 @@
       nil
     (cons (normalize-parents (car x))
           (normalize-parents-list (cdr x)))))
+
+(defun maybe-add-top-topic (all-topics)
+
+; We do it this way, rather than starting off with a top topic built in, to
+; ensure that the user's choice of a top topic wins.
+
+  (if (find-topic 'acl2::top all-topics)
+      all-topics
+    (cons
+     (list (cons :name 'acl2::top)
+           (cons :base-pkg (acl2::pkg-witness "ACL2"))
+           (cons :parents nil)
+           (cons :short "XDOC Manual -- Top Topic")
+           (cons :long "<p>This is the default top topic for an @(see xdoc)
+           manual.</p>
+
+<p>You may wish to customize this page.  The usual way to do this is to issue
+an @(see xdoc::defxdoc) command immediately before your @(see xdoc::save)
+command, along the following lines:</p>
+
+@({
+    (defxdoc acl2::top
+      :short \"your short text here\"
+      :long \"your long description here.\")
+})
+
+<p>Your topic should then automatically overwrite this default page.</p>")
+           (cons :from "[books]/xdoc/save-classic.lisp"))
+     all-topics)))
 
 (defun find-roots (x)
 
