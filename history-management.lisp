@@ -11125,13 +11125,13 @@
                     (symbol-name name))
                 nil)
                (global-val 'documentation-alist (w state))))))
-    (cond ((null lst) (value nil))
-          (t (er soft ctx
-                 "There is no documentation for ~x0.  ~#1~[A similar ~
-                  documented name is~/Similar documented names are~] ~
-                  ~&1.  See also :DOC apropos."
-                 name
-                 (strip-cdrs lst))))))
+    (er soft ctx
+        "There is no documentation for ~x0.~#1~[~/  A similar documented name ~
+         is ~&2.~/  Similar documented names are ~&2.~]~|~%NOTE: See also ~
+         :DOC finding-documentation."
+        name
+        (zero-one-or-more (length lst))
+        (strip-cdrs lst))))
 
 (defun end-doc (channel state)
   (cond
@@ -11370,18 +11370,30 @@
                                           fmt-alist
                                           channel state)))))
 
-(deflabel apropos
-
-; WARNING: Do not attempt to define apropos as a macro.  This symbol is
-; imported from Common Lisp and might already have a definition.
-
+(deflabel finding-documentation
   :doc
   ":Doc-Section acl2::Miscellaneous
 
-  searching the documentation online~/
+  searching the documentation~/
 
-  The ~c[:]~ilc[docs] command allows you to search the ~il[documentation] at
-  the terminal.  ~l[docs].~/~/")
+  The ~c[:]~ilc[doc] and ~c[:]~ilc[doc!] commands will display, at the
+  terminal, ~il[documentation] topics defined in ACL2 or in ~il[books] that
+  have already been included.  The ~c[:]~ilc[docs] command allows you to search
+  the ~il[documentation] at the terminal.  ~l[docs].
+
+  But how can you find documentation for books that are not included in the
+  current ACL2 session?
+
+  The xdoc manual is a combined manual for the ACL2 sources and the community
+  books.  It is built using documentation not only from the ACL2 sources
+  (which is rearranged) but also from the community books (whether included in
+  the current session or not), using an ``xdoc processor'' created by Jared
+  Davis.  The ACL2 home page
+  (~url[http://www.cs.utexas.edu/users/moore/acl2/]) has a link to this manual,
+  which as of this writing may be found directly by visiting the following web
+  page: ~url[http://fv.centtech.com/acl2/latest/doc/].  You can build a local
+  copy of this manual from the ACL2 Community Books, following instructions in
+  their ~c[Makefile].~/~/")
 
 (deflabel markup
   :doc

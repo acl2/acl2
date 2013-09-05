@@ -37098,6 +37098,10 @@
 ; in-local-flg.
 ;    in-local-flg
 
+; Probably in-prove-flg should be untouchable, but for now we omit it from the
+; list in order that the community book, misc/bash.lisp, be certifiable.
+;   in-prove-flg
+
     axiomsp
 
     current-acl2-world

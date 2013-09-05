@@ -8459,6 +8459,8 @@
 (link-doc-to print-summary-user switches-parameters-and-modes
              finalize-event-user)
 
+(link-doc-to apropos miscellaneous finding-documentation)
+
 #+:non-standard-analysis
 (defun build-valid-std-usage-clause (arglist body)
   (cond ((null arglist)

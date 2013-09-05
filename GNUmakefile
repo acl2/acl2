@@ -88,14 +88,7 @@
 #  Example invocations for CLI implementors:
 
 #   NOTE:  Make large completely recompiles, initializes and
-#   saves.  Consider some of the "fast" and "very-fast" options below if only
-#   part of the system needs to be rebuilt.
-
-#   make very-fast init 
-#                  ; Build the system, recompiling as little as possible
-#                  ; (perhaps don't even recompile TMP1.lisp).
-
-#   make fast init ; Compile as needed, initialize, build saved_acl2
+#   saves.
 
 #   make full      ; A complete recompilation whether needed or not.
 #   make full init ; Completely recompile, initialize and save.
@@ -124,15 +117,13 @@
 #                  ; proofs during pass 2.  Does not save an image.  Uses same
 #                  ; flags used to build full-size image.
 
-#  Metering:  If the currently compiled version is unmetered and you wish
-#  it metered, the fastest thing to do is to (push :acl2-metering *features*)
-#  and then yank in and recompile just those definitions that mention
-#  acl2-metering.  However, if you would like to install metering as part
-#  of a system-wide recompilation, you must use the full-meter option below,
-#  rather than the fast-meter option.  If, while running a fully metered
-#  system you wish to do what would otherwise be a make fast but you want
-#  to preserve the metering, use the fast-meter option.  If you want to
-#  get rid of the metering in the compiled code, do make full.
+#  Metering: If the currently compiled version is unmetered and you
+#  wish it metered, the fastest thing to do is to (push :acl2-metering
+#  *features*) and then yank in and recompile just those definitions
+#  that mention acl2-metering.  However, if you would like to install
+#  metering as part of a system-wide recompilation, use the full-meter
+#  option below.  If you want to get rid of the metering in the
+#  compiled code, do make full.
 
 LISP = ccl
 DIR = /tmp
@@ -290,7 +281,7 @@ acl2r.lisp:
 	echo "(defparameter *acl2-safety* $(ACL2_SAFETY))" >> acl2r.lisp ;\
 	fi
 	if [ "$(ACL2_SIZE)" != "" ] ; then \
-	echo '(or (find-package "ACL2") (#+gcl defpackage:defpackage #-gcl defpackage "ACL2" (:size $(ACL2_SIZE)) (:use)))' >> acl2r.lisp ;\
+	echo '(or (find-package "ACL2") (#+(and gcl (not ansi-cl)) defpackage:defpackage #-(and gcl (not ansi-cl)) defpackage "ACL2" (:size $(ACL2_SIZE)) (:use)))' >> acl2r.lisp ;\
 	fi
 	if [ "$(ACL2_COMPILER_DISABLED)" != "" ] ; then \
 	echo '(DEFPARAMETER *ACL2-COMPILER-ENABLED* NIL)' >> acl2r.lisp ;\
@@ -340,17 +331,6 @@ check_init_ok:
 	fi
 	@echo "Initialization SUCCEEDED."
 
-.PHONY: fast
-fast:
-	date
-	rm -f workxxx
-	echo '(load "init.lisp")' > workxxx
-	echo '(acl2::quick-compile-acl2 nil)' >> workxxx
-	echo '(acl2::exit-lisp)' >> workxxx
-	${LISP} < workxxx
-	@$(MAKE) check_compile_ok
-	rm -f workxxx
-
 .PHONY: compile-ok
 compile-ok:  
 	date
@@ -359,28 +339,6 @@ compile-ok:
 	echo '(acl2::note-compile-ok)' >> workxxx
 	echo '(acl2::exit-lisp)' >> workxxx
 	${LISP} < workxxx
-	rm -f workxxx
-
-.PHONY: very-fast
-very-fast:
-	date
-	rm -f workxxx
-	echo '(load "init.lisp")' > workxxx
-	echo '(acl2::quick-compile-acl2 t)' >> workxxx
-	echo '(acl2::exit-lisp)' >> workxxx
-	${LISP} < workxxx
-	@$(MAKE) check_compile_ok
-	rm -f workxxx
-
-.PHONY: fast-meter
-fast-meter:
-	date
-	rm -f workxxx
-	echo '(load "init.lisp") (push :acl2-metering *features*)' > workxxx
-	echo '(acl2::quick-compile-acl2 nil)' >> workxxx
-	echo '(acl2::exit-lisp)' >> workxxx
-	${LISP} < workxxx
-	@$(MAKE) check_compile_ok
 	rm -f workxxx
 
 .PHONY: check-sum

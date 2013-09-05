@@ -1516,7 +1516,7 @@
 ; documentation purposes:
 
                          state
-                         declare apropos
+                         declare apropos finding-documentation
                          enter-boot-strap-mode exit-boot-strap-mode
                          lp acl2-defaults-table let let*
                          complex complex-rationalp
@@ -4651,8 +4651,7 @@
                                      make-event-chk)
 
 ; WARNING: Keep this in sync with destructure-expansion, elide-locals-rec,
-; elide-locals-post, make-include-books-absolute, and
-; find-first-non-local-name.
+; make-include-books-absolute, and find-first-non-local-name.
 
 ; Note: For a test of this function, see the reference to foo.lisp below.
 
@@ -5006,8 +5005,7 @@
 
 (defun destructure-expansion (form)
 
-; WARNING: Keep this in sync with chk-embedded-event-form, elide-locals-rec,
-; and elide-locals-post.
+; WARNING: Keep this in sync with chk-embedded-event-form and elide-locals-rec.
 
   (declare (xargs :guard (true-listp form)))
   (cond ((member-eq (car form) '(local skip-proofs with-output
@@ -5503,7 +5501,7 @@
 (defun elide-locals-rec (form strongp)
 
 ; WARNING: Keep this in sync with chk-embedded-event-form,
-; destructure-expansion, make-include-books-absolute, and elide-locals-post.
+; destructure-expansion, and make-include-books-absolute.
 
 ; We assume that form is a legal event form and return (mv changed-p new-form),
 ; where new-form results from eliding top-level local events from form, and
@@ -10522,7 +10520,7 @@
                                          state)
 
 ; WARNING: Keep this in sync with chk-embedded-event-form,
-; destructure-expansion, elide-locals-rec, and elide-locals-post.
+; destructure-expansion, and elide-locals-rec.
 
 ; See the comment in fix-portcullis-cmds for a discussion.  Starting after
 ; Version_3.6.1, we allow an include-book pathname for a portcullis command to

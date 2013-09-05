@@ -2011,73 +2011,6 @@ which is saved just in case it's needed later.")
                                       :type *compiled-file-extension*))))))))))
    (note-compile-ok)))
 
-(defun no-object-file-or-out-of-date-object-file (fl)
-  (or (null (probe-file
-             (make-pathname :name fl :type *compiled-file-extension*)))
-      (> (file-write-date
-          (make-pathname :name fl :type *lisp-extension*))
-         (file-write-date
-          (make-pathname :name fl :type *compiled-file-extension*)))))
-
-(defun quick-compile-acl2 (&optional very-fast use-acl2-proclaims)
-  (with-warnings-suppressed
-
-; Here is a natural place to put compiler options.
-
-; (declaim (optimize (safety 0) (space 0) (speed 3)))
-
-; As of version 18a, cmulisp spews gc messages to the terminal even when
-; standard and error output are redirected.  So we turn them off.
-
-   #+cmu
-   (setq extensions::*gc-verbose* nil)
-
-   (cond
-    ((or (not (probe-file (make-pathname :name "acl2-status"
-                                         :type "txt")))
-         (with-open-file (str (make-pathname :name "acl2-status"
-                                             :type "txt")
-                              :direction :input)
-                         (not (eq (read str nil)
-                                  :checked))))
-     (check-suitability-for-acl2)))
-   (our-with-compilation-unit
-    (let ((compile-rest-flg nil)
-          (*readtable* *acl2-readtable*)
-          #+akcl
-          (si:*notify-gbc* nil)
-          #+akcl
-
-; AKCL compiler note stuff.  We have so many tail recursive functions
-; that the notes about tail recursion optimization are just too much
-; to take.
-
-          (compiler:*suppress-compiler-notes* t)
-          (files (remove "defpkgs" *acl2-files* :test #'equal)))
-      (cond
-       ((some #'no-object-file-or-out-of-date-object-file files)
-        (when use-acl2-proclaims
-          (load "acl2-proclaims.lisp"))
-        (dolist
-          (fl files)
-          (let ((source (make-pathname :name fl :type *lisp-extension*))
-                (object (make-pathname :name fl :type *compiled-file-extension*)))
-            (cond
-             ((or *suppress-compile-build-time*
-                  (equal fl "proof-checker-pkg"))
-              (load source))
-             ((or compile-rest-flg (no-object-file-or-out-of-date-object-file fl))
-              (load source)
-              (proclaim-file source)
-              (when (not very-fast)
-                (setq compile-rest-flg t))
-              (compile-file source)
-              (load-compiled object))
-             (t (load-compiled object)
-                (proclaim-file source))))))
-       (t "Nothing to do."))))
-   (note-compile-ok)))
-
 #+gcl
 (defvar user::*fast-acl2-gcl-build* nil)
 
@@ -2145,11 +2078,9 @@ which is saved just in case it's needed later.")
                                :direction :input)
                           (not (member (read str nil)
                                        '(:compiled :initialized)))))
-      (error "Please compile ACL2 using ~s or~%~
-            ~s, which will write the~%~
-            token :compiled to the file acl2-status.txt."
-             '(compile-acl2)
-             '(quick-compile-acl2 t))))
+      (error "Please compile ACL2 using ~s, which will write~%~
+              the token :COMPILED to the file acl2-status.txt."
+             '(compile-acl2))))
     (let ((*readtable* *acl2-readtable*)
           (extension (if *suppress-compile-build-time*
                          *lisp-extension*

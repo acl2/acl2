@@ -21028,6 +21028,11 @@
 ; has a comment explaining more about how this may not be appropriate and what
 ; needs to be done to suppress startup information.
 
+; Removed support for "make fast", "make very-fast", and "make fast-meter",
+; which as far as we know are no longer in use.  Thus, deleted
+; quick-compile-acl2.  Also deleted no-object-file-or-out-of-date-object-file,
+; since it was there only to support quick-compile-acl2.
+
   :doc
   ":Doc-Section release-notes
 
